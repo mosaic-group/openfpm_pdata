@@ -4,20 +4,44 @@
 #include <vector>
 #include "map_grid.hpp"
 
+/*! \brief Grid key for a distributed grid
+ *
+ * Grid key for a distributed grid
+ *
+ */
+
+template<unsigned int dim>
+class grid_dist_key_dx
+{
+	//! grid list counter
+
+	size_t g_c;
+
+	//! Local grid iterator
+
+	grid_key_dx_iterator<dim> a_it;
+};
+
 /*! \brief Distributed grid iterator
  *
  * Iterator across the local element of the distributed grid
- *
- *
  *
  */
 
 template<unsigned int dim>
 class grid_dist_iterator
 {
+	//! grid list counter
+
+	size_t g_c;
+
 	//! List if the grids on which iterate
 
-	std::vector<grid_key_dx<dim>> gList;
+	std::vector<grid_key_dx<dim>> & gList;
+
+	//! Actual iterator
+
+	grid_key_dx_iterator<dim> a_it;
 
 	public:
 
@@ -29,14 +53,78 @@ class grid_dist_iterator
 	 *
 	 */
 	grid_dist_iterator(std::vector<grid_key_dx<dim>> & gk)
-	:gList(gk)
+	:g_c(0),gList(gk)
 	{
+		// Initialize with the current iterator
+		// with the first grid
 
+		a_it = gList[0].getIterator();
 	}
 
+	// Destructor
 	~grid_dist_iterator()
-	{
+	{}
 
+	/*! \brief Get the next element
+	 *
+	 * Get the next element
+	 *
+	 * \return the next grid_key
+	 *
+	 */
+
+	grid_key_dx_iterator<dim> operator++()
+	{
+		a_it++;
+
+		// check if a_it is at the end
+
+		if (a_it.isEnd() == false)
+			return *this;
+		else
+		{
+			// switch to the new grid
+
+			g_c++;
+
+			// get the next grid iterator
+
+			a_it = a_it = gList[g_c].getIterator();
+
+			// increment to a valid point
+
+			a_it++;
+		}
+
+		return *this;
+	}
+
+	/*! \brief Check if there is the next element
+	 *
+	 * Check if there is the next element
+	 *
+	 * \return true if there is the next, false otherwise
+	 *
+	 */
+
+	bool isEnd()
+	{
+		// If there are no other grid stop
+
+		if (g_c >= gList.size())
+			return true;
+	}
+
+	/*! \brief Get the actual key
+	 *
+	 * Get the actual key
+	 *
+	 * \return the actual key
+	 *
+	 */
+	grid_dist_key_dx<dim> get()
+	{
+		return a_it;
 	}
 };
 
@@ -53,7 +141,7 @@ class grid_dist_iterator
  *
  */
 
-template<unsigned int dim, typename T, typename Decomposition, typename Mem = typename memory_traits_lin< typename T::type >::type, typename device_grid=device_g<dim,T>::cpu >
+template<unsigned int dim, typename T, typename Decomposition, typename Mem = typename memory_traits_lin< typename T::type >::type, typename device_grid=device_g<dim,T> >
 class grid_dist
 {
 	//! Local grids
@@ -65,8 +153,8 @@ class grid_dist
 	//! constructor
 	grid_dist(Decomposition dec)
 	{
-		// ! Create an hyper-cube approximation
-		// ! in order to work on grid_dist the decomposition
+		// ! Create an hyper-cube approximation.
+		// ! In order to work on grid_dist the decomposition
 		// ! has to be a set of hyper-cube
 
 		dec.HyperCube();
@@ -88,10 +176,10 @@ class grid_dist
 	}
 
 	//! Get iterator
-	getIterator()
+/*	getIterator()
 	{
 
-	}
+	}*/
 
 	//! Destructor
 	~grid_dist()
