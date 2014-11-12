@@ -150,14 +150,40 @@ class grid_dist
 	//! Space Decomposition
 	Decomposition dec;
 
+public:
+
 	//! constructor
-	grid_dist(Decomposition dec)
+	grid_dist()
+	:loc_grid(NULL)
+	{
+	}
+
+	/*! \brief get the object that store the decomposition information
+	 *
+	 * get the object that store the decomposition information
+	 *
+	 * \return the decomposition object
+	 *
+	 */
+
+	Decomposition & getDecomposition()
+	{
+		return dec;
+	}
+
+	/*! \brief Decompose the domain
+	 *
+	 * Decompose the domain
+	 *
+	 */
+
+	void Decompose()
 	{
 		// ! Create an hyper-cube approximation.
 		// ! In order to work on grid_dist the decomposition
 		// ! has to be a set of hyper-cube
 
-		dec.HyperCube();
+		dec.hyperCube();
 
 		// Get the number of local grid needed
 
