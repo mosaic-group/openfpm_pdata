@@ -3,6 +3,8 @@
 
 #include <vector>
 #include "map_grid.hpp"
+#include "VCluster.hpp"
+#include "Space/SpaceBox.hpp"
 
 /*! \brief Grid key for a distributed grid
  *
@@ -135,13 +137,13 @@ class grid_dist_iterator
  *
  * \dim Dimensionality of the grid
  * \T type of grid
- * \Decomposition Class that decompose the grid
+ * \Decomposition Class that decompose the grid for example CartDecomposition
  * \Mem Is the allocator
  * \device type of base structure is going to store the data
  *
  */
 
-template<unsigned int dim, typename T, typename Decomposition, typename Mem = typename memory_traits_lin< typename T::type >::type, typename device_grid=device_g<dim,T> >
+template<unsigned int dim, typename T, typename Decomposition, typename Mem = typename memory_traits_lin< typename T::type >::type, typename device_grid=grid_cpu<dim,T> >
 class grid_dist
 {
 	//! Local grids
@@ -150,11 +152,48 @@ class grid_dist
 	//! Space Decomposition
 	Decomposition dec;
 
+	//! Size of the grid on each dimension
+	std::vector<size_t> g_res;
+
+	//! Communicator class
+
+	Vcluster & v_cl;
+
+	/*! \brief Get the grid size
+	 *
+	 * Get the grid size, given a domain, the resolution on it and another spaceBox
+	 * it give the size on all directions of the local grid
+	 *
+	 * \param sp SpaceBox enclosing the local grid
+	 * \param domain Space box enclosing the physical domain or part of it
+	 * \param grid size on this physical domain
+	 *
+	 */
+	std::vector<size_t> getGridSize(SpaceBox<dim,typename Decomposition::domain_type> & sp, Box<dim,typename Decomposition::domain_type> & domain, std::vector<size_t> & v_size)
+	{
+		std::vector<size_t> tmp;
+		for (size_t d = 0 ; d < dim ; d++)
+		{
+			//! Get the grid size compared to the domain space and its resolution
+			typename Decomposition::domain_type dim_sz = (sp.getHigh(d) - sp.getLow(d)) / ((domain.getHigh(d) - domain.getLow(d)) / v_size[d]) + 0.5;
+
+			// push the size of the local grid
+			tmp.push_back(dim_sz);
+		}
+		return tmp;
+	}
+
 public:
 
 	//! constructor
+	grid_dist(Vcluster v_cl)
+	:loc_grid(NULL),v_cl(v_cl),dec(*global_v_cluster)
+	{
+	}
+
+	//! constructor
 	grid_dist()
-	:loc_grid(NULL)
+	:loc_grid(NULL),v_cl(*global_v_cluster),dec(*global_v_cluster)
 	{
 	}
 
@@ -193,11 +232,26 @@ public:
 
 		loc_grid = new device_grid[n_grid];
 
+		// Each processing unit take a space
+		// Set the space associated to this process unit
+
+		dec.setSpace(v_cl.getProcessUnitID());
+
 		// Allocate the grids
 
 		for (size_t i = 0 ; i < n_grid ; i++)
 		{
-			loc_grid[i].setDimensions(dec.getGridDims());
+			// Get the local hyper-cube
+
+			SpaceBox<dim,typename Decomposition::domain_type> sp = dec.getLocalHyperCube(i);
+
+			// Calculate the local grid size
+
+			std::vector<size_t> l_res = getGridSize(sp,dec.getDomain(),g_res);
+
+			// Set the dimensions of the local grid
+
+			loc_grid[i].setDimensions(l_res);
 		}
 	}
 
