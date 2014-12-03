@@ -37,21 +37,17 @@ class grid_dist_iterator
 
 	size_t g_c;
 
-	//! List if the grids on which iterate
-
+	//! List of the grids we are going to iterate
 	std::vector<grid_key_dx<dim>> & gList;
 
 	//! Actual iterator
-
 	grid_key_dx_iterator<dim> a_it;
 
 	public:
 
 	/*! \brief Constructor of the distributed grid
 	 *
-	 * Constructor of the distributed grid
-	 *
-	 * \param vector of the local grids
+	 * \param gk std::vector of the local grid
 	 *
 	 */
 	grid_dist_iterator(std::vector<grid_key_dx<dim>> & gk)
@@ -68,8 +64,6 @@ class grid_dist_iterator
 	{}
 
 	/*! \brief Get the next element
-	 *
-	 * Get the next element
 	 *
 	 * \return the next grid_key
 	 *
@@ -103,8 +97,6 @@ class grid_dist_iterator
 
 	/*! \brief Check if there is the next element
 	 *
-	 * Check if there is the next element
-	 *
 	 * \return true if there is the next, false otherwise
 	 *
 	 */
@@ -118,8 +110,6 @@ class grid_dist_iterator
 	}
 
 	/*! \brief Get the actual key
-	 *
-	 * Get the actual key
 	 *
 	 * \return the actual key
 	 *
@@ -135,11 +125,11 @@ class grid_dist_iterator
  * Implementation of a distributed grid. A distributed grid is a grid distributed
  * across processors
  *
- * \dim Dimensionality of the grid
- * \T type of grid
- * \Decomposition Class that decompose the grid for example CartDecomposition
- * \Mem Is the allocator
- * \device type of base structure is going to store the data
+ * \param dim Dimensionality of the grid
+ * \param T type of grid
+ * \param Decomposition Class that decompose the grid for example CartDecomposition
+ * \param Mem Is the allocator
+ * \param device type of base structure is going to store the data
  *
  */
 
@@ -166,7 +156,9 @@ class grid_dist
 	 *
 	 * \param sp SpaceBox enclosing the local grid
 	 * \param domain Space box enclosing the physical domain or part of it
-	 * \param grid size on this physical domain
+	 * \param v_size grid size on this physical domain
+	 *
+	 * \return An std::vector representing the local grid on each dimension
 	 *
 	 */
 	std::vector<size_t> getGridSize(SpaceBox<dim,typename Decomposition::domain_type> & sp, Box<dim,typename Decomposition::domain_type> & domain, std::vector<size_t> & v_size)
