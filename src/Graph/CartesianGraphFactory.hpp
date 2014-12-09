@@ -48,7 +48,7 @@ public:
 	 *
 	 */
 	template <unsigned int se,typename T, unsigned int dim_c>
-	static void construct(std::vector<size_t> sz, Box<dim,T> dom)
+	static Graph construct(std::vector<size_t> sz, Box<dim,T> dom)
 	{
 #ifdef DEBUG
 		//! The size is wrong signal it
@@ -91,7 +91,7 @@ public:
 
 		//! Iterate through all the elements
 
-		while (k_it.isEnd())
+		while (k_it.isNext())
 		{
 			grid_key_dx<dim> key = k_it.get();
 
@@ -115,25 +115,24 @@ public:
 
 					for (int s = 0 ; s < dim ; s++)
 					{
-						ele_sz += szd[s] * c[j][s];
+						ele_sz += szd[s] * abs(c[j][s]);
 					}
 
 					// Calculate the end point vertex id
 					// Calculate the start point id
 
 					size_t start_v = g.LinId(key);
-					size_t end_v = g.template LinId<CheckExistence>(key,c[j]);
+					size_t end_v = g.template LinId<CheckExistence>(key,c[j].getComb());
 
-					// set up the edge
-
-					gp.template addEdge<CheckExistence>(start_v,end_v).set<se>(ele_sz);
+					// Add an edge and set the se edge property to the size of the face (communication weight)
+					gp.template addEdge<CheckExistence>(start_v,end_v).template get<se>() = ele_sz;
 				}
 			}
 
 			++k_it;
 		}
 
-		return;
+		return gp;
 
 	}
 
