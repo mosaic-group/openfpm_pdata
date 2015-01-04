@@ -189,9 +189,7 @@ public:
 	{
 	}
 
-	/*! \brief get the object that store the decomposition information
-	 *
-	 * get the object that store the decomposition information
+	/*! \brief Get the object that store the decomposition information
 	 *
 	 * \return the decomposition object
 	 *
