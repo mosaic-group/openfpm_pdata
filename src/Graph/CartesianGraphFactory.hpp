@@ -388,7 +388,6 @@ public:
 	{
 		return Graph_constructor_impl<dim,Graph,se,T,dim_c,pos...>::construct(sz,dom);
 	}
-
 };
 
 #endif /* CARTESIANGRAPHFACTORY_HPP_ */
