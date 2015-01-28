@@ -26,9 +26,9 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use)
 
 	// Cartesian grid
 	std::vector<size_t> sz;
-	sz.push_back(4);
-	sz.push_back(4);
-	sz.push_back(1);
+	sz.push_back(GS_SIZE);
+	sz.push_back(GS_SIZE);
+	sz.push_back(GS_SIZE);
 
 	// Box
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});

@@ -2,7 +2,7 @@
 #define COM_UNIT_HPP
 
 #include <vector>
-#include "map_grid.hpp"
+#include "Grid/map_grid.hpp"
 #include "VCluster.hpp"
 #include "Space/SpaceBox.hpp"
 

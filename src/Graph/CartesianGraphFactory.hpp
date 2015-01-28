@@ -10,8 +10,9 @@
 
 #include "map_vector.hpp"
 #include "map_graph.hpp"
-#include "grid.hpp"
+#include "Grid/grid.hpp"
 #include "Space/Shape/Box.hpp"
+#include "Space/Shape/HyperCube.hpp"
 
 /*! \brief This class work as a functor
  *

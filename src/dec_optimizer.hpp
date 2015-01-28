@@ -59,7 +59,7 @@ public:
 	 *
 	 */
 
-	template<typename encap> static Box<dim,size_t> getBox(encap & enc)
+	template<typename encap> static Box<dim,size_t> getBox(encap && enc)
 	{
 		Box<dim,size_t> bx;
 
@@ -80,7 +80,7 @@ public:
 	 *
 	 */
 
-	template<typename encap> static void getBox(encap & enc, Box<dim,size_t> & bx)
+	template<typename encap> static void getBox(const encap & enc, Box<dim,size_t> & bx)
 	{
 		// Create the object from the encapsulation
 
@@ -145,7 +145,7 @@ private:
 	 *
 	 */
 
-	template<unsigned int p_sub> void fill_domain(Graph & graph, Box<dim,size_t> & box, size_t ids)
+	template<unsigned int p_sub> void fill_domain(Graph & graph,const Box<dim,size_t> & box, size_t ids)
 	{
 		// Create a subgrid iterator
 		grid_key_dx_iterator_sub<dim> g_sub(gh,box.getKP1(),box.getKP2());
@@ -283,11 +283,15 @@ private:
 					// get the wavefront sub-domain id
 					size_t sub_w = gh.LinId(it.get());
 
+					// get the sub-domain id of the expanded wavefront
+					grid_key_dx<dim> k_exp = it.get() + w_comb[d];
+					size_t sub_w_e = gh.LinId(k_exp);
+
 					// we get the processor id of the neighborhood sub-domain on direction d
-					size_t exp_p = graph.vertex(graph.getChild(sub_w,d)).template get<p_id>();
+					size_t exp_p = graph.vertex(sub_w_e).template get<p_id>();
 
 					// we check if it is the same processor id
-					w_can_expand &= exp_p != domain_id;
+					w_can_expand &= exp_p == domain_id;
 
 					// next domain
 					++it;
@@ -310,9 +314,6 @@ private:
 					{
 						v_w.template get<wavefront<dim>::stop>(d)[j] = v_w.template get<wavefront<dim>::stop>(d)[j] + w_comb[d].c[j];
 						v_w.template get<wavefront<dim>::start>(d)[j] = v_w.template get<wavefront<dim>::start>(d)[j] + w_comb[d].c[j];
-
-						std::cout << "stop: " << v_w.template get<wavefront<dim>::stop>(d)[j] << "\n";
-						std::cout << "start: " << v_w.template get<wavefront<dim>::start>(d)[j] << "\n";
 					}
 
 					// expand the intersection of the wavefronts
@@ -346,9 +347,9 @@ private:
 						for (int s = 0 ; s < dim ; s++)
 						{
 							if (is_pos == true)
-							{v_w.template get<wavefront<dim>::stop>(id)[j] = v_w.template get<wavefront<dim>::stop>(d)[j] + w_comb[id].c[j];}
+							{v_w.template get<wavefront<dim>::stop>(id)[j] = v_w.template get<wavefront<dim>::stop>(id)[j] + w_comb[id].c[j];}
 							else
-							{v_w.template get<wavefront<dim>::start>(id)[j] = v_w.template get<wavefront<dim>::start>(d)[j] + w_comb[id].c[j];}
+							{v_w.template get<wavefront<dim>::start>(id)[j] = v_w.template get<wavefront<dim>::start>(id)[j] + w_comb[id].c[j];}
 						}
 					}
 				}
