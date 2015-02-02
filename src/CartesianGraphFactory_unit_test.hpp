@@ -47,10 +47,7 @@ BOOST_AUTO_TEST_CASE( CartesianGraphFactory_use)
 	CartesianGraphFactory<3,Graph_CSR<Point_test<float>,Point_test<float>>> g_factory;
 
 	// Cartesian grid
-	std::vector<size_t> sz;
-	sz.push_back(GS_SIZE);
-	sz.push_back(GS_SIZE);
-	sz.push_back(GS_SIZE);
+	size_t sz[3] = {GS_SIZE,GS_SIZE,GS_SIZE};
 
 	// Box
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});

@@ -7,15 +7,16 @@
 #define BOOST_TEST_MODULE "C++ test module for OpenFPM_pdata project"
 #include <boost/test/included/unit_test.hpp>
 
-#include <grid_dist.hpp>
+#include "Grid/grid_dist.hpp"
 #include "Point_test.hpp"
 #include "Decomposition/CartDecomposition.hpp"
 #include "memory/HeapMemory.hpp"
 #include "Space/Shape/Box.hpp"
 #include "util.hpp"
 
-#include "hypercube_unit_test.hpp"
 #include "CartesianGraphFactory_unit_test.hpp"
 #include "metis_util_unit_test.hpp"
 #include "dec_optimizer_unit_test.hpp"
+#include "Grid/grid_dist_unit_test.hpp"
+#include "Decomposition/CartDecomposition_unit_test.hpp"
 

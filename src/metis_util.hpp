@@ -251,24 +251,40 @@ public:
 	template<unsigned int i>
 	void decompose()
 	{
-		// Decompose
-		METIS_PartGraphKway(Mg.nvtxs,Mg.ncon,Mg.xadj,Mg.adjncy,Mg.vwgt,Mg.vsize,Mg.adjwgt,
+		if (Mg.nparts[0] != 1)
+		{
+			// Decompose
+			METIS_PartGraphKway(Mg.nvtxs,Mg.ncon,Mg.xadj,Mg.adjncy,Mg.vwgt,Mg.vsize,Mg.adjwgt,
 				            Mg.nparts,Mg.tpwgts,Mg.ubvec,Mg.options,Mg.objval,Mg.part);
 
-		// vertex id
+			// vertex id
 
-		size_t id = 0;
+			size_t id = 0;
 
-		// For each vertex store the processor that contain the data
+			// For each vertex store the processor that contain the data
 
-		auto it = g.getVertexIterator();
+			auto it = g.getVertexIterator();
 
-		while (it.isNext())
+			while (it.isNext())
+			{
+				g.vertex(it).template get<i>() = Mg.part[id];
+
+				++id;
+				++it;
+			}
+		}
+		else
 		{
-			g.vertex(it).template get<i>() = Mg.part[id];
+			// Trivially assign all the domains to the processor 0
 
-			++id;
-			++it;
+			auto it = g.getVertexIterator();
+
+			while (it.isNext())
+			{
+				g.vertex(it).template get<i>() = 0;
+
+				++it;
+			}
 		}
 	}
 

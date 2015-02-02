@@ -21,125 +21,6 @@
  *
  */
 
-struct nm_v
-{
-	//! The node contain 3 unsigned long integer for communication computation memory and id
-	typedef boost::fusion::vector<float,float,float,size_t,size_t,size_t,size_t,size_t> type;
-
-	typedef typename memory_traits_inte<type>::type memory_int;
-	typedef typename memory_traits_lin<type>::type memory_lin;
-
-	//! type of the positional field
-	typedef float s_type;
-
-	//! Attributes name
-	struct attributes
-	{
-		static const std::string name[];
-	};
-
-	//! The data
-	type data;
-
-	//! computation property id in boost::fusion::vector
-	static const unsigned int x = 0;
-	//! computation property id in boost::fusion::vector
-	static const unsigned int y = 1;
-	//! memory property id in boost::fusion::vector
-	static const unsigned int z = 2;
-	//! computation property id in boost::fusion::vector
-	static const unsigned int communication = 3;
-	//! computation property id in boost::fusion::vector
-	static const unsigned int computation = 4;
-	//! memory property id in boost::fusion::vector
-	static const unsigned int memory = 5;
-	//! memory property id in boost::fusion::vector
-	static const unsigned int id = 6;
-	//! memory property sub_id in boost::fusion::vector
-	static const unsigned int sub_id = 7;
-
-	//! total number of properties boost::fusion::vector
-	static const unsigned int max_prop = 8;
-};
-
-const std::string nm_v::attributes::name[] = {"x","y","z","communication","computation","memory","id","sub_id"};
-
-/*!
- *
- * Test node
- *
- */
-
-struct nm_e
-{
-	//! The node contain 3 unsigned long integer for comunication computation and memory
-	typedef boost::fusion::vector<size_t> type;
-
-	typedef typename memory_traits_inte<type>::type memory_int;
-	typedef typename memory_traits_lin<type>::type memory_lin;
-
-	//! Attributes name
-	struct attributes
-	{
-		static const std::string name[];
-	};
-
-	//! The data
-	type data;
-
-	//! computation property id in boost::fusion::vector
-	static const unsigned int communication = 0;
-	//! total number of properties boost::fusion::vector
-	static const unsigned int max_prop = 1;
-};
-
-const std::string nm_e::attributes::name[] = {"communication"};
-
-struct nm_part_v
-{
-	//! The node contain 3 unsigned long integer for comunication computation and memory
-	typedef boost::fusion::vector<size_t> type;
-
-	typedef typename memory_traits_inte<type>::type memory_int;
-	typedef typename memory_traits_lin<type>::type memory_lin;
-
-	typedef float s_type;
-
-	//! Attributes name
-	struct attributes
-	{
-		static const std::string name[];
-	};
-
-	//! The data
-
-	type data;
-
-	//! partition id in the boost::fusion::vector
-	static const unsigned int id = 0;
-
-	//! total number of properties
-	static const unsigned int max_prop = 1;
-};
-
-const std::string nm_part_v::attributes::name[] = {"id"};
-
-struct nm_part_e
-{
-	//! The node contain 3 unsigned long integer for comunication computation and memory
-	typedef boost::fusion::vector<> type;
-
-	typedef typename memory_traits_inte<type>::type memory_int;
-	typedef typename memory_traits_lin<type>::type memory_lin;
-
-	//! The data
-
-	type data;
-
-	//! total number of properties
-	static const unsigned int max_prop = 0;
-};
-
 BOOST_AUTO_TEST_SUITE( Metis_test )
 
 BOOST_AUTO_TEST_CASE( Metis_test_use)
@@ -148,10 +29,7 @@ BOOST_AUTO_TEST_CASE( Metis_test_use)
 	CartesianGraphFactory<3,Graph_CSR<nm_part_v,nm_part_e>> g_factory_part;
 
 	// Cartesian grid
-	std::vector<size_t> sz;
-	sz.push_back(GS_SIZE);
-	sz.push_back(GS_SIZE);
-	sz.push_back(GS_SIZE);
+	size_t sz[3] = {GS_SIZE,GS_SIZE,GS_SIZE};
 
 	// Box
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});

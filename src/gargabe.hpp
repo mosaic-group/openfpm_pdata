@@ -102,4 +102,27 @@
 
 	}
 
+#ifndef PARALLEL_DECOMPOSITION
+//		CreateSubspaces();
+#endif
+
+#ifndef USE_METIS_GP
+
+		// Here we do not use METIS
+		// Distribute the divided domains
+
+		// Get the number of processing units
+		size_t Np = v_cl.getProcessingUnits();
+
+		// Get the ID of this processing unit
+		// and push the subspace is taking this
+		// processing unit
+
+		for (size_t p_id = v_cl.getProcessUnitID(); p_id < Np ; p_id += Np)
+			id_sub.push_back(p_id);
+#else
+
+
+#endif
+
 #endif /* GARGABE_HPP_ */

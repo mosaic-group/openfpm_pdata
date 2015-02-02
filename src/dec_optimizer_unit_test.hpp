@@ -14,6 +14,7 @@
 #include "metis_util.hpp"
 #include "dec_optimizer.hpp"
 
+
 #undef GS_SIZE
 #define GS_SIZE 8
 
@@ -25,10 +26,7 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use)
 	CartesianGraphFactory<3,Graph_CSR<nm_part_v,nm_part_e>> g_factory_part;
 
 	// Cartesian grid
-	std::vector<size_t> sz;
-	sz.push_back(GS_SIZE);
-	sz.push_back(GS_SIZE);
-	sz.push_back(GS_SIZE);
+	size_t sz[3] = {GS_SIZE,GS_SIZE,GS_SIZE};
 
 	// Box
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});

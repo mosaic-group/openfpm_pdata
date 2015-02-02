@@ -59,17 +59,13 @@ public:
 	 *
 	 */
 
-	template<typename encap> static Box<dim,size_t> getBox(encap && enc)
+	template<typename encap> static Box<dim,size_t> getBox(const encap && enc)
 	{
 		Box<dim,size_t> bx;
 
 		// Create the object from the encapsulation
 
-		for (int i = 0 ; i < dim ; i++)
-		{
-			bx.setHigh(i,enc.template get<wavefront::start>()[i]);
-			bx.setLow(i,enc.template get<wavefront::stop>()[i]);
-		}
+		getBox(enc,bx);
 
 		return bx;
 	}
@@ -86,8 +82,8 @@ public:
 
 		for (int i = 0 ; i < dim ; i++)
 		{
-			bx.setHigh(i,enc.template get<wavefront::start>()[i]);
-			bx.setLow(i,enc.template get<wavefront::stop>()[i]);
+			bx.setLow(i,enc.template get<wavefront::start>()[i]);
+			bx.setHigh(i,enc.template get<wavefront::stop>()[i]);
 		}
 	}
 };
@@ -160,19 +156,23 @@ private:
 			// get the vertex and set the sub id
 
 			graph.vertex(gh.LinId(gk)).template get<p_sub>() = ids;
+
+			// next subdomain
+			++g_sub;
 		}
 	}
 
-	/* \brief Add the boundary domain to the queue
+	/* \brief Add the boundary domain of id p_id to the queue
 	 *
 	 * \tparam i-property where is stored the decomposition
 	 *
 	 * \param domains vector with domains to process
 	 * \param graph we are processing
 	 * \param w_comb hyper-cube combinations
+	 * \param p_id processor id
 	 *
 	 */
-	template<unsigned int p_sub> void add_to_queue(openfpm::vector<size_t> & domains, openfpm::vector<wavefront<dim>> & v_w, Graph & graph,  std::vector<comb<dim>> & w_comb)
+	template<unsigned int p_sub, unsigned int p_id> void add_to_queue(openfpm::vector<size_t> & domains, openfpm::vector<wavefront<dim>> & v_w, Graph & graph,  std::vector<comb<dim>> & w_comb, long int pr_id)
 	{
 		// create a new queue
 		openfpm::vector<size_t> domains_new;
@@ -201,7 +201,7 @@ private:
 			}
 		}
 
-		// for each expanded wavefront create a sub-grid iterator and add the subbomain
+		// for each expanded wavefront create a sub-grid iterator and add the sub-domain
 
 		for (int d = 0 ; d < v_w.size() ; d++)
 		{
@@ -215,19 +215,27 @@ private:
 				// get the actual key
 				const grid_key_dx<dim> & gk = g_sub.get();
 
-				// get the vertex and check if is not assigned add to the queue
+				// get the vertex and if does not have a sub-id and is assigned ...
 
 				if (graph.vertex(gh.LinId(gk)).template get<p_sub>() < 0)
 				{
-					// add
-
-					domains_new.add(gh.LinId(gk));
+					// ... and the p_id different from -1
+					if (pr_id != -1)
+					{
+						// ... and the processor id of the sub-domain match p_id, add to the queue
+						if ( pr_id == graph.vertex(gh.LinId(gk)).template get<p_id>() )
+							domains_new.add(gh.LinId(gk));
+					}
+					else
+						domains_new.add(gh.LinId(gk));
 				}
+
+				++g_sub;
 			}
 		}
 
 		// copy the new queue to the old one (it not copied, C++11 move semantic)
-		domains = domains_new;
+		domains.swap(domains_new);
 	}
 
 	/* \brief Find the biggest hyper-cube
@@ -274,18 +282,16 @@ private:
 				// flag to indicate if the wavefront can expand
 				bool w_can_expand = true;
 
-				// Create an iterator of the wavefront
-				grid_key_dx_iterator_sub<dim> it(gh,v_w.template get<wavefront<dim>::start>(d),v_w.template get<wavefront<dim>::stop>(d));
+				// Create an iterator of the expanded wavefront
+				grid_key_dx<dim> start = grid_key_dx<dim>(v_w.template get<wavefront<dim>::start>(d)) + w_comb[d];
+				grid_key_dx<dim> stop = grid_key_dx<dim>(v_w.template get<wavefront<dim>::stop>(d)) + w_comb[d];
+				grid_key_dx_iterator_sub<dim> it(gh,start,stop);
 
 				// for each subdomain
 				while (it.isNext())
 				{
 					// get the wavefront sub-domain id
-					size_t sub_w = gh.LinId(it.get());
-
-					// get the sub-domain id of the expanded wavefront
-					grid_key_dx<dim> k_exp = it.get() + w_comb[d];
-					size_t sub_w_e = gh.LinId(k_exp);
+					size_t sub_w_e = gh.LinId(it.get());
 
 					// we get the processor id of the neighborhood sub-domain on direction d
 					size_t exp_p = graph.vertex(sub_w_e).template get<p_id>();
@@ -347,25 +353,13 @@ private:
 						for (int s = 0 ; s < dim ; s++)
 						{
 							if (is_pos == true)
-							{v_w.template get<wavefront<dim>::stop>(id)[j] = v_w.template get<wavefront<dim>::stop>(id)[j] + w_comb[id].c[j];}
+							{v_w.template get<wavefront<dim>::stop>(id)[s] = v_w.template get<wavefront<dim>::stop>(id)[s] + w_comb[d].c[s];}
 							else
-							{v_w.template get<wavefront<dim>::start>(id)[j] = v_w.template get<wavefront<dim>::start>(id)[j] + w_comb[id].c[j];}
+							{v_w.template get<wavefront<dim>::start>(id)[s] = v_w.template get<wavefront<dim>::start>(id)[s] + w_comb[d].c[s];}
 						}
 					}
 				}
 			}
-
-			// Debug output the wavefront graph for debug
-
-			// duplicate the graph
-
-			Graph g_debug = graph.duplicate();
-			write_wavefront<nm_part_v::id>(g_debug,v_w);
-
-			VTKWriter<Graph> vtk(g_debug);
-			vtk.template write<1>("vtk_debug.vtk");
-
-			////////////////////////////////////
 		}
 
 		// get back the hyper-cube produced
@@ -373,20 +367,31 @@ private:
 		for (int i = 0 ; i < dim ; i++)
 		{
 			// get the index of the wavefront direction
-			int w = 0;
-
-			for (int j = 0 ; j < dim ; j++)
-			{
-				if (w_comb[i].c[j] == 1)
-				{
-					w = j;
-					break;
-				}
-			}
+			size_t p_f = hyp.positiveFace(i);
+			size_t n_f = hyp.negativeFace(i);
 
 			// set the box
-			box.setHigh(i,v_w.template get<wavefront<dim>::stop>(i)[w]);
-			box.setLow(i,v_w.template get<wavefront<dim>::start>(i)[w]);
+			box.setHigh(i,v_w.template get<wavefront<dim>::stop>(p_f)[i]);
+			box.setLow(i,v_w.template get<wavefront<dim>::start>(n_f)[i]);
+		}
+	}
+
+	/*! \brief Initialize the wavefront
+	 *
+	 * \param v_w Wavefront to initialize
+	 *
+	 */
+	void InitializeWavefront(grid_key_dx<dim> & start_p, openfpm::vector<wavefront<dim>> & v_w)
+	{
+		// Wavefront to initialize
+
+		for (int i = 0 ; i < v_w.size() ; i++)
+		{
+			for (int j = 0 ; j < dim ; j++)
+			{
+				v_w.template get<wavefront<dim>::start>(i)[j] = start_p.get(j);
+				v_w.template get<wavefront<dim>::stop>(i)[j] = start_p.get(j);
+			}
 		}
 	}
 
@@ -399,7 +404,7 @@ public:
 	 *
 	 */
 
-	dec_optimizer(Graph & g, std::vector<size_t> sz)
+	dec_optimizer(Graph & g, size_t (& sz)[dim])
 	:gh(sz)
 	{
 		// The graph g is suppose to represent a cartesian grid
@@ -411,7 +416,7 @@ public:
 	 * Starting from a domain (hyper-cubic), it create wavefront at the boundary and expand
 	 * the boundary until the wavefronts cannot expand any more.
 	 * To the domains inside the hyper-cube one sub-id is assigned. This procedure continue until
-	 * all the domain of one id has a sub-id
+	 * all the domain of one p_id has a sub-id
 	 *
 	 * \tparam j property containing the decomposition
 	 * \tparam i property to fill with the sub-decomposition
@@ -422,6 +427,32 @@ public:
 	 */
 
 	template <unsigned int p_sub, unsigned int p_id> void optimize(grid_key_dx<dim> & start_p, Graph & graph)
+	{
+		// temporal vector
+		openfpm::vector<Box<dim,size_t>> tmp;
+
+		// optimize
+		optimize<p_sub,p_id>(start_p,graph,-1,tmp);
+	}
+
+	/*! \brief optimize the graph
+	 *
+	 * Starting from a domain (hyper-cubic), it create wavefront at the boundary and expand
+	 * the boundary until the wavefronts cannot expand any more.
+	 * To the domains inside the hyper-cube one sub-id is assigned. This procedure continue until
+	 * all the domain of one p_id has a sub-id
+	 *
+	 * \tparam j property containing the decomposition
+	 * \tparam i property to fill with the sub-decomposition
+	 *
+	 * \param Seed point
+	 * \param graph we are processing
+	 * \param p_id Processor id (if p_id == -1 the optimization is done for all the processors)
+	 * \param list of sub-domain boxes
+	 *
+	 */
+
+	template <unsigned int p_sub, unsigned int p_id> void optimize(grid_key_dx<dim> & start_p, Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & lb)
 	{
 		// sub-domain id
 		size_t sub_id =  0;
@@ -438,19 +469,10 @@ public:
 		// wavefronts
 		openfpm::vector<wavefront<dim>> v_w(w_comb.size());
 
-		// Initialize the wavefronts from the domain start_p
-
-		for (int i = 0 ; i < v_w.size() ; i++)
-		{
-			for (int j = 0 ; j < dim ; j++)
-			{
-				v_w.template get<wavefront<dim>::start>(i)[j] = start_p.get(start_p.get(j));
-				v_w.template get<wavefront<dim>::stop>(i)[j] = start_p.get(start_p.get(j));
-			}
-		}
+		// fill the sub decomposition with negative number
+		fill_domain<p_sub>(graph,gh.getBox(),-1);
 
 		// push the first domain
-
 		v_q.add(gh.LinId(start_p));
 
 		while (v_q.size() != 0)
@@ -458,14 +480,23 @@ public:
 			// Box
 			Box<dim,size_t> box;
 
+			// Get the grid_key position from the linearized id
+			start_p = gh.InvLinId(v_q.get(0));
+
+			// Initialize the wavefronts from the domain start_p
+			InitializeWavefront(start_p,v_w);
+
 			// Create the biggest box containing the domain
-			expand_from_point<p_sub,p_id>(gh.LinId(start_p),graph,box,v_w,w_comb);
+			expand_from_point<p_sub,p_id>(gh.LinId(v_q.get(0)),graph,box,v_w,w_comb);
+
+			// Add the created box to the list of boxes
+			lb.add(box);
 
 			// fill the domain
 			fill_domain<p_sub>(graph,box,sub_id);
 
 			// create the queue
-			add_to_queue<p_sub>(v_q,v_w,graph,w_comb);
+			add_to_queue<p_sub,p_id>(v_q,v_w,graph,w_comb,pr_id);
 
 			// increment the sub_id
 			sub_id++;
