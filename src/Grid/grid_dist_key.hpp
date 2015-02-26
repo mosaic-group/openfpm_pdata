@@ -16,7 +16,14 @@ class grid_dist_key_dx
 
 	//! Local grid iterator
 
-	grid_key_dx_iterator<dim> a_it;
+	grid_key_dx<dim> key;
+
+public:
+
+	grid_dist_key_dx(int g_c, grid_key_dx<dim> key)
+	:g_c(g_c),key(key)
+	{
+	}
 };
 
 #endif

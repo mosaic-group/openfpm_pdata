@@ -364,8 +364,7 @@ public:
 	 *           no property will store this information
 	 * \tparam T type of the domain like (int real complex ... )
 	 * \tparam dim_c Connectivity dimension
-	 * \tparam Memory class that create new memory
-	 * \tparam pos... one or more integer indicating the spatial properties
+	 * \tparam pos... (optional)one or more integer indicating the spatial properties
 	 *
 	 */
 	template <unsigned int se,typename T, unsigned int dim_c, int... pos>

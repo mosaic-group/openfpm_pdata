@@ -30,6 +30,9 @@ template<typename iterator> void jacobi_iteration(iterator g_it, grid_dist_id<2,
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 {
+	// Initialize the global VCluster
+	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
+
 	// grid size
 	size_t sz[2] = {1024,1024};
 
@@ -37,13 +40,22 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 
 	grid_dist_id<2, scalar<float>, CartDecomposition<2,size_t>> g_dist(sz);
 
-	// Create the grid on memory
+	// get the domain iterator
 
-	g_dist.Create();
+	size_t count = 0;
 
-	// get the Bulk iterator
+	auto dom = g_dist.getDomainIterator();
 
-	auto bulk = g_dist.getBulkIterator(2);
+	while (dom.isNext())
+	{
+		auto key = dom.get();
+
+		count++;
+
+		++dom;
+	}
+
+	BOOST_REQUIRE_EQUAL(count,1024*1024);
 
 /*	auto g_it = g_dist.getIteratorBulk();
 

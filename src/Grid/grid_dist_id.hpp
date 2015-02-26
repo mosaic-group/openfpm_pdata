@@ -7,7 +7,6 @@
 #include "Space/SpaceBox.hpp"
 #include "mathutil.hpp"
 #include "grid_dist_id_iterator.hpp"
-#include "grid_dist_id_iterator_margin.hpp"
 #include "grid_dist_key.hpp"
 
 #define SUB_UNIT_FACTOR 64
@@ -93,7 +92,7 @@ class grid_dist_id
 		for (size_t d = 0 ; d < dim ; d++)
 		{
 			// push the size of the local grid
-			v_size[d] = sp.getHigh(d) - sp.getLow(d);
+			v_size[d] = sp.getHigh(d) - sp.getLow(d) + 1;
 		}
 	}
 
@@ -119,16 +118,36 @@ public:
 
 		// Create the sub-domains
 		dec.setParameters(div);
+
+		// Create local grid
+		Create();
 	}
 
 	//! constructor
 	grid_dist_id(size_t (& g_sz)[dim])
-	:v_cl(*global_v_cluster),dec(Decomposition(v_cl))
+	:dec(Decomposition(*global_v_cluster)),v_cl(*global_v_cluster)
 	{
 		// fill the global size of the grid
 		for (int i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
 
-		// first compute a decomposition
+		// Get the number of processor and calculate the number of sub-domain
+		// for decomposition
+		size_t n_proc = v_cl.getProcessingUnits();
+		size_t n_sub = n_proc * SUB_UNIT_FACTOR;
+
+		// Calculate the maximum number (before merging) of sub-domain on
+		// each dimension
+		size_t div[dim];
+		for (int i = 0 ; i < dim ; i++)
+		{div[i] = round_big_2(pow(n_sub,1.0/dim));}
+
+		// Box
+		Box<dim,size_t> b(g_sz);
+
+		// Create the sub-domains
+		dec.setParameters(div,b);
+
+		// Create local grid
 		Create();
 	}
 
@@ -193,9 +212,9 @@ public:
 	 * \return An iterator to a grid with specified margins
 	 *
 	 */
-	grid_dist_iterator_margin<dim,device_grid> getBulkIterator(size_t margin)
+	grid_dist_iterator<dim,device_grid> getDomainIterator()
 	{
-		grid_dist_iterator_margin<dim,device_grid> it(loc_grid,margin);
+		grid_dist_iterator<dim,device_grid> it(loc_grid,0);
 
 		return it;
 	}

@@ -30,8 +30,6 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_use)
 
 	// Decompose
 	dec.setParameters(div,box);
-
-
 }
 
 BOOST_AUTO_TEST_SUITE_END()
