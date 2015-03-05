@@ -10,7 +10,7 @@
 
 
 #include "Graph/CartesianGraphFactory.hpp"
-#include "map_graph.hpp"
+#include "Graph/map_graph.hpp"
 #include "metis_util.hpp"
 #include "dec_optimizer.hpp"
 

@@ -8,8 +8,8 @@
 #ifndef CARTESIANGRAPHFACTORY_HPP_
 #define CARTESIANGRAPHFACTORY_HPP_
 
-#include "map_vector.hpp"
-#include "map_graph.hpp"
+#include "Vector/map_vector.hpp"
+#include "Graph/map_graph.hpp"
 #include "Grid/grid.hpp"
 #include "Space/Shape/Box.hpp"
 #include "Space/Shape/HyperCube.hpp"

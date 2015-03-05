@@ -10,11 +10,10 @@
 
 #include "config.h"
 #include "Decomposition.hpp"
-#include "map_vector.hpp"
+#include "Vector/map_vector.hpp"
 #include <vector>
 #include "global_const.hpp"
 #include <initializer_list>
-#include "map_vector.hpp"
 #include "SubdomainGraphNodes.hpp"
 #include "metis_util.hpp"
 #include "dec_optimizer.hpp"
@@ -106,11 +105,11 @@ private:
 		// Here we use METIS
 
 		// Create a cartesian grid graph
-		CartesianGraphFactory<dim,Graph_CSR<nm_v,nm_e>> g_factory_part;
+		CartesianGraphFactory<dim,Graph_CSR<nm_part_v,nm_part_e>> g_factory_part;
 
 		// Processor graph
 
-		Graph_CSR<nm_v,nm_e> gp = g_factory_part.template construct<NO_EDGE,T,dim-1,0,1>(div,domain);
+		Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.template construct<NO_EDGE,T,dim-1>(div,domain);
 
 		// Get the number of processing units
 		size_t Np = v_cl.getProcessingUnits();
@@ -119,33 +118,22 @@ private:
 		long int p_id = v_cl.getProcessUnitID();
 
 		// Convert the graph to metis
-		Metis<Graph_CSR<nm_v,nm_e>> met(gp,Np);
+		Metis<Graph_CSR<nm_part_v,nm_part_e>> met(gp,Np);
 
 		// decompose
 
-		met.decompose<nm_v::id>();
+		met.decompose<nm_part_v::id>();
 
 		// Optimize the decomposition creating bigger spaces
 		// And reducing Ghost over-stress
 
-		dec_optimizer<dim,Graph_CSR<nm_v,nm_e>> d_o(gp,div);
+		dec_optimizer<dim,Graph_CSR<nm_part_v,nm_part_e>> d_o(gp,div);
 
 		// set of Boxes produced by the decomposition optimizer
 		openfpm::vector<::Box<dim,size_t>> loc_box;
 
-		// a grig key poiting to the origin
-		grid_key_dx<dim> keyZero;
-		keyZero.zero();
-
 		// optimize the decomposition
-		d_o.template optimize<nm_v::sub_id,nm_v::id>(keyZero,gp,p_id,loc_box);
-
-		//-------------------DEBUG---------
-		VTKWriter<decltype(gp)> vtk(gp);
-		vtk.write("out_graph.vtk");
-		//---------------------------------
-
-		exit(1);
+		d_o.template optimize<nm_part_v::sub_id,nm_part_v::id>(gp,p_id,loc_box);
 
 		// convert into sub-domain
 		for (size_t s = 0 ; s < loc_box.size() ; s++)

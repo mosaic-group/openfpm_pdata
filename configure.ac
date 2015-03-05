@@ -113,6 +113,12 @@ AM_CONDITIONAL(BUILDCUDA, test ! x$NVCC = x"no")
 
 ###########################
 
+# Define that there is MPI
+
+AC_DEFINE([HAVE_MPI],[],[MPI Enabled])
+
+#####
+
 no_avx=no
 no_sse42=no
 no_sse41=no

@@ -223,6 +223,17 @@ public:
 	~grid_dist_id()
 	{
 	}
+
+	/*! \brief Get the Virtual Cluster machine
+	 *
+	 * \return the Virtual cluster machine
+	 *
+	 */
+
+	Vcluster & getVC()
+	{
+		return v_cl;
+	}
 };
 
 #endif

@@ -9,7 +9,7 @@
 #define METIS_UTIL_UNIT_TEST_HPP_
 
 #include "Graph/CartesianGraphFactory.hpp"
-#include "map_graph.hpp"
+#include "Graph/map_graph.hpp"
 #include "metis_util.hpp"
 
 #undef GS_SIZE

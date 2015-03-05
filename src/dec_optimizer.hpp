@@ -181,7 +181,8 @@ private:
 
 		for (size_t j = 0 ; j < domains.size() ; j++)
 		{
-			if (graph.vertex(domains.get(j)).template get<p_sub>() < 0)
+			long int gs = graph.vertex(domains.get(j)).template get<p_sub>();
+			if (gs < 0)
 			{
 				// not assigned push it
 
@@ -217,13 +218,17 @@ private:
 
 				// get the vertex and if does not have a sub-id and is assigned ...
 
-				if (graph.vertex(gh.LinId(gk)).template get<p_sub>() < 0)
+				long int pid = graph.vertex(gh.LinId(gk)).template get<p_sub>();
+
+				if (pid < 0)
 				{
 					// ... and the p_id different from -1
 					if (pr_id != -1)
 					{
 						// ... and the processor id of the sub-domain match p_id, add to the queue
-						if ( pr_id == graph.vertex(gh.LinId(gk)).template get<p_id>() )
+
+						long int pp_id = graph.vertex(gh.LinId(gk)).template get<p_id>();
+						if ( pr_id == pp_id)
 							domains_new.add(gh.LinId(gk));
 					}
 					else
@@ -296,8 +301,11 @@ private:
 					// we get the processor id of the neighborhood sub-domain on direction d
 					size_t exp_p = graph.vertex(sub_w_e).template get<p_id>();
 
-					// we check if it is the same processor id
-					w_can_expand &= exp_p == domain_id;
+					// Check if already assigned
+					long int ass = graph.vertex(sub_w_e).template get<p_sub>();
+
+					// we check if it is the same processor id ans is not assigned
+					w_can_expand &= ((exp_p == domain_id) & (ass < 0));
 
 					// next domain
 					++it;
@@ -376,8 +384,9 @@ private:
 		}
 	}
 
-	/*! \brief Initialize the wavefront
+	/*! \brief Initialize the wavefronts
 	 *
+	 * \param starting point of the wavefront set
 	 * \param v_w Wavefront to initialize
 	 *
 	 */
@@ -393,6 +402,55 @@ private:
 				v_w.template get<wavefront<dim>::stop>(i)[j] = start_p.get(j);
 			}
 		}
+	}
+
+	/*! \brief Get the first seed
+	 *
+	 * search in the graph for one sub-domain labelled with processor id
+	 * to use as seed
+	 *
+	 * \tparam p_id property in the graph storing the sub-domain id
+	 *
+	 * \param Graph graph
+	 * \param id processor id
+	 *
+	 */
+
+	template<unsigned int p_id> grid_key_dx<dim> search_first_seed(Graph & graph, long int id)
+	{
+		// if no processor is selected return the first point
+		if (id < -1)
+		{
+			grid_key_dx<dim> key;
+			key.zero();
+
+			return key;
+		}
+
+		// Create a grid iterator
+		grid_key_dx_iterator<dim> g_sub(gh);
+
+		// iterate through all grid points
+
+		while (g_sub.isNext())
+		{
+			// get the actual key
+			const grid_key_dx<dim> & gk = g_sub.get();
+
+			// if the subdomain has the id we are searching stop
+			if (graph.vertex(gh.LinId(gk)).template get<p_id>() == id)
+			{
+				return gk;
+			}
+
+			++g_sub;
+		}
+
+		// If not found return an invalid key
+		grid_key_dx<dim> key;
+		key.invalid();
+
+		return key;
 	}
 
 public:
@@ -421,7 +479,7 @@ public:
 	 * \tparam j property containing the decomposition
 	 * \tparam i property to fill with the sub-decomposition
 	 *
-	 * \param Seed point
+	 * \param start_p seed point
 	 * \param graph we are processing
 	 *
 	 */
@@ -445,7 +503,32 @@ public:
 	 * \tparam j property containing the decomposition
 	 * \tparam i property to fill with the sub-decomposition
 	 *
-	 * \param Seed point
+	 * \param graph we are processing
+	 * \param p_id Processor id (if p_id == -1 the optimization is done for all the processors)
+	 * \param list of sub-domain boxes
+	 *
+	 */
+
+	template <unsigned int p_sub, unsigned int p_id> void optimize(Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & lb)
+	{
+		// search for the first seed
+		grid_key_dx<dim> key_seed = search_first_seed<p_id>(graph,pr_id);
+
+		// optimize
+		optimize<p_sub,p_id>(key_seed,graph,pr_id,lb);
+	}
+
+	/*! \brief optimize the graph
+	 *
+	 * Starting from a domain (hyper-cubic), it create wavefront at the boundary and expand
+	 * the boundary until the wavefronts cannot expand any more.
+	 * To the domains inside the hyper-cube one sub-id is assigned. This procedure continue until
+	 * all the domain of one p_id has a sub-id
+	 *
+	 * \tparam j property containing the decomposition
+	 * \tparam i property to fill with the sub-decomposition
+	 *
+	 * \param start_p seed point
 	 * \param graph we are processing
 	 * \param p_id Processor id (if p_id == -1 the optimization is done for all the processors)
 	 * \param list of sub-domain boxes

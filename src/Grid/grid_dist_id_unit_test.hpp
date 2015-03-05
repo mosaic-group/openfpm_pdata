@@ -55,6 +55,14 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 		++dom;
 	}
 
+	// Get the virtual cluster machine
+	Vcluster & vcl = g_dist.getVC();
+
+	// reduce
+	vcl.reduce(count);
+	vcl.execute();
+
+	// Check
 	BOOST_REQUIRE_EQUAL(count,1024*1024);
 
 /*	auto g_it = g_dist.getIteratorBulk();
