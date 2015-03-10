@@ -50,8 +50,24 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 	{
 		auto key = dom.get();
 
+		g_dist.template get<0>(key) = count;
+
+		// Count the point
 		count++;
 
+		++dom;
+	}
+
+	size_t count_check = 0;
+	dom = g_dist.getDomainIterator();
+
+	while (dom.isNext())
+	{
+		auto key = dom.get();
+
+		BOOST_REQUIRE_EQUAL(g_dist.template get<0>(key),count_check);
+
+		count_check++;
 		++dom;
 	}
 

@@ -53,6 +53,21 @@ class grid_dist_iterator
 	{
 	}
 
+	/*! \brief operator=
+	 *
+	 * assign
+	 *
+	 */
+	grid_dist_iterator<dim,device_grid> & operator=(const grid_dist_iterator<dim,device_grid> & gdi)
+	{
+		g_c = gdi.g_c;
+		gList = gdi.gList;
+		a_it = gdi.a_it;
+		m = gdi.m;
+
+		return *this;
+	}
+
 	/*! \brief Get the next element
 	 *
 	 * \return the next grid_key

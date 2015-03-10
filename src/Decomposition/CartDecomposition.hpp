@@ -38,7 +38,7 @@
  *
  */
 
-template<unsigned int dim, typename T, template<typename> class device_l=openfpm::device_cpu, typename Memory=HeapMemory, template<unsigned int, typename> class Domain=Box, template<typename, typename, typename, typename> class data_s = openfpm::vector>
+template<unsigned int dim, typename T, template<typename> class device_l=openfpm::device_cpu, typename Memory=HeapMemory, template<unsigned int, typename> class Domain=Box, template<typename, typename, typename, typename, unsigned int> class data_s = openfpm::vector>
 class CartDecomposition
 {
 public:
@@ -52,7 +52,7 @@ private:
 
 	//! This is the access_key to data_s, for example in the case of vector
 	//! acc_key is size_t
-	typedef typename data_s<SpaceBox<dim,T>,device_l<SpaceBox<dim,T>>,Memory,openfpm::vector_grow_policy_default>::access_key acc_key;
+	typedef typename data_s<SpaceBox<dim,T>,device_l<SpaceBox<dim,T>>,Memory,openfpm::vector_grow_policy_default,openfpm::vect_isel<SpaceBox<dim,T>>::value >::access_key acc_key;
 
 	//! Subspace selected
 	//! access_key in case of grid is just the set of the index to access the grid
@@ -62,7 +62,7 @@ private:
 	SpaceBox<dim,T> sub_domain;
 
 	//! the set of all local sub-domain as vector
-	data_s<SpaceBox<dim,T>,device_l<SpaceBox<dim,T>>,Memory,openfpm::vector_grow_policy_default> sub_domains;
+	data_s<SpaceBox<dim,T>,device_l<SpaceBox<dim,T>>,Memory,openfpm::vector_grow_policy_default, openfpm::vect_isel<SpaceBox<dim,T>>::value > sub_domains;
 
 	//! number of total sub-domain
 	size_t N_tot;

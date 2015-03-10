@@ -1,5 +1,14 @@
-#ifndef GRID_DIST_KEY_DX_HPP
-#define GRID_DIST_KEY_DX_HPP
+/*
+ * vector_dist_key.hpp
+ *
+ *  Created on: Mar 10, 2015
+ *      Author: i-bird
+ */
+
+#ifndef VECTOR_DIST_KEY_HPP_
+#define VECTOR_DIST_KEY_HPP_
+
+
 
 /*! \brief Grid key for a distributed grid
  *
@@ -8,15 +17,15 @@
  */
 
 template<unsigned int dim>
-class grid_dist_key_dx
+class vect_dist_key_dx
 {
 	//! grid list counter
 
-	size_t g_c;
+	size_t v_c;
 
 	//! Local grid iterator
 
-	grid_key_dx<dim> key;
+	size_t key;
 
 public:
 
@@ -27,7 +36,7 @@ public:
 	 */
 	size_t getSub()
 	{
-		return g_c;
+		return v_c;
 	}
 
 	/*! \brief Get the key
@@ -35,15 +44,17 @@ public:
 	 * \return the local key
 	 *
 	 */
-	grid_key_dx<dim> getKey()
+	size_t getKey()
 	{
 		return key;
 	}
 
-	grid_dist_key_dx(int g_c, grid_key_dx<dim> key)
-	:g_c(g_c),key(key)
+	vect_dist_key_dx(int v_c, size_t key)
+	:v_c(v_c),key(key)
 	{
 	}
 };
 
-#endif
+
+
+#endif /* VECTOR_DIST_KEY_HPP_ */

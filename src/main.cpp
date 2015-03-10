@@ -19,5 +19,6 @@
 #include "metis_util_unit_test.hpp"
 #include "dec_optimizer_unit_test.hpp"
 #include "Grid/grid_dist_id_unit_test.hpp"
+#include "Vector/vector_dist_unit_test.hpp"
 #include "Decomposition/CartDecomposition_unit_test.hpp"
 

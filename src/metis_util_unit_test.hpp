@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE( Metis_test_use)
 
 	// Convert the graph to metis
 
-	Metis<Graph_CSR<nm_v,nm_e>> met(g,16);
+	Metis<Graph_CSR<nm_v,nm_e>> met(g,8);
 
 	// decompose
 
