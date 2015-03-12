@@ -29,6 +29,7 @@ public:
   typedef boost::fusion::vector<T> type;
   typedef typename memory_traits_inte<type>::type memory_int;
   typedef typename memory_traits_lin<type>::type memory_lin;
+  typedef T stype;
 
   type data;
 
@@ -44,6 +45,7 @@ public:
   typedef boost::fusion::vector<T,T> type;
   typedef typename memory_traits_inte<type>::type memory_int;
   typedef typename memory_traits_lin<type>::type memory_lin;
+  typedef T stype;
 
   type data;
 
@@ -60,6 +62,7 @@ public:
   typedef boost::fusion::vector<T,T,T> type;
   typedef typename memory_traits_inte<type>::type memory_int;
   typedef typename memory_traits_lin<type>::type memory_lin;
+  typedef T stype;
 
   type data;
 
@@ -77,6 +80,7 @@ public:
   typedef boost::fusion::vector<T,T,T,T> type;
   typedef typename memory_traits_inte<type>::type memory_int;
   typedef typename memory_traits_lin<type>::type memory_lin;
+  typedef T stype;
 
   type data;
 
@@ -95,6 +99,7 @@ public:
   typedef boost::fusion::vector<T,T,T,T,T> type;
   typedef typename memory_traits_inte<type>::type memory_int;
   typedef typename memory_traits_lin<type>::type memory_lin;
+  typedef T stype;
 
   type data;
 
@@ -109,6 +114,7 @@ public:
   typedef boost::fusion::vector<T,T,T,T,T,T> type;
   typedef typename memory_traits_inte<type>::type memory_int;
   typedef typename memory_traits_lin<type>::type memory_lin;
+  typedef T stype;
 
   type data;
 
@@ -123,6 +129,7 @@ public:
   typedef boost::fusion::vector<T,T,T,T,T,T,T> type;
   typedef typename memory_traits_inte<type>::type memory_int;
   typedef typename memory_traits_lin<type>::type memory_lin;
+  typedef T stype;
 
   type data;
 
@@ -136,6 +143,7 @@ public:
   typedef boost::fusion::vector<T,T,T,T,T,T,T,T> type;
   typedef typename memory_traits_inte<type>::type memory_int;
   typedef typename memory_traits_lin<type>::type memory_lin;
+  typedef T stype;
 
   type data;
 

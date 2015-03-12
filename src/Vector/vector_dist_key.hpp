@@ -16,7 +16,6 @@
  *
  */
 
-template<unsigned int dim>
 class vect_dist_key_dx
 {
 	//! grid list counter

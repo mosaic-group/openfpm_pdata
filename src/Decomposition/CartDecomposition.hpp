@@ -18,6 +18,7 @@
 #include "metis_util.hpp"
 #include "dec_optimizer.hpp"
 #include "Space/Shape/Box.hpp"
+#include "Space/space.hpp"
 
 /**
  * \brief This class decompose a space into subspaces
@@ -63,6 +64,9 @@ private:
 
 	//! the set of all local sub-domain as vector
 	data_s<SpaceBox<dim,T>,device_l<SpaceBox<dim,T>>,Memory,openfpm::vector_grow_policy_default, openfpm::vect_isel<SpaceBox<dim,T>>::value > sub_domains;
+
+	//! base structure
+	openfpm::vector<size_t> fine_s;
 
 	//! number of total sub-domain
 	size_t N_tot;
@@ -246,6 +250,24 @@ public:
 	//! Cartesian decomposition destructor
 	~CartDecomposition()
 	{}
+
+	/*! \brief processorID return in which processor the particle should go
+	 *
+	 * \return processorID
+	 *
+	 */
+
+	template<typename Mem> size_t inline processorID(encapc<1, space<dim,T>, Mem> p)
+	{
+		size_t pid = 0;
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			pid += p.get().get(i);
+		}
+
+		return pid;
+	}
 
 	/*! \brief Set the parameter of the decomposition
 	 *

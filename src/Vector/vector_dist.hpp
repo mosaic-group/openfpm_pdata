@@ -8,14 +8,16 @@
 #ifndef VECTOR_HPP_
 #define VECTOR_HPP_
 
+#include "VCluster.hpp"
 #include "Space/space.hpp"
+#include "Vector/vector_dist_iterator.hpp"
+#include "Space/Shape/Box.hpp"
+#include "Vector/vector_dist_key.hpp"
 
 #define NO_ID false
 #define ID true
 
 /*! \brief Distributed vector
- *
- *
  *
  */
 
@@ -27,11 +29,11 @@ private:
 	//! Space Decomposition
 	Decomposition dec;
 
-	// Space for space position
-	grid_dist_id<1,space,Decomposition,Memory> pos;
+	// Particle position vector for each subdomain the last one is the unassigned particles vector
+	Vcluster_object_array<openfpm::vector<space>> v_pos;
 
-	// Space for properties
-	grid_dist_id<1,prop,Decomposition,Memory> prp;
+	// Particle properties vector for each subdomain the last one is the unassigned particles vector
+	Vcluster_object_array<openfpm::vector<prop>> v_prp;
 
 	// Virtual cluster
 	Vcluster & v_cl;
@@ -43,14 +45,18 @@ public:
 	 * \param number of elements
 	 *
 	 */
-	vector_dist(size_t np)
+	vector_dist(size_t np, Box box)
 	:dec(Decomposition(*global_v_cluster)),v_cl(*global_v_cluster)
 	{
+		// Allocate unassigned particles vectors
+		v_pos = v_cl.template allocate<openfpm::vector<space>>(1);
+		v_prp = v_cl.template allocate<openfpm::vector<prop>>(1);
+
 		// resize the position vector
-		pos.resize(np);
+		v_pos.get(0).resize(np);
 
 		// resize the properties vector
-		prp.resize(np);
+		v_prp.get(0).resize(np);
 
 		// Create a valid decomposition of the space
 		// Get the number of processor and calculate the number of sub-domain
@@ -60,12 +66,12 @@ public:
 
 		// Calculate the maximum number (before merging) of sub-domain on
 		// each dimension
-		size_t div[space::size];
-		for (int i = 0 ; i < space::size ; i++)
-		{div[i] = round_big_2(pow(n_sub,1.0/space::size));}
+		size_t div[space::max_prop];
+		for (int i = 0 ; i < space::max_prop ; i++)
+		{div[i] = round_big_2(pow(n_sub,1.0/space::max_prop));}
 
 		// Create the sub-domains
-		dec.setParameters(div);
+		dec.setParameters(div,box);
 	}
 
 	/*! \brief Get position of an object
@@ -73,9 +79,9 @@ public:
 	 * \param vec_key vector element
 	 *
 	 */
-	template<unsigned int id> auto getPos(size_t vec_key) -> decltype(pos.template get<id>(vec_key))
+	template<unsigned int id> inline auto getPos(vect_dist_key_dx vec_key) -> decltype(v_pos.get(vec_key.getSub()).template get<id>(vec_key.getKey()))
 	{
-		return pos.template get<id>(vec_key);
+		return v_pos.get(vec_key.getSub()).template get<id>(vec_key.getKey());
 	}
 
 	/*! \brief Get the property of the object
@@ -83,9 +89,9 @@ public:
 	 * \param vec_key vector element
 	 *
 	 */
-	template<unsigned int id> auto getProp(size_t vec_key) -> decltype(prp.template get<id>(vec_key))
+	template<unsigned int id> inline auto getProp(vect_dist_key_dx vec_key) -> decltype(v_prp.get(vec_key.v_c).template get<id>(vec_key.key))
 	{
-		return prp.template get<id>(vec_key);
+		return v_prp.get(vec_key.v_c).template get<id>(vec_key.key);
 	}
 
 	/*! \brief It communicate the particle to the respective processor
@@ -93,29 +99,26 @@ public:
 	 */
 	void map()
 	{
-		// allocate n vector with n = number of processors
-//		boost::shared_ptr<openfpm::vector<space>> (new openfpm::vector<space>[v_cl.getProcessingUnits()]);
-
-		// allocate n vector with n = number of processors
-//		boost::shared_ptr<openfpm::vector<prop>> (new openfpm::vector<space>[v_cl.getProcessingUnits()]);
+		// Unassigned particle vector, is always the last one
+		size_t up_v = v_pos.size()-1;
 
 		// Contain the map of the processor should communicate
 		openfpm::vector<unsigned char> p_map;
 
 		// Contain the processor id of each particle (basically where they have to go)
-		openfpm::vector<size_t> lbl_p(pos.size());
+		openfpm::vector<size_t> lbl_p(v_pos.size());
 
 		// It contain the list of the processors it should to communicate
 		openfpm::vector<size_t> p_list;
 
-		auto it = pos.getIterator();
+		auto it = v_pos.get(up_v).getIterator();
 
 		// Label all the particles it the processor id where they should go
 		while (it.isNext())
 		{
 			auto key = it.get();
 
-			size_t p_id = dec.processorID(pos.get_o(key));
+			size_t p_id = dec.processorID(v_pos.get(up_v).get(key));
 
 			lbl_p.get(key) = p_id;
 
@@ -125,6 +128,27 @@ public:
 			++it;
 		}
 	}
+
+	/*! \brief Get the iterator across the position of the particles
+	 *
+	 * \return an iterator
+	 *
+	 */
+	vector_dist_iterator<openfpm::vector<space>> getIterator()
+	{
+		return vector_dist_iterator<openfpm::vector<space>>(v_pos);
+	}
+
+	/*! \brief Get the iterator across the properties of the particles
+	 *
+	 * \return an iterator
+	 *
+	 */
+	vector_dist_iterator<openfpm::vector<space>> getPropIterator()
+	{
+		return vector_dist_iterator<openfpm::vector<prop>>(v_prp);
+	}
+
 
 
 };

@@ -8,9 +8,10 @@
 #ifndef VECTOR_DIST_ITERATOR_HPP_
 #define VECTOR_DIST_ITERATOR_HPP_
 
+#include "vector_dist_key.hpp"
 #include "VCluster.hpp"
 
-template<unsigned int dim, typename device_v>
+template<typename device_v>
 class vector_dist_iterator
 {
 	//! vector list counter
@@ -44,7 +45,7 @@ class vector_dist_iterator
 	 * assign
 	 *
 	 */
-	vector_dist_iterator<dim,device_v> & operator=(const vector_dist_iterator<dim,device_v> & vdi)
+	vector_dist_iterator<device_v> & operator=(const vector_dist_iterator<device_v> & vdi)
 	{
 		v_c = vdi.v_c;
 		vList = vdi.vList;
@@ -59,13 +60,13 @@ class vector_dist_iterator
 	 *
 	 */
 
-	vector_dist_iterator<dim,device_v> operator++()
+	vector_dist_iterator<device_v> operator++()
 	{
 		++v_it;
 
 		// check if a_it is at the end
 
-		if (v_it.isNext() == true)
+		if (v_it < vList.get(v_c).size())
 			return *this;
 		else
 		{
@@ -76,7 +77,7 @@ class vector_dist_iterator
 			// get the next grid iterator
 
 			if (v_c < vList.size())
-				v_it = vList[v_c].getDomainIterator();
+				v_it = 0;
 		}
 
 		return *this;
@@ -103,9 +104,9 @@ class vector_dist_iterator
 	 * \return the actual key
 	 *
 	 */
-	size_t get()
+	vect_dist_key_dx get()
 	{
-		return vect_dist_key_dx<dim>(v_c,v_it.get());
+		return vect_dist_key_dx(v_c,v_it);
 	}
 };
 
