@@ -28,15 +28,13 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use)
 	{
 		auto key = it.get();
 
-		vd.template getPos<space<2,float>::x>(key) = (rand()/(double)(RAND_MAX));
-		vd.template getPos<space<2,float>::y>(key) = (rand()/(double)(RAND_MAX));
+		vd.template getPos<space<2,float>::x>(key)[0] = (rand()/(double)(RAND_MAX));
+		vd.template getPos<space<2,float>::x>(key)[1] = (rand()/(double)(RAND_MAX));
 
 		++it;
 	}
 
 
-
-	// collect weight
 }
 
 BOOST_AUTO_TEST_SUITE_END()

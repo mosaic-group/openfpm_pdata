@@ -10,8 +10,11 @@ BOOST_AUTO_TEST_SUITE( CartDecomposition_test )
 
 BOOST_AUTO_TEST_CASE( CartDecomposition_test_use)
 {
-	// Virtual cluster
-	Vcluster vcl(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
+	// Vcluster
+	Vcluster & vcl = *global_v_cluster;
+
+	// Initialize the global VCluster
+	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
 	CartDecomposition<3,float> dec(vcl);
 

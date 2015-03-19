@@ -65,7 +65,8 @@ private:
 	//! the set of all local sub-domain as vector
 	data_s<SpaceBox<dim,T>,device_l<SpaceBox<dim,T>>,Memory,openfpm::vector_grow_policy_default, openfpm::vect_isel<SpaceBox<dim,T>>::value > sub_domains;
 
-	//! base structure
+	//! Structure that contain for each sub-domain box the processor id
+	//! exist for efficient global communication
 	openfpm::vector<size_t> fine_s;
 
 	//! number of total sub-domain
@@ -127,6 +128,10 @@ private:
 		// decompose
 
 		met.decompose<nm_part_v::id>();
+
+		// fill the structure that store the processor id for each sub-domain
+
+		fine_s.resize(N_tot);
 
 		// Optimize the decomposition creating bigger spaces
 		// And reducing Ghost over-stress
