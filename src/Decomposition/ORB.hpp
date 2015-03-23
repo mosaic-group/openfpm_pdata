@@ -24,25 +24,18 @@ struct bisect_unroll
 {
 	ORB & orb;
 
-	// start
-	size_t start = 0;
-
-	// level
-	size_t n = 0;
-
 	/*! \brief constructor
 	 *
 	 */
-	bisect_unroll(ORB & orb, size_t start, size_t n)
-	:orb(orb),start(start),n(n)
+	bisect_unroll(ORB & orb)
+	:orb(orb)
 	{};
 
 	//! It call the copy function for each property
     template<typename T>
     void operator()(T& t)
     {
-    	start += orb.template bisect<T::value>(n,start);
-    	n = (n+1)%dim;
+    	orb.template bisect<T::value>();
     }
 };
 
@@ -102,7 +95,7 @@ public:
  *
  */
 
-template<unsigned int dim, typename T, typename loc_wg=openfpm::vector<float>, typename loc_pos=openfpm::vector<space<dim,T>> , typename Box=Box<dim,T>, template<typename,typename> class Tree=Graph_CSR_s>
+template<unsigned int dim, typename T, typename loc_wg=openfpm::vector<float>, typename loc_pos=openfpm::vector<Point<dim,T>> , typename Box=Box<dim,T>, template<typename,typename> class Tree=Graph_CSR_s>
 class ORB
 {
 	// Virtual cluster
@@ -135,7 +128,7 @@ class ORB
 	 */
 	template<unsigned int dir> void local_cm(size_t start)
 	{
-		typedef space<dim,T> s;
+		typedef Point<dim,T> s;
 
 		// reset the counters and accumulators
 		cm.fill(0);
@@ -171,10 +164,13 @@ class ORB
 
 	template<unsigned int dir> inline void local_label()
 	{
-		typedef space<dim,T> s;
+		typedef Point<dim,T> s;
 
-		// we just have to create the labels array with zero
-		if (dir == 0)
+		// direction of the previous split
+		const size_t dir_cm = (dir == 0)?(dim-1):(dir-1);
+
+		// if it is the first iteration we just have to create the labels array with zero
+		if (grp.getNVertex() == 1)
 		{lp_lbl.resize(lp.size());lp_lbl.fill(0); return;}
 
 		// we check where (the node) the particles live
@@ -199,7 +195,7 @@ class ORB
 			// if the particle n-coordinate is smaller than the CM is inside the child n1
 			// otherwise is inside the child n2
 
-			if (lp.template get<s::x>(key)[dir] < cm)
+			if (lp.template get<s::x>(key)[dir_cm] < cm)
 			{lp_lbl.get(key) = n1;}
 			else
 			{lp_lbl.get(key) = n2;}
@@ -208,13 +204,22 @@ class ORB
 		}
 	}
 
-	template<unsigned int dir> size_t bisect(size_t n, size_t start)
+	/*! \brief Bisect the domains along one direction
+	 *
+	 * \tparam dir direction where to split
+	 *
+	 */
+
+	template<unsigned int dir> size_t bisect()
 	{
+		//
+		size_t start = grp.getNVertex();
+
 		// first label the local particles
 		local_label<dir>();
 
 		// Index from where start the first leaf
-		size_t n_node = (n == 0)?1: 2 << (n-1);
+		size_t n_node = (start + 1) / 2;
 
 		// Calculate the local cm
 		local_cm<dir>(start - n_node);
@@ -279,10 +284,11 @@ public:
 		grp.addVertex();
 
 		// unroll bisection cycle
-		bisect_unroll<dim,ORB_class> bu(*this,1,0);
+		bisect_unroll<dim,ORB_class> bu(*this);
 		for (size_t i = 0 ; i < dim_cycle ; i++)
 		{
 			boost::mpl::for_each< boost::mpl::range_c<int,0,dim> >(bu);
+			// bu is recreated several time internaly
 		}
 
 		// calculate and execute the remaining cycles

@@ -18,7 +18,7 @@
 #include "metis_util.hpp"
 #include "dec_optimizer.hpp"
 #include "Space/Shape/Box.hpp"
-#include "Space/space.hpp"
+#include "Space/Shape/Point.hpp"
 
 /**
  * \brief This class decompose a space into subspaces
@@ -51,7 +51,7 @@ public:
 
 private:
 
-	//! This is the access_key to data_s, for example in the case of vector
+	//! This is the key type toaccess  data_s, for example in the case of vector
 	//! acc_key is size_t
 	typedef typename data_s<SpaceBox<dim,T>,device_l<SpaceBox<dim,T>>,Memory,openfpm::vector_grow_policy_default,openfpm::vect_isel<SpaceBox<dim,T>>::value >::access_key acc_key;
 
@@ -262,13 +262,31 @@ public:
 	 *
 	 */
 
-	template<typename Mem> size_t inline processorID(encapc<1, space<dim,T>, Mem> p)
+	template<typename Mem> size_t inline processorID(encapc<1, Point<dim,T>, Mem> p)
 	{
 		size_t pid = 0;
 
 		for (size_t i = 0 ; i < dim ; i++)
 		{
-			pid += p.get().get(i);
+			pid += p.template get<Point<dim,T>::x>()[i];
+		}
+
+		return pid;
+	}
+
+	/*! \brief processorID return in which processor the particle should go
+	 *
+	 * \return processorID
+	 *
+	 */
+
+	size_t inline processorID(T (&p)[dim])
+	{
+		size_t pid = 0;
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			pid += p[i];
 		}
 
 		return pid;
@@ -511,27 +529,29 @@ public:
 		return domain;
 	}
 
-	/*! \brief It return a graph that represent the domain decomposed into the cartesian grid
+	/*! \brief Check if the particle is local
 	 *
-	 * It return a graph that represent the domain decomposed into the cartesian grid
+	 * \param p object position
 	 *
-	 */
-
-/*	Graph<> createGraphModel()
-	{
-
-	}*/
-
-	/*! \brief It return a graph that represent the domain decomposed into the cartesian grid
-	 *
-	 * It return a graph that represent the domain decomposed into the cartesian grid
-	 *
+	 * \return true if it is local
 	 *
 	 */
-/*	Graph<> createLocalGraphMode()
+	template<typename Mem> bool isLocal(encapc<1, Point<dim,T>, Mem> p)
 	{
+		return processorID<Mem>() == v_cl.getProcessUnitID();
+	}
 
-	}*/
+	/*! \brief Check if the particle is local
+	 *
+	 * \param p object position
+	 *
+	 * \return true if it is local
+	 *
+	 */
+	bool isLocal(T (&pos)[dim])
+	{
+		return processorID(pos) == v_cl.getProcessUnitID();
+	}
 };
 
 

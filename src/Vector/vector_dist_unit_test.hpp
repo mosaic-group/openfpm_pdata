@@ -15,12 +15,16 @@ BOOST_AUTO_TEST_SUITE( vector_dist_test )
 
 BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use)
 {
-	Box<2,float> box({0.0,0.0},{1.0,1.0});
-	vector_dist<space<2,float>, Point_test<float>, Box<2,float>, CartDecomposition<2,float> > vd(4096,box);
+	typedef Point<2,float> s;
 
-	// randomized
-	size_t seed = global_v_cluster->getProcessUnitID();
-	srand (time(NULL)+seed);
+    // set the seed
+	// create the random generator engine
+	std::srand(global_v_cluster->getProcessUnitID());
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+	Box<2,float> box({0.0,0.0},{1.0,1.0});
+	vector_dist<Point<2,float>, Point_test<float>, Box<2,float>, CartDecomposition<2,float> > vd(4096,box);
 
 	auto it = vd.getIterator();
 
@@ -28,13 +32,27 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use)
 	{
 		auto key = it.get();
 
-		vd.template getPos<space<2,float>::x>(key)[0] = (rand()/(double)(RAND_MAX));
-		vd.template getPos<space<2,float>::x>(key)[1] = (rand()/(double)(RAND_MAX));
+		vd.template getPos<s::x>(key)[0] = ud(eg);
+		vd.template getPos<s::x>(key)[1] = ud(eg);
 
 		++it;
 	}
 
+	vd.map();
 
+	// Check if we have all the local particles
+
+	auto & ct = vd.getDecomposition();
+	it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		BOOST_REQUIRE_EQUAL(ct.isLocal(vd.template getPos<s::x>(key)),true);
+
+		++it;
+	}
 }
 
 BOOST_AUTO_TEST_SUITE_END()

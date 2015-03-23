@@ -9,7 +9,7 @@
 #define VECTOR_HPP_
 
 #include "VCluster.hpp"
-#include "Space/space.hpp"
+#include "Space/Shape/Point.hpp"
 #include "Vector/vector_dist_iterator.hpp"
 #include "Space/Shape/Box.hpp"
 #include "Vector/vector_dist_key.hpp"
@@ -21,7 +21,7 @@
  *
  */
 
-template<typename space, typename prop, typename Box, typename Decomposition , typename Memory=HeapMemory, bool with_id=false>
+template<typename point, typename prop, typename Box, typename Decomposition , typename Memory=HeapMemory, bool with_id=false>
 class vector_dist
 {
 private:
@@ -30,7 +30,7 @@ private:
 	Decomposition dec;
 
 	// Particle position vector for each subdomain the last one is the unassigned particles vector
-	Vcluster_object_array<openfpm::vector<space>> v_pos;
+	Vcluster_object_array<openfpm::vector<point>> v_pos;
 
 	// Particle properties vector for each subdomain the last one is the unassigned particles vector
 	Vcluster_object_array<openfpm::vector<prop>> v_prp;
@@ -49,7 +49,7 @@ public:
 	:dec(Decomposition(*global_v_cluster)),v_cl(*global_v_cluster)
 	{
 		// Allocate unassigned particles vectors
-		v_pos = v_cl.template allocate<openfpm::vector<space>>(1);
+		v_pos = v_cl.template allocate<openfpm::vector<point>>(1);
 		v_prp = v_cl.template allocate<openfpm::vector<prop>>(1);
 
 		// resize the position vector
@@ -66,9 +66,9 @@ public:
 
 		// Calculate the maximum number (before merging) of sub-domain on
 		// each dimension
-		size_t div[space::max_prop];
-		for (int i = 0 ; i < space::max_prop ; i++)
-		{div[i] = round_big_2(pow(n_sub,1.0/space::max_prop));}
+		size_t div[point::dims];
+		for (int i = 0 ; i < point::dims ; i++)
+		{div[i] = round_big_2(pow(n_sub,1.0/point::dims));}
 
 		// Create the sub-domains
 		dec.setParameters(div,box);
@@ -134,9 +134,9 @@ public:
 	 * \return an iterator
 	 *
 	 */
-	vector_dist_iterator<openfpm::vector<space>> getIterator()
+	vector_dist_iterator<openfpm::vector<point>> getIterator()
 	{
-		return vector_dist_iterator<openfpm::vector<space>>(v_pos);
+		return vector_dist_iterator<openfpm::vector<point>>(v_pos);
 	}
 
 	/*! \brief Get the iterator across the properties of the particles
@@ -144,12 +144,20 @@ public:
 	 * \return an iterator
 	 *
 	 */
-	vector_dist_iterator<openfpm::vector<space>> getPropIterator()
+	vector_dist_iterator<openfpm::vector<point>> getPropIterator()
 	{
 		return vector_dist_iterator<openfpm::vector<prop>>(v_prp);
 	}
 
-
+	/*! \brief Get the decomposition
+	 *
+	 * \return
+	 *
+	 */
+	Decomposition & getDecomposition()
+	{
+		return dec;
+	}
 
 };
 

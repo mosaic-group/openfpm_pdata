@@ -20,16 +20,16 @@ BOOST_AUTO_TEST_CASE( ORB_test_use)
 	// Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
-    // Seed with a real random value, if available
-	// and create the random generator engine
+    // set the seed
+	// create the random generator engine
 	std::srand(global_v_cluster->getProcessUnitID());
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
-	typedef space<3,float> p;
+	typedef Point<3,float> p;
 
 	// create a random local vector of particles
-	openfpm::vector<space<3,float>> vp(N_POINTS);
+	openfpm::vector<Point<3,float>> vp(N_POINTS);
 
 	// fill the particles
 
