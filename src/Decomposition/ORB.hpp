@@ -9,7 +9,7 @@
 #define ORB_HPP_
 
 #include "data_type/scalar.hpp"
-
+#include "mathutil.hpp"
 
 /*! \brief this class is a functor for "for_each" algorithm
  *
@@ -270,7 +270,7 @@ public:
 
 		dim_div = 0;
 
-		n_sub = round_big_2(n_sub);
+		n_sub = openfpm::math::round_big_2(n_sub);
 		size_t nsub = log2(n_sub);
 
 		// number of center or mass needed

@@ -114,7 +114,7 @@ public:
 		// each dimension
 		size_t div[dim];
 		for (int i = 0 ; i < dim ; i++)
-		{div[i] = round_big_2(pow(n_sub,1.0/dim));}
+		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
 
 		// Create the sub-domains
 		dec.setParameters(div);
@@ -139,7 +139,7 @@ public:
 		// each dimension
 		size_t div[dim];
 		for (int i = 0 ; i < dim ; i++)
-		{div[i] = round_big_2(pow(n_sub,1.0/dim));}
+		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
 
 		// Box
 		Box<dim,size_t> b(g_sz);

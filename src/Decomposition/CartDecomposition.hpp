@@ -167,7 +167,7 @@ private:
 	{
 		// Create a grid where each point is a space
 
-		grid<3,void> g(div);
+		grid_sm<dim,void> g(div);
 
 		// create a grid_key_dx iterator
 

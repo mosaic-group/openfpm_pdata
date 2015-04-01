@@ -10,7 +10,7 @@
 
 #include "Vector/map_vector.hpp"
 #include "Graph/map_graph.hpp"
-#include "Grid/grid.hpp"
+#include "Grid/grid_sm.hpp"
 #include "Space/Shape/Box.hpp"
 #include "Space/Shape/HyperCube.hpp"
 
@@ -99,7 +99,7 @@ public:
 
 		// Construct a grid info
 
-		grid<dim,void> g(sz);
+		grid_sm<dim,void> g(sz);
 
 		// Create a graph with the number of vertices equal to the number of
 		// grid point
@@ -209,7 +209,7 @@ public:
 
 		// Construct a grid info
 
-		grid<dim,void> g(sz);
+		grid_sm<dim,void> g(sz);
 
 		// Create a graph with the number of vertices equal to the number of
 		// grid point

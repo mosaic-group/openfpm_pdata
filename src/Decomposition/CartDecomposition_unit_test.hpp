@@ -29,7 +29,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_use)
 
 	// Calculate the number of sub-domain on each dimension
 	for (int i = 0 ; i < 3 ; i++)
-	{div[i] = round_big_2(pow(n_sub,1.0/3));}
+	{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/3));}
 
 	// Decompose
 	dec.setParameters(div,box);

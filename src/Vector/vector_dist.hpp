@@ -29,10 +29,10 @@ private:
 	//! Space Decomposition
 	Decomposition dec;
 
-	// Particle position vector for each subdomain the last one is the unassigned particles vector
+	// Particle position vector for each sub-domain the last one is the unassigned particles vector
 	Vcluster_object_array<openfpm::vector<point>> v_pos;
 
-	// Particle properties vector for each subdomain the last one is the unassigned particles vector
+	// Particle properties vector for each sub-domain the last one is the unassigned particles vector
 	Vcluster_object_array<openfpm::vector<prop>> v_prp;
 
 	// Virtual cluster
@@ -68,7 +68,7 @@ public:
 		// each dimension
 		size_t div[point::dims];
 		for (int i = 0 ; i < point::dims ; i++)
-		{div[i] = round_big_2(pow(n_sub,1.0/point::dims));}
+		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/point::dims));}
 
 		// Create the sub-domains
 		dec.setParameters(div,box);
@@ -113,7 +113,7 @@ public:
 
 		auto it = v_pos.get(up_v).getIterator();
 
-		// Label all the particles it the processor id where they should go
+		// Label all the particles with the processor id where they should go
 		while (it.isNext())
 		{
 			auto key = it.get();

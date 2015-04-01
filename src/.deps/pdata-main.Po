@@ -907,16 +907,18 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
  /usr/include/c++/4.8.3/bits/stl_tree.h \
  /usr/include/c++/4.8.3/bits/stl_map.h \
  /usr/include/c++/4.8.3/bits/stl_multimap.h \
- ../../OpenFPM_data/src/Grid/grid.hpp /usr/include/boost/shared_array.hpp \
+ ../../OpenFPM_data/src/for_each_ref.hpp \
+ ../../OpenFPM_data/src/Grid/grid_sm.hpp \
+ /usr/include/boost/shared_array.hpp \
  /usr/include/boost/smart_ptr/shared_array.hpp \
  ../../OpenFPM_data/src/Space/Shape/Box.hpp \
  ../../OpenFPM_data/src/Space/Shape/Sphere.hpp \
  ../../OpenFPM_data/src/base_type.hpp \
  ../../OpenFPM_data/src/Space/Shape/Point.hpp \
- ../../OpenFPM_data/src/Space/Shape/Point.hpp \
  ../../OpenFPM_data/src/Grid/grid_key.hpp \
  ../../OpenFPM_data/src/Grid/comb.hpp \
  ../../OpenFPM_data/src/Grid/grid_key_expression.hpp \
+ ../../OpenFPM_data/src/Space/Shape/Point.hpp \
  ../../OpenFPM_data/src/Grid/grid_key.hpp \
  ../../OpenFPM_data/src/Grid/Encap.hpp \
  ../../OpenFPM_data/src/memory_array.hpp \
@@ -957,7 +959,7 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
  /home/i-bird/MPI/include/openmpi/ompi/mpi/cxx/file_inln.h \
  ../../OpenFPM_data/src/Vector/map_vector_std.hpp \
  ../../OpenFPM_data/src/Graph/map_graph.hpp \
- ../../OpenFPM_data/src/Grid/grid.hpp \
+ ../../OpenFPM_data/src/Grid/grid_sm.hpp \
  ../../OpenFPM_data/src/Space/Shape/HyperCube.hpp \
  ../../OpenFPM_data/src/mathutil.hpp \
  /usr/include/boost/test/included/unit_test.hpp \
@@ -3300,7 +3302,9 @@ config.h:
 
 /usr/include/c++/4.8.3/bits/stl_multimap.h:
 
-../../OpenFPM_data/src/Grid/grid.hpp:
+../../OpenFPM_data/src/for_each_ref.hpp:
+
+../../OpenFPM_data/src/Grid/grid_sm.hpp:
 
 /usr/include/boost/shared_array.hpp:
 
@@ -3314,13 +3318,13 @@ config.h:
 
 ../../OpenFPM_data/src/Space/Shape/Point.hpp:
 
-../../OpenFPM_data/src/Space/Shape/Point.hpp:
-
 ../../OpenFPM_data/src/Grid/grid_key.hpp:
 
 ../../OpenFPM_data/src/Grid/comb.hpp:
 
 ../../OpenFPM_data/src/Grid/grid_key_expression.hpp:
+
+../../OpenFPM_data/src/Space/Shape/Point.hpp:
 
 ../../OpenFPM_data/src/Grid/grid_key.hpp:
 
@@ -3404,7 +3408,7 @@ config.h:
 
 ../../OpenFPM_data/src/Graph/map_graph.hpp:
 
-../../OpenFPM_data/src/Grid/grid.hpp:
+../../OpenFPM_data/src/Grid/grid_sm.hpp:
 
 ../../OpenFPM_data/src/Space/Shape/HyperCube.hpp:
 

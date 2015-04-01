@@ -101,7 +101,7 @@ class dec_optimizer
 {
 	// create a grid header for helping
 
-	grid<dim,void> gh;
+	grid_sm<dim,void> gh;
 
 private:
 

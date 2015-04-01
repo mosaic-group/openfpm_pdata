@@ -942,16 +942,18 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
  ../../OpenFPM_data/src/memory.hpp ../../OpenFPM_data/src/config.h \
  ../../OpenFPM_data/src/memory.hpp ../../OpenFPM_data/src/meta_copy.hpp \
  ../../OpenFPM_data/src/Memleak_check.hpp \
- ../../OpenFPM_data/src/Grid/grid.hpp /usr/include/boost/shared_array.hpp \
+ ../../OpenFPM_data/src/for_each_ref.hpp \
+ ../../OpenFPM_data/src/Grid/grid_sm.hpp \
+ /usr/include/boost/shared_array.hpp \
  /usr/include/boost/smart_ptr/shared_array.hpp \
  ../../OpenFPM_data/src/Space/Shape/Box.hpp \
  ../../OpenFPM_data/src/Space/Shape/Sphere.hpp \
  ../../OpenFPM_data/src/base_type.hpp \
  ../../OpenFPM_data/src/Space/Shape/Point.hpp \
- ../../OpenFPM_data/src/Space/Shape/Point.hpp \
  ../../OpenFPM_data/src/Grid/grid_key.hpp \
  ../../OpenFPM_data/src/Grid/comb.hpp \
  ../../OpenFPM_data/src/Grid/grid_key_expression.hpp \
+ ../../OpenFPM_data/src/Space/Shape/Point.hpp \
  ../../OpenFPM_data/src/Grid/grid_key.hpp \
  ../../OpenFPM_data/src/Grid/Encap.hpp \
  ../../OpenFPM_data/src/memory_array.hpp \
@@ -3029,7 +3031,9 @@ config.h:
 
 ../../OpenFPM_data/src/Memleak_check.hpp:
 
-../../OpenFPM_data/src/Grid/grid.hpp:
+../../OpenFPM_data/src/for_each_ref.hpp:
+
+../../OpenFPM_data/src/Grid/grid_sm.hpp:
 
 /usr/include/boost/shared_array.hpp:
 
@@ -3043,13 +3047,13 @@ config.h:
 
 ../../OpenFPM_data/src/Space/Shape/Point.hpp:
 
-../../OpenFPM_data/src/Space/Shape/Point.hpp:
-
 ../../OpenFPM_data/src/Grid/grid_key.hpp:
 
 ../../OpenFPM_data/src/Grid/comb.hpp:
 
 ../../OpenFPM_data/src/Grid/grid_key_expression.hpp:
+
+../../OpenFPM_data/src/Space/Shape/Point.hpp:
 
 ../../OpenFPM_data/src/Grid/grid_key.hpp:
 
