@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 BOOST_AUTO_TEST_CASE( grid_dist_id_poisson_test_use)
 {
 	// grid size
-	size_t sz[2] = {1024,1024};
+/*	size_t sz[2] = {1024,1024};
 
 	// Distributed grid with id decomposition
 
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_poisson_test_use)
 
 	// Create the grid on memory
 
-	g_dist.Create();
+	g_dist.Create();*/
 
 /*	auto g_it = g_dist.getIteratorBulk();
 

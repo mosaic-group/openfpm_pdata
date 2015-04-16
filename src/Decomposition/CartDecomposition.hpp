@@ -19,6 +19,7 @@
 #include "dec_optimizer.hpp"
 #include "Space/Shape/Box.hpp"
 #include "Space/Shape/Point.hpp"
+#include "NN/CellList/CellDecomposer.hpp"
 
 /**
  * \brief This class decompose a space into subspaces
@@ -43,6 +44,7 @@ template<unsigned int dim, typename T, template<typename> class device_l=openfpm
 class CartDecomposition
 {
 public:
+
 	//! Type of the domain we are going to decompose
 	typedef T domain_type;
 
@@ -51,7 +53,7 @@ public:
 
 private:
 
-	//! This is the key type toaccess  data_s, for example in the case of vector
+	//! This is the key type to access  data_s, for example in the case of vector
 	//! acc_key is size_t
 	typedef typename data_s<SpaceBox<dim,T>,device_l<SpaceBox<dim,T>>,Memory,openfpm::vector_grow_policy_default,openfpm::vect_isel<SpaceBox<dim,T>>::value >::access_key acc_key;
 
@@ -69,11 +71,12 @@ private:
 	//! exist for efficient global communication
 	openfpm::vector<size_t> fine_s;
 
-	//! number of total sub-domain
-	size_t N_tot;
+	//! Structure that store the cartesian grid information
+	grid_sm<dim,void> gr;
 
-	//! number of sub-domain on each dimension
-	size_t div[dim];
+	//! Structure that decompose your structure into cell without creating them
+	//! useful to convert positions to CellId or sub-domain id in this case
+	CellDecomposer_sm<dim,T> cd;
 
 	//! rectangular domain to decompose
 	Domain<dim,T> domain;
@@ -94,8 +97,6 @@ private:
 		// Calculate the total number of box and and the spacing
 		// on each direction
 
-		N_tot = 1;
-
 		// Get the box containing the domain
 		SpaceBox<dim,T> bs = domain.getBox();
 
@@ -103,8 +104,7 @@ private:
 		{
 			// Calculate the spacing
 
-			spacing[i] = (bs.getHigh(i) - bs.getLow(i)) / div[i];
-			N_tot *= div[i];
+			spacing[i] = (bs.getHigh(i) - bs.getLow(i)) / gr.size(i);
 		}
 
 		// Here we use METIS
@@ -114,7 +114,7 @@ private:
 
 		// Processor graph
 
-		Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.template construct<NO_EDGE,T,dim-1>(div,domain);
+		Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.template construct<NO_EDGE,T,dim-1>(gr.getSize(),domain);
 
 		// Get the number of processing units
 		size_t Np = v_cl.getProcessingUnits();
@@ -131,12 +131,12 @@ private:
 
 		// fill the structure that store the processor id for each sub-domain
 
-		fine_s.resize(N_tot);
+		fine_s.resize(gr.size());
 
 		// Optimize the decomposition creating bigger spaces
 		// And reducing Ghost over-stress
 
-		dec_optimizer<dim,Graph_CSR<nm_part_v,nm_part_e>> d_o(gp,div);
+		dec_optimizer<dim,Graph_CSR<nm_part_v,nm_part_e>> d_o(gp,gr.getSize());
 
 		// set of Boxes produced by the decomposition optimizer
 		openfpm::vector<::Box<dim,size_t>> loc_box;
@@ -154,6 +154,19 @@ private:
 
 			// add the sub-domain
 			sub_domains.add(sub_d);
+		}
+
+		// fill fine_s structure
+		auto it = gp.getVertexIterator();
+
+		while (it.isNext())
+		{
+			size_t key = it.get();
+
+			// fill with the fine decomposition
+			fine_s.get(key) = gp.template vertex_p<nm_part_v::id>(key);
+
+			++it;
 		}
 	}
 
@@ -210,7 +223,7 @@ public:
 	 *
 	 */
 	CartDecomposition(CartDecomposition<dim,T,device_l,Memory,Domain,data_s> && cd)
-	:sub_domain(cd.sub_domain),N_tot(cd.N_tot),domain(cd.domain),v_cl(cd.v_cl)
+	:sub_domain(cd.sub_domain),gr(cd.gr),cd(cd.cd),domain(cd.domain),v_cl(cd.v_cl)
 	{
 		//! Subspace selected
 		//! access_key in case of grid is just the set of the index to access the grid
@@ -221,8 +234,6 @@ public:
 
 		for (int i = 0 ; i < dim ; i++)
 		{
-			this->div[i] = div[dim];
-
 			//! Box Spacing
 			this->spacing[i] = spacing[i];
 		}
@@ -234,7 +245,7 @@ public:
 	 *
 	 */
 	CartDecomposition(Vcluster & v_cl)
-	:id_sub(0),N_tot(0),v_cl(v_cl)
+	:id_sub(0),v_cl(v_cl)
 	{}
 
 	/*! \brief Cartesian decomposition constructor, it divide the space in boxes
@@ -245,7 +256,7 @@ public:
 	 *
 	 */
 	CartDecomposition(std::vector<size_t> dec, Domain<dim,T> domain, Vcluster & v_cl)
-	:id_sub(0),div(dec),domain(domain),v_cl(v_cl)
+	:id_sub(0),gr(dec),cd(domain,dec),domain(domain),v_cl(v_cl)
 	{
 		// Create the decomposition
 
@@ -264,14 +275,7 @@ public:
 
 	template<typename Mem> size_t inline processorID(encapc<1, Point<dim,T>, Mem> p)
 	{
-		size_t pid = 0;
-
-		for (size_t i = 0 ; i < dim ; i++)
-		{
-			pid += p.template get<Point<dim,T>::x>()[i];
-		}
-
-		return pid;
+		return fine_s.get(cd.getCell(p));
 	}
 
 	/*! \brief processorID return in which processor the particle should go
@@ -282,14 +286,7 @@ public:
 
 	size_t inline processorID(T (&p)[dim])
 	{
-		size_t pid = 0;
-
-		for (size_t i = 0 ; i < dim ; i++)
-		{
-			pid += p[i];
-		}
-
-		return pid;
+		return fine_s.get(cd.getCell(p));
 	}
 
 	/*! \brief Set the parameter of the decomposition
@@ -316,14 +313,13 @@ public:
      * \param domain_ domain to decompose
 	 *
 	 */
-	void setParameters(size_t div_[dim], Domain<dim,T> domain_)
+	void setParameters(const size_t (& div_)[dim], Domain<dim,T> domain_)
 	{
 		// Set the decomposition parameters
 
-		for (int i = 0 ; i < dim ; i++)
-			div[i] = div_[i];
-
+		gr.setDimensions(div_);
 		domain = domain_;
+		cd.setDimensions(domain,div_);
 
 		//! Create the decomposition
 
@@ -429,7 +425,7 @@ public:
 	{
 #ifdef DEBUG
 		// Check if this subspace exist
-		if (id >= N_tot)
+		if (id >= gr.size())
 		{
 			std::cerr << "Error CartDecomposition: id > N_tot";
 		}
@@ -453,7 +449,7 @@ public:
 
 	size_t getNHyperCube()
 	{
-		return N_tot;
+		return gr.size();
 	}
 
 	/*! \brief produce an hyper-cube approximation of the space decomposition

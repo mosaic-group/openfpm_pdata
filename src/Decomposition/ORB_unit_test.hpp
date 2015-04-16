@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE( ORB_test_use)
 	// Orthogonal Recursive Bisection
 	Box<3,float> dom({0.0,0.0,0.0},{1.0,1.0,1.0});
 
-	ORB<3,float> orb(dom,16,vp);
+//	ORB<3,float> orb(dom,16,vp);
 
 	//
 }

@@ -13,7 +13,7 @@
 
 BOOST_AUTO_TEST_SUITE( vector_dist_test )
 
-BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use)
+BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use )
 {
 	typedef Point<2,float> s;
 

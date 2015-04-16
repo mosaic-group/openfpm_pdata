@@ -82,7 +82,7 @@ target_triplet = x86_64-unknown-linux-gnu
 bin_PROGRAMS = pdata$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
-	$(srcdir)/config.h.in $(top_srcdir)/depcomp
+	$(top_srcdir)/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_lib_mysql.m4 \
 	$(top_srcdir)/m4/ax_check_compiler_flags.m4 \
@@ -97,13 +97,14 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/ax_lib_mysql.m4 \
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
-CONFIG_HEADER = config.h
+CONFIG_HEADER = $(top_builddir)/src/config/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_pdata_OBJECTS = pdata-main.$(OBJEXT) pdata-HeapMemory.$(OBJEXT) \
-	pdata-VCluster.$(OBJEXT) pdata-Memleak_check.$(OBJEXT)
+	pdata-PtrMemory.$(OBJEXT) pdata-VCluster.$(OBJEXT) \
+	pdata-Memleak_check.$(OBJEXT)
 pdata_OBJECTS = $(am_pdata_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
@@ -122,7 +123,7 @@ AM_V_at = $(am__v_at_$(V))
 am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
 am__v_at_0 = @
 am__v_at_1 = 
-DEFAULT_INCLUDES = -I.
+DEFAULT_INCLUDES = -I. -I$(top_builddir)/src/config
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
@@ -150,8 +151,7 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) \
-	$(LISP)config.h.in
+am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
 # *not* preserved.
@@ -194,7 +194,7 @@ ECHO_C =
 ECHO_N = -n
 ECHO_T = 
 EXEEXT = 
-INCLUDES_PATH =  -I. -I../../metis_install/include -I../../OpenFPM_IO/src -I../../OpenFPM_data/src -I../../OpenFPM_devices/src -I../../OpenFPM_vcluster/src/
+INCLUDES_PATH =  -I. -Isrc/config/ -I../../metis_install/include -I../../OpenFPM_IO/src -I../../OpenFPM_data/src -I../../OpenFPM_devices/src -I../../OpenFPM_vcluster/src/
 INSTALL = /usr/bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
@@ -279,12 +279,11 @@ top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
 LINKLIBS = $(PTHREAD_LIBS) $(OPT_LIBS) $(BOOST_LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LIB) $(CUDA_LIBS) $(BOOST_THREAD_LIB)
-pdata_SOURCES = main.cpp ../../OpenFPM_devices/src/memory/HeapMemory.cpp ../../OpenFPM_vcluster/src/VCluster.cpp ../../OpenFPM_data/src/Memleak_check.cpp
+pdata_SOURCES = main.cpp ../../OpenFPM_devices/src/memory/HeapMemory.cpp ../../OpenFPM_devices/src/memory/PtrMemory.cpp ../../OpenFPM_vcluster/src/VCluster.cpp ../../OpenFPM_data/src/Memleak_check.cpp
 pdata_CXXFLAGS = $(CUDA_CFLAGS) $(INCLUDES_PATH)
 pdata_CFLAGS = $(CUDA_CFLAGS)
 pdata_LDADD = $(LINKLIBS) -L/usr/lib64/nvidia-bumblebee/ -L../../metis_install/lib  -lmetis
-all: config.h
-	$(MAKE) $(AM_MAKEFLAGS) all-am
+all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .cpp .cu .o .obj
@@ -318,21 +317,6 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
-
-config.h: stamp-h1
-	@if test ! -f $@; then rm -f stamp-h1; else :; fi
-	@if test ! -f $@; then $(MAKE) $(AM_MAKEFLAGS) stamp-h1; else :; fi
-
-stamp-h1: $(srcdir)/config.h.in $(top_builddir)/config.status
-	@rm -f stamp-h1
-	cd $(top_builddir) && $(SHELL) ./config.status src/config.h
-$(srcdir)/config.h.in:  $(am__configure_deps) 
-	($(am__cd) $(top_srcdir) && $(AUTOHEADER))
-	rm -f stamp-h1
-	touch $@
-
-distclean-hdr:
-	-rm -f config.h stamp-h1
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
@@ -388,6 +372,7 @@ distclean-compile:
 
 include ./$(DEPDIR)/pdata-HeapMemory.Po
 include ./$(DEPDIR)/pdata-Memleak_check.Po
+include ./$(DEPDIR)/pdata-PtrMemory.Po
 include ./$(DEPDIR)/pdata-VCluster.Po
 include ./$(DEPDIR)/pdata-main.Po
 
@@ -432,6 +417,20 @@ pdata-HeapMemory.obj: ../../OpenFPM_devices/src/memory/HeapMemory.cpp
 #	$(AM_V_CXX)source='../../OpenFPM_devices/src/memory/HeapMemory.cpp' object='pdata-HeapMemory.obj' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
 #	$(AM_V_CXX_no)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-HeapMemory.obj `if test -f '../../OpenFPM_devices/src/memory/HeapMemory.cpp'; then $(CYGPATH_W) '../../OpenFPM_devices/src/memory/HeapMemory.cpp'; else $(CYGPATH_W) '$(srcdir)/../../OpenFPM_devices/src/memory/HeapMemory.cpp'; fi`
+
+pdata-PtrMemory.o: ../../OpenFPM_devices/src/memory/PtrMemory.cpp
+	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-PtrMemory.o -MD -MP -MF $(DEPDIR)/pdata-PtrMemory.Tpo -c -o pdata-PtrMemory.o `test -f '../../OpenFPM_devices/src/memory/PtrMemory.cpp' || echo '$(srcdir)/'`../../OpenFPM_devices/src/memory/PtrMemory.cpp
+	$(AM_V_at)$(am__mv) $(DEPDIR)/pdata-PtrMemory.Tpo $(DEPDIR)/pdata-PtrMemory.Po
+#	$(AM_V_CXX)source='../../OpenFPM_devices/src/memory/PtrMemory.cpp' object='pdata-PtrMemory.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(AM_V_CXX_no)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-PtrMemory.o `test -f '../../OpenFPM_devices/src/memory/PtrMemory.cpp' || echo '$(srcdir)/'`../../OpenFPM_devices/src/memory/PtrMemory.cpp
+
+pdata-PtrMemory.obj: ../../OpenFPM_devices/src/memory/PtrMemory.cpp
+	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-PtrMemory.obj -MD -MP -MF $(DEPDIR)/pdata-PtrMemory.Tpo -c -o pdata-PtrMemory.obj `if test -f '../../OpenFPM_devices/src/memory/PtrMemory.cpp'; then $(CYGPATH_W) '../../OpenFPM_devices/src/memory/PtrMemory.cpp'; else $(CYGPATH_W) '$(srcdir)/../../OpenFPM_devices/src/memory/PtrMemory.cpp'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/pdata-PtrMemory.Tpo $(DEPDIR)/pdata-PtrMemory.Po
+#	$(AM_V_CXX)source='../../OpenFPM_devices/src/memory/PtrMemory.cpp' object='pdata-PtrMemory.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(AM_V_CXX_no)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-PtrMemory.obj `if test -f '../../OpenFPM_devices/src/memory/PtrMemory.cpp'; then $(CYGPATH_W) '../../OpenFPM_devices/src/memory/PtrMemory.cpp'; else $(CYGPATH_W) '$(srcdir)/../../OpenFPM_devices/src/memory/PtrMemory.cpp'; fi`
 
 pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp
 	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-VCluster.o -MD -MP -MF $(DEPDIR)/pdata-VCluster.Tpo -c -o pdata-VCluster.o `test -f '../../OpenFPM_vcluster/src/VCluster.cpp' || echo '$(srcdir)/'`../../OpenFPM_vcluster/src/VCluster.cpp
@@ -545,7 +544,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) config.h
+all-am: Makefile $(PROGRAMS)
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -588,7 +587,7 @@ distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
-	distclean-hdr distclean-tags
+	distclean-tags
 
 dvi: dvi-am
 
@@ -649,21 +648,21 @@ ps-am:
 
 uninstall-am: uninstall-binPROGRAMS
 
-.MAKE: all install-am install-strip
+.MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean \
 	clean-binPROGRAMS clean-generic cscopelist-am ctags ctags-am \
-	distclean distclean-compile distclean-generic distclean-hdr \
-	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-binPROGRAMS install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic pdf pdf-am ps ps-am tags tags-am uninstall \
-	uninstall-am uninstall-binPROGRAMS
+	distclean distclean-compile distclean-generic distclean-tags \
+	distdir dvi dvi-am html html-am info info-am install \
+	install-am install-binPROGRAMS install-data install-data-am \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-info install-info-am \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic pdf pdf-am \
+	ps ps-am tags tags-am uninstall uninstall-am \
+	uninstall-binPROGRAMS
 
 
 .cu.o :

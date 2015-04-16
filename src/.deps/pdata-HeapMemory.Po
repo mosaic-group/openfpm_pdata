@@ -1,7 +1,7 @@
 pdata-HeapMemory.o: ../../OpenFPM_devices/src/memory/HeapMemory.cpp \
  /usr/include/stdc-predef.h \
  ../../OpenFPM_devices/src/memory/HeapMemory.hpp config.h \
- ../../OpenFPM_data/src/memory.hpp ../../OpenFPM_data/src/config.h \
+ ../../OpenFPM_data/src/memory.hpp \
  /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/stddef.h \
  /usr/include/c++/4.8.3/cstddef \
  /usr/include/c++/4.8.3/x86_64-redhat-linux/bits/c++config.h \
@@ -95,7 +95,15 @@ pdata-HeapMemory.o: ../../OpenFPM_devices/src/memory/HeapMemory.cpp \
  /usr/include/c++/4.8.3/bits/basic_ios.tcc \
  /usr/include/c++/4.8.3/bits/ostream.tcc /usr/include/c++/4.8.3/istream \
  /usr/include/c++/4.8.3/bits/istream.tcc /usr/include/c++/4.8.3/cstring \
- /usr/include/string.h
+ /usr/include/string.h ../../OpenFPM_data/src/Memleak_check.hpp \
+ /usr/include/c++/4.8.3/map /usr/include/c++/4.8.3/bits/stl_tree.h \
+ /usr/include/c++/4.8.3/bits/alloc_traits.h \
+ /usr/include/c++/4.8.3/bits/ptr_traits.h \
+ /usr/include/c++/4.8.3/bits/stl_map.h /usr/include/c++/4.8.3/tuple \
+ /usr/include/c++/4.8.3/utility /usr/include/c++/4.8.3/bits/stl_relops.h \
+ /usr/include/c++/4.8.3/array /usr/include/c++/4.8.3/stdexcept \
+ /usr/include/c++/4.8.3/bits/uses_allocator.h \
+ /usr/include/c++/4.8.3/bits/stl_multimap.h
 
 /usr/include/stdc-predef.h:
 
@@ -104,8 +112,6 @@ pdata-HeapMemory.o: ../../OpenFPM_devices/src/memory/HeapMemory.cpp \
 config.h:
 
 ../../OpenFPM_data/src/memory.hpp:
-
-../../OpenFPM_data/src/config.h:
 
 /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/stddef.h:
 
@@ -362,3 +368,29 @@ config.h:
 /usr/include/c++/4.8.3/cstring:
 
 /usr/include/string.h:
+
+../../OpenFPM_data/src/Memleak_check.hpp:
+
+/usr/include/c++/4.8.3/map:
+
+/usr/include/c++/4.8.3/bits/stl_tree.h:
+
+/usr/include/c++/4.8.3/bits/alloc_traits.h:
+
+/usr/include/c++/4.8.3/bits/ptr_traits.h:
+
+/usr/include/c++/4.8.3/bits/stl_map.h:
+
+/usr/include/c++/4.8.3/tuple:
+
+/usr/include/c++/4.8.3/utility:
+
+/usr/include/c++/4.8.3/bits/stl_relops.h:
+
+/usr/include/c++/4.8.3/array:
+
+/usr/include/c++/4.8.3/stdexcept:
+
+/usr/include/c++/4.8.3/bits/uses_allocator.h:
+
+/usr/include/c++/4.8.3/bits/stl_multimap.h:

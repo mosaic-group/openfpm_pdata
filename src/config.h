@@ -14,7 +14,7 @@
 #define HAVE_MPI /**/
 
 /* Memory check, corruption and leak */
-/* #undef MEMLEAK_CHECK */
+#define MEMLEAK_CHECK /**/
 
 /* NVCC compiling */
 #define NVCC /**/
