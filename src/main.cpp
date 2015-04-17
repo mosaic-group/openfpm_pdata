@@ -15,6 +15,7 @@
 #include "Space/Shape/Box.hpp"
 #include "util.hpp"
 
+#include "unit_test_init_cleanup.hpp"
 #include "Decomposition/ORB_unit_test.hpp"
 #include "Graph/CartesianGraphFactory_unit_test.hpp"
 #include "metis_util_unit_test.hpp"

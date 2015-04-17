@@ -186,7 +186,7 @@ CUDA_CFLAGS =  -I -I -I/usr/local/cuda-5.5/include
 CUDA_LIBS =  -L -L -L/usr/local/cuda-5.5/lib64 -lcuda -lcudart
 CXX = mpic++
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS =  --std=c++11  -mtune=corei7 -g3  -Wall -O0  -mavx -msse4.2 -msse4.1 -msse3 -msse2 -msse -mmmx -Wno-unused-but-set-variable
+CXXFLAGS =  --std=c++11  -mtune=corei7 -Wall -O3 -g3  -mavx -msse4.2 -msse4.1 -msse3 -msse2 -msse -mmmx -Wno-unused-but-set-variable
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
@@ -207,7 +207,7 @@ LTLIBOBJS =
 MAKEINFO = ${SHELL} /home/i-bird/Desktop/MOSAIC/OpenFPM_project/OpenFPM_pdata/missing makeinfo
 MKDIR_P = /usr/bin/mkdir -p
 NVCC = /usr/local/cuda-5.5/bin/nvcc
-NVCCFLAGS =    -g -O0 
+NVCCFLAGS =    -O3 
 NVCC_EXIST = yes
 OBJEXT = o
 PACKAGE = full-package-name

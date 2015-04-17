@@ -244,7 +244,7 @@ public:
 		recv_cnt = 0;
 		v_cl.sendrecvMultipleMessages(prc_sz_r.size(),&p_map.get(0), &prc_sz_r.get(0), &prc_r.get(0) , &ptr.get(0) , vector_dist::message_alloc, this ,NEED_ALL_SIZE);
 
-		// overwrite the outcoming particle with the incoming particle
+		// overwrite the outcoming particle with the incoming particle and resize the vectors
 
 		size_t o_p_id = 0;
 
@@ -254,16 +254,16 @@ public:
 
 			size_t n_ele = v_proc.get(i) / (sizeof(point) + sizeof(prop));
 
-			PtrMemory ptr1(hp_recv.getPointer(),n_ele * sizeof(point));
-			PtrMemory ptr2((unsigned char *)hp_recv.getPointer() + n_ele * sizeof(point),n_ele * sizeof(prop));
+			PtrMemory * ptr1 = new PtrMemory(hp_recv.getPointer(),n_ele * sizeof(point));
+			PtrMemory * ptr2 = new PtrMemory((unsigned char *)hp_recv.getPointer() + n_ele * sizeof(point),n_ele * sizeof(prop));
 
 			// create vector representation to a piece of memory already allocated
 
 			openfpm::vector<point,openfpm::device_cpu<point>,PtrMemory,openfpm::grow_policy_identity> vpos;
 			openfpm::vector<prop,openfpm::device_cpu<prop>,PtrMemory,openfpm::grow_policy_identity> vprp;
 
-			vpos.setMemory(ptr1);
-			vprp.setMemory(ptr2);
+			vpos.setMemory(*ptr1);
+			vprp.setMemory(*ptr2);
 
 			vpos.resize(n_ele);
 			vprp.resize(n_ele);
@@ -286,7 +286,10 @@ public:
 			}
 		}
 
-		// Add the remaining incoming particle
+		// remove the hole (out-going particles) in the vector
+
+		v_pos.get(0).remove(opart,o_p_id);
+		v_prp.get(0).remove(opart,o_p_id);
 	}
 
 	// Heap memory receiver

@@ -49,6 +49,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use )
 	{
 		auto key = it.get();
 
+		// Check if local otherwise print the particle value
+
 		BOOST_REQUIRE_EQUAL(ct.isLocal(vd.template getPos<s::x>(key)),true);
 
 		++it;

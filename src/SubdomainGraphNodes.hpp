@@ -134,7 +134,7 @@ struct nm_part_v
 	static const unsigned int max_prop = 2;
 };
 
-const std::string nm_part_v::attributes::name[] = {"id"};
+const std::string nm_part_v::attributes::name[] = {"id","sub_id"};
 
 /*! \brief Reduced edge graph node
  *
