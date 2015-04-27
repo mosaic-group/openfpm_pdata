@@ -91,8 +91,9 @@ public:
 /*! \brief This class take a graph representing the space decomposition and produce a
  *         simplified version
  *
- * Given a Graph_CSR and a seed point produce an alternative decomposition to reduce
- * the ghost over-stress
+ * Given a Graph_CSR and a seed point produce an alternative decomposition in boxes with
+ * less sub-domain. In the following we referee with sub-domain the boxes produced by this
+ * algorithm and sub-sub-domain the sub-domain before reduction
  *
  */
 
@@ -170,10 +171,14 @@ private:
 	 * \param graph we are processing
 	 * \param w_comb hyper-cube combinations
 	 * \param p_id processor id
+	 * \param box_nn_processor list of neighborhood processors for the box
 	 *
 	 */
-	template<unsigned int p_sub, unsigned int p_id> void add_to_queue(openfpm::vector<size_t> & domains, openfpm::vector<wavefront<dim>> & v_w, Graph & graph,  std::vector<comb<dim>> & w_comb, long int pr_id)
+	template<unsigned int p_sub, unsigned int p_id> void add_to_queue(openfpm::vector<size_t> & domains, openfpm::vector<wavefront<dim>> & v_w, Graph & graph,  std::vector<comb<dim>> & w_comb, long int pr_id, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor)
 	{
+		// it contain a list of the near processor to the box
+		box_nn_processor.add();
+
 		// create a new queue
 		openfpm::vector<size_t> domains_new;
 
@@ -217,17 +222,25 @@ private:
 				const grid_key_dx<dim> & gk = g_sub.get();
 
 				// get the vertex and if does not have a sub-id and is assigned ...
-
 				long int pid = graph.vertex(gh.LinId(gk)).template get<p_sub>();
+
+				// Get the processor id of the sub-sub-domain
+				long int pp_id = graph.vertex(gh.LinId(gk)).template get<p_id>();
+
+				if (pp_id != pr_id)
+				{
+					// this box is contiguous to other processors
+
+					box_nn_processor.get(box_nn_processor.size()-1).add(pp_id);
+				}
 
 				if (pid < 0)
 				{
 					// ... and the p_id different from -1
 					if (pr_id != -1)
 					{
-						// ... and the processor id of the sub-domain match p_id, add to the queue
+						// ... and the processor id of the sub-sub-domain match p_id, add to the queue
 
-						long int pp_id = graph.vertex(gh.LinId(gk)).template get<p_id>();
 						if ( pr_id == pp_id)
 							domains_new.add(gh.LinId(gk));
 					}
@@ -239,6 +252,11 @@ private:
 			}
 		}
 
+		// sort and make it unique the numbers in processor list
+	    std::sort(box_nn_processor.get(box_nn_processor.size()-1).begin(), box_nn_processor.get(box_nn_processor.size()-1).end());
+	    auto last = std::unique(box_nn_processor.get(box_nn_processor.size()-1).begin(), box_nn_processor.get(box_nn_processor.size()-1).end());
+	    box_nn_processor.get(box_nn_processor.size()-1).erase(last, box_nn_processor.get(box_nn_processor.size()-1).end());
+
 		// copy the new queue to the old one (it not copied, C++11 move semantic)
 		domains.swap(domains_new);
 	}
@@ -246,12 +264,16 @@ private:
 	/* \brief Find the biggest hyper-cube
 	 *
 	 * starting from one initial sub-domain find the biggest hyper-cube
+	 * output the box, and fill a list of neighborhood processor
 	 *
 	 * \tparam j id of the property storing the sub-decomposition
 	 * \tparam i id of the property containing the decomposition
 	 *
 	 * \param start_p initial domain
-	 * \param graph representing the grid
+	 * \param graph representing the grid of sub-sub-domain
+	 * \param box produced box
+	 * \param v_w Wavefronts
+	 * \param w_comb wavefronts directions (0,0,1) (0,0,-1) (0,1,0) (0,-1,0) ...
 	 *
 	 */
 	template <unsigned int p_sub, unsigned int p_id> void expand_from_point(size_t start_p, Graph & graph, Box<dim,size_t> & box, openfpm::vector<wavefront<dim>> & v_w , std::vector<comb<dim>> & w_comb)
@@ -292,19 +314,20 @@ private:
 				grid_key_dx<dim> stop = grid_key_dx<dim>(v_w.template get<wavefront<dim>::stop>(d)) + w_comb[d];
 				grid_key_dx_iterator_sub<dim> it(gh,start,stop);
 
-				// for each subdomain
+				// for each sub-domain in the expanded wavefront
 				while (it.isNext())
 				{
 					// get the wavefront sub-domain id
 					size_t sub_w_e = gh.LinId(it.get());
 
 					// we get the processor id of the neighborhood sub-domain on direction d
+					// (expanded wavefront)
 					size_t exp_p = graph.vertex(sub_w_e).template get<p_id>();
 
 					// Check if already assigned
 					long int ass = graph.vertex(sub_w_e).template get<p_sub>();
 
-					// we check if it is the same processor id ans is not assigned
+					// we check if it is the same processor id and is not assigned
 					w_can_expand &= ((exp_p == domain_id) & (ass < 0));
 
 					// next domain
@@ -489,8 +512,11 @@ public:
 		// temporal vector
 		openfpm::vector<Box<dim,size_t>> tmp;
 
+		// temporal vector
+		openfpm::vector< openfpm::vector<size_t> > box_nn_processor;
+
 		// optimize
-		optimize<p_sub,p_id>(start_p,graph,-1,tmp);
+		optimize<p_sub,p_id>(start_p,graph,-1,tmp, box_nn_processor);
 	}
 
 	/*! \brief optimize the graph
@@ -509,13 +535,13 @@ public:
 	 *
 	 */
 
-	template <unsigned int p_sub, unsigned int p_id> void optimize(Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & lb)
+	template <unsigned int p_sub, unsigned int p_id> void optimize(Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & lb, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor)
 	{
 		// search for the first seed
 		grid_key_dx<dim> key_seed = search_first_seed<p_id>(graph,pr_id);
 
 		// optimize
-		optimize<p_sub,p_id>(key_seed,graph,pr_id,lb);
+		optimize<p_sub,p_id>(key_seed,graph,pr_id,lb,box_nn_processor);
 	}
 
 	/*! \brief optimize the graph
@@ -532,10 +558,11 @@ public:
 	 * \param graph we are processing
 	 * \param p_id Processor id (if p_id == -1 the optimization is done for all the processors)
 	 * \param list of sub-domain boxes
+	 * \param box_nn_processor for each box it list all the neighborhood processor
 	 *
 	 */
 
-	template <unsigned int p_sub, unsigned int p_id> void optimize(grid_key_dx<dim> & start_p, Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & lb)
+	template <unsigned int p_sub, unsigned int p_id> void optimize(grid_key_dx<dim> & start_p, Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & lb, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor )
 	{
 		// sub-domain id
 		size_t sub_id =  0;
@@ -569,6 +596,9 @@ public:
 			// Initialize the wavefronts from the domain start_p
 			InitializeWavefront(start_p,v_w);
 
+			// Create a list for the box
+			box_nn_processor.add();
+
 			// Create the biggest box containing the domain
 			expand_from_point<p_sub,p_id>(gh.LinId(v_q.get(0)),graph,box,v_w,w_comb);
 
@@ -578,8 +608,8 @@ public:
 			// fill the domain
 			fill_domain<p_sub>(graph,box,sub_id);
 
-			// create the queue
-			add_to_queue<p_sub,p_id>(v_q,v_w,graph,w_comb,pr_id);
+			// add the surrounding sub-domain to the queue
+			add_to_queue<p_sub,p_id>(v_q,v_w,graph,w_comb,pr_id,box_nn_processor);
 
 			// increment the sub_id
 			sub_id++;

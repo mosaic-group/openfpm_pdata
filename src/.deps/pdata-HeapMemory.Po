@@ -1,6 +1,6 @@
 pdata-HeapMemory.o: ../../OpenFPM_devices/src/memory/HeapMemory.cpp \
  /usr/include/stdc-predef.h \
- ../../OpenFPM_devices/src/memory/HeapMemory.hpp config.h \
+ ../../OpenFPM_devices/src/memory/HeapMemory.hpp ../src/config/config.h \
  ../../OpenFPM_data/src/memory.hpp \
  /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/stddef.h \
  /usr/include/c++/4.8.3/cstddef \
@@ -72,10 +72,9 @@ pdata-HeapMemory.o: ../../OpenFPM_devices/src/memory/HeapMemory.cpp \
  /usr/include/sys/types.h /usr/include/sys/select.h \
  /usr/include/bits/select.h /usr/include/bits/sigset.h \
  /usr/include/sys/sysmacros.h /usr/include/alloca.h \
- /usr/include/bits/stdlib-bsearch.h /usr/include/bits/stdlib-float.h \
- /usr/include/c++/4.8.3/cstdio /usr/include/libio.h \
- /usr/include/_G_config.h /usr/include/bits/stdio_lim.h \
- /usr/include/bits/sys_errlist.h /usr/include/bits/stdio.h \
+ /usr/include/bits/stdlib-float.h /usr/include/c++/4.8.3/cstdio \
+ /usr/include/libio.h /usr/include/_G_config.h \
+ /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h \
  /usr/include/c++/4.8.3/cerrno /usr/include/errno.h \
  /usr/include/bits/errno.h /usr/include/linux/errno.h \
  /usr/include/asm/errno.h /usr/include/asm-generic/errno.h \
@@ -96,21 +95,13 @@ pdata-HeapMemory.o: ../../OpenFPM_devices/src/memory/HeapMemory.cpp \
  /usr/include/c++/4.8.3/bits/basic_ios.tcc \
  /usr/include/c++/4.8.3/bits/ostream.tcc /usr/include/c++/4.8.3/istream \
  /usr/include/c++/4.8.3/bits/istream.tcc /usr/include/c++/4.8.3/cstring \
- /usr/include/string.h ../../OpenFPM_data/src/Memleak_check.hpp \
- /usr/include/c++/4.8.3/map /usr/include/c++/4.8.3/bits/stl_tree.h \
- /usr/include/c++/4.8.3/bits/alloc_traits.h \
- /usr/include/c++/4.8.3/bits/ptr_traits.h \
- /usr/include/c++/4.8.3/bits/stl_map.h /usr/include/c++/4.8.3/tuple \
- /usr/include/c++/4.8.3/utility /usr/include/c++/4.8.3/bits/stl_relops.h \
- /usr/include/c++/4.8.3/array /usr/include/c++/4.8.3/stdexcept \
- /usr/include/c++/4.8.3/bits/uses_allocator.h \
- /usr/include/c++/4.8.3/bits/stl_multimap.h
+ /usr/include/string.h
 
 /usr/include/stdc-predef.h:
 
 ../../OpenFPM_devices/src/memory/HeapMemory.hpp:
 
-config.h:
+../src/config/config.h:
 
 ../../OpenFPM_data/src/memory.hpp:
 
@@ -304,8 +295,6 @@ config.h:
 
 /usr/include/alloca.h:
 
-/usr/include/bits/stdlib-bsearch.h:
-
 /usr/include/bits/stdlib-float.h:
 
 /usr/include/c++/4.8.3/cstdio:
@@ -317,8 +306,6 @@ config.h:
 /usr/include/bits/stdio_lim.h:
 
 /usr/include/bits/sys_errlist.h:
-
-/usr/include/bits/stdio.h:
 
 /usr/include/c++/4.8.3/cerrno:
 
@@ -373,29 +360,3 @@ config.h:
 /usr/include/c++/4.8.3/cstring:
 
 /usr/include/string.h:
-
-../../OpenFPM_data/src/Memleak_check.hpp:
-
-/usr/include/c++/4.8.3/map:
-
-/usr/include/c++/4.8.3/bits/stl_tree.h:
-
-/usr/include/c++/4.8.3/bits/alloc_traits.h:
-
-/usr/include/c++/4.8.3/bits/ptr_traits.h:
-
-/usr/include/c++/4.8.3/bits/stl_map.h:
-
-/usr/include/c++/4.8.3/tuple:
-
-/usr/include/c++/4.8.3/utility:
-
-/usr/include/c++/4.8.3/bits/stl_relops.h:
-
-/usr/include/c++/4.8.3/array:
-
-/usr/include/c++/4.8.3/stdexcept:
-
-/usr/include/c++/4.8.3/bits/uses_allocator.h:
-
-/usr/include/c++/4.8.3/bits/stl_multimap.h:

@@ -15,9 +15,14 @@
 #include "Vector/vector_dist_key.hpp"
 #include "memory/PreAllocHeapMemory.hpp"
 #include "memory/PtrMemory.hpp"
+#include "NN/CellList/CellList.hpp"
+#include "common.hpp"
 
 #define NO_ID false
 #define ID true
+
+#define GET	1
+#define PUT 2
 
 /*! \brief Distributed vector
  *
@@ -27,6 +32,9 @@ template<typename point, typename prop, typename Box, typename Decomposition , t
 class vector_dist
 {
 private:
+
+	// indicate from where the ghost particle start in the vector
+	size_t ghost_pointer;
 
 	//! Space Decomposition
 	Decomposition dec;
@@ -40,6 +48,12 @@ private:
 	// Virtual cluster
 	Vcluster & v_cl;
 
+	// Geometrical cell list
+	CellList<point::dims,typename point::coord_type,FAST> geo_cell;
+
+	// Label particles
+
+
 public:
 
 	/*! \brief Constructor
@@ -50,6 +64,8 @@ public:
 	vector_dist(size_t np, Box box)
 	:dec(Decomposition(*global_v_cluster)),v_cl(*global_v_cluster)
 	{
+		typedef ::Box<point::dims,typename point::coord_type> b;
+
 		// Allocate unassigned particles vectors
 		v_pos = v_cl.template allocate<openfpm::vector<point>>(1);
 		v_prp = v_cl.template allocate<openfpm::vector<prop>>(1);
@@ -74,6 +90,26 @@ public:
 
 		// Create the sub-domains
 		dec.setParameters(div,box);
+
+		// Get the bounding box containing the processor domain +- one sub-domain spacing
+		::Box<point::dims,typename point::coord_type> & bbound = dec.getProcessorBounds();
+
+		// the smallest sub-division of the domain on each dimension
+		typename point::coord_type smallest_doms[point::dims];
+
+		// convert spacing divisions
+		size_t n_g[point::dims];
+
+		for (size_t i = 0 ; i < point::dims ; i++)
+		{
+			n_g[i] = box.template getBase<b::p2>(i) / smallest_doms[i];
+		}
+
+		point p;
+		p.zero();
+
+		// Initialize the geo cell list
+		geo_cell.Initialize(box,n_g,p,8);
 	}
 
 	/*! \brief Get position of an object
@@ -290,6 +326,76 @@ public:
 
 		v_pos.get(0).remove(opart,o_p_id);
 		v_prp.get(0).remove(opart,o_p_id);
+	}
+
+	// ghost particles sending buffer
+	openfpm::vector<HeapMemory> ghost_send_hp;
+
+	// Each entry contain the size of the ghost sending buffer
+	std::unordered_map<size_t,size_t> ghost_prc_sz;
+
+	// ghost particle labels
+	openfpm::vector<size_t> ghost_lbl_p;
+
+	/*! \brief It synchronize getting the ghost particles
+	 *
+	 * \prp Properties to get
+	 * \opt options
+	 * 		NO_RELABEL: If the particles does not move avoid to relabel
+	 *
+	 */
+	template<unsigned int N> void ghost_get(const size_t prp[N], size_t opt)
+	{
+		// outgoing particles-id
+		openfpm::vector<size_t> opart;
+
+		ghost_prc_sz.clear();
+
+		// Label the internal (assigned) particles
+		auto it = v_pos.get(0).getIterator();
+
+		// Label all the particles with the processor id, where they should go
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			size_t p_id = dec.ghost_processorID(v_pos.get(0).get(key));
+
+			ghost_lbl_p.get(key) = p_id;
+
+			// It has to communicate
+			if (p_id != v_cl.getProcessUnitID())
+			{
+				// add particle to communicate
+				ghost_prc_sz[p_id]++;
+
+				opart.add(key);
+			}
+
+			++it;
+		}
+
+		// Create memory allocator for the send buffers
+		size_t i = 0;
+		ghost_send_hp.resize(ghost_prc_sz.size());
+
+		for ( auto it = ghost_prc_sz.begin(); it != ghost_prc_sz.end(); ++it )
+		{
+			// we are sending only some properties, so calculate the size of the sending buffer
+			size_t element_size = ele_size<N,typename prop::type>(prp);
+
+			ghost_send_hp.get(i).resize(it->second * element_size);
+
+			i++;
+		}
+
+		//
+
+		// ca
+
+		// send and receive the properties of the particles
+
+		// add the received particles to the vector
 	}
 
 	// Heap memory receiver

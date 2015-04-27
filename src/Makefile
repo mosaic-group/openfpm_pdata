@@ -84,15 +84,12 @@ subdir = src
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/ax_lib_mysql.m4 \
-	$(top_srcdir)/m4/ax_check_compiler_flags.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_compiler_flags.m4 \
 	$(top_srcdir)/m4/acx_pthread.m4 $(top_srcdir)/m4/ax_opencl.m4 \
 	$(top_srcdir)/m4/ax_boost_base.m4 \
 	$(top_srcdir)/m4/ax_boost_program_options.m4 \
 	$(top_srcdir)/m4/ax_boost_thread.m4 \
 	$(top_srcdir)/m4/acx_mpi.m4 $(top_srcdir)/m4/ax_openmp.m4 \
-	$(top_srcdir)/m4/ax_gcc_x86_cpuid.m4 \
-	$(top_srcdir)/m4/ax_gcc_archflag.m4 \
 	$(top_srcdir)/m4/ax_cuda.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -186,7 +183,7 @@ CUDA_CFLAGS =  -I -I -I/usr/local/cuda-5.5/include
 CUDA_LIBS =  -L -L -L/usr/local/cuda-5.5/lib64 -lcuda -lcudart
 CXX = mpic++
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS =  --std=c++11  -mtune=corei7 -Wall -O3 -g3  -mavx -msse4.2 -msse4.1 -msse3 -msse2 -msse -mmmx -Wno-unused-but-set-variable
+CXXFLAGS =  --std=c++11 -march=native -mtune=native  -Wall -O3 -g3 -flto -funroll-loops  -Wno-unused-but-set-variable
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
@@ -218,7 +215,6 @@ PACKAGE_TARNAME = full-package-name
 PACKAGE_URL = 
 PACKAGE_VERSION = VERSION
 PATH_SEPARATOR = :
-PRTDIAG = 
 SET_MAKE = 
 SHELL = /bin/sh
 STRIP = 

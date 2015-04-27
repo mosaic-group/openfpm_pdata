@@ -68,10 +68,9 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
  /usr/include/sys/types.h /usr/include/sys/select.h \
  /usr/include/bits/select.h /usr/include/bits/sigset.h \
  /usr/include/sys/sysmacros.h /usr/include/alloca.h \
- /usr/include/bits/stdlib-bsearch.h /usr/include/bits/stdlib-float.h \
- /usr/include/c++/4.8.3/cstdio /usr/include/libio.h \
- /usr/include/_G_config.h /usr/include/bits/stdio_lim.h \
- /usr/include/bits/sys_errlist.h /usr/include/bits/stdio.h \
+ /usr/include/bits/stdlib-float.h /usr/include/c++/4.8.3/cstdio \
+ /usr/include/libio.h /usr/include/_G_config.h \
+ /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h \
  /usr/include/c++/4.8.3/cerrno /usr/include/errno.h \
  /usr/include/bits/errno.h /usr/include/linux/errno.h \
  /usr/include/asm/errno.h /usr/include/asm-generic/errno.h \
@@ -91,10 +90,10 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
  /usr/include/c++/4.8.3/bits/locale_facets.tcc \
  /usr/include/c++/4.8.3/bits/basic_ios.tcc \
  /usr/include/c++/4.8.3/bits/ostream.tcc /usr/include/c++/4.8.3/istream \
- /usr/include/c++/4.8.3/bits/istream.tcc config.h \
+ /usr/include/c++/4.8.3/bits/istream.tcc ../src/config/config.h \
  Graph/CartesianGraphFactory.hpp \
  ../../OpenFPM_data/src/Vector/map_vector.hpp \
- ../../OpenFPM_data/src/Grid/map_grid.hpp config.h \
+ ../../OpenFPM_data/src/Grid/map_grid.hpp \
  /usr/include/boost/fusion/include/mpl.hpp \
  /usr/include/boost/fusion/adapted/mpl.hpp \
  /usr/include/boost/fusion/adapted/mpl/detail/begin_impl.hpp \
@@ -738,8 +737,7 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
  /usr/include/bits/huge_valf.h /usr/include/bits/huge_vall.h \
  /usr/include/bits/inf.h /usr/include/bits/nan.h \
  /usr/include/bits/mathdef.h /usr/include/bits/mathcalls.h \
- /usr/include/bits/mathinline.h /usr/include/c++/4.8.3/sstream \
- /usr/include/c++/4.8.3/bits/sstream.tcc \
+ /usr/include/c++/4.8.3/sstream /usr/include/c++/4.8.3/bits/sstream.tcc \
  /usr/include/boost/type_traits/is_compound.hpp \
  /usr/include/boost/type_traits/is_floating_point.hpp \
  /usr/include/boost/type_traits/is_member_object_pointer.hpp \
@@ -797,10 +795,12 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
  /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/tmmintrin.h \
  /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/smmintrin.h \
  /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/popcntintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/wmmintrin.h \
  /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/immintrin.h \
  /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/avxintrin.h \
  /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/fxsrintrin.h \
  /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/xsaveintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/xsaveoptintrin.h \
  /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/adxintrin.h \
  /usr/include/c++/4.8.3/bits/random.tcc /usr/include/c++/4.8.3/numeric \
  /usr/include/c++/4.8.3/bits/stl_numeric.h \
@@ -1083,7 +1083,6 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
  /usr/include/boost/math/tools/user.hpp \
  /usr/include/boost/detail/fenv.hpp /usr/include/c++/4.8.3/fenv.h \
  /usr/include/fenv.h /usr/include/bits/fenv.h \
- /usr/include/bits/fenvinline.h \
  /usr/include/boost/math/special_functions/math_fwd.hpp \
  /usr/include/boost/math/special_functions/detail/round_fwd.hpp \
  /usr/include/boost/math/tools/promotion.hpp \
@@ -1297,6 +1296,16 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
  ../../metis_install/include/metis.h /usr/include/inttypes.h \
  ../../OpenFPM_IO/src/VTKWriter.hpp dec_optimizer.hpp \
  ../../OpenFPM_data/src/NN/CellList/CellDecomposer.hpp \
+ /usr/include/c++/4.8.3/unordered_map \
+ /usr/include/c++/4.8.3/bits/hashtable.h \
+ /usr/include/c++/4.8.3/bits/hashtable_policy.h \
+ /usr/include/c++/4.8.3/bits/unordered_map.h \
+ ../../OpenFPM_data/src/NN/CellList/CellList.hpp \
+ ../../OpenFPM_data/src/NN/CellList/CellListFast.hpp \
+ ../../OpenFPM_data/src/NN/CellList/CellDecomposer.hpp \
+ ../../OpenFPM_data/src/NN/CellList/CellNNIterator.hpp \
+ ../../OpenFPM_data/src/NN/CellList/CellListBal.hpp \
+ ../../OpenFPM_data/src/NN/CellList/CellListMem.hpp \
  ../../OpenFPM_data/src/util.hpp unit_test_init_cleanup.hpp \
  Decomposition/ORB_unit_test.hpp Decomposition/ORB.hpp \
  ../../OpenFPM_data/src/data_type/scalar.hpp \
@@ -1503,8 +1512,6 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
 
 /usr/include/alloca.h:
 
-/usr/include/bits/stdlib-bsearch.h:
-
 /usr/include/bits/stdlib-float.h:
 
 /usr/include/c++/4.8.3/cstdio:
@@ -1516,8 +1523,6 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
 /usr/include/bits/stdio_lim.h:
 
 /usr/include/bits/sys_errlist.h:
-
-/usr/include/bits/stdio.h:
 
 /usr/include/c++/4.8.3/cerrno:
 
@@ -1569,15 +1574,13 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
 
 /usr/include/c++/4.8.3/bits/istream.tcc:
 
-config.h:
+../src/config/config.h:
 
 Graph/CartesianGraphFactory.hpp:
 
 ../../OpenFPM_data/src/Vector/map_vector.hpp:
 
 ../../OpenFPM_data/src/Grid/map_grid.hpp:
-
-config.h:
 
 /usr/include/boost/fusion/include/mpl.hpp:
 
@@ -2937,8 +2940,6 @@ config.h:
 
 /usr/include/bits/mathcalls.h:
 
-/usr/include/bits/mathinline.h:
-
 /usr/include/c++/4.8.3/sstream:
 
 /usr/include/c++/4.8.3/bits/sstream.tcc:
@@ -3065,6 +3066,8 @@ config.h:
 
 /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/popcntintrin.h:
 
+/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/wmmintrin.h:
+
 /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/immintrin.h:
 
 /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/avxintrin.h:
@@ -3072,6 +3075,8 @@ config.h:
 /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/fxsrintrin.h:
 
 /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/xsaveintrin.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/xsaveoptintrin.h:
 
 /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/adxintrin.h:
 
@@ -3711,8 +3716,6 @@ config.h:
 
 /usr/include/bits/fenv.h:
 
-/usr/include/bits/fenvinline.h:
-
 /usr/include/boost/math/special_functions/math_fwd.hpp:
 
 /usr/include/boost/math/special_functions/detail/round_fwd.hpp:
@@ -4190,6 +4193,26 @@ metis_util.hpp:
 dec_optimizer.hpp:
 
 ../../OpenFPM_data/src/NN/CellList/CellDecomposer.hpp:
+
+/usr/include/c++/4.8.3/unordered_map:
+
+/usr/include/c++/4.8.3/bits/hashtable.h:
+
+/usr/include/c++/4.8.3/bits/hashtable_policy.h:
+
+/usr/include/c++/4.8.3/bits/unordered_map.h:
+
+../../OpenFPM_data/src/NN/CellList/CellList.hpp:
+
+../../OpenFPM_data/src/NN/CellList/CellListFast.hpp:
+
+../../OpenFPM_data/src/NN/CellList/CellDecomposer.hpp:
+
+../../OpenFPM_data/src/NN/CellList/CellNNIterator.hpp:
+
+../../OpenFPM_data/src/NN/CellList/CellListBal.hpp:
+
+../../OpenFPM_data/src/NN/CellList/CellListMem.hpp:
 
 ../../OpenFPM_data/src/util.hpp:
 
