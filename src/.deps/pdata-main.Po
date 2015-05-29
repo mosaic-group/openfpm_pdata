@@ -921,6 +921,7 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
  ../../OpenFPM_data/src/Grid/comb.hpp \
  ../../OpenFPM_data/src/Grid/grid_key_expression.hpp \
  ../../OpenFPM_data/src/Space/Shape/Point.hpp \
+ ../../OpenFPM_data/src/Grid/Encap.hpp \
  ../../OpenFPM_data/src/Grid/grid_key.hpp \
  ../../OpenFPM_data/src/Grid/Encap.hpp \
  ../../OpenFPM_data/src/memory_array.hpp \
@@ -1288,13 +1289,78 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
  ../../OpenFPM_data/src/Space/SpaceBox.hpp \
  ../../OpenFPM_data/src/Space/Shape/Point.hpp \
  ../../OpenFPM_data/src/Space/Shape/Box.hpp \
- ../../OpenFPM_data/src/Grid/Encap.hpp Grid/grid_dist_id_iterator.hpp \
+ ../../OpenFPM_data/src/Space/Ghost.hpp Grid/grid_dist_id_iterator.hpp \
  Grid/grid_dist_key.hpp ../../OpenFPM_data/src/Point_test.hpp \
  ../../OpenFPM_data/src/base_type.hpp Decomposition/CartDecomposition.hpp \
  Decomposition/Decomposition.hpp ../../OpenFPM_data/src/global_const.hpp \
  SubdomainGraphNodes.hpp metis_util.hpp \
  ../../metis_install/include/metis.h /usr/include/inttypes.h \
- ../../OpenFPM_IO/src/VTKWriter.hpp dec_optimizer.hpp \
+ ../../OpenFPM_IO/src/VTKWriter.hpp \
+ ../../OpenFPM_IO/src/VTKWriter_graph.hpp \
+ ../../OpenFPM_IO/src/VTKWriter_vector_box.hpp \
+ /usr/include/boost/math/special_functions/pow.hpp \
+ /usr/include/boost/math/policies/error_handling.hpp \
+ /usr/include/boost/math/tools/precision.hpp \
+ /usr/include/boost/format.hpp \
+ /usr/include/boost/format/detail/compat_workarounds.hpp \
+ /usr/include/boost/format/detail/config_macros.hpp \
+ /usr/include/boost/format/detail/workarounds_gcc-2_95.hpp \
+ /usr/include/boost/format/detail/workarounds_stlport.hpp \
+ /usr/include/boost/format/format_fwd.hpp \
+ /usr/include/boost/format/internals_fwd.hpp \
+ /usr/include/boost/format/internals.hpp \
+ /usr/include/boost/format/alt_sstream.hpp \
+ /usr/include/boost/format/alt_sstream_impl.hpp \
+ /usr/include/boost/format/format_class.hpp \
+ /usr/include/boost/format/exceptions.hpp \
+ /usr/include/boost/format/format_implementation.hpp \
+ /usr/include/boost/format/group.hpp \
+ /usr/include/boost/format/feed_args.hpp \
+ /usr/include/boost/format/detail/msvc_disambiguater.hpp \
+ /usr/include/boost/format/parsing.hpp \
+ /usr/include/boost/format/free_funcs.hpp \
+ /usr/include/boost/format/detail/unset_macros.hpp \
+ ../../OpenFPM_IO/src/util.hpp \
+ /usr/include/boost/iostreams/device/mapped_file.hpp \
+ /usr/include/boost/iostreams/close.hpp \
+ /usr/include/boost/iostreams/categories.hpp \
+ /usr/include/boost/iostreams/flush.hpp \
+ /usr/include/boost/iostreams/detail/dispatch.hpp \
+ /usr/include/boost/iostreams/detail/select.hpp \
+ /usr/include/boost/iostreams/traits.hpp \
+ /usr/include/boost/iostreams/detail/bool_trait_def.hpp \
+ /usr/include/boost/iostreams/detail/template_params.hpp \
+ /usr/include/boost/preprocessor/control/expr_if.hpp \
+ /usr/include/boost/iostreams/detail/config/wide_streams.hpp \
+ /usr/include/boost/iostreams/detail/is_iterator_range.hpp \
+ /usr/include/boost/iostreams/detail/config/disable_warnings.hpp \
+ /usr/include/boost/iostreams/detail/config/enable_warnings.hpp \
+ /usr/include/boost/iostreams/detail/select_by_size.hpp \
+ /usr/include/boost/preprocessor/iteration/local.hpp \
+ /usr/include/boost/preprocessor/iteration/detail/local.hpp \
+ /usr/include/boost/iostreams/detail/wrap_unwrap.hpp \
+ /usr/include/boost/iostreams/detail/enable_if_stream.hpp \
+ /usr/include/boost/iostreams/traits_fwd.hpp \
+ /usr/include/boost/iostreams/detail/streambuf.hpp \
+ /usr/include/boost/iostreams/operations_fwd.hpp \
+ /usr/include/boost/iostreams/detail/adapter/non_blocking_adapter.hpp \
+ /usr/include/boost/iostreams/detail/ios.hpp \
+ /usr/include/boost/iostreams/read.hpp \
+ /usr/include/boost/iostreams/char_traits.hpp \
+ /usr/include/boost/iostreams/detail/char_traits.hpp \
+ /usr/include/boost/iostreams/seek.hpp \
+ /usr/include/boost/iostreams/positioning.hpp \
+ /usr/include/boost/iostreams/detail/config/codecvt.hpp \
+ /usr/include/boost/iostreams/detail/config/fpos.hpp \
+ /usr/include/boost/iostreams/write.hpp \
+ /usr/include/boost/iostreams/concepts.hpp \
+ /usr/include/boost/iostreams/detail/default_arg.hpp \
+ /usr/include/boost/iostreams/detail/config/auto_link.hpp \
+ /usr/include/boost/config/auto_link.hpp \
+ /usr/include/boost/iostreams/detail/config/dyn_link.hpp \
+ /usr/include/boost/iostreams/detail/path.hpp \
+ /usr/include/boost/config/abi_prefix.hpp \
+ /usr/include/boost/config/abi_suffix.hpp dec_optimizer.hpp \
  ../../OpenFPM_data/src/NN/CellList/CellDecomposer.hpp \
  /usr/include/c++/4.8.3/unordered_map \
  /usr/include/c++/4.8.3/bits/hashtable.h \
@@ -1306,9 +1372,9 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
  ../../OpenFPM_data/src/NN/CellList/CellNNIterator.hpp \
  ../../OpenFPM_data/src/NN/CellList/CellListBal.hpp \
  ../../OpenFPM_data/src/NN/CellList/CellListMem.hpp \
- ../../OpenFPM_data/src/util.hpp unit_test_init_cleanup.hpp \
- Decomposition/ORB_unit_test.hpp Decomposition/ORB.hpp \
- ../../OpenFPM_data/src/data_type/scalar.hpp \
+ ../../OpenFPM_data/src/Space/Ghost.hpp ../../OpenFPM_IO/src/util.hpp \
+ unit_test_init_cleanup.hpp Decomposition/ORB_unit_test.hpp \
+ Decomposition/ORB.hpp ../../OpenFPM_data/src/data_type/scalar.hpp \
  Graph/CartesianGraphFactory_unit_test.hpp \
  Graph/CartesianGraphFactory.hpp metis_util_unit_test.hpp metis_util.hpp \
  dec_optimizer_unit_test.hpp dec_optimizer.hpp \
@@ -3344,6 +3410,8 @@ Graph/CartesianGraphFactory.hpp:
 
 ../../OpenFPM_data/src/Space/Shape/Point.hpp:
 
+../../OpenFPM_data/src/Grid/Encap.hpp:
+
 ../../OpenFPM_data/src/Grid/grid_key.hpp:
 
 ../../OpenFPM_data/src/Grid/Encap.hpp:
@@ -4164,7 +4232,7 @@ Grid/grid_dist_id.hpp:
 
 ../../OpenFPM_data/src/Space/Shape/Box.hpp:
 
-../../OpenFPM_data/src/Grid/Encap.hpp:
+../../OpenFPM_data/src/Space/Ghost.hpp:
 
 Grid/grid_dist_id_iterator.hpp:
 
@@ -4190,6 +4258,136 @@ metis_util.hpp:
 
 ../../OpenFPM_IO/src/VTKWriter.hpp:
 
+../../OpenFPM_IO/src/VTKWriter_graph.hpp:
+
+../../OpenFPM_IO/src/VTKWriter_vector_box.hpp:
+
+/usr/include/boost/math/special_functions/pow.hpp:
+
+/usr/include/boost/math/policies/error_handling.hpp:
+
+/usr/include/boost/math/tools/precision.hpp:
+
+/usr/include/boost/format.hpp:
+
+/usr/include/boost/format/detail/compat_workarounds.hpp:
+
+/usr/include/boost/format/detail/config_macros.hpp:
+
+/usr/include/boost/format/detail/workarounds_gcc-2_95.hpp:
+
+/usr/include/boost/format/detail/workarounds_stlport.hpp:
+
+/usr/include/boost/format/format_fwd.hpp:
+
+/usr/include/boost/format/internals_fwd.hpp:
+
+/usr/include/boost/format/internals.hpp:
+
+/usr/include/boost/format/alt_sstream.hpp:
+
+/usr/include/boost/format/alt_sstream_impl.hpp:
+
+/usr/include/boost/format/format_class.hpp:
+
+/usr/include/boost/format/exceptions.hpp:
+
+/usr/include/boost/format/format_implementation.hpp:
+
+/usr/include/boost/format/group.hpp:
+
+/usr/include/boost/format/feed_args.hpp:
+
+/usr/include/boost/format/detail/msvc_disambiguater.hpp:
+
+/usr/include/boost/format/parsing.hpp:
+
+/usr/include/boost/format/free_funcs.hpp:
+
+/usr/include/boost/format/detail/unset_macros.hpp:
+
+../../OpenFPM_IO/src/util.hpp:
+
+/usr/include/boost/iostreams/device/mapped_file.hpp:
+
+/usr/include/boost/iostreams/close.hpp:
+
+/usr/include/boost/iostreams/categories.hpp:
+
+/usr/include/boost/iostreams/flush.hpp:
+
+/usr/include/boost/iostreams/detail/dispatch.hpp:
+
+/usr/include/boost/iostreams/detail/select.hpp:
+
+/usr/include/boost/iostreams/traits.hpp:
+
+/usr/include/boost/iostreams/detail/bool_trait_def.hpp:
+
+/usr/include/boost/iostreams/detail/template_params.hpp:
+
+/usr/include/boost/preprocessor/control/expr_if.hpp:
+
+/usr/include/boost/iostreams/detail/config/wide_streams.hpp:
+
+/usr/include/boost/iostreams/detail/is_iterator_range.hpp:
+
+/usr/include/boost/iostreams/detail/config/disable_warnings.hpp:
+
+/usr/include/boost/iostreams/detail/config/enable_warnings.hpp:
+
+/usr/include/boost/iostreams/detail/select_by_size.hpp:
+
+/usr/include/boost/preprocessor/iteration/local.hpp:
+
+/usr/include/boost/preprocessor/iteration/detail/local.hpp:
+
+/usr/include/boost/iostreams/detail/wrap_unwrap.hpp:
+
+/usr/include/boost/iostreams/detail/enable_if_stream.hpp:
+
+/usr/include/boost/iostreams/traits_fwd.hpp:
+
+/usr/include/boost/iostreams/detail/streambuf.hpp:
+
+/usr/include/boost/iostreams/operations_fwd.hpp:
+
+/usr/include/boost/iostreams/detail/adapter/non_blocking_adapter.hpp:
+
+/usr/include/boost/iostreams/detail/ios.hpp:
+
+/usr/include/boost/iostreams/read.hpp:
+
+/usr/include/boost/iostreams/char_traits.hpp:
+
+/usr/include/boost/iostreams/detail/char_traits.hpp:
+
+/usr/include/boost/iostreams/seek.hpp:
+
+/usr/include/boost/iostreams/positioning.hpp:
+
+/usr/include/boost/iostreams/detail/config/codecvt.hpp:
+
+/usr/include/boost/iostreams/detail/config/fpos.hpp:
+
+/usr/include/boost/iostreams/write.hpp:
+
+/usr/include/boost/iostreams/concepts.hpp:
+
+/usr/include/boost/iostreams/detail/default_arg.hpp:
+
+/usr/include/boost/iostreams/detail/config/auto_link.hpp:
+
+/usr/include/boost/config/auto_link.hpp:
+
+/usr/include/boost/iostreams/detail/config/dyn_link.hpp:
+
+/usr/include/boost/iostreams/detail/path.hpp:
+
+/usr/include/boost/config/abi_prefix.hpp:
+
+/usr/include/boost/config/abi_suffix.hpp:
+
 dec_optimizer.hpp:
 
 ../../OpenFPM_data/src/NN/CellList/CellDecomposer.hpp:
@@ -4214,7 +4412,9 @@ dec_optimizer.hpp:
 
 ../../OpenFPM_data/src/NN/CellList/CellListMem.hpp:
 
-../../OpenFPM_data/src/util.hpp:
+../../OpenFPM_data/src/Space/Ghost.hpp:
+
+../../OpenFPM_IO/src/util.hpp:
 
 unit_test_init_cleanup.hpp:
 

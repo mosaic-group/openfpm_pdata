@@ -22,8 +22,7 @@
 #include "NN/CellList/CellDecomposer.hpp"
 #include <unordered_map>
 #include "NN/CellList/CellList.hpp"
-
-template<unsigned int dim, typename T> using Ghost = Box<dim,T>;
+#include "Space/Ghost.hpp"
 
 /**
  * \brief This class decompose a space into subspaces
@@ -52,6 +51,15 @@ template<unsigned int dim, typename T> using Ghost = Box<dim,T>;
 template<unsigned int dim, typename T, template<typename> class device_l=openfpm::device_cpu, typename Memory=HeapMemory, template<unsigned int, typename> class Domain=Box, template<typename, typename, typename, typename, unsigned int> class data_s = openfpm::vector>
 class CartDecomposition
 {
+	struct N_box
+	{
+		// id of the processor in the nn_processor list
+		size_t id;
+
+		// Near processor sub-domains
+		typename openfpm::vector<::Box<dim,T>> bx;
+	};
+
 	struct Box_proc
 	{
 		// Intersection between the local sub-domain enlarged by the ghost and the contiguous processor
@@ -89,21 +97,21 @@ private:
 	SpaceBox<dim,T> sub_domain;
 
 	//! the set of all local sub-domain as vector
-	data_s<SpaceBox<dim,T>,device_l<SpaceBox<dim,T>>,Memory,openfpm::vector_grow_policy_default, openfpm::vect_isel<SpaceBox<dim,T>>::value > sub_domains;
+	openfpm::vector<SpaceBox<dim,T>> sub_domains;
 
 	//! List of near processors
 	openfpm::vector<size_t> nn_processors;
 
 	//! for each sub-domain, contain the list of the neighborhood processors
 	//! and for each processor contain the boxes calculated from the intersection
-	//! of the sub-domain ghost with the near-by processor sub-domain ()
+	//! of the sub-domain + ghost with the near-by processor sub-domain ()
 	openfpm::vector< openfpm::vector< Box_proc > > box_nn_processor_int;
 
-	//! for each box, contain the list of the neighborhood processors
+	//! for each sub-domain, contain the list of the neighborhood processors
 	openfpm::vector<openfpm::vector<long unsigned int> > box_nn_processor;
 
 	// for each near-processor store the sub-domain of the near processor
-	std::unordered_map<size_t,typename openfpm::vector<::Box<dim,T>> > nn_processor_subdomains;
+	std::unordered_map<size_t, N_box> nn_processor_subdomains;
 
 	//! Structure that contain for each sub-domain box the processor id
 	//! exist for efficient global communication
@@ -144,22 +152,6 @@ private:
 	//! and the near processor sub-domains
 	CellList<dim,T,FAST> geo_cell;
 
-	/*! \brief Enlarge the ghost domain
-	 *
-	 * \param the box
-	 * \param gh spacing of the margin to enlarge
-	 *
-	 */
-	void enlarge(::Box<dim,T> & box, Ghost<dim,T> & gh)
-	{
-		typedef ::Box<dim,T> g;
-
-		for (size_t j = 0 ; j < dim ; j++)
-		{
-			box.template getBase<g::p1>(j) = box.template getBase<g::p1>(j) - gh.template getBase<g::p1>(j);
-			box.template getBase<g::p2>(j) = box.template getBase<g::p2>(j) + gh.template getBase<g::p2>(j);
-		}
-	}
 
 	/*! \brief Create internally the decomposition
 	 *
@@ -170,24 +162,20 @@ private:
 	{
 		// Calculate the total number of box and and the spacing
 		// on each direction
-
 		// Get the box containing the domain
 		SpaceBox<dim,T> bs = domain.getBox();
 
 		for (unsigned int i = 0; i < dim ; i++)
 		{
 			// Calculate the spacing
-
 			spacing[i] = (bs.getHigh(i) - bs.getLow(i)) / gr.size(i);
 		}
 
 		// Here we use METIS
-
 		// Create a cartesian grid graph
 		CartesianGraphFactory<dim,Graph_CSR<nm_part_v,nm_part_e>> g_factory_part;
 
 		// Processor graph
-
 		Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.template construct<NO_EDGE,T,dim-1>(gr.getSize(),domain);
 
 		// Get the number of processing units
@@ -200,16 +188,13 @@ private:
 		Metis<Graph_CSR<nm_part_v,nm_part_e>> met(gp,Np);
 
 		// decompose
-
 		met.decompose<nm_part_v::id>();
 
 		// fill the structure that store the processor id for each sub-domain
-
 		fine_s.resize(gr.size());
 
 		// Optimize the decomposition creating bigger spaces
 		// And reducing Ghost over-stress
-
 		dec_optimizer<dim,Graph_CSR<nm_part_v,nm_part_e>> d_o(gp,gr.getSize());
 
 		// set of Boxes produced by the decomposition optimizer
@@ -218,7 +203,8 @@ private:
 		// optimize the decomposition
 		d_o.template optimize<nm_part_v::sub_id,nm_part_v::id>(gp,p_id,loc_box,box_nn_processor);
 
-		// produce the list of the contiguous processor
+		// produce the list of the contiguous processor (nn_processors) and link nn_processor_subdomains to the
+		// processor list
 		for (size_t i = 0 ;  i < box_nn_processor.size() ; i++)
 		{
 			for (size_t j = 0 ; j < box_nn_processor.get(i).size() ; j++)
@@ -232,17 +218,64 @@ private:
 	    auto last = std::unique(nn_processors.begin(), nn_processors.end());
 	    nn_processors.erase(last, nn_processors.end());
 
-		// convert into sub-domain
-		for (size_t s = 0 ; s < loc_box.size() ; s++)
+		// produce the list of the contiguous processor (nn_processors) and link nn_processor_subdomains to the
+		// processor list
+		for (size_t i = 0 ;  i < box_nn_processor.size() ; i++)
 		{
-			SpaceBox<dim,T> sub_d(loc_box.get(s));
+			for (size_t j = 0 ; j < box_nn_processor.get(i).size() ; j++)
+			{
+				// processor id near to this sub-domain
+				size_t proc_id = box_nn_processor.get(i).get(j);
 
-			// re-scale with spacing
-			sub_d.spacing(spacing);
+				size_t k = 0;
+				// search inside near processor list
+				for (k = 0 ; k < nn_processors.size() ; k++)
+					if (nn_processors.get(k) == proc_id)	break;
+
+				nn_processor_subdomains[proc_id].id = k;
+			}
+		}
+
+		// Initialize ss_box and bbox
+		if (loc_box.size() >= 0)
+		{
+			SpaceBox<dim,T> sub_d(loc_box.get(0));
+			sub_d.mul(spacing);
+			sub_d.expand(spacing);
 
 			// add the sub-domain
 			sub_domains.add(sub_d);
+
+			ss_box = sub_d;
+			bbox = sub_d;
 		}
+
+		// convert into sub-domain
+		for (size_t s = 1 ; s < loc_box.size() ; s++)
+		{
+			SpaceBox<dim,T> sub_d(loc_box.get(s));
+
+			// re-scale and add spacing (the end is the starting point of the next domain + spacing)
+			sub_d.mul(spacing);
+			sub_d.expand(spacing);
+
+			// add the sub-domain
+			sub_domains.add(sub_d);
+
+			// Calculate the bound box
+			bbox.enclose(sub_d);
+
+			// Create the smallest box contained in all sub-domain
+			ss_box.contained(sub_d);
+		}
+
+		//++++++++++++++++++++++++++++++++++++++++ Debug output NN boxes
+		{
+		VTKWriter<openfpm::vector<::SpaceBox<dim,T>>,VECTOR_BOX> vtk_box1;
+		vtk_box1.add(sub_domains);
+		vtk_box1.write(std::string("loc_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
+		}
+		//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 		// fill fine_s structure
 		// fine_s structure contain the processor id for each sub-sub-domain
@@ -314,21 +347,28 @@ private:
 	 * \param total message size to receive from all the processors
 	 * \param the total number of processor want to communicate with you
 	 * \param i processor id
+	 * \param ri request id (it is an id that goes from 0 to total_p, and is unique
+	 *           every time message_alloc is called)
 	 * \param ptr a pointer to the vector_dist structure
 	 *
 	 * \return the pointer where to store the message
 	 *
 	 */
-	static void * message_alloc(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, void * ptr)
+	static void * message_alloc(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
 	{
 		// cast the pointer
 		CartDecomposition<dim,T,device_l,Memory,Domain,data_s> * cd = static_cast< CartDecomposition<dim,T,device_l,Memory,Domain,data_s> *>(ptr);
 
+		if (cd->v_cl.getProcessUnitID() == 0)
+		{
+			std::cout << "Receiving from " << i << "       msg size: " << msg_i << "\n";
+		}
+
 		// Resize the memory
-		cd->nn_processor_subdomains[i].resize(msg_i);
+		cd->nn_processor_subdomains[i].bx.resize(msg_i);
 
 		// Return the receive pointer
-		return cd->nn_processor_subdomains[i].getPointer();
+		return cd->nn_processor_subdomains[i].bx.getPointer();
 	}
 
 public:
@@ -341,6 +381,9 @@ public:
 	CartDecomposition(CartDecomposition<dim,T,device_l,Memory,Domain,data_s> && cd)
 	:sub_domain(cd.sub_domain),gr(cd.gr),cd(cd.cd),domain(cd.domain),v_cl(cd.v_cl)
 	{
+		// Reset the box to zero
+		bbox.zero();
+
 		//! Subspace selected
 		//! access_key in case of grid is just the set of the index to access the grid
 		id_sub.swap(cd.id_sub);
@@ -362,7 +405,10 @@ public:
 	 */
 	CartDecomposition(Vcluster & v_cl)
 	:id_sub(0),v_cl(v_cl)
-	{}
+	{
+		// Reset the box to zero
+		bbox.zero();
+	}
 
 	/*! \brief Cartesian decomposition constructor, it divide the space in boxes
 	 *
@@ -372,16 +418,84 @@ public:
 	 *
 	 */
 	CartDecomposition(std::vector<size_t> dec, Domain<dim,T> domain, Vcluster & v_cl)
-	:id_sub(0),gr(dec),cd(domain,dec),domain(domain),v_cl(v_cl)
+	:id_sub(0),gr(dec),cd(domain,dec,0),domain(domain),v_cl(v_cl)
 	{
-		// Create the decomposition
+		// Reset the box to zero
+		bbox.zero();
 
+		// Create the decomposition
 		CreateDecomposition(v_cl);
 	}
 
 	//! Cartesian decomposition destructor
 	~CartDecomposition()
 	{}
+
+	openfpm::vector<size_t> ids;
+
+	/*! \brief Given a position it return if the position belong to any neighborhood processor ghost
+	 *
+	 * \param p Particle position
+	 *
+	 * \param return the processor ids
+	 *
+	 */
+	const openfpm::vector<size_t> ghost_processorID(Point<dim,T> & p)
+	{
+		ids.clear();
+
+		// Check with geo-cell if a particle is inside one Cell caotaining boxes
+
+		auto cell_it = geo_cell.getCellIterator(p);
+
+		// For each element in the cell, check if the point is inside the box
+		// if it is store the processor id
+		while (cell_it.isNext())
+		{
+			size_t bid = cell_it.get();
+
+			if (vb_int.get(bid).box.isInside(p) == true)
+			{
+				ids.add(vb_int.get(bid).proc);
+			}
+		}
+
+		return ids;
+	}
+
+	/*! \brief Given a position it return if the position belong to any neighborhood processor ghost
+	 *
+	 * \param p Particle position
+	 *
+	 * \param return the processor ids
+	 *
+	 */
+	template<typename Mem> inline const openfpm::vector<size_t> ghost_processorID(const encapc<1,Point<dim,T>,Mem> & p)
+	{
+		ids.clear();
+
+		// Check with geo-cell if a particle is inside one Cell containing boxes
+
+		auto cell_it = geo_cell.getCellIterator(p);
+
+		// For each element in the cell, check if the point is inside the box
+		// if it is, store the processor id
+		while (cell_it.isNext())
+		{
+			size_t bid = cell_it.get();
+
+			if (vb_int.get(bid).box.isInside(p) == true)
+			{
+				ids.add(vb_int.get(bid).proc);
+			}
+		}
+
+		return ids;
+	}
+
+	// Internal boxes for this processor domain, indicated with B8_0 B9_0 ..... in the figure
+	// below as a linear vector
+	openfpm::vector<::Box<dim,T>> vb_int;
 
 	/*! It calculate the ghost boxes and internal boxes
 	 *
@@ -466,29 +580,24 @@ p1[0]<-----+         +----> p2[0]
 	 */
 	void calculateGhostBoxes(Ghost<dim,T> & ghost)
 	{
-		typedef Ghost<dim,T> g;
-
 #ifdef DEBUG
 		// the ghost margins are assumed to be smaller
 		// than one sub-domain
 
 		for (size_t i = 0 ; i < dim ; i++)
 		{
-			if (ghost.template getBase<g::p1>() >= domain.template getBase<g::p1>() / gr.size(i) )
+			if (ghost.template getLow(i) >= domain.template getHigh(i) / gr.size(i) || ghost.template getHigh(i)  >= domain.template getHigh(i) / gr.size(i))
 			{
 				std::cerr << "Error: Ghost are bigger that one domain" << "\n";
 			}
 		}
 #endif
 
-		// create a buffer with the sub-domain of this processors, the informations ( the box )
-		// of sub-domain contiguous to the processor A are sent to the processor A and
+		// create a buffer with the sub-domains of this processor, the informations ( the boxes )
+		// of the sub-domains contiguous to the processor A are sent to the processor A and
 		// the information of the contiguous sub-domains in the near processors are received
 		//
-		openfpm::vector< openfpm::vector< ::Box<dim,T>> > boxes(nn_processors.size());
-
-		// create the sub-domain buffer information to send
-		openfpm::vector< size_t > prc;
+		openfpm::vector< openfpm::vector< ::SpaceBox<dim,T>> > boxes(nn_processors.size());
 
 		for (size_t b = 0 ; b < box_nn_processor.size() ; b++)
 		{
@@ -496,24 +605,61 @@ p1[0]<-----+         +----> p2[0]
 			{
 				size_t prc = box_nn_processor.get(b).get(p);
 
-				boxes.add(sub_domains.get(b));
+				// id of the processor in the processor list
+				// [value between 0 and the number of the near processors]
+				size_t id = nn_processor_subdomains[prc].id;
+
+				boxes.get(id).add(sub_domains.get(b));
 			}
 		}
+
+		//++++++++++++++++++++++++++++++++++++++++ Debug output NN boxes
+		{
+		for (size_t b = 0 ; b < boxes.size() ; b++)
+		{
+			VTKWriter<openfpm::vector<::SpaceBox<dim,T>>,VECTOR_BOX> vtk_box1;
+			vtk_box1.add(boxes.get(b));
+			vtk_box1.write(std::string("Processor_") + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(nn_processors.get(b)) + std::string(".vtk"));
+		}
+		}
+
+		//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 		// Intersect all the local sub-domains with the sub-domains of the contiguous processors
 
 		// Get the sub-domains of the near processors
-		v_cl.sendrecvMultipleMessages(boxes,prc,CartDecomposition<dim,T,device_l,Memory,Domain,data_s>::message_alloc, this ,NEED_ALL_SIZE);
+		v_cl.sendrecvMultipleMessages(nn_processors,boxes,CartDecomposition<dim,T,device_l,Memory,Domain,data_s>::message_alloc, this ,NEED_ALL_SIZE);
 
-		box_nn_processor_int.resize(box_nn_processor.size());
+		// ++++++++++++++++++++++++++++++++++++++++++ Check received boxes
+
+		{
+		VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box1;
+		for (size_t p = 0 ; p < nn_processors.size() ; p++)
+		{
+			size_t prc = nn_processors.get(p);
+
+			if (v_cl.getProcessUnitID() == 0)
+				std::cout << "Received from " << prc << "      n_boxes: " << nn_processor_subdomains[prc].bx.size() << "\n";
+
+			vtk_box1.add(nn_processor_subdomains[prc].bx);
+		}
+		vtk_box1.write(std::string("rb_Processor_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
+		}
+
+		// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+		box_nn_processor_int.resize(sub_domains.size());
 
 		// For each sub-domain
 		for (size_t i = 0 ; i < sub_domains.size() ; i++)
 		{
-			::Box<dim,size_t> sub_with_ghost = sub_domains.get(i);
+			SpaceBox<dim,T> sub_with_ghost = sub_domains.get(i);
 
 			// enlarge the sub-domain with the ghost
-			enlarge(sub_with_ghost,ghost);
+			sub_with_ghost.enlarge(ghost);
+
+			// resize based on the number of contiguous processors
+			box_nn_processor_int.get(i).resize(box_nn_processor.get(i).size());
 
 			// For each processor contiguous to this sub-domain
 			for (size_t j = 0 ; j < box_nn_processor.get(i).size() ; j++)
@@ -522,7 +668,7 @@ p1[0]<-----+         +----> p2[0]
 				size_t p_id = box_nn_processor.get(i).get(j);
 
 				// get the set of sub-domains of the contiguous processor p_id
-				openfpm::vector< ::Box<dim,T> > & p_box = nn_processor_subdomains[p_id];
+				openfpm::vector< ::Box<dim,T> > & p_box = nn_processor_subdomains[p_id].bx;
 
 				// near processor sub-domain intersections
 				openfpm::vector< ::Box<dim,T> > & p_box_int = box_nn_processor_int.get(i).get(j).bx;
@@ -530,9 +676,9 @@ p1[0]<-----+         +----> p2[0]
 				// for each near processor sub-domain intersect with the enlarged local sub-domain and store it
 				for (size_t b = 0 ; b < p_box.size() ; b++)
 				{
-					bool intersect;
+					::Box<dim,T> bi;
 
-					::Box<dim,T> bi = sub_with_ghost.Intersect(p_box.get(b),intersect);
+					bool intersect = sub_with_ghost.Intersect(::Box<dim,T>(p_box.get(b)),bi);
 
 					if (intersect == true)
 						p_box_int.add(bi);
@@ -546,37 +692,39 @@ p1[0]<-----+         +----> p2[0]
 				size_t p_id = box_nn_processor.get(i).get(j);
 
 				// get the set of sub-domains of the contiguous processor p_id
-				openfpm::vector< ::Box<dim,T> > & nn_p_box = nn_processor_subdomains[p_id];
+				openfpm::vector< ::Box<dim,T> > & nn_p_box = nn_processor_subdomains[p_id].bx;
 
 				// near processor sub-domain intersections
-				openfpm::vector< ::Box<dim,T> > & p_box_int = box_nn_processor_int.get(i).get(j).bbx;
+				openfpm::vector< ::Box<dim,T> > & p_box_int = box_nn_processor_int.get(i).get(j).nbx;
 
 				// For each near processor sub-domains enlarge and intersect with the local sub-domain and store the result
 				for (size_t k = 0 ; k < nn_p_box.size() ; k++)
 				{
-					// enlarge the local sub-domain
+					// enlarge the near-processor sub-domain
 					::Box<dim,T> n_sub = nn_p_box.get(k);
 
+					// local sub-domain
+					::SpaceBox<dim,T> l_sub = sub_domains.get(i);
+
 					// Create a margin of ghost size around the near processor sub-domain
-					elarge(n_sub,ghost);
+					n_sub.enlarge(ghost);
 
 					// Intersect with the local sub-domain
-					bool intersect;
 
-					::Box<dim,T> b_int = n_sub.Intersect(n_sub,intersect);
+					::Box<dim,T> b_int;
+					bool intersect = n_sub.Intersect(l_sub,b_int);
 
 					// store if it intersect
 					if (intersect == true)
 					{
-						typedef ::Box<dim,T> b;
-
 						p_box_int.add(b_int);
+						vb_int.add(b_int);
 
 						// update the geo_cell list
 
 						// get the boxes this box span
-						grid_key<dim> p1 = geo_cell.getCell(b_int.template get<b::p1>() );
-						grid_key<dim> p2 = geo_cell.getCell(b_int.template get<b::p2>() );
+						const grid_key_dx<dim> p1 = geo_cell.getCellGrid(b_int.getP1());
+						const grid_key_dx<dim> p2 = geo_cell.getCellGrid(b_int.getP2());
 
 						// Get the grid and the sub-iterator
 						auto & gi = geo_cell.getGrid();
@@ -585,13 +733,31 @@ p1[0]<-----+         +----> p2[0]
 						// add the box-id to the cell list
 						while (g_sub.isNext())
 						{
-							auto & key = g_sub.get();
-							geo_cell.add(gi.LinId(key),p_box_int.size()-1);
+							auto key = g_sub.get();
+							geo_cell.addCell(gi.LinId(key),vb_int.size()-1);
 							++g_sub;
 						}
 					}
 				}
 			}
+
+
+			// ++++++++++++++++++++++++++++++++++++++++ Debug +++++++++++++++++++++++++++++
+
+			{
+			VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box1;
+			for (size_t p = 0 ; p < box_nn_processor_int.size() ; p++)
+			{
+				for (size_t s = 0 ; s < box_nn_processor_int.get(p).size() ; s++)
+				{
+					vtk_box1.add(box_nn_processor_int.get(p).get(s).nbx);
+				}
+			}
+			vtk_box1.write(std::string("inte_Processor_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
+			}
+
+			// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 		}
 	}
 
@@ -604,6 +770,19 @@ p1[0]<-----+         +----> p2[0]
 	template<typename Mem> size_t inline processorID(encapc<1, Point<dim,T>, Mem> p)
 	{
 		return fine_s.get(cd.getCell(p));
+	}
+
+	// Smallest subdivision on each direction
+	::Box<dim,T> ss_box;
+
+	/*! \brief Get the smallest subdivision of the domain on each direction
+	 *
+	 * \return a box p1 is set to zero
+	 *
+	 */
+	const ::Box<dim,T> & getSmallestSubdivision()
+	{
+		return ss_box;
 	}
 
 	/*! \brief processorID return in which processor the particle should go
@@ -647,7 +826,7 @@ p1[0]<-----+         +----> p2[0]
 
 		gr.setDimensions(div_);
 		domain = domain_;
-		cd.setDimensions(domain,div_);
+		cd.setDimensions(domain,div_,0);
 
 		//! Create the decomposition
 
@@ -888,6 +1067,68 @@ p1[0]<-----+         +----> p2[0]
 	{
 		return bbox;
 	}
+
+	/*! \brief if the point fall into the ghost of some near processor it return the processors id's in which
+	 *  it fall
+	 *
+	 * \param p Point
+	 * \return iterator of the processors id's
+	 *
+	 */
+	inline auto labelPoint(Point<dim,T> & p) -> decltype(geo_cell.getIterator(geo_cell.getCell(p)))
+	{
+		return geo_cell.getIterator(geo_cell.getCell(p));
+	}
+
+	/*! \brief if the point fall into the ghost of some near processor it return the processor number in which
+	 *  it fall
+	 *
+	 * \param p Point
+	 * \return number of processors
+	 *
+	 */
+	inline size_t labelPointNp(Point<dim,T> & p)
+	{
+		return geo_cell.getNelements(geo_cell.getCell(p));
+	}
+
+	/*! \brief It return the label point cell
+	 *
+	 * The labeling of a point p is regulated by a Cell list, give a point it give a cell-id
+	 *
+	 * \param p Point
+	 * \return cell-id
+	 *
+	 */
+	inline size_t labelPointCell(Point<dim,T> & p)
+	{
+		return geo_cell.getCell(p);
+	}
+
+	/*! \brief Fill the ghost buffer
+	 *
+	 * \tparam one or more properties to get
+	 *
+	 */
+/*	template<unsigned int ...i> void ghost_get()
+	{
+		// first check if a local particle must be sent to another processor
+		for (size_t i = 0 ; i < ; i++)
+		{
+
+		}
+	}*/
+
+	/*! \brief Fill the ghost buffer
+	 *
+	 * \tparam one or more properties to get
+	 *
+	 */
+/*	template<unsigned int ...i> void ghost_put()
+	{
+
+	}*/
+
 };
 
 

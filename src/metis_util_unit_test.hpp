@@ -50,13 +50,6 @@ BOOST_AUTO_TEST_CASE( Metis_test_use)
 
 	met.decompose<nm_part_v::id>(gp);
 	met.decompose<nm_v::id>();
-
-	// Write the VTK file
-
-	VTKWriter<Graph_CSR<nm_part_v,nm_part_e>> vtk(gp);
-	vtk.write("vtk_partition.vtk");
-	VTKWriter<Graph_CSR<nm_v,nm_e>> vtk2(g);
-	vtk2.write("vtk_partition2.vtk");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

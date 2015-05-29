@@ -84,13 +84,10 @@ subdir = src
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_compiler_flags.m4 \
-	$(top_srcdir)/m4/acx_pthread.m4 $(top_srcdir)/m4/ax_opencl.m4 \
-	$(top_srcdir)/m4/ax_boost_base.m4 \
-	$(top_srcdir)/m4/ax_boost_program_options.m4 \
-	$(top_srcdir)/m4/ax_boost_thread.m4 \
-	$(top_srcdir)/m4/acx_mpi.m4 $(top_srcdir)/m4/ax_openmp.m4 \
-	$(top_srcdir)/m4/ax_cuda.m4 $(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/m4/acx_pthread.m4 \
+	$(top_srcdir)/m4/ax_boost.m4 $(top_srcdir)/m4/acx_mpi.m4 \
+	$(top_srcdir)/m4/ax_openmp.m4 $(top_srcdir)/m4/ax_cuda.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -104,7 +101,8 @@ am_pdata_OBJECTS = pdata-main.$(OBJEXT) pdata-HeapMemory.$(OBJEXT) \
 	pdata-Memleak_check.$(OBJEXT)
 pdata_OBJECTS = $(am_pdata_OBJECTS)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 pdata_DEPENDENCIES = $(am__DEPENDENCIES_2)
 pdata_LINK = $(CXXLD) $(pdata_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -175,6 +173,18 @@ AUTOCONF = ${SHELL} /home/i-bird/Desktop/MOSAIC/OpenFPM_project/OpenFPM_pdata/mi
 AUTOHEADER = ${SHELL} /home/i-bird/Desktop/MOSAIC/OpenFPM_project/OpenFPM_pdata/missing autoheader
 AUTOMAKE = ${SHELL} /home/i-bird/Desktop/MOSAIC/OpenFPM_project/OpenFPM_pdata/missing automake-1.13
 AWK = gawk
+BOOST_CPPFLAGS = -pthread -I/usr/include
+BOOST_DATE_TIME_LIB = -lboost_date_time
+BOOST_FILESYSTEM_LIB = -lboost_filesystem
+BOOST_IOSTREAMS_LIB = -lboost_iostreams
+BOOST_LDFLAGS = -L/usr/lib
+BOOST_PROGRAM_OPTIONS_LIB = -lboost_program_options
+BOOST_REGEX_LIB = -lboost_regex
+BOOST_SERIALIZATION_LIB = -lboost_serialization
+BOOST_SIGNALS_LIB = -lboost_signals
+BOOST_THREAD_LIB = -lboost_thread
+BOOST_UNIT_TEST_FRAMEWORK_LIB = -lboost_unit_test_framework
+BOOST_WSERIALIZATION_LIB = -lboost_wserialization
 CC = gcc
 CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2
@@ -183,7 +193,7 @@ CUDA_CFLAGS =  -I -I -I/usr/local/cuda-5.5/include
 CUDA_LIBS =  -L -L -L/usr/local/cuda-5.5/lib64 -lcuda -lcudart
 CXX = mpic++
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS =  --std=c++11 -march=native -mtune=native  -Wall -O3 -g3 -flto -funroll-loops  -Wno-unused-but-set-variable
+CXXFLAGS =  --std=c++11 -march=native -mtune=native  -g3  -Wall -O0 
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
@@ -204,7 +214,7 @@ LTLIBOBJS =
 MAKEINFO = ${SHELL} /home/i-bird/Desktop/MOSAIC/OpenFPM_project/OpenFPM_pdata/missing makeinfo
 MKDIR_P = /usr/bin/mkdir -p
 NVCC = /usr/local/cuda-5.5/bin/nvcc
-NVCCFLAGS =    -O3 
+NVCCFLAGS =    -g -O0 
 NVCC_EXIST = yes
 OBJEXT = o
 PACKAGE = full-package-name
@@ -274,7 +284,7 @@ target_vendor = unknown
 top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
-LINKLIBS = $(PTHREAD_LIBS) $(OPT_LIBS) $(BOOST_LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LIB) $(CUDA_LIBS) $(BOOST_THREAD_LIB)
+LINKLIBS = $(PTHREAD_LIBS) $(OPT_LIBS) $(BOOST_LDFLAGS) $(BOOST_IOSTREAMS_LIB) $(CUDA_LIBS)
 pdata_SOURCES = main.cpp ../../OpenFPM_devices/src/memory/HeapMemory.cpp ../../OpenFPM_devices/src/memory/PtrMemory.cpp ../../OpenFPM_vcluster/src/VCluster.cpp ../../OpenFPM_data/src/Memleak_check.cpp
 pdata_CXXFLAGS = $(CUDA_CFLAGS) $(INCLUDES_PATH)
 pdata_CFLAGS = $(CUDA_CFLAGS)

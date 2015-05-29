@@ -55,6 +55,16 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use )
 
 		++it;
 	}
+
+	// set the ghost based on the radius cut off
+	Ghost<2,float> g(0.01);
+
+	vd.setGhost(g);
+
+	// do a ghost get
+
+	typedef Point_test<float> p;
+	vd.template ghost_get<p::s,p::v>();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

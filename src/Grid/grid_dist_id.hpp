@@ -54,7 +54,7 @@ class grid_dist_id
 
 	/*! \brief Get the grid size
 	 *
-	 * Get the grid size, given a domain, the resolution on it and another spaceBox
+	 * Given a domain, the resolution of the grid on it and another spaceBox contained in the domain
 	 * it give the size on all directions of the local grid
 	 *
 	 * \param sp SpaceBox enclosing the local grid
@@ -92,7 +92,7 @@ class grid_dist_id
 		for (size_t d = 0 ; d < dim ; d++)
 		{
 			// push the size of the local grid
-			v_size[d] = sp.getHigh(d) - sp.getLow(d) + 1;
+			v_size[d] = sp.getHigh(d) - sp.getLow(d);
 		}
 	}
 
@@ -175,11 +175,9 @@ public:
 		dec.hyperCube();
 
 		// Get the number of local grid needed
-
 		size_t n_grid = dec.getNLocalHyperCube();
 
 		// create local grids for each hyper-cube
-
 		loc_grid = v_cl.allocate<device_grid>(n_grid);
 
 		// Size of the grid on each dimension
@@ -322,7 +320,7 @@ class grid_dist_id<1,T,Decomposition,Memory,device_grid>
 		for (size_t d = 0 ; d < 1 ; d++)
 		{
 			// push the size of the local grid
-			v_size[d] = sp.getHigh(d) - sp.getLow(d) + 1;
+			v_size[d] = sp.getHigh(d) - sp.getLow(d);
 		}
 	}
 

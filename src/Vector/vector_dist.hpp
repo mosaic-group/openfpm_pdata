@@ -17,12 +17,33 @@
 #include "memory/PtrMemory.hpp"
 #include "NN/CellList/CellList.hpp"
 #include "common.hpp"
+#include "util/vector_creator.hpp"
+#include "memory/ExtPreAlloc.hpp"
 
 #define NO_ID false
 #define ID true
 
 #define GET	1
 #define PUT 2
+
+#define INTERNAL 0
+#define NO_POSITION 1
+
+/*! \brief This is a container for the sending buffers
+ *
+ * It is used in ghost_get to create a particular object with the properties selected
+ *
+ * \tparam Is a boost::fusion::vector with the properties selected
+ *
+ *
+ */
+template<typename v>
+class buff_com
+{
+	typedef v type;
+
+	const int max_prop = boost::fusion::result_of::size<v>::value;
+};
 
 /*! \brief Distributed vector
  *
@@ -91,25 +112,32 @@ public:
 		// Create the sub-domains
 		dec.setParameters(div,box);
 
-		// Get the bounding box containing the processor domain +- one sub-domain spacing
-		::Box<point::dims,typename point::coord_type> & bbound = dec.getProcessorBounds();
+		// Get the bounding box containing the processor domain
+		const ::Box<point::dims,typename point::coord_type> & bbound = dec.getProcessorBounds();
 
-		// the smallest sub-division of the domain on each dimension
-		typename point::coord_type smallest_doms[point::dims];
+		const ::Box<point::dims,typename point::coord_type> & smallest_unit = dec.getSmallestSubdivision();
 
 		// convert spacing divisions
 		size_t n_g[point::dims];
 
 		for (size_t i = 0 ; i < point::dims ; i++)
-		{
-			n_g[i] = box.template getBase<b::p2>(i) / smallest_doms[i];
-		}
+			n_g[i] = (bbound.getHigh(i) - bbound.getLow(i)) / smallest_unit.getHigh(i);
 
 		point p;
 		p.zero();
 
 		// Initialize the geo cell list
 		geo_cell.Initialize(box,n_g,p,8);
+	}
+
+	/*! \brief return the local size of the vector
+	 *
+	 * \return local size
+	 *
+	 */
+	size_t size_local()
+	{
+		v_pos.get(0).size();
 	}
 
 	/*! \brief Get position of an object
@@ -143,6 +171,16 @@ public:
 		//! properties vector
 		openfpm::vector<prop,openfpm::device_cpu<prop>,PreAllocHeapMemory<2>,openfpm::grow_policy_identity> prp;
 	};
+
+	/*! \brief set the ghost
+	 *
+	 *  \param g ghost
+	 *
+	 */
+	void setGhost(Ghost<point::dims,typename point::coord_type> & g)
+	{
+		dec.calculateGhostBoxes(g);
+	}
 
 	/*! \brief It communicate the particle to the respective processor
 	 *
@@ -256,12 +294,10 @@ public:
 			prc_cnt.get(lbl)++;
 
 			// Add processors and add size
-
 			++it;
 		}
 
 		// Create the set of pointers
-
 		openfpm::vector<void *> ptr(prc_r.size());
 		for (size_t i = 0 ; i < prc_r.size() ; i++)
 		{
@@ -269,8 +305,7 @@ public:
 		}
 
 		// convert the particle number to buffer size
-
-		for (size_t i = 0 ; i < v_cl.getProcessingUnits() ; i++)
+		for (size_t i = 0 ; i < prc_sz_r.size() ; i++)
 		{
 			prc_sz_r.get(i) = prc_sz_r.get(i)*(sizeof(prop) + sizeof(point));
 		}
@@ -328,72 +363,133 @@ public:
 		v_prp.get(0).remove(opart,o_p_id);
 	}
 
-	// ghost particles sending buffer
-	openfpm::vector<HeapMemory> ghost_send_hp;
+	// outgoing particles-id
+	openfpm::vector<openfpm::vector<size_t>> opart;
 
 	// Each entry contain the size of the ghost sending buffer
-	std::unordered_map<size_t,size_t> ghost_prc_sz;
+	openfpm::vector<size_t> ghost_prc_sz;
 
 	// ghost particle labels
 	openfpm::vector<size_t> ghost_lbl_p;
+
+	// Memory for the ghost sending buffer
+	Memory g_prp_mem;
+
+	// Memory for the ghost
+	Memory g_pos_mem;
 
 	/*! \brief It synchronize getting the ghost particles
 	 *
 	 * \prp Properties to get
 	 * \opt options
-	 * 		NO_RELABEL: If the particles does not move avoid to relabel
+	 * 		NO_RELABEL: If the particles does not move avoid to relabel and send particle position
 	 *
 	 */
-	template<unsigned int N> void ghost_get(const size_t prp[N], size_t opt)
+	template<int... prp> void ghost_get(size_t opt = NONE)
 	{
-		// outgoing particles-id
-		openfpm::vector<size_t> opart;
-
+		// Create the ghost buffer
 		ghost_prc_sz.clear();
+		ghost_lbl_p.clear();
+		ghost_lbl_p.resize(v_pos.get(INTERNAL).size());
 
 		// Label the internal (assigned) particles
-		auto it = v_pos.get(0).getIterator();
+		auto it = v_pos.get(INTERNAL).getIterator();
 
 		// Label all the particles with the processor id, where they should go
 		while (it.isNext())
 		{
 			auto key = it.get();
 
-			size_t p_id = dec.ghost_processorID(v_pos.get(0).get(key));
+			size_t p_id = dec.ghost_processorID(v_pos.get(INTERNAL).get(key));
 
 			ghost_lbl_p.get(key) = p_id;
 
 			// It has to communicate
 			if (p_id != v_cl.getProcessUnitID())
 			{
-				// add particle to communicate
-				ghost_prc_sz[p_id]++;
+				size_t id = dec.ProcToID(p_id);
 
-				opart.add(key);
+				// add particle to communicate
+				ghost_prc_sz.get(id)++;
+
+
+				opart.get(id).add(key);
 			}
 
 			++it;
 		}
 
-		// Create memory allocator for the send buffers
-		size_t i = 0;
-		ghost_send_hp.resize(ghost_prc_sz.size());
+		// Total number of elements
+		size_t n_ele = 0;
 
-		for ( auto it = ghost_prc_sz.begin(); it != ghost_prc_sz.end(); ++it )
+		// sequence of pre-allocation pattern
+		openfpm::vector<size_t> pap;
+
+		// Calculate the total size required for the sending buffer
+		for ( size_t i = 0 ; i < ghost_prc_sz.size() ; i++ )
 		{
-			// we are sending only some properties, so calculate the size of the sending buffer
-			size_t element_size = ele_size<N,typename prop::type>(prp);
-
-			ghost_send_hp.get(i).resize(it->second * element_size);
-
-			i++;
+			pap.add(ghost_prc_sz.get(i)*sizeof(vector_creator<Point_test<float>::type,prp...>::type));
+			n_ele += ghost_prc_sz.get(i);
 		}
 
-		//
+		// resize the property buffer memory
+		g_prp_mem.resize(n_ele * sizeof(typename vector_creator<Point_test<float>::type,prp...>::type));
+		// resize the position buffer memory
+		if (opt != NO_POSITION) g_pos_mem.resize(n_ele * sizeof(point));
 
-		// ca
+		// Create an object of preallocated memory
+		ExtPreAlloc<Memory> prAlloc(pap,g_prp_mem);
 
-		// send and receive the properties of the particles
+		// definition of a property object based on the property selected
+		typedef typename vector_creator<Point_test<float>::type,prp...>::type property_object;
+
+		// definition of the send vector for each processor
+		typedef  openfpm::vector<property_object,openfpm::device_cpu<prop>,ExtPreAlloc<Memory>> send_vector;
+
+		// create a vector of send vector (ExtPreAlloc warrant that all the created vector are contiguous)
+		openfpm::vector<send_vector> g_send;
+
+		// create a number of send buffer equal to the near processors
+		g_send.resize(ghost_prc_sz.size());
+		for (size_t i = 0 ; i < g_send.size() ; i++)
+		{
+			// set the preallocated memory to ensure contiguity
+			g_send.get(i).setMemory(prAlloc);
+
+			// resize the sending vector (No allocation is produced)
+			g_send.get(i).resize(ghost_prc_sz.get(i));
+		}
+
+		// Fill the send buffer
+		for ( size_t i = 0 ; i < opart.size() ; i++ )
+		{
+			for (size_t j = 0 ; j < opart.get(i).size() ; j++)
+			{
+				g_send.get(i).get(j) = v_prp.get(INTERNAL).get(opart.get(i).get(j));
+			}
+		}
+
+		// Create the buffer for particle position
+
+		// definition of the send vector for each processor
+		typedef  openfpm::vector<property_object,openfpm::device_cpu<point>,ExtPreAlloc<Memory>> send_pos_vector;
+
+		openfpm::vector<point> g_pos_send;
+		if (opt != NO_POSITION)
+		{
+			// Fill the send buffer
+			for ( size_t i = 0 ; i < opart.size() ; i++ )
+			{
+				for (size_t j = 0 ; j < opart.get(i).size() ; j++)
+				{
+					g_send.get(i).get(j) = v_pos.get(INTERNAL).get(opart.get(i).get(j));
+				}
+			}
+		}
+
+		// Send receive the particles information
+
+
 
 		// add the received particles to the vector
 	}
@@ -413,17 +509,19 @@ public:
 	 * \param total message size to receive from all the processors
 	 * \param the total number of processor want to communicate with you
 	 * \param i processor id
+	 * \param ri request id (it is an id that goes from 0 to total_p, and is unique
+	 *           every time message_alloc is called)
 	 * \param ptr a pointer to the vector_dist structure
 	 *
 	 * \return the pointer where to store the message
 	 *
 	 */
-	static void * message_alloc(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, void * ptr)
+	static void * message_alloc(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
 	{
 		// cast the pointer
 		vector_dist<point,prop,Box,Decomposition,Memory,with_id> * vd = static_cast<vector_dist<point,prop,Box,Decomposition,Memory,with_id> *>(ptr);
 
-		// Resize the memory and
+		// Resize the receive buffer, and the size of each message buffer
 		vd->hp_recv.resize(total_msg);
 		vd->v_proc.resize(total_p);
 
@@ -434,7 +532,7 @@ public:
 		vd->recv_cnt += msg_i;
 
 		// Save the processor message size
-		vd->v_proc.get(i) = msg_i;
+		vd->v_proc.get(ri) = msg_i;
 
 		return recv_ptr;
 	}

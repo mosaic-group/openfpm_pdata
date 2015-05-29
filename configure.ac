@@ -9,10 +9,7 @@ AC_CONFIG_SRCDIR([src/main.cpp])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADER([src/config/config.h])
 m4_ifdef([ACX_PTHREAD],,[m4_include([m4/acx_pthread.m4])])
-m4_ifdef([AX_CHECK_CL],,[m4_include([m4/ax_opencl.m4])])
-m4_ifdef([AX_BOOST_BASE],,[m4_include([m4/ax_boost_base.m4])])
-m4_ifdef([AX_BOOST_PROGRAM_OPTIONS],,[m4_include([m4/ax_boost_program_options.m4])])
-m4_ifdef([AX_BOOST_THREAD],,[m4_include([m4/ax_boost_thread.m4])])
+m4_ifdef([AX_BOOST],,[m4_include([m4/ax_boost.m4])])
 m4_ifdef([ACX_MPI],,[m4_include([m4/acx_mpi.m4])])
 m4_ifdef([AX_OPENMP],,[m4_include([m4/ax_openmp.m4])])
 m4_ifdef([AX_CUDA],,[m4_include([m4/ax_cuda.m4])])
@@ -53,7 +50,7 @@ if test x"$debuger" = x"yes"; then
 	CXXFLAGS="$CXXFLAGS -g3  -Wall -O0 "
 	NVCCFLAGS+="$NVCCFLAGS -g -O0 "
 else
-	CXXFLAGS="$CXXFLAGS -Wall -O3 -g3 -flto -funroll-loops "
+	CXXFLAGS="$CXXFLAGS -Wall -O3 -g3 -funroll-loops "
 	NVCCFLAGS+="$NVCCFLAGS -O3 "
 fi
 
@@ -79,6 +76,10 @@ fi
 ####### include OpenFPM_devices include path
 
 INCLUDES_PATH+="-I. -Isrc/config/ -I../../metis_install/include -I../../OpenFPM_IO/src -I../../OpenFPM_data/src -I../../OpenFPM_devices/src -I../../OpenFPM_vcluster/src/"
+
+##### CHECK FOR BOOST ##############
+
+AX_BOOST([1.52],[],[])
 
 ####### Checking for GPU support
 
@@ -115,10 +116,6 @@ AM_CONDITIONAL(BUILDCUDA, test ! x$NVCC = x"no")
 # Define that there is MPI
 
 AC_DEFINE([HAVE_MPI],[],[MPI Enabled])
-
-#####
-
-AX_CHECK_COMPILER_FLAGS([-Wno-unused-but-set-variable],[CXXFLAGS="$CXXFLAGS -Wno-unused-but-set-variable"],[])
 
 AC_SUBST(NVCCFLAGS)
 AC_SUBST(INCLUDES_PATH)

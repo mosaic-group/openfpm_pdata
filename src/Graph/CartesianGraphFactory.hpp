@@ -353,14 +353,15 @@ public:
 	 *
 	 * Each vertex is a subspace (Hyper-cube) of dimension dim, each vertex is
 	 * connected with an edge if two vertex (Hyper-cube) share a element of dimension grater than
-	 * dim_c
+	 * dim_c. One property can be used to store the contact size or the d-dimensional
+	 * surface in common between two connected hyper-cube.
 	 *
 	 * \param sz Vector that store the size of the grid on each dimension
 	 * \param dom Box enclosing the physical domain
 	 *
-	 * \tparam se Indicate which properties fill with the element weight. The
-	 *           element weight is the point, line , surface, d dimensional object
-	 *           in contact (in common between two hyper-cube). NO_EDGE indicate
+	 * \tparam se Indicate which properties fill with the contact size. The
+	 *           contact size is the point, line , surface, d-dimensional object size
+	 *           in contact (in common) between two hyper-cube. NO_EDGE indicate
 	 *           no property will store this information
 	 * \tparam T type of the domain like (int real complex ... )
 	 * \tparam dim_c Connectivity dimension

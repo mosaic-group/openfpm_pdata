@@ -33,6 +33,13 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_use)
 
 	// Decompose
 	dec.setParameters(div,box);
+
+	Ghost<3,float> g(0.01);
+
+	// create a ghost border
+	dec.calculateGhostBoxes(g);
+
+	//
 }
 
 BOOST_AUTO_TEST_SUITE_END()

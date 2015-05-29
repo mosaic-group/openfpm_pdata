@@ -176,9 +176,6 @@ private:
 	 */
 	template<unsigned int p_sub, unsigned int p_id> void add_to_queue(openfpm::vector<size_t> & domains, openfpm::vector<wavefront<dim>> & v_w, Graph & graph,  std::vector<comb<dim>> & w_comb, long int pr_id, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor)
 	{
-		// it contain a list of the near processor to the box
-		box_nn_processor.add();
-
 		// create a new queue
 		openfpm::vector<size_t> domains_new;
 
@@ -289,7 +286,7 @@ private:
 
 		// direction of expansion
 
-		size_t domain_id = graph.vertex(gh.LinId(start_p)).template get<p_id>();
+		size_t domain_id = graph.vertex(start_p).template get<p_id>();
 		bool can_expand = true;
 
 		// while is possible to expand
@@ -600,7 +597,7 @@ public:
 			box_nn_processor.add();
 
 			// Create the biggest box containing the domain
-			expand_from_point<p_sub,p_id>(gh.LinId(v_q.get(0)),graph,box,v_w,w_comb);
+			expand_from_point<p_sub,p_id>(v_q.get(0),graph,box,v_w,w_comb);
 
 			// Add the created box to the list of boxes
 			lb.add(box);

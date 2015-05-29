@@ -84,13 +84,10 @@ subdir = src
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_compiler_flags.m4 \
-	$(top_srcdir)/m4/acx_pthread.m4 $(top_srcdir)/m4/ax_opencl.m4 \
-	$(top_srcdir)/m4/ax_boost_base.m4 \
-	$(top_srcdir)/m4/ax_boost_program_options.m4 \
-	$(top_srcdir)/m4/ax_boost_thread.m4 \
-	$(top_srcdir)/m4/acx_mpi.m4 $(top_srcdir)/m4/ax_openmp.m4 \
-	$(top_srcdir)/m4/ax_cuda.m4 $(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/m4/acx_pthread.m4 \
+	$(top_srcdir)/m4/ax_boost.m4 $(top_srcdir)/m4/acx_mpi.m4 \
+	$(top_srcdir)/m4/ax_openmp.m4 $(top_srcdir)/m4/ax_cuda.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -104,7 +101,8 @@ am_pdata_OBJECTS = pdata-main.$(OBJEXT) pdata-HeapMemory.$(OBJEXT) \
 	pdata-Memleak_check.$(OBJEXT)
 pdata_OBJECTS = $(am_pdata_OBJECTS)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 pdata_DEPENDENCIES = $(am__DEPENDENCIES_2)
 pdata_LINK = $(CXXLD) $(pdata_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -175,6 +173,18 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BOOST_CPPFLAGS = @BOOST_CPPFLAGS@
+BOOST_DATE_TIME_LIB = @BOOST_DATE_TIME_LIB@
+BOOST_FILESYSTEM_LIB = @BOOST_FILESYSTEM_LIB@
+BOOST_IOSTREAMS_LIB = @BOOST_IOSTREAMS_LIB@
+BOOST_LDFLAGS = @BOOST_LDFLAGS@
+BOOST_PROGRAM_OPTIONS_LIB = @BOOST_PROGRAM_OPTIONS_LIB@
+BOOST_REGEX_LIB = @BOOST_REGEX_LIB@
+BOOST_SERIALIZATION_LIB = @BOOST_SERIALIZATION_LIB@
+BOOST_SIGNALS_LIB = @BOOST_SIGNALS_LIB@
+BOOST_THREAD_LIB = @BOOST_THREAD_LIB@
+BOOST_UNIT_TEST_FRAMEWORK_LIB = @BOOST_UNIT_TEST_FRAMEWORK_LIB@
+BOOST_WSERIALIZATION_LIB = @BOOST_WSERIALIZATION_LIB@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
@@ -274,7 +284,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-LINKLIBS = $(PTHREAD_LIBS) $(OPT_LIBS) $(BOOST_LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LIB) $(CUDA_LIBS) $(BOOST_THREAD_LIB)
+LINKLIBS = $(PTHREAD_LIBS) $(OPT_LIBS) $(BOOST_LDFLAGS) $(BOOST_IOSTREAMS_LIB) $(CUDA_LIBS)
 pdata_SOURCES = main.cpp ../../OpenFPM_devices/src/memory/HeapMemory.cpp ../../OpenFPM_devices/src/memory/PtrMemory.cpp ../../OpenFPM_vcluster/src/VCluster.cpp ../../OpenFPM_data/src/Memleak_check.cpp
 pdata_CXXFLAGS = $(CUDA_CFLAGS) $(INCLUDES_PATH)
 pdata_CFLAGS = $(CUDA_CFLAGS)

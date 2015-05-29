@@ -956,6 +956,7 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
  ../../OpenFPM_data/src/Grid/comb.hpp \
  ../../OpenFPM_data/src/Grid/grid_key_expression.hpp \
  ../../OpenFPM_data/src/Space/Shape/Point.hpp \
+ ../../OpenFPM_data/src/Grid/Encap.hpp \
  ../../OpenFPM_data/src/Grid/grid_key.hpp \
  ../../OpenFPM_data/src/Grid/Encap.hpp \
  ../../OpenFPM_data/src/memory_array.hpp \
@@ -3058,6 +3059,8 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 ../../OpenFPM_data/src/Grid/grid_key_expression.hpp:
 
 ../../OpenFPM_data/src/Space/Shape/Point.hpp:
+
+../../OpenFPM_data/src/Grid/Encap.hpp:
 
 ../../OpenFPM_data/src/Grid/grid_key.hpp:
 
