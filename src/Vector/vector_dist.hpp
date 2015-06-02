@@ -69,8 +69,6 @@ public:
 	vector_dist(size_t np, Box box)
 	:dec(Decomposition(*global_v_cluster)),v_cl(*global_v_cluster)
 	{
-		typedef ::Box<point::dims,typename point::coord_type> b;
-
 		// Allocate unassigned particles vectors
 		v_pos = v_cl.template allocate<openfpm::vector<point>>(1);
 		v_prp = v_cl.template allocate<openfpm::vector<prop>>(1);
@@ -121,7 +119,7 @@ public:
 	 */
 	size_t size_local()
 	{
-		v_pos.get(0).size();
+		return v_pos.get(0).size();
 	}
 
 	/*! \brief Get position of an object
@@ -359,7 +357,7 @@ public:
 	// Memory for the ghost sending buffer
 	Memory g_prp_mem;
 
-	// Memory for the ghost
+	// Memory for the ghost position sending buffer
 	Memory g_pos_mem;
 
 
@@ -404,45 +402,56 @@ public:
 			++it;
 		}
 
-		// Total number of elements
-		size_t n_ele = 0;
+		// Sending property object
+		typedef object<typename object_creator<typename prop::type,prp...>::type> prp_object;
 
-		// sequence of pre-allocation pattern
-		std::vector<size_t> pap;
+		// Send buffer size in byte ( one buffer for all processors )
+		size_t size_byte_prp = 0;
+		size_t size_byte_pos = 0;
+
+		// sequence of pre-allocation pattern for property and position send buffer
+		std::vector<size_t> pap_prp;
+		std::vector<size_t> pap_pos;
 
 		// Calculate the total size required for the sending buffer
 		for ( size_t i = 0 ; i < ghost_prc_sz.size() ; i++ )
 		{
-			pap.push_back(ghost_prc_sz.get(i)*sizeof(typename object_creator<Point_test<float>::type,prp...>::type));
-			n_ele += ghost_prc_sz.get(i);
+			size_t alloc_ele = openfpm::vector<prp_object>::calculateMem(ghost_prc_sz.get(i),0);
+			pap_prp.push_back(alloc_ele);
+			size_byte_prp += alloc_ele;
+
+			alloc_ele = openfpm::vector<point>::calculateMem(ghost_prc_sz.get(i),0);
+			pap_pos.push_back(alloc_ele);
+			size_byte_pos += alloc_ele;
 		}
 
 		// resize the property buffer memory
-		g_prp_mem.resize(n_ele * sizeof(typename object_creator<Point_test<float>::type,prp...>::type));
+		g_prp_mem.resize(size_byte_prp);
 		// resize the position buffer memory
-		if (opt != NO_POSITION) g_pos_mem.resize(n_ele * sizeof(point));
+		if (opt != NO_POSITION) g_pos_mem.resize(size_byte_pos);
 
-		// Create an object of preallocated memory
-		ExtPreAlloc<Memory> prAlloc(pap,g_prp_mem);
+		// Create an object of preallocated memory for properties
+		ExtPreAlloc<Memory> * prAlloc_prp = new ExtPreAlloc<Memory>(pap_prp,g_prp_mem);
 
-		// definition of a property object based on the property selected
-		typedef typename object_creator<Point_test<float>::type,prp...>::type property_object;
+		ExtPreAlloc<Memory> * prAlloc_pos;
+		// Create an object of preallocated memory for position
+		if (opt != NO_POSITION) prAlloc_pos = new ExtPreAlloc<Memory>(pap_pos,g_pos_mem);
 
 		// definition of the send vector for each processor
-		typedef  openfpm::vector<::object<property_object>,openfpm::device_cpu<object<property_object>>,ExtPreAlloc<Memory>> send_vector;
+		typedef  openfpm::vector<prp_object,openfpm::device_cpu<prp_object>,ExtPreAlloc<Memory>> send_vector;
 
 		// create a vector of send vector (ExtPreAlloc warrant that all the created vector are contiguous)
-		openfpm::vector<send_vector> g_send;
+		openfpm::vector<send_vector> g_send_prp;
 
 		// create a number of send buffer equal to the near processors
-		g_send.resize(ghost_prc_sz.size());
-		for (size_t i = 0 ; i < g_send.size() ; i++)
+		g_send_prp.resize(ghost_prc_sz.size());
+		for (size_t i = 0 ; i < g_send_prp.size() ; i++)
 		{
 			// set the preallocated memory to ensure contiguity
-			g_send.get(i).setMemory(prAlloc);
+			g_send_prp.get(i).setMemory(*prAlloc_prp);
 
 			// resize the sending vector (No allocation is produced)
-			g_send.get(i).resize(ghost_prc_sz.get(i));
+			g_send_prp.get(i).resize(ghost_prc_sz.get(i));
 		}
 
 		// Fill the send buffer
@@ -453,10 +462,10 @@ public:
 				// source object type
 				typedef encapc<1,prop,typename openfpm::vector<prop>::memory_t> encap_src;
 				// destination object type
-				typedef encapc<1,::object<property_object>,typename openfpm::vector<::object<property_object>>::memory_t> encap_dst;
+				typedef encapc<1,prp_object,typename openfpm::vector<prp_object>::memory_t> encap_dst;
 
 				// Copy only the selected properties
-				object_copy<encap_src,encap_dst,ENCAP,prp...>(v_prp.get(INTERNAL).get(opart.get(i).get(j)),g_send.get(i).get(j));
+				object_copy<encap_src,encap_dst,ENCAP,prp...>(v_prp.get(INTERNAL).get(opart.get(i).get(j)),g_send_prp.get(i).get(j));
 			}
 		}
 
@@ -473,7 +482,7 @@ public:
 			for (size_t i = 0 ; i < g_pos_send.size() ; i++)
 			{
 				// set the preallocated memory to ensure contiguity
-				g_pos_send.get(i).setMemory(prAlloc);
+				g_pos_send.get(i).setMemory(*prAlloc_pos);
 
 				// resize the sending vector (No allocation is produced)
 				g_pos_send.get(i).resize(ghost_prc_sz.get(i));

@@ -15,6 +15,7 @@ BOOST_AUTO_TEST_SUITE( vector_dist_test )
 
 BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use )
 {
+	typedef Point_test<float> p;
 	typedef Point<2,float> s;
 
     // set the seed
@@ -63,7 +64,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use )
 
 	// do a ghost get
 
-	typedef Point_test<float> p;
 	vd.template ghost_get<p::s,p::v>();
 }
 

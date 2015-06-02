@@ -462,7 +462,7 @@ public:
 
 		// Check with geo-cell if a particle is inside one Cell containing boxes
 
-		auto cell_it = geo_cell.getCellIterator(p);
+		auto cell_it = geo_cell.getIterator(geo_cell.getCell(p));
 
 		// For each element in the cell, check if the point is inside the box
 		// if it is, store the processor id
@@ -479,9 +479,16 @@ public:
 		return ids;
 	}
 
+	// It store all the boxes of the near processors in a linear array
+	struct p_box
+	{
+		::Box<dim,T> box;
+		size_t proc;
+	};
+
 	// Internal boxes for this processor domain, indicated with B8_0 B9_0 ..... in the figure
 	// below as a linear vector
-	openfpm::vector<::Box<dim,T>> vb_int;
+	openfpm::vector<p_box> vb_int;
 
 	/*! It calculate the internal ghost boxes
 	 *
@@ -697,20 +704,20 @@ p1[0]<-----+         +----> p2[0]
 
 					// Intersect with the local sub-domain
 
-					::Box<dim,T> b_int;
-					bool intersect = n_sub.Intersect(l_sub,b_int);
+					p_box b_int;
+					bool intersect = n_sub.Intersect(l_sub,b_int.box);
 
 					// store if it intersect
 					if (intersect == true)
 					{
-						p_box_int.add(b_int);
+						p_box_int.add(b_int.box);
 						vb_int.add(b_int);
 
 						// update the geo_cell list
 
 						// get the boxes this box span
-						const grid_key_dx<dim> p1 = geo_cell.getCellGrid(b_int.getP1());
-						const grid_key_dx<dim> p2 = geo_cell.getCellGrid(b_int.getP2());
+						const grid_key_dx<dim> p1 = geo_cell.getCellGrid(b_int.box.getP1());
+						const grid_key_dx<dim> p2 = geo_cell.getCellGrid(b_int.box.getP2());
 
 						// Get the grid and the sub-iterator
 						auto & gi = geo_cell.getGrid();
@@ -1052,6 +1059,17 @@ p1[0]<-----+         +----> p2[0]
 		return vb_int.get(b_id).proc;
 	}
 
+	/*! \brief Convert the near processor ID to processor number
+	 *
+	 * \param id
+	 *
+	 * \return return the processor number
+	 *
+	 */
+	inline size_t IDtoProc(size_t id)
+	{
+		return nn_processors.get(id);
+	}
 };
 
 
