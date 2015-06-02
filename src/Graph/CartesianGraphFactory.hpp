@@ -129,7 +129,7 @@ public:
 			auto obj = gp.vertex(g.LinId(key));
 
 			// vertex spatial properties functor
-			fill_prop<dim,T,decltype(gp.vertex(g.LinId(key))), typename to_boost_mpl<pos...>::type, sizeof...(pos) == 0 > flp(obj,szd,key);
+			fill_prop<dim,T,decltype(gp.vertex(g.LinId(key))), typename to_boost_vmpl<pos...>::type, sizeof...(pos) == 0 > flp(obj,szd,key);
 
 			// fill properties
 
@@ -239,7 +239,7 @@ public:
 			auto obj = gp.vertex(g.LinId(key));
 
 			// vertex spatial properties functor
-			fill_prop<dim,T,decltype(gp.vertex(g.LinId(key))), typename to_boost_mpl<pos...>::type, sizeof...(pos) == 0 > flp(obj,szd,key);
+			fill_prop<dim,T,decltype(gp.vertex(g.LinId(key))), typename to_boost_vmpl<pos...>::type, sizeof...(pos) == 0 > flp(obj,szd,key);
 
 			// fill properties
 

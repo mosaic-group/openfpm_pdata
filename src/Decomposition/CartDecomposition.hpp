@@ -27,8 +27,7 @@
 /**
  * \brief This class decompose a space into subspaces
  *
- * This class decompose a space into regular hyper-cube subspaces, and give the possibilities to
- * select one subspace
+ * This class decompose a space into regular hyper-cube subspaces
  *
  * \tparam dim is the dimensionality of the physical domain we are going to decompose.
  * \tparam T type of the space we decompose, Real, Integer, Complex ...
@@ -38,13 +37,13 @@
  * \tparam data type of structure that store the sub-domain decomposition can be an openfpm structure like
  *        vector, ...
  *
- * \note if PARALLEL_DECOMPOSITION macro is defined a parallel decomposition algorithm is used, basically
- *       each processor does not recompute the same decomposition
- *
- *  \note sub-sub-domain portion of space at finer level than the sub-domain (before optimization)
- *        (or before sub-sub-domain merging)
- *  \note sub-domain portion of space (after optimization)
- *  \note near processor sub-domain a sub-domain that live in the a near (or contiguous) processor
+ * \note sub-sub-domain are the sub-unit produced by the decomposition
+ * \note sub-domain are the result of merging one or more sub-sub-domain (optimization)
+ * \note Near processors are the processors adjacent to this processor
+ * \note near processor sub-domain is a sub-domain that live in the a near (or contiguous) processor
+ * \note external ghost box are the ghost space of the processors
+ * \note internal ghost box are the part of ghost of the near processor that intersect the space of the
+ *       processor
  *
  */
 
@@ -63,11 +62,11 @@ class CartDecomposition
 	struct Box_proc
 	{
 		// Intersection between the local sub-domain enlarged by the ghost and the contiguous processor
-		// sub-domains
+		// sub-domains (External ghost)
 		openfpm::vector<::Box<dim,T>> bx;
 
 		// Intersection between the contiguous processor sub-domain enlarged by the ghost with the
-		// local sub-domain
+		// local sub-domain (Internal ghost)
 		openfpm::vector<::Box<dim,T>> nbx;
 
 
@@ -127,28 +126,13 @@ private:
 	//! rectangular domain to decompose
 	Domain<dim,T> domain;
 
-	//! Ghost boxes of the processor
-	//! for each Sub-domain it store the ghost boxes, or
-	//! the set of boxes that enclose the the ghost space
-	//! Box cannot overlap, they contain one id that is the
-	//! processor the information should come from
-	openfpm::vector< openfpm::vector<Domain<dim,T>> > gh_dom;
-
-	//! Internal boxes of the processor
-	//! for each Sub-domain it store the boxes enclosing the
-	//! space that must be communicated when another processor
-	//! require the ghost
-	//! Box can overlap, they contain one id that is the
-	//! processor the information should be communicated to
-	openfpm::vector< openfpm::vector< Domain<dim,T>> > int_box;
-
 	//! Box Spacing
 	T spacing[dim];
 
 	//! Runtime virtual cluster machine
 	Vcluster & v_cl;
 
-	//! Structure that store the geometrical information about intersection between the local sub-domain
+	//! Cell-list that store the geometrical information about the intersection between the local sub-domain
 	//! and the near processor sub-domains
 	CellList<dim,T,FAST> geo_cell;
 
@@ -434,13 +418,14 @@ public:
 	openfpm::vector<size_t> ids;
 
 	/*! \brief Given a position it return if the position belong to any neighborhood processor ghost
+	 * (Internal ghost)
 	 *
 	 * \param p Particle position
 	 *
 	 * \param return the processor ids
 	 *
 	 */
-	const openfpm::vector<size_t> ghost_processorID(Point<dim,T> & p)
+	inline const openfpm::vector<size_t> ghost_processorID(Point<dim,T> & p)
 	{
 		ids.clear();
 
@@ -464,6 +449,7 @@ public:
 	}
 
 	/*! \brief Given a position it return if the position belong to any neighborhood processor ghost
+	 * (Internal ghost)
 	 *
 	 * \param p Particle position
 	 *
@@ -497,7 +483,7 @@ public:
 	// below as a linear vector
 	openfpm::vector<::Box<dim,T>> vb_int;
 
-	/*! It calculate the ghost boxes and internal boxes
+	/*! It calculate the internal ghost boxes
 	 *
 	 * Example: Processor 10 calculate
 	 * B8_0 B9_0 B9_1 and B5_0
@@ -529,7 +515,7 @@ public:
                                                      +-----------------------------------+
 
        and also
-       G8_0 G9_0 G9_1 G5_0
+       G8_0 G9_0 G9_1 G5_0 (External ghost boxes)
 
 +----------------------------------------------------+
 |                                                    |
@@ -628,7 +614,7 @@ p1[0]<-----+         +----> p2[0]
 		// Intersect all the local sub-domains with the sub-domains of the contiguous processors
 
 		// Get the sub-domains of the near processors
-		v_cl.sendrecvMultipleMessages(nn_processors,boxes,CartDecomposition<dim,T,device_l,Memory,Domain,data_s>::message_alloc, this ,NEED_ALL_SIZE);
+		v_cl.sendrecvMultipleMessagesNBX(nn_processors,boxes,CartDecomposition<dim,T,device_l,Memory,Domain,data_s>::message_alloc, this ,NEED_ALL_SIZE);
 
 		// ++++++++++++++++++++++++++++++++++++++++++ Check received boxes
 
@@ -843,65 +829,6 @@ p1[0]<-----+         +----> p2[0]
 		return sub_domains.size();
 	}
 
-	/*! The the bulk part of the data set, or the data that
-	 * does not depend from the ghosts layers
-	 *
-	 * \return the bulk of your data
-	 *
-	 */
-	T getBulk()
-	{
-
-	}
-
-	/*! \brief This function divide the data set into bulk, border, external and internal part
-	 *
-	 * \tparam dim dimensionality of the structure storing your data
-	 *         (example if they are in 3D grid, has to be 3)
-	 * \tparam T type of object we are dividing
-	 * \tparam device type of layout selected
-	 * \param data 1-dimensional grid of point
-	 * \param nb define the neighborhood of all the points
-	 * \return a structure with the set of objects divided
-	 *
-	 */
-
-//	dataDiv<T> CartDecomposition<dim,T,layout>::divide(layout::grid<1,Point<dim,T>> & data, neighborhood & nb);
-
-	/*! The the internal part of the data set, or the data that
-	 * are inside the local space
-	 *
-	 * \return the internal part of your data
-	 *
-	 */
-	T getInternal()
-	{
-
-	}
-
-	/*! Get the internal part of the dataset, or the data that
-	 * depend from the ghost layers
-	 *
-	 * \return the ghost part of your data
-	 *
-	 */
-
-	T getBorder()
-	{
-
-	}
-
-	/*! Get the external part of the dataset, or the data that
-	 * are outside localSpace including ghost
-	 *
-	 * \return the external part of your data
-	 *
-	 */
-	T getExternal()
-	{
-
-	}
-
 	/*! \brief Get the number of one set of hyper-cube enclosing one particular
 	 *         subspace, the hyper-cube enclose your space, even if one box is enough
 	 *         can be more that one to increase occupancy
@@ -1087,10 +1014,10 @@ p1[0]<-----+         +----> p2[0]
 	 * \return number of processors
 	 *
 	 */
-	inline size_t labelPointNp(Point<dim,T> & p)
+/*	inline size_t labelPointNp(Point<dim,T> & p)
 	{
 		return geo_cell.getNelements(geo_cell.getCell(p));
-	}
+	}*/
 
 	/*! \brief It return the label point cell
 	 *
@@ -1100,34 +1027,30 @@ p1[0]<-----+         +----> p2[0]
 	 * \return cell-id
 	 *
 	 */
-	inline size_t labelPointCell(Point<dim,T> & p)
+/*	inline size_t labelPointCell(Point<dim,T> & p)
 	{
 		return geo_cell.getCell(p);
+	}*/
+
+	/*! \brief get the number of near processors
+	 *
+	 * \return the number of near processors
+	 *
+	 */
+	inline size_t getNNProcessors()
+	{
+		return nn_processors.size();
 	}
 
-	/*! \brief Fill the ghost buffer
+	/*! \brief Give the internal ghost box id, it return at which processor it belong
 	 *
-	 * \tparam one or more properties to get
-	 *
-	 */
-/*	template<unsigned int ...i> void ghost_get()
-	{
-		// first check if a local particle must be sent to another processor
-		for (size_t i = 0 ; i < ; i++)
-		{
-
-		}
-	}*/
-
-	/*! \brief Fill the ghost buffer
-	 *
-	 * \tparam one or more properties to get
+	 * \return the number of near processors
 	 *
 	 */
-/*	template<unsigned int ...i> void ghost_put()
+	inline size_t getGhostBoxProcessor(size_t b_id)
 	{
-
-	}*/
+		return vb_int.get(b_id).proc;
+	}
 
 };
 
