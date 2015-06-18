@@ -39,7 +39,36 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_use)
 	// create a ghost border
 	dec.calculateGhostBoxes(g);
 
-	//
+	// For each calculated ghost box
+	for (size_t i = 0 ; i < dec.getNIGhostBox() ; i++)
+	{
+		SpaceBox<3,float> b = dec.getIGhostBox(i);
+		size_t proc = dec.getIGhostBoxProcessor(i);
+
+		// sample one point inside the box
+		Point<3,float> p = b.rnd();
+
+		// Check that ghost_processorsID return that processor number
+		const openfpm::vector<size_t> & pr = dec.template ghost_processorID<CartDecomposition<3,float>::processor_id>(p);
+
+		bool found = false;
+
+		for (size_t j = 0; j < pr.size() ; j++)
+		{
+			if (pr.get(j) == proc)
+			{found = true; break;}
+		}
+
+		if (found == false)
+		{
+			int debug = 0;
+			debug++;
+
+			const openfpm::vector<size_t> pr2 = dec.template ghost_processorID<CartDecomposition<3,float>::processor_id>(p);
+		}
+
+		BOOST_REQUIRE_EQUAL(found,true);
+	}
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -939,7 +939,7 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
  /usr/include/boost/multi_array/view.hpp \
  /usr/include/boost/functional.hpp /usr/include/boost/call_traits.hpp \
  /usr/include/boost/detail/call_traits.hpp \
- ../../OpenFPM_data/src/ct_array.hpp \
+ ../../OpenFPM_data/src/util/ct_array.hpp \
  ../../OpenFPM_data/src/memory_array.hpp \
  ../../OpenFPM_data/src/memory.hpp ../../OpenFPM_data/src/memory.hpp \
  ../../OpenFPM_data/src/util/meta_copy.hpp \
@@ -955,14 +955,17 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
  ../../OpenFPM_data/src/Grid/grid_key.hpp \
  ../../OpenFPM_data/src/Grid/comb.hpp \
  ../../OpenFPM_data/src/Grid/grid_key_expression.hpp \
- ../../OpenFPM_data/src/Space/Shape/Point.hpp \
  ../../OpenFPM_data/src/Grid/Encap.hpp \
+ ../../OpenFPM_data/src/Space/Shape/Point.hpp \
  ../../OpenFPM_data/src/Grid/grid_key.hpp \
  ../../OpenFPM_data/src/Grid/Encap.hpp \
  ../../OpenFPM_data/src/memory_array.hpp \
  ../../OpenFPM_devices/src/memory/HeapMemory.hpp \
  ../../OpenFPM_data/src/Vector/vect_isel.hpp \
  ../../OpenFPM_data/src/common.hpp \
+ ../../OpenFPM_data/src/util/object_s_di.hpp \
+ ../../OpenFPM_data/src/util/for_each_ref.hpp \
+ /usr/include/boost/fusion/include/size.hpp \
  ../../OpenFPM_data/src/Vector/map_vector_std.hpp \
  ../../OpenFPM_vcluster/src/MPI_IallreduceW.hpp
 
@@ -3024,7 +3027,7 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 /usr/include/boost/detail/call_traits.hpp:
 
-../../OpenFPM_data/src/ct_array.hpp:
+../../OpenFPM_data/src/util/ct_array.hpp:
 
 ../../OpenFPM_data/src/memory_array.hpp:
 
@@ -3058,9 +3061,9 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 ../../OpenFPM_data/src/Grid/grid_key_expression.hpp:
 
-../../OpenFPM_data/src/Space/Shape/Point.hpp:
-
 ../../OpenFPM_data/src/Grid/Encap.hpp:
+
+../../OpenFPM_data/src/Space/Shape/Point.hpp:
 
 ../../OpenFPM_data/src/Grid/grid_key.hpp:
 
@@ -3073,6 +3076,12 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 ../../OpenFPM_data/src/Vector/vect_isel.hpp:
 
 ../../OpenFPM_data/src/common.hpp:
+
+../../OpenFPM_data/src/util/object_s_di.hpp:
+
+../../OpenFPM_data/src/util/for_each_ref.hpp:
+
+/usr/include/boost/fusion/include/size.hpp:
 
 ../../OpenFPM_data/src/Vector/map_vector_std.hpp:
 

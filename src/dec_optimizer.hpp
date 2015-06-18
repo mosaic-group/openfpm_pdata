@@ -106,6 +106,68 @@ class dec_optimizer
 
 private:
 
+	/*! \brief Expand one wavefront
+	 *
+	 * \param v_w wavefronts
+	 * \param w_comb wavefront expansion combinations
+	 * \param d direction of expansion
+	 *
+	 */
+	void expand_one_wf(openfpm::vector<wavefront<dim>> & v_w, std::vector<comb<dim>> & w_comb , size_t d)
+	{
+		for (int j = 0 ; j < dim ; j++)
+		{
+			v_w.template get<wavefront<dim>::stop>(d)[j] = v_w.template get<wavefront<dim>::stop>(d)[j] + w_comb[d].c[j];
+			v_w.template get<wavefront<dim>::start>(d)[j] = v_w.template get<wavefront<dim>::start>(d)[j] + w_comb[d].c[j];
+		}
+	}
+
+
+	/*! \brief Adjust the other wavefronts
+	 *
+	 * \param d direction
+	 *
+	 */
+	void adjust_others_wf(openfpm::vector<wavefront<dim>> & v_w,  HyperCube<dim> & hyp, std::vector<comb<dim>> & w_comb, size_t d)
+	{
+		// expand the intersection of the wavefronts
+
+		std::vector<comb<dim>> q_comb = SubHyperCube<dim,dim-1>::getCombinations_R(w_comb[d],dim-2);
+
+		// Eliminate the w_comb[d] direction
+
+		for (int k = 0 ; k < q_comb.size() ; k++)
+		{
+			for (int j = 0 ; j < dim ; j++)
+			{
+				if (w_comb[d].c[j] != 0)
+				{
+					q_comb[k].c[j] = 0;
+				}
+			}
+		}
+
+		// for all the combinations
+		for (int j = 0 ; j < q_comb.size() ; j++)
+		{
+			size_t id = hyp.LinId(q_comb[j]);
+
+			// get the combination of the direction d
+
+			bool is_pos = hyp.isPositive(d);
+
+			// is positive, modify the stop point or the starting point
+
+			for (int s = 0 ; s < dim ; s++)
+			{
+				if (is_pos == true)
+				{v_w.template get<wavefront<dim>::stop>(id)[s] = v_w.template get<wavefront<dim>::stop>(id)[s] + w_comb[d].c[s];}
+				else
+				{v_w.template get<wavefront<dim>::start>(id)[s] = v_w.template get<wavefront<dim>::start>(id)[s] + w_comb[d].c[s];}
+			}
+		}
+	}
+
 	/* \brief Fill the wavefront position
 	 *
 	 * \tparam prp property to set
@@ -192,16 +254,13 @@ private:
 			}
 		}
 
-		// take the wavefront expand on direction d of one
+		// Create an Hyper-cube
+		HyperCube<dim> hyp;
 
 		for (int d = 0 ; d < v_w.size() ; d++)
 		{
-			// expand the wavefront
-			for (int j = 0 ; j < dim ; j++)
-			{
-				v_w.template get<wavefront<dim>::start>(d)[j] = v_w.template get<wavefront<dim>::start>(d)[j] + w_comb[d].c[j];
-				v_w.template get<wavefront<dim>::stop>(d)[j] = v_w.template get<wavefront<dim>::stop>(d)[j] + w_comb[d].c[j];
-			}
+			expand_one_wf(v_w,w_comb,d);
+			adjust_others_wf(v_w,hyp,w_comb,d);
 		}
 
 		// for each expanded wavefront create a sub-grid iterator and add the sub-domain

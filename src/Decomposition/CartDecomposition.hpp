@@ -41,7 +41,7 @@
  * \note sub-domain are the result of merging one or more sub-sub-domain (optimization)
  * \note Near processors are the processors adjacent to this processor
  * \note near processor sub-domain is a sub-domain that live in the a near (or contiguous) processor
- * \note external ghost box are the ghost space of the processors
+ * \note external ghost box (or ghost box) are the boxes that compose the ghost space of the processor
  * \note internal ghost box are the part of ghost of the near processor that intersect the space of the
  *       processor
  *
@@ -52,7 +52,7 @@ class CartDecomposition
 {
 	struct N_box
 	{
-		// id of the processor in the nn_processor list
+		// id of the processor in the nn_processor list (local processor id)
 		size_t id;
 
 		// Near processor sub-domains
@@ -276,6 +276,26 @@ private:
 
 			++it;
 		}
+
+		// Get the smallest sub-division on each direction
+		::Box<dim,T> unit = getSmallestSubdivision();
+		// Get the processor bounding Box
+		::Box<dim,T> bound = getProcessorBounds();
+
+		// calculate the sub-divisions (0.5 for rounding error)
+		size_t div[dim];
+		for (size_t i = 0 ; i < dim ; i++)
+			div[i] = (size_t)((bound.getHigh(i) - bound.getLow(i)) / unit.getHigh(i) + 0.5);
+
+		// Create shift
+		Point<dim,T> orig;
+
+		// p1 point of the Processor bound box is the shift
+		for (size_t i = 0 ; i < dim ; i++)
+			orig.get(i) = bound.getLow(i);
+
+		// Initialize the geo_cell structure
+		geo_cell.Initialize(domain,div,orig);
 	}
 
 	/*! \brief Create the subspaces that decompose your domain
@@ -343,13 +363,8 @@ private:
 		// cast the pointer
 		CartDecomposition<dim,T,device_l,Memory,Domain,data_s> * cd = static_cast< CartDecomposition<dim,T,device_l,Memory,Domain,data_s> *>(ptr);
 
-		if (cd->v_cl.getProcessUnitID() == 0)
-		{
-			std::cout << "Receiving from " << i << "       msg size: " << msg_i << "\n";
-		}
-
 		// Resize the memory
-		cd->nn_processor_subdomains[i].bx.resize(msg_i);
+		cd->nn_processor_subdomains[i].bx.resize(msg_i / sizeof(::Box<dim,T>) );
 
 		// Return the receive pointer
 		return cd->nn_processor_subdomains[i].bx.getPointer();
@@ -415,48 +430,107 @@ public:
 	~CartDecomposition()
 	{}
 
+	// It store all the boxes of the near processors in a linear array
+	struct p_box
+	{
+		//! Box that identify the intersection of the ghost of the near processor with the
+		//! processor sub-domain
+		::Box<dim,T> box;
+		//! local processor id
+		size_t lc_proc;
+		//! processor id
+		size_t proc;
+
+		/*! \brief Check if two p_box are the same
+		 *
+		 * \param pb box to check
+		 *
+		 */
+		bool operator==(const p_box & pb)
+		{
+			return pb.lc_proc == lc_proc;
+		}
+	};
+
 	openfpm::vector<size_t> ids;
 
-	/*! \brief Given a position it return if the position belong to any neighborhood processor ghost
-	 * (Internal ghost)
-	 *
-	 * \param p Particle position
-	 *
-	 * \param return the processor ids
+	/*! \brief class to select the returned id by ghost_processorID
 	 *
 	 */
-	inline const openfpm::vector<size_t> ghost_processorID(Point<dim,T> & p)
+	class box_id
 	{
-		ids.clear();
-
-		// Check with geo-cell if a particle is inside one Cell caotaining boxes
-
-		auto cell_it = geo_cell.getCellIterator(p);
-
-		// For each element in the cell, check if the point is inside the box
-		// if it is store the processor id
-		while (cell_it.isNext())
+	public:
+		/*! \brief Return the box id
+		 *
+		 * \param p structure containing the id informations
+		 * \param b_id box_id
+		 *
+		 * \return box id
+		 *
+		 */
+		inline static size_t id(p_box & p, size_t b_id)
 		{
-			size_t bid = cell_it.get();
-
-			if (vb_int.get(bid).box.isInside(p) == true)
-			{
-				ids.add(vb_int.get(bid).proc);
-			}
+			return b_id;
 		}
+	};
 
-		return ids;
-	}
+	/*! \brief class to select the returned id by ghost_processorID
+	 *
+	 */
+	class processor_id
+	{
+	public:
+		/*! \brief Return the processor id
+		 *
+		 * \param p structure containing the id informations
+		 * \param b_id box_id
+		 *
+		 * \return processor id
+		 *
+		 */
+		inline static size_t id(p_box & p, size_t b_id)
+		{
+			return p.proc;
+		}
+	};
+
+	/*! \brief class to select the returned id by ghost_processorID
+	 *
+	 */
+	class lc_processor_id
+	{
+	public:
+		/*! \brief Return the near processor id
+		 *
+		 * \param p structure containing the id informations
+		 * \param b_id box_id
+		 *
+		 * \return local processor id
+		 *
+		 */
+		inline static size_t id(p_box & p, size_t b_id)
+		{
+			return p.lc_proc;
+		}
+	};
+
+
+#define UNIQUE 1
+#define MULTIPLE 2
 
 	/*! \brief Given a position it return if the position belong to any neighborhood processor ghost
 	 * (Internal ghost)
 	 *
+	 * \tparam id type of if to get box_id processor_id lc_processor_id
 	 * \param p Particle position
+	 * \param opt intersection boxes of the same processor can overlap, so in general the function
+	 *        can produce more entry with the same processor, the UNIQUE option eliminate double entries
+	 *        (UNIQUE) is for particle data (MULTIPLE) is for grid data [default MULTIPLE]
 	 *
 	 * \param return the processor ids
 	 *
 	 */
-	template<typename Mem> inline const openfpm::vector<size_t> ghost_processorID(const encapc<1,Point<dim,T>,Mem> & p)
+	template <typename id> inline const openfpm::vector<size_t> ghost_processorID(Point<dim,T> & p, const int opt = MULTIPLE)
 	{
 		ids.clear();
 
@@ -472,21 +546,61 @@ public:
 
 			if (vb_int.get(bid).box.isInside(p) == true)
 			{
-				ids.add(vb_int.get(bid).proc);
+				ids.add(id::id(vb_int.get(bid),bid));
 			}
+
+			++cell_it;
 		}
+
+		// Make the id unique
+		if (opt == UNIQUE)
+			ids.unique();
 
 		return ids;
 	}
 
-	// It store all the boxes of the near processors in a linear array
-	struct p_box
+	/*! \brief Given a position it return if the position belong to any neighborhood processor ghost
+	 * (Internal ghost)
+	 *
+	 * \tparam id type of if to get box_id processor_id lc_processor_id
+	 * \param p Particle position
+	 *
+	 * \param return the processor ids
+	 *
+	 */
+	template<typename id, typename Mem> inline const openfpm::vector<size_t> ghost_processorID(const encapc<1,Point<dim,T>,Mem> & p, const int opt = MULTIPLE)
 	{
-		::Box<dim,T> box;
-		size_t proc;
-	};
+		ids.clear();
 
-	// Internal boxes for this processor domain, indicated with B8_0 B9_0 ..... in the figure
+		// Check with geo-cell if a particle is inside one Cell containing boxes
+
+		auto cell_it = geo_cell.getIterator(geo_cell.getCell(p));
+
+		// For each element in the cell, check if the point is inside the box
+		// if it is, store the processor id
+		while (cell_it.isNext())
+		{
+			size_t bid = cell_it.get();
+
+			if (vb_int.get(bid).box.isInside(p) == true)
+			{
+				ids.add(id::id(vb_int.get(bid),bid));
+			}
+
+			++cell_it;
+		}
+
+		// Make the id unique
+		if (opt == UNIQUE)
+			ids.unique();
+
+		return ids;
+	}
+
+	// External ghost boxes for this processor, indicated with G8_0 G9_0 ...
+	openfpm::vector<p_box> vb_ext;
+
+	// Internal ghost boxes for this processor domain, indicated with B8_0 B9_0 ..... in the figure
 	// below as a linear vector
 	openfpm::vector<p_box> vb_int;
 
@@ -674,7 +788,16 @@ p1[0]<-----+         +----> p2[0]
 					bool intersect = sub_with_ghost.Intersect(::Box<dim,T>(p_box.get(b)),bi);
 
 					if (intersect == true)
+					{
+						struct p_box pb;
+
+						pb.box = bi;
+						pb.proc = p_id;
+						pb.lc_proc = ProctoID(p_id);
+
+						vb_ext.add(pb);
 						p_box_int.add(bi);
+					}
 				}
 			}
 
@@ -686,6 +809,9 @@ p1[0]<-----+         +----> p2[0]
 
 				// get the set of sub-domains of the contiguous processor p_id
 				openfpm::vector< ::Box<dim,T> > & nn_p_box = nn_processor_subdomains[p_id].bx;
+
+				// get the local processor id
+				size_t lc_proc = nn_processor_subdomains[p_id].id;
 
 				// near processor sub-domain intersections
 				openfpm::vector< ::Box<dim,T> > & p_box_int = box_nn_processor_int.get(i).get(j).nbx;
@@ -703,13 +829,18 @@ p1[0]<-----+         +----> p2[0]
 					n_sub.enlarge(ghost);
 
 					// Intersect with the local sub-domain
-
 					p_box b_int;
 					bool intersect = n_sub.Intersect(l_sub,b_int.box);
 
 					// store if it intersect
 					if (intersect == true)
 					{
+						// fill with the processor id
+						b_int.proc = p_id;
+
+						// fill the local processor id
+						b_int.lc_proc = lc_proc;
+
 						p_box_int.add(b_int.box);
 						vb_int.add(b_int);
 
@@ -784,7 +915,7 @@ p1[0]<-----+         +----> p2[0]
 	 *
 	 */
 
-	size_t inline processorID(T (&p)[dim])
+	size_t inline processorID(const T (&p)[dim]) const
 	{
 		return fine_s.get(cd.getCell(p));
 	}
@@ -973,9 +1104,9 @@ p1[0]<-----+         +----> p2[0]
 	 * \return true if it is local
 	 *
 	 */
-	template<typename Mem> bool isLocal(encapc<1, Point<dim,T>, Mem> p)
+	template<typename Mem> bool isLocal(const encapc<1, Point<dim,T>, Mem> p) const
 	{
-		return processorID<Mem>() == v_cl.getProcessUnitID();
+		return processorID<Mem>(p) == v_cl.getProcessUnitID();
 	}
 
 	/*! \brief Check if the particle is local
@@ -985,7 +1116,7 @@ p1[0]<-----+         +----> p2[0]
 	 * \return true if it is local
 	 *
 	 */
-	bool isLocal(T (&pos)[dim])
+	bool isLocal(const T (&pos)[dim]) const
 	{
 		return processorID(pos) == v_cl.getProcessUnitID();
 	}
@@ -1014,49 +1145,70 @@ p1[0]<-----+         +----> p2[0]
 		return geo_cell.getIterator(geo_cell.getCell(p));
 	}
 
-	/*! \brief if the point fall into the ghost of some near processor it return the processor number in which
-	 *  it fall
-	 *
-	 * \param p Point
-	 * \return number of processors
-	 *
-	 */
-/*	inline size_t labelPointNp(Point<dim,T> & p)
-	{
-		return geo_cell.getNelements(geo_cell.getCell(p));
-	}*/
 
-	/*! \brief It return the label point cell
-	 *
-	 * The labeling of a point p is regulated by a Cell list, give a point it give a cell-id
-	 *
-	 * \param p Point
-	 * \return cell-id
-	 *
-	 */
-/*	inline size_t labelPointCell(Point<dim,T> & p)
-	{
-		return geo_cell.getCell(p);
-	}*/
-
-	/*! \brief get the number of near processors
-	 *
-	 * \return the number of near processors
-	 *
-	 */
-	inline size_t getNNProcessors()
+	inline size_t getNNProcessors() const
 	{
 		return nn_processors.size();
 	}
 
-	/*! \brief Give the internal ghost box id, it return at which processor it belong
+	/*! \brief Get the number of the calculated internal ghost boxes
 	 *
-	 * \return the number of near processors
+	 * \return the number of internal ghost boxes
 	 *
 	 */
-	inline size_t getGhostBoxProcessor(size_t b_id)
+	inline size_t getNIGhostBox() const
+	{
+		return vb_int.size();
+	}
+
+	/*! \brief Give the internal ghost box id, it return at which processor it belong
+	 *
+	 * \return the processor id
+	 *
+	 */
+	inline ::Box<dim,T> getIGhostBox(size_t b_id) const
+	{
+		return vb_int.get(b_id).box;
+	}
+
+	/*! \brief Give the processor id of the internal ghost box
+	 *
+	 * \return the processor id of the ghost box
+	 *
+	 */
+	inline size_t getIGhostBoxProcessor(size_t b_id) const
 	{
 		return vb_int.get(b_id).proc;
+	}
+
+	/*! \brief Get the number of the calculated ghost boxes
+	 *
+	 * \return the number of internal ghost boxes
+	 *
+	 */
+	inline size_t getNGhostBox() const
+	{
+		return vb_ext.size();
+	}
+
+	/*! \brief Given the ghost box id, it return at which processor it belong
+	 *
+	 * \return the processor id
+	 *
+	 */
+	inline ::Box<dim,T> getGhostBox(size_t b_id) const
+	{
+		return vb_ext.get(b_id).box;
+	}
+
+	/*! \brief Give the processor id of the internal ghost box
+	 *
+	 * \return the processor id of the ghost box
+	 *
+	 */
+	inline size_t getGhostBoxProcessor(size_t b_id) const
+	{
+		return vb_ext.get(b_id).proc;
 	}
 
 	/*! \brief Convert the near processor ID to processor number
@@ -1069,6 +1221,18 @@ p1[0]<-----+         +----> p2[0]
 	inline size_t IDtoProc(size_t id)
 	{
 		return nn_processors.get(id);
+	}
+
+	/*! \brief Convert the processor id to local processor id
+	 *
+	 * \param processor id
+	 *
+	 * \return the local processor id
+	 *
+	 */
+	inline size_t ProctoID(size_t p)
+	{
+		return nn_processor_subdomains[p].id;
 	}
 };
 

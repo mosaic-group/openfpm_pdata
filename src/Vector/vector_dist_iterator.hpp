@@ -27,11 +27,12 @@ class vector_dist_iterator
 
 	/*! \brief Constructor of the distributed grid
 	 *
-	 * \param gk std::vector of the local grid
+	 * \param gk the set of local vectors
+	 * \param offset iterator starting point
 	 *
 	 */
-	vector_dist_iterator(Vcluster_object_array<device_v> & gk)
-	:v_c(0),vList(gk),v_it(0)
+	vector_dist_iterator(Vcluster_object_array<device_v> & gk, size_t offset = 0)
+	:v_c(0),vList(gk),v_it(offset)
 	{
 	}
 
