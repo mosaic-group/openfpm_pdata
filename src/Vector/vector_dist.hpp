@@ -19,10 +19,12 @@
 #include "common.hpp"
 #include "util/object_util.hpp"
 #include "memory/ExtPreAlloc.hpp"
+#include "CSVWriter.hpp"
 
 #define NO_ID false
 #define ID true
 
+// Perform a ghost get or a ghost put
 #define GET	1
 #define PUT 2
 
@@ -30,6 +32,10 @@
 
 #define NO_POSITION 1
 #define WITH_POSITION 2
+
+// Write the particles with ghost
+#define NO_GHOST 0
+#define WITH_GHOST 2
 
 /*! \brief Distributed vector
  *
@@ -314,6 +320,7 @@ public:
 
 		// overwrite the outcoming particle with the incoming particle and resize the vectors
 
+		size_t total_element = 0;
 		size_t o_p_id = 0;
 
 		for (size_t i = 0 ; i < v_proc.size() ; i++)
@@ -322,8 +329,13 @@ public:
 
 			size_t n_ele = v_proc.get(i) / (sizeof(point) + sizeof(prop));
 
-			PtrMemory * ptr1 = new PtrMemory(hp_recv.getPointer(),n_ele * sizeof(point));
-			PtrMemory * ptr2 = new PtrMemory((unsigned char *)hp_recv.getPointer() + n_ele * sizeof(point),n_ele * sizeof(prop));
+			// Pointer of the received positions for each near processor
+			void * ptr_pos = ((unsigned char *)hp_recv.getPointer()) + (total_element * (sizeof(point) + sizeof(prop)));
+			// Pointer of the received properties for each near processor
+			void * ptr_prp = ((unsigned char *)hp_recv.getPointer()) + (total_element * (sizeof(point) + sizeof(prop))) + n_ele * sizeof(point);
+
+			PtrMemory * ptr1 = new PtrMemory(ptr_pos,n_ele * sizeof(point));
+			PtrMemory * ptr2 = new PtrMemory(ptr_prp,n_ele * sizeof(prop));
 
 			// create vector representation to a piece of memory already allocated
 
@@ -352,6 +364,9 @@ public:
 				v_prp.get(0).add();
 				v_prp.get(0).set(v_prp.get(0).size()-1,vprp.get(j));
 			}
+
+			// increment the total number of element counter
+			total_element += n_ele;
 		}
 
 		// remove the hole (out-going particles) in the vector
@@ -525,8 +540,8 @@ public:
 		// Mark the ghost part
 		g_m = v_prp.get(INTERNAL).size();
 
-		// Get the number of near processors
-		for (size_t i = 0 ; i < dec.getNNProcessors() ; i++)
+		// Process the received data (recv_mem_gg != 0 if you have data)
+		for (size_t i = 0 ; i < dec.getNNProcessors() && recv_mem_gg.size() != 0 ; i++)
 		{
 			// calculate the number of received elements
 			size_t n_ele = recv_sz.get(i) / sizeof(prp_object);
@@ -543,7 +558,7 @@ public:
 			v2.resize(n_ele);
 
 			// Add the ghost particle
-			v_prp.get(INTERNAL).template add<prp_object,PtrMemory,openfpm::grow_policy_identity,prp...>(v2);
+			v_prp.get(INTERNAL).template add_prp<prp_object,PtrMemory,openfpm::grow_policy_identity,prp...>(v2);
 		}
 
 		if (opt != NO_POSITION)
@@ -551,8 +566,8 @@ public:
 			// Send receive the particles properties information
 			v_cl.sendrecvMultipleMessagesNBX(prc,g_pos_send,msg_alloc_ghost_get,this);
 
-			// Get the number of near processors
-			for (size_t i = 0 ; i < dec.getNNProcessors() ; i++)
+			// Process the received data (recv_mem_gg != 0 if you have data)
+			for (size_t i = 0 ; i < dec.getNNProcessors() && recv_mem_gg.size() != 0 ; i++)
 			{
 				// calculate the number of received elements
 				size_t n_ele = recv_sz.get(i) / sizeof(point);
@@ -701,6 +716,30 @@ public:
 	const Decomposition & getDecomposition()
 	{
 		return dec;
+	}
+
+	/*! \brief Output particle position and properties
+	 *
+	 * \param File output
+	 * \param opt NO_GHOST or WITH_GHOST
+	 *
+	 * \return if the file has been written correctly
+	 *
+	 */
+	inline bool write(std::string out, int opt = NO_GHOST)
+	{
+		if (hasEnding(out,".csv"))
+		{
+			// CSVWriter test
+			CSVWriter<openfpm::vector<point>, openfpm::vector<prop> > csv_writer;
+
+			std::string output = std::to_string(v_cl.getProcessUnitID()) + std::string("_") + out;
+
+			// Write the CSV
+			return csv_writer.write(output,v_pos.get(INTERNAL),v_prp.get(INTERNAL));
+		}
+
+		return false;
 	}
 };
 

@@ -84,7 +84,7 @@ class Graph_constructor_impl
 {
 public:
 	//! Construct cartesian graph
-	static Graph construct(size_t (& sz)[dim], Box<dim,T> dom)
+	static Graph construct(const size_t (& sz)[dim], Box<dim,T> dom)
 	{
 		// Calculate the size of the hyper-cubes on each dimension
 
@@ -194,7 +194,7 @@ class Graph_constructor_impl<dim,Graph,NO_EDGE,T,dim_c,pos...>
 {
 public:
 	//! Construct cartesian graph
-	static Graph construct(size_t ( & sz)[dim], Box<dim,T> dom)
+	static Graph construct(const size_t ( & sz)[dim], Box<dim,T> dom)
 	{
 		// Calculate the size of the hyper-cubes on each dimension
 
@@ -369,7 +369,7 @@ public:
 	 *
 	 */
 	template <unsigned int se,typename T, unsigned int dim_c, int... pos>
-	static Graph construct(size_t (& sz)[dim], Box<dim,T> dom)
+	static Graph construct(const size_t (& sz)[dim], Box<dim,T> dom)
 	{
 		return Graph_constructor_impl<dim,Graph,se,T,dim_c,pos...>::construct(sz,dom);
 	}

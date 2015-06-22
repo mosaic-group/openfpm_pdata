@@ -541,7 +541,7 @@ public:
 	 *
 	 */
 
-	dec_optimizer(Graph & g, size_t (& sz)[dim])
+	dec_optimizer(Graph & g, const size_t (& sz)[dim])
 	:gh(sz)
 	{
 		// The graph g is suppose to represent a cartesian grid

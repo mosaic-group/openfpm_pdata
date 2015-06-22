@@ -13,59 +13,6 @@
 
 BOOST_AUTO_TEST_SUITE( vector_dist_test )
 
-BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use )
-{
-	typedef Point_test<float> p;
-	typedef Point<2,float> s;
-
-	Vcluster & v_cl = *global_v_cluster;
-
-    // set the seed
-	// create the random generator engine
-	std::srand(v_cl.getProcessUnitID());
-    std::default_random_engine eg;
-    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
-
-	Box<2,float> box({0.0,0.0},{1.0,1.0});
-	vector_dist<Point<2,float>, Point_test<float>, Box<2,float>, CartDecomposition<2,float> > vd(4096,box);
-
-	auto it = vd.getIterator();
-
-	while (it.isNext())
-	{
-		auto key = it.get();
-
-		vd.template getPos<s::x>(key)[0] = ud(eg);
-		vd.template getPos<s::x>(key)[1] = ud(eg);
-
-		++it;
-	}
-
-	vd.map();
-
-	// Check if we have all the local particles
-	size_t cnt = 0;
-	auto & ct = vd.getDecomposition();
-	it = vd.getIterator();
-
-	while (it.isNext())
-	{
-		auto key = it.get();
-
-		// Check if local
-		BOOST_REQUIRE_EQUAL(ct.isLocal(vd.template getPos<s::x>(key)),true);
-
-		cnt++;
-
-		++it;
-	}
-
-	//
-	v_cl.reduce(cnt);
-	v_cl.execute();
-	BOOST_REQUIRE_EQUAL(cnt,4096);
-}
-
 BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 {
 	// Communication object
@@ -75,7 +22,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	typedef Point<2,float> s;
 
 	Box<2,float> box({0.0,0.0},{1.0,1.0});
-	size_t g_div[]= {1000,1000};
+	size_t g_div[]= {16,16};
 
 	// processor division on y direction
 	size_t point_div = g_div[1] / v_cl.getProcessingUnits();
@@ -91,8 +38,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	Point<2,float> m_spacing = spacing / 2;
 
 	// create a sub iterator
-	grid_key_dx<2> start(0,point_div * v_cl.getProcessUnitID());
-	grid_key_dx<2> stop(999,point_div * (v_cl.getProcessUnitID() + 1) - 1);
+	grid_key_dx<2> start(point_div * v_cl.getProcessUnitID(),0);
+	grid_key_dx<2> stop(point_div * (v_cl.getProcessUnitID() + 1) - 1,g_div[0]);
 	auto g_sub = g_info.getSubIterator(start,stop);
 
 	// Vector of particles
@@ -120,11 +67,18 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 		++it;
 	}
 
+	// Debug write the particles
+	vd.write("Particles_before_map.csv");
+
 	// redistribute the particles according to the decomposition
 	vd.map();
 
+	// Debug write particles
+	vd.write("Particles_after_map.csv");
+
 	// Fill the scalar with the particle position
 	const auto & ct = vd.getDecomposition();
+
 	it = vd.getIterator();
 
 	while (it.isNext())
@@ -141,12 +95,18 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	}
 
 	// set the ghost based on the radius cut off
-	Ghost<2,float> g(0.01);
+	Ghost<2,float> g(spacing.get(0));
 
 	vd.setGhost(g);
 
+	//! Output the decomposition
+	ct.write(".");
+
 	// do a ghost get
 	vd.template ghost_get<p::s,p::v>();
+
+	// Debug write the particles with GHOST
+	vd.write("Particles_with_ghost.csv",WITH_GHOST);
 
 	// Get the decomposition
 	const auto & dec = vd.getDecomposition();
@@ -198,6 +158,59 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 
 		BOOST_REQUIRE_EQUAL(n_point,vb.get(i));
 	}
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use )
+{
+	typedef Point_test<float> p;
+	typedef Point<2,float> s;
+
+	Vcluster & v_cl = *global_v_cluster;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+	Box<2,float> box({0.0,0.0},{1.0,1.0});
+	vector_dist<Point<2,float>, Point_test<float>, Box<2,float>, CartDecomposition<2,float> > vd(4096,box);
+
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.template getPos<s::x>(key)[0] = ud(eg);
+		vd.template getPos<s::x>(key)[1] = ud(eg);
+
+		++it;
+	}
+
+	vd.map();
+
+	// Check if we have all the local particles
+	size_t cnt = 0;
+	auto & ct = vd.getDecomposition();
+	it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		// Check if local
+		BOOST_REQUIRE_EQUAL(ct.isLocal(vd.template getPos<s::x>(key)),true);
+
+		cnt++;
+
+		++it;
+	}
+
+	//
+	v_cl.reduce(cnt);
+	v_cl.execute();
+	BOOST_REQUIRE_EQUAL(cnt,4096);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

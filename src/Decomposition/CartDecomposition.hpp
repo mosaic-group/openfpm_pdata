@@ -253,14 +253,6 @@ private:
 			ss_box.contained(sub_d);
 		}
 
-		//++++++++++++++++++++++++++++++++++++++++ Debug output NN boxes
-		{
-		VTKWriter<openfpm::vector<::SpaceBox<dim,T>>,VECTOR_BOX> vtk_box1;
-		vtk_box1.add(sub_domains);
-		vtk_box1.write(std::string("loc_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
-		}
-		//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 		// fill fine_s structure
 		// fine_s structure contain the processor id for each sub-sub-domain
 		// with sub-sub-domain we mean the sub-domain decomposition before
@@ -720,40 +712,10 @@ p1[0]<-----+         +----> p2[0]
 			}
 		}
 
-		//++++++++++++++++++++++++++++++++++++++++ Debug output NN boxes
-		{
-		for (size_t b = 0 ; b < boxes.size() ; b++)
-		{
-			VTKWriter<openfpm::vector<::SpaceBox<dim,T>>,VECTOR_BOX> vtk_box1;
-			vtk_box1.add(boxes.get(b));
-			vtk_box1.write(std::string("Processor_") + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(nn_processors.get(b)) + std::string(".vtk"));
-		}
-		}
-
-		//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 		// Intersect all the local sub-domains with the sub-domains of the contiguous processors
 
 		// Get the sub-domains of the near processors
 		v_cl.sendrecvMultipleMessagesNBX(nn_processors,boxes,CartDecomposition<dim,T,device_l,Memory,Domain,data_s>::message_alloc, this ,NEED_ALL_SIZE);
-
-		// ++++++++++++++++++++++++++++++++++++++++++ Check received boxes
-
-		{
-		VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box1;
-		for (size_t p = 0 ; p < nn_processors.size() ; p++)
-		{
-			size_t prc = nn_processors.get(p);
-
-			if (v_cl.getProcessUnitID() == 0)
-				std::cout << "Received from " << prc << "      n_boxes: " << nn_processor_subdomains[prc].bx.size() << "\n";
-
-			vtk_box1.add(nn_processor_subdomains[prc].bx);
-		}
-		vtk_box1.write(std::string("rb_Processor_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
-		}
-
-		// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 		box_nn_processor_int.resize(sub_domains.size());
 
@@ -864,24 +826,6 @@ p1[0]<-----+         +----> p2[0]
 					}
 				}
 			}
-
-
-			// ++++++++++++++++++++++++++++++++++++++++ Debug +++++++++++++++++++++++++++++
-
-			{
-			VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box1;
-			for (size_t p = 0 ; p < box_nn_processor_int.size() ; p++)
-			{
-				for (size_t s = 0 ; s < box_nn_processor_int.get(p).size() ; s++)
-				{
-					vtk_box1.add(box_nn_processor_int.get(p).get(s).nbx);
-				}
-			}
-			vtk_box1.write(std::string("inte_Processor_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
-			}
-
-			// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 		}
 	}
 
@@ -1233,6 +1177,50 @@ p1[0]<-----+         +----> p2[0]
 	inline size_t ProctoID(size_t p)
 	{
 		return nn_processor_subdomains[p].id;
+	}
+
+	/*! \brief Write the decomposition as VTK file
+	 *
+	 * The function generate several files
+	 *
+	 * 1) p_sub_X.vtk domain for the processor X as union of sub-domain
+	 * 2) sub_np_c_X.vtk sub-domain of the near processors contiguous to the processor X (Color encoded)
+	 * 3) sub_X_inte_g_np.vtk Intersection between the ghosts of the near processors and the processors X sub-domains (Color encoded)
+	 *
+	 * where X is the processor number
+	 *
+	 * \param output directory where to write the files
+	 *
+	 */
+	bool write(std::string output) const
+	{
+		//! p_sub_X.vtk domain for the processor X as union of sub-domain
+		VTKWriter<openfpm::vector<::SpaceBox<dim,T>>,VECTOR_BOX> vtk_box1;
+		vtk_box1.add(sub_domains);
+		vtk_box1.write(std::string("p_sub_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
+
+		//! sub_np_c_X.vtk sub-domain of the near processors contiguous to the processor X (Color encoded)
+		VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box2;
+		for (size_t p = 0 ; p < nn_processors.size() ; p++)
+		{
+			size_t prc = nn_processors.get(p);
+			auto it = nn_processor_subdomains.find(prc);
+			if (it != nn_processor_subdomains.end())
+				vtk_box2.add(nn_processor_subdomains.at(prc).bx);
+		}
+		vtk_box2.write(std::string("sub_np_c_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
+
+		//! sub_X_inte_g_np.vtk Intersection between the ghosts of the near processors and the processors X sub-domains (Color encoded)
+		VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box3;
+		for (size_t p = 0 ; p < box_nn_processor_int.size() ; p++)
+		{
+			for (size_t s = 0 ; s < box_nn_processor_int.get(p).size() ; s++)
+			{
+				auto & diocane = box_nn_processor_int.get(p).get(s).nbx;
+				vtk_box3.add(diocane);
+			}
+		}
+		vtk_box3.write(std::string("sub_") + std::to_string(v_cl.getProcessUnitID()) + std::string("_inte_g_np") + std::string(".vtk"));
 	}
 };
 

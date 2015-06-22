@@ -34,6 +34,8 @@ class vector_dist_iterator
 	vector_dist_iterator(Vcluster_object_array<device_v> & gk, size_t offset = 0)
 	:v_c(0),vList(gk),v_it(offset)
 	{
+		if ( offset >= vList.get(0).size() )
+			v_c++;
 	}
 
 	// Destructor
