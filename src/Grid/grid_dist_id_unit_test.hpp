@@ -6,10 +6,10 @@
 
 BOOST_AUTO_TEST_SUITE( grid_dist_id_test )
 
-template<typename iterator> void jacobi_iteration(iterator g_it, grid_dist_id<2, scalar<float>, CartDecomposition<2,size_t>> & g_dist)
+template<typename iterator> void jacobi_iteration(iterator g_it, grid_dist_id<2, float, scalar<float>, CartDecomposition<2,float>> & g_dist)
 {
 	// scalar
-	typedef scalar<size_t> S;
+	typedef scalar<float> S;
 
 	// iterator
 
@@ -30,6 +30,9 @@ template<typename iterator> void jacobi_iteration(iterator g_it, grid_dist_id<2,
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 {
+	// Domain
+	Box<2,float> domain({0.0,0.0},{1.0,1.0});
+
 	// Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
@@ -38,7 +41,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 
 	// Distributed grid with id decomposition
 
-	grid_dist_id<2, scalar<float>, CartDecomposition<2,size_t>> g_dist(sz);
+	grid_dist_id<2, float, scalar<float>, CartDecomposition<2,float>> g_dist(sz,domain);
 
 	// get the domain iterator
 

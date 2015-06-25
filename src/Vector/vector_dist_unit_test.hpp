@@ -94,9 +94,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 		++it;
 	}
 
-	// set the ghost based on the radius cut off
-	Ghost<2,float> g(spacing.get(0));
+	// set the ghost based on the radius cut off (make just a little bit smaller than the spacing)
+	Ghost<2,float> g(spacing.get(0) - spacing .get(0) * 0.0001);
 
+	// set the ghost
 	vd.setGhost(g);
 
 	//! Output the decomposition
@@ -131,20 +132,30 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 
 		bool is_in = false;
 		size_t b = 0;
+		size_t lb = 0;
 
 		// check if the received data is in one of the ghost boxes
 		for ( ; b < dec.getNGhostBox() ; b++)
 		{
 			if (dec.getGhostBox(b).isInside(vd.getPos<s::x>(key)) == true)
-			{is_in = true; break;}
+			{
+				is_in = true;
+
+				// Add
+				vb.get(b)++;
+				lb = b;
+			}
 		}
 		BOOST_REQUIRE_EQUAL(is_in,true);
 
 		// Check that the particle come from the correct processor
-		BOOST_REQUIRE_EQUAL(vd.getProp<p::v>(key)[0],dec.getGhostBoxProcessor(b));
+		BOOST_REQUIRE_EQUAL(vd.getProp<p::v>(key)[0],dec.getGhostBoxProcessor(lb));
 
-		// Add
-		vb.get(b)++;
+		if (b == 0)
+		{
+			int debug = 0;
+			debug++;
+		}
 
 		++g_it;
 	}

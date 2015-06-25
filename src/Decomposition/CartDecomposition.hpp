@@ -687,7 +687,7 @@ p1[0]<-----+         +----> p2[0]
 		{
 			if (ghost.template getLow(i) >= domain.template getHigh(i) / gr.size(i) || ghost.template getHigh(i)  >= domain.template getHigh(i) / gr.size(i))
 			{
-				std::cerr << "Error: Ghost are bigger that one domain" << "\n";
+				std::cerr << "Error " << __FILE__ << ":" << __LINE__  << " : Ghost are bigger than one domain" << "\n";
 			}
 		}
 #endif
@@ -1186,6 +1186,7 @@ p1[0]<-----+         +----> p2[0]
 	 * 1) p_sub_X.vtk domain for the processor X as union of sub-domain
 	 * 2) sub_np_c_X.vtk sub-domain of the near processors contiguous to the processor X (Color encoded)
 	 * 3) sub_X_inte_g_np.vtk Intersection between the ghosts of the near processors and the processors X sub-domains (Color encoded)
+	 * 4) sub_X_ghost.vtk ghost for the processor X (Color encoded)
 	 *
 	 * where X is the processor number
 	 *
@@ -1216,11 +1217,22 @@ p1[0]<-----+         +----> p2[0]
 		{
 			for (size_t s = 0 ; s < box_nn_processor_int.get(p).size() ; s++)
 			{
-				auto & diocane = box_nn_processor_int.get(p).get(s).nbx;
-				vtk_box3.add(diocane);
+				vtk_box3.add(box_nn_processor_int.get(p).get(s).nbx);
 			}
 		}
 		vtk_box3.write(std::string("sub_") + std::to_string(v_cl.getProcessUnitID()) + std::string("_inte_g_np") + std::string(".vtk"));
+
+
+		//! sub_X_ghost.vtk ghost for the processor X (Color encoded)
+		VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box4;
+		for (size_t p = 0 ; p < box_nn_processor_int.size() ; p++)
+		{
+			for (size_t s = 0 ; s < box_nn_processor_int.get(p).size() ; s++)
+			{
+				vtk_box4.add(box_nn_processor_int.get(p).get(s).bx);
+			}
+		}
+		vtk_box4.write(std::string("sub_") + std::to_string(v_cl.getProcessUnitID()) + std::string("_ghost") + std::string(".vtk"));
 	}
 };
 

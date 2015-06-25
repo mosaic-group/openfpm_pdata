@@ -8,36 +8,35 @@
 #include "mathutil.hpp"
 #include "grid_dist_id_iterator.hpp"
 #include "grid_dist_key.hpp"
+#include "NN/CellList/CellDecomposer.hpp"
 
 #define SUB_UNIT_FACTOR 64
 
 
 /*! \brief This is a distributed grid
  *
- * Implementation of a distributed grid with id decomposition. A distributed grid is a grid distributed
- * across processors. The decomposition is performed on the id of the elements
+ * Implementation of a distributed grid with decomposition on the ids.
+ * A distributed grid is a grid distributed across processors.
+ * The decomposition is performed on the ids of the elements
  *
- * [Examples]
- *
- * on 1D where the id is from 1 to N
- * processor k take M contiguous elements
- *
- * on 3D where (for example)
- * processor k take M id-connected elements
  *
  * \param dim Dimensionality of the grid
- * \param T type of grid
+ * \param St Type of space where the grid is living
+ * \param T object the grid is storing
  * \param Decomposition Class that decompose the grid for example CartDecomposition
  * \param Mem Is the allocator
  * \param device type of base structure is going to store the data
  *
  */
 
-template<unsigned int dim, typename T, typename Decomposition,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T> >
+template<unsigned int dim, typename St, typename T, typename Decomposition,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T> >
 class grid_dist_id
 {
+	// Domain
+	Box<dim,St> domain;
+
 	// Ghost expansion
-	Box<dim,size_t> ghost;
+	Ghost<dim,St> ghost;
 
 	//! Local grids
 	Vcluster_object_array<device_grid> loc_grid;
@@ -48,8 +47,10 @@ class grid_dist_id
 	//! Size of the grid on each dimension
 	size_t g_sz[dim];
 
-	//! Communicator class
+	//! Structure that divide the space into cells
+	CellDecomposer_sm<dim,St> cd_sm;
 
+	//! Communicator class
 	Vcluster & v_cl;
 
 	/*! \brief Get the grid size
@@ -99,8 +100,8 @@ class grid_dist_id
 public:
 
 	//! constructor
-	grid_dist_id(Vcluster v_cl, Decomposition & dec, size_t (& g_sz)[dim], Box<dim,size_t> & ghost)
-	:ghost(ghost),loc_grid(NULL),v_cl(v_cl),dec(dec)
+	grid_dist_id(Vcluster v_cl, Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,T> & ghost)
+	:domain(domain),cd_sm(domain,g_sz,0),ghost(ghost),loc_grid(NULL),v_cl(v_cl),dec(dec)
 	{
 		// fill the global size of the grid
 		for (int i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
@@ -123,9 +124,14 @@ public:
 		Create();
 	}
 
-	//! constructor
-	grid_dist_id(size_t (& g_sz)[dim])
-	:dec(Decomposition(*global_v_cluster)),v_cl(*global_v_cluster)
+	/*! \brief Constrcuctor
+	 *
+	 * \param g_sz array with the grid size on each dimension
+	 * \param domain
+	 *
+	 */
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain)
+	:domain(domain),cd_sm(domain,g_sz,0),ghost(0),dec(Decomposition(*global_v_cluster)),v_cl(*global_v_cluster)
 	{
 		// fill the global size of the grid
 		for (int i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
@@ -141,11 +147,8 @@ public:
 		for (int i = 0 ; i < dim ; i++)
 		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
 
-		// Box
-		Box<dim,size_t> b(g_sz);
-
 		// Create the sub-domains
-		dec.setParameters(div,b);
+		dec.setParameters(div,domain);
 
 		// Create local grid
 		Create();
@@ -168,10 +171,13 @@ public:
 
 	void Create()
 	{
+		// Box used for rounding error
+		Box<dim,St> rnd_box;
+		for (size_t i = 0 ; i < dim ; i++)	{rnd_box.setHigh(i,0.5); rnd_box.setLow(i,0.5);}
+
 		// ! Create an hyper-cube approximation.
 		// ! In order to work on grid_dist the decomposition
 		// ! has to be a set of hyper-cube
-
 		dec.hyperCube();
 
 		// Get the number of local grid needed
@@ -188,15 +194,34 @@ public:
 		for (size_t i = 0 ; i < n_grid ; i++)
 		{
 			// Get the local hyper-cube
+			SpaceBox<dim,St> sp = dec.getLocalHyperCube(i);
 
-			SpaceBox<dim,size_t> sp = dec.getLocalHyperCube(i);
+			// Convert sp into grid units
+			sp /= cd_sm.getCellBox().getP2();
 
-			// Calculate the local grid size
+			// enlarge by 0.5 for rounding
+			sp.enlarge(rnd_box);
 
-			getGridSize(sp,l_res);
+			// Convert from SpaceBox<dim,float> to SpaceBox<dim,size_t>
+			SpaceBox<dim,size_t> sp_t = sp;
+
+			// convert the ghost from space coordinate to grid units
+			Ghost<dim,St> g_int = ghost;
+			g_int /= cd_sm.getCellBox().getP2();
+
+			// enlarge by 0.5 for rounding
+			g_int.enlarge(rnd_box);
+
+			// convert from Ghost<dim,St> to Ghost<dim,size_t>
+			Ghost<dim,size_t> g_int_t = g_int;
+
+			// Enlarge sp with the Ghost size
+			sp_t.enlarge(g_int_t);
+
+			// Get the local size
+			for (size_t i = 0 ; i < dim ; i++) {l_res[i] = sp_t.getHigh(i) - sp_t.getLow(i);}
 
 			// Set the dimensions of the local grid
-
 			loc_grid.get(i).template resize<Memory>(l_res);
 		}
 	}
@@ -251,13 +276,7 @@ public:
  * Implementation of a distributed grid with id decomposition. A distributed grid is a grid distributed
  * across processors. The decomposition is performed on the id of the elements
  *
- * [Examples]
- *
- * on 1D where the id is from 1 to N
- * processor k take M contiguous elements
- *
- * on 3D where (for example)
- * processor k take M id-connected elements
+ * 1D specialization
  *
  * \param dim Dimensionality of the grid
  * \param T type of grid
@@ -270,8 +289,8 @@ public:
 template<typename T, typename Decomposition,typename Memory , typename device_grid >
 class grid_dist_id<1,T,Decomposition,Memory,device_grid>
 {
-	// Ghost expansion
-	Box<1,size_t> ghost;
+	// Ghost
+	Ghost<1,T> ghost;
 
 	//! Local grids
 	Vcluster_object_array<device_grid> loc_grid;
@@ -327,7 +346,7 @@ class grid_dist_id<1,T,Decomposition,Memory,device_grid>
 public:
 
 	//! constructor
-	grid_dist_id(Vcluster v_cl, Decomposition & dec, size_t (& g_sz)[1], Box<1,size_t> & ghost)
+	grid_dist_id(Vcluster v_cl, Decomposition & dec, size_t (& g_sz)[1], Box<1,T> & ghost)
 	:ghost(ghost),loc_grid(NULL),v_cl(v_cl)
 	{
 		// fill the global size of the grid
@@ -339,7 +358,7 @@ public:
 
 	//! constructor
 	grid_dist_id(size_t (& g_sz)[1])
-	:v_cl(*global_v_cluster)
+	:v_cl(*global_v_cluster),ghost(0)
 	{
 		// fill the global size of the grid
 		for (int i = 0 ; i < 1 ; i++)	{this->g_sz[i] = g_sz[i];}

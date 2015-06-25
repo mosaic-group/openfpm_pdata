@@ -1293,8 +1293,12 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
  ../../OpenFPM_data/src/Space/SpaceBox.hpp \
  ../../OpenFPM_data/src/Space/Shape/Point.hpp \
  ../../OpenFPM_data/src/Space/Shape/Box.hpp \
- ../../OpenFPM_data/src/Space/Ghost.hpp Grid/grid_dist_id_iterator.hpp \
- Grid/grid_dist_key.hpp ../../OpenFPM_data/src/Point_test.hpp \
+ ../../OpenFPM_data/src/Space/Ghost.hpp \
+ ../../OpenFPM_data/src/Space/SpaceBox.hpp Grid/grid_dist_id_iterator.hpp \
+ Grid/grid_dist_key.hpp \
+ ../../OpenFPM_data/src/NN/CellList/CellDecomposer.hpp \
+ ../../OpenFPM_data/src/Space/Matrix.hpp \
+ ../../OpenFPM_data/src/Point_test.hpp \
  ../../OpenFPM_data/src/base_type.hpp \
  ../../OpenFPM_data/src/Point_orig.hpp \
  ../../OpenFPM_data/src/Grid/Encap.hpp \
@@ -1367,8 +1371,6 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
  /usr/include/boost/iostreams/detail/path.hpp \
  /usr/include/boost/config/abi_prefix.hpp \
  /usr/include/boost/config/abi_suffix.hpp dec_optimizer.hpp \
- ../../OpenFPM_data/src/NN/CellList/CellDecomposer.hpp \
- ../../OpenFPM_data/src/Space/Matrix.hpp \
  /usr/include/c++/4.8.3/unordered_map \
  /usr/include/c++/4.8.3/bits/hashtable.h \
  /usr/include/c++/4.8.3/bits/hashtable_policy.h \
@@ -4254,9 +4256,15 @@ Grid/grid_dist_id.hpp:
 
 ../../OpenFPM_data/src/Space/Ghost.hpp:
 
+../../OpenFPM_data/src/Space/SpaceBox.hpp:
+
 Grid/grid_dist_id_iterator.hpp:
 
 Grid/grid_dist_key.hpp:
+
+../../OpenFPM_data/src/NN/CellList/CellDecomposer.hpp:
+
+../../OpenFPM_data/src/Space/Matrix.hpp:
 
 ../../OpenFPM_data/src/Point_test.hpp:
 
@@ -4413,10 +4421,6 @@ metis_util.hpp:
 /usr/include/boost/config/abi_suffix.hpp:
 
 dec_optimizer.hpp:
-
-../../OpenFPM_data/src/NN/CellList/CellDecomposer.hpp:
-
-../../OpenFPM_data/src/Space/Matrix.hpp:
 
 /usr/include/c++/4.8.3/unordered_map:
 
