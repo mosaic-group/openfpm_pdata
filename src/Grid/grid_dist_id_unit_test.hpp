@@ -72,16 +72,16 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 	BOOST_REQUIRE_EQUAL(count,1024*1024);
 
 	size_t count_check = 0;
-	dom = g_dist.getDomainIterator();
+	auto dom2 = g_dist.getDomainIterator();
 
-	while (dom.isNext())
+	while (dom2.isNext())
 	{
-		auto key = dom.get();
+		auto key = dom2.get();
 
 		BOOST_REQUIRE_EQUAL(g_dist.template get<0>(key),count_check);
 
 		count_check++;
-		++dom;
+		++dom2;
 	}
 
 /*	auto g_it = g_dist.getIteratorBulk();

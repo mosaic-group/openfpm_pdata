@@ -79,7 +79,7 @@ public:
  *
  */
 
-template<unsigned int dim, typename Graph, unsigned int se,typename T, unsigned int dim_c, int... pos>
+template<unsigned int dim, typename Graph, int se,typename T, unsigned int dim_c, int... pos>
 class Graph_constructor_impl
 {
 public:
@@ -368,7 +368,7 @@ public:
 	 * \tparam pos... (optional)one or more integer indicating the spatial properties
 	 *
 	 */
-	template <unsigned int se,typename T, unsigned int dim_c, int... pos>
+	template <int se,typename T, unsigned int dim_c, int... pos>
 	static Graph construct(const size_t (& sz)[dim], Box<dim,T> dom)
 	{
 		return Graph_constructor_impl<dim,Graph,se,T,dim_c,pos...>::construct(sz,dom);

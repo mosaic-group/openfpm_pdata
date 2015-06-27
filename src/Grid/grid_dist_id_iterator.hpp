@@ -8,12 +8,47 @@
 #ifndef GRID_DIST_ID_ITERATOR_HPP_
 #define GRID_DIST_ID_ITERATOR_HPP_
 
+/*! \brief This structure store the Box that define the domain inside the Ghost + domain box
+ *
+	\verbatim
+
+                          (Ghost + Domain)
+     +------------------+
+     |                  |
+     |  +------------+ <---------- (Domain)
+     |  |            |  |
+     |  |  Domain    |  |
+     |  |  Box       |  |
+     |  |            |  |
+     |  |            |  |
+     |  +------------+  |
+     |                  |
+     +------------------+
+(0,0)
+
+	\endverbatim
+
+ *
+ *  * Domain
+ *
+ * \tparam dim dimensionality
+ *
+ */
+template<unsigned int dim>
+struct GBoxes
+{
+	//! Ghost + Domain ghost
+	Box<dim,size_t> GDbox;
+	//! Domain box
+	Box<dim,size_t> Dbox;
+};
+
 #include "grid_dist_key.hpp"
 #include "VCluster.hpp"
 
 /*! \brief Distributed grid iterator
  *
- * Iterator across the local element of the distributed grid
+ * Iterator across the local elements of the distributed grid
  *
  */
 
@@ -25,6 +60,9 @@ class grid_dist_iterator
 
 	//! List of the grids we are going to iterate
 	Vcluster_object_array<device_grid> & gList;
+
+	//! Extension of each grid: domain and ghost + domain
+	const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
 
 	//! Actual iterator
 	grid_key_dx_iterator_sub<dim> a_it;
@@ -39,13 +77,12 @@ class grid_dist_iterator
 	 * \param gk std::vector of the local grid
 	 *
 	 */
-	grid_dist_iterator(Vcluster_object_array<device_grid> & gk, size_t m)
-	:g_c(0),gList(gk),m(m)
+	grid_dist_iterator(Vcluster_object_array<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
+	:g_c(0),gdb_ext(gdb_ext),gList(gk),m(m)
 	{
 		// Initialize the current iterator
 		// with the first grid
-
-		a_it.reinitialize(gList[0].getDomainIterator());
+		a_it.reinitialize(gList[0].getIterator(gdb_ext.get(0).Dbox.getKP1(),gdb_ext.get(0).Dbox.getKP2()));
 	}
 
 	// Destructor
@@ -58,15 +95,16 @@ class grid_dist_iterator
 	 * assign
 	 *
 	 */
-	grid_dist_iterator<dim,device_grid> & operator=(const grid_dist_iterator<dim,device_grid> & gdi)
+/*	grid_dist_iterator<dim,device_grid> & operator=(const grid_dist_iterator<dim,device_grid> & gdi)
 	{
 		g_c = gdi.g_c;
 		gList = gdi.gList;
 		a_it = gdi.a_it;
 		m = gdi.m;
+		gdb_ext = gdi.gdb_ext;
 
 		return *this;
-	}
+	}*/
 
 	/*! \brief Get the next element
 	 *
@@ -89,9 +127,10 @@ class grid_dist_iterator
 			g_c++;
 
 			// get the next grid iterator
-
 			if (g_c < gList.size())
-				a_it = gList[g_c].getDomainIterator();
+			{
+				a_it.reinitialize(gList[g_c].getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2()));
+			}
 		}
 
 		return *this;
@@ -102,7 +141,6 @@ class grid_dist_iterator
 	 * \return true if there is the next, false otherwise
 	 *
 	 */
-
 	bool isNext()
 	{
 		// If there are no other grid stop

@@ -44,6 +44,9 @@ class grid_dist_id
 	//! Space Decomposition
 	Decomposition dec;
 
+	//! Extension of each grid: Domain and ghost + domain
+	openfpm::vector<GBoxes<device_grid::dims>> gdb_ext;
+
 	//! Size of the grid on each dimension
 	size_t g_sz[dim];
 
@@ -190,9 +193,10 @@ public:
 		size_t l_res[dim];
 
 		// Allocate the grids
-
 		for (size_t i = 0 ; i < n_grid ; i++)
 		{
+			gdb_ext.add();
+
 			// Get the local hyper-cube
 			SpaceBox<dim,St> sp = dec.getLocalHyperCube(i);
 
@@ -215,8 +219,14 @@ public:
 			// convert from Ghost<dim,St> to Ghost<dim,size_t>
 			Ghost<dim,size_t> g_int_t = g_int;
 
+			// for each local grid save the extension of ghost + domain part
+			gdb_ext.last().Dbox = sp_t;
+
 			// Enlarge sp with the Ghost size
-			sp_t.enlarge(g_int_t);
+			sp_t.enlarge_fix_P1(g_int_t);
+
+			// Translate the domain (see GDBoxes for a visual meaning)
+			gdb_ext.last().Dbox.translate(g_int_t.getP1());
 
 			// Get the local size
 			for (size_t i = 0 ; i < dim ; i++) {l_res[i] = sp_t.getHigh(i) - sp_t.getLow(i);}
@@ -237,7 +247,7 @@ public:
 	 */
 	grid_dist_iterator<dim,device_grid> getDomainIterator()
 	{
-		grid_dist_iterator<dim,device_grid> it(loc_grid,0);
+		grid_dist_iterator<dim,device_grid> it(loc_grid,gdb_ext);
 
 		return it;
 	}
@@ -299,8 +309,10 @@ class grid_dist_id<1,T,Decomposition,Memory,device_grid>
 	size_t g_sz[1];
 
 	//! Communicator class
-
 	Vcluster & v_cl;
+
+	//! Extension of each grid: Domain and ghost + domain
+	openfpm::vector<GBoxes<device_grid::dims>> gdb_ext;
 
 	/*! \brief Get the grid size
 	 *
@@ -349,6 +361,9 @@ public:
 	grid_dist_id(Vcluster v_cl, Decomposition & dec, size_t (& g_sz)[1], Box<1,T> & ghost)
 	:ghost(ghost),loc_grid(NULL),v_cl(v_cl)
 	{
+		// All this code is completely untested to assume broken
+		std::cout << "Error: " << __FILE__ << ":" << __LINE__ << " this structure is untested to assume broken ";
+
 		// fill the global size of the grid
 		for (int i = 0 ; i < 1 ; i++)	{this->g_sz[i] = g_sz[i];}
 
@@ -360,6 +375,9 @@ public:
 	grid_dist_id(size_t (& g_sz)[1])
 	:v_cl(*global_v_cluster),ghost(0)
 	{
+		// All this code is completely untested to assume broken
+		std::cout << "Error: " << __FILE__ << ":" << __LINE__ << " this structure is untested to assume broken ";
+
 		// fill the global size of the grid
 		for (int i = 0 ; i < 1 ; i++)	{this->g_sz[i] = g_sz[i];}
 
@@ -376,24 +394,20 @@ public:
 		size_t n_grid = 1;
 
 		// create local grids for each hyper-cube
-
 		loc_grid = v_cl.allocate<device_grid>(n_grid);
 
 		// Size of the grid on each dimension
 		size_t l_res[1];
 
 		// Calculate the local grid size
-
 		l_res[0] = g_sz[0] / v_cl.getProcessingUnits();
 
 		// Distribute the remaining
-
 		size_t residual = g_sz[0] % v_cl.getProcessingUnits();
 		if (v_cl.getProcessUnitID() < residual)
 			l_res[0]++;
 
 		// Set the dimensions of the local grid
-
 		loc_grid.get(0).template resize<Memory>(l_res);
 	}
 
@@ -408,7 +422,7 @@ public:
 	 */
 	grid_dist_iterator<1,device_grid> getDomainIterator()
 	{
-		grid_dist_iterator<1,device_grid> it(loc_grid,0);
+		grid_dist_iterator<1,device_grid> it(loc_grid,gdb_ext);
 
 		return it;
 	}
