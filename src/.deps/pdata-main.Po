@@ -1298,14 +1298,12 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
  Grid/grid_dist_key.hpp \
  ../../OpenFPM_data/src/NN/CellList/CellDecomposer.hpp \
  ../../OpenFPM_data/src/Space/Matrix.hpp \
- ../../OpenFPM_data/src/Point_test.hpp \
- ../../OpenFPM_data/src/base_type.hpp \
- ../../OpenFPM_data/src/Point_orig.hpp \
- ../../OpenFPM_data/src/Grid/Encap.hpp \
- Decomposition/CartDecomposition.hpp Decomposition/Decomposition.hpp \
- ../../OpenFPM_data/src/global_const.hpp SubdomainGraphNodes.hpp \
- metis_util.hpp ../../metis_install/include/metis.h \
- /usr/include/inttypes.h ../../OpenFPM_IO/src/VTKWriter.hpp \
+ ../../OpenFPM_data/src/util/object_util.hpp \
+ ../../OpenFPM_data/src/util/object_creator.hpp \
+ ../../OpenFPM_data/src/util/object_s_di.hpp \
+ ../../OpenFPM_data/src/util/object_si_d.hpp \
+ ../../OpenFPM_devices/src/memory/ExtPreAlloc.hpp \
+ ../../OpenFPM_IO/src/VTKWriter.hpp \
  ../../OpenFPM_IO/src/VTKWriter_graph.hpp \
  ../../OpenFPM_IO/src/VTKWriter_vector_box.hpp \
  /usr/include/boost/math/special_functions/pow.hpp \
@@ -1370,7 +1368,15 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
  /usr/include/boost/iostreams/detail/config/dyn_link.hpp \
  /usr/include/boost/iostreams/detail/path.hpp \
  /usr/include/boost/config/abi_prefix.hpp \
- /usr/include/boost/config/abi_suffix.hpp dec_optimizer.hpp \
+ /usr/include/boost/config/abi_suffix.hpp \
+ ../../OpenFPM_data/src/Point_test.hpp \
+ ../../OpenFPM_data/src/base_type.hpp \
+ ../../OpenFPM_data/src/Point_orig.hpp \
+ ../../OpenFPM_data/src/Grid/Encap.hpp \
+ Decomposition/CartDecomposition.hpp Decomposition/Decomposition.hpp \
+ ../../OpenFPM_data/src/global_const.hpp SubdomainGraphNodes.hpp \
+ metis_util.hpp ../../metis_install/include/metis.h \
+ /usr/include/inttypes.h dec_optimizer.hpp \
  /usr/include/c++/4.8.3/unordered_map \
  /usr/include/c++/4.8.3/bits/hashtable.h \
  /usr/include/c++/4.8.3/bits/hashtable_policy.h \
@@ -1394,11 +1400,6 @@ pdata-main.o: main.cpp /usr/include/stdc-predef.h \
  ../../OpenFPM_devices/src/memory/PreAllocHeapMemory.hpp \
  ../../OpenFPM_devices/src/memory/HeapMemory.hpp \
  ../../OpenFPM_devices/src/memory/PtrMemory.hpp \
- ../../OpenFPM_data/src/util/object_util.hpp \
- ../../OpenFPM_data/src/util/object_creator.hpp \
- ../../OpenFPM_data/src/util/object_s_di.hpp \
- ../../OpenFPM_data/src/util/object_si_d.hpp \
- ../../OpenFPM_devices/src/memory/ExtPreAlloc.hpp \
  ../../OpenFPM_IO/src/CSVWriter.hpp \
  ../../OpenFPM_IO/src/csv_multiarray.hpp \
  Decomposition/CartDecomposition_unit_test.hpp \
@@ -4266,27 +4267,15 @@ Grid/grid_dist_key.hpp:
 
 ../../OpenFPM_data/src/Space/Matrix.hpp:
 
-../../OpenFPM_data/src/Point_test.hpp:
+../../OpenFPM_data/src/util/object_util.hpp:
 
-../../OpenFPM_data/src/base_type.hpp:
+../../OpenFPM_data/src/util/object_creator.hpp:
 
-../../OpenFPM_data/src/Point_orig.hpp:
+../../OpenFPM_data/src/util/object_s_di.hpp:
 
-../../OpenFPM_data/src/Grid/Encap.hpp:
+../../OpenFPM_data/src/util/object_si_d.hpp:
 
-Decomposition/CartDecomposition.hpp:
-
-Decomposition/Decomposition.hpp:
-
-../../OpenFPM_data/src/global_const.hpp:
-
-SubdomainGraphNodes.hpp:
-
-metis_util.hpp:
-
-../../metis_install/include/metis.h:
-
-/usr/include/inttypes.h:
+../../OpenFPM_devices/src/memory/ExtPreAlloc.hpp:
 
 ../../OpenFPM_IO/src/VTKWriter.hpp:
 
@@ -4420,6 +4409,28 @@ metis_util.hpp:
 
 /usr/include/boost/config/abi_suffix.hpp:
 
+../../OpenFPM_data/src/Point_test.hpp:
+
+../../OpenFPM_data/src/base_type.hpp:
+
+../../OpenFPM_data/src/Point_orig.hpp:
+
+../../OpenFPM_data/src/Grid/Encap.hpp:
+
+Decomposition/CartDecomposition.hpp:
+
+Decomposition/Decomposition.hpp:
+
+../../OpenFPM_data/src/global_const.hpp:
+
+SubdomainGraphNodes.hpp:
+
+metis_util.hpp:
+
+../../metis_install/include/metis.h:
+
+/usr/include/inttypes.h:
+
 dec_optimizer.hpp:
 
 /usr/include/c++/4.8.3/unordered_map:
@@ -4485,16 +4496,6 @@ Vector/vector_dist_key.hpp:
 ../../OpenFPM_devices/src/memory/HeapMemory.hpp:
 
 ../../OpenFPM_devices/src/memory/PtrMemory.hpp:
-
-../../OpenFPM_data/src/util/object_util.hpp:
-
-../../OpenFPM_data/src/util/object_creator.hpp:
-
-../../OpenFPM_data/src/util/object_s_di.hpp:
-
-../../OpenFPM_data/src/util/object_si_d.hpp:
-
-../../OpenFPM_devices/src/memory/ExtPreAlloc.hpp:
 
 ../../OpenFPM_IO/src/CSVWriter.hpp:
 

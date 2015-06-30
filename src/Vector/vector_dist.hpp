@@ -393,8 +393,7 @@ public:
 	/*! \brief It synchronize getting the ghost particles
 	 *
 	 * \prp Properties to get
-	 * \opt options
-	 * 		NO_RELABEL: If the particles does not move avoid to relabel and send particle position
+	 * \opt options WITH_POSITION, it send also the positional information of the particles
 	 *
 	 */
 	template<int... prp> void ghost_get(size_t opt = WITH_POSITION)

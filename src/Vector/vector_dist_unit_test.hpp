@@ -123,10 +123,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	{
 		auto key = g_it.get();
 
-		float x0 = vd.getPos<s::x>(key)[0];
-		float x1 = vd.getPos<s::x>(key)[1] * 16;
-		float scalar = vd.template getProp<p::s>(key);
-
 		// Check the received data
 		BOOST_REQUIRE_EQUAL(vd.getPos<s::x>(key)[0] + vd.getPos<s::x>(key)[1] * 16,vd.template getProp<p::s>(key));
 
@@ -151,12 +147,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 		// Check that the particle come from the correct processor
 		BOOST_REQUIRE_EQUAL(vd.getProp<p::v>(key)[0],dec.getGhostBoxProcessor(lb));
 
-		if (b == 0)
-		{
-			int debug = 0;
-			debug++;
-		}
-
 		++g_it;
 	}
 
@@ -173,7 +163,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 
 BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use )
 {
-	typedef Point_test<float> p;
 	typedef Point<2,float> s;
 
 	Vcluster & v_cl = *global_v_cluster;

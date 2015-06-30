@@ -74,6 +74,20 @@ class CartDecomposition
 		size_t proc;
 	};
 
+	struct Box_dom
+	{
+		// Intersection between the local sub-domain enlarged by the ghost and the contiguous processor
+		// sub-domains (External ghost)
+		openfpm::vector< ::Box<dim,T> > ebx;
+
+		// Intersection between the contiguous processor sub-domain enlarged by the ghost with the
+		// local sub-domain (Internal ghost)
+		openfpm::vector< ::Box<dim,T> > ibx;
+
+		// Domain id
+		size_t dom;
+	};
+
 public:
 
 	//! Type of the domain we are going to decompose
@@ -101,10 +115,14 @@ private:
 	//! List of near processors
 	openfpm::vector<size_t> nn_processors;
 
-	//! for each sub-domain, contain the list of the neighborhood processors
+	//! for each sub-domain (first vector), contain the list (nested vector) of the neighborhood processors
 	//! and for each processor contain the boxes calculated from the intersection
-	//! of the sub-domain + ghost with the near-by processor sub-domain ()
+	//! of the sub-domains + ghost with the near-by processor sub-domain () and the other way around
+	//! \see calculateGhostBoxes
 	openfpm::vector< openfpm::vector< Box_proc > > box_nn_processor_int;
+
+	//! It store the same information of box_nn_processor_int organized by processor id
+	openfpm::vector< Box_dom > proc_int_box;
 
 	//! for each sub-domain, contain the list of the neighborhood processors
 	openfpm::vector<openfpm::vector<long unsigned int> > box_nn_processor;
@@ -325,6 +343,157 @@ private:
 
 			// add the iterator
 			++gk_it;
+		}
+	}
+
+	/*! \brief Create the box_nn_processor_int (bx part)  structure
+	 *
+	 * This structure store for each sub-domain of this processors enlarged by the ghost size the boxes that
+	 *  come from the intersection with the near processors sub-domains (External ghost box)
+	 *
+	 * \param ghost margins
+	 *
+	 * \note Are the G8_0 G9_0 G9_1 G5_0 boxes in calculateGhostBoxes
+	 * \see calculateGhostBoxes
+	 *
+	 */
+	void create_box_nn_processor_ext(Ghost<dim,T> & ghost)
+	{
+		box_nn_processor_int.resize(sub_domains.size());
+
+		// For each sub-domain
+		for (size_t i = 0 ; i < sub_domains.size() ; i++)
+		{
+			SpaceBox<dim,T> sub_with_ghost = sub_domains.get(i);
+
+			// enlarge the sub-domain with the ghost
+			sub_with_ghost.enlarge(ghost);
+
+			// resize based on the number of contiguous processors
+			box_nn_processor_int.get(i).resize(box_nn_processor.get(i).size());
+
+			// For each processor contiguous to this sub-domain
+			for (size_t j = 0 ; j < box_nn_processor.get(i).size() ; j++)
+			{
+				// Contiguous processor
+				size_t p_id = box_nn_processor.get(i).get(j);
+
+				// get the set of sub-domains of the contiguous processor p_id
+				openfpm::vector< ::Box<dim,T> > & p_box = nn_processor_subdomains[p_id].bx;
+
+				// near processor sub-domain intersections
+				openfpm::vector< ::Box<dim,T> > & p_box_int = box_nn_processor_int.get(i).get(j).bx;
+
+				// for each near processor sub-domain intersect with the enlarged local sub-domain and store it
+				for (size_t b = 0 ; b < p_box.size() ; b++)
+				{
+					::Box<dim,T> bi;
+
+					bool intersect = sub_with_ghost.Intersect(::Box<dim,T>(p_box.get(b)),bi);
+
+					if (intersect == true)
+					{
+						struct p_box pb;
+
+						pb.box = bi;
+						pb.proc = p_id;
+						pb.lc_proc = ProctoID(p_id);
+
+						vb_ext.add(pb);
+						p_box_int.add(bi);
+					}
+				}
+			}
+		}
+	}
+
+	/*! \brief Create the box_nn_processor_int (nbx part) structure, the geo_cell list and proc_int_box
+	 *
+	 * This structure store for each sub-domain of this processors the boxes that come from the intersection
+	 * of the near processors sub-domains enlarged by the ghost size (Internal ghost box). These boxes
+	 * fill a geometrical cell list. The proc_int_box store the same information ordered by near processors
+	 *
+	 * \param ghost margins
+	 *
+	 * \note Are the B8_0 B9_0 B9_1 B5_0 boxes in calculateGhostBoxes
+	 * \see calculateGhostBoxes
+	 *
+	 */
+	void create_box_nn_processor_int(Ghost<dim,T> & ghost)
+	{
+		box_nn_processor_int.resize(sub_domains.size());
+		proc_int_box.resize(getNNProcessors());
+
+		// For each sub-domain
+		for (size_t i = 0 ; i < sub_domains.size() ; i++)
+		{
+			// For each processor contiguous to this sub-domain
+			for (size_t j = 0 ; j < box_nn_processor.get(i).size() ; j++)
+			{
+				// Contiguous processor
+				size_t p_id = box_nn_processor.get(i).get(j);
+
+				// get the set of sub-domains of the contiguous processor p_id
+				openfpm::vector< ::Box<dim,T> > & nn_p_box = nn_processor_subdomains[p_id].bx;
+
+				// get the local processor id
+				size_t lc_proc = nn_processor_subdomains[p_id].id;
+
+				// For each near processor sub-domains enlarge and intersect with the local sub-domain and store the result
+				for (size_t k = 0 ; k < nn_p_box.size() ; k++)
+				{
+
+					// enlarge the near-processor sub-domain
+					::Box<dim,T> n_sub = nn_p_box.get(k);
+
+					// local sub-domain
+					::SpaceBox<dim,T> l_sub = sub_domains.get(i);
+
+					// Create a margin of ghost size around the near processor sub-domain
+					n_sub.enlarge(ghost);
+
+					// Intersect with the local sub-domain
+					p_box b_int;
+					bool intersect = n_sub.Intersect(l_sub,b_int.box);
+
+					// store if it intersect
+					if (intersect == true)
+					{
+						// fill with the processor id
+						b_int.proc = p_id;
+
+						// fill the local processor id
+						b_int.lc_proc = lc_proc;
+
+						// near processor sub-domain intersections
+						openfpm::vector< ::Box<dim,T> > & p_box_int = box_nn_processor_int.get(i).get(j).nbx;
+						p_box_int.add(b_int.box);
+						vb_int.add(b_int);
+
+						// store the box in proc_int_box calculating the id
+						Box_dom & pr_box_int = proc_int_box.get(ProctoID(p_id));
+						pr_box_int.ibx.add(b_int.box);
+
+						// update the geo_cell list
+
+						// get the boxes this box span
+						const grid_key_dx<dim> p1 = geo_cell.getCellGrid(b_int.box.getP1());
+						const grid_key_dx<dim> p2 = geo_cell.getCellGrid(b_int.box.getP2());
+
+						// Get the grid and the sub-iterator
+						auto & gi = geo_cell.getGrid();
+						grid_key_dx_iterator_sub<dim> g_sub(gi,p1,p2);
+
+						// add the box-id to the cell list
+						while (g_sub.isNext())
+						{
+							auto key = g_sub.get();
+							geo_cell.addCell(gi.LinId(key),vb_int.size()-1);
+							++g_sub;
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -717,116 +886,9 @@ p1[0]<-----+         +----> p2[0]
 		// Get the sub-domains of the near processors
 		v_cl.sendrecvMultipleMessagesNBX(nn_processors,boxes,CartDecomposition<dim,T,device_l,Memory,Domain,data_s>::message_alloc, this ,NEED_ALL_SIZE);
 
-		box_nn_processor_int.resize(sub_domains.size());
+		create_box_nn_processor_ext(ghost);
 
-		// For each sub-domain
-		for (size_t i = 0 ; i < sub_domains.size() ; i++)
-		{
-			SpaceBox<dim,T> sub_with_ghost = sub_domains.get(i);
-
-			// enlarge the sub-domain with the ghost
-			sub_with_ghost.enlarge(ghost);
-
-			// resize based on the number of contiguous processors
-			box_nn_processor_int.get(i).resize(box_nn_processor.get(i).size());
-
-			// For each processor contiguous to this sub-domain
-			for (size_t j = 0 ; j < box_nn_processor.get(i).size() ; j++)
-			{
-				// Contiguous processor
-				size_t p_id = box_nn_processor.get(i).get(j);
-
-				// get the set of sub-domains of the contiguous processor p_id
-				openfpm::vector< ::Box<dim,T> > & p_box = nn_processor_subdomains[p_id].bx;
-
-				// near processor sub-domain intersections
-				openfpm::vector< ::Box<dim,T> > & p_box_int = box_nn_processor_int.get(i).get(j).bx;
-
-				// for each near processor sub-domain intersect with the enlarged local sub-domain and store it
-				for (size_t b = 0 ; b < p_box.size() ; b++)
-				{
-					::Box<dim,T> bi;
-
-					bool intersect = sub_with_ghost.Intersect(::Box<dim,T>(p_box.get(b)),bi);
-
-					if (intersect == true)
-					{
-						struct p_box pb;
-
-						pb.box = bi;
-						pb.proc = p_id;
-						pb.lc_proc = ProctoID(p_id);
-
-						vb_ext.add(pb);
-						p_box_int.add(bi);
-					}
-				}
-			}
-
-			// For each processor contiguous to this sub-domain
-			for (size_t j = 0 ; j < box_nn_processor.get(i).size() ; j++)
-			{
-				// Contiguous processor
-				size_t p_id = box_nn_processor.get(i).get(j);
-
-				// get the set of sub-domains of the contiguous processor p_id
-				openfpm::vector< ::Box<dim,T> > & nn_p_box = nn_processor_subdomains[p_id].bx;
-
-				// get the local processor id
-				size_t lc_proc = nn_processor_subdomains[p_id].id;
-
-				// near processor sub-domain intersections
-				openfpm::vector< ::Box<dim,T> > & p_box_int = box_nn_processor_int.get(i).get(j).nbx;
-
-				// For each near processor sub-domains enlarge and intersect with the local sub-domain and store the result
-				for (size_t k = 0 ; k < nn_p_box.size() ; k++)
-				{
-					// enlarge the near-processor sub-domain
-					::Box<dim,T> n_sub = nn_p_box.get(k);
-
-					// local sub-domain
-					::SpaceBox<dim,T> l_sub = sub_domains.get(i);
-
-					// Create a margin of ghost size around the near processor sub-domain
-					n_sub.enlarge(ghost);
-
-					// Intersect with the local sub-domain
-					p_box b_int;
-					bool intersect = n_sub.Intersect(l_sub,b_int.box);
-
-					// store if it intersect
-					if (intersect == true)
-					{
-						// fill with the processor id
-						b_int.proc = p_id;
-
-						// fill the local processor id
-						b_int.lc_proc = lc_proc;
-
-						p_box_int.add(b_int.box);
-						vb_int.add(b_int);
-
-						// update the geo_cell list
-
-						// get the boxes this box span
-						const grid_key_dx<dim> p1 = geo_cell.getCellGrid(b_int.box.getP1());
-						const grid_key_dx<dim> p2 = geo_cell.getCellGrid(b_int.box.getP2());
-
-						// Get the grid and the sub-iterator
-						auto & gi = geo_cell.getGrid();
-						grid_key_dx_iterator_sub<dim> g_sub(gi,p1,p2);
-
-						// add the box-id to the cell list
-						while (g_sub.isNext())
-						{
-							auto key = g_sub.get();
-							geo_cell.addCell(gi.LinId(key),vb_int.size()-1);
-							++g_sub;
-						}
-					}
-				}
-			}
-		}
+		create_box_nn_processor_int(ghost);
 	}
 
 	/*! \brief processorID return in which processor the particle should go
@@ -1090,6 +1152,37 @@ p1[0]<-----+         +----> p2[0]
 	}
 
 
+	////////////// Functions to get decomposition information ///////////////
+
+
+	/*! \brief Get the number of Internal ghost boxes for one processor id
+	 *
+	 * \param id processor id (Carefully it is not the processor number)
+	 * \return the number of internal ghost
+	 *
+	 */
+	inline size_t getProcessorNIGhost(size_t id) const
+	{
+		return proc_int_box.get(id).ibx.size();
+	}
+
+	/*! \brief Get the j Internal ghost box for one processor id
+	 *
+	 * \param id processor id (Carefully it is not the processor number)
+	 * \param j box
+	 * \return the box
+	 *
+	 */
+	inline const ::Box<dim,T> & getProcessorIGhostBox(size_t id, size_t j) const
+	{
+		proc_int_box.get(id).ibx.get(j);
+	}
+
+	/*! \brief Get the number of Near processor
+	 *
+	 * \return the number of near processors
+	 *
+	 */
 	inline size_t getNNProcessors() const
 	{
 		return nn_processors.size();
@@ -1198,7 +1291,7 @@ p1[0]<-----+         +----> p2[0]
 		//! p_sub_X.vtk domain for the processor X as union of sub-domain
 		VTKWriter<openfpm::vector<::SpaceBox<dim,T>>,VECTOR_BOX> vtk_box1;
 		vtk_box1.add(sub_domains);
-		vtk_box1.write(std::string("p_sub_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
+		vtk_box1.write(output + std::string("p_sub_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
 		//! sub_np_c_X.vtk sub-domain of the near processors contiguous to the processor X (Color encoded)
 		VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box2;
@@ -1209,7 +1302,7 @@ p1[0]<-----+         +----> p2[0]
 			if (it != nn_processor_subdomains.end())
 				vtk_box2.add(nn_processor_subdomains.at(prc).bx);
 		}
-		vtk_box2.write(std::string("sub_np_c_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
+		vtk_box2.write(output + std::string("sub_np_c_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
 		//! sub_X_inte_g_np.vtk Intersection between the ghosts of the near processors and the processors X sub-domains (Color encoded)
 		VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box3;
@@ -1220,7 +1313,7 @@ p1[0]<-----+         +----> p2[0]
 				vtk_box3.add(box_nn_processor_int.get(p).get(s).nbx);
 			}
 		}
-		vtk_box3.write(std::string("sub_") + std::to_string(v_cl.getProcessUnitID()) + std::string("_inte_g_np") + std::string(".vtk"));
+		vtk_box3.write(output + std::string("sub_") + std::to_string(v_cl.getProcessUnitID()) + std::string("_inte_g_np") + std::string(".vtk"));
 
 
 		//! sub_X_ghost.vtk ghost for the processor X (Color encoded)
@@ -1232,7 +1325,9 @@ p1[0]<-----+         +----> p2[0]
 				vtk_box4.add(box_nn_processor_int.get(p).get(s).bx);
 			}
 		}
-		vtk_box4.write(std::string("sub_") + std::to_string(v_cl.getProcessUnitID()) + std::string("_ghost") + std::string(".vtk"));
+		vtk_box4.write(output + std::string("sub_") + std::to_string(v_cl.getProcessUnitID()) + std::string("_ghost") + std::string(".vtk"));
+
+		return true;
 	}
 };
 

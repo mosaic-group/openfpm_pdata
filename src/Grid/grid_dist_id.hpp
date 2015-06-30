@@ -9,6 +9,9 @@
 #include "grid_dist_id_iterator.hpp"
 #include "grid_dist_key.hpp"
 #include "NN/CellList/CellDecomposer.hpp"
+#include "util/object_util.hpp"
+#include "memory/ExtPreAlloc.hpp"
+#include "VTKWriter.hpp"
 
 #define SUB_UNIT_FACTOR 64
 
@@ -100,11 +103,47 @@ class grid_dist_id
 		}
 	}
 
+	/*! \brief Create per-processor internal ghost box list in grid units
+	 *
+	 */
+	void create_ig_box()
+	{
+		// Get the grid info
+		auto g = cd_sm.getGrid();
+
+		if (init_i_g_box == true)	return;
+
+		// Get the number of near processors
+		for (size_t i = 0 ; i < dec.getNNProcessors() ; i++)
+		{
+			ig_box.add();
+			auto&& pib = ig_box.last();
+
+			pib.prc = dec.IDtoProc(i);
+			for (size_t j = 0 ; j < dec.getProcessorNIGhost(i) ; j++)
+			{
+				// Get the internal ghost boxes and transform into grid units
+				::Box<dim,St> ib = dec.getProcessorIGhostBox(i,j);
+				ib /= cd_sm.getCellBox().getP2();
+
+				// save the box and the sub-domain id (it is calculated as the linearization of P1)
+				// It is unique because it is ensured that boxes does not overlap
+				::Box<dim,size_t> cvt = ib;
+
+				Box_id bid_t(cvt);
+				bid_t.id = 0/*g.LinId(bid_t.box.getKP1())*/;
+				pib.bid.add(bid_t);
+			}
+		}
+
+		init_i_g_box = true;
+	}
+
 public:
 
 	//! constructor
 	grid_dist_id(Vcluster v_cl, Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,T> & ghost)
-	:domain(domain),cd_sm(domain,g_sz,0),ghost(ghost),loc_grid(NULL),v_cl(v_cl),dec(dec)
+	:domain(domain),ghost(ghost),loc_grid(NULL),cd_sm(domain,g_sz,0),v_cl(v_cl),dec(dec)
 	{
 		// fill the global size of the grid
 		for (int i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
@@ -125,6 +164,9 @@ public:
 
 		// Create local grid
 		Create();
+
+		// Calculate ghost boxes
+		dec.calculateGhostBoxes(ghost);
 	}
 
 	/*! \brief Constrcuctor
@@ -133,8 +175,8 @@ public:
 	 * \param domain
 	 *
 	 */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain)
-	:domain(domain),cd_sm(domain,g_sz,0),ghost(0),dec(Decomposition(*global_v_cluster)),v_cl(*global_v_cluster)
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g)
+	:domain(domain),ghost(g),dec(Decomposition(*global_v_cluster)),cd_sm(domain,g_sz,0),v_cl(*global_v_cluster)
 	{
 		// fill the global size of the grid
 		for (int i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
@@ -155,6 +197,9 @@ public:
 
 		// Create local grid
 		Create();
+
+		// Calculate ghost boxes
+		dec.calculateGhostBoxes(ghost);
 	}
 
 	/*! \brief Get the object that store the decomposition information
@@ -177,6 +222,9 @@ public:
 		// Box used for rounding error
 		Box<dim,St> rnd_box;
 		for (size_t i = 0 ; i < dim ; i++)	{rnd_box.setHigh(i,0.5); rnd_box.setLow(i,0.5);}
+		// Box used for rounding in case of ghost
+		Box<dim,St> g_rnd_box;
+		for (size_t i = 0 ; i < dim ; i++)	{g_rnd_box.setHigh(i,0.5); g_rnd_box.setLow(i,-0.5);}
 
 		// ! Create an hyper-cube approximation.
 		// ! In order to work on grid_dist the decomposition
@@ -206,30 +254,32 @@ public:
 			// enlarge by 0.5 for rounding
 			sp.enlarge(rnd_box);
 
-			// Convert from SpaceBox<dim,float> to SpaceBox<dim,size_t>
-			SpaceBox<dim,size_t> sp_t = sp;
+			// Convert from SpaceBox<dim,float> to SpaceBox<dim,long int>
+			SpaceBox<dim,long int> sp_t = sp;
 
 			// convert the ghost from space coordinate to grid units
 			Ghost<dim,St> g_int = ghost;
 			g_int /= cd_sm.getCellBox().getP2();
 
 			// enlarge by 0.5 for rounding
-			g_int.enlarge(rnd_box);
+			g_int.enlarge(g_rnd_box);
 
-			// convert from Ghost<dim,St> to Ghost<dim,size_t>
-			Ghost<dim,size_t> g_int_t = g_int;
+			// convert from Ghost<dim,St> to Ghost<dim,long int>
+			Ghost<dim,long int> g_int_t = g_int;
 
-			// for each local grid save the extension of ghost + domain part
+			// Center the local grid to zero
+			sp_t -= sp_t.getP1();
+
+			// save the domain box seen inside the domain + ghost box (see GDBoxes for a visual meaning)
 			gdb_ext.last().Dbox = sp_t;
+			gdb_ext.last().Dbox -= g_int_t.getP1();
+			gdb_ext.last().Dbox.shrinkP2(1);
 
 			// Enlarge sp with the Ghost size
 			sp_t.enlarge_fix_P1(g_int_t);
 
-			// Translate the domain (see GDBoxes for a visual meaning)
-			gdb_ext.last().Dbox.translate(g_int_t.getP1());
-
-			// Get the local size
-			for (size_t i = 0 ; i < dim ; i++) {l_res[i] = sp_t.getHigh(i) - sp_t.getLow(i);}
+			// Get the size of the local grid
+			for (size_t i = 0 ; i < dim ; i++) {l_res[i] = sp_t.getHigh(i);}
 
 			// Set the dimensions of the local grid
 			loc_grid.get(i).template resize<Memory>(l_res);
@@ -278,6 +328,204 @@ public:
 	template <unsigned int p>inline auto get(grid_dist_key_dx<dim> & v1) -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
 		return loc_grid.get(v1.getSub()).template get<p>(v1.getKey());
+	}
+
+	/*! \brief it store a box and its unique id
+	 *
+	 */
+	struct Box_id
+	{
+		//! Constructor
+		inline Box_id(const ::Box<dim,size_t> & box)
+		:box(box)
+		{}
+
+		//! Box
+		::Box<dim,size_t> box;
+
+		//! id
+		size_t id;
+	};
+
+	/*! \brief Internal ghost box
+	 *
+	 */
+	struct p_box_grid
+	{
+		// Internal ghost in grid units
+		openfpm::vector<Box_id> bid;
+
+		//! processor id
+		size_t prc;
+	};
+
+	//! Flag that indicate if internal ghost box has been initialized
+	bool init_i_g_box = false;
+
+	//! Internal ghost boxes in grid units
+	openfpm::vector<p_box_grid> ig_box;
+
+	/*! \brief It synchronize getting the ghost part of the grid
+	 *
+	 * \tparam prp Properties to get (sequence of properties ids)
+	 * \opt options (unused)
+	 *
+	 */
+	template<int... prp> void ghost_get()
+	{
+		// Sending property object
+		typedef object<typename object_creator<typename T::type,prp...>::type> prp_object;
+
+		// send vector for each processor
+		typedef  openfpm::vector<prp_object,openfpm::device_cpu<prp_object>,ExtPreAlloc<Memory>> send_vector;
+
+		// Send buffer size in byte ( one buffer for all processors )
+		size_t size_byte_prp = 0;
+
+		create_ig_box();
+
+		// Convert the ghost boxes into grid unit boxes
+/*		const openfpm::vector<p_box_grid> p_box_g;
+
+		// total number of sending vector
+		size_t n_send_vector = 0;
+
+		// Calculate the total size required for the sending buffer for each processor
+		for ( size_t i = 0 ; i < p_box_g.size() ; i++ )
+		{
+			// for each ghost box
+			for (size_t j = 0 ; j < p_box_g.get(i).box.size() ; j++)
+			{
+				size_t alloc_ele = openfpm::vector<prp_object>::calculateMem(p_box_g.get(i).box.get(j).volume(),0);
+				pap_prp.push_back(alloc_ele);
+				size_byte_prp += alloc_ele;
+
+				n_send_vector++;
+			}
+		}
+
+		// resize the property buffer memory
+		g_prp_mem.resize(size_byte_prp);
+
+		// Create an object of preallocated memory for properties
+		ExtPreAlloc<Memory> * prAlloc_prp = new ExtPreAlloc<Memory>(pap_prp,g_prp_mem);
+
+		// create a vector of send vector (ExtPreAlloc warrant that all the created vector are contiguous)
+		openfpm::vector<send_vector> g_send_prp;
+
+		// create a number of send buffers equal to the near processors
+		g_send_prp.resize(n_send_vector);
+
+		// Create the vectors giving them memory
+		for ( size_t i = 0 ; i < p_box_g.size() ; i++ )
+		{
+			// for each ghost box
+			for (size_t j = 0 ; j < p_box_g.get(i).box.size() ; j++)
+			{
+				// set the preallocated memory to ensure contiguity
+				g_send_prp.get(i).setMemory(*prAlloc_prp);
+
+				// resize the sending vector (No allocation is produced)
+				g_send_prp.get(i).resize(ghost_prc_sz.get(i));
+			}
+		}
+
+		// Fill the sending buffers and produce a sending request
+		for ( size_t i = 0 ; i < p_box_g.size() ; i++ )
+		{
+			// for each ghost box
+			for (size_t j = 0 ; j < p_box_g.get(i).box.size() ; j++)
+			{
+				// Create a sub grid iterator of the ghost
+				grid_key_dx_iterator_sub<dim> g_it(,p_box_g.getKP1(),p_box_g.getKP2());
+
+				while (g_it.isNext())
+				{
+					// copy all the object in the send buffer
+					typedef encapc<1,prop,typename openfpm::vector<prop>::memory_t> encap_src;
+					// destination object type
+					typedef encapc<1,prp_object,typename openfpm::vector<prp_object>::memory_t> encap_dst;
+
+					// Copy only the selected properties
+					object_si_d<encap_src,encap_dst,ENCAP,prp...>(v_prp.get(INTERNAL).get(opart.get(i).get(j)),g_send_prp.get(i).get(j));
+
+					++g_it;
+				}
+			}
+			// Queue a send request
+			v_cl.send(p_box_g.get(i).proc,g_send_prp.get(i));
+		}
+
+		// Calculate the receive pattern and allocate the receive buffers
+
+		// For each processor get the ghost boxes
+		const openfpm::vector<p_box> & p_box_ext = dec.getGhostExternalBox();
+
+		// Convert the ghost boxes into grid unit boxes
+		const openfpm::vector<p_box_grid> p_box_g_ext;
+
+		size_byte_prp = 0;
+
+		// Calculate the receive pattern
+		for ( size_t i = 0 ; i < p_box_g_ext.size() ; i++ )
+		{
+			// for each ghost box
+			for (size_t j = 0 ; j < p_box_g_ext.get(i).box.size() ; j++)
+			{
+				size_t alloc_ele = openfpm::vector<prp_object>::calculateMem(p_box_g_ext.get(i).box.get(j).volume(),0);
+				pap_prp_recv.push_back(alloc_ele);
+				size_byte_prp += alloc_ele;
+			}
+
+			v_cl.recv();
+		}
+
+		// Fill the internal ghost
+
+		// wait to receive communication
+		v_cl.execute();
+
+		// move the received buffers into the ghost part
+
+		 */
+	}
+
+	/*! \brief Write the grid_dist_id information as VTK file
+	 *
+	 * The function generate several files
+	 *
+	 * 1)
+	 *
+	 * where X is the processor number
+	 *
+	 * \param output directory where to write the files
+	 *
+	 */
+	bool write(std::string output) const
+	{
+		VTKWriter<openfpm::vector<::Box<dim,size_t>>,VECTOR_BOX> vtk_box1;
+
+		openfpm::vector< openfpm::vector< ::Box<dim,size_t> > > boxes;
+
+		//! Carefully we have to ensure that boxes does not reallocate inside the for loop
+		boxes.reserve(ig_box.size());
+
+		//! Write internal ghost in grid units (Color encoded)
+		for (size_t p = 0 ; p < ig_box.size() ; p++)
+		{
+			boxes.add();
+
+			// Create a vector of boxes
+			for (size_t j = 0 ; j < ig_box.get(p).bid.size() ; j++)
+			{
+				boxes.last().add(ig_box.get(p).bid.get(j).box);
+			}
+
+			vtk_box1.add(boxes.last());
+		}
+		vtk_box1.write(output + std::string("internal_ghost_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
+
+		return true;
 	}
 };
 

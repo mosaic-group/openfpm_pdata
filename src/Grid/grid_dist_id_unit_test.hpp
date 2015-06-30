@@ -39,12 +39,13 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 	// grid size
 	size_t sz[2] = {1024,1024};
 
-	// Distributed grid with id decomposition
+	// Ghost
+	Ghost<2,float> g(0.01);
 
-	grid_dist_id<2, float, scalar<float>, CartDecomposition<2,float>> g_dist(sz,domain);
+	// Distributed grid with id decomposition
+	grid_dist_id<2, float, scalar<float>, CartDecomposition<2,float>> g_dist(sz,domain,g);
 
 	// get the domain iterator
-
 	size_t count = 0;
 
 	auto dom = g_dist.getDomainIterator();
@@ -83,6 +84,10 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 		count_check++;
 		++dom2;
 	}
+
+	g_dist.template ghost_get<0>();
+
+	g_dist.write("");
 
 /*	auto g_it = g_dist.getIteratorBulk();
 

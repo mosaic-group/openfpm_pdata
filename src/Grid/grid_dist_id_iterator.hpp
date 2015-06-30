@@ -38,9 +38,9 @@ template<unsigned int dim>
 struct GBoxes
 {
 	//! Ghost + Domain ghost
-	Box<dim,size_t> GDbox;
+	Box<dim,long int> GDbox;
 	//! Domain box
-	Box<dim,size_t> Dbox;
+	Box<dim,long int> Dbox;
 };
 
 #include "grid_dist_key.hpp"
@@ -78,7 +78,7 @@ class grid_dist_iterator
 	 *
 	 */
 	grid_dist_iterator(Vcluster_object_array<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
-	:g_c(0),gdb_ext(gdb_ext),gList(gk),m(m)
+	:g_c(0),gList(gk),gdb_ext(gdb_ext),m(m)
 	{
 		// Initialize the current iterator
 		// with the first grid
