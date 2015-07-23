@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	const auto & dec = vd.getDecomposition();
 
 	// Get the ghost external boxes
-	openfpm::vector<size_t> vb(dec.getNGhostBox());
+	openfpm::vector<size_t> vb(dec.getNEGhostBox());
 
 	// Get the ghost iterator
 	auto g_it = vd.getGhostIterator();
@@ -131,9 +131,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 		size_t lb = 0;
 
 		// check if the received data is in one of the ghost boxes
-		for ( ; b < dec.getNGhostBox() ; b++)
+		for ( ; b < dec.getNEGhostBox() ; b++)
 		{
-			if (dec.getGhostBox(b).isInside(vd.getPos<s::x>(key)) == true)
+			if (dec.getEGhostBox(b).isInside(vd.getPos<s::x>(key)) == true)
 			{
 				is_in = true;
 
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 		BOOST_REQUIRE_EQUAL(is_in,true);
 
 		// Check that the particle come from the correct processor
-		BOOST_REQUIRE_EQUAL(vd.getProp<p::v>(key)[0],dec.getGhostBoxProcessor(lb));
+		BOOST_REQUIRE_EQUAL(vd.getProp<p::v>(key)[0],dec.getEGhostBoxProcessor(lb));
 
 		++g_it;
 	}
@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	for (size_t i = 0 ; i < vb.size() ; i++)
 	{
 		// Calculate how many particle should be in the box
-		size_t n_point = cd.getGridPoints(dec.getGhostBox(i)).getVolume();
+		size_t n_point = cd.getGridPoints(dec.getEGhostBox(i)).getVolumeKey();
 
 		BOOST_REQUIRE_EQUAL(n_point,vb.get(i));
 	}

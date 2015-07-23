@@ -2,7 +2,7 @@
 #define CARTDECOMPOSITION_UNIT_TEST_HPP
 
 #include "CartDecomposition.hpp"
-#include "mathutil.hpp"
+#include "util/mathutil.hpp"
 
 BOOST_AUTO_TEST_SUITE( CartDecomposition_test )
 

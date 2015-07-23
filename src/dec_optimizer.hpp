@@ -115,7 +115,7 @@ private:
 	 */
 	void expand_one_wf(openfpm::vector<wavefront<dim>> & v_w, std::vector<comb<dim>> & w_comb , size_t d)
 	{
-		for (int j = 0 ; j < dim ; j++)
+		for (size_t j = 0 ; j < dim ; j++)
 		{
 			v_w.template get<wavefront<dim>::stop>(d)[j] = v_w.template get<wavefront<dim>::stop>(d)[j] + w_comb[d].c[j];
 			v_w.template get<wavefront<dim>::start>(d)[j] = v_w.template get<wavefront<dim>::start>(d)[j] + w_comb[d].c[j];
@@ -136,9 +136,9 @@ private:
 
 		// Eliminate the w_comb[d] direction
 
-		for (int k = 0 ; k < q_comb.size() ; k++)
+		for (size_t k = 0 ; k < q_comb.size() ; k++)
 		{
-			for (int j = 0 ; j < dim ; j++)
+			for (size_t j = 0 ; j < dim ; j++)
 			{
 				if (w_comb[d].c[j] != 0)
 				{
@@ -148,7 +148,7 @@ private:
 		}
 
 		// for all the combinations
-		for (int j = 0 ; j < q_comb.size() ; j++)
+		for (size_t j = 0 ; j < q_comb.size() ; j++)
 		{
 			size_t id = hyp.LinId(q_comb[j]);
 
@@ -158,7 +158,7 @@ private:
 
 			// is positive, modify the stop point or the starting point
 
-			for (int s = 0 ; s < dim ; s++)
+			for (size_t s = 0 ; s < dim ; s++)
 			{
 				if (is_pos == true)
 				{v_w.template get<wavefront<dim>::stop>(id)[s] = v_w.template get<wavefront<dim>::stop>(id)[s] + w_comb[d].c[s];}
@@ -257,7 +257,7 @@ private:
 		// Create an Hyper-cube
 		HyperCube<dim> hyp;
 
-		for (int d = 0 ; d < v_w.size() ; d++)
+		for (size_t d = 0 ; d < v_w.size() ; d++)
 		{
 			expand_one_wf(v_w,w_comb,d);
 			adjust_others_wf(v_w,hyp,w_comb,d);
@@ -265,7 +265,7 @@ private:
 
 		// for each expanded wavefront create a sub-grid iterator and add the sub-domain
 
-		for (int d = 0 ; d < v_w.size() ; d++)
+		for (size_t d = 0 ; d < v_w.size() ; d++)
 		{
 			// Create a sub-grid iterator
 			grid_key_dx_iterator_sub<dim> g_sub(gh,v_w.template get<wavefront<dim>::start>(d),v_w.template get<wavefront<dim>::stop>(d));
@@ -357,7 +357,7 @@ private:
 
 			// for each direction of expansion expand the wavefront
 
-			for (int d = 0 ; d < n_wf ; d++)
+			for (size_t d = 0 ; d < n_wf ; d++)
 			{
 				// number of processed sub-domain
 				size_t n_proc_sub = 0;
@@ -403,7 +403,7 @@ private:
 				if (w_can_expand == true)
 				{
 					// expand the wavefront
-					for (int j = 0 ; j < dim ; j++)
+					for (size_t j = 0 ; j < dim ; j++)
 					{
 						v_w.template get<wavefront<dim>::stop>(d)[j] = v_w.template get<wavefront<dim>::stop>(d)[j] + w_comb[d].c[j];
 						v_w.template get<wavefront<dim>::start>(d)[j] = v_w.template get<wavefront<dim>::start>(d)[j] + w_comb[d].c[j];
@@ -415,9 +415,9 @@ private:
 
 					// Eliminate the w_comb[d] direction
 
-					for (int k = 0 ; k < q_comb.size() ; k++)
+					for (size_t k = 0 ; k < q_comb.size() ; k++)
 					{
-						for (int j = 0 ; j < dim ; j++)
+						for (size_t j = 0 ; j < dim ; j++)
 						{
 							if (w_comb[d].c[j] != 0)
 							{
@@ -427,7 +427,7 @@ private:
 					}
 
 					// for all the combinations
-					for (int j = 0 ; j < q_comb.size() ; j++)
+					for (size_t j = 0 ; j < q_comb.size() ; j++)
 					{
 						size_t id = hyp.LinId(q_comb[j]);
 
@@ -437,7 +437,7 @@ private:
 
 						// is positive, modify the stop point or the starting point
 
-						for (int s = 0 ; s < dim ; s++)
+						for (size_t s = 0 ; s < dim ; s++)
 						{
 							if (is_pos == true)
 							{v_w.template get<wavefront<dim>::stop>(id)[s] = v_w.template get<wavefront<dim>::stop>(id)[s] + w_comb[d].c[s];}
@@ -451,7 +451,7 @@ private:
 
 		// get back the hyper-cube produced
 
-		for (int i = 0 ; i < dim ; i++)
+		for (size_t i = 0 ; i < dim ; i++)
 		{
 			// get the index of the wavefront direction
 			size_t p_f = hyp.positiveFace(i);
@@ -473,9 +473,9 @@ private:
 	{
 		// Wavefront to initialize
 
-		for (int i = 0 ; i < v_w.size() ; i++)
+		for (size_t i = 0 ; i < v_w.size() ; i++)
 		{
-			for (int j = 0 ; j < dim ; j++)
+			for (size_t j = 0 ; j < dim ; j++)
 			{
 				v_w.template get<wavefront<dim>::start>(i)[j] = start_p.get(j);
 				v_w.template get<wavefront<dim>::stop>(i)[j] = start_p.get(j);
@@ -517,7 +517,7 @@ private:
 			const grid_key_dx<dim> & gk = g_sub.get();
 
 			// if the subdomain has the id we are searching stop
-			if (graph.vertex(gh.LinId(gk)).template get<p_id>() == id)
+			if ((long int)graph.vertex(gh.LinId(gk)).template get<p_id>() == id)
 			{
 				return gk;
 			}

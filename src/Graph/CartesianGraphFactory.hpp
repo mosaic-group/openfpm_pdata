@@ -90,7 +90,7 @@ public:
 
 		T szd[dim];
 
-		for (int i = 0 ; i < dim ; i++)
+		for (size_t i = 0 ; i < dim ; i++)
 		{szd[i] = (dom.getHigh(i) - dom.getLow(i)) / sz[i];}
 
 		//! Construct an hyper-cube of dimension dim
@@ -137,7 +137,7 @@ public:
 
 			// Get the combinations of dimension d
 
-			for (int d = dim-1 ; d >= dim_c ; d--)
+			for (size_t d = dim-1 ; d >= dim_c ; d--)
 			{
 				// create the edges for that dimension
 
@@ -145,7 +145,7 @@ public:
 
 				// for each combination calculate a safe linearization and create an edge
 
-				for (int j = 0 ; j < c.size() ; j++)
+				for (size_t j = 0 ; j < c.size() ; j++)
 				{
 					// Calculate the element size
 
@@ -153,7 +153,7 @@ public:
 
 					// for each dimension multiply and reduce
 
-					for (int s = 0 ; s < dim ; s++)
+					for (size_t s = 0 ; s < dim ; s++)
 					{
 						ele_sz += szd[s] * abs(c[j][s]);
 					}
@@ -200,7 +200,7 @@ public:
 
 		T szd[dim];
 
-		for (int i = 0 ; i < dim ; i++)
+		for (size_t i = 0 ; i < dim ; i++)
 		{szd[i] = (dom.getHigh(i) - dom.getLow(i)) / sz[i];}
 
 		//! Construct an hyper-cube of dimension dim
@@ -247,7 +247,7 @@ public:
 
 			// Get the combinations of dimension d
 
-			for (int d = dim-1 ; d >= dim_c ; d--)
+			for (size_t d = dim-1 ; d >= dim_c ; d--)
 			{
 				// create the edges for that dimension
 
@@ -255,7 +255,7 @@ public:
 
 				// for each combination calculate a safe linearization and create an edge
 
-				for (int j = 0 ; j < c.size() ; j++)
+				for (size_t j = 0 ; j < c.size() ; j++)
 				{
 					// Calculate the element size
 
@@ -263,7 +263,7 @@ public:
 
 					// for each dimension multiply and reduce
 
-					for (int s = 0 ; s < dim ; s++)
+					for (size_t s = 0 ; s < dim ; s++)
 					{
 						ele_sz += szd[s] * abs(c[j][s]);
 					}

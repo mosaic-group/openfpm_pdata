@@ -16,7 +16,7 @@
 #include "memory/PreAllocHeapMemory.hpp"
 #include "memory/PtrMemory.hpp"
 #include "NN/CellList/CellList.hpp"
-#include "common.hpp"
+#include "util/common.hpp"
 #include "util/object_util.hpp"
 #include "memory/ExtPreAlloc.hpp"
 #include "CSVWriter.hpp"
@@ -102,7 +102,7 @@ public:
 		// Calculate the maximum number (before merging) of sub-domain on
 		// each dimension
 		size_t div[point::dims];
-		for (int i = 0 ; i < point::dims ; i++)
+		for (size_t i = 0 ; i < point::dims ; i++)
 		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/point::dims));}
 
 		// Create the sub-domains
@@ -487,9 +487,9 @@ public:
 			for (size_t j = 0 ; j < opart.get(i).size() ; j++)
 			{
 				// source object type
-				typedef encapc<1,prop,typename openfpm::vector<prop>::memory_t> encap_src;
+				typedef encapc<1,prop,typename openfpm::vector<prop>::memory_conf> encap_src;
 				// destination object type
-				typedef encapc<1,prp_object,typename openfpm::vector<prp_object>::memory_t> encap_dst;
+				typedef encapc<1,prp_object,typename openfpm::vector<prp_object>::memory_conf> encap_dst;
 
 				// Copy only the selected properties
 				object_si_d<encap_src,encap_dst,ENCAP,prp...>(v_prp.get(INTERNAL).get(opart.get(i).get(j)),g_send_prp.get(i).get(j));

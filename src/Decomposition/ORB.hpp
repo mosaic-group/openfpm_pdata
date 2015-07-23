@@ -9,7 +9,7 @@
 #define ORB_HPP_
 
 #include "data_type/scalar.hpp"
-#include "mathutil.hpp"
+#include "util/mathutil.hpp"
 
 /*! \brief this class is a functor for "for_each" algorithm
  *

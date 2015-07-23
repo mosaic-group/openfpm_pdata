@@ -1,108 +1,111 @@
 pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
  /usr/include/stdc-predef.h ../../OpenFPM_vcluster/src/VCluster.hpp \
- /home/i-bird/MPI/include/mpi.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/stddef.h \
+ ../src/config/config.h /home/i-bird/MPI/include/mpi.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/stddef.h \
  /home/i-bird/MPI/include/mpi_portable_platform.h \
  /home/i-bird/MPI/include/openmpi/ompi/mpi/cxx/mpicxx.h \
- /usr/include/c++/4.8.3/map /usr/include/c++/4.8.3/bits/stl_tree.h \
- /usr/include/c++/4.8.3/bits/stl_algobase.h \
- /usr/include/c++/4.8.3/x86_64-redhat-linux/bits/c++config.h \
+ /usr/include/c++/4.9.2/map /usr/include/c++/4.9.2/bits/stl_tree.h \
+ /usr/include/c++/4.9.2/bits/stl_algobase.h \
+ /usr/include/c++/4.9.2/x86_64-redhat-linux/bits/c++config.h \
  /usr/include/bits/wordsize.h \
- /usr/include/c++/4.8.3/x86_64-redhat-linux/bits/os_defines.h \
+ /usr/include/c++/4.9.2/x86_64-redhat-linux/bits/os_defines.h \
  /usr/include/features.h /usr/include/sys/cdefs.h \
  /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h \
- /usr/include/c++/4.8.3/x86_64-redhat-linux/bits/cpu_defines.h \
- /usr/include/c++/4.8.3/bits/functexcept.h \
- /usr/include/c++/4.8.3/bits/exception_defines.h \
- /usr/include/c++/4.8.3/bits/cpp_type_traits.h \
- /usr/include/c++/4.8.3/ext/type_traits.h \
- /usr/include/c++/4.8.3/ext/numeric_traits.h \
- /usr/include/c++/4.8.3/bits/stl_pair.h \
- /usr/include/c++/4.8.3/bits/move.h \
- /usr/include/c++/4.8.3/bits/concept_check.h \
- /usr/include/c++/4.8.3/type_traits \
- /usr/include/c++/4.8.3/bits/stl_iterator_base_types.h \
- /usr/include/c++/4.8.3/bits/stl_iterator_base_funcs.h \
- /usr/include/c++/4.8.3/debug/debug.h \
- /usr/include/c++/4.8.3/bits/stl_iterator.h \
- /usr/include/c++/4.8.3/bits/allocator.h \
- /usr/include/c++/4.8.3/x86_64-redhat-linux/bits/c++allocator.h \
- /usr/include/c++/4.8.3/ext/new_allocator.h /usr/include/c++/4.8.3/new \
- /usr/include/c++/4.8.3/exception \
- /usr/include/c++/4.8.3/bits/atomic_lockfree_defines.h \
- /usr/include/c++/4.8.3/bits/exception_ptr.h \
- /usr/include/c++/4.8.3/bits/nested_exception.h \
- /usr/include/c++/4.8.3/bits/memoryfwd.h \
- /usr/include/c++/4.8.3/bits/stl_function.h \
- /usr/include/c++/4.8.3/backward/binders.h \
- /usr/include/c++/4.8.3/bits/alloc_traits.h \
- /usr/include/c++/4.8.3/bits/ptr_traits.h \
- /usr/include/c++/4.8.3/bits/stl_map.h \
- /usr/include/c++/4.8.3/initializer_list /usr/include/c++/4.8.3/tuple \
- /usr/include/c++/4.8.3/utility /usr/include/c++/4.8.3/bits/stl_relops.h \
- /usr/include/c++/4.8.3/array /usr/include/c++/4.8.3/stdexcept \
- /usr/include/c++/4.8.3/string /usr/include/c++/4.8.3/bits/stringfwd.h \
- /usr/include/c++/4.8.3/bits/char_traits.h \
- /usr/include/c++/4.8.3/bits/postypes.h /usr/include/c++/4.8.3/cwchar \
+ /usr/include/c++/4.9.2/x86_64-redhat-linux/bits/cpu_defines.h \
+ /usr/include/c++/4.9.2/bits/functexcept.h \
+ /usr/include/c++/4.9.2/bits/exception_defines.h \
+ /usr/include/c++/4.9.2/bits/cpp_type_traits.h \
+ /usr/include/c++/4.9.2/ext/type_traits.h \
+ /usr/include/c++/4.9.2/ext/numeric_traits.h \
+ /usr/include/c++/4.9.2/bits/stl_pair.h \
+ /usr/include/c++/4.9.2/bits/move.h \
+ /usr/include/c++/4.9.2/bits/concept_check.h \
+ /usr/include/c++/4.9.2/type_traits \
+ /usr/include/c++/4.9.2/bits/stl_iterator_base_types.h \
+ /usr/include/c++/4.9.2/bits/stl_iterator_base_funcs.h \
+ /usr/include/c++/4.9.2/debug/debug.h \
+ /usr/include/c++/4.9.2/bits/stl_iterator.h \
+ /usr/include/c++/4.9.2/bits/ptr_traits.h \
+ /usr/include/c++/4.9.2/bits/predefined_ops.h \
+ /usr/include/c++/4.9.2/bits/allocator.h \
+ /usr/include/c++/4.9.2/x86_64-redhat-linux/bits/c++allocator.h \
+ /usr/include/c++/4.9.2/ext/new_allocator.h /usr/include/c++/4.9.2/new \
+ /usr/include/c++/4.9.2/exception \
+ /usr/include/c++/4.9.2/bits/atomic_lockfree_defines.h \
+ /usr/include/c++/4.9.2/bits/exception_ptr.h \
+ /usr/include/c++/4.9.2/bits/nested_exception.h \
+ /usr/include/c++/4.9.2/bits/memoryfwd.h \
+ /usr/include/c++/4.9.2/bits/stl_function.h \
+ /usr/include/c++/4.9.2/backward/binders.h \
+ /usr/include/c++/4.9.2/ext/alloc_traits.h \
+ /usr/include/c++/4.9.2/bits/alloc_traits.h \
+ /usr/include/c++/4.9.2/ext/aligned_buffer.h \
+ /usr/include/c++/4.9.2/bits/stl_map.h \
+ /usr/include/c++/4.9.2/initializer_list /usr/include/c++/4.9.2/tuple \
+ /usr/include/c++/4.9.2/utility /usr/include/c++/4.9.2/bits/stl_relops.h \
+ /usr/include/c++/4.9.2/array /usr/include/c++/4.9.2/stdexcept \
+ /usr/include/c++/4.9.2/string /usr/include/c++/4.9.2/bits/stringfwd.h \
+ /usr/include/c++/4.9.2/bits/char_traits.h \
+ /usr/include/c++/4.9.2/bits/postypes.h /usr/include/c++/4.9.2/cwchar \
  /usr/include/wchar.h /usr/include/stdio.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/stdarg.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/stdarg.h \
  /usr/include/bits/wchar.h /usr/include/xlocale.h \
- /usr/include/c++/4.8.3/cstdint \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/stdint.h \
- /usr/include/stdint.h /usr/include/c++/4.8.3/bits/localefwd.h \
- /usr/include/c++/4.8.3/x86_64-redhat-linux/bits/c++locale.h \
- /usr/include/c++/4.8.3/clocale /usr/include/locale.h \
- /usr/include/bits/locale.h /usr/include/c++/4.8.3/iosfwd \
- /usr/include/c++/4.8.3/cctype /usr/include/ctype.h \
+ /usr/include/c++/4.9.2/cstdint \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/stdint.h \
+ /usr/include/stdint.h /usr/include/c++/4.9.2/bits/localefwd.h \
+ /usr/include/c++/4.9.2/x86_64-redhat-linux/bits/c++locale.h \
+ /usr/include/c++/4.9.2/clocale /usr/include/locale.h \
+ /usr/include/bits/locale.h /usr/include/c++/4.9.2/iosfwd \
+ /usr/include/c++/4.9.2/cctype /usr/include/ctype.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/endian.h /usr/include/bits/endian.h \
  /usr/include/bits/byteswap.h /usr/include/bits/byteswap-16.h \
- /usr/include/c++/4.8.3/bits/ostream_insert.h \
- /usr/include/c++/4.8.3/bits/cxxabi_forced.h \
- /usr/include/c++/4.8.3/bits/range_access.h \
- /usr/include/c++/4.8.3/bits/basic_string.h \
- /usr/include/c++/4.8.3/ext/atomicity.h \
- /usr/include/c++/4.8.3/x86_64-redhat-linux/bits/gthr.h \
- /usr/include/c++/4.8.3/x86_64-redhat-linux/bits/gthr-default.h \
+ /usr/include/c++/4.9.2/bits/ostream_insert.h \
+ /usr/include/c++/4.9.2/bits/cxxabi_forced.h \
+ /usr/include/c++/4.9.2/bits/range_access.h \
+ /usr/include/c++/4.9.2/bits/basic_string.h \
+ /usr/include/c++/4.9.2/ext/atomicity.h \
+ /usr/include/c++/4.9.2/x86_64-redhat-linux/bits/gthr.h \
+ /usr/include/c++/4.9.2/x86_64-redhat-linux/bits/gthr-default.h \
  /usr/include/pthread.h /usr/include/sched.h /usr/include/time.h \
  /usr/include/bits/sched.h /usr/include/bits/time.h \
  /usr/include/bits/timex.h /usr/include/bits/pthreadtypes.h \
  /usr/include/bits/setjmp.h \
- /usr/include/c++/4.8.3/x86_64-redhat-linux/bits/atomic_word.h \
- /usr/include/c++/4.8.3/ext/string_conversions.h \
- /usr/include/c++/4.8.3/cstdlib /usr/include/stdlib.h \
+ /usr/include/c++/4.9.2/x86_64-redhat-linux/bits/atomic_word.h \
+ /usr/include/c++/4.9.2/ext/string_conversions.h \
+ /usr/include/c++/4.9.2/cstdlib /usr/include/stdlib.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/sys/types.h /usr/include/sys/select.h \
  /usr/include/bits/select.h /usr/include/bits/sigset.h \
  /usr/include/sys/sysmacros.h /usr/include/alloca.h \
- /usr/include/bits/stdlib-float.h /usr/include/c++/4.8.3/cstdio \
+ /usr/include/bits/stdlib-float.h /usr/include/c++/4.9.2/cstdio \
  /usr/include/libio.h /usr/include/_G_config.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h \
- /usr/include/c++/4.8.3/cerrno /usr/include/errno.h \
+ /usr/include/c++/4.9.2/cerrno /usr/include/errno.h \
  /usr/include/bits/errno.h /usr/include/linux/errno.h \
  /usr/include/asm/errno.h /usr/include/asm-generic/errno.h \
  /usr/include/asm-generic/errno-base.h \
- /usr/include/c++/4.8.3/bits/functional_hash.h \
- /usr/include/c++/4.8.3/bits/hash_bytes.h \
- /usr/include/c++/4.8.3/bits/basic_string.tcc \
- /usr/include/c++/4.8.3/bits/uses_allocator.h \
- /usr/include/c++/4.8.3/bits/stl_multimap.h \
- /usr/include/c++/4.8.3/iostream /usr/include/c++/4.8.3/ostream \
- /usr/include/c++/4.8.3/ios /usr/include/c++/4.8.3/bits/ios_base.h \
- /usr/include/c++/4.8.3/bits/locale_classes.h \
- /usr/include/c++/4.8.3/bits/locale_classes.tcc \
- /usr/include/c++/4.8.3/streambuf \
- /usr/include/c++/4.8.3/bits/streambuf.tcc \
- /usr/include/c++/4.8.3/bits/basic_ios.h \
- /usr/include/c++/4.8.3/bits/locale_facets.h \
- /usr/include/c++/4.8.3/cwctype /usr/include/wctype.h \
- /usr/include/c++/4.8.3/x86_64-redhat-linux/bits/ctype_base.h \
- /usr/include/c++/4.8.3/bits/streambuf_iterator.h \
- /usr/include/c++/4.8.3/x86_64-redhat-linux/bits/ctype_inline.h \
- /usr/include/c++/4.8.3/bits/locale_facets.tcc \
- /usr/include/c++/4.8.3/bits/basic_ios.tcc \
- /usr/include/c++/4.8.3/bits/ostream.tcc /usr/include/c++/4.8.3/istream \
- /usr/include/c++/4.8.3/bits/istream.tcc \
+ /usr/include/c++/4.9.2/bits/functional_hash.h \
+ /usr/include/c++/4.9.2/bits/hash_bytes.h \
+ /usr/include/c++/4.9.2/bits/basic_string.tcc \
+ /usr/include/c++/4.9.2/bits/uses_allocator.h \
+ /usr/include/c++/4.9.2/bits/stl_multimap.h \
+ /usr/include/c++/4.9.2/iostream /usr/include/c++/4.9.2/ostream \
+ /usr/include/c++/4.9.2/ios /usr/include/c++/4.9.2/bits/ios_base.h \
+ /usr/include/c++/4.9.2/bits/locale_classes.h \
+ /usr/include/c++/4.9.2/bits/locale_classes.tcc \
+ /usr/include/c++/4.9.2/streambuf \
+ /usr/include/c++/4.9.2/bits/streambuf.tcc \
+ /usr/include/c++/4.9.2/bits/basic_ios.h \
+ /usr/include/c++/4.9.2/bits/locale_facets.h \
+ /usr/include/c++/4.9.2/cwctype /usr/include/wctype.h \
+ /usr/include/c++/4.9.2/x86_64-redhat-linux/bits/ctype_base.h \
+ /usr/include/c++/4.9.2/bits/streambuf_iterator.h \
+ /usr/include/c++/4.9.2/x86_64-redhat-linux/bits/ctype_inline.h \
+ /usr/include/c++/4.9.2/bits/locale_facets.tcc \
+ /usr/include/c++/4.9.2/bits/basic_ios.tcc \
+ /usr/include/c++/4.9.2/bits/ostream.tcc /usr/include/c++/4.9.2/istream \
+ /usr/include/c++/4.9.2/bits/istream.tcc \
  /home/i-bird/MPI/include/openmpi/ompi/mpi/cxx/constants.h \
  /home/i-bird/MPI/include/openmpi/ompi/mpi/cxx/functions.h \
  /home/i-bird/MPI/include/openmpi/ompi/mpi/cxx/datatype.h \
@@ -134,18 +137,18 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
  /home/i-bird/MPI/include/openmpi/ompi/mpi/cxx/info_inln.h \
  /home/i-bird/MPI/include/openmpi/ompi/mpi/cxx/win_inln.h \
  /home/i-bird/MPI/include/openmpi/ompi/mpi/cxx/file_inln.h \
+ ../../OpenFPM_vcluster/src/MPI_wrapper/MPI_util.hpp \
  ../../OpenFPM_vcluster/src/VCluster_object.hpp \
  ../../OpenFPM_vcluster/src/VCluster_object_array.hpp \
- /usr/include/c++/4.8.3/vector \
- /usr/include/c++/4.8.3/bits/stl_construct.h \
- /usr/include/c++/4.8.3/ext/alloc_traits.h \
- /usr/include/c++/4.8.3/bits/stl_uninitialized.h \
- /usr/include/c++/4.8.3/bits/stl_vector.h \
- /usr/include/c++/4.8.3/bits/stl_bvector.h \
- /usr/include/c++/4.8.3/bits/vector.tcc \
+ /usr/include/c++/4.9.2/vector \
+ /usr/include/c++/4.9.2/bits/stl_construct.h \
+ /usr/include/c++/4.9.2/bits/stl_uninitialized.h \
+ /usr/include/c++/4.9.2/bits/stl_vector.h \
+ /usr/include/c++/4.9.2/bits/stl_bvector.h \
+ /usr/include/c++/4.9.2/bits/vector.tcc \
  ../../OpenFPM_vcluster/src/VObject.hpp \
  ../../OpenFPM_data/src/Vector/map_vector.hpp \
- ../../OpenFPM_data/src/Grid/map_grid.hpp ../src/config/config.h \
+ ../../OpenFPM_data/src/Grid/map_grid.hpp \
  /usr/include/boost/fusion/include/mpl.hpp \
  /usr/include/boost/fusion/adapted/mpl.hpp \
  /usr/include/boost/fusion/adapted/mpl/detail/begin_impl.hpp \
@@ -162,7 +165,7 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
  /usr/include/boost/config/select_compiler_config.hpp \
  /usr/include/boost/config/compiler/gcc.hpp \
  /usr/include/boost/config/select_stdlib_config.hpp \
- /usr/include/c++/4.8.3/cstddef \
+ /usr/include/c++/4.9.2/cstddef \
  /usr/include/boost/config/no_tr1/utility.hpp \
  /usr/include/boost/config/stdlib/libstdcpp3.hpp /usr/include/unistd.h \
  /usr/include/bits/posix_opt.h /usr/include/bits/environments.h \
@@ -615,9 +618,7 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
  /usr/include/boost/fusion/container/vector/detail/preprocessed/vector_fwd.hpp \
  /usr/include/boost/fusion/container/vector/detail/preprocessed/vvector10_fwd.hpp \
  /usr/include/boost/fusion/container/map/map_fwd.hpp \
- /usr/include/boost/fusion/container/map/limits.hpp \
- /usr/include/boost/fusion/container/map/detail/preprocessed/map_fwd.hpp \
- /usr/include/boost/fusion/container/map/detail/preprocessed/map10_fwd.hpp \
+ /usr/include/boost/fusion/container/map/detail/map_impl.hpp \
  /usr/include/boost/fusion/container/set/set_fwd.hpp \
  /usr/include/boost/fusion/container/set/limits.hpp \
  /usr/include/boost/fusion/container/set/detail/preprocessed/set_fwd.hpp \
@@ -783,13 +784,15 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
  /usr/include/boost/type_traits/has_trivial_move_constructor.hpp \
  /usr/include/boost/type_traits/has_virtual_destructor.hpp \
  /usr/include/boost/type_traits/is_complex.hpp \
- /usr/include/c++/4.8.3/complex /usr/include/c++/4.8.3/cmath \
+ /usr/include/c++/4.9.2/complex /usr/include/c++/4.9.2/cmath \
  /usr/include/math.h /usr/include/bits/huge_val.h \
  /usr/include/bits/huge_valf.h /usr/include/bits/huge_vall.h \
  /usr/include/bits/inf.h /usr/include/bits/nan.h \
  /usr/include/bits/mathdef.h /usr/include/bits/mathcalls.h \
- /usr/include/c++/4.8.3/sstream /usr/include/c++/4.8.3/bits/sstream.tcc \
+ /usr/include/c++/4.9.2/sstream /usr/include/c++/4.9.2/bits/sstream.tcc \
  /usr/include/boost/type_traits/is_compound.hpp \
+ /usr/include/boost/type_traits/is_copy_constructible.hpp \
+ /usr/include/boost/noncopyable.hpp \
  /usr/include/boost/type_traits/is_floating_point.hpp \
  /usr/include/boost/type_traits/is_member_object_pointer.hpp \
  /usr/include/boost/type_traits/is_nothrow_move_assignable.hpp \
@@ -820,51 +823,73 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
  /usr/include/boost/mpl/aux_/unwrap.hpp \
  /usr/include/boost/utility/value_init.hpp \
  /usr/include/boost/type_traits/cv_traits.hpp /usr/include/boost/swap.hpp \
- /usr/include/boost/utility/swap.hpp /usr/include/c++/4.8.3/algorithm \
- /usr/include/c++/4.8.3/bits/stl_algo.h \
- /usr/include/c++/4.8.3/bits/algorithmfwd.h \
- /usr/include/c++/4.8.3/bits/stl_heap.h \
- /usr/include/c++/4.8.3/bits/stl_tempbuf.h /usr/include/c++/4.8.3/random \
- /usr/include/c++/4.8.3/limits /usr/include/c++/4.8.3/bits/random.h \
- /usr/include/c++/4.8.3/x86_64-redhat-linux/bits/opt_random.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/x86intrin.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/ia32intrin.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/mmintrin.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/xmmintrin.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/mm_malloc.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/emmintrin.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/pmmintrin.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/tmmintrin.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/smmintrin.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/popcntintrin.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/wmmintrin.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/immintrin.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/avxintrin.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/fxsrintrin.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/xsaveintrin.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/xsaveoptintrin.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/adxintrin.h \
- /usr/include/c++/4.8.3/bits/random.tcc /usr/include/c++/4.8.3/numeric \
- /usr/include/c++/4.8.3/bits/stl_numeric.h \
- /usr/include/c++/4.8.3/functional /usr/include/c++/4.8.3/typeinfo \
- /usr/include/c++/4.8.3/cstring ../../OpenFPM_data/src/memory_conf.hpp \
+ /usr/include/boost/utility/swap.hpp /usr/include/c++/4.9.2/algorithm \
+ /usr/include/c++/4.9.2/bits/stl_algo.h \
+ /usr/include/c++/4.9.2/bits/algorithmfwd.h \
+ /usr/include/c++/4.9.2/bits/stl_heap.h \
+ /usr/include/c++/4.9.2/bits/stl_tempbuf.h /usr/include/c++/4.9.2/random \
+ /usr/include/c++/4.9.2/limits /usr/include/c++/4.9.2/bits/random.h \
+ /usr/include/c++/4.9.2/x86_64-redhat-linux/bits/opt_random.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/x86intrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/ia32intrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/mmintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/xmmintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/mm_malloc.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/emmintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/pmmintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/tmmintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/ammintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/smmintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/popcntintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/wmmintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/immintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/avxintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/avx2intrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/avx512fintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/avx512erintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/avx512pfintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/avx512cdintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/shaintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/lzcntintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/bmiintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/bmi2intrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/fmaintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/f16cintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/rtmintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/xtestintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/mm3dnow.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/prfchwintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/fma4intrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/xopintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/lwpintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/tbmintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/rdseedintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/fxsrintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/xsaveintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/xsaveoptintrin.h \
+ /usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/adxintrin.h \
+ /usr/include/c++/4.9.2/bits/random.tcc /usr/include/c++/4.9.2/numeric \
+ /usr/include/c++/4.9.2/bits/stl_numeric.h /usr/include/c++/4.9.2/cstring \
+ ../../OpenFPM_data/src/memory_ly/memory_conf.hpp \
  ../../OpenFPM_data/src/util/variadic_to_vmpl.hpp \
  /usr/include/boost/mpl/reverse.hpp /usr/include/boost/mpl/vector.hpp \
  /usr/include/boost/mpl/limits/vector.hpp \
  /usr/include/boost/mpl/vector/vector20.hpp \
  /usr/include/boost/mpl/vector/aux_/preprocessed/typeof_based/vector20.hpp \
  /usr/include/boost/mpl/aux_/preprocessed/gcc/vector.hpp \
- ../../OpenFPM_data/src/t_to_memory_c.hpp \
- ../../OpenFPM_data/src/memory_c.hpp /usr/include/boost/shared_ptr.hpp \
+ ../../OpenFPM_data/src/memory_ly/t_to_memory_c.hpp \
+ ../../OpenFPM_data/src/memory_ly/memory_c.hpp \
+ /usr/include/boost/shared_ptr.hpp \
  /usr/include/boost/smart_ptr/shared_ptr.hpp \
  /usr/include/boost/config/no_tr1/memory.hpp \
- /usr/include/c++/4.8.3/memory \
- /usr/include/c++/4.8.3/bits/stl_raw_storage_iter.h \
- /usr/include/c++/4.8.3/ext/concurrence.h \
- /usr/include/c++/4.8.3/bits/unique_ptr.h \
- /usr/include/c++/4.8.3/bits/shared_ptr.h \
- /usr/include/c++/4.8.3/bits/shared_ptr_base.h \
- /usr/include/c++/4.8.3/backward/auto_ptr.h /usr/include/boost/assert.hpp \
+ /usr/include/c++/4.9.2/memory \
+ /usr/include/c++/4.9.2/bits/stl_raw_storage_iter.h \
+ /usr/include/c++/4.9.2/typeinfo /usr/include/c++/4.9.2/ext/concurrence.h \
+ /usr/include/c++/4.9.2/functional \
+ /usr/include/c++/4.9.2/bits/unique_ptr.h \
+ /usr/include/c++/4.9.2/bits/shared_ptr.h \
+ /usr/include/c++/4.9.2/bits/shared_ptr_base.h \
+ /usr/include/c++/4.9.2/backward/auto_ptr.h /usr/include/boost/assert.hpp \
  /usr/include/assert.h /usr/include/boost/current_function.hpp \
  /usr/include/boost/checked_delete.hpp \
  /usr/include/boost/throw_exception.hpp \
@@ -891,8 +916,8 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
  /usr/include/boost/multi_array/extent_gen.hpp \
  /usr/include/boost/multi_array/range_list.hpp \
  /usr/include/boost/array.hpp /usr/include/boost/detail/iterator.hpp \
- /usr/include/c++/4.8.3/iterator \
- /usr/include/c++/4.8.3/bits/stream_iterator.h \
+ /usr/include/c++/4.9.2/iterator \
+ /usr/include/c++/4.9.2/bits/stream_iterator.h \
  /usr/include/boost/functional/hash_fwd.hpp \
  /usr/include/boost/functional/hash/hash_fwd.hpp \
  /usr/include/boost/multi_array/types.hpp \
@@ -940,11 +965,13 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
  /usr/include/boost/functional.hpp /usr/include/boost/call_traits.hpp \
  /usr/include/boost/detail/call_traits.hpp \
  ../../OpenFPM_data/src/util/ct_array.hpp \
- ../../OpenFPM_data/src/memory_array.hpp \
- ../../OpenFPM_data/src/memory.hpp ../../OpenFPM_data/src/memory.hpp \
+ ../../OpenFPM_data/src/memory_ly/memory_array.hpp \
+ ../../OpenFPM_devices/src/memory/memory.hpp \
  ../../OpenFPM_data/src/util/meta_copy.hpp \
  ../../OpenFPM_data/src/Memleak_check.hpp \
  ../../OpenFPM_data/src/util/for_each_ref.hpp \
+ ../../OpenFPM_data/src/Grid/util.hpp \
+ ../../OpenFPM_data/src/util/common.hpp \
  ../../OpenFPM_data/src/Grid/grid_sm.hpp \
  /usr/include/boost/shared_array.hpp \
  /usr/include/boost/smart_ptr/shared_array.hpp \
@@ -959,39 +986,55 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
  ../../OpenFPM_data/src/Space/Shape/Point.hpp \
  ../../OpenFPM_data/src/Grid/grid_key.hpp \
  ../../OpenFPM_data/src/Grid/Encap.hpp \
- ../../OpenFPM_data/src/memory_array.hpp \
+ ../../OpenFPM_data/src/memory_ly/memory_array.hpp \
  ../../OpenFPM_devices/src/memory/HeapMemory.hpp \
+ ../../OpenFPM_devices/src/memory/memory.hpp \
  ../../OpenFPM_data/src/Vector/vect_isel.hpp \
- ../../OpenFPM_data/src/common.hpp \
  ../../OpenFPM_data/src/util/object_s_di.hpp \
  ../../OpenFPM_data/src/util/for_each_ref.hpp \
  /usr/include/boost/fusion/include/size.hpp \
+ ../../OpenFPM_data/src/Vector/util.hpp \
  ../../OpenFPM_data/src/Vector/map_vector_std.hpp \
- ../../OpenFPM_vcluster/src/MPI_IallreduceW.hpp
+ ../../OpenFPM_vcluster/src/MPI_wrapper/MPI_IallreduceW.hpp \
+ ../../OpenFPM_vcluster/src/MPI_wrapper/MPI_IrecvW.hpp \
+ ../../OpenFPM_vcluster/src/MPI_wrapper/MPI_IsendW.hpp \
+ ../../OpenFPM_data/src/util/check_no_pointers.hpp \
+ ../../OpenFPM_data/src/util/common.hpp \
+ ../../OpenFPM_data/src/util/util_debug.hpp \
+ /usr/include/c++/4.9.2/cxxabi.h \
+ /usr/include/c++/4.9.2/x86_64-redhat-linux/bits/cxxabi_tweaks.h \
+ ../../OpenFPM_vcluster/src/util/Vcluster_log.hpp \
+ /usr/include/c++/4.9.2/fstream /usr/include/c++/4.9.2/bits/codecvt.h \
+ /usr/include/c++/4.9.2/x86_64-redhat-linux/bits/basic_file.h \
+ /usr/include/c++/4.9.2/x86_64-redhat-linux/bits/c++io.h \
+ /usr/include/c++/4.9.2/bits/fstream.tcc ../../OpenFPM_data/src/timer.hpp \
+ /usr/include/sys/time.h
 
 /usr/include/stdc-predef.h:
 
 ../../OpenFPM_vcluster/src/VCluster.hpp:
 
+../src/config/config.h:
+
 /home/i-bird/MPI/include/mpi.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/stddef.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/stddef.h:
 
 /home/i-bird/MPI/include/mpi_portable_platform.h:
 
 /home/i-bird/MPI/include/openmpi/ompi/mpi/cxx/mpicxx.h:
 
-/usr/include/c++/4.8.3/map:
+/usr/include/c++/4.9.2/map:
 
-/usr/include/c++/4.8.3/bits/stl_tree.h:
+/usr/include/c++/4.9.2/bits/stl_tree.h:
 
-/usr/include/c++/4.8.3/bits/stl_algobase.h:
+/usr/include/c++/4.9.2/bits/stl_algobase.h:
 
-/usr/include/c++/4.8.3/x86_64-redhat-linux/bits/c++config.h:
+/usr/include/c++/4.9.2/x86_64-redhat-linux/bits/c++config.h:
 
 /usr/include/bits/wordsize.h:
 
-/usr/include/c++/4.8.3/x86_64-redhat-linux/bits/os_defines.h:
+/usr/include/c++/4.9.2/x86_64-redhat-linux/bits/os_defines.h:
 
 /usr/include/features.h:
 
@@ -1001,113 +1044,119 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 /usr/include/gnu/stubs-64.h:
 
-/usr/include/c++/4.8.3/x86_64-redhat-linux/bits/cpu_defines.h:
+/usr/include/c++/4.9.2/x86_64-redhat-linux/bits/cpu_defines.h:
 
-/usr/include/c++/4.8.3/bits/functexcept.h:
+/usr/include/c++/4.9.2/bits/functexcept.h:
 
-/usr/include/c++/4.8.3/bits/exception_defines.h:
+/usr/include/c++/4.9.2/bits/exception_defines.h:
 
-/usr/include/c++/4.8.3/bits/cpp_type_traits.h:
+/usr/include/c++/4.9.2/bits/cpp_type_traits.h:
 
-/usr/include/c++/4.8.3/ext/type_traits.h:
+/usr/include/c++/4.9.2/ext/type_traits.h:
 
-/usr/include/c++/4.8.3/ext/numeric_traits.h:
+/usr/include/c++/4.9.2/ext/numeric_traits.h:
 
-/usr/include/c++/4.8.3/bits/stl_pair.h:
+/usr/include/c++/4.9.2/bits/stl_pair.h:
 
-/usr/include/c++/4.8.3/bits/move.h:
+/usr/include/c++/4.9.2/bits/move.h:
 
-/usr/include/c++/4.8.3/bits/concept_check.h:
+/usr/include/c++/4.9.2/bits/concept_check.h:
 
-/usr/include/c++/4.8.3/type_traits:
+/usr/include/c++/4.9.2/type_traits:
 
-/usr/include/c++/4.8.3/bits/stl_iterator_base_types.h:
+/usr/include/c++/4.9.2/bits/stl_iterator_base_types.h:
 
-/usr/include/c++/4.8.3/bits/stl_iterator_base_funcs.h:
+/usr/include/c++/4.9.2/bits/stl_iterator_base_funcs.h:
 
-/usr/include/c++/4.8.3/debug/debug.h:
+/usr/include/c++/4.9.2/debug/debug.h:
 
-/usr/include/c++/4.8.3/bits/stl_iterator.h:
+/usr/include/c++/4.9.2/bits/stl_iterator.h:
 
-/usr/include/c++/4.8.3/bits/allocator.h:
+/usr/include/c++/4.9.2/bits/ptr_traits.h:
 
-/usr/include/c++/4.8.3/x86_64-redhat-linux/bits/c++allocator.h:
+/usr/include/c++/4.9.2/bits/predefined_ops.h:
 
-/usr/include/c++/4.8.3/ext/new_allocator.h:
+/usr/include/c++/4.9.2/bits/allocator.h:
 
-/usr/include/c++/4.8.3/new:
+/usr/include/c++/4.9.2/x86_64-redhat-linux/bits/c++allocator.h:
 
-/usr/include/c++/4.8.3/exception:
+/usr/include/c++/4.9.2/ext/new_allocator.h:
 
-/usr/include/c++/4.8.3/bits/atomic_lockfree_defines.h:
+/usr/include/c++/4.9.2/new:
 
-/usr/include/c++/4.8.3/bits/exception_ptr.h:
+/usr/include/c++/4.9.2/exception:
 
-/usr/include/c++/4.8.3/bits/nested_exception.h:
+/usr/include/c++/4.9.2/bits/atomic_lockfree_defines.h:
 
-/usr/include/c++/4.8.3/bits/memoryfwd.h:
+/usr/include/c++/4.9.2/bits/exception_ptr.h:
 
-/usr/include/c++/4.8.3/bits/stl_function.h:
+/usr/include/c++/4.9.2/bits/nested_exception.h:
 
-/usr/include/c++/4.8.3/backward/binders.h:
+/usr/include/c++/4.9.2/bits/memoryfwd.h:
 
-/usr/include/c++/4.8.3/bits/alloc_traits.h:
+/usr/include/c++/4.9.2/bits/stl_function.h:
 
-/usr/include/c++/4.8.3/bits/ptr_traits.h:
+/usr/include/c++/4.9.2/backward/binders.h:
 
-/usr/include/c++/4.8.3/bits/stl_map.h:
+/usr/include/c++/4.9.2/ext/alloc_traits.h:
 
-/usr/include/c++/4.8.3/initializer_list:
+/usr/include/c++/4.9.2/bits/alloc_traits.h:
 
-/usr/include/c++/4.8.3/tuple:
+/usr/include/c++/4.9.2/ext/aligned_buffer.h:
 
-/usr/include/c++/4.8.3/utility:
+/usr/include/c++/4.9.2/bits/stl_map.h:
 
-/usr/include/c++/4.8.3/bits/stl_relops.h:
+/usr/include/c++/4.9.2/initializer_list:
 
-/usr/include/c++/4.8.3/array:
+/usr/include/c++/4.9.2/tuple:
 
-/usr/include/c++/4.8.3/stdexcept:
+/usr/include/c++/4.9.2/utility:
 
-/usr/include/c++/4.8.3/string:
+/usr/include/c++/4.9.2/bits/stl_relops.h:
 
-/usr/include/c++/4.8.3/bits/stringfwd.h:
+/usr/include/c++/4.9.2/array:
 
-/usr/include/c++/4.8.3/bits/char_traits.h:
+/usr/include/c++/4.9.2/stdexcept:
 
-/usr/include/c++/4.8.3/bits/postypes.h:
+/usr/include/c++/4.9.2/string:
 
-/usr/include/c++/4.8.3/cwchar:
+/usr/include/c++/4.9.2/bits/stringfwd.h:
+
+/usr/include/c++/4.9.2/bits/char_traits.h:
+
+/usr/include/c++/4.9.2/bits/postypes.h:
+
+/usr/include/c++/4.9.2/cwchar:
 
 /usr/include/wchar.h:
 
 /usr/include/stdio.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/stdarg.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/stdarg.h:
 
 /usr/include/bits/wchar.h:
 
 /usr/include/xlocale.h:
 
-/usr/include/c++/4.8.3/cstdint:
+/usr/include/c++/4.9.2/cstdint:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/stdint.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/stdint.h:
 
 /usr/include/stdint.h:
 
-/usr/include/c++/4.8.3/bits/localefwd.h:
+/usr/include/c++/4.9.2/bits/localefwd.h:
 
-/usr/include/c++/4.8.3/x86_64-redhat-linux/bits/c++locale.h:
+/usr/include/c++/4.9.2/x86_64-redhat-linux/bits/c++locale.h:
 
-/usr/include/c++/4.8.3/clocale:
+/usr/include/c++/4.9.2/clocale:
 
 /usr/include/locale.h:
 
 /usr/include/bits/locale.h:
 
-/usr/include/c++/4.8.3/iosfwd:
+/usr/include/c++/4.9.2/iosfwd:
 
-/usr/include/c++/4.8.3/cctype:
+/usr/include/c++/4.9.2/cctype:
 
 /usr/include/ctype.h:
 
@@ -1123,19 +1172,19 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 /usr/include/bits/byteswap-16.h:
 
-/usr/include/c++/4.8.3/bits/ostream_insert.h:
+/usr/include/c++/4.9.2/bits/ostream_insert.h:
 
-/usr/include/c++/4.8.3/bits/cxxabi_forced.h:
+/usr/include/c++/4.9.2/bits/cxxabi_forced.h:
 
-/usr/include/c++/4.8.3/bits/range_access.h:
+/usr/include/c++/4.9.2/bits/range_access.h:
 
-/usr/include/c++/4.8.3/bits/basic_string.h:
+/usr/include/c++/4.9.2/bits/basic_string.h:
 
-/usr/include/c++/4.8.3/ext/atomicity.h:
+/usr/include/c++/4.9.2/ext/atomicity.h:
 
-/usr/include/c++/4.8.3/x86_64-redhat-linux/bits/gthr.h:
+/usr/include/c++/4.9.2/x86_64-redhat-linux/bits/gthr.h:
 
-/usr/include/c++/4.8.3/x86_64-redhat-linux/bits/gthr-default.h:
+/usr/include/c++/4.9.2/x86_64-redhat-linux/bits/gthr-default.h:
 
 /usr/include/pthread.h:
 
@@ -1153,11 +1202,11 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 /usr/include/bits/setjmp.h:
 
-/usr/include/c++/4.8.3/x86_64-redhat-linux/bits/atomic_word.h:
+/usr/include/c++/4.9.2/x86_64-redhat-linux/bits/atomic_word.h:
 
-/usr/include/c++/4.8.3/ext/string_conversions.h:
+/usr/include/c++/4.9.2/ext/string_conversions.h:
 
-/usr/include/c++/4.8.3/cstdlib:
+/usr/include/c++/4.9.2/cstdlib:
 
 /usr/include/stdlib.h:
 
@@ -1179,7 +1228,7 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 /usr/include/bits/stdlib-float.h:
 
-/usr/include/c++/4.8.3/cstdio:
+/usr/include/c++/4.9.2/cstdio:
 
 /usr/include/libio.h:
 
@@ -1189,7 +1238,7 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 /usr/include/bits/sys_errlist.h:
 
-/usr/include/c++/4.8.3/cerrno:
+/usr/include/c++/4.9.2/cerrno:
 
 /usr/include/errno.h:
 
@@ -1203,55 +1252,55 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 /usr/include/asm-generic/errno-base.h:
 
-/usr/include/c++/4.8.3/bits/functional_hash.h:
+/usr/include/c++/4.9.2/bits/functional_hash.h:
 
-/usr/include/c++/4.8.3/bits/hash_bytes.h:
+/usr/include/c++/4.9.2/bits/hash_bytes.h:
 
-/usr/include/c++/4.8.3/bits/basic_string.tcc:
+/usr/include/c++/4.9.2/bits/basic_string.tcc:
 
-/usr/include/c++/4.8.3/bits/uses_allocator.h:
+/usr/include/c++/4.9.2/bits/uses_allocator.h:
 
-/usr/include/c++/4.8.3/bits/stl_multimap.h:
+/usr/include/c++/4.9.2/bits/stl_multimap.h:
 
-/usr/include/c++/4.8.3/iostream:
+/usr/include/c++/4.9.2/iostream:
 
-/usr/include/c++/4.8.3/ostream:
+/usr/include/c++/4.9.2/ostream:
 
-/usr/include/c++/4.8.3/ios:
+/usr/include/c++/4.9.2/ios:
 
-/usr/include/c++/4.8.3/bits/ios_base.h:
+/usr/include/c++/4.9.2/bits/ios_base.h:
 
-/usr/include/c++/4.8.3/bits/locale_classes.h:
+/usr/include/c++/4.9.2/bits/locale_classes.h:
 
-/usr/include/c++/4.8.3/bits/locale_classes.tcc:
+/usr/include/c++/4.9.2/bits/locale_classes.tcc:
 
-/usr/include/c++/4.8.3/streambuf:
+/usr/include/c++/4.9.2/streambuf:
 
-/usr/include/c++/4.8.3/bits/streambuf.tcc:
+/usr/include/c++/4.9.2/bits/streambuf.tcc:
 
-/usr/include/c++/4.8.3/bits/basic_ios.h:
+/usr/include/c++/4.9.2/bits/basic_ios.h:
 
-/usr/include/c++/4.8.3/bits/locale_facets.h:
+/usr/include/c++/4.9.2/bits/locale_facets.h:
 
-/usr/include/c++/4.8.3/cwctype:
+/usr/include/c++/4.9.2/cwctype:
 
 /usr/include/wctype.h:
 
-/usr/include/c++/4.8.3/x86_64-redhat-linux/bits/ctype_base.h:
+/usr/include/c++/4.9.2/x86_64-redhat-linux/bits/ctype_base.h:
 
-/usr/include/c++/4.8.3/bits/streambuf_iterator.h:
+/usr/include/c++/4.9.2/bits/streambuf_iterator.h:
 
-/usr/include/c++/4.8.3/x86_64-redhat-linux/bits/ctype_inline.h:
+/usr/include/c++/4.9.2/x86_64-redhat-linux/bits/ctype_inline.h:
 
-/usr/include/c++/4.8.3/bits/locale_facets.tcc:
+/usr/include/c++/4.9.2/bits/locale_facets.tcc:
 
-/usr/include/c++/4.8.3/bits/basic_ios.tcc:
+/usr/include/c++/4.9.2/bits/basic_ios.tcc:
 
-/usr/include/c++/4.8.3/bits/ostream.tcc:
+/usr/include/c++/4.9.2/bits/ostream.tcc:
 
-/usr/include/c++/4.8.3/istream:
+/usr/include/c++/4.9.2/istream:
 
-/usr/include/c++/4.8.3/bits/istream.tcc:
+/usr/include/c++/4.9.2/bits/istream.tcc:
 
 /home/i-bird/MPI/include/openmpi/ompi/mpi/cxx/constants.h:
 
@@ -1315,31 +1364,29 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 /home/i-bird/MPI/include/openmpi/ompi/mpi/cxx/file_inln.h:
 
+../../OpenFPM_vcluster/src/MPI_wrapper/MPI_util.hpp:
+
 ../../OpenFPM_vcluster/src/VCluster_object.hpp:
 
 ../../OpenFPM_vcluster/src/VCluster_object_array.hpp:
 
-/usr/include/c++/4.8.3/vector:
+/usr/include/c++/4.9.2/vector:
 
-/usr/include/c++/4.8.3/bits/stl_construct.h:
+/usr/include/c++/4.9.2/bits/stl_construct.h:
 
-/usr/include/c++/4.8.3/ext/alloc_traits.h:
+/usr/include/c++/4.9.2/bits/stl_uninitialized.h:
 
-/usr/include/c++/4.8.3/bits/stl_uninitialized.h:
+/usr/include/c++/4.9.2/bits/stl_vector.h:
 
-/usr/include/c++/4.8.3/bits/stl_vector.h:
+/usr/include/c++/4.9.2/bits/stl_bvector.h:
 
-/usr/include/c++/4.8.3/bits/stl_bvector.h:
-
-/usr/include/c++/4.8.3/bits/vector.tcc:
+/usr/include/c++/4.9.2/bits/vector.tcc:
 
 ../../OpenFPM_vcluster/src/VObject.hpp:
 
 ../../OpenFPM_data/src/Vector/map_vector.hpp:
 
 ../../OpenFPM_data/src/Grid/map_grid.hpp:
-
-../src/config/config.h:
 
 /usr/include/boost/fusion/include/mpl.hpp:
 
@@ -1377,7 +1424,7 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 /usr/include/boost/config/select_stdlib_config.hpp:
 
-/usr/include/c++/4.8.3/cstddef:
+/usr/include/c++/4.9.2/cstddef:
 
 /usr/include/boost/config/no_tr1/utility.hpp:
 
@@ -2333,11 +2380,7 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 /usr/include/boost/fusion/container/map/map_fwd.hpp:
 
-/usr/include/boost/fusion/container/map/limits.hpp:
-
-/usr/include/boost/fusion/container/map/detail/preprocessed/map_fwd.hpp:
-
-/usr/include/boost/fusion/container/map/detail/preprocessed/map10_fwd.hpp:
+/usr/include/boost/fusion/container/map/detail/map_impl.hpp:
 
 /usr/include/boost/fusion/container/set/set_fwd.hpp:
 
@@ -2675,9 +2718,9 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 /usr/include/boost/type_traits/is_complex.hpp:
 
-/usr/include/c++/4.8.3/complex:
+/usr/include/c++/4.9.2/complex:
 
-/usr/include/c++/4.8.3/cmath:
+/usr/include/c++/4.9.2/cmath:
 
 /usr/include/math.h:
 
@@ -2695,11 +2738,15 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 /usr/include/bits/mathcalls.h:
 
-/usr/include/c++/4.8.3/sstream:
+/usr/include/c++/4.9.2/sstream:
 
-/usr/include/c++/4.8.3/bits/sstream.tcc:
+/usr/include/c++/4.9.2/bits/sstream.tcc:
 
 /usr/include/boost/type_traits/is_compound.hpp:
+
+/usr/include/boost/type_traits/is_copy_constructible.hpp:
+
+/usr/include/boost/noncopyable.hpp:
 
 /usr/include/boost/type_traits/is_floating_point.hpp:
 
@@ -2765,71 +2812,109 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 /usr/include/boost/utility/swap.hpp:
 
-/usr/include/c++/4.8.3/algorithm:
+/usr/include/c++/4.9.2/algorithm:
 
-/usr/include/c++/4.8.3/bits/stl_algo.h:
+/usr/include/c++/4.9.2/bits/stl_algo.h:
 
-/usr/include/c++/4.8.3/bits/algorithmfwd.h:
+/usr/include/c++/4.9.2/bits/algorithmfwd.h:
 
-/usr/include/c++/4.8.3/bits/stl_heap.h:
+/usr/include/c++/4.9.2/bits/stl_heap.h:
 
-/usr/include/c++/4.8.3/bits/stl_tempbuf.h:
+/usr/include/c++/4.9.2/bits/stl_tempbuf.h:
 
-/usr/include/c++/4.8.3/random:
+/usr/include/c++/4.9.2/random:
 
-/usr/include/c++/4.8.3/limits:
+/usr/include/c++/4.9.2/limits:
 
-/usr/include/c++/4.8.3/bits/random.h:
+/usr/include/c++/4.9.2/bits/random.h:
 
-/usr/include/c++/4.8.3/x86_64-redhat-linux/bits/opt_random.h:
+/usr/include/c++/4.9.2/x86_64-redhat-linux/bits/opt_random.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/x86intrin.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/x86intrin.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/ia32intrin.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/ia32intrin.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/mmintrin.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/mmintrin.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/xmmintrin.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/xmmintrin.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/mm_malloc.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/mm_malloc.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/emmintrin.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/emmintrin.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/pmmintrin.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/pmmintrin.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/tmmintrin.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/tmmintrin.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/smmintrin.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/ammintrin.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/popcntintrin.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/smmintrin.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/wmmintrin.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/popcntintrin.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/immintrin.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/wmmintrin.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/avxintrin.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/immintrin.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/fxsrintrin.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/avxintrin.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/xsaveintrin.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/avx2intrin.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/xsaveoptintrin.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/avx512fintrin.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.3/include/adxintrin.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/avx512erintrin.h:
 
-/usr/include/c++/4.8.3/bits/random.tcc:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/avx512pfintrin.h:
 
-/usr/include/c++/4.8.3/numeric:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/avx512cdintrin.h:
 
-/usr/include/c++/4.8.3/bits/stl_numeric.h:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/shaintrin.h:
 
-/usr/include/c++/4.8.3/functional:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/lzcntintrin.h:
 
-/usr/include/c++/4.8.3/typeinfo:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/bmiintrin.h:
 
-/usr/include/c++/4.8.3/cstring:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/bmi2intrin.h:
 
-../../OpenFPM_data/src/memory_conf.hpp:
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/fmaintrin.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/f16cintrin.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/rtmintrin.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/xtestintrin.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/mm3dnow.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/prfchwintrin.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/fma4intrin.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/xopintrin.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/lwpintrin.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/tbmintrin.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/rdseedintrin.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/fxsrintrin.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/xsaveintrin.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/xsaveoptintrin.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include/adxintrin.h:
+
+/usr/include/c++/4.9.2/bits/random.tcc:
+
+/usr/include/c++/4.9.2/numeric:
+
+/usr/include/c++/4.9.2/bits/stl_numeric.h:
+
+/usr/include/c++/4.9.2/cstring:
+
+../../OpenFPM_data/src/memory_ly/memory_conf.hpp:
 
 ../../OpenFPM_data/src/util/variadic_to_vmpl.hpp:
 
@@ -2845,9 +2930,9 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 /usr/include/boost/mpl/aux_/preprocessed/gcc/vector.hpp:
 
-../../OpenFPM_data/src/t_to_memory_c.hpp:
+../../OpenFPM_data/src/memory_ly/t_to_memory_c.hpp:
 
-../../OpenFPM_data/src/memory_c.hpp:
+../../OpenFPM_data/src/memory_ly/memory_c.hpp:
 
 /usr/include/boost/shared_ptr.hpp:
 
@@ -2855,19 +2940,23 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 /usr/include/boost/config/no_tr1/memory.hpp:
 
-/usr/include/c++/4.8.3/memory:
+/usr/include/c++/4.9.2/memory:
 
-/usr/include/c++/4.8.3/bits/stl_raw_storage_iter.h:
+/usr/include/c++/4.9.2/bits/stl_raw_storage_iter.h:
 
-/usr/include/c++/4.8.3/ext/concurrence.h:
+/usr/include/c++/4.9.2/typeinfo:
 
-/usr/include/c++/4.8.3/bits/unique_ptr.h:
+/usr/include/c++/4.9.2/ext/concurrence.h:
 
-/usr/include/c++/4.8.3/bits/shared_ptr.h:
+/usr/include/c++/4.9.2/functional:
 
-/usr/include/c++/4.8.3/bits/shared_ptr_base.h:
+/usr/include/c++/4.9.2/bits/unique_ptr.h:
 
-/usr/include/c++/4.8.3/backward/auto_ptr.h:
+/usr/include/c++/4.9.2/bits/shared_ptr.h:
+
+/usr/include/c++/4.9.2/bits/shared_ptr_base.h:
+
+/usr/include/c++/4.9.2/backward/auto_ptr.h:
 
 /usr/include/boost/assert.hpp:
 
@@ -2927,9 +3016,9 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 /usr/include/boost/detail/iterator.hpp:
 
-/usr/include/c++/4.8.3/iterator:
+/usr/include/c++/4.9.2/iterator:
 
-/usr/include/c++/4.8.3/bits/stream_iterator.h:
+/usr/include/c++/4.9.2/bits/stream_iterator.h:
 
 /usr/include/boost/functional/hash_fwd.hpp:
 
@@ -3029,17 +3118,19 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 ../../OpenFPM_data/src/util/ct_array.hpp:
 
-../../OpenFPM_data/src/memory_array.hpp:
+../../OpenFPM_data/src/memory_ly/memory_array.hpp:
 
-../../OpenFPM_data/src/memory.hpp:
-
-../../OpenFPM_data/src/memory.hpp:
+../../OpenFPM_devices/src/memory/memory.hpp:
 
 ../../OpenFPM_data/src/util/meta_copy.hpp:
 
 ../../OpenFPM_data/src/Memleak_check.hpp:
 
 ../../OpenFPM_data/src/util/for_each_ref.hpp:
+
+../../OpenFPM_data/src/Grid/util.hpp:
+
+../../OpenFPM_data/src/util/common.hpp:
 
 ../../OpenFPM_data/src/Grid/grid_sm.hpp:
 
@@ -3069,13 +3160,13 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 ../../OpenFPM_data/src/Grid/Encap.hpp:
 
-../../OpenFPM_data/src/memory_array.hpp:
+../../OpenFPM_data/src/memory_ly/memory_array.hpp:
 
 ../../OpenFPM_devices/src/memory/HeapMemory.hpp:
 
-../../OpenFPM_data/src/Vector/vect_isel.hpp:
+../../OpenFPM_devices/src/memory/memory.hpp:
 
-../../OpenFPM_data/src/common.hpp:
+../../OpenFPM_data/src/Vector/vect_isel.hpp:
 
 ../../OpenFPM_data/src/util/object_s_di.hpp:
 
@@ -3083,6 +3174,38 @@ pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp \
 
 /usr/include/boost/fusion/include/size.hpp:
 
+../../OpenFPM_data/src/Vector/util.hpp:
+
 ../../OpenFPM_data/src/Vector/map_vector_std.hpp:
 
-../../OpenFPM_vcluster/src/MPI_IallreduceW.hpp:
+../../OpenFPM_vcluster/src/MPI_wrapper/MPI_IallreduceW.hpp:
+
+../../OpenFPM_vcluster/src/MPI_wrapper/MPI_IrecvW.hpp:
+
+../../OpenFPM_vcluster/src/MPI_wrapper/MPI_IsendW.hpp:
+
+../../OpenFPM_data/src/util/check_no_pointers.hpp:
+
+../../OpenFPM_data/src/util/common.hpp:
+
+../../OpenFPM_data/src/util/util_debug.hpp:
+
+/usr/include/c++/4.9.2/cxxabi.h:
+
+/usr/include/c++/4.9.2/x86_64-redhat-linux/bits/cxxabi_tweaks.h:
+
+../../OpenFPM_vcluster/src/util/Vcluster_log.hpp:
+
+/usr/include/c++/4.9.2/fstream:
+
+/usr/include/c++/4.9.2/bits/codecvt.h:
+
+/usr/include/c++/4.9.2/x86_64-redhat-linux/bits/basic_file.h:
+
+/usr/include/c++/4.9.2/x86_64-redhat-linux/bits/c++io.h:
+
+/usr/include/c++/4.9.2/bits/fstream.tcc:
+
+../../OpenFPM_data/src/timer.hpp:
+
+/usr/include/sys/time.h:

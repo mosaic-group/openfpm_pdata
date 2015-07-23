@@ -24,7 +24,7 @@
      |  +------------+  |
      |                  |
      +------------------+
-(0,0)
+(0,0) local coordinate ---> ( x, y )
 
 	\endverbatim
 
@@ -41,6 +41,8 @@ struct GBoxes
 	Box<dim,long int> GDbox;
 	//! Domain box
 	Box<dim,long int> Dbox;
+	//! origin of GDbox in global coordinates
+	Point<dim,long int> origin;
 };
 
 #include "grid_dist_key.hpp"
@@ -78,7 +80,7 @@ class grid_dist_iterator
 	 *
 	 */
 	grid_dist_iterator(Vcluster_object_array<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
-	:g_c(0),gList(gk),gdb_ext(gdb_ext),m(m)
+	:g_c(0),gList(gk),gdb_ext(gdb_ext),m(0)
 	{
 		// Initialize the current iterator
 		// with the first grid

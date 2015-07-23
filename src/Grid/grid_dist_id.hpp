@@ -2,16 +2,19 @@
 #define COM_UNIT_HPP
 
 #include <vector>
+#include <unordered_map>
 #include "Grid/map_grid.hpp"
 #include "VCluster.hpp"
 #include "Space/SpaceBox.hpp"
-#include "mathutil.hpp"
+#include "util/mathutil.hpp"
 #include "grid_dist_id_iterator.hpp"
 #include "grid_dist_key.hpp"
 #include "NN/CellList/CellDecomposer.hpp"
 #include "util/object_util.hpp"
 #include "memory/ExtPreAlloc.hpp"
 #include "VTKWriter.hpp"
+#include "Packer.hpp"
+#include "Unpacker.hpp"
 
 #define SUB_UNIT_FACTOR 64
 
@@ -59,6 +62,9 @@ class grid_dist_id
 	//! Communicator class
 	Vcluster & v_cl;
 
+	//! It map a global ghost id (g_id) to the external ghost box information
+	std::unordered_map<size_t,size_t> g_id_to_external_ghost_box;
+
 	/*! \brief Get the grid size
 	 *
 	 * Given a domain, the resolution of the grid on it and another spaceBox contained in the domain
@@ -103,7 +109,135 @@ class grid_dist_id
 		}
 	}
 
+//	bool link_ig_eg_init = false;
+
+	/*! \brief Link the internal ghost boxes with the internal ghost boxes
+	 *
+	 * Each internal ghost box is linked with the external ghost box of the neighbor
+	 * processor, in this function, the processors send the external ghost boxes to
+	 * the near processors and link the internal ghost boxes to the received external
+	 *
+	 */
+/*	void link_ig_eg()
+	{
+		if (link_ig_eg == true)	return;
+
+		openfpm::vector< openfpm::vector< ::Box<dim,T>> > e_box_link(eg_box.size());
+		openfpm::vector<size_t> prc_b;
+
+		// Create a vector with external ghost boxes to send for each processor
+		for (size_t i = 0; i < eg_box.size() ; i++)
+		{
+			for (size_t j = 0 ; j < eg_box.get(i).bid.size() ;j++)
+			{
+				e_box_link.add(eg_box.get(i).bid.get(j));
+			}
+
+			prc_b.add(eg_box.get(i).prc);
+		}
+
+		// Exchange the information
+
+		v_cl.sendrecvMultipleMessagesNBX(prc_b,e_box_link,msg_alloc_external_box,this);
+
+		// create a vector of boxes from the received messages
+		//! None eg_box.size() == ig_box.size() == dec.getNNProcessors()
+		for (size_t i = 0; i < dec.getNNProcessors() ; i++)
+		{
+			size_t n_ele = recv_sz.get(i) / sizeof(::Box<dim,T>);
+
+			// Pointer of the received positions for each near processor
+			void * ptr_boxes = recv_mem_gg.get(i).getPointer();
+
+			PtrMemory * ptr1 = new PtrMemory(ptr_boxes,n_ele * sizeof(point));
+
+			// received external ghost boxes in vector representation
+			openfpm::vector< ::Box<dim,T>,openfpm::device_cpu< ::Box<dim,T>> ,PtrMemory,openfpm::grow_policy_identity> r_eg_box;
+
+			// for each received external boxes
+			for (size_t j = 0 ; j < r_eg_box.size() ; j++)
+			{
+				// get the middle point
+				Point<dim,T> CM = r_eg_box.get(j).middle();
+
+				// internal ghost with maximum volume
+				long int max_vol_id = -1;
+				T max_vol = 0;
+
+				// Get the internal ghost boxes that fall into this point
+				auto b_it = dec.getInternalIDBoxes();
+
+				// Here we intersect each received external box with all
+				// our internal ghost boxes, in theory only one box should match
+				// the intersection, but we take the one with maximum, volume intersection
+				while (b_it.isNext())
+				{
+					size_t b_id = b_it.get();
+
+					// Get the internal ghost box
+					const Box<dim,T> & b = dec.getIGhostBox(b_id);
+
+					// out intersection
+					Box<dim,T> b_out;
+					// intersect
+					bool intersect = b.Intersect(b,b_out);
+
+					// if intersect
+					if (intersect == true && b_out.getVolume() > max_vol)
+					{
+						max_vol = b_out.getVolume();
+						max_vol_id = b_id;
+					}
+
+					++b_it;
+				}
+
+				// Link
+
+				ig_box.get(i).bid.get(max_vol_id).r_id = j;
+			}
+		}
+
+		link_ig_eg_init = true;
+	}*/
+
+	// Receiving size
+	openfpm::vector<size_t> recv_sz;
+
+	// Receiving buffer for particles ghost get
+	openfpm::vector<HeapMemory> recv_mem_gg;
+
+	/*! \brief Call-back to allocate buffer to receive incoming objects (external ghost boxes)
+	 *
+	 * \param msg_i message size required to receive from i
+	 * \param total_msg message size to receive from all the processors
+	 * \param total_p the total number of processor want to communicate with you
+	 * \param i processor id
+	 * \param ri request id (it is an id that goes from 0 to total_p, and is unique
+	 *           every time message_alloc is called)
+	 * \param ptr void pointer parameter for additional data to pass to the call-back
+	 *
+	 */
+	static void * msg_alloc_external_box(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
+	{
+		grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> * g = static_cast<grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> *>(ptr);
+
+		g->recv_sz.resize(g->dec.getNNProcessors());
+		g->recv_mem_gg.resize(g->dec.getNNProcessors());
+
+		// Get the local processor id
+		size_t lc_id = g->dec.ProctoID(i);
+
+		// resize the receive buffer
+		g->recv_mem_gg.get(lc_id).resize(msg_i);
+		g->recv_sz.get(lc_id) = msg_i;
+
+		return g->recv_mem_gg.get(lc_id).getPointer();
+	}
+
 	/*! \brief Create per-processor internal ghost box list in grid units
+	 *
+	 * It also create g_id_to_external_ghost_box
 	 *
 	 */
 	void create_ig_box()
@@ -130,13 +264,62 @@ class grid_dist_id
 				// It is unique because it is ensured that boxes does not overlap
 				::Box<dim,size_t> cvt = ib;
 
-				Box_id bid_t(cvt);
-				bid_t.id = 0/*g.LinId(bid_t.box.getKP1())*/;
+				i_box_id bid_t;
+				bid_t.box = cvt;
+				bid_t.g_id = g.LinId(bid_t.box.getKP1());
+				bid_t.sub = dec.getProcessorIGhostSub(i,j);
 				pib.bid.add(bid_t);
+
+				// Add the element in the unordered map
+				g_id_to_external_ghost_box[bid_t.g_id] = bid_t.sub;
 			}
 		}
 
 		init_i_g_box = true;
+	}
+
+	/*! \brief Create per-processor internal ghost box list in grid units
+	 *
+	 */
+	void create_eg_box()
+	{
+		// Get the grid info
+		auto g = cd_sm.getGrid();
+
+		if (init_e_g_box == true)	return;
+
+		// Get the number of near processors
+		for (size_t i = 0 ; i < dec.getNNProcessors() ; i++)
+		{
+			eg_box.add();
+			auto&& pib = eg_box.last();
+
+			pib.prc = dec.IDtoProc(i);
+			for (size_t j = 0 ; j < dec.getProcessorNEGhost(i) ; j++)
+			{
+				// Get the internal ghost boxes and transform into grid units
+				::Box<dim,St> ib = dec.getProcessorEGhostBox(i,j);
+				ib /= cd_sm.getCellBox().getP2();
+
+				// save the box and the unique external ghost box id (linearization of P1)
+				// It is (locally) unique because it is ensured that external ghost boxes does not overlap
+				::Box<dim,size_t> cvt = ib;
+
+				// sub domain id at which belong the external ghost box
+				size_t sub_id = dec.getProcessorEGhostSub(i,j);
+
+				e_box_id bid_t;
+				bid_t.sub = sub_id;
+				bid_t.g_e_box = cvt;
+				bid_t.l_e_box = cvt;
+				// Translate in local coordinate
+				bid_t.l_e_box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
+
+				pib.bid.add(bid_t);
+			}
+		}
+
+		init_e_g_box = true;
 	}
 
 public:
@@ -179,7 +362,7 @@ public:
 	:domain(domain),ghost(g),dec(Decomposition(*global_v_cluster)),cd_sm(domain,g_sz,0),v_cl(*global_v_cluster)
 	{
 		// fill the global size of the grid
-		for (int i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
+		for (size_t i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
 
 		// Get the number of processor and calculate the number of sub-domain
 		// for decomposition
@@ -189,7 +372,7 @@ public:
 		// Calculate the maximum number (before merging) of sub-domain on
 		// each dimension
 		size_t div[dim];
-		for (int i = 0 ; i < dim ; i++)
+		for (size_t i = 0 ; i < dim ; i++)
 		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
 
 		// Create the sub-domains
@@ -267,13 +450,20 @@ public:
 			// convert from Ghost<dim,St> to Ghost<dim,long int>
 			Ghost<dim,long int> g_int_t = g_int;
 
+			//! Save the origin of the local grid
+			gdb_ext.last().origin = sp_t.getP1();
+
 			// Center the local grid to zero
 			sp_t -= sp_t.getP1();
 
-			// save the domain box seen inside the domain + ghost box (see GDBoxes for a visual meaning)
+			// save information about the local grid: domain box seen inside the domain + ghost box (see GDBoxes for a visual meaning)
+			// and where the GDBox start, or the origin of the local grid (+ghost) in global coordinate
 			gdb_ext.last().Dbox = sp_t;
 			gdb_ext.last().Dbox -= g_int_t.getP1();
+			// needed because the last key coordinate is size - 1 on each direction
 			gdb_ext.last().Dbox.shrinkP2(1);
+			// The origin is the Domain box + ghost, so shift
+			gdb_ext.last().origin += g_int_t.getP1();
 
 			// Enlarge sp with the Ghost size
 			sp_t.enlarge_fix_P1(g_int_t);
@@ -330,40 +520,78 @@ public:
 		return loc_grid.get(v1.getSub()).template get<p>(v1.getKey());
 	}
 
-	/*! \brief it store a box and its unique id
+	/*! \brief it store a box, its unique id and the sub-domain from where it come from
 	 *
 	 */
-	struct Box_id
+	struct i_box_id
 	{
-		//! Constructor
-		inline Box_id(const ::Box<dim,size_t> & box)
-		:box(box)
-		{}
-
 		//! Box
 		::Box<dim,size_t> box;
 
 		//! id
-		size_t id;
+		size_t g_id;
+
+		//! sub
+		size_t sub;
 	};
 
-	/*! \brief Internal ghost box
+	/*! \brief It store the information about the external ghost box
+	 *
 	 *
 	 */
-	struct p_box_grid
+	struct e_box_id
 	{
-		// Internal ghost in grid units
-		openfpm::vector<Box_id> bid;
+		//! Box defining the external ghost box in global coordinates
+		::Box<dim,size_t> g_e_box;
+
+		//! Box defining the external ghost box in local coordinates
+		::Box<dim,size_t> l_e_box;
+
+		//! sub_id in which sub-domain this box live
+		size_t sub;
+	};
+
+	/*! \brief Per-processor Internal ghost box
+	 *
+	 */
+	struct ip_box_grid
+	{
+		// ghost in grid units
+		openfpm::vector<i_box_id> bid;
 
 		//! processor id
 		size_t prc;
 	};
 
-	//! Flag that indicate if internal ghost box has been initialized
+	/*! \brief Per-processor external ghost box
+	 *
+	 */
+	struct ep_box_grid
+	{
+		// ghost in grid units
+		openfpm::vector<e_box_id> bid;
+
+		//! processor id
+		size_t prc;
+	};
+
+	//! Memory for the ghost sending buffer
+	Memory g_send_prp_mem;
+
+	//! Memory for the ghost sending buffer
+	Memory g_recv_prp_mem;
+
+	//! Flag that indicate if the external ghost box has been initialized
+	bool init_e_g_box = false;
+
+	//! Flag that indicate if the internal ghost box has been initialized
 	bool init_i_g_box = false;
 
 	//! Internal ghost boxes in grid units
-	openfpm::vector<p_box_grid> ig_box;
+	openfpm::vector<ip_box_grid> ig_box;
+
+	//! External ghost boxes in grid units
+	openfpm::vector<ep_box_grid> eg_box;
 
 	/*! \brief It synchronize getting the ghost part of the grid
 	 *
@@ -376,118 +604,151 @@ public:
 		// Sending property object
 		typedef object<typename object_creator<typename T::type,prp...>::type> prp_object;
 
-		// send vector for each processor
-		typedef  openfpm::vector<prp_object,openfpm::device_cpu<prp_object>,ExtPreAlloc<Memory>> send_vector;
-
-		// Send buffer size in byte ( one buffer for all processors )
-		size_t size_byte_prp = 0;
-
+		// Convert the ghost  internal boxes into grid unit boxes
 		create_ig_box();
 
-		// Convert the ghost boxes into grid unit boxes
-/*		const openfpm::vector<p_box_grid> p_box_g;
+		// Convert the ghost external boxes into grid unit boxes
+		create_eg_box();
 
 		// total number of sending vector
-		size_t n_send_vector = 0;
+		std::vector<size_t> pap_prp;
 
-		// Calculate the total size required for the sending buffer for each processor
-		for ( size_t i = 0 ; i < p_box_g.size() ; i++ )
+		// Create a packing request vector
+		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
 		{
 			// for each ghost box
-			for (size_t j = 0 ; j < p_box_g.get(i).box.size() ; j++)
+			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
 			{
-				size_t alloc_ele = openfpm::vector<prp_object>::calculateMem(p_box_g.get(i).box.get(j).volume(),0);
-				pap_prp.push_back(alloc_ele);
-				size_byte_prp += alloc_ele;
+				// And linked sub-domain
+				size_t sub_id = ig_box.get(i).bid.get(j).sub;
+				// Internal ghost box
+				Box<dim,size_t> g_ig_box = ig_box.get(i).bid.get(j).box;
+				g_ig_box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
 
-				n_send_vector++;
+				// Pack a size_t for the internal ghost id
+				Packer<size_t,HeapMemory>::packRequest(pap_prp);
+				// Create a sub grid iterator spanning the internal ghost layer
+				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_ig_box.getKP1(),g_ig_box.getKP2());
+				// and pack the internal ghost grid
+				Packer<device_grid,HeapMemory>::template packRequest<prp...>(loc_grid.get(sub_id),sub_it,pap_prp);
 			}
 		}
 
 		// resize the property buffer memory
-		g_prp_mem.resize(size_byte_prp);
+		g_send_prp_mem.resize(ExtPreAlloc<Memory>::calculateMem(pap_prp));
 
 		// Create an object of preallocated memory for properties
-		ExtPreAlloc<Memory> * prAlloc_prp = new ExtPreAlloc<Memory>(pap_prp,g_prp_mem);
+		ExtPreAlloc<Memory> & prAlloc_prp = *(new ExtPreAlloc<Memory>(pap_prp,g_send_prp_mem));
+		prAlloc_prp.incRef();
 
-		// create a vector of send vector (ExtPreAlloc warrant that all the created vector are contiguous)
-		openfpm::vector<send_vector> g_send_prp;
+		// Pack information
+		Pack_stat sts;
 
-		// create a number of send buffers equal to the near processors
-		g_send_prp.resize(n_send_vector);
-
-		// Create the vectors giving them memory
-		for ( size_t i = 0 ; i < p_box_g.size() ; i++ )
+		// Pack the information for each processor and send it
+		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
 		{
-			// for each ghost box
-			for (size_t j = 0 ; j < p_box_g.get(i).box.size() ; j++)
-			{
-				// set the preallocated memory to ensure contiguity
-				g_send_prp.get(i).setMemory(*prAlloc_prp);
+			sts.mark();
 
-				// resize the sending vector (No allocation is produced)
-				g_send_prp.get(i).resize(ghost_prc_sz.get(i));
+			// for each ghost box
+			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
+			{
+				// And linked sub-domain
+				size_t sub_id = ig_box.get(i).bid.get(j).sub;
+				// Internal ghost box
+				Box<dim,size_t> g_ig_box = ig_box.get(i).bid.get(j).box;
+				g_ig_box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
+				// Ghost box global id
+				size_t g_id = ig_box.get(i).bid.get(j).g_id;
+
+				// Pack a size_t for the internal ghost id
+				Packer<size_t,HeapMemory>::pack(prAlloc_prp,g_id,sts);
+				// Create a sub grid iterator spanning the internal ghost layer
+				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_ig_box.getKP1(),g_ig_box.getKP2());
+				// and pack the internal ghost grid
+				Packer<device_grid,HeapMemory>::template pack<prp...>(prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
+			}
+			// send the request
+			v_cl.send(ig_box.get(i).prc,0,sts.getMarkPointer(prAlloc_prp),sts.getMarkSize(prAlloc_prp));
+		}
+
+		// Calculate the total information to receive from each processors
+		std::vector<size_t> prp_recv;
+
+		//! Receive the information from each processors
+		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
+		{
+			prp_recv.push_back(0);
+
+			// for each external ghost box
+			for (size_t j = 0 ; j < eg_box.get(i).bid.size() ; j++)
+			{
+				// External ghost box
+				Box<dim,size_t> g_eg_box = eg_box.get(i).bid.get(j).g_e_box;
+
+				//
+				prp_recv[prp_recv.size()-1] += g_eg_box.getVolumeKey() * sizeof(prp_object) + sizeof(size_t);
 			}
 		}
 
-		// Fill the sending buffers and produce a sending request
-		for ( size_t i = 0 ; i < p_box_g.size() ; i++ )
+		//! Resize the receiving buffer
+		g_recv_prp_mem.resize(ExtPreAlloc<Memory>::calculateMem(prp_recv));
+
+		// Create an object of preallocated memory for properties
+		ExtPreAlloc<Memory> & prRecv_prp = *(new ExtPreAlloc<Memory>(prp_recv,g_recv_prp_mem));
+		prRecv_prp.incRef();
+
+		// queue the receive
+
+		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
 		{
-			// for each ghost box
-			for (size_t j = 0 ; j < p_box_g.get(i).box.size() ; j++)
-			{
-				// Create a sub grid iterator of the ghost
-				grid_key_dx_iterator_sub<dim> g_it(,p_box_g.getKP1(),p_box_g.getKP2());
-
-				while (g_it.isNext())
-				{
-					// copy all the object in the send buffer
-					typedef encapc<1,prop,typename openfpm::vector<prop>::memory_t> encap_src;
-					// destination object type
-					typedef encapc<1,prp_object,typename openfpm::vector<prp_object>::memory_t> encap_dst;
-
-					// Copy only the selected properties
-					object_si_d<encap_src,encap_dst,ENCAP,prp...>(v_prp.get(INTERNAL).get(opart.get(i).get(j)),g_send_prp.get(i).get(j));
-
-					++g_it;
-				}
-			}
-			// Queue a send request
-			v_cl.send(p_box_g.get(i).proc,g_send_prp.get(i));
+			v_cl.recv(eg_box.get(i).prc,0,prRecv_prp.getPointer(i),prp_recv[i]);
 		}
-
-		// Calculate the receive pattern and allocate the receive buffers
-
-		// For each processor get the ghost boxes
-		const openfpm::vector<p_box> & p_box_ext = dec.getGhostExternalBox();
-
-		// Convert the ghost boxes into grid unit boxes
-		const openfpm::vector<p_box_grid> p_box_g_ext;
-
-		size_byte_prp = 0;
-
-		// Calculate the receive pattern
-		for ( size_t i = 0 ; i < p_box_g_ext.size() ; i++ )
-		{
-			// for each ghost box
-			for (size_t j = 0 ; j < p_box_g_ext.get(i).box.size() ; j++)
-			{
-				size_t alloc_ele = openfpm::vector<prp_object>::calculateMem(p_box_g_ext.get(i).box.get(j).volume(),0);
-				pap_prp_recv.push_back(alloc_ele);
-				size_byte_prp += alloc_ele;
-			}
-
-			v_cl.recv();
-		}
-
-		// Fill the internal ghost
 
 		// wait to receive communication
 		v_cl.execute();
 
-		// move the received buffers into the ghost part
+		Pack_stat ps;
 
-		 */
+		// Unpack the object
+		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
+		{
+			// for each external ghost box
+			for (size_t j = 0 ; j < eg_box.get(i).bid.size() ; j++)
+			{
+				// Unpack the ghost box global-id
+
+				size_t g_id;
+				Unpacker<size_t,HeapMemory>::unpack(prRecv_prp,g_id,ps);
+
+				size_t l_id = 0;
+				// convert the global id into local id
+				auto key = g_id_to_external_ghost_box.find(g_id);
+				if (key != g_id_to_external_ghost_box.end()) // FOUND
+					l_id = key->second;
+				else
+				{
+					// NOT FOUND
+
+					// It must be always found, if not it mean that the processor has no-idea of
+					// what is stored and conseguently do not know how to unpack, print a critical error
+					// and return
+
+					std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " Critical, cannot unpack object, because received data cannot be interpreted\n";
+
+					return;
+				}
+
+				// Get the external ghost box associated with the packed information
+				Box<dim,size_t> box = eg_box.get(i).bid.get(l_id).l_e_box;
+				size_t sub_id = eg_box.get(i).bid.get(l_id).sub;
+
+				// sub-grid where to unpack
+				grid_key_dx_iterator_sub<dim> sub2(loc_grid.get(sub_id).getGrid(),box.getKP1(),box.getKP2());
+
+				// Unpack
+				Unpacker<device_grid,HeapMemory>::template unpack<prp...>(prRecv_prp,sub2,loc_grid.get(sub_id),ps);
+			}
+		}
 	}
 
 	/*! \brief Write the grid_dist_id information as VTK file
