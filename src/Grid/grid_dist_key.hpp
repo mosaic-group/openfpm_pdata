@@ -3,7 +3,7 @@
 
 /*! \brief Grid key for a distributed grid
  *
- * Grid key for a distributed grid
+ * It contain from which local sub-domain grid come from, and the local grid_key_dx
  *
  */
 
@@ -25,7 +25,7 @@ public:
 	 * \return the id of the local grid
 	 *
 	 */
-	size_t getSub()
+	size_t getSub() const
 	{
 		return g_c;
 	}
@@ -35,7 +35,7 @@ public:
 	 * \return the local key
 	 *
 	 */
-	grid_key_dx<dim> getKey()
+	grid_key_dx<dim> getKey() const
 	{
 		return key;
 	}

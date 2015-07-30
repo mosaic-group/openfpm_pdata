@@ -37,7 +37,7 @@
  *
  * Given an N-dimensional space, this class decompose the space into a Cartesian grid of small
  * sub-sub-domain. At each sub-sub-domain is assigned  an id that identify which processor is
- * going to take care of that part of space (in general the space assigned to a processor is a
+ * going to take care of that part of space (in general the space assigned to a processor is
  * simply connected), a second step merge several sub-sub-domain with same id into bigger region
  *  sub-domain with the id. Each sub-domain has an extended space called ghost part
  *
@@ -57,6 +57,7 @@
  * * Near processor sub-domain: is a sub-domain that live in the a near (or contiguous) processor
  * * Near processor list: the list of all the near processor of the local processor (each processor has a list
  *                        of the near processor)
+ * * Local ghosts interal or external are all the ghosts that does not involve inter-processor communications
  *
  * \see calculateGhostBoxes() for a visualization of internal and external ghost boxes
  *
@@ -90,23 +91,28 @@ class CartDecomposition
 	};
 
 	//! It contain a box definition and from witch sub-domain it come from
-	struct Box_sub
+	struct Box_sub : Box<dim,T>
 	{
-		::Box<dim,T> box;
-
 		// Domain id
 		size_t sub;
+
+		Box_sub operator=(const Box<dim,T> & box)
+		{
+			::Box<dim,T>::operator=(box);
+
+			return *this;
+		}
 	};
 
 	struct Box_dom
 	{
 		// Intersection between the local sub-domain enlarged by the ghost and the contiguous processor
 		// sub-domains (External ghost)
-		openfpm::vector< Box_sub > ebx;
+		openfpm::vector_std< Box_sub > ebx;
 
 		// Intersection between the contiguous processor sub-domain enlarged by the ghost with the
 		// local sub-domain (Internal ghost)
-		openfpm::vector< Box_sub > ibx;
+		openfpm::vector_std< Box_sub> ibx;
 	};
 
 public:
@@ -122,10 +128,6 @@ private:
 	//! This is the key type to access  data_s, for example in the case of vector
 	//! acc_key is size_t
 	typedef typename data_s<SpaceBox<dim,T>,device_l<SpaceBox<dim,T>>,Memory,openfpm::vector_grow_policy_default,openfpm::vect_isel<SpaceBox<dim,T>>::value >::access_key acc_key;
-
-	//! Subspace selected
-	//! access_key in case of grid is just the set of the index to access the grid
-	std::vector<acc_key> id_sub;
 
 	//! the margin of the sub-domain selected
 	SpaceBox<dim,T> sub_domain;
@@ -150,6 +152,9 @@ private:
 
 	// for each near-processor store the sub-domain of the near processor
 	std::unordered_map<size_t, N_box> nn_processor_subdomains;
+
+	//! it contain the internal ghosts of the local processor
+	openfpm::vector<Box_dom> loc_ghost_box;
 
 	//! Structure that contain for each sub-domain box the processor id
 	//! exist for efficient global communication
@@ -329,6 +334,89 @@ private:
 		geo_cell.Initialize(domain,div,orig);
 	}
 
+	/*! \brief Create the external local ghost boxes
+	 *
+	 * \param ghost margin to enlarge
+	 *
+	 */
+	void create_loc_ghost_ebox(Ghost<dim,T> & ghost)
+	{
+		loc_ghost_box.resize(sub_domains.size());
+
+		// For each sub-domain
+		for (size_t i = 0 ; i < sub_domains.size() ; i++)
+		{
+			// add a local ghost box
+			loc_ghost_box.add();
+
+			// intersect with the other local sub-domains
+			for (size_t j = 0 ; j < sub_domains.size() ; j++)
+			{
+				if (i == j)
+					continue;
+
+				SpaceBox<dim,T> sub_with_ghost = sub_domains.get(j);
+				// enlarge the sub-domain with the ghost
+				sub_with_ghost.enlarge(ghost);
+
+				::Box<dim,T> bi;
+
+				bool intersect = sub_with_ghost.Intersect(::SpaceBox<dim,T>(sub_domains.get(j)),bi);
+
+				if (intersect == true)
+				{
+					Box_sub b;
+					b.sub = j;
+					b = bi;
+
+					loc_ghost_box.get(i).ibx.add(b);
+				}
+			}
+		}
+	}
+
+	/*! \brief Create the internal local ghost boxes
+	 *
+	 * \param ghost margin to enlarge
+	 *
+	 */
+	void create_loc_ghost_ibox(Ghost<dim,T> & ghost)
+	{
+		loc_ghost_box.resize(sub_domains.size());
+
+		// For each sub-domain
+		for (size_t i = 0 ; i < sub_domains.size() ; i++)
+		{
+			SpaceBox<dim,T> sub_with_ghost = sub_domains.get(i);
+
+			// enlarge the sub-domain with the ghost
+			sub_with_ghost.enlarge(ghost);
+
+			// add a local ghost box
+			loc_ghost_box.add();
+
+			// intersect with the others local sub-domains
+			for (size_t j = 0 ; j < sub_domains.size() ; j++)
+			{
+				if (i == j)
+					continue;
+
+				::Box<dim,T> bi;
+
+				bool intersect = sub_with_ghost.Intersect(::SpaceBox<dim,T>(sub_domains.get(j)),bi);
+
+				if (intersect == true)
+				{
+					Box_sub b;
+					b.sub = j;
+					b = bi;
+
+					loc_ghost_box.get(i).ibx.add(b);
+				}
+			}
+		}
+	}
+
 	/*! \brief Create the subspaces that decompose your domain
 	 *
 	 * Create the subspaces that decompose your domain
@@ -391,10 +479,10 @@ private:
 			// enlarge the sub-domain with the ghost
 			sub_with_ghost.enlarge(ghost);
 
-			// resize based on the number of contiguous processors
+			// resize based on the number of adjacent processors
 			box_nn_processor_int.get(i).resize(box_nn_processor.get(i).size());
 
-			// For each processor contiguous to this sub-domain
+			// For each processor adjacent to this sub-domain
 			for (size_t j = 0 ; j < box_nn_processor.get(i).size() ; j++)
 			{
 				// Contiguous processor
@@ -403,7 +491,7 @@ private:
 				// store the box in proc_int_box storing from which sub-domain they come from
 				Box_dom & proc_int_box_g = proc_int_box.get(ProctoID(p_id));
 
-				// get the set of sub-domains of the contiguous processor p_id
+				// get the set of sub-domains of the adjacent processor p_id
 				openfpm::vector< ::Box<dim,T> > & nn_processor_subdomains_g = nn_processor_subdomains[p_id].bx;
 
 				// near processor sub-domain intersections
@@ -437,8 +525,8 @@ private:
 						vb_ext.add(pb);
 						box_nn_processor_int_gg.add(bi);
 						proc_int_box_g.ebx.add();
-						proc_int_box_g.ebx.last().box = bi;
-						proc_int_box_g.ebx.last().sub = 0;
+						proc_int_box_g.ebx.last() = bi;
+						proc_int_box_g.ebx.last().sub = i;
 					}
 				}
 			}
@@ -522,7 +610,7 @@ private:
 						// store the box in proc_int_box storing from which sub-domain they come from
 						Box_dom & pr_box_int = proc_int_box.get(ProctoID(p_id));
 						Box_sub sb;
-						sb.box = b_int.box;
+						sb = b_int.box;
 						sb.sub = i;
 						pr_box_int.ibx.add(sb);
 
@@ -596,10 +684,6 @@ public:
 		// Reset the box to zero
 		bbox.zero();
 
-		//! Subspace selected
-		//! access_key in case of grid is just the set of the index to access the grid
-		id_sub.swap(cd.id_sub);
-
 		//! the set of all local sub-domain as vector
 		sub_domains.swap(cd.sub_domains);
 
@@ -616,7 +700,7 @@ public:
 	 *
 	 */
 	CartDecomposition(Vcluster & v_cl)
-	:id_sub(0),v_cl(v_cl)
+	:v_cl(v_cl)
 	{
 		// Reset the box to zero
 		bbox.zero();
@@ -630,7 +714,7 @@ public:
 	 *
 	 */
 	CartDecomposition(std::vector<size_t> dec, Domain<dim,T> domain, Vcluster & v_cl)
-	:id_sub(0),gr(dec),cd(domain,dec,0),domain(domain),v_cl(v_cl)
+	:gr(dec),cd(domain,dec,0),domain(domain),v_cl(v_cl)
 	{
 		// Reset the box to zero
 		bbox.zero();
@@ -949,9 +1033,11 @@ p1[0]<-----+         +----> p2[0]
 		// Get the sub-domains of the near processors
 		v_cl.sendrecvMultipleMessagesNBX(nn_processors,boxes,CartDecomposition<dim,T,device_l,Memory,Domain,data_s>::message_alloc, this ,NEED_ALL_SIZE);
 
+		// create the internal structures that store ghost information
 		create_box_nn_processor_ext(ghost);
-
 		create_box_nn_processor_int(ghost);
+		create_loc_ghost_ebox(ghost);
+		create_loc_ghost_ibox(ghost);
 	}
 
 	/*! \brief processorID return in which processor the particle should go
@@ -1101,18 +1187,6 @@ p1[0]<-----+         +----> p2[0]
 	{
 	}
 
-	/*! \brief Select the local space
-	 *
-	 * Select the local space
-	 *
-	 * \param sub select the sub-space
-	 *
-	 */
-	void setSpace(size_t sub)
-	{
-		id_sub.push_back(sub);
-	}
-
 
 	/*! \brief Get the local grids
 	 *
@@ -1240,6 +1314,30 @@ p1[0]<-----+         +----> p2[0]
 		return proc_int_box.get(id).ebx.size();
 	}
 
+	/*! \brief Get the number of external local ghost box for each sub-domain
+	 *
+	 * \param id sub-domain id
+	 *
+	 * \return the number of internal ghost box
+	 *
+	 */
+	inline size_t getLocalNEGhost(size_t id)
+	{
+		return loc_ghost_box.get(id).ibx.size();
+	}
+
+	/*! \brief Get the number of internal local ghost box for each sub-domain
+	 *
+	 * \param id sub-domain id
+	 *
+	 * \return the number of external ghost box
+	 *
+	 */
+	inline size_t getLocalNIGhost(size_t id)
+	{
+		return loc_ghost_box.get(id).ebx.size();
+	}
+
 	/*! \brief Get the j Internal ghost box for one processor
 	 *
 	 * \param id near processor list id (the id go from 0 to getNNProcessor())
@@ -1249,7 +1347,7 @@ p1[0]<-----+         +----> p2[0]
 	 */
 	inline const ::Box<dim,T> & getProcessorIGhostBox(size_t id, size_t j) const
 	{
-		return proc_int_box.get(id).ibx.get(j).box;
+		return proc_int_box.get(id).ibx.get(j);
 	}
 
 	/*! \brief Get the j External ghost box for one processor
@@ -1261,12 +1359,66 @@ p1[0]<-----+         +----> p2[0]
 	 */
 	inline const ::Box<dim,T> & getProcessorEGhostBox(size_t id, size_t j) const
 	{
-		return proc_int_box.get(id).ibx.get(j).box;
+		return proc_int_box.get(id).ebx.get(j);
+	}
+
+	/*! \brief Get the j internal local ghost box for the i sub-domain of the local processor
+	 *
+	 * \param i sub-domain
+	 * \param j box
+	 * \return the box
+	 *
+	 */
+	inline const ::Box<dim,T> & getLocalIGhostBox(size_t i, size_t j) const
+	{
+		return loc_ghost_box.get(i).ibox.get(j).box;
+	}
+
+	/*! \brief Get the j external local ghost box for the local processor
+	 *
+	 * \param i sub-domain
+	 * \param j box
+	 * \return the box
+	 *
+	 */
+	inline const ::Box<dim,T> & getLocalEGhostBox(size_t i, size_t j) const
+	{
+		return loc_ghost_box.get(i).ebox.get(j).box;
+	}
+
+	/*! \brief Considering that sub-domain has N internal local ghost box identified
+	 *         with the 0 <= k < N that come from the intersection of 2 sub-domains i and j
+	 *         where j is enlarged, given the sub-domain i and the id k, it return the id of
+	 *         the other sub-domain that produced the intersection
+	 *
+	 * \param i sub-domain
+	 * \param k id
+	 * \return the box
+	 *
+	 */
+	inline const ::Box<dim,T> & getLocalIGhostSub(size_t i, size_t j) const
+	{
+		return loc_ghost_box.get(i).ibox.get(j).sub;
+	}
+
+	/*! \brief Considering that sub-domain has N external local ghost box identified
+	 *         with the 0 <= k < N that come from the intersection of 2 sub-domains i and j
+	 *         where j is enlarged, given the sub-domain i and the id k, it return the id of
+	 *         the other sub-domain that produced the intersection
+	 *
+	 * \param i sub-domain
+	 * \param k id
+	 * \return the box
+	 *
+	 */
+	inline const ::Box<dim,T> & getLocalEGhostSub(size_t i, size_t j) const
+	{
+		return loc_ghost_box.get(i).ebox.get(j).sub;
 	}
 
 	/*! \brief Get the local sub-domain at witch belong the internal ghost box
 	 *
-	 * \param id near processor list id (the id go from 0 to getNNProcessor())
+	 * \param id adjacent processor list id (the id go from 0 to getNNProcessor())
 	 * \param j box (each near processor can produce more than one internal ghost box)
 	 * \return sub-domain at which belong the internal ghost box
 	 *
@@ -1388,24 +1540,24 @@ p1[0]<-----+         +----> p2[0]
 	 *
 	 * The function generate several files
 	 *
-	 * 1) p_sub_X.vtk domain for the processor X as union of sub-domain
-	 * 2) sub_np_c_X.vtk sub-domain of the near processors contiguous to the processor X (Color encoded)
-	 * 3) sub_X_inte_g_np.vtk Intersection between the ghosts of the near processors and the processors X sub-domains (Color encoded)
-	 * 4) sub_X_ghost.vtk ghost for the processor X (Color encoded)
+	 * 1) p_sub_X.vtk domain for the local processor as union of sub-domain (Boxes)
+	 * 2) sub_np_c_X.vtk sub-domain of the near adjacent processors to the processor local processor (Color encoded)
+	 * 3) sub_X_inte_g_np.vtk Intersection between the ghosts of the near processors and the local processor sub-domains (Color encoded)
+	 * 4) sub_X_ghost.vtk ghost of the local processor (Color encoded)
 	 *
-	 * where X is the processor number
+	 * where X is the local processor rank
 	 *
 	 * \param output directory where to write the files
 	 *
 	 */
 	bool write(std::string output) const
 	{
-		//! p_sub_X.vtk domain for the processor X as union of sub-domain
+		//! p_sub_X.vtk domain for the local processor as union of sub-domain (Boxes)
 		VTKWriter<openfpm::vector<::SpaceBox<dim,T>>,VECTOR_BOX> vtk_box1;
 		vtk_box1.add(sub_domains);
 		vtk_box1.write(output + std::string("p_sub_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
-		//! sub_np_c_X.vtk sub-domain of the near processors contiguous to the processor X (Color encoded)
+		//! sub_np_c_X.vtk sub-domain of the near adjacent processors to the processor local processor (Color encoded)
 		VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box2;
 		for (size_t p = 0 ; p < nn_processors.size() ; p++)
 		{
@@ -1416,7 +1568,7 @@ p1[0]<-----+         +----> p2[0]
 		}
 		vtk_box2.write(output + std::string("sub_np_c_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
-		//! sub_X_inte_g_np.vtk Intersection between the ghosts of the near processors and the processors X sub-domains (Color encoded)
+		//! sub_X_inte_g_np.vtk Intersection between the ghosts of the near processors and the local processor sub-domains (Color encoded)
 		VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box3;
 		for (size_t p = 0 ; p < box_nn_processor_int.size() ; p++)
 		{
@@ -1427,8 +1579,7 @@ p1[0]<-----+         +----> p2[0]
 		}
 		vtk_box3.write(output + std::string("sub_") + std::to_string(v_cl.getProcessUnitID()) + std::string("_inte_g_np") + std::string(".vtk"));
 
-
-		//! sub_X_ghost.vtk ghost for the processor X (Color encoded)
+		//! ghost of the local processor (Color encoded)
 		VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box4;
 		for (size_t p = 0 ; p < box_nn_processor_int.size() ; p++)
 		{
@@ -1438,6 +1589,20 @@ p1[0]<-----+         +----> p2[0]
 			}
 		}
 		vtk_box4.write(output + std::string("sub_") + std::to_string(v_cl.getProcessUnitID()) + std::string("_ghost") + std::string(".vtk"));
+
+		//! local external ghost of the local processor (Color encoded per domain)
+/*		VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box5;
+		for (size_t p = 0 ; p < loc_ghost_box.size() ; p++)
+		{
+			vtk_box5.add(loc_ghost_box.get(p).ibx.);
+		}
+
+		//! local internal ghost of the local processor (Color encoded per domain)
+		VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box6;
+		for (size_t p = 0 ; p < loc_ghost_box.size() ; p++)
+		{
+
+		}*/
 
 		return true;
 	}

@@ -28,6 +28,60 @@ template<typename iterator> void jacobi_iteration(iterator g_it, grid_dist_id<2,
 	}
 }
 
+BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter_test)
+{
+	// Domain
+	Box<2,float> domain({0.0,0.0},{1.0,1.0});
+
+	// Initialize the global VCluster
+	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
+
+	Vcluster & v_cl = *global_v_cluster;
+
+	// Test several grid dimensions
+
+	for (size_t k = 1024 ; k > 1 ; k--)
+	{
+		std::cout << "Testing: " << k << "\n";
+
+		// grid size
+		size_t sz[2];
+		sz[0] = k;
+		sz[1] = k;
+
+		// Ghost
+		Ghost<2,float> g(0.01);
+
+		// Distributed grid with id decomposition
+		grid_dist_id<2, float, scalar<float>, CartDecomposition<2,float>> g_dist(sz,domain,g);
+
+		// get the decomposition
+		auto & dec = g_dist.getDecomposition();
+
+		// for each local volume
+		// Get the number of local grid needed
+		size_t n_grid = dec.getNLocalHyperCube();
+
+		size_t vol = 0;
+
+		// Allocate the grids
+		for (size_t i = 0 ; i < n_grid ; i++)
+		{
+			// Get the local hyper-cube
+			SpaceBox<2,float> sub = dec.getLocalHyperCube(i);
+
+			Box<2,size_t> g_box = g_dist.getCellDecomposer().convertDomainSpaceIntoGridUnits(sub);
+
+			vol += g_box.getVolumeKey();
+		}
+
+		v_cl.reduce(vol);
+		v_cl.execute();
+
+		BOOST_REQUIRE_EQUAL(vol,sz[0]*sz[1]);
+	}
+}
+
 BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 {
 	// Domain
@@ -36,58 +90,100 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 	// Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
-	// grid size
-	size_t sz[2] = {1024,1024};
-
-	// Ghost
-	Ghost<2,float> g(0.01);
-
-	// Distributed grid with id decomposition
-	grid_dist_id<2, float, scalar<float>, CartDecomposition<2,float>> g_dist(sz,domain,g);
-
-	// get the domain iterator
-	size_t count = 0;
-
-	auto dom = g_dist.getDomainIterator();
-
-	while (dom.isNext())
+	for (long int k = 1026 ; k > 1 ; k-= 33)
 	{
-		auto key = dom.get();
+		// grid size
+		size_t sz[2];
+		sz[0] = k;
+		sz[1] = k;
 
-		g_dist.template get<0>(key) = count;
+		// Ghost
+		Ghost<2,float> g(0.01);
 
-		// Count the point
-		count++;
+		// Distributed grid with id decomposition
+		grid_dist_id<2, float, scalar<float>, CartDecomposition<2,float>> g_dist(sz,domain,g);
 
-		++dom;
+		// Grid sm
+		grid_sm<2,void> info(sz);
+
+		// get the domain iterator
+		size_t count = 0;
+
+		auto dom = g_dist.getDomainIterator();
+
+		while (dom.isNext())
+		{
+			auto key = dom.get();
+			auto key_g = g_dist.getGKey(key);
+
+			g_dist.template get<0>(key) = info.LinId(key_g);
+
+			// Count the point
+			count++;
+
+			++dom;
+		}
+
+		// Get the virtual cluster machine
+		Vcluster & vcl = g_dist.getVC();
+
+		// reduce
+		vcl.reduce(count);
+		vcl.execute();
+
+		// Check
+		BOOST_REQUIRE_EQUAL(count,k*k);
+
+		auto dom2 = g_dist.getDomainIterator();
+
+		// check that the grid store the correct information
+		while (dom2.isNext())
+		{
+			auto key = dom2.get();
+			auto key_g = g_dist.getGKey(key);
+
+			if (key_g.get(0) == 503 && key_g.get(1) == 779)
+			{
+				int debug = 0;
+				debug++;
+			}
+
+			BOOST_REQUIRE_EQUAL(g_dist.template get<0>(key),info.LinId(key_g));
+
+			++dom2;
+		}
+
+		g_dist.template ghost_get<0>();
+
+		// check that the communication is correctly completed
+
+		auto domg = g_dist.getDomainGhostIterator();
+
+		// check that the grid with the ghost past store the correct information
+		while (domg.isNext())
+		{
+			auto key = domg.get();
+			auto key_g = g_dist.getGKey(key);
+
+			// In this case the boundary condition are non periodic
+			if (g_dist.isInside(key_g))
+			{
+				if (g_dist.template get<0>(key) != info.LinId(key_g))
+				{
+					int debug = 0;
+					debug++;
+				}
+
+				BOOST_REQUIRE_EQUAL(g_dist.template get<0>(key),info.LinId(key_g));
+			}
+
+			++domg;
+		}
+
+
 	}
 
-	// Get the virtual cluster machine
-	Vcluster & vcl = g_dist.getVC();
-
-	// reduce
-	vcl.reduce(count);
-	vcl.execute();
-
-	// Check
-	BOOST_REQUIRE_EQUAL(count,1024*1024);
-
-	size_t count_check = 0;
-	auto dom2 = g_dist.getDomainIterator();
-
-	while (dom2.isNext())
-	{
-		auto key = dom2.get();
-
-		BOOST_REQUIRE_EQUAL(g_dist.template get<0>(key),count_check);
-
-		count_check++;
-		++dom2;
-	}
-
-	g_dist.template ghost_get<0>();
-
-	g_dist.write("");
+//	g_dist.write("");
 
 /*	auto g_it = g_dist.getIteratorBulk();
 
