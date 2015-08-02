@@ -58,6 +58,10 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter_test)
 		// get the decomposition
 		auto & dec = g_dist.getDecomposition();
 
+		// check the consistency of the decomposition
+		bool val = dec.check_consistency();
+		BOOST_REQUIRE_EQUAL(val,true);
+
 		// for each local volume
 		// Get the number of local grid needed
 		size_t n_grid = dec.getNLocalHyperCube();
@@ -92,6 +96,8 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 
 	for (long int k = 1026 ; k > 1 ; k-= 33)
 	{
+		std::cout << "Testing: " << k << "\n";
+
 		// grid size
 		size_t sz[2];
 		sz[0] = k;
@@ -102,6 +108,10 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 
 		// Distributed grid with id decomposition
 		grid_dist_id<2, float, scalar<float>, CartDecomposition<2,float>> g_dist(sz,domain,g);
+
+		// check the consistency of the decomposition
+		bool val = g_dist.getDecomposition().check_consistency();
+		BOOST_REQUIRE_EQUAL(val,true);
 
 		// Grid sm
 		grid_sm<2,void> info(sz);
@@ -142,12 +152,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 			auto key = dom2.get();
 			auto key_g = g_dist.getGKey(key);
 
-			if (key_g.get(0) == 503 && key_g.get(1) == 779)
-			{
-				int debug = 0;
-				debug++;
-			}
-
 			BOOST_REQUIRE_EQUAL(g_dist.template get<0>(key),info.LinId(key_g));
 
 			++dom2;
@@ -168,12 +172,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 			// In this case the boundary condition are non periodic
 			if (g_dist.isInside(key_g))
 			{
-				if (g_dist.template get<0>(key) != info.LinId(key_g))
-				{
-					int debug = 0;
-					debug++;
-				}
-
 				BOOST_REQUIRE_EQUAL(g_dist.template get<0>(key),info.LinId(key_g));
 			}
 

@@ -267,9 +267,10 @@ class grid_dist_id
 				if (ib.isValid() == false)
 					continue;
 
-				pib.ibx.add();
-				pib.ibx.last() = ib;
-				pib.ibx.last().sub = dec.getLocalIGhostSub(i,j);
+				pib.bid.add();
+				pib.bid.last().box = ib;
+				pib.bid.last().sub = dec.getLocalIGhostSub(i,j);
+				pib.bid.last().k = dec.getLocalIGhostE(i,j);
 			}
 		}
 
@@ -300,13 +301,13 @@ class grid_dist_id
 				::Box<dim,St> ib_dom = dec.getLocalEGhostBox(i,j);
 				::Box<dim,size_t> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom);
 
-				// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
-				if (ib.isValid() == false)
-					continue;
+				// Warning even if the ib is not a valid in grid unit we are forced to keep it
+				// otherwise the value returned from dec.getLocalEGhostSub(i,j) will point to an
+				// invalid or wrong box
 
-				pib.ebx.add();
-				pib.ebx.last() = ib;
-				pib.ebx.last().sub = dec.getLocalEGhostSub(i,j);
+				pib.bid.add();
+				pib.bid.last().box = ib;
+				pib.bid.last().sub = dec.getLocalEGhostSub(i,j);
 			}
 		}
 
@@ -326,21 +327,29 @@ class grid_dist_id
 			//! For all the internal ghost boxes of each sub-domain
 			for (size_t j = 0 ; j < loc_ig_box.get(i).bid.size() ; j++)
 			{
-				Box<dim,size_t> & bx_src = loc_ig_box.get(i).bid.get(j).box;
+				Box<dim,size_t> bx_src = loc_ig_box.get(i).bid.get(j).box;
+				// convert into local
+				bx_src -= gdb_ext.get(i).origin;
 
-				// sub domain connected
-				size_t sub_id = loc_ig_box.get(i).bid.get(j).sub;
+				// sub domain connected with external box
+				size_t sub_id_dst = loc_ig_box.get(i).bid.get(j).sub;
 
 				// local external ghost box connected
-				size_t e_box_sub = loc_ig_box.get(i).bid.get(j).e_b;
+				size_t k = loc_ig_box.get(i).bid.get(j).k;
 
-				Box<dim,size_t> & bx_dst = loc_eg_box.get(sub_id).bid.get(e_box_sub).box;
+				Box<dim,size_t> bx_dst = loc_eg_box.get(sub_id_dst).bid.get(k).box;
+
+				// convert into local
+				bx_dst -= gdb_ext.get(sub_id_dst).origin;
 
 				// create 2 sub grid iterator
 				grid_key_dx_iterator_sub<dim> sub_src(loc_grid.get(i).getGrid(),bx_src.getKP1(),bx_src.getKP2());
-				grid_key_dx_iterator_sub<dim> sub_dst(loc_grid.get(sub_id).getGrid(),bx_dst.getKP1(),bx_dst.getKP2());
+				grid_key_dx_iterator_sub<dim> sub_dst(loc_grid.get(sub_id_dst).getGrid(),bx_dst.getKP1(),bx_dst.getKP2());
 
 #ifdef DEBUG
+
+				if (loc_eg_box.get(sub_id_dst).bid.get(k).sub != i)
+					std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination are not correctly linked" << "\n";
 
 				if (sub_src.getVolume() != sub_dst.getVolume())
 					std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination does not match in size" << "\n";
@@ -348,15 +357,15 @@ class grid_dist_id
 #endif
 
 				const auto & gs = loc_grid.get(i);
-				auto & gd = loc_grid.get(sub_id);
+				auto & gd = loc_grid.get(sub_id_dst);
 
 				while (sub_src.isNext())
 				{
 					// Option 1
-					gd.set(sub_src.get(),gs,sub_src.get());
+					gd.set(sub_dst.get(),gs,sub_src.get());
 
 					// Option 2
-					gd.get_o(sub_src.get()) = gs.get_o(sub_dst.get());
+//					gd.get_o(sub_dst.get()) = gs.get_o(sub_src.get());
 
 					++sub_src;
 					++sub_dst;
@@ -434,13 +443,13 @@ public:
 		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
 
 		// Create the sub-domains
-		dec.setParameters(div,domain);
+		dec.setParameters(div,domain,ghost);
 
 		// Create local grid
 		Create();
 
 		// Calculate ghost boxes
-		dec.calculateGhostBoxes(ghost);
+		dec.calculateGhostBoxes();
 	}
 
 	/*! \brief Get the object that store the decomposition information
@@ -464,28 +473,14 @@ public:
 		return cd_sm;
 	}
 
-	/*! \brief Create
-	 *
-	 *
-	 */
-
 	/*! \brief Create the grids on memory
 	 *
 	 */
 
 	void Create()
 	{
-		// Box used for rounding error
-//		Box<dim,St> rnd_box;
-//		for (size_t i = 0 ; i < dim ; i++)	{rnd_box.setHigh(i,0.5); rnd_box.setLow(i,0.5);}
-		// Box used for rounding in case of ghost
 		Box<dim,St> g_rnd_box;
 		for (size_t i = 0 ; i < dim ; i++)	{g_rnd_box.setHigh(i,0.5); g_rnd_box.setLow(i,-0.5);}
-
-		// ! Create an hyper-cube approximation.
-		// ! In order to work on grid_dist the decomposition
-		// ! has to be a set of hyper-cube
-		dec.hyperCube();
 
 		// Get the number of local grid needed
 		size_t n_grid = dec.getNLocalHyperCube();
@@ -503,39 +498,25 @@ public:
 
 			// Get the local hyper-cube
 			SpaceBox<dim,St> sp = dec.getLocalHyperCube(i);
+			SpaceBox<dim,St> sp_g = dec.getSubDomainWithGhost(i);
 
-			// Convert from SpaceBox<dim,float> to SpaceBox<dim,long int>
+			// Convert from SpaceBox<dim,St> to SpaceBox<dim,long int>
 			SpaceBox<dim,long int> sp_t = cd_sm.convertDomainSpaceIntoGridUnits(sp);
-
-			// convert the ghost from space coordinate to grid units
-			Ghost<dim,St> g_int = ghost;
-			g_int /= cd_sm.getCellBox().getP2();
-
-			// enlarge by 0.5 for rounding
-			g_int.enlarge(g_rnd_box);
-
-			// convert from Ghost<dim,St> to Ghost<dim,long int>
-			Ghost<dim,long int> g_int_t = g_int;
+			SpaceBox<dim,long int> sp_tg = cd_sm.convertDomainSpaceIntoGridUnits(sp_g);
 
 			//! Save the origin of the local grid
-			gdb_ext.last().origin = sp_t.getP1();
-
-			// Center the local grid to zero
-			sp_t -= sp_t.getP1();
+			gdb_ext.last().origin = sp_tg.getP1();
 
 			// save information about the local grid: domain box seen inside the domain + ghost box (see GDBoxes for a visual meaning)
 			// and where the GDBox start, or the origin of the local grid (+ghost) in global coordinate
 			gdb_ext.last().Dbox = sp_t;
-			gdb_ext.last().Dbox -= g_int_t.getP1();
-			// needed because the last key coordinate is size - 1 on each direction
-			// The origin is the Domain box + ghost, so shift
-			gdb_ext.last().origin += g_int_t.getP1();
+			gdb_ext.last().Dbox -= sp_tg.getP1();
 
-			// Enlarge sp with the Ghost size
-			sp_t.enlarge_fix_P1(g_int_t);
+			// center to zero
+			sp_tg -= sp_tg.getP1();
 
 			// Get the size of the local grid
-			for (size_t i = 0 ; i < dim ; i++) {l_res[i] = (sp_t.getHigh(i) >= 0)?(sp_t.getHigh(i)+1):0;}
+			for (size_t i = 0 ; i < dim ; i++) {l_res[i] = (sp_tg.getHigh(i) >= 0)?(sp_tg.getHigh(i)+1):0;}
 
 			// Set the dimensions of the local grid
 			loc_grid.get(i).template resize<Memory>(l_res);
@@ -637,7 +618,7 @@ public:
 		size_t sub;
 
 		//! external box
-		size_t e_b;
+		size_t k;
 	};
 
 	/*! \brief It store the information about the external ghost box
@@ -751,6 +732,12 @@ public:
 
 		// Convert the ghost external boxes into grid unit boxes
 		create_eg_box();
+
+		// Convert the local ghost internal boxes into grid unit boxes
+		create_local_ig_box();
+
+		// Convert the local external ghost boxes into grid unit boxes
+		create_local_eg_box();
 
 		// total number of sending vector
 		std::vector<size_t> pap_prp;

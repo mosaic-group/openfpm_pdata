@@ -42,8 +42,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	grid_key_dx<2> stop(point_div * (v_cl.getProcessUnitID() + 1) - 1,g_div[0]);
 	auto g_sub = g_info.getSubIterator(start,stop);
 
+	// set the ghost based on the radius cut off (make just a little bit smaller than the spacing)
+	Ghost<2,float> g(spacing.get(0) - spacing .get(0) * 0.0001);
+
 	// Vector of particles
-	vector_dist<Point<2,float>, Point_test<float>, Box<2,float>, CartDecomposition<2,float> > vd(g_info.size(),box);
+	vector_dist<Point<2,float>, Point_test<float>, Box<2,float>, CartDecomposition<2,float> > vd(g_info.size(),box,g);
 
 	auto it = vd.getIterator();
 
@@ -56,12 +59,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 
 		vd.template getPos<s::x>(key_v)[0] = key.get(0) * spacing[0] + m_spacing[0];
 		vd.template getPos<s::x>(key_v)[1] = key.get(1) * spacing[1] + m_spacing[1];
-
-		if (vd.template getPos<s::x>(key_v)[0] >= 1.0 || vd.template getPos<s::x>(key_v)[1] >= 1.0)
-		{
-			int debug = 0;
-			debug++;
-		}
 
 		++g_sub;
 		++it;
@@ -93,12 +90,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 
 		++it;
 	}
-
-	// set the ghost based on the radius cut off (make just a little bit smaller than the spacing)
-	Ghost<2,float> g(spacing.get(0) - spacing .get(0) * 0.0001);
-
-	// set the ghost
-	vd.setGhost(g);
 
 	//! Output the decomposition
 	ct.write(".");

@@ -122,7 +122,7 @@ class grid_dist_iterator<dim,device_grid,FREE>
 	 *
 	 */
 
-	grid_dist_iterator<dim,device_grid,FREE> operator++()
+	inline grid_dist_iterator<dim,device_grid,FREE> operator++()
 	{
 		++a_it;
 
@@ -136,7 +136,7 @@ class grid_dist_iterator<dim,device_grid,FREE>
 			g_c++;
 
 			// When the grid has size 0 potentially all the other informations are garbage
-			while (gList[g_c].size() == 0 ) g_c++;
+			while (g_c < gList.size() && (gList[g_c].size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false ) ) g_c++;
 
 			// get the next grid iterator
 			if (g_c < gList.size())
@@ -153,7 +153,7 @@ class grid_dist_iterator<dim,device_grid,FREE>
 	 * \return true if there is the next, false otherwise
 	 *
 	 */
-	bool isNext()
+	inline bool isNext()
 	{
 		// If there are no other grid stop
 
@@ -168,7 +168,7 @@ class grid_dist_iterator<dim,device_grid,FREE>
 	 * \return the actual key
 	 *
 	 */
-	grid_dist_key_dx<dim> get()
+	inline grid_dist_key_dx<dim> get()
 	{
 		return grid_dist_key_dx<dim>(g_c,a_it.get());
 	}
@@ -239,7 +239,7 @@ class grid_dist_iterator<dim,device_grid,FIXED>
 			g_c++;
 
 			// When the grid has size 0 potentially all the other informations are garbage
-			while (gList[g_c].size() == 0 ) g_c++;
+			while (g_c < gList.size() && gList[g_c].size() == 0 ) g_c++;
 
 			// get the next grid iterator
 			if (g_c < gList.size())

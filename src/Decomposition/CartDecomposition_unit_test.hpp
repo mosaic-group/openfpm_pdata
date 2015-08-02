@@ -31,13 +31,13 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_use)
 	for (int i = 0 ; i < 3 ; i++)
 	{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/3));}
 
-	// Decompose
-	dec.setParameters(div,box);
-
 	Ghost<3,float> g(0.01);
 
+	// Decompose
+	dec.setParameters(div,box,g);
+
 	// create a ghost border
-	dec.calculateGhostBoxes(g);
+	dec.calculateGhostBoxes();
 
 	// For each calculated ghost box
 	for (size_t i = 0 ; i < dec.getNIGhostBox() ; i++)
@@ -61,14 +61,16 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_use)
 
 		if (found == false)
 		{
-			int debug = 0;
-			debug++;
-
 			const openfpm::vector<size_t> pr2 = dec.template ghost_processorID<CartDecomposition<3,float>::processor_id>(p);
 		}
 
 		BOOST_REQUIRE_EQUAL(found,true);
 	}
+
+	// Check the consistency
+
+	bool val = dec.check_consistency();
+	BOOST_REQUIRE_EQUAL(val,true);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

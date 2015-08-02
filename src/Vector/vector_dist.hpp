@@ -77,7 +77,7 @@ public:
 	 * \param Global number of elements
 	 *
 	 */
-	vector_dist(size_t np, Box box)
+	vector_dist(size_t np, Box box, Ghost<point::dims,typename point::coord_type> g = Ghost<point::dims,typename point::coord_type>())
 	:dec(Decomposition(*global_v_cluster)),v_cl(*global_v_cluster)
 	{
 		// Allocate unassigned particles vectors
@@ -106,7 +106,7 @@ public:
 		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/point::dims));}
 
 		// Create the sub-domains
-		dec.setParameters(div,box);
+		dec.setParameters(div,box,g);
 
 		// Get the bounding box containing the processor domain
 		const ::Box<point::dims,typename point::coord_type> & bbound = dec.getProcessorBounds();
@@ -173,9 +173,9 @@ public:
 	 *  \param g ghost
 	 *
 	 */
-	void setGhost(Ghost<point::dims,typename point::coord_type> & g)
+	void setGhost()
 	{
-		dec.calculateGhostBoxes(g);
+		dec.calculateGhostBoxes();
 	}
 
 	//! It map the processor id with the communication request into map procedure
