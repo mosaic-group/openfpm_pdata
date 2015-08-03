@@ -193,7 +193,7 @@ CUDA_CFLAGS =  -I -I -I/usr/local/cuda/include
 CUDA_LIBS =  -L -L -L/usr/local/cuda/lib64 -lcuda -lcudart
 CXX = mpic++
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS =  --std=c++11 -march=native -mtune=native  -Wall -O3 -g3 -funroll-loops 
+CXXFLAGS =  --std=c++11 -march=native -mtune=native  -g3  -Wall -O0 
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
@@ -214,7 +214,7 @@ LTLIBOBJS =
 MAKEINFO = ${SHELL} /home/i-bird/Desktop/MOSAIC/OpenFPM_project/OpenFPM_pdata/missing makeinfo
 MKDIR_P = /usr/bin/mkdir -p
 NVCC = /usr/local/cuda/bin/nvcc
-NVCCFLAGS =    -O3 
+NVCCFLAGS =    -g -O0 
 NVCC_EXIST = yes
 OBJEXT = o
 PACKAGE = full-package-name

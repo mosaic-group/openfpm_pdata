@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter_test)
 
 	// Test several grid dimensions
 
-	for (size_t k = 1024 ; k > 1 ; k--)
+	for (size_t k = 1024 ; k >= 1 ; k--)
 	{
 		std::cout << "Testing: " << k << "\n";
 
@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 	// Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
-	for (long int k = 1026 ; k > 1 ; k-= 33)
+	for (long int k = 1024 ; k >= 1 ; k-= (k >= 66)?33:1 )
 	{
 		std::cout << "Testing: " << k << "\n";
 
@@ -108,6 +108,9 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 
 		// Distributed grid with id decomposition
 		grid_dist_id<2, float, scalar<float>, CartDecomposition<2,float>> g_dist(sz,domain,g);
+
+		// Write the decomposition
+		g_dist.getDecomposition().write("output/");
 
 		// check the consistency of the decomposition
 		bool val = g_dist.getDecomposition().check_consistency();
@@ -172,6 +175,12 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 			// In this case the boundary condition are non periodic
 			if (g_dist.isInside(key_g))
 			{
+				if (g_dist.template get<0>(key) != info.LinId(key_g))
+				{
+					int debug = 0;
+					debug++;
+				}
+
 				BOOST_REQUIRE_EQUAL(g_dist.template get<0>(key),info.LinId(key_g));
 			}
 

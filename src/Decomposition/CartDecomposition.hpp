@@ -91,7 +91,7 @@ class CartDecomposition
 	};
 
 	//! It contain a box definition and from witch sub-domain it come from
-	struct Box_sub : Box<dim,T>
+	struct Box_sub : public Box<dim,T>
 	{
 		// Domain id
 		size_t sub;
@@ -102,10 +102,12 @@ class CartDecomposition
 
 			return *this;
 		}
+
+
 	};
 
 	//! Particular case for internal ghost boxes, in contain the internal local ghost box
-	struct Box_sub_k : Box<dim,T>
+	struct Box_sub_k : public Box<dim,T>
 	{
 		// Domain id
 		size_t sub;
@@ -118,6 +120,12 @@ class CartDecomposition
 			::Box<dim,T>::operator=(box);
 
 			return *this;
+		}
+
+		// encap interface to make compatible with OpenFPM_IO
+		template <int i> auto get() -> decltype( static_cast<Box<dim,T> *>(this)->template get<i>())
+		{
+			return ::Box<dim,T>::template get<i>();
 		}
 	};
 
@@ -1563,10 +1571,12 @@ p1[0]<-----+         +----> p2[0]
 	 *
 	 * The function generate several files
 	 *
-	 * 1) p_sub_X.vtk domain for the local processor as union of sub-domain (Boxes)
-	 * 2) sub_np_c_X.vtk sub-domain of the near adjacent processors to the processor local processor (Color encoded)
-	 * 3) sub_X_inte_g_np.vtk Intersection between the ghosts of the near processors and the local processor sub-domains (Color encoded)
-	 * 4) sub_X_ghost.vtk ghost of the local processor (Color encoded)
+	 * 1) subdomains_X.vtk domain for the local processor (X) as union of sub-domain
+	 * 2) subdomains_adjacent_X.vtk sub-domains adjacent to the local processor (X)
+	 * 3) internal_ghost_X.vtk Internal ghost boxes for the local processor (X)
+	 * 4) external_ghost_X.vtk External ghost boxes for the local processor (X)
+	 * 5) local_internal_ghost_X.vtk internal local ghost boxes for the local processor (X)
+	 * 6) local_external_ghost_X.vtk external local ghost boxes for the local processor (X)
 	 *
 	 * where X is the local processor rank
 	 *
@@ -1575,12 +1585,12 @@ p1[0]<-----+         +----> p2[0]
 	 */
 	bool write(std::string output) const
 	{
-		//! p_sub_X.vtk domain for the local processor as union of sub-domain (Boxes)
+		//! subdomains_X.vtk domain for the local processor (X) as union of sub-domain
 		VTKWriter<openfpm::vector<::SpaceBox<dim,T>>,VECTOR_BOX> vtk_box1;
 		vtk_box1.add(sub_domains);
-		vtk_box1.write(output + std::string("p_sub_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
+		vtk_box1.write(output + std::string("subdomains_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
-		//! sub_np_c_X.vtk sub-domain of the near adjacent processors to the processor local processor (Color encoded)
+		//! subdomains_adjacent_X.vtk sub-domains adjacent to the local processor (X)
 		VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box2;
 		for (size_t p = 0 ; p < nn_processors.size() ; p++)
 		{
@@ -1589,9 +1599,9 @@ p1[0]<-----+         +----> p2[0]
 			if (it != nn_processor_subdomains.end())
 				vtk_box2.add(nn_processor_subdomains.at(prc).bx);
 		}
-		vtk_box2.write(output + std::string("sub_np_c_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
+		vtk_box2.write(output + std::string("subdomains_adjacent_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
-		//! sub_X_inte_g_np.vtk Intersection between the ghosts of the near processors and the local processor sub-domains (Color encoded)
+		//! internal_ghost_X.vtk Internal ghost boxes for the local processor (X)
 		VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box3;
 		for (size_t p = 0 ; p < box_nn_processor_int.size() ; p++)
 		{
@@ -1600,9 +1610,9 @@ p1[0]<-----+         +----> p2[0]
 				vtk_box3.add(box_nn_processor_int.get(p).get(s).nbx);
 			}
 		}
-		vtk_box3.write(output + std::string("sub_") + std::to_string(v_cl.getProcessUnitID()) + std::string("_inte_g_np") + std::string(".vtk"));
+		vtk_box3.write(output + std::string("internal_ghost_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
-		//! ghost of the local processor (Color encoded)
+		//! external_ghost_X.vtk External ghost boxes for the local processor (X)
 		VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box4;
 		for (size_t p = 0 ; p < box_nn_processor_int.size() ; p++)
 		{
@@ -1611,21 +1621,24 @@ p1[0]<-----+         +----> p2[0]
 				vtk_box4.add(box_nn_processor_int.get(p).get(s).bx);
 			}
 		}
-		vtk_box4.write(output + std::string("sub_") + std::to_string(v_cl.getProcessUnitID()) + std::string("_ghost") + std::string(".vtk"));
+		vtk_box4.write(output + std::string("external_ghost_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
-		//! local external ghost of the local processor (Color encoded per domain)
-/*		VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box5;
+		//! local_internal_ghost_X.vtk internal local ghost boxes for the local processor (X)
+		VTKWriter<openfpm::vector_std<Box_sub_k>,VECTOR_BOX> vtk_box5;
 		for (size_t p = 0 ; p < loc_ghost_box.size() ; p++)
 		{
-			vtk_box5.add(loc_ghost_box.get(p).ibx.);
+			vtk_box5.add(loc_ghost_box.get(p).ibx);
 		}
+		vtk_box5.write(output + std::string("local_internal_ghost_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
-		//! local internal ghost of the local processor (Color encoded per domain)
-		VTKWriter<openfpm::vector<::Box<dim,T>>,VECTOR_BOX> vtk_box6;
+		//! local_external_ghost_X.vtk external local ghost boxes for the local processor (X)
+		VTKWriter<openfpm::vector_std<Box_sub>,VECTOR_BOX> vtk_box6;
 		for (size_t p = 0 ; p < loc_ghost_box.size() ; p++)
 		{
+			vtk_box6.add(loc_ghost_box.get(p).ebx);
+		}
+		vtk_box6.write(output + std::string("local_external_ghost_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
-		}*/
 
 		return true;
 	}

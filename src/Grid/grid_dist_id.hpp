@@ -176,7 +176,7 @@ class grid_dist_id
 
 				i_box_id bid_t;
 				bid_t.box = cvt;
-				bid_t.g_id = g.LinId(bid_t.box.getKP1());
+				bid_t.g_id = g.LinId(bid_t.box.middle().asArray());
 				bid_t.sub = dec.getProcessorIGhostSub(i,j);
 				pib.bid.add(bid_t);
 			}
@@ -215,24 +215,24 @@ class grid_dist_id
 				// save the box and the unique external ghost box id (linearization of P1)
 				// It is (locally) unique because it is ensured that external ghost boxes does not overlap
 				// Carefull it is not unique from the internal ghost box
-				::Box<dim,size_t> cvt = ib;
 
 				// sub domain id at which belong the external ghost box
 				size_t sub_id = dec.getProcessorEGhostSub(i,j);
 
 				e_box_id bid_t;
 				bid_t.sub = sub_id;
-				bid_t.g_e_box = cvt;
-				bid_t.l_e_box = cvt;
+				bid_t.g_e_box = ib;
+				bid_t.l_e_box = ib;
 				// Translate in local coordinate
-				Box<dim,long int> tb = cvt;
+				Box<dim,long int> tb = ib;
 				tb -= gdb_ext.get(sub_id).origin;
 				bid_t.l_e_box = tb;
 
 				pib.bid.add(bid_t);
 
 				// Add the map between the global ghost box id and id of the external box in the vector
-				g_id_to_external_ghost_box[g.LinId(cvt.getKP1())] = pib.bid.size()-1;
+				size_t g_id = g.LinId(ib.middle().asArray());
+				g_id_to_external_ghost_box[g_id] = pib.bid.size()-1;
 			}
 		}
 
@@ -802,8 +802,6 @@ public:
 
 		// Calculate the total information to receive from each processors
 		std::vector<size_t> prp_recv;
-		// Calculate the unpacking sequence
-		std::vector<size_t> prp_unpack;
 
 		//! Receive the information from each processors
 		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
@@ -816,10 +814,6 @@ public:
 				// External ghost box
 				Box<dim,size_t> g_eg_box = eg_box.get(i).bid.get(j).g_e_box;
 				prp_recv[prp_recv.size()-1] += g_eg_box.getVolumeKey() * sizeof(prp_object) + sizeof(size_t);
-
-				// unpack sequence
-				prp_unpack.push_back(sizeof(size_t));
-				prp_unpack.push_back(g_eg_box.getVolumeKey() * sizeof(prp_object));
 			}
 		}
 
@@ -827,15 +821,14 @@ public:
 		g_recv_prp_mem.resize(ExtPreAlloc<Memory>::calculateMem(prp_recv));
 
 		// Create an object of preallocated memory for properties
-		ExtPreAlloc<Memory> & prRecv_prp = *(new ExtPreAlloc<Memory>(prp_unpack,g_recv_prp_mem));
+		ExtPreAlloc<Memory> & prRecv_prp = *(new ExtPreAlloc<Memory>(prp_recv,g_recv_prp_mem));
 		prRecv_prp.incRef();
 
 		// queue the receives
-		size_t offset = 0;
 		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
 		{
-			v_cl.recv(eg_box.get(i).prc,0,prRecv_prp.getPointerOffset(offset),prp_recv[i]);
-			offset += prp_recv[i];
+			prRecv_prp.allocate(prp_recv[i]);
+			v_cl.recv(eg_box.get(i).prc,0,prRecv_prp.getPointer(),prp_recv[i]);
 		}
 
 		// Before wait for the communication to complete we sync the local ghost
