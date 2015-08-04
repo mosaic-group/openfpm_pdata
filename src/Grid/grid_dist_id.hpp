@@ -374,6 +374,19 @@ class grid_dist_id
 		}
 	}
 
+	/*! \brief Check the the grid has valid size
+	 *
+	 * Distributed grids with size < 2 on each dimension are not supported
+	 *
+	 */
+	inline void check_size(const size_t (& g_sz)[dim])
+	{
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (g_sz[i] < 2)
+				std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " distrobuted grids with size smaller than 2 are not supported\n";
+		}
+	}
 
 public:
 
@@ -381,6 +394,8 @@ public:
 	grid_dist_id(Vcluster v_cl, Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,T> & ghost)
 	:domain(domain),ghost(ghost),loc_grid(NULL),v_cl(v_cl),dec(dec)
 	{
+		check_size(g_sz);
+
 		// For a 5x5 grid you have 4x4 Cell
 		size_t c_g[dim];
 		for (size_t i = 0 ; i < dim ; i++)	{c_g[i] = g_sz[i]-1;}
@@ -421,9 +436,12 @@ public:
 	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g)
 	:domain(domain),ghost(g),dec(Decomposition(*global_v_cluster)),v_cl(*global_v_cluster)
 	{
+		// check that the grid has valid size
+		check_size(g_sz);
+
 		// For a 5x5 grid you have 4x4 Cell
 		size_t c_g[dim];
-		for (size_t i = 0 ; i < dim ; i++)	{c_g[i] = g_sz[i]-1;}
+		for (size_t i = 0 ; i < dim ; i++)	{c_g[i] = (g_sz[i]-1 > 0)?(g_sz[i]-1):1;}
 
 		// Initialize the cell decomposer
 		cd_sm.setDimensions(domain,c_g,0);

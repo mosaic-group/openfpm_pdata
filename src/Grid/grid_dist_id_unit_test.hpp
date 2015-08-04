@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter_test)
 
 	// Test several grid dimensions
 
-	for (size_t k = 1024 ; k >= 1 ; k--)
+	for (size_t k = 1024 ; k >= 2 ; k--)
 	{
 		std::cout << "Testing: " << k << "\n";
 
@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 	// Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
-	for (long int k = 1024 ; k >= 1 ; k-= (k >= 66)?33:1 )
+	for (long int k = 8 ; k >= 2 ; k-= (k >= 66)?33:1 )
 	{
 		std::cout << "Testing: " << k << "\n";
 
