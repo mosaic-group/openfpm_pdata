@@ -207,6 +207,21 @@ class grid_dist_iterator<dim,device_grid,FIXED>
 	//! Actual iterator
 	grid_key_dx_iterator<dim> a_it;
 
+	/*! \brief from g_c increment g_c until you find a valid grid
+	 *
+	 */
+	void selectValidGrid()
+	{
+		// When the grid has size 0 potentially all the other informations are garbage
+		while (g_c < gList.size() && (gList[g_c].size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false ) ) g_c++;
+
+		// get the next grid iterator
+		if (g_c < gList.size())
+		{
+			a_it.reinitialize(gList[g_c].getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2()));
+		}
+	}
+
 	public:
 
 	/*! \brief Constructor of the distributed grid
@@ -219,7 +234,7 @@ class grid_dist_iterator<dim,device_grid,FIXED>
 	{
 		// Initialize the current iterator
 		// with the first grid
-		a_it.reinitialize(gList[0].getIterator());
+		selectValidGrid();
 	}
 
 	// Destructor
@@ -245,15 +260,7 @@ class grid_dist_iterator<dim,device_grid,FIXED>
 		{
 			// switch to the new grid
 			g_c++;
-
-			// When the grid has size 0 potentially all the other informations are garbage
-			while (g_c < gList.size() && gdb_ext.get(g_c).Dbox.getVolumeKey() == 0 ) g_c++;
-
-			// get the next grid iterator
-			if (g_c < gList.size())
-			{
-				a_it.reinitialize(gList[g_c].getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2()));
-			}
+			selectValidGrid();
 		}
 
 		return *this;

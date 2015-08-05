@@ -90,11 +90,39 @@ class CartDecomposition
 		size_t proc;
 	};
 
-	//! It contain a box definition and from witch sub-domain it come from
+	/*! It contain a box definition and from witch sub-domain it come from (in the local processor)
+	 * and an unique across adjacent processors (for communication)
+	 *
+	 * If the box come from the intersection of an expanded sub-domain and a sub-domain
+	 *
+	 * Assuming we are considering the adjacent processor i (0 to getNNProcessors())
+	 *
+	 * ### external ghost box
+	 *
+	 * id = id_exp + N_non_exp + id_non_exp
+	 *
+	 * id_exp = the id in the vector proc_adj_box.get(i) of the expanded sub-domain
+	 *
+	 * id_non_exp = the id in the vector nn_processor_subdomains[i] of the sub-domain
+	 *
+	 * ### internal ghost box
+	 *
+	 * id = id_exp + N_non_exp + id_non_exp
+	 *
+	 * id_exp = the id in the vector nn_processor_subdomains[i] of the expanded sub-domain
+	 *
+	 * id_non_exp = the id in the vector proc_adj_box.get(i) of the sub-domain
+	 *
+	 */
+	/*
+	*/
 	struct Box_sub : public Box<dim,T>
 	{
 		// Domain id
 		size_t sub;
+
+		// Id
+		size_t id;
 
 		Box_sub operator=(const Box<dim,T> & box)
 		{
@@ -106,7 +134,7 @@ class CartDecomposition
 
 	};
 
-	//! Particular case for internal ghost boxes, in contain the internal local ghost box
+	//! Particular case for local internal ghost boxes
 	struct Box_sub_k : public Box<dim,T>
 	{
 		// Domain id
@@ -189,6 +217,9 @@ private:
 
 	// for each near-processor store the sub-domain of the near processor
 	std::unordered_map<size_t, N_box> nn_processor_subdomains;
+
+	// for each processor store the set of the sub-domains sent to the adjacent processors
+	openfpm::vector<openfpm::vector<size_t>> proc_adj_box;
 
 	//! it contain the internal ghosts of the local processor
 	openfpm::vector<lBox_dom> loc_ghost_box;
@@ -579,6 +610,19 @@ private:
 						proc_int_box_g.ebx.add();
 						proc_int_box_g.ebx.last() = bi;
 						proc_int_box_g.ebx.last().sub = i;
+
+						// Search for the correct id
+						size_t k = 0;
+						size_t p_idp = ProctoID(p_id);
+						for (k = 0 ; k < proc_adj_box.get(p_idp).size() ; k++)
+						{
+							if (proc_adj_box.get(p_idp).get(k) == i)
+								break;
+						}
+						if (k == proc_adj_box.get(p_idp).size())
+							std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " sub-domain not found\n";
+
+						proc_int_box_g.ebx.last().id = (k * nn_processor_subdomains_g.size() + b) * v_cl.getProcessingUnits() + p_id;
 					}
 				}
 			}
@@ -664,6 +708,19 @@ private:
 						Box_sub sb;
 						sb = b_int.box;
 						sb.sub = i;
+
+						// Search for the correct id
+						size_t s = 0;
+						size_t p_idp = ProctoID(p_id);
+						for (s = 0 ; s < proc_adj_box.get(p_idp).size() ; s++)
+						{
+							if (proc_adj_box.get(p_idp).get(s) == i)
+								break;
+						}
+						if (s == proc_adj_box.get(p_idp).size())
+							std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " sub-domain not found\n";
+
+						sb.id = (k * proc_adj_box.get(p_idp).size() + s) * v_cl.getProcessingUnits() + v_cl.getProcessUnitID();
 
 						pr_box_int.ibx.add(sb);
 
@@ -1048,6 +1105,7 @@ p1[0]<-----+         +----> p2[0]
 		// of the sub-domains contiguous to the processor A are sent to the processor A and
 		// the information of the contiguous sub-domains in the near processors are received
 		//
+		proc_adj_box.resize(getNNProcessors());
 		openfpm::vector< openfpm::vector< ::SpaceBox<dim,T>> > boxes(nn_processors.size());
 
 		for (size_t b = 0 ; b < box_nn_processor.size() ; b++)
@@ -1061,6 +1119,7 @@ p1[0]<-----+         +----> p2[0]
 				size_t id = nn_processor_subdomains[prc].id;
 
 				boxes.get(id).add(sub_domains.get(b));
+				proc_adj_box.get(id).add(b);
 			}
 		}
 
@@ -1362,7 +1421,7 @@ p1[0]<-----+         +----> p2[0]
 		return proc_int_box.get(id).ibx.get(j);
 	}
 
-	/*! \brief Get the j External ghost box for one processor
+	/*! \brief Get the j External ghost box
 	 *
 	 * \param id near processor list id (the id go from 0 to getNNProcessor())
 	 * \param j box (each near processor can produce more than one external ghost box)
@@ -1372,6 +1431,30 @@ p1[0]<-----+         +----> p2[0]
 	inline const ::Box<dim,T> & getProcessorEGhostBox(size_t id, size_t j) const
 	{
 		return proc_int_box.get(id).ebx.get(j);
+	}
+
+	/*! \brief Get the j Internal ghost box id
+	 *
+	 * \param id near processor list id (the id go from 0 to getNNProcessor())
+	 * \param j box (each near processor can produce more than one internal ghost box)
+	 * \return the box
+	 *
+	 */
+	inline size_t getProcessorIGhostId(size_t id, size_t j) const
+	{
+		return proc_int_box.get(id).ibx.get(j).id;
+	}
+
+	/*! \brief Get the j External ghost box id
+	 *
+	 * \param id near processor list id (the id go from 0 to getNNProcessor())
+	 * \param j box (each near processor can produce more than one external ghost box)
+	 * \return the box
+	 *
+	 */
+	inline size_t getProcessorEGhostId(size_t id, size_t j) const
+	{
+		return proc_int_box.get(id).ebx.get(j).id;
 	}
 
 	/*! \brief For the sub-domain i intersected with the sub-domain j enlarged, the associated
@@ -1676,6 +1759,32 @@ p1[0]<-----+         +----> p2[0]
 
 		return true;
 	}
+
+	void debugPrint()
+	{
+//		if (v_cl.getProcessUnitID() == 3)
+//		{
+			std::cout << "External ghost box\n";
+
+			for (size_t p = 0 ; p < getNNProcessors() ; p++)
+			{
+				for (size_t i = 0 ; i < getProcessorNEGhost(p) ; i++)
+				{
+					std::cout << getProcessorEGhostBox(p,i).toString() << "   prc=" << IDtoProc(p) << "   id=" << getProcessorEGhostId(p,i) << "\n";
+				}
+			}
+
+			std::cout << "Internal ghost box\n";
+
+			for (size_t p = 0 ; p < getNNProcessors() ; p++)
+			{
+				for (size_t i = 0 ; i < getProcessorNIGhost(p) ; i++)
+				{
+					std::cout << getProcessorIGhostBox(p,i).toString() << "   prc=" << IDtoProc(p)  << "   id=" << getProcessorIGhostId(p,i) <<  "\n";
+				}
+			}
+		}
+//	}
 };
 
 
