@@ -13,6 +13,7 @@ m4_ifdef([AX_BOOST],,[m4_include([m4/ax_boost.m4])])
 m4_ifdef([ACX_MPI],,[m4_include([m4/acx_mpi.m4])])
 m4_ifdef([AX_OPENMP],,[m4_include([m4/ax_openmp.m4])])
 m4_ifdef([AX_CUDA],,[m4_include([m4/ax_cuda.m4])])
+m4_ifdef([IMMDX_LIB_METIS],,[m4_include([m4/immdx_lib_metis.m4])])
 
 CXXFLAGS+=" --std=c++11 -march=native -mtune=native "
 NVCCFLAGS=" "
@@ -72,6 +73,10 @@ if test x"$memcheck" = x"yes"; then
 fi
 
 #########
+
+## Check for Metis
+
+IMMDX_LIB_METIS([],[AC_MSG_ERROR(["Cannot detect metis, use the --with-metis option if it is not installed in the default location"])])
 
 ####### include OpenFPM_devices include path
 
