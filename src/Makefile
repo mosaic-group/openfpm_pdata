@@ -102,7 +102,7 @@ am_pdata_OBJECTS = pdata-main.$(OBJEXT) pdata-HeapMemory.$(OBJEXT) \
 pdata_OBJECTS = $(am_pdata_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 pdata_DEPENDENCIES = $(am__DEPENDENCIES_2)
 pdata_LINK = $(CXXLD) $(pdata_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -213,8 +213,8 @@ LIBS =
 LTLIBOBJS = 
 MAKEINFO = ${SHELL} /home/i-bird/Desktop/MOSAIC/OpenFPM_project/OpenFPM_pdata/missing makeinfo
 METIS = 
-METIS_INCLUDE = -I../metis_install//include
-METIS_LIB = -L../metis_install//lib
+METIS_INCLUDE = -I/home/i-bird/Desktop/MOSAIC/OpenFPM_project/metis_install//include
+METIS_LIB = -L/home/i-bird/Desktop/MOSAIC/OpenFPM_project/metis_install//lib
 MKDIR_P = /usr/bin/mkdir -p
 NVCC = /usr/local/cuda/bin/nvcc
 NVCCFLAGS =    -O3 
@@ -287,11 +287,11 @@ target_vendor = unknown
 top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
-LINKLIBS = $(PTHREAD_LIBS) $(OPT_LIBS) $(BOOST_LDFLAGS) $(BOOST_IOSTREAMS_LIB) $(CUDA_LIBS)
+LINKLIBS = $(METIS_LIB) $(PTHREAD_LIBS) $(OPT_LIBS) $(BOOST_LDFLAGS) $(BOOST_IOSTREAMS_LIB) $(CUDA_LIBS)
 pdata_SOURCES = main.cpp ../../OpenFPM_devices/src/memory/HeapMemory.cpp ../../OpenFPM_devices/src/memory/PtrMemory.cpp ../../OpenFPM_vcluster/src/VCluster.cpp ../../OpenFPM_data/src/Memleak_check.cpp
-pdata_CXXFLAGS = $(CUDA_CFLAGS) $(INCLUDES_PATH)
+pdata_CXXFLAGS = $(CUDA_CFLAGS) $(INCLUDES_PATH) $(METIS_INCLUDE)
 pdata_CFLAGS = $(CUDA_CFLAGS)
-pdata_LDADD = $(LINKLIBS) -L/usr/lib64/nvidia-bumblebee/ -L../../metis_install/lib  -lmetis
+pdata_LDADD = $(LINKLIBS) -L/usr/lib64/nvidia-bumblebee/ -lmetis
 all: all-am
 
 .SUFFIXES:
