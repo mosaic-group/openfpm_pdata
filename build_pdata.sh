@@ -107,7 +107,7 @@ then
 else
  echo "Compiling general"
  sh ./autogen.sh
- sh ./configure  CXX=mpic++
+ sh ./configure --with-metis=${HOME}/METIS CXX=mpic++
  make
 
  mpirun -np 2 ./src/pdata
