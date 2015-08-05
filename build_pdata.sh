@@ -106,6 +106,7 @@ then
 
 else
  echo "Compiling general"
+ source ~/.bashrc
  sh ./autogen.sh
  sh ./configure --with-metis=${HOME}/METIS CXX=mpic++
  make
