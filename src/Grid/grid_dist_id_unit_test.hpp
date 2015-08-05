@@ -109,11 +109,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 		// Distributed grid with id decomposition
 		grid_dist_id<2, float, scalar<float>, CartDecomposition<2,float>> g_dist(sz,domain,g);
 
-//		g_dist.getDecomposition().debugPrint();
-
-		// Write the decomposition
-		g_dist.getDecomposition().write("output/");
-
 		// check the consistency of the decomposition
 		bool val = g_dist.getDecomposition().check_consistency();
 		BOOST_REQUIRE_EQUAL(val,true);
