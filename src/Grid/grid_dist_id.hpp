@@ -64,9 +64,6 @@ class grid_dist_id
 	//! It map a global ghost id (g_id) to the external ghost box information
 	std::unordered_map<size_t,size_t> g_id_to_external_ghost_box;
 
-	//!
-	openfpm::vector<conflict_res>
-
 	/*! \brief Get the grid size
 	 *
 	 * Given a domain, the resolution of the grid on it and another spaceBox contained in the domain

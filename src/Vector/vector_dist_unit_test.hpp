@@ -21,6 +21,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	typedef Point_test<float> p;
 	typedef Point<2,float> s;
 
+	// TODO generalize
+	if (v_cl.getProcessingUnits() != 4)
+		return;
+
 	Box<2,float> box({0.0,0.0},{1.0,1.0});
 	size_t g_div[]= {16,16};
 
@@ -157,6 +161,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use )
 	typedef Point<2,float> s;
 
 	Vcluster & v_cl = *global_v_cluster;
+
+	if (v_cl.getProcessingUnits() != 4)
+		return;
 
     // set the seed
 	// create the random generator engine
