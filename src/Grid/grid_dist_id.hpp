@@ -176,7 +176,7 @@ class grid_dist_id
 
 				i_box_id bid_t;
 				bid_t.box = cvt;
-				bid_t.g_id = g.LinId(bid_t.box.middle().asArray());
+				bid_t.g_id = dec.getProcessorIGhostId(i,j);
 				bid_t.sub = dec.getProcessorIGhostSub(i,j);
 				pib.bid.add(bid_t);
 			}
@@ -231,7 +231,7 @@ class grid_dist_id
 				pib.bid.add(bid_t);
 
 				// Add the map between the global ghost box id and id of the external box in the vector
-				size_t g_id = g.LinId(ib.middle().asArray());
+				size_t g_id = dec.getProcessorEGhostId(i,j);
 				g_id_to_external_ghost_box[g_id] = pib.bid.size()-1;
 			}
 		}
