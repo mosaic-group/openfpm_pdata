@@ -22,6 +22,7 @@ cd ..
 cd "$1/OpenFPM_pdata"
 
 if [ "$2" == "gin" ]
+then
  echo "Compiling on gin\n"
  source ~/.bashrc
  sh ./autogen.sh
