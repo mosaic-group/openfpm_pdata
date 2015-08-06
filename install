@@ -52,6 +52,15 @@ else
             METIS_installed=1
             configure_options=" $configure_options --with-metis=${HOME}/METIS "
         elif [ $conf_err -ne 0 ]; then
+            echo "Boost not found try to install"
+            if [ $Boost_installed -eq 1  ]; then
+                echo "Error the installation of Boost failed"
+                exit 1
+            fi
+            ./install_boost.sh
+            BOOST_installed=1
+            configure_options=" $configure_options --with-boost=${HOME}/BOOST "
+        elif [ $conf_err -ne 0 ]; then
             echo "I do not know how to recover from this error"
             exit 1
         fi

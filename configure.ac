@@ -93,7 +93,8 @@ INCLUDES_PATH+="-I. -Isrc/config/ -I../../metis_install/include -I../../OpenFPM_
 
 ##### CHECK FOR BOOST ##############
 
-AX_BOOST([1.52],[],[])
+AX_BOOST([1.52],[],[echo "boost not found"
+                    exit 202])
 
 ####### Checking for GPU support
 
