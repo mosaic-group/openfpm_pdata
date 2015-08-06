@@ -1,6 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
+## Take all the options with the exception of --enable-install-req
 
 AC_PREREQ(2.59)
 AC_INIT(FULL-PACKAGE-NAME, VERSION, BUG-REPORT-ADDRESS)
@@ -25,6 +26,13 @@ AC_PROG_CXX
 # Checks g++ flags
 
 AC_CANONICAL_HOST
+
+# Check that the compiler support mpi
+
+AC_LANG_PUSH([C++])
+AC_CHECK_HEADER(mpi.h,[],[echo "mpi.h not found"
+                          exit 200])
+AC_LANG_POP([C++])
 
 # Check target architetture
 
@@ -76,7 +84,8 @@ fi
 
 ## Check for Metis
 
-IMMDX_LIB_METIS([],[AC_MSG_ERROR(["Cannot detect metis, use the --with-metis option if it is not installed in the default location"])])
+IMMDX_LIB_METIS([],[echo "Cannot detect metis, use the --with-metis option if it is not installed in the default location"
+                    exit 201])
 
 ####### include OpenFPM_devices include path
 

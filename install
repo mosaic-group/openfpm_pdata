@@ -1,0 +1,82 @@
+#! /bin/bash
+
+## Take all the options with the exception of --enable-install-req
+
+install_req=0
+configure_options=""
+
+for var in "$@"
+do
+    echo $var
+    if [ test x"$var" -ne x"--enable-install-req" ]; then
+       configure_options= "$configure_options $var"
+    else
+       install_req=1
+    fi
+done
+
+## call the configure script
+
+MPI_installed=0
+METIS_installed=0
+conf_err=1
+
+if [ $install_req -eq 0 ]; then
+    ./configure $configure_options
+else
+    while [ $conf_err -ne 0 ]
+    do
+        ./configure $configure_options
+        conf_err=$?
+
+	echo "Configure script terminated with $conf_err"
+
+        ## if MPI or METIS installation required install it
+        if [ $conf_err -eq 200  ]; then
+            echo "MPI not found try to install"
+            if [ $MPI_installed -eq 1 ]; then
+                echo "Error the installation of MPI failed"
+                exit 1
+            fi
+            ./install_MPI.sh
+            MPI_installed=1
+            export PATH="$PATH:${HOME}/MPI/bin"
+            configure_options="$configure_options CXX=mpic++  "
+        elif [ $conf_err -eq 201  ]; then
+            echo "Metis not found try to install"
+            if [ $METIS_installed -eq 1  ]; then
+                echo "Error the installation of METIS failed"
+                exit 1
+            fi
+            ./install_Metis.sh
+            METIS_installed=1
+            configure_options=" $configure_options --with-metis=${HOME}/METIS "
+        elif [ $conf_err -ne 0 ]; then
+            echo "I do not know how to recover from this error"
+            exit 1
+        fi
+    done
+fi
+
+if [ $conf_err -eq 0  ]; then
+  echo -e "Configure \033[92;5m SUCCEED \033[0m"
+else
+  echo -e "Configure \033[91;5m FAILED \033[0m"
+fi
+
+echo "Command used to configure"
+echo ""
+echo -e "\033[1m ./configure $configure_options \033[0m "
+echo ""
+if [ $MPI_installed -eq 1 ]; then
+  echo -e "MPI has been installed into: \033[5m $HOME/MPI \033[0m"
+  echo -e "Add the following to export PATH=\"$PATH:$HOME/MPI \""
+  echo -e "                            LD_LIBRARY_PATH=
+fi
+if [ $METIS_installed -eq 1 ]; then
+  echo -e "Metis has been installed into: \033[5m $HOME/METIS \033[0m"
+fi
+echo ""
+echo ""
+
+
