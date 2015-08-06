@@ -28,17 +28,29 @@ then
  sh ./autogen.sh
  module load gcc/4.9.2
  ./install
+ if [ $? -ne 0 ]; then exit 1 ; fi
  mpirun -np 2 ./src/pdata
+ if [ $? -ne 0 ]; then exit 1 ; fi
  mpirun -np 3 ./src/pdata
+ if [ $? -ne 0 ]; then exit 1 ; fi
  mpirun -np 4 ./src/pdata
+ if [ $? -ne 0 ]; then exit 1 ; fi
  mpirun -np 5 ./src/pdata
+ if [ $? -ne 0 ]; then exit 1 ; fi
  mpirun -np 6 ./src/pdata
+ if [ $? -ne 0 ]; then exit 1 ; fi
  mpirun -np 7 ./src/pdata
+ if [ $? -ne 0 ]; then exit 1 ; fi
  mpirun -np 8 ./src/pdata
+ if [ $? -ne 0 ]; then exit 1 ; fi
  mpirun -np 9 ./src/pdata
+ if [ $? -ne 0 ]; then exit 1 ; fi
  mpirun -np 10 ./src/pdata
+ if [ $? -ne 0 ]; then exit 1 ; fi
  mpirun -np 11 ./src/pdata
+ if [ $? -ne 0 ]; then exit 1 ; fi
  mpirun -np 12 ./src/pdata
+ if [ $? -ne 0 ]; then exit 1 ; fi
 elif [ "$2" == "wetcluster" ]
 then
  echo "Compiling on wetcluster"
