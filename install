@@ -89,7 +89,7 @@ if [ $MPI_installed -eq 1 ]; then
   echo ""
   echo -e "\033[1;34m  On Linux: \033[0m"
   echo -e "\033[1m  export PATH=\"\$PATH:\$HOME/MPI \" \033[0m "
-  echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:\$HOME/MPI/lib \" \033[0m "
+  echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:\$HOME/MPI/lib\" \033[0m "
   echo -e "\033[1;34m  On OSX: \033[0m"
   echo -e "\033[1m  export PATH=\"\$PATH:\$HOME/MPI \" \033[0m "
   echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:\$HOME/MPI/lib\" \033[0m"
@@ -102,7 +102,7 @@ if [ $METIS_installed -eq 1 ]; then
   echo -e "  METIS has been installed into: \033[1m $HOME/METIS \033[0m"
   echo ""
   echo -e "\033[1;34m  On Linux: \033[0m"
-  echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:\$HOME/METIS/lib \" \033[0m "
+  echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:\$HOME/METIS/lib\" \033[0m "
   echo -e "\033[1;34m  On OSX: \033[0m"
   echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:\$HOME/METIS/lib\" \033[0m"
 
@@ -114,6 +114,11 @@ if [ $BOOST_installed -eq 1 ]; then
   echo -e "\033[1;34;5m ---------------- BOOST ---------------- \033[0m"
   echo -e "  BOOST has been installed into: \033[1m $HOME/BOOST \033[0m"
   echo ""
+  echo -e "\033[1;34m  On Linux: \033[0m"
+  echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:\$HOME/BOOST/lib\" \033[0m "
+  echo -e "\033[1;34m  On OSX: \033[0m"
+  echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:\$HOME/BOOST/lib\" \033[0m"
+
 
 fi
 echo ""
