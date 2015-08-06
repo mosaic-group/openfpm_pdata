@@ -19,6 +19,7 @@ done
 
 MPI_installed=0
 METIS_installed=0
+BOOST_installed=0
 conf_err=1
 
 if [ $install_req -eq 0 ]; then
@@ -51,13 +52,13 @@ else
             ./install_Metis.sh
             METIS_installed=1
             configure_options=" $configure_options --with-metis=${HOME}/METIS "
-        elif [ $conf_err -ne 0 ]; then
+        elif [ $conf_err -eq 202 ]; then
             echo "Boost not found try to install"
-            if [ $Boost_installed -eq 1  ]; then
+            if [ $BOOST_installed -eq 1  ]; then
                 echo "Error the installation of Boost failed"
                 exit 1
             fi
-            ./install_boost.sh
+            ./install_BOOST.sh
             BOOST_installed=1
             configure_options=" $configure_options --with-boost=${HOME}/BOOST "
         elif [ $conf_err -ne 0 ]; then
