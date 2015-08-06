@@ -2,16 +2,16 @@
 
 ## Take all the options with the exception of --enable-install-req
 
-install_req=0
+install_req=1
 configure_options=""
 
 for var in "$@"
 do
     echo $var
-    if [ test x"$var" -ne x"--enable-install-req" ]; then
+    if [ test x"$var" -ne x"--disable-install-req" ]; then
        configure_options= "$configure_options $var"
     else
-       install_req=1
+       install_req=0
     fi
 done
 
@@ -58,10 +58,14 @@ else
     done
 fi
 
+make
+
+echo ""
+echo ""
 if [ $conf_err -eq 0  ]; then
-  echo -e "Configure \033[92;5m SUCCEED \033[0m"
+  echo -e "Configure \033[92;5;1m SUCCEED \033[0m"
 else
-  echo -e "Configure \033[91;5m FAILED \033[0m"
+  echo -e "Configure \033[91;5;1m FAILED \033[0m"
 fi
 
 echo "Command used to configure"
@@ -69,14 +73,29 @@ echo ""
 echo -e "\033[1m ./configure $configure_options \033[0m "
 echo ""
 if [ $MPI_installed -eq 1 ]; then
-  echo -e "MPI has been installed into: \033[5m $HOME/MPI \033[0m"
-  echo -e "Add the following to export PATH=\"$PATH:$HOME/MPI \""
-  echo -e "                            LD_LIBRARY_PATH=
+  echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
+  echo -e "\033[1;34;5m ----------------- MPI -----------------  \033[0m"
+  echo -e "  MPI has been installed into: \033[1m $HOME/MPI \033[0m"
+  echo ""
+  echo -e "\033[1;34m  On Linux: \033[0m"
+  echo -e "\033[1m  export PATH=\"\$PATH:\$HOME/MPI \" \033[0m "
+  echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:\$HOME/MPI/lib \" \033[0m "
+  echo -e "\033[1;34m  On OSX: \033[0m"
+  echo -e "\033[1m  export PATH=\"\$PATH:\$HOME/MPI \" \033[0m "
+  echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:\$HOME/MPI/lib\" \033[0m"
 fi
+
 if [ $METIS_installed -eq 1 ]; then
-  echo -e "Metis has been installed into: \033[5m $HOME/METIS \033[0m"
+  echo ""
+  echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
+  echo -e "\033[1;34;5m ----------------  METIS ---------------- \033[0m"
+  echo -e "  METIS has been installed into: \033[1m $HOME/METIS \033[0m"
+  echo ""
+  echo -e "\033[1;34m  On Linux: \033[0m"
+  echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:\$HOME/METIS/lib \" \033[0m "
+  echo -e "\033[1;34m  On OSX: \033[0m"
+  echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:\$HOME/METIS/lib\" \033[0m"
+
 fi
 echo ""
 echo ""
-
-
