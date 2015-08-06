@@ -22,10 +22,22 @@ cd ..
 cd "$1/OpenFPM_pdata"
 
 if [ "$2" == "gin" ]
-then
  echo "Compiling on gin\n"
+ source ~/.bashrc
+ sh ./autogen.sh
  module load gcc/4.9.2
- module load openmpi/1.8.1
+ ./install
+ mpirun -np 2 ./src/pdata
+ mpirun -np 3 ./src/pdata
+ mpirun -np 4 ./src/pdata
+ mpirun -np 5 ./src/pdata
+ mpirun -np 6 ./src/pdata
+ mpirun -np 7 ./src/pdata
+ mpirun -np 8 ./src/pdata
+ mpirun -np 9 ./src/pdata
+ mpirun -np 10 ./src/pdata
+ mpirun -np 11 ./src/pdata
+ mpirun -np 12 ./src/pdata
 elif [ "$2" == "wetcluster" ]
 then
  echo "Compiling on wetcluster"
@@ -108,8 +120,7 @@ else
  echo "Compiling general"
  source ~/.bashrc
  sh ./autogen.sh
- sh ./configure --with-metis=${HOME}/METIS CXX=mpic++
- make
+ ./install
 
  mpirun -np 2 ./src/pdata
  mpirun -np 3 ./src/pdata
