@@ -28,6 +28,7 @@ then
  sh ./autogen.sh
  module load gcc/4.9.2
  ./install
+ make
  if [ $? -ne 0 ]; then exit 1 ; fi
  mpirun -np 2 ./src/pdata
  if [ $? -ne 0 ]; then exit 1 ; fi
