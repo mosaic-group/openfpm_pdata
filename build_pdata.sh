@@ -103,6 +103,7 @@ elif [ "$2" == "taurus" ]
 then
  echo "Compiling on taurus"
 
+ source /etc/profile
  echo "$PATH"
  module load gcc/4.8.2
  module load boost/1.55.0-gnu4.8

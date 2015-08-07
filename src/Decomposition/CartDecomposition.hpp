@@ -222,7 +222,7 @@ private:
 	//! it contain the internal ghosts of the local processor
 	openfpm::vector<lBox_dom> loc_ghost_box;
 
-	//! Structure that contain for each sub-domain box the processor id
+	//! Structure that contain for each sub-sub-domain box the processor id
 	//! exist for efficient global communication
 	openfpm::vector<size_t> fine_s;
 
