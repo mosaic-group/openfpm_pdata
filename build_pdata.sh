@@ -89,14 +89,15 @@ then
  if [ $? -ne 0 ]; then exit 1 ; fi
  bsub -o output_run11.%J -K -n 11 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 11 ./src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
- bsub -o output_run12.%J -K -n 12 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 12 ./src/vcluster"
+ bsub -o output_run12.%J -K -n 12 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 12 ./src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
-# bsub -o output_run32.%J -K -n 32 "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 32 ./src/vcluster"
-# if [ $? -ne 0 ]; then exit 1 ; fi
-# bsub -o output_run32.%J -K -n 64 "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 64 ./src/vcluster"
-# if [ $? -ne 0 ]; then exit 1 ; fi
-# bsub -o output_run32.%J -K -n 128 "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 128 ./src/vcluster"
-# if [ $? -ne 0 ]; then exit 1 ; fi
+ # bsub -o output_run32.%J -K -n 32 "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 32 ./src/vcluster"
+ # if [ $? -ne 0 ]; then exit 1 ; fi
+ # bsub -o output_run32.%J -K -n 64 "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 64 ./src/vcluster"
+ # if [ $? -ne 0 ]; then exit 1 ; fi
+ # bsub -o output_run32.%J -K -n 128 "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 128 ./src/vcluster"
+ # if [ $? -ne 0 ]; then exit 1 ; fi
+
 elif [ "$2" == "taurus" ]
 then
  echo "Compiling on taurus"
