@@ -69,7 +69,7 @@ then
  if [ $? -ne 0 ]; then exit 1
 
  ## Run on the cluster
- bsub -o output_run2.%J -K -n 2 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 2 ./src/pdata"
+# bsub -o output_run2.%J -K -n 2 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 2 ./src/pdata"
 # if [ $? -ne 0 ]; then exit 1 ; fi
 # bsub -o output_run3.%J -K -n 3 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 3 ./src/pdata"
 # if [ $? -ne 0 ]; then exit 1 ; fi
