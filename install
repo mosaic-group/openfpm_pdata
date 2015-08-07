@@ -5,10 +5,10 @@
 install_req=1
 configure_options=""
 
-for var in "$@"
+for var in $@
 do
     echo $var
-    if [ test x"$var" -ne x"--disable-install-req" ]; then
+    if [ x"$var" != x"--disable-install-req" ] ; then
        configure_options="$configure_options $var"
     else
        install_req=0
