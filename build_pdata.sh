@@ -109,10 +109,9 @@ then
  module load boost/1.55.0-gnu4.8
  module load openmpi/1.8.7
  module unload bullxmpi
- module load metis/5.1.0
 
  sh ./autogen.sh
- sh ./configure --enable-verbose CXX=mpic++
+ ./install CXX=mpic++
  make
  if [ $? -ne 0 ]; then exit 1 ; fi
 
