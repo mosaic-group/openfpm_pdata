@@ -59,6 +59,7 @@ then
 
 ## produce the module path
 
+ source ~/.bashrc
  module load gcc/4.9.2
  module load openmpi/1.8.1
  module load boost/1.54.0
