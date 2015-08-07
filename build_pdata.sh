@@ -111,7 +111,7 @@ then
  module unload bullxmpi
 
  sh ./autogen.sh
- ./install CXX=mpic++
+ ./configure --with-metis=$METIS_ROOT CXX=mpic++
  make
  if [ $? -ne 0 ]; then exit 1 ; fi
 
