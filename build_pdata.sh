@@ -109,6 +109,7 @@ then
  module load boost/1.55.0-gnu4.8
  module load openmpi/1.8.7
  module unload bullxmpi
+ module load metis/5.1.0
 
  sh ./autogen.sh
  ./configure --with-metis=$METIS_ROOT CXX=mpic++
