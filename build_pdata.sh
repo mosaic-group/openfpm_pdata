@@ -119,13 +119,13 @@ then
 
  salloc --nodes=1 --ntasks-per-node=16 --time=00:05:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 16 src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
- salloc --nodes=2 --ntasks-per-node=16 --time=00:05:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 32 src/vcluster"
+ salloc --nodes=2 --ntasks-per-node=16 --time=00:05:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 32 src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
- salloc --nodes=4 --ntasks-per-node=16 --time=00:05:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 64 src/vcluster"
+ salloc --nodes=4 --ntasks-per-node=16 --time=00:05:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 64 src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
- salloc --nodes=8 --ntasks-per-node=16 --time=00:05:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 128 src/vcluster"
+ salloc --nodes=8 --ntasks-per-node=16 --time=00:05:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 128 src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
- salloc --nodes=16 --ntasks-per-node=16 --time=00:5:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 256 src/vcluster"
+ salloc --nodes=16 --ntasks-per-node=16 --time=00:5:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 256 src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
 
 else
