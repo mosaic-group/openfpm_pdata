@@ -105,8 +105,9 @@ then
 
  source /etc/profile
  echo "$PATH"
- module load gcc/4.8.2
  module load boost/1.56.0-gnu4.9.1
+ module unload gcc/4.9.1
+ module load gcc/4.9.3
  module load openmpi/1.8.7
  module unload bullxmpi
  module load metis/5.1.0
