@@ -106,13 +106,13 @@ then
  source /etc/profile
  echo "$PATH"
  module load gcc/4.8.2
- module load boost/1.55.0-gnu4.8
+ module load boost/1.56.0-gnu4.9.1
  module load openmpi/1.8.7
  module unload bullxmpi
  module load metis/5.1.0
 
  sh ./autogen.sh
- ./configure --with-metis=$METIS_ROOT CXX=mpic++
+ ./configure --with-metis=$METIS_ROOT --with-boost=$BOOST_ROOT CXX=mpic++
  make
  if [ $? -ne 0 ]; then exit 1 ; fi
 
