@@ -23,6 +23,8 @@
 #include <unordered_map>
 #include "NN/CellList/CellList.hpp"
 #include "Space/Ghost.hpp"
+#include "common.hpp"
+#include "ie_loc_ghost.hpp"
 
 /**
  * \brief This class decompose a space into subspaces
@@ -62,7 +64,7 @@
  */
 
 template<unsigned int dim, typename T, template<typename> class device_l=openfpm::device_cpu, typename Memory=HeapMemory, template<unsigned int, typename> class Domain=Box>
-class CartDecomposition
+class CartDecomposition : public ie_loc_ghost<dim,T>
 {
 	struct N_box
 	{
@@ -88,95 +90,18 @@ class CartDecomposition
 		size_t proc;
 	};
 
-	/*! It contain a box definition and from witch sub-domain it come from (in the local processor)
-	 * and an unique across adjacent processors (for communication)
-	 *
-	 * If the box come from the intersection of an expanded sub-domain and a sub-domain
-	 *
-	 * Assuming we are considering the adjacent processor i (0 to getNNProcessors())
-	 *
-	 * ### external ghost box
-	 *
-	 * id = id_exp + N_non_exp + id_non_exp
-	 *
-	 * id_exp = the id in the vector proc_adj_box.get(i) of the expanded sub-domain
-	 *
-	 * id_non_exp = the id in the vector nn_processor_subdomains[i] of the sub-domain
-	 *
-	 * ### internal ghost box
-	 *
-	 * id = id_exp + N_non_exp + id_non_exp
-	 *
-	 * id_exp = the id in the vector nn_processor_subdomains[i] of the expanded sub-domain
-	 *
-	 * id_non_exp = the id in the vector proc_adj_box.get(i) of the sub-domain
-	 *
-	 */
-	/*
-	*/
-	struct Box_sub : public Box<dim,T>
-	{
-		// Domain id
-		size_t sub;
-
-		// Id
-		size_t id;
-
-		Box_sub operator=(const Box<dim,T> & box)
-		{
-			::Box<dim,T>::operator=(box);
-
-			return *this;
-		}
-
-
-	};
-
-	//! Particular case for local internal ghost boxes
-	struct Box_sub_k : public Box<dim,T>
-	{
-		// Domain id
-		size_t sub;
-
-		//! k \see getLocalGhostIBoxE
-		long int k;
-
-		Box_sub_k operator=(const Box<dim,T> & box)
-		{
-			::Box<dim,T>::operator=(box);
-
-			return *this;
-		}
-
-		// encap interface to make compatible with OpenFPM_IO
-		template <int i> auto get() -> decltype( std::declval<Box<dim,T> *>()->template get<i>())
-		{
-			return ::Box<dim,T>::template get<i>();
-		}
-	};
-
 	struct Box_dom
 	{
 		// Intersection between the local sub-domain enlarged by the ghost and the contiguous processor
 		// sub-domains (External ghost)
-		openfpm::vector_std< Box_sub > ebx;
+		openfpm::vector_std< Box_sub<dim,T> > ebx;
 
 		// Intersection between the contiguous processor sub-domain enlarged by the ghost with the
 		// local sub-domain (Internal ghost)
-		openfpm::vector_std< Box_sub> ibx;
+		openfpm::vector_std< Box_sub<dim,T> > ibx;
 	};
 
-	//! Case for local ghost box
-	struct lBox_dom
-	{
-		// Intersection between the local sub-domain enlarged by the ghost and the contiguous processor
-		// sub-domains (External ghost)
-		openfpm::vector_std< Box_sub > ebx;
 
-		// Intersection between the contiguous processor sub-domain enlarged by the ghost with the
-		// local sub-domain (Internal ghost)
-		openfpm::vector_std< Box_sub_k> ibx;
-	};
 
 public:
 
@@ -191,9 +116,6 @@ private:
 	//! This is the key type to access  data_s, for example in the case of vector
 	//! acc_key is size_t
 	typedef typename openfpm::vector<SpaceBox<dim,T>,device_l<SpaceBox<dim,T>>,Memory,openfpm::vector_grow_policy_default,openfpm::vect_isel<SpaceBox<dim,T>>::value >::access_key acc_key;
-
-	//! the margin of the sub-domain selected
-	SpaceBox<dim,T> sub_domain;
 
 	//! the set of all local sub-domain as vector
 	openfpm::vector<SpaceBox<dim,T>> sub_domains;
@@ -218,9 +140,6 @@ private:
 
 	// for each processor store the set of the sub-domains sent to the adjacent processors
 	openfpm::vector<openfpm::vector<size_t>> proc_adj_box;
-
-	//! it contain the internal ghosts of the local processor
-	openfpm::vector<lBox_dom> loc_ghost_box;
 
 	//! Structure that contain for each sub-sub-domain box the processor id
 	//! exist for efficient global communication
@@ -435,97 +354,6 @@ private:
 	// Save the ghost boundaries
 	Ghost<dim,T> ghost;
 
-	/*! \brief Create the external local ghost boxes
-	 *
-	 * \param ghost margin to enlarge
-	 *
-	 */
-	void create_loc_ghost_ebox(Ghost<dim,T> & ghost)
-	{
-		// Save the ghost
-		this->ghost = ghost;
-
-		loc_ghost_box.resize(sub_domains.size());
-
-		// For each sub-domain
-		for (size_t i = 0 ; i < sub_domains.size() ; i++)
-		{
-			SpaceBox<dim,T> sub_with_ghost = sub_domains.get(i);
-
-			// enlarge the sub-domain with the ghost
-			sub_with_ghost.enlarge(ghost);
-
-			// intersect with the other local sub-domains
-			for (size_t j = 0 ; j < sub_domains.size() ; j++)
-			{
-				if (i == j)
-					continue;
-
-				::Box<dim,T> bi;
-
-				bool intersect = sub_with_ghost.Intersect(::SpaceBox<dim,T>(sub_domains.get(j)),bi);
-
-				if (intersect == true)
-				{
-					Box_sub b;
-					b.sub = j;
-					b = bi;
-
-					// local external ghost box
-					loc_ghost_box.get(i).ebx.add(b);
-
-					// search this box in the internal box of the sub-domain j
-					for (size_t k = 0; k < loc_ghost_box.get(j).ibx.size() ; k++)
-					{
-						if (loc_ghost_box.get(j).ibx.get(k).sub == i)
-						{
-							loc_ghost_box.get(j).ibx.get(k).k = loc_ghost_box.get(i).ebx.size()-1;
-							break;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	/*! \brief Create the internal local ghost boxes
-	 *
-	 * \param ghost margin to enlarge
-	 *
-	 */
-	void create_loc_ghost_ibox(Ghost<dim,T> & ghost)
-	{
-		loc_ghost_box.resize(sub_domains.size());
-
-		// For each sub-domain
-		for (size_t i = 0 ; i < sub_domains.size() ; i++)
-		{
-			// intersect with the others local sub-domains
-			for (size_t j = 0 ; j < sub_domains.size() ; j++)
-			{
-				if (i == j)
-					continue;
-
-				SpaceBox<dim,T> sub_with_ghost = sub_domains.get(j);
-				// enlarge the sub-domain with the ghost
-				sub_with_ghost.enlarge(ghost);
-
-				::Box<dim,T> bi;
-
-				bool intersect = sub_with_ghost.Intersect(::SpaceBox<dim,T>(sub_domains.get(i)),bi);
-
-				if (intersect == true)
-				{
-					Box_sub_k b;
-					b.sub = j;
-					b = bi;
-					b.k = -1;
-
-					loc_ghost_box.get(i).ibx.add(b);
-				}
-			}
-		}
-	}
 
 	/*! \brief Create the subspaces that decompose your domain
 	 *
@@ -732,7 +560,7 @@ private:
 
 						// store the box in proc_int_box storing from which sub-domain they come from
 						Box_dom & pr_box_int = proc_int_box.get(ProctoID(p_id));
-						Box_sub sb;
+						Box_sub<dim,T> sb;
 						sb = b_int.box;
 						sb.sub = i;
 
@@ -816,7 +644,7 @@ public:
 	 *
 	 */
 	CartDecomposition(CartDecomposition<dim,T,device_l,Memory,Domain> && cd)
-	:sub_domain(cd.sub_domain),gr(cd.gr),cd(cd.cd),domain(cd.domain),v_cl(cd.v_cl)
+	:gr(cd.gr),cd(cd.cd),domain(cd.domain),v_cl(cd.v_cl)
 	{
 		// Reset the box to zero
 		bbox.zero();
@@ -1158,9 +986,11 @@ p1[0]<-----+         +----> p2[0]
 		// create the internal structures that store ghost information
 		create_box_nn_processor_ext(ghost);
 		create_box_nn_processor_int(ghost);
+
 		// ebox must come after ibox (in this case)
-		create_loc_ghost_ibox(ghost);
-		create_loc_ghost_ebox(ghost);
+
+		ie_loc_ghost<dim,T>::create_loc_ghost_ibox(ghost,sub_domains);
+		ie_loc_ghost<dim,T>::create_loc_ghost_ebox(ghost,sub_domains);
 
 		// get the smallest sub-domain dimension on each direction
 		for (size_t i = 0 ; i < dim ; i++)
@@ -1421,30 +1251,6 @@ p1[0]<-----+         +----> p2[0]
 		return proc_int_box.get(id).ebx.size();
 	}
 
-	/*! \brief Get the number of external local ghost box for each sub-domain
-	 *
-	 * \param id sub-domain id
-	 *
-	 * \return the number of internal ghost box
-	 *
-	 */
-	inline size_t getLocalNEGhost(size_t id)
-	{
-		return loc_ghost_box.get(id).ebx.size();
-	}
-
-	/*! \brief Get the number of internal local ghost box for each sub-domain
-	 *
-	 * \param id sub-domain id
-	 *
-	 * \return the number of external ghost box
-	 *
-	 */
-	inline size_t getLocalNIGhost(size_t id)
-	{
-		return loc_ghost_box.get(id).ibx.size();
-	}
-
 	/*! \brief Get the j Internal ghost box for one processor
 	 *
 	 * \param id near processor list id (the id go from 0 to getNNProcessor())
@@ -1493,78 +1299,6 @@ p1[0]<-----+         +----> p2[0]
 		return proc_int_box.get(id).ebx.get(j).id;
 	}
 
-	/*! \brief For the sub-domain i intersected with the sub-domain j enlarged, the associated
-	 *       external ghost box is located in getLocalIGhostBox(j,k) with
-	 *       getLocalIGhostSub(j,k) == i, this function return k
-	 *
-	 *
-	 */
-	inline size_t getLocalIGhostE(size_t i, size_t j)
-	{
-		return loc_ghost_box.get(i).ibx.get(j).k;
-	}
-
-	/*! \brief Get the j internal local ghost box for the i sub-domain of the local processor
-	 *
-	 * \note For the sub-domain i intersected with the sub-domain j enlarged, the associated
-	 *       external ghost box is located in getLocalIGhostBox(j,k) with
-	 *       getLocalIGhostSub(j,k) == i
-	 *
-	 * To get k use getLocalIGhostE
-	 *
-	 * \see getLocalIGhostE
-	 *
-	 * \param i sub-domain
-	 * \param j box
-	 * \return the box
-	 *
-	 */
-	inline const ::Box<dim,T> & getLocalIGhostBox(size_t i, size_t j) const
-	{
-		return loc_ghost_box.get(i).ibx.get(j);
-	}
-
-	/*! \brief Get the j external local ghost box for the local processor
-	 *
-	 * \param i sub-domain
-	 * \param j box
-	 * \return the box
-	 *
-	 */
-	inline const ::Box<dim,T> & getLocalEGhostBox(size_t i, size_t j) const
-	{
-		return loc_ghost_box.get(i).ebx.get(j);
-	}
-
-	/*! \brief Considering that sub-domain has N internal local ghost box identified
-	 *         with the 0 <= k < N that come from the intersection of 2 sub-domains i and j
-	 *         where j is enlarged, given the sub-domain i and the id k, it return the id of
-	 *         the other sub-domain that produced the intersection
-	 *
-	 * \param i sub-domain
-	 * \param k id
-	 * \return the box
-	 *
-	 */
-	inline size_t getLocalIGhostSub(size_t i, size_t j) const
-	{
-		return loc_ghost_box.get(i).ibx.get(j).sub;
-	}
-
-	/*! \brief Considering that sub-domain has N external local ghost box identified
-	 *         with the 0 <= k < N that come from the intersection of 2 sub-domains i and j
-	 *         where j is enlarged, given the sub-domain i and the id k, it return the id of
-	 *         the other sub-domain that produced the intersection
-	 *
-	 * \param i sub-domain
-	 * \param k id
-	 * \return the box
-	 *
-	 */
-	inline size_t getLocalEGhostSub(size_t i, size_t j) const
-	{
-		return loc_ghost_box.get(i).ebx.get(j).sub;
-	}
 
 	/*! \brief Get the local sub-domain at witch belong the internal ghost box
 	 *
@@ -1742,22 +1476,7 @@ p1[0]<-----+         +----> p2[0]
 		}
 		vtk_box4.write(output + std::string("external_ghost_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
-		//! local_internal_ghost_X.vtk internal local ghost boxes for the local processor (X)
-		VTKWriter<openfpm::vector_std<Box_sub_k>,VECTOR_BOX> vtk_box5;
-		for (size_t p = 0 ; p < loc_ghost_box.size() ; p++)
-		{
-			vtk_box5.add(loc_ghost_box.get(p).ibx);
-		}
-		vtk_box5.write(output + std::string("local_internal_ghost_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
-
-		//! local_external_ghost_X.vtk external local ghost boxes for the local processor (X)
-		VTKWriter<openfpm::vector_std<Box_sub>,VECTOR_BOX> vtk_box6;
-		for (size_t p = 0 ; p < loc_ghost_box.size() ; p++)
-		{
-			vtk_box6.add(loc_ghost_box.get(p).ebx);
-		}
-		vtk_box6.write(output + std::string("local_external_ghost_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
-
+		ie_loc_ghost<dim,T>::write(output,v_cl.getProcessUnitID());
 
 		return true;
 	}
@@ -1769,29 +1488,8 @@ p1[0]<-----+         +----> p2[0]
 	 */
 	bool check_consistency()
 	{
-		//! for each sub-domain
-		for (size_t i = 0 ; i < loc_ghost_box.size() ; i++)
-		{
-			for (size_t j = 0 ; j < loc_ghost_box.get(i).ibx.size() ; j++)
-			{
-				if (loc_ghost_box.get(i).ibx.get(j).k == -1)
-					return false;
-			}
-		}
-
-		// if we have more than one sub domain, the local internal/external ghost boxes must be different
-		// from zero
-
-		if (getNLocalHyperCube() > 1)
-		{
-			for (size_t i = 0 ; i < loc_ghost_box.size() ; i++)
-			{
-				if (loc_ghost_box.get(i).ibx.size() == 0)
-					return false;
-				if (loc_ghost_box.get(i).ebx.size() == 0)
-					return false;
-			}
-		}
+		if (ie_loc_ghost<dim,T>::check_consistency(getNLocalHyperCube()) == false)
+			return false;
 
 		return true;
 	}
