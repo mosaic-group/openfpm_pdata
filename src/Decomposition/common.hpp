@@ -92,4 +92,42 @@ struct lBox_dom
 	openfpm::vector_std< Box_sub_k<dim,T>> ibx;
 };
 
+template<unsigned int dim, typename T>
+struct Box_proc
+{
+	// Intersection between the local sub-domain enlarged by the ghost and the contiguous processor
+	// sub-domains (External ghost)
+	openfpm::vector<::Box<dim,T>> bx;
+
+	// Intersection between the contiguous processor sub-domain enlarged by the ghost with the
+	// local sub-domain (Internal ghost)
+	openfpm::vector<::Box<dim,T>> nbx;
+
+
+	// processor
+	size_t proc;
+};
+
+template<unsigned int dim, typename T>
+struct Box_dom
+{
+	// Intersection between the local sub-domain enlarged by the ghost and the contiguous processor
+	// sub-domains (External ghost)
+	openfpm::vector_std< Box_sub<dim,T> > ebx;
+
+	// Intersection between the contiguous processor sub-domain enlarged by the ghost with the
+	// local sub-domain (Internal ghost)
+	openfpm::vector_std< Box_sub<dim,T> > ibx;
+};
+
+template<unsigned int dim, typename T>
+struct N_box
+{
+	// id of the processor in the nn_processor list (local processor id)
+	size_t id;
+
+	// Near processor sub-domains
+	typename openfpm::vector<::Box<dim,T>> bx;
+};
+
 #endif /* SRC_DECOMPOSITION_COMMON_HPP_ */

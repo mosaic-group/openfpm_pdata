@@ -16,10 +16,12 @@
 
 /*! \brief structure that store and compute the internal and external local ghost box
  *
+ * \tparam dim is the dimensionality of the physical domain we are going to decompose.
+ * \tparam T type of the space we decompose, Real, Integer, Complex ...
+ *
  * \see CartDecomposition
  *
  */
-
 template<unsigned int dim, typename T>
 class ie_loc_ghost
 {
