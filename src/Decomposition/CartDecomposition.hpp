@@ -335,9 +335,23 @@ private:
 		// Initialize ss_box and bbox
 		if (loc_box.size() >= 0)
 		{
-			SpaceBox<dim,T> sub_d(loc_box.get(0));
+			SpaceBox<dim,size_t> sub_dc = loc_box.get(0);
+			SpaceBox<dim,T> sub_d(sub_dc);
 			sub_d.mul(spacing);
 			sub_d.expand(spacing);
+
+			// Fixing sub-domains to cover all the domain
+
+			// Fixing sub_d
+			// if (loc_box) is a the boundary we have to ensure that the box span the full
+			// domain (avoiding rounding off error)
+			for (size_t i = 0 ; i < dim ; i++)
+			{
+				if (sub_dc.getHigh(i) == cd.getGrid().size(i) - 1)
+				{
+					sub_d.setHigh(i,domain.getHigh(i));
+				}
+			}
 
 			// add the sub-domain
 			sub_domains.add(sub_d);
@@ -349,11 +363,25 @@ private:
 		// convert into sub-domain
 		for (size_t s = 1 ; s < loc_box.size() ; s++)
 		{
-			SpaceBox<dim,T> sub_d(loc_box.get(s));
+			SpaceBox<dim,size_t> sub_dc = loc_box.get(s);
+			SpaceBox<dim,T> sub_d(sub_dc);
 
 			// re-scale and add spacing (the end is the starting point of the next domain + spacing)
 			sub_d.mul(spacing);
 			sub_d.expand(spacing);
+
+			// Fixing sub-domains to cover all the domain
+
+			// Fixing sub_d
+			// if (loc_box) is a the boundary we have to ensure that the box span the full
+			// domain (avoiding rounding off error)
+			for (size_t i = 0 ; i < dim ; i++)
+			{
+				if (sub_dc.getHigh(i) == cd.getGrid().size(i) - 1)
+				{
+					sub_d.setHigh(i,domain.getHigh(i));
+				}
+			}
 
 			// add the sub-domain
 			sub_domains.add(sub_d);
