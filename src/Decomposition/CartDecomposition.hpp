@@ -357,6 +357,7 @@ private:
 			sub_domains.add(sub_d);
 
 			ss_box = sub_d;
+			ss_box -= ss_box.getP1();
 			bbox = sub_d;
 		}
 
@@ -414,10 +415,10 @@ private:
 		// Get the processor bounding Box
 		::Box<dim,T> bound = getProcessorBounds();
 
-		// calculate the sub-divisions (0.5 for rounding error)
+		// calculate the sub-divisions
 		size_t div[dim];
 		for (size_t i = 0 ; i < dim ; i++)
-			div[i] = (size_t)((bound.getHigh(i) - bound.getLow(i)) / unit.getHigh(i) + 0.5);
+			div[i] = (size_t)((bound.getHigh(i) - bound.getLow(i)) / unit.getHigh(i));
 
 		// Create shift
 		Point<dim,T> orig;

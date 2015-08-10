@@ -92,8 +92,12 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter_test)
 
 void Test2D(const Box<2,float> & domain, long int k)
 {
+	long int big_step = k / 30;
+	big_step = (big_step == 0)?1:big_step;
+	long int small_step = 1;
+
 	// 2D test
-	for ( ; k >= 2 ; k-= (k >= 66)?33:1 )
+	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 2D grid k=" << k );
 
@@ -116,42 +120,6 @@ void Test2D(const Box<2,float> & domain, long int k)
 		// check the consistency of the decomposition
 		bool val = g_dist.getDecomposition().check_consistency();
 		BOOST_REQUIRE_EQUAL(val,true);
-
-		/////////////// DEBUG /////////////////////
-
-		// get the decomposition
-		auto & dec = g_dist.getDecomposition();
-
-		Vcluster & v_cl = *global_v_cluster;
-
-		// check the consistency of the decomposition
-		val = dec.check_consistency();
-		BOOST_REQUIRE_EQUAL(val,true);
-
-		// for each local volume
-		// Get the number of local grid needed
-		size_t n_grid = dec.getNLocalHyperCube();
-
-		size_t vol = 0;
-
-		// Allocate the grids
-		for (size_t i = 0 ; i < n_grid ; i++)
-		{
-			// Get the local hyper-cube
-			SpaceBox<2,float> sub = dec.getLocalHyperCube(i);
-
-			Box<2,size_t> g_box = g_dist.getCellDecomposer().convertDomainSpaceIntoGridUnits(sub);
-
-			vol += g_box.getVolumeKey();
-		}
-
-		v_cl.reduce(vol);
-		v_cl.execute();
-
-		BOOST_REQUIRE_EQUAL(vol,k*k);
-
-		/////////////////////////////////////
-
 
 		// Grid sm
 		grid_sm<2,void> info(sz);
@@ -228,8 +196,12 @@ void Test2D(const Box<2,float> & domain, long int k)
 
 void Test3D(const Box<3,float> & domain, long int k)
 {
-	// 3D test
-	for ( ; k >= 2 ; k-= (k >= 33)?5:1 )
+	long int big_step = k / 30;
+	big_step = (big_step == 0)?1:big_step;
+	long int small_step = 1;
+
+	// 2D test
+	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 3D grid k=" << k );
 		if (global_v_cluster->getProcessUnitID() == 0)
@@ -323,8 +295,6 @@ void Test3D(const Box<3,float> & domain, long int k)
 
 			++domg;
 		}
-
-
 	}
 }
 
@@ -338,8 +308,8 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 
 	long int k = 1024*1024*global_v_cluster->getProcessingUnits();
 	k = std::pow(k, 1/2.);
-	Test2D(domain,k);
 
+	Test2D(domain,k);
 	// Domain
 	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
 

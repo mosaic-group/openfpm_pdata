@@ -125,4 +125,44 @@
 
 #endif
 
+
+
+		/////////////// DEBUG /////////////////////
+
+		// get the decomposition
+		auto & dec = g_dist.getDecomposition();
+
+		Vcluster & v_cl = *global_v_cluster;
+
+		// check the consistency of the decomposition
+		val = dec.check_consistency();
+		BOOST_REQUIRE_EQUAL(val,true);
+
+		// for each local volume
+		// Get the number of local grid needed
+		size_t n_grid = dec.getNLocalHyperCube();
+
+		size_t vol = 0;
+
+		openfpm::vector<Box<2,size_t>> v_b;
+
+		// Allocate the grids
+		for (size_t i = 0 ; i < n_grid ; i++)
+		{
+			// Get the local hyper-cube
+			SpaceBox<2,float> sub = dec.getLocalHyperCube(i);
+
+			Box<2,size_t> g_box = g_dist.getCellDecomposer().convertDomainSpaceIntoGridUnits(sub);
+			v_b.add(g_box);
+
+			vol += g_box.getVolumeKey();
+		}
+
+		v_cl.reduce(vol);
+		v_cl.execute();
+
+		BOOST_REQUIRE_EQUAL(vol,k*k);
+
+		/////////////////////////////////////
+
 #endif /* GARGABE_HPP_ */

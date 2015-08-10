@@ -254,7 +254,7 @@ public:
 		if (Mg.nparts[0] != 1)
 		{
 			// Decompose
-			METIS_PartGraphKway(Mg.nvtxs,Mg.ncon,Mg.xadj,Mg.adjncy,Mg.vwgt,Mg.vsize,Mg.adjwgt,
+			METIS_PartGraphRecursive(Mg.nvtxs,Mg.ncon,Mg.xadj,Mg.adjncy,Mg.vwgt,Mg.vsize,Mg.adjwgt,
 				            Mg.nparts,Mg.tpwgts,Mg.ubvec,Mg.options,Mg.objval,Mg.part);
 
 			// vertex id
