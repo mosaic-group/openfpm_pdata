@@ -41,7 +41,7 @@ struct GBoxes
 	Box<dim,long int> GDbox;
 	//! Domain box
 	Box<dim,long int> Dbox;
-	//! origin of GDbox in global coordinates
+	//! origin of GDbox in global grid coordinates
 	Point<dim,long int> origin;
 };
 

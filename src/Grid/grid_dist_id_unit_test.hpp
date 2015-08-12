@@ -111,6 +111,8 @@ void Test2D(const Box<2,float> & domain, long int k)
 		sz[0] = k;
 		sz[1] = k;
 
+		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/2.0f);
+
 		// Ghost
 		Ghost<2,float> g(0.01);
 
@@ -167,6 +169,8 @@ void Test2D(const Box<2,float> & domain, long int k)
 
 		g_dist.template ghost_get<0>();
 
+		g_dist.write("output/");
+
 		// check that the communication is correctly completed
 
 		auto domg = g_dist.getDomainGhostIterator();
@@ -215,8 +219,11 @@ void Test3D(const Box<3,float> & domain, long int k)
 		sz[1] = k;
 		sz[2] = k;
 
+		// factor
+		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+
 		// Ghost
-		Ghost<3,float> g(0.01);
+		Ghost<3,float> g(0.01 / factor);
 
 		// Distributed grid with id decomposition
 		grid_dist_id<3, float, scalar<float>, CartDecomposition<3,float>> g_dist(sz,domain,g);
@@ -284,12 +291,6 @@ void Test3D(const Box<3,float> & domain, long int k)
 			// In this case the boundary condition are non periodic
 			if (g_dist.isInside(key_g))
 			{
-				if (g_dist.template get<0>(key) != info.LinId(key_g))
-				{
-					int debug = 0;
-					debug++;
-				}
-
 				BOOST_REQUIRE_EQUAL(g_dist.template get<0>(key),info.LinId(key_g));
 			}
 

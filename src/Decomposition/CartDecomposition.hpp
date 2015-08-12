@@ -1161,6 +1161,15 @@ p1[0]<-----+         +----> p2[0]
 		// ebox must come after ibox (in this case)
 		create_loc_ghost_ibox(ghost);
 		create_loc_ghost_ebox(ghost);
+
+		// get the smallest sub-domain dimension on each direction
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (ghost.template getLow(i) >= ss_box.getHigh(i) || ghost.template getHigh(i)  >= domain.template getHigh(i) / gr.size(i))
+			{
+				std::cerr << "Error " << __FILE__ << ":" << __LINE__  << " : Ghost are bigger than one domain" << "\n";
+			}
+		}
 	}
 
 	/*! \brief processorID return in which processor the particle should go
