@@ -169,8 +169,6 @@ void Test2D(const Box<2,float> & domain, long int k)
 
 		g_dist.template ghost_get<0>();
 
-		g_dist.write("output/");
-
 		// check that the communication is correctly completed
 
 		auto domg = g_dist.getDomainGhostIterator();
