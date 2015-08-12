@@ -114,7 +114,7 @@ void Test2D(const Box<2,float> & domain, long int k)
 		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/2.0f);
 
 		// Ghost
-		Ghost<2,float> g(0.01);
+		Ghost<2,float> g(0.01 / factor);
 
 		// Distributed grid with id decomposition
 		grid_dist_id<2, float, scalar<float>, CartDecomposition<2,float>> g_dist(sz,domain,g);
