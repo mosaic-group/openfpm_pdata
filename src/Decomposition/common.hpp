@@ -130,4 +130,27 @@ struct N_box
 	typename openfpm::vector<::Box<dim,T>> bx;
 };
 
+// It store all the boxes of the near processors in a linear array
+template<unsigned int dim, typename T>
+struct p_box
+{
+	//! Box that identify the intersection of the ghost of the near processor with the
+	//! processor sub-domain
+	::Box<dim,T> box;
+	//! local processor id
+	size_t lc_proc;
+	//! processor id
+	size_t proc;
+
+	/*! \brief Check if two p_box are the same
+	 *
+	 * \param pb box to check
+	 *
+	 */
+	bool operator==(const p_box & pb)
+	{
+		return pb.lc_proc == lc_proc;
+	}
+};
+
 #endif /* SRC_DECOMPOSITION_COMMON_HPP_ */

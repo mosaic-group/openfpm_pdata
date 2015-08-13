@@ -138,7 +138,7 @@ public:
 	 * \return return the processor rank
 	 *
 	 */
-	inline size_t IDtoProc(size_t id)
+	inline size_t IDtoProc(size_t id) const
 	{
 		return nn_processors.get(id);
 	}
@@ -150,9 +150,16 @@ public:
 	 * \return the sub-domains
 	 *
 	 */
-	inline const openfpm::vector< ::Box<dim,T> > & getAdjacentSubdomain(size_t p_id)
+	inline const openfpm::vector< ::Box<dim,T> > & getAdjacentSubdomain(size_t p_id) const
 	{
-		return nn_processor_subdomains[p_id].bx;
+		auto key = nn_processor_subdomains.find(p_id);
+#ifdef DEBUG
+		if (key == nn_processor_subdomains.end())
+		{
+			std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " error this process rank is not adjacent to the local processor";
+		}
+#endif
+		return key->second.bx;
 	}
 
 	/*! \brief Get the adjacent processor id
@@ -162,9 +169,16 @@ public:
 	 * \return the processor rank
 	 *
 	 */
-	inline size_t getAdjacentProcessor(size_t p_id)
+	inline size_t getAdjacentProcessor(size_t p_id) const
 	{
-		return nn_processor_subdomains[p_id].id;
+		auto key = nn_processor_subdomains.find(p_id);
+#ifdef DEBUG
+		if (key == nn_processor_subdomains.end())
+		{
+			std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " error this process rank is not adjacent to the local processor";
+		}
+#endif
+		return key->second.id;
 	}
 
 
@@ -175,9 +189,27 @@ public:
 	 * \return the sub-domains
 	 *
 	 */
-	inline const openfpm::vector<size_t> & getInternalAdjSubdomain(size_t p_id)
+	inline const openfpm::vector<size_t> & getInternalAdjSubdomain(size_t p_id) const
 	{
 		return proc_adj_box.get(p_id);
+	}
+
+	/*! \brief Get the external sub-domain adjacent to a processor p_id
+	 *
+	 * \param p_id processor rank
+	 * \return the set of adjacent sub-domain comming from the processor p_id
+	 *
+	 */
+	inline const N_box<dim,T> getExternalAdjSubdomain(size_t p_id) const
+	{
+		auto key = nn_processor_subdomains.find(p_id);
+#ifdef DEBUG
+		if (key == nn_processor_subdomains.end())
+		{
+			std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " error this process rank is not adjacent to the local processor";
+		}
+#endif
+		return key->second;
 	}
 
 	/*! \brief Convert the processor rank to the id in the list
@@ -187,9 +219,17 @@ public:
 	 * \return the id
 	 *
 	 */
-	inline size_t ProctoID(size_t p)
+	inline size_t ProctoID(size_t p) const
 	{
-		return nn_processor_subdomains[p].id;
+		auto key = nn_processor_subdomains.find(p);
+#ifdef DEBUG
+		if (key == nn_processor_subdomains.end())
+		{
+			std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " error this process rank is not adjacent to the local processor";
+		}
+#endif
+
+		return key->second.id;
 	}
 
 	/*! \brief Write the decomposition as VTK file
