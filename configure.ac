@@ -89,7 +89,7 @@ IMMDX_LIB_METIS([],[echo "Cannot detect metis, use the --with-metis option if it
 
 ####### include OpenFPM_devices include path
 
-INCLUDES_PATH+="-I. -Isrc/config/ -I../../metis_install/include -I../../OpenFPM_IO/src -I../../OpenFPM_data/src -I../../OpenFPM_devices/src -I../../OpenFPM_vcluster/src/"
+INCLUDES_PATH+="-I. -Isrc/config/ -I../openfpm_io/src -I../openfpm_data/src -I../openfpm_devices/src -I../openfpm_vcluster/src/"
 
 ##### CHECK FOR BOOST ##############
 

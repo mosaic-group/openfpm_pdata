@@ -291,7 +291,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 LINKLIBS = $(METIS_LIB) $(PTHREAD_LIBS) $(OPT_LIBS) $(BOOST_LDFLAGS) $(BOOST_IOSTREAMS_LIB) $(CUDA_LIBS)
-pdata_SOURCES = main.cpp ../../OpenFPM_devices/src/memory/HeapMemory.cpp ../../OpenFPM_devices/src/memory/PtrMemory.cpp ../../OpenFPM_vcluster/src/VCluster.cpp ../../OpenFPM_data/src/Memleak_check.cpp
+pdata_SOURCES = main.cpp ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster.cpp ../openfpm_data/src/Memleak_check.cpp
 pdata_CXXFLAGS = $(CUDA_CFLAGS) $(INCLUDES_PATH) $(METIS_INCLUDE) $(BOOST_CPPFLAGS)
 pdata_CFLAGS = $(CUDA_CFLAGS)
 pdata_LDADD = $(LINKLIBS) -L/usr/lib64/nvidia-bumblebee/ -lmetis
@@ -416,61 +416,61 @@ pdata-main.obj: main.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
 
-pdata-HeapMemory.o: ../../OpenFPM_devices/src/memory/HeapMemory.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-HeapMemory.o -MD -MP -MF $(DEPDIR)/pdata-HeapMemory.Tpo -c -o pdata-HeapMemory.o `test -f '../../OpenFPM_devices/src/memory/HeapMemory.cpp' || echo '$(srcdir)/'`../../OpenFPM_devices/src/memory/HeapMemory.cpp
+pdata-HeapMemory.o: ../openfpm_devices/src/memory/HeapMemory.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-HeapMemory.o -MD -MP -MF $(DEPDIR)/pdata-HeapMemory.Tpo -c -o pdata-HeapMemory.o `test -f '../openfpm_devices/src/memory/HeapMemory.cpp' || echo '$(srcdir)/'`../openfpm_devices/src/memory/HeapMemory.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pdata-HeapMemory.Tpo $(DEPDIR)/pdata-HeapMemory.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../OpenFPM_devices/src/memory/HeapMemory.cpp' object='pdata-HeapMemory.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../openfpm_devices/src/memory/HeapMemory.cpp' object='pdata-HeapMemory.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-HeapMemory.o `test -f '../../OpenFPM_devices/src/memory/HeapMemory.cpp' || echo '$(srcdir)/'`../../OpenFPM_devices/src/memory/HeapMemory.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-HeapMemory.o `test -f '../openfpm_devices/src/memory/HeapMemory.cpp' || echo '$(srcdir)/'`../openfpm_devices/src/memory/HeapMemory.cpp
 
-pdata-HeapMemory.obj: ../../OpenFPM_devices/src/memory/HeapMemory.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-HeapMemory.obj -MD -MP -MF $(DEPDIR)/pdata-HeapMemory.Tpo -c -o pdata-HeapMemory.obj `if test -f '../../OpenFPM_devices/src/memory/HeapMemory.cpp'; then $(CYGPATH_W) '../../OpenFPM_devices/src/memory/HeapMemory.cpp'; else $(CYGPATH_W) '$(srcdir)/../../OpenFPM_devices/src/memory/HeapMemory.cpp'; fi`
+pdata-HeapMemory.obj: ../openfpm_devices/src/memory/HeapMemory.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-HeapMemory.obj -MD -MP -MF $(DEPDIR)/pdata-HeapMemory.Tpo -c -o pdata-HeapMemory.obj `if test -f '../openfpm_devices/src/memory/HeapMemory.cpp'; then $(CYGPATH_W) '../openfpm_devices/src/memory/HeapMemory.cpp'; else $(CYGPATH_W) '$(srcdir)/../openfpm_devices/src/memory/HeapMemory.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pdata-HeapMemory.Tpo $(DEPDIR)/pdata-HeapMemory.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../OpenFPM_devices/src/memory/HeapMemory.cpp' object='pdata-HeapMemory.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../openfpm_devices/src/memory/HeapMemory.cpp' object='pdata-HeapMemory.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-HeapMemory.obj `if test -f '../../OpenFPM_devices/src/memory/HeapMemory.cpp'; then $(CYGPATH_W) '../../OpenFPM_devices/src/memory/HeapMemory.cpp'; else $(CYGPATH_W) '$(srcdir)/../../OpenFPM_devices/src/memory/HeapMemory.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-HeapMemory.obj `if test -f '../openfpm_devices/src/memory/HeapMemory.cpp'; then $(CYGPATH_W) '../openfpm_devices/src/memory/HeapMemory.cpp'; else $(CYGPATH_W) '$(srcdir)/../openfpm_devices/src/memory/HeapMemory.cpp'; fi`
 
-pdata-PtrMemory.o: ../../OpenFPM_devices/src/memory/PtrMemory.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-PtrMemory.o -MD -MP -MF $(DEPDIR)/pdata-PtrMemory.Tpo -c -o pdata-PtrMemory.o `test -f '../../OpenFPM_devices/src/memory/PtrMemory.cpp' || echo '$(srcdir)/'`../../OpenFPM_devices/src/memory/PtrMemory.cpp
+pdata-PtrMemory.o: ../openfpm_devices/src/memory/PtrMemory.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-PtrMemory.o -MD -MP -MF $(DEPDIR)/pdata-PtrMemory.Tpo -c -o pdata-PtrMemory.o `test -f '../openfpm_devices/src/memory/PtrMemory.cpp' || echo '$(srcdir)/'`../openfpm_devices/src/memory/PtrMemory.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pdata-PtrMemory.Tpo $(DEPDIR)/pdata-PtrMemory.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../OpenFPM_devices/src/memory/PtrMemory.cpp' object='pdata-PtrMemory.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../openfpm_devices/src/memory/PtrMemory.cpp' object='pdata-PtrMemory.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-PtrMemory.o `test -f '../../OpenFPM_devices/src/memory/PtrMemory.cpp' || echo '$(srcdir)/'`../../OpenFPM_devices/src/memory/PtrMemory.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-PtrMemory.o `test -f '../openfpm_devices/src/memory/PtrMemory.cpp' || echo '$(srcdir)/'`../openfpm_devices/src/memory/PtrMemory.cpp
 
-pdata-PtrMemory.obj: ../../OpenFPM_devices/src/memory/PtrMemory.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-PtrMemory.obj -MD -MP -MF $(DEPDIR)/pdata-PtrMemory.Tpo -c -o pdata-PtrMemory.obj `if test -f '../../OpenFPM_devices/src/memory/PtrMemory.cpp'; then $(CYGPATH_W) '../../OpenFPM_devices/src/memory/PtrMemory.cpp'; else $(CYGPATH_W) '$(srcdir)/../../OpenFPM_devices/src/memory/PtrMemory.cpp'; fi`
+pdata-PtrMemory.obj: ../openfpm_devices/src/memory/PtrMemory.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-PtrMemory.obj -MD -MP -MF $(DEPDIR)/pdata-PtrMemory.Tpo -c -o pdata-PtrMemory.obj `if test -f '../openfpm_devices/src/memory/PtrMemory.cpp'; then $(CYGPATH_W) '../openfpm_devices/src/memory/PtrMemory.cpp'; else $(CYGPATH_W) '$(srcdir)/../openfpm_devices/src/memory/PtrMemory.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pdata-PtrMemory.Tpo $(DEPDIR)/pdata-PtrMemory.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../OpenFPM_devices/src/memory/PtrMemory.cpp' object='pdata-PtrMemory.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../openfpm_devices/src/memory/PtrMemory.cpp' object='pdata-PtrMemory.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-PtrMemory.obj `if test -f '../../OpenFPM_devices/src/memory/PtrMemory.cpp'; then $(CYGPATH_W) '../../OpenFPM_devices/src/memory/PtrMemory.cpp'; else $(CYGPATH_W) '$(srcdir)/../../OpenFPM_devices/src/memory/PtrMemory.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-PtrMemory.obj `if test -f '../openfpm_devices/src/memory/PtrMemory.cpp'; then $(CYGPATH_W) '../openfpm_devices/src/memory/PtrMemory.cpp'; else $(CYGPATH_W) '$(srcdir)/../openfpm_devices/src/memory/PtrMemory.cpp'; fi`
 
-pdata-VCluster.o: ../../OpenFPM_vcluster/src/VCluster.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-VCluster.o -MD -MP -MF $(DEPDIR)/pdata-VCluster.Tpo -c -o pdata-VCluster.o `test -f '../../OpenFPM_vcluster/src/VCluster.cpp' || echo '$(srcdir)/'`../../OpenFPM_vcluster/src/VCluster.cpp
+pdata-VCluster.o: ../openfpm_vcluster/src/VCluster.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-VCluster.o -MD -MP -MF $(DEPDIR)/pdata-VCluster.Tpo -c -o pdata-VCluster.o `test -f '../openfpm_vcluster/src/VCluster.cpp' || echo '$(srcdir)/'`../openfpm_vcluster/src/VCluster.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pdata-VCluster.Tpo $(DEPDIR)/pdata-VCluster.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../OpenFPM_vcluster/src/VCluster.cpp' object='pdata-VCluster.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../openfpm_vcluster/src/VCluster.cpp' object='pdata-VCluster.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-VCluster.o `test -f '../../OpenFPM_vcluster/src/VCluster.cpp' || echo '$(srcdir)/'`../../OpenFPM_vcluster/src/VCluster.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-VCluster.o `test -f '../openfpm_vcluster/src/VCluster.cpp' || echo '$(srcdir)/'`../openfpm_vcluster/src/VCluster.cpp
 
-pdata-VCluster.obj: ../../OpenFPM_vcluster/src/VCluster.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-VCluster.obj -MD -MP -MF $(DEPDIR)/pdata-VCluster.Tpo -c -o pdata-VCluster.obj `if test -f '../../OpenFPM_vcluster/src/VCluster.cpp'; then $(CYGPATH_W) '../../OpenFPM_vcluster/src/VCluster.cpp'; else $(CYGPATH_W) '$(srcdir)/../../OpenFPM_vcluster/src/VCluster.cpp'; fi`
+pdata-VCluster.obj: ../openfpm_vcluster/src/VCluster.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-VCluster.obj -MD -MP -MF $(DEPDIR)/pdata-VCluster.Tpo -c -o pdata-VCluster.obj `if test -f '../openfpm_vcluster/src/VCluster.cpp'; then $(CYGPATH_W) '../openfpm_vcluster/src/VCluster.cpp'; else $(CYGPATH_W) '$(srcdir)/../openfpm_vcluster/src/VCluster.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pdata-VCluster.Tpo $(DEPDIR)/pdata-VCluster.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../OpenFPM_vcluster/src/VCluster.cpp' object='pdata-VCluster.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../openfpm_vcluster/src/VCluster.cpp' object='pdata-VCluster.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-VCluster.obj `if test -f '../../OpenFPM_vcluster/src/VCluster.cpp'; then $(CYGPATH_W) '../../OpenFPM_vcluster/src/VCluster.cpp'; else $(CYGPATH_W) '$(srcdir)/../../OpenFPM_vcluster/src/VCluster.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-VCluster.obj `if test -f '../openfpm_vcluster/src/VCluster.cpp'; then $(CYGPATH_W) '../openfpm_vcluster/src/VCluster.cpp'; else $(CYGPATH_W) '$(srcdir)/../openfpm_vcluster/src/VCluster.cpp'; fi`
 
-pdata-Memleak_check.o: ../../OpenFPM_data/src/Memleak_check.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-Memleak_check.o -MD -MP -MF $(DEPDIR)/pdata-Memleak_check.Tpo -c -o pdata-Memleak_check.o `test -f '../../OpenFPM_data/src/Memleak_check.cpp' || echo '$(srcdir)/'`../../OpenFPM_data/src/Memleak_check.cpp
+pdata-Memleak_check.o: ../openfpm_data/src/Memleak_check.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-Memleak_check.o -MD -MP -MF $(DEPDIR)/pdata-Memleak_check.Tpo -c -o pdata-Memleak_check.o `test -f '../openfpm_data/src/Memleak_check.cpp' || echo '$(srcdir)/'`../openfpm_data/src/Memleak_check.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pdata-Memleak_check.Tpo $(DEPDIR)/pdata-Memleak_check.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../OpenFPM_data/src/Memleak_check.cpp' object='pdata-Memleak_check.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../openfpm_data/src/Memleak_check.cpp' object='pdata-Memleak_check.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-Memleak_check.o `test -f '../../OpenFPM_data/src/Memleak_check.cpp' || echo '$(srcdir)/'`../../OpenFPM_data/src/Memleak_check.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-Memleak_check.o `test -f '../openfpm_data/src/Memleak_check.cpp' || echo '$(srcdir)/'`../openfpm_data/src/Memleak_check.cpp
 
-pdata-Memleak_check.obj: ../../OpenFPM_data/src/Memleak_check.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-Memleak_check.obj -MD -MP -MF $(DEPDIR)/pdata-Memleak_check.Tpo -c -o pdata-Memleak_check.obj `if test -f '../../OpenFPM_data/src/Memleak_check.cpp'; then $(CYGPATH_W) '../../OpenFPM_data/src/Memleak_check.cpp'; else $(CYGPATH_W) '$(srcdir)/../../OpenFPM_data/src/Memleak_check.cpp'; fi`
+pdata-Memleak_check.obj: ../openfpm_data/src/Memleak_check.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -MT pdata-Memleak_check.obj -MD -MP -MF $(DEPDIR)/pdata-Memleak_check.Tpo -c -o pdata-Memleak_check.obj `if test -f '../openfpm_data/src/Memleak_check.cpp'; then $(CYGPATH_W) '../openfpm_data/src/Memleak_check.cpp'; else $(CYGPATH_W) '$(srcdir)/../openfpm_data/src/Memleak_check.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pdata-Memleak_check.Tpo $(DEPDIR)/pdata-Memleak_check.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../OpenFPM_data/src/Memleak_check.cpp' object='pdata-Memleak_check.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../openfpm_data/src/Memleak_check.cpp' object='pdata-Memleak_check.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-Memleak_check.obj `if test -f '../../OpenFPM_data/src/Memleak_check.cpp'; then $(CYGPATH_W) '../../OpenFPM_data/src/Memleak_check.cpp'; else $(CYGPATH_W) '$(srcdir)/../../OpenFPM_data/src/Memleak_check.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdata_CXXFLAGS) $(CXXFLAGS) -c -o pdata-Memleak_check.obj `if test -f '../openfpm_data/src/Memleak_check.cpp'; then $(CYGPATH_W) '../openfpm_data/src/Memleak_check.cpp'; else $(CYGPATH_W) '$(srcdir)/../openfpm_data/src/Memleak_check.cpp'; fi`
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique

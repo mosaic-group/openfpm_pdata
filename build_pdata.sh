@@ -5,21 +5,13 @@
 echo "Directory: $1"
 echo "Machine: $2"
 
-mkdir /tmp/openfpm_pdata
-mv * .[^.]* /tmp/openfpm_pdata
-mv /tmp/openfpm_pdata OpenFPM_pdata
+mkdir src/config
 
-mkdir OpenFPM_pdata/src/config
+git submodule init
 
-git clone ssh://git@ppmcoremirror.dynu.com:2222/incardon/openfpm_vcluster.git OpenFPM_vcluster
-git clone ssh://git@ppmcoremirror.dynu.com:2222/incardon/openfpm_devices.git OpenFPM_devices
-git clone ssh://git@ppmcoremirror.dynu.com:2222/incardon/openfpm_data.git OpenFPM_data
-git clone ssh://git@ppmcoremirror.dynu.com:2222/incardon/openfpm_io.git OpenFPM_IO
 cd OpenFPM_data
 git checkout develop
 cd ..
-
-cd "$1/OpenFPM_pdata"
 
 if [ "$2" == "gin" ]
 then
