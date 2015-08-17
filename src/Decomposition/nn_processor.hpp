@@ -91,6 +91,25 @@ public:
 	    auto last = std::unique(nn_processors.begin(), nn_processors.end());
 	    nn_processors.erase(last, nn_processors.end());
 
+        // produce the list of the contiguous processor (nn_processors) and link nn_processor_subdomains to the
+        // processor list (nn_processors)
+        for (size_t i = 0 ;  i < box_nn_processor.size() ; i++)
+        {
+                for (size_t j = 0 ; j < box_nn_processor.get(i).size() ; j++)
+                {
+                        // processor id near to this sub-domain
+                        size_t proc_id = box_nn_processor.get(i).get(j);
+
+                        size_t k = 0;
+                        // search inside near processor list
+                        for (k = 0 ; k < nn_processors.size() ; k++)
+                                if (nn_processors.get(k) == proc_id)    break;
+
+                        nn_processor_subdomains[proc_id].id = k;
+                }
+        }
+
+
 		// create a buffer with the sub-domains of this processor, the informations ( the boxes )
 		// of the sub-domains contiguous to the processor A are sent to the processor A and
 		// the information of the contiguous sub-domains in the near processors are received

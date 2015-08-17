@@ -316,31 +316,6 @@ private:
 	// Receive counter
 	size_t recv_cnt;
 
-	/*! \brief Message allocation
-	 *
-	 * \param message size required to receive from i
-	 * \param total message size to receive from all the processors
-	 * \param the total number of processor want to communicate with you
-	 * \param i processor id
-	 * \param ri request id (it is an id that goes from 0 to total_p, and is unique
-	 *           every time message_alloc is called)
-	 * \param ptr a pointer to the vector_dist structure
-	 *
-	 * \return the pointer where to store the message
-	 *
-	 */
-	static void * message_alloc(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
-	{
-		// cast the pointer
-		CartDecomposition<dim,T,device_l,Memory,Domain> * cd = static_cast< CartDecomposition<dim,T,device_l,Memory,Domain> *>(ptr);
-
-		// Resize the memory
-		cd->nn_processor_subdomains[i].bx.resize(msg_i / sizeof(::Box<dim,T>) );
-
-		// Return the receive pointer
-		return cd->nn_processor_subdomains[i].bx.getPointer();
-	}
-
 public:
 
 	/*! \brief Cartesian decomposition constructor
@@ -809,6 +784,12 @@ p1[0]<-----+         +----> p2[0]
 
 	void debugPrint()
 	{
+		std::cout << "Subdomains\n";
+		for (size_t p = 0 ; p < sub_domains.size() ; p++)
+		{
+			std::cout << ::SpaceBox<dim,T>(sub_domains.get(p)).toString() << "\n";
+		}
+
 		std::cout << "External ghost box\n";
 
 		for (size_t p = 0 ; p < nn_prcs<dim,T>::getNNProcessors() ; p++)
