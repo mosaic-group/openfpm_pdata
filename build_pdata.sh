@@ -8,6 +8,7 @@ echo "Machine: $2"
 mkdir src/config
 
 git submodule init
+git submodule update
 
 cd openfpm_data
 pwd
