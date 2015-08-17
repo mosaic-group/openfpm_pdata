@@ -9,7 +9,7 @@ mkdir src/config
 
 git submodule init
 
-cd OpenFPM_data
+cd openfpm_data
 git checkout develop
 cd ..
 
