@@ -91,6 +91,10 @@ fi
 
 make
 
+if [ $? -ne 0 ]; then
+  conf_err=1
+fi
+
 echo ""
 echo ""
 if [ $conf_err -eq 0  ]; then
