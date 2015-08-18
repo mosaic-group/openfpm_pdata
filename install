@@ -98,9 +98,9 @@ fi
 echo ""
 echo ""
 if [ $conf_err -eq 0  ]; then
-  echo -e "Configure \033[92;5;1m SUCCEED \033[0m"
+  echo -e "Install\033[92;5;1m SUCCEED \033[0m"
 else
-  echo -e "Configure \033[91;5;1m FAILED \033[0m"
+  echo -e "Install\033[91;5;1m FAILED \033[0m"
 fi
 
 echo "Command used to configure"
