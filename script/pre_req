@@ -1,38 +1,9 @@
 #! /bin/bash
 
 source script/discover_package_manager
+source script/discover_os
 
-platform=unknown
-
-
-if [[ "$OSTYPE" == "linux-gnu" ]]; then
-        echo -e "We are on\033[1;34m LINUX \033[0m"
-        platform=linux
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-        echo -e "We are on\033[1;34m MAC OSX \033[0m"
-        platform=osx
-elif [[ "$OSTYPE" == "cygwin" ]]; then
-        echo -e "We are on\033[1;34m CYGWIN \033[0m"
-        echo "This platform is not supported"
-        exit 1
-elif [[ "$OSTYPE" == "msys" ]]; then
-        echo -e "We are on\033[1;34m Microsoft Window \033[0m"
-        echo "This platform is not supported"
-        exit 1
-elif [[ "$OSTYPE" == "win32" ]]; then
-        echo -e "We are on\033[1;34m Microsoft Window \033[0m"
-        echo "This platform is not supported"
-        exit 1
-elif [[ "$OSTYPE" == "freebsd"* ]]; then
-        echo -e "We are on\033[1;34m FREEBSD \033[0m"
-        echo "This platform is not supported"
-        exit 1
-else
-        echo -e "We are on an\033[1;34m unknown OS \033[0m"
-        echo "This platform is not supported"
-        exit 1
-fi
-
+discover_os
 discover_package_manager $platform
 pcman=discover_package_manager_ret
 
