@@ -1,5 +1,8 @@
 #! /bin/bash
 
+source script/discover_os
+discover_os
+
 ## Check and try to install the prerequisites
 
 script/pre_req
@@ -8,6 +11,14 @@ script/pre_req
 
 git submodule init
 git submodule update
+
+# Create config directory
+
+mkdir src/config
+
+## generate configure script
+
+sh ./autogen.sh
 
 ## Take all the options with the exception of --enable-install-req
 
@@ -51,6 +62,7 @@ else
             ./script/install_MPI.sh
             MPI_installed=1
             export PATH="$PATH:${HOME}/MPI/bin"
+            echo $PATH
             configure_options="$configure_options CXX=mpic++  "
         elif [ $conf_err -eq 201  ]; then
             echo "Metis not found try to install"
@@ -79,6 +91,10 @@ fi
 
 make
 
+if [ $? -ne 0 ]; then
+  conf_err=1
+fi
+
 echo ""
 echo ""
 if [ $conf_err -eq 0  ]; then
@@ -96,12 +112,13 @@ if [ $MPI_installed -eq 1 ]; then
   echo -e "\033[1;34;5m ----------------- MPI -----------------  \033[0m"
   echo -e "  MPI has been installed into: \033[1m $HOME/MPI \033[0m"
   echo ""
-  echo -e "\033[1;34m  On Linux: \033[0m"
-  echo -e "\033[1m  export PATH=\"\$PATH:\$HOME/MPI \" \033[0m "
-  echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:\$HOME/MPI/lib\" \033[0m "
-  echo -e "\033[1;34m  On OSX: \033[0m"
-  echo -e "\033[1m  export PATH=\"\$PATH:\$HOME/MPI \" \033[0m "
-  echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:\$HOME/MPI/lib\" \033[0m"
+  if [ x"$platform" = x"linux" ]; then
+    echo -e "\033[1m  export PATH=\"\$PATH:\$HOME/MPI \" \033[0m "
+    echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:\$HOME/MPI/lib\" \033[0m "
+  else
+    echo -e "\033[1m  export PATH=\"\$PATH:\$HOME/MPI \" \033[0m "
+    echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:\$HOME/MPI/lib\" \033[0m"
+  fi
 fi
 
 if [ $METIS_installed -eq 1 ]; then
@@ -110,11 +127,11 @@ if [ $METIS_installed -eq 1 ]; then
   echo -e "\033[1;34;5m ---------------- METIS ---------------- \033[0m"
   echo -e "  METIS has been installed into: \033[1m $HOME/METIS \033[0m"
   echo ""
-  echo -e "\033[1;34m  On Linux: \033[0m"
-  echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:\$HOME/METIS/lib\" \033[0m "
-  echo -e "\033[1;34m  On OSX: \033[0m"
-  echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:\$HOME/METIS/lib\" \033[0m"
-
+  if [ x"$platform" = x"linux" ]; then
+    echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:\$HOME/METIS/lib\" \033[0m "
+  else
+    echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:\$HOME/METIS/lib\" \033[0m"
+  fi
 fi
 
 if [ $BOOST_installed -eq 1 ]; then
@@ -123,12 +140,11 @@ if [ $BOOST_installed -eq 1 ]; then
   echo -e "\033[1;34;5m ---------------- BOOST ---------------- \033[0m"
   echo -e "  BOOST has been installed into: \033[1m $HOME/BOOST \033[0m"
   echo ""
-  echo -e "\033[1;34m  On Linux: \033[0m"
-  echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:\$HOME/BOOST/lib\" \033[0m "
-  echo -e "\033[1;34m  On OSX: \033[0m"
-  echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:\$HOME/BOOST/lib\" \033[0m"
-
-
+  if [ x"$platform" = x"linux" ]; then
+    echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:\$HOME/BOOST/lib\" \033[0m "
+  else
+    echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:\$HOME/BOOST/lib\" \033[0m"
+  fi
 fi
 echo ""
 echo ""
