@@ -10,13 +10,13 @@ if [ x"$pcman" = x"" ]; then
 fi
 
 if [ x"$1" = x"osx" ]; then
-        commands[0]="$pcman install autoconf"
+        commands[0]="$pcman install wget"
         possible_solutions "${commands[@]}"
         echo "Executing: ${command[$possible_solutions_ret]}"
         eval ${commands[$possible_solutions_ret]}
 elif [ x"$1" = x"linux"  ]; then
-        commands[0]="su -c \"$pcman install autoconf\""
-        commands[1]="sudo $pcman install autoconf"
+        commands[0]="su -c \"$pcman install wget\""
+        commands[1]="sudo $pcman install wget"
         possible_solutions "${commands[@]}"
         echo "Executing: ${command[$possible_solutions_ret]}"
         eval ${commands[$possible_solutions_ret]}
