@@ -12,13 +12,13 @@ script/pre_req
 git submodule init
 git submodule update
 
+# Create config directory
+
+mkdir src/config
+
 ## generate configure script
 
 sh ./autogen.sh
-
-# Generate config directory
-
-mkdir src/config
 
 ## Take all the options with the exception of --enable-install-req
 
