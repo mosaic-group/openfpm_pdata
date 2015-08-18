@@ -1,5 +1,14 @@
 #! /bin/bash
 
+## Check and try to install the prerequisites
+
+script/pre_req
+
+## clone the dependencies
+
+git submodules init
+git submodules update
+
 ## Take all the options with the exception of --enable-install-req
 
 install_req=1
@@ -39,7 +48,7 @@ else
                 echo "Error the installation of MPI failed"
                 exit 1
             fi
-            ./install_MPI.sh
+            ./script/install_MPI.sh
             MPI_installed=1
             export PATH="$PATH:${HOME}/MPI/bin"
             configure_options="$configure_options CXX=mpic++  "
@@ -49,7 +58,7 @@ else
                 echo "Error the installation of METIS failed"
                 exit 1
             fi
-            ./install_Metis.sh
+            ./script/install_Metis.sh
             METIS_installed=1
             configure_options=" $configure_options --with-metis=${HOME}/METIS "
         elif [ $conf_err -eq 202 ]; then
@@ -58,7 +67,7 @@ else
                 echo "Error the installation of Boost failed"
                 exit 1
             fi
-            ./install_BOOST.sh
+            ./script/install_BOOST.sh
             BOOST_installed=1
             configure_options=" $configure_options --with-boost=${HOME}/BOOST "
         elif [ $conf_err -ne 0 ]; then

@@ -11,7 +11,6 @@ git submodule init
 git submodule update
 
 cd openfpm_data
-pwd
 git checkout develop
 cd ..
 
