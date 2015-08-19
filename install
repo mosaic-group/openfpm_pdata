@@ -46,8 +46,17 @@ METIS_installed=0
 BOOST_installed=0
 conf_err=1
 
+## MPI
+
+command -v mpic++ >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+  options="CXX=mpic++"
+fi
+
+##
+
 if [ $install_req -eq 0 ]; then
-    ./configure $configure_options
+    ./configure $options $configure_options
 else
     while [ $conf_err -ne 0 ]
     do
