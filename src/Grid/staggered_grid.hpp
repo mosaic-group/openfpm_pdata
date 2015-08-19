@@ -16,11 +16,52 @@ typedef boost::mpl::vector stag_elements;
  * \param ele elements object on each dimensional objects, must be a stag_elements
  *
  *
+		+--#--+--#--+--#--+--#--+--#--+--#--+
+		|     |     |     |     |     |     |
+		#  *  #  *  #  *  #  *  #  *  #  *  #
+		|     |     |     |     |     |     |
+		+--#--+--#--+--#--+--#--+--#--+--#--+
+		|     |     |     |     |     |     |
+		#  *  #  *  #  *  #  *  #  *  #  *  #
+		|     |     |     |     |     |     |
+		+--#--+--#--+--#--+--#--+--#--+--#--+
+		|     |     |     |     |     |     |
+		#  *  #  *  #  *  #  *  #  *  #  *  #
+		|     |     |     |     |     |     |
+		+--#--+--#--+--#--+--#--+--#--+--#--+
+		|     |     |     |     |     |     |
+		#  *  #  *  #  *  #  *  #  *  #  *  #
+		|     |     |     |     |     |     |
+		+--#--+--#--+--#--+--#--+--#--+--#--+
+		|     |     |     |     |     |     |
+		#  *  #  *  #  *  #  *  #  *  #  *  #
+		|     |     |     |     |     |     |
+		+--#--+--#--+--#--+--#--+--#--+--#--+
+
+		In the case of a 2D staggered grid we have 3 (in general dim+1 ) elements
+
+		+ = vertex
+		# = edge
+		* = volume
+
+        ele = stag_ele<scalar<float>,Point_test<float>,scalar<float>>
+
+        It place a scalar on (*) an object Point_test<float> on (#) and an object scalar<float> on (+)
+
+ *
+ *
  *
  */
 template <unsigned int dim, typename ele>
 class staggered_grid
 {
+private:
+
+
+	openfpm::vector< grid_cpu<dim> >
+
+public:
+
 
 };
 
