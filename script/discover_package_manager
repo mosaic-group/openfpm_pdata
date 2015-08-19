@@ -15,6 +15,7 @@ function discover_package_manager() {
       discover_package_manager_ret="sudo port"
       return
     else
+      discover_package_manager_ret=""
       return
     fi
   elif [ x"$1" = x"linux"  ]; then
@@ -33,6 +34,7 @@ function discover_package_manager() {
       discover_package_manager_ret="zypper"
       return
     else
+      discover_package_manager_ret=""
       return
     fi
   fi

@@ -5,10 +5,17 @@ source script/discover_os
 
 discover_os
 discover_package_manager $platform
-pcman=discover_package_manager_ret
+pcman=$discover_package_manager_ret
 
-if [ x"$platform" = x"osx"  -a  x"$pcman" = x"" ]; then
+if [ x"$platform" = x"osx" -a x"$pcman" = x""  ]; then
   echo -e "\033[93;5;1m WARNING \033[0m No package manager has been found on this system"
+  script/solve_brew $platform
+
+  discover_package_manager $platform
+  pcman=$discover_package_manager_ret
+  if [ x"$pcman" != x"brew" ]; then
+    echo -e "brew \033[91;5;1m FAILED \033[0m"
+  fi
 fi
 
 command -v cmake >/dev/null 2>&1
@@ -96,14 +103,21 @@ else
   echo -e "automake\033[92;1m SUCCESS \033[0m"
 fi
 
-command -v libtool >/dev/null 2>&1
-if [ $? -ne 0 ]; then
+
+command -v libtoolize  >/dev/null 2>&1
+opt1=$?
+command -v glibtoolize  >/dev/null 2>&1
+opt2=$?
+if [ $opt1 -ne 0 -o $opt2 -ne 0 ]; then
   echo >&2
   echo -e "libtool\033[91;5;1m FAILED \033[0m"
   echo "OpenFPM require libtool but it's not installed, searching a solution..."
   script/solve_libtool $platform
-  command -v libtool >/dev/null 2>&1
-  if [ $? -ne 0 ]; then
+  command -v libtoolize  >/dev/null 2>&1
+  opt1=$?
+  command -v glibtoolize  >/dev/null 2>&1
+  opt2=$?
+  if [ opt1 -ne 0 -o opt2 -ne 0 ]; then
     echo -e "libtool\033[91;5;1m FAILED \033[0m"
     exit 1
   else

@@ -19,6 +19,10 @@ mkdir src/config
 ## generate configure script
 
 sh ./autogen.sh
+if [ $? -ne 0 ]; then
+  echo -e "Configure\033[91;5;1m FAILED \033[0m"
+  exit 1
+fi
 
 ## Take all the options with the exception of --enable-install-req
 
