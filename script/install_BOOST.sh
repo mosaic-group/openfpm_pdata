@@ -7,10 +7,10 @@ if [ -d "${HOME}/BOOST" ]; then
   exit 0
 fi
 
-mkdir ${HOME}/BOOST
 wget http://ppmcore.mpi-cbg.de/upload/boost_1_58_0.tar.bz2
 tar -xvf boost_1_58_0.tar.bz2
 cd boost_1_58_0
 ./bootstrap.sh
+mkdir ${HOME}/BOOST
 ./b2 -j 4 install --prefix=$HOME/BOOST
 

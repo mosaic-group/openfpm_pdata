@@ -16,7 +16,7 @@ m4_ifdef([AX_OPENMP],,[m4_include([m4/ax_openmp.m4])])
 m4_ifdef([AX_CUDA],,[m4_include([m4/ax_cuda.m4])])
 m4_ifdef([IMMDX_LIB_METIS],,[m4_include([m4/immdx_lib_metis.m4])])
 
-CXXFLAGS+=" --std=c++11 -march=native -mtune=native "
+CXXFLAGS+=" --std=c++11 "
 NVCCFLAGS=" "
 INCLUDES_PATH=" "
 
