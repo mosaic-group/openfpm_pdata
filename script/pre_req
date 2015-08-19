@@ -28,6 +28,23 @@ else
   echo -e "cmake\033[92;1m SUCCESS \033[0m"
 fi
 
+command -v wget >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo >&2
+  echo -e "wget\033[91;5;1m FAILED \033[0m"
+  echo "OpenFPM require wget but it's not installed, searching a solution... "
+  script/solve_wget $platform
+  command -v wget >/dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    echo -e "wget\033[91;5;1m FAILED \033[0m"
+    exit 1
+  else
+    echo -e "wget\033[92;1m SUCCESS \033[0m"
+  fi
+else
+  echo -e "wget \033[92;1m SUCCESS \033[0m"
+fi
+
 command -v git >/dev/null 2>&1
 if [ $? -ne 0 ]; then 
   echo >&2
