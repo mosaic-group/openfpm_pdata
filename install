@@ -60,7 +60,7 @@ if [ $install_req -eq 0 ]; then
 else
     while [ $conf_err -ne 0 ]
     do
-        ./configure $configure_options
+        ./configure $options $configure_options
         conf_err=$?
 
 	echo "Configure script terminated with $conf_err"

@@ -56,8 +56,10 @@ AS_IF([test "x$NVCC_EXIST" = "xno"],[],[
 
           # If $build_cpu contains "_64", append "64" to CUDA_LIBS
           AS_IF([echo $build_cpu | grep -q "_64"],
-                [CUDA_LIBS+="64"])
-                
+                [
+                 AS_IF([-d {CUDA_LIBS}lib64], [ CUDA_LIBS+="64"  ], [ ])
+                ])
+
           # Append " -lcuda -lcudart" to CUDA_LIBS
           CUDA_LIBS+=" -lcuda -lcudart"
 

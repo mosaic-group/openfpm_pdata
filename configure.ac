@@ -98,8 +98,6 @@ AX_BOOST([1.52],[],[echo "boost not found"
 
 ####### Checking for GPU support
 
-AX_CUDA
-
 ## detect for NVCC
 
 if test x"$NVCC_EXIST" = x"yes"; then
@@ -115,6 +113,7 @@ if test x"$NVCC_EXIST" = x"yes"; then
 
   AC_MSG_RESULT($gpu_support)
   if test x"$gpu_support" = x"yes"; then
+        AX_CUDA
 	AC_DEFINE([GPU],[],[GPU support])
   fi
 else
