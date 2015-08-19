@@ -57,8 +57,8 @@ AS_IF([test "x$NVCC_EXIST" = "xno"],[],[
           # If $build_cpu contains "_64", append "64" to CUDA_LIBS
           AS_IF([echo $build_cpu | grep -q "_64"],
                 [
-                 AS_IF([ ! test -d {CUDA_LIBS}lib64 ], [ CUDA_LIBS+="64"  ], [ ])
-                 AS_IF([ ! command -v bumblebee >/dev/null  ], [ CUDA_LIBS+=" -L/usr/lib64/nvidia-bumblebee/ "  ], [])
+                 AS_IF([ ! test -d {CUDA_LIBS}lib64 ], [ CUDA_LIBS+="64"  ])
+                 AS_IF([ ! command -v bumblebee >/dev/null  ], [ CUDA_LIBS+=" -L/usr/lib64/nvidia-bumblebee/ "  ])
                 ])
 
           # Append " -lcuda -lcudart" to CUDA_LIBS
