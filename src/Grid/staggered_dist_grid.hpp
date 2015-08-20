@@ -5,14 +5,16 @@
  *      Author: i-bird
  */
 
-#ifndef SRC_GRID_STAGGERED_GRID_HPP_
-#define SRC_GRID_STAGGERED_GRID_HPP_
+#ifndef SRC_GRID_STAGGERED_DIST_GRID_HPP_
+#define SRC_GRID_STAGGERED_DIST_GRID_HPP_
 
-typedef boost::mpl::vector stag_elements;
+#include "Grid/grid_dist_id.hpp"
+#include "staggered_dist_grid_util.hpp"
+
 
 /*! \brief Implementation of the staggered grid
  *
- * \param dim Dimensionality od the staggered grid
+ * \param dim Dimensionality of the staggered grid
  * \param ele elements object on each dimensional objects, must be a stag_elements
  *
  *
@@ -52,18 +54,41 @@ typedef boost::mpl::vector stag_elements;
  *
  *
  */
-template <unsigned int dim, typename ele>
-class staggered_grid
+template<unsigned int dim, typename St, typename T, typename Decomposition,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T>>
+class staggered_grid_dist : public grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>
 {
-private:
-
-
-	openfpm::vector< grid_cpu<dim> >
 
 public:
 
+	staggered_grid_dist(Vcluster & v_cl)
+	:grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(v_cl)
+	{}
 
+	openfpm::vector<comb<dim>> c_prp[T::max_prop];
+
+	/*! \brief Set the staggered positions
+	 *
+	 *
+	 */
+	template<unsigned int p> void setStagPosition(openfpm::vector<comb<dim>> & cmb)
+	{
+#ifdef SE_CLASS1
+		if (mul_extends< boost::mpl::at<ele::type>::type >::ext() != cmb.size())
+			std::cerr << __FILE__ << ":" << __LINE << " error properties has " << mul_extends< boost::mpl::at<ele::type>::type >::ext() << " components, but " << cmb.size() << "has been defined \n";
+#endif
+		c_prp.get(p) = cmb;
+	}
+
+	/*! \brief It set all the properties on a default location
+	 *
+	 * \return default staggered position
+	 *
+	 */
+	openfpm::vector<comb<dim>> getDefaultStagPosition()
+	{
+		// for each properties
+
+	}
 };
 
-
-#endif /* SRC_GRID_STAGGERED_GRID_HPP_ */
+#endif /* SRC_GRID_STAGGERED_DIST_GRID_HPP_ */
