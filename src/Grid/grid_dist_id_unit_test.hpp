@@ -86,6 +86,9 @@ void Test2D(const Box<2,float> & domain, long int k)
 		BOOST_TEST_CHECKPOINT( "Testing 2D grid k=" << k );
 		print_test( "Testing 2D grid k=",k);
 
+
+		//! [Create and access a distributed grid]
+
 		// grid size
 		size_t sz[2];
 		sz[0] = k;
@@ -123,6 +126,8 @@ void Test2D(const Box<2,float> & domain, long int k)
 
 			++dom;
 		}
+
+		//! [Create and access a distributed grid]
 
 		// Get the virtual cluster machine
 		Vcluster & vcl = g_dist.getVC();
@@ -253,6 +258,8 @@ void Test3D(const Box<3,float> & domain, long int k)
 
 		BOOST_REQUIRE_EQUAL(match,true);
 
+		//! [Synchronize the ghost and check the information]
+
 		g_dist.template ghost_get<0>();
 
 		// check that the communication is correctly completed
@@ -275,6 +282,8 @@ void Test3D(const Box<3,float> & domain, long int k)
 		}
 
 		BOOST_REQUIRE_EQUAL(match,true);
+
+		//! [Synchronize the ghost and check the information]
 	}
 }
 
@@ -291,6 +300,8 @@ void Test2D_complex(const Box<2,float> & domain, long int k)
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 2D complex grid k=" << k );
 		print_test( "Testing 2D complex grid k=",k);
+
+		//! [Create and access a distributed grid complex]
 
 		// grid size
 		size_t sz[2];
@@ -347,6 +358,8 @@ void Test2D_complex(const Box<2,float> & domain, long int k)
 			++dom;
 		}
 
+		//! [Create and access a distributed grid complex]
+
 		// Get the virtual cluster machine
 		Vcluster & vcl = g_dist.getVC();
 
@@ -391,6 +404,8 @@ void Test2D_complex(const Box<2,float> & domain, long int k)
 
 		BOOST_REQUIRE_EQUAL(match,true);
 
+		//! [Synchronized distributed grid complex]
+
 		g_dist.template ghost_get<p::x,p::y,p::z,p::s,p::v,p::t>();
 
 		// check that the communication is correctly completed
@@ -430,6 +445,8 @@ void Test2D_complex(const Box<2,float> & domain, long int k)
 
 			++domg;
 		}
+
+		//! [Synchronized distributed grid complex]
 	}
 }
 
