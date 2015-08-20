@@ -16,6 +16,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_use)
 	// Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
+	//! [Create CartDecomposition]
 	CartDecomposition<3,float> dec(vcl);
 
 	// Physical domain
@@ -23,14 +24,15 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_use)
 	size_t div[3];
 
 	// Get the number of processor and calculate the number of sub-domain
-	// for decomposition
+	// for each processor (SUB_UNIT_FACTOR=64)
 	size_t n_proc = vcl.getProcessingUnits();
 	size_t n_sub = n_proc * SUB_UNIT_FACTOR;
 
-	// Calculate the number of sub-domain on each dimension
+	// Set the number of sub-domains on each dimension (in a scalable way)
 	for (int i = 0 ; i < 3 ; i++)
 	{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/3));}
 
+	// Define ghost
 	Ghost<3,float> g(0.01);
 
 	// Decompose
@@ -38,6 +40,8 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_use)
 
 	// create a ghost border
 	dec.calculateGhostBoxes();
+
+	//! [Create CartDecomposition]
 
 	// For each calculated ghost box
 	for (size_t i = 0 ; i < dec.getNIGhostBox() ; i++)
