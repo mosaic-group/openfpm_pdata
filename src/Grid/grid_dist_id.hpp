@@ -37,7 +37,7 @@
  * \snippet grid_dist_id_unit_test.hpp Synchronize the ghost and check the information
  * ### Create and access a distributed grid for complex structures
  * \snippet grid_dist_id_unit_test.hpp Create and access a distributed grid complex
- * ### Synchronized distributed grid for complex structures
+ * ### Synchronize a distributed grid for complex structures
  * \snippet grid_dist_id_unit_test.hpp Synchronized distributed grid complex
  *
  */
