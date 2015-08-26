@@ -38,10 +38,10 @@
  * \tparam Domain Structure that contain the information of your physical domain
  *
  * Given an N-dimensional space, this class decompose the space into a Cartesian grid of small
- * sub-sub-domain. At each sub-sub-domain is assigned  an id that identify which processor is
- * going to take care of that part of space (in general the space assigned to a processor is
- * simply connected), a second step merge several sub-sub-domain with same id into bigger region
- *  sub-domain with the id. Each sub-domain has an extended space called ghost part
+ * sub-sub-domain. To each sub-sub-domain is assigned an id that identify at which processor is
+ * assigned (in general the union of all the sub-sub-domain assigned to a processor is
+ * simply connected space), a second step merge several sub-sub-domain with same id into bigger region
+ *  sub-domain. Each sub-domain has an extended space called ghost part
  *
  * Assuming that VCluster.getProcessUnitID(), equivalent to the MPI processor rank, return the processor local
  * processor id, we define
@@ -405,18 +405,18 @@ public:
 +----------------------------------------------------+
 |                                                    |
 |                 Processor 8                        |
-|                 Sub-domain 0                       +-----------------------------------+
+|                 Sub+domain 0                       +-----------------------------------+
 |                                                    |                                   |
 |                                                    |                                   |
 ++--------------+---+---------------------------+----+        Processor 9                |
  |              |   |     B8_0                  |    |        Subdomain 0                |
  |              +------------------------------------+                                   |
  |              |   |                           |    |                                   |
- |              |   |  XXXXXXXXXXXXX XX         |B9_0|                                   |
- |              | B |  X Processor 10 X         |    |                                   |
- | Processor 5  | 5 |  X Sub-domain 0 X         |    |                                   |
- | Subdomain 0  | _ |  X              X         +----------------------------------------+
- |              | 0 |  XXXXXXXXXXXXXXXX         |    |                                   |
+ |              |   |                           |B9_0|                                   |
+ |              | B |    Local processor        |    |                                   |
+ | Processor 5  | 5 |    Subdomain 0            |    |                                   |
+ | Subdomain 0  | _ |                           +----------------------------------------+
+ |              | 0 |                           |    |                                   |
  |              |   |                           |    |                                   |
  |              |   |                           |    |        Processor 9                |
  |              |   |                           |B9_1|        Subdomain 1                |
@@ -427,33 +427,36 @@ public:
                                                      |                                   |
                                                      +-----------------------------------+
 
+
        and also
        G8_0 G9_0 G9_1 G5_0 (External ghost boxes)
 
-+----------------------------------------------------+
-|                                                    |
-|                 Processor 8                        |
-|                 Sub-domain 0                       +-----------------------------------+
-|           +---------------------------------------------+                              |
-|           |         G8_0                           |    |                              |
-++--------------+------------------------------------+    |   Processor 9                |
- |          |   |                                    |    |   Subdomain 0                |
- |          |   |                                    |G9_0|                              |
- |          |   |                                    |    |                              |
- |          |   |      XXXXXXXXXXXXX XX              |    |                              |
- |          |   |      X Processor 10 X              |    |                              |
- | Processor|5  |      X Sub-domain 0 X              |    |                              |
- | Subdomain|0  |      X              X              +-----------------------------------+
- |          |   |      XXXXXXXXXXXXXXXX              |    |                              |
- |          | G |                                    |    |                              |
- |          | 5 |                                    |    |   Processor 9                |
- |          | | |                                    |    |   Subdomain 1                |
- |          | 0 |                                    |G9_1|                              |
- |          |   |                                    |    |                              |
- |          |   |                                    |    |                              |
- +--------------+------------------------------------+    |                              |
-            |                                        |    |                              |
-            +----------------------------------------+----+------------------------------+
+      +----------------------------------------------------+
+      |                 Processor 8                        |
+      |                 Subdomain 0                        +-----------------------------------+
+      |                                                    |                                   |
+      |           +---------------------------------------------+                              |
+      |           |         G8_0                           |    |                              |
++-----+---------------+------------------------------------+    |   Processor 9                |
+|                 |   |                                    |    |   Subdomain 0                |
+|                 |   |                                    |G9_0|                              |
+|                 |   |                                    |    |                              |
+|                 |   |                                    |    |                              |
+|                 |   |        Local processor             |    |                              |
+|  Processor 5    |   |        Sub+domain 0                |    |                              |
+|  Subdomain 0    |   |                                    +-----------------------------------+
+|                 |   |                                    |    |                              |
+|                 | G |                                    |    |                              |
+|                 | 5 |                                    |    |   Processor 9                |
+|                 | | |                                    |    |   Subdomain 1                |
+|                 | 0 |                                    |G9_1|                              |
+|                 |   |                                    |    |                              |
+|                 |   |                                    |    |                              |
++---------------------+------------------------------------+    |                              |
+                  |                                        |    |                              |
+                  +----------------------------------------+----+------------------------------+
+
+
 
 
 	 *

@@ -8,6 +8,8 @@
 #ifndef SRC_GRID_STAGGERED_DIST_GRID_UTIL_HPP_
 #define SRC_GRID_STAGGERED_DIST_GRID_UTIL_HPP_
 
+#include "util/common.hpp"
+
 /*! \brief Classes to get the number of components of the properties
  *
  */
@@ -183,14 +185,22 @@ struct extends<T[N1][N2][N3][N4][N5][N6][N7][N8][N9][N10]>
  * Is mainly used to produce a default position vector for each
  * property
  *
- * \tparam vector of properties
+ * \tparam dim dimensionality
+ * \tparam v boost::fusion::vector of properties
+ * \tparam has_posMask case when v has a position mask
  *
  */
 
-template<unsigned int dim, typename v, bool has_posMask>
-struct stag_set_position
+template<unsigned int dim, typename v, bool has_pM = has_posMask<v>::value>
+class stag_set_position
 {
 	openfpm::vector<comb<dim>> (& pos_prp)[boost::fusion::result_of::size<v>::type::value];
+
+public:
+
+	stag_set_position( openfpm::vector<comb<dim>> (& pos_prp)[boost::fusion::result_of::size<v>::type::value])
+	:pos_prp(pos_prp)
+	{}
 
 	//! It call the copy function for each property
 	template<typename T>
@@ -223,7 +233,7 @@ struct stag_set_position
 			{
 				comb<dim> c;
 				c.zero();
-				c.value(i) = 1;
+				c.value(i) = -1;
 
 				pos_prp[T::value].add(c);
 			}
@@ -233,22 +243,108 @@ struct stag_set_position
 			// Create an hypercube object
 			HyperCube<dim> hyp;
 
-
-
 			// Diagonal part live in
+			for (size_t i = 0 ; i < dim ; i++)
+			{
+				comb<dim> c1 = pos_prp[T::value-1].get(i);
+				for (size_t j = 0 ; j < dim ; j++)
+				{
+					comb<dim> c2;
+					c2.zero();
+					c2.value(i) = -1;
+
+					comb<dim> c_res = -c1 + c2;
+
+					pos_prp[T::value].add(c_res);
+				}
+			}
+		}
+		else if (dim_prp > 2)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Tensor of rank bigger than 2 are not supported";
+		}
+	}
+};
+
+
+///////////////////// Staggered default positioning ////////////////////////
+
+/*! \brief this class is a functor for "for_each" algorithm
+ *
+ * For each element of the boost::vector the operator() is called.
+ * Is mainly used to produce a default position vector for each
+ * property
+ *
+ * \tparam vector of properties
+ *
+ */
+
+template<unsigned int dim, typename v>
+class stag_set_position<dim,v,false>
+{
+private:
+	openfpm::vector<comb<dim>> (& pos_prp)[boost::fusion::result_of::size<v>::type::value];
+
+
+public:
+	stag_set_position( openfpm::vector<comb<dim>> (& pos_prp)[boost::fusion::result_of::size<v>::type::value])
+	:pos_prp(pos_prp)
+	{}
+
+	//! It call the copy function for each property
+	template<typename T>
+	void operator()(T& t) const
+	{
+		// This is the type of the object we have to copy
+		typedef typename boost::mpl::at<v,typename boost::mpl::int_<T::value>>::type prop;
+
+		// Dimension of the object
+		size_t dim_prp = extends<prop>::dim();
+
+		// It is a scalar
+		if (dim_prp == 0)
+		{
+			comb<dim> c;
+			c.zero();
+
+			// It stay in the center
+			pos_prp[T::value].add(c);
+		}
+		else if (dim_prp == 1)
+		{
+			// It stay on the object of dimension dim-1 (Negative part)
 			for (size_t i = 0 ; i < dim ; i++)
 			{
 				comb<dim> c;
 				c.zero();
-				c.value(i) = 1;
+				c.getComb()[i] = -1;
 
 				pos_prp[T::value].add(c);
 			}
 		}
+		else if (dim_prp == 2)
+		{
+			// Diagonal part live in
+			for (size_t i = 0 ; i < dim ; i++)
+			{
+				comb<dim> c1 = pos_prp[T::value-1].get(i);
+				for (size_t j = 0 ; j < dim ; j++)
+				{
+					comb<dim> c2;
+					c2.zero();
+					c2.getComb()[i] = -1;
 
+					comb<dim> c_res = c2 - c1;
 
+					pos_prp[T::value].add(c_res);
+				}
+			}
+		}
+		else if (dim_prp > 2)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Tensor of rank bigger than 2 are not supported";
+		}
 	}
 };
-
 
 #endif /* SRC_GRID_STAGGERED_DIST_GRID_UTIL_HPP_ */

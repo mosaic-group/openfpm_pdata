@@ -10,6 +10,7 @@
 
 #include "Grid/grid_dist_id.hpp"
 #include "staggered_dist_grid_util.hpp"
+#include "VTKWriter.hpp"
 
 
 /*! \brief Implementation of the staggered grid
@@ -60,8 +61,8 @@ class staggered_grid_dist : public grid_dist_id<dim,St,T,Decomposition,Memory,de
 
 public:
 
-	staggered_grid_dist(Vcluster & v_cl)
-	:grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(v_cl)
+	staggered_grid_dist(const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
+	:grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(g_sz,domain,ghost)
 	{}
 
 	openfpm::vector<comb<dim>> c_prp[T::max_prop];
@@ -79,15 +80,29 @@ public:
 		c_prp.get(p) = cmb;
 	}
 
-	/*! \brief It set all the properties on a default location
-	 *
-	 * \return default staggered position
+	/*! \brief It set all the properties defined to be staggered on the default location
 	 *
 	 */
-	openfpm::vector<comb<dim>> getDefaultStagPosition()
+	void setDefaultStagPosition()
 	{
 		// for each properties
 
+		stag_set_position<dim,typename T::type> ssp(c_prp);
+
+		boost::mpl::for_each_ref< boost::mpl::range_c<int,0,T::max_prop> >(ssp);
+	}
+
+	/*! \brief Write a vtk file with the information of the staggered grid
+	 *
+	 * \param str vtk output file
+	 *
+	 */
+	void write(std::string str)
+	{
+		// spacing
+		Point<dim,St> spacing = grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>::getSpacing();
+		spacing = spacing / 2;
+		grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>::write(str,c_prp,spacing);
 	}
 };
 
