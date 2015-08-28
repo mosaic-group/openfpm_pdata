@@ -415,7 +415,53 @@ class grid_dist_id
 		vtk_box1.write(output + std::string("internal_ghost_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 	}
 
+protected:
+
+	/*! \brief Get the i sub-domain grid
+	 *
+	 * \param i sub-domain
+	 *
+	 * \return local grid
+	 *
+	 */
+	device_grid & get_loc_grid(size_t i)
+	{
+		return loc_grid.get(i);
+	}
+
+	/*! \brief Return the number of local grid
+	 *
+	 * \return the number of local grid
+	 *
+	 */
+	size_t getN_loc_grid()
+	{
+		return loc_grid.size();
+	}
+
+	/*! \brief Get the point where it start the origin of the grid in the sub-domain i
+	 *
+	 * \return the point
+	 *
+	 */
+	Point<dim,St> getOffset(size_t i)
+	{
+		return Point<dim,St>(gdb_ext.get(i).origin) * cd_sm.getCellBox().getP2();
+	}
+
+	/*! \brief Given a local sub-domain i with a local grid Domain + ghost return the part of the local grid that is domain
+	 *
+	 * \return the Box defining the domain in the local grid
+	 *
+	 */
+	Box<dim,size_t> getDomain(size_t i)
+	{
+		return gdb_ext.get(i).Dbox;
+	}
+
 public:
+
+	typedef device_grid loc_grid_type;
 
 	/*! \brief Constrcuctor
 	 *
@@ -936,34 +982,8 @@ public:
 		VTKWriter<boost::mpl::pair<device_grid,float>,VECTOR_GRIDS> vtk_g;
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{
-			Point<dim,St> offset = Point<dim,St>(gdb_ext.get(i).origin) * cd_sm.getCellBox().getP2();
+			Point<dim,St> offset = getOffset(i);
 			vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).Dbox);
-		}
-		vtk_g.write(output + "/grid_" + std::to_string(v_cl.getProcessUnitID()) + ".vtk");
-
-		write_ie_boxes(output);
-
-		return true;
-	}
-
-	/*! \brief Write the distributed grid information, where each properties has a shift
-	 *
-	 * * grid_X.vtk Output each local grids for each local processor X
-	 * * internal_ghost_X.vtk Internal ghost boxes in grid units for the local processor X
-	 *
-	 * \param output Directory where to put the files
-	 * \param c_prp for each property specify a positional vector
-	 * \param sp spacing
-	 *
-	 */
-	bool write(std::string output, const openfpm::vector<comb<dim>> (& c_prp)[T::max_prop], const Point<dim,St> & sp)
-	{
-		// Create a writer and write
-		VTKWriter<boost::mpl::pair<device_grid,float>,VECTOR_GRIDS> vtk_g;
-		for (size_t i = 0 ; i < loc_grid.size() ; i++)
-		{
-			Point<dim,St> offset = Point<dim,St>(gdb_ext.get(i).origin) * cd_sm.getCellBox().getP2();
-			vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).Dbox,sp);
 		}
 		vtk_g.write(output + "/grid_" + std::to_string(v_cl.getProcessUnitID()) + ".vtk");
 

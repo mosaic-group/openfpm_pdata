@@ -18,7 +18,8 @@
  * \param dim Dimensionality of the staggered grid
  * \param ele elements object on each dimensional objects, must be a stag_elements
  *
- *
+ * \verbatim
+
 		+--#--+--#--+--#--+--#--+--#--+--#--+
 		|     |     |     |     |     |     |
 		#  *  #  *  #  *  #  *  #  *  #  *  #
@@ -40,6 +41,8 @@
 		#  *  #  *  #  *  #  *  #  *  #  *  #
 		|     |     |     |     |     |     |
 		+--#--+--#--+--#--+--#--+--#--+--#--+
+
+\endverbatim
 
 		In the case of a 2D staggered grid we have 3 (in general dim+1 ) elements
 
@@ -60,6 +63,8 @@ class staggered_grid_dist : public grid_dist_id<dim,St,T,Decomposition,Memory,de
 {
 
 public:
+
+	typedef T value_type;
 
 	staggered_grid_dist(const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
 	:grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(g_sz,domain,ghost)
@@ -99,11 +104,16 @@ public:
 	 */
 	void write(std::string str)
 	{
+		stag_create_and_add_grid<dim,staggered_grid_dist<dim,St,T,Decomposition,Memory,device_grid>,St> sgw(*this);
+
+		boost::mpl::for_each_ref< boost::mpl::range_c<int,0,T::max_prop> >(sgw);
 		// spacing
-		Point<dim,St> spacing = grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>::getSpacing();
+/*		Point<dim,St> spacing = grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>::getSpacing();
 		spacing = spacing / 2;
-		grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>::write(str,c_prp,spacing);
+		grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>::write(str,c_prp,spacing);*/
 	}
+
+	friend class stag_create_and_add_grid<dim,staggered_grid_dist<dim,St,T,Decomposition,Memory,device_grid>,St>;
 };
 
 #endif /* SRC_GRID_STAGGERED_DIST_GRID_HPP_ */

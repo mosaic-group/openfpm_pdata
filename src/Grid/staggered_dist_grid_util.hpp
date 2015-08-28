@@ -9,6 +9,7 @@
 #define SRC_GRID_STAGGERED_DIST_GRID_UTIL_HPP_
 
 #include "util/common.hpp"
+#include "VTKWriter.hpp"
 
 /*! \brief Classes to get the number of components of the properties
  *
@@ -266,7 +267,6 @@ public:
 	}
 };
 
-
 ///////////////////// Staggered default positioning ////////////////////////
 
 /*! \brief this class is a functor for "for_each" algorithm
@@ -344,6 +344,131 @@ public:
 		{
 			std::cerr << __FILE__ << ":" << __LINE__ << " Tensor of rank bigger than 2 are not supported";
 		}
+	}
+};
+
+/*! \brief It create separated grid for each properties to write them into a file
+ *
+ * \tparam dim dimensionality of the grids
+ * \tparam obj type object to print, must be in OpenFPM format
+ *
+ */
+template<unsigned int dim, typename st_grid, typename St>
+class stag_create_and_add_grid
+{
+
+	// staggered grid to write
+	st_grid & st_g;
+
+public:
+
+	/*! \brief Constructor
+	 *
+	 * \param st_g staggered grid
+	 *
+	 */
+	stag_create_and_add_grid(st_grid & st_g)
+	:st_g(st_g)
+	{}
+
+	template<unsigned int p_val> void out_normal()
+	{
+		// property type
+		typedef typename boost::mpl::at< typename st_grid::value_type::type , typename boost::mpl::int_<p_val> >::type ele;
+
+		// create an openfpm format object from the property type
+		typedef object<typename boost::fusion::vector<ele>> d_object;
+
+		VTKWriter<boost::mpl::pair<grid_cpu<dim, d_object >,St>,VECTOR_GRIDS> vtk_w;
+
+		// Create a vector of grids
+
+		openfpm::vector< grid_cpu<dim, d_object > > vg(st_g.getN_loc_grid());
+
+		// for each domain grid
+		for (size_t i = 0 ; i < vg.size() ; i++)
+		{
+			// Set dimansions and memory
+			vg.get(i).template resize<HeapMemory>(st_g.get_loc_grid(i).getGrid().getSize());
+
+			// create the Memory
+			vg.get(i).template setMemory<HeapMemory>();
+
+			auto g_src = st_g.get_loc_grid(i);
+			auto g_dst = vg.get(i);
+
+			auto it = vg.get(i).getIterator();
+
+			while(it.isNext())
+			{
+				object_si_d< decltype(g_src.get_o(it.get())),decltype(g_dst.get_o(it.get())) ,ENCAP,T::value>(g_src.get_o(it.get()),g_dst.get_o(it.get()));
+
+				++it;
+			}
+
+			Point<dim,St> offset = st_g.getOffset(i);
+			Point<dim,St> spacing = st_g.getSpacing();
+			Box<dim,size_t> dom = st_g.getDomain(i);
+
+			vtk_w.add(g_dst,offset,spacing,dom);
+		}
+
+		vtk_w.write("vtk_grids_st_" + std::to_string(T::value) + ".vtk");
+	}
+
+	template<unsigned int p_val> void out_staggered()
+	{
+		// property type
+		typedef typename boost::mpl::at< typename st_grid::value_type::type , typename boost::mpl::int_<p_val> >::type ele;
+
+		// create an openfpm format object from the property type
+		typedef object<typename boost::fusion::vector<ele>> d_object;
+
+		VTKWriter<boost::mpl::pair<grid_cpu<dim, d_object >,St>,VECTOR_GRIDS> vtk_w;
+
+		// Create a vector of grids
+
+		openfpm::vector< grid_cpu<dim, d_object > > vg(st_g.getN_loc_grid());
+
+		// for each domain grid
+		for (size_t i = 0 ; i < vg.size() ; i++)
+		{
+			// Set dimansions and memory
+			vg.get(i).template resize<HeapMemory>(st_g.get_loc_grid(i).getGrid().getSize());
+
+			// create the Memory
+			vg.get(i).template setMemory<HeapMemory>();
+
+			auto g_src = st_g.get_loc_grid(i);
+			auto g_dst = vg.get(i);
+
+			auto it = vg.get(i).getIterator();
+
+			while(it.isNext())
+			{
+				object_si_d< decltype(g_src.get_o(it.get())),decltype(g_dst.get_o(it.get())) ,ENCAP,T::value>(g_src.get_o(it.get()),g_dst.get_o(it.get()));
+
+				++it;
+			}
+
+			Point<dim,St> offset = st_g.getOffset(i);
+			Point<dim,St> spacing = st_g.getSpacing();
+			Box<dim,size_t> dom = st_g.getDomain(i);
+
+			vtk_w.add(g_dst,offset,spacing,dom);
+		}
+
+		vtk_w.write("vtk_grids_st_" + std::to_string(T::value) + ".vtk");
+	}
+
+	//! It call the copy function for each property
+	template<typename T>
+	void operator()(T& t)
+	{
+		if (st_g.is_staggered_prop(T::value) == false)
+			out_normal<T::value>();
+		else
+			out_staggered<T::value>();
 	}
 };
 
