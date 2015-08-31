@@ -5,7 +5,7 @@ from paraview.simple import *
 paraview.simple._DisableFirstRenderCameraReset()
 
 # create a new 'Legacy VTK Reader'
-dom_boxvtk = LegacyVTKReader(FileNames=['/home/i-bird/Desktop/MOSAIC/OpenFPM_project/OpenFPM_pdata/vtk/CartDecomposition/dom_box.vtk'])
+dom_boxvtk = LegacyVTKReader(FileNames=['CartDecomposition/dom_box.vtk'])
 
 # get active view
 renderView1 = GetActiveViewOrCreate('RenderView')
@@ -17,15 +17,15 @@ renderView1.CameraParallelScale = 0.5843857695756589
 # show data in view
 dom_boxvtkDisplay = Show(dom_boxvtk, renderView1)
 
-WriteImage("domain.png")
+WriteImage("domain.jpg")
 
 # change representation type
 dom_boxvtkDisplay.SetRepresentationType('Surface With Edges')
 
-WriteImage("domain_decomposed.png")
+WriteImage("domain_decomposed.jpg")
 
 # create a new 'Legacy VTK Reader'
-vtk_partitionvtk = LegacyVTKReader(FileNames=['/home/i-bird/Desktop/MOSAIC/OpenFPM_project/OpenFPM_pdata/vtk/Metis/vtk_partition.vtk'])
+vtk_partitionvtk = LegacyVTKReader(FileNames=['Metis/vtk_partition.vtk'])
 
 
 idLUT = GetColorTransferFunction('id')
@@ -74,7 +74,7 @@ transform1Display.PointSize = 5.0
 SetActiveSource(vtk_partitionvtk)
 
 # write decomposed
-WriteImage("domain_graph.png")
+WriteImage("domain_graph.jpg")
 
 # set scalar coloring
 ColorBy(transform1Display, ('POINTS', 'id'))
@@ -83,19 +83,19 @@ ColorBy(transform1Display, ('POINTS', 'id'))
 dom_boxvtkDisplay.SetRepresentationType('Surface')
 
 # write decomposed
-WriteImage("domain_graph_decomposed.png")
+WriteImage("domain_graph_decomposed.jpg")
 
 # create a new 'Legacy VTK Reader'
-out_subdomains_0vtk = LegacyVTKReader(FileNames=['/home/i-bird/Desktop/MOSAIC/OpenFPM_project/OpenFPM_pdata/vtk/CartDecomposition/out_subdomains_0.vtk'])
+out_subdomains_0vtk = LegacyVTKReader(FileNames=['CartDecomposition/out_subdomains_0.vtk'])
 
 # create a new 'Legacy VTK Reader'
-out_subdomains_1vtk = LegacyVTKReader(FileNames=['/home/i-bird/Desktop/MOSAIC/OpenFPM_project/OpenFPM_pdata/vtk/CartDecomposition/out_subdomains_1.vtk'])
+out_subdomains_1vtk = LegacyVTKReader(FileNames=['CartDecomposition/out_subdomains_1.vtk'])
 
 # create a new 'Legacy VTK Reader'
-out_subdomains_2vtk = LegacyVTKReader(FileNames=['/home/i-bird/Desktop/MOSAIC/OpenFPM_project/OpenFPM_pdata/vtk/CartDecomposition/out_subdomains_2.vtk'])
+out_subdomains_2vtk = LegacyVTKReader(FileNames=['CartDecomposition/out_subdomains_2.vtk'])
 
 # create a new 'Legacy VTK Reader'
-out_subdomains_3vtk = LegacyVTKReader(FileNames=['/home/i-bird/Desktop/MOSAIC/OpenFPM_project/OpenFPM_pdata/vtk/CartDecomposition/out_subdomains_3.vtk'])
+out_subdomains_3vtk = LegacyVTKReader(FileNames=['CartDecomposition/out_subdomains_3.vtk'])
 
 # set active source
 #SetActiveSource(out_subdomains_0vtk)
@@ -219,12 +219,12 @@ out_subdomains_3vtkDisplay.SetRepresentationType('Surface With Edges')
 # hide data in view
 Hide(dom_boxvtk, renderView1)
 
-WriteImage("domain_subdomain_decomposed.png")
+WriteImage("domain_subdomain_decomposed.jpg")
 
 # hide data in view
 Hide(transform1, renderView1)
 
-WriteImage("domain_subdomain_decomposed_wg.png")
+WriteImage("domain_subdomain_decomposed_wg.jpg")
 
 
 #Destroy everything

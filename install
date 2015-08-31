@@ -119,7 +119,7 @@ fi
 
 echo "Command used to configure"
 echo ""
-echo -e "\033[1m ./configure $configure_options \033[0m "
+echo -e "\033[1m ./configure $options $configure_options \033[0m "
 echo ""
 if [ $MPI_installed -eq 1 ]; then
   echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
