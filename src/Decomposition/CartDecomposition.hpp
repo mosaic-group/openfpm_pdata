@@ -9,6 +9,8 @@
 #define CARTDECOMPOSITION_HPP
 
 #include "config.h"
+#include "VCluster.hpp"
+#include "Graph/CartesianGraphFactory.hpp"
 #include "Decomposition.hpp"
 #include "Vector/map_vector.hpp"
 #include <vector>
@@ -27,6 +29,17 @@
 #include "ie_loc_ghost.hpp"
 #include "ie_ghost.hpp"
 #include "nn_processor.hpp"
+
+#define CARTDEC_ERROR 2000lu
+
+// Macro that decide what to do in case of error
+#ifdef STOP_ON_ERROR
+#define ACTION_ON_ERROR() exit(1);
+#elif defined(THROW_ON_ERROR)
+#define ACTION_ON_ERROR() throw CARTDEC_ERROR;
+#else
+#define ACTION_ON_ERROR()
+#endif
 
 /**
  * \brief This class decompose a space into subspaces
@@ -116,14 +129,20 @@ private:
 	//! Cell-list that store the geometrical information of the local internal ghost boxes
 	CellList<dim,T,FAST> lgeo_cell;
 
-
 	/*! \brief Constructor, it decompose and distribute the sub-domains across the processors
 	 *
      * \param v_cl Virtual cluster, used internally for communications
-	 *
+     *
 	 */
 	void CreateDecomposition(Vcluster & v_cl)
 	{
+#ifdef SE_CLASS1
+		if (&v_cl == NULL)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " error VCluster instance is null, check that you ever initialized it \n";
+			ACTION_ON_ERROR()
+		}
+#endif
 		// Calculate the total number of box and and the spacing
 		// on each direction
 		// Get the box containing the domain
@@ -677,6 +696,7 @@ p1[0]<-----+         +----> p2[0]
 	{
 		return bbox;
 	}
+
 
 	////////////// Functions to get decomposition information ///////////////
 
