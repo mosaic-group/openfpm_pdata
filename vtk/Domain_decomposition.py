@@ -17,12 +17,12 @@ renderView1.CameraParallelScale = 0.5843857695756589
 # show data in view
 dom_boxvtkDisplay = Show(dom_boxvtk, renderView1)
 
-WriteImage("domain.jpg")
+WriteImage("jpg/domain.jpg")
 
 # change representation type
 dom_boxvtkDisplay.SetRepresentationType('Surface With Edges')
 
-WriteImage("domain_decomposed.jpg")
+WriteImage("jpg/domain_decomposed.jpg")
 
 # create a new 'Legacy VTK Reader'
 vtk_partitionvtk = LegacyVTKReader(FileNames=['Metis/vtk_partition.vtk'])
@@ -74,7 +74,7 @@ transform1Display.PointSize = 5.0
 SetActiveSource(vtk_partitionvtk)
 
 # write decomposed
-WriteImage("domain_graph.jpg")
+WriteImage("jpg/domain_graph.jpg")
 
 # set scalar coloring
 ColorBy(transform1Display, ('POINTS', 'id'))
@@ -83,7 +83,7 @@ ColorBy(transform1Display, ('POINTS', 'id'))
 dom_boxvtkDisplay.SetRepresentationType('Surface')
 
 # write decomposed
-WriteImage("domain_graph_decomposed.jpg")
+WriteImage("jpg/domain_graph_decomposed.jpg")
 
 # create a new 'Legacy VTK Reader'
 out_subdomains_0vtk = LegacyVTKReader(FileNames=['CartDecomposition/out_subdomains_0.vtk'])
@@ -97,73 +97,26 @@ out_subdomains_2vtk = LegacyVTKReader(FileNames=['CartDecomposition/out_subdomai
 # create a new 'Legacy VTK Reader'
 out_subdomains_3vtk = LegacyVTKReader(FileNames=['CartDecomposition/out_subdomains_3.vtk'])
 
-# set active source
-#SetActiveSource(out_subdomains_0vtk)
-
-# get color transfer function/color map for 'data'
-#dataLUT = GetColorTransferFunction('data')
-#dataLUT.RGBPoints = [285.3226244096321, 0.231373, 0.298039, 0.752941, 312.3676762575527, 0.865003, 0.865003, 0.865003, 339.4127281054734, 0.705882, 0.0156863, 0.14902]
-#dataLUT.ScalarRangeInitialized = 1.0
-
 # show data in view
 out_subdomains_3vtkDisplay = Show(out_subdomains_3vtk, renderView1)
-# trace defaults for the display properties.
-#out_subdomains_3vtkDisplay.ColorArrayName = ['CELLS', 'data']
-#out_subdomains_3vtkDisplay.LookupTable = dataLUT
-#out_subdomains_3vtkDisplay.ScalarOpacityUnitDistance = 0.5153778246772277
-
-# show color bar/color legend
-#out_subdomains_3vtkDisplay.SetScalarBarVisibility(renderView1, True)
 
 # show data in view
 out_subdomains_1vtkDisplay = Show(out_subdomains_1vtk, renderView1)
-# trace defaults for the display properties.
-#out_subdomains_1vtkDisplay.ColorArrayName = ['CELLS', 'data']
-#out_subdomains_1vtkDisplay.LookupTable = dataLUT
-#out_subdomains_1vtkDisplay.ScalarOpacityUnitDistance = 0.5153778246772277
-
-# show color bar/color legend
-#out_subdomains_1vtkDisplay.SetScalarBarVisibility(renderView1, True)
 
 # show data in view
 out_subdomains_2vtkDisplay = Show(out_subdomains_2vtk, renderView1)
-# trace defaults for the display properties.
-#out_subdomains_2vtkDisplay.ColorArrayName = ['CELLS', 'data']
-#out_subdomains_2vtkDisplay.LookupTable = dataLUT
-#out_subdomains_2vtkDisplay.ScalarOpacityUnitDistance = 0.5153778246772277
-
-# show color bar/color legend
-#out_subdomains_2vtkDisplay.SetScalarBarVisibility(renderView1, True)
 
 # show data in view
 out_subdomains_0vtkDisplay = Show(out_subdomains_0vtk, renderView1)
-# trace defaults for the display properties.
-#out_subdomains_0vtkDisplay.ColorArrayName = ['CELLS', 'data']
-#out_subdomains_0vtkDisplay.LookupTable = dataLUT
-#out_subdomains_0vtkDisplay.ScalarOpacityUnitDistance = 0.5153778246772277
-
-# show color bar/color legend
-#out_subdomains_0vtkDisplay.SetScalarBarVisibility(renderView1, True)
-
-# get opacity transfer function/opacity map for 'data'
-#dataPWF = GetOpacityTransferFunction('data')
-#dataPWF.Points = [285.3226244096321, 0.0, 0.5, 0.0, 339.4127281054734, 1.0, 0.5, 0.0]
-#dataPWF.ScalarRangeInitialized = 1
 
 # turn off scalar coloring
 ColorBy(out_subdomains_0vtkDisplay, None)
-
-# set active source
-#SetActiveSource(out_subdomains_1vtk)
 
 # turn off scalar coloring
 ColorBy(out_subdomains_1vtkDisplay, None)
 
 # turn off scalar coloring
 ColorBy(out_subdomains_2vtkDisplay, None)
-
-# set active source
-#SetActiveSource(out_subdomains_3vtk)
 
 # turn off scalar coloring
 ColorBy(out_subdomains_3vtkDisplay, None)
@@ -219,12 +172,12 @@ out_subdomains_3vtkDisplay.SetRepresentationType('Surface With Edges')
 # hide data in view
 Hide(dom_boxvtk, renderView1)
 
-WriteImage("domain_subdomain_decomposed.jpg")
+WriteImage("jpg/domain_subdomain_decomposed.jpg")
 
 # hide data in view
 Hide(transform1, renderView1)
 
-WriteImage("domain_subdomain_decomposed_wg.jpg")
+WriteImage("jpg/domain_subdomain_decomposed_wg.jpg")
 
 
 #Destroy everything
