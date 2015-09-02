@@ -495,7 +495,7 @@ public:
 			for (size_t i = 0 ; i < dim ; i++) {l_res[i] = (sp_tg.getHigh(i) >= 0)?(sp_tg.getHigh(i)+1):0;}
 
 			// Set the dimensions of the local grid
-			loc_grid.get(i).template resize<Memory>(l_res);
+			loc_grid.get(i).resize(l_res);
 		}
 	}
 

@@ -46,7 +46,6 @@
  *
  * \tparam dim is the dimensionality of the physical domain we are going to decompose.
  * \tparam T type of the space we decompose, Real, Integer, Complex ...
- * \tparam device_l layout to use
  * \tparam Memory Memory factory used to allocate memory
  * \tparam Domain Structure that contain the information of your physical domain
  *
@@ -82,7 +81,7 @@
  *
  */
 
-template<unsigned int dim, typename T, template<typename> class device_l=openfpm::device_cpu, typename Memory=HeapMemory, template<unsigned int, typename> class Domain=Box>
+template<unsigned int dim, typename T, typename Memory=HeapMemory, template<unsigned int, typename> class Domain=Box>
 class CartDecomposition : public ie_loc_ghost<dim,T>, public nn_prcs<dim,T> , public ie_ghost<dim,T>
 {
 
@@ -98,7 +97,7 @@ private:
 
 	//! This is the key type to access  data_s, for example in the case of vector
 	//! acc_key is size_t
-	typedef typename openfpm::vector<SpaceBox<dim,T>,device_l<SpaceBox<dim,T>>,Memory,openfpm::vector_grow_policy_default,openfpm::vect_isel<SpaceBox<dim,T>>::value >::access_key acc_key;
+	typedef typename openfpm::vector<SpaceBox<dim,T>,Memory,openfpm::vector_grow_policy_default,openfpm::vect_isel<SpaceBox<dim,T>>::value >::access_key acc_key;
 
 	//! the set of all local sub-domain as vector
 	openfpm::vector<SpaceBox<dim,T>> sub_domains;
