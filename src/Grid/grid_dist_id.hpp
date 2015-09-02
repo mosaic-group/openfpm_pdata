@@ -417,27 +417,6 @@ class grid_dist_id
 
 protected:
 
-	/*! \brief Get the i sub-domain grid
-	 *
-	 * \param i sub-domain
-	 *
-	 * \return local grid
-	 *
-	 */
-	device_grid & get_loc_grid(size_t i)
-	{
-		return loc_grid.get(i);
-	}
-
-	/*! \brief Return the number of local grid
-	 *
-	 * \return the number of local grid
-	 *
-	 */
-	size_t getN_loc_grid()
-	{
-		return loc_grid.size();
-	}
 
 	/*! \brief Get the point where it start the origin of the grid in the sub-domain i
 	 *
@@ -990,6 +969,28 @@ public:
 		write_ie_boxes(output);
 
 		return true;
+	}
+
+	/*! \brief Get the i sub-domain grid
+	 *
+	 * \param i sub-domain
+	 *
+	 * \return local grid
+	 *
+	 */
+	device_grid & get_loc_grid(size_t i)
+	{
+		return loc_grid.get(i);
+	}
+
+	/*! \brief Return the number of local grid
+	 *
+	 * \return the number of local grid
+	 *
+	 */
+	size_t getN_loc_grid()
+	{
+		return loc_grid.size();
 	}
 };
 

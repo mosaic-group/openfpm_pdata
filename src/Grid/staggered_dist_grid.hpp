@@ -79,8 +79,8 @@ public:
 	template<unsigned int p> void setStagPosition(openfpm::vector<comb<dim>> & cmb)
 	{
 #ifdef SE_CLASS1
-		if (mul_extends< boost::mpl::at<ele::type>::type >::ext() != cmb.size())
-			std::cerr << __FILE__ << ":" << __LINE << " error properties has " << mul_extends< boost::mpl::at<ele::type>::type >::ext() << " components, but " << cmb.size() << "has been defined \n";
+		if (extends< typename boost::mpl::at<typename T::type,boost::mpl::int_<p> >::type >::mul() != cmb.size())
+			std::cerr << __FILE__ << ":" << __LINE__ << " error properties has " << extends< typename boost::mpl::at<typename T::type,boost::mpl::int_<p> >::type >::mul() << " components, but " << cmb.size() << "has been defined \n";
 #endif
 		c_prp.get(p) = cmb;
 	}
@@ -111,6 +111,18 @@ public:
 /*		Point<dim,St> spacing = grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>::getSpacing();
 		spacing = spacing / 2;
 		grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>::write(str,c_prp,spacing);*/
+	}
+
+	/*! \brief Return if the properties is a staggered property or not
+	 *
+	 * \param prp property to check
+	 *
+	 * \return true if the property is staggered
+	 *
+	 */
+	bool is_staggered_prop(size_t prp)
+	{
+		return c_prp[prp].size() != 0;
 	}
 
 	friend class stag_create_and_add_grid<dim,staggered_grid_dist<dim,St,T,Decomposition,Memory,device_grid>,St>;

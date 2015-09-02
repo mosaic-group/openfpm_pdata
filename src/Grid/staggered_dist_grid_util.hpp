@@ -10,6 +10,7 @@
 
 #include "util/common.hpp"
 #include "VTKWriter.hpp"
+#include "util/convert.hpp"
 
 /*! \brief Classes to get the number of components of the properties
  *
@@ -175,6 +176,148 @@ struct extends<T[N1][N2][N3][N4][N5][N6][N7][N8][N9][N10]>
 	static inline size_t dim()
 	{
 		return 10;
+	}
+};
+
+///////////////////// Copy grid extends
+
+/*! \brief Classes to copy each component into a grid and add to the VTKWriter the grid
+ *
+ * \param T property to write
+ * \param dim dimansionality
+ * \param St type of space
+ * \param VTKW VTK writer
+ * \param
+ *
+ */
+template<typename T>
+struct write_stag
+{
+	/*! \brieg write the staggered grid
+	 *
+	 * \tparam p_val property we are going to write
+	 * \tparam sg staggered grid type
+	 * \tparam v_g vector of grids
+	 *
+	 * \param st_g staggered grid
+	 * \param v_g vector of grids
+	 * \param i local grid of the staggered grid we are writing
+	 *
+	 */
+	template<unsigned int p_val, typename sg, typename v_g> static inline void write(sg & st_g, v_g & vg,size_t lg)
+	{
+		// Add a grid;
+		vg.add();
+		size_t k = vg.size() - 1;
+
+		// Get the source and destination grid
+		auto & g_src = st_g.get_loc_grid(lg);
+		auto & g_dst = vg.get(k);
+
+		// Set dimensions and memory
+		g_dst.template resize<HeapMemory>(g_src.getGrid().getSize());
+
+		// copy
+
+		auto it = vg.get(k).getIterator();
+
+		while(it.isNext())
+		{
+			g_dst.template get<0>(it.get()) = g_src.template get<p_val>(it.get());
+
+			++it;
+		}
+	}
+};
+
+/*! \brief for each component add a grid fill it, and add to the VTK writer
+ *
+ * \param T Property to copy
+ * \param N1 number of components
+ *
+ */
+template<typename T,size_t N1>
+struct write_stag<T[N1]>
+{
+	/*! \brieg write the staggered grid
+	 *
+	 * \tparam p_val property we are going to write
+	 * \tparam sg staggered grid type
+	 * \tparam v_g vector of grids
+	 *
+	 * \param st_g staggered grid
+	 * \param v_g vector of grids
+	 * \param i local grid of the staggered grid we are writing
+	 *
+	 */
+	template<unsigned int p_val, typename sg, typename v_g> static inline void write(sg & st_g, v_g & vg,size_t lg)
+	{
+		for (size_t i = 0 ; i < N1 ; i++)
+		{
+			// Add a grid;
+			vg.add();
+			size_t k = vg.size() - 1;
+
+			// Get the source and destination grid
+			auto & g_src = st_g.get_loc_grid(lg);
+			auto & g_dst = vg.get(k);
+
+			// Set dimensions and memory
+			g_dst.template resize<HeapMemory>(g_src.getGrid().getSize());
+
+			auto it = vg.get(k).getIterator();
+
+			while(it.isNext())
+			{
+				g_dst.template get<0>(it.get()) = g_src.template get<p_val>(it.get())[i];
+
+				++it;
+			}
+		}
+	}
+};
+
+//! Partial specialization for N=2 2D-Array
+template<typename T,size_t N1,size_t N2>
+struct write_stag<T[N1][N2]>
+{
+	/*! \brieg write the staggered grid
+	 *
+	 * \tparam p_val property we are going to write
+	 * \tparam sg staggered grid type
+	 * \tparam v_g vector of grids
+	 *
+	 * \param st_g staggered grid
+	 * \param v_g vector of grids
+	 * \param i local grid of the staggered grid we are writing
+	 *
+	 */
+	template<unsigned int p_val, typename sg, typename v_g> static inline void write(sg & st_g, v_g & vg,size_t lg)
+	{
+		for (size_t i = 0 ; i < N1 ; i++)
+		{
+			for (size_t j = 0 ; j < N2 ; j++)
+			{
+				// Add a grid;
+				vg.add();
+				size_t k = vg.size() - 1;
+
+				// Set dimensions and memory
+				vg.get(k).template resize<HeapMemory>(st_g.get_loc_grid(lg).getGrid().getSize());
+
+				// copy
+				auto & g_src = st_g.get_loc_grid(lg);
+				auto & g_dst = vg.get(k);
+				auto it = vg.get(k).getIterator();
+
+				while(it.isNext())
+				{
+					g_dst.template get<0>(it.get()) = g_src.template get<p_val>(it.get())[i][j];
+
+					++it;
+				}
+			}
+		}
 	}
 };
 
@@ -391,17 +534,14 @@ public:
 			// Set dimansions and memory
 			vg.get(i).template resize<HeapMemory>(st_g.get_loc_grid(i).getGrid().getSize());
 
-			// create the Memory
-			vg.get(i).template setMemory<HeapMemory>();
-
-			auto g_src = st_g.get_loc_grid(i);
-			auto g_dst = vg.get(i);
+			auto & g_src = st_g.get_loc_grid(i);
+			auto & g_dst = vg.get(i);
 
 			auto it = vg.get(i).getIterator();
 
 			while(it.isNext())
 			{
-				object_si_d< decltype(g_src.get_o(it.get())),decltype(g_dst.get_o(it.get())) ,ENCAP,T::value>(g_src.get_o(it.get()),g_dst.get_o(it.get()));
+				object_si_d< decltype(g_src.get_o(it.get())),decltype(g_dst.get_o(it.get())) ,ENCAP,p_val>(g_src.get_o(it.get()),g_dst.get_o(it.get()));
 
 				++it;
 			}
@@ -413,7 +553,7 @@ public:
 			vtk_w.add(g_dst,offset,spacing,dom);
 		}
 
-		vtk_w.write("vtk_grids_st_" + std::to_string(T::value) + ".vtk");
+		vtk_w.write("vtk_grids_st_" + std::to_string(p_val) + ".vtk");
 	}
 
 	template<unsigned int p_val> void out_staggered()
@@ -421,44 +561,46 @@ public:
 		// property type
 		typedef typename boost::mpl::at< typename st_grid::value_type::type , typename boost::mpl::int_<p_val> >::type ele;
 
+		// Eliminate the extends
+		typedef typename std::remove_all_extents<ele>::type r_ele;
+
 		// create an openfpm format object from the property type
-		typedef object<typename boost::fusion::vector<ele>> d_object;
+		typedef object<typename boost::fusion::vector<r_ele>> d_object;
 
 		VTKWriter<boost::mpl::pair<grid_cpu<dim, d_object >,St>,VECTOR_GRIDS> vtk_w;
 
 		// Create a vector of grids
+		openfpm::vector< grid_cpu<dim, d_object > > vg;
 
-		openfpm::vector< grid_cpu<dim, d_object > > vg(st_g.getN_loc_grid());
+		size_t k = 0;
 
 		// for each domain grid
-		for (size_t i = 0 ; i < vg.size() ; i++)
+		for (size_t i = 0 ; i < st_g.getN_loc_grid() ; i++)
 		{
-			// Set dimansions and memory
-			vg.get(i).template resize<HeapMemory>(st_g.get_loc_grid(i).getGrid().getSize());
+			write_stag<ele>::template write<p_val, st_grid,openfpm::vector< grid_cpu<dim, d_object > > >(st_g,vg,i);
 
-			// create the Memory
-			vg.get(i).template setMemory<HeapMemory>();
-
-			auto g_src = st_g.get_loc_grid(i);
-			auto g_dst = vg.get(i);
-
-			auto it = vg.get(i).getIterator();
-
-			while(it.isNext())
+			// for each component
+			for ( ; k < vg.size() ; k++)
 			{
-				object_si_d< decltype(g_src.get_o(it.get())),decltype(g_dst.get_o(it.get())) ,ENCAP,T::value>(g_src.get_o(it.get()),g_dst.get_o(it.get()));
+				Point<dim,St> offset = st_g.getOffset(i);
+				Point<dim,St> spacing = st_g.getSpacing();
+				Box<dim,size_t> dom = st_g.getDomain(i);
 
-				++it;
+				// Adjust for staggered
+
+				Point<dim,St> middle = spacing / 2;
+				Point<dim,St> one;
+				one.one();
+				one = one + toPoint<dim,St>::convert(st_g.c_prp[p_val].get(k));
+				offset = offset + middle * one;
+
+				vtk_w.add(vg.get(k),offset,spacing,dom);
 			}
 
-			Point<dim,St> offset = st_g.getOffset(i);
-			Point<dim,St> spacing = st_g.getSpacing();
-			Box<dim,size_t> dom = st_g.getDomain(i);
-
-			vtk_w.add(g_dst,offset,spacing,dom);
+			k = vg.size();
 		}
 
-		vtk_w.write("vtk_grids_st_" + std::to_string(T::value) + ".vtk");
+		vtk_w.write("vtk_grids_st_" + std::to_string(p_val) + ".vtk");
 	}
 
 	//! It call the copy function for each property
