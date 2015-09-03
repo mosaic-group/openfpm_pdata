@@ -215,7 +215,7 @@ struct write_stag
 		auto & g_dst = vg.get(k);
 
 		// Set dimensions and memory
-		g_dst.template resize<HeapMemory>(g_src.getGrid().getSize());
+		g_dst.resize(g_src.getGrid().getSize());
 
 		// copy
 
@@ -263,7 +263,7 @@ struct write_stag<T[N1]>
 			auto & g_dst = vg.get(k);
 
 			// Set dimensions and memory
-			g_dst.template resize<HeapMemory>(g_src.getGrid().getSize());
+			g_dst.resize(g_src.getGrid().getSize());
 
 			auto it = vg.get(k).getIterator();
 
@@ -303,7 +303,7 @@ struct write_stag<T[N1][N2]>
 				size_t k = vg.size() - 1;
 
 				// Set dimensions and memory
-				vg.get(k).template resize<HeapMemory>(st_g.get_loc_grid(lg).getGrid().getSize());
+				vg.get(k).resize(st_g.get_loc_grid(lg).getGrid().getSize());
 
 				// copy
 				auto & g_src = st_g.get_loc_grid(lg);
@@ -365,7 +365,7 @@ public:
 		if (dim_prp == 0)
 		{
 			comb<dim> c;
-			c.zero();
+			c.mone();
 
 			// It stay in the center
 			pos_prp[T::value].add(c);
@@ -395,9 +395,9 @@ public:
 				{
 					comb<dim> c2;
 					c2.zero();
-					c2.value(i) = -1;
+					c2.value(i) = 1;
 
-					comb<dim> c_res = -c1 + c2;
+					comb<dim> c_res = (c1 + c2) & 0x1;
 
 					pos_prp[T::value].add(c_res);
 				}
@@ -448,7 +448,7 @@ public:
 		if (dim_prp == 0)
 		{
 			comb<dim> c;
-			c.zero();
+			c.mone();
 
 			// It stay in the center
 			pos_prp[T::value].add(c);
@@ -475,9 +475,9 @@ public:
 				{
 					comb<dim> c2;
 					c2.zero();
-					c2.getComb()[i] = -1;
+					c2.getComb()[j] = 1;
 
-					comb<dim> c_res = c2 - c1;
+					comb<dim> c_res = (c2 + c1).flip();
 
 					pos_prp[T::value].add(c_res);
 				}
@@ -500,6 +500,8 @@ template<unsigned int dim, typename st_grid, typename St>
 class stag_create_and_add_grid
 {
 
+	size_t p_id;
+
 	// staggered grid to write
 	st_grid & st_g;
 
@@ -508,10 +510,11 @@ public:
 	/*! \brief Constructor
 	 *
 	 * \param st_g staggered grid
+	 * \param p_id process id
 	 *
 	 */
-	stag_create_and_add_grid(st_grid & st_g)
-	:st_g(st_g)
+	stag_create_and_add_grid(st_grid & st_g, size_t p_id)
+	:p_id(p_id),st_g(st_g)
 	{}
 
 	template<unsigned int p_val> void out_normal()
@@ -532,7 +535,7 @@ public:
 		for (size_t i = 0 ; i < vg.size() ; i++)
 		{
 			// Set dimansions and memory
-			vg.get(i).template resize<HeapMemory>(st_g.get_loc_grid(i).getGrid().getSize());
+			vg.get(i).resize(st_g.get_loc_grid(i).getGrid().getSize());
 
 			auto & g_src = st_g.get_loc_grid(i);
 			auto & g_dst = vg.get(i);
@@ -553,7 +556,7 @@ public:
 			vtk_w.add(g_dst,offset,spacing,dom);
 		}
 
-		vtk_w.write("vtk_grids_st_" + std::to_string(p_val) + ".vtk");
+		vtk_w.write("vtk_grids_st_" + std::to_string(p_id) + "_" + std::to_string(p_val) + ".vtk");
 	}
 
 	template<unsigned int p_val> void out_staggered()
@@ -600,7 +603,7 @@ public:
 			k = vg.size();
 		}
 
-		vtk_w.write("vtk_grids_st_" + std::to_string(p_val) + ".vtk");
+		vtk_w.write("vtk_grids_st_" + std::to_string(p_id) + "_" + std::to_string(p_val) + ".vtk");
 	}
 
 	//! It call the copy function for each property

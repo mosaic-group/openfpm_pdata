@@ -163,9 +163,9 @@ public:
 	struct pos_prop
 	{
 		//! position vector
-		openfpm::vector<point,openfpm::device_cpu<point>,PreAllocHeapMemory<2>,openfpm::grow_policy_identity> pos;
+		openfpm::vector<point,PreAllocHeapMemory<2>,openfpm::grow_policy_identity> pos;
 		//! properties vector
-		openfpm::vector<prop,openfpm::device_cpu<prop>,PreAllocHeapMemory<2>,openfpm::grow_policy_identity> prp;
+		openfpm::vector<prop,PreAllocHeapMemory<2>,openfpm::grow_policy_identity> prp;
 	};
 
 	/*! \brief set the ghost
@@ -254,8 +254,8 @@ public:
 		for (size_t i = 0 ;  i < prc_r.size() ; i++)
 		{
 			// Create the size required to store the particles position and properties to communicate
-			size_t s1 = openfpm::vector<point,openfpm::device_cpu<point>,HeapMemory,openfpm::grow_policy_identity>::calculateMem(prc_sz_r.get(i),0);
-			size_t s2 = openfpm::vector<prop,openfpm::device_cpu<prop>,HeapMemory,openfpm::grow_policy_identity>::calculateMem(prc_sz_r.get(i),0);
+			size_t s1 = openfpm::vector<point,HeapMemory,openfpm::grow_policy_identity>::calculateMem(prc_sz_r.get(i),0);
+			size_t s2 = openfpm::vector<prop,HeapMemory,openfpm::grow_policy_identity>::calculateMem(prc_sz_r.get(i),0);
 
 			// Preallocate the memory
 			size_t sz[2] = {s1,s2};
@@ -339,8 +339,8 @@ public:
 
 			// create vector representation to a piece of memory already allocated
 
-			openfpm::vector<point,openfpm::device_cpu<point>,PtrMemory,openfpm::grow_policy_identity> vpos;
-			openfpm::vector<prop,openfpm::device_cpu<prop>,PtrMemory,openfpm::grow_policy_identity> vprp;
+			openfpm::vector<point,PtrMemory,openfpm::grow_policy_identity> vpos;
+			openfpm::vector<prop,PtrMemory,openfpm::grow_policy_identity> vprp;
 
 			vpos.setMemory(*ptr1);
 			vprp.setMemory(*ptr2);
@@ -402,7 +402,7 @@ public:
 		typedef object<typename object_creator<typename prop::type,prp...>::type> prp_object;
 
 		// send vector for each processor
-		typedef  openfpm::vector<prp_object,openfpm::device_cpu<prp_object>,ExtPreAlloc<Memory>> send_vector;
+		typedef  openfpm::vector<prp_object,ExtPreAlloc<Memory>> send_vector;
 
 		// Buffer that contain the number of elements to send for each processor
 		ghost_prc_sz.clear();
@@ -499,7 +499,7 @@ public:
 		// Create the buffer for particle position
 
 		// definition of the send vector for position for each processor
-		typedef  openfpm::vector<point,openfpm::device_cpu<point>,ExtPreAlloc<Memory>> send_pos_vector;
+		typedef  openfpm::vector<point,ExtPreAlloc<Memory>> send_pos_vector;
 
 		openfpm::vector<send_pos_vector> g_pos_send;
 		if (opt != NO_POSITION)
@@ -549,7 +549,7 @@ public:
 			PtrMemory * ptr1 = new PtrMemory(recv_mem_gg.get(i).getPointer(),recv_sz.get(i));
 
 			// create vector representation to a piece of memory already allocated
-			openfpm::vector<prp_object,openfpm::device_cpu<prp_object>,PtrMemory,openfpm::grow_policy_identity> v2;
+			openfpm::vector<prp_object,PtrMemory,openfpm::grow_policy_identity> v2;
 
 			v2.setMemory(*ptr1);
 
@@ -576,7 +576,7 @@ public:
 
 				// create vector representation to a piece of memory already allocated
 
-				openfpm::vector<point,openfpm::device_cpu<point>,PtrMemory,openfpm::grow_policy_identity> v2;
+				openfpm::vector<point,PtrMemory,openfpm::grow_policy_identity> v2;
 
 				v2.setMemory(*ptr1);
 

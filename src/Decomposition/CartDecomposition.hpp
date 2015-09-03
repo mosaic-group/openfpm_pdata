@@ -9,6 +9,8 @@
 #define CARTDECOMPOSITION_HPP
 
 #include "config.h"
+#include "VCluster.hpp"
+#include "Graph/CartesianGraphFactory.hpp"
 #include "Decomposition.hpp"
 #include "Vector/map_vector.hpp"
 #include <vector>
@@ -28,12 +30,22 @@
 #include "ie_ghost.hpp"
 #include "nn_processor.hpp"
 
+#define CARTDEC_ERROR 2000lu
+
+// Macro that decide what to do in case of error
+#ifdef STOP_ON_ERROR
+#define ACTION_ON_ERROR() exit(1);
+#elif defined(THROW_ON_ERROR)
+#define ACTION_ON_ERROR() throw CARTDEC_ERROR;
+#else
+#define ACTION_ON_ERROR()
+#endif
+
 /**
  * \brief This class decompose a space into subspaces
  *
  * \tparam dim is the dimensionality of the physical domain we are going to decompose.
  * \tparam T type of the space we decompose, Real, Integer, Complex ...
- * \tparam layout to use
  * \tparam Memory Memory factory used to allocate memory
  * \tparam Domain Structure that contain the information of your physical domain
  *
@@ -46,7 +58,8 @@
  * Assuming that VCluster.getProcessUnitID(), equivalent to the MPI processor rank, return the processor local
  * processor id, we define
  *
- * * local sub-domain: all the sub-domain with id == local processor
+ * * local processor: processor rank
+ * * local sub-domain: sub-domain given to the local processor
  * * external ghost box: (or ghost box) are the boxes that compose the ghost space of the processor, or the
  *   boxes produced expanding every local sub-domain by the ghost extension and intersecting with the sub-domain
  *   of the other processors
@@ -63,9 +76,12 @@
  *
  * \see calculateGhostBoxes() for a visualization of internal and external ghost boxes
  *
+ * ### Create a Cartesian decomposition object on a Box space, distribute, calculate internal and external ghost boxes
+ * \snippet CartDecomposition_unit_test.hpp Create CartDecomposition
+ *
  */
 
-template<unsigned int dim, typename T, template<typename> class device_l=openfpm::device_cpu, typename Memory=HeapMemory, template<unsigned int, typename> class Domain=Box>
+template<unsigned int dim, typename T, typename Memory=HeapMemory, template<unsigned int, typename> class Domain=Box>
 class CartDecomposition : public ie_loc_ghost<dim,T>, public nn_prcs<dim,T> , public ie_ghost<dim,T>
 {
 
@@ -81,7 +97,7 @@ private:
 
 	//! This is the key type to access  data_s, for example in the case of vector
 	//! acc_key is size_t
-	typedef typename openfpm::vector<SpaceBox<dim,T>,device_l<SpaceBox<dim,T>>,Memory,openfpm::vector_grow_policy_default,openfpm::vect_isel<SpaceBox<dim,T>>::value >::access_key acc_key;
+	typedef typename openfpm::vector<SpaceBox<dim,T>,Memory,openfpm::vector_grow_policy_default,openfpm::vect_isel<SpaceBox<dim,T>>::value >::access_key acc_key;
 
 	//! the set of all local sub-domain as vector
 	openfpm::vector<SpaceBox<dim,T>> sub_domains;
@@ -112,14 +128,20 @@ private:
 	//! Cell-list that store the geometrical information of the local internal ghost boxes
 	CellList<dim,T,FAST> lgeo_cell;
 
-
-	/*! \brief Create internally the decomposition
+	/*! \brief Constructor, it decompose and distribute the sub-domains across the processors
 	 *
-     * \param v_cl Virtual cluster, used internally to handle or pipeline communication
-	 *
+     * \param v_cl Virtual cluster, used internally for communications
+     *
 	 */
 	void CreateDecomposition(Vcluster & v_cl)
 	{
+#ifdef SE_CLASS1
+		if (&v_cl == NULL)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " error VCluster instance is null, check that you ever initialized it \n";
+			ACTION_ON_ERROR()
+		}
+#endif
 		// Calculate the total number of box and and the spacing
 		// on each direction
 		// Get the box containing the domain
@@ -271,10 +293,7 @@ private:
 
 	/*! \brief Create the subspaces that decompose your domain
 	 *
-	 * Create the subspaces that decompose your domain
-	 *
 	 */
-
 	void CreateSubspaces()
 	{
 		// Create a grid where each point is a space
@@ -402,6 +421,9 @@ public:
 	 * B8_0 B9_0 B9_1 and B5_0
 	 *
 	 *
+	 *
+	 \verbatim
+
 +----------------------------------------------------+
 |                                                    |
 |                 Processor 8                        |
@@ -427,6 +449,8 @@ public:
                                                      |                                   |
                                                      +-----------------------------------+
 
+
+ \endverbatim
 
        and also
        G8_0 G9_0 G9_1 G5_0 (External ghost boxes)
@@ -457,13 +481,15 @@ public:
                   +----------------------------------------+----+------------------------------+
 
 
-
+ \endverbatim
 
 	 *
 	 *
 	 *
 	 * \param ghost margins for each dimensions (p1 negative part) (p2 positive part)
 	 *
+	 *
+	 \verbatim
                 ^ p2[1]
                 |
                 |
@@ -476,6 +502,8 @@ p1[0]<-----+         +----> p2[0]
            +----+----+
                 |
                 v  p1[1]
+
+     \endverbatim
 
 	 *
 	 *
@@ -516,12 +544,11 @@ p1[0]<-----+         +----> p2[0]
 		}
 	}
 
-	/*! \brief processorID return in which processor the particle should go
+	/*! \brief Given a point return in which processor the particle should go
 	 *
 	 * \return processorID
 	 *
 	 */
-
 	template<typename Mem> size_t inline processorID(encapc<1, Point<dim,T>, Mem> p)
 	{
 		return fine_s.get(cd.getCell(p));
@@ -540,7 +567,7 @@ p1[0]<-----+         +----> p2[0]
 		return ss_box;
 	}
 
-	/*! \brief processorID return in which processor the particle should go
+	/*! \brief Given a point return in which processor the particle should go
 	 *
 	 * \return processorID
 	 *
@@ -572,7 +599,7 @@ p1[0]<-----+         +----> p2[0]
 		CreateDecomposition(v_cl);
 	}
 
-	/*! \brief Get the number of local local hyper-cubes or sub-domains
+	/*! \brief Get the number of local sub-domains
 	 *
 	 * \return the number of sub-domains
 	 *
@@ -580,61 +607,6 @@ p1[0]<-----+         +----> p2[0]
 	size_t getNLocalHyperCube()
 	{
 		return sub_domains.size();
-	}
-
-	/*! \brief Get the number of one set of hyper-cube enclosing one particular
-	 *         subspace, the hyper-cube enclose your space, even if one box is enough
-	 *         can be more that one to increase occupancy
-	 *
-     * In case of Cartesian decomposition it just return 1, each subspace
-	 * has one hyper-cube, and occupancy 1
-	 *
-	 * \param id of the subspace
-	 * \return the number of hyper-cube enclosing your space
-	 *
-	 */
-	size_t getNHyperCube(size_t id)
-	{
-		return 1;
-	}
-
-	/*! \brief Get the hyper-cube margins id_c has to be 0
-	 *
-	 * Get the hyper-cube margins id_c has to be 0, each subspace
-	 * has one hyper-cube
-	 *
-	 * \param id of the subspace
-	 * \param id_c
-	 * \return The specified hyper-cube space
-	 *
-	 */
-	SpaceBox<dim,T> & getHyperCubeMargins(size_t id, size_t id_c)
-	{
-#ifdef DEBUG
-		// Check if this subspace exist
-		if (id >= gr.size())
-		{
-			std::cerr << "Error CartDecomposition: id > N_tot";
-		}
-		else if (id_c > 0)
-		{
-			// Each subspace is an hyper-cube so return error if id_c > 0
-			std::cerr << "Error CartDecomposition: id_c > 0";
-		}
-#endif
-
-		return sub_domains.get<Object>(id);
-	}
-
-	/*! \brief Get the total number of sub-domain for the local processor
-	 *
-	 * \return The total number of sub-domains
-	 *
-	 */
-
-	size_t getNHyperCube()
-	{
-		return gr.size();
 	}
 
 	/*! \brief Get the local sub-domain
@@ -666,7 +638,6 @@ p1[0]<-----+         +----> p2[0]
 	 * \return the sub-domain
 	 *
 	 */
-
 	SpaceBox<dim,T> getSubDomainWithGhost(size_t lc)
 	{
 		// Create a space box
@@ -680,12 +651,9 @@ p1[0]<-----+         +----> p2[0]
 
 	/*! \brief Return the structure that store the physical domain
 	 *
-	 * Return the structure that store the physical domain
-	 *
 	 * \return The physical domain
 	 *
 	 */
-
 	Domain<dim,T> & getDomain()
 	{
 		return domain;
@@ -717,7 +685,7 @@ p1[0]<-----+         +----> p2[0]
 
 	::Box<dim,T> bbox;
 
-	/*! \brief Return the bounding box containing the processor box + smallest subdomain spacing
+	/*! \brief Return the bounding box containing union of all the sub-domains for the local processor
 	 *
 	 * \return The bounding box
 	 *
@@ -727,18 +695,6 @@ p1[0]<-----+         +----> p2[0]
 		return bbox;
 	}
 
-	/*! \brief if the point fall into the ghost of some near processor it return the processors id's in which
-	 *  it fall
-	 *
-	 * \param p Point
-	 * \return iterator of the processors id's
-	 *
-	 */
-/*	inline auto labelPoint(Point<dim,T> & p) -> decltype(geo_cell.getIterator(geo_cell.getCell(p)))
-	{
-		return geo_cell.getIterator(geo_cell.getCell(p));
-	}*/
-
 
 	////////////// Functions to get decomposition information ///////////////
 
@@ -746,12 +702,12 @@ p1[0]<-----+         +----> p2[0]
 	 *
 	 * The function generate several files
 	 *
-	 * 1) subdomains_X.vtk domain for the local processor (X) as union of sub-domain
-	 * 2) subdomains_adjacent_X.vtk sub-domains adjacent to the local processor (X)
-	 * 3) internal_ghost_X.vtk Internal ghost boxes for the local processor (X)
-	 * 4) external_ghost_X.vtk External ghost boxes for the local processor (X)
-	 * 5) local_internal_ghost_X.vtk internal local ghost boxes for the local processor (X)
-	 * 6) local_external_ghost_X.vtk external local ghost boxes for the local processor (X)
+	 * * subdomains_X.vtk domain for the local processor (X) as union of sub-domain
+	 * * subdomains_adjacent_X.vtk sub-domains adjacent to the local processor (X)
+	 * * internal_ghost_X.vtk Internal ghost boxes for the local processor (X)
+	 * * external_ghost_X.vtk External ghost boxes for the local processor (X)
+	 * * local_internal_ghost_X.vtk internal local ghost boxes for the local processor (X)
+	 * * local_external_ghost_X.vtk external local ghost boxes for the local processor (X)
 	 *
 	 * where X is the local processor rank
 	 *

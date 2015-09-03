@@ -44,6 +44,20 @@ public:
 	:g_c(g_c),key(key)
 	{
 	}
+
+	std::string to_string()
+	{
+		std::stringstream str;
+
+		str << "sub_domain=" << g_c << " ";
+
+		for (size_t i = 0 ; i < dim ; i++)
+			str << "x[" << i << "]=" << key.get(i) << " ";
+
+		str << "\n";
+
+		return str.str();
+	}
 };
 
 #endif

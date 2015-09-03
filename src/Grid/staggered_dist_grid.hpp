@@ -104,13 +104,9 @@ public:
 	 */
 	void write(std::string str)
 	{
-		stag_create_and_add_grid<dim,staggered_grid_dist<dim,St,T,Decomposition,Memory,device_grid>,St> sgw(*this);
+		stag_create_and_add_grid<dim,staggered_grid_dist<dim,St,T,Decomposition,Memory,device_grid>,St> sgw(*this, this->getVC().getProcessUnitID());
 
 		boost::mpl::for_each_ref< boost::mpl::range_c<int,0,T::max_prop> >(sgw);
-		// spacing
-/*		Point<dim,St> spacing = grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>::getSpacing();
-		spacing = spacing / 2;
-		grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>::write(str,c_prp,spacing);*/
 	}
 
 	/*! \brief Return if the properties is a staggered property or not

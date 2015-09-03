@@ -19,6 +19,10 @@ mkdir src/config
 ## generate configure script
 
 sh ./autogen.sh
+if [ $? -ne 0 ]; then
+  echo -e "Configure\033[91;5;1m FAILED \033[0m"
+  exit 1
+fi
 
 ## Take all the options with the exception of --enable-install-req
 
@@ -42,16 +46,27 @@ METIS_installed=0
 BOOST_installed=0
 conf_err=1
 
+<<<<<<< HEAD
 ## Check for mpirun
 
 
+=======
+## MPI
+
+command -v mpic++ >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+  options="CXX=mpic++"
+fi
+
+##
+>>>>>>> master
 
 if [ $install_req -eq 0 ]; then
-    ./configure $configure_options
+    ./configure $options $configure_options
 else
     while [ $conf_err -ne 0 ]
     do
-        ./configure $configure_options
+        ./configure $options $configure_options
         conf_err=$?
 
 	echo "Configure script terminated with $conf_err"
@@ -93,6 +108,7 @@ else
     done
 fi
 
+make clean
 make
 
 if [ $? -ne 0 ]; then
@@ -109,7 +125,7 @@ fi
 
 echo "Command used to configure"
 echo ""
-echo -e "\033[1m ./configure $configure_options \033[0m "
+echo -e "\033[1m ./configure $options $configure_options \033[0m "
 echo ""
 if [ $MPI_installed -eq 1 ]; then
   echo -e "\033[1;34;5m ---------------------------------------  \033[0m"

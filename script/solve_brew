@@ -1,0 +1,11 @@
+#! /bin/bash
+
+source script/show_solutions
+
+if [ x"$1" = x"osx" ]; then
+        commands[0]="ruby -e \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)\""
+        possible_solutions "${commands[@]}"
+        echo "Executing: ${command[$possible_solutions_ret]}"
+        eval ${commands[$possible_solutions_ret]}
+fi
+

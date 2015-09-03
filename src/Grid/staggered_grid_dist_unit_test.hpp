@@ -23,8 +23,10 @@ BOOST_AUTO_TEST_CASE( staggered_grid_dist_unit_test)
 	// Domain
 	Box<2,float> domain({0.0,0.0},{1.0,1.0});
 
-	for (size_t k = 1024 ; k >= 2 ; k--)
-	{
+	size_t k = 1024;
+
+/*	for (size_t k = 1024 ; k >= 2 ; k--)
+	{*/
 		BOOST_TEST_CHECKPOINT( "Testing grid k=" << k );
 
 		// grid size
@@ -47,21 +49,21 @@ BOOST_AUTO_TEST_CASE( staggered_grid_dist_unit_test)
 
 			grid_key_dx<2> keyg = sg.getGKey(key);
 
-			sg.template get<p::s>(key) = keyg.get(0);
+			sg.template get<p::s>(key) = 1;
 
-			sg.template get<p::v>(key)[0] = keyg.get(0);
-			sg.template get<p::v>(key)[1] = keyg.get(1);
+			sg.template get<p::v>(key)[0] = 0;
+			sg.template get<p::v>(key)[1] = 1;
 
-			sg.template get<p::t>(key)[0][0] = keyg.get(0);
-			sg.template get<p::t>(key)[0][1] = keyg.get(1);
-			sg.template get<p::t>(key)[1][0] = keyg.get(0) + 1.0;
-			sg.template get<p::t>(key)[1][1] = keyg.get(1) + 7.0;
+			sg.template get<p::t>(key)[0][0] = 0;
+			sg.template get<p::t>(key)[0][1] = 1;
+			sg.template get<p::t>(key)[1][0] = 2;
+			sg.template get<p::t>(key)[1][1] = 3;
 
 			++it;
 		}
 
 		sg.write("stag_test.vtk");
-	}
+/*	}*/
 }
 
 BOOST_AUTO_TEST_SUITE_END()

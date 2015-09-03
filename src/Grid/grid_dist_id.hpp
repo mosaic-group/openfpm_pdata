@@ -21,10 +21,8 @@
 
 /*! \brief This is a distributed grid
  *
- * Implementation of a distributed grid with decomposition on the ids.
- * A distributed grid is a grid distributed across processors.
- * The decomposition is performed on the ids of the elements
- *
+ * Implementation of a distributed grid the decomposition is geometrical, grid
+ * is splitted across several processor
  *
  * \param dim Dimensionality of the grid
  * \param St Type of space where the grid is living
@@ -32,6 +30,15 @@
  * \param Decomposition Class that decompose the grid for example CartDecomposition
  * \param Mem Is the allocator
  * \param device type of base structure is going to store the data
+ *
+ * ### Create a distributed grid and access it
+ * \snippet grid_dist_id_unit_test.hpp Create and access a distributed grid
+ * ### Synchronize the ghosts and check the information
+ * \snippet grid_dist_id_unit_test.hpp Synchronize the ghost and check the information
+ * ### Create and access a distributed grid for complex structures
+ * \snippet grid_dist_id_unit_test.hpp Create and access a distributed grid complex
+ * ### Synchronize a distributed grid for complex structures
+ * \snippet grid_dist_id_unit_test.hpp Synchronized distributed grid complex
  *
  */
 template<unsigned int dim, typename St, typename T, typename Decomposition,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T> >
@@ -63,50 +70,6 @@ class grid_dist_id
 
 	//! It map a global ghost id (g_id) to the external ghost box information
 	std::unordered_map<size_t,size_t> g_id_to_external_ghost_box;
-
-	/*! \brief Get the grid size
-	 *
-	 * Given a domain, the resolution of the grid on it and another spaceBox contained in the domain
-	 * it give the size on all directions of the local grid
-	 *
-	 * \param sp SpaceBox enclosing the local grid
-	 * \param domain Space box enclosing the physical domain or part of it
-	 * \param v_size grid size on this physical domain
-	 *
-	 * \return An std::vector representing the local grid on each dimension
-	 *
-	 */
-	std::vector<size_t> getGridSize(SpaceBox<dim,typename Decomposition::domain_type> & sp, Box<dim,typename Decomposition::domain_type> & domain, size_t (& v_size)[dim])
-	{
-		std::vector<size_t> tmp;
-		for (size_t d = 0 ; d < dim ; d++)
-		{
-			//! Get the grid size compared to the domain space and its resolution
-			typename Decomposition::domain_type dim_sz = (sp.getHigh(d) - sp.getLow(d)) / ((domain.getHigh(d) - domain.getLow(d)) / v_size[d]) + 0.5;
-
-			// push the size of the local grid
-			tmp.push_back(dim_sz);
-		}
-		return tmp;
-	}
-
-	/*! \brief Get the grid size
-	 *
-	 * Get the grid size, given a spaceBox
-	 * it give the size on all directions of the local grid
-	 *
-	 * \param sp SpaceBox enclosing the local grid
-	 * \param sz array to fill with the local grid size on each dimension
-	 *
-	 */
-	void getGridSize(SpaceBox<dim,size_t> & sp, size_t (& v_size)[dim])
-	{
-		for (size_t d = 0 ; d < dim ; d++)
-		{
-			// push the size of the local grid
-			v_size[d] = sp.getHigh(d) - sp.getLow(d);
-		}
-	}
 
 	// Receiving size
 	openfpm::vector<size_t> recv_sz;
@@ -142,9 +105,7 @@ class grid_dist_id
 		return g->recv_mem_gg.get(lc_id).getPointer();
 	}
 
-	/*! \brief Create per-processor internal ghost box list in grid units
-	 *
-	 * It also create g_id_to_external_ghost_box
+	/*! \brief Create per-processor internal ghost boxes list in grid units and g_id_to_external_ghost_box
 	 *
 	 */
 	void create_ig_box()
@@ -279,7 +240,7 @@ class grid_dist_id
 
 	bool init_local_e_g_box = false;
 
-	/*! \brief Create per-processor internal ghost box list in grid units
+	/*! \brief Create per-processor external ghost boxes list in grid units
 	 *
 	 */
 	void create_local_eg_box()
@@ -374,9 +335,7 @@ class grid_dist_id
 		}
 	}
 
-	/*! \brief Check the the grid has valid size
-	 *
-	 * Distributed grids with size < 2 on each dimension are not supported
+	/*! \brief Check the grid has a valid size
 	 *
 	 */
 	inline void check_size(const size_t (& g_sz)[dim])
@@ -445,7 +404,8 @@ public:
 	/*! \brief Constrcuctor
 	 *
 	 * \param g_sz array with the grid size on each dimension
-	 * \param domain
+	 * \param domain domain where this grid live
+	 * \param g Ghost
 	 *
 	 */
 	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g)
@@ -485,12 +445,11 @@ public:
 		dec.calculateGhostBoxes();
 	}
 
-	/*! \brief Get the object that store the decomposition information
+	/*! \brief Get the object that store the information about the decomposition
 	 *
 	 * \return the decomposition object
 	 *
 	 */
-
 	Decomposition & getDecomposition()
 	{
 		return dec;
@@ -509,7 +468,6 @@ public:
 	/*! \brief Create the grids on memory
 	 *
 	 */
-
 	void Create()
 	{
 		Box<dim,St> g_rnd_box;
@@ -552,7 +510,7 @@ public:
 			for (size_t i = 0 ; i < dim ; i++) {l_res[i] = (sp_tg.getHigh(i) >= 0)?(sp_tg.getHigh(i)+1):0;}
 
 			// Set the dimensions of the local grid
-			loc_grid.get(i).template resize<Memory>(l_res);
+			loc_grid.get(i).resize(l_res);
 		}
 	}
 
@@ -612,7 +570,6 @@ public:
 	}
 
 	/*! \brief Get the reference of the selected element
-	 *
 	 *
 	 * \param p property to get (is an integer)
 	 * \param v1 grid_key that identify the element in the grid
@@ -749,10 +706,9 @@ public:
 	//! Local external ghost boxes in grid units
 	openfpm::vector<e_lbox_grid> loc_eg_box;
 
-	/*! \brief It synchronize getting the ghost part of the grid
+	/*! \brief It synchronize the ghost parts
 	 *
-	 * \tparam prp Properties to get (sequence of properties ids)
-	 * \opt options (unused)
+	 * \tparam prp... Properties to synchronize
 	 *
 	 */
 	template<int... prp> void ghost_get()
@@ -929,7 +885,7 @@ public:
 	/*! \brief Convert a g_dist_key_dx into a global key
 	 *
 	 * \see grid_dist_key_dx
-	 * \see grid_dist_key_dx_iterator
+	 * \see grid_dist_iterator
 	 *
 	 * \return the global position in the grid
 	 *
@@ -952,7 +908,7 @@ public:
 	 * * grid_X.vtk Output each local grids for each local processor X
 	 * * internal_ghost_X.vtk Internal ghost boxes in grid units for the local processor X
 	 *
-	 * \param output Directory where to put the files
+	 * \param output directory where to put the files
 	 *
 	 */
 	bool write(std::string output)
