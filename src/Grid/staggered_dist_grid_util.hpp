@@ -12,6 +12,53 @@
 #include "VTKWriter.hpp"
 #include "util/convert.hpp"
 
+/*! \brief write a property that has attributes
+ *
+ * \tparam ele object we are writing
+ * \tparam vtk vtk writer
+ * \tparam true in case the basic object has attributes
+ *
+ */
+template<typename ele, typename vtk, bool has_attributes=has_attributes<ele>::value>
+struct vtk_write
+{
+	/*! \brief Add the grid with attributes name
+	 *
+	 * \param vtk_w VTK writer
+	 * \param output where to write
+	 * \param i property to write
+	 *
+	 */
+	vtk_write(vtk vtk_w, const std::string output, const size_t i)
+	{
+		vtk_w.write(output + "_" + ele::attributes::name[i] + ".vtk",ele::attributes::name[i]);
+	}
+};
+
+/*! \brief Add to the vtk writer the key
+ *
+ * \tparam ele object we are writing
+ * \tparam vtk vtk writer
+ * \tparam false in case the basic object has not attributes
+ *
+ */
+template<typename ele, typename vtk>
+struct vtk_write<ele,vtk,false>
+{
+	/*! \brief Add the grid with attributes name
+	 *
+	 * \param vtk_w VTK writer
+	 * \param output where to write
+	 * \param i property to write
+	 *
+	 */
+	vtk_write(vtk vtk_w, const std::string output, const size_t i)
+	{
+		vtk_w.write(output + "_" + std::to_string(i) + ".vtk","attr" + std::to_string(i));
+	}
+};
+
+
 /*! \brief Classes to get the number of components of the properties
  *
  */
@@ -570,10 +617,11 @@ public:
 		// create an openfpm format object from the property type
 		typedef object<typename boost::fusion::vector<r_ele>> d_object;
 
-		VTKWriter<boost::mpl::pair<grid_cpu<dim, d_object >,St>,VECTOR_GRIDS> vtk_w;
+		VTKWriter<boost::mpl::pair<grid_cpu<dim, d_object >,St>,VECTOR_ST_GRIDS> vtk_w;
 
 		// Create a vector of grids
 		openfpm::vector< grid_cpu<dim, d_object > > vg;
+		vg.reserve(st_g.getN_loc_grid() * extends<ele>::mul());
 
 		size_t k = 0;
 
@@ -589,21 +637,13 @@ public:
 				Point<dim,St> spacing = st_g.getSpacing();
 				Box<dim,size_t> dom = st_g.getDomain(i);
 
-				// Adjust for staggered
-
-				Point<dim,St> middle = spacing / 2;
-				Point<dim,St> one;
-				one.one();
-				one = one + toPoint<dim,St>::convert(st_g.c_prp[p_val].get(k));
-				offset = offset + middle * one;
-
-				vtk_w.add(vg.get(k),offset,spacing,dom);
+				vtk_w.add(i,vg.get(k),offset,spacing,dom,st_g.c_prp[p_val].get(k));
 			}
 
 			k = vg.size();
 		}
 
-		vtk_w.write("vtk_grids_st_" + std::to_string(p_id) + "_" + std::to_string(p_val) + ".vtk");
+		vtk_write<typename st_grid::value_type,VTKWriter<boost::mpl::pair<grid_cpu<dim, d_object >,St>,VECTOR_ST_GRIDS>> v(vtk_w,"vtk_grids_st_" + std::to_string(p_id),p_val);
 	}
 
 	//! It call the copy function for each property
