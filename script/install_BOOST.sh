@@ -1,8 +1,8 @@
 #!/bin/bash 
 
-# check if the directory ${HOME}/MPI exist
+# check if the directory $1/MPI exist
 
-if [ -d "${HOME}/BOOST" ]; then
+if [ -d "$1/BOOST" ]; then
   echo "BOOST already installed"
   exit 0
 fi
@@ -11,6 +11,6 @@ wget http://ppmcore.mpi-cbg.de/upload/boost_1_58_0.tar.bz2
 tar -xvf boost_1_58_0.tar.bz2
 cd boost_1_58_0
 ./bootstrap.sh
-mkdir ${HOME}/BOOST
-./b2 -j 4 install --prefix=$HOME/BOOST
+mkdir $1/BOOST
+./b2 -j 4 install --prefix=$1/BOOST
 
