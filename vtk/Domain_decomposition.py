@@ -9,6 +9,7 @@ dom_boxvtk = LegacyVTKReader(FileNames=['CartDecomposition/dom_box.vtk'])
 
 # get active view
 renderView1 = GetActiveViewOrCreate('RenderView')
+renderView1.ViewSize = [677, 505]
 
 renderView1.CameraPosition = [0.5, 0.5, 2.7320508075688776]
 renderView1.CameraFocalPoint = [0.5, 0.5, 0.0]
