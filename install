@@ -45,7 +45,15 @@ script/pre_req
 ## clone the dependencies
 
 git submodule init
+if [ $? -ne 0 ]; then
+  echo -e "Configure\033[91;5;1m FAILED \033[0m"
+  exit 1
+fi
 git submodule update
+if [ $? -ne 0 ]; then
+  echo -e "Configure\033[91;5;1m FAILED \033[0m"
+  exit 1
+fi
 
 # Create config directory
 
@@ -118,7 +126,7 @@ else
             fi
             ./script/install_MPI.sh $i_dir
             MPI_installed=1
-            export PATH="$PATH:${HOME}/MPI/bin"
+            export PATH="$PATH:$i_dir/MPI/bin"
             echo $PATH
             configure_options="$configure_options CXX=mpic++  "
         elif [ $conf_err -eq 201  ]; then
@@ -129,7 +137,7 @@ else
             fi
             ./script/install_Metis.sh $i_dir
             METIS_installed=1
-            configure_options=" $configure_options --with-metis=${HOME}/METIS "
+            configure_options=" $configure_options --with-metis=$i_dir/METIS "
         elif [ $conf_err -eq 202 ]; then
             echo "Boost not found try to install"
             if [ $BOOST_installed -eq 1  ]; then
@@ -138,7 +146,7 @@ else
             fi
             ./script/install_BOOST.sh $i_dir
             BOOST_installed=1
-            configure_options=" $configure_options --with-boost=${HOME}/BOOST "
+            configure_options=" $configure_options --with-boost=$i_dir/BOOST "
         elif [ $conf_err -ne 0 ]; then
             echo "I do not know how to recover from this error"
             exit 1

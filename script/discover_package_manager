@@ -30,7 +30,7 @@ function discover_package_manager() {
       return
     fi
     command -v zypper >/dev/null
-    if [ command -v zypper >/dev/null -eq 0 ]; then
+    if [ $? -eq 0 ]; then
       discover_package_manager_ret="zypper"
       return
     else

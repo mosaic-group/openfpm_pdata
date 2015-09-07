@@ -7,6 +7,9 @@ platform=unknown
   if [[ "$OSTYPE" == "linux-gnu" ]]; then
         echo -e "We are on\033[1;34m LINUX \033[0m"
         platform=linux
+  elif [[ "$OSTYPE" == "linux" ]]; then
+        echo -e "We are on\033[1;34m LINUX \033[0m"
+        platform=linux
   elif [[ "$OSTYPE" == "darwin"* ]]; then
         echo -e "We are on\033[1;34m MAC OSX \033[0m"
         platform=osx
