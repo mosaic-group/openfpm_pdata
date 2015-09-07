@@ -58,11 +58,8 @@ AS_IF([test "x$NVCC_EXIST" = "xno"],[],[
           AS_IF([echo $build_cpu | grep -q "_64"],
                 [
                  AS_IF([ test -d {CUDA_LIBS}lib64 ], [ CUDA_LIBS+="64" ])
-                 command -v bumblebee >/dev/null
-                 echo " DIOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO CANE: $? "
                  AS_IF([ ! command -v bumblebee >/dev/null  ], [ 
-                                                               CUDA_LIBS+=" -L/usr/lib64/nvidia-bumblebee/ "  
-                                                               echo "PORCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA MADONNA"
+                                                               CUDA_LIBS+=" -L/usr/lib64/nvidia-bumblebee/ "
                                                              ])
                  AS_IF([ test -d /usr/local/cuda/lib64  ], [ CUDA_LIBS+=" -L/usr/local/cuda/lib64 "  ],
                        [
