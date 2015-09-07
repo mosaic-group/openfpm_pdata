@@ -8,7 +8,45 @@ echo "Machine: $2"
 mkdir src/config
 
 git submodule init
+
+# pull from all the projects
+cd openfpm_data
+git pull origin develop
+if [ $? -ne 0 ]; then
+  echo -e "Configure\033[91;5;1m FAILED \033[0m"
+  exit 1
+fi
+cd ..
+
+cd openfpm_devices
+git pull origin master
+if [ $? -ne 0 ]; then
+  echo -e "Configure\033[91;5;1m FAILED \033[0m"
+  exit 1
+fi
+cd ..
+
+cd openfpm_vcluster
+git pull origin master
+if [ $? -ne 0 ]; then
+  echo -e "Configure\033[91;5;1m FAILED \033[0m"
+  exit 1
+fi
+cd ..
+
+cd openfpm_io
+git pull origin master
+if [ $? -ne 0 ]; then
+  echo -e "Configure\033[91;5;1m FAILED \033[0m"
+  exit 1
+fi
+cd ..
+
 git submodule update
+if [ $? -ne 0 ]; then
+  echo -e "Configure\033[91;5;1m FAILED \033[0m"
+  exit 1
+fi
 
 cd openfpm_data
 git checkout develop
