@@ -8,6 +8,16 @@ echo "Machine: $2"
 mkdir src/config
 
 git submodule init
+if [ $? -ne 0 ]; then
+  echo -e "Configure\033[91;5;1m FAILED \033[0m"
+  exit 1
+fi
+
+git submodule update
+if [ $? -ne 0 ]; then
+  echo -e "Configure\033[91;5;1m FAILED \033[0m"
+  exit 1
+fi
 
 # pull from all the projects
 cd openfpm_data
@@ -41,12 +51,6 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 cd ..
-
-git submodule update
-if [ $? -ne 0 ]; then
-  echo -e "Configure\033[91;5;1m FAILED \033[0m"
-  exit 1
-fi
 
 cd openfpm_data
 git checkout develop
