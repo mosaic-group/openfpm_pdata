@@ -20,7 +20,7 @@ then
  source ~/.bashrc
  sh ./autogen.sh
  module load gcc/4.9.2
- ./install
+ ./install -s
  make
 
  if [ $? -ne 0 ]; then exit 1 ; fi
@@ -125,7 +125,7 @@ else
  echo "Compiling general"
  source ~/.bashrc
  sh ./autogen.sh
- ./install
+ ./install -s
 
  mpirun -np 2 ./src/pdata
  mpirun -np 3 ./src/pdata
