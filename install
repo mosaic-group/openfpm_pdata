@@ -1,9 +1,41 @@
 #! /bin/bash
 
-##
-
+source script/help
 source script/discover_os
 source script/show_solutions
+
+##
+
+install_req=1
+i_dir=" "
+sq=0
+
+while getopts :di:shc: FLAG; do
+  case $FLAG in
+    d)
+      echo "Disable depencencies installation"
+      install_req=0
+      ;;
+    i)
+      echo "Setting dependencies installation dir: $OPTARG"
+      i_dir=$OPTARG
+      ;;
+    s)
+      echo "Skipping user cin"
+      sq=1
+      ;;
+    c)
+      echo "Fowarding options $OPTARG to configure script"
+      configure_options=$OPTARG
+      ;;
+    h)  #show help
+      HELP
+      ;;
+    \?) #unrecognized option - are fowarded to configure
+      ;;
+  esac
+done
+
 discover_os
 
 ## Check and try to install the prerequisites
@@ -17,7 +49,9 @@ git submodule update
 
 # Create config directory
 
-mkdir src/config
+if [ ! -d src/config ]; then
+  mkdir src/config
+fi
 
 ## generate configure script
 
@@ -27,22 +61,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-## check for an install dir file or option
-
-i_dir=" "
-if [ -f install_deps_dir ]; then
- i_dir=$(install_deps_dir)
-fi
-
-getopts i: i_dir_opt
-
-case $i_dir_opt in
-  i)
-    i_dir="$OPTARG"
-    ;;
-  \?)
-    ;;
-esac
+## check for options
 
 if [ x"$i_dir" == x" " ]; then
  i_dir="$HOME"
@@ -51,28 +70,16 @@ fi
 echo -e "\033[1;34;5mDEPENCENCIES INSTALLATION DIR      \033[0m"
 echo -e "Every required dependencies if needed will be installed into: \033[1;34;5m$i_dir\033[0m"
 echo -e "if you want to install somewhere else do ./install -i /somewhere/else"
-commands[0]="Continue"
-possible_solutions "${commands[@]}"
-
+if [ $sq -eq 0 ]; then
+  commands[0]="Continue"
+  possible_solutions "${commands[@]}"
+fi
 
 echo -e "Installing requirements into: $i_dir "
 
 ##
 
-## Take all the options with the exception of -d or -i
-
-install_req=1
-configure_options=""
-
-for var in $@
-do
-    echo $var
-    if [ x"$var" != x"-d" ] ; then
-       configure_options="$configure_options $var"
-    else
-       install_req=0
-    fi
-done
+## Take all the options with the exception of -d -i -s
 
 ## call the configure script
 
@@ -89,6 +96,8 @@ if [ $? -eq 0 ]; then
 fi
 
 ##
+
+echo "./configure $options $configure_options" 
 
 if [ $install_req -eq 0 ]; then
     ./configure $options $configure_options

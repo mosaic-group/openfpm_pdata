@@ -58,7 +58,7 @@ then
  module load boost/1.54.0
 
  sh ./autogen.sh
- ./install --with-boost=/sw/apps/boost/1.54.0/  CXX=mpic++
+ ./install -s -c "--with-boost=/sw/apps/boost/1.54.0/"  CXX=mpic++
  make
  if [ $? -ne 0 ]; then exit 1 ; fi
 
