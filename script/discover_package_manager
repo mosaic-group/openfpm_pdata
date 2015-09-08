@@ -7,6 +7,7 @@ function discover_package_manager() {
       discover_package_manager_ret="brew"
       if [ ! -w /usr/local ]; then
         echo -e "\033[93;5mWARNING: \033[0m  /usr/local is not writtable, brew require that /usr/local is writtable and /usr/local/bin is in your PATH, otherwise the solutions with brew will fail"
+        sleep 10
       fi
       return
     fi
