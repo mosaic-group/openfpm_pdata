@@ -127,21 +127,79 @@ else
   echo -e "libtool\033[92;1m SUCCESS \033[0m"
 fi
 
-command -v g++ >/dev/null 2>&1
-if [ $? -ne 0 ]; then
-  echo >&2
-  echo -e "Configure\033[91;5;1m FAILED \033[0m"
-  echo "OpenFPM require g++ but it's not installed, searching a solution..."
-  script/solve_gpp $platform
-  command -v g++ >/dev/null 2>&1
-  if [ $? -ne 0 ]; then
-    echo -e "g++\033[91;5;1m FAILED \033[0m"
+#### Detecting g++
+#### Detection is different from os linux in general has g++ and we try to detect g++
+
+if [ x"$platform" == x"osx" ]; then
+  ## we try to detect osx version
+  major=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\1/g')
+  middle=$(g++ --version | grep LLVM  | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\2/g')
+  minor=$(g++ --version | grep LLVM  | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\3/g')
+  if [ $major -gt 3 ]; then
+    echo -e "clang++ $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
+  elif [ $major -lt 3 ]; then
+    echo -e "clang++ $major.$middle.$minor \033[91;5;1m FAILED \033[0m your clang is out of date, update to 3.6.0 (Update Xcode) or use gcc 4.8.2 or higher"
+  elif [ $middle -gt 6  ]; then
+    echo -e "clang++ $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
+  elif [ $middle -lt 6 ]; then
+    echo -e "clang++\033[91;5;1m FAILED \033[0m your clang is out of date, update to 3.6.0 (Update Xcode) or use gcc 4.8.2 or higher"
     exit 1
   else
-    echo -e "g++\033[92;1m SUCCESS \033[0m"
+     echo -e "clang++ version $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
   fi
 else
-  echo -e "g++\033[92;1m SUCCESS \033[0m"
+  command -v g++ >/dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    echo >&2
+    echo -e "Configure\033[91;5;1m FAILED \033[0m"
+    echo "OpenFPM require g++ but it's not installed, searching a solution..."
+    script/solve_gpp $platform
+    command -v g++ >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+      echo -e "g++\033[91;5;1m FAILED \033[0m"
+      exit 1
+    else
+      echo -e "g++\033[92;1m SUCCESS \033[0m"
+    fi
+  else
+    major=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
+    middle=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
+    minor=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
+    if [ $major -gt 4 ]; then
+      echo -e "g++ $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
+    elif [ $major -lt 4 ]; then
+      echo -e "g++ $major.$middle.$minor  \033[91;5;1m FAILED \033[0m your g++ version is too old"
+    elif [ $middle -gt 8  ]; then
+      echo -e "g++ $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
+    elif [ $middle -lt 8 ]; then
+      echo -e "g++ $major.$middle.$minor \033[91;5;1m FAILED \033[0m your g++ version is too old"
+    elif [ $minor -gt 1  ]; then
+      echo -e "g++ $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
+    else
+      echo -e "g++ $major.$middle.$minor \033[92;1m FAILED \033[0m your g++ version is too old"
+    fi
+  fi
 fi
 
+command -v mpirun >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo -e "No MPI"
+else
+  major=$(mpirun --version | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
+  middle=$(mpirun --version | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
+  minor=$(mpirun --version | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
+  if [ $major -gt 1 ]; then
+    echo -e "mpirun $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
+  elif [ $major -lt 1 ]; then
+    echo -e "mpirun $major.$middle.$minor \033[91;5;1m FAILED \033[0m is too old, 1.8.1 at least required"
+  elif [ $middle -gt 8  ]; then
+    echo -e "mpirun $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
+  elif [ $middle -lt 8 ]; then
+    echo -e "mpirun $major.$middle.$minor \033[91;5;1m FAILED \033[0m is too old, 1.8.1 at least required"
+  elif [ $minor -gt 0  ]; then
+    echo -e "mpirun $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
+  else
+    echo -e "mpirun $major.$middle.$minor \033[92;1m FAILED \033[0m is too old, 1.8.1 at least required"
+  fi 
+fi
 
