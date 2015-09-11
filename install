@@ -107,7 +107,7 @@ fi
 
 ## if a new compiler has been installed reinstall all the dependencies
 
-if [ x"compiler_opt" != "" ]; then
+if [ x"$compiler_opt" != "" ]; then
   ./script/install_MPI.sh $i_dir $compiler_opt
   export PATH="$PATH:$i_dir/MPI/bin"
   configure_options="$configure_options CXX=mpic++  "

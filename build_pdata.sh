@@ -19,8 +19,6 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-pwd
-ls
 # pull from all the projects
 cd openfpm_data
 git pull origin develop
