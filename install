@@ -107,10 +107,10 @@ fi
 
 ## if a new compiler has been installed reinstall all the dependencies
 
-if [ x"$compiler_opt" != "" ]; then
+if [ x"$compiler_opt" != x"" ]; then
   ./script/install_MPI.sh $i_dir $compiler_opt
   export PATH="$PATH:$i_dir/MPI/bin"
-  configure_options="$configure_options CXX=mpic++  "
+  configure_options="$configure_options CXX=mpic++ "
   MPI_installed=1
   ./script/install_BOOST.sh $i_dir $compiler_opt
   configure_options=" $configure_options --with-boost=$i_dir/BOOST "
