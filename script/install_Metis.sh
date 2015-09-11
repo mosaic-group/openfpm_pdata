@@ -15,7 +15,11 @@ systype=$(uname -s)
 BUILDDIR=build/$systype-$cputype
 mkdir -p $BUILDDIR
 cd $BUILDDIR
-echo "cmake ../../ $CURDIR -DSHARED=1 -DCMAKE_INSTALL_PREFIX=$1/METIS -DCMAKE_C_COMPILER=$2 -DCMAKE_CXX_COMPILER=$3"
+if [ x"$2"==x"" -a x"$3"==x"" ]; then
+  echo "cmake ../../ $CURDIR -DSHARED=1 -DCMAKE_INSTALL_PREFIX=$1/METIS -DCMAKE_C_COMPILER=$2 -DCMAKE_CXX_COMPILER=$3"
+else
+  echo "cmake ../../ $CURDIR -DSHARED=1 -DCMAKE_INSTALL_PREFIX=$1/METIS"
+fi
 cmake ../../ $CURDIR -DSHARED=1 -DCMAKE_INSTALL_PREFIX=$1/METIS -DCMAKE_C_COMPILER=$2 -DCMAKE_CXX_COMPILER=$3
 make -j 4
 mkdir $1/METIS
