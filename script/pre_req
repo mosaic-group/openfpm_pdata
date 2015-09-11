@@ -141,9 +141,9 @@ fi
 
 if [ x"$platform" == x"osx" ]; then
   ## we try to detect osx version
-  major=$(g++ --version | grep LLVM | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\1/g')
-  middle=$(g++ --version | grep LLVM | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\2/g')
-  minor=$(g++ --version | grep LLVM  | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\3/g')
+  major=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\1/g')
+  middle=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\2/g')
+  minor=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\3/g')
 
   echo "$major" | egrep -q '^[0-9]+$'
   is_maj_num=$?
