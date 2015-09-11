@@ -10,7 +10,7 @@ fi
 wget http://www.open-mpi.de/software/ompi/v1.8/downloads/openmpi-1.8.7.tar.bz2
 tar -xvf openmpi-1.8.7.tar.bz2
 cd openmpi-1.8.7
-sh ./configure --prefix=$1/MPI --enable-opal-multi-threads --enable-mpi-f90
+sh ./configure --prefix=$1/MPI --enable-opal-multi-threads --enable-mpi-f90 $2 $3
 make -j 4
 mkdir $1/MPI
 make install

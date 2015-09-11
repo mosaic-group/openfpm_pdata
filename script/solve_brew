@@ -1,5 +1,6 @@
 #! /bin/bash
 
+function solve_brew() {
 source script/show_solutions
 
 if [ x"$1" = x"osx" ]; then
@@ -8,4 +9,5 @@ if [ x"$1" = x"osx" ]; then
         echo "Executing: ${command[$possible_solutions_ret]}"
         eval ${commands[$possible_solutions_ret]}
 fi
+}
 

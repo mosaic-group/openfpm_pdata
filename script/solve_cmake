@@ -1,6 +1,7 @@
 
 #! /bin/bash 
-        
+
+function solve_cmake() {        
 source script/show_solutions
 source script/discover_package_manager
 discover_package_manager $1
@@ -22,4 +23,5 @@ elif [ x"$1" = x"linux"  ]; then
         echo "Executing: ${command[$possible_solutions_ret]}"
         eval ${commands[$possible_solutions_ret]}
 fi 
+}
 

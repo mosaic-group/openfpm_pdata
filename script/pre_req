@@ -1,15 +1,25 @@
 #! /bin/bash
 
+function pre_req()
+{
 source script/discover_package_manager
 source script/discover_os
+source script/solve_autoconf
+source script/solve_gpp
+source script/solve_cmake
+source script/solve_git
+source script/solve_wget
+source script/solve_automake
+source script/solve_brew
+source script/solve_libtool
 
 discover_os
 discover_package_manager $platform
 pcman=$discover_package_manager_ret
 
 if [ x"$platform" = x"osx" -a x"$pcman" = x""  ]; then
-  echo -e "\033[93;5;1m WARNING \033[0m No package manager has been found on this system"
-  script/solve_brew $platform
+  echo -e "\033[30;43;5;1m WARNING \033[0m No package manager has been found on this system"
+  solve_brew $platform
 
   discover_package_manager $platform
   pcman=$discover_package_manager_ret
@@ -23,7 +33,7 @@ if [ $? -ne 0 ]; then
   echo >&2
   echo -e "cmake\033[91;5;1m FAILED \033[0m"
   echo "OpenFPM require cmake but it's not installed, searching a solution... "
-  script/solve_cmake $platform
+  solve_cmake $platform
   command -v cmake >/dev/null 2>&1
   if [ $? -ne 0 ]; then
     echo -e "cmake\033[91;5;1m FAILED \033[0m"
@@ -40,7 +50,7 @@ if [ $? -ne 0 ]; then
   echo >&2
   echo -e "wget\033[91;5;1m FAILED \033[0m"
   echo "OpenFPM require wget but it's not installed, searching a solution... "
-  script/solve_wget $platform
+  solve_wget $platform
   command -v wget >/dev/null 2>&1
   if [ $? -ne 0 ]; then
     echo -e "wget\033[91;5;1m FAILED \033[0m"
@@ -57,7 +67,7 @@ if [ $? -ne 0 ]; then
   echo >&2
   echo -e "git\033[91;5;1m FAILED \033[0m"
   echo "OpenFPM require git but it's not installed, searching a solution... "
-  script/solve_git $platform
+  solve_git $platform
   command -v git >/dev/null 2>&1
   if [ $? -ne 0 ]; then
     echo -e "git\033[91;5;1m FAILED \033[0m"
@@ -74,7 +84,7 @@ if [ $? -ne 0 ]; then
   echo >&2
   echo -e "autoconf\033[91;5;1m FAILED \033[0m"
   echo "OpenFPM require autoconf but it's not installed, searching a solution..."
-  script/solve_autoconf $platform
+  solve_autoconf $platform
   command -v autoheader >/dev/null 2>&1
   if [ $? -ne 0 ]; then
     echo -e "autoconf\033[91;5;1m FAILED \033[0m"
@@ -91,7 +101,7 @@ if [ $? -ne 0 ]; then
   echo >&2
   echo -e "automake\033[91;5;1m FAILED \033[0m"
   echo "OpenFPM require automake but it's not installed, searching a solution..."
-  script/solve_automake $platform
+  solve_automake $platform
   command -v automake >/dev/null 2>&1
   if [ $? -ne 0 ]; then
     echo "automake\033[91;5;1m FAILED \033[0m"
@@ -112,7 +122,7 @@ if [ $opt1 -ne 0 -a $opt2 -ne 0 ]; then
   echo >&2
   echo -e "libtool\033[91;5;1m FAILED \033[0m"
   echo "OpenFPM require libtool but it's not installed, searching a solution..."
-  script/solve_libtool $platform
+  solve_libtool $platform
   command -v libtoolize  >/dev/null 2>&1
   opt1=$?
   command -v glibtoolize  >/dev/null 2>&1
@@ -128,24 +138,72 @@ else
 fi
 
 #### Detecting g++
-#### Detection is different from os linux in general has g++ and we try to detect g++
 
 if [ x"$platform" == x"osx" ]; then
   ## we try to detect osx version
-  major=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\1/g')
-  middle=$(g++ --version | grep LLVM  | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\2/g')
-  minor=$(g++ --version | grep LLVM  | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\3/g')
-  if [ $major -gt 3 ]; then
-    echo -e "clang++ $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
-  elif [ $major -lt 3 ]; then
-    echo -e "clang++ $major.$middle.$minor \033[91;5;1m FAILED \033[0m your clang is out of date, update to 3.6.0 (Update Xcode) or use gcc 4.8.2 or higher"
-  elif [ $middle -gt 6  ]; then
-    echo -e "clang++ $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
-  elif [ $middle -lt 6 ]; then
-    echo -e "clang++\033[91;5;1m FAILED \033[0m your clang is out of date, update to 3.6.0 (Update Xcode) or use gcc 4.8.2 or higher"
-    exit 1
+  major=$(g++ --version | grep LLVM | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\1/g')
+  middle=$(g++ --version | grep LLVM | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\2/g')
+  minor=$(g++ --version | grep LLVM  | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\3/g')
+
+  echo "$major" | egrep -q '^[0-9]+$'
+  is_maj_num=$?
+  echo "$minor" | egrep -q '^[0-9]+$'
+  is_min_num=$?
+  echo "$middle" | egrep -q '^[0-9]+$'
+  is_mid_num=$?
+
+  command -v g++-4.9  >/dev/null 2>&1
+  opt1=$?
+
+  # Major middle and minor should contain only numbers, if they dont, and smaller than 2 character otherwise the detection was garbage
+  if [ $is_maj_num -ne 0 -o $is_min_num -ne 0 -o $is_mid_num -ne 0 ]; then
+    if [ $opt1 -eq 1 ]; then
+      ## the detection is garbage, gcc49 id not present, now we check the system
+
+      major=$(sw_vers | grep ProductVersion | sed 's/.*\([0-9][0-9]\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
+      middle=$(sw_vers | grep ProductVersion | sed 's/.*\([0-9][0-9]\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
+      minor=$(sw_vers | grep ProductVersion | sed 's/.*\([0-9][0-9]\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
+
+      if [ $major -gt 10 ]; then
+        echo -e "\033[30;43;5;1m------------------------------- WARNING --------------------------------\033[0m"
+        echo "g++ seem to be present, but we failed to detect the version. Your system $major.$middle.$minor seem to be recent enough, so we will continue the installation"
+        sleep 10
+      elif [ $major -lt 10 ]; then
+        echo -e "\033[30;43;5;1m------------------------------- WARNING --------------------------------\033[0m"
+        echo "g++ seem to be present, but we failed to detect the version. Your system $major.$middle.$minor is older than 10.10.X, so is probably going to fail with the actual compiler"
+        echo "One possible solution is to try to install gcc 4.9"
+        solve_gpp $platform
+      elif [ $middle -gt 10 ]; then
+        echo -e "\033[30;43;5;1m------------------------------- WARNING --------------------------------\033[0m"
+        echo "g++ seem to be present, but we failed to detect the version. Your system $major.$middle.$minor seem to be recent enough, so we will continue the installation"
+        sleep 10       
+      elif [ $middle -lt 10 ]; then
+        echo -e "\033[30;43;5;1m------------------------------- WARNING --------------------------------\033[0m"
+        echo "g++ seem to be present, but we failed to detect the version. Your system $major.$middle.$minor is older than 10.10.X, so is probably going to fail with the actual compiler"
+        echo "One possible solution is to try to install gcc 4.9"
+        solve_gpp $platform
+      else
+        echo -e "\033[30;43;5;1m------------------------------- WARNING --------------------------------\033[0m"
+        echo "g++ seem to be present, but we failed to detect the version. Your system $major.$middle.$minor seem to be recent enough, so we will continue the installation"
+        sleep 10
+      fi
+    fi
   else
-     echo -e "clang++ version $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
+    ## the detection is good check the compiler
+
+    if [ $major -gt 3 ]; then
+      echo -e "clang++ $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
+    elif [ $major -lt 3 ]; then
+      echo -e "clang++ $major.$middle.$minor \033[91;5;1m FAILED \033[0m your clang $major.middle;$minor is too old, 3.6.0 or higher is required"
+      solve_gpp $platform
+    elif [ $middle -gt 6  ]; then
+      echo -e "clang++ $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
+    elif [ $middle -lt 6 ]; then
+      echo -e "clang++\033[91;5;1m FAILED \033[0m your clang is out of date, update to 3.6.0 or higher is required"
+      solve_gpp $platform
+    else
+      echo -e "clang++ version $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
+    fi
   fi
 else
   command -v g++ >/dev/null 2>&1
@@ -153,7 +211,7 @@ else
     echo >&2
     echo -e "Configure\033[91;5;1m FAILED \033[0m"
     echo "OpenFPM require g++ but it's not installed, searching a solution..."
-    script/solve_gpp $platform
+    solve_gpp $platform
     command -v g++ >/dev/null 2>&1
     if [ $? -ne 0 ]; then
       echo -e "g++\033[91;5;1m FAILED \033[0m"
@@ -202,4 +260,5 @@ else
     echo -e "mpirun $major.$middle.$minor \033[92;1m FAILED \033[0m is too old, 1.8.1 at least required"
   fi 
 fi
+}
 

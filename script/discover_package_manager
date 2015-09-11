@@ -5,8 +5,23 @@ function discover_package_manager() {
     command -v brew >/dev/null
     if [ $? -eq 0 ]; then
       discover_package_manager_ret="brew"
-      if [ ! -w /usr/local ]; then
-        echo -e "\033[93;5mWARNING: \033[0m  /usr/local is not writtable, brew require that /usr/local is writtable and /usr/local/bin is in your PATH, otherwise the solutions with brew will fail"
+      brew_idir=$(brew --prefix)
+      brew_path=$(which brew)
+      brew_user=$(stat -f '%Su' $brew_path)
+      if [ x$"brew_user" == root ]; then
+        discover_package_ret="sudo brew"
+        return
+      else
+        if [ ! -w $brew_idir ]; then
+          echo -e "\033[43;30;1;5mWARNING: \033[0m $brew_idir is not writtable, brew require that $brew_idir is writtable and $brew_idir/bin is in your PATH, otherwise it will be not possible to install with brew"
+          commands[0]="sudo chown -R $USER $brew_idir && chmod -R u+w $brew_idir"
+          possible_solutions "${commands[@]}"
+          echo "Executing: ${command[$possible_solutions_ret]}"
+          eval ${commands[$possible_solutions_ret]}
+        fi
+      fi
+      if [ ! -w  ]; then
+        echo -e "\033[43,33;5mWARNING: \033[0m $brew_idir is not writtable, brew require that $brew_idir is writtable and $brew_idir/bin is in your PATH, otherwise it will be not possible to install with brew"
         sleep 10
       fi
       return

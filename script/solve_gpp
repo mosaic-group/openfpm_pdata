@@ -1,8 +1,6 @@
 #! /bin/bash
 
-function solve_libtool()
-{
-
+function solve_gpp() {
 source script/show_solutions
 source script/discover_package_manager
 discover_package_manager $1
@@ -13,16 +11,14 @@ if [ x"$pcman" = x"" ]; then
 fi
 
 if [ x"$1" = x"osx" ]; then
-        commands[0]="$pcman install libtool"
+        commands[0]="$pcman install gcc49"
+        commands[1]="echo \"Continue without installing\""
         possible_solutions "${commands[@]}"
         echo "Executing: ${command[$possible_solutions_ret]}"
         eval ${commands[$possible_solutions_ret]}
-elif [ x"$1" = x"linux"  ]; then
-        commands[0]="su -c \"$pcman install libtool\""
-        commands[1]="sudo $pcman install libtool"
-        possible_solutions "${commands[@]}"
-        echo "Executing: ${command[$possible_solutions_ret]}"
-        eval ${commands[$possible_solutions_ret]}
+        compiler_opt=" CXX=g++-4.9 CC=gcc-4.9  "
+        compiler_gcc="gcc-4.9"
+        compiler_gpp="g++-4.9"
 fi
 }
 

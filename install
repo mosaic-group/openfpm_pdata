@@ -3,6 +3,7 @@
 source script/help
 source script/discover_os
 source script/show_solutions
+source script/pre_req
 
 ##
 
@@ -40,7 +41,7 @@ discover_os
 
 ## Check and try to install the prerequisites
 
-script/pre_req
+pre_req
 
 ## clone the dependencies
 
@@ -104,7 +105,20 @@ if [ $? -eq 0 ]; then
   options="CXX=mpic++"
 fi
 
-##
+## if a new compiler has been installed reinstall all the dependencies
+
+if [ x"compiler_opt" != "" ]; then
+  ./script/install_MPI.sh $i_dir $compiler_opt
+  export PATH="$PATH:$i_dir/MPI/bin"
+  configure_options="$configure_options CXX=mpic++  "
+  MPI_installed=1
+  ./script/install_BOOST.sh $i_dir $compiler_opt
+  configure_options=" $configure_options --with-boost=$i_dir/BOOST "
+  BOOST_installed=1
+  ./script/install_METIS.sh $i_dir $compiler_gcc $compiler_gpp
+  configure_options=" $configure_options --with-metis=$i_dir/METIS "
+  METIS_installed=1
+fi
 
 echo "./configure $options $configure_options" 
 
@@ -125,7 +139,7 @@ else
                 echo "Error the installation of MPI failed"
                 exit 1
             fi
-            ./script/install_MPI.sh $i_dir
+            ./script/install_MPI.sh $i_dir $compiler_opt
             MPI_installed=1
             export PATH="$PATH:$i_dir/MPI/bin"
             echo $PATH
@@ -136,7 +150,7 @@ else
                 echo "Error the installation of METIS failed"
                 exit 1
             fi
-            ./script/install_Metis.sh $i_dir
+            ./script/install_Metis.sh $i_dir $compiler_gcc $compiler_gpp
             METIS_installed=1
             configure_options=" $configure_options --with-metis=$i_dir/METIS "
         elif [ $conf_err -eq 202 ]; then
@@ -145,7 +159,7 @@ else
                 echo "Error the installation of Boost failed"
                 exit 1
             fi
-            ./script/install_BOOST.sh $i_dir
+            ./script/install_BOOST.sh $i_dir $compiler_opt
             BOOST_installed=1
             configure_options=" $configure_options --with-boost=$i_dir/BOOST "
         elif [ $conf_err -ne 0 ]; then
@@ -183,7 +197,7 @@ if [ $MPI_installed -eq 1 ]; then
     echo -e "\033[1m  export PATH=\"\$PATH:$i_dir/MPI/bin \" \033[0m "
     echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:$i_dir/MPI/lib\" \033[0m "
   else
-    echo -e "\033[1m  export PATH=\"\$PATH:$i_dir/MPI \" \033[0m "
+    echo -e "\033[1m  export PATH=\"\$PATH:$i_dir/MPI/bin \" \033[0m "
     echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:$i_dir/MPI/lib\" \033[0m"
   fi
 fi
