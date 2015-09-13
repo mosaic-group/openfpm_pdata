@@ -1,7 +1,7 @@
 
 LINKLIBS = $(METIS_LIB) $(PTHREAD_LIBS) $(OPT_LIBS) $(BOOST_LDFLAGS) $(BOOST_IOSTREAMS_LIB) $(CUDA_LIBS)
 
-bin_PROGRAMS = cart_dec metis_dec dom_box
+noinst_PROGRAMS = cart_dec metis_dec dom_box
 cart_dec_SOURCES = CartDecomposition_gen_vtk.cpp ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster.cpp ../openfpm_data/src/Memleak_check.cpp
 cart_dec_CXXFLAGS = $(CUDA_CFLAGS) $(INCLUDES_PATH) $(METIS_INCLUDE) $(BOOST_CPPFLAGS) -I../src -Wno-unused-function
 cart_dec_CFLAGS = $(CUDA_CFLAGS)

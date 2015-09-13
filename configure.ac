@@ -7,6 +7,7 @@ AC_PREREQ(2.59)
 AC_INIT(FULL-PACKAGE-NAME, VERSION, BUG-REPORT-ADDRESS)
 AC_CANONICAL_SYSTEM
 AC_CONFIG_SRCDIR([src/main.cpp])
+AC_CONFIG_SUBDIRS([openfpm_data])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADER([src/config/config.h])
 m4_ifdef([ACX_PTHREAD],,[m4_include([m4/acx_pthread.m4])])
@@ -19,6 +20,10 @@ m4_ifdef([IMMDX_LIB_METIS],,[m4_include([m4/immdx_lib_metis.m4])])
 CXXFLAGS+=" --std=c++11 "
 NVCCFLAGS=" "
 INCLUDES_PATH=" "
+
+# Add openfpm_pdata to prefix forlder
+prefix="$prefix//openfpm_pdata"
+echo "Installation dir is: $prefix"
 
 # Checks for programs.
 AC_PROG_CXX

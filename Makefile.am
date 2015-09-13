@@ -1,3 +1,3 @@
-SUBDIRS = src vtk
+SUBDIRS = src vtk openfpm_data
 
 bin_PROGRAMS = 
