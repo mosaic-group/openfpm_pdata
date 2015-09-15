@@ -883,7 +883,7 @@ public:
 	 * * grid_X.vtk Output each local grids for each local processor X
 	 * * internal_ghost_X.vtk Internal ghost boxes in grid units for the local processor X
 	 *
-	 * \param output directory where to put the files
+	 * \param output directory where to put the files + prefix
 	 *
 	 */
 	bool write(std::string output)
@@ -895,7 +895,7 @@ public:
 			Point<dim,St> offset = Point<dim,St>(gdb_ext.get(i).origin) * cd_sm.getCellBox().getP2();
 			vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).Dbox);
 		}
-		vtk_g.write(output + "/grid_" + std::to_string(v_cl.getProcessUnitID()) + ".vtk");
+		vtk_g.write(output + "_grid_" + std::to_string(v_cl.getProcessUnitID()) + ".vtk");
 
 		// Write internal ghost box
 		VTKWriter<openfpm::vector<::Box<dim,size_t>>,VECTOR_BOX> vtk_box1;
