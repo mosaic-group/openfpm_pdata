@@ -14,7 +14,6 @@
 #include "Decomposition.hpp"
 #include "Vector/map_vector.hpp"
 #include <vector>
-#include "global_const.hpp"
 #include <initializer_list>
 #include "SubdomainGraphNodes.hpp"
 #include "metis_util.hpp"
