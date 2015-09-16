@@ -10,7 +10,8 @@ nobase_include_HEADERS = Decomposition/CartDecomposition.hpp Decomposition/commo
          Graph/CartesianGraphFactory.hpp \
          Grid/grid_dist_id.hpp Grid/grid_dist_id_iterator.hpp Grid/grid_dist_key.hpp \
          Vector/vector_dist.hpp Vector/vector_dist_iterator.hpp Vector/vector_dist_key.hpp \
-         config/config.h
+         config/config.h \
+         SubdomainGraphNodes.hpp
 
 .cu.o :
 	$(NVCC) $(NVCCFLAGS) -o $@ -c $<

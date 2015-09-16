@@ -60,19 +60,27 @@ fi
 # Create config directory in each submodule
 
 cd openfpm_data
-mkdir src/config
+if [ ! -d src/config  ]; then
+  mkdir src/config
+fi
 cd ..
 
 cd openfpm_devices
-mkdir src/config
+if [ ! -d src/config  ]; then
+  mkdir src/config
+fi
 cd ..
 
 cd openfpm_vcluster
-mkdir src/config
+if [ ! -d src/config  ]; then
+  mkdir src/config
+fi
 cd ..
 
 cd openfpm_io
-mkdir src/config
+if [ ! -d src/config  ]; then
+  mkdir src/config
+fi
 cd ..
 
 # Create config directory
