@@ -21,6 +21,7 @@ fi
 
 # pull from all the projects
 cd openfpm_data
+mkdir src/config
 git pull origin develop
 if [ $? -ne 0 ]; then
   echo -e "Configure\033[91;5;1m FAILED \033[0m"
@@ -29,6 +30,7 @@ fi
 cd ..
 
 cd openfpm_devices
+mkdir src/config
 git pull origin master
 if [ $? -ne 0 ]; then
   echo -e "Configure\033[91;5;1m FAILED \033[0m"
@@ -37,6 +39,7 @@ fi
 cd ..
 
 cd openfpm_vcluster
+mkdir src/config
 git pull origin master
 if [ $? -ne 0 ]; then
   echo -e "Configure\033[91;5;1m FAILED \033[0m"
@@ -45,6 +48,7 @@ fi
 cd ..
 
 cd openfpm_io
+mkdir src/config
 git pull origin master
 if [ $? -ne 0 ]; then
   echo -e "Configure\033[91;5;1m FAILED \033[0m"

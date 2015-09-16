@@ -57,6 +57,24 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# Create config directory in each submodule
+
+cd openfpm_data
+mkdir src/config
+cd ..
+
+cd openfpm_devices
+mkdir src/config
+cd ..
+
+cd openfpm_vcluster
+mkdir src/config
+cd ..
+
+cd openfpm_io
+mkdir src/config
+cd ..
+
 # Create config directory
 
 if [ ! -d src/config ]; then
