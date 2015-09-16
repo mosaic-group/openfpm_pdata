@@ -25,7 +25,7 @@ public:
 	 * \return the id of the local grid
 	 *
 	 */
-	size_t getSub() const
+	inline size_t getSub() const
 	{
 		return g_c;
 	}
@@ -35,12 +35,27 @@ public:
 	 * \return the local key
 	 *
 	 */
-	grid_key_dx<dim> getKey() const
+	inline grid_key_dx<dim> getKey() const
 	{
 		return key;
 	}
 
-	grid_dist_key_dx(int g_c, grid_key_dx<dim> key)
+	/*! \brief Create a new key moving the old one
+	 *
+	 * \param i dimension id
+	 * \param s number of steps
+	 *
+	 * \return new key
+	 *
+	 */
+	inline grid_dist_key_dx<dim> move(size_t i,size_t s)
+	{
+		grid_key_dx<dim> key = getKey();
+		key.set_d(i,key.get(i) + s);
+		return grid_dist_key_dx<dim>(getSub(),key);
+	}
+
+	inline grid_dist_key_dx(int g_c, grid_key_dx<dim> key)
 	:g_c(g_c),key(key)
 	{
 	}
