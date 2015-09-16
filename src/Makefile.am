@@ -11,7 +11,7 @@ nobase_include_HEADERS = Decomposition/CartDecomposition.hpp Decomposition/commo
          Grid/grid_dist_id.hpp Grid/grid_dist_id_iterator.hpp Grid/grid_dist_key.hpp \
          Vector/vector_dist.hpp Vector/vector_dist_iterator.hpp Vector/vector_dist_key.hpp \
          config/config.h \
-         SubdomainGraphNodes.hpp
+         metis_util.hpp dec_optimizer.hpp SubdomainGraphNodes.hpp
 
 .cu.o :
 	$(NVCC) $(NVCCFLAGS) -o $@ -c $<
