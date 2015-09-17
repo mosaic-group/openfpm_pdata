@@ -1,5 +1,5 @@
 #ifndef SUBDOMAIN_NODES_HPP
-#define DUBDOMAIN_NODES_HPP
+#define SUBDOMAIN_NODES_HPP
 
 /* In a decomposition graph each node represent a sub-domain while an edge represent
  * an interaction between sub-domain (it mean that they have to communicate).
