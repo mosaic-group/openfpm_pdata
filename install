@@ -63,6 +63,7 @@ cd openfpm_data
 if [ ! -d src/config  ]; then
   mkdir src/config
 fi
+git checkout develop
 cd ..
 
 cd openfpm_devices
