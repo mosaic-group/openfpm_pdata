@@ -21,6 +21,7 @@ fi
 
 # pull from all the projects
 cd openfpm_data
+git checkout develop
 mkdir src/config
 git pull origin develop
 if [ $? -ne 0 ]; then
@@ -56,9 +57,6 @@ if [ $? -ne 0 ]; then
 fi
 cd ..
 
-cd openfpm_data
-git checkout develop
-cd ..
 
 if [ "$2" == "gin" ]
 then
