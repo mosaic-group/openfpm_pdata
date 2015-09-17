@@ -492,7 +492,7 @@ public:
 				typedef encapc<1,prp_object,typename openfpm::vector<prp_object>::memory_conf> encap_dst;
 
 				// Copy only the selected properties
-				object_si_d<encap_src,encap_dst,ENCAP,prp...>(v_prp.get(INTERNAL).get(opart.get(i).get(j)),g_send_prp.get(i).get(j));
+				object_si_d<encap_src,encap_dst,OBJ_ENCAP,prp...>(v_prp.get(INTERNAL).get(opart.get(i).get(j)),g_send_prp.get(i).get(j));
 			}
 		}
 
