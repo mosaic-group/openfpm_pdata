@@ -8,9 +8,20 @@ AC_INIT(FULL-PACKAGE-NAME, VERSION, BUG-REPORT-ADDRESS)
 AC_CANONICAL_SYSTEM
 AC_CONFIG_SRCDIR([src/main.cpp])
 AC_CONFIG_SUBDIRS([openfpm_data openfpm_devices openfpm_vcluster openfpm_io])
-#### Adding --with-pdata
+
+#### Adding --with-pdata option and openfpm_pdata to prefix folder
+
+if test "$prefix" = "NONE"; then
+    prefix=/usr/local
+fi
+base=$prefix
+prefix="$prefix/openfpm_pdata"
+echo "Installation dir is: $prefix"
+
 ac_configure_args="$ac_configure_args --with-pdata=../../src"
+
 ########################
+
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADER([src/config/config.h])
 m4_ifdef([ACX_PTHREAD],,[m4_include([m4/acx_pthread.m4])])
@@ -23,11 +34,6 @@ m4_ifdef([IMMDX_LIB_METIS],,[m4_include([m4/immdx_lib_metis.m4])])
 CXXFLAGS+=" --std=c++11 "
 NVCCFLAGS=" "
 INCLUDES_PATH=" "
-
-# Add openfpm_pdata to prefix folder
-base=$prefix
-prefix="$prefix/openfpm_pdata"
-echo "Installation dir is: $prefix"
 
 # Create a file with the install base folder
 echo "$base" > install_dir
