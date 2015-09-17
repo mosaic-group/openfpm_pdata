@@ -101,10 +101,10 @@ then
  source ~/.bashrc
  module load gcc/4.9.2
  module load openmpi/1.8.1
- module load boost/1.54.0
+ module load boost/1.59.0
 
  sh ./autogen.sh
- ./install -s -c "--with-boost=/sw/apps/boost/1.54.0/ CXX=mpic++"
+ ./install -s -c "--with-boost=/sw/apps/boost/1.59.0/ CXX=mpic++"
  make
  if [ $? -ne 0 ]; then exit 1 ; fi
 
