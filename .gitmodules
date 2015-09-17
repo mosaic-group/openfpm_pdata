@@ -10,6 +10,3 @@
 [submodule "openfpm_data"]
 	path = openfpm_data
 	url = ssh://git@ppmcoremirror.dynu.com:2222/incardon/openfpm_data.git
-[submodule "openfpm_numerics"]
-	path = openfpm_numerics
-	url = git@ppmcore.mpi-cbg.de:incardon/openfpm_numerics.git
