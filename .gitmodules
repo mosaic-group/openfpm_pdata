@@ -9,4 +9,4 @@
 	url = ssh://git@ppmcoremirror.dynu.com:2222/incardon/openfpm_io.git
 [submodule "openfpm_data"]
 	path = openfpm_data
-	url = ssh://git@ppmcoremirror.dynu.com:2222/incardon/openfpm_data.git
+	url = ssh://git@ppmcoremirror.dynu.com:2222/incardon/openfpm_data.git develop
