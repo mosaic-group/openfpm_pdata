@@ -107,27 +107,27 @@ then
  if [ $? -ne 0 ]; then exit 1 ; fi
 
  ## Run on the cluster
- bsub -o output_run2.%J -K -n 2 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 2 ./src/pdata"
+ bsub -o output_run2.%J -K -n 2 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2; module load boost/1.59.0;  mpirun -np 2 ./src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
- bsub -o output_run3.%J -K -n 3 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 3 ./src/pdata"
+ bsub -o output_run3.%J -K -n 3 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2; module load boost/1.59.0;  mpirun -np 3 ./src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
- bsub -o output_run4.%J -K -n 4 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 4 ./src/pdata"
+ bsub -o output_run4.%J -K -n 4 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2; module load boost/1.59.0;  mpirun -np 4 ./src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
- bsub -o output_run5.%J -K -n 5 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 5 ./src/pdata"
+ bsub -o output_run5.%J -K -n 5 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2; module load boost/1.59.0;  mpirun -np 5 ./src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
- bsub -o output_run6.%J -K -n 6 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 6 ./src/pdata"
+ bsub -o output_run6.%J -K -n 6 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2; module load boost/1.59.0;  mpirun -np 6 ./src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
- bsub -o output_run7.%J -K -n 7 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 7 ./src/pdata"
+ bsub -o output_run7.%J -K -n 7 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2; module load boost/1.59.0;  mpirun -np 7 ./src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
- bsub -o output_run8.%J -K -n 8 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 8 ./src/pdata"
+ bsub -o output_run8.%J -K -n 8 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2; module load boost/1.59.0;  mpirun -np 8 ./src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
- bsub -o output_run9.%J -K -n 9 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 9 ./src/pdata"
+ bsub -o output_run9.%J -K -n 9 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2; module load boost/1.59.0;  mpirun -np 9 ./src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
- bsub -o output_run10.%J -K -n 10 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 10 ./src/pdata"
+ bsub -o output_run10.%J -K -n 10 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2; module load boost/1.59.0;  mpirun -np 10 ./src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
- bsub -o output_run11.%J -K -n 11 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 11 ./src/pdata"
+ bsub -o output_run11.%J -K -n 11 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2; module load boost/1.59.0;  mpirun -np 11 ./src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
- bsub -o output_run12.%J -K -n 12 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 12 ./src/pdata"
+ bsub -o output_run12.%J -K -n 12 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2; module load boost/1.59.0;  mpirun -np 12 ./src/pdata"
  if [ $? -ne 0 ]; then exit 1 ; fi
  # bsub -o output_run32.%J -K -n 32 "module load openmpi/1.8.1 ; module load gcc/4.9.2;  mpirun -np 32 ./src/vcluster"
  # if [ $? -ne 0 ]; then exit 1 ; fi
