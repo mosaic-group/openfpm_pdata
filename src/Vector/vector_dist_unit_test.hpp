@@ -89,14 +89,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	BOOST_REQUIRE_EQUAL(it.isNext(),false);
 	BOOST_REQUIRE_EQUAL(cobj,p_np);
 
-	// Debug write the particles
-//	vd.write("Particles_before_map.csv");
-
 	// redistribute the particles according to the decomposition
 	vd.map();
-
-	// Debug write particles
-//	vd.write("Particles_after_map.csv");
 
 	// Fill the scalar with the particle position
 	const auto & ct = vd.getDecomposition();
@@ -183,6 +177,20 @@ void print_test_v(std::string test, size_t sz)
 		std::cout << test << " " << sz << "\n";
 }
 
+long int decrement(long int k, long int step)
+{
+	if (k <= 32)
+	{
+		return 1;
+	}
+	else if (k - 2*step+1 <= 0)
+	{
+		return k - 32;
+	}
+	else
+		return step;
+}
+
 BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 {
 	typedef Point<2,float> s;
@@ -199,12 +207,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
-	long int small_step = 1;
 
 	print_test_v( "Testing 2D vector k<=",k);
 
 	// 2D test
-	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
+	for ( ; k >= 2 ; k-= decrement(k,big_step) )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 2D vector k=" << k );
 		Box<2,float> box({0.0,0.0},{1.0,1.0});
@@ -300,13 +307,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 			auto key = it.get();
 
 			// Check if local
-//			BOOST_REQUIRE_EQUAL(ct.isLocal(vd.template getPos<s::x>(key)),true);
-
-			if (ct.isLocal(vd.template getPos<s::x>(key)) == false)
-			{
-				std::cerr << "Error " << v_cl.getProcessUnitID() << key.to_string() << "Non local\n";
-				exit(-1);
-			}
+			BOOST_REQUIRE_EQUAL(ct.isLocal(vd.template getPos<s::x>(key)),true);
 
 			cnt++;
 
