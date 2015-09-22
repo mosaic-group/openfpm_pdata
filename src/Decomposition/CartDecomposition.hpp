@@ -544,6 +544,20 @@ p1[0]<-----+         +----> p2[0]
 		}
 	}
 
+	/*! \brief The default grid size
+	 *
+	 *  The default grid is always an isotropic grid that adapt with the number of processors,
+	 *  it define in how many cell it will be divided the space for a particular required minimum
+	 *  number of sub-domain
+	 *
+	 */
+	static size_t getDefaultGrid(size_t n_sub)
+	{
+		// Calculate the number of sub-sub-domain on
+		// each dimension
+		return openfpm::math::round_big_2(pow(n_sub,1.0/dim));
+	}
+
 	/*! \brief Given a point return in which processor the particle should go
 	 *
 	 * \return processorID

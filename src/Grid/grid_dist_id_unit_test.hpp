@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter_test)
 			vol += g_box.getVolumeKey();
 		}
 
-		v_cl.reduce(vol);
+		v_cl.sum(vol);
 		v_cl.execute();
 
 		BOOST_REQUIRE_EQUAL(vol,sz[0]*sz[1]);
@@ -133,7 +133,7 @@ void Test2D(const Box<2,float> & domain, long int k)
 		Vcluster & vcl = g_dist.getVC();
 
 		// reduce
-		vcl.reduce(count);
+		vcl.sum(count);
 		vcl.execute();
 
 		// Check
@@ -235,7 +235,7 @@ void Test3D(const Box<3,float> & domain, long int k)
 		Vcluster & vcl = g_dist.getVC();
 
 		// reduce
-		vcl.reduce(count);
+		vcl.sum(count);
 		vcl.execute();
 
 		// Check
@@ -364,7 +364,7 @@ void Test2D_complex(const Box<2,float> & domain, long int k)
 		Vcluster & vcl = g_dist.getVC();
 
 		// reduce
-		vcl.reduce(count);
+		vcl.sum(count);
 		vcl.execute();
 
 		// Check
@@ -525,7 +525,7 @@ void Test3D_complex(const Box<3,float> & domain, long int k)
 		Vcluster & vcl = g_dist.getVC();
 
 		// reduce
-		vcl.reduce(count);
+		vcl.sum(count);
 		vcl.execute();
 
 		// Check

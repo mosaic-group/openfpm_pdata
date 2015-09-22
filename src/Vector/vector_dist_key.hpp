@@ -48,6 +48,18 @@ public:
 		return key;
 	}
 
+	/*! \brief Convert the key into a message
+	 *
+	 */
+	std::string to_string()
+	{
+		std::stringstream ts;
+
+		ts << "x[0]=" << key;
+
+		return ts.str();
+	}
+
 	vect_dist_key_dx(int v_c, size_t key)
 	:v_c(v_c),key(key)
 	{

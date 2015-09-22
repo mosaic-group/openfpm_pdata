@@ -8,6 +8,9 @@
 #ifndef SRC_DECOMPOSITION_COMMON_HPP_
 #define SRC_DECOMPOSITION_COMMON_HPP_
 
+#define UNIQUE 1
+#define MULTIPLE 2
+
 #include "Vector/map_vector.hpp"
 
 

@@ -225,8 +225,8 @@ class ORB
 		local_cm<dir>(start - n_node);
 
 		// reduce the local cm and cm_cnt
-		v_cl.reduce(cm);
-		v_cl.reduce(cm_cnt);
+		v_cl.sum(cm);
+		v_cl.sum(cm_cnt);
 		v_cl.execute();
 
 		// set the CM for the previous leaf (they are not anymore leaf)

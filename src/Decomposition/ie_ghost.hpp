@@ -11,9 +11,6 @@
 #include "common.hpp"
 #include "nn_processor.hpp"
 
-#define UNIQUE 1
-#define MULTIPLE 2
-
 /*! \brief structure that store and compute the internal and external local ghost box
  *
  * \tparam dim is the dimensionality of the physical domain we are going to decompose.

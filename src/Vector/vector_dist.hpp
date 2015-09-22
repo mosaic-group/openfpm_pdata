@@ -20,6 +20,9 @@
 #include "util/object_util.hpp"
 #include "memory/ExtPreAlloc.hpp"
 #include "CSVWriter.hpp"
+#include "Decomposition/common.hpp"
+
+#define V_SUB_UNIT_FACTOR 64
 
 #define NO_ID false
 #define ID true
@@ -39,9 +42,13 @@
 
 /*! \brief Distributed vector
  *
+ * \tparam dim Dimensionality of the space where the object live
+ * \tparam St type of space
+ * \tparam prop properties the object store
+ *
  */
 
-template<typename point, typename prop, typename Box, typename Decomposition , typename Memory=HeapMemory, bool with_id=false>
+template<unsigned int dim, typename St, typename prop, typename Decomposition , typename Memory=HeapMemory, bool with_id=false>
 class vector_dist
 {
 private:
@@ -56,7 +63,7 @@ private:
 	Decomposition dec;
 
 	// Particle position vector for each sub-domain the last one is the unassigned particles vector
-	Vcluster_object_array<openfpm::vector<point>> v_pos;
+	Vcluster_object_array<openfpm::vector<Point<dim,St>>> v_pos;
 
 	// Particle properties vector for each sub-domain the last one is the unassigned particles vector
 	Vcluster_object_array<openfpm::vector<prop>> v_prp;
@@ -65,7 +72,7 @@ private:
 	Vcluster & v_cl;
 
 	// Geometrical cell list
-	CellList<point::dims,typename point::coord_type,FAST> geo_cell;
+	CellList<dim,St,FAST> geo_cell;
 
 	// Label particles
 
@@ -77,53 +84,70 @@ public:
 	 * \param Global number of elements
 	 *
 	 */
-	vector_dist(size_t np, Box box, Ghost<point::dims,typename point::coord_type> g = Ghost<point::dims,typename point::coord_type>())
-	:dec(Decomposition(*global_v_cluster)),v_cl(*global_v_cluster)
+	vector_dist(size_t np, Box<dim,St> box, Ghost<dim,St> g = Ghost<dim,St>())
+	:dec(*global_v_cluster),v_cl(*global_v_cluster)
 	{
 		// Allocate unassigned particles vectors
-		v_pos = v_cl.template allocate<openfpm::vector<point>>(1);
+		v_pos = v_cl.template allocate<openfpm::vector<Point<dim,St>>>(1);
 		v_prp = v_cl.template allocate<openfpm::vector<prop>>(1);
 
 		// convert to a local number of elements
-		np /= v_cl.getProcessingUnits();
+		size_t p_np = np / v_cl.getProcessingUnits();
+
+		// Get non divisible part
+		size_t r = np % v_cl.getProcessingUnits();
+
+		// Distribute the remain particles
+		if (v_cl.getProcessUnitID() < r)
+			p_np++;
 
 		// resize the position vector
-		v_pos.get(0).resize(np);
+		v_pos.get(0).resize(p_np);
 
 		// resize the properties vector
-		v_prp.get(0).resize(np);
+		v_prp.get(0).resize(p_np);
 
 		// Create a valid decomposition of the space
 		// Get the number of processor and calculate the number of sub-domain
 		// for decomposition
 		size_t n_proc = v_cl.getProcessingUnits();
-		size_t n_sub = n_proc * SUB_UNIT_FACTOR;
+		size_t n_sub = n_proc * getDefaultNsubsub();
 
 		// Calculate the maximum number (before merging) of sub-domain on
 		// each dimension
-		size_t div[point::dims];
-		for (size_t i = 0 ; i < point::dims ; i++)
-		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/point::dims));}
+		size_t div[dim];
+		for (size_t i = 0 ; i < dim ; i++)
+		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
 
 		// Create the sub-domains
 		dec.setParameters(div,box,g);
 
 		// Get the bounding box containing the processor domain
-		const ::Box<point::dims,typename point::coord_type> & bbound = dec.getProcessorBounds();
+		const ::Box<dim,St> & bbound = dec.getProcessorBounds();
 
-		const ::Box<point::dims,typename point::coord_type> & smallest_unit = dec.getSmallestSubdivision();
+		const ::Box<dim,St> & smallest_unit = dec.getSmallestSubdivision();
 
 		// convert spacing divisions
-		size_t n_g[point::dims];
+		size_t n_g[dim];
 
-		for (size_t i = 0 ; i < point::dims ; i++)
+		for (size_t i = 0 ; i < dim ; i++)
 			n_g[i] = (bbound.getHigh(i) - bbound.getLow(i)) / smallest_unit.getHigh(i);
 
-		point p;
+		Point<dim,St> p;
 		p.zero();
 
 		// Initialize the geo cell list
 		geo_cell.Initialize(box,n_g,p,8);
+	}
+
+	/*! \brief Get the number of minimum sub-domain
+	 *
+	 * \return minimum number
+	 *
+	 */
+	static size_t getDefaultNsubsub()
+	{
+		return  V_SUB_UNIT_FACTOR;
 	}
 
 	/*! \brief return the local size of the vector
@@ -163,7 +187,7 @@ public:
 	struct pos_prop
 	{
 		//! position vector
-		openfpm::vector<point,PreAllocHeapMemory<2>,openfpm::grow_policy_identity> pos;
+		openfpm::vector<Point<dim,St>,PreAllocHeapMemory<2>,openfpm::grow_policy_identity> pos;
 		//! properties vector
 		openfpm::vector<prop,PreAllocHeapMemory<2>,openfpm::grow_policy_identity> prp;
 	};
@@ -254,7 +278,7 @@ public:
 		for (size_t i = 0 ;  i < prc_r.size() ; i++)
 		{
 			// Create the size required to store the particles position and properties to communicate
-			size_t s1 = openfpm::vector<point,HeapMemory,openfpm::grow_policy_identity>::calculateMem(prc_sz_r.get(i),0);
+			size_t s1 = openfpm::vector<Point<dim,St>,HeapMemory,openfpm::grow_policy_identity>::calculateMem(prc_sz_r.get(i),0);
 			size_t s2 = openfpm::vector<prop,HeapMemory,openfpm::grow_policy_identity>::calculateMem(prc_sz_r.get(i),0);
 
 			// Preallocate the memory
@@ -310,13 +334,13 @@ public:
 		// convert the particle number to buffer size
 		for (size_t i = 0 ; i < prc_sz_r.size() ; i++)
 		{
-			prc_sz_r.get(i) = prc_sz_r.get(i)*(sizeof(prop) + sizeof(point));
+			prc_sz_r.get(i) = prc_sz_r.get(i)*(sizeof(prop) + sizeof(Point<dim,St>));
 		}
 
 		// Send and receive the particles
 
 		recv_cnt = 0;
-		v_cl.sendrecvMultipleMessagesPCX(prc_sz_r.size(),&p_map.get(0), &prc_sz_r.get(0), &prc_r.get(0) , &ptr.get(0) , vector_dist::message_alloc_map, this ,NEED_ALL_SIZE);
+		v_cl.sendrecvMultipleMessagesPCX(prc_sz_r.size(),&p_map.get(0), (size_t *)prc_sz_r.getPointer(), (size_t *)prc_r.getPointer() , (void **)ptr.getPointer() , vector_dist::message_alloc_map, this ,NEED_ALL_SIZE);
 
 		// overwrite the outcoming particle with the incoming particle and resize the vectors
 
@@ -327,19 +351,19 @@ public:
 		{
 			// Get the number of elements
 
-			size_t n_ele = v_proc.get(i) / (sizeof(point) + sizeof(prop));
+			size_t n_ele = v_proc.get(i) / (sizeof(Point<dim,St>) + sizeof(prop));
 
 			// Pointer of the received positions for each near processor
-			void * ptr_pos = ((unsigned char *)hp_recv.getPointer()) + (total_element * (sizeof(point) + sizeof(prop)));
+			void * ptr_pos = ((unsigned char *)hp_recv.getPointer()) + (total_element * (sizeof(Point<dim,St>) + sizeof(prop)));
 			// Pointer of the received properties for each near processor
-			void * ptr_prp = ((unsigned char *)hp_recv.getPointer()) + (total_element * (sizeof(point) + sizeof(prop))) + n_ele * sizeof(point);
+			void * ptr_prp = ((unsigned char *)hp_recv.getPointer()) + (total_element * (sizeof(Point<dim,St>) + sizeof(prop))) + n_ele * sizeof(Point<dim,St>);
 
-			PtrMemory * ptr1 = new PtrMemory(ptr_pos,n_ele * sizeof(point));
+			PtrMemory * ptr1 = new PtrMemory(ptr_pos,n_ele * sizeof(Point<dim,St>));
 			PtrMemory * ptr2 = new PtrMemory(ptr_prp,n_ele * sizeof(prop));
 
 			// create vector representation to a piece of memory already allocated
 
-			openfpm::vector<point,PtrMemory,openfpm::grow_policy_identity> vpos;
+			openfpm::vector<Point<dim,St>,PtrMemory,openfpm::grow_policy_identity> vpos;
 			openfpm::vector<prop,PtrMemory,openfpm::grow_policy_identity> vprp;
 
 			vpos.setMemory(*ptr1);
@@ -450,7 +474,7 @@ public:
 			pap_prp.push_back(alloc_ele);
 			size_byte_prp += alloc_ele;
 
-			alloc_ele = openfpm::vector<point>::calculateMem(ghost_prc_sz.get(i),0);
+			alloc_ele = openfpm::vector<Point<dim,St>>::calculateMem(ghost_prc_sz.get(i),0);
 			pap_pos.push_back(alloc_ele);
 			size_byte_pos += alloc_ele;
 		}
@@ -499,7 +523,7 @@ public:
 		// Create the buffer for particle position
 
 		// definition of the send vector for position for each processor
-		typedef  openfpm::vector<point,ExtPreAlloc<Memory>> send_pos_vector;
+		typedef  openfpm::vector<Point<dim,St>,ExtPreAlloc<Memory>> send_pos_vector;
 
 		openfpm::vector<send_pos_vector> g_pos_send;
 		if (opt != NO_POSITION)
@@ -569,14 +593,14 @@ public:
 			for (size_t i = 0 ; i < dec.getNNProcessors() && recv_mem_gg.size() != 0 ; i++)
 			{
 				// calculate the number of received elements
-				size_t n_ele = recv_sz.get(i) / sizeof(point);
+				size_t n_ele = recv_sz.get(i) / sizeof(Point<dim,St>);
 
 				// add the received particles to the vector
 				PtrMemory * ptr1 = new PtrMemory(recv_mem_gg.get(i).getPointer(),recv_sz.get(i));
 
 				// create vector representation to a piece of memory already allocated
 
-				openfpm::vector<point,PtrMemory,openfpm::grow_policy_identity> v2;
+				openfpm::vector<Point<dim,St>,PtrMemory,openfpm::grow_policy_identity> v2;
 
 				v2.setMemory(*ptr1);
 
@@ -608,7 +632,7 @@ public:
 	 */
 	static void * msg_alloc_ghost_get(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
 	{
-		vector_dist<point,prop,Box,Decomposition,Memory,with_id> * v = static_cast<vector_dist<point,prop,Box,Decomposition,Memory,with_id> *>(ptr);
+		vector_dist<dim,St,prop,Decomposition,Memory,with_id> * v = static_cast<vector_dist<dim,St,prop,Decomposition,Memory,with_id> *>(ptr);
 
 		v->recv_sz.resize(v->dec.getNNProcessors());
 		v->recv_mem_gg.resize(v->dec.getNNProcessors());
@@ -648,7 +672,7 @@ public:
 	static void * message_alloc_map(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
 	{
 		// cast the pointer
-		vector_dist<point,prop,Box,Decomposition,Memory,with_id> * vd = static_cast<vector_dist<point,prop,Box,Decomposition,Memory,with_id> *>(ptr);
+		vector_dist<dim,St,prop,Decomposition,Memory,with_id> * vd = static_cast<vector_dist<dim,St,prop,Decomposition,Memory,with_id> *>(ptr);
 
 		// Resize the receive buffer, and the size of each message buffer
 		vd->hp_recv.resize(total_msg);
@@ -672,9 +696,9 @@ public:
 	 * \return an iterator
 	 *
 	 */
-	vector_dist_iterator<openfpm::vector<point>> getIterator()
+	vector_dist_iterator<openfpm::vector<Point<dim,St>>> getIterator()
 	{
-		return vector_dist_iterator<openfpm::vector<point>>(v_pos);
+		return vector_dist_iterator<openfpm::vector<Point<dim,St>>>(v_pos);
 	}
 
 	/*! \brief Get the iterator across the position of the ghost particles
@@ -682,9 +706,9 @@ public:
 	 * \return an iterator
 	 *
 	 */
-	vector_dist_iterator<openfpm::vector<point>> getGhostIterator()
+	vector_dist_iterator<openfpm::vector<Point<dim,St>>> getGhostIterator()
 	{
-		return vector_dist_iterator<openfpm::vector<point>>(v_pos,g_m);
+		return vector_dist_iterator<openfpm::vector<Point<dim,St>>>(v_pos,g_m);
 	}
 
 	/*! \brief Get the iterator across the properties of the particles
@@ -730,7 +754,7 @@ public:
 		if (hasEnding(out,".csv"))
 		{
 			// CSVWriter test
-			CSVWriter<openfpm::vector<point>, openfpm::vector<prop> > csv_writer;
+			CSVWriter<openfpm::vector<Point<dim,St>>, openfpm::vector<prop> > csv_writer;
 
 			std::string output = std::to_string(v_cl.getProcessUnitID()) + std::string("_") + out;
 

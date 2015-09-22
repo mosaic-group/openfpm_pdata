@@ -60,7 +60,7 @@ AS_IF([test "x$NVCC_EXIST" = "xno"],[],[
                 [
                  AS_IF([ test -d $CUDA_PATH/lib64 ], [ CUDA_LIBS+="64" ], [])
                  # Be carefull the return code 0 mean true return code 1 mean false
-                 AS_IF([ command -v bumblebee >/dev/null ], [ CUDA_LIBS+=" -L/usr/lib64/nvidia-bumblebee/ "  ],
+                 AS_IF([ command -v bumblebeed >/dev/null ], [ CUDA_LIBS+=" -L/usr/lib64/nvidia-bumblebee/ "  ],
                                                              [
                                                                echo "bumblebee, NVIDIA optimus,  not found"
                                                              ])

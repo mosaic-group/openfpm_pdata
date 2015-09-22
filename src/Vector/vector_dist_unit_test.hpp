@@ -21,15 +21,29 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	typedef Point_test<float> p;
 	typedef Point<2,float> s;
 
-	// TODO generalize
-	if (v_cl.getProcessingUnits() != 4)
-		return;
+	// Get the default minimum number of sub-sub-domain per processor (granularity of the decomposition)
+	size_t n_sub = vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> >::getDefaultNsubsub() * v_cl.getProcessingUnits();
+	// Convert the request of having a minimum n_sub number of sub-sub domain into grid decompsition of the space
+	size_t sz = CartDecomposition<2,float>::getDefaultGrid(n_sub);
 
 	Box<2,float> box({0.0,0.0},{1.0,1.0});
-	size_t g_div[]= {16,16};
+	size_t g_div[]= {sz,sz};
 
-	// processor division on y direction
-	size_t point_div = g_div[1] / v_cl.getProcessingUnits();
+	// number of particles
+	size_t np = sz * sz;
+
+	// Calculate the number of objects this processor is going to obtain
+	size_t p_np = np / v_cl.getProcessingUnits();
+
+	// Get non divisible part
+	size_t r = np % v_cl.getProcessingUnits();
+
+	// Get the offset
+	size_t offset = v_cl.getProcessUnitID() * p_np + std::min(v_cl.getProcessUnitID(),r);
+
+	// Distribute the remain objects
+	if (v_cl.getProcessUnitID() < r)
+		p_np++;
 
 	// Create a grid info
 	grid_sm<2,void> g_info(g_div);
@@ -41,50 +55,57 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	// middle spacing
 	Point<2,float> m_spacing = spacing / 2;
 
-	// create a sub iterator
-	grid_key_dx<2> start(point_div * v_cl.getProcessUnitID(),0);
-	grid_key_dx<2> stop(point_div * (v_cl.getProcessUnitID() + 1) - 1,g_div[0]);
-	auto g_sub = g_info.getSubIterator(start,stop);
-
 	// set the ghost based on the radius cut off (make just a little bit smaller than the spacing)
 	Ghost<2,float> g(spacing.get(0) - spacing .get(0) * 0.0001);
 
 	// Vector of particles
-	vector_dist<Point<2,float>, Point_test<float>, Box<2,float>, CartDecomposition<2,float> > vd(g_info.size(),box,g);
+	vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(g_info.size(),box,g);
 
-	auto it = vd.getIterator();
+	// size_t
+	size_t cobj = 0;
 
-	while (it.isNext())
+	grid_key_dx_iterator_sp<2> it(g_info,offset,offset+p_np-1);
+	auto v_it = vd.getIterator();
+
+	while (v_it.isNext() && it.isNext())
 	{
-		auto key_v = it.get();
-		auto key = g_sub.get();
+		auto key = it.get();
+		auto key_v = v_it.get();
 
 		// set the particle position
 
 		vd.template getPos<s::x>(key_v)[0] = key.get(0) * spacing[0] + m_spacing[0];
 		vd.template getPos<s::x>(key_v)[1] = key.get(1) * spacing[1] + m_spacing[1];
 
-		++g_sub;
+		cobj++;
+
+		++v_it;
 		++it;
 	}
 
+	// Both iterators must signal the end, and the number of object in the vector, must the equal to the
+	// predicted one
+	BOOST_REQUIRE_EQUAL(v_it.isNext(),false);
+	BOOST_REQUIRE_EQUAL(it.isNext(),false);
+	BOOST_REQUIRE_EQUAL(cobj,p_np);
+
 	// Debug write the particles
-	vd.write("Particles_before_map.csv");
+//	vd.write("Particles_before_map.csv");
 
 	// redistribute the particles according to the decomposition
 	vd.map();
 
 	// Debug write particles
-	vd.write("Particles_after_map.csv");
+//	vd.write("Particles_after_map.csv");
 
 	// Fill the scalar with the particle position
 	const auto & ct = vd.getDecomposition();
 
-	it = vd.getIterator();
+	v_it = vd.getIterator();
 
-	while (it.isNext())
+	while (v_it.isNext())
 	{
-		auto key = it.get();
+		auto key = v_it.get();
 
 		// fill with the processor ID where these particle live
 		vd.template getProp<p::s>(key) = vd.getPos<s::x>(key)[0] + vd.getPos<s::x>(key)[1] * 16;
@@ -92,7 +113,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 		vd.template getProp<p::v>(key)[1] = v_cl.getProcessUnitID();
 		vd.template getProp<p::v>(key)[2] = v_cl.getProcessUnitID();
 
-		++it;
+		++v_it;
 	}
 
 	//! Output the decomposition
@@ -156,14 +177,17 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	}
 }
 
-BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use )
+void print_test_v(std::string test, size_t sz)
+{
+	if (global_v_cluster->getProcessUnitID() == 0)
+		std::cout << test << " " << sz << "\n";
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 {
 	typedef Point<2,float> s;
 
 	Vcluster & v_cl = *global_v_cluster;
-
-	if (v_cl.getProcessingUnits() != 4)
-		return;
 
     // set the seed
 	// create the random generator engine
@@ -171,44 +195,127 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use )
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
-	Box<2,float> box({0.0,0.0},{1.0,1.0});
-	vector_dist<Point<2,float>, Point_test<float>, Box<2,float>, CartDecomposition<2,float> > vd(4096,box);
+    size_t k = 4096 * v_cl.getProcessingUnits();
 
-	auto it = vd.getIterator();
+	long int big_step = k / 30;
+	big_step = (big_step == 0)?1:big_step;
+	long int small_step = 1;
 
-	while (it.isNext())
+	// 2D test
+	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
 	{
-		auto key = it.get();
+		BOOST_TEST_CHECKPOINT( "Testing 2D vector k=" << k );
+		print_test_v( "Testing 2D vector k=",k);
+		Box<2,float> box({0.0,0.0},{1.0,1.0});
+		vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(k,box);
 
-		vd.template getPos<s::x>(key)[0] = ud(eg);
-		vd.template getPos<s::x>(key)[1] = ud(eg);
+		auto it = vd.getIterator();
 
-		++it;
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			vd.template getPos<s::x>(key)[0] = ud(eg);
+			vd.template getPos<s::x>(key)[1] = ud(eg);
+
+			++it;
+		}
+
+		vd.map();
+
+		// Check if we have all the local particles
+		size_t cnt = 0;
+		const CartDecomposition<2,float> & ct = vd.getDecomposition();
+		it = vd.getIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			// Check if local
+			BOOST_REQUIRE_EQUAL(ct.isLocal(vd.template getPos<s::x>(key)),true);
+
+			cnt++;
+
+			++it;
+		}
+
+		//
+		v_cl.sum(cnt);
+		v_cl.execute();
+		BOOST_REQUIRE_EQUAL(cnt,k);
 	}
+}
 
-	vd.map();
+BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
+{
+	typedef Point<3,float> s;
 
-	// Check if we have all the local particles
-	size_t cnt = 0;
-	auto & ct = vd.getDecomposition();
-	it = vd.getIterator();
+	Vcluster & v_cl = *global_v_cluster;
 
-	while (it.isNext())
+    // set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+    size_t k = 4096 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 30;
+	big_step = (big_step == 0)?1:big_step;
+	long int small_step = 1;
+
+	// 3D test
+	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
 	{
-		auto key = it.get();
+		BOOST_TEST_CHECKPOINT( "Testing 3D vector k=" << k );
+		print_test_v( "Testing 3D vector k=",k);
+		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box);
 
-		// Check if local
-		BOOST_REQUIRE_EQUAL(ct.isLocal(vd.template getPos<s::x>(key)),true);
+		auto it = vd.getIterator();
 
-		cnt++;
+		while (it.isNext())
+		{
+			auto key = it.get();
 
-		++it;
+			vd.template getPos<s::x>(key)[0] = ud(eg);
+			vd.template getPos<s::x>(key)[1] = ud(eg);
+			vd.template getPos<s::x>(key)[2] = ud(eg);
+
+			++it;
+		}
+
+		vd.map();
+
+		// Check if we have all the local particles
+		size_t cnt = 0;
+		const CartDecomposition<3,float> & ct = vd.getDecomposition();
+		it = vd.getIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			// Check if local
+//			BOOST_REQUIRE_EQUAL(ct.isLocal(vd.template getPos<s::x>(key)),true);
+
+			if (ct.isLocal(vd.template getPos<s::x>(key)) == false)
+			{
+				std::cerr << "Error " << v_cl.getProcessUnitID() << key.to_string() << "Non local\n";
+				exit(-1);
+			}
+
+			cnt++;
+
+			++it;
+		}
+
+		//
+		v_cl.sum(cnt);
+		v_cl.execute();
+		BOOST_REQUIRE_EQUAL(cnt,k);
 	}
-
-	//
-	v_cl.reduce(cnt);
-	v_cl.execute();
-	BOOST_REQUIRE_EQUAL(cnt,4096);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
