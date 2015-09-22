@@ -276,7 +276,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 	print_test_v( "Testing 3D vector k<=",k);
 
 	// 3D test
-	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
+	for ( ; k >= 2 ; k-= decrement(k,big_step) )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 3D vector k=" << k );
 		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
