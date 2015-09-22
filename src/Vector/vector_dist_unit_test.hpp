@@ -195,17 +195,18 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
-    size_t k = 4096 * v_cl.getProcessingUnits();
+    long int k = 4096 * v_cl.getProcessingUnits();
 
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 1;
 
+	print_test_v( "Testing 2D vector k<=",k);
+
 	// 2D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 2D vector k=" << k );
-		print_test_v( "Testing 2D vector k=",k);
 		Box<2,float> box({0.0,0.0},{1.0,1.0});
 		vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(k,box);
 
@@ -259,17 +260,18 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
-    size_t k = 4096 * v_cl.getProcessingUnits();
+    long int k = 4096 * v_cl.getProcessingUnits();
 
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 1;
 
+	print_test_v( "Testing 3D vector k<=",k);
+
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 3D vector k=" << k );
-		print_test_v( "Testing 3D vector k=",k);
 		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box);
 

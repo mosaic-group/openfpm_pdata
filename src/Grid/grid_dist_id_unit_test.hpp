@@ -80,12 +80,12 @@ void Test2D(const Box<2,float> & domain, long int k)
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 1;
 
+	print_test( "Testing 2D grid k<=",k);
+
 	// 2D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 2D grid k=" << k );
-		print_test( "Testing 2D grid k=",k);
-
 
 		//! [Create and access a distributed grid]
 
@@ -185,11 +185,12 @@ void Test3D(const Box<3,float> & domain, long int k)
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 1;
 
+	print_test( "Testing 3D grid k<=",k);
+
 	// 2D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 3D grid k=" << k );
-		print_test( "Testing 3D grid k=",k);
 
 		// grid size
 		size_t sz[3];
@@ -295,11 +296,12 @@ void Test2D_complex(const Box<2,float> & domain, long int k)
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 1;
 
+	print_test( "Testing 2D complex grid k<=",k);
+
 	// 2D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 2D complex grid k=" << k );
-		print_test( "Testing 2D complex grid k=",k);
 
 		//! [Create and access a distributed grid complex]
 
@@ -458,11 +460,12 @@ void Test3D_complex(const Box<3,float> & domain, long int k)
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 1;
 
+	print_test( "Testing 3D grid complex k<=",k);
+
 	// 2D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 3D complex grid k=" << k );
-		print_test( "Testing 3D grid complex k=",k);
 
 		// grid size
 		size_t sz[3];
