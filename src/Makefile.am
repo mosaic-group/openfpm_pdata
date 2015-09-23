@@ -12,6 +12,7 @@ nobase_include_HEADERS = Decomposition/CartDecomposition.hpp Decomposition/commo
          Vector/vector_dist.hpp Vector/vector_dist_iterator.hpp Vector/vector_dist_key.hpp \
          config/config.h \
          metis_util.hpp dec_optimizer.hpp SubdomainGraphNodes.hpp
+include_HEADERS = ../example/example.mk
 
 .cu.o :
 	$(NVCC) $(NVCCFLAGS) -o $@ -c $<
