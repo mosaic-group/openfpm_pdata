@@ -90,4 +90,4 @@ class pack_example:
             self.add_r(dir+os.sep+example_dir)
 
         # make an archive
-        shutil.make_archive(file,"bztar",self.base_dir)
+        shutil.make_archive(file,"bztar",self.temporary)

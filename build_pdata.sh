@@ -64,8 +64,9 @@ then
  source ~/.bashrc
  sh ./autogen.sh
  module load gcc/4.9.2
- ./install -s
+ ./install -s -c "--prefix=/home/jenkins/openfpm_install"
  make
+ make install
 
  if [ $? -ne 0 ]; then exit 1 ; fi
  mpirun -np 2 ./src/pdata
