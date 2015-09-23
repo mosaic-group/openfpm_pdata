@@ -88,7 +88,7 @@ class grid_dist_iterator<dim,device_grid,FREE>
 	Vcluster_object_array<device_grid> & gList;
 
 	//! Extension of each grid: domain and ghost + domain
-	const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
+	openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
 
 	//! Actual iterator
 	grid_key_dx_iterator_sub<dim> a_it;
@@ -113,12 +113,28 @@ class grid_dist_iterator<dim,device_grid,FREE>
 
 	public:
 
-	/*! \brief Constructor of the distributed grid
+	/*! \brief Copy operator=
+	*
+	* \param tmp iterator to copy
+	*
+	*/
+	grid_dist_iterator<dim,device_grid,FREE> & operator=(const grid_dist_iterator<dim,device_grid,FREE> & tmp)
+	{
+		g_c = tmp.g_c;
+		gList = tmp.gList;
+		gdb_ext = tmp.gdb_ext;
+		a_it.reinitialize(tmp.a_it);
+		m = tmp.m;
+
+		return *this;
+	}
+
+	/*! \brief Constructor of the distributed grid iterator
 	 *
 	 * \param gk std::vector of the local grid
 	 *
 	 */
-	grid_dist_iterator(Vcluster_object_array<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
+	grid_dist_iterator(Vcluster_object_array<device_grid> & gk, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
 	:g_c(0),gList(gk),gdb_ext(gdb_ext),m(0)
 	{
 		// Initialize the current iterator
@@ -224,7 +240,22 @@ class grid_dist_iterator<dim,device_grid,FIXED>
 
 	public:
 
-	/*! \brief Constructor of the distributed grid
+	/*! \brief Copy operator=
+	*
+	* \param tmp iterator to copy
+	*
+	*/
+	grid_dist_iterator<dim,device_grid,FIXED> & operator=(const grid_dist_iterator<dim,device_grid,FIXED> & tmp)
+	{
+		g_c = tmp.g_c;
+		gList = tmp.gList;
+		gdb_ext = tmp.gdb_ext;
+		a_it.reinitialize(tmp.a_it);
+
+		return *this;
+	}
+
+	/*! \brief Constructor of the distributed grid iterator
 	 *
 	 * \param gk std::vector of the local grid
 	 *

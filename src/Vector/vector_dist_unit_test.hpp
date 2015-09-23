@@ -271,7 +271,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
-	long int small_step = 1;
 
 	print_test_v( "Testing 3D vector k<=",k);
 
