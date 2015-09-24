@@ -57,10 +57,14 @@ class pack_example:
     def add_r(self, dir):
         if self.is_example(dir):
             self.copy_example(dir)
+            return
+
+        # Create the directory in tmp
+        os.makedirs(self.temporary+os.sep+dir[len(self.base_dir):]+os.sep)
 
         # copy Makefile
-        print("copy src:"+dir+os.sep+"Makefile"+"    dst:"+self.temporary+os.sep+"Makefile")
-        shutil.copy(dir+os.sep+"Makefile",self.temporary+os.sep+"Makefile")
+        print("copy src:"+dir+os.sep+"Makefile"+"    dst:"+self.temporary+os.sep+dir[len(self.base_dir):]+os.sep+"Makefile")
+        shutil.copy(dir+os.sep+"Makefile",self.temporary+os.sep+dir[len(self.base_dir):]+os.sep+"Makefile")
 
         # List all the folder in the directory
         onlydir = [ f for f in listdir(dir) if isdir(join(dir,f)) ]
