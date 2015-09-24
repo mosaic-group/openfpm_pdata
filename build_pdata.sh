@@ -150,8 +150,7 @@ then
  module unload bullxmpi
  module load metis/5.1.0
 
- sh ./autogen.sh
- ./configure --with-metis=$METIS_ROOT --with-boost=$BOOST_ROOT CXX=mpic++
+ ./install -s -c"--with-metis=$METIS_ROOT --with-boost=$BOOST_ROOT CXX=mpic++"
  make
  if [ $? -ne 0 ]; then exit 1 ; fi
 

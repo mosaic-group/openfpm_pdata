@@ -208,7 +208,8 @@ install_base=$(cat install_dir)
 echo "INCLUDE_PATH=-I. -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include" > example.mk
 echo "LIBS_PATH=-L$install_base/openfpm_devices/lib -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib " >> example.mk
 echo "LIBS=-lvcluster -lofpmmemory -lmetis -lboost_iostreams" >> example.mk
-mv example.mk example/example.mk
+cp example.mk src/example.mk
+cp example.mk example/example.mk
 
 echo ""
 echo ""
