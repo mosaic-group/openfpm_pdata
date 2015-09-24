@@ -264,3 +264,6 @@ if [ $BOOST_installed -eq 1 ]; then
 fi
 echo ""
 echo ""
+if [ $conf_err -ne 0 ]; then
+  exit 1
+fi
