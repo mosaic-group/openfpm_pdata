@@ -169,8 +169,7 @@ else
             ./script/install_MPI.sh $i_dir $compiler_opt
             MPI_installed=1
             export PATH="$PATH:$i_dir/MPI/bin"
-            echo $PATH
-            configure_options="$configure_options CXX=mpic++  "
+
         elif [ $conf_err -eq 201  ]; then
             echo "Metis not found try to install"
             if [ $METIS_installed -eq 1  ]; then
@@ -196,13 +195,6 @@ else
     done
 fi
 
-make clean
-make
-
-if [ $? -ne 0 ]; then
-  conf_err=1
-fi
-
 ### Create example.mk
 install_base=$(cat install_dir)
 echo "INCLUDE_PATH=-I. -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include" > example.mk
@@ -210,6 +202,13 @@ echo "LIBS_PATH=-L$install_base/openfpm_devices/lib -L$install_base/openfpm_vclu
 echo "LIBS=-lvcluster -lofpmmemory -lmetis -lboost_iostreams" >> example.mk
 cp example.mk src/example.mk
 cp example.mk example/example.mk
+
+make clean
+make
+
+if [ $? -ne 0 ]; then
+  conf_err=1
+fi
 
 echo ""
 echo ""
