@@ -550,19 +550,17 @@ public:
 
 	/*! \brief optimize the graph
 	 *
-	 * Starting from a domain (hyper-cubic), it create wavefront at the boundary and expand
-	 * the boundary until the wavefronts cannot expand any more.
-	 * To the domains inside the hyper-cube one sub-id is assigned. This procedure continue until
-	 * all the domain of one p_id has a sub-id
+	 * Starting from a sub-sub-domain, it create wavefronts at the boundary and expand
+	 * the boundary until the wavefronts cannot expand any more, creating a sub-domain covering more sub-sub-domain.
+	 * This procedure continue until all the domain is covered by a sub-domains
 	 *
-	 * \tparam j property containing the decomposition
-	 * \tparam i property to fill with the sub-decomposition
+	 * \tparam j property containing the processor decomposition
+	 * \tparam i property to fill with the sub-domain-decomposition id
 	 *
 	 * \param start_p seed point
 	 * \param graph we are processing
 	 *
 	 */
-
 	template <unsigned int p_sub, unsigned int p_id> void optimize(grid_key_dx<dim> & start_p, Graph & graph)
 	{
 		// temporal vector
@@ -577,20 +575,18 @@ public:
 
 	/*! \brief optimize the graph
 	 *
-	 * Starting from a domain (hyper-cubic), it create wavefront at the boundary and expand
-	 * the boundary until the wavefronts cannot expand any more.
-	 * To the domains inside the hyper-cube one sub-id is assigned. This procedure continue until
-	 * all the domain of one p_id has a sub-id
+	 * Starting from a sub-sub-domain, it create wavefronts at the boundary and expand
+	 * the boundary until the wavefronts cannot expand any more, creating a sub-domain covering more sub-sub-domain.
+	 * This procedure continue until all the sub-domain of the processor p_id are covered by a sub-domains
 	 *
 	 * \tparam j property containing the decomposition
-	 * \tparam i property to fill with the sub-decomposition
+	 * \tparam i property to fill with the sub-domain-decomposition id
 	 *
 	 * \param graph we are processing
 	 * \param p_id Processor id (if p_id == -1 the optimization is done for all the processors)
 	 * \param list of sub-domain boxes
 	 *
 	 */
-
 	template <unsigned int p_sub, unsigned int p_id> void optimize(Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & lb, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor)
 	{
 		// search for the first seed
@@ -613,11 +609,10 @@ public:
 	 * \param start_p seed point
 	 * \param graph we are processing
 	 * \param p_id Processor id (if p_id == -1 the optimization is done for all the processors)
-	 * \param list of sub-domain boxes
+	 * \param list of sub-domain boxes produced by the algorithm
 	 * \param box_nn_processor for each box it list all the neighborhood processor
 	 *
 	 */
-
 	template <unsigned int p_sub, unsigned int p_id> void optimize(grid_key_dx<dim> & start_p, Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & lb, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor )
 	{
 		// sub-domain id

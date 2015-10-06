@@ -156,7 +156,7 @@ private:
 		// Create a cartesian grid graph
 		CartesianGraphFactory<dim,Graph_CSR<nm_part_v,nm_part_e>> g_factory_part;
 
-		// Processor graph
+		// sub-sub-domain graph
 		Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.template construct<NO_EDGE,T,dim-1>(gr.getSize(),domain);
 
 		// Get the number of processing units
