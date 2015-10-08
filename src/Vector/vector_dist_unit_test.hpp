@@ -26,13 +26,15 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	// Convert the request of having a minimum n_sub number of sub-sub domain into grid decompsition of the space
 	size_t sz = CartDecomposition<2,float>::getDefaultGrid(n_sub);
 
+	//! [Create a vector of elements distributed on a grid like way]
+
 	Box<2,float> box({0.0,0.0},{1.0,1.0});
 	size_t g_div[]= {sz,sz};
 
 	// number of particles
 	size_t np = sz * sz;
 
-	// Calculate the number of objects this processor is going to obtain
+	// Calculate the number of elements this processor is going to obtain
 	size_t p_np = np / v_cl.getProcessingUnits();
 
 	// Get non divisible part
@@ -41,7 +43,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	// Get the offset
 	size_t offset = v_cl.getProcessUnitID() * p_np + std::min(v_cl.getProcessUnitID(),r);
 
-	// Distribute the remain objects
+	// Distribute the remain elements
 	if (v_cl.getProcessUnitID() < r)
 		p_np++;
 
@@ -83,17 +85,18 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 		++it;
 	}
 
-	// Both iterators must signal the end, and the number of object in the vector, must the equal to the
+	//! [Create a vector of elements distributed on a grid like way]
+
+	// Both iterators must signal the end, and the number of elements in the vector, must the equal to the
 	// predicted one
 	BOOST_REQUIRE_EQUAL(v_it.isNext(),false);
 	BOOST_REQUIRE_EQUAL(it.isNext(),false);
 	BOOST_REQUIRE_EQUAL(cobj,p_np);
 
+	//! [Redistribute the particles and sync the ghost properties]
+
 	// redistribute the particles according to the decomposition
 	vd.map();
-
-	// Fill the scalar with the particle position
-	const auto & ct = vd.getDecomposition();
 
 	v_it = vd.getIterator();
 
@@ -110,14 +113,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 		++v_it;
 	}
 
-	//! Output the decomposition
-	ct.write(".");
-
 	// do a ghost get
 	vd.template ghost_get<p::s,p::v>();
 
-	// Debug write the particles with GHOST
-	vd.write("Particles_with_ghost.csv",WITH_GHOST);
+	//! [Redistribute the particles and sync the ghost properties]
 
 	// Get the decomposition
 	const auto & dec = vd.getDecomposition();
@@ -214,6 +213,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 	for ( ; k >= 2 ; k-= decrement(k,big_step) )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 2D vector k=" << k );
+
+		//! [Create a vector of random elements on each processor 2D]
+
 		Box<2,float> box({0.0,0.0},{1.0,1.0});
 		vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(k,box);
 
@@ -230,6 +232,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 		}
 
 		vd.map();
+
+		//! [Create a vector of random elements on each processor 2D]
 
 		// Check if we have all the local particles
 		size_t cnt = 0;
@@ -278,6 +282,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 	for ( ; k >= 2 ; k-= decrement(k,big_step) )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 3D vector k=" << k );
+
+		//! [Create a vector of random elements on each processor 3D]
+
 		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box);
 
@@ -295,6 +302,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 		}
 
 		vd.map();
+
+		//! [Create a vector of random elements on each processor 3D]
 
 		// Check if we have all the local particles
 		size_t cnt = 0;
