@@ -161,7 +161,7 @@ else
 
         ## if MPI or METIS installation required install it
         if [ $conf_err -eq 200  ]; then
-            echo "MPI not found try to install"
+            echo "MPI not found try to install, $MPI_installed"
             if [ $MPI_installed -eq 1 ]; then
                 echo "Error the installation of MPI failed"
                 exit 1
@@ -169,7 +169,7 @@ else
             ./script/install_MPI.sh $i_dir $compiler_opt
             MPI_installed=1
             export PATH="$PATH:$i_dir/MPI/bin"
-
+            configure_options="$configure_options CXX=mpic++ "
         elif [ $conf_err -eq 201  ]; then
             echo "Metis not found try to install"
             if [ $METIS_installed -eq 1  ]; then
