@@ -8,6 +8,7 @@
 #include "Space/SpaceBox.hpp"
 #include "util/mathutil.hpp"
 #include "grid_dist_id_iterator.hpp"
+#include "grid_dist_id_iterator_sub.hpp"
 #include "grid_dist_key.hpp"
 #include "NN/CellList/CellDecomposer.hpp"
 #include "util/object_util.hpp"
@@ -39,6 +40,8 @@
  * \snippet grid_dist_id_unit_test.hpp Create and access a distributed grid complex
  * ### Synchronize a distributed grid for complex structures
  * \snippet grid_dist_id_unit_test.hpp Synchronized distributed grid complex
+ * ### Usage of a grid dist iterator sub
+ * \snippet grid_dist_id_unit_test.hpp Usage of a sub_grid iterator
  *
  */
 template<unsigned int dim, typename St, typename T, typename Decomposition,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T> >
@@ -534,6 +537,20 @@ public:
 	grid_dist_iterator<dim,device_grid,FIXED> getDomainGhostIterator()
 	{
 		grid_dist_iterator<dim,device_grid,FIXED> it(loc_grid,gdb_ext);
+
+		return it;
+	}
+
+	/*! \brief It return an iterator that span the grid domain only in the specified
+	 * part
+	 *
+	 * \param start point
+	 * \param stop point
+	 *
+	 */
+	grid_dist_iterator_sub<dim,device_grid> getSubDomainIterator(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop)
+	{
+		grid_dist_iterator_sub<dim,device_grid> it(start,stop,loc_grid,gdb_ext);
 
 		return it;
 	}
