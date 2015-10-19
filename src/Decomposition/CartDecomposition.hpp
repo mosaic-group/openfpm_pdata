@@ -334,7 +334,25 @@ private:
 	// Receive counter
 	size_t recv_cnt;
 
+	// reference counter of the object in case is shared between object
+
+	long int ref_cnt;
+
 public:
+
+	//! Increment the reference counter
+	void incRef()
+	{ref_cnt++;}
+
+	//! Decrement the reference counter
+	void decRef()
+	{ref_cnt--;}
+
+	//! Return the reference counter
+	long int ref()
+	{
+		return ref_cnt;
+	}
 
 	/*! \brief Cartesian decomposition constructor
 	 *
@@ -342,7 +360,7 @@ public:
 	 *
 	 */
 	CartDecomposition(Vcluster & v_cl)
-	:nn_prcs<dim,T>(v_cl),v_cl(v_cl)
+	:nn_prcs<dim,T>(v_cl),v_cl(v_cl),ref_cnt(0)
 	{
 		// Reset the box to zero
 		bbox.zero();
