@@ -80,6 +80,12 @@ class grid_dist_id
 	// Receiving buffer for particles ghost get
 	openfpm::vector<HeapMemory> recv_mem_gg;
 
+	// Grid informations object
+	grid_sm<dim,T> ginfo;
+
+	// Grid informations object without type
+	grid_sm<dim,void> ginfo_v;
+
 	/*! \brief Call-back to allocate buffer to receive incoming objects (external ghost boxes)
 	 *
 	 * \param msg_i message size required to receive from i
@@ -350,109 +356,6 @@ class grid_dist_id
 		}
 	}
 
-public:
-
-	//! constructor
-	grid_dist_id(Vcluster v_cl, Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,T> & ghost)
-	:domain(domain),ghost(ghost),loc_grid(NULL),v_cl(v_cl),dec(dec)
-	{
-		check_size(g_sz);
-
-		// For a 5x5 grid you have 4x4 Cell
-		size_t c_g[dim];
-		for (size_t i = 0 ; i < dim ; i++)	{c_g[i] = g_sz[i]-1;}
-
-		// Initialize the cell decomposer
-		cd_sm.setDimensions(domain,c_g,0);
-
-		// fill the global size of the grid
-		for (int i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
-
-		// Get the number of processor and calculate the number of sub-domain
-		// for decomposition
-		size_t n_proc = v_cl.getProcessingUnits();
-		size_t n_sub = n_proc * SUB_UNIT_FACTOR;
-
-		// Calculate the maximum number (before merging) of sub-domain on
-		// each dimension
-		size_t div[dim];
-		for (int i = 0 ; i < dim ; i++)
-		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
-
-		// Create the sub-domains
-		dec.setParameters(div);
-
-		// Create local grid
-		Create();
-
-		// Calculate ghost boxes
-		dec.calculateGhostBoxes(ghost);
-	}
-
-	/*! \brief Constrcuctor
-	 *
-	 * \param g_sz array with the grid size on each dimension
-	 * \param domain domain where this grid live
-	 * \param g Ghost
-	 *
-	 */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g)
-	:domain(domain),ghost(g),dec(Decomposition(*global_v_cluster)),v_cl(*global_v_cluster)
-	{
-		// check that the grid has valid size
-		check_size(g_sz);
-
-		// For a 5x5 grid you have 4x4 Cell
-		size_t c_g[dim];
-		for (size_t i = 0 ; i < dim ; i++)	{c_g[i] = (g_sz[i]-1 > 0)?(g_sz[i]-1):1;}
-
-		// Initialize the cell decomposer
-		cd_sm.setDimensions(domain,c_g,0);
-
-		// fill the global size of the grid
-		for (size_t i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
-
-		// Get the number of processor and calculate the number of sub-domain
-		// for decomposition
-		size_t n_proc = v_cl.getProcessingUnits();
-		size_t n_sub = n_proc * SUB_UNIT_FACTOR;
-
-		// Calculate the maximum number (before merging) of sub-domain on
-		// each dimension
-		size_t div[dim];
-		for (size_t i = 0 ; i < dim ; i++)
-		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
-
-		// Create the sub-domains
-		dec.setParameters(div,domain,ghost);
-
-		// Create local grid
-		Create();
-
-		// Calculate ghost boxes
-		dec.calculateGhostBoxes();
-	}
-
-	/*! \brief Get the object that store the information about the decomposition
-	 *
-	 * \return the decomposition object
-	 *
-	 */
-	Decomposition & getDecomposition()
-	{
-		return dec;
-	}
-
-	/*! \brief Return the cell decomposer
-	 *
-	 * \return the cell decomposer
-	 *
-	 */
-	const CellDecomposer_sm<dim,St> & getCellDecomposer()
-	{
-		return cd_sm;
-	}
-
 	/*! \brief Create the grids on memory
 	 *
 	 */
@@ -500,6 +403,132 @@ public:
 			// Set the dimensions of the local grid
 			loc_grid.get(i).resize(l_res);
 		}
+	}
+
+public:
+
+	// Which kind of grid the structure store
+	typedef device_grid d_grid;
+
+	//! constructor
+	grid_dist_id(Vcluster v_cl, Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,T> & ghost)
+	:domain(domain),ghost(ghost),loc_grid(NULL),v_cl(v_cl),dec(dec),ginfo(g_sz),ginfo_v(g_sz)
+	{
+		check_size(g_sz);
+
+		// For a 5x5 grid you have 4x4 Cell
+		size_t c_g[dim];
+		for (size_t i = 0 ; i < dim ; i++)	{c_g[i] = g_sz[i]-1;}
+
+		// Initialize the cell decomposer
+		cd_sm.setDimensions(domain,c_g,0);
+
+		// fill the global size of the grid
+		for (int i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
+
+		// Get the number of processor and calculate the number of sub-domain
+		// for decomposition
+		size_t n_proc = v_cl.getProcessingUnits();
+		size_t n_sub = n_proc * SUB_UNIT_FACTOR;
+
+		// Calculate the maximum number (before merging) of sub-domain on
+		// each dimension
+		size_t div[dim];
+		for (int i = 0 ; i < dim ; i++)
+		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
+
+		// Create the sub-domains
+		dec.setParameters(div);
+
+		// Create local grid
+		Create();
+
+		// Calculate ghost boxes
+		dec.calculateGhostBoxes(ghost);
+	}
+
+	/*! \brief Constrcuctor
+	 *
+	 * \param g_sz array with the grid size on each dimension
+	 * \param domain domain where this grid live
+	 * \param g Ghost
+	 *
+	 */
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g)
+	:domain(domain),ghost(g),dec(Decomposition(*global_v_cluster)),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
+	{
+		// check that the grid has valid size
+		check_size(g_sz);
+
+		// For a 5x5 grid you have 4x4 Cell
+		size_t c_g[dim];
+		for (size_t i = 0 ; i < dim ; i++)	{c_g[i] = (g_sz[i]-1 > 0)?(g_sz[i]-1):1;}
+
+		// Initialize the cell decomposer
+		cd_sm.setDimensions(domain,c_g,0);
+
+		// fill the global size of the grid
+		for (size_t i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
+
+		// Get the number of processor and calculate the number of sub-domain
+		// for decomposition
+		size_t n_proc = v_cl.getProcessingUnits();
+		size_t n_sub = n_proc * SUB_UNIT_FACTOR;
+
+		// Calculate the maximum number (before merging) of sub-domain on
+		// each dimension
+		size_t div[dim];
+		for (size_t i = 0 ; i < dim ; i++)
+		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
+
+		// Create the sub-domains
+		dec.setParameters(div,domain,ghost);
+
+		// Create local grid
+		Create();
+
+		// Calculate ghost boxes
+		dec.calculateGhostBoxes();
+	}
+
+	/*! \brief Get an object containing the grid informations
+	 *
+	 * \return an information object about this grid
+	 *
+	 */
+	const grid_sm<dim,T> & getGridInfo()
+	{
+		return ginfo;
+	}
+
+	/*! \brief Get an object containing the grid informations without type
+	 *
+	 * \return an information object about this grid
+	 *
+	 */
+	const grid_sm<dim,void> & getGridInfoVoid()
+	{
+		return ginfo_v;
+	}
+
+	/*! \brief Get the object that store the information about the decomposition
+	 *
+	 * \return the decomposition object
+	 *
+	 */
+	Decomposition & getDecomposition()
+	{
+		return dec;
+	}
+
+	/*! \brief Return the cell decomposer
+	 *
+	 * \return the cell decomposer
+	 *
+	 */
+	const CellDecomposer_sm<dim,St> & getCellDecomposer()
+	{
+		return cd_sm;
 	}
 
 	/*! \brief Check that the global grid key is inside the grid domain

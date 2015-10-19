@@ -110,18 +110,21 @@ void Test2D_sub(const Box<2,float> & domain, long int k)
 		bool val = g_dist.getDecomposition().check_consistency();
 		BOOST_REQUIRE_EQUAL(val,true);
 
+		size_t count;
+
 		// Grid sm
 		grid_sm<2,void> info(sz);
 
-		// get the domain iterator
-		size_t count = 0;
-
+		{
 		//! [Usage of a sub_grid iterator]
 
 		grid_key_dx<2> one(1,1);
 		grid_key_dx<2> one_end(k-2,k-2);
 
 		bool check = true;
+		count = 0;
+
+		// get the sub-domain iterator
 		auto dom = g_dist.getSubDomainIterator(one,one_end);
 
 		while (dom.isNext())
@@ -145,6 +148,8 @@ void Test2D_sub(const Box<2,float> & domain, long int k)
 
 		//! [Usage of a sub_grid iterator]
 
+		}
+
 		// Get the virtual cluster machine
 		Vcluster & vcl = g_dist.getVC();
 
@@ -154,6 +159,45 @@ void Test2D_sub(const Box<2,float> & domain, long int k)
 
 		// Check
 		BOOST_REQUIRE_EQUAL(count,(k-2)*(k-2));
+
+		// check with a 1x1 square
+
+		{
+
+		grid_key_dx<2> one(k/2,k/2);
+		grid_key_dx<2> one_end(k/2,k/2);
+
+		count = 0;
+
+		// get the sub-domain iterator
+		auto dom = g_dist.getSubDomainIterator(one,one_end);
+
+		while (dom.isNext())
+		{
+			auto key = dom.get();
+			auto key_g = g_dist.getGKey(key);
+
+			// key_g
+			BOOST_REQUIRE_EQUAL(key_g.get(0),k/2);
+			BOOST_REQUIRE_EQUAL(key_g.get(1),k/2);
+
+			key_s_it = dom.getGKey(key);
+
+			BOOST_REQUIRE_EQUAL(key_g.get(0),key_s_it.get(0));
+			BOOST_REQUIRE_EQUAL(key_g.get(1),key_s_it.get(1));
+
+			// Count the point
+			count++;
+
+			++dom;
+		}
+
+		// reduce
+		vcl.sum(count);
+		vcl.execute();
+
+		BOOST_REQUIRE_EQUAL(count,1);
+		}
 	}
 }
 
@@ -304,7 +348,11 @@ void Test3D_sub(const Box<3,float> & domain, long int k)
 		// get the domain iterator
 		size_t count = 0;
 
-		auto dom = g_dist.getDomainIterator();
+		grid_key_dx<3> one(1,1,1);
+		grid_key_dx<3> one_end(k-2,k-2,k-2);
+
+		// Sub-domain iterator
+		auto dom = g_dist.getSubDomainIterator(one,one_end);
 
 		while (dom.isNext())
 		{
@@ -327,51 +375,47 @@ void Test3D_sub(const Box<3,float> & domain, long int k)
 		vcl.execute();
 
 		// Check
-		BOOST_REQUIRE_EQUAL(count,k*k*k);
+		BOOST_REQUIRE_EQUAL(count,(k-2)*(k-2)*(k-2));
 
-		bool match = true;
-
-		auto dom2 = g_dist.getDomainIterator();
-
-		// check that the grid store the correct information
-		while (dom2.isNext())
+		// check with a 1x1x1 square
 		{
-			auto key = dom2.get();
+
+		grid_key_dx<3> one(k/2,k/2,k/2);
+		grid_key_dx<3> one_end(k/2,k/2,k/2);
+
+		count = 0;
+
+		// get the sub-domain iterator
+		auto dom = g_dist.getSubDomainIterator(one,one_end);
+
+		while (dom.isNext())
+		{
+			auto key = dom.get();
 			auto key_g = g_dist.getGKey(key);
 
-			match &= (g_dist.template get<0>(key) == info.LinId(key_g))?true:false;
+			// key_g
+			BOOST_REQUIRE_EQUAL(key_g.get(0),k/2);
+			BOOST_REQUIRE_EQUAL(key_g.get(1),k/2);
+			BOOST_REQUIRE_EQUAL(key_g.get(2),k/2);
 
-			++dom2;
+			auto key_s_it = dom.getGKey(key);
+
+			BOOST_REQUIRE_EQUAL(key_g.get(0),key_s_it.get(0));
+			BOOST_REQUIRE_EQUAL(key_g.get(1),key_s_it.get(1));
+			BOOST_REQUIRE_EQUAL(key_g.get(2),key_s_it.get(2));
+
+			// Count the point
+			count++;
+
+			++dom;
 		}
 
-		BOOST_REQUIRE_EQUAL(match,true);
+		// reduce
+		vcl.sum(count);
+		vcl.execute();
 
-		//! [Synchronize the ghost and check the information]
-
-		g_dist.template ghost_get<0>();
-
-		// check that the communication is correctly completed
-
-		auto domg = g_dist.getDomainGhostIterator();
-
-		// check that the grid with the ghost past store the correct information
-		while (domg.isNext())
-		{
-			auto key = domg.get();
-			auto key_g = g_dist.getGKey(key);
-
-			// In this case the boundary condition are non periodic
-			if (g_dist.isInside(key_g))
-			{
-				match &= (g_dist.template get<0>(key) == info.LinId(key_g))?true:false;
-			}
-
-			++domg;
+		BOOST_REQUIRE_EQUAL(count,1);
 		}
-
-		BOOST_REQUIRE_EQUAL(match,true);
-
-		//! [Synchronize the ghost and check the information]
 	}
 }
 
