@@ -585,24 +585,24 @@ void Test3D_complex(const Box<3,float> & domain, long int k)
 			// In this case the boundary condition are non periodic
 			if (g_dist.isInside(key_g))
 			{
-				match &= (g_dist.template get<p::x>(key),1 + k)?true:false;
-				match &= (g_dist.template get<p::y>(key),567 + k)?true:false;
-				match &= (g_dist.template get<p::z>(key), 341 + k)?true:false;
-				match &= (g_dist.template get<p::s>(key), 5670 + k)?true:false;
+				match &= (g_dist.template get<p::x>(key) == 1 + k)?true:false;
+				match &= (g_dist.template get<p::y>(key) == 567 + k)?true:false;
+				match &= (g_dist.template get<p::z>(key) == 341 + k)?true:false;
+				match &= (g_dist.template get<p::s>(key) == 5670 + k)?true:false;
 
-				match &= (g_dist.template get<p::v>(key)[0], 921 + k)?true:false;
-				match &= (g_dist.template get<p::v>(key)[1], 5675 + k)?true:false;
-				match &= (g_dist.template get<p::v>(key)[2], 117 + k)?true:false;
+				match &= (g_dist.template get<p::v>(key)[0] == 921 + k)?true:false;
+				match &= (g_dist.template get<p::v>(key)[1] == 5675 + k)?true:false;
+				match &= (g_dist.template get<p::v>(key)[2] == 117 + k)?true:false;
 
-				match &= (g_dist.template get<p::t>(key)[0][0], 1921 + k)?true:false;
-				match &= (g_dist.template get<p::t>(key)[0][1], 25675 + k)?true:false;
-				match &= (g_dist.template get<p::t>(key)[0][2], 3117 + k)?true:false;
-				match &= (g_dist.template get<p::t>(key)[1][0], 4921 + k)?true:false;
-				match &= (g_dist.template get<p::t>(key)[1][1], 55675 + k)?true:false;
-				match &= (g_dist.template get<p::t>(key)[1][2], 6117 + k)?true:false;
-				match &= (g_dist.template get<p::t>(key)[2][0], 7921 + k)?true:false;
-				match &= (g_dist.template get<p::t>(key)[2][1], 85675 + k)?true:false;
-				match &= (g_dist.template get<p::t>(key)[2][2], 9117 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[0][0] == 1921 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[0][1] == 25675 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[0][2] == 3117 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[1][0] == 4921 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[1][1] == 55675 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[1][2] == 6117 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[2][0] == 7921 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[2][1] == 85675 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[2][2] == 9117 + k)?true:false;
 			}
 
 			++domg;
