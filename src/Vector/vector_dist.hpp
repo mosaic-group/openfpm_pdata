@@ -749,18 +749,13 @@ public:
 	 */
 	inline bool write(std::string out, int opt = NO_GHOST)
 	{
-		if (hasEnding(out,".csv"))
-		{
-			// CSVWriter test
-			CSVWriter<openfpm::vector<Point<dim,St>>, openfpm::vector<prop> > csv_writer;
+		// CSVWriter test
+		CSVWriter<openfpm::vector<Point<dim,St>>, openfpm::vector<prop> > csv_writer;
 
-			std::string output = std::to_string(v_cl.getProcessUnitID()) + std::string("_") + out;
+		std::string output = std::to_string(out + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".csv"));
 
-			// Write the CSV
-			return csv_writer.write(output,v_pos.get(INTERNAL),v_prp.get(INTERNAL));
-		}
-
-		return false;
+		// Write the CSV
+		return csv_writer.write(output,v_pos.get(INTERNAL),v_prp.get(INTERNAL));
 	}
 };
 
