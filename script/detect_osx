@@ -1,0 +1,50 @@
+#! /bin/bash
+
+function detect_osx()
+{
+    if [ x"$1" != x"osx" ]; then
+      return
+    fi
+
+    # Try first pattern
+
+    version=$(sw_vers | grep ProductVersion | sed 's/.*\([0-9][0-9]\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
+    echo "$version" | egrep -q '^[0-9]+$'
+    if [ $? == 0 ]; then
+      dosx_major=$(sw_vers | grep ProductVersion | sed 's/.*\([0-9][0-9]\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
+      dosx_middle=$(sw_vers | grep ProductVersion | sed 's/.*\([0-9][0-9]\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
+      dosx_minor=$(sw_vers | grep ProductVersion | sed 's/.*\([0-9][0-9]\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
+
+      if [ $dosx_major -gt 10 ]; then
+        dosx_ret=1
+      elif [ $dosx_major -lt 10 ]; then
+        dosx_ret=0
+      elif [ $dosx_middle -gt 10  ]; then
+        dosx_ret=1
+      elif [ $dosx_middle -lt 10 ]; then
+        dosx_ret=1
+      else
+        dosx_ret=0
+       fi
+    fi
+
+    version=$(sw_vers | grep ProductVersion | sed 's/.*\([0-9][0-9]\)\.\([0-9][0-9]*\).*/\1/g')
+    echo "$version" | egrep -q '^[0-9]+$'
+    if [ $? == 0 ]; then
+      dosx_major=$(sw_vers | grep ProductVersion | sed 's/.*\([0-9][0-9]\)\.\([0-9][0-9]*\).*/\1/g')
+      dosx_middle=$(sw_vers | grep ProductVersion | sed 's/.*\([0-9][0-9]\)\.\([0-9][0-9]*\).*/\2/g')
+
+      if [ $dosx_major -gt 10 ]; then
+        dosx_ret=1
+      elif [ $dosx_major -lt 10 ]; then
+        dosx_ret=0
+      elif [ $dosx_middle -gt 10  ]; then
+        dosx_ret=1
+      elif [ $dosx_middle -lt 10 ]; then
+        dosx_ret=1
+      else
+        dosx_ret=0
+      fi
+    fi
+}
+
