@@ -39,6 +39,8 @@
  * \snippet grid_dist_id_unit_test.hpp Create and access a distributed grid complex
  * ### Synchronize a distributed grid for complex structures
  * \snippet grid_dist_id_unit_test.hpp Synchronized distributed grid complex
+ * ### Construct two grid with the same decomposition
+ * \snippet grid_dist_id_unit_test.hpp Construct two grid with the same decomposition
  *
  */
 template<unsigned int dim, typename St, typename T, typename Decomposition,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T> >
@@ -367,11 +369,6 @@ public:
 
 		// fill the global size of the grid
 		for (size_t i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
-
-		// Get the number of processor and calculate the number of sub-domain
-		// for decomposition
-		size_t n_proc = v_cl.getProcessingUnits();
-		size_t n_sub = n_proc * SUB_UNIT_FACTOR;
 
 		// Create local grid
 		Create();
