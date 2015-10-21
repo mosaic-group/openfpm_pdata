@@ -40,6 +40,24 @@ public:
 		return key;
 	}
 
+	/* \brief Check if two key are the same
+	 *
+	 * \param key_t key to check
+	 *
+	 * \return true if the two key are equal
+	 *
+	 */
+
+	inline bool operator==(const grid_dist_key_dx<dim> & key_t)
+	{
+		if (g_c != key_t.g_c)
+			return false;
+
+		// Check the two key index by index
+
+		return getKey() == key_t.getKey();
+	}
+
 	/*! \brief Create a new key moving the old one
 	 *
 	 * \param i dimension id

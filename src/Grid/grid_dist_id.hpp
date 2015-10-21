@@ -39,6 +39,8 @@
  * \snippet grid_dist_id_unit_test.hpp Create and access a distributed grid complex
  * ### Synchronize a distributed grid for complex structures
  * \snippet grid_dist_id_unit_test.hpp Synchronized distributed grid complex
+ * ### Construct two grid with the same decomposition
+ * \snippet grid_dist_id_unit_test.hpp Construct two grid with the same decomposition
  *
  */
 template<unsigned int dim, typename St, typename T, typename Decomposition,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T> >
@@ -54,7 +56,7 @@ class grid_dist_id
 	Vcluster_object_array<device_grid> loc_grid;
 
 	//! Space Decomposition
-	Decomposition dec;
+	Decomposition & dec;
 
 	//! Extension of each grid: Domain and ghost + domain
 	openfpm::vector<GBoxes<device_grid::dims>> gdb_ext;
@@ -350,9 +352,12 @@ class grid_dist_id
 public:
 
 	//! constructor
-	grid_dist_id(Vcluster v_cl, Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,T> & ghost)
-	:domain(domain),ghost(ghost),loc_grid(NULL),v_cl(v_cl),dec(dec)
+	grid_dist_id(Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
+	:domain(domain),ghost(ghost),dec(dec),v_cl(*global_v_cluster)
 	{
+		// Increment the reference counter of the decomposition
+		dec.incRef();
+
 		check_size(g_sz);
 
 		// For a 5x5 grid you have 4x4 Cell
@@ -363,27 +368,13 @@ public:
 		cd_sm.setDimensions(domain,c_g,0);
 
 		// fill the global size of the grid
-		for (int i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
-
-		// Get the number of processor and calculate the number of sub-domain
-		// for decomposition
-		size_t n_proc = v_cl.getProcessingUnits();
-		size_t n_sub = n_proc * SUB_UNIT_FACTOR;
-
-		// Calculate the maximum number (before merging) of sub-domain on
-		// each dimension
-		size_t div[dim];
-		for (int i = 0 ; i < dim ; i++)
-		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
-
-		// Create the sub-domains
-		dec.setParameters(div);
+		for (size_t i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
 
 		// Create local grid
 		Create();
 
 		// Calculate ghost boxes
-		dec.calculateGhostBoxes(ghost);
+		dec.calculateGhostBoxes();
 	}
 
 	/*! \brief Constrcuctor
@@ -394,8 +385,11 @@ public:
 	 *
 	 */
 	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g)
-	:domain(domain),ghost(g),dec(Decomposition(*global_v_cluster)),v_cl(*global_v_cluster)
+	:domain(domain),ghost(g),dec(*new Decomposition(*global_v_cluster)),v_cl(*global_v_cluster)
 	{
+		// Increment the reference counter of the decomposition
+		dec.incRef();
+
 		// check that the grid has valid size
 		check_size(g_sz);
 
@@ -541,6 +535,11 @@ public:
 	//! Destructor
 	~grid_dist_id()
 	{
+		dec.decRef();
+
+		// if we reach the 0, destroy the object
+		if (dec.ref() == 0)
+			delete &dec;
 	}
 
 	/*! \brief Get the Virtual Cluster machine

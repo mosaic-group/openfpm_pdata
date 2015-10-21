@@ -131,7 +131,7 @@ public:
 	 *
 	 * \param id sub-domain id
 	 *
-	 * \return the number of internal ghost box
+	 * \return the number of external ghost box
 	 *
 	 */
 	inline size_t getLocalNEGhost(size_t id)
