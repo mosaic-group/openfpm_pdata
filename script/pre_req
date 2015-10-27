@@ -12,6 +12,8 @@ source script/solve_wget
 source script/solve_automake
 source script/solve_brew
 source script/solve_libtool
+source script/detect_gcc
+source script/detect_osx
 
 discover_os
 discover_package_manager $platform
@@ -139,103 +141,19 @@ fi
 
 #### Detecting g++
 
-if [ x"$platform" == x"osx" ]; then
-  ## we try to detect osx version
-  major=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\1/g')
-  middle=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\2/g')
-  minor=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)svn.*/\3/g')
-
-  echo "$major" | egrep -q '^[0-9]+$'
-  is_maj_num=$?
-  echo "$minor" | egrep -q '^[0-9]+$'
-  is_min_num=$?
-  echo "$middle" | egrep -q '^[0-9]+$'
-  is_mid_num=$?
-
-  command -v g++-4.9  >/dev/null 2>&1
-  opt1=$?
-
-  # Major middle and minor should contain only numbers, if they dont, and smaller than 2 character otherwise the detection was garbage
-  if [ $is_maj_num -ne 0 -o $is_min_num -ne 0 -o $is_mid_num -ne 0 ]; then
-    if [ $opt1 -eq 1 ]; then
-      ## the detection is garbage, gcc49 id not present, now we check the system
-
-      major=$(sw_vers | grep ProductVersion | sed 's/.*\([0-9][0-9]\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
-      middle=$(sw_vers | grep ProductVersion | sed 's/.*\([0-9][0-9]\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
-      minor=$(sw_vers | grep ProductVersion | sed 's/.*\([0-9][0-9]\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
-
-      if [ $major -gt 10 ]; then
-        echo -e "\033[30;43;5;1m------------------------------- WARNING --------------------------------\033[0m"
-        echo "g++ seem to be present, but we failed to detect the version. Your system $major.$middle.$minor seem to be recent enough, so we will continue the installation"
-        sleep 10
-      elif [ $major -lt 10 ]; then
-        echo -e "\033[30;43;5;1m------------------------------- WARNING --------------------------------\033[0m"
-        echo "g++ seem to be present, but we failed to detect the version. Your system $major.$middle.$minor is older than 10.10.X, so is probably going to fail with the actual compiler"
-        echo "One possible solution is to try to install gcc 4.9"
-        solve_gpp $platform
-      elif [ $middle -gt 10 ]; then
-        echo -e "\033[30;43;5;1m------------------------------- WARNING --------------------------------\033[0m"
-        echo "g++ seem to be present, but we failed to detect the version. Your system $major.$middle.$minor seem to be recent enough, so we will continue the installation"
-        sleep 10       
-      elif [ $middle -lt 10 ]; then
-        echo -e "\033[30;43;5;1m------------------------------- WARNING --------------------------------\033[0m"
-        echo "g++ seem to be present, but we failed to detect the version. Your system $major.$middle.$minor is older than 10.10.X, so is probably going to fail with the actual compiler"
-        echo "One possible solution is to try to install gcc 4.9"
-        solve_gpp $platform
-      else
-        echo -e "\033[30;43;5;1m------------------------------- WARNING --------------------------------\033[0m"
-        echo "g++ seem to be present, but we failed to detect the version. Your system $major.$middle.$minor seem to be recent enough, so we will continue the installation"
-        sleep 10
-      fi
-    fi
-  else
-    ## the detection is good check the compiler
-
-    if [ $major -gt 3 ]; then
-      echo -e "clang++ $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
-    elif [ $major -lt 3 ]; then
-      echo -e "clang++ $major.$middle.$minor \033[91;5;1m FAILED \033[0m your clang $major.middle;$minor is too old, 3.6.0 or higher is required"
-      solve_gpp $platform
-    elif [ $middle -gt 6  ]; then
-      echo -e "clang++ $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
-    elif [ $middle -lt 6 ]; then
-      echo -e "clang++\033[91;5;1m FAILED \033[0m your clang is out of date, update to 3.6.0 or higher is required"
-      solve_gpp $platform
-    else
-      echo -e "clang++ version $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
-    fi
+detect_gcc_or_clang gcc
+if [ $dgc_ret -eq 0 ]; then
+  solve_gpp $platform
+  detect_gcc_or_clang gcc-4.9
+  if [ $dgc_ret -eq 0 ]; then
+    exit 1
   fi
-else
-  command -v g++ >/dev/null 2>&1
-  if [ $? -ne 0 ]; then
-    echo >&2
-    echo -e "Configure\033[91;5;1m FAILED \033[0m"
-    echo "OpenFPM require g++ but it's not installed, searching a solution..."
-    solve_gpp $platform
-    command -v g++ >/dev/null 2>&1
-    if [ $? -ne 0 ]; then
-      echo -e "g++\033[91;5;1m FAILED \033[0m"
-      exit 1
-    else
-      echo -e "g++\033[92;1m SUCCESS \033[0m"
-    fi
-  else
-    major=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
-    middle=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
-    minor=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
-    if [ $major -gt 4 ]; then
-      echo -e "g++ $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
-    elif [ $major -lt 4 ]; then
-      echo -e "g++ $major.$middle.$minor  \033[91;5;1m FAILED \033[0m your g++ version is too old"
-    elif [ $middle -gt 8  ]; then
-      echo -e "g++ $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
-    elif [ $middle -lt 8 ]; then
-      echo -e "g++ $major.$middle.$minor \033[91;5;1m FAILED \033[0m your g++ version is too old"
-    elif [ $minor -gt 1  ]; then
-      echo -e "g++ $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
-    else
-      echo -e "g++ $major.$middle.$minor \033[92;1m FAILED \033[0m your g++ version is too old"
-    fi
+elif [ $dgc_ret -eq 2 ]; then
+  detect_osx $platform
+  if [ $dosx_ret -eq 1 ]; then
+    echo -e "\033[30;43;5;1m------------------------------- WARNING --------------------------------\033[0m"
+    echo "g++ seem to be present, but we failed to detect the version. Your system $dosx_major.$dosx_middle.$dosx_minor seem to be recent enough, so we will continue the installation"
+    sleep 10    
   fi
 fi
 

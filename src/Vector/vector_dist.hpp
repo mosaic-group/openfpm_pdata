@@ -42,46 +42,58 @@
 
 /*! \brief Distributed vector
  *
- * \tparam dim Dimensionality of the space where the object live
- * \tparam St type of space
- * \tparam prop properties the object store
+ * This class reppresent a distributed vector, the distribution of the structure
+ * is based on the positional information of the elements the vector store
+ *
+ * ## Create a vector of random elements on each processor 2D
+ * \snippet vector_dist_unit_test.hpp Create a vector of random elements on each processor 2D
+ *
+ * ## Create a vector of random elements on each processor 3D
+ * \snippet vector_dist_unit_test.hpp Create a vector of random elements on each processor 3D
+ *
+ * ## Create a vector of elements distributed on a grid like way
+ * \snippet vector_dist_unit_test.hpp Create a vector of elements distributed on a grid like way
+ *
+ * ## Redistribute the particles and sync the ghost properties
+ * \snippet vector_dist_unit_test.hpp Redistribute the particles and sync the ghost properties
+ *
+ * \tparam dim Dimensionality of the space where the elements lives
+ * \tparam St type of space float, double ...
+ * \tparam prop properties the vector element store in OpenFPM data structure format
+ * \tparam Decomposition Decomposition strategy to use CartDecomposition ...
+ * \tparam Memory Memory pool where store the information HeapMemory ...
  *
  */
 
-template<unsigned int dim, typename St, typename prop, typename Decomposition , typename Memory=HeapMemory, bool with_id=false>
+template<unsigned int dim, typename St, typename prop, typename Decomposition , typename Memory=HeapMemory>
 class vector_dist
 {
 private:
 
-	// Ghost marker, all the particle with id > g_m are ghost all with g_m < are real particle
+	//! Ghost marker, all the particle with id > g_m are ghost all with g_m < are real particle
 	size_t g_m = 0;
-
-	// indicate from where the ghost particle start in the vector
-	size_t ghost_pointer;
 
 	//! Space Decomposition
 	Decomposition dec;
 
-	// Particle position vector for each sub-domain the last one is the unassigned particles vector
+	//! Particle position vector, (It has 2 elements) the first has real particles assigned to a processor
+	//! the second element contain unassigned particles
 	Vcluster_object_array<openfpm::vector<Point<dim,St>>> v_pos;
 
-	// Particle properties vector for each sub-domain the last one is the unassigned particles vector
+	//! Particle properties vector, (It has 2 elements) the first has real particles assigned to a processor
+	//! the second element contain unassigned particles
 	Vcluster_object_array<openfpm::vector<prop>> v_prp;
 
-	// Virtual cluster
+	//! Virtual cluster
 	Vcluster & v_cl;
-
-	// Geometrical cell list
-	CellList<dim,St,FAST> geo_cell;
-
-	// Label particles
-
 
 public:
 
 	/*! \brief Constructor
 	 *
-	 * \param Global number of elements
+	 * \param np number of elements
+	 * \param box domain where the vector of elements live
+	 * \param g Ghost margins
 	 *
 	 */
 	vector_dist(size_t np, Box<dim,St> box, Ghost<dim,St> g = Ghost<dim,St>())
@@ -122,22 +134,8 @@ public:
 		// Create the sub-domains
 		dec.setParameters(div,box,g);
 
-		// Get the bounding box containing the processor domain
-		const ::Box<dim,St> & bbound = dec.getProcessorBounds();
-
-		const ::Box<dim,St> & smallest_unit = dec.getSmallestSubdivision();
-
-		// convert spacing divisions
-		size_t n_g[dim];
-
-		for (size_t i = 0 ; i < dim ; i++)
-			n_g[i] = (bbound.getHigh(i) - bbound.getLow(i)) / smallest_unit.getHigh(i);
-
 		Point<dim,St> p;
 		p.zero();
-
-		// Initialize the geo cell list
-		geo_cell.Initialize(box,n_g,p,8);
 	}
 
 	/*! \brief Get the number of minimum sub-domain
@@ -160,9 +158,13 @@ public:
 		return v_pos.get(0).size();
 	}
 
-	/*! \brief Get position of an object
+	/*! \brief Get the position of an element
 	 *
-	 * \param vec_key vector element
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
 	 *
 	 */
 	template<unsigned int id> inline auto getPos(vect_dist_key_dx vec_key) -> decltype(v_pos.get(vec_key.getSub()).template get<id>(vec_key.getKey()))
@@ -170,9 +172,14 @@ public:
 		return v_pos.get(vec_key.getSub()).template get<id>(vec_key.getKey());
 	}
 
-	/*! \brief Get the property of the object
+	/*! \brief Get the property of an element
 	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \tparam id property id
 	 * \param vec_key vector element
+	 *
+	 * \return return the selected property of the vector element
 	 *
 	 */
 	template<unsigned int id> inline auto getProp(vect_dist_key_dx vec_key) -> decltype(v_prp.get(vec_key.getSub()).template get<id>(vec_key.getKey()))
@@ -192,20 +199,14 @@ public:
 		openfpm::vector<prop,PreAllocHeapMemory<2>,openfpm::grow_policy_identity> prp;
 	};
 
-	/*! \brief set the ghost
-	 *
-	 *  \param g ghost
-	 *
-	 */
-	void setGhost()
-	{
-		dec.calculateGhostBoxes();
-	}
-
 	//! It map the processor id with the communication request into map procedure
 	openfpm::vector<size_t> p_map_req;
 
-	/*! \brief It communicate the particle to the respective processor
+	/*! \brief It move all the particles that does not belong to the local processor to the respective processor
+	 *
+	 * In general this function is called after moving the particles to move the
+	 * elements out the local processor. Or just after initialization if each processor
+	 * contain non local particle
 	 *
 	 */
 	void map()
@@ -399,25 +400,22 @@ public:
 		v_prp.get(0).remove(opart,o_p_id);
 	}
 
-	// outgoing particles-id
+	//! For each adjacent processor outgoing particles-ids
 	openfpm::vector<openfpm::vector<size_t>> opart;
 
-	// Each entry contain the size of the ghost sending buffer
+	//! For each adjacent processor the size of the ghost sending buffer
 	openfpm::vector<size_t> ghost_prc_sz;
 
-	// ghost particle labels
-	openfpm::vector<size_t> ghost_lbl_p;
-
-	// Memory for the ghost sending buffer
+	//! Sending buffer for the ghost particles properties
 	Memory g_prp_mem;
 
-	// Memory for the ghost position sending buffer
+	//! Sending buffer for the ghost particles position
 	Memory g_pos_mem;
 
-	/*! \brief It synchronize getting the ghost particles
+	/*! \brief It synchronize the properties and position of the ghost particles
 	 *
-	 * \prp Properties to get
-	 * \opt options WITH_POSITION, it send also the positional information of the particles
+	 * \tparam prp list of properties to get synchronize
+	 * \param opt options WITH_POSITION, it send also the positional information of the particles
 	 *
 	 */
 	template<int... prp> void ghost_get(size_t opt = WITH_POSITION)
@@ -613,13 +611,13 @@ public:
 		}
 	}
 
-	// Receiving size
+	//! For each adjacent processor it store the size of the receiving message in byte
 	openfpm::vector<size_t> recv_sz;
 
-	// Receiving buffer for particles ghost get
+	//! For each adjacent processot it store the received message
 	openfpm::vector<HeapMemory> recv_mem_gg;
 
-	/*! \brief Call-back to allocate buffer to receive incoming objects (particles)
+	/*! \brief Call-back to allocate buffer to receive incoming elements (particles)
 	 *
 	 * \param msg_i message size required to receive from i
 	 * \param total_msg message size to receive from all the processors
@@ -632,7 +630,7 @@ public:
 	 */
 	static void * msg_alloc_ghost_get(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
 	{
-		vector_dist<dim,St,prop,Decomposition,Memory,with_id> * v = static_cast<vector_dist<dim,St,prop,Decomposition,Memory,with_id> *>(ptr);
+		vector_dist<dim,St,prop,Decomposition,Memory> * v = static_cast<vector_dist<dim,St,prop,Decomposition,Memory> *>(ptr);
 
 		v->recv_sz.resize(v->dec.getNNProcessors());
 		v->recv_mem_gg.resize(v->dec.getNNProcessors());
@@ -647,32 +645,32 @@ public:
 		return v->recv_mem_gg.get(lc_id).getPointer();
 	}
 
-	// Heap memory receiver
+	//! Receive buffer for global communication
 	HeapMemory hp_recv;
 
-	// vector v_proc
+	//! For each message contain the processor from which processor come from
 	openfpm::vector<size_t> v_proc;
 
-	// Receive counter
+	//! Total size of the received buffer
 	size_t recv_cnt;
 
-	/*! \brief Message allocation
+	/*! \brief Call-back to allocate buffer to receive incoming elements (particles)
 	 *
-	 * \param message size required to receive from i
-	 * \param total message size to receive from all the processors
-	 * \param the total number of processor want to communicate with you
+	 * \param msg_i size required to receive the message from i
+	 * \param total_msg total size to receive from all the processors
+	 * \param total_p the total number of processor that want to communicate with you
 	 * \param i processor id
 	 * \param ri request id (it is an id that goes from 0 to total_p, and is unique
 	 *           every time message_alloc is called)
 	 * \param ptr a pointer to the vector_dist structure
 	 *
-	 * \return the pointer where to store the message
+	 * \return the pointer where to store the message for the processor i
 	 *
 	 */
 	static void * message_alloc_map(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
 	{
 		// cast the pointer
-		vector_dist<dim,St,prop,Decomposition,Memory,with_id> * vd = static_cast<vector_dist<dim,St,prop,Decomposition,Memory,with_id> *>(ptr);
+		vector_dist<dim,St,prop,Decomposition,Memory> * vd = static_cast<vector_dist<dim,St,prop,Decomposition,Memory> *>(ptr);
 
 		// Resize the receive buffer, and the size of each message buffer
 		vd->hp_recv.resize(total_msg);
@@ -743,7 +741,7 @@ public:
 
 	/*! \brief Output particle position and properties
 	 *
-	 * \param File output
+	 * \param out output
 	 * \param opt NO_GHOST or WITH_GHOST
 	 *
 	 * \return if the file has been written correctly
@@ -751,18 +749,13 @@ public:
 	 */
 	inline bool write(std::string out, int opt = NO_GHOST)
 	{
-		if (hasEnding(out,".csv"))
-		{
-			// CSVWriter test
-			CSVWriter<openfpm::vector<Point<dim,St>>, openfpm::vector<prop> > csv_writer;
+		// CSVWriter test
+		CSVWriter<openfpm::vector<Point<dim,St>>, openfpm::vector<prop> > csv_writer;
 
-			std::string output = std::to_string(v_cl.getProcessUnitID()) + std::string("_") + out;
+		std::string output = std::to_string(out + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".csv"));
 
-			// Write the CSV
-			return csv_writer.write(output,v_pos.get(INTERNAL),v_prp.get(INTERNAL));
-		}
-
-		return false;
+		// Write the CSV
+		return csv_writer.write(output,v_pos.get(INTERNAL),v_prp.get(INTERNAL));
 	}
 };
 

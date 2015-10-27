@@ -872,30 +872,130 @@ void Test3D_complex(const Box<3,float> & domain, long int k)
 			// In this case the boundary condition are non periodic
 			if (g_dist.isInside(key_g))
 			{
-				match &= (g_dist.template get<p::x>(key),1 + k)?true:false;
-				match &= (g_dist.template get<p::y>(key),567 + k)?true:false;
-				match &= (g_dist.template get<p::z>(key), 341 + k)?true:false;
-				match &= (g_dist.template get<p::s>(key), 5670 + k)?true:false;
+				match &= (g_dist.template get<p::x>(key) == 1 + k)?true:false;
+				match &= (g_dist.template get<p::y>(key) == 567 + k)?true:false;
+				match &= (g_dist.template get<p::z>(key) == 341 + k)?true:false;
+				match &= (g_dist.template get<p::s>(key) == 5670 + k)?true:false;
 
-				match &= (g_dist.template get<p::v>(key)[0], 921 + k)?true:false;
-				match &= (g_dist.template get<p::v>(key)[1], 5675 + k)?true:false;
-				match &= (g_dist.template get<p::v>(key)[2], 117 + k)?true:false;
+				match &= (g_dist.template get<p::v>(key)[0] == 921 + k)?true:false;
+				match &= (g_dist.template get<p::v>(key)[1] == 5675 + k)?true:false;
+				match &= (g_dist.template get<p::v>(key)[2] == 117 + k)?true:false;
 
-				match &= (g_dist.template get<p::t>(key)[0][0], 1921 + k)?true:false;
-				match &= (g_dist.template get<p::t>(key)[0][1], 25675 + k)?true:false;
-				match &= (g_dist.template get<p::t>(key)[0][2], 3117 + k)?true:false;
-				match &= (g_dist.template get<p::t>(key)[1][0], 4921 + k)?true:false;
-				match &= (g_dist.template get<p::t>(key)[1][1], 55675 + k)?true:false;
-				match &= (g_dist.template get<p::t>(key)[1][2], 6117 + k)?true:false;
-				match &= (g_dist.template get<p::t>(key)[2][0], 7921 + k)?true:false;
-				match &= (g_dist.template get<p::t>(key)[2][1], 85675 + k)?true:false;
-				match &= (g_dist.template get<p::t>(key)[2][2], 9117 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[0][0] == 1921 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[0][1] == 25675 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[0][2] == 3117 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[1][0] == 4921 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[1][1] == 55675 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[1][2] == 6117 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[2][0] == 7921 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[2][1] == 85675 + k)?true:false;
+				match &= (g_dist.template get<p::t>(key)[2][2] == 9117 + k)?true:false;
 			}
 
 			++domg;
 		}
 
 		BOOST_REQUIRE_EQUAL(match,true);
+	}
+}
+
+// Test duplicated topology
+
+void Test3D_dup(const Box<3,float> & domain, long int k)
+{
+	long int big_step = k / 30;
+	big_step = (big_step == 0)?1:big_step;
+	long int small_step = 1;
+
+	Vcluster & v_cl = *global_v_cluster;
+
+	if ( v_cl.getProcessingUnits() > 32 )
+		return;
+
+	print_test( "Testing 3D duplicate topology complex k<=",k);
+
+	// 3D test
+	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
+	{
+		BOOST_TEST_CHECKPOINT( "Testing 3D copy decomposition grid k=" << k );
+
+		// grid size
+		size_t sz[3];
+		sz[0] = k;
+		sz[1] = k;
+		sz[2] = k;
+
+		// factor
+		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+
+		// Ghost
+		Ghost<3,float> g(0.01 / factor);
+
+		//! [Construct two grid with the same decomposition]
+
+		// Distributed grid with id decomposition
+		grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> g_dist1(sz,domain,g);
+
+		// another grid with the same decomposition
+		grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> g_dist2(g_dist1.getDecomposition(),sz,domain,g);
+
+		//! [Construct two grid with the same decomposition]
+
+		BOOST_REQUIRE_EQUAL(g_dist2.getDecomposition().ref(),2);
+
+		auto dom_g1 = g_dist1.getDomainIterator();
+		auto dom_g2 = g_dist2.getDomainIterator();
+
+		bool check = true;
+
+		while (dom_g1.isNext())
+		{
+			auto key1 = dom_g1.get();
+			auto key2 = dom_g2.get();
+
+			check &= (key1 == key2)?true:false;
+
+			++dom_g1;
+			++dom_g2;
+		}
+
+		BOOST_REQUIRE_EQUAL(check,true);
+	}
+
+	// 3D test
+	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
+	{
+		BOOST_TEST_CHECKPOINT( "Testing 3D copy decomposition grid k=" << k );
+
+		// grid size
+		size_t sz[3];
+		sz[0] = k;
+		sz[1] = k;
+		sz[2] = k;
+
+		// factor
+		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+
+		// Ghost
+		Ghost<3,float> g(0.01 / factor);
+
+		//! [Construct two grid with the same decomposition]
+
+		// Distributed grid with id decomposition
+		grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> * g_dist1 = new grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>>(sz,domain,g);
+
+		// another grid with the same decomposition
+		grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> * g_dist2 = new grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>>(g_dist1->getDecomposition(),sz,domain,g);
+
+		//! [Construct two grid with the same decomposition]
+
+		BOOST_REQUIRE_EQUAL(g_dist2->getDecomposition().ref(),2);
+
+		delete g_dist1;
+
+		BOOST_REQUIRE_EQUAL(g_dist2->getDecomposition().ref(),1);
+		BOOST_REQUIRE_EQUAL(g_dist2->getDecomposition().getLocalNEGhost(0) != 0, true);
+		BOOST_REQUIRE_EQUAL(g_dist2->getDecomposition().check_consistency(),false);
 	}
 }
 
@@ -919,6 +1019,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 	k = std::pow(k, 1/3.);
 	Test3D(domain3,k);
 	Test3D_complex(domain3,k);
+	Test3D_dup(domain3,k);
 }
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_sub_iterator_test_use)

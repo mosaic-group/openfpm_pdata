@@ -66,6 +66,25 @@ struct nm_v
 
 	//! total number of properties boost::fusion::vector
 	static const unsigned int max_prop = 8;
+    
+    //! default constructor
+    nm_v(){
+        
+    }
+    
+    template <unsigned int dim, typename Mem> inline nm_v(const encapc<dim,nm_v,Mem> & p)
+    {
+        boost::fusion::at_c<0>(data) = p.template get<0>();
+        boost::fusion::at_c<1>(data) = p.template get<1>();
+        boost::fusion::at_c<2>(data) = p.template get<2>();
+        boost::fusion::at_c<3>(data) = p.template get<3>();
+        boost::fusion::at_c<4>(data) = p.template get<4>();
+        boost::fusion::at_c<5>(data) = p.template get<5>();
+        boost::fusion::at_c<6>(data) = p.template get<6>();
+        boost::fusion::at_c<7>(data) = p.template get<7>();
+    }
+    
+    
 };
 
 const std::string nm_v::attributes::name[] = {"x","y","z","communication","computation","memory","id","sub_id"};
@@ -132,7 +151,21 @@ struct nm_part_v
 
 	//! total number of properties
 	static const unsigned int max_prop = 2;
+    
+    //! default constructor
+    nm_part_v(){
+        
+    }
+    
+    template <unsigned int dim, typename Mem> inline nm_part_v(const encapc<dim,nm_part_v,Mem> & p)
+    {
+        boost::fusion::at_c<0>(data) = p.template get<0>();
+        boost::fusion::at_c<1>(data) = p.template get<1>();
+    }
+    
 };
+
+
 
 const std::string nm_part_v::attributes::name[] = {"id","sub_id"};
 
@@ -156,6 +189,14 @@ struct nm_part_e
 
 	//! total number of properties
 	static const unsigned int max_prop = 0;
+    
+    //! Attributes name
+    struct attributes
+    {
+        static const std::string name[];
+    };
 };
+
+const std::string nm_part_e::attributes::name[] = {"id"};
 
 #endif

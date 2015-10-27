@@ -40,8 +40,13 @@
  * \snippet grid_dist_id_unit_test.hpp Create and access a distributed grid complex
  * ### Synchronize a distributed grid for complex structures
  * \snippet grid_dist_id_unit_test.hpp Synchronized distributed grid complex
+<<<<<<< HEAD
  * ### Usage of a grid dist iterator sub
  * \snippet grid_dist_id_unit_test.hpp Usage of a sub_grid iterator
+=======
+ * ### Construct two grid with the same decomposition
+ * \snippet grid_dist_id_unit_test.hpp Construct two grid with the same decomposition
+>>>>>>> master
  *
  */
 template<unsigned int dim, typename St, typename T, typename Decomposition,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T> >
@@ -57,7 +62,7 @@ class grid_dist_id
 	Vcluster_object_array<device_grid> loc_grid;
 
 	//! Space Decomposition
-	Decomposition dec;
+	Decomposition & dec;
 
 	//! Extension of each grid: Domain and ghost + domain
 	openfpm::vector<GBoxes<device_grid::dims>> gdb_ext;
@@ -356,6 +361,7 @@ class grid_dist_id
 		}
 	}
 
+<<<<<<< HEAD
 	/*! \brief Create the grids on memory
 	 *
 	 */
@@ -363,6 +369,18 @@ class grid_dist_id
 	{
 		Box<dim,St> g_rnd_box;
 		for (size_t i = 0 ; i < dim ; i++)	{g_rnd_box.setHigh(i,0.5); g_rnd_box.setLow(i,-0.5);}
+=======
+public:
+
+	//! constructor
+	grid_dist_id(Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
+	:domain(domain),ghost(ghost),dec(dec),v_cl(*global_v_cluster)
+	{
+		// Increment the reference counter of the decomposition
+		dec.incRef();
+
+		check_size(g_sz);
+>>>>>>> master
 
 		// Get the number of local grid needed
 		size_t n_grid = dec.getNLocalHyperCube();
@@ -370,6 +388,7 @@ class grid_dist_id
 		// create local grids for each hyper-cube
 		loc_grid = v_cl.allocate<device_grid>(n_grid);
 
+<<<<<<< HEAD
 		// Size of the grid on each dimension
 		size_t l_res[dim];
 
@@ -385,10 +404,15 @@ class grid_dist_id
 			// Convert from SpaceBox<dim,St> to SpaceBox<dim,long int>
 			SpaceBox<dim,long int> sp_t = cd_sm.convertDomainSpaceIntoGridUnits(sp);
 			SpaceBox<dim,long int> sp_tg = cd_sm.convertDomainSpaceIntoGridUnits(sp_g);
+=======
+		// fill the global size of the grid
+		for (size_t i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
+>>>>>>> master
 
 			//! Save the origin of the sub-domain of the local grid
 			gdb_ext.last().origin = sp_tg.getP1();
 
+<<<<<<< HEAD
 			// save information about the local grid: domain box seen inside the domain + ghost box (see GDBoxes for a visual meaning)
 			// and where the GDBox start, or the origin of the local grid (+ghost) in global coordinate
 			gdb_ext.last().Dbox = sp_t;
@@ -403,6 +427,10 @@ class grid_dist_id
 			// Set the dimensions of the local grid
 			loc_grid.get(i).resize(l_res);
 		}
+=======
+		// Calculate ghost boxes
+		dec.calculateGhostBoxes();
+>>>>>>> master
 	}
 
 	/*! \brief Default Copy constructor on this class make no sense and is unsafe, this definition disable it
@@ -416,8 +444,16 @@ class grid_dist_id
 	 *
 	 *
 	 */
+<<<<<<< HEAD
 	inline void InitializeCellDecomposer(const size_t (& g_sz)[dim])
+=======
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g)
+	:domain(domain),ghost(g),dec(*new Decomposition(*global_v_cluster)),v_cl(*global_v_cluster)
+>>>>>>> master
 	{
+		// Increment the reference counter of the decomposition
+		dec.incRef();
+
 		// check that the grid has valid size
 		check_size(g_sz);
 
@@ -640,6 +676,11 @@ public:
 	//! Destructor
 	~grid_dist_id()
 	{
+		dec.decRef();
+
+		// if we reach the 0, destroy the object
+		if (dec.ref() == 0)
+			delete &dec;
 	}
 
 	/*! \brief Get the Virtual Cluster machine

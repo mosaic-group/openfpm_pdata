@@ -6,7 +6,7 @@ pdata_CXXFLAGS = $(CUDA_CFLAGS) $(INCLUDES_PATH) $(METIS_INCLUDE) $(BOOST_CPPFLA
 pdata_CFLAGS = $(CUDA_CFLAGS)
 pdata_LDADD = $(LINKLIBS) -lmetis
 nobase_include_HEADERS = Decomposition/CartDecomposition.hpp Decomposition/common.hpp Decomposition/Decomposition.hpp  Decomposition/ie_ghost.hpp \
-         Decomposition/nn_processor.hpp Decomposition/DistModel.hpp Decomposition/ie_loc_ghost.hpp Decomposition/ORB.hpp \
+         Decomposition/nn_processor.hpp Decomposition/ie_loc_ghost.hpp Decomposition/ORB.hpp \
          Graph/CartesianGraphFactory.hpp \
          Grid/grid_dist_id.hpp Grid/grid_dist_id_iterator.hpp Grid/grid_dist_key.hpp \
          Vector/vector_dist.hpp Vector/vector_dist_iterator.hpp Vector/vector_dist_key.hpp \

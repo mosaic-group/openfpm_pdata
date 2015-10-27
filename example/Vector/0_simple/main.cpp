@@ -118,9 +118,17 @@ int main(int argc, char* argv[])
 	v_cl.execute();
 	
 	//
-	// ### WIKI 14 ###
+	// ### WIKI 9 ###
+	//
+	// Output the particle position for each processor
+	//
+
+	vd.write("output");
+
+	//
+	// ### WIKI 10 ###
 	//
 	// Deinitialize the library
 	//
-	delete(global_v_cluster);
+	delete_global_v_cluster();
 }

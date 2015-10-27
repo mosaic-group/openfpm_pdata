@@ -151,5 +151,5 @@ int main(int argc, char* argv[])
 	//
 	// Deinitialize the library
 	//
-	delete(global_v_cluster);
+	delete_global_v_cluster();
 }
