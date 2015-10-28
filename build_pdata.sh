@@ -258,7 +258,6 @@ then
 else
  echo "Compiling general"
  source ~/.bashrc
- sh ./autogen.sh
  ./install -s
 
  mpirun -np 2 ./src/pdata
