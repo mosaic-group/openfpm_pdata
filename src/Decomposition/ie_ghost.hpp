@@ -349,7 +349,7 @@ public:
 	 * \return sub-domain at which belong the internal ghost box
 	 *
 	 */
-	inline const size_t getProcessorIGhostSub(size_t id, size_t j) const
+	inline size_t getProcessorIGhostSub(size_t id, size_t j) const
 	{
 		return proc_int_box.get(id).ibx.get(j).sub;
 	}
@@ -361,7 +361,7 @@ public:
 	 * \return sub-domain at which belong the external ghost box
 	 *
 	 */
-	inline const size_t getProcessorEGhostSub(size_t id, size_t j) const
+	inline size_t getProcessorEGhostSub(size_t id, size_t j) const
 	{
 		return proc_int_box.get(id).ebx.get(j).sub;
 	}

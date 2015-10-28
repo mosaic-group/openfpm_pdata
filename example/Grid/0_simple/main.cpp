@@ -144,7 +144,7 @@ int main(int argc, char* argv[])
 	//
 	// For debugging porpouse and demostration we output the decomposition
 	//
-	g_dist.getDecomposition().write("dec/out");
+	g_dist.getDecomposition().write("out_dec");
 	
 	//
 	// ### WIKI 14 ###

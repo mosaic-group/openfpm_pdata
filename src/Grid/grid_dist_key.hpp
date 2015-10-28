@@ -40,6 +40,16 @@ public:
 		return key;
 	}
 
+	/*! \brief Get the reference key
+	 *
+	 * \return the local key
+	 *
+	 */
+	inline grid_key_dx<dim> & getKeyRef()
+	{
+		return key;
+	}
+
 	/* \brief Check if two key are the same
 	 *
 	 * \param key_t key to check
@@ -73,7 +83,7 @@ public:
 		return grid_dist_key_dx<dim>(getSub(),key);
 	}
 
-	inline grid_dist_key_dx(int g_c, grid_key_dx<dim> key)
+	inline grid_dist_key_dx(int g_c, const grid_key_dx<dim> & key)
 	:g_c(g_c),key(key)
 	{
 	}

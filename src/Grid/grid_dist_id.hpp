@@ -40,13 +40,10 @@
  * \snippet grid_dist_id_unit_test.hpp Create and access a distributed grid complex
  * ### Synchronize a distributed grid for complex structures
  * \snippet grid_dist_id_unit_test.hpp Synchronized distributed grid complex
-<<<<<<< HEAD
  * ### Usage of a grid dist iterator sub
  * \snippet grid_dist_id_unit_test.hpp Usage of a sub_grid iterator
-=======
  * ### Construct two grid with the same decomposition
  * \snippet grid_dist_id_unit_test.hpp Construct two grid with the same decomposition
->>>>>>> master
  *
  */
 template<unsigned int dim, typename St, typename T, typename Decomposition,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T> >
@@ -361,7 +358,6 @@ class grid_dist_id
 		}
 	}
 
-<<<<<<< HEAD
 	/*! \brief Create the grids on memory
 	 *
 	 */
@@ -369,18 +365,6 @@ class grid_dist_id
 	{
 		Box<dim,St> g_rnd_box;
 		for (size_t i = 0 ; i < dim ; i++)	{g_rnd_box.setHigh(i,0.5); g_rnd_box.setLow(i,-0.5);}
-=======
-public:
-
-	//! constructor
-	grid_dist_id(Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
-	:domain(domain),ghost(ghost),dec(dec),v_cl(*global_v_cluster)
-	{
-		// Increment the reference counter of the decomposition
-		dec.incRef();
-
-		check_size(g_sz);
->>>>>>> master
 
 		// Get the number of local grid needed
 		size_t n_grid = dec.getNLocalHyperCube();
@@ -388,7 +372,6 @@ public:
 		// create local grids for each hyper-cube
 		loc_grid = v_cl.allocate<device_grid>(n_grid);
 
-<<<<<<< HEAD
 		// Size of the grid on each dimension
 		size_t l_res[dim];
 
@@ -404,15 +387,10 @@ public:
 			// Convert from SpaceBox<dim,St> to SpaceBox<dim,long int>
 			SpaceBox<dim,long int> sp_t = cd_sm.convertDomainSpaceIntoGridUnits(sp);
 			SpaceBox<dim,long int> sp_tg = cd_sm.convertDomainSpaceIntoGridUnits(sp_g);
-=======
-		// fill the global size of the grid
-		for (size_t i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
->>>>>>> master
 
 			//! Save the origin of the sub-domain of the local grid
 			gdb_ext.last().origin = sp_tg.getP1();
 
-<<<<<<< HEAD
 			// save information about the local grid: domain box seen inside the domain + ghost box (see GDBoxes for a visual meaning)
 			// and where the GDBox start, or the origin of the local grid (+ghost) in global coordinate
 			gdb_ext.last().Dbox = sp_t;
@@ -427,10 +405,6 @@ public:
 			// Set the dimensions of the local grid
 			loc_grid.get(i).resize(l_res);
 		}
-=======
-		// Calculate ghost boxes
-		dec.calculateGhostBoxes();
->>>>>>> master
 	}
 
 	/*! \brief Default Copy constructor on this class make no sense and is unsafe, this definition disable it
@@ -444,12 +418,7 @@ public:
 	 *
 	 *
 	 */
-<<<<<<< HEAD
 	inline void InitializeCellDecomposer(const size_t (& g_sz)[dim])
-=======
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g)
-	:domain(domain),ghost(g),dec(*new Decomposition(*global_v_cluster)),v_cl(*global_v_cluster)
->>>>>>> master
 	{
 		// Increment the reference counter of the decomposition
 		dec.incRef();
@@ -504,9 +473,10 @@ public:
 	// Decomposition used
 	typedef Decomposition decomposition;
 
-	//! constructor
-	grid_dist_id(Vcluster v_cl, Decomposition & dec, const size_t (& g_sz)[dim] , const Box<dim,St> & domain, const Ghost<dim,T> & ghost)
-	:domain(domain),ghost(ghost),loc_grid(NULL),v_cl(v_cl),dec(dec),ginfo(g_sz),ginfo_v(g_sz)
+
+    //! constructor
+    grid_dist_id(Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
+    :domain(domain),ghost(ghost),dec(dec),v_cl(*global_v_cluster)
 	{
 		InitializeCellDecomposer(g_sz);
 		InitializeStructures(g_sz);
@@ -520,7 +490,7 @@ public:
 	 *
 	 */
 	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g)
-	:domain(domain),ghost(g),dec(Decomposition(*global_v_cluster)),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
+	:domain(domain),ghost(g),dec(* new Decomposition(*global_v_cluster)),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
 	{
 		InitializeCellDecomposer(g_sz);
 		InitializeStructures(g_sz);
@@ -534,7 +504,36 @@ public:
 	 *
 	 */
 	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,size_t> & g)
-	:domain(domain),dec(Decomposition(*global_v_cluster)),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
+	:domain(domain),dec(*new Decomposition(*global_v_cluster)),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
+	{
+		InitializeCellDecomposer(g_sz);
+
+		// get the grid spacing
+		Box<dim,St> sp = cd_sm.getCellBox();
+
+		// enlarge 0.001 of the spacing
+		sp.magnify_fix_P1(0.001);
+
+		// set the ghost
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			ghost.setLow(i,sp.getHigh(i));
+			ghost.setHigh(i,sp.getHigh(i));
+		}
+
+		// Initialize structures
+		InitializeStructures(g_sz);
+	}
+
+	/*! \brief Constrcuctor
+	 *
+	 * \param g_sz array with the grid size on each dimension
+	 * \param domain domain where this grid live
+	 * \param g Ghost given in grid units
+	 *
+	 */
+	grid_dist_id(Decomposition & dec, const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,size_t> & g)
+	:domain(domain),dec(dec),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
 	{
 		InitializeCellDecomposer(g_sz);
 
@@ -622,8 +621,10 @@ public:
 
 		for (size_t i = 0 ; i < gdb_ext.size() ; i++)
 		{
-			total += gdb_ext.Dbox.getVolumeKey();
+			total += gdb_ext.get(i).Dbox.getVolumeKey();
 		}
+
+		return total;
 	}
 
 	/*! \brief It return the informations about the local grids
@@ -692,6 +693,17 @@ public:
 	Vcluster & getVC()
 	{
 		return v_cl;
+	}
+
+	/*! \brief Get the reference of the selected element
+	 *
+	 * \param p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 */
+	template <unsigned int p>inline const auto get(const grid_dist_key_dx<dim> & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	{
+		return loc_grid.get(v1.getSub()).template get<p>(v1.getKey());
 	}
 
 	/*! \brief Get the reference of the selected element
