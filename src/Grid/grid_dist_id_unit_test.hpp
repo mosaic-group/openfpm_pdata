@@ -548,11 +548,8 @@ void Test3D_gg(const Box<3,float> & domain, long int k, long int gk)
 		sz[1] = k;
 		sz[2] = k;
 
-		// factor
-		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
-
 		// Ghost
-		Ghost<3,size_t> g(gk);
+		Ghost<3,long int> g(gk);
 
 		// Distributed grid with id decomposition
 		grid_dist_id<3, float, scalar<float>, CartDecomposition<3,float>> g_dist(sz,domain,g);
@@ -569,8 +566,12 @@ void Test3D_gg(const Box<3,float> & domain, long int k, long int gk)
 
 		for (size_t i = 0 ; i < lg.size() ; i++)
 		{
-			BOOST_REQUIRE_EQUAL(lg.get(i).Dbox.getLow(i),gk);
-			BOOST_REQUIRE_EQUAL(lg.get(i).GDbox.getHigh(i)- lg.get(i).Dbox.getHigh(i),gk);
+			BOOST_REQUIRE(lg.get(i).Dbox.getLow(i) >= gk);
+			if ((lg.get(i).GDbox.getHigh(i) - lg.get(i).Dbox.getHigh(i)) < gk)
+			{
+				std::cout << "DIOCANE: " << gk << "  " << (lg.get(i).GDbox.getHigh(i) - lg.get(i).Dbox.getHigh(i)) << "\n";
+			}
+			BOOST_REQUIRE((lg.get(i).GDbox.getHigh(i) - lg.get(i).Dbox.getHigh(i)) >= gk);
 		}
 	}
 }

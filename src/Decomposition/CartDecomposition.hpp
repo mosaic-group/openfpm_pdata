@@ -31,14 +31,7 @@
 
 #define CARTDEC_ERROR 2000lu
 
-// Macro that decide what to do in case of error
-#ifdef STOP_ON_ERROR
-#define ACTION_ON_ERROR() exit(1);
-#elif defined(THROW_ON_ERROR)
-#define ACTION_ON_ERROR() throw CARTDEC_ERROR;
-#else
-#define ACTION_ON_ERROR()
-#endif
+#include "util/se_util.hpp"
 
 /**
  * \brief This class decompose a space into subspaces
@@ -126,6 +119,21 @@ private:
 
 	//! Cell-list that store the geometrical information of the local internal ghost boxes
 	CellList<dim,T,FAST> lgeo_cell;
+
+	// Heap memory receiver
+	HeapMemory hp_recv;
+
+	// vector v_proc
+	openfpm::vector<size_t> v_proc;
+
+	// Receive counter
+	size_t recv_cnt;
+
+	// reference counter of the object in case is shared between object
+	long int ref_cnt;
+
+	// Save the ghost boundaries
+	Ghost<dim,T> ghost;
 
 	/*! \brief Constructor, it decompose and distribute the sub-domains across the processors
 	 *
@@ -286,10 +294,6 @@ private:
 		lgeo_cell.Initialize(domain,div,orig);
 	}
 
-	// Save the ghost boundaries
-	Ghost<dim,T> ghost;
-
-
 	/*! \brief Create the subspaces that decompose your domain
 	 *
 	 */
@@ -325,19 +329,6 @@ private:
 		}
 	}
 
-	// Heap memory receiver
-	HeapMemory hp_recv;
-
-	// vector v_proc
-	openfpm::vector<size_t> v_proc;
-
-	// Receive counter
-	size_t recv_cnt;
-
-	// reference counter of the object in case is shared between object
-
-	long int ref_cnt;
-
 public:
 
 	//! Increment the reference counter
@@ -364,6 +355,28 @@ public:
 	{
 		// Reset the box to zero
 		bbox.zero();
+	}
+
+	/*! \brief Cartesian decomposition copy constructor
+	 *
+     * \param cart object to copy
+	 *
+	 */
+	CartDecomposition(const CartDecomposition<dim,T,Memory,Domain> & cart)
+	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),ref_cnt(0)
+	{
+		this->operator=(cart);
+	}
+
+	/*! \brief Cartesian decomposition copy constructor
+	 *
+     * \param cart object to copy
+	 *
+	 */
+	CartDecomposition(CartDecomposition<dim,T,Memory,Domain> && cart)
+	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),ref_cnt(0)
+	{
+		this->operator=(cart);
 	}
 
 	//! Cartesian decomposition destructor
@@ -536,7 +549,7 @@ p1[0]<-----+         +----> p2[0]
 		{
 			if (ghost.template getLow(i) >= domain.template getHigh(i) / gr.size(i) || ghost.template getHigh(i)  >= domain.template getHigh(i) / gr.size(i))
 			{
-				std::cerr << "Error " << __FILE__ << ":" << __LINE__  << " : Ghost are bigger than one domain" << "\n";
+				std::cerr << "Error " << __FILE__ << ":" << __LINE__  << " : Ghost are bigger than one sub-domain" << "\n";
 			}
 		}
 #endif
@@ -557,9 +570,98 @@ p1[0]<-----+         +----> p2[0]
 		{
 			if (ghost.template getLow(i) >= ss_box.getHigh(i) || ghost.template getHigh(i)  >= domain.template getHigh(i) / gr.size(i))
 			{
-				std::cerr << "Error " << __FILE__ << ":" << __LINE__  << " : Ghost are bigger than one domain" << "\n";
+				std::cerr << "Error " << __FILE__ << ":" << __LINE__  << " : Ghost are bigger than one sub-domain" << "\n";
 			}
 		}
+	}
+
+	/*! \brief It create anothe object that contain the same information and act in the same way
+	 *
+	 * \return a duplicated decomposition
+	 *
+	 */
+	CartDecomposition<dim,T,Memory,Domain> duplicate()
+	{
+		CartDecomposition<dim,T,Memory,Domain> cart(v_cl);
+
+		(static_cast<ie_loc_ghost<dim,T>*>(&cart))->operator=(static_cast<ie_loc_ghost<dim,T>>(*this));
+		(static_cast<nn_prcs<dim,T>*>(&cart))->operator=(static_cast<nn_prcs<dim,T>>(*this));
+		(static_cast<ie_ghost<dim,T>*>(&cart))->operator=(static_cast<ie_ghost<dim,T>>(*this));
+
+		cart.sub_domains = sub_domains;
+		cart.box_nn_processor = box_nn_processor;
+		cart.fine_s = fine_s;
+		cart.gr = gr;
+		cart.cd = cd;
+		cart.domain = domain;
+		std::copy(spacing,spacing+3,cart.spacing);
+
+		//! Runtime virtual cluster
+		cart.v_cl = v_cl;
+
+		//! Cell-list that store the geometrical information of the local internal ghost boxes
+		cart.lgeo_cell = lgeo_cell;
+		cart.ghost = ghost;
+
+		return cart;
+	}
+
+	/*! \brief Copy the element
+	 *
+	 * \param cart element to copy
+	 *
+	 */
+	CartDecomposition<dim,T,Memory,Domain> & operator=(const CartDecomposition & cart)
+	{
+		static_cast<ie_loc_ghost<dim,T>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T>>(cart));
+		static_cast<nn_prcs<dim,T>*>(this)->operator=(static_cast<nn_prcs<dim,T>>(cart));
+		static_cast<ie_ghost<dim,T>*>(this)->operator=(static_cast<ie_ghost<dim,T>>(cart));
+
+		sub_domains = cart.sub_domains;
+		box_nn_processor = cart.box_nn_processor;
+		fine_s = cart.fine_s;
+		gr = cart.gr;
+		cd = cart.cd;
+		domain = cart.domain;
+		std::copy(cart.spacing,cart.spacing+3,spacing);
+
+		//! Runtime virtual cluster
+		v_cl = cart.v_cl;
+
+		//! Cell-list that store the geometrical information of the local internal ghost boxes
+		lgeo_cell = cart.lgeo_cell;
+		ghost = cart.ghost;
+
+		return *this;
+	}
+
+	/*! \brief Copy the element, move semantic
+	 *
+	 * \param cart element to copy
+	 *
+	 */
+	CartDecomposition<dim,T,Memory,Domain> & operator=(CartDecomposition && cart)
+	{
+		static_cast<ie_loc_ghost<dim,T>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T>*>(cart));
+		static_cast<nn_prcs<dim,T>*>(this)->operator=(static_cast<nn_prcs<dim,T>*>(cart));
+		static_cast<ie_ghost<dim,T>*>(this)->operator=(static_cast<ie_ghost<dim,T>*>(cart));
+
+		sub_domains.swap(cart.sub_domains);
+		box_nn_processor.swap(cart.box_nn_processor);
+		fine_s.swap(cart.fine_s);
+		gr = cart.gr;
+		cd = cart.cd;
+		domain = cart.domain;
+		std::copy(cart.spacing,cart.spacing+3,spacing);
+
+		//! Runtime virtual cluster
+		v_cl = cart.v_cl;
+
+		//! Cell-list that store the geometrical information of the local internal ghost boxes
+		lgeo_cell.swap(cart.lgeo_cell);
+		ghost = cart.ghost;
+
+		return *this;
 	}
 
 	/*! \brief The default grid size

@@ -127,6 +127,43 @@ protected:
 
 public:
 
+	//! Default constructor
+	ie_loc_ghost()	{};
+
+	//! Constructor from another ie_loc_ghost
+	ie_loc_ghost(const ie_loc_ghost<dim,T> & ilg)
+	{
+		this->operator=(ilg);
+	};
+
+	//! Constructor from temporal ie_loc_ghost
+	ie_loc_ghost(ie_loc_ghost<dim,T> && ilg)
+	{
+		this->operator=(ilg);
+	}
+
+	/*! \brief copy the ie_loc_ghost
+	 *
+	 * \param ilg object to copy
+	 *
+	 */
+	ie_loc_ghost<dim,T> & operator=(const ie_loc_ghost<dim,T> & ilg)
+	{
+		loc_ghost_box = ilg.loc_ghost_box;
+		return *this;
+	}
+
+	/*! \brief copy the ie_loc_ghost
+	 *
+	 * \param ilg object to copy
+	 *
+	 */
+	ie_loc_ghost<dim,T> & operator=(ie_loc_ghost<dim,T> && ilg)
+	{
+		loc_ghost_box.swap(ilg.loc_ghost_box);
+		return *this;
+	}
+
 	/*! \brief Get the number of external local ghost box for each sub-domain
 	 *
 	 * \param id sub-domain id

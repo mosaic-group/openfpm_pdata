@@ -131,6 +131,49 @@ struct N_box
 
 	// Near processor sub-domains
 	typename openfpm::vector<::Box<dim,T>> bx;
+
+	//! Default constructor
+	N_box() {};
+
+	//! Copy constructor
+	N_box(const N_box<dim,T> & b)
+	{
+		this->operator=(b);
+	}
+
+	//! Copy constructor
+	N_box(N_box<dim,T> && b)
+	{
+		this->operator=(b);
+	}
+
+	/*! \brief Copy the element
+	 *
+	 * \param ele element to copy
+	 *
+	 */
+	N_box<dim,T> & operator=(const N_box<dim,T> & ele)
+	{
+		id = ele.id;
+
+		bx = ele.bx;
+
+		return * this;
+	}
+
+	/*! \brief Copy the element
+	 *
+	 * \param ele element to copy
+	 *
+	 */
+	N_box<dim,T> & operator=(N_box<dim,T> && ele)
+	{
+		id = ele.id;
+
+		bx.swap(ele.bx);
+
+		return * this;
+	}
 };
 
 // It store all the boxes of the near processors in a linear array

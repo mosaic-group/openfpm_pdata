@@ -69,6 +69,52 @@ public:
 	nn_prcs(Vcluster & v_cl)
 	:v_cl(v_cl){}
 
+	//! Constructor from another ie_loc_ghost
+	nn_prcs(const nn_prcs<dim,T> & ilg)
+	:v_cl(ilg.v_cl)
+	{
+		this->operator=(ilg);
+	};
+
+	//! Constructor from temporal ie_loc_ghost
+	nn_prcs(nn_prcs<dim,T> && ilg)
+	:v_cl(ilg.v_cl)
+	{
+		this->operator=(ilg);
+	}
+
+	/*! \brief Copy the object
+	 *
+	 * \param nnp object to copy
+	 *
+	 */
+	nn_prcs<dim,T> & operator=(const nn_prcs<dim,T> & nnp)
+	{
+		v_cl = nnp.v_cl;
+		nn_processors = nnp.nn_processors;
+		nn_processor_subdomains = nnp.nn_processor_subdomains;
+		proc_adj_box = nnp.proc_adj_box;
+		boxes = nnp.boxes;
+
+		return *this;
+	}
+
+	/*! \brief Copy the object
+	 *
+	 * \param nnp object to copy
+	 *
+	 */
+	nn_prcs<dim,T> & operator=(nn_prcs<dim,T> && nnp)
+	{
+		v_cl = nnp.v_cl;
+		nn_processors.swap(nnp.nn_processors);
+		nn_processor_subdomains.swap(nnp.nn_processor_subdomains);
+		proc_adj_box.swap(nnp.proc_adj_box);
+		boxes = nnp.boxes;
+
+		return *this;
+	}
+
 	/*! \brief Create the list of adjacent processors and the list of adjacent sub-domains
 	 *
 	 * \param box_nn_processors
@@ -219,7 +265,7 @@ public:
 	 * \return the set of adjacent sub-domain comming from the processor p_id
 	 *
 	 */
-	inline const N_box<dim,T> getExternalAdjSubdomain(size_t p_id) const
+	inline const N_box<dim,T> & getExternalAdjSubdomain(size_t p_id) const
 	{
 		auto key = nn_processor_subdomains.find(p_id);
 #ifdef DEBUG

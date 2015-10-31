@@ -396,6 +396,16 @@ class grid_dist_id
 			gdb_ext.last().Dbox = sp_t;
 			gdb_ext.last().Dbox -= sp_tg.getP1();
 
+			gdb_ext.last().GDbox = sp_tg;
+			gdb_ext.last().GDbox -= sp_tg.getP1();
+
+/*			if (gdb_ext.last().GDbox.getHigh(0) == gdb_ext.last().Dbox.getHigh(0) &&
+				gdb_ext.last().GDbox.getHigh(1) == gdb_ext.last().Dbox.getHigh(1))
+			{
+				int debug = 0;
+				debug++;
+			}*/
+
 			// center to zero
 			sp_tg -= sp_tg.getP1();
 
@@ -503,7 +513,7 @@ public:
 	 * \param g Ghost given in grid units
 	 *
 	 */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,size_t> & g)
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
 	:domain(domain),dec(*new Decomposition(*global_v_cluster)),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
 	{
 		InitializeCellDecomposer(g_sz);
@@ -512,12 +522,12 @@ public:
 		Box<dim,St> sp = cd_sm.getCellBox();
 
 		// enlarge 0.001 of the spacing
-		sp.magnify_fix_P1(0.001);
+		sp.magnify_fix_P1(1.1);
 
 		// set the ghost
 		for (size_t i = 0 ; i < dim ; i++)
 		{
-			ghost.setLow(i,sp.getHigh(i));
+			ghost.setLow(i,-sp.getHigh(i));
 			ghost.setHigh(i,sp.getHigh(i));
 		}
 
@@ -532,7 +542,7 @@ public:
 	 * \param g Ghost given in grid units
 	 *
 	 */
-	grid_dist_id(Decomposition & dec, const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,size_t> & g)
+	grid_dist_id(Decomposition & dec, const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
 	:domain(domain),dec(dec),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
 	{
 		InitializeCellDecomposer(g_sz);
@@ -541,12 +551,12 @@ public:
 		Box<dim,St> sp = cd_sm.getCellBox();
 
 		// enlarge 0.001 of the spacing
-		sp.magnify_fix_P1(0.001);
+		sp.magnify_fix_P1(1.1);
 
 		// set the ghost
 		for (size_t i = 0 ; i < dim ; i++)
 		{
-			ghost.setLow(i,sp.getHigh(i));
+			ghost.setLow(i,-sp.getHigh(i));
 			ghost.setHigh(i,sp.getHigh(i));
 		}
 

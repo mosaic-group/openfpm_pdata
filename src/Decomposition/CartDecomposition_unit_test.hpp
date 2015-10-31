@@ -75,6 +75,17 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_use)
 
 	bool val = dec.check_consistency();
 	BOOST_REQUIRE_EQUAL(val,true);
+
+	// We duplicate the decomposition
+	CartDecomposition<3,float> dec2 = dec.duplicate();
+
+	// We duplicate the decomposition redefining the ghost
+
+	// Define ghost
+	Ghost<3,float> g3(0.02);
+
+	// We duplicate the decomposition refefining the ghost
+//	CartDecomposition<3,float> dec3 = dec.duplicate(g3);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
