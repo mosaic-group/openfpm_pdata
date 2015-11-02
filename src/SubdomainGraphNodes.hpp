@@ -30,7 +30,7 @@
 struct nm_v
 {
 	//! The node contain 3 unsigned long integer for communication computation memory and id
-	typedef boost::fusion::vector<float,float,float,size_t,size_t,size_t,size_t,long int> type;
+	typedef boost::fusion::vector<float,float,float,size_t,size_t,size_t,size_t,size_t,long int> type;
 
 	typedef typename memory_traits_inte<type>::type memory_int;
 	typedef typename memory_traits_lin<type>::type memory_lin;
@@ -63,9 +63,11 @@ struct nm_v
 	static const unsigned int id = 6;
 	//! memory property sub_id in boost::fusion::vector
 	static const unsigned int sub_id = 7;
+    //! memory property proc_id in boost::fusion::vector
+    static const unsigned int proc_id = 8;
 
 	//! total number of properties boost::fusion::vector
-	static const unsigned int max_prop = 8;
+	static const unsigned int max_prop = 9;
     
     //! default constructor
     nm_v(){
@@ -82,12 +84,13 @@ struct nm_v
         boost::fusion::at_c<5>(data) = p.template get<5>();
         boost::fusion::at_c<6>(data) = p.template get<6>();
         boost::fusion::at_c<7>(data) = p.template get<7>();
+        boost::fusion::at_c<8>(data) = p.template get<8>();
     }
     
     
 };
 
-const std::string nm_v::attributes::name[] = {"x","y","z","communication","computation","memory","id","sub_id"};
+const std::string nm_v::attributes::name[] = {"x","y","z","communication","computation","memory","id","sub_id","proc_id"};
 
 /*! \brief sub-domain edge graph node
  *
