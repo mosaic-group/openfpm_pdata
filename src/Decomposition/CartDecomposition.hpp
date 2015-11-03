@@ -28,17 +28,9 @@
 #include "ie_loc_ghost.hpp"
 #include "ie_ghost.hpp"
 #include "nn_processor.hpp"
+#include "util/se_util.hpp"
 
 #define CARTDEC_ERROR 2000lu
-
-// Macro that decide what to do in case of error
-#ifdef STOP_ON_ERROR
-#define ACTION_ON_ERROR() exit(1);
-#elif defined(THROW_ON_ERROR)
-#define ACTION_ON_ERROR() throw CARTDEC_ERROR;
-#else
-#define ACTION_ON_ERROR()
-#endif
 
 /**
  * \brief This class decompose a space into subspaces
