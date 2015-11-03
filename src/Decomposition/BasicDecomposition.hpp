@@ -129,6 +129,15 @@ private:
 	//! Cell-list that store the geometrical information of the local internal ghost boxes
 	CellList<dim, T, FAST> lgeo_cell;
 
+	static void * message_receive(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
+	{
+		openfpm::vector<openfpm::vector<idx_t>> * v = static_cast<openfpm::vector<openfpm::vector<idx_t>> *>(ptr);
+
+		v->get(i).resize(msg_i/sizeof(idx_t));
+		
+		return &(v->get(i).get(0));
+	}
+	
 	/*! \brief Constructor, it decompose and distribute the sub-domains across the processors
 	 *
 	 * \param v_cl Virtual cluster, used internally for communications
@@ -153,8 +162,7 @@ private:
 		}
 
 		//! MPI initialization
-		int MPI_PROC_ID = 0;
-		MPI_Comm_rank(MPI_COMM_WORLD, &MPI_PROC_ID);
+		size_t MPI_PROC_ID = v_cl.getProcessUnitID();
 
 		// Here we use PARMETIS
 		// Create a cartesian grid graph
@@ -215,49 +223,45 @@ private:
 		MPI_Request *requests_send = new MPI_Request[Np];
 		MPI_Status *statuses = new MPI_Status[Np];
 
-		//-----------------------------------------------
-
-		/*
-
-	    /* create a type for struct nm_v */
-	    const int nitems = 9;
-	    int          blocklengths[9] = {1,1};
-	    MPI_Datatype types[9] = {MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT};
-	    MPI_Datatype MPI_VERTEX_TYPE;
-	    MPI_Aint     offsets[9];
-
-	    offsets[0] = offsetof(nm_v, x);
-	    offsets[1] = offsetof(nm_v, y);
-	    offsets[2] = offsetof(nm_v, z);
-	    offsets[3] = offsetof(nm_v, communication);
-	    offsets[4] = offsetof(nm_v, computation);
-	    offsets[5] = offsetof(nm_v, memory);
-	    offsets[6] = offsetof(nm_v, id);
-	    offsets[7] = offsetof(nm_v, sub_id);
-	    offsets[8] = offsetof(nm_v, proc_id);
-
-	    MPI_Type_create_struct(nitems, blocklengths, offsets, types, &MPI_VERTEX_TYPE);
-	    MPI_Type_commit(&MPI_VERTEX_TYPE);
-
-		//-----------------------------------------------
-
 		// Prepare vector of arrays to contain all partitions
-		int **partitions = new int*[Np];
+		
+		openfpm::vector<openfpm::vector<idx_t>> partitions(Np);
+		partitions.get(MPI_PROC_ID).resize(sub_g.getNVertex());
+		std::copy(partition,partition+sub_g.getNVertex(),&partitions.get(MPI_PROC_ID).get(0));
+		
+		openfpm::vector<size_t> prc;
+		openfpm::vector<size_t> sz;
+		openfpm::vector<void *> ptr;
+		
+		for (size_t i = 0 ; i < Np ; i++)
+		{
+			if (i != v_cl.getProcessUnitID())
+			{
+			  prc.add(i);
+			  sz.add(sub_g.getNVertex() * sizeof(idx_t));
+			  ptr.add(partitions.get(MPI_PROC_ID).getPointer());
+			}
+		}
+
+		
+		v_cl.sendrecvMultipleMessagesNBX(prc.size(),&sz.get(0),&prc.get(0),&ptr.get(0),message_receive,&partitions,NONE);
+		
+/*		idx_t **partitions = new idx_t*[Np];
 		partitions[MPI_PROC_ID] = partition;
 		for (int i = 0; i < Np; i++) {
 			if (i != MPI_PROC_ID)
-				partitions[i] = new int[gp.getNVertex()];
-		}
-
+				partitions[i] = new idx_t[gp.getNVertex()];
+		}*/
+		
 		// Exchange partitions with other processors
-		exchangePartitions(partitions, gp.getNVertex(), sub_g.getNVertex(), requests_recv, requests_send, statuses, MPI_PROC_ID, Np);
+//		exchangePartitions(partitions, gp.getNVertex(), sub_g.getNVertex(), requests_recv, requests_send, statuses, MPI_PROC_ID, Np);
 
 		// Init data structure to keep trace of new vertices distribution in processors (needed to update main graph)
-		std::vector<size_t> *v_per_proc = new std::vector<size_t>[Np];
-
+		openfpm::vector<openfpm::vector<size_t>> v_per_proc(Np);
+		
 		// Update graphs with the new distributions
 		updateGraphs(partitions, gp, sub_g, v_per_proc, vtxdist, statuses, MPI_PROC_ID, Np);
-
+		
 		if (MPI_PROC_ID == 0) {
 			VTKWriter<Graph_CSR<nm_v, nm_e>, GRAPH> gv2(gp);
 			gv2.write("test_graph_2.vtk");
@@ -272,10 +276,12 @@ private:
 
 		gp.reset_map_ids();
 		// Renumbering main graph
-		for (size_t p = 0; p < Np; p++) {
-			for (size_t j = vtxdist[p], i = 0; j < vtxdist[p + 1]; j++, i++) {
-				gp.set_map_ids(j, gp.vertex(v_per_proc[p][i]).template get<nm_v::id>());
-				gp.vertex(v_per_proc[p][i]).template get<nm_v::id>() = j;
+		for (size_t p = 0; p < Np; p++) 
+		{
+			for (size_t j = vtxdist[p], i = 0; j < vtxdist[p + 1]; j++, i++) 
+			{
+				gp.set_map_ids(j, gp.vertex(v_per_proc.get(p).get(i)).template get<nm_v::id>());
+				gp.vertex(v_per_proc.get(p).get(i)).template get<nm_v::id>() = j;
 			}
 		}
 
@@ -293,30 +299,57 @@ private:
 		// Get result partition for this processor
 		partition = parmetis_graph.getPartition();
 
+		partitions.get(MPI_PROC_ID).resize(sub_g.getNVertex());
+		std::copy(partition,partition+sub_g.getNVertex(),&partitions.get(MPI_PROC_ID).get(0));
+		
 		// Reset partitions array
-		partitions[MPI_PROC_ID] = partition;
+/*		partitions[MPI_PROC_ID] = partition;
 		for (int i = 0; i < Np; i++) {
 			if (i != MPI_PROC_ID) {
 				delete partitions[i];
 				partitions[i] = new int[gp.getNVertex()];
 			}
-		}
+		}*/
 
 		// Reset data structure to keep trace of new vertices distribution in processors (needed to update main graph)
-		for (int i = 0; i < Np; ++i) {
-			v_per_proc[i].clear();
+		for (int i = 0; i < Np; ++i) 
+		{
+			v_per_proc.get(i).clear();
 		}
 
 		// Exchange partitions with other processors
-		exchangePartitions(partitions, gp.getNVertex(), sub_g.getNVertex(), requests_recv, requests_send, statuses, MPI_PROC_ID, Np);
+//		exchangePartitions(partitions, gp.getNVertex(), sub_g.getNVertex(), requests_recv, requests_send, statuses, MPI_PROC_ID, Np);
 
+		prc.clear();
+		sz.clear();
+		ptr.clear();
+
+		for (size_t i = 0 ; i < Np ; i++)
+		{
+			if (i != v_cl.getProcessUnitID())
+			{
+			  partitions.get(i).clear();
+			  prc.add(i);
+			  sz.add(sub_g.getNVertex() * sizeof(idx_t));
+
+//			  std::cout << "sub_g: " << sub_g.getNVertex() * sizeof(idx_t) << "\n";
+			  
+			  ptr.add(partitions.get(MPI_PROC_ID).getPointer());
+			}
+		}
+		
+		v_cl.sendrecvMultipleMessagesNBX(prc.size(),&sz.get(0),&prc.get(0),&ptr.get(0),message_receive,&partitions,NONE);
+		
 		// Update graphs with the new distributions
 		updateGraphs(partitions, gp, sub_g, v_per_proc, vtxdist, statuses, MPI_PROC_ID, Np);
+		
+		//
 
-
-		if (MPI_PROC_ID == 0) {
+		if (MPI_PROC_ID == 1) {
 			VTKWriter<Graph_CSR<nm_v, nm_e>, GRAPH> gv2(gp);
 			gv2.write("test_graph_4.vtk");
+			bool test = compare("test_graph_4.vtk","test_graph_test.vtk");
+			BOOST_REQUIRE_EQUAL(test,true);
 		}
 
 		/*
@@ -634,9 +667,8 @@ private:
 		 * \param proc_id current processors rank
 		 * \param Np total umber of processors
 		 */
-	void updateGraphs(int** &partitions,Graph_CSR<nm_v, nm_e> &gp, Graph_CSR<nm_v, nm_e> &sub_g, std::vector<size_t>* &v_per_proc, idx_t* &vtxdist, MPI_Status* &statuses, int proc_id, int Np) {
-
-		int size_p = sub_g.getNVertex();
+	void updateGraphs(openfpm::vector<openfpm::vector<idx_t>> &partitions,Graph_CSR<nm_v, nm_e> &gp, Graph_CSR<nm_v, nm_e> &sub_g, openfpm::vector<openfpm::vector<size_t>> & v_per_proc, idx_t* &vtxdist, MPI_Status* &statuses, int proc_id, int Np) 
+	{
 		int local_j = 0;
 		sub_g.clear();
 
@@ -648,26 +680,22 @@ private:
 		// Update main graph with other partitions made by Parmetis in other processors and the local partition
 		for (int i = 0; i < Np; i++) {
 
-			int ndata = 0;
-			MPI_Get_count(&statuses[i], MPI_INT, &ndata);
-
-			if (i == proc_id)
-				ndata = size_p;
+			int ndata = partitions.get(i).size();
 
 			// Update the main graph with received informations
 			for (int k = 0, l = vtxdist[i]; k < ndata && l < vtxdist[i + 1]; k++, l++) {
 
 				// Create new n_vtxdist (1) (just count processors vertices)
-				n_vtxdist[partitions[i][k] + 1]++;
+				n_vtxdist[partitions.get(i).get(k) + 1]++;
 
 				// Update proc id in the vertex
-				gp.vertexById(l).template get<nm_v::proc_id>() = partitions[i][k];
+				gp.vertexById(l).template get<nm_v::proc_id>() = partitions.get(i).get(k);
 
 				// Add vertex to temporary structure of distribution (needed to update main graph)
-				v_per_proc[partitions[i][k]].push_back(gp.vertexById(l).template get<nm_v::id>());
+				v_per_proc.get(partitions.get(i).get(k)).add(gp.vertexById(l).template get<nm_v::id>());
 
 				// Add vertices belonging to this processor in sub graph
-				if (partitions[i][k] == proc_id) {
+				if (partitions.get(i).get(k) == proc_id) {
 
 					nm_v pv = gp.vertexById(l);
 					sub_g.addVertex(pv);
