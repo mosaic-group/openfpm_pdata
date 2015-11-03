@@ -393,10 +393,10 @@ public:
 	 */
 
 	template<unsigned int i>
-	void decompose(idx_t *vtxdist) {
+	void decompose(openfpm::vector<idx_t> & vtxdist) {
 
 		// Decompose
-		ParMETIS_V3_PartKway(vtxdist, Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts,
+		ParMETIS_V3_PartKway((idx_t *)vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts,
 				Mg.ubvec, Mg.options, Mg.edgecut, Mg.part, &comm);
 		/*
 		 ParMETIS_V3_AdaptiveRepart( vtxdist, Mg.xadj,Mg.adjncy,Mg.vwgt,Mg.vsize,Mg.adjwgt, &(Mg.wgtflag), &(Mg.numflag),
@@ -420,11 +420,11 @@ public:
 	 */
 
 	template<unsigned int i>
-	void refine(idx_t *vtxdist) {
-
+	void refine(openfpm::vector<idx_t> & vtxdist) 
+	{
 		// Refine
 
-		ParMETIS_V3_RefineKway(vtxdist, Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts,
+		ParMETIS_V3_RefineKway((idx_t *)vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts,
 				Mg.ubvec, Mg.options, Mg.edgecut, Mg.part, &comm);
 
 		// For each vertex store the processor that contain the data
