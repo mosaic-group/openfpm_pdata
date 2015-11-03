@@ -327,6 +327,47 @@ public:
 
 		return true;
 	}
+
+	/*! \brief Check if the ie_loc_ghosts contain the same information
+	 *
+	 * \param ele Element to check
+	 *
+	 */
+	bool is_equal(ie_loc_ghost<dim,T> & ilg)
+	{
+		if (ilg.loc_ghost_box.size() != loc_ghost_box.size())
+			return false;
+
+		// Explore all the subdomains
+		for (size_t i = 0 ; i < loc_ghost_box.size() ; i++)
+		{
+			if (getLocalNIGhost(i) != ilg.getLocalNIGhost(i))
+				return false;
+
+			if (getLocalNEGhost(i) != ilg.getLocalNEGhost(i))
+				return false;
+
+			for (size_t j = 0 ; j < getLocalNIGhost(i) ; j++)
+			{
+				if (getLocalIGhostE(i,j) != ilg.getLocalIGhostE(i,j))
+					return false;
+				if (getLocalIGhostBox(i,j) != ilg.getLocalIGhostBox(i,j))
+					return false;
+				if (getLocalIGhostSub(i,j) != ilg.getLocalIGhostSub(i,j))
+					return false;
+			}
+			for (size_t j = 0 ; j < getLocalNEGhost(i) ; j++)
+			{
+				if (getLocalEGhostBox(i,j) != ilg.getLocalEGhostBox(i,j))
+					return false;
+				if (getLocalEGhostSub(i,j) != ilg.getLocalEGhostSub(i,j))
+					return false;
+			}
+
+		}
+
+		return true;
+	}
 };
 
 

@@ -903,6 +903,47 @@ p1[0]<-----+         +----> p2[0]
 			}
 		}
 	}
+
+	/*! \brief Check if the CartDecomposition contain the same information
+	 *
+	 * \param ele Element to check
+	 *
+	 */
+	bool is_equal(CartDecomposition<dim,T,Memory,Domain> & cart)
+	{
+		static_cast<ie_loc_ghost<dim,T>*>(this)->is_equal(static_cast<ie_loc_ghost<dim,T>&>(cart));
+		static_cast<nn_prcs<dim,T>*>(this)->is_equal(static_cast<nn_prcs<dim,T>&>(cart));
+		static_cast<ie_ghost<dim,T>*>(this)->is_equal(static_cast<ie_ghost<dim,T>&>(cart));
+
+		if (sub_domains != cart.sub_domains)
+			return false;
+
+		if (box_nn_processor != cart.box_nn_processor)
+			return false;
+
+		if (fine_s != cart.fine_s)
+			return false;
+
+		if (gr != cart.gr)
+			return false;
+
+
+		if (cd != cart.cd)
+			return false;
+
+		if (domain != cart.domain)
+			return false;
+
+		std::copy(cart.spacing,cart.spacing+3,spacing);
+
+		if (lgeo_cell != cart.lgeo_cell)
+			return false;
+
+		if (ghost != cart.ghost)
+			return false;
+
+		return true;
+	}
 };
 
 

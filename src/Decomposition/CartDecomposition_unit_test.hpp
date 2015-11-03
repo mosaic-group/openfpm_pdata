@@ -78,6 +78,12 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_use)
 
 	// We duplicate the decomposition
 	CartDecomposition<3,float> dec2 = dec.duplicate();
+	dec2.check_consistency();
+
+	// We check if the two decomposition are equal
+	BOOST_REQUIRE_EQUAL(dec.is_equal(dec2),true);
+
+	// check that dec and dec2 contain the same information
 
 	// We duplicate the decomposition redefining the ghost
 

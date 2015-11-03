@@ -325,6 +325,31 @@ public:
 		return true;
 	}
 
+	/*! \brief Check if the nn_prcs contain the same information
+	 *
+	 * \param ele Element to check
+	 *
+	 */
+	bool is_equal(nn_prcs<dim,T> & np)
+	{
+		if (np.getNNProcessors() != getNNProcessors())
+			return false;
+
+		for (size_t p = 0 ; p < getNNProcessors() ; p++)
+		{
+			if (getAdjacentSubdomain(p) != np.getAdjacentSubdomain(p))
+				return false;
+			if (getAdjacentProcessor(p) != np.getAdjacentProcessor(p))
+				return false;
+			if (getInternalAdjSubdomain(p) != np.getInternalAdjSubdomain(p))
+				return false;
+			if (getExternalAdjSubdomain(p) != np.getExternalAdjSubdomain(p))
+				return false;
+		}
+
+		return true;
+	}
+
 };
 
 

@@ -567,6 +567,58 @@ public:
 
 		return true;
 	}
+
+	/*! \brief Check if the ie_loc_ghosts contain the same information
+	 *
+	 * \param ele Element to check
+	 *
+	 */
+	bool is_equal(ie_ghost<dim,T> & ig)
+	{
+		if (getNEGhostBox() != ig.getNEGhostBox())
+			return false;
+
+		if (getNIGhostBox() != ig.getNIGhostBox())
+			return false;
+
+		for (size_t i = 0 ; i < getNIGhostBox() ; i++)
+		{
+			if (getProcessorNIGhost(i) != ig.getProcessorNIGhost(i))
+				return false;
+			for (size_t j = 0 ; j < getProcessorNIGhost(i) ; j++)
+			{
+				if (getProcessorIGhostBox(i,j) != ig.getProcessorIGhostBox(i,j))
+					return false;
+				if (getProcessorIGhostId(i,j) != ig.getProcessorIGhostId(i,j))
+					return false;
+				if (getProcessorIGhostSub(i,j) != ig.getProcessorIGhostSub(i,j))
+					return false;
+			}
+			if (getIGhostBox(i) != ig.getIGhostBox(i))
+				return false;
+			if (getIGhostBoxProcessor(i) != ig.getIGhostBoxProcessor(i))
+				return false;
+		}
+
+		for (size_t i = 0 ; i < getNEGhostBox() ; i++)
+		{
+			if (getProcessorNEGhost(i) != ig.getProcessorNEGhost(i))
+				return false;
+			for (size_t j = 0 ; j < getProcessorNEGhost(i) ; j++)
+			{
+				if (getProcessorEGhostBox(i,j) != ig.getProcessorEGhostBox(i,j))
+					return false;
+				if (getProcessorEGhostId(i,j) != ig.getProcessorEGhostId(i,j))
+					return false;
+				if (getProcessorEGhostSub(i,j) != ig.getProcessorEGhostSub(i,j))
+					return false;
+			}
+			if (getEGhostBox(i) != ig.getEGhostBox(i))
+				return false;
+			if (getEGhostBoxProcessor(i) != ig.getEGhostBoxProcessor(i))
+				return false;
+		}
+	}
 };
 
 
