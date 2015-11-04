@@ -161,9 +161,9 @@ command -v mpirun >/dev/null 2>&1
 if [ $? -ne 0 ]; then
   echo -e "No MPI"
 else
-  major=$(mpirun --version | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
-  middle=$(mpirun --version | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
-  minor=$(mpirun --version | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
+  major=$(mpirun --version 2>&1 | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
+  middle=$(mpirun --version 2>&1 | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
+  minor=$(mpirun --version 2>&1 | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
   if [ $major -gt 1 ]; then
     echo -e "mpirun $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
   elif [ $major -lt 1 ]; then
@@ -175,7 +175,7 @@ else
   elif [ $minor -gt 0  ]; then
     echo -e "mpirun $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
   else
-    echo -e "mpirun $major.$middle.$minor \033[92;1m FAILED \033[0m is too old, 1.8.1 at least required"
+    echo -e "mpirun $major.$middle.$minor \033[91;5;1m FAILED \033[0m is too old, 1.8.1 at least required"
   fi 
 fi
 }
