@@ -11,6 +11,7 @@
 #include <iostream>
 #include "parmetis.h"
 #include "VTKWriter.hpp"
+#include "VCluster.hpp"
 
 /*! \brief Metis graph structure
  *
@@ -86,6 +87,8 @@ struct Parmetis_graph {
 
 /*! \brief Helper class to define Metis graph
  *
+ *  TODO Transform pointer to openfpm vector
+ * 
  * \tparam graph structure that store the graph
  *
  */
@@ -95,20 +98,27 @@ class Parmetis {
 	Parmetis_graph Mg;
 
 	// Original graph
-	Graph & g;
+//	Graph & g;
 
 	// Communticator for OpenMPI
 	MPI_Comm comm = NULL;
 
+	// VCluster
+	Vcluster & v_cl;
+	
 	// Process rank information
-	int MPI_PROC_ID = 0;
+	int p_id = 0;
 
+	// nc Number of partition
+	size_t nc = 0;
+	
 	/*! \brief Construct Adjacency list
 	 *
 	 * \param g Reference graph to get informations
 	 *
 	 */
-	void constructAdjList(Graph &refGraph) {
+	void constructAdjList(Graph &refGraph, Graph & g)
+	{
 		// create xadj and adjlist
 		Mg.vwgt = new idx_t[g.getNVertex()];
 		Mg.xadj = new idx_t[g.getNVertex() + 1];
@@ -158,8 +168,8 @@ class Parmetis {
 		// Fill the last point
 		Mg.xadj[id] = prev;
 
-		/*
-		 std::cout << MPI_PROC_ID << "\n";
+		
+/*		 std::cout << p_id << "\n";
 		 for(int i=0; i<= g.getNVertex();i++){
 		 std::cout << Mg.xadj[i] << " ";
 		 }
@@ -167,8 +177,8 @@ class Parmetis {
 		 for(int i=0; i< g.getNEdge();i++){
 		 std::cout << Mg.adjncy[i] << " ";
 		 }
-		 std::cout << "\n\n";
-		 */
+		 std::cout << "\n\n";*/
+		 
 
 	}
 
@@ -205,7 +215,7 @@ class Parmetis {
 				size_t child = refGraph.getChild(i, s);
 
 				// Check if child is not in this processor
-				if(child > old_vtxdist[MPI_PROC_ID+1] || child < old_vtxdist[MPI_PROC_ID])
+				if(child > old_vtxdist[p_id+1] || child < old_vtxdist[p_id])
 
 				Mg.adjncy[prev + s] = child;
 			}
@@ -220,7 +230,7 @@ class Parmetis {
 		Mg.xadj[id] = prev;
 
 
-		 std::cout << MPI_PROC_ID << "\n";
+		 std::cout << p_id << "\n";
 		 for(int i=0; i<= g.getNVertex();i++){
 		 std::cout << Mg.xadj[i] << " ";
 		 }
@@ -243,84 +253,13 @@ public:
 	 * \param nc number of partitions
 	 *
 	 */
-	Parmetis(Graph & g, size_t nc) :
-			g(g) {
-		// Init OpenMPI structures
-
+	Parmetis(Vcluster & v_cl, size_t nc)
+	:v_cl(v_cl),nc(nc)
+	{
+		// TODO Move into VCluster
 		MPI_Comm_dup(MPI_COMM_WORLD, &comm);
-		MPI_Comm_rank(MPI_COMM_WORLD, &MPI_PROC_ID);
-
-		// Get the number of vertex
-
-		Mg.nvtxs = new idx_t[1];
-		Mg.nvtxs[0] = g.getNVertex();
-
-		// Set the number of constrains
-
-		Mg.ncon = new idx_t[1];
-		Mg.ncon[0] = 1;
-
-		// Set to null the weight of the vertex
-
-		Mg.vwgt = NULL;
-
-		// construct the adjacency list
-
-		constructAdjList(g);
-
-		// Put the total communication size to NULL
-
-		Mg.vsize = NULL;
-
-		// Set to null the weight of the edge
-
-		Mg.adjwgt = NULL;
-
-		// Set the total number of partitions
-
-		Mg.nparts = new idx_t[1];
-		Mg.nparts[0] = nc;
-
-		//! Set option for the graph partitioning (set as default)
-
-		Mg.options = new idx_t[4];
-		Mg.options[0] = 1;
-		Mg.options[1] = 3;
-		Mg.options[2] = 0;
-		Mg.options[3] = 0;
-
-		//! is an output vector containing the partition for each vertex
-
-		Mg.part = new idx_t[g.getNVertex()];
-		for (int i = 0; i < g.getNVertex(); i++)
-			Mg.part[i] = MPI_PROC_ID;
-
-		//! adaptiveRepart itr value
-		Mg.itr = new real_t[1];
-		Mg.itr[0] = 1000.0;
-
-		//! init tpwgts to have balanced vertices and ubvec
-
-		Mg.tpwgts = new real_t[Mg.nparts[0]];
-		Mg.ubvec = new real_t[Mg.nparts[0]];
-
-		for (int s = 0; s < Mg.nparts[0]; s++) {
-			Mg.tpwgts[s] = 1.0 / Mg.nparts[0];
-			Mg.ubvec[s] = 1.05;
-		}
-
-		Mg.edgecut = new idx_t[1];
-		Mg.edgecut[0] = 0;
-
-		//! This is used to indicate the numbering scheme that is used for the vtxdist, xadj, adjncy, and part arrays. (0 for C-style, start from 0 index)
-		Mg.numflag = new idx_t[1];
-		Mg.numflag[0] = 0;
-
-		//! This is used to indicate if the graph is weighted. wgtflag can take one of four values:
-		Mg.wgtflag = new idx_t[1];
-		Mg.wgtflag[0] = 2;
 	}
-
+	
 	//TODO deconstruct new variables
 	/*! \brief destructor
 	 *
@@ -386,14 +325,96 @@ public:
 		}
 	}
 
+	/*! \brief Set the Sub-graph
+	 * 
+	 * \param sub_g Sub-graph to set
+	 * 
+	 */
+	void initSubGraph(Graph & sub_g)
+	{
+		p_id = v_cl.getProcessUnitID();
+
+		// Get the number of vertex
+
+		Mg.nvtxs = new idx_t[1];
+		Mg.nvtxs[0] = sub_g.getNVertex();
+
+		// Set the number of constrains
+
+		Mg.ncon = new idx_t[1];
+		Mg.ncon[0] = 1;
+
+		// Set to null the weight of the vertex
+
+		Mg.vwgt = NULL;
+
+		// construct the adjacency list
+
+		constructAdjList(sub_g,sub_g);
+
+		// Put the total communication size to NULL
+
+		Mg.vsize = NULL;
+
+		// Set to null the weight of the edge
+
+		Mg.adjwgt = NULL;
+
+		// Set the total number of partitions
+
+		Mg.nparts = new idx_t[1];
+		Mg.nparts[0] = nc;
+
+		//! Set option for the graph partitioning (set as default)
+
+		Mg.options = new idx_t[4];
+		Mg.options[0] = 1;
+		Mg.options[1] = 3;
+		Mg.options[2] = 0;
+		Mg.options[3] = 0;
+
+		//! is an output vector containing the partition for each vertex
+
+		Mg.part = new idx_t[sub_g.getNVertex()];
+		for (int i = 0; i < sub_g.getNVertex(); i++)
+			Mg.part[i] = p_id;
+
+		//! adaptiveRepart itr value
+		Mg.itr = new real_t[1];
+		Mg.itr[0] = 1000.0;
+
+		//! init tpwgts to have balanced vertices and ubvec
+
+		Mg.tpwgts = new real_t[Mg.nparts[0]];
+		Mg.ubvec = new real_t[Mg.nparts[0]];
+
+		for (int s = 0; s < Mg.nparts[0]; s++) {
+			Mg.tpwgts[s] = 1.0 / Mg.nparts[0];
+			Mg.ubvec[s] = 1.05;
+		}
+
+		Mg.edgecut = new idx_t[1];
+		Mg.edgecut[0] = 0;
+
+		//! This is used to indicate the numbering scheme that is used for the vtxdist, xadj, adjncy, and part arrays. (0 for C-style, start from 0 index)
+		Mg.numflag = new idx_t[1];
+		Mg.numflag[0] = 0;
+
+		//! This is used to indicate if the graph is weighted. wgtflag can take one of four values:
+		Mg.wgtflag = new idx_t[1];
+		Mg.wgtflag[0] = 2;
+	}
+	
 	/*! \brief Decompose the graph
 	 *
 	 * \tparam i which property store the decomposition
 	 *
+	 * 
+	 * 
 	 */
-
 	template<unsigned int i>
-	void decompose(openfpm::vector<idx_t> & vtxdist) {
+	void decompose(openfpm::vector<idx_t> & vtxdist, Graph & sub_g) 
+	{
 
 		// Decompose
 		ParMETIS_V3_PartKway((idx_t *)vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts,
@@ -405,9 +426,9 @@ public:
 		 */
 
 		// For each vertex store the processor that contain the data
-		for (size_t j = 0, id = 0; j < g.getNVertex(); j++, id++) {
+		for (size_t j = 0, id = 0; j < sub_g.getNVertex() ; j++, id++) {
 
-			g.vertex(j).template get<i>() = Mg.part[id];
+			sub_g.vertex(j).template get<i>() = Mg.part[id];
 
 		}
 
@@ -420,18 +441,18 @@ public:
 	 */
 
 	template<unsigned int i>
-	void refine(openfpm::vector<idx_t> & vtxdist) 
+	void refine(openfpm::vector<idx_t> & vtxdist, Graph & sub_g) 
 	{
 		// Refine
-
+	  
 		ParMETIS_V3_RefineKway((idx_t *)vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts,
 				Mg.ubvec, Mg.options, Mg.edgecut, Mg.part, &comm);
 
 		// For each vertex store the processor that contain the data
 
-		for (size_t j = 0, id = 0; j < g.getNVertex(); j++, id++) {
+		for (size_t j = 0, id = 0; j < sub_g.getNVertex(); j++, id++) {
 
-			g.vertex(j).template get<i>() = Mg.part[id];
+			sub_g.vertex(j).template get<i>() = Mg.part[id];
 
 		}
 	}
@@ -446,7 +467,8 @@ public:
 	/*! \brief Reset graph and reconstruct it
 	 *
 	 */
-	void reset(Graph & mainGraph) {
+	void reset(Graph & mainGraph, Graph & sub_g) 
+	{
 		// Deallocate the graph structures
 
 		if (Mg.xadj != NULL) {
@@ -469,16 +491,15 @@ public:
 			delete[] Mg.part;
 		}
 
-		Mg.nvtxs[0] = g.getNVertex();
+		Mg.nvtxs[0] = sub_g.getNVertex();
 
-		Mg.part = new idx_t[g.getNVertex()];
+		Mg.part = new idx_t[sub_g.getNVertex()];
 
-		for (int i = 0; i < g.getNVertex(); i++)
-			Mg.part[i] = MPI_PROC_ID;
+		for (int i = 0; i < sub_g.getNVertex(); i++)
+			Mg.part[i] = p_id;
 
 		// construct the adjacency list
-		constructAdjList(mainGraph);
-
+		constructAdjList(mainGraph,sub_g);
 	}
 
 };

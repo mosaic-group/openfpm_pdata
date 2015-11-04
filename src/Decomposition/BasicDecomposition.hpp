@@ -129,6 +129,24 @@ private:
 	//! Cell-list that store the geometrical information of the local internal ghost boxes
 	CellList<dim, T, FAST> lgeo_cell;
 
+	//! Convert the graph to parmetis format
+	Parmetis<Graph_CSR<nm_v, nm_e>> parmetis_graph;
+	
+	//! Processor sub-sub-domain graph
+	Graph_CSR<nm_v, nm_e> sub_g;
+	
+	//! Global sub-sub-domain graph
+	Graph_CSR<nm_v, nm_e> gp;
+	
+	//! Init vtxdist needed for Parmetis
+	openfpm::vector<idx_t> vtxdist;
+
+	//! partitions
+	openfpm::vector<openfpm::vector<idx_t>> partitions;
+	
+	//! Init data structure to keep trace of new vertices distribution in processors (needed to update main graph)
+	openfpm::vector<openfpm::vector<size_t>> v_per_proc;
+	
 	static void * message_receive(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
 	{
 		openfpm::vector<openfpm::vector<idx_t>> * v = static_cast<openfpm::vector<openfpm::vector<idx_t>> *>(ptr);
@@ -161,7 +179,7 @@ private:
 			spacing[i] = (bs.getHigh(i) - bs.getLow(i)) / gr.size(i);
 		}
 
-		//! MPI initialization
+		//! Get the processor id
 		size_t p_id = v_cl.getProcessUnitID();
 
 		// Here we use PARMETIS
@@ -169,7 +187,7 @@ private:
 		CartesianGraphFactory<dim, Graph_CSR<nm_v, nm_e>> g_factory_part;
 
 		// Processor graph
-		Graph_CSR<nm_v, nm_e> gp = g_factory_part.template construct<NO_EDGE, nm_v::id, T, dim - 1, 0, 1, 2>(gr.getSize(), domain);
+		gp = g_factory_part.template construct<NO_EDGE, nm_v::id, T, dim - 1, 0, 1, 2>(gr.getSize(), domain);
 
 		//! Add computation information to each vertex (shape can change)
 		addWeights(gp, HYPERBOLOID);
@@ -186,9 +204,6 @@ private:
 		size_t mod_v = gp.getNVertex() % Np;
 		size_t div_v = gp.getNVertex() / Np;
 
-		//! Init vtxdist needed for Parmetis
-		openfpm::vector<idx_t> vtxdist(Np + 1);
-
 		for (int i = 0; i <= Np; i++) 
 		{
 			if (i < mod_v)
@@ -204,24 +219,21 @@ private:
 		}
 
 		//TODO transform in factory
-		//! Create subgraph
-		Graph_CSR<nm_v, nm_e> sub_g;
+
 
 		//! Put vertices into processor graph (different for each processor)
 		fillSubGraph(sub_g, gp, vtxdist, p_id, Np);
 
-		// Convert the graph to parmetis format
-		Parmetis<Graph_CSR<nm_v, nm_e>> parmetis_graph(sub_g, Np);
-
+		parmetis_graph.initSubGraph(sub_g);
+		
 		// Decompose
-		parmetis_graph.decompose<nm_v::proc_id>(vtxdist);
+		parmetis_graph.decompose<nm_v::proc_id>(vtxdist,sub_g);
 
 		// Get result partition for this processors
 		idx_t *partition = parmetis_graph.getPartition();
 
 		// Prepare vector of arrays to contain all partitions
 		
-		openfpm::vector<openfpm::vector<idx_t>> partitions(Np);
 		partitions.get(p_id).resize(sub_g.getNVertex());
 		std::copy(partition,partition+sub_g.getNVertex(),&partitions.get(p_id).get(0));
 		
@@ -240,9 +252,6 @@ private:
 		}
 		
 		v_cl.sendrecvMultipleMessagesNBX(prc.size(),&sz.get(0),&prc.get(0),&ptr.get(0),message_receive,&partitions,NONE);
-
-		// Init data structure to keep trace of new vertices distribution in processors (needed to update main graph)
-		openfpm::vector<openfpm::vector<size_t>> v_per_proc(Np);
 		
 		// Update graphs with the new distributions
 		updateGraphs(partitions, gp, sub_g, v_per_proc, vtxdist, p_id, Np);
@@ -270,60 +279,13 @@ private:
 			}
 		}
 
-		if (p_id == 0) {
+		if (p_id == 0) 
+		{
 			VTKWriter<Graph_CSR<nm_v, nm_e>, GRAPH> gv2(gp);
 			gv2.write("test_graph_3.vtk");
 		}
-
-		// Reset parmetis graph and reconstruct it
-		parmetis_graph.reset(gp);
-
-		// Refine
-		parmetis_graph.refine<nm_v::proc_id>(vtxdist);
-
-		// Get result partition for this processor
-		partition = parmetis_graph.getPartition();
-
-		partitions.get(p_id).resize(sub_g.getNVertex());
-		std::copy(partition,partition+sub_g.getNVertex(),&partitions.get(p_id).get(0));
-
-		// Reset data structure to keep trace of new vertices distribution in processors (needed to update main graph)
-		for (int i = 0; i < Np; ++i) 
-		{
-			v_per_proc.get(i).clear();
-		}
-
-		prc.clear();
-		sz.clear();
-		ptr.clear();
-
-		for (size_t i = 0 ; i < Np ; i++)
-		{
-			if (i != v_cl.getProcessUnitID())
-			{
-			  partitions.get(i).clear();
-			  prc.add(i);
-			  sz.add(sub_g.getNVertex() * sizeof(idx_t));
-
-//			  std::cout << "sub_g: " << sub_g.getNVertex() * sizeof(idx_t) << "\n";
-			  
-			  ptr.add(partitions.get(p_id).getPointer());
-			}
-		}
 		
-		v_cl.sendrecvMultipleMessagesNBX(prc.size(),&sz.get(0),&prc.get(0),&ptr.get(0),message_receive,&partitions,NONE);
-		
-		// Update graphs with the new distributions
-		updateGraphs(partitions, gp, sub_g, v_per_proc, vtxdist, p_id, Np);
-		
-		//
-
-		if (p_id == 1) {
-			VTKWriter<Graph_CSR<nm_v, nm_e>, GRAPH> gv2(gp);
-			gv2.write("test_graph_4.vtk");
-			bool test = compare("test_graph_4.vtk","test_graph_test.vtk");
-			BOOST_REQUIRE_EQUAL(test,true);
-		}
+		refine();
 
 		/*
 		 // fill the structure that store the processor id for each sub-domain
@@ -445,6 +407,64 @@ private:
 	// Save the ghost boundaries
 	Ghost<dim, T> ghost;
 
+	void refine()
+	{
+		size_t Np = v_cl.getProcessingUnits();
+		size_t p_id = v_cl.getProcessUnitID();
+	  
+		// Reset parmetis graph and reconstruct it
+		parmetis_graph.reset(gp,sub_g);
+
+		// Refine
+		parmetis_graph.refine<nm_v::proc_id>(vtxdist,sub_g);
+
+		// Get result partition for this processor
+		idx_t * partition = parmetis_graph.getPartition();
+
+		partitions.get(p_id).resize(sub_g.getNVertex());
+		std::copy(partition,partition+sub_g.getNVertex(),&partitions.get(p_id).get(0));
+
+		// Reset data structure to keep trace of new vertices distribution in processors (needed to update main graph)
+		for (int i = 0; i < Np; ++i) 
+		{
+			v_per_proc.get(i).clear();
+		}
+
+		
+		openfpm::vector<size_t> prc;
+		openfpm::vector<size_t> sz;
+		openfpm::vector<void *> ptr;
+
+		for (size_t i = 0 ; i < Np ; i++)
+		{
+			if (i != v_cl.getProcessUnitID())
+			{
+			  partitions.get(i).clear();
+			  prc.add(i);
+			  sz.add(sub_g.getNVertex() * sizeof(idx_t));
+
+//			  std::cout << "sub_g: " << sub_g.getNVertex() * sizeof(idx_t) << "\n";
+			  
+			  ptr.add(partitions.get(p_id).getPointer());
+			}
+		}
+		
+		v_cl.sendrecvMultipleMessagesNBX(prc.size(),&sz.get(0),&prc.get(0),&ptr.get(0),message_receive,&partitions,NONE);
+		
+		// Update graphs with the new distributions
+		updateGraphs(partitions, gp, sub_g, v_per_proc, vtxdist, p_id, Np);
+		
+		//
+
+		if (p_id == 1) 
+		{
+			VTKWriter<Graph_CSR<nm_v, nm_e>, GRAPH> gv2(gp);
+			gv2.write("test_graph_4.vtk");
+			bool test = compare("test_graph_4.vtk","test_graph_test.vtk");
+			BOOST_REQUIRE_EQUAL(test,true);
+		}
+	}
+	
 	/*! \brief Create the subspaces that decompose your domain
 	 *
 	 */
@@ -715,7 +735,8 @@ public:
 	 *
 	 */
 	BasicDecomposition(Vcluster & v_cl) :
-			nn_prcs<dim, T>(v_cl), v_cl(v_cl) {
+	nn_prcs<dim, T>(v_cl), v_cl(v_cl),parmetis_graph(v_cl, v_cl.getProcessingUnits()),vtxdist(v_cl.getProcessingUnits() + 1),partitions(v_cl.getProcessingUnits()),v_per_proc(v_cl.getProcessingUnits())
+	{
 		// Reset the box to zero
 		bbox.zero();
 	}
