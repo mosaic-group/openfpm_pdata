@@ -135,7 +135,8 @@ if [ x"$MPI_installation_required" == x"yes"  ]; then
 else
   command -v mpic++ >/dev/null 2>&1
   if [ $? -eq 0 ]; then
-  options="CXX=mpic++"
+    configure_options="$configure_options CXX=mpic++ "
+  fi
 fi
 
 ## if a new compiler has been installed reinstall all the dependencies
