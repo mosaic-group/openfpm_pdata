@@ -168,14 +168,17 @@ else
     echo -e "mpirun $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
   elif [ $major -lt 1 ]; then
     echo -e "mpirun $major.$middle.$minor \033[91;5;1m FAILED \033[0m is too old, 1.8.1 at least required"
+    MPI_installation_required=yes
   elif [ $middle -gt 8  ]; then
     echo -e "mpirun $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
   elif [ $middle -lt 8 ]; then
     echo -e "mpirun $major.$middle.$minor \033[91;5;1m FAILED \033[0m is too old, 1.8.1 at least required"
+    MPI_installation_required=yes
   elif [ $minor -gt 0  ]; then
     echo -e "mpirun $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
   else
     echo -e "mpirun $major.$middle.$minor \033[91;5;1m FAILED \033[0m is too old, 1.8.1 at least required"
+    MPI_installation_required=yes
   fi 
 fi
 }

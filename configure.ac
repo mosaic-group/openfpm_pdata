@@ -187,6 +187,22 @@ fi
 AX_BOOST([1.52],[],[echo "boost not found"
                     exit 202])
 
+### Unfortunately a lot of linux distros install a pretty old MPI in the system wide folder,
+### override such MPI with the installed one is extremely difficult and tricky, because we want
+### to include "some" system library but exclude mpi. One possibility is to give specifically
+### the wanted libmpi.so directly to the linker. But this is not possible because this lib is
+### given by mpic++ in the form -L/path/to/mpi -lmpi, the other is completely eliminate every
+### -L with a system default library
+###
+
+# eliminate any /usr/lib and and /usr/include from $BOOST_LIB and $BOOST_INCLUDE
+
+BOOST_LDFLAGS=$(echo "$BOOST_LDFLAGS" | sed -e 's/-L\/usr\/lib//g')
+BOOST_CPPFLAGS=$(echo "$BOOST_CPPFLAGS" | sed -e 's/-I\/usr\/include//g')
+
+AC_SUBST(BOOST_LDFLAGS)
+AC_SUBST(BOOST_CPPFLAGS)
+
 ####### Checking for GPU support
 
 AX_CUDA
