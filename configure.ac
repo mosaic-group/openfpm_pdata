@@ -218,8 +218,8 @@ fi
 
 # eliminate any /usr/lib and and /usr/include from $BOOST_LIB and $BOOST_INCLUDE
 
-BOOST_LDFLAGS=$(echo "$BOOST_LDFLAGS" | sed -e 's/-L\/usr\/lib64//g' | sed -e 's/-L\/usr\/lib//g')
-BOOST_CPPFLAGS=$(echo "$BOOST_CPPFLAGS" | sed -e 's/-I\/usr\/include//g')
+BOOST_LDFLAGS=$(echo "$BOOST_LDFLAGS" | sed -e 's/ -L\/usr\/lib64[ \b]//g' | sed -e 's/ -L\/usr\/lib[ \b]//g')
+BOOST_CPPFLAGS=$(echo "$BOOST_CPPFLAGS" | sed -e 's/-I\/usr\/include[ \b]//g')
 
 AC_SUBST(BOOST_LDFLAGS)
 AC_SUBST(BOOST_CPPFLAGS)
