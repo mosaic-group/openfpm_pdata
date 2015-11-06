@@ -218,7 +218,7 @@ fi
 
 # eliminate any /usr/lib and and /usr/include from $BOOST_LIB and $BOOST_INCLUDE
 
-BOOST_LDFLAGS=$(echo "$BOOST_LDFLAGS" | sed -e 's/-L\/usr\/lib//g')
+BOOST_LDFLAGS=$(echo "$BOOST_LDFLAGS" | sed -e 's/-L\/usr\/lib64//g' | sed -e 's/-L\/usr\/lib//g')
 BOOST_CPPFLAGS=$(echo "$BOOST_CPPFLAGS" | sed -e 's/-I\/usr\/include//g')
 
 AC_SUBST(BOOST_LDFLAGS)
