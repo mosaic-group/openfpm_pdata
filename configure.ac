@@ -25,11 +25,14 @@ ac_configure_args="$ac_configure_args --with-pdata=../../src"
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADER([src/config/config.h])
 m4_ifdef([ACX_PTHREAD],,[m4_include([m4/acx_pthread.m4])])
-m4_ifdef([AX_BOOST],,[m4_include([m4/ax_boost.m4])])
 m4_ifdef([ACX_MPI],,[m4_include([m4/acx_mpi.m4])])
 m4_ifdef([AX_OPENMP],,[m4_include([m4/ax_openmp.m4])])
 m4_ifdef([AX_CUDA],,[m4_include([m4/ax_cuda.m4])])
 m4_ifdef([IMMDX_LIB_METIS],,[m4_include([m4/immdx_lib_metis.m4])])
+m4_ifdef([AX_BOOST_BASE],,[m4_include([m4/ax_boost_base.m4])])
+m4_ifdef([AX_BOOST_IOSTREAMS],,[m4_include([m4/ax_boost_iostreams.m4])])
+m4_ifdef([AX_BOOST_PROGRAM_OPTIONS],,[m4_include([m4/ax_boost_program_options.m4])])
+m4_ifdef([AX_BOOST_UNIT_TEST_FRAMEWORK],,[m4_include([m4/ax_boost_unit_test_framework.m4])])
 
 CXXFLAGS+=" --std=c++11 "
 NVCCFLAGS=" "
@@ -184,8 +187,26 @@ fi
 
 ##### CHECK FOR BOOST ##############
 
-AX_BOOST([1.52],[],[echo "boost not found"
+AX_BOOST_BASE([1.52],[],[echo "boost not found"
                     exit 202])
+AX_BOOST_UNIT_TEST_FRAMEWORK
+AX_BOOST_PROGRAM_OPTIONS
+AX_BOOST_IOSTREAMS
+
+if test x"$ax_cv_boost_unit_test_framework" = x"no"; then
+  echo "Notify boost not usable"
+  exit 202
+fi
+
+if test x"$ax_cv_boost_iostreams" = x"no"; then
+  echo "Notify boost not usable"
+  exit 202
+fi
+
+if test x"$ax_cv_boost_programs_options" = x"no"; then
+  echo "Notify boost not usable"
+  exit 202
+fi
 
 ### Unfortunately a lot of linux distros install a pretty old MPI in the system wide folder,
 ### override such MPI with the installed one is extremely difficult and tricky, because we want
@@ -202,16 +223,6 @@ BOOST_CPPFLAGS=$(echo "$BOOST_CPPFLAGS" | sed -e 's/-I\/usr\/include//g')
 
 AC_SUBST(BOOST_LDFLAGS)
 AC_SUBST(BOOST_CPPFLAGS)
-
-## boost_iostreams and boost_program_options are required
-
-if test x"$ax_cv_boost_program_options" = x"no"  ; then
-  exit 202
-fi
-
-if test x"$ax_cv_boost_iostreams" = x"yes" ; then
-  exit 202
-fi
 
 ####### Checking for GPU support
 
