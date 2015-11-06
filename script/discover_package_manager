@@ -31,7 +31,7 @@ function discover_package_manager() {
       discover_package_manager_ret="sudo port"
       return
     else
-      discover_package_manager_ret="bla"
+      discover_package_manager_ret=""
       return
     fi
   elif [ x"$1" = x"linux"  ]; then
@@ -42,7 +42,7 @@ function discover_package_manager() {
     fi
     command -v apt-get >/dev/null
     if [ $? -eq 0 ]; then
-      discover_package_manager_ret="apt-get"
+      discover_package_manager_ret="sudo apt-get"
       return
     fi
     command -v zypper >/dev/null
