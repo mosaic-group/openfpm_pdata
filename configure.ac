@@ -203,6 +203,16 @@ BOOST_CPPFLAGS=$(echo "$BOOST_CPPFLAGS" | sed -e 's/-I\/usr\/include//g')
 AC_SUBST(BOOST_LDFLAGS)
 AC_SUBST(BOOST_CPPFLAGS)
 
+## boost_iostreams and boost_program_options are required
+
+if test x"$ax_cv_boost_program_options" = x"no"  ; then
+  exit 202
+fi
+
+if test x"$ax_cv_boost_iostreams" = x"yes" ; then
+  exit 202
+fi
+
 ####### Checking for GPU support
 
 AX_CUDA
