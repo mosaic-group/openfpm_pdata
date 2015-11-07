@@ -84,29 +84,32 @@ else
 	NVCCFLAGS+="$NVCCFLAGS -O3 "
 fi
 
-## Check for memcheck
-
-AC_MSG_CHECKING(whether to build with memcheck capabilities)
-AC_ARG_ENABLE(memcheck,
-        AC_HELP_STRING(
-            [--enable-memcheck],
-            [enable memory check (def=no)]
-        ),
-        memcheck="$enableval"
-)
-
-AC_MSG_RESULT($memcheck)
-
-if test x"$memcheck" = x"yes"; then
-        AC_DEFINE([MEMLEAK_CHECK],[],[Memory check, corruption and leak])
-fi
-
 #########
 
 ## Check for Metis
 
 IMMDX_LIB_METIS([],[echo "Cannot detect metis, use the --with-metis option if it is not installed in the default location"
                     exit 201])
+
+########
+
+## Enable scan coverty
+
+AC_MSG_CHECKING(whether to build for scan coverty compilation)
+AC_ARG_ENABLE(scan-coverty,
+        AC_HELP_STRING(
+            [--enable-scan-coverty],
+            [enable scan-coverty compilation (def=no)]
+        ),
+        scancoverty="$enableval"
+)
+
+AC_MSG_RESULT($scancoverty)
+
+if test x"$scancoverty" = x"yes"; then
+        AC_DEFINE([COVERTY_SCAN],[],[Compile for coverty scan])
+fi
+
 
 ####### include OpenFPM_devices include path
 
