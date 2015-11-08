@@ -222,7 +222,7 @@ then
  module unload bullxmpi
  module load metis/5.1.0
 
- ./install -s -c"--with-metis=$METIS_ROOT --with-boost=$BOOST_ROOT CXX=mpic++"
+ ./install -s -c"--with-metis=/sw/global/libraries/metis/5.1.0/x86_64/ --with-boost=/sw/taurus/libraries/boost/1.55.0-gnu4.8 CXX=mpic++"
  make
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
