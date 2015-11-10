@@ -28,10 +28,9 @@
 #include "ie_loc_ghost.hpp"
 #include "ie_ghost.hpp"
 #include "nn_processor.hpp"
+#include "util/se_util.hpp"
 
 #define CARTDEC_ERROR 2000lu
-
-#include "util/se_util.hpp"
 
 /**
  * \brief This class decompose a space into subspaces

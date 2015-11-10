@@ -127,9 +127,16 @@ conf_err=1
 
 ## MPI
 
-command -v mpic++ >/dev/null 2>&1
-if [ $? -eq 0 ]; then
-  options="CXX=mpic++"
+if [ x"$MPI_installation_required" == x"yes"  ]; then
+  ./script/install_MPI.sh $i_dir $compiler_opt
+  export PATH="$i_dir/MPI/bin:$PATH"
+  configure_options="$configure_options CXX=mpic++ "
+  MPI_installed=1
+else
+  command -v mpic++ >/dev/null 2>&1
+  if [ $? -eq 0 ]; then
+    configure_options="$configure_options CXX=mpic++ "
+  fi
 fi
 
 ## if a new compiler has been installed reinstall all the dependencies
@@ -228,7 +235,7 @@ if [ $MPI_installed -eq 1 ]; then
   echo -e "  MPI has been installed into: \033[1m $i_dir/MPI \033[0m"
   echo ""
   if [ x"$platform" = x"linux" ]; then
-    echo -e "\033[1m  export PATH=\"\$PATH:$i_dir/MPI/bin \" \033[0m "
+    echo -e "\033[1m  export PATH=\"\$PATH:$i_dir/MPI/bin\" \033[0m "
     echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:$i_dir/MPI/lib\" \033[0m "
   else
     echo -e "\033[1m  export PATH=\"\$PATH:$i_dir/MPI/bin \" \033[0m "
