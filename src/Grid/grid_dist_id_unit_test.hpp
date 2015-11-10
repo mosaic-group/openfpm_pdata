@@ -619,6 +619,7 @@ void Test3D_dup(const Box<3,float> & domain, long int k)
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 1;
+	long int k_old = k;
 
 	Vcluster & v_cl = *global_v_cluster;
 
@@ -674,6 +675,8 @@ void Test3D_dup(const Box<3,float> & domain, long int k)
 
 		BOOST_REQUIRE_EQUAL(check,true);
 	}
+
+	k = k_old;
 
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
