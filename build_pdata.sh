@@ -1,11 +1,12 @@
 #! /bin/bash
 
-# Make a directory in /tmp/OpenFPM_data
+# Make a directory in /tmp/OpenFPM_pdata
 
 echo "Directory: $1"
 echo "Machine: $2"
 
 mkdir src/config
+mkdir openfpm_numerics/src/config
 
 git submodule init
 if [ $? -ne 0 ]; then
