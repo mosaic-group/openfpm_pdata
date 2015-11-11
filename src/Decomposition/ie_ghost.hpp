@@ -628,7 +628,7 @@ public:
 	 */
 	bool is_equal_ng(ie_ghost<dim,T> & ig)
 	{
-		Box<dim,T> & bt;
+		Box<dim,T> bt;
 
 		if (getNEGhostBox() != ig.getNEGhostBox())
 			return false;
