@@ -6,8 +6,6 @@ echo "Directory: $1"
 echo "Machine: $2"
 
 mkdir src/config
-echo "Making numeric config folder"
-mkdir openfpm_numerics/src/config
 
 git submodule init
 if [ $? -ne 0 ]; then
@@ -20,6 +18,8 @@ if [ $? -ne 0 ]; then
   echo -e "Configure\033[91;5;1m FAILED \033[0m"
   exit 1
 fi
+
+mkdir openfpm_numerics/src/config
 
 # pull from all the projects
 cd openfpm_data
@@ -58,7 +58,6 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 cd ..
-
 
 if [ "$2" == "gin" ]
 then
