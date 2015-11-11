@@ -399,13 +399,6 @@ class grid_dist_id
 			gdb_ext.last().GDbox = sp_tg;
 			gdb_ext.last().GDbox -= sp_tg.getP1();
 
-/*			if (gdb_ext.last().GDbox.getHigh(0) == gdb_ext.last().Dbox.getHigh(0) &&
-				gdb_ext.last().GDbox.getHigh(1) == gdb_ext.last().Dbox.getHigh(1))
-			{
-				int debug = 0;
-				debug++;
-			}*/
-
 			// center to zero
 			sp_tg -= sp_tg.getP1();
 
@@ -449,7 +442,7 @@ class grid_dist_id
 	 * \param g_sz Global size of the grid
 	 *
 	 */
-	inline void InitializeStructures(const size_t (& g_sz)[dim])
+	inline void InitializeDecomposition(const size_t (& g_sz)[dim])
 	{
 		// fill the global size of the grid
 		for (size_t i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
@@ -468,11 +461,22 @@ class grid_dist_id
 		// Create the sub-domains
 		dec.setParameters(div,domain,ghost);
 
-		// Create local grid
-		Create();
-
 		// Calculate ghost boxes
 		dec.calculateGhostBoxes();
+	}
+
+	/*! \brief Initialize the grid
+	 *
+	 * \param g_sz Global size of the grid
+	 *
+	 */
+	inline void InitializeStructures(const size_t (& g_sz)[dim])
+	{
+		// fill the global size of the grid
+		for (size_t i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
+
+		// Create local grid
+		Create();
 	}
 
 public:
@@ -503,6 +507,7 @@ public:
 	:domain(domain),ghost(g),dec(* new Decomposition(*global_v_cluster)),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
 	{
 		InitializeCellDecomposer(g_sz);
+		InitializeDecomposition(g_sz);
 		InitializeStructures(g_sz);
 	}
 
@@ -531,6 +536,7 @@ public:
 			ghost.setHigh(i,sp.getHigh(i));
 		}
 
+		InitializeDecomposition(g_sz);
 		// Initialize structures
 		InitializeStructures(g_sz);
 	}
@@ -560,6 +566,7 @@ public:
 			ghost.setHigh(i,sp.getHigh(i));
 		}
 
+		InitializeDecomposition(g_sz);
 		// Initialize structures
 		InitializeStructures(g_sz);
 	}

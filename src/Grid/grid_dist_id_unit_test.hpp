@@ -570,8 +570,11 @@ void Test3D_gg(const Box<3,float> & domain, long int k, long int gk)
 
 		for (size_t i = 0 ; i < lg.size() ; i++)
 		{
-			BOOST_REQUIRE(lg.get(i).Dbox.getLow(i) >= gk);
-			BOOST_REQUIRE((lg.get(i).GDbox.getHigh(i) - lg.get(i).Dbox.getHigh(i)) >= gk);
+			for (size_t j = 0 ; j < 3 ; j++)
+			{
+				BOOST_REQUIRE(lg.get(i).Dbox.getLow(j) >= gk);
+				BOOST_REQUIRE((lg.get(i).GDbox.getHigh(j) - lg.get(i).Dbox.getHigh(j)) >= gk);
+			}
 		}
 	}
 }
@@ -999,7 +1002,8 @@ void Test3D_dup(const Box<3,float> & domain, long int k)
 
 		BOOST_REQUIRE_EQUAL(g_dist2->getDecomposition().ref(),1);
 		BOOST_REQUIRE_EQUAL(g_dist2->getDecomposition().getLocalNEGhost(0) != 0, true);
-		BOOST_REQUIRE_EQUAL(g_dist2->getDecomposition().check_consistency(),true);
+		bool ret = g_dist2->getDecomposition().check_consistency();
+		BOOST_REQUIRE_EQUAL(ret,true);
 	}
 }
 
@@ -1023,7 +1027,26 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 	k = std::pow(k, 1/3.);
 	Test3D(domain3,k);
 	Test3D_complex(domain3,k);
+}
+
+BOOST_AUTO_TEST_CASE( grid_dist_id_dup)
+{
+	// Domain
+	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	long int k = 128*128*128*global_v_cluster->getProcessingUnits();
+	k = std::pow(k, 1/3.);
 	Test3D_dup(domain3,k);
+}
+
+BOOST_AUTO_TEST_CASE( grid_dist_id_sub)
+{
+	// Domain
+	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	long int k = 128*128*128*global_v_cluster->getProcessingUnits();
+	k = std::pow(k, 1/3.);
+	Test3D_sub(domain3,k);
 }
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_sub_iterator_test_use)
@@ -1038,12 +1061,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_sub_iterator_test_use)
 	k = std::pow(k, 1/2.);
 
 	Test2D_sub(domain,k);
-	// Domain
-	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
-
-	k = 128*128*128*global_v_cluster->getProcessingUnits();
-	k = std::pow(k, 1/3.);
-	Test3D_sub(domain3,k);
 }
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_with_grid_unit_ghost )
