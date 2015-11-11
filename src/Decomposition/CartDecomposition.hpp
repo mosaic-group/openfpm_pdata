@@ -558,7 +558,7 @@ p1[0]<-----+         +----> p2[0]
 
 		for (size_t i = 0 ; i < dim ; i++)
 		{
-			if (ghost.template getLow(i) >= domain.template getHigh(i) / gr.size(i) || ghost.template getHigh(i)  >= domain.template getHigh(i) / gr.size(i))
+			if (fabs(ghost.template getLow(i)) >= ss_box.getHigh(i) || ghost.template getHigh(i) >= ss_box.getHigh(i))
 			{
 				std::cerr << "Error " << __FILE__ << ":" << __LINE__  << " : Ghost are bigger than one sub-domain" << "\n";
 			}

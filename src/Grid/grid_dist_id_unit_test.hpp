@@ -535,10 +535,14 @@ void Test3D_gg(const Box<3,float> & domain, long int k, long int gk)
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 1;
 
+	// this test is only performed when the number of processor is <= 32
+	if (global_v_cluster->getProcessingUnits() > 32)
+		return;
+
 	print_test( "Testing 3D grid k<=",k);
 
 	// 3D test
-	for ( ; k >= 2 ; k /= 2 )
+	for ( ; k >= 6 ; k /= 2 )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 3D grid ghost integer k=" << k );
 
@@ -567,10 +571,6 @@ void Test3D_gg(const Box<3,float> & domain, long int k, long int gk)
 		for (size_t i = 0 ; i < lg.size() ; i++)
 		{
 			BOOST_REQUIRE(lg.get(i).Dbox.getLow(i) >= gk);
-			if ((lg.get(i).GDbox.getHigh(i) - lg.get(i).Dbox.getHigh(i)) < gk)
-			{
-				std::cout << "DIOCANE: " << gk << "  " << (lg.get(i).GDbox.getHigh(i) - lg.get(i).Dbox.getHigh(i)) << "\n";
-			}
 			BOOST_REQUIRE((lg.get(i).GDbox.getHigh(i) - lg.get(i).Dbox.getHigh(i)) >= gk);
 		}
 	}
