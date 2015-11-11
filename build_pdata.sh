@@ -6,6 +6,7 @@ echo "Directory: $1"
 echo "Machine: $2"
 
 mkdir src/config
+echo "Making numeric config folder"
 mkdir openfpm_numerics/src/config
 
 git submodule init
