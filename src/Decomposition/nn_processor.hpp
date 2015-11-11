@@ -115,6 +115,23 @@ public:
 		return *this;
 	}
 
+	/*! \brief Refine the ss_box to have the smallest size on each direction of the local subdomain and adjacent (from other processor) one
+	 *
+	 * \param ss_box box that store the smallest size of the sub-domain
+	 *
+	 */
+	void refine_ss_box(Box<dim,T> & ss_box)
+	{
+		for (size_t p = 0 ; p < getNNProcessors() ; p++)
+		{
+			auto list_p_box = getExternalAdjSubdomain(IDtoProc(p));
+
+			// Create the smallest box contained in all sub-domain
+			for (size_t b = 0 ; b < list_p_box.bx.size() ; b++)
+				ss_box.contained(list_p_box.bx.get(b));
+		}
+	}
+
 	/*! \brief Create the list of adjacent processors and the list of adjacent sub-domains
 	 *
 	 * \param box_nn_processors
@@ -337,19 +354,18 @@ public:
 
 		for (size_t p = 0 ; p < getNNProcessors() ; p++)
 		{
-			if (getAdjacentSubdomain(p) != np.getAdjacentSubdomain(p))
+			if (getAdjacentSubdomain(IDtoProc(p)) != np.getAdjacentSubdomain(IDtoProc(p)))
 				return false;
-			if (getAdjacentProcessor(p) != np.getAdjacentProcessor(p))
+			if (getAdjacentProcessor(IDtoProc(p)) != np.getAdjacentProcessor(IDtoProc(p)))
 				return false;
-			if (getInternalAdjSubdomain(p) != np.getInternalAdjSubdomain(p))
+			if (getInternalAdjSubdomain(IDtoProc(p)) != np.getInternalAdjSubdomain(IDtoProc(p)))
 				return false;
-			if (getExternalAdjSubdomain(p) != np.getExternalAdjSubdomain(p))
+			if (getExternalAdjSubdomain(IDtoProc(p)) != np.getExternalAdjSubdomain(IDtoProc(p)))
 				return false;
 		}
 
 		return true;
 	}
-
 };
 
 

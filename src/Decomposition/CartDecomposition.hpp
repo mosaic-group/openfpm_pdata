@@ -116,8 +116,10 @@ private:
 	//! Runtime virtual cluster machine
 	Vcluster & v_cl;
 
-	//! Cell-list that store the geometrical information of the local internal ghost boxes
-	CellList<dim,T,FAST> lgeo_cell;
+	// Smallest subdivision on each direction
+	::Box<dim,T> ss_box;
+
+	::Box<dim,T> bbox;
 
 	// Heap memory receiver
 	HeapMemory hp_recv;
@@ -254,6 +256,7 @@ private:
 		}
 
 		nn_prcs<dim,T>::create(box_nn_processor, sub_domains);
+		nn_prcs<dim,T>::refine_ss_box(ss_box);
 
 		// fill fine_s structure
 		// fine_s structure contain the processor id for each sub-sub-domain
@@ -271,6 +274,16 @@ private:
 			++it;
 		}
 
+		Initialize_geo_cell_lists();
+	}
+
+	/*! \brief Initialize geo_cell lists
+	 *
+	 *
+	 *
+	 */
+	void Initialize_geo_cell_lists()
+	{
 		// Get the smallest sub-division on each direction
 		::Box<dim,T> unit = getSmallestSubdivision();
 		// Get the processor bounding Box
@@ -290,7 +303,6 @@ private:
 
 		// Initialize the geo_cell structure
 		ie_ghost<dim,T>::Initialize_geo_cell(domain,div,orig);
-		lgeo_cell.Initialize(domain,div,orig);
 	}
 
 	/*! \brief Create the subspaces that decompose your domain
@@ -567,14 +579,49 @@ p1[0]<-----+         +----> p2[0]
 		// get the smallest sub-domain dimension on each direction
 		for (size_t i = 0 ; i < dim ; i++)
 		{
-			if (ghost.template getLow(i) >= ss_box.getHigh(i) || ghost.template getHigh(i)  >= domain.template getHigh(i) / gr.size(i))
+			if (fabs(ghost.template getLow(i)) >= ss_box.getHigh(i) || ghost.template getHigh(i) >= ss_box.getHigh(i))
 			{
 				std::cerr << "Error " << __FILE__ << ":" << __LINE__  << " : Ghost are bigger than one sub-domain" << "\n";
 			}
 		}
 	}
 
-	/*! \brief It create anothe object that contain the same information and act in the same way
+	/*! \brief It create another object that contain the same decomposition information but with different ghost boxes
+	 *
+	 * \param g ghost
+	 *
+	 * \return a duplicated decomposition with different ghost boxes
+	 *
+	 */
+	CartDecomposition<dim,T,Memory,Domain> duplicate(Ghost<dim,T> & g)
+	{
+		CartDecomposition<dim,T,Memory,Domain> cart(v_cl);
+
+		cart.box_nn_processor = box_nn_processor;
+		cart.sub_domains = sub_domains;
+		cart.fine_s = fine_s;
+
+		cart.gr = gr;
+		cart.cd = cd;
+		cart.domain = domain;
+		std::copy(spacing,spacing+3,cart.spacing);
+
+		//! Runtime virtual cluster
+		cart.v_cl = v_cl;
+
+		cart.bbox = bbox;
+		cart.ss_box = ss_box;
+		cart.ghost = g;
+
+		nn_prcs<dim,T>::create(box_nn_processor, sub_domains);
+
+		calculateGhostBoxes();
+		Initialize_geo_cell_lists();
+
+		return cart;
+	}
+
+	/*! \brief It create another object that contain the same information and act in the same way
 	 *
 	 * \return a duplicated decomposition
 	 *
@@ -598,9 +645,10 @@ p1[0]<-----+         +----> p2[0]
 		//! Runtime virtual cluster
 		cart.v_cl = v_cl;
 
-		//! Cell-list that store the geometrical information of the local internal ghost boxes
-		cart.lgeo_cell = lgeo_cell;
 		cart.ghost = ghost;
+
+		cart.bbox = bbox;
+		cart.ss_box = ss_box;
 
 		return cart;
 	}
@@ -627,9 +675,10 @@ p1[0]<-----+         +----> p2[0]
 		//! Runtime virtual cluster
 		v_cl = cart.v_cl;
 
-		//! Cell-list that store the geometrical information of the local internal ghost boxes
-		lgeo_cell = cart.lgeo_cell;
 		ghost = cart.ghost;
+
+		bbox = cart.bbox;
+		ss_box = cart.ss_box;
 
 		return *this;
 	}
@@ -656,9 +705,10 @@ p1[0]<-----+         +----> p2[0]
 		//! Runtime virtual cluster
 		v_cl = cart.v_cl;
 
-		//! Cell-list that store the geometrical information of the local internal ghost boxes
-		lgeo_cell.swap(cart.lgeo_cell);
 		ghost = cart.ghost;
+
+		cart.bbox = bbox;
+		cart.ss_box = ss_box;
 
 		return *this;
 	}
@@ -686,9 +736,6 @@ p1[0]<-----+         +----> p2[0]
 	{
 		return fine_s.get(cd.getCell(p));
 	}
-
-	// Smallest subdivision on each direction
-	::Box<dim,T> ss_box;
 
 	/*! \brief Get the smallest subdivision of the domain on each direction
 	 *
@@ -816,8 +863,6 @@ p1[0]<-----+         +----> p2[0]
 		return processorID(pos) == v_cl.getProcessUnitID();
 	}
 
-	::Box<dim,T> bbox;
-
 	/*! \brief Return the bounding box containing union of all the sub-domains for the local processor
 	 *
 	 * \return The bounding box
@@ -926,6 +971,44 @@ p1[0]<-----+         +----> p2[0]
 		if (gr != cart.gr)
 			return false;
 
+		if (cd != cart.cd)
+			return false;
+
+		if (domain != cart.domain)
+			return false;
+
+		if (meta_compare<T[dim]>::meta_compare_f(cart.spacing,spacing) == false)
+			return false;
+
+		if (ghost != cart.ghost)
+			return false;
+
+		return true;
+	}
+
+	/*! \brief Check if the CartDecomposition contain the same information with the exception of the ghost part
+	 * It is anyway required that the ghost come from the same sub-domains decomposition
+	 *
+	 * \param ele Element to check
+	 *
+	 */
+	bool is_equal_ng(CartDecomposition<dim,T,Memory,Domain> & cart)
+	{
+		static_cast<ie_loc_ghost<dim,T>*>(this)->is_equal_ng(static_cast<ie_loc_ghost<dim,T>&>(cart));
+		static_cast<nn_prcs<dim,T>*>(this)->is_equal(static_cast<nn_prcs<dim,T>&>(cart));
+		static_cast<ie_ghost<dim,T>*>(this)->is_equal(static_cast<ie_ghost<dim,T>&>(cart));
+
+		if (sub_domains != cart.sub_domains)
+			return false;
+
+		if (box_nn_processor != cart.box_nn_processor)
+			return false;
+
+		if (fine_s != cart.fine_s)
+			return false;
+
+		if (gr != cart.gr)
+			return false;
 
 		if (cd != cart.cd)
 			return false;
@@ -933,12 +1016,7 @@ p1[0]<-----+         +----> p2[0]
 		if (domain != cart.domain)
 			return false;
 
-		std::copy(cart.spacing,cart.spacing+3,spacing);
-
-		if (lgeo_cell != cart.lgeo_cell)
-			return false;
-
-		if (ghost != cart.ghost)
+		if (meta_compare<T[dim]>::meta_compare_f(cart.spacing,spacing) == false)
 			return false;
 
 		return true;

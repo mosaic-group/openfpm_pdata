@@ -619,6 +619,61 @@ public:
 				return false;
 		}
 	}
+
+	/*! \brief Check if the ie_loc_ghosts contain the same information with the exception of the ghost part
+	 * It is anyway required that the ghost come from the same sub-domains decomposition
+	 *
+	 * \param ele Element to check
+	 *
+	 */
+	bool is_equal_ng(ie_ghost<dim,T> & ig)
+	{
+		Box<dim,T> & bt;
+
+		if (getNEGhostBox() != ig.getNEGhostBox())
+			return false;
+
+		if (getNIGhostBox() != ig.getNIGhostBox())
+			return false;
+
+		for (size_t i = 0 ; i < getNIGhostBox() ; i++)
+		{
+			if (getProcessorNIGhost(i) != ig.getProcessorNIGhost(i))
+				return false;
+			for (size_t j = 0 ; j < getProcessorNIGhost(i) ; j++)
+			{
+				if (getProcessorIGhostBox(i,j).intersect(ig.getProcessorIGhostBox(i,j),bt) == false)
+					return false;
+				if (getProcessorIGhostId(i,j).intersect(ig.getProcessorIGhostId(i,j),bt) == false)
+					return false;
+				if (getProcessorIGhostSub(i,j) != ig.getProcessorIGhostSub(i,j))
+					return false;
+			}
+			if (getIGhostBox(i) != ig.getIGhostBox(i))
+				return false;
+			if (getIGhostBoxProcessor(i) != ig.getIGhostBoxProcessor(i))
+				return false;
+		}
+
+		for (size_t i = 0 ; i < getNEGhostBox() ; i++)
+		{
+			if (getProcessorNEGhost(i) != ig.getProcessorNEGhost(i))
+				return false;
+			for (size_t j = 0 ; j < getProcessorNEGhost(i) ; j++)
+			{
+				if (getProcessorEGhostBox(i,j).intersect(ig.getProcessorEGhostBox(i,j),bt) == false)
+					return false;
+				if (getProcessorEGhostId(i,j),intersect(ig.getProcessorEGhostId(i,j),bt) == false)
+					return false;
+				if (getProcessorEGhostSub(i,j) != ig.getProcessorEGhostSub(i,j))
+					return false;
+			}
+			if (getEGhostBox(i) != ig.getEGhostBox(i))
+				return false;
+			if (getEGhostBoxProcessor(i).intersect(ig.getEGhostBoxProcessor(i),bt) == false)
+				return false;
+		}
+	}
 };
 
 

@@ -174,6 +174,29 @@ struct N_box
 
 		return * this;
 	}
+
+	/*! \brief Compare two N_box object
+	 *
+	 * \return true if they match
+	 *
+	 */
+	bool operator==(const N_box<dim,T> & ele) const
+	{
+		if (id != ele.id)
+			return false;
+
+		return bx == ele.bx;
+	}
+
+	/*! \brief Compare two N_box object
+	 *
+	 * \return true if they match
+	 *
+	 */
+	bool operator!=(const N_box<dim,T> & ele) const
+	{
+		return ! this->operator==(ele);
+	}
 };
 
 // It store all the boxes of the near processors in a linear array
