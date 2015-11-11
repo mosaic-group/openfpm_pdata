@@ -542,7 +542,7 @@ void Test3D_gg(const Box<3,float> & domain, long int k, long int gk)
 	print_test( "Testing 3D grid k<=",k);
 
 	// 3D test
-	for ( ; k >= 6 ; k /= 2 )
+	for ( ; k > 64 ; k /= 2 )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 3D grid ghost integer k=" << k );
 
