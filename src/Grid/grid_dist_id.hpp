@@ -718,7 +718,7 @@ public:
 	 * \param v1 grid_key that identify the element in the grid
 	 *
 	 */
-	template <unsigned int p>inline const auto get(const grid_dist_key_dx<dim> & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	template <unsigned int p>inline auto get(const grid_dist_key_dx<dim> & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
 		return loc_grid.get(v1.getSub()).template get<p>(v1.getKey());
 	}
