@@ -108,6 +108,7 @@ echo -e "\033[1;34;5mDEPENCENCIES INSTALLATION DIR      \033[0m"
 echo -e "Every required dependencies if needed will be installed into: \033[1;34;5m$i_dir\033[0m"
 echo -e "if you want to install somewhere else do ./install -i /somewhere/else"
 if [ $sq -eq 0 ]; then
+  unset commands
   commands[0]="Continue"
   possible_solutions "${commands[@]}"
 fi
