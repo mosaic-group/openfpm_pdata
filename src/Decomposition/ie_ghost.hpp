@@ -583,6 +583,14 @@ public:
 
 		for (size_t i = 0 ; i < getNIGhostBox() ; i++)
 		{
+			if (getIGhostBox(i) != ig.getIGhostBox(i))
+				return false;
+			if (getIGhostBoxProcessor(i) != ig.getIGhostBoxProcessor(i))
+				return false;
+		}
+
+		for (size_t i = 0 ; i < proc_int_box.size() ; i++)
+		{
 			if (getProcessorNIGhost(i) != ig.getProcessorNIGhost(i))
 				return false;
 			for (size_t j = 0 ; j < getProcessorNIGhost(i) ; j++)
@@ -594,13 +602,17 @@ public:
 				if (getProcessorIGhostSub(i,j) != ig.getProcessorIGhostSub(i,j))
 					return false;
 			}
-			if (getIGhostBox(i) != ig.getIGhostBox(i))
-				return false;
-			if (getIGhostBoxProcessor(i) != ig.getIGhostBoxProcessor(i))
-				return false;
 		}
 
 		for (size_t i = 0 ; i < getNEGhostBox() ; i++)
+		{
+			if (getEGhostBox(i) != ig.getEGhostBox(i))
+				return false;
+			if (getEGhostBoxProcessor(i) != ig.getEGhostBoxProcessor(i))
+				return false;
+		}
+
+		for (size_t i = 0 ; i < proc_int_box.size() ; i++)
 		{
 			if (getProcessorNEGhost(i) != ig.getProcessorNEGhost(i))
 				return false;
@@ -613,10 +625,6 @@ public:
 				if (getProcessorEGhostSub(i,j) != ig.getProcessorEGhostSub(i,j))
 					return false;
 			}
-			if (getEGhostBox(i) != ig.getEGhostBox(i))
-				return false;
-			if (getEGhostBoxProcessor(i) != ig.getEGhostBoxProcessor(i))
-				return false;
 		}
 	}
 
