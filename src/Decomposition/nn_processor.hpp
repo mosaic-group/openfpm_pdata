@@ -235,7 +235,7 @@ public:
 	inline const openfpm::vector< ::Box<dim,T> > & getAdjacentSubdomain(size_t p_id) const
 	{
 		auto key = nn_processor_subdomains.find(p_id);
-#ifdef DEBUG
+#ifdef SE_CLASS1
 		if (key == nn_processor_subdomains.end())
 		{
 			std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " error this process rank is not adjacent to the local processor";
@@ -254,7 +254,7 @@ public:
 	inline size_t getAdjacentProcessor(size_t p_id) const
 	{
 		auto key = nn_processor_subdomains.find(p_id);
-#ifdef DEBUG
+#ifdef SE_CLASS1
 		if (key == nn_processor_subdomains.end())
 		{
 			std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " error this process rank is not adjacent to the local processor";
@@ -285,7 +285,7 @@ public:
 	inline const N_box<dim,T> & getExternalAdjSubdomain(size_t p_id) const
 	{
 		auto key = nn_processor_subdomains.find(p_id);
-#ifdef DEBUG
+#ifdef SE_CLASS1
 		if (key == nn_processor_subdomains.end())
 		{
 			std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " error this process rank is not adjacent to the local processor";
@@ -304,7 +304,7 @@ public:
 	inline size_t ProctoID(size_t p) const
 	{
 		auto key = nn_processor_subdomains.find(p);
-#ifdef DEBUG
+#ifdef SE_CLASS1
 		if (key == nn_processor_subdomains.end())
 		{
 			std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " error this process rank is not adjacent to the local processor";
@@ -358,7 +358,7 @@ public:
 				return false;
 			if (getAdjacentProcessor(IDtoProc(p)) != np.getAdjacentProcessor(IDtoProc(p)))
 				return false;
-			if (getInternalAdjSubdomain(IDtoProc(p)) != np.getInternalAdjSubdomain(IDtoProc(p)))
+			if (getInternalAdjSubdomain(p) != np.getInternalAdjSubdomain(p))
 				return false;
 			if (getExternalAdjSubdomain(IDtoProc(p)) != np.getExternalAdjSubdomain(IDtoProc(p)))
 				return false;
