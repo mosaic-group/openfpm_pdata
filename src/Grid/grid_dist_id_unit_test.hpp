@@ -78,7 +78,7 @@ void Test2D_sub(const Box<2,float> & domain, long int k)
 {
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
-	long int small_step = 1;
+	long int small_step = 21;
 
 	// this test is only performed when the number of processor is <= 32
 	if (global_v_cluster->getProcessingUnits() > 32)
@@ -205,7 +205,7 @@ void Test2D(const Box<2,float> & domain, long int k)
 {
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
-	long int small_step = 1;
+	long int small_step = 21;
 
 	print_test( "Testing 2D grid k<=",k);
 
@@ -310,7 +310,7 @@ void Test3D_sub(const Box<3,float> & domain, long int k)
 {
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
-	long int small_step = 1;
+	long int small_step = 21;
 
 	// this test is only performed when the number of processor is <= 32
 	if (global_v_cluster->getProcessingUnits() > 32)
@@ -423,7 +423,7 @@ void Test3D(const Box<3,float> & domain, long int k)
 {
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
-	long int small_step = 1;
+	long int small_step = 21;
 
 	print_test( "Testing 3D grid k<=",k);
 
@@ -533,7 +533,7 @@ void Test3D_gg(const Box<3,float> & domain, long int k, long int gk)
 {
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
-	long int small_step = 1;
+	long int small_step = 21;
 
 	// this test is only performed when the number of processor is <= 32
 	if (global_v_cluster->getProcessingUnits() > 32)
@@ -585,7 +585,7 @@ void Test2D_complex(const Box<2,float> & domain, long int k)
 
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
-	long int small_step = 1;
+	long int small_step = 21;
 
 	print_test( "Testing 2D complex grid k<=",k);
 
@@ -749,7 +749,7 @@ void Test3D_complex(const Box<3,float> & domain, long int k)
 
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
-	long int small_step = 1;
+	long int small_step = 21;
 
 	print_test( "Testing 3D grid complex k<=",k);
 
@@ -909,7 +909,7 @@ void Test3D_dup(const Box<3,float> & domain, long int k)
 {
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
-	long int small_step = 1;
+	long int small_step = 21;
 	long int k_old = k;
 
 	Vcluster & v_cl = *global_v_cluster;
