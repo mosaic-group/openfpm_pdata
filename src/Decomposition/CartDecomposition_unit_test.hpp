@@ -80,12 +80,11 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_use)
 	CartDecomposition<3,float> dec2 = dec.duplicate();
 	dec2.check_consistency();
 
+	// check that dec and dec2 contain the same information
 	bool ret = dec.is_equal(dec2);
 
 	// We check if the two decomposition are equal
 	BOOST_REQUIRE_EQUAL(ret,true);
-
-	// check that dec and dec2 contain the same information
 
 	// We duplicate the decomposition redefining the ghost
 
@@ -98,10 +97,11 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_use)
 	ret = dec3.check_consistency();
 	BOOST_REQUIRE_EQUAL(ret,true);
 
-	// Check that g3 is equal to dec2 with the exception of the ghost part
+	dec3.write("output_dec3_1.vtk");
+
+	// Check that dec3 is equal to dec2 with the exception of the ghost part
 	ret = dec3.is_equal_ng(dec2);
 	BOOST_REQUIRE_EQUAL(ret,true);
-
 }
 
 BOOST_AUTO_TEST_SUITE_END()

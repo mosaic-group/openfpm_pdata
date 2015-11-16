@@ -593,7 +593,7 @@ p1[0]<-----+         +----> p2[0]
 	 * \return a duplicated decomposition with different ghost boxes
 	 *
 	 */
-	CartDecomposition<dim,T,Memory,Domain> duplicate(Ghost<dim,T> & g)
+	CartDecomposition<dim,T,Memory,Domain> duplicate(const Ghost<dim,T> & g)
 	{
 		CartDecomposition<dim,T,Memory,Domain> cart(v_cl);
 
@@ -613,10 +613,10 @@ p1[0]<-----+         +----> p2[0]
 		cart.ss_box = ss_box;
 		cart.ghost = g;
 
-		nn_prcs<dim,T>::create(box_nn_processor, sub_domains);
+		cart.create(box_nn_processor, sub_domains);
 
-		calculateGhostBoxes();
-		Initialize_geo_cell_lists();
+		cart.Initialize_geo_cell_lists();
+		cart.calculateGhostBoxes();
 
 		return cart;
 	}
@@ -955,9 +955,14 @@ p1[0]<-----+         +----> p2[0]
 	 */
 	bool is_equal(CartDecomposition<dim,T,Memory,Domain> & cart)
 	{
-		static_cast<ie_loc_ghost<dim,T>*>(this)->is_equal(static_cast<ie_loc_ghost<dim,T>&>(cart));
-		static_cast<nn_prcs<dim,T>*>(this)->is_equal(static_cast<nn_prcs<dim,T>&>(cart));
-		static_cast<ie_ghost<dim,T>*>(this)->is_equal(static_cast<ie_ghost<dim,T>&>(cart));
+		if (static_cast<ie_loc_ghost<dim,T>*>(this)->is_equal(static_cast<ie_loc_ghost<dim,T>&>(cart)) == false)
+			return false;
+
+		if (static_cast<nn_prcs<dim,T>*>(this)->is_equal(static_cast<nn_prcs<dim,T>&>(cart)) == false)
+			return false;
+
+		if (static_cast<ie_ghost<dim,T>*>(this)->is_equal(static_cast<ie_ghost<dim,T>&>(cart)) == false)
+			return false;
 
 		if (sub_domains != cart.sub_domains)
 			return false;
@@ -994,9 +999,14 @@ p1[0]<-----+         +----> p2[0]
 	 */
 	bool is_equal_ng(CartDecomposition<dim,T,Memory,Domain> & cart)
 	{
-		static_cast<ie_loc_ghost<dim,T>*>(this)->is_equal_ng(static_cast<ie_loc_ghost<dim,T>&>(cart));
-		static_cast<nn_prcs<dim,T>*>(this)->is_equal(static_cast<nn_prcs<dim,T>&>(cart));
-		static_cast<ie_ghost<dim,T>*>(this)->is_equal(static_cast<ie_ghost<dim,T>&>(cart));
+		if (static_cast<ie_loc_ghost<dim,T>*>(this)->is_equal_ng(static_cast<ie_loc_ghost<dim,T>&>(cart)) == false)
+			return false;
+
+		if (static_cast<nn_prcs<dim,T>*>(this)->is_equal(static_cast<nn_prcs<dim,T>&>(cart)) == false)
+			return false;
+
+		if (static_cast<ie_ghost<dim,T>*>(this)->is_equal_ng(static_cast<ie_ghost<dim,T>&>(cart)) == false)
+			return false;
 
 		if (sub_domains != cart.sub_domains)
 			return false;

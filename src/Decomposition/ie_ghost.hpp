@@ -626,6 +626,8 @@ public:
 					return false;
 			}
 		}
+
+		return true;
 	}
 
 	/*! \brief Check if the ie_loc_ghosts contain the same information with the exception of the ghost part
@@ -650,14 +652,14 @@ public:
 				return false;
 			for (size_t j = 0 ; j < getProcessorNIGhost(i) ; j++)
 			{
-				if (getProcessorIGhostBox(i,j).intersect(ig.getProcessorIGhostBox(i,j),bt) == false)
+				if (getProcessorIGhostBox(i,j).Intersect(ig.getProcessorIGhostBox(i,j),bt) == false)
 					return false;
-				if (getProcessorIGhostId(i,j).intersect(ig.getProcessorIGhostId(i,j),bt) == false)
+				if (getProcessorIGhostId(i,j) != ig.getProcessorIGhostId(i,j))
 					return false;
 				if (getProcessorIGhostSub(i,j) != ig.getProcessorIGhostSub(i,j))
 					return false;
 			}
-			if (getIGhostBox(i) != ig.getIGhostBox(i))
+			if (getIGhostBox(i).Intersect(ig.getIGhostBox(i),bt) == false)
 				return false;
 			if (getIGhostBoxProcessor(i) != ig.getIGhostBoxProcessor(i))
 				return false;
@@ -669,18 +671,20 @@ public:
 				return false;
 			for (size_t j = 0 ; j < getProcessorNEGhost(i) ; j++)
 			{
-				if (getProcessorEGhostBox(i,j).intersect(ig.getProcessorEGhostBox(i,j),bt) == false)
+				if (getProcessorEGhostBox(i,j).Intersect(ig.getProcessorEGhostBox(i,j),bt) == false)
 					return false;
-				if (getProcessorEGhostId(i,j),intersect(ig.getProcessorEGhostId(i,j),bt) == false)
+				if (getProcessorEGhostId(i,j) !=  ig.getProcessorEGhostId(i,j))
 					return false;
 				if (getProcessorEGhostSub(i,j) != ig.getProcessorEGhostSub(i,j))
 					return false;
 			}
-			if (getEGhostBox(i) != ig.getEGhostBox(i))
+			if (getEGhostBox(i).Intersect(ig.getEGhostBox(i),bt) == false)
 				return false;
-			if (getEGhostBoxProcessor(i).intersect(ig.getEGhostBoxProcessor(i),bt) == false)
+			if (getEGhostBoxProcessor(i) != ig.getEGhostBoxProcessor(i))
 				return false;
 		}
+
+		return true;
 	}
 };
 

@@ -487,9 +487,37 @@ public:
 	// Decomposition used
 	typedef Decomposition decomposition;
 
+	static inline Ghost<dim,float> convert_ghost(const Ghost<dim,long int> & gd,const CellDecomposer_sm<dim,St> & cd_sm)
+	{
+		Ghost<dim,float> gc;
+
+		// get the grid spacing
+		Box<dim,St> sp = cd_sm.getCellBox();
+
+		// enlarge 0.001 of the spacing
+		sp.magnify_fix_P1(1.1);
+
+		// set the ghost
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			gc.setLow(i,-sp.getHigh(i));
+			gc.setHigh(i,sp.getHigh(i));
+		}
+
+		return gc;
+	}
+
 
     //! constructor
     grid_dist_id(Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
+    :domain(domain),ghost(ghost),dec(dec),v_cl(*global_v_cluster)
+	{
+		InitializeCellDecomposer(g_sz);
+		InitializeStructures(g_sz);
+	}
+
+    //! constructor
+    grid_dist_id(Decomposition && dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
     :domain(domain),ghost(ghost),dec(dec),v_cl(*global_v_cluster)
 	{
 		InitializeCellDecomposer(g_sz);
@@ -523,18 +551,7 @@ public:
 	{
 		InitializeCellDecomposer(g_sz);
 
-		// get the grid spacing
-		Box<dim,St> sp = cd_sm.getCellBox();
-
-		// enlarge 0.001 of the spacing
-		sp.magnify_fix_P1(1.1);
-
-		// set the ghost
-		for (size_t i = 0 ; i < dim ; i++)
-		{
-			ghost.setLow(i,-sp.getHigh(i));
-			ghost.setHigh(i,sp.getHigh(i));
-		}
+		ghost = convert_ghost(g,cd_sm);
 
 		InitializeDecomposition(g_sz);
 		// Initialize structures
@@ -553,18 +570,26 @@ public:
 	{
 		InitializeCellDecomposer(g_sz);
 
-		// get the grid spacing
-		Box<dim,St> sp = cd_sm.getCellBox();
+		ghost = convert_ghost(g,cd_sm);
 
-		// enlarge 0.001 of the spacing
-		sp.magnify_fix_P1(1.1);
+		InitializeDecomposition(g_sz);
+		// Initialize structures
+		InitializeStructures(g_sz);
+	}
 
-		// set the ghost
-		for (size_t i = 0 ; i < dim ; i++)
-		{
-			ghost.setLow(i,-sp.getHigh(i));
-			ghost.setHigh(i,sp.getHigh(i));
-		}
+	/*! \brief Constrcuctor
+	 *
+	 * \param g_sz array with the grid size on each dimension
+	 * \param domain domain where this grid live
+	 * \param g Ghost given in grid units
+	 *
+	 */
+	grid_dist_id(Decomposition && dec, const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
+	:domain(domain),dec(dec),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
+	{
+		InitializeCellDecomposer(g_sz);
+
+		ghost = convert_ghost(g,cd_sm);
 
 		InitializeDecomposition(g_sz);
 		// Initialize structures
