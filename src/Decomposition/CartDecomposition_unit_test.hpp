@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_use)
 	// Define ghost
 	Ghost<3,float> g3(0.005);
 
-	// We duplicate the decomposition refefining the ghost
+	// We duplicate the decomposition redefining the ghost
 	CartDecomposition<3,float> dec3 = dec.duplicate(g3);
 
 	ret = dec3.check_consistency();
