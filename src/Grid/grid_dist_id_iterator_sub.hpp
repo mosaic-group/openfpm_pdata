@@ -227,6 +227,26 @@ class grid_dist_iterator_sub
 
 		return k_glob;
 	}
+
+	/* \brief Get the starting point of the grid iterator
+	 *
+	 * \return the starting point
+	 *
+	 */
+	inline grid_key_dx<dim> getStart()
+	{
+		return start;
+	}
+
+	/* \brief Get the stop point of the grid iterator
+	 *
+	 * \return the stop point
+	 *
+	 */
+	inline grid_key_dx<dim> getStop()
+	{
+		return stop;
+	}
 };
 
 

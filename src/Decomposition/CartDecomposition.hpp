@@ -593,7 +593,7 @@ p1[0]<-----+         +----> p2[0]
 	 * \return a duplicated decomposition with different ghost boxes
 	 *
 	 */
-	CartDecomposition<dim,T,Memory,Domain> duplicate(const Ghost<dim,T> & g)
+	CartDecomposition<dim,T,Memory,Domain> duplicate(const Ghost<dim,T> & g) const
 	{
 		CartDecomposition<dim,T,Memory,Domain> cart(v_cl);
 
@@ -626,7 +626,7 @@ p1[0]<-----+         +----> p2[0]
 	 * \return a duplicated decomposition
 	 *
 	 */
-	CartDecomposition<dim,T,Memory,Domain> duplicate()
+	CartDecomposition<dim,T,Memory,Domain> duplicate() const
 	{
 		CartDecomposition<dim,T,Memory,Domain> cart(v_cl);
 

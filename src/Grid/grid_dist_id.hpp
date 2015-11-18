@@ -59,7 +59,7 @@ class grid_dist_id
 	Vcluster_object_array<device_grid> loc_grid;
 
 	//! Space Decomposition
-	Decomposition & dec;
+	Decomposition dec;
 
 	//! Extension of each grid: Domain and ghost + domain
 	openfpm::vector<GBoxes<device_grid::dims>> gdb_ext;
@@ -423,9 +423,6 @@ class grid_dist_id
 	 */
 	inline void InitializeCellDecomposer(const size_t (& g_sz)[dim])
 	{
-		// Increment the reference counter of the decomposition
-		dec.incRef();
-
 		// check that the grid has valid size
 		check_size(g_sz);
 
@@ -509,9 +506,12 @@ public:
 
 
     //! constructor
-    grid_dist_id(Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
+    grid_dist_id(const Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
     :domain(domain),ghost(ghost),dec(dec),v_cl(*global_v_cluster)
 	{
+		// Increment the reference counter of the decomposition
+		this->dec.incRef();
+
 		InitializeCellDecomposer(g_sz);
 		InitializeStructures(g_sz);
 	}
@@ -520,22 +520,10 @@ public:
     grid_dist_id(Decomposition && dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
     :domain(domain),ghost(ghost),dec(dec),v_cl(*global_v_cluster)
 	{
-		InitializeCellDecomposer(g_sz);
-		InitializeStructures(g_sz);
-	}
+		// Increment the reference counter of the decomposition
+    	this->dec.incRef();
 
-	/*! \brief Constrcuctor
-	 *
-	 * \param g_sz array with the grid size on each dimension
-	 * \param domain domain where this grid live
-	 * \param g Ghost
-	 *
-	 */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g)
-	:domain(domain),ghost(g),dec(* new Decomposition(*global_v_cluster)),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
-	{
 		InitializeCellDecomposer(g_sz);
-		InitializeDecomposition(g_sz);
 		InitializeStructures(g_sz);
 	}
 
@@ -546,33 +534,16 @@ public:
 	 * \param g Ghost given in grid units
 	 *
 	 */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
-	:domain(domain),dec(*new Decomposition(*global_v_cluster)),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
-	{
-		InitializeCellDecomposer(g_sz);
-
-		ghost = convert_ghost(g,cd_sm);
-
-		InitializeDecomposition(g_sz);
-		// Initialize structures
-		InitializeStructures(g_sz);
-	}
-
-	/*! \brief Constrcuctor
-	 *
-	 * \param g_sz array with the grid size on each dimension
-	 * \param domain domain where this grid live
-	 * \param g Ghost given in grid units
-	 *
-	 */
-	grid_dist_id(Decomposition & dec, const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
+	grid_dist_id(const Decomposition & dec, const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
 	:domain(domain),dec(dec),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
 	{
+		// Increment the reference counter of the decomposition
+		this->dec.incRef();
+
 		InitializeCellDecomposer(g_sz);
 
 		ghost = convert_ghost(g,cd_sm);
 
-		InitializeDecomposition(g_sz);
 		// Initialize structures
 		InitializeStructures(g_sz);
 	}
@@ -587,6 +558,48 @@ public:
 	grid_dist_id(Decomposition && dec, const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
 	:domain(domain),dec(dec),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
 	{
+		// Increment the reference counter of the decomposition
+		this->dec.incRef();
+
+		InitializeCellDecomposer(g_sz);
+
+		ghost = convert_ghost(g,cd_sm);
+
+		// Initialize structures
+		InitializeStructures(g_sz);
+	}
+
+	/*! \brief Constrcuctor
+	 *
+	 * \param g_sz array with the grid size on each dimension
+	 * \param domain domain where this grid live
+	 * \param g Ghost
+	 *
+	 */
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g)
+	:domain(domain),ghost(g),dec(*global_v_cluster),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
+	{
+		// Increment the reference counter of the decomposition
+		this->dec.incRef();
+
+		InitializeCellDecomposer(g_sz);
+		InitializeDecomposition(g_sz);
+		InitializeStructures(g_sz);
+	}
+
+	/*! \brief Constrcuctor
+	 *
+	 * \param g_sz array with the grid size on each dimension
+	 * \param domain domain where this grid live
+	 * \param g Ghost given in grid units
+	 *
+	 */
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
+	:domain(domain),dec(*global_v_cluster),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
+	{
+		// Increment the reference counter of the decomposition
+		this->dec.incRef();
+
 		InitializeCellDecomposer(g_sz);
 
 		ghost = convert_ghost(g,cd_sm);
@@ -594,6 +607,31 @@ public:
 		InitializeDecomposition(g_sz);
 		// Initialize structures
 		InitializeStructures(g_sz);
+	}
+
+	/*! \brief Constrcuctor
+	 *
+	 * \param g_sz std::vector with the grid size on each dimension
+	 * \param domain domain where this grid live
+	 * \param g Ghost given in grid units
+	 *
+	 */
+	grid_dist_id(const Decomposition & dec, const std::vector<size_t> & g_sz,const Box<dim,St> & domain, const Ghost<dim,long int> & g)
+	:grid_dist_id(dec,*static_cast<const size_t(*) [dim]>(static_cast<const void*>(&g_sz[0])),domain,g)
+	{
+
+	}
+
+	/*! \brief Constrcuctor
+	 *
+	 * \param g_sz std::vector with the grid size on each dimension
+	 * \param domain domain where this grid live
+	 * \param g Ghost given in grid units
+	 *
+	 */
+	grid_dist_id(Decomposition && dec,const std::vector<size_t> & g_sz,const Box<dim,St> & domain, const Ghost<dim,long int> & g)
+	:grid_dist_id(dec, *static_cast<const size_t(*) [dim]>(static_cast<const void*>(&g_sz[0])) , domain, g)
+	{
 	}
 
 	/*! \brief Get an object containing the grid informations
@@ -720,10 +758,6 @@ public:
 	~grid_dist_id()
 	{
 		dec.decRef();
-
-		// if we reach the 0, destroy the object
-		if (dec.ref() == 0)
-			delete &dec;
 	}
 
 	/*! \brief Get the Virtual Cluster machine
