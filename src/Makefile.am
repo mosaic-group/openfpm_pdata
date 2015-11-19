@@ -4,7 +4,7 @@ noinst_PROGRAMS = pdata
 pdata_SOURCES = main.cpp ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster.cpp ../openfpm_data/src/Memleak_check.cpp
 pdata_CXXFLAGS = $(CUDA_CFLAGS) $(INCLUDES_PATH) $(METIS_INCLUDE) $(BOOST_CPPFLAGS) -Wno-unused-function
 pdata_CFLAGS = $(CUDA_CFLAGS)
-pdata_LDADD = $(LINKLIBS) -lmetis
+pdata_LDADD = $(LINKLIBS) -lmetis -lparmetis
 nobase_include_HEADERS = Decomposition/CartDecomposition.hpp Decomposition/common.hpp Decomposition/Decomposition.hpp  Decomposition/ie_ghost.hpp \
          Decomposition/nn_processor.hpp Decomposition/DistModel.hpp Decomposition/ie_loc_ghost.hpp Decomposition/ORB.hpp \
          Graph/CartesianGraphFactory.hpp \

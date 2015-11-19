@@ -8,6 +8,7 @@
 #ifndef VTK_METIS_GEN_VTK_CPP_
 #define VTK_METIS_GEN_VTK_CPP_
 
+#include <iostream>
 #include "Graph/CartesianGraphFactory.hpp"
 #include "Graph/map_graph.hpp"
 #include "metis_util.hpp"

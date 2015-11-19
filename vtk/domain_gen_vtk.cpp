@@ -5,6 +5,7 @@
  *      Author: Pietro Incardona
  */
 
+#include <iostream>
 #include "Space/Shape/Box.hpp"
 #include "Vector/map_vector.hpp"
 #include "VTKWriter.hpp"

@@ -14,6 +14,23 @@
 #include "Space/Shape/Box.hpp"
 #include "Space/Shape/HyperCube.hpp"
 
+template<unsigned int dim, typename G_v, int prp>
+struct fill_id
+{
+	static inline void fill(G_v & g_v , const grid_key_dx<dim> & gk, const grid_sm<dim,void> & gs)
+	{
+		g_v.template get<prp>() = gs.LinId(gk);
+	}
+};
+
+template<unsigned int dim, typename G_v>
+struct fill_id<dim, G_v, -1>
+{
+	static inline void fill(G_v & g_v , const grid_key_dx<dim> & gk, const grid_sm<dim,void> & gs)
+	{
+	}
+};
+
 /*! \brief This class work as a functor
  *
  * For each number in the boost::mpl::vector (for example 3 6) set the properties of the vertex at the
@@ -42,7 +59,7 @@
  *
  */
 
-template<unsigned int dim, typename dT, typename G_v, typename v, bool is_stub>
+template<unsigned int dim, int lin_id, typename dT, typename G_v, typename v, bool is_stub>
 class fill_prop
 {
 	//! Reference to an array containing the spacing
@@ -54,11 +71,14 @@ class fill_prop
 	//! Vertex object to fill
 	G_v & g_v;
 
+	//! grid info
+	const grid_sm<dim,void> & gs;
+
 public:
 
 	//! Fill the object from where to take the properties
-	fill_prop(G_v & g_v , const dT (& szd)[dim], grid_key_dx<dim> & gk)
-	:szd(szd),gk(gk),g_v(g_v)
+	fill_prop(G_v & g_v , const dT (& szd)[dim], grid_key_dx<dim> & gk,const grid_sm<dim,void> & gs)
+	:szd(szd),gk(gk),g_v(g_v),gs(gs)
 	{}
 
 	//! It call the function for each property we want to copy
@@ -68,8 +88,52 @@ public:
     	typedef typename boost::fusion::result_of::at<v,boost::mpl::int_<T::value>>::type t_val;
 
     	g_v.template get<t_val::value>() = gk.get(T::value) * szd[T::value];
+    	fill_id<dim, G_v,lin_id>::fill(g_v,gk,gs);
     }
 };
+
+/*! \brief This class work as a functor
+ *
+ * For each number in the boost::mpl::vector (for example 3 6) set the properties of the vertex at the
+ * specified id (3 6) with pos[d] * spacing[d] with d running from 0 to 1, pos[d] the position id of the vertex
+ * spacing the grid spacing
+ *
+ * Example
+ *
+ * if we give a grid_key of dimension 2 4x4 the expression "pos[d] * spacing[d]"
+ * will assume the value
+ *
+ * (0.0 0.0) (0.25 0.0) ...... (1.0 0.0)
+ * (0.0 0.25)................. (1.0 0.25)
+ * ....................................
+ * (0.0 1.0).................. (1.0 1.0)
+ *
+ * and the properties 3 6 will be filled with the numbers 0.0 0.0    .......  1.0 1.0
+ * progressively
+ *
+ * \tparam dim Dimensionality of the cartesian grid
+ * \tparam dT type of the domain
+ * \tparam G_v vertex type object
+ * \tparam v boost::mpl::vector containing all the index to fill
+ *
+ */
+
+template<unsigned int dim, int prp_id, typename dT, typename G_v, typename v>
+class fill_prop<dim,prp_id,dT,G_v,v,true>
+{
+
+public:
+
+	//! Fill the object from where to take the properties
+	fill_prop(G_v & g_v , const dT (& szd)[dim], grid_key_dx<dim> & gk, const grid_sm<dim,void> & gs)
+	{}
+
+	//! It call the function for each property we want to copy
+    template<typename T>
+    void operator()(T& t) const
+    {}
+};
+
 
 /*! \brief Graph constructor function specialization
  *
@@ -79,7 +143,7 @@ public:
  *
  */
 
-template<unsigned int dim, typename Graph, int se,typename T, unsigned int dim_c, int... pos>
+template<unsigned int dim, int prp_id, typename Graph, int se,typename T, unsigned int dim_c, int... pos>
 class Graph_constructor_impl
 {
 public:
@@ -126,10 +190,12 @@ public:
 			grid_key_dx<dim> key = k_it.get();
 
 			// Vertex object
+
 			auto obj = gp.vertex(g.LinId(key));
 
 			// vertex spatial properties functor
-			fill_prop<dim,T,decltype(gp.vertex(g.LinId(key))), typename to_boost_vmpl<pos...>::type, sizeof...(pos) == 0 > flp(obj,szd,key);
+
+			fill_prop<dim, prp_id ,T,decltype(gp.vertex(g.LinId(key))), typename to_boost_vmpl<pos...>::type, sizeof...(pos) == 0 > flp(obj,szd,key,g);
 
 			// fill properties
 
@@ -189,8 +255,8 @@ public:
  *
  */
 
-template<unsigned int dim, typename Graph,typename T, unsigned int dim_c, int... pos>
-class Graph_constructor_impl<dim,Graph,NO_EDGE,T,dim_c,pos...>
+template<unsigned int dim, int prp_id, typename Graph,typename T, unsigned int dim_c, int... pos>
+class Graph_constructor_impl<dim, prp_id, Graph, NO_EDGE, T, dim_c, pos...>
 {
 public:
 	//! Construct cartesian graph
@@ -239,7 +305,7 @@ public:
 			auto obj = gp.vertex(g.LinId(key));
 
 			// vertex spatial properties functor
-			fill_prop<dim,T,decltype(gp.vertex(g.LinId(key))), typename to_boost_vmpl<pos...>::type, sizeof...(pos) == 0 > flp(obj,szd,key);
+			fill_prop<dim, prp_id ,T,decltype(gp.vertex(g.LinId(key))), typename to_boost_vmpl<pos...>::type, sizeof...(pos) == 0 > flp(obj,szd,key,g);
 
 			// fill properties
 
@@ -289,48 +355,6 @@ public:
 };
 
 
-/*! \brief This class work as a functor
- *
- * For each number in the boost::mpl::vector (for example 3 6) set the properties of the vertex at the
- * specified id (3 6) with pos[d] * spacing[d] with d running from 0 to 1, pos[d] the position id of the vertex
- * spacing the grid spacing
- *
- * Example
- *
- * if we give a grid_key of dimension 2 4x4 the expression "pos[d] * spacing[d]"
- * will assume the value
- *
- * (0.0 0.0) (0.25 0.0) ...... (1.0 0.0)
- * (0.0 0.25)................. (1.0 0.25)
- * ....................................
- * (0.0 1.0).................. (1.0 1.0)
- *
- * and the properties 3 6 will be filled with the numbers 0.0 0.0    .......  1.0 1.0
- * progressively
- *
- * \tparam dim Dimensionality of the cartesian grid
- * \tparam dT type of the domain
- * \tparam G_v vertex type object
- * \tparam v boost::mpl::vector containing all the index to fill
- *
- */
-
-template<unsigned int dim, typename dT, typename G_v, typename v>
-class fill_prop<dim,dT,G_v,v,true>
-{
-
-public:
-
-	//! Fill the object from where to take the properties
-	fill_prop(G_v & g_v , const dT (& szd)[dim], grid_key_dx<dim> & gk)
-	{}
-
-	//! It call the function for each property we want to copy
-    template<typename T>
-    void operator()(T& t) const
-    {}
-};
-
 /*! \brief This class construct a cartesian graph
  *
  * This class construct a cartesian graph
@@ -371,7 +395,37 @@ public:
 	template <int se,typename T, unsigned int dim_c, int... pos>
 	static Graph construct(const size_t (& sz)[dim], Box<dim,T> dom)
 	{
-		return Graph_constructor_impl<dim,Graph,se,T,dim_c,pos...>::construct(sz,dom);
+		return Graph_constructor_impl<dim,-1,Graph,se,T,dim_c,pos...>::construct(sz,dom);
+	}
+
+	/*!
+	 *
+	 * \brief Construct a cartesian graph, with V and E edge properties
+	 *
+	 * Construct a cartesian graph, with V and E edge properties
+	 *
+	 * Each vertex is a subspace (Hyper-cube) of dimension dim, each vertex is
+	 * connected with an edge if two vertex (Hyper-cube) share a element of dimension grater than
+	 * dim_c. One property can be used to store the contact size or the d-dimensional
+	 * surface in common between two connected hyper-cube.
+	 *
+	 * \param sz Vector that store the size of the grid on each dimension
+	 * \param dom Box enclosing the physical domain
+	 *
+	 * \tparam se Indicate which properties fill with the contact size. The
+	 *           contact size is the point, line , surface, d-dimensional object size
+	 *           in contact (in common) between two hyper-cube. NO_EDGE indicate
+	 *           no property will store this information
+	 * \tparam id_prp Id property of the vertex, used to initialize with the sequence of id
+	 * \tparam T type of the domain like (int real complex ... )
+	 * \tparam dim_c Connectivity dimension
+	 * \tparam pos... (optional)one or more integer indicating the spatial properties
+	 *
+	 */
+	template <int se,int id_prp,typename T, unsigned int dim_c, int... pos>
+	static Graph construct(const size_t (& sz)[dim], Box<dim,T> dom)
+	{
+		return Graph_constructor_impl<dim,id_prp,Graph,se,T,dim_c,pos...>::construct(sz,dom);
 	}
 };
 

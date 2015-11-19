@@ -30,7 +30,7 @@
 struct nm_v
 {
 	//! The node contain 3 unsigned long integer for communication computation memory and id
-	typedef boost::fusion::vector<float,float,float,size_t,size_t,size_t,size_t,long int> type;
+	typedef boost::fusion::vector<float, float, float, size_t, size_t, size_t, size_t, size_t, size_t> type;
 
 	typedef typename memory_traits_inte<type>::type memory_int;
 	typedef typename memory_traits_lin<type>::type memory_lin;
@@ -54,21 +54,44 @@ struct nm_v
 	//! memory property id in boost::fusion::vector
 	static const unsigned int z = 2;
 	//! computation property id in boost::fusion::vector
-	static const unsigned int communication = 3;
+	static const unsigned int migration = 3;
 	//! computation property id in boost::fusion::vector
 	static const unsigned int computation = 4;
 	//! memory property id in boost::fusion::vector
-	static const unsigned int memory = 5;
+	static const unsigned int global_id = 5;
 	//! memory property id in boost::fusion::vector
 	static const unsigned int id = 6;
 	//! memory property sub_id in boost::fusion::vector
 	static const unsigned int sub_id = 7;
+	//! memory property proc_id in boost::fusion::vector
+	static const unsigned int proc_id = 8;
 
 	//! total number of properties boost::fusion::vector
-	static const unsigned int max_prop = 8;
+	static const unsigned int max_prop = 9;
+
+	//! default constructor
+	nm_v()
+	{
+
+	}
+
+	template<unsigned int dim, typename Mem> inline nm_v(const encapc<dim, nm_v, Mem> & p)
+	{
+		boost::fusion::at_c < 0 > (data) = p.template get<0>();
+		boost::fusion::at_c < 1 > (data) = p.template get<1>();
+		boost::fusion::at_c < 2 > (data) = p.template get<2>();
+		boost::fusion::at_c < 3 > (data) = p.template get<3>();
+		boost::fusion::at_c < 4 > (data) = p.template get<4>();
+		boost::fusion::at_c < 5 > (data) = p.template get<5>();
+		boost::fusion::at_c < 6 > (data) = p.template get<6>();
+		boost::fusion::at_c < 7 > (data) = p.template get<7>();
+		boost::fusion::at_c < 8 > (data) = p.template get<8>();
+	}
+
 };
 
-const std::string nm_v::attributes::name[] = {"x","y","z","communication","computation","memory","id","sub_id"};
+const std::string nm_v::attributes::name[] = { "x", "y", "z", "migration", "computation", "global_id", "id",
+		"sub_id", "proc_id" };
 
 /*! \brief sub-domain edge graph node
  *
@@ -95,9 +118,20 @@ struct nm_e
 	static const unsigned int communication = 0;
 	//! total number of properties boost::fusion::vector
 	static const unsigned int max_prop = 1;
+
+	nm_e()
+	{
+
+	}
+
+	template<unsigned int dim, typename Mem> inline nm_e(const encapc<dim, nm_e, Mem> & p)
+	{
+		boost::fusion::at_c < 0 > (data) = p.template get<0>();
+
+	}
 };
 
-const std::string nm_e::attributes::name[] = {"communication"};
+const std::string nm_e::attributes::name[] = { "communication" };
 
 /*! \brief Reduced sub-domain vertex graph node
  *
@@ -108,7 +142,7 @@ const std::string nm_e::attributes::name[] = {"communication"};
 struct nm_part_v
 {
 	//! The node contain 3 unsigned long integer for comunication computation and memory
-	typedef boost::fusion::vector<size_t,size_t> type;
+	typedef boost::fusion::vector<size_t, size_t> type;
 
 	typedef typename memory_traits_inte<type>::type memory_int;
 	typedef typename memory_traits_lin<type>::type memory_lin;
@@ -132,9 +166,22 @@ struct nm_part_v
 
 	//! total number of properties
 	static const unsigned int max_prop = 2;
+
+	//! default constructor
+	nm_part_v()
+	{
+
+	}
+
+	template<unsigned int dim, typename Mem> inline nm_part_v(const encapc<dim, nm_part_v, Mem> & p)
+	{
+		boost::fusion::at_c < 0 > (data) = p.template get<0>();
+		boost::fusion::at_c < 1 > (data) = p.template get<1>();
+	}
+
 };
 
-const std::string nm_part_v::attributes::name[] = {"id","sub_id"};
+const std::string nm_part_v::attributes::name[] = { "id", "sub_id" };
 
 /*! \brief Reduced edge graph node
  *
@@ -156,6 +203,14 @@ struct nm_part_e
 
 	//! total number of properties
 	static const unsigned int max_prop = 0;
+
+	//! Attributes name
+	struct attributes
+	{
+		static const std::string name[];
+	};
 };
+
+const std::string nm_part_e::attributes::name[] = { "id" };
 
 #endif
