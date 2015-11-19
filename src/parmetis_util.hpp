@@ -18,7 +18,8 @@
  * Metis graph structure
  *
  */
-struct Parmetis_graph {
+struct Parmetis_graph
+{
 	//! The number of vertices in the graph
 	idx_t * nvtxs;
 
@@ -88,41 +89,52 @@ struct Parmetis_graph {
 /*! \brief Helper class to define Metis graph
  *
  *  TODO Transform pointer to openfpm vector
- * 
+ *
  * \tparam graph structure that store the graph
  *
  */
 template<typename Graph>
-class Parmetis {
+class Parmetis
+{
 	// Graph in metis reppresentation
 	Parmetis_graph Mg;
 
 	// Original graph
-//	Graph & g;
+	//	Graph & g;
 
 	// Communticator for OpenMPI
 	MPI_Comm comm = NULL;
 
 	// VCluster
 	Vcluster & v_cl;
-	
+
 	// Process rank information
 	int p_id = 0;
 
 	// nc Number of partition
 	size_t nc = 0;
-	
+
 	/*! \brief Construct Adjacency list
 	 *
 	 * \param g Reference graph to get informations
 	 *
 	 */
-	void constructAdjList(Graph &refGraph, Graph & g)
+	void constructAdjList(Graph &refGraph, Graph & sub_g)
 	{
-		// create xadj and adjlist
-		Mg.vwgt = new idx_t[g.getNVertex()];
-		Mg.xadj = new idx_t[g.getNVertex() + 1];
-		Mg.adjncy = new idx_t[g.getNEdge()];
+		// init basic graph informations and part vector
+		// Put the total communication size to NULL
+
+		Mg.nvtxs[0] = sub_g.getNVertex();
+		Mg.part = new idx_t[sub_g.getNVertex()];
+		for (int i = 0; i < sub_g.getNVertex(); i++)
+			Mg.part[i] = p_id;
+
+		// create xadj, adjlist, vwgt, adjwgt and vsize
+		Mg.xadj = new idx_t[sub_g.getNVertex() + 1];
+		Mg.adjncy = new idx_t[sub_g.getNEdge()];
+		Mg.vwgt = new idx_t[sub_g.getNVertex()];
+		Mg.adjwgt = new idx_t[sub_g.getNEdge()];
+		Mg.vsize = new idx_t[sub_g.getNVertex()];
 
 		//! starting point in the adjacency list
 		size_t prev = 0;
@@ -134,29 +146,41 @@ class Parmetis {
 		size_t real_id;
 
 		// boolan to check if ref is the main graph
-		bool main = refGraph.getNVertex() != g.getNVertex();
+		bool main = refGraph.getNVertex() != sub_g.getNVertex();
 
 		// for each vertex calculate the position of the starting point in the adjacency list
-		for (size_t i = 0; i < g.getNVertex(); i++) {
-			// Add weight to vertex
-			Mg.vwgt[i] = g.vertex(i).template get<nm_v::computation>();
+		for (size_t i = 0; i < sub_g.getNVertex(); i++)
+		{
+
+			// Add weight to vertex and migration cost
+			Mg.vwgt[i] = sub_g.vertex(i).template get<nm_v::computation>();
+			Mg.vsize[i] = sub_g.vertex(i).template get<nm_v::migration>();;
 
 			// Calculate the starting point in the adjacency list
 			Mg.xadj[id] = prev;
 
 			if (main)
-				real_id = g.get_real_id(g.vertex(i).template get<nm_v::id>());
+				real_id = sub_g.get_real_id(sub_g.vertex(i).template get<nm_v::id>());
 			else
 				real_id = i;
 
 			// Create the adjacency list and the weights for edges
-			for (size_t s = 0; s < refGraph.getNChilds(real_id); s++) {
+			for (size_t s = 0; s < refGraph.getNChilds(real_id); s++)
+			{
+
 				size_t child = refGraph.getChild(real_id, s);
 
 				if (main)
+				{
 					Mg.adjncy[prev + s] = refGraph.vertex(child).template get<nm_v::id>();
+				}
 				else
+				{
 					Mg.adjncy[prev + s] = child;
+				}
+
+				Mg.adjwgt[prev + s] = refGraph.edge(prev+s).template get<nm_e::communication>();
+
 			}
 
 			// update the position for the next vertex
@@ -168,17 +192,27 @@ class Parmetis {
 		// Fill the last point
 		Mg.xadj[id] = prev;
 
-		
-/*		 std::cout << p_id << "\n";
-		 for(int i=0; i<= g.getNVertex();i++){
+		/*
+		 std::cout << p_id << " ------------";
+		 for (int i = 0; i <= sub_g.getNVertex(); i++) {
+		 std::cout << Mg.vwgt[i] << " ";
+		 }
+		 std::cout << "\n";
+
+
+		 if (p_id == 0) {
+		 std::cout << p_id << "\n";
+		 for (int i = 0; i <= sub_g.getNVertex(); i++) {
 		 std::cout << Mg.xadj[i] << " ";
 		 }
 		 std::cout << "\n\n";
-		 for(int i=0; i< g.getNEdge();i++){
-		 std::cout << Mg.adjncy[i] << " ";
+
+		 for (int i = 0; i < sub_g.getNEdge(); i++) {
+		 std::cout << Mg.adjwgt[i] << " ";
 		 }
-		 std::cout << "\n\n";*/
-		 
+		 std::cout << "\n\n";
+		*/
+
 
 	}
 
@@ -188,61 +222,61 @@ class Parmetis {
 	 *
 	 */
 	/*
-	void constructAdjList(Graph &refGraph, idx_t* &old_vtxdist ) {
-		// create xadj and adjlist
-		Mg.vwgt = new idx_t[g.getNVertex()];
-		Mg.xadj = new idx_t[g.getNVertex() + 1];
-		Mg.adjncy = new idx_t[g.getNEdge()];
+	 void constructAdjList(Graph &refGraph, idx_t* &old_vtxdist ) {
+	 // create xadj and adjlist
+	 Mg.vwgt = new idx_t[g.getNVertex()];
+	 Mg.xadj = new idx_t[g.getNVertex() + 1];
+	 Mg.adjncy = new idx_t[g.getNEdge()];
 
-		//! starting point in the adjacency list
-		size_t prev = 0;
+	 //! starting point in the adjacency list
+	 size_t prev = 0;
 
-		// actual position
-		size_t id = 0;
+	 // actual position
+	 size_t id = 0;
 
-		// for each vertex calculate the position of the starting point in the adjacency list
-		for (size_t i = 0; i < g.getNVertex(); i++) {
+	 // for each vertex calculate the position of the starting point in the adjacency list
+	 for (size_t i = 0; i < g.getNVertex(); i++) {
 
-			// Add weight to vertex
-			Mg.vwgt[i] = g.vertex(i).template get<nm_v::computation>();
+	 // Add weight to vertex
+	 Mg.vwgt[i] = g.vertex(i).template get<nm_v::computation>();
 
-			// Calculate the starting point in the adjacency list
-			Mg.xadj[id] = prev;
+	 // Calculate the starting point in the adjacency list
+	 Mg.xadj[id] = prev;
 
-			// Create the adjacency list and the weights for edges
-			for (size_t s = 0; s < refGraph.getNChilds(i); s++) {
+	 // Create the adjacency list and the weights for edges
+	 for (size_t s = 0; s < refGraph.getNChilds(i); s++) {
 
-				size_t child = refGraph.getChild(i, s);
+	 size_t child = refGraph.getChild(i, s);
 
-				// Check if child is not in this processor
-				if(child > old_vtxdist[p_id+1] || child < old_vtxdist[p_id])
+	 // Check if child is not in this processor
+	 if(child > old_vtxdist[p_id+1] || child < old_vtxdist[p_id])
 
-				Mg.adjncy[prev + s] = child;
-			}
+	 Mg.adjncy[prev + s] = child;
+	 }
 
-			// update the position for the next vertex
-			prev += refGraph.getNChilds(i);
+	 // update the position for the next vertex
+	 prev += refGraph.getNChilds(i);
 
-			id++;
-		}
+	 id++;
+	 }
 
-		// Fill the last point
-		Mg.xadj[id] = prev;
-
-
-		 std::cout << p_id << "\n";
-		 for(int i=0; i<= g.getNVertex();i++){
-		 std::cout << Mg.xadj[i] << " ";
-		 }
-		 std::cout << "\n\n";
-		 for(int i=0; i< g.getNEdge();i++){
-		 std::cout << Mg.adjncy[i] << " ";
-		 }
-		 std::cout << "\n\n";
+	 // Fill the last point
+	 Mg.xadj[id] = prev;
 
 
-	}
-	*/
+	 std::cout << p_id << "\n";
+	 for(int i=0; i<= g.getNVertex();i++){
+	 std::cout << Mg.xadj[i] << " ";
+	 }
+	 std::cout << "\n\n";
+	 for(int i=0; i< g.getNEdge();i++){
+	 std::cout << Mg.adjncy[i] << " ";
+	 }
+	 std::cout << "\n\n";
+
+
+	 }
+	 */
 public:
 
 	/*! \brief Constructor
@@ -253,82 +287,97 @@ public:
 	 * \param nc number of partitions
 	 *
 	 */
-	Parmetis(Vcluster & v_cl, size_t nc)
-	:v_cl(v_cl),nc(nc)
+	Parmetis(Vcluster & v_cl, size_t nc) :
+			v_cl(v_cl), nc(nc)
 	{
 		// TODO Move into VCluster
 		MPI_Comm_dup(MPI_COMM_WORLD, &comm);
 	}
-	
+
 	//TODO deconstruct new variables
 	/*! \brief destructor
 	 *
 	 * Destructor, It destroy all the memory allocated
 	 *
 	 */
-	~Parmetis() {
+	~Parmetis()
+	{
 		// Deallocate the Mg structure
-		if (Mg.nvtxs != NULL) {
+		if (Mg.nvtxs != NULL)
+		{
 			delete[] Mg.nvtxs;
 		}
 
-		if (Mg.ncon != NULL) {
+		if (Mg.ncon != NULL)
+		{
 			delete[] Mg.ncon;
 		}
 
-		if (Mg.xadj != NULL) {
+		if (Mg.xadj != NULL)
+		{
 			delete[] Mg.xadj;
 		}
 
-		if (Mg.adjncy != NULL) {
+		if (Mg.adjncy != NULL)
+		{
 			delete[] Mg.adjncy;
 		}
 
-		if (Mg.vwgt != NULL) {
+		if (Mg.vwgt != NULL)
+		{
 			delete[] Mg.vwgt;
 		}
 
-		if (Mg.adjwgt != NULL) {
+		if (Mg.adjwgt != NULL)
+		{
 			delete[] Mg.adjwgt;
 		}
 
-		if (Mg.nparts != NULL) {
+		if (Mg.nparts != NULL)
+		{
 			delete[] Mg.nparts;
 		}
 
-		if (Mg.tpwgts != NULL) {
+		if (Mg.tpwgts != NULL)
+		{
 			delete[] Mg.tpwgts;
 		}
 
-		if (Mg.ubvec != NULL) {
+		if (Mg.ubvec != NULL)
+		{
 			delete[] Mg.ubvec;
 		}
 
-		if (Mg.options != NULL) {
+		if (Mg.options != NULL)
+		{
 			delete[] Mg.options;
 		}
 
-		if (Mg.part != NULL) {
+		if (Mg.part != NULL)
+		{
 			delete[] Mg.part;
 		}
 
-		if (Mg.edgecut != NULL) {
+		if (Mg.edgecut != NULL)
+		{
 			delete[] Mg.edgecut;
 		}
 
-		if (Mg.numflag != NULL) {
+		if (Mg.numflag != NULL)
+		{
 			delete[] Mg.numflag;
 		}
 
-		if (Mg.wgtflag != NULL) {
+		if (Mg.wgtflag != NULL)
+		{
 			delete[] Mg.wgtflag;
 		}
 	}
 
 	/*! \brief Set the Sub-graph
-	 * 
+	 *
 	 * \param sub_g Sub-graph to set
-	 * 
+	 *
 	 */
 	void initSubGraph(Graph & sub_g)
 	{
@@ -344,21 +393,17 @@ public:
 		Mg.ncon = new idx_t[1];
 		Mg.ncon[0] = 1;
 
-		// Set to null the weight of the vertex
+		// Set to null the weight of the vertex (init after in constructAdjList) (can be removed)
 
 		Mg.vwgt = NULL;
 
-		// construct the adjacency list
-
-		constructAdjList(sub_g,sub_g);
-
-		// Put the total communication size to NULL
-
-		Mg.vsize = NULL;
-
-		// Set to null the weight of the edge
+		// Set to null the weight of the edge (init after in constructAdjList) (can be removed)
 
 		Mg.adjwgt = NULL;
+
+		// construct the adjacency list
+
+		constructAdjList(sub_g, sub_g);
 
 		// Set the total number of partitions
 
@@ -368,8 +413,8 @@ public:
 		//! Set option for the graph partitioning (set as default)
 
 		Mg.options = new idx_t[4];
-		Mg.options[0] = 1;
-		Mg.options[1] = 3;
+		Mg.options[0] = 0;
+		Mg.options[1] = 0;
 		Mg.options[2] = 0;
 		Mg.options[3] = 0;
 
@@ -388,7 +433,8 @@ public:
 		Mg.tpwgts = new real_t[Mg.nparts[0]];
 		Mg.ubvec = new real_t[Mg.nparts[0]];
 
-		for (int s = 0; s < Mg.nparts[0]; s++) {
+		for (int s = 0; s < Mg.nparts[0]; s++)
+		{
 			Mg.tpwgts[s] = 1.0 / Mg.nparts[0];
 			Mg.ubvec[s] = 1.05;
 		}
@@ -402,31 +448,33 @@ public:
 
 		//! This is used to indicate if the graph is weighted. wgtflag can take one of four values:
 		Mg.wgtflag = new idx_t[1];
-		Mg.wgtflag[0] = 2;
+		Mg.wgtflag[0] = 3;
 	}
-	
+
 	/*! \brief Decompose the graph
 	 *
 	 * \tparam i which property store the decomposition
 	 *
-	 * 
-	 * 
+	 *
+	 *
 	 */
 	template<unsigned int i>
-	void decompose(openfpm::vector<idx_t> & vtxdist, Graph & sub_g) 
+	void decompose(openfpm::vector<idx_t> & vtxdist, Graph & sub_g)
 	{
 
 		// Decompose
-		ParMETIS_V3_PartKway((idx_t *)vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts,
-				Mg.ubvec, Mg.options, Mg.edgecut, Mg.part, &comm);
 		/*
-		 ParMETIS_V3_AdaptiveRepart( vtxdist, Mg.xadj,Mg.adjncy,Mg.vwgt,Mg.vsize,Mg.adjwgt, &(Mg.wgtflag), &(Mg.numflag),
-		 Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, &(Mg.itr), Mg.options, &(Mg.edgecut),
+		ParMETIS_V3_PartKway((idx_t *) vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag,
+				Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.options, Mg.edgecut, Mg.part, &comm);
+		*/
+		 ParMETIS_V3_AdaptiveRepart( (idx_t *) vtxdist.getPointer(), Mg.xadj,Mg.adjncy,Mg.vwgt,Mg.vsize,Mg.adjwgt, Mg.wgtflag, Mg.numflag,
+		 Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.itr, Mg.options, Mg.edgecut,
 		 Mg.part, &comm );
-		 */
+
 
 		// For each vertex store the processor that contain the data
-		for (size_t j = 0, id = 0; j < sub_g.getNVertex() ; j++, id++) {
+		for (size_t j = 0, id = 0; j < sub_g.getNVertex(); j++, id++)
+		{
 
 			sub_g.vertex(j).template get<i>() = Mg.part[id];
 
@@ -441,16 +489,18 @@ public:
 	 */
 
 	template<unsigned int i>
-	void refine(openfpm::vector<idx_t> & vtxdist, Graph & sub_g) 
+	void refine(openfpm::vector<idx_t> & vtxdist, Graph & sub_g)
 	{
 		// Refine
-	  
-		ParMETIS_V3_RefineKway((idx_t *)vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts,
-				Mg.ubvec, Mg.options, Mg.edgecut, Mg.part, &comm);
+
+		ParMETIS_V3_AdaptiveRepart((idx_t *) vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.vsize, Mg.adjwgt,
+				Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.itr, Mg.options, Mg.edgecut,
+				Mg.part, &comm);
 
 		// For each vertex store the processor that contain the data
 
-		for (size_t j = 0, id = 0; j < sub_g.getNVertex(); j++, id++) {
+		for (size_t j = 0, id = 0; j < sub_g.getNVertex(); j++, id++)
+		{
 
 			sub_g.vertex(j).template get<i>() = Mg.part[id];
 
@@ -460,46 +510,45 @@ public:
 	/*! \brief Get graph partition vector
 	 *
 	 */
-	idx_t* getPartition() {
+	idx_t* getPartition()
+	{
 		return Mg.part;
 	}
 
 	/*! \brief Reset graph and reconstruct it
 	 *
 	 */
-	void reset(Graph & mainGraph, Graph & sub_g) 
+	void reset(Graph & mainGraph, Graph & sub_g)
 	{
 		// Deallocate the graph structures
 
-		if (Mg.xadj != NULL) {
+		if (Mg.xadj != NULL)
+		{
 			delete[] Mg.xadj;
 		}
 
-		if (Mg.adjncy != NULL) {
+		if (Mg.adjncy != NULL)
+		{
 			delete[] Mg.adjncy;
 		}
 
-		if (Mg.vwgt != NULL) {
+		if (Mg.vwgt != NULL)
+		{
 			delete[] Mg.vwgt;
 		}
 
-		if (Mg.adjwgt != NULL) {
+		if (Mg.adjwgt != NULL)
+		{
 			delete[] Mg.adjwgt;
 		}
 
-		if (Mg.part != NULL) {
+		if (Mg.part != NULL)
+		{
 			delete[] Mg.part;
 		}
 
-		Mg.nvtxs[0] = sub_g.getNVertex();
-
-		Mg.part = new idx_t[sub_g.getNVertex()];
-
-		for (int i = 0; i < sub_g.getNVertex(); i++)
-			Mg.part[i] = p_id;
-
 		// construct the adjacency list
-		constructAdjList(mainGraph,sub_g);
+		constructAdjList(mainGraph, sub_g);
 	}
 
 };

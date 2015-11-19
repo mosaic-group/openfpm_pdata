@@ -82,8 +82,10 @@
  *
  */
 
-template<unsigned int dim, typename T, typename Memory = HeapMemory, template<unsigned int, typename > class Domain = Box>
-class BasicDecomposition: public ie_loc_ghost<dim, T>, public nn_prcs<dim, T>, public ie_ghost<dim, T> {
+template<unsigned int dim, typename T, typename Memory = HeapMemory,
+		template<unsigned int, typename > class Domain = Box>
+class BasicDecomposition: public ie_loc_ghost<dim, T>, public nn_prcs<dim, T>, public ie_ghost<dim, T>
+{
 
 public:
 
@@ -131,37 +133,59 @@ private:
 
 	//! Convert the graph to parmetis format
 	Parmetis<Graph_CSR<nm_v, nm_e>> parmetis_graph;
-	
+
 	//! Processor sub-sub-domain graph
 	Graph_CSR<nm_v, nm_e> sub_g;
-	
+
 	//! Global sub-sub-domain graph
 	Graph_CSR<nm_v, nm_e> gp;
-	
+
 	//! Init vtxdist needed for Parmetis
 	openfpm::vector<idx_t> vtxdist;
 
 	//! partitions
 	openfpm::vector<openfpm::vector<idx_t>> partitions;
-	
+
 	//! Init data structure to keep trace of new vertices distribution in processors (needed to update main graph)
 	openfpm::vector<openfpm::vector<size_t>> v_per_proc;
-	
-	static void * message_receive(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
-	{
-		openfpm::vector<openfpm::vector<idx_t>> * v = static_cast<openfpm::vector<openfpm::vector<idx_t>> *>(ptr);
 
-		v->get(i).resize(msg_i/sizeof(idx_t));
-		
+	//! Number of moved vertices in all iterations
+	size_t g_moved = 0;
+
+	//! Max number of moved vertices in all iterations
+	size_t m_moved = 0;
+
+	//! Wn for SAR heuristic
+	float w_n = 0;
+
+	//! Computation cost for SAR heuristic
+	float c_c = 5;
+
+	//! Number of time-steps since the previous DLB
+	size_t n_ts = 1;
+
+	//! Idle time accumulated so far, needed for SAR heuristic
+	openfpm::vector<float> i_times;
+
+	// Vector to collect all timings
+	openfpm::vector<long> times;
+
+	static void * message_receive(size_t msg_i, size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
+	{
+		openfpm::vector < openfpm::vector < idx_t >> *v = static_cast<openfpm::vector<openfpm::vector<idx_t>> *>(ptr);
+
+		v->get(i).resize(msg_i / sizeof(idx_t));
+
 		return &(v->get(i).get(0));
 	}
-	
+
 	/*! \brief Constructor, it decompose and distribute the sub-domains across the processors
 	 *
 	 * \param v_cl Virtual cluster, used internally for communications
 	 *
 	 */
-	void CreateDecomposition(Vcluster & v_cl) {
+	void CreateDecomposition(Vcluster & v_cl)
+	{
 #ifdef SE_CLASS1
 		if (&v_cl == NULL)
 		{
@@ -174,7 +198,8 @@ private:
 		// Get the box containing the domain
 		SpaceBox<dim, T> bs = domain.getBox();
 
-		for (unsigned int i = 0; i < dim; i++) {
+		for (unsigned int i = 0; i < dim; i++)
+		{
 			// Calculate the spacing
 			spacing[i] = (bs.getHigh(i) - bs.getLow(i)) / gr.size(i);
 		}
@@ -182,29 +207,16 @@ private:
 		//! Get the processor id
 		size_t p_id = v_cl.getProcessUnitID();
 
-		// Here we use PARMETIS
-		// Create a cartesian grid graph
-		CartesianGraphFactory<dim, Graph_CSR<nm_v, nm_e>> g_factory_part;
-
-		// Processor graph
-		gp = g_factory_part.template construct<NO_EDGE, nm_v::id, T, dim - 1, 0, 1, 2>(gr.getSize(), domain);
-
-		//! Add computation information to each vertex (shape can change)
-		addWeights(gp, HYPERBOLOID);
-
-		//! Init ids vector
-		gp.init_map_ids();
-
-		// Get the number of processing units
+		//! Get the number of processing units
 		size_t Np = v_cl.getProcessingUnits();
 
-		// Division of vertices in Np graphs
-		// Put (div+1) vertices in mod graphs
-		// Put div vertices in the rest of the graphs
+		//! Division of vertices in Np graphs
+		//! Put (div+1) vertices in mod graphs
+		//! Put div vertices in the rest of the graphs
 		size_t mod_v = gp.getNVertex() % Np;
 		size_t div_v = gp.getNVertex() / Np;
 
-		for (int i = 0; i <= Np; i++) 
+		for (int i = 0; i <= Np; i++)
 		{
 			if (i < mod_v)
 				vtxdist.get(i) = (div_v + 1) * (i);
@@ -212,80 +224,46 @@ private:
 				vtxdist.get(i) = (div_v) * (i) + mod_v;
 		}
 
-		// Just for output purpose
-		if (p_id == 0) {
-			VTKWriter<Graph_CSR<nm_v, nm_e>, GRAPH> gv2(gp);
-			gv2.write("test_graph_0.vtk");
-		}
-
 		//TODO transform in factory
 
-
 		//! Put vertices into processor graph (different for each processor)
-		fillSubGraph(sub_g, gp, vtxdist, p_id, Np);
+		fillSubGraph();
 
 		parmetis_graph.initSubGraph(sub_g);
-		
-		// Decompose
-		parmetis_graph.decompose<nm_v::proc_id>(vtxdist,sub_g);
 
-		// Get result partition for this processors
+		//! Decompose
+		parmetis_graph.decompose<nm_v::proc_id>(vtxdist, sub_g);
+
+		//! Get result partition for this processors
 		idx_t *partition = parmetis_graph.getPartition();
 
-		// Prepare vector of arrays to contain all partitions
-		
+		//! Prepare vector of arrays to contain all partitions
 		partitions.get(p_id).resize(sub_g.getNVertex());
-		std::copy(partition,partition+sub_g.getNVertex(),&partitions.get(p_id).get(0));
-		
-		openfpm::vector<size_t> prc;
-		openfpm::vector<size_t> sz;
+		std::copy(partition, partition + sub_g.getNVertex(), &partitions.get(p_id).get(0));
+
+		openfpm::vector < size_t > prc;
+		openfpm::vector < size_t > sz;
 		openfpm::vector<void *> ptr;
-		
-		for (size_t i = 0 ; i < Np ; i++)
+
+		for (size_t i = 0; i < Np; i++)
 		{
 			if (i != v_cl.getProcessUnitID())
 			{
-			  prc.add(i);
-			  sz.add(sub_g.getNVertex() * sizeof(idx_t));
-			  ptr.add(partitions.get(p_id).getPointer());
+				prc.add(i);
+				sz.add(sub_g.getNVertex() * sizeof(idx_t));
+				ptr.add(partitions.get(p_id).getPointer());
 			}
 		}
-		
-		v_cl.sendrecvMultipleMessagesNBX(prc.size(),&sz.get(0),&prc.get(0),&ptr.get(0),message_receive,&partitions,NONE);
-		
+
+		v_cl.sendrecvMultipleMessagesNBX(prc.size(), &sz.get(0), &prc.get(0), &ptr.get(0), message_receive, &partitions,
+				NONE);
+
 		// Update graphs with the new distributions
-		updateGraphs(partitions, gp, sub_g, v_per_proc, vtxdist, p_id, Np);
-		
-		if (p_id == 0) {
-			VTKWriter<Graph_CSR<nm_v, nm_e>, GRAPH> gv2(gp);
-			gv2.write("test_graph_2.vtk");
-		}
+		updateGraphs();
 
-		// Renumbering subgraph
-		sub_g.reset_map_ids();
-		for (size_t j = vtxdist.get(p_id), i = 0; j < vtxdist.get(p_id + 1); j++, i++) {
-			sub_g.set_map_ids(j, sub_g.vertex(i).template get<nm_v::id>());
-			sub_g.vertex(i).template get<nm_v::id>() = j;
-		}
-
-		gp.reset_map_ids();
-		// Renumbering main graph
-		for (size_t p = 0; p < Np; p++) 
-		{
-			for (size_t j = vtxdist.get(p), i = 0; j < vtxdist.get(p + 1); j++, i++) 
-			{
-				gp.set_map_ids(j, gp.vertex(v_per_proc.get(p).get(i)).template get<nm_v::id>());
-				gp.vertex(v_per_proc.get(p).get(i)).template get<nm_v::id>() = j;
-			}
-		}
-
-		if (p_id == 0) 
-		{
-			VTKWriter<Graph_CSR<nm_v, nm_e>, GRAPH> gv2(gp);
-			gv2.write("test_graph_3.vtk");
-		}
-		
-		refine();
+		// reset statistical variables, we only need it in refinement
+		g_moved = 0;
+		m_moved = 0;
 
 		/*
 		 // fill the structure that store the processor id for each sub-domain
@@ -407,68 +385,11 @@ private:
 	// Save the ghost boundaries
 	Ghost<dim, T> ghost;
 
-	void refine()
-	{
-		size_t Np = v_cl.getProcessingUnits();
-		size_t p_id = v_cl.getProcessUnitID();
-	  
-		// Reset parmetis graph and reconstruct it
-		parmetis_graph.reset(gp,sub_g);
-
-		// Refine
-		parmetis_graph.refine<nm_v::proc_id>(vtxdist,sub_g);
-
-		// Get result partition for this processor
-		idx_t * partition = parmetis_graph.getPartition();
-
-		partitions.get(p_id).resize(sub_g.getNVertex());
-		std::copy(partition,partition+sub_g.getNVertex(),&partitions.get(p_id).get(0));
-
-		// Reset data structure to keep trace of new vertices distribution in processors (needed to update main graph)
-		for (int i = 0; i < Np; ++i) 
-		{
-			v_per_proc.get(i).clear();
-		}
-
-		
-		openfpm::vector<size_t> prc;
-		openfpm::vector<size_t> sz;
-		openfpm::vector<void *> ptr;
-
-		for (size_t i = 0 ; i < Np ; i++)
-		{
-			if (i != v_cl.getProcessUnitID())
-			{
-			  partitions.get(i).clear();
-			  prc.add(i);
-			  sz.add(sub_g.getNVertex() * sizeof(idx_t));
-
-//			  std::cout << "sub_g: " << sub_g.getNVertex() * sizeof(idx_t) << "\n";
-			  
-			  ptr.add(partitions.get(p_id).getPointer());
-			}
-		}
-		
-		v_cl.sendrecvMultipleMessagesNBX(prc.size(),&sz.get(0),&prc.get(0),&ptr.get(0),message_receive,&partitions,NONE);
-		
-		// Update graphs with the new distributions
-		updateGraphs(partitions, gp, sub_g, v_per_proc, vtxdist, p_id, Np);
-		
-		//
-
-		if (p_id == 1) 
-		{
-			VTKWriter<Graph_CSR<nm_v, nm_e>, GRAPH> gv2(gp);
-			gv2.write("test_graph_4.vtk");
-			bool test = compare("test_graph_4.vtk","test_graph_test.vtk");
-			BOOST_REQUIRE_EQUAL(test,true);
-		}
-	}
-	
 	/*! \brief Create the subspaces that decompose your domain
 	 *
 	 */
-	void CreateSubspaces() {
+	void CreateSubspaces()
+	{
 		// Create a grid where each point is a space
 		grid_sm<dim, void> g(div);
 
@@ -476,7 +397,8 @@ private:
 		grid_key_dx_iterator < dim > gk_it(g);
 
 		// Divide the space into subspaces
-		while (gk_it.isNext()) {
+		while (gk_it.isNext())
+		{
 			//! iterate through all subspaces
 			grid_key_dx < dim > key = gk_it.get();
 
@@ -484,7 +406,8 @@ private:
 			SpaceBox<dim, T> tmp;
 
 			//! fill with the Margin of the box
-			for (int i = 0; i < dim; i++) {
+			for (int i = 0; i < dim; i++)
+			{
 				tmp.setHigh(i, (key.get(i) + 1) * spacing[i]);
 				tmp.setLow(i, key.get(i) * spacing[i]);
 			}
@@ -497,89 +420,7 @@ private:
 		}
 	}
 
-	/* /brief types of weights distributions
-	 *
-	 */
-	enum weightShape {
-		UNIFORM, SPHERE, HYPERBOLOID
-	};
-
-	/* \brief add vertex weights to the main domain, follow a shape
-	 *
-	 ** 0 - weights are all 1 on all vertices
-	 ** 1 - weights are distributed as a sphere
-	 *
-	 * \param i id of the shape
-	 *
-	 */
-	void addWeights(Graph_CSR<nm_v, nm_e> & gp, int i)
-	{
-		float c_x = 0, c_y = 0, c_z = 0 , radius2, eq;
-		float x = 0, y = 0, z = 0;
-
-		switch (i) {
-			case UNIFORM:
-
-				// Add computation information to each vertex
-				for (int i = 0; i < gp.getNVertex(); i++) {
-					gp.vertex(i).template get<nm_v::computation>() = 1;
-				}
-				break;
-			case SPHERE:
-
-				// Fill vertices weights with a sphere (if dim=2 is a circle)
-				radius2 = pow(4, 2);
-				c_x = 2;
-				c_y = 2;
-
-				if(dim == 3)
-					c_z = 2;
-
-				for (int i = 0; i < gp.getNVertex(); i++) {
-					x = gp.vertex(i).template get<nm_v::x>() * 10;
-					y = gp.vertex(i).template get<nm_v::y>() * 10;
-
-					if(dim == 3)
-						z = gp.vertex(i).template get<nm_v::z>() * 10;
-
-					eq = pow((x - c_x), 2) + pow((y - c_y), 2) + pow((z - c_z), 2);
-
-					if (eq <= radius2) {
-						gp.vertex(i).template get<nm_v::computation>() = 5;
-					} else {
-						gp.vertex(i).template get<nm_v::computation>() = 1;
-					}
-				}
-				break;
-			case HYPERBOLOID:
-
-				// Fill vertices weights with a elliptic hyperboloid (if dim=2 is an hyperbole)
-				c_x = 5;
-				c_y = 5;
-
-				if(dim == 3)
-					c_z = 5;
-				for (int i = 0; i < gp.getNVertex(); i++) {
-					x = gp.vertex(i).template get<nm_v::x>() * 10;
-					y = gp.vertex(i).template get<nm_v::y>() * 10;
-
-					if(dim == 3)
-						z = gp.vertex(i).template get<nm_v::z>() * 10;
-
-					eq = - pow((x - c_x), 2)/3 - pow((y - c_y), 2)/3 + pow((z - c_z), 2)/2;
-
-					if (eq >= 1) {
-						gp.vertex(i).template get<nm_v::computation>() = 5;
-					} else {
-						gp.vertex(i).template get<nm_v::computation>() = 1;
-					}
-				}
-				break;
-		}
-	}
-
 	/* \brief fill the graph of the processor with the first decomposition (linear)
-	 *
 	 * Put vertices into processor graph (different for each processor)
 	 *
 	 * \param sub_g sub graph to fill
@@ -588,116 +429,104 @@ private:
 	 * \param proc_id rank of the processor
 	 * \param Np total number of processors
 	 */
-	void fillSubGraph(Graph_CSR<nm_v, nm_e> &sub_g, Graph_CSR<nm_v, nm_e> &gp, openfpm::vector<idx_t> &vtxdist, int proc_id, int Np)
+	void fillSubGraph()
 	{
 
-		for (size_t j = vtxdist.get(proc_id), local_j = 0; j < vtxdist.get(proc_id + 1); j++, local_j++) {
+		int Np = v_cl.getProcessingUnits();
+		int p_id = v_cl.getProcessUnitID();
 
+		for (size_t j = vtxdist.get(p_id), local_j = 0; j < vtxdist.get(p_id + 1); j++, local_j++)
+		{
 			// Add vertex
 			nm_v pv = gp.vertexById(j);
 			sub_g.addVertex(pv);
 
 			// Add edges of vertex
-			for (size_t s = 0; s < gp.getNChilds(j); s++) {
-				sub_g.template addEdge<NoCheck>(local_j, gp.getChildByVertexId(j, s));
+			for (size_t s = 0; s < gp.getNChilds(j); s++)
+			{
+				nm_e pe = gp.edge(j + s);
+				sub_g.template addEdge<NoCheck>(local_j, gp.getChild(j, s), pe);
 			}
 		}
 
 		// Just for output purpose
-		if (proc_id == 0) {
-			for (int i = 0; i < Np; i++) {
-				for (size_t j = vtxdist.get(i); j < vtxdist.get(i + 1); j++) {
+		if (p_id == 0)
+		{
+			for (int i = 0; i < Np; i++)
+			{
+				for (size_t j = vtxdist.get(i); j < vtxdist.get(i + 1); j++)
+				{
 					gp.vertexById(j).template get<nm_v::proc_id>() = i;
 				}
 			}
-			VTKWriter<Graph_CSR<nm_v, nm_e>, GRAPH> gv2(gp);
-			gv2.write("test_graph_1.vtk");
 		}
 	}
 
-	/* \brief exchange partitions with other processors
+	/* \brief Update main graph ad subgraph with the partition in partitions param and renumber graphs
 	 *
-	 * \param partitions array to store all the partitions
-	 * \param gp_nv number of vertices on main graph
-	 * \param sub_g_nv number of vertices on sub graph
-	 * \param requests_recv array of requests
-	 * \param requests_send array of requests
+	 * \param partitions array storing all the partitions
+	 * \param gp main graph
+	 * \param sub_g sub graph
+	 * \param v_per_proc array needed to recontruct the main graph
+	 * \param vtxdist array with the distribution of vertices through processors
 	 * \param statuses array of statsu objects
 	 * \param proc_id current processors rank
 	 * \param Np total umber of processors
 	 */
-	void exchangePartitions(int** &partitions, int gp_nv, int sub_g_nv, MPI_Request* &requests_recv, MPI_Request* &requests_send,
-			MPI_Status* &statuses, int proc_id, int Np)
+	void updateGraphs()
 	{
 
-		// Receive other partitions, each partition can contain max NVertex of main graph
-		for (int i = 0; i < Np; i++) {
-			if (i != proc_id)
-				MPI_Irecv(partitions[i], gp_nv, MPI_INT, i, 0, MPI_COMM_WORLD, &requests_recv[i]);
-		}
+		int Np = v_cl.getProcessingUnits();
+		int p_id = v_cl.getProcessUnitID();
 
-		// Send processor partition to other processors
-		for (int i = 0; i < Np; i++) {
-			if (i != proc_id)
-				MPI_Isend(partitions[proc_id], sub_g_nv, MPI_INT, i, 0, MPI_COMM_WORLD, &requests_send[i]);
-		}
+		//stats info
+		size_t moved = 0;
 
-		// Wait for all partitions from other processors
-		for (int i = 0; i < Np; i++) {
-			if (i != proc_id)
-				MPI_Wait(&requests_recv[i], &statuses[i]);
-		}
-	}
-
-	/* \brief update main graph ad subgraph with the partition in partitions param
-		 *
-		 * \param partitions array storing all the partitions
-		 * \param gp main graph
-		 * \param sub_g sub graph
-		 * \param v_per_proc array needed to recontruct the main graph
-		 * \param vtxdist array with the distribution of vertices through processors
-		 * \param statuses array of statsu objects
-		 * \param proc_id current processors rank
-		 * \param Np total umber of processors
-		 */
-	void updateGraphs(openfpm::vector<openfpm::vector<idx_t>> &partitions,Graph_CSR<nm_v, nm_e> &gp, Graph_CSR<nm_v, nm_e> &sub_g, openfpm::vector<openfpm::vector<size_t>> & v_per_proc, openfpm::vector<idx_t> & vtxdist, int proc_id, int Np) 
-	{
+		// reset sub graph and local subgroph index
 		int local_j = 0;
 		sub_g.clear();
 
 		// Init n_vtxdist to gather informations about the new decomposition
-/*		idx_t *n_vtxdist = new idx_t[Np + 1];*/
-
-		openfpm::vector<idx_t> n_vtxdist(Np+1);
+		openfpm::vector < idx_t > n_vtxdist(Np + 1);
 		for (int i = 0; i <= Np; i++)
 			n_vtxdist.get(i) = 0;
-		
+
 		// Update main graph with other partitions made by Parmetis in other processors and the local partition
-		for (int i = 0; i < Np; i++) {
+		for (int i = 0; i < Np; i++)
+		{
 
 			int ndata = partitions.get(i).size();
 
 			// Update the main graph with received informations
-			for (int k = 0, l = vtxdist.get(i); k < ndata && l < vtxdist.get(i + 1); k++, l++) {
+			for (int k = 0, l = vtxdist.get(i); k < ndata && l < vtxdist.get(i + 1); k++, l++)
+			{
 
 				// Create new n_vtxdist (1) (just count processors vertices)
 				n_vtxdist.get(partitions.get(i).get(k) + 1)++;
 
+				if
+(				gp.vertexById(l).template get<nm_v::proc_id>() != partitions.get(i).get(k))
+				moved++;
+
 				// Update proc id in the vertex
 				gp.vertexById(l).template get<nm_v::proc_id>() = partitions.get(i).get(k);
+				gp.vertex(l).template get<nm_v::global_id>() = l;
 
 				// Add vertex to temporary structure of distribution (needed to update main graph)
-				v_per_proc.get(partitions.get(i).get(k)).add(gp.vertexById(l).template get<nm_v::id>());
+				v_per_proc.get(partitions.get(i).get(k)).add(gp.getVertexOldId(l));
 
 				// Add vertices belonging to this processor in sub graph
-				if (partitions.get(i).get(k) == proc_id) {
+				if (partitions.get(i).get(k) == p_id)
+				{
 
 					nm_v pv = gp.vertexById(l);
 					sub_g.addVertex(pv);
 
 					// Add edges of vertex
-					for (size_t s = 0; s < gp.getNChildsByVertexId(l); s++) {
-						sub_g.template addEdge<NoCheck>(local_j, gp.getChildByVertexId(l, s));
+					for (size_t s = 0; s < gp.getNChildsByVertexId(l); s++)
+					{
+						nm_e pe = gp.edge(l + s);
+						sub_g.template addEdge<NoCheck>(local_j, gp.getChildByVertexId(l, s), pe);
 					}
 
 					local_j++;
@@ -706,15 +535,78 @@ private:
 		}
 
 		// Create new n_vtxdist (2) (write boundaries)
-		for (int i = 2; i <= Np; i++) 
+		for (int i = 2; i <= Np; i++)
 		{
 			n_vtxdist.get(i) += n_vtxdist.get(i - 1);
 		}
 
 		// Copy the new decomposition in the main vtxdist
-		for (int i = 0; i <= Np ; i++) 
+		for (int i = 0; i <= Np; i++)
 		{
 			vtxdist.get(i) = n_vtxdist.get(i);
+		}
+
+		// Renumbering subgraph
+		sub_g.reset_map_ids();
+		for (size_t j = vtxdist.get(p_id), i = 0; j < vtxdist.get(p_id + 1); j++, i++)
+		{
+			sub_g.set_map_ids(j, sub_g.vertex(i).template get<nm_v::global_id>());
+			sub_g.vertex(i).template get<nm_v::id>() = j;
+		}
+
+		// Renumbering main graph
+		for (size_t p = 0; p < Np; p++)
+		{
+			for (size_t j = vtxdist.get(p), i = 0; j < vtxdist.get(p + 1); j++, i++)
+			{
+				gp.set_map_ids(j, v_per_proc.get(p).get(i));
+				gp.vertex(v_per_proc.get(p).get(i)).template get<nm_v::id>() = j;
+			}
+		}
+
+		g_moved += moved;
+
+		if (moved > m_moved)
+			m_moved = moved;
+
+	}
+
+	/* ! \brief Calculate communication and migration costs
+	 *
+	 * \param gh_s ghost thickness
+	 * \param ts how many timesteps have passed since last calculation, used to approximate the cost
+	 */
+	void computeCommunicationAndMigrationCosts(float gh_s, size_t ts)
+	{
+
+		size_t p_id = v_cl.getProcessUnitID();
+		float migration;
+
+		SpaceBox<dim, T> cellBox = cd.getCellBox();
+		float b_s = (cellBox.getHigh(0) - cellBox.getLow(0));
+
+		// compute the gh_area for 2 dim case
+		float gh_v = (gh_s * b_s);
+
+		// multiply for sub-sub-domain side for each domain
+		for(int i = 2 ; i < dim; i++)
+			gh_v *= b_s;
+
+		size_t norm = (size_t) (1.0 / gh_v);
+
+		migration = pow(b_s, dim);
+
+		size_t prev = 0;
+
+		for (size_t i = 0; i < gp.getNVertex(); i++)
+		{
+			gp.vertex(i).template get<nm_v::migration>() = norm * migration * gp.vertex(i).template get<nm_v::computation>();
+
+			for (size_t s = 0; s < gp.getNChilds(i); s++)
+			{
+				gp.edge(prev + s).template get<nm_e::communication>() = 1 * gp.vertex(i).template get<nm_v::computation>() * ts;
+			}
+			prev += gp.getNChilds(i);
 		}
 	}
 
@@ -735,14 +627,19 @@ public:
 	 *
 	 */
 	BasicDecomposition(Vcluster & v_cl) :
-	nn_prcs<dim, T>(v_cl), v_cl(v_cl),parmetis_graph(v_cl, v_cl.getProcessingUnits()),vtxdist(v_cl.getProcessingUnits() + 1),partitions(v_cl.getProcessingUnits()),v_per_proc(v_cl.getProcessingUnits())
+			nn_prcs<dim, T>(v_cl), v_cl(v_cl), parmetis_graph(v_cl, v_cl.getProcessingUnits()), vtxdist(
+					v_cl.getProcessingUnits() + 1), partitions(v_cl.getProcessingUnits()), v_per_proc(
+					v_cl.getProcessingUnits())
 	{
+
 		// Reset the box to zero
 		bbox.zero();
+
 	}
 
 	//! Basic decomposition destructor
-	~BasicDecomposition() {
+	~BasicDecomposition()
+	{
 	}
 
 	//	openfpm::vector<size_t> ids;
@@ -750,7 +647,8 @@ public:
 	/*! \brief class to select the returned id by ghost_processorID
 	 *
 	 */
-	class box_id {
+	class box_id
+	{
 	public:
 		/*! \brief Return the box id
 		 *
@@ -760,7 +658,8 @@ public:
 		 * \return box id
 		 *
 		 */
-		inline static size_t id(p_box<dim, T> & p, size_t b_id) {
+		inline static size_t id(p_box<dim, T> & p, size_t b_id)
+		{
 			return b_id;
 		}
 	};
@@ -768,7 +667,8 @@ public:
 	/*! \brief class to select the returned id by ghost_processorID
 	 *
 	 */
-	class processor_id {
+	class processor_id
+	{
 	public:
 		/*! \brief Return the processor id
 		 *
@@ -778,7 +678,8 @@ public:
 		 * \return processor id
 		 *
 		 */
-		inline static size_t id(p_box<dim, T> & p, size_t b_id) {
+		inline static size_t id(p_box<dim, T> & p, size_t b_id)
+		{
 			return p.proc;
 		}
 	};
@@ -786,7 +687,8 @@ public:
 	/*! \brief class to select the returned id by ghost_processorID
 	 *
 	 */
-	class lc_processor_id {
+	class lc_processor_id
+	{
 	public:
 		/*! \brief Return the near processor id
 		 *
@@ -796,7 +698,8 @@ public:
 		 * \return local processor id
 		 *
 		 */
-		inline static size_t id(p_box<dim, T> & p, size_t b_id) {
+		inline static size_t id(p_box<dim, T> & p, size_t b_id)
+		{
 			return p.lc_proc;
 		}
 	};
@@ -895,14 +798,17 @@ public:
 	 *
 	 *
 	 */
-	void calculateGhostBoxes() {
+	void calculateGhostBoxes()
+	{
 #ifdef DEBUG
 		// the ghost margins are assumed to be smaller
 		// than one sub-domain
 
-		for (size_t i = 0; i < dim; i++) {
+		for (size_t i = 0; i < dim; i++)
+		{
 			if (ghost.template getLow(i) >= domain.template getHigh(i) / gr.size(i)
-					|| ghost.template getHigh(i) >= domain.template getHigh(i) / gr.size(i)) {
+					|| ghost.template getHigh(i) >= domain.template getHigh(i) / gr.size(i))
+			{
 				std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " : Ghost are bigger than one domain" << "\n";
 			}
 		}
@@ -920,8 +826,11 @@ public:
 		ie_loc_ghost<dim, T>::create_loc_ghost_ebox(ghost, sub_domains);
 
 		// get the smallest sub-domain dimension on each direction
-		for (size_t i = 0; i < dim; i++) {
-			if (ghost.template getLow(i) >= ss_box.getHigh(i) || ghost.template getHigh(i) >= domain.template getHigh(i) / gr.size(i)) {
+		for (size_t i = 0; i < dim; i++)
+		{
+			if (ghost.template getLow(i) >= ss_box.getHigh(i)
+					|| ghost.template getHigh(i) >= domain.template getHigh(i) / gr.size(i))
+			{
 				std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " : Ghost are bigger than one domain" << "\n";
 			}
 		}
@@ -934,7 +843,8 @@ public:
 	 *  number of sub-domain
 	 *
 	 */
-	static size_t getDefaultGrid(size_t n_sub) {
+	static size_t getDefaultGrid(size_t n_sub)
+	{
 		// Calculate the number of sub-sub-domain on
 		// each dimension
 		return openfpm::math::round_big_2(pow(n_sub, 1.0 / dim));
@@ -945,7 +855,8 @@ public:
 	 * \return processorID
 	 *
 	 */
-	template<typename Mem> size_t inline processorID(encapc<1, Point<dim, T>, Mem> p) {
+	template<typename Mem> size_t inline processorID(encapc<1, Point<dim, T>, Mem> p)
+	{
 		return fine_s.get(cd.getCell(p));
 	}
 
@@ -957,7 +868,8 @@ public:
 	 * \return a box p1 is set to zero
 	 *
 	 */
-	const ::Box<dim, T> & getSmallestSubdivision() {
+	const ::Box<dim, T> & getSmallestSubdivision()
+	{
 		return ss_box;
 	}
 
@@ -967,7 +879,8 @@ public:
 	 *
 	 */
 
-	size_t inline processorID(const T (&p)[dim]) const {
+	size_t inline processorID(const T (&p)[dim]) const
+	{
 		return fine_s.get(cd.getCell(p));
 	}
 
@@ -977,18 +890,129 @@ public:
 	 * \param domain_ domain to decompose
 	 *
 	 */
-	void setParameters(const size_t (&div_)[dim], Domain<dim, T> domain_, Ghost<dim, T> ghost = Ghost<dim, T>()) {
+	void setParameters(const size_t (&div_)[dim], Domain<dim, T> domain_, Ghost<dim, T> ghost = Ghost<dim, T>())
+	{
 		// set the ghost
 		this->ghost = ghost;
-		// Set the decomposition parameters
 
+		// Set the decomposition parameters
 		gr.setDimensions(div_);
 		domain = domain_;
 		cd.setDimensions(domain, div_, 0);
 
-		//! Create the decomposition
+		// Create a cartesian grid graph
+		CartesianGraphFactory<dim, Graph_CSR<nm_v, nm_e>> g_factory_part;
+		gp = g_factory_part.template construct<NO_EDGE, nm_v::id, T, dim - 1, 0, 1, 2>(gr.getSize(), domain);
+		gp.init_map_ids();
 
+		// Init to 0.0 axis z (to fix in graphFactory)
+		if(dim < 3){
+			for(size_t i = 0; i< gp.getNVertex(); i++)
+				gp.vertex(i).template get<nm_v::z>() = 0.0;
+		}
+
+	}
+
+	/*! \brief Start decomposition
+	 *
+	 */
+	void decompose()
+	{
+		computeCommunicationAndMigrationCosts(0.01, 1);
 		CreateDecomposition(v_cl);
+	}
+
+	/* ! \brief Refine current decomposition
+	 *
+	 * It makes a refinement of the current decomposition using Parmetis function RefineKWay
+	 * After that it also does the remapping of the graph
+	 *
+	 */
+	void refine()
+	{
+		size_t Np = v_cl.getProcessingUnits();
+		size_t p_id = v_cl.getProcessUnitID();
+
+		//0.01 and 1 must be given TODO
+		computeCommunicationAndMigrationCosts(0.01, n_ts);
+
+		// Reset parmetis graph and reconstruct it
+		parmetis_graph.reset(gp, sub_g);
+
+		// Refine
+		parmetis_graph.refine<nm_v::proc_id>(vtxdist, sub_g);
+
+		// Get result partition for this processor
+		idx_t * partition = parmetis_graph.getPartition();
+
+		partitions.get(p_id).resize(sub_g.getNVertex());
+		std::copy(partition, partition + sub_g.getNVertex(), &partitions.get(p_id).get(0));
+
+		// Reset data structure to keep trace of new vertices distribution in processors (needed to update main graph)
+		for (int i = 0; i < Np; ++i)
+		{
+			v_per_proc.get(i).clear();
+		}
+
+		openfpm::vector < size_t > prc;
+		openfpm::vector < size_t > sz;
+		openfpm::vector<void *> ptr;
+
+		for (size_t i = 0; i < Np; i++)
+		{
+			if (i != v_cl.getProcessUnitID())
+			{
+				partitions.get(i).clear();
+				prc.add(i);
+				sz.add(sub_g.getNVertex() * sizeof(idx_t));
+				ptr.add(partitions.get(p_id).getPointer());
+			}
+		}
+
+		// Exchange informations through processors
+		v_cl.sendrecvMultipleMessagesNBX(prc.size(), &sz.get(0), &prc.get(0), &ptr.get(0), message_receive, &partitions,
+				NONE);
+
+		// Update graphs with the new distributions
+		updateGraphs();
+	}
+
+	/*! Function that gather times informations and decides if a rebalance is needed
+	 *  it uses the SAR heuristic
+	 *
+	 */
+	bool balanceNeeded(long t){
+
+		float t_max = 0, t_avg = 0;
+
+		// Exchange time informations through processors
+		v_cl.allGather(t, times);
+		v_cl.execute();
+
+		t_max = *(std::max_element(std::begin(times), std::end(times)));
+		//if(v_cl.getProcessUnitID())
+			//std::cout << "tmax: " << t_max << "\n";
+
+		t_avg = std::accumulate(times.begin(), times.end(), 0) / v_cl.getProcessingUnits();
+		//std::cout << "tavg: " << t_avg << "\n";
+
+		// add idle time to vector
+		i_times.add(t_max - t_avg);
+
+		// Compute Wn
+		double it_sum = *(std::max_element(std::begin(i_times), std::end(i_times)));
+		float nw_n = (it_sum + c_c) / n_ts;
+
+		if(nw_n > w_n){
+			i_times.clear();
+			n_ts = 1;
+			w_n = nw_n;
+			return true;
+		}else{
+			++n_ts;
+			w_n = nw_n;
+			return false;
+		}
 	}
 
 	/*! \brief Get the number of local sub-domains
@@ -996,7 +1020,8 @@ public:
 	 * \return the number of sub-domains
 	 *
 	 */
-	size_t getNLocalHyperCube() {
+	size_t getNLocalHyperCube()
+	{
 		return sub_domains.size();
 	}
 
@@ -1006,13 +1031,15 @@ public:
 	 * \return the sub-domain
 	 *
 	 */
-	SpaceBox<dim, T> getLocalHyperCube(size_t lc) {
+	SpaceBox<dim, T> getLocalHyperCube(size_t lc)
+	{
 		// Create a space box
 		SpaceBox<dim, T> sp;
 
 		// fill the space box
 
-		for (size_t k = 0; k < dim; k++) {
+		for (size_t k = 0; k < dim; k++)
+		{
 			// create the SpaceBox Low and High
 			sp.setLow(k, sub_domains.template get < Box::p1 > (lc)[k]);
 			sp.setHigh(k, sub_domains.template get < Box::p2 > (lc)[k]);
@@ -1027,7 +1054,8 @@ public:
 	 * \return the sub-domain
 	 *
 	 */
-	SpaceBox<dim, T> getSubDomainWithGhost(size_t lc) {
+	SpaceBox<dim, T> getSubDomainWithGhost(size_t lc)
+	{
 		// Create a space box
 		SpaceBox<dim, T> sp = sub_domains.get(lc);
 
@@ -1042,7 +1070,8 @@ public:
 	 * \return The physical domain
 	 *
 	 */
-	Domain<dim, T> & getDomain() {
+	Domain<dim, T> & getDomain()
+	{
 		return domain;
 	}
 
@@ -1053,7 +1082,8 @@ public:
 	 * \return true if it is local
 	 *
 	 */
-	template<typename Mem> bool isLocal(const encapc<1, Point<dim, T>, Mem> p) const {
+	template<typename Mem> bool isLocal(const encapc<1, Point<dim, T>, Mem> p) const
+	{
 		return processorID<Mem>(p) == v_cl.getProcessUnitID();
 	}
 
@@ -1064,7 +1094,8 @@ public:
 	 * \return true if it is local
 	 *
 	 */
-	bool isLocal(const T (&pos)[dim]) const {
+	bool isLocal(const T (&pos)[dim]) const
+	{
 		return processorID(pos) == v_cl.getProcessUnitID();
 	}
 
@@ -1075,7 +1106,8 @@ public:
 	 * \return The bounding box
 	 *
 	 */
-	::Box<dim, T> & getProcessorBounds() {
+	::Box<dim, T> & getProcessorBounds()
+	{
 		return bbox;
 	}
 
@@ -1097,11 +1129,13 @@ public:
 	 * \param output directory where to write the files
 	 *
 	 */
-	bool write(std::string output) const {
+	bool write(std::string output) const
+	{
 		//! subdomains_X.vtk domain for the local processor (X) as union of sub-domain
 		VTKWriter<openfpm::vector<::SpaceBox<dim, T>>, VECTOR_BOX> vtk_box1;
 		vtk_box1.add(sub_domains);
-		vtk_box1.write(output + std::string("subdomains_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
+		vtk_box1.write(
+				output + std::string("subdomains_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
 		nn_prcs<dim, T>::write(output);
 		ie_ghost<dim, T>::write(output, v_cl.getProcessUnitID());
@@ -1115,36 +1149,115 @@ public:
 	 * \return false if is inconsistent
 	 *
 	 */
-	bool check_consistency() {
+	bool check_consistency()
+	{
 		if (ie_loc_ghost<dim, T>::check_consistency(getNLocalHyperCube()) == false)
 			return false;
 
 		return true;
 	}
 
-	void debugPrint() {
+	/* ! \brief function that return the position of the vertex in the space
+	 *
+	 * \param id vertex id
+	 * \param pos vector tha t will contain x, y, z
+	 *
+	 */
+	void getVertexPosition(size_t id, openfpm::vector<real_t> &pos)
+	{
+		pos.get(0) = gp.vertex(id).template get<nm_v::x>();
+		pos.get(1) = gp.vertex(id).template get<nm_v::y>();
+
+		if (dim == 3)
+			pos.get(2) = gp.vertex(id).template get<nm_v::z>();
+	}
+
+	/* ! \brief function that set the weight of the vertex
+	 *
+	 * \param id vertex id
+	 *
+	 * \return vector with x, y, z
+	 *
+	 */
+	void setVertexWeight(size_t id, size_t weight)
+	{
+		gp.vertex(id).template get<nm_v::computation>() = weight;
+	}
+
+	/* ! \brief return number of moved vertices in all iterations so far
+	 *
+	 * \param id vertex id
+	 *
+	 * \return vector with x, y, z
+	 *
+	 */
+	size_t getTotalMovedV()
+	{
+
+		return g_moved;
+
+	}
+
+	/* ! \brief return number of moved vertices in all iterations so far
+	 *
+	 * \param id vertex id
+	 *
+	 * \return vector with x, y, z
+	 *
+	 */
+	size_t getMaxMovedV()
+	{
+
+		return m_moved;
+
+	}
+
+	void debugPrint()
+	{
 		std::cout << "Subdomains\n";
-		for (size_t p = 0; p < sub_domains.size(); p++) {
+		for (size_t p = 0; p < sub_domains.size(); p++)
+		{
 			std::cout << ::SpaceBox<dim, T>(sub_domains.get(p)).toString() << "\n";
 		}
 
 		std::cout << "External ghost box\n";
 
-		for (size_t p = 0; p<nn_prcs < dim, T>::getNNProcessors(); p++) {
-			for (size_t i = 0; i<ie_ghost < dim, T>::getProcessorNEGhost(p); i++) {
-				std::cout << ie_ghost<dim, T>::getProcessorEGhostBox(p, i).toString() << "   prc=" << nn_prcs<dim, T>::IDtoProc(p)
-						<< "   id=" << ie_ghost<dim, T>::getProcessorEGhostId(p, i) << "\n";
+		for (size_t p = 0; p<nn_prcs < dim, T>::getNNProcessors(); p++)
+		{
+			for (size_t i = 0; i<ie_ghost < dim, T>::getProcessorNEGhost(p); i++)
+			{
+				std::cout << ie_ghost<dim, T>::getProcessorEGhostBox(p, i).toString() << "   prc="
+						<< nn_prcs<dim, T>::IDtoProc(p) << "   id=" << ie_ghost<dim, T>::getProcessorEGhostId(p, i)
+						<< "\n";
 			}
 		}
 
 		std::cout << "Internal ghost box\n";
 
-		for (size_t p = 0; p<nn_prcs < dim, T>::getNNProcessors(); p++) {
-			for (size_t i = 0; i<ie_ghost < dim, T>::getProcessorNIGhost(p); i++) {
-				std::cout << ie_ghost<dim, T>::getProcessorIGhostBox(p, i).toString() << "   prc=" << nn_prcs<dim, T>::IDtoProc(p)
-						<< "   id=" << ie_ghost<dim, T>::getProcessorIGhostId(p, i) << "\n";
+		for (size_t p = 0; p<nn_prcs < dim, T>::getNNProcessors(); p++)
+		{
+			for (size_t i = 0; i<ie_ghost < dim, T>::getProcessorNIGhost(p); i++)
+			{
+				std::cout << ie_ghost<dim, T>::getProcessorIGhostBox(p, i).toString() << "   prc="
+						<< nn_prcs<dim, T>::IDtoProc(p) << "   id=" << ie_ghost<dim, T>::getProcessorIGhostId(p, i)
+						<< "\n";
 			}
 		}
+	}
+
+	/* \brief Print current graph and save it to file with name test_graph_[id]
+	 *
+	 * \param id to attach to the filename
+	 *
+	 */
+	void printCurrentGraph(int id)
+	{
+		if (v_cl.getProcessUnitID() == 1)
+		{
+			VTKWriter<Graph_CSR<nm_v, nm_e>, GRAPH> gv2(gp);
+			gv2.write("test_graph_" + std::to_string(id) + ".vtk");
+		}
+
 	}
 
 };
