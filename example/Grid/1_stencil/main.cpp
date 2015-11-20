@@ -1,5 +1,5 @@
 #include "Grid/grid_dist_id.hpp"
-#include "data_type/scalar.hpp"
+#include "data_type/aggregate.hpp"
 #include "Decomposition/CartDecomposition.hpp"
 
 /*
@@ -19,12 +19,17 @@
  *
  * ### WIKI 2 ###
  *
- * Define some convenient constant
+ * Define some convenient constant and types
  *
  */
 constexpr size_t x = 0;
 constexpr size_t y = 1;
 constexpr size_t z = 2;
+
+constexpr size_t A = 0;
+constexpr size_t B = 0;
+
+typedef aggregate<float[3],float[3]> grid_point;
 
 int main(int argc, char* argv[])
 {
@@ -65,7 +70,7 @@ int main(int argc, char* argv[])
 	// * domain: where the grid is defined
 	// * g: ghost extension
 	//
-	grid_dist_id<3, float, scalar<float[3]>, CartDecomposition<3,float>> g_dist(sz,domain,g);
+	grid_dist_id<3, float, grid_point, CartDecomposition<3,float>> g_dist(sz,domain,g);
 
 	// ### WIKI 5 ###
 	//
@@ -133,10 +138,10 @@ int main(int argc, char* argv[])
 		auto key = dom.get();
 
 		// Laplace stencil
-		g_dist.template get<0>(key)[1] = g_dist.template get<0>(key.move(x,1))[0] + g_dist.template get<0>(key.move(x,-1))[0] +
-		                                 g_dist.template get<0>(key.move(y,1))[0] + g_dist.template get<0>(key.move(y,-1))[0] +
-										 g_dist.template get<0>(key.move(z,1))[0] + g_dist.template get<0>(key.move(z,-1))[0] -
-										 6*g_dist.template get<0>(key)[0];
+		g_dist.template get<B>(key)[1] = g_dist.template get<A>(key.move(x,1))[0] + g_dist.template get<A>(key.move(x,-1))[0] +
+		                                 g_dist.template get<A>(key.move(y,1))[0] + g_dist.template get<A>(key.move(y,-1))[0] +
+										 g_dist.template get<A>(key.move(z,1))[0] + g_dist.template get<A>(key.move(z,-1))[0] -
+										 6*g_dist.template get<A>(key)[0];
 		                    
 
 		++dom;

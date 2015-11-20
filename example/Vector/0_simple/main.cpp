@@ -1,6 +1,5 @@
 #include "Vector/vector_dist.hpp"
 #include "Decomposition/CartDecomposition.hpp"
-#include "Point_test.hpp"
 
 /*
  * ### WIKI 1 ###
@@ -13,6 +12,32 @@
  * 
  */
 
+/*
+ * ### WIKI 2 ###
+ *
+ * We define a particle structure it contain 4 scalars one vector with 3 components
+ * and a tensor of rank 2 3x3
+ *
+ * ### WIKI END ###
+ *
+ */
+
+template<typename T> class Particle
+{
+public:
+
+	typedef boost::fusion::vector<T,T,T,T,T[3],T[3][3]> type;
+
+	type data;
+
+	static const unsigned int x = 0;
+	static const unsigned int y = 1;
+	static const unsigned int z = 2;
+	static const unsigned int s = 3;
+	static const unsigned int v = 4;
+	static const unsigned int t = 5;
+	static const unsigned int max_prop = 6;
+};
 
 int main(int argc, char* argv[])
 {
@@ -55,7 +80,7 @@ int main(int argc, char* argv[])
 	// objects with an undefined position in space. This non-space decomposition is also called data-driven
 	// decomposition
 	//
-	vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(4096,box);
+	vector_dist<2,float, Particle<float>, CartDecomposition<2,float> > vd(4096,box);
 
 	//
 	// ### WIKI 5 ###

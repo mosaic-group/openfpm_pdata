@@ -1,5 +1,5 @@
 #include "Grid/grid_dist_id.hpp"
-#include "data_type/scalar.hpp"
+#include "data_type/aggregate.hpp"
 #include "Decomposition/CartDecomposition.hpp"
 
 /*
@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 	// * domain: where the grid is defined
 	// * g: ghost extension
 	//
-	grid_dist_id<3, float, scalar<float[3]>, CartDecomposition<3,float>> g_dist(sz,domain,g);
+	grid_dist_id<3, float, aggregate<float[3]>, CartDecomposition<3,float>> g_dist(sz,domain,g);
 	
 	// ### WIKI 5 ###
 	//

@@ -99,6 +99,10 @@ public:
 	vector_dist(size_t np, Box<dim,St> box, Ghost<dim,St> g = Ghost<dim,St>())
 	:dec(*global_v_cluster),v_cl(*global_v_cluster)
 	{
+#ifdef SE_CLASS2
+		check_new(this,8,VECTOR_DIST_EVENT,4);
+#endif
+
 		// Allocate unassigned particles vectors
 		v_pos = v_cl.template allocate<openfpm::vector<Point<dim,St>>>(1);
 		v_prp = v_cl.template allocate<openfpm::vector<prop>>(1);
@@ -136,6 +140,13 @@ public:
 
 		Point<dim,St> p;
 		p.zero();
+	}
+
+	~vector_dist()
+	{
+#ifdef SE_CLASS2
+		check_delete(this);
+#endif
 	}
 
 	/*! \brief Get the number of minimum sub-domain
@@ -756,6 +767,18 @@ public:
 
 		// Write the CSV
 		return csv_writer.write(output,v_pos.get(INTERNAL),v_prp.get(INTERNAL));
+	}
+
+	/* \brief It return the id of structure in the allocation list
+	 *
+	 * \see print_alloc and SE_CLASS2
+	 *
+	 */
+	long int who()
+	{
+#ifdef SE_CLASS2
+		return check_whoami(this,8);
+#endif
 	}
 };
 
