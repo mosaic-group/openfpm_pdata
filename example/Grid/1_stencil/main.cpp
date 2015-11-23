@@ -7,9 +7,8 @@
  *
  * ## Simple example
  *
- * This example show how to move grid_key in order to create a laplacian stencil,
- * be carefull, the function move are convenient, we suggest to not use in case speed
- * of a speed critical part of the code
+ * This example show how to move grid_key in order to create a Laplacian stencil,
+ * be careful, the function move are convenient, but not the fastest implementation
  *
  * ### WIKI END ###
  *
@@ -19,7 +18,7 @@
  *
  * ### WIKI 2 ###
  *
- * Define some convenient constant and types
+ * Define some convenient constants and types
  *
  */
 constexpr size_t x = 0;
@@ -60,8 +59,9 @@ int main(int argc, char* argv[])
 	//
 	// ### WIKI 4 ###
 	//
-	// Create a distributed grid in 3D (1° template parameter) defined in R^3 with float precision (2° template parameter)
-	// using a CartesianDecomposition strategy (3° parameter) (the parameter 1° and 2° inside CartDecomposition must match 1° and 2°
+	// Create a distributed grid in 3D (1° template parameter) space in with float precision (2° template parameter)
+	// each grid point contain a vector of dimension 3 (float[3]),
+	// using a CartesianDecomposition strategy (4° parameter) (the parameter 1° and 2° inside CartDecomposition must match 1° and 2°
 	// of grid_dist_id)
 	//
 	// Constructor parameters:
@@ -85,8 +85,8 @@ int main(int argc, char* argv[])
 		//
 		// ### WIKI 6 ###
 		//
-		// Get the local grid key, the local grid key store internaly the sub-domain id (each sub-domain contain a grid)
-		// and the local grid point id identified by 2 integers in 2D 3 integer in 3D and so on. These two dinstinc element are
+		// Get the local grid key, the local grid key store internally the sub-domain id (each sub-domain contain a grid)
+		// and the local grid point id identified by 2 integers in 2D 3 integer in 3D and so on. These two distinct elements are
 		// available with key.getSub() and key.getKey()
 		//
 		auto key = dom.get();

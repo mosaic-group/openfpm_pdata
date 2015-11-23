@@ -26,9 +26,9 @@ int main(int argc, char* argv[])
 	//
 	// ### WIKI 3 ###
 	//
-	// Create several object needed later, in particular
+	// Create
 	// * A 3D box that define the domain
-	// * an array of 3 unsigned integer that define the size of the grid on each dimension
+	// * an array of 3 unsigned integer that will define the size of the grid on each dimension
 	// * A Ghost object that will define the extension of the ghost part for each sub-domain in physical units
 	
 	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
@@ -43,8 +43,9 @@ int main(int argc, char* argv[])
 	//
 	// ### WIKI 4 ###
 	//
-	// Create a distributed grid in 3D (1° template parameter) defined in R^3 with float precision (2° template parameter)
-	// using a CartesianDecomposition strategy (3° parameter) (the parameter 1° and 2° inside CartDecomposition must match 1° and 2°
+	// Create a distributed grid in 3D (1° template parameter) space in with float precision (2° template parameter)
+	// each grid point contain a vector of dimension 3 (float[3]),
+	// using a CartesianDecomposition strategy (4° parameter) (the parameter 1° and 2° inside CartDecomposition must match 1° and 2°
 	// of grid_dist_id)
 	//
 	// Constructor parameters:
@@ -57,7 +58,7 @@ int main(int argc, char* argv[])
 	
 	// ### WIKI 5 ###
 	//
-	// Get an iterator that go throught the point of the domain (No ghost)
+	// Get an iterator that go through the points of the grid (No ghost)
 	//
 	auto dom = g_dist.getDomainIterator();
 
@@ -71,8 +72,8 @@ int main(int argc, char* argv[])
 		//
 		// ### WIKI 6 ###
 		//
-		// Get the local grid key, the local grid key store internaly the sub-domain id (each sub-domain contain a grid)
-		// and the local grid point id identified by 2 integers in 2D 3 integer in 3D and so on. These two dinstinc element are
+		// Get the local grid key, the local grid key store internally the sub-domain id (each sub-domain contain a grid)
+		// and the local grid point id identified by 2 integers in 2D 3 integer in 3D and so on. These two distinct elements are
 		// available with key.getSub() and key.getKey()
 		//
 		auto key = dom.get();
@@ -120,7 +121,7 @@ int main(int argc, char* argv[])
 	//
 	// count contain the number of points the local processor contain, if we are interested to count the total number across the processor
 	// we can use the function add, to sum across processors. First we have to get an instance of Vcluster, queue an operation of add with
-	// the variable count and finaly execute. All the operation are asynchronous, execute work like a barrier and ensure that all the 
+	// the variable count and finally execute. All the operation are asynchronous, execute work like a barrier and ensure that all the
 	// queued operations are executed
 	//
 	Vcluster & vcl = g_dist.getVC();
@@ -142,7 +143,7 @@ int main(int argc, char* argv[])
 	//
 	// ### WIKI 13 ###
 	//
-	// For debugging porpouse and demostration we output the decomposition
+	// For debugging purpose and demonstration we output the decomposition
 	//
 	g_dist.getDecomposition().write("out_dec");
 	
