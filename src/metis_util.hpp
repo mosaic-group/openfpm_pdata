@@ -11,6 +11,7 @@
 #include <iostream>
 #include "metis.h"
 #include "VTKWriter.hpp"
+#include "SubdomainGraphNodes.hpp"
 
 /*! \brief Metis graph structure
  *
@@ -77,6 +78,9 @@ class Metis
 	// Original graph
 	Graph & g;
 
+	//Check if weights are available
+	bool useWeights;
+
 	/*! \brief Construct Adjacency list
 	 *
 	 * \param g Graph
@@ -86,11 +90,9 @@ class Metis
 	{
 		// create xadj and adjlist
 
-		Mg.xadj = new idx_t[g.getNVertex()+1];
+		// create xadj, adjlist, vwgt, adjwgt and vsize
+		Mg.xadj = new idx_t[g.getNVertex() + 1];
 		Mg.adjncy = new idx_t[g.getNEdge()];
-
-		//! Get a vertex iterator
-		auto it = g.getVertexIterator();
 
 		//! starting point in the adjacency list
 		size_t prev = 0;
@@ -99,19 +101,70 @@ class Metis
 		size_t id = 0;
 
 		// for each vertex calculate the position of the starting point in the adjacency list
-		while (it.isNext())
+		for (size_t i = 0; i < g.getNVertex(); i++)
 		{
 			// Calculate the starting point in the adjacency list
 			Mg.xadj[id] = prev;
 
 			// Create the adjacency list
-			for (size_t s = 0 ; s < g.getNChilds(it) ; s++)
-			{Mg.adjncy[prev+s] = g.getChild(it,s);}
+			for (size_t s = 0; s < g.getNChilds(i); s++)
+			{
+				Mg.adjncy[prev + s] = g.getChild(i, s);
+			}
 
 			// update the position for the next vertex
-			prev += g.getNChilds(it);
+			prev += g.getNChilds(i);
 
-			++it;
+			id++;
+		}
+
+		// Fill the last point
+		Mg.xadj[id] = prev;
+	}
+
+	/*! \brief Construct Adjacency list
+	 *
+	 * \param g Graph
+	 *
+	 */
+	void constructAdjListWithWeights(Graph & g)
+	{
+		// create xadj and adjlist
+
+		// create xadj, adjlist, vwgt, adjwgt and vsize
+		Mg.xadj = new idx_t[g.getNVertex() + 1];
+		Mg.adjncy = new idx_t[g.getNEdge()];
+		Mg.vwgt = new idx_t[g.getNVertex()];
+		Mg.adjwgt = new idx_t[g.getNEdge()];
+		Mg.vsize = new idx_t[g.getNVertex()];
+
+		//! starting point in the adjacency list
+		size_t prev = 0;
+
+		// actual position
+		size_t id = 0;
+
+		// for each vertex calculate the position of the starting point in the adjacency list
+		for (size_t i = 0; i < g.getNVertex(); i++)
+		{
+			// Add weight to vertex and migration cost
+			Mg.vwgt[i] = g.vertex(i).template get<nm_v::computation>();
+			Mg.vsize[i] = g.vertex(i).template get<nm_v::migration>();
+
+			// Calculate the starting point in the adjacency list
+			Mg.xadj[id] = prev;
+
+			// Create the adjacency list
+			for (size_t s = 0; s < g.getNChilds(i); s++)
+			{
+				Mg.adjncy[prev + s] = g.getChild(i, s);
+
+				Mg.adjwgt[prev + s] = g.edge(prev + s).template get<nm_e::communication>();
+			}
+
+			// update the position for the next vertex
+			prev += g.getNChilds(i);
+
 			id++;
 		}
 
@@ -127,11 +180,32 @@ public:
 	 *
 	 * \param g Graph we want to convert to decompose
 	 * \param nc number of partitions
+	 * \param useWeights tells if weights are used or not
 	 *
 	 */
-	Metis(Graph & g, size_t nc)
-	:g(g)
+	Metis(Graph & g, size_t nc, bool useWeights) :
+			g(g), useWeights(useWeights)
 	{
+		initMetisGraph(nc);
+	}
+
+	/*! \brief Constructor
+	 *
+	 * Construct a metis graph from Graph_CSR
+	 *
+	 * \param g Graph we want to convert to decompose
+	 * \param nc number of partitions
+	 *
+	 */
+	Metis(Graph & g, size_t nc) :
+			g(g)
+	{
+		initMetisGraph(nc);
+	}
+
+	void initMetisGraph(int nc)
+	{
+
 		// Get the number of vertex
 
 		Mg.nvtxs = new idx_t[1];
@@ -141,9 +215,6 @@ public:
 
 		Mg.ncon = new idx_t[1];
 		Mg.ncon[0] = 1;
-
-		// construct the adjacency list
-		constructAdjList(g);
 
 		// Set to null the weight of the vertex
 
@@ -156,6 +227,12 @@ public:
 		// Set to null the weight of the edge
 
 		Mg.adjwgt = NULL;
+
+		// construct the adjacency list
+		if (useWeights)
+			constructAdjListWithWeights(g);
+		else
+			constructAdjList(g);
 
 		// Set the total number of partitions
 
@@ -191,54 +268,54 @@ public:
 		// Deallocate the Mg structure
 		if (Mg.nvtxs != NULL)
 		{
-			delete [] Mg.nvtxs;
+			delete[] Mg.nvtxs;
 		}
 
 		if (Mg.ncon != NULL)
 		{
-			delete [] Mg.ncon;
+			delete[] Mg.ncon;
 		}
 
 		if (Mg.xadj != NULL)
 		{
-			delete [] Mg.xadj;
+			delete[] Mg.xadj;
 		}
 
 		if (Mg.adjncy != NULL)
 		{
-			delete [] Mg.adjncy;
+			delete[] Mg.adjncy;
 		}
 		if (Mg.vwgt != NULL)
 		{
-			delete [] Mg.vwgt;
+			delete[] Mg.vwgt;
 		}
 		if (Mg.adjwgt != NULL)
 		{
-			delete [] Mg.adjwgt;
+			delete[] Mg.adjwgt;
 		}
 		if (Mg.nparts != NULL)
 		{
-			delete [] Mg.nparts;
+			delete[] Mg.nparts;
 		}
 		if (Mg.tpwgts != NULL)
 		{
-			delete [] Mg.tpwgts;
+			delete[] Mg.tpwgts;
 		}
 		if (Mg.ubvec != NULL)
 		{
-			delete [] Mg.ubvec;
+			delete[] Mg.ubvec;
 		}
 		if (Mg.options != NULL)
 		{
-			delete [] Mg.options;
+			delete[] Mg.options;
 		}
 		if (Mg.objval != NULL)
 		{
-			delete [] Mg.objval;
+			delete[] Mg.objval;
 		}
 		if (Mg.part != NULL)
 		{
-			delete [] Mg.part;
+			delete[] Mg.part;
 		}
 	}
 
@@ -254,8 +331,8 @@ public:
 		if (Mg.nparts[0] != 1)
 		{
 			// Decompose
-			METIS_PartGraphRecursive(Mg.nvtxs,Mg.ncon,Mg.xadj,Mg.adjncy,Mg.vwgt,Mg.vsize,Mg.adjwgt,
-				            Mg.nparts,Mg.tpwgts,Mg.ubvec,Mg.options,Mg.objval,Mg.part);
+			METIS_PartGraphRecursive(Mg.nvtxs, Mg.ncon, Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.vsize, Mg.adjwgt, Mg.nparts,
+					Mg.tpwgts, Mg.ubvec, Mg.options, Mg.objval, Mg.part);
 
 			// vertex id
 
@@ -298,8 +375,8 @@ public:
 	void decompose(Graph_part & gp)
 	{
 		// Decompose
-		METIS_PartGraphKway(Mg.nvtxs,Mg.ncon,Mg.xadj,Mg.adjncy,Mg.vwgt,Mg.vsize,Mg.adjwgt,
-				            Mg.nparts,Mg.tpwgts,Mg.ubvec,Mg.options,Mg.objval,Mg.part);
+		METIS_PartGraphKway(Mg.nvtxs, Mg.ncon, Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.vsize, Mg.adjwgt, Mg.nparts, Mg.tpwgts,
+				Mg.ubvec, Mg.options, Mg.objval, Mg.part);
 
 		// vertex id
 
