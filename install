@@ -153,6 +153,12 @@ if [ x"$compiler_opt" != x"" ]; then
   ./script/install_METIS.sh $i_dir $compiler_gcc $compiler_gpp
   configure_options=" $configure_options --with-metis=$i_dir/METIS "
   METIS_installed=1
+  ./script/install_SuiteSparse.sh $i_dir $compiler_opt
+  configure_options=" $configure_options --with-suitesparse=$i_dir/SUITESPARSE "
+  SUITESPARSE_installed=1
+  ./script/install_lapack.sh $i_dir $compiler_opt
+  configure_option="$configure_options --with-lapack=$i_dir/LAPACK"
+  LAPACK_installed=1
 fi
 
 echo "./configure $options $configure_options" 
@@ -196,6 +202,20 @@ else
             ./script/install_BOOST.sh $i_dir $compiler_opt
             BOOST_installed=1
             configure_options=" $configure_options --with-boost=$i_dir/BOOST "
+        elif [ $conf_err -eq 204 ]; then
+            echo "Lapack not found try to install"
+            if [ $LAPACK_installed -eq 1  ]; then
+                echo "Error the installation of LAPACK failed"
+                exit 1
+            fi
+            ./script/install_SUITESPARSE.sh $i_dir $compiler_opt
+        elif [ $conf_err -eq 205 ]; then
+            echo "SuiteSparse not found try to install"
+            if [ $SUITESPARSE_installed -eq 1  ]; then
+                echo "Error the installation of SuiteSparse failed"
+                exit 1
+            fi
+            ./script/install_SUITESPARSE.sh $i_dir $compiler_opt
         elif [ $conf_err -ne 0 ]; then
             echo "I do not know how to recover from this error"
             exit 1
