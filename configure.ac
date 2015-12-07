@@ -33,6 +33,11 @@ m4_ifdef([AX_BOOST_BASE],,[m4_include([m4/ax_boost_base.m4])])
 m4_ifdef([AX_BOOST_IOSTREAMS],,[m4_include([m4/ax_boost_iostreams.m4])])
 m4_ifdef([AX_BOOST_PROGRAM_OPTIONS],,[m4_include([m4/ax_boost_program_options.m4])])
 m4_ifdef([AX_BOOST_UNIT_TEST_FRAMEWORK],,[m4_include([m4/ax_boost_unit_test_framework.m4])])
+m4_ifdef([AX_BLAS],,[m4_include([m4/ax_blas.m4])])
+m4_ifdef([AX_LAPACK],,[m4_include([m4/ax_lapack.m4])])
+m4_ifdef([AX_SUITESPARSE],,[m4_include([m4/ax_suitesparse.m4])])
+m4_ifdef([AX_EIGEN],,[m4_include([m4/ax_eigen.m4])])
+
 
 CXXFLAGS+=" --std=c++11 "
 NVCCFLAGS=" "
@@ -226,6 +231,24 @@ BOOST_CPPFLAGS=$(echo "$BOOST_CPPFLAGS" | sed -e 's/-I\/usr\/include[ \b]//g')
 
 AC_SUBST(BOOST_LDFLAGS)
 AC_SUBST(BOOST_CPPFLAGS)
+
+###### Checking for OpenBLAS
+
+AX_BLAS([],[echo "blas not found"
+                    exit 204])
+
+AX_LAPACK([],[echo "lapack not found"
+                    exit 204])
+
+###### Checking for SUITESPARSE
+
+AX_SUITESPARSE([],[echo "suitesparse not found"
+                    exit 205])
+
+###### Checking for EIGEN
+
+AX_EIGEN([],[echo "eigen not found"
+                    exit 206])
 
 ####### Checking for GPU support
 

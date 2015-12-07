@@ -34,10 +34,10 @@ class grid_dist_iterator_sub
 	size_t g_c;
 
 	//! List of the grids we are going to iterate
-	Vcluster_object_array<device_grid> & gList;
+	const Vcluster_object_array<device_grid> & gList;
 
 	//! Extension of each grid: domain and ghost + domain
-	openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
+	const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
 
 	//! Actual iterator
 	grid_key_dx_iterator_sub<dim> a_it;
@@ -144,7 +144,7 @@ class grid_dist_iterator_sub
 	 * \param gdb_ext information about the local grids
 	 *
 	 */
-	grid_dist_iterator_sub(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop ,Vcluster_object_array<device_grid> & gk, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
+	grid_dist_iterator_sub(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop ,const Vcluster_object_array<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
 	:g_c(0),gList(gk),gdb_ext(gdb_ext),start(start),stop(stop),m(0)
 	{
 		// Initialize the current iterator
@@ -233,7 +233,7 @@ class grid_dist_iterator_sub
 	 * \return the starting point
 	 *
 	 */
-	inline grid_key_dx<dim> getStart()
+	inline grid_key_dx<dim> getStart() const
 	{
 		return start;
 	}
@@ -243,7 +243,7 @@ class grid_dist_iterator_sub
 	 * \return the stop point
 	 *
 	 */
-	inline grid_key_dx<dim> getStop()
+	inline grid_key_dx<dim> getStop() const
 	{
 		return stop;
 	}

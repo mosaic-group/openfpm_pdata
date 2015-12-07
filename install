@@ -124,6 +124,10 @@ echo -e "Installing requirements into: $i_dir "
 MPI_installed=0
 METIS_installed=0
 BOOST_installed=0
+LAPACK_installed=0
+SUITESPARSE_installed=0
+EIGEN_installed=0
+blas_options=""
 conf_err=1
 
 ## MPI
@@ -140,35 +144,15 @@ else
   fi
 fi
 
-## if a new compiler has been installed reinstall all the dependencies
-
-if [ x"$compiler_opt" != x"" ]; then
-  ./script/install_MPI.sh $i_dir $compiler_opt
-  export PATH="$PATH:$i_dir/MPI/bin"
-  configure_options="$configure_options CXX=mpic++ "
-  MPI_installed=1
-  ./script/install_BOOST.sh $i_dir $compiler_opt
-  configure_options=" $configure_options --with-boost=$i_dir/BOOST "
-  BOOST_installed=1
-  ./script/install_METIS.sh $i_dir $compiler_gcc $compiler_gpp
-  configure_options=" $configure_options --with-metis=$i_dir/METIS "
-  METIS_installed=1
-  ./script/install_SuiteSparse.sh $i_dir $compiler_opt
-  configure_options=" $configure_options --with-suitesparse=$i_dir/SUITESPARSE "
-  SUITESPARSE_installed=1
-  ./script/install_lapack.sh $i_dir $compiler_opt
-  configure_option="$configure_options --with-lapack=$i_dir/LAPACK"
-  LAPACK_installed=1
-fi
 
 echo "./configure $options $configure_options" 
 
 if [ $install_req -eq 0 ]; then
-    ./configure $options $configure_options
+    ./configure $options $configure_options "$blas_options"
 else
     while [ $conf_err -ne 0 ]
     do
-        ./configure $options $configure_options
+        ./configure $options $configure_options "$blas_options"
         conf_err=$?
 
 	echo "Configure script terminated with $conf_err"
@@ -208,7 +192,9 @@ else
                 echo "Error the installation of LAPACK failed"
                 exit 1
             fi
-            ./script/install_SUITESPARSE.sh $i_dir $compiler_opt
+            ./script/install_OPENBLAS.sh $i_dir $compiler_opt
+            LAPACK_installed=1
+            blas_options="--with-blas=-L/home/i-bird/OPENBLAS/lib/ -lopenblas"
         elif [ $conf_err -eq 205 ]; then
             echo "SuiteSparse not found try to install"
             if [ $SUITESPARSE_installed -eq 1  ]; then
@@ -216,6 +202,17 @@ else
                 exit 1
             fi
             ./script/install_SUITESPARSE.sh $i_dir $compiler_opt
+            configure_options=" $configure_options --with-suitesparse=$i_dir/SUITESPARSE "
+            SUITESPARSE_installed=1
+        elif [ $conf_err -eq 206 ]; then
+            echo "Eigen not found try to install"
+            if [ $EIGEN_installed -eq 1  ]; then
+                echo "Error the installation of Eigen failed"
+                exit 1
+            fi
+            ./script/install_EIGEN.sh $i_dir $compiler_opt
+            configure_options=" $configure_options --with-eigen=$i_dir/EIGEN "
+            EIGEN_installed=1
         elif [ $conf_err -ne 0 ]; then
             echo "I do not know how to recover from this error"
             exit 1
@@ -249,7 +246,7 @@ fi
 
 echo "Command used to configure"
 echo ""
-echo -e "\033[1m ./configure $options $configure_options \033[0m "
+echo -e "\033[1m ./configure $options $configure_options "$blas_options" \033[0m "
 echo ""
 if [ $MPI_installed -eq 1 ]; then
   echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
@@ -288,6 +285,30 @@ if [ $BOOST_installed -eq 1 ]; then
     echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:$i_dir/BOOST/lib\" \033[0m "
   else
     echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:$i_dir/BOOST/lib\" \033[0m"
+  fi
+fi
+if [ $LAPACK_installed -eq 1 ]; then
+  echo ""
+  echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
+  echo -e "\033[1;34;5m --------------- OPENBLAS -------------- \033[0m"
+  echo -e "  OPENBLAS has been installed into: \033[1m $i_dir/OPENBLAS \033[0m"
+  echo ""
+  if [ x"$platform" = x"linux" ]; then
+    echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:$i_dir/OPENBLAS/lib\" \033[0m "
+  else
+    echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:$i_dir/OPENBLAS/lib\" \033[0m"
+  fi
+fi
+if [ $SUITESPARSE_installed -eq 1 ]; then
+  echo ""
+  echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
+  echo -e "\033[1;34;5m ------------- SUITESPARSE ------------- \033[0m"
+  echo -e "  SUITESPARSE has been installed into: \033[1m $i_dir/SUITESPARSE \033[0m"
+  echo ""
+  if [ x"$platform" = x"linux" ]; then
+    echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:$i_dir/SUITESPARSE/lib\" \033[0m "
+  else
+    echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:$i_dir/SUITESPARSE/lib\" \033[0m"
   fi
 fi
 echo ""

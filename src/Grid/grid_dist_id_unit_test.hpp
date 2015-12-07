@@ -268,6 +268,15 @@ void Test2D(const Box<2,float> & domain, long int k)
 
 		auto dom2 = g_dist.getDomainIterator();
 
+		grid_key_dx<2> start = dom2.getStart();
+		grid_key_dx<2> stop = dom2.getStop();
+
+		BOOST_REQUIRE_EQUAL(stop.get(0),g_dist.size(0));
+		BOOST_REQUIRE_EQUAL(stop.get(1),g_dist.size(1));
+
+		BOOST_REQUIRE_EQUAL(start.get(0),0);
+		BOOST_REQUIRE_EQUAL(start.get(1),0);
+
 		bool match = true;
 
 		// check that the grid store the correct information

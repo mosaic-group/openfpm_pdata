@@ -484,6 +484,19 @@ public:
 	// Decomposition used
 	typedef Decomposition decomposition;
 
+	// value_type
+	typedef T value_type;
+
+	/*! \brief Return the total number of points in the grid
+	 *
+	 * \return number of points
+	 *
+	 */
+	size_t size() const
+	{
+		return ginfo_v.size();
+	}
+
 	static inline Ghost<dim,float> convert_ghost(const Ghost<dim,long int> & gd,const CellDecomposer_sm<dim,St> & cd_sm)
 	{
 		Ghost<dim,float> gc;
@@ -526,6 +539,16 @@ public:
 		InitializeCellDecomposer(g_sz);
 		InitializeStructures(g_sz);
 	}
+
+    /*! \brief Get the spacing of the grid in direction i
+     *
+     * \return the spacing
+     *
+     */
+    inline St spacing(size_t i) const
+    {
+    	return cd_sm.getCellBox().getHigh(i);
+    }
 
 	/*! \brief Constrcuctor
 	 *
@@ -639,7 +662,7 @@ public:
 	 * \return an information object about this grid
 	 *
 	 */
-	const grid_sm<dim,T> & getGridInfo()
+	const grid_sm<dim,T> & getGridInfo() const
 	{
 		return ginfo;
 	}
@@ -649,7 +672,7 @@ public:
 	 * \return an information object about this grid
 	 *
 	 */
-	const grid_sm<dim,void> & getGridInfoVoid()
+	const grid_sm<dim,void> & getGridInfoVoid() const
 	{
 		return ginfo_v;
 	}
@@ -724,7 +747,12 @@ public:
 	 */
 	grid_dist_iterator<dim,device_grid,FREE> getDomainIterator()
 	{
-		grid_dist_iterator<dim,device_grid,FREE> it(loc_grid,gdb_ext);
+		grid_key_dx<dim> stop(ginfo_v.getSize());
+		grid_key_dx<dim> one;
+		one.one();
+		stop = stop - one;
+
+		grid_dist_iterator<dim,device_grid,FREE> it(loc_grid,gdb_ext,stop);
 
 		return it;
 	}
@@ -733,7 +761,7 @@ public:
 	 *
 	 *
 	 */
-	grid_dist_iterator<dim,device_grid,FIXED> getDomainGhostIterator()
+	grid_dist_iterator<dim,device_grid,FIXED> getDomainGhostIterator() const
 	{
 		grid_dist_iterator<dim,device_grid,FIXED> it(loc_grid,gdb_ext);
 
@@ -743,13 +771,33 @@ public:
 	/*! \brief It return an iterator that span the grid domain only in the specified
 	 * part
 	 *
+	 * The key spanned are the one inside the box spanned by the start point and the end
+	 * point included
+	 *
 	 * \param start point
 	 * \param stop point
 	 *
 	 */
-	grid_dist_iterator_sub<dim,device_grid> getSubDomainIterator(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop)
+	grid_dist_iterator_sub<dim,device_grid> getSubDomainIterator(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop) const
 	{
 		grid_dist_iterator_sub<dim,device_grid> it(start,stop,loc_grid,gdb_ext);
+
+		return it;
+	}
+
+	/*! \brief It return an iterator that span the grid domain only in the specified
+	 * part
+	 *
+	 * The key spanned are the one inside the box spanned by the start point and the end
+	 * point included
+	 *
+	 * \param start point
+	 * \param stop point
+	 *
+	 */
+	grid_dist_iterator_sub<dim,device_grid> getSubDomainIterator(const long int (& start)[dim], const long int (& stop)[dim]) const
+	{
+		grid_dist_iterator_sub<dim,device_grid> it(grid_key_dx<dim>(start),grid_key_dx<dim>(stop),loc_grid,gdb_ext);
 
 		return it;
 	}
@@ -769,6 +817,16 @@ public:
 	Vcluster & getVC()
 	{
 		return v_cl;
+	}
+
+	/*! \brief Indicate that this grid is not staggered
+	 *
+	 * \return false
+	 *
+	 */
+	bool is_staggered()
+	{
+		return false;
 	}
 
 	/*! \brief Get the reference of the selected element
