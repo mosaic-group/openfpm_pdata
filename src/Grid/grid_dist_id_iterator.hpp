@@ -85,7 +85,7 @@ class grid_dist_iterator<dim,device_grid,FREE>
 	size_t g_c;
 
 	//! List of the grids we are going to iterate
-	Vcluster_object_array<device_grid> & gList;
+	const Vcluster_object_array<device_grid> & gList;
 
 	//! Extension of each grid: domain and ghost + domain
 	openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
@@ -243,7 +243,7 @@ class grid_dist_iterator<dim,device_grid,FIXED>
 	size_t g_c;
 
 	//! List of the grids we are going to iterate
-	Vcluster_object_array<device_grid> & gList;
+	const Vcluster_object_array<device_grid> & gList;
 
 	//! Extension of each grid: domain and ghost + domain
 	const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;

@@ -118,7 +118,7 @@ fi
 
 ####### include OpenFPM_devices include path
 
-INCLUDES_PATH+="-I. -Isrc/config/ -I../openfpm_io/src -I../openfpm_data/src -I../openfpm_devices/src -I../openfpm_vcluster/src/"
+INCLUDES_PATH+="-I. -Iconfig/ -I../openfpm_io/src -I../openfpm_data/src -I../openfpm_devices/src -I../openfpm_vcluster/src/"
 
 ###### Check for se-class1
 

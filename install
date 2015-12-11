@@ -130,23 +130,6 @@ EIGEN_installed=0
 blas_options=""
 conf_err=1
 
-## MPI
-
-if [ x"$MPI_installation_required" == x"yes"  ]; then
-  ./script/install_MPI.sh $i_dir $compiler_opt
-  export PATH="$i_dir/MPI/bin:$PATH"
-  configure_options="$configure_options CXX=mpic++ "
-  MPI_installed=1
-else
-  command -v mpic++ >/dev/null 2>&1
-  if [ $? -eq 0 ]; then
-    configure_options="$configure_options CXX=mpic++ "
-  fi
-fi
-
-
-echo "./configure $options $configure_options" 
-
 if [ $install_req -eq 0 ]; then
     ./configure $options $configure_options "$blas_options"
 else

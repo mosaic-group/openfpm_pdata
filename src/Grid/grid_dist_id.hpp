@@ -417,7 +417,33 @@ class grid_dist_id
 	{
 	}
 
-	/*! \brief Initialize the Cell decomposer of the grid
+	void write_ie_boxes(std::string output)
+	{
+		// Write internal ghost box
+		VTKWriter<openfpm::vector<::Box<dim,size_t>>,VECTOR_BOX> vtk_box1;
+
+		openfpm::vector< openfpm::vector< ::Box<dim,size_t> > > boxes;
+
+		//! Carefully we have to ensure that boxes does not reallocate inside the for loop
+		boxes.reserve(ig_box.size());
+
+		//! Write internal ghost in grid units (Color encoded)
+		for (size_t p = 0 ; p < ig_box.size() ; p++)
+		{
+			boxes.add();
+
+			// Create a vector of boxes
+			for (size_t j = 0 ; j < ig_box.get(p).bid.size() ; j++)
+			{
+				boxes.last().add(ig_box.get(p).bid.get(j).box);
+			}
+
+			vtk_box1.add(boxes.last());
+		}
+		vtk_box1.write(output + std::string("internal_ghost_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
+	}
+
+    /*! \brief Initialize the Cell decomposer of the grid
 	 *
 	 *
 	 */
@@ -474,6 +500,28 @@ class grid_dist_id
 
 		// Create local grid
 		Create();
+	}
+
+protected:
+
+	/*! \brief Get the point where it start the origin of the grid in the sub-domain i
+	 *
+	 * \return the point
+	 *
+	 */
+	Point<dim,St> getOffset(size_t i)
+	{
+		return Point<dim,St>(gdb_ext.get(i).origin) * cd_sm.getCellBox().getP2();
+	}
+
+	/*! \brief Given a local sub-domain i with a local grid Domain + ghost return the part of the local grid that is domain
+	 *
+	 * \return the Box defining the domain in the local grid
+	 *
+	 */
+	Box<dim,size_t> getDomain(size_t i)
+	{
+		return gdb_ext.get(i).Dbox;
 	}
 
 public:
@@ -1143,6 +1191,16 @@ public:
 		}
 	}
 
+	/*! \brief Get the spacing on each dimension
+	 *
+	 * \param get the spacing
+	 *
+	 */
+	Point<dim,St> getSpacing()
+	{
+		return cd_sm.getCellBox().getP2();
+	}
+
 	/*! \brief Convert a g_dist_key_dx into a global key
 	 *
 	 * \see grid_dist_key_dx
@@ -1178,37 +1236,36 @@ public:
 		VTKWriter<boost::mpl::pair<device_grid,float>,VECTOR_GRIDS> vtk_g;
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{
-			Point<dim,St> offset = Point<dim,St>(gdb_ext.get(i).origin) * cd_sm.getCellBox().getP2();
+			Point<dim,St> offset = getOffset(i);
 			vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).Dbox);
 		}
 		vtk_g.write(output + "_grid_" + std::to_string(v_cl.getProcessUnitID()) + ".vtk");
 
-		// Write internal ghost box
-		VTKWriter<openfpm::vector<::Box<dim,size_t>>,VECTOR_BOX> vtk_box1;
-
-		openfpm::vector< openfpm::vector< ::Box<dim,size_t> > > boxes;
-
-		//! Carefully we have to ensure that boxes does not reallocate inside the for loop
-		boxes.reserve(ig_box.size());
-
-		//! Write internal ghost in grid units (Color encoded)
-		for (size_t p = 0 ; p < ig_box.size() ; p++)
-		{
-			boxes.add();
-
-			// Create a vector of boxes
-			for (size_t j = 0 ; j < ig_box.get(p).bid.size() ; j++)
-			{
-				boxes.last().add(ig_box.get(p).bid.get(j).box);
-			}
-
-			vtk_box1.add(boxes.last());
-		}
-		vtk_box1.write(output + std::string("internal_ghost_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
-
-		vtk_g.write("vtk_grids.vtk");
+		write_ie_boxes(output);
 
 		return true;
+	}
+
+	/*! \brief Get the i sub-domain grid
+	 *
+	 * \param i sub-domain
+	 *
+	 * \return local grid
+	 *
+	 */
+	device_grid & get_loc_grid(size_t i)
+	{
+		return loc_grid.get(i);
+	}
+
+	/*! \brief Return the number of local grid
+	 *
+	 * \return the number of local grid
+	 *
+	 */
+	size_t getN_loc_grid()
+	{
+		return loc_grid.size();
 	}
 };
 
