@@ -129,7 +129,7 @@ struct N_box
 	// id of the processor in the nn_processor list (local processor id)
 	size_t id;
 
-	// Near processor sub-domains
+	// adjacent processor sub-domains
 	typename openfpm::vector<::Box<dim,T>> bx;
 
 	//! Default constructor

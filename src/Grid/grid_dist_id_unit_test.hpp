@@ -158,7 +158,7 @@ void Test2D_sub(const Box<2,float> & domain, long int k)
 		vcl.execute();
 
 		// Check
-		BOOST_REQUIRE_EQUAL(count,(k-2)*(k-2));
+		BOOST_REQUIRE_EQUAL(count,(size_t)(k-2)*(k-2));
 
 		// check with a 1x1 square
 
@@ -196,7 +196,7 @@ void Test2D_sub(const Box<2,float> & domain, long int k)
 		vcl.sum(count);
 		vcl.execute();
 
-		BOOST_REQUIRE_EQUAL(count,1);
+		BOOST_REQUIRE_EQUAL(count,1ul);
 		}
 	}
 }
@@ -264,7 +264,7 @@ void Test2D(const Box<2,float> & domain, long int k)
 		vcl.execute();
 
 		// Check
-		BOOST_REQUIRE_EQUAL(count,k*k);
+		BOOST_REQUIRE_EQUAL(count,(size_t)k*k);
 
 		auto dom2 = g_dist.getDomainIterator();
 
@@ -375,7 +375,7 @@ void Test3D_sub(const Box<3,float> & domain, long int k)
 		vcl.execute();
 
 		// Check
-		BOOST_REQUIRE_EQUAL(count,(k-2)*(k-2)*(k-2));
+		BOOST_REQUIRE_EQUAL(count,(size_t)(k-2)*(k-2)*(k-2));
 
 		// check with a 1x1x1 square
 		{
@@ -414,7 +414,7 @@ void Test3D_sub(const Box<3,float> & domain, long int k)
 		vcl.sum(count);
 		vcl.execute();
 
-		BOOST_REQUIRE_EQUAL(count,1);
+		BOOST_REQUIRE_EQUAL(count,1ul);
 		}
 	}
 }
@@ -480,7 +480,7 @@ void Test3D(const Box<3,float> & domain, long int k)
 		vcl.execute();
 
 		// Check
-		BOOST_REQUIRE_EQUAL(count,k*k*k);
+		BOOST_REQUIRE_EQUAL(count,(size_t)k*k*k);
 
 		bool match = true;
 
@@ -533,7 +533,6 @@ void Test3D_gg(const Box<3,float> & domain, long int k, long int gk)
 {
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
-	long int small_step = 21;
 
 	// this test is only performed when the number of processor is <= 32
 	if (global_v_cluster->getProcessingUnits() > 32)
@@ -661,7 +660,7 @@ void Test2D_complex(const Box<2,float> & domain, long int k)
 		vcl.execute();
 
 		// Check
-		BOOST_REQUIRE_EQUAL(count,k*k);
+		BOOST_REQUIRE_EQUAL(count,(size_t)k*k);
 
 		auto dom2 = g_dist.getDomainIterator();
 
@@ -823,7 +822,7 @@ void Test3D_complex(const Box<3,float> & domain, long int k)
 		vcl.execute();
 
 		// Check
-		BOOST_REQUIRE_EQUAL(count,k*k*k);
+		BOOST_REQUIRE_EQUAL(count,(size_t)k*k*k);
 
 		bool match = true;
 

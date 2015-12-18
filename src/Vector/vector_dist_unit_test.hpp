@@ -255,7 +255,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 		//
 		v_cl.sum(cnt);
 		v_cl.execute();
-		BOOST_REQUIRE_EQUAL(cnt,k);
+		BOOST_REQUIRE_EQUAL((long int)cnt,k);
 	}
 }
 
@@ -325,7 +325,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 		//
 		v_cl.sum(cnt);
 		v_cl.execute();
-		BOOST_REQUIRE_EQUAL(cnt,k);
+		BOOST_REQUIRE_EQUAL(cnt,(size_t)k);
 	}
 }
 

@@ -133,15 +133,18 @@ private:
 	// reference counter of the object in case is shared between object
 	long int ref_cnt;
 
-	// Save the ghost boundaries
+	// ghost info
 	Ghost<dim,T> ghost;
+
+	// Boundary condition info
+	size_t bc[dim];
 
 	/*! \brief Constructor, it decompose and distribute the sub-domains across the processors
 	 *
      * \param v_cl Virtual cluster, used internally for communications
      *
 	 */
-	void CreateDecomposition(Vcluster & v_cl)
+	void CreateDecomposition(Vcluster & v_cl, const size_t (& bc)[dim])
 	{
 #ifdef SE_CLASS1
 		if (&v_cl == NULL)
@@ -165,8 +168,13 @@ private:
 		// Create a cartesian grid graph
 		CartesianGraphFactory<dim,Graph_CSR<nm_part_v,nm_part_e>> g_factory_part;
 
+		// the graph has only non perdiodic boundary conditions
+		size_t bc_o[dim];
+		for (size_t i = 0 ; i < dim ; i++)
+			bc_o[i] = NON_PERIODIC;
+
 		// sub-sub-domain graph
-		Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.template construct<NO_EDGE,T,dim-1>(gr.getSize(),domain);
+		Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.template construct<NO_EDGE,T,dim-1>(gr.getSize(),domain,bc_o);
 
 		// Get the number of processing units
 		size_t Np = v_cl.getProcessingUnits();
@@ -191,7 +199,7 @@ private:
 		openfpm::vector<::Box<dim,size_t>> loc_box;
 
 		// optimize the decomposition
-		d_o.template optimize<nm_part_v::sub_id,nm_part_v::id>(gp,p_id,loc_box,box_nn_processor);
+		d_o.template optimize<nm_part_v::sub_id,nm_part_v::id>(gp,p_id,loc_box,box_nn_processor,bc);
 
 		// Initialize ss_box and bbox
 		if (loc_box.size() >= 0)
@@ -257,6 +265,7 @@ private:
 
 		nn_prcs<dim,T>::create(box_nn_processor, sub_domains);
 		nn_prcs<dim,T>::refine_ss_box(ss_box);
+		nn_prcs<dim,T>::applyBC(domain,ghost,bc);
 
 		// fill fine_s structure
 		// fine_s structure contain the processor id for each sub-sub-domain
@@ -614,6 +623,7 @@ p1[0]<-----+         +----> p2[0]
 		cart.ghost = g;
 
 		nn_prcs<dim,T>::create(box_nn_processor, sub_domains);
+		nn_prcs<dim,T>::applyBC(domain,ghost,bc);
 
 		calculateGhostBoxes();
 		Initialize_geo_cell_lists();
@@ -764,8 +774,12 @@ p1[0]<-----+         +----> p2[0]
      * \param domain_ domain to decompose
 	 *
 	 */
-	void setParameters(const size_t (& div_)[dim], Domain<dim,T> domain_, Ghost<dim,T> ghost = Ghost<dim,T>())
+	void setParameters(const size_t (& div_)[dim], Domain<dim,T> domain_, const size_t (& bc)[dim] ,Ghost<dim,T> ghost = Ghost<dim,T>())
 	{
+		// set the boundary conditions
+		for (size_t i = 0 ; i < dim ; i++)
+			this->bc[i] = bc[i];
+
 		// set the ghost
 		this->ghost = ghost;
 		// Set the decomposition parameters
@@ -776,7 +790,7 @@ p1[0]<-----+         +----> p2[0]
 
 		//! Create the decomposition
 
-		CreateDecomposition(v_cl);
+		CreateDecomposition(v_cl,bc);
 	}
 
 	/*! \brief Get the number of local sub-domains

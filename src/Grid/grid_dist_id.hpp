@@ -461,8 +461,13 @@ class grid_dist_id
 		for (size_t i = 0 ; i < dim ; i++)
 		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
 
+		// boundary conditions
+		size_t bc[dim];
+		for (size_t i = 0 ; i < dim ; i++)
+			bc[i] = NON_PERIODIC;
+
 		// Create the sub-domains
-		dec.setParameters(div,domain,ghost);
+		dec.setParameters(div,domain,bc,ghost);
 
 		// Calculate ghost boxes
 		dec.calculateGhostBoxes();
@@ -1172,6 +1177,8 @@ public:
 	{
 #ifdef SE_CLASS2
 		return check_whoami(this,8);
+#else
+			return -1;
 #endif
 	}
 };

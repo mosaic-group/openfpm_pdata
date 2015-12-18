@@ -9,6 +9,7 @@
 #define SRC_DECOMPOSITION_NN_PROCESSOR_HPP_
 
 #include "common.hpp"
+#include <unordered_map>
 
 /*! \brief This class store the adjacent processors and the adjacent sub_domains
  *
@@ -27,10 +28,14 @@ class nn_prcs
 	//! List of adjacent processors
 	openfpm::vector<size_t> nn_processors;
 
-	// for each near-processor store the sub-domain of the near processor
+	// for each adjacent processor store the sub-domains of the adjacent processor
 	std::unordered_map<size_t, N_box<dim,T>> nn_processor_subdomains;
 
-	// for each processor store the set of the sub-domains sent to the adjacent processors
+	// when we add new boxes, are added here
+	std::unordered_map<size_t, N_box<dim,T>> nn_processor_subdomains_tmp;
+
+	// for each near processor store the set of the sub-domains sent to the near processors,
+	// the nested vector contain the id of the local sub-domain
 	openfpm::vector<openfpm::vector<size_t>> proc_adj_box;
 
 	//! contain the internal adjacent sub-domains sent to the other processors
@@ -38,6 +43,9 @@ class nn_prcs
 
 	// Receive counter
 	size_t recv_cnt;
+
+	//! applyBC function is suppose to be called only one time
+	bool aBC;
 
 	/*! \brief Message allocation
 	 *
@@ -64,21 +72,139 @@ class nn_prcs
 		return cd->nn_processor_subdomains[i].bx.getPointer();
 	}
 
+	/*! Checl that the compination is valid
+	 *
+	 * \param cmb combination
+	 * \param bc boundary conditions
+	 *
+	 */
+	bool inline check_valid(comb<dim> cmb,const size_t (& bc)[dim])
+	{
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (bc[i] == NON_PERIODIC && cmb.getComb()[i] != 0)
+				return false;
+		}
+		return true;
+	}
+
+	/*! \brief add sub-domain to processor
+	 *
+	 * \param i processor
+	 * \param bx Box to add
+	 *
+	 */
+	inline void add_nn_subdomain(size_t i, const Box<dim,T> & bx)
+	{
+		nn_processor_subdomains_tmp[i].bx.add(bx);
+	}
+
+	/*! \brief In case of periodic boundary conditions we have to add boxes
+	 *         at the borders
+	 *
+	 * \param domain Domain box
+	 * \param boundary boundary conditions
+	 * \param ghost ghost part
+	 *
+	 */
+	void add_box_periodic(const Box<dim,T> & domain, const Ghost<dim,T> & ghost, const size_t (&bc)[dim])
+	{
+		HyperCube<dim> hyp;
+
+		// first we create boxes at the border of the domain used to detect the sub-domain
+		// that must be adjusted, each of this boxes define a shift in case of periodic boundary condition
+		for (long int i = dim-1 ; i >= 0 ; i--)
+		{
+			std::vector<comb<dim>> cmbs = hyp.getCombinations_R(i);
+
+			for (size_t j = 0 ; j < cmbs.size() ; j++)
+			{
+				if (check_valid(cmbs[j],bc) == false)
+					continue;
+
+				Box<dim,T> bp;
+				Point<dim,T> shift;
+
+				for (size_t k = 0 ; k < dim ; k++)
+				{
+					switch (cmbs[j][k])
+					{
+					case 1:
+						bp.setLow(k,domain.getHigh(k)+ghost.getLow(k));
+						bp.setHigh(k,domain.getHigh(k));
+						shift.get(k) = -domain.getHigh(k);
+						break;
+					case 0:
+						bp.setLow(k,domain.getLow(k));
+						bp.setHigh(k,domain.getHigh(k));
+						shift.get(k) = 0;
+						break;
+					case -1:
+						bp.setLow(k,domain.getLow(k));
+						bp.setHigh(k,ghost.getHigh(k));
+						shift.get(k) = domain.getHigh(k);
+						break;
+					}
+				}
+
+				// Detect all the sub-domain involved, shift them and add to the list
+				// Detection is performed intersecting the sub-domains with the ghost
+				// parts near the domain borders
+				for (size_t k = 0 ; k < getNNProcessors() ; k++)
+				{
+					// sub-domains of the near processor
+					const openfpm::vector< ::Box<dim,T> > & nn_sub = getAdjacentSubdomains(IDtoProc(k));
+
+					for (size_t l = 0 ; l < nn_sub.size(); l++)
+					{
+						Box<dim,T> sub = nn_sub.get(l);
+						Box<dim,T> b_int;
+
+						if (sub.Intersect(bp,b_int) == true)
+						{
+							sub += shift;
+							add_nn_subdomain(IDtoProc(k),sub);
+						}
+					}
+				}
+			}
+		}
+
+		flush();
+	}
+
+	/*! \brief Flush the temporal added sub-domain to the processor sub-domain
+	 *
+	 *
+	 */
+	void flush()
+	{
+		for ( auto it = nn_processor_subdomains_tmp.begin(); it != nn_processor_subdomains_tmp.end(); ++it )
+		{
+			const N_box<dim,T> & nnp_bx = it->second;
+
+			for (size_t i = 0 ; i < nnp_bx.bx.size() ; i++)
+			{
+				nn_processor_subdomains[it->first].bx.add(nn_processor_subdomains_tmp[it->first].bx.get(i));
+			}
+		}
+	}
+
 public:
 
 	nn_prcs(Vcluster & v_cl)
-	:v_cl(v_cl){}
+	:v_cl(v_cl),aBC(false){}
 
-	//! Constructor from another ie_loc_ghost
+	//! Constructor from another nn_prcs
 	nn_prcs(const nn_prcs<dim,T> & ilg)
-	:v_cl(ilg.v_cl)
+	:v_cl(ilg.v_cl),aBC(false)
 	{
 		this->operator=(ilg);
 	};
 
 	//! Constructor from temporal ie_loc_ghost
 	nn_prcs(nn_prcs<dim,T> && ilg)
-	:v_cl(ilg.v_cl)
+	:v_cl(ilg.v_cl),aBC(false)
 	{
 		this->operator=(ilg);
 	}
@@ -139,8 +265,7 @@ public:
 	 */
 	void create(const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor, const openfpm::vector<SpaceBox<dim,T>> & sub_domains)
 	{
-		// produce the list of the contiguous processor (nn_processors) and link nn_processor_subdomains to the
-		// processor list
+		// produce the list of the adjacent processor (nn_processors) list
 		for (size_t i = 0 ;  i < box_nn_processor.size() ; i++)
 		{
 			for (size_t j = 0 ; j < box_nn_processor.get(i).size() ; j++)
@@ -154,13 +279,12 @@ public:
 	    auto last = std::unique(nn_processors.begin(), nn_processors.end());
 	    nn_processors.erase(last, nn_processors.end());
 
-        // produce the list of the contiguous processor (nn_processors) and link nn_processor_subdomains to the
-        // processor list (nn_processors)
+        // construct nn_processor_subdomains
         for (size_t i = 0 ;  i < box_nn_processor.size() ; i++)
         {
                 for (size_t j = 0 ; j < box_nn_processor.get(i).size() ; j++)
                 {
-                        // processor id near to this sub-domain
+                        // processor id adjacent to this sub-domain
                         size_t proc_id = box_nn_processor.get(i).get(j);
 
                         size_t k = 0;
@@ -173,10 +297,8 @@ public:
         }
 
 
-		// create a buffer with the sub-domains of this processor, the informations ( the boxes )
-		// of the sub-domains contiguous to the processor A are sent to the processor A and
-		// the information of the contiguous sub-domains in the near processors are received
-		//
+		// create a buffer with the sub-domains of this processor, send them to the adjacent
+		// processor
 		proc_adj_box.resize(getNNProcessors());
 		boxes.resize(nn_processors.size());
 
@@ -195,12 +317,8 @@ public:
 			}
 		}
 
-		// Intersect all the local sub-domains with the sub-domains of the contiguous processors
-
 		// Get the sub-domains of the near processors
 		v_cl.sendrecvMultipleMessagesNBX(nn_processors,boxes,nn_prcs<dim,T>::message_alloc, this ,NEED_ALL_SIZE);
-
-
 	}
 
 	/*! \brief Get the number of Near processors
@@ -227,12 +345,12 @@ public:
 
 	/*! \brief Get the sub-domain pf an adjacent processor
 	 *
-	 * \param p_id adjacent processor (id from 0 to getNNProcessors())
+	 * \param p_id adjacent processor rank
 	 *
 	 * \return the sub-domains
 	 *
 	 */
-	inline const openfpm::vector< ::Box<dim,T> > & getAdjacentSubdomain(size_t p_id) const
+	inline const openfpm::vector< ::Box<dim,T> > & getAdjacentSubdomains(size_t p_id) const
 	{
 		auto key = nn_processor_subdomains.find(p_id);
 #ifdef SE_CLASS1
@@ -246,7 +364,7 @@ public:
 
 	/*! \brief Get the adjacent processor id
 	 *
-	 * \param p_id adjacent processor (id from 0 to getNNProcessors())
+	 * \param p_id adjacent processor rank
 	 *
 	 * \return the processor rank
 	 *
@@ -342,6 +460,26 @@ public:
 		return true;
 	}
 
+	/*! \brief Apply boundary conditions
+	 *
+	 * \param domain The simulation domain
+	 * \param ghost ghost part
+	 * \param bc Boundary conditions
+	 *
+	 */
+	void applyBC(const Box<dim,T> & domain, const Ghost<dim,T> & ghost, const size_t (&bc)[dim])
+	{
+		if (aBC == true)
+		{
+			std::cerr << "Warning " << __FILE__ << ":" << __LINE__ << "Apply BC is suppose to be called only one time\n";
+			return;
+		}
+
+		aBC=true;
+
+		return add_box_periodic(domain,ghost,bc);
+	}
+
 	/*! \brief Check if the nn_prcs contain the same information
 	 *
 	 * \param ele Element to check
@@ -354,7 +492,7 @@ public:
 
 		for (size_t p = 0 ; p < getNNProcessors() ; p++)
 		{
-			if (getAdjacentSubdomain(IDtoProc(p)) != np.getAdjacentSubdomain(IDtoProc(p)))
+			if (getAdjacentSubdomains(IDtoProc(p)) != np.getAdjacentSubdomains(IDtoProc(p)))
 				return false;
 			if (getAdjacentProcessor(IDtoProc(p)) != np.getAdjacentProcessor(IDtoProc(p)))
 				return false;
@@ -365,6 +503,18 @@ public:
 		}
 
 		return true;
+	}
+
+	//! Used for testing porpose do not use
+	std::unordered_map<size_t, N_box<dim,T>> & get_nn_processor_subdomains()
+	{
+		return nn_processor_subdomains;
+	}
+
+	//! Used for testing porpose do not use
+	openfpm::vector<size_t> & get_nn_processors()
+	{
+		return nn_processors;
 	}
 };
 

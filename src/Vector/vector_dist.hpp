@@ -135,8 +135,13 @@ public:
 		for (size_t i = 0 ; i < dim ; i++)
 		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
 
+		// boundary conditions
+		size_t bc[dim];
+		for (size_t i = 0 ; i < dim ; i++)
+			bc[i] = NON_PERIODIC;
+
 		// Create the sub-domains
-		dec.setParameters(div,box,g);
+		dec.setParameters(div,box,bc,g);
 
 		Point<dim,St> p;
 		p.zero();
@@ -778,6 +783,8 @@ public:
 	{
 #ifdef SE_CLASS2
 		return check_whoami(this,8);
+#else
+		return -1;
 #endif
 	}
 };

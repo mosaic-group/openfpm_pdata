@@ -57,8 +57,8 @@ protected:
 
 	/*! \brief Create the box_nn_processor_int (bx part)  structure
 	 *
-	 * This structure store for each sub-domain of this processors enlarged by the ghost size the boxes that
-	 *  come from the intersection with the near processors sub-domains (External ghost box)
+	 * For each sub-domain of the local processor it store the intersection between the enlarged
+	 * sub-domain of the calling processor with the adjacent processors sub-domains (External ghost box)
 	 *
 	 * \param ghost margins
 	 *
@@ -85,19 +85,19 @@ protected:
 			// For each processor adjacent to this sub-domain
 			for (size_t j = 0 ; j < box_nn_processor.get(i).size() ; j++)
 			{
-				// Contiguous processor
+				// adjacent processor
 				size_t p_id = box_nn_processor.get(i).get(j);
 
-				// store the box in proc_int_box storing from which sub-domain they come from
+				// used later
 				Box_dom<dim,T> & proc_int_box_g = proc_int_box.get(nn_p.ProctoID(p_id));
 
 				// get the set of sub-domains of the adjacent processor p_id
 				const openfpm::vector< ::Box<dim,T> > & nn_processor_subdomains_g = nn_p.getExternalAdjSubdomain(p_id).bx;
 
-				// near processor sub-domain intersections
+				// used later
 				openfpm::vector< ::Box<dim,T> > & box_nn_processor_int_gg = box_nn_processor_int.get(i).get(j).bx;
 
-				// for each near processor sub-domain intersect with the enlarged local sub-domain and store it
+				// for each adjacent processor sub-domain intersect with the enlarged local sub-domain and store it
 				for (size_t b = 0 ; b < nn_processor_subdomains_g.size() ; b++)
 				{
 					::Box<dim,T> bi;
@@ -626,6 +626,8 @@ public:
 					return false;
 			}
 		}
+
+		return true;
 	}
 
 	/*! \brief Check if the ie_loc_ghosts contain the same information with the exception of the ghost part
