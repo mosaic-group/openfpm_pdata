@@ -60,8 +60,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	// set the ghost based on the radius cut off (make just a little bit smaller than the spacing)
 	Ghost<2,float> g(spacing.get(0) - spacing .get(0) * 0.0001);
 
+	// Boundary conditions
+	size_t bc[2]={NON_PERIODIC,NON_PERIODIC};
+
 	// Vector of particles
-	vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(g_info.size(),box,g);
+	vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(g_info.size(),box,bc,g);
 
 	// size_t
 	size_t cobj = 0;
@@ -127,6 +130,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	// Get the ghost iterator
 	auto g_it = vd.getGhostIterator();
 
+	size_t n_part = 0;
+
 	// Check if the ghost particles contain the correct information
 	while (g_it.isNext())
 	{
@@ -156,8 +161,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 		// Check that the particle come from the correct processor
 		BOOST_REQUIRE_EQUAL(vd.getProp<p::v>(key)[0],dec.getEGhostBoxProcessor(lb));
 
+		n_part++;
 		++g_it;
 	}
+
+	BOOST_REQUIRE(n_part != 0);
 
     CellDecomposer_sm<2,float> cd(SpaceBox<2,float>(box),g_div,0);
 
@@ -202,7 +210,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
-    long int k = 4096 * v_cl.getProcessingUnits();
+    long int k = 524288 * v_cl.getProcessingUnits();
 
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
@@ -217,7 +225,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 		//! [Create a vector of random elements on each processor 2D]
 
 		Box<2,float> box({0.0,0.0},{1.0,1.0});
-		vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(k,box);
+
+		// Boundary conditions
+		size_t bc[2]={NON_PERIODIC,NON_PERIODIC};
+
+		vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(k,box,bc,Ghost<2,float>(0.0));
 
 		auto it = vd.getIterator();
 
@@ -271,7 +283,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
-    long int k = 4096 * v_cl.getProcessingUnits();
+    long int k = 524288 * v_cl.getProcessingUnits();
 
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
@@ -286,7 +298,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 		//! [Create a vector of random elements on each processor 3D]
 
 		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
-		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box);
+
+		// Boundary conditions
+		size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+
+		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box,bc,Ghost<3,float>(0.0));
 
 		auto it = vd.getIterator();
 
@@ -326,6 +342,196 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 		v_cl.sum(cnt);
 		v_cl.execute();
 		BOOST_REQUIRE_EQUAL(cnt,(size_t)k);
+	}
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
+{
+	typedef Point<2,float> s;
+
+	Vcluster & v_cl = *global_v_cluster;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+    long int k = 524288 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 30;
+	big_step = (big_step == 0)?1:big_step;
+
+	print_test_v( "Testing 2D periodic vector k<=",k);
+
+	// 2D test
+	for ( ; k >= 2 ; k-= decrement(k,big_step) )
+	{
+		BOOST_TEST_CHECKPOINT( "Testing 2D periodic vector k=" << k );
+
+		//! [Create a vector of random elements on each processor 2D]
+
+		Box<2,float> box({0.0,0.0},{1.0,1.0});
+
+		// Boundary conditions
+		size_t bc[2]={PERIODIC,PERIODIC};
+
+		// ghost
+		Ghost<2,float> ghost(0.05);
+
+		vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(k,box,bc,ghost);
+
+		auto it = vd.getIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			vd.template getPos<s::x>(key)[0] = ud(eg);
+			vd.template getPos<s::x>(key)[1] = ud(eg);
+
+			++it;
+		}
+
+		vd.map();
+
+		// sync the ghost
+		vd.ghost_get<0>();
+
+		//! [Create a vector of random elements on each processor 2D]
+
+		// Check if we have all the local particles
+		size_t l_cnt = 0;
+		size_t nl_cnt = 0;
+		size_t n_out = 0;
+		const CartDecomposition<2,float> & ct = vd.getDecomposition();
+		it = vd.getIterator();
+
+		Box<2,float> dom_ext = box;
+		dom_ext.enlarge(ghost);
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			// Check if local
+			if (ct.isLocalBC(vd.template getPos<s::x>(key),bc) == true)
+				l_cnt++;
+			else
+				nl_cnt++;
+
+			// Check that all particles are inside the Domain + Ghost part
+			if (dom_ext.isInside(vd.template getPos<s::x>(key)) == false)
+					n_out++;
+
+			++it;
+		}
+
+		BOOST_REQUIRE_EQUAL(n_out,0);
+
+		if (k > 524288)
+			BOOST_REQUIRE(nl_cnt != 0);
+
+		//
+		v_cl.sum(l_cnt);
+		v_cl.execute();
+		BOOST_REQUIRE_EQUAL((long int)l_cnt,k);
+	}
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
+{
+	typedef Point<3,float> s;
+
+	Vcluster & v_cl = *global_v_cluster;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+    long int k = 524288 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 30;
+	big_step = (big_step == 0)?1:big_step;
+
+	print_test_v( "Testing 3D periodic vector k<=",k);
+
+	// 3D test
+	for ( ; k >= 2 ; k-= decrement(k,big_step) )
+	{
+		BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector k=" << k );
+
+		//! [Create a vector of random elements on each processor 3D]
+
+		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+		// Boundary conditions
+		size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+		// ghost
+		Ghost<3,float> ghost(0.05);
+
+		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box,bc,ghost);
+
+		auto it = vd.getIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			vd.template getPos<s::x>(key)[0] = ud(eg);
+			vd.template getPos<s::x>(key)[1] = ud(eg);
+			vd.template getPos<s::x>(key)[2] = ud(eg);
+
+			++it;
+		}
+
+		vd.map();
+
+		// sync the ghost
+		vd.ghost_get<0>();
+
+		//! [Create a vector of random elements on each processor 3D]
+
+		// Check if we have all the local particles
+		size_t l_cnt = 0;
+		size_t nl_cnt = 0;
+		size_t n_out = 0;
+		const CartDecomposition<3,float> & ct = vd.getDecomposition();
+		it = vd.getIterator();
+
+		Box<3,float> dom_ext = box;
+		dom_ext.enlarge(ghost);
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			// Check if local
+			if (ct.isLocalBC(vd.template getPos<s::x>(key),bc) == true)
+				l_cnt++;
+			else
+				nl_cnt++;
+
+			// Check that all particles are inside the Domain + Ghost part
+			if (dom_ext.isInside(vd.template getPos<s::x>(key)) == false)
+					n_out++;
+
+
+			++it;
+		}
+
+		BOOST_REQUIRE_EQUAL(n_out,0);
+
+		if (k > 524288)
+			BOOST_REQUIRE(nl_cnt != 0);
+
+		//
+		v_cl.sum(l_cnt);
+		v_cl.execute();
+		BOOST_REQUIRE_EQUAL(l_cnt,(size_t)k);
 	}
 }
 

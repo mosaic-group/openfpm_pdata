@@ -13,42 +13,42 @@
 
 #include "Vector/map_vector.hpp"
 
-
-
-/*! It contain a box definition and from witch sub-domain it come from (in the local processor)
- * and an unique across adjacent processors (for communication)
+/*! \brief for each sub-domain box sub contain the real the sub-domain id
  *
- * If the box come from the intersection of an expanded sub-domain and a sub-domain
+ * When we apply boundary conditions real sub-domains are copied along the border
+ * sub, contain the id of the real sub_domain
  *
- * Assuming we are considering the adjacent processor i (0 to getNNProcessors())
- *
- * ### external ghost box
- *
- * id = id_exp + N_non_exp + id_non_exp
- *
- * id_exp = the id in the vector proc_adj_box.get(i) of the expanded sub-domain
- *
- * id_non_exp = the id in the vector nn_processor_subdomains[i] of the sub-domain
- *
- * ### internal ghost box
- *
- * id = id_exp + N_non_exp + id_non_exp
- *
- * id_exp = the id in the vector nn_processor_subdomains[i] of the expanded sub-domain
- *
- * id_non_exp = the id in the vector proc_adj_box.get(i) of the sub-domain
+ * \tparam dim Dimensionality of the box
+ * \tparam T in witch space this box live
  *
  */
 template<unsigned int dim, typename T>
-struct Box_sub : public Box<dim,T>
+struct Box_loc_sub
 {
+	Box<dim,T> bx;
+
 	// Domain id
 	size_t sub;
 
-	// Id
-	size_t id;
+	// in witch sector this sub-domain live, when
+	comb<dim> cmb;
 
-	Box_sub operator=(const Box<dim,T> & box)
+	Box_loc_sub()
+	{
+		cmb.zero();
+	};
+
+	Box_loc_sub(const Box<dim,T> & bx, size_t sub, const comb<dim> & cmb)
+	:bx(bx),sub(sub),cmb(cmb)
+	{};
+
+	template <typename Memory> Box_loc_sub(const Box_loc_sub<dim,T> & bls)
+	{
+		bx = bls.bx;
+		this->sub = bls.sub;
+	};
+
+	Box_loc_sub operator=(const Box<dim,T> & box)
 	{
 		::Box<dim,T>::operator=(box);
 
@@ -58,19 +58,74 @@ struct Box_sub : public Box<dim,T>
 
 };
 
-//! Particular case for local internal ghost boxes
+/*! It contain a box definition and from witch sub-domain it come from (in the local processor)
+ * and an unique across adjacent processors (for communication)
+ *
+ * If the box come from the intersection of an expanded sub-domain and a sub-domain
+ *
+ * Assuming we are considering the near processors i (0 to getNNProcessors())
+ *
+ * ### external ghost box
+ *
+ * id = id_exp * N_non_exp + id_non_exp
+ *
+ * id_exp = the id in the vector proc_adj_box.get(i) of the expanded sub-domain (sent local sub-domains)
+ *
+ * id_non_exp = the id in the vector nn_processor_subdomains[i] of the sub-domain (received sub-domains from near processors)
+ *
+ * ### internal ghost box
+ *
+ * id = id_exp * N_non_exp + id_non_exp
+ *
+ * id_exp = the id in the vector nn_processor_subdomains[i] of the expanded sub-domain
+ *
+ * id_non_exp = the id in the vector proc_adj_box.get(i) of the sub-domain
+ *
+ */
 template<unsigned int dim, typename T>
-struct Box_sub_k : public Box<dim,T>
+struct Box_sub
 {
+	Box<dim,T> bx;
+
 	// Domain id
 	size_t sub;
+
+	// Id
+	size_t id;
+
+	Box_sub operator=(const Box<dim,T> & box)
+	{
+		bx = box;
+
+		return *this;
+	}
+
+
+};
+
+//! Particular case for local internal ghost boxes
+template<unsigned int dim, typename T>
+struct Box_sub_k
+{
+	Box<dim,T> bx;
+
+	// Domain id
+	size_t sub;
+
+	// Where this sub_domain live
+	comb<dim> cmb;
 
 	//! k \see getLocalGhostIBoxE
 	long int k;
 
+	Box_sub_k()
+	{
+		cmb.zero();
+	}
+
 	Box_sub_k operator=(const Box<dim,T> & box)
 	{
-		::Box<dim,T>::operator=(box);
+		bx = box;
 
 		return *this;
 	}
@@ -129,8 +184,11 @@ struct N_box
 	// id of the processor in the nn_processor list (local processor id)
 	size_t id;
 
-	// adjacent processor sub-domains
+	// near processor sub-domains
 	typename openfpm::vector<::Box<dim,T>> bx;
+
+	// near processor sector position (or where they live outside the domain)
+	openfpm::vector<comb<dim>> pos;
 
 	//! Default constructor
 	N_box() {};
@@ -208,8 +266,11 @@ struct p_box
 	::Box<dim,T> box;
 	//! local processor id
 	size_t lc_proc;
-	//! processor id
+	//! processor rank
 	size_t proc;
+
+	//! shift vector id
+	size_t shift_id;
 
 	/*! \brief Check if two p_box are the same
 	 *

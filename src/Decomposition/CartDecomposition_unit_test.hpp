@@ -175,9 +175,11 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 	}
 
 	// Check the consistency
-
 	bool val = dec.check_consistency();
 	BOOST_REQUIRE_EQUAL(val,true);
+
+	// write the decomposition
+	dec.write("test_out");
 
 	// We duplicate the decomposition
 	CartDecomposition<3,float> dec2 = dec.duplicate();
@@ -204,7 +206,6 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 	// Check that g3 is equal to dec2 with the exception of the ghost part
 	ret = dec3.is_equal_ng(dec2);
 	BOOST_REQUIRE_EQUAL(ret,true);
-
 }
 
 BOOST_AUTO_TEST_SUITE_END()

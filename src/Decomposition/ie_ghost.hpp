@@ -41,7 +41,134 @@ class ie_ghost
 	//! Cell-list that store the geometrical information of the internal ghost boxes
 	CellList<dim,T,FAST> geo_cell;
 
+	//! shift vectors
+	openfpm::vector<Point<dim,T>> shifts;
+
+	// Temporal buffers to return information for ghost_processorID
+	openfpm::vector<std::pair<size_t,size_t>> ids_p;
+	openfpm::vector<size_t> ids;
+
+
+	/*! \brief Given a local sub-domain i, it give the id of such sub-domain in the sent list
+	 *         for the processor p_id
+	 *
+	 * Processor 5 send its sub-domains to processor 6 and will receive the list from 6
+	 *
+	 * This function search if a local sub-domain has been sent to a processor p_id, if
+	 * found it return at witch position is in the list of the sent sub-domains
+	 *
+	 * \param nn_p structure that store the processor graph as near processor
+	 * \param p_id near processor rank
+	 * \param i sub-domain
+	 *
+	 * \return Given a local sub-domain i, it give the id of such sub-domain in the sent list
+	 *         for the processor p_id
+	 *
+	 */
+	inline size_t link_ebx_ibx(const nn_prcs<dim,T> & nn_p, size_t p_id, size_t i)
+	{
+		// Search for the correct id
+		size_t k = 0;
+		size_t p_idp = nn_p.ProctoID(p_id);
+		for (k = 0 ; k < nn_p.getSentSubdomains(p_idp).size() ; k++)
+		{
+			if (nn_p.getSentSubdomains(p_idp).get(k) == i)
+				break;
+		}
+		if (k == nn_p.getSentSubdomains(p_idp).size())
+			std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " sub-domain not found\n";
+
+		return k;
+	}
+
+	/*! \brief This is the external and internal ghost box link formula
+	*
+	* This formula is pretty important and require an extensive explanation
+	*
+	* \verbatim
+
+	+------------+
+	|            |
+	|            +---+---------+
+	| Processor 5|   |         |
+	|            | E | Proc 6  |
+	|  Sub 0     | 0 |         |
+	|            | _ | Sub 9   |
+	|            | 9 |         |
+	|            |   |         |
+	|            +---+---------+
+	|            |
+	+------------+
+
+	* \endverbatim
+	*
+	* E0_6 is an external ghost box from the prospective of processor 5 and an internal
+	* ghost boxes from the prospective of processor 6. So for every external
+	* ghost box that processor 5 compute, exist an internal ghost box in processor 6
+	*
+	* Here we link this information with an unique id, for processor 5 and 6.
+	* Consider Processor 5 sending to processor 6
+	* its sub-domains, including the one in figure with id 0 in the list, and
+	* receive from processor 6 the sub-domain in figure as id 9. Consider also
+	*  we have 16 processor, E0_9 come from the intersection of the sub-domains
+	* 0 and 9 (Careful the id is related to the send and receive position in the list)
+	*
+	* The id of the external box and (and linked internal) is calculated as
+	*
+	* (0 * (Number of sub-domains received from 6) + 9) * 16 + 6
+	*
+	* \param k sub-domain sent ( 0 )
+	* \param b sub-domain received ( 9 )
+	* \param p_id processor id ( 6 )
+	* \param c sector where the sub-domain b live
+	* \param N_b number of sub-domain received from p_id
+	* \param v_cl Vcluster
+	*
+	* \return id of the external box
+	*
+	*/
+	inline size_t ebx_ibx_form(size_t k, size_t b, size_t p_id, const comb<dim> & c ,size_t N_b, Vcluster & v_cl)
+	{
+		return ((k * N_b + b) * v_cl.getProcessingUnits() + p_id) * openfpm::math::pow(3,dim) + c.lin();
+	}
+
 protected:
+
+	/*! \brief Here we generare the shift vectors
+	 *
+	 * \param domain box that describe the domain
+	 *
+	 */
+	void generateShiftVectors(const Box<dim,T> & domain)
+	{
+		shifts.resize(openfpm::math::pow(3,dim));
+
+		HyperCube<dim> hyp;
+
+		for (long int i = dim-1 ; i >= 0 ; i--)
+		{
+			std::vector<comb<dim>> cmbs = hyp.getCombinations_R(i);
+
+			for (size_t j = 0 ; j < cmbs.size() ; j++)
+			{
+				for (size_t k = 0 ; k < dim ; k++)
+				{
+					switch (cmbs[j][k])
+					{
+					case 1:
+						shifts.get(cmbs[j].lin()).template get<0>()[0] = -domain.getHigh(k);
+						break;
+					case 0:
+						shifts.get(cmbs[j].lin()).template get<0>()[0] = 0;
+						break;
+					case -1:
+						shifts.get(cmbs[j].lin()).template get<0>()[0] = domain.getHigh(k);
+						break;
+					}
+				}
+			}
+		}
+	}
 
 	/*! \brief Initialize the geo cell list structure
 	 *
@@ -79,25 +206,26 @@ protected:
 			// enlarge the sub-domain with the ghost
 			sub_with_ghost.enlarge(ghost);
 
-			// resize based on the number of adjacent processors
+			// resize based on the number of near processors
 			box_nn_processor_int.get(i).resize(box_nn_processor.get(i).size());
 
-			// For each processor adjacent to this sub-domain
+			// For each processor near to this sub-domain
 			for (size_t j = 0 ; j < box_nn_processor.get(i).size() ; j++)
 			{
-				// adjacent processor
+				// near processor
 				size_t p_id = box_nn_processor.get(i).get(j);
 
 				// used later
 				Box_dom<dim,T> & proc_int_box_g = proc_int_box.get(nn_p.ProctoID(p_id));
 
-				// get the set of sub-domains of the adjacent processor p_id
-				const openfpm::vector< ::Box<dim,T> > & nn_processor_subdomains_g = nn_p.getExternalAdjSubdomain(p_id).bx;
+				// get the set of sub-domains of the near processor p_id
+				const openfpm::vector< ::Box<dim,T> > & nn_processor_subdomains_g = nn_p.getNearSubdomains(p_id);
+				const openfpm::vector< comb<dim> > & nnpsg_pos = nn_p.getNearSubdomainsPos(p_id);
 
 				// used later
 				openfpm::vector< ::Box<dim,T> > & box_nn_processor_int_gg = box_nn_processor_int.get(i).get(j).bx;
 
-				// for each adjacent processor sub-domain intersect with the enlarged local sub-domain and store it
+				// for each near processor sub-domain intersect with the enlarged local sub-domain and store it
 				for (size_t b = 0 ; b < nn_processor_subdomains_g.size() ; b++)
 				{
 					::Box<dim,T> bi;
@@ -122,24 +250,17 @@ protected:
 						// They all store the same information but organized in different ways
 						// read the description of each for more information
 						//
+
 						vb_ext.add(pb);
 						box_nn_processor_int_gg.add(bi);
 						proc_int_box_g.ebx.add();
 						proc_int_box_g.ebx.last() = bi;
 						proc_int_box_g.ebx.last().sub = i;
 
-						// Search for the correct id
-						size_t k = 0;
-						size_t p_idp = nn_p.ProctoID(p_id);
-						for (k = 0 ; k < nn_p.getInternalAdjSubdomain(p_idp).size() ; k++)
-						{
-							if (nn_p.getInternalAdjSubdomain(p_idp).get(k) == i)
-								break;
-						}
-						if (k == nn_p.getInternalAdjSubdomain(p_idp).size())
-							std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " sub-domain not found\n";
+						// Search where the sub-domain i is in the sent list for processor p_id
+						size_t k = link_ebx_ibx(nn_p,p_id,i);
 
-						proc_int_box_g.ebx.last().id = (k * nn_processor_subdomains_g.size() + b) * v_cl.getProcessingUnits() + p_id;
+						proc_int_box_g.ebx.last().id = ebx_ibx_form(k,b,p_id,nnpsg_pos.get(b),nn_processor_subdomains_g.size(),v_cl);
 					}
 				}
 			}
@@ -178,15 +299,17 @@ protected:
 				size_t p_id = box_nn_processor.get(i).get(j);
 
 				// get the set of sub-domains of the contiguous processor p_id
-				const openfpm::vector< ::Box<dim,T> > & nn_p_box = nn_p.getExternalAdjSubdomain(p_id).bx;
+				const openfpm::vector< ::Box<dim,T> > & nn_p_box = nn_p.getNearSubdomains(p_id);
+
+				// get the sector position for each sub-domain in the list
+				const openfpm::vector< comb<dim> > nn_p_box_pos = nn_p.getNearSubdomainsPos(p_id);
 
 				// get the local processor id
-				size_t lc_proc = nn_p.getAdjacentProcessor(p_id);
+				size_t lc_proc = nn_p.getNearProcessor(p_id);
 
 				// For each near processor sub-domains enlarge and intersect with the local sub-domain and store the result
 				for (size_t k = 0 ; k < nn_p_box.size() ; k++)
 				{
-
 					// enlarge the near-processor sub-domain
 					::Box<dim,T> n_sub = nn_p_box.get(k);
 
@@ -209,6 +332,9 @@ protected:
 						// fill the local processor id
 						b_int.lc_proc = lc_proc;
 
+						// fill the shift id
+						b_int.shift_id = nn_p_box_pos.get(k).lin();
+
 						//
 						// Updating
 						//
@@ -226,24 +352,19 @@ protected:
 						vb_int.add(b_int);
 
 						// store the box in proc_int_box storing from which sub-domain they come from
-						Box_dom<dim,T> & pr_box_int = proc_int_box.get(nn_p.ProctoID(p_id));
 						Box_sub<dim,T> sb;
 						sb = b_int.box;
 						sb.sub = i;
 
-						// Search for the correct id
-						size_t s = 0;
 						size_t p_idp = nn_p.ProctoID(p_id);
-						for (s = 0 ; s < nn_p.getInternalAdjSubdomain(p_idp).size() ; s++)
-						{
-							if (nn_p.getInternalAdjSubdomain(p_idp).get(s) == i)
-								break;
-						}
-						if (s == nn_p.getInternalAdjSubdomain(p_idp).size())
-							std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " sub-domain not found\n";
 
-						sb.id = (k * nn_p.getInternalAdjSubdomain(p_idp).size() + s) * v_cl.getProcessingUnits() + v_cl.getProcessUnitID();
+						// Search where the sub-domain i is in the sent list for processor p_id
+						size_t s = link_ebx_ibx(nn_p,p_id,i);
 
+						// calculate the id of the internal box
+						sb.id = ebx_ibx_form(k,s,v_cl.getProcessUnitID(),nn_p_box_pos.get(k),nn_p.getSentSubdomains(p_idp).size(),v_cl);
+
+						Box_dom<dim,T> & pr_box_int = proc_int_box.get(nn_p.ProctoID(p_id));
 						pr_box_int.ibx.add(sb);
 
 						// update the geo_cell list
@@ -270,6 +391,57 @@ protected:
 	}
 
 public:
+
+	/*! It return the shift vector
+	 *
+	 * Consider a domain with some ghost, at the border of the domain the
+	 * ghost must be threated in a special way depending on the periodicity
+	 * of the boundary
+	 *
+		\verbatim
+
+															[1,1]
+			+---------+------------------------+---------+
+			| (1,-1)  |                        | (1,1)   |
+			|   |     |    (1,0) --> 7         |   |     |
+			|   v     |                        |   v     |
+			|   6     |                        |   8     |
+			+--------------------------------------------+
+			|         |                        |         |
+			|         |                        |         |
+			|         |                        |         |
+			| (-1,0)  |                        | (1,0)   |
+			|    |    |                        |   |     |
+			|    v    |      (0,0) --> 4       |   v     |
+			|    3    |                        |   5     |
+			|         |                        |         |
+		 B	|         |                        |     A   |
+		*	|         |                        |    *    |
+			|         |                        |         |
+			|         |                        |         |
+			|         |                        |         |
+			+--------------------------------------------+
+			| (-1,-1) |                        | (-1,1)  |
+			|    |    |   (-1,0) --> 1         |    |    |
+			|    v    |                        |    v    |
+			|    0    |                        |    2    |
+			+---------+------------------------+---------+
+
+
+		\endverbatim
+	 *
+	 *
+	 * if a particle is bound in (1,0) linearized to 5, before communicate this particle (A in figure)
+	 * must be shifted on -1.0 on x (B in figure)
+	 *
+	 * This function return the set of shift vectors that determine such shift, for example
+	 * in the example above the shift at position 5 will be (0,-1.0)
+	 *
+	 */
+	const openfpm::vector<Point<dim,T>> & getShiftVectors()
+	{
+		return shifts;
+	}
 
 	/*! \brief Get the number of Internal ghost boxes for one processor
 	 *
@@ -302,7 +474,7 @@ public:
 	 */
 	inline const ::Box<dim,T> & getProcessorIGhostBox(size_t id, size_t j) const
 	{
-		return proc_int_box.get(id).ibx.get(j);
+		return proc_int_box.get(id).ibx.get(j).bx;
 	}
 
 	/*! \brief Get the j External ghost box
@@ -314,7 +486,7 @@ public:
 	 */
 	inline const ::Box<dim,T> & getProcessorEGhostBox(size_t id, size_t j) const
 	{
-		return proc_int_box.get(id).ebx.get(j);
+		return proc_int_box.get(id).ebx.get(j).bx;
 	}
 
 	/*! \brief Get the j Internal ghost box id
@@ -451,12 +623,61 @@ public:
 		return geo_cell.getIterator(geo_cell.getCell(p));
 	}
 
-	openfpm::vector<size_t> ids;
+	/*! \brief Given a position it return if the position belong to any neighborhood processor ghost
+	 * (Internal ghost)
+	 *
+	 * if the particle come from an internal ghost from the periodicity of the domain, position must be shifted
+	 * this function return the id of the shift vector
+	 *
+	 * \see getShiftVector
+	 *
+	 * \tparam id type of id to get box_id processor_id lc_processor_id shift_id
+	 * \param p Particle position
+	 * \param opt intersection boxes of the same processor can overlap, so in general the function
+	 *        can produce more entry with the same processor, the UNIQUE option eliminate double entries
+	 *        (UNIQUE) is for particle data (MULTIPLE) is for grid data [default MULTIPLE]
+	 *
+	 * \param return the processor ids
+	 *
+	 */
+	template <typename id1, typename id2> inline const openfpm::vector<std::pair<size_t,size_t>> ghost_processorID_pair(Point<dim,T> & p, const int opt = MULTIPLE)
+	{
+		ids_p.clear();
+
+		// Check with geo-cell if a particle is inside one Cell containing boxes
+
+		auto cell_it = geo_cell.getIterator(geo_cell.getCell(p));
+
+		// For each element in the cell, check if the point is inside the box
+		// if it is, store the processor id
+		while (cell_it.isNext())
+		{
+			size_t bid = cell_it.get();
+
+			if (vb_int.get(bid).box.isInside(p) == true)
+			{
+				ids_p.add(std::pair<size_t,size_t>(id1::id(vb_int.get(bid),bid),id2::id(vb_int.get(bid),bid)));
+			}
+
+			++cell_it;
+		}
+
+		// Make the id unique
+		if (opt == UNIQUE)
+			ids_p.unique();
+
+		return ids_p;
+	}
 
 	/*! \brief Given a position it return if the position belong to any neighborhood processor ghost
 	 * (Internal ghost)
 	 *
-	 * \tparam id type of if to get box_id processor_id lc_processor_id
+	 * if the particle come from an internal ghost from the periodicity of the domain, position must be shifted
+	 * this function return the id of the shift vector
+	 *
+	 * \see getShiftVector
+	 *
+	 * \tparam id type of id to get box_id processor_id lc_processor_id shift_id
 	 * \param p Particle position
 	 * \param opt intersection boxes of the same processor can overlap, so in general the function
 	 *        can produce more entry with the same processor, the UNIQUE option eliminate double entries
@@ -492,6 +713,44 @@ public:
 			ids.unique();
 
 		return ids;
+	}
+
+	/*! \brief Given a position it return if the position belong to any neighborhood processor ghost
+	 * (Internal ghost)
+	 *
+	 * \tparam id type of if to get box_id processor_id lc_processor_id
+	 * \param p Particle position
+	 *
+	 * \param return the processor ids
+	 *
+	 */
+	template<typename id1, typename id2, typename Mem> inline const openfpm::vector<std::pair<size_t,size_t>> ghost_processorID_pair(const encapc<1,Point<dim,T>,Mem> & p, const int opt = MULTIPLE)
+	{
+		ids_p.clear();
+
+		// Check with geo-cell if a particle is inside one Cell containing boxes
+
+		auto cell_it = geo_cell.getIterator(geo_cell.getCell(p));
+
+		// For each element in the cell, check if the point is inside the box
+		// if it is, store the processor id
+		while (cell_it.isNext())
+		{
+			size_t bid = cell_it.get();
+
+			if (vb_int.get(bid).box.isInside(p) == true)
+			{
+				ids_p.add(std::pair<size_t,size_t>(id1::id(vb_int.get(bid),bid),id2::id(vb_int.get(bid),bid)));
+			}
+
+			++cell_it;
+		}
+
+		// Make the id unique
+		if (opt == UNIQUE)
+			ids_p.unique();
+
+		return ids_p;
 	}
 
 	/*! \brief Given a position it return if the position belong to any neighborhood processor ghost

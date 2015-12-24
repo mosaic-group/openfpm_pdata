@@ -93,10 +93,11 @@ public:
 	 *
 	 * \param np number of elements
 	 * \param box domain where the vector of elements live
+	 * \param boundary conditions
 	 * \param g Ghost margins
 	 *
 	 */
-	vector_dist(size_t np, Box<dim,St> box, Ghost<dim,St> g = Ghost<dim,St>())
+	vector_dist(size_t np, Box<dim,St> box, const size_t (& bc)[dim] ,const Ghost<dim,St> & g)
 	:dec(*global_v_cluster),v_cl(*global_v_cluster)
 	{
 #ifdef SE_CLASS2
@@ -135,13 +136,11 @@ public:
 		for (size_t i = 0 ; i < dim ; i++)
 		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
 
-		// boundary conditions
-		size_t bc[dim];
-		for (size_t i = 0 ; i < dim ; i++)
-			bc[i] = NON_PERIODIC;
-
 		// Create the sub-domains
 		dec.setParameters(div,box,bc,g);
+
+		// and create the ghost boxes
+		dec.calculateGhostBoxes();
 
 		Point<dim,St> p;
 		p.zero();
@@ -416,8 +415,8 @@ public:
 		v_prp.get(0).remove(opart,o_p_id);
 	}
 
-	//! For each adjacent processor outgoing particles-ids
-	openfpm::vector<openfpm::vector<size_t>> opart;
+	//! For each near processor, outgoing particle id and shift vector
+	openfpm::vector<openfpm::vector<std::pair<size_t,size_t>>> opart;
 
 	//! For each adjacent processor the size of the ghost sending buffer
 	openfpm::vector<size_t> ghost_prc_sz;
@@ -452,22 +451,22 @@ public:
 		// Label the internal (assigned) particles
 		auto it = v_pos.get(INTERNAL).getIterator();
 
-		// Label all the particles with the processor id, where they should go
+		// Label all the particles with the processor id, where they should go and also its shift vector
 		while (it.isNext())
 		{
 			auto key = it.get();
 
-			const openfpm::vector<size_t> & vp_id = dec.template ghost_processorID<typename Decomposition::lc_processor_id>(v_pos.get(INTERNAL).get(key),UNIQUE);
+			const openfpm::vector<std::pair<size_t,size_t>> & vp_id = dec.template ghost_processorID_pair<typename Decomposition::lc_processor_id, typename Decomposition::shift_id>(v_pos.get(INTERNAL).get(key),UNIQUE);
 
 			for (size_t i = 0 ; i < vp_id.size() ; i++)
 			{
 				// processor id
-				size_t p_id = vp_id.get(i);
+				size_t p_id = vp_id.get(i).first;
 
 				// add particle to communicate
 				ghost_prc_sz.get(p_id)++;
 
-				opart.get(p_id).add(key);
+				opart.get(p_id).add(std::pair<size_t,size_t>(key,vp_id.get(i).second));
 			}
 
 			++it;
@@ -530,7 +529,7 @@ public:
 				typedef encapc<1,prp_object,typename openfpm::vector<prp_object>::memory_conf> encap_dst;
 
 				// Copy only the selected properties
-				object_si_d<encap_src,encap_dst,OBJ_ENCAP,prp...>(v_prp.get(INTERNAL).get(opart.get(i).get(j)),g_send_prp.get(i).get(j));
+				object_si_d<encap_src,encap_dst,OBJ_ENCAP,prp...>(v_prp.get(INTERNAL).get(opart.get(i).get(j).first),g_send_prp.get(i).get(j));
 			}
 		}
 
@@ -542,6 +541,9 @@ public:
 		openfpm::vector<send_pos_vector> g_pos_send;
 		if (opt != NO_POSITION)
 		{
+			// get the shift vectors
+			const openfpm::vector<Point<dim,St>> & shifts = dec.getShiftVectors();
+
 			// create a number of send buffers equal to the near processors
 			g_pos_send.resize(ghost_prc_sz.size());
 			for (size_t i = 0 ; i < g_pos_send.size() ; i++)
@@ -558,7 +560,9 @@ public:
 			{
 				for (size_t j = 0 ; j < opart.get(i).size() ; j++)
 				{
-					g_pos_send.get(i).set(j,v_pos.get(INTERNAL).get(opart.get(i).get(j)));
+					Point<dim,St> s = v_pos.get(INTERNAL).get(opart.get(i).get(j).first);
+					s += shifts.get(opart.get(i).get(j).second);
+					g_pos_send.get(i).set(j,s);
 				}
 			}
 		}
