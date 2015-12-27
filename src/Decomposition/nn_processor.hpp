@@ -66,7 +66,6 @@ class nn_prcs
 		// cast the pointer
 		nn_prcs<dim,T> * cd = static_cast< nn_prcs<dim,T> *>(ptr);
 
-		// Resize the memory
 		cd->nn_processor_subdomains[i].bx.resize(msg_i / sizeof(::Box<dim,T>) );
 
 		// Return the receive pointer
@@ -260,7 +259,7 @@ public:
 	{
 		for (size_t p = 0 ; p < getNNProcessors() ; p++)
 		{
-			auto list_p_box = getNearSubdomains(IDtoProc(p));
+			const openfpm::vector< ::Box<dim,T> > & list_p_box = getNearSubdomains(IDtoProc(p));
 
 			// Create the smallest box contained in all sub-domain
 			for (size_t b = 0 ; b < list_p_box.size() ; b++)
@@ -328,6 +327,8 @@ public:
 			}
 		}
 
+		nn_processor_subdomains.reserve(nn_processors.size());
+
 		// Get the sub-domains of the near processors
 		v_cl.sendrecvMultipleMessagesNBX(nn_processors,boxes,nn_prcs<dim,T>::message_alloc, this ,NEED_ALL_SIZE);
 
@@ -386,6 +387,7 @@ public:
 			std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " error this process rank is not adjacent to the local processor";
 		}
 #endif
+
 		return key->second.bx;
 	}
 

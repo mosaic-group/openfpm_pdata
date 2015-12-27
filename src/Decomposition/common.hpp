@@ -191,7 +191,8 @@ struct N_box
 	openfpm::vector<comb<dim>> pos;
 
 	//! Default constructor
-	N_box() {};
+	N_box()
+	{};
 
 	//! Copy constructor
 	N_box(const N_box<dim,T> & b)
@@ -213,8 +214,8 @@ struct N_box
 	N_box<dim,T> & operator=(const N_box<dim,T> & ele)
 	{
 		id = ele.id;
-
 		bx = ele.bx;
+		pos = ele.pos;
 
 		return * this;
 	}
@@ -227,8 +228,8 @@ struct N_box
 	N_box<dim,T> & operator=(N_box<dim,T> && ele)
 	{
 		id = ele.id;
-
 		bx.swap(ele.bx);
+		pos = ele.pos;
 
 		return * this;
 	}
@@ -241,6 +242,9 @@ struct N_box
 	bool operator==(const N_box<dim,T> & ele) const
 	{
 		if (id != ele.id)
+			return false;
+
+		if (pos != ele.pos)
 			return false;
 
 		return bx == ele.bx;

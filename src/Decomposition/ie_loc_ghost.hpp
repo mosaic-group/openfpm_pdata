@@ -282,6 +282,16 @@ public:
 		return *this;
 	}
 
+	/*! \brief Get the number of local sub-domains
+	 *
+	 * \return the number of local sub-domains
+	 *
+	 */
+	inline size_t getNLocalSub()
+	{
+		return loc_ghost_box.size();
+	}
+
 	/*! \brief Get the number of external local ghost box for each sub-domain
 	 *
 	 * \param id sub-domain id
@@ -335,6 +345,61 @@ public:
 	inline const ::Box<dim,T> & getLocalIGhostBox(size_t i, size_t j) const
 	{
 		return loc_ghost_box.get(i).ibx.get(j).bx;
+	}
+
+	/*! \brief Get the j internal local ghost box boundary position for the i sub-domain of the local processor
+	 *
+	 * \note For the sub-domain i intersected with the sub-domain j enlarged, the associated
+	 *       external ghost box is located in getLocalIGhostBox(j,k) with
+	 *       getLocalIGhostSub(j,k) == i
+	 *
+	 * To get k use getLocalIGhostE
+	 *
+	 * \see getLocalIGhostE
+	 *
+	 * Some of the intersection boxes has special position, because they are at the boundary, this function
+	 * return their position at the border
+	 *
+		\verbatim
+
+															[1,1]
+			+---------+------------------------+---------+
+			| (1,-1)  |                        | (1,1)   |
+			|   |     |    (1,0) --> 7         |   |     |
+			|   v     |                        |   v     |
+			|   6     |                        |   8     |
+			+--------------------------------------------+
+			|         |                        |         |
+			|         |                        |         |
+			|         |                        |         |
+			| (-1,0)  |                        | (1,0)   |
+			|    |    |                        |   |     |
+			|    v    |      (0,0) --> 4       |   v     |
+			|    3    |                        |   5     |
+			|         |                        |         |
+		 	|         |                        |         |
+			|         |                        |         |
+			|         |                        |         |
+			|         |                        |         |
+			|         |                        |         |
+			+--------------------------------------------+
+			| (-1,-1) |                        | (-1,1)  |
+			|    |    |   (-1,0) --> 1         |    |    |
+			|    v    |                        |    v    |
+			|    0    |                        |    2    |
+			+---------+------------------------+---------+
+
+
+		\endverbatim
+	 *
+	 * \param i sub-domain
+	 * \param j box
+	 * \return the box
+	 *
+	 */
+	inline const comb<dim> & getLocalIGhostPos(size_t i, size_t j) const
+	{
+		return loc_ghost_box.get(i).ibx.get(j).cmb;
 	}
 
 	/*! \brief Get the j external local ghost box for the local processor

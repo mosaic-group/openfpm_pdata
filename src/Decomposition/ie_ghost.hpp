@@ -156,13 +156,13 @@ protected:
 					switch (cmbs[j][k])
 					{
 					case 1:
-						shifts.get(cmbs[j].lin()).template get<0>()[0] = -domain.getHigh(k);
+						shifts.get(cmbs[j].lin()).template get<0>()[k] = -domain.getHigh(k);
 						break;
 					case 0:
-						shifts.get(cmbs[j].lin()).template get<0>()[0] = 0;
+						shifts.get(cmbs[j].lin()).template get<0>()[k] = 0;
 						break;
 					case -1:
-						shifts.get(cmbs[j].lin()).template get<0>()[0] = domain.getHigh(k);
+						shifts.get(cmbs[j].lin()).template get<0>()[k] = domain.getHigh(k);
 						break;
 					}
 				}
@@ -395,7 +395,7 @@ public:
 	/*! It return the shift vector
 	 *
 	 * Consider a domain with some ghost, at the border of the domain the
-	 * ghost must be threated in a special way depending on the periodicity
+	 * ghost must be treated in a special way, depending on the periodicity
 	 * of the boundary
 	 *
 		\verbatim
@@ -637,7 +637,7 @@ public:
 	 *        can produce more entry with the same processor, the UNIQUE option eliminate double entries
 	 *        (UNIQUE) is for particle data (MULTIPLE) is for grid data [default MULTIPLE]
 	 *
-	 * \param return the processor ids
+	 * \param return the processor ids (not the rank, the id in the near processor list)
 	 *
 	 */
 	template <typename id1, typename id2> inline const openfpm::vector<std::pair<size_t,size_t>> ghost_processorID_pair(Point<dim,T> & p, const int opt = MULTIPLE)

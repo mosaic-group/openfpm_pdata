@@ -489,6 +489,48 @@ public:
 		}
 	};
 
+	/*! \brief Apply boundary condition to the point
+	 *
+	 * \param p Point to apply the boundary condition
+	 *
+	 */
+	void applyPointBC(float (& pt)[dim]) const
+	{
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (bc[i] == PERIODIC)
+				pt[i] = openfpm::math::periodic_l(pt[i],domain.getHigh(i),domain.getLow(i));
+		}
+	}
+
+	/*! \brief Apply boundary condition to the point
+	 *
+	 * \param p Point to apply the boundary condition
+	 *
+	 */
+	void applyPointBC(Point<dim,T> & pt) const
+	{
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (bc[i] == PERIODIC)
+				pt.get(i) = openfpm::math::periodic_l(pt.get(i),domain.getHigh(i),domain.getLow(i));
+		}
+	}
+
+	/*! \brief Apply boundary condition to the point
+	 *
+	 * \param encapsulated object
+	 *
+	 */
+	template<typename Mem> void applyPointBC(encapc<1,Point<dim,T>,Mem> && pt) const
+	{
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (bc[i] == PERIODIC)
+				pt.template get<0>()[i] = openfpm::math::periodic_l(pt.template get<0>()[i],domain.getHigh(i),domain.getLow(i));
+		}
+	}
+
 	/*! It calculate the internal ghost boxes
 	 *
 	 * Example: Processor 10 calculate
@@ -789,6 +831,51 @@ p1[0]<-----+         +----> p2[0]
 		return fine_s.get(cd.getCell(p));
 	}
 
+	/*! \brief Given a point return in which processor the particle should go
+	 *
+	 * Boundary conditions are considered
+	 *
+	 * \return processorID
+	 *
+	 */
+	template<typename Mem> size_t inline processorIDBC(encapc<1, Point<dim,T>, Mem> p)
+	{
+		Point<dim,T> pt = p;
+		applyPointBC(pt);
+
+		return fine_s.get(cd.getCell(pt));
+	}
+
+	/*! \brief Given a point return in which processor the particle should go
+	 *
+	 * Boundary conditions are considered
+	 *
+	 * \return processorID
+	 *
+	 */
+	size_t inline processorIDBC(const Point<dim,T> &p) const
+	{
+		Point<dim,T> pt = p;
+		applyPointBC(pt);
+
+		return fine_s.get(cd.getCell(p));
+	}
+
+	/*! \brief Given a point return in which processor the particle should go
+	 *
+	 * Boundary consition are considered
+	 *
+	 * \return processorID
+	 *
+	 */
+	size_t inline processorIDBC(const T (&p)[dim]) const
+	{
+		Point<dim,T> pt = p;
+		applyPointBC(pt);
+
+		return fine_s.get(cd.getCell(p));
+	}
+
 	/*! \brief Get the smallest subdivision of the domain on each direction
 	 *
 	 * \return a box p1 is set to zero
@@ -879,7 +966,7 @@ p1[0]<-----+         +----> p2[0]
 	 * \return The physical domain
 	 *
 	 */
-	Domain<dim,T> & getDomain()
+	const Domain<dim,T> & getDomain()
 	{
 		return domain;
 	}

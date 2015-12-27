@@ -11,6 +11,82 @@
 #include <random>
 #include "Vector/vector_dist.hpp"
 
+/*! \brief Count the total number of particles
+ *
+ * \param vd distributed vector
+ * \param bc boundary conditions
+ *
+ */
+template<unsigned int dim> size_t total_n_part_lc(vector_dist<dim,float, Point_test<float>, CartDecomposition<dim,float> > & vd, size_t (& bc)[dim])
+{
+	typedef Point<dim,float> s;
+
+	Vcluster & v_cl = vd.getVC();
+	auto it2 = vd.getDomainIterator();
+	const CartDecomposition<3,float> & ct = vd.getDecomposition();
+
+	size_t cnt = 0;
+	while (it2.isNext())
+	{
+		auto key = it2.get();
+
+		// Check if local
+		BOOST_REQUIRE_EQUAL(ct.isLocal(vd.template getPos<s::x>(key)),true);
+
+		cnt++;
+
+		++it2;
+	}
+
+	//
+	v_cl.sum(cnt);
+	v_cl.execute();
+
+	return cnt;
+}
+
+/*! \brief Count local and non local
+ *
+ * \param vd distributed vector
+ * \param it iterator
+ * \param bc boundary conditions
+ * \param box domain box
+ * \param dom_ext domain + ghost box
+ * \param l_cnt local particles counter
+ * \param nl_cnt non local particles counter
+ * \param n_out out of domain + ghost particles counter
+ *
+ */
+template<unsigned int dim> inline void count_local_n_local(vector_dist<dim,float, Point_test<float>, CartDecomposition<dim,float> > & vd, vector_dist_iterator & it, size_t (& bc)[dim] , Box<dim,float> & box, Box<dim,float> & dom_ext, size_t & l_cnt, size_t & nl_cnt, size_t & n_out)
+{
+	typedef Point<dim,float> s;
+	const CartDecomposition<dim,float> & ct = vd.getDecomposition();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+		// Check if it is in the domain
+		if (box.isInsideNP(vd.template getPos<s::x>(key)) == true)
+		{
+			// Check if local
+			if (ct.isLocalBC(vd.template getPos<s::x>(key),bc) == true)
+				l_cnt++;
+			else
+				nl_cnt++;
+		}
+		else
+		{
+			nl_cnt++;
+		}
+
+		// Check that all particles are inside the Domain + Ghost part
+		if (dom_ext.isInside(vd.template getPos<s::x>(key)) == false)
+				n_out++;
+
+		++it;
+	}
+}
+
 BOOST_AUTO_TEST_SUITE( vector_dist_test )
 
 BOOST_AUTO_TEST_CASE( vector_dist_ghost )
@@ -101,11 +177,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	// redistribute the particles according to the decomposition
 	vd.map();
 
-	v_it = vd.getIterator();
+	auto v_it2 = vd.getIterator();
 
-	while (v_it.isNext())
+	while (v_it2.isNext())
 	{
-		auto key = v_it.get();
+		auto key = v_it2.get();
 
 		// fill with the processor ID where these particle live
 		vd.template getProp<p::s>(key) = vd.getPos<s::x>(key)[0] + vd.getPos<s::x>(key)[1] * 16;
@@ -113,7 +189,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 		vd.template getProp<p::v>(key)[1] = v_cl.getProcessUnitID();
 		vd.template getProp<p::v>(key)[2] = v_cl.getProcessUnitID();
 
-		++v_it;
+		++v_it2;
 	}
 
 	// do a ghost get
@@ -144,10 +220,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 		size_t b = 0;
 		size_t lb = 0;
 
-		// check if the received data is in one of the ghost boxes
+		// check if the received data are in one of the ghost boxes
 		for ( ; b < dec.getNEGhostBox() ; b++)
 		{
-			if (dec.getEGhostBox(b).isInside(vd.getPos<s::x>(key)) == true)
+			if (dec.getEGhostBox(b).isInside(vd.getPos<s::x>(key)) == true )
 			{
 				is_in = true;
 
@@ -174,7 +250,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 		// Calculate how many particle should be in the box
 		size_t n_point = cd.getGridPoints(dec.getEGhostBox(i)).getVolumeKey();
 
-		BOOST_REQUIRE_EQUAL(n_point,vb.get(i));
+		if (n_point != vb.get(i))
+		{
+			std::cout << n_point << "  " << dec.getEGhostBoxProcessor(i) << "  " << v_cl.getProcessUnitID() << dec.getEGhostBox(i).toString() << "\n";
+		}
+		//BOOST_REQUIRE_EQUAL(n_point,vb.get(i));
 	}
 }
 
@@ -250,18 +330,18 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 		// Check if we have all the local particles
 		size_t cnt = 0;
 		const CartDecomposition<2,float> & ct = vd.getDecomposition();
-		it = vd.getIterator();
+		auto it2 = vd.getIterator();
 
-		while (it.isNext())
+		while (it2.isNext())
 		{
-			auto key = it.get();
+			auto key = it2.get();
 
 			// Check if local
 			BOOST_REQUIRE_EQUAL(ct.isLocal(vd.template getPos<s::x>(key)),true);
 
 			cnt++;
 
-			++it;
+			++it2;
 		}
 
 		//
@@ -324,18 +404,18 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 		// Check if we have all the local particles
 		size_t cnt = 0;
 		const CartDecomposition<3,float> & ct = vd.getDecomposition();
-		it = vd.getIterator();
+		auto it2 = vd.getIterator();
 
-		while (it.isNext())
+		while (it2.isNext())
 		{
-			auto key = it.get();
+			auto key = it2.get();
 
 			// Check if local
 			BOOST_REQUIRE_EQUAL(ct.isLocal(vd.template getPos<s::x>(key)),true);
 
 			cnt++;
 
-			++it;
+			++it2;
 		}
 
 		//
@@ -379,6 +459,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 		// ghost
 		Ghost<2,float> ghost(0.05);
 
+		// ghost2 (a little bigger because of round off error)
+		Ghost<2,float> ghost2(0.050001);
+
+		// Distributed vector
 		vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(k,box,bc,ghost);
 
 		auto it = vd.getIterator();
@@ -395,47 +479,54 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 
 		vd.map();
 
-		// sync the ghost
+		// sync the ghost, only the property zero
 		vd.ghost_get<0>();
 
 		//! [Create a vector of random elements on each processor 2D]
 
-		// Check if we have all the local particles
+		// Domain + ghost box
+		Box<2,float> dom_ext = box;
+		dom_ext.enlarge(ghost2);
+
+		// get the decomposition
+		const CartDecomposition<2,float> & ct = vd.getDecomposition();
+
+		// Iterate on all particles domain + ghost
 		size_t l_cnt = 0;
 		size_t nl_cnt = 0;
 		size_t n_out = 0;
-		const CartDecomposition<2,float> & ct = vd.getDecomposition();
-		it = vd.getIterator();
 
-		Box<2,float> dom_ext = box;
-		dom_ext.enlarge(ghost);
 
-		while (it.isNext())
-		{
-			auto key = it.get();
+		auto it2 = vd.getIterator();
+		count_local_n_local(vd,it2,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
 
-			// Check if local
-			if (ct.isLocalBC(vd.template getPos<s::x>(key),bc) == true)
-				l_cnt++;
-			else
-				nl_cnt++;
+		// No particles should be out of domain + ghost
+		BOOST_REQUIRE_EQUAL(n_out,0ul);
 
-			// Check that all particles are inside the Domain + Ghost part
-			if (dom_ext.isInside(vd.template getPos<s::x>(key)) == false)
-					n_out++;
-
-			++it;
-		}
-
-		BOOST_REQUIRE_EQUAL(n_out,0);
-
+		// Ghost must populated because we synchronized them
 		if (k > 524288)
 			BOOST_REQUIRE(nl_cnt != 0);
 
-		//
+		// Sum all the particles inside the domain
 		v_cl.sum(l_cnt);
 		v_cl.execute();
+
+		// count that they are equal to the initial total number
 		BOOST_REQUIRE_EQUAL((long int)l_cnt,k);
+
+		l_cnt = 0;
+		nl_cnt = 0;
+
+		// Iterate only on the ghost particles
+		auto itg = vd.getGhostIterator();
+		count_local_n_local(vd,itg,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
+
+		// No particle on the ghost must be inside the domain
+		BOOST_REQUIRE_EQUAL(l_cnt,0ul);
+
+		// Ghost must be populated
+		if (k > 524288)
+			BOOST_REQUIRE(nl_cnt != 0);
 	}
 }
 
@@ -473,6 +564,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 		// ghost
 		Ghost<3,float> ghost(0.05);
 
+		// ghost2 (a little bigger because of round off error)
+		Ghost<3,float> ghost2(0.05001);
+
+		// Distributed vector
 		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box,bc,ghost);
 
 		auto it = vd.getIterator();
@@ -495,44 +590,137 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 
 		//! [Create a vector of random elements on each processor 3D]
 
-		// Check if we have all the local particles
+		// Domain + ghost
+		Box<3,float> dom_ext = box;
+		dom_ext.enlarge(ghost2);
+
+		// Get the decomposition
+		const CartDecomposition<3,float> & ct = vd.getDecomposition();
+
+		// Iterate on all particles domain + ghost
 		size_t l_cnt = 0;
 		size_t nl_cnt = 0;
 		size_t n_out = 0;
-		const CartDecomposition<3,float> & ct = vd.getDecomposition();
-		it = vd.getIterator();
 
-		Box<3,float> dom_ext = box;
-		dom_ext.enlarge(ghost);
+		auto it2 = vd.getIterator();
+		count_local_n_local(vd,it2,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
+
+		// No particles should be out of domain + ghost
+		BOOST_REQUIRE_EQUAL(n_out,0ul);
+
+		// Ghost must populated because we synchronized them
+		if (k > 524288)
+			BOOST_REQUIRE(nl_cnt != 0);
+
+		// Sum all the particles inside the domain
+		v_cl.sum(l_cnt);
+		v_cl.execute();
+		BOOST_REQUIRE_EQUAL(l_cnt,(size_t)k);
+
+		l_cnt = 0;
+		nl_cnt = 0;
+
+		// Iterate only on the ghost particles
+		auto itg = vd.getGhostIterator();
+		count_local_n_local(vd,itg,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
+
+		// No particle on the ghost must be inside the domain
+		BOOST_REQUIRE_EQUAL(l_cnt,0ul);
+
+		// Ghost must be populated
+		if (k > 524288)
+			BOOST_REQUIRE(nl_cnt != 0);
+	}
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
+{
+	typedef Point<3,float> s;
+
+	Vcluster & v_cl = *global_v_cluster;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+    long int k = 65536 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 30;
+	big_step = (big_step == 0)?1:big_step;
+
+	print_test_v( "Testing 3D random walk vector k<=",k);
+
+	// 3D test
+//	for ( ; k >= 2 ; k-= decrement(k,big_step) )
+//	{
+	while (1)
+	{
+
+    	k = 32;
+
+		BOOST_TEST_CHECKPOINT( "Testing 3D random walk vector k=" << k );
+
+		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+		// Boundary conditions
+		size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+		// ghost
+		Ghost<3,float> ghost(0.05);
+
+		// Distributed vector
+		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box,bc,ghost);
+
+		// Get the decomposition
+		const CartDecomposition<3,float> & ct = vd.getDecomposition();
+
+		auto it = vd.getIterator();
 
 		while (it.isNext())
 		{
 			auto key = it.get();
 
-			// Check if local
-			if (ct.isLocalBC(vd.template getPos<s::x>(key),bc) == true)
-				l_cnt++;
-			else
-				nl_cnt++;
-
-			// Check that all particles are inside the Domain + Ghost part
-			if (dom_ext.isInside(vd.template getPos<s::x>(key)) == false)
-					n_out++;
-
+			vd.template getPos<s::x>(key)[0] = ud(eg);
+			vd.template getPos<s::x>(key)[1] = ud(eg);
+			vd.template getPos<s::x>(key)[2] = ud(eg);
 
 			++it;
 		}
 
-		BOOST_REQUIRE_EQUAL(n_out,0);
+		vd.map();
 
-		if (k > 524288)
-			BOOST_REQUIRE(nl_cnt != 0);
+		// 10 step random walk
 
-		//
-		v_cl.sum(l_cnt);
-		v_cl.execute();
-		BOOST_REQUIRE_EQUAL(l_cnt,(size_t)k);
+		for (size_t j = 0 ; j < 10 ; j++)
+		{
+			auto it = vd.getDomainIterator();
+
+			while (it.isNext())
+			{
+				auto key = it.get();
+
+				vd.template getPos<s::x>(key)[0] += 0.02 * ud(eg);
+				vd.template getPos<s::x>(key)[1] += 0.02 * ud(eg);
+				vd.template getPos<s::x>(key)[2] += 0.02 * ud(eg);
+
+				ct.applyPointBC(vd.template getPos<s::x>(key));
+
+				++it;
+			}
+
+			vd.map();
+
+			vd.ghost_get<0,4>();
+
+			// Count the local particles and check that the total number is consistent
+			size_t cnt = total_n_part_lc(vd,bc);
+
+			BOOST_REQUIRE_EQUAL((size_t)k,cnt);
+		}
 	}
+//	}
 }
 
 BOOST_AUTO_TEST_SUITE_END()
