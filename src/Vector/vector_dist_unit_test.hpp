@@ -456,11 +456,14 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 		// Boundary conditions
 		size_t bc[2]={PERIODIC,PERIODIC};
 
+		// factor
+		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+
 		// ghost
-		Ghost<2,float> ghost(0.05);
+		Ghost<2,float> ghost(0.01 / factor);
 
 		// ghost2 (a little bigger because of round off error)
-		Ghost<2,float> ghost2(0.050001);
+		Ghost<2,float> ghost2(0.05001 / factor);
 
 		// Distributed vector
 		vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(k,box,bc,ghost);
@@ -561,11 +564,14 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 		// Boundary conditions
 		size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
+		// factor
+		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+
 		// ghost
-		Ghost<3,float> ghost(0.05);
+		Ghost<3,float> ghost(0.05 / factor);
 
 		// ghost2 (a little bigger because of round off error)
-		Ghost<3,float> ghost2(0.05001);
+		Ghost<3,float> ghost2(0.05001 / factor);
 
 		// Distributed vector
 		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box,bc,ghost);
@@ -662,8 +668,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 		// Boundary conditions
 		size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
+		// factor
+		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+
 		// ghost
-		Ghost<3,float> ghost(0.05);
+		Ghost<3,float> ghost(0.05 / factor);
 
 		// Distributed vector
 		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box,bc,ghost);
@@ -724,8 +733,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map )
 	// Boundary conditions
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
+	// factor
+	float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+
 	// ghost
-	Ghost<3,float> ghost(0.05);
+	Ghost<3,float> ghost(0.05 / factor);
 
 	// Distributed vector
 	vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(1,box,bc,ghost);
@@ -773,8 +785,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_not_periodic_map )
 	// Boundary conditions
 	size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 
+	// factor
+	float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+
 	// ghost
-	Ghost<3,float> ghost(0.05);
+	Ghost<3,float> ghost(0.05 / factor);
 
 	// Distributed vector
 	vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(1,box,bc,ghost);
