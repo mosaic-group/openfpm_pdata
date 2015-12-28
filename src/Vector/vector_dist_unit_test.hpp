@@ -653,13 +653,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 	print_test_v( "Testing 3D random walk vector k<=",k);
 
 	// 3D test
-//	for ( ; k >= 2 ; k-= decrement(k,big_step) )
-//	{
-	while (1)
+	for ( ; k >= 2 ; k-= decrement(k,big_step) )
 	{
-
-    	k = 32;
-
 		BOOST_TEST_CHECKPOINT( "Testing 3D random walk vector k=" << k );
 
 		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
@@ -720,7 +715,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 			BOOST_REQUIRE_EQUAL((size_t)k,cnt);
 		}
 	}
-//	}
 }
 
 BOOST_AUTO_TEST_SUITE_END()
