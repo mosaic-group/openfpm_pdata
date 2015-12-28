@@ -655,6 +655,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
     long int k = 65536 * v_cl.getProcessingUnits();
+	
+	size_t nsz[] = {k,32,4};
 
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
@@ -662,8 +664,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 	print_test_v( "Testing 3D random walk vector k<=",k);
 
 	// 3D test
-	for ( ; k >= 2 ; k-= decrement(k,big_step) )
+	for (size_t i = 0 ; i < 3 ; i++ )
 	{
+		k = nsz[i];
+
 		BOOST_TEST_CHECKPOINT( "Testing 3D random walk vector k=" << k );
 
 		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
