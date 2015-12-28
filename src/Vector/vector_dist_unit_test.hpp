@@ -657,15 +657,12 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 	size_t nsz[] = {0,32,4};
 	nsz[0] = 65536 * v_cl.getProcessingUnits();
 
-	long int big_step = k / 4;
-	big_step = (big_step == 0)?1:big_step;
-
-	print_test_v( "Testing 3D random walk vector k<=",k);
+	print_test_v( "Testing 3D random walk vector k<=",nsz[0]);
 
 	// 3D test
 	for (size_t i = 0 ; i < 3 ; i++ )
 	{
-		k = nsz[i];
+		size_t k = nsz[i];
 
 		BOOST_TEST_CHECKPOINT( "Testing 3D random walk vector k=" << k );
 
