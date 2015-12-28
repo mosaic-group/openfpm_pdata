@@ -205,7 +205,7 @@ BOOST_AUTO_TEST_CASE( nn_processor_box_periodic_test)
 		}
 	}
 
-	for (size_t i = 0; i < dim-1; i++)
+	for (size_t i = 0; i < dim; i++)
 	{
 		nnp_np.add(i+1);
 	}
@@ -218,7 +218,7 @@ BOOST_AUTO_TEST_CASE( nn_processor_box_periodic_test)
 
 //	nnp.write("nnp_output_after");
 
-	BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(nnp.IDtoProc(2)).size(),6ul);
+	BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(nnp.IDtoProc(2)).size(),12ul);
 	BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(nnp.IDtoProc(0)).size(),8ul*8ul);
 	BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(nnp.IDtoProc(1)).size(),12ul*4ul);
 }
