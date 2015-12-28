@@ -178,9 +178,6 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 	bool val = dec.check_consistency();
 	BOOST_REQUIRE_EQUAL(val,true);
 
-	// write the decomposition
-	dec.write("test_out");
-
 	// We duplicate the decomposition
 	CartDecomposition<3,float> dec2 = dec.duplicate();
 	dec2.check_consistency();
