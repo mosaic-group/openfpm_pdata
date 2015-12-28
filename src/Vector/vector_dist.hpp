@@ -585,7 +585,7 @@ public:
 			auto key = it.get();
 
 			// Apply the boundary conditions
-//			dec.applyPointBC(v_pos.get(key));
+			dec.applyPointBC(v_pos.get(key));
 
 			size_t p_id = dec.processorIDBC(v_pos.get(key));
 

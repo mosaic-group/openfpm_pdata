@@ -700,8 +700,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 				vd.template getPos<s::x>(key)[1] += 0.02 * ud(eg);
 				vd.template getPos<s::x>(key)[2] += 0.02 * ud(eg);
 
-				ct.applyPointBC(vd.template getPos<s::x>(key));
-
 				++it;
 			}
 
@@ -714,6 +712,104 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 
 			BOOST_REQUIRE_EQUAL((size_t)k,cnt);
 		}
+	}
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_periodic_map )
+{
+	typedef Point<3,float> s;
+
+	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	// ghost
+	Ghost<3,float> ghost(0.05);
+
+	// Distributed vector
+	vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(1,box,bc,ghost);
+
+	// put particles al 1.0, check that they go to 0.0
+
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.template getPos<s::x>(key)[0] = 1.0;
+		vd.template getPos<s::x>(key)[1] = 1.0;
+		vd.template getPos<s::x>(key)[2] = 1.0;
+
+		++it;
+	}
+
+	vd.map();
+
+	auto it2 = vd.getIterator();
+
+	while (it2.isNext())
+	{
+		auto key = it2.get();
+
+		float f = vd.template getPos<s::x>(key)[0];
+		BOOST_REQUIRE_EQUAL(f, 0.0);
+		f = vd.template getPos<s::x>(key)[1];
+		BOOST_REQUIRE_EQUAL(f, 0.0);
+		f = vd.template getPos<s::x>(key)[2];
+		BOOST_REQUIRE_EQUAL(f, 0.0);
+
+		++it2;
+	}
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_not_periodic_map )
+{
+	typedef Point<3,float> s;
+
+	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// Boundary conditions
+	size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+
+	// ghost
+	Ghost<3,float> ghost(0.05);
+
+	// Distributed vector
+	vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(1,box,bc,ghost);
+
+	// put particles al 1.0, check that they go to 0.0
+
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.template getPos<s::x>(key)[0] = 1.0;
+		vd.template getPos<s::x>(key)[1] = 1.0;
+		vd.template getPos<s::x>(key)[2] = 1.0;
+
+		++it;
+	}
+
+	vd.map();
+
+	auto it2 = vd.getIterator();
+
+	while (it2.isNext())
+	{
+		auto key = it2.get();
+
+		float f = vd.template getPos<s::x>(key)[0];
+		BOOST_REQUIRE_EQUAL(f, 1.0);
+		f = vd.template getPos<s::x>(key)[1];
+		BOOST_REQUIRE_EQUAL(f, 1.0);
+		f = vd.template getPos<s::x>(key)[2];
+		BOOST_REQUIRE_EQUAL(f, 1.0);
+
+		++it2;
 	}
 }
 
