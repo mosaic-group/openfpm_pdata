@@ -653,10 +653,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 	std::srand(v_cl.getProcessUnitID());
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
-
-    long int k = 65536 * v_cl.getProcessingUnits();
 	
-	size_t nsz[] = {k,32,4};
+	size_t nsz[] = {0,32,4};
+	nsz[0] = 65536 * v_cl.getProcessingUnits();
 
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
