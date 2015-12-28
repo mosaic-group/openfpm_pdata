@@ -25,18 +25,21 @@ template<unsigned int dim> size_t total_n_part_lc(vector_dist<dim,float, Point_t
 	auto it2 = vd.getDomainIterator();
 	const CartDecomposition<3,float> & ct = vd.getDecomposition();
 
+	bool noOut = true;
+
 	size_t cnt = 0;
 	while (it2.isNext())
 	{
 		auto key = it2.get();
 
-		// Check if local
-		BOOST_REQUIRE_EQUAL(ct.isLocal(vd.template getPos<s::x>(key)),true);
+		noOut &= ct.isLocal(vd.template getPos<s::x>(key));
 
 		cnt++;
 
 		++it2;
 	}
+
+	BOOST_REQUIRE_EQUAL(noOut,true);
 
 	//
 	v_cl.sum(cnt);
@@ -292,7 +295,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 
     long int k = 524288 * v_cl.getProcessingUnits();
 
-	long int big_step = k / 30;
+	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
 	print_test_v( "Testing 2D vector k<=",k);
@@ -365,7 +368,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 
     long int k = 524288 * v_cl.getProcessingUnits();
 
-	long int big_step = k / 30;
+	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
 	print_test_v( "Testing 3D vector k<=",k);
@@ -439,7 +442,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 
     long int k = 524288 * v_cl.getProcessingUnits();
 
-	long int big_step = k / 30;
+	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
 	print_test_v( "Testing 2D periodic vector k<=",k);
@@ -547,7 +550,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 
     long int k = 524288 * v_cl.getProcessingUnits();
 
-	long int big_step = k / 30;
+	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
 	print_test_v( "Testing 3D periodic vector k<=",k);
@@ -653,7 +656,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 
     long int k = 65536 * v_cl.getProcessingUnits();
 
-	long int big_step = k / 30;
+	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
 	print_test_v( "Testing 3D random walk vector k<=",k);
@@ -672,7 +675,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
 
 		// ghost
-		Ghost<3,float> ghost(0.05 / factor);
+		Ghost<3,float> ghost(0.01 / factor);
 
 		// Distributed vector
 		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box,bc,ghost);
@@ -697,7 +700,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 
 		// 10 step random walk
 
-		for (size_t j = 0 ; j < 10 ; j++)
+		for (size_t j = 0 ; j < 4 ; j++)
 		{
 			auto it = vd.getDomainIterator();
 
@@ -714,7 +717,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 
 			vd.map();
 
-			vd.ghost_get<0,4>();
+			vd.ghost_get<0>();
 
 			// Count the local particles and check that the total number is consistent
 			size_t cnt = total_n_part_lc(vd,bc);
