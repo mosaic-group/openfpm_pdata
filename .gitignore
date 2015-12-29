@@ -46,7 +46,7 @@ INSTALL
 NEWS
 README
 **/src/Makefile
-**/Makefile
+./Makefile
 Makefile.in
 config.status
 configure
