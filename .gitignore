@@ -45,7 +45,8 @@ ChangeLog
 INSTALL
 NEWS
 README
-Makefile
+**/src/Makefile
+**/Makefile
 Makefile.in
 config.status
 configure
@@ -62,3 +63,11 @@ vtk/metis_dec
 .autotools
 .cproject
 .project
+.settings
+ar-lib
+compile
+config.guess
+config.sub
+depcomp
+install-sh
+missing
