@@ -375,7 +375,7 @@ public:
 	 *
 	 */
 	CartDecomposition(Vcluster & v_cl)
-	:nn_prcs<dim,T>(v_cl),v_cl(v_cl),ref_cnt(0)
+	:nn_prcs<dim,T>(v_cl),v_cl(v_cl),ref_cnt(0),recv_cnt(0)
 	{
 		// Reset the box to zero
 		bbox.zero();
@@ -387,7 +387,7 @@ public:
 	 *
 	 */
 	CartDecomposition(const CartDecomposition<dim,T,Memory,Domain> & cart)
-	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),ref_cnt(0)
+	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),ref_cnt(0),recv_cnt(0)
 	{
 		this->operator=(cart);
 	}
@@ -398,7 +398,7 @@ public:
 	 *
 	 */
 	CartDecomposition(CartDecomposition<dim,T,Memory,Domain> && cart)
-	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),ref_cnt(0)
+	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),ref_cnt(0),recv_cnt(0)
 	{
 		this->operator=(cart);
 	}

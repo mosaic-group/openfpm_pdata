@@ -131,7 +131,7 @@ class grid_dist_iterator_sub
 	*
 	*/
 	grid_dist_iterator_sub(const grid_dist_iterator_sub<dim,device_grid> & tmp)
-	:g_c(tmp.g_c),gList(tmp.gList),gdb_ext(gdb_ext),m(tmp.m)
+	:g_c(tmp.g_c),gList(tmp.gList),gdb_ext(tmp.gdb_ext),m(tmp.m)
 	{
 		a_it.reinitialize(tmp.a_it);
 	}

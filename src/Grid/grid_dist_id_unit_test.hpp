@@ -1002,6 +1002,8 @@ void Test3D_dup(const Box<3,float> & domain, long int k)
 		BOOST_REQUIRE_EQUAL(g_dist2->getDecomposition().ref(),1);
 		bool ret = g_dist2->getDecomposition().check_consistency();
 		BOOST_REQUIRE_EQUAL(ret,true);
+
+		delete g_dist2;
 	}
 }
 

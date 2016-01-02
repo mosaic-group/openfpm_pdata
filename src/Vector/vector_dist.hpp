@@ -122,6 +122,50 @@ private:
 	//! Total size of the received buffer
 	size_t recv_cnt;
 
+	/*! \brief Label particles for mappings
+	 *
+	 * \param lbl_p Particle labeled
+	 * \param p_map processor map (for each processor 1=comunication required 0=no communication)
+	 * \param prc_sz processor send buffer size (number of particles)
+	 * \param opart id of the particles to send
+	 *
+	 */
+	void labelParticleMap(openfpm::vector<size_t> & lbl_p, openfpm::vector<size_t> & p_map, openfpm::vector<size_t> & prc_sz, openfpm::vector<size_t> & opart)
+	{
+		// resize the label buffer
+		prc_sz.resize(v_cl.getProcessingUnits());
+		p_map.resize(v_cl.getProcessingUnits());
+		lbl_p.resize(v_pos.size());
+
+		auto it = v_pos.getIterator();
+
+		// Label all the particles with the processor id where they should go
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			// Apply the boundary conditions
+			dec.applyPointBC(v_pos.get(key));
+
+			size_t p_id = dec.processorIDBC(v_pos.get(key));
+
+			lbl_p.get(key) = p_id;
+
+			// Particle toe move
+			if (p_id != v_cl.getProcessUnitID())
+			{
+				p_map.get(p_id) = 1;
+				prc_sz.get(p_id)++;
+
+				opart.add(key);
+			}
+
+			// Add processors and add size
+
+			++it;
+		}
+	}
+
 	/*! \brief Label the particles
 	 *
 	 * It count the number of particle to send to each processors and save its ids
@@ -435,7 +479,7 @@ public:
 	 *
 	 */
 	vector_dist(size_t np, Box<dim,St> box, const size_t (& bc)[dim] ,const Ghost<dim,St> & g)
-	:dec(*global_v_cluster),v_cl(*global_v_cluster)
+	:dec(*global_v_cluster),v_cl(*global_v_cluster),recv_cnt(0)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -476,9 +520,6 @@ public:
 
 		// and create the ghost boxes
 		dec.calculateGhostBoxes();
-
-		Point<dim,St> p;
-		p.zero();
 	}
 
 	~vector_dist()
@@ -558,6 +599,9 @@ public:
 	 */
 	void map()
 	{
+		// Labeling particles
+		openfpm::vector<size_t> lbl_p;
+
 		// outgoing particles-id
 		openfpm::vector<size_t> opart;
 
@@ -575,41 +619,11 @@ public:
 		v_prp.resize(g_m);
 
 		// Contain the processor id of each particle (basically where they have to go)
-		openfpm::vector<size_t> lbl_p(v_pos.size());
+		labelParticleMap(lbl_p,p_map,prc_sz,opart);
 
-		auto it = v_pos.getIterator();
-
-		// Label all the particles with the processor id where they should go
-		while (it.isNext())
-		{
-			auto key = it.get();
-
-			// Apply the boundary conditions
-			dec.applyPointBC(v_pos.get(key));
-
-			size_t p_id = dec.processorIDBC(v_pos.get(key));
-
-			lbl_p.get(key) = p_id;
-
-			// It has to communicate
-			if (p_id != v_cl.getProcessUnitID())
-			{
-				p_map.get(p_id) = 1;
-				prc_sz.get(p_id)++;
-
-				opart.add(key);
-			}
-
-			// Add processors and add size
-
-			++it;
-		}
-
-		// resize the map
+		// Calculate the sending buffer size for each processor, put this information in
+		// a contiguous buffer
 		p_map_req.resize(v_cl.getProcessingUnits());
-
-		// Create the sz and prc buffer
-
 		openfpm::vector<size_t> prc_sz_r;
 		openfpm::vector<size_t> prc_r;
 
@@ -623,7 +637,7 @@ public:
 			}
 		}
 
-		// Allocate all the buffers
+		// Allocate the send buffers
 
 		openfpm::vector<pos_prop> pb(prc_r.size());
 
@@ -652,7 +666,7 @@ public:
 		openfpm::vector<size_t> prc_cnt(prc_r.size());
 		prc_cnt.fill(0);
 
-		it = lbl_p.getIterator();
+		auto it = lbl_p.getIterator();
 
 		while (it.isNext())
 		{
@@ -695,7 +709,7 @@ public:
 		recv_cnt = 0;
 		v_cl.sendrecvMultipleMessagesPCX(prc_sz_r.size(),&p_map.get(0), (size_t *)prc_sz_r.getPointer(), (size_t *)prc_r.getPointer() , (void **)ptr.getPointer() , vector_dist::message_alloc_map, this ,NEED_ALL_SIZE);
 
-		// overwrite the outcoming particle with the incoming particle and resize the vectors
+		// Process the incoming particles
 
 		size_t total_element = 0;
 		size_t o_p_id = 0;
@@ -746,7 +760,7 @@ public:
 			total_element += n_ele;
 		}
 
-		// remove the hole (out-going particles) in the vector
+		// remove the (out-going particles) in the vector
 
 		v_pos.remove(opart,o_p_id);
 		v_prp.remove(opart,o_p_id);

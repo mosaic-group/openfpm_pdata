@@ -186,11 +186,12 @@ class nn_prcs
 public:
 
 	nn_prcs(Vcluster & v_cl)
-	:v_cl(v_cl),aBC(false){}
+	:v_cl(v_cl),aBC(false),recv_cnt(0)
+	{}
 
 	//! Constructor from another nn_prcs
 	nn_prcs(const nn_prcs<dim,T> & ilg)
-	:v_cl(ilg.v_cl),aBC(false)
+	:v_cl(ilg.v_cl),aBC(false),recv_cnt(0)
 	{
 		this->operator=(ilg);
 	};
