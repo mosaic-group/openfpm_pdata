@@ -193,7 +193,7 @@ else
             METIS_installed=1
             configure_options=" $configure_options --with-metis=$i_dir/METIS "
         elif [ $conf_err -eq 202 ]; then
-            echo "Boost not found try to install"
+            echo "Boost not found try to install in $i_dir with $compiler_opt"
             if [ $BOOST_installed -eq 1  ]; then
                 echo "Error the installation of Boost failed"
                 exit 1

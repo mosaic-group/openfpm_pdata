@@ -128,9 +128,6 @@ private:
 	// vector v_proc
 	openfpm::vector<size_t> v_proc;
 
-	// Receive counter
-	size_t recv_cnt;
-
 	// reference counter of the object in case is shared between object
 	long int ref_cnt;
 
@@ -375,7 +372,7 @@ public:
 	 *
 	 */
 	CartDecomposition(Vcluster & v_cl)
-	:nn_prcs<dim,T>(v_cl),v_cl(v_cl),ref_cnt(0),recv_cnt(0)
+	:nn_prcs<dim,T>(v_cl),v_cl(v_cl),ref_cnt(0)
 	{
 		// Reset the box to zero
 		bbox.zero();
@@ -387,7 +384,7 @@ public:
 	 *
 	 */
 	CartDecomposition(const CartDecomposition<dim,T,Memory,Domain> & cart)
-	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),ref_cnt(0),recv_cnt(0)
+	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),ref_cnt(0)
 	{
 		this->operator=(cart);
 	}
@@ -398,7 +395,7 @@ public:
 	 *
 	 */
 	CartDecomposition(CartDecomposition<dim,T,Memory,Domain> && cart)
-	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),ref_cnt(0),recv_cnt(0)
+	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),ref_cnt(0)
 	{
 		this->operator=(cart);
 	}

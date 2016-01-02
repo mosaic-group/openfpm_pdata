@@ -494,9 +494,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 		Box<2,float> dom_ext = box;
 		dom_ext.enlarge(ghost2);
 
-		// get the decomposition
-		const CartDecomposition<2,float> & ct = vd.getDecomposition();
-
 		// Iterate on all particles domain + ghost
 		size_t l_cnt = 0;
 		size_t nl_cnt = 0;
@@ -603,9 +600,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 		Box<3,float> dom_ext = box;
 		dom_ext.enlarge(ghost2);
 
-		// Get the decomposition
-		const CartDecomposition<3,float> & ct = vd.getDecomposition();
-
 		// Iterate on all particles domain + ghost
 		size_t l_cnt = 0;
 		size_t nl_cnt = 0;
@@ -679,9 +673,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 
 		// Distributed vector
 		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box,bc,ghost);
-
-		// Get the decomposition
-		const CartDecomposition<3,float> & ct = vd.getDecomposition();
 
 		auto it = vd.getIterator();
 

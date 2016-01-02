@@ -239,6 +239,7 @@ protected:
 						pb.box = bi;
 						pb.proc = p_id;
 						pb.lc_proc = nn_p.ProctoID(p_id);
+						pb.shift_id = (size_t)-1;
 
 						//
 						// Updating

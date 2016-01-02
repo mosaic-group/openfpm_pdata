@@ -186,19 +186,19 @@ class nn_prcs
 public:
 
 	nn_prcs(Vcluster & v_cl)
-	:v_cl(v_cl),aBC(false),recv_cnt(0)
+	:v_cl(v_cl),recv_cnt(0),aBC(false)
 	{}
 
 	//! Constructor from another nn_prcs
 	nn_prcs(const nn_prcs<dim,T> & ilg)
-	:v_cl(ilg.v_cl),aBC(false),recv_cnt(0)
+	:v_cl(ilg.v_cl),recv_cnt(0),aBC(false)
 	{
 		this->operator=(ilg);
 	};
 
 	//! Constructor from temporal ie_loc_ghost
 	nn_prcs(nn_prcs<dim,T> && ilg)
-	:v_cl(ilg.v_cl),aBC(false)
+	:v_cl(ilg.v_cl),recv_cnt(0),aBC(false)
 	{
 		this->operator=(ilg);
 	}

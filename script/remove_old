@@ -75,13 +75,12 @@ function remove_old()
     
     ## Check the installed version of the dependencies
     
-    if [ -f $1/BOOST/include/boost/version.hpp ]; then
-        is_update=$(cat $1/BOOST/include/boost/version.hpp | grep "#define BOOST_VERSION 106000")
-        if [ x"$is_update"==x"" ]; then
-            echo "New boost version, removing the old one"
-            rm -rf $1/BOOST/include
-            rm -rf $1/BOOST/lib
-        fi
+    is_update=$(cat $1/BOOST/include/boost/version.hpp | grep "#define BOOST_VERSION 106000")
+    if [ x"$is_update"==x"" ]; then
+    	echo "New boost version, removing the old one"
+        rm -rf $1/BOOST/include
+        rm -rf $1/BOOST/lib
+	rm -rf $1/BOOST
     fi
 
     
