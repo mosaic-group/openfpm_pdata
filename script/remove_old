@@ -1,0 +1,92 @@
+#! /bin/bash
+
+function remove_old()
+{
+    ## Get the previos openFPM installation
+    previous_inst=$(cat $PWD/install_dir)
+    
+    if [ x"$previous_inst"!=x"" ]; then
+        echo "Found previous installation"
+        if [ -d "$previous_inst/openfpm_pdata" ]; then
+            echo "Removing the folder: $previous_inst/openfpm_pdata"
+            rm -rf "$previous_inst/openfpm_pdata"
+            if [ -d "$previous_inst/openfpm_pdata" ]; then
+                echo -e "\033[91;5;1m Remove failed, manually remove the folder $previous_inst/openfpm_pdata, I am waiting ... \033[0m"
+            fi
+            while [ -d "$previous_inst/openfpm_pdata" ]
+            do
+                sleep 1
+            done
+            echo "Thanks"
+        fi
+
+        if [ -d "$previous_inst/openfpm_data" ]; then
+            echo "Removing the folder: $previous_inst/openfpm_data"
+            rm -rf "$previous_inst/openfpm_data"
+            if [ -d "$previous_inst/openfpm_data" ]; then
+                echo -e "\033[91;5;1m Remove failed, manually remove the folder $previous_inst/openfpm_data, I am waiting ... \033[0m"
+            fi
+            while [ -d "$previous_inst/openfpm_data" ]
+            do
+                sleep 1
+            done
+            echo "Thanks"
+        fi
+    
+        if [ -d "$previous_inst/openfpm_devices" ]; then
+            echo "Removing the folder: $previous_inst/openfpm_devices"
+            rm -rf "$previous_inst/openfpm_devices"
+            if [ -d "$previous_inst/openfpm_devices" ]; then
+                echo -e "\033[91;5;1m Remove failed, manually remove the folder $previous_inst/openfpm_devices, I am waiting ... \033[0m"
+            fi
+            while [ -d "$previous_inst/openfpm_devices" ]
+            do
+                sleep 1
+            done
+            echo "Thanks"
+        fi
+    
+        if [ -d "$previous_inst/openfpm_io" ]; then
+            echo "Removing the folder: $previous_inst/openfpm_io"
+            rm -rf "$previous_inst/openfpm_io"
+            if [ -d "$previous_inst/openfpm_io" ]; then
+                echo -e "\033[91;5;1m Remove failed, manually remove the folder $previous_inst/openfpm_io, I am waiting ... \033[0m"
+            fi
+            while [ -d "$previous_inst/openfpm_io" ]
+            do
+                sleep 1
+            done
+            echo "Thanks"
+        fi
+    
+        if [ -d "$previous_inst/openfpm_vcluster" ]; then
+            echo "Removing the folder: $previous_inst/openfpm_vcluster"
+            rm -rf "$previous_inst/openfpm_vcluster"
+            if [ -d "$previous_inst/openfpm_vcluster" ]; then
+                echo -e "\033[91;5;1m Remove failed, manually remove the folder $previous_inst/openfpm_vcluster, I am waiting ... \033[0m"
+            fi
+            while [ -d "$previous_inst/openfpm_vcluster" ]
+            do
+                sleep 1
+            done
+            echo "Thanks"
+        fi
+    fi
+    
+    ## Check the installed version of the dependencies
+    
+    if [ -f $1/BOOST/include/boost/version.hpp ]; then
+        is_update=$(cat $1/BOOST/include/boost/version.hpp | grep "#define BOOST_VERSION 106000")
+        if [ x"$is_update"==x"" ]; then
+            echo "New boost version, removing the old one"
+            rm -rf $1/BOOST/include
+            rm -rf $1/BOOST/lib
+        fi
+    fi
+
+    
+}
+
+remove_old "/home/i-bird"
+
+
