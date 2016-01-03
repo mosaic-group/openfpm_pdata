@@ -45,6 +45,7 @@ ChangeLog
 INSTALL
 NEWS
 README
+**/vtk/Makefile
 **/src/Makefile
 ./Makefile
 Makefile.in
@@ -71,3 +72,4 @@ config.sub
 depcomp
 install-sh
 missing
+install_dir
