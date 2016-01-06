@@ -196,6 +196,11 @@ public:
 	//! Construct cartesian graph
 	static Graph construct(const size_t ( & sz)[dim], Box<dim,T> dom)
 	{
+		size_t bc[dim];
+
+		for (size_t i = 0 ; i < dim ; i++)
+			bc[i] = NON_PERIODIC;
+
 		// Calculate the size of the hyper-cubes on each dimension
 
 		T szd[dim];
@@ -272,7 +277,7 @@ public:
 					// Calculate the start point id
 
 					size_t start_v = g.LinId(key);
-					size_t end_v = g.template LinId<CheckExistence>(key,c[j].getComb());
+					size_t end_v = g.template LinId<CheckExistence>(key,c[j].getComb(),bc);
 
 					// Add an edge and set the the edge property to the size of the face (communication weight)
 					gp.template addEdge<CheckExistence>(start_v,end_v);

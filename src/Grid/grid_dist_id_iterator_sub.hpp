@@ -48,9 +48,6 @@ class grid_dist_iterator_sub
 	//! stop key
 	grid_key_dx<dim> stop;
 
-	//! margin of the grid iterator
-	size_t m;
-
 	/*! \brief compute the subset where it has to iterate
 	 *
 	 * \param g_c Actual grid
@@ -119,8 +116,9 @@ class grid_dist_iterator_sub
 		g_c = tmp.g_c;
 		gList = tmp.gList;
 		gdb_ext = tmp.gdb_ext;
+		start = tmp.start;
+		stop = tmp.stop;
 		a_it.reinitialize(tmp.a_it);
-		m = tmp.m;
 
 		return *this;
 	}
@@ -131,7 +129,7 @@ class grid_dist_iterator_sub
 	*
 	*/
 	grid_dist_iterator_sub(const grid_dist_iterator_sub<dim,device_grid> & tmp)
-	:g_c(tmp.g_c),gList(tmp.gList),gdb_ext(gdb_ext),m(tmp.m)
+	:g_c(tmp.g_c),gList(tmp.gList),gdb_ext(gdb_ext),start(tmp.start),stop(tmp.stop)
 	{
 		a_it.reinitialize(tmp.a_it);
 	}
@@ -145,7 +143,7 @@ class grid_dist_iterator_sub
 	 *
 	 */
 	grid_dist_iterator_sub(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop ,const Vcluster_object_array<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
-	:g_c(0),gList(gk),gdb_ext(gdb_ext),start(start),stop(stop),m(0)
+	:g_c(0),gList(gk),gdb_ext(gdb_ext),start(start),stop(stop)
 	{
 		// Initialize the current iterator
 		// with the first grid
