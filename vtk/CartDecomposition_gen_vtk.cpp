@@ -27,8 +27,11 @@ int main(int argc, char ** argv)
 	// Define ghost
 	Ghost<2,float> g(0.01);
 
+	// boundary conditions
+	size_t bc[2] = {PERIODIC,PERIODIC};
+
 	// Decompose and write the decomposed graph
-	dec.setParameters(div,box,g);
+	dec.setParameters(div,box,bc,g);
 
 	// create a ghost border
 	dec.calculateGhostBoxes();

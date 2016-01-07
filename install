@@ -4,6 +4,7 @@ source script/help
 source script/discover_os
 source script/show_solutions
 source script/pre_req
+source script/remove_old
 
 ##
 
@@ -38,6 +39,10 @@ while getopts :di:shc: FLAG; do
 done
 
 discover_os
+
+## Remove old dependencies and installations
+
+remove_old $i_dir
 
 ## Check and try to install the prerequisites
 
@@ -161,7 +166,7 @@ else
             METIS_installed=1
             configure_options=" $configure_options --with-metis=$i_dir/METIS "
         elif [ $conf_err -eq 202 ]; then
-            echo "Boost not found try to install"
+            echo "Boost not found try to install in $i_dir with $compiler_opt"
             if [ $BOOST_installed -eq 1  ]; then
                 echo "Error the installation of Boost failed"
                 exit 1

@@ -29,6 +29,7 @@
 #include "ie_ghost.hpp"
 #include "nn_processor.hpp"
 #include "util/se_util.hpp"
+#include "util/mathutil.hpp"
 
 #define CARTDEC_ERROR 2000lu
 
@@ -127,21 +128,21 @@ private:
 	// vector v_proc
 	openfpm::vector<size_t> v_proc;
 
-	// Receive counter
-	size_t recv_cnt;
-
 	// reference counter of the object in case is shared between object
 	long int ref_cnt;
 
-	// Save the ghost boundaries
+	// ghost info
 	Ghost<dim,T> ghost;
+
+	// Boundary condition info
+	size_t bc[dim];
 
 	/*! \brief Constructor, it decompose and distribute the sub-domains across the processors
 	 *
      * \param v_cl Virtual cluster, used internally for communications
      *
 	 */
-	void CreateDecomposition(Vcluster & v_cl)
+	void CreateDecomposition(Vcluster & v_cl, const size_t (& bc)[dim])
 	{
 #ifdef SE_CLASS1
 		if (&v_cl == NULL)
@@ -165,8 +166,13 @@ private:
 		// Create a cartesian grid graph
 		CartesianGraphFactory<dim,Graph_CSR<nm_part_v,nm_part_e>> g_factory_part;
 
+		// the graph has only non perdiodic boundary conditions
+		size_t bc_o[dim];
+		for (size_t i = 0 ; i < dim ; i++)
+			bc_o[i] = NON_PERIODIC;
+
 		// sub-sub-domain graph
-		Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.template construct<NO_EDGE,T,dim-1>(gr.getSize(),domain);
+		Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.template construct<NO_EDGE,T,dim-1>(gr.getSize(),domain,bc_o);
 
 		// Get the number of processing units
 		size_t Np = v_cl.getProcessingUnits();
@@ -191,7 +197,7 @@ private:
 		openfpm::vector<::Box<dim,size_t>> loc_box;
 
 		// optimize the decomposition
-		d_o.template optimize<nm_part_v::sub_id,nm_part_v::id>(gp,p_id,loc_box,box_nn_processor);
+		d_o.template optimize<nm_part_v::sub_id,nm_part_v::id>(gp,p_id,loc_box,box_nn_processor,bc);
 
 		// Initialize ss_box and bbox
 		if (loc_box.size() >= 0)
@@ -257,6 +263,7 @@ private:
 
 		nn_prcs<dim,T>::create(box_nn_processor, sub_domains);
 		nn_prcs<dim,T>::refine_ss_box(ss_box);
+		nn_prcs<dim,T>::applyBC(domain,ghost,bc);
 
 		// fill fine_s structure
 		// fine_s structure contain the processor id for each sub-sub-domain
@@ -303,6 +310,9 @@ private:
 
 		// Initialize the geo_cell structure
 		ie_ghost<dim,T>::Initialize_geo_cell(domain,div,orig);
+
+		// Initialize shift vectors
+		ie_ghost<dim,T>::generateShiftVectors(domain);
 	}
 
 	/*! \brief Create the subspaces that decompose your domain
@@ -456,6 +466,68 @@ public:
 		}
 	};
 
+	/*! \brief class to select the returned id by ghost_processorID
+	 *
+	 */
+	class shift_id
+	{
+	public:
+		/*! \brief Return the shift id
+		 *
+		 * \param p structure containing the id informations
+		 * \param b_id box_id
+		 *
+		 * \return shift_id id
+		 *
+		 */
+		inline static size_t id(p_box<dim,T> & p, size_t b_id)
+		{
+			return p.shift_id;
+		}
+	};
+
+	/*! \brief Apply boundary condition to the point
+	 *
+	 * \param p Point to apply the boundary condition
+	 *
+	 */
+	void applyPointBC(float (& pt)[dim]) const
+	{
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (bc[i] == PERIODIC)
+				pt[i] = openfpm::math::periodic_l(pt[i],domain.getHigh(i),domain.getLow(i));
+		}
+	}
+
+	/*! \brief Apply boundary condition to the point
+	 *
+	 * \param p Point to apply the boundary condition
+	 *
+	 */
+	void applyPointBC(Point<dim,T> & pt) const
+	{
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (bc[i] == PERIODIC)
+				pt.get(i) = openfpm::math::periodic_l(pt.get(i),domain.getHigh(i),domain.getLow(i));
+		}
+	}
+
+	/*! \brief Apply boundary condition to the point
+	 *
+	 * \param encapsulated object
+	 *
+	 */
+	template<typename Mem> void applyPointBC(encapc<1,Point<dim,T>,Mem> && pt) const
+	{
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (bc[i] == PERIODIC)
+				pt.template get<0>()[i] = openfpm::math::periodic_l(pt.template get<0>()[i],domain.getHigh(i),domain.getLow(i));
+		}
+	}
+
 	/*! It calculate the internal ghost boxes
 	 *
 	 * Example: Processor 10 calculate
@@ -571,9 +643,7 @@ p1[0]<-----+         +----> p2[0]
 		ie_ghost<dim,T>::create_box_nn_processor_int(v_cl,ghost,sub_domains,box_nn_processor,*this);
 
 		// ebox must come after ibox (in this case)
-
-		ie_loc_ghost<dim,T>::create_loc_ghost_ibox(ghost,sub_domains);
-		ie_loc_ghost<dim,T>::create_loc_ghost_ebox(ghost,sub_domains);
+		ie_loc_ghost<dim,T>::create(sub_domains,domain,ghost,bc);
 
 		// get the smallest sub-domain dimension on each direction
 		for (size_t i = 0 ; i < dim ; i++)
@@ -612,7 +682,8 @@ p1[0]<-----+         +----> p2[0]
 		cart.ss_box = ss_box;
 		cart.ghost = g;
 
-		cart.create(box_nn_processor, sub_domains);
+		(static_cast<nn_prcs<dim,T> &>(cart)).create(box_nn_processor, sub_domains);
+		(static_cast<nn_prcs<dim,T> &>(cart)).applyBC(domain,ghost,bc);
 
 		cart.Initialize_geo_cell_lists();
 		cart.calculateGhostBoxes();
@@ -736,6 +807,71 @@ p1[0]<-----+         +----> p2[0]
 		return fine_s.get(cd.getCell(p));
 	}
 
+	/*! \brief Given a point return in which processor the particle should go
+	 *
+	 * \return processorID
+	 *
+	 */
+	size_t inline processorID(const Point<dim,T> &p) const
+	{
+		return fine_s.get(cd.getCell(p));
+	}
+
+	/*! \brief Given a point return in which processor the particle should go
+	 *
+	 * \return processorID
+	 *
+	 */
+	size_t inline processorID(const T (&p)[dim]) const
+	{
+		return fine_s.get(cd.getCell(p));
+	}
+
+	/*! \brief Given a point return in which processor the particle should go
+	 *
+	 * Boundary conditions are considered
+	 *
+	 * \return processorID
+	 *
+	 */
+	template<typename Mem> size_t inline processorIDBC(encapc<1, Point<dim,T>, Mem> p)
+	{
+		Point<dim,T> pt = p;
+		applyPointBC(pt);
+
+		return fine_s.get(cd.getCell(pt));
+	}
+
+	/*! \brief Given a point return in which processor the particle should go
+	 *
+	 * Boundary conditions are considered
+	 *
+	 * \return processorID
+	 *
+	 */
+	size_t inline processorIDBC(const Point<dim,T> &p) const
+	{
+		Point<dim,T> pt = p;
+		applyPointBC(pt);
+
+		return fine_s.get(cd.getCell(p));
+	}
+
+	/*! \brief Given a point return in which processor the particle should go
+	 *
+	 * Boundary consition are considered
+	 *
+	 * \return processorID
+	 *
+	 */
+	size_t inline processorIDBC(const T (&p)[dim]) const
+	{
+		Point<dim,T> pt = p;
+		applyPointBC(pt);
+
+		return fine_s.get(cd.getCell(p));
+	}
+
 	/*! \brief Get the smallest subdivision of the domain on each direction
 	 *
 	 * \return a box p1 is set to zero
@@ -746,25 +882,18 @@ p1[0]<-----+         +----> p2[0]
 		return ss_box;
 	}
 
-	/*! \brief Given a point return in which processor the particle should go
-	 *
-	 * \return processorID
-	 *
-	 */
-
-	size_t inline processorID(const T (&p)[dim]) const
-	{
-		return fine_s.get(cd.getCell(p));
-	}
-
 	/*! \brief Set the parameter of the decomposition
 	 *
      * \param div_ storing into how many domain to decompose on each dimension
      * \param domain_ domain to decompose
 	 *
 	 */
-	void setParameters(const size_t (& div_)[dim], Domain<dim,T> domain_, Ghost<dim,T> ghost = Ghost<dim,T>())
+	void setParameters(const size_t (& div_)[dim], Domain<dim,T> domain_, const size_t (& bc)[dim] ,const Ghost<dim,T> & ghost)
 	{
+		// set the boundary conditions
+		for (size_t i = 0 ; i < dim ; i++)
+			this->bc[i] = bc[i];
+
 		// set the ghost
 		this->ghost = ghost;
 		// Set the decomposition parameters
@@ -775,7 +904,7 @@ p1[0]<-----+         +----> p2[0]
 
 		//! Create the decomposition
 
-		CreateDecomposition(v_cl);
+		CreateDecomposition(v_cl,bc);
 	}
 
 	/*! \brief Get the number of local sub-domains
@@ -833,12 +962,14 @@ p1[0]<-----+         +----> p2[0]
 	 * \return The physical domain
 	 *
 	 */
-	Domain<dim,T> & getDomain()
+	const Domain<dim,T> & getDomain()
 	{
 		return domain;
 	}
 
 	/*! \brief Check if the particle is local
+	 *
+	 * \warning if the particle id outside the domain the result is unreliable
 	 *
 	 * \param p object position
 	 *
@@ -852,6 +983,8 @@ p1[0]<-----+         +----> p2[0]
 
 	/*! \brief Check if the particle is local
 	 *
+	 * \warning if the particle id outside the domain the result is unreliable
+	 *
 	 * \param p object position
 	 *
 	 * \return true if it is local
@@ -860,6 +993,56 @@ p1[0]<-----+         +----> p2[0]
 	bool isLocal(const T (&pos)[dim]) const
 	{
 		return processorID(pos) == v_cl.getProcessUnitID();
+	}
+
+	/*! \brief Check if the particle is local considering boundary conditions
+	 *
+	 * \warning if the particle id outside the domain and non periodic the result
+	 *          is unreliable
+	 *
+	 *
+	 * \param p object position
+	 *
+	 * \return true if it is local
+	 *
+	 */
+	template<typename Mem> bool isLocalBC(const encapc<1, Point<dim,T>, Mem> p, const size_t (& bc)[dim]) const
+	{
+		Point<dim,T> pt = p;
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (bc[i] == PERIODIC)
+				pt.get(i) = openfpm::math::periodic_l(p.template get<0>()[i],domain.getHigh(i),domain.getLow(i));
+		}
+
+		return processorID<Mem>(pt) == v_cl.getProcessUnitID();
+	}
+
+	/*! \brief Check if the particle is local considering boundary conditions
+	 *
+	 * \param p object position
+	 *
+	 * \return true if it is local
+	 *
+	 */
+	bool isLocalBC(const T (&p)[dim], const size_t (& bc)[dim]) const
+	{
+		Point<dim,T> pt = p;
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (pt.get(0) < -0.1)
+			{
+				int debug = 0;
+				debug++;
+			}
+
+			if (bc[i] == PERIODIC)
+				pt.get(i) = openfpm::math::periodic_l(p[i],domain.getHigh(i),domain.getLow(i));
+		}
+
+		return processorID(pt) == v_cl.getProcessUnitID();
 	}
 
 	/*! \brief Return the bounding box containing union of all the sub-domains for the local processor

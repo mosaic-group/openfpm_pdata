@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
 	// ### WIKI 2 ###
 	//
 	// Here we Initialize the library, than we create a uniform random generator between 0 and 1 to to generate particles
-	// randomly in the domain, we create a Box that define our domain
+	// randomly in the domain, we create a Box that define our domain, boundary conditions, and ghost
 	//
 	init_global_v_cluster(&argc,&argv);
 	Vcluster & v_cl = *global_v_cluster;
@@ -59,6 +59,8 @@ int main(int argc, char* argv[])
 	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
 	Box<2,float> box({0.0,0.0},{1.0,1.0});
+        size_t bc[2]={PERIODIC,PERIODIC};
+	Ghost<2,float> g(0.01);
 	
 	//
 	// ### WIKI 3 ###
@@ -80,7 +82,7 @@ int main(int argc, char* argv[])
 	// objects with an undefined position in space. This non-space decomposition is also called data-driven
 	// decomposition
 	//
-	vector_dist<2,float, Particle<float>, CartDecomposition<2,float> > vd(4096,box);
+	vector_dist<2,float, Particle<float>, CartDecomposition<2,float> > vd(4096,box,bc,g);
 
 	//
 	// ### WIKI 5 ###

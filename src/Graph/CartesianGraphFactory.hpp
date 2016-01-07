@@ -14,6 +14,7 @@
 #include "Space/Shape/Box.hpp"
 #include "Space/Shape/HyperCube.hpp"
 
+
 /*! \brief This class work as a functor
  *
  * For each number in the boost::mpl::vector (for example 3 6) set the properties of the vertex at the
@@ -84,7 +85,7 @@ class Graph_constructor_impl
 {
 public:
 	//! Construct cartesian graph
-	static Graph construct(const size_t (& sz)[dim], Box<dim,T> dom)
+	static Graph construct(const size_t (& sz)[dim], Box<dim,T> dom, const size_t(& bc)[dim])
 	{
 		// Calculate the size of the hyper-cubes on each dimension
 
@@ -162,7 +163,7 @@ public:
 					// Calculate the start point id
 
 					size_t start_v = g.LinId(key);
-					size_t end_v = g.template LinId<CheckExistence>(key,c[j].getComb());
+					size_t end_v = g.template LinId<CheckExistence>(key,c[j].getComb(),bc);
 
 					// Add an edge and set the the edge property to the size of the face (communication weight)
 					gp.template addEdge<CheckExistence>(start_v,end_v).template get<se>() = ele_sz;
@@ -170,8 +171,6 @@ public:
 			}
 
 			// Fill vertex properties
-
-
 
 			++k_it;
 		}
@@ -194,7 +193,7 @@ class Graph_constructor_impl<dim,Graph,NO_EDGE,T,dim_c,pos...>
 {
 public:
 	//! Construct cartesian graph
-	static Graph construct(const size_t ( & sz)[dim], Box<dim,T> dom)
+	static Graph construct(const size_t ( & sz)[dim], Box<dim,T> dom, const size_t(& bc)[dim])
 	{
 		size_t bc[dim];
 
@@ -264,14 +263,14 @@ public:
 				{
 					// Calculate the element size
 
-					T ele_sz = 0;
+//					T ele_sz = 0;
 
 					// for each dimension multiply and reduce
 
-					for (size_t s = 0 ; s < dim ; s++)
+/*					for (size_t s = 0 ; s < dim ; s++)
 					{
 						ele_sz += szd[s] * abs(c[j][s]);
-					}
+					}*/
 
 					// Calculate the end point vertex id
 					// Calculate the start point id
@@ -373,10 +372,40 @@ public:
 	 * \tparam pos... (optional)one or more integer indicating the spatial properties
 	 *
 	 */
-	template <int se,typename T, unsigned int dim_c, int... pos>
-	static Graph construct(const size_t (& sz)[dim], Box<dim,T> dom)
+/*	template <int se,typename T, unsigned int dim_c, int... pos>
+	static Graph construct(const size_t (& sz)[dim], Box<dim,T> dom )
 	{
-		return Graph_constructor_impl<dim,Graph,se,T,dim_c,pos...>::construct(sz,dom);
+		return Graph_constructor_impl<dim,Graph,se,T,dim_c,pos...>::construct(sz,dom,bc);
+	}*/
+
+	/*!
+	 *
+	 * \brief Construct a cartesian graph, with V and E edge properties
+	 *
+	 * Construct a cartesian graph, with V and E edge properties
+	 *
+	 * Each vertex is a subspace (Hyper-cube) of dimension dim, each vertex is
+	 * connected with an edge if two vertex (Hyper-cube) share a element of dimension grater than
+	 * dim_c. One property can be used to store the contact size or the d-dimensional
+	 * surface in common between two connected hyper-cube.
+	 *
+	 * \param sz Vector that store the size of the grid on each dimension
+	 * \param dom Box enclosing the physical domain
+	 * \param bc boundary conditions {PERIODIC and NON_PERIODIC}
+	 *
+	 * \tparam se Indicate which properties fill with the contact size. The
+	 *           contact size is the point, line , surface, d-dimensional object size
+	 *           in contact (in common) between two hyper-cube. NO_EDGE indicate
+	 *           no property will store this information
+	 * \tparam T type of the domain like (int real complex ... )
+	 * \tparam dim_c Connectivity dimension
+	 * \tparam pos... (optional)one or more integer indicating the spatial properties
+	 *
+	 */
+	template <int se,typename T, unsigned int dim_c, int... pos>
+	static Graph construct(const size_t (& sz)[dim], Box<dim,T> dom , const size_t (& bc)[dim] )
+	{
+		return Graph_constructor_impl<dim,Graph,se,T,dim_c,pos...>::construct(sz,dom,bc);
 	}
 };
 

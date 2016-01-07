@@ -23,9 +23,11 @@ int main(int argc, char ** argv)
 	// Box
 	Box<2,float> box({0.0,0.0},{1.0,1.0});
 
+	const size_t bc[] = {NON_PERIODIC,NON_PERIODIC};
+
 	// Graph to decompose
 
-	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,float,1,0,1>(sz,box);
+	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,float,1,0,1>(sz,box,bc);
 
 	// Convert the graph to metis
 
