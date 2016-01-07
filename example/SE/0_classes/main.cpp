@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
 	// ### WIKI 3 ###
 	//
 	// Here we Initialize the library, than we create a uniform random generator between 0 and 1 to to generate particles
-	// randomly in the domain, we create a Box that define our domain
+	// randomly in the domain, we create a Box that define our domain, boundary conditions and ghost
 	//
 	init_global_v_cluster(&argc,&argv);
 	Vcluster & v_cl = *global_v_cluster;
@@ -48,7 +48,9 @@ int main(int argc, char* argv[])
 	typedef Point<2,float> s;
 
 	Box<2,float> box({0.0,0.0},{1.0,1.0});
-	
+        size_t bc[2]={NON_PERIODIC,NON_PERIODIC};
+	Ghost<2,float> g(0.01);
+
 	//
 	// ### WIKI 4 ###
 	//
@@ -85,7 +87,7 @@ int main(int argc, char* argv[])
 	// decomposition
 	//
 	{
-		vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(4096,box);
+		vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(4096,box,bc,g);
 
 		//
 		// ### WIKI 6 ###
@@ -95,7 +97,7 @@ int main(int argc, char* argv[])
 		//
 		try
         {
-			vect_dist_key_dx vt(0,5048);
+			vect_dist_key_dx vt(5048);
 			auto it = vd.getPos<0>(vt);
         }
 		catch (size_t e)
@@ -110,8 +112,8 @@ int main(int argc, char* argv[])
 	// we create, now two of them using new
 	//
 
-	vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > * vd1 = new vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> >(4096,box);
-	vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > * vd2 = new vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> >(4096,box);
+	vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > * vd1 = new vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> >(4096,box,bc,g);
+	vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > * vd2 = new vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> >(4096,box,bc,g);
 
 	//
 	// ### WIKI 8 ###
@@ -182,7 +184,7 @@ int main(int argc, char* argv[])
 	//
 	try
     {
-		vect_dist_key_dx vt(0,0);
+		vect_dist_key_dx vt(0);
 		auto it = vd1->getPos<0>(vt);
     }
 	catch (size_t e)

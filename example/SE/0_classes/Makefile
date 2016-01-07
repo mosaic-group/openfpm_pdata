@@ -10,7 +10,7 @@ OBJ = main.o
 	$(CC) -O0 -g3 -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
 
 se_classes: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS_SE2)
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 all: se_classes
 
