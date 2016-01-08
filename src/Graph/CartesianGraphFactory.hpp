@@ -195,11 +195,6 @@ public:
 	//! Construct cartesian graph
 	static Graph construct(const size_t ( & sz)[dim], Box<dim,T> dom, const size_t(& bc)[dim])
 	{
-		size_t bc[dim];
-
-		for (size_t i = 0 ; i < dim ; i++)
-			bc[i] = NON_PERIODIC;
-
 		// Calculate the size of the hyper-cubes on each dimension
 
 		T szd[dim];

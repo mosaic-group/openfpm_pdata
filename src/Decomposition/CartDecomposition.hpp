@@ -1088,6 +1088,19 @@ p1[0]<-----+         +----> p2[0]
 		return true;
 	}
 
+	/*! \brief Get the Virtual Cluster machine
+	 *
+	 * \return the Virtual cluster machine
+	 *
+	 */
+	Vcluster & getVC() const
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return v_cl;
+	}
+
 	/*! \brief function to check the consistency of the information of the decomposition
 	 *
 	 * \return false if is inconsistent

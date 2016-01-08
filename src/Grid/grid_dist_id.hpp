@@ -925,7 +925,6 @@ public:
 	 * \return the Virtual cluster machine
 	 *
 	 */
-
 	Vcluster & getVC()
 	{
 #ifdef SE_CLASS2
