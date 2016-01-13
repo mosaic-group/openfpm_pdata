@@ -822,6 +822,56 @@ BOOST_AUTO_TEST_CASE( vector_dist_not_periodic_map )
 	}
 }
 
+BOOST_AUTO_TEST_CASE( vector_dist_out_of_bound_policy )
+{
+/*	Vcluster & v_cl = *global_v_cluster;
+
+	if (v_cl.getProcessingUnits() > 8)
+		return;
+
+	typedef Point<3,float> s;
+
+	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// Boundary conditions
+	size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+
+	// factor
+	float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+
+	// ghost
+	Ghost<3,float> ghost(0.05 / factor);
+
+	// Distributed vector
+	vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(100,box,bc,ghost);
+
+	// put particles at out of the boundary, they must be detected and and killed
+
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.template getPos<s::x>(key)[0] = -0.06;
+		vd.template getPos<s::x>(key)[1] = -0.06;
+		vd.template getPos<s::x>(key)[2] = -0.06;
+
+		++it;
+	}
+
+	vd.map();
+
+	// Particles out of the boundary are killed
+
+	size_t cnt = vd.size_local();
+
+	v_cl.sum(cnt);
+	v_cl.execute();
+
+	BOOST_REQUIRE_EQUAL(cnt,0);*/
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif /* VECTOR_DIST_UNIT_TEST_HPP_ */

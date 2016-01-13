@@ -100,8 +100,6 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test)
 	ret = dec3.check_consistency();
 	BOOST_REQUIRE_EQUAL(ret,true);
 
-	dec3.write("output_dec3_1.vtk");
-
 	// Check that dec3 is equal to dec2 with the exception of the ghost part
 	ret = dec3.is_equal_ng(dec2);
 	BOOST_REQUIRE_EQUAL(ret,true);

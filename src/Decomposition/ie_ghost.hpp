@@ -393,6 +393,51 @@ protected:
 
 public:
 
+	//! Default constructor
+	ie_ghost() {};
+
+	//! Copy constructor
+	ie_ghost(const ie_ghost<dim,T> & ie)
+	{
+		this->operator =(ie);
+	}
+
+	//! Copy constructor
+	ie_ghost(ie_ghost<dim,T> && ie)
+	{
+		this->operator=(ie);
+	}
+
+	//! Copy operator
+	inline ie_ghost<dim,T> & operator=(ie_ghost<dim,T> && ie)
+	{
+		box_nn_processor_int.swap(ie.box_nn_processor_int);
+		proc_int_box.swap(ie.proc_int_box);
+		vb_ext.swap(ie.vb_ext);
+		vb_int.swap(ie.vb_int);
+		geo_cell.swap(ie.geo_cell);
+		shifts.swap(ie.shifts);
+		ids_p.swap(ie.ids_p);
+		ids.swap(ie.ids);
+
+		return *this;
+	}
+
+	//! Copy operator
+	inline ie_ghost<dim,T> & operator=(const ie_ghost<dim,T> & ie)
+	{
+		box_nn_processor_int = ie.box_nn_processor_int;
+		proc_int_box = ie.proc_int_box;
+		vb_ext = ie.vb_ext;
+		vb_int = ie.vb_int;
+		geo_cell = geo_cell;
+		shifts = ie.shifts;
+		ids_p = ie.ids_p;
+		ids = ie.ids;
+
+		return *this;
+	}
+
 	/*! It return the shift vector
 	 *
 	 * Consider a domain with some ghost, at the border of the domain the

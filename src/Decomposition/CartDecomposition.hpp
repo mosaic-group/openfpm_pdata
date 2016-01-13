@@ -505,7 +505,7 @@ public:
 	 * \param p Point to apply the boundary condition
 	 *
 	 */
-	void applyPointBC(Point<dim,T> & pt) const
+	bool applyPointBC(Point<dim,T> & pt) const
 	{
 		for (size_t i = 0 ; i < dim ; i++)
 		{
@@ -802,9 +802,9 @@ p1[0]<-----+         +----> p2[0]
 	 * \return processorID
 	 *
 	 */
-	template<typename Mem> size_t inline processorID(encapc<1, Point<dim,T>, Mem> p)
+	template<typename Mem, typename ofb> size_t inline processorID(encapc<1, Point<dim,T>, Mem> p)
 	{
-		return fine_s.get(cd.getCell(p));
+		return fine_s.get(cd.template getCell<ofb>(p));
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -849,7 +849,7 @@ p1[0]<-----+         +----> p2[0]
 	 * \return processorID
 	 *
 	 */
-	size_t inline processorIDBC(const Point<dim,T> &p) const
+	template<typename ofb> size_t inline processorIDBC(const Point<dim,T> &p) const
 	{
 		Point<dim,T> pt = p;
 		applyPointBC(pt);
@@ -864,7 +864,7 @@ p1[0]<-----+         +----> p2[0]
 	 * \return processorID
 	 *
 	 */
-	size_t inline processorIDBC(const T (&p)[dim]) const
+	template<typename ofb> size_t inline processorIDBC(const T (&p)[dim]) const
 	{
 		Point<dim,T> pt = p;
 		applyPointBC(pt);

@@ -21,6 +21,7 @@
 #include "memory/ExtPreAlloc.hpp"
 #include "CSVWriter.hpp"
 #include "Decomposition/common.hpp"
+#include "Vector/vector_dist_ofb.hpp"
 
 #define V_SUB_UNIT_FACTOR 64
 
@@ -138,7 +139,7 @@ private:
 	 * \param opart id of the particles to send
 	 *
 	 */
-	void labelParticleProcessor(openfpm::vector<openfpm::vector<size_t>> & lbl_p, openfpm::vector<size_t> & prc_sz, openfpm::vector<size_t> & opart)
+	template<typename obp> void labelParticleProcessor(openfpm::vector<openfpm::vector<size_t>> & lbl_p, openfpm::vector<size_t> & prc_sz, openfpm::vector<size_t> & opart)
 	{
 		// reset lbl_p
 		lbl_p.resize(v_cl.getProcessingUnits());
@@ -158,7 +159,14 @@ private:
 			// Apply the boundary conditions
 			dec.applyPointBC(v_pos.get(key));
 
-			size_t p_id = dec.processorIDBC(v_pos.get(key));
+			size_t p_id = 0;
+
+			// Check if the particle is inside the domain
+//			if (dec.getDomain().isInside(v_pos.get(key)) == true)
+				p_id = dec.processorIDBC(v_pos.get(key));
+//			else
+//				p_id = obp::out(key,v_cl.getProcessUnitID());
+
 
 			// Particle to move
 			if (p_id != v_cl.getProcessUnitID())
@@ -674,7 +682,7 @@ public:
 	 */
 	size_t size_local()
 	{
-		return v_pos.get(0).size();
+		return g_m;
 	}
 
 	/*! \brief Get the position of an element
@@ -708,12 +716,14 @@ public:
 
 	/*! \brief It move all the particles that does not belong to the local processor to the respective processor
 	 *
+	 * \tparam out of bound policy it specify what to do when the particles are detected out of bound
+	 *
 	 * In general this function is called after moving the particles to move the
 	 * elements out the local processor. Or just after initialization if each processor
 	 * contain non local particles
 	 *
 	 */
-	void map()
+	template<typename obp=KillParticle> void map()
 	{
 		// outgoing particles-id
 		openfpm::vector<size_t> out_part;
@@ -729,7 +739,7 @@ public:
 		v_prp.resize(g_m);
 
 		// Contain the processor id of each particle (basically where they have to go)
-		labelParticleProcessor(opart,prc_sz,out_part);
+		labelParticleProcessor<obp>(opart,prc_sz,out_part);
 
 		// Calculate the sending buffer size for each processor, put this information in
 		// a contiguous buffer
@@ -907,6 +917,30 @@ public:
 		return vd->recv_mem_gm.get(i).getPointer();
 	}
 
+	/*! \brief Construct a cell list starting from the stored particles
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 */
+	template<typename CellL=CellList<dim,St,FAST>> CellL getCellList()
+	{
+		CellL cell_list;
+
+		// for each particle add the particle to the cell list
+
+		auto it = getDomainIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			cell_list.add(this->template getPos<0>(key),key.getKey());
+
+			++it;
+		}
+
+		return cell_list;
+	}
 
 	/*! \brief Get the iterator across the position of the particles
 	 *
