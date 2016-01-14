@@ -39,6 +39,9 @@ class ie_loc_ghost
 	 */
 	void create_loc_ghost_ebox(Ghost<dim,T> & ghost, openfpm::vector<SpaceBox<dim,T>> & sub_domains, openfpm::vector<Box_loc_sub<dim,T>> & sub_domains_prc)
 	{
+		comb<dim> zero;
+		zero.zero();
+
 		loc_ghost_box.resize(sub_domains.size());
 
 		// For each sub-domain
@@ -53,6 +56,9 @@ class ie_loc_ghost
 			for (size_t j = 0 ; j < sub_domains_prc.size() ; j++)
 			{
 				size_t rj = sub_domains_prc.get(j).sub;
+
+				if (rj == i && sub_domains_prc.get(j).cmb == zero)
+					continue;
 
 				::Box<dim,T> bi;
 
@@ -88,6 +94,9 @@ class ie_loc_ghost
 	 */
 	void create_loc_ghost_ibox(Ghost<dim,T> & ghost, openfpm::vector<SpaceBox<dim,T>> & sub_domains, openfpm::vector<Box_loc_sub<dim,T>> & sub_domains_prc)
 	{
+		comb<dim> zero;
+		zero.zero();
+
 		loc_ghost_box.resize(sub_domains.size());
 
 		// For each sub-domain
@@ -98,6 +107,10 @@ class ie_loc_ghost
 			{
 				SpaceBox<dim,T> sub_with_ghost = sub_domains_prc.get(j).bx;
 				size_t rj = sub_domains_prc.get(j).sub;
+
+				if (rj == i && sub_domains_prc.get(j).cmb == zero)
+					continue;
+
 				// enlarge the sub-domain with the ghost
 				sub_with_ghost.enlarge(ghost);
 

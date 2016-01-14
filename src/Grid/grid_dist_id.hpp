@@ -562,7 +562,7 @@ public:
 	 */
 	size_t size(size_t i) const
 	{
-		return ginfo_v.size();
+		return ginfo_v.size(i);
 	}
 
 	static inline Ghost<dim,float> convert_ghost(const Ghost<dim,long int> & gd,const CellDecomposer_sm<dim,St> & cd_sm)

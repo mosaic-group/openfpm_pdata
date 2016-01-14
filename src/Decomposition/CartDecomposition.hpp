@@ -682,6 +682,9 @@ p1[0]<-----+         +----> p2[0]
 		cart.ss_box = ss_box;
 		cart.ghost = g;
 
+		for (size_t i = 0 ; i < dim ; i++)
+			cart.bc[i] = bc[i];
+
 		(static_cast<nn_prcs<dim,T> &>(cart)).create(box_nn_processor, sub_domains);
 		(static_cast<nn_prcs<dim,T> &>(cart)).applyBC(domain,ghost,bc);
 
@@ -720,6 +723,9 @@ p1[0]<-----+         +----> p2[0]
 		cart.bbox = bbox;
 		cart.ss_box = ss_box;
 
+		for (size_t i = 0 ; i < dim ; i++)
+			cart.bc[i] = this->bc[i];
+
 		return cart;
 	}
 
@@ -750,6 +756,9 @@ p1[0]<-----+         +----> p2[0]
 		bbox = cart.bbox;
 		ss_box = cart.ss_box;
 
+		for (size_t i = 0 ; i < dim ; i++)
+			bc[i] = cart.bc[i];
+
 		return *this;
 	}
 
@@ -779,6 +788,9 @@ p1[0]<-----+         +----> p2[0]
 
 		cart.bbox = bbox;
 		cart.ss_box = ss_box;
+
+		for (size_t i = 0 ; i < dim ; i++)
+			cart.bc[i] = bc[i];
 
 		return *this;
 	}

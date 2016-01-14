@@ -951,7 +951,7 @@ public:
 		if (getNIGhostBox() != ig.getNIGhostBox())
 			return false;
 
-		for (size_t i = 0 ; i < getNIGhostBox() ; i++)
+		for (size_t i = 0 ; i < proc_int_box.size() ; i++)
 		{
 			if (getProcessorNIGhost(i) != ig.getProcessorNIGhost(i))
 				return false;
@@ -970,7 +970,7 @@ public:
 				return false;
 		}
 
-		for (size_t i = 0 ; i < getNEGhostBox() ; i++)
+		for (size_t i = 0 ; i < proc_int_box.size() ; i++)
 		{
 			if (getProcessorNEGhost(i) != ig.getProcessorNEGhost(i))
 				return false;

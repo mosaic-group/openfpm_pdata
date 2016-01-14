@@ -162,18 +162,25 @@ private:
 			size_t p_id = 0;
 
 			// Check if the particle is inside the domain
-//			if (dec.getDomain().isInside(v_pos.get(key)) == true)
+			if (dec.getDomain().isInside(v_pos.get(key)) == true)
 				p_id = dec.processorIDBC(v_pos.get(key));
-//			else
-//				p_id = obp::out(key,v_cl.getProcessUnitID());
+			else
+				p_id = obp::out(key,v_cl.getProcessUnitID());
 
 
 			// Particle to move
 			if (p_id != v_cl.getProcessUnitID())
 			{
-				prc_sz.get(p_id)++;
-				lbl_p.get(p_id).add(key);
-				opart.add(key);
+				if (p_id != -1)
+				{
+					prc_sz.get(p_id)++;
+					lbl_p.get(p_id).add(key);
+					opart.add(key);
+				}
+				else
+				{
+					opart.add(key);
+				}
 			}
 
 			// Add processors and add size
@@ -922,9 +929,24 @@ public:
 	 * \tparam CellL CellList type to construct
 	 *
 	 */
-	template<typename CellL=CellList<dim,St,FAST>> CellL getCellList()
+	template<typename CellL=CellList<dim,St,FAST>> CellL getCellList(St r_cut)
 	{
 		CellL cell_list;
+
+		// calculate the parameters of the cell list
+
+		// get the processor bounding box
+		Box<dim,St> pbox = dec.getProcessorBounds();
+		Box<dim,St> pbox_dom = pbox;
+		pbox_dom -= pbox_dom.getP1();
+
+		size_t div[dim];
+		// Calculate the division array
+
+		for (size_t i = 0 ; i < dim ; i++)
+			div[i] = (pbox.getP2().get(i) - pbox.getP1().get(i))/ r_cut;
+
+		cell_list.Initialize(pbox_dom,div,pbox.getP1());
 
 		// for each particle add the particle to the cell list
 
