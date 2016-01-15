@@ -929,24 +929,33 @@ public:
 	 * \tparam CellL CellList type to construct
 	 *
 	 */
-	template<typename CellL=CellList<dim,St,FAST>> CellL getCellList(St r_cut)
+	template<typename CellL=CellList<dim,St,FAST,shift<dim,St> > > CellL getCellList(St r_cut)
 	{
+
 		CellL cell_list;
 
 		// calculate the parameters of the cell list
 
 		// get the processor bounding box
 		Box<dim,St> pbox = dec.getProcessorBounds();
-		Box<dim,St> pbox_dom = pbox;
-		pbox_dom -= pbox_dom.getP1();
+		// extend by the ghost
+		pbox.enlarge(dec.getGhost());
+
+		Box<dim,St> cell_box;
 
 		size_t div[dim];
-		// Calculate the division array
 
+		// Calculate the division array and the cell box
 		for (size_t i = 0 ; i < dim ; i++)
+		{
 			div[i] = (pbox.getP2().get(i) - pbox.getP1().get(i))/ r_cut;
+			div[i]++;
 
-		cell_list.Initialize(pbox_dom,div,pbox.getP1());
+			cell_box.setLow(i,0.0);
+			cell_box.setHigh(i,div[i]*r_cut);
+		}
+
+		cell_list.Initialize(cell_box,div,pbox.getP1());
 
 		// for each particle add the particle to the cell list
 

@@ -977,6 +977,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 
 			// get the cell list with a cutoff radius
 
+			bool error = false;
+
 			auto NN = vd.getCellList(0.01 / factor);
 
 			// iterate across the domain particle
@@ -1008,16 +1010,20 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 
 					float distance = f.norm();
 
-					// Particle should be in the r_cut and
-					// 2 * r_cut range
+					// Particle should be inside 2 * r_cut range
 
-
+					if (distance > 2*r_cut*sqrt(2))
+						error = true;
 
 					++Np;
 				}
 
 				++it2;
 			}
+
+			// Error
+
+			BOOST_REQUIRE_EQUAL(error,false);
 
 			// Count the local particles and check that the total number is consistent
 			size_t cnt = total_n_part_lc(vd,bc);

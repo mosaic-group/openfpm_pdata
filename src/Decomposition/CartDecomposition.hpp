@@ -969,9 +969,9 @@ p1[0]<-----+         +----> p2[0]
 		return sp;
 	}
 
-	/*! \brief Return the structure that store the physical domain
+	/*! \brief Return the box of the physical domain
 	 *
-	 * \return The physical domain
+	 * \return The physical domain box
 	 *
 	 */
 	const Domain<dim,T> & getDomain()
@@ -1067,6 +1067,15 @@ p1[0]<-----+         +----> p2[0]
 		return bbox;
 	}
 
+
+	/*! \brief Return the ghost
+	 *
+	 *
+	 */
+	const Ghost<dim,T> & getGhost() const
+	{
+		return ghost;
+	}
 
 	////////////// Functions to get decomposition information ///////////////
 
