@@ -911,14 +911,16 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
 	size_t nsz[] = {0,32,4};
-	nsz[0] = 4096 * v_cl.getProcessingUnits();
+	nsz[0] = 65536 * v_cl.getProcessingUnits();
+
+	print_test_v("Testing 3D random walk interacting particles vector k=", nsz[0]);
 
 	// 3D test
 	for (size_t i = 0 ; i < 3 ; i++ )
 	{
 		size_t k = nsz[i];
 
-		BOOST_TEST_CHECKPOINT( "Testing 3D random walk vector k=" << k );
+		BOOST_TEST_CHECKPOINT( "Testing 3D random walk interacting particles vector k=" << k );
 
 		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 
@@ -990,12 +992,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 				auto p = it2.get();
 
 				Point<3,float> xp = vd.getPos<0>(p);
-
-				// reset the force
-
-				vd.getProp<4>(p)[0] = 0;
-				vd.getProp<4>(p)[1] = 0;
-				vd.getProp<4>(p)[2] = 0;
 
 				auto Np = NN.getIterator(NN.getCell(vd.getPos<0>(p)));
 

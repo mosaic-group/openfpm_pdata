@@ -295,6 +295,8 @@ private:
 		::Box<dim,T> unit = getSmallestSubdivision();
 		// Get the processor bounding Box
 		::Box<dim,T> bound = getProcessorBounds();
+		// Not necessary, but I prefer
+		bound.enlarge(ghost);
 
 		// calculate the sub-divisions
 		size_t div[dim];
@@ -309,7 +311,7 @@ private:
 			orig.get(i) = bound.getLow(i);
 
 		// Initialize the geo_cell structure
-		ie_ghost<dim,T>::Initialize_geo_cell(domain,div,orig);
+		ie_ghost<dim,T>::Initialize_geo_cell(bound,div,orig);
 
 		// Initialize shift vectors
 		ie_ghost<dim,T>::generateShiftVectors(domain);
