@@ -42,6 +42,10 @@ discover_os
 
 ## Remove old dependencies and installations
 
+if [ x"$i_dir" == x" " ]; then
+ i_dir="$HOME"
+fi
+
 remove_old $i_dir
 
 ## Check and try to install the prerequisites
@@ -103,10 +107,6 @@ if [ $? -ne 0 ]; then
 fi
 
 ## check for options
-
-if [ x"$i_dir" == x" " ]; then
- i_dir="$HOME"
-fi
 
 echo -e "\033[1;34;5mDEPENCENCIES INSTALLATION DIR      \033[0m"
 echo -e "Every required dependencies if needed will be installed into: \033[1;34;5m$i_dir\033[0m"
