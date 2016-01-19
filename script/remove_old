@@ -5,7 +5,7 @@ function remove_old()
     ## Get the previos openFPM installation
     previous_inst=$(cat $PWD/install_dir)
     
-    if [ x"$previous_inst"!=x"" ]; then
+    if [ x"$previous_inst" !=x "" ]; then
         echo "Found previous installation"
         if [ -d "$previous_inst/openfpm_pdata" ]; then
             echo "Removing the folder: $previous_inst/openfpm_pdata"
@@ -76,7 +76,7 @@ function remove_old()
     ## Check the installed version of the dependencies
     
     is_update=$(cat $1/BOOST/include/boost/version.hpp | grep "#define BOOST_VERSION 106000")
-    if [ x"$is_update"==x"" ]; then
+    if [ x"$is_update" == x"" ]; then
     	echo "New boost version, removing the old one"
         rm -rf $1/BOOST/include
         rm -rf $1/BOOST/lib
