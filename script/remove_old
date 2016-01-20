@@ -5,7 +5,7 @@ function remove_old()
     ## Get the previos openFPM installation
     previous_inst=$(cat $PWD/install_dir)
     
-    if [ x"$previous_inst" !=x "" ]; then
+    if [ x"$previous_inst" != x"" ]; then
         echo "Found previous installation"
         if [ -d "$previous_inst/openfpm_pdata" ]; then
             echo "Removing the folder: $previous_inst/openfpm_pdata"
