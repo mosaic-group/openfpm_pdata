@@ -171,7 +171,7 @@ private:
 			// Particle to move
 			if (p_id != v_cl.getProcessUnitID())
 			{
-				if (p_id != -1)
+				if ((long int)p_id != -1)
 				{
 					prc_sz.get(p_id)++;
 					lbl_p.get(p_id).add(key);

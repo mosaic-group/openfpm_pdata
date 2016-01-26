@@ -271,8 +271,8 @@ void Test2D(const Box<2,float> & domain, long int k)
 		grid_key_dx<2> start = dom2.getStart();
 		grid_key_dx<2> stop = dom2.getStop();
 
-		BOOST_REQUIRE_EQUAL(stop.get(0),g_dist.size(0)-1);
-		BOOST_REQUIRE_EQUAL(stop.get(1),g_dist.size(1)-1);
+		BOOST_REQUIRE_EQUAL((long int)stop.get(0),(long int)g_dist.size(0)-1);
+		BOOST_REQUIRE_EQUAL((long int)stop.get(1),(long int)g_dist.size(1)-1);
 
 		BOOST_REQUIRE_EQUAL(start.get(0),0);
 		BOOST_REQUIRE_EQUAL(start.get(1),0);

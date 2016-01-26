@@ -507,7 +507,7 @@ public:
 	 * \param p Point to apply the boundary condition
 	 *
 	 */
-	bool applyPointBC(Point<dim,T> & pt) const
+	void applyPointBC(Point<dim,T> & pt) const
 	{
 		for (size_t i = 0 ; i < dim ; i++)
 		{

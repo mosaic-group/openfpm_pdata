@@ -18,8 +18,6 @@ BOOST_AUTO_TEST_CASE( staggered_grid_dist_unit_test)
 {
 	typedef Point2D_test<float> p;
 
-	Vcluster & v_cl = *global_v_cluster;
-
 	// Domain
 	Box<2,float> domain({0.0,0.0},{1.0,1.0});
 
@@ -47,8 +45,6 @@ BOOST_AUTO_TEST_CASE( staggered_grid_dist_unit_test)
 		{
 			auto key = it.get();
 
-			grid_key_dx<2> keyg = sg.getGKey(key);
-
 			sg.template get<p::s>(key) = 1;
 
 			sg.template get<p::v>(key)[0] = 0;
@@ -62,7 +58,6 @@ BOOST_AUTO_TEST_CASE( staggered_grid_dist_unit_test)
 			++it;
 		}
 
-		sg.write("stag_test.vtk");
 /*	}*/
 }
 

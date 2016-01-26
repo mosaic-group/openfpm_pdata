@@ -698,11 +698,6 @@ public:
 #endif
 		InitializeCellDecomposer(g_sz);
 
-		// get the grid spacing
-		Box<dim,St> sp = cd_sm.getCellBox();
-
-		InitializeCellDecomposer(g_sz);
-
 		ghost = convert_ghost(g,cd_sm);
 
 		InitializeDecomposition(g_sz);
