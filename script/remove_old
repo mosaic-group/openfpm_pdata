@@ -86,6 +86,4 @@ function remove_old()
     
 }
 
-remove_old "/home/i-bird"
-
 

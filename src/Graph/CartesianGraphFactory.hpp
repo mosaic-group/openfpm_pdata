@@ -138,7 +138,7 @@ public:
 
 			// Get the combinations of dimension d
 
-			for (size_t d = dim-1 ; d >= dim_c ; d--)
+			for (long int d = dim-1 ; d >= dim_c ; d--)
 			{
 				// create the edges for that dimension
 
@@ -155,9 +155,7 @@ public:
 					// for each dimension multiply and reduce
 
 					for (size_t s = 0 ; s < dim ; s++)
-					{
 						ele_sz += szd[s] * abs(c[j][s]);
-					}
 
 					// Calculate the end point vertex id
 					// Calculate the start point id
@@ -246,7 +244,7 @@ public:
 
 			// Get the combinations of dimension d
 
-			for (size_t d = dim-1 ; d >= dim_c ; d--)
+			for (long int d = dim-1 ; d >= dim_c ; d--)
 			{
 				// create the edges for that dimension
 
@@ -256,17 +254,6 @@ public:
 
 				for (size_t j = 0 ; j < c.size() ; j++)
 				{
-					// Calculate the element size
-
-//					T ele_sz = 0;
-
-					// for each dimension multiply and reduce
-
-/*					for (size_t s = 0 ; s < dim ; s++)
-					{
-						ele_sz += szd[s] * abs(c[j][s]);
-					}*/
-
 					// Calculate the end point vertex id
 					// Calculate the start point id
 

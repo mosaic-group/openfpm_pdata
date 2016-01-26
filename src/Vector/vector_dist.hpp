@@ -924,12 +924,75 @@ public:
 		return vd->recv_mem_gm.get(i).getPointer();
 	}
 
+	/*! \brief Add local particle
+	 *
+	 * It add a local particle, with "local" we mean in this processor
+	 * the particle can be also created out of the processor domain, in this
+	 * case a call to map is required. Added particles are always created at the
+	 * end and can be accessed with getLastPos and getLastProp
+	 *
+	 */
+	void add()
+	{
+		v_prp.insert(g_m);
+		v_pos.insert(g_m);
+
+		g_m++;
+	}
+
+	/*! \brief Get the position of the last element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	template<unsigned int id> inline auto getLastPos() -> decltype(v_pos.template get<id>(0))
+	{
+		return v_pos.template get<id>(g_m-1);
+	}
+
+	/*! \brief Get the property of the last element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \tparam id property id
+	 * \param vec_key vector element
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline auto getLastProp() -> decltype(v_prp.template get<id>(0))
+	{
+		return v_prp.template get<id>(g_m-1);
+	}
+
 	/*! \brief Construct a cell list starting from the stored particles
 	 *
 	 * \tparam CellL CellList type to construct
 	 *
+	 * \param r_cut interation radius, or size of each cell
+	 *
+	 * \return the Cell list
+	 *
 	 */
 	template<typename CellL=CellList<dim,St,FAST,shift<dim,St> > > CellL getCellList(St r_cut)
+	{
+		return getCellList(r_cut,dec.getGhost());
+	}
+
+	/*! \brief Construct a cell list starting from the stored particles
+	 *
+	 * It differ from the get getCellList for an additional parameter, in case the
+	 * domain + ghost is not big enough to contain additional padding particles, a Cell list
+	 * with bigger space can be created
+	 * (padding particles in general are particles added by the user out of the domains)
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
+	 *
+	 */
+	template<typename CellL=CellList<dim,St,FAST,shift<dim,St> > > CellL getCellList(St r_cut, const Ghost<dim,St> & enlarge)
 	{
 
 		CellL cell_list;
@@ -939,7 +1002,7 @@ public:
 		// get the processor bounding box
 		Box<dim,St> pbox = dec.getProcessorBounds();
 		// extend by the ghost
-		pbox.enlarge(dec.getGhost());
+		pbox.enlarge(enlarge);
 
 		Box<dim,St> cell_box;
 
@@ -959,7 +1022,7 @@ public:
 
 		// for each particle add the particle to the cell list
 
-		auto it = getDomainIterator();
+		auto it = getIterator();
 
 		while (it.isNext())
 		{
@@ -973,7 +1036,41 @@ public:
 		return cell_list;
 	}
 
-	/*! \brief Get the iterator across the position of the particles
+	/*! \brief It return the number of particles contained by the previous processors
+	 *
+	 * \Warning It only work with the initial decomposition
+	 *
+	 * Given 1000 particles and 3 processors, you will get
+	 *
+	 * * Processor 0: 0
+	 * * Processor 1: 334
+	 * * Processor 2: 667
+	 *
+	 * \param np initial number of particles
+	 *
+	 */
+	size_t init_size_accum(size_t np)
+	{
+		size_t accum = 0;
+
+		// convert to a local number of elements
+		size_t p_np = np / v_cl.getProcessingUnits();
+
+		// Get non divisible part
+		size_t r = np % v_cl.getProcessingUnits();
+
+		accum = p_np * v_cl.getProcessUnitID();
+
+		// Distribute the remain particles
+		if (v_cl.getProcessUnitID() <= r)
+			accum += v_cl.getProcessUnitID();
+		else
+			accum += r;
+
+		return accum;
+	}
+
+	/*! \brief Get an iterator that traverse domain and ghost particles
 	 *
 	 * \return an iterator
 	 *
@@ -983,7 +1080,7 @@ public:
 		return vector_dist_iterator(0,v_pos.size());
 	}
 
-	/*! \brief Get the iterator across the position of the ghost particles
+	/*! \brief Get an iterator that traverse the ghost particles
 	 *
 	 * \return an iterator
 	 *
@@ -994,7 +1091,7 @@ public:
 	}
 
 
-	/*! \brief Get the iterator across the position of the particles
+	/*! \brief Get an iterator that traverse the particles in the domain
 	 *
 	 * \return an iterator
 	 *
