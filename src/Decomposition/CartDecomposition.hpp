@@ -12,6 +12,7 @@
 #include <cmath>
 #include "VCluster.hpp"
 #include "Graph/CartesianGraphFactory.hpp"
+#include "Graph/DistCartesianGraphFactory.hpp"
 #include "Decomposition.hpp"
 #include "Vector/map_vector.hpp"
 #include <vector>
@@ -30,6 +31,7 @@
 #include "nn_processor.hpp"
 #include "GraphMLWriter.hpp"
 #include "ParMetisDistribution.hpp"
+#include "DistParMetisDistribution.hpp"
 #include "MetisDistribution.hpp"
 #include "DLB.hpp"
 
@@ -51,6 +53,7 @@
  * \tparam T type of the space we decompose, Real, Integer, Complex ...
  * \tparam Memory Memory factory used to allocate memory
  * \tparam Domain Structure that contain the information of your physical domain
+ * \tparam Distribution type of distribution, can be ParMetisDistribution or MetisDistribution
  *
  * Given an N-dimensional space, this class decompose the space into a Cartesian grid of small
  * sub-sub-domain. At each sub-sub-domain is assigned  an id that identify which processor is
@@ -84,8 +87,7 @@
  *
  */
 
-template<unsigned int dim, typename T, typename Memory = HeapMemory,
-		template<unsigned int, typename > class Domain = Box, typename Distribution = ParMetisDistribution<dim, T>>
+template<unsigned int dim, typename T, typename Memory = HeapMemory, template<unsigned int, typename > class Domain = Box, typename Distribution = DistParMetisDistribution<dim, T>>
 class CartDecomposition: public ie_loc_ghost<dim, T>, public nn_prcs<dim, T>, public ie_ghost<dim, T>
 {
 
@@ -101,8 +103,7 @@ private:
 
 	//! This is the key type to access  data_s, for example in the case of vector
 	//! acc_key is size_t
-	typedef typename openfpm::vector<SpaceBox<dim, T>, Memory, openfpm::vector_grow_policy_default,
-			openfpm::vect_isel<SpaceBox<dim, T>>::value>::access_key acc_key;
+	typedef typename openfpm::vector<SpaceBox<dim, T>, Memory, openfpm::vector_grow_policy_default, openfpm::vect_isel<SpaceBox<dim, T>>::value>::access_key acc_key;
 
 	//! the set of all local sub-domain as vector
 	openfpm::vector<SpaceBox<dim, T>> sub_domains;
@@ -169,7 +170,7 @@ private:
 
 		// Optimize the decomposition creating bigger spaces
 		// And reducing Ghost over-stress
-		dec_optimizer<dim, Graph_CSR<nm_v, nm_e>> d_o(dist.getGraph(), gr.getSize());
+		dec_optimizer<dim, DistGraph_CSR<nm_v, nm_e>> d_o(dist.getGraph(), gr.getSize());
 
 		// set of Boxes produced by the decomposition optimizer
 		openfpm::vector<::Box<dim, size_t>> loc_box;
@@ -282,14 +283,11 @@ private:
 
 	/*! \brief Calculate communication and migration costs
 	 *
-	 * \param gh_s ghost thickness
 	 * \param ts how many timesteps have passed since last calculation, used to approximate the cost
 	 */
 	void computeCommunicationAndMigrationCosts(size_t ts)
 	{
-
-		size_t p_id = v_cl.getProcessUnitID();
-		float migration;
+		float migration = 0;
 
 		SpaceBox<dim, T> cellBox = cd.getCellBox();
 		float b_s = cellBox.getHigh(0);
@@ -314,7 +312,7 @@ private:
 
 			for (size_t s = 0; s < dist.getNSubSubDomainNeighbors(i); s++)
 			{
-				dist.setCommunicationCost(prev + s, 1 * dist.getVertexWeight(i) * ts);
+				dist.setCommunicationCost(i, s, 1 * dist.getVertexWeight(i) * ts);
 			}
 			prev += dist.getNSubSubDomainNeighbors(i);
 		}
@@ -573,8 +571,7 @@ public:
 		// get the smallest sub-domain dimension on each direction
 		for (size_t i = 0; i < dim; i++)
 		{
-			if (ghost.template getLow(i) >= ss_box.getHigh(i)
-					|| ghost.template getHigh(i) >= domain.template getHigh(i) / gr.size(i))
+			if (ghost.template getLow(i) >= ss_box.getHigh(i) || ghost.template getHigh(i) >= domain.template getHigh(i) / gr.size(i))
 			{
 				std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " : Ghost are bigger than one domain" << "\n";
 			}
@@ -659,7 +656,7 @@ public:
 
 		dist.decompose();
 
-		CreateDecomposition(v_cl);
+		//CreateDecomposition(v_cl);
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
@@ -674,14 +671,46 @@ public:
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
 	 *
+	 * \return true if the re-balance has been executed, false otherwise
 	 */
-	void rebalance(DLB & dlb)
+	bool rebalance(DLB & dlb)
 	{
+		// if the DLB heuristic to use is the "Unbalance Threshold" get unbalance percentage
+		if (dlb.getHeurisitc() == DLB::Heuristic::UNBALANCE_THRLD)
+		{
+			float unbalance = dist.getUnbalance();
+			dlb.setUnbalance(unbalance);
+			if (v_cl.getProcessUnitID() == 0)
+			{
+				std::cout << std::setprecision(3) << unbalance << "\n";
+			}
+		}
+
 		if (dlb.rebalanceNeeded())
 		{
 			computeCommunicationAndMigrationCosts(dlb.getNTimeStepSinceDLB());
 			dist.refine();
+			return true;
 		}
+		return false;
+	}
+
+	/*! \brief Get the current un-balance value
+	 *
+	 * \return the un-balance percentage value
+	 */
+	float getUnbalance()
+	{
+		return dist.getUnbalance();
+	}
+
+	/*! \brief Compute the processor load counting the total weights of its vertices
+	 *
+	 * \return the current processor load
+	 */
+	size_t getProcessorLoad()
+	{
+		return dist.getProcessorLoad();
 	}
 
 	/*! \brief function that return the position of the cell in the space
@@ -690,9 +719,18 @@ public:
 	 * \param pos vector that will contain x, y, z
 	 *
 	 */
-	inline void getSubSubDomainPosition(size_t id, openfpm::vector<real_t> &pos)
+	inline void getSubSubDomainPosition(size_t id, T (&pos)[dim])
 	{
 		dist.getVertexPosition(id, pos);
+	}
+
+	/*! \brief Get the number of sub-sub-domains in this sub-graph
+	 *
+	 * @return number of sub-sub-domains in this sub-graph
+	 */
+	size_t getNSubSubDomains()
+	{
+		return dist.getNSubSubDomains();
 	}
 
 	/*! \brief function that set the weight of the vertex
@@ -703,6 +741,25 @@ public:
 	inline void setSubSubDomainComputationCost(size_t id, size_t weight)
 	{
 		dist.setVertexWeight(id, weight);
+	}
+
+	/*! \brief function that set the weight of the vertex
+	 *
+	 * \param id vertex id
+	 *
+	 */
+	inline size_t getSubSubDomainComputationCost(size_t id)
+	{
+		return dist.getVertexWeight(id);
+	}
+
+	/*! \brief Operator to access the size of the sub-graph
+	 *
+	 * \return the size of the subgraph
+	 */
+	size_t subSize()
+	{
+		return dist.subSize();
 	}
 
 	/*! \brief Get the number of local sub-domains
@@ -824,8 +881,7 @@ public:
 		//! subdomains_X.vtk domain for the local processor (X) as union of sub-domain
 		VTKWriter<openfpm::vector<::SpaceBox<dim, T>>, VECTOR_BOX> vtk_box1;
 		vtk_box1.add(sub_domains);
-		vtk_box1.write(
-				output + std::string("subdomains_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
+		vtk_box1.write(output + std::string("subdomains_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
 		nn_prcs<dim, T>::write(output);
 		ie_ghost<dim, T>::write(output, v_cl.getProcessUnitID());
@@ -864,9 +920,7 @@ public:
 		{
 			for (size_t i = 0; i<ie_ghost < dim, T>::getProcessorNEGhost(p); i++)
 			{
-				std::cout << ie_ghost<dim, T>::getProcessorEGhostBox(p, i).toString() << "   prc="
-						<< nn_prcs<dim, T>::IDtoProc(p) << "   id=" << ie_ghost<dim, T>::getProcessorEGhostId(p, i)
-						<< "\n";
+				std::cout << ie_ghost<dim, T>::getProcessorEGhostBox(p, i).toString() << "   prc=" << nn_prcs<dim, T>::IDtoProc(p) << "   id=" << ie_ghost<dim, T>::getProcessorEGhostId(p, i) << "\n";
 			}
 		}
 
@@ -876,9 +930,7 @@ public:
 		{
 			for (size_t i = 0; i<ie_ghost < dim, T>::getProcessorNIGhost(p); i++)
 			{
-				std::cout << ie_ghost<dim, T>::getProcessorIGhostBox(p, i).toString() << "   prc="
-						<< nn_prcs<dim, T>::IDtoProc(p) << "   id=" << ie_ghost<dim, T>::getProcessorIGhostId(p, i)
-						<< "\n";
+				std::cout << ie_ghost<dim, T>::getProcessorIGhostBox(p, i).toString() << "   prc=" << nn_prcs<dim, T>::IDtoProc(p) << "   id=" << ie_ghost<dim, T>::getProcessorIGhostId(p, i) << "\n";
 			}
 		}
 	}
@@ -890,10 +942,7 @@ public:
 	 */
 	void printCurrentDecomposition(int id)
 	{
-		if (v_cl.getProcessUnitID() == 0)
-		{
-			dist.printCurrentDecomposition(id);
-		}
+		dist.printCurrentDecomposition(id);
 	}
 
 	//! Increment the reference counter

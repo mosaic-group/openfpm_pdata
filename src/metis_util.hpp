@@ -159,7 +159,7 @@ class Metis
 			{
 				Mg.adjncy[prev + s] = g.getChild(i, s);
 
-				Mg.adjwgt[prev + s] = g.edge(prev + s).template get<nm_e::communication>();
+				Mg.adjwgt[prev + s] = g.getChildEdge(i, s).template get<nm_e::communication>();
 			}
 
 			// update the position for the next vertex
@@ -256,6 +256,9 @@ public:
 
 		//! Is an output vector containing the partition for each vertex
 		Mg.part = new idx_t[g.getNVertex()];
+
+		for (int i = 0; i < g.getNVertex(); i++)
+			Mg.part[i] = 0;
 	}
 
 	/*! \brief destructor
@@ -375,7 +378,7 @@ public:
 	void decompose(Graph_part & gp)
 	{
 		// Decompose
-		METIS_PartGraphKway(Mg.nvtxs, Mg.ncon, Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.vsize, Mg.adjwgt, Mg.nparts, Mg.tpwgts,
+		METIS_PartGraphRecursive(Mg.nvtxs, Mg.ncon, Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.vsize, Mg.adjwgt, Mg.nparts, Mg.tpwgts,
 				Mg.ubvec, Mg.options, Mg.objval, Mg.part);
 
 		// vertex id

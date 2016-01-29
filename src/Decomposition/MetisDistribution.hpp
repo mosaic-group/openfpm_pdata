@@ -55,8 +55,13 @@ public:
 		{
 			for (size_t i = 0; i < gp.getNVertex(); i++)
 			{
-				gp.vertex(i).template get<nm_v::z>() = 0.0;
+				gp.vertex(i).template get<nm_v::x>()[2] = 0.0;
 			}
+		}
+
+		for (size_t i = 0; i < gp.getNVertex(); i++)
+		{
+			gp.vertex(i).template get<nm_v::global_id>() = i;
 		}
 	}
 
@@ -93,17 +98,16 @@ public:
 	 * \param pos vector that will contain x, y, z
 	 *
 	 */
-	void getVertexPosition(size_t id, openfpm::vector<real_t> &pos)
+	void getVertexPosition(size_t id, T (&pos)[dim])
 	{
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex()
-					<< ")\n";
+			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
 
-		pos.get(0) = gp.vertex(id).template get<nm_v::x>();
-		pos.get(1) = gp.vertex(id).template get<nm_v::y>();
-
+		// Copy the geometrical informations inside the pos vector
+		pos[0] = gp.vertex(id).template get<nm_v::x>()[0];
+		pos[1] = gp.vertex(id).template get<nm_v::x>()[1];
 		if (dim == 3)
-			pos.get(2) = gp.vertex(id).template get<nm_v::z>();
+			pos[2] = gp.vertex(id).template get<nm_v::x>()[2];
 	}
 
 	/*! \brief function that set the weight of the vertex
@@ -114,12 +118,11 @@ public:
 	 */
 	void setVertexWeight(size_t id, size_t weight)
 	{
-		if(!verticesGotWeights)
+		if (!verticesGotWeights)
 			verticesGotWeights = true;
 
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex()
-					<< ")\n";
+			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
 
 		gp.vertex(id).template get<nm_v::computation>() = weight;
 	}
@@ -140,8 +143,7 @@ public:
 	size_t getVertexWeight(size_t id)
 	{
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex()
-					<< ")\n";
+			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
 
 		return gp.vertex(id).template get<nm_v::computation>();
 	}
@@ -154,21 +156,25 @@ public:
 	void setMigrationCost(size_t id, size_t migration)
 	{
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex()
-					<< ")\n";
+			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
 
 		gp.vertex(id).template get<nm_v::migration>() = migration;
 	}
 
 	/*! \brief Set communication cost of the edge id
 	 *
+	 * \param v_id Id of the source vertex of the edge
+	  * \param e i child of the vertex
+	 * \param communication Communication value
 	 */
-	void setCommunicationCost(size_t id, size_t communication)
+	void setCommunicationCost(size_t v_id, size_t e, size_t communication)
 	{
-		if (id >= gp.getNEdge())
-			std::cerr << "Such edge doesn't exist (id = " << id << ", " << "total size = " << gp.getNEdge() << ")\n";
+		size_t e_id = v_id + e;
 
-		gp.edge(id).template get<nm_e::communication>() = communication;
+		if (e_id >= gp.getNEdge())
+			std::cerr << "Such edge doesn't exist (id = " << e_id << ", " << "total size = " << gp.getNEdge() << ")\n";
+
+		gp.getChildEdge(v_id, e).template get<nm_e::communication>() = communication;
 	}
 
 	/*! \brief Returns total number of sub-sub-domains in the distribution graph
@@ -186,13 +192,12 @@ public:
 	size_t getNSubSubDomainNeighbors(size_t id)
 	{
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex()
-					<< ")\n";
+			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
 
 		return gp.getNChilds(id);
 	}
 
-	/* \brief Print current graph and save it to file with name test_graph_[id]
+	/*! \brief Print current graph and save it to file with name test_graph_[id]
 	 *
 	 * \param id to attach to the filename
 	 *
@@ -202,6 +207,47 @@ public:
 		VTKWriter<Graph_CSR<nm_v, nm_e>, GRAPH> gv2(gp);
 		gv2.write("test_graph_" + std::to_string(id) + ".vtk");
 
+	}
+
+	/*! \brief Compute the unbalance value
+	 *
+	 * \return the unbalance value
+	 */
+	float getUnbalance()
+	{
+		long min, max, sum;
+		std::vector<long> loads(v_cl.getProcessingUnits());
+
+		for (size_t i = 0; i < loads.size(); i++)
+			loads[i] = 0;
+
+		for (size_t i = 0; i < gp.getNVertex(); i++)
+			loads[gp.vertex(i).template get<nm_v::proc_id>()]++;
+
+		max = *std::max_element(loads.begin(), loads.end());
+		min = *std::min_element(loads.begin(), loads.end());
+		sum = std::accumulate(loads.begin(), loads.end(), 0);
+
+		float unbalance = ((float) (max - min)) / (float) sum;
+
+		return unbalance;
+	}
+
+	/*! \brief Compute the processor load counting the total weights of its vertices
+	 *
+	 * \return the computational load of the processor graph
+	 */
+	size_t getProcessorLoad()
+	{
+		size_t load = 0;
+
+		for (size_t i = 0; i < gp.getNVertex(); i++)
+		{
+			if (gp.vertex(i).template get<nm_v::proc_id>() == v_cl.getProcessUnitID())
+				load += gp.vertex(i).template get<nm_v::computation>();
+		}
+
+		return load;
 	}
 };
 

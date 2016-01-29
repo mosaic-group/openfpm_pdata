@@ -7,7 +7,7 @@
 
 #include "SubdomainGraphNodes.hpp"
 #include "parmetis_util.hpp"
-
+#include "Graph/dist_map_graph.hpp"
 #ifndef SRC_DECOMPOSITION_PARMETISDISTRIBUTION_HPP_
 #define SRC_DECOMPOSITION_PARMETISDISTRIBUTION_HPP_
 
@@ -50,14 +50,8 @@ class ParMetisDistribution
 	//! Flag to check if weights are used on vertices
 	bool verticesGotWeights = false;
 
-	/*! \brief fill the graph of the processor with the first decomposition (linear)
+	/*! \brief Fill the graph of the processor with the first decomposition (linear)
 	 * Put vertices into processor graph (different for each processor)
-	 *
-	 * \param sub_g sub graph to fill
-	 * \param gp mai graph, source for the vertices
-	 * \param vtxdist array with the distribution of vertices through processors
-	 * \param proc_id rank of the processor
-	 * \param Np total number of processors
 	 */
 	void fillSubGraph()
 	{
@@ -68,12 +62,19 @@ class ParMetisDistribution
 		for (size_t j = vtxdist.get(p_id), local_j = 0; j < vtxdist.get(p_id + 1); j++, local_j++)
 		{
 			// Add vertex
-			nm_v pv = gp.vertexById(j);
-			sub_g.addVertex(pv);
+
+			nm_v pv = gp.vertexByMapId(j);
+			sub_g.addVertex(pv, gp.vertexByMapId(j).template get<nm_v::global_id>());
 
 			// Add edges of vertex
 			for (size_t s = 0; s < gp.getNChilds(j); s++)
 			{
+				if (gp.vertex(gp.getChild(j, s)).template get<nm_v::proc_id>() != v_cl.getProcessUnitID())
+					gp.vertex(gp.getChild(j, s)).template get<nm_v::fake_v>() = 1;
+				else
+					gp.vertex(gp.getChild(j, s)).template get<nm_v::fake_v>() = 0;
+
+				// Add Edge
 				nm_e pe = gp.edge(j + s);
 				sub_g.template addEdge<NoCheck>(local_j, gp.getChild(j, s), pe);
 			}
@@ -86,7 +87,7 @@ class ParMetisDistribution
 			{
 				for (size_t j = vtxdist.get(i); j < vtxdist.get(i + 1); j++)
 				{
-					gp.vertexById(j).template get<nm_v::proc_id>() = i;
+					gp.vertexByMapId(j).template get<nm_v::proc_id>() = i;
 				}
 			}
 		}
@@ -94,14 +95,6 @@ class ParMetisDistribution
 
 	/*! \brief Update main graph ad subgraph with the partition in partitions param and renumber graphs
 	 *
-	 * \param partitions array storing all the partitions
-	 * \param gp main graph
-	 * \param sub_g sub graph
-	 * \param v_per_proc array needed to recontruct the main graph
-	 * \param vtxdist array with the distribution of vertices through processors
-	 * \param statuses array of statsu objects
-	 * \param proc_id current processors rank
-	 * \param Np total umber of processors
 	 */
 	void updateGraphs()
 	{
@@ -124,7 +117,6 @@ class ParMetisDistribution
 		// Update main graph with other partitions made by Parmetis in other processors and the local partition
 		for (int i = 0; i < Np; i++)
 		{
-
 			int ndata = partitions.get(i).size();
 
 			// Update the main graph with received informations
@@ -135,32 +127,40 @@ class ParMetisDistribution
 				n_vtxdist.get(partitions.get(i).get(k) + 1)++;
 
 				if
-(				gp.vertexById(l).template get<nm_v::proc_id>() != partitions.get(i).get(k))
-				moved++;
+(				gp.vertexByMapId(l).template get<nm_v::proc_id>()
+				!= partitions.get(i).get(k))
+				{
+					moved++;
+				}
 
 				// Update proc id in the vertex
-				gp.vertexById(l).template get<nm_v::proc_id>() = partitions.get(i).get(k);
-				gp.vertex(l).template get<nm_v::global_id>() = l;
+				gp.vertexByMapId(l).template get<nm_v::proc_id>() = partitions.get(i).get(k);
 
 				// Add vertex to temporary structure of distribution (needed to update main graph)
-				v_per_proc.get(partitions.get(i).get(k)).add(gp.getVertexOldId(l));
+				v_per_proc.get(partitions.get(i).get(k)).add(gp.getVertexGlobalId(l));
 
 				// Add vertices belonging to this processor in sub graph
 				if (partitions.get(i).get(k) == p_id)
 				{
 
-					nm_v pv = gp.vertexById(l);
-					sub_g.addVertex(pv);
+					nm_v pv = gp.vertexByMapId(l);
+					sub_g.addVertex(pv, pv.template get<nm_v::global_id>());
 
 					// Add edges of vertex
-					for (size_t s = 0; s < gp.getNChildsByVertexId(l); s++)
+					for (size_t s = 0; s < gp.getNChildsByMapId(l); s++)
 					{
+						if (gp.vertex(gp.getChildByVertexId(l, s)).template get<nm_v::proc_id>() != v_cl.getProcessUnitID())
+							gp.vertex(gp.getChildByVertexId(l, s)).template get<nm_v::fake_v>() = 1;
+						else
+							gp.vertex(gp.getChildByVertexId(l, s)).template get<nm_v::fake_v>() = 0;
+
 						nm_e pe = gp.edge(l + s);
 						sub_g.template addEdge<NoCheck>(local_j, gp.getChildByVertexId(l, s), pe);
 					}
 
 					local_j++;
 				}
+
 			}
 		}
 
@@ -177,11 +177,10 @@ class ParMetisDistribution
 		}
 
 		// Renumbering subgraph
-		sub_g.reset_map_ids();
+		sub_g.resetLocalToGlobalMap();
 		for (size_t j = vtxdist.get(p_id), i = 0; j < vtxdist.get(p_id + 1); j++, i++)
 		{
-			sub_g.set_map_ids(j, sub_g.vertex(i).template get<nm_v::global_id>());
-			sub_g.vertex(i).template get<nm_v::id>() = j;
+			sub_g.setMapId<nm_v::id>(j, sub_g.vertex(i).template get<nm_v::global_id>(), i);
 		}
 
 		// Renumbering main graph
@@ -189,8 +188,7 @@ class ParMetisDistribution
 		{
 			for (size_t j = vtxdist.get(p), i = 0; j < vtxdist.get(p + 1); j++, i++)
 			{
-				gp.set_map_ids(j, v_per_proc.get(p).get(i));
-				gp.vertex(v_per_proc.get(p).get(i)).template get<nm_v::id>() = j;
+				gp.setMapId<nm_v::id>(j, v_per_proc.get(p).get(i), v_per_proc.get(p).get(i));
 			}
 		}
 
@@ -201,6 +199,15 @@ class ParMetisDistribution
 
 	}
 
+	/*! \brief Callback of the sendrecv to set the size of the array received
+	 *
+	 * \param msg_i Index of the message
+	 * \param total_msg Total numeber of messages
+	 * \param total_p Total number of processors to comunicate with
+	 * \param i Processor id
+	 * \param ri Request id
+	 * \param ptr Void pointer parameter for additional data to pass to the call-back
+	 */
 	static void * message_receive(size_t msg_i, size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
 	{
 		openfpm::vector < openfpm::vector < idx_t >> *v = static_cast<openfpm::vector<openfpm::vector<idx_t>> *>(ptr);
@@ -212,16 +219,20 @@ class ParMetisDistribution
 
 public:
 
-	//! constructor
+	/*! Constructor for the ParMetis class
+	 *
+	 * @param v_cl Vcluster to use as communication object in this class
+	 */
 	ParMetisDistribution(Vcluster & v_cl) :
-			v_cl(v_cl), parmetis_graph(v_cl, v_cl.getProcessingUnits()), vtxdist(v_cl.getProcessingUnits() + 1), partitions(
-					v_cl.getProcessingUnits()), v_per_proc(v_cl.getProcessingUnits())
+			v_cl(v_cl), parmetis_graph(v_cl, v_cl.getProcessingUnits()), vtxdist(v_cl.getProcessingUnits() + 1), partitions(v_cl.getProcessingUnits()), v_per_proc(v_cl.getProcessingUnits())
 
 	{
 	}
 
 	/*! \brief Initialize the distribution graph
 	 *
+	 * @param grid
+	 * @param dom
 	 */
 	void init(grid_sm<dim, void> & grid, Domain<dim, T> dom)
 	{
@@ -232,16 +243,25 @@ public:
 		// Create a cartesian grid graph
 		CartesianGraphFactory<dim, Graph_CSR<nm_v, nm_e>> g_factory_part;
 		gp = g_factory_part.template construct<NO_EDGE, nm_v::id, T, dim - 1, 0, 1, 2>(gr.getSize(), domain);
-		gp.init_map_ids();
+		gp.initLocalToGlobalMap();
+
+		// Create sub graph
+		DistCartesianGraphFactory<dim, Graph_CSR<nm_v, nm_e>> dist_g_factory;
+		sub_g = dist_g_factory.template construct<NO_EDGE, nm_v::id, nm_v::global_id, nm_e::srcgid, nm_e::dstgid, T, dim - 1, 0, 1, 2>(gr.getSize(), domain, vtxdist);
 
 		// Init to 0.0 axis z (to fix in graphFactory)
 		if (dim < 3)
 		{
 			for (size_t i = 0; i < gp.getNVertex(); i++)
 			{
-				gp.vertex(i).template get<nm_v::z>() = 0.0;
+				gp.vertex(i).template get<nm_v::x>()[2] = 0.0;
 			}
 		}
+		for (size_t i = 0; i < gp.getNVertex(); i++)
+		{
+			gp.vertex(i).template get<nm_v::global_id>() = i;
+		}
+
 	}
 
 	/*! \brief Get the current graph (main)
@@ -257,30 +277,12 @@ public:
 	 */
 	void decompose()
 	{
+
 		//! Get the processor id
 		size_t p_id = v_cl.getProcessUnitID();
 
 		//! Get the number of processing units
 		size_t Np = v_cl.getProcessingUnits();
-
-		//! Division of vertices in Np graphs
-		//! Put (div+1) vertices in mod graphs
-		//! Put div vertices in the rest of the graphs
-		size_t mod_v = gp.getNVertex() % Np;
-		size_t div_v = gp.getNVertex() / Np;
-
-		for (int i = 0; i <= Np; i++)
-		{
-			if (i < mod_v)
-				vtxdist.get(i) = (div_v + 1) * (i);
-			else
-				vtxdist.get(i) = (div_v) * (i) + mod_v;
-		}
-
-		//TODO transform in factory
-
-		//! Put vertices into processor graph (different for each processor)
-		fillSubGraph();
 
 		parmetis_graph.initSubGraph(sub_g);
 
@@ -372,45 +374,88 @@ public:
 		updateGraphs();
 	}
 
+	/*! \brief Compute the unbalance value
+	 *
+	 * \return the unbalance value
+	 */
+	float getUnbalance()
+	{
+		long t_cost = 0;
+
+		long min, max, sum;
+		float unbalance;
+
+		t_cost = getProcessorLoad();
+
+		min = t_cost;
+		max = t_cost;
+		sum = t_cost;
+
+		v_cl.min(min);
+		v_cl.max(max);
+		v_cl.sum(sum);
+		v_cl.execute();
+
+		unbalance = ((float) (max - min)) / (float) sum;
+
+		return unbalance * 100;
+	}
+
 	/*! \brief function that return the position of the vertex in the space
 	 *
 	 * \param id vertex id
 	 * \param pos vector that will contain x, y, z
 	 *
 	 */
-	void getVertexPosition(size_t id, openfpm::vector<real_t> &pos)
+	void getVertexPosition(size_t id, T (&pos)[dim])
 	{
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex()
-					<< ")\n";
+			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
 
-		pos.get(0) = gp.vertex(id).template get<nm_v::x>();
-		pos.get(1) = gp.vertex(id).template get<nm_v::y>();
+		//TOACTIVATE when move to the distributed graph
+		//Return the pos object only if the vertex is in this graph
+		/*
+		 if(sub_g.vertexIsInThisGraph(id)){
+		 pos[0] = sub_g.vertex(id).template get<nm_v::x>()[0];
+		 pos[1] = sub_g.vertex(id).template get<nm_v::x>()[1];
+		 if (dim == 3)
+		 pos[2] = sub_g.vertex(id).template get<nm_v::x>()[2];
+		 }*/
 
+		// Copy the geometrical informations inside the pos vector
+		pos[0] = gp.vertex(id).template get<nm_v::x>()[0];
+		pos[1] = gp.vertex(id).template get<nm_v::x>()[1];
 		if (dim == 3)
-			pos.get(2) = gp.vertex(id).template get<nm_v::z>();
+			pos[2] = gp.vertex(id).template get<nm_v::x>()[2];
 	}
 
-	/*! \brief function that set the weight of the vertex
+	/*! \brief Function that set the weight of the vertex
 	 *
 	 * \param id vertex id
-	 * \param wieght to give to the vertex
+	 * \param weight to give to the vertex
 	 *
 	 */
-	void setVertexWeight(size_t id, size_t weight)
+	inline void setVertexWeight(size_t id, size_t weight)
 	{
-		if(!verticesGotWeights)
+		if (!verticesGotWeights)
 			verticesGotWeights = true;
 
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex()
-					<< ")\n";
+			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
 
+		// If the vertex is inside this processor update the value
+		if (sub_g.vertexIsInThisGraph(id))
+		{
+			sub_g.getLocalVertexByGlobalId(id).template get<nm_v::computation>() = weight;
+		}
+
+		// Update vertex in main graph
 		gp.vertex(id).template get<nm_v::computation>() = weight;
 	}
 
 	/*! \brief Checks if weights are used on the vertices
 	 *
+	 * \return true if weights are used in the decomposition
 	 */
 	bool weightsAreUsed()
 	{
@@ -425,10 +470,25 @@ public:
 	size_t getVertexWeight(size_t id)
 	{
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex()
-					<< ")\n";
+			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
 
 		return gp.vertex(id).template get<nm_v::computation>();
+	}
+
+	/*! \brief Compute the processor load counting the total weights of its vertices
+	 *
+	 * \return the computational load of the processor graph
+	 */
+	size_t getProcessorLoad()
+	{
+		size_t load = 0;
+
+		for (size_t i = 0; i < sub_g.getNVertex(); i++)
+		{
+			load += sub_g.vertex(i).template get<nm_v::computation>();
+		}
+		std::cout << v_cl.getProcessUnitID() << " weight " << load << " size " << sub_g.getNVertex() << "\n";
+		return load;
 	}
 
 	/*! \brief return number of moved vertices in all iterations so far
@@ -463,21 +523,39 @@ public:
 	void setMigrationCost(size_t id, size_t migration)
 	{
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex()
-					<< ")\n";
+			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+
+		// If the vertex is inside this processor update the value
+		if (sub_g.vertexIsInThisGraph(id))
+		{
+			sub_g.getLocalVertexByGlobalId(id).template get<nm_v::migration>() = migration;
+		}
 
 		gp.vertex(id).template get<nm_v::migration>() = migration;
 	}
 
 	/*! \brief Set communication cost of the edge id
 	 *
+	 * \param v_id Id of the source vertex of the edge
+	 * \param e i child of the vertex
+	 * \param communication Communication value
 	 */
-	void setCommunicationCost(size_t id, size_t communication)
+	void setCommunicationCost(size_t v_id, size_t e, size_t communication)
 	{
-		if (id >= gp.getNEdge())
-			std::cerr << "Such edge doesn't exist (id = " << id << ", " << "total size = " << gp.getNEdge() << ")\n";
+		size_t e_id = v_id + e;
 
-		gp.edge(id).template get<nm_e::communication>() = communication;
+		if (e_id >= gp.getNEdge())
+			std::cerr << "Such edge doesn't exist (id = " << e_id << ", " << "total size = " << gp.getNEdge() << ")\n";
+
+		// If the vertex is inside this processor update the value
+		if (sub_g.vertexIsInThisGraph(v_id))
+		{
+			// Get the local id of the vertex
+			size_t local_id = sub_g.getLocalIdFromGlobalId(v_id);
+			sub_g.getChildEdge(local_id, e).template get<nm_e::communication>() = communication;
+		}
+
+		gp.getChildEdge(v_id, e).template get<nm_e::communication>() = communication;
 	}
 
 	/*! \brief Returns total number of sub-sub-domains in the distribution graph
@@ -495,21 +573,23 @@ public:
 	size_t getNSubSubDomainNeighbors(size_t id)
 	{
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex()
-					<< ")\n";
+			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
 
 		return gp.getNChilds(id);
 	}
 
-	/* \brief Print current graph and save it to file with name test_graph_[id]
+	/*! \brief Print current graph and save it to file with name test_graph_[id]
 	 *
 	 * \param id to attach to the filename
 	 *
 	 */
 	void printCurrentDecomposition(int id)
 	{
-		VTKWriter<Graph_CSR<nm_v, nm_e>, GRAPH> gv2(gp);
-		gv2.write("test_graph_" + std::to_string(id) + ".vtk");
+		if (v_cl.getProcessUnitID() == 0)
+		{
+			VTKWriter<Graph_CSR<nm_v, nm_e>, GRAPH> gv2(gp);
+			gv2.write("test_graph_" + std::to_string(id) + ".vtk");
+		}
 
 	}
 };

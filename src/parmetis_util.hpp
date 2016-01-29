@@ -160,7 +160,7 @@ class Parmetis
 			Mg.xadj[id] = prev;
 
 			if (main)
-				real_id = sub_g.get_real_id(sub_g.vertex(i).template get<nm_v::id>());
+				real_id = sub_g.getGlobalIdFromMap(sub_g.vertex(i).template get<nm_v::id>());
 			else
 				real_id = i;
 
@@ -463,14 +463,14 @@ public:
 	{
 
 		// Decompose
-		/*
+
 		ParMETIS_V3_PartKway((idx_t *) vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag,
 				Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.options, Mg.edgecut, Mg.part, &comm);
-		*/
+		/*
 		 ParMETIS_V3_AdaptiveRepart( (idx_t *) vtxdist.getPointer(), Mg.xadj,Mg.adjncy,Mg.vwgt,Mg.vsize,Mg.adjwgt, Mg.wgtflag, Mg.numflag,
 		 Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.itr, Mg.options, Mg.edgecut,
 		 Mg.part, &comm );
-
+		*/
 
 		// For each vertex store the processor that contain the data
 		for (size_t j = 0, id = 0; j < sub_g.getNVertex(); j++, id++)
