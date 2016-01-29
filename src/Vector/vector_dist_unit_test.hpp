@@ -822,6 +822,43 @@ BOOST_AUTO_TEST_CASE( vector_dist_not_periodic_map )
 	}
 }
 
+
+BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
+{
+/*	typedef Point<3,float> s;
+
+	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	// factor
+	float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+
+	// ghost
+	Ghost<3,float> ghost(0.05 / factor);
+
+	// Distributed vector
+	vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(1,box,bc,ghost);
+
+	// Put particles on a grid creating a Grid iterator
+	auto it = vd.getGridIterator(sz);
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.template getPos<s::x>(key)[0] = key.get(0);
+		vd.template getPos<s::x>(key)[1] = key.get(1);
+		vd.template getPos<s::x>(key)[2] = key.get(2);
+
+		++it;
+	}
+
+	vd.map();*/
+
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif /* VECTOR_DIST_UNIT_TEST_HPP_ */

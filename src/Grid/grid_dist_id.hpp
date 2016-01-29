@@ -7,6 +7,7 @@
 #include "VCluster.hpp"
 #include "Space/SpaceBox.hpp"
 #include "util/mathutil.hpp"
+#include "grid_dist_id_iterator_dec.hpp"
 #include "grid_dist_id_iterator.hpp"
 #include "grid_dist_id_iterator_sub.hpp"
 #include "grid_dist_key.hpp"
@@ -56,7 +57,7 @@ class grid_dist_id
 	Ghost<dim,St> ghost;
 
 	//! Local grids
-	Vcluster_object_array<device_grid> loc_grid;
+	openfpm::vector<device_grid> loc_grid;
 
 	//! Space Decomposition
 	Decomposition & dec;
@@ -369,8 +370,11 @@ class grid_dist_id
 		// Get the number of local grid needed
 		size_t n_grid = dec.getNLocalHyperCube();
 
+		// create gdb
+		create_gdb_ext<dim,Decomposition>(gdb_ext,dec,cd_sm);
+
 		// create local grids for each hyper-cube
-		loc_grid = v_cl.allocate<device_grid>(n_grid);
+		loc_grid.resize(n_grid);
 
 		// Size of the grid on each dimension
 		size_t l_res[dim];
@@ -378,32 +382,16 @@ class grid_dist_id
 		// Allocate the grids
 		for (size_t i = 0 ; i < n_grid ; i++)
 		{
-			gdb_ext.add();
 
-			// Get the local hyper-cube
-			SpaceBox<dim,St> sp = dec.getLocalHyperCube(i);
-			SpaceBox<dim,St> sp_g = dec.getSubDomainWithGhost(i);
-
-			// Convert from SpaceBox<dim,St> to SpaceBox<dim,long int>
-			SpaceBox<dim,long int> sp_t = cd_sm.convertDomainSpaceIntoGridUnits(sp);
-			SpaceBox<dim,long int> sp_tg = cd_sm.convertDomainSpaceIntoGridUnits(sp_g);
-
-			//! Save the origin of the sub-domain of the local grid
-			gdb_ext.last().origin = sp_tg.getP1();
-
-			// save information about the local grid: domain box seen inside the domain + ghost box (see GDBoxes for a visual meaning)
-			// and where the GDBox start, or the origin of the local grid (+ghost) in global coordinate
-			gdb_ext.last().Dbox = sp_t;
-			gdb_ext.last().Dbox -= sp_tg.getP1();
-
-			gdb_ext.last().GDbox = sp_tg;
-			gdb_ext.last().GDbox -= sp_tg.getP1();
-
-			// center to zero
-			sp_tg -= sp_tg.getP1();
+			SpaceBox<dim,long int> sp_tg = gdb_ext.get(i).GDbox;
 
 			// Get the size of the local grid
-			for (size_t i = 0 ; i < dim ; i++) {l_res[i] = (sp_tg.getHigh(i) >= 0)?(sp_tg.getHigh(i)+1):0;}
+			// The boxes indicate the extension of the index the size
+			// is this extension +1
+			// for example a 1D box (interval) from 0 to 3 in one dimension have
+			// the points 0,1,2,3 = so a total of 4 points
+			for (size_t i = 0 ; i < dim ; i++)
+				l_res[i] = (sp_tg.getHigh(i) >= 0)?(sp_tg.getHigh(i)+1):0;
 
 			// Set the dimensions of the local grid
 			loc_grid.get(i).resize(l_res);
@@ -590,6 +578,7 @@ public:
 		// Initialize structures
 		InitializeStructures(g_sz);
 	}
+
 
 	/*! \brief Get an object containing the grid informations
 	 *

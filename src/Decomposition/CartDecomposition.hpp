@@ -352,6 +352,10 @@ private:
 
 public:
 
+	static constexpr int dims = dim;
+
+	typedef T stype;
+
 	//! Increment the reference counter
 	void incRef()
 	{ref_cnt++;}
