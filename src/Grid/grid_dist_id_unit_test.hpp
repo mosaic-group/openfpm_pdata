@@ -268,6 +268,15 @@ void Test2D(const Box<2,float> & domain, long int k)
 
 		auto dom2 = g_dist.getDomainIterator();
 
+		grid_key_dx<2> start = dom2.getStart();
+		grid_key_dx<2> stop = dom2.getStop();
+
+		BOOST_REQUIRE_EQUAL((long int)stop.get(0),(long int)g_dist.size(0)-1);
+		BOOST_REQUIRE_EQUAL((long int)stop.get(1),(long int)g_dist.size(1)-1);
+
+		BOOST_REQUIRE_EQUAL(start.get(0),0);
+		BOOST_REQUIRE_EQUAL(start.get(1),0);
+
 		bool match = true;
 
 		// check that the grid store the correct information
@@ -945,7 +954,11 @@ void Test3D_dup(const Box<3,float> & domain, long int k)
 
 		//! [Construct two grid with the same decomposition]
 
-		BOOST_REQUIRE_EQUAL(g_dist2.getDecomposition().ref(),2);
+		bool ret = g_dist2.getDecomposition().check_consistency();
+		BOOST_REQUIRE_EQUAL(ret,true);
+		ret = g_dist2.getDecomposition().is_equal(g_dist2.getDecomposition());
+		BOOST_REQUIRE_EQUAL(ret,true);
+
 
 		auto dom_g1 = g_dist1.getDomainIterator();
 		auto dom_g2 = g_dist2.getDomainIterator();
@@ -995,11 +1008,8 @@ void Test3D_dup(const Box<3,float> & domain, long int k)
 
 		//! [Construct two grid with the same decomposition]
 
-		BOOST_REQUIRE_EQUAL(g_dist2->getDecomposition().ref(),2);
-
 		delete g_dist1;
 
-		BOOST_REQUIRE_EQUAL(g_dist2->getDecomposition().ref(),1);
 		bool ret = g_dist2->getDecomposition().check_consistency();
 		BOOST_REQUIRE_EQUAL(ret,true);
 

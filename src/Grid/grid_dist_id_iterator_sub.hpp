@@ -37,7 +37,7 @@ class grid_dist_iterator_sub
 	openfpm::vector<device_grid> & gList;
 
 	//! Extension of each grid: domain and ghost + domain
-	openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
+	const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
 
 	//! Actual iterator
 	grid_key_dx_iterator_sub<dim> a_it;
@@ -47,9 +47,6 @@ class grid_dist_iterator_sub
 
 	//! stop key
 	grid_key_dx<dim> stop;
-
-	//! margin of the grid iterator
-	size_t m;
 
 	/*! \brief compute the subset where it has to iterate
 	 *
@@ -119,8 +116,9 @@ class grid_dist_iterator_sub
 		g_c = tmp.g_c;
 		gList = tmp.gList;
 		gdb_ext = tmp.gdb_ext;
+		start = tmp.start;
+		stop = tmp.stop;
 		a_it.reinitialize(tmp.a_it);
-		m = tmp.m;
 
 		return *this;
 	}
@@ -131,7 +129,7 @@ class grid_dist_iterator_sub
 	*
 	*/
 	grid_dist_iterator_sub(const grid_dist_iterator_sub<dim,device_grid> & tmp)
-	:g_c(tmp.g_c),gList(tmp.gList),gdb_ext(tmp.gdb_ext),m(tmp.m)
+	:g_c(tmp.g_c),gList(tmp.gList),gdb_ext(gdb_ext),start(tmp.start),stop(tmp.stop)
 	{
 		a_it.reinitialize(tmp.a_it);
 	}
@@ -144,8 +142,8 @@ class grid_dist_iterator_sub
 	 * \param gdb_ext information about the local grids
 	 *
 	 */
-	grid_dist_iterator_sub(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop ,openfpm::vector<device_grid> & gk, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
-	:g_c(0),gList(gk),gdb_ext(gdb_ext),start(start),stop(stop),m(0)
+	grid_dist_iterator_sub(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop ,const Vcluster_object_array<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
+	:g_c(0),gList(gk),gdb_ext(gdb_ext),start(start),stop(stop)
 	{
 		// Initialize the current iterator
 		// with the first grid
@@ -226,6 +224,26 @@ class grid_dist_iterator_sub
 		k_glob = k_glob + gdb_ext.get(sub_id).origin;
 
 		return k_glob;
+	}
+
+	/* \brief Get the starting point of the grid iterator
+	 *
+	 * \return the starting point
+	 *
+	 */
+	inline grid_key_dx<dim> getStart() const
+	{
+		return start;
+	}
+
+	/* \brief Get the stop point of the grid iterator
+	 *
+	 * \return the stop point
+	 *
+	 */
+	inline grid_key_dx<dim> getStop() const
+	{
+		return stop;
 	}
 };
 

@@ -393,6 +393,51 @@ protected:
 
 public:
 
+	//! Default constructor
+	ie_ghost() {};
+
+	//! Copy constructor
+	ie_ghost(const ie_ghost<dim,T> & ie)
+	{
+		this->operator =(ie);
+	}
+
+	//! Copy constructor
+	ie_ghost(ie_ghost<dim,T> && ie)
+	{
+		this->operator=(ie);
+	}
+
+	//! Copy operator
+	inline ie_ghost<dim,T> & operator=(ie_ghost<dim,T> && ie)
+	{
+		box_nn_processor_int.swap(ie.box_nn_processor_int);
+		proc_int_box.swap(ie.proc_int_box);
+		vb_ext.swap(ie.vb_ext);
+		vb_int.swap(ie.vb_int);
+		geo_cell.swap(ie.geo_cell);
+		shifts.swap(ie.shifts);
+		ids_p.swap(ie.ids_p);
+		ids.swap(ie.ids);
+
+		return *this;
+	}
+
+	//! Copy operator
+	inline ie_ghost<dim,T> & operator=(const ie_ghost<dim,T> & ie)
+	{
+		box_nn_processor_int = ie.box_nn_processor_int;
+		proc_int_box = ie.proc_int_box;
+		vb_ext = ie.vb_ext;
+		vb_int = ie.vb_int;
+		geo_cell = geo_cell;
+		shifts = ie.shifts;
+		ids_p = ie.ids_p;
+		ids = ie.ids;
+
+		return *this;
+	}
+
 	/*! It return the shift vector
 	 *
 	 * Consider a domain with some ghost, at the border of the domain the
@@ -906,43 +951,45 @@ public:
 		if (getNIGhostBox() != ig.getNIGhostBox())
 			return false;
 
-		for (size_t i = 0 ; i < getNIGhostBox() ; i++)
+		for (size_t i = 0 ; i < proc_int_box.size() ; i++)
 		{
 			if (getProcessorNIGhost(i) != ig.getProcessorNIGhost(i))
 				return false;
 			for (size_t j = 0 ; j < getProcessorNIGhost(i) ; j++)
 			{
-				if (getProcessorIGhostBox(i,j).intersect(ig.getProcessorIGhostBox(i,j),bt) == false)
+				if (getProcessorIGhostBox(i,j).Intersect(ig.getProcessorIGhostBox(i,j),bt) == false)
 					return false;
-				if (getProcessorIGhostId(i,j).intersect(ig.getProcessorIGhostId(i,j),bt) == false)
+				if (getProcessorIGhostId(i,j) != ig.getProcessorIGhostId(i,j))
 					return false;
 				if (getProcessorIGhostSub(i,j) != ig.getProcessorIGhostSub(i,j))
 					return false;
 			}
-			if (getIGhostBox(i) != ig.getIGhostBox(i))
+			if (getIGhostBox(i).Intersect(ig.getIGhostBox(i),bt) == false)
 				return false;
 			if (getIGhostBoxProcessor(i) != ig.getIGhostBoxProcessor(i))
 				return false;
 		}
 
-		for (size_t i = 0 ; i < getNEGhostBox() ; i++)
+		for (size_t i = 0 ; i < proc_int_box.size() ; i++)
 		{
 			if (getProcessorNEGhost(i) != ig.getProcessorNEGhost(i))
 				return false;
 			for (size_t j = 0 ; j < getProcessorNEGhost(i) ; j++)
 			{
-				if (getProcessorEGhostBox(i,j).intersect(ig.getProcessorEGhostBox(i,j),bt) == false)
+				if (getProcessorEGhostBox(i,j).Intersect(ig.getProcessorEGhostBox(i,j),bt) == false)
 					return false;
-				if (getProcessorEGhostId(i,j),intersect(ig.getProcessorEGhostId(i,j),bt) == false)
+				if (getProcessorEGhostId(i,j) !=  ig.getProcessorEGhostId(i,j))
 					return false;
 				if (getProcessorEGhostSub(i,j) != ig.getProcessorEGhostSub(i,j))
 					return false;
 			}
-			if (getEGhostBox(i) != ig.getEGhostBox(i))
+			if (getEGhostBox(i).Intersect(ig.getEGhostBox(i),bt) == false)
 				return false;
-			if (getEGhostBoxProcessor(i).intersect(ig.getEGhostBoxProcessor(i),bt) == false)
+			if (getEGhostBoxProcessor(i) != ig.getEGhostBoxProcessor(i))
 				return false;
 		}
+
+		return true;
 	}
 };
 

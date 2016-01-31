@@ -508,7 +508,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 
 		// Ghost must populated because we synchronized them
 		if (k > 524288)
+		{
 			BOOST_REQUIRE(nl_cnt != 0);
+			BOOST_REQUIRE(l_cnt > nl_cnt);
+		}
 
 		// Sum all the particles inside the domain
 		v_cl.sum(l_cnt);
@@ -529,7 +532,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 
 		// Ghost must be populated
 		if (k > 524288)
+		{
 			BOOST_REQUIRE(nl_cnt != 0);
+		}
 	}
 }
 
@@ -613,7 +618,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 
 		// Ghost must populated because we synchronized them
 		if (k > 524288)
+		{
 			BOOST_REQUIRE(nl_cnt != 0);
+			BOOST_REQUIRE(l_cnt > nl_cnt);
+		}
 
 		// Sum all the particles inside the domain
 		v_cl.sum(l_cnt);
@@ -632,7 +640,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 
 		// Ghost must be populated
 		if (k > 524288)
+		{
 			BOOST_REQUIRE(nl_cnt != 0);
+		}
 	}
 }
 
@@ -822,6 +832,190 @@ BOOST_AUTO_TEST_CASE( vector_dist_not_periodic_map )
 	}
 }
 
+BOOST_AUTO_TEST_CASE( vector_dist_out_of_bound_policy )
+{
+	Vcluster & v_cl = *global_v_cluster;
+
+	if (v_cl.getProcessingUnits() > 8)
+		return;
+
+	typedef Point<3,float> s;
+
+	size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+
+	vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(100,box,bc,ghost);
+
+	// put particles at out of the boundary, they must be detected and and killed
+
+	auto it = vd.getIterator();
+
+	size_t cnt = 0;
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		if (cnt < 1)
+		{
+			vd.template getPos<s::x>(key)[0] = -0.06;
+			vd.template getPos<s::x>(key)[1] = -0.06;
+			vd.template getPos<s::x>(key)[2] = -0.06;
+		}
+		else
+		{
+			vd.template getPos<s::x>(key)[0] = 0.06;
+			vd.template getPos<s::x>(key)[1] = 0.06;
+			vd.template getPos<s::x>(key)[2] = 0.06;
+		}
+
+		cnt++;
+		++it;
+	}
+
+	// Particles out of the boundary are killed
+
+	size_t cnt_l = vd.size_local();
+
+	v_cl.sum(cnt_l);
+	v_cl.execute();
+
+	BOOST_REQUIRE_EQUAL(cnt_l,100-v_cl.getProcessingUnits());
+}
+
+
+BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
+{
+	typedef Point<3,float> s;
+
+	Vcluster & v_cl = *global_v_cluster;
+
+	if (v_cl.getProcessingUnits() > 8)
+		return;
+
+	// set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+	std::default_random_engine eg;
+	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+	size_t nsz[] = {0,32,4};
+	nsz[0] = 65536 * v_cl.getProcessingUnits();
+
+	print_test_v("Testing 3D random walk interacting particles vector k=", nsz[0]);
+
+	// 3D test
+	for (size_t i = 0 ; i < 3 ; i++ )
+	{
+		size_t k = nsz[i];
+
+		BOOST_TEST_CHECKPOINT( "Testing 3D random walk interacting particles vector k=" << k );
+
+		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+		// Boundary conditions
+		size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+		// factor
+		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+
+		// interaction radius
+		float r_cut = 0.01 / factor;
+
+		// ghost
+		Ghost<3,float> ghost(r_cut);
+
+		// Distributed vector
+		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box,bc,ghost);
+
+		auto it = vd.getIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			vd.template getPos<s::x>(key)[0] = ud(eg);
+			vd.template getPos<s::x>(key)[1] = ud(eg);
+			vd.template getPos<s::x>(key)[2] = ud(eg);
+
+			++it;
+		}
+
+		vd.map();
+
+		// 4 step random walk
+
+		for (size_t j = 0 ; j < 4 ; j++)
+		{
+			auto it = vd.getDomainIterator();
+
+			// Move the particles
+
+			while (it.isNext())
+			{
+				auto key = it.get();
+
+				vd.template getPos<s::x>(key)[0] += 0.02 * ud(eg);
+				vd.template getPos<s::x>(key)[1] += 0.02 * ud(eg);
+				vd.template getPos<s::x>(key)[2] += 0.02 * ud(eg);
+
+				++it;
+			}
+
+			vd.map();
+
+			vd.ghost_get<0>();
+
+			// get the cell list with a cutoff radius
+
+			bool error = false;
+
+			auto NN = vd.getCellList(0.01 / factor);
+
+			// iterate across the domain particle
+
+			auto it2 = vd.getDomainIterator();
+
+			while (it2.isNext())
+			{
+				auto p = it2.get();
+
+				Point<3,float> xp = vd.getPos<0>(p);
+
+				auto Np = NN.getIterator(NN.getCell(vd.getPos<0>(p)));
+
+				while (Np.isNext())
+				{
+					auto q = Np.get();
+
+					// repulsive
+
+					Point<3,float> xq = vd.getPos<0>(q);
+					Point<3,float> f = (xp - xq);
+
+					float distance = f.norm();
+
+					// Particle should be inside 2 * r_cut range
+
+					if (distance > 2*r_cut*sqrt(2))
+						error = true;
+
+					++Np;
+				}
+
+				++it2;
+			}
+
+			// Error
+
+			BOOST_REQUIRE_EQUAL(error,false);
+
+			// Count the local particles and check that the total number is consistent
+			size_t cnt = total_n_part_lc(vd,bc);
+
+			BOOST_REQUIRE_EQUAL((size_t)k,cnt);
+		}
+	}
+}
 
 BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 {
@@ -919,7 +1113,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 	}
 
 	BOOST_REQUIRE_EQUAL(correct,true);
-
 }
 
 BOOST_AUTO_TEST_SUITE_END()

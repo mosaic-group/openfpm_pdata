@@ -42,10 +42,10 @@
  * \tparam Domain Structure that contain the information of your physical domain
  *
  * Given an N-dimensional space, this class decompose the space into a Cartesian grid of small
- * sub-sub-domain. At each sub-sub-domain is assigned  an id that identify which processor is
- * going to take care of that part of space (in general the space assigned to a processor is
- * simply connected), a second step merge several sub-sub-domain with same id into bigger region
- *  sub-domain with the id. Each sub-domain has an extended space called ghost part
+ * sub-sub-domain. To each sub-sub-domain is assigned an id that identify at which processor is
+ * assigned (in general the union of all the sub-sub-domain assigned to a processor is
+ * simply connected space), a second step merge several sub-sub-domain with same id into bigger region
+ *  sub-domain. Each sub-domain has an extended space called ghost part
  *
  * Assuming that VCluster.getProcessUnitID(), equivalent to the MPI processor rank, return the processor local
  * processor id, we define
@@ -295,6 +295,8 @@ private:
 		::Box<dim,T> unit = getSmallestSubdivision();
 		// Get the processor bounding Box
 		::Box<dim,T> bound = getProcessorBounds();
+		// Not necessary, but I prefer
+		bound.enlarge(ghost);
 
 		// calculate the sub-divisions
 		size_t div[dim];
@@ -309,7 +311,7 @@ private:
 			orig.get(i) = bound.getLow(i);
 
 		// Initialize the geo_cell structure
-		ie_ghost<dim,T>::Initialize_geo_cell(domain,div,orig);
+		ie_ghost<dim,T>::Initialize_geo_cell(bound,div,orig);
 
 		// Initialize shift vectors
 		ie_ghost<dim,T>::generateShiftVectors(domain);
@@ -544,18 +546,18 @@ public:
 +----------------------------------------------------+
 |                                                    |
 |                 Processor 8                        |
-|                 Sub-domain 0                       +-----------------------------------+
+|                 Sub+domain 0                       +-----------------------------------+
 |                                                    |                                   |
 |                                                    |                                   |
 ++--------------+---+---------------------------+----+        Processor 9                |
  |              |   |     B8_0                  |    |        Subdomain 0                |
  |              +------------------------------------+                                   |
  |              |   |                           |    |                                   |
- |              |   |  XXXXXXXXXXXXX XX         |B9_0|                                   |
- |              | B |  X Processor 10 X         |    |                                   |
- | Processor 5  | 5 |  X Sub-domain 0 X         |    |                                   |
- | Subdomain 0  | _ |  X              X         +----------------------------------------+
- |              | 0 |  XXXXXXXXXXXXXXXX         |    |                                   |
+ |              |   |                           |B9_0|                                   |
+ |              | B |    Local processor        |    |                                   |
+ | Processor 5  | 5 |    Subdomain 0            |    |                                   |
+ | Subdomain 0  | _ |                           +----------------------------------------+
+ |              | 0 |                           |    |                                   |
  |              |   |                           |    |                                   |
  |              |   |                           |    |        Processor 9                |
  |              |   |                           |B9_1|        Subdomain 1                |
@@ -566,37 +568,36 @@ public:
                                                      |                                   |
                                                      +-----------------------------------+
 
+
  \endverbatim
 
        and also
        G8_0 G9_0 G9_1 G5_0 (External ghost boxes)
 
- \verbatim
-
-+----------------------------------------------------+
-|                                                    |
-|                 Processor 8                        |
-|                 Sub-domain 0                       +-----------------------------------+
-|           +---------------------------------------------+                              |
-|           |         G8_0                           |    |                              |
-++--------------+------------------------------------+    |   Processor 9                |
- |          |   |                                    |    |   Subdomain 0                |
- |          |   |                                    |G9_0|                              |
- |          |   |                                    |    |                              |
- |          |   |      XXXXXXXXXXXXX XX              |    |                              |
- |          |   |      X Processor 10 X              |    |                              |
- | Processor|5  |      X Sub-domain 0 X              |    |                              |
- | Subdomain|0  |      X              X              +-----------------------------------+
- |          |   |      XXXXXXXXXXXXXXXX              |    |                              |
- |          | G |                                    |    |                              |
- |          | 5 |                                    |    |   Processor 9                |
- |          | | |                                    |    |   Subdomain 1                |
- |          | 0 |                                    |G9_1|                              |
- |          |   |                                    |    |                              |
- |          |   |                                    |    |                              |
- +--------------+------------------------------------+    |                              |
-            |                                        |    |                              |
-            +----------------------------------------+----+------------------------------+
+      +----------------------------------------------------+
+      |                 Processor 8                        |
+      |                 Subdomain 0                        +-----------------------------------+
+      |                                                    |                                   |
+      |           +---------------------------------------------+                              |
+      |           |         G8_0                           |    |                              |
++-----+---------------+------------------------------------+    |   Processor 9                |
+|                 |   |                                    |    |   Subdomain 0                |
+|                 |   |                                    |G9_0|                              |
+|                 |   |                                    |    |                              |
+|                 |   |                                    |    |                              |
+|                 |   |        Local processor             |    |                              |
+|  Processor 5    |   |        Sub+domain 0                |    |                              |
+|  Subdomain 0    |   |                                    +-----------------------------------+
+|                 |   |                                    |    |                              |
+|                 | G |                                    |    |                              |
+|                 | 5 |                                    |    |   Processor 9                |
+|                 | | |                                    |    |   Subdomain 1                |
+|                 | 0 |                                    |G9_1|                              |
+|                 |   |                                    |    |                              |
+|                 |   |                                    |    |                              |
++---------------------+------------------------------------+    |                              |
+                  |                                        |    |                              |
+                  +----------------------------------------+----+------------------------------+
 
 
  \endverbatim
@@ -667,7 +668,7 @@ p1[0]<-----+         +----> p2[0]
 	 * \return a duplicated decomposition with different ghost boxes
 	 *
 	 */
-	CartDecomposition<dim,T,Memory,Domain> duplicate(Ghost<dim,T> & g)
+	CartDecomposition<dim,T,Memory,Domain> duplicate(const Ghost<dim,T> & g) const
 	{
 		CartDecomposition<dim,T,Memory,Domain> cart(v_cl);
 
@@ -687,6 +688,9 @@ p1[0]<-----+         +----> p2[0]
 		cart.ss_box = ss_box;
 		cart.ghost = g;
 
+		for (size_t i = 0 ; i < dim ; i++)
+			cart.bc[i] = bc[i];
+
 		(static_cast<nn_prcs<dim,T> &>(cart)).create(box_nn_processor, sub_domains);
 		(static_cast<nn_prcs<dim,T> &>(cart)).applyBC(domain,ghost,bc);
 
@@ -701,7 +705,7 @@ p1[0]<-----+         +----> p2[0]
 	 * \return a duplicated decomposition
 	 *
 	 */
-	CartDecomposition<dim,T,Memory,Domain> duplicate()
+	CartDecomposition<dim,T,Memory,Domain> duplicate() const
 	{
 		CartDecomposition<dim,T,Memory,Domain> cart(v_cl);
 
@@ -724,6 +728,9 @@ p1[0]<-----+         +----> p2[0]
 
 		cart.bbox = bbox;
 		cart.ss_box = ss_box;
+
+		for (size_t i = 0 ; i < dim ; i++)
+			cart.bc[i] = this->bc[i];
 
 		return cart;
 	}
@@ -755,6 +762,9 @@ p1[0]<-----+         +----> p2[0]
 		bbox = cart.bbox;
 		ss_box = cart.ss_box;
 
+		for (size_t i = 0 ; i < dim ; i++)
+			bc[i] = cart.bc[i];
+
 		return *this;
 	}
 
@@ -785,6 +795,9 @@ p1[0]<-----+         +----> p2[0]
 		cart.bbox = bbox;
 		cart.ss_box = ss_box;
 
+		for (size_t i = 0 ; i < dim ; i++)
+			cart.bc[i] = bc[i];
+
 		return *this;
 	}
 
@@ -807,9 +820,9 @@ p1[0]<-----+         +----> p2[0]
 	 * \return processorID
 	 *
 	 */
-	template<typename Mem> size_t inline processorID(encapc<1, Point<dim,T>, Mem> p)
+	template<typename Mem, typename ofb> size_t inline processorID(encapc<1, Point<dim,T>, Mem> p)
 	{
-		return fine_s.get(cd.getCell(p));
+		return fine_s.get(cd.template getCell<ofb>(p));
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -854,7 +867,7 @@ p1[0]<-----+         +----> p2[0]
 	 * \return processorID
 	 *
 	 */
-	size_t inline processorIDBC(const Point<dim,T> &p) const
+	template<typename ofb> size_t inline processorIDBC(const Point<dim,T> &p) const
 	{
 		Point<dim,T> pt = p;
 		applyPointBC(pt);
@@ -869,7 +882,7 @@ p1[0]<-----+         +----> p2[0]
 	 * \return processorID
 	 *
 	 */
-	size_t inline processorIDBC(const T (&p)[dim]) const
+	template<typename ofb> size_t inline processorIDBC(const T (&p)[dim]) const
 	{
 		Point<dim,T> pt = p;
 		applyPointBC(pt);
@@ -974,9 +987,9 @@ p1[0]<-----+         +----> p2[0]
 		return sp;
 	}
 
-	/*! \brief Return the structure that store the physical domain
+	/*! \brief Return the box of the physical domain
 	 *
-	 * \return The physical domain
+	 * \return The physical domain box
 	 *
 	 */
 	const Domain<dim,T> & getDomain()
@@ -1073,6 +1086,15 @@ p1[0]<-----+         +----> p2[0]
 	}
 
 
+	/*! \brief Return the ghost
+	 *
+	 *
+	 */
+	const Ghost<dim,T> & getGhost() const
+	{
+		return ghost;
+	}
+
 	////////////// Functions to get decomposition information ///////////////
 
 	/*! \brief Write the decomposition as VTK file
@@ -1103,6 +1125,19 @@ p1[0]<-----+         +----> p2[0]
 		ie_loc_ghost<dim,T>::write(output,v_cl.getProcessUnitID());
 
 		return true;
+	}
+
+	/*! \brief Get the Virtual Cluster machine
+	 *
+	 * \return the Virtual cluster machine
+	 *
+	 */
+	Vcluster & getVC() const
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return v_cl;
 	}
 
 	/*! \brief function to check the consistency of the information of the decomposition
@@ -1154,9 +1189,14 @@ p1[0]<-----+         +----> p2[0]
 	 */
 	bool is_equal(CartDecomposition<dim,T,Memory,Domain> & cart)
 	{
-		static_cast<ie_loc_ghost<dim,T>*>(this)->is_equal(static_cast<ie_loc_ghost<dim,T>&>(cart));
-		static_cast<nn_prcs<dim,T>*>(this)->is_equal(static_cast<nn_prcs<dim,T>&>(cart));
-		static_cast<ie_ghost<dim,T>*>(this)->is_equal(static_cast<ie_ghost<dim,T>&>(cart));
+		if (static_cast<ie_loc_ghost<dim,T>*>(this)->is_equal(static_cast<ie_loc_ghost<dim,T>&>(cart)) == false)
+			return false;
+
+		if (static_cast<nn_prcs<dim,T>*>(this)->is_equal(static_cast<nn_prcs<dim,T>&>(cart)) == false)
+			return false;
+
+		if (static_cast<ie_ghost<dim,T>*>(this)->is_equal(static_cast<ie_ghost<dim,T>&>(cart)) == false)
+			return false;
 
 		if (sub_domains != cart.sub_domains)
 			return false;
@@ -1193,9 +1233,14 @@ p1[0]<-----+         +----> p2[0]
 	 */
 	bool is_equal_ng(CartDecomposition<dim,T,Memory,Domain> & cart)
 	{
-		static_cast<ie_loc_ghost<dim,T>*>(this)->is_equal_ng(static_cast<ie_loc_ghost<dim,T>&>(cart));
-		static_cast<nn_prcs<dim,T>*>(this)->is_equal(static_cast<nn_prcs<dim,T>&>(cart));
-		static_cast<ie_ghost<dim,T>*>(this)->is_equal(static_cast<ie_ghost<dim,T>&>(cart));
+		if (static_cast<ie_loc_ghost<dim,T>*>(this)->is_equal_ng(static_cast<ie_loc_ghost<dim,T>&>(cart)) == false)
+			return false;
+
+		if (static_cast<nn_prcs<dim,T>*>(this)->is_equal(static_cast<nn_prcs<dim,T>&>(cart)) == false)
+			return false;
+
+		if (static_cast<ie_ghost<dim,T>*>(this)->is_equal_ng(static_cast<ie_ghost<dim,T>&>(cart)) == false)
+			return false;
 
 		if (sub_domains != cart.sub_domains)
 			return false;
