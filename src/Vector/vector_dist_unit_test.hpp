@@ -841,8 +841,18 @@ BOOST_AUTO_TEST_CASE( vector_dist_out_of_bound_policy )
 
 	typedef Point<3,float> s;
 
+	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// Boundary conditions
 	size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 
+	// factor
+	float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+
+	// ghost
+	Ghost<3,float> ghost(0.05 / factor);
+
+	// Distributed vector
 	vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(100,box,bc,ghost);
 
 	// put particles at out of the boundary, they must be detected and and killed
@@ -872,6 +882,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_out_of_bound_policy )
 		++it;
 	}
 
+	vd.map();
+
 	// Particles out of the boundary are killed
 
 	size_t cnt_l = vd.size_local();
@@ -882,9 +894,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_out_of_bound_policy )
 	BOOST_REQUIRE_EQUAL(cnt_l,100-v_cl.getProcessingUnits());
 }
 
-
 BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 {
+
 	typedef Point<3,float> s;
 
 	Vcluster & v_cl = *global_v_cluster;
@@ -892,11 +904,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 	if (v_cl.getProcessingUnits() > 8)
 		return;
 
-	// set the seed
+    // set the seed
 	// create the random generator engine
 	std::srand(v_cl.getProcessUnitID());
-	std::default_random_engine eg;
-	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
 	size_t nsz[] = {0,32,4};
 	nsz[0] = 65536 * v_cl.getProcessingUnits();
