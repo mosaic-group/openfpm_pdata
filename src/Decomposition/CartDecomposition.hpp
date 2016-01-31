@@ -887,6 +887,18 @@ p1[0]<-----+         +----> p2[0]
 		return ss_box;
 	}
 
+	/*! \brief Get the periodicity on i dimension
+	 *
+	 * \param i dimension
+	 *
+	 * \return the periodicity in direction i
+	 *
+	 */
+	size_t isPeriodic(size_t i)
+	{
+		return bc[i];
+	}
+
 	/*! \brief Set the parameter of the decomposition
 	 *
      * \param div_ storing into how many domain to decompose on each dimension

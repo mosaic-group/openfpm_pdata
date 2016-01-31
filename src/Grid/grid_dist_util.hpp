@@ -55,17 +55,29 @@ template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::ve
  *
  * \param gdb_ext Vector of Boxes that define the local grids extension
  * \param dec Decomposition
- * \param Global grid grid size
+ * \param sz Global grid grid size
+ * \param domain Domain where the grid is defined
+ * \param spacing Define the spacing of the grid
  *
  */
-template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::vector<GBoxes<dim>> & gdb_ext, Decomposition & dec, const size_t (& sz)[dim], const Box<Decomposition::dims,typename Decomposition::stype> & domain)
+template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::vector<GBoxes<dim>> & gdb_ext, Decomposition & dec, const size_t (& sz)[dim], const Box<Decomposition::dims,typename Decomposition::stype> & domain, typename Decomposition::stype (& spacing)[dim])
 {
 	// Create the cell decomposer
 
 	CellDecomposer_sm<Decomposition::dims,typename Decomposition::stype> cd_sm;
-	cd_sm.setDimensions(domain,sz,0);
+
+	size_t sz_cell[Decomposition::dims];
+	for (size_t i = 0 ; i < dim ; i++)
+		sz_cell[i] = sz[i] - 1;
+
+	// Careful cd_sm require the number of cell
+	cd_sm.setDimensions(domain,sz_cell,0);
 
 	create_gdb_ext<dim,Decomposition>(gdb_ext,dec,cd_sm);
+
+	// fill the spacing
+	for (size_t i = 0 ; i < dim ; i++)
+		spacing[i] = cd_sm.getCellBox().getP2()[i];
 }
 
 #endif /* SRC_GRID_GRID_DIST_UTIL_HPP_ */

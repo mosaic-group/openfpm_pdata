@@ -21,6 +21,7 @@
 #include "memory/ExtPreAlloc.hpp"
 #include "CSVWriter.hpp"
 #include "Decomposition/common.hpp"
+#include "Grid/grid_dist_id_iterator_dec.hpp"
 
 #define V_SUB_UNIT_FACTOR 64
 
@@ -916,6 +917,37 @@ public:
 	vector_dist_iterator getIterator()
 	{
 		return vector_dist_iterator(0,v_pos.size());
+	}
+
+	/*! /brief Get a grid Iterator
+	 *
+	 * Usefull function to place particles on a grid or grid-like (grid + noise)
+	 *
+	 * \return a Grid iterator
+	 *
+	 */
+	inline grid_dist_id_iterator_dec<Decomposition> getGridIterator(const size_t (& sz)[dim])
+	{
+		size_t sz_g[dim];
+		grid_key_dx<dim> start;
+		grid_key_dx<dim> stop;
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			start.set_d(i,0);
+			if (dec.isPeriodic(i) == PERIODIC)
+			{
+				sz_g[i] = sz[i]-1;
+				stop.set_d(i,sz_g[i]-1);
+			}
+			else
+			{
+				sz_g[i] = sz[i];
+				stop.set_d(i,sz_g[i]-1);
+			}
+		}
+
+		grid_dist_id_iterator_dec<Decomposition> it_dec(dec,sz_g,start,stop);
+		return it_dec;
 	}
 
 	/*! \brief Get the iterator across the position of the ghost particles

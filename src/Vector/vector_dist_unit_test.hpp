@@ -825,7 +825,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_not_periodic_map )
 
 BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 {
-/*	typedef Point<3,float> s;
+	typedef Point<3,float> s;
+
+	// we create a 128x128x128 Grid iterator
+	size_t sz[3] = {128,128,128};
+	size_t total = sz[0]*sz[1]*sz[2];
 
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 
@@ -839,23 +843,82 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 	Ghost<3,float> ghost(0.05 / factor);
 
 	// Distributed vector
-	vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(1,box,bc,ghost);
+	vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(total,box,bc,ghost);
 
 	// Put particles on a grid creating a Grid iterator
 	auto it = vd.getGridIterator(sz);
+	auto it_p = vd.getDomainIterator();
 
-	while (it.isNext())
+	while (it_p.isNext())
 	{
+		auto key_p = it_p.get();
 		auto key = it.get();
 
-		vd.template getPos<s::x>(key)[0] = key.get(0);
-		vd.template getPos<s::x>(key)[1] = key.get(1);
-		vd.template getPos<s::x>(key)[2] = key.get(2);
+		vd.template getPos<s::x>(key_p)[0] = key.get(0) * it.getSpacing(0);
+		vd.template getPos<s::x>(key_p)[1] = key.get(1) * it.getSpacing(1);
+		vd.template getPos<s::x>(key_p)[2] = key.get(2) * it.getSpacing(2);
 
 		++it;
+		++it_p;
 	}
 
-	vd.map();*/
+	vd.map();
+
+	// calculate the distance of the first, second and third neighborhood particle
+	// Consider that they are on a regular grid
+
+	float spacing = it.getSpacing(0);
+	float first_dist = spacing;
+	float second_dist = sqrt(2.0*spacing*spacing);
+	float third_dist = sqrt(3.0 * spacing*spacing);
+
+	// add a 5% to dist
+
+	first_dist += first_dist * 0.05;
+	second_dist += second_dist * 0.05;
+	third_dist += third_dist * 0.05;
+
+	// Create a verlet list for each particle
+
+	openfpm::vector<openfpm::vector<size_t>> verlet;
+	vd.getVerlet(verlet);
+
+	bool correct = true;
+
+	// for each particle
+	for (size_t i = 0 ; i < verlet.size() ; i++)
+	{
+
+		// first NN
+		size_t first_NN = 0;
+		size_t second_NN = 0;
+		size_t third_NN = 0;
+
+		Point<3,float> p = vd.getPos<0>(i);
+
+		// for each neighborhood particle
+		for (size_t j = 0 ; j < verlet.get(i).size() ; j++)
+		{
+			auto & NN = verlet.get(i);
+
+			Point<3,float> q = vc.getPos<0>(NN.get(j));
+
+			float dist = p.distance(q);
+
+			if (dist <= first_dist)
+				first_NN++;
+			else if (dist <= second_dist)
+				second_NN++;
+			else
+				third_NN++;
+		}
+
+		correct &= (first_NN == 6);
+		correct &= (second_NN == 12);
+		correct &= (third_NN = 8);
+	}
+
+	BOOST_REQUIRE_EQUAL(correct,true);
 
 }
 
