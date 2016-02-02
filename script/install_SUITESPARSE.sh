@@ -10,6 +10,10 @@ fi
 wget http://ppmcore.mpi-cbg.de/upload/SuiteSparse-4.4.5.tar.gz
 rm -rf SuiteSparse
 tar -xf SuiteSparse-4.4.5.tar.gz
+if [ $? == 0 ]; then
+  echo "Fail to download SuiteSparse"
+  exit 1
+fi
 cd SuiteSparse
 
 # configuration
@@ -27,4 +31,4 @@ mkdir $1/SUITESPARSE/lib
 mkdir $1/SUITESPARSE/include
 make install
 rm -rf SuiteSparse
-
+rm SuiteSparse-4.4.5.tar.gz
