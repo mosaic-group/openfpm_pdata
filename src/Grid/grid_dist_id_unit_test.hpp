@@ -1103,7 +1103,7 @@ void Test3D_decit(const Box<3,float> & domain, long int k)
 		big_step = (big_step == 0)?1:big_step;
 		long int small_step = 21;
 
-		print_test( "Testing grid iterator from decomposition k<=",k);
+		print_test( "Testing grid iterator from decomposition subset k<=",k);
 
 		// 3D test
 		for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )

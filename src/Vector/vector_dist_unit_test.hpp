@@ -1037,21 +1037,19 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 
 BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 {
-	size_t k = 64*64*64*global_v_cluster->getProcessingUnits();
+	long int k = 64*64*64*global_v_cluster->getProcessingUnits();
 	k = std::pow(k, 1/3.);
 
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 21;
 
-	print_test( "Vector cell and verlet list test k<=",k);
+	print_test( "Testing cell and verlet list k<=",k);
 
 	// 3D test
-	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
+	for ( ; k > 8*big_step ; k-= (k > 2*big_step)?big_step:small_step )
 	{
 		typedef Point<3,float> s;
-
-		print_test( "Vector cell and verlet list test k<=",k);
 
 		Vcluster & v_cl = *global_v_cluster;
 
@@ -1118,14 +1116,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 		openfpm::vector<openfpm::vector<size_t>> verlet;
 
 		vd.getVerlet(verlet,third_dist);
-
-		//
-		if (v_cl.getProcessUnitID() == 0)
-		{
-			Point<3,float> p1 = vd.template getPos<0>(verlet.get(0).get(4));
-			Point<3,float> p2 = vd.template getPos<0>(verlet.get(0).get(5));
-			std::cout << "Point 1: " << p1.toString() << "\n Point 2: " << p2.toString() << "\n";
-		}
 
 		bool correct = true;
 

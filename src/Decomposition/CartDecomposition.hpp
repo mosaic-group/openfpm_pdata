@@ -1062,12 +1062,6 @@ p1[0]<-----+         +----> p2[0]
 
 		for (size_t i = 0 ; i < dim ; i++)
 		{
-			if (pt.get(0) < -0.1)
-			{
-				int debug = 0;
-				debug++;
-			}
-
 			if (bc[i] == PERIODIC)
 				pt.get(i) = openfpm::math::periodic_l(p[i],domain.getHigh(i),domain.getLow(i));
 		}
