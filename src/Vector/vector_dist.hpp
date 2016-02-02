@@ -232,7 +232,6 @@ private:
 
 				// add particle to communicate
 				ghost_prc_sz.get(p_id)++;
-
 				opart.get(p_id).add(key);
 				oshift.get(p_id).add(vp_id.get(i).second);
 			}
@@ -289,10 +288,15 @@ private:
 		// get the shift vectors
 		const openfpm::vector<Point<dim,St>> & shifts = dec.getShiftVectors();
 
-		// Add local particles coming from periodic boundary, the only boxes that count are the one
-		// at the border, filter them
+		// this map is used to check if a combination is already present
+		std::unordered_map<size_t, size_t> map_cmb;
 
-		openfpm::vector_std<Box<dim,St>> box_f;
+		// Add local particles coming from periodic boundary, the only boxes that count are the one
+		// touching the border, filter them
+
+		// The boxes touching the border of the domain are divided in groups (first vector)
+		// each group contain internal ghost coming from sub-domain of the same section
+		openfpm::vector_std<openfpm::vector_std<Box<dim,St>>> box_f;
 		openfpm::vector_std<comb<dim>> box_cmb;
 
 		for (size_t i = 0 ; i < dec.getNLocalSub() ; i++)
@@ -301,12 +305,28 @@ private:
 
 			for (size_t j = 0 ; j < Nl ; j++)
 			{
-				// If they are not in the border the combination is all zero
+				// If the ghost does not come from the intersection with an out of
+				// border sub-domain the combination is all zero and n_zero return dim
 				if (dec.getLocalIGhostPos(i,j).n_zero() == dim)
 					continue;
 
-				box_f.add(dec.getLocalIGhostBox(i,j));
-				box_cmb.add(dec.getLocalIGhostPos(i,j));
+				// Check if we already have boxes with such combination
+				auto it = map_cmb.find(dec.getLocalIGhostPos(i,j).lin());
+				if (it == map_cmb.end())
+				{
+					// we do not have it
+					box_f.add();
+					box_f.last().add(dec.getLocalIGhostBox(i,j));
+					box_cmb.add(dec.getLocalIGhostPos(i,j));
+					map_cmb[dec.getLocalIGhostPos(i,j).lin()] = box_f.size()-1;
+				}
+				else
+				{
+					// we have it
+					box_f.get(it->second).add(dec.getLocalIGhostBox(i,j));
+				}
+
+
 			}
 		}
 
@@ -316,7 +336,7 @@ private:
 		else
 		{
 			// Label the internal (assigned) particles
-			auto it = v_pos.getIterator();
+			auto it = v_pos.getIteratorTo(g_m);
 
 			while (it.isNext())
 			{
@@ -325,16 +345,29 @@ private:
 				// If particles are inside these boxes
 				for (size_t i = 0 ; i < box_f.size() ; i++)
 				{
-					if (box_f.get(i).isInside(v_pos.get(key)) == true)
+					for (size_t j = 0 ; j < box_f.get(i).size() ; j++)
 					{
-						Point<dim,St> p = v_pos.get(key);
-						// shift
-						p -= shifts.get(box_cmb.get(i).lin());
+						if (box_f.get(i).get(j).isInside(v_pos.get(key)) == true)
+						{
+							Point<dim,St> p = v_pos.get(key);
+							// shift
+							p -= shifts.get(box_cmb.get(i).lin());
 
-						// add this particle shifting its position
-						v_pos.add(p);
-						v_prp.add();
-						v_prp.last() = v_prp.get(key);
+							// add this particle shifting its position
+							v_pos.add(p);
+							v_prp.add();
+							v_prp.last() = v_prp.get(key);
+
+							// boxes in one group can be overlapping
+							// we do not have to search for the other
+							// boxes otherwise we will have duplicate particles
+							//
+							// A small note overlap of boxes across groups is fine
+							// (and needed) because each group has different shift
+							// producing non overlapping particles
+							//
+							break;
+						}
 					}
 				}
 
@@ -995,7 +1028,6 @@ public:
 	 */
 	template<typename CellL=CellList<dim,St,FAST,shift<dim,St> > > CellL getCellList(St r_cut, const Ghost<dim,St> & enlarge)
 	{
-
 		CellL cell_list;
 
 		// calculate the parameters of the cell list
@@ -1035,6 +1067,63 @@ public:
 		}
 
 		return cell_list;
+	}
+
+	/*! \brief for each particle get the verlet list
+	 *
+	 * \param verlet output verlet list for each particle
+	 * \param r_cut cut-off radius
+	 *
+	 */
+	void getVerlet(openfpm::vector<openfpm::vector<size_t>> & verlet, St r_cut)
+	{
+		// resize verlet to store the number of particles
+		verlet.resize(size_local());
+
+		// get the cell-list
+		auto cl = getCellList(r_cut);
+
+		// square of the cutting radius
+		St r_cut2 = r_cut*r_cut;
+
+		// iterate the particles
+	    auto it_p = this->getDomainIterator();
+	    while (it_p.isNext())
+	    {
+	    	// key
+	    	vect_dist_key_dx key = it_p.get();
+
+	    	// Get the position of the particles
+	    	Point<dim,St> p = this->template getPos<0>(key);
+
+	    	// Clear the neighborhood of the particle
+	    	verlet.get(key.getKey()).clear();
+
+	    	// Get the neighborhood of the particle
+	    	auto NN = cl.template getNNIterator<NO_CHECK>(cl.getCell(p));
+	    	while(NN.isNext())
+	    	{
+	    		auto nnp = NN.get();
+
+	    		// p != q
+	    		if (nnp == key.getKey())
+	    		{
+	    			++NN;
+	    			continue;
+	    		}
+
+	    		Point<dim,St> q = this->template getPos<0>(nnp);
+
+	    		if (p.distance2(q) < r_cut2)
+	    			verlet.get(key.getKey()).add(nnp);
+
+	    		// Next particle
+	    		++NN;
+	    	}
+
+	    	// next particle
+	    	++it_p;
+	    }
 	}
 
 	/*! \brief It return the number of particles contained by the previous processors
@@ -1098,8 +1187,8 @@ public:
 			start.set_d(i,0);
 			if (dec.isPeriodic(i) == PERIODIC)
 			{
-				sz_g[i] = sz[i]-1;
-				stop.set_d(i,sz_g[i]-1);
+				sz_g[i] = sz[i];
+				stop.set_d(i,sz_g[i]-2);
 			}
 			else
 			{

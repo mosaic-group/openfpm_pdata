@@ -92,6 +92,12 @@ template<unsigned int dim> inline void count_local_n_local(vector_dist<dim,float
 
 BOOST_AUTO_TEST_SUITE( vector_dist_test )
 
+void print_test(std::string test, size_t sz)
+{
+	if (global_v_cluster->getProcessUnitID() == 0)
+		std::cout << test << " " << sz << "\n";
+}
+
 BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 {
 	// Communication object
@@ -1031,100 +1037,138 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 
 BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 {
-	typedef Point<3,float> s;
+	size_t k = 64*64*64*global_v_cluster->getProcessingUnits();
+	k = std::pow(k, 1/3.);
 
-	// we create a 128x128x128 Grid iterator
-	size_t sz[3] = {128,128,128};
-	size_t total = sz[0]*sz[1]*sz[2];
+	long int big_step = k / 30;
+	big_step = (big_step == 0)?1:big_step;
+	long int small_step = 21;
 
-	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+	print_test( "Vector cell and verlet list test k<=",k);
 
-	// Boundary conditions
-	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
-
-	// factor
-	float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
-
-	// ghost
-	Ghost<3,float> ghost(0.05 / factor);
-
-	// Distributed vector
-	vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(total,box,bc,ghost);
-
-	// Put particles on a grid creating a Grid iterator
-	auto it = vd.getGridIterator(sz);
-	auto it_p = vd.getDomainIterator();
-
-	while (it_p.isNext())
+	// 3D test
+	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
 	{
-		auto key_p = it_p.get();
-		auto key = it.get();
+		typedef Point<3,float> s;
 
-		vd.template getPos<s::x>(key_p)[0] = key.get(0) * it.getSpacing(0);
-		vd.template getPos<s::x>(key_p)[1] = key.get(1) * it.getSpacing(1);
-		vd.template getPos<s::x>(key_p)[2] = key.get(2) * it.getSpacing(2);
+		print_test( "Vector cell and verlet list test k<=",k);
 
-		++it;
-		++it_p;
-	}
+		Vcluster & v_cl = *global_v_cluster;
 
-	vd.map();
+		const size_t Ng = k;
 
-	// calculate the distance of the first, second and third neighborhood particle
-	// Consider that they are on a regular grid
+		// we create a 128x128x128 Grid iterator
+		size_t sz[3] = {Ng,Ng,Ng};
 
-	float spacing = it.getSpacing(0);
-	float first_dist = spacing;
-	float second_dist = sqrt(2.0*spacing*spacing);
-	float third_dist = sqrt(3.0 * spacing*spacing);
+		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 
-	// add a 5% to dist
+		// Boundary conditions
+		size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
-	first_dist += first_dist * 0.05;
-	second_dist += second_dist * 0.05;
-	third_dist += third_dist * 0.05;
+		// ghost
+		Ghost<3,float> ghost(1.0/(Ng-2));
 
-	// Create a verlet list for each particle
+		// Distributed vector
+		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(0,box,bc,ghost);
 
-	openfpm::vector<openfpm::vector<size_t>> verlet;
-	vd.getVerlet(verlet);
+		// Put particles on a grid creating a Grid iterator
+		auto it = vd.getGridIterator(sz);
 
-	bool correct = true;
-
-	// for each particle
-	for (size_t i = 0 ; i < verlet.size() ; i++)
-	{
-
-		// first NN
-		size_t first_NN = 0;
-		size_t second_NN = 0;
-		size_t third_NN = 0;
-
-		Point<3,float> p = vd.getPos<0>(i);
-
-		// for each neighborhood particle
-		for (size_t j = 0 ; j < verlet.get(i).size() ; j++)
+		while (it.isNext())
 		{
-			auto & NN = verlet.get(i);
+			vd.add();
 
-			Point<3,float> q = vc.getPos<0>(NN.get(j));
+			auto key = it.get();
 
-			float dist = p.distance(q);
+			vd.template getLastPos<s::x>()[0] = key.get(0) * it.getSpacing(0);
+			vd.template getLastPos<s::x>()[1] = key.get(1) * it.getSpacing(1);
+			vd.template getLastPos<s::x>()[2] = key.get(2) * it.getSpacing(2);
 
-			if (dist <= first_dist)
-				first_NN++;
-			else if (dist <= second_dist)
-				second_NN++;
-			else
-				third_NN++;
+			++it;
 		}
 
-		correct &= (first_NN == 6);
-		correct &= (second_NN == 12);
-		correct &= (third_NN = 8);
-	}
+		// distribute particles and sync ghost
+		vd.map();
 
-	BOOST_REQUIRE_EQUAL(correct,true);
+		// Check that the sum of all the particles is the grid size
+		size_t total = vd.size_local();
+		v_cl.sum(total);
+		v_cl.execute();
+
+		BOOST_REQUIRE_EQUAL(total,(Ng-1) * (Ng-1) * (Ng-1));
+
+		vd.ghost_get<0>();
+
+		// calculate the distance of the first, second and third neighborhood particle
+		// Consider that they are on a regular grid
+
+		float spacing = it.getSpacing(0);
+		float first_dist = spacing;
+		float second_dist = sqrt(2.0*spacing*spacing);
+		float third_dist = sqrt(3.0 * spacing*spacing);
+
+		// add a 5% to dist
+
+		first_dist += first_dist * 0.05;
+		second_dist += second_dist * 0.05;
+		third_dist += third_dist * 0.05;
+
+		// Create a verlet list for each particle
+
+		openfpm::vector<openfpm::vector<size_t>> verlet;
+
+		vd.getVerlet(verlet,third_dist);
+
+		//
+		if (v_cl.getProcessUnitID() == 0)
+		{
+			Point<3,float> p1 = vd.template getPos<0>(verlet.get(0).get(4));
+			Point<3,float> p2 = vd.template getPos<0>(verlet.get(0).get(5));
+			std::cout << "Point 1: " << p1.toString() << "\n Point 2: " << p2.toString() << "\n";
+		}
+
+		bool correct = true;
+
+		// for each particle
+		for (size_t i = 0 ; i < verlet.size() ; i++)
+		{
+			// first NN
+			size_t first_NN = 0;
+			size_t second_NN = 0;
+			size_t third_NN = 0;
+
+			Point<3,float> p = vd.getPos<0>(i);
+
+			// for each neighborhood particle
+			for (size_t j = 0 ; j < verlet.get(i).size() ; j++)
+			{
+				auto & NN = verlet.get(i);
+
+				Point<3,float> q = vd.getPos<0>(NN.get(j));
+
+				float dist = p.distance(q);
+
+				if (dist <= first_dist)
+					first_NN++;
+				else if (dist <= second_dist)
+					second_NN++;
+				else
+					third_NN++;
+			}
+
+			correct &= (first_NN == 6);
+			correct &= (second_NN == 12);
+			correct &= (third_NN == 8);
+
+			if (correct == false)
+			{
+				int debug = 0;
+				debug++;
+			}
+		}
+
+		BOOST_REQUIRE_EQUAL(correct,true);
+	}
 }
 
 BOOST_AUTO_TEST_SUITE_END()

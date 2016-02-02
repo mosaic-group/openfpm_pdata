@@ -108,6 +108,7 @@ class ie_loc_ghost
 				SpaceBox<dim,T> sub_with_ghost = sub_domains_prc.get(j).bx;
 				size_t rj = sub_domains_prc.get(j).sub;
 
+				// Avoid to intersect the box with itself
 				if (rj == i && sub_domains_prc.get(j).cmb == zero)
 					continue;
 

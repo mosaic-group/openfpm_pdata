@@ -710,7 +710,10 @@ public:
 
 		// Make the id unique
 		if (opt == UNIQUE)
+		{
+			ids_p.sort();
 			ids_p.unique();
+		}
 
 		return ids_p;
 	}
@@ -756,7 +759,10 @@ public:
 
 		// Make the id unique
 		if (opt == UNIQUE)
-			ids.unique();
+		{
+			ids_p.sort();
+			ids_p.unique();
+		}
 
 		return ids;
 	}
@@ -794,7 +800,10 @@ public:
 
 		// Make the id unique
 		if (opt == UNIQUE)
+		{
+			ids_p.sort();
 			ids_p.unique();
+		}
 
 		return ids_p;
 	}
@@ -832,7 +841,10 @@ public:
 
 		// Make the id unique
 		if (opt == UNIQUE)
-			ids.unique();
+		{
+			ids_p.sort();
+			ids_p.unique();
+		}
 
 		return ids;
 	}

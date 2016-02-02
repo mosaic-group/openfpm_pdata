@@ -85,7 +85,7 @@ class grid_dist_iterator<dim,device_grid,FREE>
 	size_t g_c;
 
 	//! List of the grids we are going to iterate
-	openfpm::vector<device_grid> & gList;
+	const openfpm::vector<device_grid> & gList;
 
 	//! Extension of each grid: domain and ghost + domain
 	openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
@@ -134,13 +134,8 @@ class grid_dist_iterator<dim,device_grid,FREE>
 	 * \param gk std::vector of the local grid
 	 *
 	 */
-<<<<<<< HEAD
-	grid_dist_iterator(openfpm::vector<device_grid> & gk, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
-	:g_c(0),gList(gk),gdb_ext(gdb_ext),m(0)
-=======
-	grid_dist_iterator(const Vcluster_object_array<device_grid> & gk, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, grid_key_dx<dim> stop)
+	grid_dist_iterator(const openfpm::vector<device_grid> & gk, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, grid_key_dx<dim> stop)
 	:g_c(0),gList(gk),gdb_ext(gdb_ext),stop(stop)
->>>>>>> numerics
 	{
 		// Initialize the current iterator
 		// with the first grid
@@ -248,11 +243,7 @@ class grid_dist_iterator<dim,device_grid,FIXED>
 	size_t g_c;
 
 	//! List of the grids we are going to iterate
-<<<<<<< HEAD
-	openfpm::vector<device_grid> & gList;
-=======
-	const Vcluster_object_array<device_grid> & gList;
->>>>>>> numerics
+	const openfpm::vector<device_grid> & gList;
 
 	//! Extension of each grid: domain and ghost + domain
 	const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
@@ -297,11 +288,7 @@ class grid_dist_iterator<dim,device_grid,FIXED>
 	 * \param gk std::vector of the local grid
 	 *
 	 */
-<<<<<<< HEAD
-	grid_dist_iterator(openfpm::vector<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
-=======
-	grid_dist_iterator(const Vcluster_object_array<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
->>>>>>> numerics
+	grid_dist_iterator(const openfpm::vector<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
 	:g_c(0),gList(gk),gdb_ext(gdb_ext)
 	{
 		// Initialize the current iterator
