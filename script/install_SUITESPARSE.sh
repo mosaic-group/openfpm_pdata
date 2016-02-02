@@ -7,7 +7,7 @@ if [ -d "$1/SUITESPARSE" ]; then
   exit 0
 fi
 
-#wget http://ppmcore.mpi-cbg.de/upload/SuiteSparse-4.4.5.tar.gz
+wget http://ppmcore.mpi-cbg.de/upload/SuiteSparse-4.4.5.tar.gz
 rm -rf SuiteSparse
 tar -xf SuiteSparse-4.4.5.tar.gz
 cd SuiteSparse
