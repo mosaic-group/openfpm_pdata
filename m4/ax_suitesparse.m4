@@ -68,7 +68,7 @@ AC_ARG_WITH(suitesparse,
 
 # First, check SUITESPARSE_LIBS environment variable
 if test "x$SUITESPARSE_LIBS" != x; then
-        save_LIBS="$LIBS"; LIBS="$SUITESPARSE_LIBS -lumfpack -lm -lsuitesparseconfig"
+        save_LIBS="$LIBS"; LIBS="$SUITESPARSE_LIBS -lumfpack -lm -lsuitesparseconfig -lrt"
         AC_MSG_CHECKING([for umf_l_malloc])
         AC_TRY_LINK_FUNC(umf_l_malloc, [ax_suitesparse_ok=yes
                                        SUITESPARSE_LIB="$SUITESPARSE_LIBS -lamd -lbtf -lcamd -lccolamd -lcholmod -lcolamd -lcxsparse -lklu -ldl -lrbio -lspqr -lsuitesparseconfig -lumfpack"], [SUITRSPARSE_LIBS=""])

@@ -63,7 +63,6 @@ if [ "$2" == "gin" ]
 then
  echo "Compiling on gin\n"
  source ~/.bashrc
- sh ./autogen.sh
  module load gcc/4.9.2
  ./install -s -c "--prefix=/home/jenkins/openfpm_install"
  make
