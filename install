@@ -181,7 +181,7 @@ else
             fi
             ./script/install_OPENBLAS.sh $i_dir $compiler_opt
             LAPACK_installed=1
-            blas_options="--with-blas=-L/home/i-bird/OPENBLAS/lib/ -lopenblas"
+            blas_options="--with-blas=-L$i_dir/OPENBLAS/lib/ -lopenblas"
         elif [ $conf_err -eq 205 ]; then
             ## First we install openblas, we ignore default lapack
             ## this SuiteSparse is programmed to use libopenblas
@@ -192,7 +192,7 @@ else
             fi
             ./script/install_OPENBLAS.sh $i_dir $compiler_opt
             LAPACK_installed=1
-            blas_options="--with-blas=-L/home/i-bird/OPENBLAS/lib/ -lopenblas"
+            blas_options="--with-blas=-L$i_dir/OPENBLAS/lib/ -lopenblas"
         
             ## Then suite sparse
             echo "SuiteSparse not found try to install"
