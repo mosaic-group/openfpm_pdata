@@ -12,9 +12,11 @@ source script/solve_wget
 source script/solve_automake
 source script/solve_brew
 source script/solve_libtool
+source script/solve_gfortran
 source script/detect_gcc
 source script/detect_osx
 source script/show_solutions
+source script/detect_fortran
 
 discover_os
 discover_package_manager $platform
@@ -196,6 +198,20 @@ elif [ $dgc_ret -eq 2 ]; then
     sleep 10    
   fi
 fi
+
+#### Detection gfortran
+
+detect_fortran gfortran
+if [ $dgc_ret -eq 0 ]; then
+  solve_gfortran $platform
+  detect_fortran $compiler_fortran
+  if [ $dgc_ret -eq 0 ]; then
+    exit 1
+  fi
+else
+  echo -e "gfortran \033[92;1m SUCCESS \033[0m"
+fi
+
 
 command -v mpirun >/dev/null 2>&1
 if [ $? -ne 0 ]; then

@@ -42,7 +42,7 @@ function discover_package_manager() {
     fi
     command -v apt-get >/dev/null
     if [ $? -eq 0 ]; then
-      discover_package_manager_ret="sudo apt-get"
+      discover_package_manager_ret="apt-get"
       return
     fi
     command -v zypper >/dev/null

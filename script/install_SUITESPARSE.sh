@@ -22,7 +22,7 @@ cd SuiteSparse
 
 # configuration
 
-if [ x"$platform"==x"osx"  ]; then
+if [ x"$platform" = x"osx"  ]; then
     # installation for OSX
 
     sed -i "" -e "s|INSTALL_LIB = \/usr\/local\/lib|INSTALL_LIB = "$1"\/SUITESPARSE\/lib|" SuiteSparse_config/SuiteSparse_config_Mac.mk
