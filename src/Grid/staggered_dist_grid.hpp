@@ -61,6 +61,7 @@
 template<unsigned int dim, typename St, typename T, typename Decomposition,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T>>
 class staggered_grid_dist : public grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>
 {
+	openfpm::vector<comb<dim>> c_prp[T::max_prop];
 
 public:
 
@@ -70,10 +71,9 @@ public:
 	:grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(g_sz,domain,ghost)
 	{}
 
-	openfpm::vector<comb<dim>> c_prp[T::max_prop];
-
-	/*! \brief Set the staggered positions
+	/*! \brief Get the staggered positions
 	 *
+	 * \return a vector of combination
 	 *
 	 */
 	template<unsigned int p> void setStagPosition(openfpm::vector<comb<dim>> & cmb)
@@ -95,6 +95,16 @@ public:
 		stag_set_position<dim,typename T::type> ssp(c_prp);
 
 		boost::mpl::for_each_ref< boost::mpl::range_c<int,0,T::max_prop> >(ssp);
+	}
+
+	/*! \brief Get the staggered positions
+	 *
+	 * \return The vector of the staggered positions
+	 *
+	 */
+	const openfpm::vector<comb<dim>>  (& getStagPositions()) [T::max_prop]
+	{
+		return c_prp;
 	}
 
 	/*! \brief Write a vtk file with the information of the staggered grid

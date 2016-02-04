@@ -23,42 +23,36 @@ BOOST_AUTO_TEST_CASE( staggered_grid_dist_unit_test)
 
 	size_t k = 1024;
 
-/*	for (size_t k = 1024 ; k >= 2 ; k--)
-	{*/
-		BOOST_TEST_CHECKPOINT( "Testing grid k=" << k );
+	// grid size
+	size_t sz[2] = {k,k};
 
-		// grid size
-		size_t sz[2];
-		sz[0] = k;
-		sz[1] = k;
+	// Ghost
+	Ghost<2,float> g(0.0);
 
-		// Ghost
-		Ghost<2,float> g(0.01);
+	staggered_grid_dist<2,float,Point2D_test<float>,CartDecomposition<2,float>> sg(sz,domain,g);
+	sg.setDefaultStagPosition();
 
-		staggered_grid_dist<2,float,Point2D_test<float>,CartDecomposition<2,float>> sg(sz,domain,g);
+	// We check that the staggered position is correct
+	const openfpm::vector<comb<2>> (& cmbs)[6] = sg.getStagPositions();
 
-		sg.setDefaultStagPosition();
 
-		auto it = sg.getDomainIterator();
+	BOOST_REQUIRE_EQUAL(cmbs[0].size(),1ul);
+	BOOST_REQUIRE_EQUAL(cmbs[1].size(),1ul);
+	BOOST_REQUIRE_EQUAL(cmbs[2].size(),1ul);
+	BOOST_REQUIRE_EQUAL(cmbs[3].size(),1ul);
+	BOOST_REQUIRE_EQUAL(cmbs[4].size(),2ul);
+	BOOST_REQUIRE_EQUAL(cmbs[5].size(),4ul);
 
-		while (it.isNext())
-		{
-			auto key = it.get();
-
-			sg.template get<p::s>(key) = 1;
-
-			sg.template get<p::v>(key)[0] = 0;
-			sg.template get<p::v>(key)[1] = 1;
-
-			sg.template get<p::t>(key)[0][0] = 0;
-			sg.template get<p::t>(key)[0][1] = 1;
-			sg.template get<p::t>(key)[1][0] = 2;
-			sg.template get<p::t>(key)[1][1] = 3;
-
-			++it;
-		}
-
-/*	}*/
+	BOOST_REQUIRE(cmbs[0].get(0) == comb<2>({0,0}));
+	BOOST_REQUIRE(cmbs[1].get(0) == comb<2>({0,0}));
+	BOOST_REQUIRE(cmbs[2].get(0) == comb<2>({0,0}));
+	BOOST_REQUIRE(cmbs[3].get(0) == comb<2>({0,0}));
+	BOOST_REQUIRE(cmbs[4].get(0) == comb<2>({0,-1}));
+	BOOST_REQUIRE(cmbs[4].get(1) == comb<2>({-1,0}));
+	BOOST_REQUIRE(cmbs[5].get(0) == comb<2>({0,0}));
+	BOOST_REQUIRE(cmbs[5].get(1) == comb<2>({-1,-1}));
+	BOOST_REQUIRE(cmbs[5].get(2) == comb<2>({-1,-1}));
+	BOOST_REQUIRE(cmbs[5].get(3) == comb<2>({0,0}));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
