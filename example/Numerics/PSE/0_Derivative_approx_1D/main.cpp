@@ -11,9 +11,10 @@
 
 #include "Vector/vector_dist.hpp"
 #include "Decomposition/CartDecomposition.hpp"
-#include "PSE/Kernels.hpp"
+#include "Kernels.hpp"
 #include "data_type/aggregate.hpp"
 #include <cmath>
+
 
 /*
  * ### WIKI 2 ###
