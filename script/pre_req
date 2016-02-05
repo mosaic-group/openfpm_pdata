@@ -6,13 +6,14 @@ source script/discover_package_manager
 source script/discover_os
 source script/solve_autoconf
 source script/solve_gpp
+source script/solve_gfortran
 source script/solve_cmake
 source script/solve_git
 source script/solve_wget
 source script/solve_automake
 source script/solve_brew
 source script/solve_libtool
-source script/solve_gfortran
+source script/solve_fortran
 source script/detect_gcc
 source script/detect_osx
 source script/show_solutions
@@ -185,6 +186,7 @@ fi
 
 detect_gcc_or_clang g++
 if [ $dgc_ret -eq 0 ]; then
+  echo -e "g++ \033[91;5;1m FAILED \033[0m"
   solve_gpp $platform
   detect_gcc_or_clang $compiler_gpp
   if [ $dgc_ret -eq 0 ]; then
@@ -203,6 +205,7 @@ fi
 
 detect_fortran gfortran
 if [ $dgc_ret -eq 0 ]; then
+  echo -e "gfortran\033[91;5;1m FAILED \033[0m"
   solve_gfortran $platform
   detect_fortran $compiler_fortran
   if [ $dgc_ret -eq 0 ]; then

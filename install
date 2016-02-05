@@ -92,6 +92,12 @@ if [ ! -d src/config  ]; then
 fi
 cd ..
 
+cd openfpm_numerics
+if [ ! -d src/config  ]; then
+  mkdir src/config
+fi
+cd ..
+
 # Create config directory
 
 if [ ! -d src/config ]; then
