@@ -131,11 +131,11 @@ int main(int argc, char* argv[])
 	// Get again another iterator, iterate across all the domain points, calculating a Laplace stencil
 	//
 	//
-	dom = g_dist.getDomainIterator();
+	auto dom2 = g_dist.getDomainIterator();
 	
-	while (dom.isNext())
+	while (dom2.isNext())
 	{
-		auto key = dom.get();
+		auto key = dom2.get();
 
 		// Laplace stencil
 		g_dist.template get<B>(key)[1] = g_dist.template get<A>(key.move(x,1))[0] + g_dist.template get<A>(key.move(x,-1))[0] +
@@ -144,7 +144,7 @@ int main(int argc, char* argv[])
 										 6*g_dist.template get<A>(key)[0];
 		                    
 
-		++dom;
+		++dom2;
 	}
 
 	//

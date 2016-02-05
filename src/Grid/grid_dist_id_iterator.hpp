@@ -113,22 +113,6 @@ class grid_dist_iterator<dim,device_grid,FREE>
 
 	public:
 
-	/*! \brief Copy operator=
-	*
-	* \param tmp iterator to copy
-	*
-	*/
-	grid_dist_iterator<dim,device_grid,FREE> & operator=(const grid_dist_iterator<dim,device_grid,FREE> & tmp)
-	{
-		g_c = tmp.g_c;
-		gList = tmp.gList;
-		gdb_ext = tmp.gdb_ext;
-		a_it.reinitialize(tmp.a_it);
-		stop = tmp.stop;
-
-		return *this;
-	}
-
 	/*! \brief Constructor of the distributed grid iterator
 	 *
 	 * \param gk std::vector of the local grid

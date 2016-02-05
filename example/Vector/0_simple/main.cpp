@@ -26,17 +26,14 @@ template<typename T> class Particle
 {
 public:
 
-	typedef boost::fusion::vector<T,T,T,T,T[3],T[3][3]> type;
+	typedef boost::fusion::vector<T,T[3],T[3][3]> type;
 
 	type data;
 
-	static const unsigned int x = 0;
-	static const unsigned int y = 1;
-	static const unsigned int z = 2;
-	static const unsigned int s = 3;
-	static const unsigned int v = 4;
-	static const unsigned int t = 5;
-	static const unsigned int max_prop = 6;
+	static const unsigned int s = 0;
+	static const unsigned int v = 1;
+	static const unsigned int t = 2;
+	static const unsigned int max_prop = 3;
 };
 
 int main(int argc, char* argv[])
@@ -58,8 +55,8 @@ int main(int argc, char* argv[])
 	std::default_random_engine eg;
 	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
-	Box<2,float> box({0.0,0.0},{1.0,1.0});
-        size_t bc[2]={PERIODIC,PERIODIC};
+	Box<2,float> domain({0.0,0.0},{1.0,1.0});
+    size_t bc[2]={PERIODIC,PERIODIC};
 	Ghost<2,float> g(0.01);
 	
 	//
@@ -82,12 +79,12 @@ int main(int argc, char* argv[])
 	// objects with an undefined position in space. This non-space decomposition is also called data-driven
 	// decomposition
 	//
-	vector_dist<2,float, Particle<float>, CartDecomposition<2,float> > vd(4096,box,bc,g);
+	vector_dist<2,float, Particle<float>, CartDecomposition<2,float> > vd(4096,domain,bc,g);
 
 	//
 	// ### WIKI 5 ###
 	//
-	// Get an iterator that go throught the objects, in an undefined position state and define its position
+	// Get an iterator that go through the particles, in an undefined position state and define its position
 	//
 	auto it = vd.getIterator();
 
@@ -124,9 +121,28 @@ int main(int argc, char* argv[])
 	{
 		auto key = it.get();
 
-		
-		if (ct.isLocal(vd.template getPos<s::x>(key)) == false)
+		// The template parameter is unuseful and will probably disappear
+		if (ct.isLocal(vd.template getPos<0>(key)) == false)
 			std::cerr << "Error particle is not local" << "\n";
+
+		// set the all the properties to 0.0
+
+		// scalar
+		vd.template getProp<0>(key) = 0.0;
+
+		vd.template getProp<1>(key)[0] = 0.0;
+		vd.template getProp<1>(key)[1] = 0.0;
+		vd.template getProp<1>(key)[2] = 0.0;
+
+		vd.template getProp<2>(key)[0][0] = 0.0;
+		vd.template getProp<2>(key)[0][1] = 0.0;
+		vd.template getProp<2>(key)[0][2] = 0.0;
+		vd.template getProp<2>(key)[1][0] = 0.0;
+		vd.template getProp<2>(key)[1][1] = 0.0;
+		vd.template getProp<2>(key)[1][2] = 0.0;
+		vd.template getProp<2>(key)[2][0] = 0.0;
+		vd.template getProp<2>(key)[2][1] = 0.0;
+		vd.template getProp<2>(key)[2][2] = 0.0;
 
 		cnt++;
 

@@ -1149,12 +1149,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 			correct &= (first_NN == 6);
 			correct &= (second_NN == 12);
 			correct &= (third_NN == 8);
-
-			if (correct == false)
-			{
-				int debug = 0;
-				debug++;
-			}
 		}
 
 		BOOST_REQUIRE_EQUAL(correct,true);

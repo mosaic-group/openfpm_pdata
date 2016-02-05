@@ -1,6 +1,10 @@
 #ifndef SUBDOMAIN_NODES_HPP
 #define SUBDOMAIN_NODES_HPP
 
+#include <boost/fusion/container/vector.hpp>
+#include <boost/fusion/include/at_c.hpp>
+#include "Grid/Encap.hpp"
+
 /* In a decomposition graph each node represent a sub-domain while an edge represent
  * an interaction between sub-domain (it mean that they have to communicate).
  *
@@ -31,9 +35,6 @@ struct nm_v
 {
 	//! The node contain 3 unsigned long integer for communication computation memory and id
 	typedef boost::fusion::vector<float,float,float,size_t,size_t,size_t,size_t,long int> type;
-
-	typedef typename memory_traits_inte<type>::type memory_int;
-	typedef typename memory_traits_lin<type>::type memory_lin;
 
 	//! type of the positional field
 	typedef float s_type;
@@ -87,8 +88,6 @@ struct nm_v
     
 };
 
-const std::string nm_v::attributes::name[] = {"x","y","z","communication","computation","memory","id","sub_id"};
-
 /*! \brief sub-domain edge graph node
  *
  */
@@ -97,9 +96,6 @@ struct nm_e
 {
 	//! The node contain 3 unsigned long integer for comunication computation and memory
 	typedef boost::fusion::vector<size_t> type;
-
-	typedef typename memory_traits_inte<type>::type memory_int;
-	typedef typename memory_traits_lin<type>::type memory_lin;
 
 	//! Attributes name
 	struct attributes
@@ -116,7 +112,6 @@ struct nm_e
 	static const unsigned int max_prop = 1;
 };
 
-const std::string nm_e::attributes::name[] = {"communication"};
 
 /*! \brief Reduced sub-domain vertex graph node
  *
@@ -128,9 +123,6 @@ struct nm_part_v
 {
 	//! The node contain 3 unsigned long integer for comunication computation and memory
 	typedef boost::fusion::vector<size_t,size_t> type;
-
-	typedef typename memory_traits_inte<type>::type memory_int;
-	typedef typename memory_traits_lin<type>::type memory_lin;
 
 	typedef float s_type;
 
@@ -166,9 +158,6 @@ struct nm_part_v
 };
 
 
-
-const std::string nm_part_v::attributes::name[] = {"id","sub_id"};
-
 /*! \brief Reduced edge graph node
  *
  * It contain only the communication between nodes
@@ -179,9 +168,6 @@ struct nm_part_e
 {
 	//! The node contain 3 unsigned long integer for comunication computation and memory
 	typedef boost::fusion::vector<> type;
-
-	typedef typename memory_traits_inte<type>::type memory_int;
-	typedef typename memory_traits_lin<type>::type memory_lin;
 
 	//! The data
 
@@ -196,7 +182,5 @@ struct nm_part_e
         static const std::string name[];
     };
 };
-
-const std::string nm_part_e::attributes::name[] = {"id"};
 
 #endif
