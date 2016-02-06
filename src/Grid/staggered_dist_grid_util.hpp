@@ -9,7 +9,7 @@
 #define SRC_GRID_STAGGERED_DIST_GRID_UTIL_HPP_
 
 #include "util/common.hpp"
-#include "VTKWriter.hpp"
+#include "VTKWriter/VTKWriter.hpp"
 #include "util/convert.hpp"
 
 

@@ -10,7 +10,7 @@
 
 #include "Grid/grid_dist_id.hpp"
 #include "staggered_dist_grid_util.hpp"
-#include "VTKWriter.hpp"
+#include "VTKWriter/VTKWriter.hpp"
 
 
 /*! \brief Implementation of the staggered grid

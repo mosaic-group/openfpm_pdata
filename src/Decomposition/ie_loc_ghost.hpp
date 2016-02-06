@@ -12,7 +12,7 @@
 #include "Space/Ghost.hpp"
 #include "Space/SpaceBox.hpp"
 #include "common.hpp"
-#include "VTKWriter.hpp"
+#include "VTKWriter/VTKWriter.hpp"
 #include "nn_processor.hpp"
 
 /*! \brief structure that store and compute the internal and external local ghost box

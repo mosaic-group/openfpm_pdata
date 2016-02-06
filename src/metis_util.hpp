@@ -10,7 +10,7 @@
 
 #include <iostream>
 #include "metis.h"
-#include "VTKWriter.hpp"
+#include "VTKWriter/VTKWriter.hpp"
 
 /*! \brief Metis graph structure
  *

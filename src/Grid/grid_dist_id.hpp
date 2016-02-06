@@ -14,7 +14,7 @@
 #include "NN/CellList/CellDecomposer.hpp"
 #include "util/object_util.hpp"
 #include "memory/ExtPreAlloc.hpp"
-#include "VTKWriter.hpp"
+#include "VTKWriter/VTKWriter.hpp"
 #include "Packer_Unpacker/Packer.hpp"
 #include "Packer_Unpacker/Unpacker.hpp"
 

@@ -19,7 +19,7 @@
 #include "util/common.hpp"
 #include "util/object_util.hpp"
 #include "memory/ExtPreAlloc.hpp"
-#include "CSVWriter.hpp"
+#include "CSVWriter/CSVWriter.hpp"
 #include "Decomposition/common.hpp"
 #include "Grid/grid_dist_id_iterator_dec.hpp"
 #include "Vector/vector_dist_ofb.hpp"
