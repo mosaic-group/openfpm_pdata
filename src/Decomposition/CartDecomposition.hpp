@@ -39,7 +39,6 @@
  * \tparam dim is the dimensionality of the physical domain we are going to decompose.
  * \tparam T type of the space we decompose, Real, Integer, Complex ...
  * \tparam Memory Memory factory used to allocate memory
- * \tparam Domain Structure that contain the information of your physical domain
  *
  * Given an N-dimensional space, this class decompose the space into a Cartesian grid of small
  * sub-sub-domain. To each sub-sub-domain is assigned an id that identify at which processor is
@@ -73,7 +72,7 @@
  *
  */
 
-template<unsigned int dim, typename T, typename Memory=HeapMemory, template<unsigned int, typename> class Domain=Box>
+template<unsigned int dim, typename T, typename Memory=HeapMemory>
 class CartDecomposition : public ie_loc_ghost<dim,T>, public nn_prcs<dim,T> , public ie_ghost<dim,T>
 {
 
@@ -109,7 +108,7 @@ private:
 	CellDecomposer_sm<dim,T> cd;
 
 	//! rectangular domain to decompose
-	Domain<dim,T> domain;
+	::Box<dim,T> domain;
 
 	//! Box Spacing
 	T spacing[dim];
@@ -389,7 +388,7 @@ public:
      * \param cart object to copy
 	 *
 	 */
-	CartDecomposition(const CartDecomposition<dim,T,Memory,Domain> & cart)
+	CartDecomposition(const CartDecomposition<dim,T,Memory> & cart)
 	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),ref_cnt(0)
 	{
 		this->operator=(cart);
@@ -400,7 +399,7 @@ public:
      * \param cart object to copy
 	 *
 	 */
-	CartDecomposition(CartDecomposition<dim,T,Memory,Domain> && cart)
+	CartDecomposition(CartDecomposition<dim,T,Memory> && cart)
 	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),ref_cnt(0)
 	{
 		this->operator=(cart);
@@ -668,9 +667,9 @@ p1[0]<-----+         +----> p2[0]
 	 * \return a duplicated decomposition with different ghost boxes
 	 *
 	 */
-	CartDecomposition<dim,T,Memory,Domain> duplicate(const Ghost<dim,T> & g) const
+	CartDecomposition<dim,T,Memory> duplicate(const Ghost<dim,T> & g) const
 	{
-		CartDecomposition<dim,T,Memory,Domain> cart(v_cl);
+		CartDecomposition<dim,T,Memory> cart(v_cl);
 
 		cart.box_nn_processor = box_nn_processor;
 		cart.sub_domains = sub_domains;
@@ -705,9 +704,9 @@ p1[0]<-----+         +----> p2[0]
 	 * \return a duplicated decomposition
 	 *
 	 */
-	CartDecomposition<dim,T,Memory,Domain> duplicate() const
+	CartDecomposition<dim,T,Memory> duplicate() const
 	{
-		CartDecomposition<dim,T,Memory,Domain> cart(v_cl);
+		CartDecomposition<dim,T,Memory> cart(v_cl);
 
 		(static_cast<ie_loc_ghost<dim,T>*>(&cart))->operator=(static_cast<ie_loc_ghost<dim,T>>(*this));
 		(static_cast<nn_prcs<dim,T>*>(&cart))->operator=(static_cast<nn_prcs<dim,T>>(*this));
@@ -740,7 +739,7 @@ p1[0]<-----+         +----> p2[0]
 	 * \param cart element to copy
 	 *
 	 */
-	CartDecomposition<dim,T,Memory,Domain> & operator=(const CartDecomposition & cart)
+	CartDecomposition<dim,T,Memory> & operator=(const CartDecomposition & cart)
 	{
 		static_cast<ie_loc_ghost<dim,T>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T>>(cart));
 		static_cast<nn_prcs<dim,T>*>(this)->operator=(static_cast<nn_prcs<dim,T>>(cart));
@@ -773,7 +772,7 @@ p1[0]<-----+         +----> p2[0]
 	 * \param cart element to copy
 	 *
 	 */
-	CartDecomposition<dim,T,Memory,Domain> & operator=(CartDecomposition && cart)
+	CartDecomposition<dim,T,Memory> & operator=(CartDecomposition && cart)
 	{
 		static_cast<ie_loc_ghost<dim,T>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T>*>(cart));
 		static_cast<nn_prcs<dim,T>*>(this)->operator=(static_cast<nn_prcs<dim,T>*>(cart));
@@ -918,7 +917,7 @@ p1[0]<-----+         +----> p2[0]
      * \param domain_ domain to decompose
 	 *
 	 */
-	void setParameters(const size_t (& div_)[dim], Domain<dim,T> domain_, const size_t (& bc)[dim] ,const Ghost<dim,T> & ghost)
+	void setParameters(const size_t (& div_)[dim], ::Box<dim,T> domain_, const size_t (& bc)[dim] ,const Ghost<dim,T> & ghost)
 	{
 		// set the boundary conditions
 		for (size_t i = 0 ; i < dim ; i++)
@@ -992,7 +991,7 @@ p1[0]<-----+         +----> p2[0]
 	 * \return The physical domain box
 	 *
 	 */
-	const Domain<dim,T> & getDomain()
+	const ::Box<dim,T> & getDomain()
 	{
 		return domain;
 	}
@@ -1181,7 +1180,7 @@ p1[0]<-----+         +----> p2[0]
 	 * \param ele Element to check
 	 *
 	 */
-	bool is_equal(CartDecomposition<dim,T,Memory,Domain> & cart)
+	bool is_equal(CartDecomposition<dim,T,Memory> & cart)
 	{
 		if (static_cast<ie_loc_ghost<dim,T>*>(this)->is_equal(static_cast<ie_loc_ghost<dim,T>&>(cart)) == false)
 			return false;
@@ -1225,7 +1224,7 @@ p1[0]<-----+         +----> p2[0]
 	 * \param ele Element to check
 	 *
 	 */
-	bool is_equal_ng(CartDecomposition<dim,T,Memory,Domain> & cart)
+	bool is_equal_ng(CartDecomposition<dim,T,Memory> & cart)
 	{
 		if (static_cast<ie_loc_ghost<dim,T>*>(this)->is_equal_ng(static_cast<ie_loc_ghost<dim,T>&>(cart)) == false)
 			return false;
