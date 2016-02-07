@@ -37,6 +37,7 @@ m4_ifdef([AX_BLAS],,[m4_include([m4/ax_blas.m4])])
 m4_ifdef([AX_LAPACK],,[m4_include([m4/ax_lapack.m4])])
 m4_ifdef([AX_SUITESPARSE],,[m4_include([m4/ax_suitesparse.m4])])
 m4_ifdef([AX_EIGEN],,[m4_include([m4/ax_eigen.m4])])
+m4_ifdef([AX_LIB_HDF5],,[m4_include([m4/ax_lib_hdf5.m4])]])
 
 
 CXXFLAGS+=" --std=c++11 "
@@ -99,6 +100,13 @@ fi
 
 IMMDX_LIB_METIS([],[echo "Cannot detect metis, use the --with-metis option if it is not installed in the default location"
                     exit 201])
+
+#########
+
+## Check for HDF5
+
+AX_LIB_HDF5([],[echo "Cannot detect hdf5, use the --with-hdf5 option if it is not installed in the default location"
+                    exit 206])
 
 ########
 

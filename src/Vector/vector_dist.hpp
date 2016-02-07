@@ -20,6 +20,8 @@
 #include "util/object_util.hpp"
 #include "memory/ExtPreAlloc.hpp"
 #include "CSVWriter/CSVWriter.hpp"
+#include "VTKWriter/VTKWriter.hpp"
+#include "H5PartWriter/H5PartWriter.hpp"
 #include "Decomposition/common.hpp"
 #include "Grid/grid_dist_id_iterator_dec.hpp"
 #include "Vector/vector_dist_ofb.hpp"
@@ -1240,15 +1242,32 @@ public:
 	 * \return if the file has been written correctly
 	 *
 	 */
-	inline bool write(std::string out, int opt = NO_GHOST)
+	inline bool write(std::string out, int opt = NO_GHOST | VTK_WRITER)
 	{
-		// CSVWriter test
-		CSVWriter<openfpm::vector<Point<dim,St>>, openfpm::vector<prop> > csv_writer;
+		if ((opt & 0xFFFF0000) == CSV_WRITER)
+		{
+			// CSVWriter test
+			CSVWriter<openfpm::vector<Point<dim,St>>, openfpm::vector<prop> > csv_writer;
 
-		std::string output = std::to_string(out + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".csv"));
+			std::string output = std::to_string(out + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".csv"));
 
-		// Write the CSV
-		return csv_writer.write(output,v_pos,v_prp);
+			// Write the CSV
+			return csv_writer.write(output,v_pos,v_prp);
+		}
+		else if ((opt & 0xFFFF0000) == VTK_WRITER)
+		{
+			// CSVWriter test
+			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim,St>>, openfpm::vector<prop>>, VECTOR_POINTS> vtk_writer;
+
+			std::string output = std::to_string(out + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".csv"));
+
+			// Write the CSV
+			return vtk_writer.write(output,v_pos,v_prp);
+		}
+		else if ((opt & 0xFFFF0000) == H5PART_WRITER)
+		{
+
+		}
 	}
 
 	/* \brief It return the id of structure in the allocation list

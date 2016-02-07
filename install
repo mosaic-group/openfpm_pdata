@@ -137,6 +137,7 @@ BOOST_installed=0
 LAPACK_installed=0
 SUITESPARSE_installed=0
 EIGEN_installed=0
+HDF5_installed=0
 blas_options=""
 conf_err=1
 
@@ -213,6 +214,14 @@ else
             ./script/install_EIGEN.sh $i_dir $compiler_opt
             configure_options=" $configure_options --with-eigen=$i_dir/EIGEN "
             EIGEN_installed=1
+        elif [ $conf_err -eq 207 ]; then
+            echo "HDF5 not found try to install"
+            if [ $HDF5_installed -eq 1 ]; then
+                echo "Error the installation of HDF5 failed"	
+            fi
+            ./script/install_HDF5.sh $i_dir $compiler_opt
+            configure_options=" $configure_options --with-hdf5=$i_dir/HDF5 "
+            HDF5_installed=1
         elif [ $conf_err -ne 0 ]; then
             echo "I do not know how to recover from this error"
             exit 1
