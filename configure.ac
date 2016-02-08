@@ -38,7 +38,7 @@ m4_ifdef([AX_LAPACK],,[m4_include([m4/ax_lapack.m4])])
 m4_ifdef([AX_SUITESPARSE],,[m4_include([m4/ax_suitesparse.m4])])
 m4_ifdef([AX_EIGEN],,[m4_include([m4/ax_eigen.m4])])
 m4_ifdef([AX_LIB_HDF5],,[m4_include([m4/ax_lib_hdf5.m4])]])
-
+m4_ifdef([AX_H5HUT],,[m4_include([m4/ax_h5hut.m4])])
 
 CXXFLAGS+=" --std=c++11 "
 NVCCFLAGS=" "
@@ -105,8 +105,22 @@ IMMDX_LIB_METIS([],[echo "Cannot detect metis, use the --with-metis option if it
 
 ## Check for HDF5
 
-AX_LIB_HDF5([],[echo "Cannot detect hdf5, use the --with-hdf5 option if it is not installed in the default location"
-                    exit 206])
+AX_LIB_HDF5([parallel])
+
+if test x"$with_hdf5" = x"no"; then
+    echo "Cannot detect hdf5, use the --with-hdf5 option if it is not installed in the default location"
+    exit 207
+fi
+
+#########
+
+## Check for H5HUT
+
+save_CC=$CC
+CC=$CXX
+AX_H5HUT([],[echo "Cannot detect h5hut, use the --with-h5hut option if it is not installed in the default location"
+                    exit 208])
+CC=$save_CC
 
 ########
 

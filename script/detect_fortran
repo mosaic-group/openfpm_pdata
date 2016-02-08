@@ -8,8 +8,6 @@ function detect_fortran()
       return
     fi
 
-    echo -e "$1 \033[92;1m SUCCESS \033[0m"
-
     dgc_ret=1
 }
 
