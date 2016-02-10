@@ -87,10 +87,11 @@ esac
 
 # First, check SUITESPARSE_LIBS environment variable
 if test "x$SUITESPARSE_LIBS" != x; then
-        save_LIBS="$LIBS"; LIBS="$SUITESPARSE_LIBS -lumfpack -lsuitesparseconfig -lm $RT_LIB"
+        save_LIBS="$LIBS"; LIBS="$SUITESPARSE_LIBS -lumfpack -lamd -lbtf -lcamd -lccolamd -lcholmod -lcolamd -lcxsparse -lklu -ldl -lrbio -lspqr -lsuitesparseconfig -lm  $RT_LIB"
         AC_MSG_CHECKING([for umf_l_malloc])
         AC_TRY_LINK_FUNC(umf_l_malloc, [ax_suitesparse_ok=yes
-                                       SUITESPARSE_LIB="$SUITESPARSE_LIBS -lamd -lbtf -lcamd -lccolamd -lcholmod -lcolamd -lcxsparse -lklu -ldl -lrbio -lspqr -lsuitesparseconfig -lumfpack"], [SUITRSPARSE_LIBS=""])
+                                        SUITESPARSE_LIBS="$SUITESPARSE_LIBS -lumfpack -lamd -lbtf -lcamd -lccolamd -lcholmod -lcolamd -lcxsparse -lklu -ldl -lrbio -lspqr -lsuitesparseconfig"
+                                       ], [SUITRSPARSE_LIBS=""])
         AC_MSG_RESULT($ax_suitesparse_ok)
         LIBS="$save_LIBS"
         if test $ax_suitesparse_ok = no; then
@@ -100,12 +101,18 @@ if test "x$SUITESPARSE_LIBS" != x; then
         CFLAGS=$SUITESPARSE_INCLUDE
 	AC_CHECK_HEADER(umfpack.h,[],[SUITESPARSE_INCLUDE=""
                                      ax_suitesparse_ok=no])
+                                     
         CFLAGS="$old_CFLAGS"
 else
-        AC_CHECK_LIB(umfpack,umf_l_alloc,[SUITESPARSE_LIB="$SUITESPARSE_LIB -lamd -lbtf -lcamd -lccolamd -lcholmod -lcolamd -lcxsparse -lklu -ldl -lrbio -lspqr -lsuitesparseconfig -lumfpack"],[SUITESPARSE_LIB=""])
+        AC_CHECK_LIB(umfpack,umf_l_alloc,[SUITESPARSE_LIBS="$SUITESPARSE_LIBS -lumfpack -lamd -lbtf -lcamd -lccolamd -lcholmod -lcolamd -lcxsparse -lklu -ldl -lrbio -lspqr -lsuitesparseconfig"],[
+                                                                  SUITESPARSE_LIBS=""
+                                                                  ax_suitesparse_ok=no
+                                                                  ])
         old_CFLAGS="$CFLAGS"
         AC_CHECK_HEADER(umfpack.h,[],[SUITESPARSE_INCLUDE=""
                                       ax_suitesparse_ok=no])
+        
+                                      
         CFLAGS="$old_CFLAGS"
 fi
 
