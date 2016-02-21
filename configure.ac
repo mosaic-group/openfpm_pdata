@@ -39,7 +39,17 @@ m4_ifdef([AX_SUITESPARSE],,[m4_include([m4/ax_suitesparse.m4])])
 m4_ifdef([AX_EIGEN],,[m4_include([m4/ax_eigen.m4])])
 
 
-CXXFLAGS+=" --std=c++11 "
+case $host_os in
+   *cygwin*)
+        # Do something specific for cygwin
+        CXXFLAGS+=" --std=gnu++11 "
+        ;;
+    *)
+        #Default Case
+        CXXFLAGS+=" --std=c++11 "
+        ;;
+esac
+
 NVCCFLAGS=" "
 INCLUDES_PATH=" "
 

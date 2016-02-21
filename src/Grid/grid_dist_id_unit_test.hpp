@@ -3,6 +3,7 @@
 
 #include "grid_dist_id.hpp"
 #include "data_type/scalar.hpp"
+#include "data_type/aggregate.hpp"
 
 BOOST_AUTO_TEST_SUITE( grid_dist_id_test )
 
@@ -586,6 +587,113 @@ void Test3D_gg(const Box<3,float> & domain, long int k, long int gk)
 		}
 	}
 }
+
+/*! \brief Test when the domain is not from 0.0 to 1.0
+ *
+ *
+ */
+
+void Test3D_domain(const Box<3,float> & domain, long int k)
+{
+	long int big_step = k / 30;
+	big_step = (big_step == 0)?1:big_step;
+	long int small_step = 21;
+
+	print_test( "Testing 3D grid k<=",k);
+
+	// 3D test
+	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
+	{
+		BOOST_TEST_CHECKPOINT( "Testing 3D grid k=" << k );
+
+		// grid size
+		size_t sz[3];
+		sz[0] = k;
+		sz[1] = k;
+		sz[2] = k;
+
+		// factor
+		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+
+		// Ghost
+		Ghost<3,float> g(0.01 / factor);
+
+		// Distributed grid with id decomposition
+		grid_dist_id<3, float, aggregate<long int,long int>, CartDecomposition<3,float>> g_dist(sz,domain,g);
+
+		// check the consistency of the decomposition
+		bool val = g_dist.getDecomposition().check_consistency();
+		BOOST_REQUIRE_EQUAL(val,true);
+
+		// Grid sm
+		grid_sm<3,void> info(sz);
+
+		// get the domain iterator
+		size_t count = 0;
+
+		auto dom = g_dist.getDomainIterator();
+
+		while (dom.isNext())
+		{
+			auto key = dom.get();
+			auto key_g = g_dist.getGKey(key);
+
+			g_dist.template get<0>(key) = count;
+			g_dist.template get<1>(key) = info.LinId(key_g);
+
+			// Count the point
+			count++;
+
+			++dom;
+		}
+
+		size_t count2 = count;
+		openfpm::vector<size_t> pnt;
+
+		// Get the total size of the local grids on each processors
+		// and the total size
+		Vcluster & v_cl = g_dist.getVC();
+		v_cl.sum(count2);
+		v_cl.allGather(count,pnt);
+		v_cl.execute();
+		size_t s_pnt = 0;
+
+		// calculate the starting point for this processor
+		for (size_t i = 0 ; i < v_cl.getProcessUnitID() ; i++)
+			s_pnt += pnt.get(i);
+
+		// Check
+		BOOST_REQUIRE_EQUAL(count2,(size_t)k*k*k);
+
+		// sync the ghost
+		g_dist.template ghost_get<0,1>();
+
+		bool match = true;
+
+		// check that the communication is correctly completed
+
+		auto domg = g_dist.getDomainGhostIterator();
+
+		// check that the grid with the ghost past store the correct information
+		while (domg.isNext())
+		{
+			auto key = domg.get();
+			auto key_g = g_dist.getGKey(key);
+
+			// In this case the boundary condition are non periodic
+			if (g_dist.isInside(key_g))
+			{
+				match &= (g_dist.template get<1>(key) == info.LinId(key_g))?true:false;
+			}
+
+			++domg;
+		}
+
+		BOOST_REQUIRE_EQUAL(match,true);
+	}
+}
+
+
 
 void Test2D_complex(const Box<2,float> & domain, long int k)
 {
@@ -1251,6 +1359,20 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_decomposition_iterator )
 	k = 128*128*128*global_v_cluster->getProcessingUnits();
 	k = std::pow(k, 1/3.);
 	Test3D_decit(domain3,k);
+}
+
+
+BOOST_AUTO_TEST_CASE( grid_dist_id_domain_test_use)
+{
+	// Initialize the global VCluster
+	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
+
+	// Domain
+	Box<3,float> domain3({0.1,0.1,0.1},{1.1,1.1,1.1});
+
+	long int k = 128*128*128*global_v_cluster->getProcessingUnits();
+	k = std::pow(k, 1/3.);
+	Test3D_domain(domain3,k);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

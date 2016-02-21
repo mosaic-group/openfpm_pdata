@@ -86,8 +86,7 @@ class nn_prcs
 		nnpst.pos.add(c);
 	}
 
-	/*! \brief In case of periodic boundary conditions we have to add boxes
-	 *         at the borders
+	/*! \brief In case of periodic boundary conditions we replicate the sub-domains at the border
 	 *
 	 * \param domain Domain box
 	 * \param boundary boundary conditions
@@ -109,6 +108,7 @@ class nn_prcs
 				if (check_valid(cmbs[j],bc) == false)
 					continue;
 
+				// Calculate the sector box
 				Box<dim,T> bp;
 				Point<dim,T> shift;
 
@@ -119,7 +119,7 @@ class nn_prcs
 					case 1:
 						bp.setLow(k,domain.getHigh(k)+ghost.getLow(k));
 						bp.setHigh(k,domain.getHigh(k));
-						shift.get(k) = -domain.getHigh(k);
+						shift.get(k) = -domain.getHigh(k)+domain.getLow(k);
 						break;
 					case 0:
 						bp.setLow(k,domain.getLow(k));
@@ -129,7 +129,7 @@ class nn_prcs
 					case -1:
 						bp.setLow(k,domain.getLow(k));
 						bp.setHigh(k,ghost.getHigh(k));
-						shift.get(k) = domain.getHigh(k);
+						shift.get(k) = domain.getHigh(k)-domain.getLow(k);
 						break;
 					}
 				}
@@ -211,6 +211,10 @@ public:
 	 */
 	static bool inline check_valid(comb<dim> cmb,const size_t (& bc)[dim])
 	{
+		// the combination 0 is not valid
+		if (cmb.n_zero() == dim)
+			return false;
+
 		for (size_t i = 0 ; i < dim ; i++)
 		{
 			if (bc[i] == NON_PERIODIC && cmb.getComb()[i] != 0)

@@ -1044,7 +1044,7 @@ public:
 		// Calculate the division array and the cell box
 		for (size_t i = 0 ; i < dim ; i++)
 		{
-			div[i] = (pbox.getP2().get(i) - pbox.getP1().get(i))/ r_cut;
+			div[i] = static_cast<size_t>((pbox.getP2().get(i) - pbox.getP1().get(i))/ r_cut);
 			div[i]++;
 
 			cell_box.setLow(i,0.0);
