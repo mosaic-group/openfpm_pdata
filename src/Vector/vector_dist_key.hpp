@@ -24,12 +24,22 @@ class vect_dist_key_dx
 
 public:
 
+	/*! \brief set the key
+	 *
+	 * \return the local key
+	 *
+	 */
+	inline void setKey(size_t key)
+	{
+		this->key = key;
+	}
+
 	/*! \brief Get the key
 	 *
 	 * \return the local key
 	 *
 	 */
-	size_t getKey()
+	inline size_t getKey()
 	{
 		return key;
 	}
@@ -46,8 +56,12 @@ public:
 		return ts.str();
 	}
 
-	vect_dist_key_dx(size_t key)
+	inline vect_dist_key_dx(size_t key)
 	:key(key)
+	{
+	}
+
+	inline vect_dist_key_dx()
 	{
 	}
 };

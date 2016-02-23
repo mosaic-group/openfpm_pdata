@@ -11,7 +11,7 @@
 
 #include "Vector/vector_dist.hpp"
 #include "Decomposition/CartDecomposition.hpp"
-#include "Kernels.hpp"
+#include "PSE/Kernels.hpp"
 #include "data_type/aggregate.hpp"
 #include <cmath>
 
@@ -63,10 +63,10 @@ int main(int argc, char* argv[])
 	//
 
 	// Number of particles
-	const size_t Npart = 1000;
+	const size_t Npart = 125;
 
 	// Number of padding particles (At least)
-	const size_t Npad = 20;
+	const size_t Npad = 40;
 
 	// The domain
 	Box<1,double> box({0.0},{4.0});
@@ -212,7 +212,7 @@ int main(int argc, char* argv[])
     // get and construct the Cell list
 
 	Ghost<1,double> gp(enlarge);
-    auto cl = vd.getCellList(8*eps,gp);
+    auto cl = vd.getCellList(12*eps,gp);
 
     // Maximum infinity norm
     double linf = 0.0;

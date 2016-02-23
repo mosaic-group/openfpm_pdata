@@ -40,7 +40,17 @@ m4_ifdef([AX_EIGEN],,[m4_include([m4/ax_eigen.m4])])
 m4_ifdef([AX_LIB_HDF5],,[m4_include([m4/ax_lib_hdf5.m4])]])
 m4_ifdef([AX_H5PART],,[m4_include([m4/ax_h5part.m4])])
 
-CXXFLAGS+=" --std=c++11 "
+case $host_os in
+   *cygwin*)
+        # Do something specific for cygwin
+        CXXFLAGS+=" --std=gnu++11 "
+        ;;
+    *)
+        #Default Case
+        CXXFLAGS+=" --std=c++11 "
+        ;;
+esac
+
 NVCCFLAGS=" "
 INCLUDES_PATH=" "
 
