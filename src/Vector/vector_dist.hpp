@@ -8,6 +8,7 @@
 #ifndef VECTOR_HPP_
 #define VECTOR_HPP_
 
+#include "HDF5_XdmfWriter/HDF5_XdmfWriter.hpp"
 #include "VCluster.hpp"
 #include "Space/Shape/Point.hpp"
 #include "Vector/vector_dist_iterator.hpp"
@@ -21,7 +22,6 @@
 #include "memory/ExtPreAlloc.hpp"
 #include "CSVWriter/CSVWriter.hpp"
 #include "VTKWriter/VTKWriter.hpp"
-#include "H5PartWriter/H5PartWriter.hpp"
 #include "Decomposition/common.hpp"
 #include "Grid/grid_dist_id_iterator_dec.hpp"
 #include "Vector/vector_dist_ofb.hpp"

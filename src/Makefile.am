@@ -1,8 +1,8 @@
-LINKLIBS = $(METIS_LIB) $(PTHREAD_LIBS) $(OPT_LIBS) $(BOOST_LDFLAGS) $(BOOST_IOSTREAMS_LIB) $(CUDA_LIBS)
+LINKLIBS = $(METIS_LIB) $(PTHREAD_LIBS) $(OPT_LIBS) $(BOOST_LDFLAGS) $(BOOST_IOSTREAMS_LIB) $(CUDA_LIBS) $(H5PART_LIB) $(HDF5_LDFLAGS)  $(HDF5_LIBS)
 
 noinst_PROGRAMS = pdata
 pdata_SOURCES = main.cpp lib/pdata.cpp test_multiple_o.cpp ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp
-pdata_CXXFLAGS = $(CUDA_CFLAGS) $(INCLUDES_PATH) $(METIS_INCLUDE) $(BOOST_CPPFLAGS) -Wno-unused-local-typedefs
+pdata_CXXFLAGS = $(CUDA_CFLAGS) $(INCLUDES_PATH) $(METIS_INCLUDE) $(BOOST_CPPFLAGS) $(H5PART_INCLUDE) -DPARALLEL_IO $(HDF5_CPPFLAGS)  -Wno-unused-local-typedefs
 pdata_CFLAGS = $(CUDA_CFLAGS)
 pdata_LDADD = $(LINKLIBS) -lmetis
 nobase_include_HEADERS = Decomposition/CartDecomposition.hpp Decomposition/common.hpp Decomposition/Decomposition.hpp  Decomposition/ie_ghost.hpp \

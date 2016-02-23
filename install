@@ -138,7 +138,7 @@ LAPACK_installed=0
 SUITESPARSE_installed=0
 EIGEN_installed=0
 HDF5_installed=0
-H5HUT_installed=0
+H5PART_installed=0
 blas_options=""
 conf_err=1
 
@@ -225,13 +225,13 @@ else
             configure_options=" $configure_options --with-hdf5=$i_dir/HDF5/bin/h5pcc "
             HDF5_installed=1
         elif [ $conf_err -eq 208 ]; then
-            echo "H5HUT not found try to install"
-            if [ $H5HUT_installed -eq 1 ]; then
-                echo "Error the installation of H5HUT failed"
+            echo "H5PART not found try to install"
+            if [ $H5PART_installed -eq 1 ]; then
+                echo "Error the installation of H5PART failed"
                 exit 1	
             fi
-            ./script/install_H5HUT.sh $i_dir $compiler_opt
-            configure_options=" $configure_options --with-h5hut=$i_dir/H5HUT/ "
+            ./script/install_H5PART.sh $i_dir $compiler_opt
+            configure_options=" $configure_options --with-h5hut=$i_dir/H5PART/ "
             H5HUT_installed=1
         elif [ $conf_err -ne 0 ]; then
             echo "I do not know how to recover from this error"

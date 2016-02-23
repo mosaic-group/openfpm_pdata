@@ -39,7 +39,7 @@ int main(int argc, char ** argv)
 
 	// Write the decomposition
 
-	VTKWriter<Graph_CSR<nm_v,nm_e>,GRAPH> vtk(g);
+	VTKWriter<Graph_CSR<nm_v,nm_e>,VTK_GRAPH> vtk(g);
 	vtk.write("Metis/vtk_partition.vtk");
 }
 

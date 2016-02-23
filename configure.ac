@@ -38,7 +38,7 @@ m4_ifdef([AX_LAPACK],,[m4_include([m4/ax_lapack.m4])])
 m4_ifdef([AX_SUITESPARSE],,[m4_include([m4/ax_suitesparse.m4])])
 m4_ifdef([AX_EIGEN],,[m4_include([m4/ax_eigen.m4])])
 m4_ifdef([AX_LIB_HDF5],,[m4_include([m4/ax_lib_hdf5.m4])]])
-m4_ifdef([AX_H5HUT],,[m4_include([m4/ax_h5hut.m4])])
+m4_ifdef([AX_H5PART],,[m4_include([m4/ax_h5part.m4])])
 
 CXXFLAGS+=" --std=c++11 "
 NVCCFLAGS=" "
@@ -114,11 +114,11 @@ fi
 
 #########
 
-## Check for H5HUT
+## Check for H5PART
 
 save_CC=$CC
 CC=$CXX
-AX_H5HUT([],[echo "Cannot detect h5hut, use the --with-h5hut option if it is not installed in the default location"
+AX_H5PART([],[echo "Cannot detect h5part, use the --with-h5part option if it is not installed in the default location"
                     exit 208])
 CC=$save_CC
 
