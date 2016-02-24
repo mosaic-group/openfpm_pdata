@@ -38,7 +38,6 @@ m4_ifdef([AX_LAPACK],,[m4_include([m4/ax_lapack.m4])])
 m4_ifdef([AX_SUITESPARSE],,[m4_include([m4/ax_suitesparse.m4])])
 m4_ifdef([AX_EIGEN],,[m4_include([m4/ax_eigen.m4])])
 m4_ifdef([AX_LIB_HDF5],,[m4_include([m4/ax_lib_hdf5.m4])]])
-m4_ifdef([AX_H5PART],,[m4_include([m4/ax_h5part.m4])])
 
 case $host_os in
    *cygwin*)
@@ -121,16 +120,6 @@ if test x"$with_hdf5" = x"no"; then
     echo "Cannot detect hdf5, use the --with-hdf5 option if it is not installed in the default location"
     exit 207
 fi
-
-#########
-
-## Check for H5PART
-
-save_CC=$CC
-CC=$CXX
-AX_H5PART([],[echo "Cannot detect h5part, use the --with-h5part option if it is not installed in the default location"
-                    exit 208])
-CC=$save_CC
 
 ########
 
