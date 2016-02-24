@@ -434,6 +434,18 @@ class grid_dist_id
 		vtk_box1.write(output + std::string("internal_ghost_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 	}
 
+    /*! \brief Initialize the Cell decomposer of the grid enforcing perfect overlap of the cells
+	 *
+	 * \param cd_old the CellDecomposer we are trying to mach
+	 * \param ext extension of the domain
+	 *
+	 */
+	inline void InitializeCellDecomposer(CellDecomposer_sm<dim,St> & cd_old, Ghost<dim,size_t> ext)
+	{
+		// Initialize the cell decomposer
+		cd_sm.setDimensions(cd_old,ext);
+	}
+
     /*! \brief Initialize the Cell decomposer of the grid
 	 *
 	 *
@@ -573,6 +585,39 @@ public:
 		return gc;
 	}
 
+	/*! \brief This constructor is special, it construct an expanded grid that perfectly overlap with the previous
+	 *
+	 * The key-word here is "perfectly overlap". Using the default constructor you could create
+	 * something similar, but because of rounding-off error it can happen that it is not perfectly overlapping
+	 *
+	 * \param g previous grid
+	 * \param ext extension of the grid (must be positive on every direction)
+	 *
+	 */
+	grid_dist_id(const grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & g, Box<dim,size_t> ext)
+	:ghost(g.ghost),dec(g.dec),v_cl(*global_v_cluster)
+	{
+#ifdef SE_CLASS2
+		check_new(this,8,GRID_DIST_EVENT,4);
+#endif
+
+		this->dec.incRef();
+
+		InitializeCellDecomposer(g.cd_sm,ext);
+
+		// Extend the grid by the extension part and calculate the domain
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			g_sz[i] = g_sz[i] + ext.getLow(i);
+			g_sz[i] = g_sz[i] + ext.getHigh(i);
+
+			this->domain.getLow(i) = g.domain.getLow(i) - ext.getLow(i) * g.spacing(i);
+			this->domain.getHigh(i) = g.domain.getHigh(i) + ext.getHigh(i) * g.spacing(i);
+		}
+
+		InitializeStructures(g.g_sz,exp);
+	}
 
     //! constructor
     grid_dist_id(const Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
