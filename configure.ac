@@ -29,9 +29,7 @@ m4_ifdef([ACX_MPI],,[m4_include([m4/acx_mpi.m4])])
 m4_ifdef([AX_OPENMP],,[m4_include([m4/ax_openmp.m4])])
 m4_ifdef([AX_CUDA],,[m4_include([m4/ax_cuda.m4])])
 m4_ifdef([IMMDX_LIB_METIS],,[m4_include([m4/immdx_lib_metis.m4])])
-<<<<<<< HEAD
 m4_ifdef([IMMDX_LIB_PARMETIS],,[m4_include([m4/immdx_lib_parmetis.m4])])
-=======
 m4_ifdef([AX_BOOST_BASE],,[m4_include([m4/ax_boost_base.m4])])
 m4_ifdef([AX_BOOST_IOSTREAMS],,[m4_include([m4/ax_boost_iostreams.m4])])
 m4_ifdef([AX_BOOST_PROGRAM_OPTIONS],,[m4_include([m4/ax_boost_program_options.m4])])
@@ -52,7 +50,6 @@ case $host_os in
         CXXFLAGS+=" --std=c++11 "
         ;;
 esac
->>>>>>> master
 
 NVCCFLAGS=" "
 INCLUDES_PATH=" "

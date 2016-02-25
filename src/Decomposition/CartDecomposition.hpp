@@ -151,7 +151,7 @@ private:
 	 * \param v_cl Virtual cluster, used internally for communications
 	 *
 	 */
-	void CreateDecomposition(Vcluster & v_cl, const size_t (& bc)[dim])
+	void createSubdomains(Vcluster & v_cl, const size_t (& bc)[dim])
 	{
 #ifdef SE_CLASS1
 		if (&v_cl == NULL)
@@ -179,7 +179,7 @@ private:
 
 		// Optimize the decomposition creating bigger spaces
 		// And reducing Ghost over-stress
-		dec_optimizer<dim, DistGraph_CSR<nm_v, nm_e>> d_o(dist.getGraph(), gr.getSize());
+		dec_optimizer<dim, Graph_CSR<nm_v, nm_e>> d_o(dist.getGraph(), gr.getSize());
 
 		// set of Boxes produced by the decomposition optimizer
 		openfpm::vector<::Box<dim, size_t>> loc_box;
@@ -1159,7 +1159,7 @@ public:
 
 		dist.decompose();
 
-		//CreateDecomposition(v_cl);
+		createSubdomains(v_cl);
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
@@ -1185,7 +1185,7 @@ public:
 			dlb.setUnbalance(unbalance);
 			if (v_cl.getProcessUnitID() == 0)
 			{
-				std::cout << std::setprecision(3) << unbalance << "\n";
+				//std::cout << std::setprecision(3) << unbalance << "\n";
 			}
 		}
 

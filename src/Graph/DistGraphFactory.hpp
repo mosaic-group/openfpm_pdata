@@ -16,37 +16,6 @@
 #include "Space/Shape/HyperCube.hpp"
 #include "parmetis.h"
 
-/*! \brief Operator to fill the property 'prp' with the linearization of indexes
- *
- *  \tparam dim Dimension of the space
- *  \tparam G_v Graph
- *  \tparam prp Property to fill
- */
-template<unsigned int dim, typename G_v, int prp_l, int prp_g>
-struct fill_lin_id
-{
-	static inline void fill(G_v & g_v, const grid_key_dx<dim> & gk, const grid_sm<dim, void> & gs)
-	{
-		// Local id
-		g_v.template get<prp_l>() = gs.LinId(gk);
-
-		// Global id
-		g_v.template get<prp_g>() = gs.LinId(gk);
-	}
-};
-/*! \brief Operator to fill the property in case there are no properties
- *
- *  \tparam dim Dimension of the space
- *  \tparam G_v Graph
- */
-template<unsigned int dim, typename G_v>
-struct fill_lin_id<dim, G_v, -1, -1>
-{
-	static inline void fill(G_v & g_v, const grid_key_dx<dim> & gk, const grid_sm<dim, void> & gs)
-	{
-	}
-};
-
 /*! \brief This class work as a functor
  *
  * For each number in the boost::mpl::vector (for example 3 6) set the properties of the vertex at the
@@ -75,7 +44,7 @@ struct fill_lin_id<dim, G_v, -1, -1>
  *
  */
 
-template<unsigned int dim, int vid, int gid, typename dT, typename G_v, typename v, int impl>
+template<unsigned int dim, typename dT, typename G_v, typename v, int impl>
 class fill_prop_v
 {
 	//! Reference to an array containing the spacing
@@ -105,9 +74,9 @@ public:
 		typedef typename boost::fusion::result_of::at<v, boost::mpl::int_<T::value>>::type t_val;
 
 		g_v.template get<t_val::value>() = gk.get(T::value) * szd[T::value];
-		fill_lin_id<dim, G_v, vid, gid>::fill(g_v, gk, gs);
 	}
 };
+
 
 /*! \brief This class work as a functor
  *
@@ -135,8 +104,8 @@ public:
  *
  */
 
-template<unsigned int dim, int vid, int gid, typename dT, typename G_v, typename v>
-class fill_prop_v<dim, vid, gid, dT, G_v, v, 0>
+template<unsigned int dim, typename dT, typename G_v, typename v>
+class fill_prop_v<dim, dT, G_v, v, 0>
 {
 
 public:
@@ -179,8 +148,8 @@ public:
  *
  */
 
-template<unsigned int dim, int vid, int gid, typename dT, typename G_v, typename v>
-class fill_prop_v<dim, vid, gid, dT, G_v, v, 2>
+template<unsigned int dim, typename dT, typename G_v, typename v>
+class fill_prop_v<dim, dT, G_v, v, 2>
 {
 
 	//! Reference to an array containing the spacing
@@ -210,7 +179,6 @@ public:
 		typedef typename boost::fusion::result_of::at<v, boost::mpl::int_<0>>::type t_val;
 
 		g_v.template get<t_val::value>()[T::value] = gk.get(T::value) * szd[T::value];
-		fill_lin_id<dim, G_v, vid, gid>::fill(g_v, gk, gs);
 	}
 };
 
@@ -260,7 +228,7 @@ struct fill_prop_v_by_type<0, p, Graph, pos...>
  *
  */
 
-template<unsigned int dim, int vid, int gid, int sgid, int dgid, typename Graph, int se, typename T, unsigned int dim_c, int ... pos>
+template<unsigned int dim, typename Graph, int se, typename T, unsigned int dim_c, int ... pos>
 class DistGraph_constr_impl
 {
 public:
@@ -349,7 +317,7 @@ public:
 
 				// vertex spatial properties functor
 
-				fill_prop_v<dim, vid, gid, T, decltype(gp.vertex(local_it)), typename to_boost_vmpl<pos...>::type, fill_prop_v_by_type<sizeof...(pos), p, Graph, pos...>::value> flp(obj, szd, key, g);
+				fill_prop_v<dim, T, decltype(gp.vertex(local_it)), typename to_boost_vmpl<pos...>::type, fill_prop_v_by_type<sizeof...(pos), p, Graph, pos...>::value> flp(obj, szd, key, g);
 
 				// fill properties
 
@@ -414,8 +382,8 @@ public:
  *
  */
 
-template<unsigned int dim, int vid, int gid, int sgid, int dgid, typename Graph, typename T, unsigned int dim_c, int ... pos>
-class DistGraph_constr_impl<dim, vid, gid, sgid, dgid, Graph, NO_EDGE, T, dim_c, pos...>
+template<unsigned int dim, typename Graph, typename T, unsigned int dim_c, int ... pos>
+class DistGraph_constr_impl<dim, Graph, NO_EDGE, T, dim_c, pos...>
 {
 public:
 	//! Construct Cartesian graph
@@ -501,7 +469,7 @@ public:
 
 				// vertex spatial properties functor
 
-				fill_prop_v<dim, vid, gid, T, decltype(gp.vertex(local_it)), typename to_boost_vmpl<pos...>::type, fill_prop_v_by_type<sizeof...(pos), p, Graph, pos...>::value> flp(obj, szd, key, g);
+				fill_prop_v<dim, T, decltype(gp.vertex(local_it)), typename to_boost_vmpl<pos...>::type, fill_prop_v_by_type<sizeof...(pos), p, Graph, pos...>::value> flp(obj, szd, key, g);
 
 				// fill properties
 
@@ -544,7 +512,7 @@ public:
 						if (end_v < g.size())
 						{
 							// Add an edge and set the the edge property to the size of the face (communication weight)
-							gp.template addEdge<NoCheck, sgid, dgid>(start_v, end_v, v_id, end_v);
+							gp.template addEdge_new(start_v, end_v, v_id, end_v);
 						}
 					}
 				}
@@ -570,11 +538,7 @@ class DistGraphFactory
 
 public:
 
-	/*!
-	 *
-	 * \brief Construct a cartesian graph, with V and E edge properties
-	 *
-	 * Construct a cartesian graph, with V and E edge properties
+	/*! \brief Construct a cartesian graph, with V and E edge properties
 	 *
 	 * Each vertex is a subspace (Hyper-cube) of dimension dim, each vertex is
 	 * connected with an edge if two vertex (Hyper-cube) share a element of dimension grater than
@@ -596,41 +560,8 @@ public:
 	template<int se, typename T, unsigned int dim_c, int ... pos>
 	static Graph construct(const size_t (&sz)[dim], Box<dim, T> dom)
 	{
-		return DistGraph_constr_impl<dim, -1, -1, -1, -1, Graph, se, T, dim_c, pos...>::construct(sz, dom);
-	}
-
-	/*!
-	 *
-	 * \brief Construct a cartesian graph, with V and E edge properties
-	 *
-	 * Construct a cartesian graph, with V and E edge properties
-	 *
-	 * Each vertex is a subspace (Hyper-cube) of dimension dim, each vertex is
-	 * connected with an edge if two vertex (Hyper-cube) share a element of dimension grater than
-	 * dim_c. One property can be used to store the contact size or the d-dimensional
-	 * surface in common between two connected hyper-cube.
-	 *
-	 * \param sz Vector that store the size of the grid on each dimension
-	 * \param dom Box enclosing the physical domain
-	 *
-	 * \tparam se Indicate which properties fill with the contact size. The
-	 *           contact size is the point, line , surface, d-dimensional object size
-	 *           in contact (in common) between two hyper-cube. NO_EDGE indicate
-	 *           no property will store this information
-	 * \tparam vid property that stores the local vertex id
-	 * \tparam gid property that stores the local vertex id
-	 * \tparam sgid property that stores on the edge global id of the source vertex
-	 * \tparam dgid property that stores on the edge global id of the destination vertex
-	 * \tparam T type of the domain like (int real complex ... )
-	 * \tparam dim_c Connectivity dimension
-	 * \tparam pos... (optional)one or more integer indicating the spatial properties
-	 *
-	 */
-	template<int se, int vid, int gid, int sgid, int dgid, typename T, unsigned int dim_c, int ... pos>
-	static Graph construct(const size_t (&sz)[dim], Box<dim, T> dom)
-	{
-		return DistGraph_constr_impl<dim, vid, gid, sgid, dgid, Graph, se, T, dim_c, pos...>::construct(sz, dom);
+		return DistGraph_constr_impl<dim, Graph, se, T, dim_c, pos...>::construct(sz, dom);
 	}
 };
 
-#endif /* DISTCARTESIANGRAPHFACTORY_HPP_ */
+#endif /* DISTGRAPHFACTORY_HPP_ */

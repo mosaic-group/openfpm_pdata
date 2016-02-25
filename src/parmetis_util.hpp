@@ -377,9 +377,9 @@ public:
 	/*! \brief Set the Sub-graph
 	 *
 	 * \param sub_g Sub-graph to set
-	 *
+	 * \param w true if vertices have weights
 	 */
-	void initSubGraph(Graph & sub_g)
+	void initSubGraph(Graph & sub_g, bool w)
 	{
 		p_id = v_cl.getProcessUnitID();
 
@@ -448,7 +448,11 @@ public:
 
 		//! This is used to indicate if the graph is weighted. wgtflag can take one of four values:
 		Mg.wgtflag = new idx_t[1];
-		Mg.wgtflag[0] = 3;
+
+		if(w)
+			Mg.wgtflag[0] = 3;
+		else
+			Mg.wgtflag[0] = 0;
 	}
 
 	/*! \brief Decompose the graph

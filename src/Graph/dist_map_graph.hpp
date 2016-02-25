@@ -5,6 +5,16 @@
  *      Author: Antonio Leo
  *
  *
+ *  The distributed graph, is a graph distributed across processors, each processor store part of the graph
+ *
+ * ## Dictionary
+ *
+ * * local vertex id, is the index of the vertex in the local graph
+ * * vertex id is the "unique" index in the distribution vector (vtxdist)
+ * * global id is the "unique" topological id of the vertex, it never change
+ *
+ *
+ *
  *  Graph structure that store a CSR graph format
  *
  *  This Graph format is suppose to have a list of vertex that store an index x that indicate where
@@ -38,6 +48,12 @@
  *
  *  Vertex properties and edge properties are stored in a separate structure
  *
+ * ## Dictionary
+ *
+ * The distributed
+ *
+ * * local vertex id is the index of the vertex in
+ *
  */
 
 #ifndef DIST_MAP_GRAPH_HPP_
@@ -54,6 +70,108 @@
 
 template<typename V, typename E, template<typename, typename, typename, unsigned int> class VertexList, template<typename, typename, typename, unsigned int> class EdgeList, typename Memory, typename grow_p>
 class DistGraph_CSR;
+
+class v_info
+{
+public:
+	typedef boost::fusion::vector<size_t, size_t> type;
+	typedef typename memory_traits_inte<type>::type memory_int;
+	typedef typename memory_traits_lin<type>::type memory_lin;
+
+	type data;
+
+	static const unsigned int id = 0;
+	static const unsigned int gid = 1;
+	static const unsigned int max_prop = 2;
+
+	v_info()
+	{
+	}
+
+	inline void setid(size_t id_)
+	{
+		boost::fusion::at_c<0>(data) = id_;
+	}
+
+	inline void setgid(size_t gid_)
+	{
+		boost::fusion::at_c<1>(data) = gid_;
+	}
+
+	template<unsigned int id> inline auto get() -> decltype(boost::fusion::at_c < id > (data))
+	{
+		return boost::fusion::at_c<id>(data);
+	}
+
+	template<unsigned int id> inline auto get() const -> const decltype(boost::fusion::at_c < id > (data))
+	{
+		return boost::fusion::at_c<id>(data);
+	}
+
+	template<unsigned int dim, typename Mem> inline v_info(const encapc<dim, v_info, Mem> & p)
+	{
+		this->operator=(p);
+	}
+
+	template<unsigned int dim, typename Mem> inline v_info & operator=(const encapc<dim, v_info, Mem> & p)
+	{
+		boost::fusion::at_c<0>(data) = p.template get<0>();
+		boost::fusion::at_c<1>(data) = p.template get<1>();
+
+		return *this;
+	}
+
+	static bool noPointers()
+	{
+		return true;
+	}
+};
+
+class e_info
+{
+public:
+	typedef boost::fusion::vector<size_t, size_t> type;
+	typedef typename memory_traits_inte<type>::type memory_int;
+	typedef typename memory_traits_lin<type>::type memory_lin;
+
+	type data;
+
+	static const unsigned int sgid = 0;
+	static const unsigned int dgid = 1;
+	static const unsigned int max_prop = 2;
+
+	e_info()
+	{
+	}
+
+	template<unsigned int id> inline auto get() -> decltype(boost::fusion::at_c < id > (data))
+	{
+		return boost::fusion::at_c<id>(data);
+	}
+
+	template<unsigned int id> inline auto get() const -> const decltype(boost::fusion::at_c < id > (data))
+	{
+		return boost::fusion::at_c<id>(data);
+	}
+
+	template<unsigned int dim, typename Mem> inline e_info(const encapc<dim, e_info, Mem> & p)
+	{
+		this->operator=(p);
+	}
+
+	template<unsigned int dim, typename Mem> inline e_info & operator=(const encapc<dim, e_info, Mem> & p)
+	{
+		boost::fusion::at_c<0>(data) = p.template get<0>();
+		boost::fusion::at_c<1>(data) = p.template get<1>();
+
+		return *this;
+	}
+
+	static bool noPointers()
+	{
+		return true;
+	}
+};
 
 /*! \brief Structure that store a graph in CSR format or basically in compressed adjacency matrix format
  *
@@ -82,77 +200,105 @@ template<typename V, typename E = no_edge, template<typename, typename, typename
 		typename grow_p = openfpm::grow_policy_double>
 class DistGraph_CSR
 {
-	//! Vcluster communication object
+	// Vcluster communication object
 	Vcluster & vcl;
 
-	//! Distribution vector
+	// Distribution vector
 	openfpm::vector<idx_t> vtxdist;
 
-	//! Fixed distribution vector, it never changes, it mantains always the first decomposition and topology
+	// Fixed distribution vector, it never changes, it maintains always the first decomposition and topology
 	openfpm::vector<idx_t> fvtxdist;
 
-	//! number of slot per vertex
+	// number of slot per vertex
 	size_t v_slot;
 
-	//! Structure that store the vertex properties
+	// Structure that store the vertex properties
 	VertexList<V, Memory, grow_p, openfpm::vect_isel<V>::value> v;
 
-	//! Hashmap to access to the global id given the id of the vertex
-	std::unordered_map<size_t, size_t> id2glb;
+	// Structure that store the vertex id and global id
+	VertexList<v_info, Memory, grow_p, openfpm::vect_isel<v_info>::value> v_m;
 
-	//! Hashmap to access the vertex id given the global one
-	std::unordered_map<size_t, size_t> glb2id;
-
-	//! Hashmap to access the vertex position (index) given the global one
-	std::unordered_map<size_t, size_t> glb2loc;
-
-	//! Structure that store the number of adjacent vertex in e_l for each vertex
+	// Structure that store the number of adjacent vertex in e_l for each vertex
 	VertexList<size_t, Memory, grow_p, openfpm::vect_isel<size_t>::value> v_l;
 
-	//! Structure that store the edge properties
+	// Structure that store the edge properties
 	EdgeList<E, Memory, grow_p, openfpm::vect_isel<E>::value> e;
 
-	//! Structure that store for each vertex the adjacent the vertex id and edge id (for property into e)
+	// Structure that store the edge properties
+	EdgeList<e_info, Memory, grow_p, openfpm::vect_isel<e_info>::value> e_m;
+
+	// Structure that store for each vertex the adjacent the vertex id and edge id (for property into e)
 	EdgeList<e_map, Memory, grow_p, openfpm::vect_isel<e_map>::value> e_l;
 
-	//! invalid edge element, when a function try to create an in valid edge this object is returned
+	// invalid edge element, when a function try to create an in valid edge this object is returned
 	EdgeList<E, Memory, grow_p, openfpm::vect_isel<E>::value> e_invalid;
 
-	//! Struct containing all the vectors needed to sent the (sub)graph
+	// Map to access to the global vertex id given the vertex id
+	std::unordered_map<size_t, size_t> id2glb;
+
+	// Map to access the vertex id given the global vertex id
+	std::unordered_map<size_t, size_t> glb2id;
+
+	// Map to access the local vertex id given the global one
+	std::unordered_map<size_t, size_t> glb2loc;
+
+	// Struct containing the (sub)graph to send
 	typedef struct
 	{
+		// vertex send buffer
 		openfpm::vector<V> send_v;
+		// vertex info send buffer
+		openfpm::vector<v_info> send_v_m;
+		// edge send buffer
 		openfpm::vector<E> send_e;
+		// edge info send buffer
+		openfpm::vector<e_info> send_e_m;
+		// For each edge contain the child vertex id
 		openfpm::vector<size_t> send_el;
+		// For each vertex contain the number of children
 		openfpm::vector<size_t> send_es;
+		// Indicates if the pack is empty or not
 		bool isEmpty = true;
 	} SendGraphPack;
 
-	//! Pack storing that data to send to other processors
+	// Pack storing that data to send to other processors
 	openfpm::vector<SendGraphPack> sgp;
 
-	//! Array containing the sent vertices and that will be deleted from the graph
+	// Array containing the sent vertices and that will be deleted from the graph
 	openfpm::vector<size_t> v_td;
 
-	//! Map containing the processors sending somtheing to this processor
-	std::unordered_map<size_t, size_t> p_recv;
-
-	//! Structure needed to get vertex position by global id
+	// Structure needed to get vertex position by global id
 	typedef struct
 	{
+		// vertex id
 		size_t id;
+		// processor containing the vertex
 		size_t pid;
 	} GlobalVInfo;
 
-	//! Map of GlobalVInfo containing informations of vertices of the INITIAL distribution contained in this processor
-	//! ex. if this will contain the first 4 vertices of the distribution (0,1,2,3) it will maintain informations only about these vertices
+	//TODO update description from pdf
+	// Map of GlobalVInfo containing informations of vertices of the INITIAL distribution contained in this processor
+	// ex. if this will contain the first 4 vertices of the distribution (0,1,2,3) it will maintain informations only about these vertices
+	// The key is the vertex global id
 	std::unordered_map<size_t, GlobalVInfo> glbi_map;
 
-	//! Queue of vertex requests
+	// Queue of vertex requests
 	openfpm::vector<openfpm::vector<size_t>> vr_queue;
 
-	//! Map containing the ghost vertices of this graph, if bool is false the ghost will be deleted in the next vertices exchange
+	// Map containing the ghost vertices of this graph, if bool is false the ghost will be deleted in the next vertices exchange
 	std::unordered_map<size_t, bool> ghs_map;
+
+	// Structure to store a add request of an edge
+	typedef struct
+	{
+		size_t v1;
+		size_t v2;
+		size_t v1n;
+		size_t v2n;
+	} EdgeReq;
+
+	// Queue of requests to add edges
+	openfpm::vector<EdgeReq> e_queue;
 
 	/*! \brief add edge on the graph
 	 *
@@ -201,20 +347,16 @@ class DistGraph_CSR
 			// Reallocate with double slot
 
 			// Create an new Graph
-
 			DistGraph_CSR<V, E, VertexList, EdgeList> g_new(2 * v_slot, v.size());
 
 			// Copy the graph
-
 			for (size_t i = 0; i < v.size(); i++)
 			{
 				// copy the property from the old graph
-
 				g_new.v.set(i, v, 2 * i);
 			}
 
 			// swap the new graph with the old one
-
 			swap(g_new);
 		}
 
@@ -225,7 +367,6 @@ class DistGraph_CSR
 		if (id_x_end >= e_l.size())
 		{
 			// Resize the basic structure
-
 			e_l.resize(v.size() * v_slot);
 		}
 
@@ -235,6 +376,7 @@ class DistGraph_CSR
 
 		// add an empty edge
 		e.resize(e.size() + 1);
+		e_m.resize(e_m.size() + 1);
 
 		// Increment the ending point
 		++v_l.template get<0>(v1);
@@ -290,7 +432,9 @@ class DistGraph_CSR
 			for (int p = 0; p < vcl.getProcessingUnits(); ++p)
 			{
 				sgp.get(p).send_v.clear();
+				sgp.get(p).send_v_m.clear();
 				sgp.get(p).send_e.clear();
+				sgp.get(p).send_e_m.clear();
 				sgp.get(p).send_es.clear();
 				sgp.get(p).send_el.clear();
 				sgp.get(p).isEmpty = true;
@@ -303,12 +447,16 @@ class DistGraph_CSR
 			for (int p = 0; p < vcl.getProcessingUnits(); ++p)
 			{
 				openfpm::vector<V> s_v;
+				openfpm::vector<v_info> s_v_m;
 				openfpm::vector<E> s_e;
+				openfpm::vector<e_info> s_e_m;
 				openfpm::vector<size_t> s_el;
 				openfpm::vector<size_t> s_es;
 
 				sgp.get(p).send_v = s_v;
+				sgp.get(p).send_v_m = s_v_m;
 				sgp.get(p).send_e = s_e;
+				sgp.get(p).send_e_m = s_e_m;
 				sgp.get(p).send_es = s_es;
 				sgp.get(p).send_el = s_el;
 				sgp.get(p).isEmpty = true;
@@ -321,35 +469,35 @@ class DistGraph_CSR
 	 */
 	void deleteMovedVertices()
 	{
-		//! Prepare new graph
+		// Prepare new graph
 		DistGraph_CSR recv_g;
 
-		//! Reset maps
+		// Reset maps
 		glb2loc.clear();
 		glb2id.clear();
 		id2glb.clear();
 
 		size_t local_i = 0;
 
-		//! Add previous vertices without the sent ones
+		// Add previous vertices without the sent ones
 		for (size_t i = 0; i < this->getNVertex(); ++i)
 		{
 			if (!isToDelete(i))
 			{
-				recv_g.addVertex(this->vertex(i));
+				recv_g.add_vertex(this->vertex(i), this->getVertexId(i), this->getVertexGlobalId(i));
 
 				for (size_t j = 0; j < this->getNChilds(i); j++)
 				{
-					recv_g.addEdge<NoCheck>(local_i, this->getChild(i, j), this->getChildEdge(i, j));
+					recv_g.addEdge_new(local_i, this->getChild(i, j), this->getChildEdge(i, j), this->getChildInfo(i, j));
 				}
 				++local_i;
 			}
 		}
 
-		//! Swap temporary graph with the main one
+		// Swap temporary graph with the main one
 		swap(recv_g);
 
-		//! Clear vertex to delet array
+		// Clear vertex to delete array
 		v_td.clear();
 	}
 
@@ -388,13 +536,15 @@ class DistGraph_CSR
 
 	/*! \brief Send and receive vertices and update current graph
 	 *
+	 * \tparam Remove the sent sub-graph
+	 *
 	 */
 	template<bool addAsGhosts>
 	void exchangeVertices()
 	{
 		size_t totVert = getNVertex();
 
-		//! If the exchange is not to retrieve ghost vertices delete the vertices this processor is sending
+		// If the exchange is not to retrieve ghost vertices delete the vertices this processor is sending
 		if (!addAsGhosts)
 			deleteMovedVertices();
 
@@ -403,52 +553,59 @@ class DistGraph_CSR
 		openfpm::vector<void *> ptr;
 		openfpm::vector<HeapMemory> packs(vcl.getProcessingUnits());
 
+		// Total number of vertex to send
 		size_t nvts = 0;
 		for (size_t i = 0; i < vcl.getProcessingUnits(); i++)
 		{
 			nvts += sgp.get(i).send_v.size();
 		}
 
+		// For each processor
 		for (size_t i = 0; i < vcl.getProcessingUnits(); i++)
 		{
+			// if nothing to send continue
 			if (sgp.get(i).isEmpty)
-			{
 				continue;
-			}
 
-			//! process to communicate with
+			// process to communicate with TODO remove pc
 			size_t pc = i;
 
 			size_t es_size = sgp.get(pc).send_es.size();
 			size_t vp_size = sgp.get(pc).send_v.size();
 			std::vector<size_t> pap_prp;
 
-			//! prepare slot for number of vertices
+			// prepare slot for number of vertices
 			Packer<size_t, HeapMemory>::packRequest(pap_prp);
 
 			for (int j = 0; j < vp_size; j++)
 			{
-				//! prepare slot for vertex
+				// prepare slot for vertex
 				Packer<V, HeapMemory>::packRequest(pap_prp);
 
-				//! prepare slot for the number of children
+				// prepare slot info for vertex
+				Packer<v_info, HeapMemory>::packRequest(pap_prp);
+
+				// prepare slot for the number of children
 				Packer<size_t, HeapMemory>::packRequest(pap_prp);
 
-				//! prepare slots for the children
+				// prepare slots for the children
 				for (int k = 0; k < sgp.get(pc).send_es.get(j); k++)
 				{
-					//! prepare slot for edge
+					// prepare slot for edge
 					Packer<E, HeapMemory>::packRequest(pap_prp);
 
-					//! prepare slot for edge target id
+					// prepare slot for edge info
+					Packer<e_info, HeapMemory>::packRequest(pap_prp);
+
+					// prepare slot for edge target id
 					Packer<size_t, HeapMemory>::packRequest(pap_prp);
 				}
 			}
 
-			//! Calculate how much preallocated memory we need to pack all the objects for each vector
+			// Calculate how much preallocated memory we need to pack all the objects for each vector
 			size_t req = ExtPreAlloc<HeapMemory>::calculateMem(pap_prp);
 
-			//! allocate the memory
+			// allocate the memory
 			HeapMemory & pmem = *(new HeapMemory());
 			pmem.allocate(req);
 			ExtPreAlloc<HeapMemory> & mem = *(new ExtPreAlloc<HeapMemory>(pap_prp, pmem));
@@ -457,24 +614,30 @@ class DistGraph_CSR
 			Pack_stat sts;
 			size_t e_it = 0;
 
-			//! Pack total size
+			// Pack total size
 			Packer<size_t, HeapMemory>::pack(mem, vp_size, sts);
 
 			for (int j = 0; j < vp_size; j++)
 			{
-				//! Pack the vertex
+				// Pack the vertex
 				Packer<decltype(sgp.get(pc).send_v.get(0)), HeapMemory>::pack(mem, sgp.get(pc).send_v.get(j), sts);
 
-				//! Pack size of the children
+				// Pack the vertex info
+				Packer<decltype(sgp.get(pc).send_v_m.get(0)), HeapMemory>::pack(mem, sgp.get(pc).send_v_m.get(j), sts);
+
+				// Pack size of the children
 				Packer<size_t, HeapMemory>::pack(mem, sgp.get(pc).send_es.get(j), sts);
 
-				//! Pack children
+				// Pack children
 				for (int k = 0; k < sgp.get(pc).send_es.get(j); k++)
 				{
-					//! Pack the edge
+					// Pack the edge
 					Packer<decltype(sgp.get(pc).send_e.get(0)), HeapMemory>::pack(mem, sgp.get(pc).send_e.get(e_it), sts);
 
-					//! Pack the edge target id
+					// Pack the edge info
+					Packer<decltype(sgp.get(pc).send_e_m.get(0)), HeapMemory>::pack(mem, sgp.get(pc).send_e_m.get(e_it), sts);
+
+					// Pack the edge target id
 					Packer<size_t, HeapMemory>::pack(mem, sgp.get(pc).send_el.get(e_it), sts);
 
 					++e_it;
@@ -486,7 +649,7 @@ class DistGraph_CSR
 			ptr.add(mem.getPointer(0));
 		}
 
-		//! Exchange informations through processors
+		// Exchange informations through processors
 		vcl.sendrecvMultipleMessagesNBX(prc.size(), &size.get(0), &prc.get(0), &ptr.get(0), gr_receive, &packs, NONE);
 
 		for (size_t i = 0; i < vcl.getProcessingUnits(); i++)
@@ -496,58 +659,62 @@ class DistGraph_CSR
 			{
 				Unpack_stat ps;
 
-				//! Store processors sending vertices to this graph, they need the re-mapping infos
-				p_recv.insert( { i, i });
-
 				ExtPreAlloc<HeapMemory> mem(packs.get(i).size(), packs.get(i));
 
-				//! unpack total number of vertex
+				// unpack total number of vertex
 				size_t r_size;
 				Unpacker<size_t, HeapMemory>::unpack(mem, r_size, ps);
 
-				//! take previous last item
+				// take previous last item
 				size_t prev = getNVertex();
 
 				for (int j = prev; j < prev + r_size; j++)
 				{
-					//! unpack the vertex
+					// unpack the vertex
 					V v_n;
 					Unpacker<V, HeapMemory>::unpack(mem, v_n, ps);
 
-					addVertex(v_n);
+					v_info vm;
+					Unpacker<v_info, HeapMemory>::unpack(mem, vm, ps);
+
+					add_vertex(v_n, vm.template get<v_info::id>(), vm.template get<v_info::gid>());
 
 					if (addAsGhosts)
-						ghs_map.insert( { v_n.template get<V::global_id>(), false });
+						ghs_map.insert( { vm.template get<v_info::gid>(), false });
 
 					size_t prev_e = getNEdge();
 
-					//! unpack size of children
+					// unpack size of children
 					size_t s;
 					Unpacker<size_t, HeapMemory>::unpack(mem, s, ps);
 
-					//! prepare slots for the children
+					// prepare slots for the children
 					for (int k = 0; k < s; k++)
 					{
-						//! unpack edge
+						// unpack edge
 						E e_n;
 						Unpacker<E, HeapMemory>::unpack(mem, e_n, ps);
 
-						//! unpack vertex id of the edge target
+						// unpack edge
+						e_info e_i;
+						Unpacker<e_info, HeapMemory>::unpack(mem, e_i, ps);
+
+						// unpack vertex id of the edge target
 						size_t el_n;
 						Unpacker<size_t, HeapMemory>::unpack(mem, el_n, ps);
 
-						//! add the edge
-						addEdge<NoCheck>(j, el_n, e_n);
+						// add the edge //HERE ERROR modify to add globals
+						addEdge_new(j, el_n, e_n, e_i);
 					}
 				}
 			}
 		}
 
-		//! After the exchange reset all the structures needed for it
+		// After the exchange reset all the structures needed for it
 		resetExchange();
 	}
 
-	/*! \brief Update the distribution vector
+	/*! \brief Update the distribution vector vtxdist
 	 *
 	 */
 	void updateVtxdist()
@@ -559,14 +726,14 @@ class DistGraph_CSR
 		openfpm::vector<size_t> recv(vcl.getProcessingUnits());
 		size_t tv = getNVertex();
 
-		//! Sent and receive the size of each subgraph
+		// Sent and receive the size of each subgraph
 		vcl.allGather(tv, recv);
 		vcl.execute();
 
-		//! Set the value for this processor
+		// Set the value for this processor
 		recv.get(vcl.getProcessUnitID()) = getNVertex();
 
-		//! Update vtxdist
+		// Update vtxdist
 		for (size_t i = 1; i <= recv.size(); ++i)
 		{
 			vtxdist.get(i) = recv.get(i - 1) + vtxdist.get(i - 1);
@@ -580,69 +747,70 @@ class DistGraph_CSR
 	{
 		size_t p_id = vcl.getProcessUnitID();
 
-		//! Vector that will contains the couples [old id, new id]
-		openfpm::vector<size_t> on_v(getNVertex() * 2);
-
 		typedef struct
 		{
+			// new vertex id
 			size_t id;
+			// processor rank that contain the vertex
 			size_t pid;
 		} IdnProc;
 
-		//! Array that will contain the couples to update in this processor
+		// Map that will contain the couples to update the global info map in this processor
+		// The key is the (old vertex id)
 		std::unordered_map<size_t, IdnProc> on_toup;
-		openfpm::vector<openfpm::vector<size_t>> perprocon(vcl.getProcessingUnits());
+
+		// For each processor old, new couples
+		openfpm::vector<openfpm::vector<size_t>> on_info(vcl.getProcessingUnits());
 
 		std::map<size_t, size_t> ord_m(glb2loc.begin(), glb2loc.end());
 		size_t j = vtxdist.get(p_id);
 		size_t i = 0, k = 0;
 
-		//! Reset maps of vertices ids
+		// Reset maps of vertices ids
 		id2glb.clear();
 		glb2id.clear();
 		glb2loc.clear();
 
+		// Fix sending couples gid, newid and remove on_toup updating glbi_map here and after receive
 		for (auto it : ord_m)
 		{
-			//! Add couple old id -> new id
-			on_v.get(k) = vertex(it.second).template get<V::id>();
-			on_v.get(k + 1) = j;
+			// The couple to the final map, needed to update the vertices in this sub-graph
+			IdnProc nidpid = { j, p_id };
+			on_toup.insert( { v_m.get(it.second).template get<v_info::id>(), nidpid });
 
-			//! The couple to the final map, needed to update the vertices in this sub-graph
-			IdnProc nidpid = { on_v.get(k + 1), p_id };
-			on_toup.insert( { vertex(it.second).template get<V::id>(), nidpid });
+			size_t id = v_m.get(it.second).template get<v_info::id>(); //delete
 
-			size_t id = vertex(i).template get<V::id>();
-			perprocon.get(getInfoProc(it.first)).add(vertex(it.second).template get<V::id>());
-			perprocon.get(getInfoProc(it.first)).add(j);
+			// fill the re-mapping information for each processors that need it
+			on_info.get(getInfoProc(it.first)).add(v_m.get(it.second).template get<v_info::id>());
+			on_info.get(getInfoProc(it.first)).add(j);
 
-			//! Remap the vertex
-			map_v<V::id>(j, vertex(it.second).template get<V::global_id>(), it.second);
+			// Re-map the vertex
+			map_v(j, v_m.get(it.second).template get<v_info::gid>(), it.second);
 
 			j++;
 			i++;
 			k += 2;
 		}
 
-		//! Prepare structures to send the old-new couples
+		// Prepare structures to send the old-new couples
 		openfpm::vector<size_t> prc;
 		openfpm::vector<size_t> size;
 		openfpm::vector<void *> ptr;
 
-		//! Array that will contain the couples, divided per processor
+		// Array that will contain the couples, divided per processor
 		openfpm::vector<openfpm::vector<size_t>> on_vs(vcl.getProcessingUnits());
 
-		fillSendRecvStructs<size_t>(perprocon, prc, size, ptr);
+		fillSendRecvStructs<size_t>(on_info, prc, size, ptr);
 
-		//! Send on_v
+		// Send on_info
 		vcl.sendrecvMultipleMessagesNBX(prc.size(), &size.get(0), &prc.get(0), &ptr.get(0), on_receive, &on_vs, NONE);
 
-		//! Insert in the final map the received couples
+		// Insert in the on_toup map the received couples
 		for (size_t i = 0; i < vcl.getProcessingUnits(); i++)
 		{
-			if (i != vcl.getProcessUnitID() && on_vs.get(i).size() > 0)
+			if (i != vcl.getProcessUnitID() && on_vs.get(i).size() > 0) // redundant check 2nd arg in if
 			{
-				for (size_t j = 0; j < on_vs.get(i).size() - 1; j += 2)
+				for (size_t j = 0; j < on_vs.get(i).size() - 1; j += 2) // -1 is useless
 				{
 					IdnProc nidpid = { on_vs.get(i).get(j + 1), i };
 					on_toup.insert( { on_vs.get(i).get(j), nidpid });
@@ -650,11 +818,10 @@ class DistGraph_CSR
 			}
 		}
 
-		//! Update the glbi_map with the new ids and the processor info
-
+		// Update the glbi_map with the new ids and the processor info
 		for (auto k : glbi_map)
 		{
-			auto search = on_toup.find(glbi_map.at(k.first).id);
+			auto search = on_toup.find(glbi_map.at(k.first).id); // fix with (k.second).id
 			if (search != on_toup.end())
 			{
 				GlobalVInfo t = { (search->second).id, (search->second).pid };
@@ -664,55 +831,57 @@ class DistGraph_CSR
 
 		}
 
-		//! Vector of vertices I need info
+		// Vector of vertices global id I need info
 		openfpm::vector<openfpm::vector<size_t>> vni(vcl.getProcessingUnits());
 
-		//! Map of re-mapping info
-		std::unordered_map<size_t, size_t> rmi_m(vcl.getProcessingUnits());
+		// Map of re-mapping info
+		std::unordered_map<size_t, size_t> rmi_m(vcl.getProcessingUnits()); // TODO elimin
 
-		//! Check which vertices info I need to ask to other processors
+		// Check which vertices I need to ask info about
 		for (size_t i = 0; i < getNVertex(); ++i)
 		{
 			for (size_t j = 0; j < getNChilds(i); ++j)
 			{
-				size_t vid = getChildEdge(i, j).template get<E::dstgid>();
+				// Here we get the global vertex id of all the children
+				size_t vid = getChildDstGid(i, j);
+				// We check which processor has the information about this vertex
 				size_t pid = getInfoProc(vid);
 
-				//! if the vertex re-mapping info is not in this processor I have to make a request to the right processor
+				// if the vertex info is not in this processor I have to make a request to the right processor
 				if (!vertexIsInThisGraph(vid) && pid != vcl.getProcessUnitID())
 				{
-					//! add to requests
+					// add to requests
 					vni.get(pid).add(vid);
 				}
 				else if (pid == vcl.getProcessUnitID())
 				{
-					//! if info is in this processor add it in the map
+					// if info is in this processor add it in the map
 					rmi_m.insert( { vid, glbi_map.at(vid).id });
 				}
-				else if (vertexIsInThisGraph(vid))
+				else if (vertexIsInThisGraph(vid)) // check if it is needed, probably not because the glbi_map is update
 				{
-					//! if the vertex is in this graph, add the new id in the map
+					// if the vertex is in this graph, add the new id in the map
 					rmi_m.insert( { vid, glb2id.at(vid) });
 				}
 			}
 		}
 
-		//! Array that will contain the requests from the other processors
+		// Array that will contain the requests from the other processors
 		openfpm::vector<openfpm::vector<size_t>> req_rmi(vcl.getProcessingUnits());
 
-		//! Fill the structures for sendrecvMultipleMessagesNBX function
+		// Fill the structures for sendrecvMultipleMessagesNBX function
 		fillSendRecvStructs<size_t>(vni, prc, size, ptr);
 
-		//! Send and receive requests
+		// Send and receive requests
 		vcl.sendrecvMultipleMessagesNBX(prc.size(), &size.get(0), &prc.get(0), &ptr.get(0), on_receive, &req_rmi, NONE);
 
-		//! Re-mapping info map
+		// Re-mapping info map
 		openfpm::vector<openfpm::vector<size_t>> rmi(vcl.getProcessingUnits());
 
-		//! Array that will contain the response to previous requests
+		// Array that will contain the response to previous requests
 		openfpm::vector<openfpm::vector<size_t>> resp_rmi(vcl.getProcessingUnits());
 
-		//! Prepare re-mapping info response
+		// Prepare re-mapping info response
 		for (int i = 0; i < req_rmi.size(); ++i)
 		{
 			for (size_t j = 0; j < req_rmi.get(i).size(); ++j)
@@ -721,13 +890,13 @@ class DistGraph_CSR
 			}
 		}
 
-		//! Fill the structures for sendrecvMultipleMessagesNBX function
+		// Fill the structures for sendrecvMultipleMessagesNBX function
 		fillSendRecvStructs<size_t>(resp_rmi, prc, size, ptr);
 
-		//! Send responses
+		// Send responses
 		vcl.sendrecvMultipleMessagesNBX(prc.size(), &size.get(0), &prc.get(0), &ptr.get(0), on_receive, &rmi, NONE);
 
-		//! Add received info into re-mapping info map
+		// Add received info into re-mapping info map
 		for (size_t i = 0; i < rmi.size(); ++i)
 		{
 			for (size_t j = 0; j < rmi.get(i).size(); ++j)
@@ -741,34 +910,14 @@ class DistGraph_CSR
 			//std::cout << vcl.getProcessUnitID() << " " <<  ik.first << " >> " <<  ik.second << "\n";
 		}
 
-		//! Finally re-map the edges
+		// Finally re-map the edges
 		for (size_t i = 0; i < getNVertex(); ++i)
 		{
 			for (size_t s = 0; s < getNChilds(i); s++)
 			{
 				//std::cout << vcl.getProcessUnitID() << " " << e_l.template get<e_map::vid>(i * v_slot + s) << " >> " << rmi_m.at(getChildEdge(i, s).template get<E::dstgid>()) << "\n";
-				e_l.template get<e_map::vid>(i * v_slot + s) = rmi_m.at(getChildEdge(i, s).template get<E::dstgid>());
+				e_l.template get<e_map::vid>(i * v_slot + s) = rmi_m.at(getChildDstGid(i, s));
 			}
-		}
-
-		p_recv.clear();
-	}
-	/*! \brief Check if processor needs re-mapping info of this graph
-	 *
-	 * \param pid processor id
-	 * \return true or false
-	 */
-	bool needRemappingInfo(size_t pid)
-	{
-		auto search = p_recv.find(pid);
-
-		if (search != p_recv.end())
-		{
-			return true;
-		}
-		else
-		{
-			return false;
 		}
 	}
 
@@ -782,9 +931,9 @@ class DistGraph_CSR
 		for (size_t i = 0; i < getNVertex(); ++i)
 		{
 			GlobalVInfo info;
-			info.id = vertex(i).template get<V::id>();
+			info.id = v_m.get(i).template get<v_info::id>();
 			info.pid = pid;
-			glbi_map.insert( { vertex(i).template get<V::global_id>(), info });
+			glbi_map.insert( { v_m.get(i).template get<v_info::gid>(), info });
 		}
 	}
 
@@ -817,7 +966,7 @@ class DistGraph_CSR
 	template<typename T>
 	void fillSendRecvStructs(openfpm::vector<openfpm::vector<T>> &vec, openfpm::vector<size_t> &prc, openfpm::vector<size_t> &size, openfpm::vector<void *> &ptr)
 	{
-		//! Reset sendrecv structures
+		// Reset sendrecv structures
 		prc.clear();
 		size.clear();
 		ptr.clear();
@@ -835,16 +984,16 @@ class DistGraph_CSR
 
 public:
 
-	//! Vertex typedef
+	// Vertex typedef
 	typedef V V_type;
 
-	//! Edge typedef
+	// Edge typedef
 	typedef E E_type;
 
-	//! Object container for the vertex, for example can be encap<...> (map_grid or openfpm::vector)
+	// Object container for the vertex, for example can be encap<...> (map_grid or openfpm::vector)
 	typedef typename VertexList<V, Memory, grow_p, openfpm::vect_isel<V>::value>::container V_container;
 
-	//! Object container for the edge, for example can be encap<...> (map_grid or openfpm::vector)
+	// Object container for the edge, for example can be encap<...> (map_grid or openfpm::vector)
 	typedef typename EdgeList<E, Memory, grow_p, openfpm::vect_isel<E>::value>::container E_container;
 
 	/*! \brief It duplicate the graph
@@ -859,9 +1008,10 @@ public:
 
 		dup.v_slot = v_slot;
 
-		//! duplicate all the structures
+		// duplicate all the structures
 
 		dup.v.swap(v.duplicate());
+		dup.v_m.swap(v_m.duplicate());
 		dup.v_l.swap(v_l.duplicate());
 		dup.glb2id = glb2id;
 		dup.id2glb = id2glb;
@@ -924,15 +1074,17 @@ public:
 	DistGraph_CSR(size_t n_vertex, size_t n_slot) :
 			vcl(*global_v_cluster), v_slot(n_slot)
 	{
-		//! Creating n_vertex into the graph
+		// Creating n_vertex into the graph
 		v.resize(n_vertex);
-		//! Creating n_vertex adjacency list counters
+		// Creating n_vertex info objects into the graph
+		v_m.resize(n_vertex);
+		// Creating n_vertex adjacency list counters
 		v_l.resize(n_vertex);
-		//! no edge set the counter to zero
+		// no edge set the counter to zero
 		v_l.fill(0);
-		//! create one invalid edge
+		// create one invalid edge
 		e_invalid.resize(1);
-		//! init communication structures
+		// init communication structures
 		resetExchange();
 	}
 
@@ -961,7 +1113,7 @@ public:
 
 	/*! \brief Operator to access the decomposition vector
 	 *
-	 * \param v vector that will contain the decomposition
+	 * \param v vector that contains the decomposition
 	 */
 	void initDistributionVector(openfpm::vector<idx_t> &v)
 	{
@@ -972,6 +1124,21 @@ public:
 		{
 			vtxdist.get(i) = v.get(i);
 			fvtxdist.get(i) = v.get(i);
+		}
+	}
+
+	/*! \brief Initialize the vtxdist and the fvtxdist
+	 *
+	 */
+	void initDistributionVector()
+	{
+		updateVtxdist();
+
+		fvtxdist.resize(vcl.getProcessingUnits() + 1);
+
+		for (int i = 0; i < vtxdist.size(); ++i)
+		{
+			fvtxdist.get(i) = vtxdist.get(i);
 		}
 	}
 
@@ -1096,6 +1263,18 @@ public:
 		return v.get(id.get());
 	}
 
+	/*! \brief operator to access the vertex info
+	 *
+	 * operator to access the vertex
+	 *
+	 * \param id of the vertex to access
+	 *
+	 */
+	auto vertex_info(openfpm::vector_key_iterator id) const -> const decltype( v_m.get(0) )
+	{
+		return v_m.get(id.get());
+	}
+
 	/*! \brief Function to access the vertexes
 	 *
 	 * \param id GLOBAL id of the vertex to access
@@ -1165,7 +1344,17 @@ public:
 	 */
 	size_t getVertexId(size_t i) const
 	{
-		return vertex(i).template get<V::id>();
+		return v_m.get(i).template get<v_info::id>();
+	}
+
+	/*! \brief Get the id of a vertex given its index position
+	 *
+	 * \param i position of the vertex
+	 * \return the id of the vertex
+	 */
+	size_t getVertexGlobalId(size_t i) const
+	{
+		return v_m.get(i).template get<v_info::gid>();
 	}
 
 	/*! \brief Check if the vertex with GLOBAL id is in this graph
@@ -1187,33 +1376,21 @@ public:
 		}
 	}
 
-	/*! \brief operator to re-map vertex to a new position
+	/*! \brief operator to update all the hashmap
 	 *
-	 * \param n re-mapped position
-	 * \param g global position
-	 * \param l local position
+	 * \param n new vertex id
+	 * \param g global vertex id
+	 * \param l local vertex id
 	 *
 	 * \tparam i id of the property storing the id
 	 *
 	 */
-	template<size_t i>
 	void map_v(size_t n, size_t g, size_t l)
 	{
 		id2glb.insert( { n, g });
 		glb2id.insert( { g, n });
 		glb2loc.insert( { g, l });
-		v.get(l).template get<i>() = n;
-	}
-
-	/*! \brief Get the global id of the vertex with id v
-	 *
-	 * \param v id of the vertex
-	 * \return global id
-	 *
-	 */
-	size_t getVertexGlobalId(size_t v)
-	{
-		return id2glb.at(v);
+		v_m.get(l).template get<v_info::id>() = n;
 	}
 
 	/*! \brief operator to clear the whole graph
@@ -1224,6 +1401,7 @@ public:
 	void clear()
 	{
 		v.clear();
+		v_m.clear();
 		e.clear();
 		id2glb.clear();
 		glb2id.clear();
@@ -1331,7 +1509,7 @@ public:
 		return v_l.template get<0>(c.get());
 	}
 
-	/*! \brief Return the number of children of a vertex
+	/*! \brief Return the number of children of a vertex given its global id
 	 *
 	 * \param v vertex global id
 	 *
@@ -1345,7 +1523,7 @@ public:
 			v = glb2loc.at(v);
 		} catch (const std::out_of_range& oor)
 		{
-			std::cout << "The source vertex fo this edge is not in this graph.\n";
+			std::cout << "The source vertex of this edge is not in this graph.\n";
 		}
 
 		return v_l.template get<0>(v);
@@ -1362,9 +1540,20 @@ public:
 		return e.get(e_l.template get<e_map::eid>(v * v_slot + v_e));
 	}
 
-	/*! \brief Get the vertex edge
+	/*! \brief Get the vertex edge info
 	 *
 	 * \param v vertex
+	 * \param v_e edge id
+	 *
+	 */
+	inline auto getChildInfo(size_t v, size_t v_e) -> decltype(e_m.get(0))
+	{
+		return e_m.get(e_l.template get<e_map::eid>(v * v_slot + v_e));
+	}
+
+	/*! \brief Get the vertex edge given the vertex global id as source
+	 *
+	 * \param v vertex global id
 	 * \param v_e edge id
 	 *
 	 */
@@ -1395,12 +1584,12 @@ public:
 #ifdef DEBUG
 		if (i >= v_l.template get<0>(v))
 		{
-			std::cerr << "Error " << __FILE__ << " line: " << __LINE__ << "    vertex " << v << " does not have edge " << i << "\n";
+			std::cerr << "Error " << __FILE__ << " line: " << __LINE__ << "    vertex " << v << " does not have edge " << i << " on processor " << vcl.getProcessUnitID() << "\n";
 		}
 
 		if (e.size() <= e_l.template get<e_map::eid>(v * v_slot + i))
 		{
-			std::cerr << "Error " << __FILE__ << " " << __LINE__ << " edge " << v << " does not have edge " << i << "\n";
+			std::cerr << "Error " << __FILE__ << " " << __LINE__ << " vertex " << v << " does not have edge " << i << " on processor " << vcl.getProcessUnitID() << " (" << e.size() << "<=" << e_l.template get<e_map::eid>(v * v_slot + i) << ")\n";
 		}
 #endif
 		// Get the edge id
@@ -1416,17 +1605,6 @@ public:
 	 */
 	inline size_t getChild(size_t i) const
 	{
-#ifdef DEBUG
-		if (i >= v_l.template get<0>(v))
-		{
-			std::cerr << "Error " << __FILE__ << " line: " << __LINE__ << "    vertex " << v << " does not have edge " << i << "\n";
-		}
-
-		if (e.size() <= e_l.template get<e_map::eid>(v * v_slot + i))
-		{
-			std::cerr << "Error " << __FILE__ << " " << __LINE__ << " edge " << v << " does not have edge " << i << "\n";
-		}
-#endif
 		// Get the edge id
 		return e_l.template get<e_map::vid>(i);
 	}
@@ -1449,7 +1627,7 @@ public:
 
 		if (e.size() <= e_l.template get<e_map::eid>(v.get() * v_slot + i))
 		{
-			std::cerr << "Error " << __FILE__ << " " << __LINE__ << " edge " << v.get() << " does not have edge " << i << "\n";
+			std::cerr << "Error " << __FILE__ << " " << __LINE__ << " vertex " << v.get() << " does not have edge " << i << "\n";
 		}
 #endif
 
@@ -1464,22 +1642,58 @@ public:
 	 */
 	inline void addVertex(const V & vrt)
 	{
-		//! Add the vertex
+		// Add the vertex
 		v.add(vrt);
 
-		//! Update id to global map
+		// Update id to global map
 		id2glb.insert( { vrt.template get<V::id>(), vrt.template get<V::global_id>() });
 
-		//! Update global id to local index
+		// Update global id to local index
 		glb2loc.insert( { vrt.template get<V::global_id>(), v.size() - 1 });
 
-		//! Update global id to id
+		// Update global id to id
 		glb2id.insert( { vrt.template get<V::global_id>(), vrt.template get<V::id>() });
 
-		//! Set the number of adjacent vertex for this vertex to 0
+		// Set the number of adjacent vertex for this vertex to 0
 		v_l.add(0ul);
 
-		//! Add a slot for the vertex adjacency list
+		// Add a slot for the vertex adjacency list
+		e_l.resize(e_l.size() + v_slot);
+	}
+
+	/*! \brief Add vertex vrt with global id and id properties
+	 *
+	 * \param vrt vertex object to add
+	 * \param gid global id, unique in global graph
+	 * \param id id, unique n global graph
+	 */
+	inline void add_vertex(const V & vrt, size_t id, size_t gid)
+	{
+
+		// Create vertex info object
+		v_info vm;
+		vm.template get<v_info::id>() = id;
+		vm.template get<v_info::gid>() = gid;
+
+		// Add the vertex info
+		v_m.add(vm);
+
+		// Add the vertex
+		v.add(vrt);
+
+		// Update id to global map
+		id2glb.insert( { id, gid });
+
+		// Update global id to local index
+		glb2loc.insert( { gid, v.size() - 1 });
+
+		// Update global id to id
+		glb2id.insert( { gid, id });
+
+		// Set the number of adjacent vertex for this vertex to 0
+		v_l.add(0ul);
+
+		// Add a slot for the vertex adjacency list
 		e_l.resize(e_l.size() + v_slot);
 	}
 
@@ -1491,13 +1705,17 @@ public:
 	 */
 	void setGlobalMap(size_t g, size_t l, size_t i)
 	{
-		//! Set global id to local index
+		v_m.template get<v_info::id>(l) = i;
+
+		v_m.template get<v_info::gid>(l) = g;
+
+		// Set global id to local index
 		glb2loc.insert( { g, l });
 
-		//! Set global id to id
+		// Set global id to id
 		glb2id.insert( { g, i });
 
-		//! Set id to global map
+		// Set id to global map
 		id2glb.insert( { i, g });
 	}
 
@@ -1512,11 +1730,11 @@ public:
 	{
 		long int id_x_end = addEdge_<CheckPolicy>(v1, v2);
 
-		//! If there is not edge return an invalid edge, is a kind of stub object
+		// If there is not edge return an invalid edge, is a kind of stub object
 		if (id_x_end == NO_EDGE)
 			return e_invalid.get(0);
 
-		//! add in e_l the edge properties
+		// add in e_l the edge properties
 		e.set(id_x_end, ed);
 
 		return e.get(id_x_end);
@@ -1533,13 +1751,13 @@ public:
 	 */
 	template<typename CheckPolicy = NoCheck> inline auto addEdge(size_t v1, size_t v2) -> decltype(e.get(0))
 	{
-		//! add an edge
+		// add an edge
 		long int id_x_end = addEdge_<CheckPolicy>(v1, v2);
 		// If there is not edge return an invalid edge, is a kind of stub object
 		if (id_x_end == NO_EDGE)
 			return e_invalid.get(0);
 
-		//! return the edge to change the properties
+		// return the edge to change the properties
 		return e.get(id_x_end);
 	}
 
@@ -1553,21 +1771,158 @@ public:
 	 * \tparam sgid property id filled with the source vertex global id
 	 * \tparam dgid property id filled with the destination vertex global id
 	 */
-
-	template<typename CheckPolicy = NoCheck, int sgid, int dgid> inline auto addEdge(size_t v1, size_t v2, size_t srdgid, size_t dstgid) -> decltype(e.get(0))
+	template<typename CheckPolicy = NoCheck, int sgid, int dgid> inline auto addEdge(size_t v1, size_t v2, size_t srcgid, size_t dstgid) -> decltype(e.get(0))
 	{
-		//! add an edge
+		// add an edge
 		long int id_x_end = addEdge_<CheckPolicy>(v1, v2);
-		//! If there is not edge return an invalid edge, is a kind of stub object
+		// If there is not edge return an invalid edge, is a kind of stub object
 		if (id_x_end == NO_EDGE)
 			return e_invalid.get(0);
 
-		//! set source and destination ids of the edge
-		e.get(id_x_end).template get<sgid>() = srdgid;
+		// set source and destination ids of the edge
+		e.get(id_x_end).template get<sgid>() = srcgid;
 		e.get(id_x_end).template get<dgid>() = dstgid;
 
-		//! return the edge to change the properties
+		// set source and destination ids of the edge
+		e_m.template get<e_info::sgid>(id_x_end) = srcgid;
+		e_m.template get<e_info::dgid>(id_x_end) = dstgid;
+
+		// return the edge to change the properties
 		return e.get(id_x_end);
+	}
+
+	inline auto addEdge_new(size_t v1, size_t v2, size_t srcgid, size_t dstgid) -> decltype(e.get(0))
+	{
+		// add an edge
+		long int id_x_end = addEdge_<NoCheck>(v1, v2);
+		// If there is not edge return an invalid edge, is a kind of stub object
+		if (id_x_end == NO_EDGE)
+			return e_invalid.get(0);
+
+		// set source and destination global ids of the edge
+		e_m.template get<e_info::sgid>(id_x_end) = srcgid;
+		e_m.template get<e_info::dgid>(id_x_end) = dstgid;
+
+		// return the edge to change the properties
+		return e.get(id_x_end);
+	}
+
+	inline auto addEdge_new(size_t v1, size_t v2, size_t srcgid, size_t dstgid, const E & ed) -> decltype(e.get(0))
+	{
+		// add an edge
+		long int id_x_end = addEdge_<NoCheck>(v1, v2);
+		// If there is not edge return an invalid edge, is a kind of stub object
+		if (id_x_end == NO_EDGE)
+			return e_invalid.get(0);
+
+		// add in e_l the edge properties
+		e.set(id_x_end, ed);
+
+		// set source and destination global ids of the edge
+		e_m.template get<e_info::sgid>(id_x_end) = srcgid;
+		e_m.template get<e_info::dgid>(id_x_end) = dstgid;
+
+		// return the edge to change the properties
+		return e.get(id_x_end);
+	}
+
+	inline auto addEdge_new(size_t v1, size_t v2, const E & ed, const e_info & ei) -> decltype(e.get(0))
+	{
+		// add an edge
+		long int id_x_end = addEdge_<NoCheck>(v1, v2);
+		// If there is not edge return an invalid edge, is a kind of stub object
+		if (id_x_end == NO_EDGE)
+			return e_invalid.get(0);
+
+		// set the edge object and the edge info object
+		e.set(id_x_end, ed);
+		e_m.set(id_x_end, ei);
+
+		// return the edge to change the properties
+		return e.get(id_x_end);
+	}
+
+	size_t getChildSrcGid(size_t v1, size_t s)
+	{
+		size_t eid = e_l.template get<e_map::eid>(v1 * v_slot + s);
+		return e_m.template get<e_info::sgid>(eid);
+	}
+
+	size_t getChildDstGid(size_t v1, size_t s)
+	{
+		size_t eid = e_l.template get<e_map::eid>(v1 * v_slot + s);
+		return e_m.template get<e_info::dgid>(eid);
+	}
+
+	/*! \brief Add an edge between vertices v1 end v2, needs syncEdge() to complete the action
+	 *
+	 * \param v1 source vertex of the edge
+	 * \param v2 destination vertex of the edge
+	 */
+	template<typename CheckPolicy = NoCheck> inline void add_edge(size_t v1, size_t v2)
+	{
+		//if the source vertex is not in this graph, this processor doesn't need to do anything
+		if (!vertexIsInThisGraph(v1))
+		{
+			return;
+		}
+
+		//if the destination vertex is not in this graph, this processor has to request it and add the edge to a queue
+		if (!vertexIsInThisGraph(v2))
+		{
+			reqVertex(v2);
+			EdgeReq er = { v1, v2, 0, 0 };
+			e_queue.add(er);
+
+			return;
+		}
+
+		// add an edge
+		long int id_x_end = addEdge_<CheckPolicy>(glb2loc.at(v1), glb2id.at(v2));
+
+		// If there is not edge return an invalid edge, is a kind of stub object
+		if (id_x_end == NO_EDGE)
+			return;
+
+		// set source and destination ids of the edge
+		e_m.get(id_x_end).template get<e_info::sgid>() = v1;
+		e_m.get(id_x_end).template get<e_info::dgid>() = v2;
+
+	}
+
+	/*! \brief Execute a synchronization through processor to finalize the add of the edges requested in the e_queue
+	 *
+	 */
+	void syncEdge()
+	{
+		// retrieve ghosts necessary for edge adding
+		sync();
+
+		// update with real values of edges, we don't add the edge here because it will modify edge's array length
+		for (size_t i = 0; i < e_queue.size(); ++i)
+		{
+			e_queue.get(i).v1n = glb2loc.at(e_queue.get(i).v1);
+			e_queue.get(i).v2n = glb2id.at(e_queue.get(i).v2);
+		}
+
+		deleteGhosts();
+
+		for (auto req : e_queue)
+		{
+			// add an edge
+			long int id_x_end = addEdge_<>(req.v1n, req.v2n);
+
+			// If there is not edge return an invalid edge, is a kind of stub object
+			if (id_x_end == NO_EDGE)
+				return;
+
+			// set source and destination ids of the edge
+			e_m.get(id_x_end).template get<e_info::sgid>() = req.v1;
+			e_m.get(id_x_end).template get<e_info::dgid>() = req.v2;
+		}
+
+		e_queue.clear();
+
 	}
 
 	/*! \brief Swap the memory of g with this graph
@@ -1582,6 +1937,7 @@ public:
 		// switch the memory
 
 		v.swap(g.v);
+		v_m.swap(g.v_m);
 		e.swap(g.e);
 		v_l.swap(g.v_l);
 		glb2id = g.glb2id;
@@ -1606,6 +1962,7 @@ public:
 		// switch the memory
 
 		v.swap(g.v);
+		v_m.swap(g.v_m);
 		e.swap(g.e);
 		v_l.swap(g.v_l);
 		glb2id = g.glb2id;
@@ -1677,14 +2034,7 @@ public:
 	 */
 	void initProperties()
 	{
-		updateVtxdist();
-
-		for (size_t i = 0, j = firstId(); i < getNVertex() && j <= lastId(); i++, j++)
-		{
-			vertex(i).template get<V::id>() = j;
-			vertex(i).template get<V::global_id>() = j;
-			setGlobalMap(j, i, j);
-		}
+		initDistributionVector();
 
 		initGlbimap();
 	}
@@ -1716,73 +2066,72 @@ public:
 		if (ghs_map.size() == 0)
 			return;
 
-		//! Prepare new graph
+		// Prepare new graph
 		DistGraph_CSR recv_g;
 
-		//! Reset global to local map
-		glb2loc.clear();
-		glb2id.clear();
-		id2glb.clear();
+		size_t fpos = getNVertex() - ghs_map.size();
+		size_t epos = 0;
 
-		size_t local_i = 0;
-
-		//! Add previous vertices without the sent ones
-		for (size_t i = 0; i < this->getNVertex(); ++i)
+		// Reset global to local map
+		for (auto gh : ghs_map)
 		{
-			if (!isGhost(this->vertex(i).template get<V::global_id>()))
-			{
-				recv_g.addVertex(this->vertex(i));
-
-				for (size_t j = 0; j < this->getNChilds(i); j++)
-				{
-					recv_g.addEdge<NoCheck>(local_i, this->getChild(i, j), this->getChildEdge(i, j));
-				}
-				++local_i;
-			}
+			epos += getNChilds(glb2loc.at(gh.first));
+			glb2loc.erase(gh.first);
+			glb2id.erase(gh.first);
+			id2glb.erase(gh.first);
 		}
 
-		//! Swap temporary graph with the main one
-		swap(recv_g);
+		//resize all structures to delete the ghosts
+		v.resize(fpos);
+		v_m.resize(fpos);
+		v_l.resize(fpos);
+		e.resize(e.size() - epos);
+		e_m.resize(e_m.size() - epos);
+		e_l.resize(fpos * v_slot);
 
-		//! Clear ghosts map
+		// Clear ghosts map
 		ghs_map.clear();
 	}
 
-	/*! \brief Prepare to send vertex i
+	/*! \brief Prepare to send vertex i from the local processor to the target processor
 	 *
 	 * \tparam toRemove if true the vertex will be deleted from this graph once it has been sent
 	 *
 	 * \param i vertex to send
 	 * \param t target processor
 	 */
-	template<bool toRemove = true>
+	template<bool toRemove = true> //TODO make it private and create wrapper in public
 	void q_move(size_t i, size_t t)
 	{
-		//! Check if a 'useless' move has been requested
+		// Check if a 'useless' move has been requested
 		if (t == vcl.getProcessUnitID())
 		{
-			std::cerr << "Skipping move: trying to move vertex " << i << " in this graph.\n";
+			std::cerr << "Warning: " << __FILE__ << ":" << __LINE__ << " target processor is equal the local processor\n";
 			return;
 		}
 
-		//! If the array for t processor is empty, set it to not empty
+		// If the array for t processor is empty, set it to not empty
 		if (sgp.get(t).isEmpty)
 			sgp.get(t).isEmpty = false;
 
-		//! Add the vertex to the vertex object array
+		// Add the vertex to the vertex send buffer
 		sgp.get(t).send_v.add(vertex(i));
 
-		//! Add the info about the number of children
+		// Add the vertex to the vertex send buffer
+		sgp.get(t).send_v_m.add(v_m.get(i));
+
+		// Add the info about the number of children
 		sgp.get(t).send_es.add(getNChilds(i));
 
 		for (size_t s = 0; s < getNChilds(i); s++)
 		{
-			//! Add edge value and object to the respective arrays
+			// Add edge value and object to the respective arrays
 			sgp.get(t).send_e.add(getChildEdge(i, s));
+			sgp.get(t).send_e_m.add(getChildInfo(i, s));
 			sgp.get(t).send_el.add(getChild(i, s));
 		}
 
-		//! If the vertex has to be removed after the send add its index id to the v_td array
+		// If the vertex has to be removed after the send add its index id to the v_td array
 		if (toRemove)
 			v_td.add(i);
 	}
@@ -1812,12 +2161,16 @@ public:
 		if (glbi_map.size() == 0)
 			initGlbimap();
 
+		//std::cout<< "TEMP DBG::deleteGhosts\n";
 		deleteGhosts();
 
+		//std::cout<< "TEMP DBG::exchangeVertices\n";
 		exchangeVertices<false>();
 
+		//std::cout<< "TEMP DBG::updateVtxdist\n";
 		updateVtxdist();
 
+		//std::cout<< "TEMP DBG::remap\n";
 		remap();
 	}
 
@@ -1827,7 +2180,7 @@ public:
 	 */
 	void reqVertex(size_t gid)
 	{
-		//! if not initialized, prepare vr_queue
+		// if not initialized, prepare vr_queue
 		if (vr_queue.size() == 0)
 			vr_queue.resize(vcl.getProcessingUnits());
 
@@ -1843,30 +2196,30 @@ public:
 	 */
 	void sync()
 	{
-		//! If not initialized, prepare global informations map
+		// If not initialized, prepare global informations map
 		if (glbi_map.size() == 0)
 			initGlbimap();
 
-		//! if not initialized, prepare vr_queue
-		if (vr_queue.size() == 0)
+		// if not initialized, prepare vr_queue
+		if (vr_queue.size() == 0) // TODO remove check on size
 			vr_queue.resize(vcl.getProcessingUnits());
 
-		//! Arrays that will contain temporary requests and responses during communications
+		// Arrays that will contain temporary requests and responses during communications TODO move to global private and reset method
 		openfpm::vector<openfpm::vector<size_t>> resp(vcl.getProcessingUnits());
 		openfpm::vector<openfpm::vector<size_t>> reqs(vcl.getProcessingUnits());
 
-		//! Prepare structures for communication
+		// Prepare structures for communication
 		openfpm::vector<size_t> prc;
 		openfpm::vector<size_t> size;
 		openfpm::vector<void *> ptr;
 
-		//! Fill the structures for sendrecvMultipleMessagesNBX function
+		// Fill the structures for sendrecvMultipleMessagesNBX function
 		fillSendRecvStructs<size_t>(vr_queue, prc, size, ptr);
 
-		//! Send/receive requests for info about needed vertices
+		// Send/receive requests for info about needed vertices
 		vcl.sendrecvMultipleMessagesNBX(prc.size(), &size.get(0), &prc.get(0), &ptr.get(0), on_receive, &resp, NONE);
 
-		//! Prepare responses with the containing processors of requested vertices
+		// Prepare responses with the containing processors of requested vertices
 		for (size_t i = 0; i < resp.size(); ++i)
 		{
 			reqs.get(i).clear();
@@ -1883,24 +2236,24 @@ public:
 			}
 		}
 
-		//! Fill the structures for sendrecvMultipleMessagesNBX function
+		// Fill the structures for sendrecvMultipleMessagesNBX function
 		fillSendRecvStructs<size_t>(reqs, prc, size, ptr);
 
-		//! Reset response array
+		// Reset response array TODO clear and resize not needed
 		resp.clear();
 		resp.resize(vcl.getProcessingUnits());
 
-		//! Send/receive responses with the containing processors of requested vertices
+		// Send/receive responses with the containing processors of requested vertices
 		vcl.sendrecvMultipleMessagesNBX(prc.size(), &size.get(0), &prc.get(0), &ptr.get(0), on_receive, &resp, NONE);
 
-		//! Clear requests array
+		// Clear requests array
 		reqs.clear();
 		reqs.resize(vcl.getProcessingUnits());
 
-		//! Prepare vertices requests
+		// Prepare vertices requests
 		for (size_t i = 0; i < vcl.getProcessingUnits(); ++i)
 		{
-			//! If the info has been retrieved from other processors take it from resp
+			// If the info has been retrieved from other processors take it from resp
 			if (i != vcl.getProcessUnitID())
 			{
 				for (size_t j = 0; j < vr_queue.get(i).size(); ++j)
@@ -1908,7 +2261,7 @@ public:
 					reqs.get(resp.get(i).get(j)).add(vr_queue.get(i).get(j));
 				}
 			}
-			//! Otherwise take it from the global info map of this processor
+			// Otherwise take it from the global info map of this processor
 			else
 			{
 				for (size_t j = 0; j < vr_queue.get(i).size(); ++j)
@@ -1918,14 +2271,14 @@ public:
 			}
 		}
 
-		//! Fill the structures for sendrecvMultipleMessagesNBX function
+		// Fill the structures for sendrecvMultipleMessagesNBX function
 		fillSendRecvStructs<size_t>(reqs, prc, size, ptr);
 
-		//! Reset response array
+		// Reset response array
 		resp.clear();
 		resp.resize(vcl.getProcessingUnits());
 
-		//! Send/receive vertices requests
+		// Send/receive vertices requests
 		vcl.sendrecvMultipleMessagesNBX(prc.size(), &size.get(0), &prc.get(0), &ptr.get(0), on_receive, &resp, NONE);
 
 		for (size_t i = 0; i < resp.size(); ++i)
@@ -1937,15 +2290,15 @@ public:
 					q_move<false>(glb2loc.at(resp.get(i).get(j)), i);
 				} catch (const std::out_of_range& oor)
 				{
-					std::cout << resp.get(i).get(j) << " not found in global to local map (proc: " << vcl.getProcessUnitID() << ") my globals are:\n";
+					std::cout << resp.get(i).get(j) << " not found in global to local map (proc: " << vcl.getProcessUnitID() << ")\n";
 				}
 			}
 		}
 
-		//! Send and receive vertices, the received ones will be added to the graph as ghosts
+		// Send and receive vertices, the received ones will be added to the graph as ghosts
 		exchangeVertices<true>();
 
-		//! Empty the requests list
+		// Empty the requests list
 		vr_queue.clear();
 	}
 };

@@ -694,6 +694,7 @@ public:
 
 		// Create the sub-domains
 		dec.setParameters(div,box,bc,g);
+		dec.decompose();
 
 		// and create the ghost boxes
 		dec.calculateGhostBoxes();
