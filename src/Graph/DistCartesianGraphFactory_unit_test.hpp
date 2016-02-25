@@ -65,6 +65,11 @@ struct node
 
 		return *this;
 	}
+
+	static bool noPointers()
+	{
+		return true;
+	}
 };
 
 
@@ -79,8 +84,6 @@ static void * message_receive(size_t msg_i, size_t total_msg, size_t total_p, si
 	return v->get(i).getPointer();
 
 }
-
-
 
 BOOST_AUTO_TEST_SUITE (DistCartesianGraphFactory_test)
 
@@ -148,6 +151,9 @@ BOOST_AUTO_TEST_CASE( DistCartesianGraphFactory_2D_use)
 
 	// Vcluster
 	Vcluster & vcl = *global_v_cluster;
+
+	if(vcl.getProcessingUnits() != 2)
+		return;
 
 	// Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);

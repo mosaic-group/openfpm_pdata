@@ -79,7 +79,7 @@ class Metis
 	Graph & g;
 
 	//Check if weights are available
-	bool useWeights;
+	bool useWeights = false;
 
 	/*! \brief Construct Adjacency list
 	 *
@@ -129,7 +129,8 @@ class Metis
 	 */
 	void constructAdjListWithWeights(Graph & g)
 	{
-		// create xadj and adjlist
+		Mg.vwgt = new idx_t[1];
+		Mg.vwgt[0] = 2;
 
 		// create xadj, adjlist, vwgt, adjwgt and vsize
 		Mg.xadj = new idx_t[g.getNVertex() + 1];
@@ -334,8 +335,7 @@ public:
 		if (Mg.nparts[0] != 1)
 		{
 			// Decompose
-			METIS_PartGraphRecursive(Mg.nvtxs, Mg.ncon, Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.vsize, Mg.adjwgt, Mg.nparts,
-					Mg.tpwgts, Mg.ubvec, Mg.options, Mg.objval, Mg.part);
+			METIS_PartGraphRecursive(Mg.nvtxs, Mg.ncon, Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.vsize, Mg.adjwgt, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.options, Mg.objval, Mg.part);
 
 			// vertex id
 
@@ -378,8 +378,7 @@ public:
 	void decompose(Graph_part & gp)
 	{
 		// Decompose
-		METIS_PartGraphRecursive(Mg.nvtxs, Mg.ncon, Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.vsize, Mg.adjwgt, Mg.nparts, Mg.tpwgts,
-				Mg.ubvec, Mg.options, Mg.objval, Mg.part);
+		METIS_PartGraphRecursive(Mg.nvtxs, Mg.ncon, Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.vsize, Mg.adjwgt, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.options, Mg.objval, Mg.part);
 
 		// vertex id
 

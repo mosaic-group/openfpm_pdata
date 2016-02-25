@@ -284,7 +284,7 @@ public:
 		//! Get the number of processing units
 		size_t Np = v_cl.getProcessingUnits();
 
-		parmetis_graph.initSubGraph(sub_g);
+		parmetis_graph.initSubGraph(sub_g, verticesGotWeights);
 
 		//! Decompose
 		parmetis_graph.decompose<nm_v::proc_id>(vtxdist, sub_g);
@@ -487,7 +487,7 @@ public:
 		{
 			load += sub_g.vertex(i).template get<nm_v::computation>();
 		}
-		std::cout << v_cl.getProcessUnitID() << " weight " << load << " size " << sub_g.getNVertex() << "\n";
+		//std::cout << v_cl.getProcessUnitID() << " weight " << load << " size " << sub_g.getNVertex() << "\n";
 		return load;
 	}
 

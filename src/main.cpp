@@ -28,6 +28,6 @@
 #include "dec_optimizer_unit_test.hpp"
 #include "Grid/grid_dist_id_unit_test.hpp"
 #include "Vector/vector_dist_unit_test.hpp"
-#include "Decomposition/DLB_unit_test.hpp"
-#include "Graph/dist_map_graph_unit_test.hpp"
+//#include "Decomposition/DLB_unit_test.hpp"
+//#include "Graph/dist_map_graph_unit_test.hpp"
 #include "Graph/DistGraphFactory.hpp"

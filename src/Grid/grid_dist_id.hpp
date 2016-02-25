@@ -417,6 +417,8 @@ public:
 		// Create the sub-domains
 		dec.setParameters(div,domain,ghost);
 
+		dec.decompose();
+
 		// Create local grid
 		Create();
 

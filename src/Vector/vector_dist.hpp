@@ -133,6 +133,7 @@ public:
 
 		// Create the sub-domains
 		dec.setParameters(div,box,g);
+		dec.decompose();
 
 		Point<dim,St> p;
 		p.zero();
