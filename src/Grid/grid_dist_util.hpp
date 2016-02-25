@@ -12,7 +12,10 @@
 
 /*! \brief Create the gdb_ext
  *
- * \param gdb_ext Vector of Boxes that define the local grids extension
+ * It is a fundamental function, because it create the structure that store the information of the local grids. In
+ * particular from the continuous decomposed domain it calculate the grid that each sub-domain store
+ *
+ * \param gdb_ext output Vector of Boxes that define the local grids extension
  * \param dec Decomposition
  * \param cd_sm CellDecomposer the size of cell is equal to the distance between grid points
  *

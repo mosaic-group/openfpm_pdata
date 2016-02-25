@@ -440,7 +440,7 @@ class grid_dist_id
 	 * \param ext extension of the domain
 	 *
 	 */
-	inline void InitializeCellDecomposer(CellDecomposer_sm<dim,St> & cd_old, Ghost<dim,size_t> ext)
+	inline void InitializeCellDecomposer(const CellDecomposer_sm<dim,St> & cd_old, const Box<dim,size_t> & ext)
 	{
 		// Initialize the cell decomposer
 		cd_sm.setDimensions(cd_old,ext);
@@ -609,14 +609,13 @@ public:
 
 		for (size_t i = 0 ; i < dim ; i++)
 		{
-			g_sz[i] = g_sz[i] + ext.getLow(i);
-			g_sz[i] = g_sz[i] + ext.getHigh(i);
+			g_sz[i] = g.g_sz[i] + ext.getLow(i) + ext.getHigh(i);
 
-			this->domain.getLow(i) = g.domain.getLow(i) - ext.getLow(i) * g.spacing(i);
-			this->domain.getHigh(i) = g.domain.getHigh(i) + ext.getHigh(i) * g.spacing(i);
+			this->domain.setLow(i,g.domain.getLow(i) - ext.getLow(i) * g.spacing(i));
+			this->domain.setHigh(i,g.domain.getHigh(i) + ext.getHigh(i) * g.spacing(i));
 		}
 
-		InitializeStructures(g.g_sz,exp);
+		InitializeStructures(g_sz);
 	}
 
     //! constructor
