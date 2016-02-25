@@ -3,21 +3,18 @@
 
 #include "CartDecomposition.hpp"
 #include "util/mathutil.hpp"
-#include "DLB.hpp"
-#include <boost/algorithm/string.hpp>
 
-BOOST_AUTO_TEST_SUITE (CartDecomposition_test)
+BOOST_AUTO_TEST_SUITE( CartDecomposition_test )
 
 #define SUB_UNIT_FACTOR 64
-#define DIM 2
 
-void setComputationCosts(CartDecomposition<DIM, float> &dec, size_t n_v, Point<DIM, float> center, float radius, size_t weight_h, size_t weight_l)
+void setComputationCosts(CartDecomposition<2, float> &dec, size_t n_v, Point<2, float> center, float radius, size_t weight_h, size_t weight_l)
 {
 	float radius2 = pow(radius, 2);
 	float eq;
 
 	// Position structure for the single vertex
-	float pos[DIM];
+	float pos[2];
 
 	for (int i = 0; i < n_v; i++)
 	{
@@ -72,14 +69,14 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D )
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
 	//! [Create CartDecomposition]
-	CartDecomposition<DIM, float> dec(vcl);
+	CartDecomposition<2, float> dec(vcl);
 
 	// Init DLB tool
 	DLB dlb(vcl);
 
 	// Physical domain
-	Box<DIM, float> box( { 0.0, 0.0 }, { 10.0, 10.0 });
-	size_t div[DIM];
+	Box<2, float> box( { 0.0, 0.0 }, { 10.0, 10.0 });
+	size_t div[2];
 
 	// Get the number of processor and calculate the number of sub-domain
 	// for each processor (SUB_UNIT_FACTOR=64)
@@ -87,13 +84,13 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D )
 	size_t n_sub = n_proc * SUB_UNIT_FACTOR;
 
 	// Set the number of sub-domains on each dimension (in a scalable way)
-	for (int i = 0; i < DIM; i++)
+	for (int i = 0; i < 2; i++)
 	{
-		div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/DIM));
+		div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/2));
 	}
 
 	// Define ghost
-	Ghost<DIM, float> g(0.01);
+	Ghost<2, float> g(0.01);
 
 	// Decompose
 	dec.setParameters(div, box, g);
@@ -105,7 +102,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D )
 	// Add weights to points
 
 	// First create the center of the weights distribution, check it is coherent to the size of the domain
-	Point<DIM, float> center( { 2.0, 2.0 });
+	Point<2, float> center( { 2.0, 2.0 });
 
 	// Radius of the weights distribution
 	float radius = 2.0;
@@ -152,14 +149,14 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D )
 	// For each calculated ghost box
 	for (size_t i = 0; i < dec.getNIGhostBox(); i++)
 	{
-		SpaceBox<DIM,float> b = dec.getIGhostBox(i);
+		SpaceBox<2,float> b = dec.getIGhostBox(i);
 		size_t proc = dec.getIGhostBoxProcessor(i);
 
 		// sample one point inside the box
-		Point<DIM,float> p = b.rnd();
+		Point<2,float> p = b.rnd();
 
 		// Check that ghost_processorsID return that processor number
-		const openfpm::vector<size_t> & pr = dec.template ghost_processorID<CartDecomposition<DIM,float>::processor_id>(p);
+		const openfpm::vector<size_t> & pr = dec.template ghost_processorID<CartDecomposition<2,float>::processor_id>(p);
 
 		bool found = false;
 
@@ -171,7 +168,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D )
 
 		if (found == false)
 		{
-			const openfpm::vector<size_t> pr2 = dec.template ghost_processorID<CartDecomposition<DIM,float>::processor_id>(p);
+			const openfpm::vector<size_t> pr2 = dec.template ghost_processorID<CartDecomposition<2,float>::processor_id>(p);
 		}
 
 		BOOST_REQUIRE_EQUAL(found,true);
@@ -192,14 +189,14 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D_sar)
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
 	//! [Create CartDecomposition]
-	CartDecomposition<DIM, float> dec(vcl);
+	CartDecomposition<2, float> dec(vcl);
 
 	// Init DLB tool
 	DLB dlb(vcl);
 
 	// Physical domain
-	Box<DIM, float> box( { 0.0, 0.0 }, { 10.0, 10.0 });
-	size_t div[DIM];
+	Box<2, float> box( { 0.0, 0.0 }, { 10.0, 10.0 });
+	size_t div[2];
 
 	// Get the number of processor and calculate the number of sub-domain
 	// for each processor (SUB_UNIT_FACTOR=64)
@@ -207,13 +204,13 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D_sar)
 	size_t n_sub = n_proc * SUB_UNIT_FACTOR;
 
 	// Set the number of sub-domains on each dimension (in a scalable way)
-	for (int i = 0; i < DIM; i++)
+	for (int i = 0; i < 2; i++)
 	{
-		div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/DIM));
+		div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/2));
 	}
 
 	// Define ghost
-	Ghost<DIM, float> g(0.01);
+	Ghost<2, float> g(0.01);
 
 	// Decompose
 	dec.setParameters(div, box, g);
@@ -224,7 +221,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D_sar)
 	// Add weights to points
 
 	// First create the center of the weights distribution, check it is coherent to the size of the domain
-	Point<DIM, float> center( { 2.0, 2.0 });
+	Point<2, float> center( { 2.0, 2.0 });
 
 	// Radius of the weights distribution
 	float radius = 2.0;
@@ -232,7 +229,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D_sar)
 	// Weight if the distribution (high)
 	size_t weight_h = 5, weight_l = 1;
 
-	size_t n_v = pow(div[0], DIM);
+	size_t n_v = pow(div[0], 2);
 
 	setComputationCosts(dec, n_v, center, radius, weight_h, weight_l);
 
@@ -288,14 +285,14 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D_sar)
 	// For each calculated ghost box
 	for (size_t i = 0; i < dec.getNIGhostBox(); i++)
 	{
-		SpaceBox<DIM,float> b = dec.getIGhostBox(i);
+		SpaceBox<2,float> b = dec.getIGhostBox(i);
 		size_t proc = dec.getIGhostBoxProcessor(i);
 
 		// sample one point inside the box
-		Point<DIM,float> p = b.rnd();
+		Point<2,float> p = b.rnd();
 
 		// Check that ghost_processorsID return that processor number
-		const openfpm::vector<size_t> & pr = dec.template ghost_processorID<CartDecomposition<DIM,float>::processor_id>(p);
+		const openfpm::vector<size_t> & pr = dec.template ghost_processorID<CartDecomposition<2,float>::processor_id>(p);
 
 		bool found = false;
 
@@ -307,7 +304,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D_sar)
 
 		if (found == false)
 		{
-			const openfpm::vector<size_t> pr2 = dec.template ghost_processorID<CartDecomposition<DIM,float>::processor_id>(p);
+			const openfpm::vector<size_t> pr2 = dec.template ghost_processorID<CartDecomposition<2,float>::processor_id>(p);
 		}
 
 		BOOST_REQUIRE_EQUAL(found,true);
@@ -441,6 +438,202 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_3D)
 	BOOST_REQUIRE_EQUAL(val,true);
 }
 
+BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test)
+{
+	// Vcluster
+	Vcluster & vcl = *global_v_cluster;
+
+	// Initialize the global VCluster
+	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
+
+	//! [Create CartDecomposition]
+	CartDecomposition<3,float> dec(vcl);
+
+	// Physical domain
+	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+	size_t div[3];
+
+	// Get the number of processor and calculate the number of sub-domain
+	// for each processor (SUB_UNIT_FACTOR=64)
+	size_t n_proc = vcl.getProcessingUnits();
+	size_t n_sub = n_proc * SUB_UNIT_FACTOR;
+
+	// Set the number of sub-domains on each dimension (in a scalable way)
+	for (int i = 0 ; i < 3 ; i++)
+	{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/3));}
+
+	// Define ghost
+	Ghost<3,float> g(0.01);
+
+	// Boundary conditions
+	size_t bc[] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+
+	// Decompose
+	dec.setParameters(div,box,bc,g);
+
+	// create a ghost border
+	dec.calculateGhostBoxes();
+
+	//! [Create CartDecomposition]
+
+	// For each calculated ghost box
+	for (size_t i = 0 ; i < dec.getNIGhostBox() ; i++)
+	{
+		SpaceBox<3,float> b = dec.getIGhostBox(i);
+		size_t proc = dec.getIGhostBoxProcessor(i);
+
+		// sample one point inside the box
+		Point<3,float> p = b.rnd();
+
+		// Check that ghost_processorsID return that processor number
+		const openfpm::vector<size_t> & pr = dec.template ghost_processorID<CartDecomposition<3,float>::processor_id>(p);
+
+		bool found = false;
+
+		for (size_t j = 0; j < pr.size() ; j++)
+		{
+			if (pr.get(j) == proc)
+			{found = true; break;}
+		}
+
+		if (found == false)
+		{
+			const openfpm::vector<size_t> pr2 = dec.template ghost_processorID<CartDecomposition<3,float>::processor_id>(p);
+		}
+
+		BOOST_REQUIRE_EQUAL(found,true);
+	}
+
+	// Check the consistency
+
+	bool val = dec.check_consistency();
+	BOOST_REQUIRE_EQUAL(val,true);
+
+	// We duplicate the decomposition
+	CartDecomposition<3,float> dec2 = dec.duplicate();
+	dec2.check_consistency();
+
+	// check that dec and dec2 contain the same information
+	bool ret = dec.is_equal(dec2);
+
+	// We check if the two decomposition are equal
+	BOOST_REQUIRE_EQUAL(ret,true);
+
+	// We duplicate the decomposition redefining the ghost
+
+	// Define ghost
+	Ghost<3,float> g3(0.005);
+
+	// We duplicate the decomposition redefining the ghost
+	CartDecomposition<3,float> dec3 = dec.duplicate(g3);
+
+	ret = dec3.check_consistency();
+	BOOST_REQUIRE_EQUAL(ret,true);
+
+	// Check that dec3 is equal to dec2 with the exception of the ghost part
+	ret = dec3.is_equal_ng(dec2);
+	BOOST_REQUIRE_EQUAL(ret,true);
+}
+
+
+BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
+{
+	// Vcluster
+	Vcluster & vcl = *global_v_cluster;
+
+	// Initialize the global VCluster
+	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
+
+	//! [Create CartDecomposition]
+	CartDecomposition<3,float> dec(vcl);
+
+	// Physical domain
+	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+	size_t div[3];
+
+	// Get the number of processor and calculate the number of sub-domain
+	// for each processor (SUB_UNIT_FACTOR=64)
+	size_t n_proc = vcl.getProcessingUnits();
+	size_t n_sub = n_proc * SUB_UNIT_FACTOR;
+
+	// Set the number of sub-domains on each dimension (in a scalable way)
+	for (int i = 0 ; i < 3 ; i++)
+	{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/3));}
+
+	// Define ghost
+	Ghost<3,float> g(0.01);
+
+	// Boundary conditions
+	size_t bc[] = {PERIODIC,PERIODIC,PERIODIC};
+
+	// Decompose
+	dec.setParameters(div,box,bc,g);
+
+	// create a ghost border
+	dec.calculateGhostBoxes();
+
+	//! [Create CartDecomposition]
+
+	// For each calculated ghost box
+	for (size_t i = 0 ; i < dec.getNIGhostBox() ; i++)
+	{
+		SpaceBox<3,float> b = dec.getIGhostBox(i);
+		size_t proc = dec.getIGhostBoxProcessor(i);
+
+		// sample one point inside the box
+		Point<3,float> p = b.rnd();
+
+		// Check that ghost_processorsID return that processor number
+		const openfpm::vector<size_t> & pr = dec.template ghost_processorID<CartDecomposition<3,float>::processor_id>(p);
+
+		bool found = false;
+
+		for (size_t j = 0; j < pr.size() ; j++)
+		{
+			if (pr.get(j) == proc)
+			{found = true; break;}
+		}
+
+		if (found == false)
+		{
+			const openfpm::vector<size_t> pr2 = dec.template ghost_processorID<CartDecomposition<3,float>::processor_id>(p);
+		}
+
+		BOOST_REQUIRE_EQUAL(found,true);
+	}
+
+	// Check the consistency
+	bool val = dec.check_consistency();
+	BOOST_REQUIRE_EQUAL(val,true);
+
+	// We duplicate the decomposition
+	CartDecomposition<3,float> dec2 = dec.duplicate();
+	dec2.check_consistency();
+
+	bool ret = dec.is_equal(dec2);
+
+	// We check if the two decomposition are equal
+	BOOST_REQUIRE_EQUAL(ret,true);
+
+	// check that dec and dec2 contain the same information
+
+	// We duplicate the decomposition redefining the ghost
+
+	// Define ghost
+	Ghost<3,float> g3(0.005);
+
+	// We duplicate the decomposition refefining the ghost
+	CartDecomposition<3,float> dec3 = dec.duplicate(g3);
+
+	ret = dec3.check_consistency();
+	BOOST_REQUIRE_EQUAL(ret,true);
+
+	// Check that g3 is equal to dec2 with the exception of the ghost part
+	ret = dec3.is_equal_ng(dec2);
+	BOOST_REQUIRE_EQUAL(ret,true);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
+
 
 #endif

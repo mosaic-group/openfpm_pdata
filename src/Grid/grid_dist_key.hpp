@@ -40,6 +40,17 @@ public:
 		return key;
 	}
 
+
+	/*! \brief Get the reference key
+	 *
+	 * \return the local key
+	 *
+	 */
+	inline grid_key_dx<dim> & getKeyRef()
+	{
+		return key;
+	}
+
 	/* \brief Check if two key are the same
 	 *
 	 * \param key_t key to check
@@ -73,9 +84,38 @@ public:
 		return grid_dist_key_dx<dim>(getSub(),key);
 	}
 
-	inline grid_dist_key_dx(int g_c, grid_key_dx<dim> key)
+	/*! \brief Create a new key moving the old one
+	 *
+	 * \param c where to move for each component
+	 *
+	 * \return new key
+	 *
+	 */
+	inline grid_dist_key_dx<dim> move(const comb<dim> & c)
+	{
+		grid_key_dx<dim> key = getKey();
+		for (size_t i = 0 ; i < dim ; i++)
+			key.set_d(i,key.get(i) + c[i]);
+		return grid_dist_key_dx<dim>(getSub(),key);
+	}
+
+	inline grid_dist_key_dx(int g_c, const grid_key_dx<dim> & key)
 	:g_c(g_c),key(key)
 	{
+	}
+
+	std::string to_string()
+	{
+		std::stringstream str;
+
+		str << "sub_domain=" << g_c << " ";
+
+		for (size_t i = 0 ; i < dim ; i++)
+			str << "x[" << i << "]=" << key.get(i) << " ";
+
+		str << "\n";
+
+		return str.str();
 	}
 };
 

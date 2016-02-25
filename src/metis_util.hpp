@@ -10,8 +10,8 @@
 
 #include <iostream>
 #include "metis.h"
-#include "VTKWriter.hpp"
 #include "SubdomainGraphNodes.hpp"
+#include "VTKWriter/VTKWriter.hpp"
 
 /*! \brief Metis graph structure
  *
@@ -79,7 +79,7 @@ class Metis
 	Graph & g;
 
 	//Check if weights are available
-	bool useWeights;
+	bool useWeights = false;
 
 	/*! \brief Construct Adjacency list
 	 *

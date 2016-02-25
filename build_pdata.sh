@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Make a directory in /tmp/OpenFPM_data
+# Make a directory in /tmp/OpenFPM_pdata
 
 echo "Directory: $1"
 echo "Machine: $2"
@@ -18,6 +18,8 @@ if [ $? -ne 0 ]; then
   echo -e "Configure\033[91;5;1m FAILED \033[0m"
   exit 1
 fi
+
+mkdir openfpm_numerics/src/config
 
 # pull from all the projects
 cd openfpm_data
@@ -57,12 +59,10 @@ if [ $? -ne 0 ]; then
 fi
 cd ..
 
-
 if [ "$2" == "gin" ]
 then
  echo "Compiling on gin\n"
  source ~/.bashrc
- sh ./autogen.sh
  module load gcc/4.9.2
  ./install -s -c "--prefix=/home/jenkins/openfpm_install"
  make
@@ -218,38 +218,38 @@ then
  module load boost/1.56.0-gnu4.9.1
  module unload gcc/4.9.1
  module load gcc/4.9.3
- module load openmpi/1.8.7
+ module load openmpi/1.8.8-gnu
  module unload bullxmpi
  module load metis/5.1.0
 
- ./install -s -c"--with-metis=$METIS_ROOT --with-boost=$BOOST_ROOT CXX=mpic++"
+ ./install -s -c"--with-metis=/sw/global/libraries/metis/5.1.0/x86_64/ --with-boost=/sw/taurus/libraries/boost/1.56.0-gnu4.9.1 CXX=mpic++"
  make
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ; 
  fi
 
- salloc --nodes=1 --ntasks-per-node=16 --time=00:10:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 16 src/pdata"
+ salloc --nodes=1 --ntasks-per-node=24 --exclude=taurusi[6300-6400],taurusi[5400-5500] --time=00:5:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 24 src/pdata --report_level=no"
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ; 
  fi
- salloc --nodes=2 --ntasks-per-node=16 --time=00:10:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 32 src/pdata"
+ salloc --nodes=2 --ntasks-per-node=24 --exclude=taurusi[6300-6400],taurusi[5400-5500] --time=00:5:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 48 src/pdata --report_level=no"
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ; 
  fi
- salloc --nodes=4 --ntasks-per-node=16 --time=00:10:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 64 src/pdata"
+ salloc --nodes=4 --ntasks-per-node=24 --exclude=taurusi[6300-6400],taurusi[5400-5500] --time=00:5:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 96 src/pdata --report_level=no"
  if [ $? -ne 0 ]; then 
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ; 
  fi
- salloc --nodes=8 --ntasks-per-node=16 --time=00:10:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 128 src/pdata"
+ salloc --nodes=8 --ntasks-per-node=24 --exclude=taurusi[6300-6400],taurusi[5400-5500] --time=00:5:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 192 src/pdata --report_level=no"
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ; 
  fi
- salloc --nodes=16 --ntasks-per-node=16 --time=00:10:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 256 src/pdata"
+ salloc --nodes=10 --ntasks-per-node=24 --exclude=taurusi[6300-6400],taurusi[5400-5500] --time=00:5:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np 240 src/pdata --report_level=no"
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ; 
@@ -258,7 +258,6 @@ then
 else
  echo "Compiling general"
  source ~/.bashrc
- sh ./autogen.sh
  ./install -s
 
  mpirun -np 2 ./src/pdata

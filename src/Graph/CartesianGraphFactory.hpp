@@ -259,7 +259,7 @@ class Graph_constructor_impl
 {
 public:
 	//! Construct cartesian graph
-	static Graph construct(const size_t (&sz)[dim], Box<dim, T> dom)
+	static Graph construct(const size_t (& sz)[dim], Box<dim,T> dom, const size_t(& bc)[dim])
 	{
 		// Calculate the size of the hyper-cubes on each dimension
 		T szd[dim];
@@ -316,7 +316,7 @@ public:
 
 			// Get the combinations of dimension d
 
-			for (size_t d = dim - 1; d >= dim_c; d--)
+			for (long int d = dim-1 ; d >= dim_c ; d--)
 			{
 				// create the edges for that dimension
 
@@ -332,16 +332,16 @@ public:
 
 					// for each dimension multiply and reduce
 
-					for (size_t s = 0; s < dim; s++)
-					{
+
+					for (size_t s = 0 ; s < dim ; s++)
 						ele_sz += szd[s] * abs(c[j][s]);
-					}
 
 					// Calculate the end point vertex id
 					// Calculate the start point id
 
 					size_t start_v = g.LinId(key);
-					size_t end_v = g.template LinId<CheckExistence>(key, c[j].getComb());
+
+					size_t end_v = g.template LinId<CheckExistence>(key,c[j].getComb(),bc);
 
 					// Add an edge and set the the edge property to the size of the face (communication weight)
 					gp.template addEdge<CheckExistence>(start_v, end_v).template get<se>() = ele_sz;
@@ -371,7 +371,7 @@ class Graph_constructor_impl<dim, lin_id, Graph, NO_EDGE, T, dim_c, pos...>
 {
 public:
 	//! Construct cartesian graph
-	static Graph construct(const size_t (&sz)[dim], Box<dim, T> dom)
+	static Graph construct(const size_t ( & sz)[dim], Box<dim,T> dom, const size_t(& bc)[dim])
 	{
 		// Calculate the size of the hyper-cubes on each dimension
 
@@ -428,7 +428,7 @@ public:
 
 			// Get the combinations of dimension d
 
-			for (size_t d = dim - 1; d >= dim_c; d--)
+			for (long int d = dim-1 ; d >= dim_c ; d--)
 			{
 				// create the edges for that dimension
 
@@ -438,22 +438,12 @@ public:
 
 				for (size_t j = 0; j < c.size(); j++)
 				{
-					// Calculate the element size
-
-					T ele_sz = 0;
-
-					// for each dimension multiply and reduce
-
-					for (size_t s = 0; s < dim; s++)
-					{
-						ele_sz += szd[s] * abs(c[j][s]);
-					}
-
 					// Calculate the end point vertex id
 					// Calculate the start point id
 
 					size_t start_v = g.LinId(key);
-					size_t end_v = g.template LinId<CheckExistence>(key, c[j].getComb());
+
+					size_t end_v = g.template LinId<CheckExistence>(key,c[j].getComb(),bc);
 
 					// Add an edge and set the the edge property to the size of the face (communication weight)
 					gp.template addEdge<CheckExistence>(start_v, end_v);
@@ -506,11 +496,12 @@ public:
 	 * \tparam pos... (optional)one or more integer indicating the spatial properties
 	 *
 	 */
-	template<int se, typename T, unsigned int dim_c, int ... pos>
-	static Graph construct(const size_t (&sz)[dim], Box<dim, T> dom)
+
+/*	template <int se,typename T, unsigned int dim_c, int... pos>
+	static Graph construct(const size_t (& sz)[dim], Box<dim,T> dom )
 	{
-		return Graph_constructor_impl<dim, -1, Graph, se, T, dim_c, pos...>::construct(sz, dom);
-	}
+		return Graph_constructor_impl<dim,Graph,se,T,dim_c,pos...>::construct(sz,dom,bc);
+	}*/
 
 	/*!
 	 *
@@ -525,6 +516,7 @@ public:
 	 *
 	 * \param sz Vector that store the size of the grid on each dimension
 	 * \param dom Box enclosing the physical domain
+	 * \param bc boundary conditions {PERIODIC and NON_PERIODIC}
 	 *
 	 * \tparam se Indicate which properties fill with the contact size. The
 	 *           contact size is the point, line , surface, d-dimensional object size
@@ -537,7 +529,7 @@ public:
 	 *
 	 */
 	template<int se, int id_prp, typename T, unsigned int dim_c, int ... pos>
-	static Graph construct(const size_t (&sz)[dim], Box<dim, T> dom)
+	static Graph construct(const size_t (&sz)[dim], Box<dim, T> dom, const size_t (& bc)[dim])
 	{
 		return Graph_constructor_impl<dim, id_prp, Graph, se, T, dim_c, pos...>::construct(sz, dom);
 	}

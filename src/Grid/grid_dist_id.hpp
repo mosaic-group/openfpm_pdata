@@ -7,14 +7,16 @@
 #include "VCluster.hpp"
 #include "Space/SpaceBox.hpp"
 #include "util/mathutil.hpp"
+#include "grid_dist_id_iterator_dec.hpp"
 #include "grid_dist_id_iterator.hpp"
+#include "grid_dist_id_iterator_sub.hpp"
 #include "grid_dist_key.hpp"
 #include "NN/CellList/CellDecomposer.hpp"
 #include "util/object_util.hpp"
 #include "memory/ExtPreAlloc.hpp"
-#include "VTKWriter.hpp"
-#include "Packer.hpp"
-#include "Unpacker.hpp"
+#include "VTKWriter/VTKWriter.hpp"
+#include "Packer_Unpacker/Packer.hpp"
+#include "Packer_Unpacker/Unpacker.hpp"
 
 #define SUB_UNIT_FACTOR 64
 
@@ -39,6 +41,8 @@
  * \snippet grid_dist_id_unit_test.hpp Create and access a distributed grid complex
  * ### Synchronize a distributed grid for complex structures
  * \snippet grid_dist_id_unit_test.hpp Synchronized distributed grid complex
+ * ### Usage of a grid dist iterator sub
+ * \snippet grid_dist_id_unit_test.hpp Usage of a sub_grid iterator
  * ### Construct two grid with the same decomposition
  * \snippet grid_dist_id_unit_test.hpp Construct two grid with the same decomposition
  *
@@ -53,10 +57,10 @@ class grid_dist_id
 	Ghost<dim,St> ghost;
 
 	//! Local grids
-	Vcluster_object_array<device_grid> loc_grid;
+	openfpm::vector<device_grid> loc_grid;
 
 	//! Space Decomposition
-	Decomposition & dec;
+	Decomposition dec;
 
 	//! Extension of each grid: Domain and ghost + domain
 	openfpm::vector<GBoxes<device_grid::dims>> gdb_ext;
@@ -78,6 +82,12 @@ class grid_dist_id
 
 	// Receiving buffer for particles ghost get
 	openfpm::vector<HeapMemory> recv_mem_gg;
+
+	// Grid informations object
+	grid_sm<dim,T> ginfo;
+
+	// Grid informations object without type
+	grid_sm<dim,void> ginfo_v;
 
 	/*! \brief Call-back to allocate buffer to receive incoming objects (external ghost boxes)
 	 *
@@ -349,47 +359,87 @@ class grid_dist_id
 		}
 	}
 
-public:
-
-	//! constructor
-	grid_dist_id(Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
-	:domain(domain),ghost(ghost),dec(dec),v_cl(*global_v_cluster)
-	{
-		// Increment the reference counter of the decomposition
-		dec.incRef();
-
-		check_size(g_sz);
-
-		// For a 5x5 grid you have 4x4 Cell
-		size_t c_g[dim];
-		for (size_t i = 0 ; i < dim ; i++)	{c_g[i] = g_sz[i]-1;}
-
-		// Initialize the cell decomposer
-		cd_sm.setDimensions(domain,c_g,0);
-
-		// fill the global size of the grid
-		for (size_t i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
-
-		// Create local grid
-		Create();
-
-		// Calculate ghost boxes
-		dec.calculateGhostBoxes();
-	}
-
-	/*! \brief Constrcuctor
-	 *
-	 * \param g_sz array with the grid size on each dimension
-	 * \param domain domain where this grid live
-	 * \param g Ghost
+	/*! \brief Create the grids on memory
 	 *
 	 */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g)
-	:domain(domain),ghost(g),dec(*new Decomposition(*global_v_cluster)),v_cl(*global_v_cluster)
+	void Create()
 	{
-		// Increment the reference counter of the decomposition
-		dec.incRef();
+		Box<dim,St> g_rnd_box;
+		for (size_t i = 0 ; i < dim ; i++)	{g_rnd_box.setHigh(i,0.5); g_rnd_box.setLow(i,-0.5);}
 
+		// Get the number of local grid needed
+		size_t n_grid = dec.getNLocalHyperCube();
+
+		// create gdb
+		create_gdb_ext<dim,Decomposition>(gdb_ext,dec,cd_sm);
+
+		// create local grids for each hyper-cube
+		loc_grid.resize(n_grid);
+
+		// Size of the grid on each dimension
+		size_t l_res[dim];
+
+		// Allocate the grids
+		for (size_t i = 0 ; i < n_grid ; i++)
+		{
+
+			SpaceBox<dim,long int> sp_tg = gdb_ext.get(i).GDbox;
+
+			// Get the size of the local grid
+			// The boxes indicate the extension of the index the size
+			// is this extension +1
+			// for example a 1D box (interval) from 0 to 3 in one dimension have
+			// the points 0,1,2,3 = so a total of 4 points
+			for (size_t i = 0 ; i < dim ; i++)
+				l_res[i] = (sp_tg.getHigh(i) >= 0)?(sp_tg.getHigh(i)+1):0;
+
+			// Set the dimensions of the local grid
+			loc_grid.get(i).resize(l_res);
+		}
+	}
+
+	/*! \brief Default Copy constructor on this class make no sense and is unsafe, this definition disable it
+	 *
+	 */
+	grid_dist_id(const grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & g)
+	{
+#ifdef SE_CLASS2
+		check_new(this,8,GRID_DIST_EVENT,4);
+#endif
+	}
+
+	void write_ie_boxes(std::string output)
+	{
+		// Write internal ghost box
+		VTKWriter<openfpm::vector<::Box<dim,size_t>>,VECTOR_BOX> vtk_box1;
+
+		openfpm::vector< openfpm::vector< ::Box<dim,size_t> > > boxes;
+
+		//! Carefully we have to ensure that boxes does not reallocate inside the for loop
+		boxes.reserve(ig_box.size());
+
+		//! Write internal ghost in grid units (Color encoded)
+		for (size_t p = 0 ; p < ig_box.size() ; p++)
+		{
+			boxes.add();
+
+			// Create a vector of boxes
+			for (size_t j = 0 ; j < ig_box.get(p).bid.size() ; j++)
+			{
+				boxes.last().add(ig_box.get(p).bid.get(j).box);
+			}
+
+			vtk_box1.add(boxes.last());
+		}
+		vtk_box1.write(output + std::string("internal_ghost_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
+	}
+
+    /*! \brief Initialize the Cell decomposer of the grid
+	 *
+	 *
+	 */
+	inline void InitializeCellDecomposer(const size_t (& g_sz)[dim])
+	{
 		// check that the grid has valid size
 		check_size(g_sz);
 
@@ -399,7 +449,15 @@ public:
 
 		// Initialize the cell decomposer
 		cd_sm.setDimensions(domain,c_g,0);
+	}
 
+	/*! \brief Initialize the grid
+	 *
+	 * \param g_sz Global size of the grid
+	 *
+	 */
+	inline void InitializeDecomposition(const size_t (& g_sz)[dim])
+	{
 		// fill the global size of the grid
 		for (size_t i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
 
@@ -414,14 +472,276 @@ public:
 		for (size_t i = 0 ; i < dim ; i++)
 		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
 
-		// Create the sub-domains
-		dec.setParameters(div,domain,ghost);
+		// boundary conditions
+		size_t bc[dim];
+		for (size_t i = 0 ; i < dim ; i++)
+			bc[i] = NON_PERIODIC;
 
-		// Create local grid
-		Create();
+		// Create the sub-domains
+		dec.setParameters(div,domain,bc,ghost);
 
 		// Calculate ghost boxes
 		dec.calculateGhostBoxes();
+	}
+
+	/*! \brief Initialize the grid
+	 *
+	 * \param g_sz Global size of the grid
+	 *
+	 */
+	inline void InitializeStructures(const size_t (& g_sz)[dim])
+	{
+		// fill the global size of the grid
+		for (size_t i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
+
+		// Create local grid
+		Create();
+	}
+
+protected:
+
+	/*! \brief Get the point where it start the origin of the grid in the sub-domain i
+	 *
+	 * \return the point
+	 *
+	 */
+	Point<dim,St> getOffset(size_t i)
+	{
+		return Point<dim,St>(gdb_ext.get(i).origin) * cd_sm.getCellBox().getP2();
+	}
+
+	/*! \brief Given a local sub-domain i with a local grid Domain + ghost return the part of the local grid that is domain
+	 *
+	 * \return the Box defining the domain in the local grid
+	 *
+	 */
+	Box<dim,size_t> getDomain(size_t i)
+	{
+		return gdb_ext.get(i).Dbox;
+	}
+
+public:
+
+	// Which kind of grid the structure store
+	typedef device_grid d_grid;
+
+	// Decomposition used
+	typedef Decomposition decomposition;
+
+	// value_type
+	typedef T value_type;
+
+	/*! \brief Return the total number of points in the grid
+	 *
+	 * \return number of points
+	 *
+	 */
+	size_t size() const
+	{
+		return ginfo_v.size();
+	}
+
+	/*! \brief Return the total number of points in the grid
+	 *
+	 * \param i direction
+	 *
+	 * \return number of points on direction i
+	 *
+	 */
+	size_t size(size_t i) const
+	{
+		return ginfo_v.size(i);
+	}
+
+	static inline Ghost<dim,float> convert_ghost(const Ghost<dim,long int> & gd,const CellDecomposer_sm<dim,St> & cd_sm)
+	{
+		Ghost<dim,float> gc;
+
+		// get the grid spacing
+		Box<dim,St> sp = cd_sm.getCellBox();
+
+		// enlarge 0.001 of the spacing
+		sp.magnify_fix_P1(1.1);
+
+		// set the ghost
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			gc.setLow(i,-sp.getHigh(i));
+			gc.setHigh(i,sp.getHigh(i));
+		}
+
+		return gc;
+	}
+
+
+    //! constructor
+    grid_dist_id(const Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
+    :domain(domain),ghost(ghost),dec(dec),v_cl(*global_v_cluster)
+	{
+		// Increment the reference counter of the decomposition
+		this->dec.incRef();
+
+		InitializeCellDecomposer(g_sz);
+		InitializeStructures(g_sz);
+	}
+
+    //! constructor
+    grid_dist_id(Decomposition && dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
+    :domain(domain),ghost(ghost),dec(dec),v_cl(*global_v_cluster)
+	{
+#ifdef SE_CLASS2
+		check_new(this,8,GRID_DIST_EVENT,4);
+#endif
+
+		InitializeCellDecomposer(g_sz);
+		InitializeStructures(g_sz);
+	}
+
+    /*! \brief Get the spacing of the grid in direction i
+     *
+     * \return the spacing
+     *
+     */
+    inline St spacing(size_t i) const
+    {
+    	return cd_sm.getCellBox().getHigh(i);
+    }
+
+	/*! \brief Constrcuctor
+	 *
+	 * \param g_sz array with the grid size on each dimension
+	 * \param domain domain where this grid live
+	 * \param g Ghost given in grid units
+	 *
+	 */
+	grid_dist_id(const Decomposition & dec, const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
+	:domain(domain),dec(dec),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
+	{
+#ifdef SE_CLASS2
+		check_new(this,8,GRID_DIST_EVENT,4);
+#endif
+
+		InitializeCellDecomposer(g_sz);
+
+		ghost = convert_ghost(g,cd_sm);
+
+		// Initialize structures
+		InitializeStructures(g_sz);
+	}
+
+	/*! \brief Constrcuctor
+	 *
+	 * \param g_sz array with the grid size on each dimension
+	 * \param domain domain where this grid live
+	 * \param g Ghost given in grid units
+	 *
+	 */
+	grid_dist_id(Decomposition && dec, const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
+	:domain(domain),dec(dec),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
+	{
+#ifdef SE_CLASS2
+		check_new(this,8,GRID_DIST_EVENT,4);
+#endif
+		InitializeCellDecomposer(g_sz);
+
+		ghost = convert_ghost(g,cd_sm);
+
+		// Initialize structures
+		InitializeStructures(g_sz);
+	}
+
+	/*! \brief Constrcuctor
+	 *
+	 * \param g_sz array with the grid size on each dimension
+	 * \param domain domain where this grid live
+	 * \param g Ghost
+	 *
+	 */
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g)
+	:domain(domain),ghost(g),dec(*global_v_cluster),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
+	{
+#ifdef SE_CLASS2
+		check_new(this,8,GRID_DIST_EVENT,4);
+#endif
+		// Increment the reference counter of the decomposition
+		this->dec.incRef();
+
+		InitializeCellDecomposer(g_sz);
+		InitializeDecomposition(g_sz);
+		InitializeStructures(g_sz);
+	}
+
+	/*! \brief Constrcuctor
+	 *
+	 * \param g_sz array with the grid size on each dimension
+	 * \param domain domain where this grid live
+	 * \param g Ghost given in grid units
+	 *
+	 */
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
+	:domain(domain),dec(*global_v_cluster),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
+	{
+#ifdef SE_CLASS2
+		check_new(this,8,GRID_DIST_EVENT,4);
+#endif
+		InitializeCellDecomposer(g_sz);
+
+		ghost = convert_ghost(g,cd_sm);
+
+		InitializeDecomposition(g_sz);
+		// Initialize structures
+		InitializeStructures(g_sz);
+	}
+
+	/*! \brief Constrcuctor
+	 *
+	 * \param g_sz std::vector with the grid size on each dimension
+	 * \param domain domain where this grid live
+	 * \param g Ghost given in grid units
+	 *
+	 */
+	grid_dist_id(const Decomposition & dec, const std::vector<size_t> & g_sz,const Box<dim,St> & domain, const Ghost<dim,long int> & g)
+	:grid_dist_id(dec,*static_cast<const size_t(*) [dim]>(static_cast<const void*>(&g_sz[0])),domain,g)
+	{
+
+	}
+
+	/*! \brief Constrcuctor
+	 *
+	 * \param g_sz std::vector with the grid size on each dimension
+	 * \param domain domain where this grid live
+	 * \param g Ghost given in grid units
+	 *
+	 */
+	grid_dist_id(Decomposition && dec,const std::vector<size_t> & g_sz,const Box<dim,St> & domain, const Ghost<dim,long int> & g)
+	:grid_dist_id(dec, *static_cast<const size_t(*) [dim]>(static_cast<const void*>(&g_sz[0])) , domain, g)
+	{
+	}
+
+	/*! \brief Get an object containing the grid informations
+	 *
+	 * \return an information object about this grid
+	 *
+	 */
+	const grid_sm<dim,T> & getGridInfo() const
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return ginfo;
+	}
+
+	/*! \brief Get an object containing the grid informations without type
+	 *
+	 * \return an information object about this grid
+	 *
+	 */
+	const grid_sm<dim,void> & getGridInfoVoid() const
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return ginfo_v;
 	}
 
 	/*! \brief Get the object that store the information about the decomposition
@@ -431,6 +751,9 @@ public:
 	 */
 	Decomposition & getDecomposition()
 	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
 		return dec;
 	}
 
@@ -441,56 +764,10 @@ public:
 	 */
 	const CellDecomposer_sm<dim,St> & getCellDecomposer()
 	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
 		return cd_sm;
-	}
-
-	/*! \brief Create the grids on memory
-	 *
-	 */
-	void Create()
-	{
-		Box<dim,St> g_rnd_box;
-		for (size_t i = 0 ; i < dim ; i++)	{g_rnd_box.setHigh(i,0.5); g_rnd_box.setLow(i,-0.5);}
-
-		// Get the number of local grid needed
-		size_t n_grid = dec.getNLocalHyperCube();
-
-		// create local grids for each hyper-cube
-		loc_grid = v_cl.allocate<device_grid>(n_grid);
-
-		// Size of the grid on each dimension
-		size_t l_res[dim];
-
-		// Allocate the grids
-		for (size_t i = 0 ; i < n_grid ; i++)
-		{
-			gdb_ext.add();
-
-			// Get the local hyper-cube
-			SpaceBox<dim,St> sp = dec.getLocalHyperCube(i);
-			SpaceBox<dim,St> sp_g = dec.getSubDomainWithGhost(i);
-
-			// Convert from SpaceBox<dim,St> to SpaceBox<dim,long int>
-			SpaceBox<dim,long int> sp_t = cd_sm.convertDomainSpaceIntoGridUnits(sp);
-			SpaceBox<dim,long int> sp_tg = cd_sm.convertDomainSpaceIntoGridUnits(sp_g);
-
-			//! Save the origin of the sub-domain of the local grid
-			gdb_ext.last().origin = sp_tg.getP1();
-
-			// save information about the local grid: domain box seen inside the domain + ghost box (see GDBoxes for a visual meaning)
-			// and where the GDBox start, or the origin of the local grid (+ghost) in global coordinate
-			gdb_ext.last().Dbox = sp_t;
-			gdb_ext.last().Dbox -= sp_tg.getP1();
-
-			// center to zero
-			sp_tg -= sp_tg.getP1();
-
-			// Get the size of the local grid
-			for (size_t i = 0 ; i < dim ; i++) {l_res[i] = (sp_tg.getHigh(i) >= 0)?(sp_tg.getHigh(i)+1):0;}
-
-			// Set the dimensions of the local grid
-			loc_grid.get(i).resize(l_res);
-		}
 	}
 
 	/*! \brief Check that the global grid key is inside the grid domain
@@ -500,6 +777,9 @@ public:
 	 */
 	bool isInside(const grid_key_dx<dim> & gk) const
 	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
 		for (size_t i = 0 ; i < dim ; i++)
 		{
 			if (gk.get(i) < 0 || gk.get(i) >= (long int)g_sz[i])
@@ -509,6 +789,39 @@ public:
 		return true;
 	}
 
+	/*! \brief Get the size of local domain grids
+	 *
+	 * \return The size of the local domain
+	 *
+	 */
+	size_t getLocalDomainSize()
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		size_t total = 0;
+
+		for (size_t i = 0 ; i < gdb_ext.size() ; i++)
+		{
+			total += gdb_ext.get(i).Dbox.getVolumeKey();
+		}
+
+		return total;
+	}
+
+	/*! \brief It return the informations about the local grids
+	 *
+	 * \return The information about the local grids
+	 *
+	 */
+	const openfpm::vector<GBoxes<device_grid::dims>> & getLocalGridsInfo()
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return gdb_ext;
+	}
+
 	/*! \brief It return an iterator that span the full grid domain (each processor span its local domain)
 	 *
 	 * \return the iterator
@@ -516,7 +829,16 @@ public:
 	 */
 	grid_dist_iterator<dim,device_grid,FREE> getDomainIterator()
 	{
-		grid_dist_iterator<dim,device_grid,FREE> it(loc_grid,gdb_ext);
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+
+		grid_key_dx<dim> stop(ginfo_v.getSize());
+		grid_key_dx<dim> one;
+		one.one();
+		stop = stop - one;
+
+		grid_dist_iterator<dim,device_grid,FREE> it(loc_grid,gdb_ext,stop);
 
 		return it;
 	}
@@ -525,9 +847,49 @@ public:
 	 *
 	 *
 	 */
-	grid_dist_iterator<dim,device_grid,FIXED> getDomainGhostIterator()
+	grid_dist_iterator<dim,device_grid,FIXED> getDomainGhostIterator() const
 	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
 		grid_dist_iterator<dim,device_grid,FIXED> it(loc_grid,gdb_ext);
+
+		return it;
+	}
+
+	/*! \brief It return an iterator that span the grid domain only in the specified
+	 * part
+	 *
+	 * The key spanned are the one inside the box spanned by the start point and the end
+	 * point included
+	 *
+	 * \param start point
+	 * \param stop point
+	 *
+	 */
+	grid_dist_iterator_sub<dim,device_grid> getSubDomainIterator(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop) const
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		grid_dist_iterator_sub<dim,device_grid> it(start,stop,loc_grid,gdb_ext);
+
+		return it;
+	}
+
+	/*! \brief It return an iterator that span the grid domain only in the specified
+	 * part
+	 *
+	 * The key spanned are the one inside the box spanned by the start point and the end
+	 * point included
+	 *
+	 * \param start point
+	 * \param stop point
+	 *
+	 */
+	grid_dist_iterator_sub<dim,device_grid> getSubDomainIterator(const long int (& start)[dim], const long int (& stop)[dim]) const
+	{
+		grid_dist_iterator_sub<dim,device_grid> it(grid_key_dx<dim>(start),grid_key_dx<dim>(stop),loc_grid,gdb_ext);
 
 		return it;
 	}
@@ -535,11 +897,10 @@ public:
 	//! Destructor
 	~grid_dist_id()
 	{
+#ifdef SE_CLASS2
+		check_delete(this);
+#endif
 		dec.decRef();
-
-		// if we reach the 0, destroy the object
-		if (dec.ref() == 0)
-			delete &dec;
 	}
 
 	/*! \brief Get the Virtual Cluster machine
@@ -547,10 +908,36 @@ public:
 	 * \return the Virtual cluster machine
 	 *
 	 */
-
 	Vcluster & getVC()
 	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
 		return v_cl;
+	}
+
+	/*! \brief Indicate that this grid is not staggered
+	 *
+	 * \return false
+	 *
+	 */
+	bool is_staggered()
+	{
+		return false;
+	}
+
+	/*! \brief Get the reference of the selected element
+	 *
+	 * \param p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 */
+	template <unsigned int p>inline auto get(const grid_dist_key_dx<dim> & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return loc_grid.get(v1.getSub()).template get<p>(v1.getKey());
 	}
 
 	/*! \brief Get the reference of the selected element
@@ -561,6 +948,9 @@ public:
 	 */
 	template <unsigned int p>inline auto get(const grid_dist_key_dx<dim> & v1) -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
 		return loc_grid.get(v1.getSub()).template get<p>(v1.getKey());
 	}
 
@@ -697,6 +1087,10 @@ public:
 	 */
 	template<int... prp> void ghost_get()
 	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+
 		// Sending property object
 		typedef object<typename object_creator<typename T::type,prp...>::type> prp_object;
 
@@ -856,6 +1250,16 @@ public:
 		}
 	}
 
+	/*! \brief Get the spacing on each dimension
+	 *
+	 * \param get the spacing
+	 *
+	 */
+	Point<dim,St> getSpacing()
+	{
+		return cd_sm.getCellBox().getP2();
+	}
+
 	/*! \brief Convert a g_dist_key_dx into a global key
 	 *
 	 * \see grid_dist_key_dx
@@ -866,6 +1270,9 @@ public:
 	 */
 	inline grid_key_dx<dim> getGKey(const grid_dist_key_dx<dim> & k)
 	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
 		// Get the sub-domain id
 		size_t sub_id = k.getSub();
 
@@ -887,41 +1294,59 @@ public:
 	 */
 	bool write(std::string output)
 	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+
 		// Create a writer and write
 		VTKWriter<boost::mpl::pair<device_grid,float>,VECTOR_GRIDS> vtk_g;
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{
-			Point<dim,St> offset = Point<dim,St>(gdb_ext.get(i).origin) * cd_sm.getCellBox().getP2();
+			Point<dim,St> offset = getOffset(i);
 			vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).Dbox);
 		}
 		vtk_g.write(output + "_grid_" + std::to_string(v_cl.getProcessUnitID()) + ".vtk");
 
-		// Write internal ghost box
-		VTKWriter<openfpm::vector<::Box<dim,size_t>>,VECTOR_BOX> vtk_box1;
-
-		openfpm::vector< openfpm::vector< ::Box<dim,size_t> > > boxes;
-
-		//! Carefully we have to ensure that boxes does not reallocate inside the for loop
-		boxes.reserve(ig_box.size());
-
-		//! Write internal ghost in grid units (Color encoded)
-		for (size_t p = 0 ; p < ig_box.size() ; p++)
-		{
-			boxes.add();
-
-			// Create a vector of boxes
-			for (size_t j = 0 ; j < ig_box.get(p).bid.size() ; j++)
-			{
-				boxes.last().add(ig_box.get(p).bid.get(j).box);
-			}
-
-			vtk_box1.add(boxes.last());
-		}
-		vtk_box1.write(output + std::string("internal_ghost_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
-
-		vtk_g.write("vtk_grids.vtk");
+		write_ie_boxes(output);
 
 		return true;
+	}
+
+	/*! \brief Get the i sub-domain grid
+	 *
+	 * \param i sub-domain
+	 *
+	 * \return local grid
+	 *
+	 */
+	device_grid & get_loc_grid(size_t i)
+	{
+		return loc_grid.get(i);
+	}
+
+	/*! \brief Return the number of local grid
+	 *
+	 * \return the number of local grid
+	 *
+	 */
+	size_t getN_loc_grid()
+	{
+		return loc_grid.size();
+	}
+
+
+	/* \brief It return the id of structure in the allocation list
+	 *
+	 * \see print_alloc and SE_CLASS2
+	 *
+	 */
+	long int who()
+	{
+#ifdef SE_CLASS2
+		return check_whoami(this,8);
+#else
+			return -1;
+#endif
 	}
 };
 

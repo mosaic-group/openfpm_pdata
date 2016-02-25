@@ -27,7 +27,7 @@ function discover_package_manager() {
       return
     fi
     command -v port >/dev/null
-    if [ command -v port >/dev/null 2>&1 ]; then
+    if [ $? -eq 0 ]; then
       discover_package_manager_ret="sudo port"
       return
     else
@@ -56,5 +56,4 @@ function discover_package_manager() {
   fi
 }
 
-echo "$discover_package_manager_ret"
-
+echo "$discover_package_manager_ret" 

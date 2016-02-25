@@ -34,13 +34,14 @@ BOOST_AUTO_TEST_CASE( Metis_test_use)
 	// Box
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 
-	// Graph to decompose
+	// Boundary conditions, non periodic
+	size_t bc[] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 
-	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,float,2,0,1,2>(sz,box);
+	// Graph to decompose
+	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,float,2,0,1,2>(sz,box,bc);
 
 	// Processor graph
-
-	Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.construct<NO_EDGE,float,2>(sz,box);
+	Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.construct<NO_EDGE,float,2>(sz,box,bc);
 
 	// Convert the graph to metis
 
@@ -51,6 +52,7 @@ BOOST_AUTO_TEST_CASE( Metis_test_use)
 	met.decompose<nm_part_v::id>(gp);
 	met.decompose<nm_v::id>();
 }
+
 
 BOOST_AUTO_TEST_SUITE_END()
 

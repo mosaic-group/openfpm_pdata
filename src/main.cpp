@@ -20,6 +20,7 @@
 #include "util.hpp"
 
 #include "unit_test_init_cleanup.hpp"
+#include "Grid/staggered_grid_dist_unit_test.hpp"
 #include "Decomposition/CartDecomposition_unit_test.hpp"
 #include "Decomposition/ORB_unit_test.hpp"
 #include "Graph/CartesianGraphFactory_unit_test.hpp"
@@ -31,3 +32,4 @@
 #include "Decomposition/DLB_unit_test.hpp"
 #include "Graph/dist_map_graph_unit_test.hpp"
 #include "Graph/DistGraphFactory.hpp"
+//#include "Decomposition/nn_processor_unit_test.hpp"

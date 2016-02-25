@@ -4,6 +4,7 @@ source script/help
 source script/discover_os
 source script/show_solutions
 source script/pre_req
+source script/remove_old
 
 ##
 
@@ -39,6 +40,14 @@ done
 
 discover_os
 
+## Remove old dependencies and installations
+
+if [ x"$i_dir" == x" " ]; then
+ i_dir="$HOME"
+fi
+
+remove_old $i_dir
+
 ## Check and try to install the prerequisites
 
 pre_req
@@ -63,7 +72,6 @@ cd openfpm_data
 if [ ! -d src/config  ]; then
   mkdir src/config
 fi
-git checkout develop
 cd ..
 
 cd openfpm_devices
@@ -79,6 +87,12 @@ fi
 cd ..
 
 cd openfpm_io
+if [ ! -d src/config  ]; then
+  mkdir src/config
+fi
+cd ..
+
+cd openfpm_numerics
 if [ ! -d src/config  ]; then
   mkdir src/config
 fi
@@ -100,14 +114,11 @@ fi
 
 ## check for options
 
-if [ x"$i_dir" == x" " ]; then
- i_dir="$HOME"
-fi
-
 echo -e "\033[1;34;5mDEPENCENCIES INSTALLATION DIR      \033[0m"
 echo -e "Every required dependencies if needed will be installed into: \033[1;34;5m$i_dir\033[0m"
 echo -e "if you want to install somewhere else do ./install -i /somewhere/else"
 if [ $sq -eq 0 ]; then
+  unset commands
   commands[0]="Continue"
   possible_solutions "${commands[@]}"
 fi
@@ -123,38 +134,18 @@ echo -e "Installing requirements into: $i_dir "
 MPI_installed=0
 METIS_installed=0
 BOOST_installed=0
+LAPACK_installed=0
+SUITESPARSE_installed=0
+EIGEN_installed=0
+blas_options=""
 conf_err=1
 
-## MPI
-
-command -v mpic++ >/dev/null 2>&1
-if [ $? -eq 0 ]; then
-  options="CXX=mpic++"
-fi
-
-## if a new compiler has been installed reinstall all the dependencies
-
-if [ x"$compiler_opt" != x"" ]; then
-  ./script/install_MPI.sh $i_dir $compiler_opt
-  export PATH="$PATH:$i_dir/MPI/bin"
-  configure_options="$configure_options CXX=mpic++ "
-  MPI_installed=1
-  ./script/install_BOOST.sh $i_dir $compiler_opt
-  configure_options=" $configure_options --with-boost=$i_dir/BOOST "
-  BOOST_installed=1
-  ./script/install_METIS.sh $i_dir $compiler_gcc $compiler_gpp
-  configure_options=" $configure_options --with-metis=$i_dir/METIS "
-  METIS_installed=1
-fi
-
-echo "./configure $options $configure_options" 
-
 if [ $install_req -eq 0 ]; then
-    ./configure $options $configure_options
+    ./configure $options $configure_options "$blas_options"
 else
     while [ $conf_err -ne 0 ]
     do
-        ./configure $options $configure_options
+        ./configure $options $configure_options "$blas_options"
         conf_err=$?
 
 	echo "Configure script terminated with $conf_err"
@@ -180,7 +171,7 @@ else
             METIS_installed=1
             configure_options=" $configure_options --with-metis=$i_dir/METIS "
         elif [ $conf_err -eq 202 ]; then
-            echo "Boost not found try to install"
+            echo "Boost not found try to install in $i_dir with $compiler_opt"
             if [ $BOOST_installed -eq 1  ]; then
                 echo "Error the installation of Boost failed"
                 exit 1
@@ -188,6 +179,40 @@ else
             ./script/install_BOOST.sh $i_dir $compiler_opt
             BOOST_installed=1
             configure_options=" $configure_options --with-boost=$i_dir/BOOST "
+        elif [ $conf_err -eq 204 ]; then
+            echo "Lapack not found try to install"
+            if [ $LAPACK_installed -eq 1  ]; then
+                echo "Error the installation of LAPACK failed"
+                exit 1
+            fi
+            ./script/install_OPENBLAS.sh $i_dir $compiler_opt
+            LAPACK_installed=1
+            blas_options="--with-blas=-L$i_dir/OPENBLAS/lib/ -lopenblas"
+        elif [ $conf_err -eq 205 ]; then
+            ## First we install openblas, we ignore default lapack
+            ## this SuiteSparse is programmed to use libopenblas
+            ./script/install_OPENBLAS.sh $i_dir $compiler_opt
+            LAPACK_installed=1
+            blas_options="--with-blas=-L$i_dir/OPENBLAS/lib/ -lopenblas"
+        
+            ## Then suite sparse
+            echo "SuiteSparse not found try to install"
+            if [ $SUITESPARSE_installed -eq 1  ]; then
+                echo "Error the installation of SuiteSparse failed"
+                exit 1
+            fi
+            ./script/install_SUITESPARSE.sh $i_dir $compiler_opt
+            configure_options=" $configure_options --with-suitesparse=$i_dir/SUITESPARSE "
+            SUITESPARSE_installed=1
+        elif [ $conf_err -eq 206 ]; then
+            echo "Eigen not found try to install"
+            if [ $EIGEN_installed -eq 1  ]; then
+                echo "Error the installation of Eigen failed"
+                exit 1
+            fi
+            ./script/install_EIGEN.sh $i_dir $compiler_opt
+            configure_options=" $configure_options --with-eigen=$i_dir/EIGEN "
+            EIGEN_installed=1
         elif [ $conf_err -ne 0 ]; then
             echo "I do not know how to recover from this error"
             exit 1
@@ -197,9 +222,10 @@ fi
 
 ### Create example.mk
 install_base=$(cat install_dir)
-echo "INCLUDE_PATH=-I. -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/BOOST/include" > example.mk
-echo "LIBS_PATH=-L$install_base/openfpm_devices/lib -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib -L$i_dir/BOOST/lib " >> example.mk
-echo "LIBS=-lvcluster -lofpmmemory -lmetis -lboost_iostreams" >> example.mk
+echo "INCLUDE_PATH=-I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/BOOST/include" > example.mk
+echo "LIBS_PATH= -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib -L$i_dir/BOOST/lib " >> example.mk
+echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lmetis -lboost_iostreams" >> example.mk
+echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lmetis -lboost_iostreams" >> example.mk
 cp example.mk src/example.mk
 cp example.mk example/example.mk
 
@@ -220,7 +246,7 @@ fi
 
 echo "Command used to configure"
 echo ""
-echo -e "\033[1m ./configure $options $configure_options \033[0m "
+echo -e "\033[1m ./configure $options $configure_options "$blas_options" \033[0m "
 echo ""
 if [ $MPI_installed -eq 1 ]; then
   echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
@@ -228,7 +254,7 @@ if [ $MPI_installed -eq 1 ]; then
   echo -e "  MPI has been installed into: \033[1m $i_dir/MPI \033[0m"
   echo ""
   if [ x"$platform" = x"linux" ]; then
-    echo -e "\033[1m  export PATH=\"\$PATH:$i_dir/MPI/bin \" \033[0m "
+    echo -e "\033[1m  export PATH=\"\$PATH:$i_dir/MPI/bin\" \033[0m "
     echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:$i_dir/MPI/lib\" \033[0m "
   else
     echo -e "\033[1m  export PATH=\"\$PATH:$i_dir/MPI/bin \" \033[0m "
@@ -259,6 +285,30 @@ if [ $BOOST_installed -eq 1 ]; then
     echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:$i_dir/BOOST/lib\" \033[0m "
   else
     echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:$i_dir/BOOST/lib\" \033[0m"
+  fi
+fi
+if [ $LAPACK_installed -eq 1 ]; then
+  echo ""
+  echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
+  echo -e "\033[1;34;5m --------------- OPENBLAS -------------- \033[0m"
+  echo -e "  OPENBLAS has been installed into: \033[1m $i_dir/OPENBLAS \033[0m"
+  echo ""
+  if [ x"$platform" = x"linux" ]; then
+    echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:$i_dir/OPENBLAS/lib\" \033[0m "
+  else
+    echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:$i_dir/OPENBLAS/lib\" \033[0m"
+  fi
+fi
+if [ $SUITESPARSE_installed -eq 1 ]; then
+  echo ""
+  echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
+  echo -e "\033[1;34;5m ------------- SUITESPARSE ------------- \033[0m"
+  echo -e "  SUITESPARSE has been installed into: \033[1m $i_dir/SUITESPARSE \033[0m"
+  echo ""
+  if [ x"$platform" = x"linux" ]; then
+    echo -e "\033[1m  export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:$i_dir/SUITESPARSE/lib\" \033[0m "
+  else
+    echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:$i_dir/SUITESPARSE/lib\" \033[0m"
   fi
 fi
 echo ""
