@@ -10,7 +10,7 @@
 
 #include <iostream>
 #include "parmetis.h"
-#include "VTKWriter.hpp"
+#include "VTKWriter/VTKWriter.hpp"
 #include "VCluster.hpp"
 
 /*! \brief Metis graph structure
@@ -126,7 +126,7 @@ class Parmetis
 
 		Mg.nvtxs[0] = sub_g.getNVertex();
 		Mg.part = new idx_t[sub_g.getNVertex()];
-		for (int i = 0; i < sub_g.getNVertex(); i++)
+		for (size_t i = 0; i < (size_t)sub_g.getNVertex(); i++)
 			Mg.part[i] = p_id;
 
 		// create xadj, adjlist, vwgt, adjwgt and vsize
@@ -421,7 +421,7 @@ public:
 		//! is an output vector containing the partition for each vertex
 
 		Mg.part = new idx_t[sub_g.getNVertex()];
-		for (int i = 0; i < sub_g.getNVertex(); i++)
+		for (size_t i = 0; i < sub_g.getNVertex(); i++)
 			Mg.part[i] = p_id;
 
 		//! adaptiveRepart itr value
@@ -433,7 +433,7 @@ public:
 		Mg.tpwgts = new real_t[Mg.nparts[0]];
 		Mg.ubvec = new real_t[Mg.nparts[0]];
 
-		for (int s = 0; s < Mg.nparts[0]; s++)
+		for (size_t s = 0; s < (size_t)Mg.nparts[0]; s++)
 		{
 			Mg.tpwgts[s] = 1.0 / Mg.nparts[0];
 			Mg.ubvec[s] = 1.05;

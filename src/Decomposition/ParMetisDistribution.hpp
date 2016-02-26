@@ -11,7 +11,7 @@
 #ifndef SRC_DECOMPOSITION_PARMETISDISTRIBUTION_HPP_
 #define SRC_DECOMPOSITION_PARMETISDISTRIBUTION_HPP_
 
-template<unsigned int dim, typename T, template<unsigned int, typename > class Domain = Box>
+template<unsigned int dim, typename T>
 class ParMetisDistribution
 {
 	//! Vcluster
@@ -21,7 +21,7 @@ class ParMetisDistribution
 	grid_sm<dim, void> gr;
 
 	//! rectangular domain to decompose
-	Domain<dim, T> domain;
+	Box<dim, T> domain;
 
 	//! Global sub-sub-domain graph
 	Graph_CSR<nm_v, nm_e> gp;
@@ -126,9 +126,7 @@ class ParMetisDistribution
 				// Create new n_vtxdist (1) (just count processors vertices)
 				n_vtxdist.get(partitions.get(i).get(k) + 1)++;
 
-				if
-(				gp.vertexByMapId(l).template get<nm_v::proc_id>()
-				!= partitions.get(i).get(k))
+				if (gp.vertexByMapId(l).template get<nm_v::proc_id>() != (size_t)partitions.get(i).get(k))
 				{
 					moved++;
 				}
@@ -178,15 +176,15 @@ class ParMetisDistribution
 
 		// Renumbering subgraph
 		sub_g.resetLocalToGlobalMap();
-		for (size_t j = vtxdist.get(p_id), i = 0; j < vtxdist.get(p_id + 1); j++, i++)
+		for (size_t j = (size_t)vtxdist.get(p_id), i = 0; j < (size_t)vtxdist.get(p_id + 1); j++, i++)
 		{
 			sub_g.setMapId<nm_v::id>(j, sub_g.vertex(i).template get<nm_v::global_id>(), i);
 		}
 
 		// Renumbering main graph
-		for (size_t p = 0; p < Np; p++)
+		for (size_t p = 0; p < (size_t)Np; p++)
 		{
-			for (size_t j = vtxdist.get(p), i = 0; j < vtxdist.get(p + 1); j++, i++)
+			for (size_t j = (size_t)vtxdist.get(p), i = 0; j < (size_t)vtxdist.get(p + 1); j++, i++)
 			{
 				gp.setMapId<nm_v::id>(j, v_per_proc.get(p).get(i), v_per_proc.get(p).get(i));
 			}
@@ -234,15 +232,20 @@ public:
 	 * @param grid
 	 * @param dom
 	 */
-	void init(grid_sm<dim, void> & grid, Domain<dim, T> dom)
+	void init(grid_sm<dim, void> & grid, Box<dim, T> dom)
 	{
+		size_t bc[dim];
+
+		for (size_t i = 0 ; i < dim ; i++)
+			bc[i] = NON_PERIODIC;
+
 		// Set grid and domain
 		gr = grid;
 		domain = dom;
 
 		// Create a cartesian grid graph
 		CartesianGraphFactory<dim, Graph_CSR<nm_v, nm_e>> g_factory_part;
-		gp = g_factory_part.template construct<NO_EDGE, nm_v::id, T, dim - 1, 0, 1, 2>(gr.getSize(), domain);
+		gp = g_factory_part.template construct<NO_EDGE, nm_v::id, T, dim - 1, 0, 1, 2>(gr.getSize(), domain, bc);
 		gp.initLocalToGlobalMap();
 
 		// Create sub graph
@@ -346,7 +349,7 @@ public:
 		std::copy(partition, partition + sub_g.getNVertex(), &partitions.get(p_id).get(0));
 
 		// Reset data structure to keep trace of new vertices distribution in processors (needed to update main graph)
-		for (int i = 0; i < Np; ++i)
+		for (size_t i = 0; i < Np; ++i)
 		{
 			v_per_proc.get(i).clear();
 		}
@@ -587,10 +590,40 @@ public:
 	{
 		if (v_cl.getProcessUnitID() == 0)
 		{
-			VTKWriter<Graph_CSR<nm_v, nm_e>, GRAPH> gv2(gp);
+			VTKWriter<Graph_CSR<nm_v, nm_e>, VTK_GRAPH> gv2(gp);
 			gv2.write("test_graph_" + std::to_string(id) + ".vtk");
 		}
 
+	}
+
+	const ParMetisDistribution<dim,T> & operator=(const ParMetisDistribution<dim,T> & dist)
+	{
+		v_cl = dist.v_cl;
+		gr = dist.gr;
+		domain = dist.domain;
+		sub_g = dist.sub_g;
+		gp = dist.gp;
+		vtxdist = dist.vtxdist;
+		partitions = dist.partitions;
+		v_per_proc = dist.v_per_proc;
+		verticesGotWeights = dist.verticesGotWeights;
+
+		return *this;
+	}
+
+	const ParMetisDistribution<dim,T> & operator=(const ParMetisDistribution<dim,T> && dist)
+	{
+		v_cl = dist.v_cl;
+		gr = dist.gr;
+		domain = dist.domain;
+		sub_g.swap(dist.sub_g);
+		gp.swap(dist.gp);
+		vtxdist.swap(dist.vtxdist);
+		partitions.swap(dist.partitions);
+		v_per_proc.swap(dist.v_per_proc);
+		verticesGotWeights = dist.verticesGotWeights;
+
+		return *this;
 	}
 };
 

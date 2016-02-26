@@ -258,7 +258,7 @@ public:
 		//! Is an output vector containing the partition for each vertex
 		Mg.part = new idx_t[g.getNVertex()];
 
-		for (int i = 0; i < g.getNVertex(); i++)
+		for (size_t i = 0; i < g.getNVertex(); i++)
 			Mg.part[i] = 0;
 	}
 

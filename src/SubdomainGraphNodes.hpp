@@ -126,9 +126,6 @@ struct nm_v
 
 };
 
-const std::string nm_v::attributes::name[] = { "x", "migration", "computation", "global_id", "id", "sub_id", "proc_id", "fake_v" };
-
-
 /*! \brief sub-domain edge graph node
  *
  */
@@ -178,8 +175,6 @@ struct nm_e
 	}
 };
 
-const std::string nm_e::attributes::name[] = { "communication", "srcgid", "dstgid" };
-
 /*! \brief Reduced sub-domain vertex graph node
  *
  * It contain only the processor id for each node
@@ -225,9 +220,6 @@ struct nm_part_v
 
 };
 
-const std::string nm_part_v::attributes::name[] = { "id", "sub_id" };
-
-
 /*! \brief Reduced edge graph node
  *
  * It contain only the communication between nodes
@@ -253,7 +245,6 @@ struct nm_part_e
 	};
 };
 
-const std::string nm_part_e::attributes::name[] = { "id" };
 
 
 #endif

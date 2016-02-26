@@ -16,45 +16,37 @@ void setComputationCosts(CartDecomposition<2, float> &dec, size_t n_v, Point<2, 
 	// Position structure for the single vertex
 	float pos[2];
 
-	for (int i = 0; i < n_v; i++)
+	for (size_t i = 0; i < n_v; i++)
 	{
 		dec.getSubSubDomainPosition(i, pos);
 
 		eq = pow((pos[0] - center.get(0)), 2) + pow((pos[1] - center.get(1)), 2);
 
 		if (eq <= radius2)
-		{
 			dec.setSubSubDomainComputationCost(i, weight_h);
-		}
 		else
-		{
 			dec.setSubSubDomainComputationCost(i, weight_l);
-		}
 	}
 }
 
 void setComputationCosts3D(CartDecomposition<3, float> &dec, size_t n_v, Point<3, float> center, float radius, size_t weight_h, size_t weight_l)
 {
-	float radius2 = pow(radius, 2);
+	float radius2 = radius * radius;
 	float eq;
 
 	// Position structure for the single vertex
 	float pos[3];
 
-	for (int i = 0; i < n_v; i++)
+	for (size_t i = 0; i < n_v; i++)
 	{
 		dec.getSubSubDomainPosition(i, pos);
 
 		eq = pow((pos[0] - center.get(0)), 2) + pow((pos[1] - center.get(1)), 2) + pow((pos[2] - center.get(2)), 2);
 
 		if (eq <= radius2)
-		{
 			dec.setSubSubDomainComputationCost(i, weight_h);
-		}
 		else
-		{
 			dec.setSubSubDomainComputationCost(i, weight_l);
-		}
 	}
 }
 
@@ -64,6 +56,9 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D )
 
 	// Vcluster
 	Vcluster & vcl = *global_v_cluster;
+
+	// non-periodic boundary condition
+	size_t bc[2] = {NON_PERIODIC,NON_PERIODIC};
 
 	// Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
@@ -93,7 +88,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D )
 	Ghost<2, float> g(0.01);
 
 	// Decompose
-	dec.setParameters(div, box, g);
+	dec.setParameters(div, box, bc, g);
 
 	// Set unbalance threshold
 	dlb.setHeurisitc(DLB::Heuristic::UNBALANCE_THRLD);
@@ -185,6 +180,9 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D_sar)
 	// Vcluster
 	Vcluster & vcl = *global_v_cluster;
 
+	// non-periodic boundary condition
+	size_t bc[2] = {NON_PERIODIC,NON_PERIODIC};
+
 	// Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
@@ -213,7 +211,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D_sar)
 	Ghost<2, float> g(0.01);
 
 	// Decompose
-	dec.setParameters(div, box, g);
+	dec.setParameters(div, box, bc, g);
 
 	// Set type of heuristic
 	dlb.setHeurisitc(DLB::Heuristic::SAR_HEURISTIC);
@@ -321,6 +319,9 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_3D)
 	// Vcluster
 	Vcluster & vcl = *global_v_cluster;
 
+	// non-periodic boundary condition
+	size_t bc[3] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+
 	// Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
@@ -349,7 +350,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_3D)
 	Ghost<3, float> g(0.01);
 
 	// Decompose
-	dec.setParameters(div, box, g);
+	dec.setParameters(div, box, bc, g);
 
 	// Set unbalance threshold
 	dlb.setHeurisitc(DLB::Heuristic::UNBALANCE_THRLD);
@@ -376,7 +377,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_3D)
 
 	float stime = 0.0, etime = 10.0, tstep = 0.1;
 
-	for(float t = stime, i = 1, t_sim = 1; t < etime; t = t + tstep, i++)
+	for(float t = stime, i = 1; t < etime; t = t + tstep, i++)
 	{
 
 		if(t < etime/2)

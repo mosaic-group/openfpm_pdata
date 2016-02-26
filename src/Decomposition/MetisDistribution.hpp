@@ -204,7 +204,7 @@ public:
 	 */
 	void printCurrentDecomposition(int id)
 	{
-		VTKWriter<Graph_CSR<nm_v, nm_e>, GRAPH> gv2(gp);
+		VTKWriter<Graph_CSR<nm_v, nm_e>, VTK_GRAPH> gv2(gp);
 		gv2.write("test_graph_" + std::to_string(id) + ".vtk");
 
 	}

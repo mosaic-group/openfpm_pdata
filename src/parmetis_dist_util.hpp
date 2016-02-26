@@ -10,7 +10,7 @@
 
 #include <iostream>
 #include "parmetis.h"
-#include "VTKWriter.hpp"
+#include "VTKWriter/VTKWriter.hpp"
 #include "VCluster.hpp"
 
 /*! \brief Metis graph structure

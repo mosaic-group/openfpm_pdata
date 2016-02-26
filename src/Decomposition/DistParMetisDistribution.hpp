@@ -12,7 +12,7 @@
 #ifndef SRC_DECOMPOSITION_DISTPARMETISDISTRIBUTION_HPP_
 #define SRC_DECOMPOSITION_DISTPARMETISDISTRIBUTION_HPP_
 
-template<unsigned int dim, typename T, template<unsigned int, typename > class Domain = Box>
+template<unsigned int dim, typename T>
 class DistParMetisDistribution
 {
 	//! Vcluster
@@ -22,7 +22,7 @@ class DistParMetisDistribution
 	grid_sm<dim, void> gr;
 
 	//! rectangular domain to decompose
-	Domain<dim, T> domain;
+	Box<dim, T> domain;
 
 	//! Processor sub-sub-domain graph
 	DistGraph_CSR<nm_v, nm_e> sub_g;
@@ -83,7 +83,7 @@ public:
 	 * /param grid Grid
 	 * /param dom Domain
 	 */
-	void init(grid_sm<dim, void> & grid, Domain<dim, T> dom)
+	void init(grid_sm<dim, void> & grid, Box<dim, T> dom)
 	{
 		//! Set grid and domain
 		gr = grid;
@@ -91,7 +91,7 @@ public:
 
 		//! Create sub graph
 		DistGraphFactory<dim, DistGraph_CSR<nm_v, nm_e>> dist_g_factory;
-		sub_g = dist_g_factory.template construct<NO_EDGE, nm_v::id, nm_v::global_id, nm_e::srcgid, nm_e::dstgid, T, dim - 1, 0, 1, 2>(gr.getSize(), domain);
+		sub_g = dist_g_factory.template construct<NO_EDGE, T, dim - 1, 0, 1, 2>(gr.getSize(), domain);
 		sub_g.getDecompositionVector(vtxdist);
 		for(size_t i=0; i< sub_g.getNVertex(); i++)
 			sub_g.vertex(i).template get<nm_v::x>()[2] = 0;
@@ -122,7 +122,7 @@ public:
 
 		for (size_t i = 0; i < sub_g.getNVertex(); ++i)
 		{
-			if (partition[i] != v_cl.getProcessUnitID())
+			if ((size_t)partition[i] != v_cl.getProcessUnitID())
 				sub_g.q_move(i, partition[i]);
 		}
 		sub_g.redistribute();
@@ -363,6 +363,34 @@ public:
 
 			sub_g.deleteGhosts();
 		}
+	}
+
+	const DistParMetisDistribution<dim,T> & operator=(const DistParMetisDistribution<dim,T> & dist)
+	{
+		v_cl = dist.v_cl;
+		gr = dist.gr;
+		domain = dist.domain;
+		sub_g = dist.sub_g;
+		vtxdist = dist.vtxdist;
+		partitions = dist.partitions;
+		v_per_proc = dist.v_per_proc;
+		verticesGotWeights = dist.verticesGotWeights;
+
+		return *this;
+	}
+
+	const DistParMetisDistribution<dim,T> & operator=(const DistParMetisDistribution<dim,T> && dist)
+	{
+		v_cl = dist.v_cl;
+		gr = dist.gr;
+		domain = dist.domain;
+		sub_g.swap(dist.sub_g);
+		vtxdist.swap(dist.vtxdist);
+		partitions.swap(dist.partitions);
+		v_per_proc.swap(dist.v_per_proc);
+		verticesGotWeights = dist.verticesGotWeights;
+
+		return *this;
 	}
 };
 

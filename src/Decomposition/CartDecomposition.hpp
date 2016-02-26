@@ -29,7 +29,7 @@
 #include "ie_loc_ghost.hpp"
 #include "ie_ghost.hpp"
 #include "nn_processor.hpp"
-#include "GraphMLWriter.hpp"
+#include "GraphMLWriter/GraphMLWriter.hpp"
 #include "ParMetisDistribution.hpp"
 #include "DistParMetisDistribution.hpp"
 #include "MetisDistribution.hpp"
@@ -79,7 +79,7 @@
  *
  */
 
-template<unsigned int dim, typename T, typename Memory = HeapMemory, typename Distribution = DistParMetisDistribution<dim, T>>
+template<unsigned int dim, typename T, typename Memory = HeapMemory, typename Distribution = ParMetisDistribution<dim, T>>
 class CartDecomposition: public ie_loc_ghost<dim, T>, public nn_prcs<dim, T>, public ie_ghost<dim, T>
 {
 
@@ -321,7 +321,7 @@ private:
 		float gh_v = (gh_s * b_s);
 
 		// multiply for sub-sub-domain side for each domain
-		for (int i = 2; i < dim; i++)
+		for (size_t i = 2; i < dim; i++)
 			gh_v *= b_s;
 
 		size_t norm = (size_t) (1.0 / gh_v);
@@ -531,7 +531,7 @@ public:
 	 *
 	 */
 	CartDecomposition(const CartDecomposition<dim,T,Memory> & cart)
-	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),ref_cnt(0)
+	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),dist(v_cl),ref_cnt(0)
 	{
 		this->operator=(cart);
 	}
@@ -542,7 +542,7 @@ public:
 	 *
 	 */
 	CartDecomposition(CartDecomposition<dim,T,Memory> && cart)
-	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),ref_cnt(0)
+	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),dist(v_cl),ref_cnt(0)
 	{
 		this->operator=(cart);
 	}
@@ -824,6 +824,8 @@ public:
 		cart.ss_box = ss_box;
 		cart.ghost = g;
 
+		cart.dist = dist;
+
 		for (size_t i = 0 ; i < dim ; i++)
 			cart.bc[i] = bc[i];
 
@@ -900,6 +902,7 @@ public:
 		cart.v_cl = v_cl;
 
 		cart.ghost = g;
+		cart.dist = dist;
 
 		for (size_t i = 0 ; i < dim ; i++)
 			cart.bc[i] = bc[i];
@@ -1159,7 +1162,7 @@ public:
 
 		dist.decompose();
 
-		createSubdomains(v_cl);
+		createSubdomains(v_cl,bc);
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call

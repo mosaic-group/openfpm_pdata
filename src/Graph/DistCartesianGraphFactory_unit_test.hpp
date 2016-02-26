@@ -3,11 +3,11 @@
 
 #include "Graph/DistCartesianGraphFactory.hpp"
 #include "Graph/map_graph.hpp"
-#include "Packer.hpp"
-#include "Unpacker.hpp"
+#include "Packer_Unpacker/Packer.hpp"
+#include "Packer_Unpacker/Unpacker.hpp"
 #include "SubdomainGraphNodes.hpp"
 
-#define GS_SIZE 4
+#define DGS_SIZE 4
 
 /*!
  *
@@ -89,6 +89,8 @@ BOOST_AUTO_TEST_SUITE (DistCartesianGraphFactory_test)
 
 BOOST_AUTO_TEST_CASE( DistCartesianGraphFactory_3D_use)
 {
+	// Boundary conditions, non periodic
+	size_t bc[] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 
 	// Vcluster
 	Vcluster & vcl = *global_v_cluster;
@@ -97,7 +99,7 @@ BOOST_AUTO_TEST_CASE( DistCartesianGraphFactory_3D_use)
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
 	// Cartesian grid
-	size_t sz[3] = { GS_SIZE, GS_SIZE, GS_SIZE };
+	size_t sz[3] = { DGS_SIZE, DGS_SIZE, DGS_SIZE };
 
 	// Box
 	Box<3, float> box( { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
@@ -106,7 +108,7 @@ BOOST_AUTO_TEST_CASE( DistCartesianGraphFactory_3D_use)
 	CartesianGraphFactory<3,Graph_CSR<Point_test<float>,Point_test<float>>> g_factory;
 
 	// Standard graph
-	Graph_CSR<Point_test<float>,Point_test<float>> g = g_factory.template construct<NO_EDGE, node::id, float, 3 - 1, 0, 1, 2>(sz, box);
+	Graph_CSR<Point_test<float>,Point_test<float>> g = g_factory.template construct<NO_EDGE, node::id, float, 3 - 1, 0, 1, 2>(sz, box, bc);
 
 	// Distribution vector
 	openfpm::vector<idx_t> vtxdist(vcl.getProcessingUnits() + 1);
@@ -132,7 +134,7 @@ BOOST_AUTO_TEST_CASE( DistCartesianGraphFactory_3D_use)
 
 	BOOST_REQUIRE_EQUAL(count, gd.getNVertex());
 
-	for(size_t i = vtxdist.get(vcl.getProcessUnitID()), local_i = 0; i < vtxdist.get(vcl.getProcessUnitID()+1); i++, local_i++)
+	for(size_t i = (size_t)vtxdist.get(vcl.getProcessUnitID()), local_i = 0; i < (size_t)vtxdist.get(vcl.getProcessUnitID()+1); i++, local_i++)
 	{
 		BOOST_REQUIRE_EQUAL(gd.vertex(local_i).template get<node::id>(), g.vertex(i).template get<node::id>());
 		BOOST_REQUIRE_EQUAL(gd.getNChilds(local_i), g.getNChilds(i));
@@ -148,6 +150,8 @@ BOOST_AUTO_TEST_CASE( DistCartesianGraphFactory_3D_use)
 
 BOOST_AUTO_TEST_CASE( DistCartesianGraphFactory_2D_use)
 {
+	// Boundary conditions, non periodic
+	size_t bc[] = {NON_PERIODIC,NON_PERIODIC};
 
 	// Vcluster
 	Vcluster & vcl = *global_v_cluster;
@@ -159,7 +163,7 @@ BOOST_AUTO_TEST_CASE( DistCartesianGraphFactory_2D_use)
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
 	// Cartesian grid
-	size_t sz[2] = { GS_SIZE, GS_SIZE };
+	size_t sz[2] = { DGS_SIZE, DGS_SIZE };
 
 	// Box
 	Box<2, float> box( { 0.0, 0.0}, { 1.0, 1.0} );
@@ -168,7 +172,7 @@ BOOST_AUTO_TEST_CASE( DistCartesianGraphFactory_2D_use)
 	CartesianGraphFactory<2,Graph_CSR<node, node>> g_factory;
 
 	// Standard graph
-	Graph_CSR<node, node> g = g_factory.template construct<NO_EDGE, node::id, float, 2 - 1, 0, 1, 2>(sz, box);
+	Graph_CSR<node, node> g = g_factory.template construct<NO_EDGE, node::id, float, 2 - 1, 0, 1, 2>(sz, box, bc);
 
 	// Distribution vector
 	openfpm::vector<idx_t> vtxdist(vcl.getProcessingUnits() + 1);
@@ -194,7 +198,7 @@ BOOST_AUTO_TEST_CASE( DistCartesianGraphFactory_2D_use)
 
 	BOOST_REQUIRE_EQUAL(count, gd.getNVertex());
 
-	for(size_t i = vtxdist.get(vcl.getProcessUnitID()), local_i = 0; i < vtxdist.get(vcl.getProcessUnitID()+1); i++, local_i++)
+	for(size_t i = (size_t)vtxdist.get(vcl.getProcessUnitID()), local_i = 0; i < (size_t)vtxdist.get(vcl.getProcessUnitID()+1); i++, local_i++)
 	{
 		BOOST_REQUIRE_EQUAL(gd.vertex(local_i).template get<node::id>(), g.vertex(i).template get<node::id>());
 		BOOST_REQUIRE_EQUAL(gd.getNChilds(local_i), g.getNChilds(i));
@@ -225,7 +229,6 @@ BOOST_AUTO_TEST_CASE( DistCartesianGraphFactory_2D_use)
 
 		// try to pack
 		Packer<size_t,HeapMemory>::pack(mem, 3, sts);
-		node n = gd.vertex(0);
 		Packer<decltype(gd.vertex(0)),HeapMemory>::pack(mem,gd.vertex(0), sts);
 		Packer<decltype(gd.vertex(0)),HeapMemory>::pack(mem,gd.vertex(1), sts);
 		Packer<decltype(gd.vertex(0)),HeapMemory>::pack(mem,gd.vertex(2), sts);
@@ -247,14 +250,14 @@ BOOST_AUTO_TEST_CASE( DistCartesianGraphFactory_2D_use)
 
 		size_t size;
 		Unpacker<size_t,HeapMemory>::unpack(mem,size,ps);
-		BOOST_REQUIRE_EQUAL(size, 3);
+		BOOST_REQUIRE_EQUAL(size, 3ul);
 
 		Unpacker<node,HeapMemory>::unpack(mem,v1,ps);
 		Unpacker<node,HeapMemory>::unpack(mem,v2,ps);
 		Unpacker<node,HeapMemory>::unpack(mem,v3,ps);
-		BOOST_REQUIRE_EQUAL(v1.template get<node::id>(), 0);
-		BOOST_REQUIRE_EQUAL(v2.template get<node::id>(), 1);
-		BOOST_REQUIRE_EQUAL(v3.template get<node::id>(), 2);
+		BOOST_REQUIRE_EQUAL(v1.template get<node::id>(), 0ul);
+		BOOST_REQUIRE_EQUAL(v2.template get<node::id>(), 1ul);
+		BOOST_REQUIRE_EQUAL(v3.template get<node::id>(), 2ul);
 	}
 
 	//! [Exchange n vertices packed]
@@ -308,18 +311,18 @@ BOOST_AUTO_TEST_CASE( DistCartesianGraphFactory_2D_use)
 		size_t size;
 		Unpacker<size_t,HeapMemory>::unpack(mem,size,ps);
 
-		BOOST_REQUIRE_EQUAL(size, 3);
+		BOOST_REQUIRE_EQUAL(size, 3ul);
 
 		v.resize(size);
 
-		for(int i = 0; i < size; i++){
+		for(size_t i = 0; i < size; i++){
 			node v_n;
 			Unpacker<node,HeapMemory>::unpack(mem,v_n,ps);
 			v.set(i, v_n);
 		}
-		BOOST_REQUIRE_EQUAL(v.get(0).template get<node::id>(), 0);
-		BOOST_REQUIRE_EQUAL(v.get(1).template get<node::id>(), 1);
-		BOOST_REQUIRE_EQUAL(v.get(2).template get<node::id>(), 2);
+		BOOST_REQUIRE_EQUAL(v.get(0).template get<node::id>(), 0ul);
+		BOOST_REQUIRE_EQUAL(v.get(1).template get<node::id>(), 1ul);
+		BOOST_REQUIRE_EQUAL(v.get(2).template get<node::id>(), 2ul);
 	}
 
 	if(vcl.getProcessUnitID() == 0){
@@ -332,19 +335,19 @@ BOOST_AUTO_TEST_CASE( DistCartesianGraphFactory_2D_use)
 		size_t size;
 		Unpacker<size_t,HeapMemory>::unpack(mem,size,ps);
 
-		BOOST_REQUIRE_EQUAL(size, 3);
+		BOOST_REQUIRE_EQUAL(size, 3ul);
 
 		v.resize(size);
 
-		for(int i = 0; i < size; i++){
+		for(size_t i = 0; i < size; i++){
 			node v_n;
 			Unpacker<node,HeapMemory>::unpack(mem,v_n,ps);
 			v.set(i, v_n);
 		}
 
-		BOOST_REQUIRE_EQUAL(v.get(0).template get<node::id>(), 8);
-		BOOST_REQUIRE_EQUAL(v.get(1).template get<node::id>(), 9);
-		BOOST_REQUIRE_EQUAL(v.get(2).template get<node::id>(), 10);
+		BOOST_REQUIRE_EQUAL(v.get(0).template get<node::id>(), 8ul);
+		BOOST_REQUIRE_EQUAL(v.get(1).template get<node::id>(), 9ul);
+		BOOST_REQUIRE_EQUAL(v.get(2).template get<node::id>(), 10ul);
 	}
 
 

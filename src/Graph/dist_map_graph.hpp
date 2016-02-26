@@ -62,8 +62,8 @@
 #include "Vector/map_vector.hpp"
 #include "Graph/map_graph.hpp"
 #include <unordered_map>
-#include "Packer.hpp"
-#include "Unpacker.hpp"
+#include "Packer_Unpacker/Packer.hpp"
+#include "Packer_Unpacker/Unpacker.hpp"
 #include "VCluster.hpp"
 
 #define NO_EDGE -1
@@ -429,7 +429,7 @@ class DistGraph_CSR
 	{
 		if (sgp.size() == vcl.getProcessingUnits())
 		{
-			for (int p = 0; p < vcl.getProcessingUnits(); ++p)
+			for (size_t p = 0; p < vcl.getProcessingUnits(); ++p)
 			{
 				sgp.get(p).send_v.clear();
 				sgp.get(p).send_v_m.clear();
@@ -444,7 +444,7 @@ class DistGraph_CSR
 		{
 			sgp.resize(vcl.getProcessingUnits());
 
-			for (int p = 0; p < vcl.getProcessingUnits(); ++p)
+			for (size_t p = 0; p < vcl.getProcessingUnits(); ++p)
 			{
 				openfpm::vector<V> s_v;
 				openfpm::vector<v_info> s_v_m;
@@ -882,7 +882,7 @@ class DistGraph_CSR
 		openfpm::vector<openfpm::vector<size_t>> resp_rmi(vcl.getProcessingUnits());
 
 		// Prepare re-mapping info response
-		for (int i = 0; i < req_rmi.size(); ++i)
+		for (size_t i = 0; i < req_rmi.size(); ++i)
 		{
 			for (size_t j = 0; j < req_rmi.get(i).size(); ++j)
 			{
@@ -1169,6 +1169,8 @@ public:
 	DistGraph_CSR<V, E, VertexList, EdgeList, Memory> & operator=(const DistGraph_CSR<V, E, VertexList, EdgeList, Memory> & g)
 	{
 		swap(g.duplicate());
+
+		return *this;
 	}
 
 	/*! \brief operator to access the vertex

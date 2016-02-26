@@ -35,10 +35,10 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_np)
 	size_t bc[] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 
 	// Graph to decompose
-	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,float,2,0,1,2>(sz,box,bc);
+	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,2,0,1,2>(sz,box,bc);
 
 	// Processor graph
-	Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.construct<NO_EDGE,float,2>(sz,box,bc);
+	Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.construct<NO_EDGE,NO_VERTEX_ID,float,2>(sz,box,bc);
 
 	// Convert the graph to metis
 	Metis<Graph_CSR<nm_v,nm_e>> met(g,16);
@@ -72,10 +72,10 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_p)
 	size_t bc[] = {PERIODIC,PERIODIC,PERIODIC};
 
 	// Graph to decompose
-	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,float,2,0,1,2>(sz,box,bc);
+	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,2,0,1,2>(sz,box,bc);
 
 	// Processor graph
-	Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.construct<NO_EDGE,float,2>(sz,box,bc);
+	Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.construct<NO_EDGE,NO_VERTEX_ID,float,2>(sz,box,bc);
 
 	bool p[3];
 

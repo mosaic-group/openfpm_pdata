@@ -14,6 +14,8 @@
 #include "Space/Shape/Box.hpp"
 #include "Space/Shape/HyperCube.hpp"
 
+#define NO_VERTEX_ID -1
+
 /*! \brief Operator to fill the property 'prp' with the linearization of indexes
  *
  *  \tparam dim Dimension of the space
@@ -34,7 +36,7 @@ struct fill_id
  *  \tparam G_v Graph
  */
 template<unsigned int dim, typename G_v>
-struct fill_id<dim, G_v, -1>
+struct fill_id<dim, G_v, NO_VERTEX_ID>
 {
 	static inline void fill(G_v & g_v, const grid_key_dx<dim> & gk, const grid_sm<dim, void> & gs)
 	{
@@ -203,7 +205,7 @@ public:
 	{
 		typedef typename boost::fusion::result_of::at<v, boost::mpl::int_<0>>::type t_val;
 
-		g_v.template get<t_val::value>()[T::value] = gk.get(T::value) * szd[T::value];
+		g_v.template get<t_val::value>()[T::value] = gk.get(T::value) * static_cast<float>(szd[T::value]);
 		fill_id<dim, G_v, lin_id>::fill(g_v, gk, gs);
 	}
 };
@@ -522,7 +524,7 @@ public:
 	 *           contact size is the point, line , surface, d-dimensional object size
 	 *           in contact (in common) between two hyper-cube. NO_EDGE indicate
 	 *           no property will store this information
-	 * \tparam id_prp property 'id' that stores the vertex id
+	 * \tparam id_prp property 'id' that stores the vertex id (with -1 it skip)
 	 * \tparam T type of the domain like (int real complex ... )
 	 * \tparam dim_c Connectivity dimension
 	 * \tparam pos... (optional)one or more integer indicating the spatial properties
@@ -531,7 +533,7 @@ public:
 	template<int se, int id_prp, typename T, unsigned int dim_c, int ... pos>
 	static Graph construct(const size_t (&sz)[dim], Box<dim, T> dom, const size_t (& bc)[dim])
 	{
-		return Graph_constructor_impl<dim, id_prp, Graph, se, T, dim_c, pos...>::construct(sz, dom);
+		return Graph_constructor_impl<dim, id_prp, Graph, se, T, dim_c, pos...>::construct(sz, dom, bc);
 	}
 };
 
