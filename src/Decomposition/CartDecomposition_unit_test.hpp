@@ -471,6 +471,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test)
 
 	// Decompose
 	dec.setParameters(div,box,bc,g);
+	dec.decompose();
 
 	// create a ghost border
 	dec.calculateGhostBoxes();
@@ -569,6 +570,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 
 	// Decompose
 	dec.setParameters(div,box,bc,g);
+	dec.decompose();
 
 	// create a ghost border
 	dec.calculateGhostBoxes();
