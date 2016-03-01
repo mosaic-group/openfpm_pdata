@@ -25,6 +25,14 @@ BOOST_AUTO_TEST_SUITE( Metis_test )
 
 BOOST_AUTO_TEST_CASE( Metis_test_use)
 {
+	Vcluster & v_cl = *global_v_cluster;
+
+	if (v_cl.getProcessingUnits() != 3)
+		return;
+
+	if (v_cl.getProcessUnitID() != 0)
+		return;
+
 	CartesianGraphFactory<3,Graph_CSR<nm_v,nm_e>> g_factory;
 	CartesianGraphFactory<3,Graph_CSR<nm_part_v,nm_part_e>> g_factory_part;
 
@@ -50,9 +58,23 @@ BOOST_AUTO_TEST_CASE( Metis_test_use)
 	// decompose
 
 	met.decompose<nm_part_v::id>(gp);
-	met.decompose<nm_v::id>();
-}
+	met.decompose<nm_v::proc_id>();
 
+	// Write the VTK file
+
+	VTKWriter<Graph_CSR<nm_part_v,nm_part_e>,VTK_GRAPH> vtk(gp);
+	vtk.write("vtk_metis_util_gp.vtk");
+
+	VTKWriter<Graph_CSR<nm_v,nm_e>,VTK_GRAPH> vtk2(g);
+	vtk2.write("vtk_metis_util_g.vtk");
+
+	// check that match
+
+	bool test = compare("vtk_metis_util_gp.vtk","src/Decomposition/Distribution/test_data/vtk_metis_util_gp_test.vtk");
+	bool test2 = compare("vtk_metis_util_g.vtk","src/Decomposition/Distribution/test_data/vtk_metis_util_g_test.vtk");
+	BOOST_REQUIRE_EQUAL(true,test);
+	BOOST_REQUIRE_EQUAL(true,test2);
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 

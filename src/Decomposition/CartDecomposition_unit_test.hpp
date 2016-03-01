@@ -107,11 +107,11 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D )
 
 	setComputationCosts(dec, dec.getNSubSubDomains(), center, radius, weight_h, weight_l);
 
-	dec.printCurrentDecomposition(0);
+	dec.getDistribution().write("DLB_test_graph_0.vtk");
 
 	dec.decompose();
 
-	dec.printCurrentDecomposition(1);
+	dec.getDistribution().write("DLB_test_graph_1.vtk");
 
 	float stime = 0.0, etime = 10.0, tstep = 0.1;
 
@@ -135,7 +135,9 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D )
 
 		dec.rebalance(dlb);
 
-		dec.printCurrentDecomposition(i+1);
+		std::stringstream str;
+		str << "DLB_test_graph_" << i + 1 << ".vtk";
+		dec.getDistribution().write(str.str());
 	}
 
 	// create a ghost border
@@ -233,7 +235,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D_sar)
 
 	dec.decompose();
 
-	dec.printCurrentDecomposition(0);
+	dec.getDistribution().write("DLB_test_graph_0.vtk");
 
 	float stime = 0.0, etime = 10.0, tstep = 0.1;
 
@@ -263,7 +265,9 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D_sar)
 
 		dec.rebalance(dlb);
 
-		dec.printCurrentDecomposition(i);
+		std::stringstream str;
+		str << "DLB_test_graph_" << i << ".vtk";
+		dec.getDistribution().write(str.str());
 	}
 
 	//print statistics
@@ -373,7 +377,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_3D)
 
 	dec.decompose();
 
-	dec.printCurrentDecomposition(0);
+	dec.getDistribution().write("DLB_test_graph_0.vtk");
 
 	float stime = 0.0, etime = 10.0, tstep = 0.1;
 
@@ -399,7 +403,9 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_3D)
 
 		dec.rebalance(dlb);
 
-		dec.printCurrentDecomposition(i);
+		std::stringstream str;
+		str << "DLB_test_graph_" << i << ".vtk";
+		dec.getDistribution().write(str.str());
 	}
 
 	// create a ghost border

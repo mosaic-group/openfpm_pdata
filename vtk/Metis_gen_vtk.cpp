@@ -11,7 +11,7 @@
 #include <iostream>
 #include "Graph/CartesianGraphFactory.hpp"
 #include "Graph/map_graph.hpp"
-#include "metis_util.hpp"
+#include "Decomposition/Distribution/metis_util.hpp"
 #include "SubdomainGraphNodes.hpp"
 
 int main(int argc, char ** argv)

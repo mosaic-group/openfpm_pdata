@@ -287,8 +287,8 @@ public:
 	 * \param nc number of partitions
 	 *
 	 */
-	Parmetis(Vcluster & v_cl, size_t nc) :
-			v_cl(v_cl), nc(nc)
+	Parmetis(Vcluster & v_cl, size_t nc)
+	:v_cl(v_cl), nc(nc)
 	{
 		// TODO Move into VCluster
 		MPI_Comm_dup(MPI_COMM_WORLD, &comm);
@@ -384,29 +384,23 @@ public:
 		p_id = v_cl.getProcessUnitID();
 
 		// Get the number of vertex
-
 		Mg.nvtxs = new idx_t[1];
 		Mg.nvtxs[0] = sub_g.getNVertex();
 
 		// Set the number of constrains
-
 		Mg.ncon = new idx_t[1];
 		Mg.ncon[0] = 1;
 
 		// Set to null the weight of the vertex (init after in constructAdjList) (can be removed)
-
 		Mg.vwgt = NULL;
 
 		// Set to null the weight of the edge (init after in constructAdjList) (can be removed)
-
 		Mg.adjwgt = NULL;
 
 		// construct the adjacency list
-
 		constructAdjList(sub_g, sub_g);
 
 		// Set the total number of partitions
-
 		Mg.nparts = new idx_t[1];
 		Mg.nparts[0] = nc;
 
@@ -470,11 +464,6 @@ public:
 
 		ParMETIS_V3_PartKway((idx_t *) vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag,
 				Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.options, Mg.edgecut, Mg.part, &comm);
-		/*
-		 ParMETIS_V3_AdaptiveRepart( (idx_t *) vtxdist.getPointer(), Mg.xadj,Mg.adjncy,Mg.vwgt,Mg.vsize,Mg.adjwgt, Mg.wgtflag, Mg.numflag,
-		 Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.itr, Mg.options, Mg.edgecut,
-		 Mg.part, &comm );
-		*/
 
 		// For each vertex store the processor that contain the data
 		for (size_t j = 0, id = 0; j < sub_g.getNVertex(); j++, id++)

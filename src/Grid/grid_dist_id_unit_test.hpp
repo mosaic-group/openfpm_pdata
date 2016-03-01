@@ -5,6 +5,7 @@
 #include "data_type/scalar.hpp"
 #include "data_type/aggregate.hpp"
 
+
 BOOST_AUTO_TEST_SUITE( grid_dist_id_test )
 
 void print_test(std::string test, size_t sz)
@@ -1267,6 +1268,8 @@ void Test3D_decit(const Box<3,float> & domain, long int k)
 	}
 }
 
+#include "grid_dist_id_unit_test_ext_dom.hpp"
+
 BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 {
 	// Domain
@@ -1373,6 +1376,20 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_test_use)
 	long int k = 128*128*128*global_v_cluster->getProcessingUnits();
 	k = std::pow(k, 1/3.);
 	Test3D_domain(domain3,k);
+}
+
+BOOST_AUTO_TEST_CASE( grid_dist_id_extended )
+{
+	// Initialize the global VCluster
+	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
+
+	// Domain
+	Box<3,float> domain3({0.1,0.1,0.1},{1.1,1.1,1.1});
+
+	long int k = 128*128*128*global_v_cluster->getProcessingUnits();
+	k = std::pow(k, 1/3.);
+
+	Test3D_extended_grid(domain3,k);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

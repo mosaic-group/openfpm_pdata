@@ -12,7 +12,7 @@ nobase_include_HEADERS = Decomposition/CartDecomposition.hpp Decomposition/commo
          Vector/vector_dist.hpp Vector/vector_dist_ofb.hpp Vector/vector_dist_iterator.hpp Vector/vector_dist_key.hpp \
          config/config.h \
          example.mk \
-         metis_util.hpp dec_optimizer.hpp SubdomainGraphNodes.hpp
+         Decomposition/Distribution/metis_util.hpp Decomposition/Distribution/parmetis_util.hpp  dec_optimizer.hpp SubdomainGraphNodes.hpp
 
 lib_LIBRARIES = libofpm_pdata.a
 libofpm_pdata_a_SOURCES = lib/pdata.cpp

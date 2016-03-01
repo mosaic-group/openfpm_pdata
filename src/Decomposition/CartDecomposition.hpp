@@ -30,10 +30,10 @@
 #include "ie_ghost.hpp"
 #include "nn_processor.hpp"
 #include "GraphMLWriter/GraphMLWriter.hpp"
-#include "ParMetisDistribution.hpp"
-#include "DistParMetisDistribution.hpp"
-#include "MetisDistribution.hpp"
-#include "DLB.hpp"
+#include "Distribution/ParMetisDistribution.hpp"
+#include "Distribution/DistParMetisDistribution.hpp"
+#include "Distribution/MetisDistribution.hpp"
+#include "DLB/DLB.hpp"
 #include "util/se_util.hpp"
 #include "util/mathutil.hpp"
 
@@ -194,18 +194,22 @@ private:
 			SpaceBox<dim, T> sub_d(sub_dc);
 			sub_d.mul(spacing);
 			sub_d.expand(spacing);
+			sub_d += domain.getP1();
+
+			// we add the
 
 			// Fixing sub-domains to cover all the domain
 
 			// Fixing sub_d
-			// if (loc_box) is a the boundary we have to ensure that the box span the full
+			// if (loc_box) is at the boundary we have to ensure that the box span the full
 			// domain (avoiding rounding off error)
 			for (size_t i = 0; i < dim; i++)
 			{
 				if (sub_dc.getHigh(i) == cd.getGrid().size(i) - 1)
-				{
 					sub_d.setHigh(i, domain.getHigh(i));
-				}
+
+				if (sub_dc.getLow(i) == 0)
+					sub_d.setLow(i,domain.getLow(i));
 			}
 
 			// add the sub-domain
@@ -216,6 +220,10 @@ private:
 			bbox = sub_d;
 		}
 
+/*		if (loc_box.size())
+		bbox.zero();
+		ss_box = domain;*/
+
 		// convert into sub-domain
 		for (size_t s = 1; s < loc_box.size(); s++)
 		{
@@ -225,6 +233,7 @@ private:
 			// re-scale and add spacing (the end is the starting point of the next domain + spacing)
 			sub_d.mul(spacing);
 			sub_d.expand(spacing);
+			sub_d += domain.getP1();
 
 			// Fixing sub-domains to cover all the domain
 
@@ -234,9 +243,10 @@ private:
 			for (size_t i = 0; i < dim; i++)
 			{
 				if (sub_dc.getHigh(i) == cd.getGrid().size(i) - 1)
-				{
 					sub_d.setHigh(i, domain.getHigh(i));
-				}
+
+				if (sub_dc.getLow(i) == 0)
+					sub_d.setLow(i,domain.getLow(i));
 			}
 
 			// add the sub-domain
@@ -1149,7 +1159,7 @@ public:
 		cd.setDimensions(domain, div_, 0);
 
 		// init distribution
-		dist.init(gr, domain);
+		dist.createCartGraph(gr, domain);
 
 	}
 
@@ -1227,7 +1237,7 @@ public:
 	 */
 	inline void getSubSubDomainPosition(size_t id, T (&pos)[dim])
 	{
-		dist.getVertexPosition(id, pos);
+		dist.getSubSubDomainPosition(id, pos);
 	}
 
 	/*! \brief Get the number of sub-sub-domains in this sub-graph
@@ -1246,7 +1256,7 @@ public:
 	 */
 	inline void setSubSubDomainComputationCost(size_t id, size_t weight)
 	{
-		dist.setVertexWeight(id, weight);
+		dist.setComputationCost(id, weight);
 	}
 
 	/*! \brief function that set the weight of the vertex
@@ -1256,7 +1266,7 @@ public:
 	 */
 	inline size_t getSubSubDomainComputationCost(size_t id)
 	{
-		return dist.getVertexWeight(id);
+		return dist.getComputationCost(id);
 	}
 
 	/*! \brief Operator to access the size of the sub-graph
@@ -1595,14 +1605,14 @@ public:
 		return true;
 	}
 
-	/*! \brief Print current graph and save it to file with name test_graph_[id]
+	/*! \brief Return the distribution object
 	 *
-	 * \param id to attach to the filename
+	 * \return the distribution object
 	 *
 	 */
-	void printCurrentDecomposition(int id)
+	Distribution getDistribution()
 	{
-		dist.printCurrentDecomposition(id);
+		return dist;
 	}
 };
 
