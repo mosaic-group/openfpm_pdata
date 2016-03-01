@@ -163,9 +163,6 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 
 	ParMetisDistribution<3,float> pmet_dist(v_cl);
 
-	// Make the result reproducible
-	pmet_dist.onTest();
-
 	// Physical domain
 	Box<3,float> box({0.0,0.0,0.0},{10.0,10.0,10.0});
 

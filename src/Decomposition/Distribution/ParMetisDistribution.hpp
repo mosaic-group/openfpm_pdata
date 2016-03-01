@@ -70,18 +70,11 @@ class ParMetisDistribution
 	//! Init data structure to keep trace of new vertices distribution in processors (needed to update main graph)
 	openfpm::vector<openfpm::vector<size_t>> v_per_proc;
 
-	//! Number of moved vertices in all iterations
-	size_t g_moved = 0;
-
-	//! Max number of moved vertices in all iterations
-	size_t m_moved = 0;
+	//! Hashmap to access to the global position given the re-mapped one (needed for access the map)
+	std::unordered_map<size_t, size_t> m2g;
 
 	//! Flag to check if weights are used on vertices
 	bool verticesGotWeights = false;
-
-	//! Flag that indicate if we are doing a test (In general it fix the seed)
-	bool testing = false;
-
 
 	/*! \brief Update main graph ad subgraph with the received data of the partitions from the other processors
 	 *
@@ -111,14 +104,14 @@ class ParMetisDistribution
 				n_vtxdist.get(partitions.get(i).get(k) + 1)++;
 
 				// for statistics
-				if (gp.vertexByMapId(l).template get<nm_v::proc_id>() != (size_t)partitions.get(i).get(k))
+				if (vertexByMapId(l).template get<nm_v::proc_id>() != (size_t)partitions.get(i).get(k))
 					moved++;
 
 				// Update proc id in the vertex (using the old map)
-				gp.vertexByMapId(l).template get<nm_v::proc_id>() = partitions.get(i).get(k);
+				vertexByMapId(l).template get<nm_v::proc_id>() = partitions.get(i).get(k);
 
 				// Add vertex to temporary structure of distribution (needed to update main graph)
-				v_per_proc.get(partitions.get(i).get(k)).add(gp.getVertexGlobalId(l));
+				v_per_proc.get(partitions.get(i).get(k)).add(getVertexGlobalId(l));
 			}
 		}
 
@@ -135,16 +128,10 @@ class ParMetisDistribution
 		{
 			for (size_t j = (size_t)vtxdist.get(p), i = 0; j < (size_t)vtxdist.get(p + 1); j++, i++)
 			{
-				gp.setMapId(j, v_per_proc.get(p).get(i));
+				setMapId(j, v_per_proc.get(p).get(i));
 				gp.vertex(v_per_proc.get(p).get(i)).template get<nm_v::id>() = j;
 			}
 		}
-
-		g_moved += moved;
-
-		if (moved > m_moved)
-			m_moved = moved;
-
 	}
 
 	void createMapsFromGlobalGraph(openfpm::vector<size_t> & vtxdist)
@@ -157,6 +144,54 @@ class ParMetisDistribution
 
 			gp.setMapId()
 		}*/
+	}
+
+	/*! \brief operator to access the vertex by mapped position
+	 *
+	 * operator to access the vertex
+	 *
+	 * \param id re-mapped id of the vertex to access
+	 *
+	 */
+	inline auto vertexByMapId(size_t id) -> decltype( gp.vertex(m2g.find(id)->second) )
+	{
+		return gp.vertex(m2g.find(id)->second);
+	}
+
+	/*! \brief operator to remap vertex to a new position
+	 *
+	 * \param n re-mapped position
+	 * \param g global position
+	 *
+	 */
+	inline void setMapId(size_t n, size_t g)
+	{
+		m2g[n] = g;
+	}
+
+	/*! \brief Get the global id of the vertex given the re-mapped one
+	 *
+	 * \param remapped id
+	 * \return global id
+	 *
+	 */
+	size_t getVertexGlobalId(size_t n)
+	{
+		return m2g.find(n)->second;
+	}
+
+	/*! \brief operator to init ids vector
+	 *
+	 * operator to init ids vector
+	 *
+	 */
+	void initLocalToGlobalMap()
+	{
+		m2g.clear();
+		for (size_t i = 0; i < gp.getNVertex(); i++)
+		{
+			m2g.insert( { i, i });
+		}
 	}
 
 	/*! \brief Callback of the sendrecv to set the size of the array received
@@ -228,7 +263,7 @@ public:
 		// Create a cartesian grid graph
 		CartesianGraphFactory<dim, Graph_CSR<nm_v, nm_e>> g_factory_part;
 		gp = g_factory_part.template construct<NO_EDGE, nm_v::id, T, dim - 1, 0, 1, 2>(gr.getSize(), domain, bc);
-		gp.initLocalToGlobalMap();
+		initLocalToGlobalMap();
 
 		//! Get the number of processing units
 		size_t Np = v_cl.getProcessingUnits();
@@ -285,7 +320,7 @@ public:
 		// Number of local vertex
 		size_t nl_vertex = vtxdist.get(p_id+1) - vtxdist.get(p_id);
 
-		parmetis_graph.initSubGraph(gp, vtxdist, gp.getMap(), verticesGotWeights);
+		parmetis_graph.initSubGraph(gp, vtxdist, m2g, verticesGotWeights);
 
 		//! Decompose
 		parmetis_graph.decompose<nm_v::proc_id>(vtxdist);
@@ -318,11 +353,6 @@ public:
 
 		// Update graphs with the received data
 		updateGraphs();
-
-		// reset statistical variables, we only need it in refinement
-		g_moved = 0;
-		m_moved = 0;
-
 	}
 
 	/*! \brief Refine current decomposition
@@ -340,7 +370,7 @@ public:
 		size_t nl_vertex = vtxdist.get(p_id+1) - vtxdist.get(p_id);
 
 		// Reset parmetis graph and reconstruct it
-		parmetis_graph.reset(gp, vtxdist, gp.getMap());
+		parmetis_graph.reset(gp, vtxdist, m2g);
 
 		// Refine
 		parmetis_graph.refine<nm_v::proc_id>(vtxdist);
@@ -489,34 +519,10 @@ public:
 
 		for (size_t i = (size_t)vtxdist.get(p_id); i < (size_t)vtxdist.get(p_id+1) ; i++)
 		{
-			load += gp.vertex(gp.getMap().find(i)->second).template get<nm_v::computation>();
+			load += gp.vertex(m2g.find(i)->second).template get<nm_v::computation>();
 		}
 		//std::cout << v_cl.getProcessUnitID() << " weight " << load << " size " << sub_g.getNVertex() << "\n";
 		return load;
-	}
-
-	/*! \brief return number of moved vertices in all iterations so far
-	 *
-	 * \param id vertex id
-	 *
-	 * \return vector with x, y, z
-	 *
-	 */
-	size_t getTotalMovedV()
-	{
-		return g_moved;
-	}
-
-	/*! \brief return number of moved vertices in all iterations so far
-	 *
-	 * \param id vertex id
-	 *
-	 * \return vector with x, y, z
-	 *
-	 */
-	size_t getMaxMovedV()
-	{
-		return m_moved;
 	}
 
 	/*! \brief Set migration cost of the vertex id
@@ -566,16 +572,6 @@ public:
 			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
 
 		return gp.getNChilds(id);
-	}
-
-	/*! \brief It set the Class on test mode
-	 *
-	 * At the moment it fix the seed to have reproducible results
-	 *
-	 */
-	void onTest()
-	{
-		testing = true;
 	}
 
 	/*! \brief Print the current distribution and save it to VTK file
