@@ -5,11 +5,15 @@
  *      Author: Antonio Leo
  */
 
+
+#ifndef SRC_DECOMPOSITION_PARMETISDISTRIBUTION_HPP_
+#define SRC_DECOMPOSITION_PARMETISDISTRIBUTION_HPP_
+
+
 #include "SubdomainGraphNodes.hpp"
 #include "parmetis_util.hpp"
 #include "Graph/dist_map_graph.hpp"
-#ifndef SRC_DECOMPOSITION_PARMETISDISTRIBUTION_HPP_
-#define SRC_DECOMPOSITION_PARMETISDISTRIBUTION_HPP_
+#include "Graph/ids.hpp"
 
 #define PARMETIS_DISTRIBUTION_ERROR 100002
 
@@ -28,7 +32,6 @@
  * \snippet Distribution_unit_tests.hpp refine with parmetis the decomposition
  *
  */
-
 template<unsigned int dim, typename T>
 class ParMetisDistribution
 {
@@ -62,16 +65,16 @@ class ParMetisDistribution
 	//
 	// vtx dist is the unique global-id of the vertices
 	//
-	openfpm::vector<idx_t> vtxdist;
+	openfpm::vector<rid> vtxdist;
 
 	//! partitions
 	openfpm::vector<openfpm::vector<idx_t>> partitions;
 
 	//! Init data structure to keep trace of new vertices distribution in processors (needed to update main graph)
-	openfpm::vector<openfpm::vector<size_t>> v_per_proc;
+	openfpm::vector<openfpm::vector<gid>> v_per_proc;
 
 	//! Hashmap to access to the global position given the re-mapped one (needed for access the map)
-	std::unordered_map<size_t, size_t> m2g;
+	std::unordered_map<rid, gid> m2g;
 
 	//! Flag to check if weights are used on vertices
 	bool verticesGotWeights = false;
@@ -81,31 +84,24 @@ class ParMetisDistribution
 	 */
 	void updateGraphs()
 	{
-
 		size_t Np = v_cl.getProcessingUnits();
 
-		//stats info
-		size_t moved = 0;
-
 		// Init n_vtxdist to gather informations about the new decomposition
-		openfpm::vector<idx_t> n_vtxdist(Np + 1);
+		openfpm::vector<rid> n_vtxdist(Np + 1);
 		for (size_t i = 0; i <= Np; i++)
-			n_vtxdist.get(i) = 0;
+			n_vtxdist.get(i).id = 0;
 
 		// Update the main graph with received data from processor i
 		for (size_t i = 0; i < Np; i++)
 		{
 			size_t ndata = partitions.get(i).size();
+			size_t k = 0;
 
 			// Update the main graph with the received informations
-			for (size_t k = 0, l = (size_t)vtxdist.get(i); k < ndata && l < (size_t)vtxdist.get(i + 1); k++, l++)
+			for (rid l = vtxdist.get(i); k < ndata && l < vtxdist.get(i + 1); k++, ++l)
 			{
 				// Create new n_vtxdist (just count processors vertices)
-				n_vtxdist.get(partitions.get(i).get(k) + 1)++;
-
-				// for statistics
-				if (vertexByMapId(l).template get<nm_v::proc_id>() != (size_t)partitions.get(i).get(k))
-					moved++;
+				++n_vtxdist.get(partitions.get(i).get(k) + 1);
 
 				// Update proc id in the vertex (using the old map)
 				vertexByMapId(l).template get<nm_v::proc_id>() = partitions.get(i).get(k);
@@ -126,10 +122,11 @@ class ParMetisDistribution
 		// Renumber the main graph and re-create the map
 		for (size_t p = 0; p < (size_t)Np; p++)
 		{
-			for (size_t j = (size_t)vtxdist.get(p), i = 0; j < (size_t)vtxdist.get(p + 1); j++, i++)
+			size_t i = 0;
+			for (rid j = vtxdist.get(p); j < vtxdist.get(p + 1); ++j, i++)
 			{
 				setMapId(j, v_per_proc.get(p).get(i));
-				gp.vertex(v_per_proc.get(p).get(i)).template get<nm_v::id>() = j;
+				gp.vertex(v_per_proc.get(p).get(i).id).template get<nm_v::id>() = j.id;
 			}
 		}
 	}
@@ -153,9 +150,9 @@ class ParMetisDistribution
 	 * \param id re-mapped id of the vertex to access
 	 *
 	 */
-	inline auto vertexByMapId(size_t id) -> decltype( gp.vertex(m2g.find(id)->second) )
+	inline auto vertexByMapId(rid id) -> decltype( gp.vertex(m2g.find(id)->second.id) )
 	{
-		return gp.vertex(m2g.find(id)->second);
+		return gp.vertex(m2g.find(id)->second.id);
 	}
 
 	/*! \brief operator to remap vertex to a new position
@@ -164,7 +161,7 @@ class ParMetisDistribution
 	 * \param g global position
 	 *
 	 */
-	inline void setMapId(size_t n, size_t g)
+	inline void setMapId(rid n, gid g)
 	{
 		m2g[n] = g;
 	}
@@ -175,7 +172,7 @@ class ParMetisDistribution
 	 * \return global id
 	 *
 	 */
-	size_t getVertexGlobalId(size_t n)
+	gid getVertexGlobalId(rid n)
 	{
 		return m2g.find(n)->second;
 	}
@@ -187,10 +184,16 @@ class ParMetisDistribution
 	 */
 	void initLocalToGlobalMap()
 	{
+		gid g;
+		rid i;
+		i.id = 0;
+
 		m2g.clear();
-		for (size_t i = 0; i < gp.getNVertex(); i++)
+		for ( ; (size_t)i.id < gp.getNVertex(); ++i)
 		{
-			m2g.insert( { i, i });
+			g.id = i.id;
+
+			m2g.insert( { i, g });
 		}
 	}
 
@@ -277,9 +280,9 @@ public:
 		for (size_t i = 0; i <= Np; i++)
 		{
 			if (i < mod_v)
-				vtxdist.get(i) = (div_v + 1) * (i);
+				vtxdist.get(i).id = (div_v + 1) * i;
 			else
-				vtxdist.get(i) = (div_v) * (i) + mod_v;
+				vtxdist.get(i).id = (div_v) * i + mod_v;
 		}
 
 		// Init to 0.0 axis z (to fix in graphFactory)
@@ -318,7 +321,7 @@ public:
 		size_t Np = v_cl.getProcessingUnits();
 
 		// Number of local vertex
-		size_t nl_vertex = vtxdist.get(p_id+1) - vtxdist.get(p_id);
+		size_t nl_vertex = vtxdist.get(p_id+1).id - vtxdist.get(p_id).id;
 
 		parmetis_graph.initSubGraph(gp, vtxdist, m2g, verticesGotWeights);
 
@@ -367,7 +370,7 @@ public:
 		size_t p_id = v_cl.getProcessUnitID();
 
 		// Number of local vertex
-		size_t nl_vertex = vtxdist.get(p_id+1) - vtxdist.get(p_id);
+		rid nl_vertex = vtxdist.get(p_id+1) - vtxdist.get(p_id);
 
 		// Reset parmetis graph and reconstruct it
 		parmetis_graph.reset(gp, vtxdist, m2g);
@@ -378,8 +381,8 @@ public:
 		// Get result partition for this processor
 		idx_t * partition = parmetis_graph.getPartition();
 
-		partitions.get(p_id).resize(nl_vertex);
-		std::copy(partition, partition + nl_vertex, &partitions.get(p_id).get(0));
+		partitions.get(p_id).resize(nl_vertex.id);
+		std::copy(partition, partition + nl_vertex.id, &partitions.get(p_id).get(0));
 
 		// Reset data structure to keep trace of new vertices distribution in processors (needed to update main graph)
 		for (size_t i = 0; i < Np; ++i)
@@ -397,7 +400,7 @@ public:
 			{
 				partitions.get(i).clear();
 				prc.add(i);
-				sz.add(nl_vertex * sizeof(idx_t));
+				sz.add(nl_vertex.id * sizeof(idx_t));
 				ptr.add(partitions.get(p_id).getPointer());
 			}
 		}
@@ -517,9 +520,9 @@ public:
 		size_t p_id = v_cl.getProcessUnitID();
 
 
-		for (size_t i = (size_t)vtxdist.get(p_id); i < (size_t)vtxdist.get(p_id+1) ; i++)
+		for (rid i = vtxdist.get(p_id); i < vtxdist.get(p_id+1) ; ++i)
 		{
-			load += gp.vertex(m2g.find(i)->second).template get<nm_v::computation>();
+			load += gp.vertex(m2g.find(i)->second.id).template get<nm_v::computation>();
 		}
 		//std::cout << v_cl.getProcessUnitID() << " weight " << load << " size " << sub_g.getNVertex() << "\n";
 		return load;
