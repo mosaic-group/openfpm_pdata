@@ -34,7 +34,7 @@
 struct nm_v
 {
 	//! The node contain 3 unsigned long integer for communication computation memory and id
-	typedef boost::fusion::vector<float[3], size_t, size_t, size_t, size_t, size_t, size_t, size_t> type;
+	typedef boost::fusion::vector<float[3], size_t, size_t, size_t, size_t, size_t, size_t> type;
 
 	//! type of the positional field
 	typedef float s_type;
@@ -62,11 +62,9 @@ struct nm_v
 	static const unsigned int sub_id = 5;
 	//! proc_id property id in boost::fusion::vector
 	static const unsigned int proc_id = 6;
-	//! fake_v property id in boost::fusion::vector
-	static const unsigned int fake_v = 7;
 
 	//! total number of properties boost::fusion::vector
-	static const unsigned int max_prop = 8;
+	static const unsigned int max_prop = 7;
 
 	//! default constructor
 	nm_v()
@@ -85,7 +83,6 @@ struct nm_v
 		boost::fusion::at_c<4>(data) = boost::fusion::at_c<4>(p.data);
 		boost::fusion::at_c<5>(data) = boost::fusion::at_c<5>(p.data);
 		boost::fusion::at_c<6>(data) = boost::fusion::at_c<6>(p.data);
-		boost::fusion::at_c<7>(data) = boost::fusion::at_c<7>(p.data);
 	}
 
 	template<unsigned int dim, typename Mem> inline nm_v(const encapc<dim, nm_v, Mem> & p)
@@ -104,7 +101,6 @@ struct nm_v
 		boost::fusion::at_c<4>(data) = p.template get<4>();
 		boost::fusion::at_c<5>(data) = p.template get<5>();
 		boost::fusion::at_c<6>(data) = p.template get<6>();
-		boost::fusion::at_c<7>(data) = p.template get<7>();
 
 		return *this;
 	}

@@ -1610,7 +1610,7 @@ public:
 	 * \return the distribution object
 	 *
 	 */
-	Distribution getDistribution()
+	Distribution & getDistribution()
 	{
 		return dist;
 	}

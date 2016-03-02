@@ -372,7 +372,6 @@ public:
 	template<unsigned int i>
 	void decompose(const openfpm::vector<rid> & vtxdist)
 	{
-
 		// Decompose
 
 		ParMETIS_V3_PartKway((idx_t *) vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag,
