@@ -207,6 +207,25 @@ public:
 	{
 		// TODO Move into VCluster
 		MPI_Comm_dup(MPI_COMM_WORLD, &comm);
+
+		// Nullify Mg
+		Mg.nvtxs = NULL;
+		Mg.ncon = NULL;
+		Mg.xadj = NULL;
+		Mg.adjncy = NULL;
+		Mg.vwgt = NULL;
+		Mg.vsize = NULL;
+		Mg.adjwgt = NULL;
+		Mg.nparts = NULL;
+		Mg.tpwgts = NULL;
+		Mg.ubvec = NULL;
+		Mg.options = NULL;
+		Mg.objval = NULL;
+		Mg.part = NULL;
+		Mg.edgecut = NULL;
+		Mg.itr = NULL;
+		Mg.numflag = NULL;
+		Mg.wgtflag = NULL;
 	}
 
 	//TODO deconstruct new variables
@@ -302,66 +321,10 @@ public:
 		last = vtxdist.get(p_id+1)-1;
 		nvertex = last.id - first.id + 1;
 
-		// Get the number of vertex
-		Mg.nvtxs = new idx_t[1];
-		Mg.nvtxs[0] =  nvertex;
-
-		// Set the number of constrains
-		Mg.ncon = new idx_t[1];
-		Mg.ncon[0] = 1;
-
-		// Set to null the weight of the vertex (init after in constructAdjList) (can be removed)
-		Mg.vwgt = NULL;
-
-		// Set to null the weight of the edge (init after in constructAdjList) (can be removed)
-		Mg.adjwgt = NULL;
+		setDefaultParameters(w);
 
 		// construct the adjacency list
 		constructAdjList(g, m2g);
-
-		// Set the total number of partitions
-		Mg.nparts = new idx_t[1];
-		Mg.nparts[0] = nc;
-
-		//! Set option for the graph partitioning (set as default)
-
-		Mg.options = new idx_t[4];
-		Mg.options[0] = 0;
-		Mg.options[1] = 0;
-		Mg.options[2] = 0;
-		Mg.options[3] = 0;
-
-		//! is an output vector containing the partition for each vertex
-
-		//! adaptiveRepart itr value
-		Mg.itr = new real_t[1];
-		Mg.itr[0] = 1000.0;
-
-		//! init tpwgts to have balanced vertices and ubvec
-
-		Mg.tpwgts = new real_t[Mg.nparts[0]];
-		Mg.ubvec = new real_t[Mg.nparts[0]];
-
-		for (size_t s = 0; s < (size_t)Mg.nparts[0]; s++)
-		{
-			Mg.tpwgts[s] = 1.0 / Mg.nparts[0];
-			Mg.ubvec[s] = 1.05;
-		}
-
-		Mg.edgecut = new idx_t[1];
-		Mg.edgecut[0] = 0;
-
-		//! This is used to indicate the numbering scheme that is used for the vtxdist, xadj, adjncy, and part arrays. (0 for C-style, start from 0 index)
-		Mg.numflag = new idx_t[1];
-		Mg.numflag[0] = 0;
-
-		//! This is used to indicate if the graph is weighted. wgtflag can take one of four values:
-		Mg.wgtflag = new idx_t[1];
-
-		if(w)
-			Mg.wgtflag[0] = 3;
-		else
-			Mg.wgtflag[0] = 0;
 	}
 
 	/*! \brief Decompose the graph
@@ -442,6 +405,93 @@ public:
 
 		// construct the adjacency list
 		constructAdjList(g,m2g);
+	}
+
+	/*! \brief Seth the default parameters for parmetis
+	 *
+	 *
+	 */
+	void setDefaultParameters(bool w)
+	{
+		Mg.nvtxs = new idx_t[1];
+
+		// Set the number of constrains
+		Mg.ncon = new idx_t[1];
+		Mg.ncon[0] = 1;
+
+		// Set to null the weight of the vertex (init after in constructAdjList) (can be removed)
+		Mg.vwgt = NULL;
+
+		// Set to null the weight of the edge (init after in constructAdjList) (can be removed)
+		Mg.adjwgt = NULL;
+
+		// Set the total number of partitions
+		Mg.nparts = new idx_t[1];
+		Mg.nparts[0] = nc;
+
+		//! Set option for the graph partitioning (set as default)
+
+		Mg.options = new idx_t[4];
+		Mg.options[0] = 0;
+		Mg.options[1] = 0;
+		Mg.options[2] = 0;
+		Mg.options[3] = 0;
+
+		//! is an output vector containing the partition for each vertex
+
+		//! adaptiveRepart itr value
+		Mg.itr = new real_t[1];
+		Mg.itr[0] = 1000.0;
+
+		//! init tpwgts to have balanced vertices and ubvec
+
+		Mg.tpwgts = new real_t[Mg.nparts[0]];
+		Mg.ubvec = new real_t[Mg.nparts[0]];
+
+		for (size_t s = 0; s < (size_t)Mg.nparts[0]; s++)
+		{
+			Mg.tpwgts[s] = 1.0 / Mg.nparts[0];
+			Mg.ubvec[s] = 1.05;
+		}
+
+		Mg.edgecut = new idx_t[1];
+		Mg.edgecut[0] = 0;
+
+		//! This is used to indicate the numbering scheme that is used for the vtxdist, xadj, adjncy, and part arrays. (0 for C-style, start from 0 index)
+		Mg.numflag = new idx_t[1];
+		Mg.numflag[0] = 0;
+
+		//! This is used to indicate if the graph is weighted. wgtflag can take one of four values:
+		Mg.wgtflag = new idx_t[1];
+
+		if(w)
+			Mg.wgtflag[0] = 3;
+		else
+			Mg.wgtflag[0] = 0;
+	}
+
+	const Parmetis<Graph> & operator=(const Parmetis<Graph> & pm)
+	{
+		comm = pm.comm;
+		v_cl = pm.v_cl;
+		p_id = pm.p_id;
+		nc = pm.nc;
+
+		setDefaultParameters(pm.Mg.wgtflag[0] == 3);
+
+		return *this;
+	}
+
+	const Parmetis<Graph> & operator=(Parmetis<Graph> && pm)
+	{
+		comm = pm.comm;
+		v_cl = pm.v_cl;
+		p_id = pm.p_id;
+		nc = pm.nc;
+
+		setDefaultParameters(pm.Mg.wgtflag[0] == 3);
+
+		return *this;
 	}
 
 };

@@ -491,6 +491,7 @@ class grid_dist_id
 
 		// Create the sub-domains
 		dec.setParameters(div,domain,bc,ghost);
+		dec.decompose();
 
 		// Calculate ghost boxes
 		dec.calculateGhostBoxes();
@@ -505,8 +506,6 @@ class grid_dist_id
 	{
 		// fill the global size of the grid
 		for (size_t i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
-
-		dec.decompose();
 
 		// Create local grid
 		Create();

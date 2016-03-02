@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 	// operator= functions
 	// operator== functions
 
-	BOOST_REQUIRE_EQUAL(sizeof(MetisDistribution<3,float>),680ul);
+	BOOST_REQUIRE_EQUAL(sizeof(MetisDistribution<3,float>),568ul);
 }
 
 BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
@@ -231,6 +231,8 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 	}
 
 	//! [refine with parmetis the decomposition]
+
+	BOOST_REQUIRE_EQUAL(sizeof(MetisDistribution<3,float>),568ul);
 }
 
 BOOST_AUTO_TEST_CASE( DistPametis_distribution_test)
