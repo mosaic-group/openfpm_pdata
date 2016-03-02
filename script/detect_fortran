@@ -1,0 +1,16 @@
+#! /bin/bash
+
+function detect_fortran()
+{
+    command -v $1 >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+      dgc_ret=0
+      return
+    fi
+
+    echo -e "$1 \033[92;1m SUCCESS \033[0m"
+
+    dgc_ret=1
+}
+
+

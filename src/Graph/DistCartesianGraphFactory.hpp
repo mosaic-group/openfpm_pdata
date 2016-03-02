@@ -209,7 +209,7 @@ public:
 	{
 		typedef typename boost::fusion::result_of::at<v, boost::mpl::int_<0>>::type t_val;
 
-		g_v.template get<t_val::value>()[T::value] = gk.get(T::value) * szd[T::value];
+		g_v.template get<t_val::value>()[T::value] = gk.get(T::value) * static_cast<float>(szd[T::value]);
 		dist_fill_id<dim, G_v, loc_id, glob_id>::fill(g_v, gk, gs);
 	}
 };
@@ -447,7 +447,7 @@ public:
 		size_t mod_v = g.size() % Np;
 		size_t div_v = g.size() / Np;
 
-		for (int i = 0; i <= Np; i++)
+		for (size_t i = 0; i <= Np; i++)
 		{
 			if (i < mod_v)
 				vtxdist.get(i) = (div_v + 1) * (i);
@@ -480,7 +480,7 @@ public:
 		{
 			size_t v_id = g.LinId(k_it.get());
 
-			if (v_id < vtxdist.get(p_id + 1) && v_id >= vtxdist.get(p_id))
+			if (v_id < (size_t)vtxdist.get(p_id + 1) && v_id >= (size_t)vtxdist.get(p_id))
 			{
 				grid_key_dx<dim> key = k_it.get();
 

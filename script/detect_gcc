@@ -14,29 +14,31 @@ function detect_gcc_or_clang()
     if [ $? == 0 ]; then
         echo "Apple LLVM based g++"
 
+        echo "Apple LLVM based g++"
+
         # we try the detect the version
-        major=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(.*/\1/g')
+        major=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\1/g')
 
         # we check if the detection is garbage
         echo "$major" | egrep -q '^[0-9]+$'
         if [ $? == 0 ]; then
-           dgc_major=$($1 --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(.*/\1/g')
-           dgc_middle=$($1 --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(.*/\2/g')
-           dgc_minor=$($1 --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(.*/\3/g')
+           dgc_major=$($1 --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\1/g')
+           dgc_middle=$($1 --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\2/g')
+           dgc_minor=$($1 --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\3/g')
 
            if [ $dgc_major -gt 6 ]; then
              echo -e "clang++ $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
              dgc_compiler=clang++
              dgc_ret=1
            elif [ $dgc_major -lt 6 ]; then
-             echo -e "clang++ $dgc_major.$dgc_middle.$dgc_minor \033[91;5;1m FAILED \033[0m your Apple clang $major.middle;$minor is too old, 6.1.0 or higher is required"
+             echo -e "clang++ $dgc_major.$dgc_middle.$dgc_minor \033[91;5;1m FAILED \033[0m your Apple clang $dgc_major.$dgc_middle;$dgc_minor is too old, 6.1.0 or higher is required"
              dgc_ret=0
            elif [ $dgc_middle -gt 1  ]; then
              echo -e "clang++ $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
              dgc_compiler=clang++
              dgc_ret=1
-           elif [ $dgc_minor -lt 1 ]; then
-             echo -e "clang++ $dgc_major.$dgc_middle.$dgc_minor \033[91;5;1m FAILED \033[0m your Apple clang $major.middle;$minor is too old, 6.1.0 or higher is required"
+           elif [ $dgc_middle -lt 1 ]; then
+             echo -e "clang++ $dgc_major.$dgc_middle.$dgc_minor \033[91;5;1m FAILED \033[0m your Apple clang $dgc_major.$dgc_middle;$dgc_minor is too old, 6.1.0 or higher is required"
              dgc_ret=0
            else
              echo -e "Apple clang++ version $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
@@ -45,12 +47,13 @@ function detect_gcc_or_clang()
            fi
            return
         fi
+
         dgc_ret=2
         return
     fi
 
     $1 --version | grep $1
-    if [ $? == 0 -a x"$1" == x"gcc" ]; then
+    if [ $? == 0 -a x"$1" == x"g++" ]; then
         dgc_major=$($1 --version | grep $1 | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
         dgc_middle=$($1 --version | grep $1 | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
         dgc_minor=$($1 --version | grep $1 | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')

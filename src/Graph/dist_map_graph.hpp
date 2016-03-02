@@ -62,8 +62,8 @@
 #include "Vector/map_vector.hpp"
 #include "Graph/map_graph.hpp"
 #include <unordered_map>
-#include "Packer.hpp"
-#include "Unpacker.hpp"
+#include "Packer_Unpacker/Packer.hpp"
+#include "Packer_Unpacker/Unpacker.hpp"
 #include "VCluster.hpp"
 
 #define NO_EDGE -1
@@ -1170,6 +1170,8 @@ public:
 	DistGraph_CSR<V, E, VertexList, EdgeList, Memory> & operator=(const DistGraph_CSR<V, E, VertexList, EdgeList, Memory> & g)
 	{
 		swap(g.duplicate());
+
+		return *this;
 	}
 
 	/*! \brief operator to access the vertex

@@ -2,7 +2,7 @@
  * CartDecomposition.hpp
  *
  *  Created on: Oct 07, 2015
- *      Author: Antonio Leo
+ *      Author: Pietro Incardona, Antonio Leo
  */
 
 #ifndef CARTDECOMPOSITION_HPP
@@ -29,22 +29,15 @@
 #include "ie_loc_ghost.hpp"
 #include "ie_ghost.hpp"
 #include "nn_processor.hpp"
-#include "GraphMLWriter.hpp"
-#include "ParMetisDistribution.hpp"
-#include "DistParMetisDistribution.hpp"
-#include "MetisDistribution.hpp"
-#include "DLB.hpp"
+#include "GraphMLWriter/GraphMLWriter.hpp"
+#include "Distribution/ParMetisDistribution.hpp"
+#include "Distribution/DistParMetisDistribution.hpp"
+#include "Distribution/MetisDistribution.hpp"
+#include "DLB/DLB.hpp"
+#include "util/se_util.hpp"
+#include "util/mathutil.hpp"
 
 #define CARTDEC_ERROR 2000lu
-
-// Macro that decide what to do in case of error
-#ifdef STOP_ON_ERROR
-#define ACTION_ON_ERROR() exit(1);
-#elif defined(THROW_ON_ERROR)
-#define ACTION_ON_ERROR() throw CARTDEC_ERROR;
-#else
-#define ACTION_ON_ERROR()
-#endif
 
 /**
  * \brief This class decompose a space into subspaces
@@ -52,14 +45,13 @@
  * \tparam dim is the dimensionality of the physical domain we are going to decompose.
  * \tparam T type of the space we decompose, Real, Integer, Complex ...
  * \tparam Memory Memory factory used to allocate memory
- * \tparam Domain Structure that contain the information of your physical domain
  * \tparam Distribution type of distribution, can be ParMetisDistribution or MetisDistribution
  *
  * Given an N-dimensional space, this class decompose the space into a Cartesian grid of small
- * sub-sub-domain. At each sub-sub-domain is assigned  an id that identify which processor is
- * going to take care of that part of space (in general the space assigned to a processor is
- * simply connected), a second step merge several sub-sub-domain with same id into bigger region
- *  sub-domain with the id. Each sub-domain has an extended space called ghost part
+ * sub-sub-domain. To each sub-sub-domain is assigned an id that identify at which processor is
+ * assigned (in general the union of all the sub-sub-domain assigned to a processor is
+ * simply connected space), a second step merge several sub-sub-domain with same id into bigger region
+ *  sub-domain. Each sub-domain has an extended space called ghost part
  *
  * Assuming that VCluster.getProcessUnitID(), equivalent to the MPI processor rank, return the processor local
  * processor id, we define
@@ -87,7 +79,7 @@
  *
  */
 
-template<unsigned int dim, typename T, typename Memory = HeapMemory, template<unsigned int, typename > class Domain = Box, typename Distribution = ParMetisDistribution<dim, T>>
+template<unsigned int dim, typename T, typename Memory = HeapMemory, typename Distribution = ParMetisDistribution<dim, T>>
 class CartDecomposition: public ie_loc_ghost<dim, T>, public nn_prcs<dim, T>, public ie_ghost<dim, T>
 {
 
@@ -123,7 +115,7 @@ private:
 	CellDecomposer_sm<dim, T> cd;
 
 	//! rectangular domain to decompose
-	Domain<dim, T> domain;
+	::Box<dim,T> domain;
 
 	//! Box Spacing
 	T spacing[dim];
@@ -131,11 +123,28 @@ private:
 	//! Runtime virtual cluster machine
 	Vcluster & v_cl;
 
-	//! Create ditribution
+	//! Create distribution
 	Distribution dist;
 
-	//! Cell-list that store the geometrical information of the local internal ghost boxes
-	CellList<dim, T, FAST> lgeo_cell;
+	// Smallest subdivision on each direction
+	::Box<dim,T> ss_box;
+
+	::Box<dim,T> bbox;
+
+	// Heap memory receiver
+	HeapMemory hp_recv;
+
+	// vector v_proc
+	openfpm::vector<size_t> v_proc;
+
+	// reference counter of the object in case is shared between object
+	long int ref_cnt;
+
+	// ghost info
+	Ghost<dim,T> ghost;
+
+	// Boundary condition info
+	size_t bc[dim];
 
 	// Heap memory receiver
 	HeapMemory hp_recv;
@@ -154,7 +163,7 @@ private:
 	 * \param v_cl Virtual cluster, used internally for communications
 	 *
 	 */
-	void createSubdomains(Vcluster & v_cl)
+	void createSubdomains(Vcluster & v_cl, const size_t (& bc)[dim])
 	{
 #ifdef SE_CLASS1
 		if (&v_cl == NULL)
@@ -188,7 +197,7 @@ private:
 		openfpm::vector<::Box<dim, size_t>> loc_box;
 
 		// optimize the decomposition
-		d_o.template optimize<nm_v::sub_id, nm_v::proc_id>(dist.getGraph(), p_id, loc_box, box_nn_processor);
+		d_o.template optimize<nm_v::sub_id, nm_v::proc_id>(dist.getGraph(), p_id, loc_box, box_nn_processor,bc);
 
 		// Initialize ss_box and bbox
 		if (loc_box.size() >= 0)
@@ -197,18 +206,22 @@ private:
 			SpaceBox<dim, T> sub_d(sub_dc);
 			sub_d.mul(spacing);
 			sub_d.expand(spacing);
+			sub_d += domain.getP1();
+
+			// we add the
 
 			// Fixing sub-domains to cover all the domain
 
 			// Fixing sub_d
-			// if (loc_box) is a the boundary we have to ensure that the box span the full
+			// if (loc_box) is at the boundary we have to ensure that the box span the full
 			// domain (avoiding rounding off error)
 			for (size_t i = 0; i < dim; i++)
 			{
 				if (sub_dc.getHigh(i) == cd.getGrid().size(i) - 1)
-				{
 					sub_d.setHigh(i, domain.getHigh(i));
-				}
+
+				if (sub_dc.getLow(i) == 0)
+					sub_d.setLow(i,domain.getLow(i));
 			}
 
 			// add the sub-domain
@@ -219,6 +232,10 @@ private:
 			bbox = sub_d;
 		}
 
+/*		if (loc_box.size())
+		bbox.zero();
+		ss_box = domain;*/
+
 		// convert into sub-domain
 		for (size_t s = 1; s < loc_box.size(); s++)
 		{
@@ -228,6 +245,7 @@ private:
 			// re-scale and add spacing (the end is the starting point of the next domain + spacing)
 			sub_d.mul(spacing);
 			sub_d.expand(spacing);
+			sub_d += domain.getP1();
 
 			// Fixing sub-domains to cover all the domain
 
@@ -237,9 +255,10 @@ private:
 			for (size_t i = 0; i < dim; i++)
 			{
 				if (sub_dc.getHigh(i) == cd.getGrid().size(i) - 1)
-				{
 					sub_d.setHigh(i, domain.getHigh(i));
-				}
+
+				if (sub_dc.getLow(i) == 0)
+					sub_d.setLow(i,domain.getLow(i));
 			}
 
 			// add the sub-domain
@@ -252,7 +271,9 @@ private:
 			ss_box.contained(sub_d);
 		}
 
-		nn_prcs<dim, T>::create(box_nn_processor, sub_domains);
+		nn_prcs<dim,T>::create(box_nn_processor, sub_domains);
+		nn_prcs<dim,T>::refine_ss_box(ss_box);
+		nn_prcs<dim,T>::applyBC(domain,ghost,bc);
 
 		// fill fine_s structure
 		// fine_s structure contain the processor id for each sub-sub-domain
@@ -270,10 +291,22 @@ private:
 			++it;
 		}
 
+		Initialize_geo_cell_lists();
+	}
+
+	/*! \brief Initialize geo_cell lists
+	 *
+	 *
+	 *
+	 */
+	void Initialize_geo_cell_lists()
+	{
 		// Get the smallest sub-division on each direction
 		::Box<dim, T> unit = getSmallestSubdivision();
 		// Get the processor bounding Box
-		::Box<dim, T> bound = getProcessorBounds();
+		::Box<dim,T> bound = getProcessorBounds();
+		// Not necessary, but I prefer
+		bound.enlarge(ghost);
 
 		// calculate the sub-divisions
 		size_t div[dim];
@@ -288,9 +321,10 @@ private:
 			orig.get(i) = bound.getLow(i);
 
 		// Initialize the geo_cell structure
-		ie_ghost<dim, T>::Initialize_geo_cell(domain, div, orig);
-		lgeo_cell.Initialize(domain, div, orig);
+		ie_ghost<dim,T>::Initialize_geo_cell(bound,div,orig);
 
+		// Initialize shift vectors
+		ie_ghost<dim,T>::generateShiftVectors(domain);
 	}
 
 	/*! \brief Calculate communication and migration costs
@@ -309,7 +343,7 @@ private:
 		float gh_v = (gh_s * b_s);
 
 		// multiply for sub-sub-domain side for each domain
-		for (int i = 2; i < dim; i++)
+		for (size_t i = 2; i < dim; i++)
 			gh_v *= b_s;
 
 		size_t norm = (size_t) (1.0 / gh_v);
@@ -329,9 +363,6 @@ private:
 			prev += dist.getNSubSubDomainNeighbors(i);
 		}
 	}
-
-	// Save the ghost boundaries
-	Ghost<dim, T> ghost;
 
 	/*! \brief Create the subspaces that decompose your domain
 	 *
@@ -368,21 +399,177 @@ private:
 		}
 	}
 
+
+	/*! \brief It copy the sub-domains into another CartesianDecomposition object extending them
+	 *
+	 * \see duplicate (in case of extended domain)
+	 *
+	 * \param cart Cartesian decomposition object
+	 * \param box Extended domain
+	 *
+	 */
+	void extend_subdomains(CartDecomposition<dim,T> & cart, const ::Box<dim,T> & ext_dom) const
+	{
+		// Box
+		typedef ::Box<dim,T> b;
+
+		cart.bbox = ext_dom;
+		cart.ss_box = ext_dom;
+
+		for (size_t i = 0 ; i < sub_domains.size() ; i++)
+		{
+			::Box<dim,T> box;
+
+			// Calculate the extended box
+			for (size_t j = 0 ; j < dim ; j++)
+			{
+				if (sub_domains.template get<b::p1>(i)[j] == domain.getLow(j))
+					box.setLow(j,ext_dom.getLow(j));
+				else
+					box.setLow(j,sub_domains.template get<b::p1>(i)[j]);
+
+				if (sub_domains.template get<b::p2>(i)[j] == domain.getHigh(j))
+					box.setHigh(j,ext_dom.getHigh(j));
+				else
+					box.setHigh(j,sub_domains.template get<b::p2>(i)[j]);
+			}
+
+			// add the subdomain
+			cart.sub_domains.add(box);
+
+			// Calculate the bound box
+			cart.bbox.enclose(box);
+
+			// Create the smallest box contained in all sub-domain
+			cart.ss_box.contained(box);
+		}
+	}
+
+	/*! \brief Extend the fines for the new Cartesian decomposition
+	 *
+	 * \param new_fines extended fine_s
+	 * \param old_fines old fine_s
+	 *
+	 */
+	void extend_fines(CartDecomposition<dim,T> & cart) const
+	{
+		// Extension, first we calculate the extensions of the new domain compared
+		// to the old one in cell units (each cell unit is a sub-sub-domain)
+		::Box<dim,size_t> ext;
+		// Extension of the new fines structure
+		::Box<dim,size_t> n_fines_ext;
+		// Extension of the old fines structure
+		::Box<dim,size_t> o_fines_ext;
+
+		size_t sz_new[dim];
+		size_t sz_old[dim];
+
+		for (size_t i = 0; i < dim ; i++)
+		{
+			size_t p1 = (domain.getLow(i) - this->domain.getLow(i)) / cd.getCellBox().getHigh(i) + 1;
+			size_t p2 = (domain.getLow(i) - this->domain.getLow(i)) / cd.getCellBox().getHigh(i) + 1;
+
+			ext.setLow(i,p1);
+			ext.setHigh(i,p2);
+			sz_new[i] = p1+p2+cd.getGrid().size(i);
+			sz_old[i] = cd.getGrid().size(i);
+		}
+
+		grid_sm<dim,void> info_new(sz_new);
+		grid_sm<dim,void> info_old(sz_old);
+
+		// resize the new fines
+		cart.fine_s.resize(info_new.size());
+
+		// we create an iterator that iterate across the full new fines
+		grid_key_dx_iterator<dim> fines_t(info_new);
+
+		while (fines_t.isNext())
+		{
+			auto key = fines_t.get();
+
+			// new_fines is bigger than old_fines structure
+			// out of bound key must be adjusted
+			// The adjustment produce a natural extension
+			// a representation can be seen in the figure of
+			// CartDecomposition duplicate function with extended domains
+
+			grid_key_dx<dim> key_old;
+			for (size_t i = 0 ; i < dim ; i++)
+			{
+				key_old.set_d(i,(long int)key.get(i) - ext.getLow(i));
+				if (key_old.get(i) < 0)
+					key_old.set_d(i,0);
+				else if(key_old.get(i) >= (long int)info_old.size(i) )
+					key_old.set_d(i,info_old.size(i)-1);
+			}
+
+			cart.fine_s.get(info_new.LinId(key)) = fine_s.get(info_old.LinId(key_old));
+
+			++fines_t;
+		}
+
+		cart.gr.setDimensions(sz_new);
+
+		// the new extended CellDecomposer must be consistent with the old cellDecomposer.
+		cart.cd.setDimensions(cd,ext);
+	}
+
 public:
 
-	/*! \brief Cart decomposition constructor
+	static constexpr int dims = dim;
+
+	typedef T stype;
+
+	//! Increment the reference counter
+	void incRef()
+	{ref_cnt++;}
+
+	//! Decrement the reference counter
+	void decRef()
+	{ref_cnt--;}
+
+	//! Return the reference counter
+	long int ref()
+	{
+		return ref_cnt;
+	}
+
+	/*! \brief Cartesian decomposition constructor
 	 *
 	 * \param v_cl Virtual cluster, used internally to handle or pipeline communication
 	 *
 	 */
 	CartDecomposition(Vcluster & v_cl) :
-			nn_prcs<dim, T>(v_cl), v_cl(v_cl), dist(v_cl)
+			nn_prcs<dim, T>(v_cl), v_cl(v_cl), dist(v_cl),ref_cnt(0)
 	{
 		// Reset the box to zero
 		bbox.zero();
 	}
 
-	//! Cart decomposition destructor
+	/*! \brief Cartesian decomposition copy constructor
+	 *
+     * \param cart object to copy
+	 *
+	 */
+	CartDecomposition(const CartDecomposition<dim,T,Memory> & cart)
+	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),dist(v_cl),ref_cnt(0)
+	{
+		this->operator=(cart);
+	}
+
+	/*! \brief Cartesian decomposition copy constructor
+	 *
+     * \param cart object to copy
+	 *
+	 */
+	CartDecomposition(CartDecomposition<dim,T,Memory> && cart)
+	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),dist(v_cl),ref_cnt(0)
+	{
+		this->operator=(cart);
+	}
+
+	//! Cartesian decomposition destructor
 	~CartDecomposition()
 	{
 	}
@@ -447,6 +634,68 @@ public:
 		}
 	};
 
+	/*! \brief class to select the returned id by ghost_processorID
+	 *
+	 */
+	class shift_id
+	{
+	public:
+		/*! \brief Return the shift id
+		 *
+		 * \param p structure containing the id informations
+		 * \param b_id box_id
+		 *
+		 * \return shift_id id
+		 *
+		 */
+		inline static size_t id(p_box<dim,T> & p, size_t b_id)
+		{
+			return p.shift_id;
+		}
+	};
+
+	/*! \brief Apply boundary condition to the point
+	 *
+	 * \param p Point to apply the boundary condition
+	 *
+	 */
+	void applyPointBC(float (& pt)[dim]) const
+	{
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (bc[i] == PERIODIC)
+				pt[i] = openfpm::math::periodic_l(pt[i],domain.getHigh(i),domain.getLow(i));
+		}
+	}
+
+	/*! \brief Apply boundary condition to the point
+	 *
+	 * \param p Point to apply the boundary condition
+	 *
+	 */
+	void applyPointBC(Point<dim,T> & pt) const
+	{
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (bc[i] == PERIODIC)
+				pt.get(i) = openfpm::math::periodic_l(pt.get(i),domain.getHigh(i),domain.getLow(i));
+		}
+	}
+
+	/*! \brief Apply boundary condition to the point
+	 *
+	 * \param encapsulated object
+	 *
+	 */
+	template<typename Mem> void applyPointBC(encapc<1,Point<dim,T>,Mem> && pt) const
+	{
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (bc[i] == PERIODIC)
+				pt.template get<0>()[i] = openfpm::math::periodic_l(pt.template get<0>()[i],domain.getHigh(i),domain.getLow(i));
+		}
+	}
+
 	/*! It calculate the internal ghost boxes
 	 *
 	 * Example: Processor 10 calculate
@@ -456,63 +705,61 @@ public:
 	 *
 	 \verbatim
 
-	 +----------------------------------------------------+
-	 |                                                    |
-	 |                 Processor 8                        |
-	 |                 Sub-domain 0                       +-----------------------------------+
-	 |                                                    |                                   |
-	 |                                                    |                                   |
-	 ++--------------+---+---------------------------+----+        Processor 9                |
-	 |              |   |     B8_0                  |    |        Subdomain 0                |
-	 |              +------------------------------------+                                   |
-	 |              |   |                           |    |                                   |
-	 |              |   |  XXXXXXXXXXXXX XX         |B9_0|                                   |
-	 |              | B |  X Processor 10 X         |    |                                   |
-	 | Processor 5  | 5 |  X Sub-domain 0 X         |    |                                   |
-	 | Subdomain 0  | _ |  X              X         +----------------------------------------+
-	 |              | 0 |  XXXXXXXXXXXXXXXX         |    |                                   |
-	 |              |   |                           |    |                                   |
-	 |              |   |                           |    |        Processor 9                |
-	 |              |   |                           |B9_1|        Subdomain 1                |
-	 |              |   |                           |    |                                   |
-	 |              |   |                           |    |                                   |
-	 |              |   |                           |    |                                   |
-	 +--------------+---+---------------------------+----+                                   |
-														 |                                   |
-														 +-----------------------------------+
++----------------------------------------------------+
+|                                                    |
+|                 Processor 8                        |
+|                 Sub+domain 0                       +-----------------------------------+
+|                                                    |                                   |
+|                                                    |                                   |
+++--------------+---+---------------------------+----+        Processor 9                |
+ |              |   |     B8_0                  |    |        Subdomain 0                |
+ |              +------------------------------------+                                   |
+ |              |   |                           |    |                                   |
+ |              |   |                           |B9_0|                                   |
+ |              | B |    Local processor        |    |                                   |
+ | Processor 5  | 5 |    Subdomain 0            |    |                                   |
+ | Subdomain 0  | _ |                           +----------------------------------------+
+ |              | 0 |                           |    |                                   |
+ |              |   |                           |    |                                   |
+ |              |   |                           |    |        Processor 9                |
+ |              |   |                           |B9_1|        Subdomain 1                |
+ |              |   |                           |    |                                   |
+ |              |   |                           |    |                                   |
+ |              |   |                           |    |                                   |
+ +--------------+---+---------------------------+----+                                   |
+                                                     |                                   |
+                                                     +-----------------------------------+
 
-	 \endverbatim
 
-	 and also
-	 G8_0 G9_0 G9_1 G5_0 (External ghost boxes)
+ \endverbatim
 
-	 \verbatim
+       and also
+       G8_0 G9_0 G9_1 G5_0 (External ghost boxes)
 
-	 +----------------------------------------------------+
-	 |                                                    |
-	 |                 Processor 8                        |
-	 |                 Sub-domain 0                       +-----------------------------------+
-	 |           +---------------------------------------------+                              |
-	 |           |         G8_0                           |    |                              |
-	 ++--------------+------------------------------------+    |   Processor 9                |
-	 |          |   |                                    |    |   Subdomain 0                |
-	 |          |   |                                    |G9_0|                              |
-	 |          |   |                                    |    |                              |
-	 |          |   |      XXXXXXXXXXXXX XX              |    |                              |
-	 |          |   |      X Processor 10 X              |    |                              |
-	 | Processor|5  |      X Sub-domain 0 X              |    |                              |
-	 | Subdomain|0  |      X              X              +-----------------------------------+
-	 |          |   |      XXXXXXXXXXXXXXXX              |    |                              |
-	 |          | G |                                    |    |                              |
-	 |          | 5 |                                    |    |   Processor 9                |
-	 |          | | |                                    |    |   Subdomain 1                |
-	 |          | 0 |                                    |G9_1|                              |
-	 |          |   |                                    |    |                              |
-	 |          |   |                                    |    |                              |
-	 +--------------+------------------------------------+    |                              |
-				 |                                        |    |                              |
-				 +----------------------------------------+----+------------------------------+
-
+      +----------------------------------------------------+
+      |                 Processor 8                        |
+      |                 Subdomain 0                        +-----------------------------------+
+      |                                                    |                                   |
+      |           +---------------------------------------------+                              |
+      |           |         G8_0                           |    |                              |
++-----+---------------+------------------------------------+    |   Processor 9                |
+|                 |   |                                    |    |   Subdomain 0                |
+|                 |   |                                    |G9_0|                              |
+|                 |   |                                    |    |                              |
+|                 |   |                                    |    |                              |
+|                 |   |        Local processor             |    |                              |
+|  Processor 5    |   |        Sub+domain 0                |    |                              |
+|  Subdomain 0    |   |                                    +-----------------------------------+
+|                 |   |                                    |    |                              |
+|                 | G |                                    |    |                              |
+|                 | 5 |                                    |    |   Processor 9                |
+|                 | | |                                    |    |   Subdomain 1                |
+|                 | 0 |                                    |G9_1|                              |
+|                 |   |                                    |    |                              |
+|                 |   |                                    |    |                              |
++---------------------+------------------------------------+    |                              |
+                  |                                        |    |                              |
+                  +----------------------------------------+----+------------------------------+
 
 	 \endverbatim
 
@@ -523,18 +770,19 @@ public:
 	 *
 	 *
 	 \verbatim
-					  ^ p2[1]
-					  |
-					  |
-				 +----+----+
-				 |         |
-				 |         |
-	  p1[0]<-----+         +----> p2[0]
-				 |         |
-				 |         |
-				 +----+----+
-					  |
-					  v  p1[1]
+
+	 	 	 	 	 ^ p2[1]
+	 	 	 	 	 |
+	 	 	 	 	 |
+	 	 	 	+----+----+
+	 	 	 	|         |
+	 	 	 	|         |
+	 p1[0]<-----+         +----> p2[0]
+	 	 	 	|         |
+	 	 	 	|         |
+	 	 	 	+----+----+
+	 	 	 	 	 |
+	 	 	 	 	 v  p1[1]
 
 	 \endverbatim
 
@@ -549,9 +797,9 @@ public:
 
 		for (size_t i = 0; i < dim; i++)
 		{
-			if (ghost.template getLow(i) >= domain.template getHigh(i) / gr.size(i) || ghost.template getHigh(i) >= domain.template getHigh(i) / gr.size(i))
+			if (fabs(ghost.template getLow(i)) >= ss_box.getHigh(i) || ghost.template getHigh(i) >= ss_box.getHigh(i))
 			{
-				std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " : Ghost are bigger than one domain" << "\n";
+				std::cerr << "Error " << __FILE__ << ":" << __LINE__  << " : Ghost are bigger than one sub-domain" << "\n";
 			}
 		}
 #endif
@@ -562,19 +810,236 @@ public:
 		ie_ghost<dim, T>::create_box_nn_processor_ext(v_cl, ghost, sub_domains, box_nn_processor, *this);
 		ie_ghost<dim, T>::create_box_nn_processor_int(v_cl, ghost, sub_domains, box_nn_processor, *this);
 
-		// ebox must come after ibox (in this case)
-
-		ie_loc_ghost<dim, T>::create_loc_ghost_ibox(ghost, sub_domains);
-		ie_loc_ghost<dim, T>::create_loc_ghost_ebox(ghost, sub_domains);
+		ie_loc_ghost<dim,T>::create(sub_domains,domain,ghost,bc);
 
 		// get the smallest sub-domain dimension on each direction
 		for (size_t i = 0; i < dim; i++)
 		{
-			if (ghost.template getLow(i) >= ss_box.getHigh(i) || ghost.template getHigh(i) >= domain.template getHigh(i) / gr.size(i))
+			if (fabs(ghost.template getLow(i)) >= ss_box.getHigh(i) || ghost.template getHigh(i) >= ss_box.getHigh(i))
 			{
-				std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " : Ghost are bigger than one domain" << "\n";
+				std::cerr << "Error " << __FILE__ << ":" << __LINE__  << " : Ghost are bigger than one sub-domain" << "\n";
 			}
 		}
+	}
+
+	/*! \brief It create another object that contain the same decomposition information but with different ghost boxes
+	 *
+	 * \param g ghost
+	 *
+	 * \return a duplicated decomposition with different ghost boxes
+	 *
+	 */
+	CartDecomposition<dim,T,Memory> duplicate(const Ghost<dim,T> & g) const
+	{
+		CartDecomposition<dim,T,Memory> cart(v_cl);
+
+		cart.box_nn_processor = box_nn_processor;
+		cart.sub_domains = sub_domains;
+		cart.fine_s = fine_s;
+
+		cart.gr = gr;
+		cart.cd = cd;
+		cart.domain = domain;
+		std::copy(spacing,spacing+3,cart.spacing);
+
+		//! Runtime virtual cluster
+		cart.v_cl = v_cl;
+
+		cart.bbox = bbox;
+		cart.ss_box = ss_box;
+		cart.ghost = g;
+
+		cart.dist = dist;
+
+		for (size_t i = 0 ; i < dim ; i++)
+			cart.bc[i] = bc[i];
+
+		(static_cast<nn_prcs<dim,T> &>(cart)).create(box_nn_processor, sub_domains);
+		(static_cast<nn_prcs<dim,T> &>(cart)).applyBC(domain,ghost,bc);
+
+		cart.Initialize_geo_cell_lists();
+		cart.calculateGhostBoxes();
+
+		return cart;
+	}
+
+	/*! \brief It create another object that contain the same decomposition information but with different ghost boxes and an extended domain
+	 *
+	 * The domain extension is produced extending the boxes at the border like in figure
+	 *
+	 * \verbatim
+	 *
++--------------^--------^----------^----------+
+|              |        |          |          |
+|        A     |    E   |     F    |    N     |
+|    +-----------------------------------+---->
+|    |         |        |          |     |    |
+|  A |   A     |        |     F    |     |    |
+|    |         |        |          |     |    |
+|    |         |    E   +----------+  N  |  N |
+<--------------+        |          |     |    |
+|    |         |        |          |     |    |
+|    |         |        |     G    |     |    |
+|    |         |        |          +---------->
+|  B |   B     |        +----------+     |    |
+|    |         +--------+          |  M  |  M |
+|    |         |        |     H    |     |    |
+|    |         |        +-----+----+---------->
+<--------------+    D   |     |          |    |
+|    |         |        |  I  |     L    |  L |
+|  C |   C     |        |     |          |    |
+|    |         |        |     |          |    |
+|    +-----------------------------------+    |
+|              |        |     |               |
+|        C     |    D   |  I  |     L         |
++--------------v--------v-----v---------------+
+
+	 *
+	 * \endverbatim
+	 *
+	 * \param g ghost
+	 * \param domain extended domain (MUST be extended)
+	 *
+	 * \return a duplicated decomposition with different ghost boxes and an extended domain
+	 *
+	 */
+	CartDecomposition<dim,T,Memory> duplicate(const Ghost<dim,T> & g, const ::Box<dim,T> & ext_domain) const
+	{
+		CartDecomposition<dim,T,Memory> cart(v_cl);
+
+		cart.box_nn_processor = box_nn_processor;
+
+		// Calculate new sub-domains for extended domain
+		extend_subdomains(cart,ext_domain);
+
+		// Calculate fine_s structure for the extended domain
+		// update the cell decomposer and gr
+		extend_fines(cart);
+
+		// Get the old sub-sub-domain grid extension
+
+		cart.domain = ext_domain;
+
+		// spacing does not change
+		std::copy(spacing,spacing+3,cart.spacing);
+
+		//! Runtime virtual cluster
+		cart.v_cl = v_cl;
+
+		cart.ghost = g;
+		cart.dist = dist;
+
+		for (size_t i = 0 ; i < dim ; i++)
+			cart.bc[i] = bc[i];
+
+		(static_cast<nn_prcs<dim,T> &>(cart)).create(cart.box_nn_processor, cart.sub_domains);
+		(static_cast<nn_prcs<dim,T> &>(cart)).applyBC(ext_domain,ghost,bc);
+
+		cart.Initialize_geo_cell_lists();
+		cart.calculateGhostBoxes();
+
+		return cart;
+	}
+
+	/*! \brief It create another object that contain the same information and act in the same way
+	 *
+	 * \return a duplicated decomposition
+	 *
+	 */
+	CartDecomposition<dim,T,Memory> duplicate() const
+	{
+		CartDecomposition<dim,T,Memory> cart(v_cl);
+
+		(static_cast<ie_loc_ghost<dim,T>*>(&cart))->operator=(static_cast<ie_loc_ghost<dim,T>>(*this));
+		(static_cast<nn_prcs<dim,T>*>(&cart))->operator=(static_cast<nn_prcs<dim,T>>(*this));
+		(static_cast<ie_ghost<dim,T>*>(&cart))->operator=(static_cast<ie_ghost<dim,T>>(*this));
+
+		cart.sub_domains = sub_domains;
+		cart.box_nn_processor = box_nn_processor;
+		cart.fine_s = fine_s;
+		cart.gr = gr;
+		cart.cd = cd;
+		cart.domain = domain;
+		std::copy(spacing,spacing+3,cart.spacing);
+
+		//! Runtime virtual cluster
+		cart.v_cl = v_cl;
+
+		cart.ghost = ghost;
+
+		cart.bbox = bbox;
+		cart.ss_box = ss_box;
+
+		for (size_t i = 0 ; i < dim ; i++)
+			cart.bc[i] = this->bc[i];
+
+		return cart;
+	}
+
+	/*! \brief Copy the element
+	 *
+	 * \param cart element to copy
+	 *
+	 */
+	CartDecomposition<dim,T,Memory> & operator=(const CartDecomposition & cart)
+	{
+		static_cast<ie_loc_ghost<dim,T>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T>>(cart));
+		static_cast<nn_prcs<dim,T>*>(this)->operator=(static_cast<nn_prcs<dim,T>>(cart));
+		static_cast<ie_ghost<dim,T>*>(this)->operator=(static_cast<ie_ghost<dim,T>>(cart));
+
+		sub_domains = cart.sub_domains;
+		box_nn_processor = cart.box_nn_processor;
+		fine_s = cart.fine_s;
+		gr = cart.gr;
+		cd = cart.cd;
+		domain = cart.domain;
+		std::copy(cart.spacing,cart.spacing+3,spacing);
+
+		//! Runtime virtual cluster
+		v_cl = cart.v_cl;
+
+		ghost = cart.ghost;
+
+		bbox = cart.bbox;
+		ss_box = cart.ss_box;
+
+		for (size_t i = 0 ; i < dim ; i++)
+			bc[i] = cart.bc[i];
+
+		return *this;
+	}
+
+	/*! \brief Copy the element, move semantic
+	 *
+	 * \param cart element to copy
+	 *
+	 */
+	CartDecomposition<dim,T,Memory> & operator=(CartDecomposition && cart)
+	{
+		static_cast<ie_loc_ghost<dim,T>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T>*>(cart));
+		static_cast<nn_prcs<dim,T>*>(this)->operator=(static_cast<nn_prcs<dim,T>*>(cart));
+		static_cast<ie_ghost<dim,T>*>(this)->operator=(static_cast<ie_ghost<dim,T>*>(cart));
+
+		sub_domains.swap(cart.sub_domains);
+		box_nn_processor.swap(cart.box_nn_processor);
+		fine_s.swap(cart.fine_s);
+		gr = cart.gr;
+		cd = cart.cd;
+		domain = cart.domain;
+		std::copy(cart.spacing,cart.spacing+3,spacing);
+
+		//! Runtime virtual cluster
+		v_cl = cart.v_cl;
+
+		ghost = cart.ghost;
+
+		cart.bbox = bbox;
+		cart.ss_box = ss_box;
+
+		for (size_t i = 0 ; i < dim ; i++)
+			cart.bc[i] = bc[i];
+
+		return *this;
 	}
 
 	/*! \brief The default grid size
@@ -596,22 +1061,9 @@ public:
 	 * \return processorID
 	 *
 	 */
-	template<typename Mem> size_t inline processorID(encapc<1, Point<dim, T>, Mem> p)
+	template<typename Mem, typename ofb> size_t inline processorID(encapc<1, Point<dim,T>, Mem> p)
 	{
-		return fine_s.get(cd.getCell(p));
-	}
-
-	// Smallest subdivision on each direction
-	::Box<dim, T> ss_box;
-
-	/*! \brief Get the smallest subdivision of the domain on each direction
-	 *
-	 * \return a box p1 is set to zero
-	 *
-	 */
-	const ::Box<dim, T> & getSmallestSubdivision()
-	{
-		return ss_box;
+		return fine_s.get(cd.template getCell<ofb>(p));
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -619,10 +1071,86 @@ public:
 	 * \return processorID
 	 *
 	 */
+	size_t inline processorID(const Point<dim,T> &p) const
+	{
+		return fine_s.get(cd.getCell(p));
+	}
 
+	/*! \brief Given a point return in which processor the particle should go
+	 *
+	 * \return processorID
+	 *
+	 */
 	size_t inline processorID(const T (&p)[dim]) const
 	{
 		return fine_s.get(cd.getCell(p));
+	}
+
+	/*! \brief Given a point return in which processor the particle should go
+	 *
+	 * Boundary conditions are considered
+	 *
+	 * \return processorID
+	 *
+	 */
+	template<typename Mem> size_t inline processorIDBC(encapc<1, Point<dim,T>, Mem> p)
+	{
+		Point<dim,T> pt = p;
+		applyPointBC(pt);
+
+		return fine_s.get(cd.getCell(pt));
+	}
+
+	/*! \brief Given a point return in which processor the particle should go
+	 *
+	 * Boundary conditions are considered
+	 *
+	 * \return processorID
+	 *
+	 */
+	template<typename ofb> size_t inline processorIDBC(const Point<dim,T> &p) const
+	{
+		Point<dim,T> pt = p;
+		applyPointBC(pt);
+
+		return fine_s.get(cd.getCell(p));
+	}
+
+	/*! \brief Given a point return in which processor the particle should go
+	 *
+	 * Boundary consition are considered
+	 *
+	 * \return processorID
+	 *
+	 */
+	template<typename ofb> size_t inline processorIDBC(const T (&p)[dim]) const
+	{
+		Point<dim,T> pt = p;
+		applyPointBC(pt);
+
+		return fine_s.get(cd.getCell(p));
+	}
+
+	/*! \brief Get the smallest subdivision of the domain on each direction
+	 *
+	 * \return a box p1 is set to zero
+	 *
+	 */
+	const ::Box<dim,T> & getSmallestSubdivision()
+	{
+		return ss_box;
+	}
+
+	/*! \brief Get the periodicity on i dimension
+	 *
+	 * \param i dimension
+	 *
+	 * \return the periodicity in direction i
+	 *
+	 */
+	size_t isPeriodic(size_t i)
+	{
+		return bc[i];
 	}
 
 	/*! \brief Set the parameter of the decomposition
@@ -631,8 +1159,12 @@ public:
 	 * \param domain_ domain to decompose
 	 *
 	 */
-	void setParameters(const size_t (&div_)[dim], Domain<dim, T> domain_, Ghost<dim, T> ghost = Ghost<dim, T>())
+	void setParameters(const size_t (& div_)[dim], ::Box<dim,T> domain_, const size_t (& bc)[dim] ,const Ghost<dim,T> & ghost)
 	{
+		// set the boundary conditions
+		for (size_t i = 0 ; i < dim ; i++)
+			this->bc[i] = bc[i];
+
 		// set the ghost
 		this->ghost = ghost;
 
@@ -642,7 +1174,7 @@ public:
 		cd.setDimensions(domain, div_, 0);
 
 		// init distribution
-		dist.init(gr, domain);
+		dist.createCartGraph(gr, domain);
 
 	}
 
@@ -655,7 +1187,7 @@ public:
 
 		dist.decompose();
 
-		//createSubdomains(v_cl);
+		createSubdomains(v_cl,bc);
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
@@ -720,7 +1252,7 @@ public:
 	 */
 	inline void getSubSubDomainPosition(size_t id, T (&pos)[dim])
 	{
-		dist.getVertexPosition(id, pos);
+		dist.getSubSubDomainPosition(id, pos);
 	}
 
 	/*! \brief Get the number of sub-sub-domains in this sub-graph
@@ -739,7 +1271,7 @@ public:
 	 */
 	inline void setSubSubDomainComputationCost(size_t id, size_t weight)
 	{
-		dist.setVertexWeight(id, weight);
+		dist.setComputationCost(id, weight);
 	}
 
 	/*! \brief function that set the weight of the vertex
@@ -749,7 +1281,7 @@ public:
 	 */
 	inline size_t getSubSubDomainComputationCost(size_t id)
 	{
-		return dist.getVertexWeight(id);
+		return dist.getComputationCost(id);
 	}
 
 	/*! \brief Operator to access the size of the sub-graph
@@ -811,17 +1343,19 @@ public:
 		return sp;
 	}
 
-	/*! \brief Return the structure that store the physical domain
+	/*! \brief Return the box of the physical domain
 	 *
-	 * \return The physical domain
+	 * \return The physical domain box
 	 *
 	 */
-	Domain<dim, T> & getDomain()
+	const ::Box<dim,T> & getDomain()
 	{
 		return domain;
 	}
 
 	/*! \brief Check if the particle is local
+	 *
+	 * \warning if the particle id outside the domain the result is unreliable
 	 *
 	 * \param p object position
 	 *
@@ -835,6 +1369,8 @@ public:
 
 	/*! \brief Check if the particle is local
 	 *
+	 * \warning if the particle id outside the domain the result is unreliable
+	 *
 	 * \param p object position
 	 *
 	 * \return true if it is local
@@ -845,7 +1381,50 @@ public:
 		return processorID(pos) == v_cl.getProcessUnitID();
 	}
 
-	::Box<dim, T> bbox;
+	/*! \brief Check if the particle is local considering boundary conditions
+	 *
+	 * \warning if the particle id outside the domain and non periodic the result
+	 *          is unreliable
+	 *
+	 *
+	 * \param p object position
+	 *
+	 * \return true if it is local
+	 *
+	 */
+	template<typename Mem> bool isLocalBC(const encapc<1, Point<dim,T>, Mem> p, const size_t (& bc)[dim]) const
+	{
+		Point<dim,T> pt = p;
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (bc[i] == PERIODIC)
+				pt.get(i) = openfpm::math::periodic_l(p.template get<0>()[i],domain.getHigh(i),domain.getLow(i));
+		}
+
+		return processorID<Mem>(pt) == v_cl.getProcessUnitID();
+	}
+
+	/*! \brief Check if the particle is local considering boundary conditions
+	 *
+	 * \param p object position
+	 *
+	 * \return true if it is local
+	 *
+	 */
+	bool isLocalBC(const T (&p)[dim], const size_t (& bc)[dim]) const
+	{
+		Point<dim,T> pt = p;
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (bc[i] == PERIODIC)
+				pt.get(i) = openfpm::math::periodic_l(p[i],domain.getHigh(i),domain.getLow(i));
+		}
+
+		return processorID(pt) == v_cl.getProcessUnitID();
+	}
+
 
 	/*! \brief Return the bounding box containing union of all the sub-domains for the local processor
 	 *
@@ -855,6 +1434,16 @@ public:
 	::Box<dim, T> & getProcessorBounds()
 	{
 		return bbox;
+	}
+
+
+	/*! \brief Return the ghost
+	 *
+	 *
+	 */
+	const Ghost<dim,T> & getGhost() const
+	{
+		return ghost;
 	}
 
 	////////////// Functions to get decomposition information ///////////////
@@ -887,6 +1476,19 @@ public:
 		ie_loc_ghost<dim, T>::write(output, v_cl.getProcessUnitID());
 
 		return true;
+	}
+
+	/*! \brief Get the Virtual Cluster machine
+	 *
+	 * \return the Virtual cluster machine
+	 *
+	 */
+	Vcluster & getVC() const
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return v_cl;
 	}
 
 	/*! \brief function to check the consistency of the information of the decomposition
@@ -934,33 +1536,100 @@ public:
 		}
 	}
 
-	/*! \brief Print current graph and save it to file with name test_graph_[id]
+	/*! \brief Check if the CartDecomposition contain the same information
 	 *
-	 * \param id to attach to the filename
+	 * \param ele Element to check
 	 *
 	 */
-	void printCurrentDecomposition(int id)
+	bool is_equal(CartDecomposition<dim,T,Memory> & cart)
 	{
-		dist.printCurrentDecomposition(id);
+		if (static_cast<ie_loc_ghost<dim,T>*>(this)->is_equal(static_cast<ie_loc_ghost<dim,T>&>(cart)) == false)
+			return false;
+
+		if (static_cast<nn_prcs<dim,T>*>(this)->is_equal(static_cast<nn_prcs<dim,T>&>(cart)) == false)
+			return false;
+
+		if (static_cast<ie_ghost<dim,T>*>(this)->is_equal(static_cast<ie_ghost<dim,T>&>(cart)) == false)
+			return false;
+
+		if (sub_domains != cart.sub_domains)
+			return false;
+
+		if (box_nn_processor != cart.box_nn_processor)
+			return false;
+
+		if (fine_s != cart.fine_s)
+			return false;
+
+		if (gr != cart.gr)
+			return false;
+
+		if (cd != cart.cd)
+			return false;
+
+		if (domain != cart.domain)
+			return false;
+
+		if (meta_compare<T[dim]>::meta_compare_f(cart.spacing,spacing) == false)
+			return false;
+
+		if (ghost != cart.ghost)
+			return false;
+
+		return true;
 	}
 
-	//! Increment the reference counter
-	void incRef()
+	/*! \brief Check if the CartDecomposition contain the same information with the exception of the ghost part
+	 * It is anyway required that the ghost come from the same sub-domains decomposition
+	 *
+	 * \param ele Element to check
+	 *
+	 */
+	bool is_equal_ng(CartDecomposition<dim,T,Memory> & cart)
 	{
-		ref_cnt++;
+		if (static_cast<ie_loc_ghost<dim,T>*>(this)->is_equal_ng(static_cast<ie_loc_ghost<dim,T>&>(cart)) == false)
+			return false;
+
+		if (static_cast<nn_prcs<dim,T>*>(this)->is_equal(static_cast<nn_prcs<dim,T>&>(cart)) == false)
+			return false;
+
+		if (static_cast<ie_ghost<dim,T>*>(this)->is_equal_ng(static_cast<ie_ghost<dim,T>&>(cart)) == false)
+			return false;
+
+		if (sub_domains != cart.sub_domains)
+			return false;
+
+		if (box_nn_processor != cart.box_nn_processor)
+			return false;
+
+		if (fine_s != cart.fine_s)
+			return false;
+
+		if (gr != cart.gr)
+			return false;
+
+		if (cd != cart.cd)
+			return false;
+
+		if (domain != cart.domain)
+			return false;
+
+		if (meta_compare<T[dim]>::meta_compare_f(cart.spacing,spacing) == false)
+			return false;
+
+		return true;
 	}
 
-	//! Decrement the reference counter
-	void decRef()
+	/*! \brief Return the distribution object
+	 *
+	 * \return the distribution object
+	 *
+	 */
+	Distribution & getDistribution()
 	{
-		ref_cnt--;
-	}
-
-	//! Return the reference counter
-	long int ref()
-	{
-		return ref_cnt;
+		return dist;
 	}
 };
+
 
 #endif

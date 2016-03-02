@@ -11,7 +11,7 @@
 #include <iostream>
 #include "Graph/CartesianGraphFactory.hpp"
 #include "Graph/map_graph.hpp"
-#include "metis_util.hpp"
+#include "Decomposition/Distribution/metis_util.hpp"
 #include "SubdomainGraphNodes.hpp"
 
 int main(int argc, char ** argv)
@@ -24,9 +24,11 @@ int main(int argc, char ** argv)
 	// Box
 	Box<2,float> box({0.0,0.0},{1.0,1.0});
 
+	const size_t bc[] = {NON_PERIODIC,NON_PERIODIC};
+
 	// Graph to decompose
 
-	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,float,1,0,1>(sz,box);
+	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,1,0,1>(sz,box,bc);
 
 	// Convert the graph to metis
 
@@ -38,7 +40,7 @@ int main(int argc, char ** argv)
 
 	// Write the decomposition
 
-	VTKWriter<Graph_CSR<nm_v,nm_e>,GRAPH> vtk(g);
+	VTKWriter<Graph_CSR<nm_v,nm_e>,VTK_GRAPH> vtk(g);
 	vtk.write("Metis/vtk_partition.vtk");
 }
 

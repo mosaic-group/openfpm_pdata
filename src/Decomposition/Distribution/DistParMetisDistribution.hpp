@@ -12,7 +12,7 @@
 #ifndef SRC_DECOMPOSITION_DISTPARMETISDISTRIBUTION_HPP_
 #define SRC_DECOMPOSITION_DISTPARMETISDISTRIBUTION_HPP_
 
-template<unsigned int dim, typename T, template<unsigned int, typename > class Domain = Box>
+template<unsigned int dim, typename T>
 class DistParMetisDistribution
 {
 	//! Vcluster
@@ -22,7 +22,7 @@ class DistParMetisDistribution
 	grid_sm<dim, void> gr;
 
 	//! rectangular domain to decompose
-	Domain<dim, T> domain;
+	Box<dim, T> domain;
 
 	//! Processor sub-sub-domain graph
 	DistGraph_CSR<nm_v, nm_e> sub_g;
@@ -83,7 +83,7 @@ public:
 	 * /param grid Grid
 	 * /param dom Domain
 	 */
-	void init(grid_sm<dim, void> & grid, Domain<dim, T> dom)
+	void init(grid_sm<dim, void> & grid, Box<dim, T> dom)
 	{
 		//! Set grid and domain
 		gr = grid;
@@ -329,6 +329,34 @@ public:
 	{
 		VTKWriter<DistGraph_CSR<nm_v, nm_e>, DIST_GRAPH> gv2(sub_g);
 		gv2.write("test_dist_graph_" + std::to_string(id) + ".vtk");
+	}
+
+	const DistParMetisDistribution<dim,T> & operator=(const DistParMetisDistribution<dim,T> & dist)
+	{
+		v_cl = dist.v_cl;
+		gr = dist.gr;
+		domain = dist.domain;
+		sub_g = dist.sub_g;
+		vtxdist = dist.vtxdist;
+		partitions = dist.partitions;
+		v_per_proc = dist.v_per_proc;
+		verticesGotWeights = dist.verticesGotWeights;
+
+		return *this;
+	}
+
+	const DistParMetisDistribution<dim,T> & operator=(const DistParMetisDistribution<dim,T> && dist)
+	{
+		v_cl = dist.v_cl;
+		gr = dist.gr;
+		domain = dist.domain;
+		sub_g.swap(dist.sub_g);
+		vtxdist.swap(dist.vtxdist);
+		partitions.swap(dist.partitions);
+		v_per_proc.swap(dist.v_per_proc);
+		verticesGotWeights = dist.verticesGotWeights;
+
+		return *this;
 	}
 };
 

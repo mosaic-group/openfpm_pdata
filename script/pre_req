@@ -6,6 +6,7 @@ source script/discover_package_manager
 source script/discover_os
 source script/solve_autoconf
 source script/solve_gpp
+source script/solve_gfortran
 source script/solve_cmake
 source script/solve_git
 source script/solve_wget
@@ -14,6 +15,8 @@ source script/solve_brew
 source script/solve_libtool
 source script/detect_gcc
 source script/detect_osx
+source script/show_solutions
+source script/detect_fortran
 
 discover_os
 discover_package_manager $platform
@@ -27,6 +30,45 @@ if [ x"$platform" = x"osx" -a x"$pcman" = x""  ]; then
   pcman=$discover_package_manager_ret
   if [ x"$pcman" != x"brew" ]; then
     echo -e "brew \033[91;5;1m FAILED \033[0m"
+  fi
+fi
+
+### Additional package required for apt-get based distros
+if [ x"$platform" = x"linux" -a x"$pcman" = x"sudo apt-get"  ]; then
+  dpkg-query -l libbz2-dev
+  ret1=$?
+  dpkg-query -l python-dev
+  ret2=$?
+  dpkg-query -l libxml2-dev
+  ret3=$?
+  dpkg-query -l libxslt-dev
+  ret4=$?
+  if [ $ret1 -ne 0 -o $ret2 -ne 0 -o $ret3 -ne 0 -o $ret4 -ne 0 ]; then
+    echo "OpenFPM require additional packages in order to install correctly"
+    commands[0]="$pcman install libbz2-dev python-dev libxml2-dev libxslt-dev"
+    possible_solutions "${commands[@]}"
+    echo "Executing: ${command[$possible_solutions_ret]}"
+    eval ${commands[$possible_solutions_ret]}
+  fi
+fi
+
+### Additional package required for yum based distros
+if [ x"$platform" = x"linux" -a x"$pcman" = x"yum"  ]; then
+  rpm -V bzip2-devel
+  ret1=$?
+  rpm -V python-devel
+  ret2=$?
+  rpm -V libxml2-devel
+  ret3=$?
+  rpm -V libxslt-devel
+  ret4=$?
+  if [ $ret1 -ne 0 -o $ret2 -ne 0 -o $ret3 -ne 0 -o $ret4 -ne 0 ]; then
+    echo "OpenFPM require additional packages in order to install correctly"
+    commands[0]="su -c \"$pcman install bzip2-devel python-devel libxml2-devel libxslt-devel\""
+    commands[1]="sudo $pcman install bzip2-devel python-devel libxml2-devel libxslt-devel"
+    possible_solutions "${commands[@]}"
+    echo "Executing: ${command[$possible_solutions_ret]}"
+    eval ${commands[$possible_solutions_ret]}
   fi
 fi
 
@@ -141,10 +183,11 @@ fi
 
 #### Detecting g++
 
-detect_gcc_or_clang gcc
+detect_gcc_or_clang g++
 if [ $dgc_ret -eq 0 ]; then
+  echo -e "g++ \033[91;5;1m FAILED \033[0m"
   solve_gpp $platform
-  detect_gcc_or_clang gcc-4.9
+  detect_gcc_or_clang $compiler_gpp
   if [ $dgc_ret -eq 0 ]; then
     exit 1
   fi
@@ -157,25 +200,43 @@ elif [ $dgc_ret -eq 2 ]; then
   fi
 fi
 
+#### Detection gfortran
+
+detect_fortran gfortran
+if [ $dgc_ret -eq 0 ]; then
+  echo -e "gfortran\033[91;5;1m FAILED \033[0m"
+  solve_gfortran $platform
+  detect_fortran $compiler_fortran
+  if [ $dgc_ret -eq 0 ]; then
+    exit 1
+  fi
+else
+  echo -e "gfortran \033[92;1m SUCCESS \033[0m"
+fi
+
+
 command -v mpirun >/dev/null 2>&1
 if [ $? -ne 0 ]; then
   echo -e "No MPI"
 else
-  major=$(mpirun --version | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
-  middle=$(mpirun --version | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
-  minor=$(mpirun --version | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
+  major=$(mpirun --version 2>&1 | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
+  middle=$(mpirun --version 2>&1 | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
+  minor=$(mpirun --version 2>&1 | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
   if [ $major -gt 1 ]; then
     echo -e "mpirun $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
   elif [ $major -lt 1 ]; then
     echo -e "mpirun $major.$middle.$minor \033[91;5;1m FAILED \033[0m is too old, 1.8.1 at least required"
+    MPI_installation_required=yes
   elif [ $middle -gt 8  ]; then
     echo -e "mpirun $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
   elif [ $middle -lt 8 ]; then
     echo -e "mpirun $major.$middle.$minor \033[91;5;1m FAILED \033[0m is too old, 1.8.1 at least required"
+    MPI_installation_required=yes
   elif [ $minor -gt 0  ]; then
     echo -e "mpirun $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
   else
-    echo -e "mpirun $major.$middle.$minor \033[92;1m FAILED \033[0m is too old, 1.8.1 at least required"
+    echo -e "mpirun $major.$middle.$minor \033[91;5;1m FAILED \033[0m is too old, 1.8.1 at least required"
+    MPI_installation_required=yes
   fi 
 fi
 }

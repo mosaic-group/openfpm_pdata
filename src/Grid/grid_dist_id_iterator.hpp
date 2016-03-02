@@ -85,7 +85,7 @@ class grid_dist_iterator<dim,device_grid,FREE>
 	size_t g_c;
 
 	//! List of the grids we are going to iterate
-	Vcluster_object_array<device_grid> & gList;
+	const openfpm::vector<device_grid> & gList;
 
 	//! Extension of each grid: domain and ghost + domain
 	openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
@@ -93,8 +93,8 @@ class grid_dist_iterator<dim,device_grid,FREE>
 	//! Actual iterator
 	grid_key_dx_iterator_sub<dim> a_it;
 
-	//! margin of the grid iterator
-	size_t m;
+	//! stop point (is the grid size)
+	grid_key_dx<dim> stop;
 
 	/*! \brief from g_c increment g_c until you find a valid grid
 	 *
@@ -102,40 +102,24 @@ class grid_dist_iterator<dim,device_grid,FREE>
 	void selectValidGrid()
 	{
 		// When the grid has size 0 potentially all the other informations are garbage
-		while (g_c < gList.size() && (gList[g_c].size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false ) ) g_c++;
+		while (g_c < gList.size() && (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false ) ) g_c++;
 
 		// get the next grid iterator
 		if (g_c < gList.size())
 		{
-			a_it.reinitialize(gList[g_c].getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2()));
+			a_it.reinitialize(gList.get(g_c).getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2()));
 		}
 	}
 
 	public:
-
-	/*! \brief Copy operator=
-	*
-	* \param tmp iterator to copy
-	*
-	*/
-	grid_dist_iterator<dim,device_grid,FREE> & operator=(const grid_dist_iterator<dim,device_grid,FREE> & tmp)
-	{
-		g_c = tmp.g_c;
-		gList = tmp.gList;
-		gdb_ext = tmp.gdb_ext;
-		a_it.reinitialize(tmp.a_it);
-		m = tmp.m;
-
-		return *this;
-	}
 
 	/*! \brief Constructor of the distributed grid iterator
 	 *
 	 * \param gk std::vector of the local grid
 	 *
 	 */
-	grid_dist_iterator(Vcluster_object_array<device_grid> & gk, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
-	:g_c(0),gList(gk),gdb_ext(gdb_ext),m(0)
+	grid_dist_iterator(const openfpm::vector<device_grid> & gk, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, grid_key_dx<dim> stop)
+	:g_c(0),gList(gk),gdb_ext(gdb_ext),stop(stop)
 	{
 		// Initialize the current iterator
 		// with the first grid
@@ -196,6 +180,34 @@ class grid_dist_iterator<dim,device_grid,FREE>
 	{
 		return grid_dist_key_dx<dim>(g_c,a_it.get());
 	}
+
+	/*! \brief it return the stop point of the iterator
+	 *
+	 * The stop point of the iterator is just the grid size
+	 *
+	 * \return the stop point
+	 *
+	 */
+	inline grid_key_dx<dim> getStop() const
+	{
+		return stop;
+	}
+
+	/*! \brief it return the start point of the iterator
+	 *
+	 * The start point of the iterator is the point with all coordinates zeros
+	 *
+	 * \return the start point
+	 *
+	 */
+	inline grid_key_dx<dim> getStart() const
+	{
+		grid_key_dx<dim> start;
+
+		start.zero();
+
+		return start;
+	}
 };
 
 
@@ -215,7 +227,7 @@ class grid_dist_iterator<dim,device_grid,FIXED>
 	size_t g_c;
 
 	//! List of the grids we are going to iterate
-	Vcluster_object_array<device_grid> & gList;
+	const openfpm::vector<device_grid> & gList;
 
 	//! Extension of each grid: domain and ghost + domain
 	const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
@@ -229,12 +241,12 @@ class grid_dist_iterator<dim,device_grid,FIXED>
 	void selectValidGrid()
 	{
 		// When the grid has size 0 potentially all the other informations are garbage
-		while (g_c < gList.size() && (gList[g_c].size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false ) ) g_c++;
+		while (g_c < gList.size() && (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false ) ) g_c++;
 
 		// get the next grid iterator
 		if (g_c < gList.size())
 		{
-			a_it.reinitialize(gList[g_c].getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2()));
+			a_it.reinitialize(gList.get(g_c).getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2()));
 		}
 	}
 
@@ -260,7 +272,7 @@ class grid_dist_iterator<dim,device_grid,FIXED>
 	 * \param gk std::vector of the local grid
 	 *
 	 */
-	grid_dist_iterator(Vcluster_object_array<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
+	grid_dist_iterator(const openfpm::vector<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
 	:g_c(0),gList(gk),gdb_ext(gdb_ext)
 	{
 		// Initialize the current iterator

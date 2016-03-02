@@ -1,6 +1,10 @@
 #ifndef SUBDOMAIN_NODES_HPP
 #define SUBDOMAIN_NODES_HPP
 
+#include <boost/fusion/container/vector.hpp>
+#include <boost/fusion/include/at_c.hpp>
+#include "Grid/Encap.hpp"
+
 /* In a decomposition graph each node represent a sub-domain while an edge represent
  * an interaction between sub-domain (it mean that they have to communicate).
  *
@@ -30,10 +34,7 @@
 struct nm_v
 {
 	//! The node contain 3 unsigned long integer for communication computation memory and id
-	typedef boost::fusion::vector<float[3], size_t, size_t, size_t, size_t, size_t, size_t, size_t> type;
-
-	typedef typename memory_traits_inte<type>::type memory_int;
-	typedef typename memory_traits_lin<type>::type memory_lin;
+	typedef boost::fusion::vector<float[3], size_t, size_t, size_t, size_t, size_t, size_t> type;
 
 	//! type of the positional field
 	typedef float s_type;
@@ -61,11 +62,9 @@ struct nm_v
 	static const unsigned int sub_id = 5;
 	//! proc_id property id in boost::fusion::vector
 	static const unsigned int proc_id = 6;
-	//! fake_v property id in boost::fusion::vector
-	static const unsigned int fake_v = 7;
 
 	//! total number of properties boost::fusion::vector
-	static const unsigned int max_prop = 8;
+	static const unsigned int max_prop = 7;
 
 	//! default constructor
 	nm_v()
@@ -84,7 +83,6 @@ struct nm_v
 		boost::fusion::at_c<4>(data) = boost::fusion::at_c<4>(p.data);
 		boost::fusion::at_c<5>(data) = boost::fusion::at_c<5>(p.data);
 		boost::fusion::at_c<6>(data) = boost::fusion::at_c<6>(p.data);
-		boost::fusion::at_c<7>(data) = boost::fusion::at_c<7>(p.data);
 	}
 
 	template<unsigned int dim, typename Mem> inline nm_v(const encapc<dim, nm_v, Mem> & p)
@@ -103,7 +101,6 @@ struct nm_v
 		boost::fusion::at_c<4>(data) = p.template get<4>();
 		boost::fusion::at_c<5>(data) = p.template get<5>();
 		boost::fusion::at_c<6>(data) = p.template get<6>();
-		boost::fusion::at_c<7>(data) = p.template get<7>();
 
 		return *this;
 	}
@@ -125,8 +122,6 @@ struct nm_v
 
 };
 
-const std::string nm_v::attributes::name[] = { "x", "migration", "computation", "global_id", "id", "sub_id", "proc_id", "fake_v" };
-
 /*! \brief sub-domain edge graph node
  *
  */
@@ -135,9 +130,6 @@ struct nm_e
 {
 	//! The node contain 3 unsigned long integer for comunication computation and memory
 	typedef boost::fusion::vector<size_t, size_t, size_t> type;
-
-	typedef typename memory_traits_inte<type>::type memory_int;
-	typedef typename memory_traits_lin<type>::type memory_lin;
 
 	//! Attributes name
 	struct attributes
@@ -179,8 +171,6 @@ struct nm_e
 	}
 };
 
-const std::string nm_e::attributes::name[] = { "communication", "srcgid", "dstgid" };
-
 /*! \brief Reduced sub-domain vertex graph node
  *
  * It contain only the processor id for each node
@@ -191,9 +181,6 @@ struct nm_part_v
 {
 	//! The node contain 3 unsigned long integer for comunication computation and memory
 	typedef boost::fusion::vector<size_t, size_t> type;
-
-	typedef typename memory_traits_inte<type>::type memory_int;
-	typedef typename memory_traits_lin<type>::type memory_lin;
 
 	typedef float s_type;
 
@@ -229,8 +216,6 @@ struct nm_part_v
 
 };
 
-const std::string nm_part_v::attributes::name[] = { "id", "sub_id" };
-
 /*! \brief Reduced edge graph node
  *
  * It contain only the communication between nodes
@@ -241,9 +226,6 @@ struct nm_part_e
 {
 	//! The node contain 3 unsigned long integer for comunication computation and memory
 	typedef boost::fusion::vector<> type;
-
-	typedef typename memory_traits_inte<type>::type memory_int;
-	typedef typename memory_traits_lin<type>::type memory_lin;
 
 	//! The data
 
@@ -259,6 +241,6 @@ struct nm_part_e
 	};
 };
 
-const std::string nm_part_e::attributes::name[] = { "id" };
+
 
 #endif

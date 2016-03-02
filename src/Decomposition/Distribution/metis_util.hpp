@@ -10,8 +10,8 @@
 
 #include <iostream>
 #include "metis.h"
-#include "VTKWriter.hpp"
 #include "SubdomainGraphNodes.hpp"
+#include "VTKWriter/VTKWriter.hpp"
 
 /*! \brief Metis graph structure
  *
@@ -129,9 +129,6 @@ class Metis
 	 */
 	void constructAdjListWithWeights(Graph & g)
 	{
-		Mg.vwgt = new idx_t[1];
-		Mg.vwgt[0] = 2;
-
 		// create xadj, adjlist, vwgt, adjwgt and vsize
 		Mg.xadj = new idx_t[g.getNVertex() + 1];
 		Mg.adjncy = new idx_t[g.getNEdge()];
@@ -150,7 +147,9 @@ class Metis
 		{
 			// Add weight to vertex and migration cost
 			Mg.vwgt[i] = g.vertex(i).template get<nm_v::computation>();
+			Mg.vwgt[i] = (Mg.adjwgt[i] == 0)?1:Mg.vwgt[i];
 			Mg.vsize[i] = g.vertex(i).template get<nm_v::migration>();
+			Mg.vsize[i] = (Mg.vsize[i] == 0)?1:Mg.vsize[i];
 
 			// Calculate the starting point in the adjacency list
 			Mg.xadj[id] = prev;
@@ -160,7 +159,9 @@ class Metis
 			{
 				Mg.adjncy[prev + s] = g.getChild(i, s);
 
+				// zero values on Metis are dangerous
 				Mg.adjwgt[prev + s] = g.getChildEdge(i, s).template get<nm_e::communication>();
+				Mg.adjwgt[prev + s] = (Mg.adjwgt[prev + s] == 0)?1:Mg.adjwgt[prev + s];
 			}
 
 			// update the position for the next vertex
@@ -244,7 +245,7 @@ public:
 
 		Mg.tpwgts = NULL;
 
-		//! Set to null the partition load imbalance tollerace
+		//! Set to null the partition load imbalance tolerance
 
 		Mg.ubvec = NULL;
 
@@ -258,7 +259,7 @@ public:
 		//! Is an output vector containing the partition for each vertex
 		Mg.part = new idx_t[g.getNVertex()];
 
-		for (int i = 0; i < g.getNVertex(); i++)
+		for (size_t i = 0; i < g.getNVertex(); i++)
 			Mg.part[i] = 0;
 	}
 
@@ -395,6 +396,31 @@ public:
 			++id;
 			++it;
 		}
+	}
+
+	/*! \brief It set Metis on test
+	 *
+	 * \param testing set to true to disable the testing
+	 *
+	 * At the moment disable the seed randomness to keep the result
+	 * reproducible
+	 *
+	 */
+	void onTest(bool testing)
+	{
+		if (testing == false)
+			return;
+
+		if (Mg.options == NULL)
+		{
+			// allocate
+			Mg.options = new idx_t[METIS_NOPTIONS];
+
+			// set default options
+			METIS_SetDefaultOptions(Mg.options);
+		}
+
+		Mg.options[METIS_OPTION_SEED] = 0;
 	}
 };
 

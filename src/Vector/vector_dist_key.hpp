@@ -18,24 +18,20 @@
 
 class vect_dist_key_dx
 {
-	//! grid list counter
-
-	size_t v_c;
-
 	//! Local grid iterator
 
 	size_t key;
 
 public:
 
-	/*! \brief Get the local grid
+	/*! \brief set the key
 	 *
-	 * \return the id of the local grid
+	 * \return the local key
 	 *
 	 */
-	size_t getSub()
+	inline void setKey(size_t key)
 	{
-		return v_c;
+		this->key = key;
 	}
 
 	/*! \brief Get the key
@@ -43,7 +39,7 @@ public:
 	 * \return the local key
 	 *
 	 */
-	size_t getKey()
+	inline size_t getKey()
 	{
 		return key;
 	}
@@ -60,8 +56,12 @@ public:
 		return ts.str();
 	}
 
-	vect_dist_key_dx(int v_c, size_t key)
-	:v_c(v_c),key(key)
+	inline vect_dist_key_dx(size_t key)
+	:key(key)
+	{
+	}
+
+	inline vect_dist_key_dx()
 	{
 	}
 };
