@@ -141,46 +141,34 @@ class DistParmetis
 		// actual position
 		size_t id = 0;
 
-		// for each vertex calculate the position of the starting point in the adjacency list
 		for (size_t i = 0, j = sub_g.firstId(); i < sub_g.getNVertex() && j <= sub_g.lastId(); i++, j++)
 		{
+			size_t idx = sub_g.nodeById(j);
+
 			// Add weight to vertex and migration cost
-			Mg.vwgt[i] = sub_g.vertex(sub_g.nodeById(j)).template get<nm_v::computation>();
-			Mg.vsize[i] = sub_g.vertex(sub_g.nodeById(j)).template get<nm_v::migration>();
+			Mg.vwgt[i] = sub_g.vertex(idx).template get<nm_v::computation>();
+			Mg.vsize[i] = sub_g.vertex(idx).template get<nm_v::migration>();
 
 			// Calculate the starting point in the adjacency list
 			Mg.xadj[id] = prev;
 
 			// Create the adjacency list and the weights for edges
-			for (size_t s = 0; s < sub_g.getNChilds(sub_g.nodeById(j)); s++)
+			for (size_t s = 0; s < sub_g.getNChilds(idx); s++)
 			{
-				Mg.adjncy[prev + s] = sub_g.getChild(sub_g.nodeById(j), s);
+				Mg.adjncy[prev + s] = sub_g.getChild(idx, s);
 
-				Mg.adjwgt[prev + s] = sub_g.getChildEdge(sub_g.nodeById(j), s).template get<nm_e::communication>();
+				Mg.adjwgt[prev + s] = sub_g.getChildEdge(idx, s).template get<nm_e::communication>();
 			}
 
 			// update the position for the next vertex
-			prev += sub_g.getNChilds(sub_g.nodeById(j));
+			prev += sub_g.getNChilds(idx);
 
 			id++;
 		}
 
 		// Fill the last point
 		Mg.xadj[id] = prev;
-		/*
-		 std::cout << p_id << "--------------------------------------\n";
-		 for (int i = 0; i <= sub_g.getNVertex(); i++)
-		 {
-		 std::cout << Mg.xadj[i] << " ";
-		 }
-		 std::cout << "\n\n";
 
-		 for (int i = 0; i < sub_g.getNEdge(); i++)
-		 {
-		 std::cout << Mg.adjncy[i] << " ";
-		 }
-		 std::cout << "-----------------------------------------------------\n\n";
-		 */
 	}
 public:
 
@@ -347,7 +335,7 @@ public:
 
 		//! This is used to indicate if the graph is weighted.
 		Mg.wgtflag = new idx_t[1];
-		Mg.wgtflag[0] = 2;
+		Mg.wgtflag[0] = 3;
 	}
 
 	/*! \brief Decompose the graph
@@ -371,13 +359,10 @@ public:
 		 */
 
 		// For each vertex store the processor that contain the data
-		for (size_t j = 0, id = 0; j < sub_g.getNVertex(); j++, id++)
+		for (size_t id = 0, j = sub_g.firstId(); id < sub_g.getNVertex() && j <= sub_g.lastId(); id++, j++)
 		{
-
-			sub_g.vertex(j).template get<i>() = Mg.part[id];
-
+			sub_g.vertex(sub_g.nodeById(j)).template get<i>() = Mg.part[id];
 		}
-
 	}
 
 	/*! \brief Refine the graph
@@ -390,20 +375,13 @@ public:
 	void refine(Graph & sub_g)
 	{
 		// Refine
-		for (int j = 0; j < sub_g.getVtxdist()->size(); ++j) {
-			std::cout << sub_g.getVtxdist()->get(j) << " ";
-		}
-		std::cout << "\n";
-		ParMETIS_V3_PartKway((idx_t *) sub_g.getVtxdist()->getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.options, Mg.edgecut, Mg.part, &comm);
-		//ParMETIS_V3_AdaptiveRepart((idx_t *) sub_g.getVtxdist()->getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.vsize, Mg.adjwgt, Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.itr, Mg.options, Mg.edgecut, Mg.part, &comm);
+		//ParMETIS_V3_PartKway((idx_t *) sub_g.getVtxdist()->getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.options, Mg.edgecut, Mg.part, &comm);
+		ParMETIS_V3_AdaptiveRepart((idx_t *) sub_g.getVtxdist()->getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.vsize, Mg.adjwgt, Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.itr, Mg.options, Mg.edgecut, Mg.part, &comm);
 
 		// For each vertex store the processor that contain the data
-
-		for (size_t j = 0, id = 0; j < sub_g.getNVertex(); j++, id++)
+		for (size_t id = 0, j = sub_g.firstId(); id < sub_g.getNVertex() && j <= sub_g.lastId(); id++, j++)
 		{
-
-			sub_g.vertex(j).template get<i>() = Mg.part[id];
-
+			sub_g.vertex(sub_g.nodeById(j)).template get<i>() = Mg.part[id];
 		}
 	}
 

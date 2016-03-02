@@ -144,8 +144,8 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D )
 		dec.rebalance(dlb);
 
 		dec.printCurrentDecomposition(i+1);
-	}
 
+	}
 	// create a ghost border
 	dec.calculateGhostBoxes();
 
@@ -271,17 +271,6 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D_sar)
 		dec.printCurrentDecomposition(i);
 	}
 
-	//print statistics
-	/*
-	 if(vcl.getProcessUnitID() == 0)
-	 {
-	 float avg = dec.getTotalMovedV()/((etime-stime)/tstep);
-
-	 std::cout << "Moved vertices average: " << avg << "\n";
-	 std::cout << "Max number of moved vertices: " << dec.getMaxMovedV() << "\n";
-	 }
-	 */
-
 	// create a ghost border
 	dec.calculateGhostBoxes();
 
@@ -379,7 +368,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_3D)
 
 	float stime = 0.0, etime = 10.0, tstep = 0.1;
 
-	for(float t = stime, i = 1, t_sim = 1; t < etime; t = t + tstep, i++)
+	for(float t = stime, i = 1; t < etime; t = t + tstep, i++)
 	{
 
 		if(t < etime/2)

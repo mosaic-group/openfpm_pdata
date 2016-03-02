@@ -152,25 +152,15 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_4p)
 
 	//! [Request some vertices given global ids]
 
-	//gd.deleteGhosts();
-
 	gd.reqVertex(13);
 	gd.reqVertex(1);
 	gd.reqVertex(14);
 	gd.sync();
 
-	//BOOST_REQUIRE_EQUAL(gd.getVertex(13).template get<vx::global_id>(), 13);
-	//BOOST_REQUIRE_EQUAL(gd.getVertex(1).template get<vx::global_id>(), 1);
-	//BOOST_REQUIRE_EQUAL(gd.getVertex(14).template get<vx::global_id>(), 14);
-
 	gd.reqVertex(15);
 	gd.reqVertex(2);
 	gd.reqVertex(10);
 	gd.sync();
-
-	//BOOST_REQUIRE_EQUAL(gd.getVertex(15).template get<vx::global_id>(), 15);
-	//BOOST_REQUIRE_EQUAL(gd.getVertex(2).template get<vx::global_id>(), 2);
-	//BOOST_REQUIRE_EQUAL(gd.getVertex(10).template get<vx::global_id>(), 10);
 
 	gd.deleteGhosts();
 
@@ -254,10 +244,13 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_4p)
 	}
 }
 
-BOOST_AUTO_TEST_CASE( dist_map_graph_use_4p_redistribution)
+BOOST_AUTO_TEST_CASE( dist_map_graph_use_redistribution)
 {
 	//! Vcluster
 	Vcluster & vcl = *global_v_cluster;
+
+	if(vcl.getProcessingUnits() != 4)
+	return;
 
 	//! Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
@@ -276,11 +269,6 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_4p_redistribution)
 
 	for(size_t i=0; i< gd.getNVertex(); i++)
 	gd.vertex(i).template get<vx::x>()[2] = 0;
-
-	for(size_t i=0; i< gd.getNVertex(); i++)
-	std::cout << gd.getVertexId(i) << " ";
-
-	std::cout << "\n";
 
 	if (vcl.getProcessUnitID() == 0)
 	{
@@ -308,27 +296,13 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_4p_redistribution)
 
 	gd.redistribute();
 
-	if (vcl.getProcessUnitID() == 0)
+	VTKWriter<DistGraph_CSR<vx, ed>, DIST_GRAPH> gv2(gd);
+	gv2.write("dist_graph_redistribution_0.vtk");
+
+	if(vcl.getProcessUnitID() == 0)
 	{
-		gd.deleteGhosts();
-
-		for (size_t i = 0; i < gd.getTotNVertex(); ++i)
-		{
-			gd.reqVertex(i);
-		}
-	}
-
-	gd.sync();
-
-	if (vcl.getProcessUnitID() == 0)
-	{
-		VTKWriter<DistGraph_CSR<vx, ed>, GRAPH> gv2(gd);
-		gv2.write("dist_graph_0.vtk");
-
-		bool test = compare("dist_graph_0.vtk","dist_graph_0_test.vtk");
-		//BOOST_REQUIRE_EQUAL(true,test);
-
-		gd.deleteGhosts();
+		bool test = compare("dist_graph_redistribution_0.vtk", "dist_graph_redistribution_0_test.vtk");
+		BOOST_REQUIRE_EQUAL(true,test);
 	}
 
 	if (vcl.getProcessUnitID() == 2)
@@ -345,35 +319,23 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_4p_redistribution)
 
 	gd.redistribute();
 
-	if (vcl.getProcessUnitID() == 0)
+	gv2.write("dist_graph_redistribution_1.vtk");
+
+	if(vcl.getProcessUnitID() == 0)
 	{
-		gd.deleteGhosts();
-
-		for (size_t i = 0; i < gd.getTotNVertex(); ++i)
-		{
-			gd.reqVertex(i);
-		}
-	}
-
-	gd.sync();
-
-	if (vcl.getProcessUnitID() == 0)
-	{
-		VTKWriter<DistGraph_CSR<vx, ed>, DIST_GRAPH> gv2(gd);
-		gv2.write("dist_graph_1.vtk");
-
-		bool test = compare("dist_graph_1.vtk","dist_graph_1_test.vtk");
-		//BOOST_REQUIRE_EQUAL(true,test);
-
-		gd.deleteGhosts();
+		bool test = compare("dist_graph_redistribution_1.vtk","dist_graph_redistribution_1_test.vtk");
+		BOOST_REQUIRE_EQUAL(true,test);
 	}
 
 }
 
-BOOST_AUTO_TEST_CASE( dist_map_graph_use_4p_free_add)
+BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)
 {
 	//! Vcluster
 	Vcluster & vcl = *global_v_cluster;
+
+	if(vcl.getProcessingUnits() != 4)
+	return;
 
 	//! Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
@@ -442,17 +404,6 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_4p_free_add)
 		}
 	}
 
-	std::cout << vcl.getProcessUnitID()<< " ";
-	for(size_t i = 0; i < gd.getNVertex(); i++)
-	{
-
-		for(size_t j =0; j< gd.getNChilds(i); j++)
-		{
-			std::cout << gd.getChildDstGid(i, j) << " ";
-		}
-	}
-	std::cout << "\n\n";
-
 	if(vcl.getProcessUnitID() == 0)
 	gd.reqVertex(5);
 
@@ -486,44 +437,13 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_4p_free_add)
 
 	gd.redistribute();
 
-	for (int i = 0; i < gd.getNVertex(); ++i)
+	VTKWriter<DistGraph_CSR<vx, ed>, DIST_GRAPH> gv2(gd);
+	gv2.write("dist_graph_free_0.vtk");
+
+	if(vcl.getProcessUnitID() == 0)
 	{
-		std::cout << gd.getVertexId(i) << " ";
-	}
-	std::cout << "\n";
-
-	std::cout << vcl.getProcessUnitID()<< " ";
-	for(size_t i = 0; i < gd.getNVertex(); i++)
-	{
-
-		for(size_t j =0; j< gd.getNChilds(i); j++)
-		{
-			std::cout << gd.getChildDstGid(i, j) << " ";
-		}
-	}
-	std::cout << "\n\n";
-
-	if (vcl.getProcessUnitID() == 0)
-	{
-		gd.deleteGhosts();
-
-		for (size_t i = 0; i < gd.getTotNVertex(); ++i)
-		{
-			gd.reqVertex(i);
-		}
-	}
-
-	gd.sync();
-
-	if (vcl.getProcessUnitID() == 0)
-	{
-		VTKWriter<DistGraph_CSR<vx, ed>, DIST_GRAPH> gv2(gd);
-		gv2.write("dist_graph_0_free.vtk");
-
-		bool test = compare("dist_graph_0_free.vtk","dist_graph_0_free_test.vtk");
-		//BOOST_REQUIRE_EQUAL(true,test);
-
-		gd.deleteGhosts();
+		bool test = compare("dist_graph_free_0.vtk", "dist_graph_free_0_test.vtk");
+		BOOST_REQUIRE_EQUAL(true,test);
 	}
 
 	if (vcl.getProcessUnitID() == 2)
@@ -540,29 +460,13 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_4p_free_add)
 
 	gd.redistribute();
 
-	if (vcl.getProcessUnitID() == 0)
+	gv2.write("dist_graph_free_1.vtk");
+
+	if(vcl.getProcessUnitID() == 0)
 	{
-		gd.deleteGhosts();
-
-		for (size_t i = 0; i < gd.getTotNVertex(); ++i)
-		{
-			gd.reqVertex(i);
-		}
+		bool test = compare("dist_graph_free_1.vtk", "dist_graph_free_1_test.vtk");
+		BOOST_REQUIRE_EQUAL(true,test);
 	}
-
-	gd.sync();
-
-	if (vcl.getProcessUnitID() == 0)
-	{
-		VTKWriter<DistGraph_CSR<vx, ed>, DIST_GRAPH> gv2(gd);
-		gv2.write("dist_graph_1_free.vtk");
-
-		bool test = compare("dist_graph_1_free.vtk","dist_graph_1_free_test.vtk");
-		//BOOST_REQUIRE_EQUAL(true,test);
-
-		gd.deleteGhosts();
-	}
-
 }
 
 BOOST_AUTO_TEST_SUITE_END()

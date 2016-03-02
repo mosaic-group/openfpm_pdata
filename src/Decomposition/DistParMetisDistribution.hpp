@@ -91,10 +91,12 @@ public:
 
 		//! Create sub graph
 		DistGraphFactory<dim, DistGraph_CSR<nm_v, nm_e>> dist_g_factory;
-		sub_g = dist_g_factory.template construct<NO_EDGE, nm_v::id, nm_v::global_id, nm_e::srcgid, nm_e::dstgid, T, dim - 1, 0, 1, 2>(gr.getSize(), domain);
+		sub_g = dist_g_factory.template construct<NO_EDGE, T, dim - 1, 0, 1, 2>(gr.getSize(), domain);
 		sub_g.getDecompositionVector(vtxdist);
-		for(size_t i=0; i< sub_g.getNVertex(); i++)
-			sub_g.vertex(i).template get<nm_v::x>()[2] = 0;
+
+		if (dim == 2)
+			for (size_t i = 0; i < sub_g.getNVertex(); i++)
+				sub_g.vertex(i).template get<nm_v::x>()[2] = 0;
 
 	}
 
@@ -120,13 +122,12 @@ public:
 		//! Get result partition for this processors
 		idx_t *partition = parmetis_graph.getPartition();
 
-		for (size_t i = 0; i < sub_g.getNVertex(); ++i)
+		for (size_t i = 0, j = sub_g.firstId(); i < sub_g.getNVertex() && j <= sub_g.lastId(); i++, j++)
 		{
 			if (partition[i] != v_cl.getProcessUnitID())
-				sub_g.q_move(i, partition[i]);
+				sub_g.q_move(sub_g.nodeById(j), partition[i]);
 		}
 		sub_g.redistribute();
-
 	}
 
 	/*! \brief Refine current decomposition
@@ -146,27 +147,12 @@ public:
 		//! Get result partition for this processors
 		idx_t *partition = parmetis_graph.getPartition();
 
-		for (size_t i = 0; i < sub_g.getNVertex(); ++i)
+		for (size_t i = 0, j = sub_g.firstId(); i < sub_g.getNVertex() && j <= sub_g.lastId(); i++, j++)
 		{
 			if (partition[i] != v_cl.getProcessUnitID())
-				sub_g.q_move(i, partition[i]);
+				sub_g.q_move(sub_g.nodeById(j), partition[i]);
 		}
-
 		sub_g.redistribute();
-
-		/*
-		 for (size_t i = 0; i < sub_g.getNVertex(); i++)
-		 {
-		 // Add weight to vertex and migration cost
-		 std::cout << "g " << sub_g.vertex(i).template get<nm_v::global_id>() << "-" << sub_g.vertex(i).template get<nm_v::id>() << "  -> ";
-
-		 // Create the adjacency list and the weights for edges
-		 for (size_t s = 0; s < sub_g.getNChilds(i); s++)
-		 {
-		 std::cout << sub_g.getChild(i, s) << " ";
-		 }
-		 std::cout << "\n";
-		 }*/
 	}
 
 	/*! \brief Compute the unbalance value
@@ -175,12 +161,10 @@ public:
 	 */
 	float getUnbalance()
 	{
-		long t_cost = 0;
+		long t_cost = getProcessorLoad();
 
 		long min, max, sum;
 		float unbalance;
-
-		t_cost = getProcessorLoad();
 
 		min = t_cost;
 		max = t_cost;
@@ -191,7 +175,7 @@ public:
 		v_cl.sum(sum);
 		v_cl.execute();
 
-		unbalance = ((float) (max - min)) / (float) sum;
+		unbalance = ((float) (max - min)) / (((float) sum) / v_cl.getProcessingUnits());
 
 		return unbalance * 100;
 	}
@@ -221,8 +205,7 @@ public:
 	 */
 	inline void setVertexWeight(size_t id, size_t weight)
 	{
-		if (!verticesGotWeights)
-			verticesGotWeights = true;
+		verticesGotWeights = true;
 
 		if (id >= sub_g.getNVertex())
 			std::cerr << "Weight - Such vertex doesn't exist (id = " << id << ", " << "total size = " << sub_g.getNVertex() << ")\n";
@@ -344,25 +327,8 @@ public:
 	 */
 	void printCurrentDecomposition(int id)
 	{
-		if (v_cl.getProcessUnitID() == 0)
-		{
-			sub_g.deleteGhosts();
-
-			for (size_t i = 0; i < sub_g.getTotNVertex(); ++i)
-			{
-				sub_g.reqVertex(i);
-			}
-		}
-
-		sub_g.sync();
-
-		if (v_cl.getProcessUnitID() == 0)
-		{
-			VTKWriter<DistGraph_CSR<nm_v, nm_e>, DIST_GRAPH> gv2(sub_g);
-			gv2.write("test_dist_graph_" + std::to_string(id) + ".vtk");
-
-			sub_g.deleteGhosts();
-		}
+		VTKWriter<DistGraph_CSR<nm_v, nm_e>, DIST_GRAPH> gv2(sub_g);
+		gv2.write("test_dist_graph_" + std::to_string(id) + ".vtk");
 	}
 };
 

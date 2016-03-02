@@ -225,7 +225,6 @@ BOOST_AUTO_TEST_CASE( DistCartesianGraphFactory_2D_use)
 
 		// try to pack
 		Packer<size_t,HeapMemory>::pack(mem, 3, sts);
-		node n = gd.vertex(0);
 		Packer<decltype(gd.vertex(0)),HeapMemory>::pack(mem,gd.vertex(0), sts);
 		Packer<decltype(gd.vertex(0)),HeapMemory>::pack(mem,gd.vertex(1), sts);
 		Packer<decltype(gd.vertex(0)),HeapMemory>::pack(mem,gd.vertex(2), sts);
@@ -312,7 +311,7 @@ BOOST_AUTO_TEST_CASE( DistCartesianGraphFactory_2D_use)
 
 		v.resize(size);
 
-		for(int i = 0; i < size; i++){
+		for(size_t i = 0; i < size; i++){
 			node v_n;
 			Unpacker<node,HeapMemory>::unpack(mem,v_n,ps);
 			v.set(i, v_n);
@@ -336,7 +335,7 @@ BOOST_AUTO_TEST_CASE( DistCartesianGraphFactory_2D_use)
 
 		v.resize(size);
 
-		for(int i = 0; i < size; i++){
+		for(size_t i = 0; i < size; i++){
 			node v_n;
 			Unpacker<node,HeapMemory>::unpack(mem,v_n,ps);
 			v.set(i, v_n);

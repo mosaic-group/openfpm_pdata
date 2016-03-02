@@ -398,6 +398,7 @@ public:
 
 		unbalance = ((float) (max - min)) / (float) sum;
 
+		std::cout << std::endl;
 		return unbalance * 100;
 	}
 

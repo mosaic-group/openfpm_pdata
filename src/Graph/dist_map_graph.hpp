@@ -429,7 +429,7 @@ class DistGraph_CSR
 	{
 		if (sgp.size() == vcl.getProcessingUnits())
 		{
-			for (int p = 0; p < vcl.getProcessingUnits(); ++p)
+			for (size_t p = 0; p < vcl.getProcessingUnits(); ++p)
 			{
 				sgp.get(p).send_v.clear();
 				sgp.get(p).send_v_m.clear();
@@ -444,7 +444,7 @@ class DistGraph_CSR
 		{
 			sgp.resize(vcl.getProcessingUnits());
 
-			for (int p = 0; p < vcl.getProcessingUnits(); ++p)
+			for (size_t p = 0; p < vcl.getProcessingUnits(); ++p)
 			{
 				openfpm::vector<V> s_v;
 				openfpm::vector<v_info> s_v_m;
@@ -524,7 +524,7 @@ class DistGraph_CSR
 	 */
 	size_t getVProcessor(size_t v)
 	{
-		for (int i = 1; i < vtxdist.size() - 1; ++i)
+		for (size_t i = 1; i < vtxdist.size() - 1; ++i)
 		{
 			if (v < vtxdist.get(i))
 			{
@@ -577,7 +577,7 @@ class DistGraph_CSR
 			// prepare slot for number of vertices
 			Packer<size_t, HeapMemory>::packRequest(pap_prp);
 
-			for (int j = 0; j < vp_size; j++)
+			for (size_t j = 0; j < vp_size; j++)
 			{
 				// prepare slot for vertex
 				Packer<V, HeapMemory>::packRequest(pap_prp);
@@ -589,7 +589,7 @@ class DistGraph_CSR
 				Packer<size_t, HeapMemory>::packRequest(pap_prp);
 
 				// prepare slots for the children
-				for (int k = 0; k < sgp.get(pc).send_es.get(j); k++)
+				for (size_t k = 0; k < sgp.get(pc).send_es.get(j); k++)
 				{
 					// prepare slot for edge
 					Packer<E, HeapMemory>::packRequest(pap_prp);
@@ -617,7 +617,7 @@ class DistGraph_CSR
 			// Pack total size
 			Packer<size_t, HeapMemory>::pack(mem, vp_size, sts);
 
-			for (int j = 0; j < vp_size; j++)
+			for (size_t j = 0; j < vp_size; j++)
 			{
 				// Pack the vertex
 				Packer<decltype(sgp.get(pc).send_v.get(0)), HeapMemory>::pack(mem, sgp.get(pc).send_v.get(j), sts);
@@ -629,7 +629,7 @@ class DistGraph_CSR
 				Packer<size_t, HeapMemory>::pack(mem, sgp.get(pc).send_es.get(j), sts);
 
 				// Pack children
-				for (int k = 0; k < sgp.get(pc).send_es.get(j); k++)
+				for (size_t k = 0; k < sgp.get(pc).send_es.get(j); k++)
 				{
 					// Pack the edge
 					Packer<decltype(sgp.get(pc).send_e.get(0)), HeapMemory>::pack(mem, sgp.get(pc).send_e.get(e_it), sts);
@@ -668,7 +668,7 @@ class DistGraph_CSR
 				// take previous last item
 				size_t prev = getNVertex();
 
-				for (int j = prev; j < prev + r_size; j++)
+				for (size_t j = prev; j < prev + r_size; j++)
 				{
 					// unpack the vertex
 					V v_n;
@@ -689,7 +689,7 @@ class DistGraph_CSR
 					Unpacker<size_t, HeapMemory>::unpack(mem, s, ps);
 
 					// prepare slots for the children
-					for (int k = 0; k < s; k++)
+					for (size_t k = 0; k < s; k++)
 					{
 						// unpack edge
 						E e_n;
@@ -882,7 +882,7 @@ class DistGraph_CSR
 		openfpm::vector<openfpm::vector<size_t>> resp_rmi(vcl.getProcessingUnits());
 
 		// Prepare re-mapping info response
-		for (int i = 0; i < req_rmi.size(); ++i)
+		for (size_t i = 0; i < req_rmi.size(); ++i)
 		{
 			for (size_t j = 0; j < req_rmi.get(i).size(); ++j)
 			{
@@ -944,7 +944,7 @@ class DistGraph_CSR
 	 */
 	size_t getInfoProc(size_t vid)
 	{
-		for (int i = 0; i < fvtxdist.size() - 1; ++i)
+		for (size_t i = 0; i < fvtxdist.size() - 1; ++i)
 		{
 			if (vid >= fvtxdist.get(i) && vid < fvtxdist.get(i + 1))
 			{
@@ -1017,6 +1017,7 @@ public:
 		dup.id2glb = id2glb;
 		dup.glb2loc = glb2loc;
 		dup.e.swap(e.duplicate());
+		dup.e_m.swap(e_m.duplicate());
 		dup.e_l.swap(e_l.duplicate());
 		dup.e_invalid.swap(e_invalid.duplicate());
 		dup.vtxdist.swap(vtxdist.duplicate());
@@ -1096,7 +1097,7 @@ public:
 	{
 		v.resize(vtxdist.size());
 
-		for (int i = 0; i < vtxdist.size(); ++i)
+		for (size_t i = 0; i < vtxdist.size(); ++i)
 		{
 			v.get(i) = vtxdist.get(i);
 		}
@@ -1120,7 +1121,7 @@ public:
 		vtxdist.resize(vcl.getProcessingUnits() + 1);
 		fvtxdist.resize(vcl.getProcessingUnits() + 1);
 
-		for (int i = 0; i < vtxdist.size(); ++i)
+		for (size_t i = 0; i < vtxdist.size(); ++i)
 		{
 			vtxdist.get(i) = v.get(i);
 			fvtxdist.get(i) = v.get(i);
@@ -1136,7 +1137,7 @@ public:
 
 		fvtxdist.resize(vcl.getProcessingUnits() + 1);
 
-		for (int i = 0; i < vtxdist.size(); ++i)
+		for (size_t i = 0; i < vtxdist.size(); ++i)
 		{
 			fvtxdist.get(i) = vtxdist.get(i);
 		}
@@ -1316,7 +1317,14 @@ public:
 	 */
 	size_t nodeById(size_t id) const
 	{
-		return glb2loc.at(id2glb.at(id));
+		try
+		{
+			return glb2loc.at(id2glb.at(id));
+		}
+		catch (const std::out_of_range& oor)
+		{
+			std::cout << "Node not found by glb: "<< id <<std::endl;
+		}
 	}
 
 	/*! /brief Get the first id of the graph
@@ -1635,32 +1643,6 @@ public:
 		return e_l.template get<e_map::vid>(v.get() * v_slot + i);
 	}
 
-	/*! \brief add vertex
-	 *
-	 * \param vrt Vertex properties
-	 *
-	 */
-	inline void addVertex(const V & vrt)
-	{
-		// Add the vertex
-		v.add(vrt);
-
-		// Update id to global map
-		id2glb.insert( { vrt.template get<V::id>(), vrt.template get<V::global_id>() });
-
-		// Update global id to local index
-		glb2loc.insert( { vrt.template get<V::global_id>(), v.size() - 1 });
-
-		// Update global id to id
-		glb2id.insert( { vrt.template get<V::global_id>(), vrt.template get<V::id>() });
-
-		// Set the number of adjacent vertex for this vertex to 0
-		v_l.add(0ul);
-
-		// Add a slot for the vertex adjacency list
-		e_l.resize(e_l.size() + v_slot);
-	}
-
 	/*! \brief Add vertex vrt with global id and id properties
 	 *
 	 * \param vrt vertex object to add
@@ -1939,6 +1921,7 @@ public:
 		v.swap(g.v);
 		v_m.swap(g.v_m);
 		e.swap(g.e);
+		e_m.swap(g.e_m);
 		v_l.swap(g.v_l);
 		glb2id = g.glb2id;
 		id2glb = g.id2glb;
@@ -1964,6 +1947,7 @@ public:
 		v.swap(g.v);
 		v_m.swap(g.v_m);
 		e.swap(g.e);
+		e_m.swap(g.e_m);
 		v_l.swap(g.v_l);
 		glb2id = g.glb2id;
 		id2glb = g.id2glb;
@@ -2076,9 +2060,10 @@ public:
 		for (auto gh : ghs_map)
 		{
 			epos += getNChilds(glb2loc.at(gh.first));
+			id2glb.erase(glb2id.at(gh.first));
 			glb2loc.erase(gh.first);
 			glb2id.erase(gh.first);
-			id2glb.erase(gh.first);
+
 		}
 
 		//resize all structures to delete the ghosts
@@ -2103,6 +2088,8 @@ public:
 	template<bool toRemove = true> //TODO make it private and create wrapper in public
 	void q_move(size_t i, size_t t)
 	{
+		//std::cout << vcl.getProcessUnitID() <<" moving " << getVertexId(i) << " local " << i << " to " << t << std::endl;
+
 		// Check if a 'useless' move has been requested
 		if (t == vcl.getProcessUnitID())
 		{
@@ -2161,16 +2148,16 @@ public:
 		if (glbi_map.size() == 0)
 			initGlbimap();
 
-		//std::cout<< "TEMP DBG::deleteGhosts\n";
+		//std::cout << "TEMP DBG::deleteGhosts\n";
 		deleteGhosts();
 
-		//std::cout<< "TEMP DBG::exchangeVertices\n";
+		//std::cout << "TEMP DBG::exchangeVertices\n";
 		exchangeVertices<false>();
 
-		//std::cout<< "TEMP DBG::updateVtxdist\n";
+		//std::cout << "TEMP DBG::updateVtxdist\n";
 		updateVtxdist();
 
-		//std::cout<< "TEMP DBG::remap\n";
+		//std::cout << "TEMP DBG::remap\n";
 		remap();
 	}
 

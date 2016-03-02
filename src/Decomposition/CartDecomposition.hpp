@@ -137,6 +137,18 @@ private:
 	//! Cell-list that store the geometrical information of the local internal ghost boxes
 	CellList<dim, T, FAST> lgeo_cell;
 
+	// Heap memory receiver
+	HeapMemory hp_recv;
+
+	// vector v_proc
+	openfpm::vector<size_t> v_proc;
+
+	// Receive counter
+	size_t recv_cnt;
+
+	// reference counter of the object in case is shared between object
+	long int ref_cnt;
+
 	/*! \brief Constructor, it decompose and distribute the sub-domains across the processors
 	 *
 	 * \param v_cl Virtual cluster, used internally for communications
@@ -356,18 +368,6 @@ private:
 		}
 	}
 
-	// Heap memory receiver
-	HeapMemory hp_recv;
-
-	// vector v_proc
-	openfpm::vector<size_t> v_proc;
-
-	// Receive counter
-	size_t recv_cnt;
-
-	// reference counter of the object in case is shared between object
-	long int ref_cnt;
-
 public:
 
 	/*! \brief Cart decomposition constructor
@@ -478,8 +478,8 @@ public:
 	 |              |   |                           |    |                                   |
 	 |              |   |                           |    |                                   |
 	 +--------------+---+---------------------------+----+                                   |
-	 |                                   |
-	 +-----------------------------------+
+														 |                                   |
+														 +-----------------------------------+
 
 	 \endverbatim
 
@@ -510,8 +510,8 @@ public:
 	 |          |   |                                    |    |                              |
 	 |          |   |                                    |    |                              |
 	 +--------------+------------------------------------+    |                              |
-	 |                                        |    |                              |
-	 +----------------------------------------+----+------------------------------+
+				 |                                        |    |                              |
+				 +----------------------------------------+----+------------------------------+
 
 
 	 \endverbatim
@@ -523,18 +523,18 @@ public:
 	 *
 	 *
 	 \verbatim
-	 ^ p2[1]
-	 |
-	 |
-	 +----+----+
-	 |         |
-	 |         |
-	 p1[0]<-----+         +----> p2[0]
-	 |         |
-	 |         |
-	 +----+----+
-	 |
-	 v  p1[1]
+					  ^ p2[1]
+					  |
+					  |
+				 +----+----+
+				 |         |
+				 |         |
+	  p1[0]<-----+         +----> p2[0]
+				 |         |
+				 |         |
+				 +----+----+
+					  |
+					  v  p1[1]
 
 	 \endverbatim
 
@@ -655,7 +655,7 @@ public:
 
 		dist.decompose();
 
-		createSubdomains(v_cl);
+		//createSubdomains(v_cl);
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
@@ -681,7 +681,7 @@ public:
 			dlb.setUnbalance(unbalance);
 			if (v_cl.getProcessUnitID() == 0)
 			{
-				//std::cout << std::setprecision(3) << unbalance << "\n";
+				std::cout << std::setprecision(3) << unbalance << "\n";
 			}
 		}
 

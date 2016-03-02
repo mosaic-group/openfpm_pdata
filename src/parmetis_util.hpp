@@ -191,92 +191,8 @@ class Parmetis
 
 		// Fill the last point
 		Mg.xadj[id] = prev;
-
-		/*
-		 std::cout << p_id << " ------------";
-		 for (int i = 0; i <= sub_g.getNVertex(); i++) {
-		 std::cout << Mg.vwgt[i] << " ";
-		 }
-		 std::cout << "\n";
-
-
-		 if (p_id == 0) {
-		 std::cout << p_id << "\n";
-		 for (int i = 0; i <= sub_g.getNVertex(); i++) {
-		 std::cout << Mg.xadj[i] << " ";
-		 }
-		 std::cout << "\n\n";
-
-		 for (int i = 0; i < sub_g.getNEdge(); i++) {
-		 std::cout << Mg.adjwgt[i] << " ";
-		 }
-		 std::cout << "\n\n";
-		*/
-
-
 	}
 
-	/*! \brief Construct Adjacency list
-	 *
-	 * \param g Reference graph to get informations
-	 *
-	 */
-	/*
-	 void constructAdjList(Graph &refGraph, idx_t* &old_vtxdist ) {
-	 // create xadj and adjlist
-	 Mg.vwgt = new idx_t[g.getNVertex()];
-	 Mg.xadj = new idx_t[g.getNVertex() + 1];
-	 Mg.adjncy = new idx_t[g.getNEdge()];
-
-	 //! starting point in the adjacency list
-	 size_t prev = 0;
-
-	 // actual position
-	 size_t id = 0;
-
-	 // for each vertex calculate the position of the starting point in the adjacency list
-	 for (size_t i = 0; i < g.getNVertex(); i++) {
-
-	 // Add weight to vertex
-	 Mg.vwgt[i] = g.vertex(i).template get<nm_v::computation>();
-
-	 // Calculate the starting point in the adjacency list
-	 Mg.xadj[id] = prev;
-
-	 // Create the adjacency list and the weights for edges
-	 for (size_t s = 0; s < refGraph.getNChilds(i); s++) {
-
-	 size_t child = refGraph.getChild(i, s);
-
-	 // Check if child is not in this processor
-	 if(child > old_vtxdist[p_id+1] || child < old_vtxdist[p_id])
-
-	 Mg.adjncy[prev + s] = child;
-	 }
-
-	 // update the position for the next vertex
-	 prev += refGraph.getNChilds(i);
-
-	 id++;
-	 }
-
-	 // Fill the last point
-	 Mg.xadj[id] = prev;
-
-
-	 std::cout << p_id << "\n";
-	 for(int i=0; i<= g.getNVertex();i++){
-	 std::cout << Mg.xadj[i] << " ";
-	 }
-	 std::cout << "\n\n";
-	 for(int i=0; i< g.getNEdge();i++){
-	 std::cout << Mg.adjncy[i] << " ";
-	 }
-	 std::cout << "\n\n";
-
-
-	 }
-	 */
 public:
 
 	/*! \brief Constructor
@@ -449,10 +365,10 @@ public:
 		//! This is used to indicate if the graph is weighted. wgtflag can take one of four values:
 		Mg.wgtflag = new idx_t[1];
 
-		if(w)
-			Mg.wgtflag[0] = 3;
-		else
-			Mg.wgtflag[0] = 0;
+		//if(w)
+			Mg.wgtflag[0] = 2;
+		//else
+			//Mg.wgtflag[0] = 0;
 	}
 
 	/*! \brief Decompose the graph
@@ -479,9 +395,7 @@ public:
 		// For each vertex store the processor that contain the data
 		for (size_t j = 0, id = 0; j < sub_g.getNVertex(); j++, id++)
 		{
-
 			sub_g.vertex(j).template get<i>() = Mg.part[id];
-
 		}
 
 	}
@@ -505,9 +419,7 @@ public:
 
 		for (size_t j = 0, id = 0; j < sub_g.getNVertex(); j++, id++)
 		{
-
 			sub_g.vertex(j).template get<i>() = Mg.part[id];
-
 		}
 	}
 

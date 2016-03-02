@@ -4,7 +4,7 @@
 #include "Graph/CartesianGraphFactory.hpp"
 #include "Graph/map_graph.hpp"
 
-#define GS_SIZE 8
+#define GS_SIZE 64
 
 /*!
  *
