@@ -69,7 +69,7 @@ class grid_dist_id
 	size_t g_sz[dim];
 
 	//! Structure that divide the space into cells
-	CellDecomposer_sm<dim,St> cd_sm;
+	CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
 
 	//! Communicator class
 	Vcluster & v_cl;
@@ -440,7 +440,7 @@ class grid_dist_id
 	 * \param ext extension of the domain
 	 *
 	 */
-	inline void InitializeCellDecomposer(const CellDecomposer_sm<dim,St> & cd_old, const Box<dim,size_t> & ext)
+	inline void InitializeCellDecomposer(const CellDecomposer_sm<dim,St,shift<dim,St>> & cd_old, const Box<dim,size_t> & ext)
 	{
 		// Initialize the cell decomposer
 		cd_sm.setDimensions(cd_old,ext);
@@ -566,7 +566,7 @@ public:
 		return ginfo_v.size(i);
 	}
 
-	static inline Ghost<dim,float> convert_ghost(const Ghost<dim,long int> & gd,const CellDecomposer_sm<dim,St> & cd_sm)
+	static inline Ghost<dim,float> convert_ghost(const Ghost<dim,long int> & gd,const CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm)
 	{
 		Ghost<dim,float> gc;
 
@@ -596,7 +596,7 @@ public:
 	 *
 	 */
 	grid_dist_id(const grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & g, Box<dim,size_t> ext)
-	:ghost(g.ghost),dec(g.dec),v_cl(*global_v_cluster)
+	:ghost(g.ghost),dec(*global_v_cluster),v_cl(*global_v_cluster)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
@@ -612,9 +612,11 @@ public:
 		{
 			g_sz[i] = g.g_sz[i] + ext.getLow(i) + ext.getHigh(i);
 
-			this->domain.setLow(i,g.domain.getLow(i) - ext.getLow(i) * g.spacing(i));
-			this->domain.setHigh(i,g.domain.getHigh(i) + ext.getHigh(i) * g.spacing(i));
+			this->domain.setLow(i,g.domain.getLow(i) - ext.getLow(i) * g.spacing(i) - g.spacing(i) / 2.0);
+			this->domain.setHigh(i,g.domain.getHigh(i) + ext.getHigh(i) * g.spacing(i) + g.spacing(i) / 2.0);
 		}
+
+		dec = g.dec.duplicate(g.ghost,this->domain);
 
 		InitializeStructures(g_sz);
 	}
@@ -807,7 +809,7 @@ public:
 	 * \return the cell decomposer
 	 *
 	 */
-	const CellDecomposer_sm<dim,St> & getCellDecomposer()
+	const CellDecomposer_sm<dim,St,shift<dim,St>> & getCellDecomposer()
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);

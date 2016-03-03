@@ -1001,9 +1001,9 @@ public:
 	 */
 	CartDecomposition<dim,T,Memory> & operator=(CartDecomposition && cart)
 	{
-		static_cast<ie_loc_ghost<dim,T>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T>*>(cart));
-		static_cast<nn_prcs<dim,T>*>(this)->operator=(static_cast<nn_prcs<dim,T>*>(cart));
-		static_cast<ie_ghost<dim,T>*>(this)->operator=(static_cast<ie_ghost<dim,T>*>(cart));
+		static_cast<ie_loc_ghost<dim,T>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T>>(cart));
+		static_cast<nn_prcs<dim,T>*>(this)->operator=(static_cast<nn_prcs<dim,T>>(cart));
+		static_cast<ie_ghost<dim,T>*>(this)->operator=(static_cast<ie_ghost<dim,T>>(cart));
 
 		sub_domains.swap(cart.sub_domains);
 		box_nn_processor.swap(cart.box_nn_processor);
