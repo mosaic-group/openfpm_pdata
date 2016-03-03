@@ -3,8 +3,8 @@
 
 #include "Graph/DistGraphFactory.hpp"
 #include "Graph/dist_map_graph.hpp"
-#include "Packer.hpp"
-#include "Unpacker.hpp"
+#include "Packer_Unpacker/Packer.hpp"
+#include "Packer_Unpacker/Unpacker.hpp"
 
 #define GS_SIZE 4
 
@@ -126,7 +126,7 @@ const std::string ed::attributes::name[] = { "prop" };
 
 BOOST_AUTO_TEST_SUITE (dist_map_graph_test)
 
-BOOST_AUTO_TEST_CASE( dist_map_graph_use_4p)
+BOOST_AUTO_TEST_CASE( dist_map_graph_use)
 {
 
 	//! Vcluster
@@ -340,9 +340,6 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)
 	//! Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
-	//! Cartesian grid
-	size_t sz[2] = { 4, 4 };
-
 	//! Box
 	Box<2, float> box( { 0.0, 0.0 }, { 10.0, 10.0 });
 
@@ -405,7 +402,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)
 	}
 
 	if(vcl.getProcessUnitID() == 0)
-	gd.reqVertex(5);
+		gd.reqVertex(5);
 
 	gd.sync();
 

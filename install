@@ -131,6 +131,11 @@ echo -e "Installing requirements into: $i_dir "
 
 ## call the configure script
 
+if [ x"$MPI_valid" == x"yes" ]; then
+	configure_options="$configure_options CXX=mpic++ "
+fi
+
+
 MPI_installed=0
 METIS_installed=0
 BOOST_installed=0

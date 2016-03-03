@@ -131,12 +131,6 @@ private:
 
 	::Box<dim,T> bbox;
 
-	// Heap memory receiver
-	HeapMemory hp_recv;
-
-	// vector v_proc
-	openfpm::vector<size_t> v_proc;
-
 	// reference counter of the object in case is shared between object
 	long int ref_cnt;
 
@@ -154,9 +148,6 @@ private:
 
 	// Receive counter
 	size_t recv_cnt;
-
-	// reference counter of the object in case is shared between object
-	long int ref_cnt;
 
 	/*! \brief Constructor, it decompose and distribute the sub-domains across the processors
 	 *

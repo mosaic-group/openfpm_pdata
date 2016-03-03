@@ -83,7 +83,7 @@ public:
 	 * /param grid Grid
 	 * /param dom Domain
 	 */
-	void init(grid_sm<dim, void> & grid, Box<dim, T> dom)
+	void createCartGraph(grid_sm<dim, void> & grid, Box<dim, T> dom)
 	{
 		//! Set grid and domain
 		gr = grid;
@@ -175,7 +175,7 @@ public:
 		v_cl.sum(sum);
 		v_cl.execute();
 
-		unbalance = ((float) (max - min)) / (((float) sum) / v_cl.getProcessingUnits());
+		unbalance = ((float) (max - min)) / (float) (sum / v_cl.getProcessingUnits());
 
 		return unbalance * 100;
 	}
@@ -186,7 +186,7 @@ public:
 	 * \param pos vector that will contain x, y, z
 	 *
 	 */
-	void getVertexPosition(size_t id, T (&pos)[dim])
+	void getSubSubDomainPosition(size_t id, T (&pos)[dim])
 	{
 		if (id >= sub_g.getNVertex())
 			std::cerr << "Position - Such vertex doesn't exist (id = " << id << ", " << "total size = " << sub_g.getNVertex() << ")\n";
@@ -203,7 +203,7 @@ public:
 	 * \param weight to give to the vertex
 	 *
 	 */
-	inline void setVertexWeight(size_t id, size_t weight)
+	inline void setComputationCost(size_t id, size_t weight)
 	{
 		verticesGotWeights = true;
 
@@ -325,13 +325,13 @@ public:
 	 * \param id to attach to the filename
 	 *
 	 */
-	void printCurrentDecomposition(int id)
+	void write(const std::string & file)
 	{
 		VTKWriter<DistGraph_CSR<nm_v, nm_e>, DIST_GRAPH> gv2(sub_g);
-		gv2.write("test_dist_graph_" + std::to_string(id) + ".vtk");
+		gv2.write(file);
 	}
 
-	const DistParMetisDistribution<dim,T> & operator=(const DistParMetisDistribution<dim,T> & dist)
+	const DistParMetisDistribution<dim, T> & operator=(const DistParMetisDistribution<dim, T> & dist)
 	{
 		v_cl = dist.v_cl;
 		gr = dist.gr;
@@ -345,7 +345,7 @@ public:
 		return *this;
 	}
 
-	const DistParMetisDistribution<dim,T> & operator=(const DistParMetisDistribution<dim,T> && dist)
+	const DistParMetisDistribution<dim, T> & operator=(const DistParMetisDistribution<dim, T> && dist)
 	{
 		v_cl = dist.v_cl;
 		gr = dist.gr;
@@ -358,6 +358,7 @@ public:
 
 		return *this;
 	}
-};
+}
+;
 
 #endif /* SRC_DECOMPOSITION_PARMETISDISTRIBUTION_HPP_ */

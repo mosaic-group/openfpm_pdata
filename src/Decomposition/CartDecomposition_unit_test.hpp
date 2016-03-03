@@ -6,7 +6,7 @@
 
 BOOST_AUTO_TEST_SUITE( CartDecomposition_test )
 
-#define SUB_UNIT_FACTOR 64
+#define SUB_UNIT_FACTOR 1024
 
 void setComputationCosts(CartDecomposition<2, float> &dec, size_t n_v, Point<2, float> center, float radius, size_t weight_h, size_t weight_l)
 {

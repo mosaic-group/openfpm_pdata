@@ -321,12 +321,6 @@ class DistGraph_CSR
 		size_t id_x_end = v_l.template get<0>(v1);
 
 #ifdef DEBUG
-		// Check that v1 and v2 exist
-
-		if (v1 >= v.size() || v2 >= v.size())
-		{
-			//std::cout << "Warning graph: creating an edge between vertex that does not exist" << "\n";
-		}
 
 		// Check that the edge does not already exist
 
@@ -488,7 +482,7 @@ class DistGraph_CSR
 
 				for (size_t j = 0; j < this->getNChilds(i); j++)
 				{
-					recv_g.addEdge_new(local_i, this->getChild(i, j), this->getChildEdge(i, j), this->getChildInfo(i, j));
+					recv_g.addEdge(local_i, this->getChild(i, j), this->getChildEdge(i, j), this->getChildInfo(i, j));
 				}
 				++local_i;
 			}
@@ -542,8 +536,6 @@ class DistGraph_CSR
 	template<bool addAsGhosts>
 	void exchangeVertices()
 	{
-		size_t totVert = getNVertex();
-
 		// If the exchange is not to retrieve ghost vertices delete the vertices this processor is sending
 		if (!addAsGhosts)
 			deleteMovedVertices();
@@ -570,7 +562,6 @@ class DistGraph_CSR
 			// process to communicate with TODO remove pc
 			size_t pc = i;
 
-			size_t es_size = sgp.get(pc).send_es.size();
 			size_t vp_size = sgp.get(pc).send_v.size();
 			std::vector<size_t> pap_prp;
 
@@ -682,8 +673,6 @@ class DistGraph_CSR
 					if (addAsGhosts)
 						ghs_map.insert( { vm.template get<v_info::gid>(), false });
 
-					size_t prev_e = getNEdge();
-
 					// unpack size of children
 					size_t s;
 					Unpacker<size_t, HeapMemory>::unpack(mem, s, ps);
@@ -704,7 +693,7 @@ class DistGraph_CSR
 						Unpacker<size_t, HeapMemory>::unpack(mem, el_n, ps);
 
 						// add the edge //HERE ERROR modify to add globals
-						addEdge_new(j, el_n, e_n, e_i);
+						addEdge(j, el_n, e_n, e_i);
 					}
 				}
 			}
@@ -778,8 +767,6 @@ class DistGraph_CSR
 			IdnProc nidpid = { j, p_id };
 			on_toup.insert( { v_m.get(it.second).template get<v_info::id>(), nidpid });
 
-			size_t id = v_m.get(it.second).template get<v_info::id>(); //delete
-
 			// fill the re-mapping information for each processors that need it
 			on_info.get(getInfoProc(it.first)).add(v_m.get(it.second).template get<v_info::id>());
 			on_info.get(getInfoProc(it.first)).add(j);
@@ -827,8 +814,6 @@ class DistGraph_CSR
 				GlobalVInfo t = { (search->second).id, (search->second).pid };
 				glbi_map.at(k.first) = t;
 			}
-			//std::cout << vcl.getProcessUnitID() << " -> " << k.first << " id: " << glbi_map.at(k.first).id << " pid: " << glbi_map.at(k.first).pid << "\n";
-
 		}
 
 		// Vector of vertices global id I need info
@@ -905,17 +890,11 @@ class DistGraph_CSR
 			}
 		}
 
-		for (auto ik : rmi_m)
-		{
-			//std::cout << vcl.getProcessUnitID() << " " <<  ik.first << " >> " <<  ik.second << "\n";
-		}
-
 		// Finally re-map the edges
 		for (size_t i = 0; i < getNVertex(); ++i)
 		{
 			for (size_t s = 0; s < getNChilds(i); s++)
 			{
-				//std::cout << vcl.getProcessUnitID() << " " << e_l.template get<e_map::vid>(i * v_slot + s) << " >> " << rmi_m.at(getChildEdge(i, s).template get<E::dstgid>()) << "\n";
 				e_l.template get<e_map::vid>(i * v_slot + s) = rmi_m.at(getChildDstGid(i, s));
 			}
 		}
@@ -1160,6 +1139,8 @@ public:
 	DistGraph_CSR<V, E, VertexList, EdgeList, Memory> & operator=(DistGraph_CSR<V, E, VertexList, EdgeList, Memory> && g)
 	{
 		swap(g);
+
+		return *this;
 	}
 
 	/*! \breif Copy the graph
@@ -1703,79 +1684,7 @@ public:
 		id2glb.insert( { i, g });
 	}
 
-	/*! \brief Add edge on the graph
-	 *
-	 * \param v1 source vertex
-	 * \param v2 destination vertex
-	 * \param ed edge object
-	 * \return the edge object
-	 */
-	template<typename CheckPolicy = NoCheck> inline auto addEdge(size_t v1, size_t v2, const E & ed) -> decltype(e.get(0))
-	{
-		long int id_x_end = addEdge_<CheckPolicy>(v1, v2);
-
-		// If there is not edge return an invalid edge, is a kind of stub object
-		if (id_x_end == NO_EDGE)
-			return e_invalid.get(0);
-
-		// add in e_l the edge properties
-		e.set(id_x_end, ed);
-
-		return e.get(id_x_end);
-	}
-
-	/*! \brief Add edge on the graph
-	 *
-	 * Add edge on the graph
-	 *
-	 * \param v1 start vertex
-	 * \param v2 end vertex
-	 *
-	 * \return the edge object
-	 */
-	template<typename CheckPolicy = NoCheck> inline auto addEdge(size_t v1, size_t v2) -> decltype(e.get(0))
-	{
-		// add an edge
-		long int id_x_end = addEdge_<CheckPolicy>(v1, v2);
-		// If there is not edge return an invalid edge, is a kind of stub object
-		if (id_x_end == NO_EDGE)
-			return e_invalid.get(0);
-
-		// return the edge to change the properties
-		return e.get(id_x_end);
-	}
-
-	/*! \brief Add edge on the graph and fill source and destination informations
-	 *
-	 * add edge on the graph
-	 *
-	 * \param v1 start vertex
-	 * \param v2 end vertex
-	 *
-	 * \tparam sgid property id filled with the source vertex global id
-	 * \tparam dgid property id filled with the destination vertex global id
-	 */
-	template<typename CheckPolicy = NoCheck, int sgid, int dgid> inline auto addEdge(size_t v1, size_t v2, size_t srcgid, size_t dstgid) -> decltype(e.get(0))
-	{
-		// add an edge
-		long int id_x_end = addEdge_<CheckPolicy>(v1, v2);
-		// If there is not edge return an invalid edge, is a kind of stub object
-		if (id_x_end == NO_EDGE)
-			return e_invalid.get(0);
-
-		// set source and destination ids of the edge
-		e.get(id_x_end).template get<sgid>() = srcgid;
-		e.get(id_x_end).template get<dgid>() = dstgid;
-
-		// set source and destination ids of the edge
-		e_m.template get<e_info::sgid>(id_x_end) = srcgid;
-		e_m.template get<e_info::dgid>(id_x_end) = dstgid;
-
-		// return the edge to change the properties
-		return e.get(id_x_end);
-	}
-
-	inline auto addEdge_new(size_t v1, size_t v2, size_t srcgid, size_t dstgid) -> decltype(e.get(0))
+	inline auto addEdge(size_t v1, size_t v2, size_t srcgid, size_t dstgid) -> decltype(e.get(0))
 	{
 		// add an edge
 		long int id_x_end = addEdge_<NoCheck>(v1, v2);
@@ -1791,7 +1700,7 @@ public:
 		return e.get(id_x_end);
 	}
 
-	inline auto addEdge_new(size_t v1, size_t v2, size_t srcgid, size_t dstgid, const E & ed) -> decltype(e.get(0))
+	inline auto addEdge(size_t v1, size_t v2, size_t srcgid, size_t dstgid, const E & ed) -> decltype(e.get(0))
 	{
 		// add an edge
 		long int id_x_end = addEdge_<NoCheck>(v1, v2);
@@ -1810,7 +1719,7 @@ public:
 		return e.get(id_x_end);
 	}
 
-	inline auto addEdge_new(size_t v1, size_t v2, const E & ed, const e_info & ei) -> decltype(e.get(0))
+	inline auto addEdge(size_t v1, size_t v2, const E & ed, const e_info & ei) -> decltype(e.get(0))
 	{
 		// add an edge
 		long int id_x_end = addEdge_<NoCheck>(v1, v2);
@@ -2090,8 +1999,6 @@ public:
 	template<bool toRemove = true> //TODO make it private and create wrapper in public
 	void q_move(size_t i, size_t t)
 	{
-		//std::cout << vcl.getProcessUnitID() <<" moving " << getVertexId(i) << " local " << i << " to " << t << std::endl;
-
 		// Check if a 'useless' move has been requested
 		if (t == vcl.getProcessUnitID())
 		{
@@ -2150,16 +2057,12 @@ public:
 		if (glbi_map.size() == 0)
 			initGlbimap();
 
-		//std::cout << "TEMP DBG::deleteGhosts\n";
 		deleteGhosts();
 
-		//std::cout << "TEMP DBG::exchangeVertices\n";
 		exchangeVertices<false>();
 
-		//std::cout << "TEMP DBG::updateVtxdist\n";
 		updateVtxdist();
 
-		//std::cout << "TEMP DBG::remap\n";
 		remap();
 	}
 

@@ -437,7 +437,6 @@ public:
 
 		unbalance = ((float) (max - min)) / (float) (sum / v_cl.getProcessingUnits());
 
-		std::cout << std::endl;
 		return unbalance * 100;
 	}
 
