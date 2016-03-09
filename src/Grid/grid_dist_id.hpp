@@ -492,9 +492,6 @@ class grid_dist_id
 		// Create the sub-domains
 		dec.setParameters(div,domain,bc,ghost);
 		dec.decompose();
-
-		// Calculate ghost boxes
-		dec.calculateGhostBoxes();
 	}
 
 	/*! \brief Initialize the grid

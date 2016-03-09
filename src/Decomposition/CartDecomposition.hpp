@@ -143,9 +143,6 @@ private:
 	// Heap memory receiver
 	HeapMemory hp_recv;
 
-	// vector v_proc
-	openfpm::vector<size_t> v_proc;
-
 	// Receive counter
 	size_t recv_cnt;
 
@@ -345,11 +342,11 @@ private:
 
 		for (size_t i = 0; i < dist.getNSubSubDomains(); i++)
 		{
-			dist.setMigrationCost(i, norm * migration * dist.getVertexWeight(i));
+			dist.setMigrationCost(i, norm * migration * dist.getSubSubDomainComputationCost(i));
 
 			for (size_t s = 0; s < dist.getNSubSubDomainNeighbors(i); s++)
 			{
-				dist.setCommunicationCost(i, s, 1 * dist.getVertexWeight(i) * ts);
+				dist.setCommunicationCost(i, s, 1 * dist.getSubSubDomainComputationCost(i) * ts);
 			}
 			prev += dist.getNSubSubDomainNeighbors(i);
 		}
@@ -1169,26 +1166,46 @@ public:
 
 	}
 
+	void reset()
+	{
+		sub_domains.clear();
+		box_nn_processor.clear();
+		fine_s.clear();
+		nn_prcs<dim, T>::reset();
+		ie_ghost<dim, T>::reset();
+		ie_loc_ghost<dim, T>::reset();
+	}
+
 	/*! \brief Start decomposition
 	 *
 	 */
 	void decompose()
 	{
+		reset();
+
 		computeCommunicationAndMigrationCosts(1);
 
 		dist.decompose();
 
 		createSubdomains(v_cl,bc);
+
+		calculateGhostBoxes();
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
 	 *
 	 */
-	void rebalance()
+	void rebalance(size_t ts)
 	{
-		computeCommunicationAndMigrationCosts(1);
+		reset();
+
+		computeCommunicationAndMigrationCosts(ts);
 
 		dist.refine();
+
+		createSubdomains(v_cl,bc);
+
+		calculateGhostBoxes();
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
@@ -1210,8 +1227,8 @@ public:
 
 		if (dlb.rebalanceNeeded())
 		{
-			computeCommunicationAndMigrationCosts(dlb.getNTimeStepSinceDLB());
-			dist.refine();
+			rebalance(dlb.getNTimeStepSinceDLB());
+
 			return true;
 		}
 		return false;
@@ -1246,9 +1263,10 @@ public:
 		dist.getSubSubDomainPosition(id, pos);
 	}
 
+	//TODO fix in Parmetis distribution to get only the right amount of vertices
 	/*! \brief Get the number of sub-sub-domains in this sub-graph
 	 *
-	 * @return number of sub-sub-domains in this sub-graph
+	 * \return number of sub-sub-domains in this sub-graph
 	 */
 	size_t getNSubSubDomains()
 	{
@@ -1437,6 +1455,15 @@ public:
 		return ghost;
 	}
 
+	/*! \brief Method to access to the grid information of the decomposition
+	 *
+	 * \return the grid
+	 */
+	const grid_sm<dim,void> getGrid()
+	{
+		return gr;
+	}
+
 	////////////// Functions to get decomposition information ///////////////
 
 	/*! \brief Write the decomposition as VTK file
@@ -1619,6 +1646,18 @@ public:
 	Distribution & getDistribution()
 	{
 		return dist;
+	}
+
+	/*! \brief Add computation cost i to the subsubdomain with global id gid
+	 *
+	 * \param gid global id of the subsubdomain to update
+	 * \param i Cost increment
+	 */
+	inline void addComputationCost(size_t gid, size_t i)
+	{
+		size_t c = dist.getSubSubDomainComputationCost(gid);
+
+		dist.setComputationCost(gid, c + i);
 	}
 };
 

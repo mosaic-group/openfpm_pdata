@@ -129,7 +129,7 @@ class Parmetis
 	 * \param g Global graph
 	 *
 	 */
-	void constructAdjList(Graph &g, const std::unordered_map<rid,gid> & m2g)
+	void constructAdjList(Graph &g, const std::unordered_map<rid, gid> & m2g)
 	{
 		// init basic graph informations and part vector
 		// Put the total communication size to NULL
@@ -139,7 +139,7 @@ class Parmetis
 
 		size_t nedge = 0;
 		size_t i = 0;
-		for (rid j = first; i < nvertex ; i++, ++j)
+		for (rid j = first; i < nvertex; i++, ++j)
 		{
 			Mg.part[i] = p_id;
 			nedge += g.getNChilds(m2g.find(j)->second.id);
@@ -161,13 +161,14 @@ class Parmetis
 		size_t j = 0;
 
 		// for each vertex calculate the position of the starting point in the adjacency list
-		for (rid i = first ; i <= last; ++i, j++)
+		for (rid i = first; i <= last; ++i, j++)
 		{
 			gid idx = m2g.find(i)->second;
 
 			// Add weight to vertex and migration cost
 			Mg.vwgt[j] = g.vertex(idx.id).template get<nm_v::computation>();
-			Mg.vsize[j] = g.vertex(idx.id).template get<nm_v::migration>();;
+			Mg.vsize[j] = g.vertex(idx.id).template get<nm_v::migration>();
+			;
 
 			// Calculate the starting point in the adjacency list
 			Mg.xadj[id] = prev;
@@ -179,7 +180,7 @@ class Parmetis
 				size_t child = g.getChild(idx.id, s);
 
 				Mg.adjncy[prev + s] = g.vertex(child).template get<nm_v::id>();
-				Mg.adjwgt[prev + s] = g.getChildEdge(idx.id,s).template get<nm_e::communication>();
+				Mg.adjwgt[prev + s] = g.getChildEdge(idx.id, s).template get<nm_e::communication>();
 			}
 
 			// update the position for the next vertex
@@ -202,8 +203,8 @@ public:
 	 * \param nc number of partitions
 	 *
 	 */
-	Parmetis(Vcluster & v_cl, size_t nc)
-	:v_cl(v_cl), nc(nc)
+	Parmetis(Vcluster & v_cl, size_t nc) :
+			v_cl(v_cl), nc(nc)
 	{
 		// TODO Move into VCluster
 		MPI_Comm_dup(MPI_COMM_WORLD, &comm);
@@ -313,18 +314,20 @@ public:
 	 * \param g Global graph to set
 	 * \param w true if vertices have weights
 	 */
-	void initSubGraph(Graph & g, const openfpm::vector<rid> & vtxdist, const std::unordered_map<rid,gid> & m2g, bool w)
+	void initSubGraph(Graph & g, const openfpm::vector<rid> & vtxdist, const std::unordered_map<rid, gid> & m2g, bool w)
 	{
 		p_id = v_cl.getProcessUnitID();
 
 		first = vtxdist.get(p_id);
-		last = vtxdist.get(p_id+1)-1;
+		last = vtxdist.get(p_id + 1) - 1;
 		nvertex = last.id - first.id + 1;
 
 		setDefaultParameters(w);
 
 		// construct the adjacency list
 		constructAdjList(g, m2g);
+
+		//reset(g, vtxdist, m2g, w);
 	}
 
 	/*! \brief Decompose the graph
@@ -337,8 +340,7 @@ public:
 	{
 		// Decompose
 
-		ParMETIS_V3_PartKway((idx_t *) vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag,
-				Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.options, Mg.edgecut, Mg.part, &comm);
+		ParMETIS_V3_PartKway((idx_t *) vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.options, Mg.edgecut, Mg.part, &comm);
 	}
 
 	/*! \brief Refine the graph
@@ -352,9 +354,7 @@ public:
 	{
 		// Refine
 
-		ParMETIS_V3_AdaptiveRepart((idx_t *) vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.vsize, Mg.adjwgt,
-				Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.itr, Mg.options, Mg.edgecut,
-				Mg.part, &comm);
+		ParMETIS_V3_AdaptiveRepart((idx_t *) vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.vsize, Mg.adjwgt, Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.itr, Mg.options, Mg.edgecut, Mg.part, &comm);
 	}
 
 	/*! \brief Get graph partition vector
@@ -367,13 +367,15 @@ public:
 
 	/*! \brief Reset graph and reconstruct it
 	 *
-	 * \param Global graph
-	 *
+	 * \param g Global graph
+	 * \param vtxdist Distribution vector
+	 * \param m2g Mapped id to global id map
+	 * \param vgw Using weights on vertices
 	 */
-	void reset(Graph & g,const openfpm::vector<rid> & vtxdist, const std::unordered_map<rid,gid> & m2g)
+	void reset(Graph & g, const openfpm::vector<rid> & vtxdist, const std::unordered_map<rid, gid> & m2g, bool vgw)
 	{
 		first = vtxdist.get(p_id);
-		last = vtxdist.get(p_id+1)-1;
+		last = vtxdist.get(p_id + 1) - 1;
 		nvertex = last.id - first.id + 1;
 
 		// Deallocate the graph structures
@@ -403,8 +405,10 @@ public:
 			delete[] Mg.part;
 		}
 
+		setDefaultParameters(vgw);
+
 		// construct the adjacency list
-		constructAdjList(g,m2g);
+		constructAdjList(g, m2g);
 	}
 
 	/*! \brief Seth the default parameters for parmetis
@@ -448,7 +452,7 @@ public:
 		Mg.tpwgts = new real_t[Mg.nparts[0]];
 		Mg.ubvec = new real_t[Mg.nparts[0]];
 
-		for (size_t s = 0; s < (size_t)Mg.nparts[0]; s++)
+		for (size_t s = 0; s < (size_t) Mg.nparts[0]; s++)
 		{
 			Mg.tpwgts[s] = 1.0 / Mg.nparts[0];
 			Mg.ubvec[s] = 1.05;
@@ -464,7 +468,7 @@ public:
 		//! This is used to indicate if the graph is weighted. wgtflag can take one of four values:
 		Mg.wgtflag = new idx_t[1];
 
-		if(w)
+		if (w)
 			Mg.wgtflag[0] = 3;
 		else
 			Mg.wgtflag[0] = 0;

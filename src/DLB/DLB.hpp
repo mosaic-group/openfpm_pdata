@@ -52,7 +52,7 @@ public:
 	//! Level of un-balance needed to trigger the re-balance
 	enum ThresholdLevel
 	{
-		THRLD_LOW = 5, THRLD_MEDIUM = 7, THRLD_HIGH = 10
+		THRLD_LOW = 10, THRLD_MEDIUM = 20, THRLD_HIGH = 30
 	};
 
 private:

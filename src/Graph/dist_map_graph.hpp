@@ -300,6 +300,41 @@ class DistGraph_CSR
 	// Queue of requests to add edges
 	openfpm::vector<EdgeReq> e_queue;
 
+	/*! \brief Add vertex vrt with global id and id properties
+	 *
+	 * \param vrt vertex object to add
+	 * \param gid global id, unique in global graph
+	 * \param id id, unique n global graph
+	 */
+	inline void add_vertex(const V & vrt, size_t id, size_t gid)
+	{
+		// Create vertex info object
+		v_info vm;
+		vm.template get<v_info::id>() = id;
+		vm.template get<v_info::gid>() = gid;
+
+		// Add the vertex info
+		v_m.add(vm);
+
+		// Add the vertex
+		v.add(vrt);
+
+		// Update id to global map
+		id2glb.insert( { id, gid });
+
+		// Update global id to local index
+		glb2loc.insert( { gid, v.size() - 1 });
+
+		// Update global id to id
+		glb2id.insert( { gid, id });
+
+		// Set the number of adjacent vertex for this vertex to 0
+		v_l.add(0ul);
+
+		// Add a slot for the vertex adjacency list
+		e_l.resize(e_l.size() + v_slot);
+	}
+
 	/*! \brief add edge on the graph
 	 *
 	 * add edge on the graph
@@ -308,7 +343,6 @@ class DistGraph_CSR
 	 * \param v2 end vertex
 	 *
 	 */
-
 	template<typename CheckPolicy = NoCheck> inline size_t addEdge_(size_t v1, size_t v2)
 	{
 		// If v1 and v2 does not satisfy some criteria return
@@ -708,11 +742,16 @@ class DistGraph_CSR
 	 */
 	void updateVtxdist()
 	{
+		// Prepare vtxdist
 		vtxdist.resize(vcl.getProcessingUnits() + 1);
 
+		// Set first element to 0, always the same
 		vtxdist.get(0) = 0;
 
+		// Prepare array that will contain the sizes of all the graphs
 		openfpm::vector<size_t> recv(vcl.getProcessingUnits());
+
+		// Set the local size
 		size_t tv = getNVertex();
 
 		// Sent and receive the size of each subgraph
@@ -1280,15 +1319,18 @@ public:
 	 * \param id GLOBAL id of the vertex to access
 	 *
 	 */
-	auto getVertex(size_t id) const -> const decltype( v.get(id) )
+	auto getVertex(size_t id) const -> const decltype( v.get(0) )
 	{
 		try
 		{
 			return v.get(glb2loc.at(id));
-		} catch (const std::out_of_range& oor)
+		}
+		catch (const std::out_of_range& oor)
 		{
 			std::cerr << "The vertex with global id " << id << " is not in this sub-graph. Try to call reqVertex(" << id << ") and sync() first.\n";
 		}
+
+		return v.get(0);
 	}
 
 	/*! \brief operator to access the vertex position index by id property
@@ -1306,8 +1348,10 @@ public:
 		}
 		catch (const std::out_of_range& oor)
 		{
-			std::cout << "Node not found by glb: "<< id <<std::endl;
+			std::cout << "Node not found by glb: " << id << std::endl;
 		}
+
+		return 0;
 	}
 
 	/*! /brief Get the first id of the graph
@@ -1630,36 +1674,10 @@ public:
 	 *
 	 * \param vrt vertex object to add
 	 * \param gid global id, unique in global graph
-	 * \param id id, unique n global graph
 	 */
-	inline void add_vertex(const V & vrt, size_t id, size_t gid)
+	inline void add_vertex(const V & vrt, size_t gid)
 	{
-
-		// Create vertex info object
-		v_info vm;
-		vm.template get<v_info::id>() = id;
-		vm.template get<v_info::gid>() = gid;
-
-		// Add the vertex info
-		v_m.add(vm);
-
-		// Add the vertex
-		v.add(vrt);
-
-		// Update id to global map
-		id2glb.insert( { id, gid });
-
-		// Update global id to local index
-		glb2loc.insert( { gid, v.size() - 1 });
-
-		// Update global id to id
-		glb2id.insert( { gid, id });
-
-		// Set the number of adjacent vertex for this vertex to 0
-		v_l.add(0ul);
-
-		// Add a slot for the vertex adjacency list
-		e_l.resize(e_l.size() + v_slot);
+		add_vertex(vrt, gid, gid);
 	}
 
 	/*! \brief map global id to local id
@@ -1735,12 +1753,24 @@ public:
 		return e.get(id_x_end);
 	}
 
+	/*! \brief Get the global id of edge's source vertex
+	 *
+	 * \param v1 source vertex of the edge
+	 * \param s n child of vertex v1
+	 * \return global id of the source vertex
+	 */
 	size_t getChildSrcGid(size_t v1, size_t s)
 	{
 		size_t eid = e_l.template get<e_map::eid>(v1 * v_slot + s);
 		return e_m.template get<e_info::sgid>(eid);
 	}
 
+	/*! \brief Get the global id of edge's destination vertex
+	 *
+	 * \param v1 source vertex of the edge
+	 * \param s n child of vertex v1
+	 * \return global id of the destination vertex
+	 */
 	size_t getChildDstGid(size_t v1, size_t s)
 	{
 		size_t eid = e_l.template get<e_map::eid>(v1 * v_slot + s);
@@ -1780,7 +1810,6 @@ public:
 		// set source and destination ids of the edge
 		e_m.get(id_x_end).template get<e_info::sgid>() = v1;
 		e_m.get(id_x_end).template get<e_info::dgid>() = v2;
-
 	}
 
 	/*! \brief Execute a synchronization through processor to finalize the add of the edges requested in the e_queue
@@ -1828,7 +1857,6 @@ public:
 	inline void swap(DistGraph_CSR<V, E, VertexList, EdgeList> & g)
 	{
 		// switch the memory
-
 		v.swap(g.v);
 		v_m.swap(g.v_m);
 		e.swap(g.e);
@@ -1854,7 +1882,6 @@ public:
 	inline void swap(DistGraph_CSR<V, E, VertexList, EdgeList> && g)
 	{
 		// switch the memory
-
 		v.swap(g.v);
 		v_m.swap(g.v_m);
 		e.swap(g.e);
@@ -1927,7 +1954,7 @@ public:
 	/*! \brief Once added all the vertices this function must be called to initialize all the properties, useless if a graph factory is used
 	 *
 	 */
-	void initProperties()
+	void init()
 	{
 		initDistributionVector();
 

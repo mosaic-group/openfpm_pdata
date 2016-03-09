@@ -5,12 +5,13 @@
  *      Author: Antonio Leo
  */
 
+#ifndef SRC_DECOMPOSITION_DISTPARMETISDISTRIBUTION_HPP_
+#define SRC_DECOMPOSITION_DISTPARMETISDISTRIBUTION_HPP_
+
 #include "SubdomainGraphNodes.hpp"
 #include "parmetis_dist_util.hpp"
 #include "Graph/dist_map_graph.hpp"
 #include "Graph/DistGraphFactory.hpp"
-#ifndef SRC_DECOMPOSITION_DISTPARMETISDISTRIBUTION_HPP_
-#define SRC_DECOMPOSITION_DISTPARMETISDISTRIBUTION_HPP_
 
 template<unsigned int dim, typename T>
 class DistParMetisDistribution
@@ -25,7 +26,7 @@ class DistParMetisDistribution
 	Box<dim, T> domain;
 
 	//! Processor sub-sub-domain graph
-	DistGraph_CSR<nm_v, nm_e> sub_g;
+	DistGraph_CSR<nm_v, nm_e> g;
 
 	//! Convert the graph to parmetis format
 	DistParmetis<DistGraph_CSR<nm_v, nm_e>> parmetis_graph;
@@ -91,12 +92,12 @@ public:
 
 		//! Create sub graph
 		DistGraphFactory<dim, DistGraph_CSR<nm_v, nm_e>> dist_g_factory;
-		sub_g = dist_g_factory.template construct<NO_EDGE, T, dim - 1, 0, 1, 2>(gr.getSize(), domain);
-		sub_g.getDecompositionVector(vtxdist);
+		g = dist_g_factory.template construct<NO_EDGE, T, dim - 1, 0, 1, 2>(gr.getSize(), domain);
+		g.getDecompositionVector(vtxdist);
 
 		if (dim == 2)
-			for (size_t i = 0; i < sub_g.getNVertex(); i++)
-				sub_g.vertex(i).template get<nm_v::x>()[2] = 0;
+			for (size_t i = 0; i < g.getNVertex(); i++)
+				g.vertex(i).template get<nm_v::x>()[2] = 0;
 
 	}
 
@@ -105,7 +106,7 @@ public:
 	 */
 	DistGraph_CSR<nm_v, nm_e> & getGraph()
 	{
-		return sub_g;
+		return g;
 	}
 
 	/*! \brief Create first decomposition, it divides the graph in slices and give each slice to a processor
@@ -114,20 +115,20 @@ public:
 	void decompose()
 	{
 		//! Init sub graph in parmetis format
-		parmetis_graph.initSubGraph(sub_g);
+		parmetis_graph.initSubGraph(g);
 
 		//! Decompose
-		parmetis_graph.decompose<nm_v::proc_id>(sub_g);
+		parmetis_graph.decompose<nm_v::proc_id>(g);
 
 		//! Get result partition for this processors
 		idx_t *partition = parmetis_graph.getPartition();
 
-		for (size_t i = 0, j = sub_g.firstId(); i < sub_g.getNVertex() && j <= sub_g.lastId(); i++, j++)
+		for (size_t i = 0, j = g.firstId(); i < g.getNVertex() && j <= g.lastId(); i++, j++)
 		{
 			if (partition[i] != v_cl.getProcessUnitID())
-				sub_g.q_move(sub_g.nodeById(j), partition[i]);
+				g.q_move(g.nodeById(j), partition[i]);
 		}
-		sub_g.redistribute();
+		g.redistribute();
 	}
 
 	/*! \brief Refine current decomposition
@@ -139,20 +140,20 @@ public:
 	void refine()
 	{
 		//! Reset parmetis graph and reconstruct it
-		parmetis_graph.reset(sub_g);
+		parmetis_graph.reset(g);
 
 		//! Refine
-		parmetis_graph.refine<nm_v::proc_id>(sub_g);
+		parmetis_graph.refine<nm_v::proc_id>(g);
 
 		//! Get result partition for this processors
 		idx_t *partition = parmetis_graph.getPartition();
 
-		for (size_t i = 0, j = sub_g.firstId(); i < sub_g.getNVertex() && j <= sub_g.lastId(); i++, j++)
+		for (size_t i = 0, j = g.firstId(); i < g.getNVertex() && j <= g.lastId(); i++, j++)
 		{
 			if (partition[i] != v_cl.getProcessUnitID())
-				sub_g.q_move(sub_g.nodeById(j), partition[i]);
+				g.q_move(g.nodeById(j), partition[i]);
 		}
-		sub_g.redistribute();
+		g.redistribute();
 	}
 
 	/*! \brief Compute the unbalance value
@@ -188,13 +189,13 @@ public:
 	 */
 	void getSubSubDomainPosition(size_t id, T (&pos)[dim])
 	{
-		if (id >= sub_g.getNVertex())
-			std::cerr << "Position - Such vertex doesn't exist (id = " << id << ", " << "total size = " << sub_g.getNVertex() << ")\n";
+		if (id >= g.getNVertex())
+			std::cerr << "Position - Such vertex doesn't exist (id = " << id << ", " << "total size = " << g.getNVertex() << ")\n";
 
-		pos[0] = sub_g.vertex(id).template get<nm_v::x>()[0];
-		pos[1] = sub_g.vertex(id).template get<nm_v::x>()[1];
+		pos[0] = g.vertex(id).template get<nm_v::x>()[0];
+		pos[1] = g.vertex(id).template get<nm_v::x>()[1];
 		if (dim == 3)
-			pos[2] = sub_g.vertex(id).template get<nm_v::x>()[2];
+			pos[2] = g.vertex(id).template get<nm_v::x>()[2];
 	}
 
 	/*! \brief Function that set the weight of the vertex
@@ -207,11 +208,11 @@ public:
 	{
 		verticesGotWeights = true;
 
-		if (id >= sub_g.getNVertex())
-			std::cerr << "Weight - Such vertex doesn't exist (id = " << id << ", " << "total size = " << sub_g.getNVertex() << ")\n";
+		if (id >= g.getNVertex())
+			std::cerr << "Weight - Such vertex doesn't exist (id = " << id << ", " << "total size = " << g.getNVertex() << ")\n";
 
 		// If the vertex is inside this processor update the value
-		sub_g.vertex(id).template get<nm_v::computation>() = weight;
+		g.vertex(id).template get<nm_v::computation>() = weight;
 
 	}
 
@@ -231,10 +232,10 @@ public:
 	 */
 	size_t getVertexWeight(size_t id)
 	{
-		if (id >= sub_g.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << sub_g.getTotNVertex() << ")\n";
+		if (id >= g.getNVertex())
+			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << g.getTotNVertex() << ")\n";
 
-		return sub_g.vertex(id).template get<nm_v::computation>();
+		return g.vertex(id).template get<nm_v::computation>();
 	}
 
 	/*! \brief Compute the processor load counting the total weights of its vertices
@@ -245,9 +246,9 @@ public:
 	{
 		size_t load = 0;
 
-		for (size_t i = 0; i < sub_g.getNVertex(); i++)
+		for (size_t i = 0; i < g.getNVertex(); i++)
 		{
-			load += sub_g.vertex(i).template get<nm_v::computation>();
+			load += g.vertex(i).template get<nm_v::computation>();
 		}
 		return load;
 	}
@@ -283,10 +284,10 @@ public:
 	 */
 	void setMigrationCost(size_t id, size_t migration)
 	{
-		if (id >= sub_g.getNVertex())
-			std::cerr << "Migration - Such vertex doesn't exist (id = " << id << ", " << "total size = " << sub_g.getNVertex() << ")\n";
+		if (id >= g.getNVertex())
+			std::cerr << "Migration - Such vertex doesn't exist (id = " << id << ", " << "total size = " << g.getNVertex() << ")\n";
 
-		sub_g.vertex(id).template get<nm_v::migration>() = migration;
+		g.vertex(id).template get<nm_v::migration>() = migration;
 	}
 
 	/*! \brief Set communication cost of the edge id
@@ -297,7 +298,7 @@ public:
 	 */
 	void setCommunicationCost(size_t v_id, size_t e, size_t communication)
 	{
-		sub_g.getChildEdge(v_id, e).template get<nm_e::communication>() = communication;
+		g.getChildEdge(v_id, e).template get<nm_e::communication>() = communication;
 	}
 
 	/*! \brief Returns total number of sub-sub-domains in the distribution graph
@@ -305,7 +306,7 @@ public:
 	 */
 	size_t getNSubSubDomains()
 	{
-		return sub_g.getNVertex();
+		return g.getNVertex();
 	}
 
 	/*! \brief Returns total number of neighbors of the sub-sub-domain id
@@ -314,10 +315,10 @@ public:
 	 */
 	size_t getNSubSubDomainNeighbors(size_t id)
 	{
-		if (id >= sub_g.getNVertex())
-			std::cerr << "Neighbors - Such vertex doesn't exist (id = " << id << ", " << "total size = " << sub_g.getNVertex() << ")\n";
+		if (id >= g.getNVertex())
+			std::cerr << "Neighbors - Such vertex doesn't exist (id = " << id << ", " << "total size = " << g.getNVertex() << ")\n";
 
-		return sub_g.getNChilds(id);
+		return g.getNChilds(id);
 	}
 
 	/*! \brief Print current graph and save it to file with name test_graph_[id]
@@ -327,7 +328,7 @@ public:
 	 */
 	void write(const std::string & file)
 	{
-		VTKWriter<DistGraph_CSR<nm_v, nm_e>, DIST_GRAPH> gv2(sub_g);
+		VTKWriter<DistGraph_CSR<nm_v, nm_e>, DIST_GRAPH> gv2(g);
 		gv2.write(file);
 	}
 
@@ -336,7 +337,7 @@ public:
 		v_cl = dist.v_cl;
 		gr = dist.gr;
 		domain = dist.domain;
-		sub_g = dist.sub_g;
+		g = dist.g;
 		vtxdist = dist.vtxdist;
 		partitions = dist.partitions;
 		v_per_proc = dist.v_per_proc;
@@ -350,7 +351,7 @@ public:
 		v_cl = dist.v_cl;
 		gr = dist.gr;
 		domain = dist.domain;
-		sub_g.swap(dist.sub_g);
+		g.swap(dist.g);
 		vtxdist.swap(dist.vtxdist);
 		partitions.swap(dist.partitions);
 		v_per_proc.swap(dist.v_per_proc);

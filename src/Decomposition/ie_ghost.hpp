@@ -1003,6 +1003,21 @@ public:
 
 		return true;
 	}
+
+	/*! \brief Reset the nn_prcs structure
+	 *
+	 */
+	void reset()
+	{
+		box_nn_processor_int.clear();
+		proc_int_box.clear();
+		vb_ext.clear();
+		vb_int.clear();
+		geo_cell.clear();
+		shifts.clear();
+		ids_p.clear();
+		ids.clear();
+	}
 };
 
 

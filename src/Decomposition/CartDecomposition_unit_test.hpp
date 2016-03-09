@@ -4,7 +4,7 @@
 #include "CartDecomposition.hpp"
 #include "util/mathutil.hpp"
 
-BOOST_AUTO_TEST_SUITE( CartDecomposition_test )
+BOOST_AUTO_TEST_SUITE (CartDecomposition_test)
 
 #define SUB_UNIT_FACTOR 1024
 
@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D )
 	Vcluster & vcl = *global_v_cluster;
 
 	// non-periodic boundary condition
-	size_t bc[2] = {NON_PERIODIC,NON_PERIODIC};
+	size_t bc[2] = { NON_PERIODIC, NON_PERIODIC };
 
 	// Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
@@ -133,16 +133,13 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D )
 
 		dlb.endIteration();
 
-		dec.rebalance(dlb);
+		if(dec.rebalance(dlb))
+			dec.write("DLB_test_graph_cart_" + std::to_string(i+1) + "_");
 
 		std::stringstream str;
 		str << "DLB_test_graph_" << i + 1 << ".vtk";
 		dec.getDistribution().write(str.str());
-
-
 	}
-	// create a ghost border
-	dec.calculateGhostBoxes();
 
 	// For each calculated ghost box
 	for (size_t i = 0; i < dec.getNIGhostBox(); i++)
@@ -184,7 +181,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D_sar)
 	Vcluster & vcl = *global_v_cluster;
 
 	// non-periodic boundary condition
-	size_t bc[2] = {NON_PERIODIC,NON_PERIODIC};
+	size_t bc[2] = { NON_PERIODIC, NON_PERIODIC };
 
 	// Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
@@ -264,15 +261,15 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D_sar)
 
 		dlb.endIteration();
 
-		dec.rebalance(dlb);
+		if(dec.rebalance(dlb))
+		{
+			dec.write("DLB_test_graph_cart_" + std::to_string(i) + "_");
+		}
 
 		std::stringstream str;
 		str << "DLB_test_graph_" << i << ".vtk";
 		dec.getDistribution().write(str.str());
 	}
-
-	// create a ghost border
-	dec.calculateGhostBoxes();
 
 	// For each calculated ghost box
 	for (size_t i = 0; i < dec.getNIGhostBox(); i++)
@@ -314,7 +311,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_3D)
 	Vcluster & vcl = *global_v_cluster;
 
 	// non-periodic boundary condition
-	size_t bc[3] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+	size_t bc[3] = { NON_PERIODIC, NON_PERIODIC, NON_PERIODIC };
 
 	// Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
@@ -398,9 +395,6 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_3D)
 		dec.getDistribution().write(str.str());
 	}
 
-	// create a ghost border
-	dec.calculateGhostBoxes();
-
 	// For each calculated ghost box
 	for (size_t i = 0; i < dec.getNIGhostBox(); i++)
 	{
@@ -444,10 +438,10 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test)
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
 	//! [Create CartDecomposition]
-	CartDecomposition<3,float> dec(vcl);
+	CartDecomposition<3, float> dec(vcl);
 
 	// Physical domain
-	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Box<3, float> box( { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
 	size_t div[3];
 
 	// Get the number of processor and calculate the number of sub-domain
@@ -456,26 +450,23 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test)
 	size_t n_sub = n_proc * SUB_UNIT_FACTOR;
 
 	// Set the number of sub-domains on each dimension (in a scalable way)
-	for (int i = 0 ; i < 3 ; i++)
-	{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/3));}
+	for (int i = 0; i < 3; i++)
+	{	div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/3));}
 
 	// Define ghost
-	Ghost<3,float> g(0.01);
+	Ghost<3, float> g(0.01);
 
 	// Boundary conditions
-	size_t bc[] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+	size_t bc[] = { NON_PERIODIC, NON_PERIODIC, NON_PERIODIC };
 
 	// Decompose
 	dec.setParameters(div,box,bc,g);
 	dec.decompose();
 
-	// create a ghost border
-	dec.calculateGhostBoxes();
-
 	//! [Create CartDecomposition]
 
 	// For each calculated ghost box
-	for (size_t i = 0 ; i < dec.getNIGhostBox() ; i++)
+	for (size_t i = 0; i < dec.getNIGhostBox(); i++)
 	{
 		SpaceBox<3,float> b = dec.getIGhostBox(i);
 		size_t proc = dec.getIGhostBoxProcessor(i);
@@ -488,10 +479,10 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test)
 
 		bool found = false;
 
-		for (size_t j = 0; j < pr.size() ; j++)
+		for (size_t j = 0; j < pr.size(); j++)
 		{
 			if (pr.get(j) == proc)
-			{found = true; break;}
+			{	found = true; break;}
 		}
 
 		if (found == false)
@@ -508,7 +499,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test)
 	BOOST_REQUIRE_EQUAL(val,true);
 
 	// We duplicate the decomposition
-	CartDecomposition<3,float> dec2 = dec.duplicate();
+	CartDecomposition<3, float> dec2 = dec.duplicate();
 	dec2.check_consistency();
 
 	// check that dec and dec2 contain the same information
@@ -520,10 +511,10 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test)
 	// We duplicate the decomposition redefining the ghost
 
 	// Define ghost
-	Ghost<3,float> g3(0.005);
+	Ghost<3, float> g3(0.005);
 
 	// We duplicate the decomposition redefining the ghost
-	CartDecomposition<3,float> dec3 = dec.duplicate(g3);
+	CartDecomposition<3, float> dec3 = dec.duplicate(g3);
 
 	ret = dec3.check_consistency();
 	BOOST_REQUIRE_EQUAL(ret,true);
@@ -532,7 +523,6 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test)
 	ret = dec3.is_equal_ng(dec2);
 	BOOST_REQUIRE_EQUAL(ret,true);
 }
-
 
 BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 {
@@ -543,10 +533,10 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
 	//! [Create CartDecomposition]
-	CartDecomposition<3,float> dec(vcl);
+	CartDecomposition<3, float> dec(vcl);
 
 	// Physical domain
-	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Box<3, float> box( { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
 	size_t div[3];
 
 	// Get the number of processor and calculate the number of sub-domain
@@ -555,26 +545,23 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 	size_t n_sub = n_proc * SUB_UNIT_FACTOR;
 
 	// Set the number of sub-domains on each dimension (in a scalable way)
-	for (int i = 0 ; i < 3 ; i++)
-	{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/3));}
+	for (int i = 0; i < 3; i++)
+	{	div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/3));}
 
 	// Define ghost
-	Ghost<3,float> g(0.01);
+	Ghost<3, float> g(0.01);
 
 	// Boundary conditions
-	size_t bc[] = {PERIODIC,PERIODIC,PERIODIC};
+	size_t bc[] = { PERIODIC, PERIODIC, PERIODIC };
 
 	// Decompose
 	dec.setParameters(div,box,bc,g);
 	dec.decompose();
 
-	// create a ghost border
-	dec.calculateGhostBoxes();
-
 	//! [Create CartDecomposition]
 
 	// For each calculated ghost box
-	for (size_t i = 0 ; i < dec.getNIGhostBox() ; i++)
+	for (size_t i = 0; i < dec.getNIGhostBox(); i++)
 	{
 		SpaceBox<3,float> b = dec.getIGhostBox(i);
 		size_t proc = dec.getIGhostBoxProcessor(i);
@@ -587,10 +574,10 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 
 		bool found = false;
 
-		for (size_t j = 0; j < pr.size() ; j++)
+		for (size_t j = 0; j < pr.size(); j++)
 		{
 			if (pr.get(j) == proc)
-			{found = true; break;}
+			{	found = true; break;}
 		}
 
 		if (found == false)
@@ -606,7 +593,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 	BOOST_REQUIRE_EQUAL(val,true);
 
 	// We duplicate the decomposition
-	CartDecomposition<3,float> dec2 = dec.duplicate();
+	CartDecomposition<3, float> dec2 = dec.duplicate();
 	dec2.check_consistency();
 
 	bool ret = dec.is_equal(dec2);
@@ -619,10 +606,10 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 	// We duplicate the decomposition redefining the ghost
 
 	// Define ghost
-	Ghost<3,float> g3(0.005);
+	Ghost<3, float> g3(0.005);
 
 	// We duplicate the decomposition refefining the ghost
-	CartDecomposition<3,float> dec3 = dec.duplicate(g3);
+	CartDecomposition<3, float> dec3 = dec.duplicate(g3);
 
 	ret = dec3.check_consistency();
 	BOOST_REQUIRE_EQUAL(ret,true);
@@ -633,6 +620,5 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
 
 #endif

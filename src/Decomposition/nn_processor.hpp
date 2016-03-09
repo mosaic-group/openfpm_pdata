@@ -539,6 +539,20 @@ public:
 		return true;
 	}
 
+	/*! \brief Reset the nn_prcs structure
+	 *
+	 */
+	void reset()
+	{
+		nn_processors.clear();
+		nn_processor_subdomains.clear();
+		nn_processor_subdomains_tmp.clear();
+		proc_adj_box.clear();
+		boxes.clear();
+		recv_cnt = 0;
+		aBC = false;
+	}
+
 	//! Used for testing porpose do not use
 	std::unordered_map<size_t, N_box<dim,T>> & get_nn_processor_subdomains()
 	{

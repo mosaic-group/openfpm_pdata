@@ -331,59 +331,78 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_redistribution)
 
 BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)
 {
-	//! Vcluster
+	// Vcluster
 	Vcluster & vcl = *global_v_cluster;
 
 	if(vcl.getProcessingUnits() != 4)
 	return;
 
-	//! Initialize the global VCluster
+	// Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
-	//! Box
-	Box<2, float> box( { 0.0, 0.0 }, { 10.0, 10.0 });
+	// [create graph adding freely the vertices and the edges ]
 
-	//! Distributed graph
+	// Distributed graph
 	DistGraph_CSR<vx, ed> gd;
 
+	// Add vertices
 	for (size_t i = 0; i < 4; ++i)
 	{
 		vx v;
 		v.template get<vx::x>()[0] = vcl.getProcessUnitID();
 		v.template get<vx::x>()[1] = i;
 		v.template get<vx::x>()[2] = 0;
-		size_t id = vcl.getProcessUnitID()*4 + i;
-		gd.add_vertex(v, id, id);
+		size_t gid = vcl.getProcessUnitID()*4 + i;
+		gd.add_vertex(v, gid);
 	}
 
-	gd.initProperties();
+	// This method must be called after adding vertices
+	gd.init();
 
-	gd.add_edge(0,1);
-	gd.add_edge(1,2);
-	gd.add_edge(2,3);
-	gd.add_edge(0,4);
-	gd.add_edge(1,5);
-	gd.add_edge(2,6);
-	gd.add_edge(3,7);
-	gd.add_edge(4,5);
-	gd.add_edge(5,6);
-	gd.add_edge(6,7);
-	gd.add_edge(4,8);
-	gd.add_edge(5,9);
-	gd.add_edge(6,10);
-	gd.add_edge(7,11);
-	gd.add_edge(8,9);
-	gd.add_edge(9,10);
-	gd.add_edge(10,11);
-	gd.add_edge(8,12);
-	gd.add_edge(9,13);
-	gd.add_edge(10,14);
-	gd.add_edge(11,15);
-	gd.add_edge(12,13);
-	gd.add_edge(13,14);
-	gd.add_edge(14,15);
+	// Add edges
+	if(vcl.getProcessUnitID()==0)
+	{
+		gd.add_edge(0,1);
+		gd.add_edge(1,2);
+		gd.add_edge(2,3);
+		gd.add_edge(0,4);
+		gd.add_edge(1,5);
+		gd.add_edge(2,6);
+		gd.add_edge(3,7);
+	}
+
+	if(vcl.getProcessUnitID()==1)
+	{
+		gd.add_edge(4,5);
+		gd.add_edge(5,6);
+		gd.add_edge(6,7);
+		gd.add_edge(4,8);
+		gd.add_edge(5,9);
+		gd.add_edge(6,10);
+		gd.add_edge(7,11);
+	}
+
+	if(vcl.getProcessUnitID()==2)
+	{
+		gd.add_edge(8,9);
+		gd.add_edge(9,10);
+		gd.add_edge(10,11);
+		gd.add_edge(8,12);
+		gd.add_edge(9,13);
+		gd.add_edge(10,14);
+		gd.add_edge(11,15);
+	}
+
+	if(vcl.getProcessUnitID()==3)
+	{
+		gd.add_edge(12,13);
+		gd.add_edge(13,14);
+		gd.add_edge(14,15);
+	}
 
 	gd.syncEdge();
+
+	//! [create graph adding freely the vertices and the edges ]
 
 	if(vcl.getProcessUnitID() == 0)
 	{
@@ -405,6 +424,9 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)
 		gd.reqVertex(5);
 
 	gd.sync();
+
+	if(vcl.getProcessUnitID() == 0)
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(5), 5);
 
 	gd.deleteGhosts();
 
@@ -464,6 +486,70 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)
 		bool test = compare("dist_graph_free_1.vtk", "dist_graph_free_1_test.vtk");
 		BOOST_REQUIRE_EQUAL(true,test);
 	}
+}
+
+BOOST_AUTO_TEST_CASE( dist_map_graph_use_multi_free_add)
+{
+	// Vcluster
+	Vcluster & vcl = *global_v_cluster;
+
+	if(vcl.getProcessingUnits() != 4)
+	return;
+
+	// Initialize the global VCluster
+	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc, &boost::unit_test::framework::master_test_suite().argv);
+
+	// Distributed graph
+	DistGraph_CSR<vx, ed> gd;
+
+	// Add vertices
+	if(vcl.getProcessUnitID()==0)
+	{
+		vx v;
+		gd.add_vertex(v, 0);
+		gd.add_vertex(v, 1);
+		gd.add_vertex(v, 2);
+		gd.add_vertex(v, 3);
+	}
+
+	if(vcl.getProcessUnitID()==1)
+	{
+		vx v;
+		gd.add_vertex(v, 4);
+		gd.add_vertex(v, 5);
+		gd.add_vertex(v, 6);
+		gd.add_vertex(v, 7);
+	}
+
+	// This method must be called ALWAYS after adding vertices
+	gd.init();
+
+	if(vcl.getProcessUnitID()==2)
+	{
+		vx v;
+		gd.add_vertex(v, 8);
+		gd.add_vertex(v, 9);
+		gd.add_vertex(v, 10);
+		gd.add_vertex(v, 11);
+	}
+
+	if(vcl.getProcessUnitID()==3)
+	{
+		vx v;
+		gd.add_vertex(v, 12);
+		gd.add_vertex(v, 13);
+		gd.add_vertex(v, 14);
+		gd.add_vertex(v, 15);
+	}
+
+	// This method must be called ALWAYS after adding vertices
+	gd.init();
+
+	gd.reqVertex(15);
+
+	gd.sync();
+
+	BOOST_REQUIRE_EQUAL(gd.getVertexId(gd.getNVertex()-1), 15);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

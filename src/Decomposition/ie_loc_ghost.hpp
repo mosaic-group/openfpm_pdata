@@ -639,6 +639,15 @@ public:
 
 		return true;
 	}
+
+	/*! \brief Reset the ie_loc_ghost
+	 *
+	 */
+	void reset()
+	{
+		loc_ghost_box.clear();
+		sub_domains_tmp.clear();
+	}
 };
 
 

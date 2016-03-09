@@ -12,7 +12,6 @@
 
 #include "SubdomainGraphNodes.hpp"
 #include "parmetis_util.hpp"
-#include "Graph/dist_map_graph.hpp"
 #include "Graph/ids.hpp"
 
 #define PARMETIS_DISTRIBUTION_ERROR 100002
@@ -373,7 +372,7 @@ public:
 		rid nl_vertex = vtxdist.get(p_id+1) - vtxdist.get(p_id);
 
 		// Reset parmetis graph and reconstruct it
-		parmetis_graph.reset(gp, vtxdist, m2g);
+		parmetis_graph.reset(gp, vtxdist, m2g, verticesGotWeights);
 
 		// Refine
 		parmetis_graph.refine<nm_v::proc_id>(vtxdist);
@@ -451,16 +450,6 @@ public:
 		if (id >= gp.getNVertex())
 			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
 
-		//TOACTIVATE when move to the distributed graph
-		//Return the pos object only if the vertex is in this graph
-		/*
-		 if(sub_g.vertexIsInThisGraph(id)){
-		 pos[0] = sub_g.vertex(id).template get<nm_v::x>()[0];
-		 pos[1] = sub_g.vertex(id).template get<nm_v::x>()[1];
-		 if (dim == 3)
-		 pos[2] = sub_g.vertex(id).template get<nm_v::x>()[2];
-		 }*/
-
 		// Copy the geometrical informations inside the pos vector
 		pos[0] = gp.vertex(id).template get<nm_v::x>()[0];
 		pos[1] = gp.vertex(id).template get<nm_v::x>()[1];
@@ -500,7 +489,7 @@ public:
 	 * \param id vertex id
 	 *
 	 */
-	size_t getVertexWeight(size_t id)
+	size_t getSubSubDomainComputationCost(size_t id)
 	{
 		if (id >= gp.getNVertex())
 			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
@@ -584,12 +573,11 @@ public:
 	 */
 	void write(const std::string & file)
 	{
-		if (v_cl.getProcessUnitID() == 0)
-		{
+		//f (v_cl.getProcessUnitID() == 0)
+		//{
 			VTKWriter<Graph_CSR<nm_v, nm_e>, VTK_GRAPH> gv2(gp);
-			gv2.write(file);
-		}
-
+			gv2.write(std::to_string(v_cl.getProcessUnitID()) + file);
+		//}
 	}
 
 	const ParMetisDistribution<dim,T> & operator=(const ParMetisDistribution<dim,T> & dist)

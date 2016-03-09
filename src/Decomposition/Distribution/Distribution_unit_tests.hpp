@@ -316,6 +316,238 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 	BOOST_REQUIRE_EQUAL(sizeof(DistParMetisDistribution<3,float>),1440ul);
 }
 
+void print_test_v(std::string test, size_t sz)
+{
+	if (global_v_cluster->getProcessUnitID() == 0)
+		std::cout << test << " " << sz << "\n";
+}
+
+BOOST_AUTO_TEST_CASE( Parmetis_distribution_test_random_walk )
+{
+	typedef Point<3,float> s;
+
+	Vcluster & v_cl = *global_v_cluster;
+
+	// set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+	std::default_random_engine eg;
+	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+	size_t nsz[] = { 0, 32, 4 };
+	nsz[0] = 65536 * v_cl.getProcessingUnits();
+
+	print_test_v( "Testing 3D random walk vector k<=",nsz[0]);
+
+	// 3D test
+	for (size_t i = 0; i < 3; i++ )
+	{
+		size_t k = nsz[i];
+
+		BOOST_TEST_CHECKPOINT( "Testing 3D random walk k=" << k );
+
+		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+		// Grid info
+		grid_sm<3, void> info( { GS_SIZE, GS_SIZE, GS_SIZE });
+
+		// Boundary conditions
+		size_t bc[3] = { NON_PERIODIC,NON_PERIODIC,NON_PERIODIC };
+
+		// factor
+		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+
+		// ghost
+		Ghost<3,float> ghost(0.01 / factor);
+
+		// Distributed vector
+		vector_dist<3,float, Point_test<float>, CartDecomposition<3, float, HeapMemory, ParMetisDistribution<3, float>>> vd(k,box,bc,ghost);
+
+		auto it = vd.getIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			vd.template getPos<s::x>(key)[0] = ud(eg);
+			vd.template getPos<s::x>(key)[1] = ud(eg);
+			vd.template getPos<s::x>(key)[2] = ud(eg);
+
+			++it;
+		}
+
+		vd.map();
+
+		vd.addComputationCosts();
+
+		vd.getDecomposition().getDistribution().write("parmetis_random_walk_" + std::to_string(0) + ".vtk");
+
+		// 10 step random walk
+
+		for (size_t j = 0; j < 10; j++)
+		{
+			auto it = vd.getDomainIterator();
+
+			while (it.isNext())
+			{
+				auto key = it.get();
+
+				vd.template getPos<s::x>(key)[0] += 0.01 * ud(eg);
+				vd.template getPos<s::x>(key)[1] += 0.01 * ud(eg);
+				vd.template getPos<s::x>(key)[2] += 0.01 * ud(eg);
+
+				++it;
+			}
+
+			vd.map();
+
+			/////// Interactions ///
+
+			//vd.ghost_get<>();
+			//vd.getDomainIterator;
+
+			////////////////////////
+
+			vd.addComputationCosts();
+
+			vd.getDecomposition().rebalance(10);
+
+			vd.map();
+
+			vd.getDecomposition().getDistribution().write("parmetis_random_walk_" + std::to_string(j+1) + ".vtk");
+
+			size_t l = vd.size_local();
+			v_cl.sum(l);
+			v_cl.execute();
+
+			// Count the local particles and check that the total number is consistent
+			size_t cnt = total_n_part_lc(vd,bc);
+
+			//BOOST_REQUIRE_EQUAL((size_t)k,cnt);
+		}
+	}
+}
+
+BOOST_AUTO_TEST_CASE( Parmetis_distribution_test_random_walk_2D )
+{
+	typedef Point<2,float> s;
+
+	Vcluster & v_cl = *global_v_cluster;
+
+	// set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+	std::default_random_engine eg;
+	std::uniform_real_distribution<float> ud(0.0f, 0.5f);
+
+	size_t k = 100000;
+
+	print_test_v( "Testing 2D random walk vector k<=",k);
+
+	BOOST_TEST_CHECKPOINT( "Testing 2D random walk k=" << k );
+
+	Box<2,float> box({0.0,0.0},{1.0,1.0});
+
+	// Grid info
+	grid_sm<2, void> info( { GS_SIZE, GS_SIZE });
+
+	// Boundary conditions
+	size_t bc[2] = { PERIODIC, PERIODIC };
+
+	// factor
+	float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+
+	// ghost
+	Ghost<2,float> ghost(0.01 / factor);
+
+	// Distributed vector
+	vector_dist<2,float, Point_test<float>, CartDecomposition<2, float, HeapMemory, ParMetisDistribution<2, float>>> vd(k,box,bc,ghost);
+
+	// Init DLB tool
+	DLB dlb(v_cl);
+
+	// Set unbalance threshold
+	dlb.setHeurisitc(DLB::Heuristic::UNBALANCE_THRLD);
+	dlb.setThresholdLevel(DLB::ThresholdLevel::THRLD_MEDIUM);
+
+	auto it = vd.getIterator();
+
+	size_t c = 0;
+	while (it.isNext())
+	{
+		auto key = it.get();
+		if(c % 5)
+		{
+			vd.template getPos<s::x>(key)[0] = ud(eg);
+			vd.template getPos<s::x>(key)[1] = ud(eg);
+		}else{
+			vd.template getPos<s::x>(key)[0] = ud(eg)*2;
+			vd.template getPos<s::x>(key)[1] = ud(eg)*2;
+		}
+		++it;
+		++c;
+	}
+
+	vd.map();
+
+	vd.addComputationCosts();
+
+	vd.getDecomposition().rebalance(dlb);
+
+	vd.map();
+
+	vd.getDecomposition().write("dec_init");
+	vd.getDecomposition().getDistribution().write("parmetis_random_walk_" + std::to_string(0) + ".vtk");
+	vd.write("particles_", 0, NO_GHOST);
+
+	// 10 step random walk
+	for (size_t j = 0; j < 50; j++)
+	{
+		std::cout << "Iteration " << (j+1) << "\n";
+
+		auto it = vd.getDomainIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			vd.template getPos<s::x>(key)[0] += 0.01 * ud(eg);
+			vd.template getPos<s::x>(key)[1] += 0.01 * ud(eg);
+
+			++it;
+		}
+
+		vd.map();
+
+		/////// Interactions ///
+
+		//vd.ghost_get<>();
+		//vd.getDomainIterator;
+
+		////////////////////////
+
+		vd.addComputationCosts();
+
+		vd.getDecomposition().rebalance(dlb);
+
+		vd.map();
+
+		vd.getDecomposition().getDistribution().write("parmetis_random_walk_" + std::to_string(j+1) + ".vtk");
+		vd.write("particles_", j+1, NO_GHOST);
+		vd.getDecomposition().write("dec_");
+
+		size_t l = vd.size_local();
+		v_cl.sum(l);
+		v_cl.execute();
+
+		// Count the local particles and check that the total number is consistent
+		//size_t cnt = total_n_part_lc(vd,bc);
+
+		//BOOST_REQUIRE_EQUAL((size_t)k,cnt);
+	}
+
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif /* SRC_DECOMPOSITION_DISTRIBUTION_DISTRIBUTION_UNIT_TESTS_HPP_ */
