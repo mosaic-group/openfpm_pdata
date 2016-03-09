@@ -1,36 +1,36 @@
-#! /bin/bash
+	#! /bin/bash
 
-source script/help
-source script/discover_os
-source script/show_solutions
-source script/pre_req
-source script/remove_old
+	source script/help
+	source script/discover_os
+	source script/show_solutions
+	source script/pre_req
+	source script/remove_old
 
-##
+	##
 
-install_req=1
-i_dir=" "
-sq=0
+	install_req=1
+	i_dir=" "
+	sq=0
 
-while getopts :di:shc: FLAG; do
-  case $FLAG in
-    d)
-      echo "Disable depencencies installation"
-      install_req=0
-      ;;
-    i)
-      echo "Setting dependencies installation dir: $OPTARG"
-      i_dir=$OPTARG
-      ;;
-    s)
-      echo "Skipping user cin"
-      sq=1
-      ;;
-    c)
-      echo "Fowarding options $OPTARG to configure script"
-      configure_options=$OPTARG
-      ;;
-    h)  #show help
+	while getopts :di:shc: FLAG; do
+	  case $FLAG in
+	    d)
+	      echo "Disable depencencies installation"
+	      install_req=0
+	      ;;
+	    i)
+	      echo "Setting dependencies installation dir: $OPTARG"
+	      i_dir=$OPTARG
+	      ;;
+	    s)
+	      echo "Skipping user cin"
+	      sq=1
+	      ;;
+	    c)
+	      echo "Fowarding options $OPTARG to configure script"
+	      configure_options=$OPTARG
+	      ;;
+	    h)  #show help
       HELP
       ;;
     \?) #unrecognized option - are fowarded to configure
@@ -143,6 +143,8 @@ BOOST_installed=0
 LAPACK_installed=0
 SUITESPARSE_installed=0
 EIGEN_installed=0
+HDF5_installed=0
+H5PART_installed=0
 blas_options=""
 conf_err=1
 
@@ -219,15 +221,24 @@ else
             ./script/install_EIGEN.sh $i_dir $compiler_opt
             configure_options=" $configure_options --with-eigen=$i_dir/EIGEN "
             EIGEN_installed=1
-	elif [ $conf_err -ne 207 ]; then
+	elif [ $conf_err -eq 208 ]; then
             echo "ParMetis not found try to install"
             if [ $PARMETIS_installed -eq 1  ]; then
                 echo "Error the installation of ParMETIS failed"
                 exit 1
             fi
-            ./script/install_ParMetis.sh $i_dir $compiler_gcc $compiler_gpp
+            ./script/install_Parmetis.sh $i_dir $compiler_gcc $compiler_gpp
             PARMETIS_installed=1
             configure_options=" $configure_options --with-parmetis=$i_dir/PARMETIS "
+        elif [ $conf_err -eq 207 ]; then
+            echo "HDF5 not found try to install"
+            if [ $HDF5_installed -eq 1 ]; then
+                echo "Error the installation of HDF5 failed"
+                exit 1	
+            fi
+            ./script/install_HDF5.sh $i_dir $compiler_opt
+            configure_options=" $configure_options --with-hdf5=$i_dir/HDF5/bin/h5pcc "
+            HDF5_installed=1
         elif [ $conf_err -ne 0 ]; then
             echo "I do not know how to recover from this error"
             exit 1
@@ -325,6 +336,20 @@ if [ $SUITESPARSE_installed -eq 1 ]; then
   else
     echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:$i_dir/SUITESPARSE/lib\" \033[0m"
   fi
+fi
+if [ $EIGEN_installed -eq 1 ]; then
+  echo ""
+  echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
+  echo -e "\033[1;34;5m --------------- EIGEN ----------------- \033[0m"
+  echo -e "  EIGEN has been installed into: \033[1m $i_dir/EIGEN \033[0m"
+  echo ""
+fi
+if [ $HDF5_installed -eq 1 ]; then
+  echo ""
+  echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
+  echo -e "\033[1;34;5m ---------------- HDF5 ----------------- \033[0m"
+  echo -e "  HDF5 has been installed into: \033[1m $i_dir/HDF5 \033[0m"
+  echo ""
 fi
 echo ""
 echo ""

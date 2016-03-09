@@ -204,7 +204,7 @@ int main(int argc, char* argv[])
 	}
 
 	//
-	// ### WIKI 6 ###
+	// ### WIKI 7 ###
 	//
 	// We create a CellList with cell spacing 12 sigma
 	//
@@ -218,14 +218,13 @@ int main(int argc, char* argv[])
     double linf = 0.0;
 
 	//
-	// ### WIKI 6 ###
+	// ### WIKI 8 ###
 	//
     // For each particle get the neighborhood of each particle
     //
     // This cycle is literally the formula from PSE operator approximation
-	//
     //
-    //
+    // \$ \frac{1}{\epsilon^{2}} h (u_{q} - u_{p}) \eta_{\epsilon}(x_q - x_p) \$
     //
 
     auto it_p = vd.getDomainIterator();
@@ -288,7 +287,7 @@ int main(int argc, char* argv[])
     }
 
 	//
-	// ### WIKI 7 ###
+	// ### WIKI 9 ###
 	//
     // Calculate the maximum infinity norm across processors and
     // print it
@@ -301,7 +300,7 @@ int main(int argc, char* argv[])
     	std::cout << "Norm infinity: " << linf << "\n";
 
 	//
-	// ### WIKI 8 ###
+	// ### WIKI 10 ###
 	//
 	// Deinitialize the library
 	//
