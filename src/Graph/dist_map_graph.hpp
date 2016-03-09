@@ -790,7 +790,7 @@ class DistGraph_CSR
 		// For each processor old, new couples
 		openfpm::vector<openfpm::vector<size_t>> on_info(vcl.getProcessingUnits());
 
-		std::map<size_t, size_t> ord_m(glb2loc.begin(), glb2loc.end());
+		std::map<size_t, size_t> old_glob2loc(glb2loc.begin(), glb2loc.end());
 		size_t j = vtxdist.get(p_id);
 		size_t i = 0, k = 0;
 
@@ -800,7 +800,7 @@ class DistGraph_CSR
 		glb2loc.clear();
 
 		// Fix sending couples gid, newid and remove on_toup updating glbi_map here and after receive
-		for (auto it : ord_m)
+		for (auto it : old_glob2loc)
 		{
 			// The couple to the final map, needed to update the vertices in this sub-graph
 			IdnProc nidpid = { j, p_id };
@@ -1675,6 +1675,42 @@ public:
 	 * \param vrt vertex object to add
 	 * \param gid global id, unique in global graph
 	 */
+
+	template<unsigned int dim, typename Mem>  inline void add_vertex(const encapc<dim,V,Mem> & vrt, size_t id, size_t gid)
+	{
+
+		// Create vertex info object
+		v_info vm;
+		vm.template get<v_info::id>() = id;
+		vm.template get<v_info::gid>() = gid;
+
+		// Add the vertex info
+		v_m.add(vm);
+
+		// Add the vertex
+		v.add(vrt);
+
+		// Update id to global map
+		id2glb.insert( { id, gid });
+
+		// Update global id to local index
+		glb2loc.insert( { gid, v.size() - 1 });
+
+		// Update global id to id
+		glb2id.insert( { gid, id });
+
+		// Set the number of adjacent vertex for this vertex to 0
+		v_l.add(0ul);
+
+		// Add a slot for the vertex adjacency list
+		e_l.resize(e_l.size() + v_slot);
+	}
+
+	/*! \brief Add vertex vrt with global id and id properties
+	 *
+	 * \param vrt vertex object to add
+	 * \param gid global id, unique in global graph
+	 */
 	inline void add_vertex(const V & vrt, size_t gid)
 	{
 		add_vertex(vrt, gid, gid);
@@ -1732,6 +1768,22 @@ public:
 		// set source and destination global ids of the edge
 		e_m.template get<e_info::sgid>(id_x_end) = srcgid;
 		e_m.template get<e_info::dgid>(id_x_end) = dstgid;
+
+		// return the edge to change the properties
+		return e.get(id_x_end);
+	}
+
+	template<unsigned int dim, typename Mem, typename Mem1> inline auto addEdge(size_t v1, size_t v2, const encapc<dim,E,Mem> & ed, const encapc<dim,e_info,Mem1> & ei) -> decltype(e.get(0))
+	{
+		// add an edge
+		long int id_x_end = addEdge_<NoCheck>(v1, v2);
+		// If there is not edge return an invalid edge, is a kind of stub object
+		if (id_x_end == NO_EDGE)
+			return e_invalid.get(0);
+
+		// set the edge object and the edge info object
+		e.set(id_x_end, ed);
+		e_m.set(id_x_end, ei);
 
 		// return the edge to change the properties
 		return e.get(id_x_end);
@@ -1959,6 +2011,8 @@ public:
 		initDistributionVector();
 
 		initGlbimap();
+
+		remap();
 	}
 
 	/*! \brief Check if a vertex is a ghost vertex (not belonging to this processor)
@@ -2148,7 +2202,8 @@ public:
 				try
 				{
 					reqs.get(i).add(glbi_map.at(resp.get(i).get(j)).pid);
-				} catch (const std::out_of_range& oor)
+				}
+				catch (const std::out_of_range& oor)
 				{
 					std::cout << resp.get(i).get(j) << " not found in global info map (proc: " << vcl.getProcessUnitID() << ")\n";
 				}

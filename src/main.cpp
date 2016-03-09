@@ -32,6 +32,6 @@
 //#include "Decomposition/DLB_unit_test.hpp"
 #include "Graph/dist_map_graph_unit_test.hpp"
 #include "Graph/DistGraphFactory.hpp"
-#include "Decomposition/Distribution/parmetis_dist_util_unit_test.hpp"
+//#include "Decomposition/Distribution/parmetis_dist_util_unit_test.hpp"
 //#include "Decomposition/nn_processor_unit_test.hpp"
 #include "Grid/staggered_grid_dist_unit_test.hpp"

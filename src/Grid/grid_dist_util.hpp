@@ -26,7 +26,7 @@ template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::ve
 	for (size_t i = 0 ; i < Decomposition::dims ; i++)	{g_rnd_box.setHigh(i,0.5); g_rnd_box.setLow(i,-0.5);}
 
 	// Get the number of local grid needed
-	size_t n_grid = dec.getNLocalHyperCube();
+	size_t n_grid = dec.getNSubDomain();
 
 	// Allocate the grids
 	for (size_t i = 0 ; i < n_grid ; i++)
@@ -35,7 +35,7 @@ template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::ve
 
 		// Get the local sub-domain (Grid conversion must be done with the domain P1 equivalent to 0.0)
 		// consider that the sub-domain with point P1 equivalent to the domain P1 is a (0,0,0) in grid unit
-		SpaceBox<Decomposition::dims, typename Decomposition::stype> sp = dec.getLocalHyperCube(i);
+		SpaceBox<Decomposition::dims, typename Decomposition::stype> sp = dec.getSubDomain(i);
 		sp -= cd_sm.getOrig();
 		SpaceBox<Decomposition::dims, typename Decomposition::stype> sp_g = dec.getSubDomainWithGhost(i);
 		sp_g -= cd_sm.getOrig();

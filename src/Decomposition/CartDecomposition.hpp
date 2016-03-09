@@ -36,11 +36,12 @@
 #include "DLB/DLB.hpp"
 #include "util/se_util.hpp"
 #include "util/mathutil.hpp"
+#include "CartDecomposition_ext.hpp"
 
 #define CARTDEC_ERROR 2000lu
 
 /**
- * \brief This class decompose a space into subspaces
+ * \brief This class decompose a space into sub-sub-domains and distribute them across processors
  *
  * \tparam dim is the dimensionality of the physical domain we are going to decompose.
  * \tparam T type of the space we decompose, Real, Integer, Complex ...
@@ -79,7 +80,7 @@
  *
  */
 
-template<unsigned int dim, typename T, typename Memory = HeapMemory, typename Distribution = ParMetisDistribution<dim, T>>
+template<unsigned int dim, typename T, typename Memory, typename Distribution>
 class CartDecomposition: public ie_loc_ghost<dim, T>, public nn_prcs<dim, T>, public ie_ghost<dim, T>
 {
 
@@ -91,7 +92,13 @@ public:
 	//! It simplify to access the SpaceBox element
 	typedef SpaceBox<dim, T> Box;
 
-private:
+	//! This class is base of itself
+	typedef CartDecomposition<dim,T,Memory,Distribution> base_type;
+
+	//! This class admit a class defined on an extended domain
+	typedef CartDecomposition_ext<dim,T,Memory,Distribution> extended_type;
+
+protected:
 
 	//! This is the key type to access  data_s, for example in the case of vector
 	//! acc_key is size_t
@@ -145,6 +152,12 @@ private:
 
 	// Receive counter
 	size_t recv_cnt;
+
+protected:
+
+
+
+public:
 
 	/*! \brief Constructor, it decompose and distribute the sub-domains across the processors
 	 *
@@ -385,122 +398,6 @@ private:
 			// add the iterator
 			++gk_it;
 		}
-	}
-
-
-	/*! \brief It copy the sub-domains into another CartesianDecomposition object extending them
-	 *
-	 * \see duplicate (in case of extended domain)
-	 *
-	 * \param cart Cartesian decomposition object
-	 * \param box Extended domain
-	 *
-	 */
-	void extend_subdomains(CartDecomposition<dim,T> & cart, const ::Box<dim,T> & ext_dom) const
-	{
-		// Box
-		typedef ::Box<dim,T> b;
-
-		cart.bbox = ext_dom;
-		cart.ss_box = ext_dom;
-
-		for (size_t i = 0 ; i < sub_domains.size() ; i++)
-		{
-			::Box<dim,T> box;
-
-			// Calculate the extended box
-			for (size_t j = 0 ; j < dim ; j++)
-			{
-				if (sub_domains.template get<b::p1>(i)[j] == domain.getLow(j))
-					box.setLow(j,ext_dom.getLow(j));
-				else
-					box.setLow(j,sub_domains.template get<b::p1>(i)[j]);
-
-				if (sub_domains.template get<b::p2>(i)[j] == domain.getHigh(j))
-					box.setHigh(j,ext_dom.getHigh(j));
-				else
-					box.setHigh(j,sub_domains.template get<b::p2>(i)[j]);
-			}
-
-			// add the subdomain
-			cart.sub_domains.add(box);
-
-			// Calculate the bound box
-			cart.bbox.enclose(box);
-
-			// Create the smallest box contained in all sub-domain
-			cart.ss_box.contained(box);
-		}
-	}
-
-	/*! \brief Extend the fines for the new Cartesian decomposition
-	 *
-	 * \param new_fines extended fine_s
-	 * \param old_fines old fine_s
-	 *
-	 */
-	void extend_fines(CartDecomposition<dim,T> & cart) const
-	{
-		// Extension, first we calculate the extensions of the new domain compared
-		// to the old one in cell units (each cell unit is a sub-sub-domain)
-		::Box<dim,size_t> ext;
-		// Extension of the new fines structure
-		::Box<dim,size_t> n_fines_ext;
-		// Extension of the old fines structure
-		::Box<dim,size_t> o_fines_ext;
-
-		size_t sz_new[dim];
-		size_t sz_old[dim];
-
-		for (size_t i = 0; i < dim ; i++)
-		{
-			size_t p1 = (domain.getLow(i) - this->domain.getLow(i)) / cd.getCellBox().getHigh(i) + 1;
-			size_t p2 = (domain.getLow(i) - this->domain.getLow(i)) / cd.getCellBox().getHigh(i) + 1;
-
-			ext.setLow(i,p1);
-			ext.setHigh(i,p2);
-			sz_new[i] = p1+p2+cd.getGrid().size(i);
-			sz_old[i] = cd.getGrid().size(i);
-		}
-
-		grid_sm<dim,void> info_new(sz_new);
-		grid_sm<dim,void> info_old(sz_old);
-
-		// resize the new fines
-		cart.fine_s.resize(info_new.size());
-
-		// we create an iterator that iterate across the full new fines
-		grid_key_dx_iterator<dim> fines_t(info_new);
-
-		while (fines_t.isNext())
-		{
-			auto key = fines_t.get();
-
-			// new_fines is bigger than old_fines structure
-			// out of bound key must be adjusted
-			// The adjustment produce a natural extension
-			// a representation can be seen in the figure of
-			// CartDecomposition duplicate function with extended domains
-
-			grid_key_dx<dim> key_old;
-			for (size_t i = 0 ; i < dim ; i++)
-			{
-				key_old.set_d(i,(long int)key.get(i) - ext.getLow(i));
-				if (key_old.get(i) < 0)
-					key_old.set_d(i,0);
-				else if(key_old.get(i) >= (long int)info_old.size(i) )
-					key_old.set_d(i,info_old.size(i)-1);
-			}
-
-			cart.fine_s.get(info_new.LinId(key)) = fine_s.get(info_old.LinId(key_old));
-
-			++fines_t;
-		}
-
-		cart.gr.setDimensions(sz_new);
-
-		// the new extended CellDecomposer must be consistent with the old cellDecomposer.
-		cart.cd.setDimensions(cd,ext);
 	}
 
 public:
@@ -844,84 +741,6 @@ public:
 
 		(static_cast<nn_prcs<dim,T> &>(cart)).create(box_nn_processor, sub_domains);
 		(static_cast<nn_prcs<dim,T> &>(cart)).applyBC(domain,ghost,bc);
-
-		cart.Initialize_geo_cell_lists();
-		cart.calculateGhostBoxes();
-
-		return cart;
-	}
-
-	/*! \brief It create another object that contain the same decomposition information but with different ghost boxes and an extended domain
-	 *
-	 * The domain extension is produced extending the boxes at the border like in figure
-	 *
-	 * \verbatim
-	 *
-+--------------^--------^----------^----------+
-|              |        |          |          |
-|        A     |    E   |     F    |    N     |
-|    +-----------------------------------+---->
-|    |         |        |          |     |    |
-|  A |   A     |        |     F    |     |    |
-|    |         |        |          |     |    |
-|    |         |    E   +----------+  N  |  N |
-<--------------+        |          |     |    |
-|    |         |        |          |     |    |
-|    |         |        |     G    |     |    |
-|    |         |        |          +---------->
-|  B |   B     |        +----------+     |    |
-|    |         +--------+          |  M  |  M |
-|    |         |        |     H    |     |    |
-|    |         |        +-----+----+---------->
-<--------------+    D   |     |          |    |
-|    |         |        |  I  |     L    |  L |
-|  C |   C     |        |     |          |    |
-|    |         |        |     |          |    |
-|    +-----------------------------------+    |
-|              |        |     |               |
-|        C     |    D   |  I  |     L         |
-+--------------v--------v-----v---------------+
-
-	 *
-	 * \endverbatim
-	 *
-	 * \param g ghost
-	 * \param domain extended domain (MUST be extended)
-	 *
-	 * \return a duplicated decomposition with different ghost boxes and an extended domain
-	 *
-	 */
-	CartDecomposition<dim,T,Memory> duplicate(const Ghost<dim,T> & g, const ::Box<dim,T> & ext_domain) const
-	{
-		CartDecomposition<dim,T,Memory> cart(v_cl);
-
-		cart.box_nn_processor = box_nn_processor;
-
-		// Calculate new sub-domains for extended domain
-		extend_subdomains(cart,ext_domain);
-
-		// Calculate fine_s structure for the extended domain
-		// update the cell decomposer and gr
-		extend_fines(cart);
-
-		// Get the old sub-sub-domain grid extension
-
-		cart.domain = ext_domain;
-
-		// spacing does not change
-		std::copy(spacing,spacing+3,cart.spacing);
-
-		//! Runtime virtual cluster
-		cart.v_cl = v_cl;
-
-		cart.ghost = g;
-		cart.dist = dist;
-
-		for (size_t i = 0 ; i < dim ; i++)
-			cart.bc[i] = bc[i];
-
-		(static_cast<nn_prcs<dim,T> &>(cart)).create(cart.box_nn_processor, cart.sub_domains);
-		(static_cast<nn_prcs<dim,T> &>(cart)).applyBC(ext_domain,ghost,bc);
 
 		cart.Initialize_geo_cell_lists();
 		cart.calculateGhostBoxes();
@@ -1307,7 +1126,7 @@ public:
 	 * \return the number of sub-domains
 	 *
 	 */
-	size_t getNLocalHyperCube()
+	size_t getNSubDomain()
 	{
 		return sub_domains.size();
 	}
@@ -1318,7 +1137,7 @@ public:
 	 * \return the sub-domain
 	 *
 	 */
-	SpaceBox<dim, T> getLocalHyperCube(size_t lc)
+	SpaceBox<dim, T> getSubDomain(size_t lc)
 	{
 		// Create a space box
 		SpaceBox<dim, T> sp;
@@ -1516,7 +1335,7 @@ public:
 	 */
 	bool check_consistency()
 	{
-		if (ie_loc_ghost<dim, T>::check_consistency(getNLocalHyperCube()) == false)
+		if (ie_loc_ghost<dim, T>::check_consistency(getNSubDomain()) == false)
 			return false;
 
 		return true;
@@ -1648,6 +1467,7 @@ public:
 		return dist;
 	}
 
+
 	/*! \brief Add computation cost i to the subsubdomain with global id gid
 	 *
 	 * \param gid global id of the subsubdomain to update
@@ -1659,6 +1479,11 @@ public:
 
 		dist.setComputationCost(gid, c + i);
 	}
+
+	// friend classes
+
+	friend extended_type;
+
 };
 
 

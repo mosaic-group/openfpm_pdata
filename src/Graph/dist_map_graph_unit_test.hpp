@@ -12,9 +12,6 @@ struct vx
 {
 	typedef boost::fusion::vector<float[3]> type;
 
-	typedef typename memory_traits_inte<type>::type memory_int;
-	typedef typename memory_traits_lin<type>::type memory_lin;
-
 	//! Attributes name
 	struct attributes
 	{
@@ -327,6 +324,132 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_redistribution)
 		BOOST_REQUIRE_EQUAL(true,test);
 	}
 
+}
+
+BOOST_AUTO_TEST_CASE( dist_map_graph_use_cartesian)
+{
+	//! Vcluster
+	Vcluster & vcl = *global_v_cluster;
+
+//	if(vcl.getProcessingUnits() != 3)
+//	return;
+
+	// non-periodic boundary condition
+	size_t bc[3] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+
+	//! [Create CartDecomposition]
+	CartDecomposition<3, float> dec(vcl);
+
+	// Physical domain
+	Box<3, float> box( { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
+	size_t div[3] = {8,8,8};
+
+	// Grid size and info
+	size_t gsz[3] = {8,8,8};
+	grid_sm<3,void> g_sm(gsz);
+
+	// Define ghost
+	Ghost<3, float> g(0.01);
+
+	// Decompose
+	dec.setParameters(div, box, bc, g);
+	dec.decompose();
+
+	grid_dist_id_iterator_dec<CartDecomposition<3,float>> it_dec(dec,gsz);
+
+	size_t cnt = 0;
+	while (it_dec.isNext())
+	{
+		cnt++;
+		++it_dec;
+	}
+
+	openfpm::vector<size_t> v_cnt(vcl.getProcessingUnits());
+
+	// Sent and receive the size of each subgraph
+	vcl.allGather(cnt, v_cnt);
+	vcl.execute();
+
+	cnt = 0;
+	for (long int i = 0; i <= ((long int)vcl.getProcessUnitID()) - 1 ; ++i)
+		cnt += v_cnt.get(i);
+
+	// count the points
+
+	//! Distributed graph
+	DistGraph_CSR<aggregate<size_t[3]>, aggregate<size_t>> dg;
+
+	grid_dist_id_iterator_dec<CartDecomposition<3,float>> it_dec2(dec,gsz);
+	while (it_dec2.isNext())
+	{
+		auto key = it_dec2.get();
+
+		aggregate<size_t[3]> v;
+
+		v.template get<0>()[0] = key.get(0);
+		v.template get<0>()[1] = key.get(1);
+		v.template get<0>()[2] = key.get(2);
+
+		size_t gid = g_sm.LinId(key);
+		dg.add_vertex(v, gid, cnt);
+
+		cnt++;
+		++it_dec2;
+	}
+
+	dg.initProperties();
+
+	// we ask for some random vertex
+
+	std::default_random_engine rg;
+	std::uniform_int_distribution<size_t> d(0,g_sm.size()-1);
+
+	openfpm::vector<size_t> v_req;
+
+/*	for (size_t i = 0 ; i < 16 ; i++)
+	{
+		size_t v = d(rg);*/
+
+		if (vcl.getProcessUnitID() == 0)
+			dg.reqVertex(450);
+
+/*		dg.reqVertex(v);
+	}*/
+
+	dg.sync();
+
+	if (vcl.getProcessUnitID() == 0)
+	{
+		grid_key_dx<3> key;
+		// get the position information
+		key.set_d(0,dg.getVertex(450).template get<0>()[0]);
+		key.set_d(1,dg.getVertex(450).template get<0>()[1]);
+		key.set_d(2,dg.getVertex(450).template get<0>()[2]);
+
+		size_t lin_id = g_sm.LinId(key);
+
+	//	BOOST_REQUIRE_EQUAL(lin_id,v_req.get(i));
+
+		std::cout << "Error: " << "   " << lin_id << "    " << key.to_string() << "\n";
+	}
+
+/*	for (size_t i = 0 ; i < 16 ; i++)
+	{
+		grid_key_dx<3> key;
+		// get the position information
+		key.set_d(0,dg.getVertex(v_req.get(i)).template get<0>()[0]);
+		key.set_d(1,dg.getVertex(v_req.get(i)).template get<0>()[1]);
+		key.set_d(2,dg.getVertex(v_req.get(i)).template get<0>()[2]);
+
+		size_t lin_id = g_sm.LinId(key);
+
+	//	BOOST_REQUIRE_EQUAL(lin_id,v_req.get(i));
+
+		std::cout << "Error: " << i << "   " << lin_id << "  " << v_req.get(i) << "\n";
+	}*/
+
+/*	if (vcl.getProcessUnitID() == 0)
+		std::cout << "Error: " << i << "   " << lin_id << "  " << v_req.get(i) << "\n";*/
 }
 
 BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)

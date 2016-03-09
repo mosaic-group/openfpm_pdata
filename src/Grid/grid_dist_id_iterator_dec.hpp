@@ -211,6 +211,27 @@ class grid_dist_id_iterator_dec
 		return *this;
 	}
 
+	/*! \brief Convert a g_dist_key_dx into a global key
+	 *
+	 * \see grid_dist_key_dx
+	 * \see grid_dist_iterator
+	 *
+	 * \return the global position in the grid
+	 *
+	 */
+/*	inline grid_key_dx<Decomposition::dims> getGKey(const grid_dist_key_dx<Decomposition::dims> & k)
+	{
+		// Get the sub-domain id
+		size_t sub_id = k.getSub();
+
+		grid_key_dx<Decomposition::dims> k_glob = k.getKey();
+
+		// shift
+		k_glob = k_glob + gdb_ext.get(sub_id).origin;
+
+		return k_glob;
+	}*/
+
 	/*! \brief Check if there is the next element
 	 *
 	 * \return true if there is the next, false otherwise
