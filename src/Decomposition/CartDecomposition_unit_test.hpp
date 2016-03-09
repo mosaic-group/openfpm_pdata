@@ -632,6 +632,114 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 	BOOST_REQUIRE_EQUAL(ret,true);
 }
 
+
+////////////////////////// CartDecomposition extended
+
+BOOST_AUTO_TEST_CASE( CartDecomposition_ext_non_periodic_test)
+{
+	// Vcluster
+	Vcluster & vcl = *global_v_cluster;
+
+	// Initialize the global VCluster
+	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
+
+	//! [Create CartDecomposition]
+	CartDecomposition<3,float> dec(vcl);
+
+	// Physical domain
+	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+	size_t div[3];
+
+	// Get the number of processor and calculate the number of sub-domain
+	// for each processor (SUB_UNIT_FACTOR=64)
+	size_t n_proc = vcl.getProcessingUnits();
+	size_t n_sub = n_proc * SUB_UNIT_FACTOR;
+
+	// Set the number of sub-domains on each dimension (in a scalable way)
+	for (int i = 0 ; i < 3 ; i++)
+	{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/3));}
+
+	// Define ghost
+	Ghost<3,float> g(0.01);
+
+	// Boundary conditions
+	size_t bc[] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+
+	// Decompose
+	dec.setParameters(div,box,bc,g);
+	dec.decompose();
+
+	// create a ghost border
+	dec.calculateGhostBoxes();
+
+	//! [Extend CartDecomposition]
+
+	Box<3,float> box_ext({-0.1,-0.1,-0.1},{1.1,1.1,1.1});
+
+	// Use the old decomposition to extend on a bigger domain
+/*	CartDecomposition_ext<3,float> dec_ext(dec,g,box_ext);
+
+	//! [Extend CartDecomposition]
+
+	// Check the new decomposition is fully contained in the new one, and there are
+	// box not fully contained i the old box
+
+	BOOST_REQUIRE_EQUAL(dec_ext.getNSubDomain(),dec.getNSubDomain());
+
+	double volume = 0.0;
+	for (size_t i = 0; i < dec_ext.getNSubDomain() ; i++)
+	{
+		volume += dec_ext.getSubDomain(i).getVolume();
+		BOOST_REQUIRE_EQUAL(dec_ext.getSubDomain(i).isContained(dec.getSubDomain(i)),true);
+	}
+
+	vcl.sum(volume);
+	vcl.execute();
+
+	BOOST_REQUIRE_CLOSE(volume,1.728,0.00001);
+
+	BOOST_REQUIRE_EQUAL(dec.getNNProcessors(),dec_ext.getNNProcessors());
+
+	double volume_g = 0.0;
+	double volume_ge = 0.0;
+	for (size_t p = 0; p < dec.getNNProcessors(); p++)
+	{
+		BOOST_REQUIRE_EQUAL(dec.getProcessorNEGhost(p),dec_ext.getProcessorNEGhost(p));
+		for (size_t i = 0; i < dec.getProcessorNEGhost(p); i++)
+		{
+			volume_g += dec.getProcessorEGhostBox(p,i).getVolume();
+			volume_ge += dec_ext.getProcessorEGhostBox(p,i).getVolume();
+
+			BOOST_REQUIRE_EQUAL(dec_ext.getProcessorEGhostBox(p,i).isContained(dec_ext.getProcessorEGhostBox(p,i)),true);
+		}
+	}
+
+	vcl.sum(volume_g);
+	vcl.sum(volume_ge);
+	vcl.execute();
+
+	BOOST_REQUIRE(volume_ge > volume_g*1.05);
+
+	volume_g = 0.0;
+	volume_ge = 0.0;
+	for (size_t p = 0; p < dec.getNNProcessors(); p++)
+	{
+		for (size_t i = 0; i< dec.getProcessorNIGhost(p); i++)
+		{
+			volume_g += dec.getProcessorIGhostBox(p,i).getVolume();
+			volume_ge += dec_ext.getProcessorIGhostBox(p,i).getVolume();
+			BOOST_REQUIRE_EQUAL(dec_ext.getProcessorIGhostBox(p,i).isContained(dec.getProcessorIGhostBox(p,i)),true);
+		}
+	}
+
+	vcl.sum(volume_g);
+	vcl.sum(volume_ge);
+	vcl.execute();
+
+	BOOST_REQUIRE(volume_ge > volume_g*1.05);*/
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()
 
 

@@ -8,6 +8,7 @@
 #ifndef SRC_GRID_GRID_DIST_ID_UNIT_TEST_EXT_DOM_HPP_
 #define SRC_GRID_GRID_DIST_ID_UNIT_TEST_EXT_DOM_HPP_
 
+#include "Decomposition/CartDecomposition_ext.hpp"
 
 // Test duplicated topology
 
@@ -44,25 +45,18 @@ void Test3D_extended_grid(const Box<3,float> & domain, long int k)
 		//! [Construct an extended grid]
 
 		// Distributed grid with id decomposition
-		grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> g_dist1(sz,domain,g);
+		grid_dist_id<3, float, aggregate<size_t[3],size_t>, CartDecomposition<3,float>> g_dist1(sz,domain,g);
 
 		// Extend the grid by 2 points
 		Box<3,size_t> ext({2,2,2},{2,2,2});
 
 		// another grid perfectly overlapping the previous, extended by 2 points
-		grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> g_dist2(g_dist1,ext);
-
-		//! [Construct an extended grid]
-
-		bool ret = g_dist2.getDecomposition().check_consistency();
-		BOOST_REQUIRE_EQUAL(ret,true);
+		grid_dist_id<3, float, aggregate<size_t[3],size_t>, CartDecomposition_ext<3,float>> g_dist2(g_dist1,ext);
 
 		// Given an iterator on grid 1
 		auto dom_g1 = g_dist1.getDomainIterator();
 		// And a sub-iterator on grid 2 overlapping grid 1
-		auto dom_g2 = g_dist2.getSubDomainIterator({2,2,2},{k+2-1,k+2-1,k+2-1});
-
-		grid_key_dx<3> kb({2l,2l,2l});
+		auto dom_g2 = g_dist2.getSubDomainIterator({0,0,0},{k-1,k-1,k-1});
 
 		// the 2 iterator must match
 
@@ -76,22 +70,91 @@ void Test3D_extended_grid(const Box<3,float> & domain, long int k)
 			grid_key_dx<3> g1_k = g_dist1.getGKey(key1);
 			grid_key_dx<3> g2_k = g_dist2.getGKey(key2);
 
-			g2_k = g2_k - kb;
-
 			check &= (g1_k == g2_k)?true:false;
-
-			std::cout << "KEY: " << g1_k.to_string() << "   " << g2_k.to_string() << "\n";
-
-			if (check == false)
-			{
-				std::cout << "ERROR: " << g1_k.to_string() << "   " << g2_k.to_string() << "\n";
-				break;
-			}
 
 			++dom_g1;
 			++dom_g2;
 		}
 
+		BOOST_REQUIRE_EQUAL(check,true);
+
+		//! [Construct an extended grid]
+
+		bool ret = g_dist2.getDecomposition().check_consistency();
+		BOOST_REQUIRE_EQUAL(ret,true);
+
+		// Get domain iterator
+
+		grid_sm<3,void> info = g_dist2.getGridInfo();
+
+		size_t cnt = 0;
+		auto dom_g3 = g_dist2.getDomainIterator();
+
+		check = false;
+
+		while (dom_g3.isNext())
+		{
+			auto key1 = dom_g3.get();
+
+			auto keyg = g_dist2.getGKey(key1);
+
+			g_dist2.template get<0>(key1)[0] = keyg.get(0);
+			g_dist2.template get<0>(key1)[1] = keyg.get(1);
+			g_dist2.template get<0>(key1)[2] = keyg.get(2);
+
+			g_dist2.template get<1>(key1) = info.LinId(keyg);
+
+			++dom_g3;
+		}
+
+		g_dist2.ghost_get<0,1>();
+
+		auto dom_g4 = g_dist2.getSubDomainIterator({-1,-1,-1},{sz[0]+2-2,sz[1]+2-2,sz[2]+2-2});
+
+		check = true;
+
+		while (dom_g4.isNext())
+		{
+			auto key1 = dom_g4.get();
+
+			key1 = key1.move(0,1);
+			key1 = key1.move(1,1);
+			key1 = key1.move(2,1);
+
+			auto key2 = g_dist2.getGKey(key1);
+
+			check &= g_dist2.template get<0>(key1)[0] == key2.get(0);
+			check &= g_dist2.template get<0>(key1)[1] == key2.get(1);
+			check &= g_dist2.template get<0>(key1)[2] == key2.get(2);
+
+			if (check == false)
+			{
+				int debug = 0;
+				debug++;
+			}
+
+			auto key3 = dom_g4.get();
+
+			key3 = key3.move(0,-1);
+			key3 = key3.move(1,-1);
+			key3 = key3.move(2,-1);
+
+			auto key4 = g_dist2.getGKey(key3);
+
+			check &= g_dist2.template get<0>(key3)[0] == key4.get(0);
+			check &= g_dist2.template get<0>(key3)[1] == key4.get(1);
+			check &= g_dist2.template get<0>(key3)[2] == key4.get(2);
+
+			if (check == false)
+			{
+				int debug = 0;
+				debug++;
+			}
+
+			++dom_g4;
+		}
+
+		std::cout << "k=" << k << "\n";
 		BOOST_REQUIRE_EQUAL(check,true);
 	}
 }

@@ -138,7 +138,8 @@ class grid_dist_id
 			{
 				// Get the internal ghost boxes and transform into grid units
 				::Box<dim,St> ib_dom = dec.getProcessorIGhostBox(i,j);
-				::Box<dim,size_t> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom);
+				ib_dom -= cd_sm.getOrig();
+				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom);
 
 				// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
 				if (ib.isValid() == false)
@@ -179,7 +180,8 @@ class grid_dist_id
 			{
 				// Get the external ghost boxes and transform into grid units
 				::Box<dim,St> ib_dom = dec.getProcessorEGhostBox(i,j);
-				::Box<dim,size_t> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom);
+				ib_dom -= cd_sm.getOrig();
+				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom);
 
 				// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
 				if (ib.isValid() == false)
@@ -225,7 +227,7 @@ class grid_dist_id
 		if (init_local_i_g_box == true)	return;
 
 		// Get the number of near processors
-		for (size_t i = 0 ; i < dec.getNLocalHyperCube() ; i++)
+		for (size_t i = 0 ; i < dec.getNSubDomain() ; i++)
 		{
 			loc_ig_box.add();
 			auto&& pib = loc_ig_box.last();
@@ -234,7 +236,8 @@ class grid_dist_id
 			{
 				// Get the internal ghost boxes and transform into grid units
 				::Box<dim,St> ib_dom = dec.getLocalIGhostBox(i,j);
-				::Box<dim,size_t> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom);
+				ib_dom -= cd_sm.getOrig();
+				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom);
 
 				// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
 				if (ib.isValid() == false)
@@ -263,7 +266,7 @@ class grid_dist_id
 		if (init_local_e_g_box == true)	return;
 
 		// Get the number of near processors
-		for (size_t i = 0 ; i < dec.getNLocalHyperCube() ; i++)
+		for (size_t i = 0 ; i < dec.getNSubDomain() ; i++)
 		{
 			loc_eg_box.add();
 			auto&& pib = loc_eg_box.last();
@@ -272,7 +275,8 @@ class grid_dist_id
 			{
 				// Get the internal ghost boxes and transform into grid units
 				::Box<dim,St> ib_dom = dec.getLocalEGhostBox(i,j);
-				::Box<dim,size_t> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom);
+				ib_dom -= cd_sm.getOrig();
+				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom);
 
 				// Warning even if the ib is not a valid in grid unit we are forced to keep it
 				// otherwise the value returned from dec.getLocalEGhostSub(i,j) will point to an
@@ -368,7 +372,7 @@ class grid_dist_id
 		for (size_t i = 0 ; i < dim ; i++)	{g_rnd_box.setHigh(i,0.5); g_rnd_box.setLow(i,-0.5);}
 
 		// Get the number of local grid needed
-		size_t n_grid = dec.getNLocalHyperCube();
+		size_t n_grid = dec.getNSubDomain();
 
 		// create gdb
 		create_gdb_ext<dim,Decomposition>(gdb_ext,dec,cd_sm);
@@ -595,8 +599,8 @@ public:
 	 * \param ext extension of the grid (must be positive on every direction)
 	 *
 	 */
-	grid_dist_id(const grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & g, Box<dim,size_t> ext)
-	:ghost(g.ghost),dec(*global_v_cluster),v_cl(*global_v_cluster)
+	grid_dist_id(const grid_dist_id<dim,St,T,typename Decomposition::base_type,Memory,device_grid> & g, Box<dim,size_t> ext)
+	:ghost(g.getDecomposition().getGhost()),dec(*global_v_cluster),v_cl(*global_v_cluster)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
@@ -616,7 +620,7 @@ public:
 			this->domain.setHigh(i,g.domain.getHigh(i) + ext.getHigh(i) * g.spacing(i) + g.spacing(i) / 2.0);
 		}
 
-		dec = g.dec.duplicate(g.ghost,this->domain);
+		dec.setParameters(g.getDecomposition(),g.getDecomposition().getGhost(),this->domain);
 
 		InitializeStructures(g_sz);
 	}
@@ -797,6 +801,19 @@ public:
 	 *
 	 */
 	Decomposition & getDecomposition()
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return dec;
+	}
+
+	/*! \brief Get the object that store the information about the decomposition
+	 *
+	 * \return the decomposition object
+	 *
+	 */
+	const Decomposition & getDecomposition() const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1395,6 +1412,10 @@ public:
 			return -1;
 #endif
 	}
+
+	// Define friend classes
+
+	friend grid_dist_id<dim,St,T,typename Decomposition::extended_type,Memory,device_grid>;
 };
 
 

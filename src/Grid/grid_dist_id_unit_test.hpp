@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter_test)
 
 		// for each local volume
 		// Get the number of local grid needed
-		size_t n_grid = dec.getNLocalHyperCube();
+		size_t n_grid = dec.getNSubDomain();
 
 		size_t vol = 0;
 
@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter_test)
 		for (size_t i = 0 ; i < n_grid ; i++)
 		{
 			// Get the local hyper-cube
-			SpaceBox<2,float> sub = dec.getLocalHyperCube(i);
+			SpaceBox<2,float> sub = dec.getSubDomain(i);
 
 			Box<2,size_t> g_box = g_dist.getCellDecomposer().convertDomainSpaceIntoGridUnits(sub);
 
@@ -600,12 +600,12 @@ void Test3D_domain(const Box<3,float> & domain, long int k)
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 21;
 
-	print_test( "Testing 3D grid k<=",k);
+	print_test( "Testing 3D grid shift domain k<=",k);
 
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
 	{
-		BOOST_TEST_CHECKPOINT( "Testing 3D grid k=" << k );
+		BOOST_TEST_CHECKPOINT( "Testing 3D grid shift domain k=" << k );
 
 		// grid size
 		size_t sz[3];
@@ -1371,7 +1371,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_test_use)
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
 	// Domain
-	Box<3,float> domain3({0.1,0.1,0.1},{1.1,1.1,1.1});
+	Box<3,float> domain3({-0.3,-0.3,-0.3},{1.1,1.1,1.1});
 
 	long int k = 128*128*128*global_v_cluster->getProcessingUnits();
 	k = std::pow(k, 1/3.);
