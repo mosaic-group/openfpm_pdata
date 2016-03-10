@@ -13,7 +13,7 @@
 #include "Graph/map_graph.hpp"
 #include "Decomposition/Distribution/metis_util.hpp"
 #include "dec_optimizer.hpp"
-
+#include "util/SimpleRNG.hpp"
 
 #undef GS_SIZE
 #define GS_SIZE 8
@@ -111,12 +111,8 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_p)
 	// For each sub-domain check the neighborhood processors
 	openfpm::vector< openfpm::vector<size_t> > box_nn_processor;
 
-	// key
-	grid_key_dx<3> zero;
-	zero.zero();
-
 	// gp,p_id,loc_box,box_nn_processor,bc
-	d_o.optimize<nm_v::sub_id,nm_v::id>(zero,g,-1,dec_o,box_nn_processor,bc);
+	d_o.optimize<nm_v::sub_id,nm_v::id>(g,-1,dec_o,box_nn_processor,bc);
 
 	BOOST_REQUIRE_EQUAL(box_nn_processor.size(),8ul);
 
@@ -143,6 +139,75 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_p)
 	}
 
 	// check
+}
+
+BOOST_AUTO_TEST_CASE( dec_optimizer_disconnected_subdomains_np)
+{
+	// Vcluster
+	Vcluster & vcl = *global_v_cluster;
+
+	CartesianGraphFactory<2,Graph_CSR<nm_v,nm_e>> g_factory;
+
+	// Cartesian grid
+	size_t sz[2] = {GS_SIZE,GS_SIZE};
+
+	// Box
+	Box<2,float> box({0.0,0.0},{1.0,1.0});
+
+	// Boundary conditions, non periodic
+	size_t bc[] = {NON_PERIODIC,NON_PERIODIC};
+
+	// Graph to decompose
+	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,1,0,1>(sz,box,bc);
+
+	SimpleRNG rng;
+
+	auto vit = g.getVertexIterator();
+
+	while (vit.isNext())
+	{
+		auto vk = vit.get();
+
+		g.template vertex_p<nm_v::proc_id>(vk) = rng.GetUniform() * 2.9999;
+		g.template vertex_p<nm_v::sub_id>(vk) = 100;
+
+		++vit;
+	}
+
+	// optimize
+	dec_optimizer<2,Graph_CSR<nm_v,nm_e>> d_o(g,sz);
+
+	// set of Boxes produced by the decomposition optimizer
+	openfpm::vector<::Box<2, size_t>> loc_box;
+
+	//! for each sub-domain, contain the list of the neighborhood processors
+	openfpm::vector<openfpm::vector<long unsigned int> > box_nn_processor;
+
+	d_o.optimize<nm_v::sub_id, nm_v::proc_id>(g, vcl.getProcessUnitID(), loc_box, box_nn_processor,bc);
+
+	std::stringstream str_g;
+	str_g << "dec_optimizer_disc_graph" << vcl.getProcessUnitID() << ".vtk";
+	std::stringstream str_gt;
+	str_gt << "dec_optimizer_disc_graph" << vcl.getProcessUnitID() << "_test.vtk";
+
+	std::stringstream str_s;
+	str_s << "dec_optimizer_disc_sub" << vcl.getProcessUnitID() << ".vtk";
+	std::stringstream str_st;
+	str_st << "dec_optimizer_disc_sub" << vcl.getProcessUnitID() << "_test.vtk";
+
+
+	VTKWriter<Graph_CSR<nm_v,nm_e>,VTK_GRAPH> wrt(g);
+	wrt.write("dec_optimizer_disc_graph" + std::to_string(vcl.getProcessUnitID()) + ".vtk");
+
+	VTKWriter<openfpm::vector<::Box<2, size_t>>, VECTOR_BOX> vtk_box1;
+	vtk_box1.add(loc_box);
+	vtk_box1.write("dec_optimizer_disc_sub" + std::to_string(vcl.getProcessUnitID()) + std::string(".vtk"));
+
+	bool test = compare(str_g.str(), str_gt.str());
+	BOOST_REQUIRE_EQUAL(true,test);
+
+	test = compare(str_s.str(),str_st.str());
+	BOOST_REQUIRE_EQUAL(true,test);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
