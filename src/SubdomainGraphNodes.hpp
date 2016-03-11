@@ -34,7 +34,7 @@
 struct nm_v
 {
 	//! The node contain 3 unsigned long integer for communication computation memory and id
-	typedef boost::fusion::vector<float[3], size_t, size_t, size_t, size_t, size_t, size_t> type;
+	typedef boost::fusion::vector<float[3], size_t, size_t, size_t, size_t, long int, size_t> type;
 
 	//! type of the positional field
 	typedef float s_type;
