@@ -397,7 +397,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_cartesian)
 		++it_dec2;
 	}
 
-	dg.initProperties();
+	dg.init();
 
 	// we ask for some random vertex
 

@@ -300,41 +300,6 @@ class DistGraph_CSR
 	// Queue of requests to add edges
 	openfpm::vector<EdgeReq> e_queue;
 
-	/*! \brief Add vertex vrt with global id and id properties
-	 *
-	 * \param vrt vertex object to add
-	 * \param gid global id, unique in global graph
-	 * \param id id, unique n global graph
-	 */
-	inline void add_vertex(const V & vrt, size_t id, size_t gid)
-	{
-		// Create vertex info object
-		v_info vm;
-		vm.template get<v_info::id>() = id;
-		vm.template get<v_info::gid>() = gid;
-
-		// Add the vertex info
-		v_m.add(vm);
-
-		// Add the vertex
-		v.add(vrt);
-
-		// Update id to global map
-		id2glb.insert( { id, gid });
-
-		// Update global id to local index
-		glb2loc.insert( { gid, v.size() - 1 });
-
-		// Update global id to id
-		glb2id.insert( { gid, id });
-
-		// Set the number of adjacent vertex for this vertex to 0
-		v_l.add(0ul);
-
-		// Add a slot for the vertex adjacency list
-		e_l.resize(e_l.size() + v_slot);
-	}
-
 	/*! \brief add edge on the graph
 	 *
 	 * add edge on the graph
@@ -1324,8 +1289,7 @@ public:
 		try
 		{
 			return v.get(glb2loc.at(id));
-		}
-		catch (const std::out_of_range& oor)
+		} catch (const std::out_of_range& oor)
 		{
 			std::cerr << "The vertex with global id " << id << " is not in this sub-graph. Try to call reqVertex(" << id << ") and sync() first.\n";
 		}
@@ -1345,8 +1309,7 @@ public:
 		try
 		{
 			return glb2loc.at(id2glb.at(id));
-		}
-		catch (const std::out_of_range& oor)
+		} catch (const std::out_of_range& oor)
 		{
 			std::cout << "Node not found by glb: " << id << std::endl;
 		}
@@ -1674,9 +1637,43 @@ public:
 	 *
 	 * \param vrt vertex object to add
 	 * \param gid global id, unique in global graph
+	 * \param id id, unique n global graph
 	 */
+	inline void add_vertex(const V & vrt, size_t id, size_t gid)
+	{
+		// Create vertex info object
+		v_info vm;
+		vm.template get<v_info::id>() = id;
+		vm.template get<v_info::gid>() = gid;
 
-	template<unsigned int dim, typename Mem>  inline void add_vertex(const encapc<dim,V,Mem> & vrt, size_t id, size_t gid)
+		// Add the vertex info
+		v_m.add(vm);
+
+		// Add the vertex
+		v.add(vrt);
+
+		// Update id to global map
+		id2glb.insert( { id, gid });
+
+		// Update global id to local index
+		glb2loc.insert( { gid, v.size() - 1 });
+
+		// Update global id to id
+		glb2id.insert( { gid, id });
+
+		// Set the number of adjacent vertex for this vertex to 0
+		v_l.add(0ul);
+
+		// Add a slot for the vertex adjacency list
+		e_l.resize(e_l.size() + v_slot);
+	}
+
+	/*! \brief Add vertex vrt with global id and id properties
+	 *
+	 * \param vrt vertex object to add
+	 * \param gid global id, unique in global graph
+	 */
+	template<unsigned int dim, typename Mem> inline void add_vertex(const encapc<dim, V, Mem> & vrt, size_t id, size_t gid)
 	{
 
 		// Create vertex info object
@@ -1773,7 +1770,7 @@ public:
 		return e.get(id_x_end);
 	}
 
-	template<unsigned int dim, typename Mem, typename Mem1> inline auto addEdge(size_t v1, size_t v2, const encapc<dim,E,Mem> & ed, const encapc<dim,e_info,Mem1> & ei) -> decltype(e.get(0))
+	template<unsigned int dim, typename Mem, typename Mem1> inline auto addEdge(size_t v1, size_t v2, const encapc<dim, E, Mem> & ed, const encapc<dim, e_info, Mem1> & ei) -> decltype(e.get(0))
 	{
 		// add an edge
 		long int id_x_end = addEdge_<NoCheck>(v1, v2);
@@ -2202,8 +2199,7 @@ public:
 				try
 				{
 					reqs.get(i).add(glbi_map.at(resp.get(i).get(j)).pid);
-				}
-				catch (const std::out_of_range& oor)
+				} catch (const std::out_of_range& oor)
 				{
 					std::cout << resp.get(i).get(j) << " not found in global info map (proc: " << vcl.getProcessUnitID() << ")\n";
 				}

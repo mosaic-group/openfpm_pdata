@@ -8,6 +8,7 @@
 #ifndef VECTOR_HPP_
 #define VECTOR_HPP_
 
+#include "HDF5_XdmfWriter/HDF5_XdmfWriter.hpp"
 #include "VCluster.hpp"
 #include "Space/Shape/Point.hpp"
 #include "Vector/vector_dist_iterator.hpp"
@@ -20,6 +21,7 @@
 #include "util/object_util.hpp"
 #include "memory/ExtPreAlloc.hpp"
 #include "CSVWriter/CSVWriter.hpp"
+#include "VTKWriter/VTKWriter.hpp"
 #include "Decomposition/common.hpp"
 #include "Grid/grid_dist_id_iterator_dec.hpp"
 #include "Vector/vector_dist_ofb.hpp"
@@ -1232,6 +1234,12 @@ public:
 		return dec;
 	}
 
+	void remove(openfpm::vector<size_t> & keys, size_t start = 0)
+	{
+		v_pos.remove(keys, start);
+		v_prp.remove(keys, start);
+	}
+
 	inline void addComputationCosts()
 	{
 		CellDecomposer_sm<dim, St> cdsm;
@@ -1266,15 +1274,33 @@ public:
 	 * \return if the file has been written correctly
 	 *
 	 */
-	inline bool write(std::string out, int opt = NO_GHOST)
+	inline bool write(std::string out, int opt = NO_GHOST | VTK_WRITER)
 	{
-		// CSVWriter test
-		CSVWriter<openfpm::vector<Point<dim, St>>, openfpm::vector<prop> > csv_writer;
 
-		std::string output = std::to_string(out + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".csv"));
+		if ((opt & 0xFFFF0000) == CSV_WRITER)
+		{
+			// CSVWriter test
+			CSVWriter<openfpm::vector<Point<dim,St>>, openfpm::vector<prop> > csv_writer;
 
-		// Write the CSV
-		return csv_writer.write(output, v_pos, v_prp);
+			std::string output = std::to_string(out + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".csv"));
+
+			// Write the CSV
+			return csv_writer.write(output,v_pos,v_prp);
+		}
+		else if ((opt & 0xFFFF0000) == VTK_WRITER)
+		{
+			// CSVWriter test
+			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim,St>>, openfpm::vector<prop>>, VECTOR_POINTS> vtk_writer;
+
+			std::string output = std::to_string(out + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".csv"));
+
+			// Write the CSV
+			return vtk_writer.write(output,v_pos,v_prp);
+		}
+		else if ((opt & 0xFFFF0000) == H5PART_WRITER)
+		{
+
+		}
 	}
 
 	/*! \brief Output particle position and properties

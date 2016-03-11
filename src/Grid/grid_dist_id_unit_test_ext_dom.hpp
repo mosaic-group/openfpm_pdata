@@ -109,7 +109,7 @@ void Test3D_extended_grid(const Box<3,float> & domain, long int k)
 
 		g_dist2.ghost_get<0,1>();
 
-		auto dom_g4 = g_dist2.getSubDomainIterator({-1,-1,-1},{sz[0]+2-2,sz[1]+2-2,sz[2]+2-2});
+		auto dom_g4 = g_dist2.getSubDomainIterator({-1,-1,-1},{(long int) sz[0]+2-2, (long int) sz[1]+2-2, (long int) sz[2]+2-2});
 
 		check = true;
 

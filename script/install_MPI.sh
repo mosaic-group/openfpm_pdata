@@ -7,7 +7,7 @@ if [ -d "$1/MPI" ]; then
   exit 0
 fi
 
-wget http://www.open-mpi.de/software/ompi/v1.8/downloads/openmpi-1.8.7.tar.bz2
+wget http://ppmcore.mpi-cbg.de/upload/openmpi-1.8.7.tar.bz2
 tar -xvf openmpi-1.8.7.tar.bz2
 cd openmpi-1.8.7
 

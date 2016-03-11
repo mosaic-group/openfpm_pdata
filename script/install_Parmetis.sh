@@ -10,8 +10,9 @@ fi
 wget http://ppmcore.mpi-cbg.de/upload/parmetis-4.0.3.tar.gz
 tar -xf parmetis-4.0.3.tar.gz
 cd parmetis-4.0.3
+make config prefix=$1/PARMETIS
 make -j 4
-if [ $? -eq 0 ]; then
+if [ $? -ne 0 ]; then
     echo "PARMETIS error installing"
     exit 0
 fi
