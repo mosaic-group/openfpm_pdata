@@ -1035,7 +1035,7 @@ public:
 		// extend by the ghost
 		pbox.enlarge(enlarge);
 
-		Box<dim, St> cell_box;
+//		Box<dim, St> cell_box;
 
 		size_t div[dim];
 
@@ -1044,12 +1044,9 @@ public:
 		{
 			div[i] = static_cast<size_t>((pbox.getP2().get(i) - pbox.getP1().get(i)) / r_cut);
 			div[i]++;
-
-			cell_box.setLow(i, 0.0);
-			cell_box.setHigh(i, div[i] * r_cut);
 		}
 
-		cell_list.Initialize(cell_box, div, pbox.getP1());
+		cell_list.Initialize(pbox, div);
 
 		// for each particle add the particle to the cell list
 
@@ -1238,6 +1235,8 @@ public:
 	{
 		v_pos.remove(keys, start);
 		v_prp.remove(keys, start);
+
+		g_m -= keys.size();
 	}
 
 	inline void addComputationCosts()
@@ -1246,7 +1245,7 @@ public:
 
 		cdsm.setDimensions(dec.getDomain(), dec.getGrid().getSize(), 0);
 
-		auto it = getIterator();
+		auto it = getDomainIterator();
 
 		for (size_t i = 0; i < dec.getNSubSubDomains(); i++)
 		{

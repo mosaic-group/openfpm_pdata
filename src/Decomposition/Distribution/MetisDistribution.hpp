@@ -446,7 +446,7 @@ public:
 	MetisDistribution & operator=(const MetisDistribution & mt)
 	{
 #ifdef SE_CLASS2
-			check_valid(mt);
+			check_valid(&mt,8);
 			check_valid(this,8);
 #endif
 		this->v_cl = mt.v_cl;
@@ -483,7 +483,7 @@ public:
 	inline bool operator==(const MetisDistribution & mt)
 	{
 #ifdef SE_CLASS2
-			check_valid(mt);
+			check_valid(&mt,8);
 			check_valid(this,8);
 #endif
 		bool ret = true;

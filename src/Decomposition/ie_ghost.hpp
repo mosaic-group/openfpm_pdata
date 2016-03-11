@@ -176,10 +176,10 @@ protected:
 	 * internal ghost
 	 *
 	 */
-	void Initialize_geo_cell(const Box<dim,T> & domain, const size_t (&div)[dim] ,const Point<dim,T> & orig)
+	void Initialize_geo_cell(const Box<dim,T> & domain, const size_t (&div)[dim])
 	{
 		// Initialize the geo_cell structure
-		geo_cell.Initialize(domain,div,orig);
+		geo_cell.Initialize(domain,div);
 	}
 
 	/*! \brief Create the box_nn_processor_int (bx part)  structure

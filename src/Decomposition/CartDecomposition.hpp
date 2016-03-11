@@ -314,15 +314,8 @@ public:
 		for (size_t i = 0; i < dim; i++)
 			div[i] = (size_t) ((bound.getHigh(i) - bound.getLow(i)) / unit.getHigh(i));
 
-		// Create shift
-		Point<dim, T> orig;
-
-		// p1 point of the Processor bound box is the shift
-		for (size_t i = 0; i < dim; i++)
-			orig.get(i) = bound.getLow(i);
-
 		// Initialize the geo_cell structure
-		ie_ghost<dim,T>::Initialize_geo_cell(bound,div,orig);
+		ie_ghost<dim,T>::Initialize_geo_cell(bound,div);
 
 		// Initialize shift vectors
 		ie_ghost<dim,T>::generateShiftVectors(domain);
