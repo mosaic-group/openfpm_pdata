@@ -447,6 +447,8 @@ public:
 		Mg.itr = new real_t[1];
 		Mg.itr[0] = 1000.0;
 
+		Mg.objval = new idx_t[1];
+
 		//! init tpwgts to have balanced vertices and ubvec
 
 		Mg.tpwgts = new real_t[Mg.nparts[0]];

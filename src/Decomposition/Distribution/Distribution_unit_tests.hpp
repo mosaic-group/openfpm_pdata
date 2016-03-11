@@ -669,7 +669,7 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test_prey_and_predators )
 	float r_cut = 0.01 / factor;
 
 	// ghost
-	Ghost<2,float> ghost(0.01 / factor);
+	Ghost<2,float> ghost(r_cut);
 
 	// Distributed vector
 	vector_dist<2,float, animal, CartDecomposition<2, float, HeapMemory, ParMetisDistribution<2, float>>> vd(k,box,bc,ghost);
@@ -746,7 +746,7 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test_prey_and_predators )
 
 		bool error = false;
 
-		auto NN = vd.getCellList(0.01 / factor);
+		auto NN = vd.getCellList(0.01  / factor);
 
 		// iterate across the domain particle
 
@@ -785,10 +785,10 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test_prey_and_predators )
 						vd.getProp<animal::status>(q) = DEAD;
 						vd.getProp<animal::time_a>(q) = TIME_A;
 					}
-					else if (gp == PREY && sp == DEAD)
+					else if (gp == PREY && gq == PREY && sq != DEAD)
 					{
-						//animal n;
-						//n.template get<animal::status>() = DEAD;
+						vd.add();
+						vd.getLastProp<animal::genre>() = 0;
 					}
 				}
 
