@@ -126,7 +126,7 @@ struct animal
 	}
 };
 
-const std::string animal::attributes::name[] = { "pos", "genre", "status", "time_a" };
+const std::string animal::attributes::name[] = { "pos", "genre", "status", "time_a", "j_repr" };
 
 BOOST_AUTO_TEST_SUITE (Distribution_test)
 
@@ -622,22 +622,25 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test_random_walk_2D )
 
 }
 
-
 BOOST_AUTO_TEST_CASE( Parmetis_distribution_test_prey_and_predators )
 {
 	Vcluster & v_cl = *global_v_cluster;
 
-	//time the animal stays alive without eating or reproducing
-	size_t TIME_A = 5;
+	//time the animal stays alive without eating
+	size_t PRED_TIME_A = 5;
+
+	size_t PREY_TIME_A = 3;
 
 	size_t PREDATOR = 1, PREY = 0;
 	size_t ALIVE = 1, DEAD = 0;
+
+	size_t JUST_REPR = 1;
 
 	// Predators reproducing probability
 	float PRED_REPR = 0.1;
 
 	// Predators eating probability
-	float PRED_EAT = 0.2;
+	float PRED_EAT = 0.5;
 
 	// Prey reproducing probability
 	float PREY_REPR = 0.1;
@@ -647,12 +650,15 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test_prey_and_predators )
 	std::srand(v_cl.getProcessUnitID());
 	std::default_random_engine eg;
 	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+	std::uniform_real_distribution<float> md(-1.0f, 1.0f);
+	std::uniform_real_distribution<float> uc(0.0f, 1.0f);
+	std::uniform_real_distribution<float> lc(0.0f, 1.0f);
 
-	size_t k = 50000;
+	size_t k = 5000;
 
-	print_test_v( "Testing 2D random walk vector k<=",k);
+	print_test_v( "Testing 2D prey and predators k<=",k);
 
-	BOOST_TEST_CHECKPOINT( "Testing 2D random walk k=" << k );
+	BOOST_TEST_CHECKPOINT( "Testing 2D prey and predators k=" << k );
 
 	Box<2,float> box({0.0,0.0},{1.0,1.0});
 
@@ -683,26 +689,24 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test_prey_and_predators )
 
 	auto it = vd.getIterator();
 
-	size_t c = 0;
 	while (it.isNext())
 	{
 		auto key = it.get();
-		if(c % 3)
+		if(ud(eg) < 0.5 )
 		{
-			vd.template getPos<animal::pos>(key)[0] = ud(eg);
-			vd.template getPos<animal::pos>(key)[1] = ud(eg);
-			vd.template getProp<animal::genre>(key) = 0; //prey
-			vd.template getProp<animal::status>(key) = 1; //alive
-			vd.template getProp<animal::time_a>(key) = TIME_A; //alive
+			vd.template getPos<animal::pos>(key)[0] = lc(eg);
+			vd.template getPos<animal::pos>(key)[1] = lc(eg);
+			vd.template getProp<animal::genre>(key) = PREY;
+			vd.template getProp<animal::status>(key) = ALIVE;
+			vd.template getProp<animal::time_a>(key) = PREY_TIME_A;
 		}else{
-			vd.template getPos<animal::pos>(key)[0] = ud(eg);
-			vd.template getPos<animal::pos>(key)[1] = ud(eg);
-			vd.template getProp<animal::genre>(key) = 1; //predator
-			vd.template getProp<animal::status>(key) = 1; //alive
-			vd.template getProp<animal::time_a>(key) = TIME_A; //alive
+			vd.template getPos<animal::pos>(key)[0] = uc(eg);
+			vd.template getPos<animal::pos>(key)[1] = uc(eg);
+			vd.template getProp<animal::genre>(key) = PREDATOR;
+			vd.template getProp<animal::status>(key) = ALIVE;
+			vd.template getProp<animal::time_a>(key) = PRED_TIME_A;
 		}
 		++it;
-		++c;
 	}
 
 	vd.map();
@@ -713,24 +717,20 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test_prey_and_predators )
 
 	vd.map();
 
-	vd.getDecomposition().write("dec_init");
-	vd.getDecomposition().getDistribution().write("parmetis_random_walk_" + std::to_string(0) + ".vtk");
+	vd.getDecomposition().getDistribution().write("parmetis_prey_predators_" + std::to_string(0) + ".vtk");
 	vd.write("particles_", 0, NO_GHOST);
 
-	// 10 step random walk
-	for (size_t j = 0; j < 50; j++)
+	// 100 step random walk
+	for (size_t j = 0; j < 100; j++)
 	{
-		std::cout << "Iteration " << (j+1) << "\n";
-
 		auto it = vd.getDomainIterator();
 
 		while (it.isNext())
 		{
 			auto key = it.get();
 
-			vd.template getPos<animal::pos>(key)[0] += 0.01 * ud(eg);
-			vd.template getPos<animal::pos>(key)[1] += 0.01 * ud(eg);
-
+			vd.template getPos<animal::pos>(key)[0] += 0.01 * md(eg);
+			vd.template getPos<animal::pos>(key)[1] += 0.01 * md(eg);
 			++it;
 		}
 
@@ -738,8 +738,10 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test_prey_and_predators )
 
 		/////// Interactions ///
 
+		// get ghosts
 		vd.ghost_get<0>();
 
+		// vector of dead animals
 		openfpm::vector<size_t> deads;
 
 		// get the cell list with a cutoff radius
@@ -761,46 +763,88 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test_prey_and_predators )
 			size_t gp = vd.getProp<animal::genre>(p);
 			size_t sp = vd.getProp<animal::status>(p);
 
-			auto Np = NN.getIterator(NN.getCell(vd.getPos<0>(p)));
-
-			while (Np.isNext())
+			if(sp == ALIVE)
 			{
-				auto q = Np.get();
-
-				size_t gq = vd.getProp<animal::genre>(q);
-				size_t sq = vd.getProp<animal::status>(q);
-
-				// repulsive
-
-				Point<2,float> xq = vd.getPos<0>(q);
-				Point<2,float> f = (xp - xq);
-
-				float distance = f.norm();
-
-				//if p is a fox and q a rabit and they are both alive then the fox eats the rabbit
-				if (distance < 2*r_cut*sqrt(2) && sp == ALIVE)
+				if(gp == PREY)
 				{
-					if(gp == PREDATOR && gq == PREY && sq == ALIVE)
+					vd.getProp<animal::time_a>(p)--;
+
+					if(vd.getProp<animal::time_a>(p) <= 0)
 					{
-						vd.getProp<animal::status>(q) = DEAD;
-						vd.getProp<animal::time_a>(q) = TIME_A;
+						vd.getProp<animal::status>(p) = DEAD;
 					}
-					else if (gp == PREY && gq == PREY && sq != DEAD)
+					else if( ud(eg) < PREY_REPR )
 					{
 						vd.add();
-						vd.getLastProp<animal::genre>() = 0;
+						vd.getLastPos<animal::pos>()[0] = vd.getPos<0>(p)[0];
+						vd.getLastPos<animal::pos>()[1] = vd.getPos<0>(p)[1];
+						vd.getLastProp<animal::genre>() = PREY;
+						vd.getLastProp<animal::status>() = ALIVE;
+						vd.getLastProp<animal::time_a>() = PREY_TIME_A;
+					}
+				}
+				else if(gp == PREDATOR)
+				{
+					vd.getProp<animal::time_a>(p)--;
+
+					if(vd.getProp<animal::time_a>(p) <= 0)
+					{
+						vd.getProp<animal::status>(p) = DEAD;
+					}
+					else
+					{
+						auto Np = NN.getIterator(NN.getCell(vd.getPos<0>(p)));
+
+						while (Np.isNext())
+						{
+							auto q = Np.get();
+
+							size_t gq = vd.getProp<animal::genre>(q);
+							size_t sq = vd.getProp<animal::status>(q);
+
+							Point<2,float> xq = vd.getPos<0>(q);
+							Point<2,float> f = (xp - xq);
+
+							float distance = f.norm();
+
+							if (distance < 2*r_cut*sqrt(2) && gq == PREY && sq == ALIVE)
+							{
+								if( ud(eg) < PRED_EAT )
+								{
+									vd.getProp<animal::status>(q) = DEAD;
+									vd.getProp<animal::time_a>(p) = PRED_TIME_A;
+
+									if( ud(eg) < PRED_REPR )
+									{
+										vd.add();
+										vd.getLastPos<animal::pos>()[0] = vd.getPos<0>(p)[0];
+										vd.getLastPos<animal::pos>()[1] = vd.getPos<0>(p)[1];
+										vd.getLastProp<animal::genre>() = PREDATOR;
+										vd.getLastProp<animal::status>() = ALIVE;
+										vd.getLastProp<animal::time_a>() = PRED_TIME_A;
+									}
+								}
+							}
+							++Np;
+						}
 					}
 				}
 
-				++Np;
-			}
-
-			if(vd.getProp<animal::status>(p) == DEAD)
-			{
-				deads.add(p.getKey());
 			}
 
 			++it2;
+		}
+
+
+		auto it3 = vd.getIterator();
+		while (it3.isNext())
+		{
+			auto key = it3.get();
+			if(vd.getProp<animal::status>(key.getKey()) == DEAD)
+			{
+				deads.add(key.getKey());
+			}
+			++it3;
 		}
 
 		vd.remove(deads, 0);

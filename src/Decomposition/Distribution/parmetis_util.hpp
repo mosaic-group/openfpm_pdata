@@ -89,8 +89,6 @@ struct Parmetis_graph
 
 /*! \brief Helper class to define Metis graph
  *
- *  TODO Transform pointer to openfpm vector
- *
  * \tparam graph structure that store the graph
  *
  */
@@ -168,7 +166,6 @@ class Parmetis
 			// Add weight to vertex and migration cost
 			Mg.vwgt[j] = g.vertex(idx.id).template get<nm_v::computation>();
 			Mg.vsize[j] = g.vertex(idx.id).template get<nm_v::migration>();
-			;
 
 			// Calculate the starting point in the adjacency list
 			Mg.xadj[id] = prev;

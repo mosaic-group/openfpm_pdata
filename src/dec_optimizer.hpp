@@ -686,8 +686,6 @@ public:
 
 			// new seed
 			key_seed = search_seed<p_id,p_sub>(graph,pr_id);
-
-			std::cerr << "Key seed " << key_seed.to_string() << "\n";
 		}
 	}
 };
