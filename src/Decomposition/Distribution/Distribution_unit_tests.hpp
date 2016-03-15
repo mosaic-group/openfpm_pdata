@@ -126,7 +126,7 @@ struct animal
 	}
 };
 
-const std::string animal::attributes::name[] = { "pos", "genre", "status", "time_a" };
+const std::string animal::attributes::name[] = { "pos", "genre", "status", "time_a", "j_repr" };
 
 BOOST_AUTO_TEST_SUITE (Distribution_test)
 

@@ -327,7 +327,10 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_ext_non_periodic_test)
 	vcl.sum(volume_ge);
 	vcl.execute();
 
-	BOOST_REQUIRE(volume_ge > volume_g*1.05);
+	if (vcl.getProcessingUnits() > 1)
+	{
+		BOOST_REQUIRE(volume_ge > volume_g*1.05);
+	}
 
 	volume_g = 0.0;
 	volume_ge = 0.0;
@@ -345,7 +348,10 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_ext_non_periodic_test)
 	vcl.sum(volume_ge);
 	vcl.execute();
 
-	BOOST_REQUIRE(volume_ge > volume_g*1.05);
+	if (vcl.getProcessingUnits() > 1)
+	{
+		BOOST_REQUIRE(volume_ge > volume_g*1.05);
+	}
 }
 
 

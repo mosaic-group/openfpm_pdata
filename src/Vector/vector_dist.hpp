@@ -1243,12 +1243,12 @@ public:
 
 		cdsm.setDimensions(dec.getDomain(), dec.getGrid().getSize(), 0);
 
-		auto it = getDomainIterator();
-
 		for (size_t i = 0; i < dec.getNSubSubDomains(); i++)
 		{
 			dec.setSubSubDomainComputationCost(i, 0);
 		}
+
+		auto it = getDomainIterator();
 
 		while (it.isNext())
 		{
