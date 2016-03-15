@@ -167,8 +167,8 @@ class fill_prop_v<dim, dT, G_v, v, 2>
 public:
 
 	//! Fill the object from where to take the properties
-	fill_prop_v(G_v & g_v, const dT (&szd)[dim], grid_key_dx<dim> & gk, const grid_sm<dim, void> & gs) :
-			szd(szd), gk(gk), g_v(g_v), gs(gs)
+	fill_prop_v(G_v & g_v, const dT (&szd)[dim], grid_key_dx<dim> & gk, const grid_sm<dim, void> & gs)
+	:szd(szd), gk(gk), g_v(g_v), gs(gs)
 	{
 	}
 
@@ -177,8 +177,13 @@ public:
 	void operator()(T& t) const
 	{
 		typedef typename boost::fusion::result_of::at<v, boost::mpl::int_<0>>::type t_val;
+		typedef typename boost::mpl::at<typename G_v::T_type::type,t_val>::type s_type;
 
-		g_v.template get<t_val::value>()[T::value] = gk.get(T::value) * szd[T::value];
+		for (size_t i = 0 ; i < std::extent<s_type>::value ; i++)
+			g_v.template get<t_val::value>()[i] = 0.0;
+
+		for (size_t i = 0 ; i < dim ; i++)
+			g_v.template get<t_val::value>()[i] = gk.get(i) * static_cast<float>(szd[i]);
 	}
 };
 
@@ -423,7 +428,7 @@ public:
 		//! Distribution vector
 		openfpm::vector<idx_t> vtxdist(v_cl.getProcessingUnits() + 1);
 
-		for (int i = 0; i <= Np; i++)
+		for (size_t i = 0; i <= Np; i++)
 		{
 			if (i < mod_v)
 				vtxdist.get(i) = (div_v + 1) * (i);
@@ -458,7 +463,7 @@ public:
 		{
 			size_t v_id = g.LinId(k_it.get());
 
-			if (v_id < vtxdist.get(p_id + 1) && v_id >= vtxdist.get(p_id))
+			if (v_id < (size_t)vtxdist.get(p_id + 1) && v_id >= (size_t)vtxdist.get(p_id))
 			{
 				grid_key_dx<dim> key = k_it.get();
 

@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_np)
 	size_t bc[] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 
 	// Graph to decompose
-	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,2,0,1,2>(sz,box,bc);
+	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,2,0>(sz,box,bc);
 
 	// Processor graph
 	Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.construct<NO_EDGE,NO_VERTEX_ID,float,2>(sz,box,bc);
@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_p)
 	size_t bc[] = {PERIODIC,PERIODIC,PERIODIC};
 
 	// Graph to decompose
-	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,2,0,1,2>(sz,box,bc);
+	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,2,0>(sz,box,bc);
 
 	// Processor graph
 	Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.construct<NO_EDGE,NO_VERTEX_ID,float,2>(sz,box,bc);
@@ -146,6 +146,10 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_disconnected_subdomains_np)
 	// Vcluster
 	Vcluster & vcl = *global_v_cluster;
 
+	// Test for only 3 processors
+	if (vcl.getProcessingUnits() > 3)
+		return;
+
 	CartesianGraphFactory<2,Graph_CSR<nm_v,nm_e>> g_factory;
 
 	// Cartesian grid
@@ -158,7 +162,7 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_disconnected_subdomains_np)
 	size_t bc[] = {NON_PERIODIC,NON_PERIODIC};
 
 	// Graph to decompose
-	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,1,0,1>(sz,box,bc);
+	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,1,0>(sz,box,bc);
 
 	SimpleRNG rng;
 

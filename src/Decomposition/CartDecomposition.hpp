@@ -12,7 +12,6 @@
 #include <cmath>
 #include "VCluster.hpp"
 #include "Graph/CartesianGraphFactory.hpp"
-#include "Graph/DistCartesianGraphFactory.hpp"
 #include "Decomposition.hpp"
 #include "Vector/map_vector.hpp"
 #include <vector>
@@ -393,6 +392,133 @@ public:
 		}
 	}
 
+
+	/*! It calculate the internal ghost boxes
+	 *
+	 * Example: Processor 10 calculate
+	 * B8_0 B9_0 B9_1 and B5_0
+	 *
+	 *
+	 *
+	 \verbatim
+
++----------------------------------------------------+
+|                                                    |
+|                 Processor 8                        |
+|                 Sub+domain 0                       +-----------------------------------+
+|                                                    |                                   |
+|                                                    |                                   |
+++--------------+---+---------------------------+----+        Processor 9                |
+ |              |   |     B8_0                  |    |        Subdomain 0                |
+ |              +------------------------------------+                                   |
+ |              |   |                           |    |                                   |
+ |              |   |                           |B9_0|                                   |
+ |              | B |    Local processor        |    |                                   |
+ | Processor 5  | 5 |    Subdomain 0            |    |                                   |
+ | Subdomain 0  | _ |                           +----------------------------------------+
+ |              | 0 |                           |    |                                   |
+ |              |   |                           |    |                                   |
+ |              |   |                           |    |        Processor 9                |
+ |              |   |                           |B9_1|        Subdomain 1                |
+ |              |   |                           |    |                                   |
+ |              |   |                           |    |                                   |
+ |              |   |                           |    |                                   |
+ +--------------+---+---------------------------+----+                                   |
+                                                     |                                   |
+                                                     +-----------------------------------+
+
+
+ \endverbatim
+
+       and also
+       G8_0 G9_0 G9_1 G5_0 (External ghost boxes)
+
+      +----------------------------------------------------+
+      |                 Processor 8                        |
+      |                 Subdomain 0                        +-----------------------------------+
+      |                                                    |                                   |
+      |           +---------------------------------------------+                              |
+      |           |         G8_0                           |    |                              |
++-----+---------------+------------------------------------+    |   Processor 9                |
+|                 |   |                                    |    |   Subdomain 0                |
+|                 |   |                                    |G9_0|                              |
+|                 |   |                                    |    |                              |
+|                 |   |                                    |    |                              |
+|                 |   |        Local processor             |    |                              |
+|  Processor 5    |   |        Sub+domain 0                |    |                              |
+|  Subdomain 0    |   |                                    +-----------------------------------+
+|                 |   |                                    |    |                              |
+|                 | G |                                    |    |                              |
+|                 | 5 |                                    |    |   Processor 9                |
+|                 | | |                                    |    |   Subdomain 1                |
+|                 | 0 |                                    |G9_1|                              |
+|                 |   |                                    |    |                              |
+|                 |   |                                    |    |                              |
++---------------------+------------------------------------+    |                              |
+                  |                                        |    |                              |
+                  +----------------------------------------+----+------------------------------+
+
+	 \endverbatim
+
+	 *
+	 *
+	 *
+	 * \param ghost margins for each dimensions (p1 negative part) (p2 positive part)
+	 *
+	 *
+	 \verbatim
+
+	 	 	 	 	 ^ p2[1]
+	 	 	 	 	 |
+	 	 	 	 	 |
+	 	 	 	+----+----+
+	 	 	 	|         |
+	 	 	 	|         |
+	 p1[0]<-----+         +----> p2[0]
+	 	 	 	|         |
+	 	 	 	|         |
+	 	 	 	+----+----+
+	 	 	 	 	 |
+	 	 	 	 	 v  p1[1]
+
+	 \endverbatim
+
+	 *
+	 *
+	 */
+	void calculateGhostBoxes()
+	{
+#ifdef DEBUG
+		// the ghost margins are assumed to be smaller
+		// than one sub-domain
+
+		for (size_t i = 0; i < dim; i++)
+		{
+			if (fabs(ghost.template getLow(i)) >= ss_box.getHigh(i) || ghost.template getHigh(i) >= ss_box.getHigh(i))
+			{
+				std::cerr << "Error " << __FILE__ << ":" << __LINE__  << " : Ghost are bigger than one sub-domain" << "\n";
+			}
+		}
+#endif
+
+		// Intersect all the local sub-domains with the sub-domains of the contiguous processors
+
+		// create the internal structures that store ghost information
+		ie_ghost<dim, T>::create_box_nn_processor_ext(v_cl, ghost, sub_domains, box_nn_processor, *this);
+		ie_ghost<dim, T>::create_box_nn_processor_int(v_cl, ghost, sub_domains, box_nn_processor, *this);
+
+		ie_loc_ghost<dim,T>::create(sub_domains,domain,ghost,bc);
+
+		// get the smallest sub-domain dimension on each direction
+		for (size_t i = 0; i < dim; i++)
+		{
+			if (fabs(ghost.template getLow(i)) >= ss_box.getHigh(i) || ghost.template getHigh(i) >= ss_box.getHigh(i))
+			{
+				std::cerr << "Error " << __FILE__ << ":" << __LINE__  << " : Ghost are bigger than one sub-domain" << "\n";
+			}
+		}
+	}
+
 public:
 
 	static constexpr int dims = dim;
@@ -571,132 +697,6 @@ public:
 		{
 			if (bc[i] == PERIODIC)
 				pt.template get<0>()[i] = openfpm::math::periodic_l(pt.template get<0>()[i],domain.getHigh(i),domain.getLow(i));
-		}
-	}
-
-	/*! It calculate the internal ghost boxes
-	 *
-	 * Example: Processor 10 calculate
-	 * B8_0 B9_0 B9_1 and B5_0
-	 *
-	 *
-	 *
-	 \verbatim
-
-+----------------------------------------------------+
-|                                                    |
-|                 Processor 8                        |
-|                 Sub+domain 0                       +-----------------------------------+
-|                                                    |                                   |
-|                                                    |                                   |
-++--------------+---+---------------------------+----+        Processor 9                |
- |              |   |     B8_0                  |    |        Subdomain 0                |
- |              +------------------------------------+                                   |
- |              |   |                           |    |                                   |
- |              |   |                           |B9_0|                                   |
- |              | B |    Local processor        |    |                                   |
- | Processor 5  | 5 |    Subdomain 0            |    |                                   |
- | Subdomain 0  | _ |                           +----------------------------------------+
- |              | 0 |                           |    |                                   |
- |              |   |                           |    |                                   |
- |              |   |                           |    |        Processor 9                |
- |              |   |                           |B9_1|        Subdomain 1                |
- |              |   |                           |    |                                   |
- |              |   |                           |    |                                   |
- |              |   |                           |    |                                   |
- +--------------+---+---------------------------+----+                                   |
-                                                     |                                   |
-                                                     +-----------------------------------+
-
-
- \endverbatim
-
-       and also
-       G8_0 G9_0 G9_1 G5_0 (External ghost boxes)
-
-      +----------------------------------------------------+
-      |                 Processor 8                        |
-      |                 Subdomain 0                        +-----------------------------------+
-      |                                                    |                                   |
-      |           +---------------------------------------------+                              |
-      |           |         G8_0                           |    |                              |
-+-----+---------------+------------------------------------+    |   Processor 9                |
-|                 |   |                                    |    |   Subdomain 0                |
-|                 |   |                                    |G9_0|                              |
-|                 |   |                                    |    |                              |
-|                 |   |                                    |    |                              |
-|                 |   |        Local processor             |    |                              |
-|  Processor 5    |   |        Sub+domain 0                |    |                              |
-|  Subdomain 0    |   |                                    +-----------------------------------+
-|                 |   |                                    |    |                              |
-|                 | G |                                    |    |                              |
-|                 | 5 |                                    |    |   Processor 9                |
-|                 | | |                                    |    |   Subdomain 1                |
-|                 | 0 |                                    |G9_1|                              |
-|                 |   |                                    |    |                              |
-|                 |   |                                    |    |                              |
-+---------------------+------------------------------------+    |                              |
-                  |                                        |    |                              |
-                  +----------------------------------------+----+------------------------------+
-
-	 \endverbatim
-
-	 *
-	 *
-	 *
-	 * \param ghost margins for each dimensions (p1 negative part) (p2 positive part)
-	 *
-	 *
-	 \verbatim
-
-	 	 	 	 	 ^ p2[1]
-	 	 	 	 	 |
-	 	 	 	 	 |
-	 	 	 	+----+----+
-	 	 	 	|         |
-	 	 	 	|         |
-	 p1[0]<-----+         +----> p2[0]
-	 	 	 	|         |
-	 	 	 	|         |
-	 	 	 	+----+----+
-	 	 	 	 	 |
-	 	 	 	 	 v  p1[1]
-
-	 \endverbatim
-
-	 *
-	 *
-	 */
-	void calculateGhostBoxes()
-	{
-#ifdef DEBUG
-		// the ghost margins are assumed to be smaller
-		// than one sub-domain
-
-		for (size_t i = 0; i < dim; i++)
-		{
-			if (fabs(ghost.template getLow(i)) >= ss_box.getHigh(i) || ghost.template getHigh(i) >= ss_box.getHigh(i))
-			{
-				std::cerr << "Error " << __FILE__ << ":" << __LINE__  << " : Ghost are bigger than one sub-domain" << "\n";
-			}
-		}
-#endif
-
-		// Intersect all the local sub-domains with the sub-domains of the contiguous processors
-
-		// create the internal structures that store ghost information
-		ie_ghost<dim, T>::create_box_nn_processor_ext(v_cl, ghost, sub_domains, box_nn_processor, *this);
-		ie_ghost<dim, T>::create_box_nn_processor_int(v_cl, ghost, sub_domains, box_nn_processor, *this);
-
-		ie_loc_ghost<dim,T>::create(sub_domains,domain,ghost,bc);
-
-		// get the smallest sub-domain dimension on each direction
-		for (size_t i = 0; i < dim; i++)
-		{
-			if (fabs(ghost.template getLow(i)) >= ss_box.getHigh(i) || ghost.template getHigh(i) >= ss_box.getHigh(i))
-			{
-				std::cerr << "Error " << __FILE__ << ":" << __LINE__  << " : Ghost are bigger than one sub-domain" << "\n";
-			}
 		}
 	}
 

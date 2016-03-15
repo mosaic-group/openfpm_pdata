@@ -593,11 +593,11 @@ class DistGraph_CSR
 			}
 
 			// Calculate how much preallocated memory we need to pack all the objects for each vector
-			size_t req = ExtPreAlloc<HeapMemory>::calculateMem(pap_prp);
+			ExtPreAlloc<HeapMemory>::calculateMem(pap_prp);
 
 			// allocate the memory
 			HeapMemory & pmem = *(new HeapMemory());
-			pmem.allocate(req);
+//			pmem.allocate(req);
 			ExtPreAlloc<HeapMemory> & mem = *(new ExtPreAlloc<HeapMemory>(pap_prp, pmem));
 			mem.incRef();
 
@@ -929,7 +929,7 @@ class DistGraph_CSR
 	{
 		for (size_t i = 0; i < fvtxdist.size() - 1; ++i)
 		{
-			if (vid >= fvtxdist.get(i) && vid < fvtxdist.get(i + 1))
+			if (vid >= (size_t)fvtxdist.get(i) && vid < (size_t)fvtxdist.get(i + 1))
 			{
 				return i;
 			}
@@ -1270,13 +1270,18 @@ public:
 	 */
 	auto getVertex(size_t id) -> decltype( v.get(id) )
 	{
-		try
+
+#ifdef SE_CLASS1
+
+		if (glb2loc.find(id) == glb2loc.end())
 		{
-			return v.get(glb2loc.at(id));
-		} catch (const std::out_of_range& oor)
-		{
-			std::cerr << "The vertex with global id " << id << " is not in this sub-graph. Try to call reqVertex(" << id << ") and sync() first.\n";
+			std::cerr << __FILE__ << ":" << __LINE__ << " The vertex with global id " << id << " is not in this sub-graph. Try to call reqVertex(" << id << ") and sync() first.\n";
+			ACTION_ON_ERROR(DIST_GRAPH_ERROR);
 		}
+
+#endif
+
+		return v.get(glb2loc.find(id)->second);
 	}
 
 	/*! \brief Function to access the vertexes

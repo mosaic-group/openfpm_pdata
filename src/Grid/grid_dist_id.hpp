@@ -18,7 +18,7 @@
 #include "Packer_Unpacker/Packer.hpp"
 #include "Packer_Unpacker/Unpacker.hpp"
 
-#define SUB_UNIT_FACTOR 64
+#define GRID_SUB_UNIT_FACTOR 64
 
 
 /*! \brief This is a distributed grid
@@ -480,7 +480,7 @@ class grid_dist_id
 		// Get the number of processor and calculate the number of sub-domain
 		// for decomposition
 		size_t n_proc = v_cl.getProcessingUnits();
-		size_t n_sub = n_proc * SUB_UNIT_FACTOR;
+		size_t n_sub = n_proc * GRID_SUB_UNIT_FACTOR;
 
 		// Calculate the maximum number (before merging) of sub-domain on
 		// each dimension

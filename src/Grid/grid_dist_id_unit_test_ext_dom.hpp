@@ -25,8 +25,11 @@ void Test3D_extended_grid(const Box<3,float> & domain, long int k)
 
 	print_test( "Testing 3D extended grid k<=",k);
 
-	// 3D test
-	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
+	// factor
+	float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+
+	// This test in order to work must have at least one ghost
+	for ( ; (0.01 / factor) > (domain.getHigh(0) - domain.getLow(0) / k) ; k-= (k > 2*big_step)?big_step:small_step )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 3D extended grid k=" << k );
 
@@ -35,9 +38,6 @@ void Test3D_extended_grid(const Box<3,float> & domain, long int k)
 		sz[0] = k;
 		sz[1] = k;
 		sz[2] = k;
-
-		// factor
-		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
 
 		// Ghost
 		Ghost<3,float> g(0.01 / factor);
@@ -86,8 +86,6 @@ void Test3D_extended_grid(const Box<3,float> & domain, long int k)
 		// Get domain iterator
 
 		grid_sm<3,void> info = g_dist2.getGridInfo();
-
-		size_t cnt = 0;
 		auto dom_g3 = g_dist2.getDomainIterator();
 
 		check = false;
@@ -123,15 +121,9 @@ void Test3D_extended_grid(const Box<3,float> & domain, long int k)
 
 			auto key2 = g_dist2.getGKey(key1);
 
-			check &= g_dist2.template get<0>(key1)[0] == key2.get(0);
-			check &= g_dist2.template get<0>(key1)[1] == key2.get(1);
-			check &= g_dist2.template get<0>(key1)[2] == key2.get(2);
-
-			if (check == false)
-			{
-				int debug = 0;
-				debug++;
-			}
+			check &= g_dist2.template get<0>(key1)[0] == (size_t)key2.get(0);
+			check &= g_dist2.template get<0>(key1)[1] == (size_t)key2.get(1);
+			check &= g_dist2.template get<0>(key1)[2] == (size_t)key2.get(2);
 
 			auto key3 = dom_g4.get();
 
@@ -141,20 +133,13 @@ void Test3D_extended_grid(const Box<3,float> & domain, long int k)
 
 			auto key4 = g_dist2.getGKey(key3);
 
-			check &= g_dist2.template get<0>(key3)[0] == key4.get(0);
-			check &= g_dist2.template get<0>(key3)[1] == key4.get(1);
-			check &= g_dist2.template get<0>(key3)[2] == key4.get(2);
-
-			if (check == false)
-			{
-				int debug = 0;
-				debug++;
-			}
+			check &= g_dist2.template get<0>(key3)[0] == (size_t)key4.get(0);
+			check &= g_dist2.template get<0>(key3)[1] == (size_t)key4.get(1);
+			check &= g_dist2.template get<0>(key3)[2] == (size_t)key4.get(2);
 
 			++dom_g4;
 		}
 
-		std::cout << "k=" << k << "\n";
 		BOOST_REQUIRE_EQUAL(check,true);
 	}
 }

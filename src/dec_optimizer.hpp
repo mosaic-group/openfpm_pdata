@@ -672,12 +672,22 @@ public:
 	 */
 	template <unsigned int p_sub, unsigned int p_id> void optimize(Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & lb, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor, const size_t (& bc)[dim])
 	{
+		grid_key_dx<dim> key_seed;
+		key_seed.zero();
+
+		// if processor is -1 call optimize with -1 to do on all processors and exit
+		if (pr_id == -1)
+		{
+			optimize<p_sub,p_id>(key_seed,graph,pr_id,lb,box_nn_processor,bc);
+			return;
+		}
+
 		size_t sub_id = 0;
 
 		// fill the sub decomposition with negative number
 		fill_domain<p_sub>(graph,gh.getBox(),-1);
 
-		grid_key_dx<dim> key_seed = search_seed<p_id,p_sub>(graph,pr_id);
+		key_seed = search_seed<p_id,p_sub>(graph,pr_id);
 
 		while (key_seed.isValid())
 		{
@@ -686,8 +696,6 @@ public:
 
 			// new seed
 			key_seed = search_seed<p_id,p_sub>(graph,pr_id);
-
-			std::cerr << "Key seed " << key_seed.to_string() << "\n";
 		}
 	}
 };

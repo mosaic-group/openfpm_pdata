@@ -125,7 +125,7 @@ class DistParmetis
 		// init basic graph informations and part vector
 		Mg.nvtxs[0] = sub_g.getNVertex();
 		Mg.part = new idx_t[sub_g.getNVertex()];
-		for (int i = 0; i < sub_g.getNVertex(); i++)
+		for (size_t i = 0; i < sub_g.getNVertex(); i++)
 			Mg.part[i] = p_id;
 
 		// create xadj, adjlist, vwgt, adjwgt and vsize

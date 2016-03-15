@@ -154,7 +154,7 @@ public:
 
 		// Create a cartesian grid graph
 		CartesianGraphFactory<dim, Graph_CSR<nm_v, nm_e>> g_factory_part;
-		gp = g_factory_part.template construct<NO_EDGE, nm_v::id, T, dim - 1, 0, 1, 2>(gr.getSize(), domain, bc);
+		gp = g_factory_part.template construct<NO_EDGE, nm_v::id, T, dim - 1, 0>(gr.getSize(), domain, bc);
 
 		// Init to 0.0 axis z (to fix in graphFactory)
 		if (dim < 3)

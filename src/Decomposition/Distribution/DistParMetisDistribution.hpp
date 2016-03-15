@@ -92,7 +92,7 @@ public:
 
 		//! Create sub graph
 		DistGraphFactory<dim, DistGraph_CSR<nm_v, nm_e>> dist_g_factory;
-		g = dist_g_factory.template construct<NO_EDGE, T, dim - 1, 0, 1, 2>(gr.getSize(), domain);
+		g = dist_g_factory.template construct<NO_EDGE, T, dim - 1, 0>(gr.getSize(), domain);
 		g.getDecompositionVector(vtxdist);
 
 		if (dim == 2)
@@ -125,7 +125,7 @@ public:
 
 		for (size_t i = 0, j = g.firstId(); i < g.getNVertex() && j <= g.lastId(); i++, j++)
 		{
-			if (partition[i] != v_cl.getProcessUnitID())
+			if ((size_t)partition[i] != v_cl.getProcessUnitID())
 				g.q_move(g.nodeById(j), partition[i]);
 		}
 		g.redistribute();
@@ -150,7 +150,7 @@ public:
 
 		for (size_t i = 0, j = g.firstId(); i < g.getNVertex() && j <= g.lastId(); i++, j++)
 		{
-			if (partition[i] != v_cl.getProcessUnitID())
+			if ((size_t)partition[i] != v_cl.getProcessUnitID())
 				g.q_move(g.nodeById(j), partition[i]);
 		}
 		g.redistribute();

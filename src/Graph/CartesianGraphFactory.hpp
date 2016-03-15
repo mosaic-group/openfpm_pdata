@@ -204,8 +204,14 @@ public:
 	void operator()(T& t) const
 	{
 		typedef typename boost::fusion::result_of::at<v, boost::mpl::int_<0>>::type t_val;
+		typedef typename boost::mpl::at<typename G_v::T_type::type,t_val>::type s_type;
 
-		g_v.template get<t_val::value>()[T::value] = gk.get(T::value) * static_cast<float>(szd[T::value]);
+		for (size_t i = 0 ; i < std::extent<s_type>::value ; i++)
+			g_v.template get<t_val::value>()[i] = 0.0;
+
+		for (size_t i = 0 ; i < dim ; i++)
+			g_v.template get<t_val::value>()[i] = gk.get(i) * static_cast<float>(szd[i]);
+
 		fill_id<dim, G_v, lin_id>::fill(g_v, gk, gs);
 	}
 };

@@ -6,7 +6,7 @@
 #include "Packer_Unpacker/Packer.hpp"
 #include "Packer_Unpacker/Unpacker.hpp"
 
-#define GS_SIZE 4
+#define DGRAPH_GS_SIZE 4
 
 struct vx
 {
@@ -133,10 +133,10 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use)
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
 	if(vcl.getProcessingUnits() != 4)
-	return;
+		return;
 
 	//! Cartesian grid
-	size_t sz[2] = { GS_SIZE, GS_SIZE };
+	size_t sz[2] = { DGRAPH_GS_SIZE, DGRAPH_GS_SIZE };
 
 	//! Box
 	Box<2, float> box( { 0.0, 0.0 }, { 1.0, 1.0 });
@@ -192,52 +192,52 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use)
 
 	if(vcl.getProcessUnitID() == 0)
 	{
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(0), 0);
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(1), 1);
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(2), 2);
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(3), 3);
-		BOOST_REQUIRE_EQUAL(gd.getNChilds(0), 3);
-		BOOST_REQUIRE_EQUAL(gd.getChild(0,0), 1);
-		BOOST_REQUIRE_EQUAL(gd.getChild(0,1), 14);
-		BOOST_REQUIRE_EQUAL(gd.getChild(0,2), 4);
-		BOOST_REQUIRE_EQUAL(gd.getNChilds(1), 4);
-		BOOST_REQUIRE_EQUAL(gd.getChild(1,0), 2);
-		BOOST_REQUIRE_EQUAL(gd.getChild(1,1), 0);
-		BOOST_REQUIRE_EQUAL(gd.getChild(1,2), 15);
-		BOOST_REQUIRE_EQUAL(gd.getChild(1,3), 5);
-		BOOST_REQUIRE_EQUAL(gd.getNChilds(2), 4);
-		BOOST_REQUIRE_EQUAL(gd.getChild(2,0), 3);
-		BOOST_REQUIRE_EQUAL(gd.getChild(2,1), 1);
-		BOOST_REQUIRE_EQUAL(gd.getChild(2,2), 8);
-		BOOST_REQUIRE_EQUAL(gd.getChild(2,3), 6);
-		BOOST_REQUIRE_EQUAL(gd.getNChilds(3), 3);
-		BOOST_REQUIRE_EQUAL(gd.getChild(3,0), 2);
-		BOOST_REQUIRE_EQUAL(gd.getChild(3,1), 9);
-		BOOST_REQUIRE_EQUAL(gd.getChild(3,2), 7);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(0), 0ul);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(1), 1ul);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(2), 2ul);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(3), 3ul);
+		BOOST_REQUIRE_EQUAL(gd.getNChilds(0), 3ul);
+		BOOST_REQUIRE_EQUAL(gd.getChild(0,0), 1ul);
+		BOOST_REQUIRE_EQUAL(gd.getChild(0,1), 14ul);
+		BOOST_REQUIRE_EQUAL(gd.getChild(0,2), 4ul);
+		BOOST_REQUIRE_EQUAL(gd.getNChilds(1), 4ul);
+		BOOST_REQUIRE_EQUAL(gd.getChild(1,0), 2ul);
+		BOOST_REQUIRE_EQUAL(gd.getChild(1,1), 0ul);
+		BOOST_REQUIRE_EQUAL(gd.getChild(1,2), 15ul);
+		BOOST_REQUIRE_EQUAL(gd.getChild(1,3), 5ul);
+		BOOST_REQUIRE_EQUAL(gd.getNChilds(2), 4ul);
+		BOOST_REQUIRE_EQUAL(gd.getChild(2,0), 3ul);
+		BOOST_REQUIRE_EQUAL(gd.getChild(2,1), 1ul);
+		BOOST_REQUIRE_EQUAL(gd.getChild(2,2), 8ul);
+		BOOST_REQUIRE_EQUAL(gd.getChild(2,3), 6ul);
+		BOOST_REQUIRE_EQUAL(gd.getNChilds(3), 3ul);
+		BOOST_REQUIRE_EQUAL(gd.getChild(3,0), 2ul);
+		BOOST_REQUIRE_EQUAL(gd.getChild(3,1), 9ul);
+		BOOST_REQUIRE_EQUAL(gd.getChild(3,2), 7ul);
 	}
 
 	if(vcl.getProcessUnitID() == 1)
 	{
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(0), 4);
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(1), 5);
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(2), 6);
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(3), 7);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(0), 4ul);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(1), 5ul);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(2), 6ul);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(3), 7ul);
 	}
 
 	if(vcl.getProcessUnitID() == 2)
 	{
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(0), 8);
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(1), 9);
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(2), 10);
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(3), 11);
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(4), 12);
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(5), 13);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(0), 8ul);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(1), 9ul);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(2), 10ul);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(3), 11ul);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(4), 12ul);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(5), 13ul);
 	}
 
 	if(vcl.getProcessUnitID() == 3)
 	{
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(0), 14);
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(1), 15);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(0), 14ul);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(1), 15ul);
 	}
 }
 
@@ -247,7 +247,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_redistribution)
 	Vcluster & vcl = *global_v_cluster;
 
 	if(vcl.getProcessingUnits() != 4)
-	return;
+		return;
 
 	//! Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
@@ -326,131 +326,6 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_redistribution)
 
 }
 
-BOOST_AUTO_TEST_CASE( dist_map_graph_use_cartesian)
-{
-	//! Vcluster
-	Vcluster & vcl = *global_v_cluster;
-
-//	if(vcl.getProcessingUnits() != 3)
-//	return;
-
-	// non-periodic boundary condition
-	size_t bc[3] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
-
-	//! [Create CartDecomposition]
-	CartDecomposition<3, float> dec(vcl);
-
-	// Physical domain
-	Box<3, float> box( { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
-	size_t div[3] = {8,8,8};
-
-	// Grid size and info
-	size_t gsz[3] = {8,8,8};
-	grid_sm<3,void> g_sm(gsz);
-
-	// Define ghost
-	Ghost<3, float> g(0.01);
-
-	// Decompose
-	dec.setParameters(div, box, bc, g);
-	dec.decompose();
-
-	grid_dist_id_iterator_dec<CartDecomposition<3,float>> it_dec(dec,gsz);
-
-	size_t cnt = 0;
-	while (it_dec.isNext())
-	{
-		cnt++;
-		++it_dec;
-	}
-
-	openfpm::vector<size_t> v_cnt(vcl.getProcessingUnits());
-
-	// Sent and receive the size of each subgraph
-	vcl.allGather(cnt, v_cnt);
-	vcl.execute();
-
-	cnt = 0;
-	for (long int i = 0; i <= ((long int)vcl.getProcessUnitID()) - 1 ; ++i)
-		cnt += v_cnt.get(i);
-
-	// count the points
-
-	//! Distributed graph
-	DistGraph_CSR<aggregate<size_t[3]>, aggregate<size_t>> dg;
-
-	grid_dist_id_iterator_dec<CartDecomposition<3,float>> it_dec2(dec,gsz);
-	while (it_dec2.isNext())
-	{
-		auto key = it_dec2.get();
-
-		aggregate<size_t[3]> v;
-
-		v.template get<0>()[0] = key.get(0);
-		v.template get<0>()[1] = key.get(1);
-		v.template get<0>()[2] = key.get(2);
-
-		size_t gid = g_sm.LinId(key);
-		dg.add_vertex(v, gid, cnt);
-
-		cnt++;
-		++it_dec2;
-	}
-
-	dg.init();
-
-	// we ask for some random vertex
-
-	std::default_random_engine rg;
-	std::uniform_int_distribution<size_t> d(0,g_sm.size()-1);
-
-	openfpm::vector<size_t> v_req;
-
-/*	for (size_t i = 0 ; i < 16 ; i++)
-	{
-		size_t v = d(rg);*/
-
-		if (vcl.getProcessUnitID() == 0)
-			dg.reqVertex(450);
-
-/*		dg.reqVertex(v);
-	}*/
-
-	dg.sync();
-
-	if (vcl.getProcessUnitID() == 0)
-	{
-		grid_key_dx<3> key;
-		// get the position information
-		key.set_d(0,dg.getVertex(450).template get<0>()[0]);
-		key.set_d(1,dg.getVertex(450).template get<0>()[1]);
-		key.set_d(2,dg.getVertex(450).template get<0>()[2]);
-
-		size_t lin_id = g_sm.LinId(key);
-
-	//	BOOST_REQUIRE_EQUAL(lin_id,v_req.get(i));
-
-		std::cout << "Error: " << "   " << lin_id << "    " << key.to_string() << "\n";
-	}
-
-/*	for (size_t i = 0 ; i < 16 ; i++)
-	{
-		grid_key_dx<3> key;
-		// get the position information
-		key.set_d(0,dg.getVertex(v_req.get(i)).template get<0>()[0]);
-		key.set_d(1,dg.getVertex(v_req.get(i)).template get<0>()[1]);
-		key.set_d(2,dg.getVertex(v_req.get(i)).template get<0>()[2]);
-
-		size_t lin_id = g_sm.LinId(key);
-
-	//	BOOST_REQUIRE_EQUAL(lin_id,v_req.get(i));
-
-		std::cout << "Error: " << i << "   " << lin_id << "  " << v_req.get(i) << "\n";
-	}*/
-
-/*	if (vcl.getProcessUnitID() == 0)
-		std::cout << "Error: " << i << "   " << lin_id << "  " << v_req.get(i) << "\n";*/
-}
 
 BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)
 {
@@ -458,7 +333,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)
 	Vcluster & vcl = *global_v_cluster;
 
 	if(vcl.getProcessingUnits() != 4)
-	return;
+		return;
 
 	// Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
@@ -549,7 +424,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)
 	gd.sync();
 
 	if(vcl.getProcessUnitID() == 0)
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(5), 5);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(5), 5ul);
 
 	gd.deleteGhosts();
 
@@ -617,7 +492,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_multi_free_add)
 	Vcluster & vcl = *global_v_cluster;
 
 	if(vcl.getProcessingUnits() != 4)
-	return;
+		return;
 
 	// Initialize the global VCluster
 	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc, &boost::unit_test::framework::master_test_suite().argv);
@@ -672,7 +547,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_multi_free_add)
 
 	gd.sync();
 
-	BOOST_REQUIRE_EQUAL(gd.getVertexId(gd.getNVertex()-1), 15);
+	BOOST_REQUIRE_EQUAL(gd.getVertexId(gd.getNVertex()-1), 15ul);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

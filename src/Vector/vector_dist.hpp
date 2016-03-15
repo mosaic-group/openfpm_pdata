@@ -1035,8 +1035,6 @@ public:
 		// extend by the ghost
 		pbox.enlarge(enlarge);
 
-//		Box<dim, St> cell_box;
-
 		size_t div[dim];
 
 		// Calculate the division array and the cell box
@@ -1273,7 +1271,7 @@ public:
 	 * \return if the file has been written correctly
 	 *
 	 */
-	inline bool write(std::string out, int opt = NO_GHOST | VTK_WRITER)
+	inline bool write(std::string out, int opt = NO_GHOST | CSV_WRITER)
 	{
 
 		if ((opt & 0xFFFF0000) == CSV_WRITER)
@@ -1286,7 +1284,7 @@ public:
 			// Write the CSV
 			return csv_writer.write(output,v_pos,v_prp);
 		}
-		else if ((opt & 0xFFFF0000) == VTK_WRITER)
+/*		else if ((opt & 0xFFFF0000) == VTK_WRITER)
 		{
 			// CSVWriter test
 			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim,St>>, openfpm::vector<prop>>, VECTOR_POINTS> vtk_writer;
@@ -1299,7 +1297,7 @@ public:
 		else if ((opt & 0xFFFF0000) == H5PART_WRITER)
 		{
 
-		}
+		}*/
 	}
 
 	/*! \brief Output particle position and properties

@@ -250,7 +250,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 		++g_it;
 	}
 
-	BOOST_REQUIRE(n_part != 0);
+	if (v_cl.getProcessingUnits() > 1)
+	{
+		BOOST_REQUIRE(n_part != 0);
+	}
 
     CellDecomposer_sm<2,float> cd(SpaceBox<2,float>(box),g_div,0);
 
