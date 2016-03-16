@@ -74,26 +74,29 @@ function remove_old()
     fi
     
     ## Check the installed version of the dependencies
-   
-    cat $1/BOOST/include/boost/version.hpp > /dev/null
-    if [ $? -eq 0 ]; then
+  
+    if [ -d $1/BOOST ]; then
     	is_update=$(cat $1/BOOST/include/boost/version.hpp | grep "#define BOOST_VERSION 106000")
     	if [ x"$is_update" == x"" ]; then
-    		echo "\033[1;34;5m New boost version, removing the old one \033[0m"
-		sleep 3
+                echo -e "\033[1;34;5m  --------------------------------------------------------------------------- \033[0m"
+                echo -e "\033[1;34;5m  Boost has been updated to 1.60, the component will be updated automatically \033[0m"
+                echo -e "\033[1;34;5m  --------------------------------------------------------------------------- \033[0m"
+		sleep 5
         	rm -rf $1/BOOST/include
         	rm -rf $1/BOOST/lib
 		rm -rf $1/BOOST
     	fi
     fi
 
-    ##
-    cat $1/METIS/version
-    if [ $? -eq 0 ]; then
+    ## check if the METIS directory exist and the METIS version installed
+
+    if [ -d $1/METIS ]; then
     	version=$(cat $1/METIS/version)
     	if [ x"$version" != x"1"  ]; then
-		echo -e "\033[1;34;5m  New METIS version, removing the old one \033[0m"
-		sleep 3
+                echo -e "\033[1;34;5m  ------------------------------------------------------------------- \033[0m"
+		echo -e "\033[1;34;5m  METIS has been updated, the component will be updated automatically \033[0m"
+		echo -e "\033[1;34;5m  ------------------------------------------------------------------- \033[0m"
+		sleep 5
 		rm -rf $1/METIS/include
         	rm -rf $1/METIS/lib
         	rm -rf $1/METIS

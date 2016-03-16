@@ -7,6 +7,9 @@ if [ -d "$1/METIS" ]; then
   exit 0
 fi
 
+## Remove old download
+rm -rf metis-5.1.0
+
 wget http://ppmcore.mpi-cbg.de/upload/metis-5.1.0.tar.gz
 tar -xf metis-5.1.0.tar.gz
 cd metis-5.1.0
@@ -25,4 +28,7 @@ fi
 make -j 4
 mkdir $1/METIS
 make install
+
+# Mark the installation
+echo 1 > $1/METIS/version
 

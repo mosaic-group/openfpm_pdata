@@ -351,6 +351,14 @@ if [ $HDF5_installed -eq 1 ]; then
   echo -e "  HDF5 has been installed into: \033[1m $i_dir/HDF5 \033[0m"
   echo ""
 fi
+if [ $PARMETIS_installed -eq 1 ]; then
+  echo ""
+  echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
+  echo -e "\033[1;34;5m ------------- PARMETIS ---------------- \033[0m"
+  echo -e "  PARMETIS has been installed into: \033[1m $i_dir/PARMETIS \033[0m"
+  echo ""
+fi
+
 echo ""
 echo ""
 if [ $conf_err -ne 0 ]; then
