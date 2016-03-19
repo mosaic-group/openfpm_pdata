@@ -100,7 +100,21 @@ function remove_old()
 		rm -rf $1/METIS/include
         	rm -rf $1/METIS/lib
         	rm -rf $1/METIS
+		fi
 	fi
+	
+    if [ -d $1/PARMETIS ]; then
+        version=$(cat $1/PARMETIS/version)
+        if [ x"$version" != x"1"  ]; then
+                echo -e "\033[1;34;5m  ---------------------------------------------------------------------- \033[0m"
+                echo -e "\033[1;34;5m  PARMETIS has been updated, the component will be updated automatically \033[0m"
+                echo -e "\033[1;34;5m  ---------------------------------------------------------------------- \033[0m"
+                sleep 5
+                rm -rf $1/PARMETIS/include
+                rm -rf $1/PARMETIS/lib
+                rm -rf $1/PARMETIS/bin
+                rm -rf $1/PARMETIS
+        fi
     fi
 }
 

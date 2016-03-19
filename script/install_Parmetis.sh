@@ -19,3 +19,6 @@ fi
 mkdir $1/PARMETIS
 make install
 
+# Mark the installation
+echo 1 > $1/PARMETIS/version
+
