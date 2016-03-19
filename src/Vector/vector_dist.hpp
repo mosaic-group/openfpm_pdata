@@ -1245,7 +1245,7 @@ public:
 
 		for (size_t i = 0; i < dec.getNSubSubDomains(); i++)
 		{
-			dec.setSubSubDomainComputationCost(i, 0);
+			dec.setSubSubDomainComputationCost(i, 1);
 		}
 
 		auto it = getDomainIterator();
@@ -1255,8 +1255,6 @@ public:
 			size_t v = cdsm.getCell(this->template getPos<0>(it.get()));
 
 			dec.addComputationCost(v, 1);
-
-			//std::cout << v_cl.getProcessUnitID() << " -> " << v << " : " << dec.getDistribution().getSubSubDomainComputationCost(v) << "\n";
 
 			++it;
 		}

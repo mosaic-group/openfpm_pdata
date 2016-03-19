@@ -720,9 +720,6 @@ public:
 		cart.domain = domain;
 		std::copy(spacing,spacing+3,cart.spacing);
 
-		//! Runtime virtual cluster
-		cart.v_cl = v_cl;
-
 		cart.bbox = bbox;
 		cart.ss_box = ss_box;
 		cart.ghost = g;
@@ -762,9 +759,6 @@ public:
 		cart.domain = domain;
 		std::copy(spacing,spacing+3,cart.spacing);
 
-		//! Runtime virtual cluster
-		cart.v_cl = v_cl;
-
 		cart.ghost = ghost;
 
 		cart.bbox = bbox;
@@ -794,9 +788,6 @@ public:
 		cd = cart.cd;
 		domain = cart.domain;
 		std::copy(cart.spacing,cart.spacing+3,spacing);
-
-		//! Runtime virtual cluster
-		v_cl = cart.v_cl;
 
 		ghost = cart.ghost;
 

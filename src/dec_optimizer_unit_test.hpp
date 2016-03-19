@@ -192,13 +192,12 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_disconnected_subdomains_np)
 	std::stringstream str_g;
 	str_g << "dec_optimizer_disc_graph" << vcl.getProcessUnitID() << ".vtk";
 	std::stringstream str_gt;
-	str_gt << "dec_optimizer_disc_graph" << vcl.getProcessUnitID() << "_test.vtk";
+	str_gt << "src/Decomposition/Distribution/test_data/dec_optimizer_disc_graph" << vcl.getProcessUnitID() << "_test.vtk";
 
 	std::stringstream str_s;
 	str_s << "dec_optimizer_disc_sub" << vcl.getProcessUnitID() << ".vtk";
 	std::stringstream str_st;
-	str_st << "dec_optimizer_disc_sub" << vcl.getProcessUnitID() << "_test.vtk";
-
+	str_st << "src/Decomposition/Distribution/test_data/dec_optimizer_disc_sub" << vcl.getProcessUnitID() << "_test.vtk";
 
 	VTKWriter<Graph_CSR<nm_v,nm_e>,VTK_GRAPH> wrt(g);
 	wrt.write("dec_optimizer_disc_graph" + std::to_string(vcl.getProcessUnitID()) + ".vtk");

@@ -573,16 +573,12 @@ public:
 	 */
 	void write(const std::string & file)
 	{
-		//f (v_cl.getProcessUnitID() == 0)
-		//{
-			VTKWriter<Graph_CSR<nm_v, nm_e>, VTK_GRAPH> gv2(gp);
-			gv2.write(std::to_string(v_cl.getProcessUnitID()) + file);
-		//}
+		VTKWriter<Graph_CSR<nm_v, nm_e>, VTK_GRAPH> gv2(gp);
+		gv2.write(std::to_string(v_cl.getProcessUnitID()) + "_" + file + ".vtk");
 	}
 
 	const ParMetisDistribution<dim,T> & operator=(const ParMetisDistribution<dim,T> & dist)
 	{
-		v_cl = dist.v_cl;
 		gr = dist.gr;
 		domain = dist.domain;
 		gp = dist.gp;

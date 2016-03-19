@@ -231,9 +231,6 @@ public:
 		// spacing does not change
 		std::copy(dec.spacing,dec.spacing+3,this->spacing);
 
-		//! Runtime virtual cluster
-		this->v_cl = dec.v_cl;
-
 		this->ghost = g;
 		this->dist = dec.dist;
 

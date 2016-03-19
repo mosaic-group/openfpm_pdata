@@ -74,7 +74,7 @@ class nn_prcs
 
 	/*! \brief add sub-domains to processor for a near processor i
 	 *
-	 * \param i near processor
+	 * \param		v_cl = nnp.v_cl; i near processor
 	 * \param bx Box to add
 	 * \param c from which sector the sub-domain come from
 	 *
@@ -230,7 +230,6 @@ public:
 	 */
 	nn_prcs<dim,T> & operator=(const nn_prcs<dim,T> & nnp)
 	{
-		v_cl = nnp.v_cl;
 		nn_processors = nnp.nn_processors;
 		nn_processor_subdomains = nnp.nn_processor_subdomains;
 		proc_adj_box = nnp.proc_adj_box;
@@ -246,7 +245,6 @@ public:
 	 */
 	nn_prcs<dim,T> & operator=(nn_prcs<dim,T> && nnp)
 	{
-		v_cl = nnp.v_cl;
 		nn_processors.swap(nnp.nn_processors);
 		nn_processor_subdomains.swap(nnp.nn_processor_subdomains);
 		proc_adj_box.swap(nnp.proc_adj_box);

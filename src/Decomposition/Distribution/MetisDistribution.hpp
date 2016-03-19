@@ -449,7 +449,6 @@ public:
 			check_valid(&mt,8);
 			check_valid(this,8);
 #endif
-		this->v_cl = mt.v_cl;
 		this->gr = mt.gr;
 		this->domain = mt.domain;
 		this->gp = mt.gp;
@@ -467,7 +466,6 @@ public:
 			check_valid(mt);
 			check_valid(this,8);
 #endif
-		this->v_cl = mt.v_cl;
 		this->gr = mt.gr;
 		this->domain = mt.domain;
 		this->gp.swap(mt.gp);

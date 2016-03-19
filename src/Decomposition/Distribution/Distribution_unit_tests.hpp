@@ -261,12 +261,12 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 
 	//! [Initialize a ParMetis Cartesian graph and decompose]
 
-	if (v_cl.getProcessingUnits() == 0)
+	if (v_cl.getProcessUnitID() == 0)
 	{
 		// write the first decomposition
-		pmet_dist.write("vtk_parmetis_distribution_0.vtk");
+		pmet_dist.write("vtk_parmetis_distribution_0");
 
-		bool test = compare("vtk_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_parmetis_distribution_0_test.vtk");
+		bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_vtk_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/" + std::to_string(v_cl.getProcessUnitID()) + "_vtk_parmetis_distribution_0_test.vtk");
 		BOOST_REQUIRE_EQUAL(true,test);
 	}
 
@@ -297,10 +297,10 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 			{
 				std::stringstream str;
 				str << "vtk_parmetis_distribution_" << iter;
-				pmet_dist.write(str.str() + ".vtk");
+				pmet_dist.write(str.str());
 
 				// Check
-				bool test = compare(str.str() + ".vtk",std::string("src/Decomposition/Distribution/test_data/") + str.str() + "_test.vtk");
+				bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_" + str.str() + ".vtk", "src/Decomposition/Distribution/test_data/" + std::to_string(v_cl.getProcessUnitID()) + "_" + str.str() + "_test.vtk");
 				BOOST_REQUIRE_EQUAL(true,test);
 			}
 		}
@@ -344,7 +344,7 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 	//! [Initialize a ParMetis Cartesian graph and decompose]
 
 	// write the first decomposition
-	pmet_dist.write("vtk_dist_parmetis_distribution_0.vtk");
+	pmet_dist.write("vtk_dist_parmetis_distribution_0");
 
 	if (v_cl.getProcessingUnits() == 0)
 	{
@@ -377,7 +377,7 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 
 			std::stringstream str;
 			str << "vtk_dist_parmetis_distribution_" << iter;
-			pmet_dist.write(str.str() + ".vtk");
+			pmet_dist.write(str.str());
 
 			// Check
 			if (v_cl.getProcessUnitID() == 0)

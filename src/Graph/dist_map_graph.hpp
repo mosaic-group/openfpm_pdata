@@ -1923,7 +1923,6 @@ public:
 		e_invalid.swap(g.e_invalid);
 		vtxdist = g.vtxdist;
 		fvtxdist = g.fvtxdist;
-		vcl = g.vcl;
 	}
 
 	/*! \brief Swap the memory of g with this graph
@@ -1948,7 +1947,6 @@ public:
 		e_invalid.swap(g.e_invalid);
 		vtxdist = g.vtxdist;
 		fvtxdist = g.fvtxdist;
-		vcl = g.vcl;
 	}
 
 	/*! \brief Get the vertex iterator
