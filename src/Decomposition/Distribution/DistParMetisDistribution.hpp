@@ -321,15 +321,13 @@ public:
 		return g.getNChilds(id);
 	}
 
-	/*! \brief Print current graph and save it to file with name test_graph_[id]
-	 *
-	 * \param id to attach to the filename
+	/*! \brief Print current graph and save it to file
 	 *
 	 */
 	void write(const std::string & file)
 	{
 		VTKWriter<DistGraph_CSR<nm_v, nm_e>, DIST_GRAPH> gv2(g);
-		gv2.write(file);
+		gv2.write(std::to_string(file + ".vtk"));
 	}
 
 	const DistParMetisDistribution<dim, T> & operator=(const DistParMetisDistribution<dim, T> & dist)
