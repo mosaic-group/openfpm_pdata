@@ -348,7 +348,7 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 
 	if (v_cl.getProcessUnitID() == 0)
 	{
-		bool test = compare("vtk_dist_parmetis_distribution_0","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_test.vtk");
+		bool test = compare("vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_test.vtk");
 		BOOST_REQUIRE_EQUAL(true,test);
 	}
 
