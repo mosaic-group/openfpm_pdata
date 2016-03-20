@@ -389,8 +389,6 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 	}
 
 	//! [refine with dist_parmetis the decomposition]
-
-	BOOST_REQUIRE_EQUAL(sizeof(DistParMetisDistribution<3,float>),1520ul);
 }
 
 void print_test_v(std::string test, size_t sz)
