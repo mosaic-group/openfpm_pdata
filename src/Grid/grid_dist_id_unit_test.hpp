@@ -14,6 +14,89 @@ void print_test(std::string test, size_t sz)
 		std::cout << test << " " << sz << "\n";
 }
 
+BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter3D_test)
+{
+	// Domain
+	Box<3,float> domain({-0.3,-0.3,-0.3},{1.0,1.0,1.0});
+
+	// Initialize the global VCluster
+	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
+
+	Vcluster & v_cl = *global_v_cluster;
+
+	// Skip this test on big scale
+	if (v_cl.getProcessingUnits() >= 32)
+		return;
+
+	// Test several grid dimensions
+
+	long int k = 293;
+	long int big_step = k / 30;
+	big_step = (big_step == 0)?1:big_step;
+	long int small_step = 21;
+
+	print_test( "Testing 3D grid converter k<=",k);
+
+	// 3D test
+	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
+	{
+		BOOST_TEST_CHECKPOINT( "Testing 3D grid converter k=" << k );
+
+		// grid size
+		size_t sz[3];
+		sz[0] = k;
+		sz[1] = k;
+		sz[2] = k;
+
+		// Ghost
+		Ghost<3,float> g(0.01);
+
+		// Distributed grid with id decomposition
+		grid_dist_id<3, float, scalar<float>, CartDecomposition<3,float>> g_dist(sz,domain,g);
+
+		// get the decomposition
+		auto & dec = g_dist.getDecomposition();
+
+		// check the consistency of the decomposition
+		bool val = dec.check_consistency();
+		BOOST_REQUIRE_EQUAL(val,true);
+
+		// for each local volume
+		// Get the number of local grid needed
+		size_t n_grid = dec.getNSubDomain();
+
+		size_t vol = 0;
+
+		// vector of boxes
+		openfpm::vector<Box<3,size_t>> vb;
+
+		// Allocate the grids
+		for (size_t i = 0 ; i < n_grid ; i++)
+		{
+			// Get the local hyper-cube
+			SpaceBox<3,float> sub = dec.getSubDomain(i);
+			sub -= domain.getP1();
+
+			Box<3,size_t> g_box = g_dist.getCellDecomposer().convertDomainSpaceIntoGridUnits(sub);
+
+			vb.add(g_box);
+
+			vol += g_box.getVolumeKey();
+		}
+
+		// Create a writer and write
+		VTKWriter<openfpm::vector<Box<3,size_t>>,VECTOR_BOX> vtk_box2;
+		vtk_box2.add(vb);
+		vtk_box2.write(std::to_string(v_cl.getProcessUnitID()) + "vtk_box_3D.vtk");
+
+		v_cl.sum(vol);
+		v_cl.execute();
+
+		BOOST_REQUIRE_EQUAL(vol,sz[0]*sz[1]*sz[2]);
+	}
+}
+
+
 BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter_test)
 {
 	// Domain
@@ -28,11 +111,9 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter_test)
 	if (v_cl.getProcessingUnits() >= 32)
 		return;
 
-	// Test several grid dimensions
-
 	for (size_t k = 1024 ; k >= 2 ; k--)
 	{
-		BOOST_TEST_CHECKPOINT( "Testing grid k=" << k );
+		BOOST_TEST_CHECKPOINT( "Testing grid converter 3D k=" << k );
 
 		// grid size
 		size_t sz[2];

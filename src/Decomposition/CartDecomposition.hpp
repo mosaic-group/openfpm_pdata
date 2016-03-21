@@ -152,6 +152,48 @@ protected:
 	// Receive counter
 	size_t recv_cnt;
 
+	/*! \brief It convert the box from the domain decomposition into sub-domain
+	 *
+	 * The decomposition box from the domain-decomposition contain the box in integer
+	 * coordinates
+	 *
+	 * \param loc_box local box
+	 *
+	 * \return the corresponding sib-domain
+	 *
+	 */
+	SpaceBox<dim,T> convertDecBoxIntoSubDomain(const SpaceBox<dim,size_t> & loc_box)
+	{
+		// A point with all coordinate to one
+		size_t one[dim];
+		for (size_t i = 0 ; i < dim ; i++)	{one[i] = 1;}
+
+		SpaceBox<dim, size_t> sub_dc = loc_box;
+		SpaceBox<dim, size_t> sub_dce = sub_dc;
+		sub_dce.expand(one);
+		SpaceBox<dim, T> sub_d(sub_dce);
+		sub_d.mul(spacing);
+		sub_d += domain.getP1();
+
+		// we add the
+
+		// Fixing sub-domains to cover all the domain
+
+		// Fixing sub_d
+		// if (loc_box) is at the boundary we have to ensure that the box span the full
+		// domain (avoiding rounding off error)
+		for (size_t i = 0; i < dim; i++)
+		{
+			if (sub_dc.getHigh(i) == cd.getGrid().size(i) - 1)
+				sub_d.setHigh(i, domain.getHigh(i));
+
+			if (sub_dc.getLow(i) == 0)
+				sub_d.setLow(i,domain.getLow(i));
+		}
+
+		return sub_d;
+	}
+
 protected:
 
 
@@ -199,67 +241,18 @@ public:
 		// optimize the decomposition
 		d_o.template optimize<nm_v::sub_id, nm_v::proc_id>(dist.getGraph(), p_id, loc_box, box_nn_processor,bc);
 
+		// reset ss_box
+		ss_box = domain;
+		ss_box -= ss_box.getP1();
+
 		// Initialize ss_box and bbox
 		if (loc_box.size() >= 0)
-		{
-			SpaceBox<dim, size_t> sub_dc = loc_box.get(0);
-			SpaceBox<dim, T> sub_d(sub_dc);
-			sub_d.mul(spacing);
-			sub_d.expand(spacing);
-			sub_d += domain.getP1();
-
-			// we add the
-
-			// Fixing sub-domains to cover all the domain
-
-			// Fixing sub_d
-			// if (loc_box) is at the boundary we have to ensure that the box span the full
-			// domain (avoiding rounding off error)
-			for (size_t i = 0; i < dim; i++)
-			{
-				if (sub_dc.getHigh(i) == cd.getGrid().size(i) - 1)
-					sub_d.setHigh(i, domain.getHigh(i));
-
-				if (sub_dc.getLow(i) == 0)
-					sub_d.setLow(i,domain.getLow(i));
-			}
-
-			// add the sub-domain
-			sub_domains.add(sub_d);
-
-			ss_box = sub_d;
-			ss_box -= ss_box.getP1();
-			bbox = sub_d;
-		}
-
-/*		if (loc_box.size())
-		bbox.zero();
-		ss_box = domain;*/
+			bbox = convertDecBoxIntoSubDomain(loc_box.get(0));
 
 		// convert into sub-domain
-		for (size_t s = 1; s < loc_box.size(); s++)
+		for (size_t s = 0; s < loc_box.size(); s++)
 		{
-			SpaceBox<dim, size_t> sub_dc = loc_box.get(s);
-			SpaceBox<dim, T> sub_d(sub_dc);
-
-			// re-scale and add spacing (the end is the starting point of the next domain + spacing)
-			sub_d.mul(spacing);
-			sub_d.expand(spacing);
-			sub_d += domain.getP1();
-
-			// Fixing sub-domains to cover all the domain
-
-			// Fixing sub_d
-			// if (loc_box) is a the boundary we have to ensure that the box span the full
-			// domain (avoiding rounding off error)
-			for (size_t i = 0; i < dim; i++)
-			{
-				if (sub_dc.getHigh(i) == cd.getGrid().size(i) - 1)
-					sub_d.setHigh(i, domain.getHigh(i));
-
-				if (sub_dc.getLow(i) == 0)
-					sub_d.setLow(i,domain.getLow(i));
-			}
+			SpaceBox<dim,T> sub_d = convertDecBoxIntoSubDomain(loc_box.get(s));
 
 			// add the sub-domain
 			sub_domains.add(sub_d);
