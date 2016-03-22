@@ -1237,6 +1237,14 @@ public:
 		return dec;
 	}
 
+	/*! \brief Remove a set of elements from the distributed vector
+	 *
+	 * \warning keys must be sorted
+	 *
+	 * \param keys vector of elements to eliminate
+	 * \param start from where to eliminate
+	 *
+	 */
 	void remove(openfpm::vector<size_t> & keys, size_t start = 0)
 	{
 		v_pos.remove(keys, start);
@@ -1245,6 +1253,14 @@ public:
 		g_m -= keys.size();
 	}
 
+	/*! \brief Remove one element from the distributed vector
+	 *
+	 * \warning keys must be sorted
+	 *
+	 * \param keys vector of elements to eliminate
+	 * \param start from where to eliminate
+	 *
+	 */
 	void remove(size_t key)
 	{
 		v_pos.remove(key);
