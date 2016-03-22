@@ -67,6 +67,7 @@
 #include "VCluster.hpp"
 
 #define NO_EDGE -1
+#define DIST_GRAPH_ERROR 7001
 
 template<typename V, typename E, template<typename, typename, typename, unsigned int> class VertexList, template<typename, typename, typename, unsigned int> class EdgeList, typename Memory, typename grow_p>
 class DistGraph_CSR;

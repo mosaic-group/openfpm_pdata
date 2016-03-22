@@ -1019,6 +1019,10 @@ public:
 			{
 				std::cout << std::setprecision(3) << unbalance << "\n";
 			}
+
+//			write(v_cl.getProcessUnitID() + "_"+ std::to_string(n_step) + "_AAAAAA");
+
+//			n_step++;
 		}
 
 		if (dlb.rebalanceNeeded())
@@ -1029,6 +1033,8 @@ public:
 		}
 		return false;
 	}
+
+//	size_t n_step = 0;
 
 	/*! \brief Get the current un-balance value
 	 *
