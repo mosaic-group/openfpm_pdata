@@ -123,8 +123,8 @@ int main(int argc, char* argv[])
 	// set the seed
 	// create the random generator engine
 	std::srand(v_cl.getProcessUnitID());
-//	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-	std::default_random_engine eg(20);
+	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+	std::default_random_engine eg(seed);
 	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 	std::uniform_real_distribution<float> md(-1.0f, 1.0f);
 	std::uniform_real_distribution<float> uc(0.0f, 0.7f);
@@ -236,7 +236,17 @@ int main(int argc, char* argv[])
 
 		/////// Interactions ///
 		// get ghosts
-		vd.ghost_get<0>();
+		try
+		{
+			vd.ghost_get<0>();
+		}
+		catch (size_t e)
+		{
+			vd.write("err_particles",j);
+			vd.getDecomposition().write("err_decomposition");
+			MPI_Abort(MPI_COMM_WORLD,-1);
+			return -1;
+		}
 
 		// vector of dead animals
 		openfpm::vector<size_t> deads;
@@ -249,17 +259,9 @@ int main(int argc, char* argv[])
 
 		CellList<2, float, FAST, shift<2, float> > NN;
 
-		try
-		{
+
 			NN = vd.getCellList(0.01/factor);
-		}
-		catch (size_t e)
-		{
-			vd.write("err_particles",j);
-			vd.getDecomposition().write("err_decomposition");
-			MPI_Abort(MPI_COMM_WORLD,-1);
-			return -1;
-		}
+
 
 		// iterate across the domain particle
 
@@ -279,9 +281,8 @@ int main(int argc, char* argv[])
 				if(gp == PREY)
 				{
 					if( prey < k/1.5 && ud(eg) < PREY_REPR )
-					{
 						reps_prey.add(p);
-					}
+
 					vd.getProp<animal::time_a>(p)--;
 
 					if(vd.getProp<animal::time_a>(p) <= 0)
@@ -300,7 +301,7 @@ int main(int argc, char* argv[])
 					}
 					else
 					{
-						auto Np = NN.getIterator(NN.getCell(vd.getPos<0>(p)));
+						auto Np = NN.getIterator(NN.getCell(xp));
 
 						while (Np.isNext())
 						{
@@ -322,9 +323,7 @@ int main(int argc, char* argv[])
 									vd.getProp<animal::time_a>(p) = PRED_TIME_A;
 
 									if( ud(eg) < PRED_REPR )
-									{
 										reps_pred.add(p);
-									}
 								}
 							}
 							++Np;

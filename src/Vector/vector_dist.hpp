@@ -109,19 +109,19 @@ private:
 	openfpm::vector<size_t> ghost_prc_sz;
 
 	//! Sending buffer for the ghost particles properties
-	HeapMemory g_prp_mem;
+	BHeapMemory g_prp_mem;
 
 	//! Sending buffer for the ghost particles position
-	HeapMemory g_pos_mem;
+	BHeapMemory g_pos_mem;
 
 	//! For each adjacent processor it store the size of the receiving message in byte
 	openfpm::vector<size_t> recv_sz;
 
 	//! For each adjacent processor it store the received message for ghost get
-	openfpm::vector<HeapMemory> recv_mem_gg;
+	openfpm::vector<BHeapMemory> recv_mem_gg;
 
 	//! For each processor it store the received message for global map
-	openfpm::vector<HeapMemory> recv_mem_gm;
+	openfpm::vector<BHeapMemory> recv_mem_gm;
 
 	/*! \brief It store for each processor the position and properties vector of the particles
 	 *
@@ -217,7 +217,7 @@ private:
 		oshift.resize(dec.getNNProcessors());
 
 		// Iterate over all particles
-		auto it = v_pos.getIterator();
+		auto it = v_pos.getIteratorTo(g_m);
 		while (it.isNext())
 		{
 			auto key = it.get();
@@ -235,17 +235,6 @@ private:
 				ghost_prc_sz.get(p_id)++;
 				opart.get(p_id).add(key);
 				oshift.get(p_id).add(vp_id.get(i).second);
-
-				/////// DEBUG /////////////
-
-				if (v_pos.template get<0>(key)[0] >= 0.653903  && v_pos.template get<0>(key)[0] <= 0.653905 &&
-					v_pos.template get<0>(key)[1] >= 0.989091  && v_pos.template get<0>(key)[1] <= 0.989093)
-				{
-					std::cerr << "DETECTED BASTARD" << "\n";
-				}
-
-				////////////////////////////
-
 			}
 
 			++it;
@@ -566,26 +555,6 @@ private:
 			// resize with the number of elements
 			v2.resize(n_ele);
 
-			///////// DEBUG /////////////////////
-
-			// Check that all the particles are inside the processor boud enlarged by ghost
-
-			Ghost<dim,St> g = dec.getGhost();
-			g.magnify(1.01);
-
-			auto pbox = dec.getProcessorBounds();
-			pbox.enlarge(g);
-
-			for (size_t j = 0 ; j < v2.size() ; j++)
-			{
-				if (pbox.isInside(v2.get(j)) == false)
-				{
-					std::cerr << "AAAAAAAAAAAAAAAAAAA" << "/n";
-				}
-			}
-
-			//////////////////////////////////////
-
 			// Add the ghost particle
 			v_pos.template add<PtrMemory, openfpm::grow_policy_identity>(v2);
 		}
@@ -871,10 +840,7 @@ public:
 	{
 		// Unload receive buffer
 		for (size_t i = 0 ; i < recv_mem_gg.size() ; i++)
-		{
-			recv_mem_gg.get(i).destroy();
 			recv_sz.get(i) = 0;
-		}
 
 		// Sending property object
 		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;

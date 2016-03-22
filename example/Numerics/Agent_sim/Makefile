@@ -7,7 +7,7 @@ LDIR =
 OBJ = main.o
 
 %.o: %.cpp
-	$(CC) -O0 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH) -I/home/i-bird/HDF5/include
+	$(CC) -O3 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH) -I/home/i-bird/HDF5/include
 
 agsim: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
