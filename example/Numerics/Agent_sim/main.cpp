@@ -9,9 +9,6 @@
  *
  */
 
-#define SE_CLASS1
-#define THROW_ON_ERROR
-
 #include "Vector/vector_dist.hpp"
 #include "Decomposition/CartDecomposition.hpp"
 #include "PSE/Kernels.hpp"
@@ -197,8 +194,6 @@ int main(int argc, char* argv[])
 	// 100 step random walk
 	for (size_t j = 0; j < 100; j++)
 	{
-		std::cout << "iteration: " << j << std::endl;
-
 		size_t prey = 0, predators = 0;
 
 		auto it = vd.getDomainIterator();
@@ -220,33 +215,11 @@ int main(int argc, char* argv[])
 
 		vd.map();
 
-		float tot_p = vd.size_local();
-
-		v_cl.sum(tot_p);
-		v_cl.sum(prey);
-		v_cl.sum(predators);
-		v_cl.execute();
-
-
-	//	 if(v_cl.getProcessUnitID()==0)
-	//	 {
-	//		 std::cout << j << " -> tot: " << tot_p << " prey: " << prey << " predators: " << predators << "\n";
-	//	 }
-
 
 		/////// Interactions ///
 		// get ghosts
-		try
-		{
-			vd.ghost_get<0>();
-		}
-		catch (size_t e)
-		{
-			vd.write("err_particles",j);
-			vd.getDecomposition().write("err_decomposition");
-			MPI_Abort(MPI_COMM_WORLD,-1);
-			return -1;
-		}
+
+		vd.ghost_get<0>();
 
 		// vector of dead animals
 		openfpm::vector<size_t> deads;
@@ -257,11 +230,7 @@ int main(int argc, char* argv[])
 
 		bool error = false;
 
-		CellList<2, float, FAST, shift<2, float> > NN;
-
-
-			NN = vd.getCellList(0.01/factor);
-
+		auto NN = vd.getCellList(0.01/factor);
 
 		// iterate across the domain particle
 
@@ -374,50 +343,17 @@ int main(int argc, char* argv[])
 		deads.sort();
 		vd.remove(deads, 0);
 
-/*		for (size_t i = 0 ; i < deads.size() ; i++)
-		{
-			size_t d = deads.get(i);
-
-			vd.remove(d);
-		}*/
-
 		deads.resize(0);
 
 		vd.deleteGhost();
 
 		////////////////////////
 
-		vd.map();
-
 		vd.addComputationCosts();
 
-//		vd.write("before_ref_particles" + std::to_string(j),j);
-//		vd.getDecomposition().write("before_ref_decomposition" + std::to_string(j));
-
-		vd.getDecomposition().rebalance(1);
+		vd.getDecomposition().rebalance(dlb);
 
 		vd.map();
-
-//		vd.write("after_ref_particles" + std::to_string(j),j);
-//		vd.getDecomposition().write("after_ref_decomposition" + std::to_string(j));
-
-		//vd.getDecomposition().getDistribution().write("parmetis_prey_predators_" + std::to_string(j+1) + ".vtk");
-		//vd.write("particles_", j+1, NO_GHOST);
-		//vd.getDecomposition().write("dec_");
-
-		size_t l = vd.size_local();
-		v_cl.sum(l);
-		v_cl.execute();
-
-		if (v_cl.getProcessUnitID() == 0)
-		{
-			std::cout << "Particles: " << l  << "\n";
-		}
-
-		// Count the local particles and check that the total number is consistent
-		//size_t cnt = total_n_part_lc(vd,bc);
-
-		//BOOST_REQUIRE_EQUAL((size_t)k,cnt);
 	}
 
 	//
