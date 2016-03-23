@@ -41,6 +41,9 @@ m4_ifdef([AX_EIGEN],,[m4_include([m4/ax_eigen.m4])])
 m4_ifdef([AX_LIB_HDF5],,[m4_include([m4/ax_lib_hdf5.m4])]])
 
 case $host_os in
+   *darwin*|*macosx*)
+	AC_DEFINE([HAVE_OSX],[],[We have OSX])
+	;;
    *cygwin*)
         # Do something specific for cygwin
         CXXFLAGS+=" --std=gnu++11 "

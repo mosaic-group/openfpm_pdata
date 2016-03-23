@@ -70,8 +70,14 @@ BOOST_AUTO_TEST_CASE( Metis_test_use)
 
 	// check that match
 
+#ifdef HAVE_OSX
+	bool test = compare("vtk_metis_util_gp.vtk","src/Decomposition/Distribution/test_data/vtk_metis_util_gp_osx_test.vtk");
+	bool test2 = compare("vtk_metis_util_g.vtk","src/Decomposition/Distribution/test_data/vtk_metis_util_g_osx_test.vtk");
+#else
 	bool test = compare("vtk_metis_util_gp.vtk","src/Decomposition/Distribution/test_data/vtk_metis_util_gp_test.vtk");
 	bool test2 = compare("vtk_metis_util_g.vtk","src/Decomposition/Distribution/test_data/vtk_metis_util_g_test.vtk");
+#endif
+
 	BOOST_REQUIRE_EQUAL(true,test);
 	BOOST_REQUIRE_EQUAL(true,test2);
 }
