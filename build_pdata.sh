@@ -215,6 +215,8 @@ then
 
  source /etc/profile
  echo "$PATH"
+ module load hdf5/1.8.15-gcc-5.1.0
+ module unload gcc/5.3.0
  module load boost/1.56.0-gnu4.9.1
  module unload gcc/4.9.1
  module load gcc/4.9.3
