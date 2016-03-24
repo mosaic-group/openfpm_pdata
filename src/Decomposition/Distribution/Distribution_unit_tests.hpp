@@ -8,6 +8,8 @@
 #ifndef SRC_DECOMPOSITION_DISTRIBUTION_DISTRIBUTION_UNIT_TESTS_HPP_
 #define SRC_DECOMPOSITION_DISTRIBUTION_DISTRIBUTION_UNIT_TESTS_HPP_
 
+#include "config.h"
+
 /*! \brief Set a sphere as high computation cost
  *
  * \param dist Distribution structure
@@ -50,83 +52,6 @@ template<unsigned int dim, typename Distribution> void setSphereComputationCosts
 			dist.setCommunicationCost(i, j, 1);
 	}
 }
-
-struct animal
-{
-	typedef boost::fusion::vector<float[2], size_t, size_t, size_t> type;
-
-	//! Attributes name
-	struct attributes
-	{
-		static const std::string name[];
-	};
-
-	//! type of the positional field
-	typedef float s_type;
-
-	//! The data
-	type data;
-
-	//! position property id in boost::fusion::vector
-	static const unsigned int pos = 0;
-	//! genre of animal property id in boost::fusion::vector
-	static const unsigned int genre = 1;
-	//! state property id in boost::fusion::vector
-	static const unsigned int status = 2;
-	//! alive time property id in boost::fusion::vector
-	static const unsigned int time_a = 3;
-
-	//! total number of properties boost::fusion::vector
-	static const unsigned int max_prop = 4;
-
-	animal()
-	{
-	}
-
-	inline animal(const animal & p)
-	{
-		boost::fusion::at_c<0>(data)[0] = boost::fusion::at_c<0>(p.data)[0];
-		boost::fusion::at_c<0>(data)[1] = boost::fusion::at_c<0>(p.data)[1];
-		//boost::fusion::at_c<0>(data)[2] = boost::fusion::at_c<0>(p.data)[2];
-		boost::fusion::at_c<1>(data) = boost::fusion::at_c<1>(p.data);
-		boost::fusion::at_c<2>(data) = boost::fusion::at_c<2>(p.data);
-		boost::fusion::at_c<3>(data) = boost::fusion::at_c<3>(p.data);
-	}
-
-	template<unsigned int id> inline auto get() -> decltype(boost::fusion::at_c < id > (data))
-	{
-		return boost::fusion::at_c<id>(data);
-	}
-
-	template<unsigned int id> inline auto get() const -> const decltype(boost::fusion::at_c < id > (data))
-	{
-		return boost::fusion::at_c<id>(data);
-	}
-
-	template<unsigned int dim, typename Mem> inline animal(const encapc<dim, animal, Mem> & p)
-	{
-		this->operator=(p);
-	}
-
-	template<unsigned int dim, typename Mem> inline animal & operator=(const encapc<dim, animal, Mem> & p)
-	{
-		boost::fusion::at_c<0>(data)[0] = p.template get<0>()[0];
-		boost::fusion::at_c<0>(data)[1] = p.template get<0>()[1];
-		//boost::fusion::at_c<0>(data)[2] = p.template get<0>()[2];
-		boost::fusion::at_c<1>(data) = p.template get<1>();
-		boost::fusion::at_c<2>(data) = p.template get<2>();
-		boost::fusion::at_c<3>(data) = p.template get<3>();
-
-		return *this;
-	}
-
-	static bool noPointers()
-	{
-		return true;
-	}
-};
-
-const std::string animal::attributes::name[] = { "pos", "genre", "status", "time_a", "j_repr" };
 
 BOOST_AUTO_TEST_SUITE (Distribution_test)
 
@@ -202,11 +127,21 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 
 	// check that match
 
-	bool test = compare("vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_test.vtk");
+#ifdef HAVE_OSX
+
+	bool test = compare("vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_osx_test.vtk");
+	BOOST_REQUIRE_EQUAL(true,test);
+	test = compare("vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_osx_test.vtk");
 	BOOST_REQUIRE_EQUAL(true,test);
 
+#else
+
+	bool test = compare("vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_test.vtk");
+	BOOST_REQUIRE_EQUAL(true,test);
 	test = compare("vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_test.vtk");
 	BOOST_REQUIRE_EQUAL(true,test);
+
+#endif
 
 	// Copy the Metis distribution
 
@@ -266,8 +201,17 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 		// write the first decomposition
 		pmet_dist.write("vtk_parmetis_distribution_0");
 
-		bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_vtk_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/" + std::to_string(v_cl.getProcessUnitID()) + "_vtk_parmetis_distribution_0_test.vtk");
+#ifdef HAVE_OSX
+
+		bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_vtk_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/" + std::to_string(v_cl.getProcessUnitID()) + "_vtk_parmetis_distribution_0_osx_test.vtk");
 		BOOST_REQUIRE_EQUAL(true,test);
+
+#else
+
+                bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_vtk_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/" + std::to_string(v_cl.getProcessUnitID()) + "_vtk_parmetis_distribution_0_test.vtk");
+                BOOST_REQUIRE_EQUAL(true,test);
+
+#endif
 	}
 
 	//! [refine with parmetis the decomposition]
@@ -300,7 +244,7 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 				pmet_dist.write(str.str());
 
 				// Check
-				bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_" + str.str() + ".vtk", "src/Decomposition/Distribution/test_data/" + std::to_string(v_cl.getProcessUnitID()) + "_" + str.str() + "_test.vtk");
+				bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_" + str.str() + ".vtk", "src/Decomposition/Distribution/test_data/" + std::to_string(v_cl.getProcessUnitID()) + "_" + str.str() + "_osx_test.vtk");
 				BOOST_REQUIRE_EQUAL(true,test);
 			}
 		}
@@ -348,8 +292,17 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 
 	if (v_cl.getProcessUnitID() == 0)
 	{
+
+#ifdef HAVE_OSX
+
+                bool test = compare("vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_osx_test.vtk");
+                BOOST_REQUIRE_EQUAL(true,test);
+
+#else
+
 		bool test = compare("vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_test.vtk");
 		BOOST_REQUIRE_EQUAL(true,test);
+#endif
 	}
 
 	//! [refine with dist_parmetis the decomposition]
@@ -382,8 +335,17 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 			// Check
 			if (v_cl.getProcessUnitID() == 0)
 			{
-				bool test = compare(str.str() + ".vtk",std::string("src/Decomposition/Distribution/test_data/") + str.str() + "_test.vtk");
+#ifdef HAVE_OSX
+				bool test = compare(str.str() + ".vtk",std::string("src/Decomposition/Distribution/test_data/") + str.str() + "_osx_test.vtk");
 				BOOST_REQUIRE_EQUAL(true,test);
+
+#else
+
+                                bool test = compare(str.str() + ".vtk",std::string("src/Decomposition/Distribution/test_data/") + str.str() + "_osx_test.vtk");
+                                BOOST_REQUIRE_EQUAL(true,test);
+
+#endif
+
 			}
 		}
 	}
