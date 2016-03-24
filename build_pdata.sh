@@ -215,6 +215,8 @@ then
 
  source /etc/profile
  echo "$PATH"
+ module load eigen/3.2.0
+ module load suitesparse/4.2.1-gnu-multimkl
  module load hdf5/1.8.14
  module unload bullxmpi
  module load boost/1.56.0-gnu4.9.1
