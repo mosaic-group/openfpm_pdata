@@ -140,7 +140,6 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 	BOOST_REQUIRE_EQUAL(true,test);
 	test = compare("vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_test.vtk");
 	BOOST_REQUIRE_EQUAL(true,test);
-#endif
 
 #endif
 
