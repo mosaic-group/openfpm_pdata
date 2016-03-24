@@ -243,9 +243,19 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 				str << "vtk_parmetis_distribution_" << iter;
 				pmet_dist.write(str.str());
 
+#ifdef HAVE_OSX
+
 				// Check
 				bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_" + str.str() + ".vtk", "src/Decomposition/Distribution/test_data/" + std::to_string(v_cl.getProcessUnitID()) + "_" + str.str() + "_osx_test.vtk");
 				BOOST_REQUIRE_EQUAL(true,test);
+
+#else
+
+				// Check
+				bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_" + str.str() + ".vtk", "src/Decomposition/Distribution/test_data/" + std::to_string(v_cl.getProcessUnitID()) + "_" + str.str() + "_test.vtk");
+				BOOST_REQUIRE_EQUAL(true,test);
+
+#endif
 			}
 		}
 	}
@@ -341,7 +351,7 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 
 #else
 
-                                bool test = compare(str.str() + ".vtk",std::string("src/Decomposition/Distribution/test_data/") + str.str() + "_osx_test.vtk");
+                                bool test = compare(str.str() + ".vtk",std::string("src/Decomposition/Distribution/test_data/") + str.str() + "_test.vtk");
                                 BOOST_REQUIRE_EQUAL(true,test);
 
 #endif
