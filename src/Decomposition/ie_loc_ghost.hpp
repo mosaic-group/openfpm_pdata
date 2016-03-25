@@ -533,23 +533,6 @@ public:
 			}
 		}
 
-		if (n_sub > 1)
-		{
-			for (size_t i = 0 ; i < loc_ghost_box.size() ; i++)
-			{
-				if (loc_ghost_box.get(i).ibx.size() == 0)
-				{
-					std::cout << "Zero ibx" << "\n";
-					return false;
-				}
-				if (loc_ghost_box.get(i).ebx.size() == 0)
-				{
-					std::cout << "Zero ebx" << "\n";
-					return false;
-				}
-			}
-		}
-
 		return true;
 	}
 
