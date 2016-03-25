@@ -3,7 +3,7 @@
  *
  * ## Simple example
  *
- * In this example we show 1D PSE derivative function approximation
+ * In this example show an agent based simulation
  *
  * ### WIKI END ###
  *

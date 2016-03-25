@@ -7,6 +7,9 @@ if [ -d "$1/PARMETIS" ]; then
   exit 0
 fi
 
+## Remove old download
+rm -rf parmetis-4.0.3
+
 wget http://ppmcore.mpi-cbg.de/upload/parmetis-4.0.3.tar.gz
 tar -xf parmetis-4.0.3.tar.gz
 cd parmetis-4.0.3

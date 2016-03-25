@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 	const double eps = 2*spacing;
 
 	// Laplacian PSE kernel 1 dimension, on double, second order
-	Lap<1,double,2> lker(eps);
+	Lap_PSE<1,double,2> lker(eps);
 
 	//
 	// ### WIKI 2 ###
