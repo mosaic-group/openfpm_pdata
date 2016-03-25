@@ -285,6 +285,12 @@ AX_SUITESPARSE([],[echo "suitesparse not found"
 AX_EIGEN([],[echo "eigen not found"
                     exit 206])
 
+###### RT runtime lib
+
+AC_CHECK_LIB(rt, clock_gettime, [AC_DEFINE([HAVE_CLOCK_GETTIME],[],[Have clock time])
+                                 OPT_LIBS="$OPT_LIBS -lrt"
+                                ])
+
 ####### Checking for GPU support
 
 AX_CUDA
@@ -330,6 +336,7 @@ AC_DEFINE([HAVE_MPI],[],[MPI Enabled])
 
 AC_SUBST(NVCCFLAGS)
 AC_SUBST(INCLUDES_PATH)
+AC_SUBST(OPT_LIBS)
 
 # Checks for typedefs, structures, and compiler characteristics.
 
