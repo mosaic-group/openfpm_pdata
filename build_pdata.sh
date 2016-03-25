@@ -224,7 +224,8 @@ then
  module load gcc/4.9.3
  module load openmpi/1.8.8-gnu
  module unload bullxmpi
- module load metis/5.1.0
+ 
+ export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/incard/PARMETIS/lib:/home/incard/METIS/lib"
 
  ./install -s -c"--with-metis=/sw/global/libraries/metis/5.1.0/x86_64/ --with-boost=/sw/taurus/libraries/boost/1.56.0-gnu4.9.1 CXX=mpic++"
  make
