@@ -222,7 +222,7 @@ then
  module load boost/1.56.0-gnu4.9.1
  module unload gcc/4.9.1
  module load gcc/4.9.3
- module load openmpi/1.8.8-gnu
+ module load openmpi/1.10.2-gnu
  module unload bullxmpi
  
  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/incard/PARMETIS/lib:/home/incard/METIS/lib"
