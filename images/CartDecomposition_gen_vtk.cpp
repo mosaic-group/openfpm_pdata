@@ -32,6 +32,7 @@ int main(int argc, char ** argv)
 
 	// Decompose and write the decomposed graph
 	dec.setParameters(div,box,bc,g);
+	dec.decompose();
 
 	// create a ghost border
 	dec.calculateGhostBoxes();

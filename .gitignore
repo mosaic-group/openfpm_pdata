@@ -71,3 +71,4 @@ depcomp
 install-sh
 missing
 install_dir
+**/*.vtk

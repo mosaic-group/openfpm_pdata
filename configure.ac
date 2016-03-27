@@ -22,7 +22,7 @@ ac_configure_args="$ac_configure_args --with-pdata=../../src"
 
 ########################
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([subdir-objects])
 AC_CONFIG_HEADER([src/config/config.h])
 m4_ifdef([ACX_PTHREAD],,[m4_include([m4/acx_pthread.m4])])
 m4_ifdef([ACX_MPI],,[m4_include([m4/acx_mpi.m4])])
@@ -342,7 +342,7 @@ AC_SUBST(OPT_LIBS)
 
 # Checks for library functions.
 
-AC_CONFIG_FILES([Makefile src/Makefile vtk/Makefile ])
+AC_CONFIG_FILES([Makefile src/Makefile images/Makefile ])
 AC_OUTPUT
 echo ""
 echo   "***********************************"
