@@ -31,5 +31,7 @@ images : cart_dec metis_dec dom_box
 	mpirun -np 4 ./cart_dec
 	./dom_box
 	./metis_dec
+	mkdir -p generated
+	mkdir -p static
 	pvbatch Domain_decomposition.py
 
