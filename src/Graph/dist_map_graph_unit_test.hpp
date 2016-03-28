@@ -298,7 +298,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_redistribution)
 
 	if(vcl.getProcessUnitID() == 0)
 	{
-		bool test = compare("dist_graph_redistribution_0.vtk", "dist_graph_redistribution_0_test.vtk");
+		bool test = compare("dist_graph_redistribution_0.vtk", "src/Graph/test_data/dist_graph_redistribution_0_test.vtk");
 		BOOST_REQUIRE_EQUAL(true,test);
 	}
 
@@ -320,7 +320,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_redistribution)
 
 	if(vcl.getProcessUnitID() == 0)
 	{
-		bool test = compare("dist_graph_redistribution_1.vtk","dist_graph_redistribution_1_test.vtk");
+		bool test = compare("dist_graph_redistribution_1.vtk","src/Graph/test_data/dist_graph_redistribution_1_test.vtk");
 		BOOST_REQUIRE_EQUAL(true,test);
 	}
 
@@ -459,7 +459,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)
 
 	if(vcl.getProcessUnitID() == 0)
 	{
-		bool test = compare("dist_graph_free_0.vtk", "dist_graph_free_0_test.vtk");
+		bool test = compare("dist_graph_free_0.vtk", "src/Graph/test_data/dist_graph_free_0_test.vtk");
 		BOOST_REQUIRE_EQUAL(true,test);
 	}
 
@@ -481,7 +481,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)
 
 	if(vcl.getProcessUnitID() == 0)
 	{
-		bool test = compare("dist_graph_free_1.vtk", "dist_graph_free_1_test.vtk");
+		bool test = compare("dist_graph_free_1.vtk", "src/Graph/test_data/dist_graph_free_1_test.vtk");
 		BOOST_REQUIRE_EQUAL(true,test);
 	}
 }
