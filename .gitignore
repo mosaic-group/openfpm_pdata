@@ -72,3 +72,4 @@ install-sh
 missing
 install_dir
 **/*.vtk
+!**/test_data/*.vtk
