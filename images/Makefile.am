@@ -43,5 +43,7 @@ images : cart_dec metis_dec dom_box
 	mkdir -p static
 	pvbatch Domain_decomposition.py
 	pvbatch Vector_dist.py
+	pvbatch mooving_particles.py
+	pvbatch mooving_particles_prc.py
 	dot -Tsvg openfpm.dot -o generated/openfpm.svg
 

@@ -58,7 +58,26 @@ int main(int argc, char* argv[])
 
 	vd.write("Vector/vector_after_map");
 	
-	vd.ghost_get<0,1,2>();
+	vd.getDecomposition().write("Vector/vect_decomposition");
+
+	// move the particles
+
+	for (size_t i = 0 ; i < 100 ; i++)
+	{
+		auto it = vd.getDomainIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			vd.template getPos<0>(key)[0] += 0.005;
+			vd.template getPos<0>(key)[1] += 0.005;
+
+			++it;
+		}
+		vd.map();
+		vd.write("Vector/vector_move",i);
+	}
 
 	delete_global_v_cluster();
 }

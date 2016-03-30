@@ -1328,6 +1328,8 @@ public:
 		{
 
 		}*/
+
+		return false;
 	}
 
 	/*! \brief Delete the particles on the ghost
