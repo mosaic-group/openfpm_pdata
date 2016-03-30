@@ -45,5 +45,6 @@ images : cart_dec metis_dec dom_box
 	pvbatch Vector_dist.py
 	pvbatch mooving_particles.py
 	pvbatch mooving_particles_prc.py
+	pvbatch vector_scal_vect.py
 	dot -Tsvg openfpm.dot -o generated/openfpm.svg
 

@@ -49,6 +49,9 @@ int main(int argc, char* argv[])
 		vd.template getPos<s::x>(key)[0] = ud(eg);
 		vd.template getPos<s::x>(key)[1] = ud(eg);
 
+		vd.template getProp<1>(key)[0] = sin(10.0*vd.template getPos<s::x>(key)[0]);
+		vd.template getProp<1>(key)[1] = sin(10.0*vd.template getPos<s::x>(key)[1]);
+
 		++it;
 	}
 
