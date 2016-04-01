@@ -362,7 +362,7 @@ int main(int argc, char* argv[])
 	options.lineWidth = 1.0;
 
 	GoogleChart cg;
-	cg.AddPointsGraph(x,y,options);
+	cg.AddLinesGraph(x,y,options);
 	cg.write("PSE_plot.html");
 
 	//

@@ -105,4 +105,4 @@ renderView1.CameraFocalPoint = [0.500684285, 0.49876095249999997, 0.0]
 renderView1.CameraParallelScale = 0.7052859287230878
 
 # save animation images/movie
-WriteAnimation('Vector/particles_mooving_prc.ogv', Magnification=1, FrameRate=25.0, Compression=True)
+WriteAnimation('generated/particles_mooving_prc.ogv', Magnification=1, FrameRate=25.0, Compression=True)
