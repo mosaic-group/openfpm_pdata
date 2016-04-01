@@ -12,7 +12,7 @@ OBJ = main.o
 verlet: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
-all: vect
+all: verlet
 
 .PHONY: clean all
 
