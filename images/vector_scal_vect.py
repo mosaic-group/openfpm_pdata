@@ -9,7 +9,7 @@ vector_before_map0csv = CSVReader(FileName=['Vector/vector_before_map0.csv'])
 # get active view
 renderView1 = GetActiveViewOrCreate('RenderView')
 # uncomment following to set a specific view size
-renderView1.ViewSize = [982, 495]
+renderView1.ViewSize = [1000, 500]
 
 # get layout
 viewLayout1 = GetLayout()

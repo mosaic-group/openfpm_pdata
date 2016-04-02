@@ -1,6 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 
+
+### Changed
+- GoogleChart name function changed: AddPointGraph to AddLinesGraph and AddColumsGraph to AddHistGraph
+
 ## [0.2.0] - 2016-03-25
 ### Added
 - Added Load Balancing and Dynamic Load Balancing on Beta
