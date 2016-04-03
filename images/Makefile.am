@@ -49,3 +49,5 @@ images : cart_dec metis_dec dom_box
 	dot -Tsvg openfpm.dot -o generated/openfpm.svg
 	avconv -i generated/particles_mooving.ogv -f mp4 generated/particles_mooving.mp4
 	avconv -i generated/particles_mooving_prc.ogv -f mp4 generated/particles_mooving_prc.mp4
+	avconv -i generated/particles_mooving.ogv -f webm generated/particles_mooving.webm
+	avconv -i generated/particles_mooving_prc.ogv -f webm generated/particles_mooving_prc.webm
