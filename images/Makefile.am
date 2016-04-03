@@ -47,5 +47,5 @@ images : cart_dec metis_dec dom_box
 	pvbatch mooving_particles_prc.py
 	pvbatch vector_scal_vect.py
 	dot -Tsvg openfpm.dot -o generated/openfpm.svg
-	ffmpeg -i generated/particles_mooving.ogv -f mp4 generated/particles_mooving.mp4
-	ffmpeg -i generated/particles_mooving_prc.ogv -f mp4 generated/particles_mooving_prc.mp4
+	avconv -i generated/particles_mooving.ogv -f mp4 generated/particles_mooving.mp4
+	avconv -i generated/particles_mooving_prc.ogv -f mp4 generated/particles_mooving_prc.mp4
