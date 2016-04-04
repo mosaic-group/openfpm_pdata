@@ -76,8 +76,8 @@ int main(int argc, char* argv[])
 			vd.template getPos<0>(key)[0] += 0.005;
 			vd.template getPos<0>(key)[1] += 0.005;
                         
-                        vd.template getProp<1>(key)[0] = 0.005;
-                        vd.template getProp<1>(key)[1] = 0.005;
+            vd.template getProp<1>(key)[0] = 0.005;
+            vd.template getProp<1>(key)[1] = 0.005;
 
 			++it;
 		}
