@@ -75,9 +75,13 @@ int main(int argc, char* argv[])
 
 			vd.template getPos<0>(key)[0] += 0.005;
 			vd.template getPos<0>(key)[1] += 0.005;
+                        
+                        vd.template getProp<1>(key)[0] = 0.005;
+                        vd.template getProp<1>(key)[1] = 0.005;
 
 			++it;
 		}
+		vd.write("Vector/vector_move_before_map",i);
 		vd.map();
 		vd.write("Vector/vector_move",i);
 	}

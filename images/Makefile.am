@@ -42,10 +42,12 @@ images : cart_dec metis_dec dom_box
 	mkdir -p generated
 	mkdir -p static
 	pvbatch Domain_decomposition.py
-	pvbatch Vector_dist.py
+	pvbatch vector_dist.py
 	pvbatch mooving_particles.py
 	pvbatch mooving_particles_prc.py
 	pvbatch vector_scal_vect.py
+	pvbatch vector_particles.py
+	pvbatch particles_maps.py
 	dot -Tsvg openfpm.dot -o generated/openfpm.svg
 	avconv -i generated/particles_mooving.ogv -f mp4 generated/particles_mooving.mp4
 	avconv -i generated/particles_mooving_prc.ogv -f mp4 generated/particles_mooving_prc.mp4
