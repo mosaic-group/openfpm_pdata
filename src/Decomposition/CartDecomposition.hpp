@@ -812,16 +812,15 @@ public:
 		domain = cart.domain;
 		std::copy(cart.spacing,cart.spacing+3,spacing);
 
-		//! Runtime virtual cluster
-		v_cl = cart.v_cl;
-
 		ghost = cart.ghost;
 
-		cart.bbox = bbox;
-		cart.ss_box = ss_box;
+		bbox = cart.bbox;
+		ss_box = cart.ss_box;
 
 		for (size_t i = 0 ; i < dim ; i++)
-			cart.bc[i] = bc[i];
+			bc[i] = cart.bc[i];
+
+		return *this;
 
 		return *this;
 	}

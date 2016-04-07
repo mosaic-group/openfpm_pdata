@@ -663,7 +663,7 @@ public:
 	 *
 	 */
 	grid_dist_id(const Decomposition & dec, const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
-	:domain(domain),dec(dec),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
+	:domain(domain),dec(*global_v_cluster),v_cl(*global_v_cluster),ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
@@ -672,6 +672,7 @@ public:
 		InitializeCellDecomposer(g_sz);
 
 		ghost = convert_ghost(g,cd_sm);
+		this->dec = dec.duplicate(ghost);
 
 		// Initialize structures
 		InitializeStructures(g_sz);
