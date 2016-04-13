@@ -86,8 +86,8 @@ int main(int argc, char* argv[])
 	// Here we Initialize the library and we define Ghost size
 	// and non-periodic boundary conditions
 	//
-	init_global_v_cluster(&argc,&argv);
-	Vcluster & v_cl = *global_v_cluster;
+	openfpm_init(&argc,&argv);
+	Vcluster & v_cl = create_vcluster();
 
     size_t bc[1]={NON_PERIODIC};
 	Ghost<1,double> g(12*eps);
@@ -304,5 +304,5 @@ int main(int argc, char* argv[])
 	//
 	// Deinitialize the library
 	//
-	delete_global_v_cluster();
+	openfpm_finalize();
 }
