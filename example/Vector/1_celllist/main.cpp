@@ -22,8 +22,8 @@ int main(int argc, char* argv[])
 	// Here we Initialize the library, we create a Box that define our domain, boundary conditions, ghost
 	// and the grid size
 	//
-	init_global_v_cluster(&argc,&argv);
-	Vcluster & v_cl = *global_v_cluster;
+	openfpm_init(&argc,&argv);
+	Vcluster & v_cl = create_vcluster();
 
 	// we create a 128x128x128 Grid iterator
 	size_t sz[3] = {128,128,128};
@@ -173,7 +173,7 @@ int main(int argc, char* argv[])
 	//
 	// Deinitialize the library
 	//
-	delete_global_v_cluster();
+	openfpm_finalize();
 }
 
 

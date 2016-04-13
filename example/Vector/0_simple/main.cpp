@@ -44,8 +44,8 @@ int main(int argc, char* argv[])
 	// Here we Initialize the library, than we create a uniform random generator between 0 and 1 to to generate particles
 	// randomly in the domain, we create a Box that define our domain, boundary conditions, and ghost
 	//
-	init_global_v_cluster(&argc,&argv);
-	Vcluster & v_cl = *global_v_cluster;
+	openfpm_init(&argc,&argv);
+	Vcluster & v_cl = create_vcluster();
 	
 	typedef Point<2,float> s;
 
@@ -172,5 +172,5 @@ int main(int argc, char* argv[])
 	//
 	// Deinitialize the library
 	//
-	delete_global_v_cluster();
+	openfpm_finalize();
 }
