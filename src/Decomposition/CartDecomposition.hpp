@@ -938,8 +938,10 @@ public:
 
 	/*! \brief Set the parameter of the decomposition
 	 *
-	 * \param div_ storing into how many domain to decompose on each dimension
+	 * \param div_ storing into how many sub-sub-domains to decompose on each dimension
 	 * \param domain_ domain to decompose
+	 * \param bc_ boundary conditions
+	 * \param ghost Ghost size
 	 *
 	 */
 	void setParameters(const size_t (& div_)[dim], ::Box<dim,T> domain_, const size_t (& bc)[dim] ,const Ghost<dim,T> & ghost)

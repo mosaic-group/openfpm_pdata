@@ -61,6 +61,10 @@ int main(int argc, char* argv[])
 
 	vd.write("Vector/vector_after_map");
 	
+	vd.ghost_get<0>();
+
+	vd.write("Vector/vector_ghost_fill");
+
 	vd.getDecomposition().write("Vector/vect_decomposition");
 
 	// move the particles

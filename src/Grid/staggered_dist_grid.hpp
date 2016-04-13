@@ -11,7 +11,8 @@
 #include "Grid/grid_dist_id.hpp"
 #include "staggered_dist_grid_util.hpp"
 #include "VTKWriter/VTKWriter.hpp"
-
+#include "staggered_dist_grid_copy.hpp"
+#include <boost/mpl/vector_c.hpp>
 
 /*! \brief Implementation of the staggered grid
  *
@@ -67,6 +68,26 @@ public:
 
 	typedef T value_type;
 
+	// Number of dimensions
+	static const unsigned int dims = dim;
+
+	/*! \brief This constructor is special, it construct an expanded grid that perfectly overlap with the previous
+	 *
+	 * The key-word here is "perfectly overlap". Using the default constructor you could create
+	 * something similar, but because of rounding-off error it can happen that it is not perfectly overlapping
+	 *
+	 * \param g previous grid
+	 * \param Ghost part in grid units
+	 * \param ext extension of the grid (must be positive on every direction)
+	 *
+	 */
+	template<typename H> staggered_grid_dist(const grid_dist_id<dim,St,H,typename Decomposition::base_type,Memory,grid_cpu<dim,H>> & g,
+			                          const Ghost<dim,long int> & gh,
+									  Box<dim,size_t> ext)
+	:grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(g,gh,ext)
+	{
+	}
+
 	staggered_grid_dist(const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
 	:grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(g_sz,domain,ghost)
 	{}
@@ -95,6 +116,60 @@ public:
 		stag_set_position<dim,typename T::type> ssp(c_prp);
 
 		boost::mpl::for_each_ref< boost::mpl::range_c<int,0,T::max_prop> >(ssp);
+	}
+
+	/*! \brief Copy the staggered grid into a normal one
+	 *
+	 *
+	 * \tparam Grid_dst type of the destination Grid
+	 * \tparam pos destination grid properties to fill
+	 *
+	 */
+	template<typename Grid_dst ,unsigned int ... pos> bool to_normal(Grid_dst & g_dst, const Padding<dim> & pd, const long int (& start)[dim], const long int (& stop)[dim])
+	{
+		// interpolation points for each property
+		openfpm::vector<std::vector<comb<dim>>> interp_pos[sizeof...(pos)];
+
+		typedef boost::mpl::vector_c<unsigned int,pos ... > v_pos_type;
+
+		interp_points<dim,v_pos_type,typename Grid_dst::value_type::type> itp(interp_pos,c_prp);
+		boost::mpl::for_each_ref<v_pos_type>(itp);
+
+		// shift the start and stop by the padding
+		grid_key_dx<dim> start_k = grid_key_dx<dim>(start);
+		grid_key_dx<dim> stop_k = grid_key_dx<dim>(stop);
+
+		// sub-grid iterator over the grid map
+		auto g_map_it = this->getSubDomainIterator(start_k,stop_k);
+
+		// Iterator over the destination grid
+		auto g_dst_it = g_dst.getDomainIterator();
+
+		// Check that the 2 iterator has the same size
+		checkIterator<St,decltype(g_map_it),decltype(g_dst_it)>(g_map_it,g_dst_it);
+
+		while (g_map_it.isNext() == true)
+		{
+			typedef typename to_boost_vmpl<pos...>::type vid;
+			typedef boost::mpl::size<vid> v_size;
+
+			auto key_src = g_map_it.get();
+
+			// destination point
+			auto key_dst = g_dst_it.get();
+
+			// Transform this id into an id for the Eigen vector
+
+			interp_ele<vid,Grid_dst,typename std::remove_reference<decltype(*this)>::type,sizeof...(pos)> cp(key_dst,g_dst,*this,key_src,interp_pos);
+
+			// For each property in the target grid
+			boost::mpl::for_each_ref<boost::mpl::range_c<int,0,v_size::value>>(cp);
+
+			++g_map_it;
+			++g_dst_it;
+		}
+
+		return true;
 	}
 
 	/*! \brief Get the staggered positions
@@ -129,6 +204,16 @@ public:
 	bool is_staggered_prop(size_t prp)
 	{
 		return c_prp[prp].size() != 0;
+	}
+
+	/*! \brief Return if the grid is staggered
+	 *
+	 * \return true
+	 *
+	 */
+	bool is_staggered()
+	{
+		return true;
 	}
 
 	friend class stag_create_and_add_grid<dim,staggered_grid_dist<dim,St,T,Decomposition,Memory,device_grid>,St>;

@@ -621,4 +621,242 @@ public:
 	virtual void destroy(size_t n) = 0;
 };*/
 
+
+
+
+
+
+
+
+
+/*! \brief Impose an operator
+ *
+ * This function impose an operator on a particular grid region to produce the system
+ *
+ * Ax = b
+ *
+ * ## Stokes equation, lid driven cavity with one splipping wall
+ *
+ * \param op Operator to impose (A term)
+ * \param num right hand side of the term (b term)
+ * \param id Equation id in the system that we are imposing
+ * \param it_d iterator that define where you want to impose
+ *
+ */
+template<typename T> void impose(const T & op , typename Sys_eqs::stype num ,long int id ,grid_dist_iterator_sub<Sys_eqs::dims,typename g_map_type::d_grid> it_d, bool skip_first = false)
+{
+	//////////////////////// DEBUG /////////////////
+
+	SparseMatrix<double,int> Al;
+	Al.load("debug_matrix_single_processor");
+
+	// Construct the map 3 processors 1 processors
+
+	std::unordered_map<size_t,size_t> map_row;
+
+	auto it2 = g_map.getDomainGhostIterator();
+	auto ginfo = g_map.getGridInfoVoid();
+
+	while (it2.isNext())
+	{
+		auto key = it2.get();
+		auto key_g = g_map.getGKey(key);
+		key_g += pd.getKP1();
+
+		// To linearize must be positive
+		bool is_negative = false;
+		for (size_t i = 0 ; i < Sys_eqs::dims ; i++)
+		{
+			if (key_g.get(i) < 0)
+				is_negative = true;
+		}
+
+		if (is_negative == true)
+		{
+			++it2;
+			continue;
+		}
+
+		// Carefull g map is extended, so the original (0,0) is shifted in g_map by
+
+		if (g_map.template get<0>(key) == 7)
+		{
+			int debug = 0;
+			debug++;
+		}
+
+		map_row[g_map.template get<0>(key)] = ginfo.LinId(key_g);
+
+		++it2;
+	}
+
+	////////////////////////////////////////////////
+
+	Vcluster & v_cl = *global_v_cluster;
+
+	openfpm::vector<triplet> & trpl = A.getMatrixTriplets();
+
+	auto it = it_d;
+	grid_sm<Sys_eqs::dims,void> gs = g_map.getGridInfoVoid();
+
+	std::unordered_map<long int,float> cols;
+
+	// resize b if needed
+	b.resize(Sys_eqs::nvar * g_map.size());
+
+	bool is_first = skip_first;
+
+	// iterate all the grid points
+	while (it.isNext())
+	{
+		if (is_first == true && v_cl.getProcessUnitID() == 0)
+		{
+			++it;
+			is_first = false;
+			continue;
+		}
+		else
+			is_first = false;
+
+		// get the position
+		auto key = it.get();
+
+		// Calculate the non-zero colums
+		T::value(g_map,key,gs,spacing,cols,1.0);
+
+		//////////// DEBUG //////////////////
+
+		auto g_calc_pos = g_map.getGKey(key);
+		g_calc_pos += pd.getKP1();
+
+		/////////////////////////////////////
+
+		// create the triplet
+
+		for ( auto it = cols.begin(); it != cols.end(); ++it )
+		{
+			trpl.add();
+			trpl.last().row() = g_map.template get<0>(key)*Sys_eqs::nvar + id;
+			trpl.last().col() = it->first;
+			trpl.last().value() = it->second;
+
+			///////////// DEBUG ///////////////////////
+
+			auto ginfo = g_map.getGridInfoVoid();
+
+			size_t r = (trpl.last().row() / Sys_eqs::nvar);
+			size_t r_rest = (trpl.last().row() % Sys_eqs::nvar);
+			size_t c = (trpl.last().col() / Sys_eqs::nvar);
+			size_t c_rest = (trpl.last().col() % Sys_eqs::nvar);
+			double val = trpl.last().value();
+
+			// Transform
+
+			size_t rf = map_row[r] * 3 + r_rest;
+			size_t cf = map_row[c] * 3 + c_rest;
+
+			auto position_row = ginfo.InvLinId(rf / 3);
+			auto position_col = ginfo.InvLinId(cf / 3);
+
+			double valf = Al.getValue(rf,cf);
+
+			if (val != valf)
+			{
+				int debug = 0;
+				debug++;
+			}
+
+			///////////////////////////////////////////
+
+//				std::cout << "(" << trpl.last().row() << "," << trpl.last().col() << "," << trpl.last().value() << ")" << "\n";
+		}
+
+		b(g_map.template get<0>(key)*Sys_eqs::nvar + id) = num;
+
+		cols.clear();
+//			std::cout << "\n";
+
+		// if SE_CLASS1 is defined check the position
+#ifdef SE_CLASS1
+//			T::position(key,gs,s_pos);
+#endif
+
+		++row;
+		++row_b;
+		++it;
+	}
+}
+
+typename Sys_eqs::SparseMatrix_type A;
+
+/*! \brief produce the Matrix
+ *
+ *  \return the Sparse matrix produced
+ *
+ */
+typename Sys_eqs::SparseMatrix_type & getA()
+{
+#ifdef SE_CLASS1
+	consistency();
+#endif
+	A.resize(g_map.size()*Sys_eqs::nvar,g_map.size()*Sys_eqs::nvar);
+
+	///////////////// DEBUG SAVE //////////////////
+
+//		A.save("debug_matrix_single_processor");
+
+	////////////////////////////////////////////////
+
+	return A;
+
+}
+
+
+typename Sys_eqs::SparseMatrix_type A;
+
+/*! \brief produce the Matrix
+ *
+ *  \return the Sparse matrix produced
+ *
+ */
+typename Sys_eqs::SparseMatrix_type & getA()
+{
+#ifdef SE_CLASS1
+	consistency();
+#endif
+	A.resize(g_map.size()*Sys_eqs::nvar,g_map.size()*Sys_eqs::nvar);
+
+	///////////////// DEBUG SAVE //////////////////
+
+//		A.save("debug_matrix_single_processor");
+
+	////////////////////////////////////////////////
+
+	return A;
+
+}
+
+
+/*! \brief produce the B vector
+ *
+ *  \return the vector produced
+ *
+ */
+typename Sys_eqs::Vector_type & getB()
+{
+#ifdef SE_CLASS1
+	consistency();
+#endif
+
+	// size of the matrix
+//		B.resize(g_map.size()*Sys_eqs::nvar);
+
+	// copy the vector
+//		for (size_t i = 0; i < row_b; i++)
+//			B.insert(i,b.get(i));
+
+	return b;
+}
+};
+
 #endif /* GARGABE_HPP_ */

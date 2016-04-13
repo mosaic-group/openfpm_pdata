@@ -77,7 +77,7 @@ public:
 	 * \return new key
 	 *
 	 */
-	inline grid_dist_key_dx<dim> move(size_t i,size_t s)
+	inline grid_dist_key_dx<dim> move(size_t i,size_t s) const
 	{
 		grid_key_dx<dim> key = getKey();
 		key.set_d(i,key.get(i) + s);
@@ -91,7 +91,7 @@ public:
 	 * \return new key
 	 *
 	 */
-	inline grid_dist_key_dx<dim> move(const comb<dim> & c)
+	inline grid_dist_key_dx<dim> move(const comb<dim> & c) const
 	{
 		grid_key_dx<dim> key = getKey();
 		for (size_t i = 0 ; i < dim ; i++)

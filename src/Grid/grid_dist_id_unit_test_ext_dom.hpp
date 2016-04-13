@@ -50,12 +50,15 @@ void Test3D_extended_grid(const Box<3,float> & domain, long int k)
 		// Extend the grid by 2 points
 		Box<3,size_t> ext({2,2,2},{2,2,2});
 
-		// another grid perfectly overlapping the previous, extended by 2 points
-		grid_dist_id<3, float, aggregate<size_t[3],size_t>, CartDecomposition_ext<3,float>> g_dist2(g_dist1,ext);
+		// Ghost size of 1 grid point
+		Ghost<3,long int> gp(1);
 
-		// Given an iterator on grid 1
+		// another grid perfectly overlapping the previous, extended by 2 points
+		grid_dist_id<3, float, aggregate<size_t[3],size_t>, CartDecomposition_ext<3,float>> g_dist2(g_dist1,gp,ext);
+
+		// Given an iterator of the grid 1
 		auto dom_g1 = g_dist1.getDomainIterator();
-		// And a sub-iterator on grid 2 overlapping grid 1
+		// And a sub-iterator of grid 2 overlapping grid 1
 		auto dom_g2 = g_dist2.getSubDomainIterator({0,0,0},{k-1,k-1,k-1});
 
 		// the 2 iterator must match
