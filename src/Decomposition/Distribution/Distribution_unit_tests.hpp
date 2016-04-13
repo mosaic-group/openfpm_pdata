@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_SUITE (Distribution_test)
 
 BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 {
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() != 3)
 	return;
@@ -166,7 +166,7 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 
 BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 {
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() != 3)
 	return;
@@ -267,7 +267,7 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 
 BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 {
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() != 3)
 		return;
@@ -365,7 +365,7 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 
 void print_test_v(std::string test, size_t sz)
 {
-	if (global_v_cluster->getProcessUnitID() == 0)
+	if (create_vcluster().getProcessUnitID() == 0)
 		std::cout << test << " " << sz << "\n";
 }
 

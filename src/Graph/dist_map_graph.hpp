@@ -1015,7 +1015,7 @@ public:
 	 *
 	 */
 	DistGraph_CSR(const DistGraph_CSR & dg) :
-			vcl(*global_v_cluster)
+			vcl(create_vcluster())
 	{
 		this->operator=(dg);
 	}
@@ -1026,7 +1026,7 @@ public:
 	 *
 	 */
 	DistGraph_CSR(DistGraph_CSR && dg) :
-			vcl(*global_v_cluster)
+			vcl(create_vcluster())
 	{
 		this->operator=(dg);
 	}
@@ -1057,7 +1057,7 @@ public:
 	 *
 	 */
 	DistGraph_CSR(size_t n_vertex, size_t n_slot) :
-			vcl(*global_v_cluster), v_slot(n_slot)
+			vcl(create_vcluster()), v_slot(n_slot)
 	{
 		// Creating n_vertex into the graph
 		v.resize(n_vertex);

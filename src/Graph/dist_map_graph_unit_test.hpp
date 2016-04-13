@@ -127,10 +127,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use)
 {
 
 	//! Vcluster
-	Vcluster & vcl = *global_v_cluster;
-
-	//! Initialize the global VCluster
-	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
+	Vcluster & vcl = create_vcluster();
 
 	if(vcl.getProcessingUnits() != 4)
 		return;
@@ -244,13 +241,10 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use)
 BOOST_AUTO_TEST_CASE( dist_map_graph_use_redistribution)
 {
 	//! Vcluster
-	Vcluster & vcl = *global_v_cluster;
+	Vcluster & vcl = create_vcluster();
 
 	if(vcl.getProcessingUnits() != 4)
 		return;
-
-	//! Initialize the global VCluster
-	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
 	//! Cartesian grid
 	size_t sz[2] = { 4, 4 };
@@ -330,13 +324,10 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_redistribution)
 BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)
 {
 	// Vcluster
-	Vcluster & vcl = *global_v_cluster;
+	Vcluster & vcl = create_vcluster();
 
 	if(vcl.getProcessingUnits() != 4)
 		return;
-
-	// Initialize the global VCluster
-	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
 
 	// [create graph adding freely the vertices and the edges ]
 
@@ -489,13 +480,10 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)
 BOOST_AUTO_TEST_CASE( dist_map_graph_use_multi_free_add)
 {
 	// Vcluster
-	Vcluster & vcl = *global_v_cluster;
+	Vcluster & vcl = create_vcluster();
 
 	if(vcl.getProcessingUnits() != 4)
 		return;
-
-	// Initialize the global VCluster
-	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc, &boost::unit_test::framework::master_test_suite().argv);
 
 	// Distributed graph
 	DistGraph_CSR<vx, ed> gd;

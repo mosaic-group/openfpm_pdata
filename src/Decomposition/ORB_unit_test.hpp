@@ -17,12 +17,9 @@ BOOST_AUTO_TEST_SUITE( ORB_test )
 
 BOOST_AUTO_TEST_CASE( ORB_test_use)
 {
-	// Initialize the global VCluster
-	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
-
     // set the seed
 	// create the random generator engine
-	std::srand(global_v_cluster->getProcessUnitID());
+	std::srand(create_vcluster().getProcessUnitID());
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 

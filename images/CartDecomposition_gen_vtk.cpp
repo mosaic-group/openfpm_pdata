@@ -10,10 +10,10 @@
 int main(int argc, char ** argv)
 {
 	// Initialize the global VCluster
-	init_global_v_cluster(&argc,&argv);
+	openfpm_init(&argc,&argv);
 
 	// Vcluster
-	Vcluster & vcl = *global_v_cluster;
+	Vcluster & vcl = create_vcluster();
 
 	//! [Create CartDecomposition vtk gen]
 	CartDecomposition<2,float> dec(vcl);
@@ -42,6 +42,7 @@ int main(int argc, char ** argv)
 
 	//! [Create CartDecomposition]
 
-	delete &vcl;
+	// deinitialize the library
+	openfpm_finalize();
 }
 

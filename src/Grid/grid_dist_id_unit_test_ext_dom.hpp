@@ -18,7 +18,7 @@ void Test3D_extended_grid(const Box<3,float> & domain, long int k)
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 21;
 
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
 	if ( v_cl.getProcessingUnits() > 32 )
 		return;
@@ -26,7 +26,7 @@ void Test3D_extended_grid(const Box<3,float> & domain, long int k)
 	print_test( "Testing 3D extended grid k<=",k);
 
 	// factor
-	float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+	float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
 	// This test in order to work must have at least one ghost
 	for ( ; (0.01 / factor) > (domain.getHigh(0) - domain.getLow(0) / k) ; k-= (k > 2*big_step)?big_step:small_step )

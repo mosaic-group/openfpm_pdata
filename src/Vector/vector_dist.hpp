@@ -25,6 +25,7 @@
 #include "Decomposition/common.hpp"
 #include "Grid/grid_dist_id_iterator_dec.hpp"
 #include "Vector/vector_dist_ofb.hpp"
+#include "Decomposition/CartDecomposition.hpp"
 
 #define V_SUB_UNIT_FACTOR 64
 
@@ -67,7 +68,7 @@
  *
  */
 
-template<unsigned int dim, typename St, typename prop, typename Decomposition, typename Memory = HeapMemory>
+template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St>, typename Memory = HeapMemory>
 class vector_dist
 {
 private:
@@ -654,7 +655,7 @@ public:
 	 *
 	 */
 	vector_dist(size_t np, Box<dim, St> box, const size_t (&bc)[dim], const Ghost<dim, St> & g) :
-			dec(*global_v_cluster), v_cl(*global_v_cluster)
+			dec(create_vcluster()), v_cl(create_vcluster())
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);

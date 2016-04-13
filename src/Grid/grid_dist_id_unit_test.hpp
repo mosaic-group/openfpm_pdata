@@ -10,7 +10,7 @@ BOOST_AUTO_TEST_SUITE( grid_dist_id_test )
 
 void print_test(std::string test, size_t sz)
 {
-	if (global_v_cluster->getProcessUnitID() == 0)
+	if (create_vcluster().getProcessUnitID() == 0)
 		std::cout << test << " " << sz << "\n";
 }
 
@@ -19,10 +19,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter3D_test)
 	// Domain
 	Box<3,float> domain({-0.3,-0.3,-0.3},{1.0,1.0,1.0});
 
-	// Initialize the global VCluster
-	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
-
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
 	// Skip this test on big scale
 	if (v_cl.getProcessingUnits() >= 32)
@@ -102,10 +99,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter_test)
 	// Domain
 	Box<2,float> domain({0.0,0.0},{1.0,1.0});
 
-	// Initialize the global VCluster
-	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
-
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
 	// Skip this test on big scale
 	if (v_cl.getProcessingUnits() >= 32)
@@ -164,7 +158,7 @@ void Test2D_sub(const Box<2,float> & domain, long int k)
 	long int small_step = 21;
 
 	// this test is only performed when the number of processor is <= 32
-	if (global_v_cluster->getProcessingUnits() > 32)
+	if (create_vcluster().getProcessingUnits() > 32)
 		return;
 
 	print_test( "Testing 2D grid sub iterator k<=",k);
@@ -181,13 +175,13 @@ void Test2D_sub(const Box<2,float> & domain, long int k)
 		sz[0] = k;
 		sz[1] = k;
 
-		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/2.0f);
+		float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/2.0f);
 
 		// Ghost
 		Ghost<2,float> g(0.01 / factor);
 
 		// Distributed grid with id decomposition
-		grid_dist_id<2, float, scalar<float>, CartDecomposition<2,float>> g_dist(sz,domain,g);
+		grid_dist_id<2, float, scalar<float>> g_dist(sz,domain,g);
 
 		// check the consistency of the decomposition
 		bool val = g_dist.getDecomposition().check_consistency();
@@ -304,13 +298,13 @@ void Test2D(const Box<2,float> & domain, long int k)
 		sz[0] = k;
 		sz[1] = k;
 
-		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/2.0f);
+		float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/2.0f);
 
 		// Ghost
 		Ghost<2,float> g(0.01 / factor);
 
 		// Distributed grid with id decomposition
-		grid_dist_id<2, float, scalar<float>, CartDecomposition<2,float>> g_dist(sz,domain,g);
+		grid_dist_id<2, float, scalar<float>> g_dist(sz,domain,g);
 
 		// check the consistency of the decomposition
 		bool val = g_dist.getDecomposition().check_consistency();
@@ -405,7 +399,7 @@ void Test3D_sub(const Box<3,float> & domain, long int k)
 	long int small_step = 21;
 
 	// this test is only performed when the number of processor is <= 32
-	if (global_v_cluster->getProcessingUnits() > 32)
+	if (create_vcluster().getProcessingUnits() > 32)
 		return;
 
 	print_test( "Testing 3D grid sub k<=",k);
@@ -422,7 +416,7 @@ void Test3D_sub(const Box<3,float> & domain, long int k)
 		sz[2] = k;
 
 		// factor
-		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+		float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
 		// Ghost
 		Ghost<3,float> g(0.01 / factor);
@@ -531,7 +525,7 @@ void Test3D(const Box<3,float> & domain, long int k)
 		sz[2] = k;
 
 		// factor
-		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+		float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
 		// Ghost
 		Ghost<3,float> g(0.01 / factor);
@@ -627,7 +621,7 @@ void Test3D_gg(const Box<3,float> & domain, long int k, long int gk)
 	big_step = (big_step == 0)?1:big_step;
 
 	// this test is only performed when the number of processor is <= 32
-	if (global_v_cluster->getProcessingUnits() > 32)
+	if (create_vcluster().getProcessingUnits() > 32)
 		return;
 
 	print_test( "Testing 3D grid k<=",k);
@@ -695,7 +689,7 @@ void Test3D_domain(const Box<3,float> & domain, long int k)
 		sz[2] = k;
 
 		// factor
-		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+		float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
 		// Ghost
 		Ghost<3,float> g(0.01 / factor);
@@ -799,13 +793,13 @@ void Test2D_complex(const Box<2,float> & domain, long int k)
 		sz[0] = k;
 		sz[1] = k;
 
-		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/2.0f);
+		float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/2.0f);
 
 		// Ghost
 		Ghost<2,float> g(0.01 / factor);
 
 		// Distributed grid with id decomposition
-		grid_dist_id<2, float, Point_test<float>, CartDecomposition<2,float>> g_dist(sz,domain,g);
+		grid_dist_id<2, float, Point_test<float>> g_dist(sz,domain,g);
 
 		// check the consistency of the decomposition
 		bool val = g_dist.getDecomposition().check_consistency();
@@ -963,7 +957,7 @@ void Test3D_complex(const Box<3,float> & domain, long int k)
 		sz[2] = k;
 
 		// factor
-		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+		float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
 		// Ghost
 		Ghost<3,float> g(0.01 / factor);
@@ -1110,7 +1104,7 @@ void Test3D_dup(const Box<3,float> & domain, long int k)
 	long int small_step = 21;
 	long int k_old = k;
 
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
 	if ( v_cl.getProcessingUnits() > 32 )
 		return;
@@ -1129,14 +1123,15 @@ void Test3D_dup(const Box<3,float> & domain, long int k)
 		sz[2] = k;
 
 		// factor
-		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+		float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
 		// Ghost
 		Ghost<3,float> g(0.01 / factor);
 
 		//! [Construct two grid with the same decomposition]
 
-		// Distributed grid with id decomposition
+		// Distributed grid with id decomposition (It work also without the third template parameter)
+		// Here is given to show that the 2 grid MUST have the same decomposition strategy
 		grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> g_dist1(sz,domain,g);
 
 		// another grid with the same decomposition
@@ -1183,7 +1178,7 @@ void Test3D_dup(const Box<3,float> & domain, long int k)
 		sz[2] = k;
 
 		// factor
-		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+		float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
 		// Ghost
 		Ghost<3,float> g(0.01 / factor);
@@ -1215,7 +1210,7 @@ void Test3D_decit(const Box<3,float> & domain, long int k)
 	{
 		typedef Point_test<float> p;
 
-		Vcluster & v_cl = *global_v_cluster;
+		Vcluster & v_cl = create_vcluster();
 
 		if ( v_cl.getProcessingUnits() > 32 )
 			return;
@@ -1238,7 +1233,7 @@ void Test3D_decit(const Box<3,float> & domain, long int k)
 			sz[2] = k;
 
 			// factor
-			float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+			float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
 			// Ghost
 			Ghost<3,float> g(0.01 / factor);
@@ -1284,7 +1279,7 @@ void Test3D_decit(const Box<3,float> & domain, long int k)
 	{
 		typedef Point_test<float> p;
 
-		Vcluster & v_cl = *global_v_cluster;
+		Vcluster & v_cl = create_vcluster();
 
 		if ( v_cl.getProcessingUnits() > 32 )
 			return;
@@ -1307,7 +1302,7 @@ void Test3D_decit(const Box<3,float> & domain, long int k)
 			sz[2] = k;
 
 			// factor
-			float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+			float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
 			// Ghost
 			Ghost<3,float> g(0.01 / factor);
@@ -1356,10 +1351,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 	// Domain
 	Box<2,float> domain({0.0,0.0},{1.0,1.0});
 
-	// Initialize the global VCluster
-	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
-
-	long int k = 1024*1024*global_v_cluster->getProcessingUnits();
+	long int k = 1024*1024*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/2.);
 
 	Test2D(domain,k);
@@ -1367,7 +1359,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 	// Domain
 	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
 
-	k = 128*128*128*global_v_cluster->getProcessingUnits();
+	k = 128*128*128*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);
 	Test3D(domain3,k);
 	Test3D_complex(domain3,k);
@@ -1378,7 +1370,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_dup)
 	// Domain
 	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
 
-	long int k = 128*128*128*global_v_cluster->getProcessingUnits();
+	long int k = 128*128*128*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);
 	Test3D_dup(domain3,k);
 }
@@ -1388,7 +1380,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_sub)
 	// Domain
 	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
 
-	long int k = 128*128*128*global_v_cluster->getProcessingUnits();
+	long int k = 128*128*128*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);
 	Test3D_sub(domain3,k);
 }
@@ -1398,10 +1390,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_sub_iterator_test_use)
 	// Domain
 	Box<2,float> domain({0.0,0.0},{1.0,1.0});
 
-	// Initialize the global VCluster
-	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
-
-	long int k = 1024*1024*global_v_cluster->getProcessingUnits();
+	long int k = 1024*1024*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/2.);
 
 	Test2D_sub(domain,k);
@@ -1412,16 +1401,13 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_with_grid_unit_ghost )
 	// Domain
 	Box<2,float> domain({0.0,0.0},{1.0,1.0});
 
-	// Initialize the global VCluster
-	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
-
-	long int k = 1024*1024*global_v_cluster->getProcessingUnits();
+	long int k = 1024*1024*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/2.);
 
 	// Domain
 	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
 
-	k = 128*128*128*global_v_cluster->getProcessingUnits();
+	k = 128*128*128*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);
 	Test3D_gg(domain3,k,1);
 }
@@ -1431,16 +1417,13 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_decomposition_iterator )
 	// Domain
 	Box<2,float> domain({0.0,0.0},{1.0,1.0});
 
-	// Initialize the global VCluster
-	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
-
-	long int k = 1024*1024*global_v_cluster->getProcessingUnits();
+	long int k = 1024*1024*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/2.);
 
 	// Domain
 	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
 
-	k = 128*128*128*global_v_cluster->getProcessingUnits();
+	k = 128*128*128*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);
 	Test3D_decit(domain3,k);
 }
@@ -1448,26 +1431,20 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_decomposition_iterator )
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_domain_test_use)
 {
-	// Initialize the global VCluster
-	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
-
 	// Domain
 	Box<3,float> domain3({-0.3,-0.3,-0.3},{1.1,1.1,1.1});
 
-	long int k = 128*128*128*global_v_cluster->getProcessingUnits();
+	long int k = 128*128*128*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);
 	Test3D_domain(domain3,k);
 }
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_extended )
 {
-	// Initialize the global VCluster
-	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
-
 	// Domain
 	Box<3,float> domain3({0.1,0.1,0.1},{1.1,1.1,1.1});
 
-	long int k = 128*128*128*global_v_cluster->getProcessingUnits();
+	long int k = 128*128*128*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);
 
 	Test3D_extended_grid(domain3,k);

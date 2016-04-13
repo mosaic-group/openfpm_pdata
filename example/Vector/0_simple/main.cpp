@@ -68,7 +68,6 @@ int main(int argc, char* argv[])
 	// * Type of the space, float (2° template parameters)
 	// * Information stored by each object (3* template parameters), in this case a Point_test store 4 scalars
 	//   1 vector and an asymmetric tensor of rank 2
-	// * Strategy used to decompose the space
 	// 
 	// Constructor instead require:
 	//
@@ -79,7 +78,7 @@ int main(int argc, char* argv[])
 	// objects with an undefined position in space. This non-space decomposition is also called data-driven
 	// decomposition
 	//
-	vector_dist<2,float, Particle<float>, CartDecomposition<2,float> > vd(4096,domain,bc,g);
+	vector_dist<2,float, Particle<float> > vd(4096,domain,bc,g);
 
 	//
 	// ### WIKI 5 ###

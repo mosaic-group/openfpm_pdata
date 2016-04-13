@@ -94,14 +94,14 @@ BOOST_AUTO_TEST_SUITE( vector_dist_test )
 
 void print_test(std::string test, size_t sz)
 {
-	if (global_v_cluster->getProcessUnitID() == 0)
+	if (create_vcluster().getProcessUnitID() == 0)
 		std::cout << test << " " << sz << "\n";
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 {
 	// Communication object
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
 	typedef Point_test<float> p;
 	typedef Point<2,float> s;
@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	size_t bc[2]={NON_PERIODIC,NON_PERIODIC};
 
 	// Vector of particles
-	vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(g_info.size(),box,bc,g);
+	vector_dist<2,float, Point_test<float> > vd(g_info.size(),box,bc,g);
 
 	// size_t
 	size_t cobj = 0;
@@ -272,7 +272,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 
 void print_test_v(std::string test, size_t sz)
 {
-	if (global_v_cluster->getProcessUnitID() == 0)
+	if (create_vcluster().getProcessUnitID() == 0)
 		std::cout << test << " " << sz << "\n";
 }
 
@@ -294,7 +294,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 {
 	typedef Point<2,float> s;
 
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
     // set the seed
 	// create the random generator engine
@@ -321,7 +321,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 		// Boundary conditions
 		size_t bc[2]={NON_PERIODIC,NON_PERIODIC};
 
-		vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(k,box,bc,Ghost<2,float>(0.0));
+		vector_dist<2,float, Point_test<float> > vd(k,box,bc,Ghost<2,float>(0.0));
 
 		auto it = vd.getIterator();
 
@@ -367,7 +367,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 {
 	typedef Point<3,float> s;
 
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
     // set the seed
 	// create the random generator engine
@@ -394,7 +394,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 		// Boundary conditions
 		size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 
-		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box,bc,Ghost<3,float>(0.0));
+		vector_dist<3,float, Point_test<float> > vd(k,box,bc,Ghost<3,float>(0.0));
 
 		auto it = vd.getIterator();
 
@@ -441,7 +441,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 {
 	typedef Point<2,float> s;
 
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
     // set the seed
 	// create the random generator engine
@@ -469,7 +469,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 		size_t bc[2]={PERIODIC,PERIODIC};
 
 		// factor
-		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+		float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
 		// ghost
 		Ghost<2,float> ghost(0.01 / factor);
@@ -551,7 +551,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 {
 	typedef Point<3,float> s;
 
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
     // set the seed
 	// create the random generator engine
@@ -579,7 +579,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 		size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
 		// factor
-		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+		float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
 		// ghost
 		Ghost<3,float> ghost(0.05 / factor);
@@ -659,7 +659,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 {
 	typedef Point<3,float> s;
 
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
     // set the seed
 	// create the random generator engine
@@ -685,7 +685,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 		size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
 		// factor
-		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+		float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
 		// ghost
 		Ghost<3,float> ghost(0.01 / factor);
@@ -747,7 +747,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map )
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
 	// factor
-	float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+	float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
 	// ghost
 	Ghost<3,float> ghost(0.05 / factor);
@@ -799,7 +799,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_not_periodic_map )
 	size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 
 	// factor
-	float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+	float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
 	// ghost
 	Ghost<3,float> ghost(0.05 / factor);
@@ -843,7 +843,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_not_periodic_map )
 
 BOOST_AUTO_TEST_CASE( vector_dist_out_of_bound_policy )
 {
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 8)
 		return;
@@ -856,7 +856,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_out_of_bound_policy )
 	size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 
 	// factor
-	float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+	float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
 	// ghost
 	Ghost<3,float> ghost(0.05 / factor);
@@ -908,7 +908,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 
 	typedef Point<3,float> s;
 
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 8)
 		return;
@@ -937,7 +937,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 		size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
 		// factor
-		float factor = pow(global_v_cluster->getProcessingUnits()/2.0f,1.0f/3.0f);
+		float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
 		// interaction radius
 		float r_cut = 0.01 / factor;
@@ -1040,7 +1040,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 
 BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 {
-	long int k = 64*64*64*global_v_cluster->getProcessingUnits();
+	long int k = 64*64*64*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);
 
 	long int big_step = k / 30;
@@ -1054,7 +1054,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 	{
 		typedef Point<3,float> s;
 
-		Vcluster & v_cl = *global_v_cluster;
+		Vcluster & v_cl = create_vcluster();
 
 		const size_t Ng = k;
 

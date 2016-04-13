@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 	// scalar double, a vector double[3], and a tensor or rank 2 double[3][3].
 	// In this case the vector contain 0 particles in total
 	//
-	vector_dist<3,float, aggregate<double,double[3],double[3][3]>, CartDecomposition<3,float> > vd(0,box,bc,ghost);
+	vector_dist<3,float, aggregate<double,double[3],double[3][3]> > vd(0,box,bc,ghost);
 
 	//
 	// ### WIKI 4 ###

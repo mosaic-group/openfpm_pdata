@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_p)
 BOOST_AUTO_TEST_CASE( dec_optimizer_disconnected_subdomains_np)
 {
 	// Vcluster
-	Vcluster & vcl = *global_v_cluster;
+	Vcluster & vcl = create_vcluster();
 
 	// Test for only 3 processors
 	if (vcl.getProcessingUnits() > 3)

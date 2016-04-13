@@ -25,7 +25,7 @@ BOOST_AUTO_TEST_SUITE( Metis_test )
 
 BOOST_AUTO_TEST_CASE( Metis_test_use)
 {
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() != 3)
 		return;

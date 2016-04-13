@@ -240,7 +240,7 @@ public:
 	//! Construct Cartesian graph
 	static Graph construct(const size_t (&sz)[dim], Box<dim, T> dom)
 	{
-		Vcluster &v_cl = *global_v_cluster;
+		Vcluster &v_cl = create_vcluster();
 
 		// Calculate the size of the hyper-cubes on each dimension
 		T szd[dim];
@@ -394,7 +394,7 @@ public:
 	//! Construct Cartesian graph
 	static Graph construct(const size_t (&sz)[dim], Box<dim, T> dom)
 	{
-		Vcluster &v_cl = *global_v_cluster;
+		Vcluster &v_cl = create_vcluster();
 
 		// Calculate the size of the hyper-cubes on each dimension
 

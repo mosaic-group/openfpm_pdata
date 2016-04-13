@@ -1,6 +1,19 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] -
+
+### Added
+- Nothing to report
+
+### Fixed
+- Nothing to report
+
+### Changed
+- Eliminated global_v_cluster, init_global_v_cluster, delete_global_v_cluster, 
+  substituted by 
+  create_vcluster, openfpm_init, openfpm_delete
+
 ## [0.2.1] - 
 
 ### Changed

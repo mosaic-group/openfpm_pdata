@@ -55,10 +55,7 @@ void setComputationCosts3D(CartDecomposition<3, float> &dec, size_t n_v, Point<3
 BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test)
 {
 	// Vcluster
-	Vcluster & vcl = *global_v_cluster;
-
-	// Initialize the global VCluster
-	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
+	Vcluster & vcl = create_vcluster();
 
 	//! [Create CartDecomposition]
 	CartDecomposition<3, float> dec(vcl);
@@ -150,10 +147,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test)
 BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 {
 	// Vcluster
-	Vcluster & vcl = *global_v_cluster;
-
-	// Initialize the global VCluster
-	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
+	Vcluster & vcl = create_vcluster();
 
 	//! [Create CartDecomposition]
 	CartDecomposition<3, float> dec(vcl);
@@ -248,10 +242,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 BOOST_AUTO_TEST_CASE( CartDecomposition_ext_non_periodic_test)
 {
 	// Vcluster
-	Vcluster & vcl = *global_v_cluster;
-
-	// Initialize the global VCluster
-	init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
+	Vcluster & vcl = create_vcluster();
 
 	//! [Create CartDecomposition]
 	CartDecomposition<3,float> dec(vcl);
