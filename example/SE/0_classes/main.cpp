@@ -98,7 +98,7 @@ int main(int argc, char* argv[])
 		try
         {
 			vect_dist_key_dx vt(5048);
-			auto it = vd.getPos<0>(vt);
+			auto it = vd.getPos(vt);
         }
 		catch (size_t e)
 		{
@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
 	try
     {
 		vect_dist_key_dx vt(0);
-		auto it = vd1->getPos<0>(vt);
+		auto it = vd1->getPos(vt);
     }
 	catch (size_t e)
 	{

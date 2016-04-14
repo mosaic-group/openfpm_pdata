@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 ## [0.3.0] -
 
 ### Added
-- Nothing to report
+- Molacular Dynamic example
 
 ### Fixed
 - Nothing to report
@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
 - Eliminated global_v_cluster, init_global_v_cluster, delete_global_v_cluster, 
   substituted by 
   create_vcluster, openfpm_init, openfpm_delete
+- CartDecomposition parameter for the distributed structures is now optional
+- template getPos<0>(), substituted by getPos()
 
 ## [0.2.1] - 
 

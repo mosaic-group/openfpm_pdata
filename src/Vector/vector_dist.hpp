@@ -734,9 +734,9 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	template<unsigned int id> inline auto getPos(vect_dist_key_dx vec_key) -> decltype(v_pos.template get<id>(vec_key.getKey()))
+	inline auto getPos(vect_dist_key_dx vec_key) -> decltype(v_pos.template get<0>(vec_key.getKey()))
 	{
-		return v_pos.template get<id>(vec_key.getKey());
+		return v_pos.template get<0>(vec_key.getKey());
 	}
 
 	/*! \brief Get the property of an element
@@ -982,9 +982,9 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	template<unsigned int id> inline auto getLastPos() -> decltype(v_pos.template get<id>(0))
+	inline auto getLastPos() -> decltype(v_pos.template get<0>(0))
 	{
-		return v_pos.template get<id>(g_m - 1);
+		return v_pos.template get<0>(g_m - 1);
 	}
 
 	/*! \brief Get the property of the last element
@@ -1018,6 +1018,32 @@ public:
 		g.magnify(1.01);
 
 		return getCellList(r_cut, g);
+	}
+
+	/*! \brief Update a cell list using the stored particles
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param cell_list Cell list to update
+	 *
+	 */
+	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > void updateCellList(CellL & cell_list)
+	{
+		// Clear the cell list from the previous particles
+		cell_list.clear();
+
+		// for each particle add the particle to the cell list
+
+		auto it = getIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			cell_list.add(this->template getPos(key), key.getKey());
+
+			++it;
+		}
 	}
 
 	/*! \brief Construct a cell list starting from the stored particles
@@ -1055,18 +1081,7 @@ public:
 
 		cell_list.Initialize(pbox, div);
 
-		// for each particle add the particle to the cell list
-
-		auto it = getIterator();
-
-		while (it.isNext())
-		{
-			auto key = it.get();
-
-			cell_list.add(this->template getPos<0>(key), key.getKey());
-
-			++it;
-		}
+		updateCellList(cell_list);
 
 		return cell_list;
 	}
@@ -1096,7 +1111,7 @@ public:
 			vect_dist_key_dx key = it_p.get();
 
 			// Get the position of the particles
-			Point<dim, St> p = this->template getPos<0>(key);
+			Point<dim, St> p = this->template getPos(key);
 
 			// Clear the neighborhood of the particle
 			verlet.get(key.getKey()).clear();
@@ -1114,7 +1129,7 @@ public:
 					continue;
 				}
 
-				Point<dim, St> q = this->template getPos<0>(nnp);
+				Point<dim, St> q = this->template getPos(nnp);
 
 				if (p.distance2(q) < r_cut2)
 					verlet.get(key.getKey()).add(nnp);
@@ -1285,7 +1300,7 @@ public:
 
 		while (it.isNext())
 		{
-			size_t v = cdsm.getCell(this->template getPos<0>(it.get()));
+			size_t v = cdsm.getCell(this->template getPos(it.get()));
 
 			dec.addComputationCost(v, 1);
 

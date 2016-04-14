@@ -32,7 +32,7 @@ template<unsigned int dim> size_t total_n_part_lc(vector_dist<dim,float, Point_t
 	{
 		auto key = it2.get();
 
-		noOut &= ct.isLocal(vd.template getPos<s::x>(key));
+		noOut &= ct.isLocal(vd.getPos(key));
 
 		cnt++;
 
@@ -69,10 +69,10 @@ template<unsigned int dim> inline void count_local_n_local(vector_dist<dim,float
 	{
 		auto key = it.get();
 		// Check if it is in the domain
-		if (box.isInsideNP(vd.template getPos<s::x>(key)) == true)
+		if (box.isInsideNP(vd.getPos(key)) == true)
 		{
 			// Check if local
-			if (ct.isLocalBC(vd.template getPos<s::x>(key),bc) == true)
+			if (ct.isLocalBC(vd.getPos(key),bc) == true)
 				l_cnt++;
 			else
 				nl_cnt++;
@@ -83,7 +83,7 @@ template<unsigned int dim> inline void count_local_n_local(vector_dist<dim,float
 		}
 
 		// Check that all particles are inside the Domain + Ghost part
-		if (dom_ext.isInside(vd.template getPos<s::x>(key)) == false)
+		if (dom_ext.isInside(vd.getPos(key)) == false)
 				n_out++;
 
 		++it;
@@ -164,8 +164,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 
 		// set the particle position
 
-		vd.template getPos<s::x>(key_v)[0] = key.get(0) * spacing[0] + m_spacing[0];
-		vd.template getPos<s::x>(key_v)[1] = key.get(1) * spacing[1] + m_spacing[1];
+		vd.getPos(key_v)[0] = key.get(0) * spacing[0] + m_spacing[0];
+		vd.getPos(key_v)[1] = key.get(1) * spacing[1] + m_spacing[1];
 
 		cobj++;
 
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 		auto key = v_it2.get();
 
 		// fill with the processor ID where these particle live
-		vd.template getProp<p::s>(key) = vd.getPos<s::x>(key)[0] + vd.getPos<s::x>(key)[1] * 16;
+		vd.template getProp<p::s>(key) = vd.getPos(key)[0] + vd.getPos(key)[1] * 16;
 		vd.template getProp<p::v>(key)[0] = v_cl.getProcessUnitID();
 		vd.template getProp<p::v>(key)[1] = v_cl.getProcessUnitID();
 		vd.template getProp<p::v>(key)[2] = v_cl.getProcessUnitID();
@@ -223,7 +223,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 		auto key = g_it.get();
 
 		// Check the received data
-		BOOST_REQUIRE_EQUAL(vd.getPos<s::x>(key)[0] + vd.getPos<s::x>(key)[1] * 16,vd.template getProp<p::s>(key));
+		BOOST_REQUIRE_EQUAL(vd.getPos(key)[0] + vd.getPos(key)[1] * 16,vd.template getProp<p::s>(key));
 
 		bool is_in = false;
 		size_t b = 0;
@@ -232,7 +232,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 		// check if the received data are in one of the ghost boxes
 		for ( ; b < dec.getNEGhostBox() ; b++)
 		{
-			if (dec.getEGhostBox(b).isInside(vd.getPos<s::x>(key)) == true )
+			if (dec.getEGhostBox(b).isInside(vd.getPos(key)) == true )
 			{
 				is_in = true;
 
@@ -329,8 +329,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 		{
 			auto key = it.get();
 
-			vd.template getPos<s::x>(key)[0] = ud(eg);
-			vd.template getPos<s::x>(key)[1] = ud(eg);
+			vd.getPos(key)[0] = ud(eg);
+			vd.getPos(key)[1] = ud(eg);
 
 			++it;
 		}
@@ -349,7 +349,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 			auto key = it2.get();
 
 			// Check if local
-			BOOST_REQUIRE_EQUAL(ct.isLocal(vd.template getPos<s::x>(key)),true);
+			BOOST_REQUIRE_EQUAL(ct.isLocal(vd.getPos(key)),true);
 
 			cnt++;
 
@@ -402,9 +402,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 		{
 			auto key = it.get();
 
-			vd.template getPos<s::x>(key)[0] = ud(eg);
-			vd.template getPos<s::x>(key)[1] = ud(eg);
-			vd.template getPos<s::x>(key)[2] = ud(eg);
+			vd.getPos(key)[0] = ud(eg);
+			vd.getPos(key)[1] = ud(eg);
+			vd.getPos(key)[2] = ud(eg);
 
 			++it;
 		}
@@ -423,7 +423,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 			auto key = it2.get();
 
 			// Check if local
-			BOOST_REQUIRE_EQUAL(ct.isLocal(vd.template getPos<s::x>(key)),true);
+			BOOST_REQUIRE_EQUAL(ct.isLocal(vd.getPos(key)),true);
 
 			cnt++;
 
@@ -486,8 +486,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 		{
 			auto key = it.get();
 
-			vd.template getPos<s::x>(key)[0] = ud(eg);
-			vd.template getPos<s::x>(key)[1] = ud(eg);
+			vd.getPos(key)[0] = ud(eg);
+			vd.getPos(key)[1] = ud(eg);
 
 			++it;
 		}
@@ -596,9 +596,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 		{
 			auto key = it.get();
 
-			vd.template getPos<s::x>(key)[0] = ud(eg);
-			vd.template getPos<s::x>(key)[1] = ud(eg);
-			vd.template getPos<s::x>(key)[2] = ud(eg);
+			vd.getPos(key)[0] = ud(eg);
+			vd.getPos(key)[1] = ud(eg);
+			vd.getPos(key)[2] = ud(eg);
 
 			++it;
 		}
@@ -699,9 +699,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 		{
 			auto key = it.get();
 
-			vd.template getPos<s::x>(key)[0] = ud(eg);
-			vd.template getPos<s::x>(key)[1] = ud(eg);
-			vd.template getPos<s::x>(key)[2] = ud(eg);
+			vd.getPos(key)[0] = ud(eg);
+			vd.getPos(key)[1] = ud(eg);
+			vd.getPos(key)[2] = ud(eg);
 
 			++it;
 		}
@@ -718,9 +718,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 			{
 				auto key = it.get();
 
-				vd.template getPos<s::x>(key)[0] += 0.02 * ud(eg);
-				vd.template getPos<s::x>(key)[1] += 0.02 * ud(eg);
-				vd.template getPos<s::x>(key)[2] += 0.02 * ud(eg);
+				vd.getPos(key)[0] += 0.02 * ud(eg);
+				vd.getPos(key)[1] += 0.02 * ud(eg);
+				vd.getPos(key)[2] += 0.02 * ud(eg);
 
 				++it;
 			}
@@ -763,9 +763,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map )
 	{
 		auto key = it.get();
 
-		vd.template getPos<s::x>(key)[0] = 1.0;
-		vd.template getPos<s::x>(key)[1] = 1.0;
-		vd.template getPos<s::x>(key)[2] = 1.0;
+		vd.getPos(key)[0] = 1.0;
+		vd.getPos(key)[1] = 1.0;
+		vd.getPos(key)[2] = 1.0;
 
 		++it;
 	}
@@ -778,11 +778,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map )
 	{
 		auto key = it2.get();
 
-		float f = vd.template getPos<s::x>(key)[0];
+		float f = vd.getPos(key)[0];
 		BOOST_REQUIRE_EQUAL(f, 0.0);
-		f = vd.template getPos<s::x>(key)[1];
+		f = vd.getPos(key)[1];
 		BOOST_REQUIRE_EQUAL(f, 0.0);
-		f = vd.template getPos<s::x>(key)[2];
+		f = vd.getPos(key)[2];
 		BOOST_REQUIRE_EQUAL(f, 0.0);
 
 		++it2;
@@ -815,9 +815,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_not_periodic_map )
 	{
 		auto key = it.get();
 
-		vd.template getPos<s::x>(key)[0] = 1.0;
-		vd.template getPos<s::x>(key)[1] = 1.0;
-		vd.template getPos<s::x>(key)[2] = 1.0;
+		vd.getPos(key)[0] = 1.0;
+		vd.getPos(key)[1] = 1.0;
+		vd.getPos(key)[2] = 1.0;
 
 		++it;
 	}
@@ -830,11 +830,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_not_periodic_map )
 	{
 		auto key = it2.get();
 
-		float f = vd.template getPos<s::x>(key)[0];
+		float f = vd.getPos(key)[0];
 		BOOST_REQUIRE_EQUAL(f, 1.0);
-		f = vd.template getPos<s::x>(key)[1];
+		f = vd.getPos(key)[1];
 		BOOST_REQUIRE_EQUAL(f, 1.0);
-		f = vd.template getPos<s::x>(key)[2];
+		f = vd.getPos(key)[2];
 		BOOST_REQUIRE_EQUAL(f, 1.0);
 
 		++it2;
@@ -876,15 +876,15 @@ BOOST_AUTO_TEST_CASE( vector_dist_out_of_bound_policy )
 
 		if (cnt < 1)
 		{
-			vd.template getPos<s::x>(key)[0] = -0.06;
-			vd.template getPos<s::x>(key)[1] = -0.06;
-			vd.template getPos<s::x>(key)[2] = -0.06;
+			vd.getPos(key)[0] = -0.06;
+			vd.getPos(key)[1] = -0.06;
+			vd.getPos(key)[2] = -0.06;
 		}
 		else
 		{
-			vd.template getPos<s::x>(key)[0] = 0.06;
-			vd.template getPos<s::x>(key)[1] = 0.06;
-			vd.template getPos<s::x>(key)[2] = 0.06;
+			vd.getPos(key)[0] = 0.06;
+			vd.getPos(key)[1] = 0.06;
+			vd.getPos(key)[2] = 0.06;
 		}
 
 		cnt++;
@@ -954,9 +954,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 		{
 			auto key = it.get();
 
-			vd.template getPos<s::x>(key)[0] = ud(eg);
-			vd.template getPos<s::x>(key)[1] = ud(eg);
-			vd.template getPos<s::x>(key)[2] = ud(eg);
+			vd.getPos(key)[0] = ud(eg);
+			vd.getPos(key)[1] = ud(eg);
+			vd.getPos(key)[2] = ud(eg);
 
 			++it;
 		}
@@ -975,9 +975,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 			{
 				auto key = it.get();
 
-				vd.template getPos<s::x>(key)[0] += 0.02 * ud(eg);
-				vd.template getPos<s::x>(key)[1] += 0.02 * ud(eg);
-				vd.template getPos<s::x>(key)[2] += 0.02 * ud(eg);
+				vd.getPos(key)[0] += 0.02 * ud(eg);
+				vd.getPos(key)[1] += 0.02 * ud(eg);
+				vd.getPos(key)[2] += 0.02 * ud(eg);
 
 				++it;
 			}
@@ -1000,9 +1000,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 			{
 				auto p = it2.get();
 
-				Point<3,float> xp = vd.getPos<0>(p);
+				Point<3,float> xp = vd.getPos(p);
 
-				auto Np = NN.getIterator(NN.getCell(vd.getPos<0>(p)));
+				auto Np = NN.getIterator(NN.getCell(vd.getPos(p)));
 
 				while (Np.isNext())
 				{
@@ -1010,7 +1010,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 
 					// repulsive
 
-					Point<3,float> xq = vd.getPos<0>(q);
+					Point<3,float> xq = vd.getPos(q);
 					Point<3,float> f = (xp - xq);
 
 					float distance = f.norm();
@@ -1081,9 +1081,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 
 			auto key = it.get();
 
-			vd.template getLastPos<s::x>()[0] = key.get(0) * it.getSpacing(0);
-			vd.template getLastPos<s::x>()[1] = key.get(1) * it.getSpacing(1);
-			vd.template getLastPos<s::x>()[2] = key.get(2) * it.getSpacing(2);
+			vd.getLastPos()[0] = key.get(0) * it.getSpacing(0);
+			vd.getLastPos()[1] = key.get(1) * it.getSpacing(1);
+			vd.getLastPos()[2] = key.get(2) * it.getSpacing(2);
 
 			++it;
 		}
@@ -1130,14 +1130,14 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 			size_t second_NN = 0;
 			size_t third_NN = 0;
 
-			Point<3,float> p = vd.getPos<0>(i);
+			Point<3,float> p = vd.getPos(i);
 
 			// for each neighborhood particle
 			for (size_t j = 0 ; j < verlet.get(i).size() ; j++)
 			{
 				auto & NN = verlet.get(i);
 
-				Point<3,float> q = vd.getPos<0>(NN.get(j));
+				Point<3,float> q = vd.getPos(NN.get(j));
 
 				float dist = p.distance(q);
 

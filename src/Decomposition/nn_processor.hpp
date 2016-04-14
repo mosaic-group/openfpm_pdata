@@ -128,7 +128,7 @@ class nn_prcs
 						break;
 					case -1:
 						bp.setLow(k,domain.getLow(k));
-						bp.setHigh(k,ghost.getHigh(k));
+						bp.setHigh(k,domain.getLow(k)+ghost.getHigh(k));
 						shift.get(k) = domain.getHigh(k)-domain.getLow(k);
 						break;
 					}

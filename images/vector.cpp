@@ -46,11 +46,11 @@ int main(int argc, char* argv[])
 	{
 		auto key = it.get();
 
-		vd.template getPos<s::x>(key)[0] = ud(eg);
-		vd.template getPos<s::x>(key)[1] = ud(eg);
+		vd.getPos(key)[0] = ud(eg);
+		vd.getPos(key)[1] = ud(eg);
 
-		vd.template getProp<1>(key)[0] = sin(10.0*vd.template getPos<s::x>(key)[0]);
-		vd.template getProp<1>(key)[1] = sin(10.0*vd.template getPos<s::x>(key)[1]);
+		vd.template getProp<1>(key)[0] = sin(10.0*vd.getPos(key)[0]);
+		vd.template getProp<1>(key)[1] = sin(10.0*vd.getPos(key)[1]);
 
 		++it;
 	}
@@ -77,8 +77,8 @@ int main(int argc, char* argv[])
 		{
 			auto key = it.get();
 
-			vd.template getPos<0>(key)[0] += 0.005;
-			vd.template getPos<0>(key)[1] += 0.005;
+			vd.getPos(key)[0] += 0.005;
+			vd.getPos(key)[1] += 0.005;
                         
             vd.template getProp<1>(key)[0] = 0.005;
             vd.template getProp<1>(key)[1] = 0.005;

@@ -103,9 +103,9 @@ int main(int argc, char* argv[])
 
 		auto key = it.get();
 
-		vd.template getLastPos<0>()[0] = key.get(0) * it.getSpacing(0);
-		vd.template getLastPos<0>()[1] = key.get(1) * it.getSpacing(1);
-		vd.template getLastPos<0>()[2] = key.get(2) * it.getSpacing(2);
+		vd.getLastPos()[0] = key.get(0) * it.getSpacing(0);
+		vd.getLastPos()[1] = key.get(1) * it.getSpacing(1);
+		vd.getLastPos()[2] = key.get(2) * it.getSpacing(2);
 
 		++it;
 	}
@@ -133,9 +133,9 @@ int main(int argc, char* argv[])
 	{
 		auto p = it2.get();
 
-		Point<3,float> xp = vd.getPos<0>(p);
+		Point<3,float> xp = vd.getPos(p);
 
-		auto Np = NN.getIterator(NN.getCell(vd.getPos<0>(p)));
+		auto Np = NN.getIterator(NN.getCell(vd.getPos(p)));
 
 		while (Np.isNext())
 		{
@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
 
 			// repulsive
 
-			Point<3,float> xq = vd.getPos<0>(q);
+			Point<3,float> xq = vd.getPos(q);
 			Point<3,float> f = (xp - xq);
 
 			// we sum the distance of all the particles

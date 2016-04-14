@@ -74,7 +74,7 @@ template<typename CellL> double calcLap(Point<1,double> p, vect_dist_key_dx key,
 		if (nnp != key.getKey())
 		{
 			// W(x-y)
-			double ker = lker.value(p,vd.template getPos<0>(nnp));
+			double ker = lker.value(p,vd.getPos(nnp));
 
 			// f(y)
 			double prp_y = vd.template getProp<0>(nnp);
@@ -180,7 +180,7 @@ int main(int argc, char* argv[])
 		auto key = it2.get();
 
 		// set the position of the particles
-		vd.template getPos<0>(key)[0] = (key.getKey() + base) * spacing;
+		vd.getPos(key)[0] = (key.getKey() + base) * spacing;
 		//set the property of the particles
 		vd.template getProp<0>(key) = f_xex2((key.getKey() + base) * spacing);
 
@@ -238,19 +238,19 @@ int main(int argc, char* argv[])
 		auto key = it.get();
 
 		// set the position of the particles
-		if (m_pad.isInsideNB(vd.template getPos<0>(key)) == true)
+		if (m_pad.isInsideNB(vd.getPos(key)) == true)
 		{
 			vd.add();
-			vd.template getLastPos<0>()[0] = - vd.template getPos<0>(key)[0];
+			vd.getLastPos()[0] = - vd.getPos(key)[0];
 			vd.template getLastProp<0>() = - vd.template getProp<0>(key);
 		}
 
 		// set the position of the particles
-		if (m_pad2.isInsideNB(vd.template getPos<0>(key)) == true)
+		if (m_pad2.isInsideNB(vd.getPos(key)) == true)
 		{
 			vd.add();
-			vd.template getLastPos<0>()[0] = 2.0 * box.getHigh(0) - vd.template getPos<0>(key)[0];
-			vd.template getLastProp<0>() = f_xex2(vd.template getLastPos<0>()[0]);
+			vd.getLastPos()[0] = 2.0 * box.getHigh(0) - vd.getPos(key)[0];
+			vd.template getLastProp<0>() = f_xex2(vd.getLastPos()[0]);
 		}
 
 		++it;
@@ -284,7 +284,7 @@ int main(int argc, char* argv[])
     		// key
     		vect_dist_key_dx key = it_p.get();
 
-    		Point<1,double> p = vd.template getPos<0>(key);
+    		Point<1,double> p = vd.getPos(key);
 
     		// We are not interested in calculating out the domain
     		// note added padding particle are considered domain particles

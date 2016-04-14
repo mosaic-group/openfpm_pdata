@@ -102,9 +102,9 @@ int main(int argc, char* argv[])
 
 		auto key = it.get();
 
-		vd.template getLastPos<0>()[0] = key.get(0) * it.getSpacing(0);
-		vd.template getLastPos<0>()[1] = key.get(1) * it.getSpacing(1);
-		vd.template getLastPos<0>()[2] = key.get(2) * it.getSpacing(2);
+		vd.getLastPos()[0] = key.get(0) * it.getSpacing(0);
+		vd.getLastPos()[1] = key.get(1) * it.getSpacing(1);
+		vd.getLastPos()[2] = key.get(2) * it.getSpacing(2);
 
 		++it;
 	}
@@ -138,14 +138,14 @@ int main(int argc, char* argv[])
 	for (size_t i = 0 ; i < verlet.size() ; i++)
 	{
 
-		Point<3,float> p = vd.getPos<0>(i);
+		Point<3,float> p = vd.getPos(i);
 
 		// for each neighborhood particle
 		for (size_t j = 0 ; j < verlet.get(i).size() ; j++)
 		{
 			auto & NN = verlet.get(i);
 
-			Point<3,float> q = vd.getPos<0>(NN.get(j));
+			Point<3,float> q = vd.getPos(NN.get(j));
 
 			// some non-sense calculation as usage demo
 

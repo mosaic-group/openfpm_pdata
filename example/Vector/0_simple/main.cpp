@@ -91,8 +91,8 @@ int main(int argc, char* argv[])
 	{
 		auto key = it.get();
 
-		vd.template getPos<s::x>(key)[0] = ud(eg);
-		vd.template getPos<s::x>(key)[1] = ud(eg);
+		vd.getPos(key)[0] = ud(eg);
+		vd.getPos(key)[1] = ud(eg);
 
 		++it;
 	}
@@ -121,7 +121,7 @@ int main(int argc, char* argv[])
 		auto key = it.get();
 
 		// The template parameter is unuseful and will probably disappear
-		if (ct.isLocal(vd.template getPos<0>(key)) == false)
+		if (ct.isLocal(vd.getPos(key)) == false)
 			std::cerr << "Error particle is not local" << "\n";
 
 		// set the all the properties to 0.0
