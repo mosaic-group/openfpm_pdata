@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Molacular Dynamic example
+- addUpdateCell list for more optimal update of the cell list instead of recreate the CellList
 
 ### Fixed
 - Nothing to report
@@ -12,7 +13,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Eliminated global_v_cluster, init_global_v_cluster, delete_global_v_cluster, 
   substituted by 
-  create_vcluster, openfpm_init, openfpm_delete
+  create_vcluster, openfpm_init, openfpm_finalize
 - CartDecomposition parameter for the distributed structures is now optional
 - template getPos<0>(), substituted by getPos()
 
