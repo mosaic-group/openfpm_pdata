@@ -12,7 +12,7 @@ OBJ = main.o
 md_dyn: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
-all: cell
+all: md_dyn
 
 .PHONY: clean all
 
