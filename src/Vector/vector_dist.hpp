@@ -1040,7 +1040,7 @@ public:
 		{
 			auto key = it.get();
 
-			cell_list.add(this->template getPos(key), key.getKey());
+			cell_list.add(this->getPos(key), key.getKey());
 
 			++it;
 		}
@@ -1111,7 +1111,7 @@ public:
 			vect_dist_key_dx key = it_p.get();
 
 			// Get the position of the particles
-			Point<dim, St> p = this->template getPos(key);
+			Point<dim, St> p = this->getPos(key);
 
 			// Clear the neighborhood of the particle
 			verlet.get(key.getKey()).clear();
@@ -1129,7 +1129,7 @@ public:
 					continue;
 				}
 
-				Point<dim, St> q = this->template getPos(nnp);
+				Point<dim, St> q = this->getPos(nnp);
 
 				if (p.distance2(q) < r_cut2)
 					verlet.get(key.getKey()).add(nnp);
@@ -1300,7 +1300,7 @@ public:
 
 		while (it.isNext())
 		{
-			size_t v = cdsm.getCell(this->template getPos(it.get()));
+			size_t v = cdsm.getCell(this->getPos(it.get()));
 
 			dec.addComputationCost(v, 1);
 
