@@ -44,14 +44,14 @@ void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, Ce
 	{
 		auto p = it2.get();
 
-		Point<3,double> xp = vd.getPos<0>(p);
+		Point<3,double> xp = vd.getPos(p);
 
 		vd.template getProp<force>(p)[0] = 0.0;
 		vd.template getProp<force>(p)[1] = 0.0;
 		vd.template getProp<force>(p)[2] = 0.0;
 
 		// For each neighborhood particle
-		auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos<0>(p)));
+		auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(p)));
 
 		while (Np.isNext())
 		{
@@ -61,7 +61,7 @@ void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, Ce
 			if (q == p.getKey())	{++Np; continue;};
 
 			// repulsive
-			Point<3,double> xq = vd.getPos<0>(q);
+			Point<3,double> xq = vd.getPos(q);
 			Point<3,double> r = xp - xq;
 
 			// take the norm, normalize
@@ -109,14 +109,14 @@ double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, 
 	{
 		auto p = it2.get();
 
-		Point<3,double> xp = vd.getPos<0>(p);
+		Point<3,double> xp = vd.getPos(p);
 
 		vd.template getProp<force>(p)[0] = 0.0;
 		vd.template getProp<force>(p)[1] = 0.0;
 		vd.template getProp<force>(p)[2] = 0.0;
 
 		// For each neighborhood particle
-		auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos<0>(p)));
+		auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(p)));
 
 		while (Np.isNext())
 		{
@@ -125,7 +125,7 @@ double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, 
 
 			if (q == p.getKey())	{++Np; continue;};
 
-			Point<3,double> xq = vd.getPos<0>(q);
+			Point<3,double> xq = vd.getPos(q);
 			Point<3,double> r = xp - xq;
 
 			// take the normalized direction
@@ -253,9 +253,9 @@ int main(int argc, char* argv[])
 
 		auto key = it.get();
 
-		vd.template getLastPos<0>()[0] = key.get(0) * it.getSpacing(0);
-		vd.template getLastPos<0>()[1] = key.get(1) * it.getSpacing(1);
-		vd.template getLastPos<0>()[2] = key.get(2) * it.getSpacing(2);
+		vd.getLastPos()[0] = key.get(0) * it.getSpacing(0);
+		vd.getLastPos()[1] = key.get(1) * it.getSpacing(1);
+		vd.getLastPos()[2] = key.get(2) * it.getSpacing(2);
 
 		vd.template getLastProp<velocity>()[0] = 0.0;
 		vd.template getLastProp<velocity>()[1] = 0.0;
@@ -307,9 +307,9 @@ int main(int argc, char* argv[])
 			vd.template getProp<velocity>(p)[2] += 0.5*dt*vd.template getProp<force>(p)[2];
 
 			// here we calculate x(tn + 1)
-			vd.template getPos<0>(p)[0] += vd.template getProp<velocity>(p)[0]*dt;
-			vd.template getPos<0>(p)[1] += vd.template getProp<velocity>(p)[1]*dt;
-			vd.template getPos<0>(p)[2] += vd.template getProp<velocity>(p)[2]*dt;
+			vd.getPos(p)[0] += vd.template getProp<velocity>(p)[0]*dt;
+			vd.getPos(p)[1] += vd.template getProp<velocity>(p)[1]*dt;
+			vd.getPos(p)[2] += vd.template getProp<velocity>(p)[2]*dt;
 
 			++it3;
 		}
