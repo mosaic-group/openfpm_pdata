@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
 	//
 	// Initialize the library and several objects 
 	//
-	init_global_v_cluster(&argc,&argv);
+	openfpm_init(&argc,&argv);
 	
 	//
 	// ### WIKI 3 ###
@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
 	// Get the vcluster object and the number of processor
 	//
 
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 	size_t N_prc = v_cl.getProcessingUnits();
 
 	//
@@ -173,5 +173,5 @@ int main(int argc, char* argv[])
 			std::cout << v_two.get(i);
 	}
 
-	delete_global_v_cluster();
+	openfpm_finalize();
 }

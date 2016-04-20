@@ -264,7 +264,7 @@ public:
 	 *
 	 */
 	ORB(Box dom, size_t n_sub, loc_pos & lp)
-	:v_cl(*global_v_cluster),lp(lp)
+	:v_cl(create_vcluster()),lp(lp)
 	{
 		typedef ORB<dim,T,loc_wg,loc_pos,Box,Tree> ORB_class;
 

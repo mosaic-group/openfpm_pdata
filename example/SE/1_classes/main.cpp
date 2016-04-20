@@ -36,8 +36,8 @@ int main(int argc, char* argv[])
 	// * message_on_allocation set a message to print when one allocation is reached, the filename and line number can be used to set a breakpoint and analyze the stacktrace.
 	// * throw_on_allocation throw when one allocation is reached, producing the termination of the program and a core dump (if no try catch is set-up)
 	//
-	init_global_v_cluster(&argc,&argv);
-	Vcluster & v_cl = *global_v_cluster;
+	openfpm_init(&argc,&argv);
+	Vcluster & v_cl = create_vcluster();
 
 	throw_on_alloc(10);
 	// message_on_alloc(10);
@@ -104,6 +104,6 @@ int main(int argc, char* argv[])
 	//
 	// Deinitialize the library
 	//
-	delete_global_v_cluster();
+	openfpm_finalize();
 }
 

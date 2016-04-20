@@ -38,7 +38,6 @@ Thumbs.db
 
 ###### Other
 
-*.vtk
 AUTHORS
 COPYING
 INSTALL
@@ -72,3 +71,5 @@ depcomp
 install-sh
 missing
 install_dir
+**/*.vtk
+!**/test_data/*.vtk

@@ -11,8 +11,8 @@
 #include "VCluster.hpp"
 
 struct ut_start {
-    ut_start()   { BOOST_TEST_MESSAGE("Initialize global VCluster"); init_global_v_cluster(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv); }
-    ~ut_start()  { BOOST_TEST_MESSAGE("Delete global VClster");delete_global_v_cluster(); }
+    ut_start()   { BOOST_TEST_MESSAGE("Initialize global VCluster"); openfpm_init(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv); }
+    ~ut_start()  { BOOST_TEST_MESSAGE("Delete global VClster"); openfpm_finalize(); }
 };
 
 //____________________________________________________________________________//

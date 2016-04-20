@@ -39,7 +39,7 @@ class ie_ghost
 	openfpm::vector<p_box<dim,T> > vb_int;
 
 	//! Cell-list that store the geometrical information of the internal ghost boxes
-	CellList<dim,T,FAST> geo_cell;
+	CellList<dim,T,FAST,shift<dim,T>> geo_cell;
 
 	//! shift vectors
 	openfpm::vector<Point<dim,T>> shifts;
@@ -176,10 +176,10 @@ protected:
 	 * internal ghost
 	 *
 	 */
-	void Initialize_geo_cell(const Box<dim,T> & domain, const size_t (&div)[dim] ,const Point<dim,T> & orig)
+	void Initialize_geo_cell(const Box<dim,T> & domain, const size_t (&div)[dim])
 	{
 		// Initialize the geo_cell structure
-		geo_cell.Initialize(domain,div,orig);
+		geo_cell.Initialize(domain,div);
 	}
 
 	/*! \brief Create the box_nn_processor_int (bx part)  structure
@@ -1002,6 +1002,21 @@ public:
 		}
 
 		return true;
+	}
+
+	/*! \brief Reset the nn_prcs structure
+	 *
+	 */
+	void reset()
+	{
+		box_nn_processor_int.clear();
+		proc_int_box.clear();
+		vb_ext.clear();
+		vb_int.clear();
+		geo_cell.clear();
+		shifts.clear();
+		ids_p.clear();
+		ids.clear();
 	}
 };
 

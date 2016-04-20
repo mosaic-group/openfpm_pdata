@@ -11,7 +11,7 @@
 
 #include "Vector/vector_dist.hpp"
 #include "Decomposition/CartDecomposition.hpp"
-#include "Kernels.hpp"
+#include "PSE/Kernels.hpp"
 #include "data_type/aggregate.hpp"
 #include <cmath>
 
@@ -63,10 +63,10 @@ int main(int argc, char* argv[])
 	//
 
 	// Number of particles
-	const size_t Npart = 1000;
+	const size_t Npart = 125;
 
 	// Number of padding particles (At least)
-	const size_t Npad = 20;
+	const size_t Npad = 40;
 
 	// The domain
 	Box<1,double> box({0.0},{4.0});
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 	const double eps = 2*spacing;
 
 	// Laplacian PSE kernel 1 dimension, on double, second order
-	Lap<1,double,2> lker(eps);
+	Lap_PSE<1,double,2> lker(eps);
 
 	//
 	// ### WIKI 2 ###
@@ -86,8 +86,8 @@ int main(int argc, char* argv[])
 	// Here we Initialize the library and we define Ghost size
 	// and non-periodic boundary conditions
 	//
-	init_global_v_cluster(&argc,&argv);
-	Vcluster & v_cl = *global_v_cluster;
+	openfpm_init(&argc,&argv);
+	Vcluster & v_cl = create_vcluster();
 
     size_t bc[1]={NON_PERIODIC};
 	Ghost<1,double> g(12*eps);
@@ -127,7 +127,7 @@ int main(int argc, char* argv[])
 		auto key = it2.get();
 
 		// set the position of the particles
-		vd.template getPos<0>(key)[0] = (key.getKey() + base) * spacing;
+		vd.getPos(key)[0] = (key.getKey() + base) * spacing;
 		//set the property of the particles
 		vd.template getProp<0>(key) = f_xex2((key.getKey() + base) * spacing);
 
@@ -185,26 +185,26 @@ int main(int argc, char* argv[])
 		auto key = it.get();
 
 		// set the position of the particles
-		if (m_pad.isInsideNB(vd.template getPos<0>(key)) == true)
+		if (m_pad.isInsideNB(vd.getPos(key)) == true)
 		{
 			vd.add();
-			vd.template getLastPos<0>()[0] = - vd.template getPos<0>(key)[0];
+			vd.getLastPos()[0] = - vd.getPos(key)[0];
 			vd.template getLastProp<0>() = - vd.template getProp<0>(key);
 		}
 
 		// set the position of the particles
-		if (m_pad2.isInsideNB(vd.template getPos<0>(key)) == true)
+		if (m_pad2.isInsideNB(vd.getPos(key)) == true)
 		{
 			vd.add();
-			vd.template getLastPos<0>()[0] = 2.0 * box.getHigh(0) - vd.template getPos<0>(key)[0];
-			vd.template getLastProp<0>() = f_xex2(vd.template getLastPos<0>()[0]);
+			vd.getLastPos()[0] = 2.0 * box.getHigh(0) - vd.getPos(key)[0];
+			vd.template getLastProp<0>() = f_xex2(vd.getLastPos()[0]);
 		}
 
 		++it;
 	}
 
 	//
-	// ### WIKI 6 ###
+	// ### WIKI 7 ###
 	//
 	// We create a CellList with cell spacing 12 sigma
 	//
@@ -212,20 +212,19 @@ int main(int argc, char* argv[])
     // get and construct the Cell list
 
 	Ghost<1,double> gp(enlarge);
-    auto cl = vd.getCellList(8*eps,gp);
+    auto cl = vd.getCellList(12*eps,gp);
 
     // Maximum infinity norm
     double linf = 0.0;
 
 	//
-	// ### WIKI 6 ###
+	// ### WIKI 8 ###
 	//
     // For each particle get the neighborhood of each particle
     //
     // This cycle is literally the formula from PSE operator approximation
-	//
     //
-    //
+    // \$ \frac{1}{\epsilon^{2}} h (u_{q} - u_{p}) \eta_{\epsilon}(x_q - x_p) \$
     //
 
     auto it_p = vd.getDomainIterator();
@@ -238,7 +237,7 @@ int main(int argc, char* argv[])
     	vect_dist_key_dx key = it_p.get();
 
     	// Get the position of the particles
-    	Point<1,double> p = vd.template getPos<0>(key);
+    	Point<1,double> p = vd.getPos(key);
 
     	// We are not interested in calculating out the domain
     	// note added padding particle are considered domain particles
@@ -262,7 +261,7 @@ int main(int argc, char* argv[])
     		if (nnp != key.getKey())
     		{
     			// W(x-y)
-    			double ker = lker.value(p,vd.template getPos<0>(nnp));
+    			double ker = lker.value(p,vd.getPos(nnp));
 
     			// f(y)
     			double prp_y = vd.template getProp<0>(nnp);
@@ -288,7 +287,7 @@ int main(int argc, char* argv[])
     }
 
 	//
-	// ### WIKI 7 ###
+	// ### WIKI 9 ###
 	//
     // Calculate the maximum infinity norm across processors and
     // print it
@@ -301,9 +300,9 @@ int main(int argc, char* argv[])
     	std::cout << "Norm infinity: " << linf << "\n";
 
 	//
-	// ### WIKI 8 ###
+	// ### WIKI 10 ###
 	//
 	// Deinitialize the library
 	//
-	delete_global_v_cluster();
+	openfpm_finalize();
 }

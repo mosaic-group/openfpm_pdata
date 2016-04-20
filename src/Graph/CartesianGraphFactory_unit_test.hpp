@@ -4,7 +4,7 @@
 #include "Graph/CartesianGraphFactory.hpp"
 #include "Graph/map_graph.hpp"
 
-#define GS_SIZE 8
+#define GS_SIZE 64
 
 /*!
  *
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE( CartesianGraphFactory_use_np)
 	// Boundary conditions, non periodic
 	size_t bc[] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 
-	Graph_CSR<Point_test<float>,Point_test<float>> g = g_factory.construct<node::communication,float,2>(sz,box,bc);
+	Graph_CSR<Point_test<float>,Point_test<float>> g = g_factory.construct<node::communication,NO_VERTEX_ID,float,2>(sz,box,bc);
 
 	// check that the number of vertex are equal to GS_SIZE^3
 	BOOST_REQUIRE_EQUAL(g.getNVertex(),(size_t)GS_SIZE*GS_SIZE*GS_SIZE);
@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE( CartesianGraphFactory_use_p)
 	// Boundary conditions, non periodic
 	size_t bc[] = {PERIODIC,PERIODIC,PERIODIC};
 
-	Graph_CSR<Point_test<float>,Point_test<float>> g = g_factory.construct<node::communication,float,2>(sz,box,bc);
+	Graph_CSR<Point_test<float>,Point_test<float>> g = g_factory.construct<node::communication,NO_VERTEX_ID,float,2>(sz,box,bc);
 
 	// check that the number of vertex are equal to GS_SIZE^3
 	BOOST_REQUIRE_EQUAL(g.getNVertex(),(size_t)GS_SIZE*GS_SIZE*GS_SIZE);

@@ -34,7 +34,7 @@
 struct nm_v
 {
 	//! The node contain 3 unsigned long integer for communication computation memory and id
-	typedef boost::fusion::vector<float,float,float,size_t,size_t,size_t,size_t,long int> type;
+	typedef boost::fusion::vector<float[3], size_t, size_t, size_t, size_t, long int, size_t> type;
 
 	//! type of the positional field
 	typedef float s_type;
@@ -48,44 +48,78 @@ struct nm_v
 	//! The data
 	type data;
 
-	//! computation property id in boost::fusion::vector
+	//! pos property id in boost::fusion::vector
 	static const unsigned int x = 0;
+	//! migration property id in boost::fusion::vector
+	static const unsigned int migration = 1;
 	//! computation property id in boost::fusion::vector
-	static const unsigned int y = 1;
-	//! memory property id in boost::fusion::vector
-	static const unsigned int z = 2;
-	//! computation property id in boost::fusion::vector
-	static const unsigned int communication = 3;
-	//! computation property id in boost::fusion::vector
-	static const unsigned int computation = 4;
-	//! memory property id in boost::fusion::vector
-	static const unsigned int memory = 5;
-	//! memory property id in boost::fusion::vector
-	static const unsigned int id = 6;
-	//! memory property sub_id in boost::fusion::vector
-	static const unsigned int sub_id = 7;
+	static const unsigned int computation = 2;
+	//! global_id property id in boost::fusion::vector
+	static const unsigned int global_id = 3;
+	//! id property id in boost::fusion::vector
+	static const unsigned int id = 4;
+	//! sub_id property id in boost::fusion::vector
+	static const unsigned int sub_id = 5;
+	//! proc_id property id in boost::fusion::vector
+	static const unsigned int proc_id = 6;
 
 	//! total number of properties boost::fusion::vector
-	static const unsigned int max_prop = 8;
-    
-    //! default constructor
-    nm_v(){
-        
-    }
-    
-    template <unsigned int dim, typename Mem> inline nm_v(const encapc<dim,nm_v,Mem> & p)
-    {
-        boost::fusion::at_c<0>(data) = p.template get<0>();
-        boost::fusion::at_c<1>(data) = p.template get<1>();
-        boost::fusion::at_c<2>(data) = p.template get<2>();
-        boost::fusion::at_c<3>(data) = p.template get<3>();
-        boost::fusion::at_c<4>(data) = p.template get<4>();
-        boost::fusion::at_c<5>(data) = p.template get<5>();
-        boost::fusion::at_c<6>(data) = p.template get<6>();
-        boost::fusion::at_c<7>(data) = p.template get<7>();
-    }
-    
-    
+	static const unsigned int max_prop = 7;
+
+	//! default constructor
+	nm_v()
+	{
+
+	}
+
+	inline nm_v(const nm_v & p)
+	{
+		boost::fusion::at_c<0>(data)[0] = boost::fusion::at_c<0>(p.data)[0];
+		boost::fusion::at_c<0>(data)[1] = boost::fusion::at_c<0>(p.data)[1];
+		boost::fusion::at_c<0>(data)[2] = boost::fusion::at_c<0>(p.data)[2];
+		boost::fusion::at_c<1>(data) = boost::fusion::at_c<1>(p.data);
+		boost::fusion::at_c<2>(data) = boost::fusion::at_c<2>(p.data);
+		boost::fusion::at_c<3>(data) = boost::fusion::at_c<3>(p.data);
+		boost::fusion::at_c<4>(data) = boost::fusion::at_c<4>(p.data);
+		boost::fusion::at_c<5>(data) = boost::fusion::at_c<5>(p.data);
+		boost::fusion::at_c<6>(data) = boost::fusion::at_c<6>(p.data);
+	}
+
+	template<unsigned int dim, typename Mem> inline nm_v(const encapc<dim, nm_v, Mem> & p)
+	{
+		this->operator=(p);
+	}
+
+	template<unsigned int dim, typename Mem> inline nm_v & operator=(const encapc<dim, nm_v, Mem> & p)
+	{
+		boost::fusion::at_c<0>(data)[0] = p.template get<0>()[0];
+		boost::fusion::at_c<0>(data)[1] = p.template get<0>()[1];
+		boost::fusion::at_c<0>(data)[2] = p.template get<0>()[2];
+		boost::fusion::at_c<1>(data) = p.template get<1>();
+		boost::fusion::at_c<2>(data) = p.template get<2>();
+		boost::fusion::at_c<3>(data) = p.template get<3>();
+		boost::fusion::at_c<4>(data) = p.template get<4>();
+		boost::fusion::at_c<5>(data) = p.template get<5>();
+		boost::fusion::at_c<6>(data) = p.template get<6>();
+
+		return *this;
+	}
+
+	template<unsigned int id> inline auto get() -> decltype(boost::fusion::at_c < id > (data))
+	{
+		return boost::fusion::at_c<id>(data);
+	}
+
+	template<unsigned int id> inline auto get() const -> const decltype(boost::fusion::at_c < id > (data))
+	{
+		return boost::fusion::at_c<id>(data);
+	}
+
+	static bool noPointers()
+	{
+		return true;
+	}
+
 };
 
 /*! \brief sub-domain edge graph node
@@ -95,7 +129,7 @@ struct nm_v
 struct nm_e
 {
 	//! The node contain 3 unsigned long integer for comunication computation and memory
-	typedef boost::fusion::vector<size_t> type;
+	typedef boost::fusion::vector<size_t, size_t, size_t> type;
 
 	//! Attributes name
 	struct attributes
@@ -108,10 +142,34 @@ struct nm_e
 
 	//! computation property id in boost::fusion::vector
 	static const unsigned int communication = 0;
+	static const unsigned int srcgid = 1;
+	static const unsigned int dstgid = 2;
 	//! total number of properties boost::fusion::vector
-	static const unsigned int max_prop = 1;
-};
+	static const unsigned int max_prop = 3;
 
+	nm_e()
+	{
+
+	}
+
+	template<unsigned int dim, typename Mem> inline nm_e(const encapc<dim, nm_e, Mem> & p)
+	{
+		boost::fusion::at_c<0>(data) = p.template get<0>();
+		boost::fusion::at_c<1>(data) = p.template get<1>();
+		boost::fusion::at_c<2>(data) = p.template get<2>();
+
+	}
+
+	template<unsigned int id> inline auto get() -> decltype(boost::fusion::at_c < id > (data))
+	{
+		return boost::fusion::at_c<id>(data);
+	}
+
+	static bool noPointers()
+	{
+		return true;
+	}
+};
 
 /*! \brief Reduced sub-domain vertex graph node
  *
@@ -122,7 +180,7 @@ struct nm_e
 struct nm_part_v
 {
 	//! The node contain 3 unsigned long integer for comunication computation and memory
-	typedef boost::fusion::vector<size_t,size_t> type;
+	typedef boost::fusion::vector<size_t, size_t> type;
 
 	typedef float s_type;
 
@@ -143,20 +201,20 @@ struct nm_part_v
 
 	//! total number of properties
 	static const unsigned int max_prop = 2;
-    
-    //! default constructor
-    nm_part_v(){
-        
-    }
-    
-    template <unsigned int dim, typename Mem> inline nm_part_v(const encapc<dim,nm_part_v,Mem> & p)
-    {
-        boost::fusion::at_c<0>(data) = p.template get<0>();
-        boost::fusion::at_c<1>(data) = p.template get<1>();
-    }
-    
-};
 
+	//! default constructor
+	nm_part_v()
+	{
+
+	}
+
+	template<unsigned int dim, typename Mem> inline nm_part_v(const encapc<dim, nm_part_v, Mem> & p)
+	{
+		boost::fusion::at_c<0>(data) = p.template get<0>();
+		boost::fusion::at_c<1>(data) = p.template get<1>();
+	}
+
+};
 
 /*! \brief Reduced edge graph node
  *
@@ -175,12 +233,14 @@ struct nm_part_e
 
 	//! total number of properties
 	static const unsigned int max_prop = 0;
-    
-    //! Attributes name
-    struct attributes
-    {
-        static const std::string name[];
-    };
+
+	//! Attributes name
+	struct attributes
+	{
+		static const std::string name[];
+	};
 };
+
+
 
 #endif

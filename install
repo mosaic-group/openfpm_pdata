@@ -13,29 +13,29 @@ i_dir=" "
 sq=0
 
 while getopts :di:shc: FLAG; do
-  case $FLAG in
-    d)
-      echo "Disable depencencies installation"
-      install_req=0
-      ;;
-    i)
-      echo "Setting dependencies installation dir: $OPTARG"
-      i_dir=$OPTARG
-      ;;
-    s)
-      echo "Skipping user cin"
-      sq=1
-      ;;
-    c)
-      echo "Fowarding options $OPTARG to configure script"
-      configure_options=$OPTARG
-      ;;
-    h)  #show help
-      HELP
-      ;;
-    \?) #unrecognized option - are fowarded to configure
-      ;;
-  esac
+	case $FLAG in
+	    d)
+	      echo "Disable depencencies installation"
+	      install_req=0
+	      ;;
+	    i)
+	      echo "Setting dependencies installation dir: $OPTARG"
+	      i_dir=$OPTARG
+	      ;;
+	    s)
+	      echo "Skipping user cin"
+	      sq=1
+	      ;;
+	    c)
+	      echo "Fowarding options $OPTARG to configure script"
+	      configure_options=$OPTARG
+	      ;;
+	    h)  #show help
+      	      HELP
+              ;;
+    	    \?) #unrecognized option - are fowarded to configure
+              ;;
+	esac
 done
 
 discover_os
@@ -131,12 +131,26 @@ echo -e "Installing requirements into: $i_dir "
 
 ## call the configure script
 
+if [ x"$MPI_valid" == x"yes" ]; then
+	configure_options="$configure_options CXX=mpic++ "
+fi
+
+### METIS and ParMETIS must be installed independently from sistem wide installation
+
+./script/install_Parmetis.sh $i_dir $compiler_gcc $compiler_gpp
+configure_options=" $configure_options --with-parmetis=$i_dir/PARMETIS "
+./script/install_Metis.sh $i_dir $compiler_gcc $compiler_gpp
+configure_options=" $configure_options --with-metis=$i_dir/METIS "
+
 MPI_installed=0
-METIS_installed=0
+METIS_installed=1
+PARMETIS_installed=1
 BOOST_installed=0
 LAPACK_installed=0
 SUITESPARSE_installed=0
 EIGEN_installed=0
+HDF5_installed=0
+H5PART_installed=0
 blas_options=""
 conf_err=1
 
@@ -213,6 +227,24 @@ else
             ./script/install_EIGEN.sh $i_dir $compiler_opt
             configure_options=" $configure_options --with-eigen=$i_dir/EIGEN "
             EIGEN_installed=1
+	elif [ $conf_err -eq 208 ]; then
+            echo "ParMetis not found try to install"
+            if [ $PARMETIS_installed -eq 1  ]; then
+                echo "Error the installation of ParMETIS failed"
+                exit 1
+            fi
+            ./script/install_Parmetis.sh $i_dir $compiler_gcc $compiler_gpp
+            PARMETIS_installed=1
+            configure_options=" $configure_options --with-parmetis=$i_dir/PARMETIS "
+        elif [ $conf_err -eq 207 ]; then
+            echo "HDF5 not found try to install"
+            if [ $HDF5_installed -eq 1 ]; then
+                echo "Error the installation of HDF5 failed"
+                exit 1	
+            fi
+            ./script/install_HDF5.sh $i_dir $compiler_opt
+            configure_options=" $configure_options --with-hdf5=$i_dir/HDF5/bin/h5pcc "
+            HDF5_installed=1
         elif [ $conf_err -ne 0 ]; then
             echo "I do not know how to recover from this error"
             exit 1
@@ -222,10 +254,10 @@ fi
 
 ### Create example.mk
 install_base=$(cat install_dir)
-echo "INCLUDE_PATH=-I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/BOOST/include" > example.mk
-echo "LIBS_PATH= -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib -L$i_dir/BOOST/lib " >> example.mk
-echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lmetis -lboost_iostreams" >> example.mk
-echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lmetis -lboost_iostreams" >> example.mk
+echo "INCLUDE_PATH=-I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include" > example.mk
+echo "LIBS_PATH= -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib -L$i_dir/HDF5/lib" >> example.mk
+echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lmetis -lparmetis -lboost_iostreams -lhdf5" >> example.mk
+echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lhdf5" >> example.mk
 cp example.mk src/example.mk
 cp example.mk example/example.mk
 
@@ -311,6 +343,28 @@ if [ $SUITESPARSE_installed -eq 1 ]; then
     echo -e "\033[1m  export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:$i_dir/SUITESPARSE/lib\" \033[0m"
   fi
 fi
+if [ $EIGEN_installed -eq 1 ]; then
+  echo ""
+  echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
+  echo -e "\033[1;34;5m --------------- EIGEN ----------------- \033[0m"
+  echo -e "  EIGEN has been installed into: \033[1m $i_dir/EIGEN \033[0m"
+  echo ""
+fi
+if [ $HDF5_installed -eq 1 ]; then
+  echo ""
+  echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
+  echo -e "\033[1;34;5m ---------------- HDF5 ----------------- \033[0m"
+  echo -e "  HDF5 has been installed into: \033[1m $i_dir/HDF5 \033[0m"
+  echo ""
+fi
+if [ $PARMETIS_installed -eq 1 ]; then
+  echo ""
+  echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
+  echo -e "\033[1;34;5m ------------- PARMETIS ---------------- \033[0m"
+  echo -e "  PARMETIS has been installed into: \033[1m $i_dir/PARMETIS \033[0m"
+  echo ""
+fi
+
 echo ""
 echo ""
 if [ $conf_err -ne 0 ]; then

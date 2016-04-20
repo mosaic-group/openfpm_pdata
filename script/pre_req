@@ -224,19 +224,19 @@ else
   minor=$(mpirun --version 2>&1 | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
   if [ $major -gt 1 ]; then
     echo -e "mpirun $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
+    MPI_valid=yes
   elif [ $major -lt 1 ]; then
     echo -e "mpirun $major.$middle.$minor \033[91;5;1m FAILED \033[0m is too old, 1.8.1 at least required"
-    MPI_installation_required=yes
   elif [ $middle -gt 8  ]; then
     echo -e "mpirun $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
+    MPI_valid=yes
   elif [ $middle -lt 8 ]; then
     echo -e "mpirun $major.$middle.$minor \033[91;5;1m FAILED \033[0m is too old, 1.8.1 at least required"
-    MPI_installation_required=yes
   elif [ $minor -gt 0  ]; then
     echo -e "mpirun $major.$middle.$minor \033[92;1m SUCCESS \033[0m"
+    MPI_valid=yes
   else
     echo -e "mpirun $major.$middle.$minor \033[91;5;1m FAILED \033[0m is too old, 1.8.1 at least required"
-    MPI_installation_required=yes
   fi 
 fi
 }

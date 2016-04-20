@@ -22,8 +22,8 @@ int main(int argc, char* argv[])
 	// Here we Initialize the library, we create a Box that define our domain, boundary conditions, ghost
 	// and the grid size
 	//
-	init_global_v_cluster(&argc,&argv);
-	Vcluster & v_cl = *global_v_cluster;
+	openfpm_init(&argc,&argv);
+	Vcluster & v_cl = create_vcluster();
 
 	// we create a 128x128x128 Grid iterator
 	size_t sz[3] = {128,128,128};
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
 	// scalar double, a vector double[3], and a tensor or rank 2 double[3][3].
 	// In this case the vector contain 0 particles in total
 	//
-	vector_dist<3,float, aggregate<double,double[3],double[3][3]>, CartDecomposition<3,float> > vd(0,box,bc,ghost);
+	vector_dist<3,float, aggregate<double,double[3],double[3][3]> > vd(0,box,bc,ghost);
 
 	//
 	// ### WIKI 4 ###
@@ -103,9 +103,9 @@ int main(int argc, char* argv[])
 
 		auto key = it.get();
 
-		vd.template getLastPos<0>()[0] = key.get(0) * it.getSpacing(0);
-		vd.template getLastPos<0>()[1] = key.get(1) * it.getSpacing(1);
-		vd.template getLastPos<0>()[2] = key.get(2) * it.getSpacing(2);
+		vd.getLastPos()[0] = key.get(0) * it.getSpacing(0);
+		vd.getLastPos()[1] = key.get(1) * it.getSpacing(1);
+		vd.getLastPos()[2] = key.get(2) * it.getSpacing(2);
 
 		++it;
 	}
@@ -133,9 +133,9 @@ int main(int argc, char* argv[])
 	{
 		auto p = it2.get();
 
-		Point<3,float> xp = vd.getPos<0>(p);
+		Point<3,float> xp = vd.getPos(p);
 
-		auto Np = NN.getIterator(NN.getCell(vd.getPos<0>(p)));
+		auto Np = NN.getIterator(NN.getCell(vd.getPos(p)));
 
 		while (Np.isNext())
 		{
@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
 
 			// repulsive
 
-			Point<3,float> xq = vd.getPos<0>(q);
+			Point<3,float> xq = vd.getPos(q);
 			Point<3,float> f = (xp - xq);
 
 			// we sum the distance of all the particles
@@ -173,7 +173,7 @@ int main(int argc, char* argv[])
 	//
 	// Deinitialize the library
 	//
-	delete_global_v_cluster();
+	openfpm_finalize();
 }
 
 

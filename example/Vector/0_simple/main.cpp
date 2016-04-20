@@ -44,8 +44,8 @@ int main(int argc, char* argv[])
 	// Here we Initialize the library, than we create a uniform random generator between 0 and 1 to to generate particles
 	// randomly in the domain, we create a Box that define our domain, boundary conditions, and ghost
 	//
-	init_global_v_cluster(&argc,&argv);
-	Vcluster & v_cl = *global_v_cluster;
+	openfpm_init(&argc,&argv);
+	Vcluster & v_cl = create_vcluster();
 	
 	typedef Point<2,float> s;
 
@@ -68,7 +68,6 @@ int main(int argc, char* argv[])
 	// * Type of the space, float (2° template parameters)
 	// * Information stored by each object (3* template parameters), in this case a Point_test store 4 scalars
 	//   1 vector and an asymmetric tensor of rank 2
-	// * Strategy used to decompose the space
 	// 
 	// Constructor instead require:
 	//
@@ -79,7 +78,7 @@ int main(int argc, char* argv[])
 	// objects with an undefined position in space. This non-space decomposition is also called data-driven
 	// decomposition
 	//
-	vector_dist<2,float, Particle<float>, CartDecomposition<2,float> > vd(4096,domain,bc,g);
+	vector_dist<2,float, Particle<float> > vd(4096,domain,bc,g);
 
 	//
 	// ### WIKI 5 ###
@@ -92,8 +91,8 @@ int main(int argc, char* argv[])
 	{
 		auto key = it.get();
 
-		vd.template getPos<s::x>(key)[0] = ud(eg);
-		vd.template getPos<s::x>(key)[1] = ud(eg);
+		vd.getPos(key)[0] = ud(eg);
+		vd.getPos(key)[1] = ud(eg);
 
 		++it;
 	}
@@ -122,7 +121,7 @@ int main(int argc, char* argv[])
 		auto key = it.get();
 
 		// The template parameter is unuseful and will probably disappear
-		if (ct.isLocal(vd.template getPos<0>(key)) == false)
+		if (ct.isLocal(vd.getPos(key)) == false)
 			std::cerr << "Error particle is not local" << "\n";
 
 		// set the all the properties to 0.0
@@ -173,5 +172,5 @@ int main(int argc, char* argv[])
 	//
 	// Deinitialize the library
 	//
-	delete_global_v_cluster();
+	openfpm_finalize();
 }

@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
 	//
 	// Initialize the library and several objects 
 	//
-	init_global_v_cluster(&argc,&argv);
+	openfpm_init(&argc,&argv);
 	
 	//
 	// ### WIKI 3 ###
@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
 	// * domain: where the grid is defined
 	// * g: ghost extension
 	//
-	grid_dist_id<3, float, aggregate<float[3]>, CartDecomposition<3,float>> g_dist(sz,domain,g);
+	grid_dist_id<3, float, aggregate<float[3]>> g_dist(sz,domain,g);
 	
 	// ### WIKI 5 ###
 	//
@@ -152,5 +152,5 @@ int main(int argc, char* argv[])
 	//
 	// Deinitialize the library
 	//
-	delete_global_v_cluster();
+	openfpm_finalize();
 }

@@ -133,12 +133,11 @@ class ie_loc_ghost
 		}
 	}
 
-	/*! \brief In case of periodic boundary conditions we have to add boxes
-	 *         at the borders
+	/*! \brief In case of periodic boundary conditions we replicate the sub-domains at the border
 	 *
 	 * \param list of sub-domains
 	 * \param domain Domain box
-	 * \param boundary boundary conditions
+	 * \param boundary conditions
 	 * \param ghost ghost part
 	 *
 	 */
@@ -167,7 +166,7 @@ class ie_loc_ghost
 					case 1:
 						bp.setLow(k,domain.getHigh(k)+ghost.getLow(k));
 						bp.setHigh(k,domain.getHigh(k));
-						shift.get(k) = -domain.getHigh(k);
+						shift.get(k) = -domain.getHigh(k)+domain.getLow(k);
 						break;
 					case 0:
 						bp.setLow(k,domain.getLow(k));
@@ -177,7 +176,7 @@ class ie_loc_ghost
 					case -1:
 						bp.setLow(k,domain.getLow(k));
 						bp.setHigh(k,ghost.getHigh(k));
-						shift.get(k) = domain.getHigh(k);
+						shift.get(k) = domain.getHigh(k)-domain.getLow(k);
 						break;
 					}
 				}
@@ -527,18 +526,10 @@ public:
 			for (size_t j = 0 ; j < loc_ghost_box.get(i).ibx.size() ; j++)
 			{
 				if (loc_ghost_box.get(i).ibx.get(j).k == -1)
+				{
+					std::cout << "No ibx link" << "\n";
 					return false;
-			}
-		}
-
-		if (n_sub > 1)
-		{
-			for (size_t i = 0 ; i < loc_ghost_box.size() ; i++)
-			{
-				if (loc_ghost_box.get(i).ibx.size() == 0)
-					return false;
-				if (loc_ghost_box.get(i).ebx.size() == 0)
-					return false;
+				}
 			}
 		}
 
@@ -630,6 +621,15 @@ public:
 		}
 
 		return true;
+	}
+
+	/*! \brief Reset the ie_loc_ghost
+	 *
+	 */
+	void reset()
+	{
+		loc_ghost_box.clear();
+		sub_domains_tmp.clear();
 	}
 };
 

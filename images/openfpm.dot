@@ -1,0 +1,22 @@
+digraph openfpm {
+	ratio = fill;
+        node [ shape = box color = blue ];
+        API;
+	node [ shape = oval color=red ] Core pdata data Vcluster "devices (Memory)";
+        node [ color=black ] Numerics IO;
+        
+        API -> Core [ arrowhead=crow color=blue ]
+       	Core -> pdata
+        Numerics -> Core
+        Numerics -> pdata
+        Numerics -> data
+ 	pdata -> Vcluster
+	pdata -> data
+        Vcluster -> data
+        data -> "devices (Memory)"
+        IO -> data
+        IO -> pdata
+        IO -> Core
+        Vcluster -> "devices (Memory)"
+}
+

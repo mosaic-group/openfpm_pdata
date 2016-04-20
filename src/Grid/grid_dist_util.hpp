@@ -12,27 +12,33 @@
 
 /*! \brief Create the gdb_ext
  *
- * \param gdb_ext Vector of Boxes that define the local grids extension
+ * It is a fundamental function, because it create the structure that store the information of the local grids. In
+ * particular from the continuous decomposed domain it calculate the grid that each sub-domain store
+ *
+ * \param gdb_ext output Vector of Boxes that define the local grids extension
  * \param dec Decomposition
  * \param cd_sm CellDecomposer the size of cell is equal to the distance between grid points
  *
  */
-template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::vector<GBoxes<Decomposition::dims>> & gdb_ext, Decomposition & dec, CellDecomposer_sm<Decomposition::dims,typename Decomposition::stype> & cd_sm)
+template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::vector<GBoxes<Decomposition::dims>> & gdb_ext, Decomposition & dec, CellDecomposer_sm<Decomposition::dims,typename Decomposition::stype,shift<dim,typename Decomposition::stype>> & cd_sm)
 {
 	Box<Decomposition::dims, typename Decomposition::stype> g_rnd_box;
 	for (size_t i = 0 ; i < Decomposition::dims ; i++)	{g_rnd_box.setHigh(i,0.5); g_rnd_box.setLow(i,-0.5);}
 
 	// Get the number of local grid needed
-	size_t n_grid = dec.getNLocalHyperCube();
+	size_t n_grid = dec.getNSubDomain();
 
 	// Allocate the grids
 	for (size_t i = 0 ; i < n_grid ; i++)
 	{
 		gdb_ext.add();
 
-		// Get the local hyper-cube
-		SpaceBox<Decomposition::dims, typename Decomposition::stype> sp = dec.getLocalHyperCube(i);
+		// Get the local sub-domain (Grid conversion must be done with the domain P1 equivalent to 0.0)
+		// consider that the sub-domain with point P1 equivalent to the domain P1 is a (0,0,0) in grid unit
+		SpaceBox<Decomposition::dims, typename Decomposition::stype> sp = dec.getSubDomain(i);
+		sp -= cd_sm.getOrig();
 		SpaceBox<Decomposition::dims, typename Decomposition::stype> sp_g = dec.getSubDomainWithGhost(i);
+		sp_g -= cd_sm.getOrig();
 
 		// Convert from SpaceBox<dim,St> to SpaceBox<dim,long int>
 		SpaceBox<Decomposition::dims,long int> sp_t = cd_sm.convertDomainSpaceIntoGridUnits(sp);
@@ -64,7 +70,7 @@ template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::ve
 {
 	// Create the cell decomposer
 
-	CellDecomposer_sm<Decomposition::dims,typename Decomposition::stype> cd_sm;
+	CellDecomposer_sm<Decomposition::dims,typename Decomposition::stype, shift<Decomposition::dims,typename Decomposition::stype>> cd_sm;
 
 	size_t sz_cell[Decomposition::dims];
 	for (size_t i = 0 ; i < dim ; i++)

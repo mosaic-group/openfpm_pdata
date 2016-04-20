@@ -658,4 +658,102 @@ public:
 	}
 };
 
+/*! \brief Check that the size of the iterators match
+ *
+ * It check the the boxes that the sub iterator defines has same dimensions, for example
+ * if the first sub-iterator, iterate from (1,1) to (5,3) and the second from (2,2) to (6,4)
+ * they match (2,2) to (4,6) they do not match
+ *
+ * \tparam Grid_map type of the map grid
+ * \tparam Grid_dst type of the destination grid
+ *
+ * \param it1 Iterator1
+ * \param it2 Iterator2
+ *
+ * \return true if they match
+ *
+ */
+template<typename Eqs_sys, typename it1_type, typename it2_type> bool checkIterator(const it1_type & it1, const it2_type & it2)
+{
+#ifdef SE_CLASS1
+
+	grid_key_dx<Eqs_sys::dims> it1_k = it1.getStop() - it1.getStart();
+	grid_key_dx<Eqs_sys::dims> it2_k = it2.getStop() - it2.getStart();
+
+	for (size_t i = 0 ; i < Eqs_sys::dims ; i++)
+	{
+		if (it1_k.get(i) !=  it2_k.get(i))
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " error src iterator and destination iterator does not match in size\n";
+			return false;
+		}
+	}
+
+	return true;
+#else
+
+	return true;
+
+#endif
+}
+
+/*! \brief this class is a functor for "for_each" algorithm
+ *
+ * This class is a functor for "for_each" algorithm. For each
+ * element of the boost::vector the operator() is called.
+ * Is mainly used to calculate the interpolation points for each
+ * property in a staggered grid
+ *
+ * \tparam dim Dimensionality
+ * \tparam v_prp_id vector of properties id
+ * \tparam v_prp_type vector with the properties
+ *
+ */
+template<unsigned int dim, typename v_prp_id, typename v_prp_type>
+struct interp_points
+{
+	// number of properties we are processing
+	typedef boost::mpl::size<v_prp_id> v_size;
+
+	// interpolation points for each property
+	openfpm::vector<std::vector<comb<dim>>> (& interp_pts)[v_size::value];
+
+	// staggered position for each property
+	const openfpm::vector<comb<dim>> (&stag_pos)[v_size::value];
+
+	/*! \brief constructor
+	 *
+	 * It define the copy parameters.
+	 *
+	 * \param inter_pts array that for each property contain the interpolation points for each components
+	 * \param staggered position for each property and components
+	 *
+	 */
+	inline interp_points(openfpm::vector<std::vector<comb<dim>>> (& interp_pts)[v_size::value],const openfpm::vector<comb<dim>> (&stag_pos)[v_size::value])
+	:interp_pts(interp_pts),stag_pos(stag_pos){};
+
+	//! It call the copy function for each property
+	template<typename T>
+	inline void operator()(T& t)
+	{
+		// This is the type of the object we have to copy
+		typedef typename boost::mpl::at_c<v_prp_type,T::value>::type prp_type;
+
+		interp_pts[T::value].resize(stag_pos[T::value].size());
+
+		for (size_t i = 0 ; i < stag_pos[T::value].size() ; i++)
+		{
+			// Create the interpolation points
+			interp_pts[T::value].get(i) = SubHyperCube<dim,dim - std::rank<prp_type>::value>::getCombinations_R(stag_pos[T::value].get(i),0);
+
+			// interp_point are -1,0,1, map the -1 to 0 and 1 to -1
+			for (size_t j = 0 ; j < interp_pts[T::value].get(i).size() ; j++)
+			{
+				for (size_t k = 0 ; k < dim ; k++)
+					interp_pts[T::value].get(i)[j].getComb()[k] = - ((interp_pts[T::value].get(i)[j].getComb()[k] == -1)?0:interp_pts[T::value].get(i)[j].getComb()[k]);
+			}
+		}
+	}
+};
+
 #endif /* SRC_GRID_STAGGERED_DIST_GRID_UTIL_HPP_ */

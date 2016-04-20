@@ -74,7 +74,7 @@ class nn_prcs
 
 	/*! \brief add sub-domains to processor for a near processor i
 	 *
-	 * \param i near processor
+	 * \param		v_cl = nnp.v_cl; i near processor
 	 * \param bx Box to add
 	 * \param c from which sector the sub-domain come from
 	 *
@@ -86,8 +86,7 @@ class nn_prcs
 		nnpst.pos.add(c);
 	}
 
-	/*! \brief In case of periodic boundary conditions we have to add boxes
-	 *         at the borders
+	/*! \brief In case of periodic boundary conditions we replicate the sub-domains at the border
 	 *
 	 * \param domain Domain box
 	 * \param boundary boundary conditions
@@ -109,6 +108,7 @@ class nn_prcs
 				if (check_valid(cmbs[j],bc) == false)
 					continue;
 
+				// Calculate the sector box
 				Box<dim,T> bp;
 				Point<dim,T> shift;
 
@@ -119,7 +119,7 @@ class nn_prcs
 					case 1:
 						bp.setLow(k,domain.getHigh(k)+ghost.getLow(k));
 						bp.setHigh(k,domain.getHigh(k));
-						shift.get(k) = -domain.getHigh(k);
+						shift.get(k) = -domain.getHigh(k)+domain.getLow(k);
 						break;
 					case 0:
 						bp.setLow(k,domain.getLow(k));
@@ -128,8 +128,8 @@ class nn_prcs
 						break;
 					case -1:
 						bp.setLow(k,domain.getLow(k));
-						bp.setHigh(k,ghost.getHigh(k));
-						shift.get(k) = domain.getHigh(k);
+						bp.setHigh(k,domain.getLow(k)+ghost.getHigh(k));
+						shift.get(k) = domain.getHigh(k)-domain.getLow(k);
 						break;
 					}
 				}
@@ -211,6 +211,10 @@ public:
 	 */
 	static bool inline check_valid(comb<dim> cmb,const size_t (& bc)[dim])
 	{
+		// the combination 0 is not valid
+		if (cmb.n_zero() == dim)
+			return false;
+
 		for (size_t i = 0 ; i < dim ; i++)
 		{
 			if (bc[i] == NON_PERIODIC && cmb.getComb()[i] != 0)
@@ -226,7 +230,6 @@ public:
 	 */
 	nn_prcs<dim,T> & operator=(const nn_prcs<dim,T> & nnp)
 	{
-		v_cl = nnp.v_cl;
 		nn_processors = nnp.nn_processors;
 		nn_processor_subdomains = nnp.nn_processor_subdomains;
 		proc_adj_box = nnp.proc_adj_box;
@@ -242,7 +245,6 @@ public:
 	 */
 	nn_prcs<dim,T> & operator=(nn_prcs<dim,T> && nnp)
 	{
-		v_cl = nnp.v_cl;
 		nn_processors.swap(nnp.nn_processors);
 		nn_processor_subdomains.swap(nnp.nn_processor_subdomains);
 		proc_adj_box.swap(nnp.proc_adj_box);
@@ -251,7 +253,7 @@ public:
 		return *this;
 	}
 
-	/*! \brief Refine the ss_box to have the smallest size on each direction of the local subdomain and adjacent (from other processor) one
+	/*! \brief Refine the ss_box to have the smallest size on each direction of the local sub-domains and adjacent (from other processor) one
 	 *
 	 * \param ss_box box that store the smallest size of the sub-domain
 	 *
@@ -533,6 +535,20 @@ public:
 		}
 
 		return true;
+	}
+
+	/*! \brief Reset the nn_prcs structure
+	 *
+	 */
+	void reset()
+	{
+		nn_processors.clear();
+		nn_processor_subdomains.clear();
+		nn_processor_subdomains_tmp.clear();
+		proc_adj_box.clear();
+		boxes.clear();
+		recv_cnt = 0;
+		aBC = false;
 	}
 
 	//! Used for testing porpose do not use

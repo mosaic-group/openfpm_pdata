@@ -207,7 +207,7 @@ private:
 	 *
 	 */
 
-	template<unsigned int p_sub> void fill_domain(Graph & graph,const Box<dim,size_t> & box, size_t ids)
+	template<unsigned int p_sub> void fill_domain(Graph & graph,const Box<dim,size_t> & box, long int ids)
 	{
 		// Create a subgrid iterator
 		grid_key_dx_iterator_sub<dim,do_not_print_warning_on_adjustment<dim>> g_sub(gh,box.getKP1(),box.getKP2());
@@ -327,8 +327,8 @@ private:
 	 * starting from one initial sub-domain find the biggest hyper-cube
 	 * output the box, and fill a list of neighborhood processor
 	 *
-	 * \tparam j id of the property storing the sub-decomposition
-	 * \tparam i id of the property containing the decomposition
+	 * \tparam p_sub id of the property storing the sub-decomposition
+	 * \tparam p_id id of the property containing the decomposition
 	 *
 	 * \param start_p initial domain
 	 * \param graph representing the grid of sub-sub-domain
@@ -500,7 +500,7 @@ private:
 	 *
 	 */
 
-	template<unsigned int p_id> grid_key_dx<dim> search_first_seed(Graph & graph, long int id)
+	template<unsigned int p_id, unsigned int p_sub> grid_key_dx<dim> search_seed(Graph & graph, long int id)
 	{
 		// if no processor is selected return the first point
 		if (id < -1)
@@ -522,7 +522,7 @@ private:
 			const grid_key_dx<dim> & gk = g_sub.get();
 
 			// if the subdomain has the id we are searching stop
-			if ((long int)graph.vertex(gh.LinId(gk)).template get<p_id>() == id)
+			if ((long int)graph.vertex(gh.LinId(gk)).template get<p_id>() == id && graph.vertex(gh.LinId(gk)).template get<p_sub>() == -1)
 			{
 				return gk;
 			}
@@ -535,6 +535,84 @@ private:
 		key.invalid();
 
 		return key;
+	}
+
+
+	/*! \brief optimize the graph
+	 *
+	 * Starting from a domain (hyper-cubic), it create wavefront at the boundary and expand
+	 * the boundary until the wavefronts cannot expand any more.
+	 * To the domains inside the hyper-cube one sub-id is assigned. This procedure continue until
+	 * all the domain of one p_id has a sub-id
+	 *
+	 * \tparam j property containing the decomposition
+	 * \tparam i property to fill with the sub-decomposition
+	 *
+	 * \param start_p seed point
+	 * \param graph we are processing
+	 * \param p_id Processor id (if p_id == -1 the optimization is done for all the processors)
+	 * \param list of sub-domain boxes produced by the algorithm
+	 * \param box_nn_processor for each box it list all the neighborhood processor
+	 * \param bc Boundary condition
+	 * \param init_sub_id when true p_sub property is initial set to -1 [default true]
+	 * \param sub_id starting sub_id enumeration [default 0]
+	 *
+	 * \return last assigned sub-id
+	 *
+	 */
+	template <unsigned int p_sub, unsigned int p_id> size_t optimize(grid_key_dx<dim> & start_p, Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & lb, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor, const size_t (& bc)[dim], bool init_sub_id = true, size_t sub_id = 0)
+	{
+		// queue
+		openfpm::vector<size_t> v_q;
+
+		// Create an hyper-cube
+		HyperCube<dim> hyp;
+
+		// Get the wavefront combinations
+		std::vector<comb<dim>> w_comb = hyp.getCombinations_R(dim-1);
+
+		// wavefronts
+		openfpm::vector<wavefront<dim>> v_w(w_comb.size());
+
+		// fill the sub decomposition with negative number
+
+		if (init_sub_id == true)
+			fill_domain<p_sub>(graph,gh.getBox(),-1);
+
+		// push the first domain
+		v_q.add(gh.LinId(start_p));
+
+		while (v_q.size() != 0)
+		{
+			// Box
+			Box<dim,size_t> box;
+
+			// Get the grid_key position from the linearized id
+			start_p = gh.InvLinId(v_q.get(0));
+
+			// Initialize the wavefronts from the domain start_p
+			InitializeWavefront(start_p,v_w);
+
+			// Create a list for the box
+			box_nn_processor.add();
+
+			// Create the biggest box containing the domain
+			expand_from_point<p_sub,p_id>(v_q.get(0),graph,box,v_w,w_comb);
+
+			// Add the created box to the list of boxes
+			lb.add(box);
+
+			// fill the domain
+			fill_domain<p_sub>(graph,box,sub_id);
+
+			// add the surrounding sub-domain to the queue
+			add_to_queue<p_sub,p_id>(v_q,v_w,graph,w_comb,pr_id,box_nn_processor,bc);
+
+			// increment the sub_id
+			sub_id++;
+		}
+
+		return sub_id;
 	}
 
 public:
@@ -594,82 +672,30 @@ public:
 	 */
 	template <unsigned int p_sub, unsigned int p_id> void optimize(Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & lb, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor, const size_t (& bc)[dim])
 	{
-		// search for the first seed
-		grid_key_dx<dim> key_seed = search_first_seed<p_id>(graph,pr_id);
+		grid_key_dx<dim> key_seed;
+		key_seed.zero();
 
-		// optimize
-		optimize<p_sub,p_id>(key_seed,graph,pr_id,lb,box_nn_processor,bc);
-	}
+		// if processor is -1 call optimize with -1 to do on all processors and exit
+		if (pr_id == -1)
+		{
+			optimize<p_sub,p_id>(key_seed,graph,pr_id,lb,box_nn_processor,bc);
+			return;
+		}
 
-	/*! \brief optimize the graph
-	 *
-	 * Starting from a domain (hyper-cubic), it create wavefront at the boundary and expand
-	 * the boundary until the wavefronts cannot expand any more.
-	 * To the domains inside the hyper-cube one sub-id is assigned. This procedure continue until
-	 * all the domain of one p_id has a sub-id
-	 *
-	 * \tparam j property containing the decomposition
-	 * \tparam i property to fill with the sub-decomposition
-	 *
-	 * \param start_p seed point
-	 * \param graph we are processing
-	 * \param p_id Processor id (if p_id == -1 the optimization is done for all the processors)
-	 * \param list of sub-domain boxes produced by the algorithm
-	 * \param box_nn_processor for each box it list all the neighborhood processor
-	 * \param bc Boundary condition
-	 *
-	 */
-	template <unsigned int p_sub, unsigned int p_id> void optimize(grid_key_dx<dim> & start_p, Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & lb, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor, const size_t (& bc)[dim])
-	{
-		// sub-domain id
-		size_t sub_id =  0;
-
-		// queue
-		openfpm::vector<size_t> v_q;
-
-		// Create an hyper-cube
-		HyperCube<dim> hyp;
-
-		// Get the wavefront combinations
-		std::vector<comb<dim>> w_comb = hyp.getCombinations_R(dim-1);
-
-		// wavefronts
-		openfpm::vector<wavefront<dim>> v_w(w_comb.size());
+		size_t sub_id = 0;
 
 		// fill the sub decomposition with negative number
 		fill_domain<p_sub>(graph,gh.getBox(),-1);
 
-		// push the first domain
-		v_q.add(gh.LinId(start_p));
+		key_seed = search_seed<p_id,p_sub>(graph,pr_id);
 
-		while (v_q.size() != 0)
+		while (key_seed.isValid())
 		{
-			// Box
-			Box<dim,size_t> box;
+			// optimize
+			sub_id = optimize<p_sub,p_id>(key_seed,graph,pr_id,lb,box_nn_processor,bc,false,sub_id);
 
-			// Get the grid_key position from the linearized id
-			start_p = gh.InvLinId(v_q.get(0));
-
-			// Initialize the wavefronts from the domain start_p
-			InitializeWavefront(start_p,v_w);
-
-			// Create a list for the box
-			box_nn_processor.add();
-
-			// Create the biggest box containing the domain
-			expand_from_point<p_sub,p_id>(v_q.get(0),graph,box,v_w,w_comb);
-
-			// Add the created box to the list of boxes
-			lb.add(box);
-
-			// fill the domain
-			fill_domain<p_sub>(graph,box,sub_id);
-
-			// add the surrounding sub-domain to the queue
-			add_to_queue<p_sub,p_id>(v_q,v_w,graph,w_comb,pr_id,box_nn_processor,bc);
-
-			// increment the sub_id
-			sub_id++;
+			// new seed
+			key_seed = search_seed<p_id,p_sub>(graph,pr_id);
 		}
 	}
 };
