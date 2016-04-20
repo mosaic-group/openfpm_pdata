@@ -1202,7 +1202,7 @@ public:
 		for (size_t i = 0; i < dim; i++)
 		{
 			start.set_d(i, 0);
-			if (dec.isPeriodic(i) == PERIODIC)
+			if (dec.periodicity(i) == PERIODIC)
 			{
 				sz_g[i] = sz[i];
 				stop.set_d(i, sz_g[i] - 2);
@@ -1312,12 +1312,12 @@ public:
 	/*! \brief Output particle position and properties
 	 *
 	 * \param out output
-	 * \param opt NO_GHOST or WITH_GHOST
+	 * \param opt VTK_WRITER or CSV_WRITER
 	 *
-	 * \return if the file has been written correctly
+	 * \return true if the file has been written without error
 	 *
 	 */
-	inline bool write(std::string out, int opt = NO_GHOST | CSV_WRITER)
+	inline bool write(std::string out, int opt = NO_GHOST | VTK_WRITER )
 	{
 
 		if ((opt & 0xFFFF0000) == CSV_WRITER)
@@ -1330,20 +1330,17 @@ public:
 			// Write the CSV
 			return csv_writer.write(output,v_pos,v_prp);
 		}
-/*		else if ((opt & 0xFFFF0000) == VTK_WRITER)
+		else if ((opt & 0xFFFF0000) == VTK_WRITER)
 		{
-			// CSVWriter test
+			// VTKWriter for a set of points
 			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim,St>>, openfpm::vector<prop>>, VECTOR_POINTS> vtk_writer;
+			vtk_writer.add(v_pos,v_prp,g_m);
 
-			std::string output = std::to_string(out + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".csv"));
+			std::string output = std::to_string(out + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtk"));
 
-			// Write the CSV
-			return vtk_writer.write(output,v_pos,v_prp);
+			// Write the VTK file
+			return vtk_writer.write(output);
 		}
-		else if ((opt & 0xFFFF0000) == H5PART_WRITER)
-		{
-
-		}*/
 
 		return false;
 	}

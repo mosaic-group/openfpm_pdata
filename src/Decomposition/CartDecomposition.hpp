@@ -931,9 +931,20 @@ public:
 	 * \return the periodicity in direction i
 	 *
 	 */
-	size_t isPeriodic(size_t i)
+	inline size_t periodicity(size_t i)
 	{
 		return bc[i];
+	}
+
+	/*! \brief Get the periodicity
+	 *
+	 *
+	 * \return the periodicity
+	 *
+	 */
+	inline const size_t (& periodicity() const) [dim]
+	{
+		return bc;
 	}
 
 	/*! \brief Set the parameter of the decomposition

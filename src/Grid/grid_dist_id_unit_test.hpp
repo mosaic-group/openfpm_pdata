@@ -16,6 +16,8 @@ void print_test(std::string test, size_t sz)
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter3D_test)
 {
+	size_t bc[3] = {NON_PERIODIC, NON_PERIODIC, NON_PERIODIC};
+
 	// Domain
 	Box<3,float> domain({-0.3,-0.3,-0.3},{1.0,1.0,1.0});
 
@@ -74,7 +76,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter3D_test)
 			SpaceBox<3,float> sub = dec.getSubDomain(i);
 			sub -= domain.getP1();
 
-			Box<3,size_t> g_box = g_dist.getCellDecomposer().convertDomainSpaceIntoGridUnits(sub);
+			Box<3,size_t> g_box = g_dist.getCellDecomposer().convertDomainSpaceIntoGridUnits(sub,bc);
 
 			vb.add(g_box);
 
@@ -96,6 +98,8 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter3D_test)
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter_test)
 {
+	size_t bc[2] = {NON_PERIODIC, NON_PERIODIC};
+
 	// Domain
 	Box<2,float> domain({0.0,0.0},{1.0,1.0});
 
@@ -139,7 +143,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter_test)
 			// Get the local hyper-cube
 			SpaceBox<2,float> sub = dec.getSubDomain(i);
 
-			Box<2,size_t> g_box = g_dist.getCellDecomposer().convertDomainSpaceIntoGridUnits(sub);
+			Box<2,size_t> g_box = g_dist.getCellDecomposer().convertDomainSpaceIntoGridUnits(sub,bc);
 
 			vol += g_box.getVolumeKey();
 		}
@@ -1344,6 +1348,112 @@ void Test3D_decit(const Box<3,float> & domain, long int k)
 	}
 }
 
+// Test grid periodic
+
+void Test3D_periodic(const Box<3,float> & domain, long int k)
+{
+	typedef Point_test<float> p;
+
+	Vcluster & v_cl = create_vcluster();
+
+	if ( v_cl.getProcessingUnits() > 32 )
+		return;
+
+	long int big_step = k / 30;
+	big_step = (big_step == 0)?1:big_step;
+	long int small_step = 21;
+
+	print_test( "Testing grid periodic k<=",k);
+
+	// 3D test
+	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
+	{
+		BOOST_TEST_CHECKPOINT( "Testing grid periodick<=" << k );
+
+		// grid size
+		size_t sz[3];
+		sz[0] = k;
+		sz[1] = k;
+		sz[2] = k;
+
+		// factor
+		float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
+
+		// Ghost
+		Ghost<3,float> g(0.01 / factor);
+
+		// periodicity
+		periodicity<3> pr = {{PERIODIC,PERIODIC,PERIODIC}};
+
+		// Distributed grid with id decomposition
+		grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> g_dist(sz,domain,g,pr);
+
+		// check the consistency of the decomposition
+		bool val = g_dist.getDecomposition().check_consistency();
+		BOOST_REQUIRE_EQUAL(val,true);
+
+		// Grid sm
+		grid_sm<3,void> info(sz);
+
+		size_t count = 0;
+
+		auto dom = g_dist.getDomainIterator();
+
+		while (dom.isNext())
+		{
+			auto key = dom.get();
+			auto key_g = g_dist.getGKey(key);
+
+			g_dist.template get<0>(key) = info.LinId(key_g);
+
+			// Count the points
+			count++;
+
+			++dom;
+		}
+
+		// Get the virtual cluster machine
+		Vcluster & vcl = g_dist.getVC();
+
+		// reduce
+		vcl.sum(count);
+		vcl.execute();
+
+		// Check
+		BOOST_REQUIRE_EQUAL(count,(size_t)k*k*k);
+
+		// sync the ghosts
+		g_dist.ghost_get<0>();
+
+		bool match = true;
+
+		// Domain + Ghost iterator
+		auto dom_gi = g_dist.getDomainGhostIterator();
+
+		while (dom_gi.isNext())
+		{
+			auto key = dom_gi.get();
+			auto key_g = g_dist.getGKey(key);
+
+			// transform the key to be periodic
+			for (size_t i = 0 ; i < 3 ; i++)
+			{
+				if (key_g.get(i) < 0)
+					key_g.set_d(i,key_g.get(i) + k);
+				else if (key_g.get(i) >= k)
+					key_g.set_d(i,key_g.get(i) - k);
+			}
+
+			if ( info.LinId(key_g) != g_dist.template get<0>(key) )
+				match &= false;
+
+			++dom_gi;
+		}
+
+		BOOST_REQUIRE_EQUAL(match, true);
+	}
+}
+
 #include "grid_dist_id_unit_test_ext_dom.hpp"
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
@@ -1448,6 +1558,17 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_extended )
 	k = std::pow(k, 1/3.);
 
 	Test3D_extended_grid(domain3,k);
+}
+
+BOOST_AUTO_TEST_CASE( grid_dist_id_periodic )
+{
+	// Domain
+	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	long int k = 128*128*128*create_vcluster().getProcessingUnits();
+	k = std::pow(k, 1/3.);
+
+	Test3D_periodic(domain3,k);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

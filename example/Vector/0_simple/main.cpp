@@ -124,24 +124,24 @@ int main(int argc, char* argv[])
 		if (ct.isLocal(vd.getPos(key)) == false)
 			std::cerr << "Error particle is not local" << "\n";
 
-		// set the all the properties to 0.0
+		// set the all the properties to some numbers
 
 		// scalar
-		vd.template getProp<0>(key) = 0.0;
+		vd.template getProp<0>(key) = 1.0;
 
-		vd.template getProp<1>(key)[0] = 0.0;
-		vd.template getProp<1>(key)[1] = 0.0;
-		vd.template getProp<1>(key)[2] = 0.0;
+		vd.template getProp<1>(key)[0] = 1.0;
+		vd.template getProp<1>(key)[1] = 1.0;
+		vd.template getProp<1>(key)[2] = 1.0;
 
-		vd.template getProp<2>(key)[0][0] = 0.0;
-		vd.template getProp<2>(key)[0][1] = 0.0;
-		vd.template getProp<2>(key)[0][2] = 0.0;
-		vd.template getProp<2>(key)[1][0] = 0.0;
-		vd.template getProp<2>(key)[1][1] = 0.0;
-		vd.template getProp<2>(key)[1][2] = 0.0;
-		vd.template getProp<2>(key)[2][0] = 0.0;
-		vd.template getProp<2>(key)[2][1] = 0.0;
-		vd.template getProp<2>(key)[2][2] = 0.0;
+		vd.template getProp<2>(key)[0][0] = 1.0;
+		vd.template getProp<2>(key)[0][1] = 1.0;
+		vd.template getProp<2>(key)[0][2] = 1.0;
+		vd.template getProp<2>(key)[1][0] = 1.0;
+		vd.template getProp<2>(key)[1][1] = 1.0;
+		vd.template getProp<2>(key)[1][2] = 1.0;
+		vd.template getProp<2>(key)[2][0] = 1.0;
+		vd.template getProp<2>(key)[2][1] = 1.0;
+		vd.template getProp<2>(key)[2][2] = 1.0;
 
 		cnt++;
 
@@ -165,7 +165,7 @@ int main(int argc, char* argv[])
 	// Output the particle position for each processor
 	//
 
-	vd.write("output");
+	vd.write("output",VTK_WRITER);
 
 	//
 	// ### WIKI 10 ###

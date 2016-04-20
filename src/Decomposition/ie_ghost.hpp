@@ -110,26 +110,39 @@ class ie_ghost
 	* Consider Processor 5 sending to processor 6
 	* its sub-domains, including the one in figure with id 0 in the list, and
 	* receive from processor 6 the sub-domain in figure as id 9. Consider also
-	*  we have 16 processor, E0_9 come from the intersection of the sub-domains
-	* 0 and 9 (Careful the id is related to the send and receive position in the list)
+	*  we have 16 processor. E0_9 come from the intersection of the expanded sub-domain
+	* 0 with 9 (Careful the id is related to the send and receive position in the list)
+	* and the intersection is in the sector 0
 	*
-	* The id of the external box and (and linked internal) is calculated as
 	*
-	* (0 * (Number of sub-domains received from 6) + 9) * 16 + 6
+	* The id of the external box (for processor 5) is calculated as
 	*
-	* \param k sub-domain sent ( 0 )
-	* \param b sub-domain received ( 9 )
+	* ((k * N_b + b) * v_cl.getProcessingUnits() + p_id) * openfpm::math::pow(3,dim) + c.lin()
+	*
+	* The parameter assume a different meaning if they the formula is used for calculating
+	* external/internal ghost boxes id
+	*
+	* \param k expanded sub-domain sent/received to/from p_id ( 0 )
+	* \param b sub-domain received/sent from/to p_id ( 9 )
 	* \param p_id processor id ( 6 )
 	* \param c sector where the sub-domain b live
-	* \param N_b number of sub-domain received from p_id
+	* \param N_b number of sub-domain received/sent from/to p_id
 	* \param v_cl Vcluster
+	* \param ei indicate if the formula is used to calculate external (true) or internal (false) ids
 	*
-	* \return id of the external box
+	* \return id of the external/internal ghost
+	*
+	* \note To an explanation about the sectors see getShiftVectors
 	*
 	*/
-	inline size_t ebx_ibx_form(size_t k, size_t b, size_t p_id, const comb<dim> & c ,size_t N_b, Vcluster & v_cl)
+	inline size_t ebx_ibx_form(size_t k, size_t b, size_t p_id, const comb<dim> & c ,size_t N_b, Vcluster & v_cl, const bool ei)
 	{
-		return ((k * N_b + b) * v_cl.getProcessingUnits() + p_id) * openfpm::math::pow(3,dim) + c.lin();
+		comb<dim> cext = c;
+
+		if (ei == true)
+			cext.sign_flip();
+
+		return ((k * N_b + b) * v_cl.getProcessingUnits() + p_id) * openfpm::math::pow(3,dim) + cext.lin();
 	}
 
 protected:
@@ -218,9 +231,13 @@ protected:
 				// used later
 				Box_dom<dim,T> & proc_int_box_g = proc_int_box.get(nn_p.ProctoID(p_id));
 
-				// get the set of sub-domains of the near processor p_id
+				// Number of received sub-domains
+				size_t n_r_sub = nn_p.getNRealSubdomains(p_id);
+
+				// get the set of sub-domains, sector position, and real sub-domain id of the near processor p_id
 				const openfpm::vector< ::Box<dim,T> > & nn_processor_subdomains_g = nn_p.getNearSubdomains(p_id);
 				const openfpm::vector< comb<dim> > & nnpsg_pos = nn_p.getNearSubdomainsPos(p_id);
+				const openfpm::vector< size_t > & r_sub = nn_p.getNearSubdomainsRealId(p_id);
 
 				// used later
 				openfpm::vector< ::Box<dim,T> > & box_nn_processor_int_gg = box_nn_processor_int.get(i).get(j).bx;
@@ -261,7 +278,7 @@ protected:
 						// Search where the sub-domain i is in the sent list for processor p_id
 						size_t k = link_ebx_ibx(nn_p,p_id,i);
 
-						proc_int_box_g.ebx.last().id = ebx_ibx_form(k,b,p_id,nnpsg_pos.get(b),nn_processor_subdomains_g.size(),v_cl);
+						proc_int_box_g.ebx.last().id = ebx_ibx_form(k,r_sub.get(b),p_id,nnpsg_pos.get(b),n_r_sub,v_cl,true);
 					}
 				}
 			}
@@ -296,14 +313,17 @@ protected:
 			// For each processor contiguous to this sub-domain
 			for (size_t j = 0 ; j < box_nn_processor.get(i).size() ; j++)
 			{
-				// Contiguous processor
+				// Near processor
 				size_t p_id = box_nn_processor.get(i).get(j);
 
-				// get the set of sub-domains of the contiguous processor p_id
+				// get the set of sub-domains of the near processor p_id
 				const openfpm::vector< ::Box<dim,T> > & nn_p_box = nn_p.getNearSubdomains(p_id);
 
 				// get the sector position for each sub-domain in the list
 				const openfpm::vector< comb<dim> > nn_p_box_pos = nn_p.getNearSubdomainsPos(p_id);
+
+				// get the real sub-domain id for each sub-domain
+				const openfpm::vector<size_t> r_sub = nn_p.getNearSubdomainsRealId(p_id);
 
 				// get the local processor id
 				size_t lc_proc = nn_p.getNearProcessor(p_id);
@@ -363,7 +383,7 @@ protected:
 						size_t s = link_ebx_ibx(nn_p,p_id,i);
 
 						// calculate the id of the internal box
-						sb.id = ebx_ibx_form(k,s,v_cl.getProcessUnitID(),nn_p_box_pos.get(k),nn_p.getSentSubdomains(p_idp).size(),v_cl);
+						sb.id = ebx_ibx_form(r_sub.get(k),s,v_cl.getProcessUnitID(),nn_p_box_pos.get(k),nn_p.getSentSubdomains(p_idp).size(),v_cl,false);
 
 						Box_dom<dim,T> & pr_box_int = proc_int_box.get(nn_p.ProctoID(p_id));
 						pr_box_int.ibx.add(sb);

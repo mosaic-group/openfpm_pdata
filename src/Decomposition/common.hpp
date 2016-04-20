@@ -191,6 +191,14 @@ struct N_box
 	// near processor sector position (or where they live outside the domain)
 	openfpm::vector<comb<dim>> pos;
 
+	// Number of real sub-domains or sub-domain in the central sector
+	size_t n_real_sub;
+
+	// When a sub-domain is not in the central sector, it mean that has been created
+	// because of periodicity in a non central sector. Any sub-domain not in the central
+	// sector is linked to one sub-domain in the central sector
+	openfpm::vector<size_t> r_sub;
+
 	//! Default constructor
 	N_box()
 	:id((size_t)-1)
@@ -218,6 +226,8 @@ struct N_box
 		id = ele.id;
 		bx = ele.bx;
 		pos = ele.pos;
+		n_real_sub = ele.n_real_sub;
+		r_sub = ele.r_sub;
 
 		return * this;
 	}
@@ -231,7 +241,9 @@ struct N_box
 	{
 		id = ele.id;
 		bx.swap(ele.bx);
-		pos = ele.pos;
+		pos.swap(ele.pos);
+		n_real_sub = ele.n_real_sub;
+		r_sub.swap(ele.r_sub);
 
 		return * this;
 	}
@@ -247,6 +259,12 @@ struct N_box
 			return false;
 
 		if (pos != ele.pos)
+			return false;
+
+		if (r_sub != ele.r_sub)
+			return false;
+
+		if (n_real_sub != ele.n_real_sub)
 			return false;
 
 		return bx == ele.bx;

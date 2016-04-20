@@ -74,21 +74,23 @@ class nn_prcs
 
 	/*! \brief add sub-domains to processor for a near processor i
 	 *
-	 * \param		v_cl = nnp.v_cl; i near processor
+	 * \param i near processor
+	 * \param r_sub real sub-domain id
 	 * \param bx Box to add
 	 * \param c from which sector the sub-domain come from
 	 *
 	 */
-	inline void add_nn_subdomain(size_t i, const Box<dim,T> & bx, const comb<dim> & c)
+	inline void add_nn_subdomain(size_t i, size_t r_sub, const Box<dim,T> & bx, const comb<dim> & c)
 	{
 		N_box<dim,T> & nnpst = nn_processor_subdomains_tmp[i];
 		nnpst.bx.add(bx);
 		nnpst.pos.add(c);
+		nnpst.r_sub.add(r_sub);
 	}
 
 	/*! \brief In case of periodic boundary conditions we replicate the sub-domains at the border
 	 *
-	 * \param domain Domain box
+	 * \param domain Domain
 	 * \param boundary boundary conditions
 	 * \param ghost ghost part
 	 *
@@ -150,7 +152,7 @@ class nn_prcs
 						if (sub.Intersect(bp,b_int) == true)
 						{
 							sub += shift;
-							add_nn_subdomain(IDtoProc(k),sub,cmbs[j]);
+							add_nn_subdomain(IDtoProc(k),l,sub,cmbs[j]);
 						}
 					}
 				}
@@ -177,6 +179,7 @@ class nn_prcs
 
 				nnps.bx.add(nnps_tmp.bx.get(i));
 				nnps.pos.add(nnps_tmp.pos.get(i));
+				nnps.r_sub.add(nnps_tmp.r_sub.get(i));
 			}
 		}
 
@@ -348,6 +351,8 @@ public:
 				N_box<dim,T> & nnps = nn_processor_subdomains[it->first];
 
 				nnps.pos.add(c);
+				nnps.r_sub.add(i);
+				nnps.n_real_sub = nnps.bx.size();
 			}
 		}
 	}
@@ -374,7 +379,27 @@ public:
 		return nn_processors.get(id);
 	}
 
-	/*! \brief Get the sub-domain of a near processor
+	/*! \brief Get the real-id of the sub-domains of a near processor
+	 *
+	 * \param p_id near processor rank
+	 *
+	 * \return the sub-domains real id
+	 *
+	 */
+	inline const openfpm::vector< size_t > & getNearSubdomainsRealId(size_t p_id) const
+	{
+		auto key = nn_processor_subdomains.find(p_id);
+#ifdef SE_CLASS1
+		if (key == nn_processor_subdomains.end())
+		{
+			std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " error this process rank is not adjacent to the local processor";
+		}
+#endif
+
+		return key->second.r_sub;
+	}
+
+	/*! \brief Get the sub-domains of a near processor
 	 *
 	 * \param p_id near processor rank
 	 *
@@ -394,11 +419,33 @@ public:
 		return key->second.bx;
 	}
 
-	/*! \brief Get the sub-domain of a near processor
+	/*! \brief Get the number of real sub-domains of a near processor
+	 *
+	 * \note the real sub-domain are the subdomain in the central sector, or any sub-domain that has not been create because of boundary conditions
 	 *
 	 * \param p_id near processor rank
 	 *
-	 * \return the sub-domains
+	 * \return the number of real sub-domains
+	 *
+	 */
+	inline size_t getNRealSubdomains(size_t p_id) const
+	{
+		auto key = nn_processor_subdomains.find(p_id);
+#ifdef SE_CLASS1
+		if (key == nn_processor_subdomains.end())
+		{
+			std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " error this process rank is not adjacent to the local processor";
+		}
+#endif
+
+		return key->second.n_real_sub;
+	}
+
+	/*! \brief Get the sub-domains sector position of a near processor
+	 *
+	 * \param p_id near processor rank
+	 *
+	 * \return the sub-domains positions
 	 *
 	 */
 	inline const openfpm::vector< comb<dim> > & getNearSubdomainsPos(size_t p_id) const
@@ -413,7 +460,7 @@ public:
 		return key->second.pos;
 	}
 
-	/*! \brief Get the adjacent processor id
+	/*! \brief Get the near processor id
 	 *
 	 * \param p_id adjacent processor rank
 	 *
