@@ -10,6 +10,7 @@
 
 #include <random>
 #include "Vector/vector_dist.hpp"
+#include "data_type/aggregate.hpp"
 
 /*! \brief Count the total number of particles
  *
@@ -270,7 +271,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 void print_test_v(std::string test, size_t sz)
 {
 	if (global_v_cluster->getProcessUnitID() == 0)
-		std::cout << test << " " << sz << "\n";
+		std::cout << "\n" << test << " " << sz << "\n";
 }
 
 long int decrement(long int k, long int step)
@@ -1031,6 +1032,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 			size_t cnt = total_n_part_lc(vd,bc);
 
 			BOOST_REQUIRE_EQUAL((size_t)k,cnt);
+
+
 		}
 	}
 }
@@ -1152,6 +1155,81 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 		}
 
 		BOOST_REQUIRE_EQUAL(correct,true);
+	}
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_hilbert_timer_test )
+{
+	typedef Point<2,float> s;
+
+	Vcluster & v_cl = *global_v_cluster;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+    long int k = 524288 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 4;
+	big_step = (big_step == 0)?1:big_step;
+
+	print_test_v( "Testing 2D vector with hilbert curve reordering k<=",k);
+
+	// 2D test
+	for ( ; k >= 2 ; k-= decrement(k,big_step) )
+	{
+		BOOST_TEST_CHECKPOINT( "Testing 2D vector with hilbert curve reordering k=" << k );
+
+		//! [Create a vector of random elements on each processor 2D]
+
+		Box<2,float> box({0.0,0.0},{1.0,1.0});
+
+		// Boundary conditions
+		size_t bc[2]={NON_PERIODIC,NON_PERIODIC};
+
+		vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(k,box,bc,Ghost<2,float>(0.0));
+
+		auto it = vd.getIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			vd.template getPos<s::x>(key)[0] = ud(eg);
+			vd.template getPos<s::x>(key)[1] = ud(eg);
+
+			++it;
+		}
+
+		vd.map();
+
+		timer t;
+		t.start();
+
+		//! [Create a vector of random elements on each processor 2D]
+
+		auto NN1 = vd.getCellList(0.01);
+
+		//An order of a curve
+		int32_t m = 6;
+
+		//Reorder a vector
+		vd.reorder(m);
+
+		auto NN2 = vd.getCellList(0.01);
+
+		for (size_t i = 0 ; i < NN1.getGrid().size() ; i++)
+		{
+			size_t n1 = NN1.getNelements(i);
+			size_t n2 = NN2.getNelements(i);
+
+			BOOST_REQUIRE_EQUAL(n1,n2);
+		}
+
+		t.stop();
+		std::cout << "  t: " << t.getwct() << "\n";
 	}
 }
 

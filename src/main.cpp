@@ -26,5 +26,8 @@
 #include "dec_optimizer_unit_test.hpp"
 #include "Grid/grid_dist_id_unit_test.hpp"
 #include "Vector/vector_dist_unit_test.hpp"
+//#ifdef PERFORMANCE_TEST
+#include "pdata_performance.hpp"
+//#endif
 //#include "Decomposition/nn_processor_unit_test.hpp"
 

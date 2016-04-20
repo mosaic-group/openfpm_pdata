@@ -74,6 +74,15 @@ class vector_dist_iterator
 	{
 		return vect_dist_key_dx(v_it);
 	}
+
+	/*! \brief Reset the iterator
+	 *
+	 *
+	 */
+	void reset()
+	{
+		v_it = 0;
+	}
 };
 
 
