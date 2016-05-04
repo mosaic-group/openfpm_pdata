@@ -18,9 +18,6 @@ public:
 
 	typedef boost::fusion::vector<size_t[dim],size_t[dim]> type;
 
-	typedef typename memory_traits_inte<type>::type memory_int;
-	typedef typename memory_traits_lin<type>::type memory_lin;
-
 	type data;
 
 	static const int start = 0;

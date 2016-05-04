@@ -91,7 +91,7 @@ private:
 	Vcluster & v_cl;
 
 	// definition of the send vector for position
-	typedef openfpm::vector<Point<dim, St>, ExtPreAlloc<Memory>, openfpm::grow_policy_identity> send_pos_vector;
+	typedef openfpm::vector<Point<dim, St>, ExtPreAlloc<Memory>, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin , openfpm::grow_policy_identity> send_pos_vector;
 
 	//////////////////////////////
 	// COMMUNICATION variables
@@ -131,9 +131,9 @@ private:
 	struct pos_prop
 	{
 		//! position vector
-		openfpm::vector<Point<dim, St>, PreAllocHeapMemory<2>, openfpm::grow_policy_identity> pos;
+		openfpm::vector<Point<dim, St>, PreAllocHeapMemory<2>, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin, openfpm::grow_policy_identity> pos;
 		//! properties vector
-		openfpm::vector<prop, PreAllocHeapMemory<2>, openfpm::grow_policy_identity> prp;
+		openfpm::vector<prop, PreAllocHeapMemory<2>, typename memory_traits_lin<prop>::type, memory_traits_lin, openfpm::grow_policy_identity> prp;
 	};
 
 	/*! \brief Label particles for mappings
@@ -439,9 +439,9 @@ private:
 			for (size_t j = 0; j < opart.get(i).size(); j++)
 			{
 				// source object type
-				typedef encapc<1, prop, typename openfpm::vector<prop>::memory_conf> encap_src;
+				typedef encapc<1, prop, typename openfpm::vector<prop>::layout_type> encap_src;
 				// destination object type
-				typedef encapc<1, prp_object, typename openfpm::vector<prp_object>::memory_conf> encap_dst;
+				typedef encapc<1, prp_object, typename openfpm::vector<prp_object>::layout_type> encap_dst;
 
 				// Copy only the selected properties
 				object_si_d<encap_src, encap_dst, OBJ_ENCAP, prp...>(v_prp.get(opart.get(i).get(j)), g_send_prp.get(i).get(j));
@@ -463,8 +463,8 @@ private:
 		for (size_t i = 0; i < prc_r.size(); i++)
 		{
 			// Create the size required to store the particles position and properties to communicate
-			size_t s1 = openfpm::vector<Point<dim, St>, HeapMemory, openfpm::grow_policy_identity>::calculateMem(prc_sz_r.get(i), 0);
-			size_t s2 = openfpm::vector<prop, HeapMemory, openfpm::grow_policy_identity>::calculateMem(prc_sz_r.get(i), 0);
+			size_t s1 = openfpm::vector<Point<dim, St>, HeapMemory, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin, openfpm::grow_policy_identity>::calculateMem(prc_sz_r.get(i), 0);
+			size_t s2 = openfpm::vector<prop, HeapMemory, typename memory_traits_lin<prop>::type, memory_traits_lin, openfpm::grow_policy_identity>::calculateMem(prc_sz_r.get(i), 0);
 
 			// Preallocate the memory
 			size_t sz[2] = { s1, s2 };
@@ -521,7 +521,7 @@ private:
 			PtrMemory * ptr1 = new PtrMemory(recv_mem_gg.get(i).getPointer(), recv_sz.get(i));
 
 			// create vector representation to a piece of memory already allocated
-			openfpm::vector<prp_object, PtrMemory, openfpm::grow_policy_identity> v2;
+			openfpm::vector<prp_object, PtrMemory, typename memory_traits_lin<prp_object>::type, memory_traits_lin , openfpm::grow_policy_identity> v2;
 
 			v2.setMemory(*ptr1);
 
@@ -549,7 +549,7 @@ private:
 
 			// create vector representation to a piece of memory already allocated
 
-			openfpm::vector<Point<dim, St>, PtrMemory, openfpm::grow_policy_identity> v2;
+			openfpm::vector<Point<dim, St>, PtrMemory, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin , openfpm::grow_policy_identity> v2;
 
 			v2.setMemory(*ptr1);
 
@@ -586,8 +586,8 @@ private:
 
 			// create vector representation to a piece of memory already allocated
 
-			openfpm::vector<Point<dim, St>, PtrMemory, openfpm::grow_policy_identity> vpos;
-			openfpm::vector<prop, PtrMemory, openfpm::grow_policy_identity> vprp;
+			openfpm::vector<Point<dim, St>, PtrMemory, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin ,openfpm::grow_policy_identity> vpos;
+			openfpm::vector<prop, PtrMemory, typename memory_traits_lin<prop>::type, memory_traits_lin ,openfpm::grow_policy_identity> vprp;
 
 			vpos.setMemory(*ptr1);
 			vprp.setMemory(*ptr2);
@@ -634,11 +634,11 @@ private:
 		// Calculate the total size required for the sending buffer
 		for (size_t i = 0; i < ghost_prc_sz.size(); i++)
 		{
-			size_t alloc_ele = openfpm::vector<prp_object, HeapMemory, openfpm::grow_policy_identity>::calculateMem(ghost_prc_sz.get(i), 0);
+			size_t alloc_ele = openfpm::vector<prp_object, HeapMemory, typename memory_traits_lin<prp_object>::type, memory_traits_lin , openfpm::grow_policy_identity>::calculateMem(ghost_prc_sz.get(i), 0);
 			pap_prp.push_back(alloc_ele);
 			size_byte_prp += alloc_ele;
 
-			alloc_ele = openfpm::vector<Point<dim, St>, HeapMemory, openfpm::grow_policy_identity>::calculateMem(ghost_prc_sz.get(i), 0);
+			alloc_ele = openfpm::vector<Point<dim, St>, HeapMemory, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin, openfpm::grow_policy_identity>::calculateMem(ghost_prc_sz.get(i), 0);
 			pap_pos.push_back(alloc_ele);
 			size_byte_pos += alloc_ele;
 		}
@@ -847,7 +847,7 @@ public:
 		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;
 
 		// send vector for each processor
-		typedef openfpm::vector<prp_object, ExtPreAlloc<Memory>, openfpm::grow_policy_identity> send_vector;
+		typedef openfpm::vector<prp_object, ExtPreAlloc<Memory>, typename memory_traits_lin<prp_object>::type, memory_traits_lin, openfpm::grow_policy_identity> send_vector;
 
 		// reset the ghost part
 		v_pos.resize(g_m);

@@ -50,7 +50,7 @@ remove_old $i_dir
 
 ## Check and try to install the prerequisites
 
-pre_req
+pre_req $i_dir
 
 ## clone the dependencies
 

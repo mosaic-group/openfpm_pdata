@@ -101,7 +101,12 @@ protected:
 
 	//! This is the key type to access  data_s, for example in the case of vector
 	//! acc_key is size_t
-	typedef typename openfpm::vector<SpaceBox<dim, T>, Memory, openfpm::vector_grow_policy_default, openfpm::vect_isel<SpaceBox<dim, T>>::value>::access_key acc_key;
+	typedef typename openfpm::vector<SpaceBox<dim, T>,
+			Memory,
+			typename memory_traits_lin<SpaceBox<dim, T>>::type,
+			memory_traits_lin,
+			openfpm::vector_grow_policy_default,
+			openfpm::vect_isel<SpaceBox<dim, T>>::value>::access_key acc_key;
 
 	//! the set of all local sub-domain as vector
 	openfpm::vector<SpaceBox<dim, T>> sub_domains;

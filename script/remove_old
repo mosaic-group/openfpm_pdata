@@ -116,6 +116,24 @@ function remove_old()
                 rm -rf $1/PARMETIS
         fi
     fi
+
+    if [ -d $1/MPI ]; then
+        version=$(cat $1/MPI/version)
+        if [ x"$version" != x"1"  ]; then
+                echo -e "\033[1;34;5m  ---------------------------------------------------------------------- \033[0m"
+                echo -e "\033[1;34;5m  MPI has been updated, the component will be updated automatically      \033[0m"
+                echo -e "\033[1;34;5m  ---------------------------------------------------------------------- \033[0m"
+                sleep 5
+                rm -rf $1/MPI/include
+                rm -rf $1/MPI/lib
+                rm -rf $1/MPI/bin
+                rm -rf $1/MPI/etc
+		rm -rf $1/MPI/share
+                rm -rf $1/MPI
+
+                rm -rf $1/HDF5
+        fi
+    fi
 }
 
 

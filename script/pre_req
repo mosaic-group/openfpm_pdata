@@ -215,6 +215,7 @@ else
 fi
 
 
+MPI_valid=no
 command -v mpirun >/dev/null 2>&1
 if [ $? -ne 0 ]; then
   echo -e "No MPI"
@@ -239,5 +240,28 @@ else
     echo -e "mpirun $major.$middle.$minor \033[91;5;1m FAILED \033[0m is too old, 1.8.1 at least required"
   fi 
 fi
+
+if [ x"$MPI_valid" == x"yes"  ]; then
+  ## Check for potential problem in the MPI installation
+
+  if [ -d $1/MPI ]; then
+    where_mpi=$(which mpic++)
+
+    if [ x"$where_mpi" != x"$1/MPI/bin/mpic++" ]; then
+      echo -e "\033[91;5;1m MPI instalation: CONFLICT \033[0m"
+        echo "Performing a \"which mpic++\", we found that you have installed one system wide MPI "
+        echo -e "\033[1m $where_mpi \033[0m"
+        echo "this MPI has priority over OpenFPM MPI installation in: "
+	echo -e "\033[1m $1/MPI/bin/mpic++ \033[0m"
+	echo "Such configuration is not supported, one MPI must be uniquely selected"
+        echo "The possible solutions are: "
+        echo -e "\033[1m 1) Set your PATH to give priority to $1/MPI/bin \033[0m"
+        echo -e "\033[1m 2) Eliminate OpenFPM MPI removing $1/MPI \033[0m"
+        echo -e "\033[1m 3) Eliminate the system wide MPI \033[0m"
+      exit 1
+    fi
+  fi
+fi
+
 }
 

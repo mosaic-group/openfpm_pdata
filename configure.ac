@@ -237,17 +237,17 @@ AX_BOOST_PROGRAM_OPTIONS
 AX_BOOST_IOSTREAMS
 
 if test x"$ax_cv_boost_unit_test_framework" = x"no"; then
-  echo "Notify boost not usable"
+  echo "Notify boost unit test framework not usable"
   exit 202
 fi
 
 if test x"$ax_cv_boost_iostreams" = x"no"; then
-  echo "Notify boost not usable"
+  echo "Notify boost iostream not usable"
   exit 202
 fi
 
 if test x"$ax_cv_boost_programs_options" = x"no"; then
-  echo "Notify boost not usable"
+  echo "Notify boost program options not usable"
   exit 202
 fi
 
