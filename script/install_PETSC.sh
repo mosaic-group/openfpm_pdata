@@ -19,7 +19,7 @@ configure_options_hypre=""
 
 if [ -d "$1/OPENBLAS" ]; then
   configure_options="$configure_options --with-blas-lib=$1/OPENBLAS/lib/libopenblas.a --with-lapack-lib=$1/OPENBLAS/lib/libopenblas.a"
-  configure_trilinos_options="$configure_trilinos_options -D TPL_ENABLE_BLAS=ON -D BLAS_LIBRARY_NAMES=openblas -D BLAS_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_LAPACK=ON -D LAPACK_LIBRARY_NAMES=openblas -D LAPACK_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_Netcdf=OFF -DTPL_ENABLE_GLM=OFF "
+  configure_trilinos_options="$configure_trilinos_options -D TPL_ENABLE_BLAS=ON -D BLAS_LIBRARY_NAMES=openblas -D BLAS_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_LAPACK=ON -D LAPACK_LIBRARY_NAMES=openblas -D LAPACK_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_Netcdf=OFF -DTPL_ENABLE_GLM=OFF -D TPL_ENABLE_X11=OFF  "
   configure_options_superlu="$configure_options_superlu -Denable_blaslib=OFF  -DTPL_BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a "
   configure_options_hypre="--with-blas-libs=-lopenblas --with-blas-lib-dirs=$1/OPENBLAS/lib --with-lapack-libs=-lopenblas  --with-lapack-lib-dirs=$1/OPENBLAS/lib "
   configure_options_scalapack="$configure_options_scalapack -D LAPACK_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a -D BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a"
@@ -69,7 +69,7 @@ if [ ! -d "$1/TRILINOS" ]; then
   cd build
   cmake -D CMAKE_INSTALL_PREFIX:PATH=$1/TRILINOS -D CMAKE_BUILD_TYPE=RELEASE -D Trilinos_ENABLE_TESTS=OFF  -D Trilinos_ENABLE_ALL_PACKAGES=ON $configure_trilinos_options  ../.
 
-  make -j 4
+  make -j $2
   if [ $? -eq 0 ]; then
     make install
     configure_options="$configure_options --with-trilinos=yes -with-trilinos-dir=$1/TRILINOS"
@@ -94,7 +94,7 @@ if [ ! -d "$1/SCALAPACK" ]; then
   mkdir build
   cd build
   cmake -D CMAKE_EXE_LINKER_FLAGS=-pthread  -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_Fortran_FLAGS_RELEASE=-fpic -D MPI_C_COMPILER_FLAGS=-fpic -D MPI_Fortran_COMPILER_FLAGS=-fpic -D CMAKE_C_FLAGS=-fpic -D CMAKE_INSTALL_PREFIX="$1/SCALAPACK" $configure_options_scalapack ../.
-  make -j 4
+  make -j $2
   if [ $? -eq 0 ]; then
     make install
     configure_options="$configure_options --with-scalapack=yes -with-scalapack-dir=$1/SCALAPACK"
@@ -142,7 +142,7 @@ if [ ! -d "$1/MUMPS" ]; then
     sed -i "/LIBBLAS\s=\s-lblas/c\LIBBLAS = -lopenblas" Makefile.inc
 
   fi
-  make -j 4
+  make -j $2
   
   if [ $? -eq 0 ]; then
     ## Copy LIB and include in the target directory
@@ -229,7 +229,7 @@ if [ ! -d "$1/HYPRE" ]; then
   cd src
 
   ./configure CFLAGS=-fpic  $configure_options_hypre --prefix=$1/HYPRE
-  make -j 4
+  make -j $2
 
   if [ $? -eq 0 ]; then
     make install
