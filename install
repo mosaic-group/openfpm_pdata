@@ -132,6 +132,27 @@ echo -e "Installing requirements into: $i_dir "
 
 ## call the configure script
 
+### Installing PETSC
+
+if [ ! -d "$i_dir/PETSC" ]; then
+    echo -e "\033[1;34m OpenFPM Numerics  \033[0m"
+    echo -e "\033[1mOpenfpm Numerics\033[0m is in Beta production. It use optionally the following\033[1m linear algebra packages (TRILINOS,SUPERLU_DIST,MUMPS,HYPRE,SCALAPACK,SUITESPARSE,OPENBLAS,EIGEN,PETSC) \033[0m. \033[1mThe installation is automated but can take long time \033[1m (i7-3612QM 4 core 90 minutes) \033[0m. In case you decide to not install the linear algebra, openfpm numeric will try anyway to search for linear algebra packages"
+
+
+    echo ""
+    echo -e "\033[1mHow many core you want to use to install the linear algebra package?\033[0m(0=no linear algebra installation)"
+    read lin_alg_ncore
+
+#    if [ ! x"$choose" == x"0" ]; then
+#        ./script/install_PETSC.sh $i_dir $choose
+#        configure_options="$configure_options --with-PETSC=$i_dir/PETSC "
+#    fi
+else
+    configure_options="$configure_options --with-PETSC=$i_dir/PETSC "
+fi
+
+### MPI
+
 if [ x"$MPI_valid" == x"yes" ]; then
 	configure_options="$configure_options CXX=mpic++ "
 else
@@ -142,23 +163,6 @@ fi
 
 set_mpi $i_dir
 
-### Installing PETSC
-
-if [ ! -d "$i_dir/PETSC" ]; then
-    echo -e "\033[1;34m OpenFPM Numerics  \033[0m"
-    echo -e "\033[1mOpenfpm Numerics\033[0m went in Beta production. It use the optionally the following\033[1m linear algebra packages (TRILINOS,SUPERLU_DIST,MUMPS,HYPRE,SCALAPACK,SUITESPARSE,OPENBLAS,EIGEN,PETSC) \033[0m. \033[1mThe installation is automated but can take long time \033[1m (i7-3612QM 4 core 90 minutes) \033[0m. In case you decide to not install the linear algebra, openfpm numeric will try anyway to search for linear algebra packages"
-
-
-    echo ""
-    echo -e "\033[1mHow many core you want to use to install the linear algebra package?\033[0m(0=no linear algebra installation)"
-    read choose
-
-    if [ ! x"$choose" == x"0" ]; then
-        ./script/install_PETSC.sh $i_dir $choose
-    fi
-
-fi
-
 ### METIS and ParMETIS must be installed independently from sistem wide installation
 
 ./script/install_Parmetis.sh $i_dir $compiler_gcc $compiler_gpp
@@ -167,23 +171,27 @@ configure_options=" $configure_options --with-parmetis=$i_dir/PARMETIS "
 configure_options=" $configure_options --with-metis=$i_dir/METIS "
 
 MPI_installed=0
+MPI_System_prv=1
 METIS_installed=1
 PARMETIS_installed=1
 BOOST_installed=0
+BOOST_System_prv=1
 LAPACK_installed=0
+LAPACK_System_prv=1
 SUITESPARSE_installed=0
+SUITESPARSE_System_prv=1
 EIGEN_installed=0
+EIGEN_System_prv=1
 HDF5_installed=0
-H5PART_installed=0
-blas_options=""
+HDF5_System_prv=1
 conf_err=1
 
 if [ $install_req -eq 0 ]; then
-    ./configure $options $configure_options "$blas_options"
+    ./configure $options $configure_options
 else
     while [ $conf_err -ne 0 ]
     do
-        ./configure $options $configure_options "$blas_options"
+        ./configure $options $configure_options
         conf_err=$?
 
 	echo "Configure script terminated with $conf_err"
@@ -217,40 +225,6 @@ else
             ./script/install_BOOST.sh $i_dir $compiler_opt
             BOOST_installed=1
             configure_options=" $configure_options --with-boost=$i_dir/BOOST "
-        elif [ $conf_err -eq 204 ]; then
-            echo "Lapack not found try to install"
-            if [ $LAPACK_installed -eq 1  ]; then
-                echo "Error the installation of LAPACK failed"
-                exit 1
-            fi
-            ./script/install_OPENBLAS.sh $i_dir $compiler_opt
-            LAPACK_installed=1
-            blas_options="--with-blas=-L$i_dir/OPENBLAS/lib/ -lopenblas"
-        elif [ $conf_err -eq 205 ]; then
-            ## First we install openblas, we ignore default lapack
-            ## this SuiteSparse is programmed to use libopenblas
-            ./script/install_OPENBLAS.sh $i_dir $compiler_opt
-            LAPACK_installed=1
-            blas_options="--with-blas=-L$i_dir/OPENBLAS/lib/ -lopenblas"
-        
-            ## Then suite sparse
-            echo "SuiteSparse not found try to install"
-            if [ $SUITESPARSE_installed -eq 1  ]; then
-                echo "Error the installation of SuiteSparse failed"
-                exit 1
-            fi
-            ./script/install_SUITESPARSE.sh $i_dir $compiler_opt
-            configure_options=" $configure_options --with-suitesparse=$i_dir/SUITESPARSE "
-            SUITESPARSE_installed=1
-        elif [ $conf_err -eq 206 ]; then
-            echo "Eigen not found try to install"
-            if [ $EIGEN_installed -eq 1  ]; then
-                echo "Error the installation of Eigen failed"
-                exit 1
-            fi
-            ./script/install_EIGEN.sh $i_dir $compiler_opt
-            configure_options=" $configure_options --with-eigen=$i_dir/EIGEN "
-            EIGEN_installed=1
 	elif [ $conf_err -eq 208 ]; then
             echo "ParMetis not found try to install"
             if [ $PARMETIS_installed -eq 1  ]; then
@@ -274,6 +248,20 @@ else
             exit 1
         fi
     done
+
+    if [ ! x"$lin_alg_ncore" == x"0" ]; then
+        ./script/install_EIGEN.sh $i_dir $lin_alg_ncore
+        if [ $? -eq 0 ]; then
+            configure_options=" $configure_options --with-eigen=$i_dir/EIGEN "
+        fi
+        ./script/install_PETSC.sh $i_dir $lin_alg_ncore
+        if [ $? -eq 0 ]; then
+            configure_options=" $configure_options --with-petsc=$i_dir/PETSC "
+        fi
+    fi
+
+    ./configure $options $configure_options
+
 fi
 
 ### Create example.mk
@@ -285,8 +273,8 @@ echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams 
 cp example.mk src/example.mk
 cp example.mk example/example.mk
 
-#make clean
-#make
+make clean
+make
 
 if [ $? -ne 0 ]; then
   conf_err=1
@@ -302,7 +290,7 @@ fi
 
 echo "Command used to configure"
 echo ""
-echo -e "\033[1m ./configure $options $configure_options "$blas_options" \033[0m "
+echo -e "\033[1m ./configure $options $configure_options \033[0m "
 echo ""
 
 if [ x"$platform" = x"linux" ]; then
@@ -316,47 +304,115 @@ bash_path="export PATH=\$PATH"
 echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
 echo -e "\033[1;34;5m --------- INSTALLATION REPORT ---------  \033[0m"
 echo ""
+echo -e "\033[1;34;5m ---------- Mandatory packages ---------  \033[0m"
+echo ""
 
-if [ $MPI_installed -eq 1 ]; then
-  installation_report="$installation_report MPI Installed: \033[1m $i_dir/MPI \033[0m\n"
-  bash_path="\033[1m$bash_path:$i_dir/MPI/bin"
-  bash_library="\033[1m$bash_library:$i_dir/MPI/lib"
+if [ -d "$i_dir/MPI" ]; then
+  installation_report="$installation_report \033[92;1mMPI\033[0m Installed: \033[1m $i_dir/MPI \033[0m\n"
+  bash_path="$bash_path:$i_dir/MPI/bin"
+  bash_library="$bash_library:$i_dir/MPI/lib"
+elif [ $MPI_System_prv -eq 1 ]; then
+  installation_report="$installation_report \033[92;1mMPI\033[0m Installed: \033[1m System installation \033[0m\n"
 fi
 
 if [ $METIS_installed -eq 1 ]; then
-  installation_report="$installation_report METIS Installed: \033[1m $i_dir/METIS \033[0m\n"
+  installation_report="$installation_report \033[92;1mMETIS\033[0m Installed: \033[1m $i_dir/METIS \033[0m\n"
   bash_library="$bash_library:$i_dir/METIS/lib"
 fi
 
-if [ $BOOST_installed -eq 1 ]; then
-  installation_report="$installation_report BOOST Installed: \033[1m $i_dir/BOOST \033[0m\n"
-  bash_library="$bash_library:$i_dir/BOOST/lib"
-
-fi
-if [ $LAPACK_installed -eq 1 ]; then
-  installation_report="$installation_report OPENBLAS Installed: \033[1m $i_dir/OPENBLAS \033[0m\n"
-  bash_library="$bash_library:$i_dir/OPENBLAS/lib"
-
-fi
-if [ $SUITESPARSE_installed -eq 1 ]; then
-  installation_report="$installation_report SUITESPARSE Installed: \033[1m $i_dir/SUITESPARSE \033[0m\n"
-  bash_library="$bash_library:$i_dir/SUITESPARSE/lib"
-fi
-if [ $EIGEN_installed -eq 1 ]; then
-  installation_report="$installation_report EIGEN Installed: \033[1m $i_dir/EIGEN \033[0m\n"
-fi
-
-if [ $HDF5_installed -eq 1 ]; then
-  installation_report="$installation_report HDF5 Installed: \033[1m $i_dir/HDF5 \033[0m\n"
-  bash_library="$bash_library:$i_dir/HDF5/lib"
-fi
 if [ $PARMETIS_installed -eq 1 ]; then
-  installation_report="$installation_report PARMETIS Installed: \033[1m $i_dir/PARMETIS \033[0m\n"
+  installation_report="$installation_report \033[92;1mPARMETIS\033[0m Installed: \033[1m $i_dir/PARMETIS \033[0m\n"
   bash_library="$bash_library:$i_dir/PARMETIS/lib"
 fi
 
-bash_path="$bash_path\033[0m"
-bash_library="$bash_library\033[0m"
+if [ $BOOST_installed -eq 1 ]; then
+  installation_report="$installation_report \033[92;1mBOOST\033[0m Installed: \033[1m $i_dir/BOOST \033[0m\n"
+  bash_library="$bash_library:$i_dir/BOOST/lib"
+elif [ $BOOST_System_prv -eq 1 ]; then
+  installation_report="$installation_report \033[92;1mBOOST\033[0m Installed: \033[1m System installation \033[0m\n"
+fi
+
+if [ $HDF5_installed -eq 1 ]; then
+  installation_report="$installation_report \033[92;1mHDF5\033[0m Installed: \033[1m $i_dir/HDF5 \033[0m\n"
+  bash_library="$bash_library:$i_dir/HDF5/lib"
+fi
+
+echo -e "$installation_report"
+
+echo ""
+echo -e "\033[1;34;5m ---------- Optional packages -----------  \033[0m"
+echo ""
+
+installation_report=""
+
+if [ -d "$i_dir/PETSC" ]; then
+  installation_report="$installation_report \033[92;1mPETSC\033[0m Installed: \033[1m $i_dir/PETSC \033[0m\n"
+  bash_library="$bash_library:$i_dir/PETSC/lib"
+else
+  installation_report="$installation_report \033[91;1mPETSC\033[0m Installed: \033[1m NO \033[0m\n"
+fi
+
+if [ -d "$i_dir/EIGEN" ]; then
+  installation_report="$installation_report \033[92;1mEIGEN\033[0m Installed: \033[1m $i_dir/EIGEN \033[0m\n"
+fi
+
+echo -e "$installation_report"
+
+echo -e "\033[1;34;5m --------------------------------  \033[0m"
+
+installation_report=""
+
+if [ -d "$i_dir/TRILINOS" ]; then
+  installation_report="$installation_report \033[92;1mTRILINOS\033[0m Installed: \033[1m $i_dir/TRILINOS \033[0m\n"
+  bash_library="$bash_library:$i_dir/TRILINOS/lib"
+else
+  installation_report="$installation_report \033[91;1mTRILINOS\033[0m Installed: \033[1m NO \033[0m\n"
+fi
+
+if [ -d "$i_dir/OPENBLAS" ]; then
+  installation_report="$installation_report \033[92;1mOPENBLAS\033[0m Installed: \033[1m $i_dir/OPENBLAS \033[0m\n"
+  bash_library="$bash_library:$i_dir/OPENBLAS/lib"
+else
+  installation_report="$installation_report \033[91;1mOPENBLAS\033[0m Installed: \033[1m NO \033[0m\n"
+fi
+
+if [ -d "$i_dir/SUITESPARSE" ]; then
+  installation_report="$installation_report \033[92;1mSUITESPARSE\033[0m Installed: \033[1m $i_dir/SUITESPARSE \033[0m\n"
+  bash_library="$bash_library:$i_dir/SUITESPARSE/lib"
+else
+  installation_report="$installation_report \033[91;1mSUITESPARSE\033[0m Installed: \033[1m NO \033[0m\n"
+fi
+
+if [ -d "$i_dir/SCALAPACK" ]; then
+  installation_report="$installation_report \033[92;1mSCALAPACK\033[0m Installed: \033[1m $i_dir/SCALAPACK \033[0m\n"
+  bash_library="$bash_library:$i_dir/SCALAPACK/lib"
+else
+  installation_report="$installation_report \033[91;1mSCALAPACK\033[0m Installed: \033[1m NO \033[0m\n"
+fi
+
+if [ -d "$i_dir/MUMPS" ]; then
+  installation_report="$installation_report \033[92;1mMUMPS\033[0m Installed: \033[1m $i_dir/MUMPS \033[0m\n"
+  bash_library="$bash_library:$i_dir/MUMPS/lib"
+else
+  installation_report="$installation_report \033[91;1mMUMPS\033[0m Installed: \033[1m NO \033[0m\n"
+fi
+
+if [ -d "$i_dir/SUPERLU_DIST" ]; then
+  installation_report="$installation_report \033[92;1mSUPERLU_DIST\033[0m Installed: \033[1m $i_dir/SUPERLU_DIST \033[0m\n"
+  bash_library="$bash_library:$i_dir/SUPERLU_DIST/lib"
+else
+  installation_report="$installation_report \033[91;1mSUPERLU_DIST\033[0m Installed: \033[1m NO \033[0m\n"
+fi
+
+if [ -d "$i_dir/HYPRE" ]; then
+  installation_report="$installation_report \033[92;1mHYPRE\033[0m Installed: \033[1m $i_dir/HYPRE \033[0m\n"
+  bash_library="$bash_library:$i_dir/HYPRE/lib"
+else
+  installation_report="$installation_report \033[91;1mHYPRE\033[0m Installed: \033[1m NO \033[0m\n"
+fi
+
+bash_path="$bash_path\""
+bash_library="$bash_library\""
 
 ##### Writing openfpm_vars file
 
@@ -365,21 +421,15 @@ echo "$bash_library" >> $HOME/openfpm_vars
 
 echo -e "$installation_report"
 echo ""
-echo "Before run any openfpm program you must execute the following command"
+if [ x"$platform" = x"linux" ]; then
+  echo "Before run any openfpm program you must execute the following command. A simple way would be to append this line at the end of your $HOME/.bashrc"
+else
+  echo "Before run any openfpm program you must execute the following command. A simple way would be to append this line at the end of your $HOME/.bash_profile"
+fi
 echo ""
 echo -e "\033[1m source $HOME/openfpm_vars \033[0m"
 echo ""
 echo -e "\033[91;1m if you have in your .bashrc or .bash_profile old openfpm setting, please remove it\033[0m"
-
-if [ x"$platform" = x"linux" ]; then
-  echo "To have a working openfpm environment every time you open bash/terminal append such command at the end of the file $HOME/.bashrc"
-else
-  echo "To have a working openfpm environment every time you open bash/terminal append such command at the end of the file $HOME/.bash_profile"
-fi
-echo ""
-echo -e "$bash_path"
-echo -e "$bash_library"
-echo ""
 echo ""
 echo ""
 if [ $conf_err -ne 0 ]; then

@@ -7,6 +7,16 @@ if [ -d "$1/EIGEN" ]; then
   exit 0
 fi
 
+./script/install_OPENBLAS.sh $1 $2
+if [ -d "$1/OPENBLAS"  ]; then
+  exit 1
+fi
+
+./script/install_SUITESPARSE.sh $1 $2
+if [ -d "$1/SUITESPARSE"  ]; then
+  exit 1
+fi
+
 wget http://ppmcore.mpi-cbg.de/upload/eigen-3.2.7.tar.bz2
 rm -rf eigen-eigen-b30b87236a1b
 tar -xf eigen-3.2.7.tar.bz2

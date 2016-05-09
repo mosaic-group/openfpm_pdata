@@ -17,14 +17,8 @@ configure_options_superlu=""
 configure_trilinos_options=" -D TPL_ENABLE_MPI=ON -D Trilinos_ENABLE_OpenMP=ON"
 configure_options_hypre=""
 
-if [ -d "$1/OPENBLAS" ]; then
-  configure_options="$configure_options --with-blas-lib=$1/OPENBLAS/lib/libopenblas.a --with-lapack-lib=$1/OPENBLAS/lib/libopenblas.a"
-  configure_trilinos_options="$configure_trilinos_options -D TPL_ENABLE_BLAS=ON -D BLAS_LIBRARY_NAMES=openblas -D BLAS_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_LAPACK=ON -D LAPACK_LIBRARY_NAMES=openblas -D LAPACK_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_Netcdf=OFF -DTPL_ENABLE_GLM=OFF -D TPL_ENABLE_X11=OFF  "
-  configure_options_superlu="$configure_options_superlu -Denable_blaslib=OFF  -DTPL_BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a "
-  configure_options_hypre="--with-blas-libs=-lopenblas --with-blas-lib-dirs=$1/OPENBLAS/lib --with-lapack-libs=-lopenblas  --with-lapack-lib-dirs=$1/OPENBLAS/lib "
-  configure_options_scalapack="$configure_options_scalapack -D LAPACK_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a -D BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a"
+### Here we install OpenBLAS and SUITESPARSE
 
-fi
 
 if [ -d "$1/PARMETIS" ]; then
   configure_options="$configure_options --with-parmetis=yes  --with-parmetis-dir=$1/PARMETIS/ "
@@ -39,11 +33,7 @@ if [ -d "$1/HDF5" ]; then
   configure_options="$configure_options --with-hdf5=yes --with-hdf5-dir=$1/HDF5  "
 fi
 
-if [ -d "$1/SUITESPARSE" ]; then
-  configure_options="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
-fi
-
-if [ -d "$1/BOOST" ]; then
+if [ -d "$1/BOOST" ]; then  
   configure_options="$configure_options --with-boost=yes --with-boost-dir=$1/BOOST "
 fi
 
@@ -52,8 +42,34 @@ if [ -d "$1/MPI" ]; then
 fi
 
 ### It seem that the PETSC --download-packege option has several problems and cannot produce
-### a valid compilation command for most of the package + it seem also seem that some library
+### a valid compilation command for most of the packages + it seem also that some library
 ### are compiled without optimization enabled, so we provide manual installation for that packages
+
+if [ ! -d "$1/OPENBLAS" ]; then
+  ./script/install_OPENBLAS.sh $1
+  if [ $? -eq 0 ]; then
+    configure_options="$configure_options --with-blas-lib=$1/OPENBLAS/lib/libopenblas.a --with-lapack-lib=$1/OPENBLAS/lib/libopenblas.a"
+    configure_trilinos_options="$configure_trilinos_options -D TPL_ENABLE_BLAS=ON -D BLAS_LIBRARY_NAMES=openblas -D BLAS_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_LAPACK=ON -D LAPACK_LIBRARY_NAMES=openblas -D LAPACK_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_Netcdf=OFF -DTPL_ENABLE_GLM=OFF -D TPL_ENABLE_X11=OFF  "
+    configure_options_superlu="$configure_options_superlu -Denable_blaslib=OFF  -DTPL_BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a "
+    configure_options_hypre="--with-blas-libs=-lopenblas --with-blas-lib-dirs=$1/OPENBLAS/lib --with-lapack-libs=-lopenblas  --with-lapack-lib-dirs=$1/OPENBLAS/lib "
+    configure_options_scalapack="$configure_options_scalapack -D LAPACK_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a -D BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a"
+  fi
+else
+    configure_options="$configure_options --with-blas-lib=$1/OPENBLAS/lib/libopenblas.a --with-lapack-lib=$1/OPENBLAS/lib/libopenblas.a"
+    configure_trilinos_options="$configure_trilinos_options -D TPL_ENABLE_BLAS=ON -D BLAS_LIBRARY_NAMES=openblas -D BLAS_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_LAPACK=ON -D LAPACK_LIBRARY_NAMES=openblas -D LAPACK_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_Netcdf=OFF -DTPL_ENABLE_GLM=OFF -D TPL_ENABLE_X11=OFF  "
+    configure_options_superlu="$configure_options_superlu -Denable_blaslib=OFF  -DTPL_BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a "
+    configure_options_hypre="--with-blas-libs=-lopenblas --with-blas-lib-dirs=$1/OPENBLAS/lib --with-lapack-libs=-lopenblas  --with-lapack-lib-dirs=$1/OPENBLAS/lib "
+    configure_options_scalapack="$configure_options_scalapack -D LAPACK_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a -D BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a"
+fi
+
+if [ ! -d "$1/SUITESPARSE" ]; then
+  ./script/install_SUITESPARSE.sh $1
+  if [ $? -eq 0 ]; then
+    configure_options="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
+  fi
+else
+  configure_options="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
+fi
 
 if [ ! -d "$1/TRILINOS" ]; then
   rm trilinos-12.6.1-Source.tar.gz
@@ -150,7 +166,10 @@ if [ ! -d "$1/MUMPS" ]; then
     mkdir $1/MUMPS
     cp -r include $1/MUMPS
     cp -r lib $1/MUMPS
-    configure_options="$configure_options --with-mumps=yes --with-mumps-lib=\"$1/MUMPS/lib/libdmumps.a $1/MUMPS/lib/libmumps_common.a $1/MUMPS/lib/libpord.a\"  --with-mumps-include=$1/MUMPS/include"
+
+    configure_options="$configure_options --with-mumps=yes --with-mumps-include=$1/MUMPS/include"
+    MUMPS_extra_lib="$1/MUMPS/lib/libdmumps.a $1/MUMPS/lib/libmumps_common.a $1/MUMPS/lib/libpord.a"
+
   fi
 
 else
