@@ -250,10 +250,9 @@ else
     done
 
     if [ ! x"$lin_alg_ncore" == x"0" ]; then
-        echo "DIOCANEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
         ./script/install_EIGEN.sh $i_dir $lin_alg_ncore
         if [ $? -eq 0 ]; then
-            configure_options=" $configure_options --with-eigen=$i_dir/EIGEN "
+            configure_options=" $configure_options --with-eigen=$i_dir/EIGEN --with-suitesparse=$i_dir/SUITESPARSE --with-blas=$i_dir/OPENBLAS  "
         fi
         ./script/install_PETSC.sh $i_dir $lin_alg_ncore
         if [ $? -eq 0 ]; then
