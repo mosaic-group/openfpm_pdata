@@ -134,7 +134,7 @@ echo -e "Installing requirements into: $i_dir "
 
 ### Installing PETSC
 
-if [ ! -d "$i_dir/PETSC" ]; then
+if [ ! -d "$i_dir/PETSC" -o ! -d "$i_dir/EIGEN" ]; then
     echo -e "\033[1;34m OpenFPM Numerics  \033[0m"
     echo -e "\033[1mOpenfpm Numerics\033[0m is in Beta production. It use optionally the following\033[1m linear algebra packages (TRILINOS,SUPERLU_DIST,MUMPS,HYPRE,SCALAPACK,SUITESPARSE,OPENBLAS,EIGEN,PETSC) \033[0m. \033[1mThe installation is automated but can take long time \033[1m (i7-3612QM 4 core 90 minutes) \033[0m. In case you decide to not install the linear algebra, openfpm numeric will try anyway to search for linear algebra packages"
 
@@ -250,6 +250,7 @@ else
     done
 
     if [ ! x"$lin_alg_ncore" == x"0" ]; then
+        echo "DIOCANEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
         ./script/install_EIGEN.sh $i_dir $lin_alg_ncore
         if [ $? -eq 0 ]; then
             configure_options=" $configure_options --with-eigen=$i_dir/EIGEN "
