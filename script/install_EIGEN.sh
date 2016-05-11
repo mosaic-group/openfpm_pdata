@@ -8,12 +8,12 @@ if [ -d "$1/EIGEN" ]; then
 fi
 
 ./script/install_OPENBLAS.sh $1 $2
-if [ -d "$1/OPENBLAS"  ]; then
+if [ ! -d "$1/OPENBLAS"  ]; then
   exit 1
 fi
 
 ./script/install_SUITESPARSE.sh $1 $2
-if [ -d "$1/SUITESPARSE"  ]; then
+if [ ! -d "$1/SUITESPARSE"  ]; then
   exit 1
 fi
 
