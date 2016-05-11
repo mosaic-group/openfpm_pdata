@@ -147,8 +147,10 @@ if [ ! -d "$i_dir/PETSC" -o ! -d "$i_dir/EIGEN" ]; then
 #        ./script/install_PETSC.sh $i_dir $choose
 #        configure_options="$configure_options --with-PETSC=$i_dir/PETSC "
 #    fi
-else
-    configure_options="$configure_options --with-PETSC=$i_dir/PETSC "
+elif [ -d "$i_dir/PETSC" ]; then
+    configure_options="$configure_options --with-petsc=$i_dir/PETSC "
+elif [ -d "$i_dir/EIGEN" ]; then
+    configure_options=" $configure_options --with-eigen=$i_dir/EIGEN --with-suitesparse=$i_dir/SUITESPARSE --with-blas=\"$i_dir/OPENBLAS/lib -lopenblas\"  "
 fi
 
 ### MPI
@@ -252,7 +254,7 @@ else
     if [ ! x"$lin_alg_ncore" == x"0" ]; then
         ./script/install_EIGEN.sh $i_dir $lin_alg_ncore
         if [ $? -eq 0 ]; then
-            configure_options=" $configure_options --with-eigen=$i_dir/EIGEN --with-suitesparse=$i_dir/SUITESPARSE --with-blas=$i_dir/OPENBLAS  "
+            configure_options=" $configure_options --with-eigen=$i_dir/EIGEN --with-suitesparse=$i_dir/SUITESPARSE --with-blas=\"$i_dir/OPENBLAS/lib -lopenblas\"  "
         fi
         ./script/install_PETSC.sh $i_dir $lin_alg_ncore
         if [ $? -eq 0 ]; then
