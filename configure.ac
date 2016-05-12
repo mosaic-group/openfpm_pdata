@@ -119,7 +119,7 @@ IMMDX_LIB_METIS([],[echo "Cannot detect metis, use the --with-metis option if it
 
 ## Check for HDF5
 
-#AX_LIB_HDF5([parallel])
+AX_LIB_HDF5([parallel])
 
 if test x"$with_hdf5" = x"no"; then
     echo "Cannot detect hdf5, use the --with-hdf5 option if it is not installed in the default location"
