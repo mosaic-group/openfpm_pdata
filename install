@@ -329,24 +329,24 @@ elif [ $MPI_System_prv -eq 1 ]; then
   installation_report="$installation_report \033[92;1mMPI\033[0m Installed: \033[1m System installation \033[0m\n"
 fi
 
-if [ $METIS_installed -eq 1 ]; then
+if [ -d "$i_dir/METIS" ]; then
   installation_report="$installation_report \033[92;1mMETIS\033[0m Installed: \033[1m $i_dir/METIS \033[0m\n"
   bash_library="$bash_library:$i_dir/METIS/lib"
 fi
 
-if [ $PARMETIS_installed -eq 1 ]; then
+if [ -d "$i_dir/PARMETIS" ]; then
   installation_report="$installation_report \033[92;1mPARMETIS\033[0m Installed: \033[1m $i_dir/PARMETIS \033[0m\n"
   bash_library="$bash_library:$i_dir/PARMETIS/lib"
 fi
 
-if [ $BOOST_installed -eq 1 ]; then
+if [ -d "$i_dir/BOOST" ]; then
   installation_report="$installation_report \033[92;1mBOOST\033[0m Installed: \033[1m $i_dir/BOOST \033[0m\n"
   bash_library="$bash_library:$i_dir/BOOST/lib"
 elif [ $BOOST_System_prv -eq 1 ]; then
   installation_report="$installation_report \033[92;1mBOOST\033[0m Installed: \033[1m System installation \033[0m\n"
 fi
 
-if [ $HDF5_installed -eq 1 ]; then
+if [ -d "$i_dir/HDF5" ]; then
   installation_report="$installation_report \033[92;1mHDF5\033[0m Installed: \033[1m $i_dir/HDF5 \033[0m\n"
   bash_library="$bash_library:$i_dir/HDF5/lib"
 fi
