@@ -25,7 +25,7 @@ else
   echo "cmake ../../. -DSHARED=1 -DGKLIB_PATH=../../GKlib -DCMAKE_INSTALL_PREFIX=$1/METIS"
   cmake ../../. -DSHARED=1 -DGKLIB_PATH=../../GKlib -DCMAKE_INSTALL_PREFIX=$1/METIS
 fi
-make -j 4
+make -j $4
 mkdir $1/METIS
 make install
 

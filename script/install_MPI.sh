@@ -26,7 +26,7 @@ cd openmpi-1.10.2
 #
 
 ./configure --prefix=$1/MPI --enable-mpi-fortran=yes
-make -j 4
+make -j $2
 make install
 
 # Mark the installation

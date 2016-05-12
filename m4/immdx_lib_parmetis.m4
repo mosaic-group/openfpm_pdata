@@ -45,9 +45,11 @@ AC_DEFUN([IMMDX_LIB_PARMETIS], [
                         old_CC=$CC
                         old_CFLAGS=$CFLAGS
                         old_LDFLAGS=$LDFLAGS
+			old_LIBS=$LIBS
                         CFLAGS="-I$with_parmetis/include -I$with_metis/include"
                         LDFLAGS="-L$with_parmetis/lib -L$with_metis/lib"
 			CC=$CXX
+			LIBS="-lmetis"
 
                         AC_LANG_SAVE
                         AC_LANG_C
@@ -62,6 +64,7 @@ AC_DEFUN([IMMDX_LIB_PARMETIS], [
                         CFLAGS=$old_CFLAGS
                         LDFLAGS=$old_LDFLAGS
                         CC=$old_CC
+			LIBS=$old_LIBS
 
                         AC_MSG_CHECKING(PARMETIS in $with_parmetis)
                         if test "$parmetis_lib" = "yes" -a "$parmetis_h" = "yes" ; then
