@@ -38,7 +38,7 @@ m4_ifdef([AX_BLAS],,[m4_include([m4/ax_blas.m4])])
 m4_ifdef([AX_LAPACK],,[m4_include([m4/ax_lapack.m4])])
 m4_ifdef([AX_SUITESPARSE],,[m4_include([m4/ax_suitesparse.m4])])
 m4_ifdef([AX_EIGEN],,[m4_include([m4/ax_eigen.m4])])
-m4_ifdef([AX_LIB_HDF5],,[m4_include([m4/ax_lib_hdf5.m4])]])
+m4_ifdef([AX_LIB_HDF5],,[m4_include([m4/ax_lib_hdf5.m4])])
 
 case $host_os in
    *darwin*|*macosx*)
@@ -119,7 +119,7 @@ IMMDX_LIB_METIS([],[echo "Cannot detect metis, use the --with-metis option if it
 
 ## Check for HDF5
 
-AX_LIB_HDF5([parallel])
+#AX_LIB_HDF5([parallel])
 
 if test x"$with_hdf5" = x"no"; then
     echo "Cannot detect hdf5, use the --with-hdf5 option if it is not installed in the default location"
