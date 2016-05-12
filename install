@@ -270,7 +270,7 @@ else
         fi
     done
 
-    if [ ! x"$inst_lin_alg" == x"y" ]; then
+    if [ x"$inst_lin_alg" == x"y" ]; then
         ./script/install_EIGEN.sh $i_dir $ncore
         if [ $? -eq 0 ]; then
             configure_options=" $configure_options --with-eigen=$i_dir/EIGEN --with-suitesparse=$i_dir/SUITESPARSE  "
@@ -302,14 +302,6 @@ if [ $? -ne 0 ]; then
   conf_err=1
 fi
 
-echo ""
-echo ""
-if [ $conf_err -eq 0  ]; then
-  echo -e "Install\033[92;5;1m SUCCEED \033[0m"
-else
-  echo -e "Install\033[91;5;1m FAILED \033[0m"
-fi
-
 echo "Command used to configure"
 echo ""
 echo -e "\033[1m ./configure $options $configure_options \033[0m "
@@ -321,7 +313,7 @@ else
   bash_library="export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH"
 fi
 
-bash_path="export PATH=\$PATH"
+bash_path="export PATH=\"\$PATH"
 
 echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
 echo -e "\033[1;34;5m --------- INSTALLATION REPORT ---------  \033[0m"
@@ -442,6 +434,14 @@ echo "$bash_path" > $HOME/openfpm_vars
 echo "$bash_library" >> $HOME/openfpm_vars
 
 echo -e "$installation_report"
+echo ""
+echo ""
+if [ $conf_err -eq 0  ]; then
+  echo -e "Install summary\033[92;5;1m SUCCEED \033[0m"
+else
+  echo -e "Install summary\033[91;5;1m FAILED \033[0m"
+fi
+
 echo ""
 if [ x"$platform" = x"linux" ]; then
   echo "Before run any openfpm program you must execute the following command. A simple way would be to append this line at the end of your $HOME/.bashrc"
