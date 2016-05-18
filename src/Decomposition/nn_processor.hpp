@@ -48,6 +48,81 @@ class nn_prcs
 	//! applyBC function is suppose to be called only one time
 	bool aBC;
 
+	/*! \brief It shift a box but it does consistently
+	 *
+	 * In calculating internal and external ghost boxes, domains are shifted by periodicity.
+	 * In particular, consider a box touching with the left bolder the left border of the domain
+	 *
+
+	 before shift                              after shift
+
++-----------------------------+        +------------------------------+
+|                             |        |                              |
+|      domain                 |        |        domain                |
+|                             |        |                              |
+|                             |        |                              |
++---------+                   |        |                              +---------+
+|         |                   |        |                              |         |
+|         |                   |        |                              |         |
+|  box    |                   |        |                              |   box   |
+|         |                   |        |                              |         |
+|         |                   |        |                              |         |
++---------+                   |        |                              +---------+
+|                             |        |                              |
+|                             |        |                              |
+|                             |        |                              |
+|                             |        |                              |
+|                             |        |                              |
++-----------------------------+        +------------------------------+
+
+	 *
+	 *
+	 *
+	 *
+	 *
+	 * shifting the box on the right by the size of the domain, we expect to have a box touching with
+	 * the left side the right side of the domain. Because of rounding off problem this is not possible
+	 * with a simple shift. This function ensure consistency like ensuring the previous condition, with
+	 * the assumption that the shift is +/- the domain size
+	 *
+	 * \param box to shift
+	 * \param domain
+	 * \param shift
+	 *
+	 */
+	inline void consistent_shift(Box<dim,T> & box, const Box<dim,T> & domain, const Point<dim,T> & shift)
+	{
+		for (size_t k = 0 ; k < dim ; k++)
+		{
+			// if it touch on the left and shift on the right
+			if (box.getLow(k) == domain.getLow(k) && shift.get(k) > 0)
+			{
+				box.setLow(k,domain.getHigh(k));
+				box.setHigh(k,box.getHigh(k) + shift.get(k));
+			}
+			else if (box.getLow(k) == domain.getHigh(k) && shift.get(k) < 0)
+			{
+				box.setLow(k,domain.getLow(k));
+				box.setHigh(k,box.getHigh(k) + shift.get(k));
+			}
+			else if (box.getHigh(k) == domain.getHigh(k) && shift.get(k) < 0)
+			{
+				box.setHigh(k,domain.getLow(k));
+				box.setLow(k,box.getLow(k) + shift.get(k));
+			}
+			else if (box.getHigh(k) == domain.getLow(k) && shift.get(k) > 0)
+			{
+				box.setHigh(k,domain.getHigh(k));
+				box.setLow(k,box.getLow(k) + shift.get(k));
+			}
+			else
+			{
+				box.setHigh(k,box.getHigh(k) + shift.get(k));
+				box.setLow(k,box.getLow(k) + shift.get(k));
+			}
+		}
+	}
+
 	/*! \brief Message allocation
 	 *
 	 * \param message size required to receive from i
@@ -151,7 +226,14 @@ class nn_prcs
 
 						if (sub.Intersect(bp,b_int) == true)
 						{
-							sub += shift;
+							Box<dim,T> sub2 = sub;
+							sub2 += shift;
+
+							// Here we have to be careful of rounding off problems, in particular if any part
+							// of the sub-domain touch the border of the domain
+
+							consistent_shift(sub,domain,shift);
+
 							add_nn_subdomain(IDtoProc(k),l,sub,cmbs[j]);
 						}
 					}

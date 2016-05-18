@@ -19,6 +19,14 @@
 #include "Packer_Unpacker/Unpacker.hpp"
 #include "Decomposition/CartDecomposition.hpp"
 
+// External ghost box to send for internal ghost box fixation
+template<unsigned int dim>
+struct Box_fix
+{
+	Box<dim,size_t> bx;
+	size_t g_id;
+};
+
 #define GRID_SUB_UNIT_FACTOR 64
 
 /*! \brief This is a distributed grid
@@ -75,7 +83,12 @@ class grid_dist_id
 	Vcluster & v_cl;
 
 	//! It map a global ghost id (g_id) to the external ghost box information
+	//! It is unique across all the near processor
 	std::unordered_map<size_t,size_t> g_id_to_external_ghost_box;
+
+	//! It map a global ghost id (g_id) to the internal ghost box information
+	//! (is unique for processor), it is not unique across all the near processor
+	openfpm::vector<std::unordered_map<size_t,size_t>> g_id_to_internal_ghost_box;
 
 	// Receiving size
 	openfpm::vector<size_t> recv_sz;
@@ -122,10 +135,12 @@ class grid_dist_id
 	 */
 	void create_ig_box()
 	{
+		if (init_i_g_box == true)	return;
+
 		// Get the grid info
 		auto g = cd_sm.getGrid();
 
-		if (init_i_g_box == true)	return;
+		g_id_to_internal_ghost_box.resize(dec.getNNProcessors());
 
 		// Get the number of near processors
 		for (size_t i = 0 ; i < dec.getNNProcessors() ; i++)
@@ -152,7 +167,10 @@ class grid_dist_id
 				bid_t.box = cvt;
 				bid_t.g_id = dec.getProcessorIGhostId(i,j);
 				bid_t.sub = dec.getProcessorIGhostSub(i,j);
+				bid_t.cmb = dec.getProcessorIGhostPos(i,j);
 				pib.bid.add(bid_t);
+
+				g_id_to_internal_ghost_box.get(i)[bid_t.g_id] = pib.bid.size()-1;
 			}
 		}
 
@@ -198,6 +216,8 @@ class grid_dist_id
 				bid_t.sub = sub_id;
 				bid_t.g_e_box = ib;
 				bid_t.l_e_box = ib;
+				bid_t.cmb = dec.getProcessorEGhostPos(i,j);
+				bid_t.g_id = dec.getProcessorEGhostId(i,j);
 				// Translate in local coordinate
 				Box<dim,long int> tb = ib;
 				tb -= gdb_ext.get(sub_id).origin;
@@ -285,6 +305,8 @@ class grid_dist_id
 				pib.bid.add();
 				pib.bid.last().box = ib;
 				pib.bid.last().sub = dec.getLocalEGhostSub(i,j);
+				pib.bid.last().cmb = dec.getLocalEGhostPos(i,j);
+				pib.bid.last().cmb.sign_flip();
 			}
 		}
 
@@ -320,10 +342,14 @@ class grid_dist_id
 				bx_dst -= gdb_ext.get(sub_id_dst).origin;
 
 				// create 2 sub grid iterator
+
+				if (bx_dst.isValid() == false)
+					continue;
+
 				grid_key_dx_iterator_sub<dim> sub_src(loc_grid.get(i).getGrid(),bx_src.getKP1(),bx_src.getKP2());
 				grid_key_dx_iterator_sub<dim> sub_dst(loc_grid.get(sub_id_dst).getGrid(),bx_dst.getKP1(),bx_dst.getKP2());
 
-#ifdef DEBUG
+#ifdef SE_CLASS1
 
 				if (loc_eg_box.get(sub_id_dst).bid.get(k).sub != i)
 					std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination are not correctly linked" << "\n";
@@ -1087,6 +1113,9 @@ public:
 		//! id
 		size_t g_id;
 
+		//! Sector where it live the linked external ghost box
+		comb<dim> cmb;
+
 		//! sub
 		size_t sub;
 	};
@@ -1119,11 +1148,17 @@ public:
 		//! Box defining the external ghost box in local coordinates
 		::Box<dim,size_t> l_e_box;
 
+		//! Sector position of the external ghost
+		comb<dim> cmb;
+
+		//! Id
+		size_t g_id;
+
 		//! sub_id in which sub-domain this box live
 		size_t sub;
 	};
 
-	/*! \brief It store the information about the external ghost box
+	/*! \brief It store the information about the local external ghost box
 	 *
 	 *
 	 */
@@ -1131,6 +1166,9 @@ public:
 	{
 		//! Box defining the external ghost box in local coordinates
 		::Box<dim,size_t> box;
+
+		//! Sector position of the local external ghost box
+		comb<dim> cmb;
 
 		//! sub_id in which sub-domain this box live
 		size_t sub;
@@ -1190,6 +1228,9 @@ public:
 	//! Flag that indicate if the internal ghost box has been initialized
 	bool init_i_g_box = false;
 
+	//! Flag that indicate if the internal and external ghost box has been fixed
+	bool init_fix_ie_g_box = false;
+
 	//! Internal ghost boxes in grid units
 	openfpm::vector<ip_box_grid> ig_box;
 
@@ -1241,6 +1282,10 @@ public:
 				size_t sub_id = ig_box.get(i).bid.get(j).sub;
 				// Internal ghost box
 				Box<dim,size_t> g_ig_box = ig_box.get(i).bid.get(j).box;
+
+				if (g_ig_box.isValid() == false)
+					continue;
+
 				g_ig_box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
 
 				// Pack a size_t for the internal ghost id
@@ -1270,6 +1315,10 @@ public:
 			// for each ghost box
 			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
 			{
+				// we pack only if it is valid
+				if (ig_box.get(i).bid.get(j).box.isValid() == false)
+					continue;
+
 				// And linked sub-domain
 				size_t sub_id = ig_box.get(i).bid.get(j).sub;
 				// Internal ghost box

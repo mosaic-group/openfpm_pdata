@@ -68,7 +68,8 @@ class ie_loc_ghost
 				{
 					Box_sub<dim,T> b;
 					b.sub = rj;
-					b = bi;
+					b.bx = bi;
+					b.cmb = sub_domains_prc.get(j).cmb;
 
 					// local external ghost box
 					loc_ghost_box.get(i).ebx.add(b);
@@ -123,7 +124,7 @@ class ie_loc_ghost
 				{
 					Box_sub_k<dim,T> b;
 					b.sub = rj;
-					b = bi;
+					b.bx = bi;
 					b.k = -1;
 					b.cmb = sub_domains_prc.get(j).cmb;
 
@@ -330,7 +331,7 @@ public:
 	}
 
 	/*! \brief For the sub-domain i intersected with the sub-domain j enlarged, the associated
-	 *       external ghost box is located in getLocalIGhostBox(j,k) with
+	 *       external ghost box is located in getLocalEGhostBox(j,k) with
 	 *       getLocalIGhostSub(j,k) == i, this function return k
 	 *
 	 *
@@ -425,6 +426,18 @@ public:
 	inline const ::Box<dim,T> & getLocalEGhostBox(size_t i, size_t j) const
 	{
 		return loc_ghost_box.get(i).ebx.get(j).bx;
+	}
+
+	/*! \brief Get the j external local ghost box for the local processor
+	 *
+	 * \param i sub-domain
+	 * \param j box
+	 * \return the box
+	 *
+	 */
+	inline const comb<dim> & getLocalEGhostPos(size_t i, size_t j) const
+	{
+		return loc_ghost_box.get(i).ebx.get(j).cmb;
 	}
 
 	/*! \brief Considering that sub-domain has N internal local ghost box identified

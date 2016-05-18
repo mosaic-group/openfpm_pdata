@@ -350,8 +350,10 @@ public:
 			}
 		}
 
-		v_cl.sendrecvMultipleMessagesNBX(prc.size(), &sz.get(0), &prc.get(0), &ptr.get(0), message_receive, &partitions,
-		NONE);
+		if (prc.size() == 0)
+			v_cl.sendrecvMultipleMessagesNBX(0, NULL, NULL, NULL, message_receive, &partitions,NONE);
+		else
+			v_cl.sendrecvMultipleMessagesNBX(prc.size(), &sz.get(0), &prc.get(0), &ptr.get(0), message_receive, &partitions,NONE);
 
 		// Update graphs with the received data
 		updateGraphs();

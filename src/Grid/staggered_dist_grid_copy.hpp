@@ -124,8 +124,8 @@ struct interp_ele
 	 * this mean that the object passed must not be a temporal object
 	 *
 	 */
-	inline interp_ele(grid_dist_key_dx<scheme::Sys_eqs_typ::dims> & key, S & grid_dst, Ev && x)
-	:key(key),grid_dst(grid_dst),x(x),interp_pos(interp_pos)
+	inline interp_ele(const grid_dist_key_dx<Grid_dst::dims> & key_dst, Grid_dst && grid_dst, const Grid_src & x, const grid_dist_key_dx<Grid_src::dims> & key_src, openfpm::vector<std::vector<comb<Grid_src::dims>>> (&interp_pos)[nst_pos])
+	:key_dst(key_dst),grid_dst(grid_dst),key_src(key_src),interp_pos(interp_pos),x(x)
 	{std::cerr << "Error: " <<__FILE__ << ":" << __LINE__ << " Passing a temporal object";};
 #endif
 

@@ -70,7 +70,7 @@
  * * Near processor sub-domain: is a sub-domain that live in the a near (or contiguous) processor
  * * Near processor list: the list of all the near processor of the local processor (each processor has a list
  *                        of the near processor)
- * * Local ghosts interal or external are all the ghosts that does not involve inter-processor communications
+ * * Local ghosts internal or external are all the ghosts that does not involve inter-processor communications
  *
  * \see calculateGhostBoxes() for a visualization of internal and external ghost boxes
  *

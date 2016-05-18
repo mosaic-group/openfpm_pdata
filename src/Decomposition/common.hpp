@@ -42,12 +42,6 @@ struct Box_loc_sub
 	:bx(bx),sub(sub),cmb(cmb)
 	{};
 
-	template <typename Memory> Box_loc_sub(const Box_loc_sub<dim,T> & bls)
-	{
-		bx = bls.bx;
-		this->sub = bls.sub;
-	};
-
 	Box_loc_sub operator=(const Box<dim,T> & box)
 	{
 		::Box<dim,T>::operator=(box);
@@ -59,7 +53,7 @@ struct Box_loc_sub
 };
 
 /*! It contain a box definition and from witch sub-domain it come from (in the local processor)
- * and an unique across adjacent processors (for communication)
+ * and an unique if across adjacent processors (for communication)
  *
  * If the box come from the intersection of an expanded sub-domain and a sub-domain
  *
@@ -85,22 +79,17 @@ struct Box_loc_sub
 template<unsigned int dim, typename T>
 struct Box_sub
 {
+	//! Internal ghost box definition
 	Box<dim,T> bx;
 
-	// Domain id
+	//! Domain id
 	size_t sub;
 
-	// Id
+	//! see ebx_ibx_form in ie_ghost for the meaning
 	size_t id;
 
-	Box_sub operator=(const Box<dim,T> & box)
-	{
-		bx = box;
-
-		return *this;
-	}
-
-
+	//! see ie_ghost follow sector explanation
+	comb<dim> cmb;
 };
 
 //! Particular case for local internal ghost boxes
@@ -122,13 +111,6 @@ struct Box_sub_k
 	:k(-1)
 	{
 		cmb.zero();
-	}
-
-	Box_sub_k operator=(const Box<dim,T> & box)
-	{
-		bx = box;
-
-		return *this;
 	}
 
 	// encap interface to make compatible with OpenFPM_IO

@@ -673,7 +673,7 @@ void Test3D_gg(const Box<3,float> & domain, long int k, long int gk)
  *
  */
 
-void Test3D_domain(const Box<3,float> & domain, long int k)
+void Test3D_domain(const Box<3,float> & domain, long int k, const periodicity<3> & pr)
 {
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
@@ -699,7 +699,9 @@ void Test3D_domain(const Box<3,float> & domain, long int k)
 		Ghost<3,float> g(0.01 / factor);
 
 		// Distributed grid with id decomposition
-		grid_dist_id<3, float, aggregate<long int,long int>, CartDecomposition<3,float>> g_dist(sz,domain,g);
+		grid_dist_id<3, float, aggregate<long int,long int>, CartDecomposition<3,float>> g_dist(sz,domain,g,pr);
+
+		auto & v_cl = create_vcluster();
 
 		// check the consistency of the decomposition
 		bool val = g_dist.getDecomposition().check_consistency();
@@ -732,7 +734,6 @@ void Test3D_domain(const Box<3,float> & domain, long int k)
 
 		// Get the total size of the local grids on each processors
 		// and the total size
-		Vcluster & v_cl = g_dist.getVC();
 		v_cl.sum(count2);
 		v_cl.allGather(count,pnt);
 		v_cl.execute();
@@ -1386,7 +1387,7 @@ void Test3D_periodic(const Box<3,float> & domain, long int k)
 		periodicity<3> pr = {{PERIODIC,PERIODIC,PERIODIC}};
 
 		// Distributed grid with id decomposition
-		grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> g_dist(sz,domain,g,pr);
+		grid_dist_id<3, float, aggregate<long int>, CartDecomposition<3,float>> g_dist(sz,domain,g,pr);
 
 		// check the consistency of the decomposition
 		bool val = g_dist.getDecomposition().check_consistency();
@@ -1396,6 +1397,19 @@ void Test3D_periodic(const Box<3,float> & domain, long int k)
 		grid_sm<3,void> info(sz);
 
 		size_t count = 0;
+
+		// Set to zero the full grid
+
+		auto dom1 = g_dist.getDomainGhostIterator();
+
+		while (dom1.isNext())
+		{
+			auto key = dom1.get();
+
+			g_dist.template get<0>(key) = -1;
+
+			++dom1;
+		}
 
 		auto dom = g_dist.getDomainIterator();
 
@@ -1430,8 +1444,12 @@ void Test3D_periodic(const Box<3,float> & domain, long int k)
 		// Domain + Ghost iterator
 		auto dom_gi = g_dist.getDomainGhostIterator();
 
+		size_t out_cnt = 0;
+
 		while (dom_gi.isNext())
 		{
+			bool out_p = false;
+
 			auto key = dom_gi.get();
 			auto key_g = g_dist.getGKey(key);
 
@@ -1439,18 +1457,27 @@ void Test3D_periodic(const Box<3,float> & domain, long int k)
 			for (size_t i = 0 ; i < 3 ; i++)
 			{
 				if (key_g.get(i) < 0)
-					key_g.set_d(i,key_g.get(i) + k);
+				{key_g.set_d(i,key_g.get(i) + k);out_p = true;}
 				else if (key_g.get(i) >= k)
-					key_g.set_d(i,key_g.get(i) - k);
+				{key_g.set_d(i,key_g.get(i) - k);out_p = true;}
 			}
 
-			if ( info.LinId(key_g) != g_dist.template get<0>(key) )
+			if (g_dist.template get<0>(key) != -1 && out_p == true)
+				out_cnt++;
+
+			if ( g_dist.template get<0>(key) != -1 && info.LinId(key_g) != g_dist.template get<0>(key) )
 				match &= false;
 
 			++dom_gi;
 		}
 
 		BOOST_REQUIRE_EQUAL(match, true);
+		if (k > 83)
+		{
+			vcl.sum(out_cnt);
+			vcl.execute();
+			BOOST_REQUIRE(out_cnt != 0ul);
+		}
 	}
 }
 
@@ -1544,9 +1571,25 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_test_use)
 	// Domain
 	Box<3,float> domain3({-0.3,-0.3,-0.3},{1.1,1.1,1.1});
 
+	periodicity<3> np({NON_PERIODIC,NON_PERIODIC,NON_PERIODIC});
+	periodicity<3> p({PERIODIC,PERIODIC,PERIODIC});
+
 	long int k = 128*128*128*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);
-	Test3D_domain(domain3,k);
+	Test3D_domain(domain3,k,np);
+
+	auto & v_cl = create_vcluster();
+	if (v_cl.getProcessingUnits() > 32)
+		return;
+
+	// We use a 128x128x128 and we move tha domain
+
+	for (size_t i = 0 ; i < 10 ; i++)
+	{
+		Box<3,float> exp({0.0,0.0,0.0},{1.3,1.3,1.3});
+		domain3.enlarge(exp);
+		Test3D_domain(domain3,128,p);
+	}
 }
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_extended )
