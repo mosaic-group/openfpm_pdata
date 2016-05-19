@@ -47,8 +47,6 @@ if [ x"$platform" = x"linux" -a x"$pcman" = x"sudo apt-get"  ]; then
     echo "OpenFPM require additional packages in order to install correctly"
     commands[0]="$pcman install libbz2-dev python-dev libxml2-dev libxslt-dev"
     possible_solutions "${commands[@]}"
-    echo "Executing: ${command[$possible_solutions_ret]}"
-    eval ${commands[$possible_solutions_ret]}
   fi
 fi
 
@@ -67,8 +65,6 @@ if [ x"$platform" = x"linux" -a x"$pcman" = x"yum"  ]; then
     commands[0]="su -c \"$pcman install bzip2-devel python-devel libxml2-devel libxslt-devel\""
     commands[1]="sudo $pcman install bzip2-devel python-devel libxml2-devel libxslt-devel"
     possible_solutions "${commands[@]}"
-    echo "Executing: ${command[$possible_solutions_ret]}"
-    eval ${commands[$possible_solutions_ret]}
   fi
 fi
 

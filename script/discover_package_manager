@@ -16,8 +16,6 @@ function discover_package_manager() {
           echo -e "\033[43;30;1;5mWARNING: \033[0m $brew_idir is not writtable, brew require that $brew_idir is writtable and $brew_idir/bin is in your PATH, otherwise it will be not possible to install with brew"
           commands[0]="sudo chown -R $USER $brew_idir && chmod -R u+w $brew_idir"
           possible_solutions "${commands[@]}"
-          echo "Executing: ${command[$possible_solutions_ret]}"
-          eval ${commands[$possible_solutions_ret]}
         fi
       fi
       if [ ! -w  ]; then
