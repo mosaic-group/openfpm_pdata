@@ -220,7 +220,7 @@ if [ $install_req -eq 0 ]; then
 else
     while [ $conf_err -ne 0 ]
     do
-        ./configure $options $configure_options
+        ./configure $options $configure_options "$configure_blas_option"
         conf_err=$?
 
 	echo "Configure script terminated with $conf_err"
@@ -290,7 +290,7 @@ else
         fi
     fi
 
-    ./configure $options $configure_options
+    ./configure $options $configure_options "$configure_blas_option"
 
 fi
 
