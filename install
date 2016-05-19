@@ -125,7 +125,11 @@ if [ $sq -eq 0 ]; then
 fi
 
 echo -e "\033[1mHow many core you want to use to install the dependencies?\033[0m"
-read ncore
+if [ $sq -eq 0 ]; then
+  read ncore
+else
+  ncore = 4
+fi
 
 echo -e "Installing requirements into: $i_dir "
 
@@ -141,7 +145,11 @@ if [ ! -d "$i_dir/PETSC" -o ! -d "$i_dir/EIGEN" ]; then
     echo -e "\033[1;34m Optional packages  \033[0m"
     echo -e "\033[1mDo you want to install linear algebra packages ?(y/n)\033[0m"
     echo "Installation can take long time (90 minutes on i7-3612QM 4 cores)"
-    read inst_lin_alg
+    if [ $sq -eq 0 ]; then
+      read inst_lin_alg
+    else
+      inst_lin_alg = n
+    fi
 
 #    if [ ! x"$choose" == x"0" ]; then
 #        ./script/install_PETSC.sh $i_dir $choose
