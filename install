@@ -161,7 +161,7 @@ if [ -d "$i_dir/PETSC" ]; then
 fi
 if [ -d "$i_dir/EIGEN" ]; then
     configure_options=" $configure_options --with-eigen=$i_dir/EIGEN --with-suitesparse=$i_dir/SUITESPARSE  "
-    configure_blas_option="--with-blas='$i_dir/OPENBLAS/lib -lopenblas'"
+    configure_blas_option="--with-blas=-L$i_dir/OPENBLAS/lib -lopenblas"
 fi
 if [ -d "$i_dir/MPI" ]; then
     configure_options="$configure_options CXX=mpic++ "
