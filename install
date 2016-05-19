@@ -124,11 +124,10 @@ if [ $sq -eq 0 ]; then
   possible_solutions "${commands[@]}"
 fi
 
+ncore=4
 echo -e "\033[1mHow many core you want to use to install the dependencies?\033[0m"
 if [ $sq -eq 0 ]; then
   read ncore
-else
-  ncore = 4
 fi
 
 echo -e "Installing requirements into: $i_dir "
@@ -162,7 +161,7 @@ if [ -d "$i_dir/PETSC" ]; then
 fi
 if [ -d "$i_dir/EIGEN" ]; then
     configure_options=" $configure_options --with-eigen=$i_dir/EIGEN --with-suitesparse=$i_dir/SUITESPARSE  "
-    configure_blas_option=" --with-blas=\"$i_dir/OPENBLAS/lib -lopenblas\"  "
+    configure_blas_option="--with-blas='$i_dir/OPENBLAS/lib -lopenblas'"
 fi
 if [ -d "$i_dir/MPI" ]; then
     configure_options="$configure_options CXX=mpic++ "
@@ -216,7 +215,7 @@ HDF5_System_prv=1
 conf_err=1
 
 if [ $install_req -eq 0 ]; then
-    ./configure $options $configure_options "$configure_blas_option"
+    ./configure $options $configure_options $configure_blas_option
 else
     while [ $conf_err -ne 0 ]
     do
@@ -290,7 +289,7 @@ else
         fi
     fi
 
-    ./configure $options $configure_options "$configure_blas_option"
+    ./configure $options $configure_options $configure_blas_option
 
 fi
 
