@@ -34,7 +34,7 @@ if [ x"$platform" = x"osx" -a x"$pcman" = x""  ]; then
 fi
 
 ### Additional package required for apt-get based distros
-if [ x"$platform" = x"linux" -a x"$pcman" = x"sudo apt-get"  ]; then
+if [ x"$platform" = x"linux" -a x"$pcman" = x"apt-get"  ]; then
   dpkg-query -l libbz2-dev
   ret1=$?
   dpkg-query -l python-dev
