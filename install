@@ -184,7 +184,7 @@ fi
 if [ x"$MPI_valid" == x"yes" ]; then
 	configure_options="$configure_options CXX=mpic++ "
 else
-	./script/install_MPI.sh $i_dir
+	./script/install_MPI.sh $i_dir $ncore
 fi
 
 ### MPI compilers must be in your PATH folder

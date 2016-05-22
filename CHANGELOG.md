@@ -5,8 +5,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Grid with periodic boundary conditions
-- VTK Writer for distributed grid, now is the default writer
+- VTK Writer for distributed vector, now is the default writer
 - Installation of linear algebra packages
+- More user friendly installation (No environment variables to add in your bashrc, installation report less verbose)
 
 ### Fixed
 - GPU compilation
