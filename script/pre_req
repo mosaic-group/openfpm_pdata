@@ -45,7 +45,7 @@ if [ x"$platform" = x"linux" -a x"$pcman" = x"apt-get"  ]; then
   ret4=$?
   if [ $ret1 -ne 0 -o $ret2 -ne 0 -o $ret3 -ne 0 -o $ret4 -ne 0 ]; then
     echo "OpenFPM require additional packages in order to install correctly"
-    commands[0]="$pcman install libbz2-dev python-dev libxml2-dev libxslt-dev"
+    commands[0]="sudo $pcman install libbz2-dev python-dev libxml2-dev libxslt-dev"
     possible_solutions "${commands[@]}"
   fi
 fi
