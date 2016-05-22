@@ -2,7 +2,7 @@
 
 function possible_solutions {
 
-   if [ $sq -eq 0 ]; then
+   if [ $sq -eq 1 ]; then
      return
    fi
 
@@ -21,6 +21,10 @@ function possible_solutions {
  fi
  possible_solutions_ret=`expr $choose - 1`
  echo "Executing: ${command[$possible_solutions_ret]}"
- eval ${commands[$possible_solutions_ret]}
+ if [ -a input_install ]; then
+   eval ${commands[$possible_solutions_ret]} < input_install
+ else
+   eval ${commands[$possible_solutions_ret]}
+ fi
 }
 

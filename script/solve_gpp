@@ -18,11 +18,19 @@ if [ x"$1" = x"osx" ]; then
         compiler_gcc="gcc-4.9"
         compiler_gpp="g++-4.9"
 elif [ x"$1" = x"linux"  ]; then
-        commands[0]="su -c \"$pcman install gcc-c++\""
-        commands[1]="sudo $pcman install gcc-c++"
-        possible_solutions "${commands[@]}"
-        compiler_gcc="gcc"
-        compiler_gpp="g++"
+        if [ x"$pcman" == x"yum" ]; then
+          commands[0]="su -c \"$pcman install gcc-c++\""
+          commands[1]="sudo $pcman install gcc-c++"
+          possible_solutions "${commands[@]}"
+          compiler_gcc="gcc"
+          compiler_gpp="g++"
+        else
+          commands[0]="su -c \"$pcman install g++\""
+          commands[1]="sudo $pcman install g++"
+          possible_solutions "${commands[@]}"
+          compiler_gcc="gcc"
+          compiler_gpp="g++"
+        fi
 fi
 }
 
