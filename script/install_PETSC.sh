@@ -35,6 +35,7 @@ fi
 
 if [ -d "$1/BOOST" ]; then  
   configure_options="$configure_options --with-boost=yes --with-boost-dir=$1/BOOST "
+  configure_trilinos_options="$configure_trilinos_options -D TPL_ENABLE_Boost=ON  -D TPL_ENABLE_BoostLib=ON  -D Boost_INCLUDE_DIRS=$1/BOOST/include -D BoostLib_LIBRARY_DIRS=$1/BOOST/lib -D BoostLib_INCLUDE_DIRS=$1/BOOST/include"
 fi
 
 if [ -d "$1/MPI" ]; then
