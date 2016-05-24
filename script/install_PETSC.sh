@@ -10,8 +10,19 @@ fi
 # Detect gcc pr clang
 
 source script/detect_gcc
+source script/discover_os
 detect_gcc_or_clang g++
+discover_os
 
+##### if we are on osx we use gsed
+
+if [ x"$platform" == x"osx" ]; then
+  sed_command=gsed
+else
+  sed_command=sed
+fi
+
+####
 
 ## If some dependencies has been installed feed them to PETSC
 
@@ -150,37 +161,21 @@ if [ ! -d "$1/MUMPS" ]; then
   cd MUMPS_5.0.1
   cp Make.inc/Makefile.inc.generic Makefile.inc
  
-  if [ x"$platform" = x"osx"  ]; then
-    # installation for OSX
+  # Installation for linux
 
-    sed -i "" -e "s|CC      = cc|CC = mpicc|" Makefile.inc
-    sed -i "" -e "s|FC      = f90| FC = mpif90|" Makefile.inc
-    sed -i "" -e "s|FL      = f90| FL = mpif90|" Makefile.inc 
+  $sed_command -i "/CC\s\+=\scc/c\CC = mpicc" Makefile.inc
+  $sed_command -i "/FC\s\+=\sf90/c\FC = mpif90" Makefile.inc
+  $sed_command -i "/FL\s\+=\sf90/c\FL = mpif90" Makefile.inc
 
-    sed -i "" -e "s|SCALAP  = -lscalapack -lblacs|SCALAP = -L$1/SCALAPACK/lib -L$1/OPENBLAS/lib -lscalapack|" Makefile.inc
-    sed -i "" -e "s|LIBBLAS = -lblas|LIBBLAS = -lopenblas|" Makefile.inc
+  $sed_command -i "/SCALAP\s\+=\s-lscalapack\s-lblacs/c\SCALAP = -L$1/SCALAPACK/lib -L$1/OPENBLAS/lib -lscalapack" Makefile.inc
+  $sed_command -i "/LIBBLAS\s\+=\s\-lopenblas/c\LIBBLAS = -lopenblas" Makefile.inc
 
-    sed -i "" -e "s|OPTF    = -O|OPTF = -fpic -O3" Makefile.inc
-    sed -i "" -e "s|OPTC    = -O -I.|OPTC = -fpic -O3 -I." Makefile.inc
-    sed -i "" -e "s|OPTL    = -O|OPTL = -fpic -O3" Makefile.inc
+  $sed_command -i "/OPTF\s\+=\s\-O/c\OPTF = -fpic -O3" Makefile.inc
+  $sed_command -i "/OPTC\s\+=\s\-O\s-I./c\OPTC = -fpic -O3 -I." Makefile.inc
+  $sed_command -i "/OPTL\s\+=\s\-O/c\OPTL = -fpic -O3" Makefile.inc
 
-  else
-    # Installation for linux
+  $sed_command -i "/LIBBLAS\s=\s-lblas/c\LIBBLAS = -lopenblas" Makefile.inc
 
-    sed -i "/CC\s\+=\scc/c\CC = mpicc" Makefile.inc
-    sed -i "/FC\s\+=\sf90/c\FC = mpif90" Makefile.inc
-    sed -i "/FL\s\+=\sf90/c\FL = mpif90" Makefile.inc
-
-    sed -i "/SCALAP\s\+=\s-lscalapack\s-lblacs/c\SCALAP = -L$1/SCALAPACK/lib -L$1/OPENBLAS/lib -lscalapack" Makefile.inc
-    sed -i "/LIBBLAS\s\+=\s\-lopenblas/c\LIBBLAS = -lopenblas" Makefile.inc
-
-    sed -i "/OPTF\s\+=\s\-O/c\OPTF = -fpic -O3" Makefile.inc
-    sed -i "/OPTC\s\+=\s\-O\s-I./c\OPTC = -fpic -O3 -I." Makefile.inc
-    sed -i "/OPTL\s\+=\s\-O/c\OPTL = -fpic -O3" Makefile.inc
-
-    sed -i "/LIBBLAS\s=\s-lblas/c\LIBBLAS = -lopenblas" Makefile.inc
-
-  fi
   make -j $2
   
   if [ $? -eq 0 ]; then
@@ -214,38 +209,33 @@ if [ ! -d "$1/SUPERLU_DIST" ]; then
   tar -xf superlu_dist_4.3.tar.gz
   cd SuperLU_DIST_4.3
 
-  if [ x"$platform" = x"osx"  ]; then
-    # installation for OSX
+  # Installation for linux
 
-    echo "OSX TO DO BYE"
-    exit 1
+  $sed_command -i "/DSuperLUroot\s\+=\s\${HOME}\/Release_Codes\/SuperLU_DIST_4.3/c\DSuperLUroot = ../" make.inc
+  $sed_command -i "/BLASLIB\s\+=/c\BLASLIB = $1/OPENBLAS/lib/libopenblas.a" make.inc
+  $sed_command -i "/LOADOPTS\s\+=\s-openmp/c\LOADOPTS = -fopenmp" make.inc
+  $sed_command -i "/PARMETIS_DIR\s\+=\/project\/projectdirs\/mp127\/parmetis-4.0.3-g/c\PARMETIS_DIR := $1/PARMETIS" make.inc
 
+  $sed_command -i "/METISLIB\s:=\s-L\${PARMETIS_DIR}\/build\/Linux-x86_64\/libmetis\s-lmetis/c\METISLIB := -L$1/METIS/lib -lmetis" make.inc
+  $sed_command -i "/PARMETISLIB\s:=\s-L\${PARMETIS_DIR}\/build\/Linux-x86_64\/libparmetis\s-lparmetis/c\PARMETISLIB := -L$1/PARMETIS/lib -lparmetis" make.inc
+
+  $sed_command -i "/I_PARMETIS\s:=\s-I\${PARMETIS_DIR}\/include\s-I\${PARMETIS_DIR}\/metis\/include/c\I_PARMETIS := -I$1/PARMETIS/include -I$1/METIS/include" make.inc
+  $sed_command -i "/CC\s\+=\scc/c\CC = mpicc" make.inc
+  $sed_command -i "/FORTRAN\s\+=\sftn/c\FORTRAN = mpif90" make.inc
+
+  if [ x"$dgc_compiler" == x"clang++" ]; then
+    $sed_command -i "/CFLAGS\s\+=\s-fast\s-m64\s-std=c99\s-Wall\s-openmp\s\\\/c\CFLAGS =-fpic -O3 -m64 -std=c99 -Wall \$(I_PARMETIS) -DDEBUGlevel=0 -DPRNTlevel=0 -DPROFlevel=0" make.inc
   else
-    # Installation for linux
-
-    sed -i "/DSuperLUroot\s\+=\s\${HOME}\/Release_Codes\/SuperLU_DIST_4.3/c\DSuperLUroot = ../" make.inc
-#    sed -i "/DSUPERLULIB\s\+=\s../lib//c\DSUPERLULIB = ../lib/libsuperlu_4.3.a" make.inc
-    sed -i "/BLASLIB\s\+=/c\BLASLIB = $1/OPENBLAS/lib/libopenblas.a" make.inc
-    sed -i "/LOADOPTS\s\+=\s-openmp/c\LOADOPTS = -fopenmp" make.inc
-    sed -i "/PARMETIS_DIR\s\+=\/project\/projectdirs\/mp127\/parmetis-4.0.3-g/c\PARMETIS_DIR := $1/PARMETIS" make.inc
-
-    sed -i "/METISLIB\s:=\s-L\${PARMETIS_DIR}\/build\/Linux-x86_64\/libmetis\s-lmetis/c\METISLIB := -L$1/METIS/lib -lmetis" make.inc
-    sed -i "/PARMETISLIB\s:=\s-L\${PARMETIS_DIR}\/build\/Linux-x86_64\/libparmetis\s-lparmetis/c\PARMETISLIB := -L$1/PARMETIS/lib -lparmetis" make.inc
-
-    sed -i "/I_PARMETIS\s:=\s-I\${PARMETIS_DIR}\/include\s-I\${PARMETIS_DIR}\/metis\/include/c\I_PARMETIS := -I$1/PARMETIS/include -I$1/METIS/include" make.inc
-    sed -i "/CC\s\+=\scc/c\CC = mpicc" make.inc
-    sed -i "/FORTRAN\s\+=\sftn/c\FORTRAN = mpif90" make.inc
-    sed -i "/CFLAGS\s\+=\s-fast\s-m64\s-std=c99\s-Wall\s-openmp\s\\\/c\CFLAGS =-fpic -O3 -m64 -std=c99 -Wall -fopenmp \$(I_PARMETIS) -DDEBUGlevel=0 -DPRNTlevel=0 -DPROFlevel=0" make.inc
-    sed -i "/\s\$(I_PARMETIS)\s-DDEBUGlevel=0\s-DPRNTlevel=0\s-DPROFlevel=0\s\\\/c\ " make.inc
-
+    $sed_command -i "/CFLAGS\s\+=\s-fast\s-m64\s-std=c99\s-Wall\s-openmp\s\\\/c\CFLAGS =-fpic -O3 -m64 -std=c99 -Wall -fopenmp \$(I_PARMETIS) -DDEBUGlevel=0 -DPRNTlevel=0 -DPROFlevel=0" make.inc
   fi
+  $sed_command -i "/\s\$(I_PARMETIS)\s-DDEBUGlevel=0\s-DPRNTlevel=0\s-DPROFlevel=0\s\\\/c\ " make.inc
 
   make
 
   if [ $? -eq 0 ]; then
     mkdir $1/SUPERLU_DIST
     mkdir $1/SUPERLU_DIST/include
-    cp -r lib/ $1/SUPERLU_DIST
+    cp -r lib $1/SUPERLU_DIST
     cp SRC/*.h $1/SUPERLU_DIST/include
     configure_options="$configure_options --with-superlu_dist=yes --with-superlu_dist-lib=$1/SUPERLU_DIST/lib/libsuperlu_dist_4.3.a --with-superlu_dist-include=$1/SUPERLU_DIST/include/"
   fi

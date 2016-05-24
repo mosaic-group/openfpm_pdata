@@ -70,7 +70,7 @@ fi
 
 #### if we are on OSX we install gnu-sed
 
-if [ x"platform" == x"osx" ]
+if [ x"$platform" == x"osx" ]; then
 
   command -v gsed >/dev/null 2>&1
   if [ $? -ne 0 ]; then
