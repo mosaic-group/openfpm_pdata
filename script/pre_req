@@ -78,7 +78,7 @@ if [ x"$platform" == x"osx" ]; then
     echo >&2
     echo -e "gsed\033[91;5;1m FAILED \033[0m"
     echo "OpenFPM require gnu-sed but it's not installed, searching a solution... "
-    ./script/solve_gsed $platform
+    solve_gsed $platform
     command -v gsed >/dev/null 2>&1
     if [ $? -ne 0 ]; then
       echo -e "gsed\033[91;5;1m FAILED \033[0m"
