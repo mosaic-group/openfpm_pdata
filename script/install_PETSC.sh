@@ -7,6 +7,12 @@ if [ -d "$1/PETSC" ]; then
   exit 0
 fi
 
+# Detect gcc pr clang
+
+source script/detect_gcc
+detect_gcc_or_clang g++
+
+
 ## If some dependencies has been installed feed them to PETSC
 
 MUMPS_extra_libs=""
@@ -14,7 +20,7 @@ MUMPS_extra_libs=""
 configure_options=""
 configure_options_scalapack=""
 configure_options_superlu=""
-configure_trilinos_options=" -D TPL_ENABLE_MPI=ON -D Trilinos_ENABLE_OpenMP=ON"
+configure_trilinos_options=" -D TPL_ENABLE_MPI=ON "
 configure_options_hypre=""
 
 ### Here we install OpenBLAS and SUITESPARSE
@@ -84,7 +90,15 @@ if [ ! -d "$1/TRILINOS" ]; then
   cd trilinos-12.6.1-Source
   mkdir build
   cd build
-  cmake -D CMAKE_INSTALL_PREFIX:PATH=$1/TRILINOS -D CMAKE_BUILD_TYPE=RELEASE -D Trilinos_ENABLE_TESTS=OFF  -D Trilinos_ENABLE_ALL_PACKAGES=ON $configure_trilinos_options  ../.
+
+  ### On clang we have no openMP
+  if [ x"$dgc_compiler" == x"clang++" ]; then
+    conf_trl_openmp="-D Trilinos_ENABLE_OpenMP=OFF"
+  else
+    conf_trl_openmp="-D Trilinos_ENABLE_OpenMP=ON"
+  fi
+
+  cmake -D CMAKE_INSTALL_PREFIX:PATH=$1/TRILINOS -D CMAKE_BUILD_TYPE=RELEASE $conf_trl_openmp -D Trilinos_ENABLE_TESTS=OFF  -D Trilinos_ENABLE_ALL_PACKAGES=ON $configure_trilinos_options  ../.
 
   make -j $2
   if [ $? -eq 0 ]; then
@@ -139,8 +153,16 @@ if [ ! -d "$1/MUMPS" ]; then
   if [ x"$platform" = x"osx"  ]; then
     # installation for OSX
 
-    echo "OSX TO DO BYE"
-    exit 1
+    sed -i "" -e "s|CC      = cc|CC = mpicc|" Makefile.inc
+    sed -i "" -e "s|FC      = f90| FC = mpif90|" Makefile.inc
+    sed -i "" -e "s|FL      = f90| FL = mpif90|" Makefile.inc 
+
+    sed -i "" -e "s|SCALAP  = -lscalapack -lblacs|SCALAP = -L$1/SCALAPACK/lib -L$1/OPENBLAS/lib -lscalapack|" Makefile.inc
+    sed -i "" -e "s|LIBBLAS = -lblas|LIBBLAS = -lopenblas|" Makefile.inc
+
+    sed -i "" -e "s|OPTF    = -O|OPTF = -fpic -O3" Makefile.inc
+    sed -i "" -e "s|OPTC    = -O -I.|OPTC = -fpic -O3 -I." Makefile.inc
+    sed -i "" -e "s|OPTL    = -O|OPTL = -fpic -O3" Makefile.inc
 
   else
     # Installation for linux

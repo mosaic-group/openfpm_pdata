@@ -68,6 +68,31 @@ if [ x"$platform" = x"linux" -a x"$pcman" = x"yum"  ]; then
   fi
 fi
 
+#### if we are on OSX we install gnu-sed
+
+if [ x"platform" == x"osx" ]
+
+  command -v gsed >/dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    echo >&2
+    echo -e "gsed\033[91;5;1m FAILED \033[0m"
+    echo "OpenFPM require gnu-sed but it's not installed, searching a solution... "
+    solve_gsed $platform
+    command -v gsed >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+      echo -e "gsed\033[91;5;1m FAILED \033[0m"
+      exit 1
+    else
+      echo -e "gsed\033[92;1m SUCCESS \033[0m"
+    fi
+  else
+    echo -e "gsed\033[92;1m SUCCESS \033[0m"
+  fi
+
+fi
+
+####
+
 command -v cmake >/dev/null 2>&1
 if [ $? -ne 0 ]; then
   echo >&2

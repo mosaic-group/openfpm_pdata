@@ -26,6 +26,7 @@
 #include "Grid/grid_dist_id_iterator_dec.hpp"
 #include "Vector/vector_dist_ofb.hpp"
 #include "Decomposition/CartDecomposition.hpp"
+#include "data_type/aggregate.hpp"
 
 #define V_SUB_UNIT_FACTOR 64
 
@@ -1015,7 +1016,7 @@ public:
 	{
 		// Get ghost and anlarge by 1%
 		Ghost<dim,St> g = dec.getGhost();
-		g.magnify(1.01);
+		g.magnify(1.013);
 
 		return getCellList(r_cut, g);
 	}
@@ -1077,6 +1078,7 @@ public:
 		{
 			div[i] = static_cast<size_t>((pbox.getP2().get(i) - pbox.getP1().get(i)) / r_cut);
 			div[i]++;
+			pbox.setHigh(i,pbox.getLow(i) + div[i]*r_cut);
 		}
 
 		cell_list.Initialize(pbox, div);

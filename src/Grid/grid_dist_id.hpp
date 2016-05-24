@@ -18,6 +18,7 @@
 #include "Packer_Unpacker/Packer.hpp"
 #include "Packer_Unpacker/Unpacker.hpp"
 #include "Decomposition/CartDecomposition.hpp"
+#include "data_type/aggregate.hpp"
 
 // External ghost box to send for internal ghost box fixation
 template<unsigned int dim>

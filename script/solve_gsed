@@ -1,0 +1,19 @@
+
+#! /bin/bash 
+
+function solve_gsed() {        
+source script/show_solutions
+source script/discover_package_manager
+discover_package_manager $1
+pcman=$discover_package_manager_ret
+
+if [ x"$pcman" = x"" ]; then
+        exit 1
+fi
+
+if [ x"$1" = x"osx" ]; then 
+        commands[0]="$pcman install gnu-sed"
+        possible_solutions "${commands[@]}"
+fi 
+}
+
