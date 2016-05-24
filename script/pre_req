@@ -12,6 +12,7 @@ source script/solve_git
 source script/solve_wget
 source script/solve_automake
 source script/solve_brew
+source script/solve_gsed
 source script/solve_libtool
 source script/detect_gcc
 source script/detect_osx
@@ -77,7 +78,7 @@ if [ x"$platform" == x"osx" ]; then
     echo >&2
     echo -e "gsed\033[91;5;1m FAILED \033[0m"
     echo "OpenFPM require gnu-sed but it's not installed, searching a solution... "
-    solve_gsed $platform
+    ./script/solve_gsed $platform
     command -v gsed >/dev/null 2>&1
     if [ $? -ne 0 ]; then
       echo -e "gsed\033[91;5;1m FAILED \033[0m"
