@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [0.4.0] - 
+## [0.4.0] - 26-05-2016
 
 ### Added
 - Grid with periodic boundary conditions
@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - GPU compilation
 - PARMetis automated installation
+- Critical Bug in getCellList, it was producing Celllist with smaller spacing
 
 ### Changed
 
