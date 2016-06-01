@@ -60,7 +60,7 @@ template<unsigned int dim> size_t total_n_part_lc(vector_dist<dim,float, Point_t
  * \param n_out out of domain + ghost particles counter
  *
  */
-template<unsigned int dim> inline void count_local_n_local(vector_dist<dim,float, Point_test<float>, CartDecomposition<dim,float> > & vd, vector_dist_iterator & it, size_t (& bc)[dim] , Box<dim,float> & box, Box<dim,float> & dom_ext, size_t & l_cnt, size_t & nl_cnt, size_t & n_out)
+template<unsigned int dim,typename vector_dist> inline void count_local_n_local(vector_dist & vd, vector_dist_iterator & it, size_t (& bc)[dim] , Box<dim,float> & box, Box<dim,float> & dom_ext, size_t & l_cnt, size_t & nl_cnt, size_t & n_out)
 {
 	typedef Point<dim,float> s;
 	const CartDecomposition<dim,float> & ct = vd.getDecomposition();
@@ -789,6 +789,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map )
 	}
 }
 
+
 BOOST_AUTO_TEST_CASE( vector_dist_not_periodic_map )
 {
 	typedef Point<3,float> s;
@@ -1155,6 +1156,111 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 		}
 
 		BOOST_REQUIRE_EQUAL(correct,true);
+	}
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
+{
+	typedef Point<3,float> s;
+
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 3)
+		return;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+    long int k = 524288 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 4;
+	big_step = (big_step == 0)?1:big_step;
+
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector with map_list k=" << k );
+
+	//! [Create a vector of random elements on each processor 3D]
+
+	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	// factor
+	float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
+
+	// ghost
+	Ghost<3,float> ghost(0.05 / factor);
+
+	// ghost2 (a little bigger because of round off error)
+	Ghost<3,float> ghost2(0.05001 / factor);
+
+	// Distributed vector
+	vector_dist<3,float, aggregate<float,float,std::list<int>,openfpm::vector<size_t>>, CartDecomposition<3,float> > vd(k,box,bc,ghost);
+
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.getPos(key)[0] = ud(eg);
+		vd.getPos(key)[1] = ud(eg);
+		vd.getPos(key)[2] = ud(eg);
+
+		++it;
+	}
+
+	vd.map_list<KillParticle,0,1>();
+
+	// sync the ghost
+	vd.ghost_get<0>();
+
+	//! [Create a vector of random elements on each processor 3D]
+
+	// Domain + ghost
+	Box<3,float> dom_ext = box;
+	dom_ext.enlarge(ghost2);
+
+	// Iterate on all particles domain + ghost
+	size_t l_cnt = 0;
+	size_t nl_cnt = 0;
+	size_t n_out = 0;
+
+	auto it2 = vd.getIterator();
+	count_local_n_local(vd,it2,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
+
+	// No particles should be out of domain + ghost
+	BOOST_REQUIRE_EQUAL(n_out,0ul);
+
+	// Ghost must populated because we synchronized them
+	if (k > 524288)
+	{
+		BOOST_REQUIRE(nl_cnt != 0);
+		BOOST_REQUIRE(l_cnt > nl_cnt);
+	}
+
+	// Sum all the particles inside the domain
+	v_cl.sum(l_cnt);
+	v_cl.execute();
+	BOOST_REQUIRE_EQUAL(l_cnt,(size_t)k);
+
+	l_cnt = 0;
+	nl_cnt = 0;
+
+	// Iterate only on the ghost particles
+	auto itg = vd.getGhostIterator();
+	count_local_n_local(vd,itg,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
+
+	// No particle on the ghost must be inside the domain
+	BOOST_REQUIRE_EQUAL(l_cnt,0ul);
+
+	// Ghost must be populated
+	if (k > 524288)
+	{
+		BOOST_REQUIRE(nl_cnt != 0);
 	}
 }
 

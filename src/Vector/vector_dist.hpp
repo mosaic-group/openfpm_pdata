@@ -137,6 +137,15 @@ private:
 		openfpm::vector<prop, PreAllocHeapMemory<2>, typename memory_traits_lin<prop>::type, memory_traits_lin, openfpm::grow_policy_identity> prp;
 	};
 
+	template <typename sel_prop>
+	struct pos_prop_sel
+	{
+		//! position vector
+		openfpm::vector<Point<dim, St>, PreAllocHeapMemory<2>, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin, openfpm::grow_policy_identity> pos;
+		//! properties vector
+		openfpm::vector<sel_prop, PreAllocHeapMemory<2>, typename memory_traits_lin<sel_prop>::type, memory_traits_lin, openfpm::grow_policy_identity> prp;
+	};
+
 	/*! \brief Label particles for mappings
 	 *
 	 * \param lbl_p Particle labeled
@@ -500,6 +509,63 @@ private:
 		}
 	}
 
+	/*! \brief allocate and fill the send buffer for the map function
+	 *
+	 * \param prc_r List of processor rank involved in the send
+	 * \param prc_r_sz For each processor in the list the size of the message to send
+	 * \param pb send buffer
+	 *
+	 */
+	template<typename prp_object,int ... prp> void fill_send_map_buf_list(openfpm::vector<size_t> & prc_r, openfpm::vector<size_t> & prc_sz_r, openfpm::vector<pos_prop_sel<prp_object>> & pb)
+	{
+		pb.resize(prc_r.size());
+
+		for (size_t i = 0; i < prc_r.size(); i++)
+		{
+			// Create the size required to store the particles position and properties to communicate
+			size_t s1 = openfpm::vector<Point<dim, St>, HeapMemory, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin, openfpm::grow_policy_identity>::calculateMem(prc_sz_r.get(i), 0);
+			size_t s2 = openfpm::vector<prp_object, HeapMemory, typename memory_traits_lin<prp_object>::type, memory_traits_lin, openfpm::grow_policy_identity>::calculateMem(prc_sz_r.get(i), 0);
+
+			// Preallocate the memory
+			size_t sz[2] = { s1, s2 };
+			PreAllocHeapMemory<2> * mem = new PreAllocHeapMemory<2>(sz);
+
+			// Set the memory allocator
+			pb.get(i).pos.setMemory(*mem);
+			pb.get(i).prp.setMemory(*mem);
+
+			// set the size and allocate, using mem warant that pos and prp is contiguous
+			pb.get(i).pos.resize(prc_sz_r.get(i));
+			pb.get(i).prp.resize(prc_sz_r.get(i));
+		}
+
+		// Run through all the particles and fill the sending buffer
+
+		for (size_t i = 0; i < opart.size(); i++)
+		{
+			auto it = opart.get(i).getIterator();
+			size_t lbl = p_map_req.get(i);
+
+			while (it.isNext())
+			{
+				size_t key = it.get();
+				size_t id = opart.get(i).get(key);
+
+				pb.get(lbl).pos.set(key, v_pos.get(id));
+
+				// source object type
+				typedef encapc<1, prop, typename openfpm::vector<prop>::layout_type> encap_src;
+				// destination object type
+				typedef encapc<1, prp_object, typename openfpm::vector<prp_object>::layout_type> encap_dst;
+
+				// Copy only the selected properties
+				object_si_d<encap_src, encap_dst, OBJ_ENCAP, prp...>(v_prp.get(id), pb.get(lbl).prp.get(key));
+
+				++it;
+			}
+		}
+	}
+
 	/*! \brief This function process the receiced data for the properties and populate the ghost
 	 *
 	 * \tparam send_vector type used to send data
@@ -611,6 +677,68 @@ private:
 				v_pos.set(v_pos.size() - 1, vpos.get(j));
 				v_prp.add();
 				v_prp.set(v_prp.size() - 1, vprp.get(j));
+			}
+		}
+
+		// remove the (out-going particles) in the vector
+
+		v_pos.remove(out_part, o_p_id);
+		v_prp.remove(out_part, o_p_id);
+	}
+
+	/*! \brief Process the received particles
+	 *
+	 * \param list of the out-going particles
+	 *
+	 */
+	template<typename prp_object , int ... prp> void process_received_map_list(openfpm::vector<size_t> & out_part)
+	{
+		size_t o_p_id = 0;
+
+		for (size_t i = 0; i < recv_mem_gm.size(); i++)
+		{
+			// Get the number of elements
+
+			size_t n_ele = recv_mem_gm.get(i).size() / (sizeof(Point<dim, St> ) + sizeof(prop));
+
+			// Pointer of the received positions for each near processor
+			void * ptr_pos = (unsigned char *) recv_mem_gm.get(i).getPointer();
+			// Pointer of the received properties for each near processor
+			void * ptr_prp = (unsigned char *) recv_mem_gm.get(i).getPointer() + n_ele * sizeof(Point<dim, St> );
+
+			PtrMemory * ptr1 = new PtrMemory(ptr_pos, n_ele * sizeof(Point<dim, St> ));
+			PtrMemory * ptr2 = new PtrMemory(ptr_prp, n_ele * sizeof(prop));
+
+			// create vector representation to a piece of memory already allocated
+
+			openfpm::vector<Point<dim, St>, PtrMemory, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin ,openfpm::grow_policy_identity> vpos;
+			openfpm::vector<prp_object, PtrMemory, typename memory_traits_lin<prp_object>::type, memory_traits_lin ,openfpm::grow_policy_identity> vprp;
+
+			vpos.setMemory(*ptr1);
+			vprp.setMemory(*ptr2);
+
+			vpos.resize(n_ele);
+			vprp.resize(n_ele);
+
+			// Add the received particles to v_pos and v_prp
+
+			// source object type
+			typedef encapc<1, prop, typename openfpm::vector<prop>::layout_type> encap_src;
+			// destination object type
+			typedef encapc<1, prp_object, typename openfpm::vector<prp_object>::layout_type> encap_dst;
+
+			size_t j = 0;
+			for (; j < vpos.size() && o_p_id < out_part.size(); j++, o_p_id++)
+			{
+				v_pos.set(out_part.get(o_p_id), vpos.get(j));
+				v_prp.template set_o<decltype(vprp.get(j)), prp... >(out_part.get(o_p_id), vprp.get(j));
+			}
+
+			for (; j < vpos.size(); j++)
+			{
+				v_pos.add();
+				v_pos.set(v_pos.size() - 1, vpos.get(j));
+				v_prp.template set_o<decltype(vprp.get(j)), prp... >(v_prp.size() - 1, vprp.get(j));
 			}
 		}
 
@@ -826,6 +954,86 @@ public:
 		// Process the incoming particles
 
 		process_received_map(out_part);
+
+		// mark the ghost part
+
+		g_m = v_pos.size();
+	}
+
+	/*! \brief It move all the particles that does not belong to the local processor to the respective processor
+	 *
+	 * \tparam out of bound policy it specify what to do when the particles are detected out of bound
+	 *
+	 * In general this function is called after moving the particles to move the
+	 * elements out the local processor. Or just after initialization if each processor
+	 * contain non local particles
+	 *
+	 */
+	template<typename obp = KillParticle,unsigned int ... prp> void map_list()
+	{
+		// outgoing particles-id
+		openfpm::vector<size_t> out_part;
+
+		// Processor communication size
+		openfpm::vector<size_t> prc_sz(v_cl.getProcessingUnits());
+
+		// It contain the list of the processors this processor should to communicate with
+		openfpm::vector<size_t> p_list;
+
+		// map completely reset the ghost part
+		v_pos.resize(g_m);
+		v_prp.resize(g_m);
+
+		// Contain the processor id of each particle (basically where they have to go)
+		labelParticleProcessor<obp>(opart, prc_sz, out_part);
+
+		// Calculate the sending buffer size for each processor, put this information in
+		// a contiguous buffer
+		p_map_req.resize(v_cl.getProcessingUnits());
+		openfpm::vector<size_t> prc_sz_r;
+		openfpm::vector<size_t> prc_r;
+
+		for (size_t i = 0; i < v_cl.getProcessingUnits(); i++)
+		{
+			if (prc_sz.get(i) != 0)
+			{
+				p_map_req.get(i) = prc_r.size();
+				prc_r.add(i);
+				prc_sz_r.add(prc_sz.get(i));
+			}
+		}
+
+		// Sending property object
+		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;
+
+		// Allocate the send buffers
+
+		openfpm::vector<pos_prop_sel<prp_object>> pb;
+
+		// fill the send buffers
+		fill_send_map_buf_list<prp_object,prp...>(prc_r, prc_sz_r, pb);
+
+		// Create the set of pointers
+		openfpm::vector<void *> ptr(prc_r.size());
+		for (size_t i = 0; i < prc_r.size(); i++)
+		{
+			ptr.get(i) = pb.get(i).pos.getPointer();
+		}
+
+		// convert the particle number to buffer size
+		for (size_t i = 0; i < prc_sz_r.size(); i++)
+		{
+			prc_sz_r.get(i) = prc_sz_r.get(i) * (sizeof(prop) + sizeof(Point<dim, St> ));
+		}
+
+		// Send and receive the particles
+
+		recv_mem_gm.clear();
+		v_cl.sendrecvMultipleMessagesNBX(prc_sz_r.size(), (size_t *) prc_sz_r.getPointer(), (size_t *) prc_r.getPointer(), (void **) ptr.getPointer(), vector_dist::message_alloc_map, this, NEED_ALL_SIZE);
+
+		// Process the incoming particles
+
+		process_received_map_list<prp_object, prp...>(out_part);
 
 		// mark the ghost part
 

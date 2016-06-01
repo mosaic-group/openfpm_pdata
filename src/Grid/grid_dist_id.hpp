@@ -1109,7 +1109,7 @@ public:
 	struct i_box_id
 	{
 		//! Box
-		::Box<dim,size_t> box;
+		::Box<dim,long int> box;
 
 		//! id
 		size_t g_id;
@@ -1128,7 +1128,7 @@ public:
 	struct i_lbox_id
 	{
 		//! Box
-		::Box<dim,size_t> box;
+		::Box<dim,long int> box;
 
 		//! sub-domain id
 		size_t sub;
@@ -1144,10 +1144,10 @@ public:
 	struct e_box_id
 	{
 		//! Box defining the external ghost box in global coordinates
-		::Box<dim,size_t> g_e_box;
+		::Box<dim,long int> g_e_box;
 
 		//! Box defining the external ghost box in local coordinates
-		::Box<dim,size_t> l_e_box;
+		::Box<dim,long int> l_e_box;
 
 		//! Sector position of the external ghost
 		comb<dim> cmb;
@@ -1166,7 +1166,7 @@ public:
 	struct e_lbox_id
 	{
 		//! Box defining the external ghost box in local coordinates
-		::Box<dim,size_t> box;
+		::Box<dim,long int> box;
 
 		//! Sector position of the local external ghost box
 		comb<dim> cmb;
@@ -1282,7 +1282,7 @@ public:
 				// And linked sub-domain
 				size_t sub_id = ig_box.get(i).bid.get(j).sub;
 				// Internal ghost box
-				Box<dim,size_t> g_ig_box = ig_box.get(i).bid.get(j).box;
+				Box<dim,long int> g_ig_box = ig_box.get(i).bid.get(j).box;
 
 				if (g_ig_box.isValid() == false)
 					continue;
@@ -1519,6 +1519,37 @@ public:
 #else
 			return -1;
 #endif
+	}
+
+	/*! \brief It print the internal ghost boxes and external ghost boxes in global unit
+	 *
+	 *
+	 */
+	void debugPrint()
+	{
+		std::cout << "-------- External Ghost boxes ---------- " << std::endl;
+
+		for (size_t i = 0 ; i < eg_box.size() ; i++)
+		{
+			std::cout << "Processor: " << eg_box.get(i).prc << " Boxes:" << std::endl;
+
+			for (size_t j = 0; j < eg_box.get(i).bid.size() ; j++)
+			{
+				std::cout << " Box: " << eg_box.get(i).bid.get(j).g_e_box.toString() << "   Id: " << eg_box.get(i).bid.get(j).g_id << std::endl;
+			}
+		}
+
+		std::cout << "-------- Internal Ghost boxes ---------- " << std::endl;
+
+		for (size_t i = 0 ; i < ig_box.size() ; i++)
+		{
+			std::cout << "Processor: " << ig_box.get(i).prc << " Boxes:" << std::endl;
+
+			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
+			{
+				std::cout << " Box: " << ig_box.get(i).bid.get(j).box.toString() << "   Id: " << ig_box.get(i).bid.get(j).g_id << std::endl;
+			}
+		}
 	}
 
 	// Define friend classes
