@@ -588,7 +588,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 		Ghost<3,float> ghost2(0.05001 / factor);
 
 		// Distributed vector
-		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box,bc,ghost);
+		vector_dist<3,float, Point_test<float> > vd(k,box,bc,ghost);
 
 		auto it = vd.getIterator();
 
@@ -620,7 +620,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 		size_t n_out = 0;
 
 		auto it2 = vd.getIterator();
-		count_local_n_local(vd,it2,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
+		count_local_n_local<3,vector_dist<3,float, Point_test<float> >>(vd,it2,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
 
 		// No particles should be out of domain + ghost
 		BOOST_REQUIRE_EQUAL(n_out,0ul);
@@ -642,7 +642,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 
 		// Iterate only on the ghost particles
 		auto itg = vd.getGhostIterator();
-		count_local_n_local(vd,itg,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
+		count_local_n_local<3,vector_dist<3,float, Point_test<float> > >(vd,itg,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
 
 		// No particle on the ghost must be inside the domain
 		BOOST_REQUIRE_EQUAL(l_cnt,0ul);
@@ -1198,7 +1198,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
 	Ghost<3,float> ghost2(0.05001 / factor);
 
 	// Distributed vector
-	vector_dist<3,float, aggregate<float,float,std::list<int>,openfpm::vector<size_t>>, CartDecomposition<3,float> > vd(k,box,bc,ghost);
+	vector_dist<3,float, aggregate<float,float,std::list<int>,openfpm::vector<size_t>> > vd(k,box,bc,ghost);
 
 	auto it = vd.getIterator();
 
@@ -1230,7 +1230,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
 	size_t n_out = 0;
 
 	auto it2 = vd.getIterator();
-	count_local_n_local(vd,it2,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
+	count_local_n_local<3,vector_dist<3,float, aggregate<float,float,std::list<int>,openfpm::vector<size_t>>> >(vd,it2,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
 
 	// No particles should be out of domain + ghost
 	BOOST_REQUIRE_EQUAL(n_out,0ul);
@@ -1252,7 +1252,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
 
 	// Iterate only on the ghost particles
 	auto itg = vd.getGhostIterator();
-	count_local_n_local(vd,itg,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
+	count_local_n_local<3, vector_dist<3,float, aggregate<float,float,std::list<int>,openfpm::vector<size_t>> > >(vd,itg,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
 
 	// No particle on the ghost must be inside the domain
 	BOOST_REQUIRE_EQUAL(l_cnt,0ul);
