@@ -510,7 +510,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 
 
 		auto it2 = vd.getIterator();
-		count_local_n_local(vd,it2,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
+		count_local_n_local<2,vector_dist<2,float, Point_test<float> >>(vd,it2,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
 
 		// No particles should be out of domain + ghost
 		BOOST_REQUIRE_EQUAL(n_out,0ul);

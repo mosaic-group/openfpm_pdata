@@ -72,6 +72,7 @@ then
  fi
 
  make install
+ source $HOME/openfpm_vars
 
  if [ x"$3" == x"no_test" ]; then
    exit 0;
@@ -150,6 +151,9 @@ then
  sh ./autogen.sh
  ./install -s -c "--with-boost=/sw/apps/boost/1.54.0/ CXX=mpic++"
  make
+
+ source $HOME/openfpm_vars
+
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
@@ -235,6 +239,9 @@ then
 
  ./install -i "/scratch/p_ppm/" -s -c"CXX=mpic++"
  make
+
+ source $HOME/openfpm_vars
+
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ; 
@@ -271,6 +278,9 @@ else
  source ~/.bashrc
  ./install -s
  make
+
+ source $HOME/openfpm_vars
+
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
