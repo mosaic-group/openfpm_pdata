@@ -286,7 +286,7 @@ else
    exit 1 ;
  fi
 
- if [ $3 -eq x"no_test" ]; then
+ if [ x"$3" == x"no_test" ]; then
    exit 0;
  fi
 
