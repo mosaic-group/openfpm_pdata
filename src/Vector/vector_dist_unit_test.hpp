@@ -1179,6 +1179,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
+	print_test("Testing 3D periodic vector with map_list k=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector with map_list k=" << k );
 
 	//! [Create a vector of random elements on each processor 3D]
@@ -1197,8 +1198,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
 	// ghost2 (a little bigger because of round off error)
 	Ghost<3,float> ghost2(0.05001 / factor);
 
+	typedef  aggregate<float,float,std::list<int>,openfpm::vector<size_t>,openfpm::vector<Point_test<float>>> part_prop;
+
 	// Distributed vector
-	vector_dist<3,float, aggregate<float,float,std::list<int>,openfpm::vector<size_t>> > vd(k,box,bc,ghost);
+	vector_dist<3,float, part_prop > vd(k,box,bc,ghost);
 
 	auto it = vd.getIterator();
 
@@ -1209,6 +1212,23 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
 		vd.getPos(key)[0] = ud(eg);
 		vd.getPos(key)[1] = ud(eg);
 		vd.getPos(key)[2] = ud(eg);
+
+		// Fill some properties randomly
+
+		vd.getProp<2>(key).push_back(1);
+		vd.getProp<2>(key).push_back(2);
+		vd.getProp<2>(key).push_back(3);
+		vd.getProp<2>(key).push_back(4);
+
+		vd.getProp<3>(key).add(1);
+		vd.getProp<3>(key).add(2);
+		vd.getProp<3>(key).add(3);
+		vd.getProp<3>(key).add(4);
+
+		vd.getProp<4>(key).add();
+		vd.getProp<4>(key).add();
+		vd.getProp<4>(key).add();
+		vd.getProp<4>(key).add();
 
 		++it;
 	}
@@ -1230,7 +1250,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
 	size_t n_out = 0;
 
 	auto it2 = vd.getIterator();
-	count_local_n_local<3,vector_dist<3,float, aggregate<float,float,std::list<int>,openfpm::vector<size_t>>> >(vd,it2,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
+	count_local_n_local<3,vector_dist<3,float, part_prop>>(vd,it2,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
 
 	// No particles should be out of domain + ghost
 	BOOST_REQUIRE_EQUAL(n_out,0ul);
@@ -1252,7 +1272,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
 
 	// Iterate only on the ghost particles
 	auto itg = vd.getGhostIterator();
-	count_local_n_local<3, vector_dist<3,float, aggregate<float,float,std::list<int>,openfpm::vector<size_t>> > >(vd,itg,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
+	count_local_n_local<3, vector_dist<3,float,part_prop> >(vd,itg,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
 
 	// No particle on the ghost must be inside the domain
 	BOOST_REQUIRE_EQUAL(l_cnt,0ul);

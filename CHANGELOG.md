@@ -1,6 +1,19 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 
+
+### Added
+- map_list map communicate particles across processors mooving the information of all the particle map_list give the possibility to
+           give a list of property to move from one to another processor
+- Numeric: Finite Differences discretization with matrix contruction and parallel solvers
+
+### Fixed
+
+### Changed
+
+
+
 ## [0.4.0] - 26-05-2016
 
 ### Added

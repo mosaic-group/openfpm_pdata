@@ -699,7 +699,7 @@ private:
 		{
 			// Get the number of elements
 
-			size_t n_ele = recv_mem_gm.get(i).size() / (sizeof(Point<dim, St> ) + sizeof(prop));
+			size_t n_ele = recv_mem_gm.get(i).size() / (sizeof(Point<dim, St> ) + sizeof(prp_object));
 
 			// Pointer of the received positions for each near processor
 			void * ptr_pos = (unsigned char *) recv_mem_gm.get(i).getPointer();
@@ -707,7 +707,7 @@ private:
 			void * ptr_prp = (unsigned char *) recv_mem_gm.get(i).getPointer() + n_ele * sizeof(Point<dim, St> );
 
 			PtrMemory * ptr1 = new PtrMemory(ptr_pos, n_ele * sizeof(Point<dim, St> ));
-			PtrMemory * ptr2 = new PtrMemory(ptr_prp, n_ele * sizeof(prop));
+			PtrMemory * ptr2 = new PtrMemory(ptr_prp, n_ele * sizeof(prp_object));
 
 			// create vector representation to a piece of memory already allocated
 
@@ -1023,7 +1023,7 @@ public:
 		// convert the particle number to buffer size
 		for (size_t i = 0; i < prc_sz_r.size(); i++)
 		{
-			prc_sz_r.get(i) = prc_sz_r.get(i) * (sizeof(prop) + sizeof(Point<dim, St> ));
+			prc_sz_r.get(i) = prc_sz_r.get(i) * (sizeof(prp_object) + sizeof(Point<dim, St> ));
 		}
 
 		// Send and receive the particles
