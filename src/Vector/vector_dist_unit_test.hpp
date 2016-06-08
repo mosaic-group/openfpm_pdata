@@ -478,7 +478,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 		Ghost<2,float> ghost2(0.05001 / factor);
 
 		// Distributed vector
-		vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(k,box,bc,ghost);
+		vector_dist<2,float, Point_test<float> > vd(k,box,bc,ghost);
 
 		auto it = vd.getIterator();
 
@@ -534,7 +534,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 
 		// Iterate only on the ghost particles
 		auto itg = vd.getGhostIterator();
-		count_local_n_local(vd,itg,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
+		count_local_n_local<2,vector_dist<2,float, Point_test<float> > >(vd,itg,bc,box,dom_ext,l_cnt,nl_cnt,n_out);
 
 		// No particle on the ghost must be inside the domain
 		BOOST_REQUIRE_EQUAL(l_cnt,0ul);

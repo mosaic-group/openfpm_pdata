@@ -229,11 +229,12 @@ then
  module load boost/1.60.0
  module load gcc/5.3.0
  module load openmpi/1.10.2-gnu
+ module load petsc/3.3-p7
  module unload bullxmpi
  
  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/incard/PARMETIS/lib:/home/incard/METIS/lib:/home/incard/HDF5/lib"
 
- ./install -s -c"CXX=mpic++ --with-boost=/sw/taurus/libraries/boost/1.60.0"
+ ./install -s -c"CXX=mpic++ --with-boost=/sw/taurus/libraries/boost/1.60.0 --with-petsc=$PETSC_DIR "
  make
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
