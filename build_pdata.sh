@@ -21,43 +21,6 @@ fi
 
 mkdir openfpm_numerics/src/config
 
-# pull from all the projects
-#cd openfpm_data
-#git checkout develop
-#mkdir src/config
-#git pull origin develop
-#if [ $? -ne 0 ]; then
-#  echo -e "Configure\033[91;5;1m FAILED \033[0m"
-#  exit 1
-#fi
-#cd ..
-
-#cd openfpm_devices
-#mkdir src/config
-#git pull origin master
-#if [ $? -ne 0 ]; then
-#  echo -e "Configure\033[91;5;1m FAILED \033[0m"
-#  exit 1
-#fi
-#cd ..
-
-#cd openfpm_vcluster
-#mkdir src/config
-#git pull origin master
-#if [ $? -ne 0 ]; then
-#  echo -e "Configure\033[91;5;1m FAILED \033[0m"
-#  exit 1
-#fi
-#cd ..
-
-#cd openfpm_io
-#mkdir src/config
-#git pull origin master
-#if [ $? -ne 0 ]; then
-#  echo -e "Configure\033[91;5;1m FAILED \033[0m"
-#  exit 1
-#fi
-#cd ..
 
 if [ "$2" == "gin" ]
 then
@@ -152,12 +115,12 @@ then
  ./install -s -c "--with-boost=/sw/apps/boost/1.54.0/ CXX=mpic++"
  make
 
- source $HOME/openfpm_vars
-
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
  fi
+
+ source $HOME/openfpm_vars
 
  ## Run on the cluster
  bsub -o output_run2.%J -K -n 2 -R "span[hosts=1]" "module load openmpi/1.8.1 ; module load gcc/4.9.2; module load boost/1.54.0;  mpirun -np 2 ./src/pdata"
@@ -279,8 +242,6 @@ else
  ./install -s
  make
 
- source $HOME/openfpm_vars
-
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
@@ -289,6 +250,8 @@ else
  if [ x"$3" == x"no_test" ]; then
    exit 0;
  fi
+
+ source $HOME/openfpm_vars
 
  mpirun -np 1 ./src/pdata
  if [ $? -ne 0 ]; then
