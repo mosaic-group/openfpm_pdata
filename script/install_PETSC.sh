@@ -103,8 +103,10 @@ if [ ! -d "$1/TRILINOS" ]; then
   cd build
 
   ### On clang we have no openMP
+  petsc_openmp=""
   if [ x"$dgc_compiler" == x"clang++" ]; then
     conf_trl_openmp="-D Trilinos_ENABLE_OpenMP=OFF"
+    petsc_openmp="--with-openmp=yes"
   else
     conf_trl_openmp="-D Trilinos_ENABLE_OpenMP=ON"
   fi
@@ -286,7 +288,7 @@ cd petsc-3.6.4
 
 echo "./configure --with-cxx-dialect=C++11 --with-mpi-dir=$1/MPI  $configure_options  --prefix=$1/PETSC"
 
-./configure --with-cxx-dialect=C++11 --with-openmp=yes  --with-mpi-dir=$1/MPI  $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC
+./configure --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$1/MPI  $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC
 make all test
 make install
 

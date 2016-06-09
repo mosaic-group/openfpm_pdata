@@ -335,12 +335,15 @@ int main(int argc, char* argv[])
 		}
 
 		if (i % 100 == 0)
-		{
-			vd.write("particles",f);
+		{	
+			vd.deleteGhost();
+			vd.write("particles_",f);
 			double energy = calc_energy(vd,NN,L);
 			auto & vcl = create_vcluster();
 			vcl.sum(energy);
 			vcl.execute();
+
+			vd.ghost_get<>();
 
 			x.add(i);
 			y.add({energy});
