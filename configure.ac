@@ -133,6 +133,12 @@ fi
 
 AX_LIB_PETSC()
 
+## Check for quadmath
+
+AC_CHECK_LIB(quadmath, sinq, [AC_DEFINE(HAVE_LIBQUADMATH,[],[Have quad math lib])
+                                LIBQUADMATH=" -lquadmath "
+                                ], [])
+
 ########
 
 ## Enable scan coverty
