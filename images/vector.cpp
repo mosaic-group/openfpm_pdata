@@ -55,15 +55,15 @@ int main(int argc, char* argv[])
 		++it;
 	}
 
-	vd.write("Vector/vector_before_map");
+	vd.write("Vector/vector_before_map",CSV_WRITER);
 
 	vd.map();
 
-	vd.write("Vector/vector_after_map");
+	vd.write("Vector/vector_after_map",CSV_WRITER);
 	
 	vd.ghost_get<0>();
 
-	vd.write("Vector/vector_ghost_fill");
+	vd.write("Vector/vector_ghost_fill",CSV_WRITER);
 
 	vd.getDecomposition().write("Vector/vect_decomposition");
 

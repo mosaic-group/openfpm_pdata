@@ -1,4 +1,3 @@
-
 LINKLIBS = $(PETSC_LIB) $(METIS_LIB) $(PARMETIS_LIB)  $(PTHREAD_LIBS) $(OPT_LIBS) $(BOOST_LDFLAGS) $(BOOST_IOSTREAMS_LIB) $(CUDA_LIBS)
 
 noinst_PROGRAMS = cart_dec metis_dec dom_box vector_dist
