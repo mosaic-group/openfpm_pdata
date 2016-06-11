@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 
 	//! [Decomposition Metis with weights]
 
-	BOOST_REQUIRE(met_dist.getUnbalance() < 0.03);
+	BOOST_REQUIRE(met_dist.getUnbalance() < 0.06);
 
 	met_dist.write("vtk_metis_distribution_red.vtk");
 
