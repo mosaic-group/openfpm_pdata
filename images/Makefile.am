@@ -28,28 +28,28 @@ vector_dist_LDADD = $(LINKLIBS) -lparmetis -lmetis
 #### Rule to make images
 
 images : cart_dec metis_dec dom_box
-	rm -rf CartDecomposition
-	rm -rf Metis
-	rm -rf Vector
-	mkdir CartDecomposition
-	mkdir Metis
-	mkdir Vector
-	mpirun -np 4 ./cart_dec
-	mpirun -np 3 ./vector_dist
-	./dom_box
-	./metis_dec
-	mkdir -p generated
-	mkdir -p static
-	pvbatch Domain_decomposition.py
-	pvbatch vector_dist.py
-	pvbatch mooving_particles.py
-	pvbatch mooving_particles_prc.py
-	pvbatch vector_scal_vect.py
-	pvbatch vector_particles.py
-	pvbatch particles_maps.py
-	pvbatch vector_ghost.py
-	dot -Tsvg openfpm.dot -o generated/openfpm.svg
-	avconv -i generated/particles_mooving.ogv -f mp4 generated/particles_mooving.mp4
-	avconv -i generated/particles_mooving_prc.ogv -f mp4 generated/particles_mooving_prc.mp4
-	avconv -i generated/particles_mooving.ogv -f webm generated/particles_mooving.webm
+	rm -rf CartDecomposition && \
+	rm -rf Metis && \
+	rm -rf Vector && \
+	mkdir CartDecomposition && \
+	mkdir Metis && \
+	mkdir Vector && \
+	mpirun -np 4 ./cart_dec && \
+	mpirun -np 3 ./vector_dist && \
+	./dom_box && \
+	./metis_dec &&  \
+	mkdir -p generated && \
+	mkdir -p static && \
+	pvbatch Domain_decomposition.py && \
+	pvbatch vector_dist.py && \
+	pvbatch mooving_particles.py && \
+	pvbatch mooving_particles_prc.py && \
+	pvbatch vector_scal_vect.py && \
+	pvbatch vector_particles.py && \
+	pvbatch particles_maps.py && \
+	pvbatch vector_ghost.py && \
+	dot -Tsvg openfpm.dot -o generated/openfpm.svg && \
+	avconv -i generated/particles_mooving.ogv -f mp4 generated/particles_mooving.mp4 && \
+	avconv -i generated/particles_mooving_prc.ogv -f mp4 generated/particles_mooving_prc.mp4 && \
+	avconv -i generated/particles_mooving.ogv -f webm generated/particles_mooving.webm && \
 	avconv -i generated/particles_mooving_prc.ogv -f webm generated/particles_mooving_prc.webm
