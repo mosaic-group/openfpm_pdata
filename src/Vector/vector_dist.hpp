@@ -27,6 +27,7 @@
 #include "Vector/vector_dist_ofb.hpp"
 #include "Decomposition/CartDecomposition.hpp"
 #include "data_type/aggregate.hpp"
+#include "vector_dist_operators.hpp"
 
 #define V_SUB_UNIT_FACTOR 64
 
@@ -883,6 +884,21 @@ public:
 		return v_prp.template get<id>(vec_key.getKey());
 	}
 
+	/*! \brief Get the property of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \tparam id property id
+	 * \param vec_key vector element
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline const auto getProp(vect_dist_key_dx vec_key) const -> decltype(v_prp.template get<id>(vec_key.getKey()))
+	{
+		return v_prp.template get<id>(vec_key.getKey());
+	}
+
 	/*! \brief It move all the particles that does not belong to the local processor to the respective processor
 	 *
 	 * \tparam out of bound policy it specify what to do when the particles are detected out of bound
@@ -1438,7 +1454,7 @@ public:
 	 * \return an iterator
 	 *
 	 */
-	vector_dist_iterator getGhostIterator()
+	vector_dist_iterator getGhostIterator() const
 	{
 		return vector_dist_iterator(g_m, v_pos.size());
 	}
@@ -1448,7 +1464,7 @@ public:
 	 * \return an iterator
 	 *
 	 */
-	vector_dist_iterator getDomainIterator()
+	vector_dist_iterator getDomainIterator() const
 	{
 		return vector_dist_iterator(0, g_m);
 	}
@@ -1611,6 +1627,16 @@ public:
 #endif
 		return v_cl;
 	}
+
+	//////////////////////////// Vector expression implementation ////////////////////////
+
+	template <unsigned int prp> inline vector_dist_expression<prp,vector_dist<dim,St,prop,Decomposition,Memory> > getV()
+	{
+		vector_dist_expression<prp,vector_dist<dim,St,prop,Decomposition,Memory> > exp_v(*this);
+
+		return exp_v;
+	}
 };
+
 
 #endif /* VECTOR_HPP_ */

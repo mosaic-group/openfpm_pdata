@@ -1,11 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [0.5.0] - 
+## [0.5.0] - mid July 2016
 
 ### Added
-- map_list map communicate particles across processors mooving the information of all the particle map_list give the possibility to
-           give a list of property to move from one to another processor
+- map_list map communicate particles across processors mooving the information of all the particle map_list give the possibility to give a list of property to move from one to another processor
 - Numeric: Finite Differences discretization with matrix contruction and parallel solvers
 
 ### Fixed
@@ -81,4 +80,19 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Nothing to report
+
+
+
+# Planned in the next Releases
+
+## [0.7.0] - Mid of October
+
+### Added
+- Dynamic Load Balancies examples and interface fixation
+- Check Point restart
+
+## [0.6.0] - Beginning of september
+
+### Added
+- Parallel IO, new formats, imroved writers
 
