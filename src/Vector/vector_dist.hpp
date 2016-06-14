@@ -17,6 +17,7 @@
 #include "memory/PreAllocHeapMemory.hpp"
 #include "memory/PtrMemory.hpp"
 #include "NN/CellList/CellList.hpp"
+#include "NN/CellList/CellListFast_hilb.hpp"
 #include "util/common.hpp"
 #include "util/object_util.hpp"
 #include "memory/ExtPreAlloc.hpp"
@@ -660,6 +661,35 @@ private:
 		}
 	}
 
+	/*! \brief Calculate parameters for the cell list
+	 *
+	 * \param div Division array
+	 * \param r_cut interation radius or size of each cell
+	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost. This parameter says how much must be enlarged
+	 *
+	 * \return the processor bounding box
+	 */
+	inline Box<dim, St> cl_param_calculate(size_t (&div)[dim], St r_cut, const Ghost<dim, St> & enlarge)
+
+	{
+		// calculate the parameters of the cell list
+
+		// get the processor bounding box
+		Box<dim, St> pbox = dec.getProcessorBounds();
+
+		// extend by the ghost
+		pbox.enlarge(enlarge);
+
+		// Calculate the division array and the cell box
+		for (size_t i = 0; i < dim; i++)
+		{
+			div[i] = static_cast<size_t>((pbox.getP2().get(i) - pbox.getP1().get(i)) / r_cut);
+			div[i]++;
+			pbox.setHigh(i,pbox.getLow(i) + div[i]*r_cut);
+		}
+		return pbox;
+	}
+
 public:
 
 	/*! \brief Constructor
@@ -1036,6 +1066,24 @@ public:
 		return getCellList(r_cut, g);
 	}
 
+	/*! \brief Construct an hilbert cell list starting from the stored particles
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 *
+	 * \return the Cell list
+	 *
+	 */
+	template<typename CellL = CellList_hilb<dim, St, FAST, shift<dim, St> > > CellL getCellList_hilb(St r_cut)
+	{
+		// Get ghost and anlarge by 1%
+		Ghost<dim,St> g = dec.getGhost();
+		g.magnify(1.01);
+
+		return getCellList_hilb(r_cut, g);
+	}
+
 	/*! \brief Update a cell list using the stored particles
 	 *
 	 * \tparam CellL CellList type to construct
@@ -1062,6 +1110,37 @@ public:
 		}
 	}
 
+	/*template<typename CellL> void celllist_initialize(CellL & cell_list, St r_cut, const Ghost<dim, St> & enlarge)
+	{
+		// calculate the parameters of the cell list
+
+		// get the processor bounding box
+		Box<dim, St> pbox = dec.getProcessorBounds();
+		// extend by the ghost
+		pbox.enlarge(enlarge);
+
+		size_t div[dim];
+
+		// Calculate the division array and the cell box
+		for (size_t i = 0; i < dim; i++)
+		{
+			div[i] = static_cast<size_t>((pbox.getP2().get(i) - pbox.getP1().get(i)) / r_cut);
+			div[i]++;
+			pbox.setHigh(i,pbox.getLow(i) + div[i]*r_cut);
+		}
+
+		if(is_Hilbert<CellL>::type::value == true)
+		{
+			std::cout << "Case 1: " << demangle(typeid(CellL).name()) << std::endl;
+			cell_list.Initialize(pbox, div, g_m);
+		}
+		else
+		{
+			std::cout << "Case 2: " << demangle(typeid(CellL).name()) << std::endl;
+			cell_list.Initialize(pbox, div);
+		}
+	}*/
+
 	/*! \brief Construct a cell list starting from the stored particles
 	 *
 	 * It differ from the get getCellList for an additional parameter, in case the
@@ -1079,23 +1158,43 @@ public:
 	{
 		CellL cell_list;
 
-		// calculate the parameters of the cell list
-
-		// get the processor bounding box
-		Box<dim, St> pbox = dec.getProcessorBounds();
-		// extend by the ghost
-		pbox.enlarge(enlarge);
-
+		// Division array
 		size_t div[dim];
 
-		// Calculate the division array and the cell box
-		for (size_t i = 0; i < dim; i++)
-		{
-			div[i] = static_cast<size_t>((pbox.getP2().get(i) - pbox.getP1().get(i)) / r_cut);
-			div[i]++;
-		}
+		// Processor bounding box
+		auto pbox = cl_param_calculate(div, r_cut, enlarge);
 
 		cell_list.Initialize(pbox, div);
+
+		updateCellList(cell_list);
+
+		return cell_list;
+	}
+
+	/*! \brief Construct an hilbert cell list starting from the stored particles
+	 *
+	 * It differ from the get getCellList for an additional parameter, in case the
+	 * domain + ghost is not big enough to contain additional padding particles, a Cell list
+	 * with bigger space can be created
+	 * (padding particles in general are particles added by the user out of the domains)
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
+	 *
+	 */
+	template<typename CellL = CellList_hilb<dim, St, FAST, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
+	{
+		CellL cell_list;
+
+		// Division array
+		size_t div[dim];
+
+		// Processor bounding box
+		auto pbox = cl_param_calculate(div, r_cut, enlarge);
+
+		cell_list.Initialize(pbox, div, g_m);
 
 		updateCellList(cell_list);
 
@@ -1202,20 +1301,15 @@ public:
 		// extend by the ghost
 		pbox.enlarge(enlarge);
 
-		Box<dim,St> cell_box;
-
 		size_t div[dim];
 
 		// Calculate the division array and the cell box
 		for (size_t i = 0 ; i < dim ; i++)
 		{
 			div[i] = 1 << m;
-
-			cell_box.setLow(i,0.0);
-			cell_box.setHigh(i,pbox.getP2().get(i) - pbox.getP1().get(i));
 		}
 
-		cell_list.Initialize(cell_box,div,pbox.getP1());
+		cell_list.Initialize(pbox,div);
 
 		// for each particle add the particle to the cell list
 
@@ -1225,7 +1319,7 @@ public:
 		{
 			auto key = it.get();
 
-			cell_list.add(this->template getPos<0>(key),key.getKey());
+			cell_list.add(this->getPos(key),key.getKey());
 
 			++it;
 		}

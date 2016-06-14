@@ -11,6 +11,7 @@
 #include <random>
 #include "Vector/vector_dist.hpp"
 #include "data_type/aggregate.hpp"
+#include "Vector/vector_dist_cl_hilb_performance_tests.hpp"
 
 /*! \brief Count the total number of particles
  *
@@ -1161,11 +1162,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 	}
 }
 
-BOOST_AUTO_TEST_CASE( vector_dist_hilbert_timer_test )
+BOOST_AUTO_TEST_CASE( vector_dist_hilbert_2d_benchmark_test )
 {
 	typedef Point<2,float> s;
 
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
     // set the seed
 	// create the random generator engine
@@ -1200,8 +1201,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_hilbert_timer_test )
 		{
 			auto key = it.get();
 
-			vd.template getPos<s::x>(key)[0] = ud(eg);
-			vd.template getPos<s::x>(key)[1] = ud(eg);
+			vd.getPos(key)[0] = ud(eg);
+			vd.getPos(key)[1] = ud(eg);
 
 			++it;
 		}
@@ -1236,6 +1237,178 @@ BOOST_AUTO_TEST_CASE( vector_dist_hilbert_timer_test )
 	}
 }
 
+BOOST_AUTO_TEST_CASE( vector_dist_cl_hilb_forces_test )
+{
+	///////// INPUT DATA //////////
+
+	// Dimensionality of the space
+	const size_t dim = 2;
+	// Cut-off radiuses. Can be put different number of values
+	openfpm::vector<float> cl_r_cutoff {0.05};
+	// The starting amount of particles (remember that this number is multiplied by number of processors you use for testing)
+	size_t cl_k_start = 100000;
+	// The lower threshold for number of particles
+	size_t cl_k_min = 10000;
+	// Ghost part of distributed vector
+	double ghost_part = 0.05;
+
+	///////////////////////////////
+
+	//For different r_cut
+	for (size_t r = 0; r < cl_r_cutoff.size(); r++ )
+	{
+		Vcluster & v_cl = create_vcluster();
+
+		//Cut-off radius
+		float r_cut = cl_r_cutoff.get(r);
+
+		//Number of particles
+		size_t k = cl_k_start * v_cl.getProcessingUnits();
+
+		std::string str("Testing " + std::to_string(dim) + "D vector's forces k<=");
+
+		vector_dist_test::print_test_v(str,k);
+
+		std::cout << std::endl << "r_cut is " << r_cut << std::endl << std::endl;
+
+		//For different number of particles
+		for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2 )
+		{
+			BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector's forces k<=" << k_int );
+
+			std::cout << "k_int: " << k_int << std::endl;
+
+			Box<dim,float> box;
+
+			for (size_t i = 0; i < dim; i++)
+			{
+				box.setLow(i,0.0);
+				box.setHigh(i,1.0);
+			}
+
+			// Boundary conditions
+			size_t bc[dim];
+
+			for (size_t i = 0; i < dim; i++)
+				bc[i] = PERIODIC;
+
+			vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(ghost_part));
+
+			vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd2(k_int,box,bc,Ghost<dim,float>(ghost_part));
+
+			// Initialize dist vectors
+			vd_initialize_double<dim>(vd, vd2, v_cl, k_int);
+
+			vd.template ghost_get<0>();
+			vd2.template ghost_get<0>();
+
+			//Get a cell list
+
+			auto NN = vd.getCellList(r_cut);
+
+			//Calculate forces
+
+			auto t_forces = vector_dist_cl_perf_test::calculate_forces<dim>(NN,vd,r_cut);
+
+			//Get a cell list hilb
+
+			auto NN_hilb = vd2.getCellList_hilb(r_cut);
+
+			//Calculate forces
+			auto t_forces_hilb = calculate_forces_hilb<dim>(NN_hilb,vd2,r_cut);
+
+			auto it_v = vd.getIterator();
+
+			while (it_v.isNext())
+			{
+				//key
+				vect_dist_key_dx key = it_v.get();
+
+				for (size_t i = 0; i < dim; i++)
+				{
+					auto a1 = vd.template getProp<0>(key)[i];
+					auto a2 = vd2.template getProp<0>(key)[i];
+					//Check that the forces are equal
+					BOOST_REQUIRE_EQUAL(a1,a2);
+				}
+
+				++it_v;
+			}
+		}
+	}
+}
+
+BOOST_AUTO_TEST_CASE( stupid_test )
+{
+	///////// INPUT DATA //////////
+
+	// Dimensionality of the space
+	const size_t dim = 2;
+	// Cut-off radiuses. Can be put different number of values
+	openfpm::vector<float> cl_r_cutoff {0.05};
+	// The starting amount of particles (remember that this number is multiplied by number of processors you use for testing)
+	size_t cl_k_start = 100000;
+	// The lower threshold for number of particles
+	size_t cl_k_min = 10000;
+	// Ghost part of distributed vector
+	double ghost_part = 0.05;
+
+	///////////////////////////////
+
+	//For different r_cut
+	for (size_t r = 0; r < cl_r_cutoff.size(); r++ )
+	{
+		Vcluster & v_cl = create_vcluster();
+
+		//Cut-off radius
+		float r_cut = cl_r_cutoff.get(r);
+
+		//Number of particles
+		size_t k = cl_k_start * v_cl.getProcessingUnits();
+
+		std::string str("Testing " + std::to_string(dim) + "D vector's forces k<=");
+
+		vector_dist_test::print_test_v(str,k);
+
+		std::cout << std::endl << "r_cut is " << r_cut << std::endl << std::endl;
+
+		//For different number of particles
+		for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2 )
+		{
+			BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector's forces k<=" << k_int );
+
+			std::cout << "k_int: " << k_int << std::endl;
+
+			Box<dim,float> box;
+
+			for (size_t i = 0; i < dim; i++)
+			{
+				box.setLow(i,0.0);
+				box.setHigh(i,1.0);
+			}
+
+			// Boundary conditions
+			size_t bc[dim];
+
+			for (size_t i = 0; i < dim; i++)
+				bc[i] = PERIODIC;
+
+			vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(ghost_part));
+
+			vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd2(k_int,box,bc,Ghost<dim,float>(ghost_part));
+
+			// Initialize dist vectors
+			vd_initialize_double<dim>(vd, vd2, v_cl, k_int);
+
+			vd.template ghost_get<0>();
+			vd2.template ghost_get<0>();
+
+			//Get a cell list
+
+			auto NN = vd.getCellList(r_cut);
+		}
+	}
+}
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif /* VECTOR_DIST_UNIT_TEST_HPP_ */
