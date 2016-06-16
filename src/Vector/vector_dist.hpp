@@ -1168,6 +1168,10 @@ public:
 
 		updateCellList(cell_list);
 
+		std::cout << "V_pos size: " << v_pos.size() << ", V_prp size: " << v_prp.size() << std::endl;
+
+		//std::cout << "Number of padding cells: " << cell_list.getPadding(0)*cell_list.getPadding(1) << /*", Tot_n_cell: " << cell_list.return_n_cell() <<*/ std::endl;
+
 		return cell_list;
 	}
 
@@ -1366,7 +1370,6 @@ public:
 
 		v_pos.swap(v_pos_dest);
 		v_prp.swap(v_prp_dest);
-
 	}
 
 	/*! \brief It return the number of particles contained by the previous processors

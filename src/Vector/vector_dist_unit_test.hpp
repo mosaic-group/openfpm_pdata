@@ -1308,14 +1308,14 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_hilb_forces_test )
 
 			//Calculate forces
 
-			auto t_forces = vector_dist_cl_perf_test::calculate_forces<dim>(NN,vd,r_cut);
+			auto t_forces = vector_dist_cl_perf_test::calc_forces<dim>(NN,vd,r_cut);
 
 			//Get a cell list hilb
 
 			auto NN_hilb = vd2.getCellList_hilb(r_cut);
 
 			//Calculate forces
-			auto t_forces_hilb = calculate_forces_hilb<dim>(NN_hilb,vd2,r_cut);
+			calc_forces_hilb<dim>(NN_hilb,vd2,r_cut);
 
 			auto it_v = vd.getIterator();
 
@@ -1338,20 +1338,118 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_hilb_forces_test )
 	}
 }
 
-BOOST_AUTO_TEST_CASE( stupid_test )
+/*! \brief Calculate forces time
+ *
+ * \param NN Cell list
+ * \param vd Distributed vector
+ * \param r_cut Cut-off radius
+ *
+ * \return real calculation time
+ */
+template<unsigned int dim, size_t prp, typename T, typename V> double calculate_forces_2(T & NN, V & vd, float r_cut)
 {
+	//Forces timer
+	timer t;
+	t.start();
+
+	calc_forces_2<dim,prp>(NN,vd,r_cut);
+
+	t.stop();
+
+	return t.getwct();
+}
+
+template<unsigned int dim, size_t prp, typename T, typename V> void calc_forces_2(T & NN, V & vd, float r_cut)
+{
+	auto it_v = vd.getDomainIterator();
+
+	float sum[dim];
+
+	size_t count = 0;
+
+	for (size_t i = 0; i < dim; i++)
+		sum[i] = 0;
+
+	//float y_sum = 0;
+
+	while (it_v.isNext())
+	{
+		count++;
+		//key
+		vect_dist_key_dx key = it_v.get();
+
+    	// Get the position of the particles
+		Point<dim,float> p = vd.getPos(key);
+
+		for (size_t i = 0; i < dim; i++)
+			sum[i] = 0;
+
+    	// Get the neighborhood of the particle
+    	auto cell_it = NN.template getNNIterator<NO_CHECK>(NN.getCell(p));
+
+    	while(cell_it.isNext())
+    	{
+    		auto nnp = cell_it.get();
+
+    		// p != q
+    		if (nnp == key.getKey())
+    		{
+    			++cell_it;
+    			continue;
+    		}
+
+    		Point<dim,float> q = vd.getPos(nnp);
+
+    		if (p.distance2(q) < r_cut*r_cut)
+    		{
+				//Calculate the forces
+    			float num[dim];
+    			for (size_t i = 0; i < dim; i++)
+    				num[i] = vd.getPos(key)[i] - vd.getPos(nnp)[i];
+
+    			float denom = 0;
+    			for (size_t i = 0; i < dim; i++)
+					denom += num[i] * num[i];
+
+    			float res[dim];
+    			for (size_t i = 0; i < dim; i++)
+					res[i] = num[i] / denom;
+
+    			for (size_t i = 0; i < dim; i++)
+					sum[i] += res[i];
+    		}
+			//Next particle in a cell
+			++cell_it;
+		}
+
+		//Put the forces
+		for (size_t i = 0; i < dim; i++)
+			vd.template getProp<prp>(key)[i] += sum[i];
+
+		//Next particle in cell list
+		++it_v;
+	}
+	std::cout << "Count: " << count << std::endl;
+}
+
+
+BOOST_AUTO_TEST_CASE( vector_dist_cl_hilb_forces_test_2 )
+{
+
+
+
 	///////// INPUT DATA //////////
 
 	// Dimensionality of the space
 	const size_t dim = 2;
 	// Cut-off radiuses. Can be put different number of values
-	openfpm::vector<float> cl_r_cutoff {0.05};
+	openfpm::vector<float> cl_r_cutoff {0.01};
 	// The starting amount of particles (remember that this number is multiplied by number of processors you use for testing)
-	size_t cl_k_start = 100000;
+	size_t cl_k_start = 10000;
 	// The lower threshold for number of particles
-	size_t cl_k_min = 10000;
+	size_t cl_k_min = 1000;
 	// Ghost part of distributed vector
-	double ghost_part = 0.05;
+	double ghost_part = 0.01;
 
 	///////////////////////////////
 
@@ -1393,19 +1491,56 @@ BOOST_AUTO_TEST_CASE( stupid_test )
 			for (size_t i = 0; i < dim; i++)
 				bc[i] = PERIODIC;
 
-			vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(ghost_part));
+			vector_dist<dim,float, aggregate<float[dim], float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(ghost_part));
 
-			vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd2(k_int,box,bc,Ghost<dim,float>(ghost_part));
+			//vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd2(k_int,box,bc,Ghost<dim,float>(ghost_part));
 
 			// Initialize dist vectors
-			vd_initialize_double<dim>(vd, vd2, v_cl, k_int);
+			vector_dist_cl_perf_test::vd_initialize<dim,decltype(vd)>(vd, v_cl, k_int);
+
+			//Reorder a vd2
 
 			vd.template ghost_get<0>();
-			vd2.template ghost_get<0>();
+			//vd2.template ghost_get<0>();
 
 			//Get a cell list
 
-			auto NN = vd.getCellList(r_cut);
+			auto NN1 = vd.getCellList(r_cut);
+
+			//Calculate forces
+
+			auto t_forces_1 = calc_forces_2<dim,0>(NN1,vd,r_cut);
+
+			//Get a cell list
+
+			//auto NN2 = vd2.getCellList(r_cut);
+
+			vd.reorder(4);
+
+			vd.template ghost_get<0>();
+
+			auto NN2 = vd.getCellList(r_cut);
+
+			//Calculate forces
+			auto t_forces_2 = calc_forces_2<dim,1>(NN2,vd,r_cut);
+
+			auto it_v = vd.getDomainIterator();
+
+			while (it_v.isNext())
+			{
+				//key
+				vect_dist_key_dx key = it_v.get();
+
+				for (size_t i = 0; i < dim; i++)
+				{
+					auto a1 = vd.template getProp<0>(key)[i];
+					auto a2 = vd.template getProp<1>(key)[i];
+					//Check that the forces are equal
+					BOOST_REQUIRE_CLOSE(a1,a2,0.001);
+				}
+
+				++it_v;
+			}
 		}
 	}
 }
