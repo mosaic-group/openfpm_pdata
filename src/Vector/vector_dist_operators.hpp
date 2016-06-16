@@ -8,17 +8,68 @@
 #ifndef SRC_VECTOR_VECTOR_DIST_OPERATORS_HPP_
 #define SRC_VECTOR_VECTOR_DIST_OPERATORS_HPP_
 
+/*! \brief has_init check if a type has defined a
+ * method called init
+ *
+ *
+ * return true if T::init() is a valid expression (function pointers)
+ * and produce a defined type
+ *
+ */
+
+template<typename ObjType, typename Sfinae = void>
+struct has_init: std::false_type {};
+
+template<typename ObjType>
+struct has_init<ObjType, typename Void<typename ObjType::has_init>::type> : std::true_type
+{};
+
+/*! \brief Call the init function if needed
+ *
+ * \param r_exp expression
+ *
+ */
+template <typename T, bool has_init = has_init<T>::value >
+struct call_init_if_needed
+{
+	static inline void call(T & r_exp)
+	{
+		r_exp.init();
+	}
+};
+
+template <typename T>
+struct call_init_if_needed<T,false>
+{
+	static inline void call(T & r_exp)
+	{
+	}
+};
+
+
 #define SUM 1
 #define SUB 2
 #define MUL 3
 #define DIV 4
 
+/*! \brief Unknown operation specialization
+ *
+ * \tparam exp1 expression1
+ * \tparam exp2 expression2
+ *
+ */
 template <typename exp1, typename exp2, unsigned int op>
 class vector_dist_expression_op
 {
 
 };
 
+/*! \brief Sum operation
+ *
+ * \tparam exp1 expression1
+ * \tparam exp2 expression2
+ *
+ */
 template <typename exp1, typename exp2>
 class vector_dist_expression_op<exp1,exp2,SUM>
 {
@@ -27,18 +78,27 @@ class vector_dist_expression_op<exp1,exp2,SUM>
 
 public:
 
-	typedef decltype(o1.value(vect_dist_key_dx(0))) r_type;
-
-	vector_dist_expression_op(const exp1 & o1, const exp2 & o2)
+	inline vector_dist_expression_op(const exp1 & o1, const exp2 & o2)
 	:o1(o1),o2(o2)
 	{}
 
-	template<typename r_type=typename std::remove_reference<decltype(o1.value(vect_dist_key_dx(0)))>::type > inline r_type value(const vect_dist_key_dx & key) const
+	/*! \brief Evaluate the expression
+	 *
+	 * \param key where to evaluate the expression
+	 *
+	 */
+	template<typename r_type=typename std::remove_reference<decltype(o1.value(vect_dist_key_dx(0)) + o2.value(vect_dist_key_dx(0)))>::type > inline r_type value(const vect_dist_key_dx & key) const
 	{
 		return o1.value(key) + o2.value(key);
 	}
 };
 
+/*! \brief Subtraction operation
+ *
+ * \tparam exp1 expression1
+ * \tparam exp2 expression2
+ *
+ */
 template <typename exp1, typename exp2>
 class vector_dist_expression_op<exp1,exp2,SUB>
 {
@@ -47,17 +107,28 @@ class vector_dist_expression_op<exp1,exp2,SUB>
 
 public:
 
-	vector_dist_expression_op(const exp1 & o1, const exp2 & o2)
+	inline vector_dist_expression_op(const exp1 & o1, const exp2 & o2)
 	:o1(o1),o2(o2)
 	{}
 
-	template<typename r_type=typename std::remove_reference<decltype(o1.value(vect_dist_key_dx(0)))>::type > inline r_type value(const vect_dist_key_dx & key) const
+	/*! \brief Evaluate the expression
+	 *
+	 * \param key where to evaluate the expression
+	 *
+	 */
+	template<typename r_type=typename std::remove_reference<decltype(o1.value(vect_dist_key_dx(0)) - o2.value(vect_dist_key_dx(0)))>::type > inline r_type value(const vect_dist_key_dx & key) const
 	{
 		return o1.value(key) - o2.value(key);
 	}
 
 };
 
+/*! \brief Multiplication operation
+ *
+ * \tparam exp1 expression1
+ * \tparam exp2 expression2
+ *
+ */
 template <typename exp1, typename exp2>
 class vector_dist_expression_op<exp1,exp2,MUL>
 {
@@ -70,13 +141,24 @@ public:
 	:o1(o1),o2(o2)
 	{}
 
-	template<typename r_type=typename std::remove_reference<decltype(o1.value(vect_dist_key_dx(0)))>::type > inline r_type value(const vect_dist_key_dx & key) const
+	/*! \brief Evaluate the expression
+	 *
+	 * \param key where to evaluate the expression
+	 *
+	 */
+	template<typename r_type=typename std::remove_reference<decltype(o1.value(vect_dist_key_dx(0)) * o2.value(vect_dist_key_dx(0)))>::type > inline r_type value(const vect_dist_key_dx & key) const
 	{
 		return o1.value(key) * o2.value(key);
 	}
 
 };
 
+/*! \brief Division operation
+ *
+ * \tparam exp1 expression1
+ * \tparam exp2 expression2
+ *
+ */
 template <typename exp1, typename exp2>
 class vector_dist_expression_op<exp1,exp2,DIV>
 {
@@ -89,17 +171,22 @@ public:
 	:o1(o1),o2(o2)
 	{}
 
-	template<typename r_type=typename std::remove_reference<decltype(o1.value(vect_dist_key_dx(0)))>::type > inline r_type value(const vect_dist_key_dx & key) const
+	/*! \brief Evaluate the expression
+	 *
+	 * \param key where to evaluate the expression
+	 *
+	 */
+	template<typename r_type=typename std::remove_reference<decltype(o1.value(vect_dist_key_dx(0)) / o2.value(vect_dist_key_dx(0)))>::type > inline r_type value(const vect_dist_key_dx & key) const
 	{
 		return o1.value(key) / o2.value(key);
 	}
 
 };
 
-/*! \brief Main class that encapsulate a vector operation expression
+/*! \brief Main class that encapsulate a vector properties
  *
- * \param prp property involved
- * \param exp expression type
+ * \tparam prp property involved
+ * \tparam vector involved
  *
  */
 template<unsigned int prp, typename vector>
@@ -113,12 +200,17 @@ public:
 	:v(v)
 	{}
 
+	/*! \brief Evaluate the expression
+	 *
+	 * \param key where to evaluate the expression
+	 *
+	 */
 	inline auto value(const vect_dist_key_dx & k) const -> decltype(v.template getProp<prp>(k))
 	{
 		return v.template getProp<prp>(k);
 	}
 
-	/*! \brief evaluate the expression and store it in the vector
+	/*! \brief Fill the vector property with the evaluated expression
 	 *
 	 * \param v_exp expression to evaluate
 	 *
@@ -131,6 +223,8 @@ public:
 		{
 			auto key = it.get();
 
+			auto exp = v_exp.value(key);
+			call_init_if_needed<decltype(exp)>::call(exp);
 			v.template getProp<prp>(key) = v_exp.value(key);
 
 			++it;
@@ -139,9 +233,9 @@ public:
 		return v;
 	}
 
-	/*! \brief evaluate the expression and store it in the vector
+	/*! \brief Fill the vector property with the double
 	 *
-	 * \param v_exp expression to evaluate
+	 * \param d value to fill
 	 *
 	 */
 	vector & operator=(double d)
@@ -161,10 +255,9 @@ public:
 	}
 };
 
-/*! \brief Main class that encapsulate a vector operation expression
+/*! \brief Main class that encapsulate a double constant
  *
- * \param prp property involved
- * \param exp expression type
+ * \param prp no meaning
  *
  */
 template<unsigned int prp>
@@ -178,6 +271,11 @@ public:
 	:d(d)
 	{}
 
+	/*! \brief Evaluate the expression
+	 *
+	 * It just return the velue set in the constructor
+	 *
+	 */
 	inline double value(const vect_dist_key_dx & k) const
 	{
 		return d;
@@ -185,12 +283,12 @@ public:
 };
 
 
-/* \brief sum two distributed vectors
+/* \brief sum two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<unsigned int p1, unsigned int p2, typename v1, typename v2>
@@ -202,12 +300,12 @@ operator+(const vector_dist_expression<p1,v1> & va, const vector_dist_expression
 	return exp_sum;
 }
 
-/* \brief sum two distributed vectors
+/* \brief sum two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<typename exp1 , typename exp2, unsigned int op1, unsigned int prp1, typename v1>
@@ -219,12 +317,12 @@ operator+(const vector_dist_expression_op<exp1,exp2,op1> & va, const vector_dist
 	return exp_sum;
 }
 
-/* \brief sum two distributed vectors
+/* \brief sum two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<typename exp1 , typename exp2, unsigned int op1, unsigned int prp1, typename v1>
@@ -236,12 +334,12 @@ operator+(const vector_dist_expression<prp1,v1> & va, const vector_dist_expressi
 	return exp_sum;
 }
 
-/* \brief sum two distributed vectors
+/* \brief sum two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<typename exp1 , typename exp2, unsigned int op1, typename exp3 , typename exp4, unsigned int op2>
@@ -253,12 +351,12 @@ operator+(const vector_dist_expression_op<exp1,exp2,op1> & va, const vector_dist
 	return exp_sum;
 }
 
-/* \brief sum two distributed vectors
+/* \brief sum two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<unsigned int prp1 , typename v1>
@@ -270,12 +368,12 @@ operator+(const vector_dist_expression<prp1,v1> & va, double d)
 	return exp_sum;
 }
 
-/* \brief sum two distributed vectors
+/* \brief sum two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<unsigned int prp1 , typename v1>
@@ -287,12 +385,12 @@ operator+(double d, const vector_dist_expression<prp1,v1> & vb)
 	return exp_sum;
 }
 
-/* \brief sum two distributed vectors
+/* \brief sum two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<typename exp1 , typename exp2, unsigned int op1>
@@ -305,12 +403,12 @@ operator+(const vector_dist_expression_op<exp1,exp2,op1> & va, double d)
 }
 
 
-/* \brief sum two distributed vectors
+/* \brief subtract two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<unsigned int p1, unsigned int p2, typename v1, typename v2>
@@ -323,12 +421,12 @@ operator-(const vector_dist_expression<p1,v1> & va, const vector_dist_expression
 }
 
 
-/* \brief sum two distributed vectors
+/* \brief subtract two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<typename exp1, typename exp2, unsigned int op1, unsigned int p2, typename v2>
@@ -340,12 +438,12 @@ operator-(const vector_dist_expression_op<exp1,exp2,op1> & va, const vector_dist
 	return exp_sum;
 }
 
-/* \brief sum two distributed vectors
+/* \brief subtract two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<typename exp1, typename exp2, unsigned int op1, unsigned int p2, typename v2>
@@ -357,12 +455,12 @@ operator-(const vector_dist_expression<p2,v2> & va, const vector_dist_expression
 	return exp_sum;
 }
 
-/* \brief sum two distributed vectors
+/* \brief subtract two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<typename exp1, typename exp2, unsigned int op1, typename exp3, typename exp4, unsigned int op2>
@@ -374,12 +472,12 @@ operator-(const vector_dist_expression_op<exp1,exp2,op1> & va, const vector_dist
 	return exp_sum;
 }
 
-/* \brief sum two distributed vectors
+/* \brief subtract two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<unsigned int prp1, typename v1>
@@ -391,12 +489,12 @@ operator-(const vector_dist_expression<prp1,v1> & va, double d)
 	return exp_sum;
 }
 
-/* \brief sum two distributed vectors
+/* \brief subtract two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<unsigned int prp1, typename v1>
@@ -408,12 +506,12 @@ operator-(double d, const vector_dist_expression<prp1,v1> & vb)
 	return exp_sum;
 }
 
-/* \brief multiplication double with a vector expression
+/* \brief Multiply two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<unsigned int p2, typename v2>
@@ -425,12 +523,12 @@ operator*(double d, const vector_dist_expression<p2,v2> & vb)
 	return exp_sum;
 }
 
-/* \brief multiplication double with a vector expression
+/* \brief Multiply two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<unsigned int p2, typename v2>
@@ -442,12 +540,12 @@ operator*(const vector_dist_expression<p2,v2> & va, double d)
 	return exp_sum;
 }
 
-/* \brief multiplication double with a vector expression
+/* \brief Multiply two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<unsigned int p1, typename v1,unsigned int p2, typename v2>
@@ -459,12 +557,12 @@ operator*(const vector_dist_expression<p1,v1> & va, const vector_dist_expression
 	return exp_sum;
 }
 
-/* \brief multiplication double with a vector expression
+/* \brief Multiply two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<unsigned int p1, typename v1, typename exp1, typename exp2, unsigned int op1>
@@ -476,12 +574,12 @@ operator*(const vector_dist_expression<p1,v1> & va, const vector_dist_expression
 	return exp_sum;
 }
 
-/* \brief multiplication double with a vector expression
+/* \brief Multiply two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<unsigned int p1, typename v1, typename exp1, typename exp2, unsigned int op1>
@@ -493,12 +591,12 @@ operator*(const vector_dist_expression_op<exp1,exp2,op1> & va, const vector_dist
 	return exp_sum;
 }
 
-/* \brief multiplication double with a vector expression
+/* \brief Multiply two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<typename exp1, typename exp2, unsigned int op1, typename exp3 , typename exp4, unsigned int op2>
@@ -510,12 +608,12 @@ operator*(const vector_dist_expression_op<exp1,exp2,op1> & va, const vector_dist
 	return exp_sum;
 }
 
-/* \brief multiplication double with a vector expression
+/* \brief Divide two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<typename exp1, typename exp2, unsigned int op1>
@@ -528,12 +626,12 @@ operator/(const vector_dist_expression_op<exp1,exp2,op1> & va, double d)
 }
 
 
-/* \brief multiplication double with a vector expression
+/* \brief Divide two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<typename exp1, typename exp2, unsigned int op1>
@@ -545,12 +643,12 @@ operator/(double d, const vector_dist_expression_op<exp1,exp2,op1> & va)
 	return exp_sum;
 }
 
-/* \brief multiplication double with a vector expression
+/* \brief Divide two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<unsigned int prp1, typename v1>
@@ -562,29 +660,29 @@ operator/(const vector_dist_expression<prp1,v1> & va, double d)
 	return exp_sum;
 }
 
-/* \brief multiplication double with a vector expression
+/* \brief Divide two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<unsigned int prp1, typename v1>
-inline vector_dist_expression_op<vector_dist_expression<prp1,v1>,vector_dist_expression<0,double>,DIV>
+inline vector_dist_expression_op<vector_dist_expression<0,double>,vector_dist_expression<prp1,v1>,DIV>
 operator/(double d, const vector_dist_expression<prp1,v1> & va)
 {
-	vector_dist_expression_op<vector_dist_expression<prp1,v1>,vector_dist_expression<0,double>,DIV> exp_sum(va,vector_dist_expression<0,double>(d));
+	vector_dist_expression_op<vector_dist_expression<0,double>,vector_dist_expression<prp1,v1>,DIV> exp_sum(vector_dist_expression<0,double>(d),va);
 
 	return exp_sum;
 }
 
-/* \brief multiplication double with a vector expression
+/* \brief Divide two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<unsigned int prp1, typename v1, unsigned int prp2, typename v2>
@@ -596,12 +694,12 @@ operator/(const vector_dist_expression<prp1,v1> & va, const vector_dist_expressi
 	return exp_sum;
 }
 
-/* \brief multiplication double with a vector expression
+/* \brief Divide two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<unsigned int prp1, typename v1, typename exp1,typename exp2, unsigned int op1>
@@ -613,12 +711,12 @@ operator/(const vector_dist_expression<prp1,v1> & va, const vector_dist_expressi
 	return exp_sum;
 }
 
-/* \brief multiplication double with a vector expression
+/* \brief Divide two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<unsigned int prp1, typename v1, typename exp1,typename exp2, unsigned int op1>
@@ -630,12 +728,12 @@ operator/(const vector_dist_expression_op<exp1,exp2,op1> & va, const vector_dist
 	return exp_sum;
 }
 
-/* \brief multiplication double with a vector expression
+/* \brief Divide two distributed vector expression
  *
- * \param v1 vector1
- * \param v2 vector2
+ * \param va vector expression one
+ * \param vb vector expression two
  *
- * \return a grid_key_dx_expression that encapsulate the expression
+ * \return an object that encapsulate the expression
  *
  */
 template<typename exp1,typename exp2, unsigned int op1, typename exp3, typename exp4, unsigned int op2>

@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	spacing = spacing / g_div;
 
 	// middle spacing
-	Point<2,float> m_spacing = spacing / 2;
+	Point<2,float> m_spacing = spacing / 2.0;
 
 	// set the ghost based on the radius cut off (make just a little bit smaller than the spacing)
 	Ghost<2,float> g(spacing.get(0) - spacing .get(0) * 0.0001);

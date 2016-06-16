@@ -23,3 +23,6 @@ libofpm_pdata_a_CFLAGS =
 
 .cu.o :
 	$(NVCC) $(NVCCFLAGS) -o $@ -c $<
+
+test: pdata
+	source $(HOME)/openfpm_vars &&  cd .. && mpirun -np 3 ./src/pdata && mpirun -np 4 ./src/pdata

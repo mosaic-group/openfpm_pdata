@@ -549,7 +549,7 @@ protected:
 	 */
 	Point<dim,St> getOffset(size_t i)
 	{
-		return Point<dim,St>(gdb_ext.get(i).origin) * cd_sm.getCellBox().getP2();
+		return pmul(Point<dim,St>(gdb_ext.get(i).origin), cd_sm.getCellBox().getP2());
 	}
 
 	/*! \brief Given a local sub-domain i with a local grid Domain + ghost return the part of the local grid that is domain
