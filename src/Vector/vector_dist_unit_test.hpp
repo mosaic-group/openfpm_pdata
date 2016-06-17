@@ -13,6 +13,100 @@
 #include "data_type/aggregate.hpp"
 #include "Vector/vector_dist_cl_hilb_performance_tests.hpp"
 
+template<unsigned int dim, size_t prp, typename T, typename V> void calc_forces_2(T & NN, V & vd, float r_cut)
+{
+	auto it_v = vd.getDomainIterator();
+
+	float sum[dim];
+
+	size_t count = 0;
+
+	for (size_t i = 0; i < dim; i++)
+		sum[i] = 0;
+
+	//float y_sum = 0;
+
+	while (it_v.isNext())
+	{
+		count++;
+		//key
+		vect_dist_key_dx key = it_v.get();
+
+    	// Get the position of the particles
+		Point<dim,float> p = vd.getPos(key);
+
+		for (size_t i = 0; i < dim; i++)
+			sum[i] = 0;
+
+    	// Get the neighborhood of the particle
+    	auto cell_it = NN.template getNNIterator<NO_CHECK>(NN.getCell(p));
+
+    	while(cell_it.isNext())
+    	{
+    		auto nnp = cell_it.get();
+
+    		// p != q
+    		if (nnp == key.getKey())
+    		{
+    			++cell_it;
+    			continue;
+    		}
+
+    		Point<dim,float> q = vd.getPos(nnp);
+
+    		if (p.distance2(q) < r_cut*r_cut)
+    		{
+				//Calculate the forces
+    			float num[dim];
+    			for (size_t i = 0; i < dim; i++)
+    				num[i] = vd.getPos(key)[i] - vd.getPos(nnp)[i];
+
+    			float denom = 0;
+    			for (size_t i = 0; i < dim; i++)
+					denom += num[i] * num[i];
+
+    			float res[dim];
+    			for (size_t i = 0; i < dim; i++)
+					res[i] = num[i] / denom;
+
+    			for (size_t i = 0; i < dim; i++)
+					sum[i] += res[i];
+    		}
+			//Next particle in a cell
+			++cell_it;
+		}
+
+		//Put the forces
+		for (size_t i = 0; i < dim; i++)
+			vd.template getProp<prp>(key)[i] += sum[i];
+
+		//Next particle in cell list
+		++it_v;
+	}
+	std::cout << "Count: " << count << std::endl;
+}
+
+/*! \brief Calculate forces time
+ *
+ * \param NN Cell list
+ * \param vd Distributed vector
+ * \param r_cut Cut-off radius
+ *
+ * \return real calculation time
+ */
+template<unsigned int dim, size_t prp, typename T, typename V> double calculate_forces_2(T & NN, V & vd, float r_cut)
+{
+	//Forces timer
+	timer t;
+	t.start();
+
+	calc_forces_2<dim,prp>(NN,vd,r_cut);
+
+	t.stop();
+
+	return t.getwct();
+}
+
 /*! \brief Count the total number of particles
  *
  * \param vd distributed vector
@@ -1308,7 +1402,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_hilb_forces_test )
 
 			//Calculate forces
 
-			auto t_forces = vector_dist_cl_perf_test::calc_forces<dim>(NN,vd,r_cut);
+			calc_forces<dim>(NN,vd,r_cut);
 
 			//Get a cell list hilb
 
@@ -1337,101 +1431,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_hilb_forces_test )
 		}
 	}
 }
-
-/*! \brief Calculate forces time
- *
- * \param NN Cell list
- * \param vd Distributed vector
- * \param r_cut Cut-off radius
- *
- * \return real calculation time
- */
-template<unsigned int dim, size_t prp, typename T, typename V> double calculate_forces_2(T & NN, V & vd, float r_cut)
-{
-	//Forces timer
-	timer t;
-	t.start();
-
-	calc_forces_2<dim,prp>(NN,vd,r_cut);
-
-	t.stop();
-
-	return t.getwct();
-}
-
-template<unsigned int dim, size_t prp, typename T, typename V> void calc_forces_2(T & NN, V & vd, float r_cut)
-{
-	auto it_v = vd.getDomainIterator();
-
-	float sum[dim];
-
-	size_t count = 0;
-
-	for (size_t i = 0; i < dim; i++)
-		sum[i] = 0;
-
-	//float y_sum = 0;
-
-	while (it_v.isNext())
-	{
-		count++;
-		//key
-		vect_dist_key_dx key = it_v.get();
-
-    	// Get the position of the particles
-		Point<dim,float> p = vd.getPos(key);
-
-		for (size_t i = 0; i < dim; i++)
-			sum[i] = 0;
-
-    	// Get the neighborhood of the particle
-    	auto cell_it = NN.template getNNIterator<NO_CHECK>(NN.getCell(p));
-
-    	while(cell_it.isNext())
-    	{
-    		auto nnp = cell_it.get();
-
-    		// p != q
-    		if (nnp == key.getKey())
-    		{
-    			++cell_it;
-    			continue;
-    		}
-
-    		Point<dim,float> q = vd.getPos(nnp);
-
-    		if (p.distance2(q) < r_cut*r_cut)
-    		{
-				//Calculate the forces
-    			float num[dim];
-    			for (size_t i = 0; i < dim; i++)
-    				num[i] = vd.getPos(key)[i] - vd.getPos(nnp)[i];
-
-    			float denom = 0;
-    			for (size_t i = 0; i < dim; i++)
-					denom += num[i] * num[i];
-
-    			float res[dim];
-    			for (size_t i = 0; i < dim; i++)
-					res[i] = num[i] / denom;
-
-    			for (size_t i = 0; i < dim; i++)
-					sum[i] += res[i];
-    		}
-			//Next particle in a cell
-			++cell_it;
-		}
-
-		//Put the forces
-		for (size_t i = 0; i < dim; i++)
-			vd.template getProp<prp>(key)[i] += sum[i];
-
-		//Next particle in cell list
-		++it_v;
-	}
-	std::cout << "Count: " << count << std::endl;
-}
-
 
 BOOST_AUTO_TEST_CASE( vector_dist_cl_hilb_forces_test_2 )
 {
@@ -1496,7 +1495,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_hilb_forces_test_2 )
 			//vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd2(k_int,box,bc,Ghost<dim,float>(ghost_part));
 
 			// Initialize dist vectors
-			vector_dist_cl_perf_test::vd_initialize<dim,decltype(vd)>(vd, v_cl, k_int);
+			vd_initialize<dim,decltype(vd)>(vd, v_cl, k_int);
 
 			//Reorder a vd2
 
@@ -1509,7 +1508,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_hilb_forces_test_2 )
 
 			//Calculate forces
 
-			auto t_forces_1 = calc_forces_2<dim,0>(NN1,vd,r_cut);
+			calc_forces_2<dim,0>(NN1,vd,r_cut);
 
 			//Get a cell list
 
@@ -1522,7 +1521,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_hilb_forces_test_2 )
 			auto NN2 = vd.getCellList(r_cut);
 
 			//Calculate forces
-			auto t_forces_2 = calc_forces_2<dim,1>(NN2,vd,r_cut);
+			calc_forces_2<dim,1>(NN2,vd,r_cut);
 
 			auto it_v = vd.getDomainIterator();
 
