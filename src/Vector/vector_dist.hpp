@@ -1110,37 +1110,6 @@ public:
 		}
 	}
 
-	/*template<typename CellL> void celllist_initialize(CellL & cell_list, St r_cut, const Ghost<dim, St> & enlarge)
-	{
-		// calculate the parameters of the cell list
-
-		// get the processor bounding box
-		Box<dim, St> pbox = dec.getProcessorBounds();
-		// extend by the ghost
-		pbox.enlarge(enlarge);
-
-		size_t div[dim];
-
-		// Calculate the division array and the cell box
-		for (size_t i = 0; i < dim; i++)
-		{
-			div[i] = static_cast<size_t>((pbox.getP2().get(i) - pbox.getP1().get(i)) / r_cut);
-			div[i]++;
-			pbox.setHigh(i,pbox.getLow(i) + div[i]*r_cut);
-		}
-
-		if(is_Hilbert<CellL>::type::value == true)
-		{
-			std::cout << "Case 1: " << demangle(typeid(CellL).name()) << std::endl;
-			cell_list.Initialize(pbox, div, g_m);
-		}
-		else
-		{
-			std::cout << "Case 2: " << demangle(typeid(CellL).name()) << std::endl;
-			cell_list.Initialize(pbox, div);
-		}
-	}*/
-
 	/*! \brief Construct a cell list starting from the stored particles
 	 *
 	 * It differ from the get getCellList for an additional parameter, in case the
@@ -1167,10 +1136,6 @@ public:
 		cell_list.Initialize(pbox, div);
 
 		updateCellList(cell_list);
-
-		std::cout << "V_pos size: " << v_pos.size() << ", V_prp size: " << v_prp.size() << std::endl;
-
-		//std::cout << "Number of padding cells: " << cell_list.getPadding(0)*cell_list.getPadding(1) << /*", Tot_n_cell: " << cell_list.return_n_cell() <<*/ std::endl;
 
 		return cell_list;
 	}

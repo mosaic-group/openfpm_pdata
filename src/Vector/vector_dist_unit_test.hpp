@@ -1256,7 +1256,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 	}
 }
 
-BOOST_AUTO_TEST_CASE( vector_dist_hilbert_2d_benchmark_test )
+BOOST_AUTO_TEST_CASE( vector_dist_reorder_2d_benchmark_test )
 {
 	typedef Point<2,float> s;
 
@@ -1280,8 +1280,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_hilbert_2d_benchmark_test )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 2D vector with hilbert curve reordering k=" << k );
 
-		//! [Create a vector of random elements on each processor 2D]
-
 		Box<2,float> box({0.0,0.0},{1.0,1.0});
 
 		// Boundary conditions
@@ -1303,10 +1301,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_hilbert_2d_benchmark_test )
 
 		vd.map();
 
+		//Start timer
 		timer t;
 		t.start();
 
-		//! [Create a vector of random elements on each processor 2D]
+		// Create first cell list
 
 		auto NN1 = vd.getCellList(0.01);
 
@@ -1316,8 +1315,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_hilbert_2d_benchmark_test )
 		//Reorder a vector
 		vd.reorder(m);
 
+		// Create second cell list
 		auto NN2 = vd.getCellList(0.01);
 
+		//Check equality of cell sizes
 		for (size_t i = 0 ; i < NN1.getGrid().size() ; i++)
 		{
 			size_t n1 = NN1.getNelements(i);
@@ -1331,7 +1332,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_hilbert_2d_benchmark_test )
 	}
 }
 
-BOOST_AUTO_TEST_CASE( vector_dist_cl_hilb_forces_test )
+BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 {
 	///////// INPUT DATA //////////
 
@@ -1432,11 +1433,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_hilb_forces_test )
 	}
 }
 
-BOOST_AUTO_TEST_CASE( vector_dist_cl_hilb_forces_test_2 )
+BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 {
-
-
-
 	///////// INPUT DATA //////////
 
 	// Dimensionality of the space
@@ -1492,27 +1490,20 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_hilb_forces_test_2 )
 
 			vector_dist<dim,float, aggregate<float[dim], float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(ghost_part));
 
-			//vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd2(k_int,box,bc,Ghost<dim,float>(ghost_part));
-
-			// Initialize dist vectors
+			// Initialize vd
 			vd_initialize<dim,decltype(vd)>(vd, v_cl, k_int);
 
-			//Reorder a vd2
-
 			vd.template ghost_get<0>();
-			//vd2.template ghost_get<0>();
 
 			//Get a cell list
 
 			auto NN1 = vd.getCellList(r_cut);
 
-			//Calculate forces
+			//Calculate forces '0'
 
 			calc_forces_2<dim,0>(NN1,vd,r_cut);
 
-			//Get a cell list
-
-			//auto NN2 = vd2.getCellList(r_cut);
+			//Reorder and get a cell list again
 
 			vd.reorder(4);
 
@@ -1520,9 +1511,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_hilb_forces_test_2 )
 
 			auto NN2 = vd.getCellList(r_cut);
 
-			//Calculate forces
+			//Calculate forces '1'
 			calc_forces_2<dim,1>(NN2,vd,r_cut);
 
+			//Test for equality of forces
 			auto it_v = vd.getDomainIterator();
 
 			while (it_v.isNext())
@@ -1534,7 +1526,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_hilb_forces_test_2 )
 				{
 					auto a1 = vd.template getProp<0>(key)[i];
 					auto a2 = vd.template getProp<1>(key)[i];
-					//Check that the forces are equal
+					//Check that the forces are (almost) equal
 					BOOST_REQUIRE_CLOSE(a1,a2,0.001);
 				}
 
