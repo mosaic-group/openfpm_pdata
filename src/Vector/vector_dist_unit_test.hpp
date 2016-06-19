@@ -13,100 +13,6 @@
 #include "data_type/aggregate.hpp"
 #include "Vector/vector_dist_cl_hilb_performance_tests.hpp"
 
-template<unsigned int dim, size_t prp, typename T, typename V> void calc_forces_2(T & NN, V & vd, float r_cut)
-{
-	auto it_v = vd.getDomainIterator();
-
-	float sum[dim];
-
-	size_t count = 0;
-
-	for (size_t i = 0; i < dim; i++)
-		sum[i] = 0;
-
-	//float y_sum = 0;
-
-	while (it_v.isNext())
-	{
-		count++;
-		//key
-		vect_dist_key_dx key = it_v.get();
-
-    	// Get the position of the particles
-		Point<dim,float> p = vd.getPos(key);
-
-		for (size_t i = 0; i < dim; i++)
-			sum[i] = 0;
-
-    	// Get the neighborhood of the particle
-    	auto cell_it = NN.template getNNIterator<NO_CHECK>(NN.getCell(p));
-
-    	while(cell_it.isNext())
-    	{
-    		auto nnp = cell_it.get();
-
-    		// p != q
-    		if (nnp == key.getKey())
-    		{
-    			++cell_it;
-    			continue;
-    		}
-
-    		Point<dim,float> q = vd.getPos(nnp);
-
-    		if (p.distance2(q) < r_cut*r_cut)
-    		{
-				//Calculate the forces
-    			float num[dim];
-    			for (size_t i = 0; i < dim; i++)
-    				num[i] = vd.getPos(key)[i] - vd.getPos(nnp)[i];
-
-    			float denom = 0;
-    			for (size_t i = 0; i < dim; i++)
-					denom += num[i] * num[i];
-
-    			float res[dim];
-    			for (size_t i = 0; i < dim; i++)
-					res[i] = num[i] / denom;
-
-    			for (size_t i = 0; i < dim; i++)
-					sum[i] += res[i];
-    		}
-			//Next particle in a cell
-			++cell_it;
-		}
-
-		//Put the forces
-		for (size_t i = 0; i < dim; i++)
-			vd.template getProp<prp>(key)[i] += sum[i];
-
-		//Next particle in cell list
-		++it_v;
-	}
-	std::cout << "Count: " << count << std::endl;
-}
-
-/*! \brief Calculate forces time
- *
- * \param NN Cell list
- * \param vd Distributed vector
- * \param r_cut Cut-off radius
- *
- * \return real calculation time
- */
-template<unsigned int dim, size_t prp, typename T, typename V> double calculate_forces_2(T & NN, V & vd, float r_cut)
-{
-	//Forces timer
-	timer t;
-	t.start();
-
-	calc_forces_2<dim,prp>(NN,vd,r_cut);
-
-	t.stop();
-
-	return t.getwct();
-}
-
 /*! \brief Count the total number of particles
  *
  * \param vd distributed vector
@@ -1334,10 +1240,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_reorder_2d_benchmark_test )
 
 BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 {
-	///////// INPUT DATA //////////
+	///////////////////// INPUT DATA //////////////////////
 
 	// Dimensionality of the space
-	const size_t dim = 2;
+	const size_t dim = 3;
 	// Cut-off radiuses. Can be put different number of values
 	openfpm::vector<float> cl_r_cutoff {0.05};
 	// The starting amount of particles (remember that this number is multiplied by number of processors you use for testing)
@@ -1347,7 +1253,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 	// Ghost part of distributed vector
 	double ghost_part = 0.05;
 
-	///////////////////////////////
+	///////////////////////////////////////////////////////
 
 	//For different r_cut
 	for (size_t r = 0; r < cl_r_cutoff.size(); r++ )
@@ -1364,14 +1270,14 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 
 		vector_dist_test::print_test_v(str,k);
 
-		std::cout << std::endl << "r_cut is " << r_cut << std::endl << std::endl;
+		std::cout << std::endl << "Cut-off radius " << r_cut << std::endl << std::endl;
 
 		//For different number of particles
 		for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2 )
 		{
 			BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector's forces k<=" << k_int );
 
-			std::cout << "k_int: " << k_int << std::endl;
+			std::cout << "Number of particles: " << k_int << std::endl;
 
 			Box<dim,float> box;
 
@@ -1435,10 +1341,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 
 BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 {
-	///////// INPUT DATA //////////
+	///////////////////// INPUT DATA //////////////////////
 
 	// Dimensionality of the space
-	const size_t dim = 2;
+	const size_t dim = 3;
 	// Cut-off radiuses. Can be put different number of values
 	openfpm::vector<float> cl_r_cutoff {0.01};
 	// The starting amount of particles (remember that this number is multiplied by number of processors you use for testing)
@@ -1448,7 +1354,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 	// Ghost part of distributed vector
 	double ghost_part = 0.01;
 
-	///////////////////////////////
+	///////////////////////////////////////////////////////
 
 	//For different r_cut
 	for (size_t r = 0; r < cl_r_cutoff.size(); r++ )
@@ -1465,14 +1371,14 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 
 		vector_dist_test::print_test_v(str,k);
 
-		std::cout << std::endl << "r_cut is " << r_cut << std::endl << std::endl;
+		std::cout << std::endl << "Cut-off radius is " << r_cut << std::endl << std::endl;
 
 		//For different number of particles
 		for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2 )
 		{
 			BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector's forces k<=" << k_int );
 
-			std::cout << "k_int: " << k_int << std::endl;
+			std::cout << "Number of particles: " << k_int << std::endl;
 
 			Box<dim,float> box;
 
@@ -1501,7 +1407,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 
 			//Calculate forces '0'
 
-			calc_forces_2<dim,0>(NN1,vd,r_cut);
+			calc_forces<dim>(NN1,vd,r_cut);
 
 			//Reorder and get a cell list again
 
@@ -1512,7 +1418,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 			auto NN2 = vd.getCellList(r_cut);
 
 			//Calculate forces '1'
-			calc_forces_2<dim,1>(NN2,vd,r_cut);
+			calc_forces<dim,1>(NN2,vd,r_cut);
 
 			//Test for equality of forces
 			auto it_v = vd.getDomainIterator();
