@@ -27,7 +27,6 @@
 #include "Vector/vector_dist_ofb.hpp"
 #include "Decomposition/CartDecomposition.hpp"
 #include "data_type/aggregate.hpp"
-#include "vector_dist_operators.hpp"
 
 #define V_SUB_UNIT_FACTOR 64
 
@@ -776,6 +775,12 @@ private:
 
 public:
 
+	//! space type
+	typedef St stype;
+
+	//! dimensions of space
+	static const unsigned int dims = dim;
+
 	/*! \brief Constructor
 	 *
 	 * \param np number of elements
@@ -865,6 +870,20 @@ public:
 	 *
 	 */
 	inline auto getPos(vect_dist_key_dx vec_key) -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	{
+		return v_pos.template get<0>(vec_key.getKey());
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPos(vect_dist_key_dx vec_key) const -> decltype(v_pos.template get<0>(vec_key.getKey()))
 	{
 		return v_pos.template get<0>(vec_key.getKey());
 	}
@@ -1626,15 +1645,6 @@ public:
 		check_valid(this,8);
 #endif
 		return v_cl;
-	}
-
-	//////////////////////////// Vector expression implementation ////////////////////////
-
-	template <unsigned int prp> inline vector_dist_expression<prp,vector_dist<dim,St,prop,Decomposition,Memory> > getV()
-	{
-		vector_dist_expression<prp,vector_dist<dim,St,prop,Decomposition,Memory> > exp_v(*this);
-
-		return exp_v;
 	}
 };
 

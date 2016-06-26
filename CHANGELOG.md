@@ -1,11 +1,17 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [0.5.0] - mid July 2016
+## [0.5.0 - Gingold] - End July 2016
 
 ### Added
-- map_list map communicate particles across processors mooving the information of all the particle map_list give the possibility to give a list of property to move from one to another processor
-- Numeric: Finite Differences discretization with matrix contruction and parallel solvers
+- map communicate particles across processors mooving the information of all the particle map_list give the possibility to give a list of property to move from one to another processor
+- Numeric: Finite Differences discretization with matrix contruction and parallel solvers (See example ... )
+- vector_dist now support complex object like Point VectorS Box ... , with no limitation
+   and more generic object like std::vector ... (WARNING TEMPORARY LIMITATION: Communication is not supported property must be excluded from communication using map_list and ghost_get)
+- vector_dist support expressions (See example ...)
+- No limit to ghost extension (they can be arbitrary extended)
+- Multi-phase CellList
+- Hilber curve data and computation reordering for cache firndliness
 
 ### Fixed
 
@@ -94,5 +100,6 @@ All notable changes to this project will be documented in this file.
 ## [0.6.0] - Beginning of september
 
 ### Added
-- Parallel IO, new formats, imroved writers
+- Parallel IO, new formats, improved writers
+- Algebraic Multigrid solver
 

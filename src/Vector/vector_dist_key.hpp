@@ -39,7 +39,7 @@ public:
 	 * \return the local key
 	 *
 	 */
-	inline size_t getKey()
+	inline size_t getKey() const
 	{
 		return key;
 	}
