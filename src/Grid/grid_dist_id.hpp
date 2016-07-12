@@ -1266,7 +1266,9 @@ public:
 		// Pack the information for each processor and send it
 		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
 		{
+
 			sts.mark();
+			void * pointer = prAlloc_prp.getPointerEnd();
 
 			// for each ghost box
 			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
@@ -1287,7 +1289,15 @@ public:
 				Packer<device_grid,HeapMemory>::template pack<prp...>(prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
 			}
 			// send the request
-			v_cl.send(ig_box.get(i).prc,0,sts.getMarkPointer(prAlloc_prp),sts.getMarkSize(prAlloc_prp));
+
+			void * pointer2 = prAlloc_prp.getPointerEnd();
+
+			//std::cout << "Mark pointer: " << sts.getMarkPointer(prAlloc_prp) << "    " <<pointer << std::endl;
+			//std::cout << "Mark size: " << sts.getMarkSize(prAlloc_prp) << "    " << (char *)pointer2 - (char *)pointer << std::endl;
+
+			v_cl.send(ig_box.get(i).prc,0,pointer/*sts.getMarkPointer(prAlloc_prp)*/,(char *)pointer2 - (char *)pointer /*sts.getMarkSize(prAlloc_prp)*/);
+
+//			pointer = prAlloc_prp.getPointerEnd();
 		}
 
 		// Calculate the total information to receive from each processors
