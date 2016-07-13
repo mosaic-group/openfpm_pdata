@@ -922,7 +922,11 @@ public:
 
 		// Create and fill send buffer for particle properties
 
-		ExtPreAlloc<Memory> * prAlloc_prp = new ExtPreAlloc<Memory>(pap_prp, g_prp_mem);
+////////////////////////////////////////////////
+		size_t req = ExtPreAlloc<Memory>::calculateMem(pap_prp);
+
+		ExtPreAlloc<Memory> * prAlloc_prp = new ExtPreAlloc<Memory>(req, g_prp_mem);
+/////////////////////////////////////////////////
 		openfpm::vector<send_vector> g_send_prp;
 		fill_send_ghost_prp_buf<send_vector, prp_object, prp...>(g_send_prp, prAlloc_prp);
 
@@ -932,7 +936,11 @@ public:
 		openfpm::vector<send_pos_vector> g_pos_send;
 		if (opt != NO_POSITION)
 		{
-			prAlloc_pos = new ExtPreAlloc<Memory>(pap_pos, g_pos_mem);
+////////////////////////////////////////////////
+			size_t req1 = ExtPreAlloc<Memory>::calculateMem(pap_pos);
+
+			prAlloc_pos = new ExtPreAlloc<Memory>(req1, g_pos_mem);
+////////////////////////////////////////////////////////
 			fill_send_ghost_pos_buf(g_pos_send, prAlloc_pos);
 		}
 

@@ -592,14 +592,15 @@ class DistGraph_CSR
 					Packer<size_t, HeapMemory>::packRequest(pap_prp);
 				}
 			}
-
+////////////////////////////////////////////////////////
 			// Calculate how much preallocated memory we need to pack all the objects for each vector
-			ExtPreAlloc<HeapMemory>::calculateMem(pap_prp);
+			size_t req = ExtPreAlloc<HeapMemory>::calculateMem(pap_prp);
 
 			// allocate the memory
 			HeapMemory & pmem = *(new HeapMemory());
 //			pmem.allocate(req);
-			ExtPreAlloc<HeapMemory> & mem = *(new ExtPreAlloc<HeapMemory>(pap_prp, pmem));
+			ExtPreAlloc<HeapMemory> & mem = *(new ExtPreAlloc<HeapMemory>(req, pmem));
+////////////////////////////////////////////////////////
 			mem.incRef();
 
 			Pack_stat sts;
@@ -637,7 +638,7 @@ class DistGraph_CSR
 
 			prc.add(i);
 			size.add(pmem.size());
-			ptr.add(mem.getPointer(0));
+			ptr.add(mem.getPointerBase());
 		}
 
 		// Exchange informations through processors

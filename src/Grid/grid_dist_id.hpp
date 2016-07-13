@@ -1256,8 +1256,12 @@ public:
 		// resize the property buffer memory
 		g_send_prp_mem.resize(ExtPreAlloc<Memory>::calculateMem(pap_prp));
 
+		////////////////////////////////////////////////
+		size_t req = ExtPreAlloc<Memory>::calculateMem(pap_prp);
+
 		// Create an object of preallocated memory for properties
-		ExtPreAlloc<Memory> & prAlloc_prp = *(new ExtPreAlloc<Memory>(pap_prp,g_send_prp_mem));
+		ExtPreAlloc<Memory> & prAlloc_prp = *(new ExtPreAlloc<Memory>(req,g_send_prp_mem));
+		///////////////////////////////////////////////////
 		prAlloc_prp.incRef();
 
 		// Pack information
@@ -1320,8 +1324,13 @@ public:
 		//! Resize the receiving buffer
 		g_recv_prp_mem.resize(ExtPreAlloc<Memory>::calculateMem(prp_recv));
 
+////////////////////////////////////////////////
+		size_t req1 = ExtPreAlloc<Memory>::calculateMem(pap_prp);
+
+
 		// Create an object of preallocated memory for properties
-		ExtPreAlloc<Memory> & prRecv_prp = *(new ExtPreAlloc<Memory>(prp_recv,g_recv_prp_mem));
+		ExtPreAlloc<Memory> & prRecv_prp = *(new ExtPreAlloc<Memory>(req1,g_recv_prp_mem));
+///////////////////////////////////////////
 		prRecv_prp.incRef();
 
 		// queue the receives
