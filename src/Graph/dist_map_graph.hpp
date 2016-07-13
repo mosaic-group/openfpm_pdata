@@ -495,6 +495,8 @@ class DistGraph_CSR
 			}
 		}
 
+		recv_g.fvtxdist = fvtxdist;
+
 		// Swap temporary graph with the main one
 		swap(recv_g);
 
@@ -648,7 +650,7 @@ class DistGraph_CSR
 		}
 
 		// Exchange informations through processors
-		vcl.sendrecvMultipleMessagesNBX(prc.size(), &size.get(0), &prc.get(0), &ptr.get(0), gr_receive, &packs, NONE);
+		vcl.sendrecvMultipleMessagesNBX(prc.size(), (size_t *)size.getPointer(), (size_t *)prc.getPointer(), (void **)ptr.getPointer(), gr_receive, &packs, NONE);
 
 		for (size_t i = 0; i < vcl.getProcessingUnits(); i++)
 		{
@@ -802,7 +804,7 @@ class DistGraph_CSR
 		fillSendRecvStructs<size_t>(on_info, prc, size, ptr);
 
 		// Send on_info
-		vcl.sendrecvMultipleMessagesNBX(prc.size(), &size.get(0), &prc.get(0), &ptr.get(0), on_receive, &on_vs, NONE);
+		vcl.sendrecvMultipleMessagesNBX(prc.size(), (size_t *)size.getPointer(), (size_t *)prc.getPointer(), (void **)ptr.getPointer(), on_receive, &on_vs, NONE);
 
 		// Insert in the on_toup map the received couples
 		for (size_t i = 0; i < vcl.getProcessingUnits(); i++)
@@ -870,7 +872,7 @@ class DistGraph_CSR
 		fillSendRecvStructs<size_t>(vni, prc, size, ptr);
 
 		// Send and receive requests
-		vcl.sendrecvMultipleMessagesNBX(prc.size(), &size.get(0), &prc.get(0), &ptr.get(0), on_receive, &req_rmi, NONE);
+		vcl.sendrecvMultipleMessagesNBX(prc.size(), (size_t *)size.getPointer(), (size_t *)prc.getPointer(), (void **)ptr.getPointer(), on_receive, &req_rmi, NONE);
 
 		// Re-mapping info map
 		openfpm::vector<openfpm::vector<size_t>> rmi(vcl.getProcessingUnits());
@@ -891,7 +893,7 @@ class DistGraph_CSR
 		fillSendRecvStructs<size_t>(resp_rmi, prc, size, ptr);
 
 		// Send responses
-		vcl.sendrecvMultipleMessagesNBX(prc.size(), &size.get(0), &prc.get(0), &ptr.get(0), on_receive, &rmi, NONE);
+		vcl.sendrecvMultipleMessagesNBX(prc.size(), (size_t *)size.getPointer(), (size_t *)prc.getPointer(), (void **)ptr.getPointer(), on_receive, &rmi, NONE);
 
 		// Add received info into re-mapping info map
 		for (size_t i = 0; i < rmi.size(); ++i)
@@ -2197,7 +2199,7 @@ public:
 		fillSendRecvStructs<size_t>(vr_queue, prc, size, ptr);
 
 		// Send/receive requests for info about needed vertices
-		vcl.sendrecvMultipleMessagesNBX(prc.size(), &size.get(0), &prc.get(0), &ptr.get(0), on_receive, &resp, NONE);
+		vcl.sendrecvMultipleMessagesNBX(prc.size(), (size_t *)size.getPointer(), (size_t *)prc.getPointer(), (void **)ptr.getPointer(), on_receive, &resp, NONE);
 
 		// Prepare responses with the containing processors of requested vertices
 		for (size_t i = 0; i < resp.size(); ++i)
@@ -2224,7 +2226,7 @@ public:
 		resp.resize(vcl.getProcessingUnits());
 
 		// Send/receive responses with the containing processors of requested vertices
-		vcl.sendrecvMultipleMessagesNBX(prc.size(), &size.get(0), &prc.get(0), &ptr.get(0), on_receive, &resp, NONE);
+		vcl.sendrecvMultipleMessagesNBX(prc.size(), (size_t *)size.getPointer(), (size_t *)prc.getPointer(), (void **)ptr.getPointer(), on_receive, &resp, NONE);
 
 		// Clear requests array
 		reqs.clear();
@@ -2259,7 +2261,7 @@ public:
 		resp.resize(vcl.getProcessingUnits());
 
 		// Send/receive vertices requests
-		vcl.sendrecvMultipleMessagesNBX(prc.size(), &size.get(0), &prc.get(0), &ptr.get(0), on_receive, &resp, NONE);
+		vcl.sendrecvMultipleMessagesNBX(prc.size(), (size_t *)size.getPointer(), (size_t *)prc.getPointer(), (void **)ptr.getPointer(), on_receive, &resp, NONE);
 
 		for (size_t i = 0; i < resp.size(); ++i)
 		{

@@ -1482,6 +1482,7 @@ void Test3D_periodic(const Box<3,float> & domain, long int k)
 }
 
 #include "grid_dist_id_unit_test_ext_dom.hpp"
+#include "grid_dist_id_unit_test_unb_ghost.hpp"
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 {
@@ -1612,6 +1613,28 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_periodic )
 	k = std::pow(k, 1/3.);
 
 	Test3D_periodic(domain3,k);
+}
+
+BOOST_AUTO_TEST_CASE( grid_dist_id_unbound_ghost )
+{
+	// Domain
+	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	long int k = 32*32*32*create_vcluster().getProcessingUnits();
+	k = std::pow(k, 1/3.);
+
+	Test3D_unb_ghost(domain3,k);
+}
+
+BOOST_AUTO_TEST_CASE( grid_dist_id_unbound_ghost_periodic )
+{
+	// Domain
+	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	long int k = 32*32*32*create_vcluster().getProcessingUnits();
+	k = std::pow(k, 1/3.);
+
+	Test3D_unb_ghost_periodic(domain3,k);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

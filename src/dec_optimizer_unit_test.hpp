@@ -50,8 +50,10 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_np)
 	// optimize
 	dec_optimizer<3,Graph_CSR<nm_v,nm_e>> d_o(g,sz);
 
+	Ghost<3,size_t> ghe(1);
+
 	grid_key_dx<3> keyZero(0,0,0);
-	d_o.optimize<nm_v::sub_id,nm_v::id>(keyZero,g,bc);
+	d_o.optimize<nm_v::sub_id,nm_v::id>(keyZero,g,ghe,bc);
 }
 
 BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_p)
@@ -111,8 +113,10 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_p)
 	// For each sub-domain check the neighborhood processors
 	openfpm::vector< openfpm::vector<size_t> > box_nn_processor;
 
+	Ghost<3,size_t> ghe(1);
+
 	// gp,p_id,loc_box,box_nn_processor,bc
-	d_o.optimize<nm_v::sub_id,nm_v::id>(g,-1,dec_o,box_nn_processor,bc);
+	d_o.optimize<nm_v::sub_id,nm_v::id>(g,-1,dec_o,box_nn_processor,ghe,bc);
 
 	BOOST_REQUIRE_EQUAL(box_nn_processor.size(),8ul);
 
@@ -187,7 +191,8 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_disconnected_subdomains_np)
 	//! for each sub-domain, contain the list of the neighborhood processors
 	openfpm::vector<openfpm::vector<long unsigned int> > box_nn_processor;
 
-	d_o.optimize<nm_v::sub_id, nm_v::proc_id>(g, vcl.getProcessUnitID(), loc_box, box_nn_processor,bc);
+	Ghost<2,size_t> ghe(1);
+	d_o.optimize<nm_v::sub_id, nm_v::proc_id>(g, vcl.getProcessUnitID(), loc_box, box_nn_processor,ghe,bc);
 
 	std::stringstream str_g;
 	str_g << "dec_optimizer_disc_graph" << vcl.getProcessUnitID() << ".vtk";

@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - Hilber curve data and computation reordering for cache firndliness
 
 ### Fixed
+- Removed small crash for small grid and big number of processors
 
 ### Changed
 

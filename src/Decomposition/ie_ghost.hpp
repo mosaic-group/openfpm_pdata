@@ -378,6 +378,7 @@ protected:
 						Box_sub<dim,T> sb;
 						sb.bx = b_int.box;
 						sb.sub = i;
+						sb.r_sub = r_sub.get(k);
 						sb.cmb = nn_p_box_pos.get(k);
 
 						size_t p_idp = nn_p.ProctoID(p_id);
@@ -615,6 +616,21 @@ public:
 		return proc_int_box.get(id).ebx.get(j).id;
 	}
 
+	/*! \brief Get the sub-domain send-id at witch belong the internal ghost box
+	 *
+	 * The internal ghost box is create from the intersection a local sub-domain
+	 * and an extended sub-domain communicated from another processor. This function
+	 * return the id of the sub-domain in the receiving list
+	 *
+	 * \param id adjacent processor list id (the id go from 0 to getNNProcessor())
+	 * \param j box (each near processor can produce more than one internal ghost box)
+	 * \return sub-domain at which belong the internal ghost box
+	 *
+	 */
+	inline size_t getProcessorIGhostSSub(size_t id, size_t j) const
+	{
+		return proc_int_box.get(id).ibx.get(j).r_sub;
+	}
 
 	/*! \brief Get the local sub-domain at witch belong the internal ghost box
 	 *

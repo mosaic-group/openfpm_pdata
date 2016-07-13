@@ -415,7 +415,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)
 	gd.sync();
 
 	if(vcl.getProcessUnitID() == 0)
-		BOOST_REQUIRE_EQUAL(gd.getVertexId(5), 5ul);
+		BOOST_REQUIRE_EQUAL(gd.getVertexId(4), 5ul);
 
 	gd.deleteGhosts();
 

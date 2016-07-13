@@ -52,28 +52,13 @@ struct Box_loc_sub
 
 };
 
-/*! It contain a box definition and from witch sub-domain it come from (in the local processor)
+/*! It contain a box definition and from witch sub-domain it come from (in the local processor list)
  * and an unique if across adjacent processors (for communication)
  *
  * If the box come from the intersection of an expanded sub-domain and a sub-domain
  *
  * Assuming we are considering the near processors i (0 to getNNProcessors())
  *
- * ### external ghost box
- *
- * id = id_exp * N_non_exp + id_non_exp
- *
- * id_exp = the id in the vector proc_adj_box.get(i) of the expanded sub-domain (sent local sub-domains)
- *
- * id_non_exp = the id in the vector nn_processor_subdomains[i] of the sub-domain (received sub-domains from near processors)
- *
- * ### internal ghost box
- *
- * id = id_exp * N_non_exp + id_non_exp
- *
- * id_exp = the id in the vector nn_processor_subdomains[i] of the expanded sub-domain
- *
- * id_non_exp = the id in the vector proc_adj_box.get(i) of the sub-domain
  *
  */
 template<unsigned int dim, typename T>
@@ -87,6 +72,9 @@ struct Box_sub
 
 	//! see ebx_ibx_form in ie_ghost for the meaning
 	size_t id;
+
+	//! see getNearSubdomainsRealId in nn_prcs
+	size_t r_sub;
 
 	//! see ie_ghost follow sector explanation
 	comb<dim> cmb;

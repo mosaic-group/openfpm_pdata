@@ -25,7 +25,9 @@ template<unsigned int dim>
 struct Box_fix
 {
 	Box<dim,size_t> bx;
+	comb<dim> cmb;
 	size_t g_id;
+	size_t r_sub;
 };
 
 #define GRID_SUB_UNIT_FACTOR 64
@@ -87,6 +89,8 @@ class grid_dist_id
 	//! It is unique across all the near processor
 	std::unordered_map<size_t,size_t> g_id_to_external_ghost_box;
 
+	std::unordered_map<size_t,size_t> g_id_to_external_ghost_box_fix;
+
 	//! It map a global ghost id (g_id) to the internal ghost box information
 	//! (is unique for processor), it is not unique across all the near processor
 	openfpm::vector<std::unordered_map<size_t,size_t>> g_id_to_internal_ghost_box;
@@ -131,6 +135,36 @@ class grid_dist_id
 		return g->recv_mem_gg.get(lc_id).getPointer();
 	}
 
+	/*! \brief flip box just convert and internal ghost box into an external ghost box
+	 *
+	 *
+	 */
+	Box<dim,long int> flip_box(const Box<dim,long int> & box, const comb<dim> & cmb)
+	{
+		Box<dim,long int> flp;
+
+		for (size_t i = 0 ; i < dim; i++)
+		{
+			if (cmb[i] == 0)
+			{
+				flp.setLow(i,box.getLow(i));
+				flp.setHigh(i,box.getHigh(i));
+			}
+			else if (cmb[i] == 1)
+			{
+				flp.setLow(i,box.getLow(i) + ginfo.size(i));
+				flp.setHigh(i,box.getHigh(i) + ginfo.size(i));
+			}
+			else if (cmb[i] == -1)
+			{
+				flp.setLow(i,box.getLow(i) - ginfo.size(i));
+				flp.setHigh(i,box.getHigh(i) - ginfo.size(i));
+			}
+		}
+
+		return flp;
+	}
+
 	/*! \brief Create per-processor internal ghost boxes list in grid units and g_id_to_external_ghost_box
 	 *
 	 */
@@ -169,6 +203,7 @@ class grid_dist_id
 				bid_t.g_id = dec.getProcessorIGhostId(i,j);
 				bid_t.sub = dec.getProcessorIGhostSub(i,j);
 				bid_t.cmb = dec.getProcessorIGhostPos(i,j);
+				bid_t.r_sub = dec.getProcessorIGhostSSub(i,j);
 				pib.bid.add(bid_t);
 
 				g_id_to_internal_ghost_box.get(i)[bid_t.g_id] = pib.bid.size()-1;
@@ -233,6 +268,97 @@ class grid_dist_id
 		}
 
 		init_e_g_box = true;
+
+		// Communicate the ig_box calculated to the other processor
+
+		comb<dim> zero;
+		zero.zero();
+
+		// Here we collect all the calculated internal ghost box in the sector different from 0 that this processor has
+
+		openfpm::vector<size_t> prc;
+		openfpm::vector<size_t> prc_recv;
+		openfpm::vector<size_t> sz_recv;
+		openfpm::vector<openfpm::vector<Box_fix<dim>>> box_int_send(dec.getNNProcessors());
+		openfpm::vector<openfpm::vector<Box_fix<dim>>> box_int_recv;
+
+		for(size_t i = 0 ; i < dec.getNNProcessors() ; i++)
+		{
+			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
+			{
+				box_int_send.get(i).add();
+				box_int_send.get(i).last().bx = ig_box.get(i).bid.get(j).box;
+				box_int_send.get(i).last().g_id = ig_box.get(i).bid.get(j).g_id;
+				box_int_send.get(i).last().r_sub = ig_box.get(i).bid.get(j).r_sub;
+				box_int_send.get(i).last().cmb = ig_box.get(i).bid.get(j).cmb;
+			}
+			prc.add(dec.IDtoProc(i));
+		}
+
+		v_cl.SSendRecv(box_int_send,box_int_recv,prc,prc_recv,sz_recv);
+
+		eg_box_tmp.resize(dec.getNNProcessors());
+
+		for (size_t i = 0 ; i < eg_box_tmp.size() ; i++)
+			eg_box_tmp.get(i).prc = dec.IDtoProc(i);
+
+		for (size_t i = 0 ; i < box_int_recv.size() ; i++)
+		{
+			size_t p_id = dec.ProctoID(prc_recv.get(i));
+			auto&& pib = eg_box_tmp.get(p_id);
+			pib.prc = prc_recv.get(i);
+
+			// For each received internal ghost box
+			for (size_t j = 0 ; j < box_int_recv.get(i).size() ; j++)
+			{
+				size_t send_list_id = box_int_recv.get(i).get(j).r_sub;
+
+				// Get the list of the sent sub-domains
+				// and recover the id of the sub-domain from
+				// the sent list
+				const openfpm::vector<size_t> & s_sub = dec.getSentSubdomains(p_id);
+				size_t sub_id = s_sub.get(send_list_id);
+
+				e_box_id bid_t;
+				bid_t.sub = sub_id;
+				bid_t.cmb = box_int_recv.get(i).get(j).cmb;
+				bid_t.cmb.sign_flip();
+				::Box<dim,long int> ib = flip_box(box_int_recv.get(i).get(j).bx,box_int_recv.get(i).get(j).cmb);
+				bid_t.g_e_box = ib;
+				bid_t.g_id = box_int_recv.get(i).get(j).g_id;
+				// Translate in local coordinate
+				Box<dim,long int> tb = ib;
+				tb -= gdb_ext.get(sub_id).origin;
+				bid_t.l_e_box = tb;
+
+				pib.bid.add(bid_t);
+
+				g_id_to_external_ghost_box_fix[bid_t.g_id] = pib.bid.size()-1;
+
+				size_t l_id = 0;
+				// convert the global id into local id
+				auto key = g_id_to_external_ghost_box.find(bid_t.g_id);
+				if (key != g_id_to_external_ghost_box.end()) // FOUND
+					l_id = key->second;
+
+				Box<dim,long int> box_le = eg_box.get(p_id).bid.get(l_id).l_e_box;
+				Box<dim,long int> box_ge = eg_box.get(p_id).bid.get(l_id).g_e_box;
+
+				if (box_le != bid_t.l_e_box || box_ge != bid_t.g_e_box ||
+						eg_box.get(p_id).bid.get(l_id).cmb != bid_t.cmb ||
+						eg_box.get(p_id).bid.get(l_id).sub != bid_t.sub)
+				{
+					int debug = 0;
+					debug++;
+				}
+			}
+		}
+
+		// switch
+
+		g_id_to_external_ghost_box = g_id_to_external_ghost_box_fix;
+		eg_box.clear();
+		eg_box = eg_box_tmp;
 	}
 
 	bool init_local_i_g_box = false;
@@ -268,6 +394,7 @@ class grid_dist_id
 				pib.bid.last().box = ib;
 				pib.bid.last().sub = dec.getLocalIGhostSub(i,j);
 				pib.bid.last().k = dec.getLocalIGhostE(i,j);
+				pib.bid.last().cmb = dec.getLocalIGhostPos(i,j);
 			}
 		}
 
@@ -286,7 +413,7 @@ class grid_dist_id
 
 		if (init_local_e_g_box == true)	return;
 
-		// Get the number of near processors
+		// Get the number of sub-domain
 		for (size_t i = 0 ; i < dec.getNSubDomain() ; i++)
 		{
 			loc_eg_box.add();
@@ -307,11 +434,41 @@ class grid_dist_id
 				pib.bid.last().box = ib;
 				pib.bid.last().sub = dec.getLocalEGhostSub(i,j);
 				pib.bid.last().cmb = dec.getLocalEGhostPos(i,j);
-				pib.bid.last().cmb.sign_flip();
 			}
 		}
 
 		init_local_e_g_box = true;
+
+		loc_eg_box_tmp.resize(dec.getNSubDomain());
+
+		// Get the number of sub-domain
+		for (size_t i = 0 ; i < dec.getNSubDomain() ; i++)
+		{
+			for (size_t j = 0 ; j < loc_ig_box.get(i).bid.size() ; j++)
+			{
+				size_t k = loc_ig_box.get(i).bid.get(j).sub;
+				auto & pib = loc_eg_box_tmp.get(k);
+
+				size_t s = loc_ig_box.get(i).bid.get(j).k;
+				pib.bid.resize(dec.getLocalNEGhost(k));
+
+				pib.bid.get(s).box = flip_box(loc_ig_box.get(i).bid.get(j).box,loc_ig_box.get(i).bid.get(j).cmb);
+				pib.bid.get(s).sub = dec.getLocalEGhostSub(k,s);
+				pib.bid.get(s).cmb = loc_ig_box.get(i).bid.get(j).cmb;
+				pib.bid.get(s).cmb.sign_flip();
+
+				if (pib.bid.get(s).box != loc_eg_box.get(k).bid.get(s).box &&
+					pib.bid.get(s).cmb != loc_eg_box.get(k).bid.get(s).cmb &&
+					pib.bid.get(s).sub != loc_eg_box.get(k).bid.get(s).sub)
+				{
+					std::cout << "CAZZO" << std::endl;
+					int debug = 0;
+					debug++;
+				}
+			}
+		}
+
+		loc_eg_box = loc_eg_box_tmp;
 	}
 
 	/*! \brief Sync the local ghost part
@@ -334,7 +491,7 @@ class grid_dist_id
 				// sub domain connected with external box
 				size_t sub_id_dst = loc_ig_box.get(i).bid.get(j).sub;
 
-				// local external ghost box connected
+				// local internal ghost box connected
 				size_t k = loc_ig_box.get(i).bid.get(j).k;
 
 				Box<dim,size_t> bx_dst = loc_eg_box.get(sub_id_dst).bid.get(k).box;
@@ -1114,8 +1271,13 @@ public:
 		//! id
 		size_t g_id;
 
+		//! r_sub id of the sub-domain in the sent list
+		size_t r_sub;
+
 		//! Sector where it live the linked external ghost box
 		comb<dim> cmb;
+
+
 
 		//! sub
 		size_t sub;
@@ -1133,8 +1295,11 @@ public:
 		//! sub-domain id
 		size_t sub;
 
-		//! external box
+		//! external ghost box linked to this internal ghost box
 		size_t k;
+
+		//! combination
+		comb<dim> cmb;
 	};
 
 	/*! \brief It store the information about the external ghost box
@@ -1238,11 +1403,15 @@ public:
 	//! External ghost boxes in grid units
 	openfpm::vector<ep_box_grid> eg_box;
 
+	openfpm::vector<ep_box_grid> eg_box_tmp;
+
 	//! Local internal ghost boxes in grid units
 	openfpm::vector<i_lbox_grid> loc_ig_box;
 
 	//! Local external ghost boxes in grid units
 	openfpm::vector<e_lbox_grid> loc_eg_box;
+
+	openfpm::vector<e_lbox_grid> loc_eg_box_tmp;
 
 	/*! \brief It synchronize the ghost parts
 	 *

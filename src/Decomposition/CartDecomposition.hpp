@@ -243,8 +243,18 @@ public:
 		// set of Boxes produced by the decomposition optimizer
 		openfpm::vector<::Box<dim, size_t>> loc_box;
 
+		// Ghost
+		Ghost<dim,long int> ghe;
+
+		// Set the ghost
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			ghe.setLow(i,static_cast<long int>(ghost.getLow(i)/spacing[i]) - 1);
+			ghe.setHigh(i,static_cast<long int>(ghost.getHigh(i)/spacing[i]) + 1);
+		}
+
 		// optimize the decomposition
-		d_o.template optimize<nm_v::sub_id, nm_v::proc_id>(dist.getGraph(), p_id, loc_box, box_nn_processor,bc);
+		d_o.template optimize<nm_v::sub_id, nm_v::proc_id>(dist.getGraph(), p_id, loc_box, box_nn_processor,ghe,bc);
 
 		// reset ss_box
 		ss_box = domain;
@@ -486,19 +496,6 @@ public:
 	 */
 	void calculateGhostBoxes()
 	{
-#ifdef DEBUG
-		// the ghost margins are assumed to be smaller
-		// than one sub-domain
-
-		for (size_t i = 0; i < dim; i++)
-		{
-			if (fabs(ghost.template getLow(i)) >= ss_box.getHigh(i) || ghost.template getHigh(i) >= ss_box.getHigh(i))
-			{
-				std::cerr << "Error " << __FILE__ << ":" << __LINE__  << " : Ghost are bigger than one sub-domain" << "\n";
-			}
-		}
-#endif
-
 		// Intersect all the local sub-domains with the sub-domains of the contiguous processors
 
 		// create the internal structures that store ghost information
@@ -506,15 +503,6 @@ public:
 		ie_ghost<dim, T>::create_box_nn_processor_int(v_cl, ghost, sub_domains, box_nn_processor, *this);
 
 		ie_loc_ghost<dim,T>::create(sub_domains,domain,ghost,bc);
-
-		// get the smallest sub-domain dimension on each direction
-		for (size_t i = 0; i < dim; i++)
-		{
-			if (fabs(ghost.template getLow(i)) >= ss_box.getHigh(i) || ghost.template getHigh(i) >= ss_box.getHigh(i))
-			{
-				std::cerr << "Error " << __FILE__ << ":" << __LINE__  << " : Ghost are bigger than one sub-domain" << "\n";
-			}
-		}
 	}
 
 public:
