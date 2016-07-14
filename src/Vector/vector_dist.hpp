@@ -913,7 +913,7 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline const auto getProp(vect_dist_key_dx vec_key) const -> decltype(v_prp.template get<id>(vec_key.getKey()))
+	template<unsigned int id> inline auto getProp(vect_dist_key_dx vec_key) const -> const decltype(v_prp.template get<id>(vec_key.getKey()))
 	{
 		return v_prp.template get<id>(vec_key.getKey());
 	}
