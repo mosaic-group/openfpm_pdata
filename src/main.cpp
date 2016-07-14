@@ -1,5 +1,4 @@
 #include <iostream>
-#include "config.h"
 
 #define NO_WARNING
 #include "Graph/CartesianGraphFactory.hpp"
@@ -7,8 +6,21 @@
 #define BOOST_DISABLE_ASSERTS
 
 
-#define BOOST_TEST_MODULE "C++ test module for OpenFPM_pdata project"
-#include <boost/test/included/unit_test.hpp>
+#include "config.h"
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
+
+// initialization function:
+bool init_unit_test()
+{
+  return true;
+}
+
+// entry point:
+int main(int argc, char* argv[])
+{
+  return boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
+}
 
 #include "Grid/grid_dist_id.hpp"
 #include "Point_test.hpp"
@@ -24,7 +36,6 @@
 #include "Decomposition/ORB_unit_test.hpp"
 #include "Decomposition/Distribution/metis_util_unit_test.hpp"
 #include "dec_optimizer_unit_test.hpp"
-#include "Grid/grid_dist_id_unit_test.hpp"
 #include "Vector/vector_dist_unit_test.hpp"
 #include "Decomposition/Distribution/Distribution_unit_tests.hpp"
 //#include "DLB/DLB_unit_test.hpp"

@@ -48,9 +48,6 @@ template<unsigned int dim> periodicity<dim> create_non_periodic()
  */
 template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::vector<GBoxes<Decomposition::dims>> & gdb_ext, Decomposition & dec, CellDecomposer_sm<Decomposition::dims,typename Decomposition::stype,shift<dim,typename Decomposition::stype>> & cd_sm)
 {
-	Box<Decomposition::dims, typename Decomposition::stype> g_rnd_box;
-	for (size_t i = 0 ; i < Decomposition::dims ; i++)	{g_rnd_box.setHigh(i,0.5); g_rnd_box.setLow(i,-0.5);}
-
 	// Get the number of local grid needed
 	size_t n_grid = dec.getNSubDomain();
 
@@ -111,5 +108,127 @@ template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::ve
 	for (size_t i = 0 ; i < dim ; i++)
 		spacing[i] = cd_sm.getCellBox().getP2()[i];
 }
+
+/*! \brief it store a box, its unique id and the sub-domain from where it come from
+ *
+ */
+template<unsigned int dim> struct i_box_id
+{
+	//! Box
+	::Box<dim,long int> box;
+
+	//! id
+	size_t g_id;
+
+	//! r_sub id of the sub-domain in the sent list
+	size_t r_sub;
+
+	//! Sector where it live the linked external ghost box
+	comb<dim> cmb;
+
+
+
+	//! sub
+	size_t sub;
+};
+
+/*! \brief it store an internal ghost box, the linked external ghost box and the sub-domain from where
+ *  it come from as internal ghost box
+ *
+ */
+template<unsigned int dim> struct i_lbox_id
+{
+	//! Box
+	::Box<dim,long int> box;
+
+	//! sub-domain id
+	size_t sub;
+
+	//! external ghost box linked to this internal ghost box
+	size_t k;
+
+	//! combination
+	comb<dim> cmb;
+};
+
+/*! \brief It store the information about the external ghost box
+ *
+ *
+ */
+template <unsigned int dim> struct e_box_id
+{
+	//! Box defining the external ghost box in global coordinates
+	::Box<dim,long int> g_e_box;
+
+	//! Box defining the external ghost box in local coordinates
+	::Box<dim,long int> l_e_box;
+
+	//! Sector position of the external ghost
+	comb<dim> cmb;
+
+	//! Id
+	size_t g_id;
+
+	//! sub_id in which sub-domain this box live
+	size_t sub;
+};
+
+/*! \brief It store the information about the local external ghost box
+ *
+ *
+ */
+template <unsigned int dim> struct e_lbox_id
+{
+	//! Box defining the external ghost box in local coordinates
+	::Box<dim,long int> box;
+
+	//! Sector position of the local external ghost box
+	comb<dim> cmb;
+
+	//! sub_id in which sub-domain this box live
+	size_t sub;
+};
+
+/*! \brief Per-processor Internal ghost box
+ *
+ */
+template <unsigned int dim> struct ip_box_grid
+{
+	// ghost in grid units
+	openfpm::vector<i_box_id<dim>> bid;
+
+	//! processor id
+	size_t prc;
+};
+
+/*! \brief local Internal ghost box
+ *
+ */
+template <unsigned int dim> struct i_lbox_grid
+{
+	// ghost in grid units
+	openfpm::vector<i_lbox_id<dim>> bid;
+};
+
+/*! \brief Per-processor external ghost box
+ *
+ */
+template <unsigned int dim>struct ep_box_grid
+{
+	// ghost in grid units
+	openfpm::vector<e_box_id<dim>> bid;
+
+	//! processor id
+	size_t prc;
+};
+
+/*! \brief Per-processor external ghost box
+ *
+ */
+template <unsigned int dim> struct e_lbox_grid
+{
+	// ghost in grid units
+	openfpm::vector<e_lbox_id<dim>> bid;
+};
 
 #endif /* SRC_GRID_GRID_DIST_UTIL_HPP_ */

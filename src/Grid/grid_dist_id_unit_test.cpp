@@ -1,6 +1,10 @@
 #ifndef GRID_DIST_UNIT_TEST_HPP
 #define GRID_DIST_UNIT_TEST_HPP
 
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
+
+#include "Point_test.hpp"
 #include "grid_dist_id.hpp"
 #include "data_type/scalar.hpp"
 #include "data_type/aggregate.hpp"

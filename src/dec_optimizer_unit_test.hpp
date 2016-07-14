@@ -122,24 +122,11 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_p)
 
 	for(size_t i = 0 ; i < box_nn_processor.size() ; i++)
 	{
-		bool nn[] = {false,false,false,false,false,false,false,false};
-		BOOST_REQUIRE_EQUAL(box_nn_processor.get(i).size(),7ul);
+		BOOST_REQUIRE_EQUAL(box_nn_processor.get(i).size(),8ul);
 		for (size_t j = 0 ; j < box_nn_processor.get(i).size(); j++)
 		{
 			BOOST_REQUIRE(box_nn_processor.get(i).get(j) < 8);
-			nn[box_nn_processor.get(i).get(j)] = true;
 		}
-
-		// search the neighborhood
-
-		size_t cnt = 0;
-		for(size_t i = 0 ; i < 8 ; i++)
-		{
-			if (nn[i] == false)
-				cnt++;
-		}
-
-		BOOST_REQUIRE_EQUAL(cnt,1ul);
 	}
 
 	// check

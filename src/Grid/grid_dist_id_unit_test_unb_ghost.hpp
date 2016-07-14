@@ -235,7 +235,7 @@ void Test3D_unb_ghost_periodic(const Box<3,float> & domain, long int k)
 			if (g_dist.template get<0>(key) != -1 && out_p == true)
 				out_cnt++;
 
-			if ( /*g_dist.template get<0>(key) != -1 &&*/ info.LinId(key_g) != g_dist.template get<0>(key) )
+			if ( g_dist.template get<0>(key) != -1 && info.LinId(key_g) != g_dist.template get<0>(key) )
 				match &= false;
 
 			++dom_gi;

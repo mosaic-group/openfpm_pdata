@@ -89,8 +89,6 @@ class grid_dist_id
 	//! It is unique across all the near processor
 	std::unordered_map<size_t,size_t> g_id_to_external_ghost_box;
 
-	std::unordered_map<size_t,size_t> g_id_to_external_ghost_box_fix;
-
 	//! It map a global ghost id (g_id) to the internal ghost box information
 	//! (is unique for processor), it is not unique across all the near processor
 	openfpm::vector<std::unordered_map<size_t,size_t>> g_id_to_internal_ghost_box;
@@ -198,7 +196,7 @@ class grid_dist_id
 				// save the box and the sub-domain id (it is calculated as the linearization of P1)
 				::Box<dim,size_t> cvt = ib;
 
-				i_box_id bid_t;
+				i_box_id<dim> bid_t;
 				bid_t.box = cvt;
 				bid_t.g_id = dec.getProcessorIGhostId(i,j);
 				bid_t.sub = dec.getProcessorIGhostSub(i,j);
@@ -223,57 +221,6 @@ class grid_dist_id
 
 		if (init_e_g_box == true)	return;
 
-		// Get the number of near processors
-		for (size_t i = 0 ; i < dec.getNNProcessors() ; i++)
-		{
-			eg_box.add();
-			auto&& pib = eg_box.last();
-
-			pib.prc = dec.IDtoProc(i);
-			for (size_t j = 0 ; j < dec.getProcessorNEGhost(i) ; j++)
-			{
-				// Get the external ghost boxes and transform into grid units
-				::Box<dim,St> ib_dom = dec.getProcessorEGhostBox(i,j);
-				ib_dom -= cd_sm.getOrig();
-				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom,dec.periodicity());
-
-				// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
-				if (ib.isValid() == false)
-					continue;
-
-				// save the box and the unique external ghost box id (linearization of P1)
-				// It is (locally) unique because it is ensured that external ghost boxes does not overlap
-				// Carefull it is not unique from the internal ghost box
-
-				// sub domain id at which belong the external ghost box
-				size_t sub_id = dec.getProcessorEGhostSub(i,j);
-
-				e_box_id bid_t;
-				bid_t.sub = sub_id;
-				bid_t.g_e_box = ib;
-				bid_t.l_e_box = ib;
-				bid_t.cmb = dec.getProcessorEGhostPos(i,j);
-				bid_t.g_id = dec.getProcessorEGhostId(i,j);
-				// Translate in local coordinate
-				Box<dim,long int> tb = ib;
-				tb -= gdb_ext.get(sub_id).origin;
-				bid_t.l_e_box = tb;
-
-				pib.bid.add(bid_t);
-
-				// Add the map between the global ghost box id and id of the external box in the vector
-				size_t g_id = dec.getProcessorEGhostId(i,j);
-				g_id_to_external_ghost_box[g_id] = pib.bid.size()-1;
-			}
-		}
-
-		init_e_g_box = true;
-
-		// Communicate the ig_box calculated to the other processor
-
-		comb<dim> zero;
-		zero.zero();
-
 		// Here we collect all the calculated internal ghost box in the sector different from 0 that this processor has
 
 		openfpm::vector<size_t> prc;
@@ -297,15 +244,15 @@ class grid_dist_id
 
 		v_cl.SSendRecv(box_int_send,box_int_recv,prc,prc_recv,sz_recv);
 
-		eg_box_tmp.resize(dec.getNNProcessors());
+		eg_box.resize(dec.getNNProcessors());
 
-		for (size_t i = 0 ; i < eg_box_tmp.size() ; i++)
-			eg_box_tmp.get(i).prc = dec.IDtoProc(i);
+		for (size_t i = 0 ; i < eg_box.size() ; i++)
+			eg_box.get(i).prc = dec.IDtoProc(i);
 
 		for (size_t i = 0 ; i < box_int_recv.size() ; i++)
 		{
 			size_t p_id = dec.ProctoID(prc_recv.get(i));
-			auto&& pib = eg_box_tmp.get(p_id);
+			auto&& pib = eg_box.get(p_id);
 			pib.prc = prc_recv.get(i);
 
 			// For each received internal ghost box
@@ -319,7 +266,7 @@ class grid_dist_id
 				const openfpm::vector<size_t> & s_sub = dec.getSentSubdomains(p_id);
 				size_t sub_id = s_sub.get(send_list_id);
 
-				e_box_id bid_t;
+				e_box_id<dim> bid_t;
 				bid_t.sub = sub_id;
 				bid_t.cmb = box_int_recv.get(i).get(j).cmb;
 				bid_t.cmb.sign_flip();
@@ -333,32 +280,11 @@ class grid_dist_id
 
 				pib.bid.add(bid_t);
 
-				g_id_to_external_ghost_box_fix[bid_t.g_id] = pib.bid.size()-1;
-
-				size_t l_id = 0;
-				// convert the global id into local id
-				auto key = g_id_to_external_ghost_box.find(bid_t.g_id);
-				if (key != g_id_to_external_ghost_box.end()) // FOUND
-					l_id = key->second;
-
-				Box<dim,long int> box_le = eg_box.get(p_id).bid.get(l_id).l_e_box;
-				Box<dim,long int> box_ge = eg_box.get(p_id).bid.get(l_id).g_e_box;
-
-				if (box_le != bid_t.l_e_box || box_ge != bid_t.g_e_box ||
-						eg_box.get(p_id).bid.get(l_id).cmb != bid_t.cmb ||
-						eg_box.get(p_id).bid.get(l_id).sub != bid_t.sub)
-				{
-					int debug = 0;
-					debug++;
-				}
+				g_id_to_external_ghost_box[bid_t.g_id] = pib.bid.size()-1;
 			}
 		}
 
-		// switch
-
-		g_id_to_external_ghost_box = g_id_to_external_ghost_box_fix;
-		eg_box.clear();
-		eg_box = eg_box_tmp;
+		init_e_g_box = true;
 	}
 
 	bool init_local_i_g_box = false;
@@ -413,33 +339,7 @@ class grid_dist_id
 
 		if (init_local_e_g_box == true)	return;
 
-		// Get the number of sub-domain
-		for (size_t i = 0 ; i < dec.getNSubDomain() ; i++)
-		{
-			loc_eg_box.add();
-			auto&& pib = loc_eg_box.last();
-
-			for (size_t j = 0 ; j < dec.getLocalNEGhost(i) ; j++)
-			{
-				// Get the internal ghost boxes and transform into grid units
-				::Box<dim,St> ib_dom = dec.getLocalEGhostBox(i,j);
-				ib_dom -= cd_sm.getOrig();
-				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom,dec.periodicity());
-
-				// Warning even if the ib is not a valid in grid unit we are forced to keep it
-				// otherwise the value returned from dec.getLocalEGhostSub(i,j) will point to an
-				// invalid or wrong box
-
-				pib.bid.add();
-				pib.bid.last().box = ib;
-				pib.bid.last().sub = dec.getLocalEGhostSub(i,j);
-				pib.bid.last().cmb = dec.getLocalEGhostPos(i,j);
-			}
-		}
-
-		init_local_e_g_box = true;
-
-		loc_eg_box_tmp.resize(dec.getNSubDomain());
+		loc_eg_box.resize(dec.getNSubDomain());
 
 		// Get the number of sub-domain
 		for (size_t i = 0 ; i < dec.getNSubDomain() ; i++)
@@ -447,7 +347,7 @@ class grid_dist_id
 			for (size_t j = 0 ; j < loc_ig_box.get(i).bid.size() ; j++)
 			{
 				size_t k = loc_ig_box.get(i).bid.get(j).sub;
-				auto & pib = loc_eg_box_tmp.get(k);
+				auto & pib = loc_eg_box.get(k);
 
 				size_t s = loc_ig_box.get(i).bid.get(j).k;
 				pib.bid.resize(dec.getLocalNEGhost(k));
@@ -456,19 +356,10 @@ class grid_dist_id
 				pib.bid.get(s).sub = dec.getLocalEGhostSub(k,s);
 				pib.bid.get(s).cmb = loc_ig_box.get(i).bid.get(j).cmb;
 				pib.bid.get(s).cmb.sign_flip();
-
-				if (pib.bid.get(s).box != loc_eg_box.get(k).bid.get(s).box &&
-					pib.bid.get(s).cmb != loc_eg_box.get(k).bid.get(s).cmb &&
-					pib.bid.get(s).sub != loc_eg_box.get(k).bid.get(s).sub)
-				{
-					std::cout << "CAZZO" << std::endl;
-					int debug = 0;
-					debug++;
-				}
 			}
 		}
 
-		loc_eg_box = loc_eg_box_tmp;
+		init_local_e_g_box = true;
 	}
 
 	/*! \brief Sync the local ghost part
@@ -525,9 +416,6 @@ class grid_dist_id
 					// Option 1
 					gd.set(sub_dst.get(),gs,sub_src.get());
 
-					// Option 2
-//					gd.get_o(sub_dst.get()) = gs.get_o(sub_src.get());
-
 					++sub_src;
 					++sub_dst;
 				}
@@ -552,9 +440,6 @@ class grid_dist_id
 	 */
 	void Create()
 	{
-		Box<dim,St> g_rnd_box;
-		for (size_t i = 0 ; i < dim ; i++)	{g_rnd_box.setHigh(i,0.5); g_rnd_box.setLow(i,-0.5);}
-
 		// Get the number of local grid needed
 		size_t n_grid = dec.getNSubDomain();
 
@@ -1260,128 +1145,6 @@ public:
 		return loc_grid.get(v1.getSub()).template get<p>(v1.getKey());
 	}
 
-	/*! \brief it store a box, its unique id and the sub-domain from where it come from
-	 *
-	 */
-	struct i_box_id
-	{
-		//! Box
-		::Box<dim,long int> box;
-
-		//! id
-		size_t g_id;
-
-		//! r_sub id of the sub-domain in the sent list
-		size_t r_sub;
-
-		//! Sector where it live the linked external ghost box
-		comb<dim> cmb;
-
-
-
-		//! sub
-		size_t sub;
-	};
-
-	/*! \brief it store an internal ghost box, the linked external ghost box and the sub-domain from where
-	 *  it come from as internal ghost box
-	 *
-	 */
-	struct i_lbox_id
-	{
-		//! Box
-		::Box<dim,long int> box;
-
-		//! sub-domain id
-		size_t sub;
-
-		//! external ghost box linked to this internal ghost box
-		size_t k;
-
-		//! combination
-		comb<dim> cmb;
-	};
-
-	/*! \brief It store the information about the external ghost box
-	 *
-	 *
-	 */
-	struct e_box_id
-	{
-		//! Box defining the external ghost box in global coordinates
-		::Box<dim,long int> g_e_box;
-
-		//! Box defining the external ghost box in local coordinates
-		::Box<dim,long int> l_e_box;
-
-		//! Sector position of the external ghost
-		comb<dim> cmb;
-
-		//! Id
-		size_t g_id;
-
-		//! sub_id in which sub-domain this box live
-		size_t sub;
-	};
-
-	/*! \brief It store the information about the local external ghost box
-	 *
-	 *
-	 */
-	struct e_lbox_id
-	{
-		//! Box defining the external ghost box in local coordinates
-		::Box<dim,long int> box;
-
-		//! Sector position of the local external ghost box
-		comb<dim> cmb;
-
-		//! sub_id in which sub-domain this box live
-		size_t sub;
-	};
-
-	/*! \brief Per-processor Internal ghost box
-	 *
-	 */
-	struct ip_box_grid
-	{
-		// ghost in grid units
-		openfpm::vector<i_box_id> bid;
-
-		//! processor id
-		size_t prc;
-	};
-
-	/*! \brief local Internal ghost box
-	 *
-	 */
-	struct i_lbox_grid
-	{
-		// ghost in grid units
-		openfpm::vector<i_lbox_id> bid;
-	};
-
-	/*! \brief Per-processor external ghost box
-	 *
-	 */
-	struct ep_box_grid
-	{
-		// ghost in grid units
-		openfpm::vector<e_box_id> bid;
-
-		//! processor id
-		size_t prc;
-	};
-
-	/*! \brief Per-processor external ghost box
-	 *
-	 */
-	struct e_lbox_grid
-	{
-		// ghost in grid units
-		openfpm::vector<e_lbox_id> bid;
-	};
-
 	//! Memory for the ghost sending buffer
 	Memory g_send_prp_mem;
 
@@ -1398,20 +1161,16 @@ public:
 	bool init_fix_ie_g_box = false;
 
 	//! Internal ghost boxes in grid units
-	openfpm::vector<ip_box_grid> ig_box;
+	openfpm::vector<ip_box_grid<dim>> ig_box;
 
 	//! External ghost boxes in grid units
-	openfpm::vector<ep_box_grid> eg_box;
-
-	openfpm::vector<ep_box_grid> eg_box_tmp;
+	openfpm::vector<ep_box_grid<dim>> eg_box;
 
 	//! Local internal ghost boxes in grid units
-	openfpm::vector<i_lbox_grid> loc_ig_box;
+	openfpm::vector<i_lbox_grid<dim>> loc_ig_box;
 
 	//! Local external ghost boxes in grid units
-	openfpm::vector<e_lbox_grid> loc_eg_box;
-
-	openfpm::vector<e_lbox_grid> loc_eg_box_tmp;
+	openfpm::vector<e_lbox_grid<dim>> loc_eg_box;
 
 	/*! \brief It synchronize the ghost parts
 	 *
