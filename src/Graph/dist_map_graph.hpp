@@ -563,44 +563,42 @@ class DistGraph_CSR
 			size_t pc = i;
 
 			size_t vp_size = sgp.get(pc).send_v.size();
-			std::vector<size_t> pap_prp;
+
+			size_t req = 0;
 
 			// prepare slot for number of vertices
-			Packer<size_t, HeapMemory>::packRequest(pap_prp);
+			Packer<size_t, HeapMemory>::packRequest(req);
 
 			for (size_t j = 0; j < vp_size; j++)
 			{
 				// prepare slot for vertex
-				Packer<V, HeapMemory>::packRequest(pap_prp);
+				Packer<V, HeapMemory>::packRequest(req);
 
 				// prepare slot info for vertex
-				Packer<v_info, HeapMemory>::packRequest(pap_prp);
+				Packer<v_info, HeapMemory>::packRequest(req);
 
 				// prepare slot for the number of children
-				Packer<size_t, HeapMemory>::packRequest(pap_prp);
+				Packer<size_t, HeapMemory>::packRequest(req);
 
 				// prepare slots for the children
 				for (size_t k = 0; k < sgp.get(pc).send_es.get(j); k++)
 				{
 					// prepare slot for edge
-					Packer<E, HeapMemory>::packRequest(pap_prp);
+					Packer<E, HeapMemory>::packRequest(req);
 
 					// prepare slot for edge info
-					Packer<e_info, HeapMemory>::packRequest(pap_prp);
+					Packer<e_info, HeapMemory>::packRequest(req);
 
 					// prepare slot for edge target id
-					Packer<size_t, HeapMemory>::packRequest(pap_prp);
+					Packer<size_t, HeapMemory>::packRequest(req);
 				}
 			}
-////////////////////////////////////////////////////////
-			// Calculate how much preallocated memory we need to pack all the objects for each vector
-			size_t req = ExtPreAlloc<HeapMemory>::calculateMem(pap_prp);
 
 			// allocate the memory
 			HeapMemory & pmem = *(new HeapMemory());
 //			pmem.allocate(req);
 			ExtPreAlloc<HeapMemory> & mem = *(new ExtPreAlloc<HeapMemory>(req, pmem));
-////////////////////////////////////////////////////////
+
 			mem.incRef();
 
 			Pack_stat sts;

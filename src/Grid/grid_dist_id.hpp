@@ -1229,8 +1229,8 @@ public:
 		// Convert the local external ghost boxes into grid unit boxes
 		create_local_eg_box();
 
-		// total number of sending vector
-		std::vector<size_t> pap_prp;
+
+		size_t req = 0;
 
 		// Create a packing request vector
 		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
@@ -1245,23 +1245,20 @@ public:
 				g_ig_box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
 
 				// Pack a size_t for the internal ghost id
-				Packer<size_t,HeapMemory>::packRequest(pap_prp);
+				Packer<size_t,HeapMemory>::packRequest(req);
 				// Create a sub grid iterator spanning the internal ghost layer
 				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_ig_box.getKP1(),g_ig_box.getKP2());
 				// and pack the internal ghost grid
-				Packer<device_grid,HeapMemory>::template packRequest<prp...>(loc_grid.get(sub_id),sub_it,pap_prp);
+				Packer<device_grid,HeapMemory>::template packRequest<prp...>(loc_grid.get(sub_id),sub_it,req);
 			}
 		}
 
 		// resize the property buffer memory
-		g_send_prp_mem.resize(ExtPreAlloc<Memory>::calculateMem(pap_prp));
-
-		////////////////////////////////////////////////
-		size_t req = ExtPreAlloc<Memory>::calculateMem(pap_prp);
+		g_send_prp_mem.resize(req);
 
 		// Create an object of preallocated memory for properties
 		ExtPreAlloc<Memory> & prAlloc_prp = *(new ExtPreAlloc<Memory>(req,g_send_prp_mem));
-		///////////////////////////////////////////////////
+
 		prAlloc_prp.incRef();
 
 		// Pack information
@@ -1296,9 +1293,6 @@ public:
 
 			void * pointer2 = prAlloc_prp.getPointerEnd();
 
-			//std::cout << "Mark pointer: " << sts.getMarkPointer(prAlloc_prp) << "    " <<pointer << std::endl;
-			//std::cout << "Mark size: " << sts.getMarkSize(prAlloc_prp) << "    " << (char *)pointer2 - (char *)pointer << std::endl;
-
 			v_cl.send(ig_box.get(i).prc,0,pointer/*sts.getMarkPointer(prAlloc_prp)*/,(char *)pointer2 - (char *)pointer /*sts.getMarkSize(prAlloc_prp)*/);
 
 //			pointer = prAlloc_prp.getPointerEnd();
@@ -1324,13 +1318,9 @@ public:
 		//! Resize the receiving buffer
 		g_recv_prp_mem.resize(ExtPreAlloc<Memory>::calculateMem(prp_recv));
 
-////////////////////////////////////////////////
-		size_t req1 = ExtPreAlloc<Memory>::calculateMem(pap_prp);
-
-
 		// Create an object of preallocated memory for properties
-		ExtPreAlloc<Memory> & prRecv_prp = *(new ExtPreAlloc<Memory>(req1,g_recv_prp_mem));
-///////////////////////////////////////////
+		ExtPreAlloc<Memory> & prRecv_prp = *(new ExtPreAlloc<Memory>(req,g_recv_prp_mem));
+
 		prRecv_prp.incRef();
 
 		// queue the receives
