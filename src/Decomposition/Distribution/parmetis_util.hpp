@@ -304,6 +304,8 @@ public:
 		{
 			delete[] Mg.wgtflag;
 		}
+
+		MPI_Comm_free(&comm);
 	}
 
 	/*! \brief Set the Sub-graph

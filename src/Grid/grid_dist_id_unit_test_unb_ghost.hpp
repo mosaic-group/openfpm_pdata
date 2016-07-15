@@ -205,9 +205,7 @@ void Test3D_unb_ghost_periodic(const Box<3,float> & domain, long int k)
 		BOOST_REQUIRE_EQUAL(count,(size_t)k*k*k);
 
 		// sync the ghosts
-//		g_dist.write("no_bound_before");
 		g_dist.ghost_get<0>();
-//		g_dist.write("no_bound_after");
 
 		bool match = true;
 
