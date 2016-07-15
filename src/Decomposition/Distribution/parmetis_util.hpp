@@ -305,7 +305,8 @@ public:
 			delete[] Mg.wgtflag;
 		}
 
-		MPI_Comm_free(&comm);
+		if (is_openfpm_init() == true)
+			MPI_Comm_free(&comm);
 	}
 
 	/*! \brief Set the Sub-graph
