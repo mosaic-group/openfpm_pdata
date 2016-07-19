@@ -11,7 +11,7 @@
 #include <random>
 #include "Vector/vector_dist.hpp"
 #include "data_type/aggregate.hpp"
-#include "Vector/vector_dist_cl_hilb_performance_tests.hpp"
+#include "Vector/vector_dist_performance_util.hpp"
 
 /*! \brief Count the total number of particles
  *
@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 void print_test_v(std::string test, size_t sz)
 {
 	if (create_vcluster().getProcessUnitID() == 0)
-		std::cout << "\n" << test << " " << sz << "\n";
+		std::cout << test << " " << sz << "\n";
 }
 
 long int decrement(long int k, long int step)
@@ -1162,7 +1162,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 	}
 }
 
-BOOST_AUTO_TEST_CASE( vector_dist_reorder_2d_benchmark_test )
+BOOST_AUTO_TEST_CASE( vector_dist_reorder_2d_test )
 {
 	typedef Point<2,float> s;
 
@@ -1207,10 +1207,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_reorder_2d_benchmark_test )
 
 		vd.map();
 
-		//Start timer
-		timer t;
-		t.start();
-
 		// Create first cell list
 
 		auto NN1 = vd.getCellList(0.01);
@@ -1232,9 +1228,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_reorder_2d_benchmark_test )
 
 			BOOST_REQUIRE_EQUAL(n1,n2);
 		}
-
-		t.stop();
-		std::cout << "  t: " << t.getwct() << "\n";
 	}
 }
 
@@ -1247,9 +1240,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 	// Cut-off radiuses. Can be put different number of values
 	openfpm::vector<float> cl_r_cutoff {0.05};
 	// The starting amount of particles (remember that this number is multiplied by number of processors you use for testing)
-	size_t cl_k_start = 100000;
+	size_t cl_k_start = 10000;
 	// The lower threshold for number of particles
-	size_t cl_k_min = 10000;
+	size_t cl_k_min = 1000;
 	// Ghost part of distributed vector
 	double ghost_part = 0.05;
 
@@ -1266,18 +1259,14 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 		//Number of particles
 		size_t k = cl_k_start * v_cl.getProcessingUnits();
 
-		std::string str("Testing " + std::to_string(dim) + "D vector's forces k<=");
+		std::string str("Testing " + std::to_string(dim) + "D vector's forces (random vs hilb celllist) k<=");
 
 		vector_dist_test::print_test_v(str,k);
-
-		std::cout << std::endl << "Cut-off radius " << r_cut << std::endl << std::endl;
 
 		//For different number of particles
 		for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2 )
 		{
-			BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector's forces k<=" << k_int );
-
-			std::cout << "Number of particles: " << k_int << std::endl;
+			BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector's forces (random vs hilb celllist) k<=" << k_int );
 
 			Box<dim,float> box;
 
@@ -1330,7 +1319,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 					auto a1 = vd.template getProp<0>(key)[i];
 					auto a2 = vd2.template getProp<0>(key)[i];
 					//Check that the forces are equal
-					BOOST_REQUIRE_EQUAL(a1,a2);
+					BOOST_REQUIRE_CLOSE(a1,a2,1);
 				}
 
 				++it_v;
@@ -1367,18 +1356,14 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 		//Number of particles
 		size_t k = cl_k_start * v_cl.getProcessingUnits();
 
-		std::string str("Testing " + std::to_string(dim) + "D vector's forces k<=");
+		std::string str("Testing " + std::to_string(dim) + "D vector's forces (random vs reorder) k<=");
 
 		vector_dist_test::print_test_v(str,k);
-
-		std::cout << std::endl << "Cut-off radius is " << r_cut << std::endl << std::endl;
 
 		//For different number of particles
 		for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2 )
 		{
-			BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector's forces k<=" << k_int );
-
-			std::cout << "Number of particles: " << k_int << std::endl;
+			BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector's forces (random vs reorder) k<=" << k_int );
 
 			Box<dim,float> box;
 
@@ -1433,7 +1418,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 					auto a1 = vd.template getProp<0>(key)[i];
 					auto a2 = vd.template getProp<1>(key)[i];
 					//Check that the forces are (almost) equal
-					BOOST_REQUIRE_CLOSE(a1,a2,0.001);
+					BOOST_REQUIRE_CLOSE(a1,a2,1);
 				}
 
 				++it_v;
@@ -1441,6 +1426,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 		}
 	}
 }
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif /* VECTOR_DIST_UNIT_TEST_HPP_ */

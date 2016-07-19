@@ -26,9 +26,9 @@
 #include "dec_optimizer_unit_test.hpp"
 #include "Grid/grid_dist_id_unit_test.hpp"
 #include "Vector/vector_dist_unit_test.hpp"
-//#ifdef PERFORMANCE_TEST
+#ifdef PERFORMANCE_TEST
 #include "pdata_performance.hpp"
-//#endif
+#endif
 #include "Decomposition/Distribution/Distribution_unit_tests.hpp"
 //#include "DLB/DLB_unit_test.hpp"
 #include "Graph/dist_map_graph_unit_test.hpp"
