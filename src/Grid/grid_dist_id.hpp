@@ -18,9 +18,17 @@
 #include "Packer_Unpacker/Packer.hpp"
 #include "Packer_Unpacker/Unpacker.hpp"
 #include "Decomposition/CartDecomposition.hpp"
+#include "data_type/aggregate.hpp"
+
+// External ghost box to send for internal ghost box fixation
+template<unsigned int dim>
+struct Box_fix
+{
+	Box<dim,size_t> bx;
+	size_t g_id;
+};
 
 #define GRID_SUB_UNIT_FACTOR 64
-
 
 /*! \brief This is a distributed grid
  *
@@ -76,7 +84,12 @@ class grid_dist_id
 	Vcluster & v_cl;
 
 	//! It map a global ghost id (g_id) to the external ghost box information
+	//! It is unique across all the near processor
 	std::unordered_map<size_t,size_t> g_id_to_external_ghost_box;
+
+	//! It map a global ghost id (g_id) to the internal ghost box information
+	//! (is unique for processor), it is not unique across all the near processor
+	openfpm::vector<std::unordered_map<size_t,size_t>> g_id_to_internal_ghost_box;
 
 	// Receiving size
 	openfpm::vector<size_t> recv_sz;
@@ -123,10 +136,12 @@ class grid_dist_id
 	 */
 	void create_ig_box()
 	{
+		if (init_i_g_box == true)	return;
+
 		// Get the grid info
 		auto g = cd_sm.getGrid();
 
-		if (init_i_g_box == true)	return;
+		g_id_to_internal_ghost_box.resize(dec.getNNProcessors());
 
 		// Get the number of near processors
 		for (size_t i = 0 ; i < dec.getNNProcessors() ; i++)
@@ -140,7 +155,7 @@ class grid_dist_id
 				// Get the internal ghost boxes and transform into grid units
 				::Box<dim,St> ib_dom = dec.getProcessorIGhostBox(i,j);
 				ib_dom -= cd_sm.getOrig();
-				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom);
+				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom,dec.periodicity());
 
 				// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
 				if (ib.isValid() == false)
@@ -153,7 +168,10 @@ class grid_dist_id
 				bid_t.box = cvt;
 				bid_t.g_id = dec.getProcessorIGhostId(i,j);
 				bid_t.sub = dec.getProcessorIGhostSub(i,j);
+				bid_t.cmb = dec.getProcessorIGhostPos(i,j);
 				pib.bid.add(bid_t);
+
+				g_id_to_internal_ghost_box.get(i)[bid_t.g_id] = pib.bid.size()-1;
 			}
 		}
 
@@ -182,7 +200,7 @@ class grid_dist_id
 				// Get the external ghost boxes and transform into grid units
 				::Box<dim,St> ib_dom = dec.getProcessorEGhostBox(i,j);
 				ib_dom -= cd_sm.getOrig();
-				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom);
+				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom,dec.periodicity());
 
 				// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
 				if (ib.isValid() == false)
@@ -199,6 +217,8 @@ class grid_dist_id
 				bid_t.sub = sub_id;
 				bid_t.g_e_box = ib;
 				bid_t.l_e_box = ib;
+				bid_t.cmb = dec.getProcessorEGhostPos(i,j);
+				bid_t.g_id = dec.getProcessorEGhostId(i,j);
 				// Translate in local coordinate
 				Box<dim,long int> tb = ib;
 				tb -= gdb_ext.get(sub_id).origin;
@@ -238,7 +258,7 @@ class grid_dist_id
 				// Get the internal ghost boxes and transform into grid units
 				::Box<dim,St> ib_dom = dec.getLocalIGhostBox(i,j);
 				ib_dom -= cd_sm.getOrig();
-				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom);
+				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom,dec.periodicity());
 
 				// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
 				if (ib.isValid() == false)
@@ -277,7 +297,7 @@ class grid_dist_id
 				// Get the internal ghost boxes and transform into grid units
 				::Box<dim,St> ib_dom = dec.getLocalEGhostBox(i,j);
 				ib_dom -= cd_sm.getOrig();
-				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom);
+				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom,dec.periodicity());
 
 				// Warning even if the ib is not a valid in grid unit we are forced to keep it
 				// otherwise the value returned from dec.getLocalEGhostSub(i,j) will point to an
@@ -286,6 +306,8 @@ class grid_dist_id
 				pib.bid.add();
 				pib.bid.last().box = ib;
 				pib.bid.last().sub = dec.getLocalEGhostSub(i,j);
+				pib.bid.last().cmb = dec.getLocalEGhostPos(i,j);
+				pib.bid.last().cmb.sign_flip();
 			}
 		}
 
@@ -321,10 +343,14 @@ class grid_dist_id
 				bx_dst -= gdb_ext.get(sub_id_dst).origin;
 
 				// create 2 sub grid iterator
+
+				if (bx_dst.isValid() == false)
+					continue;
+
 				grid_key_dx_iterator_sub<dim> sub_src(loc_grid.get(i).getGrid(),bx_src.getKP1(),bx_src.getKP2());
 				grid_key_dx_iterator_sub<dim> sub_dst(loc_grid.get(sub_id_dst).getGrid(),bx_dst.getKP1(),bx_dst.getKP2());
 
-#ifdef DEBUG
+#ifdef SE_CLASS1
 
 				if (loc_eg_box.get(sub_id_dst).bid.get(k).sub != i)
 					std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination are not correctly linked" << "\n";
@@ -455,14 +481,20 @@ class grid_dist_id
 	 *
 	 *
 	 */
-	inline void InitializeCellDecomposer(const size_t (& g_sz)[dim])
+	inline void InitializeCellDecomposer(const size_t (& g_sz)[dim], const size_t (& bc)[dim])
 	{
 		// check that the grid has valid size
 		check_size(g_sz);
 
-		// For a 5x5 grid you have 4x4 Cell
+		// For a 5x5 grid you have 4x4 Cell (With the exception of periodic)
 		size_t c_g[dim];
-		for (size_t i = 0 ; i < dim ; i++)	{c_g[i] = (g_sz[i]-1 > 0)?(g_sz[i]-1):1;}
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (bc[i] == NON_PERIODIC)
+				c_g[i] = (g_sz[i]-1 > 0)?(g_sz[i]-1):1;
+			else
+				c_g[i] = g_sz[i];
+		}
 
 		// Initialize the cell decomposer
 		cd_sm.setDimensions(domain,c_g,0);
@@ -473,7 +505,7 @@ class grid_dist_id
 	 * \param g_sz Global size of the grid
 	 *
 	 */
-	inline void InitializeDecomposition(const size_t (& g_sz)[dim])
+	inline void InitializeDecomposition(const size_t (& g_sz)[dim], const size_t (& bc)[dim])
 	{
 		// fill the global size of the grid
 		for (size_t i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
@@ -488,11 +520,6 @@ class grid_dist_id
 		size_t div[dim];
 		for (size_t i = 0 ; i < dim ; i++)
 		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
-
-		// boundary conditions
-		size_t bc[dim];
-		for (size_t i = 0 ; i < dim ; i++)
-			bc[i] = NON_PERIODIC;
 
 		// Create the sub-domains
 		dec.setParameters(div,domain,bc,ghost);
@@ -636,8 +663,6 @@ public:
 		check_new(this,8,GRID_DIST_EVENT,4);
 #endif
 
-		this->dec.incRef();
-
 		size_t ext_dim[dim];
 		for (size_t i = 0 ; i < dim ; i++) {ext_dim[i] = g.getGridInfoVoid().size(i) + ext.getKP1().get(i) + ext.getKP2().get(i);}
 
@@ -675,10 +700,11 @@ public:
     grid_dist_id(const Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
     :domain(domain),ghost(ghost),dec(dec),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
 	{
-		// Increment the reference counter of the decomposition
-		this->dec.incRef();
+#ifdef SE_CLASS2
+		check_new(this,8,GRID_DIST_EVENT,4);
+#endif
 
-		InitializeCellDecomposer(g_sz);
+		InitializeCellDecomposer(g_sz,create_non_periodic<dim>().bc);
 		InitializeStructures(g_sz);
 	}
 
@@ -761,20 +787,49 @@ public:
      *
      */
 	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g)
+	:grid_dist_id(g_sz,domain,g,create_non_periodic<dim>())
+	{
+	}
+
+    /*! It construct a grid of a specified size, defined on a specified Box space, having a specified ghost size and periodicity
+     *
+     * \param dec Decomposition
+     * \param g_sz grid size on each dimension
+     * \param domain Box that contain the grid
+     * \param ghost Ghost part of the domain (given in grid units)
+     * \param p Boundary conditions
+     *
+     * \warning In very rare case the ghost part can be one point bigger than the one specified
+     *
+     */
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
+	:grid_dist_id(g_sz,domain,g,create_non_periodic<dim>())
+	{
+	}
+
+    /*! It construct a grid of a specified size, defined on a specified Box space, having a specified ghost size, and specified periodicity
+     *
+     * \param g_sz grid size on each dimension
+     * \param domain Box that contain the grid
+     * \param ghost Ghost part (given in grid units)
+     * \param p Boundary conditions
+     *
+     * \warning In very rare case the ghost part can be one point bigger than the one specified
+     *
+     */
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g, const periodicity<dim> & p)
 	:domain(domain),ghost(g),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
 #endif
-		// Increment the reference counter of the decomposition
-		this->dec.incRef();
 
-		InitializeCellDecomposer(g_sz);
-		InitializeDecomposition(g_sz);
+		InitializeCellDecomposer(g_sz,p.bc);
+		InitializeDecomposition(g_sz, p.bc);
 		InitializeStructures(g_sz);
 	}
 
-    /*! It construct a grid of a specified size, defined on a specified Box space,  and having a specified ghost size
+    /*! It construct a grid of a specified size, defined on a specified Box space, having a specified ghost size and periodicity
      *
      * \param dec Decomposition
      * \param g_sz grid size on each dimension
@@ -784,48 +839,19 @@ public:
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g, const periodicity<dim> & p)
 	:domain(domain),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
 #endif
-		InitializeCellDecomposer(g_sz);
+		InitializeCellDecomposer(g_sz,p.bc);
 
 		ghost = convert_ghost(g,cd_sm);
 
-		InitializeDecomposition(g_sz);
+		InitializeDecomposition(g_sz,p.bc);
 		// Initialize structures
 		InitializeStructures(g_sz);
-	}
-
-	/*! \brief Constrcuctor
-	 *
-	 * \param g_sz std::vector with the grid size on each dimension
-	 * \param domain domain where this grid live
-	 * \param g Ghost given in grid units
-	 *
-	 * \warning In very rare case the ghost part can be one point bigger than the one specified
-	 *
-	 */
-	grid_dist_id(const Decomposition & dec, const std::vector<size_t> & g_sz,const Box<dim,St> & domain, const Ghost<dim,long int> & g)
-	:grid_dist_id(dec,*static_cast<const size_t(*) [dim]>(static_cast<const void*>(&g_sz[0])),domain,g)
-	{
-
-	}
-
-	/*! \brief Constrcuctor
-	 *
-	 * \param g_sz std::vector with the grid size on each dimension
-	 * \param domain domain where this grid live
-	 * \param g Ghost given in grid units
-	 *
-	 * \warning In very rare case the ghost part can be one point bigger than the one specified
-	 *
-	 */
-	grid_dist_id(Decomposition && dec,const std::vector<size_t> & g_sz,const Box<dim,St> & domain, const Ghost<dim,long int> & g)
-	:grid_dist_id(dec, *static_cast<const size_t(*) [dim]>(static_cast<const void*>(&g_sz[0])) , domain, g)
-	{
 	}
 
 	/*! \brief Get an object containing the grid informations
@@ -1088,6 +1114,9 @@ public:
 		//! id
 		size_t g_id;
 
+		//! Sector where it live the linked external ghost box
+		comb<dim> cmb;
+
 		//! sub
 		size_t sub;
 	};
@@ -1120,11 +1149,17 @@ public:
 		//! Box defining the external ghost box in local coordinates
 		::Box<dim,size_t> l_e_box;
 
+		//! Sector position of the external ghost
+		comb<dim> cmb;
+
+		//! Id
+		size_t g_id;
+
 		//! sub_id in which sub-domain this box live
 		size_t sub;
 	};
 
-	/*! \brief It store the information about the external ghost box
+	/*! \brief It store the information about the local external ghost box
 	 *
 	 *
 	 */
@@ -1132,6 +1167,9 @@ public:
 	{
 		//! Box defining the external ghost box in local coordinates
 		::Box<dim,size_t> box;
+
+		//! Sector position of the local external ghost box
+		comb<dim> cmb;
 
 		//! sub_id in which sub-domain this box live
 		size_t sub;
@@ -1191,6 +1229,9 @@ public:
 	//! Flag that indicate if the internal ghost box has been initialized
 	bool init_i_g_box = false;
 
+	//! Flag that indicate if the internal and external ghost box has been fixed
+	bool init_fix_ie_g_box = false;
+
 	//! Internal ghost boxes in grid units
 	openfpm::vector<ip_box_grid> ig_box;
 
@@ -1242,6 +1283,10 @@ public:
 				size_t sub_id = ig_box.get(i).bid.get(j).sub;
 				// Internal ghost box
 				Box<dim,size_t> g_ig_box = ig_box.get(i).bid.get(j).box;
+
+				if (g_ig_box.isValid() == false)
+					continue;
+
 				g_ig_box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
 
 				// Pack a size_t for the internal ghost id
@@ -1271,6 +1316,10 @@ public:
 			// for each ghost box
 			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
 			{
+				// we pack only if it is valid
+				if (ig_box.get(i).bid.get(j).box.isValid() == false)
+					continue;
+
 				// And linked sub-domain
 				size_t sub_id = ig_box.get(i).bid.get(j).sub;
 				// Internal ghost box

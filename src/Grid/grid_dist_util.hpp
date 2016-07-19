@@ -10,6 +10,32 @@
 
 #include "NN/CellList/CellDecomposer.hpp"
 
+/*! \brief
+ *
+ *
+ */
+template<unsigned int dim> struct periodicity
+{
+	size_t bc[dim];
+};
+
+/*! \brief Create NON_PERIODIC data structure
+ *
+ * \tparam dim Dimensionality
+ *
+ * \return structure that define the non periodicity of the grid
+ *
+ */
+template<unsigned int dim> periodicity<dim> create_non_periodic()
+{
+	periodicity<dim> p;
+
+	for(size_t i = 0 ; i < dim ; i++)
+		p.bc[i] = NON_PERIODIC;
+
+	return p;
+}
+
 /*! \brief Create the gdb_ext
  *
  * It is a fundamental function, because it create the structure that store the information of the local grids. In
@@ -41,8 +67,8 @@ template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::ve
 		sp_g -= cd_sm.getOrig();
 
 		// Convert from SpaceBox<dim,St> to SpaceBox<dim,long int>
-		SpaceBox<Decomposition::dims,long int> sp_t = cd_sm.convertDomainSpaceIntoGridUnits(sp);
-		SpaceBox<Decomposition::dims,long int> sp_tg = cd_sm.convertDomainSpaceIntoGridUnits(sp_g);
+		SpaceBox<Decomposition::dims,long int> sp_t = cd_sm.convertDomainSpaceIntoGridUnits(sp,dec.periodicity());
+		SpaceBox<Decomposition::dims,long int> sp_tg = cd_sm.convertDomainSpaceIntoGridUnits(sp_g,dec.periodicity());
 
 		//! Save the origin of the sub-domain of the local grid
 		gdb_ext.last().origin = sp_tg.getP1();

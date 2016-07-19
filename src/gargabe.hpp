@@ -859,4 +859,304 @@ typename Sys_eqs::Vector_type & getB()
 }
 };
 
+
+
+
+/*! \brief Given an external ghost box, I have an internal ghost box with the same id this function link them
+ *
+ *
+ */
+void link_ebox_with_ibox()
+{
+/*
+#ifdef SE_CLASS1
+
+	// No box must be unlinked
+	for (size_t i = 0 ; i < proc_int_box.size() ; i++)
+	{
+		for (size_t j = 0 ; j < proc_int_box.get(i).ibx.size() ; j++)
+			proc_int_box.get(i).ibx.get(j).link = -1;
+
+		for (size_t j = 0 ; j < proc_int_box.get(i).ebx.size() ; j++)
+			proc_int_box.get(i).ebx.get(j).link= -1;
+	}
+#endif
+
+	// Get the number of near processors
+	for (size_t i = 0 ; i < proc_int_box.size() ; i++)
+	{
+		std::unordered_map<size_t,std::pair<size_t,size_t>> from_id_to_ibox;
+		std::unordered_map<size_t,std::pair<size_t,size_t>> from_id_to_ebox;
+
+		for (size_t j = 0 ; j < getProcessorNIGhost(i) ; j++)
+		{
+			std::pair<size_t,size_t> & ele = from_id_to_ibox[getProcessorIGhostId(i,j)];
+			ele.first = i;
+			ele.second = j;
+		}
+
+		for (size_t j = 0 ; j < getProcessorNEGhost(i) ; j++)
+		{
+			std::pair<size_t,size_t> & ele = from_id_to_ebox[getProcessorEGhostId(i,j)];
+
+			ele.first = i;
+			ele.second = j;
+		}
+
+		// iterate across all the ibox
+
+		for ( auto it = from_id_to_ibox.begin(); it != from_id_to_ibox.end(); ++it )
+		{
+			auto ite = from_id_to_ebox.find(it->first);
+
+			if(ite == from_id_to_ebox.end())
+				std::cerr << __FILE__ << ":" << __LINE__ << " error exist an internal ghost box that does not have an external ghost box" << std::endl;
+
+			if (ite->first != it->first)
+				std::cerr << __FILE__ << ":" << __LINE__ << " error exist an internal ghost box with inconsistent information about its origin" << std::endl;
+
+			proc_int_box.get(i).ibx.get(it->second.second).link = ite->second.second;
+			proc_int_box.get(i).ebx.get(ite->second.second).link = it->second.second;
+		}
+	}
+
+#ifdef SE_CLASS1
+
+	// No box must be unlinked
+	for (size_t i = 0 ; i < proc_int_box.size() ; i++)
+	{
+		for (size_t j = 0 ; j < proc_int_box.get(i).ibx.size() ; j++)
+		{
+			if (proc_int_box.get(i).ibx.get(j).link == -1)
+				std::cerr << __FILE__ << ":" << __LINE__ << " error detected unlinked internal ghost box" << std::endl;
+		}
+
+		for (size_t j = 0 ; j < proc_int_box.get(i).ebx.size() ; j++)
+		{
+			if (proc_int_box.get(i).ibx.get(j).link == -1)
+				std::cerr << __FILE__ << ":" << __LINE__ << " error detected unlinked external ghost box" << std::endl;
+		}
+	}
+#endif*/
+
+
+	/*		for (size_t i = 0 ; i < this->getNNProcessors() ; i++)
+			{
+				for (size_t j = 0 ; j < this->getProcessorNIGhost(i) ; j++)
+				{
+					size_t id_i = this->getProcessorIGhostId(i,j);
+					long int link = this->getProcessorIGhostLink(i,j);
+
+					if (link == -1)
+						return false;
+
+					size_t id_e = this->getProcessorEGhostId(i,link);
+
+					if (id_i != id_e)
+						return false;
+				}
+			}*/
+}
+
+
+
+
+
+/////////////////////////////// Fixing  IG BOX not clear if it is really needed /////////////////
+
+/*! \brief Fix the destination box based on the source box
+ *
+ * in case of periodic grids external ghost box and internal ghost box can miss-match
+ * in size if the external ghost box is outside the domain, or more practically
+ * if internal and external ghost boxes are linked by periodicity.
+ * The two boxes has been calculated in two different way and round-off problem can happen
+ * In this call we fix such problem maching the received ghost box to the external ghost box
+ *
+ * \param bs source box
+ * \param dom_i domain from where the source box has been created
+ * \param bd destination box
+ * \param cmb sector of the destination box
+ *
+ */
+inline bool fix_box_ig(Box<dim,size_t> & bs, Box<dim,long int> & dom_i, const Box<dim,size_t> & bd, comb<dim> & cmb)
+{
+	// Each dimension must match
+	for (size_t k = 0 ; k < dim ; k++)
+	{
+		size_t iw = bs.getHigh(k) - bs.getLow(k);
+		size_t ew = bd.getHigh(k) - bd.getLow(k);
+
+		if (iw != ew)
+		{
+			std::cout << "Fixing internal external" << std::endl;
+
+			Box<dim,size_t> & bst = bs;
+
+			if (cmb.c[k] == -1)
+				bst.setHigh(k,bd.getHigh(k) - (iw - ew));
+			else if (cmb.c[k] == 1)
+				bst.setLow(k,bs.getLow(k) + (iw - ew));
+			else
+				return false;
+
+			// points in direction k of the domain
+			long int dom_ext = dom_i.getHigh(k) - dom_i.getLow(k);
+			// points in direction k of the internal ghost box
+			long int ext_ibox = bst.getHigh(k) - bst.getLow(k);
+
+			// internal ghost box cannot be bigger than the domain
+			// notify the failure in fixing
+			if (dom_ext < ext_ibox)
+				return false;
+
+			bs = bst;
+		}
+	}
+
+	return true;
+}
+
+/////////////// GHOST LOCAL FIX
+
+
+bool ret = fix_box_ig(bx_src,gdb_ext.get(i).Dbox,bx_dst,loc_eg_box.get(sub_id_dst).bid.get(k).cmb);
+
+if (ret == false)
+	std::cerr << "ERROR FAIL TO FIX " << std::endl;
+
+
+/////////////////////
+
+
+/*! \brief Fix the internal and external ghost box to be consistent
+ *
+ * in case of periodic grids external ghost box and internal ghost box can miss-match
+ * in size if the external ghost box is outside the domain, or more practically
+ * if internal and external ghost boxes are linked by periodicity.
+ * The two boxes has been calculated in two different way and round-off problem can happen
+ * In this call we fix such problem maching each processor communicate its calculate external
+ * ghost boxes out of the boundary of the domain the receiving processor fix the size of the
+ * connected internal ghost box
+ *
+ */
+inline void fix_ie_g_box()
+{
+	if (init_fix_ie_g_box == true)	return;
+
+	comb<dim> zero;
+	zero.zero();
+
+	// Here we collect all the external ghost box in the sector different from 0 that this processor has
+
+	openfpm::vector<size_t> prc;
+	openfpm::vector<size_t> prc_recv;
+	openfpm::vector<size_t> sz_recv;
+	openfpm::vector<openfpm::vector<Box_fix<dim>>> box_ext_send(dec.getNNProcessors());
+	openfpm::vector<openfpm::vector<Box_fix<dim>>> box_ext_recv;
+
+	// It contain the map g_id as key, and the pair, processor id, box-id
+	std::unordered_map<long int,std::pair<long int,long int>> iglist;
+
+	// Here we create list of all the internal ghost box linked with an external ghost box
+	// by periodicity
+	for(size_t i = 0 ; i < dec.getNNProcessors() ; i++)
+	{
+		for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
+		{
+			if (ig_box.get(i).bid.get(j).cmb != zero)
+			{
+				auto & ele = iglist[ig_box.get(i).bid.get(j).g_id];
+				ele.first = i;
+				ele.second = j;
+			}
+		}
+	}
+
+	for(size_t i = 0 ; i < dec.getNNProcessors() ; i++)
+	{
+		for (size_t j = 0 ; j < eg_box.get(i).bid.size() ; j++)
+		{
+			if (eg_box.get(i).bid.get(j).cmb != zero)
+			{
+				box_ext_send.get(i).add();
+				box_ext_send.get(i).last().bx = eg_box.get(i).bid.get(j).l_e_box;
+				box_ext_send.get(i).last().g_id = eg_box.get(i).bid.get(j).g_id;
+			}
+		}
+		prc.add(dec.IDtoProc(i));
+	}
+
+	v_cl.SSendRecv(box_ext_send,box_ext_recv,prc,prc_recv,sz_recv);
+
+	// Received the external boxes we do fixation for each processor
+	for (size_t i = 0 ; i < box_ext_recv.size() ; i++)
+	{
+		// For each received external ghost box
+		for (size_t j = 0 ; j < box_ext_recv.get(i).size() ; j++)
+		{
+			// ig box linked
+			size_t proc_id = dec.ProctoID(prc_recv.get(i));
+
+			auto it = g_id_to_internal_ghost_box.get(proc_id).find(box_ext_recv.get(i).get(j).g_id);
+
+#ifdef SE_CLASS1
+
+			if (it == g_id_to_internal_ghost_box.get(proc_id).end())
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " warning unlinked external ghost box" << std::endl;
+				continue;
+			}
+
+#endif
+
+			size_t link = it->second;
+
+			Box<dim,size_t> & box_i = ig_box.get(proc_id).bid.get(link).box;
+
+			// local Sub-domain from where this internal ghost box is calculated
+			Box<dim,long int> & box_sub_i = gdb_ext.get(ig_box.get(proc_id).bid.get(link).sub).Dbox;
+
+			comb<dim> cmb = ig_box.get(proc_id).bid.get(link).cmb;
+
+			// the fixing can fail
+			// if it fail put the ig_box into a list
+			// The fix can fail (for example) if the external ghost box require 7 point on x
+			// but the domain has 6 point, in this case we cannot correct the internal ghost box
+			bool ret = fix_box_ig(box_i,box_sub_i,box_ext_recv.get(i).get(j).bx,cmb);
+
+			if (ret == false)
+				std::cerr << __FILE__ << ":" << __LINE__ << " and inconsistency between internal and external ghost boxes has been detected. The fix is not possible please change your ghost size (by a small amount) on the order of 10^-5 if you use float 10^-14 if you use double"  << std::endl;
+
+			// Invalidate the ig_box in the list
+			auto & ele = iglist[box_ext_recv.get(i).get(j).g_id];
+			ele.first = -1;
+			ele.second = -1;
+		}
+	}
+
+	// Here we check if all the internal ghost box has been explored
+	// if one internal ghost box has not been explored, it been that, there is not
+	// corresponding external ghost box on the other side. so we invalidate
+
+	for ( auto it = iglist.begin(); it != iglist.end(); ++it )
+	{
+		// If has not been explored invalidate, there is not external ghost
+		if (it->second.first != -1)
+		{
+			size_t a = it->second.first;
+			size_t b = it->second.second;
+			ig_box.get(a).bid.get(b).box.invalidate();
+		}
+	}
+}
+
+
+//////////////////////////////////////////////////////////////
+
+// Fix the exteenal and internal ghost boxes in ghost get
+fix_ie_g_box();
+
+//////////////////////
+
+
 #endif /* GARGABE_HPP_ */

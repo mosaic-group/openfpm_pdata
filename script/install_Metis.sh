@@ -8,8 +8,8 @@ if [ -d "$1/METIS" ]; then
 fi
 
 ## Remove old download
+rm metis-5.1.0.tar.gz
 rm -rf metis-5.1.0
-
 wget http://ppmcore.mpi-cbg.de/upload/metis-5.1.0.tar.gz
 tar -xf metis-5.1.0.tar.gz
 cd metis-5.1.0
@@ -25,7 +25,7 @@ else
   echo "cmake ../../. -DSHARED=1 -DGKLIB_PATH=../../GKlib -DCMAKE_INSTALL_PREFIX=$1/METIS"
   cmake ../../. -DSHARED=1 -DGKLIB_PATH=../../GKlib -DCMAKE_INSTALL_PREFIX=$1/METIS
 fi
-make -j 4
+make -j $4
 mkdir $1/METIS
 make install
 

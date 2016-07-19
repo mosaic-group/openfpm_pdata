@@ -42,12 +42,6 @@ struct Box_loc_sub
 	:bx(bx),sub(sub),cmb(cmb)
 	{};
 
-	template <typename Memory> Box_loc_sub(const Box_loc_sub<dim,T> & bls)
-	{
-		bx = bls.bx;
-		this->sub = bls.sub;
-	};
-
 	Box_loc_sub operator=(const Box<dim,T> & box)
 	{
 		::Box<dim,T>::operator=(box);
@@ -59,7 +53,7 @@ struct Box_loc_sub
 };
 
 /*! It contain a box definition and from witch sub-domain it come from (in the local processor)
- * and an unique across adjacent processors (for communication)
+ * and an unique if across adjacent processors (for communication)
  *
  * If the box come from the intersection of an expanded sub-domain and a sub-domain
  *
@@ -85,22 +79,17 @@ struct Box_loc_sub
 template<unsigned int dim, typename T>
 struct Box_sub
 {
+	//! Internal ghost box definition
 	Box<dim,T> bx;
 
-	// Domain id
+	//! Domain id
 	size_t sub;
 
-	// Id
+	//! see ebx_ibx_form in ie_ghost for the meaning
 	size_t id;
 
-	Box_sub operator=(const Box<dim,T> & box)
-	{
-		bx = box;
-
-		return *this;
-	}
-
-
+	//! see ie_ghost follow sector explanation
+	comb<dim> cmb;
 };
 
 //! Particular case for local internal ghost boxes
@@ -122,13 +111,6 @@ struct Box_sub_k
 	:k(-1)
 	{
 		cmb.zero();
-	}
-
-	Box_sub_k operator=(const Box<dim,T> & box)
-	{
-		bx = box;
-
-		return *this;
 	}
 
 	// encap interface to make compatible with OpenFPM_IO
@@ -191,6 +173,14 @@ struct N_box
 	// near processor sector position (or where they live outside the domain)
 	openfpm::vector<comb<dim>> pos;
 
+	// Number of real sub-domains or sub-domain in the central sector
+	size_t n_real_sub;
+
+	// When a sub-domain is not in the central sector, it mean that has been created
+	// because of periodicity in a non central sector. Any sub-domain not in the central
+	// sector is linked to one sub-domain in the central sector
+	openfpm::vector<size_t> r_sub;
+
 	//! Default constructor
 	N_box()
 	:id((size_t)-1)
@@ -218,6 +208,8 @@ struct N_box
 		id = ele.id;
 		bx = ele.bx;
 		pos = ele.pos;
+		n_real_sub = ele.n_real_sub;
+		r_sub = ele.r_sub;
 
 		return * this;
 	}
@@ -231,7 +223,9 @@ struct N_box
 	{
 		id = ele.id;
 		bx.swap(ele.bx);
-		pos = ele.pos;
+		pos.swap(ele.pos);
+		n_real_sub = ele.n_real_sub;
+		r_sub.swap(ele.r_sub);
 
 		return * this;
 	}
@@ -247,6 +241,12 @@ struct N_box
 			return false;
 
 		if (pos != ele.pos)
+			return false;
+
+		if (r_sub != ele.r_sub)
+			return false;
+
+		if (n_real_sub != ele.n_real_sub)
 			return false;
 
 		return bx == ele.bx;

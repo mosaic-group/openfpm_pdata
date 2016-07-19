@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 	// operator= functions
 	// operator== functions
 
-	BOOST_REQUIRE_EQUAL(sizeof(MetisDistribution<3,float>),568ul);
+	BOOST_REQUIRE_EQUAL(sizeof(MetisDistribution<3,float>),536ul);
 }
 
 BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
@@ -262,7 +262,7 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 
 	//! [refine with parmetis the decomposition]
 
-	BOOST_REQUIRE_EQUAL(sizeof(MetisDistribution<3,float>),568ul);
+	BOOST_REQUIRE_EQUAL(sizeof(MetisDistribution<3,float>),536ul);
 }
 
 BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
@@ -351,8 +351,8 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 
 #else
 
-                                bool test = compare(str.str() + ".vtk",std::string("src/Decomposition/Distribution/test_data/") + str.str() + "_test.vtk");
-                                BOOST_REQUIRE_EQUAL(true,test);
+				bool test = compare(str.str() + ".vtk",std::string("src/Decomposition/Distribution/test_data/") + str.str() + "_test.vtk");
+				BOOST_REQUIRE_EQUAL(true,test);
 
 #endif
 

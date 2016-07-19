@@ -1,0 +1,16 @@
+#! /bin/bash
+
+function set_mpi()
+{
+  command -v mpirun >/dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    
+    ### Check for mpi installation
+
+    if [ -d "$1/MPI"  ]; then
+      echo "Setting MPI compilers to: $PATH:$1/MPI/bin"
+      export PATH="$PATH:$1/MPI/bin"
+    fi    
+  fi
+}
+
