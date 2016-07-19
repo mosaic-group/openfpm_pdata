@@ -28,6 +28,7 @@
 #include "Grid/grid_key_dx_iterator_hilbert.hpp"
 #include "Vector/vector_dist_ofb.hpp"
 #include "Decomposition/CartDecomposition.hpp"
+#include "data_type/aggregate.hpp"
 
 #define V_SUB_UNIT_FACTOR 64
 
@@ -93,7 +94,7 @@ private:
 	Vcluster & v_cl;
 
 	// definition of the send vector for position
-	typedef openfpm::vector<Point<dim, St>, ExtPreAlloc<Memory>, openfpm::grow_policy_identity> send_pos_vector;
+	typedef openfpm::vector<Point<dim, St>, ExtPreAlloc<Memory>, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin , openfpm::grow_policy_identity> send_pos_vector;
 
 	//////////////////////////////
 	// COMMUNICATION variables
@@ -133,9 +134,9 @@ private:
 	struct pos_prop
 	{
 		//! position vector
-		openfpm::vector<Point<dim, St>, PreAllocHeapMemory<2>, openfpm::grow_policy_identity> pos;
+		openfpm::vector<Point<dim, St>, PreAllocHeapMemory<2>, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin, openfpm::grow_policy_identity> pos;
 		//! properties vector
-		openfpm::vector<prop, PreAllocHeapMemory<2>, openfpm::grow_policy_identity> prp;
+		openfpm::vector<prop, PreAllocHeapMemory<2>, typename memory_traits_lin<prop>::type, memory_traits_lin, openfpm::grow_policy_identity> prp;
 	};
 
 	/*! \brief Operator= is not permitted
@@ -456,9 +457,9 @@ private:
 			for (size_t j = 0; j < opart.get(i).size(); j++)
 			{
 				// source object type
-				typedef encapc<1, prop, typename openfpm::vector<prop>::memory_conf> encap_src;
+				typedef encapc<1, prop, typename openfpm::vector<prop>::layout_type> encap_src;
 				// destination object type
-				typedef encapc<1, prp_object, typename openfpm::vector<prp_object>::memory_conf> encap_dst;
+				typedef encapc<1, prp_object, typename openfpm::vector<prp_object>::layout_type> encap_dst;
 
 				// Copy only the selected properties
 				object_si_d<encap_src, encap_dst, OBJ_ENCAP, prp...>(v_prp.get(opart.get(i).get(j)), g_send_prp.get(i).get(j));
@@ -480,8 +481,8 @@ private:
 		for (size_t i = 0; i < prc_r.size(); i++)
 		{
 			// Create the size required to store the particles position and properties to communicate
-			size_t s1 = openfpm::vector<Point<dim, St>, HeapMemory, openfpm::grow_policy_identity>::calculateMem(prc_sz_r.get(i), 0);
-			size_t s2 = openfpm::vector<prop, HeapMemory, openfpm::grow_policy_identity>::calculateMem(prc_sz_r.get(i), 0);
+			size_t s1 = openfpm::vector<Point<dim, St>, HeapMemory, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin, openfpm::grow_policy_identity>::calculateMem(prc_sz_r.get(i), 0);
+			size_t s2 = openfpm::vector<prop, HeapMemory, typename memory_traits_lin<prop>::type, memory_traits_lin, openfpm::grow_policy_identity>::calculateMem(prc_sz_r.get(i), 0);
 
 			// Preallocate the memory
 			size_t sz[2] = { s1, s2 };
@@ -538,7 +539,7 @@ private:
 			PtrMemory * ptr1 = new PtrMemory(recv_mem_gg.get(i).getPointer(), recv_sz.get(i));
 
 			// create vector representation to a piece of memory already allocated
-			openfpm::vector<prp_object, PtrMemory, openfpm::grow_policy_identity> v2;
+			openfpm::vector<prp_object, PtrMemory, typename memory_traits_lin<prp_object>::type, memory_traits_lin , openfpm::grow_policy_identity> v2;
 
 			v2.setMemory(*ptr1);
 
@@ -566,7 +567,7 @@ private:
 
 			// create vector representation to a piece of memory already allocated
 
-			openfpm::vector<Point<dim, St>, PtrMemory, openfpm::grow_policy_identity> v2;
+			openfpm::vector<Point<dim, St>, PtrMemory, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin , openfpm::grow_policy_identity> v2;
 
 			v2.setMemory(*ptr1);
 
@@ -603,8 +604,8 @@ private:
 
 			// create vector representation to a piece of memory already allocated
 
-			openfpm::vector<Point<dim, St>, PtrMemory, openfpm::grow_policy_identity> vpos;
-			openfpm::vector<prop, PtrMemory, openfpm::grow_policy_identity> vprp;
+			openfpm::vector<Point<dim, St>, PtrMemory, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin ,openfpm::grow_policy_identity> vpos;
+			openfpm::vector<prop, PtrMemory, typename memory_traits_lin<prop>::type, memory_traits_lin ,openfpm::grow_policy_identity> vprp;
 
 			vpos.setMemory(*ptr1);
 			vprp.setMemory(*ptr2);
@@ -651,11 +652,11 @@ private:
 		// Calculate the total size required for the sending buffer
 		for (size_t i = 0; i < ghost_prc_sz.size(); i++)
 		{
-			size_t alloc_ele = openfpm::vector<prp_object, HeapMemory, openfpm::grow_policy_identity>::calculateMem(ghost_prc_sz.get(i), 0);
+			size_t alloc_ele = openfpm::vector<prp_object, HeapMemory, typename memory_traits_lin<prp_object>::type, memory_traits_lin , openfpm::grow_policy_identity>::calculateMem(ghost_prc_sz.get(i), 0);
 			pap_prp.push_back(alloc_ele);
 			size_byte_prp += alloc_ele;
 
-			alloc_ele = openfpm::vector<Point<dim, St>, HeapMemory, openfpm::grow_policy_identity>::calculateMem(ghost_prc_sz.get(i), 0);
+			alloc_ele = openfpm::vector<Point<dim, St>, HeapMemory, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin, openfpm::grow_policy_identity>::calculateMem(ghost_prc_sz.get(i), 0);
 			pap_pos.push_back(alloc_ele);
 			size_byte_pos += alloc_ele;
 		}
@@ -893,7 +894,7 @@ public:
 		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;
 
 		// send vector for each processor
-		typedef openfpm::vector<prp_object, ExtPreAlloc<Memory>, openfpm::grow_policy_identity> send_vector;
+		typedef openfpm::vector<prp_object, ExtPreAlloc<Memory>, typename memory_traits_lin<prp_object>::type, memory_traits_lin, openfpm::grow_policy_identity> send_vector;
 
 		// reset the ghost part
 		v_pos.resize(g_m);
@@ -1069,7 +1070,7 @@ public:
 	{
 		// Get ghost and anlarge by 1%
 		Ghost<dim,St> g = dec.getGhost();
-		g.magnify(1.01);
+		g.magnify(1.013);
 
 		return getCellList(r_cut, g);
 	}
@@ -1404,7 +1405,7 @@ public:
 		for (size_t i = 0; i < dim; i++)
 		{
 			start.set_d(i, 0);
-			if (dec.isPeriodic(i) == PERIODIC)
+			if (dec.periodicity(i) == PERIODIC)
 			{
 				sz_g[i] = sz[i];
 				stop.set_d(i, sz_g[i] - 2);
@@ -1514,12 +1515,12 @@ public:
 	/*! \brief Output particle position and properties
 	 *
 	 * \param out output
-	 * \param opt NO_GHOST or WITH_GHOST
+	 * \param opt VTK_WRITER or CSV_WRITER
 	 *
-	 * \return if the file has been written correctly
+	 * \return true if the file has been written without error
 	 *
 	 */
-	inline bool write(std::string out, int opt = NO_GHOST | CSV_WRITER)
+	inline bool write(std::string out, int opt = NO_GHOST | VTK_WRITER )
 	{
 
 		if ((opt & 0xFFFF0000) == CSV_WRITER)
@@ -1532,20 +1533,17 @@ public:
 			// Write the CSV
 			return csv_writer.write(output,v_pos,v_prp);
 		}
-/*		else if ((opt & 0xFFFF0000) == VTK_WRITER)
+		else if ((opt & 0xFFFF0000) == VTK_WRITER)
 		{
-			// CSVWriter test
+			// VTKWriter for a set of points
 			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim,St>>, openfpm::vector<prop>>, VECTOR_POINTS> vtk_writer;
+			vtk_writer.add(v_pos,v_prp,g_m);
 
-			std::string output = std::to_string(out + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".csv"));
+			std::string output = std::to_string(out + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtk"));
 
-			// Write the CSV
-			return vtk_writer.write(output,v_pos,v_prp);
+			// Write the VTK file
+			return vtk_writer.write(output);
 		}
-		else if ((opt & 0xFFFF0000) == H5PART_WRITER)
-		{
-
-		}*/
 
 		return false;
 	}

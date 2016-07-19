@@ -48,6 +48,81 @@ class nn_prcs
 	//! applyBC function is suppose to be called only one time
 	bool aBC;
 
+	/*! \brief It shift a box but it does consistently
+	 *
+	 * In calculating internal and external ghost boxes, domains are shifted by periodicity.
+	 * In particular, consider a box touching with the left bolder the left border of the domain
+	 *
+
+	 before shift                              after shift
+
++-----------------------------+        +------------------------------+
+|                             |        |                              |
+|      domain                 |        |        domain                |
+|                             |        |                              |
+|                             |        |                              |
++---------+                   |        |                              +---------+
+|         |                   |        |                              |         |
+|         |                   |        |                              |         |
+|  box    |                   |        |                              |   box   |
+|         |                   |        |                              |         |
+|         |                   |        |                              |         |
++---------+                   |        |                              +---------+
+|                             |        |                              |
+|                             |        |                              |
+|                             |        |                              |
+|                             |        |                              |
+|                             |        |                              |
++-----------------------------+        +------------------------------+
+
+	 *
+	 *
+	 *
+	 *
+	 *
+	 * shifting the box on the right by the size of the domain, we expect to have a box touching with
+	 * the left side the right side of the domain. Because of rounding off problem this is not possible
+	 * with a simple shift. This function ensure consistency like ensuring the previous condition, with
+	 * the assumption that the shift is +/- the domain size
+	 *
+	 * \param box to shift
+	 * \param domain
+	 * \param shift
+	 *
+	 */
+	inline void consistent_shift(Box<dim,T> & box, const Box<dim,T> & domain, const Point<dim,T> & shift)
+	{
+		for (size_t k = 0 ; k < dim ; k++)
+		{
+			// if it touch on the left and shift on the right
+			if (box.getLow(k) == domain.getLow(k) && shift.get(k) > 0)
+			{
+				box.setLow(k,domain.getHigh(k));
+				box.setHigh(k,box.getHigh(k) + shift.get(k));
+			}
+			else if (box.getLow(k) == domain.getHigh(k) && shift.get(k) < 0)
+			{
+				box.setLow(k,domain.getLow(k));
+				box.setHigh(k,box.getHigh(k) + shift.get(k));
+			}
+			else if (box.getHigh(k) == domain.getHigh(k) && shift.get(k) < 0)
+			{
+				box.setHigh(k,domain.getLow(k));
+				box.setLow(k,box.getLow(k) + shift.get(k));
+			}
+			else if (box.getHigh(k) == domain.getLow(k) && shift.get(k) > 0)
+			{
+				box.setHigh(k,domain.getHigh(k));
+				box.setLow(k,box.getLow(k) + shift.get(k));
+			}
+			else
+			{
+				box.setHigh(k,box.getHigh(k) + shift.get(k));
+				box.setLow(k,box.getLow(k) + shift.get(k));
+			}
+		}
+	}
+
 	/*! \brief Message allocation
 	 *
 	 * \param message size required to receive from i
@@ -74,21 +149,23 @@ class nn_prcs
 
 	/*! \brief add sub-domains to processor for a near processor i
 	 *
-	 * \param		v_cl = nnp.v_cl; i near processor
+	 * \param i near processor
+	 * \param r_sub real sub-domain id
 	 * \param bx Box to add
 	 * \param c from which sector the sub-domain come from
 	 *
 	 */
-	inline void add_nn_subdomain(size_t i, const Box<dim,T> & bx, const comb<dim> & c)
+	inline void add_nn_subdomain(size_t i, size_t r_sub, const Box<dim,T> & bx, const comb<dim> & c)
 	{
 		N_box<dim,T> & nnpst = nn_processor_subdomains_tmp[i];
 		nnpst.bx.add(bx);
 		nnpst.pos.add(c);
+		nnpst.r_sub.add(r_sub);
 	}
 
 	/*! \brief In case of periodic boundary conditions we replicate the sub-domains at the border
 	 *
-	 * \param domain Domain box
+	 * \param domain Domain
 	 * \param boundary boundary conditions
 	 * \param ghost ghost part
 	 *
@@ -149,8 +226,15 @@ class nn_prcs
 
 						if (sub.Intersect(bp,b_int) == true)
 						{
-							sub += shift;
-							add_nn_subdomain(IDtoProc(k),sub,cmbs[j]);
+							Box<dim,T> sub2 = sub;
+							sub2 += shift;
+
+							// Here we have to be careful of rounding off problems, in particular if any part
+							// of the sub-domain touch the border of the domain
+
+							consistent_shift(sub,domain,shift);
+
+							add_nn_subdomain(IDtoProc(k),l,sub,cmbs[j]);
 						}
 					}
 				}
@@ -177,6 +261,7 @@ class nn_prcs
 
 				nnps.bx.add(nnps_tmp.bx.get(i));
 				nnps.pos.add(nnps_tmp.pos.get(i));
+				nnps.r_sub.add(nnps_tmp.r_sub.get(i));
 			}
 		}
 
@@ -348,6 +433,8 @@ public:
 				N_box<dim,T> & nnps = nn_processor_subdomains[it->first];
 
 				nnps.pos.add(c);
+				nnps.r_sub.add(i);
+				nnps.n_real_sub = nnps.bx.size();
 			}
 		}
 	}
@@ -374,7 +461,27 @@ public:
 		return nn_processors.get(id);
 	}
 
-	/*! \brief Get the sub-domain of a near processor
+	/*! \brief Get the real-id of the sub-domains of a near processor
+	 *
+	 * \param p_id near processor rank
+	 *
+	 * \return the sub-domains real id
+	 *
+	 */
+	inline const openfpm::vector< size_t > & getNearSubdomainsRealId(size_t p_id) const
+	{
+		auto key = nn_processor_subdomains.find(p_id);
+#ifdef SE_CLASS1
+		if (key == nn_processor_subdomains.end())
+		{
+			std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " error this process rank is not adjacent to the local processor";
+		}
+#endif
+
+		return key->second.r_sub;
+	}
+
+	/*! \brief Get the sub-domains of a near processor
 	 *
 	 * \param p_id near processor rank
 	 *
@@ -394,11 +501,33 @@ public:
 		return key->second.bx;
 	}
 
-	/*! \brief Get the sub-domain of a near processor
+	/*! \brief Get the number of real sub-domains of a near processor
+	 *
+	 * \note the real sub-domain are the subdomain in the central sector, or any sub-domain that has not been create because of boundary conditions
 	 *
 	 * \param p_id near processor rank
 	 *
-	 * \return the sub-domains
+	 * \return the number of real sub-domains
+	 *
+	 */
+	inline size_t getNRealSubdomains(size_t p_id) const
+	{
+		auto key = nn_processor_subdomains.find(p_id);
+#ifdef SE_CLASS1
+		if (key == nn_processor_subdomains.end())
+		{
+			std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " error this process rank is not adjacent to the local processor";
+		}
+#endif
+
+		return key->second.n_real_sub;
+	}
+
+	/*! \brief Get the sub-domains sector position of a near processor
+	 *
+	 * \param p_id near processor rank
+	 *
+	 * \return the sub-domains positions
 	 *
 	 */
 	inline const openfpm::vector< comb<dim> > & getNearSubdomainsPos(size_t p_id) const
@@ -413,7 +542,7 @@ public:
 		return key->second.pos;
 	}
 
-	/*! \brief Get the adjacent processor id
+	/*! \brief Get the near processor id
 	 *
 	 * \param p_id adjacent processor rank
 	 *

@@ -1,6 +1,11 @@
 #! /bin/bash
 
 function possible_solutions {
+
+   if [ $sq -eq 1 ]; then
+     return
+   fi
+
  sol=1
  echo "Possible solutions:"
  for com in "$@"
@@ -15,5 +20,11 @@ function possible_solutions {
   exit 1
  fi
  possible_solutions_ret=`expr $choose - 1`
+ echo "Executing: ${command[$possible_solutions_ret]}"
+ if [ -a input_install ]; then
+   eval ${commands[$possible_solutions_ret]} < input_install
+ else
+   eval ${commands[$possible_solutions_ret]}
+ fi
 }
 

@@ -70,7 +70,7 @@
  * * Near processor sub-domain: is a sub-domain that live in the a near (or contiguous) processor
  * * Near processor list: the list of all the near processor of the local processor (each processor has a list
  *                        of the near processor)
- * * Local ghosts interal or external are all the ghosts that does not involve inter-processor communications
+ * * Local ghosts internal or external are all the ghosts that does not involve inter-processor communications
  *
  * \see calculateGhostBoxes() for a visualization of internal and external ghost boxes
  *
@@ -101,7 +101,12 @@ protected:
 
 	//! This is the key type to access  data_s, for example in the case of vector
 	//! acc_key is size_t
-	typedef typename openfpm::vector<SpaceBox<dim, T>, Memory, openfpm::vector_grow_policy_default, openfpm::vect_isel<SpaceBox<dim, T>>::value>::access_key acc_key;
+	typedef typename openfpm::vector<SpaceBox<dim, T>,
+			Memory,
+			typename memory_traits_lin<SpaceBox<dim, T>>::type,
+			memory_traits_lin,
+			openfpm::vector_grow_policy_default,
+			openfpm::vect_isel<SpaceBox<dim, T>>::value>::access_key acc_key;
 
 	//! the set of all local sub-domain as vector
 	openfpm::vector<SpaceBox<dim, T>> sub_domains;
@@ -931,9 +936,20 @@ public:
 	 * \return the periodicity in direction i
 	 *
 	 */
-	size_t isPeriodic(size_t i)
+	inline size_t periodicity(size_t i)
 	{
 		return bc[i];
+	}
+
+	/*! \brief Get the periodicity
+	 *
+	 *
+	 * \return the periodicity
+	 *
+	 */
+	inline const size_t (& periodicity() const) [dim]
+	{
+		return bc;
 	}
 
 	/*! \brief Set the parameter of the decomposition

@@ -69,15 +69,19 @@
 #define NO_EDGE -1
 #define DIST_GRAPH_ERROR 7001
 
-template<typename V, typename E, template<typename, typename, typename, unsigned int> class VertexList, template<typename, typename, typename, unsigned int> class EdgeList, typename Memory, typename grow_p>
+template<typename V, typename E,
+		 typename Memory,
+		 typename layout_v,
+		 typename layout_e,
+		 template<typename> class layout_v_base,
+		 template<typename> class layout_e_base,
+		 typename grow_p>
 class DistGraph_CSR;
 
 class v_info
 {
 public:
 	typedef boost::fusion::vector<size_t, size_t> type;
-	typedef typename memory_traits_inte<type>::type memory_int;
-	typedef typename memory_traits_lin<type>::type memory_lin;
 
 	type data;
 
@@ -132,8 +136,6 @@ class e_info
 {
 public:
 	typedef boost::fusion::vector<size_t, size_t> type;
-	typedef typename memory_traits_inte<type>::type memory_int;
-	typedef typename memory_traits_lin<type>::type memory_lin;
 
 	type data;
 
@@ -197,7 +199,12 @@ public:
  *
  */
 
-template<typename V, typename E = no_edge, template<typename, typename, typename, unsigned int> class VertexList = openfpm::vector, template<typename, typename, typename, unsigned int> class EdgeList = openfpm::vector, typename Memory = HeapMemory,
+template<typename V, typename E = no_edge,
+		 typename Memory = HeapMemory,
+		 typename layout_v = typename memory_traits_lin<V>::type,
+		 typename layout_e = typename memory_traits_lin<E>::type,
+		 template <typename> class layout_v_base = memory_traits_lin,
+		 template <typename> class layout_e_base = memory_traits_lin,
 		typename grow_p = openfpm::grow_policy_double>
 class DistGraph_CSR
 {
@@ -214,25 +221,25 @@ class DistGraph_CSR
 	size_t v_slot;
 
 	// Structure that store the vertex properties
-	VertexList<V, Memory, grow_p, openfpm::vect_isel<V>::value> v;
+	openfpm::vector<V, Memory, layout_v,layout_v_base,grow_p, openfpm::vect_isel<V>::value> v;
 
 	// Structure that store the vertex id and global id
-	VertexList<v_info, Memory, grow_p, openfpm::vect_isel<v_info>::value> v_m;
+	openfpm::vector<v_info, Memory, typename memory_traits_lin<v_info>::type, memory_traits_lin, grow_p, openfpm::vect_isel<v_info>::value> v_m;
 
 	// Structure that store the number of adjacent vertex in e_l for each vertex
-	VertexList<size_t, Memory, grow_p, openfpm::vect_isel<size_t>::value> v_l;
+	openfpm::vector<size_t, Memory, typename layout_v_base<size_t>::type, layout_v_base, grow_p, openfpm::vect_isel<size_t>::value> v_l;
 
 	// Structure that store the edge properties
-	EdgeList<E, Memory, grow_p, openfpm::vect_isel<E>::value> e;
+	openfpm::vector<E, Memory, layout_e, layout_e_base, grow_p, openfpm::vect_isel<E>::value> e;
 
 	// Structure that store the edge properties
-	EdgeList<e_info, Memory, grow_p, openfpm::vect_isel<e_info>::value> e_m;
+	openfpm::vector<e_info, Memory, typename layout_e_base<e_info>::type, layout_e_base, grow_p, openfpm::vect_isel<e_info>::value> e_m;
 
 	// Structure that store for each vertex the adjacent the vertex id and edge id (for property into e)
-	EdgeList<e_map, Memory, grow_p, openfpm::vect_isel<e_map>::value> e_l;
+	openfpm::vector<e_map, Memory, typename memory_traits_lin<e_map>::type, layout_e_base, grow_p, openfpm::vect_isel<e_map>::value> e_l;
 
 	// invalid edge element, when a function try to create an in valid edge this object is returned
-	EdgeList<E, Memory, grow_p, openfpm::vect_isel<E>::value> e_invalid;
+	openfpm::vector<E, Memory, layout_e, layout_e_base, grow_p, openfpm::vect_isel<E>::value> e_invalid;
 
 	// Map to access to the global vertex id given the vertex id
 	std::unordered_map<size_t, size_t> id2glb;
@@ -341,7 +348,7 @@ class DistGraph_CSR
 			// Reallocate with double slot
 
 			// Create an new Graph
-			DistGraph_CSR<V, E, VertexList, EdgeList> g_new(2 * v_slot, v.size());
+			DistGraph_CSR<V, E> g_new(2 * v_slot, v.size());
 
 			// Copy the graph
 			for (size_t i = 0; i < v.size(); i++)
@@ -974,10 +981,10 @@ public:
 	typedef E E_type;
 
 	// Object container for the vertex, for example can be encap<...> (map_grid or openfpm::vector)
-	typedef typename VertexList<V, Memory, grow_p, openfpm::vect_isel<V>::value>::container V_container;
+	typedef typename openfpm::vector<V, Memory, layout_v, layout_v_base, grow_p, openfpm::vect_isel<V>::value>::container V_container;
 
 	// Object container for the edge, for example can be encap<...> (map_grid or openfpm::vector)
-	typedef typename EdgeList<E, Memory, grow_p, openfpm::vect_isel<E>::value>::container E_container;
+	typedef typename openfpm::vector<E, Memory, layout_e, layout_e_base, grow_p, openfpm::vect_isel<E>::value>::container E_container;
 
 	/*! \brief It duplicate the graph
 	 *
@@ -985,9 +992,9 @@ public:
 	 *
 	 */
 
-	DistGraph_CSR<V, E, VertexList, EdgeList, Memory, grow_p> duplicate() const
+	DistGraph_CSR<V, E, Memory, layout_v, layout_e,layout_v_base,layout_e_base, grow_p> duplicate() const
 	{
-		DistGraph_CSR<V, E, VertexList, EdgeList, Memory, grow_p> dup;
+		DistGraph_CSR<V, E, Memory, layout_v, layout_e,layout_v_base,layout_e_base, grow_p> dup;
 
 		dup.v_slot = v_slot;
 
@@ -1129,7 +1136,7 @@ public:
 	/*! \brief Copy constructor
 	 *
 	 */
-	DistGraph_CSR(Vcluster & vcl, DistGraph_CSR<V, E, VertexList, EdgeList, Memory> && g) :
+	DistGraph_CSR(Vcluster & vcl, DistGraph_CSR<V, E, Memory> && g) :
 			vcl(vcl)
 	{
 		swap(g);
@@ -1140,7 +1147,7 @@ public:
 	 * \param g graph to copy
 	 * 
 	 */
-	DistGraph_CSR<V, E, VertexList, EdgeList, Memory> & operator=(DistGraph_CSR<V, E, VertexList, EdgeList, Memory> && g)
+	DistGraph_CSR<V, E, Memory> & operator=(DistGraph_CSR<V, E, Memory> && g)
 	{
 		swap(g);
 
@@ -1152,7 +1159,7 @@ public:
 	 * \param g graph to copy
 	 * 
 	 */
-	DistGraph_CSR<V, E, VertexList, EdgeList, Memory> & operator=(const DistGraph_CSR<V, E, VertexList, EdgeList, Memory> & g)
+	DistGraph_CSR<V, E, Memory> & operator=(const DistGraph_CSR<V, E, Memory> & g)
 	{
 		swap(g.duplicate());
 
@@ -1507,7 +1514,7 @@ public:
 	 * \return the number of childs
 	 *
 	 */
-	inline size_t getNChilds(typename VertexList<V, Memory, grow_p, openfpm::vect_isel<V>::value>::iterator_key & c)
+	inline size_t getNChilds(typename openfpm::vector<V, Memory, layout_v, layout_v_base, grow_p, openfpm::vect_isel<V>::value>::iterator_key & c)
 	{
 		return v_l.template get<0>(c.get());
 	}
@@ -1620,7 +1627,7 @@ public:
 	 * \return the target i connected by an edge node, for the node v
 	 *
 	 */
-	inline size_t getChild(typename VertexList<V, Memory, grow_p, openfpm::vect_isel<V>::value>::iterator_key & v, size_t i)
+	inline size_t getChild(typename openfpm::vector<V, Memory, layout_v, layout_v_base, grow_p, openfpm::vect_isel<V>::value>::iterator_key & v, size_t i)
 	{
 #ifdef DEBUG
 		if (i >= v_l.template get<0>(v.get()))
@@ -1680,7 +1687,6 @@ public:
 	 */
 	template<unsigned int dim, typename Mem> inline void add_vertex(const encapc<dim, V, Mem> & vrt, size_t id, size_t gid)
 	{
-
 		// Create vertex info object
 		v_info vm;
 		vm.template get<v_info::id>() = id;
@@ -1908,7 +1914,7 @@ public:
 	 *
 	 * \param g The source graph
 	 */
-	inline void swap(DistGraph_CSR<V, E, VertexList, EdgeList> & g)
+	inline void swap(DistGraph_CSR<V, E> & g)
 	{
 		// switch the memory
 		v.swap(g.v);
@@ -1932,7 +1938,7 @@ public:
 	 *
 	 * \param g The source graph
 	 */
-	inline void swap(DistGraph_CSR<V, E, VertexList, EdgeList> && g)
+	inline void swap(DistGraph_CSR<V, E> && g)
 	{
 		// switch the memory
 		v.swap(g.v);
@@ -1968,9 +1974,9 @@ public:
 	 * \return an iterator to iterate through all the edges
 	 *
 	 */
-	inline edge_iterator<DistGraph_CSR<V, E, VertexList, EdgeList, Memory>> getEdgeIterator() const
+	inline edge_iterator<DistGraph_CSR<V, E, Memory>> getEdgeIterator() const
 	{
-		return edge_iterator<DistGraph_CSR<V, E, VertexList, EdgeList, Memory>>(*this);
+		return edge_iterator<DistGraph_CSR<V, E, Memory>>(*this);
 	}
 
 	/*! \brief Return the number of the vertices in this subgraph

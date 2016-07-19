@@ -6,10 +6,11 @@ if [ -d "$1/MPI" ]; then
   echo "MPI already installed"
   exit 0
 fi
-
-wget http://ppmcore.mpi-cbg.de/upload/openmpi-1.8.7.tar.bz2
-tar -xvf openmpi-1.8.7.tar.bz2
-cd openmpi-1.8.7
+rm -rf openmpi-1.10.2
+rm openmpi-1.10.2.tar.bz2
+wget http://ppmcore.mpi-cbg.de/upload/openmpi-1.10.2.tar.bz2
+tar -xvf openmpi-1.10.2.tar.bz2
+cd openmpi-1.10.2
 
 #
 #                  --disable-mca-dso \
@@ -24,7 +25,10 @@ cd openmpi-1.8.7
 #
 #
 
-sh ./configure --prefix=$1/MPI --enable-opal-multi-threads --enable-mpi-f90 $2 $3
-make -j 4
-mkdir $1/MPI
+./configure --prefix=$1/MPI --enable-mpi-fortran=yes
+make -j $2
 make install
+
+# Mark the installation
+echo 1 > $1/MPI/version
+

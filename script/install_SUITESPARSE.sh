@@ -1,7 +1,9 @@
 #! /bin/bash
 
+source script/detect_gcc
 source script/discover_os
 
+detect_gcc_or_clang g++
 discover_os
 
 # check if the directory $1/SUITESPARSE exist

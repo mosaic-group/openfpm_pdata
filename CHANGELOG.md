@@ -1,7 +1,23 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [0.3.0] -
+## [0.4.0] - 26-05-2016
+
+### Added
+- Grid with periodic boundary conditions
+- VTK Writer for distributed vector, now is the default writer
+- Installation of linear algebra packages
+- More user friendly installation (No environment variables to add in your bashrc, installation report less verbose)
+
+### Fixed
+- GPU compilation
+- PARMetis automated installation
+- Critical Bug in getCellList, it was producing Celllist with smaller spacing
+
+### Changed
+
+
+## [0.3.0] - 16-04-2016
 
 ### Added
 - Molacular Dynamic example
@@ -17,7 +33,7 @@ All notable changes to this project will be documented in this file.
 - CartDecomposition parameter for the distributed structures is now optional
 - template getPos<0>(), substituted by getPos()
 
-## [0.2.1] - 
+## [0.2.1] - 01-04-2016
 
 ### Changed
 - GoogleChart name function changed: AddPointGraph to AddLinesGraph and AddColumsGraph to AddHistGraph

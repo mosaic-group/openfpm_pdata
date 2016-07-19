@@ -146,7 +146,7 @@ public:
 		auto g_dst_it = g_dst.getDomainIterator();
 
 		// Check that the 2 iterator has the same size
-		checkIterator<St,decltype(g_map_it),decltype(g_dst_it)>(g_map_it,g_dst_it);
+		checkIterator<Grid_dst,decltype(g_map_it),decltype(g_dst_it)>(g_map_it,g_dst_it);
 
 		while (g_map_it.isNext() == true)
 		{

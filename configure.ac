@@ -38,7 +38,7 @@ m4_ifdef([AX_BLAS],,[m4_include([m4/ax_blas.m4])])
 m4_ifdef([AX_LAPACK],,[m4_include([m4/ax_lapack.m4])])
 m4_ifdef([AX_SUITESPARSE],,[m4_include([m4/ax_suitesparse.m4])])
 m4_ifdef([AX_EIGEN],,[m4_include([m4/ax_eigen.m4])])
-m4_ifdef([AX_LIB_HDF5],,[m4_include([m4/ax_lib_hdf5.m4])]])
+m4_ifdef([AX_LIB_HDF5],,[m4_include([m4/ax_lib_hdf5.m4])])
 
 case $host_os in
    *darwin*|*macosx*)
@@ -237,17 +237,17 @@ AX_BOOST_PROGRAM_OPTIONS
 AX_BOOST_IOSTREAMS
 
 if test x"$ax_cv_boost_unit_test_framework" = x"no"; then
-  echo "Notify boost not usable"
+  echo "Notify boost unit test framework not usable"
   exit 202
 fi
 
 if test x"$ax_cv_boost_iostreams" = x"no"; then
-  echo "Notify boost not usable"
+  echo "Notify boost iostream not usable"
   exit 202
 fi
 
 if test x"$ax_cv_boost_programs_options" = x"no"; then
-  echo "Notify boost not usable"
+  echo "Notify boost program options not usable"
   exit 202
 fi
 
@@ -267,23 +267,19 @@ BOOST_CPPFLAGS=$(echo "$BOOST_CPPFLAGS" | sed -e 's/-I\/usr\/include[ \b]//g')
 AC_SUBST(BOOST_LDFLAGS)
 AC_SUBST(BOOST_CPPFLAGS)
 
-###### Checking for OpenBLAS
+###### Checking for OpenBLAS (used to make sure than EIGEN can use such package)
 
-AX_BLAS([],[echo "blas not found"
-                    exit 204])
+#AX_BLAS([],[echo "blas not found"])
+#AX_LAPACK([],[echo "lapack not found"])
 
-AX_LAPACK([],[echo "lapack not found"
-                    exit 204])
+###### Checking for SUITESPARSE (used to make sure that EIGEN can use such package)
 
-###### Checking for SUITESPARSE
-
-AX_SUITESPARSE([],[echo "suitesparse not found"
-                    exit 205])
+#AX_SUITESPARSE([],[echo "suitesparse not found"])
 
 ###### Checking for EIGEN
 
-AX_EIGEN([],[echo "eigen not found"
-                    exit 206])
+#AX_EIGEN([],[echo "eigen not found"
+#                    exit 206])
 
 ###### RT runtime lib
 
