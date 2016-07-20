@@ -1600,6 +1600,23 @@ public:
 		v_prp.resize(g_m);
 	}
 
+	/*! \brief Resize the vector (locally)
+	 *
+	 * \warning It automaticallt delete the ghosts
+	 *
+	 * \param rs
+	 *
+	 */
+	void resize(size_t rs)
+	{
+		deleteGhost();
+
+		v_pos.resize(rs);
+		v_prp.resize(rs);
+
+		g_m = rs;
+	}
+
 	/*! \brief Output particle position and properties
 	 *
 	 * \param out output

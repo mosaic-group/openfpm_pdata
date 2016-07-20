@@ -1405,9 +1405,7 @@ public:
 			Point<dim,St> offset = getOffset(i);
 			vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).Dbox);
 		}
-		vtk_g.write(output + "_grid_" + std::to_string(v_cl.getProcessUnitID()) + ".vtk");
-
-		write_ie_boxes(output);
+		vtk_g.write(output + "_" + std::to_string(v_cl.getProcessUnitID()) + ".vtk");
 
 		return true;
 	}
