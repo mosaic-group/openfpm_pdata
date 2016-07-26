@@ -1,0 +1,473 @@
+main.cpp: In function ‘int main(int, char**)’:
+main.cpp:153:24: error: ‘getExpr’ was not declared in this scope
+  auto p0_e = getExpr(p0);
+                        ^
+main.cpp:156:45: error: no match for ‘operator-’ (operand types are ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ and ‘Point<3u, double>’)
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                             ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:766:1: note: candidate: template<unsigned int dim, class T> point_expression_op<Point<dim, T>, Point<dim, T>, Point<dim, T>, 2u> operator-(const Point<dim, T>&, const Point<dim, T>&)
+ operator-(const Point<dim,T> & va, const Point<dim,T> & vb)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:766:1: note:   template argument deduction/substitution failed:
+main.cpp:156:46: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const Point<dim, T>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                              ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:784:1: note: candidate: template<class orig, class exp1, class exp2, unsigned int op1, unsigned int dim, class T> point_expression_op<orig, point_expression_op<orig, exp1, exp2, op1>, Point<dim, T>, 2u> operator-(const point_expression_op<orig, exp1, exp2, op1>&, const Point<dim, T>&)
+ operator-(const point_expression_op<orig,exp1,exp2,op1> & va, const Point<dim,T> & vb)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:784:1: note:   template argument deduction/substitution failed:
+main.cpp:156:46: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const point_expression_op<orig, exp1, exp2, op1>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                              ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:801:1: note: candidate: template<class orig, class exp1, class exp2, unsigned int op1, unsigned int dim, class T> point_expression_op<orig, Point<dim, T>, point_expression_op<orig, exp1, exp2, op1>, 2u> operator-(const Point<dim, T>&, const point_expression_op<orig, exp1, exp2, op1>&)
+ operator-(const Point<dim,T> & va, const point_expression_op<orig,exp1,exp2,op1> & vb)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:801:1: note:   template argument deduction/substitution failed:
+main.cpp:156:46: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const Point<dim, T>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                              ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:818:1: note: candidate: template<class orig, class exp1, class exp2, unsigned int op1, class T> point_expression_op<orig, point_expression_op<orig, exp1, exp2, op1>, point_expression<T>, 2u> operator-(const point_expression_op<orig, exp1, exp2, op1>&, T)
+ operator-(const point_expression_op<orig,exp1,exp2,op1> & va, T d)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:818:1: note:   template argument deduction/substitution failed:
+main.cpp:156:46: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const point_expression_op<orig, exp1, exp2, op1>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                              ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:835:1: note: candidate: template<class orig, class exp1, class exp2, unsigned int op1, class T> point_expression_op<orig, point_expression<T>, point_expression_op<orig, exp1, exp2, op1>, 2u> operator-(T, const point_expression_op<orig, exp1, exp2, op1>&)
+ operator-(T d, const point_expression_op<orig,exp1,exp2,op1> & vb)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:835:1: note:   template argument deduction/substitution failed:
+main.cpp:156:46: note:   ‘Point<3u, double>’ is not derived from ‘const point_expression_op<orig, exp1, exp2, op1>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                              ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:853:1: note: candidate: template<class orig, class exp1, class exp2, unsigned int op1, class exp3, class exp4, unsigned int op2> point_expression_op<orig, point_expression_op<orig, exp1, exp2, op1>, point_expression_op<orig, exp3, exp4, op2>, 2u> operator-(const point_expression_op<orig, exp1, exp2, op1>&, const point_expression_op<orig, exp3, exp4, op2>&)
+ operator-(const point_expression_op<orig,exp1,exp2,op1> & va, const point_expression_op<orig,exp3,exp4,op2> & vb)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:853:1: note:   template argument deduction/substitution failed:
+main.cpp:156:46: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const point_expression_op<orig, exp1, exp2, op1>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                              ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:870:1: note: candidate: template<unsigned int dim, class T, class check> point_expression_op<Point<dim, T>, Point<dim, T>, point_expression<T>, 2u> operator-(const Point<dim, T>&, T)
+ operator-(const Point<dim,T> & va, T d)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:870:1: note:   template argument deduction/substitution failed:
+main.cpp:156:46: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const Point<dim, T>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                              ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:887:1: note: candidate: template<unsigned int dim, class T> point_expression_op<Point<dim, T>, Point<dim, T>, point_expression<double>, 2u> operator-(const Point<dim, T>&, double)
+ operator-(const Point<dim,T> & va, double d)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:887:1: note:   template argument deduction/substitution failed:
+main.cpp:156:46: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const Point<dim, T>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                              ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:904:1: note: candidate: template<unsigned int dim, class T, class check> point_expression_op<Point<dim, T>, point_expression<T>, Point<dim, T>, 2u> operator-(T, const Point<dim, T>&)
+ operator-(T d, const Point<dim,T> & vb)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:904:1: note:   template argument deduction/substitution failed:
+main.cpp:156:46: note:   deduced conflicting types for parameter ‘T’ (‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ and ‘double’)
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                              ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:921:1: note: candidate: template<unsigned int dim, class T> point_expression_op<Point<dim, T>, point_expression<double>, Point<dim, T>, 2u> operator-(double, const Point<dim, T>&)
+ operator-(double d, const Point<dim,T> & vb)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:921:1: note:   template argument deduction/substitution failed:
+main.cpp:156:46: note:   cannot convert ‘v2POS’ (type ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’) to type ‘double’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                              ^
+In file included from main.cpp:2:0:
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:588:1: note: candidate: template<unsigned int p1, unsigned int p2, class v1, class v2> vector_dist_expression_op<vector_dist_expression<p1, v1>, vector_dist_expression<p2, v2>, 2u> operator-(const vector_dist_expression<p1, v1>&, const vector_dist_expression<p2, v2>&)
+ operator-(const vector_dist_expression<p1,v1> & va, const vector_dist_expression<p2,v2> & vb)
+ ^
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:588:1: note:   template argument deduction/substitution failed:
+main.cpp:156:46: note:   ‘Point<3u, double>’ is not derived from ‘const vector_dist_expression<p2, v2>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                              ^
+In file included from main.cpp:2:0:
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:606:1: note: candidate: template<class exp1, class exp2, unsigned int op1, unsigned int p2, class v2> vector_dist_expression_op<vector_dist_expression_op<exp1, exp2, op1>, vector_dist_expression<prp1, v1>, 2u> operator-(const vector_dist_expression_op<exp1, exp2, op1>&, const vector_dist_expression<prp1, v1>&)
+ operator-(const vector_dist_expression_op<exp1,exp2,op1> & va, const vector_dist_expression<p2,v2> & vb)
+ ^
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:606:1: note:   template argument deduction/substitution failed:
+main.cpp:156:46: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const vector_dist_expression_op<exp1, exp2, op1>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                              ^
+In file included from main.cpp:2:0:
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:623:1: note: candidate: template<class exp1, class exp2, unsigned int op1, unsigned int p2, class v2> vector_dist_expression_op<vector_dist_expression<prp1, v1>, vector_dist_expression_op<exp1, exp2, op1>, 2u> operator-(const vector_dist_expression<prp1, v1>&, const vector_dist_expression_op<exp1, exp2, op1>&)
+ operator-(const vector_dist_expression<p2,v2> & va, const vector_dist_expression_op<exp1,exp2,op1> & vb)
+ ^
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:623:1: note:   template argument deduction/substitution failed:
+main.cpp:156:46: note:   ‘Point<3u, double>’ is not derived from ‘const vector_dist_expression_op<exp1, exp2, op1>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                              ^
+In file included from main.cpp:2:0:
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:640:1: note: candidate: template<class exp1, class exp2, unsigned int op1, class exp3, class exp4, unsigned int op2> vector_dist_expression_op<vector_dist_expression_op<exp1, exp2, op1>, vector_dist_expression_op<exp3, exp4, op2>, 2u> operator-(const vector_dist_expression_op<exp1, exp2, op1>&, const vector_dist_expression_op<exp3, exp4, op2>&)
+ operator-(const vector_dist_expression_op<exp1,exp2,op1> & va, const vector_dist_expression_op<exp3,exp4,op2> & vb)
+ ^
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:640:1: note:   template argument deduction/substitution failed:
+main.cpp:156:46: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const vector_dist_expression_op<exp1, exp2, op1>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                              ^
+In file included from main.cpp:2:0:
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:657:1: note: candidate: template<unsigned int prp1, class v1> vector_dist_expression_op<vector_dist_expression<prp, vector>, vector_dist_expression<0u, double>, 2u> operator-(const vector_dist_expression<prp, vector>&, double)
+ operator-(const vector_dist_expression<prp1,v1> & va, double d)
+ ^
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:657:1: note:   template argument deduction/substitution failed:
+main.cpp:156:46: note:   cannot convert ‘p0’ (type ‘Point<3u, double>’) to type ‘double’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                              ^
+In file included from main.cpp:2:0:
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:674:1: note: candidate: template<unsigned int prp1, class v1> vector_dist_expression_op<vector_dist_expression<0u, double>, vector_dist_expression<prp, vector>, 2u> operator-(double, const vector_dist_expression<prp, vector>&)
+ operator-(double d, const vector_dist_expression<prp1,v1> & vb)
+ ^
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:674:1: note:   template argument deduction/substitution failed:
+main.cpp:156:46: note:   cannot convert ‘v2POS’ (type ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’) to type ‘double’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                              ^
+main.cpp:156:56: error: no match for ‘operator-’ (operand types are ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ and ‘Point<3u, double>’)
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                                        ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:766:1: note: candidate: template<unsigned int dim, class T> point_expression_op<Point<dim, T>, Point<dim, T>, Point<dim, T>, 2u> operator-(const Point<dim, T>&, const Point<dim, T>&)
+ operator-(const Point<dim,T> & va, const Point<dim,T> & vb)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:766:1: note:   template argument deduction/substitution failed:
+main.cpp:156:57: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const Point<dim, T>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                                         ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:784:1: note: candidate: template<class orig, class exp1, class exp2, unsigned int op1, unsigned int dim, class T> point_expression_op<orig, point_expression_op<orig, exp1, exp2, op1>, Point<dim, T>, 2u> operator-(const point_expression_op<orig, exp1, exp2, op1>&, const Point<dim, T>&)
+ operator-(const point_expression_op<orig,exp1,exp2,op1> & va, const Point<dim,T> & vb)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:784:1: note:   template argument deduction/substitution failed:
+main.cpp:156:57: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const point_expression_op<orig, exp1, exp2, op1>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                                         ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:801:1: note: candidate: template<class orig, class exp1, class exp2, unsigned int op1, unsigned int dim, class T> point_expression_op<orig, Point<dim, T>, point_expression_op<orig, exp1, exp2, op1>, 2u> operator-(const Point<dim, T>&, const point_expression_op<orig, exp1, exp2, op1>&)
+ operator-(const Point<dim,T> & va, const point_expression_op<orig,exp1,exp2,op1> & vb)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:801:1: note:   template argument deduction/substitution failed:
+main.cpp:156:57: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const Point<dim, T>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                                         ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:818:1: note: candidate: template<class orig, class exp1, class exp2, unsigned int op1, class T> point_expression_op<orig, point_expression_op<orig, exp1, exp2, op1>, point_expression<T>, 2u> operator-(const point_expression_op<orig, exp1, exp2, op1>&, T)
+ operator-(const point_expression_op<orig,exp1,exp2,op1> & va, T d)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:818:1: note:   template argument deduction/substitution failed:
+main.cpp:156:57: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const point_expression_op<orig, exp1, exp2, op1>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                                         ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:835:1: note: candidate: template<class orig, class exp1, class exp2, unsigned int op1, class T> point_expression_op<orig, point_expression<T>, point_expression_op<orig, exp1, exp2, op1>, 2u> operator-(T, const point_expression_op<orig, exp1, exp2, op1>&)
+ operator-(T d, const point_expression_op<orig,exp1,exp2,op1> & vb)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:835:1: note:   template argument deduction/substitution failed:
+main.cpp:156:57: note:   ‘Point<3u, double>’ is not derived from ‘const point_expression_op<orig, exp1, exp2, op1>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                                         ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:853:1: note: candidate: template<class orig, class exp1, class exp2, unsigned int op1, class exp3, class exp4, unsigned int op2> point_expression_op<orig, point_expression_op<orig, exp1, exp2, op1>, point_expression_op<orig, exp3, exp4, op2>, 2u> operator-(const point_expression_op<orig, exp1, exp2, op1>&, const point_expression_op<orig, exp3, exp4, op2>&)
+ operator-(const point_expression_op<orig,exp1,exp2,op1> & va, const point_expression_op<orig,exp3,exp4,op2> & vb)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:853:1: note:   template argument deduction/substitution failed:
+main.cpp:156:57: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const point_expression_op<orig, exp1, exp2, op1>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                                         ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:870:1: note: candidate: template<unsigned int dim, class T, class check> point_expression_op<Point<dim, T>, Point<dim, T>, point_expression<T>, 2u> operator-(const Point<dim, T>&, T)
+ operator-(const Point<dim,T> & va, T d)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:870:1: note:   template argument deduction/substitution failed:
+main.cpp:156:57: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const Point<dim, T>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                                         ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:887:1: note: candidate: template<unsigned int dim, class T> point_expression_op<Point<dim, T>, Point<dim, T>, point_expression<double>, 2u> operator-(const Point<dim, T>&, double)
+ operator-(const Point<dim,T> & va, double d)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:887:1: note:   template argument deduction/substitution failed:
+main.cpp:156:57: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const Point<dim, T>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                                         ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:904:1: note: candidate: template<unsigned int dim, class T, class check> point_expression_op<Point<dim, T>, point_expression<T>, Point<dim, T>, 2u> operator-(T, const Point<dim, T>&)
+ operator-(T d, const Point<dim,T> & vb)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:904:1: note:   template argument deduction/substitution failed:
+main.cpp:156:57: note:   deduced conflicting types for parameter ‘T’ (‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ and ‘double’)
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                                         ^
+In file included from /usr/local/openfpm_data/include/Space/Shape/Point.hpp:12:0,
+                 from /usr/local/openfpm_data/include/Space/Shape/Sphere.hpp:11,
+                 from /usr/local/openfpm_data/include/Space/Shape/Box.hpp:5,
+                 from /usr/local/openfpm_data/include/Grid/grid_sm.hpp:10,
+                 from /usr/local/openfpm_data/include/Grid/map_grid.hpp:39,
+                 from /usr/local/openfpm_data/include/Vector/map_vector.hpp:22,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_util.hpp:12,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter_point_set.hpp:11,
+                 from /usr/local/openfpm_io/include/HDF5_XdmfWriter/HDF5_XdmfWriter.hpp:21,
+                 from /usr/local/openfpm_pdata/include/Vector/vector_dist.hpp:11,
+                 from main.cpp:1:
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:921:1: note: candidate: template<unsigned int dim, class T> point_expression_op<Point<dim, T>, point_expression<double>, Point<dim, T>, 2u> operator-(double, const Point<dim, T>&)
+ operator-(double d, const Point<dim,T> & vb)
+ ^
+/usr/local/openfpm_data/include/Space/Shape/Point_operators.hpp:921:1: note:   template argument deduction/substitution failed:
+main.cpp:156:57: note:   cannot convert ‘v2POS’ (type ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’) to type ‘double’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                                         ^
+In file included from main.cpp:2:0:
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:588:1: note: candidate: template<unsigned int p1, unsigned int p2, class v1, class v2> vector_dist_expression_op<vector_dist_expression<p1, v1>, vector_dist_expression<p2, v2>, 2u> operator-(const vector_dist_expression<p1, v1>&, const vector_dist_expression<p2, v2>&)
+ operator-(const vector_dist_expression<p1,v1> & va, const vector_dist_expression<p2,v2> & vb)
+ ^
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:588:1: note:   template argument deduction/substitution failed:
+main.cpp:156:57: note:   ‘Point<3u, double>’ is not derived from ‘const vector_dist_expression<p2, v2>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                                         ^
+In file included from main.cpp:2:0:
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:606:1: note: candidate: template<class exp1, class exp2, unsigned int op1, unsigned int p2, class v2> vector_dist_expression_op<vector_dist_expression_op<exp1, exp2, op1>, vector_dist_expression<prp1, v1>, 2u> operator-(const vector_dist_expression_op<exp1, exp2, op1>&, const vector_dist_expression<prp1, v1>&)
+ operator-(const vector_dist_expression_op<exp1,exp2,op1> & va, const vector_dist_expression<p2,v2> & vb)
+ ^
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:606:1: note:   template argument deduction/substitution failed:
+main.cpp:156:57: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const vector_dist_expression_op<exp1, exp2, op1>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                                         ^
+In file included from main.cpp:2:0:
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:623:1: note: candidate: template<class exp1, class exp2, unsigned int op1, unsigned int p2, class v2> vector_dist_expression_op<vector_dist_expression<prp1, v1>, vector_dist_expression_op<exp1, exp2, op1>, 2u> operator-(const vector_dist_expression<prp1, v1>&, const vector_dist_expression_op<exp1, exp2, op1>&)
+ operator-(const vector_dist_expression<p2,v2> & va, const vector_dist_expression_op<exp1,exp2,op1> & vb)
+ ^
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:623:1: note:   template argument deduction/substitution failed:
+main.cpp:156:57: note:   ‘Point<3u, double>’ is not derived from ‘const vector_dist_expression_op<exp1, exp2, op1>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                                         ^
+In file included from main.cpp:2:0:
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:640:1: note: candidate: template<class exp1, class exp2, unsigned int op1, class exp3, class exp4, unsigned int op2> vector_dist_expression_op<vector_dist_expression_op<exp1, exp2, op1>, vector_dist_expression_op<exp3, exp4, op2>, 2u> operator-(const vector_dist_expression_op<exp1, exp2, op1>&, const vector_dist_expression_op<exp3, exp4, op2>&)
+ operator-(const vector_dist_expression_op<exp1,exp2,op1> & va, const vector_dist_expression_op<exp3,exp4,op2> & vb)
+ ^
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:640:1: note:   template argument deduction/substitution failed:
+main.cpp:156:57: note:   ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’ is not derived from ‘const vector_dist_expression_op<exp1, exp2, op1>’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                                         ^
+In file included from main.cpp:2:0:
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:657:1: note: candidate: template<unsigned int prp1, class v1> vector_dist_expression_op<vector_dist_expression<prp, vector>, vector_dist_expression<0u, double>, 2u> operator-(const vector_dist_expression<prp, vector>&, double)
+ operator-(const vector_dist_expression<prp1,v1> & va, double d)
+ ^
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:657:1: note:   template argument deduction/substitution failed:
+main.cpp:156:57: note:   cannot convert ‘p0’ (type ‘Point<3u, double>’) to type ‘double’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                                         ^
+In file included from main.cpp:2:0:
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:674:1: note: candidate: template<unsigned int prp1, class v1> vector_dist_expression_op<vector_dist_expression<0u, double>, vector_dist_expression<prp, vector>, 2u> operator-(double, const vector_dist_expression<prp, vector>&)
+ operator-(double d, const vector_dist_expression<prp1,v1> & vb)
+ ^
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:674:1: note:   template argument deduction/substitution failed:
+main.cpp:156:57: note:   cannot convert ‘v2POS’ (type ‘vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >’) to type ‘double’
+  auto expr1 = 1.0/2.0/sqrt(M_PI)*exp(-(v2POS-p0)*(v2POS-p0)/2.0);
+                                                         ^
+In file included from main.cpp:2:0:
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp: In instantiation of ‘vector& vector_dist_expression<prp, vector>::operator=(const vector_dist_expression_op<exp1, exp2, op>&) [with exp1 = vector_dist_expression<4294967295u, vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > > >; exp2 = void; unsigned int op = 56u; unsigned int prp = 0u; vector = vector_dist<3u, double, aggregate<float, float, Point<3u, double>, Point<3u, double> > >]’:
+main.cpp:121:5:   required from here
+/usr/local/openfpm_numerics/include/Operators/Vector/vector_dist_operators.hpp:379:33: error: cannot convert ‘double*’ to ‘float’ in assignment
+    v.template getProp<prp>(key) = v_exp.value(key);
+                                 ^
+make: *** [main.o] Error 1

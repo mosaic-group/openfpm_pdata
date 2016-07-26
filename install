@@ -329,14 +329,8 @@ else
 
 fi
 
-### Create example.mk
+# Where openfpm is going to be installed
 install_base=$(cat install_dir)
-echo "INCLUDE_PATH=-I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include $lin_alg_inc" > example.mk
-echo "LIBS_PATH= -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib -L$i_dir/HDF5/lib $lin_alg_dir" >> example.mk
-echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lhdf5 $lin_alg_lib" >> example.mk
-echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lhdf5 $lin_alg_lib" >> example.mk
-cp example.mk src/example.mk
-cp example.mk example/example.mk
 
 make clean
 make
@@ -364,6 +358,10 @@ echo ""
 echo -e "\033[1;34;5m ---------- Mandatory packages ---------  \033[0m"
 echo ""
 
+example_library_path=""
+example_library=""
+example_include_path=""
+
 if [ -d "$i_dir/MPI" ]; then
   installation_report="$installation_report \033[92;1mMPI\033[0m Installed: \033[1m $i_dir/MPI \033[0m\n"
   bash_path="$bash_path:$i_dir/MPI/bin"
@@ -375,16 +373,25 @@ fi
 if [ -d "$i_dir/METIS" ]; then
   installation_report="$installation_report \033[92;1mMETIS\033[0m Installed: \033[1m $i_dir/METIS \033[0m\n"
   bash_library="$bash_library:$i_dir/METIS/lib"
+  example_library_path="$example_library_path -L$i_dir/METIS/lib"
+  example_library="$example_library"
+  example_include_path="$example_include_path -I$i_dir/METIS/include"
 fi
 
 if [ -d "$i_dir/PARMETIS" ]; then
   installation_report="$installation_report \033[92;1mPARMETIS\033[0m Installed: \033[1m $i_dir/PARMETIS \033[0m\n"
   bash_library="$bash_library:$i_dir/PARMETIS/lib"
+  example_library_path="$example_library_path -L$i_dir/PARMETIS/lib"
+  example_library="$example_library"
+  example_include_path="$example_include_path -I$i_dir/PARMETIS/include"
 fi
 
 if [ -d "$i_dir/BOOST" ]; then
   installation_report="$installation_report \033[92;1mBOOST\033[0m Installed: \033[1m $i_dir/BOOST \033[0m\n"
   bash_library="$bash_library:$i_dir/BOOST/lib"
+  example_library_path="$example_library_path -L$i_dir/BOOST/lib"
+  example_library="$example_library"
+  example_include_path="$example_include_path -I$i_dir/BOOST/include"
 elif [ $BOOST_System_prv -eq 1 ]; then
   installation_report="$installation_report \033[92;1mBOOST\033[0m Installed: \033[1m System installation \033[0m\n"
 fi
@@ -392,6 +399,9 @@ fi
 if [ -d "$i_dir/HDF5" ]; then
   installation_report="$installation_report \033[92;1mHDF5\033[0m Installed: \033[1m $i_dir/HDF5 \033[0m\n"
   bash_library="$bash_library:$i_dir/HDF5/lib"
+  example_library_path="$example_library_path -L$i_dir/HDF5/lib"
+  example_library="$example_library"
+  example_include_path="$example_include_path -I$i_dir/HDF5/include"
 fi
 
 echo -e "$installation_report"
@@ -405,12 +415,18 @@ installation_report=""
 if [ -d "$i_dir/PETSC" ]; then
   installation_report="$installation_report \033[92;1mPETSC\033[0m Installed: \033[1m $i_dir/PETSC \033[0m\n"
   bash_library="$bash_library:$i_dir/PETSC/lib"
+  example_library_path="$example_library_path -L$i_dir/PETSC/lib"
+  example_library="$example_library"
+  example_include_path="$example_include_path -I$i_dir/PETSC/include"
 else
   installation_report="$installation_report \033[91;1mPETSC\033[0m Installed: \033[1m NO \033[0m\n"
 fi
 
 if [ -d "$i_dir/EIGEN" ]; then
   installation_report="$installation_report \033[92;1mEIGEN\033[0m Installed: \033[1m $i_dir/EIGEN \033[0m\n"
+  example_library_path="$example_library_path"
+  example_library="$example_library"
+  example_include_path="$example_include_path -I$i_dir/EIGEN/include"
 fi
 
 echo -e "$installation_report"
@@ -422,6 +438,9 @@ installation_report=""
 if [ -d "$i_dir/TRILINOS" ]; then
   installation_report="$installation_report \033[92;1mTRILINOS\033[0m Installed: \033[1m $i_dir/TRILINOS \033[0m\n"
   bash_library="$bash_library:$i_dir/TRILINOS/lib"
+  example_library_path="$example_library_path"
+  example_library="$example_library"
+  example_include_path="$example_include_path -I$i_dir/TRILINOS/include"
 else
   installation_report="$installation_report \033[91;1mTRILINOS\033[0m Installed: \033[1m NO \033[0m\n"
 fi
@@ -429,6 +448,8 @@ fi
 if [ -d "$i_dir/OPENBLAS" ]; then
   installation_report="$installation_report \033[92;1mOPENBLAS\033[0m Installed: \033[1m $i_dir/OPENBLAS \033[0m\n"
   bash_library="$bash_library:$i_dir/OPENBLAS/lib"
+  example_library_path="$example_library_path"
+  example_library="$example_library"
 else
   installation_report="$installation_report \033[91;1mOPENBLAS\033[0m Installed: \033[1m NO \033[0m\n"
 fi
@@ -436,6 +457,9 @@ fi
 if [ -d "$i_dir/SUITESPARSE" ]; then
   installation_report="$installation_report \033[92;1mSUITESPARSE\033[0m Installed: \033[1m $i_dir/SUITESPARSE \033[0m\n"
   bash_library="$bash_library:$i_dir/SUITESPARSE/lib"
+  example_library_path="$example_library_path -L$i_dir/SUITESPARSE/lib"
+  example_library="$example_library"
+  example_include_path="$example_include_path -I$i_dir/SUITESPARSE/include"
 else
   installation_report="$installation_report \033[91;1mSUITESPARSE\033[0m Installed: \033[1m NO \033[0m\n"
 fi
@@ -443,6 +467,8 @@ fi
 if [ -d "$i_dir/SCALAPACK" ]; then
   installation_report="$installation_report \033[92;1mSCALAPACK\033[0m Installed: \033[1m $i_dir/SCALAPACK \033[0m\n"
   bash_library="$bash_library:$i_dir/SCALAPACK/lib"
+  example_library_path="$example_library_path"
+  example_library="$example_library"
 else
   installation_report="$installation_report \033[91;1mSCALAPACK\033[0m Installed: \033[1m NO \033[0m\n"
 fi
@@ -450,6 +476,8 @@ fi
 if [ -d "$i_dir/MUMPS" ]; then
   installation_report="$installation_report \033[92;1mMUMPS\033[0m Installed: \033[1m $i_dir/MUMPS \033[0m\n"
   bash_library="$bash_library:$i_dir/MUMPS/lib"
+  example_library_path="$example_library_path"
+  example_library="$example_library"
 else
   installation_report="$installation_report \033[91;1mMUMPS\033[0m Installed: \033[1m NO \033[0m\n"
 fi
@@ -457,6 +485,8 @@ fi
 if [ -d "$i_dir/SUPERLU_DIST" ]; then
   installation_report="$installation_report \033[92;1mSUPERLU_DIST\033[0m Installed: \033[1m $i_dir/SUPERLU_DIST \033[0m\n"
   bash_library="$bash_library:$i_dir/SUPERLU_DIST/lib"
+  example_library_path="$example_library_path"
+  example_library="$example_library"
 else
   installation_report="$installation_report \033[91;1mSUPERLU_DIST\033[0m Installed: \033[1m NO \033[0m\n"
 fi
@@ -464,6 +494,8 @@ fi
 if [ -d "$i_dir/HYPRE" ]; then
   installation_report="$installation_report \033[92;1mHYPRE\033[0m Installed: \033[1m $i_dir/HYPRE \033[0m\n"
   bash_library="$bash_library:$i_dir/HYPRE/lib"
+  example_library_path="$example_library_path"
+  example_library="$example_library"
 else
   installation_report="$installation_report \033[91;1mHYPRE\033[0m Installed: \033[1m NO \033[0m\n"
 fi
@@ -475,6 +507,15 @@ bash_library="$bash_library\""
 
 echo "$bash_path" > $HOME/openfpm_vars
 echo "$bash_library" >> $HOME/openfpm_vars
+
+### Create example.mk
+
+echo "INCLUDE_PATH=-I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include $example_include_path $lin_alg_inc" > example.mk
+echo "LIBS_PATH= -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib $example_library_path  $lin_alg_dir" >> example.mk
+echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lhdf5 $lin_alg_lib" >> example.mk
+echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lhdf5 $lin_alg_lib" >> example.mk
+cp example.mk src/example.mk
+cp example.mk example/example.mk
 
 echo -e "$installation_report"
 echo ""
