@@ -10,6 +10,31 @@
 <link href="$relpath^tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="$relpath^jquery.js"></script>
 <script type="text/javascript" src="$relpath^dynsections.js"></script>
+<script>
+var first_time_pause={};
+
+function hide_show(div_ele)
+{
+	if (document.getElementById(div_ele).style.display == 'none') 
+	{document.getElementById(div_ele).style.display = 'block'} 
+	else 
+	{document.getElementById(div_ele).style.display = 'none'}
+}
+
+function video_anim(video_ele, from, to)
+{
+	first_time_pause[video_ele] = false;
+	document.getElementById(video_ele).addEventListener('loadedmetadata', function() {
+											this.currentTime = from;}
+											, false);
+	document.getElementById(video_ele).addEventListener("timeupdate", function(){
+    		if(this.currentTime >= to && first_time_pause[video_ele]==false) {
+        		first_time_pause[video_ele]=true;
+        		this.pause();
+    		}
+	});
+}
+</script>
 $treeview
 $search
 $mathjax
