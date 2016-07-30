@@ -2,25 +2,29 @@
 #include "data_type/aggregate.hpp"
 #include "Decomposition/CartDecomposition.hpp"
 
-/*
- * ### WIKI 1 ###
+/*!
+ * \page Grid_1_stencil Grid 1 stencil
  *
- * ## Simple example
+ *
+ * # Stencil example and ghost # {#e1_st}
  *
  * This example show how to move grid_key in order to create a Laplacian stencil,
- * be careful, the function move are convenient, but not the fastest implementation
- *
- * ### WIKI END ###
+ * be careful, the function move is convenient, but not the fastest implementation.
+ * We also show how to do ghost communications
  *
  */
 
-/*
- *
- * ### WIKI 2 ###
+/*!
+ * \page Grid_1_stencil Grid 1 stencil
  *
  * Define some convenient constants and types
  *
+ * \snippet Grid/1_stencil/main.cpp useful constant
+ *
  */
+
+//! \cond [useful constant] \endcond
+
 constexpr size_t x = 0;
 constexpr size_t y = 1;
 constexpr size_t z = 2;
@@ -28,109 +32,176 @@ constexpr size_t z = 2;
 constexpr size_t A = 0;
 constexpr size_t B = 0;
 
-typedef aggregate<float[3],float[3]> grid_point;
+//! \cond [useful constant] \endcond
 
 int main(int argc, char* argv[])
 {
-	//
-	// ### WIKI 3 ###
-	//
-	// Initialize the library and several objects
-	//
+	/*!
+	 * \page Grid_1_stencil Grid 1 stencil
+	 *
+	 * ## Initialization ## {#e1_st_init}
+	 *
+	 * Initialize the library and several objects
+	 *
+	 * \see \ref e0_s_initialization
+	 *
+	 * \snippet Grid/1_stencil/main.cpp parameters
+	 *
+	 *
+	 */
+
+	//! \cond [parameters] \endcond
+
 	openfpm_init(&argc,&argv);
 
-	//
-	// ### WIKI 4 ###
-	//
-	// Create several object needed later, in particular
-	// * A 3D box that define the domain
-	// * an array of 3 unsigned integer that define the size of the grid on each dimension
-	// * A Ghost object that will define the extension of the ghost part for each sub-domain in physical units
-
+	// domain
 	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
-	size_t sz[3];
-	sz[0] = 100;
-	sz[1] = 100;
-	sz[2] = 100;
 
-	// Ghost
+	// grid sizes
+	size_t sz[3] = {100,100,100};
+
+	// ghost extension
 	Ghost<3,float> g(0.03);
 
-	//
-	// ### WIKI 4 ###
-	//
-	// Create a distributed grid in 3D (1° template parameter) space in with float precision (2° template parameter)
-	// each grid point contain a vector of dimension 3 (float[3]),
-	// using a CartesianDecomposition strategy (4° parameter) (the parameter 1° and 2° inside CartDecomposition must match 1° and 2°
-	// of grid_dist_id)
-	//
-	// Constructor parameters:
-	//
-	// * sz: size of the grid on each dimension
-	// * domain: where the grid is defined
-	// * g: ghost extension
-	//
+	//! \cond [parameters] \endcond
+
+	/*!
+	 * \page Grid_1_stencil Grid 1 stencil
+	 *
+	 * ## Grid create ## {#e1_st_inst}
+	 *
+	 * Create a distributed grid in 3D. With typedef we create an alias name for aggregate<float[3],float[3]>.
+	 * In practice the type of grid_point == aggregate<float[3],float[3]>
+	 *
+	 * \see \ref e0_s_grid_inst
+	 *
+	 * \snippet Grid/1_stencil/main.cpp grid
+	 *
+	 */
+
+	//! \cond [grid] \endcond
+
+	// a convenient alias for aggregate<...>
+	typedef aggregate<float,float> grid_point;
+
 	grid_dist_id<3, float, grid_point> g_dist(sz,domain,g);
 
-	// ### WIKI 5 ###
-	//
-	// Get an iterator that go throught the point of the domain (No ghost)
-	//
+	//! \cond [grid] \endcond
+
+	/*!
+	 * \page Grid_1_stencil Grid 1 stencil
+	 *
+	 * ## Loop over grid points ## {#e1_s_loop_gp}
+	 *
+	 * Get an iterator that go through the point of the domain (No ghost)
+	 *
+	 * \see \ref e0_s_loop_gp
+	 *
+	 * \snippet Grid/1_stencil/main.cpp iterator
+	 * \snippet Grid/1_stencil/main.cpp iterator2
+	 *
+	 */
+
+	//! \cond [iterator] \endcond
+
 	auto dom = g_dist.getDomainIterator();
-	
-	// ### WIKI END ###
 
 	while (dom.isNext())
 	{
-		//
-		// ### WIKI 6 ###
-		//
-		// Get the local grid key, the local grid key store internally the sub-domain id (each sub-domain contain a grid)
-		// and the local grid point id identified by 2 integers in 2D 3 integer in 3D and so on. These two distinct elements are
-		// available with key.getSub() and key.getKey()
-		//
+
+		//! \cond [iterator] \endcond
+
+		/*!
+		 * \page Grid_1_stencil Grid 1 stencil
+		 *
+		 * Inside the cycle we get the local grid key
+		 *
+		 * \see \ref e0_s_grid_coord
+		 *
+		 * \snippet Grid/1_stencil/main.cpp local key
+		 *
+		 */
+
+		//! \cond [local key] \endcond
+
 		auto key = dom.get();
 
-		//
-		// ### WIKI 7 ###
-		//
-		// Here we convert the local grid position, into global position, key_g contain 3 integers that identify the position
-		// of the grid point in global coordinates
-		//
-		//
+		//! \cond [local key] \endcond
+
+		/*!
+		 * \page Grid_1_stencil Grid 1 stencil
+		 *
+		 * We convert the local grid position, into global position, key_g contain 3 integers that identify the position
+		 * of the grid point in global coordinates
+		 *
+		 * \see \ref e0_s_grid_coord
+		 *
+		 * \snippet Grid/1_stencil/main.cpp global key
+		 *
+		 */
+
+		//! \cond [global key] \endcond
+
 		auto key_g = g_dist.getGKey(key);
 
-		//
-		// ### WIKI 8 ###
-		//
-		// we write on the grid point of position (i,j,k) the value i*i + j*j + k*k on the component [0] of the vector
-		g_dist.template get<0>(key)[0] = key_g.get(0)*key_g.get(0) + key_g.get(1)*key_g.get(1) + key_g.get(2)*key_g.get(2);
+		//! \cond [global key] \endcond
 
-		//
-		// ### WIKI 9 ###
-		//
-		// next point
+		/*!
+		 * \page Grid_1_stencil Grid 1 stencil
+		 *
+		 * we write on the grid point of position (i,j,k) the value i*i + j*j + k*k on the property A.
+		 * Mathematically is equivalent to the function
+		 *
+		 * \f$ f(x,y,z) = x^2 + y^2 + z^2 \f$
+		 *
+		 * \snippet Grid/1_stencil/main.cpp function
+		 *
+		 */
+
+		//! \cond [function] \endcond
+
+		g_dist.template get<A>(key) = key_g.get(0)*key_g.get(0) + key_g.get(1)*key_g.get(1) + key_g.get(2)*key_g.get(2);
+
+		//! \cond [function] \endcond
+
+		//! \cond [iterator2] \endcond
 
 		++dom;
-
-		// ### WIKI END ###
 	}
 
-	//
-	// ### WIKI 10 ###
-	//
-	// Each sub-domain has an extended part, that is materially contained from another processor that in general is not synchronized
-	// ghost_get<0> synchronize the property 0 (the vector) in the ghost part
-	//
-	//
-	g_dist.template ghost_get<0>();
+	//! \cond [iterator2] \endcond
+
+	/*!
+	 * \page Grid_1_stencil Grid 1 stencil
+	 *
+	 * ## Ghost ## {#e1_s_ghost}
+	 *
+	 * Each sub-domain has an extended part, that is materially contained into another processor.
+	 * In general is not synchronized
+	 * ghost_get<A> synchronize the property A in the ghost part
+	 *
+	 * \snippet Grid/1_stencil/main.cpp ghost
+	 *
+	 */
+
+	//! \cond [ghost] \endcond
+
+	g_dist.template ghost_get<A>();
 	
-	//
-	// ### WIKI 11 ###
-	//
-	// Get again another iterator, iterate across all the domain points, calculating a Laplace stencil
-	//
-	//
+	//! \cond [ghost] \endcond
+
+	/*!
+	 * \page Grid_1_stencil Grid 1 stencil
+	 *
+	 * Get again another iterator, iterate across all the domain points, calculating a Laplace stencil. Write the
+	 * result on B
+	 *
+	 * \snippet Grid/1_stencil/main.cpp laplacian
+	 *
+	 */
+
+	//! \cond [laplacian] \endcond
+
 	auto dom2 = g_dist.getDomainIterator();
 	
 	while (dom2.isNext())
@@ -138,26 +209,53 @@ int main(int argc, char* argv[])
 		auto key = dom2.get();
 
 		// Laplace stencil
-		g_dist.template get<B>(key)[1] = g_dist.template get<A>(key.move(x,1))[0] + g_dist.template get<A>(key.move(x,-1))[0] +
-		                                 g_dist.template get<A>(key.move(y,1))[0] + g_dist.template get<A>(key.move(y,-1))[0] +
-										 g_dist.template get<A>(key.move(z,1))[0] + g_dist.template get<A>(key.move(z,-1))[0] -
-										 6*g_dist.template get<A>(key)[0];
-		                    
+		g_dist.template get<B>(key) = g_dist.template get<A>(key.move(x,1)) + g_dist.template get<A>(key.move(x,-1)) +
+		                                 g_dist.template get<A>(key.move(y,1)) + g_dist.template get<A>(key.move(y,-1)) +
+										 g_dist.template get<A>(key.move(z,1)) + g_dist.template get<A>(key.move(z,-1)) -
+										 6*g_dist.template get<A>(key);
 
 		++dom2;
 	}
 
-	//
-	// ### WIKI 12 ###
-	//
-	// Finally we want a nice output to visualize the information stored by the distributed grid
-	//
+	//! \cond [laplacian] \endcond
+
+	/*!
+	 * \page Grid_1_stencil Grid 1 stencil
+	 *
+	 *
+	 * Finally we want a nice output to visualize the information stored by the distributed grid
+	 *
+	 * \snippet Grid/1_stencil/main.cpp output
+	 *
+	 */
+
+	//! \cond [output] \endcond
+
 	g_dist.write("output");
 
-	//
-	// ### WIKI 14 ###
-	//
-	// Deinitialize the library
-	//
+	//! \cond [output] \endcond
+
+	/*!
+	 * \page Grid_1_stencil Grid 1 stencil
+	 *
+	 * Deinitialize the library
+	 *
+	 * \snippet Grid/1_stencil/main.cpp finalize
+	 *
+	 */
+
+	//! \cond [finalize] \endcond
+
 	openfpm_finalize();
+
+	//! \cond [finalize] \endcond
+
+	/*!
+	 * \page Grid_1_stencil Grid 1 stencil
+	 *
+	 * # Full code # {#code}
+	 *
+	 * \include Grid/1_stencil/main.cpp
+	 *
+	 */
 }

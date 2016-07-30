@@ -280,19 +280,17 @@ BOOST_CPPFLAGS=$(echo "$BOOST_CPPFLAGS" | sed -e 's/-I\/usr\/include[ \b]//g')
 AC_SUBST(BOOST_LDFLAGS)
 AC_SUBST(BOOST_CPPFLAGS)
 
-###### Checking for OpenBLAS (used to make sure than EIGEN can use such package)
+AX_BLAS([],[])
 
-#AX_BLAS([],[echo "blas not found"])
-#AX_LAPACK([],[echo "lapack not found"])
+AX_LAPACK([],[])
 
-###### Checking for SUITESPARSE (used to make sure that EIGEN can use such package)
+###### Checking for SUITESPARSE
 
-#AX_SUITESPARSE([],[echo "suitesparse not found"])
+AX_SUITESPARSE([],[])
 
 ###### Checking for EIGEN
 
-#AX_EIGEN([],[echo "eigen not found"
-#                    exit 206])
+AX_EIGEN([],[])
 
 ###### RT runtime lib
 

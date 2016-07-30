@@ -8,7 +8,7 @@ pdata_LDADD = $(LINKLIBS) -lmetis -lparmetis
 nobase_include_HEADERS = Decomposition/CartDecomposition.hpp Decomposition/CartDecomposition_ext.hpp Decomposition/common.hpp Decomposition/Decomposition.hpp  Decomposition/ie_ghost.hpp \
          Decomposition/nn_processor.hpp Decomposition/ie_loc_ghost.hpp Decomposition/ORB.hpp \
          Graph/CartesianGraphFactory.hpp \
-         Grid/grid_dist_id.hpp Grid/grid_dist_id_iterator_dec.hpp Grid/grid_dist_util.hpp  Grid/grid_dist_id_iterator_sub.hpp Grid/grid_dist_id_iterator.hpp Grid/grid_dist_key.hpp \
+         Grid/grid_dist_id.hpp Grid/grid_dist_id_iterator_dec.hpp Grid/grid_dist_util.hpp  Grid/grid_dist_id_iterator_sub.hpp Grid/grid_dist_id_iterator.hpp Grid/grid_dist_key.hpp Grid/staggered_dist_grid.hpp Grid/staggered_dist_grid_util.hpp Grid/staggered_dist_grid_copy.hpp \
          Vector/vector_dist.hpp Vector/vector_dist_ofb.hpp Vector/vector_dist_iterator.hpp Vector/vector_dist_key.hpp \
          config/config.h \
          example.mk \

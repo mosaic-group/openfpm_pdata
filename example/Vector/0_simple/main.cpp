@@ -1,27 +1,87 @@
-#include "Vector/vector_dist.hpp"
-
-/*
- * ### WIKI 1 ###
+ /*! \page Vector Vector
  *
- * ## Simple example
- * 
+ * \subpage Vector_0_simple
+ * \subpage Vector_1_celllist
+ * \subpage Vector_2_expression
+ * \subpage Vector_3_md
+ *
+ */
+
+
+/*!
+ * \page Vector_0_simple Vector 0 simple
+ *
+ *
+ * [TOC]
+ *
+ *
+ * # Simple Vector example # {#simple_vector_example}
+ *
+ *
  * This example show several basic functionalities of the distributed vector, A distributed vector is nothing else than
  * a set of particles in an N dimensional space
- * 
- * ### WIKI END ###
- * 
+ *
+ * \htmlonly
+ * <a href="#" onclick="hide_show('vector-video-1')" >Video 1</a>
+ * <div style="display:none" id="vector-video-1">
+ * <video id="vid1" width="1200" height="576" controls> <source src="http://ppmcore.mpi-cbg.de/upload/video/Lesson1-1.mp4" type="video/mp4"></video>
+ * <script>video_anim('vid1',100,230)</script>
+ * </div>
+ * <a href="#" onclick="hide_show('vector-video-2')" >Video 2</a>
+ * <div style="display:none" id="vector-video-2">
+ * <video id="vid2" width="1200" height="576" controls> <source src="http://ppmcore.mpi-cbg.de/upload/video/Lesson1-2.mp4" type="video/mp4"></video>
+ * <script>video_anim('vid2',21,1590)</script>
+ * </div>
+ * \endhtmlonly
+ *
+ * ## inclusion ## {#inclusion}
+ *
+ * In order to use distributed vectors in our code we have to include the file Vector/vector_dist.hpp
+ *
+ * \snippet Vector/0_simple/main.cpp inclusion
+ *
  */
+
+//! \cond [inclusion] \endcond
+#include "Vector/vector_dist.hpp"
+//! \cond [inclusion] \endcond
 
 int main(int argc, char* argv[])
 {
-	//
-	// ### WIKI 2 ###
-	//
-	// Here we Initialize the library, than we create a uniform random generator between 0 and 1 to to generate particles
-	// randomly in the domain, we create a Box that define our domain, boundary conditions, and ghost
-	//
-	
-        // initialize the library
+
+	/*!
+	 * \page Vector_0_simple Vector 0 simple
+	 *
+	 * ## Initialization ## {#e0_s_init}
+	 *
+	 *  Here we
+	 *  * Initialize the library
+	 *  * we create a Box that define our domain
+	 *  * An array that define out boundary conditions
+	 *  * A Ghost object that will define the extension of the ghost part in physical units
+	 *
+	 *
+	 *
+	 * \snippet Vector/0_simple/main.cpp Initialization and parameters
+	 *
+	 * \htmlonly
+	 * <a href="#" onclick="hide_show('vector-video-5')" >Video 1</a>
+	 * <div style="display:none" id="vector-video-5">
+	 * <video id="vid5" width="1200" height="576" controls> <source src="http://ppmcore.mpi-cbg.de/upload/video/Lesson1-4.mp4" type="video/mp4"></video>
+	 * <script>video_anim('vid5',447,513)</script>
+	 * </div>
+	 * <a href="#" onclick="hide_show('vector-video-4')" >Video 2</a>
+	 * <div style="display:none" id="vector-video-4">
+	 * <video id="vid4" width="1200" height="576" controls> <source src="http://ppmcore.mpi-cbg.de/upload/video/Lesson1-4.mp4" type="video/mp4"></video>
+	 * <script>video_anim('vid4',594,1023)</script>
+	 * </div>
+	 * \endhtmlonly
+	 *
+	 */
+
+	//! \cond [Initialization and parameters] \endcond
+
+    // initialize the library
 	openfpm_init(&argc,&argv);
 
 	// Here we define our domain a 2D box with internals from 0 to 1.0 for x and y
@@ -33,29 +93,48 @@ int main(int argc, char* argv[])
 	// extended boundary around the domain, and the processor domain
 	Ghost<2,float> g(0.01);
 	
-	//
-	// ### WIKI 3 ###
-	//
-	// Here we are creating a distributed vector defined by the following parameters
-	//
-	// * 2 is the Dimensionality of the space where the objects live
-	// * float is the type used for the spatial coordinate of the particles
-	// * float,float[3],float[3][3] is the information stored by each particle a scalar float, a vector float[3] and a tensor of rank 2 float[3][3]
-	//   the list of properties must be put into an aggregate data astructure aggregate<prop1,prop2,prop3, ... >
-	// 
-	// vd is the instantiation of the object
-	//
-	// The Constructor instead require:
-	//
-	// * Number of particles 4096 in this case
-	// * Domain where is defined this structure
-	// * bc boundary conditions
-	// * g Ghost
-	//
-	// The following construct a vector where each processor has 4096 / N_proc (N_proc = number of processor)
-	// objects with an undefined position in space. This non-space decomposition is also called data-driven
-	// decomposition
-	//
+	//! \cond [Initialization and parameters] \endcond
+
+	/*!
+	 * \page Vector_0_simple Vector 0 simple
+	 *
+	 * ## Vector instantiation ## {#e0_s_vector_inst}
+	 *
+	 * Here we are creating a distributed vector defined by the following parameters
+	 *
+	 * * 2 is the Dimensionality of the space where the objects live
+	 * * float is the type used for the spatial coordinate of the particles
+	 * * float,float[3],float[3][3] is the information stored by each particle a scalar float, a vector float[3] and a tensor of rank 2 float[3][3]
+	 *   the list of properties must be put into an aggregate data structure aggregate<prop1,prop2,prop3, ... >
+	 *
+	 * vd is the instantiation of the object
+	 *
+	 * The Constructor instead require:
+	 *
+	 * * Number of particles 4096 in this case
+	 * * Domain where is defined this structure
+	 * * bc boundary conditions
+	 * * g Ghost
+	 *
+	 * The following construct a vector where each processor has 4096 / N_proc (N_proc = number of processor)
+	 * objects with an undefined position in space. This non-space decomposition is also called data-driven
+	 * decomposition
+	 *
+	 *
+	 * \snippet Vector/0_simple/main.cpp vector instantiation
+	 *
+	 * \htmlonly
+	 * <a href="#" onclick="hide_show('vector-video-3')" >Video</a>
+	 * <div style="display:none" id="vector-video-3">
+	 * <video id="vid3" width="1200" height="576" controls> <source src="http://ppmcore.mpi-cbg.de/upload/video/Lesson1-4.mp4" type="video/mp4"></video>
+	 * <script>video_anim('vid3',1047,1370)</script>
+	 * </div>
+	 * \endhtmlonly
+	 *
+	 */
+
+	//! \cond [vector instantiation] \endcond
+
 	vector_dist<2,float, aggregate<float,float[3],float[3][3]> > vd(4096,domain,bc,g);
 
 	// the scalar is the element at position 0 in the aggregate
@@ -67,11 +146,32 @@ int main(int argc, char* argv[])
 	// the tensor is the element at position 2 in the aggregate
 	const int tensor = 2;
 
-	//
-	// ### WIKI 5 ###
-	//
-	// Get an iterator that go through the 4096 particles, in an undefined position state and define its position
-	//
+	//! \cond [vector instantiation] \endcond
+
+	/*!
+	 * \page Vector_0_simple Vector 0 simple
+	 *
+	 * ## Assign position ## {#e0_s_assign_pos}
+	 *
+	 * Get an iterator that go through the 4096 particles. Initially all the particles
+	 *  has an undefined position state. In this cycle we define its position. In this
+	 * example we use iterators. Iterators are convenient way to explore/iterate data-structures in an
+	 * convenient and easy way
+	 *
+	 *  \snippet Vector/0_simple/main.cpp assign position
+	 *
+	 * \htmlonly
+	 * <a href="#" onclick="hide_show('vector-video-13')" >Iterator Video</a>
+	 * <div style="display:none" id="vector-video-13">
+	 * <video id="vid13" width="1200" height="576" controls> <source src="http://ppmcore.mpi-cbg.de/upload/video/Lesson1-8.mp4" type="video/mp4"></video>
+	 * <script>video_anim('vid13',31,1362)</script>
+	 * </div>
+	 * \endhtmlonly
+	 *
+	 */
+
+	//! \cond [assign position] \endcond
+
 	auto it = vd.getDomainIterator();
 
 	while (it.isNext())
@@ -88,26 +188,67 @@ int main(int argc, char* argv[])
 		++it;
 	}
 
-	//
-	// ### WIKI 6 ###
-	//
-	// Once we define the position, we distribute them according to the default space decomposition
-	// The default decomposition is created even before assigning the position to the object. It determine
-	// which part of space each processor manage
-	//
+	//! \cond [assign position] \endcond
+
+	/*!
+	 * \page Vector_0_simple Vector 0 simple
+	 *
+	 * ## Mapping particles ## {#e0_s_map}
+	 *
+	 * On a parallel program, once we define the position, we distribute the particles according to the underlying space decomposition
+	 * The default decomposition is created even before assigning the position to the object, and is calculated
+	 * giving to each processor an equal portion of space minimizing the surface to reduce communication.
+	 *
+	 * \snippet Vector/0_simple/main.cpp map
+	 *
+	 * \htmlonly
+	 * <a href="#" onclick="hide_show('vector-video-11')" >Parallelization Video</a>
+	 * <div style="display:none" id="vector-video-11">
+	 * <video id="vid11" width="1200" height="576" controls> <source src="http://ppmcore.mpi-cbg.de/upload/video/Lesson1-5.mp4" type="video/mp4"></video>
+	 * <script>video_anim('vid11',440,995)</script>
+	 * </div>
+	 * <a href="#" onclick="hide_show('vector-video-8')" >Video 1</a>
+	 * <div style="display:none" id="vector-video-8">
+	 * <video id="vid8" width="1200" height="576" controls> <source src="http://ppmcore.mpi-cbg.de/upload/video/Lesson1-6.mp4" type="video/mp4"></video>
+	 * <script>video_anim('vid8',0,483)</script>
+	 * </div>
+	 * <a href="#" onclick="hide_show('vector-video-9')" >Video 2</a><br>
+	 * <div style="display:none" id="vector-video-9">
+	 * <video id="vid9" width="1200" height="576" controls> <source src="http://ppmcore.mpi-cbg.de/upload/video/Lesson1-6.mp4" type="video/mp4"></video>
+	 * <script>video_anim('vid9',1009,1041)</script>
+	 * </div>
+	 * <a href="#" onclick="hide_show('vector-video-10')" >Video 3</a>
+	 * <div style="display:none" id="vector-video-10">
+	 * <video id="vid10" width="1200" height="576" controls> <source src="http://ppmcore.mpi-cbg.de/upload/video/Lesson1-6.mp4" type="video/mp4"></video>
+	 * <script>video_anim('vid10',1739,1948)</script>
+	 * </div>
+	 * \endhtmlonly
+	 *
+	 */
+
+	//! \cond [map] \endcond
+
 	vd.map();
 
-	//
-	// ### WIKI 7 ###
-	//
-	// We get the object that store the decomposition, than we iterate again across all the objects, we count them
-	// and we confirm that all the particles are local
-	//
+	//! \cond [map] \endcond
+
+	/*!
+	 * \page Vector_0_simple Vector 0 simple
+	 *
+	 * ## Assign values to particles property ## {#assign_prop}
+	 *
+	 * We Iterate across all the particles, we count them using a local counter and we assign 1.0 to
+	 * all the particles properties. Each particle has a scalar, vector and tensor property.
+	 *
+	 * \snippet Vector/0_simple/main.cpp assign property
+	 *
+	 *
+	 */
+
+	//! \cond [assign property] \endcond
+
 	//Counter we use it later
 	size_t cnt = 0;
-
-	// Get the space decomposition
-	auto & ct = vd.getDecomposition();
 
 	// Get a particle iterator
 	it = vd.getDomainIterator();
@@ -120,7 +261,7 @@ int main(int argc, char* argv[])
 
 		// we set the properties of the particle p
 		
-                // the scalar property
+         // the scalar property
 		vd.template getProp<scalar>(p) = 1.0;
 
 		vd.template getProp<vector>(p)[0] = 1.0;
@@ -144,31 +285,81 @@ int main(int argc, char* argv[])
 		++it;
 	}
 
-	//
-	// ### WIKI 8 ###
-	//
-	// cnt contain the number of object the local processor contain, if we are interested to count the total number across the processor
-	// we can use the function add, to sum across processors. First we have to get an instance of Vcluster, queue an operation of add with
-	// the variable count and finaly execute. All the operations are asynchronous, execute work like a barrier and ensure that all the 
-	// queued operations are executed
-	//
+	//! \cond [assign property] \endcond
+
+	/*!
+	 * \page Vector_0_simple Vector 0 simple
+	 *
+	 * ## Reduce (sum numbers across processors) ## {#e0_s_reduce}
+	 *
+	 * cnt contain the number of object the local processor contain, if we are interested to count the total number across the processors
+	 * we can use the function add, to sum across the processors. First we have to get an instance of Vcluster, queue an operation of add with
+	 * the variable count and finally execute. All the operations are asynchronous, execute work like a barrier and ensure that all the
+	 * queued operations are executed.
+	 *
+	 * \snippet Vector/0_simple/main.cpp reduce
+	 *
+	 */
+
+	//! \cond [reduce] \endcond
 	
 	auto & v_cl = create_vcluster();
 	v_cl.sum(cnt);
 	v_cl.execute();
 	
-	//
-	// ### WIKI 9 ###
-	//
-	// Output the particle position for each processor
-	//
+	//! \cond [reduce] \endcond
 
-	vd.write("output",VTK_WRITER);
+	/*!
+	 * \page Vector_0_simple Vector 0 simple
+	 *
+	 * ## Visualization, write VTK files ## {#e0_s_vis_vtk}
+	 *
+	 * With this function we output the particle position in VTK format. A VTK file
+	 * contain information about particle position and properties. Such file can be visualizaed
+	 * with program like paraview. In case this program run on several processor Each processor
+	 * generate a VTK file
+	 *
+	 * \snippet Vector/0_simple/main.cpp vtk
+	 *
+	 * \htmlonly
+	 * <a href="#" onclick="hide_show('vector-video-6')" >Video</a>
+	 * <div style="display:none" id="vector-video-6">
+	 * <video id="vid6" width="1200" height="576" controls> <source src="http://ppmcore.mpi-cbg.de/upload/video/Lesson1-5.mp4" type="video/mp4"></video>
+	 * <script>video_anim('vid6',92,400)</script>
+	 * </div>
+	 * \endhtmlonly
+	 *
+	 */
 
-	//
-	// ### WIKI 10 ###
-	//
-	// Deinitialize the library
-	//
+	//! \cond [vtk] \endcond
+
+	vd.write("particles");
+
+	//! \cond [vtk] \endcond
+
+	/*!
+	 * \page Vector_0_simple Vector 0 simple
+	 *
+	 * ## Finalize ## {#finalize}
+	 *
+	 *  At the very end of the program we have always to de-initialize the library
+	 *
+	 * \snippet Vector/0_simple/main.cpp finalize
+	 *
+	 */
+
+	//! \cond [finalize] \endcond
+
 	openfpm_finalize();
+
+	//! \cond [finalize] \endcond
+
+	/*!
+	 * \page Vector_0_simple Vector 0 simple
+	 *
+	 * # Full code # {#code}
+	 *
+	 * \include Vector/0_simple/main.cpp
+	 *
+	 */
 }

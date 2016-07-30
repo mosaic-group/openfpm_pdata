@@ -45,17 +45,17 @@ struct Box_fix
  * \param device type of base structure is going to store the data
  *
  * ### Create a distributed grid and access it
- * \snippet grid_dist_id_unit_test.hpp Create and access a distributed grid
+ * \snippet grid_dist_id_unit_test.cpp Create and access a distributed grid
  * ### Synchronize the ghosts and check the information
- * \snippet grid_dist_id_unit_test.hpp Synchronize the ghost and check the information
+ * \snippet grid_dist_id_unit_test.cpp Synchronize the ghost and check the information
  * ### Create and access a distributed grid for complex structures
- * \snippet grid_dist_id_unit_test.hpp Create and access a distributed grid complex
+ * \snippet grid_dist_id_unit_test.cpp Create and access a distributed grid complex
  * ### Synchronize a distributed grid for complex structures
- * \snippet grid_dist_id_unit_test.hpp Synchronized distributed grid complex
+ * \snippet grid_dist_id_unit_test.cpp Synchronized distributed grid complex
  * ### Usage of a grid dist iterator sub
- * \snippet grid_dist_id_unit_test.hpp Usage of a sub_grid iterator
+ * \snippet grid_dist_id_unit_test.cpp Usage of a sub_grid iterator
  * ### Construct two grid with the same decomposition
- * \snippet grid_dist_id_unit_test.hpp Construct two grid with the same decomposition
+ * \snippet grid_dist_id_unit_test.cpp Construct two grid with the same decomposition
  *
  */
 template<unsigned int dim, typename St, typename T, typename Decomposition = CartDecomposition<dim,St>,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T> >
@@ -746,7 +746,7 @@ public:
 		check_new(this,8,GRID_DIST_EVENT,4);
 #endif
 
-		InitializeCellDecomposer(g_sz,create_non_periodic<dim>().bc);
+		InitializeCellDecomposer(g_sz,dec.periodicity());
 		InitializeStructures(g_sz);
 	}
 
@@ -765,7 +765,7 @@ public:
 		check_new(this,8,GRID_DIST_EVENT,4);
 #endif
 
-		InitializeCellDecomposer(g_sz);
+		InitializeCellDecomposer(g_sz,dec.periodicity());
 		InitializeStructures(g_sz);
 	}
 
@@ -786,7 +786,7 @@ public:
 		check_new(this,8,GRID_DIST_EVENT,4);
 #endif
 
-		InitializeCellDecomposer(g_sz);
+		InitializeCellDecomposer(g_sz,dec.periodicity());
 
 		ghost = convert_ghost(g,cd_sm);
 		this->dec = dec.duplicate(ghost);
@@ -811,7 +811,7 @@ public:
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
 #endif
-		InitializeCellDecomposer(g_sz);
+		InitializeCellDecomposer(g_sz,dec.periodicity());
 
 		ghost = convert_ghost(g,cd_sm);
 
@@ -1350,6 +1350,31 @@ public:
 		}
 	}
 
+	/*! \brief Copy the give grid into this grid
+	 *
+	 * It copy the first grid into the given grid (No ghost)
+	 *
+	 * \warning the Decomposition must be ensured to be the same, otherwise crashes can happen, if you want to copy the grid independently from the decomposition please use the operator equal
+	 *
+	 * \param g Grid to copy
+	 *
+	 */
+	grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & copy(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & g)
+	{
+		auto it = this->getDomainIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			this->loc_grid.get(key.getSub()).get_o(key.getKey()) = g.loc_grid.get(key.getSub()).get_o(key.getKey());
+
+			++it;
+		}
+
+		return *this;
+	}
+
 	/*! \brief Get the spacing on each dimension
 	 *
 	 * \param get the spacing
@@ -1406,6 +1431,33 @@ public:
 			vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).Dbox);
 		}
 		vtk_g.write(output + "_" + std::to_string(v_cl.getProcessUnitID()) + ".vtk");
+
+		return true;
+	}
+
+	/*! \brief Write the distributed grid information
+	 *
+	 * * grid_X.vtk Output each local grids for each local processor X
+	 * * internal_ghost_X.vtk Internal ghost boxes in grid units for the local processor X
+	 *
+	 * \param output directory where to put the files + prefix
+	 * \param i frame number
+	 *
+	 */
+	bool write(std::string output, size_t i)
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+
+		// Create a writer and write
+		VTKWriter<boost::mpl::pair<device_grid,float>,VECTOR_GRIDS> vtk_g;
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{
+			Point<dim,St> offset = getOffset(i);
+			vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).Dbox);
+		}
+		vtk_g.write(output + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(i) + ".vtk");
 
 		return true;
 	}

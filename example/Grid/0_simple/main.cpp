@@ -1,156 +1,348 @@
 #include "Grid/grid_dist_id.hpp"
 #include "data_type/aggregate.hpp"
-#include "Decomposition/CartDecomposition.hpp"
 
-/*
- * ### WIKI 1 ###
+/*! \page grid Grid
  *
- * ## Simple example
- * 
- * This example show several basic functionalities of the distributed grid
- * 
- * ### WIKI END ###
- * 
+ * \subpage grid_0_simple
+ * \subpage Grid_1_stencil
+ * \subpage Grid_2_solve_eq
+ *
  */
 
+/*! \page grid_0_simple Grid 0 simple
+
+  [TOC]
+
+  # Simple grid example # {#simple_grid_example}
+
+  This example show several basic functionalities of the distributed grid
+
+\htmlonly
+<a href="#" onclick="if (document.getElementById('grid-video-1').style.display == 'none') {document.getElementById('grid-video-1').style.display = 'block'} else {document.getElementById('grid-video-1').style.display = 'none'}" >Video</a>
+<div style="display:none" id="grid-video-1">
+<video id="vid1" width="1200" height="576" controls> <source src="http://ppmcore.mpi-cbg.de/upload/video/Lesson1-1.mp4" type="video/mp4"></video><script>document.getElementById('vid1').addEventListener('loadedmetadata', function() {this.currentTime = 236;}, false);</script>
+</div>
+\endhtmlonly
+
+*/
 
 int main(int argc, char* argv[])
 {
-	//
-	// ### WIKI 2 ###
-	//
-	// Initialize the library and several objects 
-	//
+	/*! \page grid_0_simple Grid 0 simple
+	 *
+	 * ## Initialization ## {#e0_s_initialization}
+	 *
+	 * Here we:
+	 * * Initialize the library
+	 * * Create A 3D box that define our the domain
+	 * * an array of 3 unsigned integer that will define the size of the grid on each dimensions
+	 * * A Ghost object that will define the extension of the ghost part in physical units
+	 *
+	 * \snippet Grid/0_simple/main.cpp initialization
+	 *
+	 */
+	
+	//! \cond [initialization] \endcond
+
+	// Initialize the library
 	openfpm_init(&argc,&argv);
-	
-	//
-	// ### WIKI 3 ###
-	//
-	// Create
-	// * A 3D box that define the domain
-	// * an array of 3 unsigned integer that will define the size of the grid on each dimension
-	// * A Ghost object that will define the extension of the ghost part for each sub-domain in physical units
-	
+
+	// 3D physical domain
 	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
-	size_t sz[3];
-	sz[0] = 100;
-	sz[1] = 100;
-	sz[2] = 100;
 	
-	// Ghost
+	// Grid size on eaxh dimension
+	size_t sz[3] = {100,100,100};
+
+	// Ghost part
 	Ghost<3,float> g(0.01);
 	
-	//
-	// ### WIKI 4 ###
-	//
-	// Create a distributed grid in 3D (1° template parameter) space in with float precision (2° template parameter)
-	// each grid point contain a vector of dimension 3 (float[3]),
-	// using a CartesianDecomposition strategy (4° parameter) (the parameter 1° and 2° inside CartDecomposition must match 1° and 2°
-	// of grid_dist_id)
-	//
-	// Constructor parameters:
-	//
-	// * sz: size of the grid on each dimension
-	// * domain: where the grid is defined
-	// * g: ghost extension
-	//
+	//! \cond [initialization] \endcond
+
+	/*! \page grid_0_simple Grid 0 simple
+	 *
+	 * ## Grid instantiation ## {#e0_s_grid_inst}
+	 *
+	 * Here we are creating a distributed grid in defined by the following parameters
+	 *
+	 * * 3 dimensionality of the grid
+	 * * float Type used for the spatial coordinates
+	 * * each grid point contain a vector of dimension 3 (float[3]),
+	 * * float[3] is the information stored by each grid point a float[3]
+	 *   the list of properties must be put into an aggregate data structure aggregate<prop1,prop2,prop3, ... >
+	 *
+	 * Constructor parameters:
+	 *
+	 * * sz: size of the grid on each dimension
+	 * * domain: where the grid is defined
+	 * * g: ghost extension
+	 *
+	 * \snippet Grid/0_simple/main.cpp grid instantiation
+	 *
+	 */
+
+	//! \cond [grid instantiation] \endcond
+
 	grid_dist_id<3, float, aggregate<float[3]>> g_dist(sz,domain,g);
 	
-	// ### WIKI 5 ###
-	//
-	// Get an iterator that go through the points of the grid (No ghost)
-	//
-	auto dom = g_dist.getDomainIterator();
+	//! \cond [grid instantiation] \endcond
 
-	// ### WIKI END ###
+	/*!
+	 * \page grid_0_simple Grid 0 simple
+	 *
+	 * ## Loop over grid points ## {#e0_s_loop_gp}
+	 *
+	 * Get an iterator that go through all the grid points. In this
+	 * example we use iterators. Iterators are convenient way to explore/iterate data-structures in an
+	 * convenient and easy way.
+	 *
+	 *  \snippet Grid/0_simple/main.cpp get iterator
+	 *  \snippet Grid/0_simple/main.cpp get iterator2
+	 *
+	 */
+
+	//! \cond [get iterator] \endcond
+
+	// Get the iterator (No ghost)
+	auto dom = g_dist.getDomainIterator();
 	
+	// Counter
 	size_t count = 0;
 	
-	// Iterate over all the points
+	// Iterate over all the grid points
 	while (dom.isNext())
 	{
-		//
-		// ### WIKI 6 ###
-		//
-		// Get the local grid key, the local grid key store internally the sub-domain id (each sub-domain contain a grid)
-		// and the local grid point id identified by 2 integers in 2D 3 integer in 3D and so on. These two distinct elements are
-		// available with key.getSub() and key.getKey()
-		//
+		//! \cond [get iterator] \endcond
+
+		/*!
+		 * \page grid_0_simple Grid 0 simple
+		 *
+		 * ## Grid coordinates ## {#e0_s_grid_coord}
+		 *
+		 * Get the local grid key, one local grid key* identify one point in the grid and store the local grid coordinates of such point
+		 *
+		 * <sub><sup>(*)Internally a local grid store the sub-domain id (each sub-domain contain a grid) and the local grid point id identified by 2 integers in 2D 3 integer in 3D and so on. These two distinct elements are available with key.getSub() and key.getKey().</sup></sub>
+		 *
+		 * \snippet Grid/0_simple/main.cpp local grid
+		 *
+		 */
+
+		//! \cond [local grid] \endcond
+
+		// local grid key from iterator
 		auto key = dom.get();
 		
-		//
-		// ### WIKI 7 ###
-		//
-		// Here we convert the local grid position, into global position, key_g contain 3 integers that identify the position
-		// of the grid point in global coordinates
-		//
-		//
+		//! \cond [local grid] \endcond
+
+		/*!
+		 * \page grid_0_simple Grid 0 simple
+		 *
+		 * **Short explanation**
+		 *
+		 * In oder to get the real/global coordinates of the grid point we have to convert the object key with getGKey
+		 *
+		 */
+		 /*!
+		  *
+		  * \page grid_0_simple Grid 0 simple
+		  *
+		 \htmlonly <a href="#" onclick="if (document.getElementById('long-explanation-div').style.display == 'none') {document.getElementById('long-explanation-div').style.display = 'block'} else {document.getElementById('long-explanation-div').style.display = 'none'}" >Long Explanation</a> \endhtmlonly
+		 *
+		 *
+\htmlonly
+<div style="display:none" id="long-explanation-div">
+<p>Even if the local grid key identify an unique point in the grid, it does not store the real/global coordinates of the points in grid units.</p>
+<p>Consider this scheme</p>
+<pre class="fragment">
+   +-----+-----+--*--+-----+-----+-----+ (6,6)
+   |              |     P1,3           |
+   |     P1,1     *--------------------*
+   |              |     P1,2           |
+   +     +     +  |  +     +     +     +
+   |              *--------------------*
+   *--------------*                    |
+   |              |                    |
+   +     +     +  |  +     +     +     +
+   |              |                    |
+   |     P0,2     |      P1,0          |
+   |              |                    |
+   +     +     +  |  #     +     +     +
+   |              |                    |
+   *--------------*                    |
+   |              *--------------------*
+   +     +     +  |  +     +     +     +
+   |              |                    |
+   |   P0,0       |      P0,1          |
+   |              |                    |
+   +-----+-----+--*--+-----+-----+-----+
+  (0,0)                               (6,0)
+
++,# = grid point
+
+*--*
+|  | = uderline decomposition in sub-domain
+*--*
+
+PX,Y Processor X, sub-domain Y</pre><p>The point # has</p>
+<ul>
+<li>Global/Real coordinates are (3,2)</li>
+<li>Local grid coordinates are Sub-domain = 0, grid position = (0,0)</li>
+</ul>
+<p>Here we convert the local grid coordinates, into global coordinates. key_g internally store 3 integers that identify the position of the grid point in global coordinates</p>
+<p>
+</div>
+\endhtmlonly
+*/
+		/*! \page grid_0_simple Grid 0 simple
+		 *
+		 * \snippet Grid/0_simple/main.cpp global coord
+		 *
+		 */
+
+		//! \cond [global coord] \endcond
+
 		auto key_g = g_dist.getGKey(key);
 
-		//
-		// ### WIKI 8 ###
-		//
-		// we write on the grid point of position (i,j,k) the value i*i + j*j + k*k on the component [0] of the vector
-		g_dist.template get<0>(key)[0] = key_g.get(0)*key_g.get(0) + key_g.get(1)*key_g.get(1) + key_g.get(2)*key_g.get(2);
-		
-		// ### WIKI END ###
+		//! \cond [global coord] \endcond
+
+		/*!
+		 * \page grid_0_simple Grid 0 simple
+		 *
+		 * ## Assign properties ## {#grid_assign}
+		 *
+		 * Each grid point has a vector property we write on the vector coordinates the global coordinate of the grid point.
+		 * At the same time we also count the points
+		 *
+		 * \snippet Grid/0_simple/main.cpp assign
+		 *
+		 */
+
+		//! \cond [assign] \endcond
+
+		g_dist.template get<0>(key)[0] = key_g.get(0);
+		g_dist.template get<0>(key)[1] = key_g.get(1);
+		g_dist.template get<0>(key)[2] = key_g.get(2);
 		
 		// Count the points
 		count++;
 
-		//
-		// ### WIKI 9 ###
-		//
+		//! \cond [assign] \endcond
+
+		//! \cond [get iterator2] \endcond
+
+		//! ...
+
 		// next point
 		++dom;
-		
-		// ### WIKI END ###
 	}
 
-	//
-	// ### WIKI 10 ###
-	//
-	// Each sub-domain has an extended part, that is materially contained from another processor that in general is not synchronized
-	// ghost_get<0> synchronize the property 0 (the vector) in the ghost part
-	//
-	//
+	//! \cond [get iterator2] \endcond
+
+	/*!
+	 * \page grid_0_simple Grid 0 simple
+	 *
+	 * Each sub-domain has an extended part, that is materially contained in
+	 * another processor. The function ghost_get guarantee (after return) that this extended part
+	 * is perfectly synchronized with the other processor.
+	 *
+	 * \snippet Grid/0_simple/main.cpp ghost get
+	 *
+	 */
+
+	//! \cond [ghost get] \endcond
+
 	g_dist.template ghost_get<0>();
 	
-	//
-	// ### WIKI 11 ###
-	//
-	// count contain the number of points the local processor contain, if we are interested to count the total number across the processor
-	// we can use the function add, to sum across processors. First we have to get an instance of Vcluster, queue an operation of add with
-	// the variable count and finally execute. All the operation are asynchronous, execute work like a barrier and ensure that all the
-	// queued operations are executed
-	//
-	Vcluster & vcl = g_dist.getVC();
+	//! \cond [ghost get] \endcond
 
+	/*!
+	 * \page grid_0_simple Grid 0 simple
+	 *
+	 * count contain the number of points the local processor contain, if we are interested to count the total number across the processor
+	 * we can use the function sum, to sum numbers across processors. First we have to get an instance of Vcluster, queue an operation of sum with
+	 * the variable count and finally execute. All the operation are asynchronous, execute work like a barrier and ensure that all the
+	 * queued operations are executed
+	 *
+	 * \snippet Grid/0_simple/main.cpp reduce
+	 *
+	 */
+
+	//! \cond [reduce] \endcond
+
+	// Get the VCluster object
+	Vcluster & vcl = create_vcluster();
+
+	// queue an operation of sum for the counter count
 	vcl.sum(count);
+
+	// execute the operation
 	vcl.execute();
 	
 	// only master output
 	if (vcl.getProcessUnitID() == 0)
 	  std::cout << "Number of points: " << count << "\n";
 
-	//
-	// ### WIKI 12 ###
-	//
-	// Finally we want a nice output to visualize the information stored by the distributed grid
-	//
+	//! \cond [reduce] \endcond
+
+	/*!
+	 * \page grid_0_simple Grid 0 simple
+	 *
+	 * ## VTK and visualization ## {#e0_s_VTK_vis}
+	 *
+	 * Finally we want a nice output to visualize the information stored by the distributed grid.
+	 * The function write by default produce VTK files. One for each processor that can be visualized
+	 * with the programs like paraview
+	 *
+	 * \snippet Grid/0_simple/main.cpp write
+	 *
+	 */
+
+	//! \cond [write] \endcond
+
 	g_dist.write("output");
 	
-	//
-	// ### WIKI 13 ###
-	//
-	// For debugging purpose and demonstration we output the decomposition
-	//
+	//! \cond [write] \endcond
+
+	/*!
+	 * \page grid_0_simple Grid 0 simple
+	 *
+	 * ## Decomposition ## {#grid_dec}
+	 *
+	 * For debugging purpose and demonstration we also output the decomposition of the
+	 * space across processor. This function produce VTK files that can be visualized with Paraview
+	 *
+	 * \snippet Grid/0_simple/main.cpp out_dec
+	 *
+	 */
+
+	//! \cond [out_dec] \endcond
+
 	g_dist.getDecomposition().write("out_dec");
 	
-	//
-	// ### WIKI 14 ###
-	//
-	// Deinitialize the library
-	//
+	//! \cond [out_dec] \endcond
+
+	/*!
+	 * \page grid_0_simple Grid 0 simple
+	 *
+	 * ## Finalize ## {#finalize}
+	 *
+	 *  At the very end of the program we have always to de-initialize the library
+	 *
+	 * \snippet Vector/0_simple/main.cpp finalize
+	 *
+	 */
+
+	//! \cond [finalize] \endcond
+
 	openfpm_finalize();
+
+	//! \cond [finalize] \endcond
+
+	/*!
+	 * \page grid_0_simple Grid 0 simple
+	 *
+	 * # Full code # {#code}
+	 *
+	 * \include Grid/0_simple/main.cpp
+	 *
+	 */
 }
