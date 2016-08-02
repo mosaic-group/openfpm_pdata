@@ -6,6 +6,7 @@
  * \subpage grid_0_simple
  * \subpage Grid_1_stencil
  * \subpage Grid_2_solve_eq
+ * \subpage Grid_3_gs
  *
  */
 

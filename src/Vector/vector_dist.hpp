@@ -1627,13 +1627,27 @@ public:
 	 */
 	inline bool write(std::string out, size_t iteration, int opt = NO_GHOST)
 	{
-		// CSVWriter test
-		CSVWriter<openfpm::vector<Point<dim, St>>, openfpm::vector<prop> > csv_writer;
+		if ((opt & 0xFFFF0000) == CSV_WRITER)
+		{
+			// CSVWriter test
+			CSVWriter<openfpm::vector<Point<dim, St>>, openfpm::vector<prop> > csv_writer;
 
-		std::string output = std::to_string(out + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".csv"));
+			std::string output = std::to_string(out + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".csv"));
 
-		// Write the CSV
-		return csv_writer.write(output, v_pos, v_prp);
+			// Write the CSV
+			return csv_writer.write(output, v_pos, v_prp);
+		}
+		else
+		{
+			// VTKWriter for a set of points
+			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim,St>>, openfpm::vector<prop>>, VECTOR_POINTS> vtk_writer;
+			vtk_writer.add(v_pos,v_prp,g_m);
+
+			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtk"));
+
+			// Write the VTK file
+			return vtk_writer.write(output);
+		}
 	}
 
 	/* \brief It return the id of structure in the allocation list

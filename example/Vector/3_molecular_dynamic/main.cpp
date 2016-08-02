@@ -48,7 +48,7 @@ constexpr int force = 1;
 
 //! \cond [calc forces] \endcond
 
-void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList<3, double, FAST, shift<3, double> > & NN, double L)
+void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList<3, double, FAST, shift<3, double> > & NN, double sigma12, double sigma6)
 {
 
 //! \cond [calc forces] \endcond
@@ -125,12 +125,10 @@ void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, Ce
 			Point<3,double> r = xp - xq;
 
 			// take the norm of this vector
-			float rn = r.norm();
-			r /= rn;
-			rn *= L;
+			double rn = norm2(r);
 
 			// Calculate the force, using pow is slower
-			Point<3,double> f = 24.0*(2.0 / (rn*rn*rn*rn*rn*rn*rn*rn*rn*rn*rn*rn*rn) -  1.0 / (rn*rn*rn*rn*rn*rn*rn)) * r;
+			Point<3,double> f = 24.0*(2.0 *sigma12 / (rn*rn*rn*rn*rn*rn*rn) -  sigma6 / (rn*rn*rn*rn)) * r;
 
 			// we sum the force produced by q on p
 			vd.template getProp<force>(p)[0] += f.get(0);
@@ -167,7 +165,7 @@ void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, Ce
 
 //! \cond [calc energy] \endcond
 
-double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList<3, double, FAST, shift<3, double> > & NN, double L)
+double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList<3, double, FAST, shift<3, double> > & NN, double sigma12, double sigma6)
 {
 
 //! \cond [calc energy] \endcond
@@ -240,27 +238,20 @@ double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, 
 			// Get position of the particle q
 			Point<3,double> xq = vd.getPos(q);
 
-			// get the distance vector r between p and q
-			Point<3,double> r = xp - xq;
-
 			// take the normalized direction
-			float rn = r.norm();
-			r /= rn;
-
-			// Multiply by L
-			rn *= L;
+			double rn = norm2(xp - xq);
 
 			// potential energy (using pow is slower)
-			E += 4.0 * ( 1.0 / (rn*rn*rn*rn*rn*rn*rn*rn*rn*rn*rn*rn) + 1.0 / ( rn*rn*rn*rn*rn*rn) );
-
-			// Kinetic energy of the particle given by its actual speed
-			E += (vd.template getProp<velocity>(p)[0]*vd.template getProp<velocity>(p)[0] +
-					vd.template getProp<velocity>(p)[1]*vd.template getProp<velocity>(p)[1] +
-					vd.template getProp<velocity>(p)[2]*vd.template getProp<velocity>(p)[2]) / 2;
+			E += 4.0 * ( sigma12 / (rn*rn*rn*rn*rn*rn) - sigma6 / ( rn*rn*rn) );
 
 			// Next neighborhood
 			++Np;
 		}
+
+		// Kinetic energy of the particle given by its actual speed
+		E +=   (vd.template getProp<velocity>(p)[0]*vd.template getProp<velocity>(p)[0] +
+				vd.template getProp<velocity>(p)[1]*vd.template getProp<velocity>(p)[1] +
+				vd.template getProp<velocity>(p)[2]*vd.template getProp<velocity>(p)[2]) / 2;
 
 		// Next Particle
 		++it2;
@@ -294,9 +285,11 @@ int main(int argc, char* argv[])
 
 	//! \cond [constants] \endcond
 
-	double dt = 0.005;
-	double L = 10.0;
+	double dt = 0.0005;
 	float r_cut = 0.3;
+	double sigma = 0.1;
+	double sigma12 = pow(sigma,12);
+	double sigma6 = pow(sigma,6);
 
 	openfpm::vector<double> x;
 	openfpm::vector<openfpm::vector<double>> y;
@@ -432,7 +425,7 @@ int main(int argc, char* argv[])
 	auto NN = vd.getCellList(r_cut);
 
 	// calculate forces
-	calc_forces(vd,NN,L);
+	calc_forces(vd,NN,sigma12,sigma6);
 	unsigned long int f = 0;
 
 	// MD time stepping
@@ -464,7 +457,7 @@ int main(int argc, char* argv[])
 		vd.template ghost_get<>();
 
 		// calculate forces or a(tn + 1) Step 2
-		calc_forces(vd,NN,L);
+		calc_forces(vd,NN,sigma12,sigma6);
 
 
 		// Integrate the velocity Step 3
@@ -489,14 +482,14 @@ int main(int argc, char* argv[])
 			vd.deleteGhost();
 			vd.write("particles_",f);
 
+			// we resync the ghost
+			vd.ghost_get<>();
+
 			// We calculate the energy
-			double energy = calc_energy(vd,NN,L);
+			double energy = calc_energy(vd,NN,sigma12,sigma6);
 			auto & vcl = create_vcluster();
 			vcl.sum(energy);
 			vcl.execute();
-
-			// we resync the ghost
-			vd.ghost_get<>();
 
 			// we save the energy calculated at time step i c contain the time-step y contain the energy
 			x.add(i);
@@ -580,6 +573,19 @@ int main(int argc, char* argv[])
 	 * # Full code # {#code}
 	 *
 	 * \include Vector/3_molecular_dynamic/main.cpp
+	 *
+	 */
+
+	/*!
+	 * \page Vector_3_md Vector 3 molecular dynamic
+	 *
+	 * # Code with expression # {#code}
+	 *
+	 * Here we also show how we can simplify the example using expressions
+	 *
+	 * \see \ref Vector_2_expression
+	 *
+	 * \include Vector/3_molecular_dynamic/main_expr.cpp
 	 *
 	 */
 }

@@ -225,6 +225,8 @@ int main(int argc, char* argv[])
 	 *
 	 * Finally we want a nice output to visualize the information stored by the distributed grid
 	 *
+	 * \see \ref e0_s_VTK_vis
+	 *
 	 * \snippet Grid/1_stencil/main.cpp output
 	 *
 	 */

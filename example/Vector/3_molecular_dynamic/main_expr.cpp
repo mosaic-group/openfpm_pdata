@@ -1,8 +1,5 @@
 #include "Vector/vector_dist.hpp"
-#include "Decomposition/CartDecomposition.hpp"
-#include "data_type/aggregate.hpp"
 #include "Plot/GoogleChart.hpp"
-#include "Plot/util.hpp"
 #include "Operators/Vector/vector_dist_operators.hpp"
 
 constexpr int velocity = 0;
@@ -10,21 +7,16 @@ constexpr int force = 1;
 
 struct ln_potential
 {
-	double L;
+	double sigma12,sigma6;
 
-	ln_potential(double L)
-	:L(L){}
+	ln_potential(double sigma12_, double sigma6_) {sigma12 = sigma12_, sigma6 = sigma6_;}
 
-	Point<3,double> value(Point<3,double> & xp, Point<3,double> xq, Point<3,double> & sp, Point<3,double> & sq)
+	Point<2,double> value(const Point<3,double> & xp, const Point<3,double> xq)
 	{
-		// Energy is a vector we calculate separately Potential and kinetic, and total
-		Point<3,double> E;
+		double rn = norm2(xp - xq);
 
-		float rn = norm(xp - xq) * L;
-
-		E.get(0)= 4.0 * ( 1.0 / (rn*rn*rn*rn*rn*rn*rn*rn*rn*rn*rn*rn) + 1.0 / ( rn*rn*rn*rn*rn*rn) );
-		E.get(1) = (sp * sp) / 2.0;
-		E.get(2) = E.get(0) + E.get(1);
+		Point<2,double> E({4.0 * ( sigma12 / (rn*rn*rn*rn*rn*rn) - sigma6 / ( rn*rn*rn) ),
+						 0.0});
 
 		return E;
 	}
@@ -32,75 +24,39 @@ struct ln_potential
 
 struct ln_force
 {
-	double L;
+	double sigma12,sigma6;
 
-	ln_force(double L)
-	:L(L){}
+	ln_force(double sigma12_, double sigma6_) {sigma12 = sigma12_; sigma6 = sigma6_;}
 
-	Point<3,double> value(Point<3,double> & xp, Point<3,double> xq)
+	Point<3,double> value(const Point<3,double> & xp, const Point<3,double> xq)
 	{
 		Point<3,double> r = xp - xq;
+		double rn = norm2(r);
 
-		// take the norm of this vector
-		float rn = r.norm();
-		r /= rn;
-		rn *= L;
-
-		return 24.0*(2.0 / (rn*rn*rn*rn*rn*rn*rn*rn*rn*rn*rn*rn*rn) -  1.0 / (rn*rn*rn*rn*rn*rn*rn)) * r;
+		return 24.0*(2.0 * sigma12 / (rn*rn*rn*rn*rn*rn*rn) -  sigma6 / (rn*rn*rn*rn)) * r;
 	}
 };
 
-void calc_forces(vector_dist<3,double, aggregate<Point<3,double>,Point<3,double>> > & vd, CellList<3, double, FAST, shift<3, double> > & NN, double L)
-{
-
-	vd.updateCellList(NN);
-
-	//! \cond [ucl] \endcond
-
-	auto v_force = getV<force>(vd);
-
-	ln_force lf(L);
-
-	v_force = applyKernel_in_sim(v_force,vd,NN,lf);
-}
-
-Point<3,double> calc_energy(vector_dist<3,double, aggregate<Point<3,double>,Point<3,double>> > & vd, CellList<3, double, FAST, shift<3, double> > & NN, double L)
-{
-
-	Point<3,double> E;
-
-	vd.updateCellList(NN);
-
-	auto v_velocity = getV<velocity>(vd);
-
-	ln_potential lf(L);
-
-	auto eE = applyKernel_reduce(v_velocity,vd,NN,lf);
-	eE.init();
-
-	E = eE.value(0);
-
-	return E;
-}
-
-
 int main(int argc, char* argv[])
 {
-	double dt = 0.005;
-	double L = 10.0;
-	float r_cut = 0.3;
+	double dt = 0.0005, sigma = 0.1, r_cut = 0.3;
+
+	double sigma6 = pow(sigma,6), sigma12 = pow(sigma,12);
 
 	openfpm::vector<double> x;
 	openfpm::vector<openfpm::vector<double>> y;
 
 
 	openfpm_init(&argc,&argv);
-	Vcluster & v_cl = create_vcluster();
+	Vcluster & vcl = create_vcluster();
 
 	size_t sz[3] = {10,10,10};
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 	Ghost<3,float> ghost(r_cut);
+
+	ln_force lf(sigma12,sigma6);
+	ln_potential lp(sigma12,sigma6);
 
 	vector_dist<3,double, aggregate<Point<3,double>,Point<3,double>> > vd(0,box,bc,ghost);
 
@@ -128,24 +84,22 @@ int main(int argc, char* argv[])
 
 	auto NN = vd.getCellList(r_cut);
 
-	// calculate forces
-	calc_forces(vd,NN,L);
+	vd.updateCellList(NN);
+	v_force = applyKernel_in_sim(vd,NN,lf);
 	unsigned long int f = 0;
 
 	// MD time stepping
 	for (size_t i = 0; i < 10000 ; i++)
 	{
-		auto exp1 = v_velocity + 0.5*dt*v_force;
-		auto exp2 = v_pos + v_velocity*dt;
-
-		assign(v_velocity,exp1,
-			   v_pos,exp2);
+		assign(v_velocity, v_velocity + 0.5*dt*v_force,
+			   v_pos, v_pos + v_velocity*dt);
 
 		vd.map();
 		vd.template ghost_get<>();
 
 		// calculate forces or a(tn + 1) Step 2
-		calc_forces(vd,NN,L);
+		vd.updateCellList(NN);
+		v_force = applyKernel_in_sim(vd,NN,lf);
 
 		v_velocity = v_velocity + 0.5*dt*v_force;
 
@@ -153,24 +107,19 @@ int main(int argc, char* argv[])
 		{
 			vd.deleteGhost();
 			vd.write("particles_",f);
-
-			// We calculate the energy
-			Point<3,double> energy = calc_energy(vd,NN,L);
-			auto & vcl = create_vcluster();
-			vcl.sum(energy.get(2));
-			vcl.execute();
-
-			// we resync the ghost
 			vd.ghost_get<>();
+
+			Point<2,double> E = rsum(applyKernel_in_sim(vd,NN,lp) + (v_velocity * v_velocity)/2.0,vd).get();
+
+			vcl.sum(E.get(0));vcl.sum(E.get(1));
+			vcl.execute();
 
 			// we save the energy calculated at time step i c contain the time-step y contain the energy
 			x.add(i);
-			y.add({energy.get(2)});
+			y.add({E.get(0),E.get(1),E.get(0) - E.get(1)});
 
-			// We also print on terminal the value of the energy
-			// only one processor (master) write on terminal
 			if (vcl.getProcessUnitID() == 0)
-				std::cout << "Energy: " << energy.get(2) << std::endl;
+				std::cout << "Energy Total: " << E.get(0) << "   Kinetic: " <<  E.get(1) << "   Potential: " << E.get(0) - E.get(1) << std::endl;
 
 			f++;
 		}
