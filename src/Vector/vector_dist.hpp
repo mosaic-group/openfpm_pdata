@@ -17,6 +17,7 @@
 #include "memory/PreAllocHeapMemory.hpp"
 #include "memory/PtrMemory.hpp"
 #include "NN/CellList/CellList.hpp"
+#include "NN/CellList/CellListFast_hilb.hpp"
 #include "util/common.hpp"
 #include "util/object_util.hpp"
 #include "memory/ExtPreAlloc.hpp"
@@ -24,6 +25,7 @@
 #include "VTKWriter/VTKWriter.hpp"
 #include "Decomposition/common.hpp"
 #include "Grid/grid_dist_id_iterator_dec.hpp"
+#include "Grid/grid_key_dx_iterator_hilbert.hpp"
 #include "Vector/vector_dist_ofb.hpp"
 #include "Decomposition/CartDecomposition.hpp"
 #include "data_type/aggregate.hpp"
@@ -773,6 +775,35 @@ private:
 		}
 	}
 
+	/*! \brief Calculate parameters for the cell list
+	 *
+	 * \param div Division array
+	 * \param r_cut interation radius or size of each cell
+	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost. This parameter says how much must be enlarged
+	 *
+	 * \return the processor bounding box
+	 */
+	inline Box<dim, St> cl_param_calculate(size_t (&div)[dim], St r_cut, const Ghost<dim, St> & enlarge)
+
+	{
+		// calculate the parameters of the cell list
+
+		// get the processor bounding box
+		Box<dim, St> pbox = dec.getProcessorBounds();
+
+		// extend by the ghost
+		pbox.enlarge(enlarge);
+
+		// Calculate the division array and the cell box
+		for (size_t i = 0; i < dim; i++)
+		{
+			div[i] = static_cast<size_t>((pbox.getP2().get(i) - pbox.getP1().get(i)) / r_cut);
+			div[i]++;
+			pbox.setHigh(i,pbox.getLow(i) + div[i]*r_cut);
+		}
+		return pbox;
+	}
+
 public:
 
 	//! space type
@@ -1120,7 +1151,11 @@ public:
 
 		// Create and fill send buffer for particle properties
 
-		ExtPreAlloc<Memory> * prAlloc_prp = new ExtPreAlloc<Memory>(pap_prp, g_prp_mem);
+////////////////////////////////////////////////
+		size_t req = ExtPreAlloc<Memory>::calculateMem(pap_prp);
+
+		ExtPreAlloc<Memory> * prAlloc_prp = new ExtPreAlloc<Memory>(req, g_prp_mem);
+/////////////////////////////////////////////////
 		openfpm::vector<send_vector> g_send_prp;
 		fill_send_ghost_prp_buf<send_vector, prp_object, prp...>(g_send_prp, prAlloc_prp);
 
@@ -1130,7 +1165,11 @@ public:
 		openfpm::vector<send_pos_vector> g_pos_send;
 		if (opt != NO_POSITION)
 		{
-			prAlloc_pos = new ExtPreAlloc<Memory>(pap_pos, g_pos_mem);
+////////////////////////////////////////////////
+			size_t req1 = ExtPreAlloc<Memory>::calculateMem(pap_pos);
+
+			prAlloc_pos = new ExtPreAlloc<Memory>(req1, g_pos_mem);
+////////////////////////////////////////////////////////
 			fill_send_ghost_pos_buf(g_pos_send, prAlloc_pos);
 		}
 
@@ -1264,6 +1303,24 @@ public:
 		return getCellList(r_cut, g);
 	}
 
+	/*! \brief Construct an hilbert cell list starting from the stored particles
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 *
+	 * \return the Cell list
+	 *
+	 */
+	template<typename CellL = CellList_hilb<dim, St, FAST, shift<dim, St> > > CellL getCellList_hilb(St r_cut)
+	{
+		// Get ghost and anlarge by 1%
+		Ghost<dim,St> g = dec.getGhost();
+		g.magnify(1.01);
+
+		return getCellList_hilb(r_cut, g);
+	}
+
 	/*! \brief Update a cell list using the stored particles
 	 *
 	 * \tparam CellL CellList type to construct
@@ -1307,24 +1364,43 @@ public:
 	{
 		CellL cell_list;
 
-		// calculate the parameters of the cell list
-
-		// get the processor bounding box
-		Box<dim, St> pbox = dec.getProcessorBounds();
-		// extend by the ghost
-		pbox.enlarge(enlarge);
-
+		// Division array
 		size_t div[dim];
 
-		// Calculate the division array and the cell box
-		for (size_t i = 0; i < dim; i++)
-		{
-			div[i] = static_cast<size_t>((pbox.getP2().get(i) - pbox.getP1().get(i)) / r_cut);
-			div[i]++;
-			pbox.setHigh(i,pbox.getLow(i) + div[i]*r_cut);
-		}
+		// Processor bounding box
+		auto pbox = cl_param_calculate(div, r_cut, enlarge);
 
 		cell_list.Initialize(pbox, div);
+
+		updateCellList(cell_list);
+
+		return cell_list;
+	}
+
+	/*! \brief Construct an hilbert cell list starting from the stored particles
+	 *
+	 * It differ from the get getCellList for an additional parameter, in case the
+	 * domain + ghost is not big enough to contain additional padding particles, a Cell list
+	 * with bigger space can be created
+	 * (padding particles in general are particles added by the user out of the domains)
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
+	 *
+	 */
+	template<typename CellL = CellList_hilb<dim, St, FAST, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
+	{
+		CellL cell_list;
+
+		// Division array
+		size_t div[dim];
+
+		// Processor bounding box
+		auto pbox = cl_param_calculate(div, r_cut, enlarge);
+
+		cell_list.Initialize(pbox, div, g_m);
 
 		updateCellList(cell_list);
 
@@ -1386,6 +1462,116 @@ public:
 			// next particle
 			++it_p;
 		}
+	}
+
+	/*! \brief Construct a cell list starting from the stored particles and reorder a vector according to the Hilberts curve
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param m an order of a hilbert curve
+	 *
+	 *
+	 *
+	 */
+	template<typename CellL=CellList<dim,St,FAST,shift<dim,St> > > void reorder (int32_t m)
+	{
+		reorder(m,dec.getGhost());
+	}
+
+
+	/*! \brief Construct a cell list starting from the stored particles and reorder a vector according to the Hilberts curve
+	 *
+	 *
+	 *It differs from the reorder(m) for an additional parameter, in case the
+	 * domain + ghost is not big enough to contain additional padding particles, a Cell list
+	 * with bigger space can be created
+	 * (padding particles in general are particles added by the user out of the domains)
+	 *
+	 * \param m order of a curve
+	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
+	 *
+	 */
+	template<typename CellL=CellList<dim,St,FAST,shift<dim,St> > > void reorder(int32_t m, const Ghost<dim,St> & enlarge)
+	{
+		// reset the ghost part
+		v_pos.resize(g_m);
+		v_prp.resize(g_m);
+
+
+		CellL cell_list;
+
+		// calculate the parameters of the cell list
+
+		// get the processor bounding box
+		Box<dim,St> pbox = dec.getProcessorBounds();
+		// extend by the ghost
+		pbox.enlarge(enlarge);
+
+		size_t div[dim];
+
+		// Calculate the division array and the cell box
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			div[i] = 1 << m;
+		}
+
+		cell_list.Initialize(pbox,div);
+
+		// for each particle add the particle to the cell list
+
+		auto it = getIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			cell_list.add(this->getPos(key),key.getKey());
+
+			++it;
+		}
+
+		// Use cell_list to reorder v_pos
+
+		//destination vector
+		openfpm::vector<Point<dim,St>> v_pos_dest;
+		openfpm::vector<prop> v_prp_dest;
+
+		v_pos_dest.resize(v_pos.size());
+		v_prp_dest.resize(v_prp.size());
+
+		//hilberts curve iterator
+		grid_key_dx_iterator_hilbert<dim> h_it(m);
+
+		//Index for v_pos_dest
+		size_t count = 0;
+
+		grid_key_dx<dim> ksum;
+
+		for (size_t i = 0; i < dim ; i++)
+			ksum.set_d(i,cell_list.getPadding(i));
+
+		while (h_it.isNext())
+		{
+		  auto key = h_it.get();
+		  key += ksum;
+
+		  size_t lin = cell_list.getGrid().LinId(key);
+
+		  // for each particle in the Cell "lin"
+		  for (size_t i = 0; i < cell_list.getNelements(lin); i++)
+		  {
+			  //reorder
+			  auto v = cell_list.get(lin,i);
+			  v_pos_dest.get(count) = v_pos.get(v);
+			  v_prp_dest.get(count) = v_prp.get(v);
+
+			  count++;
+		  }
+		  ++h_it;
+		}
+
+		v_pos.swap(v_pos_dest);
+		v_prp.swap(v_prp_dest);
 	}
 
 	/*! \brief It return the number of particles contained by the previous processors
