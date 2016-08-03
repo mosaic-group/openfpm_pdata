@@ -1217,8 +1217,6 @@ void Test3D_decit(const Box<3,float> & domain, long int k)
 {
 	size_t k_bck = k;
 	{
-		typedef Point_test<float> p;
-
 		Vcluster & v_cl = create_vcluster();
 
 		if ( v_cl.getProcessingUnits() > 32 )
@@ -1286,8 +1284,6 @@ void Test3D_decit(const Box<3,float> & domain, long int k)
 	k = k_bck;
 
 	{
-		typedef Point_test<float> p;
-
 		Vcluster & v_cl = create_vcluster();
 
 		if ( v_cl.getProcessingUnits() > 32 )
@@ -1357,8 +1353,6 @@ void Test3D_decit(const Box<3,float> & domain, long int k)
 
 void Test3D_periodic(const Box<3,float> & domain, long int k)
 {
-	typedef Point_test<float> p;
-
 	Vcluster & v_cl = create_vcluster();
 
 	if ( v_cl.getProcessingUnits() > 32 )
@@ -1686,8 +1680,8 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_test_use)
 	// Domain
 	Box<3,float> domain3({-0.3,-0.3,-0.3},{1.1,1.1,1.1});
 
-	periodicity<3> np({NON_PERIODIC,NON_PERIODIC,NON_PERIODIC});
-	periodicity<3> p({PERIODIC,PERIODIC,PERIODIC});
+	periodicity<3> np({{NON_PERIODIC,NON_PERIODIC,NON_PERIODIC}});
+	periodicity<3> p({{PERIODIC,PERIODIC,PERIODIC}});
 
 	long int k = 128*128*128*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);

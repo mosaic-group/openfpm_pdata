@@ -124,8 +124,6 @@ void Test3D_unb_ghost(const Box<3,float> & domain, long int k)
 
 void Test3D_unb_ghost_periodic(const Box<3,float> & domain, long int k)
 {
-	typedef Point_test<float> p;
-
 	Vcluster & v_cl = create_vcluster();
 
 	if ( v_cl.getProcessingUnits() > 48 )

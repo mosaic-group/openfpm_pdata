@@ -724,11 +724,6 @@ private:
 
 			// Add the received particles to v_pos and v_prp
 
-			// source object type
-			typedef encapc<1, prop, typename openfpm::vector<prop>::layout_type> encap_src;
-			// destination object type
-			typedef encapc<1, prp_object, typename openfpm::vector<prp_object>::layout_type> encap_dst;
-
 			size_t j = 0;
 			for (; j < vpos.size() && o_p_id < out_part.size(); j++, o_p_id++)
 			{
