@@ -756,21 +756,17 @@ private:
 	 *
 	 * \param size_byte_prp total size for the property buffer
 	 * \param size_byte_pos total size for the position buffer
-	 * \param pap_prp allocation sequence for the property buffer
-	 * \param pap_pos allocation sequence for the position buffer
 	 *
 	 */
-	template<typename prp_object> void calc_send_ghost_buf(size_t & size_byte_prp, size_t & size_byte_pos, std::vector<size_t> & pap_prp, std::vector<size_t> & pap_pos)
+	template<typename prp_object> void calc_send_ghost_buf(size_t & size_byte_prp, size_t & size_byte_pos)
 	{
 		// Calculate the total size required for the sending buffer
 		for (size_t i = 0; i < ghost_prc_sz.size(); i++)
 		{
 			size_t alloc_ele = openfpm::vector<prp_object, HeapMemory, typename memory_traits_lin<prp_object>::type, memory_traits_lin , openfpm::grow_policy_identity>::calculateMem(ghost_prc_sz.get(i), 0);
-			pap_prp.push_back(alloc_ele);
 			size_byte_prp += alloc_ele;
 
 			alloc_ele = openfpm::vector<Point<dim, St>, HeapMemory, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin, openfpm::grow_policy_identity>::calculateMem(ghost_prc_sz.get(i), 0);
-			pap_pos.push_back(alloc_ele);
 			size_byte_pos += alloc_ele;
 		}
 	}
@@ -1137,11 +1133,7 @@ public:
 		size_t size_byte_prp = 0;
 		size_t size_byte_pos = 0;
 
-		// allocation patterns for property and position send buffer
-		std::vector<size_t> pap_prp;
-		std::vector<size_t> pap_pos;
-
-		calc_send_ghost_buf<prp_object>(size_byte_prp, size_byte_pos, pap_prp, pap_pos);
+		calc_send_ghost_buf<prp_object>(size_byte_prp, size_byte_pos);
 
 		// Create memory for the send buffer
 
@@ -1151,11 +1143,8 @@ public:
 
 		// Create and fill send buffer for particle properties
 
-////////////////////////////////////////////////
-		size_t req = ExtPreAlloc<Memory>::calculateMem(pap_prp);
+		ExtPreAlloc<Memory> * prAlloc_prp = new ExtPreAlloc<Memory>(size_byte_prp, g_prp_mem);
 
-		ExtPreAlloc<Memory> * prAlloc_prp = new ExtPreAlloc<Memory>(req, g_prp_mem);
-/////////////////////////////////////////////////
 		openfpm::vector<send_vector> g_send_prp;
 		fill_send_ghost_prp_buf<send_vector, prp_object, prp...>(g_send_prp, prAlloc_prp);
 
@@ -1165,11 +1154,7 @@ public:
 		openfpm::vector<send_pos_vector> g_pos_send;
 		if (opt != NO_POSITION)
 		{
-////////////////////////////////////////////////
-			size_t req1 = ExtPreAlloc<Memory>::calculateMem(pap_pos);
-
-			prAlloc_pos = new ExtPreAlloc<Memory>(req1, g_pos_mem);
-////////////////////////////////////////////////////////
+			prAlloc_pos = new ExtPreAlloc<Memory>(size_byte_pos, g_pos_mem);
 			fill_send_ghost_pos_buf(g_pos_send, prAlloc_pos);
 		}
 

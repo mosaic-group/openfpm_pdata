@@ -216,6 +216,9 @@ fi
 if [ -d "$i_dir/HDF5" ]; then
     configure_options=" $configure_options --with-hdf5=$i_dir/HDF5/bin/h5pcc "
 fi
+if [ -d "$i_dir/LIBHILBERT" ]; then
+    configure_options=" $configure_options --with-libhilbert=$i_dir/LIBHILBERT "
+fi
 
 ### MPI
 
@@ -250,6 +253,7 @@ EIGEN_installed=0
 EIGEN_System_prv=1
 HDF5_installed=0
 HDF5_System_prv=1
+LIBHILBERT_installed=0
 conf_err=1
 
 if [ $install_req -eq 0 ]; then
@@ -309,6 +313,15 @@ else
             ./script/install_HDF5.sh $i_dir $ncore
             configure_options=" $configure_options --with-hdf5=$i_dir/HDF5/bin/h5pcc "
             HDF5_installed=1
+        elif [ $conf_err -eq 210 ]; then
+            echo "LIBHILBERT not found try to install"
+            if [ $LIBHILBERT_installed -eq 1 ]; then
+                echo "Error the installation of LIBHILBERT failed"
+                exit 1
+            fi
+            ./script/install_LIBHILBERT.sh $i_dir $ncore
+            configure_options=" $configure_options --with-libhilbert=$i_dir/LIBHILBERT "
+            LIBHILBERT_installed=1
         elif [ $conf_err -ne 0 ]; then
             echo "I do not know how to recover from this error"
             exit 1
@@ -333,10 +346,10 @@ fi
 
 ### Create example.mk
 install_base=$(cat install_dir)
-echo "INCLUDE_PATH=-I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include $lin_alg_inc" > example.mk
-echo "LIBS_PATH= -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib -L$i_dir/HDF5/lib $lin_alg_dir" >> example.mk
-echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lhdf5 $lin_alg_lib" >> example.mk
-echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lhdf5 $lin_alg_lib" >> example.mk
+echo "INCLUDE_PATH=-I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" > example.mk
+echo "LIBS_PATH= -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib -L$i_dir/HDF5/lib -L$i_dir/LIBHILBERT/lib  $lin_alg_dir" >> example.mk
+echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lhdf5 -llibhilbert  $lin_alg_lib" >> example.mk
+echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lhdf5 -llibhilbert $lin_alg_lib" >> example.mk
 cp example.mk src/example.mk
 cp example.mk example/example.mk
 
@@ -394,6 +407,11 @@ fi
 if [ -d "$i_dir/HDF5" ]; then
   installation_report="$installation_report \033[92;1mHDF5\033[0m Installed: \033[1m $i_dir/HDF5 \033[0m\n"
   bash_library="$bash_library:$i_dir/HDF5/lib"
+fi
+
+if [ -d "$i_dir/LIBHILBERT" ]; then
+  installation_report="$installation_report \033[92;1mLibHilbert\033[0m Installed: \033[1m $i_dir/LIBHILBERT \033[0m\n"
+  bash_library="$bash_library:$i_dir/LIBHILBERT/lib"
 fi
 
 echo -e "$installation_report"

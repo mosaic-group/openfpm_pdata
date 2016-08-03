@@ -1270,9 +1270,7 @@ public:
 
 			void * pointer2 = prAlloc_prp.getPointerEnd();
 
-			v_cl.send(ig_box.get(i).prc,0,pointer/*sts.getMarkPointer(prAlloc_prp)*/,(char *)pointer2 - (char *)pointer /*sts.getMarkSize(prAlloc_prp)*/);
-
-//			pointer = prAlloc_prp.getPointerEnd();
+			v_cl.send(ig_box.get(i).prc,0,pointer,(char *)pointer2 - (char *)pointer);
 		}
 
 		// Calculate the total information to receive from each processors
@@ -1292,12 +1290,13 @@ public:
 			}
 		}
 
+		size_t tot_recv = ExtPreAlloc<Memory>::calculateMem(prp_recv);
+
 		//! Resize the receiving buffer
-		g_recv_prp_mem.resize(ExtPreAlloc<Memory>::calculateMem(prp_recv));
+		g_recv_prp_mem.resize(tot_recv);
 
 		// Create an object of preallocated memory for properties
-		ExtPreAlloc<Memory> & prRecv_prp = *(new ExtPreAlloc<Memory>(req,g_recv_prp_mem));
-
+		ExtPreAlloc<Memory> & prRecv_prp = *(new ExtPreAlloc<Memory>(tot_recv,g_recv_prp_mem));
 		prRecv_prp.incRef();
 
 		// queue the receives
