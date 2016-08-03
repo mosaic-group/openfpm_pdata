@@ -21,8 +21,6 @@
  */
 template<unsigned int dim> size_t total_n_part_lc(vector_dist<dim,float, Point_test<float>, CartDecomposition<dim,float> > & vd, size_t (& bc)[dim])
 {
-	typedef Point<dim,float> s;
-
 	Vcluster & v_cl = vd.getVC();
 	auto it2 = vd.getDomainIterator();
 	const CartDecomposition<3,float> & ct = vd.getDecomposition();
@@ -64,7 +62,6 @@ template<unsigned int dim> size_t total_n_part_lc(vector_dist<dim,float, Point_t
  */
 template<unsigned int dim,typename vector_dist> inline void count_local_n_local(vector_dist & vd, vector_dist_iterator & it, size_t (& bc)[dim] , Box<dim,float> & box, Box<dim,float> & dom_ext, size_t & l_cnt, size_t & nl_cnt, size_t & n_out)
 {
-	typedef Point<dim,float> s;
 	const CartDecomposition<dim,float> & ct = vd.getDecomposition();
 
 	while (it.isNext())
@@ -106,7 +103,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	Vcluster & v_cl = create_vcluster();
 
 	typedef Point_test<float> p;
-	typedef Point<2,float> s;
 
 	// Get the default minimum number of sub-sub-domain per processor (granularity of the decomposition)
 	size_t n_sub = vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> >::getDefaultNsubsub() * v_cl.getProcessingUnits();
@@ -294,8 +290,6 @@ long int decrement(long int k, long int step)
 
 BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 {
-	typedef Point<2,float> s;
-
 	Vcluster & v_cl = create_vcluster();
 
     // set the seed
@@ -367,8 +361,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 
 BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 {
-	typedef Point<3,float> s;
-
 	Vcluster & v_cl = create_vcluster();
 
     // set the seed
@@ -441,8 +433,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 
 BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 {
-	typedef Point<2,float> s;
-
 	Vcluster & v_cl = create_vcluster();
 
     // set the seed
@@ -551,8 +541,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 
 BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 {
-	typedef Point<3,float> s;
-
 	Vcluster & v_cl = create_vcluster();
 
     // set the seed
@@ -659,8 +647,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 
 BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 {
-	typedef Point<3,float> s;
-
 	Vcluster & v_cl = create_vcluster();
 
     // set the seed
@@ -741,8 +727,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 
 BOOST_AUTO_TEST_CASE( vector_dist_periodic_map )
 {
-	typedef Point<3,float> s;
-
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 
 	// Boundary conditions
@@ -794,8 +778,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map )
 
 BOOST_AUTO_TEST_CASE( vector_dist_not_periodic_map )
 {
-	typedef Point<3,float> s;
-
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 
 	// Boundary conditions
@@ -850,8 +832,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_out_of_bound_policy )
 
 	if (v_cl.getProcessingUnits() > 8)
 		return;
-
-	typedef Point<3,float> s;
 
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 
@@ -908,9 +888,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_out_of_bound_policy )
 
 BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 {
-
-	typedef Point<3,float> s;
-
 	Vcluster & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 8)
@@ -1057,8 +1034,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 	// 3D test
 	for ( ; k > 8*big_step ; k-= (k > 2*big_step)?big_step:small_step )
 	{
-		typedef Point<3,float> s;
-
 		Vcluster & v_cl = create_vcluster();
 
 		const size_t Ng = k;
@@ -1166,8 +1141,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 
 BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
 {
-	typedef Point<3,float> s;
-
 	Vcluster & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 3)
@@ -1293,8 +1266,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
 
 BOOST_AUTO_TEST_CASE( vector_dist_reorder_2d_test )
 {
-	typedef Point<2,float> s;
-
 	Vcluster & v_cl = create_vcluster();
 
     // set the seed
