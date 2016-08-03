@@ -1114,7 +1114,7 @@ template<unsigned int dim> void vd_verlet_performance_write_report(openfpm::vect
 
 	options.yAxis = std::string("Speedup (times)");
 	options.xAxis = std::string("Number of particles");
-	options.lineWidth = 2.5;
+	options.lineWidth = 2;
 
 	GoogleChart cg;
 
@@ -1137,7 +1137,7 @@ template<unsigned int dim> void vd_verlet_performance_write_report(openfpm::vect
 
 	options2.yAxis = std::string("Total calculation time (s)");
 	options2.xAxis = std::string("Number of particles");
-	options2.lineWidth = 2.5;
+	options2.lineWidth = 2;
 
 	std::string str2("<h2>2) Total calculation time</h2>");
 	str2 += "We count a total calculation time. In the case of unordered positioning it is: verlet list creation time + forces calculation time; in the case of an Hilbert curve positioning: reordering time + verlet list creation time + forces calculation time."
@@ -1255,7 +1255,7 @@ template<unsigned int dim> void vd_cl_performance_write_report(size_t n_moving,o
 
 	options.yAxis = std::string("Speedup (times)");
 	options.xAxis = std::string("Number of particles");
-	options.lineWidth = 2.5;
+	options.lineWidth = 2;
 	//options.more = "hAxis: {logScale: true}";
 
 	GoogleChart cg;
@@ -1279,7 +1279,7 @@ template<unsigned int dim> void vd_cl_performance_write_report(size_t n_moving,o
 
 	options2.yAxis = std::string("Total calculation time (s)");
 	options2.xAxis = std::string("Number of particles");
-	options2.lineWidth = 2.5;
+	options2.lineWidth = 2;
 	//options2.more = "hAxis: {logScale: true}";
 
 	std::string str2("<h2>2) Total calculation time</h2>");
@@ -1300,7 +1300,7 @@ template<unsigned int dim> void vd_cl_performance_write_report(size_t n_moving,o
 
 	options3.yAxis = std::string("Speedup (times)");
 	options3.xAxis = std::string("A moving step number");
-	options3.lineWidth = 2.5;
+	options3.lineWidth = 2;
 
 	std::string str3("<h2>3) Speedup degradation after moving the particles</h2>");
 	str3 += "Now we move all of the particles several times in a random direction but the same distance. Then we compare the speedup we were gaining before moving (step 0) and after moving the particles. The speedup degradation is shown below as a function of a moving step number.";
@@ -1370,7 +1370,7 @@ template<unsigned int dim> void vd_celllist_performance_write_report(openfpm::ve
 
 	options.yAxis = std::string("Speedup (times)");
 	options.xAxis = std::string("Number of particles");
-	options.lineWidth = 2.5;
+	options.lineWidth = 2;
 
 	GoogleChart cg;
 
@@ -1394,7 +1394,7 @@ template<unsigned int dim> void vd_celllist_performance_write_report(openfpm::ve
 
 	options2.yAxis = std::string("Total calculation time (s)");
 	options2.xAxis = std::string("Number of particles");
-	options2.lineWidth = 2.5;
+	options2.lineWidth = 2;
 
 	std::string str2("<h2>2) Total calculation time</h2>");
 	str2 += "We count a total calculation time. In both cases - for a 'random' and 'hilbert' cell lists - it consists of: cell list creation time + forces calculation time. "
