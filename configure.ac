@@ -40,6 +40,7 @@ m4_ifdef([AX_SUITESPARSE],,[m4_include([m4/ax_suitesparse.m4])])
 m4_ifdef([AX_EIGEN],,[m4_include([m4/ax_eigen.m4])])
 m4_ifdef([AX_LIB_HDF5],,[m4_include([m4/ax_lib_hdf5.m4])])
 m4_ifdef([AX_LIB_PETSC],,[m4/ax_petsc_lib.m4])
+m4_ifdef([AX_LIB_HILBERT],,[m4/ax_libhilbert.m4])
 
 case $host_os in
    *darwin*|*macosx*)
@@ -126,6 +127,13 @@ if test x"$with_hdf5" = x"no"; then
     echo "Cannot detect hdf5, use the --with-hdf5 option if it is not installed in the default location"
     exit 207
 fi
+
+##########
+
+## Check for LIBHILBERT
+
+AX_LIB_HILBERT([],[echo "Cannot detect libhilbert, use the --with-libhilbert option if it is not installed in the default location"
+                    exit 210])
 
 ##########
 
