@@ -1333,6 +1333,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_reorder_2d_test )
 
 BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 {
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 32)
+		return;
+
 	///////////////////// INPUT DATA //////////////////////
 
 	// Dimensionality of the space
@@ -1351,8 +1356,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 	//For different r_cut
 	for (size_t r = 0; r < cl_r_cutoff.size(); r++ )
 	{
-		Vcluster & v_cl = create_vcluster();
-
 		//Cut-off radius
 		float r_cut = cl_r_cutoff.get(r);
 
@@ -1407,8 +1410,27 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 			//Calculate forces
 			calc_forces_hilb<dim>(NN_hilb,vd2,r_cut);
 
-			auto it_v = vd.getIterator();
+			// Calculate average
+			size_t count = 0;
+			Point<dim,float> avg;
+			for (size_t i = 0 ; i < dim ; i++)	{avg.get(i) = 0.0;}
 
+			auto it_v2 = vd.getIterator();
+			while (it_v2.isNext())
+			{
+				//key
+				vect_dist_key_dx key = it_v2.get();
+
+				for (size_t i = 0; i < dim; i++)
+					avg.get(i) += fabs(vd.template getProp<0>(key)[i]);
+
+				++count;
+				++it_v2;
+			}
+
+			for (size_t i = 0 ; i < dim ; i++)	{avg.get(i) /= count;}
+
+			auto it_v = vd.getIterator();
 			while (it_v.isNext())
 			{
 				//key
@@ -1419,7 +1441,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 					auto a1 = vd.template getProp<0>(key)[i];
 					auto a2 = vd2.template getProp<0>(key)[i];
 					//Check that the forces are equal
-					BOOST_REQUIRE_CLOSE(a1,a2,1);
+					float per = fabs(0.1*a1/avg.get(i));
+					if (per < 0.1)
+						per = 0.1;
+					BOOST_REQUIRE_CLOSE(a1,a2,per);
 				}
 
 				++it_v;
@@ -1505,6 +1530,26 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 			//Calculate forces '1'
 			calc_forces<dim,1>(NN2,vd,r_cut);
 
+			// Calculate average
+			size_t count = 0;
+			Point<dim,float> avg;
+			for (size_t i = 0 ; i < dim ; i++)	{avg.get(i) = 0.0;}
+
+			auto it_v2 = vd.getIterator();
+			while (it_v2.isNext())
+			{
+				//key
+				vect_dist_key_dx key = it_v2.get();
+
+				for (size_t i = 0; i < dim; i++)
+					avg.get(i) += fabs(vd.template getProp<0>(key)[i]);
+
+				++count;
+				++it_v2;
+			}
+
+			for (size_t i = 0 ; i < dim ; i++)	{avg.get(i) /= count;}
+
 			//Test for equality of forces
 			auto it_v = vd.getDomainIterator();
 
@@ -1517,7 +1562,12 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 				{
 					auto a1 = vd.template getProp<0>(key)[i];
 					auto a2 = vd.template getProp<1>(key)[i];
+
 					//Check that the forces are (almost) equal
+					float per = fabs(0.1*a1/avg.get(i));
+					if (per < 0.1)
+						per = 0.1;
+
 					BOOST_REQUIRE_CLOSE(a1,a2,1);
 				}
 
