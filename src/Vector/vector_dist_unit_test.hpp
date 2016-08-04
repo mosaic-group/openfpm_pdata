@@ -1442,13 +1442,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 					auto a2 = vd2.template getProp<0>(key)[i];
 
 					//Check that the forces are (almost) equal
-					float per = 2.0;
-					if (avg.get(i) != 0.0)
-					{
-						float per = fabs(2.0*a1/avg.get(i));
-						if (per < 2.0)
-							per = 2.0;
-					}
+					float per = 0.1;
+					if (a1 != 0.0)
+						per = fabs(0.1*avg.get(i)/a1);
 
 					BOOST_REQUIRE_CLOSE(a1,a2,per);
 				}
@@ -1570,13 +1566,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 					auto a2 = vd.template getProp<1>(key)[i];
 
 					//Check that the forces are (almost) equal
-					float per = 2.0;
-					if (avg.get(i) != 0.0)
-					{
-						float per = fabs(2.0*a1/avg.get(i));
-						if (per < 2.0)
-							per = 2.0;
-					}
+					float per = 0.1;
+					if (a1 != 0.0)
+						per = fabs(0.1*avg.get(i)/a1);
 
 					BOOST_REQUIRE_CLOSE(a1,a2,per);
 				}
