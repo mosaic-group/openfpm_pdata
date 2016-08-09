@@ -301,7 +301,7 @@ class grid_dist_id
 
 		if (init_local_i_g_box == true)	return;
 
-		// Get the number of near processors
+		// Get the number of sub-domains
 		for (size_t i = 0 ; i < dec.getNSubDomain() ; i++)
 		{
 			loc_ig_box.add();
