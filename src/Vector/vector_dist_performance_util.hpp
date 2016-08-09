@@ -155,6 +155,59 @@ template<unsigned int dim, size_t prp = 0, typename T, typename V> void calc_for
 	}
 }
 
+
+/*! \brief For each particle of vd calculate the accumulation of the distances of the neighborhood
+ *          particles inside vd2
+ *
+ *
+ * \param NN Cell list vd
+ * \param NN2 Cell list vd2
+ * \param vd Distributed vector
+ * \param vd2 Distributed vector 2
+ * \param r_cut Cut-off radius
+ *
+ */
+template<unsigned int dim, unsigned int prp, typename T, typename V> void cross_calc(T & NN, T & NN2, V & vd, V & vd2)
+{
+	auto it_v = vd.getDomainIterator();
+
+	float sum[dim];
+
+	for (size_t i = 0; i < dim; i++)
+		sum[i] = 0;
+
+	while (it_v.isNext())
+	{
+		//key
+		vect_dist_key_dx key = it_v.get();
+
+    	// Get the position of the particles
+		Point<dim,float> p = vd.getPos(key);
+
+    	// Get the neighborhood of the particle
+    	auto cell_it = NN2.template getNNIterator<NO_CHECK>(NN2.getCell(p));
+
+    	double sum = 0.0;
+
+    	while(cell_it.isNext())
+    	{
+    		auto nnp = cell_it.get();
+
+    		Point<dim,float> q = vd2.getPos(nnp);
+
+    		sum += norm(p - q);
+
+			//Next particle in a cell
+			++cell_it;
+		}
+
+		vd.template getProp<prp>(key) = sum;
+
+		//Next particle in cell list
+		++it_v;
+	}
+}
+
 /*! \brief Benchmark particles' forces time
  *
  * \param NN Cell list

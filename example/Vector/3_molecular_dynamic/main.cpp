@@ -33,7 +33,7 @@ constexpr int force = 1;
  *
  * \page Vector_3_md Vector 3 molecular dynamic
  *
- * ## Calculate forces ##
+ * ## Calculate forces ## {#e3_md_cf}
  *
  * In this function we calculate the forces between particles. It require the vector of particles
  * Cell list and scaling factor for the Lennard-Jhones potential.
@@ -154,7 +154,7 @@ void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, Ce
 /*!
  * \page Vector_3_md Vector 3 molecular dynamic
  *
- * ## Calculate energy ##
+ * ## Calculate energy ## {#e3_md_ce}
  *
  * We also need a function to calculate energy, this function require the same parameter as calculate forces
  *
@@ -272,7 +272,7 @@ int main(int argc, char* argv[])
 	/*!
 	 * \page Vector_3_md Vector 3 molecular dynamic
 	 *
-	 * ## Initialization ##
+	 * ## Initialization ## {#e3_md_init}
 	 *
 	 * After we defined the two main function calc forces and calc energy, we define
 	 *  important parameters of the simulation, time step integration,
@@ -347,7 +347,7 @@ int main(int argc, char* argv[])
 	/*!
 	 * \page Vector_3_md Vector 3 molecular dynamic
 	 *
-	 * ## Particles on a grid like position ##
+	 * ## Particles on a grid like position ## {#e3_md_gl}
 	 *
 	 * We define a grid iterator, to create particles on a grid like way. In the same cycle we also reset
 	 * force and velocity
@@ -388,7 +388,7 @@ int main(int argc, char* argv[])
 	/*!
 	 * \page Vector_3_md Vector 3 molecular dynamic
 	 *
-	 * ## Molecular dynamic steps ##
+	 * ## Molecular dynamic steps ## {#e3_md_vi}
 	 *
 	 * Here we do 10000 MD steps using verlet integrator
 	 *
@@ -509,7 +509,7 @@ int main(int argc, char* argv[])
 	/*!
 	 * \page Vector_3_md Vector 3 molecular dynamic
 	 *
-	 * ## Plotting graphs ##
+	 * ## Plotting graphs ## {#e3_md_pg}
 	 *
 	 * After we terminate the MD steps our vector x contains at which iteration we calculated the energy
 	 * while y contains the energy value at that time-step. We can produce a graph X Y

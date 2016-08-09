@@ -455,7 +455,7 @@ public:
 		proc_int_box = ie.proc_int_box;
 		vb_ext = ie.vb_ext;
 		vb_int = ie.vb_int;
-		geo_cell = geo_cell;
+		geo_cell = ie.geo_cell;
 		shifts = ie.shifts;
 		ids_p = ie.ids_p;
 		ids = ie.ids;

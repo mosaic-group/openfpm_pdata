@@ -795,29 +795,13 @@ private:
 		return pbox;
 	}
 
-public:
-
-	//! space type
-	typedef St stype;
-
-	//! dimensions of space
-	static const unsigned int dims = dim;
-
-	/*! \brief Constructor
+	/*! \brief Initialize the structures
 	 *
-	 * \param np number of elements
-	 * \param box domain where the vector of elements live
-	 * \param boundary conditions
-	 * \param g Ghost margins
+	 * \param np number of particles
 	 *
 	 */
-	vector_dist(size_t np, Box<dim, St> box, const size_t (&bc)[dim], const Ghost<dim, St> & g) :
-			dec(create_vcluster()), v_cl(create_vcluster())
+	void init_structures(size_t np)
 	{
-#ifdef SE_CLASS2
-		check_new(this,8,VECTOR_DIST_EVENT,4);
-#endif
-
 		// convert to a local number of elements
 		size_t p_np = np / v_cl.getProcessingUnits();
 
@@ -835,7 +819,17 @@ public:
 		v_prp.resize(p_np);
 
 		g_m = p_np;
+	}
 
+	/*! \brief Initialize the decomposition
+	 *
+	 * \param box domain
+	 * \param bc boundary conditions
+	 * \param g ghost extension
+	 *
+	 */
+	void init_decomposition(Box<dim,St> & box, const size_t (& bc)[dim],const Ghost<dim,St> & g)
+	{
 		// Create a valid decomposition of the space
 		// Get the number of processor and calculate the number of sub-domain
 		// for decomposition
@@ -853,6 +847,53 @@ public:
 		// Create the sub-domains
 		dec.setParameters(div, box, bc, g);
 		dec.decompose();
+	}
+
+public:
+
+	//! space type
+	typedef St stype;
+
+	//! dimensions of space
+	static const unsigned int dims = dim;
+
+
+	/*! \brief Constructor
+	 *
+	 * \param np number of elements
+	 * \param box domain where the vector of elements live
+	 * \param boundary conditions
+	 * \param g Ghost margins
+	 *
+	 */
+	vector_dist(const Decomposition & dec, size_t np) :
+			dec(dec), v_cl(create_vcluster())
+	{
+#ifdef SE_CLASS2
+		check_new(this,8,VECTOR_DIST_EVENT,4);
+#endif
+
+		init_structures(np);
+	}
+
+
+	/*! \brief Constructor
+	 *
+	 * \param np number of elements
+	 * \param box domain where the vector of elements live
+	 * \param boundary conditions
+	 * \param g Ghost margins
+	 *
+	 */
+	vector_dist(size_t np, Box<dim, St> box, const size_t (&bc)[dim], const Ghost<dim, St> & g) :
+			dec(create_vcluster()), v_cl(create_vcluster())
+	{
+#ifdef SE_CLASS2
+		check_new(this,8,VECTOR_DIST_EVENT,4);
+#endif
+
+		init_structures(np);
+		init_decomposition(box,bc,g);
 	}
 
 	~vector_dist()
@@ -1296,7 +1337,7 @@ public:
 	{
 		// Get ghost and anlarge by 1%
 		Ghost<dim,St> g = dec.getGhost();
-		g.magnify(1.01);
+		g.magnify(1.013);
 
 		return getCellList_hilb(r_cut, g);
 	}
@@ -1325,6 +1366,8 @@ public:
 
 			++it;
 		}
+
+		cell_list.set_gm(g_m);
 	}
 
 	/*! \brief Construct a cell list starting from the stored particles

@@ -208,6 +208,18 @@ class grid_dist_iterator<dim,device_grid,FREE>
 
 		return start;
 	}
+
+	/*! \brief Get the boxes
+	 *
+	 *  Get the boxes that define the local grids
+	 *
+	 * \return Vector of local boxes
+	 *
+	 */
+	inline const openfpm::vector<GBoxes<device_grid::dims>> & getGBoxes()
+	{
+		return gdb_ext;
+	}
 };
 
 
@@ -332,6 +344,18 @@ class grid_dist_iterator<dim,device_grid,FIXED>
 	grid_dist_key_dx<dim> get()
 	{
 		return grid_dist_key_dx<dim>(g_c,a_it.get());
+	}
+
+	/*! \brief Get the boxes
+	 *
+	 *  Get the boxes that define the local grids
+	 *
+	 * \return Vector of local boxes
+	 *
+	 */
+	inline const openfpm::vector<GBoxes<device_grid::dims>> & getGBoxes()
+	{
+		return gdb_ext;
 	}
 };
 

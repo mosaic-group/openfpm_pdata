@@ -306,9 +306,6 @@ int main(int argc, char* argv[])
 	//! \cond [verletlist] \endcond
 
 	openfpm::vector<openfpm::vector<size_t>> verlet;
-
-	// interaction radius
-	float r_cut = 1.0/(128-2);
 	vd.getVerlet(verlet,r_cut);
 
 	// For each particle i verlet.size() == Number of particles
@@ -324,8 +321,10 @@ int main(int argc, char* argv[])
 		// for each neighborhood j of particle to i
 		for (size_t j = 0 ; j < NN.size() ; j++)
 		{
+			size_t p = NN.get(j);
+
 			// Get the position of the particle neighborhood if i
-			Point<3,float> xq = vd.getPos(NN.get(j));
+			Point<3,float> xq = vd.getPos(p);
 
 			// Calculate the distance vector between p and q
 			Point<3,float> f = (xp - xq);

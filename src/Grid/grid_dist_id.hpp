@@ -135,6 +135,8 @@ class grid_dist_id
 
 	/*! \brief flip box just convert and internal ghost box into an external ghost box
 	 *
+	 * \param box to convert
+	 * \param cmb sector position of the box
 	 *
 	 */
 	Box<dim,long int> flip_box(const Box<dim,long int> & box, const comb<dim> & cmb)

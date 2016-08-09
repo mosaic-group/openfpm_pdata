@@ -1451,6 +1451,9 @@ void Test3D_periodic(const Box<3,float> & domain, long int k)
 			auto key = dom_gi.get();
 			auto key_g = g_dist.getGKey(key);
 
+			// Return the external boxes
+			auto & gb = dom_gi.getGBoxes();
+
 			// transform the key to be periodic
 			for (size_t i = 0 ; i < 3 ; i++)
 			{
@@ -1463,8 +1466,25 @@ void Test3D_periodic(const Box<3,float> & domain, long int k)
 			if (g_dist.template get<0>(key) != -1 && out_p == true)
 				out_cnt++;
 
-			if ( g_dist.template get<0>(key) != -1 && info.LinId(key_g) != g_dist.template get<0>(key) )
-				match &= false;
+			// The last points can be invalid because of rounding off problems
+			bool can_invalid = false;
+			if (key.getKey().get(0) == 0 || key.getKey().get(1) == 0 || key.getKey().get(2) == 0)
+				can_invalid = true;
+			else if (key.getKey().get(0) == gb.get(key.getSub()).GDbox.getHigh(0) ||
+					 key.getKey().get(1) == gb.get(key.getSub()).GDbox.getHigh(1) ||
+					 key.getKey().get(2) == gb.get(key.getSub()).GDbox.getHigh(2))
+				can_invalid = true;
+
+			if (can_invalid == true)
+			{
+				if ( g_dist.template get<0>(key) != -1 && info.LinId(key_g) != g_dist.template get<0>(key) )
+					match &= false;
+			}
+			else
+			{
+				if (info.LinId(key_g) != g_dist.template get<0>(key) )
+					match &= false;
+			}
 
 			++dom_gi;
 		}

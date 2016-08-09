@@ -5,7 +5,7 @@ pdata_SOURCES = main.cpp Grid/grid_dist_id_unit_test.cpp  lib/pdata.cpp test_mul
 pdata_CXXFLAGS = $(LIBHILBERT_INCLUDE) $(PETSC_INCLUDE) $(HDF5_CPPFLAGS) $(CUDA_CFLAGS) $(INCLUDES_PATH) $(PARMETIS_INCLUDE) $(METIS_INCLUDE) $(BOOST_CPPFLAGS) $(H5PART_INCLUDE) -DPARALLEL_IO  -Wno-unused-local-typedefs
 pdata_CFLAGS = $(CUDA_CFLAGS)
 pdata_LDADD = $(LINKLIBS) -lparmetis -lmetis
-nobase_include_HEADERS = Decomposition/CartDecomposition.hpp Decomposition/common.hpp Decomposition/Decomposition.hpp  Decomposition/ie_ghost.hpp \
+nobase_include_HEADERS = Decomposition/CartDecomposition.hpp Decomposition/CartDecomposition_ext.hpp  Decomposition/common.hpp Decomposition/Decomposition.hpp  Decomposition/ie_ghost.hpp \
          Decomposition/nn_processor.hpp Decomposition/ie_loc_ghost.hpp Decomposition/ORB.hpp \
          Graph/CartesianGraphFactory.hpp \
          Grid/grid_dist_id.hpp Grid/grid_dist_id_iterator_dec.hpp Grid/grid_dist_util.hpp  Grid/grid_dist_id_iterator_sub.hpp Grid/grid_dist_id_iterator.hpp Grid/grid_dist_key.hpp Grid/staggered_dist_grid.hpp Grid/staggered_dist_grid_util.hpp Grid/staggered_dist_grid_copy.hpp \

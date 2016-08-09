@@ -4,6 +4,9 @@
  * \subpage Vector_1_celllist
  * \subpage Vector_2_expression
  * \subpage Vector_3_md
+ * \subpage Vector_4_reo
+ * \subpage Vector_4_comp_reo
+ * \subpage Vector_4_complex_prop
  *
  */
 
@@ -179,10 +182,10 @@ int main(int argc, char* argv[])
 		auto key = it.get();
 
 		// we define x, assign a random position between 0.0 and 1.0
-		vd.getPos(key)[0] = rand() / RAND_MAX;
+		vd.getPos(key)[0] = (float)rand() / RAND_MAX;
 
 		// we define y, assign a random position between 0.0 and 1.0
-		vd.getPos(key)[1] = rand() / RAND_MAX;
+		vd.getPos(key)[1] = (float)rand() / RAND_MAX;
 
 		// next particle
 		++it;

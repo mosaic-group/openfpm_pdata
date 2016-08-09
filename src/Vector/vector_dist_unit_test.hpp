@@ -431,6 +431,80 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 	}
 }
 
+
+BOOST_AUTO_TEST_CASE( vector_dist_iterator_fixed_dec_3d )
+{
+	Vcluster & v_cl = create_vcluster();
+
+    // set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+    long int k = 52428 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 4;
+	big_step = (big_step == 0)?1:big_step;
+
+	print_test_v( "Testing 3D vector copy decomposition k<=",k);
+
+	// 3D test
+	for ( ; k >= 2 ; k-= decrement(k,big_step) )
+	{
+		BOOST_TEST_CHECKPOINT( "Testing 3D vector copy decomposition k=" << k );
+
+		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+		// Boundary conditions
+		size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+
+		vector_dist<3,float, aggregate<double,double> > vd(k,box,bc,Ghost<3,float>(0.05));
+		vector_dist<3,float, aggregate<double,double> > vd2(vd.getDecomposition(),k);
+
+		auto it = vd.getIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			vd.getPos(key)[0] = ud(eg);
+			vd.getPos(key)[1] = ud(eg);
+			vd.getPos(key)[2] = ud(eg);
+
+			vd2.getPos(key)[0] = vd.getPos(key)[0];
+			vd2.getPos(key)[1] = vd.getPos(key)[1];
+			vd2.getPos(key)[2] = vd.getPos(key)[2];
+
+			++it;
+		}
+
+		vd.map();
+		vd2.map();
+
+		vd.ghost_get();
+		vd2.ghost_get();
+
+		auto NN = vd.getCellList(0.05);
+		auto NN2 = vd2.getCellList(0.05);
+
+		cross_calc<3,0>(NN,NN2,vd,vd2);
+		cross_calc<3,1>(NN,NN,vd,vd);
+
+
+		auto it3 = vd.getIterator();
+
+		while (it3.isNext())
+		{
+			auto key = it3.get();
+
+			BOOST_REQUIRE_EQUAL(vd.getProp<0>(key),vd.getProp<1>(key));
+
+			++it3;
+		}
+	}
+}
+
 BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 {
 	Vcluster & v_cl = create_vcluster();
