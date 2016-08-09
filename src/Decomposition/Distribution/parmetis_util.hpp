@@ -102,7 +102,7 @@ class Parmetis
 	//	Graph & g;
 
 	// Communticator for OpenMPI
-	MPI_Comm comm = NULL;
+	MPI_Comm comm = (MPI_Comm)NULL;
 
 	// VCluster
 	Vcluster & v_cl;
@@ -200,8 +200,8 @@ public:
 	 * \param nc number of partitions
 	 *
 	 */
-	Parmetis(Vcluster & v_cl, size_t nc) :
-			v_cl(v_cl), nc(nc)
+	Parmetis(Vcluster & v_cl, size_t nc)
+	:v_cl(v_cl), nc(nc)
 	{
 		// TODO Move into VCluster
 		MPI_Comm_dup(MPI_COMM_WORLD, &comm);
