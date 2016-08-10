@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [0.5.0 - Gingold] - End July 2016
+## [0.5.0 - Gingold] - Mid August 2016
 
 ### Added
 - map communicate particles across processors mooving the information of all the particle map_list give the possibility to give a list of property to move from one to another processor
@@ -92,15 +92,29 @@ All notable changes to this project will be documented in this file.
 
 # Planned in the next Releases
 
-## [0.7.0] - Mid of October
+## [0.8.0] - Mid January 2017
+## [0.7.0] - December 2016
 
 ### Added
 - Dynamic Load Balancies examples and interface fixation
 - Check Point restart
+- More example and documentations
 
-## [0.6.0] - Beginning of september
+### Proposal
+
+- Algebraic Multigrid solver
+- Parallel VTK, improved visualization
+
+## [0.6.0] - Middle of October
 
 ### Added
-- Parallel IO, new formats, improved writers
-- Algebraic Multigrid solver
+
+- Symmetric Cell list and Verlet (15 days)
+- Semantic communication (??)
+- Improved Finite difference interface (15 days) 
+
+
+## [0.6.0] - Beginning of September
+
+- Complex properties and serialization interface (15 days)
 

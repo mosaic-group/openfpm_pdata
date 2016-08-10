@@ -220,6 +220,12 @@ if [ -d "$i_dir/LIBHILBERT" ]; then
     configure_options=" $configure_options --with-libhilbert=$i_dir/LIBHILBERT "
 fi
 
+### if we are on linux we have to add -rt
+
+if [ x"$platform" = x"linux" ]; then
+	lin_alg_lib="$lin_alg_lib -rt"
+fi
+
 ### MPI
 
 if [ x"$MPI_valid" == x"yes" ]; then
