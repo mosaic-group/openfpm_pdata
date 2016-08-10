@@ -103,7 +103,7 @@ class DistParmetis
 	//	Graph & g;
 
 	// Communticator for OpenMPI
-	MPI_Comm comm = NULL;
+	MPI_Comm comm = (MPI_Comm)NULL;
 
 	// VCluster
 	Vcluster & v_cl;
@@ -170,6 +170,7 @@ class DistParmetis
 		Mg.xadj[id] = prev;
 
 	}
+
 public:
 
 	/*! \brief Constructor
