@@ -1,11 +1,15 @@
 SUBDIRS := $(wildcard */.)
 
-all clean:
+all: $(SUBDIRS)
+
+clean:
 	for dir in $(SUBDIRS); do \
-          $(MAKE) -C $$dir $@; \
+		$(MAKE) -C $$dir clean; \
         done
 
-clean: $(SUBDIRS)
+$(SUBDIRS):
+	$(MAKE) -C $@
 
-.PHONY: all clean $(SUBDIRS)
+
+.PHONY: all clean  $(SUBDIRS)
 
