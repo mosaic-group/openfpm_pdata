@@ -223,7 +223,7 @@ fi
 ### if we are on linux we have to add -rt
 
 if [ x"$platform" = x"linux" ]; then
-	lin_alg_lib="$lin_alg_lib -rt"
+	lin_alg_lib="$lin_alg_lib -lrt"
 fi
 
 ### MPI
