@@ -201,9 +201,6 @@ if [ -d "$i_dir/EIGEN" ]; then
     configure_options=" $configure_options --with-eigen=$i_dir/EIGEN "
     lin_alg_inc="$lin_alg_inc -I$i_dir/EIGEN"
 fi
-if [ -d "$i_dir/MPI" ]; then
-    configure_options="$configure_options CXX=mpic++ "
-fi
 if [ -d "$i_dir/METIS" ]; then
     configure_options=" $configure_options --with-metis=$i_dir/METIS "
 fi
@@ -224,14 +221,6 @@ fi
 
 if [ x"$platform" = x"linux" ]; then
 	lin_alg_lib="$lin_alg_lib -lrt"
-fi
-
-### MPI
-
-if [ x"$MPI_valid" == x"yes" ]; then
-	configure_options="$configure_options CXX=mpic++ "
-else
-	./script/install_MPI.sh $i_dir $ncore
 fi
 
 ### MPI compilers must be in your PATH folder
@@ -281,7 +270,7 @@ else
             fi
             ./script/install_MPI.sh $i_dir $ncore
             MPI_installed=1
-            export PATH="$PATH:$i_dir/MPI/bin"
+            export PATH="$i_dir/MPI/bin:$PATH"
             configure_options="$configure_options CXX=mpic++ "
         elif [ $conf_err -eq 201  ]; then
             echo "Metis not found try to install"
@@ -387,7 +376,7 @@ echo ""
 
 if [ -d "$i_dir/MPI" ]; then
   installation_report="$installation_report \033[92;1mMPI\033[0m Installed: \033[1m $i_dir/MPI \033[0m\n"
-  bash_path="$bash_path:$i_dir/MPI/bin"
+  bash_path="$i_dir/MPI/bin:$bash_path"
   bash_library="$bash_library:$i_dir/MPI/lib"
 elif [ $MPI_System_prv -eq 1 ]; then
   installation_report="$installation_report \033[92;1mMPI\033[0m Installed: \033[1m System installation \033[0m\n"

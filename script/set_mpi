@@ -2,15 +2,14 @@
 
 function set_mpi()
 {
-  command -v mpirun >/dev/null 2>&1
-  if [ $? -ne 0 ]; then
-    
-    ### Check for mpi installation
-
-    if [ -d "$1/MPI"  ]; then
-      echo "Setting MPI compilers to: $PATH:$1/MPI/bin"
-      export PATH="$PATH:$1/MPI/bin"
-    fi    
+  if [ x"$MPI_valid" == x"yes" ]; then
+        configure_options="$configure_options CXX=mpic++ "
+  else
+        ./script/install_MPI.sh $i_dir $ncore
+        MPI_installed=1
+        export PATH="$i_dir/MPI/bin:$PATH"
+        configure_options="$configure_options CXX=mpic++ "
   fi
+
 }
 
