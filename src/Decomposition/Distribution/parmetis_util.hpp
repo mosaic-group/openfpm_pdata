@@ -224,6 +224,9 @@ public:
 		Mg.itr = NULL;
 		Mg.numflag = NULL;
 		Mg.wgtflag = NULL;
+		first.id = 0;
+		last.id = 0;
+		nvertex = 0;
 	}
 
 	//TODO deconstruct new variables

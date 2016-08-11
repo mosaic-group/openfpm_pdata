@@ -186,6 +186,25 @@ public:
 	{
 		// TODO Move into VCluster
 		MPI_Comm_dup(MPI_COMM_WORLD, &comm);
+
+		// Nullify Mg
+		Mg.nvtxs = NULL;
+		Mg.ncon = NULL;
+		Mg.xadj = NULL;
+		Mg.adjncy = NULL;
+		Mg.vwgt = NULL;
+		Mg.vsize = NULL;
+		Mg.adjwgt = NULL;
+		Mg.nparts = NULL;
+		Mg.tpwgts = NULL;
+		Mg.ubvec = NULL;
+		Mg.options = NULL;
+		Mg.objval = NULL;
+		Mg.part = NULL;
+		Mg.edgecut = NULL;
+		Mg.itr = NULL;
+		Mg.numflag = NULL;
+		Mg.wgtflag = NULL;
 	}
 
 	//TODO deconstruct new variables

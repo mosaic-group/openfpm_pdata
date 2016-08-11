@@ -1485,7 +1485,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 			calc_forces_hilb<dim>(NN_hilb,vd2,r_cut);
 
 			// Calculate average
-			size_t count = 0;
+			size_t count = 1;
 			Point<dim,float> avg;
 			for (size_t i = 0 ; i < dim ; i++)	{avg.get(i) = 0.0;}
 
@@ -1606,8 +1606,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 			//Calculate forces '1'
 			calc_forces<dim,1>(NN2,vd,r_cut);
 
-			// Calculate average
-			size_t count = 0;
+			// Calculate average (For Coverty scan we start from 1)
+			size_t count = 1;
 			Point<dim,float> avg;
 			for (size_t i = 0 ; i < dim ; i++)	{avg.get(i) = 0.0;}
 

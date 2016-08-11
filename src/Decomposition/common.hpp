@@ -96,7 +96,7 @@ struct Box_sub_k
 	long int k;
 
 	Box_sub_k()
-	:k(-1)
+	:sub(0),k(-1)
 	{
 		cmb.zero();
 	}
@@ -171,7 +171,7 @@ struct N_box
 
 	//! Default constructor
 	N_box()
-	:id((size_t)-1)
+	:id((size_t)-1),n_real_sub(0)
 	{};
 
 	//! Copy constructor

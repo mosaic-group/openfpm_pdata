@@ -155,7 +155,7 @@ protected:
 	HeapMemory hp_recv;
 
 	// Receive counter
-	size_t recv_cnt;
+	size_t recv_cnt = 0;
 
 	/*! \brief It convert the box from the domain decomposition into sub-domain
 	 *

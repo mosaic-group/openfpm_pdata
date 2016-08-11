@@ -171,11 +171,6 @@ template<unsigned int dim, unsigned int prp, typename T, typename V> void cross_
 {
 	auto it_v = vd.getDomainIterator();
 
-	float sum[dim];
-
-	for (size_t i = 0; i < dim; i++)
-		sum[i] = 0;
-
 	while (it_v.isNext())
 	{
 		//key

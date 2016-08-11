@@ -366,7 +366,7 @@ else
   bash_library="export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH"
 fi
 
-bash_path="export PATH=\"\$PATH"
+bash_path="export PATH=\""
 
 echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
 echo -e "\033[1;34;5m --------- INSTALLATION REPORT ---------  \033[0m"
@@ -376,7 +376,7 @@ echo ""
 
 if [ -d "$i_dir/MPI" ]; then
   installation_report="$installation_report \033[92;1mMPI\033[0m Installed: \033[1m $i_dir/MPI \033[0m\n"
-  bash_path="$i_dir/MPI/bin:$bash_path"
+  bash_path="$bash_path:$i_dir/MPI/bin:$PATH"
   bash_library="$bash_library:$i_dir/MPI/lib"
 elif [ $MPI_System_prv -eq 1 ]; then
   installation_report="$installation_report \033[92;1mMPI\033[0m Installed: \033[1m System installation \033[0m\n"
