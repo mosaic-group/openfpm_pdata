@@ -7,6 +7,12 @@ source script/pre_req
 source script/remove_old
 source script/set_mpi
 
+## Check that your home is not empty
+
+if [ x"$HOME" == x"" ]; then
+	 echo -e "Your $HOME folder is empty \033[91;5;1m FAILED \033[0m"
+fi
+
 ##
 
 install_req=1
