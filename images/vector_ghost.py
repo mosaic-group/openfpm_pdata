@@ -4,7 +4,7 @@ from paraview.simple import *
 paraview.simple._DisableFirstRenderCameraReset()
 
 # create a new 'CSV Reader'
-vector_ghost_fill = CSVReader(FileName=['Vector/vector_ghost_fill0.csv'])
+vector_ghost_fill = CSVReader(FileName=['Vector/vector_ghost_fill_0.csv'])
 
 # get animation scene
 animationScene1 = GetAnimationScene()
@@ -69,7 +69,7 @@ Delete(vect_decompositionexternal_ghost_0vtk)
 del vect_decompositionexternal_ghost_0vtk
 
 # create a new 'CSV Reader'
-vector_after_map0csv = CSVReader(FileName=['Vector/vector_after_map0.csv'])
+vector_after_map0csv = CSVReader(FileName=['Vector/vector_after_map_0.csv'])
 
 # Create a new 'SpreadSheet View'
 spreadSheetView1 = CreateView('SpreadSheetView')

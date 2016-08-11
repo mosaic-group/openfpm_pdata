@@ -1841,7 +1841,7 @@ public:
 			// CSVWriter test
 			CSVWriter<openfpm::vector<Point<dim, St>>, openfpm::vector<prop> > csv_writer;
 
-			std::string output = std::to_string(out + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".csv"));
+			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".csv"));
 
 			// Write the CSV
 			return csv_writer.write(output, v_pos, v_prp);

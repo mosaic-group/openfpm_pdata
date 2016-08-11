@@ -4,7 +4,7 @@ from paraview.simple import *
 paraview.simple._DisableFirstRenderCameraReset()
 
 # create a new 'CSV Reader'
-vector_before_map0csv = CSVReader(FileName=['Vector/vector_before_map0.csv'])
+vector_before_map0csv = CSVReader(FileName=['Vector/vector_before_map_0.csv'])
 
 # get active view
 renderView1 = GetActiveViewOrCreate('RenderView')

@@ -85,9 +85,9 @@ int main(int argc, char* argv[])
 
 			++it;
 		}
-		vd.write("Vector/vector_move_before_map",i);
+		vd.write("Vector/vector_move_before_map",i,CSV_WRITER);
 		vd.map();
-		vd.write("Vector/vector_move",i);
+		vd.write("Vector/vector_move",i,CSV_WRITER);
 	}
 
 	openfpm_finalize();

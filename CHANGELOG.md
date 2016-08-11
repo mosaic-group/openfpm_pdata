@@ -18,6 +18,10 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+### Known Bugs
+
+- On gcc 6.1 the project does not compile
+- Distributed grids on 1D do not work
 
 
 ## [0.4.0] - 26-05-2016

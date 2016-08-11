@@ -4,10 +4,10 @@ from paraview.simple import *
 paraview.simple._DisableFirstRenderCameraReset()
 
 # create a new 'CSV Reader'
-vector_move0_1csv = CSVReader(FileName=['Vector/vector_move0_1.csv'])
+vector_move0_1csv = CSVReader(FileName=['Vector/vector_move_0_1.csv'])
 
 # create a new 'CSV Reader'
-vector_move1_1csv = CSVReader(FileName=['Vector/vector_move1_1.csv'])
+vector_move1_1csv = CSVReader(FileName=['Vector/vector_move_1_1.csv'])
 
 # get active view
 renderView1 = GetActiveViewOrCreate('RenderView')
@@ -143,10 +143,10 @@ glyph1Display = Show(glyph1, renderView1)
 glyph1Display.SetScalarBarVisibility(renderView1, True)
 
 # create a new 'CSV Reader'
-vector_move_before_map0_2csv = CSVReader(FileName=['Vector/vector_move_before_map0_2.csv'])
+vector_move_before_map0_2csv = CSVReader(FileName=['Vector/vector_move_before_map_0_2.csv'])
 
 # create a new 'CSV Reader'
-vector_move_before_map1_2csv = CSVReader(FileName=['Vector/vector_move_before_map1_2.csv'])
+vector_move_before_map1_2csv = CSVReader(FileName=['Vector/vector_move_before_map_1_2.csv'])
 
 # create a new 'Table To Points'
 tableToPoints3 = TableToPoints(Input=vector_move_before_map0_2csv)
@@ -204,10 +204,10 @@ SetActiveSource(glyph2)
 glyph2.GlyphMode = 'All Points'
 
 # create a new 'CSV Reader'
-vector_move1_2csv = CSVReader(FileName=['Vector/vector_move1_2.csv'])
+vector_move1_2csv = CSVReader(FileName=['Vector/vector_move_1_2.csv'])
 
 # create a new 'CSV Reader'
-vector_move0_2csv = CSVReader(FileName=['Vector/vector_move0_2.csv'])
+vector_move0_2csv = CSVReader(FileName=['Vector/vector_move_0_2.csv'])
 
 # create a new 'Table To Points'
 tableToPoints5 = TableToPoints(Input=vector_move1_2csv)

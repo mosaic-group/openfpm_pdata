@@ -4,7 +4,7 @@ from paraview.simple import *
 paraview.simple._DisableFirstRenderCameraReset()
 
 # create a new 'CSV Reader'
-vector_before_map0csv = CSVReader(FileName=['Vector/vector_before_map0.csv'])
+vector_before_map0csv = CSVReader(FileName=['Vector/vector_before_map_0.csv'])
 
 # get active view
 renderView1 = GetActiveViewOrCreate('RenderView')
@@ -29,7 +29,7 @@ tableToPoints1Display.ColorArrayName = [None, '']
 tableToPoints1Display.SetRepresentationType('Points')
 
 # create a new 'CSV Reader'
-vector_before_map1csv = CSVReader(FileName=['Vector/vector_before_map1.csv'])
+vector_before_map1csv = CSVReader(FileName=['Vector/vector_before_map_1.csv'])
 
 # set active view
 SetActiveView(renderView1)
@@ -52,7 +52,7 @@ tableToPoints2Display.SetRepresentationType('Points')
 tableToPoints2Display.AmbientColor = [1.0, 1.0, 1.0]
 
 # create a new 'CSV Reader'
-vector_before_map2csv = CSVReader(FileName=['Vector/vector_before_map2.csv'])
+vector_before_map2csv = CSVReader(FileName=['Vector/vector_before_map_2.csv'])
 
 # set active view
 SetActiveView(renderView1)
@@ -103,7 +103,7 @@ Delete(vector_before_map2csv)
 del vector_before_map2csv
 
 # create a new 'CSV Reader'
-vector_before_map0csv = CSVReader(FileName=['Vector/vector_after_map0.csv'])
+vector_before_map0csv = CSVReader(FileName=['Vector/vector_after_map_0.csv'])
 
 # get active view
 renderView1 = GetActiveViewOrCreate('RenderView')
@@ -128,7 +128,7 @@ tableToPoints1Display.ColorArrayName = [None, '']
 tableToPoints1Display.SetRepresentationType('Points')
 
 # create a new 'CSV Reader'
-vector_before_map1csv = CSVReader(FileName=['Vector/vector_after_map1.csv'])
+vector_before_map1csv = CSVReader(FileName=['Vector/vector_after_map_1.csv'])
 
 # set active view
 SetActiveView(renderView1)
@@ -151,7 +151,7 @@ tableToPoints2Display.SetRepresentationType('Points')
 tableToPoints2Display.AmbientColor = [1.0, 1.0, 1.0]
 
 # create a new 'CSV Reader'
-vector_before_map2csv = CSVReader(FileName=['Vector/vector_after_map2.csv'])
+vector_before_map2csv = CSVReader(FileName=['Vector/vector_after_map_2.csv'])
 
 # set active view
 SetActiveView(renderView1)
