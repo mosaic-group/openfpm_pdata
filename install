@@ -11,6 +11,7 @@ source script/set_mpi
 
 if [ x"$HOME" == x"" ]; then
 	 echo -e "Your $HOME folder is empty \033[91;5;1m FAILED \033[0m"
+	 exit 1
 fi
 
 ##
