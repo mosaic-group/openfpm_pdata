@@ -225,7 +225,7 @@ fi
 
 ### MPI compilers must be in your PATH folder
 
-set_mpi $i_dir
+set_mpi $i_dir $ncore
 
 ### METIS and ParMETIS must be installed independently from sistem wide installation
 

@@ -5,9 +5,9 @@ function set_mpi()
   if [ x"$MPI_valid" == x"yes" ]; then
         configure_options="$configure_options CXX=mpic++ "
   else
-        ./script/install_MPI.sh $i_dir $ncore
+        ./script/install_MPI.sh $1 $2
         MPI_installed=1
-        export PATH="$i_dir/MPI/bin:$PATH"
+        export PATH="$1/MPI/bin:$PATH"
         configure_options="$configure_options CXX=mpic++ "
   fi
 
