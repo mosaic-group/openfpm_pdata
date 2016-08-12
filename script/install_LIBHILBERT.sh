@@ -7,7 +7,7 @@ if [ -d "$1/LIBHILBERT" ]; then
   exit 0
 fi
 
-wget http://ppmcore.mpi-cbg.de/upload/libhilbert-master.zip
+wget http://ppmcore.mpi-cbg.de/upload/libhilbert-master.tar.gz
 rm -rf libhilbert-master
 tar -xf libhilbert-master.tar.gz
 cd libhilbert-master
