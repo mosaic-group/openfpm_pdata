@@ -9,7 +9,7 @@ fi
 
 wget http://ppmcore.mpi-cbg.de/upload/libhilbert-master.zip
 rm -rf libhilbert-master
-unzip libhilbert-master.zip
+tar -xf libhilbert-master.tar.gz
 cd libhilbert-master
 mkdir build
 cd build
