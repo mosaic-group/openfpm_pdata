@@ -7,6 +7,7 @@
  * \subpage Vector_4_reo
  * \subpage Vector_4_comp_reo
  * \subpage Vector_4_complex_prop
+ * \subpage Vector_4_mp_cl
  *
  */
 

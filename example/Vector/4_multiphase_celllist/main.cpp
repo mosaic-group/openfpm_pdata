@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 	 * Here we Initialize the library, and we create a set of distributed vectors all forced to have the same
 	 * decomposition. Each vector identify one phase
 	 *
-	 * \snippet Vector/1_celllist/main.cpp Initialization and parameters
+	 * \snippet Vector/4_multiphase_celllist/main.cpp Initialization and parameters
 	 *
 	 */
 
@@ -49,25 +49,6 @@ int main(int argc, char* argv[])
 	// ghost, big enough to contain the interaction radius
 	Ghost<3,float> ghost(1.0/(128-2));
 
-	//! \cond [Initialization and parameters] \endcond
-
-	/*!
-	 * \page Vector_1_celllist Vector 1 Cell-list
-	 *
-	 * ## %Vector create ##
-	 *
-	 * Here we define a distributed vector in 3D, containing 3 properties, a
-	 * scalar double, a vector double[3], and a tensor or rank 2 double[3][3].
-	 * In this case the vector contain 0 particles initially
-	 *
-	 * \see \ref vector_inst
-	 *
-	 * \snippet Vector/1_celllist/main.cpp vector inst
-	 *
-	 */
-
-	//! \cond [vector inst] \endcond
-
 	openfpm::vector< vector_dist<3,float, aggregate<double,double>> > phases;
 
 	// first phase
@@ -78,7 +59,21 @@ int main(int argc, char* argv[])
 	phases.add( vector_dist<3,float, aggregate<double,double>>(phases.get(2).getDecomposition(),4096) );
 	phases.add( vector_dist<3,float, aggregate<double,double>>(phases.get(3).getDecomposition(),4096) );
 
-	//! \cond [grid like part] \endcond
+	//! \cond [Initialization and parameters] \endcond
+
+
+	/*!
+	 * \page Vector_4_mp_cl Vector 4 Multi Phase cell-list
+	 *
+	 * ## Initialization ##
+	 *
+	 * We initialize all the phases with particle randomly positioned in the space
+	 *
+	 * \snippet Vector/4_multiphase_celllist/main.cpp rand dist
+	 *
+	 */
+
+	//! \cond [rand dist] \endcond
 
 	auto it = phases.get(0).getDomainIterator();
 
@@ -104,26 +99,63 @@ int main(int argc, char* argv[])
 	openfpm::vector<iterator> phase_it;
 
 	for (size_t i = 0 ; i < phases.size() ; i++)
-	{
 		phases.get(i).map();
-		phase_it.add(phases.get(i).getDomainIterator());
-	}
+
+	//! \cond [rand dist] \endcond
+
+	/*!
+	 * \page Vector_4_mp_cl Vector 4 Multi Phase cell-list
+	 *
+	 * ## Multi-phase cell-list construction ##
+	 *
+	 * In this part we construct the Multi-phase cell list. The multiphase cell list has 3 parameters
+	 * * one is the dimensionality (3)
+	 * * The precision of the coordinates (float),
+	 * * How many bit to use for the phase.
+	 *   Multi-phase cell-list try to pack into a 64bit number information about the particle id and the
+	 *   the phase id.
+	 *
+	 * \snippet Vector/4_multiphase_celllist/main.cpp cl construction
+	 *
+	 */
+
+	//! \cond [cl construction] \endcond
 
 	// Construct one single Multi-phase cell list to use in the computation
-
+	// in 3d, precision float, 2 bit dedicated to the phase for a maximum of 2^2 = 4 (Maximum number of phase)
 	CellListM<3,float,2> NN;
 
-	while (it.isNext())
+	// for all the phases i
+	for (size_t i = 0; i < phases.size() ; i++)
 	{
-		for (size_t i = 0; i < phases.size() ; i++)
+		// iterate across all the particle of the phase i
+		auto it = phases.get(i).getDomainIterator();
+		while (it.isNext())
 		{
 			auto key = it.get();
 
+			// Add the particle of the phase i to the cell list
 			NN.add(phases.get(i).getPos(key), key.getKey(), i);
 
 			++it;
 		}
 	}
+
+	//! \cond [cl construction] \endcond
+
+	/*!
+	 * \page Vector_4_mp_cl Vector 4 Multi Phase cell-list
+	 *
+	 * ## Multi-phase cell-list usage ##
+	 *
+	 * After construction we show how to use the Cell-list. In this case we accumulate on the property
+	 * 0 of the phase 0 the distance of the near particles from all the phases
+	 *
+	 * \snippet Vector/4_multiphase_celllist/main.cpp cl usage
+	 *
+	 */
+
+	//! \cond [cl usage] \endcond
 
 	vector_dist<3,float, aggregate<double,double> > & current_phase = phases.get(0);
 
@@ -163,16 +195,16 @@ int main(int argc, char* argv[])
 		++it2;
 	}
 
-	//! \cond [verletlist] \endcond
+	//! \cond [cl usage] \endcond
 
 	/*!
-	 * \page Vector_1_celllist Vector 1 Cell-list
+	 * \page Vector_4_mp_cl Vector 4 Multi Phase cell-list
 	 *
 	 * ## Finalize ## {#finalize}
 	 *
-	 *  At the very end of the program we have always to de-initialize the library
+	 *  At the very end of the program we have always de-initialize the library
 	 *
-	 * \snippet Vector/1_celllist/main.cpp finalize
+	 * \snippet Vector/4_multiphase_celllist/main.cpp finalize
 	 *
 	 */
 
@@ -183,11 +215,11 @@ int main(int argc, char* argv[])
 	//! \cond [finalize] \endcond
 
 	/*!
-	 * \page Vector_1_celllist Vector 1 Cell-list
+	 * \page Vector_4_mp_cl Vector 4 Multi Phase cell-list
 	 *
 	 * # Full code # {#code}
 	 *
-	 * \include Vector/1_celllist/main.cpp
+	 * \include Vector/4_multiphase_celllist/main.cpp
 	 *
 	 */
 }
