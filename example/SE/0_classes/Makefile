@@ -14,7 +14,9 @@ se_classes: $(OBJ)
 
 all: se_classes
 
-.PHONY: clean all
+run: all
+
+.PHONY: clean all run
 
 clean:
 	rm -f *.o *~ core se_classes

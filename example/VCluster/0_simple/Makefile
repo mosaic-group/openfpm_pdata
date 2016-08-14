@@ -14,7 +14,10 @@ vcluster: $(OBJ)
 
 all: vcluster
 
-.PHONY: clean all
+run: all
+	source $$HOME/openfpm_vars; mpirun -np 3 ./vcluster
+
+.PHONY: clean all run
 
 clean:
 	rm -f *.o *~ core vcluster

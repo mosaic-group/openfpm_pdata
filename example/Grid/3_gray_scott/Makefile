@@ -14,7 +14,10 @@ gray_scott: $(OBJ)
 
 all: gray_scott
 
-.PHONY: clean all
+run: all
+	source $$HOME/openfpm_vars; mpirun -np 4 ./gray_scott
+
+.PHONY: clean all run
 
 clean:
 	rm -f *.o *~ core gray_scott

@@ -61,6 +61,7 @@ int main(int argc, char* argv[])
 	phases.add( vector_dist<3,float, aggregate<double,double>>(phases.get(0).getDecomposition(),4096) );
 	phases.add( vector_dist<3,float, aggregate<double,double>>(phases.get(0).getDecomposition(),4096) );
 
+
 	//! \cond [Initialization and parameters] \endcond
 
 
@@ -167,7 +168,7 @@ int main(int argc, char* argv[])
 
 	//! \cond [cl usage] \endcond
 
-/*	vector_dist<3,float, aggregate<double,double> > & current_phase = phases.get(0);
+	vector_dist<3,float, aggregate<double,double> > & current_phase = phases.get(0);
 
 	// Get the iterator of the particles of phase 0
 	auto it2 = current_phase.getIterator();
@@ -203,7 +204,7 @@ int main(int argc, char* argv[])
 
 		// Next particle p
 		++it2;
-	}*/
+	}
 
 	//! \cond [cl usage] \endcond
 

@@ -527,8 +527,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 2D periodic vector k=" << k );
 
-		//! [Create a vector of random elements on each processor 2D]
-
 		Box<2,float> box({0.0,0.0},{1.0,1.0});
 
 		// Boundary conditions
@@ -562,8 +560,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 
 		// sync the ghost, only the property zero
 		vd.ghost_get<0>();
-
-		//! [Create a vector of random elements on each processor 2D]
 
 		// Domain + ghost box
 		Box<2,float> dom_ext = box;
@@ -635,8 +631,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector k=" << k );
 
-		//! [Create a vector of random elements on each processor 3D]
-
 		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 
 		// Boundary conditions
@@ -671,8 +665,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 
 		// sync the ghost
 		vd.ghost_get<0>();
-
-		//! [Create a vector of random elements on each processor 3D]
 
 		// Domain + ghost
 		Box<3,float> dom_ext = box;
@@ -1234,8 +1226,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
 	print_test("Testing 3D periodic vector with map_list k=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector with map_list k=" << k );
 
-	//! [Create a vector of random elements on each processor 3D]
-
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 
 	// Boundary conditions
@@ -1289,8 +1279,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
 
 	// sync the ghost
 	vd.ghost_get<0>();
-
-	//! [Create a vector of random elements on each processor 3D]
 
 	// Domain + ghost
 	Box<3,float> dom_ext = box;

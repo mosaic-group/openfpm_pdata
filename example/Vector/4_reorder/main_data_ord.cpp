@@ -277,8 +277,14 @@ int main(int argc, char* argv[])
 	timer time2;
 	time2.start();
 
+	#ifndef TEST_RUN
+	size_t Nstep = 30000;
+	#else
+	size_t Nstep = 300;
+	#endif
+
 	// MD time stepping
-	for (size_t i = 0; i < 30000 ; i++)
+	for (size_t i = 0; i < Nstep ; i++)
 	{
 		// Get the iterator
 		auto it3 = vd.getDomainIterator();

@@ -276,6 +276,8 @@ int main(int argc, char* argv[])
 			vd.template getProp<2>(p)[2][0] += (xp.get(2) - xq.get(2)) * (xp.get(0) - xq.get(0));
 			vd.template getProp<2>(p)[2][1] += (xp.get(2) - xq.get(2)) * (xp.get(1) - xq.get(1));
 			vd.template getProp<2>(p)[2][2] += (xp.get(2) - xq.get(2)) * (xp.get(2) - xq.get(2));
+
+			++Np;
 		}
 
 		// Next particle p

@@ -14,7 +14,10 @@ periodic: $(OBJ)
 
 all: periodic
 
-.PHONY: clean all
+run: all
+	source $$HOME/openfpm_vars; mpirun -np 4 ./periodic
+
+.PHONY: clean all run
 
 clean:
 	rm -f *.o *~ core periodic

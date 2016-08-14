@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
 	//
 
 	Vcluster & v_cl = create_vcluster();
-	size_t N_prc = v_cl.getProcessingUnits();
+	long int N_prc = v_cl.getProcessingUnits();
 
 	//
 	// ### WIKI 3 ###
@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
 	// processora minus one, only processor 0 print on terminal
 	//
 
-	size_t id = v_cl.getProcessUnitID();
+	long int id = v_cl.getProcessUnitID();
 
 	v_cl.max(id);
 	v_cl.execute();
@@ -67,8 +67,8 @@ int main(int argc, char* argv[])
 	// we can collect information from all processors using the function gather
 	//
 
-	size_t id3 = v_cl.getProcessUnitID();
-	openfpm::vector<size_t> v;
+	long int id3 = v_cl.getProcessUnitID();
+	openfpm::vector<long int> v;
 	
 	v_cl.allGather(id3,v);
 	v_cl.execute();
@@ -108,6 +108,8 @@ int main(int argc, char* argv[])
 	v_one.resize(msg_size);
 	openfpm::vector<char> v_two(msg_size);
 	v_two.resize(msg_size);
+
+	// Processor 0 receive from 1,2 ...
 
 	v_cl.recv(((id3-1)%N_prc + N_prc)%N_prc,0,(void *)v_one.getPointer(),msg_size);
 	v_cl.recv(((id3-2)%N_prc + N_prc)%N_prc,0,(void *)v_two.getPointer(),msg_size);

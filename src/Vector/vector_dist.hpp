@@ -93,7 +93,7 @@ private:
 	//! Virtual cluster
 	Vcluster & v_cl;
 
-	// definition of the send vector for position
+	//! definition of the send vector for position
 	typedef openfpm::vector<Point<dim, St>, ExtPreAlloc<Memory>, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin , openfpm::grow_policy_identity> send_pos_vector;
 
 	//////////////////////////////
@@ -129,6 +129,7 @@ private:
 
 	/*! \brief It store for each processor the position and properties vector of the particles
 	 *
+	 * This structure is used in the map function
 	 *
 	 */
 	struct pos_prop
@@ -139,6 +140,11 @@ private:
 		openfpm::vector<prop, PreAllocHeapMemory<2>, typename memory_traits_lin<prop>::type, memory_traits_lin, openfpm::grow_policy_identity> prp;
 	};
 
+	/*! \brief for each processor store 2 vector containing the sending buffers
+	 *
+	 * This structure is used in the map_list function
+	 *
+	 */
 	template <typename sel_prop>
 	struct pos_prop_sel
 	{
@@ -207,10 +213,6 @@ private:
 	/*! \brief Label the particles
 	 *
 	 * It count the number of particle to send to each processors and save its ids
-	 *
-	 * \param prc_sz For each processor the number of particles to send
-	 * \param opart id if of the particles to send
-	 * \param shift_id shift correction id
 	 *
 	 * \see nn_prcs::getShiftvectors()
 	 *
@@ -464,7 +466,7 @@ private:
 	/*! \brief allocate and fill the send buffer for the map function
 	 *
 	 * \param prc_r List of processor rank involved in the send
-	 * \param prc_r_sz For each processor in the list the size of the message to send
+	 * \param prc_sz_r For each processor in the list the size of the message to send
 	 * \param pb send buffer
 	 *
 	 */
@@ -514,7 +516,7 @@ private:
 	/*! \brief allocate and fill the send buffer for the map function
 	 *
 	 * \param prc_r List of processor rank involved in the send
-	 * \param prc_r_sz For each processor in the list the size of the message to send
+	 * \param prc_sz_r For each processor in the list the size of the message to send
 	 * \param pb send buffer
 	 *
 	 */
@@ -632,7 +634,7 @@ private:
 
 	/*! \brief Process the received particles
 	 *
-	 * \param list of the out-going particles
+	 * \param out_part list of the out-going particles
 	 *
 	 */
 	void process_received_map(openfpm::vector<size_t> & out_part)
@@ -690,7 +692,7 @@ private:
 
 	/*! \brief Process the received particles
 	 *
-	 * \param list of the out-going particles
+	 * \param out_part list of the out-going particles
 	 *
 	 */
 	template<typename prp_object , int ... prp> void process_received_map_list(openfpm::vector<size_t> & out_part)
@@ -861,6 +863,8 @@ public:
 	 *
 	 * \param v vector to copy
 	 *
+	 * \return itself
+	 *
 	 */
 	vector_dist<dim,St,prop,Decomposition,Memory> & operator=(const vector_dist<dim,St,prop,Decomposition,Memory> & v)
 	{
@@ -877,6 +881,8 @@ public:
 	 *
 	 * \param v vector to copy
 	 *
+	 * \return itself
+	 *
 	 */
 	vector_dist<dim,St,prop,Decomposition,Memory> & operator=(vector_dist<dim,St,prop,Decomposition,Memory> && v)
 	{
@@ -889,12 +895,9 @@ public:
 		return *this;
 	}
 
-	/*! \brief Constructor
+	/*! \brief Copy Constructor
 	 *
-	 * \param np number of elements
-	 * \param box domain where the vector of elements live
-	 * \param boundary conditions
-	 * \param g Ghost margins
+	 * \param v vector to copy
 	 *
 	 */
 	vector_dist(const vector_dist<dim,St,prop,Decomposition,Memory> & v)
@@ -907,12 +910,9 @@ public:
 		this->operator=(v);
 	}
 
-	/*! \brief Constructor
+	/*! \brief Copy constructor
 	 *
-	 * \param np number of elements
-	 * \param box domain where the vector of elements live
-	 * \param boundary conditions
-	 * \param g Ghost margins
+	 * \param v vector to copy
 	 *
 	 */
 	vector_dist(vector_dist<dim,St,prop,Decomposition,Memory> && v)
@@ -925,12 +925,10 @@ public:
 		this->operator=(v);
 	}
 
-	/*! \brief Constructor
+	/*! \brief Constructor with predefined decomposition
 	 *
-	 * \param np number of elements
-	 * \param box domain where the vector of elements live
-	 * \param boundary conditions
-	 * \param g Ghost margins
+	 * \param dec is the decomposition
+	 * \param np number of particles
 	 *
 	 */
 	vector_dist(const Decomposition & dec, size_t np) :
@@ -948,7 +946,7 @@ public:
 	 *
 	 * \param np number of elements
 	 * \param box domain where the vector of elements live
-	 * \param boundary conditions
+	 * \param bc boundary conditions
 	 * \param g Ghost margins
 	 *
 	 */
@@ -1360,10 +1358,7 @@ public:
 
 	/*! \brief Get the property of the last element
 	 *
-	 * see the vector_dist iterator usage to get an element key
-	 *
 	 * \tparam id property id
-	 * \param vec_key vector element
 	 *
 	 * \return return the selected property of the vector element
 	 *
@@ -1449,6 +1444,8 @@ public:
 	 * \param r_cut interation radius, or size of each cell
 	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
 	 *
+	 * \return the CellList
+	 *
 	 */
 	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge)
 	{
@@ -1478,6 +1475,8 @@ public:
 	 *
 	 * \param r_cut interation radius, or size of each cell
 	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
+	 *
+	 * \return The Cell-list
 	 *
 	 */
 	template<typename CellL = CellList_hilb<dim, St, FAST, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
@@ -1666,7 +1665,7 @@ public:
 
 	/*! \brief It return the number of particles contained by the previous processors
 	 *
-	 * \Warning It only work with the initial decomposition
+	 * \warning It only work with the initial decomposition
 	 *
 	 * Given 1000 particles and 3 processors, you will get
 	 *
@@ -1675,6 +1674,8 @@ public:
 	 * * Processor 2: 667
 	 *
 	 * \param np initial number of particles
+	 *
+	 * \return number of particles contained by the previous processors
 	 *
 	 */
 	size_t init_size_accum(size_t np)
@@ -1712,6 +1713,8 @@ public:
 	 *
 	 * Usefull function to place particles on a grid or grid-like (grid + noise)
 	 *
+	 * \param sz size of the grid
+	 *
 	 * \return a Grid iterator
 	 *
 	 */
@@ -1737,11 +1740,6 @@ public:
 
 		grid_dist_id_iterator_dec<Decomposition> it_dec(dec, sz_g, start, stop);
 		return it_dec;
-	}
-
-	void calculateComputationCosts()
-	{
-
 	}
 
 	/*! \brief Get the iterator across the position of the ghost particles
@@ -1792,10 +1790,7 @@ public:
 
 	/*! \brief Remove one element from the distributed vector
 	 *
-	 * \warning keys must be sorted
-	 *
-	 * \param keys vector of elements to eliminate
-	 * \param start from where to eliminate
+	 * \param key remove one element from the vector
 	 *
 	 */
 	void remove(size_t key)
@@ -1806,6 +1801,9 @@ public:
 		g_m--;
 	}
 
+	/*! \brief Add the computation cost on the decomposition comming from the particles
+	 *
+	 */
 	inline void addComputationCosts()
 	{
 		CellDecomposer_sm<dim, St> cdsm;
@@ -1878,7 +1876,7 @@ public:
 
 	/*! \brief Resize the vector (locally)
 	 *
-	 * \warning It automaticallt delete the ghosts
+	 * \warning It automatically delete the ghosts
 	 *
 	 * \param rs
 	 *
@@ -1896,6 +1894,7 @@ public:
 	/*! \brief Output particle position and properties
 	 *
 	 * \param out output
+	 * \param iteration (we can append the number at the end of the file_name)
 	 * \param opt NO_GHOST or WITH_GHOST
 	 *
 	 * \return if the file has been written correctly
@@ -1929,9 +1928,9 @@ public:
 	/*! \brief Get the Celllist parameters
 	 *
 	 * \param r_cut spacing of the cell-list
-	 * \param division required for the cell-list
+	 * \param div division required for the cell-list
 	 * \param box where the Cell list must be defined (In general Processor domain + Ghost)
-	 * \param Optionally a request to make the space a littler bit larger than Processor domain + Ghost
+	 * \param enlarge Optionally a request to make the space a littler bit larger than Processor domain + Ghost
 	 *        keeping the cell list consistent with the requests
 	 *
 	 */
@@ -1940,9 +1939,11 @@ public:
 		box = cl_param_calculate(div,r_cut,enlarge);
 	}
 
-	/* \brief It return the id of structure in the allocation list
+	/*! \brief It return the id of structure in the allocation list
 	 *
 	 * \see print_alloc and SE_CLASS2
+	 *
+	 * \return the id
 	 *
 	 */
 	long int who()
