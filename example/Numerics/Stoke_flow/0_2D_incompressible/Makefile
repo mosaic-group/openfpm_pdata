@@ -18,7 +18,9 @@ stokes_2d_eigen: $(OBJ_EIGEN)
 stokes_2d_petsc: $(OBJ_PETSC)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
-
+run: all
+	source $$HOME/openfpm_vars; mpirun -np 3 ./stokes_2d_eigen; mpirun -np 3 ./stokes_2d_petsc
+	
 .PHONY: clean all
 
 clean:

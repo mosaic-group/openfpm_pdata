@@ -14,7 +14,10 @@ plot: $(OBJ)
 
 all: plot
 
-.PHONY: clean all
+run: all
+	source $$HOME/openfpm_vars; ./plot
+
+.PHONY: clean all run
 
 clean:
 	rm -f *.o *~ core plot

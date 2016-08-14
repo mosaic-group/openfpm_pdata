@@ -20,13 +20,17 @@
 #include "Decomposition/CartDecomposition.hpp"
 #include "data_type/aggregate.hpp"
 
-// External ghost box to send for internal ghost box fixation
+//! Internal ghost box sent to construct external ghost box into the other processors
 template<unsigned int dim>
 struct Box_fix
 {
+	//! Box in global unit
 	Box<dim,size_t> bx;
+	//! In which sector live the box
 	comb<dim> cmb;
+	//! Global id of the internal ghost box
 	size_t g_id;
+	//! from which sub-domain this internal ghost box is generated (or with which sub-domain is overlapping)
 	size_t r_sub;
 };
 
@@ -61,10 +65,10 @@ struct Box_fix
 template<unsigned int dim, typename St, typename T, typename Decomposition = CartDecomposition<dim,St>,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T> >
 class grid_dist_id
 {
-	// Domain
+	//! Domain
 	Box<dim,St> domain;
 
-	// Ghost expansion
+	//! Ghost expansion
 	Ghost<dim,St> ghost;
 
 	//! Local grids
@@ -93,17 +97,23 @@ class grid_dist_id
 	//! (is unique for processor), it is not unique across all the near processor
 	openfpm::vector<std::unordered_map<size_t,size_t>> g_id_to_internal_ghost_box;
 
-	// Receiving size
+	//! Receiving size
 	openfpm::vector<size_t> recv_sz;
 
-	// Receiving buffer for particles ghost get
+	//! Receiving buffer for particles ghost get
 	openfpm::vector<HeapMemory> recv_mem_gg;
 
-	// Grid informations object
+	//! Grid informations object
 	grid_sm<dim,T> ginfo;
 
-	// Grid informations object without type
+	//! Grid informations object without type
 	grid_sm<dim,void> ginfo_v;
+
+	//! Indicate if the local internal ghost box has been initialized
+	bool init_local_i_g_box = false;
+
+	//! Indicate if the local external ghost box has been initialized
+	bool init_local_e_g_box = false;
 
 	/*! \brief Call-back to allocate buffer to receive incoming objects (external ghost boxes)
 	 *
@@ -137,6 +147,8 @@ class grid_dist_id
 	 *
 	 * \param box to convert
 	 * \param cmb sector position of the box
+	 *
+	 * \return the converted box
 	 *
 	 */
 	Box<dim,long int> flip_box(const Box<dim,long int> & box, const comb<dim> & cmb)
@@ -289,8 +301,6 @@ class grid_dist_id
 		init_e_g_box = true;
 	}
 
-	bool init_local_i_g_box = false;
-
 	/*! \brief Create local internal ghost box in grid units
 	 *
 	 */
@@ -328,8 +338,6 @@ class grid_dist_id
 
 		init_local_i_g_box = true;
 	}
-
-	bool init_local_e_g_box = false;
 
 	/*! \brief Create per-processor external ghost boxes list in grid units
 	 *
@@ -427,6 +435,8 @@ class grid_dist_id
 
 	/*! \brief Check the grid has a valid size
 	 *
+	 * \param g_sz size of the grid
+	 *
 	 */
 	inline void check_size(const size_t (& g_sz)[dim])
 	{
@@ -475,38 +485,15 @@ class grid_dist_id
 
 	/*! \brief Default Copy constructor on this class make no sense and is unsafe, this definition disable it
 	 *
+	 * \param g grid to copy
+	 *
 	 */
 	grid_dist_id(const grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & g)
+	:v_cl(g.v_cl)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
 #endif
-	}
-
-	void write_ie_boxes(std::string output)
-	{
-		// Write internal ghost box
-		VTKWriter<openfpm::vector<::Box<dim,size_t>>,VECTOR_BOX> vtk_box1;
-
-		openfpm::vector< openfpm::vector< ::Box<dim,size_t> > > boxes;
-
-		//! Carefully we have to ensure that boxes does not reallocate inside the for loop
-		boxes.reserve(ig_box.size());
-
-		//! Write internal ghost in grid units (Color encoded)
-		for (size_t p = 0 ; p < ig_box.size() ; p++)
-		{
-			boxes.add();
-
-			// Create a vector of boxes
-			for (size_t j = 0 ; j < ig_box.get(p).bid.size() ; j++)
-			{
-				boxes.last().add(ig_box.get(p).bid.get(j).box);
-			}
-
-			vtk_box1.add(boxes.last());
-		}
-		vtk_box1.write(output + std::string("internal_ghost_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 	}
 
     /*! \brief Initialize the Cell decomposer of the grid enforcing perfect overlap of the cells
@@ -523,6 +510,8 @@ class grid_dist_id
 
     /*! \brief Initialize the Cell decomposer of the grid
 	 *
+	 * \param g_sz Size of the grid
+	 * \param bc boundary conditions
 	 *
 	 */
 	inline void InitializeCellDecomposer(const size_t (& g_sz)[dim], const size_t (& bc)[dim])
@@ -547,6 +536,7 @@ class grid_dist_id
 	/*! \brief Initialize the grid
 	 *
 	 * \param g_sz Global size of the grid
+	 * \param bc boundary conditions
 	 *
 	 */
 	inline void InitializeDecomposition(const size_t (& g_sz)[dim], const size_t (& bc)[dim])
@@ -586,7 +576,9 @@ class grid_dist_id
 
 protected:
 
-	/*! \brief Get the point where it start the origin of the grid in the sub-domain i
+	/*! \brief Get the point where it start the origin of the grid of the sub-domain i
+	 *
+	 * \param i sub-domain
 	 *
 	 * \return the point
 	 *
@@ -598,6 +590,8 @@ protected:
 
 	/*! \brief Given a local sub-domain i with a local grid Domain + ghost return the part of the local grid that is domain
 	 *
+	 * \param i sub-domain
+	 *
 	 * \return the Box defining the domain in the local grid
 	 *
 	 */
@@ -606,31 +600,60 @@ protected:
 		return gdb_ext.get(i).Dbox;
 	}
 
+	/*! \brief Convert a ghost from grid point units into continus space
+	 *
+	 * \param gd Ghost in continuous space
+	 * \param cd_sm CellDecomposer of the grid
+	 *
+	 * \return the ghost in continuous unit
+	 *
+	 */
+	static inline Ghost<dim,float> convert_ghost(const Ghost<dim,long int> & gd, const CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm)
+	{
+		Ghost<dim,float> gc;
+
+		// get the grid spacing
+		Box<dim,St> sp = cd_sm.getCellBox();
+
+		// enlarge 0.001 of the spacing
+		sp.magnify_fix_P1(1.1);
+
+		// set the ghost
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			gc.setLow(i,-sp.getHigh(i));
+			gc.setHigh(i,sp.getHigh(i));
+		}
+
+		return gc;
+	}
+
 public:
 
-	// Which kind of grid the structure store
+	//! Which kind of grid the structure store
 	typedef device_grid d_grid;
 
-	// Decomposition used
+	//! Decomposition used
 	typedef Decomposition decomposition;
 
-	// value_type
+	//! value_type
 	typedef T value_type;
 
-	// Type of space
+	//! Type of space
 	typedef St stype;
 
-	// Type of Memory
+	//! Type of Memory
 	typedef Memory memory_type;
 
-	// Type of device grid
+	//! Type of device grid
 	typedef device_grid device_grid_type;
 
-	// Number of dimensions
+	//! Number of dimensions
 	static const unsigned int dims = dim;
 
 	/*! \brief Get the domain where the grid is defined
 	 *
+	 * \return the domain of the grid
 	 *
 	 */
 	inline const Box<dim,St> getDomain() const
@@ -639,6 +662,8 @@ public:
 	}
 
     /*! \brief Get the spacing of the grid in direction i
+     *
+     * \param i dimension
      *
      * \return the spacing
      *
@@ -670,33 +695,13 @@ public:
 		return ginfo_v.size(i);
 	}
 
-	static inline Ghost<dim,float> convert_ghost(const Ghost<dim,long int> & gd,const CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm)
-	{
-		Ghost<dim,float> gc;
-
-		// get the grid spacing
-		Box<dim,St> sp = cd_sm.getCellBox();
-
-		// enlarge 0.001 of the spacing
-		sp.magnify_fix_P1(1.1);
-
-		// set the ghost
-		for (size_t i = 0 ; i < dim ; i++)
-		{
-			gc.setLow(i,-sp.getHigh(i));
-			gc.setHigh(i,sp.getHigh(i));
-		}
-
-		return gc;
-	}
-
 	/*! \brief This constructor is special, it construct an expanded grid that perfectly overlap with the previous
 	 *
 	 * The key-word here is "perfectly overlap". Using the default constructor you could create
 	 * something similar, but because of rounding-off error it can happen that it is not perfectly overlapping
 	 *
 	 * \param g previous grid
-	 * \param Ghost part in grid units
+	 * \param gh Ghost part in grid units
 	 * \param ext extension of the grid (must be positive on every direction)
 	 *
 	 */
@@ -776,7 +781,7 @@ public:
      * \param dec Decomposition
      * \param g_sz grid size on each dimension
      * \param domain Box that contain the grid
-     * \param ghost Ghost part (given in grid units)
+     * \param g Ghost part (given in grid units)
      *
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
@@ -802,7 +807,7 @@ public:
      * \param dec Decomposition
      * \param g_sz grid size on each dimension
      * \param domain Box that contain the grid
-     * \param ghost Ghost part (given in grid units)
+     * \param g Ghost part (given in grid units)
      *
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
@@ -825,7 +830,7 @@ public:
      *
      * \param g_sz grid size on each dimension
      * \param domain Box that contain the grid
-     * \param ghost Ghost part (given in grid units)
+     * \param g Ghost part (given in grid units)
      *
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
@@ -837,11 +842,9 @@ public:
 
     /*! It construct a grid of a specified size, defined on a specified Box space, having a specified ghost size and periodicity
      *
-     * \param dec Decomposition
      * \param g_sz grid size on each dimension
      * \param domain Box that contain the grid
-     * \param ghost Ghost part of the domain (given in grid units)
-     * \param p Boundary conditions
+     * \param g Ghost part of the domain (given in grid units)
      *
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
@@ -855,7 +858,7 @@ public:
      *
      * \param g_sz grid size on each dimension
      * \param domain Box that contain the grid
-     * \param ghost Ghost part (given in grid units)
+     * \param g Ghost part (given in grid units)
      * \param p Boundary conditions
      *
      * \warning In very rare case the ghost part can be one point bigger than the one specified
@@ -875,10 +878,10 @@ public:
 
     /*! It construct a grid of a specified size, defined on a specified Box space, having a specified ghost size and periodicity
      *
-     * \param dec Decomposition
      * \param g_sz grid size on each dimension
      * \param domain Box that contain the grid
-     * \param ghost Ghost part of the domain (given in grid units)
+     * \param g Ghost part of the domain (given in grid units)
+     * \param p periodicity
      *
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
@@ -965,6 +968,8 @@ public:
 
 	/*! \brief Check that the global grid key is inside the grid domain
 	 *
+	 * \param gk point to check
+	 *
 	 * \return true if is inside
 	 *
 	 */
@@ -1038,6 +1043,7 @@ public:
 
 	/*! \brief It return an iterator that span the grid domain + ghost part
 	 *
+	 * \return the iterator
 	 *
 	 */
 	grid_dist_iterator<dim,device_grid,FIXED> getDomainGhostIterator() const
@@ -1059,6 +1065,8 @@ public:
 	 * \param start point
 	 * \param stop point
 	 *
+	 * \return the sub-domain iterator
+	 *
 	 */
 	grid_dist_iterator_sub<dim,device_grid> getSubDomainIterator(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop) const
 	{
@@ -1078,6 +1086,8 @@ public:
 	 *
 	 * \param start point
 	 * \param stop point
+	 *
+	 * \return an iterator on the sub-part of the grid
 	 *
 	 */
 	grid_dist_iterator_sub<dim,device_grid> getSubDomainIterator(const long int (& start)[dim], const long int (& stop)[dim]) const
@@ -1121,8 +1131,10 @@ public:
 
 	/*! \brief Get the reference of the selected element
 	 *
-	 * \param p property to get (is an integer)
+	 * \tparam p property to get (is an integer)
 	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return the selected element
 	 *
 	 */
 	template <unsigned int p>inline auto get(const grid_dist_key_dx<dim> & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
@@ -1135,8 +1147,10 @@ public:
 
 	/*! \brief Get the reference of the selected element
 	 *
-	 * \param p property to get (is an integer)
+	 * \tparam p property to get (is an integer)
 	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return the selected element
 	 *
 	 */
 	template <unsigned int p>inline auto get(const grid_dist_key_dx<dim> & v1) -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
@@ -1368,6 +1382,8 @@ public:
 	 *
 	 * \param g Grid to copy
 	 *
+	 * \return itself
+	 *
 	 */
 	grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & copy(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & g)
 	{
@@ -1387,7 +1403,7 @@ public:
 
 	/*! \brief Get the spacing on each dimension
 	 *
-	 * \param get the spacing
+	 * \return the spacing of the grid on each dimension as a point
 	 *
 	 */
 	Point<dim,St> getSpacing()
@@ -1399,6 +1415,8 @@ public:
 	 *
 	 * \see grid_dist_key_dx
 	 * \see grid_dist_iterator
+	 *
+	 * \param k grid_dist_key_dx point (in general returned by the iterators)
 	 *
 	 * \return the global position in the grid
 	 *
@@ -1426,6 +1444,8 @@ public:
 	 *
 	 * \param output directory where to put the files + prefix
 	 *
+	 * \return true if the write operation succeed
+	 *
 	 */
 	bool write(std::string output)
 	{
@@ -1452,6 +1472,8 @@ public:
 	 *
 	 * \param output directory where to put the files + prefix
 	 * \param i frame number
+	 *
+	 * \return true id the write succeed
 	 *
 	 */
 	bool write(std::string output, size_t i)
@@ -1495,9 +1517,11 @@ public:
 	}
 
 
-	/* \brief It return the id of structure in the allocation list
+	/*! \brief It return the id of structure in the allocation list
 	 *
 	 * \see print_alloc and SE_CLASS2
+	 *
+	 * \return the id
 	 *
 	 */
 	long int who()
@@ -1540,9 +1564,10 @@ public:
 		}
 	}
 
-	// Define friend classes
-
+	//! Define friend classes
+	//\cond
 	friend grid_dist_id<dim,St,T,typename Decomposition::extended_type,Memory,device_grid>;
+	//\endcond
 };
 
 

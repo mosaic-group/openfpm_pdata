@@ -176,8 +176,6 @@ void Test2D_sub(const Box<2,float> & domain, long int k)
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 2D grid k=" << k );
 
-		//! [Create and access a distributed grid]
-
 		// grid size
 		size_t sz[2];
 		sz[0] = k;
@@ -1192,15 +1190,11 @@ void Test3D_dup(const Box<3,float> & domain, long int k)
 		// Ghost
 		Ghost<3,float> g(0.01 / factor);
 
-		//! [Construct two grid with the same decomposition]
-
 		// Distributed grid with id decomposition
 		grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> * g_dist1 = new grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>>(sz,domain,g);
 
 		// another grid with the same decomposition
 		grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> * g_dist2 = new grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>>(g_dist1->getDecomposition(),sz,domain,g);
-
-		//! [Construct two grid with the same decomposition]
 
 		delete g_dist1;
 

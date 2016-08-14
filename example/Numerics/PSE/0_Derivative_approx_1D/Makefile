@@ -14,7 +14,10 @@ pse_1d: $(OBJ)
 
 all: pse_1d
 
-.PHONY: clean all
+run: all
+	source $$HOME/openfpm_vars; ./pse_1d
+
+.PHONY: clean all run
 
 clean:
 	rm -f *.o *~ core pse_1d

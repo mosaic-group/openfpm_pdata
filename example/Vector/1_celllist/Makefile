@@ -14,7 +14,10 @@ cell: $(OBJ)
 
 all: cell
 
-.PHONY: clean all
+run: all
+	source $$HOME/openfpm_vars; mpirun -np 2 ./cell
+
+.PHONY: clean all run
 
 clean:
 	rm -f *.o *~ core cell

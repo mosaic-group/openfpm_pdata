@@ -18,7 +18,10 @@ md_dyn: $(OBJ)
 md_dyn_expr: $(OBJ_EXPR)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
-.PHONY: clean all
+run: all
+	source $$HOME/openfpm_vars; mpirun -np 3 ./md_dyn; mpirun -np 3 ./md_dyn_expr
+
+.PHONY: clean all run
 
 clean:
 	rm -f *.o *~ core md_dyn md_dyn_expr

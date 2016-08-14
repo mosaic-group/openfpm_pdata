@@ -857,6 +857,73 @@ public:
 	//! dimensions of space
 	static const unsigned int dims = dim;
 
+	/*! \brief Operator= for distributed vector
+	 *
+	 * \param v vector to copy
+	 *
+	 */
+	vector_dist<dim,St,prop,Decomposition,Memory> & operator=(const vector_dist<dim,St,prop,Decomposition,Memory> & v)
+	{
+		dec = v.dec;
+
+		g_m = v.g_m;
+		v_pos = v.v_pos;
+		v_prp = v.v_prp;
+
+		return *this;
+	}
+
+	/*! \brief Operator= for distributed vector
+	 *
+	 * \param v vector to copy
+	 *
+	 */
+	vector_dist<dim,St,prop,Decomposition,Memory> & operator=(vector_dist<dim,St,prop,Decomposition,Memory> && v)
+	{
+		dec.swap(v.dec);
+
+		g_m = v.g_m;
+		v_pos.swap(v.v_pos);
+		v_prp.swap(v.v_prp);
+
+		return *this;
+	}
+
+	/*! \brief Constructor
+	 *
+	 * \param np number of elements
+	 * \param box domain where the vector of elements live
+	 * \param boundary conditions
+	 * \param g Ghost margins
+	 *
+	 */
+	vector_dist(const vector_dist<dim,St,prop,Decomposition,Memory> & v)
+	:dec(v.v_cl),v_cl(v.v_cl)
+	{
+#ifdef SE_CLASS2
+		check_new(this,8,VECTOR_DIST_EVENT,4);
+#endif
+
+		this->operator=(v);
+	}
+
+	/*! \brief Constructor
+	 *
+	 * \param np number of elements
+	 * \param box domain where the vector of elements live
+	 * \param boundary conditions
+	 * \param g Ghost margins
+	 *
+	 */
+	vector_dist(vector_dist<dim,St,prop,Decomposition,Memory> && v)
+	:v_cl(v.v_cl)
+	{
+#ifdef SE_CLASS2
+		check_new(this,8,VECTOR_DIST_EVENT,4);
+#endif
+
+		this->operator=(v);
+	}
 
 	/*! \brief Constructor
 	 *
@@ -1857,6 +1924,20 @@ public:
 			// Write the VTK file
 			return vtk_writer.write(output);
 		}
+	}
+
+	/*! \brief Get the Celllist parameters
+	 *
+	 * \param r_cut spacing of the cell-list
+	 * \param division required for the cell-list
+	 * \param box where the Cell list must be defined (In general Processor domain + Ghost)
+	 * \param Optionally a request to make the space a littler bit larger than Processor domain + Ghost
+	 *        keeping the cell list consistent with the requests
+	 *
+	 */
+	void getCellListParams(St r_cut, size_t (&div)[dim],Box<dim, St> & box, Ghost<dim,St> enlarge = Ghost<dim,St>(0.0))
+	{
+		box = cl_param_calculate(div,r_cut,enlarge);
 	}
 
 	/* \brief It return the id of structure in the allocation list

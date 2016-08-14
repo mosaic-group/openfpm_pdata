@@ -14,7 +14,10 @@ vect: $(OBJ)
 
 all: vect
 
-.PHONY: clean all
+run: all
+	source $$HOME/openfpm_vars; mpirun -np 2 ./vect
+
+.PHONY: clean all run
 
 clean:
 	rm -f *.o *~ core vect

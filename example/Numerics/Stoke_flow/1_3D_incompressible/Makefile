@@ -18,8 +18,10 @@ stokes_3d_eigen: $(OBJ_EIGEN)
 stokes_3d_petsc: $(OBJ_PETSC)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
-
-.PHONY: clean all
+run: all
+	source $$HOME/openfpm_vars; mpirun -np 3 ./stokes_3d_eigen; mpirun -np 3 ./stokes_3d_petsc
+	
+.PHONY: clean all run
 
 clean:
 	rm -f *.o *~ core stokes_3d_eigen stokes_3d_petsc

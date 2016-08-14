@@ -9,13 +9,16 @@ OBJ = main.o
 %.o: %.cpp
 	$(CC) -O3 -g3 -c --std=c++11 -fext-numeric-literals  -o $@ $< $(INCLUDE_PATH)
 
-plot: $(OBJ)
+conv_p: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS) -lquadmath
 
-all: plot
+all: conv_p
 
-.PHONY: clean all
+run: all
+	source $$HOME/openfpm_vars; ./conv_p
+
+.PHONY: clean all run
 
 clean:
-	rm -f *.o *~ core plot
+	rm -f *.o *~ core conv_p
 

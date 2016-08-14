@@ -46,8 +46,10 @@ int main(int argc, char* argv[])
 	// Boundary conditions
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
+	float r_cut = 0.05;
+
 	// ghost, big enough to contain the interaction radius
-	Ghost<3,float> ghost(1.0/(128-2));
+	Ghost<3,float> ghost(r_cut);
 
 	openfpm::vector< vector_dist<3,float, aggregate<double,double>> > phases;
 
@@ -55,9 +57,9 @@ int main(int argc, char* argv[])
 	phases.add( vector_dist<3,float, aggregate<double,double>>(4096,box,bc,ghost) );
 
 	// The other 3 phases
-	phases.add( vector_dist<3,float, aggregate<double,double>>(phases.get(1).getDecomposition(),4096) );
-	phases.add( vector_dist<3,float, aggregate<double,double>>(phases.get(2).getDecomposition(),4096) );
-	phases.add( vector_dist<3,float, aggregate<double,double>>(phases.get(3).getDecomposition(),4096) );
+	phases.add( vector_dist<3,float, aggregate<double,double>>(phases.get(0).getDecomposition(),4096) );
+	phases.add( vector_dist<3,float, aggregate<double,double>>(phases.get(0).getDecomposition(),4096) );
+	phases.add( vector_dist<3,float, aggregate<double,double>>(phases.get(0).getDecomposition(),4096) );
 
 	//! \cond [Initialization and parameters] \endcond
 
@@ -123,7 +125,15 @@ int main(int argc, char* argv[])
 
 	// Construct one single Multi-phase cell list to use in the computation
 	// in 3d, precision float, 2 bit dedicated to the phase for a maximum of 2^2 = 4 (Maximum number of phase)
+	//
+	//
+	
+	size_t div[3];
+	Box<3,float> box_cl;
+	phases.get(0).getCellListParams(r_cut,div,box_cl);
+
 	CellListM<3,float,2> NN;
+	NN.Initialize(box_cl,div);
 
 	// for all the phases i
 	for (size_t i = 0; i < phases.size() ; i++)
@@ -157,7 +167,7 @@ int main(int argc, char* argv[])
 
 	//! \cond [cl usage] \endcond
 
-	vector_dist<3,float, aggregate<double,double> > & current_phase = phases.get(0);
+/*	vector_dist<3,float, aggregate<double,double> > & current_phase = phases.get(0);
 
 	// Get the iterator of the particles of phase 0
 	auto it2 = current_phase.getIterator();
@@ -193,7 +203,7 @@ int main(int argc, char* argv[])
 
 		// Next particle p
 		++it2;
-	}
+	}*/
 
 	//! \cond [cl usage] \endcond
 
