@@ -1275,7 +1275,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
 		++it;
 	}
 
-	vd.map_list<KillParticle,0,1>();
+	vd.map_list<0,1>();
 
 	// sync the ghost
 	vd.ghost_get<0>();

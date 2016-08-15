@@ -1132,8 +1132,10 @@ public:
 	 * contain non local particles
 	 *
 	 */
-	template<typename obp = KillParticle,unsigned int ... prp> void map_list()
+	template<unsigned int ... prp> void map_list()
 	{
+		typedef KillParticle obp;
+
 		// outgoing particles-id
 		openfpm::vector<size_t> out_part;
 

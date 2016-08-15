@@ -181,7 +181,7 @@ int main(int argc, char* argv[])
 
 	// Particles are redistribued across the processors but only the scalar,vector, and point properties
 	// are transfert
-	vd.map_list<KillParticle,scalar,vector,point>();
+	vd.map_list<scalar,vector,point>();
 	
 	// Synchronize the ghost
 	vd.ghost_get<scalar,vector,point>();
