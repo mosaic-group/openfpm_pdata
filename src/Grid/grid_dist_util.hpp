@@ -10,6 +10,25 @@
 
 #include "NN/CellList/CellDecomposer.hpp"
 
+/*! \brief get cellDecomposer parameters
+ *
+ * \tparam dim dimensionality
+ *
+ * \param c_g get the parameters of the cell decomposer
+ * \param g_sz global grid parameters
+ *
+ */
+template<unsigned int dim> void getCellDecomposerPar(size_t (& c_g)[dim], const size_t (& g_sz)[dim], const size_t (& bc)[dim])
+{
+	for (size_t i = 0 ; i < dim ; i++)
+	{
+		if (bc[i] == NON_PERIODIC)
+			c_g[i] = (g_sz[i]-1 > 0)?(g_sz[i]-1):1;
+		else
+			c_g[i] = g_sz[i];
+	}
+}
+
 /*! \brief
  *
  *
@@ -87,20 +106,21 @@ template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::ve
  * \param sz Global grid grid size
  * \param domain Domain where the grid is defined
  * \param spacing Define the spacing of the grid
+ * \param bc boundary conditions
  *
  */
 template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::vector<GBoxes<dim>> & gdb_ext, Decomposition & dec, const size_t (& sz)[dim], const Box<Decomposition::dims,typename Decomposition::stype> & domain, typename Decomposition::stype (& spacing)[dim])
 {
 	// Create the cell decomposer
-
 	CellDecomposer_sm<Decomposition::dims,typename Decomposition::stype, shift<Decomposition::dims,typename Decomposition::stype>> cd_sm;
 
-	size_t sz_cell[Decomposition::dims];
-	for (size_t i = 0 ; i < dim ; i++)
-		sz_cell[i] = sz[i] - 1;
+	size_t cdp[dim];
+
+	// Get the parameters to create a Cell-decomposer
+	getCellDecomposerPar<Decomposition::dims>(cdp,sz,dec.periodicity());
 
 	// Careful cd_sm require the number of cell
-	cd_sm.setDimensions(domain,sz_cell,0);
+	cd_sm.setDimensions(domain,cdp,0);
 
 	create_gdb_ext<dim,Decomposition>(gdb_ext,dec,cd_sm);
 

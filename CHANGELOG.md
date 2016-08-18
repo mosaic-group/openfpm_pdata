@@ -1,7 +1,19 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [0.5.0 - Gingold] - Mid August 2016
+## [0.5.1] - End of August
+
+### Added
+- Symmetric cell list
+- Verlet list
+- Full-Support for complex property on vector-dist (Serialization) + example
+
+### Fixed
+- Energy calculation in md example (double counting potential energy)
+
+### Changed
+
+## [0.5.0] - 15 August 2016
 
 ### Added
 - map communicate particles across processors mooving the information of all the particle map_list give the possibility to give a list of property to move from one to another processor

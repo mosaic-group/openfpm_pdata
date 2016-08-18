@@ -218,11 +218,6 @@ double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, 
 		// Get the position of the particle p
 		Point<3,double> xp = vd.getPos(p);
 
-		// Reset the force
-		vd.template getProp<force>(p)[0] = 0.0;
-		vd.template getProp<force>(p)[1] = 0.0;
-		vd.template getProp<force>(p)[2] = 0.0;
-
 		// Get an iterator over the neighborhood of the particle p
 		auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(p)));
 
@@ -242,7 +237,7 @@ double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, 
 			double rn = norm2(xp - xq);
 
 			// potential energy (using pow is slower)
-			E += 4.0 * ( sigma12 / (rn*rn*rn*rn*rn*rn) - sigma6 / ( rn*rn*rn) );
+			E += 2.0 * ( sigma12 / (rn*rn*rn*rn*rn*rn) - sigma6 / ( rn*rn*rn) );
 
 			// Next neighborhood
 			++Np;
@@ -286,8 +281,8 @@ int main(int argc, char* argv[])
 	//! \cond [constants] \endcond
 
 	double dt = 0.0005;
-	float r_cut = 0.3;
 	double sigma = 0.1;
+	double r_cut = 3.0*sigma;
 	double sigma12 = pow(sigma,12);
 	double sigma6 = pow(sigma,6);
 

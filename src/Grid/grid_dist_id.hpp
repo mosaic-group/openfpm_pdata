@@ -519,15 +519,9 @@ class grid_dist_id
 		// check that the grid has valid size
 		check_size(g_sz);
 
-		// For a 5x5 grid you have 4x4 Cell (With the exception of periodic)
+		// get the size of the cell decomposer
 		size_t c_g[dim];
-		for (size_t i = 0 ; i < dim ; i++)
-		{
-			if (bc[i] == NON_PERIODIC)
-				c_g[i] = (g_sz[i]-1 > 0)?(g_sz[i]-1):1;
-			else
-				c_g[i] = g_sz[i];
-		}
+		getCellDecomposerPar<dim>(c_g,g_sz,bc);
 
 		// Initialize the cell decomposer
 		cd_sm.setDimensions(domain,c_g,0);

@@ -145,6 +145,7 @@ class grid_dist_id_iterator_dec
 	 *
 	 * \param dec Decomposition
 	 * \param sz size of the grid
+	 * \param bc boundary conditions
 	 *
 	 */
 	grid_dist_id_iterator_dec(Decomposition & dec, const size_t (& sz)[Decomposition::dims])
@@ -152,7 +153,8 @@ class grid_dist_id_iterator_dec
 	{
 		// Initialize start and stop
 		start.zero();
-		for (size_t i = 0 ; i < Decomposition::dims ; i++) stop.set_d(i,sz[i]-1);
+		for (size_t i = 0 ; i < Decomposition::dims ; i++)
+			stop.set_d(i,sz[i]-1);
 
 		// From the decomposition construct gdb_ext
 		create_gdb_ext<Decomposition::dims,Decomposition>(gdb_ext,dec,sz,dec.getDomain(),spacing);
@@ -210,27 +212,6 @@ class grid_dist_id_iterator_dec
 
 		return *this;
 	}
-
-	/*! \brief Convert a g_dist_key_dx into a global key
-	 *
-	 * \see grid_dist_key_dx
-	 * \see grid_dist_iterator
-	 *
-	 * \return the global position in the grid
-	 *
-	 */
-/*	inline grid_key_dx<Decomposition::dims> getGKey(const grid_dist_key_dx<Decomposition::dims> & k)
-	{
-		// Get the sub-domain id
-		size_t sub_id = k.getSub();
-
-		grid_key_dx<Decomposition::dims> k_glob = k.getKey();
-
-		// shift
-		k_glob = k_glob + gdb_ext.get(sub_id).origin;
-
-		return k_glob;
-	}*/
 
 	/*! \brief Check if there is the next element
 	 *

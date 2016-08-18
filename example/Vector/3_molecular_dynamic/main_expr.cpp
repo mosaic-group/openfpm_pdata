@@ -15,7 +15,7 @@ struct ln_potential
 	{
 		double rn = norm2(xp - xq);
 
-		Point<2,double> E({4.0 * ( sigma12 / (rn*rn*rn*rn*rn*rn) - sigma6 / ( rn*rn*rn) ),
+		Point<2,double> E({2.0 * ( sigma12 / (rn*rn*rn*rn*rn*rn) - sigma6 / ( rn*rn*rn) ),
 						 0.0});
 
 		return E;

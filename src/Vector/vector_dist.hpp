@@ -29,6 +29,7 @@
 #include "Vector/vector_dist_ofb.hpp"
 #include "Decomposition/CartDecomposition.hpp"
 #include "data_type/aggregate.hpp"
+#include "NN/VerletList/VerletList.hpp"
 
 #define V_SUB_UNIT_FACTOR 64
 
@@ -776,8 +777,7 @@ private:
 	 *
 	 * \return the processor bounding box
 	 */
-	inline Box<dim, St> cl_param_calculate(size_t (&div)[dim], St r_cut, const Ghost<dim, St> & enlarge)
-
+/*	inline Box<dim, St> cl_param_calculate(size_t (&div)[dim], St r_cut, const Ghost<dim, St> & enlarge)
 	{
 		// calculate the parameters of the cell list
 
@@ -795,7 +795,7 @@ private:
 			pbox.setHigh(i,pbox.getLow(i) + div[i]*r_cut);
 		}
 		return pbox;
-	}
+	}*/
 
 	/*! \brief Initialize the structures
 	 *
@@ -1456,8 +1456,11 @@ public:
 		// Division array
 		size_t div[dim];
 
+		// get the processor bounding box
+		Box<dim, St> pbox = dec.getProcessorBounds();
+
 		// Processor bounding box
-		auto pbox = cl_param_calculate(div, r_cut, enlarge);
+		cl_param_calculate(pbox, div, r_cut, enlarge);
 
 		cell_list.Initialize(pbox, div);
 
@@ -1488,8 +1491,11 @@ public:
 		// Division array
 		size_t div[dim];
 
+		// get the processor bounding box
+		Box<dim, St> pbox = dec.getProcessorBounds();
+
 		// Processor bounding box
-		auto pbox = cl_param_calculate(div, r_cut, enlarge);
+		cl_param_calculate(pbox,div, r_cut, enlarge);
 
 		cell_list.Initialize(pbox, div, g_m);
 
@@ -1498,13 +1504,39 @@ public:
 		return cell_list;
 	}
 
+
+	/*! \brief for each particle get the verlet list
+	 *
+	 * \param r_cut cut-off radius
+	 *
+	 */
+	VerletList<dim,St,FAST,shift<dim,St> > getVerlet(St r_cut)
+	{
+		VerletList<dim,St,FAST,shift<dim,St>> ver;
+
+		// Division array
+		size_t div[dim];
+
+		// get the processor bounding box
+		Box<dim, St> bt = dec.getProcessorBounds();
+
+		// Calculate the divisions for the Cell-lists
+		cl_param_calculate(bt,div,r_cut,Ghost<dim,St>(0.0));
+
+		ver.Initialize(bt,r_cut,v_pos,g_m);
+
+		return ver;
+	}
+
 	/*! \brief for each particle get the verlet list
 	 *
 	 * \param verlet output verlet list for each particle
 	 * \param r_cut cut-off radius
 	 *
+	 * \deprecated
+	 *
 	 */
-	void getVerlet(openfpm::vector<openfpm::vector<size_t>> & verlet, St r_cut)
+	void getVerletDeprecated(openfpm::vector<openfpm::vector<size_t>> & verlet, St r_cut)
 	{
 		// resize verlet to store the number of particles
 		verlet.resize(size_local());
@@ -1722,25 +1754,15 @@ public:
 	 */
 	inline grid_dist_id_iterator_dec<Decomposition> getGridIterator(const size_t (&sz)[dim])
 	{
-		size_t sz_g[dim];
 		grid_key_dx<dim> start;
 		grid_key_dx<dim> stop;
 		for (size_t i = 0; i < dim; i++)
 		{
 			start.set_d(i, 0);
-			if (dec.periodicity(i) == PERIODIC)
-			{
-				sz_g[i] = sz[i];
-				stop.set_d(i, sz_g[i] - 2);
-			}
-			else
-			{
-				sz_g[i] = sz[i];
-				stop.set_d(i, sz_g[i] - 1);
-			}
+			stop.set_d(i, sz[i] - 1);
 		}
 
-		grid_dist_id_iterator_dec<Decomposition> it_dec(dec, sz_g, start, stop);
+		grid_dist_id_iterator_dec<Decomposition> it_dec(dec, sz, start, stop);
 		return it_dec;
 	}
 
