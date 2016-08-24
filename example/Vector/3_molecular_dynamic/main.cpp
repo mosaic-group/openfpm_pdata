@@ -1,9 +1,9 @@
-
 #include "Vector/vector_dist.hpp"
 #include "Decomposition/CartDecomposition.hpp"
 #include "data_type/aggregate.hpp"
 #include "Plot/GoogleChart.hpp"
 #include "Plot/util.hpp"
+#include "timer.hpp"
 
 /*!
  * \page Vector_3_md Vector 3 molecular dynamic
@@ -48,7 +48,7 @@ constexpr int force = 1;
 
 //! \cond [calc forces] \endcond
 
-void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList<3, double, FAST, shift<3, double> > & NN, double sigma12, double sigma6)
+void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList<3, double, FAST, shift<3, double> > & NN, double sigma12, double sigma6, double r_cut2)
 {
 
 //! \cond [calc forces] \endcond
@@ -127,6 +127,9 @@ void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, Ce
 			// take the norm of this vector
 			double rn = norm2(r);
 
+			if (rn > r_cut2)
+			{++Np; continue;};
+
 			// Calculate the force, using pow is slower
 			Point<3,double> f = 24.0*(2.0 *sigma12 / (rn*rn*rn*rn*rn*rn*rn) -  sigma6 / (rn*rn*rn*rn)) * r;
 
@@ -165,8 +168,10 @@ void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, Ce
 
 //! \cond [calc energy] \endcond
 
-double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList<3, double, FAST, shift<3, double> > & NN, double sigma12, double sigma6)
+double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList<3, double, FAST, shift<3, double> > & NN, double sigma12, double sigma6, double r_cut2)
 {
+        double rc = r_cut2;
+        double shift = 2.0 * ( sigma12 / (rc*rc*rc*rc*rc*rc) - sigma6 / ( rc*rc*rc) );
 
 //! \cond [calc energy] \endcond
 
@@ -185,7 +190,7 @@ double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, 
 	//! \cond [up cell ene] \endcond
 
 	double E = 0.0;
-	vd.updateCellList(NN);
+//	vd.updateCellList(NN);
 
 	//! \cond [up cell ene] \endcond
 
@@ -236,8 +241,11 @@ double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, 
 			// take the normalized direction
 			double rn = norm2(xp - xq);
 
+			if (rn > r_cut2)
+			{++Np;continue;}
+
 			// potential energy (using pow is slower)
-			E += 2.0 * ( sigma12 / (rn*rn*rn*rn*rn*rn) - sigma6 / ( rn*rn*rn) );
+			E += 2.0 * ( sigma12 / (rn*rn*rn*rn*rn*rn) - sigma6 / ( rn*rn*rn) ) - shift;
 
 			// Next neighborhood
 			++Np;
@@ -414,13 +422,16 @@ int main(int argc, char* argv[])
 	 *
 	 */
 
+	timer tsim;
+	tsim.start();
+
 	//! \cond [md steps] \endcond
 
 	// Get the Cell list structure
 	auto NN = vd.getCellList(r_cut);
 
 	// calculate forces
-	calc_forces(vd,NN,sigma12,sigma6);
+	calc_forces(vd,NN,sigma12,sigma6,r_cut*r_cut);
 	unsigned long int f = 0;
 
 	// MD time stepping
@@ -452,7 +463,7 @@ int main(int argc, char* argv[])
 		vd.template ghost_get<>();
 
 		// calculate forces or a(tn + 1) Step 2
-		calc_forces(vd,NN,sigma12,sigma6);
+		calc_forces(vd,NN,sigma12,sigma6,r_cut*r_cut);
 
 
 		// Integrate the velocity Step 3
@@ -481,7 +492,7 @@ int main(int argc, char* argv[])
 			vd.ghost_get<>();
 
 			// We calculate the energy
-			double energy = calc_energy(vd,NN,sigma12,sigma6);
+			double energy = calc_energy(vd,NN,sigma12,sigma6,r_cut*r_cut);
 			auto & vcl = create_vcluster();
 			vcl.sum(energy);
 			vcl.execute();
@@ -500,6 +511,9 @@ int main(int argc, char* argv[])
 	}
 
 	//! \cond [md steps] \endcond
+
+	tsim.stop();
+	std::cout << "Time: " << tsim.getwct() << std::endl;
 
 	/*!
 	 * \page Vector_3_md Vector 3 molecular dynamic

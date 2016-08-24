@@ -1389,7 +1389,192 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
 	}
 }
 
+
+BOOST_AUTO_TEST_CASE( vector_dist_ghost_with_ghost_buffering )
+{
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 3)
+		return;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+    long int k = 524288 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 4;
+	big_step = (big_step == 0)?1:big_step;
+
+	print_test("Testing 3D periodic vector with ghost buffering k=",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic with ghost buffering k=" << k );
+
+	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	// ghost
+	Ghost<3,float> ghost(0.1);
+
+	typedef  aggregate<float> part_prop;
+
+	// Distributed vector
+	vector_dist<3,float, part_prop > vd(k,box,bc,ghost);
+
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.getPos(key)[0] = ud(eg);
+		vd.getPos(key)[1] = ud(eg);
+		vd.getPos(key)[2] = ud(eg);
+
+		// Fill some properties randomly
+
+		vd.getProp<0>(key) = 0.0;
+
+		++it;
+	}
+
+	vd.map();
+
+	// sync the ghost
+	vd.ghost_get<0>();
+
+	openfpm::vector<size_t> list_idx;
+	openfpm::vector<size_t> list_idx2;
+
+	auto it3 = vd.getGhostIterator();
+	while (it3.isNext())
+	{
+		auto key = it3.get();
+
+		list_idx.add(key.getKey());
+
+		++it3;
+	}
+
+	list_idx.sort();
+
+	for (size_t i = 0 ; i < 10 ; i++)
+	{
+		auto it = vd.getDomainIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			vd.getPos(key)[0] = ud(eg);
+			vd.getPos(key)[1] = ud(eg);
+			vd.getPos(key)[2] = ud(eg);
+
+			// Fill some properties randomly
+
+			vd.getProp<0>(key) = i;
+
+			++it;
+		}
+
+		vd.ghost_get<0>(SKIP_LABELLING);
+
+		list_idx2.clear();
+		auto it2 = vd.getGhostIterator();
+		bool ret = true;
+
+		while (it2.isNext())
+		{
+			auto key = it2.get();
+
+			list_idx2.add(key.getKey());
+			ret &= vd.getProp<0>(key) == i;
+
+			++it2;
+		}
+
+		BOOST_REQUIRE_EQUAL(ret,true);
+		BOOST_REQUIRE_EQUAL(list_idx.size(),list_idx2.size());
+
+		list_idx2.sort();
+
+		ret = true;
+		for (size_t i = 0 ; i < list_idx.size() ; i++)
+			ret &= list_idx.get(i) == list_idx2.get(i);
+
+		BOOST_REQUIRE_EQUAL(ret,true);
+	}
+
+	vd.map();
+	vd.ghost_get<0>();
+
+	list_idx.clear();
+
+	auto it4 = vd.getGhostIterator();
+	while (it4.isNext())
+	{
+		auto key = it4.get();
+
+		list_idx.add(key.getKey());
+
+		++it4;
+	}
+
+	list_idx.sort();
+
+	for (size_t i = 0 ; i < 10 ; i++)
+	{
+		auto it = vd.getDomainIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			vd.getPos(key)[0] = ud(eg);
+			vd.getPos(key)[1] = ud(eg);
+			vd.getPos(key)[2] = ud(eg);
+
+			// Fill some properties randomly
+
+			vd.getProp<0>(key) = i;
+
+			++it;
+		}
+
+		vd.ghost_get<0>(SKIP_LABELLING);
+
+		list_idx2.clear();
+		auto it2 = vd.getGhostIterator();
+		bool ret = true;
+
+		while (it2.isNext())
+		{
+			auto key = it2.get();
+
+			list_idx2.add(key.getKey());
+			ret &= vd.getProp<0>(key) == i;
+
+			++it2;
+		}
+
+		BOOST_REQUIRE_EQUAL(ret,true);
+		BOOST_REQUIRE_EQUAL(list_idx.size(),list_idx2.size());
+
+		list_idx2.sort();
+
+		ret = true;
+		for (size_t i = 0 ; i < list_idx.size() ; i++)
+			ret &= list_idx.get(i) == list_idx2.get(i);
+
+		BOOST_REQUIRE_EQUAL(ret,true);
+	}
+}
+
 #include "vector_dist_cell_list_tests.hpp"
+#include "vector_dist_NN_tests.hpp"
 
 BOOST_AUTO_TEST_SUITE_END()
 
