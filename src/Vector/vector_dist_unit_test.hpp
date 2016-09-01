@@ -1632,62 +1632,119 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 		// sync the ghost
 		vd.ghost_get<0>();
 
-		auto NN = vd.getCellList(1.3/k);
-		float a = 1.0f*k*k;
-
-		// run trough all the particles + ghost
-
-		auto it2 = vd.getDomainIterator();
-
-		while (it2.isNext())
 		{
-			// particle p
-			auto p = it2.get();
-			Point<3,float> xp = vd.getPos(p);
+			auto NN = vd.getCellList(1.3/k);
+			float a = 1.0f*k*k;
 
-			// Get an iterator over the neighborhood particles of p
-			auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(p)));
+			// run trough all the particles + ghost
 
-			// For each neighborhood particle ...
-			while (Np.isNext())
+			auto it2 = vd.getDomainIterator();
+
+			while (it2.isNext())
 			{
-				auto q = Np.get();
-				Point<3,float> xq = vd.getPos(q);
+				// particle p
+				auto p = it2.get();
+				Point<3,float> xp = vd.getPos(p);
 
-				float dist = xp.distance(xq);
+				// Get an iterator over the neighborhood particles of p
+				auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(p)));
 
-				if (dist < 1.0/k)
-					vd.getProp<0>(q) += a*(-dist*dist+1.0/k/k);
+				// For each neighborhood particle ...
+				while (Np.isNext())
+				{
+					auto q = Np.get();
+					Point<3,float> xq = vd.getPos(q);
 
-				++Np;
+					float dist = xp.distance(xq);
+
+					if (dist < 1.0/k)
+						vd.getProp<0>(q) += a*(-dist*dist+1.0/k/k);
+
+					++Np;
+				}
+
+				++it2;
 			}
 
-			++it2;
+			vd.ghost_put<add_,0>();
+
+			bool ret = true;
+			auto it3 = vd.getDomainIterator();
+
+			float constant = vd.getProp<0>(it3.get());
+			float eps = 0.001;
+
+			while (it3.isNext())
+			{
+				float constant2 = vd.getProp<0>(it3.get());
+				if (fabs(constant - constant2)/constant > eps)
+				{
+					std::cout << Point<3,float>(vd.getPos(it3.get())).toString() << "    " <<  constant2 << "/" << constant << "    " << v_cl.getProcessUnitID() << std::endl;
+					ret = false;
+					break;
+				}
+
+				++it3;
+			}
+			BOOST_REQUIRE_EQUAL(ret,true);
 		}
 
-		vd.ghost_put<add_,0>();
-
-		bool ret = true;
-		auto it3 = vd.getDomainIterator();
-
-		float constant = vd.getProp<0>(it3.get());
-		float eps = 0.001;
-
-		while (it3.isNext())
 		{
-			float constant2 = vd.getProp<0>(it3.get());
-			if (fabs(constant - constant2)/constant > eps)
+			auto NN = vd.getCellList(1.3/k);
+			float a = 1.0f*k*k;
+
+			// run trough all the particles + ghost
+
+			auto it2 = vd.getDomainIterator();
+
+			while (it2.isNext())
 			{
-				std::cout << Point<3,float>(vd.getPos(it3.get())).toString() << "    " <<  constant2 << "/" << constant << "    " << v_cl.getProcessUnitID() << std::endl;
-				ret = false;
-				break;
+				// particle p
+				auto p = it2.get();
+				Point<3,float> xp = vd.getPos(p);
+
+				// Get an iterator over the neighborhood particles of p
+				auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(p)));
+
+				// For each neighborhood particle ...
+				while (Np.isNext())
+				{
+					auto q = Np.get();
+					Point<3,float> xq = vd.getPos(q);
+
+					float dist = xp.distance(xq);
+
+					if (dist < 1.0/k)
+						vd.getProp<0>(q) += a*(-dist*dist+1.0/k/k);
+
+					++Np;
+				}
+
+				++it2;
 			}
 
-			++it3;
+			vd.ghost_put<add_,0>();
+
+			bool ret = true;
+			auto it3 = vd.getDomainIterator();
+
+			float constant = vd.getProp<0>(it3.get());
+			float eps = 0.001;
+
+			while (it3.isNext())
+			{
+				float constant2 = vd.getProp<0>(it3.get());
+				if (fabs(constant - constant2)/constant > eps)
+				{
+					std::cout << Point<3,float>(vd.getPos(it3.get())).toString() << "    " <<  constant2 << "/" << constant << "    " << v_cl.getProcessUnitID() << std::endl;
+					ret = false;
+					break;
+				}
+
+				++it3;
+			}
+			BOOST_REQUIRE_EQUAL(ret,true);
 		}
-
-
-		BOOST_REQUIRE_EQUAL(ret,true);
 	}
 }
 

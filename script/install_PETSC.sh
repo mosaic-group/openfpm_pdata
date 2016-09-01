@@ -57,6 +57,9 @@ fi
 
 if [ -d "$1/MPI" ]; then
   configure_trilinos_options="$configure_trilinos_options -D MPI_BASE_DIR=$1/MPI "
+  mpi_dir="$1/MPI"
+else
+  mpi_dir=$(dirname "$(dirname "$(which mpic++)")")
 fi
 
 ### It seem that the PETSC --download-packege option has several problems and cannot produce
@@ -286,9 +289,9 @@ fi
 tar -xf petsc-lite-3.6.4.tar.gz
 cd petsc-3.6.4
 
-echo "./configure --with-cxx-dialect=C++11 --with-mpi-dir=$1/MPI  $configure_options  --prefix=$1/PETSC"
+echo "./configure --with-cxx-dialect=C++11 --with-mpi-dir=$mpi_dir  $configure_options  --prefix=$1/PETSC"
 
-./configure --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$1/MPI  $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC
+./configure --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir  $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC
 make all test
 make install
 

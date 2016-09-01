@@ -8,8 +8,8 @@ All notable changes to this project will be documented in this file.
 - Full-Support for complex property on vector-dist (Serialization) + example
 
 ### Fixed
-- Installation in case of MPI preinstalled PETSC fail
-- vector_dist with negative domain
+- Installation PETSC installation fail in case of preinstalled MPI
+- vector_dist with negative domain (Now supported)
 - Grid 1D fixing
 
 ### Changed
