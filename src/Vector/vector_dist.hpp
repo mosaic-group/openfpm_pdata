@@ -844,6 +844,18 @@ public:
 		this->template ghost_get_<prp...>(v_pos,v_prp,g_m,opt);
 	}
 
+	/*! \brief It synchronize the properties and position of the ghost particles
+	 *
+	 * \tparam op which kind of operation to apply
+	 * \tparam prp list of properties to get synchronize
+	 *
+	 *
+	 */
+	template<template<typename,typename> class op, int ... prp> inline void ghost_put()
+	{
+		this->template ghost_put_<op,prp...>(v_pos,v_prp,g_m);
+	}
+
 	/*! \brief Remove a set of elements from the distributed vector
 	 *
 	 * \warning keys must be sorted

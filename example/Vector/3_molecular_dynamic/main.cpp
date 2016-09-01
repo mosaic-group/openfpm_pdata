@@ -1,3 +1,10 @@
+/*! \page Vector_3_md Vector 3 molecular dynamic
+ *
+ * \subpage Vector_3_md_dyn
+ * \subpage Vector_3_md_vl
+ *
+ */
+
 #include "Vector/vector_dist.hpp"
 #include "Decomposition/CartDecomposition.hpp"
 #include "data_type/aggregate.hpp"
@@ -6,7 +13,7 @@
 #include "timer.hpp"
 
 /*!
- * \page Vector_3_md Vector 3 molecular dynamic
+ * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
  *
  * [TOC]
  *
@@ -31,7 +38,7 @@ constexpr int force = 1;
 
 /*!
  *
- * \page Vector_3_md Vector 3 molecular dynamic
+ * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
  *
  * ## Calculate forces ## {#e3_md_cf}
  *
@@ -54,7 +61,7 @@ void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, Ce
 //! \cond [calc forces] \endcond
 
 	/*!
-	 * \page Vector_3_md Vector 3 molecular dynamic
+	 * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
 	 *
 	 * This function in called several time and require neighborhood of each particle. In order to speed-up the
 	 * Cell-list construction we can use updateCellList function to reuse the memory of the previous cell-list.
@@ -74,7 +81,7 @@ void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, Ce
 
 	/*!
 	 *
-	 * \page Vector_3_md Vector 3 molecular dynamic
+	 * \page Vector_3_md Vector 3 molecular dynamic with cell-list
 	 *
 	 * Get an iterator over the particles and get its position. For each particle p iterate in its neighborhood q
 	 * and calculate the force based on the Lennard-Jhones potential given by
@@ -155,7 +162,7 @@ void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, Ce
 //! \cond [calc forces2] \endcond
 
 /*!
- * \page Vector_3_md Vector 3 molecular dynamic
+ * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
  *
  * ## Calculate energy ## {#e3_md_ce}
  *
@@ -176,7 +183,7 @@ double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, 
 //! \cond [calc energy] \endcond
 
 	/*!
-	 * \page Vector_3_md Vector 3 molecular dynamic
+	 * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
 	 *
 	 * Reset the counter for the energy counter and
 	 * update the cell list from the actual particle configuration
@@ -196,7 +203,7 @@ double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, 
 
 	/*!
 	 *
-	 * \page Vector_3_md Vector 3 molecular dynamic
+	 * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
 	 *
 	 * First we get an iterator over the particles and get its position. For each particle p iterate in its neighborhood q
 	 * and calculate the energy based on the Lennard-Jhones potential given by
@@ -273,7 +280,7 @@ double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, 
 int main(int argc, char* argv[])
 {
 	/*!
-	 * \page Vector_3_md Vector 3 molecular dynamic
+	 * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
 	 *
 	 * ## Initialization ## {#e3_md_init}
 	 *
@@ -282,11 +289,11 @@ int main(int argc, char* argv[])
 	 * size of the box, and cut-off radius of the interaction. We also define 2 vectors
 	 * x and y (they are like std::vector) used for statistic
 	 *
-	 * \snippet Vector/3_molecular_dynamic/main.cpp constants
+	 * \snippet Vector/3_molecular_dynamic/main.cpp constants run
 	 *
 	 */
 
-	//! \cond [constants] \endcond
+	//! \cond [constants run] \endcond
 
 	double dt = 0.0005;
 	double sigma = 0.1;
@@ -297,10 +304,10 @@ int main(int argc, char* argv[])
 	openfpm::vector<double> x;
 	openfpm::vector<openfpm::vector<double>> y;
 
-	//! \cond [constants] \endcond
+	//! \cond [constants run] \endcond
 
 	/*!
-	 * \page Vector_3_md Vector 3 molecular dynamic
+	 * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
 	 *
 	 * Here we Initialize the library, we create a Box that define our domain, boundary conditions and ghost
 	 *
@@ -330,7 +337,7 @@ int main(int argc, char* argv[])
 	//! \cond [init] \endcond
 
 	/*!
-	 * \page Vector_3_md Vector 3 molecular dynamic
+	 * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
 	 *
 	 * Than we define a distributed vector in 3D, containing 2 vectorial properties the
 	 * first is the actual velocity of the particle the other is the force
@@ -348,7 +355,7 @@ int main(int argc, char* argv[])
 	//! \cond [vect create] \endcond
 
 	/*!
-	 * \page Vector_3_md Vector 3 molecular dynamic
+	 * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
 	 *
 	 * ## Particles on a grid like position ## {#e3_md_gl}
 	 *
@@ -389,7 +396,7 @@ int main(int argc, char* argv[])
 	//! \cond [vect grid] \endcond
 
 	/*!
-	 * \page Vector_3_md Vector 3 molecular dynamic
+	 * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
 	 *
 	 * ## Molecular dynamic steps ## {#e3_md_vi}
 	 *
@@ -397,16 +404,16 @@ int main(int argc, char* argv[])
 	 *
 	 * The verlet integration stepping look like this
 	 *
-	 * $$ \vec{v}(t_{n+1/2}) = \vec{v}_p(t_n) + \frac{1}{2} \delta t \vec{a}(t_n) $$ // Step 1
-	 * $$ \vec{x}(t_{n}) = \vec{x}_p(t_n) + \delta t \vec{v}(t_n+1/2) $$             // Step 1
+	 * \f[ \vec{v}(t_{n+1/2}) = \vec{v}_p(t_n) + \frac{1}{2} \delta t \vec{a}(t_n) \f]
+	 * \f[ \vec{x}(t_{n}) = \vec{x}_p(t_n) + \delta t \vec{v}(t_n+1/2) \f]
 	 *
-	 * calculate the forces $$ \vec{a} (t_{n}) $$ from $$ \vec{x} (t_{n}) $$         // Step 2
+	 * calculate the forces from \f$ \vec{a} (t_{n}) \f$ finally
 	 *
-	 * $$ \vec{v}(t_{n+1}) = \vec{v}_p(t_n+1/2) + \frac{1}{2} \delta t \vec{a}(t_n+1) $$ // Step 3
+	 * \f[ \vec{v}(t_{n+1}) = \vec{v}_p(t_n+1/2) + \frac{1}{2} \delta t \vec{a}(t_n+1) \f]
 	 *
 	 * The cell-list structure is required to calculate forces
 	 *
-	 * Inside this cycle we are using several features that has been explained before in particuilar
+	 * Inside this cycle we are using several features that has been explained before in particular
 	 *
 	 * \see \ref e0_s_assign_pos
 	 *
@@ -516,7 +523,7 @@ int main(int argc, char* argv[])
 	std::cout << "Time: " << tsim.getwct() << std::endl;
 
 	/*!
-	 * \page Vector_3_md Vector 3 molecular dynamic
+	 * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
 	 *
 	 * ## Plotting graphs ## {#e3_md_pg}
 	 *
@@ -560,13 +567,13 @@ int main(int argc, char* argv[])
 	//! \cond [google chart] \endcond
 
 	/*!
-	 * \page Vector_3_md Vector 3 molecular dynamic
+	 * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
 	 *
-	 * ## Finalize ## {#finalize}
+	 * ## Finalize ## {#finalize_v_e3_md}
 	 *
 	 *  At the very end of the program we have always to de-initialize the library
 	 *
-	 * \snippet Vector/1_celllist/main.cpp finalize
+	 * \snippet Vector/3_molecular_dynamic/main.cpp finalize
 	 *
 	 */
 
@@ -577,18 +584,18 @@ int main(int argc, char* argv[])
 	//! \cond [finalize] \endcond
 
 	/*!
-	 * \page Vector_3_md Vector 3 molecular dynamic
+	 * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
 	 *
-	 * # Full code # {#code}
+	 * ## Full code ## {#code_v_e3_md}
 	 *
 	 * \include Vector/3_molecular_dynamic/main.cpp
 	 *
 	 */
 
 	/*!
-	 * \page Vector_3_md Vector 3 molecular dynamic
+	 * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
 	 *
-	 * # Code with expression # {#code}
+	 * ## Code with expression ## {#code_v_e3_md_expr}
 	 *
 	 * Here we also show how we can simplify the example using expressions
 	 *

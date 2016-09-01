@@ -1573,6 +1573,124 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_with_ghost_buffering )
 	}
 }
 
+
+
+BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
+{
+	Vcluster & v_cl = create_vcluster();
+
+	long int k = 25*25*25*create_vcluster().getProcessingUnits();
+	k = std::pow(k, 1/3.);
+
+	if (v_cl.getProcessingUnits() > 48)
+		return;
+
+	print_test("Testing 3D periodic vector with ghost buffering k=",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic with ghost buffering k=" << k );
+
+	long int big_step = k / 30;
+	big_step = (big_step == 0)?1:big_step;
+	long int small_step = 21;
+
+	// 3D test
+	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
+	{
+		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+		// Boundary conditions
+		size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+		// ghost
+		Ghost<3,float> ghost(1.3/(k));
+
+		typedef  aggregate<float> part_prop;
+
+		// Distributed vector
+		vector_dist<3,float, part_prop > vd(0,box,bc,ghost);
+
+		auto it = vd.getGridIterator({k,k,k});
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			vd.add();
+
+			vd.getLastPos()[0] = key.get(0)*it.getSpacing(0);
+			vd.getLastPos()[1] = key.get(1)*it.getSpacing(1);
+			vd.getLastPos()[2] = key.get(2)*it.getSpacing(2);
+
+			// Fill some properties randomly
+
+			vd.getLastProp<0>() = 0.0;
+
+			++it;
+		}
+
+		vd.map();
+
+		// sync the ghost
+		vd.ghost_get<0>();
+
+		auto NN = vd.getCellList(1.3/k);
+		float a = 1.0f*k*k;
+
+		// run trough all the particles + ghost
+
+		auto it2 = vd.getDomainIterator();
+
+		while (it2.isNext())
+		{
+			// particle p
+			auto p = it2.get();
+			Point<3,float> xp = vd.getPos(p);
+
+			// Get an iterator over the neighborhood particles of p
+			auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(p)));
+
+			// For each neighborhood particle ...
+			while (Np.isNext())
+			{
+				auto q = Np.get();
+				Point<3,float> xq = vd.getPos(q);
+
+				float dist = xp.distance(xq);
+
+				if (dist < 0.05)
+					vd.getProp<0>(q) += a*(-dist*dist+1.0/k/k);
+
+				++Np;
+			}
+
+			++it2;
+		}
+
+		vd.ghost_put<add_,0>();
+
+		bool ret = true;
+		auto it3 = vd.getDomainIterator();
+
+		float constant = vd.getProp<0>(it3.get());
+		float eps = 0.001;
+
+		while (it3.isNext())
+		{
+			float constant2 = vd.getProp<0>(it3.get());
+			if (fabs((constant - constant2)/constant > eps))
+			{
+				std::cout << Point<3,float>(vd.getPos(it3.get())).toString() << "    " <<  constant2 << "    " << v_cl.getProcessUnitID() << std::endl;
+				ret = false;
+				break;
+			}
+
+			++it3;
+		}
+
+
+		BOOST_REQUIRE_EQUAL(ret,true);
+	}
+}
+
 #include "vector_dist_cell_list_tests.hpp"
 #include "vector_dist_NN_tests.hpp"
 

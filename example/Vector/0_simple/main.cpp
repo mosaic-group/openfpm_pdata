@@ -344,7 +344,7 @@ int main(int argc, char* argv[])
 	/*!
 	 * \page Vector_0_simple Vector 0 simple
 	 *
-	 * ## Finalize ## {#finalize}
+	 * ## Finalize ## {#finalize_e0_sim}
 	 *
 	 *  At the very end of the program we have always to de-initialize the library
 	 *
@@ -361,7 +361,7 @@ int main(int argc, char* argv[])
 	/*!
 	 * \page Vector_0_simple Vector 0 simple
 	 *
-	 * # Full code # {#code}
+	 * ## Full code ## {#code_e0_sim}
 	 *
 	 * \include Vector/0_simple/main.cpp
 	 *

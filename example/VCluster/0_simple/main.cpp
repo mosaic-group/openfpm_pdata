@@ -29,7 +29,6 @@ int main(int argc, char* argv[])
 	//
 	// Get the vcluster object and the number of processor
 	//
-
 	Vcluster & v_cl = create_vcluster();
 	long int N_prc = v_cl.getProcessingUnits();
 
@@ -37,7 +36,7 @@ int main(int argc, char* argv[])
 	// ### WIKI 3 ###
 	//
 	// We find the maximum of the processors rank, that should be the Number of
-	// processora minus one, only processor 0 print on terminal
+	// processor minus one, only processor 0 print on terminal
 	//
 
 	long int id = v_cl.getProcessUnitID();

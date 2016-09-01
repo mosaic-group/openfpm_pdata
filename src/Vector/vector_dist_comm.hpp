@@ -39,7 +39,7 @@ class vector_dist_comm
 	//! It map the processor id with the communication request into map procedure
 	openfpm::vector<size_t> p_map_req;
 
-	//! For each near processor, outgoing particle id and shift vector
+	//! For each near processor, outgoing particle id
 	openfpm::vector<openfpm::vector<size_t>> opart;
 
 	//! For each near processor, particle shift vector
@@ -54,14 +54,30 @@ class vector_dist_comm
 	//! Sending buffer for the ghost particles position
 	BHeapMemory g_pos_mem;
 
+	//! For each adjacent processor it store from which processor come from
+	openfpm::vector<size_t> prc_recv;
+
+	//! the same as prc_recv but for put
+	openfpm::vector<size_t> prc_recv_put;
+
+	//! Number of received elements
+	openfpm::vector<size_t> n_recv_ele;
+
 	//! For each adjacent processor it store the size of the receiving message in byte
 	openfpm::vector<size_t> recv_sz;
+
+	//! The same as recv_sz but for put
+	openfpm::vector<size_t> recv_sz_put;
 
 	//! For each adjacent processor it store the received message for ghost get
 	openfpm::vector<BHeapMemory> recv_mem_gg;
 
 	//! For each processor it store the received message for global map
 	openfpm::vector<BHeapMemory> recv_mem_gm;
+
+	//! Local ghost marker (across the ghost particles it mark from where we have the)
+	//! replicated ghost particles that are local
+	size_t lg_m;
 
 	/*! \brief It store for each processor the position and properties vector of the particles
 	 *
@@ -93,25 +109,24 @@ class vector_dist_comm
 	//! definition of the send vector for position
 	typedef openfpm::vector<Point<dim, St>, ExtPreAlloc<Memory>, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin , openfpm::grow_policy_identity> send_pos_vector;
 
+	//! Flags that indicate that the function createShiftBox() has been called
 	bool is_shift_box_created = false;
 
-	// this map is used to check if a combination is already present
+	//! this map is used to check if a combination is already present
 	std::unordered_map<size_t, size_t> map_cmb;
 
-	// The boxes touching the border of the domain are divided in groups (first vector)
-	// each group contain internal ghost coming from sub-domains of the same section
+	//! The boxes touching the border of the domain are divided in groups (first vector)
+	//! each group contain internal ghost coming from sub-domains of the same section
 	openfpm::vector_std<openfpm::vector_std<Box<dim, St>>>box_f;
 
-	// Store the sector for each group (previous vector)
+	//! Store the sector for each group (previous vector)
 	openfpm::vector_std<comb<dim>> box_cmb;
 
-	//
+	//! Id of the local particle to replicate for ghost_get
 	openfpm::vector<aggregate<size_t,size_t>> o_part_loc;
 
 	/*! \brief For every internal ghost box we create a structure that order such internal local ghost box in
 	 *         shift vectors
-	 *
-	 * \param shifts vectors
 	 *
 	 */
 	void createShiftBox()
@@ -156,10 +171,14 @@ class vector_dist_comm
 
 	/*! \brief Local ghost from labeled particles
 	 *
+	 * \param v_pos vector of particle positions
+	 * \param v_prp vector of particles properties
 	 *
 	 */
 	void local_ghost_from_opart(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp)
 	{
+		lg_m = v_prp.size();
+
 		// get the shift vectors
 		const openfpm::vector<Point<dim, St>> & shifts = dec.getShiftVectors();
 
@@ -183,7 +202,7 @@ class vector_dist_comm
 	 *
 	 * \param v_pos vector of particle positions
 	 * \param v_prp vector of particle properties
-	 * \g_m ghost marker
+	 * \param g_m ghost marker
 	 *
 	 */
 	void local_ghost_from_dec(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t g_m)
@@ -292,6 +311,8 @@ class vector_dist_comm
 		// Create the shift boxes
 		createShiftBox();
 
+		lg_m = v_prp.size();
+
 		if (box_f.size() == 0)
 			return;
 		else
@@ -335,6 +356,55 @@ class vector_dist_comm
 				s -= shifts.get(oshift.get(i).get(j));
 				g_pos_send.get(i).set(j, s);
 			}
+		}
+	}
+
+	/*! \brief This function fill the send buffer for ghost_put
+	 *
+	 * \tparam send_vector type used to send data
+	 * \tparam prp_object object containing only the properties to send
+	 * \tparam prp set of properties to send
+	 *
+	 * \param v_prp vector of particle properties
+	 * \param g_send_prp Send buffer to fill
+	 * \param prAlloc_prp Memory object for the send buffer
+	 * \param g_m ghost marker
+	 *
+	 */
+	template<typename send_vector, typename prp_object, int ... prp> void fill_send_ghost_put_prp_buf(openfpm::vector<prop> & v_prp, openfpm::vector<send_vector> & g_send_prp, ExtPreAlloc<Memory> * prAlloc_prp, size_t & g_m)
+	{
+		// create a number of send buffers equal to the near processors
+		// from which we received
+		g_send_prp.resize(prc_recv.size());
+		for (size_t i = 0; i < g_send_prp.size(); i++)
+		{
+			// set the preallocated memory to ensure contiguity
+			g_send_prp.get(i).setMemory(*prAlloc_prp);
+
+			// resize the sending vector (No allocation is produced)
+			g_send_prp.get(i).resize(n_recv_ele.get(i));
+		}
+
+		size_t accum = g_m;
+
+		// Fill the send buffer
+		for (size_t i = 0; i < prc_recv.size(); i++)
+		{
+			size_t j2 = 0;
+			for (size_t j = accum; j < accum + n_recv_ele.get(i); j++)
+			{
+				// source object type
+				typedef encapc<1, prop, typename openfpm::vector<prop>::layout_type> encap_src;
+				// destination object type
+				typedef encapc<1, prp_object, typename openfpm::vector<prp_object>::layout_type> encap_dst;
+
+				// Copy only the selected properties
+				object_si_d<encap_src, encap_dst, OBJ_ENCAP, prp...>(v_prp.get(j), g_send_prp.get(i).get(j2));
+
+				j2++;
+			}
+
+			accum = accum + n_recv_ele.get(i);
 		}
 	}
 
@@ -530,8 +600,8 @@ class vector_dist_comm
 			{
 				if ((long int) p_id != -1)
 				{
-					prc_sz.get(p_id)++;lbl_p
-					.get(p_id).add(key);
+					prc_sz.get(p_id)++;
+					lbl_p.get(p_id).add(key);
 					opart.add(key);
 				}
 				else
@@ -546,7 +616,7 @@ class vector_dist_comm
 		}
 	}
 
-	/*! \brief This function process the receiced data for the properties and populate the ghost
+	/*! \brief This function process the received data for the properties and populate the ghost
 	 *
 	 * \tparam send_vector type used to send data
 	 * \tparam prp_object object containing only the properties to send
@@ -558,6 +628,8 @@ class vector_dist_comm
 	 */
 	template<typename send_vector, typename prp_object, int ... prp> void process_received_ghost_prp(openfpm::vector<prop> & v_prp, size_t & g_m)
 	{
+		n_recv_ele.resize(recv_mem_gg.size());
+
 		// Mark the ghost part
 		g_m = v_prp.size();
 
@@ -575,11 +647,71 @@ class vector_dist_comm
 
 			v2.setMemory(*ptr1);
 
+			// resize with the number of elements and store the number
+			// or received elements
+			v2.resize(n_ele);
+			n_recv_ele.get(i) = n_ele;
+
+			// Add the ghost particle
+			v_prp.template add_prp<prp_object, PtrMemory, openfpm::grow_policy_identity, prp...>(v2);
+		}
+	}
+
+
+	/*! \brief This function process the received data from ghost put
+	 *
+	 * \tparam op operation to do
+	 * \tparam send_vector type used to send data
+	 * \tparam prp_object object containing only the properties to send
+	 * \tparam prp set of properties to send
+	 *
+	 * \param v_prp vector of particle properties
+	 * \param g_m ghost marker
+	 *
+	 */
+	template<template<typename,typename> class op, typename send_vector, typename prp_object, int ... prp> void process_received_put_ghost_prp(openfpm::vector<prop> & v_prp, size_t g_m)
+	{
+		// Process the received data (recv_mem_gg != 0 if you have data)
+		for (size_t i = 0; i <  recv_sz_put.size(); i++)
+		{
+			// calculate the number of received elements
+			size_t n_ele = recv_sz_put.get(i) / sizeof(prp_object);
+
+			// add the received particles to the vector
+			PtrMemory * ptr1 = new PtrMemory(recv_mem_gg.get(i).getPointer(), recv_sz_put.get(i));
+
+			// create vector representation to a piece of memory already allocated
+			openfpm::vector<prp_object, PtrMemory, typename memory_traits_lin<prp_object>::type, memory_traits_lin , openfpm::grow_policy_identity> v2;
+
+			v2.setMemory(*ptr1);
+
 			// resize with the number of elements
 			v2.resize(n_ele);
 
 			// Add the ghost particle
-			v_prp.template add_prp<prp_object, PtrMemory, openfpm::grow_policy_identity, prp...>(v2);
+			v_prp.template merge_prp<op,prp_object, PtrMemory, openfpm::grow_policy_identity, prp...>(v2,opart.get(i));
+		}
+
+		// process also the local replicated particles
+
+		size_t i2 = 0;
+
+#ifdef SE_CLASS1
+
+		if (v_prp.size() - lg_m != o_part_loc.size())
+			std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " v_prp.size() - lg_m = " << v_prp.size() - lg_m << " != " << o_part_loc.size() << std::endl;
+
+#endif
+
+		for (size_t i = lg_m ; i < v_prp.size() ; i++)
+		{
+			auto dst = v_prp.get(o_part_loc.template get<0>(i2));
+			auto src = v_prp.get(i);
+			copy_cpu_encap_encap_op_prp<op,decltype(v_prp.get(0)),decltype(v_prp.get(0)),prp...> cp(src,dst);
+
+			boost::mpl::for_each_ref< boost::mpl::range_c<int,0,sizeof...(prp)> >(cp);
+
+			i2++;
 		}
 	}
 
@@ -755,6 +887,26 @@ class vector_dist_comm
 		}
 	}
 
+	/*! \brief Calculate send buffers total size and allocation
+	 *
+	 * \tparam prp_object object containing only the properties to send
+	 *
+	 * \param v_pos vector of particle positions
+	 * \param v_prp vector of particle properties
+	 * \param size_byte_prp total size for the property buffer
+	 * \param size_byte_pos total size for the position buffer
+	 *
+	 */
+	template<typename prp_object> void calc_send_ghost_put_buf(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & size_byte_prp, size_t & size_byte_pos)
+	{
+		// Calculate the total size required for the sending buffer
+		for (size_t i = 0; i < recv_sz.size(); i++)
+		{
+			size_t alloc_ele = openfpm::vector<prp_object, HeapMemory, typename memory_traits_lin<prp_object>::type, memory_traits_lin , openfpm::grow_policy_identity>::calculateMem(n_recv_ele.get(i), 0);
+			size_byte_prp += alloc_ele;
+		}
+	}
+
 	/*! \brief Label the particles
 	 *
 	 * It count the number of particle to send to each processors and save its ids
@@ -816,12 +968,45 @@ class vector_dist_comm
 	 * \param ptr void pointer parameter for additional data to pass to the call-back
 	 *
 	 */
+	static void * msg_alloc_ghost_put(size_t msg_i, size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
+	{
+		vector_dist_comm<dim, St, prop, Decomposition, Memory> * v = static_cast<vector_dist_comm<dim, St, prop, Decomposition, Memory> *>(ptr);
+
+		v->recv_sz_put.resize(v->dec.getNNProcessors());
+		v->recv_mem_gg.resize(v->dec.getNNProcessors());
+		v->prc_recv_put.resize(v->dec.getNNProcessors());
+
+		// Get the local processor id
+		size_t lc_id = v->dec.ProctoID(i);
+
+		// resize the receive buffer
+		v->recv_mem_gg.get(lc_id).resize(msg_i);
+		v->recv_sz_put.get(lc_id) = msg_i;
+
+		// save the processor id
+		v->prc_recv_put.get(lc_id) = i;
+
+		return v->recv_mem_gg.get(lc_id).getPointer();
+	}
+
+	/*! \brief Call-back to allocate buffer to receive incoming elements (particles)
+	 *
+	 * \param msg_i message size required to receive from i
+	 * \param total_msg message size to receive from all the processors
+	 * \param total_p the total number of processor want to communicate with you
+	 * \param i processor id
+	 * \param ri request id (it is an id that goes from 0 to total_p, and is unique
+	 *           every time message_alloc is called)
+	 * \param ptr void pointer parameter for additional data to pass to the call-back
+	 *
+	 */
 	static void * msg_alloc_ghost_get(size_t msg_i, size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
 	{
 		vector_dist_comm<dim, St, prop, Decomposition, Memory> * v = static_cast<vector_dist_comm<dim, St, prop, Decomposition, Memory> *>(ptr);
 
 		v->recv_sz.resize(v->dec.getNNProcessors());
 		v->recv_mem_gg.resize(v->dec.getNNProcessors());
+		v->prc_recv.resize(v->dec.getNNProcessors());
 
 		// Get the local processor id
 		size_t lc_id = v->dec.ProctoID(i);
@@ -830,9 +1015,11 @@ class vector_dist_comm
 		v->recv_mem_gg.get(lc_id).resize(msg_i);
 		v->recv_sz.get(lc_id) = msg_i;
 
+		// save the processor id
+		v->prc_recv.get(lc_id) = i;
+
 		return v->recv_mem_gg.get(lc_id).getPointer();
 	}
-
 
 	/*! \brief Call-back to allocate buffer to receive incoming elements (particles)
 	 *
@@ -941,7 +1128,7 @@ public:
 	template<int ... prp> inline void ghost_get_(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & g_m, size_t opt = WITH_POSITION)
 	{
 		// Unload receive buffer
-		for (size_t i = 0 ; i < recv_mem_gg.size() ; i++)
+		for (size_t i = 0 ; i < recv_sz.size() ; i++)
 			recv_sz.get(i) = 0;
 
 		// Sending property object
@@ -1192,6 +1379,8 @@ public:
 	 *
 	 * \param vc vector to copy
 	 *
+	 * \return iteself
+	 *
 	 */
 	vector_dist_comm<dim,St,prop,Decomposition,Memory> & operator=(const vector_dist_comm<dim,St,prop,Decomposition,Memory> & vc)
 	{
@@ -1204,12 +1393,56 @@ public:
 	 *
 	 * \param vc vector to copy
 	 *
+	 * \return itself
+	 *
 	 */
 	vector_dist_comm<dim,St,prop,Decomposition,Memory> & operator=(vector_dist_comm<dim,St,prop,Decomposition,Memory> && vc)
 	{
 		dec.swap(vc.dec);
 
 		return *this;
+	}
+
+	/*! \brief Ghost put
+	 *
+	 * \tparam op operation to apply
+	 * \tparam prp set of properties
+	 *
+	 * \param v_pos vector of particle positions
+	 * \param v_prp vector od particle properties
+	 * \param g_m ghost marker
+	 *
+	 */
+	template<template<typename,typename> class op, int ... prp> void ghost_put_(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & g_m)
+	{
+		// Sending property object
+		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;
+
+		// send vector for each processor
+		typedef openfpm::vector<prp_object, ExtPreAlloc<Memory>, typename memory_traits_lin<prp_object>::type, memory_traits_lin, openfpm::grow_policy_identity> send_vector;
+
+		// Calculate memory and allocation for the send buffers
+
+		// Total size
+		size_t size_byte_prp = 0;
+		size_t size_byte_pos = 0;
+
+		calc_send_ghost_put_buf<prp_object>(v_pos,v_prp,size_byte_prp, size_byte_pos);
+
+		// Create memory for the send buffer
+
+		g_prp_mem.resize(size_byte_prp);
+
+		// Create and fill send buffer for particle properties
+
+		ExtPreAlloc<Memory> * prAlloc_prp = new ExtPreAlloc<Memory>(size_byte_prp, g_prp_mem);
+
+		openfpm::vector<send_vector> g_send_prp;
+		fill_send_ghost_put_prp_buf<send_vector, prp_object, prp...>(v_prp,g_send_prp, prAlloc_prp,g_m);
+
+		// Send/receive the particle properties information
+		v_cl.sendrecvMultipleMessagesNBX(prc_recv, g_send_prp, msg_alloc_ghost_put, this);
+		process_received_put_ghost_prp<op,send_vector, prp_object, prp...>(v_prp,g_m);
 	}
 };
 
