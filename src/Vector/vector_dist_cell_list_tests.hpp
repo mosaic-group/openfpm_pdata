@@ -341,6 +341,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_sym_cell_list_test )
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 21;
 
+	if (create_vcluster().getProcessingUnits() > 48)
+		return;
+
 	print_test( "Testing vector symmetric cell-list k<=",k);
 
 	// 3D test
@@ -497,7 +500,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_sym_cell_list_test )
 
 BOOST_AUTO_TEST_CASE( vector_dist_sym_verlet_list_test )
 {
-	if (create_vcluster().getProcessingUnits() > 12)
+	if (create_vcluster().getProcessingUnits() > 48)
 		return;
 
 	long int k = 4096*create_vcluster().getProcessingUnits();

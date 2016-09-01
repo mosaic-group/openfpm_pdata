@@ -1,15 +1,16 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [0.5.1] - End of August
+## [0.5.1] - Mid september
 
 ### Added
-- Symmetric cell list
-- Verlet list
+- ghost_put support for particles
 - Full-Support for complex property on vector-dist (Serialization) + example
 
 ### Fixed
-- Energy calculation in md example (double counting potential energy)
+- Installation in case of MPI preinstalled PETSC fail
+- vector_dist with negative domain
+- Grid 1D fixing
 
 ### Changed
 
