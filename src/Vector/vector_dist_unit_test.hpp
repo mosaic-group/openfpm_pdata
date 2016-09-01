@@ -1585,8 +1585,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 	if (v_cl.getProcessingUnits() > 48)
 		return;
 
-	print_test("Testing 3D periodic vector with ghost buffering k=",k);
-	BOOST_TEST_CHECKPOINT( "Testing 3D periodic with ghost buffering k=" << k );
+	print_test("Testing 3D periodic ghost put k=",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic ghost put k=" << k );
 
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
