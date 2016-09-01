@@ -1062,7 +1062,7 @@ public:
 	 *
 	 */
 	vector_dist_comm(Decomposition && dec)
-	:v_cl(create_vcluster),dec(dec)
+	:v_cl(create_vcluster()),dec(dec)
 	{
 
 	}

@@ -1676,7 +1676,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 		while (it3.isNext())
 		{
 			float constant2 = vd.getProp<0>(it3.get());
-			if (fabs((constant - constant2)/constant > eps))
+			if (fabs(constant - constant2)/constant > eps)
 			{
 				std::cout << Point<3,float>(vd.getPos(it3.get())).toString() << "    " <<  constant2 << "/" << constant << "    " << v_cl.getProcessUnitID() << std::endl;
 				ret = false;
