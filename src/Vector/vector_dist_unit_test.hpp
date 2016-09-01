@@ -1608,7 +1608,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 		// Distributed vector
 		vector_dist<3,float, part_prop > vd(0,box,bc,ghost);
 
-		auto it = vd.getGridIterator({k,k,k});
+		auto it = vd.getGridIterator({(size_t)k,(size_t)k,(size_t)k});
 
 		while (it.isNext())
 		{
@@ -1656,7 +1656,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 
 				float dist = xp.distance(xq);
 
-				if (dist < 0.05)
+				if (dist < 1.0/k)
 					vd.getProp<0>(q) += a*(-dist*dist+1.0/k/k);
 
 				++Np;
@@ -1678,7 +1678,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 			float constant2 = vd.getProp<0>(it3.get());
 			if (fabs((constant - constant2)/constant > eps))
 			{
-				std::cout << Point<3,float>(vd.getPos(it3.get())).toString() << "    " <<  constant2 << "    " << v_cl.getProcessUnitID() << std::endl;
+				std::cout << Point<3,float>(vd.getPos(it3.get())).toString() << "    " <<  constant2 << "/" << constant << "    " << v_cl.getProcessUnitID() << std::endl;
 				ret = false;
 				break;
 			}

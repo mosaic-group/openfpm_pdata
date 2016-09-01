@@ -177,8 +177,6 @@ class vector_dist_comm
 	 */
 	void local_ghost_from_opart(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp)
 	{
-		lg_m = v_prp.size();
-
 		// get the shift vectors
 		const openfpm::vector<Point<dim, St>> & shifts = dec.getShiftVectors();
 
