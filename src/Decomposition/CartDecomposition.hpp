@@ -123,7 +123,7 @@ protected:
 
 	//! Structure that decompose your structure into cell without creating them
 	//! useful to convert positions to CellId or sub-domain id in this case
-	CellDecomposer_sm<dim, T> cd;
+	CellDecomposer_sm<dim, T, shift<dim,T>> cd;
 
 	//! rectangular domain to decompose
 	::Box<dim,T> domain;
@@ -137,25 +137,20 @@ protected:
 	//! Create distribution
 	Distribution dist;
 
-	// Smallest subdivision on each direction
+	//! Smallest subdivision on each direction
 	::Box<dim,T> ss_box;
 
+	//! Processor bounding box
 	::Box<dim,T> bbox;
 
-	// reference counter of the object in case is shared between object
+	//! reference counter of the object in case is shared between object
 	long int ref_cnt;
 
-	// ghost info
+	//! ghost info
 	Ghost<dim,T> ghost;
 
-	// Boundary condition info
+	//! Boundary condition info
 	size_t bc[dim];
-
-	// Heap memory receiver
-	HeapMemory hp_recv;
-
-	// Receive counter
-	size_t recv_cnt = 0;
 
 	/*! \brief It convert the box from the domain decomposition into sub-domain
 	 *

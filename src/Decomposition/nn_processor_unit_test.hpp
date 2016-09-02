@@ -10,151 +10,192 @@
 
 #include "VCluster.hpp"
 
+void create_decomposition2x2(openfpm::vector<openfpm::vector<long unsigned int>> & box_nn_processor, openfpm::vector<SpaceBox<2,float>> & sub_domains)
+{
+	Vcluster & v_cl = create_vcluster();
+
+	box_nn_processor.add();
+
+	if (v_cl.getProcessUnitID() == 0)
+	{
+		box_nn_processor.get(0).add(1);
+		box_nn_processor.get(0).add(2);
+		box_nn_processor.get(0).add(3);
+
+		sub_domains.add(Box<2,float>({0.0,0.0},{0.5,0.5}));
+	}
+	else if (v_cl.getProcessUnitID() == 1)
+	{
+		box_nn_processor.get(0).add(0);
+		box_nn_processor.get(0).add(2);
+		box_nn_processor.get(0).add(3);
+
+		sub_domains.add(Box<2,float>({0.5,0.0},{1.0,0.5}));
+	}
+	else if (v_cl.getProcessUnitID() == 2)
+	{
+		box_nn_processor.get(0).add(1);
+		box_nn_processor.get(0).add(0);
+		box_nn_processor.get(0).add(3);
+
+		sub_domains.add(Box<2,float>({0.0,0.5},{0.5,1.0}));
+	}
+	else if (v_cl.getProcessUnitID() == 3)
+	{
+		box_nn_processor.get(0).add(1);
+		box_nn_processor.get(0).add(2);
+		box_nn_processor.get(0).add(0);
+
+		sub_domains.add(Box<2,float>({0.5,0.5},{1.0,1.0}));
+	}
+}
 
 BOOST_AUTO_TEST_SUITE( nn_processor_test )
 
 BOOST_AUTO_TEST_CASE( nn_processor_np_test)
 {
-	constexpr unsigned int dim = 2;
-	typedef float T;
+	Vcluster & v_cl = create_vcluster();
 
-	// Adjacent processor for each sub-domain
-	openfpm::vector<openfpm::vector<long unsigned int> > box_nn_processor;
+	/*!
+	 *
+	 * We test this situation
+	 *
+	 * \verbatim
+		+-------+-------+
+		|       |       |
+		|   0   |   1   |
+		|       |       |
+		|       |       |
+		+---------------+
+		|       |       |
+		|   2   |   3   |
+		|       |       |
+		|       |       |
+		+-------+-------+
 
-	// Vcluster
-	Vcluster & v_cl = *global_v_cluster;
+	 * \endverbatim
+	 *
+	 *
+	 */
 
-	const size_t bc[dim] = {NON_PERIODIC,NON_PERIODIC};
+	if (v_cl.getProcessingUnits() != 4)
+		return;
 
-	SpaceBox<dim,float> domain({0.0,0.0},{1.0,1.0});
+	openfpm::vector<openfpm::vector<long unsigned int>> box_nn_processor;
+	openfpm::vector<SpaceBox<2,float>> sub_domains;
 
-	size_t sz[dim] = {8,8};
-	//! Structure that store the cartesian grid information
-	grid_sm<dim,void> gr(sz);
+	create_decomposition2x2(box_nn_processor,sub_domains);
 
-	CellDecomposer_sm<dim,T> cd;
-	cd.setDimensions(domain,sz,0);
-
-	//! Box Spacing
-	T spacing[dim];
-
-	// Calculate the total number of box and and the spacing
-	// on each direction
-	// Get the box containing the domain
-	SpaceBox<2,T> bs = domain.getBox();
-
-	//! the set of all local sub-domain as vector
-	openfpm::vector<SpaceBox<dim,T>> sub_domains;
-
-	/////////// From Cart decomposition ///////////
-
-	for (unsigned int i = 0; i < dim ; i++)
-	{
-		// Calculate the spacing
-		spacing[i] = (bs.getHigh(i) - bs.getLow(i)) / gr.size(i);
-	}
-
-	// Here we use METIS
-	// Create a cartesian grid graph
-	CartesianGraphFactory<dim,Graph_CSR<nm_part_v,nm_part_e>> g_factory_part;
-
-	// the graph has only non perdiodic boundary conditions
-	size_t bc_o[dim];
-	for (size_t i = 0 ; i < dim ; i++)
-		bc_o[i] = NON_PERIODIC;
-
-	// sub-sub-domain graph
-	Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.template construct<NO_EDGE,T,2-1>(gr.getSize(),domain,bc_o);
-
-	// Get the number of processing units
-	size_t Np = v_cl.getProcessingUnits();
-
-	// Get the processor id
-	long int p_id = v_cl.getProcessUnitID();
-
-	// Convert the graph to metis
-	Metis<Graph_CSR<nm_part_v,nm_part_e>> met(gp,Np);
-
-	// decompose
-	met.decompose<nm_part_v::id>();
-
-	// Optimize the decomposition creating bigger spaces
-	// And reducing Ghost over-stress
-	dec_optimizer<2,Graph_CSR<nm_part_v,nm_part_e>> d_o(gp,gr.getSize());
-
-	// set of Boxes produced by the decomposition optimizer
-	openfpm::vector<::Box<2,size_t>> loc_box;
-
-	// optimize the decomposition
-	d_o.template optimize<nm_part_v::sub_id,nm_part_v::id>(gp,p_id,loc_box,box_nn_processor,bc);
-
-	// Initialize ss_box and bbox
-	if (loc_box.size() >= 0)
-	{
-		SpaceBox<dim,size_t> sub_dc = loc_box.get(0);
-		SpaceBox<dim,T> sub_d(sub_dc);
-		sub_d.mul(spacing);
-		sub_d.expand(spacing);
-
-		// Fixing sub-domains to cover all the domain
-
-		// Fixing sub_d
-		// if (loc_box) is a the boundary we have to ensure that the box span the full
-		// domain (avoiding rounding off error)
-		for (size_t i = 0 ; i < dim ; i++)
-		{
-			if (sub_dc.getHigh(i) == cd.getGrid().size(i) - 1)
-			{
-				sub_d.setHigh(i,domain.getHigh(i));
-			}
-		}
-
-		// add the sub-domain
-		sub_domains.add(sub_d);
-	}
-
-	// convert into sub-domain
-	for (size_t s = 1 ; s < loc_box.size() ; s++)
-	{
-		SpaceBox<dim,size_t> sub_dc = loc_box.get(s);
-		SpaceBox<dim,T> sub_d(sub_dc);
-
-		// re-scale and add spacing (the end is the starting point of the next domain + spacing)
-		sub_d.mul(spacing);
-		sub_d.expand(spacing);
-
-		// Fixing sub-domains to cover all the domain
-
-		// Fixing sub_d
-		// if (loc_box) is a the boundary we have to ensure that the box span the full
-		// domain (avoiding rounding off error)
-		for (size_t i = 0 ; i < 2 ; i++)
-		{
-			if (sub_dc.getHigh(i) == cd.getGrid().size(i) - 1)
-			{
-				sub_d.setHigh(i,domain.getHigh(i));
-			}
-		}
-
-		// add the sub-domain
-		sub_domains.add(sub_d);
-
-	}
-
-	nn_prcs<dim,T> nnp(v_cl);
+	nn_prcs<2,float> nnp(v_cl);
 	nnp.create(box_nn_processor, sub_domains);
 
-	if (v_cl.getProcessingUnits() == 1)
+	BOOST_REQUIRE_EQUAL(nnp.getNNProcessors(),3);
+
+	if (v_cl.getProcessUnitID() == 0)
 	{
-		BOOST_REQUIRE(nnp.getNNProcessors() == 0);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(1),1);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(2),1);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(3),1);
+
+		const openfpm::vector< ::Box<2,float> > & nsubs1 = nnp.getNearSubdomains(1);
+		const openfpm::vector< ::Box<2,float> > & nsubs2 = nnp.getNearSubdomains(2);
+		const openfpm::vector< ::Box<2,float> > & nsubs3 = nnp.getNearSubdomains(3);
+
+		SpaceBox<2,float> b1_a = nsubs1.get(0);
+		SpaceBox<2,float> b2_a = nsubs2.get(0);
+		SpaceBox<2,float> b3_a = nsubs3.get(0);
+
+
+		SpaceBox<2,float> b1_b = Box<2,float>({0.5,0.0},{1.0,0.5});
+		SpaceBox<2,float> b2_b = Box<2,float>({0.0,0.5},{0.5,1.0});
+		SpaceBox<2,float> b3_b = Box<2,float>({0.5,0.5},{1.0,1.0});
+
+		bool ret1 = b1_a == b1_b;
+		bool ret2 = b2_a == b2_b;
+		bool ret3 = b3_a == b3_b;
+
+		BOOST_REQUIRE_EQUAL(ret1,true);
+		BOOST_REQUIRE_EQUAL(ret2,true);
+		BOOST_REQUIRE_EQUAL(ret3,true);
 	}
-	else if (v_cl.getProcessingUnits() == 2)
+	else if (v_cl.getProcessUnitID() == 1)
 	{
-		BOOST_REQUIRE(nnp.getNNProcessors() == 1);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(0),1);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(2),1);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(3),1);
+
+		const openfpm::vector< ::Box<2,float> > & nsubs1 = nnp.getNearSubdomains(0);
+		const openfpm::vector< ::Box<2,float> > & nsubs2 = nnp.getNearSubdomains(2);
+		const openfpm::vector< ::Box<2,float> > & nsubs3 = nnp.getNearSubdomains(3);
+
+		SpaceBox<2,float> b1_a = nsubs1.get(0);
+		SpaceBox<2,float> b2_a = nsubs2.get(0);
+		SpaceBox<2,float> b3_a = nsubs3.get(0);
+
+
+		SpaceBox<2,float> b1_b = Box<2,float>({0.0,0.0},{0.5,0.5});
+		SpaceBox<2,float> b2_b = Box<2,float>({0.0,0.5},{0.5,1.0});
+		SpaceBox<2,float> b3_b = Box<2,float>({0.5,0.5},{1.0,1.0});
+
+		bool ret1 = b1_a == b1_b;
+		bool ret2 = b2_a == b2_b;
+		bool ret3 = b3_a == b3_b;
+
+		BOOST_REQUIRE_EQUAL(ret1,true);
+		BOOST_REQUIRE_EQUAL(ret2,true);
+		BOOST_REQUIRE_EQUAL(ret3,true);
 	}
-	else
+	else if (v_cl.getProcessUnitID() == 2)
 	{
-		BOOST_REQUIRE(nnp.getNNProcessors() >= 1);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(1),1);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(0),1);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(3),1);
+
+		const openfpm::vector< ::Box<2,float> > & nsubs1 = nnp.getNearSubdomains(1);
+		const openfpm::vector< ::Box<2,float> > & nsubs2 = nnp.getNearSubdomains(0);
+		const openfpm::vector< ::Box<2,float> > & nsubs3 = nnp.getNearSubdomains(3);
+
+		SpaceBox<2,float> b1_a = nsubs1.get(0);
+		SpaceBox<2,float> b2_a = nsubs2.get(0);
+		SpaceBox<2,float> b3_a = nsubs3.get(0);
+
+		SpaceBox<2,float> b1_b = Box<2,float>({0.5,0.0},{1.0,0.5});
+		SpaceBox<2,float> b2_b = Box<2,float>({0.0,0.0},{0.5,0.5});
+		SpaceBox<2,float> b3_b = Box<2,float>({0.5,0.5},{1.0,1.0});
+
+		bool ret1 = b1_a == b1_b;
+		bool ret2 = b2_a == b2_b;
+		bool ret3 = b3_a == b3_b;
+
+		BOOST_REQUIRE_EQUAL(ret1,true);
+		BOOST_REQUIRE_EQUAL(ret2,true);
+		BOOST_REQUIRE_EQUAL(ret3,true);
+	}
+	else if (v_cl.getProcessUnitID() == 3)
+	{
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(0),1);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(1),1);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(2),1);
+
+		const openfpm::vector< ::Box<2,float> > & nsubs1 = nnp.getNearSubdomains(0);
+		const openfpm::vector< ::Box<2,float> > & nsubs2 = nnp.getNearSubdomains(1);
+		const openfpm::vector< ::Box<2,float> > & nsubs3 = nnp.getNearSubdomains(2);
+
+		SpaceBox<2,float> b1_a = nsubs1.get(0);
+		SpaceBox<2,float> b2_a = nsubs2.get(0);
+		SpaceBox<2,float> b3_a = nsubs3.get(0);
+
+		SpaceBox<2,float> b1_b = Box<2,float>({0.0,0.0},{0.5,0.5});
+		SpaceBox<2,float> b2_b = Box<2,float>({0.5,0.0},{1.0,0.5});
+		SpaceBox<2,float> b3_b = Box<2,float>({0.0,0.5},{0.5,1.0});
+
+		bool ret1 = b1_a == b1_b;
+		bool ret2 = b2_a == b2_b;
+		bool ret3 = b3_a == b3_b;
+
+		BOOST_REQUIRE_EQUAL(ret1,true);
+		BOOST_REQUIRE_EQUAL(ret2,true);
+		BOOST_REQUIRE_EQUAL(ret3,true);
 	}
 }
 
@@ -169,7 +210,7 @@ BOOST_AUTO_TEST_CASE( nn_processor_box_periodic_test)
 	const size_t bc[dim] = {PERIODIC,PERIODIC,PERIODIC};
 
 	// Vcluster
-	Vcluster & v_cl = *global_v_cluster;
+	Vcluster & v_cl = create_vcluster();
 
 	Ghost<dim,T> ghost(0.01);
 
@@ -177,7 +218,7 @@ BOOST_AUTO_TEST_CASE( nn_processor_box_periodic_test)
 
 	nn_prcs<dim,T> nnp(v_cl);
 
-	std::unordered_map<size_t, N_box<dim,T>> & nnp_sub = nnp.get_nn_processor_subdomains();
+/*	std::unordered_map<size_t, N_box<dim,T>> & nnp_sub = nnp.get_nn_processor_subdomains();
 	openfpm::vector<size_t> & nnp_np = nnp.get_nn_processors();
 
 	// we add the boxes
@@ -208,19 +249,19 @@ BOOST_AUTO_TEST_CASE( nn_processor_box_periodic_test)
 	for (size_t i = 0; i < dim; i++)
 	{
 		nnp_np.add(i+1);
-	}
+	}*/
 
 	// check that nn_processor contain the correct boxes
 
-//	nnp.write("nnp_output_before");
-
 	nnp.applyBC(domain,ghost,bc);
 
-//	nnp.write("nnp_output_after");
+	if (v_cl.getProcessUnitID() == 0)
+	{
 
-	BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(nnp.IDtoProc(2)).size(),12ul);
-	BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(nnp.IDtoProc(0)).size(),8ul*8ul);
-	BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(nnp.IDtoProc(1)).size(),12ul*4ul);
+	}
+//	BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(nnp.IDtoProc(2)).size(),12ul);
+//	BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(nnp.IDtoProc(0)).size(),8ul*8ul);
+//	BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(nnp.IDtoProc(1)).size(),12ul*4ul);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

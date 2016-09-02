@@ -97,7 +97,7 @@ void print_test(std::string test, size_t sz)
 		std::cout << test << " " << sz << "\n";
 }
 
-BOOST_AUTO_TEST_CASE( vector_dist_ghost )
+void Test2D_ghost(Box<2,float> & box)
 {
 	// Communication object
 	Vcluster & v_cl = create_vcluster();
@@ -111,7 +111,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 
 	//! [Create a vector of elements distributed on a grid like way]
 
-	Box<2,float> box({0.0,0.0},{1.0,1.0});
 	size_t g_div[]= {sz,sz};
 
 	// number of particles
@@ -134,7 +133,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 	grid_sm<2,void> g_info(g_div);
 
 	// Calculate the grid spacing
-	Point<2,float> spacing = box.getP2();
+	Point<2,float> spacing = box.getP2() - box.getP1();
 	spacing = spacing / g_div;
 
 	// middle spacing
@@ -162,8 +161,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 
 		// set the particle position
 
-		vd.getPos(key_v)[0] = key.get(0) * spacing[0] + m_spacing[0];
-		vd.getPos(key_v)[1] = key.get(1) * spacing[1] + m_spacing[1];
+		vd.getPos(key_v)[0] = key.get(0) * spacing[0] + m_spacing[0] + box.getLow(0);
+		vd.getPos(key_v)[1] = key.get(1) * spacing[1] + m_spacing[1] + box.getLow(1);
 
 		cobj++;
 
@@ -253,19 +252,24 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 		BOOST_REQUIRE(n_part != 0);
 	}
 
-    CellDecomposer_sm<2,float> cd(SpaceBox<2,float>(box),g_div,0);
+    CellDecomposer_sm<2,float,shift<2,float>> cd(SpaceBox<2,float>(box),g_div,0);
 
 	for (size_t i = 0 ; i < vb.size() ; i++)
 	{
 		// Calculate how many particle should be in the box
 		size_t n_point = cd.getGridPoints(dec.getEGhostBox(i)).getVolumeKey();
 
-		if (n_point != vb.get(i))
-		{
-			std::cout << n_point << "  " << dec.getEGhostBoxProcessor(i) << "  " << v_cl.getProcessUnitID() << dec.getEGhostBox(i).toString() << "\n";
-		}
-		//BOOST_REQUIRE_EQUAL(n_point,vb.get(i));
+		BOOST_REQUIRE_EQUAL(n_point,vb.get(i));
 	}
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_ghost )
+{
+	Box<2,float> box({0.0,0.0},{1.0,1.0});
+	Test2D_ghost(box);
+
+	Box<2,float> box2({-1.0,-1.0},{2.5,2.5});
+	Test2D_ghost(box2);
 }
 
 void print_test_v(std::string test, size_t sz)
@@ -952,7 +956,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_out_of_bound_policy )
 	BOOST_REQUIRE_EQUAL(cnt_l,100-v_cl.getProcessingUnits());
 }
 
-BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
+void Test_interacting(Box<3,float> & box)
 {
 	Vcluster & v_cl = create_vcluster();
 
@@ -963,7 +967,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 	// create the random generator engine
 	std::srand(v_cl.getProcessUnitID());
     std::default_random_engine eg;
-    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+    std::uniform_real_distribution<float> ud(-0.5f, 0.5f);
 
 	size_t nsz[] = {0,32,4};
 	nsz[0] = 65536 * v_cl.getProcessingUnits();
@@ -976,8 +980,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 		size_t k = nsz[i];
 
 		BOOST_TEST_CHECKPOINT( "Testing 3D random walk interacting particles vector k=" << k );
-
-		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 
 		// Boundary conditions
 		size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
@@ -1030,7 +1032,12 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 
 			vd.map();
 
+			vd.write("Without_ghost");
+
 			vd.ghost_get<0>();
+
+			vd.write("With_ghost");
+			vd.getDecomposition().write("With_dec_ghost");
 
 			// get the cell list with a cutoff radius
 
@@ -1080,10 +1087,17 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 			size_t cnt = total_n_part_lc(vd,bc);
 
 			BOOST_REQUIRE_EQUAL((size_t)k,cnt);
-
-
 		}
 	}
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
+{
+	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Test_interacting(box);
+
+	Box<3,float> box2({-0.5,-0.5,-0.5},{0.5,0.5,0.5});
+	Test_interacting(box2);
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_grid_iterator )

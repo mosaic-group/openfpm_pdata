@@ -169,13 +169,13 @@ protected:
 					switch (cmbs[j][k])
 					{
 					case 1:
-						shifts.get(cmbs[j].lin()).template get<0>()[k] = -domain.getHigh(k);
+						shifts.get(cmbs[j].lin()).template get<0>()[k] = -(domain.getHigh(k) - domain.getLow(k));
 						break;
 					case 0:
 						shifts.get(cmbs[j].lin()).template get<0>()[k] = 0;
 						break;
 					case -1:
-						shifts.get(cmbs[j].lin()).template get<0>()[k] = domain.getHigh(k);
+						shifts.get(cmbs[j].lin()).template get<0>()[k] = (domain.getHigh(k) - domain.getLow(k));
 						break;
 					}
 				}

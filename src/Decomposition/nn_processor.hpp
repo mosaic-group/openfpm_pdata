@@ -28,21 +28,21 @@ class nn_prcs
 	//! List of adjacent processors
 	openfpm::vector<size_t> nn_processors;
 
-	// for each near processor store the sub-domains of the near processors
+	//! for each near processor store the sub-domains of the near processors
 	std::unordered_map<size_t, N_box<dim,T>> nn_processor_subdomains;
 
-	// when we add new boxes, are added here
+	//! when we add new boxes, are added here
 	std::unordered_map<size_t, N_box<dim,T>> nn_processor_subdomains_tmp;
 
-	// contain the same information as the member boxes with the difference that
-	// instead of the Box itself, it contain the sub-domain id in the list of the
-	// local sub-domains
+	//! contain the same information as the member boxes with the difference that
+	//! instead of the Box itself, it contain the sub-domain id in the list of the
+	//! local sub-domains
 	openfpm::vector<openfpm::vector<size_t>> proc_adj_box;
 
 	//! contain the set of sub-domains sent to the other processors
 	openfpm::vector< openfpm::vector< ::SpaceBox<dim,T>> > boxes;
 
-	// Receive counter
+	//! Receive counter
 	size_t recv_cnt;
 
 	//! applyBC function is suppose to be called only one time
