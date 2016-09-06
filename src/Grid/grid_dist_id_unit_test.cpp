@@ -390,11 +390,131 @@ void Test2D(const Box<2,float> & domain, long int k)
 			// In this case the boundary condition are non periodic
 			if (g_dist.isInside(key_g))
 			{
-				match &= (g_dist.template get<0>(key),info.LinId(key_g));
+				match &= (g_dist.template get<0>(key) == info.LinId(key_g))?true:false;
 			}
 
 			++domg;
 		}
+
+		BOOST_REQUIRE_EQUAL(match,true);
+	}
+}
+
+
+void Test1D(const Box<1,float> & domain, long int k)
+{
+	Vcluster & v_cl = create_vcluster();
+	long int big_step = k / 30;
+	big_step = (big_step == 0)?1:big_step;
+	long int small_step = 21;
+
+	if (v_cl.getProcessingUnits() > 48)
+		return;
+
+	print_test( "Testing 1D grid k<=",k);
+
+	// 1D test
+	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
+	{
+		BOOST_TEST_CHECKPOINT( "Testing 1D grid k=" << k );
+
+		//! [Create and access a distributed grid]
+
+		// grid size
+		size_t sz[1];
+		sz[0] = k;
+
+		float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f);
+
+		// Ghost
+		Ghost<1,float> g(0.01 / factor);
+
+		// Distributed grid with id decomposition
+		grid_dist_id<1, float, scalar<float>> g_dist(sz,domain,g);
+
+		// check the consistency of the decomposition
+		bool val = g_dist.getDecomposition().check_consistency();
+		BOOST_REQUIRE_EQUAL(val,true);
+
+		// Grid sm
+		grid_sm<1,void> info(sz);
+
+		// get the domain iterator
+		size_t count = 0;
+
+		auto dom = g_dist.getDomainIterator();
+
+		while (dom.isNext())
+		{
+			auto key = dom.get();
+			auto key_g = g_dist.getGKey(key);
+
+			g_dist.template get<0>(key) = info.LinId(key_g);
+
+			// Count the point
+			count++;
+
+			++dom;
+		}
+
+		//! [Create and access a distributed grid]
+
+		// Get the virtual cluster machine
+		Vcluster & vcl = g_dist.getVC();
+
+		// reduce
+		vcl.sum(count);
+		vcl.execute();
+
+		// Check
+		BOOST_REQUIRE_EQUAL(count,(size_t)k);
+
+		auto dom2 = g_dist.getDomainIterator();
+
+		grid_key_dx<1> start = dom2.getStart();
+		grid_key_dx<1> stop = dom2.getStop();
+
+		BOOST_REQUIRE_EQUAL((long int)stop.get(0),(long int)g_dist.size(0)-1);
+
+		BOOST_REQUIRE_EQUAL(start.get(0),0);
+
+		bool match = true;
+
+		// check that the grid store the correct information
+		while (dom2.isNext())
+		{
+			auto key = dom2.get();
+			auto key_g = g_dist.getGKey(key);
+
+			match &= (g_dist.template get<0>(key) == info.LinId(key_g))?true:false;
+
+			++dom2;
+		}
+
+		BOOST_REQUIRE_EQUAL(match,true);
+
+		g_dist.template ghost_get<0>();
+
+		// check that the communication is correctly completed
+
+		auto domg = g_dist.getDomainGhostIterator();
+
+		// check that the grid with the ghost past store the correct information
+		while (domg.isNext())
+		{
+			auto key = domg.get();
+			auto key_g = g_dist.getGKey(key);
+
+			// In this case the boundary condition are non periodic
+			if (g_dist.isInside(key_g))
+			{
+				match &= (g_dist.template get<0>(key) == info.LinId(key_g))?true:false;
+			}
+
+			++domg;
+		}
+
+		BOOST_REQUIRE_EQUAL(match,true);
 	}
 }
 
@@ -1768,6 +1888,16 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_copy )
 	k = std::pow(k, 1/3.);
 
 	Test_grid_copy(domain3,k);
+}
+
+BOOST_AUTO_TEST_CASE( grid_1d_test )
+{
+	// Domain
+	Box<1,float> domain1({-1.0},{1.0});
+
+	long int k = 32*32*32*create_vcluster().getProcessingUnits();
+
+	Test1D(domain1,k);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -75,6 +75,7 @@
  * \see calculateGhostBoxes() for a visualization of internal and external ghost boxes
  *
  * ### Create a Cartesian decomposition object on a Box space, distribute, calculate internal and external ghost boxes
+ *
  * \snippet CartDecomposition_unit_test.hpp Create CartDecomposition
  *
  */
@@ -203,6 +204,7 @@ public:
 	/*! \brief Constructor, it decompose and distribute the sub-domains across the processors
 	 *
 	 * \param v_cl Virtual cluster, used internally for communications
+	 * \param bc boundary conditions
 	 *
 	 */
 	void createSubdomains(Vcluster & v_cl, const size_t (& bc)[dim])
@@ -405,30 +407,30 @@ public:
 	 *
 	 \verbatim
 
-+----------------------------------------------------+
-|                                                    |
-|                 Processor 8                        |
-|                 Sub+domain 0                       +-----------------------------------+
-|                                                    |                                   |
-|                                                    |                                   |
-++--------------+---+---------------------------+----+        Processor 9                |
- |              |   |     B8_0                  |    |        Subdomain 0                |
- |              +------------------------------------+                                   |
- |              |   |                           |    |                                   |
- |              |   |                           |B9_0|                                   |
- |              | B |    Local processor        |    |                                   |
- | Processor 5  | 5 |    Subdomain 0            |    |                                   |
- | Subdomain 0  | _ |                           +----------------------------------------+
- |              | 0 |                           |    |                                   |
- |              |   |                           |    |                                   |
- |              |   |                           |    |        Processor 9                |
- |              |   |                           |B9_1|        Subdomain 1                |
- |              |   |                           |    |                                   |
- |              |   |                           |    |                                   |
- |              |   |                           |    |                                   |
- +--------------+---+---------------------------+----+                                   |
-                                                     |                                   |
-                                                     +-----------------------------------+
+	+----------------------------------------------------+
+	|                                                    |
+	|                 Processor 8                        |
+	|                 Sub+domain 0                       +-----------------------------------+
+	|                                                    |                                   |
+	|                                                    |                                   |
+	++--------------+---+---------------------------+----+        Processor 9                |
+	 |              |   |     B8_0                  |    |        Subdomain 0                |
+	 |              +------------------------------------+                                   |
+	 |              |   |                           |    |                                   |
+	 |              |   |                           |B9_0|                                   |
+	 |              | B |    Local processor        |    |                                   |
+	 | Processor 5  | 5 |    Subdomain 0            |    |                                   |
+	 | Subdomain 0  | _ |                           +----------------------------------------+
+	 |              | 0 |                           |    |                                   |
+	 |              |   |                           |    |                                   |
+	 |              |   |                           |    |        Processor 9                |
+	 |              |   |                           |B9_1|        Subdomain 1                |
+	 |              |   |                           |    |                                   |
+	 |              |   |                           |    |                                   |
+	 |              |   |                           |    |                                   |
+	 +--------------+---+---------------------------+----+                                   |
+														 |                                   |
+														 +-----------------------------------+
 
 
  \endverbatim
@@ -436,30 +438,32 @@ public:
        and also
        G8_0 G9_0 G9_1 G5_0 (External ghost boxes)
 
-      +----------------------------------------------------+
-      |                 Processor 8                        |
-      |                 Subdomain 0                        +-----------------------------------+
-      |                                                    |                                   |
-      |           +---------------------------------------------+                              |
-      |           |         G8_0                           |    |                              |
-+-----+---------------+------------------------------------+    |   Processor 9                |
-|                 |   |                                    |    |   Subdomain 0                |
-|                 |   |                                    |G9_0|                              |
-|                 |   |                                    |    |                              |
-|                 |   |                                    |    |                              |
-|                 |   |        Local processor             |    |                              |
-|  Processor 5    |   |        Sub+domain 0                |    |                              |
-|  Subdomain 0    |   |                                    +-----------------------------------+
-|                 |   |                                    |    |                              |
-|                 | G |                                    |    |                              |
-|                 | 5 |                                    |    |   Processor 9                |
-|                 | | |                                    |    |   Subdomain 1                |
-|                 | 0 |                                    |G9_1|                              |
-|                 |   |                                    |    |                              |
-|                 |   |                                    |    |                              |
-+---------------------+------------------------------------+    |                              |
-                  |                                        |    |                              |
-                  +----------------------------------------+----+------------------------------+
+\verbatim
+
+		  +----------------------------------------------------+
+		  |                 Processor 8                        |
+		  |                 Subdomain 0                        +-----------------------------------+
+		  |                                                    |                                   |
+		  |           +---------------------------------------------+                              |
+		  |           |         G8_0                           |    |                              |
+	+-----+---------------+------------------------------------+    |   Processor 9                |
+	|                 |   |                                    |    |   Subdomain 0                |
+	|                 |   |                                    |G9_0|                              |
+	|                 |   |                                    |    |                              |
+	|                 |   |                                    |    |                              |
+	|                 |   |        Local processor             |    |                              |
+	|  Processor 5    |   |        Sub+domain 0                |    |                              |
+	|  Subdomain 0    |   |                                    +-----------------------------------+
+	|                 |   |                                    |    |                              |
+	|                 | G |                                    |    |                              |
+	|                 | 5 |                                    |    |   Processor 9                |
+	|                 | | |                                    |    |   Subdomain 1                |
+	|                 | 0 |                                    |G9_1|                              |
+	|                 |   |                                    |    |                              |
+	|                 |   |                                    |    |                              |
+	+---------------------+------------------------------------+    |                              |
+					  |                                        |    |                              |
+					  +----------------------------------------+----+------------------------------+
 
 	 \endverbatim
 
@@ -502,8 +506,10 @@ public:
 
 public:
 
+	//! Space dimensions
 	static constexpr int dims = dim;
 
+	//! Space type
 	typedef T stype;
 
 	//! Increment the reference counter
@@ -641,7 +647,11 @@ public:
 
 	/*! \brief Apply boundary condition to the point
 	 *
-	 * \param p Point to apply the boundary condition
+	 * If the particle go out to the right, bring back the particle on the left
+	 * in case of periodic, nothing in case of non periodic
+	 *
+	 * \param pt Point to apply the boundary condition. (it's coordinated are changed according the
+	 *        the explanation before)
 	 *
 	 */
 	void applyPointBC(float (& pt)[dim]) const
@@ -655,7 +665,11 @@ public:
 
 	/*! \brief Apply boundary condition to the point
 	 *
-	 * \param p Point to apply the boundary condition
+	 * If the particle go out to the right, bring back the particle on the left
+	 * in case of periodic, nothing in case of non periodic
+	 *
+	 * \param pt Point to apply the boundary conditions.(it's coordinated are changed according the
+	 *        the explanation before)
 	 *
 	 */
 	void applyPointBC(Point<dim,T> & pt) const
@@ -669,7 +683,11 @@ public:
 
 	/*! \brief Apply boundary condition to the point
 	 *
-	 * \param encapsulated object
+	 * If the particle go out to the right, bring back the particle on the left
+	 * in case of periodic, nothing in case of non periodic
+	 *
+	 * \param pt encapsulated point object (it's coordinated are changed according the
+	 *        the explanation before)
 	 *
 	 */
 	template<typename Mem> void applyPointBC(encapc<1,Point<dim,T>,Mem> && pt) const
@@ -721,7 +739,7 @@ public:
 
 	/*! \brief It create another object that contain the same information and act in the same way
 	 *
-	 * \return a duplicated decomposition
+	 * \return a duplicated CartDecomposition object
 	 *
 	 */
 	CartDecomposition<dim,T,Memory> duplicate() const
@@ -755,6 +773,8 @@ public:
 	 *
 	 * \param cart element to copy
 	 *
+	 * \return itself
+	 *
 	 */
 	CartDecomposition<dim,T,Memory> & operator=(const CartDecomposition & cart)
 	{
@@ -784,6 +804,8 @@ public:
 	/*! \brief Copy the element, move semantic
 	 *
 	 * \param cart element to copy
+	 *
+	 * \return itself
 	 *
 	 */
 	CartDecomposition<dim,T,Memory> & operator=(CartDecomposition && cart)
@@ -819,6 +841,10 @@ public:
 	 *  it define in how many cell it will be divided the space for a particular required minimum
 	 *  number of sub-domain
 	 *
+	 * \param n_sub number of subdomains per processors
+	 *
+	 * \return grid dimension (it is one number because on the other dimensions is the same)
+	 *
 	 */
 	static size_t getDefaultGrid(size_t n_sub)
 	{
@@ -828,6 +854,8 @@ public:
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
+	 *
+	 * \param p point
 	 *
 	 * \return processorID
 	 *
@@ -839,6 +867,8 @@ public:
 
 	/*! \brief Given a point return in which processor the particle should go
 	 *
+	 * \param p point
+	 *
 	 * \return processorID
 	 *
 	 */
@@ -849,6 +879,8 @@ public:
 
 	/*! \brief Given a point return in which processor the particle should go
 	 *
+	 * \param p point
+	 *
 	 * \return processorID
 	 *
 	 */
@@ -857,9 +889,11 @@ public:
 		return fine_s.get(cd.getCell(p));
 	}
 
-	/*! \brief Given a point return in which processor the particle should go
+	/*! \brief Given a point return in which processor the point/particle should go
 	 *
 	 * Boundary conditions are considered
+	 *
+	 * \param p point
 	 *
 	 * \return processorID
 	 *
@@ -876,6 +910,8 @@ public:
 	 *
 	 * Boundary conditions are considered
 	 *
+	 * \param p point
+	 *
 	 * \return processorID
 	 *
 	 */
@@ -890,6 +926,8 @@ public:
 	/*! \brief Given a point return in which processor the particle should go
 	 *
 	 * Boundary consition are considered
+	 *
+	 * \param p point position
 	 *
 	 * \return processorID
 	 *
@@ -939,7 +977,7 @@ public:
 	 *
 	 * \param div_ storing into how many sub-sub-domains to decompose on each dimension
 	 * \param domain_ domain to decompose
-	 * \param bc_ boundary conditions
+	 * \param bc boundary conditions
 	 * \param ghost Ghost size
 	 *
 	 */
@@ -962,6 +1000,10 @@ public:
 
 	}
 
+	/*! \brief Delete the decomposition and reset the data-structure
+	 *
+	 *
+	 */
 	void reset()
 	{
 		sub_domains.clear();
@@ -990,6 +1032,8 @@ public:
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
 	 *
+	 * \param ts number of time step from the previous load balancing
+	 *
 	 */
 	void rebalance(size_t ts)
 	{
@@ -1005,6 +1049,8 @@ public:
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
+	 *
+	 * \param dlb Dynamic load balancing object
 	 *
 	 * \return true if the re-balance has been executed, false otherwise
 	 */
@@ -1075,9 +1121,10 @@ public:
 		return dist.getNSubSubDomains();
 	}
 
-	/*! \brief function that set the weight of the vertex
+	/*! \brief Function that set the computational cost for a of a sub-sub domain
 	 *
 	 * \param id vertex id
+	 * \param weight compotational cost
 	 *
 	 */
 	inline void setSubSubDomainComputationCost(size_t id, size_t weight)
@@ -1085,9 +1132,11 @@ public:
 		dist.setComputationCost(id, weight);
 	}
 
-	/*! \brief function that set the weight of the vertex
+	/*! \brief function that return the computation cost of the sub-sub-domain id
 	 *
-	 * \param id vertex id
+	 * \param id sub-sub-domain id
+	 *
+	 * \return the computational cost
 	 *
 	 */
 	inline size_t getSubSubDomainComputationCost(size_t id)
@@ -1116,7 +1165,8 @@ public:
 
 	/*! \brief Get the local sub-domain
 	 *
-	 * \param i (each local processor can have more than one sub-domain)
+	 * \param lc (each local processor can have more than one sub-domain)
+	 *
 	 * \return the sub-domain
 	 *
 	 */
@@ -1137,10 +1187,11 @@ public:
 		return sp;
 	}
 
-	/*! \brief Get the local sub-domain with ghost extension
+	/*! \brief Get the local sub-domain enlarged with ghost extension
 	 *
-	 * \param i (each local processor can have more than one sub-domain)
-	 * \return the sub-domain
+	 * \param lc (each processor can have more than one sub-domain)
+	 *
+	 * \return the sub-domain extended
 	 *
 	 */
 	SpaceBox<dim, T> getSubDomainWithGhost(size_t lc)
@@ -1182,7 +1233,7 @@ public:
 	 *
 	 * \warning if the particle id outside the domain the result is unreliable
 	 *
-	 * \param p object position
+	 * \param pos object position
 	 *
 	 * \return true if it is local
 	 *
@@ -1194,11 +1245,12 @@ public:
 
 	/*! \brief Check if the particle is local considering boundary conditions
 	 *
-	 * \warning if the particle id outside the domain and non periodic the result
+	 * \warning if the particle id outside the domain and non periodic boundary the result
 	 *          is unreliable
 	 *
 	 *
 	 * \param p object position
+	 * \param bc boundary conditions
 	 *
 	 * \return true if it is local
 	 *
@@ -1218,7 +1270,11 @@ public:
 
 	/*! \brief Check if the particle is local considering boundary conditions
 	 *
+	 * \warning if the particle id outside the domain and non periodic boundary the result
+	 *          is unreliable
+	 *
 	 * \param p object position
+	 * \param bc boundary conditions
 	 *
 	 * \return true if it is local
 	 *
@@ -1251,6 +1307,8 @@ public:
 	/*! \brief Return the ghost
 	 *
 	 *
+	 * \return the ghost extension
+	 *
 	 */
 	const Ghost<dim,T> & getGhost() const
 	{
@@ -1282,6 +1340,8 @@ public:
 	 * where X is the local processor rank
 	 *
 	 * \param output directory where to write the files
+	 *
+	 * \return true if the write succeed
 	 *
 	 */
 	bool write(std::string output) const
@@ -1358,7 +1418,9 @@ public:
 
 	/*! \brief Check if the CartDecomposition contain the same information
 	 *
-	 * \param ele Element to check
+	 * \param cart Element to check with
+	 *
+	 * \return true if they are equal
 	 *
 	 */
 	bool is_equal(CartDecomposition<dim,T,Memory> & cart)
@@ -1402,7 +1464,9 @@ public:
 	/*! \brief Check if the CartDecomposition contain the same information with the exception of the ghost part
 	 * It is anyway required that the ghost come from the same sub-domains decomposition
 	 *
-	 * \param ele Element to check
+	 * \param cart Element to check with
+	 *
+	 * \return true if the two CartDecomposition are equal
 	 *
 	 */
 	bool is_equal_ng(CartDecomposition<dim,T,Memory> & cart)
@@ -1463,8 +1527,7 @@ public:
 		dist.setComputationCost(gid, c + i);
 	}
 
-	// friend classes
-
+	//! friend classes
 	friend extended_type;
 
 };

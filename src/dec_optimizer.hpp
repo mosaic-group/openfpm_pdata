@@ -6,86 +6,24 @@
 
 /*! \brief this class represent a wavefront of dimension dim
  *
- * \dim Dimensionality of the wavefront (dimensionality of the space
+ * \tparam dim Dimensionality of the wavefront (dimensionality of the space
  *                                       where it live so the wavefront
  *                                       is dim-1)
  *
+ * Each wavefront is identified by one starting point and one stop point.
+ * More or less a wavefront is just a box defined in the integer space
+ *
  */
-
 template <unsigned int dim>
-class wavefront
+class wavefront : public Box<dim,size_t>
 {
 public:
 
-	typedef boost::fusion::vector<size_t[dim],size_t[dim]> type;
-
-	type data;
-
+	//! start point is the property with id 0 (first property)
 	static const int start = 0;
+
+	//! stop point is the property with id 1 (second property)
 	static const int stop = 1;
-	static const int max_prop = 2;
-
-	/* \brief Get the key to the point 1
-	 *
-	 * \return the key to the point 1
-	 *
-	 */
-
-	grid_key_dx<dim> getKP1()
-	{
-		// grid key to return
-		grid_key_dx<dim> ret(boost::fusion::at_c<start>(data));
-
-		return ret;
-	}
-
-	/* \brief Get the key to point 2
-	 *
-	 * \return the key to the point 2
-	 *
-	 */
-
-	grid_key_dx<dim> getKP2()
-	{
-		// grid key to return
-		grid_key_dx<dim> ret(boost::fusion::at_c<stop>(data));
-
-		return ret;
-	}
-
-	/* \brief produce a box from an encapsulated object
-	 *
-	 * \param encap encapsulated object
-	 *
-	 */
-
-	template<typename encap> static Box<dim,size_t> getBox(const encap && enc)
-	{
-		Box<dim,size_t> bx;
-
-		// Create the object from the encapsulation
-
-		getBox(enc,bx);
-
-		return bx;
-	}
-
-	/* \brief produce a box from an encapsulated object
-	 *
-	 * \param encap encapsulated object
-	 *
-	 */
-
-	template<typename encap> static void getBox(const encap & enc, Box<dim,size_t> & bx)
-	{
-		// Create the object from the encapsulation
-
-		for (int i = 0 ; i < dim ; i++)
-		{
-			bx.setLow(i,enc.template get<wavefront::start>()[i]);
-			bx.setHigh(i,enc.template get<wavefront::stop>()[i]);
-		}
-	}
 };
 
 /*! \brief This class take a graph representing the space decomposition and produce a
@@ -100,8 +38,7 @@ public:
 template <unsigned int dim, typename Graph>
 class dec_optimizer
 {
-	// create a grid header for helping
-
+	//! Contain information about the grid size
 	grid_sm<dim,void> gh;
 
 private:
@@ -111,7 +48,6 @@ private:
 	 * \param v_w wavefronts
 	 * \param w_comb wavefront expansion combinations
 	 * \param d direction of expansion
-	 * \param bc boundary condition
 	 *
 	 */
 	void expand_one_wf(openfpm::vector<wavefront<dim>> & v_w, std::vector<comb<dim>> & w_comb , size_t d)
@@ -126,6 +62,9 @@ private:
 
 	/*! \brief Adjust the other wavefronts
 	 *
+	 * \param v_w array of wavefronts
+	 * \param hyp Hyper cube used to adjust the wavefront
+	 * \param w_comb for each wavefront indicate their position (normal to the face of the wavefront)
 	 * \param d direction
 	 *
 	 */
@@ -154,7 +93,6 @@ private:
 			size_t id = hyp.LinId(q_comb[j]);
 
 			// get the combination of the direction d
-
 			bool is_pos = hyp.isPositive(d);
 
 			// is positive, modify the stop point or the starting point
@@ -169,16 +107,14 @@ private:
 		}
 	}
 
-	/* \brief Fill the wavefront position
+	/*! \brief Fill the wavefront position
 	 *
 	 * \tparam prp property to set
 	 *
 	 * \param graph we are processing
-	 * \param Box to fill
-	 * \param id value to fill with
+	 * \param v_w array of wavefronts
 	 *
 	 */
-
 	template<unsigned int prp> void write_wavefront(Graph & graph,openfpm::vector<wavefront<dim>> & v_w)
 	{
 		// fill the wall domain with 0
@@ -195,12 +131,12 @@ private:
 		}
 	}
 
-	/* \brief Fill the domain
+	/*! \brief Fill the domain
 	 *
 	 * \tparam p_sub property to set with the sub-domain id
 	 *
 	 * \param graph we are processing
-	 * \param Box to fill
+	 * \param box Box to fill
 	 * \param ids value to fill with
 	 *
 	 */
@@ -226,16 +162,17 @@ private:
 		}
 	}
 
-	/* \brief Add the boundary domain of id p_id to the queue
+	/*! \brief Add the boundary domain of id p_id to the queue
 	 *
-	 * \tparam i-property where is stored the decomposition
+	 * \tparam p_sub property id where to store the sub-domain decomposition
+	 * \tparam p_id property id where is stored the decomposition
 	 *
-	 * \param domains vector with domains to process
+	 * \param domains vector with sub-sub-domains still to process
+	 * \param v_w array of wave-fronts
 	 * \param graph we are processing
-	 * \param w_comb hyper-cube combinations
-	 * \param p_id processor id
-	 * \param box_nn_processor list of neighborhood processors for the box
-	 * \param bc Boundary conditions
+	 * \param w_comb wavefront combination, it is the normal vector to the wavefront
+	 * \param pr_id processor id for which we are optimizing the decomposition
+	 * \param bc boundary conditions
 	 *
 	 */
 	template<unsigned int p_sub, unsigned int p_id> void add_to_queue(openfpm::vector<size_t> & domains, openfpm::vector<wavefront<dim>> & v_w, Graph & graph,  std::vector<comb<dim>> & w_comb, long int pr_id, const size_t(& bc)[dim])
@@ -308,7 +245,7 @@ private:
 		domains.swap(domains_new);
 	}
 
-	/* \brief Find the biggest hyper-cube
+	/*! \brief Find the biggest hyper-cube
 	 *
 	 * starting from one initial sub-domain find the biggest hyper-cube
 	 * output the box, and fill a list of neighborhood processor
@@ -402,38 +339,41 @@ private:
 
 					// expand the intersection of the wavefronts
 
-					std::vector<comb<dim>> q_comb = SubHyperCube<dim,dim-1>::getCombinations_R(w_comb[d],dim-2);
-
-					// Eliminate the w_comb[d] direction
-
-					for (size_t k = 0 ; k < q_comb.size() ; k++)
+					if (dim >= 2)
 					{
-						for (size_t j = 0 ; j < dim ; j++)
+						std::vector<comb<dim>> q_comb = SubHyperCube<dim,dim-1>::getCombinations_R(w_comb[d],dim-2);
+
+						// Eliminate the w_comb[d] direction
+
+						for (size_t k = 0 ; k < q_comb.size() ; k++)
 						{
-							if (w_comb[d].c[j] != 0)
+							for (size_t j = 0 ; j < dim ; j++)
 							{
-								q_comb[k].c[j] = 0;
+								if (w_comb[d].c[j] != 0)
+								{
+									q_comb[k].c[j] = 0;
+								}
 							}
 						}
-					}
 
-					// for all the combinations
-					for (size_t j = 0 ; j < q_comb.size() ; j++)
-					{
-						size_t id = hyp.LinId(q_comb[j]);
-
-						// get the combination of the direction d
-
-						bool is_pos = hyp.isPositive(d);
-
-						// is positive, modify the stop point or the starting point
-
-						for (size_t s = 0 ; s < dim ; s++)
+						// for all the combinations
+						for (size_t j = 0 ; j < q_comb.size() ; j++)
 						{
-							if (is_pos == true)
-							{v_w.template get<wavefront<dim>::stop>(id)[s] = v_w.template get<wavefront<dim>::stop>(id)[s] + w_comb[d].c[s];}
-							else
-							{v_w.template get<wavefront<dim>::start>(id)[s] = v_w.template get<wavefront<dim>::start>(id)[s] + w_comb[d].c[s];}
+							size_t id = hyp.LinId(q_comb[j]);
+
+							// get the combination of the direction d
+
+							bool is_pos = hyp.isPositive(d);
+
+							// is positive, modify the stop point or the starting point
+
+							for (size_t s = 0 ; s < dim ; s++)
+							{
+								if (is_pos == true)
+								{v_w.template get<wavefront<dim>::stop>(id)[s] = v_w.template get<wavefront<dim>::stop>(id)[s] + w_comb[d].c[s];}
+								else
+								{v_w.template get<wavefront<dim>::start>(id)[s] = v_w.template get<wavefront<dim>::start>(id)[s] + w_comb[d].c[s];}
+							}
 						}
 					}
 				}
@@ -456,8 +396,8 @@ private:
 
 	/*! \brief Initialize the wavefronts
 	 *
-	 * \param starting point of the wavefront set
-	 * \param v_w Wavefront to initialize
+	 * \param start_p starting point for the wavefront set
+	 * \param v_w Wavefront array
 	 *
 	 */
 	void InitializeWavefront(grid_key_dx<dim> & start_p, openfpm::vector<wavefront<dim>> & v_w)
@@ -479,13 +419,15 @@ private:
 	 * search in the graph for one sub-domain labelled with processor id
 	 * to use as seed
 	 *
-	 * \tparam p_id property in the graph storing the sub-domain id
+	 * \tparam p_id property id containing the decomposition
+	 * \tparam p_sub property id that will contain the sub-domain decomposition
 	 *
-	 * \param Graph graph
+	 * \param graph Graph
 	 * \param id processor id
 	 *
+	 * \return a valid seed key
+	 *
 	 */
-
 	template<unsigned int p_id, unsigned int p_sub> grid_key_dx<dim> search_seed(Graph & graph, long int id)
 	{
 		// if no processor is selected return the first point
@@ -531,18 +473,18 @@ private:
 	 * To the domains inside the hyper-cube one sub-id is assigned. This procedure continue until
 	 * all the domain of one p_id has a sub-id
 	 *
-	 * \tparam j property containing the decomposition
-	 * \tparam i property to fill with the sub-decomposition
+	 * \tparam p_id property containing the decomposition
+	 * \tparam p_sub property to fill with the sub-domain decomposition
 	 *
 	 * \param start_p seed point
 	 * \param graph we are processing
-	 * \param p_id Processor id (if p_id == -1 the optimization is done for all the processors)
-	 * \param list of sub-domain boxes produced by the algorithm
-	 * \param box_nn_processor for each box it list all the neighborhood processor
+	 * \param pr_id Processor id (if p_id == -1 the optimization is done for all the processors)
+	 * \param lb list of sub-domain boxes produced by the algorithm
+	 * \param box_nn_processor for each sub-domain it list all the neighborhood processors
 	 * \param ghe Ghost extension in sub-sub-domain units in each direction
-	 * \param bc Boundary condition
-	 * \param init_sub_id when true p_sub property is initial set to -1 [default true]
-	 * \param sub_id starting sub_id enumeration [default 0]
+	 * \param init_sub_id when true p_sub property is initially set to -1 [default true]
+	 * \param sub_id starting sub_id to enumerate them [default 0]
+	 * \param bc boundary conditions
 	 *
 	 * \return last assigned sub-id
 	 *
@@ -607,9 +549,16 @@ private:
 
 	/*! \brief Construct the sub-domain processor list
 	 *
+	 * \tparam p_id property that contain the decomposition
+	 *
 	 * Each entry is a sub-domain, the list of numbers indicate the neighborhood processors
 	 *
-	 * \brief box_nn_processor
+	 * \param graph graph to process
+	 * \param box_nn_processor for each sub-domain it list all the neighborhood processors
+	 * \param subs vector of sub-domains
+	 * \param ghe ghost extensions
+	 * \param bc boundary conditions
+	 * \param pr_id processor that we are processing
 	 *
 	 */
 	template<unsigned int p_id> void construct_box_nn_processor(Graph & graph, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor, const openfpm::vector<Box<dim,size_t>> & subs, const Ghost<dim,long int> & ghe, const size_t (& bc)[dim], long int pr_id)
@@ -621,6 +570,7 @@ private:
 			map.clear();
 			Box<dim,size_t> sub = subs.get(i);
 			sub.enlarge(ghe);
+
 			grid_skin_iterator_bc<dim> gsi(gh,subs.get(i),sub,bc);
 
 			while (gsi.isNext())
@@ -666,11 +616,13 @@ public:
 	 * the boundary until the wavefronts cannot expand any more, creating a sub-domain covering more sub-sub-domain.
 	 * This procedure continue until all the domain is covered by a sub-domains
 	 *
-	 * \tparam j property containing the processor decomposition
-	 * \tparam i property to fill with the sub-domain-decomposition id
+	 * \tparam p_id property containing the processor decomposition
+	 * \tparam p_sub property to fill with the sub-domain decomposition
 	 *
 	 * \param start_p seed point
 	 * \param graph we are processing
+	 * \param ghe ghost size
+	 * \param bc boundary conditions
 	 *
 	 */
 	template <unsigned int p_sub, unsigned int p_id> void optimize(grid_key_dx<dim> & start_p, Graph & graph, const Ghost<dim,long int> & ghe , const size_t (& bc)[dim])
@@ -691,12 +643,14 @@ public:
 	 * the boundary until the wavefronts cannot expand any more, creating a sub-domain covering more sub-sub-domain.
 	 * This procedure continue until all the sub-domain of the processor p_id are covered by a sub-domains
 	 *
-	 * \tparam j property containing the decomposition
-	 * \tparam i property to fill with the sub-domain-decomposition id
+	 * \tparam p_id property containing the decomposition
+	 * \tparam p_sub property to fill with the sub-domain decomposition
 	 *
 	 * \param graph we are processing
-	 * \param p_id Processor id (if p_id == -1 the optimization is done for all the processors)
-	 * \param list of sub-domain boxes
+	 * \param pr_id Processor id (if p_id == -1 the optimization is done for all the processors)
+	 * \param lb list of sub-domain boxes
+	 * \param box_nn_processor for each sub-domain it list all the neighborhood processors
+	 * \param ghe ghost size
 	 *
 	 */
 	template <unsigned int p_sub, unsigned int p_id> void optimize(Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & lb, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor, const Ghost<dim,long int> & ghe, const size_t (& bc)[dim])

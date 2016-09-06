@@ -116,9 +116,11 @@ class grid_dist_iterator<dim,device_grid,FREE>
 	/*! \brief Constructor of the distributed grid iterator
 	 *
 	 * \param gk std::vector of the local grid
+	 * \param gdb_ext set of local subdomains
+	 * \param stop end point
 	 *
 	 */
-	grid_dist_iterator(const openfpm::vector<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, grid_key_dx<dim> stop)
+	grid_dist_iterator(const openfpm::vector<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, const grid_key_dx<dim> & stop)
 	:g_c(0),gList(gk),gdb_ext(gdb_ext),stop(stop)
 	{
 		// Initialize the current iterator

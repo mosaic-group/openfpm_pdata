@@ -1191,8 +1191,13 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 		// Boundary conditions
 		size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
+		float spacing = 1.0/Ng;
+		float first_dist = spacing;
+		float second_dist = sqrt(2.0*spacing*spacing);
+		float third_dist = sqrt(3.0 * spacing*spacing);
+
 		// ghost
-		Ghost<3,float> ghost(1.0/(Ng-2));
+		Ghost<3,float> ghost(third_dist*1.1);
 
 		// Distributed vector
 		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(0,box,bc,ghost);
@@ -1229,13 +1234,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 
 		vd.ghost_get<0>();
 
+		vd.write("Debug_output");
+
 		// calculate the distance of the first, second and third neighborhood particle
 		// Consider that they are on a regular grid
-
-		float spacing = it.getSpacing(0);
-		float first_dist = spacing;
-		float second_dist = sqrt(2.0*spacing*spacing);
-		float third_dist = sqrt(3.0 * spacing*spacing);
 
 		// add a 5% to dist
 
@@ -1248,6 +1250,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 		VerletList<3,float,FAST,shift<3,float>> verlet = vd.getVerlet(third_dist);
 
 		bool correct = true;
+
+		BOOST_REQUIRE_EQUAL(vd.size_local(),verlet.size());
 
 		// for each particle
 		for (size_t i = 0 ; i < verlet.size() ; i++)

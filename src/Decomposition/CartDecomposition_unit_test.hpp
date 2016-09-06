@@ -57,7 +57,6 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test)
 	// Vcluster
 	Vcluster & vcl = create_vcluster();
 
-	//! [Create CartDecomposition]
 	CartDecomposition<3, float> dec(vcl);
 
 	// Physical domain
@@ -82,8 +81,6 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test)
 	// Decompose
 	dec.setParameters(div,box,bc,g);
 	dec.decompose();
-
-	//! [Create CartDecomposition]
 
 	// For each calculated ghost box
 	for (size_t i = 0; i < dec.getNIGhostBox(); i++)
@@ -244,7 +241,6 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_ext_non_periodic_test)
 	// Vcluster
 	Vcluster & vcl = create_vcluster();
 
-	//! [Create CartDecomposition]
 	CartDecomposition<3,float> dec(vcl);
 
 	// Physical domain

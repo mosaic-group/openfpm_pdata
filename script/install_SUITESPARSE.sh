@@ -43,7 +43,7 @@ else
     sed -i "/INSTALL_LIB\s=\s\/usr\/local\/lib/c\INSTALL_LIB = $1\/SUITESPARSE\/lib" SuiteSparse_config/SuiteSparse_config.mk
     sed -i "/INSTALL_INCLUDE\s=\s\/usr\/local\/include/c\INSTALL_INCLUDE = $1\/SUITESPARSE\/include" SuiteSparse_config/SuiteSparse_config.mk
     sed -i "/\sLAPACK\s=\s-llapack/c\LAPACK = " SuiteSparse_config/SuiteSparse_config.mk
-    sed -i "/\sBLAS\s=\s\-lopenblas/c\BLAS = -L$1/OPENBLAS/lib -lopenblas" SuiteSparse_config/SuiteSparse_config.mk
+    sed -i "/\sBLAS\s=\s\-lopenblas/c\BLAS = -L$1/OPENBLAS/lib -lopenblas -lpthread" SuiteSparse_config/SuiteSparse_config.mk
 
 fi
 

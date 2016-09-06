@@ -93,9 +93,9 @@ BOOST_AUTO_TEST_CASE( nn_processor_np_test)
 
 	if (v_cl.getProcessUnitID() == 0)
 	{
-		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(1),1);
-		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(2),1);
-		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(3),1);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(1),1ul);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(2),1ul);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(3),1ul);
 
 		const openfpm::vector< ::Box<2,float> > & nsubs1 = nnp.getNearSubdomains(1);
 		const openfpm::vector< ::Box<2,float> > & nsubs2 = nnp.getNearSubdomains(2);
@@ -120,9 +120,9 @@ BOOST_AUTO_TEST_CASE( nn_processor_np_test)
 	}
 	else if (v_cl.getProcessUnitID() == 1)
 	{
-		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(0),1);
-		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(2),1);
-		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(3),1);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(0),1ul);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(2),1ul);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(3),1ul);
 
 		const openfpm::vector< ::Box<2,float> > & nsubs1 = nnp.getNearSubdomains(0);
 		const openfpm::vector< ::Box<2,float> > & nsubs2 = nnp.getNearSubdomains(2);
@@ -147,9 +147,9 @@ BOOST_AUTO_TEST_CASE( nn_processor_np_test)
 	}
 	else if (v_cl.getProcessUnitID() == 2)
 	{
-		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(1),1);
-		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(0),1);
-		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(3),1);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(1),1ul);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(0),1ul);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(3),1ul);
 
 		const openfpm::vector< ::Box<2,float> > & nsubs1 = nnp.getNearSubdomains(1);
 		const openfpm::vector< ::Box<2,float> > & nsubs2 = nnp.getNearSubdomains(0);
@@ -173,9 +173,9 @@ BOOST_AUTO_TEST_CASE( nn_processor_np_test)
 	}
 	else if (v_cl.getProcessUnitID() == 3)
 	{
-		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(0),1);
-		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(1),1);
-		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(2),1);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(0),1ul);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(1),1ul);
+		BOOST_REQUIRE_EQUAL(nnp.getNRealSubdomains(2),1ul);
 
 		const openfpm::vector< ::Box<2,float> > & nsubs1 = nnp.getNearSubdomains(0);
 		const openfpm::vector< ::Box<2,float> > & nsubs2 = nnp.getNearSubdomains(1);
@@ -250,9 +250,9 @@ BOOST_AUTO_TEST_CASE( nn_processor_box_periodic_test)
 
 	if (v_cl.getProcessUnitID() == 0)
 	{
-		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(1).size(),4);
-		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(2).size(),4);
-		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(3).size(),4);
+		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(1).size(),4ul);
+		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(2).size(),4ul);
+		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(3).size(),4ul);
 
 		openfpm::vector<Box<2,float>> bv;
 
@@ -286,9 +286,9 @@ BOOST_AUTO_TEST_CASE( nn_processor_box_periodic_test)
 	}
 	else if (v_cl.getProcessUnitID() == 1)
 	{
-		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(0).size(),4);
-		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(2).size(),4);
-		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(3).size(),4);
+		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(0).size(),4ul);
+		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(2).size(),4ul);
+		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(3).size(),4ul);
 
 		openfpm::vector<Box<2,float>> bv;
 
@@ -322,9 +322,9 @@ BOOST_AUTO_TEST_CASE( nn_processor_box_periodic_test)
 	}
 	else if (v_cl.getProcessUnitID() == 2)
 	{
-		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(0).size(),4);
-		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(1).size(),4);
-		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(3).size(),4);
+		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(0).size(),4ul);
+		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(1).size(),4ul);
+		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(3).size(),4ul);
 
 		openfpm::vector<Box<2,float>> bv;
 
@@ -358,9 +358,9 @@ BOOST_AUTO_TEST_CASE( nn_processor_box_periodic_test)
 	}
 	else if (v_cl.getProcessUnitID() == 3)
 	{
-		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(0).size(),4);
-		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(1).size(),4);
-		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(2).size(),4);
+		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(0).size(),4ul);
+		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(1).size(),4ul);
+		BOOST_REQUIRE_EQUAL(nnp.getNearSubdomains(2).size(),4ul);
 
 		openfpm::vector<Box<2,float>> bv;
 

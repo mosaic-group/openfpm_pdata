@@ -9,8 +9,9 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Installation PETSC installation fail in case of preinstalled MPI
+- Miss-compilation of SUITESPARSE on gcc-6.2
 - vector_dist with negative domain (Now supported)
-- Grid 1D fixing
+- Grid 1D has been fixed
 
 ### Changed
 
