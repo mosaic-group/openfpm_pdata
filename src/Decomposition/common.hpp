@@ -100,12 +100,6 @@ struct Box_sub_k
 	{
 		cmb.zero();
 	}
-
-	// encap interface to make compatible with OpenFPM_IO
-	template <int i> auto get() -> decltype( std::declval<Box<dim,T> *>()->template get<i>())
-	{
-		return ::Box<dim,T>::template get<i>();
-	}
 };
 
 //! Case for local ghost box
