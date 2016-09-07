@@ -155,7 +155,6 @@ template<unsigned int dim, size_t prp = 0, typename T, typename V> void calc_for
 	}
 }
 
-
 /*! \brief For each particle of vd calculate the accumulation of the distances of the neighborhood
  *          particles inside vd2
  *
@@ -1304,6 +1303,7 @@ template<unsigned int dim> void vd_cl_performance_write_report(size_t n_moving,o
 	options.yAxis = std::string("Speedup (times)");
 	options.xAxis = std::string("Number of particles");
 	options.lineWidth = 2;
+
 	//options.more = "hAxis: {logScale: true}";
 
 	GoogleChart cg;
@@ -1328,6 +1328,7 @@ template<unsigned int dim> void vd_cl_performance_write_report(size_t n_moving,o
 	options2.yAxis = std::string("Total calculation time (s)");
 	options2.xAxis = std::string("Number of particles");
 	options2.lineWidth = 2;
+
 	//options2.more = "hAxis: {logScale: true}";
 
 	std::string str2("<h2>2) Total calculation time</h2>");

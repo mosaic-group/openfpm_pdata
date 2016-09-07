@@ -25,23 +25,28 @@
 template<unsigned int dim, typename T>
 struct Box_loc_sub
 {
+	//! Box defining the sub-domain (copied)
 	Box<dim,T> bx;
 
-	// Domain id
+	//! The id of the real domain
 	size_t sub;
 
-	// in witch sector this sub-domain live, when
+	//! in witch sector this sub-domain live
 	comb<dim> cmb;
 
+	//! Constructor
 	Box_loc_sub()
+	:sub(0)
 	{
 		cmb.zero();
 	};
 
+	//! Constructor from box, domain id and sector where it live
 	Box_loc_sub(const Box<dim,T> & bx, size_t sub, const comb<dim> & cmb)
 	:bx(bx),sub(sub),cmb(cmb)
 	{};
 
+	//! Set the sub-domain box coordinates
 	Box_loc_sub operator=(const Box<dim,T> & box)
 	{
 		::Box<dim,T>::operator=(box);
@@ -84,12 +89,13 @@ struct Box_sub
 template<unsigned int dim, typename T>
 struct Box_sub_k
 {
+	//! extension of this local internal ghost box
 	Box<dim,T> bx;
 
-	// Domain id
+	//! Domain id
 	size_t sub;
 
-	// Where this sub_domain live
+	//! Where this sub_domain live
 	comb<dim> cmb;
 
 	//! k \see getLocalGhostIBoxE
@@ -106,61 +112,64 @@ struct Box_sub_k
 template<unsigned int dim, typename T>
 struct lBox_dom
 {
-	// Intersection between the local sub-domain enlarged by the ghost and the contiguous processor
-	// sub-domains (External ghost)
+	//! Intersection between the local sub-domain enlarged by the ghost and the contiguous processor
+	//! sub-domains (External ghost)
 	openfpm::vector_std< Box_sub<dim,T> > ebx;
 
-	// Intersection between the contiguous processor sub-domain enlarged by the ghost with the
-	// local sub-domain (Internal ghost)
+	//! Intersection between the contiguous processor sub-domain enlarged by the ghost with the
+	//! local sub-domain (Internal ghost)
 	openfpm::vector_std< Box_sub_k<dim,T>> ibx;
 };
 
+//! Case for local external ghost box
 template<unsigned int dim, typename T>
 struct Box_proc
 {
-	// Intersection between the local sub-domain enlarged by the ghost and the contiguous processor
-	// sub-domains (External ghost)
+	//! Intersection between the local sub-domain enlarged by the ghost and the contiguous processor
+	//! sub-domains (External ghost)
 	openfpm::vector<::Box<dim,T>> bx;
 
-	// Intersection between the contiguous processor sub-domain enlarged by the ghost with the
-	// local sub-domain (Internal ghost)
+	//! Intersection between the contiguous processor sub-domain enlarged by the ghost with the
+	//! local sub-domain (Internal ghost)
 	openfpm::vector<::Box<dim,T>> nbx;
 
 
-	// processor
+	//! processor
 	size_t proc;
 };
 
+//! Case for external ghost box
 template<unsigned int dim, typename T>
 struct Box_dom
 {
-	// Intersection between the local sub-domain enlarged by the ghost and the contiguous processor
-	// sub-domains (External ghost)
+	//! Intersection between the local sub-domain enlarged by the ghost and the contiguous processor
+	//! sub-domains (External ghost)
 	openfpm::vector_std< Box_sub<dim,T> > ebx;
 
-	// Intersection between the contiguous processor sub-domain enlarged by the ghost with the
-	// local sub-domain (Internal ghost)
+	//! Intersection between the contiguous processor sub-domain enlarged by the ghost with the
+	//! local sub-domain (Internal ghost)
 	openfpm::vector_std< Box_sub<dim,T> > ibx;
 };
 
+// It store the sub-domain sent by the near processors
 template<unsigned int dim, typename T>
 struct N_box
 {
-	// id of the processor in the nn_processor list (local processor id)
+	//! id of the processor in the nn_processor list (local processor id)
 	size_t id;
 
-	// near processor sub-domains
+	//! near processor sub-domains
 	typename openfpm::vector<::Box<dim,T>> bx;
 
-	// near processor sector position (or where they live outside the domain)
+	//! near processor sector position (or where they live outside the domain)
 	openfpm::vector<comb<dim>> pos;
 
-	// Number of real sub-domains or sub-domain in the central sector
+	//! Number of real sub-domains or sub-domain in the central sector
 	size_t n_real_sub;
 
-	// When a sub-domain is not in the central sector, it mean that has been created
-	// because of periodicity in a non central sector. Any sub-domain not in the central
-	// sector is linked to one sub-domain in the central sector
+	//! When a sub-domain is not in the central sector, it mean that has been created
+	//! because of periodicity in a non central sector. Any sub-domain not in the central
+	//! sector is linked to one sub-domain in the central sector
 	openfpm::vector<size_t> r_sub;
 
 	//! Default constructor
@@ -170,12 +179,14 @@ struct N_box
 
 	//! Copy constructor
 	N_box(const N_box<dim,T> & b)
+	:id((size_t)-1),n_real_sub(0)
 	{
 		this->operator=(b);
 	}
 
 	//! Copy constructor
 	N_box(N_box<dim,T> && b)
+	:id((size_t)-1),n_real_sub(0)
 	{
 		this->operator=(b);
 	}
@@ -183,6 +194,8 @@ struct N_box
 	/*! \brief Copy the element
 	 *
 	 * \param ele element to copy
+	 *
+	 * \return itself
 	 *
 	 */
 	N_box<dim,T> & operator=(const N_box<dim,T> & ele)
@@ -200,6 +213,8 @@ struct N_box
 	 *
 	 * \param ele element to copy
 	 *
+	 * \return itself
+	 *
 	 */
 	N_box<dim,T> & operator=(N_box<dim,T> && ele)
 	{
@@ -213,6 +228,8 @@ struct N_box
 	}
 
 	/*! \brief Compare two N_box object
+	 *
+	 * \param ele element to compare with
 	 *
 	 * \return true if they match
 	 *
@@ -236,6 +253,8 @@ struct N_box
 
 	/*! \brief Compare two N_box object
 	 *
+	 * \param ele element to compare with
+	 *
 	 * \return true if they match
 	 *
 	 */
@@ -245,7 +264,7 @@ struct N_box
 	}
 };
 
-// It store all the boxes of the near processors in a linear array
+//! It store all the boxes of the near processors in a linear array
 template<unsigned int dim, typename T>
 struct p_box
 {
@@ -263,6 +282,8 @@ struct p_box
 	/*! \brief Check if two p_box are the same
 	 *
 	 * \param pb box to check
+	 *
+	 * \return true if they match
 	 *
 	 */
 	bool operator==(const p_box & pb)
