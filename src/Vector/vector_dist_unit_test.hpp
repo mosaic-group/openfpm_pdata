@@ -1773,6 +1773,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 
 #include "vector_dist_cell_list_tests.hpp"
 #include "vector_dist_NN_tests.hpp"
+#include "vector_dist_complex_prp_unit_test.hpp"
 
 BOOST_AUTO_TEST_SUITE_END()
 

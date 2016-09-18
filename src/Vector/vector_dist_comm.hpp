@@ -84,6 +84,67 @@ class vector_dist_comm
 	//! replicated ghost particles that are local
 	size_t lg_m;
 
+	//! process the particle with properties
+	struct proc_without_prp
+	{
+		template<typename T1, typename T2> inline static void proc(size_t lbl, size_t cnt, size_t id, T1 & v_prp, T2 & m_prp)
+		{
+			m_prp.get(lbl).set(cnt, v_prp.get(id));
+		}
+	};
+
+	template<typename prp_object, int ... prp>
+	struct proc_with_prp
+	{
+		template<typename T1, typename T2> inline static void proc(size_t lbl, size_t cnt, size_t id, T1 & v_prp, T2 & m_prp)
+		{
+			// source object type
+			typedef encapc<1, prop, typename openfpm::vector<prop>::layout_type> encap_src;
+			// destination object type
+			typedef encapc<1, prp_object, typename openfpm::vector<prp_object>::layout_type> encap_dst;
+
+			// Copy only the selected properties
+			object_si_d<encap_src, encap_dst, OBJ_ENCAP, prp...>(v_prp.get(id), m_prp.get(lbl).get(cnt));
+		}
+	};
+
+	//! It process one particle
+	template<typename proc_class, typename T1, typename T2, typename T3, typename T4> inline void process_map_particle(size_t i, long int & end, long int & id_end, T1 & m_pos, T2 & m_prp, T3 & v_pos, T4 & v_prp, openfpm::vector<size_t> & cnt)
+	{
+		long int prc_id = m_opart.template get<2>(i);
+		size_t id = m_opart.template get<0>(i);
+
+		if (prc_id >= 0)
+		{
+			size_t lbl = p_map_req.get(prc_id);
+
+			m_pos.get(lbl).set(cnt.get(lbl), v_pos.get(id));
+			proc_class::proc(lbl,cnt.get(lbl),id,v_prp,m_prp);
+
+			cnt.get(lbl)++;
+
+			// swap the particle
+			long int id_valid = get_end_valid(end,id_end);
+
+			if (id_valid > 0 && (long int)id < id_valid)
+			{
+				v_pos.set(id,v_pos.get(id_valid));
+				v_prp.set(id,v_prp.get(id_valid));
+			}
+		}
+		else
+		{
+			// swap the particle
+			long int id_valid = get_end_valid(end,id_end);
+
+			if (id_valid > 0 && (long int)id < id_valid)
+			{
+				v_pos.set(id,v_pos.get(id_valid));
+				v_prp.set(id,v_prp.get(id_valid));
+			}
+		}
+	}
+
 	/*! \brief Return a valid particle starting from end and tracing back
 	 *
 	 * \param end actual opart particle pointer
@@ -492,21 +553,7 @@ class vector_dist_comm
 		// Run through all the particles and fill the sending buffer
 		for (size_t i = 0; i < m_opart.size(); i++)
 		{
-			size_t lbl = p_map_req.get(m_opart.template get<2>(i));
-			size_t id = m_opart.template get<0>(i);
-
-			m_pos.get(lbl).set(cnt.get(lbl), v_pos.get(id));
-			m_prp.get(lbl).set(cnt.get(lbl), v_prp.get(id));
-			cnt.get(lbl)++;
-
-			// swap the particle
-			long int id_valid = get_end_valid(end,id_end);
-
-			if (id_valid > 0 && (long int)id < id_valid)
-			{
-				v_pos.set(id,v_pos.get(id_valid));
-				v_prp.set(id,v_prp.get(id_valid));
-			}
+			process_map_particle<proc_without_prp>(i,end,id_end,m_pos,m_prp,v_pos,v_prp,cnt);
 		}
 
 		v_pos.resize(v_pos.size() - m_opart.size());
@@ -523,17 +570,18 @@ class vector_dist_comm
 	 * \param pb send buffer
 	 *
 	 */
-	template<typename prp_object,int ... prp> void fill_send_map_buf_list(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, openfpm::vector<size_t> & prc_r, openfpm::vector<size_t> & prc_sz_r, openfpm::vector<openfpm::vector<Point<dim,St>>> & m_pos, openfpm::vector<openfpm::vector<prp_object>> & m_prp)
+	template<typename prp_object,int ... prp> void fill_send_map_buf_list(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, openfpm::vector<size_t> & prc_sz_r, openfpm::vector<openfpm::vector<Point<dim,St>>> & m_pos, openfpm::vector<openfpm::vector<prp_object>> & m_prp)
 	{
-		m_prp.resize(v_cl.getProcessingUnits());
-		m_pos.resize(v_cl.getProcessingUnits());
-		openfpm::vector<size_t> cnt(v_cl.getProcessingUnits());
+		m_prp.resize(prc_sz_r.size());
+		m_pos.resize(prc_sz_r.size());
+		openfpm::vector<size_t> cnt(prc_sz_r.size());
 
-		for (size_t i = 0; i < prc_r.size(); i++)
+		for (size_t i = 0; i < prc_sz_r.size(); i++)
 		{
 			// set the size and allocate, using mem warant that pos and prp is contiguous
 			m_pos.get(i).resize(prc_sz_r.get(i));
 			m_prp.get(i).resize(prc_sz_r.get(i));
+			cnt.get(i) = 0;
 		}
 
 		// end vector point
@@ -545,31 +593,11 @@ class vector_dist_comm
 		// Run through all the particles and fill the sending buffer
 		for (size_t i = 0; i < m_opart.size(); i++)
 		{
-			size_t lbl = m_opart.template get<2>(i);
-			size_t id = m_opart.template get<0>(i);
-
-			m_pos.get(lbl).set(cnt.get(lbl), v_pos.get(id));
-
-			// source object type
-			typedef encapc<1, prop, typename openfpm::vector<prop>::layout_type> encap_src;
-			// destination object type
-			typedef encapc<1, prp_object, typename openfpm::vector<prp_object>::layout_type> encap_dst;
-
-			// Copy only the selected properties
-			object_si_d<encap_src, encap_dst, OBJ_ENCAP, prp...>(v_prp.get(id), m_prp.get(lbl).get(cnt.get(lbl)));
-
-			cnt.get(lbl)++;
-
-			// swap the particle
-			long int id_valid = get_end_valid(end,id_end);
-
-			if (id_valid > 0 && (long int)id < id_valid)
-			{
-				v_pos.set(id,v_pos.get(id_valid));
-				v_prp.set(id,v_prp.get(id_valid));
-			}
+			process_map_particle<proc_with_prp<prp_object,prp...>>(i,end,id_end,m_pos,m_prp,v_pos,v_prp,cnt);
 		}
 
+		v_pos.resize(v_pos.size() - m_opart.size());
+		v_prp.resize(v_prp.size() - m_opart.size());
 	}
 
 	/*! \brief Label particles for mappings
@@ -612,6 +640,12 @@ class vector_dist_comm
 				if ((long int) p_id != -1)
 				{
 					prc_sz.get(p_id)++;
+					lbl_p.add();
+					lbl_p.last().template get<0>() = key;
+					lbl_p.last().template get<2>() = p_id;
+				}
+				else
+				{
 					lbl_p.add();
 					lbl_p.last().template get<0>() = key;
 					lbl_p.last().template get<2>() = p_id;
@@ -930,7 +964,7 @@ public:
 		//! properties vector
 		openfpm::vector<openfpm::vector<prp_object>> m_prp;
 
-		fill_send_map_buf_list<prp_object,prp...>(v_pos,v_prp,prc_r, prc_sz_r, m_pos, m_prp);
+		fill_send_map_buf_list<prp_object,prp...>(v_pos,v_prp,prc_sz_r, m_pos, m_prp);
 
 		v_cl.SSendRecv(m_pos,v_pos,prc_r,prc_recv_map,recv_sz_map);
 		v_cl.SSendRecvP<openfpm::vector<prp_object>,decltype(v_prp),prp...>(m_prp,v_prp,prc_r,prc_recv_map,recv_sz_map);
