@@ -4,9 +4,8 @@
  * \subpage Vector_1_celllist
  * \subpage Vector_2_expression
  * \subpage Vector_3_md
- * \subpage Vector_4_reo
- * \subpage Vector_4_comp_reo
- * \subpage Vector_4_complex_prop
+ * \subpage Vector_4_reo_root
+ * \subpage Vector_4_cp
  * \subpage Vector_4_mp_cl
  *
  */

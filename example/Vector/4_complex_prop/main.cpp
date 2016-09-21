@@ -31,6 +31,16 @@ int main(int argc, char* argv[])
 	 *
 	 * ## Initialization and vector creation ##
 	 *
+	 * We first initialize the library and define useful constants
+	 *
+	 * \see \ref e0_s_init
+	 *
+	 * \snippet Vector/4_complex_prop/main.cpp lib init
+	 *
+	 * We also define a custom structure
+	 *
+	 * \snippet Vector/4_complex_prop/main.cpp struct A
+	 *
 	 * After we initialize the library we can create a vector with complex properties
 	 * with the following line
 	 *
@@ -66,7 +76,11 @@ int main(int argc, char* argv[])
 	 * \warning custom data structure are allowed only if they does not have pointer.
 	 *          In case they have pointer we have to define how to serialize our data-structure
 	 *
+	 * \see \ref vector_example_cp_ser
+	 *
 	 */
+
+	//! \cond [lib init] \endcond
 
     // initialize the library
 	openfpm_init(&argc,&argv);
@@ -80,23 +94,6 @@ int main(int argc, char* argv[])
 	// extended boundary around the domain, and the processor domain
 	Ghost<2,float> g(0.01);
 	
-	//! \cond [struct A] \endcond
-
-	// The a custom structure
-	struct A
-	{
-		float p1;
-		int p2;
-
-		A() {};
-
-		A(float p1, int p2)
-		:p1(p1),p2(p2)
-		{}
-	};
-
-	//! \cond [struct A] \endcond
-
 	// the scalar is the element at position 0 in the aggregate
 	constexpr int scalar = 0;
 
@@ -114,6 +111,25 @@ int main(int argc, char* argv[])
 
 	// A list of list
 	constexpr int listlist = 5;
+
+	//! \cond [lib init] \endcond
+
+	//! \cond [struct A] \endcond
+
+	// The custom structure
+	struct A
+	{
+		float p1;
+		int p2;
+
+		A() {};
+
+		A(float p1, int p2)
+		:p1(p1),p2(p2)
+		{}
+	};
+
+	//! \cond [struct A] \endcond
 
 	//! \cond [vect create] \endcond
 
@@ -137,8 +153,8 @@ int main(int argc, char* argv[])
 	 * Assign values to properties does not changes, from the simple case. Consider
 	 * now that each particle has a list, so when we can get the property listA for particle p
 	 * and resize such list with **vd.getProp<listA>(p).resize(...)**. We can add new elements at the
-	 * end with **vd.getProp<listA>(p).add(...)** and get some element with **vd.getProp<listA>(p).get(i)**.
-	 * More in general from vd.getProp<listA>(p) we can use the full openfpm::vector interface.
+	 * end with **vd.getProp<listA>(p).add(...)** and get some element of this list with **vd.getProp<listA>(p).get(i)**.
+	 * More in general vd.getProp<listA>(p) return a reference to the openfpm::vector contained by the particle.
 	 *
 	 * \snippet Vector/4_complex_prop/main.cpp vect assign
 	 *
@@ -205,10 +221,14 @@ int main(int argc, char* argv[])
 	 * ## Mapping and ghost_get ##
 	 *
 	 * Particles are redistributed across processors all properties are communicated but instead of
-	 * using map we use map_list that we can use to select properties.
+	 * using map we use **map_list** that we can use to select properties.
 	 * A lot of time complex properties can be recomputed and communicate them is not a good idea.
 	 * The same concept also apply for ghost_get. In general we choose which properties to communicate
 	 *
+	 *
+	 * \see \ref e0_s_map
+	 *
+	 * \see \ref e1_part_ghost
 	 *
 	 * \snippet Vector/4_complex_prop/main.cpp vect map ghost
 	 *
@@ -234,6 +254,8 @@ int main(int argc, char* argv[])
 	 *
 	 * Vector with complex properties can be still be visualized, because unknown properties are
 	 * automatically excluded
+	 *
+	 * \see \ref e0_s_vis_vtk
 	 *
 	 * \snippet Vector/4_complex_prop/main.cpp vtk
 	 *

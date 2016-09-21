@@ -5,13 +5,15 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - ghost_put support for particles
-- Full-Support for complex property on vector-dist (Serialization) + example
+- Full-Support for complex property on vector_dist (Serialization)
+- Added examples for serialization of complex properties 4_Vector
 
 ### Fixed
 - Installation PETSC installation fail in case of preinstalled MPI
 - Miss-compilation of SUITESPARSE on gcc-6.2
 - vector_dist with negative domain (Now supported)
 - Grid 1D has been fixed
+- One constructor of Box had arguments inverted. 
 
 ### Changed
 
