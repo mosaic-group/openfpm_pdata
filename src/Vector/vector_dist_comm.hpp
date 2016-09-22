@@ -743,6 +743,17 @@ class vector_dist_comm
 
 public:
 
+	/*! \brief Copy Constructor
+	 *
+	 * \param v vector to copy
+	 *
+	 */
+	vector_dist_comm(const vector_dist_comm<dim,St,prop,Decomposition,Memory> & v)
+	{
+		this->operator=(v);
+	}
+
+
 	/*! \brief Constructor
 	 *
 	 * \param dec Domain decompositon
@@ -995,6 +1006,16 @@ public:
 	 *
 	 */
 	inline Decomposition & getDecomposition()
+	{
+		return dec;
+	}
+
+	/*! \brief Get the decomposition
+	 *
+	 * \return
+	 *
+	 */
+	inline const Decomposition & getDecomposition() const
 	{
 		return dec;
 	}

@@ -10,7 +10,7 @@ OBJ_SER = main_ser.o
 all: vect_cp vect_ser
 
 %.o: %.cpp
-	$(CC) -O0 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -fext-numeric-literals -O3 -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
 
 vect_cp: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)

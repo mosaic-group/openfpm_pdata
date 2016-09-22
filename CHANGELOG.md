@@ -13,9 +13,16 @@ All notable changes to this project will be documented in this file.
 - Miss-compilation of SUITESPARSE on gcc-6.2
 - vector_dist with negative domain (Now supported)
 - Grid 1D has been fixed
-- One constructor of Box had arguments inverted. 
+- One constructor of Box had arguments inverted.
+  PLEASE CAREFULL ON THIS BUG
+     float xmin[] = {0.0,0.0};
+     float xmax[] = {1.0,1.0};
+     // Box<2,float> box(xmax,xmin)    BUG IT WAS xmax,xmin
+	 Box<2,float> box(xmin,xmax)  <--- NOW IT IS xmin,xmax
+	 Box<2,float> box({0.0,0.0},{1.0,1.0}) <---- This constructor is not affected by the BUG
 
 ### Changed
+- On gcc the -fext-numeric-literals compilation flag is now mandatory
 
 ## [0.5.0] - 15 August 2016
 

@@ -175,14 +175,11 @@ my_save_cflags="$CXXFLAGS"
 CXXFLAGS=-fext-numeric-literals
 AC_MSG_CHECKING([whether CXX supports -fext-numeric-literals])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
-    [AC_MSG_RESULT([yes])],
-    [
-     AM_CXXFLAGS=-fext-numeric-literals
-     echo "-fext-numeric-literals" > config_opt
+    [AC_MSG_RESULT([yes])
+     AM_CXXFLAGS="-fext-numeric-literals"
     ],
     [
-     AC_MSG_RESULT([no]),
-     echo "" > config_opt
+     AC_MSG_RESULT([no])
     ]
 )
 AC_LANG_POP([C++])

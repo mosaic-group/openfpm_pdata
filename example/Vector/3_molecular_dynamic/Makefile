@@ -12,7 +12,7 @@ OBJ_VL_SYM = main_vl_sym.o
 all: md_dyn md_dyn_expr md_dyn_vl md_dyn_vl_sym
 
 %.o: %.cpp
-	$(CC) -O3 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -fext-numeric-literals -O3 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
 
 md_dyn: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)

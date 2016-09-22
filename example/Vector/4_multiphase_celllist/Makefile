@@ -7,7 +7,7 @@ LDIR =
 OBJ = main.o
 
 %.o: %.cpp
-	$(CC) -O0 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -fext-numeric-literals -O3 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
 
 cell: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)

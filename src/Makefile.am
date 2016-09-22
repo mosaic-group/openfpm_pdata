@@ -18,7 +18,7 @@ nobase_include_HEADERS = Decomposition/CartDecomposition.hpp Decomposition/CartD
 
 lib_LIBRARIES = libofpm_pdata.a
 libofpm_pdata_a_SOURCES = lib/pdata.cpp
-libofpm_pdata_a_CXXFLAGS = $(INCLUDES_PATH) $(BOOST_CPPFLAGS) -I/usr/local/include -Wno-unused-local-typedefs
+libofpm_pdata_a_CXXFLAGS = $(AM_CXXFLAGS) $(INCLUDES_PATH) $(BOOST_CPPFLAGS) -I/usr/local/include -Wno-unused-local-typedefs
 libofpm_pdata_a_CFLAGS =
 
 .cu.o :

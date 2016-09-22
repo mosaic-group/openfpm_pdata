@@ -164,7 +164,7 @@ public:
 	 *
 	 */
 	vector_dist(const vector_dist<dim,St,prop,Decomposition,Memory> & v)
-	:vector_dist_comm<dim,St,prop,Decomposition,Memory>(v.dec),v_cl(v.v_cl)
+	:vector_dist_comm<dim,St,prop,Decomposition,Memory>(v.getDecomposition()),v_cl(v.v_cl)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -799,6 +799,16 @@ public:
 		return vector_dist_comm<dim,St,prop,Decomposition,Memory>::getDecomposition();
 	}
 
+	/*! \brief Get the decomposition
+	 *
+	 * \return
+	 *
+	 */
+	inline const Decomposition & getDecomposition() const
+	{
+		return vector_dist_comm<dim,St,prop,Decomposition,Memory>::getDecomposition();
+	}
+
 	/*! \brief It move all the particles that does not belong to the local processor to the respective processor
 	 *
 	 * \tparam out of bound policy it specify what to do when the particles are detected out of bound
@@ -1022,7 +1032,14 @@ public:
 	 */
 	void getCellListParams(St r_cut, size_t (&div)[dim],Box<dim, St> & box, Ghost<dim,St> enlarge = Ghost<dim,St>(0.0))
 	{
-		box = cl_param_calculate(div,r_cut,enlarge);
+		// get the processor bounding box
+		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+
+		// enlarge the processor bounding box by the ghost
+		Ghost<dim,St> g = getDecomposition().getGhost();
+		pbox.enlarge(g);
+
+		cl_param_calculate(pbox, div,r_cut,enlarge);
 	}
 
 	/*! \brief It return the id of structure in the allocation list
