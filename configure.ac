@@ -167,6 +167,29 @@ if test x"$scancoverty" = x"yes"; then
 fi
 
 
+###### Checking for compiler flags -fext-numeric-literals
+
+AC_LANG_PUSH([C++])
+
+my_save_cflags="$CXXFLAGS"
+CXXFLAGS=-fext-numeric-literals
+AC_MSG_CHECKING([whether CXX supports -fext-numeric-literals])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
+    [AC_MSG_RESULT([yes])],
+    [
+     AM_CXXFLAGS=-fext-numeric-literals
+     echo "-fext-numeric-literals" > config_opt
+    ],
+    [
+     AC_MSG_RESULT([no]),
+     echo "" > config_opt
+    ]
+)
+AC_LANG_POP([C++])
+CXXFLAGS="$my_save_cflags"
+AC_SUBST([AM_CXXFLAGS])
+
+
 ## Check for parMetis
 
 IMMDX_LIB_PARMETIS([],[echo "Cannot detect parmetis, use the --with-parmetis option if it is not installed in the default location"
