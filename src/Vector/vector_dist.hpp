@@ -178,7 +178,7 @@ public:
 	 * \param v vector to copy
 	 *
 	 */
-	vector_dist(vector_dist<dim,St,prop,Decomposition,Memory> && v)
+	vector_dist(vector_dist<dim,St,prop,Decomposition,Memory> && v) noexcept
 	:v_cl(v.v_cl)
 	{
 #ifdef SE_CLASS2
