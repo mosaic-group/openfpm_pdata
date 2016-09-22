@@ -49,10 +49,13 @@ class vector_dist_comm
 	//! third id is the processor id
 	openfpm::vector<aggregate<size_t,size_t,size_t>> m_opart;
 
-	//! Per processor ordered particles id for ghost_get
+	//! Per processor ordered particles id for ghost_get (see prc_g_opart)
 	//! For each processor the internal vector store the id of the
 	//! particles that must be communicated to the other processors
 	openfpm::vector<openfpm::vector<aggregate<size_t,size_t>>> g_opart;
+
+	// processor rank list of g_opart
+	openfpm::vector<size_t> prc_g_opart;
 
 	//! Sending buffer for the ghost particles position
 	openfpm::vector<send_pos_vector> g_pos_send;
@@ -671,6 +674,7 @@ class vector_dist_comm
 		// Buffer that contain for each processor the id of the particle to send
 		g_opart.clear();
 		g_opart.resize(dec.getNNProcessors());
+		prc_g_opart.clear();
 
 		// Iterate over all particles
 		auto it = v_pos.getIteratorTo(g_m);
@@ -833,12 +837,9 @@ public:
 		v_pos.resize(g_m);
 		v_prp.resize(g_m);
 
-		// Create processor list
-		openfpm::vector<size_t> prc;
-
 		// Label all the particles
 		if ((opt & SKIP_LABELLING) == false)
-			labelParticlesGhost(v_pos,v_prp,prc,g_m);
+			labelParticlesGhost(v_pos,v_prp,prc_g_opart,g_m);
 
 		// Send and receive ghost particle information
 		openfpm::vector<send_vector> g_send_prp;
@@ -850,13 +851,13 @@ public:
 
 		prc_recv_get.clear();
 		recv_sz_get.clear();
-		v_cl.SSendRecvP<send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc,prc_recv_get,recv_sz_get);
+		v_cl.SSendRecvP<send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get);
 
 		if (opt != NO_POSITION)
 		{
 			prc_recv_get.clear();
 			recv_sz_get.clear();
-			v_cl.SSendRecv(g_pos_send,v_pos,prc,prc_recv_get,recv_sz_get);
+			v_cl.SSendRecv(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_get);
 		}
 
 		add_loc_particles_bc(v_pos,v_prp,g_m,opt);
