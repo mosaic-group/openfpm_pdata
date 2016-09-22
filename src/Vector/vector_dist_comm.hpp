@@ -749,6 +749,7 @@ public:
 	 *
 	 */
 	vector_dist_comm(const vector_dist_comm<dim,St,prop,Decomposition,Memory> & v)
+	:v_cl(create_vcluster()),dec(create_vcluster())
 	{
 		this->operator=(v);
 	}
@@ -1043,7 +1044,7 @@ public:
 	 */
 	vector_dist_comm<dim,St,prop,Decomposition,Memory> & operator=(vector_dist_comm<dim,St,prop,Decomposition,Memory> && vc)
 	{
-		dec.swap(vc.dec);
+		dec = vc.dec;
 
 		return *this;
 	}

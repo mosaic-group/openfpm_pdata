@@ -1771,6 +1771,52 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 	}
 }
 
+BOOST_AUTO_TEST_CASE( vector_of_vector_dist )
+{
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 48)
+		return;
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	// Box
+	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// ghost
+	Ghost<3,float> ghost(0.1);
+
+	openfpm::vector< vector_dist<3,float, aggregate<double,double>> > phases;
+
+	// first phase
+	phases.add( vector_dist<3,float, aggregate<double,double>>(4096,box,bc,ghost) );
+
+	// The other 3 phases
+	phases.add( vector_dist<3,float, aggregate<double,double>>(phases.get(0).getDecomposition(),4096) );
+	phases.add( vector_dist<3,float, aggregate<double,double>>(phases.get(0).getDecomposition(),4096) );
+	phases.add( vector_dist<3,float, aggregate<double,double>>(phases.get(0).getDecomposition(),4096) );
+
+	phases.get(0).map();
+	phases.get(0).ghost_get<>();
+	phases.get(1).map();
+	phases.get(1).ghost_get<>();
+	phases.get(2).map();
+	phases.get(2).ghost_get<>();
+	phases.get(3).map();
+	phases.get(3).ghost_get<>();
+
+	size_t cnt = 0;
+
+	for (size_t i = 0 ; i < phases.size() ; i++)
+		cnt += phases.get(i).size_local();
+
+	v_cl.sum(cnt);
+	v_cl.execute();
+
+	BOOST_REQUIRE_EQUAL(cnt,4*4096ul);
+}
+
 #include "vector_dist_cell_list_tests.hpp"
 #include "vector_dist_NN_tests.hpp"
 #include "vector_dist_complex_prp_unit_test.hpp"
