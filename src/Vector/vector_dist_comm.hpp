@@ -54,9 +54,6 @@ class vector_dist_comm
 	//! particles that must be communicated to the other processors
 	openfpm::vector<openfpm::vector<aggregate<size_t,size_t>>> g_opart;
 
-	//! For each adjacent processor the size of the ghost sending buffer
-	openfpm::vector<size_t> ghost_prc_sz;
-
 	//! Sending buffer for the ghost particles position
 	openfpm::vector<send_pos_vector> g_pos_send;
 
@@ -419,11 +416,11 @@ class vector_dist_comm
 		const openfpm::vector<Point<dim, St>> & shifts = dec.getShiftVectors();
 
 		// create a number of send buffers equal to the near processors
-		g_pos_send.resize(ghost_prc_sz.size());
+		g_pos_send.resize(g_opart.size());
 		for (size_t i = 0; i < g_pos_send.size(); i++)
 		{
 			// resize the sending vector (No allocation is produced)
-			g_pos_send.get(i).resize(ghost_prc_sz.get(i));
+			g_pos_send.get(i).resize(g_opart.get(i).size());
 		}
 
 		// Fill the send buffer
@@ -498,11 +495,11 @@ class vector_dist_comm
 	template<typename send_vector, typename prp_object, int ... prp> void fill_send_ghost_prp_buf(openfpm::vector<prop> & v_prp, openfpm::vector<send_vector> & g_send_prp)
 	{
 		// create a number of send buffers equal to the near processors
-		g_send_prp.resize(ghost_prc_sz.size());
+		g_send_prp.resize(g_opart.size());
 		for (size_t i = 0; i < g_send_prp.size(); i++)
 		{
 			// resize the sending vector (No allocation is produced)
-			g_send_prp.get(i).resize(ghost_prc_sz.get(i));
+			g_send_prp.get(i).resize(g_opart.get(i).size());
 		}
 
 		// Fill the send buffer
@@ -658,49 +655,6 @@ class vector_dist_comm
 		}
 	}
 
-	/*! \brief Calculate send buffers total size and allocation
-	 *
-	 * \tparam prp_object object containing only the properties to send
-	 *
-	 * \param v_pos vector of particle positions
-	 * \param v_prp vector of particle properties
-	 * \param size_byte_prp total size for the property buffer
-	 * \param size_byte_pos total size for the position buffer
-	 *
-	 */
-	template<typename prp_object> void calc_send_ghost_buf(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & size_byte_prp, size_t & size_byte_pos)
-	{
-		// Calculate the total size required for the sending buffer
-		for (size_t i = 0; i < ghost_prc_sz.size(); i++)
-		{
-			size_t alloc_ele = openfpm::vector<prp_object, HeapMemory, typename memory_traits_lin<prp_object>::type, memory_traits_lin , openfpm::grow_policy_identity>::calculateMem(ghost_prc_sz.get(i), 0);
-			size_byte_prp += alloc_ele;
-
-			alloc_ele = openfpm::vector<Point<dim, St>, HeapMemory, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin, openfpm::grow_policy_identity>::calculateMem(ghost_prc_sz.get(i), 0);
-			size_byte_pos += alloc_ele;
-		}
-	}
-
-	/*! \brief Calculate send buffers total size and allocation
-	 *
-	 * \tparam prp_object object containing only the properties to send
-	 *
-	 * \param v_pos vector of particle positions
-	 * \param v_prp vector of particle properties
-	 * \param size_byte_prp total size for the property buffer
-	 * \param size_byte_pos total size for the position buffer
-	 *
-	 */
-	template<typename prp_object> void calc_send_ghost_put_buf(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & size_byte_prp, size_t & size_byte_pos)
-	{
-		// Calculate the total size required for the sending buffer
-		for (size_t i = 0; i < recv_sz_get.size(); i++)
-		{
-			size_t alloc_ele = openfpm::vector<prp_object, HeapMemory, typename memory_traits_lin<prp_object>::type, memory_traits_lin , openfpm::grow_policy_identity>::calculateMem(recv_sz_get.get(i), 0);
-			size_byte_prp += alloc_ele;
-		}
-	}
-
 	/*! \brief Label the particles
 	 *
 	 * It count the number of particle to send to each processors and save its ids
@@ -712,12 +666,8 @@ class vector_dist_comm
 	 * \param g_m ghost marker
 	 *
 	 */
-	void labelParticlesGhost(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & g_m)
+	void labelParticlesGhost(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, openfpm::vector<size_t> & prc, size_t & g_m)
 	{
-		// Buffer that contain the number of elements to send for each processor
-		ghost_prc_sz.clear();
-		ghost_prc_sz.resize(dec.getNNProcessors());
-
 		// Buffer that contain for each processor the id of the particle to send
 		g_opart.clear();
 		g_opart.resize(dec.getNNProcessors());
@@ -738,7 +688,6 @@ class vector_dist_comm
 				size_t p_id = vp_id.get(i).first;
 
 				// add particle to communicate
-				ghost_prc_sz.get(p_id)++;
 				g_opart.get(p_id).add();
 				g_opart.get(p_id).last().template get<0>() = key;
 				g_opart.get(p_id).last().template get<1>() = vp_id.get(i).second;
@@ -746,6 +695,22 @@ class vector_dist_comm
 
 			++it;
 		}
+
+		// remove all zero entry and construct prc (the list of the sending processors)
+		openfpm::vector<openfpm::vector<aggregate<size_t,size_t>>> g_opart_f;
+
+		// count the non zero element
+		for (size_t i = 0 ; i < g_opart.size() ; i++)
+		{
+			if (g_opart.get(i).size() != 0)
+			{
+				g_opart_f.add();
+				g_opart.get(i).swap(g_opart_f.last());
+				prc.add(dec.IDtoProc(i));
+			}
+		}
+
+		g_opart.swap(g_opart_f);
 	}
 
 	/*! \brief Call-back to allocate buffer to receive incoming elements (particles)
@@ -868,17 +833,12 @@ public:
 		v_pos.resize(g_m);
 		v_prp.resize(g_m);
 
+		// Create processor list
+		openfpm::vector<size_t> prc;
+
 		// Label all the particles
 		if ((opt & SKIP_LABELLING) == false)
-			labelParticlesGhost(v_pos,v_prp,g_m);
-
-		// Calculate memory and allocation for the send buffers
-
-		// Total size
-		size_t size_byte_prp = 0;
-		size_t size_byte_pos = 0;
-
-		calc_send_ghost_buf<prp_object>(v_pos,v_prp,size_byte_prp, size_byte_pos);
+			labelParticlesGhost(v_pos,v_prp,prc,g_m);
 
 		// Send and receive ghost particle information
 		openfpm::vector<send_vector> g_send_prp;
@@ -887,11 +847,6 @@ public:
 		// Create and fill the send buffer for the particle position
 		if (opt != NO_POSITION)
 			fill_send_ghost_pos_buf(v_pos,g_pos_send);
-
-		// Create processor list
-		openfpm::vector<size_t> prc;
-		for (size_t i = 0; i < g_opart.size(); i++)
-			prc.add(dec.IDtoProc(i));
 
 		prc_recv_get.clear();
 		recv_sz_get.clear();
@@ -1088,14 +1043,6 @@ public:
 
 		// send vector for each processor
 		typedef openfpm::vector<prp_object> send_vector;
-
-		// Calculate memory and allocation for the send buffers
-
-		// Total size
-		size_t size_byte_prp = 0;
-		size_t size_byte_pos = 0;
-
-		calc_send_ghost_put_buf<prp_object>(v_pos,v_prp,size_byte_prp, size_byte_pos);
 
 		openfpm::vector<send_vector> g_send_prp;
 		fill_send_ghost_put_prp_buf<send_vector, prp_object, prp...>(v_prp,g_send_prp,g_m);
