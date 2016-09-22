@@ -308,7 +308,7 @@ int main(int argc, char* argv[])
 	//! \cond [verletlist] \endcond
 
 	openfpm::vector<openfpm::vector<size_t>> verlet;
-	vd.getVerlet(verlet,r_cut);
+	vd.getVerletDeprecated(verlet,r_cut);
 
 	// For each particle i verlet.size() == Number of particles
 	for (size_t i = 0 ; i < verlet.size() ; i++)
