@@ -1862,7 +1862,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_unbound_ghost )
 	// Domain
 	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
 
-	long int k = 32*32*32*create_vcluster().getProcessingUnits();
+	long int k = 28*28*28*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);
 
 	Test3D_unb_ghost(domain3,k);
