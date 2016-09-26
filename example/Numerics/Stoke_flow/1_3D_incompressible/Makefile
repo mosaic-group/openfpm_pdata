@@ -13,10 +13,10 @@ OBJ_PETSC = main_petsc.o
 all: stokes_3d_eigen stokes_3d_petsc
 
 stokes_3d_eigen: $(OBJ_EIGEN)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
+	$(CC) -fopenmp -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 stokes_3d_petsc: $(OBJ_PETSC)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
+	$(CC) -fopenmp -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 run: all
 	source $$HOME/openfpm_vars; mpirun -np 3 ./stokes_3d_eigen; mpirun -np 3 ./stokes_3d_petsc
