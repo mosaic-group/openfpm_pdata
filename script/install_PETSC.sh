@@ -109,9 +109,9 @@ if [ ! -d "$1/TRILINOS" ]; then
   petsc_openmp=""
   if [ x"$dgc_compiler" == x"clang++" ]; then
     conf_trl_openmp="-D Trilinos_ENABLE_OpenMP=OFF"
-    petsc_openmp="--with-openmp=yes"
   else
     conf_trl_openmp="-D Trilinos_ENABLE_OpenMP=ON"
+#    petsc_openmp="--with-openmp=yes"
   fi
 
   cmake -D CMAKE_INSTALL_PREFIX:PATH=$1/TRILINOS -D CMAKE_BUILD_TYPE=RELEASE $conf_trl_openmp -D Trilinos_ENABLE_TESTS=OFF  -D Trilinos_ENABLE_ALL_PACKAGES=ON $configure_trilinos_options  ../.

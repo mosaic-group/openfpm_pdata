@@ -147,6 +147,9 @@ AC_CHECK_LIB(quadmath, sinq, [AC_DEFINE(HAVE_LIBQUADMATH,[],[Have quad math lib]
                                 LIBQUADMATH=" -lquadmath "
                                 ], [])
 
+AC_SUBST(OPENMP_CFLAGS)
+AC_SUBST(OPENMP_LDFLAGS)
+
 ########
 
 ## Enable scan coverty
