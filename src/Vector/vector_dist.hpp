@@ -347,6 +347,48 @@ public:
 		return v_prp.template get<id>(g_m - 1);
 	}
 
+	/*! \brief Construct a cell list symmetric based on a cut of radius
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 *
+	 * \return the Cell list
+	 *
+	 */
+	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > CellL getCellListSym(St r_cut)
+	{
+		// Cell list
+		CellL cell_list;
+		size_t div[dim];
+
+		// Calculate the Cell list division for this CellList
+		CellDecomposer<dim,St,shift<dim,St>> cd_sm;
+
+		for (size_t i = 0 ; i < dim ; i++)
+			div[i] = (domain.getHigh(i) - domain.getLow(i)) / r_cut;
+
+		size_t pad = 0;
+		Ghost g = getDecomposition().getGhost();
+		g.magnify(1.013);
+
+		// Calculate the maximum padding
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			size_t tmp = std::ceil(fabs(g.getLow(i)) / r_cut);
+			pad = (pad > tmp)?pad:tmp;
+		}
+
+		cd_sm.Initialize(domain,div,pad);
+
+		// get the processor bounding box
+		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+
+		cell_list.Initialize(cd_sm, pbox);
+
+		updateCellList(cell_list);
+	}
+
 	/*! \brief Construct a cell list starting from the stored particles
 	 *
 	 * \tparam CellL CellList type to construct

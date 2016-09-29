@@ -1817,6 +1817,140 @@ BOOST_AUTO_TEST_CASE( vector_of_vector_dist )
 	BOOST_REQUIRE_EQUAL(cnt,4*4096ul);
 }
 
+BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
+{
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 24)
+		return;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+    long int k = 524288 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 4;
+	big_step = (big_step == 0)?1:big_step;
+
+	print_test("Testing 3D periodic vector symmetric cell-list k=",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list k=" << k );
+
+	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	float r_cut = 0.1;
+
+	// ghost
+	Ghost<3,float> ghost(r_cut);
+
+	typedef  aggregate<size_t,size_t> part_prop;
+
+	// Distributed vector
+	vector_dist<3,float, part_prop > vd(k,box,bc,ghost);
+
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.getPos(key)[0] = ud(eg);
+		vd.getPos(key)[1] = ud(eg);
+		vd.getPos(key)[2] = ud(eg);
+
+		// Fill some properties randomly
+
+		vd.getProp<0>(key) = 0.0;
+
+		++it;
+	}
+
+	vd.map();
+
+	// sync the ghost
+	vd.ghost_get<0>();
+
+	auto NN = vd.getCellList(0.1);
+
+	auto p_it = vd.getDomainIterator();
+
+	while (p_it.isNext())
+	{
+		auto p = p_it.get();
+
+		Point<3,float> xp = vd.getPos(p);
+
+		auto Np = NN.getIterator(NN.getCell(vd.getPos(p)));
+
+		while (Np.isNext())
+		{
+			auto q = Np.get();
+
+			// repulsive
+
+			Point<3,float> xq = vd.getPos(q);
+			Point<3,float> f = (xp - xq);
+
+			float distance = f.norm();
+
+			// Particle should be inside 2 * r_cut range
+
+			if (distance < r_cut )
+				vd.getProp<0>(p)++;
+
+			++Np;
+		}
+
+		++p_it;
+	}
+
+	// We now try symmetric  Cell-list
+
+	auto NN2 = vd.getCellListSym(0.1);
+
+	auto p_it2 = vd.getDomainIterator();
+
+	while (p_it2.isNext())
+	{
+		auto p = p_it2.get();
+
+		Point<3,float> xp = vd.getPos(p);
+
+		auto Np = NN2.getIterator(NN2.getCell(vd.getPos(p)));
+
+		while (Np.isNext())
+		{
+			auto q = Np.get();
+
+			// repulsive
+
+			Point<3,float> xq = vd.getPos(q);
+			Point<3,float> f = (xp - xq);
+
+			float distance = f.norm();
+
+			// Particle should be inside r_cut range
+
+			if (distance < r_cut )
+			{
+				vd.getProp<1>(p)++;
+				vd.getProp<1>(q)++;
+			}
+
+			++Np;
+		}
+
+		++p_it;
+	}
+
+	vd.ghost_put<add,1>();
+}
+
 #include "vector_dist_cell_list_tests.hpp"
 #include "vector_dist_NN_tests.hpp"
 #include "vector_dist_complex_prp_unit_test.hpp"

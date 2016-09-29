@@ -200,7 +200,6 @@ class grid_dist_id
 			{
 				// Get the internal ghost boxes and transform into grid units
 				::Box<dim,St> ib_dom = dec.getProcessorIGhostBox(i,j);
-				ib_dom -= cd_sm.getOrig();
 				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom,dec.periodicity());
 
 				// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
@@ -321,7 +320,6 @@ class grid_dist_id
 			{
 				// Get the internal ghost boxes and transform into grid units
 				::Box<dim,St> ib_dom = dec.getLocalIGhostBox(i,j);
-				ib_dom -= cd_sm.getOrig();
 				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom,dec.periodicity());
 
 				// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
