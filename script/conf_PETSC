@@ -1,0 +1,48 @@
+#! /bin/bash
+
+function conf_PETSC()
+{
+if [ -d "$i_dir/PETSC" ]; then
+    configure_options="$configure_options --with-petsc=$i_dir/PETSC "
+    lin_alg_dir="$lin_alg_dir -L$i_dir/PETSC/lib"
+    lin_alg_lib="$lin_alg_lib -lpetsc"
+    lin_alg_inc="$lin_alg_inc -I$i_dir/PETSC/include"
+fi
+if [ -d "$i_dir/HYPRE" ]; then
+    lin_alg_dir="$lin_alg_dir -L$i_dir/HYPRE/lib"
+    lin_alg_inc="$lin_alg_inc -I$i_dir/HYPRE/include"
+fi
+if [ -d "$i_dir/MUMPS" ]; then
+    lin_alg_dir="$lin_alg_dir -L$i_dir/MUMPS/lib"
+    lin_alg_inc="$lin_alg_inc -I$i_dir/MUMPS/include"
+fi
+if [ -d "$i_dir/OPENBLAS" ]; then
+    lin_alg_dir="$lin_alg_dir -L$i_dir/OPENBLAS/lib"
+    lin_alg_lib="$lin_alg_lib -lopenblas"
+    lin_alg_inc="$lin_alg_inc -I$i_dir/OPENBLAS/include"
+    configure_blas_option="--with-blas=-L$i_dir/OPENBLAS/lib -lopenblas"
+fi
+if [ -d "$i_dir/SCALAPACK" ]; then
+    lin_alg_dir="$lin_alg_dir -L$i_dir/SCALAPACK/lib"
+    lin_alg_inc="$lin_alg_inc -I$i_dir/SCALAPACK/include"
+fi
+if [ -d "$i_dir/SUPERLU_DIST" ]; then
+    lin_alg_dir="$lin_alg_dir -L$i_dir/SUPERLU_DIST/lib"
+    lin_alg_inc="$lin_alg_inc -I$i_dir/SUPERLU_DIST/include"
+fi
+if [ -d "$i_dir/TRILINOS" ]; then
+    lin_alg_dir="$lin_alg_dir -L$i_dir/TRILINOS/lib"
+    lin_alg_inc="$lin_alg_inc -I$i_dir/TRILINOS/include"
+fi
+if [ -d "$i_dir/SUITESPARSE" ]; then
+    lin_alg_dir="$lin_alg_dir -L$i_dir/SUITESPARSE/lib"
+    lin_alg_inc="$lin_alg_inc -I$i_dir/SUITESPARSE/include"
+    lin_alg_lib="$lin_alg_lib -lumfpack -lamd -lbtf -lcamd -lccolamd -lcholmod -lcolamd -lcxsparse -lklu -ldl -lrbio -lspqr -lsuitesparseconfig"
+    configure_options="$configure_options --with-suitesparse=$i_dir/SUITESPARSE "
+fi
+if [ -d "$i_dir/EIGEN" ]; then
+    configure_options=" $configure_options --with-eigen=$i_dir/EIGEN "
+    lin_alg_inc="$lin_alg_inc -I$i_dir/EIGEN"
+fi
+}
+

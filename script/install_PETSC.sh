@@ -298,4 +298,7 @@ make install
 # if empty remove the folder
 if [ ! "$(ls -A $1/PETSC)" ]; then
    rm -rf $1/PETSC
+else
+   exit 0
 fi
+

@@ -150,6 +150,8 @@ AC_CHECK_LIB(quadmath, sinq, [AC_DEFINE(HAVE_LIBQUADMATH,[],[Have quad math lib]
 AC_SUBST(OPENMP_CFLAGS)
 AC_SUBST(OPENMP_LDFLAGS)
 
+echo "$OPENMP_CFLAGS" > openmp_flags
+
 ########
 
 ## Enable scan coverty
