@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [0.5.1] - Mid september
+## [0.5.1] - 27 September 2016
 
 ### Added
 - ghost_put support for particles

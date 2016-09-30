@@ -846,7 +846,8 @@ public:
 		typedef openfpm::vector<prp_object> send_vector;
 
 		// reset the ghost part
-		v_pos.resize(g_m);
+		if (opt != NO_POSITION)
+			v_pos.resize(g_m);
 		v_prp.resize(g_m);
 
 		// Label all the particles

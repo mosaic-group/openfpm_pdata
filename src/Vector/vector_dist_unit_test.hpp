@@ -1948,7 +1948,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 		++p_it;
 	}
 
-	vd.ghost_put<add,1>();
+	vd.ghost_put<add_,1>();
 }
 
 #include "vector_dist_cell_list_tests.hpp"

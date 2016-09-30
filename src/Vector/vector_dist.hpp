@@ -363,13 +363,13 @@ public:
 		size_t div[dim];
 
 		// Calculate the Cell list division for this CellList
-		CellDecomposer<dim,St,shift<dim,St>> cd_sm;
+		CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
 
 		for (size_t i = 0 ; i < dim ; i++)
-			div[i] = (domain.getHigh(i) - domain.getLow(i)) / r_cut;
+			div[i] = (getDecomposition().getDomain().getHigh(i) - getDecomposition().getDomain().getLow(i)) / r_cut;
 
 		size_t pad = 0;
-		Ghost g = getDecomposition().getGhost();
+		Ghost<dim,St> g = getDecomposition().getGhost();
 		g.magnify(1.013);
 
 		// Calculate the maximum padding
@@ -379,14 +379,16 @@ public:
 			pad = (pad > tmp)?pad:tmp;
 		}
 
-		cd_sm.Initialize(domain,div,pad);
+		cd_sm.setDimensions(getDecomposition().getDomain(),div,pad);
 
 		// get the processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
 
-		cell_list.Initialize(cd_sm, pbox);
+		cell_list.setDimensions(cd_sm, pbox);
 
 		updateCellList(cell_list);
+
+		return cell_list;
 	}
 
 	/*! \brief Construct a cell list starting from the stored particles
