@@ -381,10 +381,12 @@ public:
 
 		cd_sm.setDimensions(getDecomposition().getDomain(),div,pad);
 
-		// get the processor bounding box
+		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
 
-		cell_list.setDimensions(cd_sm, pbox);
+		// Ghost padding extension
+		Ghost<dim,size_t> g_ext(0);
+		cell_list.Initialize(cd_sm,pbox,pad);
 
 		updateCellList(cell_list);
 
@@ -1114,6 +1116,16 @@ public:
 		check_valid(this,8);
 #endif
 		return v_cl;
+	}
+
+	/*! \brief return the position vector of all the particles
+	 *
+	 * \return the particle position vector
+	 *
+	 */
+	const openfpm::vector<Point<dim,St>> & getPosVector() const
+	{
+		return v_pos;
 	}
 };
 

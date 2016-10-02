@@ -749,7 +749,7 @@ public:
 	 *
 	 */
 	vector_dist_comm(const vector_dist_comm<dim,St,prop,Decomposition,Memory> & v)
-	:v_cl(create_vcluster()),dec(create_vcluster())
+	:v_cl(create_vcluster()),dec(create_vcluster()),lg_m(0)
 	{
 		this->operator=(v);
 	}
@@ -761,7 +761,7 @@ public:
 	 *
 	 */
 	vector_dist_comm(const Decomposition & dec)
-	:v_cl(create_vcluster()),dec(dec)
+	:v_cl(create_vcluster()),dec(dec),lg_m(0)
 	{
 
 	}
@@ -781,7 +781,7 @@ public:
 	 *
 	 */
 	vector_dist_comm()
-	:v_cl(create_vcluster()),dec(create_vcluster())
+	:v_cl(create_vcluster()),dec(create_vcluster()),lg_m(0)
 	{
 	}
 
