@@ -14,7 +14,6 @@
 #include "Vector/vector_dist_iterator.hpp"
 #include "Space/Shape/Box.hpp"
 #include "Vector/vector_dist_key.hpp"
-#include "memory/PreAllocHeapMemory.hpp"
 #include "memory/PtrMemory.hpp"
 #include "NN/CellList/CellList.hpp"
 #include "NN/CellList/CellListFast_hilb.hpp"

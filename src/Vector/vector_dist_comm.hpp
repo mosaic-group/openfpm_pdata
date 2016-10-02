@@ -166,33 +166,6 @@ class vector_dist_comm
 		return end_id;
 	}
 
-	/*! \brief It store for each processor the position and properties vector of the particles
-	 *
-	 * This structure is used in the map function
-	 *
-	 */
-	struct pos_prop
-	{
-		//! position vector
-		openfpm::vector<Point<dim, St>, PreAllocHeapMemory<2>, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin, openfpm::grow_policy_identity> pos;
-		//! properties vector
-		openfpm::vector<prop, PreAllocHeapMemory<2>, typename memory_traits_lin<prop>::type, memory_traits_lin, openfpm::grow_policy_identity> prp;
-	};
-
-	/*! \brief for each processor store 2 vector containing the sending buffers
-	 *
-	 * This structure is used in the map_list function
-	 *
-	 */
-	template <typename sel_prop>
-	struct pos_prop_sel
-	{
-		//! position vector
-		openfpm::vector<Point<dim, St>, PreAllocHeapMemory<2>, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin, openfpm::grow_policy_identity> pos;
-		//! properties vector
-		openfpm::vector<sel_prop, PreAllocHeapMemory<2>, typename memory_traits_lin<sel_prop>::type, memory_traits_lin, openfpm::grow_policy_identity> prp;
-	};
-
 	//! Flags that indicate that the function createShiftBox() has been called
 	bool is_shift_box_created = false;
 
