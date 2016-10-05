@@ -1047,6 +1047,27 @@ public:
 		// Send and receive ghost particle information
 		op_ssend_recv_merge<op> opm(g_opart);
 		v_cl.SSendRecvP_op<op_ssend_recv_merge<op>,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_recv_get,opm,prc_recv_put,recv_sz_put);
+
+		// process also the local replicated particles
+
+		size_t i2 = 0;
+
+		#ifdef SE_CLASS1
+
+		if (v_prp.size() - lg_m != o_part_loc.size())
+			std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " v_prp.size() - lg_m = " << v_prp.size() - lg_m << " != " << o_part_loc.size() << std::endl;
+
+		#endif
+
+		for (size_t i = lg_m ; i < v_prp.size() ; i++)
+		{
+			auto dst = v_prp.get(o_part_loc.template get<0>(i2));
+			auto src = v_prp.get(i);
+			copy_cpu_encap_encap_op_prp<op,decltype(v_prp.get(0)),decltype(v_prp.get(0)),prp...> cp(src,dst);
+
+			boost::mpl::for_each_ref< boost::mpl::range_c<int,0,sizeof...(prp)> >(cp);
+			i2++;
+		}
 	}
 };
 

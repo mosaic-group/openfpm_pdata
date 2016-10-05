@@ -31,11 +31,10 @@ class ie_ghost
 	//! It store the same information of box_nn_processor_int organized by processor id
 	openfpm::vector< Box_dom<dim,T> > proc_int_box;
 
-	// External ghost boxes for this processor, indicated with G8_0 G9_0 ...
+	//! External ghost boxes for this processor
 	openfpm::vector<p_box<dim,T> > vb_ext;
 
-	// Internal ghost boxes for this processor domain, indicated with B8_0 B9_0 ..... in the figure
-	// below as a linear vector
+	//! Internal ghost boxes for this processor domain
 	openfpm::vector<p_box<dim,T> > vb_int;
 
 	//! Cell-list that store the geometrical information of the internal ghost boxes
@@ -44,8 +43,10 @@ class ie_ghost
 	//! shift vectors
 	openfpm::vector<Point<dim,T>> shifts;
 
-	// Temporal buffers to return information for ghost_processorID
+	//! Temporal buffers to return temporal information for ghost_processorID
 	openfpm::vector<std::pair<size_t,size_t>> ids_p;
+
+	//! Temporal buffers to return temporal information
 	openfpm::vector<size_t> ids;
 
 
@@ -188,6 +189,9 @@ protected:
 	 * The geo cell list structure exist to speed up the labelling the points if they fall on some
 	 * internal ghost
 	 *
+	 * \param domain where the cell list is defined
+	 * \param div number of division of the cell list
+	 *
 	 */
 	void Initialize_geo_cell(const Box<dim,T> & domain, const size_t (&div)[dim])
 	{
@@ -200,7 +204,11 @@ protected:
 	 * For each sub-domain of the local processor it store the intersection between the enlarged
 	 * sub-domain of the calling processor with the adjacent processors sub-domains (External ghost box)
 	 *
+	 * \param v_cl Virtual cluster
 	 * \param ghost margins
+	 * \param subdomains vector of local sundomains
+	 * \param box_nn_processor it will store for each sub-domain the near processors
+	 * \param nn_prcs contain the sub-domains of the near processors
 	 *
 	 * \note Are the G8_0 G9_0 G9_1 G5_0 boxes in calculateGhostBoxes
 	 * \see calculateGhostBoxes
@@ -296,8 +304,8 @@ protected:
 	 * \param v_cl Virtual cluster
 	 * \param ghost margins
 	 * \param sub_domains
-	 * \param box_nn_processors sub-domains of the adjacent processors
-	 * \param nn_prcs structure that store the adjacent processor information
+	 * \param box_nn_processors sub-domains of the near processors
+	 * \param nn_prcs structure that store the near processor sub-domains
 	 * \param geo_cell Cell list that store the subdomain information
 	 *
 	 * \note Are the B8_0 B9_0 B9_1 B5_0 boxes in calculateGhostBoxes
@@ -508,6 +516,8 @@ public:
 	 * This function return the set of shift vectors that determine such shift, for example
 	 * in the example above the shift at position 5 will be (0,-1.0)
 	 *
+	 * \return the shift vectors
+	 *
 	 */
 	const openfpm::vector<Point<dim,T>> & getShiftVectors()
 	{
@@ -668,6 +678,8 @@ public:
 
 	/*! \brief Given the internal ghost box id, it return the internal ghost box
 	 *
+	 * \param b_id internal ghost box id
+	 *
 	 * \return the internal ghost box
 	 *
 	 */
@@ -678,6 +690,8 @@ public:
 
 	/*! \brief Given the internal ghost box id, it return the near processor at witch belong
 	 *         or the near processor that produced this internal ghost box
+	 *
+	 * \param internal ghost box id
 	 *
 	 * \return the processor id of the ghost box
 	 *
@@ -699,6 +713,8 @@ public:
 
 	/*! \brief Given the external ghost box id, it return the external ghost box
 	 *
+	 * \param b_id external ghost box id
+	 *
 	 * \return the external ghost box
 	 *
 	 */
@@ -709,6 +725,8 @@ public:
 
 	/*! \brief Given the external ghost box id, it return the near processor at witch belong
 	 *         or the near processor that produced this external ghost box
+	 *
+	 * \param b_id external ghost box id
 	 *
 	 * \return the processor id of the external ghost box
 	 *
@@ -721,6 +739,7 @@ public:
 	/*! /brief Given a point it return the set of boxes in which the point fall
 	 *
 	 * \param p Point to check
+	 *
 	 * \return An iterator with the id's of the internal boxes in which the point fall
 	 *
 	 */
@@ -756,6 +775,8 @@ public:
 	 *        (UNIQUE) is for particle data (MULTIPLE) is for grid data [default MULTIPLE]
 	 *
 	 * \param return the processor ids (not the rank, the id in the near processor list)
+	 *
+	 * \return a vector of pairs containinf the requested infromation
 	 *
 	 */
 	template <typename id1, typename id2> inline const openfpm::vector<std::pair<size_t,size_t>> ghost_processorID_pair(Point<dim,T> & p, const int opt = MULTIPLE)
@@ -806,6 +827,8 @@ public:
 	 *
 	 * \param return the processor ids
 	 *
+	 * \return a vector containing the requested information
+	 *
 	 */
 	template <typename id> inline const openfpm::vector<size_t> ghost_processorID(Point<dim,T> & p, const int opt = MULTIPLE)
 	{
@@ -842,10 +865,12 @@ public:
 	/*! \brief Given a position it return if the position belong to any neighborhood processor ghost
 	 * (Internal ghost)
 	 *
-	 * \tparam id type of if to get box_id processor_id lc_processor_id
+	 * \tparam id1 first index type to get box_id processor_id lc_processor_id
+	 * \tparam id2 second index type to get box_id processor_id lc_processor_id
+	 *
 	 * \param p Particle position
 	 *
-	 * \param return the processor ids
+	 * \return a vector of pair containing the requested information
 	 *
 	 */
 	template<typename id1, typename id2, typename Mem> inline const openfpm::vector<std::pair<size_t,size_t>> ghost_processorID_pair(const encapc<1,Point<dim,T>,Mem> & p, const int opt = MULTIPLE)

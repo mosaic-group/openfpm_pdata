@@ -1618,13 +1618,16 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
 	{
+		float r_cut = 1.3 / k;
+		float r_g = 1.5 / k;
+
 		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 
 		// Boundary conditions
 		size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
 		// ghost
-		Ghost<3,float> ghost(1.3/(k));
+		Ghost<3,float> ghost(r_g);
 
 		typedef  aggregate<float> part_prop;
 
@@ -1656,7 +1659,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 		vd.ghost_get<0>();
 
 		{
-			auto NN = vd.getCellList(1.3/k);
+			auto NN = vd.getCellList(r_cut);
 			float a = 1.0f*k*k;
 
 			// run trough all the particles + ghost
@@ -1680,8 +1683,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 
 					float dist = xp.distance(xq);
 
-					if (dist < 1.0/k)
-						vd.getProp<0>(q) += a*(-dist*dist+1.0/k/k);
+					if (dist < r_cut)
+						vd.getProp<0>(q) += a*(-dist*dist+r_cut*r_cut);
 
 					++Np;
 				}
@@ -1712,8 +1715,18 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 			BOOST_REQUIRE_EQUAL(ret,true);
 		}
 
+		auto itp = vd.getDomainAndGhostIterator();
+		while (itp.isNext())
 		{
-			auto NN = vd.getCellList(1.3/k);
+			auto key = itp.get();
+
+			vd.getProp<0>(key) = 0.0;
+
+			++itp;
+		}
+
+		{
+			auto NN = vd.getCellList(r_cut);
 			float a = 1.0f*k*k;
 
 			// run trough all the particles + ghost
@@ -1737,8 +1750,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 
 					float dist = xp.distance(xq);
 
-					if (dist < 1.0/k)
-						vd.getProp<0>(q) += a*(-dist*dist+1.0/k/k);
+					if (dist < r_cut)
+						vd.getProp<0>(q) += a*(-dist*dist+r_cut*r_cut);
 
 					++Np;
 				}
