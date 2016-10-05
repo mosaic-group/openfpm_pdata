@@ -8,6 +8,8 @@
 #ifndef VECTOR_HPP_
 #define VECTOR_HPP_
 
+#include "../../openfpm_data/src/NN/CellList/CellListFast_gen.hpp"
+#include "../../openfpm_data/src/NN/CellList/CellListFast_gen.hpp"
 #include "HDF5_XdmfWriter/HDF5_XdmfWriter.hpp"
 #include "VCluster.hpp"
 #include "Space/Shape/Point.hpp"
@@ -17,7 +19,6 @@
 #include "memory/PreAllocHeapMemory.hpp"
 #include "memory/PtrMemory.hpp"
 #include "NN/CellList/CellList.hpp"
-#include "NN/CellList/CellListFast_hilb.hpp"
 #include "util/common.hpp"
 #include "util/object_util.hpp"
 #include "memory/ExtPreAlloc.hpp"
@@ -31,7 +32,6 @@
 #include "data_type/aggregate.hpp"
 #include "NN/VerletList/VerletList.hpp"
 #include "vector_dist_comm.hpp"
-#include "NN/CellList/CellListFast_hilb.hpp"
 
 #define NO_ID false
 #define ID true
@@ -375,7 +375,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_hilb<dim, St, Process_keys_hilb<dim>, FAST, shift<dim, St> > > CellL getCellList_hilb(St r_cut)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb<dim>, FAST, shift<dim, St> > > CellL getCellList_hilb(St r_cut)
 	{
 		// Get ghost and anlarge by 1%
 		Ghost<dim,St> g = getDecomposition().getGhost();
@@ -462,7 +462,7 @@ public:
 	 * \return The Cell-list
 	 *
 	 */
-	template<typename CellL = CellList_hilb<dim, St, Process_keys_hilb<dim>, FAST, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb<dim>, FAST, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
 	{
 		CellL cell_list;
 
