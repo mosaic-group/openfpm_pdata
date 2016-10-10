@@ -530,173 +530,206 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 	BOOST_REQUIRE_EQUAL(ret,true);
 }
 
-BOOST_AUTO_TEST_CASE( vector_dist_sym_verlet_list_test )
+
+BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list )
 {
-	if (create_vcluster().getProcessingUnits() > 48)
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 24)
 		return;
 
-	long int k = 4096*create_vcluster().getProcessingUnits();
+	float L = 1000.0;
 
-	long int big_step = k / 30;
+    // set the seed
+	// create the random generator engine
+	std::srand(0);
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(-L,L);
+
+    long int k = 4096 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
-	long int small_step = 21;
 
-	print_test( "Testing vector symmetric verlet-list k<=",k);
+	print_test("Testing 3D periodic vector symmetric cell-list k=",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list k=" << k );
 
-	// 3D test
-	for ( ; k > 8*big_step ; k-= (k > 2*big_step)?big_step:small_step )
+	Box<3,float> box({-L,-L,-L},{L,L,L});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	float r_cut = 100.0;
+
+	// ghost
+	Ghost<3,float> ghost(r_cut);
+
+	// Point and global id
+	struct point_and_gid
 	{
-		double r_cut = 0.1;
+		size_t id;
+		Point<3,float> xq;
 
-		// domain
-		Box<3,double> box({0.0,0.0,0.0},{1.0,1.0,1.0});
-
-		// Boundary conditions
-		size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
-
-		// ghost, big enough to contain the interaction radius
-		Ghost<3,float> ghost(r_cut);
-
-		vector_dist<3,double, aggregate<double> > vd(k,box,bc,ghost);
-
+		bool operator<(const struct point_and_gid & pag)
 		{
-		auto it = vd.getDomainIterator();
-
-		while (it.isNext())
-		{
-			auto p = it.get();
-
-			vd.getPos(p)[0] = (double)rand()/RAND_MAX;
-			vd.getPos(p)[1] = (double)rand()/RAND_MAX;
-			vd.getPos(p)[2] = (double)rand()/RAND_MAX;
-
-			++it;
+			return (id < pag.id);
 		}
-		}
+	};
 
-		vd.map();
-		vd.ghost_get<>();
+	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
 
-		// Get the Cell list structure
-		auto NN = vd.getVerlet(r_cut,VL_SYMMETRIC);
-		auto NNc = vd.getVerlet(r_cut);
+	// Distributed vector
+	vector_dist<3,float, part_prop > vd(k,box,bc,ghost);
+	size_t start = vd.init_size_accum(k);
 
-		// Get an iterator over particles
-		auto it2 = vd.getDomainAndGhostIterator();
+	auto it = vd.getIterator();
 
-		openfpm::vector<openfpm::vector<size_t>> idx;
-		idx.resize(vd.size_local_with_ghost());
+	while (it.isNext())
+	{
+		auto key = it.get();
 
-		/////////// SYMMETRIC CASE VERLET-LIST ////////
+		vd.getPos(key)[0] = ud(eg);
+		vd.getPos(key)[1] = ud(eg);
+		vd.getPos(key)[2] = ud(eg);
 
-		// For each particle ...
-		while (it2.isNext())
-		{
-			// ... p
-			auto p = it2.get();
+		// Fill some properties randomly
 
-			// Get the position of the particle p
-			Point<3,double> xp = vd.getPos(p);
+		vd.getProp<0>(key) = 0;
+		vd.getProp<1>(key) = 0;
+		vd.getProp<2>(key) = key.getKey() + start;
 
-			// Get an iterator over the neighborhood of the particle p symmetric
-			auto NpSym = NN.template getNNIterator<NO_CHECK>(p.getKey());
-
-			// For each neighborhood of the particle p
-			while (NpSym.isNext())
-			{
-				// Neighborhood particle q
-				auto q = NpSym.get();
-
-				// if p == q skip this particle
-				if (q == p.getKey())	{++NpSym; continue;};
-
-				// Get position of the particle q
-				Point<3,double> xq = vd.getPos(q);
-
-				// take the normalized direction
-				double rn = norm2(xp - xq);
-
-				// potential energy (using pow is slower)
-				vd.getProp<0>(p) += rn;
-				vd.getProp<0>(q) += rn;
-
-				idx.get(p.getKey()).add(q);
-				idx.get(q).add(p.getKey());
-
-
-				// Next neighborhood
-				++NpSym;
-			}
-
-			// Next Particle
-			++it2;
-		}
-
-		/////////////// NON SYMMETRIC CASE VERLET-LIST ////////////////////////
-
-		openfpm::vector<openfpm::vector<size_t>> idx2;
-		idx2.resize(vd.size_local());
-
-		auto it = vd.getDomainIterator();
-
-		// For each particle ...
-		while (it.isNext())
-		{
-			// ... p
-			auto p = it.get();
-
-			// Get the position of the particle p
-			Point<3,double> xp = vd.getPos(p);
-
-			// Get an iterator over the neighborhood of the particle p
-			auto Np = NNc.template getNNIterator<NO_CHECK>(p.getKey());
-
-			double Ep = 0.0;
-
-			// For each neighborhood of the particle p
-			while (Np.isNext())
-			{
-				// Neighborhood particle q
-				auto q = Np.get();
-
-				// if p == q skip this particle
-				if (q == p.getKey())	{++Np; continue;};
-
-				// Get position of the particle q
-				Point<3,double> xq = vd.getPos(q);
-
-				// take the normalized direction
-				double rn = norm2(xp - xq);
-
-				idx2.get(p.getKey()).add(q);
-
-				// potential energy (using pow is slower)
-				Ep += rn;
-
-				// Next neighborhood
-				++Np;
-			}
-
-			idx.get(p.getKey()).sort();
-			idx2.get(p.getKey()).sort();
-
-			bool ret = true;
-
-			BOOST_REQUIRE_EQUAL(idx.get(p.getKey()).size(),idx2.get(p.getKey()).size());
-
-			for (size_t i = 0 ; i < idx.get(p.getKey()).size() ; i++)
-			{
-				ret &= idx.get(p.getKey()).get(i) == idx2.get(p.getKey()).get(i);
-			}
-
-			BOOST_REQUIRE_EQUAL(ret,true);
-
-			BOOST_REQUIRE_CLOSE(Ep,vd.getProp<0>(p),0.01);
-
-			// Next Particle
-			++it;
-		}
+		++it;
 	}
+
+	vd.map();
+
+	// sync the ghost
+	vd.ghost_get<0,2>();
+
+	auto NN = vd.getVerlet(r_cut);
+	auto p_it = vd.getDomainIterator();
+
+	while (p_it.isNext())
+	{
+		auto p = p_it.get();
+
+		Point<3,float> xp = vd.getPos(p);
+
+		auto Np = NN.getNNIterator(p.getKey());
+
+		while (Np.isNext())
+		{
+			auto q = Np.get();
+
+			if (p.getKey() == q)
+			{
+				++Np;
+				continue;
+			}
+
+			// repulsive
+
+			Point<3,float> xq = vd.getPos(q);
+			Point<3,float> f = (xp - xq);
+
+			float distance = f.norm();
+
+			// Particle should be inside 2 * r_cut range
+
+			if (distance < r_cut )
+			{
+				vd.getProp<0>(p)++;
+				vd.getProp<3>(p).add();
+				vd.getProp<3>(p).last().xq = xq;
+				vd.getProp<3>(p).last().id = vd.getProp<2>(q);
+			}
+
+			++Np;
+		}
+
+		++p_it;
+	}
+
+	// We now try symmetric  Cell-list
+
+	auto NN2 = vd.getVerletSym(r_cut);
+
+	auto p_it2 = vd.getDomainIterator();
+
+	while (p_it2.isNext())
+	{
+		auto p = p_it2.get();
+
+		Point<3,float> xp = vd.getPos(p);
+
+		auto Np = NN2.template getNNIterator<NO_CHECK>(p.getKey());
+
+		while (Np.isNext())
+		{
+			auto q = Np.get();
+
+			if (p.getKey() == q)
+			{
+				++Np;
+				continue;
+			}
+
+			// repulsive
+
+			Point<3,float> xq = vd.getPos(q);
+			Point<3,float> f = (xp - xq);
+
+			float distance = f.norm();
+
+			// Particle should be inside r_cut range
+
+			if (distance < r_cut )
+			{
+				vd.getProp<1>(p)++;
+				vd.getProp<1>(q)++;
+
+				vd.getProp<4>(p).add();
+				vd.getProp<4>(q).add();
+
+				vd.getProp<4>(p).last().xq = xq;
+				vd.getProp<4>(q).last().xq = xp;
+				vd.getProp<4>(p).last().id = vd.getProp<2>(q);
+				vd.getProp<4>(q).last().id = vd.getProp<2>(p);
+			}
+
+			++Np;
+		}
+
+		++p_it2;
+	}
+
+	vd.ghost_put<add_,1>();
+	vd.ghost_put<merge_,4>();
+
+	auto p_it3 = vd.getDomainIterator();
+
+	bool ret = true;
+	while (p_it3.isNext())
+	{
+		auto p = p_it3.get();
+
+		ret &= vd.getProp<1>(p) == vd.getProp<0>(p);
+
+		vd.getProp<3>(p).sort();
+		vd.getProp<4>(p).sort();
+
+		ret &= vd.getProp<3>(p).size() == vd.getProp<4>(p).size();
+
+		for (size_t i = 0 ; i < vd.getProp<3>(p).size() ; i++)
+			ret &= vd.getProp<3>(p).get(i).id == vd.getProp<4>(p).get(i).id;
+
+		if (ret == false)
+			break;
+
+		++p_it3;
+	}
+
+	BOOST_REQUIRE_EQUAL(ret,true);
 }
 
 

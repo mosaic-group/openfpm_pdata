@@ -181,6 +181,9 @@ if [ ! -d "$1/MUMPS" ]; then
 
   $sed_command -i "/LIBBLAS\s=\s-lblas/c\LIBBLAS = -lopenblas" Makefile.inc
 
+  $sed_command -i "/INCPAR\s\+=\s\-I\/usr\/include/c\INCPAR =" Makefile.inc
+  $sed_command -i "/LIBPAR\s\+=\s\$(SCALAP)\s\-L\/usr\/lib\s\-lmpi/c\LIBPAR = \$(SCALAP)" Makefile.inc
+
   make -j $2
   
   if [ $? -eq 0 ]; then

@@ -526,15 +526,29 @@ public:
 		return cell_list;
 	}
 
+	/*! \brief for each particle get the symmetric verlet list
+	 *
+	 * \param r_cut cut-off radius
+	 *
+	 */
+	VerletList<dim,St,FAST,shift<dim,St> > getVerletSym(St r_cut)
+	{
+		VerletList<dim,St,FAST,shift<dim,St>> ver;
 
+		// Processor bounding box
+		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+
+		ver.InitializeSym(getDecomposition().getDomain(),pbox,getDecomposition().getGhost(),r_cut,v_pos,g_m);
+
+		return ver;
+	}
 
 	/*! \brief for each particle get the verlet list
 	 *
 	 * \param r_cut cut-off radius
-	 * \param opt option like VL_SYMMETRIC and VL_NON_SYMMETRIC
 	 *
 	 */
-	VerletList<dim,St,FAST,shift<dim,St> > getVerlet(St r_cut, size_t opt = VL_NON_SYMMETRIC)
+	VerletList<dim,St,FAST,shift<dim,St> > getVerlet(St r_cut)
 	{
 		VerletList<dim,St,FAST,shift<dim,St>> ver;
 
@@ -548,7 +562,7 @@ public:
 		// enlarge the box where the Verlet is defined
 		bt.enlarge(g);
 
-		ver.Initialize(bt,getDecomposition().getProcessorBounds(),r_cut,v_pos,g_m,opt);
+		ver.Initialize(bt,getDecomposition().getProcessorBounds(),r_cut,v_pos,g_m,VL_NON_SYMMETRIC);
 
 		return ver;
 	}
@@ -1125,6 +1139,28 @@ public:
 	const openfpm::vector<Point<dim,St>> & getPosVector() const
 	{
 		return v_pos;
+	}
+
+	/*! \brief It return the sum of the particles in the previous processors
+	 *
+	 * \return the particles number
+	 *
+	 */
+	size_t accum()
+	{
+		openfpm::vector<size_t> accu;
+
+		size_t sz = size_local();
+
+		v_cl.allGather(sz,accu);
+		v_cl.execute();
+
+		sz = 0;
+
+		for (size_t i = 0 ; i < v_cl.getProcessUnitID() ; i++)
+			sz += accu.get(i);
+
+		return sz;
 	}
 };
 

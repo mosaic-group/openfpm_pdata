@@ -1052,12 +1052,13 @@ public:
 
 		size_t i2 = 0;
 
-		#ifdef SE_CLASS1
 
 		if (v_prp.size() - lg_m != o_part_loc.size())
-			std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " v_prp.size() - lg_m = " << v_prp.size() - lg_m << " != " << o_part_loc.size() << std::endl;
+		{
+			std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " Local ghost particles = " << v_prp.size() - lg_m << " != " << o_part_loc.size() << std::endl;
+			std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << "Check that you did a ghost_get before a ghost_put" << std::endl;
+		}
 
-		#endif
 
 		for (size_t i = lg_m ; i < v_prp.size() ; i++)
 		{
