@@ -357,7 +357,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > CellL getCellList(St r_cut)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin<dim>, FAST, shift<dim, St> > > CellL getCellList(St r_cut)
 	{
 		// Get ghost and anlarge by 1%
 		Ghost<dim,St> g = getDecomposition().getGhost();
@@ -391,7 +391,7 @@ public:
 	 * \param cell_list Cell list to update
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > void updateCellList(CellL & cell_list)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin<dim>, FAST, shift<dim, St> > > void updateCellList(CellL & cell_list)
 	{
 		// Clear the cell list from the previous particles
 		cell_list.clear();
@@ -427,7 +427,7 @@ public:
 	 * \return the CellList
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin<dim>, FAST, shift<dim, St> > > CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge)
 	{
 		CellL cell_list;
 
@@ -440,7 +440,7 @@ public:
 		// Processor bounding box
 		cl_param_calculate(pbox, div, r_cut, enlarge);
 
-		cell_list.Initialize(pbox, div);
+		cell_list.Initialize(pbox, div, g_m);
 
 		updateCellList(cell_list);
 
@@ -590,7 +590,7 @@ public:
 	 *
 	 *
 	 */
-	template<typename CellL=CellList<dim,St,FAST,shift<dim,St> > > void reorder (int32_t m)
+	template<typename CellL=CellList_gen<dim,St,Process_keys_lin<dim>,FAST,shift<dim,St> > > void reorder (int32_t m)
 	{
 		reorder(m,getDecomposition().getGhost());
 	}
@@ -608,7 +608,7 @@ public:
 	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
 	 *
 	 */
-	template<typename CellL=CellList<dim,St,FAST,shift<dim,St> > > void reorder(int32_t m, const Ghost<dim,St> & enlarge)
+	template<typename CellL=CellList_gen<dim,St,Process_keys_lin<dim>,FAST,shift<dim,St> > > void reorder(int32_t m, const Ghost<dim,St> & enlarge)
 	{
 		// reset the ghost part
 		v_pos.resize(g_m);
@@ -632,7 +632,7 @@ public:
 			div[i] = 1 << m;
 		}
 
-		cell_list.Initialize(pbox,div);
+		cell_list.Initialize(pbox,div,g_m);
 
 		// for each particle add the particle to the cell list
 
