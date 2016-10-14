@@ -440,8 +440,7 @@ public:
 		// Clear the cell list from the previous particles
 		cell_list.clear();
 
-		// for each particle add the particle to the cell list
-
+		// for each particle real and ghost, add the particle to the cell list
 		auto it = getIterator();
 
 		while (it.isNext())
@@ -449,6 +448,45 @@ public:
 			auto key = it.get();
 
 			cell_list.add(this->getPos(key), key.getKey());
+
+			++it;
+		}
+
+		cell_list.set_gm(g_m);
+	}
+
+	/*! \brief Update a cell list using the stored particles
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param cell_list Cell list to update
+	 *
+	 */
+	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > void updateCellListSym(CellL & cell_list)
+	{
+		// Clear the cell list from the previous particles
+		cell_list.clear();
+
+		// for each particle real and ghost, add the particle to the cell list
+		auto it = getDomainIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			cell_list.addDom(this->getPos(key), key.getKey());
+
+			++it;
+		}
+
+		// for each particle real and ghost, add the particle to the cell list
+		it = getGhostIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			cell_list.addGhost(this->getPos(key), key.getKey());
 
 			++it;
 		}

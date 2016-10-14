@@ -1239,8 +1239,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 
 		vd.ghost_get<0>();
 
-		vd.write("Debug_output");
-
 		// calculate the distance of the first, second and third neighborhood particle
 		// Consider that they are on a regular grid
 

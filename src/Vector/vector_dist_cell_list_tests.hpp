@@ -524,6 +524,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 		for (size_t i = 0 ; i < vd.getProp<3>(p).size() ; i++)
 			ret &= vd.getProp<3>(p).get(i).id == vd.getProp<4>(p).get(i).id;
 
+		if (ret == false)
+			break;
+
 		++p_it3;
 	}
 
