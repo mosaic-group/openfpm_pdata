@@ -49,4 +49,5 @@ int main(int argc, char* argv[])
 #include "Graph/DistGraphFactory.hpp"
 #include "Decomposition/nn_processor_unit_test.hpp"
 #include "Grid/staggered_grid_dist_unit_test.hpp"
+#include "Vector/vector_dist_MP_unit_tests.hpp"
 //#include "antoniol_test_isolation.hpp"

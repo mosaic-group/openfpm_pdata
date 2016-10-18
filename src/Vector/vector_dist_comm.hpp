@@ -248,8 +248,7 @@ class vector_dist_comm
 
 			// add this particle shifting its position
 			v_pos.add(p);
-			v_prp.add();
-			v_prp.last() = v_prp.get(key);
+			v_prp.get(lg_m+i) = v_prp.get(key);
 		}
 	}
 
@@ -366,7 +365,11 @@ class vector_dist_comm
 		// Create the shift boxes
 		createShiftBox();
 
-		lg_m = v_prp.size();
+		if (opt != SKIP_LABELLING)
+			lg_m = v_prp.size();
+
+//		v_pos.resize(lg_m);
+//		v_prp.resize(lg_m);
 
 		if (box_f.size() == 0)
 			return;
@@ -818,10 +821,13 @@ public:
 		// send vector for each processor
 		typedef openfpm::vector<prp_object> send_vector;
 
+		v_pos.resize(g_m);
+
 		// reset the ghost part
-		if (opt != NO_POSITION)
-			v_pos.resize(g_m);
-		v_prp.resize(g_m);
+		if (opt != SKIP_LABELLING)
+		{
+			v_prp.resize(g_m);
+		}
 
 		// Label all the particles
 		if ((opt & SKIP_LABELLING) == false)
@@ -837,7 +843,15 @@ public:
 
 		prc_recv_get.clear();
 		recv_sz_get.clear();
-		v_cl.SSendRecvP<send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get);
+
+		if (opt == SKIP_LABELLING)
+		{
+			op_ssend_gg_recv_merge opm(g_m);
+//			v_cl.SSendRecvP_op<op_ssend_recv_merge<op>
+			v_cl.SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get);
+		}
+		else
+			v_cl.SSendRecvP<send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get);
 
 		if (opt != NO_POSITION)
 		{

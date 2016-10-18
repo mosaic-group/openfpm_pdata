@@ -359,26 +359,10 @@ public:
 	{
 		// Cell list
 		CellL cell_list;
-		size_t div[dim];
-
-		// Calculate the Cell list division for this CellList
-		CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
-
-		for (size_t i = 0 ; i < dim ; i++)
-			div[i] = (getDecomposition().getDomain().getHigh(i) - getDecomposition().getDomain().getLow(i)) / r_cut;
 
 		size_t pad = 0;
-		Ghost<dim,St> g = getDecomposition().getGhost();
-		g.magnify(1.013);
-
-		// Calculate the maximum padding
-		for (size_t i = 0 ; i < dim ; i++)
-		{
-			size_t tmp = std::ceil(fabs(g.getLow(i)) / r_cut);
-			pad = (pad > tmp)?pad:tmp;
-		}
-
-		cd_sm.setDimensions(getDecomposition().getDomain(),div,pad);
+		CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
+		cl_param_calculateSym(getDecomposition().getDomain(),cd_sm,getDecomposition().getGhost(),r_cut,pad);
 
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
@@ -568,6 +552,8 @@ public:
 	 *
 	 * \param r_cut cut-off radius
 	 *
+	 * \return the verlet list
+	 *
 	 */
 	VerletList<dim,St,FAST,shift<dim,St> > getVerletSym(St r_cut)
 	{
@@ -584,6 +570,8 @@ public:
 	/*! \brief for each particle get the verlet list
 	 *
 	 * \param r_cut cut-off radius
+	 *
+	 * \return a VerletList object
 	 *
 	 */
 	VerletList<dim,St,FAST,shift<dim,St> > getVerlet(St r_cut)
@@ -1137,6 +1125,9 @@ public:
 		pbox.enlarge(g);
 
 		cl_param_calculate(pbox, div,r_cut,enlarge);
+
+		// output the fixed domain
+		box = pbox;
 	}
 
 	/*! \brief It return the id of structure in the allocation list

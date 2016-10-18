@@ -14,7 +14,6 @@
  *
  * This example show multi-phase cell lists for the distributed vector
  *
- * \warning BETA version
  *
  */
 
@@ -135,6 +134,8 @@ int main(int argc, char* argv[])
 
 	CellListM<3,float,2> NN;
 	NN.Initialize(box_cl,div);
+
+
 
 	// for all the phases i
 	for (size_t i = 0; i < phases.size() ; i++)
