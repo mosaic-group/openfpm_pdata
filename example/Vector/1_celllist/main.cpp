@@ -173,6 +173,9 @@ int main(int argc, char* argv[])
 	 * no properties. If we want to synchronize also properties we have to specify which one.
 	 * For example with <0,1,2> here we synchronize the scalar property (0), the vector (1), and the rank 2 tensor (2)
 	 *
+	 * \warning Every ghost_get by default reset the status of the ghost so the information are lost
+	 *
+	 * \see \ref e1_gg_options
 	 *
 	 * \htmlonly
 	 * <a href="#" onclick="hide_show('vector-video-5')" >Video 1</a>

@@ -2,6 +2,7 @@
  *
  * \subpage Vector_0_simple
  * \subpage Vector_1_celllist
+ * \subpage Vector_1_ghost_get
  * \subpage Vector_2_expression
  * \subpage Vector_3_md
  * \subpage Vector_4_reo_root
@@ -39,7 +40,7 @@
  * </div>
  * \endhtmlonly
  *
- * ## inclusion ## {#inclusion}
+ * ## inclusion ## {#e0_v_inclusion}
  *
  * In order to use distributed vectors in our code we have to include the file Vector/vector_dist.hpp
  *
@@ -62,7 +63,7 @@ int main(int argc, char* argv[])
 	 *  Here we
 	 *  * Initialize the library
 	 *  * we create a Box that define our domain
-	 *  * An array that define out boundary conditions
+	 *  * An array that define our boundary conditions
 	 *  * A Ghost object that will define the extension of the ghost part in physical units
 	 *
 	 *

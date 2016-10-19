@@ -366,11 +366,8 @@ class vector_dist_comm
 		// Create the shift boxes
 		createShiftBox();
 
-		if (opt != SKIP_LABELLING)
+		if (!(opt & SKIP_LABELLING))
 			lg_m = v_prp.size();
-
-//		v_pos.resize(lg_m);
-//		v_prp.resize(lg_m);
 
 		if (box_f.size() == 0)
 			return;
@@ -822,10 +819,11 @@ public:
 		// send vector for each processor
 		typedef openfpm::vector<prp_object> send_vector;
 
-		v_pos.resize(g_m);
+		if (!(opt & NO_POSITION))
+			v_pos.resize(g_m);
 
 		// reset the ghost part
-		if (opt != SKIP_LABELLING)
+		if (!(opt & SKIP_LABELLING))
 		{
 			v_prp.resize(g_m);
 		}
@@ -839,22 +837,21 @@ public:
 		fill_send_ghost_prp_buf<send_vector, prp_object, prp...>(v_prp,g_send_prp);
 
 		// Create and fill the send buffer for the particle position
-		if (opt != NO_POSITION)
+		if (!(opt & NO_POSITION))
 			fill_send_ghost_pos_buf(v_pos,g_pos_send);
 
 		prc_recv_get.clear();
 		recv_sz_get.clear();
 
-		if (opt == SKIP_LABELLING)
+		if (opt & SKIP_LABELLING)
 		{
 			op_ssend_gg_recv_merge opm(g_m);
-//			v_cl.SSendRecvP_op<op_ssend_recv_merge<op>
 			v_cl.SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get);
 		}
 		else
 			v_cl.SSendRecvP<send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get);
 
-		if (opt != NO_POSITION)
+		if (!(opt & NO_POSITION))
 		{
 			prc_recv_get.clear();
 			recv_sz_get.clear();
@@ -1071,7 +1068,7 @@ public:
 		if (v_prp.size() - lg_m != o_part_loc.size())
 		{
 			std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " Local ghost particles = " << v_prp.size() - lg_m << " != " << o_part_loc.size() << std::endl;
-			std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << "Check that you did a ghost_get before a ghost_put" << std::endl;
+			std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " Check that you did a ghost_get before a ghost_put" << std::endl;
 		}
 
 
