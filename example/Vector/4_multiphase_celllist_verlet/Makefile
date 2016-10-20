@@ -9,16 +9,16 @@ OBJ = main.o
 %.o: %.cpp
 	$(CC) -fext-numeric-literals -O3 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
 
-cell: $(OBJ)
+multip: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
-all: cell
+all: multip
 
 run: all
-	source $$HOME/openfpm_vars; mpirun -np 2 ./cell
+	source $$HOME/openfpm_vars; mpirun -np 2 ./multip
 
 .PHONY: clean all run
 
 clean:
-	rm -f *.o *~ core cell
+	rm -f *.o *~ core multip
 

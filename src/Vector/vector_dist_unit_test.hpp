@@ -1239,8 +1239,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 
 		vd.ghost_get<0>();
 
-		vd.write("Debug_output");
-
 		// calculate the distance of the first, second and third neighborhood particle
 		// Consider that they are on a regular grid
 
@@ -1437,12 +1435,12 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_with_ghost_buffering )
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 
 	// Boundary conditions
-	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+	size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 
 	// ghost
 	Ghost<3,float> ghost(0.1);
 
-	typedef  aggregate<float> part_prop;
+	typedef  aggregate<float,float,float> part_prop;
 
 	// Distributed vector
 	vector_dist<3,float, part_prop > vd(k,box,bc,ghost);
@@ -1460,6 +1458,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_with_ghost_buffering )
 		// Fill some properties randomly
 
 		vd.getProp<0>(key) = 0.0;
+		vd.getProp<1>(key) = vd.getPos(key)[0];
+		vd.getProp<2>(key) = vd.getPos(key)[0]*vd.getPos(key)[0];
 
 		++it;
 	}
@@ -1467,22 +1467,21 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_with_ghost_buffering )
 	vd.map();
 
 	// sync the ghost
-	vd.ghost_get<0>();
+	vd.ghost_get<0,1,2>();
 
-	openfpm::vector<size_t> list_idx;
-	openfpm::vector<size_t> list_idx2;
-
-	auto it3 = vd.getGhostIterator();
-	while (it3.isNext())
+	bool ret = true;
+	auto it2 = vd.getGhostIterator();
+	while (it2.isNext())
 	{
-		auto key = it3.get();
+		auto key = it2.get();
 
-		list_idx.add(key.getKey());
+		ret &= vd.getProp<1>(key) == vd.getPos(key)[0];
+		ret &= vd.getProp<2>(key) == vd.getPos(key)[0] * vd.getPos(key)[0];
 
-		++it3;
+		++it2;
 	}
 
-	list_idx.sort();
+	BOOST_REQUIRE_EQUAL(ret,true);
 
 	for (size_t i = 0 ; i < 10 ; i++)
 	{
@@ -1492,7 +1491,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_with_ghost_buffering )
 		{
 			auto key = it.get();
 
-			vd.getPos(key)[0] = ud(eg);
 			vd.getPos(key)[1] = ud(eg);
 			vd.getPos(key)[2] = ud(eg);
 
@@ -1505,7 +1503,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_with_ghost_buffering )
 
 		vd.ghost_get<0>(SKIP_LABELLING);
 
-		list_idx2.clear();
 		auto it2 = vd.getGhostIterator();
 		bool ret = true;
 
@@ -1513,40 +1510,36 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_with_ghost_buffering )
 		{
 			auto key = it2.get();
 
-			list_idx2.add(key.getKey());
 			ret &= vd.getProp<0>(key) == i;
+			ret &= vd.getProp<1>(key) == vd.getPos(key)[0];
+			ret &= vd.getProp<2>(key) == vd.getPos(key)[0] * vd.getPos(key)[0];
 
 			++it2;
 		}
-
-		BOOST_REQUIRE_EQUAL(ret,true);
-		BOOST_REQUIRE_EQUAL(list_idx.size(),list_idx2.size());
-
-		list_idx2.sort();
-
-		ret = true;
-		for (size_t i = 0 ; i < list_idx.size() ; i++)
-			ret &= list_idx.get(i) == list_idx2.get(i);
 
 		BOOST_REQUIRE_EQUAL(ret,true);
 	}
 
 	vd.map();
-	vd.ghost_get<0>();
+	vd.ghost_get<0,1,2>();
 
-	list_idx.clear();
+	// shift the particle position by 1.0
 
-	auto it4 = vd.getGhostIterator();
-	while (it4.isNext())
+	it = vd.getGhostIterator();
+	while (it.isNext())
 	{
-		auto key = it4.get();
+		// Particle p
+		auto p = it.get();
 
-		list_idx.add(key.getKey());
+		// we shift down he particles
+		vd.getPos(p)[0] = 10.0;
 
-		++it4;
+		// we shift
+		vd.getPos(p)[1] = 17.0;
+
+		// next particle
+		++it;
 	}
-
-	list_idx.sort();
 
 	for (size_t i = 0 ; i < 10 ; i++)
 	{
@@ -1556,41 +1549,36 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_with_ghost_buffering )
 		{
 			auto key = it.get();
 
-			vd.getPos(key)[0] = ud(eg);
 			vd.getPos(key)[1] = ud(eg);
 			vd.getPos(key)[2] = ud(eg);
 
 			// Fill some properties randomly
 
 			vd.getProp<0>(key) = i;
+			vd.getProp<1>(key) = vd.getPos(key)[0];
+			vd.getProp<2>(key) = vd.getPos(key)[0]*vd.getPos(key)[0];
 
 			++it;
 		}
 
-		vd.ghost_get<0>(SKIP_LABELLING);
+		vd.ghost_get<0>(SKIP_LABELLING | NO_POSITION);
 
-		list_idx2.clear();
 		auto it2 = vd.getGhostIterator();
 		bool ret = true;
 
 		while (it2.isNext())
 		{
-			auto key = it2.get();
+			// Particle p
+			auto p = it.get();
 
-			list_idx2.add(key.getKey());
-			ret &= vd.getProp<0>(key) == i;
+			ret &= vd.getPos(p)[0] == 10.0;
 
+			// we shift
+			ret &= vd.getPos(p)[1] == 17.0;
+
+			// next particle
 			++it2;
 		}
-
-		BOOST_REQUIRE_EQUAL(ret,true);
-		BOOST_REQUIRE_EQUAL(list_idx.size(),list_idx2.size());
-
-		list_idx2.sort();
-
-		ret = true;
-		for (size_t i = 0 ; i < list_idx.size() ; i++)
-			ret &= list_idx.get(i) == list_idx2.get(i);
 
 		BOOST_REQUIRE_EQUAL(ret,true);
 	}
@@ -1618,13 +1606,16 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
 	{
+		float r_cut = 1.3 / k;
+		float r_g = 1.5 / k;
+
 		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 
 		// Boundary conditions
 		size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
 		// ghost
-		Ghost<3,float> ghost(1.3/(k));
+		Ghost<3,float> ghost(r_g);
 
 		typedef  aggregate<float> part_prop;
 
@@ -1656,7 +1647,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 		vd.ghost_get<0>();
 
 		{
-			auto NN = vd.getCellList(1.3/k);
+			auto NN = vd.getCellList(r_cut);
 			float a = 1.0f*k*k;
 
 			// run trough all the particles + ghost
@@ -1680,8 +1671,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 
 					float dist = xp.distance(xq);
 
-					if (dist < 1.0/k)
-						vd.getProp<0>(q) += a*(-dist*dist+1.0/k/k);
+					if (dist < r_cut)
+						vd.getProp<0>(q) += a*(-dist*dist+r_cut*r_cut);
 
 					++Np;
 				}
@@ -1712,8 +1703,18 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 			BOOST_REQUIRE_EQUAL(ret,true);
 		}
 
+		auto itp = vd.getDomainAndGhostIterator();
+		while (itp.isNext())
 		{
-			auto NN = vd.getCellList(1.3/k);
+			auto key = itp.get();
+
+			vd.getProp<0>(key) = 0.0;
+
+			++itp;
+		}
+
+		{
+			auto NN = vd.getCellList(r_cut);
 			float a = 1.0f*k*k;
 
 			// run trough all the particles + ghost
@@ -1737,8 +1738,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 
 					float dist = xp.distance(xq);
 
-					if (dist < 1.0/k)
-						vd.getProp<0>(q) += a*(-dist*dist+1.0/k/k);
+					if (dist < r_cut)
+						vd.getProp<0>(q) += a*(-dist*dist+r_cut*r_cut);
 
 					++Np;
 				}
@@ -1816,6 +1817,7 @@ BOOST_AUTO_TEST_CASE( vector_of_vector_dist )
 
 	BOOST_REQUIRE_EQUAL(cnt,4*4096ul);
 }
+
 
 #include "vector_dist_cell_list_tests.hpp"
 #include "vector_dist_NN_tests.hpp"

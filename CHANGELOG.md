@@ -1,12 +1,30 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [0.5.1] - Mid september
+## [0.6.0] - End October 2016
+
+### Added
+- Symmetric cell-list/verlet list
+- Multi-phase cell-list and Multi-phase cell-list
+- Added ghost_get that keep properties
+- Examples: 1_ghost_get_put it show how to use ghost_get and put with the new options
+            4_multiphase_celllist_verlet completely rewritten for new Cell-list and multiphase verlet
+	    5_molecular_dynamic use case of symmetric cell-list and verlet list with ghost put
+	    6_complex_usage It show how the flexibility of openfpm can be used to debug your program
+
+### Fixed
+- Option NO_POSITION was untested
+
+### Changes
+
+
+## [0.5.1] - 27 September 2016
 
 ### Added
 - ghost_put support for particles
 - Full-Support for complex property on vector_dist (Serialization)
 - Added examples for serialization of complex properties 4_Vector
+- improved speed of the iterators
 
 ### Fixed
 - Installation PETSC installation fail in case of preinstalled MPI
@@ -131,17 +149,14 @@ All notable changes to this project will be documented in this file.
 
 - Algebraic Multigrid solver
 - Parallel VTK, improved visualization
+- Asynchronous communication
 
-## [0.6.0] - Middle of October
+## [0.7.0] - December of October
 
 ### Added
-
-- Symmetric Cell list and Verlet (15 days)
-- Semantic communication (??)
-- Improved Finite difference interface (15 days) 
+- Asynchronous communication
 
 
-## [0.6.0] - Beginning of September
 
-- Complex properties and serialization interface (15 days)
+
 

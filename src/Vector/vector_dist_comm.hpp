@@ -11,6 +11,7 @@
 #define V_SUB_UNIT_FACTOR 64
 
 #define SKIP_LABELLING 512
+#define KEEP_PROPERTIES 512
 
 #define NO_POSITION 1
 #define WITH_POSITION 2
@@ -166,33 +167,6 @@ class vector_dist_comm
 		return end_id;
 	}
 
-	/*! \brief It store for each processor the position and properties vector of the particles
-	 *
-	 * This structure is used in the map function
-	 *
-	 */
-	struct pos_prop
-	{
-		//! position vector
-		openfpm::vector<Point<dim, St>, PreAllocHeapMemory<2>, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin, openfpm::grow_policy_identity> pos;
-		//! properties vector
-		openfpm::vector<prop, PreAllocHeapMemory<2>, typename memory_traits_lin<prop>::type, memory_traits_lin, openfpm::grow_policy_identity> prp;
-	};
-
-	/*! \brief for each processor store 2 vector containing the sending buffers
-	 *
-	 * This structure is used in the map_list function
-	 *
-	 */
-	template <typename sel_prop>
-	struct pos_prop_sel
-	{
-		//! position vector
-		openfpm::vector<Point<dim, St>, PreAllocHeapMemory<2>, typename memory_traits_lin<Point<dim, St>>::type, memory_traits_lin, openfpm::grow_policy_identity> pos;
-		//! properties vector
-		openfpm::vector<sel_prop, PreAllocHeapMemory<2>, typename memory_traits_lin<sel_prop>::type, memory_traits_lin, openfpm::grow_policy_identity> prp;
-	};
-
 	//! Flags that indicate that the function createShiftBox() has been called
 	bool is_shift_box_created = false;
 
@@ -275,8 +249,7 @@ class vector_dist_comm
 
 			// add this particle shifting its position
 			v_pos.add(p);
-			v_prp.add();
-			v_prp.last() = v_prp.get(key);
+			v_prp.get(lg_m+i) = v_prp.get(key);
 		}
 	}
 
@@ -393,7 +366,8 @@ class vector_dist_comm
 		// Create the shift boxes
 		createShiftBox();
 
-		lg_m = v_prp.size();
+		if (!(opt & SKIP_LABELLING))
+			lg_m = v_prp.size();
 
 		if (box_f.size() == 0)
 			return;
@@ -749,7 +723,7 @@ public:
 	 *
 	 */
 	vector_dist_comm(const vector_dist_comm<dim,St,prop,Decomposition,Memory> & v)
-	:v_cl(create_vcluster()),dec(create_vcluster())
+	:v_cl(create_vcluster()),dec(create_vcluster()),lg_m(0)
 	{
 		this->operator=(v);
 	}
@@ -761,7 +735,7 @@ public:
 	 *
 	 */
 	vector_dist_comm(const Decomposition & dec)
-	:v_cl(create_vcluster()),dec(dec)
+	:v_cl(create_vcluster()),dec(dec),lg_m(0)
 	{
 
 	}
@@ -781,7 +755,7 @@ public:
 	 *
 	 */
 	vector_dist_comm()
-	:v_cl(create_vcluster()),dec(create_vcluster())
+	:v_cl(create_vcluster()),dec(create_vcluster()),lg_m(0)
 	{
 	}
 
@@ -845,10 +819,13 @@ public:
 		// send vector for each processor
 		typedef openfpm::vector<prp_object> send_vector;
 
-		// reset the ghost part
-		if (opt != NO_POSITION)
+		if (!(opt & NO_POSITION))
 			v_pos.resize(g_m);
-		v_prp.resize(g_m);
+
+		// reset the ghost part
+
+		if (!(opt & SKIP_LABELLING))
+			v_prp.resize(g_m);
 
 		// Label all the particles
 		if ((opt & SKIP_LABELLING) == false)
@@ -859,14 +836,21 @@ public:
 		fill_send_ghost_prp_buf<send_vector, prp_object, prp...>(v_prp,g_send_prp);
 
 		// Create and fill the send buffer for the particle position
-		if (opt != NO_POSITION)
+		if (!(opt & NO_POSITION))
 			fill_send_ghost_pos_buf(v_pos,g_pos_send);
 
 		prc_recv_get.clear();
 		recv_sz_get.clear();
-		v_cl.SSendRecvP<send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get);
 
-		if (opt != NO_POSITION)
+		if (opt & SKIP_LABELLING)
+		{
+			op_ssend_gg_recv_merge opm(g_m);
+			v_cl.SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get);
+		}
+		else
+			v_cl.SSendRecvP<send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get);
+
+		if (!(opt & NO_POSITION))
 		{
 			prc_recv_get.clear();
 			recv_sz_get.clear();
@@ -1074,6 +1058,28 @@ public:
 		// Send and receive ghost particle information
 		op_ssend_recv_merge<op> opm(g_opart);
 		v_cl.SSendRecvP_op<op_ssend_recv_merge<op>,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_recv_get,opm,prc_recv_put,recv_sz_put);
+
+		// process also the local replicated particles
+
+		size_t i2 = 0;
+
+
+		if (v_prp.size() - lg_m != o_part_loc.size())
+		{
+			std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " Local ghost particles = " << v_prp.size() - lg_m << " != " << o_part_loc.size() << std::endl;
+			std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " Check that you did a ghost_get before a ghost_put" << std::endl;
+		}
+
+
+		for (size_t i = lg_m ; i < v_prp.size() ; i++)
+		{
+			auto dst = v_prp.get(o_part_loc.template get<0>(i2));
+			auto src = v_prp.get(i);
+			copy_cpu_encap_encap_op_prp<op,decltype(v_prp.get(0)),decltype(v_prp.get(0)),prp...> cp(src,dst);
+
+			boost::mpl::for_each_ref< boost::mpl::range_c<int,0,sizeof...(prp)> >(cp);
+			i2++;
+		}
 	}
 };
 

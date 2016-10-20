@@ -14,7 +14,6 @@
 #include "Vector/vector_dist_iterator.hpp"
 #include "Space/Shape/Box.hpp"
 #include "Vector/vector_dist_key.hpp"
-#include "memory/PreAllocHeapMemory.hpp"
 #include "memory/PtrMemory.hpp"
 #include "NN/CellList/CellList.hpp"
 #include "NN/CellList/CellListFast_hilb.hpp"
@@ -347,6 +346,36 @@ public:
 		return v_prp.template get<id>(g_m - 1);
 	}
 
+	/*! \brief Construct a cell list symmetric based on a cut of radius
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 *
+	 * \return the Cell list
+	 *
+	 */
+	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > CellL getCellListSym(St r_cut)
+	{
+		// Cell list
+		CellL cell_list;
+
+		size_t pad = 0;
+		CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
+		cl_param_calculateSym(getDecomposition().getDomain(),cd_sm,getDecomposition().getGhost(),r_cut,pad);
+
+		// Processor bounding box
+		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+
+		// Ghost padding extension
+		Ghost<dim,size_t> g_ext(0);
+		cell_list.Initialize(cd_sm,pbox,pad);
+
+		updateCellList(cell_list);
+
+		return cell_list;
+	}
+
 	/*! \brief Construct a cell list starting from the stored particles
 	 *
 	 * \tparam CellL CellList type to construct
@@ -392,21 +421,21 @@ public:
 	 */
 	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > void updateCellList(CellL & cell_list)
 	{
-		// Clear the cell list from the previous particles
-		cell_list.clear();
+		populate_cell_list(v_pos,cell_list,g_m,CL_NON_SYMMETRIC);
 
-		// for each particle add the particle to the cell list
+		cell_list.set_gm(g_m);
+	}
 
-		auto it = getIterator();
-
-		while (it.isNext())
-		{
-			auto key = it.get();
-
-			cell_list.add(this->getPos(key), key.getKey());
-
-			++it;
-		}
+	/*! \brief Update a cell list using the stored particles
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param cell_list Cell list to update
+	 *
+	 */
+	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > void updateCellListSym(CellL & cell_list)
+	{
+		populate_cell_list(v_pos,cell_list,g_m,CL_SYMMETRIC);
 
 		cell_list.set_gm(g_m);
 	}
@@ -481,15 +510,33 @@ public:
 		return cell_list;
 	}
 
+	/*! \brief for each particle get the symmetric verlet list
+	 *
+	 * \param r_cut cut-off radius
+	 *
+	 * \return the verlet list
+	 *
+	 */
+	VerletList<dim,St,FAST,shift<dim,St> > getVerletSym(St r_cut)
+	{
+		VerletList<dim,St,FAST,shift<dim,St>> ver;
 
+		// Processor bounding box
+		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+
+		ver.InitializeSym(getDecomposition().getDomain(),pbox,getDecomposition().getGhost(),r_cut,v_pos,g_m);
+
+		return ver;
+	}
 
 	/*! \brief for each particle get the verlet list
 	 *
 	 * \param r_cut cut-off radius
-	 * \param opt option like VL_SYMMETRIC and VL_NON_SYMMETRIC
+	 *
+	 * \return a VerletList object
 	 *
 	 */
-	VerletList<dim,St,FAST,shift<dim,St> > getVerlet(St r_cut, size_t opt = VL_NON_SYMMETRIC)
+	VerletList<dim,St,FAST,shift<dim,St> > getVerlet(St r_cut)
 	{
 		VerletList<dim,St,FAST,shift<dim,St>> ver;
 
@@ -503,7 +550,7 @@ public:
 		// enlarge the box where the Verlet is defined
 		bt.enlarge(g);
 
-		ver.Initialize(bt,getDecomposition().getProcessorBounds(),r_cut,v_pos,g_m,opt);
+		ver.Initialize(bt,getDecomposition().getProcessorBounds(),r_cut,v_pos,g_m,VL_NON_SYMMETRIC);
 
 		return ver;
 	}
@@ -1040,6 +1087,9 @@ public:
 		pbox.enlarge(g);
 
 		cl_param_calculate(pbox, div,r_cut,enlarge);
+
+		// output the fixed domain
+		box = pbox;
 	}
 
 	/*! \brief It return the id of structure in the allocation list
@@ -1070,6 +1120,38 @@ public:
 		check_valid(this,8);
 #endif
 		return v_cl;
+	}
+
+	/*! \brief return the position vector of all the particles
+	 *
+	 * \return the particle position vector
+	 *
+	 */
+	const openfpm::vector<Point<dim,St>> & getPosVector() const
+	{
+		return v_pos;
+	}
+
+	/*! \brief It return the sum of the particles in the previous processors
+	 *
+	 * \return the particles number
+	 *
+	 */
+	size_t accum()
+	{
+		openfpm::vector<size_t> accu;
+
+		size_t sz = size_local();
+
+		v_cl.allGather(sz,accu);
+		v_cl.execute();
+
+		sz = 0;
+
+		for (size_t i = 0 ; i < v_cl.getProcessUnitID() ; i++)
+			sz += accu.get(i);
+
+		return sz;
 	}
 };
 

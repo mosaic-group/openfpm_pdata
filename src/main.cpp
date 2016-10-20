@@ -22,6 +22,7 @@ int main(int argc, char* argv[])
   return boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
 }
 
+#include "debug.hpp"
 #include "Grid/grid_dist_id.hpp"
 #include "Point_test.hpp"
 #include "Decomposition/CartDecomposition.hpp"
@@ -48,4 +49,5 @@ int main(int argc, char* argv[])
 #include "Graph/DistGraphFactory.hpp"
 #include "Decomposition/nn_processor_unit_test.hpp"
 #include "Grid/staggered_grid_dist_unit_test.hpp"
+#include "Vector/vector_dist_MP_unit_tests.hpp"
 //#include "antoniol_test_isolation.hpp"
