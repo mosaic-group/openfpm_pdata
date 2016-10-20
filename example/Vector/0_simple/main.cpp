@@ -348,7 +348,7 @@ int main(int argc, char* argv[])
 	 *
 	 * ## Finalize ## {#finalize_e0_sim}
 	 *
-	 *  At the very end of the program we have always to de-initialize the library
+	 *  At the very end of the program we have always de-initialize the library
 	 *
 	 * \snippet Vector/0_simple/main.cpp finalize
 	 *

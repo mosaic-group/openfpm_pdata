@@ -1523,6 +1523,24 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_with_ghost_buffering )
 	vd.map();
 	vd.ghost_get<0,1,2>();
 
+	// shift the particle position by 1.0
+
+	it = vd.getGhostIterator();
+	while (it.isNext())
+	{
+		// Particle p
+		auto p = it.get();
+
+		// we shift down he particles
+		vd.getPos(p)[0] = 10.0;
+
+		// we shift
+		vd.getPos(p)[1] = 17.0;
+
+		// next particle
+		++it;
+	}
+
 	for (size_t i = 0 ; i < 10 ; i++)
 	{
 		auto it = vd.getDomainIterator();
@@ -1543,7 +1561,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_with_ghost_buffering )
 			++it;
 		}
 
-		vd.ghost_get<0>(SKIP_LABELLING);
+		vd.ghost_get<0>(SKIP_LABELLING | NO_POSITION);
 
 		auto it2 = vd.getGhostIterator();
 		bool ret = true;
@@ -1557,6 +1575,22 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_with_ghost_buffering )
 			ret &= vd.getProp<1>(key) == vd.getPos(key)[0];
 			ret &= vd.getProp<2>(key) == vd.getPos(key)[0] * vd.getPos(key)[0];
 
+			++it2;
+		}
+
+		it2 = vd.getGhostIterator();
+		while (it2.isNext())
+		{
+			// Particle p
+			auto p = it.get();
+
+			// we shift down he particles
+			ret &= vd.getPos(p)[0] == 10.0;
+
+			// we shift
+			ret &= vd.getPos(p)[1] == 17.0;
+
+			// next particle
 			++it2;
 		}
 
