@@ -421,20 +421,7 @@ public:
 	 */
 	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > void updateCellList(CellL & cell_list)
 	{
-		// Clear the cell list from the previous particles
-		cell_list.clear();
-
-		// for each particle real and ghost, add the particle to the cell list
-		auto it = getIterator();
-
-		while (it.isNext())
-		{
-			auto key = it.get();
-
-			cell_list.add(this->getPos(key), key.getKey());
-
-			++it;
-		}
+		populate_cell_list(v_pos,cell_list,g_m,CL_NON_SYMMETRIC);
 
 		cell_list.set_gm(g_m);
 	}
@@ -448,32 +435,7 @@ public:
 	 */
 	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > void updateCellListSym(CellL & cell_list)
 	{
-		// Clear the cell list from the previous particles
-		cell_list.clear();
-
-		// for each particle real and ghost, add the particle to the cell list
-		auto it = getDomainIterator();
-
-		while (it.isNext())
-		{
-			auto key = it.get();
-
-			cell_list.addDom(this->getPos(key), key.getKey());
-
-			++it;
-		}
-
-		// for each particle real and ghost, add the particle to the cell list
-		it = getGhostIterator();
-
-		while (it.isNext())
-		{
-			auto key = it.get();
-
-			cell_list.addGhost(this->getPos(key), key.getKey());
-
-			++it;
-		}
+		populate_cell_list(v_pos,cell_list,g_m,CL_SYMMETRIC);
 
 		cell_list.set_gm(g_m);
 	}

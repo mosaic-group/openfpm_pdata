@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
 	//! \cond [count part from phase0 to 1] \endcond
 
 	// Get an iterator of the particles of the phase0
-	auto it = phases.get(0).getDomainIterator();
+	it = phases.get(0).getDomainIterator();
 
 	// For each particle of the phase0
 	while (it.isNext())
@@ -314,13 +314,13 @@ int main(int argc, char* argv[])
 	//! \cond [compute sym multi-phase two phase] \endcond
 
 	// Get the cell list of the phase1
-	auto CL_phase1 = phases.get(1).getCellListSym(r_cut);
+	CL_phase1 = phases.get(1).getCellListSym(r_cut);
 
 	// This function create a Verlet-list between phases 0 and 1
-	auto NN_ver01 = createVerletSym(phases.get(0),CL_phase1,r_cut);
+	NN_ver01 = createVerletSym(phases.get(0),CL_phase1,r_cut);
 
 	// Get an iterator over the real and ghost particles
-	auto it = phases.get(0).getDomainAndGhostIterator();
+	it = phases.get(0).getDomainAndGhostIterator();
 
 	// For each particles
 	while (it.isNext())
@@ -338,7 +338,7 @@ int main(int argc, char* argv[])
 	// Compute interaction from phase0 to phase1
 
 	// Get an iterator over the real particles of phase0
-	auto it = phases.get(0).getDomainIterator();
+	it = phases.get(0).getDomainIterator();
 
 	// For each particle of the phase0
 	while (it.isNext())
@@ -397,7 +397,7 @@ int main(int argc, char* argv[])
 	//! \cond [create sym multi-phase multi verlet] \endcond
 
 	// Get an iterator over the phase0
-	auto it = phases.get(0).getDomainAndGhostIterator();
+	it = phases.get(0).getDomainAndGhostIterator();
 
 	// For each particle of the phase 0
 	while (it.isNext())
@@ -416,7 +416,7 @@ int main(int argc, char* argv[])
 	}
 
 	// This function create an "Empty" Multiphase Cell List
-	auto CL_all = createCellListSymM<2>(phases,r_cut);
+	CL_all = createCellListSymM<2>(phases,r_cut);
 
 	// Type of the multiphase Verlet-list
 	typedef decltype(createVerletSymM<2>(phases.get(0),CL_all,r_cut)) verlet_type;
@@ -518,7 +518,7 @@ int main(int argc, char* argv[])
 		current_phase.getProp<0>(p) = 0.0;
 
 		// Get an iterator of all the particles neighborhood of p
-		auto Np = CL_all.getNNIterator(NN.getCell(current_phase.getPos(p)));
+		auto Np = CL_all.getNNIterator(CL_all.getCell(current_phase.getPos(p)));
 
 		// For each particle near p
 		while (Np.isNext())

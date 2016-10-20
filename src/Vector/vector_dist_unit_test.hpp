@@ -1568,23 +1568,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_with_ghost_buffering )
 
 		while (it2.isNext())
 		{
-			auto key = it2.get();
-
-			ret &= vd.getProp<0>(key) == i;
-
-			ret &= vd.getProp<1>(key) == vd.getPos(key)[0];
-			ret &= vd.getProp<2>(key) == vd.getPos(key)[0] * vd.getPos(key)[0];
-
-			++it2;
-		}
-
-		it2 = vd.getGhostIterator();
-		while (it2.isNext())
-		{
 			// Particle p
 			auto p = it.get();
 
-			// we shift down he particles
 			ret &= vd.getPos(p)[0] == 10.0;
 
 			// we shift
