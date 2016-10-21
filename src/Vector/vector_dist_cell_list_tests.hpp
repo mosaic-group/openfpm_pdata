@@ -573,7 +573,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list )
 		size_t id;
 		Point<3,float> xq;
 
-		bool operator<(const struct point_and_gid & pag)
+		bool operator<(const struct point_and_gid & pag) const
 		{
 			return (id < pag.id);
 		}
