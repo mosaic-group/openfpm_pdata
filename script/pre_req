@@ -327,6 +327,25 @@ if [ x"$MPI_valid" == x"yes"  ]; then
       exit 1
     fi
   fi
+
+  #### Detect a potential dangerous situation ###
+  #### In which g++ is different from mpic++ ###
+
+  output_mpi=$(mpic++ --version)
+  output_gcc=$(g++ -- version)
+
+  if [ x"$output_mpi" != x"$output_gcc" ]; then
+    echo -e "\033[91;5;1m MPI dangerous installation \033[0m"
+    echo "Performing a \"which mpic++ --version\", we detect that your installed mpic++ does not wrap the standard command g++"
+    echo "In general we strongly disencourage to override the default compiler(s) and this configuration is not supported by OpenFPM because lead to several problems"
+    echo "1) All system wide dependencies become potentially useless"
+    echo "2) It is not possible to distinguish which compiler has been used to compile one dependencies"
+    echo -e "For just the time of the installation the installer will realign mpic++ to g++, unfortunately this could be not enough to ensure that all the dependencies has been compiled with the same compiler"
+    echo -e "Installation will resume in 20 seconds"
+    sleep 20
+  fi
+
+
 fi
 
 }
