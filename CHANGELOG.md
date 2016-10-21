@@ -11,7 +11,8 @@ All notable changes to this project will be documented in this file.
             4_multiphase_celllist_verlet completely rewritten for new Cell-list and multiphase verlet
 	    5_molecular_dynamic use case of symmetric cell-list and verlet list with ghost put
 	    6_complex_usage It show how the flexibility of openfpm can be used to debug your program
-
+- Plotting system can export graph in svg (to be included in the paper)
+ 
 ### Fixed
 - Option NO_POSITION was untested
 
