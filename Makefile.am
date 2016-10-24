@@ -2,6 +2,27 @@ SUBDIRS = src images openfpm_data openfpm_io openfpm_devices openfpm_vcluster op
 
 bin_PROGRAMS =
 
+pdata:
+	cd src && make
+
+data:
+	cd openfpm_data/src && make
+
+devices:
+	cd openfpm_devices/src && make
+
+vcluster:
+	cd openfpm_vcluster/src && make
+
+io:
+	cd openfpm_io/src && make
+
+numerics:
+	cd openfpm_numerics/src && make
+
+
+
+
 test_pdata:
 	cd src && make test
 
