@@ -47,7 +47,7 @@ parallel (
                       sh "cd openfpm_vcluster && ./run.sh $WORKSPACE $NODE_NAME 7"
                     }
                   }
-                 }
+                 },
 
 
 "gin" : {node ('gin')
