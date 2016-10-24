@@ -40,10 +40,10 @@ parallel (
                     stage ('run_sb15')
                     {
                       parallel (
-                      "1" : {sh "cd openfpm_vcluster && ./run.sh $WORKSPACE $NODE_NAME 1"},
-                      "2" : {sh "cd openfpm_vcluster && ./run.sh $WORKSPACE $NODE_NAME 2"},
-                      "3" : {sh "cd openfpm_vcluster && ./run.sh $WORKSPACE $NODE_NAME 3"},
-                      "4" : {sh "cd openfpm_vcluster && ./run.sh $WORKSPACE $NODE_NAME 4"}
+                      "1" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 1"},
+                      "2" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 2"},
+                      "3" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 3"},
+                      "4" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 4"}
                       )
                     }
                   }
