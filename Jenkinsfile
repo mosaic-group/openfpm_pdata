@@ -9,7 +9,7 @@ parallel (
                     checkout scm
                     stage ('build_nyu')
                     {
-                      sh "./build.sh $WORKSPACE $NODE_NAME"
+                      sh "./build.sh $WORKSPACE $NODE_NAME pdata"
                     }
 
                     stage ('run_nyu')
@@ -32,7 +32,7 @@ parallel (
                     checkout scm
                     stage ('build_sb15')
                     {
-                      sh "./build.sh $WORKSPACE $NODE_NAME"
+                      sh "./build.sh $WORKSPACE $NODE_NAME pdata"
                     }
 
                     stage ('run_sb15')
@@ -56,7 +56,7 @@ parallel (
                     checkout scm
                     stage ('build_gin')
                     {
-                      sh "./build.sh $WORKSPACE $NODE_NAME"
+                      sh "./build.sh $WORKSPACE $NODE_NAME pdata"
                     }
 
                     stage ('run_gin')
