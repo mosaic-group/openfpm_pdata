@@ -20,6 +20,7 @@ fi
 install_req=1
 i_dir=" "
 sq=0
+nomake=0
 
 while getopts :di:shc: FLAG; do
 	case $FLAG in
@@ -39,6 +40,10 @@ while getopts :di:shc: FLAG; do
 	      echo "Fowarding options $OPTARG to configure script"
 	      configure_options=$OPTARG
 	      ;;
+            m)
+              echo "Skip make"
+              nomake=1
+              ;;
 	    h)  #show help
       	      HELP
               ;;
