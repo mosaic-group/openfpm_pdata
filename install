@@ -22,7 +22,7 @@ i_dir=" "
 sq=0
 nomake=0
 
-while getopts :di:shc: FLAG; do
+while getopts :di:smhc: FLAG; do
 	case $FLAG in
 	    d)
 	      echo "Disable depencencies installation"
@@ -317,7 +317,9 @@ cp example.mk src/example.mk
 cp example.mk example/example.mk
 
 make clean
-make
+if [ nomake -eq 0 ]; then
+  make
+fi
 
 if [ $? -ne 0 ]; then
   conf_err=1

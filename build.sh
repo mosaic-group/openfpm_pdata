@@ -27,7 +27,7 @@ then
  echo "Compiling on gin\n"
  source ~/.bashrc
  module load gcc/4.9.2
- ./install -s -c "--prefix=/home/jenkins/openfpm_install"
+ ./install -m -s -c "--prefix=/home/jenkins/openfpm_install"
  make pdata
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
@@ -57,7 +57,7 @@ then
  module load boost/1.54.0
 
  sh ./autogen.sh
- ./install -s -c "--with-boost=/sw/apps/boost/1.54.0/ CXX=mpic++"
+ ./install -m -s -c "--with-boost=/sw/apps/boost/1.54.0/ CXX=mpic++"
  make pdata
 
  if [ $? -ne 0 ]; then
@@ -80,7 +80,7 @@ then
  
  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/incard/PARMETIS/lib:/home/incard/METIS/lib:/home/incard/HDF5/lib"
 
- ./install -i "/scratch/p_ppm/" -s -c"CXX=mpic++"
+ ./install -m -i "/scratch/p_ppm/" -s -c"CXX=mpic++"
  make pdata
 
  source $HOME/openfpm_vars
@@ -92,7 +92,7 @@ then
 else
  echo "Compiling general"
  source ~/.bashrc
- ./install -s
+ ./install -m -s
  make pdata
 
  if [ $? -ne 0 ]; then
