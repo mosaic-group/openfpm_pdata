@@ -61,11 +61,12 @@ parallel (
 
                     stage ('run_gin')
                     {
-                      sh "./run.sh $WORKSPACE $NODE_NAME 1"
-                      sh "./run.sh $WORKSPACE $NODE_NAME 2"
-                      sh "./run.sh $WORKSPACE $NODE_NAME 3"
-                      sh "./run.sh $WORKSPACE $NODE_NAME 5"
-                      sh "./run.sh $WORKSPACE $NODE_NAME 7"
+                      parallel (
+                      "p1" : {sh "./run.sh $WORKSPACE $NODE_NAME 1"}
+                      "p2" : {sh "./run.sh $WORKSPACE $NODE_NAME 2"}
+                      "p3" : {sh "./run.sh $WORKSPACE $NODE_NAME 3"}
+                      "p4" : {sh "./run.sh $WORKSPACE $NODE_NAME 5"}
+                      )
                     }
                   }
                  }
