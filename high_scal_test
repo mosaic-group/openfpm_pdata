@@ -1,0 +1,23 @@
+#!groovy
+
+node ('taurus')
+{
+  deleteDir()
+  checkout scm
+  stage ('build_taurus')
+  {
+    sh "./build.sh $WORKSPACE $NODE_NAME pdata"
+  }
+
+  stage ('run_taurus')
+  {
+    sh "./run.sh $WORKSPACE $NODE_NAME 24 1"
+    sh "./run.sh $WORKSPACE $NODE_NAME 24 2"
+    sh "./run.sh $WORKSPACE $NODE_NAME 24 4"
+    sh "./run.sh $WORKSPACE $NODE_NAME 24 8"
+    sh "./run.sh $WORKSPACE $NODE_NAME 24 10"
+  }
+}
+                 
+
+
