@@ -11,11 +11,11 @@ node ('taurus')
 
   stage ('run_taurus')
   {
-    sh "./run.sh $WORKSPACE $NODE_NAME 24 1"
-    sh "./run.sh $WORKSPACE $NODE_NAME 24 2"
-    sh "./run.sh $WORKSPACE $NODE_NAME 24 4"
-    sh "./run.sh $WORKSPACE $NODE_NAME 24 8"
-    sh "./run.sh $WORKSPACE $NODE_NAME 24 10"
+    sh "./run.sh $WORKSPACE $NODE_NAME 24 1 24"
+    sh "./run.sh $WORKSPACE $NODE_NAME 48 2 24"
+    sh "./run.sh $WORKSPACE $NODE_NAME 96 4 24"
+    sh "./run.sh $WORKSPACE $NODE_NAME 192 8 24"
+    sh "./run.sh $WORKSPACE $NODE_NAME 240 10 24"
   }
 }
                  
