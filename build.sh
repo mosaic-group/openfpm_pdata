@@ -27,18 +27,18 @@ then
  echo "Compiling on gin\n"
  source ~/.bashrc
  module load gcc/4.9.2
- ./install -m -s -c "--prefix=/home/jenkins/openfpm_install"
- make $3
+ if [ x"$4" == x"full" ]; then
+  ./install -s -c "--prefix=/home/jenkins/openfpm_install"
+ else
+  ./install -m -s -c "--prefix=/home/jenkins/openfpm_install"
+  make $4
+ fi
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
  fi
 
  source $HOME/openfpm_vars
-
- if [ x"$3" == x"no_test" ]; then
-   exit 0;
- fi
 
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
@@ -92,17 +92,19 @@ then
 else
  echo "Compiling general"
  source ~/.bashrc
- ./install -m -s -c"--prefix=/Users/jenkins/openfpm_install"
- make $3
+
+ if [ x"$4" == x"full" ]; then
+  ./install -s -c "--prefix=/Users/jenkins/openfpm_install"
+ else
+  ./install -m -s -c "--prefix=/Users/jenkins/openfpm_install"
+  make $4
+ fi
 
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
  fi
 
- if [ x"$3" == x"no_test" ]; then
-   exit 0;
- fi
 fi
 
 curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Info:\", \"color\": \"#00FF00\", \"text\":\"$2 completed succeffuly the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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

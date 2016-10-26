@@ -8,7 +8,7 @@ parallel (
          checkout scm
          stage ('build_gin')
          {
-          sh "./build.sh $WORKSPACE $NODE_NAME pdata && make install"
+          sh "./build.sh $WORKSPACE $NODE_NAME pdata full  && make install"
          }
 
          stage ('run_example_gin')
@@ -24,7 +24,7 @@ parallel (
           env.PATH = "/usr/local/bin:${env.PATH}"
           stage ('build_sb15')
           {
-           sh "./build.sh $WORKSPACE $NODE_NAME pdata && make install"
+           sh "./build.sh $WORKSPACE $NODE_NAME pdata full && make install"
           }
 
           stage ('run_example_sb15')
