@@ -92,7 +92,7 @@ then
 else
  echo "Compiling general"
  source ~/.bashrc
- ./install -m -s
+ ./install -m -s -c"--prefix=/Users/pietro/openfpm_install"
  make $3
 
  if [ $? -ne 0 ]; then
