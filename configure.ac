@@ -182,9 +182,11 @@ AC_MSG_CHECKING([whether CXX supports -fext-numeric-literals])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
     [AC_MSG_RESULT([yes])
      AM_CXXFLAGS="-fext-numeric-literals"
+     echo "-fext-numeric-literals" > openfpm_flags
     ],
     [
      AC_MSG_RESULT([no])
+     echo "" > openfpm_flags
     ]
 )
 AC_LANG_POP([C++])
