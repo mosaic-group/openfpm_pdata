@@ -12,9 +12,15 @@ All notable changes to this project will be documented in this file.
 	    5_molecular_dynamic use case of symmetric cell-list and verlet list with ghost put
 	    6_complex_usage It show how the flexibility of openfpm can be used to debug your program
 - Plotting system can export graph in svg (to be included in the paper)
+- Defining a domain an invalid domain like Box<2,float> box({0.0,1.0},{0.0,1.0}) (the correct is {0.0,0.0},{1.0,1.0}  )
+           produce dead-lock or unclear error message in SE_CLASS1, not hint is given, added usefull error message
  
 ### Fixed
 - Option NO_POSITION was untested
+- Regression: Examples code compilation was broken on OSX (Affect only 0.5.1)
+              (Internal: Added OSX examples testing in the release pipeline)
+- gray_scott example code (variable not initialized)
+
 
 ### Changes
 
