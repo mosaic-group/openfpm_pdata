@@ -15,7 +15,7 @@ parallel (
          {
           sh "cd example && make"
          }
-       }}
+       }},
 
 "sb15" : {node ('sbalzarini-mac-15')
          {
