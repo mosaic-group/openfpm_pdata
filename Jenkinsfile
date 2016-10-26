@@ -18,6 +18,7 @@ parallel (
                       sh "./run.sh $WORKSPACE $NODE_NAME 2"
                       sh "./run.sh $WORKSPACE $NODE_NAME 3"
                       sh "./run.sh $WORKSPACE $NODE_NAME 5"
+                      sh "./success.sh 2 nyu opefpm_pdata"
                     }
                   }
                  },
@@ -44,6 +45,7 @@ parallel (
                       sh "./run.sh $WORKSPACE $NODE_NAME 5"
                       sh "./run.sh $WORKSPACE $NODE_NAME 6"
                       sh "./run.sh $WORKSPACE $NODE_NAME 7"
+                      sh "./success.sh 2 sbalzarini-mac-15 opefpm_pdata"
                     }
                   }
                  },
@@ -67,6 +69,7 @@ parallel (
                       "p3" : {sh "./run.sh $WORKSPACE $NODE_NAME 3"},
                       "p4" : {sh "./run.sh $WORKSPACE $NODE_NAME 5"}
                       )
+                      sh "./success.sh 2 gin opefpm_pdata"
                     }
                   }
                  }
