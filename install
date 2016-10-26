@@ -8,6 +8,7 @@ source script/remove_old
 source script/set_mpi
 source script/conf_PETSC
 
+
 ## Check that your home is not empty
 
 if [ x"$HOME" == x"" ]; then
@@ -308,7 +309,8 @@ fi
 
 ### Create example.mk
 install_base=$(cat install_dir)
-openmp_flags=$(cat openmp_flags) $(cat openfpm_flags)
+openmp_flags="$(cat openmp_flags) $(cat openfpm_flags)"
+
 echo "INCLUDE_PATH= $openmp_flags  -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" > example.mk
 echo "LIBS_PATH= $openmp_flags -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib -L$i_dir/HDF5/lib -L$i_dir/LIBHILBERT/lib  $lin_alg_dir" >> example.mk
 echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lhdf5 -llibhilbert  $lin_alg_lib" >> example.mk
