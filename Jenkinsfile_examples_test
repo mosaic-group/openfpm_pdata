@@ -23,7 +23,7 @@ parallel (
           checkout scm
           stage ('build_sb15')
           {
-           sh "./build.sh $WORKSPACE $NODE_NAME pdata"
+           sh "./build.sh $WORKSPACE $NODE_NAME pdata && make install"
           }
 
           stage ('run_example_sb15')
