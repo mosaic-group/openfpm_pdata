@@ -21,9 +21,10 @@ parallel (
          {
           deleteDir()
           checkout scm
+          env.PATH = "/usr/local/bin:${env.PATH}"
           stage ('build_sb15')
           {
-           sh "echo $PATH && brew --version  && ./build.sh $WORKSPACE $NODE_NAME pdata && make install"
+           sh "./build.sh $WORKSPACE $NODE_NAME pdata && make install"
           }
 
           stage ('run_example_sb15')
