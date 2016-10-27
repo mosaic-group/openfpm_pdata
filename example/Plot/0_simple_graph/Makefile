@@ -10,7 +10,7 @@ OBJ = main.o
 	$(CC) -O3 -g3 -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
 
 plot: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS) -lquadmath
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 all: plot
 
