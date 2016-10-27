@@ -12,10 +12,10 @@ node ('taurus')
   stage ('run_taurus')
   {
     parallel (
-      "24" : {sh "./run.sh $WORKSPACE $NODE_NAME 24 1 24"}
-      "48" : {sh "./run.sh $WORKSPACE $NODE_NAME 48 2 24"}
-      "96" : {sh "./run.sh $WORKSPACE $NODE_NAME 96 4 24"}
-      "192" : {sh "./run.sh $WORKSPACE $NODE_NAME 192 8 24"}
+      "24" : {sh "./run.sh $WORKSPACE $NODE_NAME 24 1 24"},
+      "48" : {sh "./run.sh $WORKSPACE $NODE_NAME 48 2 24"},
+      "96" : {sh "./run.sh $WORKSPACE $NODE_NAME 96 4 24"},
+      "192" : {sh "./run.sh $WORKSPACE $NODE_NAME 192 8 24"},
       "240" : {sh "./run.sh $WORKSPACE $NODE_NAME 240 10 24"}
     )
   }
