@@ -8,7 +8,7 @@ OBJ_EIGEN = main_eigen.o
 OBJ_PETSC = main_petsc.o
 
 %.o: %.cpp
-	$(CC) -fext-numeric-literals -O3 -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -O3 -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
 
 all: stokes_2d_eigen stokes_2d_petsc
 

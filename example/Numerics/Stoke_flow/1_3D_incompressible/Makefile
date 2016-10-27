@@ -8,15 +8,15 @@ OBJ_EIGEN = main_eigen.o
 OBJ_PETSC = main_petsc.o
 
 %.o: %.cpp
-	$(CC) -fopenmp -fext-numeric-literals  -O3 -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -O3 -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
 
 all: stokes_3d_eigen stokes_3d_petsc
 
 stokes_3d_eigen: $(OBJ_EIGEN)
-	$(CC) -fopenmp -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 stokes_3d_petsc: $(OBJ_PETSC)
-	$(CC) -fopenmp -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 run: all
 	source $$HOME/openfpm_vars; mpirun -np 3 ./stokes_3d_eigen; mpirun -np 3 ./stokes_3d_petsc

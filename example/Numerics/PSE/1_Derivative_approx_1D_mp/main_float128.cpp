@@ -10,11 +10,16 @@
  *
  */
 
+#include "config/config.h"
 #include "Vector/vector_dist.hpp"
 #include "Decomposition/CartDecomposition.hpp"
 #include "PSE/Kernels.hpp"
 #include "data_type/aggregate.hpp"
 #include <cmath>
+
+// This example only work if there is HAVE_LIBQUADMATH
+#ifdef HAVE_LIBQUADMATH
+
 #include <boost/multiprecision/float128.hpp>
 
 typedef boost::multiprecision::float128 float128;
@@ -310,3 +315,11 @@ int main(int argc, char* argv[])
 	//
 	openfpm_finalize();
 }
+
+#else
+
+int main(int argc, char* argv[])
+{
+}
+
+#endif

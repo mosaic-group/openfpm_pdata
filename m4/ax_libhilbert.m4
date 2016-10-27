@@ -80,7 +80,7 @@ AC_DEFUN([AX_LIB_HILBERT], [
                                 with_libhilbert=$PETSC
                                 AC_MSG_RESULT(yes)
                         else
-                                with_petsc=/usr
+                                with_libhilbert=/usr
                                 if test ! -f "$with_libhilbert/include/hilbertKey.h" ; then
                                         with_libhilbert=/usr/local
                                         if test ! -f "$with_libhilbert/include/hilbertKey.h" ; then
