@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
 		Point<3,float> xq;
 
 		// Used to reorder the neighborhood particles by id
-		bool operator<(const struct point_and_gid & pag)
+		bool operator<(const struct point_and_gid & pag) const
 		{
 			return (id < pag.id);
 		}
