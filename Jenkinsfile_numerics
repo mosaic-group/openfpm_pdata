@@ -20,6 +20,7 @@ parallel (
                       "3" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 3"},
                       "4" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 4"}
                       )
+                      sh "./success.sh 2 gin openfpm_numerics"
                     }
                   }
                  },
@@ -45,6 +46,7 @@ parallel (
                       "3" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 3"},
                       "4" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 4"}
                       )
+                      sh "./success.sh 2 sbalzarini-mac-15 openfpm_numerics"
                     }
                   }
                  }
