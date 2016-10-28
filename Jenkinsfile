@@ -14,9 +14,10 @@ parallel (
 
                     stage ('run_nyu')
                     {
-                      sh "./run.sh $WORKSPACE $NODE_NAME 1"
-                      sh "./run.sh $WORKSPACE $NODE_NAME 2"
-                      sh "./run.sh $WORKSPACE $NODE_NAME 3"
+                      parallel (
+                      "1" : {sh "./run.sh $WORKSPACE $NODE_NAME 1"},
+                      "2" : {sh "./run.sh $WORKSPACE $NODE_NAME 2"},
+                      "3" : {sh "./run.sh $WORKSPACE $NODE_NAME 3"})
                       sh "./run.sh $WORKSPACE $NODE_NAME 5"
                       sh "./success.sh 2 nyu opefpm_pdata"
                     }
@@ -38,9 +39,11 @@ parallel (
 
                     stage ('run_sb15')
                     {
-                      sh "./run.sh $WORKSPACE $NODE_NAME 1"
-                      sh "./run.sh $WORKSPACE $NODE_NAME 2"
-                      sh "./run.sh $WORKSPACE $NODE_NAME 3"
+                      parallel (
+                      "1" : {sh "./run.sh $WORKSPACE $NODE_NAME 1"},
+                      "2" : {sh "./run.sh $WORKSPACE $NODE_NAME 2"},
+                      "3" : {sh "./run.sh $WORKSPACE $NODE_NAME 3"}
+                      )
                       sh "./run.sh $WORKSPACE $NODE_NAME 4"
                       sh "./run.sh $WORKSPACE $NODE_NAME 5"
                       sh "./run.sh $WORKSPACE $NODE_NAME 6"
