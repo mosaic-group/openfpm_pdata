@@ -30,7 +30,7 @@ then
  if [ x"$4" == x"full" ]; then
   ./install -s -c "--prefix=/home/jenkins/openfpm_install"
  else
-  ./install -m -s -c "--prefix=/home/jenkins/openfpm_install"
+  ./install -m -s -c "--prefix=/home/jenkins/openfpm_install --no-recursion"
   make $3
  fi
  if [ $? -ne 0 ]; then
@@ -57,7 +57,7 @@ then
  module load boost/1.54.0
 
  sh ./autogen.sh
- ./install -m -s -c "--with-boost=/sw/apps/boost/1.54.0/ CXX=mpic++"
+ ./install -m -s -c "--with-boost=/sw/apps/boost/1.54.0/ CXX=mpic++ --no-recursion"
  make $3
 
  if [ $? -ne 0 ]; then
@@ -80,7 +80,7 @@ then
  
  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/incard/PARMETIS/lib:/home/incard/METIS/lib:/home/incard/HDF5/lib"
 
- ./install -m -i "/scratch/p_ppm/" -s -c"CXX=mpic++"
+ ./install -m -i "/scratch/p_ppm/" -s -c"CXX=mpic++ --no-recursion"
  make $3
 
  source $HOME/openfpm_vars
@@ -96,7 +96,7 @@ else
  if [ x"$4" == x"full" ]; then
   ./install -s -c "--prefix=/Users/jenkins/openfpm_install"
  else
-  ./install -m -s -c "--prefix=/Users/jenkins/openfpm_install"
+  ./install -m -s -c "--prefix=/Users/jenkins/openfpm_install --no-recursion"
   make $3
  fi
 
