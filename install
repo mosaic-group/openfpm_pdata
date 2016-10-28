@@ -318,8 +318,8 @@ echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams 
 cp example.mk src/example.mk
 cp example.mk example/example.mk
 
-make clean
 if [ $nomake -eq 0 ]; then
+  make clean
   make
 fi
 

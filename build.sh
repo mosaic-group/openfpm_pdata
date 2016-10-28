@@ -31,7 +31,7 @@ then
   ./install -s -c "--prefix=/home/jenkins/openfpm_install"
  else
   ./install -m -s -c "--prefix=/home/jenkins/openfpm_install"
-  make $4
+  make $3
  fi
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
@@ -97,7 +97,7 @@ else
   ./install -s -c "--prefix=/Users/jenkins/openfpm_install"
  else
   ./install -m -s -c "--prefix=/Users/jenkins/openfpm_install"
-  make $4
+  make $3
  fi
 
  if [ $? -ne 0 ]; then
