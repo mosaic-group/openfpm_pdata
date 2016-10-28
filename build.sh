@@ -29,7 +29,7 @@ then
  module load gcc/4.9.2
  if [ x"$4" == x"full" ]; then
   ./install -s -c "--prefix=/home/jenkins/openfpm_install"
- else if [ x"$3" == x"numerics" ]; then
+ elif [ x"$3" == x"numerics" ]; then
   ./install -m -s -c "--prefix=/home/jenkins/openfpm_install"
   make $3
  else
@@ -98,7 +98,7 @@ else
 
  if [ x"$4" == x"full" ]; then
   ./install -s -c "--prefix=/Users/jenkins/openfpm_install"
- else if [ x"$3" == x"numerics" ]; then
+ elif [ x"$3" == x"numerics" ]; then
   ./install -m -s -c "--prefix=/home/jenkins/openfpm_install"
   make $3
  else
