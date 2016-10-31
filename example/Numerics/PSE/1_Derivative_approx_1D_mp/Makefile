@@ -18,7 +18,7 @@ OBJ_128 = main_float128.o
 #all: pse_1d_128
 
 run: #all
-	source $$HOME/openfpm_vars;# ./pse_1d_128
+#	source $$HOME/openfpm_vars;# ./pse_1d_128
 
 #.PHONY: clean all run
 

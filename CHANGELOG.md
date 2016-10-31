@@ -17,7 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Option NO_POSITION was untested
 - Regression: Examples code compilation was broken on OSX (Affect only 0.5.1)
-              (Internal: Added OSX examples testing in the release pipeline)
+              (Internal: Added OSX examples compilarion/running test in the release pipeline)
 - gray_scott example code (variable not initialized)
 
 

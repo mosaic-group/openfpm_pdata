@@ -14,7 +14,7 @@ all: complex_use
 complex_use: $(OBJ_DORD)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
-run: all_test
+run: all
 	source $$HOME/openfpm_vars; mpirun -np 3 ./complex_use
 
 .PHONY: clean all run all_test on_test
