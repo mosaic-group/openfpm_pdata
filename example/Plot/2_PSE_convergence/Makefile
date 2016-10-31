@@ -18,7 +18,7 @@ LDIR =
 #all: conv_p
 
 run: #all
-	source $$HOME/openfpm_vars;# ./conv_p
+#	source $$HOME/openfpm_vars;# ./conv_p
 
 #.PHONY: clean all run
 
