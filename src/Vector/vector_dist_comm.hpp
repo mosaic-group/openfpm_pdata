@@ -1064,7 +1064,7 @@ public:
 		size_t i2 = 0;
 
 
-		if (v_prp.size() - lg_m != o_part_loc.size())
+		if (lg_m < v_prp.size() && v_prp.size() - lg_m != o_part_loc.size())
 		{
 			std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " Local ghost particles = " << v_prp.size() - lg_m << " != " << o_part_loc.size() << std::endl;
 			std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " Check that you did a ghost_get before a ghost_put" << std::endl;

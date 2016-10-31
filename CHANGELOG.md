@@ -12,8 +12,7 @@ All notable changes to this project will be documented in this file.
 	    5_molecular_dynamic use case of symmetric cell-list and verlet list with ghost put
 	    6_complex_usage It show how the flexibility of openfpm can be used to debug your program
 - Plotting system can export graph in svg (to be included in the paper)
-- Defining a domain an invalid domain like Box<2,float> box({0.0,1.0},{0.0,1.0}) (the correct is {0.0,0.0},{1.0,1.0}  )
-           produce dead-lock or unclear error message in SE_CLASS1, not hint is given, added usefull error message
+
  
 ### Fixed
 - Option NO_POSITION was untested
@@ -144,26 +143,26 @@ All notable changes to this project will be documented in this file.
 
 # Planned in the next Releases
 
+## [0.9.0] - Mid March
+
+- Algebraic Multigrid solver
+- Parallel VTK, improved visualization
+
 ## [0.8.0] - Mid January 2017
-## [0.7.0] - December 2016
 
 ### Added
 - Dynamic Load Balancies examples and interface fixation
 - Check Point restart
 - More example and documentations
 
-### Proposal
-
-- Algebraic Multigrid solver
-- Parallel VTK, improved visualization
-- Asynchronous communication
-
 ## [0.7.0] - December of October
 
 ### Added
 - Asynchronous communication
-
-
+- Support for Microsoft Windows with Cygwin
+- Support for Docker/codenvy
+- Defining a domain an invalid domain like Box<2,float> box({0.0,1.0},{0.0,1.0}) (the correct is {0.0,0.0},{1.0,1.0}  )
+           produce dead-lock or unclear error message in SE_CLASS1, not hint is given, added usefull error message
 
 
 
