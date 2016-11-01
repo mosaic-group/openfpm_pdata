@@ -420,7 +420,7 @@ int main(int argc, char* argv[])
 			vd.write("particles_",f);
 
 			// we resync the ghost
-			vd.ghost_get<>(SKIP_LABELLING);
+			vd.ghost_get<>();
 
 
 			// We calculate the energy
