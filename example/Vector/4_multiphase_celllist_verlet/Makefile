@@ -15,7 +15,7 @@ multip: $(OBJ)
 all: multip
 
 run: all
-	source $$HOME/openfpm_vars; mpirun -np 2 ./multip
+	mpirun -np 2 ./multip
 
 .PHONY: clean all run
 

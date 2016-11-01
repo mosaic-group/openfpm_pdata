@@ -15,7 +15,7 @@ expr: $(OBJ)
 all: expr
 
 run: all
-	source $$HOME/openfpm_vars; mpirun -np 3 ./expr
+	mpirun -np 3 ./expr
 
 .PHONY: clean all run
 

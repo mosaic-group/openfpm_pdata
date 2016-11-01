@@ -15,7 +15,7 @@ vect: $(OBJ)
 all: vect
 
 run: all
-	source $$HOME/openfpm_vars; mpirun -np 2 ./vect
+	mpirun -np 2 ./vect
 
 .PHONY: clean all run
 

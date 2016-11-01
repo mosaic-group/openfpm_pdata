@@ -23,7 +23,7 @@ md_dyn_vl: $(OBJ_VL)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 run: all
-	source $$HOME/openfpm_vars; mpirun -np 3 ./md_dyn; mpirun -np 3 ./md_dyn_expr; mpirun -np 3 ./md_dyn_vl;
+	mpirun -np 3 ./md_dyn && mpirun -np 3 ./md_dyn_expr && mpirun -np 3 ./md_dyn_vl;
 
 .PHONY: clean all run
 

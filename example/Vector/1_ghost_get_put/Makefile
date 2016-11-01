@@ -15,7 +15,7 @@ ghost: $(OBJ)
 all: ghost
 
 run: all
-	source $$HOME/openfpm_vars; mpirun -np 2 ./ghost
+	mpirun -np 2 ./ghost
 
 .PHONY: clean all run
 

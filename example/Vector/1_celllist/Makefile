@@ -15,7 +15,7 @@ cell: $(OBJ)
 all: cell
 
 run: all
-	source $$HOME/openfpm_vars; mpirun -np 2 ./cell
+	mpirun -np 2 ./cell
 
 .PHONY: clean all run
 

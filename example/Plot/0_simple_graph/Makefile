@@ -15,7 +15,7 @@ plot: $(OBJ)
 all: plot
 
 run: all
-	source $$HOME/openfpm_vars; ./plot
+	./plot
 
 .PHONY: clean all run
 
