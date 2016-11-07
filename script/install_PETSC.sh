@@ -46,9 +46,9 @@ if [ -d "$1/METIS" ]; then
   configure_options="$configure_options --with-metis=yes --with-metis-dir=$1/METIS  "
 fi
 
-if [ -d "$1/HDF5" ]; then
-  configure_options="$configure_options --with-hdf5=yes --with-hdf5-dir=$1/HDF5  "
-fi
+#if [ -d "$1/HDF5" ]; then
+#  configure_options="$configure_options --with-hdf5=yes --with-hdf5-dir=$1/HDF5  "
+#fi
 
 if [ -d "$1/BOOST" ]; then  
   configure_options="$configure_options --with-boost=yes --with-boost-dir=$1/BOOST "
@@ -292,9 +292,9 @@ fi
 tar -xf petsc-lite-3.6.4.tar.gz
 cd petsc-3.6.4
 
-echo "./configure --with-cxx-dialect=C++11 --with-mpi-dir=$mpi_dir  $configure_options  --prefix=$1/PETSC"
+echo "./configure --with-cxx-dialect=C++11 --with-mpi-dir=$mpi_dir  $configure_options  --prefix=$1/PETSC --with-debugging=0"
 
-./configure --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir  $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC
+./configure --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir  $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC --with-debugging=0
 make all test
 make install
 
