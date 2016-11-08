@@ -149,8 +149,8 @@ function detect_compiler()
         else
           echo -e "icpc $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
           dgc_compiler=icpc
-          dgc_ret=0
-          icpc_found=0
+          dgc_ret=1
+          icpc_found=1
         fi
     fi
 
