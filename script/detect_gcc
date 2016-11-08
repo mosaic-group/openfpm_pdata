@@ -156,7 +156,7 @@ function detect_compiler()
 
     ### If we detect more than one valid compiler ask to choose
 
-    if [ icpc_found -eq 1 -a gpp_found -eq 1 ]; then
+    if [ $icpc_found -eq 1 -a $gpp_found -eq 1 ]; then
         echo "Two different valid compilers has been found please choose one"
         commands[0]="icpc"
         commands[1]="g++"
