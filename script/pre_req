@@ -332,7 +332,7 @@ if [ x"$MPI_valid" == x"yes"  ]; then
   #### In which g++ is different from mpic++ ###
 
   output_mpi=$(mpic++ --version)
-  output_gcc=$(g++ --version)
+  output_gcc=$($dgc_compiler --version)
 
   if [ x"$output_mpi" != x"$output_gcc" ]; then
     echo -e "\033[91;5;1m MPI dangerous installation \033[0m"

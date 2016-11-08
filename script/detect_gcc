@@ -5,15 +5,11 @@ function detect_compiler()
     gpp_found=0
     icpc_found=0
 
-    command -v $1 >/dev/null 2>&1
-    if [ $? -ne 0 ]; then
-      dgc_ret=0
-      return
-    fi
+    dgc_ret=0
 
     # First we try to understand if g++ command line is linked to clang
     
-    $1 --version | grep "Apple LLVM"
+    g++ --version | grep "Apple LLVM"
     if [ $? == 0 ]; then
         echo "Apple LLVM based g++"
 
@@ -25,9 +21,9 @@ function detect_compiler()
         # we check if the detection is garbage
         echo "$major" | egrep -q '^[0-9]+$'
         if [ $? == 0 ]; then
-           dgc_major=$($1 --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\1/g')
-           dgc_middle=$($1 --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\2/g')
-           dgc_minor=$($1 --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\3/g')
+           dgc_major=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\1/g')
+           dgc_middle=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\2/g')
+           dgc_minor=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\3/g')
 
            if [ $dgc_major -gt 6 ]; then
              echo -e "clang++ $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
@@ -53,114 +49,109 @@ function detect_compiler()
              dgc_ret=1
              gpp_found=1
            fi
-           return
         fi
 
         dgc_ret=2
-        return
     fi
 
-    $1 --version | grep $1
-    if [ $? == 0 -a x"$1" == x"g++" ]; then
-        dgc_major=$($1 --version | grep $1 | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
-        dgc_middle=$($1 --version | grep $1 | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
-        dgc_minor=$($1 --version | grep $1 | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
+    g++ --version | grep g++
+    if [ $? == 0 -a x"g++" == x"g++" ]; then
+        dgc_major=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
+        dgc_middle=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
+        dgc_minor=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
 
         if [ $dgc_major -gt 4 ]; then
-          echo -e "$1 $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
+          echo -e "g++ $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
           dgc_compiler=g++
           dgc_ret=1
           gpp_found=1
         elif [ $dgc_major -lt 4 ]; then
-          echo -e "$1 $dgc_major.$dgc_middle.$dgc_minor  \033[91;5;1m FAILED \033[0m your g++ version is too old, 4.8.2 at least required"
+          echo -e "g++ $dgc_major.$dgc_middle.$dgc_minor  \033[91;5;1m FAILED \033[0m your g++ version is too old, 4.8.2 at least required"
           dgc_ret=0
           gpp_found=0
         elif [ $dgc_middle -gt 8  ]; then
-          echo -e "$1 $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
+          echo -e "g++ $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
           dgc_compiler=g++
           dgc_ret=1
           gpp_found=1
         elif [ $dgc_middle -lt 8 ]; then
-          echo -e "$1 $dgc_major.$dgc_middle.$dgc_minor \033[91;5;1m FAILED \033[0m your g++ version is too old, 4.8.2 at least required"
+          echo -e "g++ $dgc_major.$dgc_middle.$dgc_minor \033[91;5;1m FAILED \033[0m your g++ version is too old, 4.8.2 at least required"
           dgc_ret=0
           gpp_found=0
         elif [ $dgc_minor -gt 1  ]; then
-          echo -e "$1 $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
+          echo -e "g++ $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
           dgc_compiler=g++
           dgc_ret=1
           gpp_found=1
         else
-          echo -e "$1 $dgc_major.$dgc_middle.$dgc_minor \033[92;1m FAILED \033[0m your g++ version is too old, 4.8.2 at least required"
+          echo -e "g++ $dgc_major.$dgc_middle.$dgc_minor \033[92;1m FAILED \033[0m your g++ version is too old, 4.8.2 at least required"
           dgc_ret=0
           gpp_found=0
         fi
-        return
     fi
 
-    $1 --version | grep $1
-    if [ $? == 0 -a x"$1" == x"clang" ]; then
-        dgc_major=$($1 --version | grep $1 | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
-        dgc_middle=$($1 --version | grep $1 | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
-        dgc_minor=$($1 --version | grep $1 | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
+    g++ --version | grep g++
+    if [ $? == 0 -a x"g++" == x"clang" ]; then
+        dgc_major=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
+        dgc_middle=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
+        dgc_minor=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
 
         if [ $dgc_major -gt 3 ]; then
-          echo -e "$1 $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
+          echo -e "g++ $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
           dgc_compiler=clang++
           dgc_ret=1
           gpp_found=1
         elif [ $dgc_major -lt 3 ]; then
-          echo -e "$1 $dgc_major.$dgc_middle.$dgc_minor  \033[91;5;1m FAILED \033[0m your clang version is too old 3.6.0 at least required"
+          echo -e "g++ $dgc_major.$dgc_middle.$dgc_minor  \033[91;5;1m FAILED \033[0m your clang version is too old 3.6.0 at least required"
           dgc_ret=0
           gpp_found=0
         elif [ $dgc_middle -gt 6  ]; then
-          echo -e "$1 $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
+          echo -e "g++ $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
           dgc_compiler=clang++
           dgc_ret=1
           gpp_found=1
         elif [ $dgc_middle -lt 6 ]; then
-          echo -e "$1 $dgc_major.$dgc_middle.$dgc_minor \033[91;5;1m FAILED \033[0m your clang version is too old 3.6.0 at least required"
+          echo -e "g++ $dgc_major.$dgc_middle.$dgc_minor \033[91;5;1m FAILED \033[0m your clang version is too old 3.6.0 at least required"
           dgc_ret=0
           gpp_found=0
         else
-          echo -e "$1 $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
+          echo -e "g++ $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
           dgc_compiler=clang++
           dgc_ret=0
           gpp_found=0
         fi
-        return
     fi
 
-    $1 --version | grep $1
-    if [ $? == 0 -a x"$1" == x"icpc" ]; then
-        dgc_major=$($1 --version | grep $1 | sed 's/.*\([0-9][0-9]\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
-        dgc_middle=$($1 --version | grep $1 | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
-        dgc_minor=$($1 --version | grep $1 | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
+    icpc --version | grep icpc
+    if [ $? == 0 -a x"icpc" == x"icpc" ]; then
+        dgc_major=$(icpc --version | grep icpc | sed 's/.*\([0-9][0-9]\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
+        dgc_middle=$(icpc --version | grep icpc | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
+        dgc_minor=$(icpc --version | grep icpc | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
 
         if [ $dgc_major -gt 16 ]; then
-          echo -e "$1 $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
+          echo -e "icpc $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
           dgc_compiler=icpc
           dgc_ret=1
           icpc_found=1
         elif [ $dgc_major -lt 16 ]; then
-          echo -e "$1 $dgc_major.$dgc_middle.$dgc_minor  \033[91;5;1m FAILED \033[0m your icpc version is too old intel 16.0.2 at least required"
+          echo -e "icpc $dgc_major.$dgc_middle.$dgc_minor  \033[91;5;1m FAILED \033[0m your icpc version is too old intel 16.0.2 at least required"
           dgc_ret=0
           icpc_found=0
         elif [ $dgc_middle -gt 0  ]; then
-          echo -e "$1 $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
+          echo -e "icpc $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
           dgc_compiler=icpc
           dgc_ret=1
           icpc_found=1
         elif [ $dgc_middle -lt 0 ]; then
-          echo -e "$1 $dgc_major.$dgc_middle.$dgc_minor \033[91;5;1m FAILED \033[0m your icpc version is too old 16.0.2 at least required"
+          echo -e "icpc $dgc_major.$dgc_middle.$dgc_minor \033[91;5;1m FAILED \033[0m your icpc version is too old 16.0.2 at least required"
           dgc_ret=0
           icpc_found=0
         else
-          echo -e "$1 $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
+          echo -e "icpc $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
           dgc_compiler=icpc
           dgc_ret=0
           icpc_found=0
         fi
-        return
     fi
 
     ### If we detect more than one valid compiler ask to choose
@@ -171,9 +162,8 @@ function detect_compiler()
         commands[1]="g++"
         possible_solutions "${commands[@]}"
         dgc_compiler=possible_solutions_ret
+        dgc_ret=1
     fi
-
-    dgc_ret=0
 }
 
 
