@@ -13,11 +13,17 @@ function possible_solutions {
    echo "$sol $com"
    sol=`expr $sol + 1`
  done
+ sol_sk=$sol
+ echo "$sol continue"
+ sol=`expr $sol + 1`
  echo "$sol exit the script"
  echo -e "\033[1;34;5mChoose the solution:\033[0m"
  read choose
  if [ x"$choose" = x"$sol" ]; then
   exit 1
+ fi
+ if [ x"$choose" = x"$sol_sk" ]; then
+  return
  fi
  possible_solutions_ret=`expr $choose - 1`
  echo "Executing: ${command[$possible_solutions_ret]}"
