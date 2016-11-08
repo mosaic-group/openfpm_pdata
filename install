@@ -42,7 +42,7 @@ while getopts :di:smhc: FLAG; do
 	      configure_options=$OPTARG
 	      ;;
             m)
-              echo "Skip make"
+              echo "Skip to make the testing"
               nomake=1
               ;;
 	    h)  #show help

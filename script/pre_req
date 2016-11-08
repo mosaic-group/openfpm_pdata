@@ -205,7 +205,7 @@ fi
 
 #### Detecting g++
 
-detect_gcc_or_clang g++
+detect_compiler
 if [ $dgc_ret -eq 0 ]; then
   echo -e "g++ \033[91;5;1m FAILED \033[0m"
   solve_gpp $platform
