@@ -357,7 +357,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin<dim>, FAST, shift<dim, St> > > CellL getCellList(St r_cut)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin<dim>, Mem_fast<dim,St>, shift<dim, St> > > CellL getCellList(St r_cut)
 	{
 		// Get ghost and anlarge by 1%
 		Ghost<dim,St> g = getDecomposition().getGhost();
@@ -375,7 +375,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb<dim>, FAST, shift<dim, St> > > CellL getCellList_hilb(St r_cut)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb<dim>, Mem_fast<dim,St>, shift<dim, St> > > CellL getCellList_hilb(St r_cut)
 	{
 		// Get ghost and anlarge by 1%
 		Ghost<dim,St> g = getDecomposition().getGhost();
@@ -391,7 +391,7 @@ public:
 	 * \param cell_list Cell list to update
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin<dim>, FAST, shift<dim, St> > > void updateCellList(CellL & cell_list)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin<dim>, Mem_fast<dim,St>, shift<dim, St> > > void updateCellList(CellL & cell_list)
 	{
 		// Clear the cell list from the previous particles
 		cell_list.clear();
@@ -427,7 +427,7 @@ public:
 	 * \return the CellList
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin<dim>, FAST, shift<dim, St> > > CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin<dim>, Mem_fast<dim,St>, shift<dim, St> > > CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge)
 	{
 		CellL cell_list;
 
@@ -462,7 +462,7 @@ public:
 	 * \return The Cell-list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb<dim>, FAST, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb<dim>, Mem_fast<dim,St>, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
 	{
 		CellL cell_list;
 
@@ -590,7 +590,7 @@ public:
 	 *
 	 *
 	 */
-	template<typename CellL=CellList_gen<dim,St,Process_keys_lin<dim>,FAST,shift<dim,St> > > void reorder (int32_t m)
+	template<typename CellL=CellList_gen<dim,St,Process_keys_lin<dim>,Mem_fast<dim,St>,shift<dim,St> > > void reorder (int32_t m)
 	{
 		reorder(m,getDecomposition().getGhost());
 	}
@@ -608,7 +608,7 @@ public:
 	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
 	 *
 	 */
-	template<typename CellL=CellList_gen<dim,St,Process_keys_lin<dim>,FAST,shift<dim,St> > > void reorder(int32_t m, const Ghost<dim,St> & enlarge)
+	template<typename CellL=CellList_gen<dim,St,Process_keys_lin<dim>,Mem_fast<dim,St>,shift<dim,St> > > void reorder(int32_t m, const Ghost<dim,St> & enlarge)
 	{
 		// reset the ghost part
 		v_pos.resize(g_m);
