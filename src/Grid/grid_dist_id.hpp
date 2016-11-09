@@ -473,8 +473,8 @@ class grid_dist_id
 			// is this extension +1
 			// for example a 1D box (interval) from 0 to 3 in one dimension have
 			// the points 0,1,2,3 = so a total of 4 points
-			for (size_t i = 0 ; i < dim ; i++)
-				l_res[i] = (sp_tg.getHigh(i) >= 0)?(sp_tg.getHigh(i)+1):0;
+			for (size_t j = 0 ; j < dim ; j++)
+				l_res[j] = (sp_tg.getHigh(j) >= 0)?(sp_tg.getHigh(j)+1):0;
 
 			// Set the dimensions of the local grid
 			loc_grid.get(i).resize(l_res);
