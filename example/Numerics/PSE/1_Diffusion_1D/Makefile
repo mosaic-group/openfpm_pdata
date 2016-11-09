@@ -15,7 +15,7 @@ diff_1d: $(OBJ)
 all: diff_1d
 
 run: all
-	source $$HOME/openfpm_vars; mpirun -np 4 ./diff_1d
+	mpirun -np 4 ./diff_1d
 
 .PHONY: clean all
 

@@ -6,6 +6,8 @@ source script/show_solutions
 source script/pre_req
 source script/remove_old
 source script/set_mpi
+source script/conf_PETSC
+
 
 ## Check that your home is not empty
 
@@ -19,8 +21,9 @@ fi
 install_req=1
 i_dir=" "
 sq=0
+nomake=0
 
-while getopts :di:shc: FLAG; do
+while getopts :di:smhc: FLAG; do
 	case $FLAG in
 	    d)
 	      echo "Disable depencencies installation"
@@ -38,6 +41,10 @@ while getopts :di:shc: FLAG; do
 	      echo "Fowarding options $OPTARG to configure script"
 	      configure_options=$OPTARG
 	      ;;
+            m)
+              echo "Skip make"
+              nomake=1
+              ;;
 	    h)  #show help
       	      HELP
               ;;
@@ -166,48 +173,6 @@ fi
 lin_alg_dir=""
 lin_alg_lib=""
 lin_alg_inc=""
-if [ -d "$i_dir/PETSC" ]; then
-    configure_options="$configure_options --with-petsc=$i_dir/PETSC "
-    lin_alg_dir="$lin_alg_dir -L$i_dir/PETSC/lib"
-    lin_alg_lib="$lin_alg_lib -lpetsc"
-    lin_alg_inc="$lin_alg_inc -I$i_dir/PETSC/include"
-fi
-if [ -d "$i_dir/HYPRE" ]; then
-    lin_alg_dir="$lin_alg_dir -L$i_dir/HYPRE/lib"
-    lin_alg_inc="$lin_alg_inc -I$i_dir/HYPRE/include"
-fi
-if [ -d "$i_dir/MUMPS" ]; then
-    lin_alg_dir="$lin_alg_dir -L$i_dir/MUMPS/lib"
-    lin_alg_inc="$lin_alg_inc -I$i_dir/MUMPS/include"
-fi
-if [ -d "$i_dir/OPENBLAS" ]; then
-    lin_alg_dir="$lin_alg_dir -L$i_dir/OPENBLAS/lib"
-    lin_alg_lib="$lin_alg_lib -lopenblas"
-    lin_alg_inc="$lin_alg_inc -I$i_dir/OPENBLAS/include"
-    configure_blas_option="--with-blas=-L$i_dir/OPENBLAS/lib -lopenblas"
-fi
-if [ -d "$i_dir/SCALAPACK" ]; then
-    lin_alg_dir="$lin_alg_dir -L$i_dir/SCALAPACK/lib"
-    lin_alg_inc="$lin_alg_inc -I$i_dir/SCALAPACK/include"
-fi
-if [ -d "$i_dir/SUPERLU_DIST" ]; then
-    lin_alg_dir="$lin_alg_dir -L$i_dir/SUPERLU_DIST/lib"
-    lin_alg_inc="$lin_alg_inc -I$i_dir/SUPERLU_DIST/include"
-fi
-if [ -d "$i_dir/TRILINOS" ]; then
-    lin_alg_dir="$lin_alg_dir -L$i_dir/TRILINOS/lib"
-    lin_alg_inc="$lin_alg_inc -I$i_dir/TRILINOS/include"
-fi
-if [ -d "$i_dir/SUITESPARSE" ]; then
-    lin_alg_dir="$lin_alg_dir -L$i_dir/SUITESPARSE/lib"
-    lin_alg_inc="$lin_alg_inc -I$i_dir/SUITESPARSE/include"
-    lin_alg_lib="$lin_alg_lib -lumfpack -lamd -lbtf -lcamd -lccolamd -lcholmod -lcolamd -lcxsparse -lklu -ldl -lrbio -lspqr -lsuitesparseconfig"
-    configure_options="$configure_options --with-suitesparse=$i_dir/SUITESPARSE "
-fi
-if [ -d "$i_dir/EIGEN" ]; then
-    configure_options=" $configure_options --with-eigen=$i_dir/EIGEN "
-    lin_alg_inc="$lin_alg_inc -I$i_dir/EIGEN"
-fi
 if [ -d "$i_dir/METIS" ]; then
     configure_options=" $configure_options --with-metis=$i_dir/METIS "
 fi
@@ -259,7 +224,7 @@ LIBHILBERT_installed=0
 conf_err=1
 
 if [ $install_req -eq 0 ]; then
-    ./configure $options $configure_options $configure_blas_option
+    ./configure $options $configure_options "$configure_blas_option"
 else
     while [ $conf_err -ne 0 ]
     do
@@ -332,31 +297,31 @@ else
 
     if [ x"$inst_lin_alg" == x"y" ]; then
         ./script/install_EIGEN.sh $i_dir $ncore
-        if [ $? -eq 0 ]; then
-            configure_options=" $configure_options --with-eigen=$i_dir/EIGEN --with-suitesparse=$i_dir/SUITESPARSE  "
-            configure_blas_option=" --with-blas=\"$i_dir/OPENBLAS/lib -lopenblas\"  "
-        fi
         ./script/install_PETSC.sh $i_dir $ncore
-        if [ $? -eq 0 ]; then
-            configure_options=" $configure_options --with-petsc=$i_dir/PETSC "
-        fi
     fi
 
-    ./configure $options $configure_options $configure_blas_option
+	### collect PETSC configuration options
+	conf_PETSC
+
+    ./configure $options $configure_options "$configure_blas_option"
 
 fi
 
 ### Create example.mk
 install_base=$(cat install_dir)
-echo "INCLUDE_PATH=-I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" > example.mk
-echo "LIBS_PATH= -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib -L$i_dir/HDF5/lib -L$i_dir/LIBHILBERT/lib  $lin_alg_dir" >> example.mk
+openmp_flags="$(cat openmp_flags) $(cat openfpm_flags)"
+
+echo "INCLUDE_PATH= $openmp_flags  -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" > example.mk
+echo "LIBS_PATH= $openmp_flags -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib -L$i_dir/HDF5/lib -L$i_dir/LIBHILBERT/lib  $lin_alg_dir" >> example.mk
 echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lhdf5 -llibhilbert  $lin_alg_lib" >> example.mk
 echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lhdf5 -llibhilbert $lin_alg_lib" >> example.mk
 cp example.mk src/example.mk
 cp example.mk example/example.mk
 
-make clean
-make
+if [ $nomake -eq 0 ]; then
+  make clean
+  make
+fi
 
 if [ $? -ne 0 ]; then
   conf_err=1

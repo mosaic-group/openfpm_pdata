@@ -425,7 +425,7 @@ int main(int argc, char* argv[])
             double val;
 
             // usefull to sort the particle by position
-            bool operator<(const pos_val & p)
+            bool operator<(const pos_val & p) const
             {
                     return pos < p.pos;
             }

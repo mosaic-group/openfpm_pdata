@@ -46,9 +46,9 @@ if [ -d "$1/METIS" ]; then
   configure_options="$configure_options --with-metis=yes --with-metis-dir=$1/METIS  "
 fi
 
-if [ -d "$1/HDF5" ]; then
-  configure_options="$configure_options --with-hdf5=yes --with-hdf5-dir=$1/HDF5  "
-fi
+#if [ -d "$1/HDF5" ]; then
+#  configure_options="$configure_options --with-hdf5=yes --with-hdf5-dir=$1/HDF5  "
+#fi
 
 if [ -d "$1/BOOST" ]; then  
   configure_options="$configure_options --with-boost=yes --with-boost-dir=$1/BOOST "
@@ -109,9 +109,9 @@ if [ ! -d "$1/TRILINOS" ]; then
   petsc_openmp=""
   if [ x"$dgc_compiler" == x"clang++" ]; then
     conf_trl_openmp="-D Trilinos_ENABLE_OpenMP=OFF"
-    petsc_openmp="--with-openmp=yes"
   else
     conf_trl_openmp="-D Trilinos_ENABLE_OpenMP=ON"
+#    petsc_openmp="--with-openmp=yes"
   fi
 
   cmake -D CMAKE_INSTALL_PREFIX:PATH=$1/TRILINOS -D CMAKE_BUILD_TYPE=RELEASE $conf_trl_openmp -D Trilinos_ENABLE_TESTS=OFF  -D Trilinos_ENABLE_ALL_PACKAGES=ON $configure_trilinos_options  ../.
@@ -180,6 +180,9 @@ if [ ! -d "$1/MUMPS" ]; then
   $sed_command -i "/OPTL\s\+=\s\-O/c\OPTL = -fpic -O3" Makefile.inc
 
   $sed_command -i "/LIBBLAS\s=\s-lblas/c\LIBBLAS = -lopenblas" Makefile.inc
+
+  $sed_command -i "/INCPAR\s\+=\s\-I\/usr\/include/c\INCPAR =" Makefile.inc
+  $sed_command -i "/LIBPAR\s\+=\s\$(SCALAP)\s\-L\/usr\/lib\s\-lmpi/c\LIBPAR = \$(SCALAP)" Makefile.inc
 
   make -j $2
   
@@ -289,13 +292,16 @@ fi
 tar -xf petsc-lite-3.6.4.tar.gz
 cd petsc-3.6.4
 
-echo "./configure --with-cxx-dialect=C++11 --with-mpi-dir=$mpi_dir  $configure_options  --prefix=$1/PETSC"
+echo "./configure --with-cxx-dialect=C++11 --with-mpi-dir=$mpi_dir  $configure_options  --prefix=$1/PETSC --with-debugging=0"
 
-./configure --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir  $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC
+./configure --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir  $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC --with-debugging=0
 make all test
 make install
 
 # if empty remove the folder
 if [ ! "$(ls -A $1/PETSC)" ]; then
    rm -rf $1/PETSC
+else
+   exit 0
 fi
+

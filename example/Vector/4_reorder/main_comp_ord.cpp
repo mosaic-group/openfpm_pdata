@@ -7,6 +7,13 @@
 #include "timer.hpp"
 
 /*!
+ * \page Vector_4_reo_root Vector 4 reordering
+ *   \subpage Vector_4_reo
+ *   \subpage Vector_4_comp_reo
+ *
+ */
+
+/*!
  * \page Vector_4_comp_reo Vector 4 computational reordering and cache friendliness
  *
  * [TOC]

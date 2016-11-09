@@ -7,18 +7,18 @@ LDIR =
 OBJ = main.o
 
 %.o: %.cpp
-	$(CC) -O0 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -O3 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
 
-cell: $(OBJ)
+ghost: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
-all: cell
+all: ghost
 
 run: all
-	source $$HOME/openfpm_vars; mpirun -np 2 ./cell
+	mpirun -np 2 ./ghost
 
 .PHONY: clean all run
 
 clean:
-	rm -f *.o *~ core cell
+	rm -f *.o *~ core ghost
 

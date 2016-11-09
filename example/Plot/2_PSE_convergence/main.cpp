@@ -10,6 +10,14 @@
  *
  */
 
+#include "config/config.h"
+
+// Some compiler like clang does not have libquadmath this example
+// require libquadmath. So is active only if in openfpm installation
+// such library has been detected
+
+#ifdef HAVE_LIBQUADMATH
+
 #include "VCluster.hpp"
 #include "PSE/Kernels_test_util.hpp"
 #include "Plot/GoogleChart.hpp"
@@ -158,5 +166,11 @@ int main(int argc, char* argv[])
 	openfpm_finalize();
 }
 
+#else
 
+int main()
+{
 
+}
+
+#endif

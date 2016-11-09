@@ -66,11 +66,13 @@ struct vtk_write<ele,vtk,false>
 template<typename T>
 struct extends
 {
+	//! number of elements
 	static inline size_t mul()
 	{
 		return 1;
 	}
 
+	//! number of indexes
 	static inline size_t dim()
 	{
 		return 0;
@@ -81,11 +83,13 @@ struct extends
 template<typename T,size_t N1>
 struct extends<T[N1]>
 {
+	//! number of elements
 	static inline size_t mul()
 	{
 		return N1;
 	}
 
+	//! number of indexes
 	static inline size_t dim()
 	{
 		return 1;
@@ -96,11 +100,13 @@ struct extends<T[N1]>
 template<typename T,size_t N1,size_t N2>
 struct extends<T[N1][N2]>
 {
+	//! number of elements
 	static inline size_t mul()
 	{
 		return N1 * N2;
 	}
 
+	//! number of indexes
 	static inline size_t dim()
 	{
 		return 2;
@@ -111,11 +117,13 @@ struct extends<T[N1][N2]>
 template<typename T,size_t N1,size_t N2,size_t N3>
 struct extends<T[N1][N2][N3]>
 {
+	//! number of elements
 	static inline size_t mul()
 	{
 		return N1 * N2 * N3;
 	}
 
+	//! number of indexes
 	static inline size_t dim()
 	{
 		return 3;
@@ -126,11 +134,13 @@ struct extends<T[N1][N2][N3]>
 template<typename T,size_t N1,size_t N2,size_t N3,size_t N4>
 struct extends<T[N1][N2][N3][N4]>
 {
+	//! number of elements
 	static inline size_t mul()
 	{
 		return N1 * N2 * N3 * N4;
 	}
 
+	//! number of indexes
 	static inline size_t dim()
 	{
 		return 4;
@@ -141,11 +151,13 @@ struct extends<T[N1][N2][N3][N4]>
 template<typename T,size_t N1,size_t N2,size_t N3,size_t N4,size_t N5>
 struct extends<T[N1][N2][N3][N4][N5]>
 {
+	//! number of elements
 	static inline size_t mul()
 	{
 		return N1 * N2 * N3 * N4 * N5;
 	}
 
+	//! number of indexes
 	static inline size_t dim()
 	{
 		return 5;
@@ -156,11 +168,13 @@ struct extends<T[N1][N2][N3][N4][N5]>
 template<typename T,size_t N1,size_t N2,size_t N3,size_t N4,size_t N5, size_t N6>
 struct extends<T[N1][N2][N3][N4][N5][N6]>
 {
+	//! number of elements
 	static inline size_t mul()
 	{
 		return N1 * N2 * N3 * N4 * N5 * N6;
 	}
 
+	//! number of indexes
 	static inline size_t dim()
 	{
 		return 6;
@@ -171,11 +185,13 @@ struct extends<T[N1][N2][N3][N4][N5][N6]>
 template<typename T,size_t N1,size_t N2,size_t N3,size_t N4,size_t N5, size_t N6, size_t N7>
 struct extends<T[N1][N2][N3][N4][N5][N6][N7]>
 {
+	//! number of elements
 	static inline size_t mul()
 	{
 		return N1 * N2 * N3 * N4 * N5 * N6 * N7;
 	}
 
+	//! number of indexes
 	static inline size_t dim()
 	{
 		return 7;
@@ -186,11 +202,13 @@ struct extends<T[N1][N2][N3][N4][N5][N6][N7]>
 template<typename T,size_t N1,size_t N2,size_t N3,size_t N4,size_t N5, size_t N6, size_t N7, size_t N8>
 struct extends<T[N1][N2][N3][N4][N5][N6][N7][N8]>
 {
+	//! number of elements
 	static inline size_t mul()
 	{
 		return N1 * N2 * N3 * N4 * N5 * N6 * N7 * N8;
 	}
 
+	//! number of indexes
 	static inline size_t dim()
 	{
 		return 8;
@@ -201,11 +219,13 @@ struct extends<T[N1][N2][N3][N4][N5][N6][N7][N8]>
 template<typename T,size_t N1,size_t N2,size_t N3,size_t N4,size_t N5, size_t N6, size_t N7, size_t N8, size_t N9>
 struct extends<T[N1][N2][N3][N4][N5][N6][N7][N8][N9]>
 {
+	//! number of elements
 	static inline size_t mul()
 	{
 		return N1 * N2 * N3 * N4 * N5 * N6 * N7 * N8 * N9;
 	}
 
+	//! number of indexes
 	static inline size_t dim()
 	{
 		return 9;
@@ -216,11 +236,13 @@ struct extends<T[N1][N2][N3][N4][N5][N6][N7][N8][N9]>
 template<typename T,size_t N1,size_t N2,size_t N3,size_t N4,size_t N5, size_t N6, size_t N7, size_t N8, size_t N9, size_t N10>
 struct extends<T[N1][N2][N3][N4][N5][N6][N7][N8][N9][N10]>
 {
+	//! number of elements
 	static inline size_t mul()
 	{
 		return N1 * N2 * N3 * N4 * N5 * N6 * N7 * N8 * N9 * N10;
 	}
 
+	//! number of indexes
 	static inline size_t dim()
 	{
 		return 10;

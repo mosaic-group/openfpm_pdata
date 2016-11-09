@@ -15,7 +15,7 @@ stencil: $(OBJ)
 all: stencil
 
 run: all
-	source $$HOME/openfpm_vars; mpirun -np 3 ./stencil
+	mpirun -np 3 ./stencil
 
 .PHONY: clean all run
 

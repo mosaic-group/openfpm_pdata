@@ -7,15 +7,15 @@ LDIR =
 OBJ = main.o
 
 %.o: %.cpp
-	$(CC) -O3 -g3 -c --std=c++11 -fext-numeric-literals  -o $@ $< $(INCLUDE_PATH)
+	$(CC) -O3 -g3 -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
 
 plot: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS) -lquadmath
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 all: plot
 
 run: all
-	source $$HOME/openfpm_vars; ./plot
+	./plot
 
 .PHONY: clean all run
 

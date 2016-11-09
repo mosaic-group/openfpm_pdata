@@ -143,9 +143,21 @@ AX_LIB_PETSC()
 
 ## Check for quadmath
 
-AC_CHECK_LIB(quadmath, sinq, [AC_DEFINE(HAVE_LIBQUADMATH,[],[Have quad math lib])
-                                LIBQUADMATH=" -lquadmath "
-                                ], [])
+
+have_quad_lib=no
+have_quad_head=no
+AC_CHECK_LIB(quadmath, sinq, [have_quad_lib=yes], [])
+AC_CHECK_HEADER(quadmath.h,[have_quad_head=yes],[])
+
+if [x"have_quad_math" == x"yes" $&& x"have_quad_math" == x"yes" ]; then
+    AC_DEFINE(HAVE_LIBQUADMATH,[],[Have quad math lib])
+    LIBQUADMATH=" -lquadmath "
+fi
+
+AC_SUBST(OPENMP_CFLAGS)
+AC_SUBST(OPENMP_LDFLAGS)
+
+echo "$OPENMP_CFLAGS" > openmp_flags
 
 ########
 
@@ -165,6 +177,28 @@ AC_MSG_RESULT($scancoverty)
 if test x"$scancoverty" = x"yes"; then
         AC_DEFINE([COVERTY_SCAN],[],[Compile for coverty scan])
 fi
+
+
+###### Checking for compiler flags -fext-numeric-literals
+
+AC_LANG_PUSH([C++])
+
+my_save_cflags="$CXXFLAGS"
+CXXFLAGS=-fext-numeric-literals
+AC_MSG_CHECKING([whether CXX supports -fext-numeric-literals])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
+    [AC_MSG_RESULT([yes])
+     AM_CXXFLAGS="-fext-numeric-literals"
+     echo "-fext-numeric-literals" > openfpm_flags
+    ],
+    [
+     AC_MSG_RESULT([no])
+     echo "" > openfpm_flags
+    ]
+)
+AC_LANG_POP([C++])
+CXXFLAGS="$my_save_cflags"
+AC_SUBST([AM_CXXFLAGS])
 
 
 ## Check for parMetis

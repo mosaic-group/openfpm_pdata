@@ -15,7 +15,7 @@ grid: $(OBJ)
 all: grid
 
 run: all
-	source $$HOME/openfpm_vars; mpirun -np 2 ./grid
+	mpirun -np 2 ./grid
 
 .PHONY: clean all run
 

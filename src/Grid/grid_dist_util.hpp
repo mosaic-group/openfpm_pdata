@@ -78,9 +78,7 @@ template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::ve
 		// Get the local sub-domain (Grid conversion must be done with the domain P1 equivalent to 0.0)
 		// consider that the sub-domain with point P1 equivalent to the domain P1 is a (0,0,0) in grid unit
 		SpaceBox<Decomposition::dims, typename Decomposition::stype> sp = dec.getSubDomain(i);
-		sp -= cd_sm.getOrig();
 		SpaceBox<Decomposition::dims, typename Decomposition::stype> sp_g = dec.getSubDomainWithGhost(i);
-		sp_g -= cd_sm.getOrig();
 
 		// Convert from SpaceBox<dim,St> to SpaceBox<dim,long int>
 		SpaceBox<Decomposition::dims,long int> sp_t = cd_sm.convertDomainSpaceIntoGridUnits(sp,dec.periodicity());

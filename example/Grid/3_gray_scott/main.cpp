@@ -261,7 +261,7 @@ int main(int argc, char* argv[])
 	//! \cond [time stepping] \endcond
 
 	// sync the ghost
-	size_t count;
+	size_t count = 0;
 	Old.template ghost_get<U,V>();
 
 	// because we assume that spacing[x] == spacing[y] we use formula 2

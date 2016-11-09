@@ -1,19 +1,52 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [0.5.1] - Mid september
+## [0.6.0] - End October 2016
+
+### Added
+- Symmetric cell-list/verlet list
+- Multi-phase cell-list and Multi-phase cell-list
+- Added ghost_get that keep properties
+- Examples: 1_ghost_get_put it show how to use ghost_get and put with the new options
+            4_multiphase_celllist_verlet completely rewritten for new Cell-list and multiphase verlet
+	    5_molecular_dynamic use case of symmetric cell-list and verlet list with ghost put
+	    6_complex_usage It show how the flexibility of openfpm can be used to debug your program
+- Plotting system can export graph in svg (to be included in the paper)
+
+ 
+### Fixed
+- Option NO_POSITION was untested
+- Regression: Examples code compilation was broken on OSX (Affect only 0.5.1)
+              (Internal: Added OSX examples compilarion/running test in the release pipeline)
+- gray_scott example code (variable not initialized)
+
+
+### Changes
+
+
+## [0.5.1] - 27 September 2016
 
 ### Added
 - ghost_put support for particles
-- Full-Support for complex property on vector-dist (Serialization) + example
+- Full-Support for complex property on vector_dist (Serialization)
+- Added examples for serialization of complex properties 4_Vector
+- improved speed of the iterators
 
 ### Fixed
 - Installation PETSC installation fail in case of preinstalled MPI
 - Miss-compilation of SUITESPARSE on gcc-6.2
 - vector_dist with negative domain (Now supported)
 - Grid 1D has been fixed
+- One constructor of Box had arguments inverted.
+  PLEASE CAREFULL ON THIS BUG
+     float xmin[] = {0.0,0.0};
+     float xmax[] = {1.0,1.0};
+     // Box<2,float> box(xmax,xmin)    BUG IT WAS xmax,xmin
+	 Box<2,float> box(xmin,xmax)  <--- NOW IT IS xmin,xmax
+	 Box<2,float> box({0.0,0.0},{1.0,1.0}) <---- This constructor is not affected by the BUG
 
 ### Changed
+- On gcc the -fext-numeric-literals compilation flag is now mandatory
 
 ## [0.5.0] - 15 August 2016
 
@@ -110,29 +143,26 @@ All notable changes to this project will be documented in this file.
 
 # Planned in the next Releases
 
+## [0.9.0] - Mid March
+
+- Algebraic Multigrid solver
+- Parallel VTK, improved visualization
+
 ## [0.8.0] - Mid January 2017
-## [0.7.0] - December 2016
 
 ### Added
 - Dynamic Load Balancies examples and interface fixation
 - Check Point restart
 - More example and documentations
 
-### Proposal
-
-- Algebraic Multigrid solver
-- Parallel VTK, improved visualization
-
-## [0.6.0] - Middle of October
+## [0.7.0] - December of October
 
 ### Added
+- Asynchronous communication
+- Support for Microsoft Windows with Cygwin
+- Support for Docker/codenvy
+- Defining a domain an invalid domain like Box<2,float> box({0.0,1.0},{0.0,1.0}) (the correct is {0.0,0.0},{1.0,1.0}  )
+           produce dead-lock or unclear error message in SE_CLASS1, not hint is given, added usefull error message
 
-- Symmetric Cell list and Verlet (15 days)
-- Semantic communication (??)
-- Improved Finite difference interface (15 days) 
 
-
-## [0.6.0] - Beginning of September
-
-- Complex properties and serialization interface (15 days)
 

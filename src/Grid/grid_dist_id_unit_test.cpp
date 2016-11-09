@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter3D_test)
 		{
 			// Get the local hyper-cube
 			SpaceBox<3,float> sub = dec.getSubDomain(i);
-			sub -= domain.getP1();
+//			sub -= domain.getP1();
 
 			Box<3,size_t> g_box = g_dist.getCellDecomposer().convertDomainSpaceIntoGridUnits(sub,bc);
 
@@ -1862,7 +1862,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_unbound_ghost )
 	// Domain
 	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
 
-	long int k = 32*32*32*create_vcluster().getProcessingUnits();
+	long int k = 28*28*28*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);
 
 	Test3D_unb_ghost(domain3,k);
@@ -1873,7 +1873,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_unbound_ghost_periodic )
 	// Domain
 	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
 
-	long int k = 32*32*32*create_vcluster().getProcessingUnits();
+	long int k = 25*25*25*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);
 
 	Test3D_unb_ghost_periodic(domain3,k);
