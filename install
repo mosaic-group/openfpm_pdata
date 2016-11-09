@@ -240,7 +240,7 @@ else
                 echo "Error the installation of MPI failed"
                 exit 1
             fi
-            ./script/install_MPI.sh $i_dir $ncore
+            ./script/install_MPI.sh $i_dir $ncore $CC $CXX $F77 $FC
             MPI_installed=1
             export PATH="$i_dir/MPI/bin:$PATH"
             configure_options="$configure_options CXX=mpic++ "
