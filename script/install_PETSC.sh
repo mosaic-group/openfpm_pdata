@@ -11,7 +11,7 @@ fi
 
 source script/detect_gcc
 source script/discover_os
-detect_gcc_or_clang g++
+detect_compiler g++
 discover_os
 
 ##### if we are on osx we use gsed
