@@ -161,9 +161,19 @@ function detect_compiler()
         commands[0]="icpc"
         commands[1]="g++"
         possible_solutions "${commands[@]}"
-        dgc_compiler=$possible_solutions_command
+        if [ x"$possible_solutions_command" == x"icpc" ]; then
+          CXX=icpc
+          CC=icc
+          F77=ifort
+          FC=ifort
+          dgc_compiler=icpc
+        else
+          CXX=g++
+          CC=gcc
+          F77=gfortran
+          FC=gfortran
+        fi
         dgc_ret=1
-        CXX=$dgc_compiler
     fi
 }
 

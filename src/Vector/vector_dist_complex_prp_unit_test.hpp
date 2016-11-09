@@ -63,53 +63,53 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_complex_prp_test_use_3d )
 
 			// initalize vector property and grid
 
-			vd.template getProp<0>(key).add(vd.getPos(key)[0]);
-			vd.template getProp<0>(key).add(vd.getPos(key)[1]);
-			vd.template getProp<0>(key).add(vd.getPos(key)[2]);
+			vd.getProp<0>(key).add(vd.getPos(key)[0]);
+			vd.getProp<0>(key).add(vd.getPos(key)[1]);
+			vd.getProp<0>(key).add(vd.getPos(key)[2]);
 
-			vd.template getProp<0>(key).add(vd.getPos(key)[0]+vd.getPos(key)[1]);
-			vd.template getProp<0>(key).add(vd.getPos(key)[1]+vd.getPos(key)[2]);
-			vd.template getProp<0>(key).add(vd.getPos(key)[0]+vd.getPos(key)[2]);
+			vd.getProp<0>(key).add(vd.getPos(key)[0]+vd.getPos(key)[1]);
+			vd.getProp<0>(key).add(vd.getPos(key)[1]+vd.getPos(key)[2]);
+			vd.getProp<0>(key).add(vd.getPos(key)[0]+vd.getPos(key)[2]);
 
 			// Grid
 			size_t sz[] = {3,3,3};
-			vd.template getProp<1>(key).resize(sz);
+			vd.getProp<1>(key).resize(sz);
 
-			vd.template getProp<1>(key).template get<0>({0,0,0}) = vd.getPos(key)[0];
-			vd.template getProp<1>(key).template get<0>({0,0,1}) = vd.getPos(key)[1];
-			vd.template getProp<1>(key).template get<0>({0,0,2}) = vd.getPos(key)[2];
+			vd.getProp<1>(key).get<0>({0,0,0}) = vd.getPos(key)[0];
+			vd.getProp<1>(key).get<0>({0,0,1}) = vd.getPos(key)[1];
+			vd.getProp<1>(key).get<0>({0,0,2}) = vd.getPos(key)[2];
 
-			vd.template getProp<1>(key).template get<0>({0,1,0}) = 2.0*vd.getPos(key)[0];
-			vd.template getProp<1>(key).template get<0>({0,1,1}) = 2.0*vd.getPos(key)[1];
-			vd.template getProp<1>(key).template get<0>({0,1,2}) = 2.0*vd.getPos(key)[2];
+			vd.getProp<1>(key).get<0>({0,1,0}) = 2.0*vd.getPos(key)[0];
+			vd.getProp<1>(key).get<0>({0,1,1}) = 2.0*vd.getPos(key)[1];
+			vd.getProp<1>(key).get<0>({0,1,2}) = 2.0*vd.getPos(key)[2];
 
-			vd.template getProp<1>(key).template get<0>({0,2,0}) = 3.0*vd.getPos(key)[0];
-			vd.template getProp<1>(key).template get<0>({0,2,1}) = 3.0*vd.getPos(key)[1];
-			vd.template getProp<1>(key).template get<0>({0,2,2}) = 3.0*vd.getPos(key)[2];
+			vd.getProp<1>(key).get<0>({0,2,0}) = 3.0*vd.getPos(key)[0];
+			vd.getProp<1>(key).get<0>({0,2,1}) = 3.0*vd.getPos(key)[1];
+			vd.getProp<1>(key).get<0>({0,2,2}) = 3.0*vd.getPos(key)[2];
 
-			vd.template getProp<1>(key).template get<0>({1,0,0}) = 4.0*vd.getPos(key)[0];
-			vd.template getProp<1>(key).template get<0>({1,0,1}) = 4.0*vd.getPos(key)[1];
-			vd.template getProp<1>(key).template get<0>({1,0,2}) = 4.0*vd.getPos(key)[2];
+			vd.getProp<1>(key).get<0>({1,0,0}) = 4.0*vd.getPos(key)[0];
+			vd.getProp<1>(key).get<0>({1,0,1}) = 4.0*vd.getPos(key)[1];
+			vd.getProp<1>(key).get<0>({1,0,2}) = 4.0*vd.getPos(key)[2];
 
-			vd.template getProp<1>(key).template get<0>({1,1,0}) = 5.0*vd.getPos(key)[0];
-			vd.template getProp<1>(key).template get<0>({1,1,1}) = 5.0*vd.getPos(key)[1];
-			vd.template getProp<1>(key).template get<0>({1,1,2}) = 5.0*vd.getPos(key)[2];
+			vd.getProp<1>(key).get<0>({1,1,0}) = 5.0*vd.getPos(key)[0];
+			vd.getProp<1>(key).get<0>({1,1,1}) = 5.0*vd.getPos(key)[1];
+			vd.getProp<1>(key).get<0>({1,1,2}) = 5.0*vd.getPos(key)[2];
 
-			vd.template getProp<1>(key).template get<0>({1,2,0}) = 6.0*vd.getPos(key)[0];
-			vd.template getProp<1>(key).template get<0>({1,2,1}) = 6.0*vd.getPos(key)[1];
-			vd.template getProp<1>(key).template get<0>({1,2,2}) = 6.0*vd.getPos(key)[2];
+			vd.getProp<1>(key).get<0>({1,2,0}) = 6.0*vd.getPos(key)[0];
+			vd.getProp<1>(key).get<0>({1,2,1}) = 6.0*vd.getPos(key)[1];
+			vd.getProp<1>(key).get<0>({1,2,2}) = 6.0*vd.getPos(key)[2];
 
-			vd.template getProp<1>(key).template get<0>({2,0,0}) = 7.0*vd.getPos(key)[0];
-			vd.template getProp<1>(key).template get<0>({2,0,1}) = 7.0*vd.getPos(key)[1];
-			vd.template getProp<1>(key).template get<0>({2,0,2}) = 7.0*vd.getPos(key)[2];
+			vd.getProp<1>(key).get<0>({2,0,0}) = 7.0*vd.getPos(key)[0];
+			vd.getProp<1>(key).get<0>({2,0,1}) = 7.0*vd.getPos(key)[1];
+			vd.getProp<1>(key).get<0>({2,0,2}) = 7.0*vd.getPos(key)[2];
 
-			vd.template getProp<1>(key).template get<0>({2,1,0}) = 8.0*vd.getPos(key)[0];
-			vd.template getProp<1>(key).template get<0>({2,1,1}) = 8.0*vd.getPos(key)[1];
-			vd.template getProp<1>(key).template get<0>({2,1,2}) = 8.0*vd.getPos(key)[2];
+			vd.getProp<1>(key).get<0>({2,1,0}) = 8.0*vd.getPos(key)[0];
+			vd.getProp<1>(key).get<0>({2,1,1}) = 8.0*vd.getPos(key)[1];
+			vd.getProp<1>(key).get<0>({2,1,2}) = 8.0*vd.getPos(key)[2];
 
-			vd.template getProp<1>(key).template get<0>({2,2,0}) = 9.0*vd.getPos(key)[0];
-			vd.template getProp<1>(key).template get<0>({2,2,1}) = 9.0*vd.getPos(key)[1];
-			vd.template getProp<1>(key).template get<0>({2,2,2}) = 9.0*vd.getPos(key)[2];
+			vd.getProp<1>(key).get<0>({2,2,0}) = 9.0*vd.getPos(key)[0];
+			vd.getProp<1>(key).get<0>({2,2,1}) = 9.0*vd.getPos(key)[1];
+			vd.getProp<1>(key).get<0>({2,2,2}) = 9.0*vd.getPos(key)[2];
 
 			++it;
 		}
@@ -171,54 +171,54 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_complex_prp_test_use_3d )
 		{
 			auto key = it3.get();
 
-			ret &= vd.template getProp<0>(key).size() == 6;
+			ret &= vd.getProp<0>(key).size() == 6;
 
-			ret &= vd.template getProp<0>(key).get(0) == vd.getPos(key)[0];
-			ret &= vd.template getProp<0>(key).get(1) == vd.getPos(key)[1];
-			ret &= vd.template getProp<0>(key).get(2) == vd.getPos(key)[2];
+			ret &= vd.getProp<0>(key).get(0) == vd.getPos(key)[0];
+			ret &= vd.getProp<0>(key).get(1) == vd.getPos(key)[1];
+			ret &= vd.getProp<0>(key).get(2) == vd.getPos(key)[2];
 
-			ret &= vd.template getProp<0>(key).get(3) == vd.getPos(key)[0]+vd.getPos(key)[1];
-			ret &= vd.template getProp<0>(key).get(4) == vd.getPos(key)[1]+vd.getPos(key)[2];
-			ret &= vd.template getProp<0>(key).get(5) == vd.getPos(key)[0]+vd.getPos(key)[2];
+			ret &= vd.getProp<0>(key).get(3) == vd.getPos(key)[0]+vd.getPos(key)[1];
+			ret &= vd.getProp<0>(key).get(4) == vd.getPos(key)[1]+vd.getPos(key)[2];
+			ret &= vd.getProp<0>(key).get(5) == vd.getPos(key)[0]+vd.getPos(key)[2];
 
-//			BOOST_REQUIRE_EQUAL(vd.template getProp<0>(key).get(0),vd.getPos(key)[0]);
+//			BOOST_REQUIRE_EQUAL(vd.getProp<0>(key).get(0),vd.getPos(key)[0]);
 
-			ret &= vd.template getProp<1>(key).size() == 3*3*3;
-			ret &= vd.template getProp<1>(key).template get<0>({0,0,0}) == vd.getPos(key)[0];
-			ret &= vd.template getProp<1>(key).template get<0>({0,0,1}) == vd.getPos(key)[1];
-			ret &= vd.template getProp<1>(key).template get<0>({0,0,2}) == vd.getPos(key)[2];
+			ret &= vd.getProp<1>(key).size() == 3*3*3;
+			ret &= vd.getProp<1>(key).get<0>({0,0,0}) == vd.getPos(key)[0];
+			ret &= vd.getProp<1>(key).get<0>({0,0,1}) == vd.getPos(key)[1];
+			ret &= vd.getProp<1>(key).get<0>({0,0,2}) == vd.getPos(key)[2];
 
-			ret &= vd.template getProp<1>(key).template get<0>({0,1,0}) == 2.0*vd.getPos(key)[0];
-			ret &= vd.template getProp<1>(key).template get<0>({0,1,1}) == 2.0*vd.getPos(key)[1];
-			ret &= vd.template getProp<1>(key).template get<0>({0,1,2}) == 2.0*vd.getPos(key)[2];
+			ret &= vd.getProp<1>(key).get<0>({0,1,0}) == 2.0*vd.getPos(key)[0];
+			ret &= vd.getProp<1>(key).get<0>({0,1,1}) == 2.0*vd.getPos(key)[1];
+			ret &= vd.getProp<1>(key).get<0>({0,1,2}) == 2.0*vd.getPos(key)[2];
 
-			ret &= vd.template getProp<1>(key).template get<0>({0,2,0}) == 3.0*vd.getPos(key)[0];
-			ret &= vd.template getProp<1>(key).template get<0>({0,2,1}) == 3.0*vd.getPos(key)[1];
-			ret &= vd.template getProp<1>(key).template get<0>({0,2,2}) == 3.0*vd.getPos(key)[2];
+			ret &= vd.getProp<1>(key).get<0>({0,2,0}) == 3.0*vd.getPos(key)[0];
+			ret &= vd.getProp<1>(key).get<0>({0,2,1}) == 3.0*vd.getPos(key)[1];
+			ret &= vd.getProp<1>(key).get<0>({0,2,2}) == 3.0*vd.getPos(key)[2];
 
-			ret &= vd.template getProp<1>(key).template get<0>({1,0,0}) == 4.0*vd.getPos(key)[0];
-			ret &= vd.template getProp<1>(key).template get<0>({1,0,1}) == 4.0*vd.getPos(key)[1];
-			ret &= vd.template getProp<1>(key).template get<0>({1,0,2}) == 4.0*vd.getPos(key)[2];
+			ret &= vd.getProp<1>(key).get<0>({1,0,0}) == 4.0*vd.getPos(key)[0];
+			ret &= vd.getProp<1>(key).get<0>({1,0,1}) == 4.0*vd.getPos(key)[1];
+			ret &= vd.getProp<1>(key).get<0>({1,0,2}) == 4.0*vd.getPos(key)[2];
 
-			ret &= vd.template getProp<1>(key).template get<0>({1,1,0}) == 5.0*vd.getPos(key)[0];
-			ret &= vd.template getProp<1>(key).template get<0>({1,1,1}) == 5.0*vd.getPos(key)[1];
-			ret &= vd.template getProp<1>(key).template get<0>({1,1,2}) == 5.0*vd.getPos(key)[2];
+			ret &= vd.getProp<1>(key).get<0>({1,1,0}) == 5.0*vd.getPos(key)[0];
+			ret &= vd.getProp<1>(key).get<0>({1,1,1}) == 5.0*vd.getPos(key)[1];
+			ret &= vd.getProp<1>(key).get<0>({1,1,2}) == 5.0*vd.getPos(key)[2];
 
-			ret &= vd.template getProp<1>(key).template get<0>({1,2,0}) == 6.0*vd.getPos(key)[0];
-			ret &= vd.template getProp<1>(key).template get<0>({1,2,1}) == 6.0*vd.getPos(key)[1];
-			ret &= vd.template getProp<1>(key).template get<0>({1,2,2}) == 6.0*vd.getPos(key)[2];
+			ret &= vd.getProp<1>(key).get<0>({1,2,0}) == 6.0*vd.getPos(key)[0];
+			ret &= vd.getProp<1>(key).get<0>({1,2,1}) == 6.0*vd.getPos(key)[1];
+			ret &= vd.getProp<1>(key).get<0>({1,2,2}) == 6.0*vd.getPos(key)[2];
 
-			ret &= vd.template getProp<1>(key).template get<0>({2,0,0}) == 7.0*vd.getPos(key)[0];
-			ret &= vd.template getProp<1>(key).template get<0>({2,0,1}) == 7.0*vd.getPos(key)[1];
-			ret &= vd.template getProp<1>(key).template get<0>({2,0,2}) == 7.0*vd.getPos(key)[2];
+			ret &= vd.getProp<1>(key).get<0>({2,0,0}) == 7.0*vd.getPos(key)[0];
+			ret &= vd.getProp<1>(key).get<0>({2,0,1}) == 7.0*vd.getPos(key)[1];
+			ret &= vd.getProp<1>(key).get<0>({2,0,2}) == 7.0*vd.getPos(key)[2];
 
-			ret &= vd.template getProp<1>(key).template get<0>({2,1,0}) == 8.0*vd.getPos(key)[0];
-			ret &= vd.template getProp<1>(key).template get<0>({2,1,1}) == 8.0*vd.getPos(key)[1];
-			ret &= vd.template getProp<1>(key).template get<0>({2,1,2}) == 8.0*vd.getPos(key)[2];
+			ret &= vd.getProp<1>(key).get<0>({2,1,0}) == 8.0*vd.getPos(key)[0];
+			ret &= vd.getProp<1>(key).get<0>({2,1,1}) == 8.0*vd.getPos(key)[1];
+			ret &= vd.getProp<1>(key).get<0>({2,1,2}) == 8.0*vd.getPos(key)[2];
 
-			ret &= vd.template getProp<1>(key).template get<0>({2,2,0}) == 9.0*vd.getPos(key)[0];
-			ret &= vd.template getProp<1>(key).template get<0>({2,2,1}) == 9.0*vd.getPos(key)[1];
-			ret &= vd.template getProp<1>(key).template get<0>({2,2,2}) == 9.0*vd.getPos(key)[2];
+			ret &= vd.getProp<1>(key).get<0>({2,2,0}) == 9.0*vd.getPos(key)[0];
+			ret &= vd.getProp<1>(key).get<0>({2,2,1}) == 9.0*vd.getPos(key)[1];
+			ret &= vd.getProp<1>(key).get<0>({2,2,2}) == 9.0*vd.getPos(key)[2];
 
 			++it3;
 		}

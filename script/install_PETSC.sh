@@ -2,6 +2,11 @@
 
 # check if the directory $1/PETSC exist
 
+CXX=$3
+CC=$4
+F77=$5
+FC=$6
+
 if [ -d "$1/PETSC" ]; then
   echo "PETSC already installed"
   exit 0
@@ -9,9 +14,7 @@ fi
 
 # Detect gcc pr clang
 
-source script/detect_gcc
 source script/discover_os
-detect_compiler g++
 discover_os
 
 ##### if we are on osx we use gsed

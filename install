@@ -163,11 +163,6 @@ if [ ! -d "$i_dir/PETSC" -o ! -d "$i_dir/EIGEN" ]; then
     else
       inst_lin_alg = n
     fi
-
-#    if [ ! x"$choose" == x"0" ]; then
-#        ./script/install_PETSC.sh $i_dir $choose
-#        configure_options="$configure_options --with-PETSC=$i_dir/PETSC "
-#    fi
 fi
 
 lin_alg_dir=""
@@ -301,7 +296,7 @@ else
 
     if [ x"$inst_lin_alg" == x"y" ]; then
         ./script/install_EIGEN.sh $i_dir $ncore
-        ./script/install_PETSC.sh $i_dir $ncore
+        ./script/install_PETSC.sh $i_dir $ncore $CC $CXX $F77 $FC
     fi
 
 	### collect PETSC configuration options
