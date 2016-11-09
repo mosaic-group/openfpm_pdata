@@ -195,16 +195,16 @@ void Test2D_ghost(Box<2,float> & box)
 		auto key = v_it2.get();
 
 		// fill with the processor ID where these particle live
-		vd.template getProp<p::s>(key) = vd.getPos(key)[0] + vd.getPos(key)[1] * 16;
-		vd.template getProp<p::v>(key)[0] = v_cl.getProcessUnitID();
-		vd.template getProp<p::v>(key)[1] = v_cl.getProcessUnitID();
-		vd.template getProp<p::v>(key)[2] = v_cl.getProcessUnitID();
+		vd.getProp<p::s>(key) = vd.getPos(key)[0] + vd.getPos(key)[1] * 16;
+		vd.getProp<p::v>(key)[0] = v_cl.getProcessUnitID();
+		vd.getProp<p::v>(key)[1] = v_cl.getProcessUnitID();
+		vd.getProp<p::v>(key)[2] = v_cl.getProcessUnitID();
 
 		++v_it2;
 	}
 
 	// do a ghost get
-	vd.template ghost_get<p::s,p::v>();
+	vd.ghost_get<p::s,p::v>();
 
 	//! [Redistribute the particles and sync the ghost properties]
 
@@ -225,7 +225,7 @@ void Test2D_ghost(Box<2,float> & box)
 		auto key = g_it.get();
 
 		// Check the received data
-		BOOST_REQUIRE_EQUAL(vd.getPos(key)[0] + vd.getPos(key)[1] * 16,vd.template getProp<p::s>(key));
+		BOOST_REQUIRE_EQUAL(vd.getPos(key)[0] + vd.getPos(key)[1] * 16,vd.getProp<p::s>(key));
 
 		bool is_in = false;
 		size_t b = 0;
@@ -1661,7 +1661,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 				Point<3,float> xp = vd.getPos(p);
 
 				// Get an iterator over the neighborhood particles of p
-				auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(p)));
+				auto Np = NN.getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(p)));
 
 				// For each neighborhood particle ...
 				while (Np.isNext())
@@ -1728,7 +1728,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 				Point<3,float> xp = vd.getPos(p);
 
 				// Get an iterator over the neighborhood particles of p
-				auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(p)));
+				auto Np = NN.getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(p)));
 
 				// For each neighborhood particle ...
 				while (Np.isNext())

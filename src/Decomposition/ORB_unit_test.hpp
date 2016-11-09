@@ -36,9 +36,9 @@ BOOST_AUTO_TEST_CASE( ORB_test_use)
 	{
 		auto key = vp_it.get();
 
-		vp.template get<p::x>(key)[0] = ud(eg);
-		vp.template get<p::x>(key)[1] = ud(eg);
-		vp.template get<p::x>(key)[2] = ud(eg);
+		vp.get<p::x>(key)[0] = ud(eg);
+		vp.get<p::x>(key)[1] = ud(eg);
+		vp.get<p::x>(key)[2] = ud(eg);
 
 		++vp_it;
 	}

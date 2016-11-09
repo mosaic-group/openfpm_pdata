@@ -142,8 +142,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 			// Initialize dist vectors
 			vd_initialize_double<dim>(vd, vd2, v_cl, k_int);
 
-			vd.template ghost_get<0>();
-			vd2.template ghost_get<0>();
+			vd.ghost_get<0>();
+			vd2.ghost_get<0>();
 
 			//Get a cell list
 
@@ -172,7 +172,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 				vect_dist_key_dx key = it_v2.get();
 
 				for (size_t i = 0; i < dim; i++)
-					avg.get(i) += fabs(vd.template getProp<0>(key)[i]);
+					avg.get(i) += fabs(vd.getProp<0>(key)[i]);
 
 				++count;
 				++it_v2;
@@ -188,8 +188,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 
 				for (size_t i = 0; i < dim; i++)
 				{
-					auto a1 = vd.template getProp<0>(key)[i];
-					auto a2 = vd2.template getProp<0>(key)[i];
+					auto a1 = vd.getProp<0>(key)[i];
+					auto a2 = vd2.getProp<0>(key)[i];
 
 					//Check that the forces are (almost) equal
 					float per = 0.1;
@@ -297,7 +297,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 				vect_dist_key_dx key = it_v2.get();
 
 				for (size_t i = 0; i < dim; i++)
-					avg.get(i) += fabs(vd.template getProp<0>(key)[i]);
+					avg.get(i) += fabs(vd.getProp<0>(key)[i]);
 
 				++count;
 				++it_v2;
@@ -315,8 +315,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 
 				for (size_t i = 0; i < dim; i++)
 				{
-					auto a1 = vd.template getProp<0>(key)[i];
-					auto a2 = vd.template getProp<1>(key)[i];
+					auto a1 = vd.getProp<0>(key)[i];
+					auto a2 = vd.getProp<1>(key)[i];
 
 					//Check that the forces are (almost) equal
 					float per = 0.1;
@@ -463,7 +463,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 
 		Point<3,float> xp = vd.getPos(p);
 
-		auto Np = NN2.template getNNIteratorSym<NO_CHECK>(NN2.getCell(vd.getPos(p)),p.getKey(),vd.getPosVector());
+		auto Np = NN2.getNNIteratorSym<NO_CHECK>(NN2.getCell(vd.getPos(p)),p.getKey(),vd.getPosVector());
 
 		while (Np.isNext())
 		{
@@ -665,7 +665,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list )
 
 		Point<3,float> xp = vd.getPos(p);
 
-		auto Np = NN2.template getNNIterator<NO_CHECK>(p.getKey());
+		auto Np = NN2.getNNIterator<NO_CHECK>(p.getKey());
 
 		while (Np.isNext())
 		{

@@ -58,9 +58,9 @@ struct vx
 
 	template<unsigned int dim, typename Mem> inline vx & operator=(const encapc<dim, vx, Mem> & p)
 	{
-		boost::fusion::at_c<0>(data)[0] = p.template get<0>()[0];
-		boost::fusion::at_c<0>(data)[1] = p.template get<0>()[1];
-		boost::fusion::at_c<0>(data)[2] = p.template get<0>()[2];
+		boost::fusion::at_c<0>(data)[0] = p.get<0>()[0];
+		boost::fusion::at_c<0>(data)[1] = p.get<0>()[1];
+		boost::fusion::at_c<0>(data)[2] = p.get<0>()[2];
 
 		return *this;
 	}
@@ -108,7 +108,7 @@ struct ed
 
 	template<unsigned int dim, typename Mem> inline ed & operator=(const encapc<dim, ed, Mem> & p)
 	{
-		boost::fusion::at_c<0>(data) = p.template get<0>();
+		boost::fusion::at_c<0>(data) = p.get<0>();
 
 		return *this;
 	}
@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use)
 	DistGraphFactory<2, DistGraph_CSR<vx, ed>> g_factory;
 
 	//! Distributed graph
-	DistGraph_CSR<vx, ed> gd = g_factory.template construct<NO_EDGE, float, 2 - 1, 0, 1, 2>(sz, box);
+	DistGraph_CSR<vx, ed> gd = g_factory.construct<NO_EDGE, float, 2 - 1, 0, 1, 2>(sz, box);
 
 	//! [Request some vertices given global ids]
 
@@ -256,10 +256,10 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_redistribution)
 	DistGraphFactory<2, DistGraph_CSR<vx, ed>> g_factory;
 
 	//! Distributed graph
-	DistGraph_CSR<vx, ed> gd = g_factory.template construct<NO_EDGE, float, 2 - 1, 0, 1, 2>(sz, box);
+	DistGraph_CSR<vx, ed> gd = g_factory.construct<NO_EDGE, float, 2 - 1, 0, 1, 2>(sz, box);
 
 	for(size_t i=0; i< gd.getNVertex(); i++)
-	gd.vertex(i).template get<vx::x>()[2] = 0;
+	gd.vertex(i).get<vx::x>()[2] = 0;
 
 	if (vcl.getProcessUnitID() == 0)
 	{
@@ -338,9 +338,9 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)
 	for (size_t i = 0; i < 4; ++i)
 	{
 		vx v;
-		v.template get<vx::x>()[0] = vcl.getProcessUnitID();
-		v.template get<vx::x>()[1] = i;
-		v.template get<vx::x>()[2] = 0;
+		v.get<vx::x>()[0] = vcl.getProcessUnitID();
+		v.get<vx::x>()[1] = i;
+		v.get<vx::x>()[2] = 0;
 		size_t gid = vcl.getProcessUnitID()*4 + i;
 		gd.add_vertex(v, gid);
 	}

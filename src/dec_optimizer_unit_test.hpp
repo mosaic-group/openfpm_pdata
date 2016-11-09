@@ -96,8 +96,8 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_p)
 				size_t id = 4*p[2] + 2*p[1] + p[0];
 
 				grid_key_dx<3> key(i,j,k);
-				gp.vertex(gs.LinId(key)).template get<nm_part_v::id>() = id;
-				g.vertex(gs.LinId(key)).template get<nm_v::id>() = id;
+				gp.vertex(gs.LinId(key)).get<nm_part_v::id>() = id;
+				g.vertex(gs.LinId(key)).get<nm_v::id>() = id;
 			}
 		}
 	}
@@ -163,8 +163,8 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_disconnected_subdomains_np)
 	{
 		auto vk = vit.get();
 
-		g.template vertex_p<nm_v::proc_id>(vk) = rng.GetUniform() * 2.9999;
-		g.template vertex_p<nm_v::sub_id>(vk) = 100;
+		g.vertex_p<nm_v::proc_id>(vk) = rng.GetUniform() * 2.9999;
+		g.vertex_p<nm_v::sub_id>(vk) = 100;
 
 		++vit;
 	}
