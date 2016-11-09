@@ -334,8 +334,8 @@ public:
 		float migration = 0;
 
 		SpaceBox<dim, T> cellBox = cd.getCellBox();
-		float b_s = cellBox.getHigh(0);
-		float gh_s = ghost.getHigh(0);
+		float b_s = static_cast<float>(cellBox.getHigh(0));
+		float gh_s = static_cast<float>(ghost.getHigh(0));
 
 		// compute the gh_area for 2 dim case
 		float gh_v = (gh_s * b_s);
