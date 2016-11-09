@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test)
 
 		if (found == false)
 		{
-			const openfpm::vector<size_t> pr2 = dec.template ghost_processorID<CartDecomposition<3,float>::processor_id>(p);
+			const openfpm::vector<size_t> pr2 = dec.ghost_processorID<CartDecomposition<3,float>::processor_id>(p);
 		}
 
 		BOOST_REQUIRE_EQUAL(found,true);
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 		Point<3,float> p = b.rnd();
 
 		// Check that ghost_processorsID return that processor number
-		const openfpm::vector<size_t> & pr = dec.template ghost_processorID<CartDecomposition<3,float>::processor_id>(p);
+		const openfpm::vector<size_t> & pr = dec.ghost_processorID<CartDecomposition<3,float>::processor_id>(p);
 
 		bool found = false;
 
@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 
 		if (found == false)
 		{
-			const openfpm::vector<size_t> pr2 = dec.template ghost_processorID<CartDecomposition<3,float>::processor_id>(p);
+			const openfpm::vector<size_t> pr2 = dec.ghost_processorID<CartDecomposition<3,float>::processor_id>(p);
 		}
 
 		BOOST_REQUIRE_EQUAL(found,true);

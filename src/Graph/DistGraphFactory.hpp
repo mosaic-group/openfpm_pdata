@@ -517,7 +517,7 @@ public:
 						if (end_v < g.size())
 						{
 							// Add an edge and set the the edge property to the size of the face (communication weight)
-							gp.template addEdge(start_v, end_v, v_id, end_v);
+							gp.addEdge(start_v, end_v, v_id, end_v);
 						}
 					}
 				}

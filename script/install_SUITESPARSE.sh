@@ -42,12 +42,12 @@ else
 
     if [ x"$CXX" == x"icpc" ]; then
       export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/$1/OPENBLAS/lib"
+      sed -i "/\sLIB\s=\s-lm\s-lrt/c\LIB = -shared-intel -lm -lrt -lifcore" SuiteSparse_config/SuiteSparse_config.mk
       sed -i "/INSTALL_LIB\s=\s\/usr\/local\/lib/c\INSTALL_LIB = $1\/SUITESPARSE\/lib" SuiteSparse_config/SuiteSparse_config.mk
       sed -i "/INSTALL_INCLUDE\s=\s\/usr\/local\/include/c\INSTALL_INCLUDE = $1\/SUITESPARSE\/include" SuiteSparse_config/SuiteSparse_config.mk
       sed -i "/\sLAPACK\s=\s-llapack/c\LAPACK = " SuiteSparse_config/SuiteSparse_config.mk
       sed -i "/\sBLAS\s=\s\-lopenblas/c\BLAS = -L$1/OPENBLAS/lib -lopenblas -lpthread" SuiteSparse_config/SuiteSparse_config.mk
     else
-      sed -i "/\sLIB\s=\s-lm\s-lrt/c\LIB\s=\s-shared-intel\s-lm\s-lrt\s-lifcore" SuiteSparse_config/SuiteSparse_config.mk
       sed -i "/INSTALL_LIB\s=\s\/usr\/local\/lib/c\INSTALL_LIB = $1\/SUITESPARSE\/lib" SuiteSparse_config/SuiteSparse_config.mk
       sed -i "/INSTALL_INCLUDE\s=\s\/usr\/local\/include/c\INSTALL_INCLUDE = $1\/SUITESPARSE\/include" SuiteSparse_config/SuiteSparse_config.mk
       sed -i "/\sLAPACK\s=\s-llapack/c\LAPACK = " SuiteSparse_config/SuiteSparse_config.mk
