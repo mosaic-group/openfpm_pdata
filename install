@@ -259,7 +259,11 @@ else
                 echo "Error the installation of Boost failed"
                 exit 1
             fi
-            ./script/install_BOOST.sh $i_dir $ncore
+            if [ x"$dgc_compiler" == x"icpc" ]; then
+              ./script/install_BOOST.sh $i_dir $ncore intel-linux
+            else
+              ./script/install_BOOST.sh $i_dir $ncore gcc
+            fi
             BOOST_installed=1
             configure_options=" $configure_options --with-boost=$i_dir/BOOST "
 	elif [ $conf_err -eq 208 ]; then

@@ -14,7 +14,7 @@ cd OpenBLAS-0.2.15
 
 # configuration
 
-make
+make CC=gcc CXX=g++
 mkdir $1/OPENBLAS
 make install PREFIX=$1/OPENBLAS
 rm -rf OpenBLAS-0.2.15

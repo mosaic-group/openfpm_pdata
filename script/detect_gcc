@@ -163,6 +163,7 @@ function detect_compiler()
         possible_solutions "${commands[@]}"
         dgc_compiler=possible_solutions_ret
         dgc_ret=1
+        CXX=$dgc_compiler
     fi
 }
 
