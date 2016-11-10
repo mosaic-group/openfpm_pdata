@@ -110,8 +110,10 @@ if [ ! -d "$1/TRILINOS" ]; then
 
   ### On clang we have no openMP
   petsc_openmp=""
-  if [ x"$dgc_compiler" == x"clang++" ]; then
+  if [ x"$3" == x"clang++" ]; then
     conf_trl_openmp="-D Trilinos_ENABLE_OpenMP=OFF"
+  elif [ x"$3" == x"icpc" ]; then
+    configure_trilinos_options="$configure_trilinos_options -D Trilinos_ENABLE_Xpetra=OFF -D Trilinos_ENABLE_Amesos2=OFF -D Trilinos_ENABLE_ifpack2=OFF"
   else
     conf_trl_openmp="-D Trilinos_ENABLE_OpenMP=ON"
 #    petsc_openmp="--with-openmp=yes"
