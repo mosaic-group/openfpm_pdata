@@ -154,7 +154,7 @@ if [x"have_quad_math" == x"yes" $&& x"have_quad_math" == x"yes" ]; then
     LIBQUADMATH=" -lquadmath "
 fi
 
-AC_CHECK_LIB(ifcore, for_copy, [ LIBIFCORE=-lifcore  ], [ LIBIFCORE= ])
+AC_CHECK_LIB(ifcore, for_cpystr, [ LIBIFCORE=-lifcore  ], [ LIBIFCORE= ])
 AC_SUBST(LIBIFCORE)
 
 AC_SUBST(OPENMP_CFLAGS)
