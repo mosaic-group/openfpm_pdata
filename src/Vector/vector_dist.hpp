@@ -356,7 +356,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > CellL getCellListSym(St r_cut)
+	template<typename CellL = CellList<dim, St, Mem_fast<dim,St>, shift<dim, St> > > CellL getCellListSym(St r_cut)
 	{
 		// Cell list
 		CellL cell_list;
@@ -434,7 +434,7 @@ public:
 	 * \param cell_list Cell list to update
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > void updateCellListSym(CellL & cell_list)
+	template<typename CellL = CellList<dim, St, Mem_fast<dim,St>, shift<dim, St> > > void updateCellListSym(CellL & cell_list)
 	{
 		populate_cell_list(v_pos,cell_list,g_m,CL_SYMMETRIC);
 
