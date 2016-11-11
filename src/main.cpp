@@ -40,6 +40,8 @@ int main(int argc, char* argv[])
 #include "Decomposition/Distribution/metis_util_unit_test.hpp"
 #include "dec_optimizer_unit_test.hpp"
 #include "Vector/vector_dist_unit_test.hpp"
+#include "Vector/vector_dist_HDF5_chckpnt_restart_test.hpp"
+#include "Grid/grid_dist_id_HDF5_chckpnt_restart_test.hpp"
 #ifdef PERFORMANCE_TEST
 #include "pdata_performance.hpp"
 #endif
