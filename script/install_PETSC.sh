@@ -110,10 +110,10 @@ if [ ! -d "$1/TRILINOS" ]; then
 
   ### On clang we have no openMP
   petsc_openmp=""
-  if [ x"$3" == x"clang++" ]; then
+  if [ x"$CXX" == x"clang++" ]; then
     conf_trl_openmp="-D Trilinos_ENABLE_OpenMP=OFF"
-  elif [ x"$3" == x"icpc" ]; then
-    configure_trilinos_options="$configure_trilinos_options -D Trilinos_ENABLE_Xpetra=OFF -D Trilinos_ENABLE_Amesos2=OFF -D Trilinos_ENABLE_ifpack2=OFF"
+  elif [ x"$CXX" == x"icpc" ]; then
+    configure_trilinos_options="$configure_trilinos_options -D Trilinos_ENABLE_Xpetra=OFF -D Trilinos_ENABLE_Amesos2=OFF -D Trilinos_ENABLE_Ifpack2=OFF -D Trilinos_ENABLE_Teko=OFF"
   else
     conf_trl_openmp="-D Trilinos_ENABLE_OpenMP=ON"
 #    petsc_openmp="--with-openmp=yes"
@@ -198,8 +198,8 @@ if [ ! -d "$1/MUMPS" ]; then
     cp -r include $1/MUMPS
     cp -r lib $1/MUMPS
 
-    configure_options="$configure_options --with-mumps=yes --with-mumps-include=$1/MUMPS/include"
     MUMPS_extra_lib="$1/MUMPS/lib/libdmumps.a $1/MUMPS/lib/libmumps_common.a $1/MUMPS/lib/libpord.a"
+    configure_options="$configure_options --with-mumps=yes --with-mumps-lib=\"$MUMPS_extra_lib\"  --with-mumps-include=$1/MUMPS/include"
 
   fi
 
@@ -299,7 +299,7 @@ cd petsc-3.6.4
 
 echo "./configure --with-cxx-dialect=C++11 --with-mpi-dir=$mpi_dir  $configure_options  --prefix=$1/PETSC --with-debugging=0"
 
-./configure --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir  $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC --with-debugging=0
+./configure CXX=$CXX CC=$CC F77=$F77 FC=$FC --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir  $configure_options  --prefix=$1/PETSC --with-debugging=0
 make all test
 make install
 
