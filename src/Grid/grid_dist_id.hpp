@@ -19,6 +19,7 @@
 #include "Packer_Unpacker/Unpacker.hpp"
 #include "Decomposition/CartDecomposition.hpp"
 #include "data_type/aggregate.hpp"
+#include "hdf5.h"
 
 //! Internal ghost box sent to construct external ghost box into the other processors
 template<unsigned int dim>

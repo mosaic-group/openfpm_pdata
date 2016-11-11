@@ -97,27 +97,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test )
 
 	// Save the vector
     vd.save("vector_dist.h5");
-
-    // Load the vector
-/*
-    vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd2(0,box,bc,Ghost<dim,float>(ghost_part));
-
-    vd2.load("vector_dist.h5");
-
-    auto it_d = vd.getDomainIterator();
-
-    while (it_d.isNext())
-    {
-		auto key = it_d.get();
-
-		// Get the position of the particles
-		Point<dim,float> p1 = vd.getPos(key);
-		Point<dim,float> p2 = vd2.getPos(key);
-
-		BOOST_REQUIRE(p1 == p2);
-
-		++it_d;
-    }*/
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
@@ -146,7 +125,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
 	vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(0,box,bc,Ghost<dim,float>(ghost_part));
 
 	vd.load("vector_dist.h5");
-
+	/*
 	auto NN = vd.getCellList(0.5);
 
 	auto it_v = vd.getDomainIterator();
@@ -176,8 +155,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
 		//Next particle in cell list
 		++it_v;
 	}
-
-
+*/
 }
 
 BOOST_AUTO_TEST_SUITE_END()

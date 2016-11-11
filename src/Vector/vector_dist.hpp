@@ -972,6 +972,383 @@ public:
 
 	}
 
+	inline void save(const std::string & filename) const
+	{
+		//Pack_request vector
+		size_t req = 0;
+
+		//Pack request
+		Packer<decltype(v_pos),HeapMemory>::packRequest(v_pos,req);
+		Packer<decltype(v_prp),HeapMemory>::packRequest(v_prp,req);
+
+		std::cout << "Req: " << req << std::endl;
+
+		// allocate the memory
+		HeapMemory pmem;
+		//pmem.allocate(req);
+		ExtPreAlloc<HeapMemory> & mem = *(new ExtPreAlloc<HeapMemory>(req,pmem));
+		mem.incRef();
+
+		//Packing
+
+		Pack_stat sts;
+
+		Packer<decltype(v_pos),HeapMemory>::pack(mem,v_pos,sts);
+		Packer<decltype(v_prp),HeapMemory>::pack(mem,v_prp,sts);
+
+	    /*****************************************************************
+	     * Create a new file with default creation and access properties.*
+	     * Then create a dataset and write data to it and close the file *
+	     * and dataset.                                                  *
+	     *****************************************************************/
+
+		int mpi_rank = v_cl.getProcessUnitID();
+		int mpi_size = v_cl.getProcessingUnits();
+
+		if (mpi_rank == 0)
+			std::cout << "Saving" << std::endl;
+
+		MPI_Comm comm = v_cl.getMPIComm();
+		MPI_Info info  = MPI_INFO_NULL;
+/*
+	    //Initialize MPI
+	    MPI_Comm_size(comm, &mpi_size);
+	    MPI_Comm_rank(comm, &mpi_rank);
+*/
+	    // Set up file access property list with parallel I/O access
+
+		hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
+		H5Pset_fapl_mpio(plist_id, comm, info);
+
+		// Create a new file collectively and release property list identifier.
+		hid_t file = H5Fcreate (filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
+		H5Pclose(plist_id);
+
+		size_t sz = pmem.size();
+		std::cout << "Pmem.size: " << pmem.size() << std::endl;
+		openfpm::vector<size_t> sz_others;
+		v_cl.allGather(sz,sz_others);
+		v_cl.execute();
+
+		size_t sum = 0;
+
+		for (size_t i = 0; i < sz_others.size(); i++)
+			sum += sz_others.get(i);
+
+		//Size for data space in file
+		hsize_t fdim[1] = {sum};
+
+		//Size for data space in file
+		hsize_t fdim2[1] = {mpi_size};
+
+		//Create data space in file
+		hid_t file_dataspace_id = H5Screate_simple(1, fdim, NULL);
+
+		//Create data space in file
+		hid_t file_dataspace_id_2 = H5Screate_simple(1, fdim2, NULL);
+
+		//Size for data space in memory
+		hsize_t mdim[1] = {pmem.size()};
+
+		//Create data space in memory
+		hid_t mem_dataspace_id = H5Screate_simple(1, mdim, NULL);
+
+		std::cout << "Sum: " << sum << std::endl;
+
+		//Create data set in file
+		hid_t file_dataset = H5Dcreate (file, "vector_dist", H5T_NATIVE_CHAR, file_dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+		//Create data set 2 in file
+		hid_t file_dataset_2 = H5Dcreate (file, "metadata", H5T_NATIVE_INT, file_dataspace_id_2, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+	    //H5Pclose(plist_id);
+	    H5Sclose(file_dataspace_id);
+	    H5Sclose(file_dataspace_id_2);
+
+	    hsize_t block[1] = {pmem.size()};
+
+	    hsize_t stride[1] = {1};
+
+		hsize_t count[1] = {1};
+
+	    hsize_t offset[1] = {0};
+
+	    for (size_t i = 0; i < mpi_rank; i++)
+	    {
+	    	if (mpi_rank == 0)
+				offset[0] = 0;
+	    	else
+	    		offset[0] += sz_others.get(i);
+	    }
+
+	    std::cout << "MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << ", Offset: " << offset[0] << ", Block: " << block[0] << std::endl;
+
+	    int metadata[mpi_size];
+
+	    for (size_t i = 0; i < mpi_size; i++)
+	    	metadata[i] = sz_others.get(i);
+
+	    //Select hyperslab in the file.
+	    file_dataspace_id = H5Dget_space(file_dataset);
+	    H5Sselect_hyperslab(file_dataspace_id, H5S_SELECT_SET, offset, NULL, count, block);
+
+	    file_dataspace_id_2 = H5Dget_space(file_dataset_2);
+
+
+	    //Create property list for collective dataset write.
+	    plist_id = H5Pcreate(H5P_DATASET_XFER);
+	    H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
+
+		//Write a data set to a file
+		herr_t status = H5Dwrite(file_dataset, H5T_NATIVE_CHAR, mem_dataspace_id, file_dataspace_id, plist_id, (const char *)pmem.getPointer());
+
+		//Write a data set 2 to a file
+		herr_t status_2 = H5Dwrite(file_dataset_2, H5T_NATIVE_INT, H5S_ALL, file_dataspace_id_2, plist_id, metadata);
+
+
+	    //Close/release resources.
+	    H5Dclose(file_dataset);
+	    H5Sclose(file_dataspace_id);
+	    H5Dclose(file_dataset_2);
+	    H5Sclose(file_dataspace_id_2);
+	    H5Sclose(mem_dataspace_id);
+	    H5Pclose(plist_id);
+	    H5Fclose(file);
+	}
+
+	inline void load(const std::string & filename)
+	{
+		MPI_Comm comm = v_cl.getMPIComm();
+		MPI_Info info  = MPI_INFO_NULL;
+
+		int mpi_rank = v_cl.getProcessUnitID();
+		int mpi_size = v_cl.getProcessingUnits();
+
+		if (mpi_rank == 0)
+			std::cout << "Loading" << std::endl;
+
+		// Set up file access property list with parallel I/O access
+		hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
+		H5Pset_fapl_mpio(plist_id, comm, info);
+
+		//Open a file
+	    hid_t file = H5Fopen (filename.c_str(), H5F_ACC_RDONLY, plist_id);
+	    H5Pclose(plist_id);
+
+	    //Open dataset
+	    hid_t dataset = H5Dopen (file, "metadata", H5P_DEFAULT);
+
+	    //Create property list for collective dataset read
+	  	plist_id = H5Pcreate(H5P_DATASET_XFER);
+	  	H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
+
+		//Select file dataspace
+		hid_t file_dataspace_id = H5Dget_space(dataset);
+
+		hssize_t mpi_size_old = H5Sget_select_npoints (file_dataspace_id);
+
+		if (mpi_rank == 0)
+			printf ("\nOld MPI size: %i\n", mpi_size_old);
+
+	  	//Where to read metadata
+	  	int metadata_out[mpi_size_old];
+
+	  	for (size_t i = 0; i < mpi_size_old; i++)
+	  	{
+	  		metadata_out[i] = 0;
+	  	}
+
+		//Size for data space in memory
+		hsize_t mdim[1] = {mpi_size_old};
+
+		//Create data space in memory
+		hid_t mem_dataspace_id = H5Screate_simple(1, mdim, NULL);
+
+
+		if (mpi_rank == 0)
+		{
+			hssize_t size;
+
+			size = H5Sget_select_npoints (mem_dataspace_id);
+			printf ("\nmemspace_id size: %i\n", size);
+			size = H5Sget_select_npoints (file_dataspace_id);
+			printf ("dataspace_id size: %i\n", size);
+		}
+
+	  	// Read the dataset.
+	    herr_t status = H5Dread(dataset, H5T_NATIVE_INT, mem_dataspace_id, file_dataspace_id, plist_id, metadata_out);
+
+		if (mpi_rank == 0)
+		{
+			std::cout << "Metadata_out[]: ";
+			for (size_t i = 0; i < mpi_size_old; i++)
+			{
+				std::cout << metadata_out[i] << " ";
+			}
+			std::cout << " " << std::endl;
+		}
+
+	    //Open dataset
+	    hid_t dataset_2 = H5Dopen (file, "vector_dist", H5P_DEFAULT);
+
+	    //Create property list for collective dataset read
+	  	plist_id = H5Pcreate(H5P_DATASET_XFER);
+	  	H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
+
+	  	hsize_t block[1] = {0};
+	  	hsize_t block_add[1] = {0};
+
+	  	if (mpi_size >= mpi_size_old)
+	  	{
+			if (mpi_rank >= mpi_size_old)
+				block[0] = 0;
+			else
+				block[0] = {metadata_out[mpi_rank]};
+	  	}
+	  	else
+	  	{
+	  		int x = mpi_size_old/mpi_size;
+	  		int shift = mpi_rank*x;
+	  		for (int i = 0; i < x; i++)
+	  		{
+	  			block[0] += metadata_out[shift];
+	  			shift++;
+	  		}
+	  		int y = mpi_size_old%mpi_size;
+	  		if (mpi_rank < y)
+				block_add[0] += metadata_out[mpi_size*x+mpi_rank];
+	  	}
+
+	  	hsize_t offset[1] = {0};
+	    hsize_t offset_add[1] = {0};
+
+	    if (mpi_size >= mpi_size_old)
+		{
+			if (mpi_rank >= mpi_size_old)
+				offset[0] = 0;
+			else
+			{
+				for (size_t i = 0; i < mpi_rank; i++)
+				offset[0] += metadata_out[i];
+			}
+		}
+	    else
+	    {
+	  		int x = mpi_size_old/mpi_size;
+	  		int shift = mpi_rank*x;
+
+	  		for (size_t i = 0; i < shift; i++)
+	  		{
+	  			offset[0] += metadata_out[i];
+	  		}
+
+	  		int y = mpi_size_old%mpi_size;
+	  		if (mpi_rank < y)
+	  		{
+	  			for (size_t i = 0; i < mpi_size*x + mpi_rank; i++)
+	  				offset_add[0] += metadata_out[i];
+	  		}
+	    }
+
+	    hsize_t stride[1] = {1};
+	    hsize_t count[1] = {1};
+
+	    std::cout << "LOAD: MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << ", Offset: " << offset[0] << ", Offset_add: " << offset_add[0] << ", Block: " << block[0] << ", Block_add: " << block_add[0] << std::endl;
+
+
+		//Select file dataspace
+		hid_t file_dataspace_id_2 = H5Dget_space(dataset_2);
+
+        H5Sselect_hyperslab(file_dataspace_id_2, H5S_SELECT_SET, offset, NULL, count, block);
+
+		//Select file dataspace
+		hid_t file_dataspace_id_3 = H5Dget_space(dataset_2);
+
+        H5Sselect_hyperslab(file_dataspace_id_3, H5S_SELECT_SET, offset_add, NULL, count, block_add);
+
+        hsize_t mdim_2[1] = {block[0]};
+        hsize_t mdim_3[1] = {block_add[0]};
+
+
+		//Size for data space in memory
+
+		/*if (mpi_rank >= mpi_size_old)
+			mdim_2[0] = 0;
+		else
+			mdim_2[0] = metadata_out[mpi_rank];*/
+
+		//Create data space in memory
+		hid_t mem_dataspace_id_2 = H5Screate_simple(1, mdim_2, NULL);
+		hid_t mem_dataspace_id_3 = H5Screate_simple(1, mdim_3, NULL);
+
+		if (mpi_rank == 0)
+		{
+			hssize_t size2;
+
+			size2 = H5Sget_select_npoints (mem_dataspace_id_2);
+			printf ("\nLOAD: memspace_id_2 size: %i\n", size2);
+			size2 = H5Sget_select_npoints (file_dataspace_id_2);
+			printf ("LOAD: dataspace_id_2 size: %i\n", size2);
+		}
+
+		if (mpi_rank == 0)
+		{
+			hssize_t size2;
+
+			size2 = H5Sget_select_npoints (mem_dataspace_id_3);
+			printf ("\nLOAD: memspace_id_3 size: %i\n", size2);
+			size2 = H5Sget_select_npoints (file_dataspace_id_3);
+			printf ("LOAD: dataspace_id_3 size: %i\n", size2);
+		}
+
+		size_t sum = 0;
+
+		for (size_t i = 0; i < mpi_size_old; i++)
+		{
+			sum += metadata_out[i];
+		}
+
+
+		std::cout << "LOAD: sum: " << sum << std::endl;
+
+		// allocate the memory
+		HeapMemory pmem;
+		//pmem.allocate(req);
+		ExtPreAlloc<HeapMemory> & mem = *(new ExtPreAlloc<HeapMemory>(block[0]+block_add[0],pmem));
+		mem.incRef();
+
+	  	// Read the dataset.
+	    herr_t status_2 = H5Dread(dataset_2, H5T_NATIVE_CHAR, mem_dataspace_id_2, file_dataspace_id_2, plist_id, (char *)mem.getPointer());
+
+	    // Read the dataset.
+		herr_t status_3 = H5Dread(dataset_2, H5T_NATIVE_CHAR, mem_dataspace_id_3, file_dataspace_id_3, plist_id, (char *)mem.getPointer());
+
+		mem.allocate(pmem.size());
+		std::cout << "Mem.size(): " << mem.size() << " = " << block[0]+block_add[0] << std::endl;
+
+	    // Close the dataset.
+	    status = H5Dclose(dataset);
+	    status_2 = H5Dclose(dataset_2);
+
+	    // Close the file.
+	    status = H5Fclose(file);
+
+	    H5Pclose(plist_id);
+
+		Unpack_stat ps;
+
+		Unpacker<decltype(v_pos),HeapMemory>::unpack(mem,v_pos,ps);
+		Unpacker<decltype(v_prp),HeapMemory>::unpack(mem,v_prp,ps);
+
+		std::cout << "V_pos.size(): " << v_pos.size() << std::endl;
+
+		mem.decRef();
+		delete &mem;
+
+		g_m = v_pos.size();
+		map();
+	}
+
 	/*! \brief Output particle position and properties
 	 *
 	 * \param out output
