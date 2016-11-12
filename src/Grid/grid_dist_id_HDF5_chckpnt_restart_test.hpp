@@ -82,6 +82,75 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
     g_dist.save("grid_dist_id.h5");
 }
 
+BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
+{
+
+	// Input data
+	size_t k = 100;
+
+	size_t ghost_part = 0.01;
+
+	/////////////////
+	size_t bc[3] = {NON_PERIODIC, NON_PERIODIC, NON_PERIODIC};
+
+	// Domain
+	Box<3,float> domain({-0.3,-0.3,-0.3},{1.0,1.0,1.0});
+
+	Vcluster & v_cl = create_vcluster();
+
+	// Skip this test on big scale
+	if (v_cl.getProcessingUnits() >= 32)
+		return;
+
+	if (v_cl.getProcessUnitID() == 0)
+			std::cout << "Testing 3D grid HDF5 save/load" << std::endl;
+
+	// grid size
+	size_t sz[3];
+	sz[0] = k;
+	sz[1] = k;
+	sz[2] = k;
+
+	// Ghost
+	Ghost<3,float> g(ghost_part);
+
+	// Distributed grid with id decomposition
+	grid_dist_id<3, float, scalar<float>, CartDecomposition<3,float>> g_dist(sz,domain,g);
+
+	g_dist.load("grid_dist_id.h5");
+	/*
+	auto NN = vd.getCellList(0.5);
+
+	auto it_v = vd.getDomainIterator();
+
+	while (it_v.isNext())
+	{
+		//key
+		vect_dist_key_dx key = it_v.get();
+
+		size_t count = 0;
+
+		// Get the position of the particles
+		Point<dim,float> p = vd.getPos(key);
+
+		// Get the neighborhood of the particle
+		auto cell_it = NN.template getNNIterator<NO_CHECK>(NN.getCell(p));
+
+		while(cell_it.isNext())
+		{
+			//Next particle in a cell
+			++cell_it;
+			count++;
+		}
+
+		std::cout << "Count: " << count << std::endl;
+
+		//Next particle in cell list
+		++it_v;
+	}
+*/
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif /* SRC_GRID_GRID_DIST_ID_HDF5_CHCKPNT_RESTART_TEST_HPP_ */

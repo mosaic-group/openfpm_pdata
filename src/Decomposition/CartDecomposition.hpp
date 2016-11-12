@@ -1215,6 +1215,11 @@ public:
 		return domain;
 	}
 
+	openfpm::vector<SpaceBox<dim, T>> getSubDomains()
+	{
+		return sub_domains;
+	}
+
 	/*! \brief Check if the particle is local
 	 *
 	 * \warning if the particle id outside the domain the result is unreliable
