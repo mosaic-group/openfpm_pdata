@@ -842,19 +842,19 @@ public:
 		prc_recv_get.clear();
 		recv_sz_get.clear();
 
-		if (opt & SKIP_LABELLING)
-		{
-			// if there are no properties skip
-			// SSendRecvP send everything when we do not give properties
+		// if there are no properties skip
+		// SSendRecvP send everything when we do not give properties
 
-			if (sizeof...(prp) != 0)
+		if (sizeof...(prp) != 0)
+		{
+			if (opt & SKIP_LABELLING)
 			{
-				op_ssend_gg_recv_merge opm(g_m);
-				v_cl.SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get);
+					op_ssend_gg_recv_merge opm(g_m);
+					v_cl.SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get);
 			}
+			else
+				v_cl.SSendRecvP<send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get);
 		}
-		else
-			v_cl.SSendRecvP<send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get);
 
 		if (!(opt & NO_POSITION))
 		{
@@ -862,6 +862,11 @@ public:
 			recv_sz_get.clear();
 			v_cl.SSendRecv(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_get);
 		}
+
+		// Important to ensure that the number of particles in v_prp must be equal to v_pos
+		// Note that if we do not give properties sizeof...(prp) == 0 in general at this point
+		// v_prp.size() != v_pos.size()
+		v_prp.resize(v_pos.size());
 
 		add_loc_particles_bc(v_pos,v_prp,g_m,opt);
 	}
