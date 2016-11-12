@@ -198,15 +198,15 @@ if [ ! -d "$1/MUMPS" ]; then
     cp -r include $1/MUMPS
     cp -r lib $1/MUMPS
 
-    MUMPS_extra_lib="$1/MUMPS/lib/libdmumps.a $1/MUMPS/lib/libmumps_common.a $1/MUMPS/lib/libpord.a"
-    configure_options="$configure_options --with-mumps=yes --with-mumps-lib=\"$MUMPS_extra_lib\"  --with-mumps-include=$1/MUMPS/include"
+    MUMPS_extra_lib="--with-mumps-lib=\"$1/MUMPS/lib/libdmumps.a $1/MUMPS/lib/libmumps_common.a $1/MUMPS/lib/libpord.a\""
+    configure_options="$configure_options --with-mumps=yes  --with-mumps-include=$1/MUMPS/include"
 
   fi
 
 else
   echo "MUMPS already installed"
-  configure_options="$configure_options --with-mumps=yes --with-mumps-include=$1/MUMPS/include"
-  MUMPS_extra_lib="$1/MUMPS/lib/libdmumps.a $1/MUMPS/lib/libmumps_common.a $1/MUMPS/lib/libpord.a"
+  MUMPS_extra_lib="--with-mumps-lib=\"$1/MUMPS/lib/libdmumps.a $1/MUMPS/lib/libmumps_common.a $1/MUMPS/lib/libpord.a\""
+  configure_options="$configure_options --with-mumps=yes --with-mumps-lib=\"$MUMPS_extra_lib\"  --with-mumps-include=$1/MUMPS/include"
 fi
 
 ## SuperLU installation
@@ -250,12 +250,20 @@ if [ ! -d "$1/SUPERLU_DIST" ]; then
     mkdir $1/SUPERLU_DIST/include
     cp -r lib $1/SUPERLU_DIST
     cp SRC/*.h $1/SUPERLU_DIST/include
-    configure_options="$configure_options --with-superlu_dist=yes --with-superlu_dist-lib=$1/SUPERLU_DIST/lib/libsuperlu_dist_4.3.a --with-superlu_dist-include=$1/SUPERLU_DIST/include/"
+    if [ x"$CXX" == x"icpc" ]; then
+      configure_options="$configure_options"
+    else
+      configure_options="$configure_options --with-superlu_dist=yes --with-superlu_dist-lib=$1/SUPERLU_DIST/lib/libsuperlu_dist_4.3.a --with-superlu_dist-include=$1/SUPERLU_DIST/include/"
+    fi
   fi
 
 else
   echo "SUPERLU already installed"
-  configure_options="$configure_options --with-superlu_dist=yes --with-superlu_dist-lib=$1/SUPERLU_DIST/lib/libsuperlu_dist_4.3.a --with-superlu_dist-include=$1/SUPERLU_DIST/include/"
+  if [ x"$CXX" == x"icpc" ]; then
+    configure_options="$configure_options"
+  else
+    configure_options="$configure_options --with-superlu_dist=yes --with-superlu_dist-lib=$1/SUPERLU_DIST/lib/libsuperlu_dist_4.3.a --with-superlu_dist-include=$1/SUPERLU_DIST/include/"
+  fi
 fi
 
 ## HYPRE installation
@@ -299,7 +307,7 @@ cd petsc-3.6.4
 
 echo "./configure --with-cxx-dialect=C++11 --with-mpi-dir=$mpi_dir  $configure_options  --prefix=$1/PETSC --with-debugging=0"
 
-./configure CXX=$CXX CC=$CC F77=$F77 FC=$FC --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir  $configure_options  --prefix=$1/PETSC --with-debugging=0
+./configure CXX=$CXX CC=$CC F77=$F77 FC=$FC --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $MUMPS_extra_lib  $configure_options  --prefix=$1/PETSC --with-debugging=0
 make all test
 make install
 

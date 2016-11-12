@@ -170,6 +170,11 @@ function detect_compiler()
           FC=gfortran
         fi
         dgc_ret=1
+    else
+        CXX=g++
+        CC=gcc
+        F77=gfortran
+        FC=gfortran
     fi
 }
 

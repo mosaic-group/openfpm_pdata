@@ -3,7 +3,7 @@
 source script/detect_gcc
 source script/discover_os
 
-detect_gcc_or_clang g++
+detect_compiler
 discover_os
 
 # check if the directory $1/SUITESPARSE exist

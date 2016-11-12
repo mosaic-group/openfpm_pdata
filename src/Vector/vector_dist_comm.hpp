@@ -844,8 +844,14 @@ public:
 
 		if (opt & SKIP_LABELLING)
 		{
-			op_ssend_gg_recv_merge opm(g_m);
-			v_cl.SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get);
+			// if there are no properties skip
+			// SSendRecvP send everything when we do not give properties
+
+			if (sizeof...(prp) != 0)
+			{
+				op_ssend_gg_recv_merge opm(g_m);
+				v_cl.SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get);
+			}
 		}
 		else
 			v_cl.SSendRecvP<send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get);
