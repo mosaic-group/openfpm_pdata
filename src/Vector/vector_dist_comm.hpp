@@ -16,6 +16,8 @@
 #define NO_POSITION 1
 #define WITH_POSITION 2
 
+#define BIND_DEC_TO_GHOST 1
+
 /*! \brief This class is an helper for the communication of vector_dist
  *
  * \tparam dim Dimensionality of the space where the elements lives
@@ -774,22 +776,42 @@ public:
 	 * \param box domain
 	 * \param bc boundary conditions
 	 * \param g ghost extension
+	 * \param opt additional options
 	 *
 	 */
-	void init_decomposition(Box<dim,St> & box, const size_t (& bc)[dim],const Ghost<dim,St> & g)
+	void init_decomposition(Box<dim,St> & box, const size_t (& bc)[dim],const Ghost<dim,St> & g, size_t opt)
 	{
-		// Create a valid decomposition of the space
-		// Get the number of processor and calculate the number of sub-domain
-		// for decomposition
-		size_t n_proc = v_cl.getProcessingUnits();
-		size_t n_sub = n_proc * getDefaultNsubsub();
-
-		// Calculate the maximum number (before merging) of sub-domain on
-		// each dimension
 		size_t div[dim];
-		for (size_t i = 0; i < dim; i++)
+
+		if (opt & BIND_DEC_TO_GHOST)
 		{
-			div[i] = openfpm::math::round_big_2(pow(n_sub, 1.0 / dim));
+			// padding
+			size_t pad = 0;
+
+			// CellDecomposer
+			CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
+
+			// Calculate the divisions for the symmetric Cell-lists
+			cl_param_calculateSym<dim,St>(box,cd_sm,g,pad);
+
+			for (size_t i = 0 ; i < dim ; i++)
+				div[i] = cd_sm.getDiv()[i] - 2*pad;
+		}
+		else
+		{
+			// Create a valid decomposition of the space
+			// Get the number of processor and calculate the number of sub-domain
+			// for decomposition
+			size_t n_proc = v_cl.getProcessingUnits();
+			size_t n_sub = n_proc * getDefaultNsubsub();
+
+			// Calculate the maximum number (before merging) of sub-domain on
+			// each dimension
+
+			for (size_t i = 0; i < dim; i++)
+			{
+				div[i] = openfpm::math::round_big_2(pow(n_sub, 1.0 / dim));
+			}
 		}
 
 		// Create the sub-domains

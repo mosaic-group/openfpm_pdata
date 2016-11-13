@@ -210,9 +210,13 @@ public:
 	 * \param box domain where the vector of elements live
 	 * \param bc boundary conditions
 	 * \param g Ghost margins
+	 * \param opt additional options.
+	 *        * BIND_DEC_TO_GHOST Bind the decomposition to be multiple of the
+	 *          ghost size. This is required if we want to use symmetric to eliminate
+	 *          ghost communications.
 	 *
 	 */
-	vector_dist(size_t np, Box<dim, St> box, const size_t (&bc)[dim], const Ghost<dim, St> & g)
+	vector_dist(size_t np, Box<dim, St> box, const size_t (&bc)[dim], const Ghost<dim, St> & g, size_t opt = 0)
 	:v_cl(create_vcluster())
 	{
 #ifdef SE_CLASS2
@@ -220,7 +224,7 @@ public:
 #endif
 
 		init_structures(np);
-		this->init_decomposition(box,bc,g);
+		this->init_decomposition(box,bc,g,opt);
 	}
 
 	~vector_dist()
