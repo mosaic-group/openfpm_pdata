@@ -784,171 +784,176 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list_no_bottom )
 
 	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
 
-	// Distributed vector
-	vector_dist<3,float, part_prop > vd(k,box,bc,ghost,BIND_DEC_TO_GHOST);
-	vector_dist<3,float, part_prop > vd2(k,box,bc,ghost2,BIND_DEC_TO_GHOST);
-	size_t start = vd.init_size_accum(k);
-
-	auto it = vd.getIterator();
-
-	while (it.isNext())
+	// 3D test
+	for (size_t s = 0 ; s < 8 ; s++)
 	{
-		auto key = it.get();
 
-		vd.getPos(key)[0] = ud(eg);
-		vd.getPos(key)[1] = ud(eg);
-		vd.getPos(key)[2] = ud(eg);
+		// Distributed vector
+		vector_dist<3,float, part_prop > vd(k,box,bc,ghost,BIND_DEC_TO_GHOST);
+		vector_dist<3,float, part_prop > vd2(k,box,bc,ghost2,BIND_DEC_TO_GHOST);
+		size_t start = vd.init_size_accum(k);
 
-		vd2.getPos(key)[0] = vd.getPos(key)[0];
-		vd2.getPos(key)[1] = vd.getPos(key)[1];
-		vd2.getPos(key)[2] = vd.getPos(key)[2];
+		auto it = vd.getIterator();
 
-		// Fill some properties randomly
-
-		vd.getProp<0>(key) = 0;
-		vd.getProp<1>(key) = 0;
-		vd.getProp<2>(key) = key.getKey() + start;
-
-		vd2.getProp<0>(key) = 0;
-		vd2.getProp<1>(key) = 0;
-		vd2.getProp<2>(key) = key.getKey() + start;
-
-		++it;
-	}
-
-	vd.map();
-	vd2.map();
-
-	// sync the ghost
-	vd.ghost_get<0,2>();
-	vd2.ghost_get<0,2>();
-
-	auto NN = vd.getVerlet(r_cut);
-	auto p_it = vd.getDomainIterator();
-
-	while (p_it.isNext())
-	{
-		auto p = p_it.get();
-
-		Point<3,float> xp = vd.getPos(p);
-
-		auto Np = NN.getNNIterator(p.getKey());
-
-		while (Np.isNext())
+		while (it.isNext())
 		{
-			auto q = Np.get();
+			auto key = it.get();
 
-			if (p.getKey() == q)
-			{
-				++Np;
-				continue;
-			}
+			vd.getPos(key)[0] = ud(eg);
+			vd.getPos(key)[1] = ud(eg);
+			vd.getPos(key)[2] = ud(eg);
 
-			// repulsive
+			vd2.getPos(key)[0] = vd.getPos(key)[0];
+			vd2.getPos(key)[1] = vd.getPos(key)[1];
+			vd2.getPos(key)[2] = vd.getPos(key)[2];
 
-			Point<3,float> xq = vd.getPos(q);
-			Point<3,float> f = (xp - xq);
+			// Fill some properties randomly
 
-			float distance = f.norm();
+			vd.getProp<0>(key) = 0;
+			vd.getProp<1>(key) = 0;
+			vd.getProp<2>(key) = key.getKey() + start;
 
-			// Particle should be inside 2 * r_cut range
+			vd2.getProp<0>(key) = 0;
+			vd2.getProp<1>(key) = 0;
+			vd2.getProp<2>(key) = key.getKey() + start;
 
-			if (distance < r_cut )
-			{
-				vd.getProp<0>(p)++;
-				vd.getProp<3>(p).add();
-				vd.getProp<3>(p).last().xq = xq;
-				vd.getProp<3>(p).last().id = vd.getProp<2>(q);
-			}
-
-			++Np;
+			++it;
 		}
 
-		++p_it;
-	}
+		vd.map();
+		vd2.map();
 
-	// We now try symmetric  Cell-list
+		// sync the ghost
+		vd.ghost_get<0,2>();
+		vd2.ghost_get<0,2>();
 
-	auto NN2 = vd2.getVerletSym(r_cut);
+		auto NN = vd.getVerlet(r_cut);
+		auto p_it = vd.getDomainIterator();
 
-	auto p_it2 = vd2.getDomainIterator();
-
-	while (p_it2.isNext())
-	{
-		auto p = p_it2.get();
-
-		Point<3,float> xp = vd2.getPos(p);
-
-		auto Np = NN2.getNNIterator<NO_CHECK>(p.getKey());
-
-		while (Np.isNext())
+		while (p_it.isNext())
 		{
-			auto q = Np.get();
+			auto p = p_it.get();
 
-			if (p.getKey() == q)
+			Point<3,float> xp = vd.getPos(p);
+
+			auto Np = NN.getNNIterator(p.getKey());
+
+			while (Np.isNext())
 			{
+				auto q = Np.get();
+
+				if (p.getKey() == q)
+				{
+					++Np;
+					continue;
+				}
+
+				// repulsive
+
+				Point<3,float> xq = vd.getPos(q);
+				Point<3,float> f = (xp - xq);
+
+				float distance = f.norm();
+
+				// Particle should be inside 2 * r_cut range
+
+				if (distance < r_cut )
+				{
+					vd.getProp<0>(p)++;
+					vd.getProp<3>(p).add();
+					vd.getProp<3>(p).last().xq = xq;
+					vd.getProp<3>(p).last().id = vd.getProp<2>(q);
+				}
+
 				++Np;
-				continue;
 			}
 
-			// repulsive
-
-			Point<3,float> xq = vd2.getPos(q);
-			Point<3,float> f = (xp - xq);
-
-			float distance = f.norm();
-
-			// Particle should be inside r_cut range
-
-			if (distance < r_cut )
-			{
-				vd2.getProp<1>(p)++;
-				vd2.getProp<1>(q)++;
-
-				vd2.getProp<4>(p).add();
-				vd2.getProp<4>(q).add();
-
-				vd2.getProp<4>(p).last().xq = xq;
-				vd2.getProp<4>(q).last().xq = xp;
-				vd2.getProp<4>(p).last().id = vd2.getProp<2>(q);
-				vd2.getProp<4>(q).last().id = vd2.getProp<2>(p);
-			}
-
-			++Np;
+			++p_it;
 		}
 
+		// We now try symmetric  Cell-list
 
-		++p_it2;
+		auto NN2 = vd2.getVerletSym(r_cut);
+
+		auto p_it2 = vd2.getDomainIterator();
+
+		while (p_it2.isNext())
+		{
+			auto p = p_it2.get();
+
+			Point<3,float> xp = vd2.getPos(p);
+
+			auto Np = NN2.getNNIterator<NO_CHECK>(p.getKey());
+
+			while (Np.isNext())
+			{
+				auto q = Np.get();
+
+				if (p.getKey() == q)
+				{
+					++Np;
+					continue;
+				}
+
+				// repulsive
+
+				Point<3,float> xq = vd2.getPos(q);
+				Point<3,float> f = (xp - xq);
+
+				float distance = f.norm();
+
+				// Particle should be inside r_cut range
+
+				if (distance < r_cut )
+				{
+					vd2.getProp<1>(p)++;
+					vd2.getProp<1>(q)++;
+
+					vd2.getProp<4>(p).add();
+					vd2.getProp<4>(q).add();
+
+					vd2.getProp<4>(p).last().xq = xq;
+					vd2.getProp<4>(q).last().xq = xp;
+					vd2.getProp<4>(p).last().id = vd2.getProp<2>(q);
+					vd2.getProp<4>(q).last().id = vd2.getProp<2>(p);
+				}
+
+				++Np;
+			}
+
+
+			++p_it2;
+		}
+
+		vd2.ghost_put<add_,1>();
+		vd2.ghost_put<merge_,4>();
+
+		auto p_it3 = vd.getDomainIterator();
+
+		bool ret = true;
+		while (p_it3.isNext())
+		{
+			auto p = p_it3.get();
+
+			ret &= vd2.getProp<1>(p) == vd.getProp<0>(p);
+
+
+			vd.getProp<3>(p).sort();
+			vd2.getProp<4>(p).sort();
+
+			ret &= vd.getProp<3>(p).size() == vd2.getProp<4>(p).size();
+
+			for (size_t i = 0 ; i < vd.getProp<3>(p).size() ; i++)
+				ret &= vd.getProp<3>(p).get(i).id == vd2.getProp<4>(p).get(i).id;
+
+			if (ret == false)
+				break;
+
+			++p_it3;
+		}
+
+		BOOST_REQUIRE_EQUAL(ret,true);
 	}
-
-	vd2.ghost_put<add_,1>();
-	vd2.ghost_put<merge_,4>();
-
-	auto p_it3 = vd.getDomainIterator();
-
-	bool ret = true;
-	while (p_it3.isNext())
-	{
-		auto p = p_it3.get();
-
-		ret &= vd2.getProp<1>(p) == vd.getProp<0>(p);
-
-
-		vd.getProp<3>(p).sort();
-		vd2.getProp<4>(p).sort();
-
-		ret &= vd.getProp<3>(p).size() == vd2.getProp<4>(p).size();
-
-		for (size_t i = 0 ; i < vd.getProp<3>(p).size() ; i++)
-			ret &= vd.getProp<3>(p).get(i).id == vd2.getProp<4>(p).get(i).id;
-
-		if (ret == false)
-			break;
-
-		++p_it3;
-	}
-
-	BOOST_REQUIRE_EQUAL(ret,true);
 }
 
 #endif /* SRC_VECTOR_VECTOR_DIST_CELL_LIST_TESTS_HPP_ */
