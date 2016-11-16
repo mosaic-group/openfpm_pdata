@@ -20,6 +20,7 @@
 #include "Decomposition/CartDecomposition.hpp"
 #include "data_type/aggregate.hpp"
 #include "hdf5.h"
+#include "grid_dist_id_comm.hpp"
 
 //! Internal ghost box sent to construct external ghost box into the other processors
 template<unsigned int dim>
@@ -64,7 +65,7 @@ struct Box_fix
  *
  */
 template<unsigned int dim, typename St, typename T, typename Decomposition = CartDecomposition<dim,St>,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T> >
-class grid_dist_id
+class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,device_grid>
 {
 	//! Domain
 	Box<dim,St> domain;
@@ -75,11 +76,17 @@ class grid_dist_id
 	//! Local grids
 	openfpm::vector<device_grid> loc_grid;
 
+	//! Old (before loading) local grids
+	//openfpm::vector<device_grid> loc_grid_old;
+
 	//! Space Decomposition
 	Decomposition dec;
 
 	//! Extension of each grid: Domain and ghost + domain
 	openfpm::vector<GBoxes<device_grid::dims>> gdb_ext;
+
+	//! Extension of each old grid (before loading): Domain and ghost + domain
+	//openfpm::vector<GBoxes<device_grid::dims>> gdb_ext_old;
 
 	//! Size of the grid on each dimension
 	size_t g_sz[dim];
@@ -1563,10 +1570,11 @@ public:
 	 *
 	 *
 	 */
-	void map()
+	void map(openfpm::vector<SpaceBox<dim, T>> & sub_domains_old)
 	{
-
+		this->template map_(sub_domains_old,loc_grid,gdb_ext);
 	}
+
 
 	inline void save(const std::string & filename) const
 	{
@@ -1574,8 +1582,8 @@ public:
 		size_t req = 0;
 
 		//Pack request
-		//Packer<decltype(dec.getSubDomains()),HeapMemory>::packRequest(dec.getSubDomains(),req);
-		//Packer<decltype(ginfo),HeapMemory>::packRequest(ginfo,req);
+		Packer<decltype(dec.getSubDomains()),HeapMemory>::packRequest(dec.getSubDomains(),req);
+		Packer<decltype(loc_grid),HeapMemory>::packRequest(loc_grid,req);
 		Packer<decltype(gdb_ext),HeapMemory>::packRequest(gdb_ext,req);
 
 		std::cout << "Req: " << req << std::endl;
@@ -1590,8 +1598,8 @@ public:
 
 		Pack_stat sts;
 
-		//Packer<decltype(dec.getSubDomains()),HeapMemory>::pack(mem,dec.getSubDomains(),sts);
-		//Packer<decltype(ginfo),HeapMemory>::pack(mem,ginfo,sts);
+		Packer<decltype(dec.getSubDomains()),HeapMemory>::pack(mem,dec.getSubDomains(),sts);
+		Packer<decltype(loc_grid),HeapMemory>::pack(mem,loc_grid,sts);
 		Packer<decltype(gdb_ext),HeapMemory>::pack(mem,gdb_ext,sts);
 
 	    /*****************************************************************
@@ -1935,13 +1943,19 @@ public:
 
 		Unpack_stat ps;
 
-		//Unpacker<decltype(dec.getSubDomains()),HeapMemory>::unpack(mem,dec.getSubDomains(),ps);
+
+		//! the set of all old (before loading) local sub-domain as vector
+		openfpm::vector<SpaceBox<dim, T>> sub_domains_old;
+
+		Unpacker<decltype(sub_domains_old),HeapMemory>::unpack(mem,sub_domains_old,ps);
+		Unpacker<decltype(loc_grid),HeapMemory>::unpack(mem,loc_grid,ps);
 		Unpacker<decltype(gdb_ext),HeapMemory>::unpack(mem,gdb_ext,ps);
 
 		mem.decRef();
 		delete &mem;
 
-		//map();
+		// Map the distributed grid
+		map(sub_domains_old);
 	}
 
 	//! Define friend classes

@@ -24,7 +24,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
 	size_t bc[3] = {NON_PERIODIC, NON_PERIODIC, NON_PERIODIC};
 
 	// Domain
-	Box<3,float> domain({-0.3,-0.3,-0.3},{1.0,1.0,1.0});
+	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
 
 	Vcluster & v_cl = create_vcluster();
 
@@ -77,7 +77,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
 		vol += g_box.getVolumeKey();
 	}
 
-
 	// Save the vector
     g_dist.save("grid_dist_id.h5");
 }
@@ -94,7 +93,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 	size_t bc[3] = {NON_PERIODIC, NON_PERIODIC, NON_PERIODIC};
 
 	// Domain
-	Box<3,float> domain({-0.3,-0.3,-0.3},{1.0,1.0,1.0});
+	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
 
 	Vcluster & v_cl = create_vcluster();
 
