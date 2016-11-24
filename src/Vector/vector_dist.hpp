@@ -1039,7 +1039,7 @@ public:
 		hsize_t fdim[1] = {sum};
 
 		//Size for data space in file
-		hsize_t fdim2[1] = {mpi_size};
+		hsize_t fdim2[1] = {(size_t)mpi_size};
 
 		//Create data space in file
 		hid_t file_dataspace_id = H5Screate_simple(1, fdim, NULL);
@@ -1067,13 +1067,13 @@ public:
 
 	    hsize_t block[1] = {pmem.size()};
 
-	    hsize_t stride[1] = {1};
+	    //hsize_t stride[1] = {1};
 
 		hsize_t count[1] = {1};
 
 	    hsize_t offset[1] = {0};
 
-	    for (size_t i = 0; i < mpi_rank; i++)
+	    for (int i = 0; i < mpi_rank; i++)
 	    {
 	    	if (mpi_rank == 0)
 				offset[0] = 0;
@@ -1085,7 +1085,7 @@ public:
 
 	    int metadata[mpi_size];
 
-	    for (size_t i = 0; i < mpi_size; i++)
+	    for (int i = 0; i < mpi_size; i++)
 	    	metadata[i] = sz_others.get(i);
 
 	    //Select hyperslab in the file.
@@ -1100,10 +1100,10 @@ public:
 	    H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
 
 		//Write a data set to a file
-		herr_t status = H5Dwrite(file_dataset, H5T_NATIVE_CHAR, mem_dataspace_id, file_dataspace_id, plist_id, (const char *)pmem.getPointer());
+		H5Dwrite(file_dataset, H5T_NATIVE_CHAR, mem_dataspace_id, file_dataspace_id, plist_id, (const char *)pmem.getPointer());
 
 		//Write a data set 2 to a file
-		herr_t status_2 = H5Dwrite(file_dataset_2, H5T_NATIVE_INT, H5S_ALL, file_dataspace_id_2, plist_id, metadata);
+		H5Dwrite(file_dataset_2, H5T_NATIVE_INT, H5S_ALL, file_dataspace_id_2, plist_id, metadata);
 
 
 	    //Close/release resources.
@@ -1148,18 +1148,18 @@ public:
 		hssize_t mpi_size_old = H5Sget_select_npoints (file_dataspace_id);
 
 		if (mpi_rank == 0)
-			printf ("\nOld MPI size: %i\n", mpi_size_old);
+			printf ("\nOld MPI size: %llu\n", mpi_size_old);
 
 	  	//Where to read metadata
 	  	int metadata_out[mpi_size_old];
 
-	  	for (size_t i = 0; i < mpi_size_old; i++)
+	  	for (int i = 0; i < mpi_size_old; i++)
 	  	{
 	  		metadata_out[i] = 0;
 	  	}
 
 		//Size for data space in memory
-		hsize_t mdim[1] = {mpi_size_old};
+		hsize_t mdim[1] = {(size_t)mpi_size_old};
 
 		//Create data space in memory
 		hid_t mem_dataspace_id = H5Screate_simple(1, mdim, NULL);
@@ -1170,18 +1170,18 @@ public:
 			hssize_t size;
 
 			size = H5Sget_select_npoints (mem_dataspace_id);
-			printf ("\nmemspace_id size: %i\n", size);
+			printf ("\nmemspace_id size: %llu\n", size);
 			size = H5Sget_select_npoints (file_dataspace_id);
-			printf ("dataspace_id size: %i\n", size);
+			printf ("dataspace_id size: %llu\n", size);
 		}
 
 	  	// Read the dataset.
-	    herr_t status = H5Dread(dataset, H5T_NATIVE_INT, mem_dataspace_id, file_dataspace_id, plist_id, metadata_out);
+	    H5Dread(dataset, H5T_NATIVE_INT, mem_dataspace_id, file_dataspace_id, plist_id, metadata_out);
 
 		if (mpi_rank == 0)
 		{
 			std::cout << "Metadata_out[]: ";
-			for (size_t i = 0; i < mpi_size_old; i++)
+			for (int i = 0; i < mpi_size_old; i++)
 			{
 				std::cout << metadata_out[i] << " ";
 			}
@@ -1203,7 +1203,7 @@ public:
 			if (mpi_rank >= mpi_size_old)
 				block[0] = 0;
 			else
-				block[0] = {metadata_out[mpi_rank]};
+				block[0] = {(size_t)metadata_out[mpi_rank]};
 	  	}
 	  	else
 	  	{
@@ -1228,7 +1228,7 @@ public:
 				offset[0] = 0;
 			else
 			{
-				for (size_t i = 0; i < mpi_rank; i++)
+				for (int i = 0; i < mpi_rank; i++)
 				offset[0] += metadata_out[i];
 			}
 		}
@@ -1237,7 +1237,7 @@ public:
 	  		int x = mpi_size_old/mpi_size;
 	  		int shift = mpi_rank*x;
 
-	  		for (size_t i = 0; i < shift; i++)
+	  		for (int i = 0; i < shift; i++)
 	  		{
 	  			offset[0] += metadata_out[i];
 	  		}
@@ -1245,12 +1245,12 @@ public:
 	  		int y = mpi_size_old%mpi_size;
 	  		if (mpi_rank < y)
 	  		{
-	  			for (size_t i = 0; i < mpi_size*x + mpi_rank; i++)
+	  			for (int i = 0; i < mpi_size*x + mpi_rank; i++)
 	  				offset_add[0] += metadata_out[i];
 	  		}
 	    }
 
-	    hsize_t stride[1] = {1};
+	    //hsize_t stride[1] = {1};
 	    hsize_t count[1] = {1};
 
 	    std::cout << "LOAD: MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << ", Offset: " << offset[0] << ", Offset_add: " << offset_add[0] << ", Block: " << block[0] << ", Block_add: " << block_add[0] << std::endl;
@@ -1286,9 +1286,9 @@ public:
 			hssize_t size2;
 
 			size2 = H5Sget_select_npoints (mem_dataspace_id_2);
-			printf ("\nLOAD: memspace_id_2 size: %i\n", size2);
+			printf ("\nLOAD: memspace_id_2 size: %llu\n", size2);
 			size2 = H5Sget_select_npoints (file_dataspace_id_2);
-			printf ("LOAD: dataspace_id_2 size: %i\n", size2);
+			printf ("LOAD: dataspace_id_2 size: %llu\n", size2);
 		}
 
 		if (mpi_rank == 0)
@@ -1296,14 +1296,14 @@ public:
 			hssize_t size2;
 
 			size2 = H5Sget_select_npoints (mem_dataspace_id_3);
-			printf ("\nLOAD: memspace_id_3 size: %i\n", size2);
+			printf ("\nLOAD: memspace_id_3 size: %llu\n", size2);
 			size2 = H5Sget_select_npoints (file_dataspace_id_3);
-			printf ("LOAD: dataspace_id_3 size: %i\n", size2);
+			printf ("LOAD: dataspace_id_3 size: %llu\n", size2);
 		}
 
 		size_t sum = 0;
 
-		for (size_t i = 0; i < mpi_size_old; i++)
+		for (int i = 0; i < mpi_size_old; i++)
 		{
 			sum += metadata_out[i];
 		}
@@ -1318,21 +1318,19 @@ public:
 		mem.incRef();
 
 	  	// Read the dataset.
-	    herr_t status_2 = H5Dread(dataset_2, H5T_NATIVE_CHAR, mem_dataspace_id_2, file_dataspace_id_2, plist_id, (char *)mem.getPointer());
+	    H5Dread(dataset_2, H5T_NATIVE_CHAR, mem_dataspace_id_2, file_dataspace_id_2, plist_id, (char *)mem.getPointer());
 
 	    // Read the dataset.
-		herr_t status_3 = H5Dread(dataset_2, H5T_NATIVE_CHAR, mem_dataspace_id_3, file_dataspace_id_3, plist_id, (char *)mem.getPointer());
+		H5Dread(dataset_2, H5T_NATIVE_CHAR, mem_dataspace_id_3, file_dataspace_id_3, plist_id, (char *)mem.getPointer());
 
 		mem.allocate(pmem.size());
 		std::cout << "Mem.size(): " << mem.size() << " = " << block[0]+block_add[0] << std::endl;
 
 	    // Close the dataset.
-	    status = H5Dclose(dataset);
-	    status_2 = H5Dclose(dataset_2);
-
+	    H5Dclose(dataset);
+	    H5Dclose(dataset_2);
 	    // Close the file.
-	    status = H5Fclose(file);
-
+	    H5Fclose(file);
 	    H5Pclose(plist_id);
 
 		Unpack_stat ps;

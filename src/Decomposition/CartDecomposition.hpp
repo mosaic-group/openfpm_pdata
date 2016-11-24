@@ -112,6 +112,9 @@ protected:
 	//! the set of all local sub-domain as vector
 	openfpm::vector<SpaceBox<dim, T>> sub_domains;
 
+	//! the global set of all sub-domains as vector of 'sub_domains' vectors
+	mutable openfpm::vector<openfpm::vector<SpaceBox<dim, T>>> sub_domains_global;
+
 	//! for each sub-domain, contain the list of the neighborhood processors
 	openfpm::vector<openfpm::vector<long unsigned int> > box_nn_processor;
 
@@ -1215,9 +1218,14 @@ public:
 		return domain;
 	}
 
-	openfpm::vector<SpaceBox<dim, T>> getSubDomains()
+	openfpm::vector<SpaceBox<dim, T>> getSubDomains() const
 	{
 		return sub_domains;
+	}
+
+	openfpm::vector<openfpm::vector<SpaceBox<dim, T>>> & getSubDomainsGlobal()
+	{
+		return sub_domains_global;
 	}
 
 	/*! \brief Check if the particle is local

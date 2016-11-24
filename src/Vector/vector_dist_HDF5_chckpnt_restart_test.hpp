@@ -22,19 +22,17 @@ BOOST_AUTO_TEST_SUITE( vd_hdf5_chckpnt_rstrt_test )
 BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test )
 {
 	// Input data
-
-	const size_t dim = 3;
-
+	//Number of particles
 	size_t k = 100;
-
-	size_t ghost_part = 0.1;
+	// Dimensionality
+	const size_t dim = 3;
 
 	/////////////////
 
 	Vcluster & v_cl = create_vcluster();
 
-	if (v_cl.getProcessUnitID() == 0)
-		std::cout << "Testing " << dim << "D vector HDF5 save/load" << std::endl;
+	if (create_vcluster().getProcessUnitID() == 0)
+		std::cout << "Saving distributed vector" << std::endl;
 
 	Box<dim,float> box;
 
@@ -48,14 +46,146 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test )
 	size_t bc[dim];
 
 	for (size_t i = 0; i < dim; i++)
-		bc[i] = PERIODIC;
+		bc[i] = NON_PERIODIC;
 
-	vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(0,box,bc,Ghost<dim,float>(ghost_part));
+	// ghost
+	Ghost<3,float> ghost(0.5);
+
+	vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k,box,bc,ghost);
 
 	// Initialize a dist vector
 	//vd_initialize<dim>(vd, v_cl, k);
 
-	size_t sz[3] = {10,10,10};
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		for (size_t i = 0; i < dim; i++)
+			vd.getPos(key)[i] = 0.45123;
+
+		++it;
+	}
+
+	vd.map();
+
+	vd.template ghost_get<0>();
+
+	auto it_2 = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it_2.get();
+
+		//Put the forces
+		for (size_t i = 0; i < dim; i++)
+			vd.template getProp<0>(key)[i] = 0.51234;
+		++it_2;
+	}
+
+	// Save the vector
+    vd.save("vector_dist.h5");
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
+{
+	if (create_vcluster().getProcessUnitID() == 0)
+		std::cout << "Loading distributed vector" << std::endl;
+
+	const size_t dim = 3;
+
+	Box<dim,float> box;
+
+	for (size_t i = 0; i < dim; i++)
+	{
+		box.setLow(i,0.0);
+		box.setHigh(i,1.0);
+	}
+
+	// Boundary conditions
+	size_t bc[dim];
+
+	for (size_t i = 0; i < dim; i++)
+		bc[i] = NON_PERIODIC;
+
+	// ghost
+	Ghost<3,float> ghost(0.5);
+
+	vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(0,box,bc,ghost);
+
+	vd.load("vector_dist.h5");
+
+	auto it = vd.getDomainIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		for (size_t i = 0; i < dim; i++)
+			BOOST_CHECK_CLOSE(vd.getPos(key)[i],0.45123,0.0001);
+
+		++it;
+	}
+
+	vd.template ghost_get<0>();
+
+	auto it_2 = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it_2.get();
+
+		//Put the forces
+		for (size_t i = 0; i < dim; i++)
+			BOOST_CHECK_CLOSE(vd.template getProp<0>(key)[i],0.51234,0.0001);
+		++it_2;
+	}
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test_2 )
+{
+	// Input data
+	// Number of particles
+	size_t k = 100;
+
+	//Dimensinality of the space
+	const size_t dim = 3;
+
+	/////////////////
+
+	Vcluster & v_cl = create_vcluster();
+
+	if (create_vcluster().getProcessUnitID() == 0)
+		std::cout << "Saving distributed vector" << std::endl;
+
+
+	Box<dim,float> box;
+
+	for (size_t i = 0; i < dim; i++)
+	{
+		box.setLow(i,0.0);
+		box.setHigh(i,1.0);
+	}
+
+	// Boundary conditions
+	size_t bc[dim];
+
+	const size_t Ng = 128;
+
+	// we create a 128x128x128 Grid iterator
+	size_t sz[3] = {Ng,Ng,Ng};
+
+	for (size_t i = 0; i < dim; i++)
+		bc[i] = NON_PERIODIC;
+
+	// ghost
+	Ghost<3,float> ghost(1.0/(Ng-2));
+
+	vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(0,box,bc,ghost);
+
+	// Initialize a dist vector
+	//vd_initialize<dim>(vd, v_cl, k);
 
 	auto it = vd.getGridIterator(sz);
 
@@ -72,6 +202,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test )
 		++it;
 	}
 
+	BOOST_REQUIRE_EQUAL(it.getSpacing(0),1.0f/(Ng-1));
+	BOOST_REQUIRE_EQUAL(it.getSpacing(1),1.0f/(Ng-1));
+	BOOST_REQUIRE_EQUAL(it.getSpacing(2),1.0f/(Ng-1));
+
 	vd.map();
 
 	vd.template ghost_get<0>();
@@ -80,7 +214,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test )
 	std::default_random_engine eg(v_cl.getProcessUnitID()*4313);
 	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
-	//! [Create a vector of random elements on each processor 2D]
+	// Create a vector of random elements on each processor
 
 	auto it_2 = vd.getIterator();
 
@@ -91,22 +225,20 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test )
 		//Put the forces
 		for (size_t i = 0; i < dim; i++)
 			vd.template getProp<0>(key)[i] = ud(eg);
-
+			//vd.getPos(key)[i]
 		++it_2;
 	}
 
 	// Save the vector
-    vd.save("vector_dist.h5");
+    vd.save("vector_dist_2.h5");
 }
 
-BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
+BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test_2 )
 {
 	if (create_vcluster().getProcessUnitID() == 0)
 		std::cout << "Loading distributed vector" << std::endl;
 
 	const size_t dim = 3;
-
-	size_t ghost_part = 0.1;
 
 	Box<dim,float> box;
 
@@ -120,42 +252,35 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
 	size_t bc[dim];
 
 	for (size_t i = 0; i < dim; i++)
-		bc[i] = PERIODIC;
+		bc[i] = NON_PERIODIC;
 
-	vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(0,box,bc,Ghost<dim,float>(ghost_part));
 
-	vd.load("vector_dist.h5");
-	/*
+	const size_t Ng = 128;
+
+	// we create a 128x128x128 Grid iterator
+	size_t sz[3] = {Ng,Ng,Ng};
+
+	// ghost
+	Ghost<3,float> ghost(1.0/(Ng-2));
+
+	vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(0,box,bc,ghost);
+
+	vd.load("vector_dist_2.h5");
+
 	auto NN = vd.getCellList(0.5);
 
-	auto it_v = vd.getDomainIterator();
+	auto it = vd.getGridIterator(sz);
 
-	while (it_v.isNext())
+	while (it.isNext())
 	{
-		//key
-		vect_dist_key_dx key = it_v.get();
+		auto key = it.get();
 
-		size_t count = 0;
-
-		// Get the position of the particles
-		Point<dim,float> p = vd.getPos(key);
-
-		// Get the neighborhood of the particle
-		auto cell_it = NN.template getNNIterator<NO_CHECK>(NN.getCell(p));
-
-		while(cell_it.isNext())
-		{
-			//Next particle in a cell
-			++cell_it;
-			count++;
-		}
-
-		std::cout << "Count: " << count << std::endl;
-
-		//Next particle in cell list
-		++it_v;
+		++it;
 	}
-*/
+
+	BOOST_REQUIRE_EQUAL(it.getSpacing(0),1.0f/(Ng-1));
+	BOOST_REQUIRE_EQUAL(it.getSpacing(1),1.0f/(Ng-1));
+	BOOST_REQUIRE_EQUAL(it.getSpacing(2),1.0f/(Ng-1));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
