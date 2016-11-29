@@ -919,9 +919,6 @@ public:
 		// Processor communication size
 		openfpm::vector<size_t> prc_sz(v_cl.getProcessingUnits());
 
-		// It contain the list of the processors this processor should to communicate with
-		openfpm::vector<size_t> p_list;
-
 		// map completely reset the ghost part
 		v_pos.resize(g_m);
 		v_prp.resize(g_m);
@@ -980,9 +977,6 @@ public:
 	{
 		// Processor communication size
 		openfpm::vector<size_t> prc_sz(v_cl.getProcessingUnits());
-
-		// It contain the list of the processors this processor should to communicate with
-		openfpm::vector<size_t> p_list;
 
 		// map completely reset the ghost part
 		v_pos.resize(g_m);

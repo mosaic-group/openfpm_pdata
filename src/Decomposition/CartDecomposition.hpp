@@ -36,8 +36,12 @@
 #include "util/se_util.hpp"
 #include "util/mathutil.hpp"
 #include "CartDecomposition_ext.hpp"
+#include "data_type/aggregate.hpp"
+#include "Domain_NN_calculator_cart.hpp"
 
 #define CARTDEC_ERROR 2000lu
+
+#define COMPUTE_SKIN_SUB 1
 
 /**
  * \brief This class decompose a space into sub-sub-domains and distribute them across processors
@@ -81,7 +85,7 @@
  */
 
 template<unsigned int dim, typename T, typename Memory, typename Distribution>
-class CartDecomposition: public ie_loc_ghost<dim, T>, public nn_prcs<dim, T>, public ie_ghost<dim, T>
+class CartDecomposition: public ie_loc_ghost<dim, T>, public nn_prcs<dim, T>, public ie_ghost<dim, T>, public domain_nn_calculator_cart<dim>
 {
 
 public:
@@ -153,6 +157,12 @@ protected:
 	//! Boundary condition info
 	size_t bc[dim];
 
+	//! Processor domain bounding box
+	::Box<dim,size_t> proc_box;
+
+	//! set of Boxes produced by the decomposition optimizer
+	openfpm::vector<::Box<dim, size_t>> loc_box;
+
 	/*! \brief It convert the box from the domain decomposition into sub-domain
 	 *
 	 * The decomposition box from the domain-decomposition contain the box in integer
@@ -205,9 +215,10 @@ public:
 	 *
 	 * \param v_cl Virtual cluster, used internally for communications
 	 * \param bc boundary conditions
+	 * \param opt option (one option is to construct)
 	 *
 	 */
-	void createSubdomains(Vcluster & v_cl, const size_t (& bc)[dim])
+	void createSubdomains(Vcluster & v_cl, const size_t (& bc)[dim], size_t opt = 0)
 	{
 #ifdef SE_CLASS1
 		if (&v_cl == NULL)
@@ -237,9 +248,6 @@ public:
 		// And reducing Ghost over-stress
 		dec_optimizer<dim, Graph_CSR<nm_v, nm_e>> d_o(dist.getGraph(), gr.getSize());
 
-		// set of Boxes produced by the decomposition optimizer
-		openfpm::vector<::Box<dim, size_t>> loc_box;
-
 		// Ghost
 		Ghost<dim,long int> ghe;
 
@@ -259,7 +267,10 @@ public:
 
 		// Initialize ss_box and bbox
 		if (loc_box.size() >= 0)
+		{
 			bbox = convertDecBoxIntoSubDomain(loc_box.get(0));
+			proc_box = loc_box.get(0);
+		}
 
 		// convert into sub-domain
 		for (size_t s = 0; s < loc_box.size(); s++)
@@ -271,6 +282,7 @@ public:
 
 			// Calculate the bound box
 			bbox.enclose(sub_d);
+			proc_box.enclose(loc_box.get(s));
 
 			// Create the smallest box contained in all sub-domain
 			ss_box.contained(sub_d);
@@ -362,7 +374,7 @@ public:
 		}
 	}
 
-	/*! \brief Create the subspaces that decompose your domain
+	/*! \brief Create the sub-domain that decompose your domain
 	 *
 	 */
 	void CreateSubspaces()
@@ -392,7 +404,7 @@ public:
 			//! add the space box
 			sub_domains.add(tmp);
 
-			// add the iterator
+			// Next sub-domain
 			++gk_it;
 		}
 	}
@@ -531,8 +543,8 @@ public:
 	 * \param v_cl Virtual cluster, used internally to handle or pipeline communication
 	 *
 	 */
-	CartDecomposition(Vcluster & v_cl) :
-			nn_prcs<dim, T>(v_cl), v_cl(v_cl), dist(v_cl),ref_cnt(0)
+	CartDecomposition(Vcluster & v_cl)
+	:nn_prcs<dim, T>(v_cl), v_cl(v_cl), dist(v_cl),ref_cnt(0)
 	{
 		// Reset the box to zero
 		bbox.zero();
@@ -1065,10 +1077,6 @@ public:
 			{
 				std::cout << std::setprecision(3) << unbalance << "\n";
 			}
-
-//			write(v_cl.getProcessUnitID() + "_"+ std::to_string(n_step) + "_AAAAAA");
-
-//			n_step++;
 		}
 
 		if (dlb.rebalanceNeeded())
@@ -1266,6 +1274,28 @@ public:
 		}
 
 		return processorID<Mem>(pt) == v_cl.getProcessUnitID();
+	}
+
+	/*! \brief Get the domain Cells
+	 *
+	 * \param shift Shifting point
+	 * \param gs grid extension
+	 *
+	 */
+	openfpm::vector<size_t> & getDomainCells(grid_key_dx<dim> & shift, grid_key_dx<dim> & cell_shift, grid_sm<dim,void> & gs)
+	{
+		return domain_nn_calculator_cart<dim>::getDomainCells(shift,cell_shift,gs,proc_box,loc_box);
+	}
+
+	/*! \brief Get the domain anomalous cells
+	 *
+	 * \param shift Shifting point
+	 * \param gs grid extension
+	 *
+	 */
+	openfpm::vector<subsub_lin<dim>> & getAnomDomainCells(grid_key_dx<dim> & shift, grid_key_dx<dim> & cell_shift, grid_sm<dim,void> & gs)
+	{
+		return domain_nn_calculator_cart<dim>::getAnomDomainCells(shift,cell_shift,gs,proc_box,loc_box);
 	}
 
 	/*! \brief Check if the particle is local considering boundary conditions

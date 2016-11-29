@@ -113,6 +113,19 @@ private:
 		g_m = p_np;
 	}
 
+	/*! \brief Checl if the parameters describe a valid vector. In case it does not report an error
+	 *
+	 * \param box Box to check
+	 *
+	 */
+	void check_parameters(Box<dim,St> & box)
+	{
+		// if the box is not valid return an error
+		if (box.isValid() == false)
+			std::cerr << __FILE__ << ":" << __LINE__ << "  Error the domain is not valid " << box.toString() << std::endl;
+
+	}
+
 public:
 
 	//! space type
@@ -222,6 +235,8 @@ public:
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
 #endif
+
+		check_parameters(box);
 
 		init_structures(np);
 		this->init_decomposition(box,bc,g,opt);
@@ -1156,6 +1171,60 @@ public:
 			sz += accu.get(i);
 
 		return sz;
+	}
+
+	/*! \brief Get a special particle iterator able to iterate across particles using
+	 *         symmetric crossing scheme
+	 *
+	 * \param NN Cell-List neighborhood
+	 *
+	 */
+	template<typename cli> ParticleItCRS_Cells<dim,cli> getParticleIteratorCRS(cli & NN)
+	{
+		// Shift
+		grid_key_dx<dim> cell_shift = NN.getShift();
+
+		// Shift
+		grid_key_dx<dim> shift = NN.getShift();
+
+		// Add padding
+		for (size_t i = 0 ; i < dim ; i++)
+			shift.set_d(i,shift.get(i) + NN.getPadding(i));
+
+		grid_sm<dim,void> gs = NN.getInternalGrid();
+
+		// First we check that
+		return ParticleItCRS_Cells<dim,cli>(NN,getDecomposition().getDomainCells(shift,cell_shift,gs),getDecomposition().getAnomDomainCells(shift,cell_shift,gs),NN.getNNc_sym());
+	}
+
+	/*! \brief Return from which cell we have to start in case of CRS interation
+	 *         scheme
+	 *
+	 * \param NN cell-list
+	 *
+	 * \return The starting cell point
+	 *
+	 */
+	template<typename Celllist> grid_key_dx<dim> getCRSStart(Celllist & NN)
+	{
+		return NN.getStartDomainCell();
+	}
+
+	/*! \brief Return from which cell we have to stop in case of CRS interation
+	 *         scheme
+	 *
+	 * \param NN cell-list
+	 *
+	 * \return The stop cell point
+	 *
+	 */
+	template<typename Celllist> grid_key_dx<dim> getCRSStop(Celllist & NN)
+	{
+		grid_key_dx<dim> key = NN.getStopDomainCell();
+
+		for (size_t i = 0 ; i < dim ; i++)
+			key.set_d(i,key.get(i) + 1);
+		return key;
 	}
 };
 

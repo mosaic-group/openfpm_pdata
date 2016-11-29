@@ -58,9 +58,9 @@ struct vx
 
 	template<unsigned int dim, typename Mem> inline vx & operator=(const encapc<dim, vx, Mem> & p)
 	{
-		boost::fusion::at_c<0>(data)[0] = p.get<0>()[0];
-		boost::fusion::at_c<0>(data)[1] = p.get<0>()[1];
-		boost::fusion::at_c<0>(data)[2] = p.get<0>()[2];
+		boost::fusion::at_c<0>(data)[0] = p.template get<0>()[0];
+		boost::fusion::at_c<0>(data)[1] = p.template get<0>()[1];
+		boost::fusion::at_c<0>(data)[2] = p.template get<0>()[2];
 
 		return *this;
 	}
