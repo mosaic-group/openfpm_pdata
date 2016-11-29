@@ -977,6 +977,8 @@ public:
 		//Pack_request vector
 		size_t req = 0;
 
+		//std::cout << "V_pos.size() before save: " << v_pos.size() << std::endl;
+
 		//Pack request
 		Packer<decltype(v_pos),HeapMemory>::packRequest(v_pos,req);
 		Packer<decltype(v_prp),HeapMemory>::packRequest(v_prp,req);
@@ -1005,9 +1007,6 @@ public:
 		int mpi_rank = v_cl.getProcessUnitID();
 		int mpi_size = v_cl.getProcessingUnits();
 
-		if (mpi_rank == 0)
-			std::cout << "Saving" << std::endl;
-
 		MPI_Comm comm = v_cl.getMPIComm();
 		MPI_Info info  = MPI_INFO_NULL;
 /*
@@ -1025,7 +1024,7 @@ public:
 		H5Pclose(plist_id);
 
 		size_t sz = pmem.size();
-		std::cout << "Pmem.size: " << pmem.size() << std::endl;
+		//std::cout << "Pmem.size: " << pmem.size() << std::endl;
 		openfpm::vector<size_t> sz_others;
 		v_cl.allGather(sz,sz_others);
 		v_cl.execute();
@@ -1053,7 +1052,8 @@ public:
 		//Create data space in memory
 		hid_t mem_dataspace_id = H5Screate_simple(1, mdim, NULL);
 
-		std::cout << "Sum: " << sum << std::endl;
+		if (mpi_rank == 0)
+			std::cout << "Total object size: " << sum << std::endl;
 
 		//Create data set in file
 		hid_t file_dataset = H5Dcreate (file, "vector_dist", H5T_NATIVE_CHAR, file_dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
@@ -1124,9 +1124,6 @@ public:
 		int mpi_rank = v_cl.getProcessUnitID();
 		int mpi_size = v_cl.getProcessingUnits();
 
-		if (mpi_rank == 0)
-			std::cout << "Loading" << std::endl;
-
 		// Set up file access property list with parallel I/O access
 		hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
 		H5Pset_fapl_mpio(plist_id, comm, info);
@@ -1170,9 +1167,9 @@ public:
 			hssize_t size;
 
 			size = H5Sget_select_npoints (mem_dataspace_id);
-			printf ("\nmemspace_id size: %llu\n", size);
+			printf ("LOAD: memspace_id size: %llu\n", size);
 			size = H5Sget_select_npoints (file_dataspace_id);
-			printf ("dataspace_id size: %llu\n", size);
+			printf ("LOAD: dataspace_id size: %llu\n", size);
 		}
 
 	  	// Read the dataset.
@@ -1197,7 +1194,17 @@ public:
 
 	  	hsize_t block[1] = {0};
 	  	hsize_t block_add[1] = {0};
+/*
+	  	openfpm::vector<openfpm::vector<hsize_t>> block0;
+	  	openfpm::vector<openfpm::vector<hsize_t>> block_add0;
+	  	openfpm::vector<openfpm::vector<hsize_t>> offset0;
+	  	openfpm::vector<openfpm::vector<hsize_t>> offset_add0;
 
+	  	block0.resize(mpi_size);
+	  	offset0.resize(mpi_size);
+	  	block_add0.resize(mpi_size);
+		offset_add0.resize(mpi_size);
+*/
 	  	if (mpi_size >= mpi_size_old)
 	  	{
 			if (mpi_rank >= mpi_size_old)
@@ -1211,12 +1218,16 @@ public:
 	  		int shift = mpi_rank*x;
 	  		for (int i = 0; i < x; i++)
 	  		{
+	  			//block0.get(mpi_rank).add(metadata_out[shift]);
 	  			block[0] += metadata_out[shift];
 	  			shift++;
 	  		}
 	  		int y = mpi_size_old%mpi_size;
 	  		if (mpi_rank < y)
+	  		{
 				block_add[0] += metadata_out[mpi_size*x+mpi_rank];
+				//block_add0.get(mpi_rank).add(metadata_out[mpi_size*x+mpi_rank]);
+	  		}
 	  	}
 
 	  	hsize_t offset[1] = {0};
@@ -1240,13 +1251,17 @@ public:
 	  		for (int i = 0; i < shift; i++)
 	  		{
 	  			offset[0] += metadata_out[i];
+	  			//offset0.get(mpi_rank).add(metadata_out[i]);
 	  		}
 
 	  		int y = mpi_size_old%mpi_size;
 	  		if (mpi_rank < y)
 	  		{
 	  			for (int i = 0; i < mpi_size*x + mpi_rank; i++)
+	  			{
 	  				offset_add[0] += metadata_out[i];
+	  				//offset_add0.get(mpi_rank).add(metadata_out[i]);
+	  			}
 	  		}
 	    }
 
@@ -1254,7 +1269,17 @@ public:
 	    hsize_t count[1] = {1};
 
 	    std::cout << "LOAD: MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << ", Offset: " << offset[0] << ", Offset_add: " << offset_add[0] << ", Block: " << block[0] << ", Block_add: " << block_add[0] << std::endl;
-
+/*
+	    std::cout << "LOAD: MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << std::endl;
+	    for (size_t i = 0; i < offset0.get(mpi_rank).size(); i++)
+	    	std::cout << ", Offset: " << offset0.get(mpi_rank).get(i) << std::endl;
+		for (size_t i = 0; i < offset_add0.get(mpi_rank).size(); i++)
+			std::cout << ", Offset_add: " << offset_add0.get(mpi_rank).get(i) << std::endl;
+		for (size_t i = 0; i < block0.get(mpi_rank).size(); i++)
+			std::cout << ", Block: " << block0.get(mpi_rank).get(i) << std::endl;
+		for (size_t i = 0; i < block_add0.get(mpi_rank).size(); i++)
+			std::cout << ", Block_add: " << block_add0.get(mpi_rank).get(i) << std::endl;
+*/
 
 		//Select file dataspace
 		hid_t file_dataspace_id_2 = H5Dget_space(dataset_2);
@@ -1313,18 +1338,36 @@ public:
 
 		// allocate the memory
 		HeapMemory pmem;
+		HeapMemory pmem2;
 		//pmem.allocate(req);
-		ExtPreAlloc<HeapMemory> & mem = *(new ExtPreAlloc<HeapMemory>(block[0]+block_add[0],pmem));
+		ExtPreAlloc<HeapMemory> & mem = *(new ExtPreAlloc<HeapMemory>(block[0],pmem));
 		mem.incRef();
+		ExtPreAlloc<HeapMemory> & mem2 = *(new ExtPreAlloc<HeapMemory>(block_add[0],pmem2));
+		mem2.incRef();
 
 	  	// Read the dataset.
 	    H5Dread(dataset_2, H5T_NATIVE_CHAR, mem_dataspace_id_2, file_dataspace_id_2, plist_id, (char *)mem.getPointer());
 
 	    // Read the dataset.
-		H5Dread(dataset_2, H5T_NATIVE_CHAR, mem_dataspace_id_3, file_dataspace_id_3, plist_id, (char *)mem.getPointer());
+		H5Dread(dataset_2, H5T_NATIVE_CHAR, mem_dataspace_id_3, file_dataspace_id_3, plist_id, (char *)mem2.getPointer());
 
 		mem.allocate(pmem.size());
-		std::cout << "Mem.size(): " << mem.size() << " = " << block[0]+block_add[0] << std::endl;
+		mem2.allocate(pmem2.size());
+		std::cout << "Mem+mem2.size(): " << mem.size() + mem2.size() << " = " << block[0]+block_add[0] << std::endl;
+
+		Unpack_stat ps;
+
+		Unpacker<decltype(v_pos),HeapMemory>::unpack(mem,v_pos,ps);
+		Unpacker<decltype(v_prp),HeapMemory>::unpack(mem,v_prp,ps);
+
+		Unpack_stat ps2;
+
+		openfpm::vector<Point<dim, St>> v_pos_unp;
+
+		openfpm::vector<prop> v_prp_unp;
+
+		Unpacker<decltype(v_pos),HeapMemory>::unpack(mem2,v_pos_unp,ps2);
+		Unpacker<decltype(v_prp),HeapMemory>::unpack(mem2,v_prp_unp,ps2);
 
 	    // Close the dataset.
 	    H5Dclose(dataset);
@@ -1333,18 +1376,21 @@ public:
 	    H5Fclose(file);
 	    H5Pclose(plist_id);
 
-		Unpack_stat ps;
-
-		Unpacker<decltype(v_pos),HeapMemory>::unpack(mem,v_pos,ps);
-		Unpacker<decltype(v_prp),HeapMemory>::unpack(mem,v_prp,ps);
-
 		std::cout << "V_pos.size(): " << v_pos.size() << std::endl;
+		std::cout << "V_pos_unp.size(): " << v_pos_unp.size() << std::endl;
 
 		mem.decRef();
 		delete &mem;
 
+		for (size_t i = 0; i < v_pos_unp.size(); i++)
+			v_pos.add(v_pos_unp.get(i));
+
 		g_m = v_pos.size();
+
+		std::cout << "V_pos.size() after merge: " << v_pos.size() << std::endl;
 		map();
+
+		std::cout << "V_pos.size() after merge and map: " << v_pos.size() << std::endl;
 	}
 
 	/*! \brief Output particle position and properties

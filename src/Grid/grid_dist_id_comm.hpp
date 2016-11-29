@@ -46,113 +46,23 @@ class grid_dist_id_comm
 
 public:
 
-	//! It processes one box
-	template<typename T1, typename T2, typename T3, typename T4> inline void process_map_box(size_t i, long int & end, long int & id_end, T1 & m_pos, T2 & m_prp, T3 & v_pos, T4 & v_prp, openfpm::vector<size_t> & cnt)
-	{
-/*
-		long int prc_id = m_oBox.template get<1>(i);
-		size_t id = m_oBox.template get<0>(i);
-
-		if (prc_id >= 0)
-		{
-			size_t lbl = p_map_req.get(prc_id);
-
-			m_pos.get(lbl).set(cnt.get(lbl), v_pos.get(id));
-
-			cnt.get(lbl)++;
-
-			// swap the particle
-			long int id_valid = get_end_valid(end,id_end);
-
-			if (id_valid > 0 && (long int)id < id_valid)
-			{
-				v_pos.set(id,v_pos.get(id_valid));
-				v_prp.set(id,v_prp.get(id_valid));
-			}
-		}
-		else
-		{
-			// swap the particle
-			long int id_valid = get_end_valid(end,id_end);
-
-			if (id_valid > 0 && (long int)id < id_valid)
-			{
-				v_pos.set(id,v_pos.get(id_valid));
-				v_prp.set(id,v_prp.get(id_valid));
-			}
-		}
-*/
-	}
-
-	/*! \brief Allocates and fills the send buffer for the map function
+	/*! \brief Reconstruct the local grids
 	 *
-	 *
+	 * \param m_oGrid_recv Vector of labeled grids to combine into a local grid
 	 */
-	void fill_send_map_buf_(openfpm::vector<device_grid> & loc_grid, openfpm::vector<size_t> & prc_sz_r, openfpm::vector<openfpm::vector<SpaceBox<dim,St>>> & m_box)
+	inline void grids_reconstruct(openfpm::vector<openfpm::vector<device_grid>> & m_oGrid_recv, openfpm::vector<device_grid> & loc_grid)
 	{
-		m_box.resize(prc_sz_r.size());
-		openfpm::vector<size_t> cnt(prc_sz_r.size());
 
-		for (size_t i = 0; i < prc_sz_r.size(); i++)
-		{
-			// set the size and allocate, using mem warant that pos and prp is contiguous
-			m_box.get(i).resize(prc_sz_r.get(i));
-			cnt.get(i) = 0;
-		}
-/*
-		// end vector point
-		long int id_end = v_pos.size();
-
-		// end opart point
-		long int end = m_opart.size()-1;
-
-		// Run through all the particles and fill the sending buffer
-		for (size_t i = 0; i < m_opart.size(); i++)
-		{
-			process_map_particle<proc_with_prp<prp_object,prp...>>(i,end,id_end,m_pos,m_prp,v_pos,v_prp,cnt);
-		}
-
-		v_pos.resize(v_pos.size() - m_opart.size());
-*/
 	}
 
-	/*! \brief Allocates and fills the send buffer for the map function
-	 *
-	 *
-	 */
-	void fill_send_map_buf(openfpm::vector<device_grid> & loc_grid, openfpm::vector<size_t> & prc_sz_r, openfpm::vector<openfpm::vector<SpaceBox<dim,St>>> & m_box)
-	{
-		m_box.resize(prc_sz_r.size());
-		openfpm::vector<size_t> cnt(prc_sz_r.size());
 
-		for (size_t i = 0; i < prc_sz_r.size(); i++)
-		{
-			// set the size and allocate, using mem warant that pos and prp is contiguous
-			m_box.get(i).resize(prc_sz_r.get(i));
-			cnt.get(i) = 0;
-		}
-/*
-		// end vector point
-		long int id_end = v_pos.size();
 
-		// end opart point
-		long int end = m_opart.size()-1;
-
-		// Run through all the particles and fill the sending buffer
-		for (size_t i = 0; i < m_opart.size(); i++)
-		{
-			process_map_particle<proc_with_prp<prp_object,prp...>>(i,end,id_end,m_pos,m_prp,v_pos,v_prp,cnt);
-		}
-
-		v_pos.resize(v_pos.size() - m_opart.size());
-*/
-	}
 
 	/*! \brief Label intersection grids for mappings
 	 *
 	 * \param prc_sz For each processor the number of grids to send
 	 */
-	void labelIntersectionGridsProcessor(Box<dim,St> domain, Decomposition & dec, CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm, openfpm::vector<device_grid> & loc_grid_old, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_old, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_global, openfpm::vector<openfpm::vector<device_grid>> & lbl_b, openfpm::vector<size_t> & prc_sz)
+	inline void labelIntersectionGridsProcessor(Box<dim,St> domain, Decomposition & dec, CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm, openfpm::vector<device_grid> & loc_grid_old, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_old, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_global, openfpm::vector<openfpm::vector<device_grid>> & lbl_b, openfpm::vector<size_t> & prc_sz)
 	{
 		// resize the label buffer
 		lbl_b.resize(v_cl.getProcessingUnits());
@@ -259,7 +169,7 @@ public:
 	 * \param g_m ghost marker
 	 *
 	 */
-	void map_(Box<dim,St> domain, Decomposition & dec, CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm, openfpm::vector<device_grid> & loc_grid_old, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_old, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_global)
+	void map_(Box<dim,St> domain, Decomposition & dec, CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm, openfpm::vector<device_grid> & loc_grid, openfpm::vector<device_grid> & loc_grid_old, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_old, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_global)
 	{
 		// Processor communication size
 		openfpm::vector<size_t> prc_sz(v_cl.getProcessingUnits());
@@ -286,11 +196,7 @@ public:
 			}
 		}
 
-		//! Boxes vector
-		//openfpm::vector<openfpm::vector<device_grid>> m_box;
-
-		//fill_send_map_buf(loc_grid_global, prc_sz_r, m_box);
-
+		// Vector for receiving of intersection grids
 		openfpm::vector<openfpm::vector<device_grid>> m_oGrid_recv;
 
 		m_oGrid_recv.resize(m_oGrid.size());
@@ -299,9 +205,15 @@ public:
 			m_oGrid_recv.get(i).resize(m_oGrid.get(i).size());
 		}
 
+		// Send and recieve intersection grids
 		v_cl.SSendRecv(m_oGrid,m_oGrid_recv,prc_r,prc_recv_map,recv_sz_map);
 
+		std::cout << "m_oGrid.size(): " << m_oGrid.size() << std::endl;
+
 		std::cout << "m_oGrid_recv.size(): " << m_oGrid_recv.size() << std::endl;
+
+		// Reconstruct the new local grids
+		grids_reconstruct(m_oGrid_recv,loc_grid);
 	}
 
 	/*! \brief Constructor

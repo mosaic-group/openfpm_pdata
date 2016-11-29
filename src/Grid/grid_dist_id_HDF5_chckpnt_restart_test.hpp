@@ -16,9 +16,9 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
 {
 
 	// Input data
-	size_t k = 10;
+	size_t k = 1000;
 
-	size_t ghost_part = 0.01;
+	size_t ghost_part = 0.02;
 
 	// Domain
 	Box<2,float> domain({0.0,0.0},{1.0,1.0});
@@ -30,7 +30,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
 		return;
 
 	if (v_cl.getProcessUnitID() == 0)
-			std::cout << "Testing 2D grid HDF5 save" << std::endl;
+			std::cout << "Saving Distributed 2D Grid..." << std::endl;
 
 	// grid size
 	size_t sz[2];
@@ -50,17 +50,22 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
 	bool val = dec.check_consistency();
 	BOOST_REQUIRE_EQUAL(val,true);
 
-	// Save the vector
+	timer t;
+	t.start();
+	// Save the grid
     g_dist.save("grid_dist_id.h5");
+	t.stop();
+
+	std::cout << "Saving time: " << t.getwct() << std::endl;
 }
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 {
 
 	// Input data
-	size_t k = 100;
+	size_t k = 1000;
 
-	size_t ghost_part = 0.01;
+	size_t ghost_part = 0.02;
 
 	// Domain
 	Box<2,float> domain({0.0,0.0},{1.0,1.0});
@@ -72,7 +77,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 		return;
 
 	if (v_cl.getProcessUnitID() == 0)
-			std::cout << "Testing 2D grid HDF5 save/load" << std::endl;
+			std::cout << "Loading Distributed 2D Grid..." << std::endl;
 
 	// grid size
 	size_t sz[2];
@@ -85,38 +90,29 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 	// Distributed grid with id decomposition
 	grid_dist_id<2, float, scalar<float>, CartDecomposition<2,float>> g_dist(sz,domain,g);
 
+	timer t;
+	t.start();
+	// Save the grid
 	g_dist.load("grid_dist_id.h5");
-	/*
-	auto NN = vd.getCellList(0.5);
+	t.stop();
 
-	auto it_v = vd.getDomainIterator();
+	std::cout << "Loading time: " << t.getwct() << std::endl;
 
-	while (it_v.isNext())
+	auto it = g_dist.getDomainIterator();
+
+	size_t count = 0;
+
+	while (it.isNext())
 	{
 		//key
-		vect_dist_key_dx key = it_v.get();
+		grid_dist_key_dx<2> key = it.get();
 
-		size_t count = 0;
+		//g_dist.get(key);
 
-		// Get the position of the particles
-		Point<dim,float> p = vd.getPos(key);
-
-		// Get the neighborhood of the particle
-		auto cell_it = NN.template getNNIterator<NO_CHECK>(NN.getCell(p));
-
-		while(cell_it.isNext())
-		{
-			//Next particle in a cell
-			++cell_it;
-			count++;
-		}
-
-		std::cout << "Count: " << count << std::endl;
-
-		//Next particle in cell list
-		++it_v;
+		++it;
+		count++;
 	}
-*/
+	BOOST_REQUIRE_EQUAL(count, (size_t)1000*1000);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

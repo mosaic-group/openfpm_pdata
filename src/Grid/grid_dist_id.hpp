@@ -1677,12 +1677,15 @@ public:
 			//std::cout << "(" << gdb_ext_global.get(i).Dbox.getLow(0) << "; " << gdb_ext_global.get(i).Dbox.getHigh(0) << ")" << std::endl;
 			//std::cout << "I = " << i << ", Origin is (" << gdb_ext_global.get(i).origin.get(0) << "; " << gdb_ext_global.get(i).origin.get(1) << ")" << std::endl;
 
-		this->template map_(domain,dec,cd_sm,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global);
+		this->template map_(domain,dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global);
 	}
 
 
 	inline void save(const std::string & filename) const
 	{
+		//std::cout << "Loc_grid.size() before save: " << loc_grid.size() << std::endl;
+		//std::cout << "Gdb_ext.size() before save: " << gdb_ext.size() << std::endl;
+
 		//Pack_request vector
 		size_t req = 0;
 
@@ -1690,7 +1693,7 @@ public:
 		Packer<decltype(loc_grid),HeapMemory>::packRequest(loc_grid,req);
 		Packer<decltype(gdb_ext),HeapMemory>::packRequest(gdb_ext,req);
 
-		std::cout << "Req: " << req << std::endl;
+		//std::cout << "Req: " << req << std::endl;
 
 		// allocate the memory
 		HeapMemory pmem;
@@ -1714,9 +1717,6 @@ public:
 		int mpi_rank = v_cl.getProcessUnitID();
 		int mpi_size = v_cl.getProcessingUnits();
 
-		if (mpi_rank == 0)
-			std::cout << "Saving grid" << std::endl;
-
 		MPI_Comm comm = v_cl.getMPIComm();
 		MPI_Info info  = MPI_INFO_NULL;
 
@@ -1730,7 +1730,7 @@ public:
 		H5Pclose(plist_id);
 
 		size_t sz = pmem.size();
-		std::cout << "Pmem.size: " << pmem.size() << std::endl;
+		//std::cout << "Pmem.size: " << pmem.size() << std::endl;
 		openfpm::vector<size_t> sz_others;
 		v_cl.allGather(sz,sz_others);
 		v_cl.execute();
@@ -1758,7 +1758,8 @@ public:
 		//Create data space in memory
 		hid_t mem_dataspace_id = H5Screate_simple(1, mdim, NULL);
 
-		std::cout << "Sum: " << sum << std::endl;
+		if (mpi_rank == 0)
+			std::cout << "Total object size: " << sum << std::endl;
 
 		//Create data set in file
 		hid_t file_dataset = H5Dcreate (file, "grid_dist", H5T_NATIVE_CHAR, file_dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
@@ -1786,7 +1787,7 @@ public:
 	    		offset[0] += sz_others.get(i);
 	    }
 
-	    std::cout << "MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << ", Offset: " << offset[0] << ", Block: " << block[0] << std::endl;
+	    //std::cout << "MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << ", Offset: " << offset[0] << ", Block: " << block[0] << std::endl;
 
 	    int metadata[mpi_size];
 
@@ -1829,9 +1830,6 @@ public:
 		int mpi_rank = v_cl.getProcessUnitID();
 		int mpi_size = v_cl.getProcessingUnits();
 
-		if (mpi_rank == 0)
-			std::cout << "Loading" << std::endl;
-
 		// Set up file access property list with parallel I/O access
 		hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
 		H5Pset_fapl_mpio(plist_id, comm, info);
@@ -1852,8 +1850,8 @@ public:
 
 		hssize_t mpi_size_old = H5Sget_select_npoints (file_dataspace_id);
 
-		if (mpi_rank == 0)
-			printf ("\nOld MPI size: %llu\n", mpi_size_old);
+		//if (mpi_rank == 0)
+			//printf ("\nOld MPI size: %llu\n", mpi_size_old);
 
 	  	//Where to read metadata
 	  	int metadata_out[mpi_size_old];
@@ -1869,7 +1867,7 @@ public:
 		//Create data space in memory
 		hid_t mem_dataspace_id = H5Screate_simple(1, mdim, NULL);
 
-
+/*
 		if (mpi_rank == 0)
 		{
 			hssize_t size;
@@ -1879,10 +1877,10 @@ public:
 			size = H5Sget_select_npoints (file_dataspace_id);
 			printf ("dataspace_id size: %llu\n", size);
 		}
-
+*/
 	  	// Read the dataset.
 	    H5Dread(dataset, H5T_NATIVE_INT, mem_dataspace_id, file_dataspace_id, plist_id, metadata_out);
-
+/*
 		if (mpi_rank == 0)
 		{
 			std::cout << "Metadata_out[]: ";
@@ -1892,7 +1890,7 @@ public:
 			}
 			std::cout << " " << std::endl;
 		}
-
+*/
 	    //Open dataset
 	    hid_t dataset_2 = H5Dopen (file, "grid_dist", H5P_DEFAULT);
 
@@ -1958,7 +1956,7 @@ public:
 	    //hsize_t stride[1] = {1};
 	    hsize_t count[1] = {1};
 
-	    std::cout << "LOAD: MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << ", Offset: " << offset[0] << ", Offset_add: " << offset_add[0] << ", Block: " << block[0] << ", Block_add: " << block_add[0] << std::endl;
+	    //std::cout << "LOAD: MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << ", Offset: " << offset[0] << ", Offset_add: " << offset_add[0] << ", Block: " << block[0] << ", Block_add: " << block_add[0] << std::endl;
 
 
 		//Select file dataspace
@@ -1977,7 +1975,7 @@ public:
 		//Create data space in memory
 		hid_t mem_dataspace_id_2 = H5Screate_simple(1, mdim_2, NULL);
 		hid_t mem_dataspace_id_3 = H5Screate_simple(1, mdim_3, NULL);
-
+/*
 		if (mpi_rank == 0)
 		{
 			hssize_t size2;
@@ -1997,7 +1995,7 @@ public:
 			size2 = H5Sget_select_npoints (file_dataspace_id_3);
 			printf ("LOAD: dataspace_id_3 size: %llu\n", size2);
 		}
-
+*/
 		size_t sum = 0;
 
 		for (int i = 0; i < mpi_size_old; i++)
@@ -2006,35 +2004,63 @@ public:
 		}
 
 
-		std::cout << "LOAD: sum: " << sum << std::endl;
+		//std::cout << "LOAD: sum: " << sum << std::endl;
 
 		// allocate the memory
 		HeapMemory pmem;
+		HeapMemory pmem2;
 		//pmem.allocate(req);
-		ExtPreAlloc<HeapMemory> & mem = *(new ExtPreAlloc<HeapMemory>(block[0]+block_add[0],pmem));
+		ExtPreAlloc<HeapMemory> & mem = *(new ExtPreAlloc<HeapMemory>(block[0],pmem));
 		mem.incRef();
+		ExtPreAlloc<HeapMemory> & mem2 = *(new ExtPreAlloc<HeapMemory>(block_add[0],pmem2));
+		mem2.incRef();
 
 	  	// Read the dataset.
 	    H5Dread(dataset_2, H5T_NATIVE_CHAR, mem_dataspace_id_2, file_dataspace_id_2, plist_id, (char *)mem.getPointer());
 
 	    // Read the dataset.
-		H5Dread(dataset_2, H5T_NATIVE_CHAR, mem_dataspace_id_3, file_dataspace_id_3, plist_id, (char *)mem.getPointer());
+		H5Dread(dataset_2, H5T_NATIVE_CHAR, mem_dataspace_id_3, file_dataspace_id_3, plist_id, (char *)mem2.getPointer());
 
 		mem.allocate(pmem.size());
-		std::cout << "Mem.size(): " << mem.size() << " = " << block[0]+block_add[0] << std::endl;
-
-	    // Close the dataset.
-	    H5Dclose(dataset);
-	    H5Dclose(dataset_2);
-
-	    // Close the file.
-	    H5Fclose(file);
-	    H5Pclose(plist_id);
+		mem2.allocate(pmem2.size());
+		//std::cout << "Mem+mem2.size(): " << mem.size() + mem2.size() << " = " << block[0]+block_add[0] << std::endl;
 
 		Unpack_stat ps;
 
 		Unpacker<decltype(loc_grid_old),HeapMemory>::unpack(mem,loc_grid_old,ps);
 		Unpacker<decltype(gdb_ext_old),HeapMemory>::unpack(mem,gdb_ext_old,ps);
+
+		Unpack_stat ps2;
+
+
+		openfpm::vector<device_grid> loc_grid_old_unp;
+		openfpm::vector<GBoxes<device_grid::dims>> gdb_ext_old_unp;
+
+		Unpacker<decltype(loc_grid_old),HeapMemory>::unpack(mem2,loc_grid_old_unp,ps2);
+		Unpacker<decltype(gdb_ext_old),HeapMemory>::unpack(mem2,gdb_ext_old_unp,ps2);
+/*
+		std::cout << "Loc_grid_old.size() before merge: " << loc_grid_old.size() << std::endl;
+		std::cout << "Gdb_ext_old.size() before merge: " << gdb_ext_old.size() << std::endl;
+
+		std::cout << "Loc_grid_old_unp.size() before merge: " << loc_grid_old_unp.size() << std::endl;
+		std::cout << "Gdb_ext_old_unp.size() before merge: " << gdb_ext_old_unp.size() << std::endl;
+*/
+		for (size_t i = 0; i < loc_grid_old_unp.size(); i++)
+			loc_grid_old.add(loc_grid_old_unp.get(i));
+
+		for (size_t i = 0; i < gdb_ext_old_unp.size(); i++)
+			gdb_ext_old.add(gdb_ext_old_unp.get(i));
+/*
+		std::cout << "Loc_grid_old.size() after merge: " << loc_grid_old.size() << std::endl;
+		std::cout << "Gdb_ext_old.size() after merge: " << gdb_ext_old.size() << std::endl;
+		std::cout << "*********************************" << std::endl;
+*/
+	    // Close the dataset.
+	    H5Dclose(dataset);
+	    H5Dclose(dataset_2);
+	    // Close the file.
+	    H5Fclose(file);
+	    H5Pclose(plist_id);
 
 		mem.decRef();
 		delete &mem;
