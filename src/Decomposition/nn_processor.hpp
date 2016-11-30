@@ -338,23 +338,6 @@ public:
 		return *this;
 	}
 
-	/*! \brief Refine the ss_box to have the smallest size on each direction of the local sub-domains and adjacent (from other processor) one
-	 *
-	 * \param ss_box box that store the smallest size of the sub-domain
-	 *
-	 */
-	void refine_ss_box(Box<dim,T> & ss_box)
-	{
-		for (size_t p = 0 ; p < getNNProcessors() ; p++)
-		{
-			const openfpm::vector< ::Box<dim,T> > & list_p_box = getNearSubdomains(IDtoProc(p));
-
-			// Create the smallest box contained in all sub-domain
-			for (size_t b = 0 ; b < list_p_box.size() ; b++)
-				ss_box.contained(list_p_box.get(b));
-		}
-	}
-
 	/*! \brief Create the list of adjacent processors and the list of adjacent sub-domains
 	 *
 	 * \param box_nn_processors

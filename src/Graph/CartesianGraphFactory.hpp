@@ -25,6 +25,7 @@
 template<unsigned int dim, typename G_v, int prp>
 struct fill_id
 {
+	//! function that fill with linearization indexes
 	static inline void fill(G_v & g_v, const grid_key_dx<dim> & gk, const grid_sm<dim, void> & gs)
 	{
 		g_v.template get<prp>() = gs.LinId(gk);
@@ -38,6 +39,7 @@ struct fill_id
 template<unsigned int dim, typename G_v>
 struct fill_id<dim, G_v, NO_VERTEX_ID>
 {
+	//! function that fill with linearization indexes
 	static inline void fill(G_v & g_v, const grid_key_dx<dim> & gk, const grid_sm<dim, void> & gs)
 	{
 	}
@@ -219,7 +221,7 @@ public:
 /*! \brief Operator for vector and scalar property
  *
  * \tparam i Size of the property
- * \tparam p Type of the property
+ * \tparam p Type of the property boost mpl
  * \tparam Graph Graph
  * \tparam pos Array of properties
  */
@@ -227,7 +229,10 @@ template<int i, typename p, typename Graph, int ... pos>
 struct fill_prop_by_type
 {
 
+	//! Get the element 0
 	typedef typename boost::mpl::at<p, boost::mpl::int_<0>>::type v_element;
+
+	//! Get the property v_element (v_element is a number)
 	typedef typename boost::mpl::at<typename Graph::V_type::type, v_element>::type pos_prop_type;
 
 	enum
@@ -266,7 +271,16 @@ template<unsigned int dim, int lin_id, typename Graph, int se, typename T, unsig
 class Graph_constructor_impl
 {
 public:
-	//! Construct cartesian graph
+
+	/*! \brief Construct a cartesian graph
+	 *
+	 * \param sz size of the partesian graph
+	 * \param dom domain where this cartesian graph is defined (used to fill the coordinates)
+	 * \param bc boundary conditions (torus or cube)
+	 *
+	 * \return the constructed graph
+	 *
+	 */
 	static Graph construct(const size_t (& sz)[dim], Box<dim,T> dom, const size_t(& bc)[dim])
 	{
 		// Calculate the size of the hyper-cubes on each dimension
@@ -378,7 +392,16 @@ template<unsigned int dim, int lin_id, typename Graph, typename T, unsigned int 
 class Graph_constructor_impl<dim, lin_id, Graph, NO_EDGE, T, dim_c, pos...>
 {
 public:
-	//! Construct cartesian graph
+
+	/*! \brief Construct a cartesian graph
+	 *
+	 * \param sz size of the partesian graph
+	 * \param dom domain where this cartesian graph is defined (used to fill the coordinates)
+	 * \param bc boundary conditions (torus or cube)
+	 *
+	 * \return the constructed graph
+	 *
+	 */
 	static Graph construct(const size_t ( & sz)[dim], Box<dim,T> dom, const size_t(& bc)[dim])
 	{
 		// Calculate the size of the hyper-cubes on each dimension
@@ -492,40 +515,6 @@ public:
 	 * dim_c. One property can be used to store the contact size or the d-dimensional
 	 * surface in common between two connected hyper-cube.
 	 *
-	 * \param sz Vector that store the size of the grid on each dimension
-	 * \param dom Box enclosing the physical domain
-	 *
-	 * \tparam se Indicate which properties fill with the contact size. The
-	 *           contact size is the point, line , surface, d-dimensional object size
-	 *           in contact (in common) between two hyper-cube. NO_EDGE indicate
-	 *           no property will store this information
-	 * \tparam T type of the domain like (int real complex ... )
-	 * \tparam dim_c Connectivity dimension
-	 * \tparam pos... (optional)one or more integer indicating the spatial properties
-	 *
-	 */
-
-/*	template <int se,typename T, unsigned int dim_c, int... pos>
-	static Graph construct(const size_t (& sz)[dim], Box<dim,T> dom )
-	{
-		return Graph_constructor_impl<dim,Graph,se,T,dim_c,pos...>::construct(sz,dom,bc);
-	}*/
-
-	/*!
-	 *
-	 * \brief Construct a cartesian graph, with V and E edge properties
-	 *
-	 * Construct a cartesian graph, with V and E edge properties
-	 *
-	 * Each vertex is a subspace (Hyper-cube) of dimension dim, each vertex is
-	 * connected with an edge if two vertex (Hyper-cube) share a element of dimension grater than
-	 * dim_c. One property can be used to store the contact size or the d-dimensional
-	 * surface in common between two connected hyper-cube.
-	 *
-	 * \param sz Vector that store the size of the grid on each dimension
-	 * \param dom Box enclosing the physical domain
-	 * \param bc boundary conditions {PERIODIC and NON_PERIODIC}
-	 *
 	 * \tparam se Indicate which properties fill with the contact size. The
 	 *           contact size is the point, line , surface, d-dimensional object size
 	 *           in contact (in common) between two hyper-cube. NO_EDGE indicate
@@ -534,6 +523,12 @@ public:
 	 * \tparam T type of the domain like (int real complex ... )
 	 * \tparam dim_c Connectivity dimension
 	 * \tparam pos... (optional)one or more integer indicating the spatial properties
+	 *
+	 * \param sz store the size of the cartesian grid on each dimension
+	 * \param dom Box enclosing the physical domain
+	 * \param bc boundary conditions {PERIODIC = torus and NON_PERIODIC = cube}
+	 *
+	 * \return the constructed graph
 	 *
 	 */
 	template<int se, int id_prp, typename T, unsigned int dim_c, int ... pos>

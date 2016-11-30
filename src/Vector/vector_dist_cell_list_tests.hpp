@@ -552,8 +552,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
-	print_test("Testing 3D periodic vector symmetric cell-list k=",k);
-	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list k=" << k );
+	print_test("Testing 3D periodic vector symmetric crs cell-list k=",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric crs cell-list k=" << k );
 
 	Box<3,float> box({-L,-L,-L},{L,L,L});
 
@@ -655,31 +655,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 
 	auto NN2 = vd.getCellListSym(r_cut);
 
-	int debug = 0;
-	debug++;
-
-	auto debug_it = vd.getDomainAndGhostIterator();
-
-	while (debug_it.isNext())
-	{
-		auto key = debug_it.get();
-
-		if (vd.getProp<2>(key) == 1698)
-		{
-			int debug = 0;
-			debug++;
-		}
-
-		++debug_it;
-	}
-
-	vd.write("debug_decomp_crs_part");
-	vd.getDecomposition().write("debug_decomp_crs");
-	std::cout << "NN2:   " << NN2.getCell(vd.getPos(4853)) << std::endl;
-	std::cout << "NN2 Grid:   " << NN2.getCellGrid(vd.getPos(4853)).to_string() << std::endl;
-
-	int debug_cnt = 0;
-
 	// In case of CRS we have to iterate particles within some cells
 	// here we define whichone
 	auto p_it2 = vd.getParticleIteratorCRS(NN2);
@@ -689,15 +664,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 	{
 		auto p = p_it2.get();
 
-		debug_cnt++;
 		Point<3,float> xp = vd.getPos(p);
-
-		if (debug_cnt == 3762  && v_cl.getProcessUnitID() == 0)
-		{
-			std::cout << " P local " << p << "      " << vd.getProp<2>(p) << std::endl;
-			int debug = 0;
-			debug++;
-		}
 
 		auto Np = p_it2.getNNIteratorCSR(vd.getPosVector());
 
@@ -732,16 +699,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 				vd.getProp<4>(q).last().xq = xp;
 				vd.getProp<4>(p).last().id = vd.getProp<2>(q);
 				vd.getProp<4>(q).last().id = vd.getProp<2>(p);
-
-				if (v_cl.getProcessUnitID() == 0 && vd.getProp<2>(p) == 1698)
-				{
-					std::cerr << "NN " << vd.getProp<2>(q) << std::endl;
-				}
-
-				if (v_cl.getProcessUnitID() == 0 && vd.getProp<2>(q) == 1689)
-				{
-					std::cerr << "NN " << vd.getProp<2>(p) << std::endl;
-				}
 			}
 
 			++Np;
@@ -767,18 +724,18 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 
 		ret &= vd.getProp<3>(p).size() == vd.getProp<4>(p).size();
 
-		if (v_cl.getProcessUnitID() == 0)
-		{
-			std::cerr << "Particle: " << p.getKey()  <<  "   Position: " << Point<3,float>(vd.getPos(p)).toString() << std::endl;
+//		if (v_cl.getProcessUnitID() == 0)
+//		{
+//			std::cerr << "Particle: " << p.getKey()  <<  "   Position: " << Point<3,float>(vd.getPos(p)).toString() << std::endl;
 
 			for (size_t i = 0 ; i < vd.getProp<4>(p).size() ; i++)
 			{
-				std::cerr << "POSITION: " << vd.getProp<3>(p).get(i).xq.toString() << std::endl;
+//				std::cerr << "POSITION: " << vd.getProp<3>(p).get(i).xq.toString() << std::endl;
 
-				std::cerr << "ID nn " << vd.getProp<3>(p).get(i).id << "     " << vd.getProp<4>(p).get(i).id << std::endl;
+//				std::cerr << "ID nn " << vd.getProp<3>(p).get(i).id << "     " << vd.getProp<4>(p).get(i).id << std::endl;
 				ret &= vd.getProp<3>(p).get(i).id == vd.getProp<4>(p).get(i).id;
 			}
-		}
+//		}
 
 		if (ret == false)
 			break;

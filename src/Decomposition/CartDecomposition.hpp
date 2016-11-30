@@ -142,9 +142,6 @@ protected:
 	//! Create distribution
 	Distribution dist;
 
-	//! Smallest subdivision on each direction
-	::Box<dim,T> ss_box;
-
 	//! Processor bounding box
 	::Box<dim,T> bbox;
 
@@ -261,10 +258,6 @@ public:
 		// optimize the decomposition
 		d_o.template optimize<nm_v::sub_id, nm_v::proc_id>(dist.getGraph(), p_id, loc_box, box_nn_processor,ghe,bc);
 
-		// reset ss_box
-		ss_box = domain;
-		ss_box -= ss_box.getP1();
-
 		// Initialize ss_box and bbox
 		if (loc_box.size() >= 0)
 		{
@@ -283,13 +276,9 @@ public:
 			// Calculate the bound box
 			bbox.enclose(sub_d);
 			proc_box.enclose(loc_box.get(s));
-
-			// Create the smallest box contained in all sub-domain
-			ss_box.contained(sub_d);
 		}
 
 		nn_prcs<dim,T>::create(box_nn_processor, sub_domains);
-		nn_prcs<dim,T>::refine_ss_box(ss_box);
 		nn_prcs<dim,T>::applyBC(domain,ghost,bc);
 
 		// fill fine_s structure
@@ -318,8 +307,6 @@ public:
 	 */
 	void Initialize_geo_cell_lists()
 	{
-		// Get the smallest sub-division on each direction
-		::Box<dim, T> unit = getSmallestSubdivision();
 		// Get the processor bounding Box
 		::Box<dim,T> bound = getProcessorBounds();
 		// Not necessary, but I prefer
@@ -328,7 +315,7 @@ public:
 		// calculate the sub-divisions
 		size_t div[dim];
 		for (size_t i = 0; i < dim; i++)
-			div[i] = (size_t) ((bound.getHigh(i) - bound.getLow(i)) / unit.getHigh(i));
+			div[i] = (size_t) ((bound.getHigh(i) - bound.getLow(i)) / cd.getCellBox().getP2()[i]);
 
 		// Initialize the geo_cell structure
 		ie_ghost<dim,T>::Initialize_geo_cell(bound,div);
@@ -732,7 +719,6 @@ public:
 		std::copy(spacing,spacing+3,cart.spacing);
 
 		cart.bbox = bbox;
-		cart.ss_box = ss_box;
 		cart.ghost = g;
 
 		cart.dist = dist;
@@ -773,7 +759,6 @@ public:
 		cart.ghost = ghost;
 
 		cart.bbox = bbox;
-		cart.ss_box = ss_box;
 
 		for (size_t i = 0 ; i < dim ; i++)
 			cart.bc[i] = this->bc[i];
@@ -805,7 +790,6 @@ public:
 		ghost = cart.ghost;
 
 		bbox = cart.bbox;
-		ss_box = cart.ss_box;
 
 		for (size_t i = 0 ; i < dim ; i++)
 			bc[i] = cart.bc[i];
@@ -837,7 +821,6 @@ public:
 		ghost = cart.ghost;
 
 		bbox = cart.bbox;
-		ss_box = cart.ss_box;
 
 		for (size_t i = 0 ; i < dim ; i++)
 			bc[i] = cart.bc[i];
@@ -950,16 +933,6 @@ public:
 		applyPointBC(pt);
 
 		return fine_s.get(cd.getCell(p));
-	}
-
-	/*! \brief Get the smallest subdivision of the domain on each direction
-	 *
-	 * \return a box p1 is set to zero
-	 *
-	 */
-	const ::Box<dim,T> & getSmallestSubdivision()
-	{
-		return ss_box;
 	}
 
 	/*! \brief Get the periodicity on i dimension
@@ -1287,10 +1260,17 @@ public:
 		return domain_nn_calculator_cart<dim>::getDomainCells(shift,cell_shift,gs,proc_box,loc_box);
 	}
 
-	/*! \brief Get the domain anomalous cells
+	/*! \brief Get the anomalous cells
+	 *
+	 * This function include also a linearization of the indexes
 	 *
 	 * \param shift Shifting point
+	 * \param cell_shift where the processor cell-list start (In case of symmetric)
+	 *                   exist one global cell-list, but each processor span only one
+	 *                   part of it
 	 * \param gs grid extension
+	 *
+	 * \return the anomalous cells with neighborhood
 	 *
 	 */
 	openfpm::vector<subsub_lin<dim>> & getAnomDomainCells(grid_key_dx<dim> & shift, grid_key_dx<dim> & cell_shift, grid_sm<dim,void> & gs)

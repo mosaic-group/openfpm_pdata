@@ -42,8 +42,8 @@ private:
 	 *
 	 * \see duplicate (in case of extended domain)
 	 *
-	 * \param cart Cartesian decomposition object
-	 * \param box Extended domain
+	 * \param dec Cartesian decomposition object
+	 * \param ext_dom Extended domain
 	 *
 	 */
 	void extend_subdomains(const CartDecomposition<dim,T,Memory,Distribution> & dec, const ::Box<dim,T> & ext_dom)
@@ -52,12 +52,6 @@ private:
 		typedef ::Box<dim,T> b;
 
 		this->bbox.zero();
-
-		for (size_t i = 0 ; i < dim ; i++)
-		{
-			this->ss_box.setLow(i,0.0);
-			this->ss_box.setHigh(i,ext_dom.getHigh(i) - ext_dom.getLow(i));
-		}
 
 		// Extend sub-domains
 		for (size_t i = 0 ; i < dec.sub_domains.size() ; i++)
@@ -83,16 +77,12 @@ private:
 
 			// Calculate the bound box
 			this->bbox.enclose(box);
-
-			// Create the smallest box contained in all sub-domain
-			this->ss_box.contained(box);
 		}
 	}
 
 	/*! \brief Extend the fines for the new Cartesian decomposition
 	 *
-	 * \param new_fines extended fine_s
-	 * \param old_fines old fine_s
+	 * \param dec Non-extended decomposition
 	 *
 	 */
 	void extend_fines(const CartDecomposition<dim,T> & dec)
@@ -171,6 +161,7 @@ public:
 	{
 	}
 
+	//! The non-extended decomposition base class
 	typedef CartDecomposition<dim,T,Memory,Distribution> base_type;
 
 	/*! \brief It create another object that contain the same decomposition information but with different ghost boxes and an extended domain
@@ -179,36 +170,37 @@ public:
 	 *
 	 * \verbatim
 	 *
-+--------------^--------^----------^----------+
-|              |        |          |          |
-|        A     |    E   |     F    |    N     |
-|    +-----------------------------------+---->
-|    |         |        |          |     |    |
-|  A |   A     |        |     F    |     |    |
-|    |         |        |          |     |    |
-|    |         |    E   +----------+  N  |  N |
-<--------------+        |          |     |    |
-|    |         |        |          |     |    |
-|    |         |        |     G    |     |    |
-|    |         |        |          +---------->
-|  B |   B     |        +----------+     |    |
-|    |         +--------+          |  M  |  M |
-|    |         |        |     H    |     |    |
-|    |         |        +-----+----+---------->
-<--------------+    D   |     |          |    |
-|    |         |        |  I  |     L    |  L |
-|  C |   C     |        |     |          |    |
-|    |         |        |     |          |    |
-|    +-----------------------------------+    |
-|              |        |     |               |
-|        C     |    D   |  I  |     L         |
-+--------------v--------v-----v---------------+
+	+--------------^--------^----------^----------+
+	|              |        |          |          |
+	|        A     |    E   |     F    |    N     |
+	|    +-----------------------------------+---->
+	|    |         |        |          |     |    |
+	|  A |   A     |        |     F    |     |    |
+	|    |         |        |          |     |    |
+	|    |         |    E   +----------+  N  |  N |
+	<--------------+        |          |     |    |
+	|    |         |        |          |     |    |
+	|    |         |        |     G    |     |    |
+	|    |         |        |          +---------->
+	|  B |   B     |        +----------+     |    |
+	|    |         +--------+          |  M  |  M |
+	|    |         |        |     H    |     |    |
+	|    |         |        +-----+----+---------->
+	<--------------+    D   |     |          |    |
+	|    |         |        |  I  |     L    |  L |
+	|  C |   C     |        |     |          |    |
+	|    |         |        |     |          |    |
+	|    +-----------------------------------+    |
+	|              |        |     |               |
+	|        C     |    D   |  I  |     L         |
+	+--------------v--------v-----v---------------+
 
 	 *
 	 * \endverbatim
 	 *
+	 * \param dec Decomposition
 	 * \param g ghost
-	 * \param domain extended domain (MUST be extended)
+	 * \param ext_domain extended domain (MUST be extended)
 	 *
 	 * \return a duplicated decomposition with different ghost boxes and an extended domain
 	 *
