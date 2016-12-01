@@ -983,7 +983,7 @@ public:
 		Packer<decltype(v_pos),HeapMemory>::packRequest(v_pos,req);
 		Packer<decltype(v_prp),HeapMemory>::packRequest(v_prp,req);
 
-		std::cout << "Req: " << req << std::endl;
+		//std::cout << "Req: " << req << std::endl;
 
 		// allocate the memory
 		HeapMemory pmem;
@@ -1081,7 +1081,7 @@ public:
 	    		offset[0] += sz_others.get(i);
 	    }
 
-	    std::cout << "MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << ", Offset: " << offset[0] << ", Block: " << block[0] << std::endl;
+	    //std::cout << "MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << ", Offset: " << offset[0] << ", Block: " << block[0] << std::endl;
 
 	    int metadata[mpi_size];
 
@@ -1143,10 +1143,10 @@ public:
 		hid_t file_dataspace_id = H5Dget_space(dataset);
 
 		hssize_t mpi_size_old = H5Sget_select_npoints (file_dataspace_id);
-
+/*
 		if (mpi_rank == 0)
 			printf ("\nOld MPI size: %llu\n", mpi_size_old);
-
+*/
 	  	//Where to read metadata
 	  	int metadata_out[mpi_size_old];
 
@@ -1160,8 +1160,7 @@ public:
 
 		//Create data space in memory
 		hid_t mem_dataspace_id = H5Screate_simple(1, mdim, NULL);
-
-
+/*
 		if (mpi_rank == 0)
 		{
 			hssize_t size;
@@ -1171,10 +1170,10 @@ public:
 			size = H5Sget_select_npoints (file_dataspace_id);
 			printf ("LOAD: dataspace_id size: %llu\n", size);
 		}
-
+*/
 	  	// Read the dataset.
 	    H5Dread(dataset, H5T_NATIVE_INT, mem_dataspace_id, file_dataspace_id, plist_id, metadata_out);
-
+/*
 		if (mpi_rank == 0)
 		{
 			std::cout << "Metadata_out[]: ";
@@ -1184,7 +1183,7 @@ public:
 			}
 			std::cout << " " << std::endl;
 		}
-
+*/
 	    //Open dataset
 	    hid_t dataset_2 = H5Dopen (file, "vector_dist", H5P_DEFAULT);
 
@@ -1268,7 +1267,7 @@ public:
 	    //hsize_t stride[1] = {1};
 	    hsize_t count[1] = {1};
 
-	    std::cout << "LOAD: MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << ", Offset: " << offset[0] << ", Offset_add: " << offset_add[0] << ", Block: " << block[0] << ", Block_add: " << block_add[0] << std::endl;
+	    //std::cout << "LOAD: MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << ", Offset: " << offset[0] << ", Offset_add: " << offset_add[0] << ", Block: " << block[0] << ", Block_add: " << block_add[0] << std::endl;
 /*
 	    std::cout << "LOAD: MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << std::endl;
 	    for (size_t i = 0; i < offset0.get(mpi_rank).size(); i++)
@@ -1305,7 +1304,7 @@ public:
 		//Create data space in memory
 		hid_t mem_dataspace_id_2 = H5Screate_simple(1, mdim_2, NULL);
 		hid_t mem_dataspace_id_3 = H5Screate_simple(1, mdim_3, NULL);
-
+/*
 		if (mpi_rank == 0)
 		{
 			hssize_t size2;
@@ -1325,7 +1324,7 @@ public:
 			size2 = H5Sget_select_npoints (file_dataspace_id_3);
 			printf ("LOAD: dataspace_id_3 size: %llu\n", size2);
 		}
-
+*/
 		size_t sum = 0;
 
 		for (int i = 0; i < mpi_size_old; i++)
@@ -1334,7 +1333,7 @@ public:
 		}
 
 
-		std::cout << "LOAD: sum: " << sum << std::endl;
+		//std::cout << "LOAD: sum: " << sum << std::endl;
 
 		// allocate the memory
 		HeapMemory pmem;
@@ -1353,7 +1352,7 @@ public:
 
 		mem.allocate(pmem.size());
 		mem2.allocate(pmem2.size());
-		std::cout << "Mem+mem2.size(): " << mem.size() + mem2.size() << " = " << block[0]+block_add[0] << std::endl;
+		//std::cout << "Mem+mem2.size(): " << mem.size() + mem2.size() << " = " << block[0]+block_add[0] << std::endl;
 
 		Unpack_stat ps;
 
@@ -1376,8 +1375,8 @@ public:
 	    H5Fclose(file);
 	    H5Pclose(plist_id);
 
-		std::cout << "V_pos.size(): " << v_pos.size() << std::endl;
-		std::cout << "V_pos_unp.size(): " << v_pos_unp.size() << std::endl;
+		//std::cout << "V_pos.size(): " << v_pos.size() << std::endl;
+		//std::cout << "V_pos_unp.size(): " << v_pos_unp.size() << std::endl;
 
 		mem.decRef();
 		delete &mem;
@@ -1387,10 +1386,12 @@ public:
 
 		g_m = v_pos.size();
 
-		std::cout << "V_pos.size() after merge: " << v_pos.size() << std::endl;
+		//std::cout << "V_pos.size() after merge: " << v_pos.size() << std::endl;
+
+		// Map particles
 		map();
 
-		std::cout << "V_pos.size() after merge and map: " << v_pos.size() << std::endl;
+		//std::cout << "V_pos.size() after merge and map: " << v_pos.size() << std::endl;
 	}
 
 	/*! \brief Output particle position and properties

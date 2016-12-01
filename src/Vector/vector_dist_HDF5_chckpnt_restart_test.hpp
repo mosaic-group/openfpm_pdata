@@ -20,192 +20,20 @@
 BOOST_AUTO_TEST_SUITE( vd_hdf5_chckpnt_rstrt_test )
 
 // Input data
-//Number of particles
+
+// Number of particles
 size_t k = 1000;
+
 // Dimensionality
 const size_t dim = 3;
 
 BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test )
 {
-	/////////////////
-
-	Vcluster & v_cl = create_vcluster();
-
-	if (v_cl.getProcessUnitID() == 0)
-		std::cout << "Saving Distributed 3D Vector..." << std::endl;
-
-	Box<dim,float> box;
-
-	for (size_t i = 0; i < dim; i++)
-	{
-		box.setLow(i,0.0);
-		box.setHigh(i,1.0);
-	}
-
-	// Boundary conditions
-	size_t bc[dim];
-
-	for (size_t i = 0; i < dim; i++)
-		bc[i] = NON_PERIODIC;
-
-	// ghost
-	Ghost<dim,float> ghost(0.1);
-
-	vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k,box,bc,ghost);
-
-	// Initialize a dist vector
-	//vd_initialize<dim>(vd, v_cl, k);
-
-	auto it = vd.getDomainIterator();
-
-	std::default_random_engine eg(v_cl.getProcessUnitID()*4313);
-	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
-
-	while (it.isNext())
-	{
-		auto key = it.get();
-
-		for (size_t i = 0; i < dim; i++)
-		{
-			vd.getPos(key)[i] = ud(eg);
-			//std::cout << "Value: " << vd.getPos(key)[i] << std::endl;
-		}
-
-		++it;
-	}
-
-	std::cout << "Size_local: " << vd.size_local_with_ghost() << std::endl;
-
-	vd.map();
-
-	std::cout << "Size_local after map: " << vd.size_local_with_ghost() << std::endl;
-
-	//vd.template ghost_get<0>();
-
-	//std::cout << "Size_local after ghost get: " << vd.size_local_with_ghost() << std::endl;
-
-	auto it_2 = vd.getDomainIterator();
-
-	while (it_2.isNext())
-	{
-		auto key = it_2.get();
-
-		//Put the forces
-		for (size_t i = 0; i < dim; i++)
-			vd.template getProp<0>(key)[i] = 0.51234;
-		++it_2;
-	}
-
-	timer t;
-	t.start();
-	// Save the vector
-    vd.save("vector_dist.h5");
-	t.stop();
-
-	std::cout << "Saving time: " << t.getwct() << std::endl;
-}
-
-BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
-{
-	Vcluster & v_cl = create_vcluster();
-
-	if (v_cl.getProcessUnitID() == 0)
-		std::cout << "Loading Distributed 3D Vector..." << std::endl;
-
-	const size_t dim = 3;
-
-	Box<dim,float> box;
-
-	for (size_t i = 0; i < dim; i++)
-	{
-		box.setLow(i,0.0);
-		box.setHigh(i,1.0);
-	}
-
-	// Boundary conditions
-	size_t bc[dim];
-
-	for (size_t i = 0; i < dim; i++)
-		bc[i] = NON_PERIODIC;
-
-	// ghost
-	Ghost<dim,float> ghost(0.1);
-
-	vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(0,box,bc,ghost);
-
-	timer t;
-	t.start();
-	// Save the vector
-    vd.load("vector_dist.h5");
-	t.stop();
-
-	std::cout << "Loading time: " << t.getwct() << std::endl;
-
-
-	size_t n_part = vd.size_local();
-	openfpm::vector<size_t> tot_n_part;
-	v_cl.allGather(n_part,tot_n_part);
-	v_cl.execute();
-
-	size_t sum = 0;
-
-	for (size_t i = 0; i < tot_n_part.size(); i++)
-		sum += tot_n_part.get(i);
-
-	// Check total number of real particles
-	BOOST_REQUIRE_EQUAL(sum,k);
-
-/*
-	auto it = vd.getDomainIterator();
-
-	while (it.isNext())
-	{
-		auto key = it.get();
-
-		for (size_t i = 0; i < dim; i++)
-		{
-			std::cout << "Pos: " << vd.getPos(key)[i] << std::endl;
-		}
-
-		++it;
-	}
-*/
-
-	//vd.template ghost_get<0>();
-
-
-	auto it_2 = vd.getDomainIterator();
-
-	while (it_2.isNext())
-	{
-		auto key = it_2.get();
-
-		//Put the forces
-		for (size_t i = 0; i < dim; i++)
-			//BOOST_CHECK_CLOSE(vd.template getProp<0>(key)[i],0.51234,0.0001);
-			std::cout << "Prop: " << vd.template getProp<0>(key)[i] << std::endl;
-		++it_2;
-	}
-
-}
-
-BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test_2 )
-{
-	// Input data
-	// Number of particles
-	size_t k = 100;
-
-	//Dimensinality of the space
-	const size_t dim = 3;
-
-	/////////////////
-
 	Vcluster & v_cl = create_vcluster();
 
 	if (v_cl.getProcessUnitID() == 0)
 		std::cout << "Saving distributed vector" << std::endl;
 
-
 	Box<dim,float> box;
 
 	for (size_t i = 0; i < dim; i++)
@@ -217,9 +45,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test_2 )
 	// Boundary conditions
 	size_t bc[dim];
 
-	const size_t Ng = 128;
+	const size_t Ng = cbrt(k);
 
-	// we create a 128x128x128 Grid iterator
+	// we create a Grid iterator
 	size_t sz[3] = {Ng,Ng,Ng};
 
 	for (size_t i = 0; i < dim; i++)
@@ -228,10 +56,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test_2 )
 	// ghost
 	Ghost<dim,float> ghost(1.0/(Ng-2));
 
-	vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k,box,bc,ghost);
+	vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(0,box,bc,ghost);
 
-	// Initialize a dist vector
-	//vd_initialize<dim>(vd, v_cl, k);
+	// Put particles
 
 	auto it = vd.getGridIterator(sz);
 
@@ -252,41 +79,42 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test_2 )
 	BOOST_REQUIRE_EQUAL(it.getSpacing(1),1.0f/(Ng-1));
 	BOOST_REQUIRE_EQUAL(it.getSpacing(2),1.0f/(Ng-1));
 
+	//std::cout << "Size_local: " << vd.size_local_with_ghost() << std::endl;
+
 	vd.map();
 
-	vd.template ghost_get<0>();
+	//std::cout << "Size_local after map: " << vd.size_local_with_ghost() << std::endl;
 
-	// The random generator engine
-	std::default_random_engine eg(v_cl.getProcessUnitID()*4313);
-	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+	// Put forces
 
-	// Create a vector of random elements on each processor
+	auto it2 = vd.getDomainIterator();
 
-	auto it_2 = vd.getIterator();
-
-	while (it.isNext())
+	while (it2.isNext())
 	{
-		auto key = it_2.get();
+		auto key = it2.get();
 
 		//Put the forces
 		for (size_t i = 0; i < dim; i++)
-			vd.template getProp<0>(key)[i] = ud(eg);
-			//vd.getPos(key)[i]
-		++it_2;
+			vd.template getProp<0>(key)[i] = 0.51234;
+
+		++it2;
 	}
 
+	timer t;
+	t.start();
 	// Save the vector
-    vd.save("vector_dist_2.h5");
+    vd.save("vector_dist.h5");
+	t.stop();
+
+	std::cout << "Saving time: " << t.getwct() << std::endl;
 }
 
-BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test_2 )
+BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
 {
 	Vcluster & v_cl = create_vcluster();
 
 	if (v_cl.getProcessUnitID() == 0)
 		std::cout << "Loading distributed vector" << std::endl;
-
-	const size_t dim = 3;
 
 	Box<dim,float> box;
 
@@ -303,9 +131,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test_2 )
 		bc[i] = NON_PERIODIC;
 
 
-	const size_t Ng = 128;
+	const size_t Ng = cbrt(k);
 
-	// we create a 128x128x128 Grid iterator
+	// we create a Grid iterator
 	size_t sz[3] = {Ng,Ng,Ng};
 
 	// ghost
@@ -313,9 +141,30 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test_2 )
 
 	vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(0,box,bc,ghost);
 
-	vd.load("vector_dist_2.h5");
+	timer t;
+	t.start();
+	// Save the vector
+    vd.load("vector_dist.h5");
+	t.stop();
 
-	auto NN = vd.getCellList(0.5);
+	std::cout << "Loading time: " << t.getwct() << std::endl;
+
+	/////////////////// Checking data ///////////////////////
+
+	// Check total number of particles
+	size_t n_part = vd.size_local();
+	openfpm::vector<size_t> tot_n_part;
+	v_cl.allGather(n_part,tot_n_part);
+	v_cl.execute();
+
+	size_t sum = 0;
+
+	for (size_t i = 0; i < tot_n_part.size(); i++)
+		sum += tot_n_part.get(i);
+
+	BOOST_REQUIRE_EQUAL(sum,k);
+
+    // Check spacing (positions)
 
 	auto it = vd.getGridIterator(sz);
 
@@ -329,6 +178,23 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test_2 )
 	BOOST_REQUIRE_EQUAL(it.getSpacing(0),1.0f/(Ng-1));
 	BOOST_REQUIRE_EQUAL(it.getSpacing(1),1.0f/(Ng-1));
 	BOOST_REQUIRE_EQUAL(it.getSpacing(2),1.0f/(Ng-1));
+
+/*
+	// Check properties
+
+	auto it2 = vd.getDomainIterator();
+
+	while (it2.isNext())
+	{
+		auto key = it2.get();
+
+		//Put the forces
+		for (size_t i = 0; i < dim; i++)
+			BOOST_CHECK_CLOSE(vd.template getProp<0>(key)[i],0.51234,0.0001);
+
+		++it2;
+	}
+*/
 }
 
 BOOST_AUTO_TEST_SUITE_END()

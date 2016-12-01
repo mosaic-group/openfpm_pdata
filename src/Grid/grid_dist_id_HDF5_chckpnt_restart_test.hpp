@@ -16,7 +16,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
 {
 
 	// Input data
-	size_t k = 1000;
+	size_t k = 100;
 
 	size_t ghost_part = 0.02;
 
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 {
 
 	// Input data
-	size_t k = 1000;
+	size_t k = 100;
 
 	size_t ghost_part = 0.02;
 
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 
 	std::cout << "Loading time: " << t.getwct() << std::endl;
 
-	auto it = g_dist.getDomainIterator();
+	auto it = g_dist.getOldDomainIterator();
 
 	size_t count = 0;
 
@@ -112,7 +112,17 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 		++it;
 		count++;
 	}
-	BOOST_REQUIRE_EQUAL(count, (size_t)1000*1000);
+
+	openfpm::vector<size_t> count_total;
+	v_cl.allGather(count,count_total);
+	v_cl.execute();
+
+	size_t sum = 0;
+
+	for (size_t i = 0; i < count_total.size(); i++)
+		sum += count_total.get(i);
+
+	BOOST_REQUIRE_EQUAL(sum, (size_t)k*k);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
