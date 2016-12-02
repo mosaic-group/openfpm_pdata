@@ -548,6 +548,43 @@ public:
 		return ver;
 	}
 
+	/*! \brief for each particle get the symmetric verlet list
+	 *
+	 * \param r_cut cut-off radius
+	 *
+	 * \return the verlet list
+	 *
+	 */
+	VerletList<dim,St,FAST,shift<dim,St> > getVerletCrs(St r_cut)
+	{
+		VerletList<dim,St,FAST,shift<dim,St>> ver;
+
+		// Processor bounding box
+		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+
+		// Initialize the verlet list
+		ver.InitializeCrs(getDecomposition().getDomain(),pbox,getDecomposition().getGhost(),r_cut,v_pos,g_m);
+
+		// Get the internal cell list
+		auto & NN = ver.getInternalCellList();
+
+		// Shift
+		grid_key_dx<dim> cell_shift = NN.getShift();
+
+		// Shift
+		grid_key_dx<dim> shift = NN.getShift();
+
+		// Add padding
+		for (size_t i = 0 ; i < dim ; i++)
+			shift.set_d(i,shift.get(i) + NN.getPadding(i));
+
+		grid_sm<dim,void> gs = NN.getInternalGrid();
+
+		ver.createVerletCrs(r_cut,g_m,v_pos,getDecomposition().getDomainCells(shift,cell_shift,gs),getDecomposition().getAnomDomainCells(shift,cell_shift,gs));
+
+		return ver;
+	}
+
 	/*! \brief for each particle get the verlet list
 	 *
 	 * \param r_cut cut-off radius
@@ -584,7 +621,27 @@ public:
 	 */
 	void updateVerlet(VerletList<dim,St,FAST,shift<dim,St> > & ver, St r_cut, size_t opt = VL_NON_SYMMETRIC)
 	{
-		ver.update(getDecomposition().getDomain(),r_cut,v_pos,g_m, opt);
+		if (opt == VL_CRS_SYMMETRIC)
+		{
+			// Get the internal cell list
+			auto & NN = ver.getInternalCellList();
+
+			// Shift
+			grid_key_dx<dim> cell_shift = NN.getShift();
+
+			// Shift
+			grid_key_dx<dim> shift = NN.getShift();
+
+			// Add padding
+			for (size_t i = 0 ; i < dim ; i++)
+				shift.set_d(i,shift.get(i) + NN.getPadding(i));
+
+			grid_sm<dim,void> gs = NN.getInternalGrid();
+
+			ver.updateCrs(getDecomposition().getDomain(),r_cut,v_pos,g_m,getDecomposition().getDomainCells(shift,cell_shift,gs),getDecomposition().getAnomDomainCells(shift,cell_shift,gs));
+		}
+		else
+			ver.update(getDecomposition().getDomain(),r_cut,v_pos,g_m, opt);
 	}
 
 	/*! \brief for each particle get the verlet list

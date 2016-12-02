@@ -623,7 +623,7 @@ public:
 
 		aBC=true;
 
-		return add_box_periodic(domain,ghost,bc);
+		add_box_periodic(domain,ghost,bc);
 	}
 
 	/*! \brief Check if the nn_prcs contain the same information

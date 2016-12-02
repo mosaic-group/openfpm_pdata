@@ -9,6 +9,7 @@
  * \subpage Vector_4_cp
  * \subpage Vector_4_mp_cl
  * \subpage Vector_5_md_vl_sym
+ * \subpage Vector_5_md_vl_sym_crs
  * \subpage Vector_6_complex_usage
  *
  */
