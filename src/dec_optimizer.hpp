@@ -541,9 +541,6 @@ private:
 			sub_id++;
 		}
 
-		// Construct box box_nn_processor from the constructed domain
-		construct_box_nn_processor<p_id>(graph,box_nn_processor,lb,ghe,bc,pr_id);
-
 		return sub_id;
 	}
 
@@ -662,6 +659,10 @@ public:
 		if (pr_id == -1)
 		{
 			optimize<p_sub,p_id>(key_seed,graph,pr_id,lb,box_nn_processor,ghe,bc);
+
+			// Construct box box_nn_processor from the constructed domain
+			construct_box_nn_processor<p_id>(graph,box_nn_processor,lb,ghe,bc,pr_id);
+
 			return;
 		}
 
@@ -680,6 +681,9 @@ public:
 			// new seed
 			key_seed = search_seed<p_id,p_sub>(graph,pr_id);
 		}
+
+		// Construct box box_nn_processor from the constructed domain
+		construct_box_nn_processor<p_id>(graph,box_nn_processor,lb,ghe,bc,pr_id);
 	}
 };
 
