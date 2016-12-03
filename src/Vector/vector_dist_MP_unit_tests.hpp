@@ -102,9 +102,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_test )
 		// For each neighborhood of the particle p
 		while (Np.isNext())
 		{
-			// Neighborhood particle q
-			auto q = Np.get();
-
 			// Count the number of particles
 			nn_count++;
 
@@ -145,9 +142,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_test )
 		// For each neighborhood of the particle p
 		while (Np.isNext())
 		{
-			// Get the particle q near to p
-			auto q = Np.getP();
-
 			// Get from which phase it come from
 			auto ph_q = Np.getV();
 
