@@ -9,6 +9,7 @@
 #define SRC_DECOMPOSITION_DISTRIBUTION_DISTRIBUTION_UNIT_TESTS_HPP_
 
 #include "config.h"
+#include "SpaceDistribution.hpp"
 
 /*! \brief Set a sphere as high computation cost
  *
@@ -208,8 +209,8 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 
 #else
 
-                bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_vtk_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/" + std::to_string(v_cl.getProcessUnitID()) + "_vtk_parmetis_distribution_0_test.vtk");
-                BOOST_REQUIRE_EQUAL(true,test);
+        bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_vtk_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/" + std::to_string(v_cl.getProcessUnitID()) + "_vtk_parmetis_distribution_0_test.vtk");
+        BOOST_REQUIRE_EQUAL(true,test);
 
 #endif
 	}
@@ -297,16 +298,15 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 
 	//! [Initialize a ParMetis Cartesian graph and decompose]
 
-	// write the first decomposition
-	pmet_dist.write("vtk_dist_parmetis_distribution_0");
-
 	if (v_cl.getProcessUnitID() == 0)
 	{
+		// write the first decomposition
+		pmet_dist.write("vtk_dist_parmetis_distribution_0");
 
 #ifdef HAVE_OSX
 
-                bool test = compare("vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_osx_test.vtk");
-                BOOST_REQUIRE_EQUAL(true,test);
+        bool test = compare("vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_osx_test.vtk");
+        BOOST_REQUIRE_EQUAL(true,test);
 
 #else
 
@@ -358,6 +358,51 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 
 			}
 		}
+	}
+
+	//! [refine with dist_parmetis the decomposition]
+}
+
+BOOST_AUTO_TEST_CASE( Space_distribution_test)
+{
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() != 3)
+		return;
+
+	//! [Initialize a Space Cartesian graph and decompose]
+
+	SpaceDistribution<3, float> space_dist(v_cl);
+
+	// Physical domain
+	Box<3, float> box( { 0.0, 0.0, 0.0 }, { 10.0, 10.0, 10.0 });
+
+	// Grid info
+	grid_sm<3, void> info( { 17, 17, 17 });
+
+	// Initialize Cart graph and decompose
+	space_dist.createCartGraph(info,box);
+
+	// first decomposition
+	space_dist.decompose();
+
+	//! [Initialize a Space Cartesian graph and decompose]
+
+	if (v_cl.getProcessUnitID() == 0)
+	{
+		// write the first decomposition
+		space_dist.write("vtk_dist_space_distribution_0");
+
+#ifdef HAVE_OSX
+
+        bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_osx_test.vtk");
+        BOOST_REQUIRE_EQUAL(true,test);
+
+#else
+
+		bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_vtk_dist_space_distribution_0.vtk","src/Decomposition/Distribution/test_data/" + std::to_string(v_cl.getProcessUnitID()) + + "_vtk_dist_space_distribution_0_test.vtk");
+		BOOST_REQUIRE_EQUAL(true,test);
+#endif
 	}
 
 	//! [refine with dist_parmetis the decomposition]
