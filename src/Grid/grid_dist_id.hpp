@@ -1694,10 +1694,11 @@ public:
 
 		std::cout << "Global size: " << gdb_ext_global.size() << std::endl;
 
-		//for (size_t i = 0; i < gdb_ext_global.size(); i++)
-			//std::cout << "(" << gdb_ext_global.get(i).Dbox.getLow(0) << "; " << gdb_ext_global.get(i).Dbox.getHigh(0) << ")" << std::endl;
-			//std::cout << "I = " << i << ", Origin is (" << gdb_ext_global.get(i).origin.get(0) << "; " << gdb_ext_global.get(i).origin.get(1) << ")" << std::endl;
-
+		for (size_t i = 0; i < gdb_ext_global.size(); i++)
+		{
+			std::cout << "(" << gdb_ext_global.get(i).Dbox.getLow(0) << "; " << gdb_ext_global.get(i).Dbox.getHigh(0) << ")" << std::endl;
+			std::cout << "I = " << i << ", Origin is (" << gdb_ext_global.get(i).origin.get(0) << "; " << gdb_ext_global.get(i).origin.get(1) << ")" << std::endl;
+		}
 		this->template map_(domain,dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global);
 	}
 

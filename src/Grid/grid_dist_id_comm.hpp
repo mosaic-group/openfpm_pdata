@@ -109,6 +109,10 @@ public:
 					// Convert intersection box from contiguous to discrete
 					SpaceBox<dim,long int> inte_box_discr = cd_sm.convertDomainSpaceIntoGridUnits(inte_box,dec.periodicity());
 
+
+					std::cout << "Beg:" << inte_box_discr.getHigh(0) << "; " << inte_box.getHigh(1) << std::endl;
+					std::cout << "End:" << inte_box_discr.getLow(0) << "; " << inte_box.getLow(1) << std::endl;
+
 					// Transform coordinates to local
 					inte_box_discr -= gdb_ext.get(i).origin;
 
@@ -143,13 +147,16 @@ public:
 						//std::string str = key.to_string();
 						//std::cout << "Key: " << str << std::endl;
 
-						gr_send.set(key,gr,key);
+						gr_send.get_o(key) = gr.get_o(key);
+						//gr.template get<0>(key)
+						std::cout << "8" << std::endl;
+						//gr_send.set(key,gr,key);
 
 						++key_it;
 					}
+
 					// Add to the labeling vector
 					lbl_b.get(p_id).add(gr_send);
-
 					//std::cout << "9" << std::endl;
 				}
 			}
