@@ -71,6 +71,8 @@ public:
 
 		for (size_t i = 0; i < gdb_ext_old.size(); i++)
 		{
+			// Local old sub-domain
+			SpaceBox<dim,St> sub_dom = gdb_ext_old.get(i).Dbox;
 
 			for (size_t j = 0; j < gdb_ext_global.size(); j++)
 			{
@@ -78,9 +80,6 @@ public:
 
 				// Intersection box
 				SpaceBox<dim,St> inte_box;
-
-				// Local old sub-domain
-				SpaceBox<dim,St> sub_dom = gdb_ext_old.get(i).Dbox;
 
 				// Global new sub-domain
 				SpaceBox<dim,St> sub_dom_new = gdb_ext_global.get(j).Dbox;
@@ -110,12 +109,13 @@ public:
 					// Convert intersection box from contiguous to discrete
 					SpaceBox<dim,long int> inte_box_discr = cd_sm.convertDomainSpaceIntoGridUnits(inte_box,dec.periodicity());
 
+					// Transform coordinates to local
 					inte_box_discr -= gdb_ext.get(i).origin;
 
 					// Grid corresponding for gdb_ext_old.get(i) box
 					device_grid gr = loc_grid_old.get(i);
 
-					// Grid to send size
+					// Size of the grid to send
 					size_t sz[dim];
 					for (size_t l = 0; l < dim; l++)
 					{
@@ -131,8 +131,8 @@ public:
 					grid_key_dx<dim> start = inte_box_discr.getKP1();
 					grid_key_dx<dim> stop = inte_box_discr.getKP2();
 
-					std::string start2 = start.to_string();
-					std::string stop2 = stop.to_string();
+					//std::string start2 = start.to_string();
+					//std::string stop2 = stop.to_string();
 
 					auto key_it = gr.getSubIterator(start,stop);
 
