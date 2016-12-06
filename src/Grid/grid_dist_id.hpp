@@ -2087,7 +2087,7 @@ public:
 		delete &mem;
 
 		// Map the distributed grid
-		//map();
+		map();
 	}
 
 	//! Define friend classes

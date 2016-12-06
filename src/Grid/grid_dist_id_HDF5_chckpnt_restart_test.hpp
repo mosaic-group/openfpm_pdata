@@ -16,7 +16,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
 {
 
 	// Input data
-	size_t k = 100;
+	size_t k = 1000;
 
 	size_t ghost_part = 0.02;
 
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 {
 
 	// Input data
-	size_t k = 100;
+	size_t k = 1000;
 
 	size_t ghost_part = 0.02;
 

@@ -120,7 +120,7 @@ public:
 					for (size_t l = 0; l < dim; l++)
 					{
 						sz[l] = inte_box_discr.getHigh(l) - inte_box_discr.getLow(l);
-						std::cout << " Size on " << l << " dimension: " << sz[l] << std::endl;
+						//std::cout << " Size on " << l << " dimension: " << sz[l] << std::endl;
 					}
 
 					// Grid to send
@@ -150,7 +150,7 @@ public:
 					// Add to the labeling vector
 					lbl_b.get(p_id).add(gr_send);
 
-					std::cout << "9" << std::endl;
+					//std::cout << "9" << std::endl;
 				}
 			}
 		}
@@ -213,7 +213,7 @@ public:
 		std::cout << "m_oGrid_recv.size(): " << m_oGrid_recv.size() << std::endl;
 
 		// Reconstruct the new local grids
-		grids_reconstruct(m_oGrid_recv,loc_grid);
+		//grids_reconstruct(m_oGrid_recv,loc_grid);
 	}
 
 	/*! \brief Constructor
