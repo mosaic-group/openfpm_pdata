@@ -1501,7 +1501,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_with_ghost_buffering )
 			++it;
 		}
 
-		vd.ghost_get<0>(SKIP_LABELLING);
+		if (i % 2 == 0)
+			vd.ghost_get<0>(SKIP_LABELLING);
+		else
+			vd.ghost_get<0>(SKIP_LABELLING | NO_CHANGE_ELEMENTS );
 
 		auto it2 = vd.getGhostIterator();
 		bool ret = true;

@@ -15,6 +15,7 @@
 
 #define NO_POSITION 1
 #define WITH_POSITION 2
+#define NO_CHANGE_ELEMENTS 4
 
 #define BIND_DEC_TO_GHOST 1
 
@@ -57,7 +58,7 @@ class vector_dist_comm
 	//! particles that must be communicated to the other processors
 	openfpm::vector<openfpm::vector<aggregate<size_t,size_t>>> g_opart;
 
-	// processor rank list of g_opart
+	//! processor rank list of g_opart
 	openfpm::vector<size_t> prc_g_opart;
 
 	//! Sending buffer for the ghost particles position
@@ -76,6 +77,8 @@ class vector_dist_comm
 	//! It store the size of the elements added for each processor that communicate with us (local processor)
 	//! from the last ghost get
 	openfpm::vector<size_t> recv_sz_get;
+	//! Conversion to byte of recv_sz_get
+	openfpm::vector<size_t> recv_sz_get_byte;
 
 	//! The same as recv_sz_get but for put
 	openfpm::vector<size_t> recv_sz_put;
@@ -87,18 +90,21 @@ class vector_dist_comm
 	//! replicated ghost particles that are local
 	size_t lg_m;
 
-	//! process the particle with properties
+	//! process the particle without properties
 	struct proc_without_prp
 	{
+		//! process the particle
 		template<typename T1, typename T2> inline static void proc(size_t lbl, size_t cnt, size_t id, T1 & v_prp, T2 & m_prp)
 		{
 			m_prp.get(lbl).set(cnt, v_prp.get(id));
 		}
 	};
 
+	//! process the particle with properties
 	template<typename prp_object, int ... prp>
 	struct proc_with_prp
 	{
+		//! process the particle
 		template<typename T1, typename T2> inline static void proc(size_t lbl, size_t cnt, size_t id, T1 & v_prp, T2 & m_prp)
 		{
 			// source object type
@@ -151,7 +157,7 @@ class vector_dist_comm
 	/*! \brief Return a valid particle starting from end and tracing back
 	 *
 	 * \param end actual opart particle pointer
-	 * \param actual end particle point
+	 * \param end_id actual end particle point
 	 *
 	 * \return a valid particle
 	 *
@@ -386,7 +392,6 @@ class vector_dist_comm
 	 *
 	 * \param v_pos vector of particle positions
 	 * \param g_pos_send Send buffer to fill
-	 * \param prAlloc_pos Memory object for the send buffer
 	 *
 	 */
 	void fill_send_ghost_pos_buf(openfpm::vector<Point<dim, St>> & v_pos,openfpm::vector<send_pos_vector> & g_pos_send)
@@ -422,7 +427,6 @@ class vector_dist_comm
 	 *
 	 * \param v_prp vector of particle properties
 	 * \param g_send_prp Send buffer to fill
-	 * \param prAlloc_prp Memory object for the send buffer
 	 * \param g_m ghost marker
 	 *
 	 */
@@ -468,7 +472,6 @@ class vector_dist_comm
 	 *
 	 * \param v_prp vector of particle properties
 	 * \param g_send_prp Send buffer to fill
-	 * \param prAlloc_prp Memory object for the send buffer
 	 *
 	 */
 	template<typename send_vector, typename prp_object, int ... prp> void fill_send_ghost_prp_buf(openfpm::vector<prop> & v_prp, openfpm::vector<send_vector> & g_send_prp)
@@ -501,9 +504,9 @@ class vector_dist_comm
 	 *
 	 * \param v_pos vector of particle positions
 	 * \param v_prp vector of particles properties
-	 * \param prc_r List of processor rank involved in the send
 	 * \param prc_sz_r For each processor in the list the size of the message to send
-	 * \param pb send buffer
+	 * \param m_pos sending buffer for position
+	 * \param m_prp sending buffer for properties
 	 *
 	 */
 	void fill_send_map_buf(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, openfpm::vector<size_t> & prc_sz_r, openfpm::vector<openfpm::vector<Point<dim,St>>> & m_pos, openfpm::vector<openfpm::vector<prop>> & m_prp)
@@ -542,8 +545,8 @@ class vector_dist_comm
 	 * \param v_pos vector of particle positions
 	 * \param v_prp vector of particle properties
 	 * \param prc_r List of processor rank involved in the send
-	 * \param prc_sz_r For each processor in the list the size of the message to send
-	 * \param pb send buffer
+	 * \param m_pos sending buffer for position
+	 * \param m_prp sending buffer for properties
 	 *
 	 */
 	template<typename prp_object,int ... prp> void fill_send_map_buf_list(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, openfpm::vector<size_t> & prc_sz_r, openfpm::vector<openfpm::vector<Point<dim,St>>> & m_pos, openfpm::vector<openfpm::vector<prp_object>> & m_prp)
@@ -871,11 +874,15 @@ public:
         {
                 if (opt & SKIP_LABELLING)
                 {
-                                op_ssend_gg_recv_merge opm(g_m);
-                                v_cl.SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get);
+                	size_t opt = NONE;
+                	if (opt & NO_CHANGE_ELEMENTS)
+                		opt = RECEIVE_KNOWN;
+
+                	op_ssend_gg_recv_merge opm(g_m);
+                    v_cl.SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get);
                 }
                 else
-                        v_cl.SSendRecvP<send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get);
+                        v_cl.SSendRecvP<send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get,recv_sz_get_byte);
         }
 
 		if (!(opt & NO_POSITION))

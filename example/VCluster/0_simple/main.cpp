@@ -4,40 +4,76 @@
 #include "VCluster.hpp"
 
 /*
- * ### WIKI 1 ###
+ *
+ * \page VCluster_0_simple Using Vcluster to communicate across processors
+ *
+ *
+ * [TOC]
  *
  * ## Simple example
  * 
  * This example show several basic functionalities of VCluster
  * 
- * ### WIKI END ###
  * 
  */
-
-
 int main(int argc, char* argv[])
 {
-	//
-	// ### WIKI 2 ###
-	//
-	// Initialize the library and several objects 
-	//
+	/*
+	 *
+	 * \page VCluster_0_simple Using Vcluster to communicate across processors
+	 *
+	 *
+	 * ## Initialization
+	 *
+	 * Before using any functionality the library must be initialized
+	 *
+	 * \snippet Vcluster/0_simple/main.cpp initialization
+	 *
+	 */
+
+	//! \cond [initialization] \endcond
+
 	openfpm_init(&argc,&argv);
 	
-	//
-	// ### WIKI 3 ###
-	//
-	// Get the vcluster object and the number of processor
-	//
+	//! \cond [initialization] \endcond
+
+	/*
+	 *
+	 * \page VCluster_0_simple Using Vcluster to communicate across processors
+	 *
+	 * ### Initialization of Vcluster
+	 *
+	 * Because in general our program is parallel we have more than one processors. With
+	 * the function getProcessingUnits we can querry how many processors are involved in
+	 * out computation
+	 *
+	 * \snippet Vcluster/0_simple/main.cpp initialization
+	 *
+	 */
 	Vcluster & v_cl = create_vcluster();
 	long int N_prc = v_cl.getProcessingUnits();
 
-	//
-	// ### WIKI 3 ###
-	//
-	// We find the maximum of the processors rank, that should be the Number of
-	// processor minus one, only processor 0 print on terminal
-	//
+	/*
+	 *
+	 * \page VCluster_0_simple Using Vcluster to communicate across processors
+	 *
+	 *
+	 * ### min max, sum
+	 *
+	 * with the function getProcessUnitID we can the the id of the processor executing
+	 * the function. This function is equivalent to the MPI rank function.
+	 * Vcluster provide several high and low level functionalities. One is max that
+	 * return the maximum value across processors. There is also the function min
+	 * and sum that return respectively the sum and the minimum across processors.
+	 * All these operations are asynchronous, in order to get the result the function
+	 * execute must be used. In our example the processor 0 print we also print the value
+	 * but can be easily verified that also the other processors has the same value.
+	 *
+	 * \snippet Vcluster/0_simple/main.cpp max calc
+	 *
+	 */
+
+	//! \cond [max calc] \endcond
 
 	long int id = v_cl.getProcessUnitID();
 
@@ -46,12 +82,21 @@ int main(int argc, char* argv[])
 	if (v_cl.getProcessUnitID() == 0)
 		std::cout << "Maximum processor rank: " << id << "\n";
 
-	//
-	// ### WIKI 4 ###
-	//
-	// We sum all the processor ranks the maximum, the result should be that should
-	// be $\frac{(n-1)n}{2}$, only processor 0 print on terminal
-	//
+	//! \cond [max calc] \endcond
+
+	/*
+	 *
+	 * \page VCluster_0_simple Using Vcluster to communicate across processors
+	 *
+	 * We sum all the processor ranks the result should be that should
+	 * be \$\frac{(n-1)n}{2}\$, only processor 0 print on terminal
+	 *
+	 *
+	 * \snippet Vcluster/0_simple/main.cpp sum calc
+	 *
+	 */
+
+	//! \cond [sum calc] \endcond
 
 	size_t id2 = v_cl.getProcessUnitID();
 
@@ -60,11 +105,19 @@ int main(int argc, char* argv[])
 	if (v_cl.getProcessUnitID() == 0)
 		std::cout << "Sum of all processors rank: " << id2 << "\n";
 
-	//
-	// ### WIKI 5 ###
-	//
-	// we can collect information from all processors using the function gather
-	//
+	//! \cond [sum calc] \endcond
+
+	/*
+	 *
+	 * \page VCluster_0_simple Using Vcluster to communicate across processors
+	 *
+	 * We sum all the processor ranks the result should be that should
+	 * be \$\frac{(n-1)n}{2}\$, only processor 0 print on terminal
+	 *
+	 *
+	 * \snippet Vcluster/0_simple/main.cpp max calc
+	 *
+	 */
 
 	long int id3 = v_cl.getProcessUnitID();
 	openfpm::vector<long int> v;

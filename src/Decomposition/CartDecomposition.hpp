@@ -1251,7 +1251,11 @@ public:
 
 	/*! \brief Get the domain Cells
 	 *
-	 * \param shift Shifting point
+	 * It performa a linearization of the domain cells using the extension provided in gs
+	 *
+	 *
+	 * \param shift Cell padding
+	 * \param cell_shift where the domain cell start
 	 * \param gs grid extension
 	 *
 	 */

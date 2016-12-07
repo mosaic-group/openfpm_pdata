@@ -390,7 +390,7 @@ public:
 		Ghost<dim,size_t> g_ext(0);
 		cell_list.Initialize(cd_sm,pbox,pad);
 
-		updateCellList(cell_list);
+		updateCellListSym(cell_list);
 
 		return cell_list;
 	}
