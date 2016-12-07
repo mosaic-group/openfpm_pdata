@@ -60,7 +60,7 @@ public:
 
 	/*! \brief Label intersection grids for mappings
 	 *
-	 * \param prc_sz For each processor the number of grids to send
+	 * \param prc_sz For each processor the number of grids to send to
 	 */
 	inline void labelIntersectionGridsProcessor(Box<dim,St> domain, Decomposition & dec, CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm, openfpm::vector<device_grid> & loc_grid_old, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_old, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_global, openfpm::vector<openfpm::vector<device_grid>> & lbl_b, openfpm::vector<size_t> & prc_sz)
 	{
@@ -72,22 +72,27 @@ public:
 		for (size_t i = 0; i < gdb_ext_old.size(); i++)
 		{
 			// Local old sub-domain
-			SpaceBox<dim,St> sub_dom = gdb_ext_old.get(i).Dbox;
+			SpaceBox<dim,long int> sub_dom = gdb_ext_old.get(i).Dbox;
+			sub_dom += gdb_ext_old.get(i).origin;
 
 			for (size_t j = 0; j < gdb_ext_global.size(); j++)
 			{
 				size_t p_id = 0;
 
 				// Intersection box
-				SpaceBox<dim,St> inte_box;
+				SpaceBox<dim,long int> inte_box;
 
 				// Global new sub-domain
-				SpaceBox<dim,St> sub_dom_new = gdb_ext_global.get(j).Dbox;
+				SpaceBox<dim,long int> sub_dom_new = gdb_ext_global.get(j).Dbox;
+				sub_dom_new += gdb_ext_global.get(j).origin;
 
 				bool intersect = sub_dom.Intersect(sub_dom_new, inte_box);
 
 				if (intersect == true)
 				{
+
+					//std::cout << "Inte_box: (" << inte_box.getLow(0) << "; " << inte_box.getLow(1) << "); (" << inte_box.getHigh(0) << "; " << inte_box.getHigh(1) << ")" << std::endl;
+
 /*
 					// Grid to send size
 					size_t sz1[dim];
@@ -101,30 +106,40 @@ public:
 					Point<dim,St> p;
 					for (size_t i = 0; i < dim; i++)
 						p.get(i) = (inte_box.getHigh(i) + inte_box.getLow(i))/2;
+
+					//std::cout << "Point: (" << p.get(0) << "; " << p.get(1) << ")" << std::endl;
+
 					p_id = dec.processorID(p);
 					prc_sz.get(p_id)++;
 
-					std::cout << "P_id: " << p_id << std::endl;
+					//std::cout << "P_id: " << p_id << std::endl;
 
 					// Convert intersection box from contiguous to discrete
-					SpaceBox<dim,long int> inte_box_discr = cd_sm.convertDomainSpaceIntoGridUnits(inte_box,dec.periodicity());
+					//SpaceBox<dim,long int> inte_box_discr = cd_sm.convertDomainSpaceIntoGridUnits(inte_box,dec.periodicity());
 
 
-					std::cout << "Beg:" << inte_box_discr.getHigh(0) << "; " << inte_box.getHigh(1) << std::endl;
-					std::cout << "End:" << inte_box_discr.getLow(0) << "; " << inte_box.getLow(1) << std::endl;
+					//std::cout << "Beg:" << inte_box_discr.getHigh(0) << "; " << inte_box.getHigh(1) << std::endl;
+					//std::cout << "End:" << inte_box_discr.getLow(0) << "; " << inte_box.getLow(1) << std::endl;
 
 					// Transform coordinates to local
-					inte_box_discr -= gdb_ext.get(i).origin;
+					auto inte_box_local = inte_box;
+
+					inte_box_local -= gdb_ext_global.get(j).origin;
+
+					//std::cout << "Inte_box_local: (" << inte_box_local.getLow(0) << "; " << inte_box_local.getLow(1) << "); (" << inte_box_local.getHigh(0) << "; " << inte_box_local.getHigh(1) << ")" << std::endl;
 
 					// Grid corresponding for gdb_ext_old.get(i) box
 					device_grid gr = loc_grid_old.get(i);
+
+					for (size_t l = 0; l < dim; l++)
+						std::cout << "GR Size on " << l << " dimension: " << gr.getGrid().size(l) << std::endl;
 
 					// Size of the grid to send
 					size_t sz[dim];
 					for (size_t l = 0; l < dim; l++)
 					{
-						sz[l] = inte_box_discr.getHigh(l) - inte_box_discr.getLow(l);
-						//std::cout << " Size on " << l << " dimension: " << sz[l] << std::endl;
+						sz[l] = inte_box_local.getHigh(l) - inte_box_local.getLow(l);
+						std::cout << "GR_send size on " << l << " dimension: " << sz[l] << std::endl;
 					}
 
 					// Grid to send
@@ -132,32 +147,34 @@ public:
 					gr_send.setMemory();
 
 					// Sub iterator across intersection box inside local grid
-					grid_key_dx<dim> start = inte_box_discr.getKP1();
-					grid_key_dx<dim> stop = inte_box_discr.getKP2();
+					grid_key_dx<dim> start = inte_box_local.getKP1();
+					grid_key_dx<dim> stop = inte_box_local.getKP2();
 
 					//std::string start2 = start.to_string();
 					//std::string stop2 = stop.to_string();
 
-					auto key_it = gr.getSubIterator(start,stop);
+					auto it = gr.getSubIterator(start,stop);
 
 					// Copy selected elements into a new sub-grid
-					while (key_it.isNext())
+					while (it.isNext())
 					{
-						grid_key_dx<dim> key = key_it.get();
-						//std::string str = key.to_string();
-						//std::cout << "Key: " << str << std::endl;
+						auto key = it.get();
+						std::string str = key.to_string();
+						std::cout << "Key: " << str << std::endl;
 
 						gr_send.get_o(key) = gr.get_o(key);
+
+						//gr_send.template get<0>(key) = gr.template get<0>(key);
 						//gr.template get<0>(key)
-						std::cout << "8" << std::endl;
+
 						//gr_send.set(key,gr,key);
 
-						++key_it;
+						++it;
 					}
-
 					// Add to the labeling vector
-					lbl_b.get(p_id).add(gr_send);
+					//lbl_b.get(p_id).add(gr_send);
 					//std::cout << "9" << std::endl;
+
 				}
 			}
 		}

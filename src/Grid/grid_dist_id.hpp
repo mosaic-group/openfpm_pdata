@@ -1693,13 +1693,37 @@ public:
 		getGlobalGridsInfo(gdb_ext_global);
 
 		std::cout << "Global size: " << gdb_ext_global.size() << std::endl;
-
+/*
 		for (size_t i = 0; i < gdb_ext_global.size(); i++)
 		{
-			std::cout << "(" << gdb_ext_global.get(i).Dbox.getLow(0) << "; " << gdb_ext_global.get(i).Dbox.getHigh(0) << ")" << std::endl;
+			std::cout << "(" << gdb_ext_global.get(i).Dbox.getLow(0) << "; " << gdb_ext_global.get(i).Dbox.getLow(1) << "); (" << gdb_ext_global.get(i).Dbox.getHigh(0) << "; " << gdb_ext_global.get(i).Dbox.getHigh(1) << ")" << std::endl;
 			std::cout << "I = " << i << ", Origin is (" << gdb_ext_global.get(i).origin.get(0) << "; " << gdb_ext_global.get(i).origin.get(1) << ")" << std::endl;
 		}
+*/
+		for (size_t i = 0; i < gdb_ext.size(); i++)
+		{
+			Box<dim,long int> box = gdb_ext.get(i).Dbox;
+			box += gdb_ext.get(i).origin;
+			std::cout << "(" << box.getLow(0) << "; " << box.getLow(1) << "); (" << box.getHigh(0) << "; " << box.getHigh(1) << ")" << std::endl;
+		}
+
 		this->template map_(domain,dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global);
+	}
+
+	void gdb_ext_info()
+	{
+		for (size_t i = 0; i < gdb_ext.size(); i++)
+		{
+			Box<dim,long int> box = gdb_ext.get(i).Dbox;
+			box += gdb_ext.get(i).origin;
+			std::cout << "(" << box.getLow(0) << "; " << box.getLow(1) << "); (" << box.getHigh(0) << "; " << box.getHigh(1) << ")" << std::endl;
+		}
+		std::cout << "--------------" << std::endl;
+		for (size_t i = 0; i < dec.getNSubDomain(); i++)
+		{
+			std::cout << "(" << dec.getSubDomain(i).getLow(0) << "; " << dec.getSubDomain(i).getLow(1) << "); (" << dec.getSubDomain(i).getHigh(0) << "; " << dec.getSubDomain(i).getHigh(1) << ")" << std::endl;
+		}
+		std::cout << "******************" << std::endl;
 	}
 
 

@@ -125,6 +125,39 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 	BOOST_REQUIRE_EQUAL(sum, (size_t)k*k);
 }
 
+BOOST_AUTO_TEST_CASE( grid_gdb_test )
+{
+	// Input data
+	size_t k = 10;
+
+	size_t ghost_part = 0.2;
+
+	// Domain
+	Box<2,float> domain({0.0,0.0},{1.0,1.0});
+
+	Vcluster & v_cl = create_vcluster();
+
+	// Skip this test on big scale
+	if (v_cl.getProcessingUnits() >= 32)
+		return;
+
+	if (v_cl.getProcessUnitID() == 0)
+			std::cout << "Testing gdb_ext grid info..." << std::endl;
+
+	// grid size
+	size_t sz[2];
+	sz[0] = k;
+	sz[1] = k;
+
+	// Ghost
+	Ghost<2,float> g(ghost_part);
+
+	// Distributed grid with id decomposition
+	grid_dist_id<2, float, scalar<float>, CartDecomposition<2,float>> g_dist(sz,domain,g);
+
+	g_dist.gdb_ext_info();
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif /* SRC_GRID_GRID_DIST_ID_HDF5_CHCKPNT_RESTART_TEST_HPP_ */
