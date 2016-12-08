@@ -725,7 +725,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 		++p_it2;
 	}
 
-	vd2.ghost_put<add_,1>();
+	vd2.ghost_put<add_,1>(NO_CHANGE_ELEMENTS);
 	vd2.ghost_put<merge_,4>();
 
 	auto p_it3 = vd.getDomainIterator();

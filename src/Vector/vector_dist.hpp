@@ -982,11 +982,13 @@ public:
 	 * \tparam op which kind of operation to apply
 	 * \tparam prp list of properties to get synchronize
 	 *
+	 * \param opt options NO_CHANGE_ELEMENTS
+	 *
 	 *
 	 */
-	template<template<typename,typename> class op, int ... prp> inline void ghost_put()
+	template<template<typename,typename> class op, int ... prp> inline void ghost_put(size_t opt_ = NONE)
 	{
-		this->template ghost_put_<op,prp...>(v_pos,v_prp,g_m);
+		this->template ghost_put_<op,prp...>(v_pos,v_prp,g_m,opt_);
 	}
 
 	/*! \brief Remove a set of elements from the distributed vector

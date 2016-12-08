@@ -19,6 +19,19 @@
 
 #define BIND_DEC_TO_GHOST 1
 
+/*! \brief compute the communication options from the ghost_get/put options
+ *
+ *
+ */
+inline static size_t compute_options(size_t opt)
+{
+	size_t opt_ = NONE;
+	if (opt & NO_CHANGE_ELEMENTS)
+		opt_ = RECEIVE_KNOWN | KNOWN_ELEMENT_OR_BYTE;
+
+	return opt_;
+}
+
 /*! \brief This class is an helper for the communication of vector_dist
  *
  * \tparam dim Dimensionality of the space where the elements lives
@@ -58,6 +71,9 @@ class vector_dist_comm
 	//! particles that must be communicated to the other processors
 	openfpm::vector<openfpm::vector<aggregate<size_t,size_t>>> g_opart;
 
+	//! Per processor number of particle g_opart_sz.get(i) = g_opart.get(i).size()
+	openfpm::vector<size_t> g_opart_sz;
+
 	//! processor rank list of g_opart
 	openfpm::vector<size_t> prc_g_opart;
 
@@ -79,6 +95,9 @@ class vector_dist_comm
 	openfpm::vector<size_t> recv_sz_get;
 	//! Conversion to byte of recv_sz_get
 	openfpm::vector<size_t> recv_sz_get_byte;
+	//! recv_sz_pos_get
+	openfpm::vector<size_t> recv_sz_pos_get;
+
 
 	//! The same as recv_sz_get but for put
 	openfpm::vector<size_t> recv_sz_put;
@@ -834,10 +853,6 @@ public:
 	 */
 	template<int ... prp> inline void ghost_get_(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & g_m, size_t opt = WITH_POSITION)
 	{
-		// Unload receive buffer
-		for (size_t i = 0 ; i < recv_sz_get.size() ; i++)
-			recv_sz_get.get(i) = 0;
-
 		// Sending property object
 		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;
 
@@ -864,9 +879,6 @@ public:
 		if (!(opt & NO_POSITION))
 			fill_send_ghost_pos_buf(v_pos,g_pos_send);
 
-		prc_recv_get.clear();
-		recv_sz_get.clear();
-
 		// if there are no properties skip
 		// SSendRecvP send everything when we do not give properties
 
@@ -874,22 +886,33 @@ public:
         {
                 if (opt & SKIP_LABELLING)
                 {
-                	size_t opt = NONE;
-                	if (opt & NO_CHANGE_ELEMENTS)
-                		opt = RECEIVE_KNOWN;
-
+                	size_t opt_ = compute_options(opt);
                 	op_ssend_gg_recv_merge opm(g_m);
-                    v_cl.SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get);
+                    v_cl.SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
                 }
                 else
-                        v_cl.SSendRecvP<send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get,recv_sz_get_byte);
+                	v_cl.SSendRecvP<send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get,recv_sz_get_byte);
+
+                // fill g_opart_sz
+                g_opart_sz.resize(prc_g_opart.size());
+
+				for (size_t i = 0 ; i < prc_g_opart.size() ; i++)
+					g_opart_sz.get(i) = g_send_prp.get(i).size();
         }
 
 		if (!(opt & NO_POSITION))
 		{
-			prc_recv_get.clear();
-			recv_sz_get.clear();
-			v_cl.SSendRecv(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_get);
+			if (opt & SKIP_LABELLING)
+			{
+            	size_t opt_ = compute_options(opt);
+				v_cl.SSendRecv(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_pos_get,opt_);
+			}
+			else
+			{
+				prc_recv_get.clear();
+				recv_sz_pos_get.clear();
+				v_cl.SSendRecv(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_pos_get);
+			}
 		}
 
         // Important to ensure that the number of particles in v_prp must be equal to v_pos
@@ -1079,9 +1102,10 @@ public:
 	 * \param v_pos vector of particle positions
 	 * \param v_prp vector od particle properties
 	 * \param g_m ghost marker
+	 * \param opt options
 	 *
 	 */
-	template<template<typename,typename> class op, int ... prp> void ghost_put_(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & g_m)
+	template<template<typename,typename> class op, int ... prp> void ghost_put_(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & g_m, size_t opt)
 	{
 		// Sending property object
 		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;
@@ -1093,8 +1117,18 @@ public:
 		fill_send_ghost_put_prp_buf<send_vector, prp_object, prp...>(v_prp,g_send_prp,g_m);
 
 		// Send and receive ghost particle information
-		op_ssend_recv_merge<op> opm(g_opart);
-		v_cl.SSendRecvP_op<op_ssend_recv_merge<op>,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_recv_get,opm,prc_recv_put,recv_sz_put);
+		if (opt & NO_CHANGE_ELEMENTS)
+		{
+			size_t opt_ = compute_options(opt);
+
+			op_ssend_recv_merge<op> opm(g_opart);
+			v_cl.SSendRecvP_op<op_ssend_recv_merge<op>,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_recv_get,opm,prc_g_opart,g_opart_sz,opt_);
+		}
+		else
+		{
+			op_ssend_recv_merge<op> opm(g_opart);
+			v_cl.SSendRecvP_op<op_ssend_recv_merge<op>,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_recv_get,opm,prc_recv_put,recv_sz_put);
+		}
 
 		// process also the local replicated particles
 
