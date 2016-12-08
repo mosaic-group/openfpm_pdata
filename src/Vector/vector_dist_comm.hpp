@@ -95,8 +95,6 @@ class vector_dist_comm
 	openfpm::vector<size_t> recv_sz_get;
 	//! Conversion to byte of recv_sz_get
 	openfpm::vector<size_t> recv_sz_get_byte;
-	//! recv_sz_pos_get
-	openfpm::vector<size_t> recv_sz_pos_get;
 
 
 	//! The same as recv_sz_get but for put
@@ -905,14 +903,20 @@ public:
 			if (opt & SKIP_LABELLING)
 			{
             	size_t opt_ = compute_options(opt);
-				v_cl.SSendRecv(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_pos_get,opt_);
+				v_cl.SSendRecv(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_get,opt_);
 			}
 			else
 			{
 				prc_recv_get.clear();
-				recv_sz_pos_get.clear();
-				v_cl.SSendRecv(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_pos_get);
+				recv_sz_get.clear();
+				v_cl.SSendRecv(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_get);
 			}
+
+            // fill g_opart_sz
+            g_opart_sz.resize(prc_g_opart.size());
+
+			for (size_t i = 0 ; i < prc_g_opart.size() ; i++)
+				g_opart_sz.get(i) = g_pos_send.get(i).size();
 		}
 
         // Important to ensure that the number of particles in v_prp must be equal to v_pos
