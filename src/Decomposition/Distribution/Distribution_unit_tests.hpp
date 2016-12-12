@@ -302,20 +302,23 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 	// write the first decomposition
 	pmet_dist.write("vtk_dist_parmetis_distribution_0");
 
-#ifdef HAVE_OSX
+	// Check
+	if (v_cl.getProcessUnitID() == 0)
+	{
 
-    bool test = compare("vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_osx_test.vtk");
-    BOOST_REQUIRE_EQUAL(true,test);
+	#ifdef HAVE_OSX
 
-#else
+		bool test = compare("vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_osx_test.vtk");
+		BOOST_REQUIRE_EQUAL(true,test);
 
-    char wct[256];
-    std::cout << "WORKING DIRECTORY: " << getcwd(wct,256) << std::endl;
+	#else
 
-	bool test = compare("vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_test.vtk");
-	BOOST_REQUIRE_EQUAL(true,test);
+		bool test = compare("vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_test.vtk");
+		BOOST_REQUIRE_EQUAL(true,test);
 
-#endif
+	#endif
+
+	}
 
 	//! [refine with dist_parmetis the decomposition]
 
