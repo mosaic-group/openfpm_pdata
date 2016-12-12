@@ -10,6 +10,7 @@
 
 #include "config.h"
 #include "SpaceDistribution.hpp"
+#include <unistd.h>
 
 /*! \brief Set a sphere as high computation cost
  *
@@ -307,6 +308,9 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
     BOOST_REQUIRE_EQUAL(true,test);
 
 #else
+
+    char wct[256];
+    std::cout << "WORKING DIRECTORY: " << getcwd(wct,256) << std::endl;
 
 	bool test = compare("vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_test.vtk");
 	BOOST_REQUIRE_EQUAL(true,test);
