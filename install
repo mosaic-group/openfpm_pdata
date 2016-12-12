@@ -132,6 +132,10 @@ fi
 echo -e "\033[1;34;5mDEPENCENCIES INSTALLATION DIR      \033[0m"
 echo -e "Every required dependencies if needed will be installed into: \033[1;34;5m$i_dir\033[0m"
 echo -e "if you want to install somewhere else do ./install -i /somewhere/else"
+if [ x"$configure_options" == x"" ]; then
+    echo -e "OpenFPM will be installed into: \033[1;34;5m/usr/local\033[0m"
+    echo "if you want to install in a different place use ./install -c \"--prefix=/where/you/want/to/install\""
+fi
 if [ $sq -eq 0 ]; then
   unset commands
   commands[0]="Continue"

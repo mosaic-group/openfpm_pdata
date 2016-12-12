@@ -3,7 +3,14 @@
 #include "Decomposition/CartDecomposition.hpp"
 #include "VCluster.hpp"
 
-/*
+ /*! \page VCluster VCluster
+ *
+ * \subpage VCluster_0_simple
+ * \subpage VCluster_1_semantic
+ *
+ */
+
+/*!
  *
  * \page VCluster_0_simple Using Vcluster to communicate across processors
  *
@@ -12,13 +19,13 @@
  *
  * ## Simple example
  * 
- * This example show several basic functionalities of VCluster
+ * This example show several basic functionalities of Vcluster
  * 
  * 
  */
 int main(int argc, char* argv[])
 {
-	/*
+	/*!
 	 *
 	 * \page VCluster_0_simple Using Vcluster to communicate across processors
 	 *
@@ -27,7 +34,7 @@ int main(int argc, char* argv[])
 	 *
 	 * Before using any functionality the library must be initialized
 	 *
-	 * \snippet Vcluster/0_simple/main.cpp initialization
+	 * \snippet VCluster/0_simple/main.cpp initialization
 	 *
 	 */
 
@@ -37,39 +44,45 @@ int main(int argc, char* argv[])
 	
 	//! \cond [initialization] \endcond
 
-	/*
+	/*!
 	 *
 	 * \page VCluster_0_simple Using Vcluster to communicate across processors
 	 *
 	 * ### Initialization of Vcluster
 	 *
 	 * Because in general our program is parallel we have more than one processors. With
-	 * the function getProcessingUnits we can querry how many processors are involved in
-	 * out computation
+	 * the function getProcessingUnits() we can get how many processors are involved in
+	 * our computation
 	 *
-	 * \snippet Vcluster/0_simple/main.cpp initialization
+	 * \snippet VCluster/0_simple/main.cpp create
 	 *
 	 */
+
+	//! \cond [create] \endcond
+
 	Vcluster & v_cl = create_vcluster();
 	long int N_prc = v_cl.getProcessingUnits();
 
-	/*
+	//! \cond [create] \endcond
+
+	/*!
 	 *
 	 * \page VCluster_0_simple Using Vcluster to communicate across processors
 	 *
 	 *
-	 * ### min max, sum
+	 * ### Min, max, sum
 	 *
-	 * with the function getProcessUnitID we can the the id of the processor executing
+	 * With the function getProcessUnitID() we can get the id of the processor executing
 	 * the function. This function is equivalent to the MPI rank function.
-	 * Vcluster provide several high and low level functionalities. One is max that
+	 * Vcluster provides several high and low level functionalities. One is max that
 	 * return the maximum value across processors. There is also the function min
 	 * and sum that return respectively the sum and the minimum across processors.
 	 * All these operations are asynchronous, in order to get the result the function
-	 * execute must be used. In our example the processor 0 print we also print the value
+	 * execute must be used. In our example the processor 0 print the result
 	 * but can be easily verified that also the other processors has the same value.
 	 *
-	 * \snippet Vcluster/0_simple/main.cpp max calc
+	 * \snippet VCluster/0_simple/main.cpp max calc
+	 *
 	 *
 	 */
 
@@ -84,15 +97,17 @@ int main(int argc, char* argv[])
 
 	//! \cond [max calc] \endcond
 
-	/*
+	/*!
 	 *
 	 * \page VCluster_0_simple Using Vcluster to communicate across processors
 	 *
-	 * We sum all the processor ranks the result should be that should
-	 * be \$\frac{(n-1)n}{2}\$, only processor 0 print on terminal
 	 *
 	 *
-	 * \snippet Vcluster/0_simple/main.cpp sum calc
+	 * We sum all the processor ranks the result should be \f$\frac{(n-1)n}{2}\f$, only processor 0
+	 *  print on terminal
+	 *
+	 *
+	 * \snippet VCluster/0_simple/main.cpp sum calc
 	 *
 	 */
 
@@ -107,17 +122,19 @@ int main(int argc, char* argv[])
 
 	//! \cond [sum calc] \endcond
 
-	/*
+	/*!
 	 *
 	 * \page VCluster_0_simple Using Vcluster to communicate across processors
 	 *
-	 * We sum all the processor ranks the result should be that should
-	 * be \$\frac{(n-1)n}{2}\$, only processor 0 print on terminal
+	 * Than each processor send its own rank. the vector of all ranks is collected on all
+	 * processors.
 	 *
 	 *
-	 * \snippet Vcluster/0_simple/main.cpp max calc
+	 * \snippet VCluster/0_simple/main.cpp gather
 	 *
 	 */
+
+	//! \cond [gather] \endcond
 
 	long int id3 = v_cl.getProcessUnitID();
 	openfpm::vector<long int> v;
@@ -134,15 +151,26 @@ int main(int argc, char* argv[])
 		std::cout << "\n";
 	}
 
-	//
-	// ### WIKI 5 ###
-	//
-	// we can also send messages to specific processors, with the condition that the receiving
-	// processors know we want to communicate with them, if you are searching for a more
-	// free way to communicate where the receiving processors does not know which one processor
-	// want to communicate with us, see the example 1_dsde
-	//
+	//! \cond [gather] \endcond
 
+	/*!
+	 *
+	 * \page VCluster_0_simple Using Vcluster to communicate across processors
+	 *
+	 * ### Send and recv
+	 *
+	 * we can also send messages to specific processors, with the condition that the receiving
+	 * processors is aware of such communication to (send and recv must be coupled).
+	 * if you are searching for a more free way to communicate where the receiving processors
+	 *  does not know which one processor want to communicate with us, see the example 1_dsde
+	 *
+	 * \snippet VCluster/0_simple/main.cpp recvsend
+	 *
+	 */
+
+	//! \cond [recvsend] \endcond
+
+	// Create 2 messages with and hello message inside
 	std::stringstream ss_message_1;
 	std::stringstream ss_message_2;
 	ss_message_1 << "Hello from " << std::setw(8) << v_cl.getProcessUnitID() << "\n";
@@ -153,9 +181,11 @@ int main(int argc, char* argv[])
 	
 	// Processor 0 send to processors 1,2 , 1 to 2,1, 2 to 0,1
 
+	// send the message
 	v_cl.send(((id3+1)%N_prc + N_prc)%N_prc,0,message_1.c_str(),msg_size);
 	v_cl.send(((id3+2)%N_prc + N_prc)%N_prc,0,message_2.c_str(),msg_size);
 
+	// create the receiving buffer
 	openfpm::vector<char> v_one;
 	v_one.resize(msg_size);
 	openfpm::vector<char> v_two(msg_size);
@@ -167,6 +197,7 @@ int main(int argc, char* argv[])
 	v_cl.recv(((id3-2)%N_prc + N_prc)%N_prc,0,(void *)v_two.getPointer(),msg_size);
 	v_cl.execute();
 
+	// Processor 0 print the received message
 	if (v_cl.getProcessUnitID() == 0)
 	{
 		for (size_t i = 0 ; i < msg_size ; i++)
@@ -176,19 +207,30 @@ int main(int argc, char* argv[])
 			std::cout << v_two.get(i);
 	}
 
-	//
-	// ### WIKI 5 ###
-	//
-	// we can also do what we did before in one shot
-	//
+	//! \cond [recvsend] \endcond
 
-	id = v_cl.getProcessUnitID();
+	/*!
+	 *
+	 * \page VCluster_0_simple Using Vcluster to communicate across processors
+	 *
+	 * ### All in one
+	 *
+	 * Because all previous functions are asynchronous
+	 * we can also do what we did before in one shot
+	 *
+	 * \snippet VCluster/0_simple/main.cpp allinonestep
+	 *
+	 */
+
+	//! \cond [allinonestep] \endcond
+
+	// Get the rank of the processor and put this rank in one variable
+	id  = v_cl.getProcessUnitID();
 	id2 = v_cl.getProcessUnitID();
 	id3 = v_cl.getProcessUnitID();
 	v.clear();
 
 	// convert the string into a vector
-
 	openfpm::vector<char> message_1_v(msg_size);
 	openfpm::vector<char> message_2_v(msg_size);
 
@@ -198,8 +240,11 @@ int main(int argc, char* argv[])
 	for (size_t i = 0 ; i < msg_size ; i++)
 		message_2_v.get(i) = message_2[i];
 
+	// Calculate the maximin across all the rank
 	v_cl.max(id);
+	// Calculate the sum across all the rank
 	v_cl.sum(id2);
+	// all processor send one number, all processor receive all numbers
 	v_cl.allGather(id3,v);
 
 	// in the case of vector we have special functions that avoid to specify the size
@@ -209,7 +254,8 @@ int main(int argc, char* argv[])
 	v_cl.recv(((id-2)%N_prc + N_prc)%N_prc,0,v_two);
 	v_cl.execute();
 
-	if (v_cl.getProcessUnitID() == 0)
+	// Only processor one print the received data
+	if (v_cl.getProcessUnitID() == 1)
 	{
 		std::cout << "Maximum processor rank: " << id << "\n";
 		std::cout << "Sum of all processors rank: " << id << "\n";
@@ -227,5 +273,31 @@ int main(int argc, char* argv[])
 			std::cout << v_two.get(i);
 	}
 
+	//! \cond [allinonestep] \endcond
+
+	/*!
+	 * \page VCluster_0_simple Using Vcluster to communicate across processors
+	 *
+	 * ## Finalize ##
+	 *
+	 *  At the very end of the program we have always to de-initialize the library
+	 *
+	 * \snippet VCluster/0_simple/main.cpp finalize
+	 *
+	 */
+
+	//! \cond [finalize] \endcond
+
 	openfpm_finalize();
+
+	//! \cond [finalize] \endcond
+
+	/*!
+	 * \page VCluster_0_simple Using Vcluster to communicate across processors
+	 *
+	 * # Full code # {#code}
+	 *
+	 * \include VCluster/0_simple/main.cpp
+	 *
+	 */
 }

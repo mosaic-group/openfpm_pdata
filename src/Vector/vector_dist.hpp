@@ -9,7 +9,7 @@
 #define VECTOR_HPP_
 
 #include "HDF5_XdmfWriter/HDF5_XdmfWriter.hpp"
-#include "VCluster.hpp"
+#include "VCluster/VCluster.hpp"
 #include "Space/Shape/Point.hpp"
 #include "Vector/vector_dist_iterator.hpp"
 #include "Space/Shape/Box.hpp"

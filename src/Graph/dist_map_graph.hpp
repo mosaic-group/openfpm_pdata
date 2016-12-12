@@ -64,7 +64,7 @@
 #include <unordered_map>
 #include "Packer_Unpacker/Packer.hpp"
 #include "Packer_Unpacker/Unpacker.hpp"
-#include "VCluster.hpp"
+#include "VCluster/VCluster.hpp"
 
 #define NO_EDGE -1
 #define DIST_GRAPH_ERROR 7001
@@ -1033,8 +1033,8 @@ public:
 	 * Constructor
 	 *
 	 */
-	DistGraph_CSR(DistGraph_CSR && dg) :
-			vcl(create_vcluster())
+	DistGraph_CSR(DistGraph_CSR && dg)
+	:vcl(create_vcluster())
 	{
 		this->operator=(dg);
 	}

@@ -8,7 +8,7 @@
 #ifndef DISTGRAPHFACTORYOLD_HPP_
 #define DISTGRAPHFACTORYOLD_HPP_
 
-#include "VCluster.hpp"
+#include "VCluster/VCluster.hpp"
 #include "Vector/map_vector.hpp"
 #include "Graph/map_graph.hpp"
 #include "Grid/grid_sm.hpp"

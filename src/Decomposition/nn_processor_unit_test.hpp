@@ -8,7 +8,7 @@
 #ifndef SRC_DECOMPOSITION_NN_PROCESSOR_UNIT_TEST_HPP_
 #define SRC_DECOMPOSITION_NN_PROCESSOR_UNIT_TEST_HPP_
 
-#include "VCluster.hpp"
+#include "VCluster/VCluster.hpp"
 
 void create_decomposition2x2(openfpm::vector<openfpm::vector<long unsigned int>> & box_nn_processor, openfpm::vector<SpaceBox<2,float>> & sub_domains)
 {

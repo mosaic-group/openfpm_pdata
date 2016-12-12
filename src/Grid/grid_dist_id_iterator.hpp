@@ -49,7 +49,7 @@ struct GBoxes
 #define FIXED 2
 
 #include "grid_dist_key.hpp"
-#include "VCluster.hpp"
+#include "VCluster/VCluster.hpp"
 
 
 

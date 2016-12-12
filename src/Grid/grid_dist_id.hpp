@@ -4,7 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include "Grid/map_grid.hpp"
-#include "VCluster.hpp"
+#include "VCluster/VCluster.hpp"
 #include "Space/SpaceBox.hpp"
 #include "util/mathutil.hpp"
 #include "grid_dist_id_iterator_dec.hpp"

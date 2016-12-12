@@ -10,7 +10,7 @@
 
 #include "config.h"
 #include <cmath>
-#include "VCluster.hpp"
+#include "VCluster/VCluster.hpp"
 #include "Graph/CartesianGraphFactory.hpp"
 #include "Decomposition.hpp"
 #include "Vector/map_vector.hpp"

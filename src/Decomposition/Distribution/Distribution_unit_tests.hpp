@@ -298,22 +298,20 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 
 	//! [Initialize a ParMetis Cartesian graph and decompose]
 
-	if (v_cl.getProcessUnitID() == 0)
-	{
-		// write the first decomposition
-		pmet_dist.write("vtk_dist_parmetis_distribution_0");
+	// write the first decomposition
+	pmet_dist.write("vtk_dist_parmetis_distribution_0");
 
 #ifdef HAVE_OSX
 
-        bool test = compare("vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_osx_test.vtk");
-        BOOST_REQUIRE_EQUAL(true,test);
+    bool test = compare("vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_osx_test.vtk");
+    BOOST_REQUIRE_EQUAL(true,test);
 
 #else
 
-		bool test = compare("vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_test.vtk");
-		BOOST_REQUIRE_EQUAL(true,test);
+	bool test = compare("vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_test.vtk");
+	BOOST_REQUIRE_EQUAL(true,test);
+
 #endif
-	}
 
 	//! [refine with dist_parmetis the decomposition]
 

@@ -9,7 +9,7 @@
 #define VECTOR_DIST_ITERATOR_HPP_
 
 #include "vector_dist_key.hpp"
-#include "VCluster.hpp"
+#include "VCluster/VCluster.hpp"
 
 class vector_dist_iterator
 {
