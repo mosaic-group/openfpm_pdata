@@ -108,7 +108,7 @@ struct ed
 
 	template<unsigned int dim, typename Mem> inline ed & operator=(const encapc<dim, ed, Mem> & p)
 	{
-		boost::fusion::at_c<0>(data) = p.get<0>();
+		boost::fusion::at_c<0>(data) = p.template get<0>();
 
 		return *this;
 	}
