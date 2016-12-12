@@ -398,16 +398,8 @@ BOOST_AUTO_TEST_CASE( Space_distribution_test)
 		// write the first decomposition
 		space_dist.write("vtk_dist_space_distribution_0");
 
-#ifdef HAVE_OSX
-
-        bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_osx_test.vtk");
-        BOOST_REQUIRE_EQUAL(true,test);
-
-#else
-
 		bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_vtk_dist_space_distribution_0.vtk","src/Decomposition/Distribution/test_data/" + std::to_string(v_cl.getProcessUnitID()) + + "_vtk_dist_space_distribution_0_test.vtk");
 		BOOST_REQUIRE_EQUAL(true,test);
-#endif
 	}
 
 	//! [refine with dist_parmetis the decomposition]
