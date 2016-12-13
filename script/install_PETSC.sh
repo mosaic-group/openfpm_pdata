@@ -310,7 +310,7 @@ cd petsc-3.6.4
 
 echo "./configure --with-cxx-dialect=C++11 --with-mpi-dir=$mpi_dir  $configure_options  --prefix=$1/PETSC --with-debugging=0"
 
-./configure CXX=$CXX CC=$CC F77=$F77 FC=$FC --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $MUMPS_extra_lib  $configure_options  --prefix=$1/PETSC --with-debugging=0
+./configure --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $MUMPS_extra_lib  $configure_options  --prefix=$1/PETSC --with-debugging=0
 make all test
 make install
 
