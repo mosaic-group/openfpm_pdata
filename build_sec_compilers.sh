@@ -30,7 +30,13 @@ if [ "$2" == "taurus" ]; then
     module load gcc/4.9.3
     module load intel/2017.0.020
 
-    ./install -m -i "/scratch/p_ppm/openfpm_deps_intel" -s
+    echo "3" > input_install
+    echo "1" >> input_install
+    echo "1" >> input_install
+    echo "24" >> input_install
+    echo "y" >> input_install
+
+    ./install -m -i "/scratch/p_ppm/openfpm_deps_intel" < input_install
 
 fi
 
