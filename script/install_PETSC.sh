@@ -161,54 +161,55 @@ fi
 
 ### MUMPS installation
 
-if [ ! -d "$1/MUMPS" ]; then
-  rm MUMPS_5.0.1.tar.gz
-  rm -rf MUMPS_5.0.1
-  wget http://ppmcore.mpi-cbg.de/upload/MUMPS_5.0.1.tar.gz
-  if [ $? -ne 0 ]; then
-    echo -e "\033[91;5;1m FAILED Installation require an Internet connection \033[0m"
-    exit 1
-  fi
-  tar -xf MUMPS_5.0.1.tar.gz
-  cd MUMPS_5.0.1
-  cp Make.inc/Makefile.inc.generic Makefile.inc
+if [ x"$CXX" != x"icpc" ]; then
+  if [ ! -d "$1/MUMPS" ]; then
+    rm MUMPS_5.0.1.tar.gz
+    rm -rf MUMPS_5.0.1
+    wget http://ppmcore.mpi-cbg.de/upload/MUMPS_5.0.1.tar.gz
+    if [ $? -ne 0 ]; then
+      echo -e "\033[91;5;1m FAILED Installation require an Internet connection \033[0m"
+      exit 1
+    fi
+    tar -xf MUMPS_5.0.1.tar.gz
+    cd MUMPS_5.0.1
+    cp Make.inc/Makefile.inc.generic Makefile.inc
  
-  # Installation for linux
+    # Installation for linux
 
-  $sed_command -i "/CC\s\+=\scc/c\CC = mpicc" Makefile.inc
-  $sed_command -i "/FC\s\+=\sf90/c\FC = mpif90" Makefile.inc
-  $sed_command -i "/FL\s\+=\sf90/c\FL = mpif90" Makefile.inc
+    $sed_command -i "/CC\s\+=\scc/c\CC = mpicc" Makefile.inc
+    $sed_command -i "/FC\s\+=\sf90/c\FC = mpif90" Makefile.inc
+    $sed_command -i "/FL\s\+=\sf90/c\FL = mpif90" Makefile.inc
 
-  $sed_command -i "/SCALAP\s\+=\s-lscalapack\s-lblacs/c\SCALAP = -L$1/SCALAPACK/lib -L$1/OPENBLAS/lib -lscalapack" Makefile.inc
-  $sed_command -i "/LIBBLAS\s\+=\s\-lopenblas/c\LIBBLAS = -lopenblas" Makefile.inc
+    $sed_command -i "/SCALAP\s\+=\s-lscalapack\s-lblacs/c\SCALAP = -L$1/SCALAPACK/lib -L$1/OPENBLAS/lib -lscalapack" Makefile.inc
+    $sed_command -i "/LIBBLAS\s\+=\s\-lopenblas/c\LIBBLAS = -lopenblas" Makefile.inc
 
-  $sed_command -i "/OPTF\s\+=\s\-O/c\OPTF = -fpic -O3" Makefile.inc
-  $sed_command -i "/OPTC\s\+=\s\-O\s-I./c\OPTC = -fpic -O3 -I." Makefile.inc
-  $sed_command -i "/OPTL\s\+=\s\-O/c\OPTL = -fpic -O3" Makefile.inc
+    $sed_command -i "/OPTF\s\+=\s\-O/c\OPTF = -fpic -O3" Makefile.inc
+    $sed_command -i "/OPTC\s\+=\s\-O\s-I./c\OPTC = -fpic -O3 -I." Makefile.inc
+    $sed_command -i "/OPTL\s\+=\s\-O/c\OPTL = -fpic -O3" Makefile.inc
 
-  $sed_command -i "/LIBBLAS\s=\s-lblas/c\LIBBLAS = -lopenblas" Makefile.inc
+    $sed_command -i "/LIBBLAS\s=\s-lblas/c\LIBBLAS = -lopenblas" Makefile.inc
 
-  $sed_command -i "/INCPAR\s\+=\s\-I\/usr\/include/c\INCPAR =" Makefile.inc
-  $sed_command -i "/LIBPAR\s\+=\s\$(SCALAP)\s\-L\/usr\/lib\s\-lmpi/c\LIBPAR = \$(SCALAP)" Makefile.inc
+    $sed_command -i "/INCPAR\s\+=\s\-I\/usr\/include/c\INCPAR =" Makefile.inc
+    $sed_command -i "/LIBPAR\s\+=\s\$(SCALAP)\s\-L\/usr\/lib\s\-lmpi/c\LIBPAR = \$(SCALAP)" Makefile.inc
 
-  make -j $2
+    make -j $2
   
-  if [ $? -eq 0 ]; then
-    ## Copy LIB and include in the target directory
+    if [ $? -eq 0 ]; then
+      ## Copy LIB and include in the target directory
 
-    mkdir $1/MUMPS
-    cp -r include $1/MUMPS
-    cp -r lib $1/MUMPS
+      mkdir $1/MUMPS
+      cp -r include $1/MUMPS
+      cp -r lib $1/MUMPS
 
+      MUMPS_extra_lib="--with-mumps-lib=\"$1/MUMPS/lib/libdmumps.a $1/MUMPS/lib/libmumps_common.a $1/MUMPS/lib/libpord.a\""
+      configure_options="$configure_options --with-mumps=yes  --with-mumps-include=$1/MUMPS/include"
+
+    fi
+  else
+    echo "MUMPS already installed"
     MUMPS_extra_lib="--with-mumps-lib=\"$1/MUMPS/lib/libdmumps.a $1/MUMPS/lib/libmumps_common.a $1/MUMPS/lib/libpord.a\""
-    configure_options="$configure_options --with-mumps=yes  --with-mumps-include=$1/MUMPS/include"
-
+    configure_options="$configure_options --with-mumps=yes --with-mumps-lib=\"$MUMPS_extra_lib\"  --with-mumps-include=$1/MUMPS/include"
   fi
-
-else
-  echo "MUMPS already installed"
-  MUMPS_extra_lib="--with-mumps-lib=\"$1/MUMPS/lib/libdmumps.a $1/MUMPS/lib/libmumps_common.a $1/MUMPS/lib/libpord.a\""
-  configure_options="$configure_options --with-mumps=yes --with-mumps-lib=\"$MUMPS_extra_lib\"  --with-mumps-include=$1/MUMPS/include"
 fi
 
 ## SuperLU installation
