@@ -21,6 +21,15 @@ fi
 
 mkdir openfpm_numerics/src/config
 
-source gcc/5.3.0
+
+if [ "$2" == "taurus" ]; then
+	echo "Compiling on taurus with intel compiler"
+
+	module load gcc/4.9.3
+	module load intel/2017.0.020
+
+	./install -m -i "/scratch/p_ppm/openfpm_deps_intel" -s
+
+fi
 
 
