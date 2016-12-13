@@ -102,17 +102,20 @@ public:
 						std::cout << "Cont. size on " << l << " dimension: " << sz1[l] << std::endl;
 					}
 */
+
+					auto inte_box_cont = cd_sm.convertCellUnitsIntoDomainSpace(inte_box);
+
 					// Get processor ID that store intersection box
 					Point<dim,St> p;
-					for (size_t i = 0; i < dim; i++)
-						p.get(i) = (inte_box.getHigh(i) + inte_box.getLow(i))/2;
+					for (size_t n = 0; n < dim; n++)
+						p.get(n) = (inte_box_cont.getHigh(n) + inte_box_cont.getLow(n))/2;
 
-					//std::cout << "Point: (" << p.get(0) << "; " << p.get(1) << ")" << std::endl;
+					std::cout << "Point: (" << p.get(0) << "; " << p.get(1) << ")" << std::endl;
 
 					p_id = dec.processorID(p);
 					prc_sz.get(p_id)++;
 
-					//std::cout << "P_id: " << p_id << std::endl;
+					std::cout << "P_id: " << p_id << std::endl;
 
 					// Convert intersection box from contiguous to discrete
 					//SpaceBox<dim,long int> inte_box_discr = cd_sm.convertDomainSpaceIntoGridUnits(inte_box,dec.periodicity());
@@ -133,12 +136,11 @@ public:
 
 					for (size_t l = 0; l < dim; l++)
 						std::cout << "GR Size on " << l << " dimension: " << gr.getGrid().size(l) << std::endl;
-
 					// Size of the grid to send
 					size_t sz[dim];
 					for (size_t l = 0; l < dim; l++)
 					{
-						sz[l] = inte_box_local.getHigh(l) - inte_box_local.getLow(l);
+						sz[l] = inte_box_local.getHigh(l) - inte_box_local.getLow(l) + 1;
 						std::cout << "GR_send size on " << l << " dimension: " << sz[l] << std::endl;
 					}
 
@@ -160,8 +162,8 @@ public:
 					{
 						auto key = it.get();
 						std::string str = key.to_string();
-						std::cout << "Key: " << str << std::endl;
 
+						std::cout << "Key: " << str << std::endl;
 						gr_send.get_o(key) = gr.get_o(key);
 
 						//gr_send.template get<0>(key) = gr.template get<0>(key);
@@ -172,7 +174,7 @@ public:
 						++it;
 					}
 					// Add to the labeling vector
-					//lbl_b.get(p_id).add(gr_send);
+					lbl_b.get(p_id).add(gr_send);
 					//std::cout << "9" << std::endl;
 
 				}
