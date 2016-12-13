@@ -113,7 +113,8 @@ if [ ! -d "$1/TRILINOS" ]; then
   if [ x"$CXX" == x"clang++" ]; then
     conf_trl_openmp="-D Trilinos_ENABLE_OpenMP=OFF"
   elif [ x"$CXX" == x"icpc" ]; then
-    configure_trilinos_options="$configure_trilinos_options -D Trilinos_ENABLE_Xpetra=OFF -D Trilinos_ENABLE_Amesos2=OFF -D Trilinos_ENABLE_Ifpack2=OFF -D Trilinos_ENABLE_Teko=OFF -D Trilinos_ENABLE_Teuchos=OFF "
+    
+    configure_trilinos_options="$configure_trilinos_options -D Trilinos_ENABLE_Xpetra=OFF -D Trilinos_ENABLE_Amesos2=OFF -D Trilinos_ENABLE_Ifpack2=OFF -D Trilinos_ENABLE_Teko=OFF "
   else
     conf_trl_openmp="-D Trilinos_ENABLE_OpenMP=ON"
 #    petsc_openmp="--with-openmp=yes"
@@ -145,6 +146,7 @@ if [ ! -d "$1/SCALAPACK" ]; then
   cd scalapack-2.0.2
   mkdir build
   cd build
+  echo "cmake -D CMAKE_EXE_LINKER_FLAGS=-pthread  -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_Fortran_FLAGS_RELEASE=-fpic -D MPI_C_COMPILER_FLAGS=-fpic -D MPI_Fortran_COMPILER_FLAGS=-fpic -D CMAKE_C_FLAGS=-fpic -D CMAKE_INSTALL_PREFIX="$1/SCALAPACK" $configure_options_scalapack ../."
   cmake -D CMAKE_EXE_LINKER_FLAGS=-pthread  -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_Fortran_FLAGS_RELEASE=-fpic -D MPI_C_COMPILER_FLAGS=-fpic -D MPI_Fortran_COMPILER_FLAGS=-fpic -D CMAKE_C_FLAGS=-fpic -D CMAKE_INSTALL_PREFIX="$1/SCALAPACK" $configure_options_scalapack ../.
   make -j $2
   if [ $? -eq 0 ]; then
