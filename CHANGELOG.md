@@ -1,7 +1,17 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [0.6.0] - End October 2016
+## [0.7.0] 15 December 2016
+
+### Added
+- Symmetric cell-list/verlet list Crossing scheme
+- VCluster examples
+- cell-list crossing scheme
+
+### Fixed
+- Critical bug OpenFPM has a bug handling decomposition where a processor has a disconnected domains
+
+## [0.6.0] - 5 November 2016
 
 ### Added
 - Symmetric cell-list/verlet list
