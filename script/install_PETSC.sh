@@ -2,8 +2,8 @@
 
 # check if the directory $1/PETSC exist
 
-CXX=$3
-CC=$4
+CXX=$4
+CC=$3
 F77=$5
 FC=$6
 
