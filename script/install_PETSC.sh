@@ -283,7 +283,7 @@ if [ ! -d "$1/HYPRE" ]; then
 
   cd src
 
-  ./configure CFLAGS=-fpic  $configure_options_hypre --prefix=$1/HYPRE
+  ./configure CC=mpicc CXX=mpic++ CFLAGS=-fpic  $configure_options_hypre --prefix=$1/HYPRE
   make -j $2
 
   if [ $? -eq 0 ]; then
