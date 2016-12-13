@@ -36,7 +36,7 @@ if [ "$2" == "taurus" ]; then
     echo "24" >> input_install
     echo "y" >> input_install
 
-    ./install -m -i "/scratch/p_ppm/openfpm_deps_intel" < input_install
+    ./install -i "/scratch/p_ppm/openfpm_deps_intel" < input_install
 
 fi
 
