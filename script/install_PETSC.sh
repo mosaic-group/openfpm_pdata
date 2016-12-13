@@ -113,7 +113,7 @@ if [ ! -d "$1/TRILINOS" ]; then
   if [ x"$CXX" == x"clang++" ]; then
     conf_trl_openmp="-D Trilinos_ENABLE_OpenMP=OFF"
   elif [ x"$CXX" == x"icpc" ]; then
-    configure_trilinos_options="$configure_trilinos_options -D Trilinos_ENABLE_Xpetra=OFF -D Trilinos_ENABLE_Amesos2=OFF -D Trilinos_ENABLE_Ifpack2=OFF -D Trilinos_ENABLE_Teko=OFF"
+    configure_trilinos_options="$configure_trilinos_options -D Trilinos_ENABLE_Xpetra=OFF -D Trilinos_ENABLE_Amesos2=OFF -D Trilinos_ENABLE_Ifpack2=OFF -D Trilinos_ENABLE_Teko=OFF -D Trilinos_ENABLE_Teuchos=OFF "
   else
     conf_trl_openmp="-D Trilinos_ENABLE_OpenMP=ON"
 #    petsc_openmp="--with-openmp=yes"

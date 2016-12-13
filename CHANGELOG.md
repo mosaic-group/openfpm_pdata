@@ -9,7 +9,10 @@ All notable changes to this project will be documented in this file.
 - cell-list crossing scheme
 
 ### Fixed
-- Critical bug OpenFPM has a bug handling decomposition where a processor has a disconnected domains
+- CRITICAL BUG: OpenFPM has a bug handling decomposition when a processor has a disconnected domains
+                (By experience this case has been seen on big number of processors). Please update to
+                0.7.0 or apply the patch to upgrade to 0.6.1
+
 
 ## [0.6.0] - 5 November 2016
 
