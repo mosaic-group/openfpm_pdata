@@ -126,7 +126,7 @@ void Test3D_unb_ghost_periodic(const Box<3,float> & domain, long int k)
 {
 	Vcluster & v_cl = create_vcluster();
 
-	if ( v_cl.getProcessingUnits() >= 24 )
+	if ( v_cl.getProcessingUnits() > 24 )
 		return;
 
 	long int big_step = k / 30;
