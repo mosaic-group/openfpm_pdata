@@ -1,7 +1,7 @@
 #include "Grid/grid_dist_id.hpp"
 #include "data_type/aggregate.hpp"
 #include "Decomposition/CartDecomposition.hpp"
-#include "VCluster.hpp"
+#include "VCluster/VCluster.hpp"
 
 /*!
  *

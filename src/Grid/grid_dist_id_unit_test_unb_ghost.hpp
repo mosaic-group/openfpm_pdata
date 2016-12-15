@@ -121,7 +121,6 @@ void Test3D_unb_ghost(const Box<3,float> & domain, long int k)
 
 
 // Test grid periodic
-
 void Test3D_unb_ghost_periodic(const Box<3,float> & domain, long int k)
 {
 	Vcluster & v_cl = create_vcluster();

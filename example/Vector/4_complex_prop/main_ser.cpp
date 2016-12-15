@@ -53,10 +53,50 @@ public:
 		ptr = NULL;
 	}
 
+	//! Copy constructor
+	my_struct(const my_struct & my)
+	{
+		this->operator=(my);
+	}
+
+	//! Copy constructor from temporal object
+	my_struct(my_struct && my)
+	{
+		this->operator=(my);
+	}
+
 	~my_struct()
 	{
 		if (ptr != NULL)
 			delete [] ptr;
+	}
+
+	//! This is fundamental to avoid crash, otherwise
+	// we copy pointer and we do double delete
+	my_struct & operator=(const my_struct & my)
+	{
+		size = my.size;
+		str = my.str;
+		v = my.v;
+
+		ptr = new char[size];
+		memcpy(ptr,my.ptr,32);
+
+		return *this;
+	}
+
+	//! This is fundamental to avoid crash, otherwise
+	// we copy pointer and we do double delete
+	my_struct & operator=(my_struct && my)
+	{
+		size = my.size;
+		my.size = 0;
+		str.swap(my.str);
+		v.swap(my.v);
+		ptr = my.ptr;
+		my.ptr = 0;
+
+		return *this;
 	}
 
 	//! \cond [con and dest] \endcond
@@ -254,7 +294,7 @@ public:
  *
  * \snippet Vector/4_complex_prop/main_ser.cpp unpacker ser other
  *
- * ### Constructor and destructor ###
+ * ### Constructor and destructor and operator= ###
  *
  * Constructor and destructor are not releated to serialization and de-serialization concept.
  * But on how my_struct is constructed and destructed in order to avoid memory

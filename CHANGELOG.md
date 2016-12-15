@@ -14,6 +14,9 @@ All notable changes to this project will be documented in this file.
                 0.7.0 or apply the patch to upgrade to 0.6.1
 - Found and fixed a memory leak when using complex properties
 
+### Changed
+- The file VCluster has been mooved #include "VCluster.hpp" must be changed to #include "VCluster/VCluster.hpp"
+  BECAUSE OF THIS, PLEASE CLEAN THE OPENFPM FOLDER OTHERWISE YOU WILL END TO HAVE 2 VCLUSTER.HPP
 
 ## [0.6.0] - 5 November 2016
 

@@ -22,7 +22,7 @@
 //! \cond [include] \endcond
 
 #include "Plot/GoogleChart.hpp"
-#include "VCluster.hpp"
+#include "VCluster/VCluster.hpp"
 
 //! \cond [include] \endcond
 
