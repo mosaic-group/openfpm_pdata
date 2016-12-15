@@ -209,7 +209,7 @@ detect_compiler
 if [ $dgc_ret -eq 0 ]; then
   echo -e "g++ \033[91;5;1m FAILED \033[0m"
   solve_gpp $platform
-  detect_gcc_or_clang $compiler_gpp
+  detect_compiler
   if [ $dgc_ret -eq 0 ]; then
     exit 1
   fi
