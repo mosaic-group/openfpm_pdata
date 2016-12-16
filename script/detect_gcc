@@ -1,5 +1,21 @@
 #! /bin/bash
 
+function gpp_clang()
+{
+    if [ x"$dgc_compiler" == g++ ]; then
+        CXX=g++
+        CC=gcc
+        F77=gfortran
+        FC=gfortran
+    else
+        CXX=clang++
+        CC=clang
+        F77=gfortran
+        FC=gfortran
+    fi
+}
+
+
 function detect_compiler()
 {
     gpp_found=0
@@ -49,9 +65,9 @@ function detect_compiler()
              dgc_ret=1
              gpp_found=1
            fi
+		else
+        	dgc_ret=2
         fi
-
-        dgc_ret=2
     fi
 
     g++ --version | grep g++
@@ -164,17 +180,11 @@ function detect_compiler()
           FC=ifort
           dgc_compiler=icpc
         else
-          CXX=g++
-          CC=gcc
-          F77=gfortran
-          FC=gfortran
+          gpp_clang
         fi
         dgc_ret=1
     else
-        CXX=g++
-        CC=gcc
-        F77=gfortran
-        FC=gfortran
+        gpp_clang
     fi
 }
 
