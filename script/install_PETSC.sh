@@ -239,7 +239,7 @@ if [ ! -d "$1/SUPERLU_DIST" ]; then
   $sed_command -i "/CC\s\+=\scc/c\CC = mpicc" make.inc
   $sed_command -i "/FORTRAN\s\+=\sftn/c\FORTRAN = mpif90" make.inc
 
-  if [ x"$dgc_compiler" == x"clang++" ]; then
+  if [ x"$CXX" == x"clang++" ]; then
     $sed_command -i "/CFLAGS\s\+=\s-fast\s-m64\s-std=c99\s-Wall\s-openmp\s\\\/c\CFLAGS =-fpic -O3 -m64 -std=c99 -Wall \$(I_PARMETIS) -DDEBUGlevel=0 -DPRNTlevel=0 -DPROFlevel=0" make.inc
   else
     $sed_command -i "/CFLAGS\s\+=\s-fast\s-m64\s-std=c99\s-Wall\s-openmp\s\\\/c\CFLAGS =-fpic -O3 -m64 -std=c99 -Wall -fopenmp \$(I_PARMETIS) -DDEBUGlevel=0 -DPRNTlevel=0 -DPROFlevel=0" make.inc
