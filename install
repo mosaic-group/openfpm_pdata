@@ -258,8 +258,10 @@ else
                 echo "Error the installation of Boost failed"
                 exit 1
             fi
-            if [ x"$dgc_compiler" == x"icpc" ]; then
+            if [ x"$CXX" == x"icpc" ]; then
               ./script/install_BOOST.sh $i_dir $ncore intel-linux
+            elif [ x"$CXX" == x"clang++" ]; then
+              ./script/install_BOOST.sh $i_dir $ncore darwin
             else
               ./script/install_BOOST.sh $i_dir $ncore gcc
             fi
