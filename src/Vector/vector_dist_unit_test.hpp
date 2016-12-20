@@ -11,7 +11,7 @@
 #include <random>
 #include "Vector/vector_dist.hpp"
 #include "data_type/aggregate.hpp"
-#include "Vector/vector_dist_performance_util.hpp"
+#include "Vector/performance/vector_dist_performance_util.hpp"
 
 /*! \brief Count the total number of particles
  *

@@ -10,14 +10,17 @@
 
 #include "Plot/GoogleChart.hpp"
 
+// Number of tests
+#define N_VERLET_TEST 3
+
 /*! \brief Print out only ones (no matter how many processors involved)
  *
  * \param test, sz Data to print out
  */
-void print_test_v(std::string test, size_t sz)
+void print_test_v(std::string test)
 {
 	if (create_vcluster().getProcessUnitID() == 0)
-		std::cout << "\n" << test << " " << sz << "\n";
+		std::cout << test  << "\n";
 }
 
 /*! \brief Initialize a distributed vector
@@ -281,7 +284,7 @@ template<typename V> double benchmark_get_verlet(V & vd, float r_cut)
 	t.start();
 
 	//get verlet
-	vd.getVerlet(verlet,r_cut);
+	auto vr = vd.getVerlet(r_cut);
 
 	t.stop();
 
@@ -455,6 +458,9 @@ template<unsigned int dim> void vd_verlet_random_benchmark(size_t k_start, size_
 	time_rand.resize(r_cutoff.size());
 	time_total_rand.resize(r_cutoff.size());
 
+	std::string str("Testing " + std::to_string(dim) + "D vector no-order, Verlet-list");
+	print_test_v(str);
+
 	{
 		//For different r_cut
 		for (size_t r = 0; r < r_cutoff.size(); r++ )
@@ -467,20 +473,12 @@ template<unsigned int dim> void vd_verlet_random_benchmark(size_t k_start, size_
 			//Number of particles
 			size_t k = k_start * v_cl.getProcessingUnits();
 
-			std::string str("Testing " + std::to_string(dim) + "D vector without an Hilbert curve reordering k<=");
-
-			print_test_v(str,k);
-
-			std::cout << std::endl << "Cut-off raidus is " << r_cut << std::endl;
-
 			//Counter number for amounts of particles
 			size_t k_count = 1 + log2(k/k_min);
 
 			for (size_t k_int = k ; k_int >= k_min ; k_int/=2 )
 			{
 				BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector without an Hilbert curve reordering k=" << k_int );
-
-				std::cout << std::endl << "Number of particles: " << k_int << std::endl;
 
 				if (n_particles.size() < k_count)
 					n_particles.add(k_int);
@@ -507,31 +505,27 @@ template<unsigned int dim> void vd_verlet_random_benchmark(size_t k_start, size_
 
 				//Get verlet list
 
-				size_t n = 0;
 				double sum_verlet = 0;
-
-				for ( ; n < 3; n++)
-				{
+				for (size_t n = 0 ; n < N_VERLET_TEST; n++)
 					sum_verlet += benchmark_get_verlet(vd,r_cut);
-				}
-				std::cout << "Average of " << n << " calculations: verlet time = " << sum_verlet / n << std::endl;
+				sum_verlet /= N_VERLET_TEST;
 
 				//Calculate forces
 
 				auto NN = vd.getCellList(r_cut);
 				double sum_forces = 0;
-				size_t l = 0;
 
-				for ( ; l < 3; l++)
-				{
+				for (size_t l = 0 ; l < N_VERLET_TEST ; l++)
 					sum_forces += benchmark_calc_forces<dim>(NN,vd,r_cut);
-				}
-				std::cout << "Average of " << l << " calculations: forces time = " << sum_forces / l << std::endl;
-				time_rand.get(r).add(sum_forces / l);
+				sum_forces /= N_VERLET_TEST;
+
+				time_rand.get(r).add(sum_forces);
 
 				//Average total time
-				time_total_rand.get(r).add(sum_forces / l + sum_verlet / n);
-				std::cout << "Average total time = " << sum_forces / l + sum_verlet / n << std::endl;
+				time_total_rand.get(r).add(sum_forces + sum_verlet);
+
+				if (v_cl.getProcessUnitID() == 0)
+					std::cout << "Particles: " << k_int << "," << "cut-off: " << r_cut << " time to construct a Verlet list = " << sum_verlet << "    calculate force = " << sum_forces << std::endl;
 			}
 		}
 	}
@@ -562,6 +556,9 @@ template<unsigned int dim> void vd_verlet_hilbert_benchmark(size_t k_start, size
 		}
 	}
 
+	std::string str("Testing " + std::to_string(dim) + "D vector, Hilbert curve reordering, Verlet-list");
+	print_test_v(str);
+
 	// For different r_cut
 	for (size_t r = 0; r < r_cutoff.size(); r++ )
 	{
@@ -573,26 +570,15 @@ template<unsigned int dim> void vd_verlet_hilbert_benchmark(size_t k_start, size
 		// Number of particles
 		size_t k = k_start * v_cl.getProcessingUnits();
 
-		std::string str("Testing " + std::to_string(dim) + "D vector with an Hilbert curve reordering k<=");
-
-		print_test_v(str,k);
-
-		std::cout << std::endl << "Cut-off raidus is " << r_cut << std::endl;
-
 		//For different curve orders
 		for ( size_t i = 0; i < orders.size(); i++)
 		{
 			size_t m = orders.get(i);
-
-			std::cout << std::endl << "Order of a curve: " << orders.get(i) << std::endl;
-
 			size_t part = 0;
 
 			for (size_t k_int = k ; k_int >= k_min ; k_int/=2, part++ )
 			{
 				BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector with an Hilbert curve reordering k=" << k_int );
-
-				std::cout << std::endl << "Number of particles: " << k_int << std::endl;
 
 				Box<dim,float> box;
 
@@ -618,41 +604,34 @@ template<unsigned int dim> void vd_verlet_hilbert_benchmark(size_t k_start, size
 				//Reorder a vector
 
 				double sum_reorder = 0;
-				size_t h = 0;
-
-				for ( ; h < 3; h++)
-				{
+				for (size_t h = 0 ; h < N_VERLET_TEST; h++)
 					sum_reorder += benchmark_reorder(vd,m);
-				}
-				std::cout << "Average of " << h << " calculations: reordering time = " << sum_reorder / h << std::endl;
+				sum_reorder /= N_VERLET_TEST;
 
 				//Get verlet list
 
-				size_t n = 0;
 				double sum_verlet = 0;
 
-				for ( ; n < 3; n++)
-				{
+				for (size_t n = 0 ; n < N_VERLET_TEST; n++)
 					sum_verlet += benchmark_get_verlet(vd,r_cut);
-				}
-				std::cout << "Average of " << n << " calculations: verlet time = " << sum_verlet / n << std::endl;
+				sum_verlet /= N_VERLET_TEST;
 
 				//Calculate forces
 
 				auto NN = vd.getCellList(r_cut);
 				double sum_forces = 0;
-				size_t l = 0;
 
-				for ( ; l < 3; l++)
-				{
+				for (size_t l = 0 ; l < N_VERLET_TEST; l++)
 					sum_forces += benchmark_calc_forces<dim>(NN,vd,r_cut);
-				}
-				std::cout << "Average of " << l << " calculations: forces time = " << sum_forces / l << std::endl;
-				time_hilb.get(r).get(part).get(i) = sum_forces / l;
+				sum_forces /= N_VERLET_TEST;
+
+				time_hilb.get(r).get(part).get(i) = sum_forces;
 
 				//Average total time
-				std::cout << "Average total time = " << sum_forces / l + sum_verlet / n + sum_reorder / h << std::endl;
-				time_total_hilb.get(r).get(part).get(i) = sum_forces / l + sum_verlet / n + sum_reorder / h;
+				time_total_hilb.get(r).get(part).get(i) = sum_forces + sum_verlet + sum_reorder;
+
+				if (v_cl.getProcessUnitID() == 0)
+					std::cout << "Order = " << m << ", Cut-off = " << r_cut << ", Particles = " << k_int << ". Time to reorder: " << sum_reorder << " time to get the verlet-list: " << sum_verlet << " time to calculate forces: " << sum_forces << std::endl;
 			}
 		}
 	}
@@ -666,6 +645,9 @@ template<unsigned int dim> void vd_cl_random_benchmark(size_t cl_k_start, size_t
 	cl_time_rand.resize(cl_r_cutoff.size());
 	cl_time_total_rand.resize(cl_r_cutoff.size());
 
+	std::string str("Testing " + std::to_string(dim) + "D vector, no-order, Cell-list");
+	print_test_v(str);
+
 	{
 		//For different r_cut
 		for (size_t r = 0; r < cl_r_cutoff.size(); r++ )
@@ -678,12 +660,6 @@ template<unsigned int dim> void vd_cl_random_benchmark(size_t cl_k_start, size_t
 			//Number of particles
 			size_t k = cl_k_start * v_cl.getProcessingUnits();
 
-			std::string str("Testing " + std::to_string(dim) + "D vector without an Hilbert curve reordering k<=");
-
-			print_test_v(str,k);
-
-			std::cout << std::endl << "Cut-off raidus is " << r_cut << std::endl;
-
 			//Counter number for amounts of particles
 			size_t k_count = 1 + log2(k/cl_k_min);
 
@@ -691,8 +667,6 @@ template<unsigned int dim> void vd_cl_random_benchmark(size_t cl_k_start, size_t
 			for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2 )
 			{
 				BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector without an Hilbert curve reordering k=" << k_int );
-
-				std::cout << std::endl << "Number of particles: " << k_int << std::endl;
 
 				if (cl_n_particles.size() < k_count)
 					cl_n_particles.add(k_int);
@@ -724,27 +698,26 @@ template<unsigned int dim> void vd_cl_random_benchmark(size_t cl_k_start, size_t
 				size_t n = 0;
 				double sum_cl = 0;
 
-				for ( ; n < 3; n++)
-				{
+				for ( ; n < N_VERLET_TEST ; n++)
 					sum_cl += benchmark_get_celllist(NN,vd,r_cut);
-				}
-				std::cout << "Average of " << n << " calculations: celllist time = " << sum_cl / n << std::endl;
+				sum_cl /= N_VERLET_TEST;
 
 				//Calculate forces
 
 				double sum_forces = 0;
 				size_t l = 0;
 
-				for ( ; l < 3; l++)
-				{
+				for ( ; l < N_VERLET_TEST; l++)
 					sum_forces += benchmark_calc_forces<dim>(NN,vd,r_cut);
-				}
-				std::cout << "Average of " << l << " calculations: forces time = " << sum_forces / l << std::endl;
+				sum_forces /= N_VERLET_TEST;
+
 				cl_time_rand.get(r).add(sum_forces / l);
 
 				//Average total time
-				cl_time_total_rand.get(r).add(sum_forces / l + sum_cl / n);
-				std::cout << "Average total time = " << sum_forces / l + sum_cl / n << std::endl;
+				cl_time_total_rand.get(r).add(sum_forces + sum_cl);
+
+				if (v_cl.getProcessUnitID() == 0)
+					std::cout << "Cut-off = " << r_cut << ", Particles = " << k_int << " time to get the verlet-list: " << sum_cl << " time to calculate forces: " << sum_forces << std::endl;
 			}
 		}
 	}
@@ -790,6 +763,10 @@ template<unsigned int dim> void vd_cl_hilbert_benchmark(size_t cl_k_start, size_
 			}
 		}
 
+		// Print test
+		std::string str("Testing " + std::to_string(dim) + "D vector, Hilbert curve reordering, Cell-List");
+		print_test_v(str);
+
 		// For different r_cut
 		for (size_t r = 0; r < cl_r_cutoff.size(); r++ )
 		{
@@ -801,26 +778,15 @@ template<unsigned int dim> void vd_cl_hilbert_benchmark(size_t cl_k_start, size_
 			// Number of particles
 			size_t k = cl_k_start * v_cl.getProcessingUnits();
 
-			std::string str("Testing " + std::to_string(dim) + "D vector with an Hilbert curve reordering k<=");
-
-			print_test_v(str,k);
-
-			std::cout << std::endl << "Cut-off raidus is " << r_cut << std::endl;
-
 			//For different curve orders
 			for ( size_t i = 0; i < cl_orders.size(); i++)
 			{
 				size_t m = cl_orders.get(i);
-
-				std::cout << std::endl << "Order of a curve: " << cl_orders.get(i) << std::endl;
-
 				size_t part = 0;
 
 				for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2, part++ )
 				{
 					BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector with an Hilbert curve reordering k=" << k_int );
-
-					std::cout << std::endl << "Number of particles: " << k_int << std::endl;
 
 					Box<dim,float> box;
 
@@ -844,43 +810,34 @@ template<unsigned int dim> void vd_cl_hilbert_benchmark(size_t cl_k_start, size_
 					//Reorder a vector
 
 					double sum_reorder = 0;
-					size_t h = 0;
-
-					for ( ; h < 3; h++)
-					{
+					for (size_t h = 0 ; h < 3; h++)
 						sum_reorder += benchmark_reorder(vd,m);
-					}
-					std::cout << "Average of " << h << " calculations: reordering time = " << sum_reorder / h << std::endl;
+					sum_reorder /= N_VERLET_TEST;
 
 					vd.template ghost_get<0>();
 
 					//Get cell list
 
 					auto NN = vd.getCellList(r_cut);
-					size_t n = 0;
 					double sum_cl = 0;
-
-					for ( ; n < 3; n++)
-					{
+					for (size_t n = 0 ; n < N_VERLET_TEST; n++)
 						sum_cl += benchmark_get_celllist(NN,vd,r_cut);
-					}
-					std::cout << "Average of " << n << " calculations: celllist time = " << sum_cl / n << std::endl;
+					sum_cl /= N_VERLET_TEST;
 
 					//Calculate forces
 
 					double sum_forces = 0;
-					size_t l = 0;
-
-					for ( ; l < 3; l++)
-					{
+					for (size_t l = 0 ; l < N_VERLET_TEST ; l++)
 						sum_forces += benchmark_calc_forces<dim>(NN,vd,r_cut);
-					}
-					std::cout << "Average of " << l << " calculations: forces time = " << sum_forces / l << std::endl;
-					cl_time_hilb.get(r).get(part).get(i) = sum_forces / l;
+					sum_forces /= N_VERLET_TEST;
+
+					if (v_cl.getProcessUnitID() == 0)
+						std::cout << "Cut-off = " << r_cut << ", Particles = " << k_int << ". Time to reorder: " << sum_reorder << " time to get the cell-list: " << sum_cl << std::endl;
+
+					cl_time_hilb.get(r).get(part).get(i) = sum_forces;
 
 					//Average total time
-					std::cout << "Average total time = " << sum_forces / l + sum_cl / n + sum_reorder / h << std::endl;
-					cl_time_total_hilb.get(r).get(part).get(i) = sum_forces / l + sum_cl / n + sum_reorder / h;
+					cl_time_total_hilb.get(r).get(part).get(i) = sum_forces + sum_cl + sum_reorder;
 
 					//Move particles
 					for ( size_t d = 0; d < n_moving; d++)
@@ -896,14 +853,14 @@ template<unsigned int dim> void vd_cl_hilbert_benchmark(size_t cl_k_start, size_
 						//Calculate forces
 
 						double sum_forces_moved = 0;
-						size_t j = 0;
-
-						for ( ; j < 3; j++)
-						{
+						for (size_t j = 0 ; j < N_VERLET_TEST; j++)
 							sum_forces_moved += benchmark_calc_forces<dim>(NN,vd,r_cut);
-						}
-						std::cout << "Average of " << j << " calculations: forces time after moving = " << sum_forces_moved / j << ", iteration " << d+1 << std::endl;
-						cl_time_hilb_moved.get(d).get(r).get(part).get(i) = sum_forces_moved / j;
+						sum_forces_moved /= N_VERLET_TEST;
+
+						cl_time_hilb_moved.get(d).get(r).get(part).get(i) = sum_forces_moved;
+
+						if (v_cl.getProcessUnitID() == 0)
+							std::cout << "Order = " << m << " Cut-off = " << r_cut << ", Particles = " << k_int << ". Time to reorder: " << sum_reorder << " time to calculate forces: " << sum_forces_moved << std::endl;
 					}
 				}
 			}
@@ -919,6 +876,9 @@ template<unsigned int dim> void vd_celllist_random_benchmark(size_t cl_k_start, 
 	cl_time_rand.resize(cl_r_cutoff.size());
 	cl_time_total_rand.resize(cl_r_cutoff.size());
 
+	std::string str("Testing " + std::to_string(dim) + "D vector, no order, cell-list");
+	print_test_v(str);
+
 	{
 		//For different r_cut
 		for (size_t r = 0; r < cl_r_cutoff.size(); r++ )
@@ -931,12 +891,6 @@ template<unsigned int dim> void vd_celllist_random_benchmark(size_t cl_k_start, 
 			//Number of particles
 			size_t k = cl_k_start * v_cl.getProcessingUnits();
 
-			std::string str("Testing " + std::to_string(dim) + "D vector with a random cell list k<=");
-
-			print_test_v(str,k);
-
-			std::cout << std::endl << "Cut-off raidus is " << r_cut << std::endl;
-
 			//Counter number for amounts of particles
 			size_t k_count = 1 + log2(k/cl_k_min);
 
@@ -944,8 +898,6 @@ template<unsigned int dim> void vd_celllist_random_benchmark(size_t cl_k_start, 
 			for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2 )
 			{
 				BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector with a random cell list k=" << k_int );
-
-				std::cout << std::endl << "Number of particles: " << k_int << std::endl;
 
 				if (cl_n_particles.size() < k_count)
 					cl_n_particles.add(k_int);
@@ -974,30 +926,27 @@ template<unsigned int dim> void vd_celllist_random_benchmark(size_t cl_k_start, 
 				//Get a cell list
 
 				auto NN = vd.getCellList(r_cut);
-				size_t n = 0;
 				double sum_cl = 0;
 
-				for ( ; n < 3; n++)
-				{
+				for (size_t n = 0 ; n < 3; n++)
 					sum_cl += benchmark_get_celllist(NN,vd,r_cut);
-				}
-				std::cout << "Average of " << n << " calculations: celllist time = " << sum_cl / n << std::endl;
+				sum_cl /= N_VERLET_TEST;
 
 				//Calculate forces
 
 				double sum_forces = 0;
-				size_t l = 0;
 
-				for ( ; l < 3; l++)
-				{
+				for (size_t l = 0 ; l < 3; l++)
 					sum_forces += benchmark_calc_forces<dim>(NN,vd,r_cut);
-				}
-				std::cout << "Average of " << l << " calculations: forces time = " << sum_forces / l << std::endl;
-				cl_time_rand.get(r).add(sum_forces / l);
+				sum_forces /= N_VERLET_TEST;
+
+				cl_time_rand.get(r).add(sum_forces);
 
 				//Average total time
-				cl_time_total_rand.get(r).add(sum_forces / l + sum_cl / n);
-				std::cout << "Average total time = " << sum_forces / l + sum_cl / n << std::endl;
+				cl_time_total_rand.get(r).add(sum_forces + sum_cl);
+
+				if (v_cl.getProcessUnitID() == 0)
+					std::cout << "Cut-off = " << r_cut << ", Particles = " << k_int << ". Time to create a cell-list: " << sum_cl << " time to calculate forces: " << sum_forces << std::endl;
 			}
 		}
 	}
@@ -1011,6 +960,9 @@ template<unsigned int dim> void vd_celllist_hilbert_benchmark(size_t cl_k_start,
 	cl_time_hilb.resize(cl_r_cutoff.size());
 	cl_time_total_hilb.resize(cl_r_cutoff.size());
 
+	std::string str("Testing " + std::to_string(dim) + "D vector, Hilbert reorder, cell list");
+	print_test_v(str);
+
 	{
 		//For different r_cut
 		for (size_t r = 0; r < cl_r_cutoff.size(); r++ )
@@ -1023,12 +975,6 @@ template<unsigned int dim> void vd_celllist_hilbert_benchmark(size_t cl_k_start,
 			//Number of particles
 			size_t k = cl_k_start * v_cl.getProcessingUnits();
 
-			std::string str("Testing " + std::to_string(dim) + "D vector with an Hilbert cell list k<=");
-
-			print_test_v(str,k);
-
-			std::cout << std::endl << "Cut-off raidus is " << r_cut << std::endl;
-
 			//Counter number for amounts of particles
 			size_t k_count = 1 + log2(k/cl_k_min);
 
@@ -1036,8 +982,6 @@ template<unsigned int dim> void vd_celllist_hilbert_benchmark(size_t cl_k_start,
 			for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2 )
 			{
 				BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector with an Hilbert cell list k=" << k_int );
-
-				std::cout << std::endl << "Number of particles: " << k_int << std::endl;
 
 				if (cl_n_particles.size() < k_count)
 					cl_n_particles.add(k_int);
@@ -1067,30 +1011,25 @@ template<unsigned int dim> void vd_celllist_hilbert_benchmark(size_t cl_k_start,
 
 				auto NN = vd.getCellList_hilb(r_cut);
 
-				size_t n = 0;
 				double sum_cl = 0;
-
-				for ( ; n < 3; n++)
-				{
+				for (size_t n = 0 ; n < 3; n++)
 					sum_cl += benchmark_get_celllist_hilb(NN,vd,r_cut);
-				}
-				std::cout << "Average of " << n << " calculations: celllist time = " << sum_cl / n << std::endl;
+				sum_cl /= N_VERLET_TEST;
 
 				//Calculate forces
 
 				double sum_forces = 0;
-				size_t l = 0;
 
-				for ( ; l < 3; l++)
-				{
+				for (size_t l = 0 ; l < 3; l++)
 					sum_forces += benchmark_calc_forces_hilb<dim>(NN,vd,r_cut);
-				}
-				std::cout << "Average of " << l << " calculations: forces time = " << sum_forces / l << std::endl;
-				cl_time_hilb.get(r).add(sum_forces / l);
+				sum_forces /= N_VERLET_TEST;
+				cl_time_hilb.get(r).add(sum_forces);
 
 				//Average total time
-				cl_time_total_hilb.get(r).add(sum_forces / l + sum_cl / n);
-				std::cout << "Average total time = " << sum_forces / l + sum_cl / n << std::endl;
+				cl_time_total_hilb.get(r).add(sum_forces + sum_cl);
+
+				if (v_cl.getProcessUnitID() == 0)
+					std::cout << "Cut-off = " << r_cut << ", Particles = " << k_int << ". Time to reorder: " << sum_cl << " time to calculate forces: " << sum_forces << std::endl;
 			}
 		}
 	}
@@ -1309,9 +1248,8 @@ template<unsigned int dim> void vd_cl_performance_write_report(size_t n_moving,o
 	GoogleChart cg;
 
 	std::string str("<h1>Distributed " + std::to_string(dim) + "-D vector performance tests: </h1>");
-	str += "<h2> 1) Speedup between an unordered positioning and an Hilbert curve positioning of particles</h2>";
-	str += "We create a distributed vector (VD) of randomly positioned in a " + std::to_string(dim) + "D-box particles. Then we get a cell list of VD, with a certain cut-off radius. After that we calculate the forces of each particle. Later "
-			"a VD is reordered according to an Hilbert curve, then we calculate forces again and compare the forces calculation time for an unordered and an Hilbert curve cases. The speedup is calculated and shown on graphs below, depending on different numbers of particles.";
+	str += "<h2> 1) Speedup in force calculation between an unordered vector and a vector with particles ordered along an Hilbert curve </h2>";
+
 	cg.addHTML(str);
 
 	for (size_t i = 0; i < cl_r_cutoff.size(); i++)
@@ -1332,8 +1270,7 @@ template<unsigned int dim> void vd_cl_performance_write_report(size_t n_moving,o
 	//options2.more = "hAxis: {logScale: true}";
 
 	std::string str2("<h2>2) Total calculation time</h2>");
-	str2 += "We count a total calculation time. In the case of unordered positioning it is: cell list creation time + forces calculation time; in the case of an Hilbert curve positioning: reordering time + cell list creation time + forces calculation time."
-			"The total calculation time is shown on graphs below, depending on different numbers of particles.";
+	str2 += "The sum in time of force calculation and reordering";
 	cg.addHTML(str2);
 
 	for (size_t i = 0; i < cl_r_cutoff.size(); i++)

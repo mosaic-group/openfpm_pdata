@@ -10,9 +10,9 @@
 
 BOOST_AUTO_TEST_SUITE( performance )
 
-#include "Vector/vector_dist_verlet_performance_tests.hpp"
-#include "Vector/vector_dist_cl_performance_tests.hpp"
-#include "Vector/vector_dist_cl_hilb_performance_tests.hpp"
+#include "Vector/performance/vector_dist_verlet_performance_tests.hpp"
+#include "Vector/performance/vector_dist_cl_performance_tests.hpp"
+#include "Vector/performance/vector_dist_cl_hilb_performance_tests.hpp"
 
 
 BOOST_AUTO_TEST_SUITE_END()

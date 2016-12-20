@@ -181,6 +181,24 @@ if test x"$scancoverty" = x"yes"; then
         AC_DEFINE([COVERTY_SCAN],[],[Compile for coverty scan])
 fi
 
+###### Check for performance test
+
+AC_MSG_CHECKING(whether to build with performance test)
+test_per=no
+AC_ARG_ENABLE(test-performance,
+        AC_HELP_STRING(
+            [--enable-test-performance],
+            [enable test performance]
+        ),
+        test_per="$enableval"
+)
+
+
+
+AC_MSG_RESULT($test_per)
+if test x"$test_per" = x"yes"; then
+        AC_DEFINE([PERFORMANCE_TEST],[],[Test performance mode])
+fi
 
 ###### Checking for compiler flags -fext-numeric-literals
 
