@@ -1136,7 +1136,8 @@ template<unsigned int dim> void vd_verlet_performance_write_report(openfpm::vect
 		cg.AddLinesGraph(x,y2.get(i),yn2,options2);
 	}
 
-	cg.write("Vect_dist_verlet_perf_" + std::to_string(dim) + "D.html");
+	// Get the directory of the performance test files
+	cg.write(std::string(test_dir) + "/openfpm_pdata/Vect_dist_verlet_perf_" + std::to_string(dim) + "D.html");
 }
 
 
@@ -1299,7 +1300,7 @@ template<unsigned int dim> void vd_cl_performance_write_report(size_t n_moving,o
 		cg.AddLinesGraph(x3,y3.get(k).get(cl_r_cutoff.size()-1),yn3,options3);
 	}
 
-	cg.write("Vect_dist_cl_perf_" + std::to_string(dim) + "D.html");
+	cg.write(std::string(test_dir) + "/openfpm_pdata/Vect_dist_cl_perf_" + std::to_string(dim) + "D.html");
 }
 
 /*! \brief Function for cell list hilb performance report
@@ -1393,7 +1394,7 @@ template<unsigned int dim> void vd_celllist_performance_write_report(openfpm::ve
 		cg.AddLinesGraph(x,y2.get(i),yn2,options2);
 	}
 
-	cg.write("Vect_dist_cl_hilb_perf_" + std::to_string(dim) + "D.html");
+	cg.write(std::string(test_dir) + "/openfpm_pdata/Vect_dist_cl_hilb_perf_" + std::to_string(dim) + "D.html");
 }
 
 #endif /* SRC_VECTOR_VECTOR_DIST_PERFORMANCE_UTIL_HPP_ */
