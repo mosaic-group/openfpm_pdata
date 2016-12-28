@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_verlet_performance_write_report)
 	{
 		addUpdtateTime(cg);
 
-		cg.write(std::string(test_dir) + "/openfpm_pdata/Verletlist_comp.html");
+		cg.write("Verletlist_comp.html");
 	}
 }
 

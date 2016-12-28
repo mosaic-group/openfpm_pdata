@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_cl_performance_write_report)
 	addUpdtateTime(cg);
 
 	if (create_vcluster().getProcessUnitID() == 0)
-		cg.write(std::string(test_dir) + "/openfpm_pdata/Celllist_part_ord.html");
+		cg.write("Celllist_part_ord.html");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_cl_performance_write_report)
 		// write the xml report
 		pt.put("celllist.comp.warning",warning_level);
 
-		cg.write(std::string(test_dir) + "/openfpm_pdata/Celllist_comp_ord.html");
+		cg.write("Celllist_comp_ord.html");
 	}
 }
 
