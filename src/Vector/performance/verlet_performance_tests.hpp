@@ -54,7 +54,11 @@ BOOST_AUTO_TEST_CASE(vector_dist_verlet_performance_write_report)
 	vd_verlet_performance_write_report<2>(cg,r_cutoff,n_particles,time_force_mean_2,time_force_dev_2,time_create_mean_2,time_create_dev_2);
 
 	if (create_vcluster().getProcessUnitID() == 0)
+	{
+		addUpdtateTime(cg);
+
 		cg.write(std::string(test_dir) + "/openfpm_pdata/Verletlist_comp.html");
+	}
 }
 
 BOOST_AUTO_TEST_SUITE_END()

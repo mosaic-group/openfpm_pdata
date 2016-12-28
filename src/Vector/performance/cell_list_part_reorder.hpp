@@ -90,40 +90,6 @@ BOOST_AUTO_TEST_CASE(vector_dist_cl_performance_write_report)
 {
 	GoogleChart cg;
 
-/*	n_particles.save("debug1");
-	time_rand_mean.save("debug2");
-	time_hilb_mean.save("debug3");
-	time_rand_dev.save("debug4");
-	time_hilb_dev.save("debug5");
-	time_reorder_mean.save("debug6");
-	time_reorder_dev.save("debug7");
-	time_hilb_moved.save("debug8");
-
-	time_rand_2_mean.save("debug9");
-	time_hilb_2_mean.save("debug10");
-	time_rand_2_dev.save("debug11");
-	time_hilb_2_dev.save("debug12");
-	time_reorder_2_mean.save("debug13");
-	time_reorder_2_dev.save("debug14");
-	time_hilb_moved_2.save("debug15");*/
-
-/*	n_particles.load("debug1");
-	time_rand_mean.load("debug2");
-	time_hilb_mean.load("debug3");
-	time_rand_dev.load("debug4");
-	time_hilb_dev.load("debug5");
-	time_reorder_mean.load("debug6");
-	time_reorder_dev.load("debug7");
-	time_hilb_moved.load("debug8");
-
-	time_rand_2_mean.load("debug9");
-	time_hilb_2_mean.load("debug10");
-	time_rand_2_dev.load("debug11");
-	time_hilb_2_dev.load("debug12");
-	time_reorder_2_mean.load("debug13");
-	time_reorder_2_dev.load("debug14");
-	time_hilb_moved_2.load("debug15");*/
-
 	//Write report for 2D and 3D
 	cell_list_part_reorder_report<3>(cg,
 			                         n_moving,
@@ -148,6 +114,8 @@ BOOST_AUTO_TEST_CASE(vector_dist_cl_performance_write_report)
 									 time_hilb_2_dev,
 									 time_rand_2_dev,
 									 time_reorder_2_dev);
+
+	addUpdtateTime(cg);
 
 	if (create_vcluster().getProcessUnitID() == 0)
 		cg.write(std::string(test_dir) + "/openfpm_pdata/Celllist_part_ord.html");

@@ -861,6 +861,9 @@ template<unsigned int dim> void vd_verlet_performance_write_report(GoogleChart &
 	y_ref_create_mean.load(file_mean);
 	y_ref_create_dev.load(file_var);
 
+	// warning level
+	openfpm::vector<int> warning_vlevel;
+
 	// Get the test dir
 	std::string file_mean2(test_dir);
 	std::string file_var2(test_dir);
@@ -871,6 +874,9 @@ template<unsigned int dim> void vd_verlet_performance_write_report(GoogleChart &
 	openfpm::vector<openfpm::vector<openfpm::vector<double>>> y_ref_force_dev;
 	y_ref_force_mean.load(file_mean2);
 	y_ref_force_dev.load(file_var2);
+
+	// warning level
+	openfpm::vector<int> warning_vlevel2;
 
 	// Speedup graphs data
 	openfpm::vector<size_t> x;
@@ -912,6 +918,8 @@ template<unsigned int dim> void vd_verlet_performance_write_report(GoogleChart &
 		y.resize(time_force_mean.size());
 		for (size_t r = 0; r < time_force_mean.size(); r++)
 		{
+			int warning_level = -1;
+
 			y.get(r).resize(time_force_mean.get(r).size());
 			y_dev.get(r).resize(time_force_mean.get(r).size());
 			for (size_t k = 0; k < time_force_mean.get(r).size(); k++)
@@ -920,7 +928,11 @@ template<unsigned int dim> void vd_verlet_performance_write_report(GoogleChart &
 				y.get(r).get(k).add(time_force_mean.get(r).get(k));
 				y.get(r).get(k).add(y_ref_force_mean.get(r).get(k).get(0) - 3.0*y_ref_force_dev.get(r).get(k).get(0) );
 				y.get(r).get(k).add(y_ref_force_mean.get(r).get(k).get(0) + 3.0*y_ref_force_dev.get(r).get(k).get(0) );
+
+				warning_set(warning_level,time_force_mean.get(r).get(k),y_ref_force_mean.get(r).get(k).get(0),y_ref_force_dev.get(r).get(k).get(0));
 			}
+
+			warning_vlevel.add(warning_level);
 		}
 	}
 
@@ -962,6 +974,8 @@ template<unsigned int dim> void vd_verlet_performance_write_report(GoogleChart &
 		y2.resize(time_create_mean.size());
 		for (size_t r = 0; r < time_create_mean.size(); r++)
 		{
+			int warning_level = -1;
+
 			y2.get(r).resize(time_create_mean.get(r).size());
 			for (size_t k = 0; k < time_create_mean.get(r).size(); k++)
 			{
@@ -970,7 +984,11 @@ template<unsigned int dim> void vd_verlet_performance_write_report(GoogleChart &
 
 				y2.get(r).get(k).add(y_ref_create_mean.get(r).get(k).get(0) - 3.0*y_ref_create_dev.get(r).get(k).get(0) );
 				y2.get(r).get(k).add(y_ref_create_mean.get(r).get(k).get(0) + 3.0*y_ref_create_dev.get(r).get(k).get(0) );
+
+				warning_set(warning_level,time_create_mean.get(r).get(k),y_ref_create_mean.get(r).get(k).get(0),y_ref_create_dev.get(r).get(k).get(0));
 			}
+
+			warning_vlevel2.add(warning_level);
 		}
 	}
 
@@ -982,13 +1000,17 @@ template<unsigned int dim> void vd_verlet_performance_write_report(GoogleChart &
 	options.yAxis = std::string("Time (s)");
 	options.xAxis = std::string("Number of particles");
 	options.lineWidth = 2;
-	options.more = GC_Y_LOG + "," + GC_ZOOM;
 
 	std::string str("<h1>Verlet-list " + std::to_string(dim) + "-D performance test force calculation: </h1>");
 	cg.addHTML(str);
 
 	for (size_t i = 0; i < r_cutoff.size(); i++)
 	{
+		std::string chart_area;
+		if (warning_vlevel.size() != 0)
+			addchartarea(chart_area,warning_vlevel.get(i));
+		options.more = GC_Y_LOG + "," + GC_ZOOM + chart_area;
+
 		options.title = std::string("Verlet-list cut-off radius: " + std::to_string(r_cutoff.get(i)));
 		cg.AddLinesGraph(x,y.get(i),yn,options);
 	}
@@ -1001,13 +1023,17 @@ template<unsigned int dim> void vd_verlet_performance_write_report(GoogleChart &
 	options2.yAxis = std::string("Time to construct a verlet-list (s)");
 	options2.xAxis = std::string("Number of particles");
 	options2.lineWidth = 2;
-	options2.more = GC_ZOOM;
 
-	std::string str2("<h2>2) Total calculation time</h2>");
+	std::string str2("<h2>2) Time to construct a Verlet-list time</h2>");
 	cg.addHTML(str2);
 
 	for (size_t i = 0; i < r_cutoff.size(); i++)
 	{
+		std::string chart_area;
+		if (warning_vlevel.size() != 0)
+			addchartarea(chart_area,warning_vlevel2.get(i));
+		options2.more = GC_ZOOM + chart_area;
+
 		options2.title = std::string("Cell-list performance, cut-off radius: " + std::to_string(r_cutoff.get(i)));
 		cg.AddLinesGraph(x,y2.get(i),yn2,options2);
 	}
@@ -1036,8 +1062,21 @@ template<unsigned int dim> void cell_list_part_reorder_report(GoogleChart & cg,
 
 	// Speedup graphs data
 
-	cl_part_time<dim>(cg,cl_n_particles,cl_r_cutoff,cl_orders,cl_time_hilb_mean,cl_time_rand_mean,cl_time_hilb_dev,cl_time_rand_dev);
-	cl_part_reorder_time<dim>(cg,cl_n_particles,cl_r_cutoff,cl_orders,cl_time_reorder_mean,cl_time_reorder_dev);
+	cl_part_time<dim>(cg,
+			          cl_n_particles,
+					  cl_r_cutoff,
+					  cl_orders,
+					  cl_time_hilb_mean,
+					  cl_time_rand_mean,
+					  cl_time_hilb_dev,
+					  cl_time_rand_dev);
+
+	cl_part_reorder_time<dim>(cg,
+			                  cl_n_particles,
+							  cl_r_cutoff,
+							  cl_orders,
+							  cl_time_reorder_mean,
+							  cl_time_reorder_dev);
 }
 
 /*! \brief Function for cell list hilb performance report
@@ -1053,10 +1092,29 @@ template<unsigned int dim> void cell_list_comp_reorder_report(GoogleChart & cg,
 															  openfpm::vector<openfpm::vector<double>> & cl_time_create_hilb_mean,
 															  openfpm::vector<openfpm::vector<double>> & cl_time_create_rand_mean,
 															  openfpm::vector<openfpm::vector<double>> & cl_time_create_hilb_dev,
-															  openfpm::vector<openfpm::vector<double>> & cl_time_create_rand_dev)
+															  openfpm::vector<openfpm::vector<double>> & cl_time_create_rand_dev,
+															  double & warning_level,
+															  double & norm)
 {
-	cl_comp_normal_vs_hilbert_force_time<dim>(cg,cl_n_particles,cl_r_cutoff,cl_time_hilb_mean,cl_time_rand_mean,cl_time_hilb_dev,cl_time_rand_dev);
-	cl_comp_normal_vs_hilbert_create_time<dim>(cg,cl_n_particles,cl_r_cutoff,cl_time_create_hilb_mean,cl_time_create_rand_mean,cl_time_create_hilb_dev,cl_time_create_rand_dev);
+	cl_comp_normal_vs_hilbert_force_time<dim>(cg,
+			                                  cl_n_particles,
+											  cl_r_cutoff,
+											  cl_time_hilb_mean,
+											  cl_time_rand_mean,
+											  cl_time_hilb_dev,
+											  cl_time_rand_dev,
+											  warning_level,
+											  norm);
+
+	cl_comp_normal_vs_hilbert_create_time<dim>(cg,
+			                                   cl_n_particles,
+											   cl_r_cutoff,
+											   cl_time_create_hilb_mean,
+											   cl_time_create_rand_mean,
+											   cl_time_create_hilb_dev,
+											   cl_time_create_rand_dev,
+											   warning_level,
+											   norm);
 }
 
 #endif /* SRC_VECTOR_VECTOR_DIST_PERFORMANCE_UTIL_HPP_ */
