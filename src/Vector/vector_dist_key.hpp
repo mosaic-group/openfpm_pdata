@@ -26,7 +26,7 @@ public:
 
 	/*! \brief set the key
 	 *
-	 * \return the local key
+	 * \param key the local key
 	 *
 	 */
 	inline void setKey(size_t key)
@@ -44,7 +44,9 @@ public:
 		return key;
 	}
 
-	/*! \brief Convert the key into a message
+	/*! \brief Convert the key into a string message
+	 *
+	 * \return a string message
 	 *
 	 */
 	std::string to_string()
@@ -56,11 +58,13 @@ public:
 		return ts.str();
 	}
 
+	//! constructor from a key
 	inline vect_dist_key_dx(size_t key)
 	:key(key)
 	{
 	}
 
+	//! Default constructor
 	inline vect_dist_key_dx()
 	{
 	}

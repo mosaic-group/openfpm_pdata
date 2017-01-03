@@ -1924,13 +1924,17 @@ public:
 		e.swap(g.e);
 		e_m.swap(g.e_m);
 		v_l.swap(g.v_l);
-		glb2id = g.glb2id;
-		id2glb = g.id2glb;
-		glb2loc = g.glb2loc;
+		glb2id.swap(g.glb2id);
+		id2glb.swap(g.id2glb);
+		glb2loc.swap(g.glb2loc);
 		e_l.swap(g.e_l);
 		e_invalid.swap(g.e_invalid);
-		vtxdist = g.vtxdist;
-		fvtxdist = g.fvtxdist;
+		vtxdist.swap(g.vtxdist);
+		fvtxdist.swap(g.fvtxdist);
+
+		size_t v_slot_tmp = v_slot;
+		v_slot = g.v_slot;
+		g.v_slot = v_slot_tmp;
 	}
 
 	/*! \brief Swap the memory of g with this graph
@@ -1948,13 +1952,17 @@ public:
 		e.swap(g.e);
 		e_m.swap(g.e_m);
 		v_l.swap(g.v_l);
-		glb2id = g.glb2id;
-		id2glb = g.id2glb;
-		glb2loc = g.glb2loc;
+		glb2id.swap(g.glb2id);
+		id2glb.swap(g.id2glb);
+		glb2loc.swap(g.glb2loc);
 		e_l.swap(g.e_l);
 		e_invalid.swap(g.e_invalid);
-		vtxdist = g.vtxdist;
-		fvtxdist = g.fvtxdist;
+		vtxdist.swap(g.vtxdist);
+		fvtxdist.swap(g.fvtxdist);
+
+		size_t v_slot_tmp = v_slot;
+		v_slot = g.v_slot;
+		g.v_slot = v_slot_tmp;
 	}
 
 	/*! \brief Get the vertex iterator

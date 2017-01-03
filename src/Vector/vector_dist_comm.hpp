@@ -559,9 +559,12 @@ class vector_dist_comm
 
 	/*! \brief allocate and fill the send buffer for the map function
 	 *
+	 * \tparam prp_object object type to send
+	 * \tparam prp properties to send
+	 *
 	 * \param v_pos vector of particle positions
 	 * \param v_prp vector of particle properties
-	 * \param prc_r List of processor rank involved in the send
+	 * \param prc_sz_r number of particles to send for each processor
 	 * \param m_pos sending buffer for position
 	 * \param m_prp sending buffer for properties
 	 *
@@ -601,7 +604,6 @@ class vector_dist_comm
 	 * \param v_pos vector of particle positions
 	 * \param lbl_p Particle labeled
 	 * \param prc_sz For each processor the number of particles to send
-	 * \param opart id of the particles to send
 	 *
 	 */
 	template<typename obp> void labelParticleProcessor(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<aggregate<size_t,size_t,size_t>> & lbl_p, openfpm::vector<size_t> & prc_sz)
@@ -662,6 +664,7 @@ class vector_dist_comm
 	 *
 	 * \param v_pos vector of particle positions
 	 * \param v_prp vector of particle properties
+	 * \param prc for each particle it label the processor id (the owner of the particle, or where it should go the particle)
 	 * \param g_m ghost marker
 	 *
 	 */
@@ -768,7 +771,7 @@ public:
 	 *
 	 */
 	vector_dist_comm(Decomposition && dec)
-	:v_cl(create_vcluster()),dec(dec)
+	:v_cl(create_vcluster()),dec(dec),lg_m(0)
 	{
 
 	}

@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_disconnected_subdomains_np)
 	Vcluster & vcl = create_vcluster();
 
 	// Test for only 3 processors
-	if (vcl.getProcessingUnits() > 3)
+	if (vcl.getProcessingUnits() != 3)
 		return;
 
 	CartesianGraphFactory<2,Graph_CSR<nm_v,nm_e>> g_factory;

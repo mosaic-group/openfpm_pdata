@@ -982,7 +982,9 @@ public:
 	 * \tparam op which kind of operation to apply
 	 * \tparam prp list of properties to get synchronize
 	 *
-	 * \param opt options NO_CHANGE_ELEMENTS
+	 * \param opt_ options. It is an optional parameter.
+	 *             If set to NO_CHANGE_ELEMENTS the communication has lower latencies. This option has some usage limitations, so please refere to the examples
+	 *             for further explanations
 	 *
 	 *
 	 */
@@ -1236,6 +1238,8 @@ public:
 	 *         symmetric crossing scheme
 	 *
 	 * \param NN Cell-List neighborhood
+	 *
+	 * \return Particle iterator
 	 *
 	 */
 	template<typename cli> ParticleItCRS_Cells<dim,cli> getParticleIteratorCRS(cli & NN)

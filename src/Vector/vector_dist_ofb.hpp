@@ -20,6 +20,8 @@ struct KillParticle
 	 * \param pp_id particle id
 	 * \param p_id processor id
 	 *
+	 * \return -1
+	 *
 	 */
 	static size_t out(size_t pp_id, size_t p_id)
 	{
@@ -27,6 +29,7 @@ struct KillParticle
 	}
 };
 
+//! Out-of-bound policy kill the particle but print a warning
 struct KillParticleWithWarning
 {
 	/*! \brief It decide what to do when the particle is out
@@ -34,8 +37,10 @@ struct KillParticleWithWarning
 	 * \param pp_id particle id
 	 * \param p_id processor id
 	 *
+	 * \return -1
+	 *
 	 */
-	static size_t out(size_t p_id)
+	static size_t out(size_t pp_id, size_t p_id)
 	{
 		std::cerr << "Warning: " << __FILE__ << ":" << __LINE__ << " out of bound particle detected ";
 
@@ -43,6 +48,7 @@ struct KillParticleWithWarning
 	}
 };
 
+//! Out-of-bound policy do nothing
 struct Nothing
 {
 	/*! \brief It decide what to do when the particle is out
@@ -50,13 +56,16 @@ struct Nothing
 	 * \param pp_id particle id
 	 * \param p_id processor id
 	 *
+	 * \return -1
+	 *
 	 */
-	static size_t out(size_t p_id)
+	static size_t out(size_t pp_id, size_t p_id)
 	{
-		return p_id;
+		return -1;
 	}
 };
 
+//! Out-of-bound policy kill the program
 struct Error
 {
 	/*! \brief It decide what to do when the particle is out
@@ -64,8 +73,10 @@ struct Error
 	 * \param pp_id particle id
 	 * \param p_id processor id
 	 *
+	 * \return -1
+	 *
 	 */
-	static size_t out(size_t p_id)
+	static size_t out(size_t pp_id, size_t p_id)
 	{
 		std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " out of bound particle detected ";
 

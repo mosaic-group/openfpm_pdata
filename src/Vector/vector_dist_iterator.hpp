@@ -11,19 +11,21 @@
 #include "vector_dist_key.hpp"
 #include "VCluster/VCluster.hpp"
 
+//! Iterator that Iterate across particle indexes
 class vector_dist_iterator
 {
 	//! Actual iterator
 	size_t v_it;
 
+	//! end point
 	size_t stop;
 
 	public:
 
 	/*! \brief Constructor of the distributed grid
 	 *
-	 * \param gk the set of local vectors
-	 * \param offset iterator starting point
+	 * \param start start point
+	 * \param stop end point
 	 *
 	 */
 	vector_dist_iterator(size_t start, size_t stop)
