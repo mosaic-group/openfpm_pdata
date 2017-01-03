@@ -8,9 +8,7 @@
 #ifndef SRC_VECTOR_VECTOR_DIST_PERFORMANCE_UTIL_HPP_
 #define SRC_VECTOR_VECTOR_DIST_PERFORMANCE_UTIL_HPP_
 
-#include "cl_comp_performance_graph.hpp"
 #include "Plot/GoogleChart.hpp"
-#include "cl_part_performance_graph.hpp"
 #include "vector_dist_performance_common.hpp"
 
 // Number of tests
@@ -192,7 +190,7 @@ template<unsigned int dim, typename v_dist> void move_particles(v_dist & vd, dou
 	double theta;
 	const double pi = 3.14159;
 
-	auto it = vd.getIterator();
+	auto it = vd.getDomainIterator();
 
 	while (it.isNext())
 	{
@@ -221,798 +219,109 @@ template<unsigned int dim, typename v_dist> void move_particles(v_dist & vd, dou
 	}
 }
 
-////////////////////////// BENCHMARK TEST FUNCTIONS ///////////////////////////
+///////////////////////////// CONSTRUCT GRAPH //////////////////////////////
 
-/*! \brief Function for verlet test without an Hilbert curve reordering (unordered positioning)
- *
- */
-template<unsigned int dim> void vd_verlet_random_benchmark(size_t k_start,
-		                                                   size_t k_min,
-														   openfpm::vector<float> & r_cutoff,
-														   openfpm::vector<size_t> & n_particles,
-														   openfpm::vector<openfpm::vector<double>> & time_force_mean,
-														   openfpm::vector<openfpm::vector<double>> & time_create_mean,
-														   openfpm::vector<openfpm::vector<double>> & time_force_dev,
-														   openfpm::vector<openfpm::vector<double>> & time_create_dev)
+void StandardPerformanceGraph(std::string file_mean,
+		                      std::string file_var,
+							  std::string file_mean_save,
+							  std::string file_var_save,
+							  GoogleChart & cg,
+							  openfpm::vector<size_t> & xp,
+							  openfpm::vector<openfpm::vector<openfpm::vector<double>>> & yp_mean,
+							  openfpm::vector<openfpm::vector<openfpm::vector<double>>> & yp_dev,
+							  openfpm::vector<std::string> & names,
+							  openfpm::vector<std::string> & gnames,
+							  std::string x_string,
+							  std::string y_string)
 {
-	time_force_mean.resize(r_cutoff.size());
-	time_create_mean.resize(r_cutoff.size());
-	time_force_dev.resize(r_cutoff.size());
-	time_create_dev.resize(r_cutoff.size());
-
-	std::string str("Testing " + std::to_string(dim) + "D vector no-order, Verlet-list");
-	print_test_v(str);
-
-	{
-		//For different r_cut
-		for (size_t r = 0; r < r_cutoff.size(); r++ )
-		{
-			Vcluster & v_cl = create_vcluster();
-
-			//Cut-off radius
-			float r_cut = r_cutoff.get(r);
-
-			//Number of particles
-			size_t k = k_start * v_cl.getProcessingUnits();
-
-			//Counter number for amounts of particles
-			size_t k_count = 1 + log2(k/k_min);
-
-			for (size_t k_int = k ; k_int >= k_min ; k_int/=2 )
-			{
-				BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector without an Hilbert curve reordering k=" << k_int );
-
-				if (n_particles.size() < k_count)
-					n_particles.add(k_int);
-
-				Box<dim,float> box;
-
-				for (size_t i = 0; i < dim; i++)
-				{
-					box.setLow(i,0.0);
-					box.setHigh(i,1.0);
-				}
-
-				// Boundary conditions
-				size_t bc[dim];
-				for (size_t i = 0; i < dim; i++)
-					bc[i] = PERIODIC;
-
-				vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
-
-				// Initialize a dist vector
-				vd_initialize<dim>(vd, v_cl, k_int);
-
-				vd.template ghost_get<0>();
-
-				//Get verlet list
-
-				openfpm::vector<double> measures;
-				double sum_verlet_mean = 0;
-				double sum_verlet_dev = 0;
-				for (size_t n = 0 ; n < N_STAT_TEST; n++)
-					measures.add(benchmark_get_verlet(vd,r_cut));
-				standard_deviation(measures,sum_verlet_mean,sum_verlet_dev);
-
-				//Average total time
-				time_create_mean.get(r).add(sum_verlet_mean);
-				time_create_dev.get(r).add(sum_verlet_dev);
-
-				//Calculate forces
-
-				auto NN = vd.getCellList(r_cut);
-				double sum_fr_mean = 0;
-				double sum_fr_dev = 0;
-
-				measures.clear();
-				for (size_t l = 0 ; l < N_STAT_TEST ; l++)
-					measures.add(benchmark_calc_forces<dim>(NN,vd,r_cut));
-				standard_deviation(measures,sum_fr_mean,sum_fr_dev);
-				time_force_mean.get(r).add(sum_fr_mean);
-				time_force_dev.get(r).add(sum_fr_dev);
-
-				if (v_cl.getProcessUnitID() == 0)
-					std::cout << "Particles: " << k_int << "," << "cut-off: " << r_cut << " time to construct a Verlet list = " << sum_verlet_mean << " dev: " << sum_verlet_dev << "    calculate force = " << sum_fr_mean << " dev: " << sum_fr_dev << std::endl;
-			}
-		}
-	}
-}
-
-/*! \brief Function for verlet test with an Hilbert curve reordering
- *
- */
-template<unsigned int dim> void vd_verlet_hilbert_benchmark(size_t k_start, size_t k_min, double ghost_part,openfpm::vector<float> & r_cutoff, openfpm::vector<size_t> & n_particles, openfpm::vector<size_t> &orders, openfpm::vector<openfpm::vector<openfpm::vector<double>>> &time_hilb, openfpm::vector<openfpm::vector<openfpm::vector<double>>> &time_total_hilb)
-{
-	time_hilb.resize(r_cutoff.size());
-	for (size_t r = 0; r < time_hilb.size(); r++)
-	{
-		time_hilb.get(r).resize(n_particles.size());
-		for (size_t k = 0; k < time_hilb.get(r).size(); k++)
-		{
-			time_hilb.get(r).get(k).resize(orders.size());
-		}
-	}
-
-	time_total_hilb.resize(r_cutoff.size());
-	for (size_t r = 0; r < time_total_hilb.size(); r++)
-	{
-		time_total_hilb.get(r).resize(n_particles.size());
-		for (size_t k = 0; k < time_total_hilb.get(r).size(); k++)
-		{
-			time_total_hilb.get(r).get(k).resize(orders.size());
-		}
-	}
-
-	std::string str("Testing " + std::to_string(dim) + "D vector, Hilbert curve reordering, Verlet-list");
-	print_test_v(str);
-
-	// For different r_cut
-	for (size_t r = 0; r < r_cutoff.size(); r++ )
-	{
-		Vcluster & v_cl = create_vcluster();
-
-		//Cut-off radius
-		float r_cut = r_cutoff.get(r);
-
-		// Number of particles
-		size_t k = k_start * v_cl.getProcessingUnits();
-
-		//For different curve orders
-		for ( size_t i = 0; i < orders.size(); i++)
-		{
-			size_t m = orders.get(i);
-			size_t part = 0;
-
-			for (size_t k_int = k ; k_int >= k_min ; k_int/=2, part++ )
-			{
-				BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector with an Hilbert curve reordering k=" << k_int );
-
-				Box<dim,float> box;
-
-				for (size_t i = 0; i < dim; i++)
-				{
-					box.setLow(i,0.0);
-					box.setHigh(i,1.0);
-				}
-
-				// Boundary conditions
-				size_t bc[dim];
-
-				for (size_t i = 0; i < dim; i++)
-					bc[i] = PERIODIC;
-
-				vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(ghost_part));
-
-				// Initialize a dist vector
-				vd_initialize<dim>(vd, v_cl, k_int);
-
-				vd.template ghost_get<0>();
-
-				//Reorder a vector
-
-				double sum_reorder = 0;
-				for (size_t h = 0 ; h < N_VERLET_TEST; h++)
-					sum_reorder += benchmark_reorder(vd,m);
-				sum_reorder /= N_VERLET_TEST;
-
-				//Get verlet list
-
-				double sum_verlet = 0;
-
-				for (size_t n = 0 ; n < N_VERLET_TEST; n++)
-					sum_verlet += benchmark_get_verlet(vd,r_cut);
-				sum_verlet /= N_VERLET_TEST;
-				//Average total time
-				time_total_hilb.get(r).get(part).get(i) = sum_verlet;
-
-				//Calculate forces
-
-				auto NN = vd.getCellList(r_cut);
-				double sum_forces = 0;
-
-				for (size_t l = 0 ; l < N_VERLET_TEST; l++)
-					sum_forces += benchmark_calc_forces<dim>(NN,vd,r_cut);
-				sum_forces /= N_VERLET_TEST;
-				time_hilb.get(r).get(part).get(i) = sum_forces;
-
-				if (v_cl.getProcessUnitID() == 0)
-					std::cout << "Order = " << m << ", Cut-off = " << r_cut << ", Particles = " << k_int << ". Time to reorder: " << sum_reorder << " time to get the verlet-list: " << sum_verlet << " time to calculate forces: " << sum_forces << std::endl;
-			}
-		}
-	}
-}
-
-/*! \brief Function for cell list test without an Hilbert curve reordering (unordered positioning)
- *
- */
-template<unsigned int dim> void cell_list_part_reorder_random_benchmark(size_t cl_k_start,
-		                                                                size_t cl_k_min,
-																		openfpm::vector<float> & cl_r_cutoff,
-																		openfpm::vector<size_t> & cl_n_particles,
-																		openfpm::vector<openfpm::vector<double>> & cl_time_rand_mean,
-																		openfpm::vector<openfpm::vector<double>> & cl_time_rand_dev)
-{
-	cl_time_rand_mean.resize(cl_r_cutoff.size());
-	cl_time_rand_dev.resize(cl_r_cutoff.size());
-
-	std::string str("Testing " + std::to_string(dim) + "D vector, no-order, Cell-list");
-	print_test_v(str);
-
-	{
-		//For different r_cut
-		for (size_t r = 0; r < cl_r_cutoff.size(); r++ )
-		{
-			Vcluster & v_cl = create_vcluster();
-
-			//Cut-off radius
-			float r_cut = cl_r_cutoff.get(r);
-
-			//Number of particles
-			size_t k = cl_k_start * v_cl.getProcessingUnits();
-
-			//Counter number for amounts of particles
-			size_t k_count = 1 + log2(k/cl_k_min);
-
-			//For different number of particles
-			for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2 )
-			{
-				BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector without an Hilbert curve reordering k=" << k_int );
-
-				if (cl_n_particles.size() < k_count)
-					cl_n_particles.add(k_int);
-
-				Box<dim,float> box;
-
-				for (size_t i = 0; i < dim; i++)
-				{
-					box.setLow(i,0.0);
-					box.setHigh(i,1.0);
-				}
-
-				// Boundary conditions
-				size_t bc[dim];
-
-				for (size_t i = 0; i < dim; i++)
-					bc[i] = PERIODIC;
-
-				vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
-
-				// Initialize a dist vector
-				vd_initialize<dim>(vd, v_cl, k_int);
-
-				vd.template ghost_get<0>();
-
-				//Get a cell list
-
-				auto NN = vd.getCellList(r_cut);
-				double sum_fr_mean = 0;
-				double sum_fr_dev = 0;
-
-				benchmark_get_celllist(NN,vd,r_cut);
-
-				//Calculate forces
-				size_t l = 0;
-
-				openfpm::vector<double> measures;
-				for ( ; l < N_STAT_TEST; l++)
-					measures.add(benchmark_calc_forces<dim>(NN,vd,r_cut));
-				standard_deviation(measures,sum_fr_mean,sum_fr_dev);
-
-				cl_time_rand_mean.get(r).add(sum_fr_mean);
-				cl_time_rand_dev.get(r).add(sum_fr_dev);
-
-				if (v_cl.getProcessUnitID() == 0)
-					std::cout << "Cut-off = " << r_cut << ", Particles = " << k_int << " time to calculate forces: " << sum_fr_mean << " dev: " << sum_fr_dev << std::endl;
-			}
-		}
-	}
-}
-
-/*! \brief Function for cell list test with an Hilbert curve reordering
- *
- */
-template<unsigned int dim> void cell_list_part_reorder_hilbert_benchmark(size_t cl_k_start,
-		                                                                 size_t cl_k_min,
-																		 size_t n_moving,
-																		 double dist,
-																		 openfpm::vector<float> & cl_r_cutoff,
-																		 openfpm::vector<size_t> & cl_n_particles,
-																		 openfpm::vector<size_t> &cl_orders,
-																		 openfpm::vector<openfpm::vector<openfpm::vector<double>>> &cl_time_hilb_mean,
-																		 openfpm::vector<openfpm::vector<openfpm::vector<double>>> &cl_time_reorder_hilb_mean,
-																		 openfpm::vector<openfpm::vector<openfpm::vector<double>>> &cl_time_hilb_dev,
-																		 openfpm::vector<openfpm::vector<openfpm::vector<double>>> &cl_time_reorder_hilb_dev)
-{
-	{
-		cl_time_hilb_mean.resize(cl_r_cutoff.size());
-		cl_time_hilb_dev.resize(cl_r_cutoff.size());
-		for (size_t r = 0; r < cl_time_hilb_mean.size(); r++)
-		{
-			cl_time_hilb_mean.get(r).resize(cl_n_particles.size());
-			cl_time_hilb_dev.get(r).resize(cl_n_particles.size());
-			for (size_t k = 0; k < cl_time_hilb_mean.get(r).size(); k++)
-			{
-				cl_time_hilb_mean.get(r).get(k).resize(cl_orders.size());
-				cl_time_hilb_dev.get(r).get(k).resize(cl_orders.size());
-			}
-		}
-
-
-		cl_time_reorder_hilb_mean.resize(cl_r_cutoff.size());
-		cl_time_reorder_hilb_dev.resize(cl_r_cutoff.size());
-		for (size_t r = 0; r < cl_time_reorder_hilb_mean.size(); r++)
-		{
-			cl_time_reorder_hilb_mean.get(r).resize(cl_n_particles.size());
-			cl_time_reorder_hilb_dev.get(r).resize(cl_n_particles.size());
-			for (size_t k = 0; k < cl_time_reorder_hilb_mean.get(r).size(); k++)
-			{
-				cl_time_reorder_hilb_mean.get(r).get(k).resize(cl_orders.size());
-				cl_time_reorder_hilb_dev.get(r).get(k).resize(cl_orders.size());
-			}
-		}
-
-		// Print test
-		std::string str("Testing " + std::to_string(dim) + "D vector, Hilbert curve reordering, Cell-List");
-		print_test_v(str);
-
-		// For different r_cut
-		for (size_t r = 0; r < cl_r_cutoff.size(); r++ )
-		{
-			Vcluster & v_cl = create_vcluster();
-
-			// Cut-off radius
-			float r_cut = cl_r_cutoff.get(r);
-
-			// Number of particles
-			size_t k = cl_k_start * v_cl.getProcessingUnits();
-
-			//For different curve orders
-			for ( size_t i = 0; i < cl_orders.size(); i++)
-			{
-				size_t m = cl_orders.get(i);
-				size_t part = 0;
-
-				for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2, part++ )
-				{
-					BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector with an Hilbert curve reordering k=" << k_int );
-
-					Box<dim,float> box;
-
-					for (size_t i = 0; i < dim; i++)
-					{
-						box.setLow(i,0.0);
-						box.setHigh(i,1.0);
-					}
-
-					// Boundary conditions
-					size_t bc[dim];
-
-					for (size_t i = 0; i < dim; i++)
-						bc[i] = PERIODIC;
-
-					vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
-
-					// Initialize a dist vector
-					vd_initialize<dim>(vd, v_cl, k_int);
-
-					//Reorder a vector
-
-					double sum_reorder_mean = 0;
-					double sum_reorder_dev = 0;
-
-					openfpm::vector<double> measures;
-
-					for (size_t h = 0 ; h < N_STAT_TEST; h++)
-						measures.add(benchmark_reorder(vd,m));
-					standard_deviation(measures,sum_reorder_mean,sum_reorder_dev);
-
-					//Average reorder time
-					cl_time_reorder_hilb_mean.get(r).get(part).get(i) = sum_reorder_mean;
-					cl_time_reorder_hilb_dev.get(r).get(part).get(i) = sum_reorder_dev;
-
-					vd.template ghost_get<0>();
-
-					//Get cell list
-
-					auto NN = vd.getCellList(r_cut);
-					benchmark_get_celllist(NN,vd,r_cut);
-
-					//Calculate forces
-
-					double sum_fr_mean = 0;
-					double sum_fr_dev = 0;
-					measures.clear();
-
-					for (size_t l = 0 ; l < N_STAT_TEST ; l++)
-						measures.add(benchmark_calc_forces<dim>(NN,vd,r_cut));
-					standard_deviation(measures,sum_fr_mean,sum_fr_dev);
-
-					cl_time_hilb_mean.get(r).get(part).get(i) = sum_fr_mean;
-					cl_time_hilb_dev.get(r).get(part).get(i) = sum_fr_dev;
-
-
-					if (v_cl.getProcessUnitID() == 0)
-						std::cout << "Cut-off = " << r_cut << ", Particles = " << k_int << ". Time to reorder: " << sum_reorder_mean << " dev: " << sum_reorder_dev << "      time calculate forces: " << sum_fr_mean << " dev: " << sum_fr_dev << std::endl;
-				}
-			}
-		}
-	}
-}
-
-/*! \brief Function for random cell list test
- *
- */
-template<unsigned int dim> void cell_list_comp_reorder_random_benchmark(size_t cl_k_start,
-		                                                                size_t cl_k_min,
-																		openfpm::vector<float> & cl_r_cutoff,
-																		openfpm::vector<size_t> & cl_n_particles,
-																		openfpm::vector<openfpm::vector<double>> & cl_time_rand_mean,
-																		openfpm::vector<openfpm::vector<double>> & cl_time_rand_dev,
-																		openfpm::vector<openfpm::vector<double>> & cl_time_create_rand_mean,
-																		openfpm::vector<openfpm::vector<double>> & cl_time_create_rand_dev)
-{
-	cl_time_rand_mean.resize(cl_r_cutoff.size());
-	cl_time_create_rand_mean.resize(cl_r_cutoff.size());
-	cl_time_rand_dev.resize(cl_r_cutoff.size());
-	cl_time_create_rand_dev.resize(cl_r_cutoff.size());
-
-	std::string str("Testing " + std::to_string(dim) + "D vector, no order, cell-list");
-	print_test_v(str);
-
-	{
-		//For different r_cut
-		for (size_t r = 0; r < cl_r_cutoff.size(); r++ )
-		{
-			Vcluster & v_cl = create_vcluster();
-
-			//Cut-off radius
-			float r_cut = cl_r_cutoff.get(r);
-
-			//Number of particles
-			size_t k = cl_k_start * v_cl.getProcessingUnits();
-
-			//Counter number for amounts of particles
-			size_t k_count = 1 + log2(k/cl_k_min);
-
-			//For different number of particles
-			for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2 )
-			{
-				BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector with a random cell list k=" << k_int );
-
-				if (cl_n_particles.size() < k_count)
-					cl_n_particles.add(k_int);
-
-				Box<dim,float> box;
-
-				for (size_t i = 0; i < dim; i++)
-				{
-					box.setLow(i,0.0);
-					box.setHigh(i,1.0);
-				}
-
-				// Boundary conditions
-				size_t bc[dim];
-
-				for (size_t i = 0; i < dim; i++)
-					bc[i] = PERIODIC;
-
-				vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
-
-				// Initialize a dist vector
-				vd_initialize<dim>(vd, v_cl, k_int);
-
-				vd.template ghost_get<0>();
-
-				//Get a cell list
-
-				auto NN = vd.getCellList(r_cut);
-				double sum_cl_mean = 0;
-				double sum_cl_dev = 0;
-
-				openfpm::vector<double> measures;
-				for (size_t n = 0 ; n < N_STAT_TEST; n++)
-					measures.add(benchmark_get_celllist(NN,vd,r_cut));
-				standard_deviation(measures,sum_cl_mean,sum_cl_dev);
-				//Average total time
-
-				cl_time_create_rand_mean.get(r).add(sum_cl_mean);
-				cl_time_create_rand_dev.get(r).add(sum_cl_dev);
-
-				//Calculate forces
-
-				double sum_fr_mean = 0;
-				double sum_fr_dev = 0;
-
-				measures.clear();
-				for (size_t l = 0 ; l < N_STAT_TEST; l++)
-					measures.add(benchmark_calc_forces<dim>(NN,vd,r_cut));
-				standard_deviation(measures,sum_fr_mean,sum_fr_dev);
-
-				cl_time_rand_mean.get(r).add(sum_fr_mean);
-				cl_time_rand_dev.get(r).add(sum_fr_dev);
-
-				if (v_cl.getProcessUnitID() == 0)
-					std::cout << "Cut-off = " << r_cut << ", Particles = " << k_int << ". Time to create a cell-list: " << sum_cl_mean << " dev: " << sum_cl_dev << "    time to calculate forces: " << sum_fr_mean << " dev: " << sum_fr_dev << std::endl;
-			}
-		}
-	}
-}
-
-/*! \brief Function for hilb cell list test
- *
- */
-template<unsigned int dim> void cell_list_comp_reorder_hilbert_benchmark(size_t cl_k_start,
-		                                                                 size_t cl_k_min,
-																		 openfpm::vector<float> & cl_r_cutoff,
-																		 openfpm::vector<size_t> & cl_n_particles,
-																		 openfpm::vector<openfpm::vector<double>> & cl_time_force_mean,
-																		 openfpm::vector<openfpm::vector<double>> & cl_time_force_dev,
-																		 openfpm::vector<openfpm::vector<double>> & cl_time_create_mean,
-																		 openfpm::vector<openfpm::vector<double>> & cl_time_create_dev)
-{
-	cl_time_force_mean.resize(cl_r_cutoff.size());
-	cl_time_create_mean.resize(cl_r_cutoff.size());
-	cl_time_force_dev.resize(cl_r_cutoff.size());
-	cl_time_create_dev.resize(cl_r_cutoff.size());
-
-	std::string str("Testing " + std::to_string(dim) + "D vector, Hilbert comp reorder, cell list");
-	print_test_v(str);
-
-	{
-		//For different r_cut
-		for (size_t r = 0; r < cl_r_cutoff.size(); r++ )
-		{
-			Vcluster & v_cl = create_vcluster();
-
-			//Cut-off radius
-			float r_cut = cl_r_cutoff.get(r);
-
-			//Number of particles
-			size_t k = cl_k_start * v_cl.getProcessingUnits();
-
-			//Counter number for amounts of particles
-			size_t k_count = 1 + log2(k/cl_k_min);
-
-			//For different number of particles
-			for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2 )
-			{
-				BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector with an Hilbert cell list k=" << k_int );
-
-				if (cl_n_particles.size() < k_count)
-					cl_n_particles.add(k_int);
-
-				Box<dim,float> box;
-
-				for (size_t i = 0; i < dim; i++)
-				{
-					box.setLow(i,0.0);
-					box.setHigh(i,1.0);
-				}
-
-				// Boundary conditions
-				size_t bc[dim];
-
-				for (size_t i = 0; i < dim; i++)
-					bc[i] = PERIODIC;
-
-				vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
-
-				// Initialize a dist vector
-				vd_initialize<dim>(vd, v_cl, k_int);
-
-				vd.template ghost_get<0>();
-
-				//Get a cell list hilb
-
-				auto NN = vd.getCellList_hilb(r_cut);
-
-				openfpm::vector<double> measures;
-
-				double sum_cl_mean = 0;
-				double sum_cl_dev = 0;
-				for (size_t n = 0 ; n < N_VERLET_TEST; n++)
-					measures.add(benchmark_get_celllist_hilb(NN,vd,r_cut));
-				standard_deviation(measures,sum_cl_mean,sum_cl_dev);
-				//Average total time
-				cl_time_create_mean.get(r).add(sum_cl_mean);
-				cl_time_create_dev.get(r).add(sum_cl_dev);
-
-				//Calculate forces
-
-				double sum_fr_mean = 0;
-				double sum_fr_dev = 0;
-
-				measures.clear();
-				for (size_t l = 0 ; l < N_VERLET_TEST; l++)
-					measures.add(benchmark_calc_forces_hilb<dim>(NN,vd,r_cut));
-				standard_deviation(measures,sum_fr_mean,sum_fr_dev);
-
-				cl_time_force_mean.get(r).add(sum_fr_mean);
-				cl_time_force_dev.get(r).add(sum_fr_dev);
-
-				if (v_cl.getProcessUnitID() == 0)
-					std::cout << "Cut-off = " << r_cut << ", Particles = " << k_int << ". Time to create: " << sum_cl_mean << " dev: " << sum_cl_dev << " time to create a Cell-list: " << sum_fr_mean << " dev: " << sum_fr_dev << std::endl;
-			}
-		}
-	}
-}
-
-////////////////////////// REPORT WRITING FUNCTIONS ///////////////////////////
-
-/*! \brief Function for verlet performance report
- *
- */
-template<unsigned int dim> void vd_verlet_performance_write_report(GoogleChart & cg,
-																   openfpm::vector<float> & r_cutoff,
-		                                                           openfpm::vector<size_t> & n_particles,
-																   openfpm::vector<openfpm::vector<double>> time_force_mean,
-																   openfpm::vector<openfpm::vector<double>> time_force_dev,
-																   openfpm::vector<openfpm::vector<double>> time_create_mean,
-																   openfpm::vector<openfpm::vector<double>> time_create_dev)
-{
-	// Get the test dir
-	std::string file_mean(test_dir);
-	std::string file_var(test_dir);
-	file_mean += std::string("/openfpm_pdata/verlet_comp_create_mean_" + std::to_string(dim) + std::string("_ref"));
-	file_var += std::string("/openfpm_pdata/verlet_comp_create_dev_" + std::to_string(dim) + std::string("_ref"));
-
-	openfpm::vector<openfpm::vector<openfpm::vector<double>>> y_ref_create_mean;
-	openfpm::vector<openfpm::vector<openfpm::vector<double>>> y_ref_create_dev;
-	y_ref_create_mean.load(file_mean);
-	y_ref_create_dev.load(file_var);
+	openfpm::vector<openfpm::vector<openfpm::vector<double>>> y_ref_mean;
+	openfpm::vector<openfpm::vector<openfpm::vector<double>>> y_ref_dev;
+	y_ref_mean.load(file_mean);
+	y_ref_dev.load(file_var);
 
 	// warning level
 	openfpm::vector<int> warning_vlevel;
 
-	// Get the test dir
-	std::string file_mean2(test_dir);
-	std::string file_var2(test_dir);
-	file_mean2 += std::string("/openfpm_pdata/verlet_comp_force_mean_" + std::to_string(dim) + std::string("_ref"));
-	file_var2 += std::string("/openfpm_pdata/verlet_comp_force_dev_" + std::to_string(dim) + std::string("_ref"));
-
-	openfpm::vector<openfpm::vector<openfpm::vector<double>>> y_ref_force_mean;
-	openfpm::vector<openfpm::vector<openfpm::vector<double>>> y_ref_force_dev;
-	y_ref_force_mean.load(file_mean2);
-	y_ref_force_dev.load(file_var2);
-
-	// warning level
-	openfpm::vector<int> warning_vlevel2;
-
-	// Speedup graphs data
-	openfpm::vector<size_t> x;
-	openfpm::vector<openfpm::vector<openfpm::vector<double>>> y;
-	openfpm::vector<openfpm::vector<openfpm::vector<double>>> y_dev;
-	openfpm::vector<std::string> yn;
-
-	yn.add("Force verlet");
-	for (size_t i = 0; i < n_particles.size() ; i++)
-		x.add(n_particles.get(i));
-
-	y.resize(time_force_mean.size());
-	y_dev.resize(time_force_mean.size());
-	for (size_t r = 0; r < time_force_mean.size(); r++)
-	{
-		y.get(r).resize(time_force_mean.get(r).size());
-		y_dev.get(r).resize(time_force_mean.get(r).size());
-		for (size_t k = 0; k < time_force_mean.get(r).size(); k++)
-		{
-			// Put the speedup
-			y.get(r).get(k).add(time_force_mean.get(r).get(k));
-
-			y_dev.get(r).get(k).add(time_force_dev.get(r).get(k));
-		}
-	}
-
-	y.save("verlet_comp_force_mean_" + std::to_string(dim) + std::to_string("_ref"));
-	y_dev.save("verlet_comp_force_dev_" + std::to_string(dim) + std::to_string("_ref"));
-
-	if (y_ref_force_mean.size() != 0)
-	{
-		yn.clear();
-
-		yn.add("Force verlet");
-		yn.add("interval");
-		yn.add("interval");
-
-		y.clear();
-		y.resize(time_force_mean.size());
-		for (size_t r = 0; r < time_force_mean.size(); r++)
-		{
-			int warning_level = -1;
-
-			y.get(r).resize(time_force_mean.get(r).size());
-			y_dev.get(r).resize(time_force_mean.get(r).size());
-			for (size_t k = 0; k < time_force_mean.get(r).size(); k++)
-			{
-				// Put the speedup
-				y.get(r).get(k).add(time_force_mean.get(r).get(k));
-				y.get(r).get(k).add(y_ref_force_mean.get(r).get(k).get(0) - 3.0*y_ref_force_dev.get(r).get(k).get(0) );
-				y.get(r).get(k).add(y_ref_force_mean.get(r).get(k).get(0) + 3.0*y_ref_force_dev.get(r).get(k).get(0) );
-
-				warning_set(warning_level,time_force_mean.get(r).get(k),y_ref_force_mean.get(r).get(k).get(0),y_ref_force_dev.get(r).get(k).get(0));
-			}
-
-			warning_vlevel.add(warning_level);
-		}
-	}
-
 	// Calculation time graphs data
 
+	openfpm::vector<size_t> x;
 	openfpm::vector<openfpm::vector<openfpm::vector<double>>> y2;
 	openfpm::vector<openfpm::vector<openfpm::vector<double>>> y2_dev;
 	openfpm::vector<std::string> yn2;
 
-	yn2.add("Create a Verlet");
+	if (names.size() != yp_mean.size())
+		std::cerr << __FILE__ << ":" << __LINE__ << ", Error names.size() != yp_mean.size() " << names.size() << " != " << yp_mean.size() << std::endl;
 
-	y2.resize(time_create_mean.size());
-	y2_dev.resize(time_create_mean.size());
-	for (size_t r = 0; r < time_create_mean.size(); r++)
+	if (names.size() == 0)
+		return;
+
+	for (size_t i = 0 ; i < names.size() ; i++)
+		yn2.add(names.get(i));
+
+	for (size_t i = 0; i < xp.size() ; i++)
+		x.add(xp.get(i));
+
+	// We are assuming that yp_mean.get(g).size() are equal for each g
+	y2.resize(yp_mean.get(0).size());
+	y2_dev.resize(yp_mean.get(0).size());
+	for (size_t r = 0; r < yp_mean.get(0).size() ; r++)
 	{
-		y2.get(r).resize(time_create_mean.get(r).size());
-		y2_dev.get(r).resize(time_create_mean.get(r).size());
-		for (size_t k = 0; k < time_create_mean.get(r).size(); k++)
+		y2.get(r).resize(yp_mean.get(0).get(r).size());
+		y2_dev.get(r).resize(yp_mean.get(0).get(r).size());
+		for (size_t k = 0; k < yp_mean.get(0).get(r).size(); k++)
 		{
-			// Put a random case total time
-			y2.get(r).get(k).add(time_create_mean.get(r).get(k));
+			// Number of graph points
+			for (size_t g = 0 ; g < yp_mean.size() ; g++)
+			{
+				// Put a total time
+				y2.get(r).get(k).add(yp_mean.get(g).get(r).get(k));
+				y2.get(r).get(k).add(yp_mean.get(g).get(r).get(k));
 
-			y2_dev.get(r).get(k).add(time_create_dev.get(r).get(k));
+				y2_dev.get(r).get(k).add(yp_dev.get(g).get(r).get(k));
+				y2_dev.get(r).get(k).add(yp_dev.get(g).get(r).get(k));
+			}
 		}
 	}
 
-	y2.save("verlet_comp_create_mean_" + std::to_string(dim) + std::to_string("_ref"));
-	y2_dev.save("verlet_comp_create_dev_" + std::to_string(dim) + std::to_string("_ref"));
+	y2.save(file_mean_save);
+	y2_dev.save(file_var_save);
 
-	if (y_ref_create_mean.size() != 0)
+	if (y_ref_mean.size() != 0)
 	{
-		yn2.clear();
-		yn2.add("Create a Verlet");
-		yn2.add("interval");
-		yn2.add("interval");
+		// We reconstruct y and yn
 
 		y2.clear();
+		yn2.clear();
 
-		y2.resize(time_create_mean.size());
-		for (size_t r = 0; r < time_create_mean.size(); r++)
+		for (size_t i = 0 ; i < yp_mean.size() ; i++)
+		{
+			yn2.add(names.get(i));
+			yn2.add("interval");
+			yn2.add("interval");
+		}
+
+
+		y2.resize(yp_mean.get(0).size());
+		for (size_t r = 0; r < yp_mean.get(0).size(); r++)
 		{
 			int warning_level = -1;
 
-			y2.get(r).resize(time_create_mean.get(r).size());
-			for (size_t k = 0; k < time_create_mean.get(r).size(); k++)
+			y2.get(r).resize(yp_mean.get(0).get(r).size());
+			for (size_t k = 0; k < yp_mean.get(0).get(r).size(); k++)
 			{
-				// Put a random case total time
-				y2.get(r).get(k).add(time_create_mean.get(r).get(k));
 
-				y2.get(r).get(k).add(y_ref_create_mean.get(r).get(k).get(0) - 3.0*y_ref_create_dev.get(r).get(k).get(0) );
-				y2.get(r).get(k).add(y_ref_create_mean.get(r).get(k).get(0) + 3.0*y_ref_create_dev.get(r).get(k).get(0) );
+				// Number of graph points
+				for (size_t g = 0 ; g < yp_mean.size() ; g++)
+				{
+					// Time for construction hilbert and random
+					y2.get(r).get(k).add(yp_mean.get(g).get(r).get(k));
+					y2.get(r).get(k).add(y_ref_mean.get(r).get(k).get(0) - 3.0*y_ref_dev.get(r).get(k).get(g));
+					y2.get(r).get(k).add(y_ref_mean.get(r).get(k).get(0) + 3.0*y_ref_dev.get(r).get(k).get(g));
 
-				warning_set(warning_level,time_create_mean.get(r).get(k),y_ref_create_mean.get(r).get(k).get(0),y_ref_create_dev.get(r).get(k).get(0));
+					warning_set(warning_level,yp_mean.get(g).get(r).get(k),y_ref_mean.get(r).get(k).get(g),y_ref_dev.get(r).get(k).get(g));
+				}
 			}
-
-			warning_vlevel2.add(warning_level);
 		}
-	}
-
-	// Speedup graphs report
-
-	// Google charts options
-	GCoptions options;
-
-	options.yAxis = std::string("Time (s)");
-	options.xAxis = std::string("Number of particles");
-	options.lineWidth = 2;
-
-	std::string str("<h1>Verlet-list " + std::to_string(dim) + "-D performance test force calculation: </h1>");
-	cg.addHTML(str);
-
-	for (size_t i = 0; i < r_cutoff.size(); i++)
-	{
-		std::string chart_area;
-		if (warning_vlevel.size() != 0)
-			addchartarea(chart_area,warning_vlevel.get(i));
-		options.more = GC_Y_LOG + "," + GC_ZOOM + chart_area;
-
-		options.title = std::string("Verlet-list cut-off radius: " + std::to_string(r_cutoff.get(i)));
-		cg.AddLinesGraph(x,y.get(i),yn,options);
 	}
 
 	// Calculation time graphs report
@@ -1020,101 +329,23 @@ template<unsigned int dim> void vd_verlet_performance_write_report(GoogleChart &
 	// Google charts options
 	GCoptions options2;
 
-	options2.yAxis = std::string("Time to construct a verlet-list (s)");
-	options2.xAxis = std::string("Number of particles");
-	options2.lineWidth = 2;
+	options2.yAxis = std::string(y_string);
+	options2.xAxis = std::string(x_string);
+	options2.lineWidth = 4;
 
-	std::string str2("<h2>2) Time to construct a Verlet-list time</h2>");
+	std::string str2("<h2>2) Time to create the cell-list</h2>");
 	cg.addHTML(str2);
 
-	for (size_t i = 0; i < r_cutoff.size(); i++)
+	for (size_t i = 0; i < yp_mean.get(0).size() ; i++)
 	{
 		std::string chart_area;
 		if (warning_vlevel.size() != 0)
-			addchartarea(chart_area,warning_vlevel2.get(i));
-		options2.more = GC_ZOOM + chart_area;
+			addchartarea(chart_area,warning_vlevel.get(i));
+		options2.more = GC_Y_LOG + "," + GC_ZOOM + chart_area;
 
-		options2.title = std::string("Cell-list performance, cut-off radius: " + std::to_string(r_cutoff.get(i)));
+		options2.title = gnames.get(i);
 		cg.AddLinesGraph(x,y2.get(i),yn2,options2);
 	}
-}
-
-
-/*! \brief Function for cell list performance report
- *
- */
-template<unsigned int dim> void cell_list_part_reorder_report(GoogleChart & cg,
-		                                                      size_t n_moving,
-		                                                      openfpm::vector<float> & cl_r_cutoff,
-															  openfpm::vector<size_t> & cl_n_particles,
-															  openfpm::vector<size_t> cl_orders,
-															  openfpm::vector<openfpm::vector<openfpm::vector<double>>> cl_time_hilb_mean,
-															  openfpm::vector<openfpm::vector<double>> cl_time_rand_mean,
-															  openfpm::vector<openfpm::vector<openfpm::vector<double>>> cl_time_reorder_mean,
-															  openfpm::vector<openfpm::vector<openfpm::vector<double>>> cl_time_hilb_dev,
-															  openfpm::vector<openfpm::vector<double>> cl_time_rand_dev,
-															  openfpm::vector<openfpm::vector<openfpm::vector<double>>> cl_time_reorder_dev)
-{
-	openfpm::vector<size_t> x;
-
-	for (size_t i = 0; i < cl_n_particles.size() ; i++)
-		x.add(cl_n_particles.get(i));
-
-	// Speedup graphs data
-
-	cl_part_time<dim>(cg,
-			          cl_n_particles,
-					  cl_r_cutoff,
-					  cl_orders,
-					  cl_time_hilb_mean,
-					  cl_time_rand_mean,
-					  cl_time_hilb_dev,
-					  cl_time_rand_dev);
-
-	cl_part_reorder_time<dim>(cg,
-			                  cl_n_particles,
-							  cl_r_cutoff,
-							  cl_orders,
-							  cl_time_reorder_mean,
-							  cl_time_reorder_dev);
-}
-
-/*! \brief Function for cell list hilb performance report
- *
- */
-template<unsigned int dim> void cell_list_comp_reorder_report(GoogleChart & cg,
-		                                                      openfpm::vector<float> & cl_r_cutoff,
-															  openfpm::vector<size_t> & cl_n_particles,
-															  openfpm::vector<openfpm::vector<double>> & cl_time_hilb_mean,
-															  openfpm::vector<openfpm::vector<double>> & cl_time_rand_mean,
-															  openfpm::vector<openfpm::vector<double>> & cl_time_hilb_dev,
-															  openfpm::vector<openfpm::vector<double>> & cl_time_rand_dev,
-															  openfpm::vector<openfpm::vector<double>> & cl_time_create_hilb_mean,
-															  openfpm::vector<openfpm::vector<double>> & cl_time_create_rand_mean,
-															  openfpm::vector<openfpm::vector<double>> & cl_time_create_hilb_dev,
-															  openfpm::vector<openfpm::vector<double>> & cl_time_create_rand_dev,
-															  double & warning_level,
-															  double & norm)
-{
-	cl_comp_normal_vs_hilbert_force_time<dim>(cg,
-			                                  cl_n_particles,
-											  cl_r_cutoff,
-											  cl_time_hilb_mean,
-											  cl_time_rand_mean,
-											  cl_time_hilb_dev,
-											  cl_time_rand_dev,
-											  warning_level,
-											  norm);
-
-	cl_comp_normal_vs_hilbert_create_time<dim>(cg,
-			                                   cl_n_particles,
-											   cl_r_cutoff,
-											   cl_time_create_hilb_mean,
-											   cl_time_create_rand_mean,
-											   cl_time_create_hilb_dev,
-											   cl_time_create_rand_dev,
-											   warning_level,
-											   norm);
 }
 
 #endif /* SRC_VECTOR_VECTOR_DIST_PERFORMANCE_UTIL_HPP_ */
