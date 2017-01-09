@@ -217,5 +217,4 @@ BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
 	}
 }
 
-
 #endif /* SRC_VECTOR_VECTOR_DIST_NN_TESTS_HPP_ */

@@ -983,7 +983,7 @@ public:
 		Packer<decltype(v_pos),HeapMemory>::packRequest(v_pos,req);
 		Packer<decltype(v_prp),HeapMemory>::packRequest(v_prp,req);
 
-		//std::cout << "Req: " << req << std::endl;
+		std::cout << "Req: " << req << std::endl;
 
 		// allocate the memory
 		HeapMemory pmem;
@@ -1081,7 +1081,7 @@ public:
 	    		offset[0] += sz_others.get(i);
 	    }
 
-	    //std::cout << "MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << ", Offset: " << offset[0] << ", Block: " << block[0] << std::endl;
+	    std::cout << "MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << ", Offset: " << offset[0] << ", Block: " << block[0] << std::endl;
 
 	    int metadata[mpi_size];
 
@@ -1116,13 +1116,215 @@ public:
 	    H5Fclose(file);
 	}
 
+	void load_block(long int bid, hssize_t mpi_size_old, int * metadata_out, openfpm::vector<size_t> metadata_accum, hid_t plist_id, hid_t dataset_2)
+	{
+/*	  	if (mpi_size >= mpi_size_old)
+	  	{
+			if (mpi_rank >= mpi_size_old)
+				block[0] = 0;
+			else
+				block[0] = {(size_t)metadata_out[mpi_rank]};
+	  	}
+	  	else
+	  	{
+	  		int x = mpi_size_old/mpi_size;
+	  		int shift = mpi_rank*x;
+	  		for (int i = 0; i < x; i++)
+	  		{
+	  			//block0.get(mpi_rank).add(metadata_out[shift]);
+	  			block[0] += metadata_out[shift];
+	  			shift++;
+	  		}
+	  		int y = mpi_size_old%mpi_size;
+	  		if (mpi_rank < y)
+	  		{
+				block_add[0] += metadata_out[mpi_size*x+mpi_rank];
+				//block_add0.get(mpi_rank).add(metadata_out[mpi_size*x+mpi_rank]);
+	  		}
+	  	}*/
+
+		std::cout << "BID: " << bid << std::endl;
+
+		hsize_t offset[1];
+		hsize_t block[1];
+
+		if (bid < mpi_size_old && bid != -1)
+		{
+			offset[0] = metadata_accum.get(bid);
+			block[0] = metadata_out[bid];
+		}
+		else
+		{
+			offset[0] = 0;
+			block[0] = 0;
+		}
+
+		std::cout << "Offset: " << offset[0] << "; Block: " << block[0]<<  std::endl;
+//	    hsize_t offset_add[1] = {0};
+
+/*	    if (mpi_size >= mpi_size_old)
+		{
+			if (mpi_rank >= mpi_size_old)
+				offset[0] = 0;
+			else
+			{
+				for (int i = 0; i < mpi_rank; i++)
+				offset[0] += metadata_out[i];
+			}
+		}
+	    else
+	    {
+	  		int x = mpi_size_old/mpi_size;
+	  		int shift = mpi_rank*x;
+
+	  		for (int i = 0; i < shift; i++)
+	  		{
+	  			offset[0] += metadata_out[i];
+	  			//offset0.get(mpi_rank).add(metadata_out[i]);
+	  		}
+
+	  		int y = mpi_size_old%mpi_size;
+	  		if (mpi_rank < y)
+	  		{
+	  			for (int i = 0; i < mpi_size*x + mpi_rank; i++)
+	  			{
+	  				offset_add[0] += metadata_out[i];
+	  				//offset_add0.get(mpi_rank).add(metadata_out[i]);
+	  			}
+	  		}
+	    }*/
+
+	    //hsize_t stride[1] = {1};
+	    hsize_t count[1] = {1};
+
+	    //std::cout << "LOAD: MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << ", Offset: " << offset[0] << ", Offset_add: " << offset_add[0] << ", Block: " << block[0] << ", Block_add: " << block_add[0] << std::endl;
+/*
+	    std::cout << "LOAD: MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << std::endl;
+	    for (size_t i = 0; i < offset0.get(mpi_rank).size(); i++)
+	    	std::cout << ", Offset: " << offset0.get(mpi_rank).get(i) << std::endl;
+		for (size_t i = 0; i < offset_add0.get(mpi_rank).size(); i++)
+			std::cout << ", Offset_add: " << offset_add0.get(mpi_rank).get(i) << std::endl;
+		for (size_t i = 0; i < block0.get(mpi_rank).size(); i++)
+			std::cout << ", Block: " << block0.get(mpi_rank).get(i) << std::endl;
+		for (size_t i = 0; i < block_add0.get(mpi_rank).size(); i++)
+			std::cout << ", Block_add: " << block_add0.get(mpi_rank).get(i) << std::endl;
+*/
+
+		//Select file dataspace
+		hid_t file_dataspace_id_2 = H5Dget_space(dataset_2);
+
+        H5Sselect_hyperslab(file_dataspace_id_2, H5S_SELECT_SET, offset, NULL, count, block);
+
+		//Select file dataspace
+/*		hid_t file_dataspace_id_3 = H5Dget_space(dataset_2);
+
+        H5Sselect_hyperslab(file_dataspace_id_3, H5S_SELECT_SET, offset_add, NULL, count, block_add);*/
+
+        hsize_t mdim_2[1] = {block[0]};
+//        hsize_t mdim_3[1] = {block_add[0]};
+
+
+		//Size for data space in memory
+
+		/*if (mpi_rank >= mpi_size_old)
+			mdim_2[0] = 0;
+		else
+			mdim_2[0] = metadata_out[mpi_rank];*/
+
+		//Create data space in memory
+		hid_t mem_dataspace_id_2 = H5Screate_simple(1, mdim_2, NULL);
+//		hid_t mem_dataspace_id_3 = H5Screate_simple(1, mdim_3, NULL);
+
+		//if (mpi_rank == 0)
+		{
+			hssize_t size2;
+
+			size2 = H5Sget_select_npoints (mem_dataspace_id_2);
+			printf ("\nLOAD: memspace_id_2 size: %llu\n", size2);
+			size2 = H5Sget_select_npoints (file_dataspace_id_2);
+			printf ("LOAD: dataspace_id_2 size: %llu\n", size2);
+		}
+/*
+		if (mpi_rank == 0)
+		{
+			hssize_t size2;
+
+			size2 = H5Sget_select_npoints (mem_dataspace_id_3);
+			printf ("\nLOAD: memspace_id_3 size: %llu\n", size2);
+			size2 = H5Sget_select_npoints (file_dataspace_id_3);
+			printf ("LOAD: dataspace_id_3 size: %llu\n", size2);
+		}
+*/
+	size_t sum = 0;
+
+		for (int i = 0; i < mpi_size_old; i++)
+		{
+			sum += metadata_out[i];
+		}
+
+		std::cout << "LOAD: sum: " << sum << std::endl;
+
+		// allocate the memory
+		HeapMemory pmem;
+//		HeapMemory pmem2;
+		//pmem.allocate(req);
+		ExtPreAlloc<HeapMemory> & mem = *(new ExtPreAlloc<HeapMemory>(block[0],pmem));
+		mem.incRef();
+//		ExtPreAlloc<HeapMemory> & mem2 = *(new ExtPreAlloc<HeapMemory>(block_add[0],pmem2));
+//		mem2.incRef();
+
+	  	// Read the dataset.
+	    H5Dread(dataset_2, H5T_NATIVE_CHAR, mem_dataspace_id_2, file_dataspace_id_2, plist_id, (char *)mem.getPointer());
+
+	    // Read the dataset.
+//		H5Dread(dataset_2, H5T_NATIVE_CHAR, mem_dataspace_id_3, file_dataspace_id_3, plist_id, (char *)mem2.getPointer());
+
+		mem.allocate(pmem.size());
+//		mem2.allocate(pmem2.size());
+		std::cout << "Mem.size(): " << mem.size() << " = " << block[0] << std::endl;
+
+		Unpack_stat ps;
+
+		openfpm::vector<Point<dim, St>> v_pos_unp;
+
+		openfpm::vector<prop> v_prp_unp;
+
+		Unpacker<decltype(v_pos_unp),HeapMemory>::unpack(mem,v_pos_unp,ps,1);
+		Unpacker<decltype(v_prp_unp),HeapMemory>::unpack(mem,v_prp_unp,ps,1);
+
+//		Unpack_stat ps2;
+
+
+//		Unpacker<decltype(v_pos),HeapMemory>::unpack(mem2,v_pos_unp,ps2,1);
+//		Unpacker<decltype(v_prp),HeapMemory>::unpack(mem2,v_prp_unp,ps2,1);
+
+//		std::cout << "V_pos.size(): " << v_pos.size() << std::endl;
+//		std::cout << "V_pos_unp.size(): " << v_pos_unp.size() << std::endl;
+
+		mem.decRef();
+		delete &mem;
+
+		for (size_t i = 0; i < v_pos_unp.size(); i++)
+			v_pos.add(v_pos_unp.get(i));
+
+		for (size_t i = 0; i < v_prp_unp.size(); i++)
+			v_prp.add(v_prp_unp.get(i));
+
+		g_m = v_pos.size();
+	}
+
 	inline void load(const std::string & filename)
 	{
+		v_pos.clear();
+		v_prp.clear();
+
+		g_m = 0;
+
 		MPI_Comm comm = v_cl.getMPIComm();
 		MPI_Info info  = MPI_INFO_NULL;
 
 		int mpi_rank = v_cl.getProcessUnitID();
-		int mpi_size = v_cl.getProcessingUnits();
+		//int mpi_size = v_cl.getProcessingUnits();
 
 		// Set up file access property list with parallel I/O access
 		hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
@@ -1184,6 +1386,13 @@ public:
 			std::cout << " " << std::endl;
 		}
 */
+	    openfpm::vector<size_t> metadata_accum;
+	    metadata_accum.resize(mpi_size_old);
+
+	    metadata_accum.get(0) = 0;
+	    for (int i = 1 ; i < mpi_size_old ; i++)
+	    	metadata_accum.get(i) = metadata_accum.get(i-1) + metadata_out[i-1];
+
 	    //Open dataset
 	    hid_t dataset_2 = H5Dopen (file, "vector_dist", H5P_DEFAULT);
 
@@ -1191,8 +1400,6 @@ public:
 	  	plist_id = H5Pcreate(H5P_DATASET_XFER);
 	  	H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
 
-	  	hsize_t block[1] = {0};
-	  	hsize_t block_add[1] = {0};
 /*
 	  	openfpm::vector<openfpm::vector<hsize_t>> block0;
 	  	openfpm::vector<openfpm::vector<hsize_t>> block_add0;
@@ -1204,169 +1411,62 @@ public:
 	  	block_add0.resize(mpi_size);
 		offset_add0.resize(mpi_size);
 */
-	  	if (mpi_size >= mpi_size_old)
+	  	openfpm::vector<size_t> n_block;
+	  	n_block.resize(v_cl.getProcessingUnits());
+
+
+	  	for(size_t i = 0 ; i < n_block.size() ; i++)
+	  		n_block.get(i) = mpi_size_old / v_cl.getProcessingUnits();
+
+	  	size_t rest_block = mpi_size_old % v_cl.getProcessingUnits();
+
+	  	std::cout << "MPI size old: " << mpi_size_old << std::endl;
+	  	std::cout << "MPI size: " << v_cl.getProcessingUnits() << std::endl;
+
+
+	  	std::cout << "Rest block: " << rest_block << std::endl;
+
+	  	size_t max_block;
+
+	  	if (rest_block != 0)
+	  		max_block = n_block.get(0) + 1;
+	  	else
+	  		max_block = n_block.get(0);
+
+	  	//for(size_t i = 0 ; i < n_block.size() ; i++)
+	  	for(size_t i = 0 ; i < rest_block ; i++)
+	  		n_block.get(i) += 1;
+
+
+	  	for(size_t i = 0 ; i < n_block.size() ; i++)
+	  		std::cout << "n_block.get(i): " << n_block.get(i) << std::endl;
+
+	  	size_t start_block = 0;
+	  	size_t stop_block = 0;
+
+
+	  	if (v_cl.getProcessUnitID() != 0)
 	  	{
-			if (mpi_rank >= mpi_size_old)
-				block[0] = 0;
-			else
-				block[0] = {(size_t)metadata_out[mpi_rank]};
+			for(size_t i = 0 ; i < v_cl.getProcessUnitID() ; i++)
+				start_block += n_block.get(i);
 	  	}
+
+	  	stop_block = start_block + n_block.get(v_cl.getProcessUnitID());
+
+	  	std::cout << "ID: " << v_cl.getProcessUnitID() << "; Start block: " << start_block << "; " << "Stop block: " << stop_block << std::endl;
+
+	  	if (mpi_rank >= mpi_size_old)
+	  		load_block(start_block,mpi_size_old,metadata_out,metadata_accum,plist_id,dataset_2);
 	  	else
 	  	{
-	  		int x = mpi_size_old/mpi_size;
-	  		int shift = mpi_rank*x;
-	  		for (int i = 0; i < x; i++)
-	  		{
-	  			//block0.get(mpi_rank).add(metadata_out[shift]);
-	  			block[0] += metadata_out[shift];
-	  			shift++;
-	  		}
-	  		int y = mpi_size_old%mpi_size;
-	  		if (mpi_rank < y)
-	  		{
-				block_add[0] += metadata_out[mpi_size*x+mpi_rank];
-				//block_add0.get(mpi_rank).add(metadata_out[mpi_size*x+mpi_rank]);
-	  		}
+	  		size_t n_bl = 0;
+	  		size_t lb = start_block;
+			for ( ; lb < stop_block ; lb++, n_bl++)
+				load_block(lb,mpi_size_old,metadata_out,metadata_accum,plist_id,dataset_2);
+
+			if (n_bl < max_block)
+				load_block(-1,mpi_size_old,metadata_out,metadata_accum,plist_id,dataset_2);
 	  	}
-
-	  	hsize_t offset[1] = {0};
-	    hsize_t offset_add[1] = {0};
-
-	    if (mpi_size >= mpi_size_old)
-		{
-			if (mpi_rank >= mpi_size_old)
-				offset[0] = 0;
-			else
-			{
-				for (int i = 0; i < mpi_rank; i++)
-				offset[0] += metadata_out[i];
-			}
-		}
-	    else
-	    {
-	  		int x = mpi_size_old/mpi_size;
-	  		int shift = mpi_rank*x;
-
-	  		for (int i = 0; i < shift; i++)
-	  		{
-	  			offset[0] += metadata_out[i];
-	  			//offset0.get(mpi_rank).add(metadata_out[i]);
-	  		}
-
-	  		int y = mpi_size_old%mpi_size;
-	  		if (mpi_rank < y)
-	  		{
-	  			for (int i = 0; i < mpi_size*x + mpi_rank; i++)
-	  			{
-	  				offset_add[0] += metadata_out[i];
-	  				//offset_add0.get(mpi_rank).add(metadata_out[i]);
-	  			}
-	  		}
-	    }
-
-	    //hsize_t stride[1] = {1};
-	    hsize_t count[1] = {1};
-
-	    //std::cout << "LOAD: MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << ", Offset: " << offset[0] << ", Offset_add: " << offset_add[0] << ", Block: " << block[0] << ", Block_add: " << block_add[0] << std::endl;
-/*
-	    std::cout << "LOAD: MPI rank: " << mpi_rank << ", MPI size: " << mpi_size << std::endl;
-	    for (size_t i = 0; i < offset0.get(mpi_rank).size(); i++)
-	    	std::cout << ", Offset: " << offset0.get(mpi_rank).get(i) << std::endl;
-		for (size_t i = 0; i < offset_add0.get(mpi_rank).size(); i++)
-			std::cout << ", Offset_add: " << offset_add0.get(mpi_rank).get(i) << std::endl;
-		for (size_t i = 0; i < block0.get(mpi_rank).size(); i++)
-			std::cout << ", Block: " << block0.get(mpi_rank).get(i) << std::endl;
-		for (size_t i = 0; i < block_add0.get(mpi_rank).size(); i++)
-			std::cout << ", Block_add: " << block_add0.get(mpi_rank).get(i) << std::endl;
-*/
-
-		//Select file dataspace
-		hid_t file_dataspace_id_2 = H5Dget_space(dataset_2);
-
-        H5Sselect_hyperslab(file_dataspace_id_2, H5S_SELECT_SET, offset, NULL, count, block);
-
-		//Select file dataspace
-		hid_t file_dataspace_id_3 = H5Dget_space(dataset_2);
-
-        H5Sselect_hyperslab(file_dataspace_id_3, H5S_SELECT_SET, offset_add, NULL, count, block_add);
-
-        hsize_t mdim_2[1] = {block[0]};
-        hsize_t mdim_3[1] = {block_add[0]};
-
-
-		//Size for data space in memory
-
-		/*if (mpi_rank >= mpi_size_old)
-			mdim_2[0] = 0;
-		else
-			mdim_2[0] = metadata_out[mpi_rank];*/
-
-		//Create data space in memory
-		hid_t mem_dataspace_id_2 = H5Screate_simple(1, mdim_2, NULL);
-		hid_t mem_dataspace_id_3 = H5Screate_simple(1, mdim_3, NULL);
-/*
-		if (mpi_rank == 0)
-		{
-			hssize_t size2;
-
-			size2 = H5Sget_select_npoints (mem_dataspace_id_2);
-			printf ("\nLOAD: memspace_id_2 size: %llu\n", size2);
-			size2 = H5Sget_select_npoints (file_dataspace_id_2);
-			printf ("LOAD: dataspace_id_2 size: %llu\n", size2);
-		}
-
-		if (mpi_rank == 0)
-		{
-			hssize_t size2;
-
-			size2 = H5Sget_select_npoints (mem_dataspace_id_3);
-			printf ("\nLOAD: memspace_id_3 size: %llu\n", size2);
-			size2 = H5Sget_select_npoints (file_dataspace_id_3);
-			printf ("LOAD: dataspace_id_3 size: %llu\n", size2);
-		}
-*/
-		size_t sum = 0;
-
-		for (int i = 0; i < mpi_size_old; i++)
-		{
-			sum += metadata_out[i];
-		}
-
-
-		//std::cout << "LOAD: sum: " << sum << std::endl;
-
-		// allocate the memory
-		HeapMemory pmem;
-		HeapMemory pmem2;
-		//pmem.allocate(req);
-		ExtPreAlloc<HeapMemory> & mem = *(new ExtPreAlloc<HeapMemory>(block[0],pmem));
-		mem.incRef();
-		ExtPreAlloc<HeapMemory> & mem2 = *(new ExtPreAlloc<HeapMemory>(block_add[0],pmem2));
-		mem2.incRef();
-
-	  	// Read the dataset.
-	    H5Dread(dataset_2, H5T_NATIVE_CHAR, mem_dataspace_id_2, file_dataspace_id_2, plist_id, (char *)mem.getPointer());
-
-	    // Read the dataset.
-		H5Dread(dataset_2, H5T_NATIVE_CHAR, mem_dataspace_id_3, file_dataspace_id_3, plist_id, (char *)mem2.getPointer());
-
-		mem.allocate(pmem.size());
-		mem2.allocate(pmem2.size());
-		//std::cout << "Mem+mem2.size(): " << mem.size() + mem2.size() << " = " << block[0]+block_add[0] << std::endl;
-
-		Unpack_stat ps;
-
-		Unpacker<decltype(v_pos),HeapMemory>::unpack(mem,v_pos,ps);
-		Unpacker<decltype(v_prp),HeapMemory>::unpack(mem,v_prp,ps);
-
-		Unpack_stat ps2;
-
-		openfpm::vector<Point<dim, St>> v_pos_unp;
-
-		openfpm::vector<prop> v_prp_unp;
-
-		Unpacker<decltype(v_pos),HeapMemory>::unpack(mem2,v_pos_unp,ps2);
-		Unpacker<decltype(v_prp),HeapMemory>::unpack(mem2,v_prp_unp,ps2);
 
 	    // Close the dataset.
 	    H5Dclose(dataset);
@@ -1374,17 +1474,6 @@ public:
 	    // Close the file.
 	    H5Fclose(file);
 	    H5Pclose(plist_id);
-
-		//std::cout << "V_pos.size(): " << v_pos.size() << std::endl;
-		//std::cout << "V_pos_unp.size(): " << v_pos_unp.size() << std::endl;
-
-		mem.decRef();
-		delete &mem;
-
-		for (size_t i = 0; i < v_pos_unp.size(); i++)
-			v_pos.add(v_pos_unp.get(i));
-
-		g_m = v_pos.size();
 
 		//std::cout << "V_pos.size() after merge: " << v_pos.size() << std::endl;
 

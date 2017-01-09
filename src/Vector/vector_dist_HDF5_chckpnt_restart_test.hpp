@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test )
 	const size_t Ng = cbrt(k);
 
 	// we create a Grid iterator
-	size_t sz[3] = {Ng,Ng,Ng};
+	size_t sz[dim] = {Ng,Ng,Ng};
 
 	for (size_t i = 0; i < dim; i++)
 		bc[i] = NON_PERIODIC;
@@ -75,15 +75,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test )
 		++it;
 	}
 
-	BOOST_REQUIRE_EQUAL(it.getSpacing(0),1.0f/(Ng-1));
-	BOOST_REQUIRE_EQUAL(it.getSpacing(1),1.0f/(Ng-1));
-	BOOST_REQUIRE_EQUAL(it.getSpacing(2),1.0f/(Ng-1));
-
-	//std::cout << "Size_local: " << vd.size_local_with_ghost() << std::endl;
+	//BOOST_REQUIRE_EQUAL(it.getSpacing(0),1.0f/(Ng-1));
+	//BOOST_REQUIRE_EQUAL(it.getSpacing(1),1.0f/(Ng-1));
+	//BOOST_REQUIRE_EQUAL(it.getSpacing(2),1.0f/(Ng-1));
 
 	vd.map();
-
-	//std::cout << "Size_local after map: " << vd.size_local_with_ghost() << std::endl;
 
 	// Put forces
 
@@ -95,7 +91,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test )
 
 		//Put the forces
 		for (size_t i = 0; i < dim; i++)
-			vd.template getProp<0>(key)[i] = 0.51234;
+			vd.template getProp<0>(key)[i] = 0.51234 + vd.getPos(key)[0] + vd.getPos(key)[1]+ vd.getPos(key)[2];
 
 		++it2;
 	}
@@ -108,6 +104,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test )
 
 	std::cout << "Saving time: " << t.getwct() << std::endl;
 }
+
+
 
 BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
 {
@@ -141,6 +139,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
 
 	vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(0,box,bc,ghost);
 
+	vd.load("vector_dist.h5");
+
 	timer t;
 	t.start();
 	// Save the vector
@@ -164,13 +164,15 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
 
 	BOOST_REQUIRE_EQUAL(sum,k);
 
+	//std::cout << "Sum: " << sum << std::endl;
+
     // Check spacing (positions)
 
 	auto it = vd.getGridIterator(sz);
 
 	while (it.isNext())
 	{
-		auto key = it.get();
+		//auto key = it.get();
 
 		++it;
 	}
@@ -179,7 +181,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
 	BOOST_REQUIRE_EQUAL(it.getSpacing(1),1.0f/(Ng-1));
 	BOOST_REQUIRE_EQUAL(it.getSpacing(2),1.0f/(Ng-1));
 
-/*
+
 	// Check properties
 
 	auto it2 = vd.getDomainIterator();
@@ -190,11 +192,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
 
 		//Put the forces
 		for (size_t i = 0; i < dim; i++)
-			BOOST_CHECK_CLOSE(vd.template getProp<0>(key)[i],0.51234,0.0001);
+			BOOST_CHECK_CLOSE(vd.template getProp<0>(key)[i],0.51234 + vd.getPos(key)[0] + vd.getPos(key)[1]+ vd.getPos(key)[2],0.0001);
 
 		++it2;
 	}
-*/
 }
 
 BOOST_AUTO_TEST_SUITE_END()
