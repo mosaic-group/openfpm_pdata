@@ -124,13 +124,6 @@ public:
 							loc_grid.get(j).get_o(key) = g.get_o(key2);
 							count2++;
 
-							////////// DEBUG ///////////////
-							if (g.template get<0>(key2) != 1)
-							{
-								//std::cout << "WRONG ZZZZ" << std::endl;
-								//std::cout << "Start: " << start2 << "; Stop: " << stop2 << "; G size: (" << p.get(0) << "; " << p.get(1) << "); Key: " << str << std::endl;
-
-							}
 							++it;
 						}
 					}
@@ -308,21 +301,6 @@ public:
 
 					// Add to the labeling vector
 					lbl_b.get(p_id).add(aggr);
-
-					auto it2 = gr_send.getIterator();
-
-					while (it2.isNext())
-					{
-						auto key3 = it2.get();
-
-						if (gr_send.template get<0>(key3) != 1)
-						{
-							//std::string str = key3.to_string();
-							//std::cout << "Wrong!" << std::endl;
-							//std::cout << "Start: " << start2 << "; Stop: " << stop2 << "; Grid send size: (" << p2.get(0) << "; " << p2.get(1) << "); " << "Key: " << str << std::endl;
-						}
-						++it2;
-					}
 				}
 			}
 		}

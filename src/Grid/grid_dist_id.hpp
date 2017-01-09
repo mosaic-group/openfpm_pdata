@@ -1729,23 +1729,6 @@ public:
 		this->template map_(dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global);
 	}
 
-	void gdb_ext_info()
-	{
-		for (size_t i = 0; i < gdb_ext.size(); i++)
-		{
-			Box<dim,long int> box = gdb_ext.get(i).Dbox;
-			box += gdb_ext.get(i).origin;
-			std::cout << "(" << box.getLow(0) << "; " << box.getLow(1) << "); (" << box.getHigh(0) << "; " << box.getHigh(1) << ")" << std::endl;
-		}
-		std::cout << "--------------" << std::endl;
-		for (size_t i = 0; i < dec.getNSubDomain(); i++)
-		{
-			std::cout << "(" << dec.getSubDomain(i).getLow(0) << "; " << dec.getSubDomain(i).getLow(1) << "); (" << dec.getSubDomain(i).getHigh(0) << "; " << dec.getSubDomain(i).getHigh(1) << ")" << std::endl;
-		}
-		std::cout << "******************" << std::endl;
-	}
-
-
 	inline void save(const std::string & filename) const
 	{
 		std::cout << "Loc_grid.size() before save: " << loc_grid.size() << std::endl;
