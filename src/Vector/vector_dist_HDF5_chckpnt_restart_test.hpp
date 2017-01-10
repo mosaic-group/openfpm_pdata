@@ -22,7 +22,7 @@ BOOST_AUTO_TEST_SUITE( vd_hdf5_chckpnt_rstrt_test )
 // Input data
 
 // Number of particles
-size_t k = 1000;
+size_t k = 1000000;
 
 // Dimensionality
 const size_t dim = 3;

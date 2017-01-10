@@ -82,7 +82,7 @@ public:
 				//device_grid gr_send(sz);
 				//gr_send.setMemory();
 
-				std::cout << "B: (" << b.getLow(0) << "; " << b.getLow(1) << "); (" << b.getHigh(0) << "; " << b.getHigh(1) << "); " << "G: (" << g.getGrid().getBox().getHigh(0) << "; " << g.getGrid().getBox().getHigh(1) << ")" << std::endl;
+				//std::cout << "B: (" << b.getLow(0) << "; " << b.getLow(1) << "); (" << b.getHigh(0) << "; " << b.getHigh(1) << "); " << "G: (" << g.getGrid().getBox().getHigh(0) << "; " << g.getGrid().getBox().getHigh(1) << ")" << std::endl;
 
 				// Set the dimensions of the local grid
 				//g.resize(l_res);
@@ -130,7 +130,7 @@ public:
 				}
 			}
 		}
-		std::cout << "Count after: " << count2 << std::endl;
+		//std::cout << "Count after: " << count2 << std::endl;
 	}
 
 
@@ -185,7 +185,7 @@ public:
 					count2++;
 					//////////////
 
-					std::cout << "Inte_box: (" << inte_box.getLow(0) << "; " << inte_box.getLow(1) << "); (" << inte_box.getHigh(0) << "; " << inte_box.getHigh(1) << ")" << std::endl;
+					//std::cout << "Inte_box: (" << inte_box.getLow(0) << "; " << inte_box.getLow(1) << "); (" << inte_box.getHigh(0) << "; " << inte_box.getHigh(1) << ")" << std::endl;
 
 					auto inte_box_cont = cd_sm.convertCellUnitsIntoDomainSpace(inte_box);
 
@@ -199,23 +199,23 @@ public:
 					p_id = dec.processorID(p);
 					prc_sz.get(p_id)++;
 
-					std::cout << "P_id: " << p_id << std::endl;
+					//std::cout << "P_id: " << p_id << std::endl;
 
 					// Transform coordinates to local
 					auto inte_box_local = inte_box;
 
 					inte_box_local -= gdb_ext_old.get(i).origin;
 
-					std::cout << "gdb_ext_old.get(i): (" << sub_dom.getLow(0) << "; " << sub_dom.getLow(1) << "); (" << sub_dom.getHigh(0) << "; " << sub_dom.getHigh(1) << ")" << std::endl;
+					//std::cout << "gdb_ext_old.get(i): (" << sub_dom.getLow(0) << "; " << sub_dom.getLow(1) << "); (" << sub_dom.getHigh(0) << "; " << sub_dom.getHigh(1) << ")" << std::endl;
 
-					std::cout << "gdb_ext_global.get(j): (" << sub_dom_new.getLow(0) << "; " << sub_dom_new.getLow(1) << "); (" << sub_dom_new.getHigh(0) << "; " << sub_dom_new.getHigh(1) << ")" << std::endl;
+					//std::cout << "gdb_ext_global.get(j): (" << sub_dom_new.getLow(0) << "; " << sub_dom_new.getLow(1) << "); (" << sub_dom_new.getHigh(0) << "; " << sub_dom_new.getHigh(1) << ")" << std::endl;
 
-					std::cout << "Inte_box_local: (" << inte_box_local.getLow(0) << "; " << inte_box_local.getLow(1) << "); (" << inte_box_local.getHigh(0) << "; " << inte_box_local.getHigh(1) << ")" << std::endl;
+					//std::cout << "Inte_box_local: (" << inte_box_local.getLow(0) << "; " << inte_box_local.getLow(1) << "); (" << inte_box_local.getHigh(0) << "; " << inte_box_local.getHigh(1) << ")" << std::endl;
 
 					// Grid corresponding for gdb_ext_old.get(i) box
 					device_grid & gr = loc_grid_old.get(i);
 
-					std::cout << "loc_grid_old.get(i): (" << gr.getGrid().getBox().getLow(0) << "; " << gr.getGrid().getBox().getLow(1) << "); (" << gr.getGrid().getBox().getHigh(0) << "; " << gr.getGrid().getBox().getHigh(1) << ")" << std::endl;
+					//std::cout << "loc_grid_old.get(i): (" << gr.getGrid().getBox().getLow(0) << "; " << gr.getGrid().getBox().getLow(1) << "); (" << gr.getGrid().getBox().getHigh(0) << "; " << gr.getGrid().getBox().getHigh(1) << ")" << std::endl;
 
 					//for (size_t l = 0; l < dim; l++)
 						//std::cout << "loc_grid_old.get(i).size on " << l << " dimension: " << gr.getGrid().size(l) << std::endl;
@@ -263,7 +263,7 @@ public:
 					std::string start2 = start.to_string();
 					std::string stop2 = stop.to_string();
 
-					std::cout << "Start: " << start2 << "; Stop: " << stop2 << std::endl;
+					//std::cout << "Start: " << start2 << "; Stop: " << stop2 << std::endl;
 
 					auto it = gr.getSubIterator(start,stop);
 
@@ -304,8 +304,8 @@ public:
 				}
 			}
 		}
-		std::cout << "Count for points: " << count << std::endl;
-		std::cout << "Count for inte_boxes: " << count2 << std::endl;
+		//std::cout << "Count for points: " << count << std::endl;
+		//std::cout << "Count for inte_boxes: " << count2 << std::endl;
 	}
 
 	/*! \brief Moves all the grids that does not belong to the local processor to the respective processor
@@ -386,9 +386,9 @@ public:
 		// Vector for receiving of intersection grids
 		openfpm::vector<openfpm::vector<aggregate<device_grid,SpaceBox<dim,long int>>>> m_oGrid_recv;
 
-		std::cout << "vcl.getProcessUnitID(): " << v_cl.getProcessUnitID() << "; prc_r.size(): " << prc_r.size() << std::endl;
+		//std::cout << "vcl.getProcessUnitID(): " << v_cl.getProcessUnitID() << "; prc_r.size(): " << prc_r.size() << std::endl;
 
-		std::cout << "vcl.getProcessUnitID(): " << v_cl.getProcessUnitID() << "; m_oGrid_new.size(): " << m_oGrid_new.size() << std::endl;
+		//std::cout << "vcl.getProcessUnitID(): " << v_cl.getProcessUnitID() << "; m_oGrid_new.size(): " << m_oGrid_new.size() << std::endl;
 /*
 		for (size_t i = 0; i < m_oGrid.size(); i++)
 		{

@@ -1143,7 +1143,7 @@ public:
 	  		}
 	  	}*/
 
-		std::cout << "BID: " << bid << std::endl;
+//		std::cout << "BID: " << bid << std::endl;
 
 		hsize_t offset[1];
 		hsize_t block[1];
@@ -1159,7 +1159,7 @@ public:
 			block[0] = 0;
 		}
 
-		std::cout << "Offset: " << offset[0] << "; Block: " << block[0]<<  std::endl;
+//		std::cout << "Offset: " << offset[0] << "; Block: " << block[0]<<  std::endl;
 //	    hsize_t offset_add[1] = {0};
 
 /*	    if (mpi_size >= mpi_size_old)
@@ -1236,14 +1236,14 @@ public:
 //		hid_t mem_dataspace_id_3 = H5Screate_simple(1, mdim_3, NULL);
 
 		//if (mpi_rank == 0)
-		{
+/*		{
 			hssize_t size2;
 
 			size2 = H5Sget_select_npoints (mem_dataspace_id_2);
 			printf ("\nLOAD: memspace_id_2 size: %llu\n", size2);
 			size2 = H5Sget_select_npoints (file_dataspace_id_2);
 			printf ("LOAD: dataspace_id_2 size: %llu\n", size2);
-		}
+		}*/
 /*
 		if (mpi_rank == 0)
 		{
@@ -1262,7 +1262,7 @@ public:
 			sum += metadata_out[i];
 		}
 
-		std::cout << "LOAD: sum: " << sum << std::endl;
+//		std::cout << "LOAD: sum: " << sum << std::endl;
 
 		// allocate the memory
 		HeapMemory pmem;
@@ -1281,7 +1281,7 @@ public:
 
 		mem.allocate(pmem.size());
 //		mem2.allocate(pmem2.size());
-		std::cout << "Mem.size(): " << mem.size() << " = " << block[0] << std::endl;
+//		std::cout << "Mem.size(): " << mem.size() << " = " << block[0] << std::endl;
 
 		Unpack_stat ps;
 
@@ -1420,11 +1420,11 @@ public:
 
 	  	size_t rest_block = mpi_size_old % v_cl.getProcessingUnits();
 
-	  	std::cout << "MPI size old: " << mpi_size_old << std::endl;
-	  	std::cout << "MPI size: " << v_cl.getProcessingUnits() << std::endl;
+	  	//std::cout << "MPI size old: " << mpi_size_old << std::endl;
+	  	//std::cout << "MPI size: " << v_cl.getProcessingUnits() << std::endl;
 
 
-	  	std::cout << "Rest block: " << rest_block << std::endl;
+	  //	std::cout << "Rest block: " << rest_block << std::endl;
 
 	  	size_t max_block;
 
@@ -1438,8 +1438,8 @@ public:
 	  		n_block.get(i) += 1;
 
 
-	  	for(size_t i = 0 ; i < n_block.size() ; i++)
-	  		std::cout << "n_block.get(i): " << n_block.get(i) << std::endl;
+	  	//for(size_t i = 0 ; i < n_block.size() ; i++)
+	  		//std::cout << "n_block.get(i): " << n_block.get(i) << std::endl;
 
 	  	size_t start_block = 0;
 	  	size_t stop_block = 0;
@@ -1453,7 +1453,7 @@ public:
 
 	  	stop_block = start_block + n_block.get(v_cl.getProcessUnitID());
 
-	  	std::cout << "ID: " << v_cl.getProcessUnitID() << "; Start block: " << start_block << "; " << "Stop block: " << stop_block << std::endl;
+	  	//std::cout << "ID: " << v_cl.getProcessUnitID() << "; Start block: " << start_block << "; " << "Stop block: " << stop_block << std::endl;
 
 	  	if (mpi_rank >= mpi_size_old)
 	  		load_block(start_block,mpi_size_old,metadata_out,metadata_accum,plist_id,dataset_2);
@@ -1478,7 +1478,7 @@ public:
 		//std::cout << "V_pos.size() after merge: " << v_pos.size() << std::endl;
 
 		// Map particles
-		map();
+		//map();
 
 		//std::cout << "V_pos.size() after merge and map: " << v_pos.size() << std::endl;
 	}

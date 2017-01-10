@@ -16,12 +16,12 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
 {
 
 	// Input data
-	size_t k = 1000;
+	size_t k = 2400;
 
 	float ghost_part = 0.0;
 
 	// Domain
-	Box<2,float> domain({-1.0,-1.0},{1.0,1.0});
+	Box<2,float> domain({0.0,0.0},{1.0,1.0});
 
 	Vcluster & v_cl = create_vcluster();
 
@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
 	Ghost<2,float> g(ghost_part);
 
 	// Distributed grid with id decomposition
-	grid_dist_id<2, float, scalar<float[2]>, CartDecomposition<2,float>> g_dist(sz,domain,g);
+	grid_dist_id<2, float, scalar<float>, CartDecomposition<2,float>> g_dist(sz,domain,g);
 
 	// get the decomposition
 	auto & dec = g_dist.getDecomposition();
@@ -61,8 +61,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
 
 		auto keyg = g_dist.getGKey(key);
 
-		g_dist.template get<0>(key)[0] = keyg.get(0);
-		g_dist.template get<0>(key)[1] = keyg.get(1);
+		g_dist.template get<0>(key) = keyg.get(0);
 
 		++it;
 		count++;
@@ -94,7 +93,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 {
 
 	// Input data
-	size_t k = 1000;
+	size_t k = 2400;
 
 	float ghost_part = 0.0;
 
@@ -119,7 +118,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 	Ghost<2,float> g(ghost_part);
 
 	// Distributed grid with id decomposition
-	grid_dist_id<2, float, scalar<float[2]>, CartDecomposition<2,float>> g_dist(sz,domain,g);
+	grid_dist_id<2, float, scalar<float>, CartDecomposition<2,float>> g_dist(sz,domain,g);
 
 	g_dist.getDecomposition().write("Before_load_grid_decomposition");
 	g_dist.write("Before_Loaded_grid");
@@ -149,8 +148,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 
 		auto keyg = g_dist.getGKey(key);
 
-		BOOST_REQUIRE_EQUAL(g_dist.template get<0>(key)[0], keyg.get(0));
-		BOOST_REQUIRE_EQUAL(g_dist.template get<0>(key)[1], keyg.get(1));
+		BOOST_REQUIRE_EQUAL(g_dist.template get<0>(key), keyg.get(0));
 
 		++it;
 		count++;
