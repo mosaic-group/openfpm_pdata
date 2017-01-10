@@ -31,8 +31,6 @@ int main(int argc, char* argv[])
 #include "Space/Shape/Box.hpp"
 #include "util.hpp"
 
-//using namespace openfpm;
-
 #include "unit_test_init_cleanup.hpp"
 #include "Graph/CartesianGraphFactory_unit_test.hpp"
 #include "Decomposition/CartDecomposition_unit_test.hpp"
@@ -41,6 +39,7 @@ int main(int argc, char* argv[])
 #include "dec_optimizer_unit_test.hpp"
 #include "Vector/vector_dist_unit_test.hpp"
 #include "Decomposition/Distribution/Distribution_unit_tests.hpp"
+#include "Grid/Iterators/grid_dist_id_iterators_unit_tests.hpp"
 //#include "DLB/DLB_unit_test.hpp"
 #include "Graph/dist_map_graph_unit_test.hpp"
 #include "Graph/DistGraphFactory.hpp"

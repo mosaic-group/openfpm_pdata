@@ -202,13 +202,13 @@ if [ x"$CXX" != x"icpc" ]; then
       cp -r lib $1/MUMPS
 
       MUMPS_extra_lib="--with-mumps-lib=\"$1/MUMPS/lib/libdmumps.a $1/MUMPS/lib/libmumps_common.a $1/MUMPS/lib/libpord.a\""
-      configure_options="$configure_options --with-mumps=yes  --with-mumps-include=$1/MUMPS/include"
+      configure_options="$configure_options --with-mumps=yes --with-mumps-include=$1/MUMPS/include"
 
     fi
   else
     echo "MUMPS already installed"
     MUMPS_extra_lib="--with-mumps-lib=\"$1/MUMPS/lib/libdmumps.a $1/MUMPS/lib/libmumps_common.a $1/MUMPS/lib/libpord.a\""
-    configure_options="$configure_options --with-mumps=yes --with-mumps-lib=\"$MUMPS_extra_lib\"  --with-mumps-include=$1/MUMPS/include"
+    configure_options="$configure_options --with-mumps=yes --with-mumps-include=$1/MUMPS/include" 
   fi
 fi
 
@@ -308,9 +308,9 @@ fi
 tar -xf petsc-lite-3.6.4.tar.gz
 cd petsc-3.6.4
 
-echo "./configure --with-cxx-dialect=C++11 --with-mpi-dir=$mpi_dir  $configure_options  --prefix=$1/PETSC --with-debugging=0"
+echo "./configure --with-cxx-dialect=C++11 $petsc_openmp  --with-mpi-dir=$mpi_dir $configure_options "$MUMPS_extra_lib"  --prefix=$1/PETSC --with-debugging=0"
 
-./configure --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $MUMPS_extra_lib  $configure_options  --prefix=$1/PETSC --with-debugging=0
+./configure --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options "$MUMPS_extra_lib" --prefix=$1/PETSC --with-debugging=0
 make all test
 make install
 

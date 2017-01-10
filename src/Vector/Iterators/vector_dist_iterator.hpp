@@ -8,7 +8,7 @@
 #ifndef VECTOR_DIST_ITERATOR_HPP_
 #define VECTOR_DIST_ITERATOR_HPP_
 
-#include "vector_dist_key.hpp"
+#include "Vector/vector_dist_key.hpp"
 #include "VCluster/VCluster.hpp"
 
 //! Iterator that Iterate across particle indexes

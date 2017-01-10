@@ -48,7 +48,7 @@ struct GBoxes
 #define FREE 1
 #define FIXED 2
 
-#include "grid_dist_key.hpp"
+#include "Grid/grid_dist_key.hpp"
 #include "VCluster/VCluster.hpp"
 
 

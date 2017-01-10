@@ -9,7 +9,8 @@
 #define SRC_GRID_GRID_DIST_ID_ITERATOR_DEC_HPP_
 
 #include "grid_dist_id_iterator.hpp"
-#include "grid_dist_util.hpp"
+#include "Grid/grid_dist_util.hpp"
+#include "grid_dist_id_iterator_util.hpp"
 
 /*! \brief Given the decomposition it create an iterator
  *
@@ -40,41 +41,6 @@ class grid_dist_id_iterator_dec
 	typename Decomposition::stype spacing[Decomposition::dims];
 
 
-	/*! \brief compute the subset where it has to iterate
-	 *
-	 * \param g_c Actual grid
-	 * \param start_c adjusted start point for the grid g_c
-	 * \param stop_c adjusted stop point for the grid g_c
-	 *
-	 * \return false if the sub-set does not contain points
-	 *
-	 */
-	bool compute_subset(size_t gc, grid_key_dx<Decomposition::dims> & start_c, grid_key_dx<Decomposition::dims> & stop_c)
-	{
-		// Intersect the grid keys
-
-		for (size_t i = 0 ; i < Decomposition::dims ; i++)
-		{
-			long int start_p = gdb_ext.get(g_c).Dbox.getP1().get(i) + gdb_ext.get(g_c).origin.get(i);
-			long int stop_p = gdb_ext.get(g_c).Dbox.getP2().get(i) + gdb_ext.get(g_c).origin.get(i);
-			if (start.get(i) <= start_p)
-				start_c.set_d(i,gdb_ext.get(g_c).Dbox.getP1().get(i));
-			else if (start.get(i) <= stop_p)
-				start_c.set_d(i,start.get(i) - gdb_ext.get(g_c).origin.get(i));
-			else
-				return false;
-
-			if (stop.get(i) >= stop_p)
-				stop_c.set_d(i,gdb_ext.get(g_c).Dbox.getP2().get(i));
-			else if (stop.get(i) >= start_p)
-				stop_c.set_d(i,stop.get(i) - gdb_ext.get(g_c).origin.get(i));
-			else
-				return false;
-		}
-
-		return true;
-	}
-
 	/*! \brief from g_c increment g_c until you find a valid grid
 	 *
 	 */
@@ -86,7 +52,7 @@ class grid_dist_id_iterator_dec
 
 		// When the grid has size 0 potentially all the other informations are garbage
 		while (g_c < gdb_ext.size() &&
-			   (gdb_ext.get(g_c).Dbox.isValid() == false || compute_subset(g_c,start_c,stop_c) == false ))
+			   (gdb_ext.get(g_c).Dbox.isValid() == false || compute_subset<Decomposition>(gdb_ext,g_c,start,stop,start_c,stop_c) == false ))
 		{g_c++;}
 
 		// get the next grid iterator
@@ -117,6 +83,8 @@ class grid_dist_id_iterator_dec
 	/*! \brief Copy operator=
 	*
 	* \param tmp iterator to copy
+	*
+	* \return itself
 	*
 	*/
 	grid_dist_id_iterator_dec<Decomposition> & operator=(const grid_dist_id_iterator_dec<Decomposition> & tmp)
@@ -246,7 +214,7 @@ class grid_dist_id_iterator_dec
 	 */
 	inline grid_key_dx<Decomposition::dims> get()
 	{
-		const grid_dist_key_dx<Decomposition::dims> & k = get_int();
+		const grid_dist_key_dx<Decomposition::dims> k = get_int();
 
 		// Get the sub-domain id
 		size_t sub_id = k.getSub();
@@ -257,6 +225,26 @@ class grid_dist_id_iterator_dec
 		k_glob = k_glob + gdb_ext.get(sub_id).origin;
 
 		return k_glob;
+	}
+
+	/*! \brief Get the starting point of the sub-grid we are iterating
+	 *
+	 * \return the starting point
+	 *
+	 */
+	inline grid_key_dx<Decomposition::dims> getStart()
+	{
+		return start;
+	}
+
+	/*! \brief Get the starting point of the sub-grid we are iterating
+	 *
+	 * \return the stop point
+	 *
+	 */
+	inline grid_key_dx<Decomposition::dims> getStop()
+	{
+		return stop;
 	}
 };
 

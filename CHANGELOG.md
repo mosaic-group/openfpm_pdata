@@ -1,6 +1,19 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] February
+
+### Added
+- Dynamic Load balancing
+- Added SPH Dam break with Dynamic load balancing
+- Added procedure for update ./install --update
+  (From 0.8.0 version will be supported for bug fixing, version 0.X.0 will be supported untill
+   0.X+2.0 will be out)
+
+### Changed
+- BOOST updated to 1.63
+- Eigen updated to 3.3.7
+
 ## [0.7.0] 15 December 2016
 
 ### Added
@@ -165,19 +178,18 @@ All notable changes to this project will be documented in this file.
 - Algebraic Multigrid solver
 - Parallel VTK, improved visualization
 
-## [0.8.0] - Mid January 2017
+## [0.10.0] -  July 2017
 
 ### Added
 - Dynamic Load Balancies examples and interface fixation
 - Check Point restart
 - More example and documentations
 
-## [0.7.0] - December of October
+## [0.9.0] - May 2017
 
 ### Added
 - Asynchronous communication
 - Support for Microsoft Windows with Cygwin
-- Support for Docker/codenvy
 - Defining a domain an invalid domain like Box<2,float> box({0.0,1.0},{0.0,1.0}) (the correct is {0.0,0.0},{1.0,1.0}  )
            produce dead-lock or unclear error message in SE_CLASS1, not hint is given, added usefull error message
 
