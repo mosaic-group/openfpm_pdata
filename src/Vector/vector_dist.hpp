@@ -30,9 +30,12 @@
 #include "data_type/aggregate.hpp"
 #include "NN/VerletList/VerletList.hpp"
 #include "vector_dist_comm.hpp"
+#include "DLB/LB_Model.hpp"
 
 #define NO_ID false
 #define ID true
+
+#define DEC_GRAN(gr) ((size_t)gr << 32)
 
 // Perform a ghost get or a ghost put
 #define GET	1
@@ -235,6 +238,9 @@ public:
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
 #endif
+
+		if (opt >> 32 != 0)
+			this->setDecompositionGranularity(opt >> 32);
 
 		check_parameters(box);
 
@@ -1022,21 +1028,19 @@ public:
 		g_m--;
 	}
 
-	/*! \brief Add the computation cost on the decomposition comming from the particles
+	/*! \brief Add the computation cost on the decomposition coming from the particles
 	 *
 	 */
-	inline void addComputationCosts()
+	template <typename Model=ModelLin>inline void addComputationCosts(Model md=Model())
 	{
-		CellDecomposer_sm<dim, St> cdsm;
+		CellDecomposer_sm<dim, St, shift<dim,St>> cdsm;
 
 		Decomposition & dec = getDecomposition();
 
 		cdsm.setDimensions(dec.getDomain(), dec.getGrid().getSize(), 0);
 
 		for (size_t i = 0; i < getDecomposition().getNSubSubDomains(); i++)
-		{
 			dec.setSubSubDomainComputationCost(i, 1);
-		}
 
 		auto it = getDomainIterator();
 
@@ -1044,11 +1048,15 @@ public:
 		{
 			size_t v = cdsm.getCell(this->getPos(it.get()));
 
-			dec.addComputationCost(v, 1);
+			md.addComputation(dec,*this,v,it.get().getKey());
 
 			++it;
 		}
 
+		// Go throught all the sub-sub-domains and apply the model
+
+		for (size_t i = 0 ; i < dec.getDistribution().getNSubSubDomains(); i++)
+			md.applyModel(dec,i);
 	}
 
 	/*! \brief Output particle position and properties

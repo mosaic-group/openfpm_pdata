@@ -76,6 +76,9 @@ struct fill_id<dim, G_v, NO_VERTEX_ID>
 template<unsigned int dim, int lin_id, typename dT, typename G_v, typename v, int impl>
 class fill_prop
 {
+	//! Domain
+	const Box<dim,dT> & domain;
+
 	//! Reference to an array containing the spacing
 	const dT (&szd)[dim];
 
@@ -91,8 +94,8 @@ class fill_prop
 public:
 
 	//! Fill the object from where to take the properties
-	fill_prop(G_v & g_v, const dT (&szd)[dim], grid_key_dx<dim> & gk, const grid_sm<dim, void> & gs) :
-			szd(szd), gk(gk), g_v(g_v), gs(gs)
+	fill_prop(G_v & g_v, const dT (&szd)[dim], grid_key_dx<dim> & gk, const grid_sm<dim, void> & gs, const Box<dim,dT> & domain)
+	:domain(domain), szd(szd), gk(gk), g_v(g_v), gs(gs)
 	{
 	}
 
@@ -102,7 +105,7 @@ public:
 	{
 		typedef typename boost::fusion::result_of::at<v, boost::mpl::int_<T::value>>::type t_val;
 
-		g_v.template get<t_val::value>() = gk.get(T::value) * szd[T::value];
+		g_v.template get<t_val::value>() = gk.get(T::value) * szd[T::value] + domain.getLow(T::value);
 		fill_id<dim, G_v, lin_id>::fill(g_v, gk, gs);
 	}
 };
@@ -140,7 +143,7 @@ class fill_prop<dim, lin_id, dT, G_v, v, 0>
 public:
 
 	//! Fill the object from where to take the properties
-	fill_prop(G_v & g_v, const dT (&szd)[dim], grid_key_dx<dim> & gk, const grid_sm<dim, void> & gs)
+	fill_prop(G_v & g_v, const dT (&szd)[dim], grid_key_dx<dim> & gk, const grid_sm<dim, void> & gs, const Box<dim,dT> & domain)
 	{
 	}
 
@@ -180,6 +183,8 @@ public:
 template<unsigned int dim, int lin_id, typename dT, typename G_v, typename v>
 class fill_prop<dim, lin_id, dT, G_v, v, 2>
 {
+	//! Domain
+	const Box<dim,dT> & domain;
 
 	//! Reference to an array containing the spacing
 	const dT (&szd)[dim];
@@ -196,8 +201,8 @@ class fill_prop<dim, lin_id, dT, G_v, v, 2>
 public:
 
 	//! Fill the object from where to take the properties
-	fill_prop(G_v & g_v, const dT (&szd)[dim], grid_key_dx<dim> & gk, const grid_sm<dim, void> & gs) :
-			szd(szd), gk(gk), g_v(g_v), gs(gs)
+	fill_prop(G_v & g_v, const dT (&szd)[dim], grid_key_dx<dim> & gk, const grid_sm<dim, void> & gs, const Box<dim,dT> & domain)
+	:domain(domain), szd(szd), gk(gk), g_v(g_v), gs(gs)
 	{
 	}
 
@@ -212,7 +217,7 @@ public:
 			g_v.template get<t_val::value>()[i] = 0.0;
 
 		for (size_t i = 0 ; i < dim ; i++)
-			g_v.template get<t_val::value>()[i] = gk.get(i) * static_cast<float>(szd[i]);
+			g_v.template get<t_val::value>()[i] = gk.get(i) * static_cast<float>(szd[i]) + domain.getLow(i);
 
 		fill_id<dim, G_v, lin_id>::fill(g_v, gk, gs);
 	}
@@ -330,7 +335,7 @@ public:
 
 			// vertex spatial properties functor
 
-			fill_prop<dim, lin_id, T, decltype(gp.vertex(g.LinId(key))), typename to_boost_vmpl<pos...>::type, fill_prop_by_type<sizeof...(pos), p, Graph, pos...>::value> flp(obj, szd, key, g);
+			fill_prop<dim, lin_id, T, decltype(gp.vertex(g.LinId(key))), typename to_boost_vmpl<pos...>::type, fill_prop_by_type<sizeof...(pos), p, Graph, pos...>::value> flp(obj, szd, key, g, dom);
 
 			// fill properties
 
@@ -451,7 +456,7 @@ public:
 
 			// vertex spatial properties functor
 
-			fill_prop<dim, lin_id, T, decltype(gp.vertex(g.LinId(key))), typename to_boost_vmpl<pos...>::type, fill_prop_by_type<sizeof...(pos), p, Graph, pos...>::value> flp(obj, szd, key, g);
+			fill_prop<dim, lin_id, T, decltype(gp.vertex(g.LinId(key))), typename to_boost_vmpl<pos...>::type, fill_prop_by_type<sizeof...(pos), p, Graph, pos...>::value> flp(obj, szd, key, g, dom);
 
 			// fill properties
 

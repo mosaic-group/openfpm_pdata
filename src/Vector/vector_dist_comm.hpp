@@ -8,8 +8,6 @@
 #ifndef SRC_VECTOR_VECTOR_DIST_COMM_HPP_
 #define SRC_VECTOR_VECTOR_DIST_COMM_HPP_
 
-#define V_SUB_UNIT_FACTOR 64
-
 #define SKIP_LABELLING 512
 #define KEEP_PROPERTIES 512
 
@@ -47,6 +45,9 @@ inline static size_t compute_options(size_t opt)
 template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St>, typename Memory = HeapMemory>
 class vector_dist_comm
 {
+	//! Number of units for each sub-domain
+	size_t v_sub_unit_factor = 64;
+
 	//! definition of the send vector for position
 	typedef openfpm::vector<Point<dim, St>, Memory> send_pos_vector;
 
@@ -784,14 +785,24 @@ public:
 	{
 	}
 
-	/*! \brief Get the number of minimum sub-domain
+	/*! \brief Get the number of minimum sub-domain per processor
 	 *
 	 * \return minimum number
 	 *
 	 */
-	static size_t getDefaultNsubsub()
+	size_t getDecompositionGranularity()
 	{
-		return V_SUB_UNIT_FACTOR;
+		return v_sub_unit_factor;
+	}
+
+	/*! \brief Set the minimum number of sub-domain per processor
+	 *
+	 * \param n_sub
+	 *
+	 */
+	void setDecompositionGranularity(size_t n_sub)
+	{
+		this->v_sub_unit_factor = n_sub;
 	}
 
 	/*! \brief Initialize the decomposition
@@ -826,7 +837,7 @@ public:
 			// Get the number of processor and calculate the number of sub-domain
 			// for decomposition
 			size_t n_proc = v_cl.getProcessingUnits();
-			size_t n_sub = n_proc * getDefaultNsubsub();
+			size_t n_sub = n_proc * getDecompositionGranularity();
 
 			// Calculate the maximum number (before merging) of sub-domain on
 			// each dimension

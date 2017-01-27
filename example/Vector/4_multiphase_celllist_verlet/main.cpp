@@ -317,7 +317,7 @@ int main(int argc, char* argv[])
 	CL_phase1 = phases.get(1).getCellListSym(r_cut);
 
 	// This function create a Verlet-list between phases 0 and 1
-	NN_ver01 = createVerletSym(phases.get(0),CL_phase1,r_cut);
+	NN_ver01 = createVerletSym(phases.get(0),phases.get(1),CL_phase1,r_cut);
 
 	// Get an iterator over the real and ghost particles
 	it = phases.get(0).getDomainAndGhostIterator();
@@ -419,7 +419,7 @@ int main(int argc, char* argv[])
 	CL_all = createCellListSymM<2>(phases,r_cut);
 
 	// Type of the multiphase Verlet-list
-	typedef decltype(createVerletSymM<2>(phases.get(0),CL_all,r_cut)) verlet_type;
+	typedef decltype(createVerletSymM<2>(phases.get(0),phases,CL_all,r_cut)) verlet_type;
 
 	// for each phase we create one Verlet-list that contain the neighborhood
 	// from all the phases

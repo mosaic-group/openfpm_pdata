@@ -11,20 +11,25 @@
 #include "NN/CellList/CellListM.hpp"
 #include "NN/VerletList/VerletListM.hpp"
 
-template<typename Vector,typename CL, typename T> VerletList<Vector::dims,typename Vector::stype,FAST,shift<Vector::dims,typename Vector::stype>> createVerlet(Vector & v, CL & cl, T r_cut)
+template<typename Vector, typename CL, typename T> VerletList<Vector::dims,typename Vector::stype,FAST,shift<Vector::dims,typename Vector::stype>> createVerlet(Vector & v, Vector & v1, CL & cl, T r_cut)
 {
 	VerletList<Vector::dims,typename Vector::stype,FAST,shift<Vector::dims,typename Vector::stype>> ver;
 
-	ver.Initialize(cl,r_cut,v.getPosVector(),v.size_local());
+	ver.Initialize(cl,r_cut,v.getPosVector(),v1.getPosVector(),v.size_local());
 
 	return ver;
 }
 
-template<unsigned int sh_byte, typename Vector,typename CL, typename T> VerletListM<Vector::dims,typename Vector::stype,sh_byte,shift<Vector::dims,typename Vector::stype>> createVerletM(Vector & v, CL & cl, T r_cut)
+template<unsigned int sh_byte, typename Vector , typename Vector1,typename CL, typename T> VerletListM<Vector::dims,typename Vector::stype,sh_byte,CL,shift<Vector::dims,typename Vector::stype>> createVerletM(Vector & v, Vector1 & phases, CL & cl, T r_cut)
 {
-	VerletListM<Vector::dims,typename Vector::stype,sh_byte,shift<Vector::dims,typename Vector::stype>> ver;
+	VerletListM<Vector::dims,typename Vector::stype,sh_byte,CL,shift<Vector::dims,typename Vector::stype>> ver;
 
-	ver.Initialize(cl,r_cut,v.getPosVector(),v.size_local());
+	openfpm::vector<pos_v<Vector::dims,typename Vector::stype>> v_phases;
+
+	for (size_t i = 0 ; i < phases.size() ; i++)
+		v_phases.add(pos_v<Vector::dims,typename Vector::stype>(phases.get(i).getPosVector()));
+
+	ver.Initialize(cl,r_cut,v.getPosVector(),v_phases,v.size_local());
 
 	return ver;
 }
@@ -65,20 +70,25 @@ template<unsigned int nbit, typename Vector, typename T> CellListM<Vector::dims,
 
 /////// Symmetric version
 
-template<typename Vector,typename CL, typename T> VerletList<Vector::dims,typename Vector::stype,FAST,shift<Vector::dims,typename Vector::stype>> createVerletSym(Vector & v, CL & cl, T r_cut)
+template<typename Vector,typename CL, typename T> VerletList<Vector::dims,typename Vector::stype,FAST,shift<Vector::dims,typename Vector::stype>> createVerletSym(Vector & v, Vector & v1, CL & cl, T r_cut)
 {
 	VerletList<Vector::dims,typename Vector::stype,FAST,shift<Vector::dims,typename Vector::stype>> ver;
 
-	ver.Initialize(cl,r_cut,v.getPosVector(),v.size_local());
+	ver.Initialize(cl,r_cut,v.getPosVector(),v1.getPosVector(),v.size_local());
 
 	return ver;
 }
 
-template<unsigned int sh_byte, typename Vector,typename CL, typename T> VerletListM<Vector::dims,typename Vector::stype,sh_byte,shift<Vector::dims,typename Vector::stype>> createVerletSymM(Vector & v, CL & cl, T r_cut)
+template<unsigned int sh_byte, typename Vector, typename Vector1 ,typename CL, typename T> VerletListM<Vector::dims,typename Vector::stype,sh_byte,CL,shift<Vector::dims,typename Vector::stype>> createVerletSymM(Vector & v, Vector1 & phases, CL & cl, T r_cut)
 {
-	VerletListM<Vector::dims,typename Vector::stype,sh_byte,shift<Vector::dims,typename Vector::stype>> ver;
+	VerletListM<Vector::dims,typename Vector::stype,sh_byte,CL,shift<Vector::dims,typename Vector::stype>> ver;
 
-	ver.Initialize(cl,r_cut,v.getPosVector(),v.size_local(),VL_SYMMETRIC);
+	openfpm::vector<pos_v<Vector::dims,typename Vector::stype>> v_phases;
+
+	for (size_t i = 0 ; i < phases.size() ; i++)
+		v_phases.add(pos_v<Vector::dims,typename Vector::stype>(phases.get(i).getPosVector()));
+
+	ver.Initialize(cl,r_cut,v.getPosVector(),v_phases,v.size_local(),VL_SYMMETRIC);
 
 	return ver;
 }

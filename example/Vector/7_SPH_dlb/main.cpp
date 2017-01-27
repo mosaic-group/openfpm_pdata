@@ -1,5 +1,5 @@
 /*!
- * \page Vector_7_sph_dlb Vector 7 SPH Dam break  simulation with Dynamic load balacing
+ * \page Vector_7_sph_dlb Vector 7 SPH Dam break simulation with Dynamic load balacing
  *
  *
  * [TOC]
@@ -8,11 +8,15 @@
  * # SPH with Dynamic load Balancing # {#SPH_dlb}
  *
  *
- * This example show the classical SPH Dam break simulation with Dynamic load balancing
+ * This example show the classical SPH Dam break simulation with Load Balancing and Dynamic load balancing. With
+ * Load balancing and Dynamic load balancing we indicate the possibility of the system to re-adapt the domain
+ * decomposition to keep all the processor load and reduce idle time.
  *
  * ## inclusion ## {#e0_v_inclusion}
  *
  * In order to use distributed vectors in our code we have to include the file Vector/vector_dist.hpp
+ * we also include DrawParticles that has nice utilities to draw particles in parallel accordingly
+ * to simple shapes
  *
  * \snippet Vector/7_SPH_dlb/main.cpp inclusion
  *
@@ -21,56 +25,211 @@
 //! \cond [inclusion] \endcond
 #include "Vector/vector_dist.hpp"
 #include <math.h>
+#include "Draw/DrawParticles.hpp"
 //! \cond [inclusion] \endcond
 
-#include "Draw/DrawParticles.hpp"
+/*!
+ * \page Vector_7_sph_dlb Vector 7 SPH Dam break  simulation with Dynamic load balacing
+ *
+ * ## Parameters {#e7_sph_parameters}
+ *
+ * The SPH formulation used in this example code follow these equations
+ *
+ * \f$\frac{dv_a}{dt} = - \sum_{b = NN(a) } m_b \left(\frac{P_a + P_b}{\rho_a \rho_b} + \Pi_{ab} \right) \nabla_{a} W_{ab} + g  \tag{1} \f$
+ *
+ * \f$\frac{d\rho_a}{dt} =  \sum_{b = NN(a) } m_b v_{ab} \cdot \nabla_{a} W_{ab} \tag{2} \f$
+ *
+ * \f$ P_a = b \left[ \left( \frac{\rho_a}{\rho_{0}} \right)^{\gamma} - 1 \right] \tag{3} \f$
+ *
+ * with
+ *
+ * \f$ \Pi_{ab} =  \begin{cases} - \frac {\alpha \bar{c_{ab}} \mu_{ab} }{\bar{\rho_{ab}} } & v_{ab} \cdot r_{ab} > 0 \\ 0 & v_{ab} \cdot r_{ab} < 0 \end{cases} \tag{4}\f$
+ *
+ * and the constants defined as
+ *
+ * \f$ b = \frac{c_{s}^{2} \rho_0}{\gamma} \tag{5} \f$
+ *
+ * \f$ c_s = \sqrt{g \cdot h_{swl}} \tag{6} \f$
+ *
+ * While the particle kernel support is given by
+ *
+ * \f$ H = \sqrt{3 \cdot dp} \tag{7} \f$
+ *
+ * Explain the equations is out of the context of this tutorial. An introduction
+ * can be found in the original Monghagan SPH paper. In this example we use the version
+ * used by Dual-SPH (http://www.dual.sphysics.org/). A summary of the equation and constants can be founded in
+ * their User Manual and the XML user Manual.
+ * In the following we define all the constants required by the simulation
+ *
+ * \snippet Vector/7_SPH_dlb/main.cpp sim parameters
+ *
+ */
 
+/*! \cond [sim parameters] \endcond */
+
+// A constant to indicate boundary particles
 #define BOUNDARY 0
+
+// A constant to indicate fluid particles
 #define FLUID 1
 
-double lower_z = 2.0;
-
+// initial spacing between particles dp in the formulas
 const double dp = 0.0085;
+// Maximum height of the fluid water
+// is coing to be calculated and filled later on
 double h_swl = 0.0;
+
+// in the formulas indicated with c_s (constant used to calculate the sound speed)
 const double coeff_sound = 20.0;
+
+// gamma in the formulas
 const double gamma_ = 7.0;
-// sqrt(3.0*dp*dp)
+
+// sqrt(3.0*dp*dp) support of the kernel
 const double H = 0.0147224318643;
+
+// Eta in the formulas
 const double Eta2 = 0.01 * H*H;
+
+
 const double visco = 0.1;
 double cbar = 0.0;
+
+// Mass of the fluid particles
 const double MassFluid = 0.000614125;
+
+// Mass of the boundary particles
 const double MassBound = 0.000614125;
-const double t_end = 1.0;
+
+// End simulation time
+const double t_end = 1.5;
+
+// Gravity acceleration
 const double gravity = 9.81;
+
+// Reference densitu 1000Kg/m^3
 const double rho_zero = 1000.0;
+
+// Filled later require h_swl, it is b in the formulas
 double B = 0.0;
+
+// Constant used to define time integration
 const double CFLnumber = 0.2;
+
+// Minimum T
 const double DtMin = 0.00001;
+
+// Minimum Rho allowed
+const double RhoMin = 700.0;
+
+// Maximum Rho allowed
+const double RhoMax = 1300.0;
 
 // Filled in initialization
 double max_fluid_height = 0.0;
 
+// Properties
+
+// FLUID or BOUNDARY
 const size_t type = 0;
+
+// Density
 const int rho = 1;
+
+// Density at step n-1
 const int rho_prev = 2;
+
+// Pressure
 const int Pressure = 3;
+
+// Delta rho calculated in the force calculation
 const int drho = 4;
+
+// calculated force
 const int force = 5;
+
+// velocity
 const int velocity = 6;
+
+// velocity at previous step
 const int velocity_prev = 7;
 
-typedef vector_dist<3,double,aggregate<size_t,double,double,double,double,double[3],double[3],double[3]>> particles;
+// Type of the vector containing particles
+typedef vector_dist<3,double,aggregate<size_t,double,  double,    double,     double,     double[3], double[3], double[3]>> particles;
+//                                       |      |        |          |            |            |         |            |
+//                                       |      |        |          |            |            |         |            |
+//                                     type   density   density    Pressure    delta       force     velocity    velocity
+//                                                      at n-1                 density                           at n - 1
+
+
+/*! \cond [sim parameters] \endcond */
+
+/*! \brief Linear model
+ *
+ * The linear model count each particle as weight one
+ *
+ */
+struct ModelCustom
+{
+	size_t factor = 1;
+
+	template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec, const vector & vd, size_t v, size_t p)
+	{
+		if (vd.template getProp<type>(p) == FLUID)
+		{
+			dec.addComputationCost(v,3);
+		}
+		else
+		{
+			dec.addComputationCost(v,2);
+		}
+
+	}
+
+	template<typename Decomposition> inline void applyModel(Decomposition & dec, size_t v)
+	{
+		dec.setSubSubDomainComputationCost(v, dec.getSubSubDomainComputationCost(v) * dec.getSubSubDomainComputationCost(v));
+	}
+};
+
+/*! \brief Linear model
+ *
+ * The linear model count each particle as weight one
+ *
+ */
+struct ModelCustom1
+{
+	size_t factor = 1;
+
+	template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec, const vector & vd, size_t v, size_t p)
+	{
+
+			dec.addComputationCost(v,100);
+	}
+
+	template<typename Decomposition> inline void applyModel(Decomposition & dec, size_t v)
+	{
+
+	}
+};
+
+/*!
+ * \page Vector_7_sph_dlb Vector 7 SPH Dam break  simulation with Dynamic load balacing
+ *
+ * ## Equation of state and SPH Kernels {#e7_sph_equation_state}
+ *
+ * This function implement the formula 3 in the set of equations. It calculate the
+ * pressure of each particle based on the local density of each particle.
+ *
+ * \snippet Vector/7_SPH_dlb/main.cpp eq_state_and_ker
+ *
+ */
+
+/*! \cond [eq_state_and_ker] \endcond */
+
 
 inline void EqState(particles & vd)
 {
-//	double min = 100000000.0;
-//	double max = 0.0;
-//	double accum = 0.0;
-//	size_t n = 0;
-
-//	Vcluster & v_cl = create_vcluster();
-
 	auto it = vd.getDomainIterator();
 
 	while (it.isNext())
@@ -82,40 +241,27 @@ inline void EqState(particles & vd)
 
 		vd.template getProp<Pressure>(a) = B*( rho_frac*rho_frac*rho_frac*rho_frac*rho_frac*rho_frac*rho_frac - 1.0);
 
-		/// DEBUG
-
-/*		if (vd.template getProp<Pressure>(a) < min)
-			min = vd.template getProp<Pressure>(a);
-
-		if (vd.template getProp<Pressure>(a) > max)
-			max = vd.template getProp<Pressure>(a);
-
-		if (vd.template getProp<Pressure>(a) > 2849.0)
-			std::cout << "Particle: " << Point<3,double>(vd.getPos(a)).toString() << std::endl;
-
-		accum += vd.template getProp<Pressure>(a);
-		n++;*/
-
 		++it;
 	}
-
-/*	v_cl.max(max);
-	v_cl.min(min);
-	v_cl.sum(accum);
-	v_cl.sum(n);
-
-	v_cl.execute();
-
-	std::cout << "Max: " << max << " min: " << min << "  accum: " << accum/n << "     " << B << " n: " << n << std::endl;*/
 }
 
-const double c1 = -3.0/M_PI/H/H/H/H;
-const double d1 = 9.0/4.0/M_PI/H/H/H/H;
-const double c2 = -3.0/4.0/M_PI/H/H/H/H;
+/*! \cond [eq_state_and_ker] \endcond */
+
+/*!
+ * \page Vector_7_sph_dlb Vector 7 SPH Dam break  simulation with Dynamic load balancing
+ *
+ * This function define the Cubic kernel or \f$ W_{ab} \f$ in the set of equations. The cubic kernel is
+ * defined as
+ *
+ * \f$ \begin{cases} 1.0 - \frac{3}{2} q^2 + \frac{3}{4} q^3 & 0 < q < 1 \\ (2 - q)^3 & 1 < q < 2 \\ 0 & q > 2 \end{cases} \f$
+ *
+ * \snippet Vector/7_SPH_dlb/main.cpp kernel_sph
+ *
+ */
+
+/*! \cond [kernel_sph] \endcond */
+
 const double a2 = 1.0/M_PI/H/H/H;
-const double a2_4 = 0.25*a2;
-// Filled later
-double W_dap = 0.0;
 
 inline double Wab(double r)
 {
@@ -129,6 +275,29 @@ inline double Wab(double r)
 		return 0.0;
 }
 
+/*! \cond [kernel_sph] \endcond */
+
+/*!
+ * \page Vector_7_sph_dlb Vector 7 SPH Dam break  simulation with Dynamic load balancing
+ *
+ * This function define the derivative of the Cubic kernel function \f$ W_{ab} \f$ in the set of equations.
+ *
+ * \f$ \nabla W_{ab} = \beta (x,y,z)  \f$
+ *
+ * \f$ \beta = \begin{cases} (c_1 q + d_1 q^2) & 0 < q < 1 \\ c_2 (2 - q)^2  & 1 < q < 2 \end{cases} \f$
+ *
+ * \snippet Vector/7_SPH_dlb/main.cpp kernel_sph_der
+ *
+ */
+
+/*! \cond [kernel_sph_der] \endcond */
+
+const double c1 = -3.0/M_PI/H/H/H/H;
+const double d1 = 9.0/4.0/M_PI/H/H/H/H;
+const double c2 = -3.0/4.0/M_PI/H/H/H/H;
+const double a2_4 = 0.25*a2;
+// Filled later
+double W_dap = 0.0;
 
 inline void DWab(Point<3,double> & dx, Point<3,double> & DW, double r, bool print)
 {
@@ -160,8 +329,26 @@ inline void DWab(Point<3,double> & dx, Point<3,double> & DW, double r, bool prin
 	}
 }
 
+/*! \cond [kernel_sph_der] \endcond */
+
+/*!
+ * \page Vector_7_sph_dlb Vector 7 SPH Dam break  simulation with Dynamic load balancing
+ *
+ * This function define the Tensile term. An explanation of the Tensile term is out of the
+ * context of this tutorial, but in brief is an additional repulsive term that avoid the particles
+ * to get enough near. Can be considered at small scale like a repulsive force that avoid
+ * particles to get too close like the Lennard-Jhonned potential at atomistic level. A good
+ * reference is the Monaghan paper "SPH without a Tensile Instability"
+ *
+ * \snippet Vector/7_SPH_dlb/main.cpp tensile_term
+ *
+ *
+ */
+
+/*! \cond [tensile_term] \endcond */
+
 // Tensile correction
-inline double Tensile(double r, double rhoa, double rhob, double prs1, double prs2, bool print)
+inline double Tensile(double r, double rhoa, double rhob, double prs1, double prs2)
 {
 	const double qq=r/H;
 	//-Cubic Spline kernel
@@ -187,13 +374,26 @@ inline double Tensile(double r, double rhoa, double rhob, double prs1, double pr
 	const double tensilp1=(prs1/(rhoa*rhoa))*(prs1>0? 0.01: -0.2);
 	const double tensilp2=(prs2/(rhob*rhob))*(prs2>0? 0.01: -0.2);
 
-//	if (print == true)
-//		std::cout << "fab " << fab << " tensilp1: " << tensilp1 << " tensilp2: " << tensilp2 << std::endl;
-
 	return (fab*(tensilp1+tensilp2));
 }
 
-inline double Pi(const Point<3,double> & dr, double rr2, Point<3,double> & dv, double rhoa, double rhob, double massb, double & visc, bool print)
+/*! \cond [tensile_term] \endcond */
+
+
+/*!
+ *
+ * \page Vector_7_sph_dlb Vector 7 SPH Dam break  simulation with Dynamic load balancing
+ *
+ * This function is the implementation of the viscous term \f$ \Pi_{ab} \f$
+ *
+ * \snippet Vector/7_SPH_dlb/main.cpp viscous_term
+ *
+ *
+ */
+
+/*! \cond [viscous_term] \endcond */
+
+inline double Pi(const Point<3,double> & dr, double rr2, Point<3,double> & dv, double rhoa, double rhob, double massb, double & visc)
 {
 	const double dot = dr.get(0)*dv.get(0) + dr.get(1)*dv.get(1) + dr.get(2)*dv.get(2);
 	const double dot_rr2 = dot/(rr2+Eta2);
@@ -205,169 +405,189 @@ inline double Pi(const Point<3,double> & dr, double rr2, Point<3,double> & dv, d
 		const float robar=(rhoa+rhob)*0.5f;
 		const float pi_visc=(-visco*cbar*amubar/robar);
 
-		if (print == true)
-			std::cout << "   visco: " << visco << "  " << cbar << "  " << amubar << "   " << robar << "   ";
-
 		return pi_visc;
     }
 	else
 		return 0.0;
 }
 
+/*! \cond [viscous_term] \endcond */
+
+/*!
+ *
+ * \page Vector_7_sph_dlb Vector 7 SPH Dam break  simulation with Dynamic load balancing
+ *
+ * ## Force calculation {#e7_force_calc}
+ *
+ * Calculate forces. It calculate equation 1 and 2 in the set of formulas
+ *
+ * \snippet Vector/7_SPH_dlb/main.cpp calc_forces
+ *
+ *
+ */
+
+/*! \cond [calc_forces] \endcond */
+
 template<typename CellList> inline double calc_forces(particles & vd, CellList & NN, double & max_visc)
 {
 	auto part = vd.getDomainIterator();
-
-	Point<3,double> ForceMax({       0.0,      0.0,      0.0});
-	Point<3,double> ForceMin({10000000.0,1000000.0,1000000,0});
-
 	double visc = 0;
-//	std::cout << "c1: " << c1 << "    c2: " << c2 << "    d1: " << d1 << std::endl;
 
+	// Update the cell-list
 	vd.updateCellList(NN);
 
+	// For each particle ...
 	while (part.isNext())
 	{
+		// ... a
 		auto a = part.get();
 
 		// Get the position xp of the particle
 		Point<3,double> xa = vd.getPos(a);
 
-		if (vd.getProp<type>(a) != FLUID)
-		{
-			++part;
-			continue;
-		}
-
+		// Take the mass of the particle dependently if it is FLUID or BOUNDARY
 		double massa = (vd.getProp<type>(a) == FLUID)?MassFluid:MassBound;
+
+		// Get the density of the of the particle a
 		double rhoa = vd.getProp<rho>(a);
+
+		// Get the pressure of the particle a
 		double Pa = vd.getProp<Pressure>(a);
+
+		// Get the Velocity of the particle a
 		Point<3,double> va = vd.getProp<velocity>(a);
 
-		// Reset the force counter
+		// Reset the force counter (- gravity on zeta direction)
 		vd.template getProp<force>(a)[0] = 0.0;
 		vd.template getProp<force>(a)[1] = 0.0;
 		vd.template getProp<force>(a)[2] = -gravity;
 		vd.template getProp<drho>(a) = 0.0;
 
-		size_t cnt = 0;
-
-//		std::cout << "---------------------" << std::endl;
-//		std::cout << vd.getPos(a)[0] << "   " << vd.getPos(a)[1] << "   " << vd.getPos(a)[2] << std::endl;
-
-		// Get an iterator over the neighborhood particles of p
-		auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(a)));
-
-		while (Np.isNext() == true)
+		// We threat FLUID particle differently from BOUNDARY PARTICLES ...
+		if (vd.getProp<type>(a) != FLUID)
 		{
-			// ... q
-			auto b = Np.get();
+			// If it is a boundary particle calculate the delta rho based on equation 2
+			// This require to run across the neighborhoods particles of a
+			auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(a)));
 
-			// Get the position xp of the particle
-			Point<3,double> xb = vd.getPos(b);
-
-			// if (p == q) skip this particle
-			if (a.getKey() == b)	{++Np; continue;};
-
-			double massb = (vd.getProp<type>(b) == FLUID)?MassFluid:MassBound;
-			Point<3,double> vb = vd.getProp<velocity>(b);
-			double Pb = vd.getProp<Pressure>(b);
-			double rhob = vd.getProp<rho>(b);
-
-			// Get the distance between p and q
-			Point<3,double> dr = xa - xb;
-			// take the norm of this vector
-			double r2 = norm2(dr);
-
-			if (r2 < 4.0*H*H)
+			// For each neighborhood particle
+			while (Np.isNext() == true)
 			{
-				double r = sqrt(r2);
+				// ... q
+				auto b = Np.get();
 
-				Point<3,double> v_rel = va - vb;
+				// Get the position xp of the particle
+				Point<3,double> xb = vd.getPos(b);
 
-				Point<3,double> DW;
-				DWab(dr,DW,r,false);
+				// if (p == q) skip this particle
+				if (a.getKey() == b)	{++Np; continue;};
 
-				double factor = - massb*((vd.getProp<Pressure>(a) + vd.getProp<Pressure>(b)) / (rhoa * rhob) + Tensile(r,rhoa,rhob,Pa,Pb,false) + Pi(dr,r2,v_rel,rhoa,rhob,massb,visc,false));
-/*
-				if (create_vcluster().getProcessUnitID() == 0)
+				// get the mass of the particle
+				double massb = (vd.getProp<type>(b) == FLUID)?MassFluid:MassBound;
+
+				// Get the velocity of the particle b
+				Point<3,double> vb = vd.getProp<velocity>(b);
+
+				// Get the pressure and density of particle b
+				double Pb = vd.getProp<Pressure>(b);
+				double rhob = vd.getProp<rho>(b);
+
+				// Get the distance between p and q
+				Point<3,double> dr = xa - xb;
+				// take the norm of this vector
+				double r2 = norm2(dr);
+
+				// If the particles interact ...
+				if (r2 < 4.0*H*H)
 				{
-					std::cout << "PARTICLE: " << dr.toString() << std::endl;
-					std::cout << "Pressure: " << Pa << "  " << Pb << std::endl;
-					std::cout << "Density: " << rhoa << "  " << rhob << std::endl;
-					std::cout << "FACTOR: " << factor << std::endl;
-					std::cout << "Tensile: " << Tensile(r,rhoa,rhob,Pa,Pb,false) << std::endl;
-					std::cout << "DW: " << DW.get(0) << "     " << DW.get(1) << "     " << DW.get(2) << std::endl;
-				}*/
+					// ... calculate delta rho
+					double r = sqrt(r2);
 
-				vd.getProp<force>(a)[0] += factor * DW.get(0);
-				vd.getProp<force>(a)[1] += factor * DW.get(1);
-				vd.getProp<force>(a)[2] += factor * DW.get(2);
+					Point<3,double> dv = va - vb;
 
-				if (xa.get(0) > 0.0085 && xa.get(0) < 0.0105 &&
-					xa.get(1) > 0.0085 && xa.get(1) < 0.0105 &&
-					xa.get(2) > 0.0085 && xa.get(2) < 0.0105)
-				{
-					std::cout << "POSITION: " << xb.toString() << std::endl;
-					std::cout << "FORCE: " << factor*DW.get(0) << "    " << factor*DW.get(1) << "      " << factor*DW.get(2) << std::endl;
-					std::cout << "FORCE TERM: " << Tensile(r,rhoa,rhob,Pa,Pb,true) << "      " << Pi(dr,r2,v_rel,rhoa,rhob,massb,visc,true) << std::endl;
-					cnt++;
+					Point<3,double> DW;
+					DWab(dr,DW,r,false);
+
+					const double dot = dr.get(0)*dv.get(0) + dr.get(1)*dv.get(1) + dr.get(2)*dv.get(2);
+					const double dot_rr2 = dot/(r2+Eta2);
+					max_visc=std::max(dot_rr2,max_visc);
+
+					vd.getProp<drho>(a) += massb*(dv.get(0)*DW.get(0)+dv.get(1)*DW.get(1)+dv.get(2)*DW.get(2));
 				}
 
-	            vd.getProp<drho>(a) += massb*(v_rel.get(0)*DW.get(0)+v_rel.get(1)*DW.get(1)+v_rel.get(2)*DW.get(2));
-
-/*	            if (vd.getProp<type>(a) == FLUID)
-	            {
-	            	std::cout << "DELTA RHO: " << massb*(v_rel.get(0)*DW.get(0)+v_rel.get(1)*DW.get(1)+v_rel.get(2)*DW.get(2)) << "    " << v_rel.get(0) <<  "     " << v_rel.get(1) << "     "  << v_rel.get(2) <<  "  VISC: " << Pi(dr,r2,v_rel,rhoa,rhob,massb,visc,true) << std::endl;
-	            }*/
+				++Np;
 			}
-
-			++Np;
 		}
-
-		if (xa.get(0) > 0.0085 && xa.get(0) < 0.0105 &&
-			xa.get(1) > 0.0085 && xa.get(1) < 0.0105 &&
-			xa.get(2) > 0.0085 && xa.get(2) < 0.0105)
+		else
 		{
-			std::cout << "FORCE FINAL: " << vd.getProp<force>(a)[0] << "   " << vd.getProp<force>(a)[1] << "  " << vd.getProp<force>(a)[2] << "    " << cnt << std::endl;
-		}
+			// If it is a fluid particle calculate based on equation 1 and 2
 
-/*        if (vd.getProp<type>(a) == FLUID)
-        {
-        	std::cout << "DELTA DENSITY: " << vd.getProp<drho>(a) << std::endl;
-        	std::cout << "+++++++++++++++++++++++++++++++++++" << std::endl;
-        }*/
+			// Get an iterator over the neighborhood particles of p
+			auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(a)));
+
+			// For each neighborhood particle
+			while (Np.isNext() == true)
+			{
+				// ... q
+				auto b = Np.get();
+
+				// Get the position xp of the particle
+				Point<3,double> xb = vd.getPos(b);
+
+				// if (p == q) skip this particle
+				if (a.getKey() == b)	{++Np; continue;};
+
+				double massb = (vd.getProp<type>(b) == FLUID)?MassFluid:MassBound;
+				Point<3,double> vb = vd.getProp<velocity>(b);
+				double Pb = vd.getProp<Pressure>(b);
+				double rhob = vd.getProp<rho>(b);
+
+				// Get the distance between p and q
+				Point<3,double> dr = xa - xb;
+				// take the norm of this vector
+				double r2 = norm2(dr);
+
+				// if they interact
+				if (r2 < 4.0*H*H)
+				{
+					double r = sqrt(r2);
+
+					Point<3,double> v_rel = va - vb;
+
+					Point<3,double> DW;
+					DWab(dr,DW,r,false);
+
+					double factor = - massb*((vd.getProp<Pressure>(a) + vd.getProp<Pressure>(b)) / (rhoa * rhob) + Tensile(r,rhoa,rhob,Pa,Pb) + Pi(dr,r2,v_rel,rhoa,rhob,massb,visc));
+
+					vd.getProp<force>(a)[0] += factor * DW.get(0);
+					vd.getProp<force>(a)[1] += factor * DW.get(1);
+					vd.getProp<force>(a)[2] += factor * DW.get(2);
+
+					vd.getProp<drho>(a) += massb*(v_rel.get(0)*DW.get(0)+v_rel.get(1)*DW.get(1)+v_rel.get(2)*DW.get(2));
+				}
+
+				++Np;
+			}
+		}
 
 		++part;
-
-		if (Point<3,double>(vd.getProp<force>(a)).norm() > ForceMax.norm()  )
-		{
-			ForceMax = Point<3,double>(vd.getProp<force>(a));
-//			std::cout << "ForceMax: " << ForceMax.toString() << "   " << a.getKey() << std::endl;
-
-			Point<3,double> p({0.01,0.0,0.0});
-			Point<3,double> DW;
-
-			DWab(p,DW,0.01,false);
-
-//			std::cout << DW.get(0) << "   " << DW.get(1) << "      " << DW.get(2)  << std::endl;
-		}
-
-		if (Point<3,double>(vd.getProp<force>(a)).norm() < ForceMin.norm()  )
-		{
-			ForceMin = Point<3,double>(vd.getProp<force>(a));
-		}
 	}
-
-	// Get the maximum viscosity term across processors
-	Vcluster & v_cl = create_vcluster();
-	v_cl.max(visc);
-	v_cl.execute();
-	max_visc = visc;
-
-//	std::cout << "---------------------------------" << std::endl;
 }
 
+/*! \cond [calc_forces] \endcond */
+
+/*!
+ *
+ * \page Vector_7_sph_dlb Vector 7 SPH Dam break  simulation with Dynamic load balancing
+ *
+ * This function calculate the Maximum acceleration and velocity across the particles.
+ *
+ * \snippet Vector/7_SPH_dlb/main.cpp max_acc_vel
+ *
+ *
+ */
+
+/*! \cond [max_acc_vel] \endcond */
 
 void max_acceleration_and_velocity(particles & vd, double & max_acc, double & max_vel)
 {
@@ -396,7 +616,30 @@ void max_acceleration_and_velocity(particles & vd, double & max_acc, double & ma
 	max_vel = sqrt(max_vel);
 }
 
-double dt_old = 0.0;
+/*! \cond [max_acc_vel] \endcond */
+
+/*!
+ *
+ * \page Vector_7_sph_dlb Vector 7 SPH Dam break  simulation with Dynamic load balancing
+ *
+ * In this example we are using Dynamic time-stepping. The Dynamic time stepping is
+ * calculated with the Courant-Friedrich-Lewy condition. See Monaghan 1992 "Smoothed Particle Hydrodynamic"
+ *
+ * \f$ \delta t = CFL \cdot min(t_f,t_{cv}) \f$
+ *
+ * where
+ *
+ * \f$ \delta t_f = min \sqrt{h/f_a}\f$
+ *
+ * \f$  \delta t_{cv} = min \frac{h}{c_s + max \left| \frac{hv_{ab} \cdot r_{ab}}{r_{ab}^2} \right|} \f$
+ *
+ *
+ * \snippet Vector/7_SPH_dlb/main.cpp dyn_stepping
+ *
+ *
+ */
+
+/*! \cond [dyn_stepping] \endcond */
 
 double calc_deltaT(particles & vd, double ViscDtMax)
 {
@@ -410,29 +653,51 @@ double calc_deltaT(particles & vd, double ViscDtMax)
 	//-dt2 combines the Courant and the viscous time-step controls.
 	const double dt_cv = H/(std::max(cbar,Maxvel*10.) + H*ViscDtMax);
 
-//	std::cout << "dt_f   " << dt_f << "     dt_cv: " << dt_cv << "    Maxvel: " << Maxvel << std::endl;
-
 	//-dt new value of time step.
 	double dt=double(CFLnumber)*std::min(dt_f,dt_cv);
 	if(dt<double(DtMin))
 		dt=double(DtMin);
 
-	if (dt_old != dt)
-	{
-		std::cout << "Dt changed to " << dt << "    MaxVel: " << Maxvel << "     Maxacc: " << Maxacc << "     lower_z: " << lower_z << std::endl;
-
-		dt_old = dt;
-	}
-
-//	std::cout << "Returned dt: " << dt << std::endl;
 	return dt;
 }
 
+/*! \cond [dyn_stepping] \endcond */
+
+/*!
+ *
+ * \page Vector_7_sph_dlb Vector 7 SPH Dam break  simulation with Dynamic load balancing
+ *
+ * This function perform verlet integration accordingly to the Verlet time stepping scheme
+ *
+ * \f$ v_a^{n+1} = v_a^{n-1} + 2 \delta t F_a^{n} \f$
+ *
+ * \f$ r_a^{n+1} = \delta t V_a^n + 0.5 \delta t^2 F_a^n \f$
+ *
+ * \f$ \rho_a^{n+1} = \rho_a^{n-1} + 2 \delta t D_a^n \f$
+ *
+ * Every N Verlet steps the euler stepping scheme is choosen to avoid instabilities
+ *
+ * \f$ v_a^{n+1} = v_a^{n} + \delta t F_a^n \f$
+ *
+ * \f$ r_a^{n+1} = r_a^{n} + \delta t V_a^n + 0.5 delta t^2 F_a^n \f$
+ *
+ * \f$ \rho_a^n + \delta t D_a^n \f$
+ *
+ * More the integration this function also check that no particles go outside the simulation
+ * domain or their density go dangerously out of range
+ *
+ * \snippet Vector/7_SPH_dlb/main.cpp verlet_int
+ *
+ *
+ */
+
+/*! \cond [verlet_int] \endcond */
+
 openfpm::vector<size_t> to_remove;
 
-bool particle_out = true;
+size_t cnt = 0;
 
-void verlet_int(particles & vd, double dt)
+void verlet_int(particles & vd, double dt, bool VerletStep)
 {
 	to_remove.clear();
 
@@ -448,7 +713,26 @@ void verlet_int(particles & vd, double dt)
 
 		if (vd.template getProp<type>(a) == BOUNDARY)
 		{
+			double rhop = vd.template getProp<rho>(a);
+
 			// Update only the density
+		    if (VerletStep == true)
+		    {
+		    	vd.template getProp<velocity>(a)[0] = 0.0;
+		    	vd.template getProp<velocity>(a)[1] = 0.0;
+		    	vd.template getProp<velocity>(a)[2] = 0.0;
+		    	vd.template getProp<rho>(a) = vd.template getProp<rho_prev>(a) + dt2*vd.template getProp<drho>(a);
+		    }
+		    else
+		    {
+		    	vd.template getProp<velocity>(a)[0] = 0.0;
+		    	vd.template getProp<velocity>(a)[1] = 0.0;
+		    	vd.template getProp<velocity>(a)[2] = 0.0;
+		    	vd.template getProp<rho>(a) = vd.template getProp<rho>(a) + dt*vd.template getProp<drho>(a);
+		    }
+
+		    vd.template getProp<rho_prev>(a) = rhop;
+
 			++part;
 			continue;
 		}
@@ -458,75 +742,62 @@ void verlet_int(particles & vd, double dt)
 	    double dy = vd.template getProp<velocity>(a)[1]*dt + vd.template getProp<force>(a)[1]*dt205;
 	    double dz = vd.template getProp<velocity>(a)[2]*dt + vd.template getProp<force>(a)[2]*dt205;
 
-//	    bool outrhop=(rhopnew<RhopOutMin||rhopnew>RhopOutMax);
-
-//	    if (vd.getPos(a)[0] > 0.0085 && vd.getPos(a)[0] < 0.0105 &&
-//	    	vd.getPos(a)[1] > 0.0085 && vd.getPos(a)[1] < 0.0105 &&
-//			vd.getPos(a)[2] > 0.0085 && vd.getPos(a)[2] < 0.0105)
-//	    {
-//	    	std::cout << "DeltaX: " << dx << "    " << dy << "      " << dz << std::endl;
-/*	    	std::cout << "FORCE: " << vd.template getProp<force>(a)[0] << "       "
-	    			  << vd.template getProp<force>(a)[1] << "      "
-					  << vd.template getProp<force>(a)[2] <<
-	    			  "    DENSITY: " << vd.template getProp<rho_prev>(a) + dt2*vd.template getProp<drho>(a) <<
-					  "    PRESSURE: " << vd.template getProp<Pressure>(a) <<
-					  "    POSITION Z: " << vd.getPos(a)[2]
-					  << std::endl;*/
-	    //	std::cout << "FORCE TERM: " << Tensile(r,rhoa,rhob,Pa,Pb,true) << "      " << massb*Pi(dr,r2,v_rel,rhoa,rhob,massa,massb) << std::endl;
-//	    }
-
 	    vd.getPos(a)[0] += dx;
 	    vd.getPos(a)[1] += dy;
 	    vd.getPos(a)[2] += dz;
-
-	    if (vd.getPos(a)[2] < lower_z)
-	    	lower_z = vd.getPos(a)[2];
-
-	    if (vd.getPos(a)[0] <  0.000263878 || vd.getPos(a)[1] < 0.000263878 || vd.getPos(a)[2] < 0.000263878 ||
-	    	vd.getPos(a)[0] >  0.000263878+1.59947 || vd.getPos(a)[1] > 0.000263878+0.672972 || vd.getPos(a)[2] > 0.000263878+0.903944)
-	    {
-//	    	std::cout << "Particle out" << std::endl;
-	    	to_remove.add(a.getKey());
-
-	    	particle_out = true;
-	    }
 
 	    double velX = vd.template getProp<velocity>(a)[0];
 	    double velY = vd.template getProp<velocity>(a)[1];
 	    double velZ = vd.template getProp<velocity>(a)[2];
 	    double rhop = vd.template getProp<rho>(a);
 
-	    vd.template getProp<velocity>(a)[0] = vd.template getProp<velocity_prev>(a)[0] + vd.template getProp<force>(a)[0]*dt2;
-	    vd.template getProp<velocity>(a)[1] = vd.template getProp<velocity_prev>(a)[1] + vd.template getProp<force>(a)[1]*dt2;
-	    vd.template getProp<velocity>(a)[2] = vd.template getProp<velocity_prev>(a)[2] + vd.template getProp<force>(a)[2]*dt2;
-	    vd.template getProp<rho>(a) = vd.template getProp<rho_prev>(a) + dt2*vd.template getProp<drho>(a);
+	    if (VerletStep == true)
+	    {
+	    	vd.template getProp<velocity>(a)[0] = vd.template getProp<velocity_prev>(a)[0] + vd.template getProp<force>(a)[0]*dt2;
+	    	vd.template getProp<velocity>(a)[1] = vd.template getProp<velocity_prev>(a)[1] + vd.template getProp<force>(a)[1]*dt2;
+	    	vd.template getProp<velocity>(a)[2] = vd.template getProp<velocity_prev>(a)[2] + vd.template getProp<force>(a)[2]*dt2;
+	    	vd.template getProp<rho>(a) = vd.template getProp<rho_prev>(a) + dt2*vd.template getProp<drho>(a);
+	    }
+	    else
+	    {
+	    	vd.template getProp<velocity>(a)[0] = vd.template getProp<velocity>(a)[0] + vd.template getProp<force>(a)[0]*dt;
+	    	vd.template getProp<velocity>(a)[1] = vd.template getProp<velocity>(a)[1] + vd.template getProp<force>(a)[1]*dt;
+	    	vd.template getProp<velocity>(a)[2] = vd.template getProp<velocity>(a)[2] + vd.template getProp<force>(a)[2]*dt;
+	    	vd.template getProp<rho>(a) = vd.template getProp<rho>(a) + dt*vd.template getProp<drho>(a);
+	    }
+
+	    // Check if there are particles to remove
+
+	    if (vd.getPos(a)[0] <  0.000263878 || vd.getPos(a)[1] < 0.000263878 || vd.getPos(a)[2] < 0.000263878 ||
+	        vd.getPos(a)[0] >  0.000263878+1.59947 || vd.getPos(a)[1] > 0.000263878+0.672972 || vd.getPos(a)[2] > 0.000263878+0.903944 ||
+			vd.template getProp<rho>(a) < RhoMin || vd.template getProp<rho>(a) > RhoMax)
+	    {
+	    	std::cout << "Particle_out" << std::endl;
+	                   to_remove.add(a.getKey());
+	    }
 
 	    vd.template getProp<velocity_prev>(a)[0] = velX;
 	    vd.template getProp<velocity_prev>(a)[1] = velY;
 	    vd.template getProp<velocity_prev>(a)[2] = velZ;
 	    vd.template getProp<rho_prev>(a) = rhop;
 
-//	    std::cout << "VELOCITY: " << vd.template getProp<velocity>(a)[0] << "     " << vd.template getProp<velocity>(a)[1] << "     " << vd.template getProp<velocity>(a)[2] << std::endl;
-//	    std::cout << "++++++++++++++++++++++++++++++++++++++++++" << std::endl;
-
-/*	    if (particle_out == true)
-	    {
-	    	std::cout << "PARTICLE DENSITY: " << vd.template getProp<rho>(a) << "   PARTICLE PRESSURE: " << vd.template getProp<Pressure>(a) << "     Delta rho: " << vd.template getProp<drho>(a) << "   VELOCITY: " << vd.template getProp<velocity>(a)[0] << "   " << vd.template getProp<velocity>(a)[1] << "    " << vd.template getProp<velocity>(a)[2] << std::endl;
-	    }*/
-
 		++part;
 	}
 
 	vd.remove(to_remove,0);
+
+	cnt++;
 }
+
+/*! \cond [verlet_int] \endcond */
 
 int main(int argc, char* argv[])
 {
-
 	/*!
-	 * \page Vector_7_sph_dlb Vector 7 SPH Dam break  simulation with Dynamic load balacing
 	 *
-	 * ## Initialization ##
+	 * \page Vector_7_sph_dlb Vector 7 SPH Dam break  simulation with Dynamic load balancing
+	 *
+	 * ## Main function ##
 	 *
 	 * Here we Initialize the library, we create a Box that define our domain, boundary conditions, ghost
 	 *
@@ -542,8 +813,8 @@ int main(int argc, char* argv[])
 	openfpm_init(&argc,&argv);
 
 	// Here we define our domain a 2D box with internals from 0 to 1.0 for x and y
-	Box<3,double> domain({-0.05,-0.05,-0.05},{2.0070,1.0040,1.0040});
-	size_t sz[3] = {243,125,125};
+	Box<3,double> domain({-0.05,-0.05,-0.05},{1.7010,0.7065,0.5025});
+	size_t sz[3] = {207,90,66};
 
 	// Fill W_dap
 	W_dap = 1.0/Wab(H/1.5);
@@ -557,7 +828,7 @@ int main(int argc, char* argv[])
 	//! \cond [Initialization and parameters] \endcond
 
 	/*!
-	 * \page Vector_7_SPH_dlb Vector 7 SPH Dam break  simulation with Dynamic load balacing
+	 * \page Vector_7_SPH_dlb Vector 7 SPH Dam break  simulation with Dynamic load balancing
 	 *
 	 * ## %Vector create ##
 	 *
@@ -573,15 +844,14 @@ int main(int argc, char* argv[])
 
 	//! \cond [vector inst] \endcond
 
-	particles vd(0,domain,bc,g);
+	particles vd(0,domain,bc,g,DEC_GRAN(4096));
 
 	//! \cond [vector inst] \endcond
 
 	// the scalar is the element at position 0 in the aggregate
 	const int type = 0;
 
-//	Box<3,double> fluid_box({dp/2.0,dp/2.0,dp/2.0},{0.4+dp/2.0,0.67-dp/2.0,0.3+dp/2.0});
-	Box<3,double> fluid_box({0.2,0.2,0.298},{0.2+2*dp,0.2+2*dp,0.298+2*dp});
+	Box<3,double> fluid_box({dp/2.0,dp/2.0,dp/2.0},{0.4+dp/2.0,0.67-dp/2.0,0.3+dp/2.0});
 
 	// first we create Fluid particles
 	// Fluid particles are created
@@ -591,8 +861,6 @@ int main(int argc, char* argv[])
 	h_swl = fluid_it.getBoxMargins().getHigh(2) - fluid_it.getBoxMargins().getLow(2);
 	B = (coeff_sound)*(coeff_sound)*gravity*h_swl*rho_zero / gamma_;
 	cbar = coeff_sound * sqrt(gravity * h_swl);
-
-//	std::cout << "MAX FLUID: " << max_fluid_height << std::endl;
 
 	while (fluid_it.isNext())
 	{
@@ -612,8 +880,6 @@ int main(int argc, char* argv[])
 		//
 
 		vd.template getLastProp<Pressure>() = rho_zero * gravity *  (max_fluid_height - fluid_it.get().get(2));
-
-		std::cout << "B: " << B << std::endl;
 
 		vd.template getLastProp<rho>() = pow(vd.template getLastProp<Pressure>() / B + 1, 1.0/gamma_) * rho_zero;
 		vd.template getLastProp<rho_prev>() = vd.template getLastProp<rho>();
@@ -690,7 +956,31 @@ int main(int argc, char* argv[])
 	}
 
 	vd.map();
-	vd.ghost_get<rho,Pressure>();
+	vd.getDecomposition().write("Decomposition_before_load_bal");
+
+	// Now that we fill the vector with particles
+	ModelCustom md;
+
+	vd.addComputationCosts(md);
+	vd.getDecomposition().getDistribution().write("BEFORE_DECOMPOSE");
+	vd.getDecomposition().decompose();
+	vd.map();
+
+	vd.addComputationCosts(md);
+	vd.getDecomposition().getDistribution().write("AFTER_DECOMPOSE1");
+
+	vd.getDecomposition().rebalance(1);
+
+	vd.map();
+	vd.getDecomposition().getDistribution().write("AFTER_DECOMPOSE2");
+
+	std::cout << "N particles: " << vd.size_local()  << "    " << create_vcluster().getProcessUnitID() << "      " << "Get processor Load " << vd.getDecomposition().getDistribution().getProcessorLoad() << std::endl;
+
+	vd.write("Geometry");
+	vd.getDecomposition().write("Decomposition_after_load_bal");
+	vd.getDecomposition().getDistribution().write("Distribution_load_bal");
+
+	vd.ghost_get<type,rho,Pressure,velocity>();
 
 	auto NN = vd.getCellList(2*H);
 
@@ -699,27 +989,44 @@ int main(int argc, char* argv[])
 
 	size_t write = 0;
 	size_t it = 0;
+	size_t it_reb = 0;
 	double t = 0.0;
 	while (t <= t_end)
 	{
-		const size_t type = 0;
-		const int rho = 1;
-		const int Pressure = 2;
-		const int drho = 3;
-		const int force = 4;
-		const int velocity = 5;
-		const int velocity_prev = 6;
+		timer it_time;
+
+		////// Do rebalancing every 200 timesteps
+		it_reb++;
+		if (it_reb == 10)
+		{
+			vd.map();
+
+			it_reb = 0;
+			ModelCustom md;
+			vd.addComputationCosts(md);
+			vd.getDecomposition().rebalance(1);
+
+			std::cout << "REBALANCED " << std::endl;
+		}
 
 		vd.map();
-		vd.ghost_get<type,rho,Pressure,velocity,velocity_prev>();
+		vd.ghost_get<type,rho,Pressure,velocity>();
 
 		// Calculate pressure from the density
 		EqState(vd);
 
 		double max_visc = 0.0;
 
+		it_time.start();
+
 		// Calc forces
 		calc_forces(vd,NN,max_visc);
+		it_time.stop();
+
+		// Get the maximum viscosity term across processors
+		Vcluster & v_cl = create_vcluster();
+		v_cl.max(max_visc);
+		v_cl.execute();
 
 		// Calculate delta t integration
 		double dt = calc_deltaT(vd,max_visc);
@@ -727,7 +1034,14 @@ int main(int argc, char* argv[])
 //		std::cout << "Calculate deltaT: " << dt << "   " << DtMin << std::endl;
 
 		// VerletStep
-		verlet_int(vd,dt);
+		it++;
+		if (it < 40)
+			verlet_int(vd,dt,true);
+		else
+		{
+			verlet_int(vd,dt,false);
+			it = 0;
+		}
 
 		t += dt;
 
@@ -736,6 +1050,12 @@ int main(int argc, char* argv[])
 
 			vd.write("Geometry",write);
 			write++;
+
+			std::cout << "TIME: " << t << "  write " << it_time.getwct() << "   " << v_cl.getProcessUnitID() << "   " << cnt << std::endl;
+		}
+		else
+		{
+			std::cout << "TIME: " << t << "  " << it_time.getwct() << "   " << v_cl.getProcessUnitID() << "   " << cnt << std::endl;
 		}
 	}
 
@@ -746,7 +1066,7 @@ int main(int argc, char* argv[])
 	//! \cond [finalize] \endcond
 
 	/*!
-	 * \page Vector_7_SPH_dlb Vector 7 SPH Dam break  simulation with Dynamic load balacing
+	 * \page Vector_7_SPH_dlb Vector 7 SPH Dam break  simulation with Dynamic load balancing
 	 *
 	 * ## Full code ## {#code_e0_sim}
 	 *

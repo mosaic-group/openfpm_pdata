@@ -105,7 +105,7 @@ void Test2D_ghost(Box<2,float> & box)
 	typedef Point_test<float> p;
 
 	// Get the default minimum number of sub-sub-domain per processor (granularity of the decomposition)
-	size_t n_sub = vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> >::getDefaultNsubsub() * v_cl.getProcessingUnits();
+	size_t n_sub = 64 * v_cl.getProcessingUnits();
 	// Convert the request of having a minimum n_sub number of sub-sub domain into grid decompsition of the space
 	size_t sz = CartDecomposition<2,float>::getDefaultGrid(n_sub);
 

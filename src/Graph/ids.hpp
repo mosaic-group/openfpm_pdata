@@ -17,7 +17,16 @@
  */
 struct rid
 {
+	//! id
 	idx_t id;
+
+	//! Cosntructor
+	rid(size_t id)
+	:id(id)
+	{}
+
+	//! Constructor
+	rid()	{}
 
 	inline bool operator<=(const rid & r) const
 	{
@@ -79,6 +88,14 @@ struct rid
 struct gid
 {
 	size_t id;
+
+	//! Constructor
+	gid(){};
+
+	//! Constructor
+	gid(size_t id)
+	:id(id)
+	{}
 };
 
 /*! Here we define different the remapped-id

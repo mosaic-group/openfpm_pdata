@@ -11,6 +11,7 @@
  * \subpage Vector_5_md_vl_sym
  * \subpage Vector_5_md_vl_sym_crs
  * \subpage Vector_6_complex_usage
+ * \subpage Vector_7_sph_dlb
  *
  */
 

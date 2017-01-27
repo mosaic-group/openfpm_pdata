@@ -14,7 +14,7 @@ nobase_include_HEADERS = Decomposition/CartDecomposition.hpp Decomposition/CartD
          example.mk \
          Decomposition/Distribution/metis_util.hpp Decomposition/Distribution/SpaceDistribution.hpp Decomposition/Distribution/parmetis_dist_util.hpp  Decomposition/Distribution/parmetis_util.hpp Decomposition/Distribution/MetisDistribution.hpp Decomposition/Distribution/ParMetisDistribution.hpp Decomposition/Distribution/DistParMetisDistribution.hpp  dec_optimizer.hpp SubdomainGraphNodes.hpp \
          Graph/ids.hpp Graph/dist_map_graph.hpp Graph/DistGraphFactory.hpp \
-         DLB/DLB.hpp
+         DLB/DLB.hpp DLB/LB_Model.hpp
 
 lib_LIBRARIES = libofpm_pdata.a
 libofpm_pdata_a_SOURCES = lib/pdata.cpp

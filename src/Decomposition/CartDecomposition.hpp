@@ -351,11 +351,11 @@ public:
 
 		for (size_t i = 0; i < dist.getNSubSubDomains(); i++)
 		{
-			dist.setMigrationCost(i, norm * migration * dist.getSubSubDomainComputationCost(i));
+			dist.setMigrationCost(i, norm * migration /* * dist.getSubSubDomainComputationCost(i) */);
 
 			for (size_t s = 0; s < dist.getNSubSubDomainNeighbors(i); s++)
 			{
-				dist.setCommunicationCost(i, s, 1 * dist.getSubSubDomainComputationCost(i) * ts);
+				dist.setCommunicationCost(i, s, 1 * /* dist.getSubSubDomainComputationCost(i)  * */ ts);
 			}
 			prev += dist.getNSubSubDomainNeighbors(i);
 		}
@@ -994,6 +994,7 @@ public:
 		sub_domains.clear();
 		box_nn_processor.clear();
 		fine_s.clear();
+		loc_box.clear();
 		nn_prcs<dim, T>::reset();
 		ie_ghost<dim, T>::reset();
 		ie_loc_ghost<dim, T>::reset();
@@ -1122,7 +1123,7 @@ public:
 	 */
 	inline size_t getSubSubDomainComputationCost(size_t id)
 	{
-		return dist.getComputationCost(id);
+		return dist.getSubSubDomainComputationCost(id);
 	}
 
 	/*! \brief Operator to access the size of the sub-graph

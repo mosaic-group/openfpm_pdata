@@ -118,28 +118,33 @@ class ParMetisDistribution
 		for (size_t i = 0; i <= Np; i++)
 			vtxdist.get(i) = n_vtxdist.get(i);
 
+		openfpm::vector<size_t> cnt;
+		cnt.resize(Np);
+
 		// Renumber the main graph and re-create the map
-		for (size_t p = 0; p < (size_t)Np; p++)
+/*		for (size_t p = 0; p < (size_t)Np; p++)
 		{
 			size_t i = 0;
 			for (rid j = vtxdist.get(p); j < vtxdist.get(p + 1); ++j, i++)
 			{
 				setMapId(j, v_per_proc.get(p).get(i));
-				gp.vertex(v_per_proc.get(p).get(i).id).template get<nm_v::id>() = j.id;
+				gp.vertex(v_per_proc.get(p).get(i).id).template get<nm_v::id>() = cnt.get(p) + vtxdist.get(p).id;
+				cnt.get(p)++;
 			}
-		}
-	}
-
-	void createMapsFromGlobalGraph(openfpm::vector<size_t> & vtxdist)
-	{
-/*		openfpm::vector<size_t> cnt_np;
-
-		for (size_t i = 0 ; i < gp.getNVertex() ; i++)
-		{
-			cnt_np(gp.template vertex<nm_v::proc_id>)++;
-
-			gp.setMapId()
 		}*/
+
+		for (size_t i = 0 ; i < gp.getNVertex(); ++i)
+		{
+			size_t pid = gp.template vertex_p<nm_v::proc_id>(i);
+
+			rid j = rid(vtxdist.get(pid).id + cnt.get(pid));
+			gid gi = gid(i);
+
+			gp.template vertex_p<nm_v::id>(i) = j.id;
+			cnt.get(pid)++;
+
+			setMapId(j,gi);
+		}
 	}
 
 	/*! \brief operator to access the vertex by mapped position
