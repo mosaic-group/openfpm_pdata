@@ -77,6 +77,24 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_test )
 	for (size_t i = 0 ; i < 4 ; i++)
 	{
 		phases.get(i).map();
+	}
+
+	// randomize a little the particles
+
+	for (size_t p = 0 ; p < phases.size() ; p++)
+	{
+		openfpm::vector<Point<3,float>> vt;
+
+		for (size_t j = 0 ; j < phases.get(p).size_local() ; j++)
+		{
+			vt.add(phases.get(p).getPos((j + p*133) % phases.get(p).size_local()));
+		}
+		phases.get(p).getPosVector().swap(vt);
+	}
+
+	// Sync all phases
+	for (size_t i = 0 ; i < 4 ; i++)
+	{
 		phases.get(i).ghost_get<>();
 	}
 
