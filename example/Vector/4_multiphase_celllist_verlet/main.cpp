@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
 	auto CL_phase1 = phases.get(1).getCellList(r_cut);
 
 	// This function create a Verlet-list between phases 0 and 1
-	auto NN_ver01 = createVerlet(phases.get(0),CL_phase1,r_cut);
+	auto NN_ver01 = createVerlet(phases.get(0),phases.get(1),CL_phase1,r_cut);
 
 	//! \cond [create multi-phase verlet] \endcond
 
@@ -236,7 +236,7 @@ int main(int argc, char* argv[])
 	auto CL_all = createCellListM<2>(phases,r_cut);
 
 	// This create a Verlet-list between phase0 and all the other phases
-	auto NNver0_all = createVerletM<2>(phases.get(0),CL_all,r_cut);
+	auto NNver0_all = createVerletM<2>(0,phases.get(0),phases,CL_all,r_cut);
 
 	//! \cond [create multi-phase multi verlet] \endcond
 
@@ -419,7 +419,7 @@ int main(int argc, char* argv[])
 	CL_all = createCellListSymM<2>(phases,r_cut);
 
 	// Type of the multiphase Verlet-list
-	typedef decltype(createVerletSymM<2>(phases.get(0),phases,CL_all,r_cut)) verlet_type;
+	typedef decltype(createVerletSymM<2>(0,phases.get(0),phases,CL_all,r_cut)) verlet_type;
 
 	// for each phase we create one Verlet-list that contain the neighborhood
 	// from all the phases
@@ -428,16 +428,16 @@ int main(int argc, char* argv[])
 	// Here we create a Verlet-list between each phases
 
 	// 0 to all
-	NNver_all[0] = createVerletSymM<2>(phases.get(0),CL_all,r_cut);
+	NNver_all[0] = createVerletSymM<2>(0,phases.get(0),phases,CL_all,r_cut);
 
 	// 1 to all
-	NNver_all[1] = createVerletSymM<2>(phases.get(1),CL_all,r_cut);
+	NNver_all[1] = createVerletSymM<2>(1,phases.get(1),phases,CL_all,r_cut);
 
 	// 2 to all
-	NNver_all[2] = createVerletSymM<2>(phases.get(2),CL_all,r_cut);
+	NNver_all[2] = createVerletSymM<2>(2,phases.get(2),phases,CL_all,r_cut);
 
 	// 3 to all
-	NNver_all[3] = createVerletSymM<2>(phases.get(3),CL_all,r_cut);
+	NNver_all[3] = createVerletSymM<2>(3,phases.get(3),phases,CL_all,r_cut);
 
 	// For each phase
 	for (size_t i = 0 ; i < phases.size() ; i++)
