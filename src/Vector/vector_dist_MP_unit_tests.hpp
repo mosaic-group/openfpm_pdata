@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_test )
 	auto CL_phase1 = phases.get(1).getCellList(r_cut);
 
 	// This function create a Verlet-list between phases 0 and 1
-	auto NN_ver01 = createVerlet(phases.get(0),CL_phase1,r_cut);
+	auto NN_ver01 = createVerlet(phases.get(0),phases.get(1),CL_phase1,r_cut);
 
 	// Check NNver0_1
 
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_test )
 	auto CL_all = createCellListM<2>(phases,r_cut);
 
 	// This create a Verlet-list between phase 0 and all the other phases
-	auto NNver0_all = createVerletM<2>(phases.get(0),CL_all,r_cut);
+	auto NNver0_all = createVerletM<2>(phases.get(0),phases,CL_all,r_cut);
 
 	it = phases.get(0).getDomainIterator();
 
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_sym_test )
 	auto CL_phase1 = phases.get(1).getCellListSym(r_cut);
 
 	// This function create a Verlet-list between phases 0 and 1
-	auto NN_ver01 = createVerletSym(phases.get(0),CL_phase1,r_cut);
+	auto NN_ver01 = createVerletSym(phases.get(0),phases.get(1),CL_phase1,r_cut);
 
 	// Check NNver0_1
 
@@ -305,15 +305,15 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_sym_test )
 	// This function create an "Empty" Multiphase Cell List
 	auto CL_all = createCellListSymM<2>(phases,r_cut);
 
-	typedef decltype(createVerletSymM<2>(phases.get(0),CL_all,r_cut)) verlet_type;
+	typedef decltype(createVerletSymM<2>(phases.get(0),phases,CL_all,r_cut)) verlet_type;
 
 	verlet_type NNver_all[4];
 
 	// This create a Verlet-list between phase all phases to all the other phases
-	NNver_all[0] = createVerletSymM<2>(phases.get(0),CL_all,r_cut);
-	NNver_all[1] = createVerletSymM<2>(phases.get(1),CL_all,r_cut);
-	NNver_all[2] = createVerletSymM<2>(phases.get(2),CL_all,r_cut);
-	NNver_all[3] = createVerletSymM<2>(phases.get(3),CL_all,r_cut);
+	NNver_all[0] = createVerletSymM<2>(phases.get(0),phases,CL_all,r_cut);
+	NNver_all[1] = createVerletSymM<2>(phases.get(1),phases,CL_all,r_cut);
+	NNver_all[2] = createVerletSymM<2>(phases.get(2),phases,CL_all,r_cut);
+	NNver_all[3] = createVerletSymM<2>(phases.get(3),phases,CL_all,r_cut);
 
 	// all phases to all phases
 
