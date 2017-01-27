@@ -1210,6 +1210,16 @@ public:
 		return v_pos;
 	}
 
+	/*! \brief return the position vector of all the particles
+	 *
+	 * \return the particle position vector
+	 *
+	 */
+	openfpm::vector<Point<dim,St>> & getPosVector()
+	{
+		return v_pos;
+	}
+
 	/*! \brief It return the sum of the particles in the previous processors
 	 *
 	 * \return the particles number
