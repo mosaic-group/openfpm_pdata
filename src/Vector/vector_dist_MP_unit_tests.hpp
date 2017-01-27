@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_test )
 	auto CL_all = createCellListM<2>(phases,r_cut);
 
 	// This create a Verlet-list between phase 0 and all the other phases
-	auto NNver0_all = createVerletM<2>(phases.get(0),phases,CL_all,r_cut);
+	auto NNver0_all = createVerletM<2>(0,phases.get(0),phases,CL_all,r_cut);
 
 	it = phases.get(0).getDomainIterator();
 
@@ -227,6 +227,24 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_sym_test )
 	for (size_t i = 0 ; i < 4 ; i++)
 	{
 		phases.get(i).map();
+	}
+
+	// randomize a little the particles
+
+	for (size_t p = 0 ; p < phases.size() ; p++)
+	{
+		openfpm::vector<Point<3,float>> vt;
+
+		for (size_t j = 0 ; j < phases.get(p).size_local() ; j++)
+		{
+			vt.add(phases.get(p).getPos((j + p*133) % phases.get(p).size_local()));
+		}
+		phases.get(p).getPosVector().swap(vt);
+	}
+
+	// Sync all phases
+	for (size_t i = 0 ; i < 4 ; i++)
+	{
 		phases.get(i).ghost_get<>();
 	}
 
@@ -305,15 +323,15 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_sym_test )
 	// This function create an "Empty" Multiphase Cell List
 	auto CL_all = createCellListSymM<2>(phases,r_cut);
 
-	typedef decltype(createVerletSymM<2>(phases.get(0),phases,CL_all,r_cut)) verlet_type;
+	typedef decltype(createVerletSymM<2>(0,phases.get(0),phases,CL_all,r_cut)) verlet_type;
 
 	verlet_type NNver_all[4];
 
 	// This create a Verlet-list between phase all phases to all the other phases
-	NNver_all[0] = createVerletSymM<2>(phases.get(0),phases,CL_all,r_cut);
-	NNver_all[1] = createVerletSymM<2>(phases.get(1),phases,CL_all,r_cut);
-	NNver_all[2] = createVerletSymM<2>(phases.get(2),phases,CL_all,r_cut);
-	NNver_all[3] = createVerletSymM<2>(phases.get(3),phases,CL_all,r_cut);
+	NNver_all[0] = createVerletSymM<2>(0,phases.get(0),phases,CL_all,r_cut);
+	NNver_all[1] = createVerletSymM<2>(1,phases.get(1),phases,CL_all,r_cut);
+	NNver_all[2] = createVerletSymM<2>(2,phases.get(2),phases,CL_all,r_cut);
+	NNver_all[3] = createVerletSymM<2>(3,phases.get(3),phases,CL_all,r_cut);
 
 	// all phases to all phases
 
@@ -359,6 +377,14 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_sym_test )
 		ret &= phases.get(1).getProp<0>(p) == 32;
 		ret &= phases.get(2).getProp<0>(p) == 32;
 		ret &= phases.get(3).getProp<0>(p) == 32;
+
+		if (ret == false)
+		{
+			std::cout << phases.get(0).getProp<0>(p) << std::endl;
+			std::cout << phases.get(1).getProp<0>(p) << std::endl;
+			std::cout << phases.get(2).getProp<0>(p) << std::endl;
+			std::cout << phases.get(3).getProp<0>(p) << std::endl;
+		}
 
 		++it;
 	}

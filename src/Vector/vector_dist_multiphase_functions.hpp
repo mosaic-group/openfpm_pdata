@@ -20,7 +20,7 @@ template<typename Vector, typename CL, typename T> VerletList<Vector::dims,typen
 	return ver;
 }
 
-template<unsigned int sh_byte, typename Vector , typename Vector1,typename CL, typename T> VerletListM<Vector::dims,typename Vector::stype,sh_byte,CL,shift<Vector::dims,typename Vector::stype>> createVerletM(Vector & v, Vector1 & phases, CL & cl, T r_cut)
+template<unsigned int sh_byte, typename Vector , typename Vector1,typename CL, typename T> VerletListM<Vector::dims,typename Vector::stype,sh_byte,CL,shift<Vector::dims,typename Vector::stype>> createVerletM(size_t pp, Vector & v, Vector1 & phases, CL & cl, T r_cut)
 {
 	VerletListM<Vector::dims,typename Vector::stype,sh_byte,CL,shift<Vector::dims,typename Vector::stype>> ver;
 
@@ -29,7 +29,7 @@ template<unsigned int sh_byte, typename Vector , typename Vector1,typename CL, t
 	for (size_t i = 0 ; i < phases.size() ; i++)
 		v_phases.add(pos_v<Vector::dims,typename Vector::stype>(phases.get(i).getPosVector()));
 
-	ver.Initialize(cl,r_cut,v.getPosVector(),v_phases,v.size_local());
+	ver.Initialize(cl,pp,r_cut,v.getPosVector(),v_phases,v.size_local());
 
 	return ver;
 }
@@ -79,7 +79,7 @@ template<typename Vector,typename CL, typename T> VerletList<Vector::dims,typena
 	return ver;
 }
 
-template<unsigned int sh_byte, typename Vector, typename Vector1 ,typename CL, typename T> VerletListM<Vector::dims,typename Vector::stype,sh_byte,CL,shift<Vector::dims,typename Vector::stype>> createVerletSymM(Vector & v, Vector1 & phases, CL & cl, T r_cut)
+template<unsigned int sh_byte, typename Vector, typename Vector1 ,typename CL, typename T> VerletListM<Vector::dims,typename Vector::stype,sh_byte,CL,shift<Vector::dims,typename Vector::stype>> createVerletSymM(size_t pp, Vector & v, Vector1 & phases, CL & cl, T r_cut)
 {
 	VerletListM<Vector::dims,typename Vector::stype,sh_byte,CL,shift<Vector::dims,typename Vector::stype>> ver;
 
@@ -88,7 +88,7 @@ template<unsigned int sh_byte, typename Vector, typename Vector1 ,typename CL, t
 	for (size_t i = 0 ; i < phases.size() ; i++)
 		v_phases.add(pos_v<Vector::dims,typename Vector::stype>(phases.get(i).getPosVector()));
 
-	ver.Initialize(cl,r_cut,v.getPosVector(),v_phases,v.size_local(),VL_SYMMETRIC);
+	ver.Initialize(cl,pp,r_cut,v.getPosVector(),v_phases,v.size_local(),VL_SYMMETRIC);
 
 	return ver;
 }
