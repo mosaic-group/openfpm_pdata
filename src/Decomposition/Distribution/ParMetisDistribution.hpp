@@ -121,18 +121,6 @@ class ParMetisDistribution
 		openfpm::vector<size_t> cnt;
 		cnt.resize(Np);
 
-		// Renumber the main graph and re-create the map
-/*		for (size_t p = 0; p < (size_t)Np; p++)
-		{
-			size_t i = 0;
-			for (rid j = vtxdist.get(p); j < vtxdist.get(p + 1); ++j, i++)
-			{
-				setMapId(j, v_per_proc.get(p).get(i));
-				gp.vertex(v_per_proc.get(p).get(i).id).template get<nm_v::id>() = cnt.get(p) + vtxdist.get(p).id;
-				cnt.get(p)++;
-			}
-		}*/
-
 		for (size_t i = 0 ; i < gp.getNVertex(); ++i)
 		{
 			size_t pid = gp.template vertex_p<nm_v::proc_id>(i);

@@ -1028,10 +1028,15 @@ public:
 		g_m--;
 	}
 
-	/*! \brief Add the computation cost on the decomposition coming from the particles
+	/*! \brief Add the computation cost on the decomposition coming
+	 * from the particles
+	 *
+	 * \param md Model to use
+	 * \param ts It is an optional parameter approximately should be the number of ghost get between two
+	 *           rebalancing at first decomposition this number can be ignored (default = 1) because not used
 	 *
 	 */
-	template <typename Model=ModelLin>inline void addComputationCosts(Model md=Model())
+	template <typename Model=ModelLin>inline void addComputationCosts(Model md=Model(), size_t ts = 1)
 	{
 		CellDecomposer_sm<dim, St, shift<dim,St>> cdsm;
 
@@ -1052,6 +1057,8 @@ public:
 
 			++it;
 		}
+
+		dec.computeCommunicationAndMigrationCosts(ts);
 
 		// Go throught all the sub-sub-domains and apply the model
 

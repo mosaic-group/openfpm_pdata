@@ -104,6 +104,9 @@ public:
 
 protected:
 
+	//! Indicate the communication weight has been set
+	bool commCostSet = false;
+
 	//! This is the key type to access  data_s, for example in the case of vector
 	//! acc_key is size_t
 	typedef typename openfpm::vector<SpaceBox<dim, T>,
@@ -201,9 +204,6 @@ protected:
 
 		return sub_d;
 	}
-
-protected:
-
 
 
 public:
@@ -351,14 +351,16 @@ public:
 
 		for (size_t i = 0; i < dist.getNSubSubDomains(); i++)
 		{
-			dist.setMigrationCost(i, norm * migration /* * dist.getSubSubDomainComputationCost(i) */);
+			dist.setMigrationCost(i, norm * migration * dist.getSubSubDomainComputationCost(i) );
 
 			for (size_t s = 0; s < dist.getNSubSubDomainNeighbors(i); s++)
 			{
-				dist.setCommunicationCost(i, s, 1 * /* dist.getSubSubDomainComputationCost(i)  * */ ts);
+				dist.setCommunicationCost(i, s, 1 * dist.getSubSubDomainComputationCost(i)  *  ts);
 			}
 			prev += dist.getNSubSubDomainNeighbors(i);
 		}
+
+		commCostSet = true;
 	}
 
 	/*! \brief Create the sub-domain that decompose your domain
@@ -1007,7 +1009,8 @@ public:
 	{
 		reset();
 
-		computeCommunicationAndMigrationCosts(1);
+		if (commCostSet == false)
+			computeCommunicationAndMigrationCosts(1);
 
 		dist.decompose();
 
@@ -1025,7 +1028,8 @@ public:
 	{
 		reset();
 
-		computeCommunicationAndMigrationCosts(ts);
+		if (commCostSet == false)
+			computeCommunicationAndMigrationCosts(ts);
 
 		dist.refine();
 
