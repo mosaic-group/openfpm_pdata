@@ -22,6 +22,9 @@
  *
  */
 
+//#define SE_CLASS1
+//#define STOP_ON_ERROR
+
 //! \cond [inclusion] \endcond
 #include "Vector/vector_dist.hpp"
 #include <math.h>
@@ -1096,7 +1099,7 @@ int main(int argc, char* argv[])
 
 	//! \cond [load balancing] \endcond
 
-//	vd.addComputationCosts(md);
+	vd.addComputationCosts(md);
 //	vd.getDecomposition().getDistribution().write("AFTER_DECOMPOSE1");
 
 //	vd.getDecomposition().rebalance(1);
@@ -1132,6 +1135,9 @@ int main(int argc, char* argv[])
 
 	//! \cond [main loop] \endcond
 
+	double time_mean = 0.0;
+	double time_min = 1000.0;
+	double time_max = 0.0;
 	size_t write = 0;
 	size_t it = 0;
 	size_t it_reb = 0;
@@ -1147,16 +1153,31 @@ int main(int argc, char* argv[])
 		{
 			vd.map();
 
-			it_reb = 0;
+			vd.getDecomposition().write("DLB_BEFORE_");
+//			it_reb = 0;
 			ModelCustom md;
 			vd.addComputationCosts(md);
-			vd.getDecomposition().rebalance(1);
+			vd.getDecomposition().decompose();
 
 			if (v_cl.getProcessUnitID() == 0)
 				std::cout << "REBALANCED " << std::endl;
 		}
 
 		vd.map();
+
+
+		if (it_reb == 200)
+		{
+			vd.getDecomposition().write("DLB_AFTER_");
+
+			it_reb = 0;
+			vd.addComputationCosts(md);
+			std::cout << "PROCESSOR LOAD: " << vd.getDecomposition().getDistribution().getProcessorLoad() << "   MEAN: " << time_mean / 200 << "     MIN: " << time_min << "      MAX: " << time_max  << std::endl;
+			time_mean = 0.0;
+			time_min = 1000.0;
+			time_max = 0.0;
+		}
+
 		vd.ghost_get<type,rho,Pressure,velocity>();
 
 		// Calculate pressure from the density
@@ -1173,6 +1194,9 @@ int main(int argc, char* argv[])
 		// Get the maximum viscosity term across processors
 		v_cl.max(max_visc);
 		v_cl.execute();
+		time_mean += it_time.getwct();
+		time_min = std::min(time_min,it_time.getwct());
+		time_max = std::max(time_max,it_time.getwct());
 
 		// Calculate delta t integration
 		double dt = calc_deltaT(vd,max_visc);

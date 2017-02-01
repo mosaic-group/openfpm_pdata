@@ -34,6 +34,9 @@
 template<unsigned int dim, typename T>
 class ParMetisDistribution
 {
+	//! Is distributed
+	bool is_distributed = false;
+
 	//! Vcluster
 	Vcluster & v_cl;
 
@@ -207,6 +210,100 @@ class ParMetisDistribution
 		return &(v->get(i).get(0));
 	}
 
+	/*! \brief It update the full decomposition
+	 *
+	 *
+	 */
+	void postDecomposition()
+	{
+		//! Get the processor id
+		size_t p_id = v_cl.getProcessUnitID();
+
+		//! Get the number of processing units
+		size_t Np = v_cl.getProcessingUnits();
+
+		// Number of local vertex
+		size_t nl_vertex = vtxdist.get(p_id+1).id - vtxdist.get(p_id).id;
+
+		//! Get result partition for this processors
+		idx_t * partition = parmetis_graph.getPartition();
+
+		//! Prepare vector of arrays to contain all partitions
+		partitions.get(p_id).resize(nl_vertex);
+		std::copy(partition, partition + nl_vertex, &partitions.get(p_id).get(0));
+
+		// Reset data structure to keep trace of new vertices distribution in processors (needed to update main graph)
+		for (size_t i = 0; i < Np; ++i)
+		{
+			v_per_proc.get(i).clear();
+		}
+
+		// Communicate the local distribution to the other processors
+		// to reconstruct individually the global graph
+		openfpm::vector<size_t> prc;
+		openfpm::vector<size_t> sz;
+		openfpm::vector<void *> ptr;
+
+		for (size_t i = 0; i < Np; i++)
+		{
+			if (i != v_cl.getProcessUnitID())
+			{
+				partitions.get(i).clear();
+				prc.add(i);
+				sz.add(nl_vertex * sizeof(idx_t));
+				ptr.add(partitions.get(p_id).getPointer());
+			}
+		}
+
+		if (prc.size() == 0)
+			v_cl.sendrecvMultipleMessagesNBX(0, NULL, NULL, NULL, message_receive, &partitions,NONE);
+		else
+			v_cl.sendrecvMultipleMessagesNBX(prc.size(), &sz.get(0), &prc.get(0), &ptr.get(0), message_receive, &partitions,NONE);
+
+		// Update graphs with the received data
+		updateGraphs();
+
+
+		/////////////////////////////////////////
+
+
+		// Get result partition for this processor
+/*		idx_t * partition = parmetis_graph.getPartition();
+
+		//! Prepare vector of arrays to contain all partitions
+		partitions.get(p_id).resize(nl_vertex.id);
+		std::copy(partition, partition + nl_vertex.id, &partitions.get(p_id).get(0));
+
+		// Reset data structure to keep trace of new vertices distribution in processors (needed to update main graph)
+		for (size_t i = 0; i < Np; ++i)
+		{
+			v_per_proc.get(i).clear();
+		}
+
+		openfpm::vector<size_t> prc;
+		openfpm::vector<size_t> sz;
+		openfpm::vector<void *> ptr;
+
+		for (size_t i = 0; i < Np; i++)
+		{
+			if (i != v_cl.getProcessUnitID())
+			{
+				partitions.get(i).clear();
+				prc.add(i);
+				sz.add(nl_vertex.id * sizeof(idx_t));
+				ptr.add(partitions.get(p_id).getPointer());
+			}
+		}
+
+		// Exchange informations through processors
+		v_cl.sendrecvMultipleMessagesNBX(prc.size(), &sz.get(0), &prc.get(0), &ptr.get(0), message_receive, &partitions,
+		NONE);
+
+		// Update graphs with the new distributions
+		updateGraphs();*/
+	}
+
+
 public:
 
 	/*! Constructor for the ParMetis class
@@ -214,7 +311,7 @@ public:
 	 * \param v_cl Vcluster to use as communication object in this class
 	 */
 	ParMetisDistribution(Vcluster & v_cl)
-	:v_cl(v_cl), parmetis_graph(v_cl, v_cl.getProcessingUnits()), vtxdist(v_cl.getProcessingUnits() + 1), partitions(v_cl.getProcessingUnits()), v_per_proc(v_cl.getProcessingUnits())
+	:is_distributed(false),v_cl(v_cl), parmetis_graph(v_cl, v_cl.getProcessingUnits()), vtxdist(v_cl.getProcessingUnits() + 1), partitions(v_cl.getProcessingUnits()), v_per_proc(v_cl.getProcessingUnits())
 	{
 	}
 
@@ -305,51 +402,18 @@ public:
 	 */
 	void decompose()
 	{
-
-		//! Get the processor id
-		size_t p_id = v_cl.getProcessUnitID();
-
-		//! Get the number of processing units
-		size_t Np = v_cl.getProcessingUnits();
-
-		// Number of local vertex
-		size_t nl_vertex = vtxdist.get(p_id+1).id - vtxdist.get(p_id).id;
-
-		parmetis_graph.initSubGraph(gp, vtxdist, m2g, verticesGotWeights);
+		if (is_distributed == false)
+			parmetis_graph.initSubGraph(gp, vtxdist, m2g, verticesGotWeights);
+		else
+			parmetis_graph.reset(gp, vtxdist, m2g, verticesGotWeights);
 
 		//! Decompose
 		parmetis_graph.decompose<nm_v::proc_id>(vtxdist);
 
-		//! Get result partition for this processors
-		idx_t *partition = parmetis_graph.getPartition();
+		// update after decomposition
+		postDecomposition();
 
-		//! Prepare vector of arrays to contain all partitions
-		partitions.get(p_id).resize(nl_vertex);
-		std::copy(partition, partition + nl_vertex, &partitions.get(p_id).get(0));
-
-		// Communicate the local distribution to the other processors
-		// to reconstruct individually the global graph
-		openfpm::vector<size_t> prc;
-		openfpm::vector<size_t> sz;
-		openfpm::vector<void *> ptr;
-
-		for (size_t i = 0; i < Np; i++)
-		{
-			if (i != v_cl.getProcessUnitID())
-			{
-				prc.add(i);
-				sz.add(nl_vertex * sizeof(idx_t));
-				ptr.add(partitions.get(p_id).getPointer());
-			}
-		}
-
-		if (prc.size() == 0)
-			v_cl.sendrecvMultipleMessagesNBX(0, NULL, NULL, NULL, message_receive, &partitions,NONE);
-		else
-			v_cl.sendrecvMultipleMessagesNBX(prc.size(), &sz.get(0), &prc.get(0), &ptr.get(0), message_receive, &partitions,NONE);
-
-		// Update graphs with the received data
-		updateGraphs();
+		is_distributed = true;
 	}
 
 	/*! \brief Refine current decomposition
@@ -360,51 +424,13 @@ public:
 	 */
 	void refine()
 	{
-		size_t Np = v_cl.getProcessingUnits();
-		size_t p_id = v_cl.getProcessUnitID();
-
-		// Number of local vertex
-		rid nl_vertex = vtxdist.get(p_id+1) - vtxdist.get(p_id);
-
 		// Reset parmetis graph and reconstruct it
 		parmetis_graph.reset(gp, vtxdist, m2g, verticesGotWeights);
 
 		// Refine
 		parmetis_graph.refine<nm_v::proc_id>(vtxdist);
 
-		// Get result partition for this processor
-		idx_t * partition = parmetis_graph.getPartition();
-
-		partitions.get(p_id).resize(nl_vertex.id);
-		std::copy(partition, partition + nl_vertex.id, &partitions.get(p_id).get(0));
-
-		// Reset data structure to keep trace of new vertices distribution in processors (needed to update main graph)
-		for (size_t i = 0; i < Np; ++i)
-		{
-			v_per_proc.get(i).clear();
-		}
-
-		openfpm::vector<size_t> prc;
-		openfpm::vector<size_t> sz;
-		openfpm::vector<void *> ptr;
-
-		for (size_t i = 0; i < Np; i++)
-		{
-			if (i != v_cl.getProcessUnitID())
-			{
-				partitions.get(i).clear();
-				prc.add(i);
-				sz.add(nl_vertex.id * sizeof(idx_t));
-				ptr.add(partitions.get(p_id).getPointer());
-			}
-		}
-
-		// Exchange informations through processors
-		v_cl.sendrecvMultipleMessagesNBX(prc.size(), &sz.get(0), &prc.get(0), &ptr.get(0), message_receive, &partitions,
-		NONE);
-
-		// Update graphs with the new distributions
-		updateGraphs();
+		postDecomposition();
 	}
 
 	/*! \brief Compute the unbalance of the processor compared to the optimal balance
@@ -574,6 +600,7 @@ public:
 
 	const ParMetisDistribution<dim,T> & operator=(const ParMetisDistribution<dim,T> & dist)
 	{
+		is_distributed = dist.is_distributed;
 		gr = dist.gr;
 		domain = dist.domain;
 		gp = dist.gp;
@@ -587,6 +614,7 @@ public:
 
 	const ParMetisDistribution<dim,T> & operator=(ParMetisDistribution<dim,T> && dist)
 	{
+		is_distributed = dist.is_distributed;
 		v_cl = dist.v_cl;
 		gr = dist.gr;
 		domain = dist.domain;

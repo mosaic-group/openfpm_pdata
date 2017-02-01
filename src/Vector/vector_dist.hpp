@@ -45,6 +45,44 @@
 #define NO_GHOST 0
 #define WITH_GHOST 2
 
+//! General function t get a cell-list
+template<unsigned int dim, typename St, typename CellL, typename Vector>
+struct gcl
+{
+	/*! \brief Get the Cell list based on the type
+	 *
+	 * \param vd Distributed vector
+	 * \param r_cut Cut-off radius
+	 * \param g Ghost
+	 *
+	 * \return the constructed cell-list
+	 *
+	 */
+	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
+	{
+		return vd.getCellList(r_cut);
+	}
+};
+
+//! General function t get a cell-list
+template<unsigned int dim, typename St, typename Vector>
+struct gcl<dim,St,CellList_hilb<dim, St, FAST, shift<dim, St> >,Vector>
+{
+	/*! \brief Get the Cell list based on the type
+	 *
+	 * \param vd Distributed vector
+	 * \param r_cut Cut-off radius
+	 * \param g Ghost
+	 *
+	 * \return the constructed cell-list
+	 *
+	 */
+	static inline CellList_hilb<dim, St, FAST, shift<dim, St> > get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
+	{
+		return vd.getCellList_hilb(r_cut,g);
+	}
+};
+
 /*! \brief Distributed vector
  *
  * This class reppresent a distributed vector, the distribution of the structure
@@ -129,6 +167,32 @@ private:
 
 	}
 
+	/*! \brief Check if the cell-list must be reconstructed because domain has changed
+	 *         because of load balancing
+	 *
+	 * \param bx Box to reconstruct
+	 *
+	 * \return true if the cell-list must be reconstructed
+	 *
+	 */
+	bool check_cl_reconstruct(const Box<dim,St> & bx, St r_cut)
+	{
+		// Get ghost and anlarge by 1%
+		Ghost<dim,St> g = getDecomposition().getGhost();
+		g.magnify(1.013);
+
+		// Division array
+		size_t div[dim];
+
+		// get the processor bounding box
+		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+
+		// Processor bounding box
+		cl_param_calculate(pbox, div, r_cut, g);
+
+		return !bx.isContained(pbox);
+	}
+
 public:
 
 	//! space type
@@ -136,6 +200,9 @@ public:
 
 	//! dimensions of space
 	static const unsigned int dims = dim;
+
+	//! Self type
+	typedef vector_dist<dim,St,prop,Decomposition,Memory> self;
 
 	/*! \brief Operator= for distributed vector
 	 *
@@ -446,9 +513,28 @@ public:
 	 */
 	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > void updateCellList(CellL & cell_list)
 	{
-		populate_cell_list(v_pos,cell_list,g_m,CL_NON_SYMMETRIC);
+		// This function assume equal spacing in all directions
+		// but in the worst case we take the maximum
+		St r_cut = 0;
+		for (size_t i = 0 ; i < dim ; i++)
+			r_cut = std::max(r_cut,cell_list.getCellBox().getHigh(i));
 
-		cell_list.set_gm(g_m);
+		// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
+		// processor. if it is not like that we have to completely reconstruct from stratch
+		bool to_reconstruct = check_cl_reconstruct(cell_list.getDomain(),r_cut);
+
+		if (to_reconstruct == false)
+		{
+			populate_cell_list(v_pos,cell_list,g_m,CL_NON_SYMMETRIC);
+
+			cell_list.set_gm(g_m);
+		}
+		else
+		{
+			CellL cli_tmp = gcl<dim,St,CellL,self>::get(*this,r_cut,getDecomposition().getGhost());
+
+			cell_list.swap(cli_tmp);
+		}
 	}
 
 	/*! \brief Update a cell list using the stored particles
