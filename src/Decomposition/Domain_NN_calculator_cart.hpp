@@ -20,6 +20,12 @@ class domain_nn_calculator_cart
 	//! True if domain and anomalous domain cells are computed
 	bool are_domain_anom_computed;
 
+	//! Are linearized the domain cell
+    bool are_dom_lin;
+
+    //! are linearized the anomalous cells
+    bool are_anom_lin;
+
 	//! anomalous cell neighborhood
 	openfpm::vector<subsub<dim>> anom;
 
@@ -95,8 +101,16 @@ class domain_nn_calculator_cart
 	 *
 	 *
 	 */
-	void CalculateDomAndAnomCells(openfpm::vector<subsub<dim>> & sub_keys, openfpm::vector<grid_key_dx<dim>> & dom_subsub, const ::Box<dim,long int> & proc_box, grid_key_dx<dim> & shift, const openfpm::vector<::Box<dim, size_t>> & loc_box)
+	void CalculateDomAndAnomCells(openfpm::vector<subsub<dim>> & sub_keys,
+			                      openfpm::vector<grid_key_dx<dim>> & dom_subsub,
+								  const ::Box<dim,long int> & proc_box,
+								  grid_key_dx<dim> & shift,
+								  const openfpm::vector<::Box<dim, size_t>> & loc_box)
 	{
+		// Reset dom and dom_subsub
+		sub_keys.clear();
+		dom_subsub.clear();
+
 		size_t sz[dim];
 
 		for (size_t j = 0 ; j < dim ; j++)
@@ -169,7 +183,7 @@ class domain_nn_calculator_cart
 public:
 
 	domain_nn_calculator_cart()
-	:are_domain_anom_computed(false)
+	:are_domain_anom_computed(false),are_dom_lin(false),are_anom_lin(false)
 	{}
 
 	/*! \brief Get the domain Cells
@@ -190,13 +204,15 @@ public:
 			are_domain_anom_computed = true;
 		}
 
-		if (shift != shift_calc_dom || gs != gs_calc_dom  || dom_lin.size() == 0)
+		if (are_dom_lin == false)
 		{
 			dom_lin.clear();
 			shift_calc_dom = shift;
 			gs_calc_dom = gs;
 			for (size_t i = 0 ; i < dom.size() ; i++)
 				dom_lin.add(gs.LinId(dom.get(i) - cell_shift));
+
+			are_dom_lin = true;
 		}
 
 		return dom_lin;
@@ -221,10 +237,7 @@ public:
 			are_domain_anom_computed = true;
 		}
 
-		// Convert the list of the neighborhood sub-sub-domains for each sub-sub-domains
-		// into a linearized sub-sub-domain index. Again we check that this operation has not
-		// been already executed
-		if (shift != shift_calc_anom || gs != gs_calc_anom || anom_lin.size() == 0)
+		if (are_anom_lin == false)
 		{
 			anom_lin.clear();
 			shift_calc_anom = shift;
@@ -257,9 +270,18 @@ public:
 					anom_lin.get(i).NN_subsub.get(self_cell) = tmp;
 				}
 			}
+
+			are_anom_lin = true;
 		}
 
 		return anom_lin;
+	}
+
+	void reset()
+	{
+		are_domain_anom_computed = false;
+		are_dom_lin = false;
+		are_anom_lin = false;
 	}
 };
 

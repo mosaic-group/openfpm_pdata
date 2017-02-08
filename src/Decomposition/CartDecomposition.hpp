@@ -351,11 +351,13 @@ public:
 
 		for (size_t i = 0; i < dist.getNSubSubDomains(); i++)
 		{
-			dist.setMigrationCost(i, norm * migration * dist.getSubSubDomainComputationCost(i) );
+			dist.setMigrationCost(i, norm * migration /* * dist.getSubSubDomainComputationCost(i)*/ );
 
 			for (size_t s = 0; s < dist.getNSubSubDomainNeighbors(i); s++)
 			{
-				dist.setCommunicationCost(i, s, 1 * dist.getSubSubDomainComputationCost(i)  *  ts);
+				// We have to remove dist.getSubSubDomainComputationCost(i) otherwise the graph is
+				// not directed
+				dist.setCommunicationCost(i, s, 1 /** dist.getSubSubDomainComputationCost(i)*/  *  ts);
 			}
 			prev += dist.getNSubSubDomainNeighbors(i);
 		}
@@ -1017,6 +1019,8 @@ public:
 		createSubdomains(v_cl,bc);
 
 		calculateGhostBoxes();
+
+		domain_nn_calculator_cart<dim>::reset();
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
@@ -1036,6 +1040,8 @@ public:
 		createSubdomains(v_cl,bc);
 
 		calculateGhostBoxes();
+
+		domain_nn_calculator_cart<dim>::reset();
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call

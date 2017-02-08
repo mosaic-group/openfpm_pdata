@@ -193,6 +193,39 @@ private:
 		return !bx.isContained(pbox);
 	}
 
+	template<typename CellList> bool check_cl_reconstruct_sym(const CellList & NN, St r_cut)
+	{
+		Box<dim,long int> pbox_prev;
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			pbox_prev.setLow(i,NN.getStartDomainCell().get(i));
+			pbox_prev.setHigh(i,NN.getStopDomainCell().get(i));
+		}
+
+		// get the processor bounding box
+		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+
+		CellDecomposer_sm<dim,St,shift<dim,St>> cd2;
+		size_t pad = 0;
+
+		cl_param_calculateSym(NN.getDomain(),cd2,getDecomposition().getGhost(),r_cut,pad);
+
+		CellDecomposer_sm<dim,St,shift<dim,St>> cd3;
+
+		NN.setCellDecomposer(cd3,cd2,pbox,pad);
+
+		Box<dim,long int> pbox_disc;
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			pbox_disc.setLow(i,cd3.getStartDomainCell().get(i));
+			pbox_disc.setHigh(i,cd3.getStopDomainCell().get(i));
+		}
+
+		return !pbox_prev.isContained(pbox_disc);
+	}
+
 public:
 
 	//! space type
@@ -708,32 +741,121 @@ public:
 	 * \param r_cut cut-off radius
 	 * \param ver Verlet to update
 	 * \param r_cut cutoff radius
-	 * \param opt option like VL_SYMMETRIC and VL_NON_SYMMETRIC
+	 * \param opt option like VL_SYMMETRIC and VL_NON_SYMMETRIC or VL_CRS_SYMMETRIC
 	 *
 	 */
 	void updateVerlet(VerletList<dim,St,FAST,shift<dim,St> > & ver, St r_cut, size_t opt = VL_NON_SYMMETRIC)
 	{
-		if (opt == VL_CRS_SYMMETRIC)
+		if (opt == VL_SYMMETRIC)
 		{
-			// Get the internal cell list
 			auto & NN = ver.getInternalCellList();
 
-			// Shift
-			grid_key_dx<dim> cell_shift = NN.getShift();
+			// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
+			// processor. if it is not like that we have to completely reconstruct from stratch
+			bool to_reconstruct = check_cl_reconstruct_sym(NN,r_cut);
 
-			// Shift
-			grid_key_dx<dim> shift = NN.getShift();
+			if (to_reconstruct == false)
+				ver.update(getDecomposition().getDomain(),r_cut,v_pos,g_m, opt);
+			else
+			{
+				VerletList<dim,St,FAST,shift<dim,St> > ver_tmp;
 
-			// Add padding
-			for (size_t i = 0 ; i < dim ; i++)
-				shift.set_d(i,shift.get(i) + NN.getPadding(i));
+				ver_tmp = getVerlet(r_cut);
+				ver.swap(ver);
+			}
+		}
+		else if (opt == VL_CRS_SYMMETRIC)
+		{
+			auto & NN = ver.getInternalCellList();
 
-			grid_sm<dim,void> gs = NN.getInternalGrid();
+			// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
+			// processor. if it is not like that we have to completely reconstruct from stratch
+			bool to_reconstruct = check_cl_reconstruct_sym(NN,r_cut);
 
-			ver.updateCrs(getDecomposition().getDomain(),r_cut,v_pos,g_m,getDecomposition().getDomainCells(shift,cell_shift,gs),getDecomposition().getAnomDomainCells(shift,cell_shift,gs));
+			if (to_reconstruct == false)
+			{
+				// Shift
+				grid_key_dx<dim> cell_shift = NN.getShift();
+
+				// Shift
+				grid_key_dx<dim> shift = NN.getShift();
+
+				// Add padding
+				for (size_t i = 0 ; i < dim ; i++)
+					shift.set_d(i,shift.get(i) + NN.getPadding(i));
+
+				grid_sm<dim,void> gs = NN.getInternalGrid();
+
+				ver.updateCrs(getDecomposition().getDomain(),r_cut,v_pos,g_m,getDecomposition().getDomainCells(shift,cell_shift,gs),getDecomposition().getAnomDomainCells(shift,cell_shift,gs));
+			}
+			else
+			{
+				VerletList<dim,St,FAST,shift<dim,St> > ver_tmp;
+
+				ver_tmp = getVerletCrs(r_cut);
+				ver.swap(ver_tmp);
+			}
 		}
 		else
-			ver.update(getDecomposition().getDomain(),r_cut,v_pos,g_m, opt);
+		{
+			auto & NN = ver.getInternalCellList();
+
+			// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
+			// processor. if it is not like that we have to completely reconstruct from stratch
+			bool to_reconstruct = check_cl_reconstruct(NN.getDomain(),r_cut);
+
+			if (to_reconstruct == false)
+				ver.update(getDecomposition().getDomain(),r_cut,v_pos,g_m, opt);
+			else
+			{
+				VerletList<dim,St,FAST,shift<dim,St> > ver_tmp;
+
+				ver_tmp = getVerlet(r_cut);
+				ver.swap(ver_tmp);
+			}
+		}
+
+/*		// Get the internal cell list
+		auto & NN = ver.getInternalCellList();
+
+		// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
+		// processor. if it is not like that we have to completely reconstruct from stratch
+		bool to_reconstruct = check_cl_reconstruct(NN.getDomain(),r_cut);
+
+		if (to_reconstruct == false)
+		{
+			if (opt == VL_CRS_SYMMETRIC)
+			{
+				// Shift
+				grid_key_dx<dim> cell_shift = NN.getShift();
+
+				// Shift
+				grid_key_dx<dim> shift = NN.getShift();
+
+				// Add padding
+				for (size_t i = 0 ; i < dim ; i++)
+					shift.set_d(i,shift.get(i) + NN.getPadding(i));
+
+				grid_sm<dim,void> gs = NN.getInternalGrid();
+
+				ver.updateCrs(getDecomposition().getDomain(),r_cut,v_pos,g_m,getDecomposition().getDomainCells(shift,cell_shift,gs),getDecomposition().getAnomDomainCells(shift,cell_shift,gs));
+			}
+			else
+				ver.update(getDecomposition().getDomain(),r_cut,v_pos,g_m, opt);
+		}
+		else
+		{
+			VerletList<dim,St,FAST,shift<dim,St> > ver_tmp;
+
+			if (opt == VL_SYMMETRIC)
+				ver_tmp = getVerletSym(r_cut);
+			else if (opt == VL_CRS_SYMMETRIC)
+				ver_tmp = getVerletCrs(r_cut);
+			else
+				ver_tmp = getVerlet(r_cut);
+
+			ver.swap(ver_tmp);
+		}*/
 	}
 
 	/*! \brief for each particle get the verlet list
