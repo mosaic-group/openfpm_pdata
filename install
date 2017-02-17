@@ -22,8 +22,10 @@ install_req=1
 i_dir=" "
 sq=0
 nomake=0
+update_openfpm=0
+upgrade_openfpm=0
 
-while getopts :di:smhc: FLAG; do
+while getopts :di:smhc:nu FLAG; do
 	case $FLAG in
 	    d)
 	      echo "Disable depencencies installation"
@@ -45,6 +47,14 @@ while getopts :di:smhc: FLAG; do
               echo "Skip to make the testing"
               nomake=1
               ;;
+	    u)
+	      echo "Updating openfpm"
+	      update_openfpm=1
+	      ;;
+	    n)
+              echo "Upgrading openfpm"
+	      upgrade_openfpm=1
+	      ;;
 	    h)  #show help
       	      HELP
               ;;
@@ -66,6 +76,21 @@ remove_old $i_dir
 ## Check and try to install the prerequisites
 
 pre_req
+
+if [ $update_openfpm -eq 1 -a  $upgrade_openfpm -eq 1 ]; then
+	echo -e "\033[1;5;31m It is not possible to update and upgrade at the same time \033[0m"
+	exit 1
+fi
+
+if [ $update_openfpm -eq 1 ]; then
+	update_openfpm
+fi
+
+if [ $upgrade_openfpm -eq 1 ]; then
+	upgrade_openfpm
+fi
+
+exit 1
 
 ## clone the dependencies
 

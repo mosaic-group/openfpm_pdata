@@ -544,6 +544,17 @@ public:
 	{
 		return n_dec;
 	}
+
+	/*! \brief Distribution tolerance
+	 *
+	 * \param i partition id
+	 * \param tol tollerance
+	 *
+	 */
+	const void setDistTol(size_t i, real_t tol)
+	{
+		Mg.ubvec[i] = tol;
+	}
 };
 
 #endif

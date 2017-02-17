@@ -614,6 +614,17 @@ public:
 	{
 		return parmetis_graph.get_ndec();
 	}
+
+	/*! \brief Set the tollerance for each partition
+	 *
+	 * \param i partition
+	 * \param tol tollerance
+	 *
+	 */
+	void setDistTol(size_t i, double tol)
+	{
+		parmetis_graph.setDistTol(i,tol);
+	}
 };
 
 #endif /* SRC_DECOMPOSITION_PARMETISDISTRIBUTION_HPP_ */

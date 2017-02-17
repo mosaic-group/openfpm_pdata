@@ -1545,7 +1545,7 @@ public:
 
 		for (size_t i = 0 ; i < n_part ; i++)
 		{
-			dec.getDistribution().setDistributionTol(i,md.setDistributionTol());
+			dec.getDistribution().setDistTol(i,md.distributionTol(i));
 		}
 	}
 
