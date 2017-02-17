@@ -57,8 +57,10 @@ template<unsigned int nbit, typename Vector, typename T> CellListM<Vector::dims,
 		{
 			auto key = it.get();
 
+			Point<Vector::dims,T> xp = phases.get(i).getPos(key);
+
 			// Add the particle of the phase i to the cell list
-			NN.add(phases.get(i).getPos(key), key.getKey(), i);
+			NN.add(xp, key.getKey(), i);
 
 			++it;
 		}
@@ -123,8 +125,10 @@ template<unsigned int nbit, typename Vector, typename T> CellListM<Vector::dims,
 		{
 			auto key = it.get();
 
+			Point<Vector::dims,T> xp = phases.get(i).getPos(key);
+
 			// Add the particle of the phase i to the cell list
-			NN.add(phases.get(i).getPos(key), key.getKey(), i);
+			NN.add(xp, key.getKey(), i);
 
 			++it;
 		}

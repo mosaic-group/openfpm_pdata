@@ -206,15 +206,19 @@ protected:
 	 *
 	 * \param v_cl Virtual cluster
 	 * \param ghost margins
-	 * \param subdomains vector of local sundomains
+	 * \param sub_domains vector of local sub-domains
 	 * \param box_nn_processor it will store for each sub-domain the near processors
-	 * \param nn_prcs contain the sub-domains of the near processors
+	 * \param nn_p contain the sub-domains of the near processors
 	 *
 	 * \note Are the G8_0 G9_0 G9_1 G5_0 boxes in calculateGhostBoxes
 	 * \see calculateGhostBoxes
 	 *
 	 */
-	void create_box_nn_processor_ext(Vcluster & v_cl, Ghost<dim,T> & ghost, openfpm::vector<SpaceBox<dim,T>> & sub_domains, const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor, const nn_prcs<dim,T> & nn_p)
+	void create_box_nn_processor_ext(Vcluster & v_cl,
+			                         Ghost<dim,T> & ghost,
+									 openfpm::vector<SpaceBox<dim,T>> & sub_domains,
+									 const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
+									 const nn_prcs<dim,T> & nn_p)
 	{
 		box_nn_processor_int.resize(sub_domains.size());
 		proc_int_box.resize(nn_p.getNNProcessors());
@@ -304,15 +308,18 @@ protected:
 	 * \param v_cl Virtual cluster
 	 * \param ghost margins
 	 * \param sub_domains
-	 * \param box_nn_processors sub-domains of the near processors
-	 * \param nn_prcs structure that store the near processor sub-domains
-	 * \param geo_cell Cell list that store the subdomain information
+	 * \param box_nn_processor sub-domains of the near processors
+	 * \param nn_p structure that store the near processor sub-domains
 	 *
 	 * \note Are the B8_0 B9_0 B9_1 B5_0 boxes in calculateGhostBoxes
 	 * \see calculateGhostBoxes
 	 *
 	 */
-	void create_box_nn_processor_int(Vcluster & v_cl, Ghost<dim,T> & ghost, openfpm::vector<SpaceBox<dim,T>> & sub_domains, const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor, const nn_prcs<dim,T> & nn_p)
+	void create_box_nn_processor_int(Vcluster & v_cl,
+			                         Ghost<dim,T> & ghost,
+									 openfpm::vector<SpaceBox<dim,T>> & sub_domains,
+									 const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
+									 const nn_prcs<dim,T> & nn_p)
 	{
 		box_nn_processor_int.resize(sub_domains.size());
 		proc_int_box.resize(nn_p.getNNProcessors());
@@ -691,7 +698,7 @@ public:
 	/*! \brief Given the internal ghost box id, it return the near processor at witch belong
 	 *         or the near processor that produced this internal ghost box
 	 *
-	 * \param internal ghost box id
+	 * \param b_id internal ghost box id
 	 *
 	 * \return the processor id of the ghost box
 	 *
@@ -769,14 +776,12 @@ public:
 	 * \see getShiftVector
 	 *
 	 * \tparam id type of id to get box_id processor_id lc_processor_id shift_id
+	 *
 	 * \param p Particle position
 	 * \param opt intersection boxes of the same processor can overlap, so in general the function
 	 *        can produce more entry with the same processor, the UNIQUE option eliminate double entries
 	 *        (UNIQUE) is for particle data (MULTIPLE) is for grid data [default MULTIPLE]
-	 *
-	 * \param return the processor ids (not the rank, the id in the near processor list)
-	 *
-	 * \return a vector of pairs containinf the requested infromation
+	 * \return return the processor ids (not the rank, the id in the near processor list)
 	 *
 	 */
 	template <typename id1, typename id2> inline const openfpm::vector<std::pair<size_t,size_t>> ghost_processorID_pair(Point<dim,T> & p, const int opt = MULTIPLE)
@@ -825,12 +830,10 @@ public:
 	 *        can produce more entry with the same processor, the UNIQUE option eliminate double entries
 	 *        (UNIQUE) is for particle data (MULTIPLE) is for grid data [default MULTIPLE]
 	 *
-	 * \param return the processor ids
-	 *
-	 * \return a vector containing the requested information
+	 * \return the processor ids
 	 *
 	 */
-	template <typename id> inline const openfpm::vector<size_t> ghost_processorID(Point<dim,T> & p, const int opt = MULTIPLE)
+	template <typename id> inline const openfpm::vector<size_t> ghost_processorID(const Point<dim,T> & p, const int opt = MULTIPLE)
 	{
 		ids.clear();
 
@@ -869,11 +872,12 @@ public:
 	 * \tparam id2 second index type to get box_id processor_id lc_processor_id
 	 *
 	 * \param p Particle position
+	 * \param opt indicate if the entries in the vector must be unique
 	 *
 	 * \return a vector of pair containing the requested information
 	 *
 	 */
-	template<typename id1, typename id2, typename Mem> inline const openfpm::vector<std::pair<size_t,size_t>> ghost_processorID_pair(const encapc<1,Point<dim,T>,Mem> & p, const int opt = MULTIPLE)
+	template<typename id1, typename id2, typename Mem> inline const openfpm::vector<std::pair<size_t,size_t>> & ghost_processorID_pair(const encapc<1,Point<dim,T>,Mem> & p, const int opt = MULTIPLE)
 	{
 		ids_p.clear();
 
@@ -909,12 +913,14 @@ public:
 	 * (Internal ghost)
 	 *
 	 * \tparam id type of if to get box_id processor_id lc_processor_id
-	 * \param p Particle position
 	 *
-	 * \param return the processor ids
+	 * \param p Particle position
+	 * \param opt it indicate if the entry in the vector must be unique or not
+	 *
+	 * \return the processor ids
 	 *
 	 */
-	template<typename id, typename Mem> inline const openfpm::vector<size_t> ghost_processorID(const encapc<1,Point<dim,T>,Mem> & p, const int opt = MULTIPLE)
+	template<typename id, typename Mem> inline const openfpm::vector<size_t> & ghost_processorID(const encapc<1,Point<dim,T>,Mem> & p, const int opt = MULTIPLE)
 	{
 		ids.clear();
 
@@ -954,6 +960,9 @@ public:
 	 * \param output directory
 	 * \param p_id processor rank
 	 *
+	 *
+	 * \return true if the write succeed
+	 *
 	 */
 	bool write(std::string output, size_t p_id) const
 	{
@@ -984,7 +993,9 @@ public:
 
 	/*! \brief Check if the ie_loc_ghosts contain the same information
 	 *
-	 * \param ele Element to check
+	 * \param ig Element to check
+	 *
+	 * \return true if they are equal
 	 *
 	 */
 	bool is_equal(ie_ghost<dim,T> & ig)
@@ -1047,7 +1058,9 @@ public:
 	/*! \brief Check if the ie_loc_ghosts contain the same information with the exception of the ghost part
 	 * It is anyway required that the ghost come from the same sub-domains decomposition
 	 *
-	 * \param ele Element to check
+	 * \param ig Element to check
+	 *
+	 * \return true if they are equal
 	 *
 	 */
 	bool is_equal_ng(ie_ghost<dim,T> & ig)

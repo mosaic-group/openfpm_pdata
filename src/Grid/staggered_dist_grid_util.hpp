@@ -271,7 +271,7 @@ struct write_stag
 	 *
 	 * \param st_g staggered grid
 	 * \param v_g vector of grids
-	 * \param i local grid of the staggered grid we are writing
+	 * \param lg local grid of the staggered grid we are writing
 	 *
 	 */
 	template<unsigned int p_val, typename sg, typename v_g> static inline void write(sg & st_g, v_g & vg,size_t lg)
@@ -317,7 +317,7 @@ struct write_stag<T[N1]>
 	 *
 	 * \param st_g staggered grid
 	 * \param v_g vector of grids
-	 * \param i local grid of the staggered grid we are writing
+	 * \param lg local grid of the staggered grid we are writing
 	 *
 	 */
 	template<unsigned int p_val, typename sg, typename v_g> static inline void write(sg & st_g, v_g & vg,size_t lg)
@@ -359,7 +359,7 @@ struct write_stag<T[N1][N2]>
 	 *
 	 * \param st_g staggered grid
 	 * \param v_g vector of grids
-	 * \param i local grid of the staggered grid we are writing
+	 * \param lg local grid of the staggered grid we are writing
 	 *
 	 */
 	template<unsigned int p_val, typename sg, typename v_g> static inline void write(sg & st_g, v_g & vg,size_t lg)
@@ -734,8 +734,19 @@ template<typename Eqs_sys, typename it1_type, typename it2_type> bool checkItera
 template<unsigned int dim, typename v_prp_id, typename v_prp_type>
 struct interp_points
 {
+/*#ifdef SE_CLASS3
+
+	// number of properties we are processing
+	typedef boost::mpl::size<v_prp_id> v_size_old;
+
+	typedef boost::mpl::int_<v_size_old::value-3> v_size;
+
+#else*/
+
 	// number of properties we are processing
 	typedef boost::mpl::size<v_prp_id> v_size;
+
+//#endif
 
 	// interpolation points for each property
 	openfpm::vector<std::vector<comb<dim>>> (& interp_pts)[v_size::value];

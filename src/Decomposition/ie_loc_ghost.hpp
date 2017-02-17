@@ -26,6 +26,7 @@
 template<unsigned int dim, typename T>
 class ie_loc_ghost
 {
+	//! It contain the calculated local ghost boxes
 	openfpm::vector<lBox_dom<dim,T>> loc_ghost_box;
 
 	//! temporal added sub-domains
@@ -33,11 +34,14 @@ class ie_loc_ghost
 
 	/*! \brief Create the external local ghost boxes
 	 *
-	 * \param ghost margin to enlarge
-	 * \param local sub-domain
+	 * \param ghost part
+	 * \param sub_domains list of local sub-domains
+	 * \param sub_domains_prc list of sub-domains from the neighborhood processors
 	 *
 	 */
-	void create_loc_ghost_ebox(Ghost<dim,T> & ghost, openfpm::vector<SpaceBox<dim,T>> & sub_domains, openfpm::vector<Box_loc_sub<dim,T>> & sub_domains_prc)
+	void create_loc_ghost_ebox(Ghost<dim,T> & ghost,
+			                   openfpm::vector<SpaceBox<dim,T>> & sub_domains,
+							   openfpm::vector<Box_loc_sub<dim,T>> & sub_domains_prc)
 	{
 		comb<dim> zero;
 		zero.zero();
@@ -90,10 +94,14 @@ class ie_loc_ghost
 
 	/*! \brief Create the internal local ghost boxes
 	 *
-	 * \param ghost margin to enlarge
+	 * \param ghost part
+	 * \param sub_domains local sub-domains
+	 * \param sub_domains_prc list of sub-domains from the neighborhood processors
 	 *
 	 */
-	void create_loc_ghost_ibox(Ghost<dim,T> & ghost, openfpm::vector<SpaceBox<dim,T>> & sub_domains, openfpm::vector<Box_loc_sub<dim,T>> & sub_domains_prc)
+	void create_loc_ghost_ibox(Ghost<dim,T> & ghost,
+			                   openfpm::vector<SpaceBox<dim,T>> & sub_domains,
+							   openfpm::vector<Box_loc_sub<dim,T>> & sub_domains_prc)
 	{
 		comb<dim> zero;
 		zero.zero();
@@ -136,10 +144,10 @@ class ie_loc_ghost
 
 	/*! \brief In case of periodic boundary conditions we replicate the sub-domains at the border
 	 *
-	 * \param list of sub-domains
+	 * \param sub_domains list of sub-domains
 	 * \param domain Domain box
-	 * \param boundary conditions
-	 * \param ghost ghost part
+	 * \param ghost part
+	 * \param bc boundary conditions
 	 *
 	 */
 	void applyBC(openfpm::vector<Box_loc_sub<dim,T>> & sub_domains, const Box<dim,T> & domain, const Ghost<dim,T> & ghost, const size_t (&bc)[dim])
@@ -216,6 +224,8 @@ class ie_loc_ghost
 
 	/*! \brief Flush the temporal added sub-domain to the sub-domain list
 	 *
+	 * \param sub_domains to add (In general they come from mirroring periodic
+	 *        boundary conditions)
 	 *
 	 */
 	void flush(openfpm::vector<Box_loc_sub<dim,T>> & sub_domains)
@@ -232,8 +242,9 @@ public:
 
 	/*! \brief Create external and internal local ghosts
 	 *
+	 * \param sub_domains list of local sub-domains
+	 * \param domain simulation domain
 	 * \param ghost boundary
-	 * \param sub_domain
 	 * \param bc Boundary conditions
 	 *
 	 */
@@ -278,6 +289,8 @@ public:
 	 *
 	 * \param ilg object to copy
 	 *
+	 * \return itself
+	 *
 	 */
 	ie_loc_ghost<dim,T> & operator=(const ie_loc_ghost<dim,T> & ilg)
 	{
@@ -289,6 +302,8 @@ public:
 	 *
 	 * \param ilg object to copy
 	 *
+	 * \return itself
+	 *
 	 */
 	ie_loc_ghost<dim,T> & operator=(ie_loc_ghost<dim,T> && ilg)
 	{
@@ -299,6 +314,7 @@ public:
 	/*! \brief Get the number of local sub-domains
 	 *
 	 * \return the number of local sub-domains
+	 *
 	 *
 	 */
 	inline size_t getNLocalSub()
@@ -322,7 +338,7 @@ public:
 	 *
 	 * \param id sub-domain id
 	 *
-	 * \return the number of external ghost box
+	 * \return the number of internal ghost box
 	 *
 	 */
 	inline size_t getLocalNIGhost(size_t id)
@@ -334,6 +350,10 @@ public:
 	 *       external ghost box is located in getLocalEGhostBox(j,k) with
 	 *       getLocalIGhostSub(j,k) == i, this function return k
 	 *
+	 * \param i
+	 * \param j
+	 *
+	 * \return k
 	 *
 	 */
 	inline size_t getLocalIGhostE(size_t i, size_t j)
@@ -341,7 +361,7 @@ public:
 		return loc_ghost_box.get(i).ibx.get(j).k;
 	}
 
-	/*! \brief Get the j internal local ghost box for the i sub-domain of the local processor
+	/*! \brief Get the j internal local ghost box for the i sub-domain
 	 *
 	 * \note For the sub-domain i intersected with the sub-domain j enlarged, the associated
 	 *       external ghost box is located in getLocalIGhostBox(j,k) with
@@ -442,32 +462,32 @@ public:
 
 	/*! \brief Considering that sub-domain has N internal local ghost box identified
 	 *         with the 0 <= k < N that come from the intersection of 2 sub-domains i and j
-	 *         where j is enlarged, given the sub-domain i and the id k, it return the id of
-	 *         the other sub-domain that produced the intersection
+	 *         where j is enlarged, given the sub-domain i and the id k to identify the local internal ghost,
+	 *          it return the id k of the other sub-domain that produced the intersection
 	 *
 	 * \param i sub-domain
 	 * \param k id
-	 * \return the box
+	 * \return j
 	 *
 	 */
-	inline size_t getLocalIGhostSub(size_t i, size_t j) const
+	inline size_t getLocalIGhostSub(size_t i, size_t k) const
 	{
-		return loc_ghost_box.get(i).ibx.get(j).sub;
+		return loc_ghost_box.get(i).ibx.get(k).sub;
 	}
 
 	/*! \brief Considering that sub-domain has N external local ghost box identified
 	 *         with the 0 <= k < N that come from the intersection of 2 sub-domains i and j
-	 *         where j is enlarged, given the sub-domain i and the id k, it return the id of
-	 *         the other sub-domain that produced the intersection
+	 *         where i is enlarged, given the sub-domain i and the id k of the external box,
+	 *         it return the id of the other sub-domain that produced the intersection
 	 *
 	 * \param i sub-domain
 	 * \param k id
-	 * \return the box
+	 * \return j
 	 *
 	 */
-	inline size_t getLocalEGhostSub(size_t i, size_t j) const
+	inline size_t getLocalEGhostSub(size_t i, size_t k) const
 	{
-		return loc_ghost_box.get(i).ebx.get(j).sub;
+		return loc_ghost_box.get(i).ebx.get(k).sub;
 	}
 
 	/*! \brief Write the decomposition as VTK file
@@ -481,6 +501,8 @@ public:
 	 *
 	 * \param output directory where to write the files
 	 * \param p_id id of the local processor
+	 *
+	 * \return true if the file is written correctly
 	 *
 	 */
 	bool write(std::string output, size_t p_id) const
@@ -551,7 +573,9 @@ public:
 
 	/*! \brief Check if the ie_loc_ghosts contain the same information
 	 *
-	 * \param ele Element to check
+	 * \param ilg Element to check
+	 *
+	 * \return true if they match
 	 *
 	 */
 	bool is_equal(ie_loc_ghost<dim,T> & ilg)
@@ -595,7 +619,10 @@ public:
 	/*! \brief Check if the ie_loc_ghosts contain the same information
 	 * with the exception of the ghost part
 	 *
-	 * \param ele Element to check
+	 * \param ilg Element to check
+	 *
+	 * \return true if the two objects are equal with the exception of the
+	 *         ghost part
 	 *
 	 */
 	bool is_equal_ng(ie_loc_ghost<dim,T> & ilg)

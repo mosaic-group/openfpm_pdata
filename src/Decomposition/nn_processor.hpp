@@ -125,10 +125,10 @@ class nn_prcs
 
 	/*! \brief Message allocation
 	 *
-	 * \param message size required to receive from i
-	 * \param total message size to receive from all the processors
-	 * \param the total number of processor want to communicate with you
-	 * \param i processor id
+	 * \param msg_i message size required to receive from i
+	 * \param total_msg total message size to receive from all the processors
+	 * \param total_p the total number of processor want to communicate with you
+	 * \param i processor id from which we receive
 	 * \param ri request id (it is an id that goes from 0 to total_p, and is unique
 	 *           every time message_alloc is called)
 	 * \param ptr a pointer to the vector_dist structure
@@ -166,8 +166,8 @@ class nn_prcs
 	/*! \brief In case of periodic boundary conditions we replicate the sub-domains at the border
 	 *
 	 * \param domain Domain
-	 * \param boundary boundary conditions
 	 * \param ghost ghost part
+	 * \param bc boundary boundary conditions
 	 *
 	 */
 	void add_box_periodic(const Box<dim,T> & domain, const Ghost<dim,T> & ghost, const size_t (&bc)[dim])
@@ -270,6 +270,7 @@ class nn_prcs
 
 public:
 
+	//! Constructor require Vcluster
 	nn_prcs(Vcluster & v_cl)
 	:v_cl(v_cl),recv_cnt(0),aBC(false)
 	{}
@@ -288,10 +289,15 @@ public:
 		this->operator=(ilg);
 	}
 
-	/*! Check that the compination is valid
+	/*! Check that the combination is valid
+	 *
+	 * Is a function that is used in otder to understand if a sub-domain
+	 * must be mirrored because of boundary conditions
 	 *
 	 * \param cmb combination
 	 * \param bc boundary conditions
+	 *
+	 * \return true if the combination is valid
 	 *
 	 */
 	static bool inline check_valid(comb<dim> cmb,const size_t (& bc)[dim])
@@ -312,6 +318,8 @@ public:
 	 *
 	 * \param nnp object to copy
 	 *
+	 * \return itself
+	 *
 	 */
 	nn_prcs<dim,T> & operator=(const nn_prcs<dim,T> & nnp)
 	{
@@ -327,6 +335,8 @@ public:
 	 *
 	 * \param nnp object to copy
 	 *
+	 * \return itself
+	 *
 	 */
 	nn_prcs<dim,T> & operator=(nn_prcs<dim,T> && nnp)
 	{
@@ -340,7 +350,8 @@ public:
 
 	/*! \brief Create the list of adjacent processors and the list of adjacent sub-domains
 	 *
-	 * \param box_nn_processors
+	 * \param box_nn_processor list of adjacent processors for each sub-domain
+	 * \param sub_domains list of local sub-domains
 	 *
 	 */
 	void create(const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor, const openfpm::vector<SpaceBox<dim,T>> & sub_domains)
@@ -587,7 +598,8 @@ public:
 	 * where X is the local processor rank
 	 *
 	 * \param output directory where to write the files
-	 * \param p_id id of the local processor
+	 *
+	 * \return true if the write procedure succeed
 	 *
 	 */
 	bool write(std::string output) const
@@ -628,7 +640,9 @@ public:
 
 	/*! \brief Check if the nn_prcs contain the same information
 	 *
-	 * \param ele Element to check
+	 * \param np Element to check
+	 *
+	 * \return true if they are equal
 	 *
 	 */
 	bool is_equal(nn_prcs<dim,T> & np)

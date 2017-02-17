@@ -5,10 +5,11 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Dynamic Load balancing
-- Added SPH Dam break with Dynamic load balancing
+- Added SPH Dam break with Dynamic load balancing (7_sph_dlb)(7_sph_dlb_opt)
 - Added procedure for update ./install --update
   (From 0.8.0 version will be supported for bug fixing, version 0.X.0 will be supported untill
    0.X+2.0 will be out)
+- Added for debugging the options PRINT_STACKTRACE, CHECKFOR_POSNAN, CHECKFOR_POSINF, CHECKFOR_PROPINF, CHECKFOR_PROPNAN, SE_CLASS3 for debugging. Additional example added (7_sph_dlb_safe)
 
 ### Changed
 - BOOST updated to 1.63
@@ -27,7 +28,7 @@ All notable changes to this project will be documented in this file.
                 0.7.0 or apply the patch to upgrade to 0.6.1
 - Found and fixed a memory leak when using complex properties
 
-### Changed
+-### Changed
 - The file VCluster has been mooved #include "VCluster.hpp" must be changed to #include "VCluster/VCluster.hpp"
   BECAUSE OF THIS, PLEASE CLEAN THE OPENFPM FOLDER OTHERWISE YOU WILL END TO HAVE 2 VCLUSTER.HPP
 

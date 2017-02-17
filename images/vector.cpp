@@ -6,14 +6,34 @@ template<typename T> class Particle
 {
 public:
 
+#ifdef SE_CLASS3
+
+	typedef boost::fusion::vector<T,T[3],T[3][3],SE3_ADD_PROP(3)> type;
+
+#else
+
 	typedef boost::fusion::vector<T,T[3],T[3][3]> type;
+
+#endif
 
 	type data;
 
 	static const unsigned int s = 0;
 	static const unsigned int v = 1;
 	static const unsigned int t = 2;
+
+#ifdef SE_CLASS3
+
+	static const unsigned int max_prop = SE3_MAX_PROP(3);
+	static const unsigned int max_prop_real = 3;
+
+#else
+
 	static const unsigned int max_prop = 3;
+	static const unsigned int max_prop_real = 3;
+
+#endif
+
 };
 
 int main(int argc, char* argv[])

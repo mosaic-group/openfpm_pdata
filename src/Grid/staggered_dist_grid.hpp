@@ -62,13 +62,15 @@
 template<unsigned int dim, typename St, typename T, typename Decomposition,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T>>
 class staggered_grid_dist : public grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>
 {
-	openfpm::vector<comb<dim>> c_prp[T::max_prop];
+	//! position of the properties in the grid cell
+	openfpm::vector<comb<dim>> c_prp[T::max_prop_real];
 
 public:
 
+	//! Properties for each grid point
 	typedef T value_type;
 
-	// Number of dimensions
+	//! Number of dimensions
 	static const unsigned int dims = dim;
 
 	/*! \brief This constructor is special, it construct an expanded grid that perfectly overlap with the previous
@@ -77,7 +79,7 @@ public:
 	 * something similar, but because of rounding-off error it can happen that it is not perfectly overlapping
 	 *
 	 * \param g previous grid
-	 * \param Ghost part in grid units
+	 * \param gh Ghost part in grid units
 	 * \param ext extension of the grid (must be positive on every direction)
 	 *
 	 */
@@ -88,13 +90,25 @@ public:
 	{
 	}
 
-	staggered_grid_dist(const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
+	/*! \brief Constructor
+	 *
+	 * \param g_sz size of the staggered grid
+	 * \param domain domain
+	 * \param ghost part
+	 *
+	 *
+	 */
+	staggered_grid_dist(const size_t (& g_sz)[dim],
+			            const Box<dim,St> & domain,
+						const Ghost<dim,St> & ghost)
 	:grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(g_sz,domain,ghost)
 	{}
 
-	/*! \brief Get the staggered positions
+	/*! \brief set the staggered positions of the properties
 	 *
-	 * \return a vector of combination
+	 * \tparam property p
+	 *
+	 * \param cmb a vector containing for each component the position in the cell-grid
 	 *
 	 */
 	template<unsigned int p> void setStagPosition(openfpm::vector<comb<dim>> & cmb)
@@ -113,9 +127,9 @@ public:
 	{
 		// for each properties
 
-		stag_set_position<dim,typename T::type> ssp(c_prp);
+		stag_set_position<dim,typename T::type_real> ssp(c_prp);
 
-		boost::mpl::for_each_ref< boost::mpl::range_c<int,0,T::max_prop> >(ssp);
+		boost::mpl::for_each_ref< boost::mpl::range_c<int,0,T::max_prop_real> >(ssp);
 	}
 
 	/*! \brief Copy the staggered grid into a normal one
@@ -123,6 +137,11 @@ public:
 	 *
 	 * \tparam Grid_dst type of the destination Grid
 	 * \tparam pos destination grid properties to fill
+	 *
+	 * \param g_dst destination grid
+	 * \param pd padding of the grid compared to the destination grid
+	 * \param start starting point
+	 * \param stop stop point
 	 *
 	 */
 	template<typename Grid_dst ,unsigned int ... pos> bool to_normal(Grid_dst & g_dst, const Padding<dim> & pd, const long int (& start)[dim], const long int (& stop)[dim])
@@ -174,7 +193,8 @@ public:
 
 	/*! \brief Get the staggered positions
 	 *
-	 * \return The vector of the staggered positions
+	 * \return for each property it contain a vector that specify where in the cell
+	 *         grid the properties live
 	 *
 	 */
 	const openfpm::vector<comb<dim>>  (& getStagPositions()) [T::max_prop]

@@ -113,7 +113,6 @@ class grid_dist_id_iterator_dec
 	 *
 	 * \param dec Decomposition
 	 * \param sz size of the grid
-	 * \param bc boundary conditions
 	 *
 	 */
 	grid_dist_id_iterator_dec(Decomposition & dec, const size_t (& sz)[Decomposition::dims])

@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 					if (a1 != 0.0)
 						per = fabs(0.1*avg.get(i)/a1);
 
-					BOOST_REQUIRE_CLOSE(a1,a2,per);
+					BOOST_REQUIRE_CLOSE((float)a1,(float)a2,per);
 				}
 
 				++it_v;
@@ -315,8 +315,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 
 				for (size_t i = 0; i < dim; i++)
 				{
-					auto a1 = vd.getProp<0>(key)[i];
-					auto a2 = vd.getProp<1>(key)[i];
+					float a1 = vd.getProp<0>(key)[i];
+					float a2 = vd.getProp<1>(key)[i];
 
 					//Check that the forces are (almost) equal
 					float per = 0.1;
@@ -380,7 +380,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
 
 	// Distributed vector
-	vector_dist<3,float, part_prop > vd(k,box,bc,ghost);
+	vector_dist<3,float, part_prop > vd(k,box,bc,ghost,BIND_DEC_TO_GHOST);
 	size_t start = vd.init_size_accum(k);
 
 	auto it = vd.getIterator();
@@ -416,7 +416,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 
 		Point<3,float> xp = vd.getPos(p);
 
-		auto Np = NN.getNNIterator(NN.getCell(vd.getPos(p)));
+		auto Np = NN.getNNIterator(NN.getCell(xp));
 
 		while (Np.isNext())
 		{
@@ -463,7 +463,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 
 		Point<3,float> xp = vd.getPos(p);
 
-		auto Np = NN2.getNNIteratorSym<NO_CHECK>(NN2.getCell(vd.getPos(p)),p.getKey(),vd.getPosVector());
+		auto Np = NN2.getNNIteratorSym<NO_CHECK>(NN2.getCell(xp),p.getKey(),vd.getPosVector());
 
 		while (Np.isNext())
 		{
@@ -525,7 +525,16 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 			ret &= vd.getProp<3>(p).get(i).id == vd.getProp<4>(p).get(i).id;
 
 		if (ret == false)
+		{
+			std::cout << vd.getProp<3>(p).size() << "   " << vd.getProp<4>(p).size() << std::endl;
+
+			for (size_t i = 0 ; i < vd.getProp<3>(p).size() ; i++)
+				std::cout << vd.getProp<3>(p).get(i).id << "    " << vd.getProp<4>(p).get(i).id << std::endl;
+
+			std::cout << vd.getProp<1>(p) << "  A  " << vd.getProp<0>(p) << std::endl;
+
 			break;
+		}
 
 		++p_it3;
 	}
@@ -634,7 +643,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 
 		Point<3,float> xp = vd.getPos(p);
 
-		auto Np = NN.getNNIterator(NN.getCell(vd.getPos(p)));
+		auto Np = NN.getNNIterator(NN.getCell(xp));
 
 		while (Np.isNext())
 		{

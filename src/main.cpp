@@ -1,5 +1,11 @@
 #include <iostream>
 
+#define PRINT_STACKTRACE
+#define CHECKFOR_POSNAN
+#define CHECKFOR_POSINF
+#define CHECKFOR_PROPNAN
+#define CHECKFOR_PROPINF
+
 #define NO_WARNING
 #include "Graph/CartesianGraphFactory.hpp"
 
@@ -48,4 +54,5 @@ int main(int argc, char* argv[])
 #include "Decomposition/nn_processor_unit_test.hpp"
 #include "Grid/staggered_grid_dist_unit_test.hpp"
 #include "Vector/vector_dist_MP_unit_tests.hpp"
+#include "Vector/se_class3_vector_unit_tests.hpp"
 //#include "antoniol_test_isolation.hpp"

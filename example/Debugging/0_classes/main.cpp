@@ -187,7 +187,7 @@ int main(int argc, char* argv[])
 		vect_dist_key_dx vt(0);
 		auto it = vd1->getPos(vt);
     }
-	catch (size_t e)
+	catch (std::exception & e)
 	{
 		std::cerr << "Error notification of invalid usage of deleted object \n";
 	}

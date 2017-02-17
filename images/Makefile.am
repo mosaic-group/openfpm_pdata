@@ -16,7 +16,7 @@ dom_box_CXXFLAGS = $(OPENMP_CFLAGS) $(AM_CXXFLAGS) $(PETSC_INCLUDE) $(METIS_INCL
 dom_box_CFLAGS = $(OPENMP_CFLAGS) $(CUDA_CFLAGS)
 dom_box_LDADD = $(LINKLIBS)
 
-vector_dist_SOURCES = vector.cpp ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/memory/PtrMemory.cpp
+vector_dist_SOURCES = vector.cpp ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_devices/src/Memleak_check.cpp
 vector_dist_CXXFLAGS = $(OPENMP_CFLAGS) $(AM_CXXFLAGS) $(LIBHILBERT_INCLUDE) $(PETSC_INCLUDE) $(PARMETIS_INCLUDE) $(METIS_INCLUDE) $(CUDA_CFLAGS) $(INCLUDES_PATH) $(HDF5_CPPFLAGS) $(BOOST_CPPFLAGS) -I../src -Wno-unused-function -Wno-unused-local-typedefs
 vector_dist_CFLAGS = $(OPENMP_CFLAGS) $(CUDA_CFLAGS)
 vector_dist_LDADD = $(LINKLIBS) -lparmetis -lmetis

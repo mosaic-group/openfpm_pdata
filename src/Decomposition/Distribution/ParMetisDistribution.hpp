@@ -262,45 +262,6 @@ class ParMetisDistribution
 
 		// Update graphs with the received data
 		updateGraphs();
-
-
-		/////////////////////////////////////////
-
-
-		// Get result partition for this processor
-/*		idx_t * partition = parmetis_graph.getPartition();
-
-		//! Prepare vector of arrays to contain all partitions
-		partitions.get(p_id).resize(nl_vertex.id);
-		std::copy(partition, partition + nl_vertex.id, &partitions.get(p_id).get(0));
-
-		// Reset data structure to keep trace of new vertices distribution in processors (needed to update main graph)
-		for (size_t i = 0; i < Np; ++i)
-		{
-			v_per_proc.get(i).clear();
-		}
-
-		openfpm::vector<size_t> prc;
-		openfpm::vector<size_t> sz;
-		openfpm::vector<void *> ptr;
-
-		for (size_t i = 0; i < Np; i++)
-		{
-			if (i != v_cl.getProcessUnitID())
-			{
-				partitions.get(i).clear();
-				prc.add(i);
-				sz.add(nl_vertex.id * sizeof(idx_t));
-				ptr.add(partitions.get(p_id).getPointer());
-			}
-		}
-
-		// Exchange informations through processors
-		v_cl.sendrecvMultipleMessagesNBX(prc.size(), &sz.get(0), &prc.get(0), &ptr.get(0), message_receive, &partitions,
-		NONE);
-
-		// Update graphs with the new distributions
-		updateGraphs();*/
 	}
 
 
@@ -408,7 +369,7 @@ public:
 			parmetis_graph.reset(gp, vtxdist, m2g, verticesGotWeights);
 
 		//! Decompose
-		parmetis_graph.decompose<nm_v::proc_id>(vtxdist);
+		parmetis_graph.decompose(vtxdist);
 
 		// update after decomposition
 		postDecomposition();
@@ -428,7 +389,24 @@ public:
 		parmetis_graph.reset(gp, vtxdist, m2g, verticesGotWeights);
 
 		// Refine
-		parmetis_graph.refine<nm_v::proc_id>(vtxdist);
+		parmetis_graph.refine(vtxdist);
+
+		postDecomposition();
+	}
+
+	/*! \brief Redecompose current decomposition
+	 *
+	 * It makes a redecomposition using Parmetis taking into consideration
+	 * also migration cost
+	 *
+	 */
+	void redecompose()
+	{
+		// Reset parmetis graph and reconstruct it
+		parmetis_graph.reset(gp, vtxdist, m2g, verticesGotWeights);
+
+		// Refine
+		parmetis_graph.redecompose(vtxdist);
 
 		postDecomposition();
 	}
@@ -577,7 +555,7 @@ public:
 
 	/*! \brief Returns total number of neighbors of the sub-sub-domain id
 	 *
-	 * \param i id of the sub-sub-domain
+	 * \param id id of the sub-sub-domain
 	 */
 	size_t getNSubSubDomainNeighbors(size_t id)
 	{
@@ -625,6 +603,16 @@ public:
 		verticesGotWeights = dist.verticesGotWeights;
 
 		return *this;
+	}
+
+	/*! \brief Get the decomposition counter
+	 *
+	 * \return the decomposition counter
+	 *
+	 */
+	size_t get_ndec()
+	{
+		return parmetis_graph.get_ndec();
 	}
 };
 

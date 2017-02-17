@@ -81,8 +81,10 @@ template<unsigned int dim,typename vector_dist> inline void count_local_n_local(
 			nl_cnt++;
 		}
 
+		Point<dim,float> xp = vd.getPos(key);
+
 		// Check that all particles are inside the Domain + Ghost part
-		if (dom_ext.isInside(vd.getPos(key)) == false)
+		if (dom_ext.isInside(xp) == false)
 				n_out++;
 
 		++it;
@@ -195,7 +197,7 @@ void Test2D_ghost(Box<2,float> & box)
 		auto key = v_it2.get();
 
 		// fill with the processor ID where these particle live
-		vd.getProp<p::s>(key) = vd.getPos(key)[0] + vd.getPos(key)[1] * 16;
+		vd.getProp<p::s>(key) = vd.getPos(key)[0] + vd.getPos(key)[1] * 16.0f;
 		vd.getProp<p::v>(key)[0] = v_cl.getProcessUnitID();
 		vd.getProp<p::v>(key)[1] = v_cl.getProcessUnitID();
 		vd.getProp<p::v>(key)[2] = v_cl.getProcessUnitID();
@@ -225,7 +227,7 @@ void Test2D_ghost(Box<2,float> & box)
 		auto key = g_it.get();
 
 		// Check the received data
-		BOOST_REQUIRE_EQUAL(vd.getPos(key)[0] + vd.getPos(key)[1] * 16,vd.getProp<p::s>(key));
+		BOOST_REQUIRE_EQUAL(vd.getPos(key)[0] + vd.getPos(key)[1] * 16.0f,vd.getProp<p::s>(key));
 
 		bool is_in = false;
 		size_t b = 0;
@@ -234,7 +236,9 @@ void Test2D_ghost(Box<2,float> & box)
 		// check if the received data are in one of the ghost boxes
 		for ( ; b < dec.getNEGhostBox() ; b++)
 		{
-			if (dec.getEGhostBox(b).isInside(vd.getPos(key)) == true )
+			Point<2,float> xp = vd.getPos(key);
+
+			if (dec.getEGhostBox(b).isInside(xp) == true )
 			{
 				is_in = true;
 
@@ -1060,7 +1064,7 @@ void Test_interacting(Box<3,float> & box)
 
 				Point<3,float> xp = vd.getPos(p);
 
-				auto Np = NN.getIterator(NN.getCell(vd.getPos(p)));
+				auto Np = NN.getIterator(NN.getCell(xp));
 
 				while (Np.isNext())
 				{
@@ -1664,7 +1668,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 				Point<3,float> xp = vd.getPos(p);
 
 				// Get an iterator over the neighborhood particles of p
-				auto Np = NN.getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(p)));
+				auto Np = NN.getNNIterator<NO_CHECK>(NN.getCell(xp));
 
 				// For each neighborhood particle ...
 				while (Np.isNext())
@@ -1696,7 +1700,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 				float constant2 = vd.getProp<0>(it3.get());
 				if (fabs(constant - constant2)/constant > eps)
 				{
-					std::cout << Point<3,float>(vd.getPos(it3.get())).toString() << "    " <<  constant2 << "/" << constant << "    " << v_cl.getProcessUnitID() << std::endl;
+					Point<3,float> p = vd.getPos(it3.get());
+
+					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "    " << v_cl.getProcessUnitID() << std::endl;
 					ret = false;
 					break;
 				}
@@ -1731,7 +1737,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 				Point<3,float> xp = vd.getPos(p);
 
 				// Get an iterator over the neighborhood particles of p
-				auto Np = NN.getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(p)));
+				auto Np = NN.getNNIterator<NO_CHECK>(NN.getCell(xp));
 
 				// For each neighborhood particle ...
 				while (Np.isNext())
@@ -1763,7 +1769,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 				float constant2 = vd.getProp<0>(it3.get());
 				if (fabs(constant - constant2)/constant > eps)
 				{
-					std::cout << Point<3,float>(vd.getPos(it3.get())).toString() << "    " <<  constant2 << "/" << constant << "    " << v_cl.getProcessUnitID() << std::endl;
+					Point<3,float> p = vd.getPos(it3.get());
+
+					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "    " << v_cl.getProcessUnitID() << std::endl;
 					ret = false;
 					break;
 				}

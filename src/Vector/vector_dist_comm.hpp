@@ -201,7 +201,7 @@ class vector_dist_comm
 
 	//! The boxes touching the border of the domain are divided in groups (first vector)
 	//! each group contain internal ghost coming from sub-domains of the same section
-	openfpm::vector_std<openfpm::vector_std<Box<dim, St>>>box_f;
+	openfpm::vector_std<openfpm::vector_std<Box<dim, St>>> box_f;
 
 	//! Store the sector for each group (previous vector)
 	openfpm::vector_std<comb<dim>> box_cmb;

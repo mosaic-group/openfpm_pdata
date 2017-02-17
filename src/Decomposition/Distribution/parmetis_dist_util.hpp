@@ -96,27 +96,24 @@ struct Parmetis_dist_graph
 template<typename Graph>
 class DistParmetis
 {
-	// Graph in metis reppresentation
+	//! Graph in parmetis reppresentation
 	Parmetis_dist_graph Mg;
 
-	// Original graph
-	//	Graph & g;
-
-	// Communticator for OpenMPI
+	//! Communticator for OpenMPI
 	MPI_Comm comm = (MPI_Comm)NULL;
 
-	// VCluster
+	//! VCluster
 	Vcluster & v_cl;
 
-	// Process rank information
+	//! Process rank information
 	int p_id = 0;
 
-	// nc Number of partition
+	//! nc Number of partition
 	size_t nc = 0;
 
 	/*! \brief Construct Adjacency list
 	 *
-	 * \param g Reference graph to get informations
+	 * \param sub_g graph in which we construct the adjacency list
 	 *
 	 */
 	void constructAdjList(Graph & sub_g)
@@ -175,9 +172,9 @@ public:
 
 	/*! \brief Constructor
 	 *
-	 * Construct a metis graph from Graph_CSR
+	 * Construct a metis graph from a Graph_CSR
 	 *
-	 * \param g Graph we want to convert to decompose
+	 * \param v_cl Vcluster
 	 * \param nc number of partitions
 	 *
 	 */
@@ -362,7 +359,7 @@ public:
 	 *
 	 * \tparam i which property store the decomposition
 	 *
-	 *
+	 * \param sub_g graph to decompose
 	 *
 	 */
 	template<unsigned int i>
@@ -389,6 +386,8 @@ public:
 	 *
 	 * \tparam i which property store the refined decomposition
 	 *
+	 * \param sub_g graph to decompose
+	 *
 	 */
 
 	template<unsigned int i>
@@ -407,6 +406,8 @@ public:
 
 	/*! \brief Get graph partition vector
 	 *
+	 * \return the partition or the assignment of each sub-sub-domain
+	 *
 	 */
 	idx_t * getPartition()
 	{
@@ -414,6 +415,8 @@ public:
 	}
 
 	/*! \brief Reset graph and reconstruct it
+	 *
+	 * \param sub_g graph to decompose
 	 *
 	 */
 	void reset(Graph & sub_g)

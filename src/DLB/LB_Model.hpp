@@ -32,6 +32,11 @@ struct ModelLin
 	{
 		dec.setSubSubDomainComputationCost(v, dec.getSubSubDomainComputationCost(v));
 	}
+
+	double setDistributionTol(size_t i)
+	{
+		return 1.01;
+	}
 };
 
 /*! \brief Linear model
@@ -51,6 +56,11 @@ struct ModelSquare
 	template<typename Decomposition> inline void applyModel(Decomposition & dec, size_t v)
 	{
 		dec.setSubSubDomainComputationCost(v, dec.getSubSubDomainComputationCost(v) * dec.getSubSubDomainComputationCost(v));
+	}
+
+	double setDistributionTol(size_t i)
+	{
+		return 1.01;
 	}
 };
 

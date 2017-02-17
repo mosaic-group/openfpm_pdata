@@ -217,14 +217,6 @@ public:
 	 */
 	void createSubdomains(Vcluster & v_cl, const size_t (& bc)[dim], size_t opt = 0)
 	{
-#ifdef SE_CLASS1
-		if (&v_cl == NULL)
-		{
-			std::cerr << __FILE__ << ":" << __LINE__ << " error VCluster instance is null, check that you ever initialized it \n";
-			ACTION_ON_ERROR()
-		}
-#endif
-
 		int p_id = v_cl.getProcessUnitID();
 
 		// Calculate the total number of box and and the spacing
@@ -1028,7 +1020,7 @@ public:
 	 * \param ts number of time step from the previous load balancing
 	 *
 	 */
-	void rebalance(size_t ts)
+	void refine(size_t ts)
 	{
 		reset();
 
@@ -1046,11 +1038,32 @@ public:
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
 	 *
+	 * \param ts number of time step from the previous load balancing
+	 *
+	 */
+	void redecompose(size_t ts)
+	{
+		reset();
+
+		if (commCostSet == false)
+			computeCommunicationAndMigrationCosts(ts);
+
+		dist.redecompose();
+
+		createSubdomains(v_cl,bc);
+
+		calculateGhostBoxes();
+
+		domain_nn_calculator_cart<dim>::reset();
+	}
+
+	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
+	 *
 	 * \param dlb Dynamic load balancing object
 	 *
 	 * \return true if the re-balance has been executed, false otherwise
 	 */
-	bool rebalance(DLB & dlb)
+	bool refine(DLB & dlb)
 	{
 		// if the DLB heuristic to use is the "Unbalance Threshold" get unbalance percentage
 		if (dlb.getHeurisitc() == DLB::Heuristic::UNBALANCE_THRLD)
@@ -1065,7 +1078,7 @@ public:
 
 		if (dlb.rebalanceNeeded())
 		{
-			rebalance(dlb.getNTimeStepSinceDLB());
+			refine(dlb.getNTimeStepSinceDLB());
 
 			return true;
 		}
@@ -1550,6 +1563,16 @@ public:
 		size_t c = dist.getSubSubDomainComputationCost(gid);
 
 		dist.setComputationCost(gid, c + i);
+	}
+
+	/*! \brief Get the decomposition counter
+	 *
+	 * \return the decomposition counter
+	 *
+	 */
+	size_t get_ndec()
+	{
+		return dist.get_ndec();
 	}
 
 	//! friend classes

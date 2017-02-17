@@ -11,7 +11,7 @@
 #include "SubdomainGraphNodes.hpp"
 #include "metis_util.hpp"
 
-#define METIS_DISTRIBUTION_ERROR 100001
+#define METIS_DISTRIBUTION_ERROR_OBJECT std::runtime_error("Metis runtime error");
 
 /*! \brief Class that distribute sub-sub-domains across processors using Metis Library
  *
@@ -58,7 +58,7 @@ class MetisDistribution
 		if (id >= gp.getNVertex())
 		{
 			std::cerr << "Error " << __FILE__ ":" << __LINE__ << " such sub-sub-domain doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
-			ACTION_ON_ERROR(METIS_DISTRIBUTION_ERROR)
+			ACTION_ON_ERROR(METIS_DISTRIBUTION_ERROR_OBJECT)
 		}
 #endif
 	}
@@ -74,7 +74,7 @@ class MetisDistribution
 		if (e >= gp.getNChilds(id))
 		{
 			std::cerr << "Error " << __FILE__ ":" << __LINE__ << " for the sub-sub-domain " << id << " such neighborhood doesn't exist (e = " << e << ", " << "total size = " << gp.getNChilds(id) << ")\n";
-			ACTION_ON_ERROR(METIS_DISTRIBUTION_ERROR)
+			ACTION_ON_ERROR(METIS_DISTRIBUTION_ERROR_OBJECT)
 		}
 #endif
 	}
@@ -208,7 +208,7 @@ public:
 			check_valid(this,8);
 #endif
 		std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " MetisDistribution does not have refine functionality";
-		ACTION_ON_ERROR(METIS_DISTRIBUTION_ERROR);
+		ACTION_ON_ERROR(METIS_DISTRIBUTION_ERROR_OBJECT);
 	}
 
 	/*! \brief Function that return the position (point P1) of the sub-sub domain box in the space

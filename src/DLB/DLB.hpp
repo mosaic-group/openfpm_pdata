@@ -11,10 +11,21 @@
 //! Time structure for statistical purposes
 typedef struct
 {
+	//! starting time of the simulation (0)
 	size_t simulationStartTime = 0;
+
+	//! End iteration of the simulation
 	size_t simulationEndTime;
+
+	//! integration time
 	double timeStep = 0.1;
+
+	//! Interval between teo rebalance
+
+	//! Start time
 	size_t iterationStartTime;
+
+	//! End time
 	size_t iterationEndTime;
 } Times;
 
@@ -89,7 +100,7 @@ private:
 
 	/*! \brief Function that gather times informations and decides if a rebalance is needed it uses the SAR heuristic
 	 *
-	 * \param t
+	 * \return true if re-balance is needed
 	 *
 	 */
 	inline bool SAR()
@@ -168,7 +179,12 @@ public:
 		heuristic = h;
 	}
 
-	/*! \brief Get the heuristic to use
+	/*! \brief Get the heuristic
+	 *
+	 * Indicate which heuristic model is used to calculate when a rebalance
+	 * is needed
+	 *
+	 * \return the Heuristic used by DLB
 	 *
 	 */
 	Heuristic getHeurisitc()
@@ -176,7 +192,9 @@ public:
 		return heuristic;
 	}
 
-	/*! \brief check if a re-balance is needed using the SAR heuristic
+	/*! \brief check if a re-balance is needed using the selected heuristic
+	 *
+	 * \return true if the rebalance is needed
 	 *
 	 */
 	bool rebalanceNeeded()
@@ -193,7 +211,7 @@ public:
 
 	/*! \brief Set start time for the simulation
 	 *
-	 * \param simulationStartTime time when the whole simulation starts
+	 * \param t time when the whole simulation starts
 	 */
 	void setSimulationStartTime(size_t t)
 	{
@@ -201,6 +219,8 @@ public:
 	}
 
 	/*! \brief Get start time for the simulation
+	 *
+	 * \return the start point of the simulation
 	 *
 	 */
 	size_t getSimulationStartTime()
@@ -210,7 +230,7 @@ public:
 
 	/*! \brief Set end time for the simulation
 	 *
-	 * \param simulationEndTime time when the whole simulation ends
+	 * \param t time when the whole simulation ends
 	 */
 	void setSimulationEndTime(size_t t)
 	{
@@ -218,6 +238,8 @@ public:
 	}
 
 	/*! \brief Get end time for the simulation
+	 *
+	 * \return the end time of the simulation
 	 *
 	 */
 	size_t getSimulationEndTime()
@@ -235,7 +257,7 @@ public:
 
 	/*! \brief Set start time for the single iteration
 	 *
-	 * \param iterationStartTime time when the single iteration starts
+	 * \param t time when the one iteration starts
 	 */
 	void startIteration(size_t t)
 	{
@@ -244,24 +266,26 @@ public:
 
 	/*! \brief Set end time for the single iteration
 	 *
+	 * \param time when one iteration is completed
+	 *
 	 */
 	void endIteration()
 	{
 		timeInfo.iterationEndTime = clock();
 	}
 
-	/*! \brief Set end time for the single iteration
+	/*! \brief Set the end time when the previous rebalance has been performed
 	 *
-	 * \param iterationEndTime time when the single iteration ends
+	 * \param t time when one iteration ends
 	 */
 	void endIteration(size_t t)
 	{
 		timeInfo.iterationEndTime = t;
 	}
 
-	/*! \brief Set time step for the single iteration
+	/*! \brief Set delta time step for one iteration (Computation time)
 	 *
-	 * \param timestep value, can be also a 0.1 s
+	 * \param t timestep
 	 */
 	void setTimeStep(double t)
 	{
@@ -279,6 +303,8 @@ public:
 
 	/*! \brief Get how many time-steps have passed since the last re-balancing
 	 *
+	 * \return number of timesteos
+	 *
 	 */
 	size_t getNTimeStepSinceDLB()
 	{
@@ -287,16 +313,16 @@ public:
 
 	/*! \brief Set un-balance value
 	 *
-	 * \param computation value of the computation cost (default: 5)
+	 * \param u unbalance
 	 */
 	void setUnbalance(float u)
 	{
 		unbalance = u;
 	}
 
-	/*! \brief Set un-balance value
+	/*! \brief threshold of umbalance to start a rebalance
 	 *
-	 * \param computation value of the computation cost (default: 5)
+	 * \param t threshold level
 	 */
 	void setThresholdLevel(ThresholdLevel t)
 	{

@@ -247,8 +247,6 @@ public:
 				anom_lin.add();
 				anom_lin.last().subsub = gs.LinId(anom.get(i).subsub - cell_shift);
 
-
-
 				long int self_cell = -1;
 
 				for (size_t j = 0 ; j < anom.get(i).NN_subsub.size() ; j++)

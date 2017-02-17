@@ -335,7 +335,7 @@ public:
 
 	/*! \brief Returns total number of neighbors of the sub-sub-domain id
 	 *
-	 * \param i id of the sub-sub-domain
+	 * \param id id of the sub-sub-domain
 	 */
 	size_t getNSubSubDomainNeighbors(size_t id)
 	{

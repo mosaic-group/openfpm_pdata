@@ -32,6 +32,19 @@
 #include "vector_dist_comm.hpp"
 #include "DLB/LB_Model.hpp"
 
+#define VECTOR_DIST_ERROR_OBJECT std::runtime_error("Runtime vector distributed error");
+
+#ifdef SE_CLASS3
+#include "se_class3_vector.hpp"
+#endif
+
+#ifdef SE_CLASS3
+	#define SE_CLASS3_VDIST_CONSTRUCTOR ,se3(getDecomposition(),*this)
+#else
+	#define SE_CLASS3_VDIST_CONSTRUCTOR
+#endif
+
+
 #define NO_ID false
 #define ID true
 
@@ -111,6 +124,14 @@ struct gcl<dim,St,CellList_hilb<dim, St, FAST, shift<dim, St> >,Vector>
 template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St>, typename Memory = HeapMemory>
 class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory>
 {
+public:
+
+	//! Self type
+	typedef vector_dist<dim,St,prop,Decomposition,Memory> self;
+
+	//! property object
+	typedef prop value_type;
+
 private:
 
 	//! Ghost marker, all the particle with id > g_m are ghost all with g_m < are real particle
@@ -127,6 +148,14 @@ private:
 	//! Virtual cluster
 	Vcluster & v_cl;
 
+	//! option used to create this vector
+	size_t opt = 0;
+
+#ifdef SE_CLASS3
+
+	se_class3_vector<prop::max_prop,dim,St,Decomposition,self> se3;
+
+#endif
 
 	/*! \brief Initialize the structures
 	 *
@@ -163,67 +192,23 @@ private:
 	{
 		// if the box is not valid return an error
 		if (box.isValid() == false)
+		{
 			std::cerr << __FILE__ << ":" << __LINE__ << "  Error the domain is not valid " << box.toString() << std::endl;
+			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+		}
 
 	}
 
-	/*! \brief Check if the cell-list must be reconstructed because domain has changed
-	 *         because of load balancing
-	 *
-	 * \param bx Box to reconstruct
-	 *
-	 * \return true if the cell-list must be reconstructed
-	 *
-	 */
-	bool check_cl_reconstruct(const Box<dim,St> & bx, St r_cut)
+	void check_ghost_compatible_rcut(St r_cut)
 	{
-		// Get ghost and anlarge by 1%
-		Ghost<dim,St> g = getDecomposition().getGhost();
-		g.magnify(1.013);
-
-		// Division array
-		size_t div[dim];
-
-		// get the processor bounding box
-		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
-
-		// Processor bounding box
-		cl_param_calculate(pbox, div, r_cut, g);
-
-		return !bx.isContained(pbox);
-	}
-
-	template<typename CellList> bool check_cl_reconstruct_sym(const CellList & NN, St r_cut)
-	{
-		Box<dim,long int> pbox_prev;
-
 		for (size_t i = 0 ; i < dim ; i++)
 		{
-			pbox_prev.setLow(i,NN.getStartDomainCell().get(i));
-			pbox_prev.setHigh(i,NN.getStopDomainCell().get(i));
+			if (fabs(getDecomposition().getGhost().getLow(i)) < r_cut)
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " Error the cut off radius " << r_cut << " is bigger that the ghost layer on the dimension " << i << " lower=" << getDecomposition().getGhost().getLow(i) << std::endl;
+				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+			}
 		}
-
-		// get the processor bounding box
-		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
-
-		CellDecomposer_sm<dim,St,shift<dim,St>> cd2;
-		size_t pad = 0;
-
-		cl_param_calculateSym(NN.getDomain(),cd2,getDecomposition().getGhost(),r_cut,pad);
-
-		CellDecomposer_sm<dim,St,shift<dim,St>> cd3;
-
-		NN.setCellDecomposer(cd3,cd2,pbox,pad);
-
-		Box<dim,long int> pbox_disc;
-
-		for (size_t i = 0 ; i < dim ; i++)
-		{
-			pbox_disc.setLow(i,cd3.getStartDomainCell().get(i));
-			pbox_disc.setHigh(i,cd3.getStopDomainCell().get(i));
-		}
-
-		return !pbox_prev.isContained(pbox_disc);
 	}
 
 public:
@@ -233,9 +218,6 @@ public:
 
 	//! dimensions of space
 	static const unsigned int dims = dim;
-
-	//! Self type
-	typedef vector_dist<dim,St,prop,Decomposition,Memory> self;
 
 	/*! \brief Operator= for distributed vector
 	 *
@@ -251,6 +233,12 @@ public:
 		g_m = v.g_m;
 		v_pos = v.v_pos;
 		v_prp = v.v_prp;
+
+#ifdef SE_CLASS3
+		se3 = v.se3;
+#endif
+
+		opt = v.opt;
 
 		return *this;
 	}
@@ -270,8 +258,15 @@ public:
 		v_pos.swap(v.v_pos);
 		v_prp.swap(v.v_prp);
 
+#ifdef SE_CLASS3
+		se3 = v.se3;
+#endif
+
+		opt = v.opt;
+
 		return *this;
 	}
+
 
 	/*! \brief Copy Constructor
 	 *
@@ -279,7 +274,7 @@ public:
 	 *
 	 */
 	vector_dist(const vector_dist<dim,St,prop,Decomposition,Memory> & v)
-	:vector_dist_comm<dim,St,prop,Decomposition,Memory>(v.getDecomposition()),v_cl(v.v_cl)
+	:vector_dist_comm<dim,St,prop,Decomposition,Memory>(v.getDecomposition()),v_cl(v.v_cl) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -294,13 +289,17 @@ public:
 	 *
 	 */
 	vector_dist(vector_dist<dim,St,prop,Decomposition,Memory> && v) noexcept
-	:v_cl(v.v_cl)
+	:v_cl(v.v_cl) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
 #endif
 
 		this->operator=(v);
+
+#ifdef SE_CLASS3
+		se3.Initialize();
+#endif
 	}
 
 	/*! \brief Constructor with predefined decomposition
@@ -310,17 +309,21 @@ public:
 	 *
 	 */
 	vector_dist(const Decomposition & dec, size_t np) :
-	vector_dist_comm<dim,St,prop,Decomposition,Memory>(dec), v_cl(create_vcluster())
+	vector_dist_comm<dim,St,prop,Decomposition,Memory>(dec), v_cl(create_vcluster()) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
 #endif
 
 		init_structures(np);
+
+#ifdef SE_CLASS3
+		se3.Initialize();
+#endif
 	}
 
 
-	/*! \brief Constructor
+	/*! \brief Constructor of a distributed vector
 	 *
 	 * \param np number of elements
 	 * \param box domain where the vector of elements live
@@ -333,7 +336,7 @@ public:
 	 *
 	 */
 	vector_dist(size_t np, Box<dim, St> box, const size_t (&bc)[dim], const Ghost<dim, St> & g, size_t opt = 0)
-	:v_cl(create_vcluster())
+	:v_cl(create_vcluster()),opt(opt) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -346,6 +349,10 @@ public:
 
 		init_structures(np);
 		this->init_decomposition(box,bc,g,opt);
+
+#ifdef SE_CLASS3
+		se3.Initialize();
+#endif
 	}
 
 	~vector_dist()
@@ -360,7 +367,7 @@ public:
 	 * \return local size
 	 *
 	 */
-	size_t size_local()
+	size_t size_local() const
 	{
 		return g_m;
 	}
@@ -370,10 +377,12 @@ public:
 	 * \return local size
 	 *
 	 */
-	size_t size_local_with_ghost()
+	size_t size_local_with_ghost() const
 	{
 		return v_pos.size();
 	}
+
+#ifndef ONLY_READWRITE_GETTER
 
 	/*! \brief Get the position of an element
 	 *
@@ -433,6 +442,86 @@ public:
 		return v_prp.template get<id>(vec_key.getKey());
 	}
 
+#endif
+
+///////////////////// Read and Write function
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPosWrite(vect_dist_key_dx vec_key) -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	{
+#ifdef SE_CLASS3
+		se3.template write<prop::max_prop_real>(*this,vec_key.getKey());
+#endif
+
+		return v_pos.template get<0>(vec_key.getKey());
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPosRead(vect_dist_key_dx vec_key) const -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	{
+#ifdef SE_CLASS3
+		se3.template read<prop::max_prop_real>(*this,vec_key.getKey());
+#endif
+
+		return v_pos.template get<0>(vec_key.getKey());
+	}
+
+	/*! \brief Get the property of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \tparam id property id
+	 * \param vec_key vector element
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline auto getPropWrite(vect_dist_key_dx vec_key) -> decltype(v_prp.template get<id>(vec_key.getKey()))
+	{
+#ifdef SE_CLASS3
+		se3.template write<id>(*this,vec_key.getKey());
+#endif
+
+		return v_prp.template get<id>(vec_key.getKey());
+	}
+
+	/*! \brief Get the property of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \tparam id property id
+	 * \param vec_key vector element
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline auto getPropRead(vect_dist_key_dx vec_key) const -> const decltype(v_prp.template get<id>(vec_key.getKey()))
+	{
+#ifdef SE_CLASS3
+		se3.template read<id>(*this,vec_key.getKey());
+#endif
+
+		return v_prp.template get<id>(vec_key.getKey());
+	}
+
+//////////////////////////////////////////////
+
 	/*! \brief Add local particle
 	 *
 	 * It add a local particle, with "local" we mean in this processor
@@ -447,6 +536,11 @@ public:
 		v_pos.insert(g_m);
 
 		g_m++;
+
+#ifdef SE_CLASS3
+		for (size_t i = 0 ; i < prop::max_prop_real+1 ; i++)
+			v_prp.template get<prop::max_prop_real>(g_m-1)[i] = UNINITIALIZED;
+#endif
 	}
 
 	/*! \brief Get the position of the last element
@@ -471,6 +565,71 @@ public:
 		return v_prp.template get<id>(g_m - 1);
 	}
 
+////////////////////////////// READ AND WRITE VERSION //////////
+
+	/*! \brief Get the position of the last element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getLastPosRead() -> decltype(v_pos.template get<0>(0))
+	{
+#ifdef SE_CLASS3
+		se3.read<prop::max_prop_real>(*this,g_m-1);
+#endif
+
+		return v_pos.template get<0>(g_m - 1);
+	}
+
+	/*! \brief Get the property of the last element
+	 *
+	 * \tparam id property id
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline auto getLastPropRead() -> decltype(v_prp.template get<id>(0))
+	{
+#ifdef SE_CLASS3
+		se3.read<id>(*this,g_m-1);
+#endif
+
+		return v_prp.template get<id>(g_m - 1);
+	}
+
+
+	/*! \brief Get the position of the last element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getLastPosWrite() -> decltype(v_pos.template get<0>(0))
+	{
+#ifdef SE_CLASS3
+		se3.write<prop::max_prop_real>(*this,g_m-1);
+#endif
+
+		return v_pos.template get<0>(g_m - 1);
+	}
+
+	/*! \brief Get the property of the last element
+	 *
+	 * \tparam id property id
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline auto getLastPropWrite() -> decltype(v_prp.template get<id>(0))
+	{
+#ifdef SE_CLASS3
+		se3.write<id>(*this,g_m-1);
+#endif
+
+		return v_prp.template get<id>(g_m - 1);
+	}
+
+////////////////////////////////////////////////////////////////
+
 	/*! \brief Construct a cell list symmetric based on a cut of radius
 	 *
 	 * \tparam CellL CellList type to construct
@@ -482,6 +641,14 @@ public:
 	 */
 	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > CellL getCellListSym(St r_cut)
 	{
+#ifdef SE_CLASS1
+		if ((opt & BIND_DEC_TO_GHOST))
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " error to get symmetric cell-list you must construct the vector with the option BIND_DEC_TO_GHOST " << std::endl;
+			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+		}
+#endif
+
 		// Cell list
 		CellL cell_list;
 
@@ -512,6 +679,13 @@ public:
 	 */
 	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > CellL getCellList(St r_cut)
 	{
+#ifdef SE_CLASS3
+		se3.getNN();
+#endif
+#ifdef SE_CLASS1
+		check_ghost_compatible_rcut(r_cut);
+#endif
+
 		// Get ghost and anlarge by 1%
 		Ghost<dim,St> g = getDecomposition().getGhost();
 		g.magnify(1.013);
@@ -530,6 +704,13 @@ public:
 	 */
 	template<typename CellL = CellList_hilb<dim, St, FAST, shift<dim, St> > > CellL getCellList_hilb(St r_cut)
 	{
+#ifdef SE_CLASS3
+		se3.getNN();
+#endif
+#ifdef SE_CLASS1
+		check_ghost_compatible_rcut(r_cut);
+#endif
+
 		// Get ghost and anlarge by 1%
 		Ghost<dim,St> g = getDecomposition().getGhost();
 		g.magnify(1.013);
@@ -546,15 +727,19 @@ public:
 	 */
 	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > void updateCellList(CellL & cell_list)
 	{
+#ifdef SE_CLASS3
+		se3.getNN();
+#endif
+
 		// This function assume equal spacing in all directions
 		// but in the worst case we take the maximum
 		St r_cut = 0;
 		for (size_t i = 0 ; i < dim ; i++)
 			r_cut = std::max(r_cut,cell_list.getCellBox().getHigh(i));
 
-		// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
-		// processor. if it is not like that we have to completely reconstruct from stratch
-		bool to_reconstruct = check_cl_reconstruct(cell_list.getDomain(),r_cut);
+		// Here we have to check that the Cell-list has been constructed
+		// from the same decomposition
+		bool to_reconstruct = cell_list.get_ndec() != getDecomposition().get_ndec();
 
 		if (to_reconstruct == false)
 		{
@@ -579,9 +764,32 @@ public:
 	 */
 	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > void updateCellListSym(CellL & cell_list)
 	{
-		populate_cell_list(v_pos,cell_list,g_m,CL_SYMMETRIC);
+#ifdef SE_CLASS3
+		se3.getNN();
+#endif
 
-		cell_list.set_gm(g_m);
+		// This function assume equal spacing in all directions
+		// but in the worst case we take the maximum
+		St r_cut = 0;
+		for (size_t i = 0 ; i < dim ; i++)
+			r_cut = std::max(r_cut,cell_list.getCellBox().getHigh(i));
+
+		// Here we have to check that the Cell-list has been constructed
+		// from the same decomposition
+		bool to_reconstruct = cell_list.get_ndec() != getDecomposition().get_ndec();
+
+		if (to_reconstruct == false)
+		{
+			populate_cell_list(v_pos,cell_list,g_m,CL_SYMMETRIC);
+
+			cell_list.set_gm(g_m);
+		}
+		else
+		{
+			CellL cli_tmp = gcl<dim,St,CellL,self>::get(*this,r_cut,getDecomposition().getGhost());
+
+			cell_list.swap(cli_tmp);
+		}
 	}
 
 	/*! \brief Construct a cell list starting from the stored particles
@@ -601,6 +809,10 @@ public:
 	 */
 	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge)
 	{
+#ifdef SE_CLASS3
+		se3.getNN();
+#endif
+
 		CellL cell_list;
 
 		// Division array
@@ -613,6 +825,7 @@ public:
 		cl_param_calculate(pbox, div, r_cut, enlarge);
 
 		cell_list.Initialize(pbox, div);
+		cell_list.set_ndec(getDecomposition().get_ndec());
 
 		updateCellList(cell_list);
 
@@ -636,6 +849,10 @@ public:
 	 */
 	template<typename CellL = CellList_hilb<dim, St, FAST, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
 	{
+#ifdef SE_CLASS3
+		se3.getNN();
+#endif
+
 		CellL cell_list;
 
 		// Division array
@@ -648,6 +865,7 @@ public:
 		cl_param_calculate(pbox,div, r_cut, enlarge);
 
 		cell_list.Initialize(pbox, div, g_m);
+		cell_list.set_ndec(getDecomposition().get_ndec());
 
 		updateCellList(cell_list);
 
@@ -663,12 +881,18 @@ public:
 	 */
 	VerletList<dim,St,FAST,shift<dim,St> > getVerletSym(St r_cut)
 	{
+#ifdef SE_CLASS3
+		se3.getNN();
+#endif
+
 		VerletList<dim,St,FAST,shift<dim,St>> ver;
 
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
 
 		ver.InitializeSym(getDecomposition().getDomain(),pbox,getDecomposition().getGhost(),r_cut,v_pos,g_m);
+
+		ver.set_ndec(getDecomposition().get_ndec());
 
 		return ver;
 	}
@@ -682,6 +906,10 @@ public:
 	 */
 	VerletList<dim,St,FAST,shift<dim,St> > getVerletCrs(St r_cut)
 	{
+#ifdef SE_CLASS3
+		se3.getNN();
+#endif
+
 		VerletList<dim,St,FAST,shift<dim,St>> ver;
 
 		// Processor bounding box
@@ -707,6 +935,8 @@ public:
 
 		ver.createVerletCrs(r_cut,g_m,v_pos,getDecomposition().getDomainCells(shift,cell_shift,gs),getDecomposition().getAnomDomainCells(shift,cell_shift,gs));
 
+		ver.set_ndec(getDecomposition().get_ndec());
+
 		return ver;
 	}
 
@@ -719,6 +949,10 @@ public:
 	 */
 	VerletList<dim,St,FAST,shift<dim,St> > getVerlet(St r_cut)
 	{
+#ifdef SE_CLASS3
+		se3.getNN();
+#endif
+
 		VerletList<dim,St,FAST,shift<dim,St>> ver;
 
 		// get the processor bounding box
@@ -733,6 +967,8 @@ public:
 
 		ver.Initialize(bt,getDecomposition().getProcessorBounds(),r_cut,v_pos,g_m,VL_NON_SYMMETRIC);
 
+		ver.set_ndec(getDecomposition().get_ndec());
+
 		return ver;
 	}
 
@@ -746,13 +982,17 @@ public:
 	 */
 	void updateVerlet(VerletList<dim,St,FAST,shift<dim,St> > & ver, St r_cut, size_t opt = VL_NON_SYMMETRIC)
 	{
+#ifdef SE_CLASS3
+		se3.getNN();
+#endif
+
 		if (opt == VL_SYMMETRIC)
 		{
 			auto & NN = ver.getInternalCellList();
 
 			// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
 			// processor. if it is not like that we have to completely reconstruct from stratch
-			bool to_reconstruct = check_cl_reconstruct_sym(NN,r_cut);
+			bool to_reconstruct = NN.get_ndec() != getDecomposition().get_ndec();
 
 			if (to_reconstruct == false)
 				ver.update(getDecomposition().getDomain(),r_cut,v_pos,g_m, opt);
@@ -770,7 +1010,7 @@ public:
 
 			// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
 			// processor. if it is not like that we have to completely reconstruct from stratch
-			bool to_reconstruct = check_cl_reconstruct_sym(NN,r_cut);
+			bool to_reconstruct = NN.get_ndec() != getDecomposition().get_ndec();
 
 			if (to_reconstruct == false)
 			{
@@ -802,7 +1042,7 @@ public:
 
 			// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
 			// processor. if it is not like that we have to completely reconstruct from stratch
-			bool to_reconstruct = check_cl_reconstruct(NN.getDomain(),r_cut);
+			bool to_reconstruct = NN.get_ndec() != getDecomposition().get_ndec();
 
 			if (to_reconstruct == false)
 				ver.update(getDecomposition().getDomain(),r_cut,v_pos,g_m, opt);
@@ -814,48 +1054,6 @@ public:
 				ver.swap(ver_tmp);
 			}
 		}
-
-/*		// Get the internal cell list
-		auto & NN = ver.getInternalCellList();
-
-		// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
-		// processor. if it is not like that we have to completely reconstruct from stratch
-		bool to_reconstruct = check_cl_reconstruct(NN.getDomain(),r_cut);
-
-		if (to_reconstruct == false)
-		{
-			if (opt == VL_CRS_SYMMETRIC)
-			{
-				// Shift
-				grid_key_dx<dim> cell_shift = NN.getShift();
-
-				// Shift
-				grid_key_dx<dim> shift = NN.getShift();
-
-				// Add padding
-				for (size_t i = 0 ; i < dim ; i++)
-					shift.set_d(i,shift.get(i) + NN.getPadding(i));
-
-				grid_sm<dim,void> gs = NN.getInternalGrid();
-
-				ver.updateCrs(getDecomposition().getDomain(),r_cut,v_pos,g_m,getDecomposition().getDomainCells(shift,cell_shift,gs),getDecomposition().getAnomDomainCells(shift,cell_shift,gs));
-			}
-			else
-				ver.update(getDecomposition().getDomain(),r_cut,v_pos,g_m, opt);
-		}
-		else
-		{
-			VerletList<dim,St,FAST,shift<dim,St> > ver_tmp;
-
-			if (opt == VL_SYMMETRIC)
-				ver_tmp = getVerletSym(r_cut);
-			else if (opt == VL_CRS_SYMMETRIC)
-				ver_tmp = getVerletCrs(r_cut);
-			else
-				ver_tmp = getVerlet(r_cut);
-
-			ver.swap(ver_tmp);
-		}*/
 	}
 
 	/*! \brief for each particle get the verlet list
@@ -866,7 +1064,7 @@ public:
 	 * \deprecated
 	 *
 	 */
-	void getVerletDeprecated(openfpm::vector<openfpm::vector<size_t>> & verlet, St r_cut)
+/*	void getVerletDeprecated(openfpm::vector<openfpm::vector<size_t>> & verlet, St r_cut)
 	{
 		// resize verlet to store the number of particles
 		verlet.resize(size_local());
@@ -915,7 +1113,7 @@ public:
 			// next particle
 			++it_p;
 		}
-	}
+	}*/
 
 	/*! \brief Construct a cell list starting from the stored particles and reorder a vector according to the Hilberts curve
 	 *
@@ -978,7 +1176,9 @@ public:
 		{
 			auto key = it.get();
 
-			cell_list.add(this->getPos(key),key.getKey());
+			Point<dim,St> xp = this->getPos(key);
+
+			cell_list.add(xp,key.getKey());
 
 			++it;
 		}
@@ -1070,6 +1270,9 @@ public:
 	 */
 	vector_dist_iterator getIterator()
 	{
+#ifdef SE_CLASS3
+		se3.getIterator();
+#endif
 		return vector_dist_iterator(0, v_pos.size());
 	}
 
@@ -1103,6 +1306,20 @@ public:
 	 */
 	vector_dist_iterator getGhostIterator() const
 	{
+#ifdef SE_CLASS3
+		se3.getIterator();
+#endif
+
+		return vector_dist_iterator(g_m, v_pos.size());
+	}
+
+	/*! \brief Get the iterator across the position of the ghost particles
+	 *
+	 * \return an iterator
+	 *
+	 */
+	vector_dist_iterator getGhostIterator_no_se3() const
+	{
 		return vector_dist_iterator(g_m, v_pos.size());
 	}
 
@@ -1113,6 +1330,20 @@ public:
 	 */
 	vector_dist_iterator getDomainIterator() const
 	{
+#ifdef SE_CLASS3
+		se3.getIterator();
+#endif
+
+		return vector_dist_iterator(0, g_m);
+	}
+
+	/*! \brief Get an iterator that traverse the particles in the domain
+	 *
+	 * \return an iterator
+	 *
+	 */
+	vector_dist_iterator getDomainIterator_no_se3() const
+	{
 		return vector_dist_iterator(0, g_m);
 	}
 
@@ -1122,6 +1353,20 @@ public:
 	 *
 	 */
 	vector_dist_iterator getDomainAndGhostIterator() const
+	{
+#ifdef SE_CLASS3
+		se3.getIterator();
+#endif
+
+		return vector_dist_iterator(0, v_pos.size());
+	}
+
+	/*! \brief Get an iterator that traverse the particles in the domain
+	 *
+	 * \return an iterator
+	 *
+	 */
+	vector_dist_iterator getDomainAndGhostIterator_no_se3() const
 	{
 		return vector_dist_iterator(0, v_pos.size());
 	}
@@ -1176,7 +1421,15 @@ public:
 	 */
 	template<typename obp = KillParticle> void map()
 	{
+#ifdef SE_CLASS3
+		se3.map_pre();
+#endif
+
 		this->template map_<obp>(v_pos,v_prp,g_m);
+
+#ifdef SE_CLASS3
+		se3.map_post();
+#endif
 	}
 
 	/*! \brief It synchronize the properties and position of the ghost particles
@@ -1188,7 +1441,18 @@ public:
 	 */
 	template<int ... prp> inline void ghost_get(size_t opt = WITH_POSITION)
 	{
+#ifdef SE_CLASS3
+		se3.template ghost_get_pre<prp...>(opt);
+#endif
+
 		this->template ghost_get_<prp...>(v_pos,v_prp,g_m,opt);
+
+#ifdef SE_CLASS3
+
+		this->template ghost_get_<prop::max_prop_real>(v_pos,v_prp,g_m,opt | KEEP_PROPERTIES);
+
+		se3.template ghost_get_post<prp...>(opt);
+#endif
 	}
 
 	/*! \brief It synchronize the properties and position of the ghost particles
@@ -1204,6 +1468,9 @@ public:
 	 */
 	template<template<typename,typename> class op, int ... prp> inline void ghost_put(size_t opt_ = NONE)
 	{
+#ifdef SE_CLASS3
+		se3.template ghost_put<prp...>();
+#endif
 		this->template ghost_put_<op,prp...>(v_pos,v_prp,g_m,opt_);
 	}
 
@@ -1272,6 +1539,14 @@ public:
 
 		for (size_t i = 0 ; i < dec.getDistribution().getNSubSubDomains(); i++)
 			md.applyModel(dec,i);
+
+		// set the ubvec
+		size_t n_part = v_cl.getProcessingUnits();
+
+		for (size_t i = 0 ; i < n_part ; i++)
+		{
+			dec.getDistribution().setDistributionTol(i,md.setDistributionTol());
+		}
 	}
 
 	/*! \brief Output particle position and properties
@@ -1522,6 +1797,15 @@ public:
 			key.set_d(i,key.get(i) + 1);
 		return key;
 	}
+
+#ifdef SE_CLASS3
+
+	se_class3_vector<prop::max_prop,dim,St,Decomposition,self> & get_se_class3()
+	{
+		return se3;
+	}
+
+#endif
 };
 
 

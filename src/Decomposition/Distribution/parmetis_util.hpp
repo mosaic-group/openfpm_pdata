@@ -95,32 +95,35 @@ struct Parmetis_graph
 template<typename Graph>
 class Parmetis
 {
-	// Graph in metis reppresentation
+	//! Graph in metis reppresentation
 	Parmetis_graph Mg;
 
 	// Original graph
 	//	Graph & g;
 
-	// Communticator for OpenMPI
+	//! Communticator for OpenMPI
 	MPI_Comm comm = (MPI_Comm)NULL;
 
-	// VCluster
+	//! VCluster
 	Vcluster & v_cl;
 
-	// Process rank information
+	//! Process rank information
 	int p_id = 0;
 
-	// nc Number of partition
+	//! nc Number of partition
 	size_t nc = 0;
 
-	// first re-mapped id
+	//! first re-mapped id
 	rid first;
 
-	// last re-mapped id
+	//! last re-mapped id
 	rid last;
 
-	// number of vertices that the processor has
+	//! number of vertices that the processor has
 	size_t nvertex;
+
+	//! indicate how many time decompose/refine/re-decompose has been called
+	size_t n_dec;
 
 	/*! \brief Construct Adjacency list
 	 *
@@ -196,12 +199,12 @@ public:
 	 *
 	 * Construct a metis graph from Graph_CSR
 	 *
-	 * \param g Graph we want to convert to decompose
+	 * \param v_cl Vcluster object
 	 * \param nc number of partitions
 	 *
 	 */
 	Parmetis(Vcluster & v_cl, size_t nc)
-	:v_cl(v_cl), nc(nc)
+	:v_cl(v_cl), nc(nc),n_dec(0)
 	{
 		// TODO Move into VCluster
 		MPI_Comm_dup(MPI_COMM_WORLD, &comm);
@@ -315,9 +318,15 @@ public:
 	/*! \brief Set the Sub-graph
 	 *
 	 * \param g Global graph to set
+	 * \param vtxdist indicate how the vertex of the graph are distrubuted across
+	 *        processors.
+	 * \param m2g map the local ids of the vertex into global-ids
 	 * \param w true if vertices have weights
 	 */
-	void initSubGraph(Graph & g, const openfpm::vector<rid> & vtxdist, const std::unordered_map<rid, gid> & m2g, bool w)
+	void initSubGraph(Graph & g,
+			          const openfpm::vector<rid> & vtxdist,
+					  const std::unordered_map<rid, gid> & m2g,
+					  bool w)
 	{
 		p_id = v_cl.getProcessUnitID();
 
@@ -338,12 +347,13 @@ public:
 	 * \tparam i which property store the decomposition
 	 *
 	 */
-	template<unsigned int i>
 	void decompose(const openfpm::vector<rid> & vtxdist)
 	{
 		// Decompose
 
 		ParMETIS_V3_PartKway((idx_t *) vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.options, Mg.edgecut, Mg.part, &comm);
+
+		n_dec++;
 	}
 
 	/*! \brief Refine the graph
@@ -351,13 +361,25 @@ public:
 	 * \tparam i which property store the refined decomposition
 	 *
 	 */
-
-	template<unsigned int i>
 	void refine(openfpm::vector<rid> & vtxdist)
 	{
 		// Refine
 
 		ParMETIS_V3_RefineKway((idx_t *) vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.adjwgt, Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.options, Mg.edgecut, Mg.part, &comm);
+
+		n_dec++;
+	}
+
+	/*! \brief Redecompose the graph
+	 *
+	 * \tparam i which property
+	 *
+	 */
+	void redecompose(openfpm::vector<rid> & vtxdist)
+	{
+		ParMETIS_V3_AdaptiveRepart((idx_t *)vtxdist.getPointer(), Mg.xadj, Mg.adjncy, Mg.vwgt, Mg.vsize, Mg.adjwgt, Mg.wgtflag, Mg.numflag, Mg.ncon, Mg.nparts, Mg.tpwgts, Mg.ubvec, Mg.itr, Mg.options, Mg.edgecut, Mg.part, &comm);
+
+		n_dec++;
 	}
 
 	/*! \brief Get graph partition vector
@@ -479,6 +501,11 @@ public:
 			Mg.wgtflag[0] = 0;
 	}
 
+	/*! \brief Copy the object
+	 *
+	 * \param object to copy
+	 *
+	 */
 	const Parmetis<Graph> & operator=(const Parmetis<Graph> & pm)
 	{
 		comm = pm.comm;
@@ -491,6 +518,11 @@ public:
 		return *this;
 	}
 
+	/*! \brief Copy the object
+	 *
+	 * \param object to copy
+	 *
+	 */
 	const Parmetis<Graph> & operator=(Parmetis<Graph> && pm)
 	{
 		comm = pm.comm;
@@ -503,6 +535,15 @@ public:
 		return *this;
 	}
 
+	/*! \brief Get the decomposition counter
+	 *
+	 * \return the decomposition counter
+	 *
+	 */
+	size_t get_ndec()
+	{
+		return n_dec;
+	}
 };
 
 #endif

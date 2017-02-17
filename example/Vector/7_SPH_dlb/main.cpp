@@ -13,6 +13,19 @@
  * decomposition to keep all the processor load and reduce idle time.
  *
  * \htmlonly
+ * <a href="#" onclick="hide_show('vector-video-3')" >Video 1</a>
+ * <div style="display:none" id="vector-video-3">
+ * <video id="vid1" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_speed.mp4" type="video/mp4"></video>
+ * <script>video_anim('vid1',100,230)</script>
+ * </div>
+ * <a href="#" onclick="hide_show('vector-video-4')" >Video 2</a>
+ * <div style="display:none" id="vector-video-4">
+ * <video id="vid2" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_speed2.mp4" type="video/mp4"></video>
+ * <script>video_anim('vid2',21,1590)</script>
+ * </div>
+ * \endhtmlonly
+ *
+ * \htmlonly
  * <img src="http://ppmcore.mpi-cbg.de/web/images/examples/7_SPH_dlb/dam_break_all.jpg"/>
  * \endhtmlonly
  *

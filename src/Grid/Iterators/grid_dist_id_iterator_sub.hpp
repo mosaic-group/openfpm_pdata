@@ -50,7 +50,7 @@ class grid_dist_iterator_sub
 
 	/*! \brief compute the subset where it has to iterate
 	 *
-	 * \param g_c Actual grid
+	 * \param gc Actual grid
 	 * \param start_c adjusted start point for the grid g_c
 	 * \param stop_c adjusted stop point for the grid g_c
 	 *
