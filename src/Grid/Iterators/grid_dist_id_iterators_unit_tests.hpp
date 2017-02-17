@@ -309,6 +309,9 @@ void Test3D_decskinit(const Box<3,float> & domain, long int k)
 			sz[1] = k;
 			sz[2] = k;
 
+			if (k <= 9)
+				continue;
+
 			// factor
 			float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
