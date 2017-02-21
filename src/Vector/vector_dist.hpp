@@ -183,7 +183,7 @@ private:
 		g_m = p_np;
 	}
 
-	/*! \brief Checl if the parameters describe a valid vector. In case it does not report an error
+	/*! \brief Check if the parameters describe a valid vector. In case it does not report an error
 	 *
 	 * \param box Box to check
 	 *
@@ -199,6 +199,11 @@ private:
 
 	}
 
+	/*! \brief It check that the r_cut is not bugger than the ghost
+	 *
+	 * \param r_cut cut-off radius
+	 *
+	 */
 	void check_ghost_compatible_rcut(St r_cut)
 	{
 		for (size_t i = 0 ; i < dim ; i++)
@@ -329,8 +334,7 @@ public:
 	 * \param box domain where the vector of elements live
 	 * \param bc boundary conditions
 	 * \param g Ghost margins
-	 * \param opt additional options.
-	 *        * BIND_DEC_TO_GHOST Bind the decomposition to be multiple of the
+	 * \param opt additional options. BIND_DEC_TO_GHOST Bind the decomposition to be multiple of the
 	 *          ghost size. This is required if we want to use symmetric to eliminate
 	 *          ghost communications.
 	 *
@@ -1056,14 +1060,8 @@ public:
 		}
 	}
 
-	/*! \brief for each particle get the verlet list
-	 *
-	 * \param verlet output verlet list for each particle
-	 * \param r_cut cut-off radius
-	 *
-	 * \deprecated
-	 *
-	 */
+#if 0
+
 /*	void getVerletDeprecated(openfpm::vector<openfpm::vector<size_t>> & verlet, St r_cut)
 	{
 		// resize verlet to store the number of particles
@@ -1115,13 +1113,13 @@ public:
 		}
 	}*/
 
+#endif
+
 	/*! \brief Construct a cell list starting from the stored particles and reorder a vector according to the Hilberts curve
 	 *
 	 * \tparam CellL CellList type to construct
 	 *
 	 * \param m an order of a hilbert curve
-	 *
-	 *
 	 *
 	 */
 	template<typename CellL=CellList<dim,St,FAST,shift<dim,St> > > void reorder (int32_t m)
@@ -1540,13 +1538,7 @@ public:
 		for (size_t i = 0 ; i < dec.getDistribution().getNSubSubDomains(); i++)
 			md.applyModel(dec,i);
 
-		// set the ubvec
-		size_t n_part = v_cl.getProcessingUnits();
-
-		for (size_t i = 0 ; i < n_part ; i++)
-		{
-			dec.getDistribution().setDistTol(i,md.distributionTol(i));
-		}
+		dec.getDistribution().setDistTol(md.distributionTol());
 	}
 
 	/*! \brief Output particle position and properties
@@ -1557,10 +1549,10 @@ public:
 	 * \return true if the file has been written without error
 	 *
 	 */
-	inline bool write(std::string out, int opt = NO_GHOST | VTK_WRITER )
+	inline bool write(std::string out, int opt = VTK_WRITER)
 	{
 
-		if ((opt & 0xFFFF0000) == CSV_WRITER)
+		if ((opt & 0x0FFF0000) == CSV_WRITER)
 		{
 			// CSVWriter test
 			CSVWriter<openfpm::vector<Point<dim,St>>, openfpm::vector<prop> > csv_writer;
@@ -1570,8 +1562,13 @@ public:
 			// Write the CSV
 			return csv_writer.write(output,v_pos,v_prp);
 		}
-		else if ((opt & 0xFFFF0000) == VTK_WRITER)
+		else
 		{
+			file_type ft = file_type::ASCII;
+
+			if (opt & FORMAT_BINARY)
+				ft = file_type::BINARY;
+
 			// VTKWriter for a set of points
 			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim,St>>, openfpm::vector<prop>>, VECTOR_POINTS> vtk_writer;
 			vtk_writer.add(v_pos,v_prp,g_m);
@@ -1579,7 +1576,7 @@ public:
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtk"));
 
 			// Write the VTK file
-			return vtk_writer.write(output);
+			return vtk_writer.write(output,"particles",ft);
 		}
 
 		return false;
@@ -1623,7 +1620,7 @@ public:
 	 */
 	inline bool write(std::string out, size_t iteration, int opt = NO_GHOST)
 	{
-		if ((opt & 0xFFFF0000) == CSV_WRITER)
+		if ((opt & 0x0FFF0000) == CSV_WRITER)
 		{
 			// CSVWriter test
 			CSVWriter<openfpm::vector<Point<dim, St>>, openfpm::vector<prop> > csv_writer;
@@ -1635,6 +1632,11 @@ public:
 		}
 		else
 		{
+			file_type ft = file_type::ASCII;
+
+			if (opt & FORMAT_BINARY)
+				ft = file_type::BINARY;
+
 			// VTKWriter for a set of points
 			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim,St>>, openfpm::vector<prop>>, VECTOR_POINTS> vtk_writer;
 			vtk_writer.add(v_pos,v_prp,g_m);
@@ -1642,7 +1644,7 @@ public:
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtk"));
 
 			// Write the VTK file
-			return vtk_writer.write(output);
+			return vtk_writer.write(output,"particles",ft);
 		}
 	}
 

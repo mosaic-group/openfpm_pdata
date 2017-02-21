@@ -55,4 +55,5 @@ int main(int argc, char* argv[])
 #include "Grid/staggered_grid_dist_unit_test.hpp"
 #include "Vector/vector_dist_MP_unit_tests.hpp"
 #include "Vector/se_class3_vector_unit_tests.hpp"
+#include "Vector/vector_dist_dlb_test.hpp"
 //#include "antoniol_test_isolation.hpp"

@@ -9,11 +9,16 @@ All notable changes to this project will be documented in this file.
 - Added procedure for update ./install --update
   (From 0.8.0 version will be supported for bug fixing, version 0.X.0 will be supported untill
    0.X+2.0 will be out)
+- Added video lessons for Dynamic load balancing (openfpm.mpi-cbg.de)
 - Added for debugging the options PRINT_STACKTRACE, CHECKFOR_POSNAN, CHECKFOR_POSINF, CHECKFOR_PROPINF, CHECKFOR_PROPNAN, SE_CLASS3 for debugging. Additional example added (7_sph_dlb_safe)
+- Added the possibility to write binary VTK files using VTK_WRITER_BINARY 0_simple_vector
+  example
+  
 
 ### Changed
 - BOOST updated to 1.63
 - Eigen updated to 3.3.7
+- Option CSV_WRITER changed to CSV_WRITER_ASCII
 
 ## [0.7.0] 15 December 2016
 

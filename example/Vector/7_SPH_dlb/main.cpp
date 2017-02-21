@@ -13,15 +13,21 @@
  * decomposition to keep all the processor load and reduce idle time.
  *
  * \htmlonly
- * <a href="#" onclick="hide_show('vector-video-3')" >Video 1</a>
+ * <a href="#" onclick="hide_show('vector-video-3')" >Simulation video 1</a><br>
  * <div style="display:none" id="vector-video-3">
- * <video id="vid1" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_speed.mp4" type="video/mp4"></video>
- * <script>video_anim('vid1',100,230)</script>
+ * <video id="vid3" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_speed.mp4" type="video/mp4"></video>
  * </div>
- * <a href="#" onclick="hide_show('vector-video-4')" >Video 2</a>
+ * <a href="#" onclick="hide_show('vector-video-4')" >Simulation video 2</a><br>
  * <div style="display:none" id="vector-video-4">
- * <video id="vid2" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_speed2.mp4" type="video/mp4"></video>
- * <script>video_anim('vid2',21,1590)</script>
+ * <video id="vid4" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_speed2.mp4" type="video/mp4"></video>
+ * </div>
+ * <a href="#" onclick="hide_show('vector-video-15')" >Simulation dynamic load balancing video 1</a><br>
+ * <div style="display:none" id="vector-video-15">
+ * <video id="vid15" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_dlb.mp4" type="video/mp4"></video>
+ * </div>
+ * <a href="#" onclick="hide_show('vector-video-16')" >Simulation dynamic load balancing video 2</a><br>
+ * <div style="display:none" id="vector-video-16">
+ * <video id="vid16" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_dlb2.mp4" type="video/mp4"></video>
  * </div>
  * \endhtmlonly
  *
@@ -1195,6 +1201,21 @@ int main(int argc, char* argv[])
 	 * \note All processors now has part of the fluid. It is good to note that the computationaly
 	 *       balanced configuration does not correspond to the evenly distributed particles to know
 	 *       more about that please follow the video tutorials
+	 *
+	 * \htmlonly
+	 * <a href="#" onclick="hide_show('vector-video-6')" >Dynamic load balancing the theory part1</a>
+	 * <div style="display:none" id="vector-video-6">
+	 * <video id="vid6" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/upload/video/dlb-1.mp4" type="video/mp4"></video>
+	 * </div>
+	 * <a href="#" onclick="hide_show('vector-video-7')" >Dynamic load balancing the theory part2</a>
+	 * <div style="display:none" id="vector-video-7">
+	 * <video id="vid7" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/upload/video/dlb-2.mp4" type="video/mp4"></video>
+	 * </div>
+	 * <a href="#" onclick="hide_show('vector-video-8')" >Dynamic load balancing practice part1</a>
+	 * <div style="display:none" id="vector-video-8">
+	 * <video id="vid8" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/upload/video/dlb-2.mp4" type="video/mp4"></video>
+	 * </div>
+	 * \endhtmlonly
 	 *
 	 * \snippet Vector/7_SPH_dlb/main.cpp load balancing
 	 *

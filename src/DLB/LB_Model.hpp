@@ -33,7 +33,7 @@ struct ModelLin
 		dec.setSubSubDomainComputationCost(v, dec.getSubSubDomainComputationCost(v));
 	}
 
-	double setDistributionTol(size_t i)
+	double distributionTol()
 	{
 		return 1.01;
 	}
@@ -58,7 +58,7 @@ struct ModelSquare
 		dec.setSubSubDomainComputationCost(v, dec.getSubSubDomainComputationCost(v) * dec.getSubSubDomainComputationCost(v));
 	}
 
-	double setDistributionTol(size_t i)
+	double distributionTol()
 	{
 		return 1.01;
 	}

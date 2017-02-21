@@ -125,6 +125,9 @@ class Parmetis
 	//! indicate how many time decompose/refine/re-decompose has been called
 	size_t n_dec;
 
+	//! Distribution tolerance
+	real_t dist_tol = 1.05;
+
 	/*! \brief Construct Adjacency list
 	 *
 	 * \param g Global graph
@@ -482,7 +485,7 @@ public:
 		for (size_t s = 0; s < (size_t) Mg.nparts[0]; s++)
 		{
 			Mg.tpwgts[s] = 1.0 / Mg.nparts[0];
-			Mg.ubvec[s] = 1.05;
+			Mg.ubvec[s] = dist_tol;
 		}
 
 		Mg.edgecut = new idx_t[1];
@@ -547,13 +550,12 @@ public:
 
 	/*! \brief Distribution tolerance
 	 *
-	 * \param i partition id
-	 * \param tol tollerance
+	 * \param tol tolerance
 	 *
 	 */
-	const void setDistTol(size_t i, real_t tol)
+	const void setDistTol(real_t tol)
 	{
-		Mg.ubvec[i] = tol;
+		dist_tol = tol;
 	}
 };
 

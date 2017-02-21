@@ -615,15 +615,14 @@ public:
 		return parmetis_graph.get_ndec();
 	}
 
-	/*! \brief Set the tollerance for each partition
+	/*! \brief Set the tolerance for each partition
 	 *
-	 * \param i partition
-	 * \param tol tollerance
+	 * \param tol tolerance
 	 *
 	 */
-	void setDistTol(size_t i, double tol)
+	void setDistTol(double tol)
 	{
-		parmetis_graph.setDistTol(i,tol);
+		parmetis_graph.setDistTol(tol);
 	}
 };
 

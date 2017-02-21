@@ -393,7 +393,7 @@ public:
 	}
 
 
-	/*! It calculate the internal ghost boxes
+	/*! \brief It calculate the internal ghost boxes
 	 *
 	 * Example: Processor 10 calculate
 	 * B8_0 B9_0 B9_1 and B5_0
@@ -1275,7 +1275,7 @@ public:
 
 	/*! \brief Get the domain Cells
 	 *
-	 * It performa a linearization of the domain cells using the extension provided in gs
+	 * It perform a linearization of the domain cells using the extension provided in gs
 	 *
 	 *
 	 * \param shift Cell padding
