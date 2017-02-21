@@ -75,9 +75,6 @@ function update_openfpm()
       echo -e "To make the upgrade active do: \033[1m make install \033[0m"
     fi
   fi
-
-  #### end
-
 }
 
 
