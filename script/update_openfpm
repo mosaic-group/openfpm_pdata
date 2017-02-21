@@ -43,17 +43,29 @@ function update_openfpm()
   git checkout $branch
   git submodule update
 
-  sh autogen.sh
-  ./config.status
-  if [ $? -ne 0 ]; then
-    echo -e "Update summary\033[91;5;1m FAILED \033[0m"
-  fi
-  make
-  if [ $? -ne 0 ]; then
-    echo -e "Update summary\033[91;5;1m FAILED \033[0m"
+  if [ x"$1" == x"update" ]; then
+    sh autogen.sh
+    ./config.status
+    if [ $? -ne 0 ]; then
+      echo -e "Update summary\033[91;5;1m FAILED \033[0m"
+    fi
+    make
+    if [ $? -ne 0 ]; then
+      echo -e "Update summary\033[91;5;1m FAILED \033[0m"
+    else
+      echo -e "Update summary\033[92;5;1m SUCCEED \033[0m"
+      echo -e "To make the update active do: \033[1m make install \033[0m"
+    fi
   else
-    echo -e "Update summary\033[92;5;1m SUCCEED \033[0m"
-    echo -e "To make the update active do: \033[1m make install \033[0m"
+    dir_prev_inst=$(cat dependencies_dir)
+    for_opt=$(cat foward_options)
+    if [ x"$dir_prev_inst" != x"" ]; then
+      dir_prev_inst="-i dir_prev_inst"
+    fi
+    if [ x"$foward_options" != x"" ]; then
+      foward_options="-i foward_options"
+    fi
+    ./install $dir_prev_inst $foward_options
   fi
 
   ## end
