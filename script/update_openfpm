@@ -39,10 +39,10 @@ function update_openfpm()
   dir_prev_inst=$(cat dependencies_dir)
   for_opt=$(cat foward_options)
   if [ x"$dir_prev_inst" != x"" ]; then
-    dir_prev_inst="-i $dir_prev_inst"
+    dir_prev_inst="-i \"$dir_prev_inst\""
   fi
-  if [ x"$foward_options" != x"" ]; then
-    foward_options="-c $foward_options"
+  if [ x"$for_opt" != x"" ]; then
+    for_opt="-c \"$for_opt\""
   fi
 
 
@@ -67,8 +67,10 @@ function update_openfpm()
       echo -e "To make the update active do: \033[1m make install \033[0m"
     fi
   else
-    ./install $dir_prev_inst $foward_options
+    ./install $dir_prev_inst $for_opt
   fi
+
+  ### end
 
 }
 
