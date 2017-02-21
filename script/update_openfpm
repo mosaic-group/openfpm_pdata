@@ -45,7 +45,16 @@ function update_openfpm()
 
   sh autogen.sh
   ./config.status
-  make install
+  if [ $? -ne 0 ]; then
+    echo -e "Update summary\033[91;5;1m FAILED \033[0m"
+  fi
+  make
+  if [ $? -ne 0 ]; then
+    echo -e "Update summary\033[91;5;1m FAILED \033[0m"
+  else
+    echo -e "Update summary\033[92;5;1m SUCCEED \033[0m"
+    echo -e "To make the update active do: \033[1m make install \033[0m"
+  fi
 
 }
 
