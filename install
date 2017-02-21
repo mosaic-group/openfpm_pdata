@@ -90,8 +90,6 @@ if [ $upgrade_openfpm -eq 1 ]; then
 	upgrade_openfpm
 fi
 
-exit 1
-
 ## clone the dependencies
 
 git submodule init
