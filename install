@@ -7,7 +7,8 @@ source script/pre_req
 source script/remove_old
 source script/set_mpi
 source script/conf_PETSC
-
+source script/update_openfpm
+source script/upgrade_openfpm
 
 ## Check that your home is not empty
 
@@ -15,8 +16,6 @@ if [ x"$HOME" == x"" ]; then
 	 echo -e "Your $HOME folder is empty \033[91;5;1m FAILED \033[0m"
 	 exit 1
 fi
-
-##
 
 install_req=1
 i_dir=" "
@@ -63,6 +62,11 @@ while getopts :di:smhc:nu FLAG; do
 	esac
 done
 
+### Configure options
+
+i_dir_old=$i_dir
+configure_options_old=$configure_options
+
 discover_os
 
 ## Remove old dependencies and installations
@@ -84,10 +88,12 @@ fi
 
 if [ $update_openfpm -eq 1 ]; then
 	update_openfpm
+	exit 0
 fi
 
 if [ $upgrade_openfpm -eq 1 ]; then
 	upgrade_openfpm
+	exit 0
 fi
 
 ## clone the dependencies
@@ -496,6 +502,11 @@ echo ""
 echo ""
 if [ $conf_err -eq 0  ]; then
   echo -e "Install summary\033[92;5;1m SUCCEED \033[0m"
+  
+  ## Save dependencies dir and foward options
+  echo "$i_dir_old" > dependencies_dir
+  echo "$configure_options_old" > foward_options
+
 else
   echo -e "Install summary\033[91;5;1m FAILED \033[0m"
 fi

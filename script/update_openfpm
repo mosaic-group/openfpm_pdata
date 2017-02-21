@@ -14,13 +14,16 @@ function update_openfpm()
 
   url_update=$(cat update)
   echo "Checking for update from $url_update"
-  branch=$(wget $url_update)
+  rm tmp_brc
+  wget -O tmp_brc $url_update
+  branch=$(cat tmp_brc)
+  echo "Update branch $branch"
   if [ x"$branch" == x"" ]; then
     echo -e "\033[1m There are no-updates \033[0m"
     return
   fi
 
-  actual_branch=git branch | grep \* | cut -d ' ' -f2
+  actual_branch=$(git branch | grep \* | cut -d ' ' -f2)
 
   if [ x"$branch" == x"actual_branch" ]; then
 
