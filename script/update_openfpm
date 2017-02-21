@@ -39,10 +39,10 @@ function update_openfpm()
   dir_prev_inst=$(cat dependencies_dir)
   for_opt=$(cat foward_options)
   if [ x"$dir_prev_inst" != x"" ]; then
-    dir_prev_inst="-i $dir_prev_inst"
+    dir_prev_inst="-i \"$dir_prev_inst\""
   fi
   if [ x"$for_opt" != x"" ]; then
-    for_opt="-c $for_opt"
+    for_opt="-c \"$for_opt\""
   fi
 
 

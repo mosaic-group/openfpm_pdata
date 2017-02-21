@@ -17,7 +17,7 @@ if [ x"$HOME" == x"" ]; then
 fi
 
 install_req=1
-i_dir=" "
+i_dir=""
 sq=0
 nomake=0
 update_openfpm=0
@@ -503,8 +503,8 @@ if [ $conf_err -eq 0  ]; then
   echo -e "Install summary\033[92;5;1m SUCCEED \033[0m"
   
   ## Save dependencies dir and foward options
-  echo "$i_dir_old" > dependencies_dir
-  echo "$configure_options_old" > foward_options
+  printf "$i_dir_old" > dependencies_dir
+  printf "$configure_options_old" > foward_options
 
 else
   echo -e "Install summary\033[91;5;1m FAILED \033[0m"
