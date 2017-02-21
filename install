@@ -8,7 +8,6 @@ source script/remove_old
 source script/set_mpi
 source script/conf_PETSC
 source script/update_openfpm
-source script/upgrade_openfpm
 
 ## Check that your home is not empty
 
@@ -87,12 +86,12 @@ if [ $update_openfpm -eq 1 -a  $upgrade_openfpm -eq 1 ]; then
 fi
 
 if [ $update_openfpm -eq 1 ]; then
-	update_openfpm
+	update_openfpm update
 	exit 0
 fi
 
 if [ $upgrade_openfpm -eq 1 ]; then
-	upgrade_openfpm
+	upgrade_openfpm upgrade
 	exit 0
 fi
 

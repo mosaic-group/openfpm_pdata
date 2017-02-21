@@ -12,7 +12,7 @@ function update_openfpm()
 
   ## Get the name of the updating branch
 
-  url_update=$(cat update)
+  url_update=$(cat $1)
   echo "Checking for update from $url_update"
   rm tmp_brc
   wget -O tmp_brc $url_update
@@ -25,7 +25,7 @@ function update_openfpm()
 
   actual_branch=$(git branch | grep \* | cut -d ' ' -f2)
 
-  if [ x"$branch" == x"actual_branch" ]; then
+  if [ x"$branch" == x"$actual_branch" ]; then
 
    git remote update
    git status -uno | grep "nothing to commit"
@@ -36,7 +36,7 @@ function update_openfpm()
     fi
   fi
 
-#  git stash
+#  git stash -u
 #  git submodule foreach 'git stash'
 
 #  git pull origin
@@ -44,6 +44,7 @@ function update_openfpm()
 #  git submodule update
 
 #  sh autogen.sh
+#  make clean
 #  make install
 
 }
