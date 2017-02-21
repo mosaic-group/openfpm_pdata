@@ -60,10 +60,10 @@ function update_openfpm()
     dir_prev_inst=$(cat dependencies_dir)
     for_opt=$(cat foward_options)
     if [ x"$dir_prev_inst" != x"" ]; then
-      dir_prev_inst="-i dir_prev_inst"
+      dir_prev_inst="-i $dir_prev_inst"
     fi
     if [ x"$foward_options" != x"" ]; then
-      foward_options="-i foward_options"
+      foward_options="-i $foward_options"
     fi
     ./install $dir_prev_inst $foward_options
   fi
