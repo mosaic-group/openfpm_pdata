@@ -91,7 +91,7 @@ if [ $update_openfpm -eq 1 ]; then
 fi
 
 if [ $upgrade_openfpm -eq 1 ]; then
-	upgrade_openfpm upgrade
+	update_openfpm upgrade
 	exit 0
 fi
 
