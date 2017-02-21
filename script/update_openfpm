@@ -70,8 +70,6 @@ function update_openfpm()
     ./install $dir_prev_inst $foward_options
   fi
 
-### end
-
 }
 
 
