@@ -28,24 +28,24 @@ function update_openfpm()
   if [ x"$branch" == x"$actual_branch" ]; then
 
    git remote update
-   git status -uno | grep "nothing to commit"
+   n_commit=$(git rev-list --count origin/$branch...$branch)
 
-    if [ $? -eq 0 ]; then
+    if [ $n_commit -eq 0 ]; then
       echo -e "\033[1m There are no-updates \033[0m"
       return
     fi
   fi
 
-#  git stash -u
-#  git submodule foreach 'git stash'
+  git stash -u
+  git submodule foreach 'git stash'
 
-#  git pull origin
-#  git checkout $branch
-#  git submodule update
+  git pull origin
+  git checkout $branch
+  git submodule update
 
-#  sh autogen.sh
-#  ./config.status
-#  make install
+  sh autogen.sh
+  ./config.status
+  make install
 
 }
 
