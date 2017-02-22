@@ -310,26 +310,28 @@ int main(int argc, char* argv[])
 
 	//! \cond [verletlist] \endcond
 
-	openfpm::vector<openfpm::vector<size_t>> verlet;
-	vd.getVerletDeprecated(verlet,r_cut);
+	auto verlet = vd.getVerlet(r_cut);
+
+	auto it3 = vd.getDomainIterator();
 
 	// For each particle i verlet.size() == Number of particles
-	for (size_t i = 0 ; i < verlet.size() ; i++)
+	while (it3.isNext())
 	{
+		auto p = it3.get();
 
 		// get the position of the particle i
-		Point<3,float> xp = vd.getPos(i);
+		Point<3,float> xp = vd.getPos(p);
 
-		// get the Neighborhood of i
-		openfpm::vector<size_t> & NN = verlet.get(i);
+		// get the Neighborhood of p
+		auto NNp = verlet.getNNIterator(p.getKey());
 
 		// for each neighborhood j of particle to i
-		for (size_t j = 0 ; j < NN.size() ; j++)
+		while (NNp.isNext())
 		{
-			size_t p = NN.get(j);
+			size_t q = NNp.get();
 
 			// Get the position of the particle neighborhood if i
-			Point<3,float> xq = vd.getPos(p);
+			Point<3,float> xq = vd.getPos(q);
 
 			// Calculate the distance vector between p and q
 			Point<3,float> f = (xp - xq);
@@ -352,7 +354,11 @@ int main(int argc, char* argv[])
 			vd.template getProp<2>(p)[2][0] += (xp.get(2) - xq.get(2)) * (xp.get(0) - xq.get(0));
 			vd.template getProp<2>(p)[2][1] += (xp.get(2) - xq.get(2)) * (xp.get(1) - xq.get(1));
 			vd.template getProp<2>(p)[2][2] += (xp.get(2) - xq.get(2)) * (xp.get(2) - xq.get(2));
+
+			++NNp;
 		}
+
+		++it3;
 	}
 
 	//! \cond [verletlist] \endcond

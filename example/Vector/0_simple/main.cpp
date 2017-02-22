@@ -330,7 +330,7 @@ int main(int argc, char* argv[])
 	 * generate a VTK file. VTK has two format one is the ASCII that is human readable but produce
 	 * bigger file the other is the binary that produce not-human readable files, but smaller
 	 * and more efficent files to read for Paraview. In order to create a Binary VTK file use the
-	 * option VTK_
+	 * option VTK_WRITER in combination with FORMAT_BINARY
 	 *
 	 * \snippet Vector/0_simple/main.cpp vtk
 	 *
@@ -346,8 +346,11 @@ int main(int argc, char* argv[])
 
 	//! \cond [vtk] \endcond
 
+	// save vtk format (vtk is always the default)
 	vd.write("particles");
-	vd.write("particles",VTK_WRITE_BINARY);
+
+	// save in vtk binary format
+	vd.write("particles_bin",VTK_WRITER | FORMAT_BINARY);
 
 	//! \cond [vtk] \endcond
 
