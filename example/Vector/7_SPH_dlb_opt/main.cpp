@@ -311,7 +311,7 @@ typedef vector_dist<3,double,aggregate<size_t,double,  double,    double,     do
 
 struct ModelCustom
 {
-	template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec, const vector & vd, size_t v, size_t p)
+	template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p)
 	{
 		if (vd.template getProp<type>(p) == FLUID)
 			dec.addComputationCost(v,4);
