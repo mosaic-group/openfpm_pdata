@@ -666,6 +666,7 @@ public:
 		// Ghost padding extension
 		Ghost<dim,size_t> g_ext(0);
 		cell_list.Initialize(cd_sm,pbox,pad);
+		cell_list.set_ndec(getDecomposition().get_ndec());
 
 		updateCellListSym(cell_list);
 
