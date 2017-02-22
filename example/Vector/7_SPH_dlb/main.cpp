@@ -1211,17 +1211,21 @@ int main(int argc, char* argv[])
 	 *       more about that please follow the video tutorials
 	 *
 	 * \htmlonly
-	 * <a href="#" onclick="hide_show('vector-video-6')" >Dynamic load balancing the theory part1</a>
+	 * <a href="#" onclick="hide_show('vector-video-6')" >Dynamic load balancing the theory part1</a><br>
 	 * <div style="display:none" id="vector-video-6">
 	 * <video id="vid6" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/upload/video/dlb-1.mp4" type="video/mp4"></video>
 	 * </div>
-	 * <a href="#" onclick="hide_show('vector-video-7')" >Dynamic load balancing the theory part2</a>
+	 * <a href="#" onclick="hide_show('vector-video-7')" >Dynamic load balancing the theory part2</a><br>
 	 * <div style="display:none" id="vector-video-7">
 	 * <video id="vid7" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/upload/video/dlb-2.mp4" type="video/mp4"></video>
 	 * </div>
-	 * <a href="#" onclick="hide_show('vector-video-8')" >Dynamic load balancing practice part1</a>
+	 * <a href="#" onclick="hide_show('vector-video-8')" >Dynamic load balancing practice part1</a><br>
 	 * <div style="display:none" id="vector-video-8">
-	 * <video id="vid8" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/upload/video/dlb-2.mp4" type="video/mp4"></video>
+	 * <video id="vid8" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/upload/video/dlb-3.mp4" type="video/mp4"></video>
+	 * </div>
+	 * <a href="#" onclick="hide_show('vector-video-9')" >Dynamic load balancing practice part2</a><br>
+	 * <div style="display:none" id="vector-video-9">
+	 * <video id="vid9" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/upload/video/dlb-4.mp4" type="video/mp4"></video>
 	 * </div>
 	 * \endhtmlonly
 	 *
