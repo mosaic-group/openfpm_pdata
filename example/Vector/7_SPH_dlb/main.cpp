@@ -205,7 +205,7 @@ typedef vector_dist<3,double,aggregate<size_t,double,  double,    double,     do
 struct ModelCustom
 {
 	template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec,
-			                                                                     const vector & vd,
+			                                                                     vector & vd,
 																				 size_t v,
 																				 size_t p)
 	{
