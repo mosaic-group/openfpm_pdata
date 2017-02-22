@@ -70,7 +70,7 @@ discover_os
 
 ## Remove old dependencies and installations
 
-if [ x"$i_dir" == x" " ]; then
+if [ x"$i_dir" == x"" ]; then
  i_dir="$HOME"
 fi
 
