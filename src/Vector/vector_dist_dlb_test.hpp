@@ -43,6 +43,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_dlb_test_part )
 	vd.ghost_get<>();
 
 	ModelSquare md;
+	md.factor = 10;
 	vd.addComputationCosts(md);
 	vd.getDecomposition().decompose();
 	vd.map();

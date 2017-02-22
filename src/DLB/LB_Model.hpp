@@ -50,7 +50,7 @@ struct ModelSquare
 
 	template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec, const vector & vd, size_t v, size_t p)
 	{
-		dec.addComputationCost(v, 1);
+		dec.addComputationCost(v, factor);
 	}
 
 	template<typename Decomposition> inline void applyModel(Decomposition & dec, size_t v)
