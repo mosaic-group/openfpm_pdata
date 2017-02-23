@@ -14,7 +14,7 @@ sph_dlb: $(OBJ)
 
 all: sph_dlb
 
-run: spl_dlb
+run: sph_dlb
 	mpirun -np 2 ./sph_dlb
 
 .PHONY: clean all run
