@@ -1,24 +1,29 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [0.8.0] February
+## [0.8.0] 28 February 2016
 
 ### Added
 - Dynamic Load balancing
 - Added SPH Dam break with Dynamic load balancing (7_sph_dlb)(7_sph_dlb_opt)
-- Added procedure for update ./install --update
-  (From 0.8.0 version will be supported for bug fixing, version 0.X.0 will be supported untill
-   0.X+2.0 will be out)
+- Added automatic procedure for update ./install --update and --upgrade
+  (From 0.8.0 version will have a long term support for bug fixing. End-of-life of 0.8.0 is not decided yet, it should be still supported for bug fixing after release 0.9.0)
 - Added video lessons for Dynamic load balancing (openfpm.mpi-cbg.de)
-- Added for debugging the options PRINT_STACKTRACE, CHECKFOR_POSNAN, CHECKFOR_POSINF, CHECKFOR_PROPINF, CHECKFOR_PROPNAN, SE_CLASS3 for debugging. Additional example added (7_sph_dlb_safe)
-- Added the possibility to write binary VTK files using VTK_WRITER_BINARY 0_simple_vector
-  example
-  
+  (website officially open)
+- Added for debugging the options PRINT_STACKTRACE, CHECKFOR_POSNAN, CHECKFOR_POSINF, CHECKFOR_PROPINF, CHECKFOR_PROPNAN, SE_CLASS3.
+- Added the possibility to write binary VTK files using VTK_WRITER and FORMAT_BINARY see 0_simple_vector for an example
+
+### Fixed
+- Installation of PETSC with MUMPS  
 
 ### Changed
 - BOOST updated to 1.63
 - Eigen updated to 3.3.7
-- Option CSV_WRITER changed to CSV_WRITER_ASCII
+
+## [0.7.1] 28 January 2016
+
+### Fixed
+- Multiphase verlet single to all case generate overflow
 
 ## [0.7.0] 15 December 2016
 
@@ -29,8 +34,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - CRITICAL BUG: OpenFPM has a bug handling decomposition when a processor has a disconnected domains
-                (By experience this case has been seen on big number of processors). Please update to
-                0.7.0 or apply the patch to upgrade to 0.6.1
+                (By experience this case has been seen on big number of processors).
 - Found and fixed a memory leak when using complex properties
 
 -### Changed

@@ -135,7 +135,11 @@ const double MassFluid = 0.000614125;
 const double MassBound = 0.000614125;
 
 // End simulation time
+#ifdef TEST_RUN
+const double t_end = 0.001;
+#else
 const double t_end = 1.5;
+#endif
 
 // Gravity acceleration
 const double gravity = 9.81;
