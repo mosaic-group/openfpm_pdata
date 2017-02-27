@@ -109,6 +109,12 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+#### Eventualy remove garbage from old installation
+
+rm -rf openfpm_numerics/src/.deps
+rm -rf src/.deps
+
+
 # Create config directory in each submodule
 
 cd openfpm_data
