@@ -938,7 +938,9 @@ public:
 
 		grid_sm<dim,void> gs = NN.getInternalGrid();
 
-		ver.createVerletCrs(r_cut,g_m,v_pos,getDecomposition().getDomainCells(shift,cell_shift,gs),getDecomposition().getAnomDomainCells(shift,cell_shift,gs));
+		ver.createVerletCrs(r_cut,g_m,v_pos,
+				            getDecomposition().getCRSDomainCells(shift,cell_shift,gs),
+							getDecomposition().getCRSAnomDomainCells(shift,cell_shift,gs));
 
 		ver.set_ndec(getDecomposition().get_ndec());
 
@@ -1031,7 +1033,9 @@ public:
 
 				grid_sm<dim,void> gs = NN.getInternalGrid();
 
-				ver.updateCrs(getDecomposition().getDomain(),r_cut,v_pos,g_m,getDecomposition().getDomainCells(shift,cell_shift,gs),getDecomposition().getAnomDomainCells(shift,cell_shift,gs));
+				ver.updateCrs(getDecomposition().getDomain(),r_cut,v_pos,g_m,
+						      getDecomposition().getCRSDomainCells(shift,cell_shift,gs),
+							  getDecomposition().getCRSAnomDomainCells(shift,cell_shift,gs));
 			}
 			else
 			{
@@ -1061,60 +1065,6 @@ public:
 		}
 	}
 
-#if 0
-
-/*	void getVerletDeprecated(openfpm::vector<openfpm::vector<size_t>> & verlet, St r_cut)
-	{
-		// resize verlet to store the number of particles
-		verlet.resize(size_local());
-
-		// get the cell-list
-		auto cl = getCellList(r_cut);
-
-		// square of the cutting radius
-		St r_cut2 = r_cut * r_cut;
-
-		// iterate the particles
-		auto it_p = this->getDomainIterator();
-		while (it_p.isNext())
-		{
-			// key
-			vect_dist_key_dx key = it_p.get();
-
-			// Get the position of the particles
-			Point<dim, St> p = this->getPos(key);
-
-			// Clear the neighborhood of the particle
-			verlet.get(key.getKey()).clear();
-
-			// Get the neighborhood of the particle
-			auto NN = cl.template getNNIterator<NO_CHECK>(cl.getCell(p));
-			while (NN.isNext())
-			{
-				auto nnp = NN.get();
-
-				// p != q
-				if (nnp == key.getKey())
-				{
-					++NN;
-					continue;
-				}
-
-				Point<dim, St> q = this->getPos(nnp);
-
-				if (p.distance2(q) < r_cut2)
-					verlet.get(key.getKey()).add(nnp);
-
-				// Next particle
-				++NN;
-			}
-
-			// next particle
-			++it_p;
-		}
-	}*/
-
-#endif
 
 	/*! \brief Construct a cell list starting from the stored particles and reorder a vector according to the Hilberts curve
 	 *
@@ -1320,6 +1270,32 @@ public:
 	vector_dist_iterator getGhostIterator_no_se3() const
 	{
 		return vector_dist_iterator(g_m, v_pos.size());
+	}
+
+	/*! \brief Get an iterator that traverse the particles in the domain
+	 *
+	 * \return an iterator
+	 *
+	 */
+	template<typename CellList> ParticleIt_Cells<dim,CellList> getDomainIteratorCells(CellList & NN)
+	{
+#ifdef SE_CLASS3
+		se3.getIterator();
+#endif
+
+		// Shift
+		grid_key_dx<dim> cell_shift = NN.getShift();
+
+		// Shift
+		grid_key_dx<dim> shift = NN.getShift();
+
+		// Add padding
+		for (size_t i = 0 ; i < dim ; i++)
+			shift.set_d(i,shift.get(i) + NN.getPadding(i));
+
+		grid_sm<dim,void> gs = NN.getInternalGrid();
+
+		return ParticleIt_Cells<dim,CellList>(NN,getDecomposition().getDomainCells(shift,cell_shift,gs));
 	}
 
 	/*! \brief Get an iterator that traverse the particles in the domain
@@ -1768,7 +1744,9 @@ public:
 		grid_sm<dim,void> gs = NN.getInternalGrid();
 
 		// First we check that
-		return ParticleItCRS_Cells<dim,cli>(NN,getDecomposition().getDomainCells(shift,cell_shift,gs),getDecomposition().getAnomDomainCells(shift,cell_shift,gs),NN.getNNc_sym());
+		return ParticleItCRS_Cells<dim,cli>(NN,getDecomposition().getCRSDomainCells(shift,cell_shift,gs),
+				                               getDecomposition().getCRSAnomDomainCells(shift,cell_shift,gs),
+											   NN.getNNc_sym());
 	}
 
 	/*! \brief Return from which cell we have to start in case of CRS interation
