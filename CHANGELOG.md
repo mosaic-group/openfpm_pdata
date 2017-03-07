@@ -1,6 +1,15 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [0.9.0]
+
+### Added
+- Introduced getDomainIterator for Cell-list
+
+### Fixed
+- Installation of PETSC in case with MUMPS try without MUMPS
+- In case of miss compilation ignore system wide installation
+
 ## [0.8.0] 28 February 2016
 
 ### Added

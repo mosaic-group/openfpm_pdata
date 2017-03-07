@@ -20,17 +20,23 @@ class domain_nn_calculator_cart
 	//! True if domain and anomalous domain cells are computed
 	bool are_domain_anom_computed;
 
-	//! Are linearized the domain cell
+	//! Are linearized the domain cells
+    bool are_dom_cells_lin;
+
+	//! Are linearized the CRS domain cell
     bool are_dom_lin;
 
-    //! are linearized the anomalous cells
+    //! are linearized the CRS anomalous cells
     bool are_anom_lin;
 
-	//! anomalous cell neighborhood
+	//! anomalous cell neighborhood for CRS
 	openfpm::vector<subsub<dim>> anom;
 
-	//! Set of normal domain cells
+	//! Set of normal domain cells for CRS
 	openfpm::vector<grid_key_dx<dim>> dom;
+
+	//! Set of domain cells
+	openfpm::vector<grid_key_dx<dim>> dom_cells;
 
 	//! Linearization is calculated out of a shift and grid dimension this is the shift
 	grid_key_dx<dim> shift_calc_dom;
@@ -45,11 +51,14 @@ class domain_nn_calculator_cart
 	grid_sm<dim,void> gs_calc_anom;
 
 
-	//! Set of normal domain cells linearized
+	//! Set of normal CRS domain cells linearized
 	openfpm::vector<size_t> dom_lin;
 
-	//! Set of normal domain cells linearized
+	//! Set of anomalous CRS domain cells linearized
 	openfpm::vector<subsub_lin<dim>> anom_lin;
+
+	//! Set of linearized domain cells
+	openfpm::vector<size_t> dom_cells_lin;
 
 	//! Processor box
 	Box<dim,long int> proc_box;
@@ -103,6 +112,7 @@ class domain_nn_calculator_cart
 	 */
 	void CalculateDomAndAnomCells(openfpm::vector<subsub<dim>> & sub_keys,
 			                      openfpm::vector<grid_key_dx<dim>> & dom_subsub,
+								  openfpm::vector<grid_key_dx<dim>> & dom_cells,
 								  const ::Box<dim,long int> & proc_box,
 								  grid_key_dx<dim> & shift,
 								  const openfpm::vector<::Box<dim, size_t>> & loc_box)
@@ -149,6 +159,8 @@ class domain_nn_calculator_cart
 					g.template get<0>(src).add(dst + shift);
 				}
 
+				dom_cells.add(key + shift);
+
 				++sub;
 			}
 		}
@@ -183,7 +195,7 @@ class domain_nn_calculator_cart
 public:
 
 	domain_nn_calculator_cart()
-	:are_domain_anom_computed(false),are_dom_lin(false),are_anom_lin(false)
+	:are_domain_anom_computed(false),are_dom_cells_lin(false),are_dom_lin(false),are_anom_lin(false)
 	{}
 
 	/*! \brief Get the domain Cells
@@ -200,7 +212,39 @@ public:
 	{
 		if (are_domain_anom_computed == false)
 		{
-			CalculateDomAndAnomCells(anom,dom,proc_box,shift,loc_box);
+			CalculateDomAndAnomCells(anom,dom,dom_cells,proc_box,shift,loc_box);
+			are_domain_anom_computed = true;
+		}
+
+		if (are_dom_cells_lin == false)
+		{
+			dom_cells_lin.clear();
+			shift_calc_dom = shift;
+			gs_calc_dom = gs;
+			for (size_t i = 0 ; i < dom_cells.size() ; i++)
+				dom_cells_lin.add(gs.LinId(dom_cells.get(i) - cell_shift));
+
+			are_dom_cells_lin = true;
+		}
+
+		return dom_cells_lin;
+	}
+
+	/*! \brief Get the domain Cells
+	 *
+	 * \param shift Shifting point
+	 * \param gs grid extension
+	 * \param proc_box processor bounding box
+	 * \param loc_box set of local sub-domains
+	 *
+	 * \return The set of domain cells
+	 *
+	 */
+	openfpm::vector<size_t> & getCRSDomainCells(grid_key_dx<dim> & shift, grid_key_dx<dim> & cell_shift, grid_sm<dim,void> & gs, Box<dim,size_t> & proc_box, openfpm::vector<::Box<dim, size_t>> & loc_box)
+	{
+		if (are_domain_anom_computed == false)
+		{
+			CalculateDomAndAnomCells(anom,dom,dom_cells,proc_box,shift,loc_box);
 			are_domain_anom_computed = true;
 		}
 
@@ -228,12 +272,12 @@ public:
 	 * \return The set of anomalous cells
 	 *
 	 */
-	openfpm::vector<subsub_lin<dim>> & getAnomDomainCells(grid_key_dx<dim> & shift, grid_key_dx<dim> & cell_shift, grid_sm<dim,void> & gs, Box<dim,size_t> & proc_box, openfpm::vector<::Box<dim, size_t>> & loc_box)
+	openfpm::vector<subsub_lin<dim>> & getCRSAnomDomainCells(grid_key_dx<dim> & shift, grid_key_dx<dim> & cell_shift, grid_sm<dim,void> & gs, Box<dim,size_t> & proc_box, openfpm::vector<::Box<dim, size_t>> & loc_box)
 	{
 		// if the neighborhood of each sub-sub-domains has not been calculated, calculate it
 		if (are_domain_anom_computed == false)
 		{
-			CalculateDomAndAnomCells(anom,dom,proc_box,shift,loc_box);
+			CalculateDomAndAnomCells(anom,dom,dom_cells,proc_box,shift,loc_box);
 			are_domain_anom_computed = true;
 		}
 

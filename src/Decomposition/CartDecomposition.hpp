@@ -1288,7 +1288,22 @@ public:
 		return domain_nn_calculator_cart<dim>::getDomainCells(shift,cell_shift,gs,proc_box,loc_box);
 	}
 
-	/*! \brief Get the anomalous cells
+	/*! \brief Get the CRS domain Cells
+	 *
+	 * It perform a linearization of the domain cells using the extension provided in gs
+	 *
+	 *
+	 * \param shift Cell padding
+	 * \param cell_shift where the domain cell start
+	 * \param gs grid extension
+	 *
+	 */
+	openfpm::vector<size_t> & getCRSDomainCells(grid_key_dx<dim> & shift, grid_key_dx<dim> & cell_shift, grid_sm<dim,void> & gs)
+	{
+		return domain_nn_calculator_cart<dim>::getCRSDomainCells(shift,cell_shift,gs,proc_box,loc_box);
+	}
+
+	/*! \brief Get the CRS anomalous cells
 	 *
 	 * This function include also a linearization of the indexes
 	 *
@@ -1301,9 +1316,9 @@ public:
 	 * \return the anomalous cells with neighborhood
 	 *
 	 */
-	openfpm::vector<subsub_lin<dim>> & getAnomDomainCells(grid_key_dx<dim> & shift, grid_key_dx<dim> & cell_shift, grid_sm<dim,void> & gs)
+	openfpm::vector<subsub_lin<dim>> & getCRSAnomDomainCells(grid_key_dx<dim> & shift, grid_key_dx<dim> & cell_shift, grid_sm<dim,void> & gs)
 	{
-		return domain_nn_calculator_cart<dim>::getAnomDomainCells(shift,cell_shift,gs,proc_box,loc_box);
+		return domain_nn_calculator_cart<dim>::getCRSAnomDomainCells(shift,cell_shift,gs,proc_box,loc_box);
 	}
 
 	/*! \brief Check if the particle is local considering boundary conditions

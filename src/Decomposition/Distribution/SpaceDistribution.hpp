@@ -371,6 +371,18 @@ public:
 
 		return *this;
 	}
+
+	/*! \brief It return the decomposition id
+	 *
+	 * It just return 0
+	 *
+	 * \return 0
+	 *
+	 */
+	size_t get_ndec()
+	{
+		return 0;
+	}
 };
 
 
