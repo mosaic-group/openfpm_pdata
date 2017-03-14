@@ -59,10 +59,10 @@ public:
 	}
 
 	//! constructor from a key
-	inline vect_dist_key_dx(size_t key)
+/*	inline vect_dist_key_dx(size_t key)
 	:key(key)
 	{
-	}
+	}*/
 
 	//! Default constructor
 	inline vect_dist_key_dx()

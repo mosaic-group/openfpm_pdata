@@ -295,11 +295,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_iteration )
 	v_cl.sum(count);
 	v_cl.execute();
 
-	for (size_t i = 0 ; i < ids.size() ; i++)
-	{
-		std::cout << "OUTPUT: " << i << "    " << ids.get(i) <<  create_vcluster().getProcessUnitID() << std::endl;
-	}
-
 	BOOST_REQUIRE_EQUAL((long int)count,k);
 }
 

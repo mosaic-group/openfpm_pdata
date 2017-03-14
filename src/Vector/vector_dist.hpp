@@ -416,6 +416,20 @@ public:
 		return v_pos.template get<0>(vec_key.getKey());
 	}
 
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPos(size_t vec_key) const -> decltype(v_pos.template get<0>(vec_key))
+	{
+		return v_pos.template get<0>(vec_key);
+	}
+
 	/*! \brief Get the property of an element
 	 *
 	 * see the vector_dist iterator usage to get an element key
@@ -444,6 +458,21 @@ public:
 	template<unsigned int id> inline auto getProp(vect_dist_key_dx vec_key) const -> const decltype(v_prp.template get<id>(vec_key.getKey()))
 	{
 		return v_prp.template get<id>(vec_key.getKey());
+	}
+
+	/*! \brief Get the property of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \tparam id property id
+	 * \param vec_key vector element
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline auto getProp(size_t vec_key) const -> const decltype(v_prp.template get<id>(vec_key))
+	{
+		return v_prp.template get<id>(vec_key);
 	}
 
 #endif
@@ -672,6 +701,34 @@ public:
 
 		return cell_list;
 	}
+
+	/*! \brief return the neighborhood cells of a cells to do symmetric interactions
+	 *
+	 * \warning Used in in combination of getNNIteratorSym in a Cell-list
+	 *
+	 * \return the neighborhood cells of a cell
+	 *
+	 *
+	 */
+/*	const openfpm::vector<subsub_lin<dim>> & getNNCells(size_t cell) const
+	{
+		return getDecomposition().getDomainCellNNSym();
+	}*/
+
+	/*! \brief Construct a cell list symmetric based on a cut of radius
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 *
+	 * \return the Cell list
+	 *
+	 */
+	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > CellL getCellListSymNoBind(St r_cut)
+	{
+		return getCellList(r_cut);
+	}
+
 
 	/*! \brief Construct a cell list starting from the stored particles
 	 *
@@ -927,20 +984,19 @@ public:
 		auto & NN = ver.getInternalCellList();
 
 		// Shift
-		grid_key_dx<dim> cell_shift = NN.getShift();
-
-		// Shift
-		grid_key_dx<dim> shift = NN.getShift();
+		grid_key_dx<dim> shift;
 
 		// Add padding
 		for (size_t i = 0 ; i < dim ; i++)
-			shift.set_d(i,shift.get(i) + NN.getPadding(i));
+			shift.set_d(i,NN.getPadding(i));
 
 		grid_sm<dim,void> gs = NN.getInternalGrid();
 
+		getDecomposition().setNNParameters(shift,gs);
+
 		ver.createVerletCrs(r_cut,g_m,v_pos,
-				            getDecomposition().getCRSDomainCells(shift,cell_shift,gs),
-							getDecomposition().getCRSAnomDomainCells(shift,cell_shift,gs));
+				            getDecomposition().getCRSDomainCells(),
+							getDecomposition().getCRSAnomDomainCells());
 
 		ver.set_ndec(getDecomposition().get_ndec());
 
@@ -1022,20 +1078,19 @@ public:
 			if (to_reconstruct == false)
 			{
 				// Shift
-				grid_key_dx<dim> cell_shift = NN.getShift();
-
-				// Shift
-				grid_key_dx<dim> shift = NN.getShift();
+				grid_key_dx<dim> shift;
 
 				// Add padding
 				for (size_t i = 0 ; i < dim ; i++)
-					shift.set_d(i,shift.get(i) + NN.getPadding(i));
+					shift.set_d(i,NN.getPadding(i));
 
 				grid_sm<dim,void> gs = NN.getInternalGrid();
 
+				getDecomposition().setNNParameters(shift,gs);
+
 				ver.updateCrs(getDecomposition().getDomain(),r_cut,v_pos,g_m,
-						      getDecomposition().getCRSDomainCells(shift,cell_shift,gs),
-							  getDecomposition().getCRSAnomDomainCells(shift,cell_shift,gs));
+						      getDecomposition().getCRSDomainCells(),
+							  getDecomposition().getCRSAnomDomainCells());
 			}
 			else
 			{
@@ -1284,18 +1339,17 @@ public:
 #endif
 
 		// Shift
-		grid_key_dx<dim> cell_shift = NN.getShift();
-
-		// Shift
-		grid_key_dx<dim> shift = NN.getShift();
+		grid_key_dx<dim> shift;
 
 		// Add padding
 		for (size_t i = 0 ; i < dim ; i++)
-			shift.set_d(i,shift.get(i) + NN.getPadding(i));
+			shift.set_d(i,NN.getPadding(i));
 
 		grid_sm<dim,void> gs = NN.getInternalGrid();
 
-		return ParticleIt_Cells<dim,CellList>(NN,getDecomposition().getDomainCells(shift,cell_shift,gs));
+		getDecomposition().setNNParameters(shift,gs);
+
+		return ParticleIt_Cells<dim,CellList>(NN,getDecomposition().getDomainCells());
 	}
 
 	/*! \brief Get an iterator that traverse the particles in the domain
@@ -1732,20 +1786,19 @@ public:
 	template<typename cli> ParticleItCRS_Cells<dim,cli> getParticleIteratorCRS(cli & NN)
 	{
 		// Shift
-		grid_key_dx<dim> cell_shift = NN.getShift();
-
-		// Shift
-		grid_key_dx<dim> shift = NN.getShift();
+		grid_key_dx<dim> shift;
 
 		// Add padding
 		for (size_t i = 0 ; i < dim ; i++)
-			shift.set_d(i,shift.get(i) + NN.getPadding(i));
+			shift.set_d(i,NN.getPadding(i));
 
 		grid_sm<dim,void> gs = NN.getInternalGrid();
 
+		getDecomposition().setNNParameters(shift,gs);
+
 		// First we check that
-		return ParticleItCRS_Cells<dim,cli>(NN,getDecomposition().getCRSDomainCells(shift,cell_shift,gs),
-				                               getDecomposition().getCRSAnomDomainCells(shift,cell_shift,gs),
+		return ParticleItCRS_Cells<dim,cli>(NN,getDecomposition().getCRSDomainCells(),
+				                               getDecomposition().getCRSAnomDomainCells(),
 											   NN.getNNc_sym());
 	}
 
