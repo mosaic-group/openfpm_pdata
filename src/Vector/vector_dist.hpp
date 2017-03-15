@@ -425,7 +425,21 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getPos(size_t vec_key) const -> decltype(v_pos.template get<0>(vec_key))
+	inline auto getPos(size_t vec_key) -> decltype(v_pos.template get<0>(vec_key))
+	{
+		return v_pos.template get<0>(vec_key);
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPos(size_t vec_key) const -> const decltype(v_pos.template get<0>(vec_key))
 	{
 		return v_pos.template get<0>(vec_key);
 	}
@@ -458,6 +472,21 @@ public:
 	template<unsigned int id> inline auto getProp(vect_dist_key_dx vec_key) const -> const decltype(v_prp.template get<id>(vec_key.getKey()))
 	{
 		return v_prp.template get<id>(vec_key.getKey());
+	}
+
+	/*! \brief Get the property of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \tparam id property id
+	 * \param vec_key vector element
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline auto getProp(size_t vec_key) -> decltype(v_prp.template get<id>(vec_key))
+	{
+		return v_prp.template get<id>(vec_key);
 	}
 
 	/*! \brief Get the property of an element
