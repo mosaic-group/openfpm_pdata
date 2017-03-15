@@ -72,9 +72,11 @@ class vector_dist_iterator
 	 * \return the actual key
 	 *
 	 */
-	vect_dist_key_dx get()
+	inline vect_dist_key_dx get()
 	{
-		return vect_dist_key_dx(v_it);
+		vect_dist_key_dx v;
+		v.setKey(v_it);
+		return v;
 	}
 
 	/*! \brief Reset the iterator

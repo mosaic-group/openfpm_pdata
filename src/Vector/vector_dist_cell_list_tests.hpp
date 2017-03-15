@@ -1385,7 +1385,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_verlet_list )
 
 		ret &= vd2.getProp<1>(p) == vd.getProp<0>(p);
 
-
 		vd.getProp<3>(p).sort();
 		vd2.getProp<4>(p).sort();
 
@@ -1402,5 +1401,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_verlet_list )
 
 	BOOST_REQUIRE_EQUAL(ret,true);
 }
+
 
 #endif /* SRC_VECTOR_VECTOR_DIST_CELL_LIST_TESTS_HPP_ */

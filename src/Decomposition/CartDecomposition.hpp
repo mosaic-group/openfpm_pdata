@@ -1013,6 +1013,7 @@ public:
 		calculateGhostBoxes();
 
 		domain_nn_calculator_cart<dim>::reset();
+		domain_nn_calculator_cart<dim>::setParameters(proc_box);
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
@@ -1034,6 +1035,7 @@ public:
 		calculateGhostBoxes();
 
 		domain_nn_calculator_cart<dim>::reset();
+		domain_nn_calculator_cart<dim>::setParameters(proc_box);
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
@@ -1055,6 +1057,7 @@ public:
 		calculateGhostBoxes();
 
 		domain_nn_calculator_cart<dim>::reset();
+		domain_nn_calculator_cart<dim>::setParameters(proc_box);
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
@@ -1283,9 +1286,9 @@ public:
 	 * \param gs grid extension
 	 *
 	 */
-	openfpm::vector<size_t> & getDomainCells(grid_key_dx<dim> & shift, grid_key_dx<dim> & cell_shift, grid_sm<dim,void> & gs)
+	openfpm::vector<size_t> & getDomainCells()
 	{
-		return domain_nn_calculator_cart<dim>::getDomainCells(shift,cell_shift,gs,proc_box,loc_box);
+		return domain_nn_calculator_cart<dim>::getDomainCells();
 	}
 
 	/*! \brief Get the CRS domain Cells
@@ -1296,11 +1299,23 @@ public:
 	 * \param shift Cell padding
 	 * \param cell_shift where the domain cell start
 	 * \param gs grid extension
+	 * \param loc_box processor sub-domains
 	 *
 	 */
-	openfpm::vector<size_t> & getCRSDomainCells(grid_key_dx<dim> & shift, grid_key_dx<dim> & cell_shift, grid_sm<dim,void> & gs)
+	openfpm::vector<size_t> & getCRSDomainCells()
 	{
-		return domain_nn_calculator_cart<dim>::getCRSDomainCells(shift,cell_shift,gs,proc_box,loc_box);
+		return domain_nn_calculator_cart<dim>::getCRSDomainCells();
+	}
+
+	/*! \brief set NN parameters to calculate cell-list neighborhood
+	 *
+	 * \param shift to apply in cell linearization
+	 * \param gs cell grid
+	 *
+	 */
+	void setNNParameters(grid_key_dx<dim> & shift, grid_sm<dim,void> & gs)
+	{
+		domain_nn_calculator_cart<dim>::setNNParameters(loc_box, shift, gs);
 	}
 
 	/*! \brief Get the CRS anomalous cells
@@ -1316,9 +1331,9 @@ public:
 	 * \return the anomalous cells with neighborhood
 	 *
 	 */
-	openfpm::vector<subsub_lin<dim>> & getCRSAnomDomainCells(grid_key_dx<dim> & shift, grid_key_dx<dim> & cell_shift, grid_sm<dim,void> & gs)
+	openfpm::vector<subsub_lin<dim>> & getCRSAnomDomainCells()
 	{
-		return domain_nn_calculator_cart<dim>::getCRSAnomDomainCells(shift,cell_shift,gs,proc_box,loc_box);
+		return domain_nn_calculator_cart<dim>::getCRSAnomDomainCells();
 	}
 
 	/*! \brief Check if the particle is local considering boundary conditions

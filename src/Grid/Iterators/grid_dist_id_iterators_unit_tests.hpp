@@ -260,7 +260,7 @@ void Test3D_decit(const Box<3,float> & domain, long int k)
 
 			// create a grid iterator from the decomposition
 
-			grid_dist_id_iterator_dec<CartDecomposition<3,float>> it_dec(g_dist.getDecomposition(),sz,{0,0,0},{sz[0]-2,sz[1]-2,sz[2]-2});
+			grid_dist_id_iterator_dec<CartDecomposition<3,float>> it_dec(g_dist.getDecomposition(),sz,{0,0,0},{(long int)sz[0]-2,(long int)sz[1]-2,(long int)sz[2]-2});
 
 			while (dom.isNext())
 			{
