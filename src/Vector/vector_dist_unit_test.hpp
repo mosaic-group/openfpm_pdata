@@ -1064,7 +1064,7 @@ void Test_interacting(Box<3,float> & box)
 
 				Point<3,float> xp = vd.getPos(p);
 
-				auto Np = NN.getIterator(NN.getCell(xp));
+				auto Np = NN.getCellIterator(NN.getCell(xp));
 
 				while (Np.isNext())
 				{
