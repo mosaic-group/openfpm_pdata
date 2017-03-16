@@ -439,7 +439,7 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getPos(size_t vec_key) const -> const decltype(v_pos.template get<0>(vec_key))
+	inline auto getPos(size_t vec_key) const -> decltype(v_pos.template get<0>(vec_key))
 	{
 		return v_pos.template get<0>(vec_key);
 	}
@@ -1378,7 +1378,7 @@ public:
 
 		getDecomposition().setNNParameters(shift,gs);
 
-		return ParticleIt_Cells<dim,CellList>(NN,getDecomposition().getDomainCells());
+		return ParticleIt_Cells<dim,CellList>(NN,getDecomposition().getDomainCells(),g_m);
 	}
 
 	/*! \brief Get an iterator that traverse the particles in the domain
