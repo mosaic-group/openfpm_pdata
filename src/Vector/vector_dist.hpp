@@ -731,18 +731,6 @@ public:
 		return cell_list;
 	}
 
-	/*! \brief return the neighborhood cells of a cells to do symmetric interactions
-	 *
-	 * \warning Used in in combination of getNNIteratorSym in a Cell-list
-	 *
-	 * \return the neighborhood cells of a cell
-	 *
-	 *
-	 */
-/*	const openfpm::vector<subsub_lin<dim>> & getNNCells(size_t cell) const
-	{
-		return getDecomposition().getDomainCellNNSym();
-	}*/
 
 	/*! \brief Construct a cell list symmetric based on a cut of radius
 	 *

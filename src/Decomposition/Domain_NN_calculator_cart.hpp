@@ -198,7 +198,7 @@ class domain_nn_calculator_cart
 
 	/*! \brief Linearize the sub-sub-domains
 	 *
-	 * \param anon set of grid keys to linearize
+	 * \param anom set of grid keys to linearize
 	 * \param anom_lin linearized output
 	 * \param shift shifting
 	 *
@@ -256,8 +256,9 @@ public:
 
 	/*! \brief Set parameters to calculate the cell neighborhood
 	 *
-	 * \param shift to apply in the linearization
 	 * \param loc_box set of local sub-domains
+	 * \param shift to apply in the linearization
+	 * \param gs grid of cells (for the processor domain)
 	 *
 	 */
 	void setNNParameters(openfpm::vector<::Box<dim, size_t>> & loc_box,
@@ -284,7 +285,6 @@ public:
 
 	/*! \brief Get the domain Cells
 	 *
-	 * \param loc_box set of local sub-domains
 	 *
 	 * \return The set of domain cells
 	 *
@@ -296,7 +296,6 @@ public:
 
 	/*! \brief Get the domain Cells
 	 *
-	 * \param loc_box set of local sub-domains
 	 *
 	 * \return The set of domain cells
 	 *
@@ -308,7 +307,6 @@ public:
 
 	/*! \brief Get the domain anomalous cells
 	 *
-	 * \param loc_box set of local sub-domains
 	 *
 	 * \return The set of anomalous cells
 	 *

@@ -16,8 +16,6 @@ BOOST_AUTO_TEST_SUITE( staggered_grid_dist_id_test )
 
 BOOST_AUTO_TEST_CASE( staggered_grid_dist_unit_test)
 {
-	typedef Point2D_test<float> p;
-
 	// Domain
 	Box<2,float> domain({0.0,0.0},{1.0,1.0});
 

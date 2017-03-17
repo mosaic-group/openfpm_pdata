@@ -240,7 +240,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_iteration )
 	// Boundary conditions
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
-	float r_cut = 0.01;
+	float r_cut = 0.1;
 
 	// ghost
 	Ghost<3,float> ghost(r_cut);
