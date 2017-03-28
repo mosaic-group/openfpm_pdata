@@ -970,6 +970,8 @@ int main(int argc, char* argv[])
 
 	/*! \cond [important_option] \endcond */
 
+#if 0
+
 	// You can ignore all these dp/2.0 is a trick to reach the same initialization
 	// of Dual-SPH that use a different criteria to draw particles
 	Box<3,double> fluid_box({dp/2.0,dp/2.0,dp/2.0},{0.4+dp/2.0,0.67-dp/2.0,0.3+dp/2.0});
@@ -1019,6 +1021,8 @@ int main(int argc, char* argv[])
 		// next fluid particle
 		++fluid_it;
 	}
+
+#endif
 
 	// Recipient
 	Box<3,double> recipient1({0.0,0.0,0.0},{1.6+dp/2.0,0.67+dp/2.0,0.4+dp/2.0});
@@ -1080,6 +1084,11 @@ int main(int argc, char* argv[])
 	}
 
 	vd.map();
+
+        vd.write("Recipient");
+
+        openfpm_finalize();
+        return 0;
 
 	// Now that we fill the vector with particles
 	ModelCustom md;

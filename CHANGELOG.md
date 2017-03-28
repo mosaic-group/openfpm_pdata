@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Installation of PETSC in case with MUMPS try without MUMPS
 - In case of miss compilation ignore system wide installation
+- Bug in VTK writer binary in case of vectors
+- Bug in VTK writer binary: long int are not supported removing output
 
 ## [0.8.0] 28 February 2016
 

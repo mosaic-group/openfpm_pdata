@@ -851,9 +851,9 @@ public:
 	 * \return processorID
 	 *
 	 */
-	template<typename Mem, typename ofb> size_t inline processorID(encapc<1, Point<dim,T>, Mem> p)
+	template<typename Mem> size_t inline processorID(const encapc<1, Point<dim,T>, Mem> & p) const
 	{
-		return fine_s.get(cd.template getCell<ofb>(p));
+		return fine_s.get(cd.template getCell(p));
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -1247,6 +1247,20 @@ public:
 	 *
 	 */
 	bool isLocal(const T (&pos)[dim]) const
+	{
+		return processorID(pos) == v_cl.getProcessUnitID();
+	}
+
+	/*! \brief Check if the particle is local
+	 *
+	 * \warning if the particle id outside the domain the result is unreliable
+	 *
+	 * \param pos object position
+	 *
+	 * \return true if it is local
+	 *
+	 */
+	bool isLocal(const Point<dim,T> & pos) const
 	{
 		return processorID(pos) == v_cl.getProcessUnitID();
 	}

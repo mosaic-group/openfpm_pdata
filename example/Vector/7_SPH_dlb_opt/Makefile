@@ -7,6 +7,8 @@ OPT=
 
 OBJ = main.o
 
+all: sph_dlb
+
 sph_dlb_test: OPT += -DTEST_RUN
 sph_dlb_test: sph_dlb
 
@@ -16,7 +18,6 @@ sph_dlb_test: sph_dlb
 sph_dlb: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
-all: sph_dlb
 
 run: sph_dlb_test
 	mpirun -np 2 ./sph_dlb
