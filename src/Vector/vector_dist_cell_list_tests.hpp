@@ -684,7 +684,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 
 	// In case of CRS we have to iterate particles within some cells
 	// here we define whichone
-	auto p_it2 = vd2.getParticleIteratorCRS(NN2);
+	auto p_it2 = vd2.getParticleIteratorCRS_Cell(NN2);
 
 	// For each particle
 	while (p_it2.isNext())
@@ -1326,7 +1326,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_verlet_list )
 	auto NN2 = vd2.getVerletCrs(r_cut);
 
 	// Because iterating across particles in the CSR scheme require a Cell-list
-	auto p_it2 = vd2.getParticleIteratorCRS(NN2.getInternalCellList());
+	auto p_it2 = vd2.getParticleIteratorCRS_Cell(NN2.getInternalCellList());
 
 	while (p_it2.isNext())
 	{
@@ -1396,6 +1396,98 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_verlet_list )
 		if (ret == false)
 			break;
 
+		++p_it3;
+	}
+
+	BOOST_REQUIRE_EQUAL(ret,true);
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_verlet_list_partit )
+{
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 24)
+		return;
+
+	float L = 1000.0;
+
+	bool ret = true;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(0);
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(-L,L);
+
+    long int k = 4096 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 4;
+	big_step = (big_step == 0)?1:big_step;
+
+	print_test("Testing 3D periodic vector symmetric cell-list k=",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list k=" << k );
+
+	Box<3,float> box({-L,-L,-L},{L,L,L});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	float r_cut = 100.0;
+
+	// ghost
+	Ghost<3,float> ghost(r_cut);
+	Ghost<3,float> ghost2(r_cut);
+	ghost2.setLow(0,0.0);
+	ghost2.setLow(1,0.0);
+	ghost2.setLow(2,0.0);
+
+
+	typedef  aggregate<size_t> part_prop;
+
+	// Distributed vector
+	vector_dist<3,float, part_prop > vd(k,box,bc,ghost,BIND_DEC_TO_GHOST);
+
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.getPos(key)[0] = ud(eg);
+		vd.getPos(key)[1] = ud(eg);
+		vd.getPos(key)[2] = ud(eg);
+
+		// Fill some properties randomly
+
+		vd.getProp<0>(key) = 0;
+
+		++it;
+	}
+
+	vd.map();
+
+	// sync the ghost
+	vd.ghost_get<0>();
+
+	// We now try symmetric Verlet-list Crs scheme
+
+	auto NN2 = vd.getVerletCrs(r_cut);
+
+	// Because iterating across particles in the CSR scheme require a Cell-list
+	auto p_it2 = vd.getParticleIteratorCRS_Cell(NN2.getInternalCellList());
+	auto p_it3 = vd.getParticleIteratorCRS(NN2);
+
+	while (p_it2.isNext())
+	{
+		auto p = p_it2.get();
+		auto p2 = p_it3.get();
+
+		ret &= (p == p2);
+
+		if (ret == false)
+			break;
+
+		++p_it2;
 		++p_it3;
 	}
 

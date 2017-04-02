@@ -4,7 +4,7 @@
 ## Take all the options with the exception of --enable-install-req
 
 AC_PREREQ(2.59)
-AC_INIT(OpenFPM_pdata, 0.8.0, BUG-REPORT-ADDRESS)
+AC_INIT(OpenFPM_pdata, 0.9.0, BUG-REPORT-ADDRESS)
 AC_CANONICAL_SYSTEM
 AC_CONFIG_SRCDIR([src/main.cpp])
 AC_CONFIG_SUBDIRS([openfpm_data openfpm_devices openfpm_vcluster openfpm_io openfpm_numerics])

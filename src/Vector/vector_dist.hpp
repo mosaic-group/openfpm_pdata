@@ -31,6 +31,7 @@
 #include "NN/VerletList/VerletList.hpp"
 #include "vector_dist_comm.hpp"
 #include "DLB/LB_Model.hpp"
+#include "Vector/vector_map_iterator.hpp"
 
 #define VECTOR_DIST_ERROR_OBJECT std::runtime_error("Runtime vector distributed error");
 
@@ -1800,7 +1801,7 @@ public:
 	 * \return Particle iterator
 	 *
 	 */
-	template<typename cli> ParticleItCRS_Cells<dim,cli> getParticleIteratorCRS(cli & NN)
+	template<typename cli> ParticleItCRS_Cells<dim,cli> getParticleIteratorCRS_Cell(cli & NN)
 	{
 		// Shift
 		grid_key_dx<dim> shift;
@@ -1817,6 +1818,20 @@ public:
 		return ParticleItCRS_Cells<dim,cli>(NN,getDecomposition().getCRSDomainCells(),
 				                               getDecomposition().getCRSAnomDomainCells(),
 											   NN.getNNc_sym());
+	}
+
+	/*! \brief Get a special particle iterator able to iterate across particles using
+	 *         symmetric crossing scheme
+	 *
+	 * \param NN Verlet list neighborhood
+	 *
+	 * \return Particle iterator
+	 *
+	 */
+	template<typename vrl> openfpm::vector_key_iterator_seq<typename vrl::local_index_t> getParticleIteratorCRS(vrl & NN)
+	{
+		// First we check that
+		return openfpm::vector_key_iterator_seq<typename vrl::local_index_t>(NN.getParticleSeq());
 	}
 
 	/*! \brief Return from which cell we have to start in case of CRS interation
