@@ -881,7 +881,11 @@ public:
 	 * \param opt additional options
 	 *
 	 */
-	void init_decomposition(Box<dim,St> & box, const size_t (& bc)[dim],const Ghost<dim,St> & g, size_t opt)
+	void init_decomposition(Box<dim,St> & box,
+							const size_t (& bc)[dim],
+							const Ghost<dim,St> & g,
+							size_t opt,
+							const grid_sm<dim,void> & gdist)
 	{
 		size_t div[dim];
 
@@ -917,7 +921,7 @@ public:
 		}
 
 		// Create the sub-domains
-		dec.setParameters(div, box, bc, g);
+		dec.setParameters(div, box, bc, g, gdist);
 		dec.decompose();
 	}
 

@@ -345,7 +345,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_sym_test )
 
 	verlet_type NNver_all[4];
 
-	// This create a Verlet-list between phase all phases to all the other phases
+	// This create a Verlet-list between each phase to all the other phases
 	NNver_all[0] = createVerletSymM<2>(0,phases.get(0),phases,CL_all,r_cut);
 	NNver_all[1] = createVerletSymM<2>(1,phases.get(1),phases,CL_all,r_cut);
 	NNver_all[2] = createVerletSymM<2>(2,phases.get(2),phases,CL_all,r_cut);

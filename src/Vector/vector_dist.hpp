@@ -340,7 +340,7 @@ public:
 	 *          ghost communications.
 	 *
 	 */
-	vector_dist(size_t np, Box<dim, St> box, const size_t (&bc)[dim], const Ghost<dim, St> & g, size_t opt = 0)
+	vector_dist(size_t np, Box<dim, St> box, const size_t (&bc)[dim], const Ghost<dim, St> & g, size_t opt = 0, const grid_sm<dim,void> & gdist = grid_sm<dim,void>())
 	:v_cl(create_vcluster()),opt(opt) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
@@ -353,7 +353,7 @@ public:
 		check_parameters(box);
 
 		init_structures(np);
-		this->init_decomposition(box,bc,g,opt);
+		this->init_decomposition(box,bc,g,opt,gdist);
 
 #ifdef SE_CLASS3
 		se3.Initialize();
