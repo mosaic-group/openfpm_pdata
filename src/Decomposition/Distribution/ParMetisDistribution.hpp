@@ -446,8 +446,10 @@ public:
 	 */
 	void getSubSubDomainPosition(size_t id, T (&pos)[dim])
 	{
+#ifdef SE_CLASS1
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+			std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+#endif
 
 		// Copy the geometrical informations inside the pos vector
 		pos[0] = gp.vertex(id).template get<nm_v::x>()[0];
@@ -467,8 +469,10 @@ public:
 		if (!verticesGotWeights)
 			verticesGotWeights = true;
 
+#ifdef SE_CLASS1
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+			std::cerr << << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+#endif
 
 		// Update vertex in main graph
 		gp.vertex(id).template get<nm_v::computation>() = weight;
@@ -490,8 +494,10 @@ public:
 	 */
 	size_t getSubSubDomainComputationCost(size_t id)
 	{
+#ifdef SE_CLASS1
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+			std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+#endif
 
 		return gp.vertex(id).template get<nm_v::computation>();
 	}
@@ -523,8 +529,10 @@ public:
 	 */
 	void setMigrationCost(size_t id, size_t migration)
 	{
+#ifdef SE_CLASS1
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+			std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+#endif
 
 		gp.vertex(id).template get<nm_v::migration>() = migration;
 	}
@@ -559,8 +567,10 @@ public:
 	 */
 	size_t getNSubSubDomainNeighbors(size_t id)
 	{
+#ifdef SE_CLASS1
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+			std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+#endif
 
 		return gp.getNChilds(id);
 	}

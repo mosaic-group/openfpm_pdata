@@ -245,8 +245,10 @@ public:
 	 */
 	void getSubSubDomainPosition(size_t id, T (&pos)[dim])
 	{
+#ifdef SE_CLASS1
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+			std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+#endif
 
 		// Copy the geometrical informations inside the pos vector
 		pos[0] = gp.vertex(id).template get<nm_v::x>()[0];

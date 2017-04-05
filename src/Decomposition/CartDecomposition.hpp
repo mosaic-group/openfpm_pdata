@@ -295,18 +295,7 @@ public:
 		// fine_s structure contain the processor id for each sub-sub-domain
 		// with sub-sub-domain we mean the sub-domain decomposition before
 		// running dec_optimizer (before merging sub-domains)
-/*		auto it = dist.getGraph().getVertexIterator();
 
-
-		while (it.isNext())
-		{
-			size_t key = it.get();
-
-			// fill with the fine decomposition
-			fine_s.get(key) = dist.getGraph().template vertex_p<nm_v::proc_id>(key);
-
-			++it;
-		}*/
 
 		grid_key_dx_iterator<dim> git(gr);
 
@@ -1008,7 +997,7 @@ public:
 			for (size_t i = 0 ; i < dim ; i++)
 			{
 				if (gr.size(i) % gm.size(i) != 0)
-					std::cerr << __FILE__ << ":" << __LINE__ << ".Error the distribution grid must be multiple of the decomposition grid" << std::endl;
+					std::cerr << __FILE__ << ":" << __LINE__ << ".Error the decomposition grid specified as gr.size(" << i << ")=" << gr.size(i) << " is not multiple of the distribution grid gm.size(" << i << ")=" << gm.size(i) << std::endl;
 
 				magn[i] = gr.size(i) / gm.size(i);
 			}

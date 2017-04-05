@@ -1564,7 +1564,7 @@ public:
 
 		Decomposition & dec = getDecomposition();
 
-		cdsm.setDimensions(dec.getDomain(), dec.getGrid().getSize(), 0);
+		cdsm.setDimensions(dec.getDomain(), dec.getDistGrid().getSize(), 0);
 
 		for (size_t i = 0; i < getDecomposition().getNSubSubDomains(); i++)
 			dec.setSubSubDomainComputationCost(i, 1);
