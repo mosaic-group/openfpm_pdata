@@ -546,6 +546,9 @@ public:
 	void setCommunicationCost(size_t v_id, size_t e, size_t communication)
 	{
 #ifdef SE_CLASS1
+
+		size_t e_id = v_id + e;
+
 		if (e_id >= gp.getNEdge())
 			std::cerr << "Such edge doesn't exist (id = " << e_id << ", " << "total size = " << gp.getNEdge() << ")\n";
 #endif
