@@ -280,10 +280,10 @@ public:
 			for (size_t i = 0 ; i < dim ; i++)
 			{
 				proc_box.setLow(i,0.0);
-				proc_box.setHigh(i,(size_t)-1);
+				proc_box.setHigh(i,0);
 
 				bbox.setLow(i,0.0);
-				bbox.setHigh(i,(size_t)-1);
+				bbox.setHigh(i,0);
 			}
 		}
 
@@ -340,7 +340,8 @@ public:
 		// Get the processor bounding Box
 		::Box<dim,T> bound = getProcessorBounds();
 
-		if (bound.isValid() == true)
+		// Check if the box is valid
+		if (bound.isValidN() == true)
 		{
 			// Not necessary, but I prefer
 			bound.enlarge(ghost);
