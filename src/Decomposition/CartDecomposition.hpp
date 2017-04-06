@@ -268,11 +268,23 @@ public:
 		d_o.template optimize<nm_v::sub_id, nm_v::proc_id>(dist.getGraph(), p_id, loc_box, box_nn_processor,ghe,bc);
 
 		// Initialize
-		if (loc_box.size() >= 0)
+		if (loc_box.size() > 0)
 		{
 			bbox = convertDecBoxIntoSubDomain(loc_box.get(0));
 			proc_box = loc_box.get(0);
 			sub_domains.add(bbox);
+		}
+		else
+		{
+			// invalidate all the boxes
+			for (size_t i = 0 ; i < dim ; i++)
+			{
+				proc_box.setLow(i,0.0);
+				proc_box.setHigh(i,(size_t)-1);
+
+				bbox.setLow(i,0.0);
+				bbox.setHigh(i,(size_t)-1);
+			}
 		}
 
 		// convert into sub-domain
@@ -327,19 +339,23 @@ public:
 	{
 		// Get the processor bounding Box
 		::Box<dim,T> bound = getProcessorBounds();
-		// Not necessary, but I prefer
-		bound.enlarge(ghost);
 
-		// calculate the sub-divisions
-		size_t div[dim];
-		for (size_t i = 0; i < dim; i++)
-			div[i] = (size_t) ((bound.getHigh(i) - bound.getLow(i)) / cd.getCellBox().getP2()[i]);
+		if (bound.isValid() == true)
+		{
+			// Not necessary, but I prefer
+			bound.enlarge(ghost);
 
-		// Initialize the geo_cell structure
-		ie_ghost<dim,T>::Initialize_geo_cell(bound,div);
+			// calculate the sub-divisions
+			size_t div[dim];
+			for (size_t i = 0; i < dim; i++)
+				div[i] = (size_t) ((bound.getHigh(i) - bound.getLow(i)) / cd.getCellBox().getP2()[i]);
 
-		// Initialize shift vectors
-		ie_ghost<dim,T>::generateShiftVectors(domain);
+			// Initialize the geo_cell structure
+			ie_ghost<dim,T>::Initialize_geo_cell(bound,div);
+
+			// Initialize shift vectors
+			ie_ghost<dim,T>::generateShiftVectors(domain);
+		}
 	}
 
 	/*! \brief Calculate communication and migration costs

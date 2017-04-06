@@ -471,7 +471,7 @@ public:
 
 #ifdef SE_CLASS1
 		if (id >= gp.getNVertex())
-			std::cerr << << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+			std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
 #endif
 
 		// Update vertex in main graph
@@ -545,10 +545,10 @@ public:
 	 */
 	void setCommunicationCost(size_t v_id, size_t e, size_t communication)
 	{
-		size_t e_id = v_id + e;
-
+#ifdef SE_CLASS1
 		if (e_id >= gp.getNEdge())
 			std::cerr << "Such edge doesn't exist (id = " << e_id << ", " << "total size = " << gp.getNEdge() << ")\n";
+#endif
 
 		gp.getChildEdge(v_id, e).template get<nm_e::communication>() = communication;
 	}

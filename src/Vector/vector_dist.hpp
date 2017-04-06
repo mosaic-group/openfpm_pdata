@@ -1488,6 +1488,14 @@ public:
 	 */
 	template<int ... prp> inline void ghost_get(size_t opt = WITH_POSITION)
 	{
+#ifdef SE_CLASS1
+		if (getDecomposition().getProcessorBounds().isValid() == false && vd.size_local() != 0)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Error the processor " << v_cl.getProcessorUnitID() << " has particles, but is supposed to be unloaded" << std::endl;
+			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+		}
+#endif
+
 #ifdef SE_CLASS3
 		se3.template ghost_get_pre<prp...>(opt);
 #endif
