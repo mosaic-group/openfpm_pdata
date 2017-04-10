@@ -1611,8 +1611,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_checking_unloaded_processors )
 
 	float L = 200.0;
 
-	bool ret = true;
-
     // set the seed
 	// create the random generator engine
 	std::srand(0);
@@ -1674,7 +1672,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_checking_unloaded_processors )
 		v_cl.min(min);
 		v_cl.execute();
 
-		BOOST_REQUIRE_EQUAL(min,0);
+		BOOST_REQUIRE_EQUAL(min,0ul);
 	}
 
 
@@ -1689,7 +1687,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_checking_unloaded_processors )
 		v_cl.min(min);
 		v_cl.execute();
 
-		BOOST_REQUIRE_EQUAL(min,0);
+		BOOST_REQUIRE_EQUAL(min,0ul);
 	}
 }
 

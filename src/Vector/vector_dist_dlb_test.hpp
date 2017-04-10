@@ -10,7 +10,7 @@
 
 BOOST_AUTO_TEST_SUITE( vector_dist_dlb_test )
 
-BOOST_AUTO_TEST_CASE( vector_dist_dlb_test_part )
+template<typename vector_type> void test_dlb_vector()
 {
 	Vcluster & v_cl = create_vcluster();
 
@@ -21,7 +21,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_dlb_test_part )
 	Ghost<3,float> g(0.1);
 	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
 
-	vector_dist<3,float,aggregate<float>> vd(0,domain,bc,g,DEC_GRAN(2048));
+	vector_type vd(0,domain,bc,g,DEC_GRAN(2048));
 
 	// Only processor 0 initialy add particles on a corner of a domain
 
@@ -37,16 +37,17 @@ BOOST_AUTO_TEST_CASE( vector_dist_dlb_test_part )
 		}
 	}
 
-
-
 	vd.map();
-	vd.ghost_get<>();
+	vd.template ghost_get<>();
 
 	ModelSquare md;
 	md.factor = 10;
 	vd.addComputationCosts(md);
 	vd.getDecomposition().decompose();
 	vd.map();
+
+	vd.getDecomposition().getDistribution().write("dist_out_");
+	vd.getDecomposition().write("dec_out_");
 
 	vd.addComputationCosts(md);
 
@@ -92,7 +93,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_dlb_test_part )
 
 		BOOST_REQUIRE(vd.size_local() != 0);
 
-		vd.ghost_get<>();
+		vd.template ghost_get<>();
 
 		vd.addComputationCosts(md);
 
@@ -109,6 +110,16 @@ BOOST_AUTO_TEST_CASE( vector_dist_dlb_test_part )
 			BOOST_REQUIRE_CLOSE(load_f,load_fc,7.0);
 		}
 	}
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_dlb_test_part )
+{
+	test_dlb_vector<vector_dist<3,float,aggregate<float>>>();
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_dlb_metis_test_part )
+{
+	test_dlb_vector<vector_dist<3,float,aggregate<float>,CartDecomposition<3,float,HeapMemory,MetisDistribution<3,float>>>>();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

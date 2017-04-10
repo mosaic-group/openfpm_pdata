@@ -1571,11 +1571,12 @@ public:
 		CellDecomposer_sm<dim, St, shift<dim,St>> cdsm;
 
 		Decomposition & dec = getDecomposition();
+		auto & dist = getDecomposition().getDistribution();
 
 		cdsm.setDimensions(dec.getDomain(), dec.getDistGrid().getSize(), 0);
 
-		for (size_t i = 0; i < getDecomposition().getNSubSubDomains(); i++)
-			dec.setSubSubDomainComputationCost(i, 1);
+		for (size_t i = 0; i < dist.getNOwnerSubSubDomains() ; i++)
+			dec.setSubSubDomainComputationCost(dist.getOwnerSubSubDomain(i) , 1);
 
 		auto it = getDomainIterator();
 
@@ -1592,10 +1593,10 @@ public:
 
 		// Go throught all the sub-sub-domains and apply the model
 
-		for (size_t i = 0 ; i < dec.getDistribution().getNSubSubDomains(); i++)
-			md.applyModel(dec,i);
+		for (size_t i = 0 ; i < dist.getNOwnerSubSubDomains(); i++)
+			md.applyModel(dec,dist.getOwnerSubSubDomain(i));
 
-		dec.getDistribution().setDistTol(md.distributionTol());
+		dist.setDistTol(md.distributionTol());
 	}
 
 	/*! \brief Output particle position and properties
@@ -1777,6 +1778,26 @@ public:
 	openfpm::vector<Point<dim,St>> & getPosVector()
 	{
 		return v_pos;
+	}
+
+	/*! \brief return the property vector of all the particles
+	 *
+	 * \return the particle property vector
+	 *
+	 */
+	const openfpm::vector<prop> & getPropVector() const
+	{
+		return v_prp;
+	}
+
+	/*! \brief return the property vector of all the particles
+	 *
+	 * \return the particle property vector
+	 *
+	 */
+	openfpm::vector<prop> & getPropVector()
+	{
+		return v_prp;
 	}
 
 	/*! \brief It return the sum of the particles in the previous processors

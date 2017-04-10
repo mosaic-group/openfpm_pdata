@@ -64,9 +64,6 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 	if (v_cl.getProcessingUnits() != 3)
 	return;
 
-	if (v_cl.getProcessUnitID() != 0)
-	return;
-
 	//! [Initialize a Metis Cartesian graph and decompose]
 
 	MetisDistribution<3, float> met_dist(v_cl);
@@ -100,17 +97,21 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 
 	// Initialize the weights to 1.0
 	// not required, if we set ALL Computation,Migration,Communication cost
-	met_dist.initWeights();
 
 	// Change set some weight on the graph and re-decompose
 
-	for (size_t i = 0; i < met_dist.getNSubSubDomains(); i++)
+	for (size_t k = 0; k < met_dist.getNOwnerSubSubDomains(); k++)
 	{
-		if (i == 0 || i == b || i == 2*b || i == 3*b || i == 4*b)
-		met_dist.setComputationCost(i,10);
-		else
-		met_dist.setComputationCost(i,1);
+		size_t i = met_dist.getOwnerSubSubDomain(k);
 
+		if (i == 0 || i == b || i == 2*b || i == 3*b || i == 4*b)
+			met_dist.setComputationCost(i,10);
+		else
+			met_dist.setComputationCost(i,1);
+	}
+
+	for (size_t i = 0 ; i <  met_dist.getNSubSubDomains() ; i++)
+	{
 		// We also show how to set some Communication and Migration cost
 
 		met_dist.setMigrationCost(i,1);
@@ -163,7 +164,7 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 	// operator= functions
 	// operator== functions
 
-	BOOST_REQUIRE_EQUAL(sizeof(MetisDistribution<3,float>),472ul);
+	BOOST_REQUIRE_EQUAL(sizeof(MetisDistribution<3,float>),712ul);
 }
 
 BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
@@ -264,7 +265,7 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 
 	//! [refine with parmetis the decomposition]
 
-	BOOST_REQUIRE_EQUAL(sizeof(MetisDistribution<3,float>),472ul);
+	BOOST_REQUIRE_EQUAL(sizeof(ParMetisDistribution<3,float>),872ul);
 }
 
 BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
