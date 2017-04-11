@@ -85,6 +85,8 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 	met_dist.createCartGraph(info,box);
 	met_dist.decompose();
 
+	BOOST_REQUIRE_EQUAL(met_dist.get_ndec(),1ul);
+
 	//! [Initialize a Metis Cartesian graph and decompose]
 
 	BOOST_REQUIRE(met_dist.getUnbalance() < 0.03);
@@ -121,6 +123,8 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 	}
 
 	met_dist.decompose();
+
+	BOOST_REQUIRE_EQUAL(met_dist.get_ndec(),2ul);
 
 	//! [Decomposition Metis with weights]
 
@@ -164,7 +168,7 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 	// operator= functions
 	// operator== functions
 
-	BOOST_REQUIRE_EQUAL(sizeof(MetisDistribution<3,float>),712ul);
+	BOOST_REQUIRE_EQUAL(sizeof(MetisDistribution<3,float>),720ul);
 }
 
 BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
@@ -197,6 +201,8 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 	// first decomposition
 	pmet_dist.decompose();
 
+	BOOST_REQUIRE_EQUAL(pmet_dist.get_ndec(),1ul);
+
 	//! [Initialize a ParMetis Cartesian graph and decompose]
 
 	if (v_cl.getProcessUnitID() == 0)
@@ -225,6 +231,7 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 	Point<3, float> shift( { tstep, tstep, tstep });
 
 	size_t iter = 1;
+	size_t n_dec = 1;
 
 	for(float t = stime; t < etime; t = t + tstep, iter++)
 	{
@@ -239,6 +246,8 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 		if ((size_t)iter % 10 == 0)
 		{
 			pmet_dist.refine();
+			n_dec++;
+			BOOST_REQUIRE_EQUAL(pmet_dist.get_ndec(),n_dec);
 
 			if (v_cl.getProcessUnitID() == 0)
 			{

@@ -78,8 +78,8 @@ class Metis
 	//! Original graph
 	Graph & g;
 
-	//Check if weights are available
-//	bool useWeights = false;
+	//! indicate how many time decompose/refine/re-decompose has been called
+	size_t n_dec;
 
 	//! Distribution tolerance
 	real_t dist_tol = 1.05;
@@ -189,7 +189,7 @@ public:
 	 *
 	 */
 	Metis(Graph & g, size_t nc, bool useWeights)
-	:g(g)
+	:g(g),n_dec(0)
 	{
 		initMetisGraph(nc,useWeights);
 	}
@@ -202,8 +202,8 @@ public:
 	 * \param nc number of partitions
 	 *
 	 */
-	Metis(Graph & g, size_t nc) :
-			g(g)
+	Metis(Graph & g, size_t nc)
+	:g(g),n_dec(0)
 	{
 		initMetisGraph(nc,false);
 	}
@@ -217,7 +217,7 @@ public:
 	 *
 	 */
 	Metis(Graph & g)
-	:g(g)
+	:g(g),n_dec(0)
 	{
 		Mg.nvtxs = NULL;
 		Mg.ncon = NULL;
@@ -402,6 +402,8 @@ public:
 				++it;
 			}
 		}
+
+		n_dec++;
 	}
 
 	/*! \brief Decompose the graph
@@ -431,6 +433,8 @@ public:
 			++id;
 			++it;
 		}
+
+		n_dec++;
 	}
 
 	/*! \brief It set Metis on test
@@ -466,6 +470,25 @@ public:
 	const void setDistTol(real_t tol)
 	{
 		dist_tol = tol;
+	}
+
+	/*! \brief Get the decomposition counter
+	 *
+	 * \return the decomposition counter
+	 *
+	 */
+	size_t get_ndec()
+	{
+		return n_dec;
+	}
+
+	/*! \brief Increment the decomposition counter
+	 *
+	 *
+	 */
+	void inc_dec()
+	{
+		n_dec++;
 	}
 };
 

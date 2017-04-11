@@ -259,6 +259,10 @@ public:
 				}
 			}
 		}
+		else
+		{
+			metis_graph.inc_dec();
+		}
 
 		recv_ass.resize(gp.getNVertex());
 
@@ -651,6 +655,16 @@ public:
 
 		size_t ids = fnd->second;
 		return owner_cost_sub.get(ids).w;
+	}
+
+	/*! \brief Get the decomposition counter
+	 *
+	 * \return the decomposition counter
+	 *
+	 */
+	size_t get_ndec()
+	{
+		return metis_graph.get_ndec();
 	}
 };
 
