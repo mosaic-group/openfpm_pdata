@@ -38,7 +38,7 @@ class ie_ghost
 	openfpm::vector<p_box<dim,T> > vb_int;
 
 	//! Cell-list that store the geometrical information of the internal ghost boxes
-	CellList<dim,T,FAST,shift<dim,T>> geo_cell;
+	CellList<dim,T,Mem_fast<dim,T>,shift<dim,T>> geo_cell;
 
 	//! shift vectors
 	openfpm::vector<Point<dim,T>> shifts;
@@ -750,9 +750,9 @@ public:
 	 * \return An iterator with the id's of the internal boxes in which the point fall
 	 *
 	 */
-	auto getInternalIDBoxes(Point<dim,T> & p) -> decltype(geo_cell.getIterator(geo_cell.getCell(p)))
+	auto getInternalIDBoxes(Point<dim,T> & p) -> decltype(geo_cell.getCellIterator(geo_cell.getCell(p)))
 	{
-		return geo_cell.getIterator(geo_cell.getCell(p));
+		return geo_cell.getCellIterator(geo_cell.getCell(p));
 	}
 
 	/*! \brief if the point fall into the ghost of some near processor it return the processors id's in which
@@ -762,9 +762,9 @@ public:
 	 * \return iterator of the processors id's
 	 *
 	 */
-	inline auto labelPoint(Point<dim,T> & p) -> decltype(geo_cell.getIterator(geo_cell.getCell(p)))
+	inline auto labelPoint(Point<dim,T> & p) -> decltype(geo_cell.getCellIterator(geo_cell.getCell(p)))
 	{
-		return geo_cell.getIterator(geo_cell.getCell(p));
+		return geo_cell.getCellIterator(geo_cell.getCell(p));
 	}
 
 	/*! \brief Given a position it return if the position belong to any neighborhood processor ghost
@@ -790,7 +790,7 @@ public:
 
 		// Check with geo-cell if a particle is inside one Cell containing boxes
 
-		auto cell_it = geo_cell.getIterator(geo_cell.getCell(p));
+		auto cell_it = geo_cell.getCellIterator(geo_cell.getCell(p));
 
 		// For each element in the cell, check if the point is inside the box
 		// if it is, store the processor id
@@ -839,7 +839,7 @@ public:
 
 		// Check with geo-cell if a particle is inside one Cell containing boxes
 
-		auto cell_it = geo_cell.getIterator(geo_cell.getCell(p));
+		auto cell_it = geo_cell.getCellIterator(geo_cell.getCell(p));
 
 		// For each element in the cell, check if the point is inside the box
 		// if it is, store the processor id
@@ -883,7 +883,7 @@ public:
 
 		// Check with geo-cell if a particle is inside one Cell containing boxes
 
-		auto cell_it = geo_cell.getIterator(geo_cell.getCell(p));
+		auto cell_it = geo_cell.getCellIterator(geo_cell.getCell(p));
 
 		// For each element in the cell, check if the point is inside the box
 		// if it is, store the processor id
@@ -926,7 +926,7 @@ public:
 
 		// Check with geo-cell if a particle is inside one Cell containing boxes
 
-		auto cell_it = geo_cell.getIterator(geo_cell.getCell(p));
+		auto cell_it = geo_cell.getCellIterator(geo_cell.getCell(p));
 
 		// For each element in the cell, check if the point is inside the box
 		// if it is, store the processor id
