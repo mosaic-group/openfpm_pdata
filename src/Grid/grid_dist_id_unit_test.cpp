@@ -1138,7 +1138,7 @@ void Test3D_dup(const Box<3,float> & domain, long int k)
 		grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> g_dist1(sz,domain,g);
 
 		// another grid with the same decomposition
-		grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> g_dist2(g_dist1.getDecomposition(),sz,domain,g);
+		grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> g_dist2(g_dist1.getDecomposition(),sz,g);
 
 		//! [Construct two grid with the same decomposition]
 
@@ -1190,7 +1190,7 @@ void Test3D_dup(const Box<3,float> & domain, long int k)
 		grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> * g_dist1 = new grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>>(sz,domain,g);
 
 		// another grid with the same decomposition
-		grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> * g_dist2 = new grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>>(g_dist1->getDecomposition(),sz,domain,g);
+		grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> * g_dist2 = new grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>>(g_dist1->getDecomposition(),sz,g);
 
 		delete g_dist1;
 
@@ -1286,6 +1286,13 @@ void Test3D_periodic(const Box<3,float> & domain, long int k)
 
 		// Check
 		BOOST_REQUIRE_EQUAL(count,(size_t)k*k*k);
+
+		size_t tot = g_dist.getLocalDomainSize();
+		// reduce
+		vcl.sum(tot);
+		vcl.execute();
+
+		BOOST_REQUIRE_EQUAL(count,tot);
 
 		// sync the ghosts
 		g_dist.ghost_get<0>();
@@ -1389,7 +1396,7 @@ void Test_grid_copy(const Box<3,float> & domain, long int k)
 
 		// Distributed grid with id decomposition
 		grid_dist_id<3,float,Point_test<float>> g_dist(sz,domain,g,pr);
-		grid_dist_id<3,float,Point_test<float>> g_dist2(g_dist.getDecomposition(),sz,domain,g);
+		grid_dist_id<3,float,Point_test<float>> g_dist2(g_dist.getDecomposition(),sz,g);
 
 		// Grid sm
 		grid_sm<3,void> info(sz);

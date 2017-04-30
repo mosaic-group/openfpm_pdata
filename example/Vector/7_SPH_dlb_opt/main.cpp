@@ -209,10 +209,10 @@
  */
 
 // A constant to indicate boundary particles
-#define BOUNDARY 0
+#define BOUNDARY 1
 
 // A constant to indicate fluid particles
-#define FLUID 1
+#define FLUID 0
 
 // initial spacing between particles dp in the formulas
 const double dp = 0.0085;
@@ -228,6 +228,8 @@ const double gamma_ = 7.0;
 
 // sqrt(3.0*dp*dp) support of the kernel
 const double H = 0.0147224318643;
+
+const double FourH2 = 4.0 * H*H;
 
 // Eta in the formulas
 const double Eta2 = 0.01 * H*H;
@@ -280,47 +282,49 @@ double max_fluid_height = 0.0;
 // FLUID or BOUNDARY
 const size_t type = 0;
 
+// FLUID or BOUNDARY
+const size_t nn_num = 1;
+
 // Density
-const int rho = 1;
+const int rho = 2;
 
 // Density at step n-1
-const int rho_prev = 2;
+const int rho_prev = 3;
 
 // Pressure
-const int Pressure = 3;
+const int Pressure = 4;
 
 // Delta rho calculated in the force calculation
-const int drho = 4;
+const int drho = 5;
 
 // calculated force
-const int force = 5;
+const int force = 6;
 
 // velocity
-const int velocity = 6;
+const int velocity = 7;
 
 // velocity at previous step
-const int velocity_prev = 7;
+const int velocity_prev = 8;
 
 /*! \cond [sim parameters] \endcond */
 
 /*! \cond [vector_dist_def] \endcond */
 
 // Type of the vector containing particles
-typedef vector_dist<3,double,aggregate<size_t,double,  double,    double,     double,     double[3], double[3], double[3]> > particles;
+typedef vector_dist<3,double,aggregate<int, int,double,  double,    double,     double,     double[3], double[3], double[3]> > particles;
 //                                       |      |        |          |            |            |         |            |
 //                                       |      |        |          |            |            |         |            |
 //                                     type   density   density    Pressure    delta       force     velocity    velocity
 //                                                      at n-1                 density                           at n - 1
 
-
 struct ModelCustom
 {
 	template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p)
 	{
-		if (vd.template getProp<type>(p) == FLUID)
-			dec.addComputationCost(v,4);
-		else
-			dec.addComputationCost(v,3);
+                if (vd.template getProp<type>(p) == FLUID )
+                        dec.addComputationCost(v,4);
+                else
+                        dec.addComputationCost(v,3);
 	}
 
 	template<typename Decomposition> inline void applyModel(Decomposition & dec, size_t v)
@@ -328,12 +332,29 @@ struct ModelCustom
 		dec.setSubSubDomainComputationCost(v, dec.getSubSubDomainComputationCost(v) * dec.getSubSubDomainComputationCost(v));
 	}
 
-	double distributionTol()
+        float distributionTol()
 	{
 		return 1.01;
 	}
 };
 
+
+struct ModelCustom2
+{
+        template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p)
+        {
+            dec.addComputationCost(v,vd.template getProp<nn_num>(p) + 4);
+        }
+
+        template<typename Decomposition> inline void applyModel(Decomposition & dec, size_t v)
+        {
+        }
+
+        float distributionTol()
+        {
+                return 1.01;
+        }
+};
 
 inline void EqState(particles & vd)
 {
@@ -373,34 +394,23 @@ const double a2_4 = 0.25*a2;
 // Filled later
 double W_dap = 0.0;
 
-inline void DWab(Point<3,double> & dx, Point<3,double> & DW, double r, bool print)
+inline void DWab(Point<3,double> & dx, Point<3,double> & DW, double r)
 {
 	const double qq=r/H;
 
-	if (qq < 1.0)
-	{
-		double qq2 = qq * qq;
-		double fac = (c1*qq + d1*qq2)/r;
+    double qq2 = qq * qq;
+    double fac1 = (c1*qq + d1*qq2)/r;
+    double b1 = (qq < 1.0)?1.0f:0.0f;
 
-		DW.get(0) = fac*dx.get(0);
-		DW.get(1) = fac*dx.get(1);
-		DW.get(2) = fac*dx.get(2);
-	}
-	else if (qq < 2.0)
-	{
-		double wqq = (2.0 - qq);
-		double fac = c2 * wqq * wqq / r;
+    double wqq = (2.0 - qq);
+    double fac2 = c2 * wqq * wqq / r;
+    double b2 = (qq >= 1.0 && qq < 2.0)?1.0f:0.0f;
 
-		DW.get(0) = fac * dx.get(0);
-		DW.get(1) = fac * dx.get(1);
-		DW.get(2) = fac * dx.get(2);
-	}
-	else
-	{
-		DW.get(0) = 0.0;
-		DW.get(1) = 0.0;
-		DW.get(2) = 0.0;
-	}
+    double factor = (b1*fac1 + b2*fac2);
+
+    DW.get(0) = factor * dx.get(0);
+    DW.get(1) = factor * dx.get(1);
+    DW.get(2) = factor * dx.get(2);
 }
 
 inline double Tensile(double r, double rhoa, double rhob, double prs1, double prs2)
@@ -495,7 +505,7 @@ template<typename VerletList> inline double calc_forces(particles & vd, VerletLi
     /*! \cond [reset_particles2] \endcond */
 
     // Get an iterator over particles
-    auto part = vd.getParticleIteratorCRS(NN.getInternalCellList());
+    auto part = vd.getParticleIteratorCRS(NN);
 
 	double visc = 0;
 
@@ -507,6 +517,9 @@ template<typename VerletList> inline double calc_forces(particles & vd, VerletLi
 
 		// Get the position xp of the particle
 		Point<3,double> xa = vd.getPos(a);
+
+		// Type of the particle
+		size_t typea = vd.getProp<type>(a);
 
 		// Take the mass of the particle dependently if it is FLUID or BOUNDARY
 		double massa = (vd.getProp<type>(a) == FLUID)?MassFluid:MassBound;
@@ -520,149 +533,74 @@ template<typename VerletList> inline double calc_forces(particles & vd, VerletLi
 		// Get the Velocity of the particle a
 		Point<3,double> va = vd.getProp<velocity>(a);
 
-		// We threat FLUID particle differently from BOUNDARY PARTICLES ...
-		if (vd.getProp<type>(a) != FLUID)
-		{
-			// If it is a boundary particle calculate the delta rho based on equation 2
-			// This require to run across the neighborhoods particles of a
+        // Get an iterator over the neighborhood particles of p
+        auto Np = NN.template getNNIterator<NO_CHECK>(a);
 
-			//! \cond [nn_part] \endcond
-			auto Np = NN.template getNNIterator<NO_CHECK>(a);
-			//! \cond [nn_part] \endcond
+        size_t nn = 0;
 
-			// For each neighborhood particle
-			while (Np.isNext() == true)
-			{
-				// ... q
-				auto b = Np.get();
+        // For each neighborhood particle
+        while (Np.isNext() == true)
+        {
+                // ... q
+                auto b = Np.get();
 
-				// Get the position xp of the particle
-				Point<3,double> xb = vd.getPos(b);
+                // Get the position xp of the particle
+                Point<3,double> xb = vd.getPos(b);
 
-				//! \cond [skip_self] \endcond
+                // Get the distance between p and q
+                Point<3,double> dr = xa - xb;
+                // take the norm of this vector
+                float r2 = norm2(dr);
 
-				// if (p == q) skip this particle
-				if (a == b)	{++Np; continue;};
+                // if they interact
+                if (r2 < FourH2 && r2 > 1e-18)
+                {
+                        double r = sqrt(r2);
 
-				//! \cond [skip_self] \endcond
+                        unsigned int typeb = vd.getProp<type>(b);
 
-				// get the mass of the particle
-				double massb = (vd.getProp<type>(b) == FLUID)?MassFluid:MassBound;
+                        double massb = (typeb == FLUID)?MassFluid:MassBound;
+                        Point<3,double> vb = vd.getProp<velocity>(b);
+                        double Pb = vd.getProp<Pressure>(b);
+                        double rhob = vd.getProp<rho>(b);
 
-				// Get the velocity of the particle b
-				Point<3,double> vb = vd.getProp<velocity>(b);
+                        Point<3,double> v_rel = va - vb;
 
-				// Get the pressure and density of particle b
-				double Pb = vd.getProp<Pressure>(b);
-				double rhob = vd.getProp<rho>(b);
+                        Point<3,double> DW;
+                        DWab(dr,DW,r);
 
-				// Get the distance between p and q
-				Point<3,double> dr = xa - xb;
-				// take the norm of this vector
-				double r2 = norm2(dr);
+                        //! \cond [symmetry2] \endcond
 
-				// If the particles interact ...
-				if (r2 < 4.0*H*H)
-				{
-					// ... calculate delta rho
-					double r = sqrt(r2);
+                        double factor = - ((Pa + Pb) / (rhoa * rhob) + Tensile(r,rhoa,rhob,Pa,Pb) + Pi(dr,r2,v_rel,rhoa,rhob,massb,visc));
 
-					Point<3,double> dv = va - vb;
+                        // Bound - Bound does not produce any change
+                        factor = (typea == BOUNDARY && typeb == BOUNDARY)?0.0f:factor;
 
-					Point<3,double> DW;
-					DWab(dr,DW,r,false);
+                        vd.getProp<force>(a)[0] += massb * factor * DW.get(0);
+                        vd.getProp<force>(a)[1] += massb * factor * DW.get(1);
+                        vd.getProp<force>(a)[2] += massb * factor * DW.get(2);
 
-					const double dot = dr.get(0)*dv.get(0) + dr.get(1)*dv.get(1) + dr.get(2)*dv.get(2);
-					const double dot_rr2 = dot/(r2+Eta2);
-					max_visc=std::max(dot_rr2,max_visc);
+                        vd.getProp<force>(b)[0] -= massa * factor * DW.get(0);
+                        vd.getProp<force>(b)[1] -= massa * factor * DW.get(1);
+                        vd.getProp<force>(b)[2] -= massa * factor * DW.get(2);
 
-					double scal = (dv.get(0)*DW.get(0)+dv.get(1)*DW.get(1)+dv.get(2)*DW.get(2));
+                        double scal = (v_rel.get(0)*DW.get(0)+v_rel.get(1)*DW.get(1)+v_rel.get(2)*DW.get(2));
 
-					vd.getProp<drho>(a) += massb*scal;
-					vd.getProp<drho>(b) += massa*scal;
+                        // Bound - Bound does not produce any change
+                        scal = (typea == BOUNDARY && typeb == BOUNDARY)?0.0f:scal;
 
-					//! \cond [symmetry] \endcond
+                        vd.getProp<drho>(a) += massb*scal;
+                        vd.getProp<drho>(b) += massa*scal;
 
-					// If it is a fluid we have to calculate force
-					if (vd.getProp<type>(b) == FLUID)
-					{
-						Point<3,double> v_rel = va - vb;
+                        //! \cond [symmetry2] \endcond
+                }
 
-						double factor = - ((vd.getProp<Pressure>(a) + vd.getProp<Pressure>(b)) / (rhoa * rhob) + Tensile(r,rhoa,rhob,Pa,Pb) + Pi(dr,r2,v_rel,rhoa,rhob,massb,visc));
+                nn++;
+                ++Np;
+        }
 
-						vd.getProp<force>(b)[0] -= massa * factor * DW.get(0);
-						vd.getProp<force>(b)[1] -= massa * factor * DW.get(1);
-						vd.getProp<force>(b)[2] -= massa * factor * DW.get(2);
-					}
-
-					//! \cond [symmetry] \endcond
-				}
-
-				++Np;
-			}
-		}
-		else
-		{
-			// If it is a fluid particle calculate based on equation 1 and 2
-
-			// Get an iterator over the neighborhood particles of p
-			auto Np = NN.template getNNIterator<NO_CHECK>(a);
-
-			// For each neighborhood particle
-			while (Np.isNext() == true)
-			{
-				// ... q
-				auto b = Np.get();
-
-				// Get the position xp of the particle
-				Point<3,double> xb = vd.getPos(b);
-
-				// if (p == q) skip this particle
-				if (a == b)	{++Np; continue;};
-
-				double massb = (vd.getProp<type>(b) == FLUID)?MassFluid:MassBound;
-				Point<3,double> vb = vd.getProp<velocity>(b);
-				double Pb = vd.getProp<Pressure>(b);
-				double rhob = vd.getProp<rho>(b);
-
-				// Get the distance between p and q
-				Point<3,double> dr = xa - xb;
-				// take the norm of this vector
-				double r2 = norm2(dr);
-
-				// if they interact
-				if (r2 < 4.0*H*H)
-				{
-					double r = sqrt(r2);
-
-					Point<3,double> v_rel = va - vb;
-
-					Point<3,double> DW;
-					DWab(dr,DW,r,false);
-
-					//! \cond [symmetry2] \endcond
-
-					double factor = - ((vd.getProp<Pressure>(a) + vd.getProp<Pressure>(b)) / (rhoa * rhob) + Tensile(r,rhoa,rhob,Pa,Pb) + Pi(dr,r2,v_rel,rhoa,rhob,massb,visc));
-
-					vd.getProp<force>(a)[0] += massb * factor * DW.get(0);
-					vd.getProp<force>(a)[1] += massb * factor * DW.get(1);
-					vd.getProp<force>(a)[2] += massb * factor * DW.get(2);
-
-					vd.getProp<force>(b)[0] -= massa * factor * DW.get(0);
-					vd.getProp<force>(b)[1] -= massa * factor * DW.get(1);
-					vd.getProp<force>(b)[2] -= massa * factor * DW.get(2);
-
-					double scal = (v_rel.get(0)*DW.get(0)+v_rel.get(1)*DW.get(1)+v_rel.get(2)*DW.get(2));
-
-					vd.getProp<drho>(a) += massb*scal;
-					vd.getProp<drho>(b) += massa*scal;
-
-					//! \cond [symmetry2] \endcond
-				}
-
-				++Np;
-			}
-		}
+        // Number of particles here
+        vd.getProp<nn_num>(a) = nn;
 
 		++part;
 	}
@@ -764,7 +702,8 @@ void verlet_int(particles & vd, double dt, double & max_disp)
 	    	vd.template getProp<velocity>(a)[0] = 0.0;
 	    	vd.template getProp<velocity>(a)[1] = 0.0;
 	    	vd.template getProp<velocity>(a)[2] = 0.0;
-	    	vd.template getProp<rho>(a) = vd.template getProp<rho_prev>(a) + dt2*vd.template getProp<drho>(a);
+            double rhonew = vd.template getProp<rho_prev>(a) + dt2*vd.template getProp<drho>(a);
+            vd.template getProp<rho>(a) = (rhonew < rho_zero)?rho_zero:rhonew;
 
 		    vd.template getProp<rho_prev>(a) = rhop;
 
@@ -807,9 +746,6 @@ void verlet_int(particles & vd, double dt, double & max_disp)
 
 	                   /*! \cond [big_number_set] \endcond */
 
-	                   // if we remove something the verlet are not anymore correct and must be reconstructed
-	                   max_disp = 100.0;
-
 	                   /*! \cond [big_number_set] \endcond */
 	    }
 
@@ -830,9 +766,6 @@ void verlet_int(particles & vd, double dt, double & max_disp)
 	max_disp = sqrt(max_disp);
 
 	/*! \cond [max_across_proc] \endcond */
-
-	// remove the particles
-	vd.remove(to_remove,0);
 
 	// increment the iteration counter
 	cnt++;
@@ -869,7 +802,8 @@ void euler_int(particles & vd, double dt, double & max_disp)
 	    	vd.template getProp<velocity>(a)[0] = 0.0;
 	    	vd.template getProp<velocity>(a)[1] = 0.0;
 	    	vd.template getProp<velocity>(a)[2] = 0.0;
-	    	vd.template getProp<rho>(a) = vd.template getProp<rho>(a) + dt*vd.template getProp<drho>(a);
+            double rhonew = vd.template getProp<rho>(a) + dt*vd.template getProp<drho>(a);
+            vd.template getProp<rho>(a) = (rhonew < rho_zero)?rho_zero:rhonew;
 
 		    vd.template getProp<rho_prev>(a) = rhop;
 
@@ -906,9 +840,6 @@ void euler_int(particles & vd, double dt, double & max_disp)
 			vd.template getProp<rho>(a) < RhoMin || vd.template getProp<rho>(a) > RhoMax)
 	    {
 	                   to_remove.add(a.getKey());
-
-	                   // if we remove something the verlet are not anymore correct and must be reconstructed
-	                   max_disp = 100.0;
 	    }
 
 	    vd.template getProp<velocity_prev>(a)[0] = velX;
@@ -918,9 +849,6 @@ void euler_int(particles & vd, double dt, double & max_disp)
 
 		++part;
 	}
-
-	// remove the particles
-	vd.remove(to_remove,0);
 
 	Vcluster & v_cl = create_vcluster();
 	v_cl.max(max_disp);
@@ -970,8 +898,6 @@ int main(int argc, char* argv[])
 
 	/*! \cond [important_option] \endcond */
 
-#if 0
-
 	// You can ignore all these dp/2.0 is a trick to reach the same initialization
 	// of Dual-SPH that use a different criteria to draw particles
 	Box<3,double> fluid_box({dp/2.0,dp/2.0,dp/2.0},{0.4+dp/2.0,0.67-dp/2.0,0.3+dp/2.0});
@@ -986,7 +912,7 @@ int main(int argc, char* argv[])
 	cbar = coeff_sound * sqrt(gravity * h_swl);
 
 	// for each particle inside the fluid box ...
-	while (fluid_it.isNext())
+/*	while (fluid_it.isNext())
 	{
 		// ... add a particle ...
 		vd.add();
@@ -1020,9 +946,8 @@ int main(int argc, char* argv[])
 
 		// next fluid particle
 		++fluid_it;
-	}
+	}*/
 
-#endif
 
 	// Recipient
 	Box<3,double> recipient1({0.0,0.0,0.0},{1.6+dp/2.0,0.67+dp/2.0,0.4+dp/2.0});
@@ -1087,8 +1012,7 @@ int main(int argc, char* argv[])
 
         vd.write("Recipient");
 
-        openfpm_finalize();
-        return 0;
+	return 0;
 
 	// Now that we fill the vector with particles
 	ModelCustom md;
@@ -1119,11 +1043,13 @@ int main(int argc, char* argv[])
 		it_reb++;
 		if (2*tot_disp >= skin)
 		{
+			vd.remove(to_remove);
+
 			vd.map();
 
 			if (it_reb > 200)
 			{
-				ModelCustom md;
+				ModelCustom2 md;
 				vd.addComputationCosts(md);
 				vd.getDecomposition().redecompose(200);
 
@@ -1193,7 +1119,7 @@ int main(int argc, char* argv[])
 		if (write < t*100)
 		{
 			vd.deleteGhost();
-			vd.write("Geometry",write);
+			vd.write("Geometry",write,VTK_WRITER | FORMAT_BINARY);
 			vd.ghost_get<type,rho,Pressure,velocity>(SKIP_LABELLING);
 			write++;
 

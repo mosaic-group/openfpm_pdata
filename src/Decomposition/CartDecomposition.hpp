@@ -981,7 +981,7 @@ public:
 	 * \return the periodicity in direction i
 	 *
 	 */
-	inline size_t periodicity(size_t i)
+	inline size_t periodicity(size_t i) const
 	{
 		return bc[i];
 	}
@@ -1301,7 +1301,7 @@ public:
 	 * \return The physical domain box
 	 *
 	 */
-	const ::Box<dim,T> & getDomain()
+	const ::Box<dim,T> & getDomain() const
 	{
 		return domain;
 	}

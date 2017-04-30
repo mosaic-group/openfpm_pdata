@@ -324,30 +324,19 @@ inline void DWab(Point<3,double> & dx, Point<3,double> & DW, double r, bool prin
 {
 	const double qq=r/H;
 
-	if (qq < 1.0)
-	{
-		double qq2 = qq * qq;
-		double fac = (c1*qq + d1*qq2)/r;
+    double qq2 = qq * qq;
+    double fac1 = (c1*qq + d1*qq2)/r;
+    double b1 = (qq < 1.0)?1.0f:0.0f;
 
-		DW.get(0) = fac*dx.get(0);
-		DW.get(1) = fac*dx.get(1);
-		DW.get(2) = fac*dx.get(2);
-	}
-	else if (qq < 2.0)
-	{
-		double wqq = (2.0 - qq);
-		double fac = c2 * wqq * wqq / r;
+    double wqq = (2.0 - qq);
+    double fac2 = c2 * wqq * wqq / r;
+    double b2 = (qq >= 1.0 && qq < 2.0)?1.0f:0.0f;
 
-		DW.get(0) = fac * dx.get(0);
-		DW.get(1) = fac * dx.get(1);
-		DW.get(2) = fac * dx.get(2);
-	}
-	else
-	{
-		DW.get(0) = 0.0;
-		DW.get(1) = 0.0;
-		DW.get(2) = 0.0;
-	}
+    double factor = (b1*fac1 + b2*fac2);
+
+    DW.get(0) = factor * dx.get(0);
+    DW.get(1) = factor * dx.get(1);
+    DW.get(2) = factor * dx.get(2);
 }
 
 /*! \cond [kernel_sph_der] \endcond */

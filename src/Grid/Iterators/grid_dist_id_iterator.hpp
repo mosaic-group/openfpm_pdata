@@ -222,6 +222,27 @@ class grid_dist_iterator<dim,device_grid,FREE>
 	{
 		return gdb_ext;
 	}
+
+	/*! \brief Convert a g_dist_key_dx into a global key
+	 *
+	 * \see grid_dist_key_dx
+	 * \see grid_dist_iterator
+	 *
+	 * \return the global position in the grid
+	 *
+	 */
+	inline grid_key_dx<dim> getGKey(const grid_dist_key_dx<dim> & k)
+	{
+		// Get the sub-domain id
+		size_t sub_id = k.getSub();
+
+		grid_key_dx<dim> k_glob = k.getKey();
+
+		// shift
+		k_glob = k_glob + gdb_ext.get(sub_id).origin;
+
+		return k_glob;
+	}
 };
 
 
@@ -358,6 +379,27 @@ class grid_dist_iterator<dim,device_grid,FIXED>
 	inline const openfpm::vector<GBoxes<device_grid::dims>> & getGBoxes()
 	{
 		return gdb_ext;
+	}
+
+	/*! \brief Convert a g_dist_key_dx into a global key
+	 *
+	 * \see grid_dist_key_dx
+	 * \see grid_dist_iterator
+	 *
+	 * \return the global position in the grid
+	 *
+	 */
+	inline grid_key_dx<dim> getGKey(const grid_dist_key_dx<dim> & k)
+	{
+		// Get the sub-domain id
+		size_t sub_id = k.getSub();
+
+		grid_key_dx<dim> k_glob = k.getKey();
+
+		// shift
+		k_glob = k_glob + gdb_ext.get(sub_id).origin;
+
+		return k_glob;
 	}
 };
 

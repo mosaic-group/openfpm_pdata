@@ -5,12 +5,23 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Introduced getDomainIterator for Cell-list
+- Vortex in Cell example
+- Example to show how to add sensors in SPH/particle based methods (see)
+- Vortex in Cell example
+- Interpolation functions (see Numerics/vortex_in_cell example)
+- Gray-scott 3d example (see Grid/gray_scott_3d example)
+- HDF5 Check point restart for vector_dist particles (see ...) 
+- Raw reader for grid (see ...)
+- A way to specify names for proeprties and select properties to write
+- Ghost put on grid
 
 ### Fixed
 - Installation of PETSC in case with MUMPS try without MUMPS
 - In case of miss compilation ignore system wide installation
 - Bug in VTK writer binary in case of vectors
 - Bug in VTK writer binary: long int are not supported removing output
+
+
 
 ## [0.8.0] 28 February 2016
 

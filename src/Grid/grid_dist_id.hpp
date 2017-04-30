@@ -721,8 +721,16 @@ public:
 		{
 			g_sz[i] = g.size(i) + ext.getLow(i) + ext.getHigh(i);
 
-			this->domain.setLow(i,g.getDomain().getLow(i) - ext.getLow(i) * g.spacing(i) - g.spacing(i) / 2.0);
-			this->domain.setHigh(i,g.getDomain().getHigh(i) + ext.getHigh(i) * g.spacing(i) + g.spacing(i) / 2.0);
+			if (g.getDecomposition().periodicity(i) == NON_PERIODIC)
+			{
+				this->domain.setLow(i,g.getDomain().getLow(i) - ext.getLow(i) * g.spacing(i) - g.spacing(i) / 2.0);
+				this->domain.setHigh(i,g.getDomain().getHigh(i) + ext.getHigh(i) * g.spacing(i) + g.spacing(i) / 2.0);
+			}
+			else
+			{
+				this->domain.setLow(i,g.getDomain().getLow(i) - ext.getLow(i) * g.spacing(i));
+				this->domain.setHigh(i,g.getDomain().getHigh(i) + ext.getHigh(i) * g.spacing(i));
+			}
 		}
 
 		dec.setParameters(g.getDecomposition(),ghost,this->domain);
@@ -738,8 +746,8 @@ public:
      * \param ghost Ghost part
      *
      */
-    grid_dist_id(const Decomposition & dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
-    :domain(domain),ghost(ghost),dec(dec),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
+    grid_dist_id(const Decomposition & dec, const size_t (& g_sz)[dim], const Ghost<dim,St> & ghost)
+    :domain(dec.getDomain()),ghost(ghost),dec(dec),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
@@ -757,8 +765,8 @@ public:
      * \param ghost Ghost part
      *
      */
-    grid_dist_id(Decomposition && dec, const size_t (& g_sz)[dim], const Box<dim,St> & domain, const Ghost<dim,St> & ghost)
-    :domain(domain),ghost(ghost),dec(dec),ginfo(g_sz),ginfo_v(g_sz),v_cl(create_vcluster())
+    grid_dist_id(Decomposition && dec, const size_t (& g_sz)[dim], const Ghost<dim,St> & ghost)
+    :domain(dec.getDomain()),ghost(ghost),dec(dec),ginfo(g_sz),ginfo_v(g_sz),v_cl(create_vcluster())
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
@@ -778,8 +786,8 @@ public:
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(const Decomposition & dec, const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
-	:domain(domain),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
+	grid_dist_id(const Decomposition & dec, const size_t (& g_sz)[dim], const Ghost<dim,long int> & g)
+	:domain(dec.getDomain()),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
@@ -798,14 +806,13 @@ public:
      *
      * \param dec Decomposition
      * \param g_sz grid size on each dimension
-     * \param domain Box that contain the grid
      * \param g Ghost part (given in grid units)
      *
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(Decomposition && dec, const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
-	:domain(domain),dec(dec),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
+	grid_dist_id(Decomposition && dec, const size_t (& g_sz)[dim], const Ghost<dim,long int> & g)
+	:domain(dec.getDomain()),dec(dec),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
@@ -1439,11 +1446,15 @@ public:
 	 * \return true if the write operation succeed
 	 *
 	 */
-	bool write(std::string output)
+	bool write(std::string output, size_t opt = VTK_WRITER | FORMAT_ASCII)
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
+		file_type ft = file_type::ASCII;
+
+		if (opt & FORMAT_BINARY)
+			ft = file_type::BINARY;
 
 		// Create a writer and write
 		VTKWriter<boost::mpl::pair<device_grid,float>,VECTOR_GRIDS> vtk_g;
@@ -1452,7 +1463,7 @@ public:
 			Point<dim,St> offset = getOffset(i);
 			vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).Dbox);
 		}
-		vtk_g.write(output + "_" + std::to_string(v_cl.getProcessUnitID()) + ".vtk");
+		vtk_g.write(output + "_" + std::to_string(v_cl.getProcessUnitID()) + ".vtk", "grids", ft);
 
 		return true;
 	}
@@ -1464,15 +1475,20 @@ public:
 	 *
 	 * \param output directory where to put the files + prefix
 	 * \param i frame number
+	 * \param opt options
 	 *
 	 * \return true id the write succeed
 	 *
 	 */
-	bool write(std::string output, size_t i)
+	bool write(std::string output, size_t i, size_t opt = VTK_WRITER | FORMAT_ASCII)
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
+		file_type ft = file_type::ASCII;
+
+		if (opt & FORMAT_BINARY)
+			ft = file_type::BINARY;
 
 		// Create a writer and write
 		VTKWriter<boost::mpl::pair<device_grid,float>,VECTOR_GRIDS> vtk_g;
@@ -1481,10 +1497,12 @@ public:
 			Point<dim,St> offset = getOffset(i);
 			vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).Dbox);
 		}
-		vtk_g.write(output + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(i) + ".vtk");
+		vtk_g.write(output + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(i) + ".vtk","grids",ft);
 
 		return true;
 	}
+
+
 
 	/*! \brief Get the i sub-domain grid
 	 *

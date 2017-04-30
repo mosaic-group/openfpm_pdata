@@ -226,6 +226,19 @@ class grid_dist_id_iterator_dec
 		return k_glob;
 	}
 
+	/*! \brief Get the actual grid key for a distributed grid
+	 *
+	 * \note if you are using this iterator and you need the position for grid_dist_id use this
+	 *       function to retrieve the grid point
+	 *
+	 * \return the grid point
+	 *
+	 */
+	inline grid_dist_key_dx<Decomposition::dims> get_dist()
+	{
+		return get_int();
+	}
+
 	/*! \brief Get the starting point of the sub-grid we are iterating
 	 *
 	 * \return the starting point

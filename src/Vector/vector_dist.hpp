@@ -367,6 +367,15 @@ public:
 #endif
 	}
 
+	/*! \brief remove all the elements
+	 *
+	 *
+	 */
+	void clear()
+	{
+		resize(0);
+	}
+
 	/*! \brief return the local size of the vector
 	 *
 	 * \return local size
