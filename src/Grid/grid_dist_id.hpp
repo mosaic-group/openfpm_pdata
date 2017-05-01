@@ -1044,19 +1044,18 @@ public:
 		v_cl.execute();
 
 		size_t size_r;
+		size_t size = gdb_ext_global.size();
 
 		if (v_cl.getProcessUnitID()  == 0)
 		{
-			size_t size = gdb_ext_global.size();
-			for (size_t i = 0; i < v_cl.getProcessingUnits(); i++)
-			{
+			for (size_t i = 1; i < v_cl.getProcessingUnits(); i++)
 				v_cl.send(i,0,&size,sizeof(size_t));
-			}
+
+			size_r = size;
 		}
 		else
-		{
 			v_cl.recv(0,0,&size_r,sizeof(size_t));
-		}
+
 		v_cl.execute();
 
 		gdb_ext_global.resize(size_r);
@@ -1077,52 +1076,6 @@ public:
 		v_cl.execute();
 	}
 
-	/*! \brief It gathers the local grids for all of the processors
-	 *
-	 *
-	 *
-	 */
-	void getGlobalGrids(openfpm::vector<openfpm::vector<device_grid>> & loc_grid_global) const
-	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
-		v_cl.SGather(loc_grid,loc_grid_global,0);
-		v_cl.execute();
-
-		size_t size_r;
-
-		if (v_cl.getProcessUnitID()  == 0)
-		{
-			size_t size = loc_grid_global.size();
-			for (size_t i = 0; i < v_cl.getProcessingUnits(); i++)
-			{
-				v_cl.send(i,0,&size,sizeof(size_t));
-			}
-		}
-		else
-		{
-			v_cl.recv(0,0,&size_r,sizeof(size_t));
-		}
-		v_cl.execute();
-
-		loc_grid_global.resize(size_r);
-
-
-		if (v_cl.getProcessUnitID()  == 0)
-		{
-			for (size_t i = 0; i < v_cl.getProcessingUnits(); i++)
-			{
-				v_cl.send(i,0,loc_grid_global);
-			}
-		}
-		else
-		{
-			v_cl.recv(0,0,loc_grid_global);
-		}
-
-		v_cl.execute();
-	}
 
 	/*! \brief It return an iterator that span the full grid domain (each processor span its local domain)
 	 *
@@ -1898,7 +1851,12 @@ public:
 	    H5Fclose(file);
 	}
 
-	void load_block(long int bid, hssize_t mpi_size_old, int * metadata_out, openfpm::vector<size_t> metadata_accum, hid_t plist_id, hid_t dataset_2)
+	void load_block(long int bid,
+			        hssize_t mpi_size_old,
+					int * metadata_out,
+					openfpm::vector<size_t> & metadata_accum,
+					hid_t plist_id,
+					hid_t dataset_2)
 	{
 /*	  	if (mpi_size >= mpi_size_old)
 	  	{
@@ -2037,12 +1995,12 @@ public:
 			printf ("LOAD: dataspace_id_3 size: %llu\n", size2);
 		}
 */
-	size_t sum = 0;
+/*	size_t sum = 0;
 
 		for (int i = 0; i < mpi_size_old; i++)
 		{
 			sum += metadata_out[i];
-		}
+		}*/
 
 	//	std::cout << "LOAD: sum: " << sum << std::endl;
 

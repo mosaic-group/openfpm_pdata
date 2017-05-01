@@ -29,9 +29,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
 	if (v_cl.getProcessingUnits() >= 32)
 		return;
 
-	if (v_cl.getProcessUnitID() == 0)
-			std::cout << "Saving Distributed 2D Grid..." << std::endl;
-
 	// grid size
 	size_t sz[2];
 	sz[0] = k;
@@ -67,8 +64,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
 		count++;
 	}
 
-	std::cout << "Count: " << count << std::endl;
-
 	openfpm::vector<size_t> count_total;
 	v_cl.allGather(count,count_total);
 	v_cl.execute();
@@ -78,15 +73,11 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
 	for (size_t i = 0; i < count_total.size(); i++)
 		sum += count_total.get(i);
 
-	std::cout << "Sum: " << sum << std::endl;
-
 	timer t;
 	t.start();
 	// Save the grid
     g_dist.save("grid_dist_id.h5");
 	t.stop();
-
-	std::cout << "Saving time: " << t.getwct() << std::endl;
 }
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
@@ -105,9 +96,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 	// Skip this test on big scale
 	if (v_cl.getProcessingUnits() >= 32)
 		return;
-
-	if (v_cl.getProcessUnitID() == 0)
-		std::cout << "Loading Distributed 2D Grid..." << std::endl;
 
 	// grid size
 	size_t sz[2];
@@ -132,8 +120,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 	g_dist.write("Loaded_grid");
 	g_dist.getDecomposition().write("Loaded_grid_decomposition");
 
-	std::cout << "Loading time: " << t.getwct() << std::endl;
-
 	auto it = g_dist.getDomainIterator();
 
 	size_t count = 0;
@@ -153,8 +139,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 		++it;
 		count++;
 	}
-
-	std::cout << "COOOOOOUNT: " << count << std::endl;
 
 	openfpm::vector<size_t> count_total;
 	v_cl.allGather(count,count_total);
