@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 
 	BOOST_REQUIRE(met_dist.getUnbalance() < 0.03);
 
-	met_dist.write("vtk_metis_distribution.vtk");
+	met_dist.write("vtk_metis_distribution");
 
 	size_t b = GS_SIZE * GS_SIZE * GS_SIZE / 5;
 
@@ -130,22 +130,22 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 
 	BOOST_REQUIRE(met_dist.getUnbalance() < 0.06);
 
-	met_dist.write("vtk_metis_distribution_red.vtk");
+	met_dist.write("vtk_metis_distribution_red");
 
 	// check that match
 
 #ifdef HAVE_OSX
 
-	bool test = compare("vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_osx_test.vtk");
+	bool test = compare("0_vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_osx_test.vtk");
 	BOOST_REQUIRE_EQUAL(true,test);
-	test = compare("vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_osx_test.vtk");
+	test = compare("0_vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_osx_test.vtk");
 	BOOST_REQUIRE_EQUAL(true,test);
 
 #else
 
-	bool test = compare("vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_test.vtk");
+	bool test = compare("0_vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_test.vtk");
 	BOOST_REQUIRE_EQUAL(true,test);
-	test = compare("vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_test.vtk");
+	test = compare("0_vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_test.vtk");
 	BOOST_REQUIRE_EQUAL(true,test);
 
 #endif
