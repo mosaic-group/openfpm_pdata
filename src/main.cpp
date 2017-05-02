@@ -37,7 +37,6 @@ int main(int argc, char* argv[])
 #include "Graph/dist_map_graph.hpp"
 #include "memory/HeapMemory.hpp"
 #include "Space/Shape/Box.hpp"
-#include "util.hpp"
 
 #include "unit_test_init_cleanup.hpp"
 #include "Graph/CartesianGraphFactory_unit_test.hpp"
