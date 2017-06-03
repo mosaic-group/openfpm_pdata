@@ -46,8 +46,16 @@ void init(grid_dist_id<3,double,aggregate<double,double> > & Old, grid_dist_id<3
 		++it;
 	}
 
-	grid_key_dx<3> start({(long int)std::floor(Old.size(0)*1.55f/domain.getHigh(0)),(long int)std::floor(Old.size(1)*1.55f/domain.getHigh(1)),(long int)std::floor(Old.size(1)*1.55f/domain.getHigh(2))});
-	grid_key_dx<3> stop ({(long int)std::ceil (Old.size(0)*1.85f/domain.getHigh(0)),(long int)std::ceil (Old.size(1)*1.85f/domain.getHigh(1)),(long int)std::floor(Old.size(1)*1.85f/domain.getHigh(1))});
+        long int x_start = Old.size(0)*1.55f/domain.getHigh(0);
+        long int y_start = Old.size(1)*1.55f/domain.getHigh(1);
+        long int z_start = Old.size(1)*1.55f/domain.getHigh(2);
+
+        long int x_stop = Old.size(0)*1.85f/domain.getHigh(0);
+        long int y_stop = Old.size(1)*1.85f/domain.getHigh(1);
+        long int z_stop = Old.size(1)*1.85f/domain.getHigh(2);
+
+        grid_key_dx<3> start({x_start,y_start,z_start});
+        grid_key_dx<3> stop ({x_stop,y_stop,z_stop});
 	auto it_init = Old.getSubDomainIterator(start,stop);
 
 	while (it_init.isNext())
@@ -72,7 +80,7 @@ int main(int argc, char* argv[])
 	Box<3,double> domain({0.0,0.0},{2.5,2.5,2.5});
 	
 	// grid size
-	size_t sz[3] = {128,128,128};
+        size_t sz[3] = {128,128,128};
 
 	// Define periodicity of the grid
 	periodicity<3> bc = {PERIODIC,PERIODIC,PERIODIC};
@@ -90,11 +98,11 @@ int main(int argc, char* argv[])
 	double dv = 1*1e-5;
 
 	// Number of timesteps
-        size_t timeSteps = 17000;
+        size_t timeSteps = 5000;
 
 	// K and F (Physical constant in the equation)
-        double K = 0.065;
-        double F = 0.034;
+        double K = 0.014;
+        double F = 0.053;
 
 	//! \cond [init lib] \endcond
 
@@ -186,7 +194,7 @@ int main(int argc, char* argv[])
 		// visualization
 		if (i % 60 == 0)
 		{
-			Old.write("output",count,VTK_WRITER | FORMAT_BINARY);
+			Old.write_frame("output",count,VTK_WRITER | FORMAT_BINARY);
 			count++;
 		}
 	}

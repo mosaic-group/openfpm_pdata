@@ -912,7 +912,7 @@ int main(int argc, char* argv[])
 	cbar = coeff_sound * sqrt(gravity * h_swl);
 
 	// for each particle inside the fluid box ...
-/*	while (fluid_it.isNext())
+        while (fluid_it.isNext())
 	{
 		// ... add a particle ...
 		vd.add();
@@ -946,8 +946,7 @@ int main(int argc, char* argv[])
 
 		// next fluid particle
 		++fluid_it;
-	}*/
-
+        }
 
 	// Recipient
 	Box<3,double> recipient1({0.0,0.0,0.0},{1.6+dp/2.0,0.67+dp/2.0,0.4+dp/2.0});
@@ -1009,10 +1008,6 @@ int main(int argc, char* argv[])
 	}
 
 	vd.map();
-
-        vd.write("Recipient");
-
-	return 0;
 
 	// Now that we fill the vector with particles
 	ModelCustom md;

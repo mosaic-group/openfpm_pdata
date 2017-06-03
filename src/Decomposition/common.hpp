@@ -114,7 +114,7 @@ struct lBox_dom
 {
 	//! Intersection between the local sub-domain enlarged by the ghost and the contiguous processor
 	//! sub-domains (External ghost)
-	openfpm::vector_std< Box_sub<dim,T> > ebx;
+	openfpm::vector_std< Box_sub_k<dim,T> > ebx;
 
 	//! Intersection between the contiguous processor sub-domain enlarged by the ghost with the
 	//! local sub-domain (Internal ghost)

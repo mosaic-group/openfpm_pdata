@@ -68,6 +68,12 @@ public:
 	inline vect_dist_key_dx()
 	{
 	}
+
+	//! Default constructor
+	inline vect_dist_key_dx(size_t key)
+	:key(key)
+	{
+	}
 };
 
 

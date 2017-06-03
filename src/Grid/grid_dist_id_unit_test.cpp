@@ -1359,6 +1359,126 @@ void Test3D_periodic(const Box<3,float> & domain, long int k)
 	}
 }
 
+// Test grid periodic
+
+void Test3D_periodic_put(const Box<3,float> & domain, long int k)
+{
+	Vcluster & v_cl = create_vcluster();
+
+	if ( v_cl.getProcessingUnits() > 32 )
+		return;
+
+	long int big_step = k / 30;
+	big_step = (big_step == 0)?1:big_step;
+	long int small_step = 21;
+
+	print_test( "Testing grid periodic put k<=",k);
+
+	// 3D test
+	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
+	{
+		BOOST_TEST_CHECKPOINT( "Testing grid periodick<=" << k );
+
+		// grid size
+		size_t sz[3];
+		sz[0] = k;
+		sz[1] = k;
+		sz[2] = k;
+
+		// Ghost
+		Ghost<3,long int> g(1);
+
+		// periodicity
+		periodicity<3> pr = {{PERIODIC,PERIODIC,PERIODIC}};
+
+		// Distributed grid with id decomposition
+		grid_dist_id<3, float, aggregate<long int>, CartDecomposition<3,float>> g_dist(sz,domain,g,pr);
+
+		// check the consistency of the decomposition
+		bool val = g_dist.getDecomposition().check_consistency();
+		BOOST_REQUIRE_EQUAL(val,true);
+
+		// Grid sm
+		grid_sm<3,void> info(sz);
+
+		size_t count = 0;
+
+		{
+		auto dom = g_dist.getDomainIterator();
+
+		while (dom.isNext())
+		{
+			auto key = dom.get();
+
+			g_dist.template get<0>(key) = -6.0;
+
+			// Count the points
+			count++;
+
+			++dom;
+		}
+		}
+
+		// Set to zero the full grid
+
+		{
+		auto dom = g_dist.getDomainIterator();
+
+		while (dom.isNext())
+		{
+			auto key = dom.get();
+
+			g_dist.template get<0>(key.move(0,1)) += 1.0;
+			g_dist.template get<0>(key.move(0,-1)) += 1.0;
+			g_dist.template get<0>(key.move(1,1)) += 1.0;
+			g_dist.template get<0>(key.move(1,-1)) += 1.0;
+			g_dist.template get<0>(key.move(2,1)) += 1.0;
+			g_dist.template get<0>(key.move(2,-1)) += 1.0;
+
+			++dom;
+		}
+		}
+
+		bool correct = true;
+
+		// Domain + Ghost iterator
+		auto dom_gi = g_dist.getDomainIterator();
+
+		while (dom_gi.isNext())
+		{
+			auto key = dom_gi.get();
+
+			correct &= (g_dist.template get<0>(key) == 0);
+
+			++dom_gi;
+		}
+
+		g_dist.ghost_put<add_,0>();
+
+		if (count != 0)
+			BOOST_REQUIRE_EQUAL(correct, false);
+
+		// sync the ghosts
+		g_dist.ghost_get<0>();
+
+		correct = true;
+
+		// Domain + Ghost iterator
+		auto dom_gi2 = g_dist.getDomainIterator();
+
+		while (dom_gi2.isNext())
+		{
+			auto key = dom_gi2.get();
+
+			correct &= (g_dist.template get<0>(key) == 0);
+
+			++dom_gi2;
+		}
+
+		BOOST_REQUIRE_EQUAL(correct, true);
+	}
+}
+
 void Test_grid_copy(const Box<3,float> & domain, long int k)
 {
 	typedef Point_test<float> p;
@@ -1618,6 +1738,17 @@ BOOST_AUTO_TEST_CASE( grid_1d_test )
 	long int k = 32*32*32*create_vcluster().getProcessingUnits();
 
 	Test1D(domain1,k);
+}
+
+BOOST_AUTO_TEST_CASE( grid_dist_id_periodic_put_test )
+{
+	// Domain
+	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	long int k = 128*128*128*create_vcluster().getProcessingUnits();
+	k = std::pow(k, 1/3.);
+
+	Test3D_periodic_put(domain3,k);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

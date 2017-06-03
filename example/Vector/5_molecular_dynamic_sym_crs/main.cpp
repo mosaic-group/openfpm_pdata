@@ -148,7 +148,7 @@ void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, Ve
 	//! \cond [real and ghost] \endcond
 
 	// Get an iterator over particles
-	auto it2 = vd.getParticleIteratorCRS(NN.getInternalCellList());
+	auto it2 = vd.getParticleIteratorCRS(NN);
 
 	//! \cond [real and ghost] \endcond
 
@@ -250,7 +250,7 @@ double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, 
 	double shift = 4.0 * ( sigma12 / (rc*rc*rc*rc*rc*rc) - sigma6 / ( rc*rc*rc) );
 
 	// Get an iterator over particles
-	auto it2 = vd.getParticleIteratorCRS(NN.getInternalCellList());
+	auto it2 = vd.getParticleIteratorCRS(NN);
 
 	// For each particle ...
 	while (it2.isNext())

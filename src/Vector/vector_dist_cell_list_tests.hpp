@@ -1691,4 +1691,114 @@ BOOST_AUTO_TEST_CASE( vector_dist_checking_unloaded_processors )
 	}
 }
 
+BOOST_AUTO_TEST_CASE( vector_dist_cell_list_multi_type )
+{
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 24)
+		return;
+
+	float L = 1000.0;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(0);
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(-L,L);
+
+    long int k = 4096 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 4;
+	big_step = (big_step == 0)?1:big_step;
+
+	print_test("Testing 3D periodic vector symmetric cell-list k=",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list k=" << k );
+
+	Box<3,float> box({-L,-L,-L},{L,L,L});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	float r_cut = 100.0;
+
+	// ghost
+	Ghost<3,float> ghost(r_cut);
+
+	typedef  aggregate<size_t> part_prop;
+
+	// Distributed vector
+	vector_dist<3,float, part_prop > vd(k,box,bc,ghost);
+
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.getPos(key)[0] = ud(eg);
+		vd.getPos(key)[1] = ud(eg);
+		vd.getPos(key)[2] = ud(eg);
+
+		++it;
+	}
+
+	vd.map();
+
+	// sync the ghost
+	vd.ghost_get<0>();
+
+
+	bool ret = true;
+
+	// We take different type of Cell-list
+	auto NN = vd.getCellList<CELL_MEMFAST(3,float)>(r_cut);
+	auto NN2 = vd.getCellList<CELL_MEMBAL(3,float)>(r_cut);
+	auto NN3 = vd.getCellList<CELL_MEMMW(3,float)>(r_cut);
+
+	auto p_it = vd.getDomainIterator();
+
+	while (p_it.isNext())
+	{
+		auto p = p_it.get();
+
+		Point<3,float> xp = vd.getPos(p);
+
+		auto Np = NN.getNNIterator(NN.getCell(xp));
+		auto Np2 = NN2.getNNIterator(NN2.getCell(xp));
+		auto Np3 = NN3.getNNIterator(NN3.getCell(xp));
+
+		while (Np.isNext())
+		{
+			// first all cell-list must agree
+
+			ret &= (Np.isNext() == Np2.isNext()) && (Np3.isNext() == Np.isNext());
+
+			if (ret == false)
+				break;
+
+			auto q = Np.get();
+			auto q2 = Np2.get();
+			auto q3 = Np3.get();
+
+			ret &= (q == q2) && (q == q3);
+
+			if (ret == false)
+				break;
+
+			++Np;
+			++Np2;
+			++Np3;
+		}
+
+		ret &= (Np.isNext() == Np2.isNext()) && (Np.isNext() == Np3.isNext());
+
+		if (ret == false)
+			break;
+
+		++p_it;
+	}
+
+	BOOST_REQUIRE_EQUAL(ret,true);
+}
+
 #endif /* SRC_VECTOR_VECTOR_DIST_CELL_LIST_TESTS_HPP_ */

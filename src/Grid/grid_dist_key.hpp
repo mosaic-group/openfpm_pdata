@@ -20,6 +20,16 @@ class grid_dist_key_dx
 
 public:
 
+	/*! \brief Set the local grid
+	 *
+	 * \param sub local grid
+	 *
+	 */
+	inline void setSub(size_t sub)
+	{
+		g_c = sub;
+	}
+
 	/*! \brief Get the local grid
 	 *
 	 * \return the id of the local grid
@@ -99,10 +109,19 @@ public:
 		return grid_dist_key_dx<dim>(getSub(),key);
 	}
 
+	/*! \brief Constructor set the sub-domain grid and the position in local coordinates
+	 *
+	 * \param g_c sub-domain
+	 * \param key key
+	 *
+	 */
 	inline grid_dist_key_dx(int g_c, const grid_key_dx<dim> & key)
 	:g_c(g_c),key(key)
 	{
 	}
+
+	//! Constructor
+	inline grid_dist_key_dx(){}
 
 	std::string to_string()
 	{

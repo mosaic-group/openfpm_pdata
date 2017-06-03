@@ -8,8 +8,6 @@
 #ifndef VECTOR_HPP_
 #define VECTOR_HPP_
 
-#include "../../openfpm_data/src/NN/CellList/CellListFast_gen.hpp"
-#include "../../openfpm_data/src/NN/CellList/CellListFast_gen.hpp"
 #include "HDF5_wr/HDF5_wr.hpp"
 #include "VCluster/VCluster.hpp"
 #include "Space/Shape/Point.hpp"
@@ -18,6 +16,7 @@
 #include "Vector/vector_dist_key.hpp"
 #include "memory/PtrMemory.hpp"
 #include "NN/CellList/CellList.hpp"
+#include "NN/CellList/CellListFast_gen.hpp"
 #include "util/common.hpp"
 #include "util/object_util.hpp"
 #include "memory/ExtPreAlloc.hpp"
@@ -77,7 +76,7 @@ struct gcl
 	 */
 	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
 	{
-		return vd.getCellList(r_cut);
+		return vd.template getCellList<CellL>(r_cut);
 	}
 };
 
@@ -99,6 +98,10 @@ struct gcl<dim,St,CellList_gen<dim, St, Process_keys_hilb,Mem_type, shift<dim, S
 		return vd.getCellList_hilb(r_cut,g);
 	}
 };
+
+#define CELL_MEMFAST(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_fast<dim,St>, shift<dim, St> >
+#define CELL_MEMBAL(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_bal<dim,St>, shift<dim, St> >
+#define CELL_MEMMW(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_mw<dim,St>, shift<dim, St> >
 
 /*! \brief Distributed vector
  *
@@ -519,6 +522,124 @@ public:
 
 #endif
 
+///////////////////// Read and write with no check
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPosNC(vect_dist_key_dx vec_key) -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	{
+		return v_pos.template get<0>(vec_key.getKey());
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPosNC(vect_dist_key_dx vec_key) const -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	{
+		return v_pos.template get<0>(vec_key.getKey());
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPosNC(size_t vec_key) -> decltype(v_pos.template get<0>(vec_key))
+	{
+		return v_pos.template get<0>(vec_key);
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPosNC(size_t vec_key) const -> decltype(v_pos.template get<0>(vec_key))
+	{
+		return v_pos.template get<0>(vec_key);
+	}
+
+	/*! \brief Get the property of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \tparam id property id
+	 * \param vec_key vector element
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline auto getPropNC(vect_dist_key_dx vec_key) -> decltype(v_prp.template get<id>(vec_key.getKey()))
+	{
+		return v_prp.template get<id>(vec_key.getKey());
+	}
+
+	/*! \brief Get the property of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \tparam id property id
+	 * \param vec_key vector element
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline auto getPropNC(vect_dist_key_dx vec_key) const -> const decltype(v_prp.template get<id>(vec_key.getKey()))
+	{
+		return v_prp.template get<id>(vec_key.getKey());
+	}
+
+	/*! \brief Get the property of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \tparam id property id
+	 * \param vec_key vector element
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline auto getPropNC(size_t vec_key) -> decltype(v_prp.template get<id>(vec_key))
+	{
+		return v_prp.template get<id>(vec_key);
+	}
+
+	/*! \brief Get the property of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \tparam id property id
+	 * \param vec_key vector element
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline auto getPropNC(size_t vec_key) const -> const decltype(v_prp.template get<id>(vec_key))
+	{
+		return v_prp.template get<id>(vec_key);
+	}
+
 ///////////////////// Read and Write function
 
 	/*! \brief Get the position of an element
@@ -767,7 +888,7 @@ public:
 		Ghost<dim,St> g = getDecomposition().getGhost();
 		g.magnify(1.013);
 
-		return getCellList(r_cut, g);
+		return getCellList<CellL>(r_cut, g);
 	}
 
 	/*! \brief Construct an hilbert cell list starting from the stored particles

@@ -9,7 +9,7 @@ pdata_LDADD = $(LINKLIBS) -lparmetis -lmetis
 nobase_include_HEADERS = Decomposition/CartDecomposition.hpp Decomposition/CartDecomposition_ext.hpp  Decomposition/common.hpp Decomposition/Decomposition.hpp  Decomposition/ie_ghost.hpp \
          Decomposition/Domain_NN_calculator_cart.hpp Decomposition/nn_processor.hpp Decomposition/ie_loc_ghost.hpp Decomposition/ORB.hpp \
          Graph/CartesianGraphFactory.hpp \
-         Grid/grid_dist_id.hpp Grid/Iterators/grid_dist_id_iterator_util.hpp Grid/Iterators/grid_dist_id_iterator_dec.hpp Grid/Iterators/grid_dist_id_iterator_dec_skin.hpp Grid/grid_dist_util.hpp  Grid/Iterators/grid_dist_id_iterator_sub.hpp Grid/Iterators/grid_dist_id_iterator.hpp Grid/grid_dist_key.hpp Grid/staggered_dist_grid.hpp Grid/staggered_dist_grid_util.hpp Grid/staggered_dist_grid_copy.hpp \
+         Grid/grid_dist_id.hpp Grid/grid_dist_id_comm.hpp Grid/Iterators/grid_dist_id_iterator_util.hpp Grid/Iterators/grid_dist_id_iterator_dec.hpp Grid/Iterators/grid_dist_id_iterator_dec_skin.hpp Grid/grid_dist_util.hpp  Grid/Iterators/grid_dist_id_iterator_sub.hpp Grid/Iterators/grid_dist_id_iterator.hpp Grid/grid_dist_key.hpp Grid/staggered_dist_grid.hpp Grid/staggered_dist_grid_util.hpp Grid/staggered_dist_grid_copy.hpp \
          Vector/se_class3_vector.hpp  Vector/vector_dist_multiphase_functions.hpp Vector/vector_dist_comm.hpp Vector/vector_dist.hpp Vector/vector_dist_ofb.hpp Vector/Iterators/vector_dist_iterator.hpp Vector/vector_dist_key.hpp \
          config/config.h \
          example.mk \

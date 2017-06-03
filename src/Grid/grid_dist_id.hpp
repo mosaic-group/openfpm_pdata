@@ -376,71 +376,12 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 				pib.bid.get(s).sub = dec.getLocalEGhostSub(k,s);
 				pib.bid.get(s).cmb = loc_ig_box.get(i).bid.get(j).cmb;
 				pib.bid.get(s).cmb.sign_flip();
+				pib.bid.get(s).k = j;
+				pib.bid.get(s).initialized = true;
 			}
 		}
 
 		init_local_e_g_box = true;
-	}
-
-	/*! \brief Sync the local ghost part
-	 *
-	 * \tparam prp... properties to sync
-	 *
-	 */
-	template<int... prp> void ghost_get_local()
-	{
-		//! For all the sub-domains
-		for (size_t i = 0 ; i < loc_ig_box.size() ; i++)
-		{
-			//! For all the internal ghost boxes of each sub-domain
-			for (size_t j = 0 ; j < loc_ig_box.get(i).bid.size() ; j++)
-			{
-				Box<dim,size_t> bx_src = loc_ig_box.get(i).bid.get(j).box;
-				// convert into local
-				bx_src -= gdb_ext.get(i).origin;
-
-				// sub domain connected with external box
-				size_t sub_id_dst = loc_ig_box.get(i).bid.get(j).sub;
-
-				// local internal ghost box connected
-				size_t k = loc_ig_box.get(i).bid.get(j).k;
-
-				Box<dim,size_t> bx_dst = loc_eg_box.get(sub_id_dst).bid.get(k).box;
-
-				// convert into local
-				bx_dst -= gdb_ext.get(sub_id_dst).origin;
-
-				// create 2 sub grid iterator
-
-				if (bx_dst.isValid() == false)
-					continue;
-
-				grid_key_dx_iterator_sub<dim> sub_src(loc_grid.get(i).getGrid(),bx_src.getKP1(),bx_src.getKP2());
-				grid_key_dx_iterator_sub<dim> sub_dst(loc_grid.get(sub_id_dst).getGrid(),bx_dst.getKP1(),bx_dst.getKP2());
-
-#ifdef SE_CLASS1
-
-				if (loc_eg_box.get(sub_id_dst).bid.get(k).sub != i)
-					std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination are not correctly linked" << "\n";
-
-				if (sub_src.getVolume() != sub_dst.getVolume())
-					std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination does not match in size" << "\n";
-
-#endif
-
-				const auto & gs = loc_grid.get(i);
-				auto & gd = loc_grid.get(sub_id_dst);
-
-				while (sub_src.isNext())
-				{
-					// Option 1
-					gd.set(sub_dst.get(),gs,sub_src.get());
-
-					++sub_src;
-					++sub_dst;
-				}
-			}
-		}
 	}
 
 	/*! \brief Check the grid has a valid size
@@ -625,8 +566,8 @@ protected:
 		// set the ghost
 		for (size_t i = 0 ; i < dim ; i++)
 		{
-			gc.setLow(i,-sp.getHigh(i));
-			gc.setHigh(i,sp.getHigh(i));
+			gc.setLow(i,gd.getLow(i)*(sp.getHigh(i)));
+			gc.setHigh(i,gd.getHigh(i)*(sp.getHigh(i)));
 		}
 
 		return gc;
@@ -1018,6 +959,8 @@ public:
 		return total;
 	}
 
+
+
 	/*! \brief It return the informations about the local grids
 	 *
 	 * \return The information about the local grids
@@ -1065,14 +1008,10 @@ public:
 		if (v_cl.getProcessUnitID()  == 0)
 		{
 			for (size_t i = 1; i < v_cl.getProcessingUnits(); i++)
-			{
 				v_cl.send(i,0,gdb_ext_global);
-			}
 		}
 		else
-		{
 			v_cl.recv(0,0,gdb_ext_global);
-		}
 
 		v_cl.execute();
 	}
@@ -1216,6 +1155,33 @@ public:
 	 * \return the selected element
 	 *
 	 */
+	template <unsigned int p>inline auto getProp(const grid_dist_key_dx<dim> & v1) const -> decltype(this->template get<p>(v1))
+	{
+		return this->template get<p>(v1);
+	}
+
+	/*! \brief Get the reference of the selected element
+	 *
+	 * \tparam p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return the selected element
+	 *
+	 */
+	template <unsigned int p>inline auto getProp(const grid_dist_key_dx<dim> & v1) -> decltype(this->template get<p>(v1))
+	{
+		return this->template get<p>(v1);
+	}
+
+
+	/*! \brief Get the reference of the selected element
+	 *
+	 * \tparam p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return the selected element
+	 *
+	 */
 	template <unsigned int p>inline auto get(const grid_dist_key_dx<dim> & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
 #ifdef SE_CLASS2
@@ -1239,12 +1205,6 @@ public:
 #endif
 		return loc_grid.get(v1.getSub()).template get<p>(v1.getKey());
 	}
-
-	//! Memory for the ghost sending buffer
-	Memory g_send_prp_mem;
-
-	//! Memory for the ghost sending buffer
-	Memory g_recv_prp_mem;
 
 	//! Flag that indicate if the external ghost box has been initialized
 	bool init_e_g_box = false;
@@ -1278,8 +1238,37 @@ public:
 		check_valid(this,8);
 #endif
 
-		// Sending property object
-		typedef object<typename object_creator<typename T::type,prp...>::type> prp_object;
+		// Convert the ghost  internal boxes into grid unit boxes
+		create_ig_box();
+
+		// Convert the ghost external boxes into grid unit boxes
+		create_eg_box();
+
+		// Convert the local ghost internal boxes into grid unit boxes
+		create_local_ig_box();
+
+		// Convert the local external ghost boxes into grid unit boxes
+		create_local_eg_box();
+
+		grid_dist_id_comm<dim,St,T,Decomposition,Memory,device_grid>::template ghost_get_<prp...>(ig_box,
+																								  eg_box,
+																								  loc_ig_box,
+																								  loc_eg_box,
+																								  gdb_ext,
+																								  loc_grid,
+																								  g_id_to_external_ghost_box);
+	}
+
+	/*! \brief It synchronize the ghost parts
+	 *
+	 * \tparam prp... Properties to synchronize
+	 *
+	 */
+	template<template<typename,typename> class op,int... prp> void ghost_put()
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
 
 		// Convert the ghost  internal boxes into grid unit boxes
 		create_ig_box();
@@ -1293,164 +1282,13 @@ public:
 		// Convert the local external ghost boxes into grid unit boxes
 		create_local_eg_box();
 
-
-		size_t req = 0;
-
-		// Create a packing request vector
-		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
-		{
-			// for each ghost box
-			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
-			{
-				// And linked sub-domain
-				size_t sub_id = ig_box.get(i).bid.get(j).sub;
-				// Internal ghost box
-				Box<dim,long int> g_ig_box = ig_box.get(i).bid.get(j).box;
-
-				if (g_ig_box.isValid() == false)
-					continue;
-
-				g_ig_box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
-
-				// Pack a size_t for the internal ghost id
-				Packer<size_t,HeapMemory>::packRequest(req);
-				// Create a sub grid iterator spanning the internal ghost layer
-				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_ig_box.getKP1(),g_ig_box.getKP2());
-				// and pack the internal ghost grid
-				Packer<device_grid,HeapMemory>::template packRequest<prp...>(loc_grid.get(sub_id),sub_it,req);
-			}
-		}
-
-		// resize the property buffer memory
-		g_send_prp_mem.resize(req);
-
-		// Create an object of preallocated memory for properties
-		ExtPreAlloc<Memory> & prAlloc_prp = *(new ExtPreAlloc<Memory>(req,g_send_prp_mem));
-
-		prAlloc_prp.incRef();
-
-		// Pack information
-		Pack_stat sts;
-
-		// Pack the information for each processor and send it
-		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
-		{
-
-			sts.mark();
-			void * pointer = prAlloc_prp.getPointerEnd();
-
-			// for each ghost box
-			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
-			{
-				// we pack only if it is valid
-				if (ig_box.get(i).bid.get(j).box.isValid() == false)
-					continue;
-
-				// And linked sub-domain
-				size_t sub_id = ig_box.get(i).bid.get(j).sub;
-				// Internal ghost box
-				Box<dim,size_t> g_ig_box = ig_box.get(i).bid.get(j).box;
-				g_ig_box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
-				// Ghost box global id
-				size_t g_id = ig_box.get(i).bid.get(j).g_id;
-
-				// Pack a size_t for the internal ghost id
-				Packer<size_t,HeapMemory>::pack(prAlloc_prp,g_id,sts);
-				// Create a sub grid iterator spanning the internal ghost layer
-				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_ig_box.getKP1(),g_ig_box.getKP2());
-				// and pack the internal ghost grid
-				Packer<device_grid,HeapMemory>::template pack<prp...>(prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
-			}
-			// send the request
-
-			void * pointer2 = prAlloc_prp.getPointerEnd();
-
-			v_cl.send(ig_box.get(i).prc,0,pointer,(char *)pointer2 - (char *)pointer);
-		}
-
-		// Calculate the total information to receive from each processors
-		std::vector<size_t> prp_recv;
-
-		//! Receive the information from each processors
-		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
-		{
-			prp_recv.push_back(0);
-
-			// for each external ghost box
-			for (size_t j = 0 ; j < eg_box.get(i).bid.size() ; j++)
-			{
-				// External ghost box
-				Box<dim,size_t> g_eg_box = eg_box.get(i).bid.get(j).g_e_box;
-				prp_recv[prp_recv.size()-1] += g_eg_box.getVolumeKey() * sizeof(prp_object) + sizeof(size_t);
-			}
-		}
-
-		size_t tot_recv = ExtPreAlloc<Memory>::calculateMem(prp_recv);
-
-		//! Resize the receiving buffer
-		g_recv_prp_mem.resize(tot_recv);
-
-		// Create an object of preallocated memory for properties
-		ExtPreAlloc<Memory> & prRecv_prp = *(new ExtPreAlloc<Memory>(tot_recv,g_recv_prp_mem));
-		prRecv_prp.incRef();
-
-		// queue the receives
-		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
-		{
-			prRecv_prp.allocate(prp_recv[i]);
-			v_cl.recv(eg_box.get(i).prc,0,prRecv_prp.getPointer(),prp_recv[i]);
-		}
-
-		// Before wait for the communication to complete we sync the local ghost
-		// in order to overlap with communication
-
-		ghost_get_local<prp...>();
-
-		// wait to receive communication
-		v_cl.execute();
-
-		Unpack_stat ps;
-
-		// Unpack the object
-		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
-		{
-			// for each external ghost box
-			for (size_t j = 0 ; j < eg_box.get(i).bid.size() ; j++)
-			{
-				// Unpack the ghost box global-id
-
-				size_t g_id;
-				Unpacker<size_t,HeapMemory>::unpack(prRecv_prp,g_id,ps);
-
-				size_t l_id = 0;
-				// convert the global id into local id
-				auto key = g_id_to_external_ghost_box.find(g_id);
-				if (key != g_id_to_external_ghost_box.end()) // FOUND
-					l_id = key->second;
-				else
-				{
-					// NOT FOUND
-
-					// It must be always found, if not it mean that the processor has no-idea of
-					// what is stored and conseguently do not know how to unpack, print a critical error
-					// and return
-
-					std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " Critical, cannot unpack object, because received data cannot be interpreted\n";
-
-					return;
-				}
-
-				// Get the external ghost box associated with the packed information
-				Box<dim,size_t> box = eg_box.get(i).bid.get(l_id).l_e_box;
-				size_t sub_id = eg_box.get(i).bid.get(l_id).sub;
-
-				// sub-grid where to unpack
-				grid_key_dx_iterator_sub<dim> sub2(loc_grid.get(sub_id).getGrid(),box.getKP1(),box.getKP2());
-
-				// Unpack
-				Unpacker<device_grid,HeapMemory>::template unpack<prp...>(prRecv_prp,sub2,loc_grid.get(sub_id),ps);
-			}
-		}
+		grid_dist_id_comm<dim,St,T,Decomposition,Memory,device_grid>::template ghost_put_<op,prp...>(ig_box,
+																									 eg_box,
+																									 loc_ig_box,
+																									 loc_eg_box,
+																									 gdb_ext,
+																									 loc_grid,
+																						  	  	  	 g_id_to_internal_ghost_box);
 	}
 
 	/*! \brief Copy the give grid into this grid
@@ -1560,7 +1398,7 @@ public:
 	 * \return true id the write succeed
 	 *
 	 */
-	bool write(std::string output, size_t i, size_t opt = VTK_WRITER | FORMAT_ASCII)
+	bool write_frame(std::string output, size_t i, size_t opt = VTK_WRITER | FORMAT_ASCII)
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);

@@ -70,7 +70,7 @@ class ie_loc_ghost
 
 				if (intersect == true)
 				{
-					Box_sub<dim,T> b;
+					Box_sub_k<dim,T> b;
 					b.sub = rj;
 					b.bx = bi;
 					b.cmb = sub_domains_prc.get(j).cmb;
@@ -84,6 +84,7 @@ class ie_loc_ghost
 						if (loc_ghost_box.get(rj).ibx.get(k).sub == i && loc_ghost_box.get(rj).ibx.get(k).cmb == sub_domains_prc.get(j).cmb.operator-())
 						{
 							loc_ghost_box.get(rj).ibx.get(k).k = loc_ghost_box.get(i).ebx.size()-1;
+							loc_ghost_box.get(i).ebx.last().k = k;
 							break;
 						}
 					}
@@ -346,9 +347,11 @@ public:
 		return loc_ghost_box.get(id).ibx.size();
 	}
 
-	/*! \brief For the sub-domain i intersected with the sub-domain j enlarged, the associated
-	 *       external ghost box is located in getLocalEGhostBox(j,k) with
-	 *       getLocalIGhostSub(j,k) == i, this function return k
+	/*! \brief For the sub-domain i intersected with a surrounding sub-domain enlarged. Produce a internal ghost box from
+	 *        the prospecive of i and an associated external ghost box from the prospective of j.
+	 *        In order to retrieve the information about the external ghost box we have to use getLocalEGhostBox(x,k).
+	 *        where k is the value returned by getLocalIGhostE(i,j) and x is the value returned by
+	 *        getLocalIGhostSub(i,j)
 	 *
 	 * \param i
 	 * \param j
@@ -460,10 +463,10 @@ public:
 		return loc_ghost_box.get(i).ebx.get(j).cmb;
 	}
 
-	/*! \brief Considering that sub-domain has N internal local ghost box identified
+	/*! \brief Considering that sub-domains has N internal local ghost box identified
 	 *         with the 0 <= k < N that come from the intersection of 2 sub-domains i and j
-	 *         where j is enlarged, given the sub-domain i and the id k to identify the local internal ghost,
-	 *          it return the id k of the other sub-domain that produced the intersection
+	 *         where j is enlarged, given the sub-domain i and the id k of the internal box,
+	 *         it return the id of the other sub-domain that produced the intersection
 	 *
 	 * \param i sub-domain
 	 * \param k id
@@ -475,7 +478,7 @@ public:
 		return loc_ghost_box.get(i).ibx.get(k).sub;
 	}
 
-	/*! \brief Considering that sub-domain has N external local ghost box identified
+	/*! \brief Considering that sub-domains has N external local ghost box identified
 	 *         with the 0 <= k < N that come from the intersection of 2 sub-domains i and j
 	 *         where i is enlarged, given the sub-domain i and the id k of the external box,
 	 *         it return the id of the other sub-domain that produced the intersection
@@ -562,7 +565,16 @@ public:
 			{
 				if (loc_ghost_box.get(i).ibx.get(j).k == -1)
 				{
-					std::cout << "No ibx link" << "\n";
+					std::cout << __FILE__ << ":" << __LINE__ << " Error: inconsistent decomposition no ibx link" << "\n";
+					return false;
+				}
+
+				size_t k = loc_ghost_box.get(i).ibx.get(j).k;
+				size_t sub = loc_ghost_box.get(i).ibx.get(j).sub;
+
+				if (loc_ghost_box.get(sub).ebx.get(k).k != (long int)j)
+				{
+					std::cout << __FILE__ << ":" << __LINE__ << " Error: inconsistent link between an external ghost box and an internal ghost box" << "\n";
 					return false;
 				}
 			}
@@ -627,39 +639,6 @@ public:
 	 */
 	bool is_equal_ng(ie_loc_ghost<dim,T> & ilg)
 	{
-		Box<dim,T> bt;
-
-		if (ilg.loc_ghost_box.size() != loc_ghost_box.size())
-			return false;
-
-		// Explore all the subdomains
-		for (size_t i = 0 ; i < loc_ghost_box.size() ; i++)
-		{
-			if (getLocalNIGhost(i) != ilg.getLocalNIGhost(i))
-				return false;
-
-			if (getLocalNEGhost(i) != ilg.getLocalNEGhost(i))
-				return false;
-
-			for (size_t j = 0 ; j < getLocalNIGhost(i) ; j++)
-			{
-				if (getLocalIGhostE(i,j) != ilg.getLocalIGhostE(i,j))
-					return false;
-				if (getLocalIGhostBox(i,j).Intersect(ilg.getLocalIGhostBox(i,j),bt) == false)
-					return false;
-				if (getLocalIGhostSub(i,j) != ilg.getLocalIGhostSub(i,j))
-					return false;
-			}
-			for (size_t j = 0 ; j < getLocalNEGhost(i) ; j++)
-			{
-				if (getLocalEGhostBox(i,j).Intersect(ilg.getLocalEGhostBox(i,j),bt) == false)
-					return false;
-				if (getLocalEGhostSub(i,j) != ilg.getLocalEGhostSub(i,j))
-					return false;
-			}
-
-		}
-
 		return true;
 	}
 

@@ -404,7 +404,7 @@ int main(int argc, char* argv[])
 	 *
 	 * Once we have the solution we copy it on the grid
 	 *
-	 * \snippet Numerics/Stoke_flow/0_2D_incompressible/main_eigen.cpp copy write
+	 * \snippet Numerics/Stoke_flow/0_2D_incompressible/main_petsc.cpp copy write
 	 *
 	 */
 
@@ -424,7 +424,7 @@ int main(int argc, char* argv[])
 	 *
 	 *  At the very end of the program we have always to de-initialize the library
 	 *
-	 * \snippet Numerics/Stoke_flow/0_2D_incompressible/main_eigen.cpp fin lib
+	 * \snippet Numerics/Stoke_flow/0_2D_incompressible/main_petsc.cpp fin lib
 	 *
 	 */
 
@@ -440,7 +440,7 @@ int main(int argc, char* argv[])
 	 *
 	 * # Full code # {#num_sk_inc_2D_ps_code}
 	 *
-	 * \include Numerics/Stoke_flow/0_2D_incompressible/main_eigen.cpp
+	 * \include Numerics/Stoke_flow/0_2D_incompressible/main_petsc.cpp
 	 *
 	 */
 }

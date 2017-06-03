@@ -10,10 +10,10 @@
  * This example show the usage of periodic grid with ghost part given in grid units to solve
  * the following system of equations
  *
- * \f$\frac{\partial u}{\partial t} = D_u \nabla u -uv^2 + F(1-u)\f$
+ * \f$\frac{\partial u}{\partial t} = D_u \nabla u - uv^2 + F(1-u)\f$
  *
  *
- * \f$\frac{\partial v}{\partial t} = D_v \nabla v -uv^2 - (F + k)v\f$
+ * \f$\frac{\partial v}{\partial t} = D_v \nabla v + uv^2 - (F + k)v\f$
  * 
  * ## Constants and functions ##
  *
@@ -201,7 +201,7 @@ int main(int argc, char* argv[])
 	grid_dist_id<2, double, aggregate<double,double>> Old(sz,domain,g,bc);
 
 	// New grid with the decomposition of the old grid
-	grid_dist_id<2, double, aggregate<double,double>> New(Old.getDecomposition(),sz,domain,g);
+	grid_dist_id<2, double, aggregate<double,double>> New(Old.getDecomposition(),sz,g);
 
 	
 	// spacing of the grid on x and y

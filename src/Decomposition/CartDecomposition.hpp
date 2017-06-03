@@ -135,7 +135,7 @@ protected:
 	//! Structure that store the cartesian grid information
 	grid_sm<dim, void> gr_dist;
 
-	//! Structure that decompose your structure into cell without creating them
+	//! Structure that decompose the space into cells without creating them
 	//! useful to convert positions to CellId or sub-domain id in this case
 	CellDecomposer_sm<dim, T, shift<dim,T>> cd;
 
@@ -1722,6 +1722,16 @@ public:
 	size_t get_ndec()
 	{
 		return dist.get_ndec();
+	}
+
+	/*! \brief Get the cell decomposer of the decomposition
+	 *
+	 * \return the cell decomposer
+	 *
+	 */
+	const CellDecomposer_sm<dim, T, shift<dim,T>> & getCellDecomposer()
+	{
+		return cd;
 	}
 
 	//! friend classes

@@ -149,6 +149,8 @@ int main(int argc, char* argv[])
 
 	//! \cond [create multi-phase verlet] \endcond
 
+	{
+
 	// Get the cell list of the phase1
 	auto CL_phase1 = phases.get(1).getCellList(r_cut);
 
@@ -202,6 +204,8 @@ int main(int argc, char* argv[])
 
 		// Next particle
 		++it;
+	}
+
 	}
 
 	//! \cond [count part from phase0 to 1] \endcond
@@ -311,13 +315,14 @@ int main(int argc, char* argv[])
 	 *
 	 */
 
+	{
 	//! \cond [compute sym multi-phase two phase] \endcond
 
 	// Get the cell list of the phase1
-	CL_phase1 = phases.get(1).getCellListSym(r_cut);
+	auto CL_phase1 = phases.get(1).getCellListSym(r_cut);
 
 	// This function create a Verlet-list between phases 0 and 1
-	NN_ver01 = createVerletSym(phases.get(0),phases.get(1),CL_phase1,r_cut);
+	auto NN_ver01 = createVerletSym(phases.get(0),phases.get(1),CL_phase1,r_cut);
 
 	// Get an iterator over the real and ghost particles
 	it = phases.get(0).getDomainAndGhostIterator();
@@ -370,6 +375,8 @@ int main(int argc, char* argv[])
 	// Merge the information of the ghost with the real particles
 	phases.get(0).ghost_put<add_,0>();
 	phases.get(1).ghost_put<add_,0>();
+
+	}
 
 	//! \cond [compute sym multi-phase two phase] \endcond
 
