@@ -134,6 +134,8 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 
 	// check that match
 
+	bool test;
+
 #ifdef HAVE_OSX
 
 	bool test = compare("0_vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_osx_test.vtk");
@@ -141,9 +143,9 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 	test = compare("0_vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_osx_test.vtk");
 	BOOST_REQUIRE_EQUAL(true,test);
 
-#else
+#elif __GNUC__ == 6 && __GNUC_MINOR__ == 3
 
-	bool test = compare("0_vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_test.vtk");
+	test = compare("0_vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_test.vtk");
 	BOOST_REQUIRE_EQUAL(true,test);
 	test = compare("0_vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_test.vtk");
 	BOOST_REQUIRE_EQUAL(true,test);
