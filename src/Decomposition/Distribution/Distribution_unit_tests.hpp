@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 
 #ifdef HAVE_OSX
 
-	bool test = compare("0_vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_osx_test.vtk");
+	test = compare("0_vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_osx_test.vtk");
 	BOOST_REQUIRE_EQUAL(true,test);
 	test = compare("0_vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_osx_test.vtk");
 	BOOST_REQUIRE_EQUAL(true,test);
