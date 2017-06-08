@@ -1155,33 +1155,6 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p>inline auto getProp(const grid_dist_key_dx<dim> & v1) const -> decltype(this->template get<p>(v1))
-	{
-		return this->template get<p>(v1);
-	}
-
-	/*! \brief Get the reference of the selected element
-	 *
-	 * \tparam p property to get (is an integer)
-	 * \param v1 grid_key that identify the element in the grid
-	 *
-	 * \return the selected element
-	 *
-	 */
-	template <unsigned int p>inline auto getProp(const grid_dist_key_dx<dim> & v1) -> decltype(this->template get<p>(v1))
-	{
-		return this->template get<p>(v1);
-	}
-
-
-	/*! \brief Get the reference of the selected element
-	 *
-	 * \tparam p property to get (is an integer)
-	 * \param v1 grid_key that identify the element in the grid
-	 *
-	 * \return the selected element
-	 *
-	 */
 	template <unsigned int p>inline auto get(const grid_dist_key_dx<dim> & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
 #ifdef SE_CLASS2
@@ -1205,6 +1178,33 @@ public:
 #endif
 		return loc_grid.get(v1.getSub()).template get<p>(v1.getKey());
 	}
+
+	/*! \brief Get the reference of the selected element
+	 *
+	 * \tparam p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return the selected element
+	 *
+	 */
+	template <unsigned int p>inline auto getProp(const grid_dist_key_dx<dim> & v1) const -> decltype(this->template get<p>(v1))
+	{
+		return this->template get<p>(v1);
+	}
+
+	/*! \brief Get the reference of the selected element
+	 *
+	 * \tparam p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return the selected element
+	 *
+	 */
+	template <unsigned int p>inline auto getProp(const grid_dist_key_dx<dim> & v1) -> decltype(this->template get<p>(v1))
+	{
+		return this->template get<p>(v1);
+	}
+
 
 	//! Flag that indicate if the external ghost box has been initialized
 	bool init_e_g_box = false;
