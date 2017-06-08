@@ -20,7 +20,8 @@ All notable changes to this project will be documented in this file.
 - In case of miss compilation ignore system wide installation
 - Bug in VTK writer binary in case of vectors
 - Bug in VTK writer binary: long int are not supported removing output
-- Bug in the constructor with stencil bigger than one
+- Bug in FDScheme in the constructor with stencil bigger than one
+- Bug Fixed Memory leak in petsc solver
 
 ### Changed
 - CellList types has changed

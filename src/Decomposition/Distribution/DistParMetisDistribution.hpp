@@ -351,7 +351,7 @@ public:
 		return *this;
 	}
 
-	const DistParMetisDistribution<dim, T> & operator=(const DistParMetisDistribution<dim, T> && dist)
+	const DistParMetisDistribution<dim, T> & operator=(DistParMetisDistribution<dim, T> && dist)
 	{
 		v_cl = dist.v_cl;
 		gr = dist.gr;
