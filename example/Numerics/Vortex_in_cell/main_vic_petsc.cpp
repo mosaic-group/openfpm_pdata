@@ -795,7 +795,7 @@ int main(int argc, char* argv[])
 
 	// Time Integration
 
-	for (size_t i = 0 ; i < 2001 ; i++)
+	for (size_t i = 0 ; i < 10001 ; i++)
 	{
 		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s);
 
