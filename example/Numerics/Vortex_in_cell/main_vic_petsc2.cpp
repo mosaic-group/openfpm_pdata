@@ -1,13 +1,4 @@
-/*!
- * \page Vortex_in_cell_petsc Vortex in Cell 3D
- *
- * # Vortex in Cell 3D ring with ring-lets # {#vic_ringlets}
- *
- * In this example we solve the Navier-Stokes in the vortex formulation in 3D
- * for an incompressible fluid
- *
- *
- */
+
 
 #define SE_CLASS1
 //#define PRINT_STACKTRACE

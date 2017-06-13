@@ -10,10 +10,10 @@
  * This example show the usage of periodic grid with ghost part given in grid units to solve
  * the following system of equations
  *
- * \f$\frac{\partial u}{\partial t} = D_u \nabla u - uv^2 + F(1-u)\f$
+ * \f$\frac{\partial u}{\partial t} = D_u \nabla^{2} u - uv^2 + F(1-u)\f$
  *
  *
- * \f$\frac{\partial v}{\partial t} = D_v \nabla v + uv^2 - (F + k)v\f$
+ * \f$\frac{\partial v}{\partial t} = D_v \nabla^{2} v + uv^2 - (F + k)v\f$
  * 
  * ## Constants and functions ##
  *
