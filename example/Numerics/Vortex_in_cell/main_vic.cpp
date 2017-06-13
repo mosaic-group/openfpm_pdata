@@ -170,14 +170,13 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain)
 		++it;
 	}
 
-	Padding<3>pd({0,0,0},{0,0,0});
 	Ghost<3,long int> stencil_max(1);
 
 	// Finite difference scheme
-	FDScheme<poisson_nn_helm> fd(pd, stencil_max, domain, gr_hl.getGridInfo(), gr_hl);
+	FDScheme<poisson_nn_helm> fd(stencil_max, domain, gr_hl);
 
 	// fd.impose(ic_eq(),0.0, EQ_3, {0,0},{sz[0]-2,sz[1]-2},true);
-	fd.template impose_dit<phi>(ps,gr_hl,0,gr_hl.getDomainIterator());
+	fd.template impose_dit<phi>(ps,gr_hl,gr_hl.getDomainIterator());
 
 	// Create an PETSC solver
 /*	petsc_solver<double> solver;
@@ -303,11 +302,11 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 
 
 		// Finite difference scheme
-		FDScheme<poisson_nn_helm> fd(pd, stencil_max, domain, gr_ps.getGridInfo(), gr_ps);
+		FDScheme<poisson_nn_helm> fd(stencil_max, domain, gr_ps);
 
 		poisson ps;
 
-		fd.template impose_dit<phi>(ps,gr_ps,0,gr_ps.getDomainIterator());
+		fd.template impose_dit<phi>(ps,gr_ps,gr_ps.getDomainIterator());
 
 		// Create an PETSC solver
 /*		petsc_solver<double> solver;

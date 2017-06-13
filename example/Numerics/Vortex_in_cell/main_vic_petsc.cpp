@@ -451,7 +451,15 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain)
 		++it5;
 	}
 
-	std::cout << "Max div for vorticity " << max_vort << "   Integral: " << int_vort[0] << "  " << int_vort[1] << "   " << int_vort[2] << std::endl;
+	Vcluster & v_cl = create_vcluster();
+	v_cl.max(max_vort);
+	v_cl.sum(int_vort[0]);
+	v_cl.sum(int_vort[1]);
+	v_cl.sum(int_vort[2]);
+	v_cl.execute();
+
+	if (v_cl.getProcessUnitID() == 0)
+	{std::cout << "Max div for vorticity " << max_vort << "   Integral: " << int_vort[0] << "  " << int_vort[1] << "   " << int_vort[2] << std::endl;}
 
 	//! \cond [sanity_div_integral] \endcond
 
@@ -540,7 +548,11 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain)
 		++it3;
 	}
 
-	std::cout << "Maximum divergence of the ring MAX " << max << std::endl;
+	v_cl.max(max);
+	v_cl.execute();
+
+	if (v_cl.getProcessUnitID() == 0)
+	{std::cout << "Maximum divergence of the ring MAX " << max << std::endl;}
 
 	//! \cond [div_free_check] \endcond
 
@@ -713,7 +725,15 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 		++it5;
 	}
 
-	std::cout << "Max div for vorticity " << max_vort << "   Integral: " << int_vort[0] << "  " << int_vort[1] << "   " << int_vort[2] << std::endl;
+	Vcluster & v_cl = create_vcluster();
+	v_cl.max(max_vort);
+	v_cl.sum(int_vort[0]);
+	v_cl.sum(int_vort[1]);
+	v_cl.sum(int_vort[2]);
+	v_cl.execute();
+
+	if (v_cl.getProcessUnitID() == 0)
+	{std::cout << "Max div for vorticity " << max_vort << "   Integral: " << int_vort[0] << "  " << int_vort[1] << "   " << int_vort[2] << std::endl;}
 
 	//! \cond [sanity_int_div] \endcond
 
@@ -751,8 +771,6 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 		solver.setAbsTol(0.001);
 		solver.setMaxIter(500);
 
-		std::cout << "Solving component " << i << std::endl;
-
 		PetscBool flg;
 		SparseMatrix<double,int,PETSC_BASE> & A = fd.getA();
 
@@ -767,16 +785,11 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 
 		// Calculate the residual
 
-		petsc_solver<double>::return_type r(gr_ps.size(),gr_ps.getLocalDomainSize());
-		Vec & pr = r.getVec();
+		solError serr;
+		serr = solver.get_residual_error(A,phi_s[i],b);
 
-		PETSC_SAFE_CALL(MatResidual(A.getMat(),b.getVec(),phi_s[i].getVec(),pr));
-
-		PetscReal ne;
-		PETSC_SAFE_CALL(VecNorm(pr,NORM_INFINITY,&ne));
-
-
-		std::cout << "Solved component " << i << "  Error: " << ne << "   Symmetric: " << flg << std::endl;
+		if (v_cl.getProcessUnitID() == 0)
+		{std::cout << "Solved component " << i << "  Error: " << serr.err_inf << std::endl;}
 
 		// copy the solution to grid
 		fd.template copy<phi>(phi_s[i],gr_ps);
@@ -865,7 +878,11 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 		++it4;
 	}
 
-	std::cout << "Norm max: " << norm_max << std::endl;
+	v_cl.max(norm_max);
+	v_cl.execute();
+
+	if (v_cl.getProcessUnitID() == 0)
+	{std::cout << "Norm max: " << norm_max << std::endl;}
 
 	//! \cond [cross_check_curl_u_vort] \endcond
 }
@@ -1132,15 +1149,15 @@ int main(int argc, char* argv[])
 	grid_type g_dvort(g_vort.getDecomposition(),szu,g);
 	particles_type particles(g_vort.getDecomposition(),0);
 
-	std::cout << "SPACING " << g_vort.spacing(0) << " " << g_vort.spacing(1) << " " << g_vort.spacing(2) << std::endl;
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessUnitID() == 0)
+	{std::cout << "SPACING " << g_vort.spacing(0) << " " << g_vort.spacing(1) << " " << g_vort.spacing(2) << std::endl;}
 
 	init_ring(g_vort,domain);
 	helmotz_hodge_projection(g_vort,domain);
 
 	remesh(particles,g_vort,domain);
-
-	// Get the total number of particles
-	Vcluster & v_cl = create_vcluster();
 
 	size_t tot_part = particles.size_local();
 	v_cl.sum(tot_part);
@@ -1151,17 +1168,15 @@ int main(int argc, char* argv[])
 	phi_s[1].resize(tot_part,particles.size_local());
 	phi_s[2].resize(tot_part,particles.size_local());
 
-	std::cout << "SETTING ZERO" << std::endl;
-
 	phi_s[0].setZero();
 	phi_s[1].setZero();
 	phi_s[2].setZero();
 
-	std::cout << "END setting zero" << std::endl;
-
 	interpolate<particles_type,grid_type,mp4_kernel<float>> inte(particles,g_vort);
 
-	g_vort.write("grid_vorticity_init", VTK_WRITER | FORMAT_BINARY);
+	// With more than 24 core we rely on the HDF5 checkpoint restart file
+	if (v_cl.getProcessingUnits() < 24)
+	{g_vort.write("grid_vorticity_init", VTK_WRITER | FORMAT_BINARY);}
 
 
 	// Before entering the loop we check if we have to restart a previous simulation
@@ -1178,7 +1193,8 @@ int main(int argc, char* argv[])
 
 		particles.map();
 
-		std::cout << "Restarting from " << i << std::endl;
+		if (v_cl.getProcessUnitID() == 0)
+		{std::cout << "Restarting from " << i << std::endl;}
 	}
 
 	// Time Integration
@@ -1203,12 +1219,14 @@ int main(int argc, char* argv[])
 
 		if (i % 100 == 0)
 		{
-			particles.write("part_out_" + std::to_string(i),VTK_WRITER | FORMAT_BINARY);
-
-			g_vort.ghost_get<vorticity>();
-			g_vel.ghost_get<velocity>();
-			g_vel.write("grid_velocity_" + std::to_string(i), VTK_WRITER | FORMAT_BINARY);
-			g_vort.write("grid_vorticity_" + std::to_string(i), VTK_WRITER | FORMAT_BINARY);
+			if (v_cl.getProcessingUnits() < 24)
+			{
+				particles.write("part_out_" + std::to_string(i),VTK_WRITER | FORMAT_BINARY);
+				g_vort.ghost_get<vorticity>();
+				g_vel.ghost_get<velocity>();
+				g_vel.write("grid_velocity_" + std::to_string(i), VTK_WRITER | FORMAT_BINARY);
+				g_vort.write("grid_vorticity_" + std::to_string(i), VTK_WRITER | FORMAT_BINARY);
+			}
 
 			// Save also for checkpoint restart
 
