@@ -3,6 +3,7 @@
  * \subpage Vector_0_simple
  * \subpage Vector_1_celllist
  * \subpage Vector_1_ghost_get
+ * \subpage Vector_1_HDF5
  * \subpage Vector_2_expression
  * \subpage Vector_3_md
  * \subpage Vector_4_reo_root

@@ -3,16 +3,16 @@
  * # Vortex in Cell 3D ring with ringlets # {#vic_ringlets}
  *
  * In this example we solve the Navier-Stokes equation in the vortex formulation in 3D
- * for an incompressible fluid.
+ * for an incompressible fluid. (bold symbols are vectorial quantity)
  *
  * ## Numerical method ## {#num_vic_mt}
  *
  * In this code we solve the Navier-stokes equation for incompressible fluid in the
  * vorticity formulation. We first recall the Navier-stokes equation in vorticity formulation
  *
- * \f$ \nabla \times u = -w \f$
+ * \f$ \nabla \times \boldsymbol u = - \boldsymbol w \f$
  *
- * \f$  \frac{Dw}{dt} = (w \cdot \vec \nabla) u + \nu \nabla^{2} w \f$ (5)
+ * \f$  \frac{\displaystyle D \boldsymbol w}{\displaystyle dt} = ( \boldsymbol w \cdot \vec \nabla) \boldsymbol u + \nu \nabla^{2} \boldsymbol w \f$    (5)
  *
  * Where \f$w\f$ is the vorticity and \f$u\f$ is the velocity of the fluid.
  * With high Reynold number \f$Re = \frac{uL}{\nu}\f$ and the term \f$uL\f$ significantly
@@ -26,17 +26,18 @@
 	3) Initialize particles on the same position as the grid or remesh
 
 	while (t < t_end) do
-		4) Interpolate mesh vorticity on particles
+		4) Interpolate vorticity from the particles to mesh
 		5) calculate velocity u from the vorticity w
-		6) interpolate velocity u to particles
-		7) calculate the right-hand-side on grid and interpolate on particles
+		6) calculate the right-hand-side on grid and interpolate on particles
+		7) interpolate velocity u to particles
 		8) move particles accordingly to the velocity
-		9) interpolate vorticity w back to grid
+		9) interpolate the vorticity into mesh and reinitialize the particles
+		   in a grid like position
 	end while
 
    \endverbatim
  *
- * This pseudo code show how to solve the equation above using euler integration
+ * This pseudo code show how to solve the equation above using euler integration.
  * In case of Runge-kutta of order two the pseudo code change into
  *
  *
@@ -47,18 +48,19 @@
 	3) Initialize particles on the same position as the grid or remesh
 
 	while (t < t_end) do
-		4) Interpolate mesh vorticity on particles
+		4) 4) Interpolate vorticity from the particles to mesh
 		5) calculate velocity u from the vorticity w
-		6) interpolate velocity u to particles
-		7) calculate the right-hand-side on grid and interpolate on particles
+		6) calculate the right-hand-side on grid and interpolate on particles
+		7) interpolate velocity u to particles
 		8) move particles accordingly to the velocity and save the old position in x_old
-		9) interpolate vorticity w back to grid
 
-		10) Interpolate mesh vorticity on particles
-		11) calculate velocity u from the vorticity w
+		9) Interpolate vorticity on mesh on the particles
+		10) calculate velocity u from the vorticity w
+		11) calculate the right-hand-side on grid and interpolate on particles
 		12) interpolate velocity u to particles
-		13) calculate the right-hand-side on grid and interpolate on particles
-		14) move particles accordingly to the velocity starting from x_old
+		13) move particles accordingly to the velocity starting from x_old
+		14) interpolate the vorticity into mesh and reinitialize the particles
+		   in a grid like position
 	end while
 
    \endverbatim
@@ -68,16 +70,17 @@
  * ## Inclusion ## {#num_vic_inc}
  *
  * This example code need several components. First because is a particle
- * mesh example we have to activate "grid_dist_id.hpp" and "vector_dist_id.hpp".
+ * mesh example we have to activate **grid_dist_id.hpp** and **vector_dist_id.hpp**.
  * Because we use a finite-difference scheme and linear-algebra to calculate the
- * velocity out of the vorticity, we have to include "FDScheme.hpp" to produce
- * out of the finite difference scheme a matrix that represent the linear-system
- * to solve. "SparseMatrix.hpp" is the Sparse-Matrix that contain the linear
- * system. "Vector.hpp" is the data-structure that contain the solution of the
- * linear system. "petsc_solver.hpp" is the library to invert the linear system.
+ * velocity out of the vorticity, we have to include **FDScheme.hpp** to produce
+ * from the finite difference scheme a matrix that represent the linear-system
+ * to solve. **SparseMatrix.hpp** is the Sparse-Matrix that will contain the linear
+ * system to solve in order to get the velocity out of the vorticity.
+ * **Vector.hpp** is the data-structure that contain the solution of the
+ * linear system. **petsc_solver.hpp** is the library to use in order invert the linear system.
  * Because we have to interpolate between particles and grid we the to include
- * "interpolate.hpp" as interpolation kernel we use the mp4, so we include the
- * "mp4_kernel.hpp"
+ * **interpolate.hpp** as interpolation kernel we use the mp4, so we include the
+ * **mp4_kernel.hpp**
  *
  * For convenience we also define the particles type and the grid type and some
  * convenient constants
@@ -106,9 +109,10 @@ constexpr int x = 0;
 constexpr int y = 1;
 constexpr int z = 2;
 
-////////////////// Simulation Parameters //////////////////////
-
+// The type of the grids
 typedef grid_dist_id<3,float,aggregate<float[3]>> grid_type;
+
+// The type of the particles
 typedef vector_dist<3,float,aggregate<float[3],float[3],float[3],float[3],float[3]>> particles_type;
 
 // radius of the torus
@@ -127,6 +131,7 @@ float nu = 0.0001535;
 float dt = 0.006;
 
 
+// All the properties by index
 constexpr unsigned int vorticity = 0;
 constexpr unsigned int velocity = 0;
 constexpr unsigned int p_vel = 1;
@@ -135,6 +140,50 @@ constexpr unsigned int old_vort = 3;
 constexpr unsigned int old_pos = 4;
 
 //! \cond [inclusion] \endcond
+
+template<typename grid> void calc_and_print_max_div_and_int(grid & g_vort)
+{
+	//! \cond [sanity_int_div] \endcond
+
+	g_vort.template ghost_get<vorticity>();
+	auto it5 = g_vort.getDomainIterator();
+
+	double max_vort = 0.0;
+
+	double int_vort[3] = {0.0,0.0,0.0};
+
+	while (it5.isNext())
+	{
+		auto key = it5.get();
+
+		double tmp;
+
+        tmp = 1.0f/g_vort.spacing(x)/2.0f*(g_vort.template get<vorticity>(key.move(x,1))[x] - g_vort.template get<vorticity>(key.move(x,-1))[x] ) +
+			         	 	 1.0f/g_vort.spacing(y)/2.0f*(g_vort.template get<vorticity>(key.move(y,1))[y] - g_vort.template get<vorticity>(key.move(y,-1))[y] ) +
+							 1.0f/g_vort.spacing(z)/2.0f*(g_vort.template get<vorticity>(key.move(z,1))[z] - g_vort.template get<vorticity>(key.move(z,-1))[z] );
+
+        int_vort[x] += g_vort.template get<vorticity>(key)[x];
+        int_vort[y] += g_vort.template get<vorticity>(key)[y];
+        int_vort[z] += g_vort.template get<vorticity>(key)[z];
+
+        if (tmp > max_vort)
+        	max_vort = tmp;
+
+		++it5;
+	}
+
+	Vcluster & v_cl = create_vcluster();
+	v_cl.max(max_vort);
+	v_cl.sum(int_vort[0]);
+	v_cl.sum(int_vort[1]);
+	v_cl.sum(int_vort[2]);
+	v_cl.execute();
+
+	if (v_cl.getProcessUnitID() == 0)
+	{std::cout << "Max div for vorticity " << max_vort << "   Integral: " << int_vort[0] << "  " << int_vort[1] << "   " << int_vort[2] << std::endl;}
+
+	//! \cond [sanity_int_div] \endcond
+}
 
 /*! \page Vortex_in_cell_petsc Vortex in Cell 3D
  *
@@ -302,20 +351,16 @@ const bool poisson_nn_helm::boundary[] = {PERIODIC,PERIODIC,PERIODIC};
  *
  * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp poisson_syseq
  *
- * Once created this object we can define the equation we are trying to solve
- * the left-hand-side of the equation \f$ \nabla^{2} \psi \f$
+ * Once created this object we can define the equation we are trying to solve.
+ * In particular the code below define the left-hand-side of the equation \f$ \nabla^{2} \psi \f$
  *
  * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp poisson_obj_eq
  *
  * Before to construct the linear system we also calculate the divergence of the
  * vorticity \f$ \nabla \cdot w \f$ that will be the right-hand-side
+ * of the equation
  *
  * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp calc_div_vort
- *
- * For statistic purpose we also calculate the integral of the vorticity and
- * the maximum divergence of the vorticity
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp sanity_div_integral
  *
  * Finally we can create the object FDScheme using the object **poisson_nn_helm**
  * as template variable. In addition to the constructor we have to specify the maximum extension of the stencil, the domain and the
@@ -334,17 +379,17 @@ const bool poisson_nn_helm::boundary[] = {PERIODIC,PERIODIC,PERIODIC};
  * the method go into infinite loop. After we set the parameters of the solver we can the
  * the solution **x**. Finaly we copy back the solution **x** into the grid \f$ \psi \f$.
  *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp div_free_check
+ * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp solve_petsc
  *
  * ### Note ###
  *
  * Because we are solving the poisson equation in periodic boundary conditions the Matrix has
  * determinat equal to zero. This mean that \f$ \psi \f$ has no unique solution (if it has one).
- * In order to recover one we have to ensure that the integral of the righ hand side or vorticity
+ * In order to recover one, we have to ensure that the integral of the righ hand side or vorticity
  * is zero. (In our case is the case). We have to ensure that across time the integral of the
  * vorticity is conserved. (In our case is the case if we consider the \f$ \nu = 0 \f$ and \f$
  * \nabla \cdot w = 0 \f$ we can rewrite (5) in a conservative way \f$  \frac{Dw}{dt} = div(w \otimes v) \f$ ).
- * Is also good to notice that the solution that you get is the one with \f$ \int v  = 0 \f$
+ * Is also good to notice that the solution that you get is the one with \f$ \int w  = 0 \f$
  *
  *
  *
@@ -416,52 +461,9 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain)
 
 	//! \cond [calc_div_vort] \endcond
 
-	//! \cond [sanity_div_integral] \endcond
 
-	// Get iterator across the domain points
-	auto it5 = gr.getDomainIterator();
+	calc_and_print_max_div_and_int(gr);
 
-	// maximum vorticity
-	double max_vort = 0.0;
-
-	// Total integral
-	double int_vort[3] = {0.0,0.0,0.0};
-
-	// For each grid point
-	while (it5.isNext())
-	{
-		auto key = it5.get();
-
-		double tmp;
-
-		// Calculate the vorticity
-        tmp = 1.0f/gr.spacing(x)/2.0f*(gr.template get<vorticity>(key.move(x,1))[x] - gr.template get<vorticity>(key.move(x,-1))[x] ) +
-			         	 	 1.0f/gr.spacing(y)/2.0f*(gr.template get<vorticity>(key.move(y,1))[y] - gr.template get<vorticity>(key.move(y,-1))[y] ) +
-							 1.0f/gr.spacing(z)/2.0f*(gr.template get<vorticity>(key.move(z,1))[z] - gr.template get<vorticity>(key.move(z,-1))[z] );
-
-        // Calculate the integral of the vorticity on each direction
-        int_vort[x] += gr.template get<vorticity>(key)[x];
-        int_vort[y] += gr.template get<vorticity>(key)[y];
-        int_vort[z] += gr.template get<vorticity>(key)[z];
-
-        // Store the maximum vorticity
-        if (tmp > max_vort)
-        	max_vort = tmp;
-
-		++it5;
-	}
-
-	Vcluster & v_cl = create_vcluster();
-	v_cl.max(max_vort);
-	v_cl.sum(int_vort[0]);
-	v_cl.sum(int_vort[1]);
-	v_cl.sum(int_vort[2]);
-	v_cl.execute();
-
-	if (v_cl.getProcessUnitID() == 0)
-	{std::cout << "Max div for vorticity " << max_vort << "   Integral: " << int_vort[0] << "  " << int_vort[1] << "   " << int_vort[2] << std::endl;}
-
-	//! \cond [sanity_div_integral] \endcond
 
 	//! \cond [create_fdscheme] \endcond
 
@@ -523,46 +525,15 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain)
 
 	//! \cond [vort_correction] \endcond
 
-	//! \cond [div_free_check] \endcond
-
-	// Here we check the maximum divergence of the ring
-	// We also copy the solution to the original grid
-	double max = 0.0;
-
-	gr.template ghost_get<vorticity>();
-	auto it3 = gr.getDomainIterator();
-
-	while (it3.isNext())
-	{
-		auto key = it3.get();
-
-        psi.template get<phi>(key) = 1.0f/gr.spacing(x)/2.0f*(gr.template get<vorticity>(key.move(x,1))[x] - gr.template get<vorticity>(key.move(x,-1))[x] ) +
-			         	 	 1.0f/gr.spacing(y)/2.0f*(gr.template get<vorticity>(key.move(y,1))[y] - gr.template get<vorticity>(key.move(y,-1))[y] ) +
-							 1.0f/gr.spacing(z)/2.0f*(gr.template get<vorticity>(key.move(z,1))[z] - gr.template get<vorticity>(key.move(z,-1))[z] );
-
-
-
-        if (psi.template get<phi>(key) > max)
-        	max = psi.template get<phi>(key);
-
-		++it3;
-	}
-
-	v_cl.max(max);
-	v_cl.execute();
-
-	if (v_cl.getProcessUnitID() == 0)
-	{std::cout << "Maximum divergence of the ring MAX " << max << std::endl;}
-
-	//! \cond [div_free_check] \endcond
-
+	calc_and_print_max_div_and_int(gr);
 }
+
 
 /*! \page Vortex_in_cell_petsc Vortex in Cell 3D
  *
  * # Step 3: Remeshing vorticity # {#vic_remesh_vort}
  *
- * After that we initialized the vorticity on the grid, initialize the particles
+ * After that we initialized the vorticity on the grid, we initialize the particles
  * in a grid like position and we interpolate the vorticity on particles. Because
  * of the particles position being in a grid-like position and the symmetry of the
  * interpolation kernels, the re-mesh step simply reduce to initialize the particle
@@ -642,33 +613,28 @@ void remesh(particles_type & vd, grid_type & gr,Box<3,float> & domain)
  *
  * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp poisson_obj_eq
  *
- * For statistic reason we do a check of the total integral of the vorticity
- * and maximum divergence of the vorticity
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp sanity_int_div
- *
  * In order to calculate the velocity out of the vorticity, we solve a poisson
  * equation like we did in helmotz-projection equation, but we do it for each
- * component \f$ i \f$ of the vorticity.
+ * component \f$ i \f$ of the vorticity. Qnce we have the solution in **psi_s**
+ * we copy the result back into the grid **gr_ps**. We than calculate the
+ * quality of the solution printing the norm infinity of the residual and
+ * finally we save in the grid vector vield **phi_v** the compinent \f$ i \f$
+ * (Copy from phi_s to phi_v is necessary because in phi_s is not a grid
+ * and cannot be used as a grid like object)
  *
  * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp solve_poisson_comp
  *
- * We save the \f$ \phi \f$ component into **phi_s**
+ * We save the component \f$ i \f$ of \f$ \phi \f$ into **phi_v**
  *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp solve_poisson_comp
+ * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp copy_to_phi_v
  *
- * Once we filled phi_s we can implement (7) doing the curl of **phi_s**
- * and recovering the velocity v
+ * Once we filled phi_v we can implement (7) and calculate the curl of **phi_v**
+ * to recover the velocity v
  *
  * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp curl_phi_v
  *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp solve_poisson_comp
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp cross_check_curl_u_vort
  *
  */
-
-//! \cond [comp_vel] \endcond
 
 void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc_solver<double>::return_type (& phi_s)[3])
 {
@@ -688,61 +654,23 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 
 	//! \cond [poisson_obj_eq] \endcond
 
+	// Maximum size of the stencil
 	Ghost<3,long int> g(2);
 
-	// Here we create a distributed grid to store the result of the helmotz projection
+	// Here we create a distributed grid to store the result
 	grid_dist_id<3,float,aggregate<float>> gr_ps(g_vort.getDecomposition(),g_vort.getGridInfo().getSize(),g);
 	grid_dist_id<3,float,aggregate<float[3]>> phi_v(g_vort.getDecomposition(),g_vort.getGridInfo().getSize(),g);
 
-	// Check one we control the the divergence of vorticity is zero
-
-	//! \cond [sanity_int_div] \endcond
-
-	g_vort.template ghost_get<vorticity>();
-	auto it5 = g_vort.getDomainIterator();
-
-	double max_vort = 0.0;
-
-	double int_vort[3] = {0.0,0.0,0.0};
-
-	while (it5.isNext())
-	{
-		auto key = it5.get();
-
-		double tmp;
-
-        tmp = 1.0f/g_vort.spacing(x)/2.0f*(g_vort.template get<vorticity>(key.move(x,1))[x] - g_vort.template get<vorticity>(key.move(x,-1))[x] ) +
-			         	 	 1.0f/g_vort.spacing(y)/2.0f*(g_vort.template get<vorticity>(key.move(y,1))[y] - g_vort.template get<vorticity>(key.move(y,-1))[y] ) +
-							 1.0f/g_vort.spacing(z)/2.0f*(g_vort.template get<vorticity>(key.move(z,1))[z] - g_vort.template get<vorticity>(key.move(z,-1))[z] );
-
-        int_vort[x] += g_vort.template get<vorticity>(key)[x];
-        int_vort[y] += g_vort.template get<vorticity>(key)[y];
-        int_vort[z] += g_vort.template get<vorticity>(key)[z];
-
-        if (tmp > max_vort)
-        	max_vort = tmp;
-
-		++it5;
-	}
-
-	Vcluster & v_cl = create_vcluster();
-	v_cl.max(max_vort);
-	v_cl.sum(int_vort[0]);
-	v_cl.sum(int_vort[1]);
-	v_cl.sum(int_vort[2]);
-	v_cl.execute();
-
-	if (v_cl.getProcessUnitID() == 0)
-	{std::cout << "Max div for vorticity " << max_vort << "   Integral: " << int_vort[0] << "  " << int_vort[1] << "   " << int_vort[2] << std::endl;}
-
-	//! \cond [sanity_int_div] \endcond
+	// We calculate and print the maximum divergence of the vorticity
+	// and the integral of it
+	calc_and_print_max_div_and_int(g_vort);
 
 	// For each component solve a poisson
 	for (size_t i = 0 ; i < 3 ; i++)
 	{
 		//! \cond [solve_poisson_comp] \endcond
 
-		// Copy the vorticity in gr_ps
+		// Copy the vorticity component i in gr_ps
 		auto it2 = gr_ps.getDomainIterator();
 
 		// calculate the velocity from the curl of phi
@@ -750,19 +678,20 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 		{
 			auto key = it2.get();
 
+			// copy
 			gr_ps.get<vorticity>(key) = g_vort.template get<vorticity>(key)[i];
 
 			++it2;
 		}
 
+		// Maximum size of the stencil
 		Ghost<3,long int> stencil_max(2);
 
 		// Finite difference scheme
 		FDScheme<poisson_nn_helm> fd(stencil_max, domain, gr_ps);
 
-		poisson ps;
-
-		fd.template impose_dit<phi>(ps,gr_ps,gr_ps.getDomainIterator());
+		// impose the poisson equation using gr_ps = vorticity for the right-hand-side (on the full domain)
+		fd.template impose_dit<phi>(poisson(),gr_ps,gr_ps.getDomainIterator());
 
 		// Create an PETSC solver
 		petsc_solver<double> solver;
@@ -771,28 +700,33 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 		solver.setAbsTol(0.001);
 		solver.setMaxIter(500);
 
-		PetscBool flg;
+		// Get the sparse matrix that represent the left-hand-side
+		// of the equation
 		SparseMatrix<double,int,PETSC_BASE> & A = fd.getA();
 
+		// Get the vector that represent the right-hand-side
 		Vector<double,PETSC_BASE> & b = fd.getB();
 
-		// Give to the solver A and b, return x, the solution
+		// Give to the solver A and b in this case we are giving
+		// an intitial guess phi_s calculated in the previous
+		// time step
 		solver.solve(A,phi_s[i],b);
-
-		//! \cond [solve_poisson_comp] \endcond
-
-		//! \cond [print_residual_copy] \endcond
 
 		// Calculate the residual
 
 		solError serr;
 		serr = solver.get_residual_error(A,phi_s[i],b);
 
+		Vcluster & v_cl = create_vcluster();
 		if (v_cl.getProcessUnitID() == 0)
 		{std::cout << "Solved component " << i << "  Error: " << serr.err_inf << std::endl;}
 
 		// copy the solution to grid
 		fd.template copy<phi>(phi_s[i],gr_ps);
+
+		//! \cond [solve_poisson_comp] \endcond
+
+		//! \cond [copy_to_phi_v] \endcond
 
 		auto it3 = gr_ps.getDomainIterator();
 
@@ -806,7 +740,7 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 			++it3;
 		}
 
-		//! \cond [print_residual_copy] \endcond
+		//! \cond [copy_to_phi_v] \endcond
 	}
 
 	//! \cond [curl_phi_v] \endcond
@@ -839,89 +773,8 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 	}
 
 	//! \cond [curl_phi_v] \endcond
-
-	//! \cond [cross_check_curl_u_vort] \endcond
-
-	g_vel.template ghost_get<velocity>();
-
-	// We check that curl u = vorticity
-
-	auto it4 = phi_v.getDomainIterator();
-
-	double norm_max = 0.0;
-
-	// calculate the velocity from the curl of phi
-	while (it4.isNext())
-	{
-		auto key = it4.get();
-
-		float phi_xy = (g_vel.template get<phi>(key.move(y,1))[x] - g_vel.template get<phi>(key.move(y,-1))[x])*inv_dy;
-		float phi_xz = (g_vel.template get<phi>(key.move(z,1))[x] - g_vel.template get<phi>(key.move(z,-1))[x])*inv_dz;
-		float phi_yx = (g_vel.template get<phi>(key.move(x,1))[y] - g_vel.template get<phi>(key.move(x,-1))[y])*inv_dx;
-		float phi_yz = (g_vel.template get<phi>(key.move(z,1))[y] - g_vel.template get<phi>(key.move(z,-1))[y])*inv_dz;
-		float phi_zx = (g_vel.template get<phi>(key.move(x,1))[z] - g_vel.template get<phi>(key.move(x,-1))[z])*inv_dx;
-		float phi_zy = (g_vel.template get<phi>(key.move(y,1))[z] - g_vel.template get<phi>(key.move(y,-1))[z])*inv_dy;
-
-		phi_v.template get<velocity>(key)[x] = phi_zy - phi_yz  + g_vort.template get<vorticity>(key)[x];
-		phi_v.template get<velocity>(key)[y] = phi_xz - phi_zx + g_vort.template get<vorticity>(key)[y];
-		phi_v.template get<velocity>(key)[z] = phi_yx - phi_xy + g_vort.template get<vorticity>(key)[z];
-
-		if (phi_v.template get<velocity>(key)[x] > norm_max)
-			norm_max = phi_v.template get<velocity>(key)[x];
-
-		if (phi_v.template get<velocity>(key)[y] > norm_max)
-			norm_max = phi_v.template get<velocity>(key)[y];
-
-		if (phi_v.template get<velocity>(key)[z] > norm_max)
-			norm_max = phi_v.template get<velocity>(key)[z];
-
-		++it4;
-	}
-
-	v_cl.max(norm_max);
-	v_cl.execute();
-
-	if (v_cl.getProcessUnitID() == 0)
-	{std::cout << "Norm max: " << norm_max << std::endl;}
-
-	//! \cond [cross_check_curl_u_vort] \endcond
 }
 
-//! \cond [comp_vel] \endcond
-
-void remesh(particles_type & vd, grid_type & g_rhs, grid_type & g_vel,Box<3,float> & domain)
-{
-	constexpr int rhs_g = 0;
-
-	// Remove all particles
-	vd.clear();
-
-	auto git = vd.getGridIterator(g_rhs.getGridInfo().getSize());
-
-	while (git.isNext())
-	{
-		auto p = git.get();
-		auto key = git.get_dist();
-
-		vd.add();
-
-		vd.getLastPos()[x] = g_rhs.spacing(x)*p.get(x) + domain.getLow(x);
-		vd.getLastPos()[y] = g_rhs.spacing(y)*p.get(y) + domain.getLow(y);
-		vd.getLastPos()[z] = g_rhs.spacing(z)*p.get(z) + domain.getLow(z);
-
-		vd.template getLastProp<rhs_part>()[x] = g_rhs.template get<rhs_g>(key)[x];
-		vd.template getLastProp<rhs_part>()[y] = g_rhs.template get<rhs_g>(key)[y];
-		vd.template getLastProp<rhs_part>()[z] = g_rhs.template get<rhs_g>(key)[z];
-
-		vd.template getLastProp<p_vel>()[x] = g_vel.template get<velocity>(key)[x];
-		vd.template getLastProp<p_vel>()[y] = g_vel.template get<velocity>(key)[y];
-		vd.template getLastProp<p_vel>()[z] = g_vel.template get<velocity>(key)[z];
-
-		++git;
-	}
-
-	vd.map();
-}
 
 template<unsigned int prp> void set_zero(grid_type & gr)
 {
@@ -958,12 +811,29 @@ template<unsigned int prp> void set_zero(particles_type & vd)
 	}
 }
 
+/*! \page Vortex_in_cell_petsc Vortex in Cell 3D
+ *
+ * # Step 6: Compute right hand side # {#vic_rhs_calc}
+ *
+ * Computing the right hand side is performed calculating the term
+ * \f$ (w \cdot \nabla) u \f$. For the nabla operator we use second
+ * order finite difference central scheme. The commented part is the
+ * term \f$ \nu \nabla^{2} w \f$ that we said to neglect
+ *
+ * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp calc_rhs
+ *
+ */
+
+//! \cond [calc_rhs] \endcond
 
 // Calculate the right hand side of the vorticity formulation
 template<typename grid> void calc_rhs(grid & g_vort, grid & g_vel, grid & g_dwp)
 {
+	// usefull constant
 	constexpr int rhs = 0;
 
+	// calculate several pre-factors for the stencil finite
+	// difference
 	float fac1 = 2.0f*nu/(g_vort.spacing(0));
 	float fac2 = 2.0f*nu/(g_vort.spacing(1));
 	float fac3 = 2.0f*nu/(g_vort.spacing(2));
@@ -1018,6 +888,27 @@ template<typename grid> void calc_rhs(grid & g_vort, grid & g_vel, grid & g_dwp)
 	}
 }
 
+//! \cond [calc_rhs] \endcond
+
+/*! \page Vortex_in_cell_petsc Vortex in Cell 3D
+ *
+ * # Step 8: Runge-Kutta # {#vic_runge_kutta1}
+ *
+ * Here we do the first step of the runge kutta update. In particular we
+ * update the vorticity and position of the particles. The right-hand-side
+ * of the vorticity update is calculated on the grid and interpolated
+ *  on the particles. The Runge-Kutta of order two
+ * require the following update for the vorticity and position as first step
+ *
+ * \f$ \boldsymbol w = \boldsymbol w + \frac{1}{2} \boldsymbol {rhs} \delta t \f$
+ *
+ * \f$ \boldsymbol x = \boldsymbol x + \frac{1}{2} \boldsymbol u \delta t \f$
+ *
+ * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp runge_kutta_1
+ *
+ */
+
+//! \cond [runge_kutta_1] \endcond
 
 void rk_step1(particles_type & particles)
 {
@@ -1060,6 +951,28 @@ void rk_step1(particles_type & particles)
 	particles.map();
 }
 
+//! \cond [runge_kutta_1] \endcond
+
+/*! \page Vortex_in_cell_petsc Vortex in Cell 3D
+ *
+ * # Step 13: Runge-Kutta # {#vic_runge_kutta2}
+ *
+ * Here we do the second step of the Runge-Kutta update. In particular we
+ * update the vorticity and position of the particles. The right-hand-side
+ * of the vorticity update is calculated on the grid and interpolated
+ *  on the particles. The Runge-Kutta of order two
+ * require the following update for the vorticity and position as first step
+ *
+ * \f$ \boldsymbol w = \boldsymbol w + \frac{1}{2} \boldsymbol {rhs} \delta t \f$
+ *
+ * \f$ \boldsymbol x = \boldsymbol x + \frac{1}{2} \boldsymbol u \delta t \f$
+ *
+ * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp runge_kutta_2
+ *
+ */
+
+//! \cond [runge_kutta_2] \endcond
+
 void rk_step2(particles_type & particles)
 {
 	auto it = particles.getDomainIterator();
@@ -1091,6 +1004,27 @@ void rk_step2(particles_type & particles)
 	particles.map();
 }
 
+//! \cond [runge_kutta_2] \endcond
+
+/*! \page Vortex_in_cell_petsc Vortex in Cell 3D
+ *
+ * # Step 4-5-6-7: Do step # {#vic_do_step}
+ *
+ * The do step function assemble multiple steps some of them already explained.
+ * First we interpolate the vorticity from particles to mesh
+ *
+ * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp do_step_p2m
+ *
+ * than we calculate velocity out of vorticity and the right-hand-side
+ * recalling step 5 and 6
+ *
+ * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp step_56
+ *
+ * Finally we interpolate velocity and right-hand-side back to particles
+ *
+ * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp inte_m2p
+ *
+ */
 
 template<typename grid, typename vector> void do_step(vector & particles,
 		                                              grid & g_vort,
@@ -1102,14 +1036,23 @@ template<typename grid, typename vector> void do_step(vector & particles,
 {
 	constexpr int rhs = 0;
 
+	//! \cond [do_step_p2m] \endcond
+
 	set_zero<vorticity>(g_vort);
 	inte.template p2m<vorticity,vorticity>(particles,g_vort);
 	g_vort.template ghost_put<add_,vorticity>();
 
+	//! \cond [do_step_p2m] \endcond
+
+	//! \cond [step_56] \endcond
+
 	// Calculate velocity from vorticity
 	comp_vel(domain,g_vort,g_vel,phi_s);
-
 	calc_rhs(g_vort,g_vel,g_dvort);
+
+	//! \cond [step_56] \endcond
+
+	//! \cond [inte_m2p] \endcond
 
 	g_dvort.template ghost_get<rhs>();
 	g_vel.template ghost_get<velocity>();
@@ -1117,20 +1060,86 @@ template<typename grid, typename vector> void do_step(vector & particles,
 	set_zero<p_vel>(particles);
 	inte.template m2p<rhs,rhs_part>(g_dvort,particles);
 	inte.template m2p<velocity,p_vel>(g_vel,particles);
+
+	//! \cond [inte_m2p] \endcond
 }
 
+template<typename vector, typename grid> void check_point_and_save(vector & particles,
+																   grid & g_vort,
+																   grid & g_vel,
+																   grid & g_dvort,
+																   size_t i)
+{
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() < 24)
+	{
+		particles.write("part_out_" + std::to_string(i),VTK_WRITER | FORMAT_BINARY);
+		g_vort.template ghost_get<vorticity>();
+		g_vel.template ghost_get<velocity>();
+		g_vel.write("grid_velocity_" + std::to_string(i), VTK_WRITER | FORMAT_BINARY);
+		g_vort.write("grid_vorticity_" + std::to_string(i), VTK_WRITER | FORMAT_BINARY);
+	}
+
+	// In order to reduce the size of the saved data we apply a threshold.
+	// We only save particles with vorticity higher than 0.1
+	vector_dist<3,float,aggregate<float>> part_save(particles.getDecomposition(),0);
+
+	auto it_s = particles.getDomainIterator();
+
+	while (it_s.isNext())
+	{
+		auto p = it_s.get();
+
+		float vort_magn = sqrt(particles.template getProp<vorticity>(p)[0] * particles.template getProp<vorticity>(p)[0] +
+							   particles.template getProp<vorticity>(p)[1] * particles.template getProp<vorticity>(p)[1] +
+							   particles.template getProp<vorticity>(p)[2] * particles.template getProp<vorticity>(p)[2]);
+
+		if (vort_magn < 0.1)
+		{
+			++it_s;
+			continue;
+		}
+
+		part_save.add();
+
+		part_save.getLastPos()[0] = particles.getPos(p)[0];
+		part_save.getLastPos()[1] = particles.getPos(p)[1];
+		part_save.getLastPos()[2] = particles.getPos(p)[2];
+
+		part_save.template getLastProp<0>() = vort_magn;
+
+		++it_s;
+	}
+
+	part_save.map();
+
+	// Save and HDF5 file for checkpoint restart
+	particles.save("check_point");
+}
+
+/*! \page Vortex_in_cell_petsc Vortex in Cell 3D
+ *
+ * # Main # {#vic_main}
+ *
+ * The main function as usual call the function **openfpm_init** it define
+ * the domain where the simulation take place. The ghost size of the grid
+ * the size of the grid in grid units on each direction, the periodicity
+ * of the domain, in this case PERIODIC in each dimension and we create
+ * our basic data structure for the simulation. A grid for the vorticity
+ * **g_vort** a grid for the velocity **g_vel** a grid for the right-hand-side
+ * of the vorticity update, and the **particles** vector. Additionally
+ * we define the data structure **phi_s[3]** that store the velocity solution
+ * in the previous time-step. keeping track of the previous solution for
+ * the velocity help the interative-solver to find the solution more quickly.
+ * Using the old velocity configuration as initial guess the solver will
+ * converge in few iterations refining the old one.
+ *
+ */
 int main(int argc, char* argv[])
 {
 	// Initialize
 	openfpm_init(&argc,&argv);
-
-	// It store the solution to compute velocity
-	// It is used as initial guess every time we call the solver
-	petsc_solver<double>::return_type phi_s[3];
-
-	// velocity in the grid is the property 0, pressure is the property 1
-	constexpr int velocity = 0;
-	constexpr int pressure = 1;
 
 	// Domain, a rectangle
 	Box<3,float> domain({0.0,0.0,0.0},{22.0,5.0,5.0});
@@ -1149,29 +1158,46 @@ int main(int argc, char* argv[])
 	grid_type g_dvort(g_vort.getDecomposition(),szu,g);
 	particles_type particles(g_vort.getDecomposition(),0);
 
+	// It store the solution to compute velocity
+	// It is used as initial guess every time we call the solver
+	Vector<double,PETSC_BASE> phi_s[3];
+
+	// Parallel object
 	Vcluster & v_cl = create_vcluster();
 
+	// print out the spacing of the grid
 	if (v_cl.getProcessUnitID() == 0)
 	{std::cout << "SPACING " << g_vort.spacing(0) << " " << g_vort.spacing(1) << " " << g_vort.spacing(2) << std::endl;}
 
+	// initialize the ring step 1
 	init_ring(g_vort,domain);
+
+	// Do the helmotz projection step 2
 	helmotz_hodge_projection(g_vort,domain);
 
+	// initialize the particle on a mesh step 3
 	remesh(particles,g_vort,domain);
 
+	// Get the total number of particles
 	size_t tot_part = particles.size_local();
 	v_cl.sum(tot_part);
 	v_cl.execute();
 
-	// Now we set phi_s
+	// Now we set the size of phi_s
 	phi_s[0].resize(tot_part,particles.size_local());
 	phi_s[1].resize(tot_part,particles.size_local());
 	phi_s[2].resize(tot_part,particles.size_local());
 
+	// And we initially set it to zero
 	phi_s[0].setZero();
 	phi_s[1].setZero();
 	phi_s[2].setZero();
 
+	// We create the interpolation object outside the loop cycles
+	// to avoid to recreate it at every cycle. Internally this object
+	// create some data-structure to optimize the conversion particle
+	// position to sub-domain. If there are no re-balancing it is safe
+	// to reuse-it
 	interpolate<particles_type,grid_type,mp4_kernel<float>> inte(particles,g_vort);
 
 	// With more than 24 core we rely on the HDF5 checkpoint restart file
@@ -1179,59 +1205,56 @@ int main(int argc, char* argv[])
 	{g_vort.write("grid_vorticity_init", VTK_WRITER | FORMAT_BINARY);}
 
 
-	// Before entering the loop we check if we have to restart a previous simulation
-
+	// Before entering the loop we check if we want to restart from
+	// a previous simulation
 	size_t i = 0;
 
+	// if we have an argument
 	if (argc > 1)
 	{
+		// take that argument
 		std::string restart(argv[1]);
 
+		// convert it into number
 		i = std::stoi(restart);
 
+		// load the file
 		particles.load("check_point_" + std::to_string(i));
 
-		particles.map();
-
+		// Print to inform that we are restarting from a
+		// particular position
 		if (v_cl.getProcessUnitID() == 0)
 		{std::cout << "Restarting from " << i << std::endl;}
 	}
 
 	// Time Integration
-
 	for ( ; i < 10001 ; i++)
 	{
+		// do step 4-5-6-7
 		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s);
 
+		// do step 8
 		rk_step1(particles);
 
+		// do step 9-10-11-12
 		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s);
 
+		// do step 13
 		rk_step2(particles);
 
+		// so step 14
 		set_zero<vorticity>(g_vort);
 		inte.template p2m<vorticity,vorticity>(particles,g_vort);
 		g_vort.template ghost_put<add_,vorticity>();
 
 		remesh(particles,g_vort,domain);
 
-		std::cout << "Step " << i << std::endl;
+		// print the step number
+		if (v_cl.getProcessUnitID() == 0)
+		{std::cout << "Step " << i << std::endl;}
 
-		if (i % 100 == 0)
-		{
-			if (v_cl.getProcessingUnits() < 24)
-			{
-				particles.write("part_out_" + std::to_string(i),VTK_WRITER | FORMAT_BINARY);
-				g_vort.ghost_get<vorticity>();
-				g_vel.ghost_get<velocity>();
-				g_vel.write("grid_velocity_" + std::to_string(i), VTK_WRITER | FORMAT_BINARY);
-				g_vort.write("grid_vorticity_" + std::to_string(i), VTK_WRITER | FORMAT_BINARY);
-			}
-
-			// Save also for checkpoint restart
-
-			particles.save("check_point_" + std::to_string(i+1));
-		}
+		// every 100 steps write the output
+		if (i % 100 == 0)		{check_point_and_save(particles,g_vort,g_vel,g_dvort,i);}
 
 	}
 
