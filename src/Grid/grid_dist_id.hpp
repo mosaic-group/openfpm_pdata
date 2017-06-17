@@ -959,6 +959,25 @@ public:
 		return total;
 	}
 
+	/*! \brief Get the size of local domain grids
+	 *
+	 * \return The size of the local domain
+	 *
+	 */
+	size_t getLocalDomainWithGhostSize() const
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		size_t total = 0;
+
+		for (size_t i = 0 ; i < gdb_ext.size() ; i++)
+		{
+			total += gdb_ext.get(i).GDbox.getVolumeKey();
+		}
+
+		return total;
+	}
 
 
 	/*! \brief It return the informations about the local grids

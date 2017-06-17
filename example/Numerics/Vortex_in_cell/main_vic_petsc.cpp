@@ -115,6 +115,8 @@ typedef grid_dist_id<3,float,aggregate<float[3]>> grid_type;
 // The type of the particles
 typedef vector_dist<3,float,aggregate<float[3],float[3],float[3],float[3],float[3]>> particles_type;
 
+#include "CG.hpp"
+
 // radius of the torus
 float ringr1 = 5.0/4.0;
 // radius of the core of the torus
@@ -300,6 +302,29 @@ const bool poisson_nn_helm::boundary[] = {PERIODIC,PERIODIC,PERIODIC};
 
 //! \cond [poisson_syseq] \endcond
 
+void OpA(grid_type_scal & in, grid_type_scal & out)
+{
+	float fac1 = 0.25f/(in.spacing(0)*in.spacing(0));
+	float fac2 = 0.25f/(in.spacing(1)*in.spacing(1));
+	float fac3 = 0.25f/(in.spacing(2)*in.spacing(2));
+
+	in.ghost_get<0>();
+
+	auto it = in.getDomainIterator();
+
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+
+		out.template getProp<0>(p) = fac1*(in.template get<0>(p.move(x,2))+in.template get<0>(p.move(x,-2)))+
+                fac2*(in.template get<0>(p.move(y,2))+in.template get<0>(p.move(y,-2)))+
+				  fac3*(in.template get<0>(p.move(z,2))+in.template get<0>(p.move(z,-2)))-
+				  2.0f*(fac1+fac2+fac3)*in.template get<0>(p);
+
+		++it;
+	}
+}
 
 /*! \page Vortex_in_cell_petsc Vortex in Cell 3D
  *
@@ -499,6 +524,26 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain)
 	// Give to the solver A and b, return x, the solution
 	auto x_ = solver.solve(fd.getA(),fd.getB());
 
+	//////////////// CG Call //////////////////////////
+
+	// Here we create a distributed grid to store the result of the helmotz projection
+	grid_dist_id<3,float,aggregate<float>> sol(gr.getDecomposition(),gr.getGridInfo().getSize(),g);
+
+	auto zit = sol.getDomainIterator();
+
+	while (zit.isNext())
+	{
+		auto p = zit.get();
+
+		sol.template getProp<0>(p) = 0.0;
+
+		++zit;
+	}
+
+	CG(OpA,sol,psi);
+
+	///////////////////////////////////////////////////
+
 	// copy the solution x to the grid psi
 	fd.template copy<phi>(x_,psi);
 
@@ -697,8 +742,9 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 		petsc_solver<double> solver;
 
 		solver.setSolver(KSPCG);
-		solver.setAbsTol(0.001);
+		solver.setAbsTol(0.1);
 		solver.setMaxIter(500);
+		solver.log_monitor();
 
 		// Get the sparse matrix that represent the left-hand-side
 		// of the equation
@@ -712,6 +758,26 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 		// time step
 		solver.solve(A,phi_s[i],b);
 
+		//////////////// CG Call //////////////////////////
+
+		// Here we create a distributed grid to store the result of the helmotz projection
+		grid_dist_id<3,float,aggregate<float>> sol(gr_ps.getDecomposition(),gr_ps.getGridInfo().getSize(),g);
+
+		auto zit = sol.getDomainIterator();
+
+		while (zit.isNext())
+		{
+			auto p = zit.get();
+
+			sol.template getProp<0>(p) = 0.0;
+
+			++zit;
+		}
+
+		CG(OpA,sol,gr_ps);
+
+		///////////////////////////////////////////////////
+
 		// Calculate the residual
 
 		solError serr;
@@ -723,6 +789,13 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 
 		// copy the solution to grid
 		fd.template copy<phi>(phi_s[i],gr_ps);
+
+		/////////////// DEBUG ///////////////
+
+		gr_ps.write("Solution_petsc_" + std::to_string(i));
+		sol.write("Solution_my_" + std::to_string(i));
+
+		/////////////////////////////////////
 
 		//! \cond [solve_poisson_comp] \endcond
 
@@ -742,6 +815,8 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 
 		//! \cond [copy_to_phi_v] \endcond
 	}
+
+	exit(0);
 
 	//! \cond [curl_phi_v] \endcond
 
