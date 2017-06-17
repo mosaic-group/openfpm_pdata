@@ -145,6 +145,8 @@ void CG(void (* A)(grid_type_scal & in, grid_type_scal & out), grid_type_scal & 
 	A(x,Ap);
 	x_plus_alpha_p(r,Ap,-1);
 
+	std::cout << "It init: " << "  " << sqrt(norm(r)) << std::endl;
+
 	// r0 = p0
 	copy(r,p);
 
@@ -157,9 +159,9 @@ void CG(void (* A)(grid_type_scal & in, grid_type_scal & out), grid_type_scal & 
 
 		float r_norm = norm(rn);
 
-		std::cout << "It: " << i << "  " << r_norm << std::endl;
+		std::cout << "It: " << i << "  " << sqrt(r_norm) << std::endl;
 
-		if (r_norm < 0.1)
+		if (sqrt(r_norm) < 0.1)
 			return;
 
 		float beta_c = beta(r,rn);

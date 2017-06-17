@@ -133,6 +133,10 @@ float nu = 0.0001535;
 float dt = 0.006;
 
 
+#ifdef SE_CLASS1
+DIOCANE
+#endif
+
 // All the properties by index
 constexpr unsigned int vorticity = 0;
 constexpr unsigned int velocity = 0;
@@ -516,13 +520,20 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain)
 	solver.setSolver(KSPCG);
 
 	// Set the absolute tolerance to determine that the method is converged
-	solver.setAbsTol(0.001);
+	solver.setAbsTol(0.1);
 
 	// Set the maximum number of iterations
 	solver.setMaxIter(500);
 
+	solver.log_monitor();
+
+	timer tm_solve;
+	tm_solve.start();
+
 	// Give to the solver A and b, return x, the solution
 	auto x_ = solver.solve(fd.getA(),fd.getB());
+
+	tm_solve.stop();
 
 	//////////////// CG Call //////////////////////////
 
@@ -540,7 +551,15 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain)
 		++zit;
 	}
 
+	timer tm_solve2;
+
+	tm_solve2.start();
+
 	CG(OpA,sol,psi);
+
+	tm_solve2.stop();
+
+	std::cout << "Time to solve: " << tm_solve2.getwct() << "   " << tm_solve.getwct() << std::endl;
 
 	///////////////////////////////////////////////////
 
@@ -753,10 +772,15 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 		// Get the vector that represent the right-hand-side
 		Vector<double,PETSC_BASE> & b = fd.getB();
 
+		timer tm_solve;
+		tm_solve.start();
+
 		// Give to the solver A and b in this case we are giving
 		// an intitial guess phi_s calculated in the previous
 		// time step
 		solver.solve(A,phi_s[i],b);
+
+		tm_solve.stop();
 
 		//////////////// CG Call //////////////////////////
 
@@ -774,7 +798,15 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 			++zit;
 		}
 
+		timer tm_solve2;
+		tm_solve2.start();
+
 		CG(OpA,sol,gr_ps);
+
+		tm_solve2.stop();
+
+		std::cout << "Time to solve: " << tm_solve2.getwct() << "   " << tm_solve.getwct() << std::endl;
+
 
 		///////////////////////////////////////////////////
 
@@ -789,13 +821,6 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 
 		// copy the solution to grid
 		fd.template copy<phi>(phi_s[i],gr_ps);
-
-		/////////////// DEBUG ///////////////
-
-		gr_ps.write("Solution_petsc_" + std::to_string(i));
-		sol.write("Solution_my_" + std::to_string(i));
-
-		/////////////////////////////////////
 
 		//! \cond [solve_poisson_comp] \endcond
 
@@ -815,8 +840,6 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 
 		//! \cond [copy_to_phi_v] \endcond
 	}
-
-	exit(0);
 
 	//! \cond [curl_phi_v] \endcond
 
@@ -1303,7 +1326,7 @@ int main(int argc, char* argv[])
 	}
 
 	// Time Integration
-	for ( ; i < 10001 ; i++)
+	for ( ; i < 1 ; i++)
 	{
 		// do step 4-5-6-7
 		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s);
@@ -1312,7 +1335,7 @@ int main(int argc, char* argv[])
 		rk_step1(particles);
 
 		// do step 9-10-11-12
-		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s);
+/*		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s);
 
 		// do step 13
 		rk_step2(particles);
@@ -1330,7 +1353,7 @@ int main(int argc, char* argv[])
 
 		// every 100 steps write the output
 		if (i % 100 == 0)		{check_point_and_save(particles,g_vort,g_vel,g_dvort,i);}
-
+*/
 	}
 
 	openfpm_finalize();
