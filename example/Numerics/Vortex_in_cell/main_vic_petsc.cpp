@@ -115,8 +115,6 @@ typedef grid_dist_id<3,float,aggregate<float[3]>> grid_type;
 // The type of the particles
 typedef vector_dist<3,float,aggregate<float[3],float[3],float[3],float[3],float[3]>> particles_type;
 
-#include "CG.hpp"
-
 // radius of the torus
 float ringr1 = 5.0/4.0;
 // radius of the core of the torus
@@ -131,11 +129,6 @@ float nu = 0.0001535;
 
 // Time step
 float dt = 0.006;
-
-
-#ifdef SE_CLASS1
-DIOCANE
-#endif
 
 // All the properties by index
 constexpr unsigned int vorticity = 0;
@@ -305,30 +298,6 @@ struct poisson_nn_helm
 const bool poisson_nn_helm::boundary[] = {PERIODIC,PERIODIC,PERIODIC};
 
 //! \cond [poisson_syseq] \endcond
-
-void OpA(grid_type_scal & in, grid_type_scal & out)
-{
-	float fac1 = 0.25f/(in.spacing(0)*in.spacing(0));
-	float fac2 = 0.25f/(in.spacing(1)*in.spacing(1));
-	float fac3 = 0.25f/(in.spacing(2)*in.spacing(2));
-
-	in.ghost_get<0>();
-
-	auto it = in.getDomainIterator();
-
-
-	while (it.isNext())
-	{
-		auto p = it.get();
-
-		out.template getProp<0>(p) = fac1*(in.template get<0>(p.move(x,2))+in.template get<0>(p.move(x,-2)))+
-                fac2*(in.template get<0>(p.move(y,2))+in.template get<0>(p.move(y,-2)))+
-				  fac3*(in.template get<0>(p.move(z,2))+in.template get<0>(p.move(z,-2)))-
-				  2.0f*(fac1+fac2+fac3)*in.template get<0>(p);
-
-		++it;
-	}
-}
 
 /*! \page Vortex_in_cell_petsc Vortex in Cell 3D
  *
@@ -517,7 +486,7 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain)
 	petsc_solver<double> solver;
 
 	// Set the conjugate-gradient as method to solve the linear solver
-	solver.setSolver(KSPCG);
+	solver.setSolver(KSPBCGS);
 
 	// Set the absolute tolerance to determine that the method is converged
 	solver.setAbsTol(0.1);
@@ -534,34 +503,6 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain)
 	auto x_ = solver.solve(fd.getA(),fd.getB());
 
 	tm_solve.stop();
-
-	//////////////// CG Call //////////////////////////
-
-	// Here we create a distributed grid to store the result of the helmotz projection
-	grid_dist_id<3,float,aggregate<float>> sol(gr.getDecomposition(),gr.getGridInfo().getSize(),g);
-
-	auto zit = sol.getDomainIterator();
-
-	while (zit.isNext())
-	{
-		auto p = zit.get();
-
-		sol.template getProp<0>(p) = 0.0;
-
-		++zit;
-	}
-
-	timer tm_solve2;
-
-	tm_solve2.start();
-
-	CG(OpA,sol,psi);
-
-	tm_solve2.stop();
-
-	std::cout << "Time to solve: " << tm_solve2.getwct() << "   " << tm_solve.getwct() << std::endl;
-
-	///////////////////////////////////////////////////
 
 	// copy the solution x to the grid psi
 	fd.template copy<phi>(x_,psi);
@@ -760,8 +701,8 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 		// Create an PETSC solver
 		petsc_solver<double> solver;
 
-		solver.setSolver(KSPCG);
-		solver.setAbsTol(0.1);
+		solver.setSolver(KSPBCGS);
+		solver.setAbsTol(0.01);
 		solver.setMaxIter(500);
 		solver.log_monitor();
 
@@ -781,34 +722,6 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 		solver.solve(A,phi_s[i],b);
 
 		tm_solve.stop();
-
-		//////////////// CG Call //////////////////////////
-
-		// Here we create a distributed grid to store the result of the helmotz projection
-		grid_dist_id<3,float,aggregate<float>> sol(gr_ps.getDecomposition(),gr_ps.getGridInfo().getSize(),g);
-
-		auto zit = sol.getDomainIterator();
-
-		while (zit.isNext())
-		{
-			auto p = zit.get();
-
-			sol.template getProp<0>(p) = 0.0;
-
-			++zit;
-		}
-
-		timer tm_solve2;
-		tm_solve2.start();
-
-		CG(OpA,sol,gr_ps);
-
-		tm_solve2.stop();
-
-		std::cout << "Time to solve: " << tm_solve2.getwct() << "   " << tm_solve.getwct() << std::endl;
-
-
-		///////////////////////////////////////////////////
 
 		// Calculate the residual
 
@@ -1246,7 +1159,7 @@ int main(int argc, char* argv[])
 	Ghost<3,long int> g(2);
 
 	// Grid points on x=128 y=64 z=64
-	long int sz[] = {512,128,128};
+	long int sz[] = {512,64,64};
 	size_t szu[] = {(size_t)sz[0],(size_t)sz[1],(size_t)sz[2]};
 
 	periodicity<3> bc = {{PERIODIC,PERIODIC,PERIODIC}};
@@ -1326,7 +1239,7 @@ int main(int argc, char* argv[])
 	}
 
 	// Time Integration
-	for ( ; i < 1 ; i++)
+	for ( ; i < 10 ; i++)
 	{
 		// do step 4-5-6-7
 		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s);
@@ -1335,7 +1248,7 @@ int main(int argc, char* argv[])
 		rk_step1(particles);
 
 		// do step 9-10-11-12
-/*		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s);
+		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s);
 
 		// do step 13
 		rk_step2(particles);
@@ -1353,7 +1266,7 @@ int main(int argc, char* argv[])
 
 		// every 100 steps write the output
 		if (i % 100 == 0)		{check_point_and_save(particles,g_vort,g_vel,g_dvort,i);}
-*/
+
 	}
 
 	openfpm_finalize();
