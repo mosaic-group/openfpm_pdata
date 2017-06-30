@@ -238,7 +238,7 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 */
 	template<unsigned int id> inline grid_dist_lin_dx getStencil()
 	{
-		return grid_dist_lin_dx(g_c,a_it.getStencil<id>());
+		return grid_dist_lin_dx(g_c,a_it.template getStencil<id>());
 	}
 };
 
@@ -287,6 +287,8 @@ class grid_dist_iterator<dim,device_grid,FIXED,stencil>
 	/*! \brief Copy operator=
 	*
 	* \param tmp iterator to copy
+	*
+	* \return itself
 	*
 	*/
 	grid_dist_iterator<dim,device_grid,FIXED> & operator=(const grid_dist_iterator<dim,device_grid,FIXED> & tmp)
@@ -410,7 +412,7 @@ class grid_dist_iterator<dim,device_grid,FIXED,stencil>
 	 */
 	template<unsigned int id> inline grid_dist_lin_dx getStencil()
 	{
-		return grid_dist_lin_dx(g_c,a_it.getStencil<id>());
+		return grid_dist_lin_dx(g_c,a_it.template getStencil<id>());
 	}
 };
 
