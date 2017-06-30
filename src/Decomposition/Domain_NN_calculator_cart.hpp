@@ -95,7 +95,9 @@ class domain_nn_calculator_cart
 	 * \param sub_keys array that contain the position of the sub-sub-domains indicated with numbers
 	 *        in grid coordinates + for each its neighboring cells
 	 *
-	 * \param list of all the domain cells
+	 * \param dom_cells list of all the domain cells
+	 *
+	 * \param dom_subsub cells with normal neighborhood
 	 *
 	 * \param loc_box array of local sub-sub-domain in grid coordinates
 	 *
@@ -196,11 +198,15 @@ class domain_nn_calculator_cart
 		}
 	}
 
-	/*! \brief Linearize the sub-sub-domains
+	/*! \brief Linearize the sub-sub-domains ids
+	 *
+	 * A subsub domain can be identified by a set of number (i,j).
+	 * The linearization transform it into a number
 	 *
 	 * \param anom set of grid keys to linearize
 	 * \param anom_lin linearized output
-	 * \param shift shifting
+	 * \param shift shifting to add for the linearizaton
+	 * \param gs information about the grid to linearize
 	 *
 	 */
 	void linearize_subsub(const openfpm::vector<subsub<dim>> & anom,
