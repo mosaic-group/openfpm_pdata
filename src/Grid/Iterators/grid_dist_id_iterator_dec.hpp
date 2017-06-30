@@ -161,7 +161,7 @@ class grid_dist_id_iterator_dec
 	 *
 	 */
 
-	inline grid_dist_id_iterator_dec<Decomposition> operator++()
+	inline grid_dist_id_iterator_dec<Decomposition> & operator++()
 	{
 		++a_it;
 

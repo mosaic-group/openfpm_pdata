@@ -144,7 +144,7 @@ private:
 	template<unsigned int p_sub> void fill_domain(Graph & graph,const Box<dim,size_t> & box, long int ids)
 	{
 		// Create a subgrid iterator
-		grid_key_dx_iterator_sub<dim,do_not_print_warning_on_adjustment<dim>> g_sub(gh,box.getKP1(),box.getKP2());
+		grid_key_dx_iterator_sub<dim,no_stencil,do_not_print_warning_on_adjustment<dim>> g_sub(gh,box.getKP1(),box.getKP2());
 
 		// iterate through all grid points
 
@@ -207,7 +207,7 @@ private:
 		for (size_t d = 0 ; d < v_w.size() ; d++)
 		{
 			// Create a sub-grid iterator
-			grid_key_dx_iterator_sub_bc<dim,do_not_print_warning_on_adjustment<dim>> g_sub(gh,v_w.template get<wavefront<dim>::start>(d),v_w.template get<wavefront<dim>::stop>(d),bc);
+			grid_key_dx_iterator_sub_bc<dim,no_stencil,do_not_print_warning_on_adjustment<dim>> g_sub(gh,v_w.template get<wavefront<dim>::start>(d),v_w.template get<wavefront<dim>::stop>(d),bc);
 
 			// iterate through all grid points
 
@@ -296,7 +296,7 @@ private:
 				// Create an iterator of the expanded wavefront
 				grid_key_dx<dim> start = grid_key_dx<dim>(v_w.template get<wavefront<dim>::start>(d)) + w_comb[d];
 				grid_key_dx<dim> stop = grid_key_dx<dim>(v_w.template get<wavefront<dim>::stop>(d)) + w_comb[d];
-				grid_key_dx_iterator_sub<dim,do_not_print_warning_on_adjustment<dim>> it(gh,start,stop);
+				grid_key_dx_iterator_sub<dim,no_stencil,do_not_print_warning_on_adjustment<dim>> it(gh,start,stop);
 
 				// for each sub-domain in the expanded wavefront
 				while (it.isNext())

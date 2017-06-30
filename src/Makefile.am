@@ -13,7 +13,7 @@ nobase_include_HEADERS = Decomposition/CartDecomposition.hpp Decomposition/CartD
          Vector/se_class3_vector.hpp  Vector/vector_dist_multiphase_functions.hpp Vector/vector_dist_comm.hpp Vector/vector_dist.hpp Vector/vector_dist_ofb.hpp Vector/Iterators/vector_dist_iterator.hpp Vector/vector_dist_key.hpp \
          config/config.h \
          example.mk \
-         Decomposition/Distribution/metis_util.hpp Decomposition/Distribution/SpaceDistribution.hpp Decomposition/Distribution/parmetis_dist_util.hpp  Decomposition/Distribution/parmetis_util.hpp Decomposition/Distribution/MetisDistribution.hpp Decomposition/Distribution/ParMetisDistribution.hpp Decomposition/Distribution/DistParMetisDistribution.hpp  dec_optimizer.hpp SubdomainGraphNodes.hpp \
+         Decomposition/Distribution/metis_util.hpp Decomposition/Distribution/SpaceDistribution.hpp Decomposition/Distribution/parmetis_dist_util.hpp  Decomposition/Distribution/parmetis_util.hpp Decomposition/Distribution/MetisDistribution.hpp Decomposition/Distribution/ParMetisDistribution.hpp Decomposition/Distribution/DistParMetisDistribution.hpp  Decomposition/dec_optimizer.hpp SubdomainGraphNodes.hpp \
          Graph/ids.hpp Graph/dist_map_graph.hpp Graph/DistGraphFactory.hpp \
          DLB/DLB.hpp DLB/LB_Model.hpp
 

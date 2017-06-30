@@ -1388,12 +1388,9 @@ public:
 
 	/*! \brief Get the domain Cells
 	 *
-	 * It perform a linearization of the domain cells using the extension provided in gs
+	 * It return all the cells-id that are inside the processor-domain
 	 *
-	 *
-	 * \param shift Cell padding
-	 * \param cell_shift where the domain cell start
-	 * \param gs grid extension
+	 * \return the cells id inside the domain
 	 *
 	 */
 	openfpm::vector<size_t> & getDomainCells()
@@ -1401,15 +1398,26 @@ public:
 		return domain_nn_calculator_cart<dim>::getDomainCells();
 	}
 
-	/*! \brief Get the CRS domain Cells
+	/*! \brief Get the CRS domain Cells with normal neighborhood
 	 *
-	 * It perform a linearization of the domain cells using the extension provided in gs
+	 * In case of symmetric interaction the neighborhood cells of
+	 * a cell is different
+	 *
+	 * \verbatim
+
+	   Symmetric      Normal
+
+	    * * *         * * *
+	      X *         * X *
+	                  * * *
+	  \endverbatim
 	 *
 	 *
-	 * \param shift Cell padding
-	 * \param cell_shift where the domain cell start
-	 * \param gs grid extension
-	 * \param loc_box processor sub-domains
+	 * In case of CRS scheme some cells has the symmetric neighborhood
+	 * some others has more complex neighborhood. This function return
+	 * all the cells with normal neighborhood
+	 *
+	 * \return the cell-id of the cells inside the processor-domain with normal neighborhood
 	 *
 	 */
 	openfpm::vector<size_t> & getCRSDomainCells()
@@ -1430,13 +1438,8 @@ public:
 
 	/*! \brief Get the CRS anomalous cells
 	 *
-	 * This function include also a linearization of the indexes
+	 * This function return the anomalous cells
 	 *
-	 * \param shift Shifting point
-	 * \param cell_shift where the processor cell-list start (In case of symmetric)
-	 *                   exist one global cell-list, but each processor span only one
-	 *                   part of it
-	 * \param gs grid extension
 	 *
 	 * \return the anomalous cells with neighborhood
 	 *

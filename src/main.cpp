@@ -1,5 +1,7 @@
 #include <iostream>
 
+size_t debug_tot_call = 0;
+
 #define PRINT_STACKTRACE
 #define CHECKFOR_POSNAN
 #define CHECKFOR_POSINF
@@ -43,13 +45,10 @@ int main(int argc, char* argv[])
 #include "Decomposition/CartDecomposition_unit_test.hpp"
 #include "Decomposition/ORB_unit_test.hpp"
 #include "Decomposition/Distribution/metis_util_unit_test.hpp"
-#include "dec_optimizer_unit_test.hpp"
+#include "Decomposition/dec_optimizer_unit_test.hpp"
 #include "Vector/vector_dist_unit_test.hpp"
 #include "Vector/vector_dist_HDF5_chckpnt_restart_test.hpp"
 #include "Grid/grid_dist_id_HDF5_chckpnt_restart_test.hpp"
-#ifdef PERFORMANCE_TEST
-#include "pdata_performance.hpp"
-#endif
 #include "Decomposition/Distribution/Distribution_unit_tests.hpp"
 #include "Grid/Iterators/grid_dist_id_iterators_unit_tests.hpp"
 //#include "DLB/DLB_unit_test.hpp"

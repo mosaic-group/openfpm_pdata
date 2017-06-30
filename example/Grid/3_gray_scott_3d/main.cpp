@@ -140,6 +140,9 @@ int main(int argc, char* argv[])
 	double uFactor = deltaT * du/(spacing[x]*spacing[x]);
 	double vFactor = deltaT * dv/(spacing[x]*spacing[x]);
 
+	timer tot_sim;
+	tot_sim.start();
+
 	for (size_t i = 0; i < timeSteps; ++i)
 	{
 		if (i % 300 == 0)
@@ -199,6 +202,9 @@ int main(int argc, char* argv[])
 		}
 	}
 	
+	tot_sim.stop();
+	std::cout << "Total simulation: " << tot_sim.getwct() << std::endl;
+
 	//! \cond [time stepping] \endcond
 
 	/*!

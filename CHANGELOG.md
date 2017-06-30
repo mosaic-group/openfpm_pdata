@@ -14,6 +14,8 @@ All notable changes to this project will be documented in this file.
 - Raw reader for grid (see ...)
 - A way to specify names for proeprties and select properties to write
 - Ghost put on grid
+- getDomainIterator stencil for faster stencil codes iterators
+- Agebraic multigrid solvers interface for linear systems
 
 ### Fixed
 - Installation of PETSC in case with MUMPS try without MUMPS
@@ -22,9 +24,11 @@ All notable changes to this project will be documented in this file.
 - Bug in VTK writer binary: long int are not supported removing output
 - Bug in FDScheme in the constructor with stencil bigger than one
 - Bug Fixed Memory leak in petsc solver
+- Bug Performance bug in the grid iterator
 
 ### Changed
-- CellList types has changed
+- CellList types has changed (one additional template parameter)
+- Gris iterator types has changes (one additional template parameter)
 
 ## [0.8.0] 28 February 2016
 

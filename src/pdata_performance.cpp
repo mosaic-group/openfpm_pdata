@@ -8,6 +8,7 @@
 #ifndef SRC_PDATA_PERFORMANCE_CPP_
 #define SRC_PDATA_PERFORMANCE_CPP_
 
+
 #include <iostream>
 #include <mpi.h>
 #include "config.h"
@@ -37,6 +38,7 @@ BOOST_AUTO_TEST_SUITE( performance )
 #include "Vector/performance/cell_list_part_reorder.hpp"
 #include "Vector/performance/cell_list_comp_reorder.hpp"
 
+#include "Grid/performance/grid_dist_performance.hpp"
 
 BOOST_AUTO_TEST_SUITE_END()
 

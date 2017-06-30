@@ -288,6 +288,12 @@ template<unsigned int dim, typename v_dist> void move_particles(v_dist & vd, dou
 
 ///////////////////////////// CONSTRUCT GRAPH //////////////////////////////
 
+/*! \brief Draw a standard performance graph
+ *
+ * \param file_mean
+ *
+ *
+ */
 void StandardPerformanceGraph(std::string file_mean,
 		                      std::string file_var,
 							  std::string file_mean_save,
@@ -389,6 +395,10 @@ void StandardPerformanceGraph(std::string file_mean,
 				}
 			}
 		}
+	}
+	else
+	{
+		return;
 	}
 
 	// Calculation time graphs report

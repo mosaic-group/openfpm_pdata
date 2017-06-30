@@ -116,19 +116,19 @@ typedef grid_dist_id<3,float,aggregate<float[3]>> grid_type;
 typedef vector_dist<3,float,aggregate<float[3],float[3],float[3],float[3],float[3]>> particles_type;
 
 // radius of the torus
-float ringr1 = 5.0/4.0;
+float ringr1 = 1.0;
 // radius of the core of the torus
-float ringr2 = 0.5;
+float sigma = 1.0/3.523;
 // Reynold number
-float tgtre  = 10000.0;
+float tgtre  = 7500.0;
 // Noise factor for the ring vorticity on z
-float ringnz = 0.00009;
+float ringnz = 0.01;
 
 // Kinematic viscosity
-float nu = 0.0001535;
+float nu = 1.0/tgtre;
 
 // Time step
-float dt = 0.006;
+float dt = 0.025;
 
 // All the properties by index
 constexpr unsigned int vorticity = 0;
@@ -225,13 +225,13 @@ void init_ring(grid_type & gr, const Box<3,float> & domain)
 
 	for (size_t i = 0 ; i < nk ; i++)
 	{
-	     ak[i] = 0.0/*rand()/RAND_MAX*/;
-	     bk[i] = 0.0/*rand()/RAND_MAX*/;
+	     ak[i] = rand()/RAND_MAX;
+	     bk[i] = rand()/RAND_MAX;
 	}
 
 	// We calculate the circuitation gamma
 	float gamma = nu * tgtre;
-	float rinv2 = 1.0f/(ringr2*ringr2);
+	float rinv2 = 1.0f/(sigma*sigma);
 	float max_vorticity = gamma*rinv2/M_PI;
 
 	// We go through the grid to initialize the vortex
@@ -247,27 +247,20 @@ void init_ring(grid_type & gr, const Box<3,float> & domain)
         float tz = (key.get(z)-2)*gr.spacing(z) + domain.getLow(z);
         float theta1 = atan2((ty-2.5f),(tz-2.5f));
 
+
+
         float noise = 0.0f;
-        for (int kk=1 ; kk < nk; kk++)
-        	noise = noise + sin(kk*(theta1+2.0f*M_PI*ak[kk])) + cos(kk*(theta1+2.0f*M_PI*bk[kk]));
+ //       for (int kk=1 ; kk < nk; kk++)
+ //       	noise = noise + sin(kk*(theta1+2.0f*M_PI*ak[kk])) + cos(kk*(theta1+2.0f*M_PI*bk[kk]));
 
         float rad1r  = sqrt((ty-2.5f)*(ty-2.5f) + (tz-2.5f)*(tz-2.5f)) - ringr1*(1.0f + ringnz * noise);
-        float rad1t = tx - 2.5f;
+        float rad1t = tx - 1.0f;
         float rad1sq = rad1r*rad1r + rad1t*rad1t;
         float radstr = -exp(-rad1sq*rinv2)*rinv2*gamma/M_PI;
         gr.template get<vorticity>(key_d)[x] = 0.0f;
         gr.template get<vorticity>(key_d)[y] = -radstr * cos(theta1);
         gr.template get<vorticity>(key_d)[z] = radstr * sin(theta1);
 
-/*        theta1 = atan2((ty-2.5f),(tz-2.5f));
-        rad1r  = sqrt((ty-2.5f)*(ty-2.5f) + (tz-2.5f)*(tz-2.5f)) + ringr1*(1.0f + ringnz * noise);
-        rad1t = tx - 2.5f;
-        rad1sq = rad1r*rad1r + rad1t*rad1t;
-        float rad1sqTILDA = rad1sq*rinv2;
-        radstr = exp(-rad1sqTILDA)*rinv2*gamma/M_PI;
-        gr.template get<vorticity>(key_d)[x] = 0.0f;
-        gr.template get<vorticity>(key_d)[y] = gr.template get<vorticity>(key_d)[y] + radstr * cos(theta1);
-        gr.template get<vorticity>(key_d)[z] = gr.template get<vorticity>(key_d)[z] - radstr * sin(theta1);*/
 
 		++it;
 	}
@@ -494,8 +487,6 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain)
 	// Set the maximum number of iterations
 	solver.setMaxIter(500);
 
-	solver.log_monitor();
-
 	timer tm_solve;
 	tm_solve.start();
 
@@ -704,7 +695,6 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 		solver.setSolver(KSPBCGS);
 		solver.setAbsTol(0.01);
 		solver.setMaxIter(500);
-		solver.log_monitor();
 
 		// Get the sparse matrix that represent the left-hand-side
 		// of the equation
@@ -1153,7 +1143,7 @@ int main(int argc, char* argv[])
 	openfpm_init(&argc,&argv);
 
 	// Domain, a rectangle
-	Box<3,float> domain({0.0,0.0,0.0},{22.0,5.0,5.0});
+	Box<3,float> domain({0.0,0.0,0.0},{22.0,5.57,5.57});
 
 	// Ghost (Not important in this case but required)
 	Ghost<3,long int> g(2);
@@ -1239,7 +1229,7 @@ int main(int argc, char* argv[])
 	}
 
 	// Time Integration
-	for ( ; i < 10 ; i++)
+	for ( ; i < 10001 ; i++)
 	{
 		// do step 4-5-6-7
 		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s);
@@ -1257,6 +1247,9 @@ int main(int argc, char* argv[])
 		set_zero<vorticity>(g_vort);
 		inte.template p2m<vorticity,vorticity>(particles,g_vort);
 		g_vort.template ghost_put<add_,vorticity>();
+
+		// helmotz-hodge projection
+		helmotz_hodge_projection(g_vort,domain);
 
 		remesh(particles,g_vort,domain);
 

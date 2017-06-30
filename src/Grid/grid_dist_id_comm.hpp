@@ -11,20 +11,43 @@
 #include "Vector/vector_dist_ofb.hpp"
 #include "data_type/scalar.hpp"
 
-
+/*! \brief Unpack selector
+ *
+ *
+ */
 template<bool result,typename T, typename device_grid, typename Memory>
 struct grid_unpack_selector_with_prp
 {
-	template<template<typename,typename> class op, int ... prp> static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims> & sub2, device_grid & dg, Unpack_stat & ps)
+	/*! \brief Error i do not know how to unpack
+	 *
+	 * \param recv_buf buffer with data
+	 * \param sub2 where to unpack (extension)
+	 * \param gd grid where to unpack
+	 * \param ps unpack status
+	 *
+	 */
+	template<template<typename,typename> class op, int ... prp> static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims> & sub2, device_grid & gd, Unpack_stat & ps)
 	{
 		std::cerr << __FILE__ << ":" << __LINE__ << " Error: complex properties on grids are not supported yet" << std::endl;
 	}
 };
 
-//
+/*! \brief Unpack selector
+ *
+ *
+ */
 template<typename T, typename device_grid, typename Memory>
 struct grid_unpack_selector_with_prp<true,T,device_grid,Memory>
 {
+
+	/*! \brief Unpack
+	 *
+	 * \param recv_buf buffer with data
+	 * \param sub2 where to unpack (extension)
+	 * \param gd grid where to unpack
+	 * \param ps unpack status
+	 *
+	 */
 	template<template<typename,typename> class op, unsigned int ... prp> static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims> & sub2, device_grid & gd, Unpack_stat & ps)
 	{
 		PtrMemory * ptr1;
@@ -75,13 +98,31 @@ struct grid_unpack_selector_with_prp<true,T,device_grid,Memory>
 	}
 };
 
-
+/*! \brief Unpack selector
+ *
+ * Stub version
+ *
+ */
 template<typename device_grid, typename Memory, typename T>
 struct grid_call_serialize_variadic {};
 
+/*! \brief Unpack selector
+ *
+ * Selector when there is not max_prop
+ *
+ */
 template<typename device_grid, typename Memory , int ... prp>
 struct grid_call_serialize_variadic<device_grid, Memory, index_tuple<prp...>>
 {
+
+	/*! \brief Unpack
+	 *
+	 * \param recv_buf buffer with data
+	 * \param sub2 where to unpack (extension)
+	 * \param dg grid where to unpack
+	 * \param ps unpack status
+	 *
+	 */
 	template<template<typename,typename> class op, typename T> inline static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims> & sub2, device_grid & dg, Unpack_stat & ps)
 	{
 		const bool result = has_pack_gen<typename T::type>::value == false;
@@ -90,10 +131,23 @@ struct grid_call_serialize_variadic<device_grid, Memory, index_tuple<prp...>>
 	}
 };
 
-//! There is max_prop inside
+/*! \brief Unpack selector
+ *
+ * Selector when there is max_prop
+ *
+ */
 template<template<typename,typename> class op, typename T, typename device_grid, typename Memory>
 struct grid_unpack_with_prp
 {
+
+	/*! \brief Unpack
+	 *
+	 * \param recv_buf buffer with data
+	 * \param sub2 where to unpack (extension)
+	 * \param dg grid where to unpack
+	 * \param ps unpack status
+	 *
+	 */
 	template<unsigned int ... prp> static void unpacking(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims> & sub2, device_grid & dg, Unpack_stat & ps)
 	{
 		typedef index_tuple<prp...> ind_prop_to_pack;
@@ -145,6 +199,12 @@ class grid_dist_id_comm
 	/*! \brief Sync the local ghost part
 	 *
 	 * \tparam prp... properties to sync
+	 *
+	 * \param loc_ig_box local internel ghost boxes
+	 * \param loc_eg_box local external ghost boxes
+	 * \param gdb_ext information about the local grids
+	 * \param loc_grid local grids
+	 * \param g_id_to_external_ghost_box from global index to external ghost box
 	 *
 	 */
 	template<int... prp> void ghost_get_local(const openfpm::vector<i_lbox_grid<dim>> & loc_ig_box,
@@ -210,6 +270,12 @@ class grid_dist_id_comm
 	/*! \brief Sync the local ghost part
 	 *
 	 * \tparam prp... properties to sync
+	 *
+	 * \param loc_ig_box local internel ghost boxes
+	 * \param loc_eg_box local external ghost boxes
+	 * \param gdb_ext information about the local grids
+	 * \param loc_grid local grids
+	 * \param g_id_to_external_ghost_box global-if to external ghost box
 	 *
 	 */
 	template<template<typename,typename> class op, int... prp> void ghost_put_local(const openfpm::vector<i_lbox_grid<dim>> & loc_ig_box,
@@ -280,8 +346,15 @@ public:
 	/*! \brief Reconstruct the local grids
 	 *
 	 * \param m_oGrid_recv Vector of labeled grids to combine into a local grid
+	 * \param loc_grid local grids
+	 * \param gdb_ext information of the local grids
+	 * \param cd_sm Cell-decomposer
+	 *
 	 */
-	inline void grids_reconstruct(openfpm::vector<openfpm::vector<aggregate<device_grid,SpaceBox<dim,long int>>>> & m_oGrid_recv, openfpm::vector<device_grid> & loc_grid, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm)
+	inline void grids_reconstruct(openfpm::vector<openfpm::vector<aggregate<device_grid,SpaceBox<dim,long int>>>> & m_oGrid_recv,
+			                      openfpm::vector<device_grid> & loc_grid,
+								  openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
+								  CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm)
 	{
 		size_t count2 = 0;
 		for (size_t a = 0; a < m_oGrid_recv.size(); a++)
@@ -362,21 +435,26 @@ public:
 		//std::cout << "Count after: " << count2 << std::endl;
 	}
 
-
-	/*! \brief Reconstruct the local grids
-	 *
-	 * \param m_oGrid_recv Vector of labeled grids to combine into a local grid
-	 */
-	inline void grids_reconstruct(openfpm::vector<openfpm::vector<aggregate<device_grid,SpaceBox<dim,long int>>>> & m_oGrid_recv, openfpm::vector<device_grid> & loc_grid, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm, openfpm::vector<size_t> & prc_r)
-	{
-
-	}
-
 	/*! \brief Label intersection grids for mappings
 	 *
+	 * \param dec Decomposition
+	 * \param loc_grid_old old local grids
+	 * \param cd_sm Cell-decomposer
+	 * \param gdb_ext information of the local grids
+	 * \param gdb_ext_old information of the old local grids
+	 * \param gdb_ext_global information of the grids globaly
+	 * \param lbl_b label for each grid
 	 * \param prc_sz For each processor the number of grids to send to
+	 *
 	 */
-	inline void labelIntersectionGridsProcessor(Decomposition & dec, CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm, openfpm::vector<device_grid> & loc_grid_old, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_old, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_global, openfpm::vector<openfpm::vector<aggregate<device_grid,SpaceBox<dim,long int>>>> & lbl_b, openfpm::vector<size_t> & prc_sz)
+	inline void labelIntersectionGridsProcessor(Decomposition & dec,
+												CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm,
+												openfpm::vector<device_grid> & loc_grid_old,
+												openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
+												openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_old,
+												openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_global,
+												openfpm::vector<openfpm::vector<aggregate<device_grid,SpaceBox<dim,long int>>>> & lbl_b,
+												openfpm::vector<size_t> & prc_sz)
 	{
 		// resize the label buffer
 		lbl_b.resize(v_cl.getProcessingUnits());
@@ -483,18 +561,24 @@ public:
 
 	/*! \brief Moves all the grids that does not belong to the local processor to the respective processor
 	 *
-	 * \tparam out of bound policy it specify what to do when the particles are detected out of bound
+	 * This function in general is called if the decomposition change
 	 *
-	 * In general this function is called after moving the particles to move the
-	 * elements out the local processor. Or just after initialization if each processor
-	 * contain non local particles
-	 *
-	 * \param v_pos vector of particle positions
-	 * \param v_prp vector of particle properties
-	 * \param g_m ghost marker
+	 * \param dec Decomposition
+	 * \param cd_sm cell-decomposer
+	 * \param loc_grid set of local grids
+	 * \param loc_grid_old set of old local grids
+	 * \param gdb_ext information of the local grids
+	 * \param gdb_ext_old information of the old local grids
+	 * \param gdb_ext_global it contain the decomposition at global level
 	 *
 	 */
-	void map_(Decomposition & dec, CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm, openfpm::vector<device_grid> & loc_grid, openfpm::vector<device_grid> & loc_grid_old, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_old, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_global)
+	void map_(Decomposition & dec,
+			  CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm,
+			  openfpm::vector<device_grid> & loc_grid,
+			  openfpm::vector<device_grid> & loc_grid_old,
+			  openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
+			  openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_old,
+			  openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_global)
 	{
 		// Processor communication size
 		openfpm::vector<size_t> prc_sz(v_cl.getProcessingUnits());
@@ -538,6 +622,17 @@ public:
 		grids_reconstruct(m_oGrid_recv,loc_grid,gdb_ext,cd_sm);
 	}
 
+	/*! \brief It fill the ghost part of the grids
+	 *
+	 * \param ig_box internal ghost box
+	 * \param eg_box external ghost box
+	 * \param loc_ig_box local internal ghost box
+	 * \param loc_eg_box local external ghost box
+	 * \param gdb_ext local grids information
+	 * \param loc_grid set of local grid
+	 * \param g_id_to_external_ghost_box index to external ghost box
+	 *
+	 */
 	template<int... prp> void ghost_get_(const openfpm::vector<ip_box_grid<dim>> & ig_box,
 									     const openfpm::vector<ep_box_grid<dim>> & eg_box,
 										 const openfpm::vector<i_lbox_grid<dim>> & loc_ig_box,
@@ -708,7 +803,20 @@ public:
 		}
 	}
 
-
+	/*! \brief It merge the information in the ghost with the
+	 *         real information
+	 *
+	 * \tparam op merge operation
+	 *
+	 * \param ig_box internal ghost box
+	 * \param eg_box external ghost box
+	 * \param loc_ig_box local internal ghost box
+	 * \param loc_eg_box local external ghost box
+	 * \param gdb_ext local grids information
+	 * \param loc_grid set of local grid
+	 * \param g_id_to_internal_ghost_box index to internal ghost box
+	 *
+	 */
 	template<template<typename,typename> class op,int... prp>
 	void ghost_put_(const openfpm::vector<ip_box_grid<dim>> & ig_box,
 					const openfpm::vector<ep_box_grid<dim>> & eg_box,
@@ -876,16 +984,12 @@ public:
 				grid_key_dx_iterator_sub<dim> sub2(loc_grid.get(sub_id).getGrid(),box.getKP1(),box.getKP2());
 
 				grid_unpack_with_prp<op,prp_object,device_grid,Memory>::template unpacking<prp...>(prRecv_prp,sub2,loc_grid.get(sub_id),ps);
-
-				// Unpack
-//				Unpacker<device_grid,HeapMemory>::template unpack<prp...>(prRecv_prp,sub2,loc_grid.get(sub_id),ps);
 			}
 		}
 	}
 
 	/*! \brief Constructor
 	 *
-	 * \param dec Domain decompositon
 	 *
 	 */
 	grid_dist_id_comm()

@@ -44,7 +44,7 @@ class vector_dist_iterator
 	 *
 	 */
 
-	vector_dist_iterator operator++()
+	vector_dist_iterator & operator++()
 	{
 		++v_it;
 
