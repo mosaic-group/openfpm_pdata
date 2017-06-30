@@ -304,6 +304,7 @@ class grid_dist_iterator<dim,device_grid,FIXED,stencil>
 	/*! \brief Constructor of the distributed grid iterator
 	 *
 	 * \param gk std::vector of the local grid
+	 * \param gdb_ext information about the local grids
 	 *
 	 */
 	grid_dist_iterator(const openfpm::vector<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
