@@ -91,7 +91,8 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 
 	BOOST_REQUIRE(met_dist.getUnbalance() < 0.03);
 
-	met_dist.write("vtk_metis_distribution");
+	if (v_cl.getProcessUnitID() == 0)
+	{met_dist.write("vtk_metis_distribution");}
 
 	size_t b = GS_SIZE * GS_SIZE * GS_SIZE / 5;
 
@@ -130,27 +131,31 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 
 	BOOST_REQUIRE(met_dist.getUnbalance() < 0.06);
 
-	met_dist.write("vtk_metis_distribution_red");
+	if (v_cl.getProcessUnitID() == 0)
+	{met_dist.write("vtk_metis_distribution_red");}
 
 	// check that match
 
 	bool test;
 
-#ifdef HAVE_OSX
+	if (v_cl.getProcessUnitID() == 0)
+	{
+	#ifdef HAVE_OSX
 
-	test = compare("0_vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_osx_test.vtk");
-	BOOST_REQUIRE_EQUAL(true,test);
-	test = compare("0_vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_osx_test.vtk");
-	BOOST_REQUIRE_EQUAL(true,test);
+		test = compare("0_vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_osx_test.vtk");
+		BOOST_REQUIRE_EQUAL(true,test);
+		test = compare("0_vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_osx_test.vtk");
+		BOOST_REQUIRE_EQUAL(true,test);
 
-#elif __GNUC__ == 6 && __GNUC_MINOR__ == 3
+	#elif __GNUC__ == 6 && __GNUC_MINOR__ == 3
 
-	test = compare("0_vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_test.vtk");
-	BOOST_REQUIRE_EQUAL(true,test);
-	test = compare("0_vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_test.vtk");
-	BOOST_REQUIRE_EQUAL(true,test);
+		test = compare("0_vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_test.vtk");
+		BOOST_REQUIRE_EQUAL(true,test);
+		test = compare("0_vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_test.vtk");
+		BOOST_REQUIRE_EQUAL(true,test);
 
-#endif
+	#endif
+	}
 
 	// Copy the Metis distribution
 

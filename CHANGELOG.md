@@ -5,17 +5,16 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Introduced getDomainIterator for Cell-list
-- Vortex in Cell example
 - Example to show how to add sensors in SPH/particle based methods (see)
 - Vortex in Cell example
 - Interpolation functions (see Numerics/vortex_in_cell example)
-- Gray-scott 3d example (see Grid/gray_scott_3d example)
-- HDF5 Check point restart for vector_dist particles (see ...) 
+- Gray-scott 3d example with stencil iterator optimixation (see Grid/gray_scott_3d example)
+- HDF5 Check point restart for vector_dist particles (see Vector/1_HDF5_save_and_load) 
 - Raw reader for grid (see ...)
-- A way to specify names for proeprties and select properties to write
-- Ghost put on grid
-- getDomainIterator stencil for faster stencil codes iterators
-- Agebraic multigrid solvers interface for linear systems
+- A way to specify names for properties and select properties to write (in PROGRESS)
+- Ghost put on grid (see Vortex in Cell example)
+- getDomainIterator stencil for faster stencil codes iterators see (Grid/gray_scott_3d example)
+- Agebraic multigrid solvers interface for linear systems (see Vortex in Cell example)
 
 ### Fixed
 - Installation of PETSC in case with MUMPS try without MUMPS
