@@ -1239,9 +1239,6 @@ int main(int argc, char* argv[])
 		// do step 4-5-6-7
 		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s,solver);
 
-		openfpm_finalize();
-		return 0;
-
 		// do step 8
 		rk_step1(particles);
 
