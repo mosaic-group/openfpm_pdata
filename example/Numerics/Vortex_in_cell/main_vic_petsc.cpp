@@ -96,6 +96,7 @@
 
 //! \cond [inclusion] \endcond
 
+#include "../../../openfpm_numerics/src/interpolation/interpolation.hpp"
 #include "Grid/grid_dist_id.hpp"
 #include "Vector/vector_dist.hpp"
 #include "Matrix/SparseMatrix.hpp"
@@ -103,7 +104,6 @@
 #include "FiniteDifference/FDScheme.hpp"
 #include "Solvers/petsc_solver.hpp"
 #include "interpolation/mp4_kernel.hpp"
-#include "interpolation/interpolation.hpp"
 #include "Solvers/petsc_solver_AMG_report.hpp"
 
 constexpr int x = 0;
@@ -293,6 +293,7 @@ const bool poisson_nn_helm::boundary[] = {PERIODIC,PERIODIC,PERIODIC};
 
 //! \cond [poisson_syseq] \endcond
 
+
 /*! \page Vortex_in_cell_petsc Vortex in Cell 3D
  *
  * # Step 2: Helmotz-hodge projection # {#vic_hlm_proj}
@@ -406,7 +407,7 @@ const bool poisson_nn_helm::boundary[] = {PERIODIC,PERIODIC,PERIODIC};
  * domain simulation domain
  *
  */
-void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain)
+void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain, petsc_solver<double> & solver, petsc_solver<double>::return_type & x_ , bool init)
 {
 	///////////////////////////////////////////////////////////////
 
@@ -476,25 +477,29 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain)
 
 	//! \cond [solve_petsc] \endcond
 
-	// Create a PETSC solver to get the solution x
-	petsc_solver<double> solver;
+	if (init == true)
+	{
+		// Set the conjugate-gradient as method to solve the linear solver
+		solver.setSolver(KSPBCGS);
 
-	// Set the conjugate-gradient as method to solve the linear solver
-	solver.setSolver(KSPBCGS);
+		// Set the absolute tolerance to determine that the method is converged
+		solver.setAbsTol(0.1);
 
-	// Set the absolute tolerance to determine that the method is converged
-	solver.setAbsTol(0.1);
+		// Set the maximum number of iterations
+		solver.setMaxIter(500);
 
-	// Set the maximum number of iterations
-	solver.setMaxIter(500);
+		timer tm_solve;
+		tm_solve.start();
 
-	timer tm_solve;
-	tm_solve.start();
+		// Give to the solver A and b, return x, the solution
+		solver.solve(fd.getA(),x_,fd.getB());
 
-	// Give to the solver A and b, return x, the solution
-	auto x_ = solver.solve(fd.getA(),fd.getB());
-
-	tm_solve.stop();
+		tm_solve.stop();
+	}
+	else
+	{
+		solver.solve(x_,fd.getB());
+	}
 
 	// copy the solution x to the grid psi
 	fd.template copy<phi>(x_,psi);
@@ -633,7 +638,7 @@ void remesh(particles_type & vd, grid_type & gr,Box<3,float> & domain)
  *
  */
 
-void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc_solver<double>::return_type (& phi_s)[3])
+void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc_solver<double>::return_type (& phi_s)[3],petsc_solver<double> & solver)
 {
 	//! \cond [poisson_obj_eq] \endcond
 
@@ -690,16 +695,7 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 		// impose the poisson equation using gr_ps = vorticity for the right-hand-side (on the full domain)
 		fd.template impose_dit<phi>(poisson(),gr_ps,gr_ps.getDomainIterator());
 
-		// Create an PETSC solver
-		petsc_solver<double> solver;
-
-		solver.setSolver(KSPBCGS);
 		solver.setAbsTol(0.01);
-		solver.setMaxIter(500);
-
-		// Get the sparse matrix that represent the left-hand-side
-		// of the equation
-		SparseMatrix<double,int,PETSC_BASE> & A = fd.getA();
 
 		// Get the vector that represent the right-hand-side
 		Vector<double,PETSC_BASE> & b = fd.getB();
@@ -710,14 +706,14 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 		// Give to the solver A and b in this case we are giving
 		// an intitial guess phi_s calculated in the previous
 		// time step
-		solver.solve(A,phi_s[i],b);
+		solver.solve(phi_s[i],b);
 
 		tm_solve.stop();
 
 		// Calculate the residual
 
 		solError serr;
-		serr = solver.get_residual_error(A,phi_s[i],b);
+		serr = solver.get_residual_error(phi_s[i],b);
 
 		Vcluster & v_cl = create_vcluster();
 		if (v_cl.getProcessUnitID() == 0)
@@ -1034,7 +1030,8 @@ template<typename grid, typename vector> void do_step(vector & particles,
 													  grid & g_dvort,
 													  Box<3,float> & domain,
 													  interpolate<particles_type,grid_type,mp4_kernel<float>> & inte,
-													  petsc_solver<double>::return_type (& phi_s)[3])
+													  petsc_solver<double>::return_type (& phi_s)[3],
+													  petsc_solver<double> & solver)
 {
 	constexpr int rhs = 0;
 
@@ -1049,7 +1046,7 @@ template<typename grid, typename vector> void do_step(vector & particles,
 	//! \cond [step_56] \endcond
 
 	// Calculate velocity from vorticity
-	comp_vel(domain,g_vort,g_vel,phi_s);
+	comp_vel(domain,g_vort,g_vel,phi_s,solver);
 	calc_rhs(g_vort,g_vel,g_dvort);
 
 	//! \cond [step_56] \endcond
@@ -1163,6 +1160,7 @@ int main(int argc, char* argv[])
 	// It store the solution to compute velocity
 	// It is used as initial guess every time we call the solver
 	Vector<double,PETSC_BASE> phi_s[3];
+	Vector<double,PETSC_BASE> x_;
 
 	// Parallel object
 	Vcluster & v_cl = create_vcluster();
@@ -1174,8 +1172,14 @@ int main(int argc, char* argv[])
 	// initialize the ring step 1
 	init_ring(g_vort,domain);
 
+	x_.resize(g_vort.size(),g_vort.getLocalDomainSize());
+	x_.setZero();
+
+	// Create a PETSC solver to get the solution x
+	petsc_solver<double> solver;
+
 	// Do the helmotz projection step 2
-	helmotz_hodge_projection(g_vort,domain);
+	helmotz_hodge_projection(g_vort,domain,solver,x_,true);
 
 	// initialize the particle on a mesh step 3
 	remesh(particles,g_vort,domain);
@@ -1233,13 +1237,16 @@ int main(int argc, char* argv[])
 	for ( ; i < 10001 ; i++)
 	{
 		// do step 4-5-6-7
-		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s);
+		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s,solver);
+
+		openfpm_finalize();
+		return 0;
 
 		// do step 8
 		rk_step1(particles);
 
 		// do step 9-10-11-12
-		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s);
+		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s,solver);
 
 		// do step 13
 		rk_step2(particles);
@@ -1250,7 +1257,7 @@ int main(int argc, char* argv[])
 		g_vort.template ghost_put<add_,vorticity>();
 
 		// helmotz-hodge projection
-		helmotz_hodge_projection(g_vort,domain);
+		helmotz_hodge_projection(g_vort,domain,solver,x_,false);
 
 		remesh(particles,g_vort,domain);
 

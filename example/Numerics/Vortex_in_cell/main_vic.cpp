@@ -18,7 +18,7 @@
 #include "Solvers/petsc_solver.hpp"
 #include "Solvers/umfpack_solver.hpp"
 #include "interpolation/mp4_kernel.hpp"
-#include "interpolation/interpolation.hpp"
+#include "../../../openfpm_numerics/src/interpolation/interpolation.hpp"
 
 constexpr int x = 0;
 constexpr int y = 1;
