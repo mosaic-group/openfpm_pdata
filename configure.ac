@@ -191,6 +191,7 @@ AC_ARG_ENABLE(test-performance,
             [enable test performance]
         ),
         test_per="$enableval"
+	INCLUDES_PATH+="-I../openfpm_numerics/src "
 )
 
 
