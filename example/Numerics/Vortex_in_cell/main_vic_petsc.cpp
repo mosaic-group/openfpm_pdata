@@ -104,6 +104,7 @@
 #include "Solvers/petsc_solver.hpp"
 #include "interpolation/mp4_kernel.hpp"
 #include "interpolation/interpolation.hpp"
+#include "Solvers/petsc_solver_AMG_report.hpp"
 
 constexpr int x = 0;
 constexpr int y = 1;
