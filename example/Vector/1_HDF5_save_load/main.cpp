@@ -1,22 +1,3 @@
- /*! \page Vector Vector
- *
- * \subpage Vector_0_simple
- * \subpage Vector_1_celllist
- * \subpage Vector_1_ghost_get
- * \subpage Vector_2_expression
- * \subpage Vector_3_md
- * \subpage Vector_4_reo_root
- * \subpage Vector_4_cp
- * \subpage Vector_4_mp_cl
- * \subpage Vector_5_md_vl_sym
- * \subpage Vector_5_md_vl_sym_crs
- * \subpage Vector_6_complex_usage
- * \subpage Vector_7_sph_dlb
- * \subpage Vector_7_sph_dlb_opt
- *
- */
-
-
 /*!
  * \page Vector_1_HDF5 HDF5 save and load
  *

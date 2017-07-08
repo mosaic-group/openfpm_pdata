@@ -406,7 +406,12 @@ int main(int argc, char* argv[])
 	 *
 	 * \f[ \vec{v}(t_{n+1}) = \vec{v}_p(t_n+1/2) + \frac{1}{2} \delta t \vec{a}(t_n+1) \f]
 	 *
-	 * The cell-list structure is required to calculate forces
+	 * The cell-list structure is required to calculate forces. As demonstration
+	 * purpose instead of using the standard Cell-list with (getCellList) we use the CELL_MEMBAL
+	 * type. The impact in performance of using the CELL_MEMBAL instead of CELL_MEMFAST is less
+	 * than 1% on the other hand CELL_MEMFAST use 16 Megabyte of memory
+	 *
+	 * \see \ref e1_cls_types
 	 *
 	 * Inside this cycle we are using several features that has been explained before in particular
 	 *
@@ -430,7 +435,10 @@ int main(int argc, char* argv[])
 	//! \cond [md steps] \endcond
 
 	// Get the Cell list structure
-	auto NN = vd.getCellList(r_cut);
+	auto NN = vd.getCellList<CELL_MEMBAL(3,double)>(r_cut);
+
+	// The standard
+	// auto NN = vd.getCellList(r_cut);
 
 	// calculate forces
 	calc_forces(vd,NN,sigma12,sigma6,r_cut*r_cut);

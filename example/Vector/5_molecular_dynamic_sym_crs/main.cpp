@@ -323,8 +323,18 @@ int main(int argc, char* argv[])
 	 *
 	 * \see \ref md_e5_sym
 	 *
-	 * The difference is that we create a symmetric Verlet-list for crossing scheme instead of a normal one
+	 * With two major differences. First we create a symmetric Verlet-list for crossing scheme instead of a normal one
 	 * \snippet Vector/5_molecular_dynamic_sym_crs/main.cpp sim verlet
+	 *
+	 * Second we **MUST** give the option BIND_DEC_TO_GHOST when we constructing the vector. This option
+	 * force the vector to decompose the domain in a compatible way for the CRS scheme
+	 *
+	 * \snippet Vector/5_molecular_dynamic_sym_crs/main.cpp bind_dec_ghost
+	 *
+	 * Because we will use the crossing scheme and the option BIND_DEC_TO_GHOST we can remove the lower part
+	 * of the ghost as explained initially in this example
+	 *
+	 * \snippet Vector/5_molecular_dynamic_sym_crs/main.cpp remove_lower_part
 	 *
 	 * The rest of the code remain unchanged
 	 *
@@ -356,13 +366,21 @@ int main(int argc, char* argv[])
 	// Boundary conditions
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
+	//! \cond [remove_lower_part] \endcond
+
 	// ghost, big enough to contain the interaction radius
 	Ghost<3,float> ghost(r_gskin);
 	ghost.setLow(0,0.0);
 	ghost.setLow(1,0.0);
 	ghost.setLow(2,0.0);
 
+	//! \cond [remove_lower_part] \endcond
+
+	//! \cond [bind_dec_ghost] \endcond
+
 	vector_dist<3,double, aggregate<double[3],double[3]> > vd(0,box,bc,ghost,BIND_DEC_TO_GHOST);
+
+	//! \cond [bind_dec_ghost] \endcond
 
 	size_t k = 0;
 	size_t start = vd.accum();

@@ -326,12 +326,14 @@ int main(int argc, char* argv[])
 	 * ## Visualization, write VTK files ## {#e0_s_vis_vtk}
 	 *
 	 * With this function we output the particle position in VTK format. A VTK file
-	 * contain information about particle position and properties. Such file can be visualizaed
-	 * with program like paraview. In case this program run on several processor Each processor
+	 * contain information about particle position and properties. Such file can be visualized
+	 * with a program like paraview. In case this program run on several processor each processor
 	 * generate a VTK file. VTK has two format one is the ASCII that is human readable but produce
 	 * bigger file the other is the binary that produce not-human readable files, but smaller
 	 * and more efficent files to read for Paraview. In order to create a Binary VTK file use the
-	 * option VTK_WRITER in combination with FORMAT_BINARY
+	 * option VTK_WRITER in combination with FORMAT_BINARY. By default properties does not have name
+	 * the VTK writer will label them "attr0" for the first property "attr1" for the second and so on
+	 * in case we want to assign names to the properties we can use the function setPropNames
 	 *
 	 * \snippet Vector/0_simple/main.cpp vtk
 	 *
@@ -346,6 +348,9 @@ int main(int argc, char* argv[])
 	 */
 
 	//! \cond [vtk] \endcond
+
+	openfpm::vector<std::string> names({"scalar","vector","tensor"});
+	vd.setPropNames(names);
 
 	// save vtk format (vtk is always the default)
 	vd.write("particles");

@@ -99,9 +99,9 @@ struct gcl<dim,St,CellList_gen<dim, St, Process_keys_hilb,Mem_type, shift<dim, S
 	}
 };
 
-#define CELL_MEMFAST(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_fast<dim,St>, shift<dim, St> >
-#define CELL_MEMBAL(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_bal<dim,St>, shift<dim, St> >
-#define CELL_MEMMW(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_mw<dim,St>, shift<dim, St> >
+#define CELL_MEMFAST(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> >
+#define CELL_MEMBAL(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_bal, shift<dim, St> >
+#define CELL_MEMMW(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_mw, shift<dim, St> >
 
 /*! \brief Distributed vector
  *
@@ -157,6 +157,9 @@ private:
 
 	//! option used to create this vector
 	size_t opt = 0;
+
+	//! Name of the properties
+	openfpm::vector<std::string> prp_names;
 
 #ifdef SE_CLASS3
 
@@ -836,13 +839,16 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, Mem_fast<dim,St>, shift<dim, St> > > CellL getCellListSym(St r_cut)
+	template<typename CellL = CellList<dim, St, Mem_fast, shift<dim, St> > > CellL getCellListSym(St r_cut)
 	{
 #ifdef SE_CLASS1
 		if ((opt & BIND_DEC_TO_GHOST))
 		{
-			std::cerr << __FILE__ << ":" << __LINE__ << " error to get symmetric cell-list you must construct the vector with the option BIND_DEC_TO_GHOST " << std::endl;
-			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+			if (ghost.getLow(dim-1) == 0.0)
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, If you construct a vector without BIND_DEC_TO_GHOST the ghost must be full without reductions " << std::endl;
+				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+			}
 		}
 #endif
 
@@ -876,7 +882,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<dim,St>, shift<dim, St> > > CellL getCellList(St r_cut)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> > > CellL getCellList(St r_cut)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -901,7 +907,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast<dim,St>, shift<dim, St> > > CellL getCellList_hilb(St r_cut)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast, shift<dim, St> > > CellL getCellList_hilb(St r_cut)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -961,7 +967,7 @@ public:
 	 * \param cell_list Cell list to update
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, Mem_fast<dim,St>, shift<dim, St> > > void updateCellListSym(CellL & cell_list)
+	template<typename CellL = CellList<dim, St, Mem_fast, shift<dim, St> > > void updateCellListSym(CellL & cell_list)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -1006,7 +1012,7 @@ public:
 	 * \return the CellList
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<dim,St>, shift<dim, St> > > CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> > > CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -1046,7 +1052,7 @@ public:
 	 * \return The Cell-list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast<dim,St>, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -1105,6 +1111,14 @@ public:
 	 */
 	VerletList<dim,St,FAST,shift<dim,St> > getVerletCrs(St r_cut)
 	{
+#ifdef SE_CLASS1
+		if ((opt & BIND_DEC_TO_GHOST))
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, getVerletCrs require the vector to be constructed with BIND_DEC_TO_GHOST option " << std::endl;
+			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+		}
+#endif
+
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
@@ -1206,6 +1220,14 @@ public:
 		}
 		else if (opt == VL_CRS_SYMMETRIC)
 		{
+#ifdef SE_CLASS1
+			if ((opt & BIND_DEC_TO_GHOST))
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, updateVerlet with the option VL_CRS_SYMMETRIC require the vector to be constructed with BIND_DEC_TO_GHOST option " << std::endl;
+				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+			}
+#endif
+
 			auto & NN = ver.getInternalCellList();
 
 			// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
@@ -1265,7 +1287,7 @@ public:
 	 * \param m an order of a hilbert curve
 	 *
 	 */
-	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_fast<dim,St>,shift<dim,St> > > void reorder (int32_t m)
+	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_fast,shift<dim,St> > > void reorder (int32_t m)
 	{
 		reorder(m,getDecomposition().getGhost());
 	}
@@ -1283,7 +1305,7 @@ public:
 	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
 	 *
 	 */
-	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_fast<dim,St>,shift<dim,St> > > void reorder(int32_t m, const Ghost<dim,St> & enlarge)
+	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_fast,shift<dim,St> > > void reorder(int32_t m, const Ghost<dim,St> & enlarge)
 	{
 		// reset the ghost part
 		v_pos.resize(g_m);
@@ -1767,7 +1789,7 @@ public:
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtk"));
 
 			// Write the VTK file
-			return vtk_writer.write(output,"particles",ft);
+			return vtk_writer.write(output,prp_names,"particles",ft);
 		}
 
 		return false;
@@ -1835,7 +1857,7 @@ public:
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtk"));
 
 			// Write the VTK file
-			return vtk_writer.write(output,"particles",ft);
+			return vtk_writer.write(output,prp_names,"particles",ft);
 		}
 	}
 
@@ -1965,6 +1987,14 @@ public:
 	 */
 	template<typename cli> ParticleItCRS_Cells<dim,cli> getParticleIteratorCRS_Cell(cli & NN)
 	{
+#ifdef SE_CLASS1
+		if ((opt & BIND_DEC_TO_GHOST))
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, getParticleIteratorCRS_Cell require the vector to be constructed with BIND_DEC_TO_GHOST option " << std::endl;
+			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+		}
+#endif
+
 		// Shift
 		grid_key_dx<dim> shift;
 
@@ -1982,6 +2012,18 @@ public:
 											   NN.getNNc_sym());
 	}
 
+	/*! \brief Set the properties names
+	 *
+	 * It is useful to specify name for the properties in vtk writers
+	 *
+	 * \param names set of properties names
+	 *
+	 */
+	void setPropNames(const openfpm::vector<std::string> & names)
+	{
+		prp_names = names;
+	}
+
 	/*! \brief Get a special particle iterator able to iterate across particles using
 	 *         symmetric crossing scheme
 	 *
@@ -1992,6 +2034,14 @@ public:
 	 */
 	template<typename vrl> openfpm::vector_key_iterator_seq<typename vrl::local_index_t> getParticleIteratorCRS(vrl & NN)
 	{
+#ifdef SE_CLASS1
+		if ((opt & BIND_DEC_TO_GHOST))
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, getParticleIteratorCRS_Cell require the vector to be constructed with BIND_DEC_TO_GHOST option " << std::endl;
+			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+		}
+#endif
+
 		// First we check that
 		return openfpm::vector_key_iterator_seq<typename vrl::local_index_t>(NN.getParticleSeq());
 	}

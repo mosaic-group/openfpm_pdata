@@ -1139,7 +1139,7 @@ int main(int argc, char* argv[])
 {
 	// Initialize
 	openfpm_init(&argc,&argv);
-
+	{
 	// Domain, a rectangle
 	Box<3,float> domain({0.0,0.0,0.0},{22.0,5.57,5.57});
 
@@ -1190,9 +1190,9 @@ int main(int argc, char* argv[])
 	v_cl.execute();
 
 	// Now we set the size of phi_s
-	phi_s[0].resize(tot_part,particles.size_local());
-	phi_s[1].resize(tot_part,particles.size_local());
-	phi_s[2].resize(tot_part,particles.size_local());
+	phi_s[0].resize(g_vort.size(),g_vort.getLocalDomainSize());
+	phi_s[1].resize(g_vort.size(),g_vort.getLocalDomainSize());
+	phi_s[2].resize(g_vort.size(),g_vort.getLocalDomainSize());
 
 	// And we initially set it to zero
 	phi_s[0].setZero();
@@ -1265,6 +1265,7 @@ int main(int argc, char* argv[])
 		// every 100 steps write the output
 		if (i % 100 == 0)		{check_point_and_save(particles,g_vort,g_vel,g_dvort,i);}
 
+	}
 	}
 
 	openfpm_finalize();

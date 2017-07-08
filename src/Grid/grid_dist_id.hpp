@@ -101,6 +101,9 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	//! Communicator class
 	Vcluster & v_cl;
 
+	//! properties names
+	openfpm::vector<std::string> prp_names;
+
 	//! It map a global ghost id (g_id) to the external ghost box information
 	//! It is unique across all the near processor
 	std::unordered_map<size_t,size_t> g_id_to_external_ghost_box;
@@ -695,7 +698,6 @@ public:
      *
      * \param dec Decomposition
      * \param g_sz grid size on each dimension
-     * \param domain Box that contain the grid
      * \param ghost Ghost part
      *
      */
@@ -714,7 +716,6 @@ public:
      *
      * \param dec Decomposition
      * \param g_sz grid size on each dimension
-     * \param domain Box that contain the grid
      * \param ghost Ghost part
      *
      */
@@ -733,7 +734,6 @@ public:
      *
      * \param dec Decomposition
      * \param g_sz grid size on each dimension
-     * \param domain Box that contain the grid
      * \param g Ghost part (given in grid units)
      *
      * \warning In very rare case the ghost part can be one point bigger than the one specified
@@ -995,7 +995,7 @@ public:
 
 	/*! \brief It gathers the information about local grids for all of the processors
 	 *
-	 *
+	 * \param gdb_ext_global where to store the grid infos
 	 *
 	 */
 	void getGlobalGridsInfo(openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_global) const
@@ -1435,6 +1435,7 @@ public:
 	 * * internal_ghost_X.vtk Internal ghost boxes in grid units for the local processor X
 	 *
 	 * \param output directory where to put the files + prefix
+	 * \param opt options
 	 *
 	 * \return true if the write operation succeed
 	 *
@@ -1456,7 +1457,7 @@ public:
 			Point<dim,St> offset = getOffset(i);
 			vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).Dbox);
 		}
-		vtk_g.write(output + "_" + std::to_string(v_cl.getProcessUnitID()) + ".vtk", "grids", ft);
+		vtk_g.write(output + "_" + std::to_string(v_cl.getProcessUnitID()) + ".vtk", prp_names, "grids", ft);
 
 		return true;
 	}
@@ -1566,6 +1567,19 @@ public:
 			}
 		}
 	}
+
+	/*! \brief Set the properties names
+	 *
+	 * It is useful to specify name for the properties in vtk writers
+	 *
+	 * \param names set of properties names
+	 *
+	 */
+	void setPropNames(const openfpm::vector<std::string> & names)
+	{
+		prp_names = names;
+	}
+
 
 	/*! \brief It move all the grid parts that do not belong to the local processor to the respective processor
 	 *
