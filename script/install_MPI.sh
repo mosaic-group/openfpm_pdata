@@ -6,11 +6,11 @@ if [ -d "$1/MPI" ]; then
   echo "MPI already installed"
   exit 0
 fi
-rm -rf openmpi-1.10.2
-rm openmpi-1.10.2.tar.bz2
-wget http://ppmcore.mpi-cbg.de/upload/openmpi-1.10.2.tar.bz2
-tar -xvf openmpi-1.10.2.tar.bz2
-cd openmpi-1.10.2
+rm -rf openmpi-2.1.1
+rm openmpi-2.1.1.tar.bz2
+wget http://ppmcore.mpi-cbg.de/upload/openmpi-2.1.1.tar.bz2
+tar -xvf openmpi-2.1.1.tar.bz2
+cd openmpi-2.1.1
 
 #
 #                  --disable-mca-dso \
@@ -30,5 +30,5 @@ make -j $2
 make install
 
 # Mark the installation
-echo 1 > $1/MPI/version
+echo 2 > $1/MPI/version
 

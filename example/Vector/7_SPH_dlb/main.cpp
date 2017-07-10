@@ -876,6 +876,107 @@ void euler_int(particles & vd, double dt)
 
 /*! \cond [verlet_int] \endcond */
 
+/*!
+ *
+ * \page Vector_7_sph_dlb Vector 7 SPH Dam break  simulation with Dynamic load balancing
+ *
+ * ### Probes/sensors {#e7_sph_prob_sens}
+ *
+ * This function show how to create a pressure sensor/probe on a set of specified points. To do this
+ * from the cell-list we just get an iterator across the neighborhood points of the sensors and we
+ * calculate the pressure profile. On the other hand because the sensor is in the processor domain
+ * of only one processor, only one processor must do this calculation. We will use the function isLocal
+ * to determine which processor contain the probe and only such processor will do the calculation.
+ *
+ * \warning This type of calculation is suitable if the number of probes is small (like 10) and pressure is not
+ * calculated every time step. In case the number of
+ * probes is comparable to the number of particles or the pressure is calculated every time-step than we suggest
+ *  to create a set of "probe" particles
+ *
+ *
+ * \snippet Vector/7_SPH_dlb/main.cpp sens_press
+ *
+ *
+ */
+
+/*! \cond [sens_press] \endcond */
+
+template<typename Vector, typename CellList>
+inline void sensor_pressure(Vector & vd,
+                            CellList & NN,
+                            openfpm::vector<openfpm::vector<double>> & press_t,
+                            openfpm::vector<Point<3,double>> & probes)
+{
+    Vcluster & v_cl = create_vcluster();
+
+    press_t.add();
+
+    for (size_t i = 0 ; i < probes.size() ; i++)
+    {
+        float press_tmp = 0.0f;
+        float tot_ker = 0.0;
+
+        // if the probe is inside the processor domain
+		if (vd.getDecomposition().isLocal(probes.get(i)) == true)
+		{
+			// Get the position of the probe i
+			Point<3,double> xp = probes.get(i);
+
+			// get the iterator over the neighbohood particles of the probes position
+			auto itg = NN.template getNNIterator<NO_CHECK>(NN.getCell(probes.get(i)));
+			while (itg.isNext())
+			{
+				auto q = itg.get();
+
+				// Only the fluid particles are importants
+				if (vd.template getProp<type>(q) != FLUID)
+				{
+					++itg;
+					continue;
+				}
+
+				// Get the position of the neighborhood particle q
+				Point<3,double> xq = vd.template getPos(q);
+
+				// Calculate the contribution of the particle to the pressure
+				// of the probe
+				double r = sqrt(norm2(xp - xq));
+
+				double ker = Wab(r) * (MassFluid / rho_zero);
+
+				// Also keep track of the calculation of the summed
+				// kernel
+				tot_ker += ker;
+
+				// Add the total pressure contribution
+				press_tmp += vd.template getProp<Pressure>(q) * ker;
+
+				// next neighborhood particle
+				++itg;
+			}
+
+			// We calculate the pressure normalizing the
+			// sum over all kernels
+			if (tot_ker == 0.0)
+				press_tmp = 0.0;
+			else
+				press_tmp = 1.0 / tot_ker * press_tmp;
+
+		}
+
+		// This is not necessary in principle, but if you
+		// want to make all processor aware of the history of the calculated
+		// pressure we have to execute this
+		v_cl.sum(press_tmp);
+		v_cl.execute();
+
+		// We add the calculated pressure into the history
+		press_t.last().add(press_tmp);
+	}
+}
+
+/*! \cond [sens_press] \endcond */
+
 int main(int argc, char* argv[])
 {
 	/*!
@@ -884,7 +985,8 @@ int main(int argc, char* argv[])
 	 *
 	 * ## Main function {#e7_sph_main}
 	 *
-	 * Here we Initialize the library, we create a Box that define our domain, boundary conditions and ghost
+	 * Here we Initialize the library, we create a Box that define our domain, boundary conditions and ghost. We also create
+	 * a vector that contain two probes to measure pressure
 	 *
 	 * \see \ref e0_s_init
 	 *
@@ -896,6 +998,13 @@ int main(int argc, char* argv[])
 
     // initialize the library
 	openfpm_init(&argc,&argv);
+
+	// It contain for each time-step the value detected by the probes
+	openfpm::vector<openfpm::vector<double>> press_t;
+	openfpm::vector<Point<3,double>> probes;
+
+	probes.add({0.8779,0.3,0.02});
+	probes.add({0.754,0.31,0.02});
 
 	// Here we define our domain a 2D box with internals from 0 to 1.0 for x and y
 	Box<3,double> domain({-0.05,-0.05,-0.05},{1.7010,0.7065,0.5025});
@@ -1254,8 +1363,8 @@ int main(int argc, char* argv[])
 	 *
 	 * The main loop do time integration. It calculate the pressure based on the
 	 * density, than calculate the forces, than we calculate delta time, and finally update position
-	 * and velocity. After 200 time-step we do a rebalancing. And we save the configuration
-	 * every 0.01 seconds
+	 * and velocity. After 200 time-step we do a re-balancing. We save the configuration
+	 * and we calculate the pressure on the probe position every 0.01 seconds
 	 *
 	 * \snippet Vector/7_SPH_dlb/main.cpp main loop
 	 *
@@ -1320,6 +1429,8 @@ int main(int argc, char* argv[])
 
 		if (write < t*100)
 		{
+			// calculate the pressure at the sensor points
+			sensor_pressure(vd,NN,press_t,probes);
 
 			vd.write("Geometry",write);
 			write++;

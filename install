@@ -23,7 +23,7 @@ nomake=0
 update_openfpm=0
 upgrade_openfpm=0
 
-while getopts :di:smhc:nu FLAG; do
+while getopts di:smhc:nu FLAG; do
 	case $FLAG in
 	    d)
 	      echo "Disable depencencies installation"
@@ -196,6 +196,21 @@ if [ ! -d "$i_dir/PETSC" -o ! -d "$i_dir/EIGEN" ]; then
       inst_lin_alg = n
     fi
 fi
+
+#### License and Copyright disclamer
+
+echo -e "\033[1;34m Licenses  \033[0m"
+echo -e "\033[1;34m OpenFPM install several dependencies automatically. Some of them impose restriction and the user must explicitly accept it \033[0m"
+echo -e "\033[1;33m PARMETIS: \033[0m \033[1m http://glaros.dtc.umn.edu/gkhome/metis/parmetis/download  (Copyright and License) \033[0m"
+echo -e ""
+
+if [ $sq -eq 0 ]; then
+  unset commands
+  commands[0]="Accept and continue"
+  possible_solutions_no_continue "${commands[@]}"
+fi
+
+####
 
 lin_alg_dir=""
 lin_alg_lib=""

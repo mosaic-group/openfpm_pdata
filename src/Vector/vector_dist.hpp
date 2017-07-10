@@ -844,7 +844,7 @@ public:
 #ifdef SE_CLASS1
 		if ((opt & BIND_DEC_TO_GHOST))
 		{
-			if (ghost.getLow(dim-1) == 0.0)
+			if (getDecomposition().getGhost().getLow(dim-1) == 0.0)
 			{
 				std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, If you construct a vector without BIND_DEC_TO_GHOST the ghost must be full without reductions " << std::endl;
 				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);

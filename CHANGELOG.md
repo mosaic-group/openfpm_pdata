@@ -34,7 +34,8 @@ All notable changes to this project will be documented in this file.
   become
           CellList<3, double, Mem_fast<3, double>, shift<3, double>>
 - getIterator in CellList changed getCellIterator
-- Gris iterator types has changes (one additional template parameter)
+- Grid iterator types has changes (one additional template parameter)
+- FDScheme the constructor now has one parameter less (Parameter number 4 has been removed) (see Stokes_Flow examples in Numerics)
 
 ## [0.8.0] 28 February 2016
 

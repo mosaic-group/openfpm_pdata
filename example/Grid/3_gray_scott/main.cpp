@@ -3,7 +3,7 @@
 #include "timer.hpp"
 
 /*!
- * \page Grid_3_gs Grid 3 Gray Scott
+ * \page Grid_3_gs Gray Scott 2D
  *
  * # Solving a gray scott-system # {#e3_gs_gray_scott}
  *
@@ -34,7 +34,7 @@ constexpr int y = 1;
 //! \cond [constants] \endcond
 
 /*!
- * \page Grid_3_gs Grid 3 Gray Scott
+ * \page Grid_3_gs Gray Scott 2D
  *
  * We also define an init function. This function initialize the species U and V. In the following we are going into the
  * detail of this function
@@ -52,7 +52,7 @@ void init(grid_dist_id<2,double,aggregate<double,double> > & Old, grid_dist_id<2
 //! \cond [init fun] \endcond
 
 	/*!
-	 * \page Grid_3_gs Grid 3 Gray Scott
+	 * \page Grid_3_gs Gray Scott 2D
 	 *
 	 * Here we initialize for the full domain. U and V itarating across the grid points. For the calculation
 	 * We are using 2 grids one Old and New. We initialize Old with the initial condition concentration of the
@@ -86,7 +86,7 @@ void init(grid_dist_id<2,double,aggregate<double,double> > & Old, grid_dist_id<2
 	//! \cond [init uv] \endcond
 
 	/*!
-	 * \page Grid_3_gs Grid 3 Gray Scott
+	 * \page Grid_3_gs Gray Scott 2D
 	 *
 	 * After we initialized the full grid, we create a perturbation in the domain with different values.
 	 * We do in the part of space: 1.55 < x < 1.85 and 1.55 < y < 1.85. Or more precisely on the points included
@@ -125,7 +125,7 @@ void init(grid_dist_id<2,double,aggregate<double,double> > & Old, grid_dist_id<2
 int main(int argc, char* argv[])
 {
 	/*!
-	 * \page Grid_3_gs Grid 3 Gray Scott
+	 * \page Grid_3_gs Gray Scott 2D
 	 *
 	 * ## Initialization ##
 	 *
@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
 	//! \cond [init lib] \endcond
 
 	/*!
-	 * \page Grid_3_gs Grid 3 Gray Scott
+	 * \page Grid_3_gs Gray Scott 2D
 	 *
 	 * Here we create 2 distributed grid in 2D Old and New. In particular because we want that
 	 * the second grid is distributed across processors in the same way we pass the decomposition
@@ -210,7 +210,7 @@ int main(int argc, char* argv[])
 	//! \cond [init grid] \endcond
 
 	/*!
-	 * \page Grid_3_gs Grid 3 Gray Scott
+	 * \page Grid_3_gs Gray Scott 2D
 	 *
 	 * We use the function init to initialize U and V on the grid Old
 	 *
@@ -225,7 +225,7 @@ int main(int argc, char* argv[])
 	//! \cond [init uvc] \endcond
 
 	/*!
-	 * \page Grid_3_gs Grid 3 Gray Scott
+	 * \page Grid_3_gs Gray Scott 2D
 	 *
 	 * ## Time stepping ##
 	 *
@@ -323,7 +323,7 @@ int main(int argc, char* argv[])
 	//! \cond [time stepping] \endcond
 
 	/*!
-	 * \page Grid_3_gs Grid 3 Gray Scott
+	 * \page Grid_3_gs Gray Scott 2D
 	 *
 	 * ## Finalize ##
 	 *

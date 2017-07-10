@@ -319,7 +319,7 @@ int main(int argc, char* argv[])
 	Ghost<3,long int> stencil_max(1);
 
 	// Finite difference scheme
-	FDScheme<lid_nn> fd(pd, stencil_max, domain, g_dist.getGridInfo(), g_dist);
+	FDScheme<lid_nn> fd(pd, stencil_max, domain, g_dist);
 
 	//! \cond [fd scheme] \endcond
 

@@ -3,7 +3,7 @@
 #include "timer.hpp"
 
 /*!
- * \page Grid_3_gs Grid 3 Gray Scott in 3D
+ * \page Grid_3_gs_3D Grid 3 Gray Scott in 3D
  *
  * # Solving a gray scott-system in 3D # {#e3_gs_gray_scott}
  *
@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
 	//! \cond [init lib] \endcond
 
 	/*!
-	 * \page Grid_3_gs Grid 3 Gray Scott
+	 * \page Grid_3_gs_3D Grid 3 Gray Scott
 	 *
 	 * Here we create 2 distributed grid in 2D Old and New. In particular because we want that
 	 * the second grid is distributed across processors in the same way we pass the decomposition
@@ -208,7 +208,7 @@ int main(int argc, char* argv[])
 	//! \cond [time stepping] \endcond
 
 	/*!
-	 * \page Grid_3_gs Grid 3 Gray Scott
+	 * \page Grid_3_gs_3D Grid 3 Gray Scott
 	 *
 	 * ## Finalize ##
 	 *
