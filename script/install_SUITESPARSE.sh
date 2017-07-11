@@ -23,18 +23,18 @@ cd SuiteSparse
 
 # configuration
 
-if [ x"$platform" = x"osx"  ]; then
-    # installation for OSX
+#if [ x"$platform" = x"osx"  ]; then
+#    # installation for OSX
 
 #    sed -i "" -e "s| LAPACK = -llapack|LAPACK = |" SuiteSparse_config/SuiteSparse_config_Mac.mk
 #    sed -i "" -e "s| BLAS = -lopenblas|BLAS = -L"$1"/OPENBLAS/lib -lopenblas|" SuiteSparse_config/SuiteSparse_config_Mac.mk
 
     ### Overwrite SuiteSparse_config.mk
 
-    rm SuiteSparse_config/SuiteSparse_config.mk
-    mv SuiteSparse_config/SuiteSparse_config_Mac.mk SuiteSparse_config/SuiteSparse_config.mk
+#    rm SuiteSparse_config/SuiteSparse_config.mk
+#    mv SuiteSparse_config/SuiteSparse_config_Mac.mk SuiteSparse_config/SuiteSparse_config.mk
 
-else
+#else
     
     # Installation for linux
 
@@ -50,7 +50,7 @@ else
 #      sed -i "/\sBLAS\s=\s\-lopenblas/c\BLAS = -L$1/OPENBLAS/lib -lopenblas -lpthread" SuiteSparse_config/SuiteSparse_config.mk
 #    fi
 
-fi
+#fi
 
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$1/OPENBLAS/lib"
 

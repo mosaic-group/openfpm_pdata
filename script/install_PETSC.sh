@@ -355,6 +355,8 @@ make install
 if [ ! "$(ls -A $1/PETSC)" ]; then
    rm -rf $1/PETSC
 else
+   #Mark the installation
+   echo 1 > $1/PETSC/version
    exit 0
 fi
 
