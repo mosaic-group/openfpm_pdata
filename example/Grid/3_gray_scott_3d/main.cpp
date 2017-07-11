@@ -3,12 +3,19 @@
 #include "timer.hpp"
 
 /*!
- * \page Grid_3_gs_3D Grid 3 Gray Scott in 3D
+ *
+ * \page Grid_3_gs_3D Gray Scott in 3D
  *
  * # Solving a gray scott-system in 3D # {#e3_gs_gray_scott}
  *
  * This example is just an extension of the 2D Gray scott example.
  * Here we show how to solve a non-linear reaction diffusion system in 3D
+ *
+ * In figure is the final solution of the problem
+ *
+ * \htmlonly
+ * <img src="http://ppmcore.mpi-cbg.de/web/images/examples/gray_scott_3d/gs_alpha.png"/>
+ * \endhtmlonly
  *
  * \see \ref Grid_2_solve_eq
  *
@@ -25,6 +32,7 @@ constexpr int x = 0;
 constexpr int y = 1;
 constexpr int z = 2;
 
+//! \cond [constants] \endcond
 
 void init(grid_dist_id<3,double,aggregate<double,double> > & Old, grid_dist_id<3,double,aggregate<double,double> > & New, Box<3,double> & domain)
 {
@@ -46,16 +54,16 @@ void init(grid_dist_id<3,double,aggregate<double,double> > & Old, grid_dist_id<3
 		++it;
 	}
 
-        long int x_start = Old.size(0)*1.55f/domain.getHigh(0);
-        long int y_start = Old.size(1)*1.55f/domain.getHigh(1);
-        long int z_start = Old.size(1)*1.55f/domain.getHigh(2);
+	long int x_start = Old.size(0)*1.55f/domain.getHigh(0);
+	long int y_start = Old.size(1)*1.55f/domain.getHigh(1);
+	long int z_start = Old.size(1)*1.55f/domain.getHigh(2);
 
-        long int x_stop = Old.size(0)*1.85f/domain.getHigh(0);
-        long int y_stop = Old.size(1)*1.85f/domain.getHigh(1);
-        long int z_stop = Old.size(1)*1.85f/domain.getHigh(2);
+	long int x_stop = Old.size(0)*1.85f/domain.getHigh(0);
+	long int y_stop = Old.size(1)*1.85f/domain.getHigh(1);
+	long int z_stop = Old.size(1)*1.85f/domain.getHigh(2);
 
-        grid_key_dx<3> start({x_start,y_start,z_start});
-        grid_key_dx<3> stop ({x_stop,y_stop,z_stop});
+	grid_key_dx<3> start({x_start,y_start,z_start});
+	grid_key_dx<3> stop ({x_stop,y_stop,z_stop});
 	auto it_init = Old.getSubDomainIterator(start,stop);
 
 	while (it_init.isNext())
@@ -68,8 +76,6 @@ void init(grid_dist_id<3,double,aggregate<double,double> > & Old, grid_dist_id<3
 		++it_init;
 	}
 }
-
-//! \cond [end fun] \endcond
 
 
 int main(int argc, char* argv[])
@@ -107,7 +113,7 @@ int main(int argc, char* argv[])
 	//! \cond [init lib] \endcond
 
 	/*!
-	 * \page Grid_3_gs_3D Grid 3 Gray Scott
+	 * \page Grid_3_gs_3D Gray Scott in 3D
 	 *
 	 * Here we create 2 distributed grid in 2D Old and New. In particular because we want that
 	 * the second grid is distributed across processors in the same way we pass the decomposition
@@ -208,7 +214,7 @@ int main(int argc, char* argv[])
 	//! \cond [time stepping] \endcond
 
 	/*!
-	 * \page Grid_3_gs_3D Grid 3 Gray Scott
+	 * \page Grid_3_gs_3D Gray Scott in 3D
 	 *
 	 * ## Finalize ##
 	 *

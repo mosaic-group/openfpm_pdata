@@ -39,6 +39,12 @@ constexpr int y = 1;
  * We also define an init function. This function initialize the species U and V. In the following we are going into the
  * detail of this function
  *
+ * In figure is the final solution of the problem
+ *
+ * \htmlonly
+ * <img src="http://ppmcore.mpi-cbg.de/web/images/examples/gray_scott_2d/2D_gray_scott.jpg"/>
+ * \endhtmlonly
+ *
  * \snippet Grid/3_gray_scott/main.cpp init fun
  * \snippet Grid/3_gray_scott/main.cpp end fun
  *
