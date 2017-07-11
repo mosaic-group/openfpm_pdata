@@ -1,5 +1,8 @@
 #! /bin/bash
 
+source script/discover_os
+discover_os
+
 # check if the directory $1/PARMETIS exist
 
 if [ -d "$1/PARMETIS" ]; then
@@ -22,8 +25,6 @@ else
 fi
 
 $sed_command -i "/#define\sIDXTYPEWIDTH\s32/c\#define IDXTYPEWIDTH 64" metis/include/metis.h
-
-sed #define IDXTYPEWIDTH 32
 
 make config prefix=$1/PARMETIS
 make -j $2
