@@ -22,10 +22,10 @@ discover_os
 ldflags_petsc=
 if [ x"$platform" == x"osx" ]; then
   sed_command=gsed
-  ldflags_petsc=LDFLAGS="-lcurl"
+  ldflags_petsc=
 else
   sed_command=sed
-  ldflags_petsc=LDFLAGS="-lcurl"
+  ldflags_petsc=
 fi
 
 
@@ -326,12 +326,12 @@ if [ ! -d "$1/NETCDF" ]; then
   tar -xf netcdf-4.4.1.1.tar.gz
   cd netcdf-4.4.1.1
 
-  ./configure CC=mpicc CPPFLAGS=-I$1/HDF5/include LDFLAGS=-L$1/HDF5/lib  --disable-shared --prefix=$1/NETCDF
+  ./configure CC=mpicc CPPFLAGS=-I$1/HDF5/include LDFLAGS=-L$1/HDF5/lib --disable-dap  --disable-shared --prefix=$1/NETCDF
   make -j $2
 
   if [ $? -eq 0 ]; then
     make install
-    configure_options="$configure_options --with-netcdf=yes -with-netcdf-dir=$1/NETCDF --with-hdf5=yes --with-hdf5-dir=$1/HDF5"
+    configure_options="$configure_options --with-netcdf=yes -with-netcdf-dir=$1/NETCDF  --with-hdf5=yes --with-hdf5-dir=$1/HDF5"
   fi
 
 else
