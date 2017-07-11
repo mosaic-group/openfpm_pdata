@@ -19,11 +19,14 @@ discover_os
 
 ##### if we are on osx we use gsed
 
+ldflags_petsc=
 if [ x"$platform" == x"osx" ]; then
   sed_command=gsed
+  ldflags_petsc=LDFLAGS="-lcurl"
 else
   sed_command=sed
 fi
+
 
 ####
 
@@ -345,9 +348,16 @@ fi
 tar -xf petsc-lite-3.7.6.tar.gz
 cd petsc-3.7.6
 
-echo "./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" --with-cxx-dialect=C++11 $petsc_openmp  --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC --with-debugging=0"
+echo "./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp  --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC --with-debugging=0"
 
-python2 configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g"  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib" --prefix=$1/PETSC --with-debugging=0
+python_command=python
+# if python2 exist use python2
+command -v python2 >/dev/null
+if [ $? -eq 0 ]; then
+  python_command=python2
+fi
+
+$python_command configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib" --prefix=$1/PETSC --with-debugging=0
 make all test
 make install
 
@@ -355,6 +365,8 @@ make install
 if [ ! "$(ls -A $1/PETSC)" ]; then
    rm -rf $1/PETSC
 else
+   #Mark the installation
+   echo 1 > $1/PETSC/version
    exit 0
 fi
 
