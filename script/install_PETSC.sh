@@ -25,6 +25,7 @@ if [ x"$platform" == x"osx" ]; then
   ldflags_petsc=LDFLAGS="-lcurl"
 else
   sed_command=sed
+  ldflags_petsc=LDFLAGS="-lcurl"
 fi
 
 
@@ -233,7 +234,7 @@ if [ ! -d "$1/SUPERLU_DIST" ]; then
   mkdir build
   cd build
 
-  cmake .. -DCMAKE_C_FLAGS="-fPIC" -DMPI_C_COMPILE_FLAGS="-std=c99"  -DTPL_BLAS_LIBRARIES="$1/OPENBLAS/lib/libopenblas.a"  -DCMAKE_INSTALL_PREFIX="$1/SUPERLU_DIST"  -DCMAKE_EXE_LINKER_FLAGS="-L$1/METIS/lib -lmetis"  -DTPL_PARMETIS_INCLUDE_DIRS="$1/PARMETIS/include/;$1/METIS/include/" -DTPL_PARMETIS_LIBRARIES="$1/PARMETIS/lib/libparmetis.a"
+  cmake .. -DCMAKE_C_FLAGS="-fPIC -std=c99 "  -DTPL_BLAS_LIBRARIES="$1/OPENBLAS/lib/libopenblas.a"  -DCMAKE_INSTALL_PREFIX="$1/SUPERLU_DIST"  -DCMAKE_EXE_LINKER_FLAGS="-L$1/METIS/lib -lmetis"  -DTPL_PARMETIS_INCLUDE_DIRS="$1/PARMETIS/include/;$1/METIS/include/" -DTPL_PARMETIS_LIBRARIES="$1/PARMETIS/lib/libparmetis.a"
 
   # Installation for linux
 
