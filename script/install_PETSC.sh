@@ -233,7 +233,7 @@ if [ ! -d "$1/SUPERLU_DIST" ]; then
   mkdir build
   cd build
 
-  cmake .. -DCMAKE_C_FLAGS="-fPIC"  -DCMAKE_INSTALL_PREFIX="$1/SUPERLU_DIST"  -DCMAKE_EXE_LINKER_FLAGS="-L$1/METIS/lib -lmetis"  -DTPL_PARMETIS_INCLUDE_DIRS="$1/PARMETIS/include/;$1/METIS/include/" -DTPL_PARMETIS_LIBRARIES="$1/PARMETIS/lib/libparmetis.a"
+  cmake .. -DCMAKE_C_FLAGS="-fPIC" -DTPL_BLAS_LIBRARIES="$1/OPENBLAS/lib/libopenblas.a"  -DCMAKE_INSTALL_PREFIX="$1/SUPERLU_DIST"  -DCMAKE_EXE_LINKER_FLAGS="-L$1/METIS/lib -lmetis"  -DTPL_PARMETIS_INCLUDE_DIRS="$1/PARMETIS/include/;$1/METIS/include/" -DTPL_PARMETIS_LIBRARIES="$1/PARMETIS/lib/libparmetis.a"
 
   # Installation for linux
 
@@ -348,7 +348,7 @@ fi
 tar -xf petsc-lite-3.7.6.tar.gz
 cd petsc-3.7.6
 
-echo "./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp  --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC --with-debugging=0"
+echo "./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc --with-cxx-dialect=C++11 $petsc_openmp  --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC --with-debugging=0"
 
 python_command=python
 # if python2 exist use python2
