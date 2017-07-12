@@ -9,6 +9,13 @@ source script/set_mpi
 source script/conf_PETSC
 source script/update_openfpm
 
+### switch to the branch
+
+b_switch=$(cat switch_branch)
+if [ x"$b_switch" != x"" ]; then
+        git checkout $b_switch
+fi
+
 ## Check that your home is not empty
 
 if [ x"$HOME" == x"" ]; then
