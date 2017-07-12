@@ -76,6 +76,7 @@ function update_openfpm()
     else
       echo -e "Upgrade summary\033[92;5;1m SUCCEED \033[0m"
       echo -e "To make the upgrade active do: \033[1m make install \033[0m"
+      rm force_upgrade
     fi
   fi
   
