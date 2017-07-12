@@ -14,6 +14,9 @@ source script/update_openfpm
 b_switch=$(cat switch_branch)
 if [ x"$b_switch" != x"" ]; then
         git checkout $b_switch
+	rm switch_branch
+	./install "$@"
+	exit 0
 fi
 
 ## Check that your home is not empty
