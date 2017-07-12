@@ -477,18 +477,26 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain, petsc
 
 	//! \cond [solve_petsc] \endcond
 
+	timer tm_solve;
 	if (init == true)
 	{
 		// Set the conjugate-gradient as method to solve the linear solver
 		solver.setSolver(KSPBCGS);
 
 		// Set the absolute tolerance to determine that the method is converged
-		solver.setAbsTol(0.1);
+		solver.setAbsTol(0.001);
 
 		// Set the maximum number of iterations
 		solver.setMaxIter(500);
 
-		timer tm_solve;
+        solver.setPreconditioner(PCHYPRE_BOOMERAMG);
+        solver.setPreconditionerAMG_nl(6);
+        solver.setPreconditionerAMG_maxit(1);
+        solver.setPreconditionerAMG_relax("SOR/Jacobi");
+        solver.setPreconditionerAMG_cycleType("V",0,4);
+        solver.setPreconditionerAMG_coarsenNodalType(0);
+        solver.setPreconditionerAMG_coarsen("HMIS");
+
 		tm_solve.start();
 
 		// Give to the solver A and b, return x, the solution
@@ -498,7 +506,9 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain, petsc
 	}
 	else
 	{
+		tm_solve.start();
 		solver.solve(x_,fd.getB());
+		tm_solve.stop();
 	}
 
 	// copy the solution x to the grid psi
