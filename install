@@ -81,11 +81,8 @@ if [ x"$i_dir" == x"" ]; then
  i_dir="$HOME"
 fi
 
-remove_old $i_dir
-
 ## Check and try to install the prerequisites
 
-pre_req
 
 if [ $update_openfpm -eq 1 -a  $upgrade_openfpm -eq 1 ]; then
 	echo -e "\033[1;5;31m It is not possible to update and upgrade at the same time \033[0m"
@@ -101,6 +98,12 @@ if [ $upgrade_openfpm -eq 1 ]; then
 	update_openfpm upgrade
 	exit 0
 fi
+
+remove_old $i_dir
+
+## Check and try to install the prerequisites
+
+pre_req
 
 ## clone the dependencies
 
