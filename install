@@ -511,6 +511,10 @@ bash_library="$bash_library\""
 echo "$bash_path" > $HOME/openfpm_vars
 echo "$bash_library" >> $HOME/openfpm_vars
 
+if [ x"$platform" = x"osx" ]; then
+    echo "TMPDIR=/tmp/" >> $HOME/openfpm_vars
+fi
+
 echo -e "$installation_report"
 echo ""
 echo ""
