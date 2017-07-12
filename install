@@ -9,12 +9,21 @@ source script/set_mpi
 source script/conf_PETSC
 source script/update_openfpm
 
+### switch to the branch
+
+b_switch=$(cat switch_branch)
+if [ x"$b_switch" != x"" ]
+	git checkout $b_switch
+fi
+
 ## Check that your home is not empty
 
 if [ x"$HOME" == x"" ]; then
 	 echo -e "Your $HOME folder is empty \033[91;5;1m FAILED \033[0m"
 	 exit 1
 fi
+
+## If 
 
 install_req=1
 i_dir=""
