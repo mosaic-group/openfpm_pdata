@@ -13,10 +13,10 @@ OBJ_VIC_PETSC = main_vic_petsc.o
 all: vic vic_petsc
 
 vic: $(OBJ_VIC)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS_SE2)
 
 vic_petsc: $(OBJ_VIC_PETSC)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS_SE2)
 	
 run: all
 	mpirun -np 3 ./vic && mpirun -np 3 ./vic

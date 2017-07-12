@@ -96,7 +96,7 @@
 
 //! \cond [inclusion] \endcond
 
-#include "../../../openfpm_numerics/src/interpolation/interpolation.hpp"
+#include "interpolation/interpolation.hpp"
 #include "Grid/grid_dist_id.hpp"
 #include "Vector/vector_dist.hpp"
 #include "Matrix/SparseMatrix.hpp"
@@ -586,6 +586,7 @@ void remesh(particles_type & vd, grid_type & gr,Box<3,float> & domain)
 
 //! \cond [remesh_part] \endcond
 
+
 /*! \page Vortex_in_cell_petsc Vortex in Cell 3D
  *
  * # Step 5: Compute velocity from vorticity # {#vic_vel_from_vort}
@@ -1002,6 +1003,8 @@ void rk_step2(particles_type & particles)
 	particles.map();
 }
 
+
+
 //! \cond [runge_kutta_2] \endcond
 
 /*! \page Vortex_in_cell_petsc Vortex in Cell 3D
@@ -1039,6 +1042,7 @@ template<typename grid, typename vector> void do_step(vector & particles,
 
 	set_zero<vorticity>(g_vort);
 	inte.template p2m<vorticity,vorticity>(particles,g_vort);
+
 	g_vort.template ghost_put<add_,vorticity>();
 
 	//! \cond [do_step_p2m] \endcond
