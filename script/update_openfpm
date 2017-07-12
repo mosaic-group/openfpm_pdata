@@ -56,7 +56,7 @@ function update_openfpm()
   #### Check if we have to force upgrade
   force_up=$(cat force_upgrade)
 
-  if [ x"$1" == x"update" -a x"$force_up" == x"no" ]; then
+  if [ x"$1" == x"update" -a x"$force_up" == x"" ]; then
     sh autogen.sh
     ./config.status
     if [ $? -ne 0 ]; then
