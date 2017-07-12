@@ -13,7 +13,9 @@ source script/update_openfpm
 
 b_switch=$(cat switch_branch)
 if [ x"$b_switch" != x"" ]; then
-	git checkout $b_switch
+    git checkout $b_switch
+    echo -e "Please relaunch ./install ..."
+    exit 0
 fi
 
 ## Check that your home is not empty
@@ -83,11 +85,6 @@ if [ x"$i_dir" == x"" ]; then
  i_dir="$HOME"
 fi
 
-remove_old $i_dir
-
-## Check and try to install the prerequisites
-
-pre_req
 
 if [ $update_openfpm -eq 1 -a  $upgrade_openfpm -eq 1 ]; then
 	echo -e "\033[1;5;31m It is not possible to update and upgrade at the same time \033[0m"
@@ -103,6 +100,11 @@ if [ $upgrade_openfpm -eq 1 ]; then
 	update_openfpm upgrade
 	exit 0
 fi
+
+remove_old $i_dir
+## Check and try to install the prerequisites
+pre_req
+
 
 ## clone the dependencies
 
