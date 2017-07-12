@@ -12,7 +12,7 @@ source script/update_openfpm
 ### switch to the branch
 
 b_switch=$(cat switch_branch)
-if [ x"$b_switch" != x"" ]
+if [ x"$b_switch" != x"" ]; then
 	git checkout $b_switch
 fi
 
