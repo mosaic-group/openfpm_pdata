@@ -53,7 +53,10 @@ function update_openfpm()
   git checkout $branch
   git submodule update
 
-  if [ x"$1" == x"update" ]; then
+  #### Check if we have to force upgrade
+  force_up=$(cat force_upgrade)
+
+  if [ x"$1" == x"update" -a x"$force_up" == x"no" ]; then
     sh autogen.sh
     ./config.status
     if [ $? -ne 0 ]; then
