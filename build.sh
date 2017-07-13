@@ -27,13 +27,14 @@ then
  echo "Compiling on gin\n"
  source ~/.bashrc
  module load gcc/4.9.2
+ mkdir $HOME/$5
  if [ x"$4" == x"full" ]; then
-  ./install -s -c "--prefix=/home/jenkins/openfpm_install"
+  ./install -i $HOME/$5  -s -c "--prefix=/home/jenkins/openfpm_install"
  elif [ x"$3" == x"numerics" ]; then
-  ./install -m -s -c "--prefix=/home/jenkins/openfpm_install"
+  ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install"
   make $3
  else
-  ./install -m -s -c "--prefix=/home/jenkins/openfpm_install --no-recursion"
+  ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install --no-recursion"
   make $3
  fi
  if [ $? -ne 0 ]; then
@@ -83,7 +84,8 @@ then
  
  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/incard/PARMETIS/lib:/home/incard/METIS/lib:/home/incard/HDF5/lib"
 
- ./install -m -i "/scratch/p_ppm/" -s -c"CXX=mpic++ --no-recursion"
+ mkdir /scratch/p_ppm/$5
+ ./install -m -i "/scratch/p_ppm/$5" -s -c"CXX=mpic++ --no-recursion"
  make $3
 
  source $HOME/openfpm_vars
@@ -96,13 +98,14 @@ else
  echo "Compiling general"
  source ~/.bashrc
 
+ mkdir $HOME/$5
  if [ x"$4" == x"full" ]; then
-  ./install -s -c "--prefix=/Users/jenkins/openfpm_install"
+  ./install -i $HOME/$5  -s -c "--prefix=/Users/jenkins/openfpm_install"
  elif [ x"$3" == x"numerics" ]; then
-  ./install -m -s -c "--prefix=/home/jenkins/openfpm_install"
+  ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install"
   make $3
  else
-  ./install -m -s -c "--prefix=/Users/jenkins/openfpm_install --no-recursion"
+  ./install -i $HOME/$5 -m -s -c "--prefix=/Users/jenkins/openfpm_install --no-recursion"
   make $3
  fi
 

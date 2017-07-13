@@ -27,7 +27,8 @@ then
  echo "Compiling on gin\n"
  source ~/.bashrc
  module load gcc/4.9.2
- ./install -s -c "--prefix=/home/jenkins/openfpm_install"
+ mkdir $HOME/$4
+ ./install -i $HOME/$4 -s -c "--prefix=/home/jenkins/openfpm_install"
  make
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
@@ -200,7 +201,8 @@ then
  
  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/incard/PARMETIS/lib:/home/incard/METIS/lib:/home/incard/HDF5/lib"
 
- ./install -i "/scratch/p_ppm/" -s -c"CXX=mpic++"
+ mkdir "/scratch/p_ppm/$4"
+ ./install -i "/scratch/p_ppm/$4" -s -c"CXX=mpic++"
  make
 
  source $HOME/openfpm_vars
@@ -242,7 +244,8 @@ then
 else
  echo "Compiling general"
  source ~/.bashrc
- ./install -s
+ mkdir $HOME/$4
+ ./install -i $HOME/$4 -s
  make
 
  if [ $? -ne 0 ]; then
@@ -264,7 +267,7 @@ else
  mpirun -np 2 ./src/pdata
  if [ $? -ne 0 ]; then 
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
-   exit 1 ; 
+   exit 1 ;
  fi
  mpirun -np 3 ./src/pdata
  if [ $? -ne 0 ]; then 
