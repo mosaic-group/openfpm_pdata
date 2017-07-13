@@ -4,6 +4,7 @@
 
 echo "Directory: $1"
 echo "Machine: $2"
+echo "Branch name: $5"
 
 mkdir src/config
 
