@@ -28,11 +28,6 @@ if [ "$2" == "gin" ]
 then
  echo "Compiling on gin\n"
 
- echo "1" >> input_install
- echo "1" >> input_install
- echo "12" >> input_install
- echo "y" >> input_install
-
  source ~/.bashrc
  module load gcc/4.9.2
  mkdir $HOME/$5
@@ -61,11 +56,6 @@ elif [ "$2" == "taurus" ]
 then
  echo "Compiling on taurus"
 
-    echo "1" >> input_install
-    echo "1" >> input_install
-    echo "24" >> input_install
-    echo "y" >> input_install
-
  source /etc/profile
  echo "$PATH"
  module load eigen/3.2.0
@@ -90,11 +80,6 @@ then
 else
  echo "Compiling general"
  source ~/.bashrc
-
-    echo "1" >> input_install
-    echo "1" >> input_install
-    echo "4" >> input_install
-    echo "y" >> input_install
 
  mkdir $HOME/$5
  if [ x"$4" == x"full" ]; then
