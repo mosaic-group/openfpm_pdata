@@ -7,21 +7,7 @@ echo "Machine: $2"
 echo "Branch name: $5"
 
 mkdir src/config
-
-git submodule init
-if [ $? -ne 0 ]; then
-  echo -e "Configure\033[91;5;1m FAILED \033[0m"
-  exit 1
-fi
-
-git submodule update
-if [ $? -ne 0 ]; then
-  echo -e "Configure\033[91;5;1m FAILED \033[0m"
-  exit 1
-fi
-
 mkdir openfpm_numerics/src/config
-
 
 
 if [ "$2" == "gin" ]
@@ -33,13 +19,20 @@ then
  mkdir $HOME/$5
  if [ x"$4" == x"full" ]; then
   ./install -i $HOME/$5  -s -c "--prefix=/home/jenkins/openfpm_install"
+  mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
+  source $HOME/openfpm_vars_$5
  elif [ x"$3" == x"numerics" ]; then
-	 ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install"
+  ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install"
+  mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
+  source $HOME/openfpm_vars_$5
   make $3
  else
   ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install --no-recursion"
+  mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
+  source $HOME/openfpm_vars_$5
   make $3
  fi
+
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
@@ -69,6 +62,7 @@ then
 
  mkdir /scratch/p_ppm/$5
  ./install -m -i "/scratch/p_ppm/$5" -s -c"CXX=mpic++ --no-recursion"
+ mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
  make $3
 
  source $HOME/openfpm_vars
@@ -84,11 +78,17 @@ else
  mkdir $HOME/$5
  if [ x"$4" == x"full" ]; then
   ./install -i $HOME/$5  -s -c "--prefix=/Users/jenkins/openfpm_install"
+  mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
+  source $HOME/openfpm_vars_$5
  elif [ x"$3" == x"numerics" ]; then
   ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install"
+  mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
+  source $HOME/openfpm_vars_$5
   make $3
  else
   ./install -i $HOME/$5 -m -s -c "--prefix=/Users/jenkins/openfpm_install --no-recursion"
+  mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
+  source $HOME/openfpm_vars_$5
   make $3
  fi
 
