@@ -32,12 +32,12 @@ then
  module load gcc/4.9.2
  mkdir $HOME/$5
  if [ x"$4" == x"full" ]; then
-  ./install -i $HOME/$5  -s -c "--prefix=/home/jenkins/openfpm_install" < input_install
+  ./install -i $HOME/$5  -s -c "--prefix=/home/jenkins/openfpm_install"
  elif [ x"$3" == x"numerics" ]; then
-	 ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install" < input_install
+	 ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install"
   make $3
  else
-  ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install --no-recursion" < input_install
+  ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install --no-recursion"
   make $3
  fi
  if [ $? -ne 0 ]; then
@@ -68,7 +68,7 @@ then
  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/incard/PARMETIS/lib:/home/incard/METIS/lib:/home/incard/HDF5/lib"
 
  mkdir /scratch/p_ppm/$5
- ./install -m -i "/scratch/p_ppm/$5" -s -c"CXX=mpic++ --no-recursion" < input_install
+ ./install -m -i "/scratch/p_ppm/$5" -s -c"CXX=mpic++ --no-recursion"
  make $3
 
  source $HOME/openfpm_vars
@@ -83,12 +83,12 @@ else
 
  mkdir $HOME/$5
  if [ x"$4" == x"full" ]; then
-  ./install -i $HOME/$5  -s -c "--prefix=/Users/jenkins/openfpm_install" < input_install
+  ./install -i $HOME/$5  -s -c "--prefix=/Users/jenkins/openfpm_install"
  elif [ x"$3" == x"numerics" ]; then
-  ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install" < input_install
+  ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install"
   make $3
  else
-  ./install -i $HOME/$5 -m -s -c "--prefix=/Users/jenkins/openfpm_install --no-recursion" < input_install
+  ./install -i $HOME/$5 -m -s -c "--prefix=/Users/jenkins/openfpm_install --no-recursion"
   make $3
  fi
 
