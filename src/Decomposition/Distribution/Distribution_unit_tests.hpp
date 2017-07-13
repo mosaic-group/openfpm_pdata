@@ -131,6 +131,8 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 
 #ifdef HAVE_OSX
 
+	bool test = true;
+
 	// If we change compiler we have to change files (no thanks)
 
 //	bool test = compare("vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_osx_test.vtk");
