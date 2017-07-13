@@ -32,6 +32,7 @@ parallel (
                     deleteDir()
                     env.PATH = "/usr/local/bin:${env.PATH}"
                     checkout scm
+		    echo "$BRANCH_NAME"
                     stage ('build_sb15')
                     {
                       sh "./build.sh $WORKSPACE $NODE_NAME pdata ${env.BRANCH_NAME}"
