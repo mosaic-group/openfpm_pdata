@@ -15,9 +15,9 @@ parallel (
                     stage ('run_nyu')
                     {
                       parallel (
-                      "1" : {sh "./run.sh $WORKSPACE $NODE_NAME 1"},
-                      "2" : {sh "./run.sh $WORKSPACE $NODE_NAME 2"},
-                      "3" : {sh "./run.sh $WORKSPACE $NODE_NAME 3"})
+                      "1" : {sh "./run.sh $WORKSPACE $NODE_NAME 1 0 0  $BRANCH_NAME"},
+                      "2" : {sh "./run.sh $WORKSPACE $NODE_NAME 2 0 0  $BRANCH_NAME"},
+                      "3" : {sh "./run.sh $WORKSPACE $NODE_NAME 3 0 0  $BRANCH_NAME"})
                       sh "./run.sh $WORKSPACE $NODE_NAME 5"
                       sh "./success.sh 2 nyu opefpm_pdata"
                     }
@@ -40,9 +40,9 @@ parallel (
                     stage ('run_sb15')
                     {
                       parallel (
-                      "1" : {sh "./run.sh $WORKSPACE $NODE_NAME 1"},
-                      "2" : {sh "./run.sh $WORKSPACE $NODE_NAME 2"},
-                      "3" : {sh "./run.sh $WORKSPACE $NODE_NAME 3"}
+                      "1" : {sh "./run.sh $WORKSPACE $NODE_NAME 1 0 0  $BRANCH_NAME"},
+                      "2" : {sh "./run.sh $WORKSPACE $NODE_NAME 2 0 0  $BRANCH_NAME"},
+                      "3" : {sh "./run.sh $WORKSPACE $NODE_NAME 3 0 0  $BRANCH_NAME"}
                       )
                       sh "./run.sh $WORKSPACE $NODE_NAME 4"
                       sh "./run.sh $WORKSPACE $NODE_NAME 5"
@@ -67,10 +67,10 @@ parallel (
                     stage ('run_gin')
                     {
                       parallel (
-                      "p1" : {sh "./run.sh $WORKSPACE $NODE_NAME 1"},
-                      "p2" : {sh "./run.sh $WORKSPACE $NODE_NAME 2"},
-                      "p3" : {sh "./run.sh $WORKSPACE $NODE_NAME 3"},
-                      "p4" : {sh "./run.sh $WORKSPACE $NODE_NAME 5"}
+                      "p1" : {sh "./run.sh $WORKSPACE $NODE_NAME 1 0 0  $BRANCH_NAME"},
+                      "p2" : {sh "./run.sh $WORKSPACE $NODE_NAME 2 0 0  $BRANCH_NAME"},
+                      "p3" : {sh "./run.sh $WORKSPACE $NODE_NAME 3 0 0  $BRANCH_NAME"},
+                      "p4" : {sh "./run.sh $WORKSPACE $NODE_NAME 5 0 0  $BRANCH_NAME"}
                       )
                       sh "./success.sh 2 gin opefpm_pdata"
                     }
