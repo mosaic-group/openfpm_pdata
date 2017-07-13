@@ -33,6 +33,9 @@ then
   make $3
  fi
 
+ echo "MPI in use: "
+ which mpirun
+
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
@@ -63,9 +66,12 @@ then
  mkdir /scratch/p_ppm/$5
  ./install -m -i "/scratch/p_ppm/$5" -s -c"CXX=mpic++ --no-recursion"
  mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
+ source $HOME/openfpm_vars_$5
  make $3
 
- source $HOME/openfpm_vars
+ echo "MPI in use: "
+ which mpirun
+
 
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
@@ -91,6 +97,9 @@ else
   source $HOME/openfpm_vars_$5
   make $3
  fi
+
+ echo "MPI in use: "
+ which mpirun
 
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
