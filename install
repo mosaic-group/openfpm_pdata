@@ -212,7 +212,7 @@ if [ ! -d "$i_dir/PETSC" -o ! -d "$i_dir/EIGEN" ]; then
     if [ $sq -eq 0 ]; then
       read inst_lin_alg
     else
-      inst_lin_alg = y
+      inst_lin_alg="y"
     fi
 fi
 
