@@ -9,7 +9,7 @@ parallel (
                     checkout scm
                     stage ('build_nyu')
                     {
-                      sh "./build.sh $WORKSPACE $NODE_NAME pdata ${env.BRANCH_NAME}"
+                      sh "./build.sh $WORKSPACE $NODE_NAME pdata 0 $BRANCH_NAME }"
                     }
 
                     stage ('run_nyu')
@@ -32,10 +32,9 @@ parallel (
                     deleteDir()
                     env.PATH = "/usr/local/bin:${env.PATH}"
                     checkout scm
-		    echo "$BRANCH_NAME"
                     stage ('build_sb15')
                     {
-                      sh "./build.sh $WORKSPACE $NODE_NAME pdata ${env.BRANCH_NAME}"
+                      sh "./build.sh $WORKSPACE $NODE_NAME pdata 0  $BRANCH_NAME"
                     }
 
                     stage ('run_sb15')
@@ -62,7 +61,7 @@ parallel (
                     checkout scm
                     stage ('build_gin')
                     {
-                      sh "./build.sh $WORKSPACE $NODE_NAME pdata ${env.BRANCH_NAME}"
+                      sh "./build.sh $WORKSPACE $NODE_NAME pdata 0 $BRANCH_NAME"
                     }
 
                     stage ('run_gin')
