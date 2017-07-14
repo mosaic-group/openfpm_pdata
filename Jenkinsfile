@@ -18,7 +18,7 @@ parallel (
                       "1" : {sh "./run.sh $WORKSPACE $NODE_NAME 1 0 0  $BRANCH_NAME"},
                       "2" : {sh "./run.sh $WORKSPACE $NODE_NAME 2 0 0  $BRANCH_NAME"},
                       "3" : {sh "./run.sh $WORKSPACE $NODE_NAME 3 0 0  $BRANCH_NAME"})
-                      sh "./run.sh $WORKSPACE $NODE_NAME 5"
+                      sh "./run.sh $WORKSPACE $NODE_NAME 5 0 0 $BRANCH_NAME"
                       sh "./success.sh 2 nyu opefpm_pdata"
                     }
                   }
@@ -44,10 +44,10 @@ parallel (
                       "2" : {sh "./run.sh $WORKSPACE $NODE_NAME 2 0 0  $BRANCH_NAME"},
                       "3" : {sh "./run.sh $WORKSPACE $NODE_NAME 3 0 0  $BRANCH_NAME"}
                       )
-                      sh "./run.sh $WORKSPACE $NODE_NAME 4"
-                      sh "./run.sh $WORKSPACE $NODE_NAME 5"
-                      sh "./run.sh $WORKSPACE $NODE_NAME 6"
-                      sh "./run.sh $WORKSPACE $NODE_NAME 7"
+                      sh "./run.sh $WORKSPACE $NODE_NAME 4 0 0 $BRANCH_NAME"
+                      sh "./run.sh $WORKSPACE $NODE_NAME 5 0 0 $BRANCH_NAME"
+                      sh "./run.sh $WORKSPACE $NODE_NAME 6 0 0 $BRANCH_NAME"
+                      sh "./run.sh $WORKSPACE $NODE_NAME 7 0 0 $BRANCH_NAME"
                       sh "./success.sh 2 sbalzarini-mac-15 opefpm_pdata"
                     }
                   }
