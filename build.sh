@@ -6,6 +6,13 @@ echo "Directory: $1"
 echo "Machine: $2"
 echo "Branch name: $5"
 
+#### If you have a dep_dir file change the branch name to the dep_dir
+
+dep_dir=$(cat dep_dir)
+if [ x"$dep_dir" != x"" ]; then
+  set -- "${@:1:4}" "$dep_dir"
+fi
+
 mkdir src/config
 mkdir openfpm_numerics/src/config
 
