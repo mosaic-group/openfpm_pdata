@@ -21,6 +21,13 @@ if [ "$2" == "gin" ]
 then
  echo "Compiling on gin\n"
 
+ ## Check if MPI folder exist if not copy MPICH
+
+ if [ ! -d $HOME/$5/MPI ]; then
+   echo "COPY MPICH"
+   cp -R $HOME/MPI_base $HOME/$5/MPI
+ fi
+
  source ~/.bashrc
  module load gcc/4.9.2
  mkdir $HOME/$5
