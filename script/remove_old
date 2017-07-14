@@ -148,6 +148,24 @@ function remove_old()
         fi
     fi
 
+
+    if [ -d $1/OPENBLAS ]; then
+        version=$(cat $1/OPENBLAS/version)
+        if [ x"$version" != x"1"  ]; then
+                echo -e "\033[1;34;5m  ---------------------------------------------------------------------- \033[0m"
+                echo -e "\033[1;34;5m  OPENBLAS has been updated, the component will be updated automatically    \033[0m"
+                echo -e "\033[1;34;5m  ---------------------------------------------------------------------- \033[0m"
+                sleep 5
+                rm -rf $1/EIGEN
+                rm -rf $1/PETSC
+		rm -rf $1/SUITESPARSE
+		rm -rf $1/SCALAPACK
+		rm -rf $1/SUPERLU_DIST
+		rm -rf $1/TRILINOS
+		rm -rf $1/HYPRE
+        fi
+    fi
+
 }
 
 
