@@ -25,8 +25,8 @@ then
 
  if [ ! -d $HOME/$5/MPI ]; then
    echo "COPY MPICH"
-   echo 1 > $HOME/$5/MPI/version
    cp -R $HOME/MPI_base $HOME/$5/MPI
+   echo 1 > $HOME/$5/MPI/version
  fi
 
  source ~/.bashrc
