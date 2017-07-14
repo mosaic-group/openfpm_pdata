@@ -29,8 +29,11 @@ then
    echo 1 > $HOME/$5/MPI/version
  fi
 
- source ~/.bashrc
  module load gcc/4.9.2
+ ### Activate MPI ###
+
+ export PATH="$PATH:$HOME/$5/MPI/bin"
+
  mkdir $HOME/$5
  if [ x"$4" == x"full" ]; then
   ./install -i $HOME/$5  -s -c "--prefix=/home/jenkins/openfpm_install"
