@@ -29,14 +29,13 @@ then
    echo 1 > $HOME/$5/MPI/version
  fi
 
- module load gcc/4.9.2
  ### Activate MPI ###
 
  export PATH="$PATH:$HOME/$5/MPI/bin"
 
  mkdir $HOME/$5
  if [ x"$4" == x"full" ]; then
-  ./install -i $HOME/$5  -s -c "--prefix=/home/jenkins/openfpm_install"
+  ./install CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2  -i $HOME/$5  -s -c "--prefix=/home/jenkins/openfpm_install"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
   source $HOME/openfpm_vars_$5
  elif [ x"$3" == x"numerics" ]; then
