@@ -25,7 +25,7 @@ then
 
  if [ ! -d $HOME/$5/MPI ]; then
    echo "COPY MPICH"
-   cp -R $HOME/MPI_base $HOME/$5/MPI
+   cp -R $HOME/MPI $HOME/$5/MPI
    echo 1 > $HOME/$5/MPI/version
  fi
 
@@ -35,16 +35,16 @@ then
 
  mkdir $HOME/$5
  if [ x"$4" == x"full" ]; then
-  ./install CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2  -i $HOME/$5  -s -c "--prefix=/home/jenkins/openfpm_install"
+  CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$5  -s -c "--prefix=/home/jenkins/openfpm_install"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
   source $HOME/openfpm_vars_$5
  elif [ x"$3" == x"numerics" ]; then
-  ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install"
+  CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
   source $HOME/openfpm_vars_$5
   make $3
  else
-  ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install --no-recursion"
+  CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install --no-recursion"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
   source $HOME/openfpm_vars_$5
   make $3

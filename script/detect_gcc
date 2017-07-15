@@ -23,25 +23,42 @@ function detect_compiler()
 
     dgc_ret=0
 
-    if [ x"$CXX" != x"" -o x"$CC" != x"" -o x"$F77" != x"" -o x"$FC" != x"" ]; then
-        
-        if [ $CXX  ]
+     if [ x"$CXX" != x"" -o x"$CC" != x"" -o x"$F77" != x"" -o x"$FC" != x"" ]; then
+
+        if [ x"$CXX" == x"" ]; then
+          CXX=g++
+        fi
+
+        if [ x"$CC" == x"" ]; then
+          CC=gcc
+        fi
+
+        if [ x"$FC" == x"" ]; then
+          FC=gfortran
+        fi
+
+        if [ x"$F77" == x"" ]; then
+          F77=gfortran
+        fi
 
         echo -e "\033[1;34;5m  ---------------------------------------------------------------------- \033[0m"
         echo -e "\033[1;34;5m  Selected compilers    \033[0m"
         echo -e "\033[1;34;5m  ---------------------------------------------------------------------- \033[0m"
 
-	echo -e "\033[91;1m The user request to use specifics compilers to compile C/C++ or Fortran code \033[0m"
-	echo -e "\033[91;1m specifing one or more of these variables CXX/CC/F77/FC. When at least one is \033[0m"
+        echo -e "\033[91;1m The user request to use specifics compilers to compile C/C++ or Fortran code \033[0m"
+        echo -e "\033[91;1m specifing one or more of these variables CXX/CC/F77/FC. When at least one is \033[0m"
         echo -e "\033[91;1m defined the specified compiler will be used. \033[0m"
-	echo -e "\033[91;1m When not specified the system will use the default g++/gcc/gfortran/gfortran \033[0m"
-	echo -e "\033[91;1m The installer will use the following compilers \033[0m"
+        echo -e "\033[91;1m When not specified the system will use the default g++/gcc/gfortran/gfortran \033[0m"
+        echo -e "\033[91;1m The installer will use the following compilers \033[0m"
 
-	echo -e ""
-	echo -e "CXX=$CXX"
-	echo -e "CC=$CC"
-	echo -e "F77=$F77"
-	echo -e "FC=$FC"
+        echo -e ""
+        echo -e "CXX=$CXX"
+        echo -e "CC=$CC"
+        echo -e "F77=$F77"
+        echo -e "FC=$FC"
+
+        dgc_ret=1
+        dgc_compiler=$CXX
 
         return
     fi
