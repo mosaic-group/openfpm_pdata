@@ -29,9 +29,10 @@ then
    echo 1 > $HOME/$5/MPI/version
  fi
 
- ### Activate MPI ###
+ ### Activate MPI and binutils ###
 
  export PATH="$PATH:$HOME/$5/MPI/bin"
+ export PATH="/usr/local/binutils/bin/:$PATH"
 
  mkdir $HOME/$5
  if [ x"$4" == x"full" ]; then
