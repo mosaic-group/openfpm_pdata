@@ -3,7 +3,7 @@
 # check if the directory $1/EIGEN exist
 
 if [ -d "$1/EIGEN" ]; then
-  echo "EIGEN already installed"
+  echo "EIGEN is already installed"
   exit 0
 fi
 

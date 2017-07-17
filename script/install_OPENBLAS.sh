@@ -3,7 +3,7 @@
 # check if the directory $1/OPENBLAS exist
 
 if [ -d "$1/OPENBLAS" ]; then
-  echo "OPENBLAS already installed"
+  echo "OPENBLAS is already installed"
   exit 0
 fi
 

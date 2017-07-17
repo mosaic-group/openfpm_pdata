@@ -10,8 +10,9 @@ source script/conf_PETSC
 source script/update_openfpm
 
 ### switch to the branch
-
-b_switch=$(cat switch_branch)
+b_switch=`git rev-parse --abbrev-ref HEAD`
+b_switch=
+#b_switch=$(cat switch_branch)
 if [ x"$b_switch" != x"" ]; then
     git checkout $b_switch
     echo -e "Please relaunch ./install ..."
@@ -52,23 +53,23 @@ while getopts di:smhc:nu FLAG; do
 	      echo "Fowarding options $OPTARG to configure script"
 	      configure_options=$OPTARG
 	      ;;
-            m)
-              echo "Skip to make the testing"
-              nomake=1
-              ;;
+        m)
+          echo "Skip to make the testing"
+          nomake=1
+          ;;
 	    u)
 	      echo "Updating openfpm"
 	      update_openfpm=1
 	      ;;
 	    n)
-              echo "Upgrading openfpm"
+          echo "Upgrading openfpm"
 	      upgrade_openfpm=1
 	      ;;
 	    h)  #show help
-      	      HELP
-              ;;
-    	    \?) #unrecognized option - are fowarded to configure
-              ;;
+      	  HELP
+          ;;
+    	\?) #unrecognized option - are fowarded to configure
+          ;;
 	esac
 done
 
@@ -101,13 +102,12 @@ if [ $upgrade_openfpm -eq 1 ]; then
 	exit 0
 fi
 
-remove_old $i_dir
+remove_old $i_dir $configure_options
+
 ## Check and try to install the prerequisites
 pre_req
 
-
 ## clone the dependencies
-
 git submodule init
 if [ $? -ne 0 ]; then
   echo -e "Configure\033[91;5;1m FAILED \033[0m"
@@ -121,7 +121,6 @@ if [ $? -ne 0 ]; then
 fi
 
 # Create config directory in each submodule
-
 cd openfpm_data
 if [ ! -d src/config  ]; then
   mkdir src/config
@@ -166,6 +165,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+
 ## check for options
 
 echo -e "\033[1;34;5mDEPENCENCIES INSTALLATION DIR      \033[0m"
@@ -177,7 +177,7 @@ if [ x"$configure_options" == x"" ]; then
 fi
 if [ $sq -eq 0 ]; then
   unset commands
-  commands[0]="Continue"
+  commands[0]="continue"
   possible_solutions "${commands[@]}"
 fi
 
@@ -284,7 +284,7 @@ else
         ./configure $options $configure_options "$configure_blas_option"
         conf_err=$?
 
-	echo "Configure script terminated with $conf_err"
+        echo "Configure script terminated with $conf_err"
 
         ## if MPI or METIS installation required install it
         if [ $conf_err -eq 200  ]; then
@@ -321,7 +321,7 @@ else
             fi
             BOOST_installed=1
             configure_options=" $configure_options --with-boost=$i_dir/BOOST "
-	elif [ $conf_err -eq 208 ]; then
+        elif [ $conf_err -eq 208 ]; then
             echo "ParMetis not found try to install"
             if [ $PARMETIS_installed -eq 1  ]; then
                 echo "Error the installation of ParMETIS failed"
@@ -334,7 +334,7 @@ else
             echo "HDF5 not found try to install"
             if [ $HDF5_installed -eq 1 ]; then
                 echo "Error the installation of HDF5 failed"
-                exit 1	
+                exit 1
             fi
             ./script/install_HDF5.sh $i_dir $ncore
             configure_options=" $configure_options --with-hdf5=$i_dir/HDF5/bin/h5pcc "
@@ -359,11 +359,10 @@ else
         ./script/install_PETSC.sh $i_dir $ncore $CC $CXX $F77 $FC
     fi
 
-	### collect PETSC configuration options
-	conf_PETSC
+    ### collect PETSC configuration options
+    conf_PETSC
 
     ./configure $options $configure_options "$configure_blas_option"
-
 fi
 
 ### Create example.mk

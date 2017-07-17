@@ -3,7 +3,7 @@
 # check if the directory $1/METIS exist
 
 if [ -d "$1/METIS" ]; then
-  echo "METIS already installed"
+  echo "METIS is already installed"
   exit 0
 fi
 

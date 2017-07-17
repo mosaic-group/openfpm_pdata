@@ -1,57 +1,63 @@
 #! /bin/bash
 
-function discover_package_manager() {
-  if [ x"$1" = x"osx" ]; then
-    command -v brew >/dev/null
-    if [ $? -eq 0 ]; then
-      discover_package_manager_ret="brew"
-      brew_idir=$(brew --prefix)
-      brew_path=$(which brew)
-      brew_user=$(stat -f '%Su' $brew_path)
-      if [ x$"brew_user" == root ]; then
-        discover_package_ret="sudo brew"
-        return
-      else
-        if [ ! -w $brew_idir ]; then
-          echo -e "\033[43;30;1;5mWARNING: \033[0m $brew_idir is not writtable, brew require that $brew_idir is writtable and $brew_idir/bin is in your PATH, otherwise it will be not possible to install with brew"
-          commands[0]="sudo chown -R $USER $brew_idir && chmod -R u+w $brew_idir"
-          possible_solutions "${commands[@]}"
-        fi
-      fi
-      if [ ! -w  ]; then
-        echo -e "\033[43,33;5mWARNING: \033[0m $brew_idir is not writtable, brew require that $brew_idir is writtable and $brew_idir/bin is in your PATH, otherwise it will be not possible to install with brew"
-        sleep 10
-      fi
-      return
-    fi
-    command -v port >/dev/null
-    if [ $? -eq 0 ]; then
-      discover_package_manager_ret="sudo port"
-      return
-    else
-      discover_package_manager_ret=""
-      return
-    fi
-  elif [ x"$1" = x"linux"  ]; then
-    command -v yum >/dev/null
-    if [ $? -eq 0 ]; then
-      discover_package_manager_ret="yum"
-      return
-    fi
-    command -v apt-get >/dev/null
-    if [ $? -eq 0 ]; then
-      discover_package_manager_ret="apt-get"
-      return
-    fi
-    command -v zypper >/dev/null
-    if [ $? -eq 0 ]; then
-      discover_package_manager_ret="zypper"
-      return
-    else
-      discover_package_manager_ret=""
-      return
-    fi
-  fi
+function haveProg() {
+    [ -x "$(command -v $1)" ]
 }
 
-echo "$discover_package_manager_ret" 
+function discover_package_manager() {
+if [ x"$1" == x"osx" ]; then
+    if haveProg brew; then
+        discover_package_manager_ret="brew"
+        brew_idir=$(brew --prefix)
+        brew_path=$(which brew)
+        brew_user=$(stat -f '%Su' $brew_path)
+        if [ x$"brew_user" == root ]; then
+            discover_package_ret="sudo brew"
+            echo 'Package Manager: '"$discover_package_manager_ret"
+            return
+        else
+            if [ ! -w $brew_idir ]; then
+                echo -e "\033[43;30;1;5mWARNING: \033[0m $brew_idir is not writtable, brew require that $brew_idir is writtable and $brew_idir/bin is in your PATH, otherwise it will be not possible to install with brew"
+                commands[0]="sudo chown -R $USER $brew_idir && chmod -R u+w $brew_idir"
+                possible_solutions "${commands[@]}"
+            fi
+        fi
+        if [ ! -w  ]; then
+            echo -e "\033[43,33;5mWARNING: \033[0m $brew_idir is not writtable, brew require that $brew_idir is writtable and $brew_idir/bin is in your PATH, otherwise it will be not possible to install with brew"
+            sleep 10
+        fi
+        echo echo 'Package Manager: '"$discover_package_manager_ret"
+        return
+    fi
+    if haveProg port; then
+        discover_package_manager_ret="sudo port"
+        echo 'Package Manager: '"$discover_package_manager_ret"
+        return
+    else
+        discover_package_manager_ret=""
+        echo 'Package Manager: '"$discover_package_manager_ret"
+        return
+    fi
+elif [ x"$1" == x"linux"  ]; then
+    if haveProg yum; then
+        discover_package_manager_ret="yum"
+        echo 'Package Manager: '"$discover_package_manager_ret"
+        return
+    fi
+    if haveProg apt-get; then
+        discover_package_manager_ret="apt-get"
+        echo 'Package Manager: '"$discover_package_manager_ret"
+        return
+    fi
+    if haveProg zypper; then
+        discover_package_manager_ret="zypper"
+        echo 'Package Manager: '"$discover_package_manager_ret"
+        return
+    else
+        discover_package_manager_ret=""
+        echo 'Package Manager: '"$discover_package_manager_ret"
+        return
+    fi
+fi
+}
+

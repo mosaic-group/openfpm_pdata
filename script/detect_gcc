@@ -1,5 +1,9 @@
 #! /bin/bash
 
+function haveProg() {
+    [ -x "$(command -v $1)" ]
+}
+
 function gpp_clang()
 {
     if [ x"$dgc_compiler" == x"g++" ]; then
@@ -15,20 +19,17 @@ function gpp_clang()
     fi
 }
 
-
 function detect_compiler()
 {
     gpp_found=0
     icpc_found=0
-
     dgc_ret=0
 
     # First we try to understand if g++ command line is linked to clang
-    
-    g++ --version | grep "Apple LLVM"
-    if [ $? == 0 ]; then
-        echo "Apple LLVM based g++"
+    if haveProg g++; then
 
+      g++ --version | grep "Apple LLVM" >/dev/null 2>&1
+      if [ $? == 0 ]; then
         echo "Apple LLVM based g++"
 
         # we try the detect the version
@@ -65,13 +66,13 @@ function detect_compiler()
              dgc_ret=1
              gpp_found=1
            fi
-		else
-        	dgc_ret=2
+        else
+           dgc_ret=2
         fi
-    fi
+      fi
 
-    g++ --version | grep g++
-    if [ $? == 0 -a x"g++" == x"g++" ]; then
+      g++ --version | grep "g++" > /dev/null 2>&1
+      if [ $? == 0 ]; then
         dgc_major=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
         dgc_middle=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
         dgc_minor=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
@@ -104,10 +105,10 @@ function detect_compiler()
           dgc_ret=0
           gpp_found=0
         fi
-    fi
+      fi
 
-    g++ --version | grep g++
-    if [ $? == 0 -a x"g++" == x"clang" ]; then
+      g++ --version | grep "clang" > /dev/null 2>&1
+      if [ $? == 0 ]; then
         dgc_major=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
         dgc_middle=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
         dgc_minor=$(g++ --version | grep g++ | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
@@ -136,10 +137,12 @@ function detect_compiler()
           dgc_ret=0
           gpp_found=0
         fi
+      fi
     fi
 
-    icpc --version | grep icpc
-    if [ $? == 0 -a x"icpc" == x"icpc" ]; then
+    if haveProg icpc; then
+      icpc --version | grep icpc > /dev/null 2>&1
+      if [ $? == 0 ]; then
         dgc_major=$(icpc --version | grep icpc | sed 's/.*\([0-9][0-9]\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
         dgc_middle=$(icpc --version | grep icpc | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
         dgc_minor=$(icpc --version | grep icpc | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
@@ -164,10 +167,10 @@ function detect_compiler()
           dgc_ret=1
           icpc_found=1
         fi
+      fi
     fi
 
     ### If we detect more than one valid compiler ask to choose
-
     if [ $icpc_found -eq 1 -a $gpp_found -eq 1 ]; then
         echo "Two different valid compilers has been found please choose one"
         commands[0]="icpc"
