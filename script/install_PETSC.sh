@@ -212,6 +212,7 @@ if [ x"$CXX" != x"icpc" ]; then
 
     fi
   else
+
     echo "MUMPS already installed"
     MUMPS_extra_lib="$1/MUMPS/lib/libdmumps.a $1/MUMPS/lib/libmumps_common.a $1/MUMPS/lib/libpord.a -pthread "
     configure_options="$configure_options --with-mumps=yes --with-mumps-include=$1/MUMPS/include" 
@@ -351,6 +352,7 @@ cd petsc-3.7.6
 
 echo "./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc --with-cxx-dialect=C++11 $petsc_openmp  --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC --with-debugging=0"
 
+<<<<<<< HEAD
 python_command=python
 # if python2 exist use python2
 command -v python2 >/dev/null
@@ -359,6 +361,11 @@ if [ $? -eq 0 ]; then
 fi
 
 $python_command configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib" --prefix=$1/PETSC --with-debugging=0
+=======
+echo "./configure --with-cxx-dialect=C++11 $petsc_openmp  --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC --with-debugging=0"
+
+./configure --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib" --prefix=$1/PETSC --with-debugging=0
+>>>>>>> master
 make all test
 make install
 

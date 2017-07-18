@@ -13,9 +13,10 @@ source script/update_openfpm
 
 b_switch=$(cat switch_branch)
 if [ x"$b_switch" != x"" ]; then
-    git checkout $b_switch
-    echo -e "Please relaunch ./install ..."
-    exit 0
+        git checkout $b_switch
+	rm switch_branch
+	./install "$@"
+	exit 0
 fi
 
 ## Check that your home is not empty
@@ -85,6 +86,8 @@ if [ x"$i_dir" == x"" ]; then
  i_dir="$HOME"
 fi
 
+## Check and try to install the prerequisites
+
 
 if [ $update_openfpm -eq 1 -a  $upgrade_openfpm -eq 1 ]; then
 	echo -e "\033[1;5;31m It is not possible to update and upgrade at the same time \033[0m"
@@ -102,9 +105,11 @@ if [ $upgrade_openfpm -eq 1 ]; then
 fi
 
 remove_old $i_dir
-## Check and try to install the prerequisites
-pre_req
 
+
+## Check and try to install the prerequisites
+
+pre_req
 
 ## clone the dependencies
 
@@ -119,6 +124,12 @@ if [ $? -ne 0 ]; then
   echo -e "Configure\033[91;5;1m FAILED \033[0m"
   exit 1
 fi
+
+#### Eventualy remove garbage from old installation
+
+rm -rf openfpm_numerics/src/.deps
+rm -rf src/.deps
+
 
 # Create config directory in each submodule
 
@@ -204,7 +215,7 @@ if [ ! -d "$i_dir/PETSC" -o ! -d "$i_dir/EIGEN" ]; then
     if [ $sq -eq 0 ]; then
       read inst_lin_alg
     else
-      inst_lin_alg = n
+      inst_lin_alg="y"
     fi
 fi
 

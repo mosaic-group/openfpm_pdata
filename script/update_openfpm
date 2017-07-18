@@ -70,6 +70,7 @@ function update_openfpm()
       echo -e "To make the update active do: \033[1m make install \033[0m"
     fi
   else
+    #### Remove .deps for fresh install
     ./install $dir_prev_inst $for_opt
     if [ $? -ne 0 ]; then
       echo -e "Upgrade summary\033[91;5;1m FAILED \033[0m"
