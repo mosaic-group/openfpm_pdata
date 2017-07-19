@@ -10,9 +10,9 @@ source script/conf_PETSC
 source script/update_openfpm
 
 ### switch to the branch
-b_switch=`git rev-parse --abbrev-ref HEAD`
-b_switch=
-#b_switch=$(cat switch_branch)
+#b_switch=`git rev-parse --abbrev-ref HEAD`
+#b_switch=
+b_switch=$(cat switch_branch)
 if [ x"$b_switch" != x"" ]; then
         git checkout $b_switch
 	rm switch_branch
