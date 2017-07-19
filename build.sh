@@ -26,7 +26,7 @@ then
  if [ ! -d $HOME/$5/MPI ]; then
    echo "COPY MPICH"
    cp -R $HOME/MPI $HOME/$5/MPI
-   echo 1 > $HOME/$5/MPI/version
+   echo 2 > $HOME/$5/MPI/version
  fi
 
  ### Activate MPI and binutils ###
