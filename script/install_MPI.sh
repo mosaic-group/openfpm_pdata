@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 # check if the directory $1/MPI exist
 

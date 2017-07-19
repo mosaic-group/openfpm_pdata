@@ -2,9 +2,9 @@
 
 function possible_solutions {
 
-   if [ $sq -eq 1 ]; then
-     return
-   fi
+ if [ $sq -eq 1 ]; then
+   return
+ fi
 
  sol=1
  echo "Possible solutions:"
@@ -37,9 +37,9 @@ function possible_solutions {
 
 function possible_solutions_no_continue {
 
-   if [ $sq -eq 1 ]; then
-     return
-   fi
+ if [ $sq -eq 1 ]; then
+   return
+ fi
 
  sol=1
  echo "Possible solutions:"
