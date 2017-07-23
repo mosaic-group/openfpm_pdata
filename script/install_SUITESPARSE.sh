@@ -21,38 +21,17 @@ if [ $? != 0 ]; then
 fi
 cd SuiteSparse
 
-# configuration
-
-#if [ x"$platform" = x"osx"  ]; then
-#    # installation for OSX
-
-#    sed -i "" -e "s| LAPACK = -llapack|LAPACK = |" SuiteSparse_config/SuiteSparse_config_Mac.mk
-#    sed -i "" -e "s| BLAS = -lopenblas|BLAS = -L"$1"/OPENBLAS/lib -lopenblas|" SuiteSparse_config/SuiteSparse_config_Mac.mk
-
-    ### Overwrite SuiteSparse_config.mk
-
-#    rm SuiteSparse_config/SuiteSparse_config.mk
-#    mv SuiteSparse_config/SuiteSparse_config_Mac.mk SuiteSparse_config/SuiteSparse_config.mk
-
-#else
-
-    # Installation for linux
-
-    if [ x"$CXX" == x"icpc" ]; then
-      export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/$1/OPENBLAS/lib"
-      STS_LIB="-shared-intel -lrt -lifcore"
-    fi
-#      sed -i "/\sLIB\s=\s-lm\s-lrt/c\LIB = -shared-intel -lm -lrt -lifcore" SuiteSparse_config/SuiteSparse_config.mk
-#      sed -i "/\sLAPACK\s=\s-llapack/c\LAPACK = " SuiteSparse_config/SuiteSparse_config.mk
-#      sed -i "/\sBLAS\s=\s\-lopenblas/c\BLAS = -L$1/OPENBLAS/lib -lopenblas -lpthread" SuiteSparse_config/SuiteSparse_config.mk
-#    else
-#      sed -i "/\sLAPACK\s=\s-llapack/c\LAPACK = " SuiteSparse_config/SuiteSparse_config.mk
-#      sed -i "/\sBLAS\s=\s\-lopenblas/c\BLAS = -L$1/OPENBLAS/lib -lopenblas -lpthread" SuiteSparse_config/SuiteSparse_config.mk
-#    fi
-
-#fi
+if [ x"$CXX" == x"icpc" ]; then
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/$1/OPENBLAS/lib"
+    STS_LIB="-shared-intel -lrt -lifcore"
+fi
 
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$1/OPENBLAS/lib"
+
+if [ x"$platform" == x"cygwin" ]; then
+    export PATH="$PATH:$(pwd)/lib"
+    echo "$PATH"
+fi
 
 echo "Compiling SuiteSparse without CUDA (old variable $CUDA)"
 make "CUDA=no" "BLAS=-L$1/OPENBLAS/lib -lopenblas" "LAPACK="

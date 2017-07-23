@@ -35,6 +35,14 @@ fi
 mkdir $1/PARMETIS
 make install
 
+#### Apply patch if we are on cygwin
+
+if [ x"$platform" == x"cygwin" ]; then
+  cd $1/PARMETIS/include
+  wget http://openfpm.mpi-cbg.de/upload/parmetis_patch
+  patch < parmetis_patch
+fi
+
 # Mark the installation
 echo 1 > $1/PARMETIS/version
 

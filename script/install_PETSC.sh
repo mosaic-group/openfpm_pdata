@@ -263,38 +263,19 @@ if [ ! -d "$1/SUPERLU_DIST" ]; then
   mkdir build
   cd build
 
-  cmake .. -DCMAKE_C_FLAGS="-fPIC -std=c99 "  -DTPL_BLAS_LIBRARIES="$1/OPENBLAS/lib/libopenblas.a"  -DCMAKE_INSTALL_PREFIX="$1/SUPERLU_DIST"  -DTPL_PARMETIS_INCLUDE_DIRS="$1/PARMETIS/include/;$1/METIS/include/" -DTPL_PARMETIS_LIBRARIES="$1/PARMETIS/lib/libparmetis.a;$1/METIS/lib/libmetis.so"
+  if [ x"$platform" == x"cygwin" ]; then
+    cmake .. -DCMAKE_C_FLAGS="-fPIC -std=c99 "  -DTPL_BLAS_LIBRARIES="$1/OPENBLAS/lib/libopenblas.a"  -DCMAKE_INSTALL_PREFIX="$1/SUPERLU_DIST"  -DTPL_PARMETIS_INCLUDE_DIRS="$1/PARMETIS/include/;$1/METIS/include/" -DTPL_PARMETIS_LIBRARIES="$1/PARMETIS/lib/libparmetis.a;$1/METIS/lib/libmetis.dll.a;-lmpi;-lopen-rte;-lopen-pal"
+  else
+    cmake .. -DCMAKE_C_FLAGS="-fPIC -std=c99 "  -DTPL_BLAS_LIBRARIES="$1/OPENBLAS/lib/libopenblas.a"  -DCMAKE_INSTALL_PREFIX="$1/SUPERLU_DIST"  -DTPL_PARMETIS_INCLUDE_DIRS="$1/PARMETIS/include/;$1/METIS/include/" -DTPL_PARMETIS_LIBRARIES="$1/PARMETIS/lib/libparmetis.a;$1/METIS/lib/libmetis.so"
+  fi
 
   # Installation for linux
-
-#  $sed_command -i "/DSuperLUroot\s\+=\s\${HOME}\/Release_Codes\/SuperLU_DIST_4.3/c\DSuperLUroot = ../" make.inc
-#  $sed_command -i "/BLASLIB\s\+=/c\BLASLIB = $1/OPENBLAS/lib/libopenblas.a" make.inc
-#  $sed_command -i "/LOADOPTS\s\+=\s-openmp/c\LOADOPTS = -fopenmp" make.inc
-#  $sed_command -i "/PARMETIS_DIR\s\+=\/project\/projectdirs\/mp127\/parmetis-4.0.3-g/c\PARMETIS_DIR := $1/PARMETIS" make.inc
-
-#  $sed_command -i "/METISLIB\s:=\s-L\${PARMETIS_DIR}\/build\/Linux-x86_64\/libmetis\s-lmetis/c\METISLIB := -L$1/METIS/lib -lmetis" make.inc
-#  $sed_command -i "/PARMETISLIB\s:=\s-L\${PARMETIS_DIR}\/build\/Linux-x86_64\/libparmetis\s-lparmetis/c\PARMETISLIB := -L$1/PARMETIS/lib -lparmetis" make.inc
-
-#  $sed_command -i "/I_PARMETIS\s:=\s-I\${PARMETIS_DIR}\/include\s-I\${PARMETIS_DIR}\/metis\/include/c\I_PARMETIS := -I$1/PARMETIS/include -I$1/METIS/include" make.inc
-#  $sed_command -i "/CC\s\+=\scc/c\CC = mpicc" make.inc
-#  $sed_command -i "/FORTRAN\s\+=\sftn/c\FORTRAN = mpif90" make.inc
-
-#  if [ x"$CXX" == x"clang++" ]; then
-#    $sed_command -i "/CFLAGS\s\+=\s-fast\s-m64\s-std=c99\s-Wall\s-openmp\s\\\/c\CFLAGS =-fpic -O3 -m64 -std=c99 -Wall \$(I_PARMETIS) -DDEBUGlevel=0 -DPRNTlevel=0 -DPROFlevel=0" make.inc
-#  else
-#    $sed_command -i "/CFLAGS\s\+=\s-fast\s-m64\s-std=c99\s-Wall\s-openmp\s\\\/c\CFLAGS =-fpic -O3 -m64 -std=c99 -Wall -fopenmp \$(I_PARMETIS) -DDEBUGlevel=0 -DPRNTlevel=0 -DPROFlevel=0" make.inc
-#  fi
-#  $sed_command -i "/\s\$(I_PARMETIS)\s-DDEBUGlevel=0\s-DPRNTlevel=0\s-DPROFlevel=0\s\\\/c\ " make.inc
 
   make
   if [ $? -eq 0 ]; then
      make install
      echo 1 > $1/SUPERLU_DIST/version
 
-#    mkdir $1/SUPERLU_DIST
-#    mkdir $1/SUPERLU_DIST/include
-#    cp -r lib $1/SUPERLU_DIST
-#    cp SRC/*.h $1/SUPERLU_DIST/include
     if [ x"$CXX" == x"icpc" ]; then
       configure_options="$configure_options"
     else
