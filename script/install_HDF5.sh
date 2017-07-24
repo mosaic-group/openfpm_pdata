@@ -1,5 +1,9 @@
 #! /bin/bash
 
+source script/discover_os
+
+discover_os
+
 # check if the directory $1/HDF5 exist
 
 if [ -d "$1/HDF5" ]; then
