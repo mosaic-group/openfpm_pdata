@@ -136,14 +136,14 @@ else
 fi
 
 if [ ! -d "$1/TRILINOS" ]; then
-  rm trilinos-12.10.1-Source.tar.bz2
+  rm trilinos-12.10.1-Source.tar.gz
   rm -rf trilinos-12.10.1-Source
-  wget http://ppmcore.mpi-cbg.de/upload/trilinos-12.10.1-Source.tar.bz2
+  wget http://ppmcore.mpi-cbg.de/upload/trilinos-12.10.1-Source.tar.gz
   if [ $? -ne 0 ]; then
     echo -e "\033[91;5;1m FAILED! Installation requires an Internet connection \033[0m"
     exit 1
   fi
-  tar -xf trilinos-12.10.1-Source.tar.bz2
+  tar -xf trilinos-12.10.1-Source.tar.gz
   cd trilinos-12.10.1-Source
   mkdir build
   cd build
