@@ -4,7 +4,6 @@
 
 echo "Directory: $1"
 echo "Machine: $2"
-echo "Branch: $BRANCH_NAME"
 
 mkdir src/config
 
@@ -17,7 +16,9 @@ if [ "$2" == "windows10" ]; then
     echo "y" >> input_install
     echo "1" >> input_install
 
-    ./install -i "/home/jenkins/$BRANCH_NAME" < input_install
+    branch=$(git rev-parse --abbrev-ref HEAD)    
+
+    ./install -i "/home/jenkins/$branch" < input_install
 
 fi
 
