@@ -36,9 +36,9 @@ else
   echo "ZLIB is already installed"
 fi
 
-wget http://ppmcore.mpi-cbg.de/upload/hdf5-1.8.16.tar.bz2
-tar -xf hdf5-1.8.16.tar.bz2
-cd hdf5-1.8.16
+wget http://ppmcore.mpi-cbg.de/upload/hdf5-1.8.19.tar.bz2
+tar -xf hdf5-1.8.19.tar.bz2
+cd hdf5-1.8.19
 
 if [ x"$plaform" != "cygwin" ]; then
         CC=mpicc ./configure --with-zlib=$1/ZLIB --enable-parallel --prefix=$1/HDF5
@@ -46,5 +46,6 @@ else
         CC=mpicc ./configure --enable-parallel --prefix=$1/HDF5
 fi
 make -j $2
+echo 1 > $1/HDF5/version
 mkdir $1/HDF5
 make install

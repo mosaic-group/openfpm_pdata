@@ -176,6 +176,17 @@ function remove_old()
         fi
     fi
 
+    if [ -d $1/HDF5 ]; then
+        version=$(cat $1/HDF5/version)
+        if [ x"$version" != x"1"  ]; then
+            echo -e "\033[1;34;5m  -------------------------------------------------------------------------------------- \033[0m"
+            echo -e "\033[1;34;5m  HDF5 has been updated to version 1.8.19, the component will be updated automatically   \033[0m"
+            echo -e "\033[1;34;5m  -------------------------------------------------------------------------------------- \033[0m"
+            sleep 5
+	    rm -rf $1/HDF5
+        fi
+    fi
+
     if [ -d $1/MPI ]; then
         version=$(cat $1/MPI/version)
         if [ x"$version" != x"2"  ]; then
