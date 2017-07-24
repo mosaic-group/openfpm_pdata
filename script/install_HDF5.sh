@@ -7,7 +7,7 @@ if [ -d "$1/HDF5" ]; then
   exit 0
 fi
 
-if [ ! -d "$1/ZLIB" ]; then
+if [ ! -d "$1/ZLIB"  -a x"$platform" != x"cygwin" ]; then
   rm zlib1211.tar.gz
   rm -rf zlib-1.2.11
   wget https://zlib.net/zlib-1.2.11.tar.gz
