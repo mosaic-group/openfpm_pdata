@@ -160,6 +160,12 @@ if [ ! -d "$1/TRILINOS" ]; then
 #    petsc_openmp="--with-openmp=yes"
   fi
 
+  if [ x"$platform" == x"cygwin" ]; then
+    configure_trilinos_options="$configure_trilinos_options -D Trilinos_CXX11_FLAGS=-std=gnu++11 "
+  fi
+  cmake -D CMAKE_INSTALL_PREFIX:PATH=$1/TRILINOS -D CMAKE_BUILD_TYPE=RELEASE $conf_trl_openmp -D Trilinos_ENABLE_TESTS=OFF  -D Trilinos_ENABLE_ALL_PACKAGES=ON $configure_trilinos_options  ../.
+
+
   cmake -D CMAKE_INSTALL_PREFIX:PATH=$1/TRILINOS -D CMAKE_BUILD_TYPE=RELEASE $conf_trl_openmp -D Trilinos_ENABLE_TESTS=OFF  -D Trilinos_ENABLE_ALL_PACKAGES=ON $configure_trilinos_options  ../.
 
   make -j $2
