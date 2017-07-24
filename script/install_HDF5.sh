@@ -46,6 +46,6 @@ else
         CC=mpicc ./configure --enable-parallel --prefix=$1/HDF5
 fi
 make -j $2
-echo 1 > $1/HDF5/version
 mkdir $1/HDF5
 make install
+echo 1 > $1/HDF5/version
