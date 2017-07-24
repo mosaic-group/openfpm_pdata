@@ -28,6 +28,7 @@ then
  source ~/.bashrc
  module load gcc/4.9.2
  if [ x"$3" == x"numerics" ]; then
+   echo "Installing for numerics"
    branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
    ./install -i $HOME/$branch -s -c "--prefix=/home/jenkins/openfpm_install"
    make
@@ -251,6 +252,7 @@ else
  source ~/.bashrc
 
  if [ x"$3" == x"numerics" ]; then
+   echo "Installing for numerics"
    branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
    ./install -i $HOME/$branch -s -c "--prefix=/home/jenkins/openfpm_install"
    make
