@@ -119,7 +119,11 @@ else
   tar -xf netcdf-4.4.1.1.tar.gz
   cd netcdf-4.4.1.1
 
-  ./configure CC=mpicc CPPFLAGS="-I$1/HDF5/include -I$1/ZLIB/include " LDFLAGS="-L$1/HDF5/lib -L$1/ZLIB/lib" --disable-dap --disable-shared --prefix=$1/NETCDF
+  if [ x"$platform" == x"cygwin" ]; then
+    ./configure CC=mpicc CPPFLAGS="-I$1/HDF5/include -I$1/ZLIB/include " LDFLAGS="-L$1/HDF5/lib -L$1/ZLIB/lib" --disable-netcdf-4 --disable-dap --disable-shared --prefix=$1/NETCDF
+  else
+    ./configure CC=mpicc CPPFLAGS="-I$1/HDF5/include -I$1/ZLIB/include " LDFLAGS="-L$1/HDF5/lib -L$1/ZLIB/lib" --disable-dap --disable-shared --prefix=$1/NETCDF
+  fi
   make -j $2
 
   if [ $? -eq 0 ]; then
