@@ -146,6 +146,10 @@ if [ ! -d "$1/TRILINOS" ]; then
   tar -xf trilinos-12.10.1-Source.tar.gz
   cd trilinos-12.10.1-Source
   mkdir build
+
+  ## Apply patch
+  wget http://ppmcore.mpi-cbg.de/upload/trilinos_cygwin_comb
+  patch -p0 -R < trilinos_cygwin_comb
   cd build
 
   ### On clang we have no openMP
