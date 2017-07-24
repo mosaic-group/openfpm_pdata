@@ -36,8 +36,8 @@ else
   echo "ZLIB is already installed"
 fi
 
-wget http://ppmcore.mpi-cbg.de/upload/hdf5-1.8.19.tar.bz2
-tar -xf hdf5-1.8.19.tar.bz2
+wget http://ppmcore.mpi-cbg.de/upload/hdf5-1.8.19.tar.gz
+tar -xf hdf5-1.8.19.tar.gz
 cd hdf5-1.8.19
 
 if [ x"$plaform" != "cygwin" ]; then
