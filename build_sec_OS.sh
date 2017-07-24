@@ -16,7 +16,7 @@ if [ "$2" == "windows10" ]; then
     echo "y" >> input_install
     echo "1" >> input_install
 
-    branch=$(git rev-parse --abbrev-ref HEAD)    
+    branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)    
 
     ./install -i "/home/jenkins/$branch" < input_install
 
