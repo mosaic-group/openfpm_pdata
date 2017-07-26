@@ -14,7 +14,7 @@ if [ x"$1" = x"osx" ]; then
         commands[0]="$pcman install gcc"
         possible_solutions "${commands[@]}"
 elif [ x"$1" = x"linux"  ]; then
-        if [ x"$pcman" == "apt-get" ]; then
+        if [ x"$pcman" == x"apt-get" ]; then
           commands[0]="su -c \"$pcman install gfortran\""
           commands[1]="sudo $pcman install gfortran"
           possible_solutions "${commands[@]}"
