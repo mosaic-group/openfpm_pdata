@@ -318,6 +318,8 @@ typedef vector_dist<3,double,aggregate<int, int,double,  double,    double,     
 //                                           |           at n-1                 density                           at n - 1
 //                                           |
 //									Number of neighborhood
+
+//! Model for Dynamic load balancing
 struct ModelCustom
 {
 	template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p)
@@ -339,7 +341,7 @@ struct ModelCustom
 	}
 };
 
-
+//! Second model for dynamic load balancing
 struct ModelCustom2
 {
         template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p)

@@ -61,6 +61,11 @@ if [ x"$platform" = x"linux" -a x"$pcman" = x"yum"  ]; then
   ret1=$?
   rpm -V python-devel
   ret2=$?
+  if [ $ret2 -ne 0 ]; then
+    echo "Cheking python2-devel"
+    rpm -V python2-devel
+    ret2=$?
+  fi
   rpm -V libxml2-devel
   ret3=$?
   rpm -V libxslt-devel
