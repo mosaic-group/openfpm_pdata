@@ -223,8 +223,16 @@ function detect_compiler()
           gpp_clang
         fi
         dgc_ret=1
-    else
+    elif [ $gpp_found -eq 1 ]; then
         gpp_clang
+    elif [ $icpc_found -eq 1 ]; then
+          CXX=icpc
+          CC=icc
+          F77=ifort
+          FC=ifort
+          dgc_compiler=icpc
+    else
+          echo "No compiler found"
     fi
 }
 
