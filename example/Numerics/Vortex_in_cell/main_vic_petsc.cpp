@@ -111,25 +111,25 @@ constexpr int y = 1;
 constexpr int z = 2;
 
 // The type of the grids
-typedef grid_dist_id<3,double,aggregate<double[3]>> grid_type;
+typedef grid_dist_id<3,float,aggregate<float[3]>> grid_type;
 
 // The type of the particles
-typedef vector_dist<3,double,aggregate<double[3],double[3],double[3],double[3],double[3]>> particles_type;
+typedef vector_dist<3,float,aggregate<float[3],float[3],float[3],float[3],float[3]>> particles_type;
 
 // radius of the torus
-double ringr1 = 1.0;
+float ringr1 = 1.0;
 // radius of the core of the torus
-double sigma = 1.0/3.523;
+float sigma = 1.0/3.523;
 // Reynold number
-double tgtre  = 7500.0;
+float tgtre  = 7500.0;
 // Noise factor for the ring vorticity on z
-double ringnz = 0.01;
+float ringnz = 0.01;
 
 // Kinematic viscosity
-double nu = 1.0/tgtre;
+float nu = 1.0/tgtre;
 
 // Time step
-double dt = 0.025;
+float dt = 0.025;
 
 // All the properties by index
 constexpr unsigned int vorticity = 0;
@@ -215,14 +215,14 @@ template<typename grid> void calc_and_print_max_div_and_int(grid & g_vort)
  * domain is the simulation domain
  *
  */
-void init_ring(grid_type & gr, const Box<3,double> & domain)
+void init_ring(grid_type & gr, const Box<3,float> & domain)
 {
 	// To add some noise to the vortex ring we create two random
 	// vector
 	constexpr int nk = 32;
 
-	double ak[nk];
-	double bk[nk];
+	float ak[nk];
+	float bk[nk];
 
 	for (size_t i = 0 ; i < nk ; i++)
 	{
@@ -231,9 +231,9 @@ void init_ring(grid_type & gr, const Box<3,double> & domain)
 	}
 
 	// We calculate the circuitation gamma
-	double gamma = nu * tgtre;
-	double rinv2 = 1.0f/(sigma*sigma);
-	double max_vorticity = gamma*rinv2/M_PI;
+	float gamma = nu * tgtre;
+	float rinv2 = 1.0f/(sigma*sigma);
+	float max_vorticity = gamma*rinv2/M_PI;
 
 	// We go through the grid to initialize the vortex
 	auto it = gr.getDomainIterator();
@@ -243,21 +243,21 @@ void init_ring(grid_type & gr, const Box<3,double> & domain)
 		auto key_d = it.get();
 		auto key = it.getGKey(key_d);
 
-        double tx = (key.get(x)-2)*gr.spacing(x) + domain.getLow(x);
-        double ty = (key.get(y)-2)*gr.spacing(y) + domain.getLow(y);
-        double tz = (key.get(z)-2)*gr.spacing(z) + domain.getLow(z);
-        double theta1 = atan2((ty-2.5f),(tz-2.5f));
+        float tx = (key.get(x)-2)*gr.spacing(x) + domain.getLow(x);
+        float ty = (key.get(y)-2)*gr.spacing(y) + domain.getLow(y);
+        float tz = (key.get(z)-2)*gr.spacing(z) + domain.getLow(z);
+        float theta1 = atan2((ty-2.5f),(tz-2.5f));
 
 
 
-        double noise = 0.0f;
+        float noise = 0.0f;
  //       for (int kk=1 ; kk < nk; kk++)
  //       	noise = noise + sin(kk*(theta1+2.0f*M_PI*ak[kk])) + cos(kk*(theta1+2.0f*M_PI*bk[kk]));
 
-        double rad1r  = sqrt((ty-2.5f)*(ty-2.5f) + (tz-2.5f)*(tz-2.5f)) - ringr1*(1.0f + ringnz * noise);
-        double rad1t = tx - 1.0f;
-        double rad1sq = rad1r*rad1r + rad1t*rad1t;
-        double radstr = -exp(-rad1sq*rinv2)*rinv2*gamma/M_PI;
+        float rad1r  = sqrt((ty-2.5f)*(ty-2.5f) + (tz-2.5f)*(tz-2.5f)) - ringr1*(1.0f + ringnz * noise);
+        float rad1t = tx - 1.0f;
+        float rad1sq = rad1r*rad1r + rad1t*rad1t;
+        float radstr = -exp(-rad1sq*rinv2)*rinv2*gamma/M_PI;
         gr.template get<vorticity>(key_d)[x] = 0.0f;
         gr.template get<vorticity>(key_d)[y] = -radstr * cos(theta1);
         gr.template get<vorticity>(key_d)[z] = radstr * sin(theta1);
@@ -273,7 +273,7 @@ void init_ring(grid_type & gr, const Box<3,double> & domain)
 
 // Specification of the poisson equation for the helmotz-hodge projection
 // 3D (dims = 3). The field is a scalar value (nvar = 1), bournary are periodic
-// type of the the space is double. Final grid that will store \phi, the result (grid_dist_id<.....>)
+// type of the the space is float. Final grid that will store \phi, the result (grid_dist_id<.....>)
 // The other indicate which kind of Matrix to use to construct the linear system and
 // which kind of vector to construct for the right hand side. Here we use a PETSC Sparse Matrix
 // and PETSC vector. NORMAL_GRID indicate that is a standard grid (non-staggered)
@@ -282,8 +282,8 @@ struct poisson_nn_helm
         static const unsigned int dims = 3;
         static const unsigned int nvar = 1;
         static const bool boundary[];
-        typedef double stype;
-        typedef grid_dist_id<3,double,aggregate<double>> b_grid;
+        typedef float stype;
+        typedef grid_dist_id<3,float,aggregate<float>> b_grid;
         typedef SparseMatrix<double,int,PETSC_BASE> SparseMatrix_type;
         typedef Vector<double,PETSC_BASE> Vector_type;
         static const int grid_type = NORMAL_GRID;
@@ -407,7 +407,7 @@ const bool poisson_nn_helm::boundary[] = {PERIODIC,PERIODIC,PERIODIC};
  * domain simulation domain
  *
  */
-void helmotz_hodge_projection(grid_type & gr, const Box<3,double> & domain, petsc_solver<double> & solver, petsc_solver<double>::return_type & x_ , bool init)
+void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain, petsc_solver<double> & solver, petsc_solver<double>::return_type & x_ , bool init)
 {
 	///////////////////////////////////////////////////////////////
 
@@ -436,7 +436,7 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,double> & domain, pets
     Ghost<3,long int> g(2);
 
 	// Here we create a distributed grid to store the result of the helmotz projection
-	grid_dist_id<3,double,aggregate<double>> psi(gr.getDecomposition(),gr.getGridInfo().getSize(),g);
+	grid_dist_id<3,float,aggregate<float>> psi(gr.getDecomposition(),gr.getGridInfo().getSize(),g);
 
 	// Calculate the divergence of the vortex field
 	auto it = gr.getDomainIterator();	
@@ -558,7 +558,7 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,double> & domain, pets
 
 //! \cond [remesh_part] \endcond
 
-void remesh(particles_type & vd, grid_type & gr,Box<3,double> & domain)
+void remesh(particles_type & vd, grid_type & gr,Box<3,float> & domain)
 {
 	// Remove all particles because we reinitialize in a grid like position
 	vd.clear();
@@ -649,7 +649,7 @@ void remesh(particles_type & vd, grid_type & gr,Box<3,double> & domain)
  *
  */
 
-void comp_vel(Box<3,double> & domain, grid_type & g_vort,grid_type & g_vel, petsc_solver<double>::return_type (& phi_s)[3],petsc_solver<double> & solver)
+void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc_solver<double>::return_type (& phi_s)[3],petsc_solver<double> & solver)
 {
 	//! \cond [poisson_obj_eq] \endcond
 
@@ -671,8 +671,8 @@ void comp_vel(Box<3,double> & domain, grid_type & g_vort,grid_type & g_vel, pets
 	Ghost<3,long int> g(2);
 
 	// Here we create a distributed grid to store the result
-	grid_dist_id<3,double,aggregate<double>> gr_ps(g_vort.getDecomposition(),g_vort.getGridInfo().getSize(),g);
-	grid_dist_id<3,double,aggregate<double[3]>> phi_v(g_vort.getDecomposition(),g_vort.getGridInfo().getSize(),g);
+	grid_dist_id<3,float,aggregate<float>> gr_ps(g_vort.getDecomposition(),g_vort.getGridInfo().getSize(),g);
+	grid_dist_id<3,float,aggregate<float[3]>> phi_v(g_vort.getDecomposition(),g_vort.getGridInfo().getSize(),g);
 
 	// We calculate and print the maximum divergence of the vorticity
 	// and the integral of it
@@ -756,9 +756,9 @@ void comp_vel(Box<3,double> & domain, grid_type & g_vort,grid_type & g_vel, pets
 
 	phi_v.ghost_get<phi>();
 
-	double inv_dx = 0.5f / g_vort.spacing(0);
-	double inv_dy = 0.5f / g_vort.spacing(1);
-	double inv_dz = 0.5f / g_vort.spacing(2);
+	float inv_dx = 0.5f / g_vort.spacing(0);
+	float inv_dy = 0.5f / g_vort.spacing(1);
+	float inv_dz = 0.5f / g_vort.spacing(2);
 
 	auto it3 = phi_v.getDomainIterator();
 
@@ -767,12 +767,12 @@ void comp_vel(Box<3,double> & domain, grid_type & g_vort,grid_type & g_vel, pets
 	{
 		auto key = it3.get();
 
-		double phi_xy = (phi_v.get<phi>(key.move(y,1))[x] - phi_v.get<phi>(key.move(y,-1))[x])*inv_dy;
-		double phi_xz = (phi_v.get<phi>(key.move(z,1))[x] - phi_v.get<phi>(key.move(z,-1))[x])*inv_dz;
-		double phi_yx = (phi_v.get<phi>(key.move(x,1))[y] - phi_v.get<phi>(key.move(x,-1))[y])*inv_dx;
-		double phi_yz = (phi_v.get<phi>(key.move(z,1))[y] - phi_v.get<phi>(key.move(z,-1))[y])*inv_dz;
-		double phi_zx = (phi_v.get<phi>(key.move(x,1))[z] - phi_v.get<phi>(key.move(x,-1))[z])*inv_dx;
-		double phi_zy = (phi_v.get<phi>(key.move(y,1))[z] - phi_v.get<phi>(key.move(y,-1))[z])*inv_dy;
+		float phi_xy = (phi_v.get<phi>(key.move(y,1))[x] - phi_v.get<phi>(key.move(y,-1))[x])*inv_dy;
+		float phi_xz = (phi_v.get<phi>(key.move(z,1))[x] - phi_v.get<phi>(key.move(z,-1))[x])*inv_dz;
+		float phi_yx = (phi_v.get<phi>(key.move(x,1))[y] - phi_v.get<phi>(key.move(x,-1))[y])*inv_dx;
+		float phi_yz = (phi_v.get<phi>(key.move(z,1))[y] - phi_v.get<phi>(key.move(z,-1))[y])*inv_dz;
+		float phi_zx = (phi_v.get<phi>(key.move(x,1))[z] - phi_v.get<phi>(key.move(x,-1))[z])*inv_dx;
+		float phi_zy = (phi_v.get<phi>(key.move(y,1))[z] - phi_v.get<phi>(key.move(y,-1))[z])*inv_dy;
 
 		g_vel.template get<velocity>(key)[x] = phi_zy - phi_yz;
 		g_vel.template get<velocity>(key)[y] = phi_xz - phi_zx;
@@ -843,13 +843,13 @@ template<typename grid> void calc_rhs(grid & g_vort, grid & g_vel, grid & g_dwp)
 
 	// calculate several pre-factors for the stencil finite
 	// difference
-	double fac1 = 2.0f*nu/(g_vort.spacing(0));
-	double fac2 = 2.0f*nu/(g_vort.spacing(1));
-	double fac3 = 2.0f*nu/(g_vort.spacing(2));
+	float fac1 = 2.0f*nu/(g_vort.spacing(0));
+	float fac2 = 2.0f*nu/(g_vort.spacing(1));
+	float fac3 = 2.0f*nu/(g_vort.spacing(2));
 
-	double fac4 = 0.5f/(g_vort.spacing(0));
-	double fac5 = 0.5f/(g_vort.spacing(1));
-	double fac6 = 0.5f/(g_vort.spacing(2));
+	float fac4 = 0.5f/(g_vort.spacing(0));
+	float fac5 = 0.5f/(g_vort.spacing(1));
+	float fac6 = 0.5f/(g_vort.spacing(2));
 
 	auto it = g_dwp.getDomainIterator();
 
@@ -1041,8 +1041,8 @@ template<typename grid, typename vector> void do_step(vector & particles,
 		                                              grid & g_vort,
 													  grid & g_vel,
 													  grid & g_dvort,
-													  Box<3,double> & domain,
-													  interpolate<particles_type,grid_type,mp4_kernel<double>> & inte,
+													  Box<3,float> & domain,
+													  interpolate<particles_type,grid_type,mp4_kernel<float>> & inte,
 													  petsc_solver<double>::return_type (& phi_s)[3],
 													  petsc_solver<double> & solver)
 {
@@ -1096,7 +1096,7 @@ template<typename vector, typename grid> void check_point_and_save(vector & part
 
 	// In order to reduce the size of the saved data we apply a threshold.
 	// We only save particles with vorticity higher than 0.1
-	vector_dist<3,double,aggregate<double>> part_save(particles.getDecomposition(),0);
+	vector_dist<3,float,aggregate<float>> part_save(particles.getDecomposition(),0);
 
 	auto it_s = particles.getDomainIterator();
 
@@ -1104,7 +1104,7 @@ template<typename vector, typename grid> void check_point_and_save(vector & part
 	{
 		auto p = it_s.get();
 
-		double vort_magn = sqrt(particles.template getProp<vorticity>(p)[0] * particles.template getProp<vorticity>(p)[0] +
+		float vort_magn = sqrt(particles.template getProp<vorticity>(p)[0] * particles.template getProp<vorticity>(p)[0] +
 							   particles.template getProp<vorticity>(p)[1] * particles.template getProp<vorticity>(p)[1] +
 							   particles.template getProp<vorticity>(p)[2] * particles.template getProp<vorticity>(p)[2]);
 
@@ -1155,7 +1155,7 @@ int main(int argc, char* argv[])
 	openfpm_init(&argc,&argv);
 	{
 	// Domain, a rectangle
-	Box<3,double> domain({0.0,0.0,0.0},{22.0,5.57,5.57});
+	Box<3,float> domain({0.0,0.0,0.0},{22.0,5.57,5.57});
 
 	// Ghost (Not important in this case but required)
 	Ghost<3,long int> g(2);
@@ -1218,7 +1218,7 @@ int main(int argc, char* argv[])
 	// create some data-structure to optimize the conversion particle
 	// position to sub-domain. If there are no re-balancing it is safe
 	// to reuse-it
-	interpolate<particles_type,grid_type,mp4_kernel<double>> inte(particles,g_vort);
+	interpolate<particles_type,grid_type,mp4_kernel<float>> inte(particles,g_vort);
 
 	// With more than 24 core we rely on the HDF5 checkpoint restart file
 	if (v_cl.getProcessingUnits() < 24)

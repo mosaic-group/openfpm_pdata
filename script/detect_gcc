@@ -211,6 +211,7 @@ function detect_compiler()
     fi
 
     ### If we detect more than one valid compiler ask to choose
+
     if [ $icpc_found -eq 1 -a $gpp_found -eq 1 ]; then
         echo "Two different valid compilers has been found please choose one"
         commands[0]="icpc"
@@ -226,8 +227,16 @@ function detect_compiler()
           gpp_clang
         fi
         dgc_ret=1
-    else
+    elif [ $gpp_found -eq 1 ]; then
         gpp_clang
+    elif [ $icpc_found -eq 1 ]; then
+          CXX=icpc
+          CC=icc
+          F77=ifort
+          FC=ifort
+          dgc_compiler=icpc
+    else
+          echo "No compiler found"
     fi
 }
 

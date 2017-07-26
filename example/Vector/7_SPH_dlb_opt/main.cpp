@@ -312,11 +312,12 @@ const int velocity_prev = 8;
 
 // Type of the vector containing particles
 typedef vector_dist<3,double,aggregate<int, int,double,  double,    double,     double,     double[3], double[3], double[3]> > particles;
-//                                       |      |        |          |            |            |         |            |
-//                                       |      |        |          |            |            |         |            |
-//                                     type   density   density    Pressure    delta       force     velocity    velocity
-//                                                      at n-1                 density                           at n - 1
-
+//                                       |   |    |        |          |            |            |         |            |
+//                                       |   |    |        |          |            |            |         |            |
+//                                     type  |  density   density    Pressure    delta       force     velocity    velocity
+//                                           |           at n-1                 density                           at n - 1
+//                                           |
+//									Number of neighborhood
 struct ModelCustom
 {
 	template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p)
