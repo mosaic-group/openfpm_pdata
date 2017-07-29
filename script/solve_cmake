@@ -15,8 +15,9 @@ if [ x"$1" = x"osx" ]; then
         commands[0]="$pcman install cmake"
         possible_solutions "${commands[@]}"
 elif [ x"$1" = x"linux"  ]; then
-        commands[0]="su -c \"$pcman install cmake\""
-        commands[1]="sudo $pcman install cmake"
+	pc_install_command $pcman
+        commands[0]="su -c \"$pc_install_command_ret cmake\""
+        commands[1]="sudo $pc_install_command_ret cmake"
         possible_solutions "${commands[@]}"
 fi 
 }

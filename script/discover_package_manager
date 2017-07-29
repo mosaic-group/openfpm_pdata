@@ -47,6 +47,12 @@ function discover_package_manager() {
     if [ $? -eq 0 ]; then
       discover_package_manager_ret="zypper"
       return
+    fi
+
+    command -v pacman >/dev/null
+    if [ $? -eq 0 ]; then
+      discover_package_manager_ret="pacman"
+      return
     else
       discover_package_manager_ret=""
       return
@@ -54,4 +60,11 @@ function discover_package_manager() {
   fi
 }
 
-echo "$discover_package_manager_ret" 
+function pc_install_command() {
+  if [ x"$1" == x"pacman" ]; then
+    pc_install_command_ret="pacman -Sy"
+  else
+    pc_install_command_ret="$1 install"
+  fi
+}
+
