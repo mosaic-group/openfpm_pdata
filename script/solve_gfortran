@@ -14,7 +14,7 @@ if [ x"$1" = x"osx" ]; then
         commands[0]="$pcman install gcc"
         possible_solutions "${commands[@]}"
 elif [ x"$1" = x"linux"  ]; then
-	if [ x"pcman" == x"pacman" ]; then
+	if [ x"$pcman" == x"pacman" ]; then
           commands[0]="su -c \"$pcman -Sy gcc-fortran\""
           commands[1]="sudo $pcman -Sy gcc-fortran"
           possible_solutions "${commands[@]}"
