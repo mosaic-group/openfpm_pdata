@@ -20,8 +20,8 @@ if [ x"$1" = x"osx" ]; then
 elif [ x"$1" = x"linux"  ]; then
 
 	if [ x"$pcman" == x"pacman" ]; then
-          commands[0]="su -c \"$pcman -Sy gcc\""
-          commands[1]="sudo $pcman -Sy gcc"
+          commands[0]="su -c \"$pcman -Sy gcc sudo make\""
+          commands[1]="sudo $pcman -Sy gcc make"
           possible_solutions "${commands[@]}"
           compiler_gcc="gcc"
           compiler_gpp="g++"
