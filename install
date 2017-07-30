@@ -8,6 +8,7 @@ source script/remove_old
 source script/set_mpi
 source script/conf_PETSC
 source script/update_openfpm
+source script/solve_python
 
 ### switch to the branch
 
