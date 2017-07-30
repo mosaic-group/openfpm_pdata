@@ -8,6 +8,7 @@ source script/remove_old
 source script/set_mpi
 source script/conf_PETSC
 source script/update_openfpm
+source script/solve_python
 
 ### switch to the branch
 
@@ -221,7 +222,7 @@ if [ ! -d "$i_dir/PETSC" -o ! -d "$i_dir/EIGEN" ]; then
     if [ $? -ne 0 ]; then
       ### We have to install python
       echo "OpenFPM require python but it's not installed, searching a solution... "
-      ./script/solve_python $platform
+      solve_python $platform
       command -v python
       if [ $? -ne 0 ]; then
 	echo -e "python\033[91;5;1m FAILED \033[0m"
