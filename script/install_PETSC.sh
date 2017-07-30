@@ -312,7 +312,17 @@ cd petsc-3.6.4
 
 echo "./configure --with-cxx-dialect=C++11 $petsc_openmp  --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC --with-debugging=0"
 
-./configure --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib" --prefix=$1/PETSC --with-debugging=0
+function haveProg() {
+    [ -x "$(command -v $1)" ]
+}
+
+if haveProg python2; then
+  python_command=python2
+else
+  python_command=python
+fi
+
+$python_command ./configure --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib" --prefix=$1/PETSC --with-debugging=0
 make all test
 make install
 
