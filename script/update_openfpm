@@ -54,6 +54,7 @@ function update_openfpm()
   git submodule update
 
   if [ x"$1" == x"update" ]; then
+    source $HOME/openfpm_vars
     sh autogen.sh
     ./config.status
     if [ $? -ne 0 ]; then
