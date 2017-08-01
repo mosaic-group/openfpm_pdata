@@ -14,7 +14,7 @@ if [ x"$1" = x"osx" ]; then
         commands[0]="$pcman install automake"
         possible_solutions "${commands[@]}"
 elif [ x"$1" = x"linux"  ]; then
-	pc_install_command $pcman
+	pc_install_command "$pcman"
         commands[0]="su -c \"$pc_install_command_ret automake\""
         commands[1]="sudo $pc_install_command_ret automake"
         possible_solutions "${commands[@]}"
