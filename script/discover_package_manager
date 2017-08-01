@@ -36,7 +36,7 @@ function discover_package_manager() {
 
     command -v zypper >/dev/null
     if [ $? -eq 0 ]; then
-      discover_package_manager_ret="zypper"
+      discover_package_manager_ret="zypper -n"
       return
     fi
     command -v yum >/dev/null
