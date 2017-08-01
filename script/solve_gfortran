@@ -18,7 +18,7 @@ elif [ x"$1" = x"linux"  ]; then
           commands[0]="su -c \"$pcman -Sy gcc-fortran\""
           commands[1]="sudo $pcman -Sy gcc-fortran"
           possible_solutions "${commands[@]}"
-	elif [ x"$pcman" == x"zypper" ]; then
+	elif [ x"$pcman" == x"zypper -n" ]; then
           commands[0]="su -c \"$pcman install gcc-fortran\""
           commands[1]="sudo $pcman install gcc-fortran"
           possible_solutions "${commands[@]}"
