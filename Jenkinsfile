@@ -6,7 +6,22 @@ parallel (
 "nyu" : {node ('nyu')
                   {
                     deleteDir()
-                    checkout scm
+
+                    int ntry = 5
+                    while (ntry != 0)
+                    {
+                      try {
+                        checkout scm
+                        ntry = 0
+                      }
+                      catch (IOException e)
+                      {
+                        ntry--
+                        sleep(50)
+                      }
+                    }
+
+
                     stage ('build_nyu')
                     {
                       sh "./build.sh $WORKSPACE $NODE_NAME pdata 0 $BRANCH_NAME }"
@@ -31,7 +46,22 @@ parallel (
                   {
                     deleteDir()
                     env.PATH = "/usr/local/bin:${env.PATH}"
-                    checkout scm
+               
+                    int ntry = 5
+                    while (ntry != 0)
+                    {
+                      try {
+                        checkout scm
+                        ntry = 0
+                      }
+                      catch (IOException e)
+                      {
+                        ntry--
+                        sleep(50)
+                      }
+                    }
+
+
                     stage ('build_sb15')
                     {
                       sh "./build.sh $WORKSPACE $NODE_NAME pdata 0  $BRANCH_NAME"
@@ -58,7 +88,22 @@ parallel (
                   {
                     deleteDir()
                     env.PATH = "/usr/local/bin:${env.PATH}"
-                    checkout scm
+
+                    int ntry = 5
+                    while (ntry != 0)
+                    {
+                      try {
+                        checkout scm
+                        ntry = 0
+                      }
+                      catch (IOException e)
+                      {
+                        ntry--
+                        sleep(50)
+                      }
+                    }
+
+
                     stage ('build_gin')
                     {
                       sh "./build.sh $WORKSPACE $NODE_NAME pdata 0 $BRANCH_NAME"
