@@ -72,14 +72,17 @@ struct Metis_graph
 template<typename Graph>
 class Metis
 {
-	// Graph in metis reppresentation
+	//! Graph in metis reppresentation
 	Metis_graph Mg;
 
-	// Original graph
+	//! Original graph
 	Graph & g;
 
-	//Check if weights are available
-	bool useWeights = false;
+	//! indicate how many time decompose/refine/re-decompose has been called
+	size_t n_dec;
+
+	//! Distribution tolerance
+	real_t dist_tol = 1.05;
 
 	/*! \brief Construct Adjacency list
 	 *
@@ -147,7 +150,7 @@ class Metis
 		{
 			// Add weight to vertex and migration cost
 			Mg.vwgt[i] = g.vertex(i).template get<nm_v::computation>();
-			Mg.vwgt[i] = (Mg.adjwgt[i] == 0)?1:Mg.vwgt[i];
+			Mg.vwgt[i] = (Mg.vwgt[i] == 0)?1:Mg.vwgt[i];
 			Mg.vsize[i] = g.vertex(i).template get<nm_v::migration>();
 			Mg.vsize[i] = (Mg.vsize[i] == 0)?1:Mg.vsize[i];
 
@@ -185,10 +188,10 @@ public:
 	 * \param useWeights tells if weights are used or not
 	 *
 	 */
-	Metis(Graph & g, size_t nc, bool useWeights) :
-			g(g), useWeights(useWeights)
+	Metis(Graph & g, size_t nc, bool useWeights)
+	:g(g),n_dec(0)
 	{
-		initMetisGraph(nc);
+		initMetisGraph(nc,useWeights);
 	}
 
 	/*! \brief Constructor
@@ -199,13 +202,45 @@ public:
 	 * \param nc number of partitions
 	 *
 	 */
-	Metis(Graph & g, size_t nc) :
-			g(g)
+	Metis(Graph & g, size_t nc)
+	:g(g),n_dec(0)
 	{
-		initMetisGraph(nc);
+		initMetisGraph(nc,false);
 	}
 
-	void initMetisGraph(int nc)
+	/*! \brief Constructor
+	 *
+	 * This constructor does not initialize the internal metis graph
+	 * you have to use initMetisGraph to initialize
+	 *
+	 * \param g Graph we want to convert to decompose
+	 *
+	 */
+	Metis(Graph & g)
+	:g(g),n_dec(0)
+	{
+		Mg.nvtxs = NULL;
+		Mg.ncon = NULL;
+		Mg.xadj = NULL;
+		Mg.adjncy = NULL;
+		Mg.vwgt = NULL;
+		Mg.adjwgt = NULL;
+		Mg.nparts = NULL;
+		Mg.tpwgts = NULL;
+		Mg.ubvec = NULL;
+		Mg.options = NULL;
+		Mg.objval = NULL;
+		Mg.part = NULL;
+	}
+
+
+	/*! \brief Initialize the METIS graph
+	 *
+	 * \param nc number of partitions
+	 * \param useWeights use the weights on the graph
+	 *
+	 */
+	void initMetisGraph(int nc, bool useWeights)
 	{
 
 		// Get the number of vertex
@@ -367,6 +402,8 @@ public:
 				++it;
 			}
 		}
+
+		n_dec++;
 	}
 
 	/*! \brief Decompose the graph
@@ -396,6 +433,8 @@ public:
 			++id;
 			++it;
 		}
+
+		n_dec++;
 	}
 
 	/*! \brief It set Metis on test
@@ -421,6 +460,35 @@ public:
 		}
 
 		Mg.options[METIS_OPTION_SEED] = 0;
+	}
+
+	/*! \brief Distribution tolerance
+	 *
+	 * \param tol tolerance
+	 *
+	 */
+	const void setDistTol(real_t tol)
+	{
+		dist_tol = tol;
+	}
+
+	/*! \brief Get the decomposition counter
+	 *
+	 * \return the decomposition counter
+	 *
+	 */
+	size_t get_ndec()
+	{
+		return n_dec;
+	}
+
+	/*! \brief Increment the decomposition counter
+	 *
+	 *
+	 */
+	void inc_dec()
+	{
+		n_dec++;
 	}
 };
 

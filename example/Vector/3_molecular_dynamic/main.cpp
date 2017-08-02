@@ -6,8 +6,6 @@
  */
 
 #include "Vector/vector_dist.hpp"
-#include "Decomposition/CartDecomposition.hpp"
-#include "data_type/aggregate.hpp"
 #include "Plot/GoogleChart.hpp"
 #include "Plot/util.hpp"
 #include "timer.hpp"
@@ -19,7 +17,10 @@
  *
  * # Molecular Dynamic with Lennard-Jones potential # {#e3_md}
  *
- * This example show a simple Lennard-Jones molecular dynamic simulation in a stable regime
+ * This example show a simple Lennard-Jones molecular dynamic simulation in a stable regime.
+ * Particle feel each other by the potential.
+ *
+ * \f$ V(x_p,x_q) = 4( (\frac{\sigma}{r})^{12} - (\frac{\sigma}{r})^6  ) \f$
  *
  * ## Constants ##
  *
@@ -55,7 +56,7 @@ constexpr int force = 1;
 
 //! \cond [calc forces] \endcond
 
-void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList<3, double, FAST, shift<3, double> > & NN, double sigma12, double sigma6, double r_cut2)
+template<typename CellList> void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList & NN, double sigma12, double sigma6, double r_cut2)
 {
 
 //! \cond [calc forces] \endcond
@@ -81,12 +82,12 @@ void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, Ce
 
 	/*!
 	 *
-	 * \page Vector_3_md Vector 3 molecular dynamic with cell-list
+	 * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
 	 *
 	 * Get an iterator over the particles and get its position. For each particle p iterate in its neighborhood q
 	 * and calculate the force based on the Lennard-Jhones potential given by
 	 *
-	 * \f$ F(x_p,x_q) = 24(\frac{2}{r^{13}} - \frac{1}{r^{7}}) r \f$
+	 * \f$ F(x_p,x_q) = 24( \frac{2 \sigma^{12}}{r^{13}} - \frac{\sigma^6}{r^{7}}) \hat{r} \f$
 	 *
 	 * \see \ref e0_s_assign_pos
 	 *
@@ -108,7 +109,7 @@ void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, Ce
 		// Get the position xp of the particle
 		Point<3,double> xp = vd.getPos(p);
 
-		// Reset the forice counter
+		// Reset the force counter
 		vd.template getProp<force>(p)[0] = 0.0;
 		vd.template getProp<force>(p)[1] = 0.0;
 		vd.template getProp<force>(p)[2] = 0.0;
@@ -175,7 +176,7 @@ void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, Ce
 
 //! \cond [calc energy] \endcond
 
-double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList<3, double, FAST, shift<3, double> > & NN, double sigma12, double sigma6, double r_cut2)
+template<typename CellList> double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList & NN, double sigma12, double sigma6, double r_cut2)
 {
         double rc = r_cut2;
         double shift = 2.0 * ( sigma12 / (rc*rc*rc*rc*rc*rc) - sigma6 / ( rc*rc*rc) );
@@ -208,7 +209,7 @@ double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, 
 	 * First we get an iterator over the particles and get its position. For each particle p iterate in its neighborhood q
 	 * and calculate the energy based on the Lennard-Jhones potential given by
 	 *
-	 * \f$ V(x_p,x_q) = 4(\frac{1}{r^{12}} - \frac{1}{r^{6}}) r \f$
+	 * \f$ V(x_p,x_q) = 4(\frac{1}{r^{12}} - \frac{1}{r^{6}}) \f$
 	 *
 	 * \see \ref e0_s_assign_pos
 	 *
@@ -284,10 +285,13 @@ int main(int argc, char* argv[])
 	 *
 	 * ## Initialization ## {#e3_md_init}
 	 *
-	 * After we defined the two main function calc forces and calc energy, we define
-	 *  important parameters of the simulation, time step integration,
+	 * After we defined the two main function calc forces and calc energy, we Initialize
+	 *  the library, we create a Box that define our domain, boundary conditions and ghost.
+	 *  Than we define important parameters of the simulation, time step integration,
 	 * size of the box, and cut-off radius of the interaction. We also define 2 vectors
 	 * x and y (they are like std::vector) used for statistic
+	 *
+	 * \see \ref e0_s_init
 	 *
 	 * \snippet Vector/3_molecular_dynamic/main.cpp constants run
 	 *
@@ -295,32 +299,10 @@ int main(int argc, char* argv[])
 
 	//! \cond [constants run] \endcond
 
-	double dt = 0.0005;
+	openfpm_init(&argc,&argv);
+
 	double sigma = 0.1;
 	double r_cut = 3.0*sigma;
-	double sigma12 = pow(sigma,12);
-	double sigma6 = pow(sigma,6);
-
-	openfpm::vector<double> x;
-	openfpm::vector<openfpm::vector<double>> y;
-
-	//! \cond [constants run] \endcond
-
-	/*!
-	 * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
-	 *
-	 * Here we Initialize the library, we create a Box that define our domain, boundary conditions and ghost
-	 *
-	 * \see \ref e0_s_init
-	 *
-	 * \snippet Vector/3_molecular_dynamic/main.cpp init
-	 *
-	 */
-
-	//! \cond [init] \endcond
-
-	openfpm_init(&argc,&argv);
-	Vcluster & v_cl = create_vcluster();
 
 	// we will use it do place particles on a 10x10x10 Grid like
 	size_t sz[3] = {10,10,10};
@@ -334,7 +316,14 @@ int main(int argc, char* argv[])
 	// ghost, big enough to contain the interaction radius
 	Ghost<3,float> ghost(r_cut);
 
-	//! \cond [init] \endcond
+	double dt = 0.0005;
+	double sigma12 = pow(sigma,12);
+	double sigma6 = pow(sigma,6);
+
+	openfpm::vector<double> x;
+	openfpm::vector<openfpm::vector<double>> y;
+
+	//! \cond [constants run] \endcond
 
 	/*!
 	 * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
@@ -370,18 +359,24 @@ int main(int argc, char* argv[])
 
 	//! \cond [vect grid] \endcond
 
+	// We create the grid iterator
 	auto it = vd.getGridIterator(sz);
 
 	while (it.isNext())
 	{
+		// Create a new particle
 		vd.add();
 
+		// key contain (i,j,k) index of the grid
 		auto key = it.get();
 
+		// The index of the grid can be accessed with key.get(0) == i, key.get(1) == j ...
+		// We use getLastPos to set the position of the last particle added
 		vd.getLastPos()[0] = key.get(0) * it.getSpacing(0);
 		vd.getLastPos()[1] = key.get(1) * it.getSpacing(1);
 		vd.getLastPos()[2] = key.get(2) * it.getSpacing(2);
 
+		// We use getLastProp to set the property value of the last particle we added
 		vd.template getLastProp<velocity>()[0] = 0.0;
 		vd.template getLastProp<velocity>()[1] = 0.0;
 		vd.template getLastProp<velocity>()[2] = 0.0;
@@ -404,14 +399,19 @@ int main(int argc, char* argv[])
 	 *
 	 * The verlet integration stepping look like this
 	 *
-	 * \f[ \vec{v}(t_{n+1/2}) = \vec{v}_p(t_n) + \frac{1}{2} \delta t \vec{a}(t_n) \f]
-	 * \f[ \vec{x}(t_{n}) = \vec{x}_p(t_n) + \delta t \vec{v}(t_n+1/2) \f]
+	 * \f[ \vec{v}(t_{n}+1/2) = \vec{v}_p(t_n) + \frac{1}{2} \delta t \vec{a}(t_n) \f]
+	 * \f[ \vec{x}(t_{n}+1) = \vec{x}_p(t_n) + \delta t \vec{v}(t_n+1/2) \f]
 	 *
 	 * calculate the forces from \f$ \vec{a} (t_{n}) \f$ finally
 	 *
 	 * \f[ \vec{v}(t_{n+1}) = \vec{v}_p(t_n+1/2) + \frac{1}{2} \delta t \vec{a}(t_n+1) \f]
 	 *
-	 * The cell-list structure is required to calculate forces
+	 * The cell-list structure is required to calculate forces. As demonstration
+	 * purpose instead of using the standard Cell-list with (getCellList) we use the CELL_MEMBAL
+	 * type. The impact in performance of using the CELL_MEMBAL instead of CELL_MEMFAST is less
+	 * than 1% on the other hand CELL_MEMFAST use 16 Megabyte of memory
+	 *
+	 * \see \ref e1_cls_types
 	 *
 	 * Inside this cycle we are using several features that has been explained before in particular
 	 *
@@ -435,7 +435,10 @@ int main(int argc, char* argv[])
 	//! \cond [md steps] \endcond
 
 	// Get the Cell list structure
-	auto NN = vd.getCellList(r_cut);
+	auto NN = vd.getCellList<CELL_MEMBAL(3,double)>(r_cut);
+
+	// The standard
+	// auto NN = vd.getCellList(r_cut);
 
 	// calculate forces
 	calc_forces(vd,NN,sigma12,sigma6,r_cut*r_cut);
@@ -465,7 +468,7 @@ int main(int argc, char* argv[])
 			++it3;
 		}
 
-		// Because we mooved the particles in space we have to map them and re-sync the ghost
+		// Because we moved the particles in space we have to map them and re-sync the ghost
 		vd.map();
 		vd.template ghost_get<>();
 
@@ -488,7 +491,7 @@ int main(int argc, char* argv[])
 			++it4;
 		}
 
-		// After every iteration collect some statistic about the confoguration
+		// After every iteration collect some statistic about the configuration
 		if (i % 100 == 0)
 		{	
 			// We write the particle position for visualization (Without ghost)
@@ -553,6 +556,15 @@ int main(int argc, char* argv[])
 
 	// width of the line
 	options.lineWidth = 1.0;
+
+	// Resolution in x
+	options.width = 1280;
+
+	// Resolution in y
+	options.heigh = 720;
+
+	// Add zoom capability
+	options.more = GC_ZOOM;
 
 	// Object that draw the X Y graph
 	GoogleChart cg;

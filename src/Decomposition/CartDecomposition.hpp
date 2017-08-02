@@ -119,6 +119,9 @@ protected:
 	//! the set of all local sub-domain as vector
 	openfpm::vector<SpaceBox<dim, T>> sub_domains;
 
+	//! the global set of all sub-domains as vector of 'sub_domains' vectors
+	mutable openfpm::vector<openfpm::vector<SpaceBox<dim, T>>> sub_domains_global;
+
 	//! for each sub-domain, contain the list of the neighborhood processors
 	openfpm::vector<openfpm::vector<long unsigned int> > box_nn_processor;
 
@@ -129,7 +132,10 @@ protected:
 	//! Structure that store the cartesian grid information
 	grid_sm<dim, void> gr;
 
-	//! Structure that decompose your structure into cell without creating them
+	//! Structure that store the cartesian grid information
+	grid_sm<dim, void> gr_dist;
+
+	//! Structure that decompose the space into cells without creating them
 	//! useful to convert positions to CellId or sub-domain id in this case
 	CellDecomposer_sm<dim, T, shift<dim,T>> cd;
 
@@ -138,6 +144,10 @@ protected:
 
 	//! Box Spacing
 	T spacing[dim];
+
+	//! Magnification factor between distribution and
+	//! decomposition
+	size_t magn[dim];
 
 	//! Runtime virtual cluster machine
 	Vcluster & v_cl;
@@ -166,14 +176,15 @@ protected:
 	/*! \brief It convert the box from the domain decomposition into sub-domain
 	 *
 	 * The decomposition box from the domain-decomposition contain the box in integer
-	 * coordinates
+	 * coordinates. This box is converted into a continuos box. It also adjust loc_box
+	 * if the distribution grid and the decomposition grid are different.
 	 *
 	 * \param loc_box local box
 	 *
-	 * \return the corresponding sib-domain
+	 * \return the corresponding sub-domain
 	 *
 	 */
-	SpaceBox<dim,T> convertDecBoxIntoSubDomain(const SpaceBox<dim,size_t> & loc_box)
+	template<typename Memory_bx> SpaceBox<dim,T> convertDecBoxIntoSubDomain(encapc<1,::Box<dim,size_t>,Memory_bx> loc_box)
 	{
 		// A point with all coordinate to one
 		size_t one[dim];
@@ -182,6 +193,15 @@ protected:
 		SpaceBox<dim, size_t> sub_dc = loc_box;
 		SpaceBox<dim, size_t> sub_dce = sub_dc;
 		sub_dce.expand(one);
+		sub_dce.mul(magn);
+
+		// shrink by one
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			loc_box.template get<Box::p1>()[i] = sub_dce.getLow(i);
+			loc_box.template get<Box::p2>()[i] = sub_dce.getHigh(i) - 1;
+		}
+
 		SpaceBox<dim, T> sub_d(sub_dce);
 		sub_d.mul(spacing);
 		sub_d += domain.getP1();
@@ -195,7 +215,7 @@ protected:
 		// domain (avoiding rounding off error)
 		for (size_t i = 0; i < dim; i++)
 		{
-			if (sub_dc.getHigh(i) == cd.getGrid().size(i) - 1)
+			if (sub_dc.getHigh(i) == gr.size(i) - 1)
 				sub_d.setHigh(i, domain.getHigh(i));
 
 			if (sub_dc.getLow(i) == 0)
@@ -235,7 +255,7 @@ public:
 
 		// Optimize the decomposition creating bigger spaces
 		// And reducing Ghost over-stress
-		dec_optimizer<dim, Graph_CSR<nm_v, nm_e>> d_o(dist.getGraph(), gr.getSize());
+		dec_optimizer<dim, Graph_CSR<nm_v, nm_e>> d_o(dist.getGraph(), gr_dist.getSize());
 
 		// Ghost
 		Ghost<dim,long int> ghe;
@@ -250,15 +270,28 @@ public:
 		// optimize the decomposition
 		d_o.template optimize<nm_v::sub_id, nm_v::proc_id>(dist.getGraph(), p_id, loc_box, box_nn_processor,ghe,bc);
 
-		// Initialize ss_box and bbox
-		if (loc_box.size() >= 0)
+		// Initialize
+		if (loc_box.size() > 0)
 		{
 			bbox = convertDecBoxIntoSubDomain(loc_box.get(0));
 			proc_box = loc_box.get(0);
+			sub_domains.add(bbox);
+		}
+		else
+		{
+			// invalidate all the boxes
+			for (size_t i = 0 ; i < dim ; i++)
+			{
+				proc_box.setLow(i,0.0);
+				proc_box.setHigh(i,0);
+
+				bbox.setLow(i,0.0);
+				bbox.setHigh(i,0);
+			}
 		}
 
 		// convert into sub-domain
-		for (size_t s = 0; s < loc_box.size(); s++)
+		for (size_t s = 1; s < loc_box.size(); s++)
 		{
 			SpaceBox<dim,T> sub_d = convertDecBoxIntoSubDomain(loc_box.get(s));
 
@@ -277,16 +310,24 @@ public:
 		// fine_s structure contain the processor id for each sub-sub-domain
 		// with sub-sub-domain we mean the sub-domain decomposition before
 		// running dec_optimizer (before merging sub-domains)
-		auto it = dist.getGraph().getVertexIterator();
 
-		while (it.isNext())
+
+		grid_key_dx_iterator<dim> git(gr);
+
+		while (git.isNext())
 		{
-			size_t key = it.get();
+			auto key = git.get();
+			grid_key_dx<dim> key2;
 
-			// fill with the fine decomposition
-			fine_s.get(key) = dist.getGraph().template vertex_p<nm_v::proc_id>(key);
+			for (size_t i = 0 ; i < dim ; i++)
+				key2.set_d(i,key.get(i) / magn[i]);
 
-			++it;
+			size_t lin = gr_dist.LinId(key2);
+			size_t lin2 = gr.LinId(key);
+
+			fine_s.get(lin2) = dist.getGraph().template vertex_p<nm_v::proc_id>(lin);
+
+			++git;
 		}
 
 		Initialize_geo_cell_lists();
@@ -301,19 +342,24 @@ public:
 	{
 		// Get the processor bounding Box
 		::Box<dim,T> bound = getProcessorBounds();
-		// Not necessary, but I prefer
-		bound.enlarge(ghost);
 
-		// calculate the sub-divisions
-		size_t div[dim];
-		for (size_t i = 0; i < dim; i++)
-			div[i] = (size_t) ((bound.getHigh(i) - bound.getLow(i)) / cd.getCellBox().getP2()[i]);
+		// Check if the box is valid
+		if (bound.isValidN() == true)
+		{
+			// Not necessary, but I prefer
+			bound.enlarge(ghost);
 
-		// Initialize the geo_cell structure
-		ie_ghost<dim,T>::Initialize_geo_cell(bound,div);
+			// calculate the sub-divisions
+			size_t div[dim];
+			for (size_t i = 0; i < dim; i++)
+				div[i] = (size_t) ((bound.getHigh(i) - bound.getLow(i)) / cd.getCellBox().getP2()[i]);
 
-		// Initialize shift vectors
-		ie_ghost<dim,T>::generateShiftVectors(domain);
+			// Initialize the geo_cell structure
+			ie_ghost<dim,T>::Initialize_geo_cell(bound,div);
+
+			// Initialize shift vectors
+			ie_ghost<dim,T>::generateShiftVectors(domain);
+		}
 	}
 
 	/*! \brief Calculate communication and migration costs
@@ -851,9 +897,9 @@ public:
 	 * \return processorID
 	 *
 	 */
-	template<typename Mem, typename ofb> size_t inline processorID(encapc<1, Point<dim,T>, Mem> p)
+	template<typename Mem> size_t inline processorID(const encapc<1, Point<dim,T>, Mem> & p) const
 	{
-		return fine_s.get(cd.template getCell<ofb>(p));
+		return fine_s.get(cd.template getCell(p));
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -938,7 +984,7 @@ public:
 	 * \return the periodicity in direction i
 	 *
 	 */
-	inline size_t periodicity(size_t i)
+	inline size_t periodicity(size_t i) const
 	{
 		return bc[i];
 	}
@@ -954,15 +1000,43 @@ public:
 		return bc;
 	}
 
+	/*! \brief Calculate magnification
+	 *
+	 * \param gm distribution grid
+	 *
+	 */
+	void calculate_magn(const grid_sm<dim,void> & gm)
+	{
+		if (gm.size() == 0)
+		{
+			for (size_t i = 0 ; i < dim ; i++)
+				magn[i] = 1;
+		}
+		else
+		{
+			for (size_t i = 0 ; i < dim ; i++)
+			{
+				if (gr.size(i) % gm.size(i) != 0)
+					std::cerr << __FILE__ << ":" << __LINE__ << ".Error the decomposition grid specified as gr.size(" << i << ")=" << gr.size(i) << " is not multiple of the distribution grid gm.size(" << i << ")=" << gm.size(i) << std::endl;
+
+				magn[i] = gr.size(i) / gm.size(i);
+			}
+		}
+	}
+
+
 	/*! \brief Set the parameter of the decomposition
 	 *
 	 * \param div_ storing into how many sub-sub-domains to decompose on each dimension
 	 * \param domain_ domain to decompose
 	 * \param bc boundary conditions
 	 * \param ghost Ghost size
+	 * \param sec_dist Distribution grid. The distribution grid help in reducing the underlying
+	 *                 distribution problem simplifying decomposition problem. This is done in order to
+	 *                 reduce the load/balancing dynamic load balancing problem
 	 *
 	 */
-	void setParameters(const size_t (& div_)[dim], ::Box<dim,T> domain_, const size_t (& bc)[dim] ,const Ghost<dim,T> & ghost)
+	void setParameters(const size_t (& div_)[dim], ::Box<dim,T> domain_, const size_t (& bc)[dim] ,const Ghost<dim,T> & ghost, const grid_sm<dim,void> & sec_dist = grid_sm<dim,void>())
 	{
 		// set the boundary conditions
 		for (size_t i = 0 ; i < dim ; i++)
@@ -976,8 +1050,20 @@ public:
 		domain = domain_;
 		cd.setDimensions(domain, div_, 0);
 
+		// We we have a secondary grid costruct a reduced graph
+		if (sec_dist.size(0) != 0)
+		{
+			calculate_magn(sec_dist);
+			gr_dist.setDimensions(sec_dist.getSize());
+		}
+		else
+		{
+			calculate_magn(sec_dist);
+			gr_dist = gr;
+		}
+
 		// init distribution
-		dist.createCartGraph(gr, domain);
+		dist.createCartGraph(gr_dist, domain);
 
 	}
 
@@ -1013,6 +1099,7 @@ public:
 		calculateGhostBoxes();
 
 		domain_nn_calculator_cart<dim>::reset();
+		domain_nn_calculator_cart<dim>::setParameters(proc_box);
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
@@ -1034,6 +1121,7 @@ public:
 		calculateGhostBoxes();
 
 		domain_nn_calculator_cart<dim>::reset();
+		domain_nn_calculator_cart<dim>::setParameters(proc_box);
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
@@ -1055,6 +1143,7 @@ public:
 		calculateGhostBoxes();
 
 		domain_nn_calculator_cart<dim>::reset();
+		domain_nn_calculator_cart<dim>::setParameters(proc_box);
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
@@ -1215,9 +1304,19 @@ public:
 	 * \return The physical domain box
 	 *
 	 */
-	const ::Box<dim,T> & getDomain()
+	const ::Box<dim,T> & getDomain() const
 	{
 		return domain;
+	}
+
+	openfpm::vector<SpaceBox<dim, T>> getSubDomains() const
+	{
+		return sub_domains;
+	}
+
+	openfpm::vector<openfpm::vector<SpaceBox<dim, T>>> & getSubDomainsGlobal()
+	{
+		return sub_domains_global;
 	}
 
 	/*! \brief Check if the particle is local
@@ -1244,6 +1343,20 @@ public:
 	 *
 	 */
 	bool isLocal(const T (&pos)[dim]) const
+	{
+		return processorID(pos) == v_cl.getProcessUnitID();
+	}
+
+	/*! \brief Check if the particle is local
+	 *
+	 * \warning if the particle id outside the domain the result is unreliable
+	 *
+	 * \param pos object position
+	 *
+	 * \return true if it is local
+	 *
+	 */
+	bool isLocal(const Point<dim,T> & pos) const
 	{
 		return processorID(pos) == v_cl.getProcessUnitID();
 	}
@@ -1275,35 +1388,65 @@ public:
 
 	/*! \brief Get the domain Cells
 	 *
-	 * It perform a linearization of the domain cells using the extension provided in gs
+	 * It return all the cells-id that are inside the processor-domain
 	 *
-	 *
-	 * \param shift Cell padding
-	 * \param cell_shift where the domain cell start
-	 * \param gs grid extension
+	 * \return the cells id inside the domain
 	 *
 	 */
-	openfpm::vector<size_t> & getDomainCells(grid_key_dx<dim> & shift, grid_key_dx<dim> & cell_shift, grid_sm<dim,void> & gs)
+	openfpm::vector<size_t> & getDomainCells()
 	{
-		return domain_nn_calculator_cart<dim>::getDomainCells(shift,cell_shift,gs,proc_box,loc_box);
+		return domain_nn_calculator_cart<dim>::getDomainCells();
 	}
 
-	/*! \brief Get the anomalous cells
+	/*! \brief Get the CRS domain Cells with normal neighborhood
 	 *
-	 * This function include also a linearization of the indexes
+	 * In case of symmetric interaction the neighborhood cells of
+	 * a cell is different
 	 *
-	 * \param shift Shifting point
-	 * \param cell_shift where the processor cell-list start (In case of symmetric)
-	 *                   exist one global cell-list, but each processor span only one
-	 *                   part of it
-	 * \param gs grid extension
+	 * \verbatim
+
+	   Symmetric      Normal
+
+	    * * *         * * *
+	      X *         * X *
+	                  * * *
+	  \endverbatim
+	 *
+	 *
+	 * In case of CRS scheme some cells has the symmetric neighborhood
+	 * some others has more complex neighborhood. This function return
+	 * all the cells with normal neighborhood
+	 *
+	 * \return the cell-id of the cells inside the processor-domain with normal neighborhood
+	 *
+	 */
+	openfpm::vector<size_t> & getCRSDomainCells()
+	{
+		return domain_nn_calculator_cart<dim>::getCRSDomainCells();
+	}
+
+	/*! \brief set NN parameters to calculate cell-list neighborhood
+	 *
+	 * \param shift to apply in cell linearization
+	 * \param gs cell grid
+	 *
+	 */
+	void setNNParameters(grid_key_dx<dim> & shift, grid_sm<dim,void> & gs)
+	{
+		domain_nn_calculator_cart<dim>::setNNParameters(loc_box, shift, gs);
+	}
+
+	/*! \brief Get the CRS anomalous cells
+	 *
+	 * This function return the anomalous cells
+	 *
 	 *
 	 * \return the anomalous cells with neighborhood
 	 *
 	 */
-	openfpm::vector<subsub_lin<dim>> & getAnomDomainCells(grid_key_dx<dim> & shift, grid_key_dx<dim> & cell_shift, grid_sm<dim,void> & gs)
+	openfpm::vector<subsub_lin<dim>> & getCRSAnomDomainCells()
 	{
-		return domain_nn_calculator_cart<dim>::getAnomDomainCells(shift,cell_shift,gs,proc_box,loc_box);
+		return domain_nn_calculator_cart<dim>::getCRSAnomDomainCells();
 	}
 
 	/*! \brief Check if the particle is local considering boundary conditions
@@ -1353,13 +1496,22 @@ public:
 		return ghost;
 	}
 
-	/*! \brief Method to access to the grid information of the decomposition
+	/*! \brief Decomposition grid
 	 *
 	 * \return the grid
 	 */
 	const grid_sm<dim,void> getGrid()
 	{
 		return gr;
+	}
+
+	/*! \brief Distribution grid
+	 *
+	 * \return the grid
+	 */
+	const grid_sm<dim,void> getDistGrid()
+	{
+		return gr_dist;
 	}
 
 	////////////// Functions to get decomposition information ///////////////
@@ -1573,6 +1725,16 @@ public:
 	size_t get_ndec()
 	{
 		return dist.get_ndec();
+	}
+
+	/*! \brief Get the cell decomposer of the decomposition
+	 *
+	 * \return the cell decomposer
+	 *
+	 */
+	const CellDecomposer_sm<dim, T, shift<dim,T>> & getCellDecomposer()
+	{
+		return cd;
 	}
 
 	//! friend classes

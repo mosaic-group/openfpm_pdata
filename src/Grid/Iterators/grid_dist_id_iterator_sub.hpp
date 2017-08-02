@@ -26,7 +26,7 @@ class grid_dist_iterator_sub
 	{
 		//! start point where iterate
 		grid_key_dx<dim> start;
-		// ! stop point where iterate
+		//! stop point where iterate
 		grid_key_dx<dim> stop;
 	};
 
@@ -165,7 +165,7 @@ class grid_dist_iterator_sub
 	 *
 	 */
 
-	inline grid_dist_iterator_sub<dim,device_grid> operator++()
+	inline grid_dist_iterator_sub<dim,device_grid> & operator++()
 	{
 		++a_it;
 

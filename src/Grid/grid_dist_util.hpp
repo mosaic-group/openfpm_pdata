@@ -200,11 +200,17 @@ template <unsigned int dim> struct e_lbox_id
 	//! Box defining the external ghost box in local coordinates
 	::Box<dim,long int> box;
 
-	//! Sector position of the local external ghost box
-	comb<dim> cmb;
+	//! Has this external ghost box initialized
+	bool initialized = false;
 
 	//! sub_id in which sub-domain this box live
 	size_t sub;
+
+	//! external ghost box linked to this internal ghost box
+	size_t k;
+
+	//! Sector position of the local external ghost box
+	comb<dim> cmb;
 };
 
 /*! \brief Per-processor Internal ghost box

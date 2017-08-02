@@ -189,8 +189,10 @@ public:
 	 */
 	void getSubSubDomainPosition(size_t id, T (&pos)[dim])
 	{
+#ifdef SE_CLASS1
 		if (id >= g.getNVertex())
-			std::cerr << "Position - Such vertex doesn't exist (id = " << id << ", " << "total size = " << g.getNVertex() << ")\n";
+			std::cerr << __FILE__ << ":" << __LINE__ << " Position - Such vertex doesn't exist (id = " << id << ", " << "total size = " << g.getNVertex() << ")\n";
+#endif
 
 		pos[0] = g.vertex(id).template get<nm_v::x>()[0];
 		pos[1] = g.vertex(id).template get<nm_v::x>()[1];
@@ -207,9 +209,10 @@ public:
 	inline void setComputationCost(size_t id, size_t weight)
 	{
 		verticesGotWeights = true;
-
+#ifdef SE_CLASS1
 		if (id >= g.getNVertex())
-			std::cerr << "Weight - Such vertex doesn't exist (id = " << id << ", " << "total size = " << g.getNVertex() << ")\n";
+			std::cerr << __FILE__ << ":" << __LINE__ << "Weight - Such vertex doesn't exist (id = " << id << ", " << "total size = " << g.getNVertex() << ")\n";
+#endif
 
 		// If the vertex is inside this processor update the value
 		g.vertex(id).template get<nm_v::computation>() = weight;
@@ -232,8 +235,10 @@ public:
 	 */
 	size_t getVertexWeight(size_t id)
 	{
+#ifdef SE_CLASS1
 		if (id >= g.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << g.getTotNVertex() << ")\n";
+			std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << g.getTotNVertex() << ")\n";
+#endif
 
 		return g.vertex(id).template get<nm_v::computation>();
 	}
@@ -284,8 +289,10 @@ public:
 	 */
 	void setMigrationCost(size_t id, size_t migration)
 	{
+#ifdef SE_CLASS1
 		if (id >= g.getNVertex())
-			std::cerr << "Migration - Such vertex doesn't exist (id = " << id << ", " << "total size = " << g.getNVertex() << ")\n";
+			std::cerr << __FILE__ << ":" << __LINE__ << "Migration - Such vertex doesn't exist (id = " << id << ", " << "total size = " << g.getNVertex() << ")\n";
+#endif
 
 		g.vertex(id).template get<nm_v::migration>() = migration;
 	}

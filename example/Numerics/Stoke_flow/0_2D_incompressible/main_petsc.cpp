@@ -291,7 +291,7 @@ int main(int argc, char* argv[])
 	Ghost<2,long int> stencil_max(1);
 
 	// Finite difference scheme
-	FDScheme<lid_nn> fd(pd, stencil_max, domain, g_dist.getGridInfo(), g_dist);
+	FDScheme<lid_nn> fd(pd, stencil_max, domain, g_dist);
 
 	//! \cond [fd scheme] \endcond
 
@@ -383,17 +383,13 @@ int main(int argc, char* argv[])
 	// Create a PETSC solver
 	petsc_solver<double> solver;
 
-	// Warning try many solver and collect statistics require a lot of time
-	// To just solve you can comment this line
-	solver.best_solve();
-
 	// Set the maxumum nunber if iterations
 	solver.setMaxIter(1000);
 
 	solver.setRestart(200);
 
 	// Give to the solver A and b, return x, the solution
-	auto x = solver.solve(fd.getA(),fd.getB());
+	auto x = solver.try_solve(fd.getA(),fd.getB());
 
 	//! \cond [solver] \endcond
 
@@ -404,7 +400,7 @@ int main(int argc, char* argv[])
 	 *
 	 * Once we have the solution we copy it on the grid
 	 *
-	 * \snippet Numerics/Stoke_flow/0_2D_incompressible/main_eigen.cpp copy write
+	 * \snippet Numerics/Stoke_flow/0_2D_incompressible/main_petsc.cpp copy write
 	 *
 	 */
 
@@ -424,7 +420,7 @@ int main(int argc, char* argv[])
 	 *
 	 *  At the very end of the program we have always to de-initialize the library
 	 *
-	 * \snippet Numerics/Stoke_flow/0_2D_incompressible/main_eigen.cpp fin lib
+	 * \snippet Numerics/Stoke_flow/0_2D_incompressible/main_petsc.cpp fin lib
 	 *
 	 */
 
@@ -440,7 +436,7 @@ int main(int argc, char* argv[])
 	 *
 	 * # Full code # {#num_sk_inc_2D_ps_code}
 	 *
-	 * \include Numerics/Stoke_flow/0_2D_incompressible/main_eigen.cpp
+	 * \include Numerics/Stoke_flow/0_2D_incompressible/main_petsc.cpp
 	 *
 	 */
 }

@@ -5,7 +5,7 @@
  *      Author: i-bird
  */
 
-#ifndef GARGABE_HPP_
+#ifdef GARGABE_HPP_
 #define GARGABE_HPP_
 
 

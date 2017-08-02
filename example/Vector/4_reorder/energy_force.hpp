@@ -12,7 +12,7 @@ constexpr int velocity = 0;
 constexpr int force = 1;
 
 
-void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList<3, double, FAST, shift<3, double> > & NN, double sigma12, double sigma6)
+template<typename CellList> void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList & NN, double sigma12, double sigma6)
 {
 	// update the Cell-list
 	vd.updateCellList(NN);
@@ -73,7 +73,7 @@ void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, Ce
 }
 
 
-double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList<3, double, FAST, shift<3, double> > & NN, double sigma12, double sigma6)
+template<typename CellList> double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList & NN, double sigma12, double sigma6)
 {
 	double E = 0.0;
 

@@ -4,13 +4,15 @@
 /*! \page grid Grid
  *
  * \subpage grid_0_simple
+ * \subpage grid_1_save_load
  * \subpage Grid_1_stencil
  * \subpage Grid_2_solve_eq
  * \subpage Grid_3_gs
+ * \subpage Grid_3_gs_3D
  *
  */
 
-/*! \page grid_0_simple Grid 0 simple
+/*! \page grid_0_simple Simple usage
 
   [TOC]
 
@@ -29,7 +31,7 @@
 
 int main(int argc, char* argv[])
 {
-	/*! \page grid_0_simple Grid 0 simple
+	/*! \page grid_0_simple Simple usage
 	 *
 	 * ## Initialization ## {#e0_s_initialization}
 	 *
@@ -55,18 +57,18 @@ int main(int argc, char* argv[])
 	size_t sz[3] = {100,100,100};
 
 	// Ghost part
-	Ghost<3,float> g(0.01);
+	Ghost<3,float> g(0.1);
 	
 	//! \cond [initialization] \endcond
 
-	/*! \page grid_0_simple Grid 0 simple
+	/*! \page grid_0_simple Simple usage
 	 *
 	 * ## Grid instantiation ## {#e0_s_grid_inst}
 	 *
-	 * Here we are creating a distributed grid in defined by the following parameters
+	 * Here we are creating a distributed grid defined by the following parameters
 	 *
 	 * * 3 dimensionality of the grid
-	 * * float Type used for the spatial coordinates
+	 * * float type used for the spatial coordinates
 	 * * each grid point contain a vector of dimension 3 (float[3]),
 	 * * float[3] is the information stored by each grid point a float[3]
 	 *   the list of properties must be put into an aggregate data structure aggregate<prop1,prop2,prop3, ... >
@@ -88,13 +90,12 @@ int main(int argc, char* argv[])
 	//! \cond [grid instantiation] \endcond
 
 	/*!
-	 * \page grid_0_simple Grid 0 simple
+	 * \page grid_0_simple Simple usage
 	 *
 	 * ## Loop over grid points ## {#e0_s_loop_gp}
 	 *
 	 * Get an iterator that go through all the grid points. In this
-	 * example we use iterators. Iterators are convenient way to explore/iterate data-structures in an
-	 * convenient and easy way.
+	 * example we use iterators. Iterators are convenient way to explore/iterate data-structures.
 	 *
 	 *  \snippet Grid/0_simple/main.cpp get iterator
 	 *  \snippet Grid/0_simple/main.cpp get iterator2
@@ -115,7 +116,7 @@ int main(int argc, char* argv[])
 		//! \cond [get iterator] \endcond
 
 		/*!
-		 * \page grid_0_simple Grid 0 simple
+		 * \page grid_0_simple Simple usage
 		 *
 		 * ## Grid coordinates ## {#e0_s_grid_coord}
 		 *
@@ -135,7 +136,7 @@ int main(int argc, char* argv[])
 		//! \cond [local grid] \endcond
 
 		/*!
-		 * \page grid_0_simple Grid 0 simple
+		 * \page grid_0_simple Simple usage
 		 *
 		 * **Short explanation**
 		 *
@@ -144,7 +145,7 @@ int main(int argc, char* argv[])
 		 */
 		 /*!
 		  *
-		  * \page grid_0_simple Grid 0 simple
+		  * \page grid_0_simple Simple usage
 		  *
 		 \htmlonly <a href="#" onclick="if (document.getElementById('long-explanation-div').style.display == 'none') {document.getElementById('long-explanation-div').style.display = 'block'} else {document.getElementById('long-explanation-div').style.display = 'none'}" >Long Explanation</a> \endhtmlonly
 		 *
@@ -185,7 +186,7 @@ int main(int argc, char* argv[])
 
 PX,Y Processor X, sub-domain Y</pre><p>The point # has</p>
 <ul>
-<li>Global/Real coordinates are (3,2)</li>
+<li>Global/Real coordinates (3,2)</li>
 <li>Local grid coordinates are Sub-domain = 0, grid position = (0,0)</li>
 </ul>
 <p>Here we convert the local grid coordinates, into global coordinates. key_g internally store 3 integers that identify the position of the grid point in global coordinates</p>
@@ -193,7 +194,7 @@ PX,Y Processor X, sub-domain Y</pre><p>The point # has</p>
 </div>
 \endhtmlonly
 */
-		/*! \page grid_0_simple Grid 0 simple
+		/*! \page grid_0_simple Simple usage
 		 *
 		 * \snippet Grid/0_simple/main.cpp global coord
 		 *
@@ -206,7 +207,7 @@ PX,Y Processor X, sub-domain Y</pre><p>The point # has</p>
 		//! \cond [global coord] \endcond
 
 		/*!
-		 * \page grid_0_simple Grid 0 simple
+		 * \page grid_0_simple Simple usage
 		 *
 		 * ## Assign properties ## {#grid_assign}
 		 *
@@ -230,8 +231,6 @@ PX,Y Processor X, sub-domain Y</pre><p>The point # has</p>
 
 		//! \cond [get iterator2] \endcond
 
-		//! ...
-
 		// next point
 		++dom;
 	}
@@ -239,7 +238,7 @@ PX,Y Processor X, sub-domain Y</pre><p>The point # has</p>
 	//! \cond [get iterator2] \endcond
 
 	/*!
-	 * \page grid_0_simple Grid 0 simple
+	 * \page grid_0_simple Simple usage
 	 *
 	 * Each sub-domain has an extended part, that is materially contained in
 	 * another processor. The function ghost_get guarantee (after return) that this extended part
@@ -256,7 +255,7 @@ PX,Y Processor X, sub-domain Y</pre><p>The point # has</p>
 	//! \cond [ghost get] \endcond
 
 	/*!
-	 * \page grid_0_simple Grid 0 simple
+	 * \page grid_0_simple Simple usage
 	 *
 	 * count contain the number of points the local processor contain, if we are interested to count the total number across the processor
 	 * we can use the function sum, to sum numbers across processors. First we have to get an instance of Vcluster, queue an operation of sum with
@@ -285,13 +284,17 @@ PX,Y Processor X, sub-domain Y</pre><p>The point # has</p>
 	//! \cond [reduce] \endcond
 
 	/*!
-	 * \page grid_0_simple Grid 0 simple
+	 * \page grid_0_simple Simple usage
 	 *
 	 * ## VTK and visualization ## {#e0_s_VTK_vis}
 	 *
 	 * Finally we want a nice output to visualize the information stored by the distributed grid.
 	 * The function write by default produce VTK files. One for each processor that can be visualized
 	 * with the programs like paraview
+	 *
+	 * \htmlonly
+	 * <img src="http://ppmcore.mpi-cbg.de/web/images/examples/0_simple_grid/0_simple_grid_init.jpg"/>
+	 * \endhtmlonly
 	 *
 	 * \snippet Grid/0_simple/main.cpp write
 	 *
@@ -304,7 +307,7 @@ PX,Y Processor X, sub-domain Y</pre><p>The point # has</p>
 	//! \cond [write] \endcond
 
 	/*!
-	 * \page grid_0_simple Grid 0 simple
+	 * \page grid_0_simple Simple usage
 	 *
 	 * ## Decomposition ## {#grid_dec}
 	 *
@@ -312,6 +315,15 @@ PX,Y Processor X, sub-domain Y</pre><p>The point # has</p>
 	 * space across processor. This function produce VTK files that can be visualized with Paraview
 	 *
 	 * \snippet Grid/0_simple/main.cpp out_dec
+	 *
+	 * \htmlonly
+	 * <img src="http://ppmcore.mpi-cbg.de/web/images/examples/0_simple_grid/0_simple_grid_dec.jpg"/>
+	 * \endhtmlonly
+	 *
+	 * Here we see the decomposition in 3D for 2 processors. The red box in wire-frame is the processor 0
+	 * subdomain. The blu one is the processor 1 sub-domain. The red solid box is the extended part for processor 0
+	 * the blu solid part is the extended part for processor 1
+	 *
 	 *
 	 */
 
@@ -322,7 +334,7 @@ PX,Y Processor X, sub-domain Y</pre><p>The point # has</p>
 	//! \cond [out_dec] \endcond
 
 	/*!
-	 * \page grid_0_simple Grid 0 simple
+	 * \page grid_0_simple Simple usage
 	 *
 	 * ## Finalize ## {#finalize}
 	 *
@@ -339,7 +351,7 @@ PX,Y Processor X, sub-domain Y</pre><p>The point # has</p>
 	//! \cond [finalize] \endcond
 
 	/*!
-	 * \page grid_0_simple Grid 0 simple
+	 * \page grid_0_simple Simple usage
 	 *
 	 * # Full code # {#code}
 	 *

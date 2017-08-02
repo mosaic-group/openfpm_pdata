@@ -319,7 +319,7 @@ int main(int argc, char* argv[])
 	Ghost<3,long int> stencil_max(1);
 
 	// Finite difference scheme
-	FDScheme<lid_nn> fd(pd, stencil_max, domain, g_dist.getGridInfo(), g_dist);
+	FDScheme<lid_nn> fd(pd, stencil_max, domain, g_dist);
 
 	//! \cond [fd scheme] \endcond
 
@@ -465,7 +465,7 @@ int main(int argc, char* argv[])
 
 	//! \cond [copy write] \endcond
 
-	// Bring the solution to grid
+	// copy the solution to grid
 	fd.template copy<velocity,pressure>(x,{0,0},{sz[0]-1,sz[1]-1,sz[2]-1},g_dist);
 
 	g_dist.write("lid_driven_cavity_p_petsc");

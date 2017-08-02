@@ -684,7 +684,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 
 	// In case of CRS we have to iterate particles within some cells
 	// here we define whichone
-	auto p_it2 = vd2.getParticleIteratorCRS(NN2);
+	auto p_it2 = vd2.getParticleIteratorCRS_Cell(NN2);
 
 	// For each particle
 	while (p_it2.isNext())
@@ -812,7 +812,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list )
 	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
 
 	// Distributed vector
-	vector_dist<3,float, part_prop > vd(k,box,bc,ghost);
+	vector_dist<3,float, part_prop > vd(k,box,bc,ghost,BIND_DEC_TO_GHOST);
 	size_t start = vd.init_size_accum(k);
 
 	auto it = vd.getIterator();
@@ -1186,8 +1186,189 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list_no_bottom )
 	}
 }
 
+template<typename part_prop> void test_crs_full(vector_dist<3,float, part_prop > & vd,
+		                                        vector_dist<3,float, part_prop > & vd2,
+												std::default_random_engine & eg,
+												std::uniform_real_distribution<float> & ud,
+												size_t start,
+												float r_cut)
+{
+	auto it = vd.getIterator();
 
-BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_verlet_list )
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.getPos(key)[0] = ud(eg);
+		vd.getPos(key)[1] = ud(eg);
+		vd.getPos(key)[2] = ud(eg);
+
+		vd2.getPos(key)[0] = vd.getPos(key)[0];
+		vd2.getPos(key)[1] = vd.getPos(key)[1];
+		vd2.getPos(key)[2] = vd.getPos(key)[2];
+
+		// Fill some properties randomly
+
+		vd.template getProp<0>(key) = 0;
+		vd.template getProp<1>(key) = 0;
+		vd.template getProp<2>(key) = key.getKey() + start;
+
+		vd2.template getProp<0>(key) = 0;
+		vd2.template getProp<1>(key) = 0;
+		vd2.template getProp<2>(key) = key.getKey() + start;
+
+		++it;
+	}
+
+	vd.map();
+	vd2.map();
+
+	Vcluster & v_cl = create_vcluster();
+
+	// sync the ghost
+	vd.template ghost_get<0,2>();
+	vd2.template ghost_get<0,2>();
+
+	auto NN = vd.getVerlet(r_cut);
+	auto p_it = vd.getDomainIterator();
+
+	while (p_it.isNext())
+	{
+		auto p = p_it.get();
+
+		Point<3,float> xp = vd.getPos(p);
+
+		if (v_cl.getProcessUnitID() == 2 && p.getKey() == 137)
+		{
+			int debug = 0;
+			debug++;
+		}
+
+
+		auto Np = NN.getNNIterator(p.getKey());
+
+		while (Np.isNext())
+		{
+			auto q = Np.get();
+
+			if (p.getKey() == q)
+			{
+				++Np;
+				continue;
+			}
+
+			// repulsive
+
+			Point<3,float> xq = vd.getPos(q);
+			Point<3,float> f = (xp - xq);
+
+			float distance = f.norm();
+
+			// Particle should be inside 2 * r_cut range
+
+			if (distance < r_cut )
+			{
+				vd.template getProp<0>(p)++;
+				vd.template getProp<3>(p).add();
+				vd.template getProp<3>(p).last().xq = xq;
+				vd.template getProp<3>(p).last().id = vd.template getProp<2>(q);
+			}
+
+			++Np;
+		}
+
+		++p_it;
+	}
+
+	// We now try symmetric Verlet-list Crs scheme
+
+	auto NN2 = vd2.getVerletCrs(r_cut);
+
+	// Because iterating across particles in the CSR scheme require a Cell-list
+	auto p_it2 = vd2.getParticleIteratorCRS_Cell(NN2.getInternalCellList());
+
+	while (p_it2.isNext())
+	{
+		auto p = p_it2.get();
+
+		Point<3,float> xp = vd2.getPos(p);
+
+		auto Np = NN2.template getNNIterator<NO_CHECK>(p);
+
+		while (Np.isNext())
+		{
+			auto q = Np.get();
+
+			if (p == q)
+			{
+				++Np;
+				continue;
+			}
+
+			// repulsive
+
+			Point<3,float> xq = vd2.getPos(q);
+			Point<3,float> f = (xp - xq);
+
+			float distance = f.norm();
+
+			if (distance < r_cut )
+			{
+				vd2.template getProp<1>(p)++;
+				vd2.template getProp<1>(q)++;
+
+				vd2.template getProp<4>(p).add();
+				vd2.template getProp<4>(q).add();
+
+				vd2.template getProp<4>(p).last().xq = xq;
+				vd2.template getProp<4>(q).last().xq = xp;
+				vd2.template getProp<4>(p).last().id = vd2.template getProp<2>(q);
+				vd2.template getProp<4>(q).last().id = vd2.template getProp<2>(p);
+			}
+
+			++Np;
+		}
+
+		++p_it2;
+	}
+
+	vd2.template ghost_put<add_,1>();
+	vd2.template ghost_put<merge_,4>();
+
+	auto p_it3 = vd.getDomainIterator();
+
+	bool ret = true;
+	while (p_it3.isNext())
+	{
+		auto p = p_it3.get();
+
+		ret &= vd2.template getProp<1>(p) == vd.template getProp<0>(p);
+
+		if (ret == false)
+		{
+			Point<3,float> xp = vd2.getPos(p);
+			std::cout << "ERROR " << vd2.template getProp<1>(p) << "   " << vd.template getProp<0>(p) <<  "    " << xp.toString() << std::endl;
+		}
+
+		vd.template getProp<3>(p).sort();
+		vd2.template getProp<4>(p).sort();
+
+		ret &= vd.template getProp<3>(p).size() == vd2.template getProp<4>(p).size();
+
+		for (size_t i = 0 ; i < vd.template getProp<3>(p).size() ; i++)
+			ret &= vd.template getProp<3>(p).get(i).id == vd2.template getProp<4>(p).get(i).id;
+
+		if (ret == false)
+			break;
+
+		++p_it3;
+	}
+
+	BOOST_REQUIRE_EQUAL(ret,true);
+}
+
+
+void test_csr_verlet_list()
 {
 	Vcluster & v_cl = create_vcluster();
 
@@ -1243,6 +1424,137 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_verlet_list )
 	vector_dist<3,float, part_prop > vd2(k,box,bc,ghost2,BIND_DEC_TO_GHOST);
 	size_t start = vd.init_size_accum(k);
 
+	test_crs_full(vd,vd2,eg,ud,start,r_cut);
+}
+
+void test_csr_verlet_list_override()
+{
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 24)
+		return;
+
+	float L = 1000.0;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(0);
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(-L,L);
+
+    long int k = 4096 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 4;
+	big_step = (big_step == 0)?1:big_step;
+
+	print_test("Testing 3D periodic vector symmetric cell-list k=",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list k=" << k );
+
+	Box<3,float> box({-L,-L,-L},{L,L,L});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	float r_cut = 100.0;
+
+	// ghost
+	Ghost<3,float> ghost(r_cut);
+	Ghost<3,float> ghost2(r_cut);
+	ghost2.setLow(0,0.0);
+	ghost2.setLow(1,0.0);
+	ghost2.setLow(2,0.0);
+
+	// Point and global id
+	struct point_and_gid
+	{
+		size_t id;
+		Point<3,float> xq;
+
+		bool operator<(const struct point_and_gid & pag) const
+		{
+			return (id < pag.id);
+		}
+	};
+
+	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
+
+	size_t gdist_d[3];
+	size_t gdist2_d[3];
+
+	gdist_d[0] = 1;
+	gdist_d[1] = 2;
+	gdist_d[2] = 5;
+
+	gdist2_d[0] = 1;
+	gdist2_d[1] = 2;
+	gdist2_d[2] = 5;
+
+	grid_sm<3,void> gdist(gdist_d);
+	grid_sm<3,void> gdist2(gdist2_d);
+
+	// Distributed vector
+	vector_dist<3,float, part_prop > vd(k,box,bc,ghost,BIND_DEC_TO_GHOST,gdist_d);
+	vector_dist<3,float, part_prop > vd2(k,box,bc,ghost2,BIND_DEC_TO_GHOST,gdist2_d);
+	size_t start = vd.init_size_accum(k);
+
+	test_crs_full(vd,vd2,eg,ud,start,r_cut);
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_verlet_list )
+{
+	test_csr_verlet_list();
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_verlet_list_dec_override )
+{
+	test_csr_verlet_list_override();
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_verlet_list_partit )
+{
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 24)
+		return;
+
+	float L = 1000.0;
+
+	bool ret = true;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(0);
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(-L,L);
+
+    long int k = 4096 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 4;
+	big_step = (big_step == 0)?1:big_step;
+
+	print_test("Testing 3D periodic vector symmetric cell-list k=",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list k=" << k );
+
+	Box<3,float> box({-L,-L,-L},{L,L,L});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	float r_cut = 100.0;
+
+	// ghost
+	Ghost<3,float> ghost(r_cut);
+	Ghost<3,float> ghost2(r_cut);
+	ghost2.setLow(0,0.0);
+	ghost2.setLow(1,0.0);
+	ghost2.setLow(2,0.0);
+
+
+	typedef  aggregate<size_t> part_prop;
+
+	// Distributed vector
+	vector_dist<3,float, part_prop > vd(k,box,bc,ghost,BIND_DEC_TO_GHOST);
+
 	auto it = vd.getIterator();
 
 	while (it.isNext())
@@ -1253,31 +1565,196 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_verlet_list )
 		vd.getPos(key)[1] = ud(eg);
 		vd.getPos(key)[2] = ud(eg);
 
-		vd2.getPos(key)[0] = vd.getPos(key)[0];
-		vd2.getPos(key)[1] = vd.getPos(key)[1];
-		vd2.getPos(key)[2] = vd.getPos(key)[2];
-
 		// Fill some properties randomly
 
 		vd.getProp<0>(key) = 0;
-		vd.getProp<1>(key) = 0;
-		vd.getProp<2>(key) = key.getKey() + start;
-
-		vd2.getProp<0>(key) = 0;
-		vd2.getProp<1>(key) = 0;
-		vd2.getProp<2>(key) = key.getKey() + start;
 
 		++it;
 	}
 
 	vd.map();
-	vd2.map();
 
 	// sync the ghost
-	vd.ghost_get<0,2>();
-	vd2.ghost_get<0,2>();
+	vd.ghost_get<0>();
 
-	auto NN = vd.getVerlet(r_cut);
+	// We now try symmetric Verlet-list Crs scheme
+
+	auto NN2 = vd.getVerletCrs(r_cut);
+
+	// Because iterating across particles in the CSR scheme require a Cell-list
+	auto p_it2 = vd.getParticleIteratorCRS_Cell(NN2.getInternalCellList());
+	auto p_it3 = vd.getParticleIteratorCRS(NN2);
+
+	while (p_it2.isNext())
+	{
+		auto p = p_it2.get();
+		auto p2 = p_it3.get();
+
+		ret &= (p == p2);
+
+		if (ret == false)
+			break;
+
+		++p_it2;
+		++p_it3;
+	}
+
+	BOOST_REQUIRE_EQUAL(ret,true);
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_checking_unloaded_processors )
+{
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 24)
+		return;
+
+	float L = 200.0;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(0);
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(0,L);
+
+    long int k = 4096 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 4;
+	big_step = (big_step == 0)?1:big_step;
+
+	print_test("Testing 3D periodic vector symmetric cell-list (unload processors) k=",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list (unload processors) k=" << k );
+
+	Box<3,float> box({0,0,0},{L,L,L});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	float r_cut = 100.0;
+
+	// ghost
+	Ghost<3,float> ghost(r_cut);
+	Ghost<3,float> ghost2(r_cut);
+	ghost2.setLow(0,0.0);
+	ghost2.setLow(1,0.0);
+	ghost2.setLow(2,0.0);
+
+
+	typedef  aggregate<size_t> part_prop;
+
+	// Distributed vector
+	vector_dist<3,float, part_prop > vd(k,box,bc,ghost,BIND_DEC_TO_GHOST);
+
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.getPos(key)[0] = ud(eg);
+		vd.getPos(key)[1] = ud(eg);
+		vd.getPos(key)[2] = ud(eg);
+
+		// Fill some properties randomly
+
+		vd.getProp<0>(key) = 0;
+
+		++it;
+	}
+
+	vd.map();
+
+	//
+	if (v_cl.getProcessingUnits() >= 9)
+	{
+		size_t min = vd.size_local();
+
+		v_cl.min(min);
+		v_cl.execute();
+
+		BOOST_REQUIRE_EQUAL(min,0ul);
+	}
+
+
+	// sync the ghost
+	vd.ghost_get<0>();
+
+	//
+	if (v_cl.getProcessingUnits() >= 9)
+	{
+		size_t min = vd.size_local_with_ghost() - vd.size_local();
+
+		v_cl.min(min);
+		v_cl.execute();
+
+		BOOST_REQUIRE_EQUAL(min,0ul);
+	}
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_cell_list_multi_type )
+{
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 24)
+		return;
+
+	float L = 1000.0;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(0);
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(-L,L);
+
+    long int k = 4096 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 4;
+	big_step = (big_step == 0)?1:big_step;
+
+	print_test("Testing 3D periodic vector symmetric cell-list k=",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list k=" << k );
+
+	Box<3,float> box({-L,-L,-L},{L,L,L});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	float r_cut = 100.0;
+
+	// ghost
+	Ghost<3,float> ghost(r_cut);
+
+	typedef  aggregate<size_t> part_prop;
+
+	// Distributed vector
+	vector_dist<3,float, part_prop > vd(k,box,bc,ghost);
+
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.getPos(key)[0] = ud(eg);
+		vd.getPos(key)[1] = ud(eg);
+		vd.getPos(key)[2] = ud(eg);
+
+		++it;
+	}
+
+	vd.map();
+
+	// sync the ghost
+	vd.ghost_get<0>();
+
+
+	bool ret = true;
+
+	// We take different type of Cell-list
+	auto NN = vd.getCellList<CELL_MEMFAST(3,float)>(r_cut);
+	auto NN2 = vd.getCellList<CELL_MEMBAL(3,float)>(r_cut);
+	auto NN3 = vd.getCellList<CELL_MEMMW(3,float)>(r_cut);
+
 	auto p_it = vd.getDomainIterator();
 
 	while (p_it.isNext())
@@ -1286,118 +1763,39 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_verlet_list )
 
 		Point<3,float> xp = vd.getPos(p);
 
-		auto Np = NN.getNNIterator(p.getKey());
+		auto Np = NN.getNNIterator(NN.getCell(xp));
+		auto Np2 = NN2.getNNIterator(NN2.getCell(xp));
+		auto Np3 = NN3.getNNIterator(NN3.getCell(xp));
 
 		while (Np.isNext())
 		{
+			// first all cell-list must agree
+
+			ret &= (Np.isNext() == Np2.isNext()) && (Np3.isNext() == Np.isNext());
+
+			if (ret == false)
+				break;
+
 			auto q = Np.get();
+			auto q2 = Np2.get();
+			auto q3 = Np3.get();
 
-			if (p.getKey() == q)
-			{
-				++Np;
-				continue;
-			}
+			ret &= (q == q2) && (q == q3);
 
-			// repulsive
-
-			Point<3,float> xq = vd.getPos(q);
-			Point<3,float> f = (xp - xq);
-
-			float distance = f.norm();
-
-			// Particle should be inside 2 * r_cut range
-
-			if (distance < r_cut )
-			{
-				vd.getProp<0>(p)++;
-				vd.getProp<3>(p).add();
-				vd.getProp<3>(p).last().xq = xq;
-				vd.getProp<3>(p).last().id = vd.getProp<2>(q);
-			}
+			if (ret == false)
+				break;
 
 			++Np;
+			++Np2;
+			++Np3;
 		}
 
-		++p_it;
-	}
-
-	// We now try symmetric Verlet-list Crs scheme
-
-	auto NN2 = vd2.getVerletCrs(r_cut);
-
-	// Because iterating across particles in the CSR scheme require a Cell-list
-	auto p_it2 = vd2.getParticleIteratorCRS(NN2.getInternalCellList());
-
-	while (p_it2.isNext())
-	{
-		auto p = p_it2.get();
-
-		Point<3,float> xp = vd2.getPos(p);
-
-		auto Np = NN2.getNNIterator<NO_CHECK>(p);
-
-		while (Np.isNext())
-		{
-			auto q = Np.get();
-
-			if (p == q)
-			{
-				++Np;
-				continue;
-			}
-
-			// repulsive
-
-			Point<3,float> xq = vd2.getPos(q);
-			Point<3,float> f = (xp - xq);
-
-			float distance = f.norm();
-
-			if (distance < r_cut )
-			{
-				vd2.getProp<1>(p)++;
-				vd2.getProp<1>(q)++;
-
-				vd2.getProp<4>(p).add();
-				vd2.getProp<4>(q).add();
-
-				vd2.getProp<4>(p).last().xq = xq;
-				vd2.getProp<4>(q).last().xq = xp;
-				vd2.getProp<4>(p).last().id = vd2.getProp<2>(q);
-				vd2.getProp<4>(q).last().id = vd2.getProp<2>(p);
-			}
-
-			++Np;
-		}
-
-		++p_it2;
-	}
-
-	vd2.ghost_put<add_,1>();
-	vd2.ghost_put<merge_,4>();
-
-	auto p_it3 = vd.getDomainIterator();
-
-	bool ret = true;
-	while (p_it3.isNext())
-	{
-		auto p = p_it3.get();
-
-		ret &= vd2.getProp<1>(p) == vd.getProp<0>(p);
-
-
-		vd.getProp<3>(p).sort();
-		vd2.getProp<4>(p).sort();
-
-		ret &= vd.getProp<3>(p).size() == vd2.getProp<4>(p).size();
-
-		for (size_t i = 0 ; i < vd.getProp<3>(p).size() ; i++)
-			ret &= vd.getProp<3>(p).get(i).id == vd2.getProp<4>(p).get(i).id;
+		ret &= (Np.isNext() == Np2.isNext()) && (Np.isNext() == Np3.isNext());
 
 		if (ret == false)
 			break;
 
-		++p_it3;
+		++p_it;
 	}
 
 	BOOST_REQUIRE_EQUAL(ret,true);

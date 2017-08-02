@@ -53,7 +53,10 @@ function update_openfpm()
   git checkout $branch
   git submodule update
 
-  if [ x"$1" == x"update" ]; then
+  #### Check if we have to force upgrade
+  force_up=$(cat force_upgrade)
+
+  if [ x"$1" == x"update" -a x"$force_up" == x"" ]; then
     source $HOME/openfpm_vars
     sh autogen.sh
     ./config.status
@@ -75,6 +78,7 @@ function update_openfpm()
     else
       echo -e "Upgrade summary\033[92;5;1m SUCCEED \033[0m"
       echo -e "To make the upgrade active do: \033[1m make install \033[0m"
+      rm force_upgrade
     fi
   fi
   

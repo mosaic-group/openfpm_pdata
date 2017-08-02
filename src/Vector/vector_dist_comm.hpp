@@ -78,9 +78,6 @@ class vector_dist_comm
 	//! processor rank list of g_opart
 	openfpm::vector<size_t> prc_g_opart;
 
-	//! Sending buffer for the ghost particles position
-	openfpm::vector<send_pos_vector> g_pos_send;
-
 	//! It store the list of processor that communicate with us (local processor)
 	//! from the last ghost get
 	openfpm::vector<size_t> prc_recv_get;
@@ -107,6 +104,12 @@ class vector_dist_comm
 	//! Local ghost marker (across the ghost particles it mark from where we have the)
 	//! replicated ghost particles that are local
 	size_t lg_m;
+
+	//! Sending buffer
+	openfpm::vector<HeapMemory> hsmem;
+
+	//! Receiving buffer
+	openfpm::vector<HeapMemory> hrmem;
 
 	//! process the particle without properties
 	struct proc_without_prp
@@ -419,8 +422,19 @@ class vector_dist_comm
 
 		// create a number of send buffers equal to the near processors
 		g_pos_send.resize(g_opart.size());
+
+		resize_retained_buffer(hsmem,g_pos_send.size());
+
 		for (size_t i = 0; i < g_pos_send.size(); i++)
 		{
+			// Buffer must retained and survive the destruction of the
+			// vector
+			if (hsmem.get(i).ref() == 0)
+				hsmem.get(i).incRef();
+
+			// Set the memory for retain the send buffer
+			g_pos_send.get(i).setMemory(hsmem.get(i));
+
 			// resize the sending vector (No allocation is produced)
 			g_pos_send.get(i).resize(g_opart.get(i).size());
 		}
@@ -453,8 +467,19 @@ class vector_dist_comm
 		// create a number of send buffers equal to the near processors
 		// from which we received
 		g_send_prp.resize(prc_recv_get.size());
+
+		resize_retained_buffer(hsmem,g_send_prp.size());
+
 		for (size_t i = 0; i < g_send_prp.size(); i++)
 		{
+			// Buffer must retained and survive the destruction of the
+			// vector
+			if (hsmem.get(i).ref() == 0)
+				hsmem.get(i).incRef();
+
+			// Set the memory for retain the send buffer
+			g_send_prp.get(i).setMemory(hsmem.get(i));
+
 			// resize the sending vector (No allocation is produced)
 			g_send_prp.get(i).resize(recv_sz_get.get(i));
 		}
@@ -482,6 +507,21 @@ class vector_dist_comm
 		}
 	}
 
+	/*! \brief resize the retained buffer by nbf
+	 *
+	 *
+	 */
+	void resize_retained_buffer(openfpm::vector<HeapMemory> & rt_buf, size_t nbf)
+	{
+		// Release all the buffer that are going to be deleted
+		for (size_t i = nbf ; i < rt_buf.size() ; i++)
+		{
+			rt_buf.get(i).decRef();
+		}
+
+		hsmem.resize(nbf);
+	}
+
 	/*! \brief This function fill the send buffer for properties after the particles has been label with labelParticles
 	 *
 	 * \tparam send_vector type used to send data
@@ -496,8 +536,19 @@ class vector_dist_comm
 	{
 		// create a number of send buffers equal to the near processors
 		g_send_prp.resize(g_opart.size());
+
+		resize_retained_buffer(hsmem,g_send_prp.size());
+
 		for (size_t i = 0; i < g_send_prp.size(); i++)
 		{
+			// Buffer must retained and survive the destruction of the
+			// vector
+			if (hsmem.get(i).ref() == 0)
+				hsmem.get(i).incRef();
+
+			// Set the memory for retain the send buffer
+			g_send_prp.get(i).setMemory(hsmem.get(i));
+
 			// resize the sending vector (No allocation is produced)
 			g_send_prp.get(i).resize(g_opart.get(i).size());
 		}
@@ -785,6 +836,23 @@ public:
 	{
 	}
 
+	/*! \brief Destructor
+	 *
+	 * Release the retained buffer
+	 *
+	 */
+	~vector_dist_comm()
+	{
+		for (size_t i = 0 ; i < hsmem.size() ; i++)
+		{
+			if (hsmem.get(i).ref() == 1)
+				hsmem.get(i).decRef();
+			else
+				std::cout << __FILE__ << ":" << __LINE__ << " internal error memory is in an invalid state " << std::endl;
+		}
+
+	}
+
 	/*! \brief Get the number of minimum sub-domain per processor
 	 *
 	 * \return minimum number
@@ -813,7 +881,11 @@ public:
 	 * \param opt additional options
 	 *
 	 */
-	void init_decomposition(Box<dim,St> & box, const size_t (& bc)[dim],const Ghost<dim,St> & g, size_t opt)
+	void init_decomposition(Box<dim,St> & box,
+							const size_t (& bc)[dim],
+							const Ghost<dim,St> & g,
+							size_t opt,
+							const grid_sm<dim,void> & gdist)
 	{
 		size_t div[dim];
 
@@ -849,7 +921,7 @@ public:
 		}
 
 		// Create the sub-domains
-		dec.setParameters(div, box, bc, g);
+		dec.setParameters(div, box, bc, g, gdist);
 		dec.decompose();
 	}
 
@@ -884,18 +956,15 @@ public:
 			labelParticlesGhost(v_pos,v_prp,prc_g_opart,g_m);
 
 		// Send and receive ghost particle information
-		openfpm::vector<send_vector> g_send_prp;
-		fill_send_ghost_prp_buf<send_vector, prp_object, prp...>(v_prp,g_send_prp);
+		{
+			openfpm::vector<send_vector> g_send_prp;
+			fill_send_ghost_prp_buf<send_vector, prp_object, prp...>(v_prp,g_send_prp);
 
-		// Create and fill the send buffer for the particle position
-		if (!(opt & NO_POSITION))
-			fill_send_ghost_pos_buf(v_pos,g_pos_send);
+			// if there are no properties skip
+			// SSendRecvP send everything when we do not give properties
 
-		// if there are no properties skip
-		// SSendRecvP send everything when we do not give properties
-
-        if (sizeof...(prp) != 0)
-        {
+			if (sizeof...(prp) != 0)
+			{
                 if (opt & SKIP_LABELLING)
                 {
                 	size_t opt_ = compute_options(opt);
@@ -910,10 +979,16 @@ public:
 
 				for (size_t i = 0 ; i < prc_g_opart.size() ; i++)
 					g_opart_sz.get(i) = g_send_prp.get(i).size();
-        }
+			}
+		}
 
 		if (!(opt & NO_POSITION))
 		{
+			// Sending buffer for the ghost particles position
+			openfpm::vector<send_pos_vector> g_pos_send;
+
+			fill_send_ghost_pos_buf(v_pos,g_pos_send);
+
 			if (opt & SKIP_LABELLING)
 			{
             	size_t opt_ = compute_options(opt);

@@ -26,7 +26,7 @@ then
  if [ ! -d $HOME/$5/MPI ]; then
    echo "COPY MPICH"
    cp -R $HOME/MPI $HOME/$5/MPI
-   echo 1 > $HOME/$5/MPI/version
+   echo 2 > $HOME/$5/MPI/version
  fi
 
  ### Activate MPI and binutils ###
@@ -40,9 +40,10 @@ then
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
   source $HOME/openfpm_vars_$5
  elif [ x"$3" == x"numerics" ]; then
-  CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install"
-  mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
-  source $HOME/openfpm_vars_$5
+  branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
+  CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$branch  -m -s -c "--prefix=/home/jenkins/openfpm_install"
+  mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
+  source $HOME/openfpm_vars_$branch
   make $3
  else
   CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install --no-recursion"
@@ -98,9 +99,9 @@ else
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
   source $HOME/openfpm_vars_$5
  elif [ x"$3" == x"numerics" ]; then
-  ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install"
-  mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
-  source $HOME/openfpm_vars_$5
+  branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
+  ./install -i $HOME/$branch  -m -s -c "--prefix=/home/jenkins/openfpm_install"
+  source $HOME/openfpm_vars_$branch
   make $3
  else
   ./install -i $HOME/$5 -m -s -c "--prefix=/Users/jenkins/openfpm_install --no-recursion"

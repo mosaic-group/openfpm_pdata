@@ -215,7 +215,7 @@ int main(int argc, char* argv[])
 	 *
 	 *  for each neighborhood particle of we calculate the distance. This distance is
 	 * accumulated on the property 0. On the vector property (1) the distance vector is accumulated.
-	 * While on the tensor the moment of inertia is calculated
+	 * While on the tensor the moment of inertia is calculated.
 	 *
 	 * \f$ s = \sum_{q = Neighborhood(p)} |p-q| \f$
 	 *
@@ -247,7 +247,7 @@ int main(int argc, char* argv[])
 		Point<3,float> xp = vd.getPos(p);
 
 		// Get an iterator of all the particles neighborhood of p
-		auto Np = NN.getIterator(NN.getCell(vd.getPos(p)));
+		auto Np = NN.getNNIterator(NN.getCell(vd.getPos(p)));
 
 		// For each particle near p
 		while (Np.isNext())
@@ -362,6 +362,40 @@ int main(int argc, char* argv[])
 	}
 
 	//! \cond [verletlist] \endcond
+
+	/*!
+	 * \page Vector_1_celllist Vector 1 Cell-list
+	 *
+	 * ## Cell-list types ## {#e1_cls_types}
+	 *
+	 * Cell-list can have different types. The dafault that we get from getCellList is called
+	 * CELL_MEMFAST. Exist other two types of Cell-list called CELL_MEMBAL and CELL_MEMMw.
+	 * They all expose the same interface and same functionality so from a user prospective there
+	 * is no difference. Internally they use different memory layout and they can consume
+	 * more or less memory at the cost of speed. The first called CELL_MEMFAST has memory complexity
+	 * equivalent to \f$N_{cells} * N_mco\f$ where \f$N_{cells}\f$ is the number of cells and \f$N_{mco}\f$
+	 * is the maximum number of particles in a cell it is the fastest in access but consume a lot
+	 * of memory. The CELL_MEMBAL has memory complexity \f$N_{cells} + N_{parts}\f$ it consume less memory
+	 * it **can (must be evaluated case by case)** be slower because access require the resolution of
+	 *  pointer to pointer. CELL_MEMMW has memory complexity \f$N_{parts}\f$ access the cell list requires
+	 *  the calculation of an hashing function. The peculiarity of this Cell-list is that does not depend
+	 *  from the number of cells. We suggest in anycase to use the default until memory is not a problem.
+	 *
+	 * \note CELL_MEMBAL and CELLMEMMW are macro that require two parameters
+	 *       one is the dimensionality of the space the other is the type of the space
+	 *
+	 *
+	 * \snippet Vector/1_celllist/main.cpp cell_list_types
+	 *
+	 */
+
+	//! \cond [cell_list_types] \endcond
+
+	// Get cell list
+	auto NN4 = vd.getCellList<CELL_MEMBAL(3,float)>(r_cut);
+	auto NN5 = vd.getCellList<CELL_MEMMW(3,float)>(r_cut);
+
+	//! \cond [cell_list_types] \endcond
 
 	/*!
 	 * \page Vector_1_celllist Vector 1 Cell-list

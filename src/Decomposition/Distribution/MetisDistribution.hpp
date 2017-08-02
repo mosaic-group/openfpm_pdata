@@ -41,11 +41,34 @@ class MetisDistribution
 	//! Global sub-sub-domain graph
 	Graph_CSR<nm_v, nm_e> gp;
 
-	//! Flag to check if weights are used on vertices
-	bool useWeights = false;
-
 	//! Flag that indicate if we are doing a test (In general it fix the seed)
 	bool testing = false;
+
+	//! Metis decomposer utility
+	Metis<Graph_CSR<nm_v, nm_e>> metis_graph;
+
+	/*! \brief sub-domain list and weight
+	 *
+	 */
+	struct met_sub_w
+	{
+		//! sub-domain id
+		size_t id;
+
+		//! sub-domain weight / assignment (it depend in which context is used)
+		size_t w;
+
+		static bool noPointers() {return true;}
+	};
+
+	//! unordered map that map global sub-sub-domain to owned_cost_sub id
+	std::unordered_map<size_t,size_t> owner_scs;
+
+	//! list owned sub-sub-domains set for computation cost
+	openfpm::vector<met_sub_w> owner_cost_sub;
+
+	//! received assignment
+	openfpm::vector<met_sub_w> recv_ass;
 
 	/*! \brief Check that the sub-sub-domain id exist
 	 *
@@ -83,9 +106,13 @@ public:
 
 	static constexpr unsigned int computation = nm_v::computation;
 
-	//! constructor
-	MetisDistribution(Vcluster & v_cl) :
-			v_cl(v_cl)
+	/*! \brief constructor
+	 *
+	 * \param v_cl vcluster
+	 *
+	 */
+	MetisDistribution(Vcluster & v_cl)
+	:v_cl(v_cl),metis_graph(gp)
 	{
 #ifdef SE_CLASS2
 			check_new(this,8,VECTOR_EVENT,1);
@@ -94,6 +121,7 @@ public:
 
 	/*! \brief Copy constructor
 	 *
+	 * \param mt distribution to copy
 	 *
 	 */
 	MetisDistribution(const MetisDistribution & mt)
@@ -108,6 +136,7 @@ public:
 
 	/*! \brief Copy constructor
 	 *
+	 * \param mt distribution to copy
 	 *
 	 */
 	MetisDistribution(MetisDistribution && mt)
@@ -190,16 +219,80 @@ public:
 #ifdef SE_CLASS2
 			check_valid(this,8);
 #endif
-		Metis<Graph_CSR<nm_v, nm_e>> met(gp, v_cl.getProcessingUnits(), useWeights);
-		met.onTest(testing);
 
-		// decompose
-		met.decompose<nm_v::proc_id>();
+		// Gather the sub-domain weight in one processor
+		recv_ass.clear();
+		v_cl.SGather(owner_cost_sub,recv_ass,0);
+
+		if (v_cl.getProcessUnitID() == 0)
+		{
+			if (recv_ass.size() != 0)
+			{
+				// we fill the assignment
+				for (size_t i = 0 ; i < recv_ass.size() ; i++)
+					gp.template vertex_p<nm_v::computation>(recv_ass.get(i).id) = recv_ass.get(i).w;
+
+				metis_graph.initMetisGraph(v_cl.getProcessingUnits(),true);
+			}
+			else
+				metis_graph.initMetisGraph(v_cl.getProcessingUnits(),false);
+			metis_graph.onTest(testing);
+
+			// decompose
+			metis_graph.decompose<nm_v::proc_id>();
+
+			if (recv_ass.size() != 0)
+			{
+				// we fill the assignment
+				for (size_t i = 0 ; i < recv_ass.size() ; i++)
+					recv_ass.get(i).w = gp.template vertex_p<nm_v::proc_id>(recv_ass.get(i).id);
+			}
+			else
+			{
+				recv_ass.resize(gp.getNVertex());
+
+				// we fill the assignment
+				for (size_t i = 0 ; i < gp.getNVertex() ; i++)
+				{
+					recv_ass.get(i).id = i;
+					recv_ass.get(i).w = gp.template vertex_p<nm_v::proc_id>(i);
+				}
+			}
+		}
+		else
+		{
+			metis_graph.inc_dec();
+		}
+
+		recv_ass.resize(gp.getNVertex());
+
+		// broad cast the result
+		v_cl.Bcast(recv_ass,0);
+		v_cl.execute();
+		owner_scs.clear();
+		owner_cost_sub.clear();
+
+		size_t j = 0;
+
+		// Fill the metis graph
+		for (size_t i = 0 ; i < recv_ass.size() ; i++)
+		{
+			gp.template vertex_p<nm_v::proc_id>(recv_ass.get(i).id) = recv_ass.get(i).w;
+
+			if (recv_ass.get(i).w == v_cl.getProcessUnitID())
+			{
+				owner_scs[recv_ass.get(i).id] = j;
+				j++;
+				owner_cost_sub.add();
+				owner_cost_sub.last().id = recv_ass.get(i).id;
+				owner_cost_sub.last().w = 1;
+			}
+		}
 	}
 
-	/*! \brief Refine current decomposition (NOT AVAILABLE on Metis)
+	/*! \brief Refine current decomposition
 	 *
-	 * Disabled for MetisDistribution
+	 * In metis case it just re-decompose
 	 *
 	 */
 	void refine()
@@ -207,9 +300,21 @@ public:
 #ifdef SE_CLASS2
 			check_valid(this,8);
 #endif
-		std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " MetisDistribution does not have refine functionality";
-		ACTION_ON_ERROR(METIS_DISTRIBUTION_ERROR_OBJECT);
+
+		decompose();
 	}
+
+	/*! \brief Redecompose current decomposition
+	 *
+	 */
+	void redecompose()
+	{
+#ifdef SE_CLASS2
+			check_valid(this,8);
+#endif
+		decompose();
+	}
+
 
 	/*! \brief Function that return the position (point P1) of the sub-sub domain box in the space
 	 *
@@ -231,19 +336,6 @@ public:
 			pos[2] = gp.vertex(id).template get<nm_v::x>()[2];
 	}
 
-	/*! \brief Checks if Computational/Migration/Communication Cost are used
-	 *
-	 * \return true if such weights are used
-	 *
-	 */
-	bool weightsAreUsed()
-	{
-#ifdef SE_CLASS2
-			check_valid(this,8);
-#endif
-		return useWeights;
-	}
-
 	/*! \brief function that get the computational cost of the sub-sub-domain
 	 *
 	 * \param id sub-sub-domain
@@ -260,24 +352,6 @@ public:
 		return gp.vertex(id).template get<nm_v::computation>();
 	}
 
-	/*! \brief Initialize all the weight
-	 *
-	 * Initialize Computation/Communication/Migration costs to 1
-	 *
-	 */
-	void initWeights()
-	{
-#ifdef SE_CLASS2
-			check_valid(this,8);
-#endif
-		for (size_t i = 0 ; i < getNSubSubDomains() ; i++)
-		{
-			setComputationCost(i,1);
-			setMigrationCost(i,1);
-			for (size_t j = 0 ; j < getNSubSubDomainNeighbors(i) ; j++)
-				setCommunicationCost(i,j,1);
-		}
-	}
 
 	/*! \brief Set computation cost on a sub-sub domain
 	 *
@@ -290,11 +364,20 @@ public:
 #ifdef SE_CLASS2
 			check_valid(this,8);
 #endif
+#ifdef SE_CLASS1
 		check_overflow(id);
+#endif
 
-		useWeights = true;
-
-		gp.vertex(id).template get<nm_v::computation>() = cost;
+		auto fnd = owner_scs.find(id);
+		if (fnd == owner_scs.end())
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Error you are setting a sub-sub-domain the processor does not own" << std::endl;
+		}
+		else
+		{
+			size_t id = fnd->second;
+			owner_cost_sub.get(id).w = cost;
+		}
 	}
 
 	/*! \brief Set migration cost on a sub-sub domain
@@ -307,7 +390,9 @@ public:
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
+#ifdef SE_CLASS1
 		check_overflow(id);
+#endif
 
 		gp.vertex(id).template get<nm_v::migration>() = cost;
 	}
@@ -323,8 +408,10 @@ public:
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
+#ifdef SE_CLASS1
 		check_overflow(id);
 		check_overflowe(id,e);
+#endif
 
 		gp.getChildEdge(id, e).template get<nm_e::communication>() = cost;
 	}
@@ -351,12 +438,16 @@ public:
 #ifdef SE_CLASS2
 			check_valid(this,8);
 #endif
+#ifdef SE_CLASS1
 		check_overflow(id);
+#endif
 
 		return gp.getNChilds(id);
 	}
 
 	/*! \brief Compute the unbalance of the processor compared to the optimal balance
+	 *
+	 * \warning all processor must call this function
 	 *
 	 * \return the unbalance from the optimal one 0.01 mean 1%
 	 */
@@ -365,30 +456,46 @@ public:
 #ifdef SE_CLASS2
 			check_valid(this,8);
 #endif
-		long int min, max, sum;
-		openfpm::vector<long int> loads(v_cl.getProcessingUnits());
+		size_t load_p = getProcessorLoad();
 
-		for (size_t i = 0; i < loads.size(); i++)
-			loads.get(i) = 0;
+		float load_avg = load_p;
+		v_cl.sum(load_avg);
+		v_cl.execute();
 
-		if (useWeights == false)
+		if (load_avg == 0)
 		{
-			for (size_t i = 0; i < gp.getNVertex(); i++)
-				loads.get(gp.vertex(i).template get<nm_v::proc_id>())++;
-		}
-		else
-		{
-			for (size_t i = 0; i < gp.getNVertex(); i++)
-				loads.get(gp.vertex(i).template get<nm_v::proc_id>()) += (gp.vertex(i).template get<nm_v::computation>() == 0)?1:gp.vertex(i).template get<nm_v::computation>();
+			// count the number if sub-sub-domain assigned
+			load_avg = owner_cost_sub.size();
+
+			v_cl.sum(load_avg);
+			v_cl.execute();
 		}
 
-		max = *std::max_element(loads.begin(), loads.end());
-		min = *std::min_element(loads.begin(), loads.end());
-		sum = std::accumulate(loads.begin(),loads.end(),0);
+		load_avg /= v_cl.getProcessingUnits();
 
-		float unbalance = ((float) (max - min)) / ((float) sum / v_cl.getProcessingUnits());
+		return ((float)load_p - load_avg) / load_avg;
+	}
 
-		return unbalance;
+	/*! \brief Return the total number of sub-sub-domains in the distribution graph
+	 *
+	 * \return the total number of sub-sub-domains set
+	 *
+	 */
+	size_t getNOwnerSubSubDomains() const
+	{
+		return owner_cost_sub.size();
+	}
+
+	/*! \brief Return the id of the set sub-sub-domain
+	 *
+	 * \param id id in the list of the set sub-sub-domains
+	 *
+	 * \return the id
+	 *
+	 */
+	size_t getOwnerSubSubDomain(size_t id) const
+	{
+		return owner_cost_sub.get(id).id;
 	}
 
 	/*! \brief It set the Classs on test mode
@@ -414,12 +521,15 @@ public:
 #ifdef SE_CLASS2
 			check_valid(this,8);
 #endif
+
 		VTKWriter<Graph_CSR<nm_v, nm_e>, VTK_GRAPH> gv2(gp);
-		gv2.write(out);
+		gv2.write(std::to_string(v_cl.getProcessUnitID()) + "_" + out + ".vtk");
 
 	}
 
-	/*! \brief Compute the total computational cost of the processor
+	/*! \brief Compute the processor load
+	 *
+	 * \warning all processors must call this function
 	 *
 	 * \return the total computation cost
 	 */
@@ -428,19 +538,31 @@ public:
 #ifdef SE_CLASS2
 			check_valid(this,8);
 #endif
+		openfpm::vector<size_t> loads(v_cl.getProcessingUnits());
+
 		size_t load = 0;
 
-		for (size_t i = 0; i < gp.getNVertex(); i++)
+		if (v_cl.getProcessUnitID() == 0)
 		{
-			if (gp.vertex(i).template get<nm_v::proc_id>() == v_cl.getProcessUnitID())
-				load += gp.vertex(i).template get<nm_v::computation>();
+			for (size_t i = 0; i < gp.getNVertex(); i++)
+				loads.get(gp.template vertex_p<nm_v::proc_id>(i)) += gp.template vertex_p<nm_v::computation>(i);
+
+			for (size_t i = 0 ; i < v_cl.getProcessingUnits() ; i++)
+			{
+				v_cl.send(i,1234,&loads.get(i),sizeof(size_t));
+			}
 		}
+		v_cl.recv(0,1234,&load,sizeof(size_t));
+		v_cl.execute();
 
 		return load;
 	}
 
 	/*! \brief operator=
 	 *
+	 * \param mt object to copy
+	 *
+	 * \return itself
 	 *
 	 */
 	MetisDistribution & operator=(const MetisDistribution & mt)
@@ -452,12 +574,16 @@ public:
 		this->gr = mt.gr;
 		this->domain = mt.domain;
 		this->gp = mt.gp;
-		this->useWeights = mt.useWeights;
+		this->owner_cost_sub = mt.owner_cost_sub;
+		this->owner_scs = mt.owner_scs;
 		return *this;
 	}
 
 	/*! \brief operator=
 	 *
+	 * \param mt object to copy
+	 *
+	 * \return itself
 	 *
 	 */
 	MetisDistribution & operator=(MetisDistribution && mt)
@@ -469,11 +595,14 @@ public:
 		this->gr = mt.gr;
 		this->domain = mt.domain;
 		this->gp.swap(mt.gp);
-		this->useWeights = mt.useWeights;
+		this->owner_cost_sub.swap(mt.owner_cost_sub);
+		this->owner_scs.swap(mt.owner_scs);
 		return *this;
 	}
 
 	/*! \brief operator==
+	 *
+	 * \param mt Metis distribution to compare with
 	 *
 	 * \return true if the distribution match
 	 *
@@ -489,8 +618,53 @@ public:
 		ret &= (this->gr == mt.gr);
 		ret &= (this->domain == mt.domain);
 		ret &= (this->gp == mt.gp);
-		ret &= (this->useWeights == mt.useWeights);
+
 		return ret;
+	}
+
+	/*! \brief Set the tolerance for each partition
+	 *
+	 * \param tol tolerance
+	 *
+	 */
+	void setDistTol(double tol)
+	{
+		metis_graph.setDistTol(tol);
+	}
+
+
+
+	/*! \brief function that get the weight of the vertex
+	 *
+	 * \param id vertex id
+	 *
+	 */
+	size_t getSubSubDomainComputationCost(size_t id)
+	{
+#ifdef SE_CLASS1
+		if (id >= gp.getNVertex())
+			std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+#endif
+
+		auto fnd = owner_scs.find(id);
+		if (fnd == owner_scs.end())
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Error you are setting a sub-sub-domain that the processor does not own" << std::endl;
+			return 0;
+		}
+
+		size_t ids = fnd->second;
+		return owner_cost_sub.get(ids).w;
+	}
+
+	/*! \brief Get the decomposition counter
+	 *
+	 * \return the decomposition counter
+	 *
+	 */
+	size_t get_ndec()
+	{
+		return metis_graph.get_ndec();
 	}
 };
 

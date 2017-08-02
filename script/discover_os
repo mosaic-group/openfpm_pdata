@@ -15,6 +15,7 @@ platform=unknown
         platform=osx
   elif [[ "$OSTYPE" == "cygwin" ]]; then
         echo -e "We are on\033[1;34m CYGWIN \033[0m"
+	platform=cygwin
   elif [[ "$OSTYPE" == "msys" ]]; then
         echo -e "We are on\033[1;34m Microsoft Window \033[0m"
         echo "This platform is not supported"

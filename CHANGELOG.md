@@ -1,6 +1,42 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [0.9.0]
+
+### Added
+- Introduced getDomainIterator for Cell-list
+- Example to show how to add sensors in SPH/particle based methods (see Vector/7_SPH_opt)
+- Increased performance of 7_SPH_opt
+- Vortex in Cell example Numerics/Vortex_in_cell
+- Interpolation functions (see Numerics/vortex_in_cell example)
+- Gray-scott 3d example with stencil iterator optimixation (see Grid/gray_scott_3d example)
+- HDF5 Check point restart for vector_dist particles (see Vector/1_HDF5_save_and_load) 
+- Raw reader for grid (see ...)
+- A way to specify names for properties and select properties to write (in PROGRESS)
+- Ghost put on grid (see Vortex in Cell example)
+- getDomainIterator stencil for faster stencil codes iterators see (Grid/gray_scott_3d example)
+- Algebraic multigrid solvers interface for linear systems (see Vortex in Cell example)
+- Added setPropNames in vector_dist see Vector/0_simple
+
+### Fixed
+- Installation of PETSC in case with MUMPS try without MUMPS
+- In case of miss compilation ignore system wide installation
+- 2 Bugs in 7_SPH_opt and 7_SPH_opt error in Kernel and update for boundary particles
+- Bug in VTK writer binary in case of vectors
+- Bug in VTK writer binary: long int are not supported removing output
+- Bug in FDScheme in the constructor with stencil bigger than one
+- Bug Fixed Memory leak in petsc solver
+- Bug Performance bug in the grid iterator
+
+### Changed
+- CellList types has changed for example
+	  CellList<3, double, FAST, shift<3,double>>
+  become
+          CellList<3, double, Mem_fast<3, double>, shift<3, double>>
+- getIterator in CellList changed getCellIterator
+- Grid iterator types has changes (one additional template parameter)
+- FDScheme the constructor now has one parameter less (Parameter number 4 has been removed) (see Stokes_Flow examples in Numerics)
+
 ## [0.8.0] 28 February 2016
 
 ### Added

@@ -1,5 +1,9 @@
 #! /bin/bash
 
+function haveProg() {
+    [ -x "$(command -v $1)" ]
+}
+
 function pre_req()
 {
 source script/discover_package_manager
@@ -77,127 +81,132 @@ fi
 #### if we are on OSX we install gnu-sed
 
 if [ x"$platform" == x"osx" ]; then
-
-  command -v gsed >/dev/null 2>&1
-  if [ $? -ne 0 ]; then
+  if haveProg gsed; then
+    echo -e "gsed\033[92;1m SUCCESS \033[0m"
+  else
     echo >&2
     echo -e "gsed\033[91;5;1m FAILED \033[0m"
     echo "OpenFPM require gnu-sed but it's not installed, searching a solution... "
     solve_gsed $platform
-    command -v gsed >/dev/null 2>&1
-    if [ $? -ne 0 ]; then
+    if haveProg gsed; then
+      echo -e "gsed\033[92;1m SUCCESS \033[0m"
+    else
       echo -e "gsed\033[91;5;1m FAILED \033[0m"
       exit 1
-    else
-      echo -e "gsed\033[92;1m SUCCESS \033[0m"
     fi
-  else
-    echo -e "gsed\033[92;1m SUCCESS \033[0m"
   fi
-
 fi
 
-####
-
-command -v cmake >/dev/null 2>&1
-if [ $? -ne 0 ]; then
+## cmake
+if haveProg cmake; then
+  echo -e "cmake\033[92;1m SUCCESS \033[0m"
+else
   echo >&2
   echo -e "cmake\033[91;5;1m FAILED \033[0m"
   echo "OpenFPM require cmake but it's not installed, searching a solution... "
   solve_cmake $platform
-  command -v cmake >/dev/null 2>&1
-  if [ $? -ne 0 ]; then
+  if haveProg cmake; then
+    echo -e "cmake\033[92;1m SUCCESS \033[0m"
+  else
     echo -e "cmake\033[91;5;1m FAILED \033[0m"
     exit 1
-  else
-    echo -e "cmake\033[92;1m SUCCESS \033[0m"
   fi
-else
-  echo -e "cmake\033[92;1m SUCCESS \033[0m"
 fi
-
-command -v wget >/dev/null 2>&1
-if [ $? -ne 0 ]; then
+## wget
+if haveProg wget; then
+  echo -e "wget \033[92;1m SUCCESS \033[0m"
+else
   echo >&2
   echo -e "wget\033[91;5;1m FAILED \033[0m"
   echo "OpenFPM require wget but it's not installed, searching a solution... "
   solve_wget $platform
-  command -v wget >/dev/null 2>&1
-  if [ $? -ne 0 ]; then
+  if haveProg wget; then
+    echo -e "wget\033[92;1m SUCCESS \033[0m"
+  else
     echo -e "wget\033[91;5;1m FAILED \033[0m"
     exit 1
-  else
-    echo -e "wget\033[92;1m SUCCESS \033[0m"
   fi
-else
-  echo -e "wget \033[92;1m SUCCESS \033[0m"
 fi
-
-command -v git >/dev/null 2>&1
-if [ $? -ne 0 ]; then 
+## git
+if haveProg git; then
+  echo -e "git \033[92;1m SUCCESS \033[0m"
+else
   echo >&2
   echo -e "git\033[91;5;1m FAILED \033[0m"
   echo "OpenFPM require git but it's not installed, searching a solution... "
   solve_git $platform
-  command -v git >/dev/null 2>&1
-  if [ $? -ne 0 ]; then
+  if haveProg git; then
+    echo -e "git\033[92;1m SUCCESS \033[0m"
+  else
     echo -e "git\033[91;5;1m FAILED \033[0m"
     exit 1
-  else
-    echo -e "git\033[92;1m SUCCESS \033[0m"
   fi
-else
-  echo -e "git \033[92;1m SUCCESS \033[0m"
 fi
-
-command -v autoconf >/dev/null 2>&1
-if [ $? -ne 0 ]; then
+## autoconf
+if haveProg autoconf; then
+  echo -e "autoconf\033[92;1m SUCCESS \033[0m"
+else
   echo >&2
   echo -e "autoconf\033[91;5;1m FAILED \033[0m"
   echo "OpenFPM require autoconf but it's not installed, searching a solution..."
   solve_autoconf $platform
-  command -v autoheader >/dev/null 2>&1
-  if [ $? -ne 0 ]; then
+  if haveProg autoconf; then
+    echo -e "autoconf\033[92;1m SUCCESS \033[0m"
+  else
     echo -e "autoconf\033[91;5;1m FAILED \033[0m"
     exit 1
-  else
-    echo -e "autoconf\033[92;1m SUCCESS \033[0m"
   fi
-else
-  echo -e "autoconf\033[92;1m SUCCESS \033[0m"
 fi
-
-command -v automake >/dev/null 2>&1
-if [ $? -ne 0 ]; then
+## autoheader
+if haveProg autoheader; then
+  echo -e "autoheader\033[92;1m SUCCESS \033[0m"
+else
+  echo >&2
+  echo -e "autoheader\033[91;5;1m FAILED \033[0m"
+  echo "OpenFPM require autoheader but it's not installed, searching a solution..."
+  solve_autoconf $platform
+  if haveProg autoheader; then
+    echo -e "autoheader\033[92;1m SUCCESS \033[0m"
+  else
+    echo -e "autoheader\033[91;5;1m FAILED \033[0m"
+    exit 1
+  fi
+fi
+## automake
+if haveProg automake; then
+  echo -e "automake\033[92;1m SUCCESS \033[0m"
+else
   echo >&2
   echo -e "automake\033[91;5;1m FAILED \033[0m"
   echo "OpenFPM require automake but it's not installed, searching a solution..."
   solve_automake $platform
-  command -v automake >/dev/null 2>&1
-  if [ $? -ne 0 ]; then
+  if haveProg automake; then
+    echo -e "automake\033[92;1m SUCCESS \033[0m"
+  else
     echo "automake\033[91;5;1m FAILED \033[0m"
     exit 1
-  else
-    echo -e "automake\033[92;1m SUCCESS \033[0m"
   fi
-else
-  echo -e "automake\033[92;1m SUCCESS \033[0m"
 fi
-
-
-command -v libtoolize  >/dev/null 2>&1
-opt1=$?
-command -v glibtoolize  >/dev/null 2>&1
-opt2=$?
+## libtoolize or glibtoolize
+opt1=1
+opt2=1
+if haveProg libtoolize; then
+  opt1=0
+fi
+if haveProg glibtoolize; then
+  opt2=0
+fi
 if [ $opt1 -ne 0 -a $opt2 -ne 0 ]; then
   echo >&2
   echo -e "libtool\033[91;5;1m FAILED \033[0m"
   echo "OpenFPM require libtool but it's not installed, searching a solution..."
   solve_libtool $platform
-  command -v libtoolize  >/dev/null 2>&1
-  opt1=$?
-  command -v glibtoolize  >/dev/null 2>&1
-  opt2=$?
+  if haveProg libtoolize; then
+    opt1=0
+  fi
+  if haveProg glibtoolize; then
+    opt2=0
+  fi
   if [ $opt1 -ne 0 -a $opt2 -ne 0 ]; then
     echo -e "libtool\033[91;5;1m FAILED \033[0m"
     exit 1
@@ -207,9 +216,7 @@ if [ $opt1 -ne 0 -a $opt2 -ne 0 ]; then
 else
   echo -e "libtool\033[92;1m SUCCESS \033[0m"
 fi
-
 #### Detecting g++
-
 detect_compiler
 if [ $dgc_ret -eq 0 ]; then
   echo -e "g++ \033[91;5;1m FAILED \033[0m"
@@ -228,7 +235,6 @@ elif [ $dgc_ret -eq 2 ]; then
 fi
 
 #### Detection gfortran
-
 detect_fortran gfortran
 if [ $dgc_ret -eq 0 ]; then
   echo -e "gfortran\033[91;5;1m FAILED \033[0m"
@@ -241,12 +247,8 @@ else
   echo -e "gfortran \033[92;1m SUCCESS \033[0m"
 fi
 
-
 MPI_valid=no
-command -v mpirun >/dev/null 2>&1
-if [ $? -ne 0 ]; then
-  echo -e "No MPI"
-else
+if haveProg mpirun; then
   # Here we check if we are running openmpi  mpich or unknown
 
   version=$(mpirun --version 2>&1 | grep mpirun | sed 's/.*Open MPI.*/openmpi/g')
@@ -310,6 +312,8 @@ else
     fi
 
   fi
+else
+  echo -e "No MPI"
 fi
 
 if [ x"$MPI_valid" == x"yes"  ]; then
@@ -319,12 +323,12 @@ if [ x"$MPI_valid" == x"yes"  ]; then
     where_mpi=$(which mpic++)
 
     if [ x"$where_mpi" != x"$1/MPI/bin/mpic++" ]; then
-      echo -e "\033[91;5;1m MPI instalation: CONFLICT \033[0m"
+        echo -e "\033[91;5;1m MPI instalation: CONFLICT \033[0m"
         echo "Performing a \"which mpic++\", we found that you have installed one system wide MPI "
         echo -e "\033[1m $where_mpi \033[0m"
         echo "this MPI has priority over OpenFPM MPI installation in: "
-	echo -e "\033[1m $1/MPI/bin/mpic++ \033[0m"
-	echo "Such configuration is not supported, one MPI must be uniquely selected"
+        echo -e "\033[1m $1/MPI/bin/mpic++ \033[0m"
+        echo "Such configuration is not supported, one MPI must be uniquely selected"
         echo "The possible solutions are: "
         echo -e "\033[1m 1) Set your PATH to give priority to $1/MPI/bin \033[0m"
         echo -e "\033[1m 2) Eliminate OpenFPM MPI removing $1/MPI \033[0m"
@@ -360,8 +364,6 @@ if [ x"$MPI_valid" == x"yes"  ]; then
     echo -e "\033[1m The realign operation failed the installation will continue \033[0m"
     sleep 10
   fi
-
-
 fi
 
 }

@@ -38,7 +38,7 @@ class ie_ghost
 	openfpm::vector<p_box<dim,T> > vb_int;
 
 	//! Cell-list that store the geometrical information of the internal ghost boxes
-	CellList<dim,T,FAST,shift<dim,T>> geo_cell;
+	CellList<dim,T,Mem_fast,shift<dim,T>> geo_cell;
 
 	//! shift vectors
 	openfpm::vector<Point<dim,T>> shifts;
@@ -750,9 +750,9 @@ public:
 	 * \return An iterator with the id's of the internal boxes in which the point fall
 	 *
 	 */
-	auto getInternalIDBoxes(Point<dim,T> & p) -> decltype(geo_cell.getIterator(geo_cell.getCell(p)))
+	auto getInternalIDBoxes(Point<dim,T> & p) -> decltype(geo_cell.getCellIterator(geo_cell.getCell(p)))
 	{
-		return geo_cell.getIterator(geo_cell.getCell(p));
+		return geo_cell.getCellIterator(geo_cell.getCell(p));
 	}
 
 	/*! \brief if the point fall into the ghost of some near processor it return the processors id's in which
@@ -762,9 +762,9 @@ public:
 	 * \return iterator of the processors id's
 	 *
 	 */
-	inline auto labelPoint(Point<dim,T> & p) -> decltype(geo_cell.getIterator(geo_cell.getCell(p)))
+	inline auto labelPoint(Point<dim,T> & p) -> decltype(geo_cell.getCellIterator(geo_cell.getCell(p)))
 	{
-		return geo_cell.getIterator(geo_cell.getCell(p));
+		return geo_cell.getCellIterator(geo_cell.getCell(p));
 	}
 
 	/*! \brief Given a position it return if the position belong to any neighborhood processor ghost
@@ -790,7 +790,7 @@ public:
 
 		// Check with geo-cell if a particle is inside one Cell containing boxes
 
-		auto cell_it = geo_cell.getIterator(geo_cell.getCell(p));
+		auto cell_it = geo_cell.getCellIterator(geo_cell.getCell(p));
 
 		// For each element in the cell, check if the point is inside the box
 		// if it is, store the processor id
@@ -839,7 +839,7 @@ public:
 
 		// Check with geo-cell if a particle is inside one Cell containing boxes
 
-		auto cell_it = geo_cell.getIterator(geo_cell.getCell(p));
+		auto cell_it = geo_cell.getCellIterator(geo_cell.getCell(p));
 
 		// For each element in the cell, check if the point is inside the box
 		// if it is, store the processor id
@@ -883,7 +883,7 @@ public:
 
 		// Check with geo-cell if a particle is inside one Cell containing boxes
 
-		auto cell_it = geo_cell.getIterator(geo_cell.getCell(p));
+		auto cell_it = geo_cell.getCellIterator(geo_cell.getCell(p));
 
 		// For each element in the cell, check if the point is inside the box
 		// if it is, store the processor id
@@ -926,7 +926,7 @@ public:
 
 		// Check with geo-cell if a particle is inside one Cell containing boxes
 
-		auto cell_it = geo_cell.getIterator(geo_cell.getCell(p));
+		auto cell_it = geo_cell.getCellIterator(geo_cell.getCell(p));
 
 		// For each element in the cell, check if the point is inside the box
 		// if it is, store the processor id
@@ -991,7 +991,7 @@ public:
 		return true;
 	}
 
-	/*! \brief Check if the ie_loc_ghosts contain the same information
+	/*! \brief Check if the ie_ghosts contain the same information
 	 *
 	 * \param ig Element to check
 	 *
@@ -1065,52 +1065,6 @@ public:
 	 */
 	bool is_equal_ng(ie_ghost<dim,T> & ig)
 	{
-		Box<dim,T> bt;
-
-		if (getNEGhostBox() != ig.getNEGhostBox())
-			return false;
-
-		if (getNIGhostBox() != ig.getNIGhostBox())
-			return false;
-
-		for (size_t i = 0 ; i < proc_int_box.size() ; i++)
-		{
-			if (getProcessorNIGhost(i) != ig.getProcessorNIGhost(i))
-				return false;
-			for (size_t j = 0 ; j < getProcessorNIGhost(i) ; j++)
-			{
-				if (getProcessorIGhostBox(i,j).Intersect(ig.getProcessorIGhostBox(i,j),bt) == false)
-					return false;
-				if (getProcessorIGhostId(i,j) != ig.getProcessorIGhostId(i,j))
-					return false;
-				if (getProcessorIGhostSub(i,j) != ig.getProcessorIGhostSub(i,j))
-					return false;
-			}
-			if (getIGhostBox(i).Intersect(ig.getIGhostBox(i),bt) == false)
-				return false;
-			if (getIGhostBoxProcessor(i) != ig.getIGhostBoxProcessor(i))
-				return false;
-		}
-
-		for (size_t i = 0 ; i < proc_int_box.size() ; i++)
-		{
-			if (getProcessorNEGhost(i) != ig.getProcessorNEGhost(i))
-				return false;
-			for (size_t j = 0 ; j < getProcessorNEGhost(i) ; j++)
-			{
-				if (getProcessorEGhostBox(i,j).Intersect(ig.getProcessorEGhostBox(i,j),bt) == false)
-					return false;
-				if (getProcessorEGhostId(i,j) !=  ig.getProcessorEGhostId(i,j))
-					return false;
-				if (getProcessorEGhostSub(i,j) != ig.getProcessorEGhostSub(i,j))
-					return false;
-			}
-			if (getEGhostBox(i).Intersect(ig.getEGhostBox(i),bt) == false)
-				return false;
-			if (getEGhostBoxProcessor(i) != ig.getEGhostBoxProcessor(i))
-				return false;
-		}
-
 		return true;
 	}
 

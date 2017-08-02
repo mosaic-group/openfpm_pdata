@@ -109,11 +109,16 @@ struct interp_ele
 	 *
 	 * \param key_dst destination point
 	 * \param grid_dst Destination grid
+	 * \param x source grid
 	 * \param key_src source point
-	 * \param grid_src Source grid
+	 * \param interp_pos interpolation points
 	 *
 	 */
-	inline interp_ele(const grid_dist_key_dx<Grid_dst::dims> & key_dst, Grid_dst & grid_dst, const Grid_src & x, const grid_dist_key_dx<Grid_src::dims> & key_src, openfpm::vector<std::vector<comb<Grid_src::dims>>> (&interp_pos)[nst_pos])
+	inline interp_ele(const grid_dist_key_dx<Grid_dst::dims> & key_dst,
+			          Grid_dst & grid_dst,
+					  const Grid_src & x,
+					  const grid_dist_key_dx<Grid_src::dims> & key_src,
+					  openfpm::vector<std::vector<comb<Grid_src::dims>>> (&interp_pos)[nst_pos])
 	:key_dst(key_dst),grid_dst(grid_dst),key_src(key_src),interp_pos(interp_pos),x(x){};
 
 
@@ -129,7 +134,11 @@ struct interp_ele
 	{std::cerr << "Error: " <<__FILE__ << ":" << __LINE__ << " Passing a temporal object";};
 #endif
 
-	//! It call the copy function for each property
+	/*! \brief Interpolate each point in the destination grid for each property
+	 *
+	 * \param t property id
+	 *
+	 */
 	template<typename Tsrc>
 	inline void operator()(Tsrc& t)
 	{

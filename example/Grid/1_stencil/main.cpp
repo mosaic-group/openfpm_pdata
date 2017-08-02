@@ -3,7 +3,7 @@
 #include "Decomposition/CartDecomposition.hpp"
 
 /*!
- * \page Grid_1_stencil Grid 1 stencil
+ * \page Grid_1_stencil Stencil example
  *
  *
  * # Stencil example and ghost # {#e1_st}
@@ -15,7 +15,7 @@
  */
 
 /*!
- * \page Grid_1_stencil Grid 1 stencil
+ * \page Grid_1_stencil Stencil example
  *
  * Define some convenient constants and types
  *
@@ -37,7 +37,7 @@ constexpr size_t B = 0;
 int main(int argc, char* argv[])
 {
 	/*!
-	 * \page Grid_1_stencil Grid 1 stencil
+	 * \page Grid_1_stencil Stencil example
 	 *
 	 * ## Initialization ## {#e1_st_init}
 	 *
@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
 	//! \cond [parameters] \endcond
 
 	/*!
-	 * \page Grid_1_stencil Grid 1 stencil
+	 * \page Grid_1_stencil Stencil example
 	 *
 	 * ## Grid create ## {#e1_st_inst}
 	 *
@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
 	//! \cond [grid] \endcond
 
 	/*!
-	 * \page Grid_1_stencil Grid 1 stencil
+	 * \page Grid_1_stencil Stencil example
 	 *
 	 * ## Loop over grid points ## {#e1_s_loop_gp}
 	 *
@@ -112,7 +112,7 @@ int main(int argc, char* argv[])
 		//! \cond [iterator] \endcond
 
 		/*!
-		 * \page Grid_1_stencil Grid 1 stencil
+		 * \page Grid_1_stencil Stencil example
 		 *
 		 * Inside the cycle we get the local grid key
 		 *
@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
 		//! \cond [local key] \endcond
 
 		/*!
-		 * \page Grid_1_stencil Grid 1 stencil
+		 * \page Grid_1_stencil Stencil example
 		 *
 		 * We convert the local grid position, into global position, key_g contain 3 integers that identify the position
 		 * of the grid point in global coordinates
@@ -147,7 +147,7 @@ int main(int argc, char* argv[])
 		//! \cond [global key] \endcond
 
 		/*!
-		 * \page Grid_1_stencil Grid 1 stencil
+		 * \page Grid_1_stencil Stencil example
 		 *
 		 * we write on the grid point of position (i,j,k) the value i*i + j*j + k*k on the property A.
 		 * Mathematically is equivalent to the function
@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
 	//! \cond [iterator2] \endcond
 
 	/*!
-	 * \page Grid_1_stencil Grid 1 stencil
+	 * \page Grid_1_stencil Stencil example
 	 *
 	 * ## Ghost ## {#e1_s_ghost}
 	 *
@@ -191,7 +191,7 @@ int main(int argc, char* argv[])
 	//! \cond [ghost] \endcond
 
 	/*!
-	 * \page Grid_1_stencil Grid 1 stencil
+	 * \page Grid_1_stencil Stencil example
 	 *
 	 * Get again another iterator, iterate across all the domain points, calculating a Laplace stencil. Write the
 	 * result on B
@@ -220,7 +220,7 @@ int main(int argc, char* argv[])
 	//! \cond [laplacian] \endcond
 
 	/*!
-	 * \page Grid_1_stencil Grid 1 stencil
+	 * \page Grid_1_stencil Stencil example
 	 *
 	 *
 	 * Finally we want a nice output to visualize the information stored by the distributed grid
@@ -238,7 +238,7 @@ int main(int argc, char* argv[])
 	//! \cond [output] \endcond
 
 	/*!
-	 * \page Grid_1_stencil Grid 1 stencil
+	 * \page Grid_1_stencil Stencil example
 	 *
 	 * Deinitialize the library
 	 *
@@ -253,7 +253,7 @@ int main(int argc, char* argv[])
 	//! \cond [finalize] \endcond
 
 	/*!
-	 * \page Grid_1_stencil Grid 1 stencil
+	 * \page Grid_1_stencil Stencil example
 	 *
 	 * # Full code # {#code}
 	 *

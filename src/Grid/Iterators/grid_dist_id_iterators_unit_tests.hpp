@@ -260,7 +260,7 @@ void Test3D_decit(const Box<3,float> & domain, long int k)
 
 			// create a grid iterator from the decomposition
 
-			grid_dist_id_iterator_dec<CartDecomposition<3,float>> it_dec(g_dist.getDecomposition(),sz,{0,0,0},{sz[0]-2,sz[1]-2,sz[2]-2});
+			grid_dist_id_iterator_dec<CartDecomposition<3,float>> it_dec(g_dist.getDecomposition(),sz,{0,0,0},{(long int)sz[0]-2,(long int)sz[1]-2,(long int)sz[2]-2});
 
 			while (dom.isNext())
 			{
@@ -281,6 +281,98 @@ void Test3D_decit(const Box<3,float> & domain, long int k)
 	}
 }
 
+void Test3D_stencil(const Box<3,float> & domain, long int k)
+{
+	grid_key_dx<3> star_stencil_3D[7] = {{0,0,0},
+	                                         {0,0,-1},
+											 {0,0,1},
+											 {0,-1,0},
+											 {0,1,0},
+											 {-1,0,0},
+											 {1,0,0}};
+
+	{
+		Vcluster & v_cl = create_vcluster();
+
+		if ( v_cl.getProcessingUnits() > 32 )
+			return;
+
+		long int big_step = k / 30;
+		big_step = (big_step == 0)?1:big_step;
+		long int small_step = 21;
+
+		print_test( "Testing grid stencil iterator k<=",k);
+
+		// 3D test
+		for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
+		{
+			BOOST_TEST_CHECKPOINT( "Testing grid skin iterator from decomposition k<=" << k );
+
+			// grid size
+			size_t sz[3];
+			sz[0] = k;
+			sz[1] = k;
+			sz[2] = k;
+
+			if (k <= 9)
+				continue;
+
+			Ghost<3,long int> g(1);
+
+			// Distributed grid with id decomposition
+			grid_dist_id<3, float, aggregate<long int>, CartDecomposition<3,float>> g_dist(sz,domain,g);
+
+			// fill the grid with values
+
+			auto it = g_dist.getDomainGhostIterator();
+
+			while (it.isNext())
+			{
+				auto p = it.get();
+				auto gkey = it.getGKey(p);
+
+				g_dist.template get<0>(p) = gkey.get(0) + gkey.get(1) + gkey.get(2);
+
+				++it;
+			}
+
+			g_dist.ghost_get<0>();
+
+			auto st_it = g_dist.getDomainIteratorStencil(star_stencil_3D);
+
+			bool ret = true;
+
+			while (st_it.isNext())
+			{
+				// center point
+				auto Cp = st_it.getStencil<0>();
+
+				// plus,minus X,Y,Z
+				auto mx = st_it.getStencil<1>();
+				auto px = st_it.getStencil<2>();
+				auto my = st_it.getStencil<3>();
+				auto py = st_it.getStencil<4>();
+				auto mz = st_it.getStencil<5>();
+				auto pz = st_it.getStencil<6>();
+
+				size_t sum = 6*g_dist.template get<0>(Cp) -
+						     g_dist.template get<0>(mx) -
+							 g_dist.template get<0>(px) -
+							 g_dist.template get<0>(my) -
+							 g_dist.template get<0>(py) -
+							 g_dist.template get<0>(mz) -
+							 g_dist.template get<0>(pz);
+
+				ret &= (sum == 0);
+
+				++st_it;
+			}
+
+			BOOST_REQUIRE_EQUAL(ret,true);
+		}
+
+	}
+}
 
 // Test decomposition grid iterator
 
@@ -395,6 +487,17 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_decomposition_iterator )
 	k = std::pow(k, 1/3.);
 	Test3D_decit(domain3,k);
 }
+
+BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_stencil )
+{
+	// Domain
+	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	size_t k = 128*128*128*create_vcluster().getProcessingUnits();
+	k = std::pow(k, 1/3.);
+	Test3D_stencil(domain3,k);
+}
+
 
 BOOST_AUTO_TEST_CASE( grid_dist_it_iterators_skin_test )
 {

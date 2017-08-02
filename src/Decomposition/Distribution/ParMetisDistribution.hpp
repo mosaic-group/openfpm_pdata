@@ -52,6 +52,9 @@ class ParMetisDistribution
 	//! Convert the graph to parmetis format
 	Parmetis<Graph_CSR<nm_v, nm_e>> parmetis_graph;
 
+	//! Id of the sub-sub-domain where we set the costs
+	openfpm::vector<size_t> sub_sub_owner;
+
 	//! Init vtxdist needed for Parmetis
 	//
 	// vtxdist is a common array across processor, it indicate how
@@ -86,6 +89,8 @@ class ParMetisDistribution
 	 */
 	void updateGraphs()
 	{
+		sub_sub_owner.clear();
+
 		size_t Np = v_cl.getProcessingUnits();
 
 		// Init n_vtxdist to gather informations about the new decomposition
@@ -105,8 +110,14 @@ class ParMetisDistribution
 				// Create new n_vtxdist (just count processors vertices)
 				++n_vtxdist.get(partitions.get(i).get(k) + 1);
 
+				// vertex id from vtx to grobal id
+				auto v_id = m2g.find(l)->second.id;
+
 				// Update proc id in the vertex (using the old map)
-				vertexByMapId(l).template get<nm_v::proc_id>() = partitions.get(i).get(k);
+				gp.template vertex_p<nm_v::proc_id>(v_id) = partitions.get(i).get(k);
+
+				if (partitions.get(i).get(k) == (long int)v_cl.getProcessUnitID())
+					sub_sub_owner.add(v_id);
 
 				// Add vertex to temporary structure of distribution (needed to update main graph)
 				v_per_proc.get(partitions.get(i).get(k)).add(getVertexGlobalId(l));
@@ -446,8 +457,10 @@ public:
 	 */
 	void getSubSubDomainPosition(size_t id, T (&pos)[dim])
 	{
+#ifdef SE_CLASS1
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+			std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+#endif
 
 		// Copy the geometrical informations inside the pos vector
 		pos[0] = gp.vertex(id).template get<nm_v::x>()[0];
@@ -467,8 +480,10 @@ public:
 		if (!verticesGotWeights)
 			verticesGotWeights = true;
 
+#ifdef SE_CLASS1
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+			std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+#endif
 
 		// Update vertex in main graph
 		gp.vertex(id).template get<nm_v::computation>() = weight;
@@ -490,8 +505,10 @@ public:
 	 */
 	size_t getSubSubDomainComputationCost(size_t id)
 	{
+#ifdef SE_CLASS1
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+			std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+#endif
 
 		return gp.vertex(id).template get<nm_v::computation>();
 	}
@@ -509,9 +526,8 @@ public:
 
 
 		for (rid i = vtxdist.get(p_id); i < vtxdist.get(p_id+1) ; ++i)
-		{
 			load += gp.vertex(m2g.find(i)->second.id).template get<nm_v::computation>();
-		}
+
 		//std::cout << v_cl.getProcessUnitID() << " weight " << load << " size " << sub_g.getNVertex() << "\n";
 		return load;
 	}
@@ -523,8 +539,10 @@ public:
 	 */
 	void setMigrationCost(size_t id, size_t migration)
 	{
+#ifdef SE_CLASS1
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+			std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+#endif
 
 		gp.vertex(id).template get<nm_v::migration>() = migration;
 	}
@@ -537,30 +555,62 @@ public:
 	 */
 	void setCommunicationCost(size_t v_id, size_t e, size_t communication)
 	{
+#ifdef SE_CLASS1
+
 		size_t e_id = v_id + e;
 
 		if (e_id >= gp.getNEdge())
 			std::cerr << "Such edge doesn't exist (id = " << e_id << ", " << "total size = " << gp.getNEdge() << ")\n";
+#endif
 
 		gp.getChildEdge(v_id, e).template get<nm_e::communication>() = communication;
 	}
 
 	/*! \brief Returns total number of sub-sub-domains in the distribution graph
 	 *
+	 * \return the total number of sub-sub-domains
+	 *
 	 */
-	size_t getNSubSubDomains()
+	size_t getNSubSubDomains() const
 	{
 		return gp.getNVertex();
+	}
+
+	/*! \brief Return the total number of sub-sub-domains this processor own
+	 *
+	 * \return the total number of sub-sub-domains owned by this processor
+	 *
+	 */
+	size_t getNOwnerSubSubDomains() const
+	{
+		return sub_sub_owner.size();
+	}
+
+	/*! \brief Return the global id of the owned sub-sub-domain
+	 *
+	 * \param id in the list of owned sub-sub-domains
+	 *
+	 * \return the global id
+	 *
+	 */
+	size_t getOwnerSubSubDomain(size_t id) const
+	{
+		return sub_sub_owner.get(id);
 	}
 
 	/*! \brief Returns total number of neighbors of the sub-sub-domain id
 	 *
 	 * \param id id of the sub-sub-domain
+	 *
+	 * \return the number of neighborhood sub-sub-domains for each sub-domain
+	 *
 	 */
 	size_t getNSubSubDomainNeighbors(size_t id)
 	{
+#ifdef SE_CLASS1
 		if (id >= gp.getNVertex())
-			std::cerr << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+			std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+#endif
 
 		return gp.getNChilds(id);
 	}
@@ -586,6 +636,8 @@ public:
 		partitions = dist.partitions;
 		v_per_proc = dist.v_per_proc;
 		verticesGotWeights = dist.verticesGotWeights;
+		sub_sub_owner = dist.sub_sub_owner;
+		m2g = dist.m2g;
 
 		return *this;
 	}
@@ -601,6 +653,8 @@ public:
 		partitions.swap(dist.partitions);
 		v_per_proc.swap(dist.v_per_proc);
 		verticesGotWeights = dist.verticesGotWeights;
+		sub_sub_owner.swap(dist.sub_sub_owner);
+		m2g.swap(dist.m2g);
 
 		return *this;
 	}

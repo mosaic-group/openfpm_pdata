@@ -1,5 +1,7 @@
 #include <iostream>
 
+size_t debug_tot_call = 0;
+
 #define PRINT_STACKTRACE
 #define CHECKFOR_POSNAN
 #define CHECKFOR_POSINF
@@ -37,15 +39,16 @@ int main(int argc, char* argv[])
 #include "Graph/dist_map_graph.hpp"
 #include "memory/HeapMemory.hpp"
 #include "Space/Shape/Box.hpp"
-#include "util.hpp"
 
 #include "unit_test_init_cleanup.hpp"
 #include "Graph/CartesianGraphFactory_unit_test.hpp"
 #include "Decomposition/CartDecomposition_unit_test.hpp"
 #include "Decomposition/ORB_unit_test.hpp"
 #include "Decomposition/Distribution/metis_util_unit_test.hpp"
-#include "dec_optimizer_unit_test.hpp"
+#include "Decomposition/dec_optimizer_unit_test.hpp"
 #include "Vector/vector_dist_unit_test.hpp"
+#include "Vector/vector_dist_HDF5_chckpnt_restart_test.hpp"
+#include "Grid/grid_dist_id_HDF5_chckpnt_restart_test.hpp"
 #include "Decomposition/Distribution/Distribution_unit_tests.hpp"
 #include "Grid/Iterators/grid_dist_id_iterators_unit_tests.hpp"
 //#include "DLB/DLB_unit_test.hpp"
@@ -56,4 +59,5 @@ int main(int argc, char* argv[])
 #include "Vector/vector_dist_MP_unit_tests.hpp"
 #include "Vector/se_class3_vector_unit_tests.hpp"
 #include "Vector/vector_dist_dlb_test.hpp"
+#include "Decomposition/Domain_NN_calculator_cart_unit_test.hpp"
 //#include "antoniol_test_isolation.hpp"

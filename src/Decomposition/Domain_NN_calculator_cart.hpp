@@ -8,6 +8,9 @@
 #ifndef SRC_DECOMPOSITION_DOMAIN_NN_CALCULATOR_CART_HPP_
 #define SRC_DECOMPOSITION_DOMAIN_NN_CALCULATOR_CART_HPP_
 
+#include <Vector/map_vector.hpp>
+#include "NN/CellList/ParticleItCRS_Cells.hpp"
+
 /*! \brief This class calculate processor domains and neighborhood
  *  of each processor domain
  *
@@ -20,39 +23,38 @@ class domain_nn_calculator_cart
 	//! True if domain and anomalous domain cells are computed
 	bool are_domain_anom_computed;
 
-	//! Are linearized the domain cell
-    bool are_dom_lin;
+    /////////////////////////////// CRS //////////////////////
 
-    //! are linearized the anomalous cells
-    bool are_anom_lin;
-
-	//! anomalous cell neighborhood
+	//! anomalous cell neighborhood for CRS
 	openfpm::vector<subsub<dim>> anom;
 
-	//! Set of normal domain cells
+	//! Set of anomalous CRS domain cells linearized
+	openfpm::vector<subsub_lin<dim>> anom_lin;
+
+	//! Set of normal domain cells for CRS
 	openfpm::vector<grid_key_dx<dim>> dom;
 
-	//! Linearization is calculated out of a shift and grid dimension this is the shift
-	grid_key_dx<dim> shift_calc_dom;
-
-	//! Linearization is calculated out of a grid dimensions this is the grid dimension
-	grid_sm<dim,void> gs_calc_dom;
-
-	//! Linearization is calculated out of a shift and grid dimension this is the shift
-	grid_key_dx<dim> shift_calc_anom;
-
-	//! Linearization is calculated out of a grid dimensions this is the grid dimension
-	grid_sm<dim,void> gs_calc_anom;
-
-
-	//! Set of normal domain cells linearized
+	//! Set of normal CRS domain cells linearized
 	openfpm::vector<size_t> dom_lin;
 
-	//! Set of normal domain cells linearized
-	openfpm::vector<subsub_lin<dim>> anom_lin;
+	////////////////////////////////// DOMAIN CELLS ///////////////////////
+
+	//! Set of domain cells
+	openfpm::vector<grid_key_dx<dim>> dom_cells;
+
+	//! Set of linearized domain cells
+	openfpm::vector<size_t> dom_cells_lin;
+
+	//////////////////////////////////////////////////////////////
 
 	//! Processor box
 	Box<dim,long int> proc_box;
+
+	//! Processor cells-grid
+	grid_sm<dim,void> gs;
+
+	//! key with all coordinates set to one
+	grid_key_dx<dim> one;
 
 	/*! \brief Calculate the subdomain that are in the skin part of the domain
 	 *
@@ -93,7 +95,9 @@ class domain_nn_calculator_cart
 	 * \param sub_keys array that contain the position of the sub-sub-domains indicated with numbers
 	 *        in grid coordinates + for each its neighboring cells
 	 *
-	 * \param list of all the domain cells
+	 * \param dom_cells list of all the domain cells
+	 *
+	 * \param dom_subsub cells with normal neighborhood
 	 *
 	 * \param loc_box array of local sub-sub-domain in grid coordinates
 	 *
@@ -103,8 +107,8 @@ class domain_nn_calculator_cart
 	 */
 	void CalculateDomAndAnomCells(openfpm::vector<subsub<dim>> & sub_keys,
 			                      openfpm::vector<grid_key_dx<dim>> & dom_subsub,
+								  openfpm::vector<grid_key_dx<dim>> & dom_cells,
 								  const ::Box<dim,long int> & proc_box,
-								  grid_key_dx<dim> & shift,
 								  const openfpm::vector<::Box<dim, size_t>> & loc_box)
 	{
 		// Reset dom and dom_subsub
@@ -113,12 +117,20 @@ class domain_nn_calculator_cart
 
 		size_t sz[dim];
 
+		// ----Grid size = proc_box.getHigh(j) - proc_box.getLow(j)
+		// +2 is padding
+
 		for (size_t j = 0 ; j < dim ; j++)
-			sz[j] = proc_box.getHigh(j) - proc_box.getLow(j) + 2;
+			sz[j] = proc_box.getHigh(j) - proc_box.getLow(j) + 2 + 1;
+
+		gs.setDimensions(sz);
 
 		// Set the grid
-		grid_cpu<dim, aggregate<openfpm::vector<grid_key_dx<dim>>> > g(sz);
+		grid_cpu<dim, aggregate<openfpm::vector<grid_key_dx<dim>> >> g(sz);
 		g.setMemory();
+
+		for (size_t i = 0 ; i < dim ; i++)
+			one.set_d(i,1);
 
 		// Calculate the csr neighborhood
 		openfpm::vector<std::pair<grid_key_dx<dim>,grid_key_dx<dim>>> csr;
@@ -132,8 +144,8 @@ class domain_nn_calculator_cart
 
 			for (size_t j = 0 ; j < dim ; j++)
 			{
-				start.set_d(j,loc_box.template get<0>(i)[j] - proc_box.getLow(j));
-				stop.set_d(j,loc_box.template get<1>(i)[j] - proc_box.getLow(j));
+				start.set_d(j,loc_box.template get<0>(i)[j] - proc_box.getLow(j) + 1);
+				stop.set_d(j,loc_box.template get<1>(i)[j] - proc_box.getLow(j) + 1);
 			}
 
 			grid_key_dx_iterator_sub<dim> sub(g.getGrid(),start,stop);
@@ -146,8 +158,10 @@ class domain_nn_calculator_cart
 				{
 					grid_key_dx<dim> src = key + csr.get(j).first;
 					grid_key_dx<dim> dst = key + csr.get(j).second;
-					g.template get<0>(src).add(dst + shift);
+					g.template get<0>(src).add(dst);
 				}
+
+				dom_cells.add(key - one);
 
 				++sub;
 			}
@@ -166,120 +180,156 @@ class domain_nn_calculator_cart
 			if (g.template get<0>(key).size() == openfpm::math::pow(3,dim)/2+1)
 			{
 				// Add in the list of the normal neighborhood list
-				dom_subsub.add(key + shift);
+				dom_subsub.add(key - one);
 			}
 			else if (g.template get<0>(key).size() != 0)
 			{
 				sub_keys.add();
-				sub_keys.last().subsub = key + shift;
+				sub_keys.last().subsub = key - one;
 				// Adding the neighborhood of the cell
-				sub_keys.last().NN_subsub = g.template get<0>(key);
+
+				sub_keys.last().NN_subsub.resize(g.template get<0>(key).size());
+
+				for (size_t i = 0 ; i < g.template get<0>(key).size() ; i++)
+					sub_keys.last().NN_subsub.get(i) = g.template get<0>(key).get(i) - one;
 			}
 
 			++it;
 		}
 	}
 
+	/*! \brief Linearize the sub-sub-domains ids
+	 *
+	 * A subsub domain can be identified by a set of number (i,j).
+	 * The linearization transform it into a number
+	 *
+	 * \param anom set of grid keys to linearize
+	 * \param anom_lin linearized output
+	 * \param shift shifting to add for the linearizaton
+	 * \param gs information about the grid to linearize
+	 *
+	 */
+	void linearize_subsub(const openfpm::vector<subsub<dim>> & anom,
+			              openfpm::vector<subsub_lin<dim>> & anom_lin,
+						  const grid_key_dx<dim> & shift,
+						  const grid_sm<dim,void> & gs)
+	{
+		anom_lin.clear();
+		for (size_t i = 0 ; i < anom.size() ; i++)
+		{
+			anom_lin.add();
+			anom_lin.last().subsub = gs.LinId(anom.get(i).subsub + shift);
+
+			long int self_cell = -1;
+
+			for (size_t j = 0 ; j < anom.get(i).NN_subsub.size() ; j++)
+			{
+				anom_lin.get(i).NN_subsub.add((long int)gs.LinId(anom.get(i).NN_subsub.get(j) + shift) - anom_lin.get(i).subsub);
+
+				// This indicate that for example in the neighborhood of one cell it-self is included in the list
+				// For example the cell 100 is in the neighborhood of the cell 100
+				if (anom_lin.get(i).NN_subsub.last() == 0)
+					self_cell = anom_lin.get(i).NN_subsub.size() - 1;
+			}
+
+			// if exist the self interacting cell (Example cell 100 neighborhood of cell 100), this cell MUST BE ALWAYS at the beginning
+			if (self_cell != -1)
+			{
+				// bring the self-cell into the beginning
+				size_t tmp = anom_lin.get(i).NN_subsub.get(0);
+				anom_lin.get(i).NN_subsub.get(0) = 0;
+				anom_lin.get(i).NN_subsub.get(self_cell) = tmp;
+			}
+		}
+	}
+
 public:
 
 	domain_nn_calculator_cart()
-	:are_domain_anom_computed(false),are_dom_lin(false),are_anom_lin(false)
-	{}
+	:are_domain_anom_computed(false)
+	{
+	}
+
+	/*! \brief Set parameters to calculate the cell neighborhood
+	 *
+	 * \param proc_box processor cells box
+	 *
+	 */
+	void setParameters(const Box<dim,long int> & proc_box)
+	{
+		this->proc_box = proc_box;
+	}
+
+	/*! \brief Set parameters to calculate the cell neighborhood
+	 *
+	 * \param loc_box set of local sub-domains
+	 * \param shift to apply in the linearization
+	 * \param gs grid of cells (for the processor domain)
+	 *
+	 */
+	void setNNParameters(openfpm::vector<::Box<dim, size_t>> & loc_box,
+			             const grid_key_dx<dim> & shift,
+						 const grid_sm<dim,void> & gs)
+	{
+		if (are_domain_anom_computed == false)
+		{
+			CalculateDomAndAnomCells(anom,dom,dom_cells,proc_box,loc_box);
+			are_domain_anom_computed = true;
+
+			dom_cells_lin.clear();
+			for (size_t i = 0 ; i < dom_cells.size() ; i++)
+				dom_cells_lin.add(gs.LinId(dom_cells.get(i) + shift));
+
+
+			dom_lin.clear();
+			for (size_t i = 0 ; i < dom.size() ; i++)
+				dom_lin.add(gs.LinId(dom.get(i) + shift));
+
+			linearize_subsub(anom,anom_lin,shift,gs);
+		}
+	}
 
 	/*! \brief Get the domain Cells
 	 *
-	 * \param shift Shifting point
-	 * \param gs grid extension
-	 * \param proc_box processor bounding box
-	 * \param loc_box set of local sub-domains
 	 *
 	 * \return The set of domain cells
 	 *
 	 */
-	openfpm::vector<size_t> & getDomainCells(grid_key_dx<dim> & shift, grid_key_dx<dim> & cell_shift, grid_sm<dim,void> & gs, Box<dim,size_t> & proc_box, openfpm::vector<::Box<dim, size_t>> & loc_box)
+	openfpm::vector<size_t> & getDomainCells()
 	{
-		if (are_domain_anom_computed == false)
-		{
-			CalculateDomAndAnomCells(anom,dom,proc_box,shift,loc_box);
-			are_domain_anom_computed = true;
-		}
+		return dom_cells_lin;
+	}
 
-		if (are_dom_lin == false)
-		{
-			dom_lin.clear();
-			shift_calc_dom = shift;
-			gs_calc_dom = gs;
-			for (size_t i = 0 ; i < dom.size() ; i++)
-				dom_lin.add(gs.LinId(dom.get(i) - cell_shift));
-
-			are_dom_lin = true;
-		}
-
+	/*! \brief Get the domain Cells
+	 *
+	 *
+	 * \return The set of domain cells
+	 *
+	 */
+	openfpm::vector<size_t> & getCRSDomainCells()
+	{
 		return dom_lin;
 	}
 
 	/*! \brief Get the domain anomalous cells
 	 *
-	 * \param shift Shifting point
-	 * \param gs grid extension
-	 * \param proc_box processor bounding box
-	 * \param loc_box set of local sub-domains
 	 *
 	 * \return The set of anomalous cells
 	 *
 	 */
-	openfpm::vector<subsub_lin<dim>> & getAnomDomainCells(grid_key_dx<dim> & shift, grid_key_dx<dim> & cell_shift, grid_sm<dim,void> & gs, Box<dim,size_t> & proc_box, openfpm::vector<::Box<dim, size_t>> & loc_box)
+	openfpm::vector<subsub_lin<dim>> & getCRSAnomDomainCells()
 	{
-		// if the neighborhood of each sub-sub-domains has not been calculated, calculate it
-		if (are_domain_anom_computed == false)
-		{
-			CalculateDomAndAnomCells(anom,dom,proc_box,shift,loc_box);
-			are_domain_anom_computed = true;
-		}
-
-		if (are_anom_lin == false)
-		{
-			anom_lin.clear();
-			shift_calc_anom = shift;
-			gs_calc_anom = gs;
-			for (size_t i = 0 ; i < anom.size() ; i++)
-			{
-				anom_lin.add();
-				anom_lin.last().subsub = gs.LinId(anom.get(i).subsub - cell_shift);
-
-				long int self_cell = -1;
-
-				for (size_t j = 0 ; j < anom.get(i).NN_subsub.size() ; j++)
-				{
-					anom_lin.get(i).NN_subsub.add((long int)gs.LinId(anom.get(i).NN_subsub.get(j) - cell_shift) - anom_lin.get(i).subsub);
-
-					// This indicate that for example in the neighborhood of one cell it-self is included in the list
-					// For example the cell 100 is in the neighborhood of the cell 100
-					if (anom_lin.get(i).NN_subsub.last() == 0)
-						self_cell = anom_lin.get(i).NN_subsub.size() - 1;
-				}
-
-				// if exist the self interacting cell (Example cell 100 neighborhood of cell 100), this cell MUST BE ALWAYS at the beginning
-				if (self_cell != -1)
-				{
-					// bring the self-cell into the beginning
-					size_t tmp = anom_lin.get(i).NN_subsub.get(0);
-					anom_lin.get(i).NN_subsub.get(0) = 0;
-					anom_lin.get(i).NN_subsub.get(self_cell) = tmp;
-				}
-			}
-
-			are_anom_lin = true;
-		}
-
 		return anom_lin;
 	}
 
+
+	/*! \brief In case you have to recompute the indexes
+	 *
+	 *
+	 */
 	void reset()
 	{
 		are_domain_anom_computed = false;
-		are_dom_lin = false;
-		are_anom_lin = false;
 	}
 };
 

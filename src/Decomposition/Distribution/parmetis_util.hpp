@@ -506,7 +506,9 @@ public:
 
 	/*! \brief Copy the object
 	 *
-	 * \param object to copy
+	 * \param pm object to copy
+	 *
+	 * \return itself
 	 *
 	 */
 	const Parmetis<Graph> & operator=(const Parmetis<Graph> & pm)
@@ -523,7 +525,9 @@ public:
 
 	/*! \brief Copy the object
 	 *
-	 * \param object to copy
+	 * \param pm object to copy
+	 *
+	 * \return itself
 	 *
 	 */
 	const Parmetis<Graph> & operator=(Parmetis<Graph> && pm)

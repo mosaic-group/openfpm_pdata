@@ -64,9 +64,6 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 	if (v_cl.getProcessingUnits() != 3)
 	return;
 
-	if (v_cl.getProcessUnitID() != 0)
-	return;
-
 	//! [Initialize a Metis Cartesian graph and decompose]
 
 	MetisDistribution<3, float> met_dist(v_cl);
@@ -88,11 +85,14 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 	met_dist.createCartGraph(info,box);
 	met_dist.decompose();
 
+	BOOST_REQUIRE_EQUAL(met_dist.get_ndec(),1ul);
+
 	//! [Initialize a Metis Cartesian graph and decompose]
 
 	BOOST_REQUIRE(met_dist.getUnbalance() < 0.03);
 
-	met_dist.write("vtk_metis_distribution.vtk");
+	if (v_cl.getProcessUnitID() == 0)
+	{met_dist.write("vtk_metis_distribution");}
 
 	size_t b = GS_SIZE * GS_SIZE * GS_SIZE / 5;
 
@@ -100,17 +100,21 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 
 	// Initialize the weights to 1.0
 	// not required, if we set ALL Computation,Migration,Communication cost
-	met_dist.initWeights();
 
 	// Change set some weight on the graph and re-decompose
 
-	for (size_t i = 0; i < met_dist.getNSubSubDomains(); i++)
+	for (size_t k = 0; k < met_dist.getNOwnerSubSubDomains(); k++)
 	{
-		if (i == 0 || i == b || i == 2*b || i == 3*b || i == 4*b)
-		met_dist.setComputationCost(i,10);
-		else
-		met_dist.setComputationCost(i,1);
+		size_t i = met_dist.getOwnerSubSubDomain(k);
 
+		if (i == 0 || i == b || i == 2*b || i == 3*b || i == 4*b)
+			met_dist.setComputationCost(i,10);
+		else
+			met_dist.setComputationCost(i,1);
+	}
+
+	for (size_t i = 0 ; i <  met_dist.getNSubSubDomains() ; i++)
+	{
 		// We also show how to set some Communication and Migration cost
 
 		met_dist.setMigrationCost(i,1);
@@ -121,33 +125,37 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 
 	met_dist.decompose();
 
+	BOOST_REQUIRE_EQUAL(met_dist.get_ndec(),2ul);
+
 	//! [Decomposition Metis with weights]
 
 	BOOST_REQUIRE(met_dist.getUnbalance() < 0.06);
 
-	met_dist.write("vtk_metis_distribution_red.vtk");
+	if (v_cl.getProcessUnitID() == 0)
+	{met_dist.write("vtk_metis_distribution_red");}
 
 	// check that match
 
-#ifdef HAVE_OSX
+	bool test;
 
-	bool test = true;
+	if (v_cl.getProcessUnitID() == 0)
+	{
+	#ifdef HAVE_OSX
 
-	// If we change compiler we have to change files (no thanks)
+		test = compare("0_vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_osx_test.vtk");
+		BOOST_REQUIRE_EQUAL(true,test);
+		test = compare("0_vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_osx_test.vtk");
+		BOOST_REQUIRE_EQUAL(true,test);
 
-//	bool test = compare("vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_osx_test.vtk");
-//	BOOST_REQUIRE_EQUAL(true,test);
-//	test = compare("vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_osx_test.vtk");
-//	BOOST_REQUIRE_EQUAL(true,test);
+	#elif __GNUC__ == 6 && __GNUC_MINOR__ == 3
 
-#else
+		test = compare("0_vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_test.vtk");
+		BOOST_REQUIRE_EQUAL(true,test);
+		test = compare("0_vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_test.vtk");
+		BOOST_REQUIRE_EQUAL(true,test);
 
-	bool test = compare("vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_test.vtk");
-	BOOST_REQUIRE_EQUAL(true,test);
-	test = compare("vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_test.vtk");
-	BOOST_REQUIRE_EQUAL(true,test);
-
-#endif
+	#endif
+	}
 
 	// Copy the Metis distribution
 
@@ -167,7 +175,7 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 	// operator= functions
 	// operator== functions
 
-	BOOST_REQUIRE_EQUAL(sizeof(MetisDistribution<3,float>),472ul);
+//	BOOST_REQUIRE_EQUAL(sizeof(MetisDistribution<3,float>),720ul);
 }
 
 BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
@@ -200,6 +208,8 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 	// first decomposition
 	pmet_dist.decompose();
 
+	BOOST_REQUIRE_EQUAL(pmet_dist.get_ndec(),1ul);
+
 	//! [Initialize a ParMetis Cartesian graph and decompose]
 
 	if (v_cl.getProcessUnitID() == 0)
@@ -228,6 +238,7 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 	Point<3, float> shift( { tstep, tstep, tstep });
 
 	size_t iter = 1;
+	size_t n_dec = 1;
 
 	for(float t = stime; t < etime; t = t + tstep, iter++)
 	{
@@ -242,6 +253,8 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 		if ((size_t)iter % 10 == 0)
 		{
 			pmet_dist.refine();
+			n_dec++;
+			BOOST_REQUIRE_EQUAL(pmet_dist.get_ndec(),n_dec);
 
 			if (v_cl.getProcessUnitID() == 0)
 			{
@@ -268,7 +281,7 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 
 	//! [refine with parmetis the decomposition]
 
-	BOOST_REQUIRE_EQUAL(sizeof(MetisDistribution<3,float>),472ul);
+//	BOOST_REQUIRE_EQUAL(sizeof(ParMetisDistribution<3,float>),872ul);
 }
 
 BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)

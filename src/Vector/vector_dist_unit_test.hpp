@@ -182,13 +182,8 @@ void Test2D_ghost(Box<2,float> & box)
 
 	//! [Redistribute the particles and sync the ghost properties]
 
-	vd.write("debug_before");
-
 	// redistribute the particles according to the decomposition
 	vd.map();
-
-	vd.write("debug_after");
-	vd.getDecomposition().write("debug_decomposition");
 
 	auto v_it2 = vd.getIterator();
 
@@ -1064,7 +1059,7 @@ void Test_interacting(Box<3,float> & box)
 
 				Point<3,float> xp = vd.getPos(p);
 
-				auto Np = NN.getIterator(NN.getCell(xp));
+				auto Np = NN.getCellIterator(NN.getCell(xp));
 
 				while (Np.isNext())
 				{

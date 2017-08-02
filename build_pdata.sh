@@ -27,15 +27,21 @@ then
  echo "Compiling on gin\n"
  source ~/.bashrc
  module load gcc/4.9.2
- mkdir $HOME/$4
- ./install -i $HOME/$4 -s -c "--prefix=/home/jenkins/openfpm_install"
- make
+ if [ x"$3" == x"numerics" ]; then
+   echo "Installing for numerics"
+   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
+   ./install -i $HOME/$branch -s -c "--prefix=/home/jenkins/openfpm_install"
+   make
+ else
+   mkdir $HOME/$4
+   ./install -i $HOME/$4 -s -c "--prefix=/home/jenkins/openfpm_install"
+   make install
+ fi
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
  fi
 
- make install
  source $HOME/openfpm_vars
 
  if [ x"$3" == x"no_test" ]; then
@@ -244,9 +250,17 @@ then
 else
  echo "Compiling general"
  source ~/.bashrc
- mkdir $HOME/$4
- ./install -i $HOME/$4 -s
- make
+
+ if [ x"$3" == x"numerics" ]; then
+   echo "Installing for numerics"
+   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
+   ./install -i $HOME/$branch -s -c "--prefix=/home/jenkins/openfpm_install"
+   make
+ else
+   mkdir $HOME/$4
+   ./install -i $HOME/$4 -s
+   make
+ fi
 
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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

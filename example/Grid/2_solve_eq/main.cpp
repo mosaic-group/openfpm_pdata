@@ -2,7 +2,7 @@
 #include "data_type/aggregate.hpp"
 
 /*!
- * \page Grid_2_solve_eq Grid 2 solve eq
+ * \page Grid_2_solve_eq Solve equation
  *
  * [TOC]
  *
@@ -14,7 +14,11 @@
  * 
  * \f$u(x,y) = 0 \f$
  *
- * at the boundary
+ * at the boundary. This lead to the solution shown in the picture
+ *
+ * \htmlonly
+ * <img src="http://ppmcore.mpi-cbg.de/web/images/examples/2_solve_eq/solution.jpg"/>
+ * \endhtmlonly
  * 
  *
  * ## Field initialization ## {#e2_se_finit}
@@ -26,7 +30,7 @@
 void init(grid_dist_id<2,double,aggregate<double> > & g_dist, const size_t (& sz)[2])
 {
 	/*!
-	 * \page Grid_2_solve_eq Grid 2 solve eq
+	 * \page Grid_2_solve_eq Solve equation
 	 *
 	 * In order to initialize the field U, first we get an iterator that cover
 	 *  domain + Ghost to iterate all the grid points.
@@ -47,7 +51,7 @@ void init(grid_dist_id<2,double,aggregate<double> > & g_dist, const size_t (& sz
 		//! \cond [iterator] \endcond
 
 		/*!
-		 * \page Grid_2_solve_eq Grid 2 solve eq
+		 * \page Grid_2_solve_eq Solve equation
 		 *
 		 * Get the local grid key
 		 *
@@ -64,7 +68,7 @@ void init(grid_dist_id<2,double,aggregate<double> > & g_dist, const size_t (& sz
 		//! \cond [local key] \endcond
 
 		/*!
-		 * \page Grid_2_solve_eq Grid 2 solve eq
+		 * \page Grid_2_solve_eq Solve equation
 		 *
 		 *
 		 * Here we convert the local grid position, into global position.
@@ -84,7 +88,7 @@ void init(grid_dist_id<2,double,aggregate<double> > & g_dist, const size_t (& sz
 		//! \cond [global key] \endcond
 
 		/*!
-		 * \page Grid_2_solve_eq Grid 2 solve eq
+		 * \page Grid_2_solve_eq Solve equation
 		 *
 		 * Initialize to 0, domain + boundary
 		 *
@@ -129,7 +133,7 @@ constexpr int y = 1;
 int main(int argc, char* argv[])
 {
 	/*!
-	 * \page Grid_2_solve_eq Grid 2 solve eq
+	 * \page Grid_2_solve_eq Solve equation
 	 *
 	 * ## Initialization ##
 	 *
@@ -148,7 +152,7 @@ int main(int argc, char* argv[])
 	//! \cond [ofp_init] \endcond
 
 	/*!
-	 * \page Grid_2_solve_eq Grid 2 solve eq
+	 * \page Grid_2_solve_eq Solve equation
 	 *
 	 * ## Grid instantiation and initialization ##
 	 *
@@ -174,7 +178,7 @@ int main(int argc, char* argv[])
 	//! \cond [ofp_par] \endcond
 
 	/*!
-	 * \page Grid_2_solve_eq Grid 2 solve eq
+	 * \page Grid_2_solve_eq Solve equation
 	 *
 	 * Create a distributed grid in 2D (1° template parameter) space in with double precision (2° template parameter)
 	 * each grid point contain a scalar (double),
@@ -202,7 +206,7 @@ int main(int argc, char* argv[])
 	//! \cond [grid inst] \endcond
 
 	/*!
-	 * \page Grid_2_solve_eq Grid 2 solve eq
+	 * \page Grid_2_solve_eq Solve equation
 	 *
 	 * Initialize U and fill the boundary conditions
 	 *
@@ -219,7 +223,7 @@ int main(int argc, char* argv[])
 	//! \cond [grid init] \endcond
 
 	/*!
-	 * \page Grid_2_solve_eq Grid 2 solve eq
+	 * \page Grid_2_solve_eq Solve equation
 	 *
 	 * ## %Ghost synchronization ##
 	 *
@@ -238,7 +242,7 @@ int main(int argc, char* argv[])
 	//! \cond [ghost sync] \endcond
 
 	/*!
-	 * \page Grid_2_solve_eq Grid 2 solve eq
+	 * \page Grid_2_solve_eq Solve equation
 	 *
 	 * ## Red-Black alghorithm ##
 	 *
@@ -257,7 +261,7 @@ int main(int argc, char* argv[])
 	for (size_t i = 0 ; i < 10000 ; i++)
 	{
 		/*!
-		 * \page Grid_2_solve_eq Grid 2 solve eq
+		 * \page Grid_2_solve_eq Solve equation
 		 *
 		 * Get an iterator that go through the points of the grid (No ghost)
 		 * To compute one iteration.
@@ -312,7 +316,7 @@ int main(int argc, char* argv[])
 		//! \cond [gs_it] \endcond
 
 		/*!
-		 * \page Grid_2_solve_eq Grid 2 solve eq
+		 * \page Grid_2_solve_eq Solve equation
 		 *
 		 *
 		 * Once an iteration is done we have to synchronize the ghosts
@@ -336,7 +340,7 @@ int main(int argc, char* argv[])
 	}
 	
 	/*!
-	 * \page Grid_2_solve_eq Grid 2 solve eq
+	 * \page Grid_2_solve_eq Solve equation
 	 *
 	 * The full Algorithm look like this
 	 *
@@ -400,7 +404,7 @@ int main(int argc, char* argv[])
 	//! \cond [sol stat] \endcond
 
 	/*!
-	 * \page Grid_2_solve_eq Grid 2 solve eq
+	 * \page Grid_2_solve_eq Solve equation
 	 *
 	 * ## VTK Write and visualization ##
 	 *
@@ -422,7 +426,7 @@ int main(int argc, char* argv[])
 	
 
 	/*!
-	 * \page Grid_2_solve_eq Grid 2 solve eq
+	 * \page Grid_2_solve_eq Solve equation
 	 *
 	 * ## Finalize ##
 	 *
@@ -439,9 +443,9 @@ int main(int argc, char* argv[])
 	//! \cond [finalize] \endcond
 
 	/*!
-	 * \page Grid_2_solve_eq Grid 2 solve eq
+	 * \page Grid_2_solve_eq Solve equation
 	 *
-	 * # Full code # {#code}
+	 * # Full code # {#e2_solve_eq_code}
 	 *
 	 * \include Grid/2_solve_eq/main.cpp
 	 *

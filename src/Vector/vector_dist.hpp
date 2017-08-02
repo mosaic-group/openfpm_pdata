@@ -8,7 +8,7 @@
 #ifndef VECTOR_HPP_
 #define VECTOR_HPP_
 
-#include "HDF5_XdmfWriter/HDF5_XdmfWriter.hpp"
+#include "HDF5_wr/HDF5_wr.hpp"
 #include "VCluster/VCluster.hpp"
 #include "Space/Shape/Point.hpp"
 #include "Vector/Iterators/vector_dist_iterator.hpp"
@@ -16,7 +16,7 @@
 #include "Vector/vector_dist_key.hpp"
 #include "memory/PtrMemory.hpp"
 #include "NN/CellList/CellList.hpp"
-#include "NN/CellList/CellListFast_hilb.hpp"
+#include "NN/CellList/CellListFast_gen.hpp"
 #include "util/common.hpp"
 #include "util/object_util.hpp"
 #include "memory/ExtPreAlloc.hpp"
@@ -31,6 +31,9 @@
 #include "NN/VerletList/VerletList.hpp"
 #include "vector_dist_comm.hpp"
 #include "DLB/LB_Model.hpp"
+#include "Vector/vector_map_iterator.hpp"
+#include "NN/CellList/ParticleIt_Cells.hpp"
+#include "NN/CellList/ProcKeys.hpp"
 
 #define VECTOR_DIST_ERROR_OBJECT std::runtime_error("Runtime vector distributed error");
 
@@ -73,13 +76,13 @@ struct gcl
 	 */
 	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
 	{
-		return vd.getCellList(r_cut);
+		return vd.template getCellList<CellL>(r_cut);
 	}
 };
 
 //! General function t get a cell-list
-template<unsigned int dim, typename St, typename Vector>
-struct gcl<dim,St,CellList_hilb<dim, St, FAST, shift<dim, St> >,Vector>
+template<unsigned int dim, typename St, typename Vector, typename Mem_type>
+struct gcl<dim,St,CellList_gen<dim, St, Process_keys_hilb,Mem_type, shift<dim, St> >,Vector>
 {
 	/*! \brief Get the Cell list based on the type
 	 *
@@ -90,11 +93,15 @@ struct gcl<dim,St,CellList_hilb<dim, St, FAST, shift<dim, St> >,Vector>
 	 * \return the constructed cell-list
 	 *
 	 */
-	static inline CellList_hilb<dim, St, FAST, shift<dim, St> > get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
+	static inline CellList_gen<dim, St, Process_keys_hilb, Mem_type, shift<dim, St> > get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
 	{
 		return vd.getCellList_hilb(r_cut,g);
 	}
 };
+
+#define CELL_MEMFAST(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> >
+#define CELL_MEMBAL(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_bal, shift<dim, St> >
+#define CELL_MEMMW(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_mw, shift<dim, St> >
 
 /*! \brief Distributed vector
  *
@@ -150,6 +157,9 @@ private:
 
 	//! option used to create this vector
 	size_t opt = 0;
+
+	//! Name of the properties
+	openfpm::vector<std::string> prp_names;
 
 #ifdef SE_CLASS3
 
@@ -334,12 +344,13 @@ public:
 	 * \param box domain where the vector of elements live
 	 * \param bc boundary conditions
 	 * \param g Ghost margins
-	 * \param opt additional options. BIND_DEC_TO_GHOST Bind the decomposition to be multiple of the
+	 * \param opt [Optional] additional options. BIND_DEC_TO_GHOST Bind the decomposition to be multiple of the
 	 *          ghost size. This is required if we want to use symmetric to eliminate
 	 *          ghost communications.
+	 * \param gdist [Optional] override the default distribution grid
 	 *
 	 */
-	vector_dist(size_t np, Box<dim, St> box, const size_t (&bc)[dim], const Ghost<dim, St> & g, size_t opt = 0)
+	vector_dist(size_t np, Box<dim, St> box, const size_t (&bc)[dim], const Ghost<dim, St> & g, size_t opt = 0, const grid_sm<dim,void> & gdist = grid_sm<dim,void>())
 	:v_cl(create_vcluster()),opt(opt) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
@@ -352,7 +363,7 @@ public:
 		check_parameters(box);
 
 		init_structures(np);
-		this->init_decomposition(box,bc,g,opt);
+		this->init_decomposition(box,bc,g,opt,gdist);
 
 #ifdef SE_CLASS3
 		se3.Initialize();
@@ -364,6 +375,15 @@ public:
 #ifdef SE_CLASS2
 		check_delete(this);
 #endif
+	}
+
+	/*! \brief remove all the elements
+	 *
+	 *
+	 */
+	void clear()
+	{
+		resize(0);
 	}
 
 	/*! \brief return the local size of the vector
@@ -416,6 +436,34 @@ public:
 		return v_pos.template get<0>(vec_key.getKey());
 	}
 
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPos(size_t vec_key) -> decltype(v_pos.template get<0>(vec_key))
+	{
+		return v_pos.template get<0>(vec_key);
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPos(size_t vec_key) const -> decltype(v_pos.template get<0>(vec_key))
+	{
+		return v_pos.template get<0>(vec_key);
+	}
+
 	/*! \brief Get the property of an element
 	 *
 	 * see the vector_dist iterator usage to get an element key
@@ -446,7 +494,155 @@ public:
 		return v_prp.template get<id>(vec_key.getKey());
 	}
 
+	/*! \brief Get the property of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \tparam id property id
+	 * \param vec_key vector element
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline auto getProp(size_t vec_key) -> decltype(v_prp.template get<id>(vec_key))
+	{
+		return v_prp.template get<id>(vec_key);
+	}
+
+	/*! \brief Get the property of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \tparam id property id
+	 * \param vec_key vector element
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline auto getProp(size_t vec_key) const -> const decltype(v_prp.template get<id>(vec_key))
+	{
+		return v_prp.template get<id>(vec_key);
+	}
+
 #endif
+
+///////////////////// Read and write with no check
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPosNC(vect_dist_key_dx vec_key) -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	{
+		return v_pos.template get<0>(vec_key.getKey());
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPosNC(vect_dist_key_dx vec_key) const -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	{
+		return v_pos.template get<0>(vec_key.getKey());
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPosNC(size_t vec_key) -> decltype(v_pos.template get<0>(vec_key))
+	{
+		return v_pos.template get<0>(vec_key);
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPosNC(size_t vec_key) const -> decltype(v_pos.template get<0>(vec_key))
+	{
+		return v_pos.template get<0>(vec_key);
+	}
+
+	/*! \brief Get the property of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \tparam id property id
+	 * \param vec_key vector element
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline auto getPropNC(vect_dist_key_dx vec_key) -> decltype(v_prp.template get<id>(vec_key.getKey()))
+	{
+		return v_prp.template get<id>(vec_key.getKey());
+	}
+
+	/*! \brief Get the property of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \tparam id property id
+	 * \param vec_key vector element
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline auto getPropNC(vect_dist_key_dx vec_key) const -> const decltype(v_prp.template get<id>(vec_key.getKey()))
+	{
+		return v_prp.template get<id>(vec_key.getKey());
+	}
+
+	/*! \brief Get the property of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \tparam id property id
+	 * \param vec_key vector element
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline auto getPropNC(size_t vec_key) -> decltype(v_prp.template get<id>(vec_key))
+	{
+		return v_prp.template get<id>(vec_key);
+	}
+
+	/*! \brief Get the property of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \tparam id property id
+	 * \param vec_key vector element
+	 *
+	 * \return return the selected property of the vector element
+	 *
+	 */
+	template<unsigned int id> inline auto getPropNC(size_t vec_key) const -> const decltype(v_prp.template get<id>(vec_key))
+	{
+		return v_prp.template get<id>(vec_key);
+	}
 
 ///////////////////// Read and Write function
 
@@ -643,13 +839,16 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > CellL getCellListSym(St r_cut)
+	template<typename CellL = CellList<dim, St, Mem_fast, shift<dim, St> > > CellL getCellListSym(St r_cut)
 	{
 #ifdef SE_CLASS1
 		if ((opt & BIND_DEC_TO_GHOST))
 		{
-			std::cerr << __FILE__ << ":" << __LINE__ << " error to get symmetric cell-list you must construct the vector with the option BIND_DEC_TO_GHOST " << std::endl;
-			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+			if (getDecomposition().getGhost().getLow(dim-1) == 0.0)
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, If you construct a vector without BIND_DEC_TO_GHOST the ghost must be full without reductions " << std::endl;
+				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+			}
 		}
 #endif
 
@@ -673,6 +872,7 @@ public:
 		return cell_list;
 	}
 
+
 	/*! \brief Construct a cell list starting from the stored particles
 	 *
 	 * \tparam CellL CellList type to construct
@@ -682,7 +882,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > CellL getCellList(St r_cut)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> > > CellL getCellList(St r_cut)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -695,7 +895,7 @@ public:
 		Ghost<dim,St> g = getDecomposition().getGhost();
 		g.magnify(1.013);
 
-		return getCellList(r_cut, g);
+		return getCellList<CellL>(r_cut, g);
 	}
 
 	/*! \brief Construct an hilbert cell list starting from the stored particles
@@ -707,7 +907,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_hilb<dim, St, FAST, shift<dim, St> > > CellL getCellList_hilb(St r_cut)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast, shift<dim, St> > > CellL getCellList_hilb(St r_cut)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -730,7 +930,7 @@ public:
 	 * \param cell_list Cell list to update
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > void updateCellList(CellL & cell_list)
+	template<typename CellL> void updateCellList(CellL & cell_list)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -767,7 +967,7 @@ public:
 	 * \param cell_list Cell list to update
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > void updateCellListSym(CellL & cell_list)
+	template<typename CellL = CellList<dim, St, Mem_fast, shift<dim, St> > > void updateCellListSym(CellL & cell_list)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -812,7 +1012,7 @@ public:
 	 * \return the CellList
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, FAST, shift<dim, St> > > CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> > > CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -829,7 +1029,7 @@ public:
 		// Processor bounding box
 		cl_param_calculate(pbox, div, r_cut, enlarge);
 
-		cell_list.Initialize(pbox, div);
+		cell_list.Initialize(pbox, div, g_m);
 		cell_list.set_ndec(getDecomposition().get_ndec());
 
 		updateCellList(cell_list);
@@ -852,7 +1052,7 @@ public:
 	 * \return The Cell-list
 	 *
 	 */
-	template<typename CellL = CellList_hilb<dim, St, FAST, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -911,6 +1111,14 @@ public:
 	 */
 	VerletList<dim,St,FAST,shift<dim,St> > getVerletCrs(St r_cut)
 	{
+#ifdef SE_CLASS1
+		if ((opt & BIND_DEC_TO_GHOST))
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, getVerletCrs require the vector to be constructed with BIND_DEC_TO_GHOST option " << std::endl;
+			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+		}
+#endif
+
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
@@ -927,18 +1135,19 @@ public:
 		auto & NN = ver.getInternalCellList();
 
 		// Shift
-		grid_key_dx<dim> cell_shift = NN.getShift();
-
-		// Shift
-		grid_key_dx<dim> shift = NN.getShift();
+		grid_key_dx<dim> shift;
 
 		// Add padding
 		for (size_t i = 0 ; i < dim ; i++)
-			shift.set_d(i,shift.get(i) + NN.getPadding(i));
+			shift.set_d(i,NN.getPadding(i));
 
 		grid_sm<dim,void> gs = NN.getInternalGrid();
 
-		ver.createVerletCrs(r_cut,g_m,v_pos,getDecomposition().getDomainCells(shift,cell_shift,gs),getDecomposition().getAnomDomainCells(shift,cell_shift,gs));
+		getDecomposition().setNNParameters(shift,gs);
+
+		ver.createVerletCrs(r_cut,g_m,v_pos,
+				            getDecomposition().getCRSDomainCells(),
+							getDecomposition().getCRSAnomDomainCells());
 
 		ver.set_ndec(getDecomposition().get_ndec());
 
@@ -1011,6 +1220,14 @@ public:
 		}
 		else if (opt == VL_CRS_SYMMETRIC)
 		{
+#ifdef SE_CLASS1
+			if ((opt & BIND_DEC_TO_GHOST))
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, updateVerlet with the option VL_CRS_SYMMETRIC require the vector to be constructed with BIND_DEC_TO_GHOST option " << std::endl;
+				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+			}
+#endif
+
 			auto & NN = ver.getInternalCellList();
 
 			// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
@@ -1020,18 +1237,19 @@ public:
 			if (to_reconstruct == false)
 			{
 				// Shift
-				grid_key_dx<dim> cell_shift = NN.getShift();
-
-				// Shift
-				grid_key_dx<dim> shift = NN.getShift();
+				grid_key_dx<dim> shift;
 
 				// Add padding
 				for (size_t i = 0 ; i < dim ; i++)
-					shift.set_d(i,shift.get(i) + NN.getPadding(i));
+					shift.set_d(i,NN.getPadding(i));
 
 				grid_sm<dim,void> gs = NN.getInternalGrid();
 
-				ver.updateCrs(getDecomposition().getDomain(),r_cut,v_pos,g_m,getDecomposition().getDomainCells(shift,cell_shift,gs),getDecomposition().getAnomDomainCells(shift,cell_shift,gs));
+				getDecomposition().setNNParameters(shift,gs);
+
+				ver.updateCrs(getDecomposition().getDomain(),r_cut,v_pos,g_m,
+						      getDecomposition().getCRSDomainCells(),
+							  getDecomposition().getCRSAnomDomainCells());
 			}
 			else
 			{
@@ -1061,60 +1279,6 @@ public:
 		}
 	}
 
-#if 0
-
-/*	void getVerletDeprecated(openfpm::vector<openfpm::vector<size_t>> & verlet, St r_cut)
-	{
-		// resize verlet to store the number of particles
-		verlet.resize(size_local());
-
-		// get the cell-list
-		auto cl = getCellList(r_cut);
-
-		// square of the cutting radius
-		St r_cut2 = r_cut * r_cut;
-
-		// iterate the particles
-		auto it_p = this->getDomainIterator();
-		while (it_p.isNext())
-		{
-			// key
-			vect_dist_key_dx key = it_p.get();
-
-			// Get the position of the particles
-			Point<dim, St> p = this->getPos(key);
-
-			// Clear the neighborhood of the particle
-			verlet.get(key.getKey()).clear();
-
-			// Get the neighborhood of the particle
-			auto NN = cl.template getNNIterator<NO_CHECK>(cl.getCell(p));
-			while (NN.isNext())
-			{
-				auto nnp = NN.get();
-
-				// p != q
-				if (nnp == key.getKey())
-				{
-					++NN;
-					continue;
-				}
-
-				Point<dim, St> q = this->getPos(nnp);
-
-				if (p.distance2(q) < r_cut2)
-					verlet.get(key.getKey()).add(nnp);
-
-				// Next particle
-				++NN;
-			}
-
-			// next particle
-			++it_p;
-		}
-	}*/
-
-#endif
 
 	/*! \brief Construct a cell list starting from the stored particles and reorder a vector according to the Hilberts curve
 	 *
@@ -1123,7 +1287,7 @@ public:
 	 * \param m an order of a hilbert curve
 	 *
 	 */
-	template<typename CellL=CellList<dim,St,FAST,shift<dim,St> > > void reorder (int32_t m)
+	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_fast,shift<dim,St> > > void reorder (int32_t m)
 	{
 		reorder(m,getDecomposition().getGhost());
 	}
@@ -1141,7 +1305,7 @@ public:
 	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
 	 *
 	 */
-	template<typename CellL=CellList<dim,St,FAST,shift<dim,St> > > void reorder(int32_t m, const Ghost<dim,St> & enlarge)
+	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_fast,shift<dim,St> > > void reorder(int32_t m, const Ghost<dim,St> & enlarge)
 	{
 		// reset the ghost part
 		v_pos.resize(g_m);
@@ -1165,7 +1329,7 @@ public:
 			div[i] = 1 << m;
 		}
 
-		cell_list.Initialize(pbox,div);
+		cell_list.Initialize(pbox,div,g_m);
 
 		// for each particle add the particle to the cell list
 
@@ -1327,6 +1491,31 @@ public:
 	 * \return an iterator
 	 *
 	 */
+	template<typename CellList> ParticleIt_Cells<dim,CellList> getDomainIteratorCells(CellList & NN)
+	{
+#ifdef SE_CLASS3
+		se3.getIterator();
+#endif
+
+		// Shift
+		grid_key_dx<dim> shift;
+
+		// Add padding
+		for (size_t i = 0 ; i < dim ; i++)
+			shift.set_d(i,NN.getPadding(i));
+
+		grid_sm<dim,void> gs = NN.getInternalGrid();
+
+		getDecomposition().setNNParameters(shift,gs);
+
+		return ParticleIt_Cells<dim,CellList>(NN,getDecomposition().getDomainCells(),g_m);
+	}
+
+	/*! \brief Get an iterator that traverse the particles in the domain
+	 *
+	 * \return an iterator
+	 *
+	 */
 	vector_dist_iterator getDomainIterator() const
 	{
 #ifdef SE_CLASS3
@@ -1440,6 +1629,14 @@ public:
 	 */
 	template<int ... prp> inline void ghost_get(size_t opt = WITH_POSITION)
 	{
+#ifdef SE_CLASS1
+		if (getDecomposition().getProcessorBounds().isValid() == false && size_local() != 0)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Error the processor " << v_cl.getProcessUnitID() << " has particles, but is supposed to be unloaded" << std::endl;
+			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+		}
+#endif
+
 #ifdef SE_CLASS3
 		se3.template ghost_get_pre<prp...>(opt);
 #endif
@@ -1515,11 +1712,12 @@ public:
 		CellDecomposer_sm<dim, St, shift<dim,St>> cdsm;
 
 		Decomposition & dec = getDecomposition();
+		auto & dist = getDecomposition().getDistribution();
 
-		cdsm.setDimensions(dec.getDomain(), dec.getGrid().getSize(), 0);
+		cdsm.setDimensions(dec.getDomain(), dec.getDistGrid().getSize(), 0);
 
-		for (size_t i = 0; i < getDecomposition().getNSubSubDomains(); i++)
-			dec.setSubSubDomainComputationCost(i, 1);
+		for (size_t i = 0; i < dist.getNOwnerSubSubDomains() ; i++)
+			dec.setSubSubDomainComputationCost(dist.getOwnerSubSubDomain(i) , 1);
 
 		auto it = getDomainIterator();
 
@@ -1536,10 +1734,24 @@ public:
 
 		// Go throught all the sub-sub-domains and apply the model
 
-		for (size_t i = 0 ; i < dec.getDistribution().getNSubSubDomains(); i++)
-			md.applyModel(dec,i);
+		for (size_t i = 0 ; i < dist.getNOwnerSubSubDomains(); i++)
+			md.applyModel(dec,dist.getOwnerSubSubDomain(i));
 
-		dec.getDistribution().setDistTol(md.distributionTol());
+		dist.setDistTol(md.distributionTol());
+	}
+
+	inline void save(const std::string & filename) const
+	{
+		HDF5_writer<VECTOR_DIST> h5s;
+
+		h5s.save(filename,v_pos,v_prp);
+	}
+
+	inline void load(const std::string & filename)
+	{
+		HDF5_reader<VECTOR_DIST> h5l;
+
+		h5l.load(filename,v_pos,v_prp,g_m);
 	}
 
 	/*! \brief Output particle position and properties
@@ -1577,7 +1789,7 @@ public:
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtk"));
 
 			// Write the VTK file
-			return vtk_writer.write(output,"particles",ft);
+			return vtk_writer.write(output,prp_names,"particles",ft);
 		}
 
 		return false;
@@ -1645,7 +1857,7 @@ public:
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtk"));
 
 			// Write the VTK file
-			return vtk_writer.write(output,"particles",ft);
+			return vtk_writer.write(output,prp_names,"particles",ft);
 		}
 	}
 
@@ -1723,6 +1935,26 @@ public:
 		return v_pos;
 	}
 
+	/*! \brief return the property vector of all the particles
+	 *
+	 * \return the particle property vector
+	 *
+	 */
+	const openfpm::vector<prop> & getPropVector() const
+	{
+		return v_prp;
+	}
+
+	/*! \brief return the property vector of all the particles
+	 *
+	 * \return the particle property vector
+	 *
+	 */
+	openfpm::vector<prop> & getPropVector()
+	{
+		return v_prp;
+	}
+
 	/*! \brief It return the sum of the particles in the previous processors
 	 *
 	 * \return the particles number
@@ -1753,22 +1985,65 @@ public:
 	 * \return Particle iterator
 	 *
 	 */
-	template<typename cli> ParticleItCRS_Cells<dim,cli> getParticleIteratorCRS(cli & NN)
+	template<typename cli> ParticleItCRS_Cells<dim,cli> getParticleIteratorCRS_Cell(cli & NN)
 	{
-		// Shift
-		grid_key_dx<dim> cell_shift = NN.getShift();
+#ifdef SE_CLASS1
+		if ((opt & BIND_DEC_TO_GHOST))
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, getParticleIteratorCRS_Cell require the vector to be constructed with BIND_DEC_TO_GHOST option " << std::endl;
+			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+		}
+#endif
 
 		// Shift
-		grid_key_dx<dim> shift = NN.getShift();
+		grid_key_dx<dim> shift;
 
 		// Add padding
 		for (size_t i = 0 ; i < dim ; i++)
-			shift.set_d(i,shift.get(i) + NN.getPadding(i));
+			shift.set_d(i,NN.getPadding(i));
 
 		grid_sm<dim,void> gs = NN.getInternalGrid();
 
+		getDecomposition().setNNParameters(shift,gs);
+
 		// First we check that
-		return ParticleItCRS_Cells<dim,cli>(NN,getDecomposition().getDomainCells(shift,cell_shift,gs),getDecomposition().getAnomDomainCells(shift,cell_shift,gs),NN.getNNc_sym());
+		return ParticleItCRS_Cells<dim,cli>(NN,getDecomposition().getCRSDomainCells(),
+				                               getDecomposition().getCRSAnomDomainCells(),
+											   NN.getNNc_sym());
+	}
+
+	/*! \brief Set the properties names
+	 *
+	 * It is useful to specify name for the properties in vtk writers
+	 *
+	 * \param names set of properties names
+	 *
+	 */
+	void setPropNames(const openfpm::vector<std::string> & names)
+	{
+		prp_names = names;
+	}
+
+	/*! \brief Get a special particle iterator able to iterate across particles using
+	 *         symmetric crossing scheme
+	 *
+	 * \param NN Verlet list neighborhood
+	 *
+	 * \return Particle iterator
+	 *
+	 */
+	template<typename vrl> openfpm::vector_key_iterator_seq<typename vrl::local_index_t> getParticleIteratorCRS(vrl & NN)
+	{
+#ifdef SE_CLASS1
+		if ((opt & BIND_DEC_TO_GHOST))
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, getParticleIteratorCRS_Cell require the vector to be constructed with BIND_DEC_TO_GHOST option " << std::endl;
+			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+		}
+#endif
+
+		// First we check that
+		return openfpm::vector_key_iterator_seq<typename vrl::local_index_t>(NN.getParticleSeq());
 	}
 
 	/*! \brief Return from which cell we have to start in case of CRS interation

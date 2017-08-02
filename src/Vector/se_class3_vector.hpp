@@ -222,7 +222,7 @@ struct propCheckINF
 	{
 		typedef typename boost::mpl::at<typename vector::value_type::type,boost::mpl::int_<T::value> >::type type_to_check;
 
-		bool snn = typeCheck<type_to_check,std::is_fundamental<type_to_check>::value>::isInf(data.template getProp<T::value>(id));
+		bool snn = typeCheck<type_to_check,std::is_fundamental<type_to_check>::value>::isInf(data.template getPropNC<T::value>(id));
 
 		if (snn == true)
 		{
@@ -383,15 +383,18 @@ class se_class3_vector
 				auto p = it.get();
 
 				for (size_t i = 0 ; i < Np_real ; i++)
-					vd.template getProp<Np+SE3_STATUS>(p)[i] = UNINITIALIZED;
+					vd.template getPropNC<Np+SE3_STATUS>(p)[i] = UNINITIALIZED;
 
-				vd.template getProp<Np+SE3_TYPE>(p) = INSIDE;
+				vd.template getPropNC<Np+SE3_TYPE>(p) = INSIDE;
 
 				++it;
 			}
 
 			for (size_t i = 0 ; i < Np_real ; i++)
+			{
 				sync[GHOST][i] = NOTSYNC;
+				sync[HALO][i] = SYNC;
+			}
 		}
 
 		template <unsigned int ... prp> void ghost_get_pre(size_t opt)
@@ -411,7 +414,7 @@ class se_class3_vector
 
 				for (size_t i = 0 ; i < sizeof...(prp) ; i++)
 				{
-					if (vd.template getProp<Np+SE3_STATUS>(p)[gg[i]] == DIRTY)
+					if (vd.template getPropNC<Np+SE3_STATUS>(p)[gg[i]] == DIRTY)
 					{
 						std::cerr << __FILE__ << ":" << __LINE__ << " Error the ghost has been written and ghost_get will overwrite your changes" << std::endl;
 						ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
@@ -422,7 +425,7 @@ class se_class3_vector
 				{
 					for (size_t i = 0 ; i < non_NP.size() ; i++)
 					{
-						if (vd.template getProp<Np+SE3_STATUS>(p)[non_NP.get(i)] == DIRTY)
+						if (vd.template getPropNC<Np+SE3_STATUS>(p)[non_NP.get(i)] == DIRTY)
 						{
 							std::cerr << __FILE__ << ":" << __LINE__ << " Error the it seem that the property=" << getPrpName(non_NP.get(i)) << " has been written and ghost_get will destroy such changes" << std::endl;
 							ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
@@ -448,11 +451,11 @@ class se_class3_vector
 
 				for (size_t i = 0 ; i < sizeof...(prp) ; i++)
 				{
-					if (vd.template getProp<Np+SE3_STATUS>(p)[gg[i]] == DIRTY)
-						vd.template getProp<Np+SE3_STATUS>(p)[gg[i]] = CLEAN;
+					if (vd.template getPropNC<Np+SE3_STATUS>(p)[gg[i]] == DIRTY)
+						vd.template getPropNC<Np+SE3_STATUS>(p)[gg[i]] = CLEAN;
 				}
 
-				vd.template getProp<Np+SE3_TYPE>(p) = GHOST;
+				vd.template getPropNC<Np+SE3_TYPE>(p) = GHOST;
 
 				++it2;
 			}
@@ -469,7 +472,7 @@ class se_class3_vector
 					auto p = it.get();
 
 					for (size_t i = 0 ; i < non_NP.size() ; i++)
-						vd.template getProp<Np+SE3_STATUS>(p)[non_NP.get(i)] = UNINITIALIZED;
+						vd.template getPropNC<Np+SE3_STATUS>(p)[non_NP.get(i)] = UNINITIALIZED;
 
 					++it;
 				}
@@ -548,15 +551,15 @@ class se_class3_vector
 
 				for (size_t j = 0 ; j < Np ; j++)
 				{
-					if (vd.template getProp<Np+SE3_STATUS>(p)[j] == DIRTY)
-						vd.template getProp<Np+SE3_STATUS>(p)[j] = CLEAN;
+					if (vd.template getPropNC<Np+SE3_STATUS>(p)[j] == DIRTY)
+						vd.template getPropNC<Np+SE3_STATUS>(p)[j] = CLEAN;
 				}
 
 #ifdef CHECK_FOR_POSINF
 
-				if ( std::isinf(vd.getPos(p)[0]) || std::isinf(vd.getPos(p)[1]) || std::isinf(vd.getPos(p)[2]) )
+				if ( std::isinf(vd.getPosNC(p)[0]) || std::isinf(vd.getPosNC(p)[1]) || std::isinf(vd.getPosNC(p)[2]) )
 				{
-					std::cerr << __FILE__ << ":" << __LINE__ << " error detected INF in position for particle p=" << p.getKey() << " of type=" << getParticleTypeString(vd.template getProp<Np+SE3_TYPE>(p)) << std::endl;
+					std::cerr << __FILE__ << ":" << __LINE__ << " error detected INF in position for particle p=" << p.getKey() << " of type=" << getParticleTypeString(vd.template getPropNC<Np+SE3_TYPE>(p)) << std::endl;
 					ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
 				}
 
@@ -564,9 +567,9 @@ class se_class3_vector
 
 #ifdef CHECKFOR_POSNAN
 
-				if ( std::isnan(vd.getPos(p)[0]) || std::isnan(vd.getPos(p)[1]) || std::isnan(vd.getPos(p)[2]) )
+				if ( std::isnan(vd.getPosNC(p)[0]) || std::isnan(vd.getPosNC(p)[1]) || std::isnan(vd.getPosNC(p)[2]) )
 				{
-					std::cerr << __FILE__ << ":" << __LINE__ << " error detected NAN in position for particle p=" << p.getKey() << " of type=" << getParticleTypeString(vd.template getProp<Np+SE3_TYPE>(p)) << std::endl;
+					std::cerr << __FILE__ << ":" << __LINE__ << " error detected NAN in position for particle p=" << p.getKey() << " of type=" << getParticleTypeString(vd.template getPropNC<Np+SE3_TYPE>(p)) << std::endl;
 					ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
 				}
 
@@ -606,7 +609,7 @@ class se_class3_vector
 
 				for (size_t j = 0 ; j < Np ; j++)
 				{
-					if (vd.template getProp<Np+SE3_STATUS>(p)[j] == DIRTY)
+					if (vd.template getPropNC<Np+SE3_STATUS>(p)[j] == DIRTY)
 					{
 						std::cerr << __FILE__ << ":" << __LINE__ << " error it seem that ghost has been filled with information that we are going to destroy with the map call " << std::endl;
 					}
@@ -632,9 +635,9 @@ class se_class3_vector
 
 				for (size_t j = 0 ; j < Np ; j++)
 				{
-					Point<vector::dims,typename vector::stype> xp = vd.getPos(p);
+					Point<vector::dims,typename vector::stype> xp = vd.getPosNC(p);
 
-					vd.template getProp<Np+SE3_TYPE>(p) = getParticleType(xp,p.getKey(),vd);
+					vd.template getPropNC<Np+SE3_TYPE>(p) = getParticleType(xp,p.getKey(),vd);
 				}
 
 				++it;
@@ -643,10 +646,10 @@ class se_class3_vector
 
 		template<unsigned int prp> void read(const vector & vd, size_t p) const
 		{
-			if (vd.template getProp<Np+SE3_STATUS>(p)[prp] == UNINITIALIZED)
+			if (vd.template getPropNC<Np+SE3_STATUS>(p)[prp] == UNINITIALIZED)
 			{
 				std::stringstream str;
-				std::string type_str = getParticleTypeString(vd.template getProp<Np+SE3_TYPE>(p));
+				std::string type_str = getParticleTypeString(vd.template getPropNC<Np+SE3_TYPE>(p));
 
 				if (prp == Np_real)
 					str << __FILE__ << ":" << __LINE__ << " Error you are reading the particle " << p << " of type " << type_str << " the position. But it result to be uninitialized" << std::endl;
@@ -658,18 +661,18 @@ class se_class3_vector
 				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
 			}
 
-			if (vd.template getProp<Np+SE3_STATUS>(p)[prp] == DIRTY)
+			if (vd.template getPropNC<Np+SE3_STATUS>(p)[prp] == DIRTY)
 			{
 				std::cerr << __FILE__ << ":" << __LINE__ << " Warning you are reading from an particle that has been changed already in the same cycle" << std::endl;
 				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
 			}
 
-			if (vd.template getProp<Np+SE3_TYPE>(p) == GHOST || vd.template getProp<Np+SE3_TYPE>(p) == HALO)
+			if (vd.template getPropNC<Np+SE3_TYPE>(p) == GHOST || vd.template getPropNC<Np+SE3_TYPE>(p) == HALO)
 			{
 				// if we read from the ghost we have to ensure that the ghost is in
 				// sync in particular that the state of the halo is CLEAR
 
-				if (sync[vd.template getProp<Np+SE3_TYPE>(p)][prp] != SYNC)
+				if (sync[vd.template getPropNC<Np+SE3_TYPE>(p)][prp] != SYNC)
 				{
 					std::cerr << __FILE__ << ":" << __LINE__ << " Error it seem that you are reading from a ghost the property=" << getPrpName(prp) << " but it seem it is changed from the last ghost_get. It seems that is missing a ghost_get" << std::endl;
 					ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
@@ -679,12 +682,12 @@ class se_class3_vector
 
 		template<unsigned int prp> void write(vector & vd, size_t p)
 		{
-			vd.template getProp<Np+SE3_STATUS>(p)[prp] = DIRTY;
+			vd.template getPropNC<Np+SE3_STATUS>(p)[prp] = DIRTY;
 			if (p >= vd.size_local())
 				vd.get_se_class3().template setHaloOutSync<prp>();
 			else
 			{
-				if (vd.template getProp<Np+SE3_TYPE>(p) == HALO)
+				if (vd.template getPropNC<Np+SE3_TYPE>(p) == HALO)
 					vd.get_se_class3().template setGhostOutSync<prp>();
 			}
 
