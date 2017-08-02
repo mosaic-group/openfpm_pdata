@@ -56,6 +56,9 @@ else
    exit 0;
  fi
 
+ ldd ./src/pdata
+ echo "$LD_LIBRARY_PATH"
+
  source $HOME/openfpm_vars_$6
 
  mpirun -np $3 ./src/pdata
