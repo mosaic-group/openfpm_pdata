@@ -50,7 +50,6 @@ then
  fi
 
 else
- source ~/.bashrc
 
  if [ x"$3" == x"no_test" ]; then
    exit 0;
@@ -58,6 +57,7 @@ else
 
  ldd ./src/pdata
  echo "$LD_LIBRARY_PATH"
+ echo "$HOME/openfpm_vars_$6" 
 
  source $HOME/openfpm_vars_$6
 
