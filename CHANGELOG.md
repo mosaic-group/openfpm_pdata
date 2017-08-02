@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [0.9.0]
+## [development]
 
 ### Added
 - Introduced getDomainIterator for Cell-list
@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - getDomainIterator stencil for faster stencil codes iterators see (Grid/gray_scott_3d example)
 - Algebraic multigrid solvers interface for linear systems (see Vortex in Cell example)
 - Added setPropNames in vector_dist see Vector/0_simple
+- Support for Windows with CYGWIN
 
 ### Fixed
 - Installation of PETSC in case with MUMPS try without MUMPS

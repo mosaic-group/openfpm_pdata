@@ -125,6 +125,8 @@ float tgtre  = 7500.0;
 // Noise factor for the ring vorticity on z
 float ringnz = 0.01;
 
+float dcgamma = 4.32334181e-01;
+
 // Kinematic viscosity
 float nu = 1.0/tgtre;
 
