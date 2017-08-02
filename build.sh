@@ -21,6 +21,8 @@ if [ "$2" == "gin" ]
 then
  echo "Compiling on gin\n"
 
+ source "$HOME/.bashrc"
+
  ## Check if MPI folder exist if not copy MPICH
 
  if [ ! -d $HOME/$5/MPI ]; then
