@@ -22,6 +22,8 @@ then
  echo "Compiling on gin\n"
 
  source "$HOME/.bashrc"
+ echo "AHHHHHHHHHH: $(which mpic++)"
+ echo "AHHHHHHHHHH: $(which mpirun)"
 
  ## Check if MPI folder exist if not copy MPICH
 

@@ -17,6 +17,9 @@ then
 
  source $HOME/openfpm_vars_$6
 
+  echo "AHHHHHHHHHH: $(which mpic++)"
+ echo "AHHHHHHHHHH: $(which mpirun)"
+
  echo "$LD_LIBRARY_PATH"
  ldd ./src/pdata
 
