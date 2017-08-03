@@ -119,10 +119,16 @@ else
   tar -xf netcdf-4.4.1.1.tar.gz
   cd netcdf-4.4.1.1
 
+  if [ -d "$1/HDF5/lib"  ]; then
+    lib_path="$1/HDF5/lib"
+  elif [ -d "$1/HDF5/lib64" ]; then
+    lib_path="$1/HDF5/lib64"
+  fi
+
   if [ x"$platform" == x"cygwin" ]; then
-    ./configure CC=mpicc CPPFLAGS="-I$1/HDF5/include -I$1/ZLIB/include " LDFLAGS="-L$1/HDF5/lib -L$1/ZLIB/lib" --disable-netcdf-4 --disable-dap --disable-shared --prefix=$1/NETCDF
+    ./configure CC=mpicc CPPFLAGS="-I$1/HDF5/include -I$1/ZLIB/include " LDFLAGS="-L$lib_path -L$1/ZLIB/lib" --disable-netcdf-4 --disable-dap --disable-shared --prefix=$1/NETCDF
   else
-    ./configure CC=mpicc CPPFLAGS="-I$1/HDF5/include -I$1/ZLIB/include " LDFLAGS="-L$1/HDF5/lib -L$1/ZLIB/lib" --disable-dap --disable-shared --prefix=$1/NETCDF
+    ./configure CC=mpicc CPPFLAGS="-I$1/HDF5/include -I$1/ZLIB/include " LDFLAGS="-L$lib_path -L$1/ZLIB/lib" --disable-dap --disable-shared --prefix=$1/NETCDF
   fi
   make -j $2
 
