@@ -99,6 +99,9 @@ then
  fi
 else
  echo "Compiling general"
+
+ echo "AHHHHHHHHHH: $(which mpirun)"
+
  source ~/.bashrc
 
  mkdir $HOME/$branch
