@@ -6,6 +6,12 @@ echo "Directory: $1"
 echo "Machine: $2"
 echo "Branch name: $5"
 
+if [ x"$5" == x"" ]; then
+  branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
+else
+  branch=$5
+fi
+
 #### If you have a dep_dir file change the branch name to the dep_dir
 
 dep_dir=$(cat dep_dir)
@@ -22,27 +28,25 @@ then
  echo "Compiling on gin\n"
 
  source "$HOME/.bashrc"
- echo "AHHHHHHHHHH: $(which mpic++)"
- echo "AHHHHHHHHHH: $(which mpirun)"
 
  ## Check if MPI folder exist if not copy MPICH
 
- if [ ! -d $HOME/$5/MPI ]; then
+ if [ ! -d $HOME/$branch/MPI ]; then
    echo "COPY MPICH"
-   cp -R $HOME/MPI $HOME/$5/MPI
-   echo 2 > $HOME/$5/MPI/version
+   cp -R $HOME/MPI $HOME/$branch/MPI
+   echo 2 > $HOME/$branch/MPI/version
  fi
 
  ### Activate MPI and binutils ###
 
- export PATH="$PATH:$HOME/$5/MPI/bin"
+ export PATH="$PATH:$HOME/$branch/MPI/bin"
  export PATH="/usr/local/binutils/bin/:$PATH"
 
- mkdir $HOME/$5
+ mkdir $HOME/$branch
  if [ x"$4" == x"full" ]; then
-  CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$5  -s -c "--prefix=/home/jenkins/openfpm_install"
-  mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
-  source $HOME/openfpm_vars_$5
+  CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$branch  -s -c "--prefix=/home/jenkins/openfpm_install"
+  mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
+  source $HOME/openfpm_vars_$branch
  elif [ x"$3" == x"numerics" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
   CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$branch  -m -s -c "--prefix=/home/jenkins/openfpm_install"
@@ -50,9 +54,9 @@ then
   source $HOME/openfpm_vars_$branch
   make $3
  else
-  CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$5  -m -s -c "--prefix=/home/jenkins/openfpm_install --no-recursion"
-  mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
-  source $HOME/openfpm_vars_$5
+  CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$branch  -m -s -c "--prefix=/home/jenkins/openfpm_install --no-recursion"
+  mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
+  source $HOME/openfpm_vars_$branch
   make $3
  fi
 
@@ -82,10 +86,10 @@ then
  
  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/incard/PARMETIS/lib:/home/incard/METIS/lib:/home/incard/HDF5/lib"
 
- mkdir /scratch/p_ppm/$5
- ./install -m -i "/scratch/p_ppm/$5" -s -c"CXX=mpic++ --no-recursion"
- mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
- source $HOME/openfpm_vars_$5
+ mkdir /scratch/p_ppm/$branch
+ ./install -m -i "/scratch/p_ppm/$branch" -s -c"CXX=mpic++ --no-recursion"
+ mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
+ source $HOME/openfpm_vars_$branch
  make $3
 
 
@@ -97,20 +101,20 @@ else
  echo "Compiling general"
  source ~/.bashrc
 
- mkdir $HOME/$5
+ mkdir $HOME/$branch
  if [ x"$4" == x"full" ]; then
-  ./install -i $HOME/$5  -s -c "--prefix=/Users/jenkins/openfpm_install"
-  mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
-  source $HOME/openfpm_vars_$5
+  ./install -i $HOME/$branch  -s -c "--prefix=/Users/jenkins/openfpm_install"
+  mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
+  source $HOME/openfpm_vars_$branch
  elif [ x"$3" == x"numerics" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
   ./install -i $HOME/$branch  -m -s -c "--prefix=/home/jenkins/openfpm_install"
   source $HOME/openfpm_vars_$branch
   make $3
  else
-  ./install -i $HOME/$5 -m -s -c "--prefix=/Users/jenkins/openfpm_install --no-recursion"
-  mv $HOME/openfpm_vars $HOME/openfpm_vars_$5
-  source $HOME/openfpm_vars_$5
+  ./install -i $HOME/$branch -m -s -c "--prefix=/Users/jenkins/openfpm_install --no-recursion"
+  mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
+  source $HOME/openfpm_vars_$branch
   make $3
  fi
 
