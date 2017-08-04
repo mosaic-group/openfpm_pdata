@@ -6,7 +6,22 @@ parallel (
 "gin" : {node ('gin')
                   {
                     deleteDir()
-                    checkout scm
+
+                    int ntry = 5
+                    while (ntry != 0)
+                    {
+                      try {
+                        checkout scm
+                        ntry = 0
+                      }
+                      catch (IOException e)
+                      {
+                        ntry--
+                        sleep(50)
+                      }
+                    }
+
+
                     stage ('build_gin')
                     {
                       sh "./build.sh $WORKSPACE $NODE_NAME numerics"
@@ -32,7 +47,22 @@ parallel (
                   {
                     deleteDir()
                     env.PATH = "/usr/local/bin:${env.PATH}"
-                    checkout scm
+
+                    int ntry = 5
+                    while (ntry != 0)
+                    {
+                      try {
+                        checkout scm
+                        ntry = 0
+                      }
+                      catch (IOException e)
+                      {
+                        ntry--
+                        sleep(50)
+                      }
+                    }
+
+
                     stage ('build_sb15')
                     {
                       sh "./build.sh $WORKSPACE $NODE_NAME numerics"
