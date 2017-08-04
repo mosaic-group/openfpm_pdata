@@ -6,6 +6,8 @@ echo "Directory: $1"
 echo "Machine: $2"
 echo "Branch name: $5"
 
+echo "AHHHHHHHHHH: $(which mpirun)"
+
 if [ x"$5" == x"" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
 else
