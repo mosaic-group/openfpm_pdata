@@ -75,13 +75,13 @@ AC_CANONICAL_HOST
 # specifically based on the host
 case $host_os in
   darwin* )
-        RT_LIB=""
+        RT_LIB=" $BLAS_LIBS"
         ;;
   linux*)
-        RT_LIB="-lrt"
+        RT_LIB="-lrt $BLAS_LIBS"
         ;;
     *)
-        RT_LIB="-lrt"
+        RT_LIB="-lrt $BLAS_LIBS"
         ;;
 esac
 
