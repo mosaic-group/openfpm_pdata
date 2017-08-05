@@ -208,104 +208,108 @@ template<typename V, typename E = no_edge,
 		typename grow_p = openfpm::grow_policy_double>
 class DistGraph_CSR
 {
-	// Vcluster communication object
+	//! Vcluster communication object
 	Vcluster & vcl;
 
-	// Distribution vector
+	//! Distribution vector
 	openfpm::vector<idx_t> vtxdist;
 
-	// Fixed distribution vector, it never changes, it maintains always the first decomposition and topology
+	//! Fixed distribution vector, it never changes, it maintains always the first decomposition and topology
 	openfpm::vector<idx_t> fvtxdist;
 
-	// number of slot per vertex
+	//! number of slot per vertex
 	size_t v_slot;
 
-	// Structure that store the vertex properties
+	//! Structure that store the vertex properties
 	openfpm::vector<V, Memory, layout_v,layout_v_base,grow_p, openfpm::vect_isel<V>::value> v;
 
-	// Structure that store the vertex id and global id
+	//! Structure that store the vertex id and global id
 	openfpm::vector<v_info, Memory, typename memory_traits_lin<v_info>::type, memory_traits_lin, grow_p, openfpm::vect_isel<v_info>::value> v_m;
 
-	// Structure that store the number of adjacent vertex in e_l for each vertex
+	//! Structure that store the number of adjacent vertex in e_l for each vertex
 	openfpm::vector<size_t, Memory, typename layout_v_base<size_t>::type, layout_v_base, grow_p, openfpm::vect_isel<size_t>::value> v_l;
 
-	// Structure that store the edge properties
+	//! Structure that store the edge properties
 	openfpm::vector<E, Memory, layout_e, layout_e_base, grow_p, openfpm::vect_isel<E>::value> e;
 
-	// Structure that store the edge properties
+	//! Structure that store the edge properties
 	openfpm::vector<e_info, Memory, typename layout_e_base<e_info>::type, layout_e_base, grow_p, openfpm::vect_isel<e_info>::value> e_m;
 
-	// Structure that store for each vertex the adjacent the vertex id and edge id (for property into e)
+	//! Structure that store for each vertex the adjacent the vertex id and edge id (for property into e)
 	openfpm::vector<e_map, Memory, typename memory_traits_lin<e_map>::type, layout_e_base, grow_p, openfpm::vect_isel<e_map>::value> e_l;
 
-	// invalid edge element, when a function try to create an in valid edge this object is returned
+	//! invalid edge element, when a function try to create an in valid edge this object is returned
 	openfpm::vector<E, Memory, layout_e, layout_e_base, grow_p, openfpm::vect_isel<E>::value> e_invalid;
 
-	// Map to access to the global vertex id given the vertex id
+	//! Map to access to the global vertex id given the vertex id
 	std::unordered_map<size_t, size_t> id2glb;
 
-	// Map to access the vertex id given the global vertex id
+	//! Map to access the vertex id given the global vertex id
 	std::unordered_map<size_t, size_t> glb2id;
 
-	// Map to access the local vertex id given the global one
+	//! Map to access the local vertex id given the global one
 	std::unordered_map<size_t, size_t> glb2loc;
 
-	// Struct containing the (sub)graph to send
+	//! Struct containing the (sub)graph to send
 	typedef struct
 	{
-		// vertex send buffer
+		//! vertex send buffer
 		openfpm::vector<V> send_v;
-		// vertex info send buffer
+		//! vertex info send buffer
 		openfpm::vector<v_info> send_v_m;
-		// edge send buffer
+		//! edge send buffer
 		openfpm::vector<E> send_e;
-		// edge info send buffer
+		//! edge info send buffer
 		openfpm::vector<e_info> send_e_m;
-		// For each edge contain the child vertex id
+		//! For each edge contain the child vertex id
 		openfpm::vector<size_t> send_el;
-		// For each vertex contain the number of children
+		//! For each vertex contain the number of children
 		openfpm::vector<size_t> send_es;
-		// Indicates if the pack is empty or not
+		//! Indicates if the pack is empty or not
 		bool isEmpty = true;
 	} SendGraphPack;
 
-	// Pack storing that data to send to other processors
+	//! Pack storing that data to send to other processors
 	openfpm::vector<SendGraphPack> sgp;
 
-	// Array containing the sent vertices and that will be deleted from the graph
+	//! Array containing the sent vertices and that will be deleted from the graph
 	openfpm::vector<size_t> v_td;
 
-	// Structure needed to get vertex position by global id
+	//! Structure needed to get vertex position by global id
 	typedef struct
 	{
-		// vertex id
+		//! vertex id
 		size_t id;
 		// processor containing the vertex
 		size_t pid;
 	} GlobalVInfo;
 
-	//TODO update description from pdf
+	//!TODO update description from pdf
 	// Map of GlobalVInfo containing informations of vertices of the INITIAL distribution contained in this processor
 	// ex. if this will contain the first 4 vertices of the distribution (0,1,2,3) it will maintain informations only about these vertices
 	// The key is the vertex global id
 	std::unordered_map<size_t, GlobalVInfo> glbi_map;
 
-	// Queue of vertex requests
+	//! Queue of vertex requests
 	openfpm::vector<openfpm::vector<size_t>> vr_queue;
 
-	// Map containing the ghost vertices of this graph, if bool is false the ghost will be deleted in the next vertices exchange
+	//! Map containing the ghost vertices of this graph, if bool is false the ghost will be deleted in the next vertices exchange
 	std::unordered_map<size_t, bool> ghs_map;
 
-	// Structure to store a add request of an edge
+	//! Structure to store a add request of an edge
 	typedef struct
 	{
+		//! source vertex
 		size_t v1;
+		//! target vertex
 		size_t v2;
+		//! source vertex global index
 		size_t v1n;
+		//! destination vertex global index
 		size_t v2n;
 	} EdgeReq;
 
-	// Queue of requests to add edges
+	//! Queue of requests to add edges
 	openfpm::vector<EdgeReq> e_queue;
 
 	/*! \brief add edge on the graph
@@ -314,6 +318,8 @@ class DistGraph_CSR
 	 *
 	 * \param v1 start vertex
 	 * \param v2 end vertex
+	 *
+	 * \return the index of the edge created
 	 *
 	 */
 	template<typename CheckPolicy = NoCheck> inline size_t addEdge_(size_t v1, size_t v2)
@@ -976,16 +982,16 @@ class DistGraph_CSR
 
 public:
 
-	// Vertex typedef
+	//! Vertex typedef
 	typedef V V_type;
 
-	// Edge typedef
+	//! Edge typedef
 	typedef E E_type;
 
-	// Object container for the vertex, for example can be encap<...> (map_grid or openfpm::vector)
+	//! Object container for the vertex, for example can be encap<...> (map_grid or openfpm::vector)
 	typedef typename openfpm::vector<V, Memory, layout_v, layout_v_base, grow_p, openfpm::vect_isel<V>::value>::container V_container;
 
-	// Object container for the edge, for example can be encap<...> (map_grid or openfpm::vector)
+	//! Object container for the edge, for example can be encap<...> (map_grid or openfpm::vector)
 	typedef typename openfpm::vector<E, Memory, layout_e, layout_e_base, grow_p, openfpm::vect_isel<E>::value>::container E_container;
 
 	/*! \brief It duplicate the graph
@@ -1137,6 +1143,9 @@ public:
 
 	/*! \brief Copy constructor
 	 *
+	 * \param v_cl vcluster
+	 * \param gg distributed graph to copy
+	 *
 	 */
 	DistGraph_CSR(Vcluster & vcl, DistGraph_CSR<V, E, Memory> && g) :
 			vcl(vcl)
@@ -1144,10 +1153,12 @@ public:
 		swap(g);
 	}
 
-	/*! \breif Copy the graph
+	/*! \brief Copy the graph
 	 * 
-	 * \param g graph to copy
+	 * \param g distributed graph to copy
 	 * 
+	 * \return itself
+	 *
 	 */
 	DistGraph_CSR<V, E, Memory> & operator=(DistGraph_CSR<V, E, Memory> && g)
 	{
@@ -1156,10 +1167,12 @@ public:
 		return *this;
 	}
 
-	/*! \breif Copy the graph
+	/*! \brief Copy the graph
 	 * 
 	 * \param g graph to copy
 	 * 
+	 * \return itself
+	 *
 	 */
 	DistGraph_CSR<V, E, Memory> & operator=(const DistGraph_CSR<V, E, Memory> & g)
 	{
@@ -1175,6 +1188,8 @@ public:
 	 * \tparam i property to access
 	 * \param id of the vertex to access
 	 *
+	 * \return a reference to the vertex property
+	 *
 	 */
 	template<unsigned int i> auto vertex_p(size_t id) -> decltype( v.template get<i>(id) )
 	{
@@ -1186,6 +1201,8 @@ public:
 	 * \tparam i property to access
 	 * \param id of the vertex to access
 	 *
+	 * \return a reference to the vertex property
+	 *
 	 */
 	template<unsigned int i> auto vertex_p(grid_key_dx<1> id) -> decltype( v.template get<i>(id) )
 	{
@@ -1195,6 +1212,8 @@ public:
 	/*! \brief Function to access the vertexes
 	 *
 	 * \param id of the vertex to access
+	 *
+	 * \return the vertex
 	 *
 	 */
 	auto vertex(size_t id) -> decltype( v.get(id) )
@@ -1208,6 +1227,8 @@ public:
 	 *
 	 * \param id of the vertex to access
 	 *
+	 * \return the vertex
+	 *
 	 */
 	auto vertex(grid_key_dx<1> id) -> decltype( v.get(id.get(0)) )
 	{
@@ -1220,6 +1241,8 @@ public:
 	 *
 	 * \param id of the vertex to access
 	 *
+	 * \return the vertex
+	 *
 	 */
 	auto vertex(openfpm::vector_key_iterator id) -> decltype( v.get(0) )
 	{
@@ -1229,6 +1252,8 @@ public:
 	/*! \brief Function to access the vertexes
 	 *
 	 * \param id of the vertex to access
+	 *
+	 * \return the vertex
 	 *
 	 */
 	auto vertex(size_t id) const -> const decltype( v.get(id) )
@@ -1242,6 +1267,8 @@ public:
 	 *
 	 * \param id of the vertex to access
 	 *
+	 * \return the vertex
+	 *
 	 */
 	auto vertex(grid_key_dx<1> id) const -> const decltype( v.get(id.get(0)) )
 	{
@@ -1253,6 +1280,8 @@ public:
 	 * operator to access the vertex
 	 *
 	 * \param id of the vertex to access
+	 *
+	 * \return the vertex
 	 *
 	 */
 	auto vertex(openfpm::vector_key_iterator id) const -> const decltype( v.get(0) )
@@ -1266,6 +1295,8 @@ public:
 	 *
 	 * \param id of the vertex to access
 	 *
+	 * \return the vertex global id
+	 *
 	 */
 	auto vertex_info(openfpm::vector_key_iterator id) const -> const decltype( v_m.get(0) )
 	{
@@ -1275,6 +1306,8 @@ public:
 	/*! \brief Function to access the vertexes
 	 *
 	 * \param id GLOBAL id of the vertex to access
+	 *
+	 * \return the vertex
 	 *
 	 */
 	auto getVertex(size_t id) -> decltype( v.get(id) )
@@ -1297,6 +1330,8 @@ public:
 	 *
 	 * \param id GLOBAL id of the vertex to access
 	 *
+	 * \return the vertex
+	 *
 	 */
 	auto getVertex(size_t id) const -> const decltype( v.get(0) )
 	{
@@ -1316,6 +1351,8 @@ public:
 	 * operator to access the vertex
 	 *
 	 * \param id id of the vertex to access
+	 *
+	 * \return id of the vertex
 	 *
 	 */
 	size_t nodeById(size_t id) const
@@ -1428,6 +1465,8 @@ public:
 	 * \tparam i property to access
 	 * \param id of the edge to access
 	 *
+	 * \return a reference to the edge property
+	 *
 	 */
 	template<unsigned int i> auto edge_p(grid_key_dx<1> id) -> decltype ( e.template get<i>(id) )
 	{
@@ -1439,6 +1478,8 @@ public:
 	 * \tparam i property to access
 	 * \param id of the edge to access
 	 *
+	 * \return a reference to the edge property
+	 *
 	 */
 	template<unsigned int i> auto edge_p(size_t id) -> decltype ( e.template get<i>(id) )
 	{
@@ -1448,6 +1489,8 @@ public:
 	/*! \brief Access the edge
 	 *
 	 * \param id of the edge to access
+	 *
+	 * \return a reference to the edge
 	 *
 	 */
 	auto edge(grid_key_dx<1> id) const -> const decltype ( e.get(id.get(0)) )
@@ -1459,6 +1502,8 @@ public:
 	 *
 	 * \param ek key of the edge
 	 *
+	 * \return a reference to the edge
+	 *
 	 */
 	auto edge(edge_key ek) const -> const decltype ( e.get(0) )
 	{
@@ -1468,6 +1513,8 @@ public:
 	/*! \brief operator to access the edge
 	 *
 	 * \param ek key of the edge
+	 *
+	 * \param return a reference to the edge
 	 *
 	 */
 	auto getEdge(edge_key ek) const -> const decltype ( e.get(0) )
@@ -1490,6 +1537,8 @@ public:
 	 * operator to access the edge
 	 *
 	 * \param id of the edge to access
+	 *
+	 * \return a reference to the edge
 	 *
 	 */
 	auto edge(size_t id) const -> const decltype ( e.get(id) )
@@ -1546,6 +1595,8 @@ public:
 	 * \param v vertex
 	 * \param v_e edge id
 	 *
+	 * \return the edge
+	 *
 	 */
 	inline auto getChildEdge(size_t v, size_t v_e) -> decltype(e.get(0))
 	{
@@ -1557,6 +1608,8 @@ public:
 	 * \param v vertex
 	 * \param v_e edge id
 	 *
+	 * \return the id of the edge
+	 *
 	 */
 	inline auto getChildInfo(size_t v, size_t v_e) -> decltype(e_m.get(0))
 	{
@@ -1567,6 +1620,8 @@ public:
 	 *
 	 * \param v vertex global id
 	 * \param v_e edge id
+	 *
+	 * \return the edge
 	 *
 	 */
 	inline auto getEdge(size_t v, size_t v_e) -> decltype(e.get(0))
@@ -1590,10 +1645,9 @@ public:
 	 * \return the edge id that connect v with the target at position i
 	 *
 	 */
-
 	inline size_t getChild(size_t v, size_t i) const
 	{
-#ifdef DEBUG
+#ifdef SE_CLASS1
 		if (i >= v_l.template get<0>(v))
 		{
 			std::cerr << "Error " << __FILE__ << " line: " << __LINE__ << "    vertex " << v << " does not have edge " << i << " on processor " << vcl.getProcessUnitID() << "\n";
@@ -1610,7 +1664,7 @@ public:
 
 	/*! \brief Get the child edge
 	 *
-	 * \param id of the child
+	 * \param i id of the child
 	 *
 	 * \return the edge id that connect v with the target at position i
 	 *
@@ -1685,6 +1739,7 @@ public:
 	/*! \brief Add vertex vrt with global id and id properties
 	 *
 	 * \param vrt vertex object to add
+	 * \param id of the vertex
 	 * \param gid global id, unique in global graph
 	 */
 	template<unsigned int dim, typename Mem> inline void add_vertex(const encapc<dim, V, Mem> & vrt, size_t id, size_t gid)

@@ -66,13 +66,21 @@ struct vtk_write<ele,vtk,false>
 template<typename T>
 struct extends
 {
-	//! number of elements
+	/*! \brief Scalar case
+	 *
+	 * \return 1 component
+	 *
+	 */
 	static inline size_t mul()
 	{
 		return 1;
 	}
 
-	//! number of indexes
+	/*! \brief Dimensionality
+	 *
+	 * \return 0
+	 *
+	 */
 	static inline size_t dim()
 	{
 		return 0;
@@ -83,13 +91,21 @@ struct extends
 template<typename T,size_t N1>
 struct extends<T[N1]>
 {
-	//! number of elements
+	/*! \brief Vector case return N1 component
+	 *
+	 * \return N1
+	 *
+	 */
 	static inline size_t mul()
 	{
 		return N1;
 	}
 
-	//! number of indexes
+	/*! Dimensionality 1
+	 *
+	 * \return 1
+	 *
+	 */
 	static inline size_t dim()
 	{
 		return 1;
@@ -100,13 +116,21 @@ struct extends<T[N1]>
 template<typename T,size_t N1,size_t N2>
 struct extends<T[N1][N2]>
 {
-	//! number of elements
+	/*! \brief Matrix case return N1*N2 component
+	 *
+	 * \return N1*N2
+	 *
+	 */
 	static inline size_t mul()
 	{
 		return N1 * N2;
 	}
 
-	//! number of indexes
+	/*! Dimensionality 2
+	 *
+	 * \return 2
+	 *
+	 */
 	static inline size_t dim()
 	{
 		return 2;
@@ -256,8 +280,7 @@ struct extends<T[N1][N2][N3][N4][N5][N6][N7][N8][N9][N10]>
  * \param T property to write
  * \param dim dimansionality
  * \param St type of space
- * \param VTKW VTK writer
- * \param
+ * \param VTK VTK writer
  *
  */
 template<typename T>

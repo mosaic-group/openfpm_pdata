@@ -32,8 +32,10 @@ class grid_dist_id_iterator_dec_skin : protected grid_skin_iterator_bc<Decomposi
 	//! Extension of each grid: domain and ghost + domain
 	openfpm::vector<GBoxes<Decomposition::dims>> gdb_ext;
 
+	//! Internal grid sub-iterator
 	grid_key_dx_iterator_sub<Decomposition::dims> a_it;
 
+	//! Internal struct
 	struct gp_sub
 	{
 		//! from which grid this iterator come from
@@ -42,6 +44,12 @@ class grid_dist_id_iterator_dec_skin : protected grid_skin_iterator_bc<Decomposi
 		//! Iterator
 		grid_key_dx_iterator_sub<Decomposition::dims> it;
 
+		/*! \brief constructor
+		 *
+		 * \param gc sub-domain
+		 * \param it iterator
+		 *
+		 */
 		gp_sub(size_t gc, grid_key_dx_iterator_sub<Decomposition::dims> && it)
 		:gc(gc),it(it)
 		{}
@@ -142,7 +150,9 @@ class grid_dist_id_iterator_dec_skin : protected grid_skin_iterator_bc<Decomposi
 	/*! \brief Constructor of the distributed grid iterator
 	 *
 	 * \param dec Decomposition
-	 * \param sz size of the grid
+	 * \param g_sm grid size on each direction
+	 * \param A box A (must be contained into B)
+	 * \param B box B
 	 * \param bc boundary conditions
 	 *
 	 */
@@ -168,17 +178,16 @@ class grid_dist_id_iterator_dec_skin : protected grid_skin_iterator_bc<Decomposi
 		selectValidGrid();
 	}
 
-	// Destructor
+	//! Destructor
 	~grid_dist_id_iterator_dec_skin()
 	{
 	}
 
 	/*! \brief Get the next element
 	 *
-	 * \return the next grid_key
+	 * \return itself
 	 *
 	 */
-
 	inline grid_dist_id_iterator_dec_skin<Decomposition> & operator++()
 	{
 		++a_it;
@@ -215,7 +224,9 @@ class grid_dist_id_iterator_dec_skin : protected grid_skin_iterator_bc<Decomposi
 
 	/*! \brief Get the spacing of the grid
 	 *
-	 * \param i
+	 * \param i dimension
+	 *
+	 * \return the spacing
 	 *
 	 */
 	inline typename Decomposition::stype getSpacing(size_t i)
@@ -254,6 +265,8 @@ class grid_dist_id_iterator_dec_skin : protected grid_skin_iterator_bc<Decomposi
 	*
 	* \param tmp iterator to copy
 	*
+	* \return itself
+	*
 	*/
 	grid_dist_id_iterator_dec_skin<Decomposition> & operator=(const grid_dist_id_iterator_dec_skin<Decomposition> & tmp)
 	{
@@ -273,6 +286,8 @@ class grid_dist_id_iterator_dec_skin : protected grid_skin_iterator_bc<Decomposi
 	/*! \brief Copy operator=
 	*
 	* \param tmp iterator to copy
+	*
+	* \return itself
 	*
 	*/
 	grid_dist_id_iterator_dec_skin<Decomposition> & operator=(grid_dist_id_iterator_dec_skin<Decomposition> && tmp)
