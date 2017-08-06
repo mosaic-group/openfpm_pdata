@@ -4,7 +4,7 @@
 ## Take all the options with the exception of --enable-install-req
 
 AC_PREREQ(2.59)
-AC_INIT(OpenFPM_pdata, 0.9.0, BUG-REPORT-ADDRESS)
+AC_INIT(OpenFPM_pdata, 1.0.0, BUG-REPORT-ADDRESS)
 AC_CANONICAL_SYSTEM
 AC_CONFIG_SRCDIR([src/main.cpp])
 AC_CONFIG_SUBDIRS([openfpm_data openfpm_devices openfpm_vcluster openfpm_io openfpm_numerics])
@@ -200,6 +200,27 @@ AC_MSG_RESULT($test_per)
 if test x"$test_per" = x"yes"; then
         AC_DEFINE([PERFORMANCE_TEST],[],[Test performance mode])
 fi
+
+###### Check for test coverage
+
+AC_MSG_CHECKING(whether to build with test coverage)
+test_cov=no
+AC_ARG_ENABLE(test-coverage,
+        AC_HELP_STRING(
+            [--enable-test-coverage],
+            [enable test coverage]
+        ),
+        test_cov="$enableval"
+)
+
+
+
+AC_MSG_RESULT($test_cov)
+if test x"$test_cov" = x"yes"; then
+        AC_DEFINE([TEST_COVERAGE_MODE],[],[Test coverage mode])
+        CXXFLAGS="$CXXFLAGS  -fprofile-arcs -ftest-coverage "
+fi
+
 
 ###### Checking for compiler flags -fext-numeric-literals
 
