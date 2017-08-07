@@ -1597,7 +1597,11 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 	// Domain
 	Box<2,float> domain({0.0,0.0},{1.0,1.0});
 
+#ifdef TEST_COVERAGE_MODE
+	long int k = 256*256*create_vcluster().getProcessingUnits();
+#else
 	long int k = 1024*1024*create_vcluster().getProcessingUnits();
+#endif
 	k = std::pow(k, 1/2.);
 
 	Test2D(domain,k);

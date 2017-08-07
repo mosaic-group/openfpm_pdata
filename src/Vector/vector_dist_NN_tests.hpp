@@ -22,7 +22,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
+#ifdef TEST_COVERAGE_MODE
+    long int k = 50 * v_cl.getProcessingUnits();
+#else
     long int k = 750 * v_cl.getProcessingUnits();
+#endif
 
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
