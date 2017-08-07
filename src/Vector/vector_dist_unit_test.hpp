@@ -8,6 +8,8 @@
 #ifndef VECTOR_DIST_UNIT_TEST_HPP_
 #define VECTOR_DIST_UNIT_TEST_HPP_
 
+#include "config.h"
+
 #include <random>
 #include "Vector/vector_dist.hpp"
 #include "data_type/aggregate.hpp"
@@ -306,7 +308,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
+#ifdef TEST_COVERAGE_MODE
+    long int k = 24288 * v_cl.getProcessingUnits();
+#else
     long int k = 524288 * v_cl.getProcessingUnits();
+#endif
 
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
@@ -377,7 +383,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
+#ifdef TEST_COVERAGE_MODE
+    long int k = 24288 * v_cl.getProcessingUnits();
+#else
     long int k = 524288 * v_cl.getProcessingUnits();
+#endif
 
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
@@ -450,7 +460,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_fixed_dec_3d )
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
+#ifdef TEST_COVERAGE_MODE
+    long int k = 2428 * v_cl.getProcessingUnits();
+#else
     long int k = 52428 * v_cl.getProcessingUnits();
+#endif
 
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
@@ -523,7 +537,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
+#ifdef TEST_COVERAGE_MODE
+    long int k = 24288 * v_cl.getProcessingUnits();
+#else
     long int k = 524288 * v_cl.getProcessingUnits();
+#endif
 
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
@@ -627,7 +645,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
+#ifdef TEST_COVERAGE_MODE
+    long int k = 24288 * v_cl.getProcessingUnits();
+#else
     long int k = 524288 * v_cl.getProcessingUnits();
+#endif
 
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
@@ -974,7 +996,12 @@ void Test_interacting(Box<3,float> & box)
     std::uniform_real_distribution<float> ud(-0.5f, 0.5f);
 
 	size_t nsz[] = {0,32,4};
+
+#ifdef TEST_COVERAGE_MODE
+	nsz[0] = 5536 * v_cl.getProcessingUnits();
+#else
 	nsz[0] = 65536 * v_cl.getProcessingUnits();
+#endif
 
 	print_test_v("Testing 3D random walk interacting particles vector k=", nsz[0]);
 
@@ -1106,7 +1133,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_interacting_particles )
 
 BOOST_AUTO_TEST_CASE( vector_dist_grid_iterator )
 {
+#ifdef TEST_COVERAGE_MODE
+	long int k = 32*32*32*create_vcluster().getProcessingUnits();
+#else
 	long int k = 64*64*64*create_vcluster().getProcessingUnits();
+#endif
 	k = std::pow(k, 1/3.);
 
 	long int big_step = k / 30;
@@ -1171,7 +1202,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_grid_iterator )
 
 BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 {
+#ifdef TEST_COVERAGE_MODE
+	long int k = 16*16*16*create_vcluster().getProcessingUnits();
+#else
 	long int k = 64*64*64*create_vcluster().getProcessingUnits();
+#endif
 	k = std::pow(k, 1/3.);
 
 	long int big_step = k / 30;
@@ -1303,7 +1338,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
+#ifdef TEST_COVERAGE_MODE
+    long int k = 24288 * v_cl.getProcessingUnits();
+#else
     long int k = 524288 * v_cl.getProcessingUnits();
+#endif
 
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
@@ -1423,7 +1462,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_with_ghost_buffering )
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
+#ifdef TEST_COVERAGE_MODE
+    long int k = 24288 * v_cl.getProcessingUnits();
+#else
     long int k = 524288 * v_cl.getProcessingUnits();
+#endif
 
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;

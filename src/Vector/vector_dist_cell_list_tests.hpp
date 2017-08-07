@@ -5,6 +5,8 @@
  *      Author: i-bird
  */
 
+#include "config.h"
+
 #ifndef SRC_VECTOR_VECTOR_DIST_CELL_LIST_TESTS_HPP_
 #define SRC_VECTOR_VECTOR_DIST_CELL_LIST_TESTS_HPP_
 
@@ -24,7 +26,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_reorder_2d_test )
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
+#ifdef TEST_COVERAGE_MODE
+    long int k = 24288 * v_cl.getProcessingUnits();
+#else
     long int k = 524288 * v_cl.getProcessingUnits();
+#endif
 
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
