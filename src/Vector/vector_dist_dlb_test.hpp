@@ -27,7 +27,7 @@ template<typename vector_type> void test_dlb_vector()
 
 	if (v_cl.getProcessUnitID() == 0)
 	{
-		for(size_t i = 0 ; i < 10000 ; i++)
+		for(size_t i = 0 ; i < 50000 ; i++)
 		{
 			vd.add();
 
@@ -107,7 +107,7 @@ template<typename vector_type> void test_dlb_vector()
 			float load_f = load;
 			float load_fc = loads.get(i);
 
-			BOOST_REQUIRE_CLOSE(load_f,load_fc,7.0);
+			BOOST_REQUIRE_CLOSE(load_f,load_fc,10.0);
 		}
 	}
 }
