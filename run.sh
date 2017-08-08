@@ -15,13 +15,12 @@ then
    exit 1 ;
  fi
 
- source $HOME/openfpm_vars_$6
+ if [ x"$6" != x"" ]; then
+   source $HOME/openfpm_vars_$6
+ else
+   source $HOME/openfpm_vars_master
+ fi
 
-  echo "AHHHHHHHHHH: $(which mpic++)"
- echo "AHHHHHHHHHH: $(which mpirun)"
-
- echo "$LD_LIBRARY_PATH"
- ldd ./src/pdata
 
  if [ x"$3" == x"no_test" ]; then
    exit 0;
