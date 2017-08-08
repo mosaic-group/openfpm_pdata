@@ -43,10 +43,12 @@ then
  module load gcc/5.3.0
  module load openmpi/1.10.2-gnu
  module unload bullxmpi
- 
- export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/incard/PARMETIS/lib:/home/incard/METIS/lib:/home/incard/HDF5/lib"
 
- source $HOME/openfpm_vars_$6
+ if [ x"$6" != x"" ]; then
+   source $HOME/openfpm_vars_$6
+ else
+   source $HOME/openfpm_vars_master
+ fi
 
  salloc --nodes=$4 --ntasks-per-node=$5 --time=00:15:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np $3 src/pdata --report_level=no"
  if [ $? -ne 0 ]; then
