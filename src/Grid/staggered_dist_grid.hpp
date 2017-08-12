@@ -59,7 +59,7 @@
  *
  *
  */
-template<unsigned int dim, typename St, typename T, typename Decomposition,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T>>
+template<unsigned int dim, typename St, typename T, typename Decomposition=CartDecomposition<dim,St>,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T>>
 class staggered_grid_dist : public grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>
 {
 	//! position of the properties in the grid cell

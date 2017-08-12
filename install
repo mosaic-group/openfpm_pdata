@@ -427,7 +427,7 @@ else
   bash_library="export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH"
 fi
 
-bash_path="export PATH=\""
+bash_path="export PATH=\"\$PATH"
 
 echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
 echo -e "\033[1;34;5m --------- INSTALLATION REPORT ---------  \033[0m"
