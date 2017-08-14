@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_reorder_2d_test )
 		// Boundary conditions
 		size_t bc[2]={NON_PERIODIC,NON_PERIODIC};
 
-		vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(k,box,bc,Ghost<2,float>(0.0));
+		vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(k,box,bc,Ghost<2,float>(0.01));
 
 		auto it = vd.getIterator();
 
@@ -791,7 +791,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list )
 	big_step = (big_step == 0)?1:big_step;
 
 	print_test("Testing 3D periodic vector symmetric cell-list k=",k);
-	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list k=" << k );
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric verlet-list k=" << k );
 
 	Box<3,float> box({-L,-L,-L},{L,L,L});
 

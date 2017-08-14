@@ -842,7 +842,7 @@ public:
 	template<typename CellL = CellList<dim, St, Mem_fast, shift<dim, St> > > CellL getCellListSym(St r_cut)
 	{
 #ifdef SE_CLASS1
-		if ((opt & BIND_DEC_TO_GHOST))
+		if (!(opt & BIND_DEC_TO_GHOST))
 		{
 			if (getDecomposition().getGhost().getLow(dim-1) == 0.0)
 			{
@@ -1112,7 +1112,7 @@ public:
 	VerletList<dim,St,FAST,shift<dim,St> > getVerletCrs(St r_cut)
 	{
 #ifdef SE_CLASS1
-		if ((opt & BIND_DEC_TO_GHOST))
+		if (!(opt & BIND_DEC_TO_GHOST))
 		{
 			std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, getVerletCrs require the vector to be constructed with BIND_DEC_TO_GHOST option " << std::endl;
 			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
@@ -1988,7 +1988,7 @@ public:
 	template<typename cli> ParticleItCRS_Cells<dim,cli> getParticleIteratorCRS_Cell(cli & NN)
 	{
 #ifdef SE_CLASS1
-		if ((opt & BIND_DEC_TO_GHOST))
+		if (!(opt & BIND_DEC_TO_GHOST))
 		{
 			std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, getParticleIteratorCRS_Cell require the vector to be constructed with BIND_DEC_TO_GHOST option " << std::endl;
 			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
@@ -2035,7 +2035,7 @@ public:
 	template<typename vrl> openfpm::vector_key_iterator_seq<typename vrl::local_index_t> getParticleIteratorCRS(vrl & NN)
 	{
 #ifdef SE_CLASS1
-		if ((opt & BIND_DEC_TO_GHOST))
+		if (!(opt & BIND_DEC_TO_GHOST))
 		{
 			std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, getParticleIteratorCRS_Cell require the vector to be constructed with BIND_DEC_TO_GHOST option " << std::endl;
 			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
