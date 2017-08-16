@@ -489,7 +489,7 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getProp(vect_dist_key_dx vec_key) const -> const decltype(v_prp.template get<id>(vec_key.getKey()))
+	template<unsigned int id> inline auto getProp(vect_dist_key_dx vec_key) const -> decltype(v_prp.template get<id>(vec_key.getKey()))
 	{
 		return v_prp.template get<id>(vec_key.getKey());
 	}
@@ -519,7 +519,7 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getProp(size_t vec_key) const -> const decltype(v_prp.template get<id>(vec_key))
+	template<unsigned int id> inline auto getProp(size_t vec_key) const -> decltype(v_prp.template get<id>(vec_key))
 	{
 		return v_prp.template get<id>(vec_key);
 	}
@@ -609,7 +609,7 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getPropNC(vect_dist_key_dx vec_key) const -> const decltype(v_prp.template get<id>(vec_key.getKey()))
+	template<unsigned int id> inline auto getPropNC(vect_dist_key_dx vec_key) const -> decltype(v_prp.template get<id>(vec_key.getKey()))
 	{
 		return v_prp.template get<id>(vec_key.getKey());
 	}
@@ -639,7 +639,7 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getPropNC(size_t vec_key) const -> const decltype(v_prp.template get<id>(vec_key))
+	template<unsigned int id> inline auto getPropNC(size_t vec_key) const -> decltype(v_prp.template get<id>(vec_key))
 	{
 		return v_prp.template get<id>(vec_key);
 	}
@@ -711,7 +711,7 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getPropRead(vect_dist_key_dx vec_key) const -> const decltype(v_prp.template get<id>(vec_key.getKey()))
+	template<unsigned int id> inline auto getPropRead(vect_dist_key_dx vec_key) const -> decltype(v_prp.template get<id>(vec_key.getKey()))
 	{
 #ifdef SE_CLASS3
 		se3.template read<id>(*this,vec_key.getKey());
