@@ -743,6 +743,8 @@ public:
 #endif
 	}
 
+#ifndef ONLY_READWRITE_GETTER
+
 	/*! \brief Get the position of the last element
 	 *
 	 * \return the position of the element in space
@@ -765,6 +767,8 @@ public:
 		return v_prp.template get<id>(g_m - 1);
 	}
 
+#endif
+
 ////////////////////////////// READ AND WRITE VERSION //////////
 
 	/*! \brief Get the position of the last element
@@ -775,7 +779,7 @@ public:
 	inline auto getLastPosRead() -> decltype(v_pos.template get<0>(0))
 	{
 #ifdef SE_CLASS3
-		se3.read<prop::max_prop_real>(*this,g_m-1);
+		se3.template read<prop::max_prop_real>(*this,g_m-1);
 #endif
 
 		return v_pos.template get<0>(g_m - 1);
@@ -806,7 +810,7 @@ public:
 	inline auto getLastPosWrite() -> decltype(v_pos.template get<0>(0))
 	{
 #ifdef SE_CLASS3
-		se3.write<prop::max_prop_real>(*this,g_m-1);
+		se3.template write<prop::max_prop_real>(*this,g_m-1);
 #endif
 
 		return v_pos.template get<0>(g_m - 1);
@@ -822,7 +826,7 @@ public:
 	template<unsigned int id> inline auto getLastPropWrite() -> decltype(v_prp.template get<id>(0))
 	{
 #ifdef SE_CLASS3
-		se3.write<id>(*this,g_m-1);
+		se3.template write<id>(*this,g_m-1);
 #endif
 
 		return v_prp.template get<id>(g_m - 1);
@@ -882,10 +886,11 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> > > CellL getCellList(St r_cut)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> > > CellL getCellList(St r_cut, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
-		se3.getNN();
+		if (no_se3 == false)
+		{se3.getNN();}
 #endif
 #ifdef SE_CLASS1
 		check_ghost_compatible_rcut(r_cut);
@@ -895,7 +900,7 @@ public:
 		Ghost<dim,St> g = getDecomposition().getGhost();
 		g.magnify(1.013);
 
-		return getCellList<CellL>(r_cut, g);
+		return getCellList<CellL>(r_cut, g,no_se3);
 	}
 
 	/*! \brief Construct an hilbert cell list starting from the stored particles
@@ -930,10 +935,11 @@ public:
 	 * \param cell_list Cell list to update
 	 *
 	 */
-	template<typename CellL> void updateCellList(CellL & cell_list)
+	template<typename CellL> void updateCellList(CellL & cell_list, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
-		se3.getNN();
+		if (no_se3 == false)
+		{se3.getNN();}
 #endif
 
 		// This function assume equal spacing in all directions
@@ -1012,10 +1018,11 @@ public:
 	 * \return the CellList
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> > > CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> > > CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
-		se3.getNN();
+		if (no_se3 == false)
+		{se3.getNN();}
 #endif
 
 		CellL cell_list;
@@ -1032,7 +1039,7 @@ public:
 		cell_list.Initialize(pbox, div, g_m);
 		cell_list.set_ndec(getDecomposition().get_ndec());
 
-		updateCellList(cell_list);
+		updateCellList(cell_list,no_se3);
 
 		return cell_list;
 	}
@@ -1987,6 +1994,10 @@ public:
 	 */
 	template<typename cli> ParticleItCRS_Cells<dim,cli> getParticleIteratorCRS_Cell(cli & NN)
 	{
+#ifdef SE_CLASS3
+		se3.getIterator();
+#endif
+
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
 		{

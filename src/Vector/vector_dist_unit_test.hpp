@@ -1675,13 +1675,13 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 
 			vd.add();
 
-			vd.getLastPos()[0] = key.get(0)*it.getSpacing(0);
-			vd.getLastPos()[1] = key.get(1)*it.getSpacing(1);
-			vd.getLastPos()[2] = key.get(2)*it.getSpacing(2);
+			vd.getLastPosWrite()[0] = key.get(0)*it.getSpacing(0);
+			vd.getLastPosWrite()[1] = key.get(1)*it.getSpacing(1);
+			vd.getLastPosWrite()[2] = key.get(2)*it.getSpacing(2);
 
 			// Fill some properties randomly
 
-			vd.getLastProp<0>() = 0.0;
+			vd.getLastPropWrite<0>() = 0.0;
 
 			++it;
 		}
@@ -1712,12 +1712,12 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 				while (Np.isNext())
 				{
 					auto q = Np.get();
-					Point<3,float> xq = vd.getPos(q);
+					Point<3,float> xq = vd.getPosRead(q);
 
 					float dist = xp.distance(xq);
 
 					if (dist < r_cut)
-						vd.getProp<0>(q) += a*(-dist*dist+r_cut*r_cut);
+						vd.getPropWrite<0>(q) += a*(-dist*dist+r_cut*r_cut);
 
 					++Np;
 				}
@@ -1738,7 +1738,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 				float constant2 = vd.getProp<0>(it3.get());
 				if (fabs(constant - constant2)/constant > eps)
 				{
-					Point<3,float> p = vd.getPos(it3.get());
+					Point<3,float> p = vd.getPosRead(it3.get());
 
 					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "    " << v_cl.getProcessUnitID() << std::endl;
 					ret = false;
@@ -1755,7 +1755,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 		{
 			auto key = itp.get();
 
-			vd.getProp<0>(key) = 0.0;
+			vd.getPropWrite<0>(key) = 0.0;
 
 			++itp;
 		}
@@ -1772,7 +1772,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 			{
 				// particle p
 				auto p = it2.get();
-				Point<3,float> xp = vd.getPos(p);
+				Point<3,float> xp = vd.getPosRead(p);
 
 				// Get an iterator over the neighborhood particles of p
 				auto Np = NN.getNNIterator<NO_CHECK>(NN.getCell(xp));
@@ -1781,12 +1781,12 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 				while (Np.isNext())
 				{
 					auto q = Np.get();
-					Point<3,float> xq = vd.getPos(q);
+					Point<3,float> xq = vd.getPosRead(q);
 
 					float dist = xp.distance(xq);
 
 					if (dist < r_cut)
-						vd.getProp<0>(q) += a*(-dist*dist+r_cut*r_cut);
+						vd.getPropWrite<0>(q) += a*(-dist*dist+r_cut*r_cut);
 
 					++Np;
 				}
@@ -1799,15 +1799,15 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 			bool ret = true;
 			auto it3 = vd.getDomainIterator();
 
-			float constant = vd.getProp<0>(it3.get());
+			float constant = vd.getPropRead<0>(it3.get());
 			float eps = 0.001;
 
 			while (it3.isNext())
 			{
-				float constant2 = vd.getProp<0>(it3.get());
+				float constant2 = vd.getPropRead<0>(it3.get());
 				if (fabs(constant - constant2)/constant > eps)
 				{
-					Point<3,float> p = vd.getPos(it3.get());
+					Point<3,float> p = vd.getPosRead(it3.get());
 
 					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "    " << v_cl.getProcessUnitID() << std::endl;
 					ret = false;

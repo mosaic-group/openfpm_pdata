@@ -117,7 +117,7 @@ public:
 		if (extends< typename boost::mpl::at<typename T::type,boost::mpl::int_<p> >::type >::mul() != cmb.size())
 			std::cerr << __FILE__ << ":" << __LINE__ << " error properties has " << extends< typename boost::mpl::at<typename T::type,boost::mpl::int_<p> >::type >::mul() << " components, but " << cmb.size() << "has been defined \n";
 #endif
-		c_prp.get(p) = cmb;
+		c_prp[p] = cmb;
 	}
 
 	/*! \brief It set all the properties defined to be staggered on the default location

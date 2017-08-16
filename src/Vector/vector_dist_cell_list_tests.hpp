@@ -63,9 +63,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_reorder_2d_test )
 
 		vd.map();
 
+		// in case of SE_CLASS3 get a cell-list without ghost get is an error
+
 		// Create first cell list
 
-		auto NN1 = vd.getCellList(0.01);
+		auto NN1 = vd.getCellList(0.01,true);
 
 		//An order of a curve
 		int32_t m = 6;
@@ -74,7 +76,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_reorder_2d_test )
 		vd.reorder(m);
 
 		// Create second cell list
-		auto NN2 = vd.getCellList(0.01);
+		auto NN2 = vd.getCellList(0.01,true);
 
 		//Check equality of cell sizes
 		for (size_t i = 0 ; i < NN1.getGrid().size() ; i++)
@@ -395,15 +397,15 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 	{
 		auto key = it.get();
 
-		vd.getPos(key)[0] = ud(eg);
-		vd.getPos(key)[1] = ud(eg);
-		vd.getPos(key)[2] = ud(eg);
+		vd.getPosWrite(key)[0] = ud(eg);
+		vd.getPosWrite(key)[1] = ud(eg);
+		vd.getPosWrite(key)[2] = ud(eg);
 
 		// Fill some properties randomly
 
-		vd.getProp<0>(key) = 0;
-		vd.getProp<1>(key) = 0;
-		vd.getProp<2>(key) = key.getKey() + start;
+		vd.getPropWrite<0>(key) = 0;
+		vd.getPropWrite<1>(key) = 0;
+		vd.getPropWrite<2>(key) = key.getKey() + start;
 
 		++it;
 	}
@@ -420,7 +422,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 	{
 		auto p = p_it.get();
 
-		Point<3,float> xp = vd.getPos(p);
+		Point<3,float> xp = vd.getPosRead(p);
 
 		auto Np = NN.getNNIterator(NN.getCell(xp));
 
@@ -436,7 +438,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 
 			// repulsive
 
-			Point<3,float> xq = vd.getPos(q);
+			Point<3,float> xq = vd.getPosRead(q);
 			Point<3,float> f = (xp - xq);
 
 			float distance = f.norm();
@@ -445,10 +447,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 
 			if (distance < r_cut )
 			{
-				vd.getProp<0>(p)++;
-				vd.getProp<3>(p).add();
-				vd.getProp<3>(p).last().xq = xq;
-				vd.getProp<3>(p).last().id = vd.getProp<2>(q);
+				vd.getPropWrite<0>(p)++;
+				vd.getPropWrite<3>(p).add();
+				vd.getPropWrite<3>(p).last().xq = xq;
+				vd.getPropWrite<3>(p).last().id = vd.getPropWrite<2>(q);
 			}
 
 			++Np;
@@ -467,7 +469,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 	{
 		auto p = p_it2.get();
 
-		Point<3,float> xp = vd.getPos(p);
+		Point<3,float> xp = vd.getPosRead(p);
 
 		auto Np = NN2.getNNIteratorSym<NO_CHECK>(NN2.getCell(xp),p.getKey(),vd.getPosVector());
 
@@ -483,7 +485,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 
 			// repulsive
 
-			Point<3,float> xq = vd.getPos(q);
+			Point<3,float> xq = vd.getPosRead(q);
 			Point<3,float> f = (xp - xq);
 
 			float distance = f.norm();
@@ -492,16 +494,16 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 
 			if (distance < r_cut )
 			{
-				vd.getProp<1>(p)++;
-				vd.getProp<1>(q)++;
+				vd.getPropWrite<1>(p)++;
+				vd.getPropWrite<1>(q)++;
 
-				vd.getProp<4>(p).add();
-				vd.getProp<4>(q).add();
+				vd.getPropWrite<4>(p).add();
+				vd.getPropWrite<4>(q).add();
 
-				vd.getProp<4>(p).last().xq = xq;
-				vd.getProp<4>(q).last().xq = xp;
-				vd.getProp<4>(p).last().id = vd.getProp<2>(q);
-				vd.getProp<4>(q).last().id = vd.getProp<2>(p);
+				vd.getPropWrite<4>(p).last().xq = xq;
+				vd.getPropWrite<4>(q).last().xq = xp;
+				vd.getPropWrite<4>(p).last().id = vd.getProp<2>(q);
+				vd.getPropWrite<4>(q).last().id = vd.getProp<2>(p);
 			}
 
 			++Np;
@@ -520,24 +522,24 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 	{
 		auto p = p_it3.get();
 
-		ret &= vd.getProp<1>(p) == vd.getProp<0>(p);
+		ret &= vd.getPropRead<1>(p) == vd.getPropRead<0>(p);
 
-		vd.getProp<3>(p).sort();
-		vd.getProp<4>(p).sort();
+		vd.getPropRead<3>(p).sort();
+		vd.getPropRead<4>(p).sort();
 
-		ret &= vd.getProp<3>(p).size() == vd.getProp<4>(p).size();
+		ret &= vd.getPropRead<3>(p).size() == vd.getPropRead<4>(p).size();
 
-		for (size_t i = 0 ; i < vd.getProp<3>(p).size() ; i++)
-			ret &= vd.getProp<3>(p).get(i).id == vd.getProp<4>(p).get(i).id;
+		for (size_t i = 0 ; i < vd.getPropRead<3>(p).size() ; i++)
+			ret &= vd.getPropRead<3>(p).get(i).id == vd.getPropRead<4>(p).get(i).id;
 
 		if (ret == false)
 		{
-			std::cout << vd.getProp<3>(p).size() << "   " << vd.getProp<4>(p).size() << std::endl;
+			std::cout << vd.getPropRead<3>(p).size() << "   " << vd.getPropRead<4>(p).size() << std::endl;
 
-			for (size_t i = 0 ; i < vd.getProp<3>(p).size() ; i++)
-				std::cout << vd.getProp<3>(p).get(i).id << "    " << vd.getProp<4>(p).get(i).id << std::endl;
+			for (size_t i = 0 ; i < vd.getPropRead<3>(p).size() ; i++)
+				std::cout << vd.getPropRead<3>(p).get(i).id << "    " << vd.getPropRead<4>(p).get(i).id << std::endl;
 
-			std::cout << vd.getProp<1>(p) << "  A  " << vd.getProp<0>(p) << std::endl;
+			std::cout << vd.getPropRead<1>(p) << "  A  " << vd.getPropRead<0>(p) << std::endl;
 
 			break;
 		}
@@ -609,23 +611,23 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 	{
 		auto key = it.get();
 
-		vd.getPos(key)[0] = ud(eg);
-		vd.getPos(key)[1] = ud(eg);
-		vd.getPos(key)[2] = ud(eg);
+		vd.getPosWrite(key)[0] = ud(eg);
+		vd.getPosWrite(key)[1] = ud(eg);
+		vd.getPosWrite(key)[2] = ud(eg);
 
-		vd2.getPos(key)[0] = vd.getPos(key)[0];
-		vd2.getPos(key)[1] = vd.getPos(key)[1];
-		vd2.getPos(key)[2] = vd.getPos(key)[2];
+		vd2.getPosWrite(key)[0] = vd.getPosRead(key)[0];
+		vd2.getPosWrite(key)[1] = vd.getPosRead(key)[1];
+		vd2.getPosWrite(key)[2] = vd.getPosRead(key)[2];
 
 		// Fill some properties randomly
 
-		vd.getProp<0>(key) = 0;
-		vd.getProp<1>(key) = 0;
-		vd.getProp<2>(key) = key.getKey() + start;
+		vd.getPropWrite<0>(key) = 0;
+		vd.getPropWrite<1>(key) = 0;
+		vd.getPropWrite<2>(key) = key.getKey() + start;
 
-		vd2.getProp<0>(key) = 0;
-		vd2.getProp<1>(key) = 0;
-		vd2.getProp<2>(key) = key.getKey() + start;
+		vd2.getPropWrite<0>(key) = 0;
+		vd2.getPropWrite<1>(key) = 0;
+		vd2.getPropWrite<2>(key) = key.getKey() + start;
 
 		++it;
 	}
@@ -647,7 +649,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 	{
 		auto p = p_it.get();
 
-		Point<3,float> xp = vd.getPos(p);
+		Point<3,float> xp = vd.getPosRead(p);
 
 		auto Np = NN.getNNIterator(NN.getCell(xp));
 
@@ -663,7 +665,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 
 			// repulsive
 
-			Point<3,float> xq = vd.getPos(q);
+			Point<3,float> xq = vd.getPosRead(q);
 			Point<3,float> f = (xp - xq);
 
 			float distance = f.norm();
@@ -672,10 +674,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 
 			if (distance < r_cut )
 			{
-				vd.getProp<0>(p)++;
-				vd.getProp<3>(p).add();
-				vd.getProp<3>(p).last().xq = xq;
-				vd.getProp<3>(p).last().id = vd.getProp<2>(q);
+				vd.getPropWrite<0>(p)++;
+				vd.getPropWrite<3>(p).add();
+				vd.getPropWrite<3>(p).last().xq = xq;
+				vd.getPropWrite<3>(p).last().id = vd.getPropRead<2>(q);
 			}
 
 			++Np;
@@ -697,7 +699,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 	{
 		auto p = p_it2.get();
 
-		Point<3,float> xp = vd2.getPos(p);
+		Point<3,float> xp = vd2.getPosRead(p);
 
 		auto Np = p_it2.getNNIteratorCSR(vd2.getPosVector());
 
@@ -713,7 +715,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 
 			// repulsive
 
-			Point<3,float> xq = vd2.getPos(q);
+			Point<3,float> xq = vd2.getPosRead(q);
 			Point<3,float> f = (xp - xq);
 
 			float distance = f.norm();
@@ -722,16 +724,16 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 
 			if (distance < r_cut )
 			{
-				vd2.getProp<1>(p)++;
-				vd2.getProp<1>(q)++;
+				vd2.getPropWrite<1>(p)++;
+				vd2.getPropWrite<1>(q)++;
 
-				vd2.getProp<4>(p).add();
-				vd2.getProp<4>(q).add();
+				vd2.getPropWrite<4>(p).add();
+				vd2.getPropWrite<4>(q).add();
 
-				vd2.getProp<4>(p).last().xq = xq;
-				vd2.getProp<4>(q).last().xq = xp;
-				vd2.getProp<4>(p).last().id = vd2.getProp<2>(q);
-				vd2.getProp<4>(q).last().id = vd2.getProp<2>(p);
+				vd2.getPropWrite<4>(p).last().xq = xq;
+				vd2.getPropWrite<4>(q).last().xq = xp;
+				vd2.getPropWrite<4>(p).last().id = vd2.getPropRead<2>(q);
+				vd2.getPropWrite<4>(q).last().id = vd2.getPropRead<2>(p);
 			}
 
 			++Np;
@@ -743,6 +745,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 	vd2.ghost_put<add_,1>(NO_CHANGE_ELEMENTS);
 	vd2.ghost_put<merge_,4>();
 
+#ifdef SE_CLASS3
+	vd2.getDomainIterator();
+#endif
+
 	auto p_it3 = vd.getDomainIterator();
 
 	bool ret = true;
@@ -750,16 +756,16 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 	{
 		auto p = p_it3.get();
 
-		ret &= vd2.getProp<1>(p) == vd.getProp<0>(p);
+		ret &= vd2.getPropRead<1>(p) == vd.getPropRead<0>(p);
 
 
-		vd.getProp<3>(p).sort();
-		vd2.getProp<4>(p).sort();
+		vd.getPropWrite<3>(p).sort();
+		vd2.getPropWrite<4>(p).sort();
 
-		ret &= vd.getProp<3>(p).size() == vd2.getProp<4>(p).size();
+		ret &= vd.getPropRead<3>(p).size() == vd2.getPropRead<4>(p).size();
 
-		for (size_t i = 0 ; i < vd.getProp<3>(p).size() ; i++)
-			ret &= vd.getProp<3>(p).get(i).id == vd2.getProp<4>(p).get(i).id;
+		for (size_t i = 0 ; i < vd.getPropRead<3>(p).size() ; i++)
+			ret &= vd.getPropRead<3>(p).get(i).id == vd2.getPropRead<4>(p).get(i).id;
 
 		if (ret == false)
 			break;
@@ -827,15 +833,15 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list )
 	{
 		auto key = it.get();
 
-		vd.getPos(key)[0] = ud(eg);
-		vd.getPos(key)[1] = ud(eg);
-		vd.getPos(key)[2] = ud(eg);
+		vd.getPosWrite(key)[0] = ud(eg);
+		vd.getPosWrite(key)[1] = ud(eg);
+		vd.getPosWrite(key)[2] = ud(eg);
 
 		// Fill some properties randomly
 
-		vd.getProp<0>(key) = 0;
-		vd.getProp<1>(key) = 0;
-		vd.getProp<2>(key) = key.getKey() + start;
+		vd.getPropWrite<0>(key) = 0;
+		vd.getPropWrite<1>(key) = 0;
+		vd.getPropWrite<2>(key) = key.getKey() + start;
 
 		++it;
 	}
@@ -852,7 +858,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list )
 	{
 		auto p = p_it.get();
 
-		Point<3,float> xp = vd.getPos(p);
+		Point<3,float> xp = vd.getPosRead(p);
 
 		auto Np = NN.getNNIterator(p.getKey());
 
@@ -868,7 +874,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list )
 
 			// repulsive
 
-			Point<3,float> xq = vd.getPos(q);
+			Point<3,float> xq = vd.getPosRead(q);
 			Point<3,float> f = (xp - xq);
 
 			float distance = f.norm();
@@ -877,10 +883,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list )
 
 			if (distance < r_cut )
 			{
-				vd.getProp<0>(p)++;
-				vd.getProp<3>(p).add();
-				vd.getProp<3>(p).last().xq = xq;
-				vd.getProp<3>(p).last().id = vd.getProp<2>(q);
+				vd.getPropWrite<0>(p)++;
+				vd.getPropWrite<3>(p).add();
+				vd.getPropWrite<3>(p).last().xq = xq;
+				vd.getPropWrite<3>(p).last().id = vd.getPropRead<2>(q);
 			}
 
 			++Np;
@@ -899,7 +905,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list )
 	{
 		auto p = p_it2.get();
 
-		Point<3,float> xp = vd.getPos(p);
+		Point<3,float> xp = vd.getPosRead(p);
 
 		auto Np = NN2.getNNIterator<NO_CHECK>(p.getKey());
 
@@ -915,7 +921,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list )
 
 			// repulsive
 
-			Point<3,float> xq = vd.getPos(q);
+			Point<3,float> xq = vd.getPosRead(q);
 			Point<3,float> f = (xp - xq);
 
 			float distance = f.norm();
@@ -924,16 +930,16 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list )
 
 			if (distance < r_cut )
 			{
-				vd.getProp<1>(p)++;
-				vd.getProp<1>(q)++;
+				vd.getPropWrite<1>(p)++;
+				vd.getPropWrite<1>(q)++;
 
-				vd.getProp<4>(p).add();
-				vd.getProp<4>(q).add();
+				vd.getPropWrite<4>(p).add();
+				vd.getPropWrite<4>(q).add();
 
-				vd.getProp<4>(p).last().xq = xq;
-				vd.getProp<4>(q).last().xq = xp;
-				vd.getProp<4>(p).last().id = vd.getProp<2>(q);
-				vd.getProp<4>(q).last().id = vd.getProp<2>(p);
+				vd.getPropWrite<4>(p).last().xq = xq;
+				vd.getPropWrite<4>(q).last().xq = xp;
+				vd.getPropWrite<4>(p).last().id = vd.getPropRead<2>(q);
+				vd.getPropWrite<4>(q).last().id = vd.getPropRead<2>(p);
 			}
 
 			++Np;
@@ -952,15 +958,15 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list )
 	{
 		auto p = p_it3.get();
 
-		ret &= vd.getProp<1>(p) == vd.getProp<0>(p);
+		ret &= vd.getPropRead<1>(p) == vd.getPropRead<0>(p);
 
-		vd.getProp<3>(p).sort();
-		vd.getProp<4>(p).sort();
+		vd.getPropWrite<3>(p).sort();
+		vd.getPropWrite<4>(p).sort();
 
-		ret &= vd.getProp<3>(p).size() == vd.getProp<4>(p).size();
+		ret &= vd.getPropRead<3>(p).size() == vd.getPropRead<4>(p).size();
 
-		for (size_t i = 0 ; i < vd.getProp<3>(p).size() ; i++)
-			ret &= vd.getProp<3>(p).get(i).id == vd.getProp<4>(p).get(i).id;
+		for (size_t i = 0 ; i < vd.getPropRead<3>(p).size() ; i++)
+			ret &= vd.getPropRead<3>(p).get(i).id == vd.getPropRead<4>(p).get(i).id;
 
 		if (ret == false)
 			break;
@@ -1035,23 +1041,23 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list_no_bottom )
 		{
 			auto key = it.get();
 
-			vd.getPos(key)[0] = ud(eg);
-			vd.getPos(key)[1] = ud(eg);
-			vd.getPos(key)[2] = ud(eg);
+			vd.getPosWrite(key)[0] = ud(eg);
+			vd.getPosWrite(key)[1] = ud(eg);
+			vd.getPosWrite(key)[2] = ud(eg);
 
-			vd2.getPos(key)[0] = vd.getPos(key)[0];
-			vd2.getPos(key)[1] = vd.getPos(key)[1];
-			vd2.getPos(key)[2] = vd.getPos(key)[2];
+			vd2.getPosWrite(key)[0] = vd.getPosRead(key)[0];
+			vd2.getPosWrite(key)[1] = vd.getPosRead(key)[1];
+			vd2.getPosWrite(key)[2] = vd.getPosRead(key)[2];
 
 			// Fill some properties randomly
 
-			vd.getProp<0>(key) = 0;
-			vd.getProp<1>(key) = 0;
-			vd.getProp<2>(key) = key.getKey() + start;
+			vd.getPropWrite<0>(key) = 0;
+			vd.getPropWrite<1>(key) = 0;
+			vd.getPropWrite<2>(key) = key.getKey() + start;
 
-			vd2.getProp<0>(key) = 0;
-			vd2.getProp<1>(key) = 0;
-			vd2.getProp<2>(key) = key.getKey() + start;
+			vd2.getPropWrite<0>(key) = 0;
+			vd2.getPropWrite<1>(key) = 0;
+			vd2.getPropWrite<2>(key) = key.getKey() + start;
 
 			++it;
 		}
@@ -1070,7 +1076,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list_no_bottom )
 		{
 			auto p = p_it.get();
 
-			Point<3,float> xp = vd.getPos(p);
+			Point<3,float> xp = vd.getPosRead(p);
 
 			auto Np = NN.getNNIterator(p.getKey());
 
@@ -1086,7 +1092,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list_no_bottom )
 
 				// repulsive
 
-				Point<3,float> xq = vd.getPos(q);
+				Point<3,float> xq = vd.getPosRead(q);
 				Point<3,float> f = (xp - xq);
 
 				float distance = f.norm();
@@ -1095,10 +1101,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list_no_bottom )
 
 				if (distance < r_cut )
 				{
-					vd.getProp<0>(p)++;
-					vd.getProp<3>(p).add();
-					vd.getProp<3>(p).last().xq = xq;
-					vd.getProp<3>(p).last().id = vd.getProp<2>(q);
+					vd.getPropWrite<0>(p)++;
+					vd.getPropWrite<3>(p).add();
+					vd.getPropWrite<3>(p).last().xq = xq;
+					vd.getPropWrite<3>(p).last().id = vd.getPropRead<2>(q);
 				}
 
 				++Np;
@@ -1117,7 +1123,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list_no_bottom )
 		{
 			auto p = p_it2.get();
 
-			Point<3,float> xp = vd2.getPos(p);
+			Point<3,float> xp = vd2.getPosRead(p);
 
 			auto Np = NN2.getNNIterator<NO_CHECK>(p.getKey());
 
@@ -1133,7 +1139,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list_no_bottom )
 
 				// repulsive
 
-				Point<3,float> xq = vd2.getPos(q);
+				Point<3,float> xq = vd2.getPosRead(q);
 				Point<3,float> f = (xp - xq);
 
 				float distance = f.norm();
@@ -1142,16 +1148,16 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list_no_bottom )
 
 				if (distance < r_cut )
 				{
-					vd2.getProp<1>(p)++;
-					vd2.getProp<1>(q)++;
+					vd2.getPropWrite<1>(p)++;
+					vd2.getPropWrite<1>(q)++;
 
-					vd2.getProp<4>(p).add();
-					vd2.getProp<4>(q).add();
+					vd2.getPropWrite<4>(p).add();
+					vd2.getPropWrite<4>(q).add();
 
-					vd2.getProp<4>(p).last().xq = xq;
-					vd2.getProp<4>(q).last().xq = xp;
-					vd2.getProp<4>(p).last().id = vd2.getProp<2>(q);
-					vd2.getProp<4>(q).last().id = vd2.getProp<2>(p);
+					vd2.getPropWrite<4>(p).last().xq = xq;
+					vd2.getPropWrite<4>(q).last().xq = xp;
+					vd2.getPropWrite<4>(p).last().id = vd2.getPropRead<2>(q);
+					vd2.getPropWrite<4>(q).last().id = vd2.getPropRead<2>(p);
 				}
 
 				++Np;
@@ -1164,6 +1170,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list_no_bottom )
 		vd2.ghost_put<add_,1>();
 		vd2.ghost_put<merge_,4>();
 
+#ifdef SE_CLASS3
+		vd2.getDomainIterator();
+#endif
+
 		auto p_it3 = vd.getDomainIterator();
 
 		bool ret = true;
@@ -1171,16 +1181,16 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list_no_bottom )
 		{
 			auto p = p_it3.get();
 
-			ret &= vd2.getProp<1>(p) == vd.getProp<0>(p);
+			ret &= vd2.getPropRead<1>(p) == vd.getPropRead<0>(p);
 
 
-			vd.getProp<3>(p).sort();
-			vd2.getProp<4>(p).sort();
+			vd.getPropWrite<3>(p).sort();
+			vd2.getPropWrite<4>(p).sort();
 
-			ret &= vd.getProp<3>(p).size() == vd2.getProp<4>(p).size();
+			ret &= vd.getPropRead<3>(p).size() == vd2.getPropRead<4>(p).size();
 
-			for (size_t i = 0 ; i < vd.getProp<3>(p).size() ; i++)
-				ret &= vd.getProp<3>(p).get(i).id == vd2.getProp<4>(p).get(i).id;
+			for (size_t i = 0 ; i < vd.getPropRead<3>(p).size() ; i++)
+				ret &= vd.getPropRead<3>(p).get(i).id == vd2.getPropRead<4>(p).get(i).id;
 
 			if (ret == false)
 				break;
@@ -1205,31 +1215,29 @@ template<typename part_prop> void test_crs_full(vector_dist<3,float, part_prop >
 	{
 		auto key = it.get();
 
-		vd.getPos(key)[0] = ud(eg);
-		vd.getPos(key)[1] = ud(eg);
-		vd.getPos(key)[2] = ud(eg);
+		vd.getPosWrite(key)[0] = ud(eg);
+		vd.getPosWrite(key)[1] = ud(eg);
+		vd.getPosWrite(key)[2] = ud(eg);
 
-		vd2.getPos(key)[0] = vd.getPos(key)[0];
-		vd2.getPos(key)[1] = vd.getPos(key)[1];
-		vd2.getPos(key)[2] = vd.getPos(key)[2];
+		vd2.getPosWrite(key)[0] = vd.getPosRead(key)[0];
+		vd2.getPosWrite(key)[1] = vd.getPosRead(key)[1];
+		vd2.getPosWrite(key)[2] = vd.getPosRead(key)[2];
 
 		// Fill some properties randomly
 
-		vd.template getProp<0>(key) = 0;
-		vd.template getProp<1>(key) = 0;
-		vd.template getProp<2>(key) = key.getKey() + start;
+		vd.template getPropWrite<0>(key) = 0;
+		vd.template getPropWrite<1>(key) = 0;
+		vd.template getPropWrite<2>(key) = key.getKey() + start;
 
-		vd2.template getProp<0>(key) = 0;
-		vd2.template getProp<1>(key) = 0;
-		vd2.template getProp<2>(key) = key.getKey() + start;
+		vd2.template getPropWrite<0>(key) = 0;
+		vd2.template getPropWrite<1>(key) = 0;
+		vd2.template getPropWrite<2>(key) = key.getKey() + start;
 
 		++it;
 	}
 
 	vd.map();
 	vd2.map();
-
-	Vcluster & v_cl = create_vcluster();
 
 	// sync the ghost
 	vd.template ghost_get<0,2>();
@@ -1242,14 +1250,7 @@ template<typename part_prop> void test_crs_full(vector_dist<3,float, part_prop >
 	{
 		auto p = p_it.get();
 
-		Point<3,float> xp = vd.getPos(p);
-
-		if (v_cl.getProcessUnitID() == 2 && p.getKey() == 137)
-		{
-			int debug = 0;
-			debug++;
-		}
-
+		Point<3,float> xp = vd.getPosRead(p);
 
 		auto Np = NN.getNNIterator(p.getKey());
 
@@ -1265,7 +1266,7 @@ template<typename part_prop> void test_crs_full(vector_dist<3,float, part_prop >
 
 			// repulsive
 
-			Point<3,float> xq = vd.getPos(q);
+			Point<3,float> xq = vd.getPosRead(q);
 			Point<3,float> f = (xp - xq);
 
 			float distance = f.norm();
@@ -1274,10 +1275,10 @@ template<typename part_prop> void test_crs_full(vector_dist<3,float, part_prop >
 
 			if (distance < r_cut )
 			{
-				vd.template getProp<0>(p)++;
-				vd.template getProp<3>(p).add();
-				vd.template getProp<3>(p).last().xq = xq;
-				vd.template getProp<3>(p).last().id = vd.template getProp<2>(q);
+				vd.template getPropWrite<0>(p)++;
+				vd.template getPropWrite<3>(p).add();
+				vd.template getPropWrite<3>(p).last().xq = xq;
+				vd.template getPropWrite<3>(p).last().id = vd.template getPropRead<2>(q);
 			}
 
 			++Np;
@@ -1297,7 +1298,7 @@ template<typename part_prop> void test_crs_full(vector_dist<3,float, part_prop >
 	{
 		auto p = p_it2.get();
 
-		Point<3,float> xp = vd2.getPos(p);
+		Point<3,float> xp = vd2.getPosRead(p);
 
 		auto Np = NN2.template getNNIterator<NO_CHECK>(p);
 
@@ -1313,23 +1314,23 @@ template<typename part_prop> void test_crs_full(vector_dist<3,float, part_prop >
 
 			// repulsive
 
-			Point<3,float> xq = vd2.getPos(q);
+			Point<3,float> xq = vd2.getPosRead(q);
 			Point<3,float> f = (xp - xq);
 
 			float distance = f.norm();
 
 			if (distance < r_cut )
 			{
-				vd2.template getProp<1>(p)++;
-				vd2.template getProp<1>(q)++;
+				vd2.template getPropWrite<1>(p)++;
+				vd2.template getPropWrite<1>(q)++;
 
-				vd2.template getProp<4>(p).add();
-				vd2.template getProp<4>(q).add();
+				vd2.template getPropWrite<4>(p).add();
+				vd2.template getPropWrite<4>(q).add();
 
-				vd2.template getProp<4>(p).last().xq = xq;
-				vd2.template getProp<4>(q).last().xq = xp;
-				vd2.template getProp<4>(p).last().id = vd2.template getProp<2>(q);
-				vd2.template getProp<4>(q).last().id = vd2.template getProp<2>(p);
+				vd2.template getPropWrite<4>(p).last().xq = xq;
+				vd2.template getPropWrite<4>(q).last().xq = xp;
+				vd2.template getPropWrite<4>(p).last().id = vd2.template getPropRead<2>(q);
+				vd2.template getPropWrite<4>(q).last().id = vd2.template getPropRead<2>(p);
 			}
 
 			++Np;
@@ -1341,6 +1342,10 @@ template<typename part_prop> void test_crs_full(vector_dist<3,float, part_prop >
 	vd2.template ghost_put<add_,1>();
 	vd2.template ghost_put<merge_,4>();
 
+#ifdef SE_CLASS3
+	vd2.getDomainIterator();
+#endif
+
 	auto p_it3 = vd.getDomainIterator();
 
 	bool ret = true;
@@ -1348,21 +1353,21 @@ template<typename part_prop> void test_crs_full(vector_dist<3,float, part_prop >
 	{
 		auto p = p_it3.get();
 
-		ret &= vd2.template getProp<1>(p) == vd.template getProp<0>(p);
+		ret &= vd2.template getPropRead<1>(p) == vd.template getPropRead<0>(p);
 
 		if (ret == false)
 		{
-			Point<3,float> xp = vd2.getPos(p);
-			std::cout << "ERROR " << vd2.template getProp<1>(p) << "   " << vd.template getProp<0>(p) <<  "    " << xp.toString() << std::endl;
+			Point<3,float> xp = vd2.getPosRead(p);
+			std::cout << "ERROR " << vd2.template getPropWrite<1>(p) << "   " << vd.template getPropWrite<0>(p) <<  "    " << xp.toString() << std::endl;
 		}
 
-		vd.template getProp<3>(p).sort();
-		vd2.template getProp<4>(p).sort();
+		vd.template getPropWrite<3>(p).sort();
+		vd2.template getPropWrite<4>(p).sort();
 
-		ret &= vd.template getProp<3>(p).size() == vd2.template getProp<4>(p).size();
+		ret &= vd.template getPropRead<3>(p).size() == vd2.template getPropRead<4>(p).size();
 
-		for (size_t i = 0 ; i < vd.template getProp<3>(p).size() ; i++)
-			ret &= vd.template getProp<3>(p).get(i).id == vd2.template getProp<4>(p).get(i).id;
+		for (size_t i = 0 ; i < vd.template getPropRead<3>(p).size() ; i++)
+			ret &= vd.template getPropRead<3>(p).get(i).id == vd2.template getPropRead<4>(p).get(i).id;
 
 		if (ret == false)
 			break;

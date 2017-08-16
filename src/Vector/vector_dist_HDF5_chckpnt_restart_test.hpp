@@ -119,6 +119,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test )
 
 BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
 {
+#ifndef SE_CLASS3
+
 	Vcluster & v_cl = create_vcluster();
 
 	Box<dim,float> box;
@@ -169,6 +171,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
 
 		++it2;
 	}
+
+#endif
 }
 
 BOOST_AUTO_TEST_SUITE_END()

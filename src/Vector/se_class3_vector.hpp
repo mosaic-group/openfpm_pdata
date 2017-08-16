@@ -16,6 +16,7 @@
 
 #define SE3_STATUS -2
 #define SE3_TYPE -1
+#define SE3_SIZE 2
 
 enum statuses
 {
@@ -35,6 +36,67 @@ enum ptype
 	HALO,
 	GHOST,
 	INSIDE
+};
+
+// is initialized
+template<typename T>
+struct is_initialized
+{
+	static const int init = UNINITIALIZED;
+};
+
+// is initialized
+template<typename T>
+struct is_initialized<openfpm::vector<T>>
+{
+	static const int init = CLEAN;
+};
+
+
+///////////////////////////////
+
+/*! \brief this class is a functor for "for_each" algorithm
+ *
+ * This class is a functor for "for_each" algorithm. For each
+ * element of the boost::vector the operator() is called.
+ * Is mainly used to initialize the properties
+ *
+ * \tparam encap source
+ * \tparam encap dst
+ *
+ */
+
+template<unsigned int Np, typename vector>
+struct init_prop
+{
+	//! vector for prop initializetion
+	size_t (& prp_init)[Np];
+
+	/*! \brief constructor
+	 *
+	 *
+	 * \param src encapsulated object1
+	 * \param dst encapsulated object2
+	 *
+	 */
+	inline init_prop(size_t ( & prp_init)[Np])
+	:prp_init(prp_init)
+	{
+	};
+
+
+	/*!  \brief It call the copy function for each property
+	 *
+	 * \param t each member
+	 *
+	 */
+	template<typename T>
+	inline void operator()(T& t) const
+	{
+		typedef typename boost::mpl::at<vector,boost::mpl::int_<T::value>>::type tc;
+
+		prp_init[T::value] = is_initialized<tc>::init;
+	}
 };
 
 // Unknown type
@@ -147,7 +209,7 @@ template<typename vector>
 struct propCheckNAN
 {
 	//! Data to check
-	vector & data;
+	const vector & data;
 
 	//! Element to check
 	size_t id;
@@ -157,7 +219,7 @@ struct propCheckNAN
 	 * \param
 	 *
 	 */
-	inline propCheckNAN(vector & data, size_t id)
+	inline propCheckNAN(const vector & data, size_t id)
 	:data(data),id(id)
 	{};
 
@@ -196,7 +258,7 @@ template<typename vector>
 struct propCheckINF
 {
 	//! Data to check
-	vector & data;
+	const vector & data;
 
 	//! id
 	size_t id;
@@ -207,7 +269,7 @@ struct propCheckINF
 	 * \param
 	 *
 	 */
-	inline propCheckINF(vector & data, size_t id)
+	inline propCheckINF(const vector & data, size_t id)
 	:data(data),id(id)
 	{};
 
@@ -261,7 +323,7 @@ class se_class3_vector
 		int sync[2][Np];
 
 		//! number of real properties + POSITION
-		static const size_t Np_real = Np+SE3_STATUS+1;
+		static const size_t Np_real = Np+SE3_STATUS;
 
 		//! Domain decomposition object
 		Decomposition & dec;
@@ -271,6 +333,9 @@ class se_class3_vector
 
 		//! temporal buffer
 		openfpm::vector<size_t> non_NP;
+
+		//! last write
+		size_t l_wrt;
 
 		bool isLocalHalo(const Point<dim,T> & p)
 		{
@@ -335,7 +400,7 @@ class se_class3_vector
 		{
 			non_NP.clear();
 
-			for (size_t i = 0 ; i < Np_real-1 ; i++)
+			for (size_t i = 0 ; i < Np_real ; i++)
 			{
 				bool found = false;
 				for (size_t j = 0 ; j < sizeof...(prp) ; j++)
@@ -355,7 +420,7 @@ class se_class3_vector
 
 		std::string getPrpName(size_t i) const
 		{
-			if (i == Np_real-1)
+			if (i == Np_real)
 				return std::string("POSITION");
 
 			return std::to_string(i);
@@ -382,8 +447,9 @@ class se_class3_vector
 			{
 				auto p = it.get();
 
-				for (size_t i = 0 ; i < Np_real ; i++)
-					vd.template getPropNC<Np+SE3_STATUS>(p)[i] = UNINITIALIZED;
+				init_prop<Np_real+1,typename vector::value_type::type> np_r(vd.template getPropNC<Np+SE3_STATUS>(p));
+
+				boost::mpl::for_each_ref< boost::mpl::range_c<int,0,Np_real+1> >(np_r);
 
 				vd.template getPropNC<Np+SE3_TYPE>(p) = INSIDE;
 
@@ -452,8 +518,11 @@ class se_class3_vector
 				for (size_t i = 0 ; i < sizeof...(prp) ; i++)
 				{
 					if (vd.template getPropNC<Np+SE3_STATUS>(p)[gg[i]] == DIRTY)
-						vd.template getPropNC<Np+SE3_STATUS>(p)[gg[i]] = CLEAN;
+					{vd.template getPropNC<Np+SE3_STATUS>(p)[gg[i]] = CLEAN;}
 				}
+
+				if (vd.template getPropNC<Np+SE3_STATUS>(p)[Np_real] == DIRTY)
+				{vd.template getPropNC<Np+SE3_STATUS>(p)[Np_real] = CLEAN;}
 
 				vd.template getPropNC<Np+SE3_TYPE>(p) = GHOST;
 
@@ -463,7 +532,7 @@ class se_class3_vector
 			if (!(opt & KEEP_PROPERTIES))
 			{
 				for (size_t i = 0 ; i < non_NP.size() ; i++)
-					sync[GHOST][gg[i]] = NOTSYNC;
+					sync[GHOST][non_NP.get(i)] = NOTSYNC;
 
 				auto it = vd.getGhostIterator_no_se3();
 
@@ -484,7 +553,9 @@ class se_class3_vector
 				sync[GHOST][gg[i]] = SYNC;
 
 			if (!(opt & NO_POSITION))
+			{
 				sync[GHOST][Np_real] = SYNC;
+			}
 
 			if (!(opt & KEEP_PROPERTIES))
 			{
@@ -549,51 +620,11 @@ class se_class3_vector
 			{
 				auto p = it.get();
 
-				for (size_t j = 0 ; j < Np ; j++)
+				for (size_t j = 0 ; j < Np_real + 1 ; j++)
 				{
 					if (vd.template getPropNC<Np+SE3_STATUS>(p)[j] == DIRTY)
 						vd.template getPropNC<Np+SE3_STATUS>(p)[j] = CLEAN;
 				}
-
-#ifdef CHECK_FOR_POSINF
-
-				if ( std::isinf(vd.getPosNC(p)[0]) || std::isinf(vd.getPosNC(p)[1]) || std::isinf(vd.getPosNC(p)[2]) )
-				{
-					std::cerr << __FILE__ << ":" << __LINE__ << " error detected INF in position for particle p=" << p.getKey() << " of type=" << getParticleTypeString(vd.template getPropNC<Np+SE3_TYPE>(p)) << std::endl;
-					ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
-				}
-
-#endif
-
-#ifdef CHECKFOR_POSNAN
-
-				if ( std::isnan(vd.getPosNC(p)[0]) || std::isnan(vd.getPosNC(p)[1]) || std::isnan(vd.getPosNC(p)[2]) )
-				{
-					std::cerr << __FILE__ << ":" << __LINE__ << " error detected NAN in position for particle p=" << p.getKey() << " of type=" << getParticleTypeString(vd.template getPropNC<Np+SE3_TYPE>(p)) << std::endl;
-					ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
-				}
-
-#endif
-
-#ifdef CHECKFOR_PROPINF
-
-				{
-					propCheckINF<vector> checker(vd,p.getKey());
-
-					boost::mpl::for_each_ref< boost::mpl::range_c<int,0, Np_real-1 > > (checker);
-				}
-
-#endif
-
-#ifdef CHECKFOR_PROPNAN
-
-				{
-					propCheckNAN<vector> checker(vd,p.getKey());
-
-					boost::mpl::for_each_ref< boost::mpl::range_c<int,0, Np_real-1 > >(checker);
-				}
-
-#endif
 
 				++it;
 			}
@@ -607,7 +638,7 @@ class se_class3_vector
 			{
 				auto p = it.get();
 
-				for (size_t j = 0 ; j < Np ; j++)
+				for (size_t j = 0 ; j < Np_real + 1 ; j++)
 				{
 					if (vd.template getPropNC<Np+SE3_STATUS>(p)[j] == DIRTY)
 					{
@@ -621,7 +652,7 @@ class se_class3_vector
 
 		void map_post()
 		{
-			for (size_t j = 0 ; j < Np ; j++)
+			for (size_t j = 0 ; j < Np_real + 1 ; j++)
 			{
 
 				sync[GHOST][j] = NOTSYNC;
@@ -633,12 +664,9 @@ class se_class3_vector
 			{
 				auto p = it.get();
 
-				for (size_t j = 0 ; j < Np ; j++)
-				{
-					Point<vector::dims,typename vector::stype> xp = vd.getPosNC(p);
+				Point<vector::dims,typename vector::stype> xp = vd.getPosNC(p);
 
-					vd.template getPropNC<Np+SE3_TYPE>(p) = getParticleType(xp,p.getKey(),vd);
-				}
+				vd.template getPropNC<Np+SE3_TYPE>(p) = getParticleType(xp,p.getKey(),vd);
 
 				++it;
 			}
@@ -657,20 +685,20 @@ class se_class3_vector
 					str << __FILE__ << ":" << __LINE__ << " Error you are reading from the particle " << p << " of type " << type_str << " the property=" << getPrpName(prp) << ". But it result to be uninitialized" << std::endl;
 
 				// It is an error read from an uninitialized property
-				std::cerr << str.str();
+				std::cerr << str.str() << std::endl;
 				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
 			}
 
-			if (vd.template getPropNC<Np+SE3_STATUS>(p)[prp] == DIRTY)
+			if (vd.template getPropNC<Np+SE3_STATUS>(p)[prp] == DIRTY && p != l_wrt)
 			{
-				std::cerr << __FILE__ << ":" << __LINE__ << " Warning you are reading from an particle that has been changed already in the same cycle" << std::endl;
+				std::cerr << __FILE__ << ":" << __LINE__ << " Warning you are reading from a particle that has been changed already in the same cycle" << std::endl;
 				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
 			}
 
-			if (vd.template getPropNC<Np+SE3_TYPE>(p) == GHOST || vd.template getPropNC<Np+SE3_TYPE>(p) == HALO)
+			if (vd.template getPropNC<Np+SE3_TYPE>(p) == GHOST)
 			{
 				// if we read from the ghost we have to ensure that the ghost is in
-				// sync in particular that the state of the halo is CLEAR
+				// sync in particular that the state of the halo is CLEAN
 
 				if (sync[vd.template getPropNC<Np+SE3_TYPE>(p)][prp] != SYNC)
 				{
@@ -678,6 +706,47 @@ class se_class3_vector
 					ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
 				}
 			}
+
+#ifdef CHECK_FOR_POSINF
+
+			if ( std::isinf(vd.getPosNC(p)[0]) || std::isinf(vd.getPosNC(p)[1]) || std::isinf(vd.getPosNC(p)[2]) )
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " error detected INF in position for particle p=" << p << " of type=" << getParticleTypeString(vd.template getPropNC<Np+SE3_TYPE>(p)) << std::endl;
+				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+			}
+
+#endif
+
+#ifdef CHECKFOR_POSNAN
+
+			if ( std::isnan(vd.getPosNC(p)[0]) || std::isnan(vd.getPosNC(p)[1]) || std::isnan(vd.getPosNC(p)[2]) )
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " error detected NAN in position for particle p=" << p << " of type=" << getParticleTypeString(vd.template getPropNC<Np+SE3_TYPE>(p)) << std::endl;
+				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+			}
+
+#endif
+
+#ifdef CHECKFOR_PROPINF
+
+			{
+				propCheckINF<vector> checker(vd,p);
+
+				boost::mpl::for_each_ref< boost::mpl::range_c<int,0, Np_real > > (checker);
+			}
+
+#endif
+
+#ifdef CHECKFOR_PROPNAN
+
+			{
+				propCheckNAN<vector> checker(vd,p);
+
+				boost::mpl::for_each_ref< boost::mpl::range_c<int,0, Np_real > >(checker);
+			}
+
+#endif
+
 		}
 
 		template<unsigned int prp> void write(vector & vd, size_t p)
@@ -691,33 +760,29 @@ class se_class3_vector
 					vd.get_se_class3().template setGhostOutSync<prp>();
 			}
 
+			l_wrt = p;
 		}
 
 		//! Copy operator
 		se_class3_vector<Np,dim,T,Decomposition,vector> & operator=(const se_class3_vector<Np,dim,T,Decomposition,vector> & se3)
 		{
-			for (size_t i = 0 ; i < Np ; i++)
+			for (size_t i = 0 ; i < Np_real + 1 ; i++)
 			{
 				sync[0][i] = se3.sync[0][i];
 				sync[1][i] = se3.sync[1][i];
 			}
-
-			dec = se3.dec;
-			vd = se3.vd;
 
 			return *this;
 		}
 
 		template<unsigned int prp> void setHaloOutSync()
 		{
-			for (size_t i = 0 ; i < Np ; i++)
-				sync[HALO][prp] = NOTSYNC;
+			sync[HALO][prp] = NOTSYNC;
 		}
 
 		template<unsigned int prp> void setGhostOutSync()
 		{
-			for (size_t i = 0 ; i < Np ; i++)
-				sync[GHOST][prp] = NOTSYNC;
+			sync[GHOST][prp] = NOTSYNC;
 		}
 
 		void getNN()

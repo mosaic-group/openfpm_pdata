@@ -558,7 +558,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_class3_check_nan_inf )
 	{
 	try
 	{
-		auto it = vd.getDomainIterator();
+		vd.getPosRead(0);
 	}
 	catch (std::exception & e)
 	{
@@ -585,7 +585,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_class3_check_nan_inf )
 	{
 	try
 	{
-		auto it = vd2.getDomainIterator();
+		vd2.getLastPosRead();
 	}
 	catch (std::exception & e)
 	{

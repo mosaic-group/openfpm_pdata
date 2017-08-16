@@ -222,21 +222,21 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_sym_test )
 		phases.get(2).add();
 		phases.get(3).add();
 
-		phases.get(0).getLastPos()[0] = key.get(0) * g_it.getSpacing(0) + box.getLow(0);
-		phases.get(0).getLastPos()[1] = key.get(1) * g_it.getSpacing(1) + box.getLow(1);
-		phases.get(0).getLastPos()[2] = key.get(2) * g_it.getSpacing(2) + box.getLow(2);
+		phases.get(0).getLastPosWrite()[0] = key.get(0) * g_it.getSpacing(0) + box.getLow(0);
+		phases.get(0).getLastPosWrite()[1] = key.get(1) * g_it.getSpacing(1) + box.getLow(1);
+		phases.get(0).getLastPosWrite()[2] = key.get(2) * g_it.getSpacing(2) + box.getLow(2);
 
-		phases.get(1).getLastPos()[0] = key.get(0) * g_it.getSpacing(0) + box.getLow(0);
-		phases.get(1).getLastPos()[1] = key.get(1) * g_it.getSpacing(1) + box.getLow(1);
-		phases.get(1).getLastPos()[2] = key.get(2) * g_it.getSpacing(2) + box.getLow(2);
+		phases.get(1).getLastPosWrite()[0] = key.get(0) * g_it.getSpacing(0) + box.getLow(0);
+		phases.get(1).getLastPosWrite()[1] = key.get(1) * g_it.getSpacing(1) + box.getLow(1);
+		phases.get(1).getLastPosWrite()[2] = key.get(2) * g_it.getSpacing(2) + box.getLow(2);
 
-		phases.get(2).getLastPos()[0] = key.get(0) * g_it.getSpacing(0) + box.getLow(0);
-		phases.get(2).getLastPos()[1] = key.get(1) * g_it.getSpacing(1) + box.getLow(1);
-		phases.get(2).getLastPos()[2] = key.get(2) * g_it.getSpacing(2) + box.getLow(2);
+		phases.get(2).getLastPosWrite()[0] = key.get(0) * g_it.getSpacing(0) + box.getLow(0);
+		phases.get(2).getLastPosWrite()[1] = key.get(1) * g_it.getSpacing(1) + box.getLow(1);
+		phases.get(2).getLastPosWrite()[2] = key.get(2) * g_it.getSpacing(2) + box.getLow(2);
 
-		phases.get(3).getLastPos()[0] = key.get(0) * g_it.getSpacing(0) + box.getLow(0);
-		phases.get(3).getLastPos()[1] = key.get(1) * g_it.getSpacing(1) + box.getLow(1);
-		phases.get(3).getLastPos()[2] = key.get(2) * g_it.getSpacing(2) + box.getLow(2);
+		phases.get(3).getLastPosWrite()[0] = key.get(0) * g_it.getSpacing(0) + box.getLow(0);
+		phases.get(3).getLastPosWrite()[1] = key.get(1) * g_it.getSpacing(1) + box.getLow(1);
+		phases.get(3).getLastPosWrite()[2] = key.get(2) * g_it.getSpacing(2) + box.getLow(2);
 
 		++g_it;
 	}
@@ -289,8 +289,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_sym_test )
 			// Neighborhood particle q
 			auto q = Np.get();
 
-			phases.get(0).getProp<0>(p)++;
-			phases.get(1).getProp<0>(q)++;
+			phases.get(0).getPropWrite<0>(p)++;
+			phases.get(1).getPropWrite<0>(q)++;
 
 			++Np;
 		}
@@ -301,13 +301,19 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_sym_test )
 	phases.get(0).ghost_put<add_,0>();
 	phases.get(1).ghost_put<add_,0>();
 
+#ifdef SE_CLASS3
+
+	phases.get(1).getDomainIterator();
+
+#endif
+
 	it = phases.get(0).getDomainIterator();
 	while (it.isNext())
 	{
 		auto p = it.get();
 
-		ret &= phases.get(0).getProp<0>(p) == 7;
-		ret &= phases.get(1).getProp<0>(p) == 7;
+		ret &= phases.get(0).getPropRead<0>(p) == 7;
+		ret &= phases.get(1).getPropRead<0>(p) == 7;
 
 		++it;
 	}
@@ -330,7 +336,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_sym_test )
 		{
 			auto p = it.get();
 
-			phases.get(i).getProp<0>(p) = 0;
+			phases.get(i).getPropWrite<0>(p) = 0;
 
 			++it;
 		}
@@ -371,8 +377,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_sym_test )
 				// Get from which phase it come from
 				auto ph_q = Np.getV();
 
-				phases.get(i).getProp<0>(p)++;
-				phases.get(ph_q).getProp<0>(q)++;
+				phases.get(i).getPropWrite<0>(p)++;
+				phases.get(ph_q).getPropWrite<0>(q)++;
 
 				++Np;
 			}
@@ -386,22 +392,30 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_sym_test )
 	phases.get(2).ghost_put<add_,0>();
 	phases.get(3).ghost_put<add_,0>();
 
+#ifdef SE_CLASS3
+
+	it = phases.get(1).getDomainIterator();
+	it = phases.get(2).getDomainIterator();
+	it = phases.get(3).getDomainIterator();
+
+#endif
+
 	it = phases.get(0).getDomainIterator();
 	while (it.isNext())
 	{
 		auto p = it.get();
 
-		ret &= phases.get(0).getProp<0>(p) == 32;
-		ret &= phases.get(1).getProp<0>(p) == 32;
-		ret &= phases.get(2).getProp<0>(p) == 32;
-		ret &= phases.get(3).getProp<0>(p) == 32;
+		ret &= phases.get(0).getPropRead<0>(p) == 32;
+		ret &= phases.get(1).getPropRead<0>(p) == 32;
+		ret &= phases.get(2).getPropRead<0>(p) == 32;
+		ret &= phases.get(3).getPropRead<0>(p) == 32;
 
 		if (ret == false)
 		{
-			std::cout << phases.get(0).getProp<0>(p) << std::endl;
-			std::cout << phases.get(1).getProp<0>(p) << std::endl;
-			std::cout << phases.get(2).getProp<0>(p) << std::endl;
-			std::cout << phases.get(3).getProp<0>(p) << std::endl;
+			std::cout << phases.get(0).getPropRead<0>(p) << std::endl;
+			std::cout << phases.get(1).getPropRead<0>(p) << std::endl;
+			std::cout << phases.get(2).getPropRead<0>(p) << std::endl;
+			std::cout << phases.get(3).getPropRead<0>(p) << std::endl;
 		}
 
 		++it;
