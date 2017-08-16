@@ -29,6 +29,18 @@
  * <div style="display:none" id="vector-video-16">
  * <video id="vid16" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_dlb2.mp4" type="video/mp4"></video>
  * </div>
+ * <a href="#" onclick="hide_show('vector-video-17')" >Simulation countour prospective 1</a><br>
+ * <div style="display:none" id="vector-video-17">
+ * <video id="vid17" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_zoom.mp4" type="video/mp4"></video>
+ * </div>
+ * <a href="#" onclick="hide_show('vector-video-18')" >Simulation countour prospective 2</a><br>
+ * <div style="display:none" id="vector-video-18">
+ * <video id="vid18" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_back.mp4" type="video/mp4"></video>
+ * </div>
+ * <a href="#" onclick="hide_show('vector-video-19')" >Simulation countour prospective 3</a><br>
+ * <div style="display:none" id="vector-video-19">
+ * <video id="vid19" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_all.mp4" type="video/mp4"></video>
+ * </div>
  * \endhtmlonly
  *
  * \htmlonly
