@@ -544,7 +544,7 @@ else
   installation_report="$installation_report \033[91;1mHYPRE\033[0m Installed: \033[1m NO \033[0m\n"
 fi
 
-bash_path="$bash_path$PATH\""
+bash_path="$bash_path:\$PATH\""
 bash_library="$bash_library\""
 
 ##### Writing openfpm_vars file
