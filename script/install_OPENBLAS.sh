@@ -17,7 +17,7 @@ patch -p1 < openblas.diff
 
 # configuration
 
-make CC=gcc CXX=g++
+make
 mkdir $1/OPENBLAS
 make install PREFIX=$1/OPENBLAS
 
