@@ -231,6 +231,7 @@ public:
 		Mg.options = NULL;
 		Mg.objval = NULL;
 		Mg.part = NULL;
+		Mg.vsize = NULL;
 	}
 
 

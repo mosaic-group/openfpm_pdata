@@ -35,6 +35,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter3D_test)
 
 	long int k = 293;
 	long int big_step = k / 30;
+	/* coverity[dead_error_line] */
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 21;
 

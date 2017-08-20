@@ -379,7 +379,10 @@ public:
 
 		// multiply for sub-sub-domain side for each domain
 		for (size_t i = 2; i < dim; i++)
+		{
+			/* coverity[dead_error_line] */
 			gh_v *= b_s;
+		}
 
 		size_t norm = (size_t) (1.0 / gh_v);
 
@@ -758,7 +761,8 @@ public:
 		cart.gr = gr;
 		cart.cd = cd;
 		cart.domain = domain;
-		std::copy(spacing,spacing+3,cart.spacing);
+		for (size_t i = 0 ; i < dim ; i++)
+		{cart.spacing[i] = spacing[i];};
 
 		cart.bbox = bbox;
 		cart.ghost = g;
@@ -796,7 +800,8 @@ public:
 		cart.gr = gr;
 		cart.cd = cd;
 		cart.domain = domain;
-		std::copy(spacing,spacing+3,cart.spacing);
+		for (size_t i = 0 ; i < dim ; i++)
+		{cart.spacing[i] = spacing[i];};
 
 		cart.ghost = ghost;
 
@@ -827,7 +832,9 @@ public:
 		gr = cart.gr;
 		cd = cart.cd;
 		domain = cart.domain;
-		std::copy(cart.spacing,cart.spacing+3,spacing);
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{spacing[i] = cart.spacing[i];};
 
 		ghost = cart.ghost;
 
@@ -858,7 +865,8 @@ public:
 		gr = cart.gr;
 		cd = cart.cd;
 		domain = cart.domain;
-		std::copy(cart.spacing,cart.spacing+3,spacing);
+		for (size_t i = 0 ; i < dim ; i++)
+		{spacing[i] = cart.spacing[i];};
 
 		ghost = cart.ghost;
 
@@ -866,8 +874,6 @@ public:
 
 		for (size_t i = 0 ; i < dim ; i++)
 			bc[i] = cart.bc[i];
-
-		return *this;
 
 		return *this;
 	}

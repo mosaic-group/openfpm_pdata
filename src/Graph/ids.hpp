@@ -20,24 +20,51 @@ struct rid
 	//! id
 	idx_t id;
 
-	//! Cosntructor
+	/*! \brief Cosntructor from id
+	 *
+	 * \param id
+	 *
+	 */
 	rid(size_t id)
 	:id(id)
 	{}
 
 	//! Constructor
-	rid()	{}
+	rid()
+	:id(0)
+	{}
 
+	/*! \brief Compare two gid
+	 *
+	 * \param r gid to compare with
+	 *
+	 * \return the result for comparation
+	 *
+	 */
 	inline bool operator<=(const rid & r) const
 	{
 		return id <= r.id;
 	}
 
+	/*! \brief Compare two gid
+	 *
+	 * \param r gid to compare with
+	 *
+	 * \return the result for comparation
+	 *
+	 */
 	inline bool operator<(const rid & r) const
 	{
 		return id < r.id;
 	}
 
+	/*! \brief Subtract two gid
+	 *
+	 * \param i
+	 *
+	 * \return itself
+	 *
+	 */
 	inline rid operator-(int i) const
 	{
 		struct rid tmp;
@@ -45,6 +72,13 @@ struct rid
 		return tmp;
 	}
 
+	/*! \brief Subtract two gid
+	 *
+	 * \param i gid to subtract
+	 *
+	 * \return itself
+	 *
+	 */
 	inline rid operator-(struct rid i) const
 	{
 		struct rid tmp;
@@ -52,6 +86,13 @@ struct rid
 		return tmp;
 	}
 
+	/*! \brief Sum two gid
+	 *
+	 * \param i gid to subtract
+	 *
+	 * \return itself
+	 *
+	 */
 	inline rid operator+(int i) const
 	{
 		struct rid tmp;
@@ -59,12 +100,24 @@ struct rid
 		return tmp;
 	}
 
+	/*! \brief Sum two gid
+	 *
+	 * \param i gid to sum
+	 *
+	 * \return itself
+	 *
+	 */
 	inline rid & operator+=(const rid & i)
 	{
 		id += i.id;
 		return *this;
 	}
 
+	/*! \brief Increment the id
+	 *
+	 * \return itself
+	 *
+	 */
 	inline rid & operator++()
 	{
 		id++;
@@ -72,6 +125,13 @@ struct rid
 		return *this;
 	}
 
+	/*! \brief compare two ids
+	 *
+	 * \param r id to check with
+	 *
+	 * \return the result
+	 *
+	 */
 	inline bool operator==(const rid & r) const
 	{
 		return id == r.id;

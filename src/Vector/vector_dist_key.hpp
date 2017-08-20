@@ -67,6 +67,7 @@ public:
 	//! Default constructor
 	inline vect_dist_key_dx()
 	{
+		/* coverity[uninit_member] */
 	}
 
 	//! Default constructor

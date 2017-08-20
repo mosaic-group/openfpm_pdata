@@ -221,7 +221,9 @@ public:
 		this->domain = ext_domain;
 
 		// spacing does not change
-		std::copy(dec.spacing,dec.spacing+3,this->spacing);
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{this->spacing[i] = dec.spacing[i];};
 
 		this->ghost = g;
 		this->dist = dec.dist;
