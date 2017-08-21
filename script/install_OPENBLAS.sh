@@ -7,13 +7,13 @@ if [ -d "$1/OPENBLAS" ]; then
   exit 0
 fi
 
-wget http://ppmcore.mpi-cbg.de/upload/OpenBLAS-0.2.19.tar.gz
-rm -rf OpenBLAS-0.2.19
-tar -xf OpenBLAS-0.2.19.tar.gz
-cd OpenBLAS-0.2.19
+wget http://ppmcore.mpi-cbg.de/upload/OpenBLAS-0.2.20.tar.gz
+rm -rf OpenBLAS-0.2.20
+tar -xf OpenBLAS-0.2.20.tar.gz
+cd OpenBLAS-0.2.20
 
-wget http://ppmcore.mpi-cbg.de/upload/openblas.diff
-patch -p1 < openblas.diff
+#wget http://ppmcore.mpi-cbg.de/upload/openblas.diff
+#patch -p1 < openblas.diff
 
 # configuration
 
