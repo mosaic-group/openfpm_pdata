@@ -216,7 +216,7 @@ template<unsigned int dim> void cell_list_comp_reorder_hilbert_benchmark(size_t 
 				auto NN = vd.getCellList_hilb(r_cut);
 
 				// Initialize SFC (we are only interested in force calculation)
-				NN.Init_SFC();
+				NN.init_SFC();
 
 				openfpm::vector<double> measures;
 
