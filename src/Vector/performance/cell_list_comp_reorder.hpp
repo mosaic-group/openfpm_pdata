@@ -215,12 +215,15 @@ template<unsigned int dim> void cell_list_comp_reorder_hilbert_benchmark(size_t 
 
 				auto NN = vd.getCellList_hilb(r_cut);
 
+				// Initialize SFC (we are only interested in force calculation)
+				NN.Init_SFC();
+
 				openfpm::vector<double> measures;
 
 				double sum_cl_mean = 0;
 				double sum_cl_dev = 0;
 				for (size_t n = 0 ; n < N_VERLET_TEST; n++)
-					measures.add(benchmark_get_celllist_hilb(NN,vd,r_cut));
+				{measures.add(benchmark_get_celllist_hilb(NN,vd,r_cut));}
 				standard_deviation(measures,sum_cl_mean,sum_cl_dev);
 				//Average total time
 				cl_time_create_mean.get(r).add(sum_cl_mean);
@@ -233,14 +236,14 @@ template<unsigned int dim> void cell_list_comp_reorder_hilbert_benchmark(size_t 
 
 				measures.clear();
 				for (size_t l = 0 ; l < N_VERLET_TEST; l++)
-					measures.add(benchmark_calc_forces_hilb<dim>(NN,vd,r_cut));
+				{measures.add(benchmark_calc_forces_hilb<dim>(NN,vd,r_cut));}
 				standard_deviation(measures,sum_fr_mean,sum_fr_dev);
 
 				cl_time_force_mean.get(r).add(sum_fr_mean);
 				cl_time_force_dev.get(r).add(sum_fr_dev);
 
 				if (v_cl.getProcessUnitID() == 0)
-					std::cout << "Cut-off = " << r_cut << ", Particles = " << k_int << ". Time to create: " << sum_cl_mean << " dev: " << sum_cl_dev << " time to create a Cell-list: " << sum_fr_mean << " dev: " << sum_fr_dev << std::endl;
+				{std::cout << "Cut-off = " << r_cut << ", Particles = " << k_int << ". Time to create: " << sum_cl_mean << " dev: " << sum_cl_dev << " time to calculate force: " << sum_fr_mean << " dev: " << sum_fr_dev << std::endl;}
 			}
 		}
 	}
