@@ -410,9 +410,6 @@ void StandardPerformanceGraph(std::string file_mean,
 	options2.xAxis = std::string(x_string);
 	options2.lineWidth = 4;
 
-	std::string str2("<h2>2) Time to create the cell-list</h2>");
-	cg.addHTML(str2);
-
 	for (size_t i = 0; i < yp_mean.get(0).size() ; i++)
 	{
 		std::string chart_area;
