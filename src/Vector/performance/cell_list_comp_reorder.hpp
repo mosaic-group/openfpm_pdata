@@ -215,9 +215,6 @@ template<unsigned int dim> void cell_list_comp_reorder_hilbert_benchmark(size_t 
 
 				auto NN = vd.getCellList_hilb(r_cut);
 
-				// Initialize SFC (we are only interested in force calculation)
-				NN.init_SFC();
-
 				openfpm::vector<double> measures;
 
 				double sum_cl_mean = 0;
@@ -233,6 +230,9 @@ template<unsigned int dim> void cell_list_comp_reorder_hilbert_benchmark(size_t 
 
 				double sum_fr_mean = 0;
 				double sum_fr_dev = 0;
+
+				// Initialize SFC (we are only interested in force calculation)
+				NN.init_SFC();
 
 				measures.clear();
 				for (size_t l = 0 ; l < N_VERLET_TEST; l++)

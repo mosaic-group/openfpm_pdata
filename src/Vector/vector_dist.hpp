@@ -103,6 +103,11 @@ struct gcl<dim,St,CellList_gen<dim, St, Process_keys_hilb,Mem_type, shift<dim, S
 #define CELL_MEMBAL(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_bal, shift<dim, St> >
 #define CELL_MEMMW(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_mw, shift<dim, St> >
 
+#define CELL_MEMFAST_HILB(dim,St) CellList_gen<dim, St, Process_keys_hilb, Mem_fast, shift<dim, St> >
+#define CELL_MEMBAL_HILB(dim,St) CellList_gen<dim, St, Process_keys_hilb, Mem_bal, shift<dim, St> >
+#define CELL_MEMMW_HILB(dim,St) CellList_gen<dim, St, Process_keys_hilb, Mem_mw, shift<dim, St> >
+
+
 /*! \brief Distributed vector
  *
  * This class reppresent a distributed vector, the distribution of the structure
@@ -1747,6 +1752,11 @@ public:
 		dist.setDistTol(md.distributionTol());
 	}
 
+	/*! \brief Save the distributed vector on HDF5 file
+	 *
+	 * \param filename file where to save
+	 *
+	 */
 	inline void save(const std::string & filename) const
 	{
 		HDF5_writer<VECTOR_DIST> h5s;
@@ -1754,6 +1764,11 @@ public:
 		h5s.save(filename,v_pos,v_prp);
 	}
 
+	/*! \brief Load the distributed vector from an HDF5 file
+	 *
+	 * \param filename file from where to load
+	 *
+	 */
 	inline void load(const std::string & filename)
 	{
 		HDF5_reader<VECTOR_DIST> h5l;
@@ -1763,8 +1778,9 @@ public:
 
 	/*! \brief Output particle position and properties
 	 *
-	 * \param out output
-	 * \param opt VTK_WRITER or CSV_WRITER
+	 * \param out output filename
+	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
+	 *            FORMAT_BINARY. (the default is ASCII format)
 	 *
 	 * \return true if the file has been written without error
 	 *
@@ -1833,12 +1849,13 @@ public:
 	 *
 	 * \param out output
 	 * \param iteration (we can append the number at the end of the file_name)
-	 * \param opt NO_GHOST or WITH_GHOST
+	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
+	 *            FORMAT_BINARY. (the default is ASCII format)
 	 *
 	 * \return if the file has been written correctly
 	 *
 	 */
-	inline bool write(std::string out, size_t iteration, int opt = NO_GHOST)
+	inline bool write_frame(std::string out, size_t iteration, int opt = VTK_WRITER)
 	{
 		if ((opt & 0x0FFF0000) == CSV_WRITER)
 		{

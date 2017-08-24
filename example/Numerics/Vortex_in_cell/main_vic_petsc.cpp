@@ -120,8 +120,9 @@ typedef vector_dist<3,float,aggregate<float[3],float[3],float[3],float[3],float[
 float ringr1 = 1.0;
 // radius of the core of the torus
 float sigma = 1.0/3.523;
-// Reynold number
-float tgtre  = 7500.0;
+// Reynold number (If you want to use 7500.0 you have to use a grid 1600x400x400)
+//float tgtre  = 7500.0;
+float tgtre = 10.0;
 // Noise factor for the ring vorticity on z
 float ringnz = 0.01;
 
@@ -131,7 +132,8 @@ float dcgamma = 4.32334181e-01;
 float nu = 1.0/tgtre;
 
 // Time step
-float dt = 0.025;
+// float dt = 0.0025
+float dt = 0.0125;
 
 // All the properties by index
 constexpr unsigned int vorticity = 0;
@@ -264,6 +266,14 @@ void init_ring(grid_type & gr, const Box<3,float> & domain)
         gr.template get<vorticity>(key_d)[y] = -radstr * cos(theta1);
         gr.template get<vorticity>(key_d)[z] = radstr * sin(theta1);
 
+        // kill the axis term
+
+        float rad1r_  = sqrt((ty-2.5f)*(ty-2.5f) + (tz-2.5f)*(tz-2.5f)) + ringr1*(1.0f + ringnz * noise);
+        float rad1sqTILDA = rad1sq*rinv2;
+        radstr = exp(-rad1sq*rinv2)*rinv2*gamma/M_PI;
+        gr.template get<vorticity>(key_d)[x] = 0.0f;
+        gr.template get<vorticity>(key_d)[y] = -radstr * cos(theta1);
+        gr.template get<vorticity>(key_d)[z] = radstr * sin(theta1);
 
 		++it;
 	}
@@ -1092,8 +1102,8 @@ template<typename vector, typename grid> void check_point_and_save(vector & part
 		particles.write("part_out_" + std::to_string(i),VTK_WRITER | FORMAT_BINARY);
 		g_vort.template ghost_get<vorticity>();
 		g_vel.template ghost_get<velocity>();
-		g_vel.write("grid_velocity_" + std::to_string(i), VTK_WRITER | FORMAT_BINARY);
-		g_vort.write("grid_vorticity_" + std::to_string(i), VTK_WRITER | FORMAT_BINARY);
+		g_vel.write_frame("grid_velocity",i, VTK_WRITER | FORMAT_BINARY);
+		g_vort.write_frame("grid_vorticity",i, VTK_WRITER | FORMAT_BINARY);
 	}
 
 	// In order to reduce the size of the saved data we apply a threshold.
@@ -1157,13 +1167,17 @@ int main(int argc, char* argv[])
 	openfpm_init(&argc,&argv);
 	{
 	// Domain, a rectangle
-	Box<3,float> domain({0.0,0.0,0.0},{22.0,5.57,5.57});
+	// For the grid 1600x400x400 use
+	// Box<3,float> domain({0.0,0.0,0.0},{22.0,5.57,5.57});
+	Box<3,float> domain({0.0,0.0,0.0},{11.0,5.57,5.57});
 
 	// Ghost (Not important in this case but required)
 	Ghost<3,long int> g(2);
 
 	// Grid points on x=128 y=64 z=64
-	long int sz[] = {512,64,64};
+	// if we use Re = 7500
+	//  long int sz[] = {1600,400,400};
+	long int sz[] = {128,64,64};
 	size_t szu[] = {(size_t)sz[0],(size_t)sz[1],(size_t)sz[2]};
 
 	periodicity<3> bc = {{PERIODIC,PERIODIC,PERIODIC}};
