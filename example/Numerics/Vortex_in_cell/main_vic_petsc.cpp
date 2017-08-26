@@ -122,7 +122,7 @@ float ringr1 = 1.0;
 float sigma = 1.0/3.523;
 // Reynold number (If you want to use 7500.0 you have to use a grid 1600x400x400)
 //float tgtre  = 7500.0;
-float tgtre = 10.0;
+float tgtre = 1000.0;
 // Noise factor for the ring vorticity on z
 float ringnz = 0.01;
 
@@ -250,15 +250,13 @@ void init_ring(grid_type & gr, const Box<3,float> & domain)
         float tx = (key.get(x)-2)*gr.spacing(x) + domain.getLow(x);
         float ty = (key.get(y)-2)*gr.spacing(y) + domain.getLow(y);
         float tz = (key.get(z)-2)*gr.spacing(z) + domain.getLow(z);
-        float theta1 = atan2((ty-2.5f),(tz-2.5f));
+        float theta1 = atan2((ty-domain.getHigh(1)/2.0f),(tz-domain.getHigh(2)/2.0f));
 
 
 
         float noise = 0.0f;
- //       for (int kk=1 ; kk < nk; kk++)
- //       	noise = noise + sin(kk*(theta1+2.0f*M_PI*ak[kk])) + cos(kk*(theta1+2.0f*M_PI*bk[kk]));
 
-        float rad1r  = sqrt((ty-2.5f)*(ty-2.5f) + (tz-2.5f)*(tz-2.5f)) - ringr1*(1.0f + ringnz * noise);
+        float rad1r  = sqrt((ty-domain.getHigh(1)/2.0f)*(ty-domain.getHigh(1)/2.0f) + (tz-domain.getHigh(2)/2.0f)*(tz-domain.getHigh(2)/2.0f)) - ringr1*(1.0f + ringnz * noise);
         float rad1t = tx - 1.0f;
         float rad1sq = rad1r*rad1r + rad1t*rad1t;
         float radstr = -exp(-rad1sq*rinv2)*rinv2*gamma/M_PI;
@@ -268,7 +266,7 @@ void init_ring(grid_type & gr, const Box<3,float> & domain)
 
         // kill the axis term
 
-        float rad1r_  = sqrt((ty-2.5f)*(ty-2.5f) + (tz-2.5f)*(tz-2.5f)) + ringr1*(1.0f + ringnz * noise);
+        float rad1r_  = sqrt((ty-domain.getHigh(1)/2.0f)*(ty-domain.getHigh(1)/2.0f) + (tz-domain.getHigh(2)/2.0f)*(tz-domain.getHigh(2)/2.0f)) + ringr1*(1.0f + ringnz * noise);
         float rad1sqTILDA = rad1sq*rinv2;
         radstr = exp(-rad1sq*rinv2)*rinv2*gamma/M_PI;
         gr.template get<vorticity>(key_d)[x] = 0.0f;
@@ -496,10 +494,12 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain, petsc
 		solver.setSolver(KSPBCGS);
 
 		// Set the absolute tolerance to determine that the method is converged
-		solver.setAbsTol(0.001);
+		solver.setAbsTol(0.0001);
 
 		// Set the maximum number of iterations
 		solver.setMaxIter(500);
+
+#ifdef USE_MULTIGRID
 
         solver.setPreconditioner(PCHYPRE_BOOMERAMG);
         solver.setPreconditionerAMG_nl(6);
@@ -508,6 +508,9 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain, petsc
         solver.setPreconditionerAMG_cycleType("V",0,4);
         solver.setPreconditionerAMG_coarsenNodalType(0);
         solver.setPreconditionerAMG_coarsen("HMIS");
+
+
+#endif
 
 		tm_solve.start();
 
@@ -855,9 +858,9 @@ template<typename grid> void calc_rhs(grid & g_vort, grid & g_vel, grid & g_dwp)
 
 	// calculate several pre-factors for the stencil finite
 	// difference
-	float fac1 = 2.0f*nu/(g_vort.spacing(0));
-	float fac2 = 2.0f*nu/(g_vort.spacing(1));
-	float fac3 = 2.0f*nu/(g_vort.spacing(2));
+	float fac1 = 2.0f*nu/(g_vort.spacing(0)*g_vort.spacing(0));
+	float fac2 = 2.0f*nu/(g_vort.spacing(1)*g_vort.spacing(1));
+	float fac3 = 2.0f*nu/(g_vort.spacing(2)*g_vort.spacing(2));
 
 	float fac4 = 0.5f/(g_vort.spacing(0));
 	float fac5 = 0.5f/(g_vort.spacing(1));
@@ -871,10 +874,10 @@ template<typename grid> void calc_rhs(grid & g_vort, grid & g_vel, grid & g_dwp)
 	{
 		auto key = it.get();
 
-		g_dwp.template get<rhs>(key)[x] = /*fac1*(g_vort.template get<vorticity>(key.move(x,1))[x]+g_vort.template get<vorticity>(key.move(x,-1))[x])+
+		g_dwp.template get<rhs>(key)[x] = fac1*(g_vort.template get<vorticity>(key.move(x,1))[x]+g_vort.template get<vorticity>(key.move(x,-1))[x])+
 				                          fac2*(g_vort.template get<vorticity>(key.move(y,1))[x]+g_vort.template get<vorticity>(key.move(y,-1))[x])+
 										  fac3*(g_vort.template get<vorticity>(key.move(z,1))[x]+g_vort.template get<vorticity>(key.move(z,-1))[x])-
-										  2.0f*(fac1+fac2+fac3)*g_vort.template get<vorticity>(key)[x]+*/
+										  2.0f*(fac1+fac2+fac3)*g_vort.template get<vorticity>(key)[x]+
 										  fac4*g_vort.template get<vorticity>(key)[x]*
 										  (g_vel.template get<velocity>(key.move(x,1))[x] - g_vel.template get<velocity>(key.move(x,-1))[x])+
 										  fac5*g_vort.template get<vorticity>(key)[y]*
@@ -882,10 +885,10 @@ template<typename grid> void calc_rhs(grid & g_vort, grid & g_vel, grid & g_dwp)
 										  fac6*g_vort.template get<vorticity>(key)[z]*
 										  (g_vel.template get<velocity>(key.move(z,1))[x] - g_vel.template get<velocity>(key.move(z,-1))[x]);
 
-		g_dwp.template get<rhs>(key)[y] = /*fac1*(g_vort.template get<vorticity>(key.move(x,1))[y]+g_vort.template get<vorticity>(key.move(x,-1))[y])+
+		g_dwp.template get<rhs>(key)[y] = fac1*(g_vort.template get<vorticity>(key.move(x,1))[y]+g_vort.template get<vorticity>(key.move(x,-1))[y])+
 				                          fac2*(g_vort.template get<vorticity>(key.move(y,1))[y]+g_vort.template get<vorticity>(key.move(y,-1))[y])+
 										  fac3*(g_vort.template get<vorticity>(key.move(z,1))[y]+g_vort.template get<vorticity>(key.move(z,-1))[y])-
-										  2.0f*(fac1+fac2+fac3)*g_vort.template get<vorticity>(key)[y]+*/
+										  2.0f*(fac1+fac2+fac3)*g_vort.template get<vorticity>(key)[y]+
 										  fac4*g_vort.template get<vorticity>(key)[x]*
 										  (g_vel.template get<velocity>(key.move(x,1))[y] - g_vel.template get<velocity>(key.move(x,-1))[y])+
 										  fac5*g_vort.template get<vorticity>(key)[y]*
@@ -894,10 +897,10 @@ template<typename grid> void calc_rhs(grid & g_vort, grid & g_vel, grid & g_dwp)
 										  (g_vel.template get<velocity>(key.move(z,1))[y] - g_vel.template get<velocity>(key.move(z,-1))[y]);
 
 
-		g_dwp.template get<rhs>(key)[z] = /*fac1*(g_vort.template get<vorticity>(key.move(x,1))[z]+g_vort.template get<vorticity>(key.move(x,-1))[z])+
+		g_dwp.template get<rhs>(key)[z] = fac1*(g_vort.template get<vorticity>(key.move(x,1))[z]+g_vort.template get<vorticity>(key.move(x,-1))[z])+
 				                          fac2*(g_vort.template get<vorticity>(key.move(y,1))[z]+g_vort.template get<vorticity>(key.move(y,-1))[z])+
 										  fac3*(g_vort.template get<vorticity>(key.move(z,1))[z]+g_vort.template get<vorticity>(key.move(z,-1))[z])-
-										  2.0f*(fac1+fac2+fac3)*g_vort.template get<vorticity>(key)[z]+*/
+										  2.0f*(fac1+fac2+fac3)*g_vort.template get<vorticity>(key)[z]+
 										  fac4*g_vort.template get<vorticity>(key)[x]*
 										  (g_vel.template get<velocity>(key.move(x,1))[z] - g_vel.template get<velocity>(key.move(x,-1))[z])+
 										  fac5*g_vort.template get<vorticity>(key)[y]*
@@ -1169,7 +1172,7 @@ int main(int argc, char* argv[])
 	// Domain, a rectangle
 	// For the grid 1600x400x400 use
 	// Box<3,float> domain({0.0,0.0,0.0},{22.0,5.57,5.57});
-	Box<3,float> domain({0.0,0.0,0.0},{11.0,5.57,5.57});
+	Box<3,float> domain({0.0,0.0,0.0},{3.57,3.57,3.57});
 
 	// Ghost (Not important in this case but required)
 	Ghost<3,long int> g(2);
@@ -1177,7 +1180,7 @@ int main(int argc, char* argv[])
 	// Grid points on x=128 y=64 z=64
 	// if we use Re = 7500
 	//  long int sz[] = {1600,400,400};
-	long int sz[] = {128,64,64};
+	long int sz[] = {96,96,96};
 	size_t szu[] = {(size_t)sz[0],(size_t)sz[1],(size_t)sz[2]};
 
 	periodicity<3> bc = {{PERIODIC,PERIODIC,PERIODIC}};
