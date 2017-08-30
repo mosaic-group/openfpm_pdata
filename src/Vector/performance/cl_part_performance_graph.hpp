@@ -35,10 +35,27 @@ template<unsigned int dim> void cl_part_time(GoogleChart & cg,
 	openfpm::vector<std::string> names;
 	openfpm::vector<std::string> gnames;
 
-	yp_mean.add(cl_time_rand_mean);
-	yp_mean.add(cl_time_hilb_mean);
-	yp_dev.add(cl_time_rand_dev);
-	yp_dev.add(cl_time_hilb_dev);
+	yp_mean.resize(cl_time_rand_mean.size());
+	yp_dev.resize(cl_time_rand_dev.size());
+	for (size_t i = 0 ; i < yp_mean.size() ; i++)
+	{
+		yp_mean.get(i).resize(cl_time_rand_mean.get(i).size());
+		yp_dev.get(i).resize(cl_time_rand_dev.get(i).size());
+
+		for (size_t j = 0 ; j < yp_mean.get(i).size() ; j++)
+		{
+			yp_mean.get(i).get(j).resize(1+cl_time_hilb_mean.get(i).get(j).size());
+			yp_dev.get(i).get(j).resize(1+cl_time_hilb_dev.get(i).get(j).size());
+
+			for (size_t k = 0 ; k < cl_time_hilb_mean.get(i).get(j).size() ; k++)
+			{
+				yp_mean.get(i).get(j).get(k) = cl_time_hilb_mean.get(i).get(j).get(k);
+				yp_dev.get(i).get(j).get(k) = cl_time_hilb_dev.get(i).get(j).get(k);
+			}
+			yp_mean.get(i).get(j).get(cl_time_hilb_mean.get(i).get(j).size()) = cl_time_rand_mean.get(i).get(j);
+			yp_dev.get(i).get(j).get(cl_time_hilb_mean.get(i).get(j).size()) = cl_time_rand_mean.get(i).get(j);
+		}
+	}
 
 	names.add("No-order");
 	for (size_t i = 0 ; i < cl_orders.size() ; i++)

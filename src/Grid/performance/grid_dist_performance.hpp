@@ -14,6 +14,7 @@
 #include "interpolation/mp4_kernel.hpp"
 
 #define GRID_ITERATOR_TESTS  30
+#define GRID_INTERPOLATION_TESTS  30
 
 // Vectors to store the data for 3D
 openfpm::vector<double> time_iterator_normal_mean;
@@ -22,7 +23,10 @@ openfpm::vector<double> time_iterator_stencil_mean;
 openfpm::vector<double> time_iterator_stencil_dev;
 openfpm::vector<double> time_inte_p2m_mean;
 openfpm::vector<double> time_inte_m2p_mean;
-openfpm::vector<size_t> nk_grid;
+openfpm::vector<double> time_inte_p2m_dev;
+openfpm::vector<double> time_inte_m2p_dev;
+openfpm::vector<size_t> nk_grid_st;
+openfpm::vector<size_t> nk_grid_int;
 
 BOOST_AUTO_TEST_SUITE( grid_iterator_performance_test )
 
@@ -36,7 +40,9 @@ constexpr int z = 2;
  */
 void grid_interpolation_benchmark(openfpm::vector<size_t> & nk_grid,
 		                            openfpm::vector<double> & time_interpolation_p2m_mean,
-									openfpm::vector<double> & time_interpolation_m2p_mean)
+									openfpm::vector<double> & time_interpolation_m2p_mean,
+									openfpm::vector<double> & time_interpolation_p2m_dev,
+									openfpm::vector<double> & time_interpolation_m2p_dev)
 {
 	for (size_t k = 0 ; k < nk_grid.size() ; k++)
 	{
@@ -72,25 +78,46 @@ void grid_interpolation_benchmark(openfpm::vector<size_t> & nk_grid,
 
 		vd.map();
 
-		interpolate<decltype(vd),decltype(gd),mp4_kernel<float>> inte(vd,gd);
+		double mean;
+		double dev;
+		openfpm::vector<double> measures;
+		for (size_t j = 0 ; j < GRID_INTERPOLATION_TESTS ; j++)
+		{
 
-		timer tstl;
-		tstl.start();
+			interpolate<decltype(vd),decltype(gd),mp4_kernel<float>> inte(vd,gd);
 
-		inte.p2m<0,0>(vd,gd);
+			timer tstl;
+			tstl.start();
 
-		tstl.stop();
-		std::cout << "Time particles to mesh " << tstl.getwct() << std::endl;
+			inte.p2m<0,0>(vd,gd);
 
-		timer tstl2;
-		tstl2.start();
+			tstl.stop();
+			measures.add(tstl.getwct());
+		}
+		standard_deviation(measures,mean,dev);
+		time_interpolation_p2m_mean.add(mean);
+		time_interpolation_p2m_dev.add(dev);
 
-		inte.m2p<0,0>(gd,vd);
+		std::cout << "Time particles to mesh " << time_interpolation_p2m_mean.last() << std::endl;
 
-		tstl2.stop();
-		std::cout << "Time mesh to particles " << tstl2.getwct() << std::endl;
+		for (size_t j = 0 ; j < GRID_INTERPOLATION_TESTS ; j++)
+		{
 
-		time_interpolation_m2p_mean.add(tstl2.getwct());
+			interpolate<decltype(vd),decltype(gd),mp4_kernel<float>> inte(vd,gd);
+
+			timer tstl;
+			tstl.start();
+
+			inte.m2p<0,0>(gd,vd);
+
+			tstl.stop();
+			measures.add(tstl.getwct());
+		}
+		standard_deviation(measures,mean,dev);
+		time_interpolation_m2p_mean.add(mean);
+		time_interpolation_m2p_dev.add(dev);
+
+		std::cout << "Time mesh to particles " << time_interpolation_m2p_mean.last() << std::endl;
 	}
 }
 
@@ -163,7 +190,9 @@ double grid_iterator_benchmark_norm(grid_dist_id<3, float, aggregate<long int>, 
  */
 template<unsigned int dim> void grid_iterator_benchmark(openfpm::vector<size_t> & nk_grid,
 														   openfpm::vector<double> & time_iterator_normal_mean,
-														   openfpm::vector<double> & time_iterator_stencil_mean)
+														   openfpm::vector<double> & time_iterator_stencil_mean,
+														   openfpm::vector<double> & time_iterator_normal_dev,
+														   openfpm::vector<double> & time_iterator_stencil_dev)
 {
 	std::string str("Testing " + std::to_string(dim) + "D grid iterator stencil and normal");
 	print_test_v(str);
@@ -263,16 +292,36 @@ void grid_iterator_performance_write_report(GoogleChart & cg,
 	openfpm::vector<std::string> names;
 	openfpm::vector<std::string> gnames;
 
-	yp_mean.add();
+/*	yp_mean.add();
 	yp_dev.add();
 	yp_mean.last().add(time_iterator_stencil_mean);
 	yp_mean.last().add(time_iterator_normal_mean);
 	yp_dev.last().add(time_iterator_stencil_dev);
-	yp_dev.last().add(time_iterator_normal_dev);
+	yp_dev.last().add(time_iterator_normal_dev);*/
 
-	names.add("Grid iterators performance on stencil");
-	gnames.add("Stencil specialized iterator");
-	gnames.add("Normal iterator");
+	yp_mean.resize(1);
+	yp_dev.resize(1);
+	for (size_t i = 0 ; i < yp_mean.size() ; i++)
+	{
+		yp_mean.get(i).resize(time_iterator_stencil_mean.size());
+		yp_dev.get(i).resize(time_iterator_stencil_dev.size());
+
+		for (size_t j = 0 ; j < yp_mean.get(i).size() ; j++)
+		{
+			yp_mean.get(i).get(j).resize(2);
+			yp_dev.get(i).get(j).resize(2);
+
+			yp_mean.get(i).get(j).get(0) = time_iterator_stencil_mean.get(j);
+			yp_mean.get(i).get(j).get(1) = time_iterator_normal_mean.get(j);
+
+			yp_dev.get(i).get(j).get(0) = time_iterator_stencil_dev.get(j);
+			yp_dev.get(i).get(j).get(1) = time_iterator_normal_dev.get(j);
+		}
+	}
+
+	gnames.add("Grid iterators performance for stencil");
+	names.add("Stencil specialized iterator");
+	names.add("Normal iterator");
 
 	std::string y_string = std::string("Time seconds");
 	std::string x_string = std::string("Number of grid poins");
@@ -292,30 +341,105 @@ void grid_iterator_performance_write_report(GoogleChart & cg,
 							 y_string);
 }
 
+/*! \brief Function for verlet performance report
+ *
+ */
+template<unsigned int dim>
+void grid_m2p_performance_write_report(GoogleChart & cg,
+											openfpm::vector<size_t> & nk_grid,
+											openfpm::vector<double> & time_m2p_mean,
+											openfpm::vector<double> & time_m2p_dev)
+{
+	std::string file_mean(test_dir);
+	std::string file_var(test_dir);
+	file_mean += std::string("/openfpm_pdata/grid_m2p_mean_" + std::to_string(dim) + std::string("_ref"));
+	file_var += std::string("/openfpm_pdata/grid_m2p_dev_" + std::to_string(dim) + std::string("_ref"));
+
+	std::string file_mean_save = std::string("grid_m2p_mean_" + std::to_string(dim) + std::to_string("_ref"));
+	std::string file_var_save = std::string("grid_m2p_dev_" + std::to_string(dim) + std::to_string("_ref"));
+
+	openfpm::vector<size_t> xp = nk_grid;
+
+	openfpm::vector<openfpm::vector<openfpm::vector<double>>> yp_mean;
+	openfpm::vector<openfpm::vector<openfpm::vector<double>>> yp_dev;
+
+	openfpm::vector<std::string> names;
+	openfpm::vector<std::string> gnames;
+
+/*	yp_mean.add();
+	yp_dev.add();
+	yp_mean.last().add(time_iterator_stencil_mean);
+	yp_mean.last().add(time_iterator_normal_mean);
+	yp_dev.last().add(time_iterator_stencil_dev);
+	yp_dev.last().add(time_iterator_normal_dev);*/
+
+	yp_mean.resize(1);
+	yp_dev.resize(1);
+	for (size_t i = 0 ; i < yp_mean.size() ; i++)
+	{
+		yp_mean.get(i).resize(time_iterator_stencil_mean.size());
+		yp_dev.get(i).resize(time_iterator_stencil_dev.size());
+
+		for (size_t j = 0 ; j < yp_mean.get(i).size() ; j++)
+		{
+			yp_mean.get(i).get(j).resize(1);
+			yp_dev.get(i).get(j).resize(1);
+
+			yp_mean.get(i).get(j).get(0) = time_m2p_mean.get(j);
+			yp_dev.get(i).get(j).get(0) = time_m2p_dev.get(j);
+		}
+	}
+
+	gnames.add("Grid m2p performance");
+	names.add("Mesh to particle performance");
+
+	std::string y_string = std::string("Time seconds");
+	std::string x_string = std::string("Number of grid poins");
+
+
+	StandardPerformanceGraph(file_mean,
+			                 file_var,
+							 file_mean_save,
+							 file_var_save,
+							 cg,
+							 xp,
+							 yp_mean,
+							 yp_dev,
+							 names,
+							 gnames,
+							 x_string,
+							 y_string);
+
+}
+
 
 
 BOOST_AUTO_TEST_CASE( grid_interpolation_benchmark_test )
 {
-	nk_grid.add(96);
-	nk_grid.add(128);
-	nk_grid.add(192);
+	nk_grid_int.add(96);
+	nk_grid_int.add(128);
+	nk_grid_int.add(192);
 
 	//Benchmark test for 2D and 3D
-	grid_interpolation_benchmark(nk_grid,
+	grid_interpolation_benchmark(nk_grid_int,
 			                time_inte_p2m_mean,
-							time_inte_m2p_mean);
+							time_inte_m2p_mean,
+							time_inte_p2m_dev,
+							time_inte_m2p_dev);
 }
 
 BOOST_AUTO_TEST_CASE( grid_iterator_benchmark_test )
 {
-	nk_grid.add(96);
-	nk_grid.add(128);
-	nk_grid.add(192);
+	nk_grid_st.add(96);
+	nk_grid_st.add(128);
+	nk_grid_st.add(192);
 
 	//Benchmark test for 2D and 3D
-	grid_iterator_benchmark<3>(nk_grid,
+	grid_iterator_benchmark<3>(nk_grid_st,
 			                time_iterator_normal_mean,
-							time_iterator_stencil_mean);
+							time_iterator_stencil_mean,
+							time_iterator_normal_dev,
+							time_iterator_stencil_dev);
 }
 
 
@@ -325,11 +449,17 @@ BOOST_AUTO_TEST_CASE(grid_iterator_performance_write_report_final)
 
 	//Write report for 2D and 3D
 	grid_iterator_performance_write_report<3>(cg,
-            								  nk_grid,
+            								  nk_grid_st,
 											  time_iterator_stencil_mean,
 											  time_iterator_stencil_dev,
 											  time_iterator_normal_mean,
 											  time_iterator_normal_dev);
+
+
+	grid_m2p_performance_write_report<3>(cg,
+										nk_grid_int,
+										time_inte_m2p_mean,
+										time_inte_m2p_dev);
 
 	if (create_vcluster().getProcessUnitID() == 0)
 	{

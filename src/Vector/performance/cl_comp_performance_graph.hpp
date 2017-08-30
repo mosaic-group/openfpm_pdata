@@ -50,11 +50,25 @@ template<unsigned int dim> void cl_comp_normal_vs_hilbert_force_time(GoogleChart
 	openfpm::vector<std::string> names;
 	openfpm::vector<std::string> gnames;
 
-	yp_mean.add(cl_time_rand_mean);
-	yp_mean.add(cl_time_hilb_mean);
+	yp_mean.resize(cl_time_rand_mean.size());
+	yp_dev.resize(cl_time_rand_dev.size());
+	for (size_t i = 0 ; i < yp_mean.size() ; i++)
+	{
+		yp_mean.get(i).resize(cl_time_rand_mean.get(i).size());
+		yp_dev.get(i).resize(cl_time_rand_dev.get(i).size());
 
-	yp_dev.add(cl_time_rand_dev);
-	yp_dev.add(cl_time_hilb_dev);
+		for (size_t j = 0 ; j < yp_mean.get(i).size() ; j++)
+		{
+			yp_mean.get(i).get(j).resize(2);
+			yp_dev.get(i).get(j).resize(2);
+
+			yp_mean.get(i).get(j).get(0) = cl_time_hilb_mean.get(i).get(j);
+			yp_dev.get(i).get(j).get(0) = cl_time_hilb_dev.get(i).get(j);
+
+			yp_mean.get(i).get(j).get(1) = cl_time_rand_mean.get(i).get(j);
+			yp_dev.get(i).get(j).get(1) = cl_time_rand_mean.get(i).get(j);
+		}
+	}
 
 	names.add("Random cell list");
 	names.add("Hilbert cell list");
@@ -120,11 +134,25 @@ template<unsigned int dim> void cl_comp_normal_vs_hilbert_create_time(GoogleChar
 	openfpm::vector<std::string> names;
 	openfpm::vector<std::string> gnames;
 
-	yp_mean.add(cl_time_create_rand_mean);
-	yp_mean.add(cl_time_create_hilb_mean);
+	yp_mean.resize(cl_time_create_rand_mean.size());
+	yp_dev.resize(cl_time_create_rand_dev.size());
+	for (size_t i = 0 ; i < yp_mean.size() ; i++)
+	{
+		yp_mean.get(i).resize(cl_time_create_rand_mean.get(i).size());
+		yp_dev.get(i).resize(cl_time_create_rand_dev.get(i).size());
 
-	yp_dev.add(cl_time_create_rand_dev);
-	yp_dev.add(cl_time_create_hilb_dev);
+		for (size_t j = 0 ; j < yp_mean.get(i).size() ; j++)
+		{
+			yp_mean.get(i).get(j).resize(2);
+			yp_dev.get(i).get(j).resize(2);
+
+			yp_mean.get(i).get(j).get(0) = cl_time_create_hilb_mean.get(i).get(j);
+			yp_dev.get(i).get(j).get(0) = cl_time_create_hilb_dev.get(i).get(j);
+
+			yp_mean.get(i).get(j).get(1) = cl_time_create_rand_mean.get(i).get(j);
+			yp_dev.get(i).get(j).get(1) = cl_time_create_rand_mean.get(i).get(j);
+		}
+	}
 
 	names.add("Random cell list");
 	names.add("Hilbert cell list");

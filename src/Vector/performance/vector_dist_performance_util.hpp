@@ -322,9 +322,6 @@ void StandardPerformanceGraph(std::string file_mean,
 	openfpm::vector<openfpm::vector<openfpm::vector<double>>> y2_dev;
 	openfpm::vector<std::string> yn2;
 
-	if (names.size() != yp_mean.size())
-		std::cerr << __FILE__ << ":" << __LINE__ << ", Error names.size() != yp_mean.size() " << names.size() << " != " << yp_mean.size() << std::endl;
-
 	if (names.size() == 0)
 		return;
 
@@ -334,66 +331,45 @@ void StandardPerformanceGraph(std::string file_mean,
 	for (size_t i = 0; i < xp.size() ; i++)
 		x.add(xp.get(i));
 
-	// We are assuming that yp_mean.get(g).size() are equal for each g
-	y2.resize(yp_mean.get(0).size());
-	y2_dev.resize(yp_mean.get(0).size());
-	for (size_t r = 0; r < yp_mean.get(0).size() ; r++)
-	{
-		y2.get(r).resize(yp_mean.get(0).get(r).size());
-		y2_dev.get(r).resize(yp_mean.get(0).get(r).size());
-		for (size_t k = 0; k < yp_mean.get(0).get(r).size(); k++)
-		{
-			// Number of graph points
-			for (size_t g = 0 ; g < yp_mean.size() ; g++)
-			{
-				// Put a total time
-				y2.get(r).get(k).add(yp_mean.get(g).get(r).get(k));
-				y2.get(r).get(k).add(yp_mean.get(g).get(r).get(k));
+	yp_mean.save(file_mean_save);
+	yp_dev.save(file_var_save);
 
-				y2_dev.get(r).get(k).add(yp_dev.get(g).get(r).get(k));
-				y2_dev.get(r).get(k).add(yp_dev.get(g).get(r).get(k));
-			}
-		}
-	}
-
-	y2.save(file_mean_save);
-	y2_dev.save(file_var_save);
-
-	if (y_ref_mean.size() != 0)
+	if (y_ref_mean.size() != 0 && yp_mean.size() != 0 && yp_mean.get(0).size() != 0)
 	{
 		// We reconstruct y and yn
 
 		y2.clear();
 		yn2.clear();
 
-		for (size_t i = 0 ; i < yp_mean.size() ; i++)
+		for (size_t i = 0 ; i < yp_mean.get(0).get(0).size() ; i++)
 		{
 			yn2.add(names.get(i));
 			yn2.add("interval");
 			yn2.add("interval");
 		}
 
-
-		y2.resize(yp_mean.get(0).size());
-		for (size_t r = 0; r < yp_mean.get(0).size(); r++)
+		y2.resize(yp_mean.size());
+		for (size_t r = 0; r < yp_mean.size(); r++)
 		{
 			int warning_level = -1;
 
-			y2.get(r).resize(yp_mean.get(0).get(r).size());
-			for (size_t k = 0; k < yp_mean.get(0).get(r).size(); k++)
+			y2.get(r).resize(yp_mean.get(r).size());
+			for (size_t k = 0; k < yp_mean.get(r).size(); k++)
 			{
 
 				// Number of graph points
-				for (size_t g = 0 ; g < yp_mean.size() ; g++)
+				for (size_t g = 0 ; g < yp_mean.get(r).get(k).size() ; g++)
 				{
 					// Time for construction hilbert and random
-					y2.get(r).get(k).add(yp_mean.get(g).get(r).get(k));
-					y2.get(r).get(k).add(y_ref_mean.get(r).get(k).get(0) - 3.0*y_ref_dev.get(r).get(k).get(g));
-					y2.get(r).get(k).add(y_ref_mean.get(r).get(k).get(0) + 3.0*y_ref_dev.get(r).get(k).get(g));
+					y2.get(r).get(k).add(yp_mean.get(r).get(k).get(g));
+					y2.get(r).get(k).add(y_ref_mean.get(r).get(k).get(g) - 3.0*y_ref_dev.get(r).get(k).get(g));
+					y2.get(r).get(k).add(y_ref_mean.get(r).get(k).get(g) + 3.0*y_ref_dev.get(r).get(k).get(g));
 
-					warning_set(warning_level,yp_mean.get(g).get(r).get(k),y_ref_mean.get(r).get(k).get(g),y_ref_dev.get(r).get(k).get(g));
+					warning_set(warning_level,yp_mean.get(r).get(k).get(g),y_ref_mean.get(r).get(k).get(g),y_ref_dev.get(r).get(k).get(g));
 				}
 			}
+
+			warning_vlevel.add(warning_level);
 		}
 	}
 	else
@@ -410,7 +386,7 @@ void StandardPerformanceGraph(std::string file_mean,
 	options2.xAxis = std::string(x_string);
 	options2.lineWidth = 4;
 
-	for (size_t i = 0; i < yp_mean.get(0).size() ; i++)
+	for (size_t i = 0; i < y2.size() ; i++)
 	{
 		std::string chart_area;
 		if (warning_vlevel.size() != 0)

@@ -265,8 +265,22 @@ template<unsigned int dim> void vd_verlet_performance_write_report(GoogleChart &
 	openfpm::vector<std::string> names;
 	openfpm::vector<std::string> gnames;
 
-	yp_mean.add(time_force_mean);
-	yp_dev.add(time_force_dev);
+	yp_mean.resize(time_force_mean.size());
+	yp_dev.resize(time_force_dev.size());
+	for (size_t i = 0 ; i < yp_mean.size() ; i++)
+	{
+		yp_mean.get(i).resize(time_force_mean.get(i).size());
+		yp_dev.get(i).resize(time_force_dev.get(i).size());
+
+		for (size_t j = 0 ; j < yp_mean.get(i).size() ; j++)
+		{
+			yp_mean.get(i).get(j).resize(1);
+			yp_dev.get(i).get(j).resize(1);
+
+			yp_mean.get(i).get(j).get(0) = time_force_mean.get(i).get(j);
+			yp_dev.get(i).get(j).get(0) = time_force_dev.get(i).get(j);
+		}
+	}
 
 	names.add("Force verlet");
 
@@ -311,8 +325,22 @@ template<unsigned int dim> void vd_verlet_performance_write_report(GoogleChart &
 	openfpm::vector<std::string> names;
 	openfpm::vector<std::string> gnames;
 
-	yp_mean.add(time_force_mean);
-	yp_dev.add(time_force_dev);
+	yp_mean.resize(time_create_mean.size());
+	yp_dev.resize(time_create_dev.size());
+	for (size_t i = 0 ; i < yp_mean.size() ; i++)
+	{
+		yp_mean.get(i).resize(time_create_mean.get(i).size());
+		yp_dev.get(i).resize(time_create_dev.get(i).size());
+
+		for (size_t j = 0 ; j < yp_mean.get(i).size() ; j++)
+		{
+			yp_mean.get(i).get(j).resize(1);
+			yp_dev.get(i).get(j).resize(1);
+
+			yp_mean.get(i).get(j).get(0) = time_create_mean.get(i).get(j);
+			yp_dev.get(i).get(j).get(0) = time_create_dev.get(i).get(j);
+		}
+	}
 
 	names.add("Create verlet");
 

@@ -5,6 +5,19 @@
  * In this example we solve the Navier-Stokes equation in the vortex formulation in 3D
  * for an incompressible fluid. (bold symbols are vectorial quantity)
  *
+ * \htmlonly
+ * <a href="#" onclick="hide_show('vector-video-1')" >Video 1</a>
+ * <div style="display:none" id="vector-video-1">
+ * <video id="vid1" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/3_Vortex_in_cell/vortex_in_cell.mp4"></video>
+ * <script>video_anim('vid1',100,230)</script>
+ * </div>
+ * <a href="#" onclick="hide_show('vector-video-2')" >Video 2</a>
+ * <div style="display:none" id="vector-video-2">
+ * <video id="vid2" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/3_Vortex_in_cell/vortex_in_cell_iso.mp4"></video>
+ * <script>video_anim('vid2',21,1590)</script>
+ * </div>
+ * \endhtmlonly
+ *
  * ## Numerical method ## {#num_vic_mt}
  *
  * In this code we solve the Navier-stokes equation for incompressible fluid in the
@@ -15,9 +28,7 @@
  * \f$  \frac{\displaystyle D \boldsymbol w}{\displaystyle dt} = ( \boldsymbol w \cdot \vec \nabla) \boldsymbol u + \nu \nabla^{2} \boldsymbol w \f$    (5)
  *
  * Where \f$w\f$ is the vorticity and \f$u\f$ is the velocity of the fluid.
- * With high Reynold number \f$Re = \frac{uL}{\nu}\f$ and the term \f$uL\f$ significantly
- * smaller than the reynold number we have that \f$\nu\f$ is small and the term \f$\nu \nabla^{2} w\f$ is
- * negligible. The algorithm can be expressed with the following pseudo code.
+ * With Reynold number defined as \f$Re = \frac{uL}{\nu}\f$. The algorithm can be expressed with the following pseudo code.
  *
  * \verbatim
 
@@ -48,7 +59,7 @@
 	3) Initialize particles on the same position as the grid or remesh
 
 	while (t < t_end) do
-		4) 4) Interpolate vorticity from the particles to mesh
+		4) Interpolate vorticity from the particles to mesh
 		5) calculate velocity u from the vorticity w
 		6) calculate the right-hand-side on grid and interpolate on particles
 		7) interpolate velocity u to particles
@@ -122,17 +133,13 @@ float ringr1 = 1.0;
 float sigma = 1.0/3.523;
 // Reynold number (If you want to use 7500.0 you have to use a grid 1600x400x400)
 //float tgtre  = 7500.0;
-float tgtre = 1000.0;
-// Noise factor for the ring vorticity on z
-float ringnz = 0.01;
-
-float dcgamma = 4.32334181e-01;
+float tgtre = 3000.0;
 
 // Kinematic viscosity
 float nu = 1.0/tgtre;
 
 // Time step
-// float dt = 0.0025
+// float dt = 0.0025 for Re 7500
 float dt = 0.0125;
 
 // All the properties by index
@@ -253,10 +260,7 @@ void init_ring(grid_type & gr, const Box<3,float> & domain)
         float theta1 = atan2((ty-domain.getHigh(1)/2.0f),(tz-domain.getHigh(2)/2.0f));
 
 
-
-        float noise = 0.0f;
-
-        float rad1r  = sqrt((ty-domain.getHigh(1)/2.0f)*(ty-domain.getHigh(1)/2.0f) + (tz-domain.getHigh(2)/2.0f)*(tz-domain.getHigh(2)/2.0f)) - ringr1*(1.0f + ringnz * noise);
+        float rad1r  = sqrt((ty-domain.getHigh(1)/2.0f)*(ty-domain.getHigh(1)/2.0f) + (tz-domain.getHigh(2)/2.0f)*(tz-domain.getHigh(2)/2.0f)) - ringr1;
         float rad1t = tx - 1.0f;
         float rad1sq = rad1r*rad1r + rad1t*rad1t;
         float radstr = -exp(-rad1sq*rinv2)*rinv2*gamma/M_PI;
@@ -266,7 +270,7 @@ void init_ring(grid_type & gr, const Box<3,float> & domain)
 
         // kill the axis term
 
-        float rad1r_  = sqrt((ty-domain.getHigh(1)/2.0f)*(ty-domain.getHigh(1)/2.0f) + (tz-domain.getHigh(2)/2.0f)*(tz-domain.getHigh(2)/2.0f)) + ringr1*(1.0f + ringnz * noise);
+        float rad1r_  = sqrt((ty-domain.getHigh(1)/2.0f)*(ty-domain.getHigh(1)/2.0f) + (tz-domain.getHigh(2)/2.0f)*(tz-domain.getHigh(2)/2.0f)) + ringr1;
         float rad1sqTILDA = rad1sq*rinv2;
         radstr = exp(-rad1sq*rinv2)*rinv2*gamma/M_PI;
         gr.template get<vorticity>(key_d)[x] = 0.0f;
@@ -283,22 +287,31 @@ void init_ring(grid_type & gr, const Box<3,float> & domain)
 
 // Specification of the poisson equation for the helmotz-hodge projection
 // 3D (dims = 3). The field is a scalar value (nvar = 1), bournary are periodic
-// type of the the space is float. Final grid that will store \phi, the result (grid_dist_id<.....>)
-// The other indicate which kind of Matrix to use to construct the linear system and
+// type of the the space is float. The grid type that store \psi
+// The others indicate which kind of Matrix to use to construct the linear system and
 // which kind of vector to construct for the right hand side. Here we use a PETSC Sparse Matrix
 // and PETSC vector. NORMAL_GRID indicate that is a standard grid (non-staggered)
 struct poisson_nn_helm
 {
+		//! 3D Stystem
         static const unsigned int dims = 3;
+        //! We are solving for \psi that is a scalar
         static const unsigned int nvar = 1;
+        //! Boundary conditions
         static const bool boundary[];
+        //! type of the spatial coordinates
         typedef float stype;
+        //! grid that store \psi
         typedef grid_dist_id<3,float,aggregate<float>> b_grid;
+        //! Sparse matrix used to sove the linear system (we use PETSC)
         typedef SparseMatrix<double,int,PETSC_BASE> SparseMatrix_type;
+        //! Vector to solve the system (PETSC)
         typedef Vector<double,PETSC_BASE> Vector_type;
+        //! It is a normal grid
         static const int grid_type = NORMAL_GRID;
 };
 
+//! boundary conditions are PERIODIC
 const bool poisson_nn_helm::boundary[] = {PERIODIC,PERIODIC,PERIODIC};
 
 //! \cond [poisson_syseq] \endcond
