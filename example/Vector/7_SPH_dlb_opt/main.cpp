@@ -1117,7 +1117,7 @@ int main(int argc, char* argv[])
 		if (write < t*100)
 		{
 			vd.deleteGhost();
-			vd.write("Geometry",write,VTK_WRITER | FORMAT_BINARY);
+			vd.write_frame("Geometry",write,VTK_WRITER | FORMAT_BINARY);
 			vd.ghost_get<type,rho,Pressure,velocity>(SKIP_LABELLING);
 			write++;
 
