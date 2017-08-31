@@ -36,16 +36,18 @@ else
   echo "ZLIB is already installed"
 fi
 
+### 1.8.19 does not compile on CYGWIN
 wget http://ppmcore.mpi-cbg.de/upload/hdf5-1.8.19.tar.gz
 tar -xf hdf5-1.8.19.tar.gz
 cd hdf5-1.8.19
 
 if [ x"$plaform" != "cygwin" ]; then
         CC=mpicc ./configure --with-zlib=$1/ZLIB --enable-parallel --prefix=$1/HDF5
+	make -j $2
 else
         CC=mpicc ./configure --enable-parallel --prefix=$1/HDF5
+	make CFLAGS=-D_POSIX_C_SOURCE -j $2
 fi
-make -j $2
 mkdir $1/HDF5
 make install
 echo 1 > $1/HDF5/version
