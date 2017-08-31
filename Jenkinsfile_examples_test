@@ -13,7 +13,7 @@ parallel (
 
          stage ('run_example_gin')
          {
-          sh "source $HOME/openfpm_vars_master && cd example && make"
+          sh "export PATH=\"/usr/local/binutils/bin/:$PATH\" && source $HOME/openfpm_vars_master && cd example && make"
          }
        }},
 
