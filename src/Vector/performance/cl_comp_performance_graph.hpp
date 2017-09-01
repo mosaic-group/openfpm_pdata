@@ -70,8 +70,8 @@ template<unsigned int dim> void cl_comp_normal_vs_hilbert_force_time(GoogleChart
 		}
 	}
 
-	names.add("Random cell list");
 	names.add("Hilbert cell list");
+	names.add("Random cell list");
 
 	for (size_t i = 0 ; i < cl_r_cutoff.size() ; i++)
 		gnames.add("Cell-list performance, cut-off radius: " + std::to_string(cl_r_cutoff.get(i)));
