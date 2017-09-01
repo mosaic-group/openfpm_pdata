@@ -557,7 +557,7 @@ public:
 	 * \param tol tolerance
 	 *
 	 */
-	const void setDistTol(real_t tol)
+	void setDistTol(real_t tol)
 	{
 		dist_tol = tol;
 	}
