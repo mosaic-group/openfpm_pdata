@@ -50,4 +50,8 @@ else
 fi
 mkdir $1/HDF5
 make install
+if [ $? -ne 0 ]; then
+    echo "HDF5 error installing"
+    exit 0
+fi
 echo 1 > $1/HDF5/version
