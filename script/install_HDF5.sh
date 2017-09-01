@@ -41,7 +41,7 @@ wget http://ppmcore.mpi-cbg.de/upload/hdf5-1.8.19.tar.gz
 tar -xf hdf5-1.8.19.tar.gz
 cd hdf5-1.8.19
 
-if [ x"$plaform" != "cygwin" ]; then
+if [ x"$plaform" != x"cygwin" ]; then
         CC=mpicc ./configure --with-zlib=$1/ZLIB --enable-parallel --prefix=$1/HDF5
 	make -j $2
 else
