@@ -32,7 +32,6 @@ if [ "$2" == "taurus" ]; then
 
     echo "3" > input_install
     echo "1" >> input_install
-    echo "1" >> input_install
     echo "24" >> input_install
     echo "y" >> input_install
     echo "1" >> input_install
