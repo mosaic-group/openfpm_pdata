@@ -83,7 +83,8 @@ template<unsigned int dim> void cl_part_time(GoogleChart & cg,
 							 names,
 							 gnames,
 							 x_string,
-							 y_string);
+							 y_string,
+							 false);
 }
 
 template<unsigned int dim> void cl_part_reorder_time(GoogleChart & cg,

@@ -94,7 +94,8 @@ template<unsigned int dim> void cl_comp_normal_vs_hilbert_force_time(GoogleChart
 							 names,
 							 gnames,
 							 x_string,
-							 y_string);
+							 y_string,
+							 true);
 }
 
 /*! \brief Output the graph normal cell-list vs Hilbert cell-list (Total time)
@@ -178,7 +179,8 @@ template<unsigned int dim> void cl_comp_normal_vs_hilbert_create_time(GoogleChar
 							 names,
 							 gnames,
 							 x_string,
-							 y_string);
+							 y_string,
+							 true);
 }
 
 

@@ -305,7 +305,8 @@ void StandardPerformanceGraph(std::string file_mean,
 							  openfpm::vector<std::string> & names,
 							  openfpm::vector<std::string> & gnames,
 							  std::string x_string,
-							  std::string y_string)
+							  std::string y_string,
+							  bool use_log)
 {
 	openfpm::vector<openfpm::vector<openfpm::vector<double>>> y_ref_mean;
 	openfpm::vector<openfpm::vector<openfpm::vector<double>>> y_ref_dev;
@@ -391,7 +392,11 @@ void StandardPerformanceGraph(std::string file_mean,
 		std::string chart_area;
 		if (warning_vlevel.size() != 0)
 			addchartarea(chart_area,warning_vlevel.get(i));
-		options2.more = GC_Y_LOG + "," + GC_ZOOM + chart_area;
+
+		if (use_log == true)
+		{options2.more = GC_Y_LOG + "," + GC_ZOOM + chart_area;}
+		else
+		{options2.more = GC_ZOOM + chart_area;}
 
 		options2.title = gnames.get(i);
 		cg.AddLinesGraph(x,y2.get(i),yn2,options2);

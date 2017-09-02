@@ -304,7 +304,8 @@ template<unsigned int dim> void vd_verlet_performance_write_report(GoogleChart &
 							 names,
 							 gnames,
 							 x_string,
-							 y_string);
+							 y_string,
+							 true);
 	}
 	//////////////////// TIME TO CREATE //////////////////////////
 
@@ -364,7 +365,8 @@ template<unsigned int dim> void vd_verlet_performance_write_report(GoogleChart &
 							 names,
 							 gnames,
 							 x_string,
-							 y_string);
+							 y_string,
+							 true);
 	}
 }
 

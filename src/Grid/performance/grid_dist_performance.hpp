@@ -338,7 +338,8 @@ void grid_iterator_performance_write_report(GoogleChart & cg,
 							 names,
 							 gnames,
 							 x_string,
-							 y_string);
+							 y_string,
+							 true);
 }
 
 /*! \brief Function for verlet performance report
@@ -365,13 +366,6 @@ void grid_m2p_performance_write_report(GoogleChart & cg,
 
 	openfpm::vector<std::string> names;
 	openfpm::vector<std::string> gnames;
-
-/*	yp_mean.add();
-	yp_dev.add();
-	yp_mean.last().add(time_iterator_stencil_mean);
-	yp_mean.last().add(time_iterator_normal_mean);
-	yp_dev.last().add(time_iterator_stencil_dev);
-	yp_dev.last().add(time_iterator_normal_dev);*/
 
 	yp_mean.resize(1);
 	yp_dev.resize(1);
@@ -408,7 +402,8 @@ void grid_m2p_performance_write_report(GoogleChart & cg,
 							 names,
 							 gnames,
 							 x_string,
-							 y_string);
+							 y_string,
+							 true);
 
 }
 
