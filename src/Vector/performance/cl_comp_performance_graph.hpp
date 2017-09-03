@@ -151,7 +151,7 @@ template<unsigned int dim> void cl_comp_normal_vs_hilbert_create_time(GoogleChar
 			yp_dev.get(i).get(j).get(0) = cl_time_create_hilb_dev.get(i).get(j);
 
 			yp_mean.get(i).get(j).get(1) = cl_time_create_rand_mean.get(i).get(j);
-			yp_dev.get(i).get(j).get(1) = cl_time_create_rand_mean.get(i).get(j);
+			yp_dev.get(i).get(j).get(1) = cl_time_create_rand_dev.get(i).get(j);
 		}
 	}
 
