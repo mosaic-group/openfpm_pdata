@@ -53,13 +53,13 @@ template<unsigned int dim> void cl_part_time(GoogleChart & cg,
 				yp_dev.get(i).get(j).get(k) = cl_time_hilb_dev.get(i).get(j).get(k);
 			}
 			yp_mean.get(i).get(j).get(cl_time_hilb_mean.get(i).get(j).size()) = cl_time_rand_mean.get(i).get(j);
-			yp_dev.get(i).get(j).get(cl_time_hilb_mean.get(i).get(j).size()) = cl_time_rand_mean.get(i).get(j);
+			yp_dev.get(i).get(j).get(cl_time_hilb_mean.get(i).get(j).size()) = cl_time_rand_dev.get(i).get(j);
 		}
 	}
 
-	names.add("No-order");
 	for (size_t i = 0 ; i < cl_orders.size() ; i++)
-		names.add(std::string("Order of: " + std::to_string(cl_orders.get(i))));
+	{names.add(std::string("Order of: " + std::to_string(cl_orders.get(i))));}
+	names.add("No-order");
 
 	for (size_t i = 0 ; i < cl_r_cutoff.size() ; i++)
 		gnames.add("Cell-list performance, cut-off radius: " + std::to_string(cl_r_cutoff.get(i)));
