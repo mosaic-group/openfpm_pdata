@@ -114,8 +114,10 @@ const bool lid_nn::boundary[] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 // Constant Field
 struct eta
 {
+	//! indicate it is a constant field
 	typedef void const_field;
 
+	//! Eta is constant  one
 	static float val()	{return 1.0;}
 };
 
@@ -253,7 +255,7 @@ int main(int argc, char* argv[])
 
 	// Initialize
 	openfpm_init(&argc,&argv);
-
+	{
 	// velocity in the grid is the property 0, pressure is the property 1
 	constexpr int velocity = 0;
 	constexpr int pressure = 1;
@@ -485,7 +487,7 @@ int main(int argc, char* argv[])
 	 */
 
 	//! \cond [fin lib] \endcond
-
+	}
 	openfpm_finalize();
 
 	//! \cond [fin lib] \endcond
