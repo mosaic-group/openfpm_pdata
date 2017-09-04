@@ -142,6 +142,12 @@ float nu = 1.0/tgtre;
 // float dt = 0.0025 for Re 7500
 float dt = 0.0125;
 
+#ifdef TEST_RUN
+const unsigned int nsteps = 10;
+#else
+const unsigned int nsteps = 10001;
+#endif
+
 // All the properties by index
 constexpr unsigned int vorticity = 0;
 constexpr unsigned int velocity = 0;
@@ -1280,7 +1286,7 @@ int main(int argc, char* argv[])
 	}
 
 	// Time Integration
-	for ( ; i < 10001 ; i++)
+	for ( ; i < nsteps ; i++)
 	{
 		// do step 4-5-6-7
 		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s,solver);
