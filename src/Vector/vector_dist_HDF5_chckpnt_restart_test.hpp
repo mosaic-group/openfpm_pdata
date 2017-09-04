@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test )
 	size_t sz[dim] = {Ng,Ng,Ng};
 
 	for (size_t i = 0; i < dim; i++)
-		bc[i] = NON_PERIODIC;
+	{bc[i] = NON_PERIODIC;}
 
 	// ghost
 	Ghost<dim,float> ghost(1.0/(Ng-2));

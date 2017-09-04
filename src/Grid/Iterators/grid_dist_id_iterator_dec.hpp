@@ -168,7 +168,7 @@ class grid_dist_id_iterator_dec
 		// check if a_it is at the end
 
 		if (a_it.isNext() == true)
-			return *this;
+		{return *this;}
 		else
 		{
 			// switch to the new grid

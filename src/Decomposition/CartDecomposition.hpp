@@ -216,10 +216,10 @@ protected:
 		for (size_t i = 0; i < dim; i++)
 		{
 			if (sub_dc.getHigh(i) == gr.size(i) - 1)
-				sub_d.setHigh(i, domain.getHigh(i));
+			{sub_d.setHigh(i, domain.getHigh(i));}
 
 			if (sub_dc.getLow(i) == 0)
-				sub_d.setLow(i,domain.getLow(i));
+			{sub_d.setLow(i,domain.getLow(i));}
 		}
 
 		return sub_d;

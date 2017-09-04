@@ -525,7 +525,7 @@ table.memberdecls {
         -ms-transition: box-shadow 0.5s linear;
         -o-transition: box-shadow 0.5s linear;
         transition: box-shadow 0.5s linear;
-        display: table !important;
+        display: table;
         width: 100%;
 }
 
@@ -1444,9 +1444,9 @@ tr.heading h2 {
   .memitem { page-break-inside: avoid; }
   #doc-content
   {
-    margin-left:0 !important;
-    height:auto !important;
-    width:auto !important;
+    margin-left:0;
+    height:auto;
+    width:auto;
     overflow:inherit;
     display:inline;
   }

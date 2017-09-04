@@ -482,7 +482,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_cartesian)
 		size_t v = d(rg);*/
 
 		if (vcl.getProcessUnitID() == 0)
-			dg.reqVertex(450);
+		{dg.reqVertex(450);}
 
 /*		dg.reqVertex(v);
 	}*/

@@ -84,7 +84,7 @@ renderView1.CameraParallelScale = 0.7067808453124975
 
 #### uncomment the following to render all views
 # RenderAllViews()
-# alternatively, if you want to write images, you can use SaveScreenshot(...). 
+# alternatively, if you want to write images, you can use SaveScreenshot(...).
 
 WriteImage("generated/non_geometrical_decomposition.jpg")
 

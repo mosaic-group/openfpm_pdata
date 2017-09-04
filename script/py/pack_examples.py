@@ -1,7 +1,7 @@
 __author__ = 'i-bird'
 
 import os
-import shutil, errno
+import shutil
 import configparser
 from os import listdir
 from os.path import isdir, join

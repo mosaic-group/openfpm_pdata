@@ -213,4 +213,4 @@ WriteImage('generated/vector_one_p_zoom_ghost_part.jpg')
 
 #### uncomment the following to render all views
 # RenderAllViews()
-# alternatively, if you want to write images, you can use SaveScreenshot(...). 
+# alternatively, if you want to write images, you can use SaveScreenshot(...).

@@ -46,8 +46,7 @@ BOOST_AUTO_TEST_CASE( DLB_test_use)
 
 		bool rebalance = dlb.rebalanceNeeded();
 
-		if(rebalance)
-			t_high = 1;
+		if(rebalance)  {t_high = 1;}
 
 		if(t == 6)
 			BOOST_REQUIRE_EQUAL(rebalance,true);

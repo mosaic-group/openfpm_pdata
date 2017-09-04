@@ -933,7 +933,7 @@ public:
 		for (size_t i = 0 ; i < dim ; i++)
 		{
 			if (gk.get(i) < 0 || gk.get(i) >= (long int)g_sz[i])
-				return false;
+			{return false;}
 		}
 
 		return true;
