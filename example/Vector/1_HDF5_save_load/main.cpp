@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
 	//! \cond [save_part] \endcond
 	
 	vd.save("particles_save.hdf5");
-	
+
 	//! \cond [save_part] \endcond
 
 	/*!
@@ -264,7 +264,7 @@ int main(int argc, char* argv[])
 	vector_dist<3,float, aggregate<float[3],float[3],float[3],float[3],float[3]> > vd2(vd.getDecomposition(),0);
 
 	// load the particles on another vector
-	vd2.load("particles_load.hdf5");
+	vd2.load("particles_save.hdf5");
 
 	//! \cond [hdf5_load] \endcond
 
