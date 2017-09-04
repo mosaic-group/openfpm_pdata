@@ -584,7 +584,7 @@ echo ""
 echo -e "\033[91;1m if you have in your .bashrc or .bash_profile old openfpm setting, please remove it\033[0m"
 echo ""
 echo ""
-if [  x"$inst_lin_alg" == "y" -a x"$lin_alg_installed" == ""]
+if [  x"$inst_lin_alg" == "y" -a x"$lin_alg_installed" == ""]; then
   conf_err=1
 fi
 if [ $conf_err -ne 0 ]; then
