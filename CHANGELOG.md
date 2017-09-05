@@ -38,7 +38,7 @@ All notable changes to this project will be documented in this file.
 - Grid iterator types has changes (one additional template parameter)
 - FDScheme the constructor now has one parameter less (Parameter number 4 has been removed) (see Stokes_Flow examples in Numerics)
 
-## [0.8.0] 28 February 2016
+## [0.8.0] 28 February 2017
 
 ### Added
 - Dynamic Load balancing
@@ -57,7 +57,7 @@ All notable changes to this project will be documented in this file.
 - BOOST updated to 1.63
 - Eigen updated to 3.3.7
 
-## [0.7.1] 28 January 2016
+## [0.7.1] 28 January 2017
 
 ### Fixed
 - Multiphase verlet single to all case generate overflow
