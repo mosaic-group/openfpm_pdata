@@ -12,6 +12,29 @@ if [ -d "$1/PETSC" ]; then
   exit 0
 fi
 
+if haveProg python2; then
+  python_command=python2
+else
+  python_command=python
+fi
+
+function haveProg() {
+    [ -x "$(command -v $1)" ]
+}
+
+if haveProg python2; then
+  python_command=python2
+else
+  # we check that python is python2
+  dgc_major=$(python --version 2>&1 | grep Python | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)/\1/g')
+
+  if [ $dgc_major -eq 3 ]; then
+      # we have to install python2
+      solve_python
+  fi
+  python_command=python
+fi
+
 # Detect gcc pr clang
 
 source script/discover_os
@@ -357,28 +380,7 @@ function haveProg() {
     [ -x "$(command -v $1)" ]
 }
 
-if haveProg python2; then
-  python_command=python2
-else
-  python_command=python
-fi
 
-function haveProg() {
-    [ -x "$(command -v $1)" ]
-}
-
-if haveProg python2; then
-  python_command=python2
-else
-  # we check that python is python2
-  dgc_major=$(python --version 2>&1 | grep Python | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)/\1/g')
-
-  if [ $dgc_major -eq 3 ]; then
-      # we have to install python2
-      solve_pyhton
-  fi
-  python_command=python
-fi
 
 $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib" --prefix=$1/PETSC --with-debugging=0
 make all test
