@@ -12,15 +12,21 @@ if [ -d "$1/PETSC" ]; then
   exit 0
 fi
 
+# Detect gcc pr clang
+
+source script/discover_os
+source script/solve_python
+discover_os
+
+function haveProg() {
+    [ -x "$(command -v $1)" ]
+}
+
 if haveProg python2; then
   python_command=python2
 else
   python_command=python
 fi
-
-function haveProg() {
-    [ -x "$(command -v $1)" ]
-}
 
 if haveProg python2; then
   python_command=python2
@@ -34,12 +40,6 @@ else
   fi
   python_command=python
 fi
-
-# Detect gcc pr clang
-
-source script/discover_os
-source script/solve_python
-discover_os
 
 ##### if we are on osx we use gsed
 
