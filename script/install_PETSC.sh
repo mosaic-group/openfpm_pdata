@@ -28,18 +28,6 @@ else
   python_command=python
 fi
 
-if haveProg python2; then
-  python_command=python2
-else
-  # we check that python is python2
-  dgc_major=$(python --version 2>&1 | grep Python | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)/\1/g')
-
-  if [ $dgc_major -eq 3 ]; then
-      # we have to install python2
-      solve_python
-  fi
-  python_command=python
-fi
 
 ##### if we are on osx we use gsed
 
