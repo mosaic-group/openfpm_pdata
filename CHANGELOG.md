@@ -1,27 +1,26 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [development]
+## [1.0.0] 13 September 2017
 
 ### Added
 - Introduced getDomainIterator for Cell-list
-- Example to show how to add sensors in SPH/particle based methods (see Vector/7_SPH_opt)
+- New dynamic load balancing scheme to 7_SPH_opt (see Vector/7_SPH_opt)
 - Increased performance of 7_SPH_opt
 - Vortex in Cell example Numerics/Vortex_in_cell
 - Interpolation functions (see Numerics/vortex_in_cell example)
-- Gray-scott 3d example with stencil iterator optimixation (see Grid/gray_scott_3d example)
+- Gray-scott 3D example with stencil iterator optimization (see Grid/gray_scott_3d example)
 - HDF5 Check point restart for vector_dist particles (see Vector/1_HDF5_save_and_load) 
 - Raw reader for grid (see ...)
-- A way to specify names for properties and select properties to write (in PROGRESS)
-- Ghost put on grid (see Vortex in Cell example)
-- getDomainIterator stencil for faster stencil codes iterators see (Grid/gray_scott_3d example)
+- Added setPropNames to give names to properties (Grid and Vector see Vector/0_simple)
+- Ghost put on grid (see Numerics/Vortex_in_Cell example)
+- Stencil iterators for faster stencil codes see (Test3D_stencil function in Units tests src/Grid/Iterators/grid_dist_id_iterators_unit_tests.hpp)
 - Algebraic multigrid solvers interface for linear systems (see Vortex in Cell example)
 - Added setPropNames in vector_dist see Vector/0_simple
 - Support for Windows with CYGWIN
 
 ### Fixed
-- Installation of PETSC in case with MUMPS try without MUMPS
-- In case of miss compilation ignore system wide installation
+- Bug fixes in installation of PETSC
 - 2 Bugs in 7_SPH_opt and 7_SPH_opt error in Kernel and update for boundary particles
 - Bug in VTK writer binary in case of vectors
 - Bug in VTK writer binary: long int are not supported removing output
@@ -30,13 +29,14 @@ All notable changes to this project will be documented in this file.
 - Bug Performance bug in the grid iterator
 
 ### Changed
-- CellList types has changed for example
-	  CellList<3, double, FAST, shift<3,double>>
-  become
-          CellList<3, double, Mem_fast<3, double>, shift<3, double>>
+-  getCellList and getCellListSym now return respectively
+	  CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St>>
+          CellList<dim, St, Mem_fast, shift<dim, St>>
+    
 - getIterator in CellList changed getCellIterator
 - Grid iterator types has changes (one additional template parameter)
 - FDScheme the constructor now has one parameter less (Parameter number 4 has been removed) (see Stokes_Flow examples in Numerics)
+- MPI,PETSC,SUPERLU,Trilinos,MUMPS,SuiteSparse has been upgraded
 
 ## [0.8.0] 28 February 2017
 
@@ -67,14 +67,14 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Symmetric cell-list/verlet list Crossing scheme
 - VCluster examples
-- cell-list crossing scheme
+- Cell-list crossing scheme
 
 ### Fixed
 - CRITICAL BUG: OpenFPM has a bug handling decomposition when a processor has a disconnected domains
                 (By experience this case has been seen on big number of processors).
 - Found and fixed a memory leak when using complex properties
 
--### Changed
+### Changed
 - The file VCluster has been mooved #include "VCluster.hpp" must be changed to #include "VCluster/VCluster.hpp"
   BECAUSE OF THIS, PLEASE CLEAN THE OPENFPM FOLDER OTHERWISE YOU WILL END TO HAVE 2 VCLUSTER.HPP
 
@@ -217,28 +217,6 @@ All notable changes to this project will be documented in this file.
 - Nothing to report
 
 
-
-# Planned in the next Releases
-
-## [0.9.0] - Mid March
-
-- Algebraic Multigrid solver
-- Parallel VTK, improved visualization
-
-## [0.10.0] -  July 2017
-
-### Added
-- Dynamic Load Balancies examples and interface fixation
-- Check Point restart
-- More example and documentations
-
-## [0.9.0] - May 2017
-
-### Added
-- Asynchronous communication
-- Support for Microsoft Windows with Cygwin
-- Defining a domain an invalid domain like Box<2,float> box({0.0,1.0},{0.0,1.0}) (the correct is {0.0,0.0},{1.0,1.0}  )
-           produce dead-lock or unclear error message in SE_CLASS1, not hint is given, added usefull error message
 
 
 

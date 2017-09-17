@@ -12,8 +12,8 @@
  * Dynamic Sparse Data Exchange or DSDE, is a typical point to point communication in which
  * senders know to which processor to receive, but receivers has not knowledge about from
  * where they are receiving. OpenFPM use the NBX method or Non blocking consensus exchange.
- * (Said without bombastic world each processor wait for incoming messages. Pretty basic achivement
- * and technique in standard server programming, pictured bombastic and incredible discovery in MPI)
+ * (Said without bombastic word each processor wait for incoming messages. Pretty basic achievement
+ * and technique in standard server programming, presented as bombastic and incredible discovery in MPI)
  * 
  */
 
