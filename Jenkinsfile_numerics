@@ -24,7 +24,7 @@ parallel (
 
                     stage ('build_gin')
                     {
-                      sh "./build.sh $WORKSPACE $NODE_NAME numerics"
+                      sh "./build.sh $WORKSPACE $NODE_NAME numerics 0 $BRANCH_NAME"
                     }
 
                     stage ('run_gin')
@@ -65,7 +65,7 @@ parallel (
 
                     stage ('build_sb15')
                     {
-                      sh "./build.sh $WORKSPACE $NODE_NAME numerics"
+                      sh "./build.sh $WORKSPACE $NODE_NAME numerics 0 $BRANCH_NAME"
                     }
 
                     stage ('run_sb15')
