@@ -65,7 +65,7 @@ parallel (
 
                     stage ('build_sb15')
                     {
-                      sh "./build.sh $WORKSPACE $NODE_NAME numerics 0 $BRANCH_NAME"
+                      sh "./build.sh $WORKSPACE $NODE_NAME numerics 0"
                     }
 
                     stage ('run_sb15')
