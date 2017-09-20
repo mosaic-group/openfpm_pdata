@@ -34,7 +34,7 @@ then
 
  if [ ! -d $HOME/$branch/MPI ]; then
    echo "COPY MPICH"
-   cp -R $HOME/MPI $HOME/$branch/MPI
+   cp -R $HOME/MPI $HOME/$branch
    echo 2 > $HOME/$branch/MPI/version
  fi
 
