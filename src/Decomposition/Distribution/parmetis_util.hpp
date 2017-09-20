@@ -14,6 +14,9 @@
 #include "VCluster/VCluster.hpp"
 #include "Graph/ids.hpp"
 
+#define PARMETSI_ERROR_OBJECT std::runtime_error("Runtime Parmetis error");
+
+
 /*! \brief Metis graph structure
  *
  * Metis graph structure
@@ -131,6 +134,7 @@ class Parmetis
 	/*! \brief Construct Adjacency list
 	 *
 	 * \param g Global graph
+	 * \param m2g map from local index to global index
 	 *
 	 */
 	void constructAdjList(Graph &g, const std::unordered_map<rid, gid> & m2g)
@@ -235,7 +239,6 @@ public:
 		nvertex = 0;
 	}
 
-	//TODO deconstruct new variables
 	/*! \brief destructor
 	 *
 	 * Destructor, It destroy all the memory allocated
@@ -243,6 +246,16 @@ public:
 	 */
 	~Parmetis()
 	{
+#ifdef SE_CLASS1
+
+		if (sizeof(idx_t) != 8)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Error detected invalid installation of Parmetis. OpenFPM support Parmetis/Metis version with 64 bit idx_t" << std::endl;
+			ACTION_ON_ERROR(PARMETIS_ERROR_OBJECT);
+		}
+
+#endif
+
 		// Deallocate the Mg structure
 		if (Mg.nvtxs != NULL)
 		{

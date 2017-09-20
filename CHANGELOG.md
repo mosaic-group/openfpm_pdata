@@ -29,6 +29,8 @@ All notable changes to this project will be documented in this file.
 - Bug Performance bug in the grid iterator
 
 ### Changed
+- CAREFULL: write("output",frame) now has changed to write_frame("output",frame)
+            write() with two arguments has a different meanings write("output",options)
 -  getCellList and getCellListSym now return respectively
 	  CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St>>
           CellList<dim, St, Mem_fast, shift<dim, St>>
