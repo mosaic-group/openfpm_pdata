@@ -46,16 +46,19 @@ then
  mkdir $HOME/$branch
  if [ x"$4" == x"full" ]; then
   CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$branch  -s -c "--prefix=/home/jenkins/openfpm_install"
+  echo "Moving envoronment variable"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
  elif [ x"$3" == x"numerics" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
   CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$branch  -m -s -c "--prefix=/home/jenkins/openfpm_install"
+  echo "Mooving environment variable"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
   make $3
  else
   CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$branch  -m -s -c "--prefix=/home/jenkins/openfpm_install --no-recursion"
+  echo "Mooving envoronment variables"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
   make $3
