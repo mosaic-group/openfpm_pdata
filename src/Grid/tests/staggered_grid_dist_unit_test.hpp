@@ -8,7 +8,7 @@
 #ifndef SRC_GRID_STAGGERED_GRID_DIST_UNIT_TEST_HPP_
 #define SRC_GRID_STAGGERED_GRID_DIST_UNIT_TEST_HPP_
 
-#include "staggered_dist_grid.hpp"
+#include "Grid/staggered_dist_grid.hpp"
 #include "Point_test.hpp"
 
 BOOST_AUTO_TEST_SUITE( staggered_grid_dist_id_test )

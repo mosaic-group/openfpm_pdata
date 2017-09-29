@@ -997,6 +997,18 @@ public:
 	{
 
 	}
+
+	/*! \brief Copy constructor
+	 *
+	 * It does not really copy. This structure it suppose to store only
+	 * temporal data
+	 *
+	 */
+	grid_dist_id_comm(const grid_dist_id_comm<dim,St,T,Decomposition,Memory,device_grid> & gc)
+	:v_cl(gc.v_cl)
+	{
+
+	}
 };
 
 

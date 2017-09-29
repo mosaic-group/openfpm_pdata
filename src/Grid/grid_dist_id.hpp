@@ -403,14 +403,17 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 
 	/*! \brief Create the grids on memory
 	 *
+	 * \param bx_def Where the grid is defined
+	 * \param use_bx_def use the array that define where the grid is defined
+	 *
 	 */
-	void Create()
+	void Create(openfpm::vector<Box<dim,long int>> & bx_def, bool use_bx_def)
 	{
 		// Get the number of local grid needed
 		size_t n_grid = dec.getNSubDomain();
 
 		// create gdb
-		create_gdb_ext<dim,Decomposition>(gdb_ext,dec,cd_sm);
+		create_gdb_ext<dim,Decomposition>(gdb_ext,dec,cd_sm,bx_def,use_bx_def);
 
 		// create local grids for each hyper-cube
 		loc_grid.resize(n_grid);
@@ -437,18 +440,6 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		}
 	}
 
-	/*! \brief Default Copy constructor on this class make no sense and is unsafe, this definition disable it
-	 *
-	 * \param g grid to copy
-	 *
-	 */
-	grid_dist_id(const grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & g)
-	:v_cl(g.v_cl)
-	{
-#ifdef SE_CLASS2
-		check_new(this,8,GRID_DIST_EVENT,4);
-#endif
-	}
 
     /*! \brief Initialize the Cell decomposer of the grid enforcing perfect overlap of the cells
 	 *
@@ -643,6 +634,39 @@ public:
 		return ginfo_v.size(i);
 	}
 
+	/*! \brief Default Copy constructor on this class make no sense and is unsafe, this definition disable it
+	 *
+	 * \param g grid to copy
+	 *
+	 */
+	grid_dist_id(const grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & g)
+	:grid_dist_id_comm<dim,St,T,Decomposition,Memory,device_grid>(g),
+	 domain(g.domain),
+	 ghost(g.ghost),
+	 loc_grid(g.loc_grid),
+	 loc_grid_old(g.loc_grid_old),
+	 dec(g.dec),
+	 gdb_ext(g.gdb_ext),
+	 gdb_ext_global(g.gdb_ext_global),
+	 gdb_ext_old(g.gdb_ext_old),
+	 cd_sm(g.cd_sm),
+	 v_cl(g.v_cl),
+	 prp_names(g.prp_names),
+	 g_id_to_external_ghost_box(g.g_id_to_external_ghost_box),
+	 g_id_to_internal_ghost_box(g.g_id_to_internal_ghost_box),
+	 ginfo(g.ginfo),
+	 ginfo_v(g.ginfo_v),
+	 init_local_i_g_box(g.init_local_i_g_box),
+	 init_local_e_g_box(g.init_local_e_g_box)
+	{
+#ifdef SE_CLASS2
+		check_new(this,8,GRID_DIST_EVENT,4);
+#endif
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{g_sz[i] = g.g_sz[i];}
+	}
+
 	/*! \brief This constructor is special, it construct an expanded grid that perfectly overlap with the previous
 	 *
 	 * The key-word here is "perfectly overlap". Using the default constructor you could create
@@ -826,6 +850,36 @@ public:
 		InitializeCellDecomposer(g_sz,p.bc);
 		InitializeDecomposition(g_sz, p.bc);
 		InitializeStructures(g_sz);
+	}
+
+	/*! \brief It construct a grid on the full domain restricted
+	 *         to the set of boxes specified
+	 *
+	 * In particular the grid is defined in the space equal to the
+	 *  domain intersected the boxes defined by bx
+	 *
+	 * \param g_sz grid size on each dimension
+	 * \param domain where the grid is constructed
+	 * \param g ghost size
+	 * \param p periodicity of the grid
+	 * \param bx set of boxes where the grid is defined
+	 *
+	 *
+	 */
+	grid_dist_id(const size_t (& g_sz)[dim],
+			     const Box<dim,St> & domain,
+				 const Ghost<dim,St> & g,
+				 const periodicity<dim> & p,
+				 openfpm::vector<Box<dim,St>> & bx)
+	:domain(domain),ghost(g),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
+	{
+#ifdef SE_CLASS2
+		check_new(this,8,GRID_DIST_EVENT,4);
+#endif
+
+		InitializeCellDecomposer(g_sz,p.bc);
+		InitializeDecomposition(g_sz, p.bc);
+		InitializeStructures(g_sz,bx);
 	}
 
     /*! It construct a grid of a specified size, defined on a specified Box space, having a specified ghost size and periodicity
@@ -1597,6 +1651,11 @@ public:
 		gdb_ext_old.clear();
 	}
 
+	/*! \brief Save the grid state on HDF5
+	 *
+	 * \param filename output filename
+	 *
+	 */
 	inline void save(const std::string & filename) const
 	{
 		HDF5_writer<GRID_DIST> h5s;
@@ -1604,6 +1663,11 @@ public:
 		h5s.save(filename,loc_grid,gdb_ext);
 	}
 
+	/*! \brief Reload the grid from HDF5 file
+	 *
+	 * \param filename output filename
+	 *
+	 */
 	inline void load(const std::string & filename)
 	{
 		HDF5_reader<GRID_DIST> h5l;

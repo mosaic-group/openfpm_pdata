@@ -111,7 +111,17 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 		selectValidGrid();
 	}
 
-	// Destructor
+	//! Copy constructor
+	grid_dist_iterator(const grid_dist_iterator<dim,device_grid,FREE,stencil> & g)
+	:g_c(g.g_c),gList(g.gList),gdb_ext(g.gdb_ext),a_it(g.a_it),stop(g.stop)
+	{}
+
+	//! Copy constructor
+	grid_dist_iterator(grid_dist_iterator<dim,device_grid,FREE,stencil> && g)
+	:g_c(g.g_c),gList(g.gList),gdb_ext(g.gdb_ext),a_it(g.a_it),stop(g.stop)
+	{}
+
+	//! Destructor
 	~grid_dist_iterator()
 	{
 	}
@@ -121,7 +131,6 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 * \return the next grid_key
 	 *
 	 */
-
 	inline grid_dist_iterator<dim,device_grid,FREE,stencil> & operator++()
 	{
 		++a_it;
@@ -146,7 +155,7 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 * \return true if there is the next, false otherwise
 	 *
 	 */
-	inline bool isNext()
+	inline bool isNext() const
 	{
 		// If there are no other grid stop
 
@@ -161,7 +170,7 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 * \return the actual key
 	 *
 	 */
-	inline grid_dist_key_dx<dim> get()
+	inline grid_dist_key_dx<dim> get() const
 	{
 		return grid_dist_key_dx<dim>(g_c,a_it.get());
 	}

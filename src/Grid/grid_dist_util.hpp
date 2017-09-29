@@ -107,7 +107,13 @@ template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::ve
  * \param bc boundary conditions
  *
  */
-template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::vector<GBoxes<dim>> & gdb_ext, Decomposition & dec, const size_t (& sz)[dim], const Box<Decomposition::dims,typename Decomposition::stype> & domain, typename Decomposition::stype (& spacing)[dim])
+template<int dim, typename Decomposition>
+inline void create_gdb_ext(openfpm::vector<GBoxes<dim>> & gdb_ext,
+		                   Decomposition & dec,
+						   const size_t (& sz)[dim],
+						   const Box<Decomposition::dims,
+						   typename Decomposition::stype> & domain,
+						   typename Decomposition::stype (& spacing)[dim])
 {
 	// Create the cell decomposer
 	CellDecomposer_sm<Decomposition::dims,typename Decomposition::stype, shift<Decomposition::dims,typename Decomposition::stype>> cd_sm;
