@@ -220,8 +220,11 @@ class grid_dist_id_comm
 			for (size_t j = 0 ; j < loc_ig_box.get(i).bid.size() ; j++)
 			{
 				Box<dim,size_t> bx_src = loc_ig_box.get(i).bid.get(j).box;
+
+				size_t sub_id_src_gdb_ext = loc_ig_box.get(i).bid.get(j).sub_gdb_ext;
+
 				// convert into local
-				bx_src -= gdb_ext.get(i).origin;
+				bx_src -= gdb_ext.get(sub_id_src_gdb_ext).origin;
 
 				// sub domain connected with external box
 				size_t sub_id_dst = loc_ig_box.get(i).bid.get(j).sub;
@@ -232,15 +235,16 @@ class grid_dist_id_comm
 				Box<dim,size_t> bx_dst = loc_eg_box.get(sub_id_dst).bid.get(k).box;
 
 				// convert into local
-				bx_dst -= gdb_ext.get(sub_id_dst).origin;
+				size_t sub_id_dst_gdb_ext = loc_eg_box.get(sub_id_dst).bid.get(k).sub_gdb_ext;
+				bx_dst -= gdb_ext.get(sub_id_dst_gdb_ext).origin;
 
 				// create 2 sub grid iterator
 
 				if (bx_dst.isValid() == false)
 					continue;
 
-				grid_key_dx_iterator_sub<dim> sub_src(loc_grid.get(i).getGrid(),bx_src.getKP1(),bx_src.getKP2());
-				grid_key_dx_iterator_sub<dim> sub_dst(loc_grid.get(sub_id_dst).getGrid(),bx_dst.getKP1(),bx_dst.getKP2());
+				grid_key_dx_iterator_sub<dim> sub_src(loc_grid.get(sub_id_src_gdb_ext).getGrid(),bx_src.getKP1(),bx_src.getKP2());
+				grid_key_dx_iterator_sub<dim> sub_dst(loc_grid.get(sub_id_dst_gdb_ext).getGrid(),bx_dst.getKP1(),bx_dst.getKP2());
 
 #ifdef SE_CLASS1
 
@@ -252,8 +256,8 @@ class grid_dist_id_comm
 
 #endif
 
-				const auto & gs = loc_grid.get(i);
-				auto & gd = loc_grid.get(sub_id_dst);
+				const auto & gs = loc_grid.get(sub_id_src_gdb_ext);
+				auto & gd = loc_grid.get(sub_id_dst_gdb_ext);
 
 				while (sub_src.isNext())
 				{
@@ -638,6 +642,8 @@ public:
 										 const openfpm::vector<i_lbox_grid<dim>> & loc_ig_box,
 										 const openfpm::vector<e_lbox_grid<dim>> & loc_eg_box,
 			                             const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
+										 const openfpm::vector<e_box_multi<dim>> & eb_gid_list,
+										 bool use_bx_def,
 										 openfpm::vector<device_grid> & loc_grid,
 										 std::unordered_map<size_t,size_t> & g_id_to_external_ghost_box)
 	{
@@ -724,15 +730,15 @@ public:
 		//! Receive the information from each processors
 		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
 		{
-			prp_recv.push_back(0);
+			prp_recv.push_back(eg_box.get(i).recv_pnt * sizeof(prp_object) + sizeof(size_t)*eg_box.get(i).n_r_box);
 
 			// for each external ghost box
-			for (size_t j = 0 ; j < eg_box.get(i).bid.size() ; j++)
+/*			for (size_t j = 0 ; j < eg_box.get(i).bid.size() ; j++)
 			{
 				// External ghost box
 				Box<dim,size_t> g_eg_box = eg_box.get(i).bid.get(j).g_e_box;
 				prp_recv[prp_recv.size()-1] += g_eg_box.getVolumeKey() * sizeof(prp_object) + sizeof(size_t);
-			}
+			}*/
 		}
 
 		size_t tot_recv = ExtPreAlloc<Memory>::calculateMem(prp_recv);
@@ -764,8 +770,10 @@ public:
 		// Unpack the object
 		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
 		{
+			size_t mark_here = ps.getOffset();
+
 			// for each external ghost box
-			for (size_t j = 0 ; j < eg_box.get(i).bid.size() ; j++)
+			while (ps.getOffset() - mark_here < prp_recv[i])
 			{
 				// Unpack the ghost box global-id
 
@@ -775,8 +783,9 @@ public:
 				size_t l_id = 0;
 				// convert the global id into local id
 				auto key = g_id_to_external_ghost_box.find(g_id);
+
 				if (key != g_id_to_external_ghost_box.end()) // FOUND
-					l_id = key->second;
+				{l_id = key->second;}
 				else
 				{
 					// NOT FOUND
@@ -790,15 +799,48 @@ public:
 					return;
 				}
 
+
+				// we unpack into the last eb_gid_list that is always big enought to
+				// unpack the information
+
+				size_t le_id = eb_gid_list.get(l_id).eb_list.last();
+
 				// Get the external ghost box associated with the packed information
-				Box<dim,size_t> box = eg_box.get(i).bid.get(l_id).l_e_box;
-				size_t sub_id = eg_box.get(i).bid.get(l_id).sub;
+				Box<dim,size_t> box = eg_box.get(i).bid.get(le_id).l_e_box;
+				size_t sub_id = eg_box.get(i).bid.get(le_id).sub;
 
 				// sub-grid where to unpack
 				grid_key_dx_iterator_sub<dim> sub2(loc_grid.get(sub_id).getGrid(),box.getKP1(),box.getKP2());
 
 				// Unpack
 				Unpacker<device_grid,HeapMemory>::template unpack<prp...>(prRecv_prp,sub2,loc_grid.get(sub_id),ps);
+
+
+				// Copy the information on the other grid
+				for (long int j = 0 ; j < (long int)eb_gid_list.get(l_id).eb_list.size() - 1 ; j++)
+				{
+					size_t nle_id = eb_gid_list.get(l_id).eb_list.get(j);
+					size_t n_sub_id = eg_box.get(i).bid.get(nle_id).sub;
+
+					Box<dim,size_t> box = eg_box.get(i).bid.get(nle_id).l_e_box;
+					Box<dim,size_t> rbox = eg_box.get(i).bid.get(nle_id).lr_e_box;
+
+					// sub-grid where to unpack
+					grid_key_dx_iterator_sub<dim> src(loc_grid.get(sub_id).getGrid(),rbox.getKP1(),rbox.getKP2());
+					grid_key_dx_iterator_sub<dim> dst(loc_grid.get(n_sub_id).getGrid(),box.getKP1(),box.getKP2());
+
+					while (src.isNext())
+					{
+						auto key_src = src.get();
+						auto key_dst = dst.get();
+
+						loc_grid.get(n_sub_id).get_o(key_dst) = loc_grid.get(sub_id).get_o(key_src);
+
+						++src;
+						++dst;
+					}
+
+				}
 			}
 		}
 	}

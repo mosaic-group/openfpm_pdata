@@ -1444,7 +1444,7 @@ int main(int argc, char* argv[])
 			// calculate the pressure at the sensor points
 			sensor_pressure(vd,NN,press_t,probes);
 
-			vd.write("Geometry",write);
+			vd.write_frame("Geometry",write);
 			write++;
 
 			if (v_cl.getProcessUnitID() == 0)

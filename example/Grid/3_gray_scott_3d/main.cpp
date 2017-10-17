@@ -107,8 +107,8 @@ int main(int argc, char* argv[])
         size_t timeSteps = 5000;
 
 	// K and F (Physical constant in the equation)
-        double K = 0.014;
-        double F = 0.053;
+        double K = 0.053;
+        double F = 0.014;
 
 	//! \cond [init lib] \endcond
 
@@ -149,41 +149,58 @@ int main(int argc, char* argv[])
 	timer tot_sim;
 	tot_sim.start();
 
+	static grid_key_dx<3> star_stencil_3D[7] = {{0,0,0},
+                                         	    {0,0,-1},
+						    {0,0,1},
+						    {0,-1,0},
+						    {0,1,0},
+						    {-1,0,0},
+						    {1,0,0}};
+
 	for (size_t i = 0; i < timeSteps; ++i)
 	{
 		if (i % 300 == 0)
 			std::cout << "STEP: " << i << std::endl;
 
-		auto it = Old.getDomainIterator();
+		auto it = Old.getDomainIteratorStencil(star_stencil_3D);
 
 		while (it.isNext())
 		{
-			auto key = it.get();
+			// center point
+			auto Cp = it.getStencil<0>();
+
+			// plus,minus X,Y,Z
+			auto mx = it.getStencil<1>();
+			auto px = it.getStencil<2>();
+			auto my = it.getStencil<3>();
+			auto py = it.getStencil<4>();
+			auto mz = it.getStencil<5>();
+			auto pz = it.getStencil<6>();
 
 			// update based on Eq 2
-			New.get<U>(key) = Old.get<U>(key) + uFactor * (
-										Old.get<U>(key.move(x,1)) +
-										Old.get<U>(key.move(x,-1)) +
-										Old.get<U>(key.move(y,1)) +
-										Old.get<U>(key.move(y,-1)) +
-										Old.get<U>(key.move(z,1)) +
-										Old.get<U>(key.move(z,-1)) -
-										6.0*Old.get<U>(key)) +
-										- deltaT * Old.get<U>(key) * Old.get<V>(key) * Old.get<V>(key) +
-										- deltaT * F * (Old.get<U>(key) - 1.0);
+			New.get<U>(Cp) = Old.get<U>(Cp) + uFactor * (
+										Old.get<U>(mz) +
+										Old.get<U>(pz) +
+										Old.get<U>(my) +
+										Old.get<U>(py) +
+										Old.get<U>(mx) +
+										Old.get<U>(px) -
+										6.0*Old.get<U>(Cp)) +
+										- deltaT * Old.get<U>(Cp) * Old.get<V>(Cp) * Old.get<V>(Cp) +
+										- deltaT * F * (Old.get<U>(Cp) - 1.0);
 
 
 			// update based on Eq 2
-			New.get<V>(key) = Old.get<V>(key) + vFactor * (
-										Old.get<V>(key.move(x,1)) +
-										Old.get<V>(key.move(x,-1)) +
-										Old.get<V>(key.move(y,1)) +
-										Old.get<V>(key.move(y,-1)) +
-										Old.get<V>(key.move(z,1)) +
-                                                                                Old.get<V>(key.move(z,-1)) -
-										6*Old.get<V>(key)) +
-										deltaT * Old.get<U>(key) * Old.get<V>(key) * Old.get<V>(key) +
-										- deltaT * (F+K) * Old.get<V>(key);
+			New.get<V>(Cp) = Old.get<V>(Cp) + vFactor * (
+										Old.get<V>(mz) +
+										Old.get<V>(pz) +
+										Old.get<V>(my) +
+										Old.get<V>(py) +
+										Old.get<V>(mx) +
+                                        Old.get<V>(px) -
+										6*Old.get<V>(Cp)) +
+										deltaT * Old.get<U>(Cp) * Old.get<V>(Cp) * Old.get<V>(Cp) +
+										- deltaT * (F+K) * Old.get<V>(Cp);
 
 			// Next point in the grid
 			++it;

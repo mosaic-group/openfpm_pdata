@@ -344,6 +344,8 @@ void Test3D_stencil(const Box<3,float> & domain, long int k)
 
 			while (st_it.isNext())
 			{
+				auto key = st_it.get();
+
 				// center point
 				auto Cp = st_it.getStencil<0>();
 
@@ -364,6 +366,12 @@ void Test3D_stencil(const Box<3,float> & domain, long int k)
 							 g_dist.template get<0>(pz);
 
 				ret &= (sum == 0);
+
+				// get the local grid info
+
+				grid_sm<3,void> info = g_dist.get_loc_grid(key.getSub()).getGrid();
+
+				ret &= info.LinId(key.getKey()) == (long int)Cp.getKey();
 
 				++st_it;
 			}
