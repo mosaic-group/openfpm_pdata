@@ -18,7 +18,7 @@ systype=$(uname -s)
 BUILDDIR=build/$systype-$cputype
 mkdir -p $BUILDDIR
 cd $BUILDDIR
-if [ "$#" -eq 3 ]; then
+if [ "$#" -eq 4 ]; then
   echo "cmake ../../. -DSHARED=1 -DGKLIB_PATH=../../GKlib -DCMAKE_INSTALL_PREFIX=$1/METIS -DCMAKE_C_COMPILER=$2 -DCMAKE_CXX_COMPILER=$3"
   cmake ../../. -DSHARED=1 -DGKLIB_PATH=../../GKlib  -DCMAKE_INSTALL_PREFIX=$1/METIS -DCMAKE_C_COMPILER=$2 -DCMAKE_CXX_COMPILER=$3
 else

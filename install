@@ -296,6 +296,7 @@ set_mpi $i_dir $ncore $CC $CXX $F77 $FC
 
 ./script/install_Parmetis.sh $i_dir $ncore
 configure_options=" $configure_options --with-parmetis=$i_dir/PARMETIS "
+
 ./script/install_Metis.sh $i_dir $CC $CXX $ncore
 configure_options=" $configure_options --with-metis=$i_dir/METIS "
 
