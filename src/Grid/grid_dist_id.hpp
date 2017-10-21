@@ -1187,6 +1187,9 @@ public:
 #endif
 
 		InitializeCellDecomposer(g_sz,dec.periodicity());
+
+		this->dec = dec.duplicate(ghost);
+
 		InitializeStructures(g_sz);
 	}
 
@@ -1198,13 +1201,16 @@ public:
      *
      */
     grid_dist_id(Decomposition && dec, const size_t (& g_sz)[dim], const Ghost<dim,St> & ghost)
-    :domain(dec.getDomain()),ghost(ghost),dec(dec),ginfo(g_sz),ginfo_v(g_sz),v_cl(create_vcluster())
+    :domain(dec.getDomain()),ghost(ghost),dec(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz),v_cl(create_vcluster())
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
 #endif
 
 		InitializeCellDecomposer(g_sz,dec.periodicity());
+
+		this->dec = dec.duplicate(ghost);
+
 		InitializeStructures(g_sz);
 	}
 
@@ -1251,6 +1257,7 @@ public:
 		InitializeCellDecomposer(g_sz,dec.periodicity());
 
 		ghost = convert_ghost(g,cd_sm);
+		this->dec = dec.duplicate(ghost);
 
 		// Initialize structures
 		InitializeStructures(g_sz);

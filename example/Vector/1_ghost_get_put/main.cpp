@@ -10,7 +10,6 @@
  *
  * This example shows more in details the functionalities of **ghost_get** and **ghost_put** for a distributed vector.
  *
- *
  * ## Inclusion ## {#e1_v_inclusion}
  *
  * We activate the vector_dist functionalities
@@ -187,6 +186,34 @@ int main(int argc, char* argv[])
 	 * <img src="http://ppmcore.mpi-cbg.de/web/images/examples/after_ghost_get.jpg"/>
 	 * \endhtmlonly
 	 *
+	 * ## So ... how I have to put these ghost_get ##
+	 *
+	 * The first thing to do is to place the ghost in a way that the program work
+	 * in parallel for sure. In order to do this we can do the following reasoning:
+	 * If we have a loop over particles we distinguish two type of loops:
+	 *
+	 *  * A loop that iterate over particles
+	 *  * A loop that iterate over particles and neighborhood particles
+	 *
+	 *
+	 * If the loop is of the first type (you do not loop over the neighborhood particles)
+	 *  ghost_get is not necessary. If I am in the second case I need a ghost_get. The
+	 *  second point is which property I have to synchronize ghost_get<...>(), or more
+	 *  practically what I have to put in the ... . To answer this we have to check all
+	 *  the properties that we use from the neighborhood particles and pass it to ghost_get
+	 *  as a list. To summarize:
+       \code{.unparsed}
+
+        I am doing a simple loop over particles (1), or I am looping also over neighborhood particles (2)?
+        For the case (1) the answer is "I do not need ghost_get". For the case (2) the answer is "I need ghost_get"
+
+        if I am on the case (2) the second question is which parameters should I use ?
+                  The answer is look at all vd.getProp<...>(b) where b is a neighborhood particle. All ... properties should appear in
+                  ghost_get<...>()
+
+       \endcode
+     * This reasoning is always enough to have ghost_get function always placed correctly. For
+     * more fine tuning look at the options below
 	 *
 	 */
 

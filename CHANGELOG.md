@@ -1,6 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] Development
+
+### Fixed
+- Bug fix: grid with external decomposition accept ghost argument but they do not change the ghost size (with the exception of one constructor).
+           Now they all accept ghost argument and change the ghost size
+
 ## [1.0.0] 13 September 2017
 
 ### Added
