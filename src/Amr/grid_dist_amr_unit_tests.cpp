@@ -100,6 +100,12 @@ void Test3D_amr_child_parent_get(Box<3,float> & domain, size_t coars_g, size_t n
 
 	amr_g.initLevels(n_lvl,g_sz);
 
+	for (size_t i = 0; i < n_lvl ; i++)
+	{
+		if (create_vcluster().rank() == 0)
+		{std::cout << amr_g.getSpacing(i).toString() << std::endl;}
+	}
+
 	// Iterate across all the levels initialized
 	auto it = amr_g.getDomainIterator();
 
@@ -227,6 +233,9 @@ void Test3D_amr_child_parent_get(Box<3,float> & domain, size_t coars_g, size_t n
 	}
 
 	BOOST_REQUIRE_EQUAL(match,true);
+
+
+	auto it_l = amr_g.getDomainIterator(1);
 }
 
 BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test )

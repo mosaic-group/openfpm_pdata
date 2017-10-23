@@ -1868,6 +1868,24 @@ BOOST_AUTO_TEST_CASE( vector_of_vector_dist )
 }
 
 
+BOOST_AUTO_TEST_CASE ( vector_of_cell_list_compile_test )
+{
+	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Ghost<3,double> g(0.1);
+	size_t bc[3] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+
+	vector_dist<3,double,aggregate<float,float[3]>> vd(100,domain,bc,g);
+
+	std::vector<decltype(vd.getCellList(0.1))> vector_of_celllist;
+
+	typedef vector_dist<3,double,aggregate<float,float[3]>> my_particles;
+	std::vector<decltype(std::declval<my_particles>().getCellList(0.0))> vector_of_celllist2;
+
+	vector_of_celllist.push_back(vd.getCellList(0.1));
+
+	vector_of_celllist2.push_back(vd.getCellList(0.1));
+}
+
 #include "vector_dist_cell_list_tests.hpp"
 #include "vector_dist_NN_tests.hpp"
 #include "vector_dist_complex_prp_unit_test.hpp"

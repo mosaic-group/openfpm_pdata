@@ -172,6 +172,18 @@ public:
 		return grid_dist_amr_key_iterator<dim,device_grid>(git);
 	}
 
+	/*! \brief return an iterator over the level lvl
+	 *
+	 * \param lvl level
+	 *
+	 * \return an iterator over the level lvl selected
+	 *
+	 */
+	grid_dist_iterator<dim,device_grid,FREE> getDomainIterator(size_t lvl) const
+	{
+		return gd_array.get(lvl).getDomainIterator();
+	}
+
 	/*! \brief Get the reference of the selected element
 	 *
 	 * \tparam p property to get (is an integer)
@@ -214,6 +226,19 @@ public:
 		for (size_t i = 0 ; i < gd_array.size() ; i++)
 		{
 			gd_array.get(i).ghost_get<prp...>();
+		}
+	}
+
+	/*! \brief Apply the ghost put
+	 *
+	 * \tparam prp... Properties to apply ghost put
+	 *
+	 */
+	template<template<typename,typename> class op,int... prp> void ghost_put()
+	{
+		for (size_t i = 0 ; i < gd_array.size() ; i++)
+		{
+			gd_array.get(i).ghost_put<op,prp...>();
 		}
 	}
 
@@ -299,6 +324,18 @@ public:
 	grid_key_dx<dim> getGKey(const grid_dist_amr_key<dim> & v1)
 	{
 		return gd_array.get(v1.getLvl()).getGKey(v1.getKey());
+	}
+
+	/*! \brief return the spacing for the grid in the level lvl
+	 *
+	 * \param lvl level
+	 *
+	 * \return return the spacing
+	 *
+	 */
+	Point<dim,St> getSpacing(size_t lvl)
+	{
+		return gd_array.get(lvl).getSpacing();
 	}
 
 	/*! \brief Write on vtk file
