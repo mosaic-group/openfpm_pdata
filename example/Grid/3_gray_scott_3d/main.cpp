@@ -157,6 +157,13 @@ int main(int argc, char* argv[])
 						    {-1,0,0},
 						    {1,0,0}};
 
+	constexpr int BACK_X = 1;
+	constexpr int FORWARD_X = 2;
+	constexpr int BACK_Y = 3;
+	constexpr int FORWARD_Y = 4;
+	constexpr int BACK_Z = 5;
+	constexpr int FORWARD_Z = 6;
+
 	for (size_t i = 0; i < timeSteps; ++i)
 	{
 		if (i % 300 == 0)
@@ -168,14 +175,6 @@ int main(int argc, char* argv[])
 		{
 			// center point
 			auto Cp = it.getStencil<0>();
-
-			// plus,minus X,Y,Z
-			auto mx = it.getStencil<1>();
-			auto px = it.getStencil<2>();
-			auto my = it.getStencil<3>();
-			auto py = it.getStencil<4>();
-			auto mz = it.getStencil<5>();
-			auto pz = it.getStencil<6>();
 
 			// update based on Eq 2
 			New.get<U>(Cp) = Old.get<U>(Cp) + uFactor * (
