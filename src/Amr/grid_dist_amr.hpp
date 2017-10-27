@@ -225,7 +225,7 @@ public:
 	{
 		for (size_t i = 0 ; i < gd_array.size() ; i++)
 		{
-			gd_array.get(i).ghost_get<prp...>();
+			gd_array.get(i).template ghost_get<prp...>();
 		}
 	}
 
@@ -238,7 +238,7 @@ public:
 	{
 		for (size_t i = 0 ; i < gd_array.size() ; i++)
 		{
-			gd_array.get(i).ghost_put<op,prp...>();
+			gd_array.get(i).template ghost_put<op,prp...>();
 		}
 	}
 
