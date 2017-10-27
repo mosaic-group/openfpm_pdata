@@ -155,6 +155,27 @@ public:
 		}
 	}
 
+	grid_dist_amr_key_iterator<dim,device_grid,grid_dist_iterator_sub<dim,device_grid>> getDomainIteratorCells()
+	{
+		git_sub.clear();
+
+		for (size_t i = 0 ; i < gd_array.size() ; i++)
+		{
+			grid_key_dx<dim> start;
+			grid_key_dx<dim> stop;
+
+			for (size_t j = 0 ; j < dim ; j++)
+			{
+				start.set_d(j,0);
+				stop.set_d(j,getGridInfoVoid(i).size(j) - 2);
+			}
+
+			git_sub.add(gd_array.get(i).getSubDomainIterator(start,stop));
+		}
+
+		return grid_dist_amr_key_iterator<dim,device_grid,grid_dist_iterator_sub<dim,device_grid>>(git_sub);
+	}
+
 	/*! \brief Get domain iterator
 	 *
 	 * \return an iterator over all the grid levels

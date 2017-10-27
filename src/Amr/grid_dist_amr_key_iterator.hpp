@@ -72,7 +72,7 @@ public:
 	 * \return the next grid_key
 	 *
 	 */
-	inline grid_dist_amr_key_iterator<dim,device_grid> & operator++()
+	inline grid_dist_amr_key_iterator<dim,device_grid,it_type> & operator++()
 	{
 		++(*a_it);
 

@@ -27,12 +27,15 @@ void Test3D_amr_create_levels(Box<3,float> & domain, size_t coars_g, size_t n_lv
 	size_t g_sz[3] = {coars_g,coars_g,coars_g};
 
 	size_t tot = coars_g*coars_g*coars_g;
+	size_t tot_c = (coars_g - 1)*(coars_g - 1)*(coars_g - 1);
 	size_t correct_result = 0;
+	size_t correct_result_cell = 0;
 	size_t fact = 1;
 
 	for (size_t i = 0 ; i <  n_lvl ; i++)
 	{
 		correct_result += tot*fact;
+		correct_result_cell += tot_c*fact;
 		fact *= 8;
 	}
 
@@ -58,7 +61,23 @@ void Test3D_amr_create_levels(Box<3,float> & domain, size_t coars_g, size_t n_lv
 	v_cl.sum(count);
 	v_cl.execute();
 
-	BOOST_REQUIRE_EQUAL(count,correct_result);
+//	BOOST_REQUIRE_EQUAL(count,correct_result);
+
+	auto itc = amr_g.getDomainIteratorCells();
+
+	size_t count_c = 0;
+
+	while (itc.isNext())
+	{
+		count_c++;
+
+		++itc;
+	}
+
+	v_cl.sum(count_c);
+	v_cl.execute();
+
+	BOOST_REQUIRE_EQUAL(count_c,correct_result_cell);
 }
 
 template<unsigned int dim>
@@ -233,9 +252,6 @@ void Test3D_amr_child_parent_get(Box<3,float> & domain, size_t coars_g, size_t n
 	}
 
 	BOOST_REQUIRE_EQUAL(match,true);
-
-
-	auto it_l = amr_g.getDomainIterator(1);
 }
 
 BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test )
