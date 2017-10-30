@@ -252,6 +252,39 @@ public:
 		return gd_array.get(v1.getLvl()).template get<p>(v1.getKey());
 	}
 
+
+	/*! \brief Get the reference of the selected element
+	 *
+	 * \tparam p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return the selected element
+	 *
+	 */
+	template <unsigned int p>inline auto get(size_t lvl, const grid_dist_key_dx<dim> & v1) const -> typename std::add_lvalue_reference<decltype(gd_array.get(lvl).template get<p>(v1.getKey()))>::type
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return gd_array.get(lvl).template get<p>(v1);
+	}
+
+	/*! \brief Get the reference of the selected element
+	 *
+	 * \tparam p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return the selected element
+	 *
+	 */
+	template <unsigned int p>inline auto get(size_t lvl, const grid_dist_key_dx<dim> & v1) -> typename std::add_lvalue_reference<decltype(gd_array.get(lvl).template get<p>(v1.getKey()))>::type
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return gd_array.get(lvl).template get<p>(v1);
+	}
+
 	/*! \brief It synchronize the ghost parts
 	 *
 	 * \tparam prp... Properties to synchronize
