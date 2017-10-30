@@ -261,7 +261,7 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p>inline auto get(size_t lvl, const grid_dist_key_dx<dim> & v1) const -> typename std::add_lvalue_reference<decltype(gd_array.get(lvl).template get<p>(v1.getKey()))>::type
+	template <unsigned int p>inline auto get(size_t lvl, const grid_dist_key_dx<dim> & v1) const -> typename std::add_lvalue_reference<decltype(gd_array.get(lvl).template get<p>(v1))>::type
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -277,7 +277,7 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p>inline auto get(size_t lvl, const grid_dist_key_dx<dim> & v1) -> typename std::add_lvalue_reference<decltype(gd_array.get(lvl).template get<p>(v1.getKey()))>::type
+	template <unsigned int p>inline auto get(size_t lvl, const grid_dist_key_dx<dim> & v1) -> typename std::add_lvalue_reference<decltype(gd_array.get(lvl).template get<p>(v1))>::type
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);

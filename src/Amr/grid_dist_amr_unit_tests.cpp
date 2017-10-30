@@ -77,6 +77,17 @@ void Test3D_amr_create_levels(Box<3,float> & domain, size_t coars_g, size_t n_lv
 	v_cl.sum(count_c);
 	v_cl.execute();
 
+	auto it_level = amr_g.getDomainIteratorCells(3);
+
+	while (it_level.isNext())
+	{
+		auto key = it_level.get();
+
+		amr_g.template get<0>(3,key);
+
+		++it_level;
+	}
+
 	BOOST_REQUIRE_EQUAL(count_c,correct_result_cell);
 }
 
