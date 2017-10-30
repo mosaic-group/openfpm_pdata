@@ -26,16 +26,16 @@ void Test3D_amr_create_levels(Box<3,float> & domain, size_t coars_g, size_t n_lv
 
 	size_t g_sz[3] = {coars_g,coars_g,coars_g};
 
-	size_t tot = coars_g*coars_g*coars_g;
 	size_t tot_c = (coars_g - 1)*(coars_g - 1)*(coars_g - 1);
 	size_t correct_result = 0;
 	size_t correct_result_cell = 0;
 	size_t fact = 1;
 
-	for (size_t i = 0 ; i <  n_lvl ; i++)
+	for (size_t i = 0 ; i < n_lvl ; i++)
 	{
-		correct_result += tot*fact;
+		correct_result += coars_g*coars_g*coars_g;
 		correct_result_cell += tot_c*fact;
+		coars_g = 2*(coars_g - 1) + 1;
 		fact *= 8;
 	}
 
@@ -61,7 +61,7 @@ void Test3D_amr_create_levels(Box<3,float> & domain, size_t coars_g, size_t n_lv
 	v_cl.sum(count);
 	v_cl.execute();
 
-//	BOOST_REQUIRE_EQUAL(count,correct_result);
+	BOOST_REQUIRE_EQUAL(count,correct_result);
 
 	auto itc = amr_g.getDomainIteratorCells();
 
@@ -119,11 +119,7 @@ void Test3D_amr_child_parent_get(Box<3,float> & domain, size_t coars_g, size_t n
 
 	amr_g.initLevels(n_lvl,g_sz);
 
-	for (size_t i = 0; i < n_lvl ; i++)
-	{
-		if (create_vcluster().rank() == 0)
-		{std::cout << amr_g.getSpacing(i).toString() << std::endl;}
-	}
+	std::string test = amr_g.getSpacing(0).toString();
 
 	// Iterate across all the levels initialized
 	auto it = amr_g.getDomainIterator();
@@ -274,6 +270,16 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_test )
 	k = std::pow(k, 1/3.);
 
 	Test3D_amr_create_levels(domain3,k,4);
+}
+
+BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test_low_res )
+{
+	// Domain
+	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	long int k = 2;
+
+	Test3D_amr_child_parent_get(domain3,k,4);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

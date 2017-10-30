@@ -155,6 +155,7 @@ public:
 		}
 	}
 
+
 	grid_dist_amr_key_iterator<dim,device_grid,grid_dist_iterator_sub<dim,device_grid>> getDomainIteratorCells()
 	{
 		git_sub.clear();
@@ -174,6 +175,20 @@ public:
 		}
 
 		return grid_dist_amr_key_iterator<dim,device_grid,grid_dist_iterator_sub<dim,device_grid>>(git_sub);
+	}
+
+	grid_dist_iterator_sub<dim,device_grid> getDomainIteratorCells(size_t lvl)
+	{
+		grid_key_dx<dim> start;
+		grid_key_dx<dim> stop;
+
+		for (size_t j = 0 ; j < dim ; j++)
+		{
+			start.set_d(j,0);
+			stop.set_d(j,getGridInfoVoid(lvl).size(j) - 2);
+		}
+
+		return gd_array.get(lvl).getSubDomainIterator(start,stop);
 	}
 
 	/*! \brief Get domain iterator
