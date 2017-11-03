@@ -80,7 +80,7 @@ public:
 
 	/*! \brief Create a new key moving the old one
 	 *
-	 * \param i dimension id
+	 * \param s dimension id
 	 * \param s number of steps
 	 *
 	 * \return new key
