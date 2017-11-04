@@ -1,6 +1,17 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.1.0]
+
+### Added
+
+- Interface for Multi-vector dynamic load balancing
+
+### Fixed
+
+- Installation/detection of PETSC
+- 2D Fixing IO in binary for vector
+
 ## [1.0.0] 13 September 2017
 
 ### Added

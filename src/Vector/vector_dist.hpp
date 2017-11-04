@@ -913,11 +913,13 @@ public:
 	 * \tparam CellL CellList type to construct
 	 *
 	 * \param r_cut interation radius, or size of each cell
+	 * \param no_se3 avoid SE_CLASS3 checking
 	 *
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> > > CellL getCellList(St r_cut, bool no_se3 = false)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> > >
+	CellL getCellList(St r_cut, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -943,7 +945,8 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast, shift<dim, St> > > CellL getCellList_hilb(St r_cut)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast, shift<dim, St> > >
+	CellL getCellList_hilb(St r_cut)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -964,6 +967,7 @@ public:
 	 * \tparam CellL CellList type to construct
 	 *
 	 * \param cell_list Cell list to update
+	 * \param no_se3 avoid se class 3 checking
 	 *
 	 */
 	template<typename CellL> void updateCellList(CellL & cell_list, bool no_se3 = false)
@@ -1045,11 +1049,13 @@ public:
 	 *
 	 * \param r_cut interation radius, or size of each cell
 	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
+	 * \param no_se3 avoid se_class3 cheking default false
 	 *
 	 * \return the CellList
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> > > CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> > >
+	CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -1525,11 +1531,15 @@ public:
 	}
 
 	/*! \brief Get an iterator that traverse the particles in the domain
+	 *         using a cell list
 	 *
-	 * \return an iterator
+	 * \param NN Cell-list
+	 *
+	 * \return an iterator over the particles
 	 *
 	 */
-	template<typename CellList> ParticleIt_Cells<dim,CellList> getDomainIteratorCells(CellList & NN)
+	template<typename CellList> ParticleIt_Cells<dim,CellList>
+	getDomainIteratorCells(CellList & NN)
 	{
 #ifdef SE_CLASS3
 		se3.getIterator();
@@ -1741,9 +1751,7 @@ public:
 	 * from the particles
 	 *
 	 * \param md Model to use
-	 * \param vd vector to add for the computational cost
-	 * \param ts It is an optional parameter approximately should be the number of ghost get between two
-	 *           rebalancing at first decomposition this number can be ignored (default = 1) because not used
+	 * \param vd external vector to add for the computational cost
 	 *
 	 */
 	template <typename Model=ModelLin>inline void addComputationCosts(const self & vd, Model md=Model())
@@ -1766,6 +1774,14 @@ public:
 		}
 	}
 
+	/*! \brief Add the computation cost on the decomposition coming
+	 * from the particles
+	 *
+	 * \param md Model to use
+	 * \param ts It is an optional parameter approximately should be the number of ghost get between two
+	 *           rebalancing at first decomposition this number can be ignored (default = 1) because not used
+	 *
+	 */
 	template <typename Model=ModelLin> void finalizeComputationCosts(Model md=Model(), size_t ts = 1)
 	{
 		Decomposition & dec = getDecomposition();
@@ -1808,36 +1824,6 @@ public:
 		addComputationCosts(*this,md);
 
 		finalizeComputationCosts(md,ts);
-
-/*		CellDecomposer_sm<dim, St, shift<dim,St>> cdsm;
-
-		Decomposition & dec = getDecomposition();
-		auto & dist = getDecomposition().getDistribution();
-
-		cdsm.setDimensions(dec.getDomain(), dec.getDistGrid().getSize(), 0);
-
-		for (size_t i = 0; i < dist.getNOwnerSubSubDomains() ; i++)
-			dec.setSubSubDomainComputationCost(dist.getOwnerSubSubDomain(i) , 1);
-
-		auto it = getDomainIterator();
-
-		while (it.isNext())
-		{
-			size_t v = cdsm.getCell(this->getPos(it.get()));
-
-			md.addComputation(dec,*this,v,it.get().getKey());
-
-			++it;
-		}
-
-		dec.computeCommunicationAndMigrationCosts(ts);
-
-		// Go throught all the sub-sub-domains and apply the model
-
-		for (size_t i = 0 ; i < dist.getNOwnerSubSubDomains(); i++)
-			md.applyModel(dec,dist.getOwnerSubSubDomain(i));
-
-		dist.setDistTol(md.distributionTol());*/
 	}
 
 	/*! \brief Save the distributed vector on HDF5 file

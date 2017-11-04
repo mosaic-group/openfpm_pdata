@@ -100,42 +100,75 @@ struct init_prop
 	}
 };
 
-// Unknown type
+//! Type check in case of unknown type
 template<typename tcheck, bool foundamental>
 struct typeCheck
 {
-	//! It check if the type is Nan, data type to check
+	/*! \brief It check if the type is Nan, data type to check
+	 *
+	 * \param data to check
+	 *
+	 * \return true if is Nan
+	 *
+	 */
 	static bool isNan(const tcheck & data)
 	{
 		return false;
 	}
 
-	//! It check is the type is infinity, data type to checl
+	/*! \brief It check if the type is Infinity, data type to check
+	 *
+	 * \param data to check
+	 *
+	 * \return false if is infinity
+	 *
+	 */
 	static bool isInf(const tcheck & data)
 	{
 		return false;
 	}
 };
 
-// Unknown type
+//! Type check in case of supported type
 template<typename tcheck>
 struct typeCheck<tcheck,true>
 {
+	/*! \brief It check if the type is Nan, data type to check
+	 *
+	 * \param data to check
+	 *
+	 * \return true if is Nan
+	 *
+	 */
 	static bool isNan(const tcheck & data)
 	{
 		return std::isnan(data);
 	}
 
+	/*! \brief It check if the type is Infinity, data type to check
+	 *
+	 * \param data to check
+	 *
+	 * \return true if is infinity
+	 *
+	 */
 	static bool isInf(const tcheck & data)
 	{
 		return std::isinf(data);
 	}
 };
 
-// Array
+//! Type check in case of supported array type
 template<typename tcheck, bool foundamental, unsigned int N1>
 struct typeCheck<tcheck[N1], foundamental>
 {
+	/*! \brief It check if the type is Nan, data type to check
+	 *
+	 * \param data to check
+	 *
+	 * \return true if is Nan
+	 *
+	 */
 	static bool isNan(tcheck (& data)[N1])
 	{
 		bool nn = false;
@@ -149,6 +182,13 @@ struct typeCheck<tcheck[N1], foundamental>
 		return nn;
 	}
 
+	/*! \brief It check if the type is Infinity, data type to check
+	 *
+	 * \param data to check
+	 *
+	 * \return true if is infinity
+	 *
+	 */
 	static bool isInf(tcheck (& data)[N1])
 	{
 		bool nn = false;
@@ -163,10 +203,17 @@ struct typeCheck<tcheck[N1], foundamental>
 	}
 };
 
-// Array2d
+//! Type check in case of supported 2D array type
 template<typename tcheck, bool foundamental, unsigned int N1, unsigned int N2>
 struct typeCheck<tcheck[N1][N2], foundamental>
 {
+	/*! \brief It check if the type is Nan, data type to check
+	 *
+	 * \param data to check
+	 *
+	 * \return true if is Nan
+	 *
+	 */
 	static bool isNan(tcheck (& data)[N1][N2])
 	{
 		bool nn = false;
@@ -183,6 +230,13 @@ struct typeCheck<tcheck[N1][N2], foundamental>
 		return nn;
 	}
 
+	/*! \brief It check if the type is Infinity, data type to check
+	 *
+	 * \param data to check
+	 *
+	 * \return true if is infinity
+	 *
+	 */
 	static bool isInf(tcheck (& data)[N1][N2])
 	{
 		bool nn = false;
@@ -219,7 +273,8 @@ struct propCheckNAN
 
 	/*! \brief constructor
 	 *
-	 * \param
+	 * \param data vector to check for Nan properties
+	 * \param id element to check
 	 *
 	 */
 	inline propCheckNAN(const vector & data, size_t id)
@@ -252,7 +307,7 @@ struct propCheckNAN
 /*! \brief this class is a functor for "for_each" algorithm
  *
  * This class is a functor for "for_each" algorithm. For each
- * property it check that there are not NAN properties
+ * property it check that there are not infinity properties
  *
  * \param T boost::fusion::vector
  *
@@ -269,7 +324,7 @@ struct propCheckINF
 
 	/*! \brief constructor
 	 *
-	 * \param check the the property is infinity
+	 * \param data vector to check
 	 * \param id element
 	 *
 	 */
@@ -389,6 +444,13 @@ class se_class3_vector
 		//! last write
 		size_t l_wrt;
 
+		/*! \brief It check if the particle is in the internal ghost area
+		 *
+		 * \param p particle to check
+		 *
+		 * \return true if the particle is in that area
+		 *
+		 */
 		bool isLocalHalo(const Point<dim,T> & p)
 		{
 			for (size_t i = 0; i < dec.getNLocalSub(); i++)
@@ -448,7 +510,13 @@ class se_class3_vector
 			return type;
 		}
 
-		template<unsigned int ... prp> void create_NNP( const size_t (& gg)[sizeof...(prp)+1] )
+		/*! \brief Fill non_NP with the properties that are not synchronized
+		 *
+		 * \param gg vector of properties synchronized
+		 *
+		 */
+		template<unsigned int ... prp>
+		void create_NNP( const size_t (& gg)[sizeof...(prp)+1] )
 		{
 			non_NP.clear();
 
@@ -470,6 +538,13 @@ class se_class3_vector
 		}
 
 
+		/*! \brief Get property name
+		 *
+		 * \param i property
+		 *
+		 * \return the property name
+		 *
+		 */
 		std::string getPrpName(size_t i) const
 		{
 			if (i == Np_real)
@@ -480,17 +555,30 @@ class se_class3_vector
 
 	public:
 
-		//! Constructor all properties are uninitialized
+		/*! Constructor all properties are uninitialized
+		 *
+		 * \param dec decomposition
+		 * \param vd vector we are cheking with SE_CLASS3 checks
+		 *
+		 */
 		se_class3_vector(Decomposition & dec, vector & vd)
-		:dec(dec),vd(vd)
+		:dec(dec),vd(vd),l_wrt(-1)
 		{
 		}
 
+		/*! \brief return the status of the ghosts
+		 *
+		 * \return the status of the ghosts
+		 *
+		 */
 		template<unsigned int prp> size_t isGhostSync()
 		{
 			return sync[GHOST][prp];
 		}
 
+		/*! \brief Initialize the se_class2 structure
+		 *
+		 */
 		void Initialize()
 		{
 			auto it = vd.getDomainIterator_no_se3();
@@ -702,6 +790,10 @@ class se_class3_vector
 			}
 		}
 
+		/*! \brief Operation to do after map
+		 *
+		 *
+		 */
 		void map_post()
 		{
 			for (size_t j = 0 ; j < Np_real + 1 ; j++)
