@@ -939,9 +939,9 @@ public:
 		return true;
 	}
 
-	/*! \brief Get the size of local domain grids
+	/*! \brief Get the total number of grid points for the calling processor
 	 *
-	 * \return The size of the local domain
+	 * \return The number of grid points
 	 *
 	 */
 	size_t getLocalDomainSize() const
@@ -959,9 +959,9 @@ public:
 		return total;
 	}
 
-	/*! \brief Get the size of local domain grids
+	/*! \brief Get the total number of grid points with ghost for the calling processor
 	 *
-	 * \return The size of the local domain
+	 * \return The number of grid points
 	 *
 	 */
 	size_t getLocalDomainWithGhostSize() const

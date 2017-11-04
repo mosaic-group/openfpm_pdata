@@ -281,6 +281,8 @@ public:
 	 *
 	 * \param id vertex id
 	 *
+	 * \return the weight of the vertex
+	 *
 	 */
 	size_t getSubSubDomainComputationCost(size_t id)
 	{
@@ -328,6 +330,8 @@ public:
 	}
 
 	/*! \brief Returns total number of sub-sub-domains in the distribution graph
+	 *
+	 * \return number of sub-sub-domain
 	 *
 	 */
 	size_t getNSubSubDomains()

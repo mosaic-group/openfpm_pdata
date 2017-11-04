@@ -231,6 +231,7 @@ private:
 		}
 	}
 
+
 public:
 
 	//! space type
@@ -424,6 +425,10 @@ public:
 	 */
 	inline auto getPos(vect_dist_key_dx vec_key) -> decltype(v_pos.template get<0>(vec_key.getKey()))
 	{
+#ifdef SE_CLASS3
+		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key.getKey());
+#endif
+
 		return v_pos.template get<0>(vec_key.getKey());
 	}
 
@@ -438,6 +443,9 @@ public:
 	 */
 	inline auto getPos(vect_dist_key_dx vec_key) const -> decltype(v_pos.template get<0>(vec_key.getKey()))
 	{
+#ifdef SE_CLASS3
+		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key.getKey());
+#endif
 		return v_pos.template get<0>(vec_key.getKey());
 	}
 
@@ -452,6 +460,9 @@ public:
 	 */
 	inline auto getPos(size_t vec_key) -> decltype(v_pos.template get<0>(vec_key))
 	{
+#ifdef SE_CLASS3
+		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key);
+#endif
 		return v_pos.template get<0>(vec_key);
 	}
 
@@ -466,6 +477,9 @@ public:
 	 */
 	inline auto getPos(size_t vec_key) const -> decltype(v_pos.template get<0>(vec_key))
 	{
+#ifdef SE_CLASS3
+		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key);
+#endif
 		return v_pos.template get<0>(vec_key);
 	}
 
@@ -481,6 +495,9 @@ public:
 	 */
 	template<unsigned int id> inline auto getProp(vect_dist_key_dx vec_key) -> decltype(v_prp.template get<id>(vec_key.getKey()))
 	{
+#ifdef SE_CLASS3
+		check_for_prop_nan_inf<id,prop::max_prop+SE3_STATUS>(*this,vec_key.getKey());
+#endif
 		return v_prp.template get<id>(vec_key.getKey());
 	}
 
@@ -496,6 +513,9 @@ public:
 	 */
 	template<unsigned int id> inline auto getProp(vect_dist_key_dx vec_key) const -> decltype(v_prp.template get<id>(vec_key.getKey()))
 	{
+#ifdef SE_CLASS3
+		check_for_prop_nan_inf<id,prop::max_prop+SE3_STATUS>(*this,vec_key.getKey());
+#endif
 		return v_prp.template get<id>(vec_key.getKey());
 	}
 
@@ -511,6 +531,9 @@ public:
 	 */
 	template<unsigned int id> inline auto getProp(size_t vec_key) -> decltype(v_prp.template get<id>(vec_key))
 	{
+#ifdef SE_CLASS3
+		check_for_prop_nan_inf<id,prop::max_prop+SE3_STATUS>(*this,vec_key);
+#endif
 		return v_prp.template get<id>(vec_key);
 	}
 
@@ -526,6 +549,9 @@ public:
 	 */
 	template<unsigned int id> inline auto getProp(size_t vec_key) const -> decltype(v_prp.template get<id>(vec_key))
 	{
+#ifdef SE_CLASS3
+		check_for_prop_nan_inf<id,prop::max_prop+SE3_STATUS>(*this,vec_key);
+#endif
 		return v_prp.template get<id>(vec_key);
 	}
 
@@ -1715,13 +1741,75 @@ public:
 	 * from the particles
 	 *
 	 * \param md Model to use
+	 * \param vd vector to add for the computational cost
+	 * \param ts It is an optional parameter approximately should be the number of ghost get between two
+	 *           rebalancing at first decomposition this number can be ignored (default = 1) because not used
+	 *
+	 */
+	template <typename Model=ModelLin>inline void addComputationCosts(const self & vd, Model md=Model())
+	{
+		CellDecomposer_sm<dim, St, shift<dim,St>> cdsm;
+
+		Decomposition & dec = getDecomposition();
+
+		cdsm.setDimensions(dec.getDomain(), dec.getDistGrid().getSize(), 0);
+
+		auto it = vd.getDomainIterator();
+
+		while (it.isNext())
+		{
+			size_t v = cdsm.getCell(vd.getPos(it.get()));
+
+			md.addComputation(dec,vd,v,it.get().getKey());
+
+			++it;
+		}
+	}
+
+	template <typename Model=ModelLin> void finalizeComputationCosts(Model md=Model(), size_t ts = 1)
+	{
+		Decomposition & dec = getDecomposition();
+		auto & dist = getDecomposition().getDistribution();
+
+		dec.computeCommunicationAndMigrationCosts(ts);
+
+		// Go throught all the sub-sub-domains and apply the model
+
+		for (size_t i = 0 ; i < dist.getNOwnerSubSubDomains(); i++)
+		{md.applyModel(dec,dist.getOwnerSubSubDomain(i));}
+
+		dist.setDistTol(md.distributionTol());
+	}
+
+	/*! \brief Initialize the computational cost
+	 *
+	 */
+	void initializeComputationCosts()
+	{
+		Decomposition & dec = getDecomposition();
+		auto & dist = getDecomposition().getDistribution();
+
+		for (size_t i = 0; i < dist.getNOwnerSubSubDomains() ; i++)
+		{dec.setSubSubDomainComputationCost(dist.getOwnerSubSubDomain(i) , 1);}
+	}
+
+	/*! \brief Add the computation cost on the decomposition coming
+	 * from the particles
+	 *
+	 * \param md Model to use
 	 * \param ts It is an optional parameter approximately should be the number of ghost get between two
 	 *           rebalancing at first decomposition this number can be ignored (default = 1) because not used
 	 *
 	 */
 	template <typename Model=ModelLin>inline void addComputationCosts(Model md=Model(), size_t ts = 1)
 	{
-		CellDecomposer_sm<dim, St, shift<dim,St>> cdsm;
+		initializeComputationCosts();
+
+		addComputationCosts(*this,md);
+
+		finalizeComputationCosts(md,ts);
+
+/*		CellDecomposer_sm<dim, St, shift<dim,St>> cdsm;
 
 		Decomposition & dec = getDecomposition();
 		auto & dist = getDecomposition().getDistribution();
@@ -1749,7 +1837,7 @@ public:
 		for (size_t i = 0 ; i < dist.getNOwnerSubSubDomains(); i++)
 			md.applyModel(dec,dist.getOwnerSubSubDomain(i));
 
-		dist.setDistTol(md.distributionTol());
+		dist.setDistTol(md.distributionTol());*/
 	}
 
 	/*! \brief Save the distributed vector on HDF5 file
@@ -1996,7 +2084,7 @@ public:
 		sz = 0;
 
 		for (size_t i = 0 ; i < v_cl.getProcessUnitID() ; i++)
-			sz += accu.get(i);
+		{sz += accu.get(i);}
 
 		return sz;
 	}

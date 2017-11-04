@@ -38,17 +38,19 @@ enum ptype
 	INSIDE
 };
 
-// is initialized
+//! is initialized
 template<typename T>
 struct is_initialized
 {
+	//! it indicate the property is not initialized
 	static const int init = UNINITIALIZED;
 };
 
-// is initialized
+//! is initialized
 template<typename T>
 struct is_initialized<openfpm::vector<T>>
 {
+	//! it indicaste that property is clean
 	static const int init = CLEAN;
 };
 
@@ -61,22 +63,21 @@ struct is_initialized<openfpm::vector<T>>
  * element of the boost::vector the operator() is called.
  * Is mainly used to initialize the properties
  *
- * \tparam encap source
- * \tparam encap dst
+ * \tparam Np number of properties
+ * \tparam vector type of vector
  *
  */
 
 template<unsigned int Np, typename vector>
 struct init_prop
 {
-	//! vector for prop initializetion
+	//! vector for prop initialization
 	size_t (& prp_init)[Np];
 
 	/*! \brief constructor
 	 *
 	 *
-	 * \param src encapsulated object1
-	 * \param dst encapsulated object2
+	 * \param prp_init properties to initialize
 	 *
 	 */
 	inline init_prop(size_t ( & prp_init)[Np])
@@ -103,11 +104,13 @@ struct init_prop
 template<typename tcheck, bool foundamental>
 struct typeCheck
 {
+	//! It check if the type is Nan, data type to check
 	static bool isNan(const tcheck & data)
 	{
 		return false;
 	}
 
+	//! It check is the type is infinity, data type to checl
 	static bool isInf(const tcheck & data)
 	{
 		return false;
@@ -234,7 +237,7 @@ struct propCheckNAN
 	{
 		typedef typename boost::mpl::at<typename vector::value_type::type,typename boost::mpl::int_<T::value> >::type type_to_check;
 
-		bool snn = typeCheck<type_to_check,std::is_fundamental<type_to_check>::value>::isNan(data.template getProp<T::value>(id));
+		bool snn = typeCheck<type_to_check,std::is_fundamental<type_to_check>::value>::isNan(data.template getPropNC<T::value>(id));
 
 		if (snn == true)
 		{
@@ -266,7 +269,8 @@ struct propCheckINF
 
 	/*! \brief constructor
 	 *
-	 * \param
+	 * \param check the the property is infinity
+	 * \param id element
 	 *
 	 */
 	inline propCheckINF(const vector & data, size_t id)
@@ -310,6 +314,54 @@ static inline std::string getParticleTypeString(size_t type)
 
 	return std::string();
 }
+
+template<unsigned int prp, unsigned int Np, typename vector>  void check_for_pos_nan_inf(const vector & vd, size_t p)
+{
+#ifdef CHECKFOR_POSINF
+
+			if ( std::isinf(vd.getPosNC(p)[0]) || std::isinf(vd.getPosNC(p)[1]) || std::isinf(vd.getPosNC(p)[2]) )
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " error detected INF in position for particle p=" << p << " of type=" << getParticleTypeString(vd.template getPropNC<Np+SE3_TYPE>(p)) << std::endl;
+				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+			}
+
+#endif
+
+#ifdef CHECKFOR_POSNAN
+
+			if ( std::isnan(vd.getPosNC(p)[0]) || std::isnan(vd.getPosNC(p)[1]) || std::isnan(vd.getPosNC(p)[2]) )
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " error detected NAN in position for particle p=" << p << " of type=" << getParticleTypeString(vd.template getPropNC<Np+SE3_TYPE>(p)) << std::endl;
+				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+			}
+
+#endif
+}
+
+template<unsigned int prp, unsigned int Np_real, typename vector>  void check_for_prop_nan_inf(const vector & vd, size_t p)
+{
+#ifdef CHECKFOR_PROPINF
+
+			{
+				propCheckINF<vector> checker(vd,p);
+
+				boost::mpl::for_each_ref< boost::mpl::range_c<int,0, Np_real > > (checker);
+			}
+
+#endif
+
+#ifdef CHECKFOR_PROPNAN
+
+			{
+				propCheckNAN<vector> checker(vd,p);
+
+				boost::mpl::for_each_ref< boost::mpl::range_c<int,0, Np_real > >(checker);
+			}
+
+#endif
+}
+
+
 
 /*! \brief This class check for inconsistency access
  *
@@ -707,46 +759,8 @@ class se_class3_vector
 				}
 			}
 
-#ifdef CHECK_FOR_POSINF
-
-			if ( std::isinf(vd.getPosNC(p)[0]) || std::isinf(vd.getPosNC(p)[1]) || std::isinf(vd.getPosNC(p)[2]) )
-			{
-				std::cerr << __FILE__ << ":" << __LINE__ << " error detected INF in position for particle p=" << p << " of type=" << getParticleTypeString(vd.template getPropNC<Np+SE3_TYPE>(p)) << std::endl;
-				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
-			}
-
-#endif
-
-#ifdef CHECKFOR_POSNAN
-
-			if ( std::isnan(vd.getPosNC(p)[0]) || std::isnan(vd.getPosNC(p)[1]) || std::isnan(vd.getPosNC(p)[2]) )
-			{
-				std::cerr << __FILE__ << ":" << __LINE__ << " error detected NAN in position for particle p=" << p << " of type=" << getParticleTypeString(vd.template getPropNC<Np+SE3_TYPE>(p)) << std::endl;
-				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
-			}
-
-#endif
-
-#ifdef CHECKFOR_PROPINF
-
-			{
-				propCheckINF<vector> checker(vd,p);
-
-				boost::mpl::for_each_ref< boost::mpl::range_c<int,0, Np_real > > (checker);
-			}
-
-#endif
-
-#ifdef CHECKFOR_PROPNAN
-
-			{
-				propCheckNAN<vector> checker(vd,p);
-
-				boost::mpl::for_each_ref< boost::mpl::range_c<int,0, Np_real > >(checker);
-			}
-
-#endif
-
+			check_for_pos_nan_inf<prp>(vd,p);
+			check_for_prop_nan_inf<prp,Np_real>(vd,p);
 		}
 
 		template<unsigned int prp> void write(vector & vd, size_t p)
