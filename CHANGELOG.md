@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 
 - Installation/detection of PETSC
 - 2D Fixing IO in binary for vector
+- CRITICAL-BUG scalar product in combination with vector product is broken (it return 0)
 
 ## [1.0.0] 13 September 2017
 
