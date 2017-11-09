@@ -133,13 +133,19 @@ struct gcl<dim,St,CellList_gen<dim, St, Process_keys_hilb,Mem_type, shift<dim, S
  *
  */
 
-template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St>, typename Memory = HeapMemory>
+template<unsigned int dim,
+         typename St,
+		 typename prop,
+		 typename layout = typename memory_traits_lin<prop>::type,
+		 template <typename> class layout_base = memory_traits_lin,
+		 typename Decomposition = CartDecomposition<dim,St>,
+		 typename Memory = HeapMemory>
 class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory>
 {
 public:
 
 	//! Self type
-	typedef vector_dist<dim,St,prop,Decomposition,Memory> self;
+	typedef vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> self;
 
 	//! property object
 	typedef prop value_type;
@@ -151,11 +157,11 @@ private:
 
 	//! Particle position vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector<Point<dim, St>> v_pos;
+	openfpm::vector<Point<dim, St>,Memory> v_pos;
 
 	//! Particle properties vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector<prop> v_prp;
+	openfpm::vector<prop,Memory> v_prp;
 
 	//! Virtual cluster
 	Vcluster & v_cl;
@@ -247,7 +253,7 @@ public:
 	 * \return itself
 	 *
 	 */
-	vector_dist<dim,St,prop,Decomposition,Memory> & operator=(const vector_dist<dim,St,prop,Decomposition,Memory> & v)
+	vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & operator=(const vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & v)
 	{
 		static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory>>(v));
 
@@ -271,7 +277,7 @@ public:
 	 * \return itself
 	 *
 	 */
-	vector_dist<dim,St,prop,Decomposition,Memory> & operator=(vector_dist<dim,St,prop,Decomposition,Memory> && v)
+	vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & operator=(vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> && v)
 	{
 		static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory> >(v));
 
@@ -294,7 +300,7 @@ public:
 	 * \param v vector to copy
 	 *
 	 */
-	vector_dist(const vector_dist<dim,St,prop,Decomposition,Memory> & v)
+	vector_dist(const vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & v)
 	:vector_dist_comm<dim,St,prop,Decomposition,Memory>(v.getDecomposition()),v_cl(v.v_cl) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
@@ -309,7 +315,7 @@ public:
 	 * \param v vector to copy
 	 *
 	 */
-	vector_dist(vector_dist<dim,St,prop,Decomposition,Memory> && v) noexcept
+	vector_dist(vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> && v) noexcept
 	:v_cl(v.v_cl) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
