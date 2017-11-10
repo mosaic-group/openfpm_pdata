@@ -526,10 +526,11 @@ public:
 	 */
 	const Parmetis<Graph> & operator=(const Parmetis<Graph> & pm)
 	{
-		comm = pm.comm;
-		v_cl = pm.v_cl;
+		MPI_Comm_dup(pm.comm, &comm);
 		p_id = pm.p_id;
 		nc = pm.nc;
+		n_dec = pm.n_dec;
+		dist_tol = pm.dist_tol;
 
 		setDefaultParameters(pm.Mg.wgtflag[0] == 3);
 
@@ -545,10 +546,12 @@ public:
 	 */
 	const Parmetis<Graph> & operator=(Parmetis<Graph> && pm)
 	{
-		comm = pm.comm;
-		v_cl = pm.v_cl;
+		// TODO Move into VCluster
+		MPI_Comm_dup(pm.comm, &comm);
 		p_id = pm.p_id;
 		nc = pm.nc;
+		n_dec = pm.n_dec;
+		dist_tol = pm.dist_tol;
 
 		setDefaultParameters(pm.Mg.wgtflag[0] == 3);
 

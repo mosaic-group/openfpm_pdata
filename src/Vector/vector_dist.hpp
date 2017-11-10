@@ -140,7 +140,7 @@ template<unsigned int dim,
 		 template <typename> class layout_base = memory_traits_lin,
 		 typename Decomposition = CartDecomposition<dim,St>,
 		 typename Memory = HeapMemory>
-class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory>
+class vector_dist : public vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>
 {
 public:
 
@@ -161,7 +161,7 @@ private:
 
 	//! Particle properties vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector<prop,Memory> v_prp;
+	openfpm::vector<prop,Memory,layout,layout_base> v_prp;
 
 	//! Virtual cluster
 	Vcluster & v_cl;
@@ -255,7 +255,7 @@ public:
 	 */
 	vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & operator=(const vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & v)
 	{
-		static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory>>(v));
+		static_cast<vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>>(v));
 
 		g_m = v.g_m;
 		v_pos = v.v_pos;
@@ -279,7 +279,7 @@ public:
 	 */
 	vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & operator=(vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> && v)
 	{
-		static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory> >(v));
+		static_cast<vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> >(v));
 
 		g_m = v.g_m;
 		v_pos.swap(v.v_pos);
@@ -301,7 +301,7 @@ public:
 	 *
 	 */
 	vector_dist(const vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & v)
-	:vector_dist_comm<dim,St,prop,Decomposition,Memory>(v.getDecomposition()),v_cl(v.v_cl) SE_CLASS3_VDIST_CONSTRUCTOR
+	:vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>(v.getDecomposition()),v_cl(v.v_cl) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -336,7 +336,7 @@ public:
 	 *
 	 */
 	vector_dist(const Decomposition & dec, size_t np) :
-	vector_dist_comm<dim,St,prop,Decomposition,Memory>(dec), v_cl(create_vcluster()) SE_CLASS3_VDIST_CONSTRUCTOR
+	vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>(dec), v_cl(create_vcluster()) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -1620,7 +1620,7 @@ public:
 	 */
 	inline Decomposition & getDecomposition()
 	{
-		return vector_dist_comm<dim,St,prop,Decomposition,Memory>::getDecomposition();
+		return vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>::getDecomposition();
 	}
 
 	/*! \brief Get the decomposition
@@ -1630,7 +1630,7 @@ public:
 	 */
 	inline const Decomposition & getDecomposition() const
 	{
-		return vector_dist_comm<dim,St,prop,Decomposition,Memory>::getDecomposition();
+		return vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>::getDecomposition();
 	}
 
 	/*! \brief It move all the particles that does not belong to the local processor to the respective processor

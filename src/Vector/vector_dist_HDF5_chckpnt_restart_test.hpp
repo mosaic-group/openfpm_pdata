@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test )
 	// ghost
 	Ghost<dim,float> ghost(1.0/(Ng-2));
 
-	vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(0,box,bc,ghost);
+	vector_dist<dim,float, aggregate<float[dim]> > vd(0,box,bc,ghost);
 
 	// Put particles
 
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test )
 	// Save the vector
     vd.save("vector_dist.h5");
 
-    vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd2(0,box,bc,ghost);
+    vector_dist<dim,float, aggregate<float[dim]> > vd2(0,box,bc,ghost);
 
     vd2.load("vector_dist.h5");
 
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
 	// ghost
 	Ghost<dim,float> ghost(1.0/(Ng-2));
 
-	vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(0,box,bc,ghost);
+	vector_dist<dim,float, aggregate<float[dim]> > vd(0,box,bc,ghost);
 
 	// Load the vector
     vd.load("test_data/vector_dist_24.h5");

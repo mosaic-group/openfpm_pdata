@@ -21,7 +21,7 @@
  * \param bc boundary conditions
  *
  */
-template<unsigned int dim> size_t total_n_part_lc(vector_dist<dim,float, Point_test<float>, CartDecomposition<dim,float> > & vd, size_t (& bc)[dim])
+template<unsigned int dim, template <typename> class layout> size_t total_n_part_lc(vector_dist<dim,float, Point_test<float>,typename layout<Point_test<float>>::type, layout, CartDecomposition<dim,float> > & vd, size_t (& bc)[dim])
 {
 	Vcluster & v_cl = vd.getVC();
 	auto it2 = vd.getDomainIterator();
@@ -775,7 +775,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 		Ghost<3,float> ghost(0.01 / factor);
 
 		// Distributed vector
-		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box,bc,ghost);
+		vector_dist<3,float, Point_test<float> > vd(k,box,bc,ghost);
 
 		auto it = vd.getIterator();
 
@@ -835,7 +835,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map )
 	Ghost<3,float> ghost(0.05 / factor);
 
 	// Distributed vector
-	vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(1,box,bc,ghost);
+	vector_dist<3,float, Point_test<float> > vd(1,box,bc,ghost);
 
 	// put particles al 1.0, check that they go to 0.0
 
@@ -886,7 +886,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_not_periodic_map )
 	Ghost<3,float> ghost(0.05 / factor);
 
 	// Distributed vector
-	vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(1,box,bc,ghost);
+	vector_dist<3,float, Point_test<float> > vd(1,box,bc,ghost);
 
 	// put particles al 1.0, check that they go to 0.0
 
@@ -941,7 +941,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_out_of_bound_policy )
 	Ghost<3,float> ghost(0.05 / factor);
 
 	// Distributed vector
-	vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(100,box,bc,ghost);
+	vector_dist<3,float, Point_test<float> > vd(100,box,bc,ghost);
 
 	// put particles at out of the boundary, they must be detected and and killed
 
@@ -1025,7 +1025,7 @@ void Test_interacting(Box<3,float> & box)
 		Ghost<3,float> ghost(r_cut);
 
 		// Distributed vector
-		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box,bc,ghost);
+		vector_dist<3,float, Point_test<float> > vd(k,box,bc,ghost);
 
 		auto it = vd.getIterator();
 
@@ -1165,7 +1165,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_grid_iterator )
 		Ghost<3,float> ghost(1.0/(Ng-2));
 
 		// Distributed vector
-		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(0,box,bc,ghost);
+		vector_dist<3,float, Point_test<float> > vd(0,box,bc,ghost);
 
 		// Put particles on a grid creating a Grid iterator
 		auto it = vd.getGridIterator(sz);
@@ -1239,7 +1239,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 		Ghost<3,float> ghost(third_dist*1.1);
 
 		// Distributed vector
-		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(0,box,bc,ghost);
+		vector_dist<3,float, Point_test<float> > vd(0,box,bc,ghost);
 
 		// Put particles on a grid creating a Grid iterator
 		auto it = vd.getGridIterator(sz);

@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
     size_t bc[2]={PERIODIC,PERIODIC};
 	Ghost<2,float> g(0.01);
 	
-	vector_dist<2,float, Particle<float>, CartDecomposition<2,float> > vd(4096,domain,bc,g);
+	vector_dist<2,float, Particle<float> > vd(4096,domain,bc,g);
 
 	auto it = vd.getIterator();
 

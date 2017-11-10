@@ -798,6 +798,9 @@ public:
 		cart.box_nn_processor = box_nn_processor;
 		cart.fine_s = fine_s;
 		cart.gr = gr;
+		cart.gr_dist = gr_dist;
+		cart.dist = dist;
+		cart.commCostSet = commCostSet;
 		cart.cd = cd;
 		cart.domain = domain;
 		for (size_t i = 0 ; i < dim ; i++)
@@ -830,11 +833,17 @@ public:
 		box_nn_processor = cart.box_nn_processor;
 		fine_s = cart.fine_s;
 		gr = cart.gr;
+		gr_dist = cart.gr_dist;
+		dist = cart.dist;
+		commCostSet = cart.commCostSet;
 		cd = cart.cd;
 		domain = cart.domain;
 
 		for (size_t i = 0 ; i < dim ; i++)
-		{spacing[i] = cart.spacing[i];};
+		{
+			spacing[i] = cart.spacing[i];
+			magn[i] = cart.magn[i];
+		};
 
 		ghost = cart.ghost;
 
@@ -863,10 +872,16 @@ public:
 		box_nn_processor.swap(cart.box_nn_processor);
 		fine_s.swap(cart.fine_s);
 		gr = cart.gr;
+		gr_dist = cart.gr_dist;
+		dist = cart.dist;
+		commCostSet = cart.commCostSet;
 		cd = cart.cd;
 		domain = cart.domain;
 		for (size_t i = 0 ; i < dim ; i++)
-		{spacing[i] = cart.spacing[i];};
+		{
+			spacing[i] = cart.spacing[i];
+			magn[i] = cart.magn[i];
+		};
 
 		ghost = cart.ghost;
 
@@ -1096,7 +1111,7 @@ public:
 		reset();
 
 		if (commCostSet == false)
-			computeCommunicationAndMigrationCosts(1);
+		{computeCommunicationAndMigrationCosts(1);}
 
 		dist.decompose();
 
@@ -1118,7 +1133,7 @@ public:
 		reset();
 
 		if (commCostSet == false)
-			computeCommunicationAndMigrationCosts(ts);
+		{computeCommunicationAndMigrationCosts(ts);}
 
 		dist.refine();
 
@@ -1140,7 +1155,7 @@ public:
 		reset();
 
 		if (commCostSet == false)
-			computeCommunicationAndMigrationCosts(ts);
+		{computeCommunicationAndMigrationCosts(ts);}
 
 		dist.redecompose();
 

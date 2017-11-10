@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_reorder_2d_test )
 		// Boundary conditions
 		size_t bc[2]={NON_PERIODIC,NON_PERIODIC};
 
-		vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(k,box,bc,Ghost<2,float>(0.01));
+		vector_dist<2,float, Point_test<float> > vd(k,box,bc,Ghost<2,float>(0.01));
 
 		auto it = vd.getIterator();
 
@@ -143,9 +143,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 			for (size_t i = 0; i < dim; i++)
 				bc[i] = PERIODIC;
 
-			vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(ghost_part));
+			vector_dist<dim,float, aggregate<float[dim]> > vd(k_int,box,bc,Ghost<dim,float>(ghost_part));
 
-			vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd2(k_int,box,bc,Ghost<dim,float>(ghost_part));
+			vector_dist<dim,float, aggregate<float[dim]> > vd2(k_int,box,bc,Ghost<dim,float>(ghost_part));
 
 			// Initialize dist vectors
 			vd_initialize_double<dim>(vd, vd2, v_cl, k_int);
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 				vect_dist_key_dx key = it_v2.get();
 
 				for (size_t i = 0; i < dim; i++)
-					avg.get(i) += fabs(vd.getProp<0>(key)[i]);
+				{avg.get(i) += fabs(vd.getProp<0>(key)[i]);}
 
 				++count;
 				++it_v2;
@@ -267,7 +267,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 			for (size_t i = 0; i < dim; i++)
 				bc[i] = PERIODIC;
 
-			vector_dist<dim,float, aggregate<float[dim], float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(ghost_part));
+			vector_dist<dim,float, aggregate<float[dim], float[dim]> > vd(k_int,box,bc,Ghost<dim,float>(ghost_part));
 
 			// Initialize vd
 			vd_initialize<dim,decltype(vd)>(vd, v_cl, k_int);

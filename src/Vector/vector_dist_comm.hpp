@@ -42,7 +42,13 @@ inline static size_t compute_options(size_t opt)
  *
  */
 
-template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St>, typename Memory = HeapMemory>
+template<unsigned int dim,
+         typename St,
+		 typename prop,
+		 typename layout,
+		 template <typename> class layout_base,
+		 typename Decomposition = CartDecomposition<dim,St>,
+		 typename Memory = HeapMemory>
 class vector_dist_comm
 {
 	//! Number of units for each sub-domain
@@ -784,7 +790,7 @@ class vector_dist_comm
 	static void * message_alloc_map(size_t msg_i, size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
 	{
 		// cast the pointer
-		vector_dist_comm<dim, St, prop, Decomposition, Memory> * vd = static_cast<vector_dist_comm<dim, St, prop, Decomposition, Memory> *>(ptr);
+		vector_dist_comm<dim, St, prop,layout,layout_base, Decomposition, Memory> * vd = static_cast<vector_dist_comm<dim, St, prop, layout, layout_base, Decomposition, Memory> *>(ptr);
 
 		vd->recv_mem_gm.resize(vd->v_cl.getProcessingUnits());
 		vd->recv_mem_gm.get(i).resize(msg_i);
@@ -799,7 +805,7 @@ public:
 	 * \param v vector to copy
 	 *
 	 */
-	vector_dist_comm(const vector_dist_comm<dim,St,prop,Decomposition,Memory> & v)
+	vector_dist_comm(const vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> & v)
 	:v_cl(create_vcluster()),dec(create_vcluster()),lg_m(0)
 	{
 		this->operator=(v);
@@ -1166,7 +1172,7 @@ public:
 	 * \return iteself
 	 *
 	 */
-	vector_dist_comm<dim,St,prop,Decomposition,Memory> & operator=(const vector_dist_comm<dim,St,prop,Decomposition,Memory> & vc)
+	vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> & operator=(const vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> & vc)
 	{
 		dec = vc.dec;
 
@@ -1180,7 +1186,7 @@ public:
 	 * \return itself
 	 *
 	 */
-	vector_dist_comm<dim,St,prop,Decomposition,Memory> & operator=(vector_dist_comm<dim,St,prop,Decomposition,Memory> && vc)
+	vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> & operator=(vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> && vc)
 	{
 		dec = vc.dec;
 
