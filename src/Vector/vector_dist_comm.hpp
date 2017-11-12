@@ -268,7 +268,8 @@ class vector_dist_comm
 	 * \param v_prp vector of particles properties
 	 *
 	 */
-	void local_ghost_from_opart(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp)
+	void local_ghost_from_opart(openfpm::vector<Point<dim, St>> & v_pos,
+			                    openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp)
 	{
 		// get the shift vectors
 		const openfpm::vector<Point<dim, St>> & shifts = dec.getShiftVectors();
@@ -295,7 +296,9 @@ class vector_dist_comm
 	 * \param g_m ghost marker
 	 *
 	 */
-	void local_ghost_from_dec(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t g_m)
+	void local_ghost_from_dec(openfpm::vector<Point<dim, St>> & v_pos,
+			                  openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+							  size_t g_m)
 	{
 		o_part_loc.clear();
 
@@ -396,7 +399,10 @@ class vector_dist_comm
 	 * \param opt options
 	 *
 	 */
-	void add_loc_particles_bc(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp ,size_t & g_m, size_t opt)
+	void add_loc_particles_bc(openfpm::vector<Point<dim, St>> & v_pos,
+			                  openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp ,
+							  size_t & g_m,
+							  size_t opt)
 	{
 		// Create the shift boxes
 		createShiftBox();
@@ -409,9 +415,9 @@ class vector_dist_comm
 		else
 		{
 			if (opt & SKIP_LABELLING)
-				local_ghost_from_opart(v_pos,v_prp);
+			{local_ghost_from_opart(v_pos,v_prp);}
 			else
-				local_ghost_from_dec(v_pos,v_prp,g_m);
+			{local_ghost_from_dec(v_pos,v_prp,g_m);}
 		}
 	}
 
@@ -538,7 +544,9 @@ class vector_dist_comm
 	 * \param g_send_prp Send buffer to fill
 	 *
 	 */
-	template<typename send_vector, typename prp_object, int ... prp> void fill_send_ghost_prp_buf(openfpm::vector<prop> & v_prp, openfpm::vector<send_vector> & g_send_prp)
+	template<typename send_vector, typename prp_object, int ... prp>
+	void fill_send_ghost_prp_buf(openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+			                     openfpm::vector<send_vector> & g_send_prp)
 	{
 		// create a number of send buffers equal to the near processors
 		g_send_prp.resize(g_opart.size());
@@ -565,7 +573,7 @@ class vector_dist_comm
 			for (size_t j = 0; j < g_opart.get(i).size(); j++)
 			{
 				// source object type
-				typedef encapc<1, prop, typename openfpm::vector<prop>::layout_type> encap_src;
+				typedef encapc<1, prop, typename openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base>::layout_type> encap_src;
 				// destination object type
 				typedef encapc<1, prp_object, typename openfpm::vector<prp_object>::layout_type> encap_dst;
 
@@ -584,7 +592,11 @@ class vector_dist_comm
 	 * \param m_prp sending buffer for properties
 	 *
 	 */
-	void fill_send_map_buf(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, openfpm::vector<size_t> & prc_sz_r, openfpm::vector<openfpm::vector<Point<dim,St>>> & m_pos, openfpm::vector<openfpm::vector<prop>> & m_prp)
+	void fill_send_map_buf(openfpm::vector<Point<dim, St>> & v_pos,
+			               openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+						   openfpm::vector<size_t> & prc_sz_r,
+						   openfpm::vector<openfpm::vector<Point<dim,St>>> & m_pos,
+						   openfpm::vector<openfpm::vector<prop>> & m_prp)
 	{
 		m_prp.resize(prc_sz_r.size());
 		m_pos.resize(prc_sz_r.size());
@@ -627,7 +639,12 @@ class vector_dist_comm
 	 * \param m_prp sending buffer for properties
 	 *
 	 */
-	template<typename prp_object,int ... prp> void fill_send_map_buf_list(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, openfpm::vector<size_t> & prc_sz_r, openfpm::vector<openfpm::vector<Point<dim,St>>> & m_pos, openfpm::vector<openfpm::vector<prp_object>> & m_prp)
+	template<typename prp_object,int ... prp>
+	void fill_send_map_buf_list(openfpm::vector<Point<dim, St>> & v_pos,
+			                    openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+								openfpm::vector<size_t> & prc_sz_r,
+								openfpm::vector<openfpm::vector<Point<dim,St>>> & m_pos,
+								openfpm::vector<openfpm::vector<prp_object>> & m_prp)
 	{
 		m_prp.resize(prc_sz_r.size());
 		m_pos.resize(prc_sz_r.size());
@@ -726,7 +743,10 @@ class vector_dist_comm
 	 * \param g_m ghost marker
 	 *
 	 */
-	void labelParticlesGhost(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, openfpm::vector<size_t> & prc, size_t & g_m)
+	void labelParticlesGhost(openfpm::vector<Point<dim, St>> & v_pos,
+			                 openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+							 openfpm::vector<size_t> & prc,
+							 size_t & g_m)
 	{
 		// Buffer that contain for each processor the id of the particle to send
 		g_opart.clear();
@@ -941,7 +961,11 @@ public:
 	 * \param g_m marker between real and ghost particles
 	 *
 	 */
-	template<int ... prp> inline void ghost_get_(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & g_m, size_t opt = WITH_POSITION)
+	template<int ... prp> inline
+	void ghost_get_(openfpm::vector<Point<dim, St>> & v_pos,
+			        openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+					size_t & g_m,
+					size_t opt = WITH_POSITION)
 	{
 		// Sending property object
 		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;
@@ -959,7 +983,7 @@ public:
 
 		// Label all the particles
 		if ((opt & SKIP_LABELLING) == false)
-			labelParticlesGhost(v_pos,v_prp,prc_g_opart,g_m);
+		{labelParticlesGhost(v_pos,v_prp,prc_g_opart,g_m);}
 
 		// Send and receive ghost particle information
 		{
@@ -975,10 +999,10 @@ public:
                 {
                 	size_t opt_ = compute_options(opt);
                 	op_ssend_gg_recv_merge opm(g_m);
-                    v_cl.SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
+                    v_cl.SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
                 }
                 else
-                	v_cl.SSendRecvP<send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get,recv_sz_get_byte);
+                {v_cl.SSendRecvP<send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get,recv_sz_get_byte);}
 
                 // fill g_opart_sz
                 g_opart_sz.resize(prc_g_opart.size());
@@ -1082,7 +1106,7 @@ public:
 		fill_send_map_buf_list<prp_object,prp...>(v_pos,v_prp,prc_sz_r, m_pos, m_prp);
 
 		v_cl.SSendRecv(m_pos,v_pos,prc_r,prc_recv_map,recv_sz_map);
-		v_cl.SSendRecvP<openfpm::vector<prp_object>,decltype(v_prp),prp...>(m_prp,v_prp,prc_r,prc_recv_map,recv_sz_map);
+		v_cl.SSendRecvP<openfpm::vector<prp_object>,decltype(v_prp),layout_base,prp...>(m_prp,v_prp,prc_r,prc_recv_map,recv_sz_map);
 
 		// mark the ghost part
 
@@ -1102,7 +1126,10 @@ public:
 	 * \param g_m ghost marker
 	 *
 	 */
-	template<typename obp = KillParticle> void map_(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & g_m)
+	template<typename obp = KillParticle>
+	void map_(openfpm::vector<Point<dim, St>> & v_pos,
+			  openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+			  size_t & g_m)
 	{
 		// Processor communication size
 		openfpm::vector<size_t> prc_sz(v_cl.getProcessingUnits());
@@ -1221,12 +1248,12 @@ public:
 			size_t opt_ = compute_options(opt);
 
 			op_ssend_recv_merge<op> opm(g_opart);
-			v_cl.SSendRecvP_op<op_ssend_recv_merge<op>,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_recv_get,opm,prc_g_opart,g_opart_sz,opt_);
+			v_cl.SSendRecvP_op<op_ssend_recv_merge<op>,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_recv_get,opm,prc_g_opart,g_opart_sz,opt_);
 		}
 		else
 		{
 			op_ssend_recv_merge<op> opm(g_opart);
-			v_cl.SSendRecvP_op<op_ssend_recv_merge<op>,send_vector,decltype(v_prp),prp...>(g_send_prp,v_prp,prc_recv_get,opm,prc_recv_put,recv_sz_put);
+			v_cl.SSendRecvP_op<op_ssend_recv_merge<op>,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_recv_get,opm,prc_recv_put,recv_sz_put);
 		}
 
 		// process also the local replicated particles

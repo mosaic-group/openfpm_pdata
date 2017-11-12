@@ -101,6 +101,7 @@ void print_test(std::string test, size_t sz)
 		std::cout << test << " " << sz << "\n";
 }
 
+template<typename vector>
 void Test2D_ghost(Box<2,float> & box)
 {
 	// Communication object
@@ -150,7 +151,7 @@ void Test2D_ghost(Box<2,float> & box)
 	size_t bc[2]={NON_PERIODIC,NON_PERIODIC};
 
 	// Vector of particles
-	vector_dist<2,float, Point_test<float> > vd(g_info.size(),box,bc,g);
+	vector vd(g_info.size(),box,bc,g);
 
 	// size_t
 	size_t cobj = 0;
@@ -194,16 +195,16 @@ void Test2D_ghost(Box<2,float> & box)
 		auto key = v_it2.get();
 
 		// fill with the processor ID where these particle live
-		vd.getProp<p::s>(key) = vd.getPos(key)[0] + vd.getPos(key)[1] * 16.0f;
-		vd.getProp<p::v>(key)[0] = v_cl.getProcessUnitID();
-		vd.getProp<p::v>(key)[1] = v_cl.getProcessUnitID();
-		vd.getProp<p::v>(key)[2] = v_cl.getProcessUnitID();
+		vd.template getProp<p::s>(key) = vd.getPos(key)[0] + vd.getPos(key)[1] * 16.0f;
+		vd.template getProp<p::v>(key)[0] = v_cl.getProcessUnitID();
+		vd.template getProp<p::v>(key)[1] = v_cl.getProcessUnitID();
+		vd.template getProp<p::v>(key)[2] = v_cl.getProcessUnitID();
 
 		++v_it2;
 	}
 
 	// do a ghost get
-	vd.ghost_get<p::s,p::v>();
+	vd.template ghost_get<p::s,p::v>();
 
 	//! [Redistribute the particles and sync the ghost properties]
 
@@ -224,7 +225,7 @@ void Test2D_ghost(Box<2,float> & box)
 		auto key = g_it.get();
 
 		// Check the received data
-		BOOST_REQUIRE_EQUAL(vd.getPos(key)[0] + vd.getPos(key)[1] * 16.0f,vd.getProp<p::s>(key));
+		BOOST_REQUIRE_EQUAL(vd.getPos(key)[0] + vd.getPos(key)[1] * 16.0f,vd.template getProp<p::s>(key));
 
 		bool is_in = false;
 		size_t b = 0;
@@ -247,7 +248,7 @@ void Test2D_ghost(Box<2,float> & box)
 		BOOST_REQUIRE_EQUAL(is_in,true);
 
 		// Check that the particle come from the correct processor
-		BOOST_REQUIRE_EQUAL(vd.getProp<p::v>(key)[0],dec.getEGhostBoxProcessor(lb));
+		BOOST_REQUIRE_EQUAL(vd.template getProp<p::v>(key)[0],dec.getEGhostBoxProcessor(lb));
 
 		n_part++;
 		++g_it;
@@ -269,13 +270,17 @@ void Test2D_ghost(Box<2,float> & box)
 	}
 }
 
-BOOST_AUTO_TEST_CASE( vector_dist_ghost )
+//! types to use in the tests each element in the list is tested
+typedef boost::mpl::list<vector_dist<2,float, Point_test<float> >,
+		                 vector_dist<2,float, Point_test<float>,memory_traits_inte<Point_test<float>>::type,memory_traits_inte> > test_types;
+
+BOOST_AUTO_TEST_CASE_TEMPLATE( vector_dist_ghost, vector, test_types )
 {
 	Box<2,float> box({0.0,0.0},{1.0,1.0});
-	Test2D_ghost(box);
+	Test2D_ghost<vector>(box);
 
 	Box<2,float> box2({-1.0,-1.0},{2.5,2.5});
-	Test2D_ghost(box2);
+	Test2D_ghost<vector>(box2);
 }
 
 void print_test_v(std::string test, size_t sz)
