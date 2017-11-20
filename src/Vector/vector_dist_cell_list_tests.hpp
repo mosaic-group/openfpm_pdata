@@ -524,8 +524,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 
 		ret &= vd.getPropRead<1>(p) == vd.getPropRead<0>(p);
 
-		vd.getPropRead<3>(p).sort();
-		vd.getPropRead<4>(p).sort();
+		vd.getPropWrite<3>(p).sort();
+		vd.getPropWrite<4>(p).sort();
 
 		ret &= vd.getPropRead<3>(p).size() == vd.getPropRead<4>(p).size();
 

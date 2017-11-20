@@ -22,6 +22,7 @@
 #include "hdf5.h"
 #include "grid_dist_id_comm.hpp"
 #include "HDF5_wr/HDF5_wr.hpp"
+#include "SparseGrid/SparseGrid.hpp"
 
 //! Internal ghost box sent to construct external ghost box into the other processors
 template<unsigned int dim>
@@ -1578,6 +1579,30 @@ public:
 		return it;
 	}
 
+	/*! /brief Get a grid Iterator
+	 *
+	 * In case of dense grid getGridIterator is equivalent to getDomainIterator
+	 * in case if sparse distributed grid getDomainIterator go across all the
+	 * inserted point get grid iterator run across all grid points independently
+	 * that the point has been insert or not
+	 *
+	 * \return a Grid iterator
+	 *
+	 */
+	inline grid_dist_id_iterator_dec<Decomposition> getGridIterator()
+	{
+		grid_key_dx<dim> start;
+		grid_key_dx<dim> stop;
+		for (size_t i = 0; i < dim; i++)
+		{
+			start.set_d(i, 0);
+			stop.set_d(i, g_sz[i] - 1);
+		}
+
+		grid_dist_id_iterator_dec<Decomposition> it_dec(getDecomposition(), g_sz, start, stop);
+		return it_dec;
+	}
+
 	/*! \brief It return an iterator that span the full grid domain (each processor span its local domain)
 	 *
 	 * \return the iterator
@@ -1710,6 +1735,30 @@ public:
 	bool is_staggered()
 	{
 		return false;
+	}
+
+	/*! \brief insert an element in the grid
+	 *
+	 * In case of dense grid this function is equivalent to get, in case of sparse
+	 * grid this function insert a grid point. When the point already exist it return
+	 * a reference to the already existing point
+	 *
+	 * \tparam p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return a reference to the inserted element
+	 *
+	 */
+	template <unsigned int p>inline auto insert(const grid_dist_key_dx<dim> & v1)
+	-> typename std::add_lvalue_reference
+	<
+		decltype(loc_grid.get(v1.getSub()).template insert<p>(v1.getKey()))
+	>::type
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return loc_grid.get(v1.getSub()).template insert<p>(v1.getKey());
 	}
 
 	/*! \brief Get the reference of the selected element
@@ -2133,5 +2182,6 @@ public:
 };
 
 
+template<unsigned int dim, typename St, typename T> using sgrid_dist_id = grid_dist_id<dim,St,T,CartDecomposition<dim,St>,HeapMemory,sgrid_cpu<dim,T,St>>;
 
 #endif

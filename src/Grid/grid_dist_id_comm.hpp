@@ -731,14 +731,6 @@ public:
 		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
 		{
 			prp_recv.push_back(eg_box.get(i).recv_pnt * sizeof(prp_object) + sizeof(size_t)*eg_box.get(i).n_r_box);
-
-			// for each external ghost box
-/*			for (size_t j = 0 ; j < eg_box.get(i).bid.size() ; j++)
-			{
-				// External ghost box
-				Box<dim,size_t> g_eg_box = eg_box.get(i).bid.get(j).g_e_box;
-				prp_recv[prp_recv.size()-1] += g_eg_box.getVolumeKey() * sizeof(prp_object) + sizeof(size_t);
-			}*/
 		}
 
 		size_t tot_recv = ExtPreAlloc<Memory>::calculateMem(prp_recv);
@@ -825,8 +817,10 @@ public:
 					Box<dim,size_t> box = eg_box.get(i).bid.get(nle_id).l_e_box;
 					Box<dim,size_t> rbox = eg_box.get(i).bid.get(nle_id).lr_e_box;
 
+					loc_grid.get(n_sub_id).copy_to(loc_grid.get(sub_id),rbox,box);
+
 					// sub-grid where to unpack
-					grid_key_dx_iterator_sub<dim> src(loc_grid.get(sub_id).getGrid(),rbox.getKP1(),rbox.getKP2());
+/*					grid_key_dx_iterator_sub<dim> src(loc_grid.get(sub_id).getGrid(),rbox.getKP1(),rbox.getKP2());
 					grid_key_dx_iterator_sub<dim> dst(loc_grid.get(n_sub_id).getGrid(),box.getKP1(),box.getKP2());
 
 					while (src.isNext())
@@ -838,7 +832,7 @@ public:
 
 						++src;
 						++dst;
-					}
+					}*/
 
 				}
 			}

@@ -1,7 +1,8 @@
 #!groovy
 
-timeout(20)
+timeout(180)
 {
+
 parallel (
 
 
@@ -126,3 +127,4 @@ parallel (
 
 )
 }
+
