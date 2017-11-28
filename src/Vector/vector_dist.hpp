@@ -61,8 +61,12 @@
 #define NO_GHOST 0
 #define WITH_GHOST 2
 
+#define GCL_NON_SYMMETRIC 0
+#define GCL_SYMMETRIC 1
+#define GCL_HILBERT 2
+
 //! General function t get a cell-list
-template<unsigned int dim, typename St, typename CellL, typename Vector>
+template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
 struct gcl
 {
 	/*! \brief Get the Cell list based on the type
@@ -81,8 +85,8 @@ struct gcl
 };
 
 //! General function t get a cell-list
-template<unsigned int dim, typename St, typename Vector, typename Mem_type>
-struct gcl<dim,St,CellList_gen<dim, St, Process_keys_hilb,Mem_type, shift<dim, St> >,Vector>
+template<unsigned int dim, typename St, typename CellL, typename Vector>
+struct gcl<dim,St,CellL,Vector,GCL_HILBERT>
 {
 	/*! \brief Get the Cell list based on the type
 	 *
@@ -93,9 +97,28 @@ struct gcl<dim,St,CellList_gen<dim, St, Process_keys_hilb,Mem_type, shift<dim, S
 	 * \return the constructed cell-list
 	 *
 	 */
-	static inline CellList_gen<dim, St, Process_keys_hilb, Mem_type, shift<dim, St> > get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
+	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
 	{
 		return vd.getCellList_hilb(r_cut,g);
+	}
+};
+
+//! General function t get a cell-list
+template<unsigned int dim, typename St, typename CellL, typename Vector>
+struct gcl<dim,St,CellL,Vector,GCL_SYMMETRIC>
+{
+	/*! \brief Get the Cell list based on the type
+	 *
+	 * \param vd Distributed vector
+	 * \param r_cut Cut-off radius
+	 * \param g Ghost
+	 *
+	 * \return the constructed cell-list
+	 *
+	 */
+	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
+	{
+		return vd.getCellListSym(r_cut);
 	}
 };
 
@@ -1001,7 +1024,7 @@ public:
 		}
 		else
 		{
-			CellL cli_tmp = gcl<dim,St,CellL,self>::get(*this,r_cut,getDecomposition().getGhost());
+			CellL cli_tmp = gcl<dim,St,CellL,self,GCL_NON_SYMMETRIC>::get(*this,r_cut,getDecomposition().getGhost());
 
 			cell_list.swap(cli_tmp);
 		}
@@ -1038,7 +1061,7 @@ public:
 		}
 		else
 		{
-			CellL cli_tmp = gcl<dim,St,CellL,self>::get(*this,r_cut,getDecomposition().getGhost());
+			CellL cli_tmp = gcl<dim,St,CellL,self,GCL_SYMMETRIC>::get(*this,r_cut,getDecomposition().getGhost());
 
 			cell_list.swap(cli_tmp);
 		}
@@ -1079,7 +1102,8 @@ public:
 		// Processor bounding box
 		cl_param_calculate(pbox, div, r_cut, enlarge);
 
-		cell_list.Initialize(pbox, div, g_m);
+		cell_list.Initialize(pbox, div);
+		cell_list.set_gm(g_m);
 		cell_list.set_ndec(getDecomposition().get_ndec());
 
 		updateCellList(cell_list,no_se3);
@@ -1119,7 +1143,8 @@ public:
 		// Processor bounding box
 		cl_param_calculate(pbox,div, r_cut, enlarge);
 
-		cell_list.Initialize(pbox, div, g_m);
+		cell_list.Initialize(pbox, div);
+		cell_list.set_gm(g_m);
 		cell_list.set_ndec(getDecomposition().get_ndec());
 
 		updateCellList(cell_list);
@@ -1379,7 +1404,8 @@ public:
 			div[i] = 1 << m;
 		}
 
-		cell_list.Initialize(pbox,div,g_m);
+		cell_list.Initialize(pbox,div);
+		cell_list.set_gm(g_m);
 
 		// for each particle add the particle to the cell list
 

@@ -124,7 +124,7 @@ template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::ve
 
 	// fill the spacing
 	for (size_t i = 0 ; i < dim ; i++)
-		spacing[i] = cd_sm.getCellBox().getP2()[i];
+	{spacing[i] = cd_sm.getCellBox().getP2()[i];}
 }
 
 /*! \brief it store a box, its unique id and the sub-domain from where it come from

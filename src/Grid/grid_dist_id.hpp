@@ -1199,7 +1199,7 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p>inline auto get(const grid_dist_key_dx<dim> & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	template <unsigned int p = 0>inline auto get(const grid_dist_key_dx<dim> & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1215,7 +1215,7 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p>inline auto get(const grid_dist_key_dx<dim> & v1) -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	template <unsigned int p = 0>inline auto get(const grid_dist_key_dx<dim> & v1) -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1231,7 +1231,39 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p>inline auto get(const grid_dist_lin_dx & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	template <unsigned int p = 0>inline auto get(grid_dist_g_dx<device_grid> & v1) const -> typename std::add_lvalue_reference<decltype(v1.getSub()->template get<p>(v1.getKey()))>::type
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return v1.getSub()->template get<p>(v1.getKey());
+	}
+
+	/*! \brief Get the reference of the selected element
+	 *
+	 * \tparam p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return the selected element
+	 *
+	 */
+	template <unsigned int p = 0>inline auto get(grid_dist_g_dx<device_grid> & v1) -> typename std::add_lvalue_reference<decltype(v1.getSub()->template get<p>(v1.getKey()))>::type
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return v1.getSub()->template get<p>(v1.getKey());
+	}
+
+	/*! \brief Get the reference of the selected element
+	 *
+	 * \tparam p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return the selected element
+	 *
+	 */
+	template <unsigned int p = 0>inline auto get(const grid_dist_lin_dx & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1247,7 +1279,7 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p>inline auto get(const grid_dist_lin_dx & v1) -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	template <unsigned int p = 0>inline auto get(const grid_dist_lin_dx & v1) -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1263,7 +1295,7 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p>inline auto getProp(const grid_dist_key_dx<dim> & v1) const -> decltype(this->template get<p>(v1))
+	template <unsigned int p = 0>inline auto getProp(const grid_dist_key_dx<dim> & v1) const -> decltype(this->template get<p>(v1))
 	{
 		return this->template get<p>(v1);
 	}
@@ -1276,7 +1308,7 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p>inline auto getProp(const grid_dist_key_dx<dim> & v1) -> decltype(this->template get<p>(v1))
+	template <unsigned int p = 0>inline auto getProp(const grid_dist_key_dx<dim> & v1) -> decltype(this->template get<p>(v1))
 	{
 		return this->template get<p>(v1);
 	}
@@ -1366,6 +1398,12 @@ public:
 																						  	  	  	 g_id_to_internal_ghost_box);
 	}
 
+	// copy bench test
+	double mem_mem_time = 0.0;
+	double mem_ite_time = 0.0;
+
+	int mem_select = 0;
+
 	/*! \brief Copy the give grid into this grid
 	 *
 	 * It copy the first grid into the given grid (No ghost)
@@ -1373,21 +1411,52 @@ public:
 	 * \warning the Decomposition must be ensured to be the same, otherwise crashes can happen, if you want to copy the grid independently from the decomposition please use the operator equal
 	 *
 	 * \param g Grid to copy
+	 * \param use_memcpy use memcpy function if possible
 	 *
 	 * \return itself
 	 *
 	 */
-	grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & copy(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & g)
+	grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & copy(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & g, bool use_memcpy = true)
 	{
-		auto it = this->getDomainIterator();
-
-		while (it.isNext())
+		if (T::noPointers() == true && use_memcpy)
 		{
-			auto key = it.get();
+			for (size_t i = 0 ; i < this->getN_loc_grid() ; i++)
+			{
+				auto & gs_src = this->get_loc_grid(i).getGrid();
 
-			this->loc_grid.get(key.getSub()).get_o(key.getKey()) = g.loc_grid.get(key.getSub()).get_o(key.getKey());
+				long int start = gs_src.LinId(gdb_ext.get(i).Dbox.getKP1());
+				long int stop = gs_src.LinId(gdb_ext.get(i).Dbox.getKP2());
 
-			++it;
+				if (stop < start) {continue;}
+
+				void * dst = static_cast<void *>(static_cast<char *>(this->get_loc_grid(i).getPointer()) + start*sizeof(T));
+				void * src = static_cast<void *>(static_cast<char *>(g.get_loc_grid(i).getPointer()) + start*sizeof(T));
+
+				memcpy(dst,src,sizeof(T) * (stop + 1 - start));
+			}
+		}
+		else
+		{
+			grid_key_dx<dim> cnt[1];
+			cnt[0].zero();
+
+			for (size_t i = 0 ; i < this->getN_loc_grid() ; i++)
+			{
+				auto & dst = this->get_loc_grid(i);
+				auto & src = g.get_loc_grid(i);
+
+				auto it = this->get_loc_grid_iterator_stencil(i,cnt);
+
+				while (it.isNext())
+				{
+					// center point
+					auto Cp = it.template getStencil<0>();
+
+					dst.get_o(Cp) = src.get_o(Cp);
+
+					++it;
+				}
+			}
 		}
 
 		return *this;
@@ -1508,6 +1577,36 @@ public:
 	device_grid & get_loc_grid(size_t i)
 	{
 		return loc_grid.get(i);
+	}
+
+	/*! \brief Get the i sub-domain grid
+	 *
+	 * \param i sub-domain
+	 *
+	 * \return local grid
+	 *
+	 */
+	grid_key_dx_iterator_sub<dim,no_stencil> get_loc_grid_iterator(size_t i)
+	{
+		return grid_key_dx_iterator_sub<dim,no_stencil>(loc_grid.get(i).getGrid(),
+				 gdb_ext.get(i).Dbox.getKP1(),
+				 gdb_ext.get(i).Dbox.getKP2());
+	}
+
+	/*! \brief Get the i sub-domain grid
+	 *
+	 * \param i sub-domain
+	 *
+	 * \return local grid
+	 *
+	 */
+	template<unsigned int Np>
+	grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,Np>> get_loc_grid_iterator_stencil(size_t i,const grid_key_dx<dim> (& stencil_pnt)[Np])
+	{
+		return grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,Np>>(loc_grid.get(i).getGrid(),
+													 gdb_ext.get(i).Dbox.getKP1(),
+													 gdb_ext.get(i).Dbox.getKP2(),
+													 stencil_pnt);
 	}
 
 	/*! \brief Return the number of local grid

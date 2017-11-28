@@ -270,12 +270,21 @@ void Test2D_ghost(Box<2,float> & box)
 	}
 }
 
-//! types to use in the tests each element in the list is tested
-typedef boost::mpl::list<vector_dist<2,float, Point_test<float> >,
-		                 vector_dist<2,float, Point_test<float>,memory_traits_inte<Point_test<float>>::type,memory_traits_inte> > test_types;
-
-BOOST_AUTO_TEST_CASE_TEMPLATE( vector_dist_ghost, vector, test_types )
+BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 {
+	typedef vector_dist<2,float, Point_test<float>> vector;
+
+	Box<2,float> box({0.0,0.0},{1.0,1.0});
+	Test2D_ghost<vector>(box);
+
+	Box<2,float> box2({-1.0,-1.0},{2.5,2.5});
+	Test2D_ghost<vector>(box2);
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_ghost_inte )
+{
+	typedef vector_dist<2,float, Point_test<float>,memory_traits_inte<Point_test<float>>::type,memory_traits_inte> vector;
+
 	Box<2,float> box({0.0,0.0},{1.0,1.0});
 	Test2D_ghost<vector>(box);
 

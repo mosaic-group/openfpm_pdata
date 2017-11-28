@@ -26,7 +26,7 @@ struct grid_unpack_selector_with_prp
 	 * \param ps unpack status
 	 *
 	 */
-	template<template<typename,typename> class op, int ... prp> static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims> & sub2, device_grid & gd, Unpack_stat & ps)
+	template<template<typename,typename> class op, int ... prp> static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims,stencil_offset_compute<device_grid::dims,1>> & sub2, device_grid & gd, Unpack_stat & ps)
 	{
 		std::cerr << __FILE__ << ":" << __LINE__ << " Error: complex properties on grids are not supported yet" << std::endl;
 	}
@@ -48,7 +48,7 @@ struct grid_unpack_selector_with_prp<true,T,device_grid,Memory>
 	 * \param ps unpack status
 	 *
 	 */
-	template<template<typename,typename> class op, unsigned int ... prp> static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims> & sub2, device_grid & gd, Unpack_stat & ps)
+	template<template<typename,typename> class op, unsigned int ... prp> static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims,stencil_offset_compute<device_grid::dims,1>> & sub2, device_grid & gd, Unpack_stat & ps)
 	{
 		PtrMemory * ptr1;
 
@@ -84,11 +84,19 @@ struct grid_unpack_selector_with_prp<true,T,device_grid,Memory>
 
 		// Merge the information
 
-		auto it_src = gs.getIterator();
+		grid_key_dx<device_grid::dims> cnt[1];
+		cnt[0].zero();
+
+		auto it_src = gs.getIteratorStencil(cnt);
 
 		while (sub2.isNext())
 		{
-			object_s_di_op<op,decltype(gs.get_o(it_src.get())),decltype(gd.get_o(sub2.get())),OBJ_ENCAP,prp...>(gs.get_o(it_src.get()),gd.get_o(sub2.get()));
+			object_s_di_op<op,
+			            decltype(gs.get_o(it_src.template getStencil<0>())),
+						decltype(gd.get_o(sub2.template getStencil<0>())),
+						OBJ_ENCAP,prp...>
+			(gs.get_o(it_src.template getStencil<0>()),
+			 gd.get_o(sub2.template getStencil<0>()));
 
 			++sub2;
 			++it_src;
@@ -123,7 +131,7 @@ struct grid_call_serialize_variadic<device_grid, Memory, index_tuple<prp...>>
 	 * \param ps unpack status
 	 *
 	 */
-	template<template<typename,typename> class op, typename T> inline static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims> & sub2, device_grid & dg, Unpack_stat & ps)
+	template<template<typename,typename> class op, typename T> inline static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims,stencil_offset_compute<device_grid::dims,1>> & sub2, device_grid & dg, Unpack_stat & ps)
 	{
 		const bool result = has_pack_gen<typename T::type>::value == false;
 
@@ -148,7 +156,7 @@ struct grid_unpack_with_prp
 	 * \param ps unpack status
 	 *
 	 */
-	template<unsigned int ... prp> static void unpacking(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims> & sub2, device_grid & dg, Unpack_stat & ps)
+	template<unsigned int ... prp> static void unpacking(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims,stencil_offset_compute<device_grid::dims,1>> & sub2, device_grid & dg, Unpack_stat & ps)
 	{
 		typedef index_tuple<prp...> ind_prop_to_pack;
 		grid_call_serialize_variadic<device_grid,Memory,ind_prop_to_pack>::template call_unpack<op,T>(recv_buf, sub2, dg, ps);
@@ -239,8 +247,11 @@ class grid_dist_id_comm
 				if (bx_dst.isValid() == false)
 					continue;
 
-				grid_key_dx_iterator_sub<dim> sub_src(loc_grid.get(i).getGrid(),bx_src.getKP1(),bx_src.getKP2());
-				grid_key_dx_iterator_sub<dim> sub_dst(loc_grid.get(sub_id_dst).getGrid(),bx_dst.getKP1(),bx_dst.getKP2());
+				grid_key_dx<dim> cnt[1];
+				cnt[0].zero();
+
+				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub_src(loc_grid.get(i).getGrid(),bx_src.getKP1(),bx_src.getKP2(),cnt);
+				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub_dst(loc_grid.get(sub_id_dst).getGrid(),bx_dst.getKP1(),bx_dst.getKP2(),cnt);
 
 #ifdef SE_CLASS1
 
@@ -258,7 +269,7 @@ class grid_dist_id_comm
 				while (sub_src.isNext())
 				{
 					// Option 1
-					gd.set(sub_dst.get(),gs,sub_src.get());
+					gd.set(sub_dst.template getStencil<0>(),gs,sub_src.template getStencil<0>());
 
 					++sub_src;
 					++sub_dst;
@@ -313,8 +324,11 @@ class grid_dist_id_comm
 				if (bx_dst.isValid() == false)
 					continue;
 
-				grid_key_dx_iterator_sub<dim> sub_src(loc_grid.get(i).getGrid(),bx_src.getKP1(),bx_src.getKP2());
-				grid_key_dx_iterator_sub<dim> sub_dst(loc_grid.get(sub_id_dst).getGrid(),bx_dst.getKP1(),bx_dst.getKP2());
+				grid_key_dx<dim> cnt[1];
+				cnt[0].zero();
+
+				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub_src(loc_grid.get(i).getGrid(),bx_src.getKP1(),bx_src.getKP2(),cnt);
+				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub_dst(loc_grid.get(sub_id_dst).getGrid(),bx_dst.getKP1(),bx_dst.getKP2(),cnt);
 
 #ifdef SE_CLASS1
 
@@ -332,7 +346,7 @@ class grid_dist_id_comm
 				while (sub_src.isNext())
 				{
 					// write the object in the last element
-					object_s_di_op<op,decltype(gs.get_o(sub_src.get())),decltype(gd.get_o(sub_dst.get())),OBJ_ENCAP,prp...>(gs.get_o(sub_src.get()),gd.get_o(sub_dst.get()));
+					object_s_di_op<op,decltype(gs.get_o(sub_src.get())),decltype(gd.get_o(sub_dst.get())),OBJ_ENCAP,prp...>(gs.get_o(sub_src.template getStencil<0>()),gd.get_o(sub_dst.template getStencil<0>()));
 
 					++sub_src;
 					++sub_dst;
@@ -664,8 +678,12 @@ public:
 
 				// Pack a size_t for the internal ghost id
 				Packer<size_t,HeapMemory>::packRequest(req);
+
+				grid_key_dx<dim> cnt[1];
+				cnt[0].zero();
+
 				// Create a sub grid iterator spanning the internal ghost layer
-				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_ig_box.getKP1(),g_ig_box.getKP2());
+				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub_it(loc_grid.get(sub_id).getGrid(),g_ig_box.getKP1(),g_ig_box.getKP2(),cnt);
 				// and pack the internal ghost grid
 				Packer<device_grid,HeapMemory>::template packRequest<prp...>(loc_grid.get(sub_id),sub_it,req);
 			}
@@ -706,8 +724,12 @@ public:
 
 				// Pack a size_t for the internal ghost id
 				Packer<size_t,HeapMemory>::pack(prAlloc_prp,g_id,sts);
+
+				grid_key_dx<dim> cnt[1];
+				cnt[0].zero();
+
 				// Create a sub grid iterator spanning the internal ghost layer
-				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_ig_box.getKP1(),g_ig_box.getKP2());
+				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub_it(loc_grid.get(sub_id).getGrid(),g_ig_box.getKP1(),g_ig_box.getKP2(),cnt);
 				// and pack the internal ghost grid
 				Packer<device_grid,HeapMemory>::template pack<prp...>(prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
 			}
@@ -794,8 +816,11 @@ public:
 				Box<dim,size_t> box = eg_box.get(i).bid.get(l_id).l_e_box;
 				size_t sub_id = eg_box.get(i).bid.get(l_id).sub;
 
+				grid_key_dx<dim> cnt[1];
+				cnt[0].zero();
+
 				// sub-grid where to unpack
-				grid_key_dx_iterator_sub<dim> sub2(loc_grid.get(sub_id).getGrid(),box.getKP1(),box.getKP2());
+				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub2(loc_grid.get(sub_id).getGrid(),box.getKP1(),box.getKP2(),cnt);
 
 				// Unpack
 				Unpacker<device_grid,HeapMemory>::template unpack<prp...>(prRecv_prp,sub2,loc_grid.get(sub_id),ps);
@@ -849,8 +874,12 @@ public:
 
 				// Pack a size_t for the internal ghost id
 				Packer<size_t,HeapMemory>::packRequest(req);
+
+				grid_key_dx<dim> cnt[1];
+				cnt[0].zero();
+
 				// Create a sub grid iterator spanning the internal ghost layer
-				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_eg_box.getKP1(),g_eg_box.getKP2());
+				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub_it(loc_grid.get(sub_id).getGrid(),g_eg_box.getKP1(),g_eg_box.getKP2(),cnt);
 				// and pack the internal ghost grid
 				Packer<device_grid,HeapMemory>::template packRequest<prp...>(loc_grid.get(sub_id),sub_it,req);
 			}
@@ -891,8 +920,12 @@ public:
 
 				// Pack a size_t for the internal ghost id
 				Packer<size_t,HeapMemory>::pack(prAlloc_prp,g_id,sts);
+
+				grid_key_dx<dim> cnt[1];
+				cnt[0].zero();
+
 				// Create a sub grid iterator spanning the internal ghost layer
-				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_eg_box.getKP1(),g_eg_box.getKP2());
+				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub_it(loc_grid.get(sub_id).getGrid(),g_eg_box.getKP1(),g_eg_box.getKP2(),cnt);
 				// and pack the internal ghost grid
 				Packer<device_grid,HeapMemory>::template pack<prp...>(prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
 			}
@@ -980,8 +1013,11 @@ public:
 				size_t sub_id = ig_box.get(i).bid.get(l_id).sub;
 				box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
 
+				grid_key_dx<dim> cnt[1];
+				cnt[0].zero();
+
 				// sub-grid where to unpack
-				grid_key_dx_iterator_sub<dim> sub2(loc_grid.get(sub_id).getGrid(),box.getKP1(),box.getKP2());
+				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub2(loc_grid.get(sub_id).getGrid(),box.getKP1(),box.getKP2(),cnt);
 
 				grid_unpack_with_prp<op,prp_object,device_grid,Memory>::template unpacking<prp...>(prRecv_prp,sub2,loc_grid.get(sub_id),ps);
 			}
