@@ -34,6 +34,11 @@ public:
 
 #endif
 
+	static inline bool noPointers()
+	{
+		return true;
+	}
+
 };
 
 int main(int argc, char* argv[])

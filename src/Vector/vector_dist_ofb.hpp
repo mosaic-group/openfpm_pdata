@@ -42,7 +42,7 @@ struct KillParticleWithWarning
 	 */
 	static size_t out(size_t pp_id, size_t p_id)
 	{
-		std::cerr << "Warning: " << __FILE__ << ":" << __LINE__ << " out of bound particle detected ";
+		std::cerr << "Warning: " << __FILE__ << ":" << __LINE__ << " out of bound particle detected " << std::endl;
 
 		return -1;
 	}
@@ -78,7 +78,7 @@ struct Error
 	 */
 	static size_t out(size_t pp_id, size_t p_id)
 	{
-		std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " out of bound particle detected ";
+		std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " out of bound particle detected " << std::endl;
 
 		exit(-1);
 

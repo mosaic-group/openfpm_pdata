@@ -74,6 +74,9 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	//! Ghost expansion
 	Ghost<dim,St> ghost;
 
+	//! Ghost expansion
+	Ghost<dim,long int> ghost_int;
+
 	//! Local grids
 	mutable openfpm::vector<device_grid> loc_grid;
 
@@ -192,6 +195,53 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		return flp;
 	}
 
+	/*! \brief this function is for optimization of the ghost size
+	 *
+	 * Because the decomposition work in continuum and discrete ghost is
+	 *  converted in continuum, in some case continuum ghost because of
+	 *  rounding-off error can produce ghost bigger than the discrete selected
+	 *   one. This function adjust for this round-off error
+	 *
+	 * \param sub_domain the sub-domain
+	 * \param sub_domain_other the other sub-domain
+	 * \param ib internal ghost box to adjust
+	 *
+	 */
+	void set_for_adjustment(const Box<dim,long int> & sub_domain,
+							const Box<dim,St> & sub_domain_other,
+							const comb<dim> & cmb,
+							Box<dim,long int> & ib,
+							Ghost<dim,long int> & g)
+	{
+		if (g.isInvalidGhost() == true)
+		{return;}
+
+		// Convert from SpaceBox<dim,St> to SpaceBox<dim,long int>
+		Box<dim,long int> sub_domain_other_exp = cd_sm.convertDomainSpaceIntoGridUnits(sub_domain_other,dec.periodicity());
+
+		// translate sub_domain_other based on cmb
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (cmb.c[i] == 1)
+			{
+				sub_domain_other_exp.setLow(i,sub_domain_other_exp.getLow(i) - ginfo.size(i));
+				sub_domain_other_exp.setHigh(i,sub_domain_other_exp.getHigh(i) - ginfo.size(i));
+			}
+			else if (cmb.c[i] == -1)
+			{
+				sub_domain_other_exp.setLow(i,sub_domain_other_exp.getLow(i) + ginfo.size(i));
+				sub_domain_other_exp.setHigh(i,sub_domain_other_exp.getHigh(i) + ginfo.size(i));
+			}
+		}
+
+		sub_domain_other_exp.enlarge(g);
+		if (sub_domain_other_exp.Intersect(sub_domain,ib) == false)
+		{
+			for (size_t i = 0 ; i < dim ; i++)
+			{ib.setHigh(i,ib.getLow(i) - 1);}
+		}
+	}
+
 	/*! \brief Create per-processor internal ghost boxes list in grid units and g_id_to_external_ghost_box
 	 *
 	 */
@@ -218,6 +268,21 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom,dec.periodicity());
 
 				// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
+				if (ib.isValid() == false)
+					continue;
+
+				size_t sub_id = dec.getProcessorIGhostSub(i,j);
+				size_t r_sub = dec.getProcessorIGhostSSub(i,j);
+
+				auto & n_box = dec.getNearSubdomains(dec.IDtoProc(i));
+
+				Box<dim,long int> sub = gdb_ext.get(sub_id).Dbox;
+				sub += gdb_ext.get(sub_id).origin;
+
+				set_for_adjustment(sub,
+						           n_box.get(r_sub),dec.getProcessorIGhostPos(i,j),
+								   ib,ghost_int);
+
 				if (ib.isValid() == false)
 					continue;
 
@@ -336,6 +401,19 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 				// Get the internal ghost boxes and transform into grid units
 				::Box<dim,St> ib_dom = dec.getLocalIGhostBox(i,j);
 				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom,dec.periodicity());
+
+				// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
+				if (ib.isValid() == false)
+					continue;
+
+				size_t sub_id = i;
+				size_t r_sub = dec.getLocalIGhostSub(i,j);
+
+				Box<dim,long int> sub = gdb_ext.get(sub_id).Dbox;
+				sub += gdb_ext.get(sub_id).origin;
+
+				set_for_adjustment(sub,dec.getSubDomain(r_sub),
+						           dec.getLocalIGhostPos(i,j),ib,ghost_int);
 
 				// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
 				if (ib.isValid() == false)
@@ -653,8 +731,11 @@ public:
 	 * \param ext extension of the grid (must be positive on every direction)
 	 *
 	 */
-	template<typename H> grid_dist_id(const grid_dist_id<dim,St,H,typename Decomposition::base_type,Memory,grid_cpu<dim,H>> & g, const Ghost<dim,long int> & gh, Box<dim,size_t> ext)
-	:dec(create_vcluster()),v_cl(create_vcluster())
+	template<typename H>
+	grid_dist_id(const grid_dist_id<dim,St,H,typename Decomposition::base_type,Memory,grid_cpu<dim,H>> & g,
+			     const Ghost<dim,long int> & gh,
+				 Box<dim,size_t> ext)
+	:ghost_int(gh),dec(create_vcluster()),v_cl(create_vcluster())
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
@@ -701,8 +782,11 @@ public:
      * \param ghost Ghost part
      *
      */
-    grid_dist_id(const Decomposition & dec, const size_t (& g_sz)[dim], const Ghost<dim,St> & ghost)
-    :domain(dec.getDomain()),ghost(ghost),dec(dec),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
+    grid_dist_id(const Decomposition & dec,
+    		     const size_t (& g_sz)[dim],
+				 const Ghost<dim,St> & ghost)
+    :domain(dec.getDomain()),ghost(ghost),ghost_int(INVALID_GHOST),dec(dec),v_cl(create_vcluster()),
+	 ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
@@ -719,8 +803,10 @@ public:
      * \param ghost Ghost part
      *
      */
-    grid_dist_id(Decomposition && dec, const size_t (& g_sz)[dim], const Ghost<dim,St> & ghost)
-    :domain(dec.getDomain()),ghost(ghost),dec(dec),ginfo(g_sz),ginfo_v(g_sz),v_cl(create_vcluster())
+    grid_dist_id(Decomposition && dec, const size_t (& g_sz)[dim],
+    		     const Ghost<dim,St> & ghost)
+    :domain(dec.getDomain()),ghost(ghost),dec(dec),ginfo(g_sz),
+	 ginfo_v(g_sz),v_cl(create_vcluster()),ghost_int(INVALID_GHOST)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
@@ -739,8 +825,10 @@ public:
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(const Decomposition & dec, const size_t (& g_sz)[dim], const Ghost<dim,long int> & g)
-	:domain(dec.getDomain()),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
+	grid_dist_id(const Decomposition & dec, const size_t (& g_sz)[dim],
+			     const Ghost<dim,long int> & g)
+	:domain(dec.getDomain()),ghost_int(g),dec(create_vcluster()),v_cl(create_vcluster()),
+	 ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
@@ -764,8 +852,10 @@ public:
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(Decomposition && dec, const size_t (& g_sz)[dim], const Ghost<dim,long int> & g)
-	:domain(dec.getDomain()),dec(dec),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
+	grid_dist_id(Decomposition && dec, const size_t (& g_sz)[dim],
+			     const Ghost<dim,long int> & g)
+	:domain(dec.getDomain()),dec(dec),v_cl(create_vcluster()),ginfo(g_sz),
+	 ginfo_v(g_sz),ghost_int(g)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
@@ -787,7 +877,8 @@ public:
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g)
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain,
+			     const Ghost<dim,St> & g)
 	:grid_dist_id(g_sz,domain,g,create_non_periodic<dim>())
 	{
 	}
@@ -816,8 +907,10 @@ public:
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g, const periodicity<dim> & p)
-	:domain(domain),ghost(g),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain,
+			     const Ghost<dim,St> & g, const periodicity<dim> & p)
+	:domain(domain),ghost(g),ghost_int(INVALID_GHOST),dec(create_vcluster()),v_cl(create_vcluster()),
+	 ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
@@ -838,8 +931,10 @@ public:
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g, const periodicity<dim> & p)
-	:domain(domain),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain,
+			     const Ghost<dim,long int> & g, const periodicity<dim> & p)
+	:domain(domain),ghost_int(g),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),
+	 ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
@@ -1398,11 +1493,6 @@ public:
 																						  	  	  	 g_id_to_internal_ghost_box);
 	}
 
-	// copy bench test
-	double mem_mem_time = 0.0;
-	double mem_ite_time = 0.0;
-
-	int mem_select = 0;
 
 	/*! \brief Copy the give grid into this grid
 	 *
@@ -1711,6 +1801,26 @@ public:
 
 		// Map the distributed grid
 		map();
+	}
+
+	/*! \brief Get the internal local ghost box
+	 *
+	 * \return the internal local ghost box
+	 *
+	 */
+	const openfpm::vector<i_lbox_grid<dim>> & get_loc_ig_box()
+	{
+		return this->loc_ig_box;
+	}
+
+	/*! \brief Get the internal ghost box
+	 *
+	 * \return the internal local ghost box
+	 *
+	 */
+	const openfpm::vector<i_lbox_grid<dim>> & get_ig_box()
+	{
+		return this->ig_box;
 	}
 
 	//! Define friend classes

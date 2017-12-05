@@ -46,7 +46,7 @@ void Test2D_sub(const Box<2,float> & domain, long int k)
 		Ghost<2,float> g(0.01 / factor);
 
 		// Distributed grid with id decomposition
-		grid_dist_id<2, float, scalar<float>> g_dist(sz,domain,g);
+		grid_dist_id<2, float, aggregate<float>> g_dist(sz,domain,g);
 
 		// check the consistency of the decomposition
 		bool val = g_dist.getDecomposition().check_consistency();

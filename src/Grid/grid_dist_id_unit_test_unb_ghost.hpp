@@ -34,7 +34,7 @@ void Test3D_unb_ghost(const Box<3,float> & domain, long int k)
 		Ghost<3,float> g(0.49);
 
 		// Distributed grid with id decomposition
-		grid_dist_id<3, float, scalar<float>, CartDecomposition<3,float>> g_dist(sz,domain,g);
+		grid_dist_id<3, float, aggregate<float>, CartDecomposition<3,float>> g_dist(sz,domain,g);
 
 		g_dist.getDecomposition().write("no_bound_decomposition");
 

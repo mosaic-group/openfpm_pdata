@@ -1159,4 +1159,67 @@ fix_ie_g_box();
 //////////////////////
 
 
+/*		Point<dim,long int> p;
+		p.get(0) = 0;
+		p.get(1) = 81;
+		p.get(2) = 79;
+		if (ib.isInside(p))
+		{
+			int debug = 0;
+			debug++;
+		}
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (sub_domain.getLow(i) == ib_dom.getLow(i) &&
+				(sub_domain_other.getHigh(i) == sub_domain.getLow(i) || cmb.c[i] == 1))
+			{
+				if (g.getHigh(i) != INVALID_GHOST && (ib.getHigh(i) - ib.getLow(i) + 1) > g.getHigh(i))
+				{
+					ib.setHigh(i,ib.getLow(i) + g.getHigh(i) - 1);
+				}
+			}
+
+			if (sub_domain.getHigh(i) == ib_dom.getHigh(i) &&
+				(sub_domain_other.getLow(i) == sub_domain.getHigh(i) || cmb.c[i] == 1))
+			{
+				if (g.getLow(i) != -INVALID_GHOST && (ib.getHigh(i) - ib.getLow(i) + 1) > abs(g.getLow(i)))
+				{
+					ib.setLow(i, g.getHigh(i) - g.getLow(i) + 1);
+				}
+			}
+		}
+
+		// This is a special case because a domain intersect itself by
+		// periodicity
+		if (sub_domain == sub_domain_other)
+		{
+			for (size_t i = 0 ; i < dim ; i++)
+			{
+				if (sub_domain.getLow(i) == ib_dom.getLow(i) &&
+					sub_domain.getLow(i) == domain.getLow(i) &&
+					sub_domain_other.getHigh(i) == domain.getHigh(i) &&
+					cmb.c[i] == 1)
+				{
+					if (g.getHigh(i) != INVALID_GHOST && (ib.getHigh(i) - ib.getLow(i) + 1) > g.getHigh(i))
+					{
+						ib.setHigh(i,ib.getLow(i) + g.getHigh(i) - 1);
+					}
+				}
+
+				if (sub_domain.getHigh(i) == ib_dom.getHigh(i) &&
+					sub_domain.getHigh(i) == domain.getHigh(i) &&
+					sub_domain_other.getLow(i) == sub_domain.getHigh(i) &&
+					cmb.c[i] == -1)
+				{
+					if (g.getLow(i) != -INVALID_GHOST && (ib.getHigh(i) - ib.getLow(i) + 1) > abs(g.getLow(i)))
+					{
+						ib.setLow(i, g.getHigh(i) - g.getLow(i) + 1);
+					}
+				}
+			}
+		}*/
+
+//////////////////////////
+
 #endif /* GARGABE_HPP_ */

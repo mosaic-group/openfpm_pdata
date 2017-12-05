@@ -9,7 +9,7 @@
 #define SRC_GRID_GRID_DIST_ID_COMM_HPP_
 
 #include "Vector/vector_dist_ofb.hpp"
-#include "data_type/scalar.hpp"
+#include "Grid/copy_grid_fast.hpp"
 
 /*! \brief Unpack selector
  *
@@ -26,7 +26,7 @@ struct grid_unpack_selector_with_prp
 	 * \param ps unpack status
 	 *
 	 */
-	template<template<typename,typename> class op, int ... prp> static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims,stencil_offset_compute<device_grid::dims,1>> & sub2, device_grid & gd, Unpack_stat & ps)
+	template<template<typename,typename> class op, int ... prp> static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims> & sub2, device_grid & gd, Unpack_stat & ps)
 	{
 		std::cerr << __FILE__ << ":" << __LINE__ << " Error: complex properties on grids are not supported yet" << std::endl;
 	}
@@ -48,7 +48,7 @@ struct grid_unpack_selector_with_prp<true,T,device_grid,Memory>
 	 * \param ps unpack status
 	 *
 	 */
-	template<template<typename,typename> class op, unsigned int ... prp> static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims,stencil_offset_compute<device_grid::dims,1>> & sub2, device_grid & gd, Unpack_stat & ps)
+	template<template<typename,typename> class op, unsigned int ... prp> static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims> & sub2, device_grid & gd, Unpack_stat & ps)
 	{
 		PtrMemory * ptr1;
 
@@ -84,19 +84,16 @@ struct grid_unpack_selector_with_prp<true,T,device_grid,Memory>
 
 		// Merge the information
 
-		grid_key_dx<device_grid::dims> cnt[1];
-		cnt[0].zero();
-
-		auto it_src = gs.getIteratorStencil(cnt);
+		auto it_src = gs.getIterator();
 
 		while (sub2.isNext())
 		{
 			object_s_di_op<op,
-			            decltype(gs.get_o(it_src.template getStencil<0>())),
-						decltype(gd.get_o(sub2.template getStencil<0>())),
+			            decltype(gs.get_o(it_src.get())),
+						decltype(gd.get_o(sub2.get())),
 						OBJ_ENCAP,prp...>
-			(gs.get_o(it_src.template getStencil<0>()),
-			 gd.get_o(sub2.template getStencil<0>()));
+			(gs.get_o(it_src.get()),
+			 gd.get_o(sub2.get()));
 
 			++sub2;
 			++it_src;
@@ -131,7 +128,7 @@ struct grid_call_serialize_variadic<device_grid, Memory, index_tuple<prp...>>
 	 * \param ps unpack status
 	 *
 	 */
-	template<template<typename,typename> class op, typename T> inline static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims,stencil_offset_compute<device_grid::dims,1>> & sub2, device_grid & dg, Unpack_stat & ps)
+	template<template<typename,typename> class op, typename T> inline static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims> & sub2, device_grid & dg, Unpack_stat & ps)
 	{
 		const bool result = has_pack_gen<typename T::type>::value == false;
 
@@ -156,7 +153,7 @@ struct grid_unpack_with_prp
 	 * \param ps unpack status
 	 *
 	 */
-	template<unsigned int ... prp> static void unpacking(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims,stencil_offset_compute<device_grid::dims,1>> & sub2, device_grid & dg, Unpack_stat & ps)
+	template<unsigned int ... prp> static void unpacking(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims> & sub2, device_grid & dg, Unpack_stat & ps)
 	{
 		typedef index_tuple<prp...> ind_prop_to_pack;
 		grid_call_serialize_variadic<device_grid,Memory,ind_prop_to_pack>::template call_unpack<op,T>(recv_buf, sub2, dg, ps);
@@ -221,6 +218,9 @@ class grid_dist_id_comm
 											  openfpm::vector<device_grid> & loc_grid,
 											  std::unordered_map<size_t,size_t> & g_id_to_external_ghost_box)
 	{
+		grid_key_dx<dim> cnt[1];
+		cnt[0].zero();
+
 		//! For all the sub-domains
 		for (size_t i = 0 ; i < loc_ig_box.size() ; i++)
 		{
@@ -247,12 +247,6 @@ class grid_dist_id_comm
 				if (bx_dst.isValid() == false)
 					continue;
 
-				grid_key_dx<dim> cnt[1];
-				cnt[0].zero();
-
-				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub_src(loc_grid.get(i).getGrid(),bx_src.getKP1(),bx_src.getKP2(),cnt);
-				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub_dst(loc_grid.get(sub_id_dst).getGrid(),bx_dst.getKP1(),bx_dst.getKP2(),cnt);
-
 #ifdef SE_CLASS1
 
 				if (loc_eg_box.get(sub_id_dst).bid.get(k).sub != i)
@@ -266,14 +260,17 @@ class grid_dist_id_comm
 				const auto & gs = loc_grid.get(i);
 				auto & gd = loc_grid.get(sub_id_dst);
 
-				while (sub_src.isNext())
-				{
-					// Option 1
-					gd.set(sub_dst.template getStencil<0>(),gs,sub_src.template getStencil<0>());
+				typedef typename std::remove_reference<decltype(gd)>::type grid_cp;
+				typedef typename std::remove_reference<decltype(loc_grid.get(i).getGrid())>::type grid_info_cp;
 
-					++sub_src;
-					++sub_dst;
-				}
+				copy_grid_fast<!is_contiguos<prp...>::type::value || has_pack_gen<typename device_grid::value_type>::value,
+							   dim,
+							   grid_cp,
+							   grid_info_cp>::copy(loc_grid.get(i).getGrid(),
+						       loc_grid.get(sub_id_dst).getGrid(),
+							   bx_src,
+							   bx_dst,
+							   gs,gd,cnt);
 			}
 		}
 	}
@@ -324,11 +321,8 @@ class grid_dist_id_comm
 				if (bx_dst.isValid() == false)
 					continue;
 
-				grid_key_dx<dim> cnt[1];
-				cnt[0].zero();
-
-				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub_src(loc_grid.get(i).getGrid(),bx_src.getKP1(),bx_src.getKP2(),cnt);
-				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub_dst(loc_grid.get(sub_id_dst).getGrid(),bx_dst.getKP1(),bx_dst.getKP2(),cnt);
+				grid_key_dx_iterator_sub<dim> sub_src(loc_grid.get(i).getGrid(),bx_src.getKP1(),bx_src.getKP2());
+				grid_key_dx_iterator_sub<dim> sub_dst(loc_grid.get(sub_id_dst).getGrid(),bx_dst.getKP1(),bx_dst.getKP2());
 
 #ifdef SE_CLASS1
 
@@ -346,11 +340,192 @@ class grid_dist_id_comm
 				while (sub_src.isNext())
 				{
 					// write the object in the last element
-					object_s_di_op<op,decltype(gs.get_o(sub_src.get())),decltype(gd.get_o(sub_dst.get())),OBJ_ENCAP,prp...>(gs.get_o(sub_src.template getStencil<0>()),gd.get_o(sub_dst.template getStencil<0>()));
+					object_s_di_op<op,decltype(gs.get_o(sub_src.get())),decltype(gd.get_o(sub_dst.get())),OBJ_ENCAP,prp...>(gs.get_o(sub_src.get()),gd.get_o(sub_dst.get()));
 
 					++sub_src;
 					++sub_dst;
 				}
+			}
+		}
+	}
+
+	/*! \brief this function create send and receive asynchronously to receive ghosts part
+	 *
+	 * \param ig_box internal ghost box
+	 * \param eg_box external ghost box
+	 *
+	 */
+	template<int... prp>
+	void send_and_receive_ghost(ExtPreAlloc<Memory> ** prAlloc_prp,
+								ExtPreAlloc<Memory> ** prRecv_prp,
+								const openfpm::vector<ip_box_grid<dim>> & ig_box,
+								const openfpm::vector<ep_box_grid<dim>> & eg_box,
+								const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
+								openfpm::vector<device_grid> & loc_grid,
+								size_t & req)
+	{
+		// Sending property object
+		typedef object<typename object_creator<typename T::type,prp...>::type> prp_object;
+
+		// Create a packing request vector
+		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
+		{
+			// for each ghost box
+			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
+			{
+				// And linked sub-domain
+				size_t sub_id = ig_box.get(i).bid.get(j).sub;
+				// Internal ghost box
+				Box<dim,long int> g_ig_box = ig_box.get(i).bid.get(j).box;
+
+				if (g_ig_box.isValid() == false)
+					continue;
+
+				g_ig_box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
+
+				// Pack a size_t for the internal ghost id
+				Packer<size_t,HeapMemory>::packRequest(req);
+
+				// Create a sub grid iterator spanning the internal ghost layer
+
+				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_ig_box.getKP1(),g_ig_box.getKP2());
+				// and pack the internal ghost grid
+				Packer<device_grid,HeapMemory>::template packRequest<prp...>(loc_grid.get(sub_id),sub_it,req);
+			}
+		}
+
+		// resize the property buffer memory
+		g_send_prp_mem.resize(req);
+
+		// Create an object of preallocated memory for properties
+		(*prAlloc_prp) = new ExtPreAlloc<Memory>(req,g_send_prp_mem);
+		(*prAlloc_prp)->incRef();
+
+		// Pack information
+		Pack_stat sts;
+
+		// Pack the information for each processor and send it
+		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
+		{
+
+			sts.mark();
+			void * pointer = (*prAlloc_prp)->getPointerEnd();
+
+			// for each ghost box
+			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
+			{
+				// we pack only if it is valid
+				if (ig_box.get(i).bid.get(j).box.isValid() == false)
+					continue;
+
+				// And linked sub-domain
+				size_t sub_id = ig_box.get(i).bid.get(j).sub;
+				// Internal ghost box
+				Box<dim,size_t> g_ig_box = ig_box.get(i).bid.get(j).box;
+				g_ig_box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
+				// Ghost box global id
+				size_t g_id = ig_box.get(i).bid.get(j).g_id;
+
+				// Pack a size_t for the internal ghost id
+				Packer<size_t,HeapMemory>::pack(**prAlloc_prp,g_id,sts);
+
+				// Create a sub grid iterator spanning the internal ghost layer
+				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_ig_box.getKP1(),g_ig_box.getKP2());
+				// and pack the internal ghost grid
+				Packer<device_grid,HeapMemory>::template pack<prp...>(**prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
+			}
+			// send the request
+
+			void * pointer2 = (*prAlloc_prp)->getPointerEnd();
+
+			v_cl.send(ig_box.get(i).prc,0,pointer,(char *)pointer2 - (char *)pointer);
+		}
+
+		// Calculate the total information to receive from each processors
+		std::vector<size_t> prp_recv;
+
+		//! Receive the information from each processors
+		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
+		{
+			prp_recv.push_back(0);
+
+			// for each external ghost box
+			for (size_t j = 0 ; j < eg_box.get(i).bid.size() ; j++)
+			{
+				// External ghost box
+				Box<dim,size_t> g_eg_box = eg_box.get(i).bid.get(j).g_e_box;
+				prp_recv[prp_recv.size()-1] += g_eg_box.getVolumeKey() * sizeof(prp_object) + sizeof(size_t);
+			}
+		}
+
+		size_t tot_recv = ExtPreAlloc<Memory>::calculateMem(prp_recv);
+
+		//! Resize the receiving buffer
+		g_recv_prp_mem.resize(tot_recv);
+
+		// Create an object of preallocated memory for properties
+		(*prRecv_prp) = new ExtPreAlloc<Memory>(tot_recv,g_recv_prp_mem);
+		(*prRecv_prp)->incRef();
+
+		// queue the receives
+		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
+		{
+			(*prRecv_prp)->allocate(prp_recv[i]);
+			v_cl.recv(eg_box.get(i).prc,0,(*prRecv_prp)->getPointer(),prp_recv[i]);
+		}
+	}
+
+	/*! \brief Process the received data
+	 *
+	 * \param eg_box external ghost box
+	 *
+	 */
+	template<int... prp>
+	void process_received(ExtPreAlloc<Memory> * prRecv_prp,
+			   	   	   	  const openfpm::vector<ep_box_grid<dim>> & eg_box,
+						  openfpm::vector<device_grid> & loc_grid,
+						  std::unordered_map<size_t,size_t> & g_id_to_external_ghost_box)
+	{
+		Unpack_stat ps;
+
+		// Unpack the object
+		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
+		{
+			// for each external ghost box
+			for (size_t j = 0 ; j < eg_box.get(i).bid.size() ; j++)
+			{
+				// Unpack the ghost box global-id
+
+				size_t g_id;
+				Unpacker<size_t,HeapMemory>::unpack(*prRecv_prp,g_id,ps);
+
+				size_t l_id = 0;
+				// convert the global id into local id
+				auto key = g_id_to_external_ghost_box.find(g_id);
+				if (key != g_id_to_external_ghost_box.end()) // FOUND
+					l_id = key->second;
+				else
+				{
+					// NOT FOUND
+
+					// It must be always found, if not it mean that the processor has no-idea of
+					// what is stored and conseguently do not know how to unpack, print a critical error
+					// and return
+
+					std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " Critical, cannot unpack object, because received data cannot be interpreted\n";
+
+					return;
+				}
+
+				// Get the external ghost box associated with the packed information
+				Box<dim,size_t> box = eg_box.get(i).bid.get(l_id).l_e_box;
+				size_t sub_id = eg_box.get(i).bid.get(l_id).sub;
+
+				// sub-grid where to unpack
+				grid_key_dx_iterator_sub<dim> sub2(loc_grid.get(sub_id).getGrid(),box.getKP1(),box.getKP2());
+
+				// Unpack
+				Unpacker<device_grid,HeapMemory>::template unpack<prp...>(*prRecv_prp,sub2,loc_grid.get(sub_id),ps);
 			}
 		}
 	}
@@ -394,14 +569,6 @@ public:
 				}
 
 				SpaceBox<dim,long int> b = m_oGrid_recv.get(a).template get<1>(k);
-
-				//device_grid gr_send(sz);
-				//gr_send.setMemory();
-
-				//std::cout << "B: (" << b.getLow(0) << "; " << b.getLow(1) << "); (" << b.getHigh(0) << "; " << b.getHigh(1) << "); " << "G: (" << g.getGrid().getBox().getHigh(0) << "; " << g.getGrid().getBox().getHigh(1) << ")" << std::endl;
-
-				// Set the dimensions of the local grid
-				//g.resize(l_res);
 
 				Point<dim,St> p;
 				for (size_t n = 0; n < dim; n++)
@@ -655,123 +822,13 @@ public:
 										 openfpm::vector<device_grid> & loc_grid,
 										 std::unordered_map<size_t,size_t> & g_id_to_external_ghost_box)
 	{
-		// Sending property object
-		typedef object<typename object_creator<typename T::type,prp...>::type> prp_object;
-
 		size_t req = 0;
 
-		// Create a packing request vector
-		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
-		{
-			// for each ghost box
-			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
-			{
-				// And linked sub-domain
-				size_t sub_id = ig_box.get(i).bid.get(j).sub;
-				// Internal ghost box
-				Box<dim,long int> g_ig_box = ig_box.get(i).bid.get(j).box;
+		ExtPreAlloc<Memory> * prRecv_prp = NULL;
+		ExtPreAlloc<Memory> * prAlloc_prp = NULL;
 
-				if (g_ig_box.isValid() == false)
-					continue;
-
-				g_ig_box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
-
-				// Pack a size_t for the internal ghost id
-				Packer<size_t,HeapMemory>::packRequest(req);
-
-				grid_key_dx<dim> cnt[1];
-				cnt[0].zero();
-
-				// Create a sub grid iterator spanning the internal ghost layer
-				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub_it(loc_grid.get(sub_id).getGrid(),g_ig_box.getKP1(),g_ig_box.getKP2(),cnt);
-				// and pack the internal ghost grid
-				Packer<device_grid,HeapMemory>::template packRequest<prp...>(loc_grid.get(sub_id),sub_it,req);
-			}
-		}
-
-		// resize the property buffer memory
-		g_send_prp_mem.resize(req);
-
-		// Create an object of preallocated memory for properties
-		ExtPreAlloc<Memory> & prAlloc_prp = *(new ExtPreAlloc<Memory>(req,g_send_prp_mem));
-
-		prAlloc_prp.incRef();
-
-		// Pack information
-		Pack_stat sts;
-
-		// Pack the information for each processor and send it
-		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
-		{
-
-			sts.mark();
-			void * pointer = prAlloc_prp.getPointerEnd();
-
-			// for each ghost box
-			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
-			{
-				// we pack only if it is valid
-				if (ig_box.get(i).bid.get(j).box.isValid() == false)
-					continue;
-
-				// And linked sub-domain
-				size_t sub_id = ig_box.get(i).bid.get(j).sub;
-				// Internal ghost box
-				Box<dim,size_t> g_ig_box = ig_box.get(i).bid.get(j).box;
-				g_ig_box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
-				// Ghost box global id
-				size_t g_id = ig_box.get(i).bid.get(j).g_id;
-
-				// Pack a size_t for the internal ghost id
-				Packer<size_t,HeapMemory>::pack(prAlloc_prp,g_id,sts);
-
-				grid_key_dx<dim> cnt[1];
-				cnt[0].zero();
-
-				// Create a sub grid iterator spanning the internal ghost layer
-				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub_it(loc_grid.get(sub_id).getGrid(),g_ig_box.getKP1(),g_ig_box.getKP2(),cnt);
-				// and pack the internal ghost grid
-				Packer<device_grid,HeapMemory>::template pack<prp...>(prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
-			}
-			// send the request
-
-			void * pointer2 = prAlloc_prp.getPointerEnd();
-
-			v_cl.send(ig_box.get(i).prc,0,pointer,(char *)pointer2 - (char *)pointer);
-		}
-
-		// Calculate the total information to receive from each processors
-		std::vector<size_t> prp_recv;
-
-		//! Receive the information from each processors
-		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
-		{
-			prp_recv.push_back(0);
-
-			// for each external ghost box
-			for (size_t j = 0 ; j < eg_box.get(i).bid.size() ; j++)
-			{
-				// External ghost box
-				Box<dim,size_t> g_eg_box = eg_box.get(i).bid.get(j).g_e_box;
-				prp_recv[prp_recv.size()-1] += g_eg_box.getVolumeKey() * sizeof(prp_object) + sizeof(size_t);
-			}
-		}
-
-		size_t tot_recv = ExtPreAlloc<Memory>::calculateMem(prp_recv);
-
-		//! Resize the receiving buffer
-		g_recv_prp_mem.resize(tot_recv);
-
-		// Create an object of preallocated memory for properties
-		ExtPreAlloc<Memory> & prRecv_prp = *(new ExtPreAlloc<Memory>(tot_recv,g_recv_prp_mem));
-		prRecv_prp.incRef();
-
-		// queue the receives
-		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
-		{
-			prRecv_prp.allocate(prp_recv[i]);
-			v_cl.recv(eg_box.get(i).prc,0,prRecv_prp.getPointer(),prp_recv[i]);
-		}
+		if (v_cl.getProcessingUnits() != 1)
+		{send_and_receive_ghost<prp...>(&prAlloc_prp,&prRecv_prp, ig_box,eg_box,gdb_ext,loc_grid,req);}
 
 		// Before wait for the communication to complete we sync the local ghost
 		// in order to overlap with communication
@@ -781,51 +838,8 @@ public:
 		// wait to receive communication
 		v_cl.execute();
 
-		Unpack_stat ps;
-
-		// Unpack the object
-		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
-		{
-			// for each external ghost box
-			for (size_t j = 0 ; j < eg_box.get(i).bid.size() ; j++)
-			{
-				// Unpack the ghost box global-id
-
-				size_t g_id;
-				Unpacker<size_t,HeapMemory>::unpack(prRecv_prp,g_id,ps);
-
-				size_t l_id = 0;
-				// convert the global id into local id
-				auto key = g_id_to_external_ghost_box.find(g_id);
-				if (key != g_id_to_external_ghost_box.end()) // FOUND
-					l_id = key->second;
-				else
-				{
-					// NOT FOUND
-
-					// It must be always found, if not it mean that the processor has no-idea of
-					// what is stored and conseguently do not know how to unpack, print a critical error
-					// and return
-
-					std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " Critical, cannot unpack object, because received data cannot be interpreted\n";
-
-					return;
-				}
-
-				// Get the external ghost box associated with the packed information
-				Box<dim,size_t> box = eg_box.get(i).bid.get(l_id).l_e_box;
-				size_t sub_id = eg_box.get(i).bid.get(l_id).sub;
-
-				grid_key_dx<dim> cnt[1];
-				cnt[0].zero();
-
-				// sub-grid where to unpack
-				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub2(loc_grid.get(sub_id).getGrid(),box.getKP1(),box.getKP2(),cnt);
-
-				// Unpack
-				Unpacker<device_grid,HeapMemory>::template unpack<prp...>(prRecv_prp,sub2,loc_grid.get(sub_id),ps);
-			}
-		}
+		if (v_cl.getProcessingUnits() != 1)
+		{process_received<prp...>(prRecv_prp,eg_box,loc_grid,g_id_to_external_ghost_box);}
 	}
 
 	/*! \brief It merge the information in the ghost with the
@@ -875,11 +889,8 @@ public:
 				// Pack a size_t for the internal ghost id
 				Packer<size_t,HeapMemory>::packRequest(req);
 
-				grid_key_dx<dim> cnt[1];
-				cnt[0].zero();
-
 				// Create a sub grid iterator spanning the internal ghost layer
-				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub_it(loc_grid.get(sub_id).getGrid(),g_eg_box.getKP1(),g_eg_box.getKP2(),cnt);
+				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_eg_box.getKP1(),g_eg_box.getKP2());
 				// and pack the internal ghost grid
 				Packer<device_grid,HeapMemory>::template packRequest<prp...>(loc_grid.get(sub_id),sub_it,req);
 			}
@@ -921,11 +932,8 @@ public:
 				// Pack a size_t for the internal ghost id
 				Packer<size_t,HeapMemory>::pack(prAlloc_prp,g_id,sts);
 
-				grid_key_dx<dim> cnt[1];
-				cnt[0].zero();
-
 				// Create a sub grid iterator spanning the internal ghost layer
-				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub_it(loc_grid.get(sub_id).getGrid(),g_eg_box.getKP1(),g_eg_box.getKP2(),cnt);
+				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_eg_box.getKP1(),g_eg_box.getKP2());
 				// and pack the internal ghost grid
 				Packer<device_grid,HeapMemory>::template pack<prp...>(prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
 			}
@@ -1013,11 +1021,8 @@ public:
 				size_t sub_id = ig_box.get(i).bid.get(l_id).sub;
 				box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
 
-				grid_key_dx<dim> cnt[1];
-				cnt[0].zero();
-
 				// sub-grid where to unpack
-				grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,1>> sub2(loc_grid.get(sub_id).getGrid(),box.getKP1(),box.getKP2(),cnt);
+				grid_key_dx_iterator_sub<dim> sub2(loc_grid.get(sub_id).getGrid(),box.getKP1(),box.getKP2());
 
 				grid_unpack_with_prp<op,prp_object,device_grid,Memory>::template unpacking<prp...>(prRecv_prp,sub2,loc_grid.get(sub_id),ps);
 			}

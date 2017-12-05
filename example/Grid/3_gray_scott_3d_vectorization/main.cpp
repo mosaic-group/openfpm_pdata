@@ -36,7 +36,7 @@
 
 //! \cond [constants] \endcond
 
-//#define FORTRAN_UPDATE
+#define FORTRAN_UPDATE
 
 constexpr int x = 0;
 constexpr int y = 1;
@@ -269,8 +269,50 @@ int main(int argc, char* argv[])
 	// New grid with the decomposition of the old grid
     grid_dist_id<3, double, aggregate<double>> NewU(OldU.getDecomposition(),sz,g);
     grid_dist_id<3, double, aggregate<double>> NewV(OldV.getDecomposition(),sz,g);
-	
+
+	//////////// DEBUG /////////////////////////
+	//
+	//
+	//
+
+    	auto debug_it = OldU.getDomainIterator();
+
+	int count_ = 0;
+
+	while (debug_it.isNext())
+	{
+		auto key = debug_it.get();
+
+		count_++;
+
+		++debug_it;
+	}
+
+        auto debug_it2 = OldU.getDomainGhostIterator();
+
+        int count_dg = 0;
+
+        while (debug_it2.isNext())
+        {       
+                auto key = debug_it2.get();
+
+                count_dg++;
+
+                ++debug_it2;
+        }
+
+	auto & v_cl = create_vcluster();
+
+	count_dg -= count_;
+	v_cl.sum(count_dg);
+	v_cl.execute();
+
+	std::cout << "Ghost points: " << count_dg << std::endl;
+
+	//////////////////////////////////////////////
+
 	// spacing of the grid on x and y
+
 	double spacing[3] = {OldU.spacing(0),OldU.spacing(1),OldU.spacing(2)};
 
 	init(OldU,OldV,NewU,NewV,domain);
@@ -298,7 +340,7 @@ int main(int argc, char* argv[])
 						    {-1,0,0},
 						    {1,0,0}};
 
-	for (size_t i = 0; i < timeSteps; ++i)
+	for (size_t i = 0; i < 1 /*timeSteps*/; ++i)
 	{
 		if (i % 300 == 0)
 			std::cout << "STEP: " << i << std::endl;
@@ -329,9 +371,11 @@ int main(int argc, char* argv[])
 		{
 			step(OldU,OldV,NewU,NewV,star_stencil_3D,uFactor,vFactor,deltaT,F,K);
 
+			for (size_t i = 0 ; i < 10000 ; i++)
+			{
 			NewU.ghost_get<0>();
 			NewV.ghost_get<0>();
-
+			}
 		}
 		else
 		{
@@ -355,9 +399,9 @@ int main(int argc, char* argv[])
 		//! \cond [save hdf5] \endcond
 
 		// Every 500 time step we output the configuration on hdf5
-		if (i % 500 == 0)
+		if (i % 2000 == 0)
 		{
-			OldU.save("output_u_" + std::to_string(count));
+//			OldU.save("output_u_" + std::to_string(count));
 			OldV.save("output_v_" + std::to_string(count));
 			count++;
 		}
@@ -367,6 +411,9 @@ int main(int argc, char* argv[])
 	
 	tot_sim.stop();
 	std::cout << "Total simulation: " << tot_sim.getwct() << std::endl;
+
+	// We frite the final configuration
+	OldV.write("final");
 
 	//! \cond [time stepping] \endcond
 
