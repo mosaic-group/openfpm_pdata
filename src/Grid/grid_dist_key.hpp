@@ -1,13 +1,44 @@
 #ifndef GRID_DIST_KEY_DX_HPP
 #define GRID_DIST_KEY_DX_HPP
 
+template<unsigned int dim, typename base_key = grid_key_dx<dim>>
+class grid_dist_key_dx;
+
+template<bool impl, typename grid_key_base, unsigned int dim>
+class move_impl
+{
+public:
+	static grid_dist_key_dx<dim> move(grid_key_base & key, size_t sub, size_t i, size_t s)
+	{
+		key.set_d(i,key.get(i) + s);
+		return grid_dist_key_dx<dim>(sub,key);
+	}
+};
+
+template<typename grid_key_base, unsigned int dim>
+class move_impl<false,grid_key_base,dim>
+{
+public:
+	static grid_dist_key_dx<dim> move(grid_key_base & key, size_t sub, size_t i, size_t s)
+	{
+		std::cout << __FILE__ << ":" << __LINE__ << " Error move a key is not supported"
+				" directly acting on the grid key, please use the move function from the grid method" << std::endl;
+
+		grid_key_dx<dim> zero;
+		zero.zero();
+
+		return grid_dist_key_dx<dim>(0,zero);
+	}
+};
+
+
 /*! \brief Grid key for a distributed grid
  *
  * It contain from which local sub-domain grid come from, and the local grid_key_dx
  *
  */
 
-template<unsigned int dim>
+template<unsigned int dim, typename base_key>
 class grid_dist_key_dx
 {
 	//! grid list counter
@@ -16,7 +47,7 @@ class grid_dist_key_dx
 
 	//! Local grid iterator
 
-	grid_key_dx<dim> key;
+	base_key key;
 
 public:
 
@@ -45,7 +76,7 @@ public:
 	 * \return the local key
 	 *
 	 */
-	inline grid_key_dx<dim> getKey() const
+	inline base_key getKey() const
 	{
 		return key;
 	}
@@ -56,7 +87,7 @@ public:
 	 * \return the local key
 	 *
 	 */
-	inline grid_key_dx<dim> & getKeyRef()
+	inline base_key & getKeyRef()
 	{
 		return key;
 	}
@@ -89,9 +120,17 @@ public:
 	 */
 	inline grid_dist_key_dx<dim> move(size_t i,size_t s) const
 	{
-		grid_key_dx<dim> key = getKey();
+//		std::is_same<base_key,grid_key_dx<dim>>::value
+
+		auto key = getKey();
+
+		return move_impl<std::is_same<base_key,grid_key_dx<dim>>::value,
+				 decltype(this->getKey()),
+				 dim>::move(key,getSub(),i,s);
+
+/*		grid_key_dx<dim> key = getKey();
 		key.set_d(i,key.get(i) + s);
-		return grid_dist_key_dx<dim>(getSub(),key);
+		return grid_dist_key_dx<dim>(getSub(),key);*/
 	}
 
 	/*! \brief Create a new key moving the old one
@@ -115,7 +154,7 @@ public:
 	 * \param key key
 	 *
 	 */
-	inline grid_dist_key_dx(int g_c, const grid_key_dx<dim> & key)
+	inline grid_dist_key_dx(int g_c, const base_key & key)
 	:g_c(g_c),key(key)
 	{
 	}

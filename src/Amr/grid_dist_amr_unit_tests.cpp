@@ -20,10 +20,9 @@ BOOST_AUTO_TEST_SUITE( grid_dist_amr_test )
  * \param n_lvl number of levels
  *
  */
-void Test3D_amr_create_levels(Box<3,float> & domain, size_t coars_g, size_t n_lvl)
+template<typename grid_amr>
+void Test3D_amr_create_levels(grid_amr & amr_g, Box<3,float> & domain, size_t coars_g, size_t n_lvl)
 {
-	Ghost<3,float> g(0.05);
-
 	size_t g_sz[3] = {coars_g,coars_g,coars_g};
 
 	size_t tot_c = (coars_g - 1)*(coars_g - 1)*(coars_g - 1);
@@ -39,10 +38,29 @@ void Test3D_amr_create_levels(Box<3,float> & domain, size_t coars_g, size_t n_lv
 		fact *= 8;
 	}
 
-
-	grid_dist_amr<3,float,aggregate<float>> amr_g(domain,g);
-
 	amr_g.initLevels(n_lvl,g_sz);
+
+
+	for (size_t i = 0 ; i < amr_g.getNLvl() ; i++)
+	{
+		// Fill the AMR with something
+
+		size_t count = 0;
+
+		auto it = amr_g.getGridIterator(i);
+
+		while (it.isNext())
+		{
+			auto key = it.get_dist();
+			auto akey = amr_g.getAMRKey(i,key);
+
+			amr_g.template insert<0>(akey) = 3.0;
+
+			count++;
+
+			++it;
+		}
+	}
 
 	// Iterate across all the levels initialized
 	auto it = amr_g.getDomainIterator();
@@ -91,6 +109,8 @@ void Test3D_amr_create_levels(Box<3,float> & domain, size_t coars_g, size_t n_lv
 	BOOST_REQUIRE_EQUAL(count_c,correct_result_cell);
 }
 
+
+
 template<unsigned int dim>
 inline bool gr_is_inside(const grid_key_dx<dim> & key, const size_t (& sz)[dim])
 {
@@ -105,13 +125,12 @@ inline bool gr_is_inside(const grid_key_dx<dim> & key, const size_t (& sz)[dim])
 	return true;
 }
 
-void Test3D_amr_child_parent_get(Box<3,float> & domain, size_t coars_g, size_t n_lvl)
+template <typename grid>
+void Test3D_amr_child_parent_get(grid & amr_g, Box<3,float> & domain, size_t coars_g, size_t n_lvl)
 {
 	const int x = 0;
 	const int y = 1;
 	const int z = 2;
-
-	Ghost<3,long int> g(1);
 
 	size_t g_sz[3] = {coars_g,coars_g,coars_g};
 
@@ -125,10 +144,32 @@ void Test3D_amr_child_parent_get(Box<3,float> & domain, size_t coars_g, size_t n
 		fact *= 8;
 	}
 
-
-	grid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g(domain,g);
-
 	amr_g.initLevels(n_lvl,g_sz);
+
+	//////// Add something /////
+
+	for (size_t i = 0 ; i < amr_g.getNLvl() ; i++)
+	{
+		// Fill the AMR with something
+
+		size_t count = 0;
+
+		auto it = amr_g.getGridIterator(i);
+
+		while (it.isNext())
+		{
+			auto key = it.get_dist();
+			auto akey = amr_g.getAMRKey(i,key);
+
+			amr_g.template insert<0>(akey) = 3.0;
+
+			count++;
+
+			++it;
+		}
+	}
+
+	////////////////////////////
 
 	std::string test = amr_g.getSpacing(0).toString();
 
@@ -140,14 +181,14 @@ void Test3D_amr_child_parent_get(Box<3,float> & domain, size_t coars_g, size_t n
 		auto key = it.get();
 		auto gkey = it.getGKey();
 
-		amr_g.get<0>(key) = gkey.get(0);
-		amr_g.get<1>(key) = gkey.get(1);
-		amr_g.get<2>(key) = gkey.get(2);
+		amr_g.template insert<0>(key) = gkey.get(0);
+		amr_g.template insert<1>(key) = gkey.get(1);
+		amr_g.template insert<2>(key) = gkey.get(2);
 
 		++it;
 	}
 
-	amr_g.ghost_get<0,1,2>();
+	amr_g.template ghost_get<0,1,2>();
 	amr_g.write("amr_write_test");
 
 	// now we check that move space work
@@ -180,44 +221,44 @@ void Test3D_amr_child_parent_get(Box<3,float> & domain, size_t coars_g, size_t n
 
 		if (gr_is_inside(key_gpx,amr_g.getGridInfoVoid(it2.getLvl()).getSize()) == true)
 		{
-			match &= amr_g.get<0>(key_px) == gkey.get(0) + 1;
-			match &= amr_g.get<1>(key_px) == gkey.get(1);
-			match &= amr_g.get<2>(key_px) == gkey.get(2);
+			match &= amr_g.template get<0>(key_px) == gkey.get(0) + 1;
+			match &= amr_g.template get<1>(key_px) == gkey.get(1);
+			match &= amr_g.template get<2>(key_px) == gkey.get(2);
 		}
 
 		if (gr_is_inside(key_gmx,amr_g.getGridInfoVoid(it2.getLvl()).getSize()) == true)
 		{
-			match &= amr_g.get<0>(key_mx) == gkey.get(0) - 1;
-			match &= amr_g.get<1>(key_mx) == gkey.get(1);
-			match &= amr_g.get<2>(key_mx) == gkey.get(2);
+			match &= amr_g.template get<0>(key_mx) == gkey.get(0) - 1;
+			match &= amr_g.template get<1>(key_mx) == gkey.get(1);
+			match &= amr_g.template get<2>(key_mx) == gkey.get(2);
 		}
 
 		if (gr_is_inside(key_gpy,amr_g.getGridInfoVoid(it2.getLvl()).getSize()) == true)
 		{
-			match &= amr_g.get<0>(key_py) == gkey.get(0);
-			match &= amr_g.get<1>(key_py) == gkey.get(1) + 1;
-			match &= amr_g.get<2>(key_py) == gkey.get(2);
+			match &= amr_g.template get<0>(key_py) == gkey.get(0);
+			match &= amr_g.template get<1>(key_py) == gkey.get(1) + 1;
+			match &= amr_g.template get<2>(key_py) == gkey.get(2);
 		}
 
 		if (gr_is_inside(key_gmy,amr_g.getGridInfoVoid(it2.getLvl()).getSize()) == true)
 		{
-			match &= amr_g.get<0>(key_my) == gkey.get(0);
-			match &= amr_g.get<1>(key_my) == gkey.get(1) - 1;
-			match &= amr_g.get<2>(key_my) == gkey.get(2);
+			match &= amr_g.template get<0>(key_my) == gkey.get(0);
+			match &= amr_g.template get<1>(key_my) == gkey.get(1) - 1;
+			match &= amr_g.template get<2>(key_my) == gkey.get(2);
 		}
 
 		if (gr_is_inside(key_gpz,amr_g.getGridInfoVoid(it2.getLvl()).getSize()) == true)
 		{
-			match &= amr_g.get<0>(key_pz) == gkey.get(0);
-			match &= amr_g.get<1>(key_pz) == gkey.get(1);
-			match &= amr_g.get<2>(key_pz) == gkey.get(2) + 1;
+			match &= amr_g.template get<0>(key_pz) == gkey.get(0);
+			match &= amr_g.template get<1>(key_pz) == gkey.get(1);
+			match &= amr_g.template get<2>(key_pz) == gkey.get(2) + 1;
 		}
 
 		if (gr_is_inside(key_gmz,amr_g.getGridInfoVoid(it2.getLvl()).getSize()) == true)
 		{
-			match &= amr_g.get<0>(key_mz) == gkey.get(0);
-			match &= amr_g.get<1>(key_mz) == gkey.get(1);
-			match &= amr_g.get<2>(key_mz) == gkey.get(2) - 1;
+			match &= amr_g.template get<0>(key_mz) == gkey.get(0);
+			match &= amr_g.template get<1>(key_mz) == gkey.get(1);
+			match &= amr_g.template get<2>(key_mz) == gkey.get(2) - 1;
 		}
 
 		// Test to go to all the levels down
@@ -261,6 +302,8 @@ void Test3D_amr_child_parent_get(Box<3,float> & domain, size_t coars_g, size_t n
 	BOOST_REQUIRE_EQUAL(match,true);
 }
 
+template <typename> struct Debug;
+
 BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test )
 {
 	// Domain
@@ -269,7 +312,10 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test )
 	long int k = 16*16*16*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);
 
-	Test3D_amr_child_parent_get(domain3,k,4);
+	Ghost<3,long int> g(1);
+	grid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g(domain3,g);
+
+	Test3D_amr_child_parent_get(amr_g,domain3,k,4);
 }
 
 BOOST_AUTO_TEST_CASE( grid_dist_amr_test )
@@ -280,8 +326,16 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_test )
 	long int k = 16*16*16*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);
 
-	Test3D_amr_create_levels(domain3,k,4);
+	Ghost<3,float> g(0.05);
+	grid_dist_amr<3,float,aggregate<float>> amr_g(domain3,g);
+
+	Test3D_amr_create_levels(amr_g,domain3,k,4);
+
+	sgrid_dist_amr<3,float,aggregate<float>> amr_g2(domain3,g);
+
+	Test3D_amr_create_levels(amr_g2,domain3,k,4);
 }
+
 
 BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test_low_res )
 {
@@ -290,7 +344,14 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test_low_res )
 
 	long int k = 2;
 
-	Test3D_amr_child_parent_get(domain3,k,4);
+	Ghost<3,long int> g(1);
+	grid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g(domain3,g);
+
+	Test3D_amr_child_parent_get(amr_g,domain3,k,4);
+
+	sgrid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g2(domain3,g);
+
+	Test3D_amr_child_parent_get(amr_g2,domain3,k,4);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -11,6 +11,7 @@
 #include "Vector/vector_dist_ofb.hpp"
 #include "data_type/scalar.hpp"
 
+
 /*! \brief Unpack selector
  *
  *
@@ -243,8 +244,8 @@ class grid_dist_id_comm
 				if (bx_dst.isValid() == false)
 					continue;
 
-				grid_key_dx_iterator_sub<dim> sub_src(loc_grid.get(sub_id_src_gdb_ext).getGrid(),bx_src.getKP1(),bx_src.getKP2());
-				grid_key_dx_iterator_sub<dim> sub_dst(loc_grid.get(sub_id_dst_gdb_ext).getGrid(),bx_dst.getKP1(),bx_dst.getKP2());
+/*				grid_key_dx_iterator_sub<dim> sub_src(loc_grid.get(sub_id_src_gdb_ext).getGrid(),bx_src.getKP1(),bx_src.getKP2());
+				grid_key_dx_iterator_sub<dim> sub_dst(loc_grid.get(sub_id_dst_gdb_ext).getGrid(),bx_dst.getKP1(),bx_dst.getKP2());*/
 
 #ifdef SE_CLASS1
 
@@ -256,7 +257,10 @@ class grid_dist_id_comm
 
 #endif
 
-				const auto & gs = loc_grid.get(sub_id_src_gdb_ext);
+				auto & gd = loc_grid.get(sub_id_dst_gdb_ext);
+				gd.copy_to(loc_grid.get(sub_id_src_gdb_ext),bx_src,bx_dst);
+
+/*				const auto & gs = loc_grid.get(sub_id_src_gdb_ext);
 				auto & gd = loc_grid.get(sub_id_dst_gdb_ext);
 
 				while (sub_src.isNext())
@@ -266,7 +270,7 @@ class grid_dist_id_comm
 
 					++sub_src;
 					++sub_dst;
-				}
+				}*/
 			}
 		}
 	}
@@ -671,9 +675,10 @@ public:
 				// Pack a size_t for the internal ghost id
 				Packer<size_t,HeapMemory>::packRequest(req);
 				// Create a sub grid iterator spanning the internal ghost layer
-				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_ig_box.getKP1(),g_ig_box.getKP2());
+				auto sub_it = loc_grid.get(sub_id).getIterator(g_ig_box.getKP1(),g_ig_box.getKP2());
+
 				// and pack the internal ghost grid
-				Packer<device_grid,HeapMemory>::template packRequest<prp...>(loc_grid.get(sub_id),sub_it,req);
+				Packer<device_grid,HeapMemory>::template packRequest<decltype(sub_it),prp...>(loc_grid.get(sub_id),sub_it,req);
 			}
 		}
 
@@ -713,9 +718,9 @@ public:
 				// Pack a size_t for the internal ghost id
 				Packer<size_t,HeapMemory>::pack(prAlloc_prp,g_id,sts);
 				// Create a sub grid iterator spanning the internal ghost layer
-				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_ig_box.getKP1(),g_ig_box.getKP2());
+				auto sub_it = loc_grid.get(sub_id).getIterator(g_ig_box.getKP1(),g_ig_box.getKP2());
 				// and pack the internal ghost grid
-				Packer<device_grid,HeapMemory>::template pack<prp...>(prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
+				Packer<device_grid,HeapMemory>::template pack<decltype(sub_it),prp...>(prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
 			}
 			// send the request
 
@@ -802,11 +807,10 @@ public:
 				size_t sub_id = eg_box.get(i).bid.get(le_id).sub;
 
 				// sub-grid where to unpack
-				grid_key_dx_iterator_sub<dim> sub2(loc_grid.get(sub_id).getGrid(),box.getKP1(),box.getKP2());
+				auto sub2 = loc_grid.get(sub_id).getIterator(box.getKP1(),box.getKP2());
 
 				// Unpack
-				Unpacker<device_grid,HeapMemory>::template unpack<prp...>(prRecv_prp,sub2,loc_grid.get(sub_id),ps);
-
+				Unpacker<device_grid,HeapMemory>::template unpack<decltype(sub2),prp...>(prRecv_prp,sub2,loc_grid.get(sub_id),ps);
 
 				// Copy the information on the other grid
 				for (long int j = 0 ; j < (long int)eb_gid_list.get(l_id).eb_list.size() - 1 ; j++)
@@ -888,7 +892,7 @@ public:
 				// Create a sub grid iterator spanning the internal ghost layer
 				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_eg_box.getKP1(),g_eg_box.getKP2());
 				// and pack the internal ghost grid
-				Packer<device_grid,HeapMemory>::template packRequest<prp...>(loc_grid.get(sub_id),sub_it,req);
+				Packer<device_grid,HeapMemory>::template packRequest<decltype(sub_it),prp...>(loc_grid.get(sub_id),sub_it,req);
 			}
 		}
 
@@ -930,7 +934,7 @@ public:
 				// Create a sub grid iterator spanning the internal ghost layer
 				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_eg_box.getKP1(),g_eg_box.getKP2());
 				// and pack the internal ghost grid
-				Packer<device_grid,HeapMemory>::template pack<prp...>(prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
+				Packer<device_grid,HeapMemory>::template pack<decltype(sub_it),prp...>(prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
 			}
 			// send the request
 

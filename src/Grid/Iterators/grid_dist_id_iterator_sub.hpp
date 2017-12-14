@@ -40,7 +40,7 @@ class grid_dist_iterator_sub
 	const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
 
 	//! Actual iterator
-	grid_key_dx_iterator_sub<dim> a_it;
+	decltype(device_grid::type_of_subiterator()) a_it;
 
 	//! start key
 	grid_key_dx<dim> start;
@@ -111,7 +111,8 @@ class grid_dist_iterator_sub
 	* \param tmp iterator to copy
 	*
 	*/
-	grid_dist_iterator_sub<dim,device_grid> & operator=(const grid_dist_iterator_sub<dim,device_grid> & tmp)
+	grid_dist_iterator_sub<dim,device_grid> &
+	operator=(const grid_dist_iterator_sub<dim,device_grid> & tmp)
 	{
 		g_c = tmp.g_c;
 		gList = tmp.gList;

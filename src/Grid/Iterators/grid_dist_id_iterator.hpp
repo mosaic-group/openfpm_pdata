@@ -22,10 +22,11 @@
  *
  * \tparam dim dimensionality of the grid
  * \tparam device_grid type of basic grid
+ * \tparam device_sub_it device grid sib-iterator type
  * \tparam impl implementation
  *
  */
-template<unsigned int dim, typename device_grid, int impl,typename stencil = no_stencil >
+template<unsigned int dim, typename device_grid, typename device_sub_it, int impl,typename stencil = no_stencil >
 class grid_dist_iterator
 {
 
@@ -38,11 +39,12 @@ class grid_dist_iterator
  *
  * \tparam dim dimensionality of the grid
  * \tparam device_grid type of basic grid
- * \tparam impl implementation
+ * \tparam stencil it inject the code to calculate stencil offset
+ * \tparam sub_iterator it indicate the sub-iterator type of the device_grid
  *
  */
-template<unsigned int dim, typename device_grid, typename stencil>
-class grid_dist_iterator<dim,device_grid,FREE,stencil>
+template<unsigned int dim, typename device_grid, typename device_sub_it, typename stencil>
+class grid_dist_iterator<dim,device_grid,device_sub_it,FREE,stencil>
 {
 	//! grid list counter
 	size_t g_c;
@@ -54,7 +56,7 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
 
 	//! Actual iterator
-	grid_key_dx_iterator_sub<dim,stencil> a_it;
+	device_sub_it a_it;
 
 	//! stop point (is the grid size)
 	grid_key_dx<dim> stop;
@@ -83,7 +85,9 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 * \param stop end point
 	 *
 	 */
-	grid_dist_iterator(const openfpm::vector<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, const grid_key_dx<dim> & stop)
+	grid_dist_iterator(const openfpm::vector<device_grid> & gk,
+					   const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
+					   const grid_key_dx<dim> & stop)
 	:g_c(0),gList(gk),gdb_ext(gdb_ext),stop(stop)
 	{
 		// Initialize the current iterator
@@ -112,12 +116,12 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	}
 
 	//! Copy constructor
-	grid_dist_iterator(const grid_dist_iterator<dim,device_grid,FREE,stencil> & g)
+	grid_dist_iterator(const grid_dist_iterator<dim,device_grid,device_sub_it,FREE,stencil> & g)
 	:g_c(g.g_c),gList(g.gList),gdb_ext(g.gdb_ext),a_it(g.a_it),stop(g.stop)
 	{}
 
 	//! Copy constructor
-	grid_dist_iterator(grid_dist_iterator<dim,device_grid,FREE,stencil> && g)
+	grid_dist_iterator(grid_dist_iterator<dim,device_grid,device_sub_it,FREE,stencil> && g)
 	:g_c(g.g_c),gList(g.gList),gdb_ext(g.gdb_ext),a_it(g.a_it),stop(g.stop)
 	{}
 
@@ -131,7 +135,7 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 * \return the next grid_key
 	 *
 	 */
-	inline grid_dist_iterator<dim,device_grid,FREE,stencil> & operator++()
+	inline grid_dist_iterator<dim,device_grid,device_sub_it,FREE,stencil> & operator++()
 	{
 		++a_it;
 
@@ -170,9 +174,9 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 * \return the actual key
 	 *
 	 */
-	inline grid_dist_key_dx<dim> get() const
+	inline grid_dist_key_dx<dim, typename device_grid::base_key> get() const
 	{
-		return grid_dist_key_dx<dim>(g_c,a_it.get());
+		return grid_dist_key_dx<dim,typename device_grid::base_key>(g_c,a_it.get());
 	}
 
 	/*! \brief it return the stop point of the iterator
@@ -225,12 +229,13 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 * \return the global position in the grid
 	 *
 	 */
-	inline grid_key_dx<dim> getGKey(const grid_dist_key_dx<dim> & k)
+	inline grid_key_dx<dim> getGKey(const grid_dist_key_dx<dim,typename device_grid::base_key> & k)
 	{
 		// Get the sub-domain id
 		size_t sub_id = k.getSub();
 
 		grid_key_dx<dim> k_glob = k.getKey();
+//		gList.get(sub_id).convert_key(k_glob,k.getKey());
 
 		// shift
 		k_glob = k_glob + gdb_ext.get(sub_id).origin;
@@ -261,8 +266,8 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
  * \tparam impl implementation
  *
  */
-template<unsigned int dim, typename device_grid,typename stencil>
-class grid_dist_iterator<dim,device_grid,FIXED,stencil>
+template<unsigned int dim, typename device_grid, typename device_sub_it,typename stencil>
+class grid_dist_iterator<dim,device_grid,device_sub_it,FIXED,stencil>
 {
 	//! grid list counter
 	size_t g_c;
@@ -274,7 +279,7 @@ class grid_dist_iterator<dim,device_grid,FIXED,stencil>
 	const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
 
 	//! Actual iterator
-	grid_key_dx_iterator<dim,stencil> a_it;
+	device_sub_it a_it;
 
 	/*! \brief from g_c increment g_c until you find a valid grid
 	 *
@@ -300,7 +305,7 @@ class grid_dist_iterator<dim,device_grid,FIXED,stencil>
 	* \return itself
 	*
 	*/
-	grid_dist_iterator<dim,device_grid,FIXED> & operator=(const grid_dist_iterator<dim,device_grid,FIXED> & tmp)
+	grid_dist_iterator<dim,device_grid,device_sub_it,FIXED> & operator=(const grid_dist_iterator<dim,device_grid,device_sub_it,FIXED> & tmp)
 	{
 		g_c = tmp.g_c;
 		gList = tmp.gList;
@@ -335,7 +340,7 @@ class grid_dist_iterator<dim,device_grid,FIXED,stencil>
 	 *
 	 */
 
-	grid_dist_iterator<dim,device_grid,FIXED> &  operator++()
+	grid_dist_iterator<dim,device_grid,device_sub_it,FIXED> &  operator++()
 	{
 		++a_it;
 
@@ -405,7 +410,8 @@ class grid_dist_iterator<dim,device_grid,FIXED,stencil>
 		// Get the sub-domain id
 		size_t sub_id = k.getSub();
 
-		grid_key_dx<dim> k_glob = k.getKey();
+		grid_key_dx<dim> k_glob;
+		gList.get(sub_id).convert_key(k_glob,k.getKey());
 
 		// shift
 		k_glob = k_glob + gdb_ext.get(sub_id).origin;

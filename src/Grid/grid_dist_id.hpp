@@ -24,6 +24,8 @@
 #include "HDF5_wr/HDF5_wr.hpp"
 #include "SparseGrid/SparseGrid.hpp"
 
+template <typename> struct Debug;
+
 //! Internal ghost box sent to construct external ghost box into the other processors
 template<unsigned int dim>
 struct Box_fix
@@ -1563,7 +1565,10 @@ public:
 	 * \return the iterator
 	 *
 	 */
-	grid_dist_iterator<dim,device_grid,FREE> getOldDomainIterator() const
+	grid_dist_iterator<dim,device_grid,
+					   decltype(device_grid::type_of_subiterator()),
+					   FREE>
+	getOldDomainIterator() const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1574,7 +1579,9 @@ public:
 		one.one();
 		stop = stop - one;
 
-		grid_dist_iterator<dim,device_grid,FREE> it(loc_grid_old,gdb_ext_old,stop);
+		grid_dist_iterator<dim,device_grid,
+							decltype(device_grid::type_of_subiterator()),
+							FREE> it(loc_grid_old,gdb_ext_old,stop);
 
 		return it;
 	}
@@ -1608,7 +1615,9 @@ public:
 	 * \return the iterator
 	 *
 	 */
-	grid_dist_iterator<dim,device_grid,FREE> getDomainIterator() const
+	grid_dist_iterator<dim,device_grid,
+					   decltype(device_grid::type_of_subiterator()),FREE>
+	getDomainIterator() const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1619,7 +1628,9 @@ public:
 		one.one();
 		stop = stop - one;
 
-		grid_dist_iterator<dim,device_grid,FREE> it(loc_grid,gdb_ext,stop);
+		grid_dist_iterator<dim,device_grid,
+							decltype(device_grid::type_of_subiterator()),
+							FREE> it(loc_grid,gdb_ext,stop);
 
 		return it;
 	}
@@ -1632,7 +1643,10 @@ public:
 	 *
 	 */
 	template<unsigned int Np>
-	grid_dist_iterator<dim,device_grid,FREE,stencil_offset_compute<dim,Np>>
+	grid_dist_iterator<dim,device_grid,
+						decltype(device_grid::template type_of_subiterator<stencil_offset_compute<dim,Np>>()),
+						FREE,
+						stencil_offset_compute<dim,Np> >
 	getDomainIteratorStencil(const grid_key_dx<dim> (& stencil_pnt)[Np]) const
 	{
 #ifdef SE_CLASS2
@@ -1644,7 +1658,10 @@ public:
 		one.one();
 		stop = stop - one;
 
-		grid_dist_iterator<dim,device_grid,FREE,stencil_offset_compute<dim,Np>> it(loc_grid,gdb_ext,stop,stencil_pnt);
+		grid_dist_iterator<dim,device_grid,
+						   decltype(device_grid::template type_of_subiterator<stencil_offset_compute<dim,Np>>()),
+						   FREE,
+						   stencil_offset_compute<dim,Np>> it(loc_grid,gdb_ext,stop,stencil_pnt);
 
 		return it;
 	}
@@ -1654,12 +1671,17 @@ public:
 	 * \return the iterator
 	 *
 	 */
-	grid_dist_iterator<dim,device_grid,FIXED> getDomainGhostIterator() const
+	grid_dist_iterator<dim,device_grid,
+	decltype(device_grid::type_of_subiterator()),
+	FIXED>
+	getDomainGhostIterator() const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
-		grid_dist_iterator<dim,device_grid,FIXED> it(loc_grid,gdb_ext);
+		grid_dist_iterator<dim,device_grid,
+							decltype(device_grid::type_of_subiterator()),
+							FIXED> it(loc_grid,gdb_ext);
 
 		return it;
 	}
@@ -1676,7 +1698,9 @@ public:
 	 * \return the sub-domain iterator
 	 *
 	 */
-	grid_dist_iterator_sub<dim,device_grid> getSubDomainIterator(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop) const
+	grid_dist_iterator_sub<dim,device_grid>
+	getSubDomainIterator(const grid_key_dx<dim> & start,
+						 const grid_key_dx<dim> & stop) const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1737,6 +1761,24 @@ public:
 		return false;
 	}
 
+	/*! \brief remove an element in the grid
+	 *
+	 * In case of dense grid this function print a warning, in case of sparse
+	 * grid this function remove a grid point.
+	 *
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return a reference to the inserted element
+	 *
+	 */
+	template <typename bg_key> inline void remove(const grid_dist_key_dx<dim,bg_key> & v1)
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return loc_grid.get(v1.getSub()).remove(v1.getKey());
+	}
+
 	/*! \brief insert an element in the grid
 	 *
 	 * In case of dense grid this function is equivalent to get, in case of sparse
@@ -1749,7 +1791,7 @@ public:
 	 * \return a reference to the inserted element
 	 *
 	 */
-	template <unsigned int p>inline auto insert(const grid_dist_key_dx<dim> & v1)
+	template <unsigned int p,typename bg_key>inline auto insert(const grid_dist_key_dx<dim,bg_key> & v1)
 	-> typename std::add_lvalue_reference
 	<
 		decltype(loc_grid.get(v1.getSub()).template insert<p>(v1.getKey()))
@@ -1758,8 +1800,10 @@ public:
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
+
 		return loc_grid.get(v1.getSub()).template insert<p>(v1.getKey());
 	}
+
 
 	/*! \brief Get the reference of the selected element
 	 *
@@ -1769,7 +1813,9 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p>inline auto get(const grid_dist_key_dx<dim> & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	template <unsigned int p, typename bg_key>
+	inline auto get(const grid_dist_key_dx<dim,bg_key> & v1) const
+	-> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1777,6 +1823,7 @@ public:
 		return loc_grid.get(v1.getSub()).template get<p>(v1.getKey());
 	}
 
+
 	/*! \brief Get the reference of the selected element
 	 *
 	 * \tparam p property to get (is an integer)
@@ -1785,7 +1832,9 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p>inline auto get(const grid_dist_key_dx<dim> & v1) -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	template <unsigned int p, typename bg_key>
+	inline auto get(const grid_dist_key_dx<dim,bg_key> & v1)
+	-> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1996,6 +2045,7 @@ public:
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
+
 		file_type ft = file_type::ASCII;
 
 		if (opt & FORMAT_BINARY)
@@ -2175,6 +2225,17 @@ public:
 		map();
 	}
 
+	/*! \brief This is a meta-function return which type of sub iterator a grid produce
+	 *
+	 * \return the type of the sub-grid iterator
+	 *
+	 */
+	template <typename stencil = no_stencil>
+	static grid_dist_iterator_sub<dim,device_grid> type_of_subiterator()
+	{
+		return grid_key_dx_iterator_sub<dim, stencil>();
+	}
+
 	//! Define friend classes
 	//\cond
 	friend grid_dist_id<dim,St,T,typename Decomposition::extended_type,Memory,device_grid>;
@@ -2182,6 +2243,7 @@ public:
 };
 
 
-template<unsigned int dim, typename St, typename T> using sgrid_dist_id = grid_dist_id<dim,St,T,CartDecomposition<dim,St>,HeapMemory,sgrid_cpu<dim,T,St>>;
+template<unsigned int dim, typename St, typename T>
+using sgrid_dist_id = grid_dist_id<dim,St,T,CartDecomposition<dim,St>,HeapMemory,sgrid_cpu<dim,T,HeapMemory>>;
 
 #endif

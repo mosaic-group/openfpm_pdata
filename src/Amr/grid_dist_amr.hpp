@@ -15,6 +15,8 @@
 #define AMR_IMPL_PATCHES 2
 #define AMR_IMPL_OPENVDB 3
 
+
+
 template<unsigned int dim, typename St, typename T, unsigned int impl=AMR_IMPL_TRIVIAL ,typename Decomposition = CartDecomposition<dim,St>,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T> >
 class grid_dist_amr
 {
@@ -54,8 +56,10 @@ class grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,Decomposition,Memory,device_grid>
 	//! array of grids
 	openfpm::vector<grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>> gd_array;
 
+	typedef decltype(device_grid::type_of_subiterator()) device_sub_it;
+
 	//! Iterator for each distributed grid
-	openfpm::vector<grid_dist_iterator<dim,device_grid,FREE>> git;
+	openfpm::vector<grid_dist_iterator<dim,device_grid,device_sub_it,FREE>> git;
 
 	//! Iterator for each distributed grid
 	openfpm::vector<grid_dist_iterator_sub<dim,device_grid>> git_sub;
@@ -156,7 +160,10 @@ public:
 	}
 
 
-	grid_dist_amr_key_iterator<dim,device_grid,grid_dist_iterator_sub<dim,device_grid>> getDomainIteratorCells()
+	grid_dist_amr_key_iterator<dim,device_grid,
+							   decltype(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>::type_of_subiterator()),
+							   decltype(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>::type_of_subiterator()) >
+	getDomainIteratorCells()
 	{
 		git_sub.clear();
 
@@ -174,7 +181,9 @@ public:
 			git_sub.add(gd_array.get(i).getSubDomainIterator(start,stop));
 		}
 
-		return grid_dist_amr_key_iterator<dim,device_grid,grid_dist_iterator_sub<dim,device_grid>>(git_sub);
+		return grid_dist_amr_key_iterator<dim,device_grid,
+											decltype(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>::type_of_subiterator()),
+											decltype(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>::type_of_subiterator())>(git_sub);
 	}
 
 	grid_dist_iterator_sub<dim,device_grid> getDomainIteratorCells(size_t lvl)
@@ -191,12 +200,23 @@ public:
 		return gd_array.get(lvl).getSubDomainIterator(start,stop);
 	}
 
+	/*! \brief Get an iterator to the grid
+	 *
+	 * \return an iterator to the grid
+	 *
+	 */
+	auto getGridIterator(size_t lvl) -> decltype(gd_array.get(lvl).getGridIterator())
+	{
+		return gd_array.get(lvl).getGridIterator();
+	}
+
 	/*! \brief Get domain iterator
 	 *
 	 * \return an iterator over all the grid levels
 	 *
 	 */
-	grid_dist_amr_key_iterator<dim,device_grid> getDomainIterator()
+	grid_dist_amr_key_iterator<dim,device_grid, decltype(device_grid::type_of_subiterator())>
+	getDomainIterator()
 	{
 		git.clear();
 
@@ -205,7 +225,7 @@ public:
 			git.add(gd_array.get(i).getDomainIterator());
 		}
 
-		return grid_dist_amr_key_iterator<dim,device_grid>(git);
+		return grid_dist_amr_key_iterator<dim,device_grid,decltype(device_grid::type_of_subiterator())>(git);
 	}
 
 	/*! \brief return an iterator over the level lvl
@@ -215,7 +235,8 @@ public:
 	 * \return an iterator over the level lvl selected
 	 *
 	 */
-	grid_dist_iterator<dim,device_grid,FREE> getDomainIterator(size_t lvl) const
+	grid_dist_iterator<dim,device_grid,decltype(device_grid::type_of_subiterator()),FREE>
+	getDomainIterator(size_t lvl) const
 	{
 		return gd_array.get(lvl).getDomainIterator();
 	}
@@ -284,6 +305,80 @@ public:
 #endif
 		return gd_array.get(lvl).template get<p>(v1);
 	}
+
+	//////////////////// Insert functions
+
+
+	/*! \brief Get the reference of the selected element
+	 *
+	 * \tparam p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return the selected element
+	 *
+	 */
+	template <unsigned int p>
+	inline auto insert(const grid_dist_amr_key<dim> & v1)
+	-> typename std::add_lvalue_reference<decltype(gd_array.get(v1.getLvl()).template insert<p>(v1.getKey()))>::type
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return gd_array.get(v1.getLvl()).template insert<p>(v1.getKey());
+	}
+
+
+
+	/*! \brief Get the reference of the selected element
+	 *
+	 * \tparam p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return the selected element
+	 *
+	 */
+	template <unsigned int p>inline auto insert(size_t lvl, const grid_dist_key_dx<dim> & v1) -> typename std::add_lvalue_reference<decltype(gd_array.get(lvl).template get<p>(v1))>::type
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return gd_array.get(lvl).template insert<p>(v1);
+	}
+
+	//////////////////////////////////////
+
+	//////////////////// Remove functions
+
+
+	/*! \brief Remove a grid point (this function make sense only in case of
+	 *         sparse grid)
+	 *
+	 * \param v1 grid_key that identify the element in the AMR grid to eleminate
+	 *
+	 */
+	inline void remove(const grid_dist_amr_key<dim> & v1)
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return gd_array.get(v1.getLvl()).remove(v1.getKey());
+	}
+
+	/*! \brief Remove a grid point (this function make sense only in case of
+	 *         sparse grid)
+	 *
+	 * \param v1 grid_key that identify the element in the AMR grid to eleminate
+	 *
+	 */
+	void remove(size_t lvl, const grid_dist_key_dx<dim> & v1)
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return gd_array.get(lvl).remove(v1);
+	}
+
+	//////////////////////////////////////
 
 	/*! \brief It synchronize the ghost parts
 	 *
@@ -358,6 +453,17 @@ public:
 		key.setLvl(lvl+1);
 	}
 
+	/*! \brief From a distributed key it return a AMR key that contain also the grid level
+	 *
+	 * \param lvl level
+	 * \param key distributed key
+	 *
+	 */
+	inline grid_dist_amr_key<dim> getAMRKey(size_t lvl, grid_dist_key_dx<dim> key)
+	{
+		return grid_dist_amr_key<dim>(lvl,key);
+	}
+
 	/*! \brief Move up (to coarser level) the key
 	 *
 	 * \param key multi-resolution AMR key
@@ -425,5 +531,7 @@ public:
 	}
 };
 
+template<unsigned int dim, typename St, typename T>
+using sgrid_dist_amr = grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,CartDecomposition<dim,St>,HeapMemory,sgrid_cpu<dim,T,HeapMemory>>;
 
 #endif /* AMR_GRID_AMR_DIST_HPP_ */

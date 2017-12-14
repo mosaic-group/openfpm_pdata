@@ -12,7 +12,7 @@
 #include "Grid/Iterators/grid_dist_id_iterator.hpp"
 #include "grid_dist_amr_key.hpp"
 
-template<unsigned int dim, typename device_grid,typename it_type = grid_dist_iterator<dim,device_grid,FREE>>
+template<unsigned int dim, typename device_grid, typename device_sub_it, typename it_type = grid_dist_iterator<dim,device_grid,device_sub_it,FREE>>
 class grid_dist_amr_key_iterator
 {
 	//! Array of grid iterators
@@ -58,6 +58,8 @@ public:
 	:git(git),g_c(0)
 	{
 		a_it = &git.get(0);
+
+		selectValidGrid();
 	}
 
 
@@ -72,14 +74,14 @@ public:
 	 * \return the next grid_key
 	 *
 	 */
-	inline grid_dist_amr_key_iterator<dim,device_grid,it_type> & operator++()
+	inline grid_dist_amr_key_iterator<dim,device_grid,device_sub_it,it_type> & operator++()
 	{
 		++(*a_it);
 
 		// check if a_it is at the end
 
 		if (a_it->isNext() == true)
-			return *this;
+		{return *this;}
 		else
 		{
 			// switch to the new iterator
