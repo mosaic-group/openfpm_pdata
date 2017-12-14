@@ -5,7 +5,7 @@ pdata_SOURCES = main.cpp pdata_performance.cpp Grid/tests/grid_dist_id_unit_test
 pdata_CXXFLAGS = $(HDF5_CPPFLAGS) $(OPENMP_CFLAGS) $(AM_CXXFLAGS) $(LIBHILBERT_INCLUDE) $(PETSC_INCLUDE) $(CUDA_CFLAGS) $(INCLUDES_PATH) $(PARMETIS_INCLUDE) $(METIS_INCLUDE) $(BOOST_CPPFLAGS) $(H5PART_INCLUDE) -DPARALLEL_IO  -Wno-unused-local-typedefs
 pdata_CFLAGS = $(CUDA_CFLAGS)
 pdata_LDADD = $(LINKLIBS) -lparmetis -lmetis
-nobase_include_HEADERS = Decomposition/CartDecomposition.hpp Decomposition/CartDecomposition_ext.hpp  Decomposition/common.hpp Decomposition/Decomposition.hpp  Decomposition/ie_ghost.hpp \
+nobase_include_HEADERS = Amr/grid_dist_amr_key_iterator.hpp Amr/grid_dist_amr_key.hpp Amr/grid_dist_amr.hpp Decomposition/CartDecomposition.hpp Decomposition/CartDecomposition_ext.hpp  Decomposition/common.hpp Decomposition/Decomposition.hpp  Decomposition/ie_ghost.hpp \
          Decomposition/Domain_NN_calculator_cart.hpp Decomposition/nn_processor.hpp Decomposition/ie_loc_ghost.hpp Decomposition/ORB.hpp \
          Graph/CartesianGraphFactory.hpp \
          Grid/grid_dist_id.hpp Grid/grid_dist_id_comm.hpp Grid/Iterators/grid_dist_id_iterator_util.hpp Grid/Iterators/grid_dist_id_iterator_dec.hpp Grid/Iterators/grid_dist_id_iterator_dec_skin.hpp Grid/grid_dist_util.hpp  Grid/Iterators/grid_dist_id_iterator_sub.hpp Grid/Iterators/grid_dist_id_iterator.hpp Grid/grid_dist_key.hpp Grid/staggered_dist_grid.hpp Grid/staggered_dist_grid_util.hpp Grid/staggered_dist_grid_copy.hpp \
