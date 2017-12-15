@@ -210,6 +210,25 @@ public:
 		return gd_array.get(lvl).getGridIterator();
 	}
 
+	/*! \brief Get an iterator to the grid
+	 *
+	 * \return an iterator to the grid
+	 *
+	 */
+	auto getGridIteratorCells(size_t lvl) -> decltype(gd_array.get(lvl).getGridIterator())
+	{
+		grid_key_dx<dim> start;
+		grid_key_dx<dim> stop;
+
+		for (size_t j = 0 ; j < dim ; j++)
+		{
+			start.set_d(j,0);
+			stop.set_d(j,getGridInfoVoid(lvl).size(j) - 2);
+		}
+
+		return gd_array.get(lvl).getGridIterator(start,stop);
+	}
+
 	/*! \brief Get domain iterator
 	 *
 	 * \return an iterator over all the grid levels
