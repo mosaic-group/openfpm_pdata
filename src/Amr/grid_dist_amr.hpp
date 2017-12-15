@@ -356,7 +356,8 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p>inline auto insert(size_t lvl, const grid_dist_key_dx<dim> & v1) -> typename std::add_lvalue_reference<decltype(gd_array.get(lvl).template get<p>(v1))>::type
+	template <unsigned int p>inline auto insert(size_t lvl, const grid_dist_key_dx<dim> & v1)
+	-> typename std::add_lvalue_reference<decltype(gd_array.get(lvl).template insert<p>(v1))>::type
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);

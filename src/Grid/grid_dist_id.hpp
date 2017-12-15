@@ -1596,6 +1596,22 @@ public:
 	 * \return a Grid iterator
 	 *
 	 */
+	inline grid_dist_id_iterator_dec<Decomposition> getGridIterator(grid_key_dx<dim> & start, grid_key_dx<dim> & stop)
+	{
+		grid_dist_id_iterator_dec<Decomposition> it_dec(getDecomposition(), g_sz, start, stop);
+		return it_dec;
+	}
+
+	/*! /brief Get a grid Iterator
+	 *
+	 * In case of dense grid getGridIterator is equivalent to getDomainIterator
+	 * in case if sparse distributed grid getDomainIterator go across all the
+	 * inserted point get grid iterator run across all grid points independently
+	 * that the point has been insert or not
+	 *
+	 * \return a Grid iterator
+	 *
+	 */
 	inline grid_dist_id_iterator_dec<Decomposition> getGridIterator()
 	{
 		grid_key_dx<dim> start;
