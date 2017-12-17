@@ -264,52 +264,9 @@ int main(int argc, char* argv[])
 	grid_dist_id<3, double, aggregate<double>> OldU(sz,domain,g,bc);
 	grid_dist_id<3, double, aggregate<double>> OldV(OldU.getDecomposition(),sz,g);
 
-	OldU.getDecomposition().write("Test");
-
 	// New grid with the decomposition of the old grid
     grid_dist_id<3, double, aggregate<double>> NewU(OldU.getDecomposition(),sz,g);
     grid_dist_id<3, double, aggregate<double>> NewV(OldV.getDecomposition(),sz,g);
-
-	//////////// DEBUG /////////////////////////
-	//
-	//
-	//
-
-    	auto debug_it = OldU.getDomainIterator();
-
-	int count_ = 0;
-
-	while (debug_it.isNext())
-	{
-		auto key = debug_it.get();
-
-		count_++;
-
-		++debug_it;
-	}
-
-        auto debug_it2 = OldU.getDomainGhostIterator();
-
-        int count_dg = 0;
-
-        while (debug_it2.isNext())
-        {       
-                auto key = debug_it2.get();
-
-                count_dg++;
-
-                ++debug_it2;
-        }
-
-	auto & v_cl = create_vcluster();
-
-	count_dg -= count_;
-	v_cl.sum(count_dg);
-	v_cl.execute();
-
-	std::cout << "Ghost points: " << count_dg << std::endl;
-
-	//////////////////////////////////////////////
 
 	// spacing of the grid on x and y
 
@@ -340,7 +297,7 @@ int main(int argc, char* argv[])
 						    {-1,0,0},
 						    {1,0,0}};
 
-	for (size_t i = 0; i < 1 /*timeSteps*/; ++i)
+	for (size_t i = 0; i < timeSteps; ++i)
 	{
 		if (i % 300 == 0)
 			std::cout << "STEP: " << i << std::endl;
@@ -371,11 +328,8 @@ int main(int argc, char* argv[])
 		{
 			step(OldU,OldV,NewU,NewV,star_stencil_3D,uFactor,vFactor,deltaT,F,K);
 
-			for (size_t i = 0 ; i < 10000 ; i++)
-			{
 			NewU.ghost_get<0>();
 			NewV.ghost_get<0>();
-			}
 		}
 		else
 		{
