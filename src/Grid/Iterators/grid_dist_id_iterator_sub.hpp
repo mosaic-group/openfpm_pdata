@@ -286,4 +286,38 @@ class grid_dist_iterator_sub
 	}
 };
 
+
+//////// MACRO in 3D
+
+#define WHILE_M(grid,stencil) auto & ginfo = grid.getLocalGridsInfo();\
+								 for (size_t i = 0 ; i < grid.getN_loc_grid() ; i++)\
+								 {\
+									 auto it = grid.get_loc_grid_iterator_stencil(i,stencil);\
+\
+										int lo[3] = {(int)ginfo.get(i).Dbox.getLow(0),(int)ginfo.get(i).Dbox.getLow(1),(int)ginfo.get(i).Dbox.getLow(2)};\
+										int hi[3] = {(int)ginfo.get(i).Dbox.getHigh(0),(int)ginfo.get(i).Dbox.getHigh(1),(int)ginfo.get(i).Dbox.getHigh(2)};\
+\
+										int uhi[3] = {(int)ginfo.get(i).GDbox.getHigh(0),(int)ginfo.get(i).GDbox.getHigh(1),(int)ginfo.get(i).GDbox.getHigh(2)};\
+\
+										int sx = uhi[0]+1;\
+										int sxsy = (uhi[0]+1)*(uhi[1]+1);
+
+#define ITERATE_3D_M			for (int i = lo[2] ; i <= hi[2] ; i+=1)\
+								{\
+									for (int j = lo[1] ; j <= hi[1] ; j+=1)\
+									{\
+										for (int k = lo[0] ; k <= hi[0] ; k+=4)\
+										{
+
+#define GET_GRID_M(grid)	grid.get_loc_grid(i);
+
+
+#define END_LOOP_M 					it.private_sum<Vc::double_v::Size>();\
+								}\
+								it.private_adjust( - (hi[1] + 1) + sx + lo[0]);\
+							}\
+							it.private_adjust(- (hi[2] + 1)*sx + sxsy + lo[1]*sx);\
+						}\
+					}
+
 #endif /* SRC_GRID_GRID_DIST_ID_ITERATOR_SUB_HPP_ */
