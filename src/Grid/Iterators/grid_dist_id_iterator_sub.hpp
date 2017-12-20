@@ -249,6 +249,41 @@ class grid_dist_iterator_sub
 	{
 		return stop;
 	}
+
+	/*! \brief Return the number of local grids
+	 *
+	 *
+	 */
+	inline size_t N_loc_grid()
+	{
+		return gList.size();
+	}
+
+	/*! \brief Return the component j of the starting point (P1) of the domain part
+	 *         for the local grid i
+	 *
+	 * \param i local grid
+	 * \param j dimension
+	 *
+	 *
+	 */
+	inline size_t loc_grid_info_start(size_t i,size_t j)
+	{
+		return gdb_ext.get(i).DBox.getLow(i);
+	}
+
+	/*! \brief Return the component j of the stop point (P2) of the domain part
+	 *         for the local grid i
+	 *
+	 * \param i local grid
+	 * \param j dimension
+	 *
+	 *
+	 */
+	inline size_t loc_grid_info_size(size_t i,size_t j)
+	{
+		return gdb_ext.get(i).GDBox.getHigh(i);
+	}
 };
 
 #endif /* SRC_GRID_GRID_DIST_ID_ITERATOR_SUB_HPP_ */

@@ -36,7 +36,7 @@
 
 //! \cond [constants] \endcond
 
-#define FORTRAN_UPDATE
+//#define FORTRAN_UPDATE
 
 constexpr int x = 0;
 constexpr int y = 1;
@@ -111,18 +111,17 @@ void step(grid_dist_id<3, double, aggregate<double>> & OldU,
 		  Vc::double_v uFactor, Vc::double_v vFactor, double deltaT, double F, double K)
 {
 #ifndef FORTRAN_UPDATE
-	for (size_t i = 0 ; i < OldU.getN_loc_grid() ; i++)
-	{
-		auto & U_old = OldU.get_loc_grid(i);
-		auto & V_old = OldV.get_loc_grid(i);
 
-		auto & U_new = NewU.get_loc_grid(i);
-		auto & V_new = NewV.get_loc_grid(i);
+	//! \cond [cpp_update] \endcond
 
-		auto it = OldU.get_loc_grid_iterator_stencil(i,star_stencil_3D);
+	WHILE_M(OldU,star_stencil_3D)
+			auto & U_old = GET_GRID_M(OldU);
+			auto & V_old = GET_GRID_M(OldV);
 
-		while (it.isNext())
-		{
+			auto & U_new = GET_GRID_M(NewU);
+			auto & V_new = GET_GRID_M(NewV);
+	ITERATE_3D_M
+
 			// center point
 			auto Cp = it.getStencil<0>();
 
@@ -168,12 +167,13 @@ void step(grid_dist_id<3, double, aggregate<double>> & OldU,
 
 			out1.store(&U_new.get<0>(Cp),Vc::Unaligned);
 			out2.store(&V_new.get<0>(Cp),Vc::Unaligned);
+	END_LOOP_M
 
-			// Next point in the grid
-			it += Vc::double_v::Size;
-		}
-	}
+	//! \cond [cpp_update] \endcond
+
 #else
+
+	//! \cond [fort_update] \endcond
 
 	double uFactor_s = uFactor[0];
 	double vFactor_s = vFactor[0];
@@ -208,6 +208,8 @@ void step(grid_dist_id<3, double, aggregate<double>> & OldU,
 				   (double *)V_new.getPointer(),nulo,nvhi,
 				   &deltaT, &uFactor_s, &vFactor_s,&F,&K);
 	}
+
+	//! \cond [fort_update] \endcond
 
 #endif
 }
@@ -306,19 +308,30 @@ int main(int argc, char* argv[])
 		 * \page Grid_3_gs_3D_vector Gray Scott in 3D fast implementation with vectorization
 		 *
 		 * Alternate New and Old field to run one step, switch between old and new if the iteration
-		 * is even or odd. The function step is nothing else than the the implementation of Gray-Scott
-		 * 3D in the previous example.
+		 * is even or odd. The function step is nothing else than the implementation of Gray-Scott
+		 * 3D in the previous example but in a more optimized way.
 		 *
 		 * \snippet Grid/3_gray_scott_3d_vectorization/main.cpp alternate
 		 *
+		 * In this function we show two methods to optimize this function.
 		 *
-		 * The function has two main changes. The first is that we iterate
-		 * across local grids rather than a performance improvement is a convenient way
-		 * in case we have a lot of grid in this case we moved from 3 grid Old and New
-		 * to 4 grids. The second improvement is using Vc::double_v instead of double to
-		 * vectorize the code.
+		 * * We can use the macro **WHILE_M** passing the stencil definition, **ITERATE_3D** to define the loop,
+		 *  **END_LOOP** to close the loop, and use the function
+		 * function **getStencil<0>()** to retrieve the stencil points. Additionaly we can use Vc::double_v instead
+		 *  of double to vectorize the code. This method give the advantage to keep all the
+		 * code in C++.
 		 *
-		 * \snippet Grid/3_gray_scott_3d_vectorization/main.cpp vectorization
+		 * \snippet Grid/3_gray_scott_3d_vectorization/main.cpp cpp_update
+		 *
+		 * * Another possibility is to use FORTRAN. Because FORTRAN has better
+		 *  support for multi dimensional array another possibility is to process each local grid using
+		 *  FORTRAN, this also give us the opportunity to show hybrid code. We can switch between
+		 *   one and the other method commenting
+		 *  and uncommeting the line #define FORTRAN_UPDATE in the code.
+		 *
+		 * \snippet Grid/3_gray_scott_3d_vectorization/main.cpp fort_update
+		 *
+		 * \include Grid/3_gray_scott_3d_vectorization/update_new.f90
 		 *
 		 */
 
@@ -352,10 +365,10 @@ int main(int argc, char* argv[])
 
 		//! \cond [save hdf5] \endcond
 
-		// Every 500 time step we output the configuration on hdf5
+		// Every 2000 time step we output the configuration on hdf5
 		if (i % 2000 == 0)
 		{
-//			OldU.save("output_u_" + std::to_string(count));
+			OldU.save("output_u_" + std::to_string(count));
 			OldV.save("output_v_" + std::to_string(count));
 			count++;
 		}
@@ -364,7 +377,9 @@ int main(int argc, char* argv[])
 	}
 	
 	tot_sim.stop();
-	std::cout << "Total simulation: " << tot_sim.getwct() << std::endl;
+
+	if (create_vcluster().rank() == 0)
+	{std::cout << "Total simulation: " << tot_sim.getwct() << std::endl;}
 
 	// We frite the final configuration
 	OldV.write("final");
