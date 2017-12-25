@@ -12,10 +12,10 @@
 #include "NN/VerletList/VerletListM.hpp"
 
 template<typename Vector, typename CL, typename T>
-VerletList<Vector::dims,typename Vector::stype,Mem_fast,shift<Vector::dims,typename Vector::stype>>
+VerletList<Vector::dims,typename Vector::stype,Mem_fast<>,shift<Vector::dims,typename Vector::stype>>
 createVerlet(Vector & v, Vector & v1, CL & cl, T r_cut)
 {
-	VerletList<Vector::dims,typename Vector::stype,Mem_fast,shift<Vector::dims,typename Vector::stype>> ver;
+	VerletList<Vector::dims,typename Vector::stype,Mem_fast<>,shift<Vector::dims,typename Vector::stype>> ver;
 
 	ver.Initialize(cl,r_cut,v.getPosVector(),v1.getPosVector(),v.size_local());
 
@@ -75,10 +75,10 @@ template<unsigned int nbit, typename Vector, typename T> CellListM<Vector::dims,
 /////// Symmetric version
 
 template<typename Vector,typename CL, typename T>
-VerletList<Vector::dims,typename Vector::stype,Mem_fast,shift<Vector::dims,typename Vector::stype>>
+VerletList<Vector::dims,typename Vector::stype,Mem_fast<>,shift<Vector::dims,typename Vector::stype>>
 createVerletSym(Vector & v, Vector & v1, CL & cl, T r_cut)
 {
-	VerletList<Vector::dims,typename Vector::stype,Mem_fast,shift<Vector::dims,typename Vector::stype>> ver;
+	VerletList<Vector::dims,typename Vector::stype,Mem_fast<>,shift<Vector::dims,typename Vector::stype>> ver;
 
 	ver.Initialize(cl,r_cut,v.getPosVector(),v1.getPosVector(),v.size_local());
 

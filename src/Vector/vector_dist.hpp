@@ -122,11 +122,11 @@ struct gcl<dim,St,CellL,Vector,GCL_SYMMETRIC>
 	}
 };
 
-#define CELL_MEMFAST(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> >
+#define CELL_MEMFAST(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St> >
 #define CELL_MEMBAL(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_bal, shift<dim, St> >
 #define CELL_MEMMW(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_mw, shift<dim, St> >
 
-#define CELL_MEMFAST_HILB(dim,St) CellList_gen<dim, St, Process_keys_hilb, Mem_fast, shift<dim, St> >
+#define CELL_MEMFAST_HILB(dim,St) CellList_gen<dim, St, Process_keys_hilb, Mem_fast<>, shift<dim, St> >
 #define CELL_MEMBAL_HILB(dim,St) CellList_gen<dim, St, Process_keys_hilb, Mem_bal, shift<dim, St> >
 #define CELL_MEMMW_HILB(dim,St) CellList_gen<dim, St, Process_keys_hilb, Mem_mw, shift<dim, St> >
 
@@ -903,7 +903,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, Mem_fast, shift<dim, St> > > CellL getCellListSym(St r_cut)
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > > CellL getCellListSym(St r_cut)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -947,7 +947,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> > >
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St> > >
 	CellL getCellList(St r_cut, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
@@ -974,7 +974,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast, shift<dim, St> > >
+	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast<>, shift<dim, St> > >
 	CellL getCellList_hilb(St r_cut)
 	{
 #ifdef SE_CLASS3
@@ -1037,7 +1037,7 @@ public:
 	 * \param cell_list Cell list to update
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, Mem_fast, shift<dim, St> > > void updateCellListSym(CellL & cell_list)
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > > void updateCellListSym(CellL & cell_list)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -1083,7 +1083,7 @@ public:
 	 * \return the CellList
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> > >
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St> > >
 	CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
@@ -1126,7 +1126,7 @@ public:
 	 * \return The Cell-list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast<>, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -1159,13 +1159,13 @@ public:
 	 * \return the verlet list
 	 *
 	 */
-	VerletList<dim,St,Mem_fast,shift<dim,St> > getVerletSym(St r_cut)
+	VerletList<dim,St,Mem_fast<>,shift<dim,St> > getVerletSym(St r_cut)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
 
-		VerletList<dim,St,Mem_fast,shift<dim,St>> ver;
+		VerletList<dim,St,Mem_fast<>,shift<dim,St>> ver;
 
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
@@ -1184,7 +1184,7 @@ public:
 	 * \return the verlet list
 	 *
 	 */
-	VerletList<dim,St,Mem_fast,shift<dim,St> > getVerletCrs(St r_cut)
+	VerletList<dim,St,Mem_fast<>,shift<dim,St> > getVerletCrs(St r_cut)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -1198,7 +1198,7 @@ public:
 		se3.getNN();
 #endif
 
-		VerletList<dim,St,Mem_fast,shift<dim,St>> ver;
+		VerletList<dim,St,Mem_fast<>,shift<dim,St>> ver;
 
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
@@ -1236,13 +1236,13 @@ public:
 	 * \return a VerletList object
 	 *
 	 */
-	VerletList<dim,St,Mem_fast,shift<dim,St> > getVerlet(St r_cut)
+	VerletList<dim,St,Mem_fast<>,shift<dim,St> > getVerlet(St r_cut)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
 
-		VerletList<dim,St,Mem_fast,shift<dim,St>> ver;
+		VerletList<dim,St,Mem_fast<>,shift<dim,St>> ver;
 
 		// get the processor bounding box
 		Box<dim, St> bt = getDecomposition().getProcessorBounds();
@@ -1269,7 +1269,7 @@ public:
 	 * \param opt option like VL_SYMMETRIC and VL_NON_SYMMETRIC or VL_CRS_SYMMETRIC
 	 *
 	 */
-	void updateVerlet(VerletList<dim,St,Mem_fast,shift<dim,St> > & ver, St r_cut, size_t opt = VL_NON_SYMMETRIC)
+	void updateVerlet(VerletList<dim,St,Mem_fast<>,shift<dim,St> > & ver, St r_cut, size_t opt = VL_NON_SYMMETRIC)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -1287,7 +1287,7 @@ public:
 				ver.update(getDecomposition().getDomain(),r_cut,v_pos,g_m, opt);
 			else
 			{
-				VerletList<dim,St,Mem_fast,shift<dim,St> > ver_tmp;
+				VerletList<dim,St,Mem_fast<>,shift<dim,St> > ver_tmp;
 
 				ver_tmp = getVerlet(r_cut);
 				ver.swap(ver);
@@ -1328,7 +1328,7 @@ public:
 			}
 			else
 			{
-				VerletList<dim,St,Mem_fast,shift<dim,St> > ver_tmp;
+				VerletList<dim,St,Mem_fast<>,shift<dim,St> > ver_tmp;
 
 				ver_tmp = getVerletCrs(r_cut);
 				ver.swap(ver_tmp);
@@ -1346,7 +1346,7 @@ public:
 				ver.update(getDecomposition().getDomain(),r_cut,v_pos,g_m, opt);
 			else
 			{
-				VerletList<dim,St,Mem_fast,shift<dim,St> > ver_tmp;
+				VerletList<dim,St,Mem_fast<>,shift<dim,St> > ver_tmp;
 
 				ver_tmp = getVerlet(r_cut);
 				ver.swap(ver_tmp);
@@ -1362,7 +1362,7 @@ public:
 	 * \param m an order of a hilbert curve
 	 *
 	 */
-	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_fast,shift<dim,St> > > void reorder (int32_t m)
+	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_fast<>,shift<dim,St> > > void reorder (int32_t m)
 	{
 		reorder(m,getDecomposition().getGhost());
 	}
@@ -1380,7 +1380,7 @@ public:
 	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
 	 *
 	 */
-	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_fast,shift<dim,St> > > void reorder(int32_t m, const Ghost<dim,St> & enlarge)
+	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_fast<>,shift<dim,St> > > void reorder(int32_t m, const Ghost<dim,St> & enlarge)
 	{
 		// reset the ghost part
 		v_pos.resize(g_m);

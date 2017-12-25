@@ -38,7 +38,7 @@ class ie_ghost
 	openfpm::vector<p_box<dim,T> > vb_int;
 
 	//! Cell-list that store the geometrical information of the internal ghost boxes
-	CellList<dim,T,Mem_fast,shift<dim,T>> geo_cell;
+	CellList<dim,T,Mem_fast<>,shift<dim,T>> geo_cell;
 
 	//! shift vectors
 	openfpm::vector<Point<dim,T>> shifts;
