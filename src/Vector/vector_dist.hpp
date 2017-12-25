@@ -1159,13 +1159,13 @@ public:
 	 * \return the verlet list
 	 *
 	 */
-	VerletList<dim,St,FAST,shift<dim,St> > getVerletSym(St r_cut)
+	VerletList<dim,St,Mem_fast,shift<dim,St> > getVerletSym(St r_cut)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
 
-		VerletList<dim,St,FAST,shift<dim,St>> ver;
+		VerletList<dim,St,Mem_fast,shift<dim,St>> ver;
 
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
@@ -1184,7 +1184,7 @@ public:
 	 * \return the verlet list
 	 *
 	 */
-	VerletList<dim,St,FAST,shift<dim,St> > getVerletCrs(St r_cut)
+	VerletList<dim,St,Mem_fast,shift<dim,St> > getVerletCrs(St r_cut)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -1198,7 +1198,7 @@ public:
 		se3.getNN();
 #endif
 
-		VerletList<dim,St,FAST,shift<dim,St>> ver;
+		VerletList<dim,St,Mem_fast,shift<dim,St>> ver;
 
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
@@ -1236,13 +1236,13 @@ public:
 	 * \return a VerletList object
 	 *
 	 */
-	VerletList<dim,St,FAST,shift<dim,St> > getVerlet(St r_cut)
+	VerletList<dim,St,Mem_fast,shift<dim,St> > getVerlet(St r_cut)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
 
-		VerletList<dim,St,FAST,shift<dim,St>> ver;
+		VerletList<dim,St,Mem_fast,shift<dim,St>> ver;
 
 		// get the processor bounding box
 		Box<dim, St> bt = getDecomposition().getProcessorBounds();
@@ -1269,7 +1269,7 @@ public:
 	 * \param opt option like VL_SYMMETRIC and VL_NON_SYMMETRIC or VL_CRS_SYMMETRIC
 	 *
 	 */
-	void updateVerlet(VerletList<dim,St,FAST,shift<dim,St> > & ver, St r_cut, size_t opt = VL_NON_SYMMETRIC)
+	void updateVerlet(VerletList<dim,St,Mem_fast,shift<dim,St> > & ver, St r_cut, size_t opt = VL_NON_SYMMETRIC)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -1287,7 +1287,7 @@ public:
 				ver.update(getDecomposition().getDomain(),r_cut,v_pos,g_m, opt);
 			else
 			{
-				VerletList<dim,St,FAST,shift<dim,St> > ver_tmp;
+				VerletList<dim,St,Mem_fast,shift<dim,St> > ver_tmp;
 
 				ver_tmp = getVerlet(r_cut);
 				ver.swap(ver);
@@ -1328,7 +1328,7 @@ public:
 			}
 			else
 			{
-				VerletList<dim,St,FAST,shift<dim,St> > ver_tmp;
+				VerletList<dim,St,Mem_fast,shift<dim,St> > ver_tmp;
 
 				ver_tmp = getVerletCrs(r_cut);
 				ver.swap(ver_tmp);
@@ -1346,7 +1346,7 @@ public:
 				ver.update(getDecomposition().getDomain(),r_cut,v_pos,g_m, opt);
 			else
 			{
-				VerletList<dim,St,FAST,shift<dim,St> > ver_tmp;
+				VerletList<dim,St,Mem_fast,shift<dim,St> > ver_tmp;
 
 				ver_tmp = getVerlet(r_cut);
 				ver.swap(ver_tmp);

@@ -1298,7 +1298,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 
 		// Create a verlet list for each particle
 
-		VerletList<3,float,FAST,shift<3,float>> verlet = vd.getVerlet(third_dist);
+		VerletList<3,float,Mem_fast,shift<3,float>> verlet = vd.getVerlet(third_dist);
 
 		bool correct = true;
 
