@@ -247,18 +247,27 @@ class grid_dist_id_comm
 				if (bx_dst.isValid() == false)
 					continue;
 
+				const auto & gs = loc_grid.get(i);
+				auto & gd = loc_grid.get(sub_id_dst);
+
 #ifdef SE_CLASS1
 
 				if (loc_eg_box.get(sub_id_dst).bid.get(k).sub != i)
-					std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination are not correctly linked" << "\n";
+				{std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination are not correctly linked" << "\n";}
 
-				if (sub_src.getVolume() != sub_dst.getVolume())
-					std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination does not match in size" << "\n";
+				if (bx_src.getVolumeKey() != bx_dst.getVolumeKey())
+				{std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination does not match in size" << "\n";}
+
+				auto bxs = gs.getGrid().getBoxKey();
+				auto bxd = gd.getGrid().getBoxKey();
+
+				if (bxs.isContained(bx_src) == false)
+				{std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " the source box is out of bound of the local grid" << "\n";}
+
+				if (bxd.isContained(bx_dst) == false)
+				{std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " the destination box is out of bound of the local grid" << "\n";}
 
 #endif
-
-				const auto & gs = loc_grid.get(i);
-				auto & gd = loc_grid.get(sub_id_dst);
 
 				typedef typename std::remove_reference<decltype(gd)>::type grid_cp;
 				typedef typename std::remove_reference<decltype(loc_grid.get(i).getGrid())>::type grid_info_cp;

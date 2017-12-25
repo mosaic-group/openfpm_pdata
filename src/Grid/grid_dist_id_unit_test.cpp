@@ -1871,6 +1871,95 @@ BOOST_AUTO_TEST_CASE ( grid_ghost_correction )
 	Test_ghost_correction(domain,k,4);
 }
 
+BOOST_AUTO_TEST_CASE ( grid_overflow_round_off_error )
+{
+    size_t numGridPoint     =   100;
+    const double domainSize =   20851.7;
+    double domainLength = sqrt(domainSize);
+
+    Box<2,double> domain({0.0,0.0},{domainLength,domainLength});
+
+    size_t sz[2] = {numGridPoint,numGridPoint};
+
+    periodicity<2> bc = {PERIODIC,PERIODIC};
+
+    Ghost<2,double> g(3.0*(domain.getHigh(0) - domain.getLow(0))/numGridPoint + 0.001);
+
+    grid_dist_id<2, double, aggregate<double, double, double, double, double>> grid(sz,domain,g,bc);
+
+    auto & gs = grid.getGridInfo();
+
+    auto it = grid.getDomainIterator();
+
+    while (it.isNext())
+    {
+    	auto p = it.get();
+    	auto gp = it.getGKey(p);
+
+    	grid.get<0>(p) = gs.LinId(gp);
+
+    	++it;
+    }
+
+    grid.ghost_get<0>();
+
+    // Now we check
+
+    auto it2 = grid.getDomainIterator();
+
+    bool match = true;
+
+    while (it2.isNext())
+    {
+    	auto p = it2.get();
+    	auto gp = it.getGKey(p);
+
+    	if (gs.LinId(gp) != grid.get<0>(p))
+    	{match = false;}
+
+    	// look around
+
+    	auto px = p.move(0,1);
+    	auto gpx = it.getGKey(px);
+    	auto mx = p.move(0,-1);
+    	auto gmx = it.getGKey(mx);
+
+    	auto py = p.move(1,1);
+    	auto gpy = it.getGKey(py);
+    	auto my = p.move(1,-1);
+    	auto gmy = it.getGKey(my);
+
+    	gpx.set_d(0,gpx.get(0) % gs.size(0));
+    	gpx.set_d(1,gpx.get(1) % gs.size(1));
+
+    	if (grid.template get<0>(px) != gs.LinId(gpx))
+    	{match = false;}
+
+    	gmx.set_d(0,(gmx.get(0) + gs.size(0)) % gs.size(0));
+    	gmx.set_d(1,(gmx.get(1) + gs.size(1)) % gs.size(1));
+
+    	if (grid.template get<0>(mx) != gs.LinId(gmx))
+    	{match = false;}
+
+    	gpy.set_d(0,gpy.get(0) % gs.size(0));
+    	gpy.set_d(1,gpy.get(1) % gs.size(1));
+
+    	if (grid.template get<0>(py) != gs.LinId(gpy))
+    	{match = false;}
+
+    	gmy.set_d(0,(gmy.get(0) + gs.size(0)) % gs.size(0));
+    	gmy.set_d(1,(gmy.get(1) + gs.size(1)) % gs.size(1));
+
+    	if (grid.template get<0>(my) != gs.LinId(gmy))
+    	{match = false;}
+
+    	++it2;
+    }
+
+    BOOST_REQUIRE_EQUAL(match,true);
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif

@@ -302,20 +302,21 @@ class grid_dist_iterator_sub
 										int sx = uhi[0]+1;\
 										int sxsy = (uhi[0]+1)*(uhi[1]+1);
 
-#define ITERATE_3D_M			int i = lo[2];\
-								for ( ; i <= hi[2] ; i+=1)\
-								{\
-									int j = lo[1];\
-									for ( ; j <= hi[1] ; j+=1)\
+#define ITERATE_3D_M(n_pt)				int i = lo[2];\
+									for ( ; i <= hi[2] ; i+=1)\
 									{\
-										int k = lo[0];\
-										for ( ; k <= hi[0] ; k+=Vc::double_v::Size)\
-										{
+										int j = lo[1];\
+										for ( ; j <= hi[1] ; j+=1)\
+										{\
+											int k = lo[0];\
+											for ( ; k <= hi[0] ; k+=n_pt)\
+											{
+
 
 #define GET_GRID_M(grid)	grid.get_loc_grid(s);
 
 
-#define END_LOOP_M 					it.private_sum<Vc::double_v::Size>();\
+#define END_LOOP_M(n_pt) 					it.private_sum<n_pt>();\
 								}\
 								it.private_adjust( - k + sx + lo[0]);\
 							}\
