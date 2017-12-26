@@ -1231,7 +1231,11 @@ public:
 	 * \param opt options
 	 *
 	 */
-	template<template<typename,typename> class op, int ... prp> void ghost_put_(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & g_m, size_t opt)
+	template<template<typename,typename> class op, int ... prp>
+	void ghost_put_(openfpm::vector<Point<dim, St>> & v_pos,
+					openfpm::vector<prop> & v_prp,
+					size_t & g_m,
+					size_t opt)
 	{
 		// Sending property object
 		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;

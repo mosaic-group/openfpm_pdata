@@ -8,8 +8,8 @@
 #ifndef SRC_VECTOR_VECTOR_DIST_NN_TESTS_HPP_
 #define SRC_VECTOR_VECTOR_DIST_NN_TESTS_HPP_
 
-
-BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
+template<typename VerletList>
+void test_full_nn(long int k)
 {
 	Vcluster & v_cl = create_vcluster();
 
@@ -21,12 +21,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
 	std::srand(v_cl.getProcessUnitID());
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
-
-#ifdef TEST_COVERAGE_MODE
-    long int k = 50 * v_cl.getProcessingUnits();
-#else
-    long int k = 750 * v_cl.getProcessingUnits();
-#endif
 
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
@@ -134,14 +128,14 @@ BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
 
 		///////////////////////////////////
 
-		auto NNv = vd.getVerlet(r_cut*1.0001);
+		auto NNv = vd.template getVerlet<VerletList>(r_cut*1.0001);
 
 		it = vd.getDomainIterator();
 
 		while (it.isNext())
 		{
 			Point<3,float> xp = vd.getPos(it.get());
-			auto Np = NNv.getNNIterator<NO_CHECK>(it.get().getKey());
+			auto Np = NNv.template getNNIterator<NO_CHECK>(it.get().getKey());
 
 			list_idx2.get(it.get().getKey()).clear();
 
@@ -185,7 +179,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
 		while (it.isNext())
 		{
 			Point<3,float> xp = vd.getPos(it.get());
-			auto Np = NNv.getNNIterator<NO_CHECK>(it.get().getKey());
+			auto Np = NNv.template getNNIterator<NO_CHECK>(it.get().getKey());
 
 			list_idx2.get(it.get().getKey()).clear();
 
@@ -219,6 +213,24 @@ BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
 			BOOST_REQUIRE_EQUAL(ret,true);
 		}
 	}
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
+{
+	auto & v_cl = create_vcluster();
+
+#ifdef TEST_COVERAGE_MODE
+    long int k = 50 * v_cl.getProcessingUnits();
+#else
+    long int k = 750 * v_cl.getProcessingUnits();
+#endif
+
+	test_full_nn<VERLET_MEMFAST(3,float)>(k);
+
+	k /= 2;
+	test_full_nn<VERLET_MEMBAL(3,float)>(k);
+	k /= 2;
+	test_full_nn<VERLET_MEMMW(3,float)>(k);
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_particle_iteration )
