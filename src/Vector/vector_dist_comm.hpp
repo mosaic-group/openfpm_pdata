@@ -17,6 +17,8 @@
 
 #define BIND_DEC_TO_GHOST 1
 
+#define MAP_LOCAL 2
+
 /*! \brief compute the communication options from the ghost_get/put options
  *
  *
@@ -681,7 +683,10 @@ class vector_dist_comm
 	 * \param prc_sz For each processor the number of particles to send
 	 *
 	 */
-	template<typename obp> void labelParticleProcessor(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<aggregate<size_t,size_t,size_t>> & lbl_p, openfpm::vector<size_t> & prc_sz)
+	template<typename obp>
+	void labelParticleProcessor(openfpm::vector<Point<dim, St>> & v_pos,
+								openfpm::vector<aggregate<size_t,size_t,size_t>> & lbl_p,
+								openfpm::vector<size_t> & prc_sz)
 	{
 		// reset lbl_p
 		lbl_p.clear();
@@ -703,9 +708,9 @@ class vector_dist_comm
 
 			// Check if the particle is inside the domain
 			if (dec.getDomain().isInside(v_pos.get(key)) == true)
-				p_id = dec.processorIDBC(v_pos.get(key));
+			{p_id = dec.processorIDBC(v_pos.get(key));}
 			else
-				p_id = obp::out(key, v_cl.getProcessUnitID());
+			{p_id = obp::out(key, v_cl.getProcessUnitID());}
 
 			// Particle to move
 			if (p_id != v_cl.getProcessUnitID())
@@ -1063,9 +1068,12 @@ public:
 	 * \param v_pos vector of particle positions
 	 * \param v_prp vector of particle properties
 	 * \param g_m ghost marker
+	 * \param opt options
 	 *
 	 */
-	template<unsigned int ... prp> void map_list_(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & g_m)
+	template<unsigned int ... prp>
+	void map_list_(openfpm::vector<Point<dim, St>> & v_pos,
+				   openfpm::vector<prop> & v_prp, size_t & g_m, size_t opt = NONE)
 	{
 		typedef KillParticle obp;
 
@@ -1095,6 +1103,17 @@ public:
 			}
 		}
 
+		// In case we have receive option
+
+		if (opt & MAP_LOCAL)
+		{
+			// if the map is local we indicate that we receive only from the neighborhood processors
+
+			prc_recv_map.clear();
+			for (size_t i = 0 ; i < dec.getNNProcessors() ; i++)
+			{prc_recv_map.add(dec.IDtoProc(i));}
+		}
+
 		// Sending property object
 		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;
 
@@ -1105,8 +1124,8 @@ public:
 
 		fill_send_map_buf_list<prp_object,prp...>(v_pos,v_prp,prc_sz_r, m_pos, m_prp);
 
-		v_cl.SSendRecv(m_pos,v_pos,prc_r,prc_recv_map,recv_sz_map);
-		v_cl.SSendRecvP<openfpm::vector<prp_object>,decltype(v_prp),layout_base,prp...>(m_prp,v_prp,prc_r,prc_recv_map,recv_sz_map);
+		v_cl.SSendRecv(m_pos,v_pos,prc_r,prc_recv_map,recv_sz_map,opt);
+		v_cl.SSendRecvP<openfpm::vector<prp_object>,decltype(v_prp),layout_base,prp...>(m_prp,v_prp,prc_r,prc_recv_map,recv_sz_map,opt);
 
 		// mark the ghost part
 
@@ -1129,7 +1148,7 @@ public:
 	template<typename obp = KillParticle>
 	void map_(openfpm::vector<Point<dim, St>> & v_pos,
 			  openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
-			  size_t & g_m)
+			  size_t & g_m, size_t opt = NONE)
 	{
 		// Processor communication size
 		openfpm::vector<size_t> prc_sz(v_cl.getProcessingUnits());
@@ -1164,8 +1183,8 @@ public:
 
 		fill_send_map_buf(v_pos,v_prp, prc_sz_r, m_pos, m_prp);
 
-		v_cl.SSendRecv(m_pos,v_pos,prc_r,prc_recv_map,recv_sz_map);
-		v_cl.SSendRecv(m_prp,v_prp,prc_r,prc_recv_map,recv_sz_map);
+		v_cl.SSendRecv(m_pos,v_pos,prc_r,prc_recv_map,recv_sz_map,opt);
+		v_cl.SSendRecv(m_prp,v_prp,prc_r,prc_recv_map,recv_sz_map,opt);
 
 		// mark the ghost part
 

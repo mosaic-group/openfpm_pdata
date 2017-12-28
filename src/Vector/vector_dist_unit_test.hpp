@@ -755,7 +755,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 	}
 }
 
-BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
+void test_random_walk(size_t opt)
 {
 	Vcluster & v_cl = create_vcluster();
 
@@ -823,7 +823,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 				++it;
 			}
 
-			vd.map();
+			vd.map(opt);
 
 			vd.ghost_get<0>();
 
@@ -833,6 +833,16 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 			BOOST_REQUIRE_EQUAL((size_t)k,cnt);
 		}
 	}
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
+{
+	test_random_walk(NONE);
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk_local_map )
+{
+	test_random_walk(MAP_LOCAL);
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_periodic_map )

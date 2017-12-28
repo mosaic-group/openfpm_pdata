@@ -65,6 +65,7 @@
 #define GCL_SYMMETRIC 1
 #define GCL_HILBERT 2
 
+
 //! General function t get a cell-list
 template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
 struct gcl
@@ -1498,7 +1499,7 @@ public:
 
 			reorder_sfc<CellL,grid_key_dx_iterator_hilbert<dim>>(v_pos_dest,v_prp_dest,h_it,cell_list);
 		}
-		else if (reorder_opt::LINEAR)
+		else if (opt == reorder_opt::LINEAR)
 		{
 			grid_sm<dim,void> gs(div);
 			grid_key_dx_iterator<dim> h_it(gs);
@@ -1721,9 +1722,17 @@ public:
 	 *
 	 *
 	 */
-	template<unsigned int ... prp> void map_list()
+	template<unsigned int ... prp> void map_list(size_t opt = NONE)
 	{
-		this->template map_list_<prp...>(v_pos,v_prp,g_m);
+#ifdef SE_CLASS3
+		se3.map_pre();
+#endif
+
+		this->template map_list_<prp...>(v_pos,v_prp,g_m,opt);
+
+#ifdef SE_CLASS3
+		se3.map_post();
+#endif
 	}
 
 
@@ -1737,13 +1746,13 @@ public:
 	 *
 	 *
 	 */
-	template<typename obp = KillParticle> void map()
+	template<typename obp = KillParticle> void map(size_t opt = NONE)
 	{
 #ifdef SE_CLASS3
 		se3.map_pre();
 #endif
 
-		this->template map_<obp>(v_pos,v_prp,g_m);
+		this->template map_<obp>(v_pos,v_prp,g_m,opt);
 
 #ifdef SE_CLASS3
 		se3.map_post();
