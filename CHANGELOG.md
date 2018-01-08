@@ -20,7 +20,7 @@ All notable changes to this project will be documented in this file.
 
 - VerletList<3, double, FAST, shift<3, double> > is now VerletList<3, double, Mem_fast<>, shift<3, double> >
 
-## [1.0.0] 13 September 2017
+## [1.0.0] 13 September 2017 (Codename: Vortex)
 
 ### Added
 - Introduced getDomainIterator for Cell-list
