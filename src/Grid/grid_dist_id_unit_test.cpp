@@ -1871,6 +1871,27 @@ BOOST_AUTO_TEST_CASE ( grid_ghost_correction )
 	Test_ghost_correction(domain,k,4);
 }
 
+BOOST_AUTO_TEST_CASE ( grid_basic_functions )
+{
+	auto & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() != 1)
+	{return;}
+
+	size_t sz[2] = {(size_t)8,(size_t)8};
+	periodicity<2> bc = {PERIODIC,PERIODIC};
+
+	Ghost<2,long int> g(1);
+	Box<2,double> domain({-1.0,-1.0},{1.0,1.0});
+
+	grid_dist_id<2, double, aggregate<double>> grid(sz,domain,g,bc);
+
+	std::cout << "Offset: " << grid.getOffset(0).toString() << std::endl;
+
+	BOOST_REQUIRE_EQUAL(grid.getOffset(0)[0],-1.25);
+	BOOST_REQUIRE_EQUAL(grid.getOffset(0)[1],-1.25);
+}
+
 BOOST_AUTO_TEST_CASE ( grid_overflow_round_off_error )
 {
     size_t numGridPoint     =   100;

@@ -16,20 +16,24 @@
  *
  */
 
+#define EIGEN_USE_LAPACKE
 #include "Vector/vector_dist.hpp"
 #include "Eigen/Dense"
 #include <Eigen/Eigenvalues>
 #include <Eigen/Jacobi>
 #include <limits>
 #include "Vector/vector_dist.hpp"
+#include <f15_cec_fun.hpp>
+#include <boost/math/special_functions/sign.hpp>
 
-constexpr int dim = 2;
+
+constexpr int dim = 3;
 // set this to 4+std::floor(3*log(dim))
-constexpr int lambda = 6;
+constexpr int lambda = 7;
 constexpr int mu = lambda/2;
+constexpr int hist_size = 21;
 
 constexpr int sigma = 0;
-constexpr int sample = 1;
 constexpr int Cov_m = 2;
 constexpr int B = 3;
 constexpr int D = 4;
@@ -37,18 +41,31 @@ constexpr int Zeta = 5;
 constexpr int path_s = 6;
 constexpr int path_c = 7;
 constexpr int ord = 8;
+constexpr int stop = 9;
+constexpr int fithist = 10;
+constexpr int weight = 11;
+constexpr int validfit = 12;
+constexpr int xold = 13;
+constexpr int last_restart = 14;
+constexpr int iniphase = 15;
 
 const double c_m = 1.0;
 
 double mu_eff = 1.0;
 double cs = 1.0;
 double cc = 1.0;
-double c1 = 1.0;
-double c_mu = 0.5;
+double ccov = 1.0;
 double chiN;
 double d_amps = 1.0;
 double stop_fitness = 1.0;
 int eigeneval = 0;
+double t_c = 0.1;
+double b = 0.1;
+double psoWeight = 0.7;
+// number of cma-step before pso step
+int N_pso = 200;
+double stopTolX = 1e-12;
+double stopTolUpX = 2000.0;
 
 typedef vector_dist<dim,double, aggregate<double,
 										 Eigen::VectorXd[lambda],
@@ -58,16 +75,15 @@ typedef vector_dist<dim,double, aggregate<double,
 										 Eigen::VectorXd[lambda],
 										 Eigen::VectorXd,
 										 Eigen::VectorXd,
-										 int[lambda]> > particle_type;
+										 int[lambda],
+										 int,
+										 double [hist_size],
+										 double [dim],
+										 double,
+										 Eigen::VectorXd,
+										 int,
+										 bool> > particle_type;
 
-double f(Eigen::VectorXd & v)
-{
-	double ret = 0.0;
-
-	ret = v.transpose()*v;
-
-	return ret;
-}
 
 double generateGaussianNoise(double mu, double sigma)
 {
@@ -90,8 +106,8 @@ double generateGaussianNoise(double mu, double sigma)
 	while ( u1 <= epsilon );
 
 	double z0;
-	z0 = sqrt(-2.0 * log(u1)) * cos(two_pi * u2);
-	z1 = sqrt(-2.0 * log(u1)) * sin(two_pi * u2);
+	z0 = sqrt(-2.0 * log(u2)) * cos(two_pi * u1);
+	z1 = sqrt(-2.0 * log(u2)) * sin(two_pi * u1);
 	return z0 * sigma + mu;
 }
 
@@ -138,7 +154,7 @@ double wm[mu];
 void init_weight()
 {
 	for (size_t i = 0 ; i < mu ; i++)
-	{wm[i] = log(mu+0.5) - log(i+1);}
+	{wm[i] = log(mu+1.0) - log(i+1);}
 
 	double tot = 0.0;
 
@@ -160,168 +176,9 @@ void init_weight()
 
 }
 
-double weight(int i)
+double weight_sample(int i)
 {
 	return wm[i];
-}
-
-void cma_step(particle_type & vd, int step,  double & best, int & best_i)
-{
-	best = std::numeric_limits<double>::max();
-	auto it = vd.getDomainIterator();
-
-	Eigen::VectorXd mean_x_new(dim);
-	Eigen::VectorXd mean_x_old(dim);
-	Eigen::VectorXd mean_z(dim);
-
-	openfpm::vector<fun_index> f_obj(lambda);
-
-	int counteval = step*lambda;
-
-	while (it.isNext())
-	{
-		auto p = it.get();
-
-		// fill the mean vector;
-
-		fill_vector(vd.getPos(p),mean_x_old);
-
-		for (size_t j = 0 ; j < lambda ; j++)
-		{
-			vd.getProp<Zeta>(p)[j] = generateGaussianVector<dim>();
-			vd.getProp<sample>(p)[j] = mean_x_old + vd.getProp<sigma>(p)*vd.getProp<B>(p)*vd.getProp<D>(p)*vd.getProp<Zeta>(p)[j];
-			f_obj.get(j).f = f(vd.getProp<sample>(p)[j]);
-			f_obj.get(j).id = j;
-		}
-
-		f_obj.sort();
-
-		for (size_t j = 0 ; j < lambda ; j++)
-		{vd.getProp<ord>(p)[j] = f_obj.get(j).id;}
-
-		// Calculate weighted mean
-
-		mean_x_new.setZero();
-		mean_z.setZero();
-		for (size_t j = 0 ; j < mu ; j++)
-		{
-			mean_x_new += weight(j)*vd.getProp<sample>(p)[vd.getProp<ord>(p)[j]];
-			mean_z += weight(j)*vd.getProp<Zeta>(p)[vd.getProp<ord>(p)[j]];
-		}
-
-		vd.getProp<path_s>(p) = vd.getProp<path_s>(p)*(1.0 - cs) + sqrt(cs*(2.0-cs)*mu_eff)*vd.getProp<B>(p)*mean_z;
-
-		double hsig = vd.getProp<path_s>(p).norm()/(1-pow(1-cs,2*counteval/lambda))/dim < 2.0 + 4.0/(dim+1);
-
-		vd.getProp<path_c>(p) = (1-cc)*vd.getProp<path_c>(p) + hsig * sqrt(cc*(2-cc)*mu_eff)*(vd.getProp<B>(p)*vd.getProp<D>(p)*mean_z);
-
-		// Adapt covariance matrix C
-		vd.getProp<Cov_m>(p) = (1-c1-c_mu)*vd.getProp<Cov_m>(p) +
-				            c1*(vd.getProp<path_c>(p)*vd.getProp<path_c>(p).transpose() + (1-hsig)*cc*(2-cc)*vd.getProp<Cov_m>(p));
-
-		for (size_t i = 0 ; i < mu ; i++)
-		{vd.getProp<Cov_m>(p) += c_mu*(vd.getProp<B>(p)*vd.getProp<D>(p)*vd.getProp<Zeta>(p)[vd.getProp<ord>(p)[i]])*weight(i)*
-			                          (vd.getProp<B>(p)*vd.getProp<D>(p)*vd.getProp<Zeta>(p)[vd.getProp<ord>(p)[i]]).transpose();
-		}
-
-		//Adapt step-size sigma
-		vd.getProp<sigma>(p) = vd.getProp<sigma>(p)*exp((cs/d_amps)*(vd.getProp<path_s>(p).norm()/chiN - 1));
-
-		std::cout << vd.getProp<sigma>(p) << std::endl;
-
-		// Update B and D from C
-
-		if (counteval - eigeneval > lambda/(c1+c_mu)/dim/10)
-		{
-			eigeneval = counteval;
-			//vd.getProp<Cov_m>(p) = (vd.getProp<Cov_m>(p)+vd.getProp<Cov_m>(p).transpose()) / 2.0; // enforce symmetry
-
-			// Eigen decomposition
-			Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eig_solver;
-			eig_solver.compute(vd.getProp<Cov_m>(p));
-
-			for (size_t i = 0 ; i < eig_solver.eigenvalues().size() ; i++)
-			{vd.getProp<D>(p).diagonal()[i] = sqrt(eig_solver.eigenvalues()[i]);}
-			vd.getProp<B>(p) = eig_solver.eigenvectors();
-		}
-
-	    // Break, if fitness is good enough or condition exceeds 1e14, better termination methods are advisable
-//	    if (f_obj.get(0).f <= stop_fitness || vd.getProp<D>(p).diagonal().maxCoeff() > 1e7 * vd.getProp<D>(p).diagonal().minCoeff())
-//	    {break;}
-
-	    // Escape flat fitness, or better terminate?
-
-	    if (f_obj.get(0).f == f_obj.get(std::ceil(0.7*lambda)).f )
-	    {
-	    	vd.getProp<sigma>(p) = vd.getProp<sigma>(p)*exp(0.2+cs/d_amps);
-	    	std::cout << "warning: flat fitness, consider reformulating the objective";
-	    }
-
-	    // Copy the new mean as position of the particle
-	    for (size_t i = 0 ; i < dim ; i++)
-	    {vd.getPos(p)[i] = mean_x_new(i);}
-
-	    if (best > f_obj.get(0).f)
-	    {
-	    	best = f_obj.get(0).f;
-	    	best_i = p.getKey();
-	    }
-	    std::cout << "Best solution: " << f_obj.get(0).f << "   " << vd.getProp<sigma>(p) << std::endl;
-
-		++it;
-	}
-}
-
-void broadcast_best_solution(particle_type & vd, openfpm::vector<double> & best_sol, double best, size_t best_i)
-{
-	best_sol.resize(dim);
-	auto & v_cl = create_vcluster();
-
-	double best_old = best;
-	v_cl.min(best);
-	v_cl.execute();
-
-	size_t rank;
-	if (best_old == best)
-	{
-		rank = v_cl.getProcessUnitID();
-
-		// we own the minimum and we decide who broad cast
-		v_cl.min(rank);
-		v_cl.execute();
-
-		if (rank == v_cl.getProcessUnitID())
-		{
-			for (size_t i = 0 ; i < dim ; i++)
-			{best_sol.get(i) = vd.getPos(best_i)[i];}
-		}
-	}
-	else
-	{
-		rank = std::numeric_limits<size_t>::max();
-
-		// we do not own  decide who broad cast
-		v_cl.min(rank);
-		v_cl.execute();
-	}
-
-	// now we broad cast the best solution across processors
-
-	v_cl.Bcast(best_sol,rank);
-	v_cl.execute();
-}
-
-void write_million_point_on_file()
-{
-	std::ofstream output("rnd_output");
-
-	for (size_t i = 0 ; i < 1000000 ; i++)
-	{
-		double rnd = generateGaussianNoise(0.0,1.0);
-		output << std::setprecision(15) << rnd << std::endl;
-	}
-
-	output.close();
 }
 
 
@@ -360,19 +217,20 @@ void create_rotmat(Eigen::VectorXd & S,Eigen::VectorXd & T, Eigen::MatrixXd & R)
 			// Perform Givens Rotation on start vector
 
 			Eigen::JacobiRotation<double> G;
-			G.makeGivens(S_tmp(0), S_tmp(1));
+			double z;
+			G.makeGivens(S_tmp(0), S_tmp(1),&z);
 
 			// Check direction of rotation
 			double sign = 1.0;
-			if (S_tmp(1) > 0.0)
+			if (z < 0.0)
 			{sign = -1.0;}
 
 			// Build a Rotation Matrix out of G_C and G_S
 			R_tmp.setIdentity();
 			R_tmp(p,p) = sign*G.c();
 			R_tmp(q,q) = sign*G.c();
-			R_tmp(p,q) = sign*G.s();
-			R_tmp(q,p) = sign*-G.s();
+			R_tmp(p,q) = sign*-G.s();
+			R_tmp(q,p) = sign*G.s();
 
 			// Rotate start vector and update R
 			// S_work = R_tmp*S_work
@@ -383,17 +241,17 @@ void create_rotmat(Eigen::VectorXd & S,Eigen::VectorXd & T, Eigen::MatrixXd & R)
 
 			// Perform Givens Rotation on target vector
 
-			G.makeGivens(T_tmp(0), T_tmp(1));
+			G.makeGivens(T_tmp(0), T_tmp(1),&z);
 
 			sign = 1.0;
-			if (T_tmp(1) < 0.0)
+			if (z < 0.0)
 			{sign = -1.0;}
 
 			R_tmp.setIdentity();
 			R_tmp(p,p) = sign*G.c();
 			R_tmp(q,q) = sign*G.c();
-			R_tmp(p,q) = sign*G.s();
-			R_tmp(q,p) = sign*-G.s();
+			R_tmp(p,q) = sign*-G.s();
+			R_tmp(q,p) = sign*G.s();
 
 			// Rotate target vector and update R_tar
 
@@ -410,47 +268,603 @@ void create_rotmat(Eigen::VectorXd & S,Eigen::VectorXd & T, Eigen::MatrixXd & R)
 	Check = R*S;
 }
 
-void rotate_covariant_matrix_and_bias(particle_type & vd, const openfpm::vector<double> & best_sol)
+void updatePso(openfpm::vector<double> & best_sol,
+			   double sigma,
+			   Eigen::VectorXd & xmean,
+			   Eigen::MatrixXd & B,
+			   Eigen::DiagonalMatrix<double,Eigen::Dynamic> & D,
+			   Eigen::MatrixXd & C_pso)
 {
-	auto it = vd.getDomainIterator();
+	Eigen::VectorXd best_sol_ei(dim);
 
-	Eigen::VectorXd eigen_v(dim);
-	Eigen::VectorXd best_sol_v(dim);
-	fill_vector(&best_sol.get(0),best_sol_v);
-	Eigen::VectorXd pos;
+	double bias_weight = psoWeight;
+	fill_vector(&best_sol.get(0),best_sol_ei);
+	Eigen::VectorXd gb_vec = best_sol_ei-xmean;
+	double gb_vec_length = sqrt(gb_vec.transpose() * gb_vec);
+	Eigen::VectorXd b_main = B.col(dim-1);
+	Eigen::VectorXd bias(dim);
+	bias.setZero();
 
-	// Calculate the target
+	// Rotation Matrix
 	Eigen::MatrixXd R(dim,dim);
-	// Target
-	Eigen::VectorXd T(dim);
 
+	if (gb_vec_length > 0.0)
+	{
+	    if(sigma < gb_vec_length)
+	    {
+	    	if(sigma/gb_vec_length <= t_c*gb_vec_length)
+	    	{bias = 0.5*gb_vec;}
+	    	else
+	    	{bias = sigma*gb_vec/gb_vec_length;}
+	    }
+	    else
+	    {bias.setZero();}
+	}
+
+	  xmean = xmean + bias;
+
+	  if (psoWeight < 1.0)
+	  {
+		  Eigen::MatrixXd B_rot(dim,dim);
+		  Eigen::DiagonalMatrix<double,Eigen::Dynamic> D_square(dim);
+
+		  create_rotmat(b_main,gb_vec,R);
+		  for (size_t i = 0 ; i < dim ; i++)
+		  {B_rot.col(i) = R*B.col(i);}
+
+		  for (size_t i = 0 ; i < dim ; i++)
+		  {D_square.diagonal()[i] = D.diagonal()[i] * D.diagonal()[i];}
+		  C_pso = B_rot * D_square * B_rot.transpose();
+
+		  Eigen::MatrixXd trUp = C_pso.triangularView<Eigen::Upper>();
+		  Eigen::MatrixXd trDw = C_pso.triangularView<Eigen::StrictlyUpper>();
+		  C_pso = trUp + trDw.transpose();
+	  }
+}
+
+
+void broadcast_best_solution(particle_type & vd,
+							 openfpm::vector<double> & best_sol,
+							 double & best,
+							 double best_sample,
+							 openfpm::vector<double> & best_sample_sol)
+{
+	best_sol.resize(dim);
+	auto & v_cl = create_vcluster();
+
+	double best_old = best_sample;
+	v_cl.min(best_sample);
+	v_cl.execute();
+
+	// The old solution remain the best
+	if (best < best_sample)
+	{return;}
+
+	best = best_sample;
+
+	size_t rank;
+	if (best_old == best_sample)
+	{
+		rank = v_cl.getProcessUnitID();
+
+		// we own the minimum and we decide who broad cast
+		v_cl.min(rank);
+		v_cl.execute();
+
+		if (rank == v_cl.getProcessUnitID())
+		{
+			for (size_t i = 0 ; i < dim ; i++)
+			{best_sol.get(i) = best_sample_sol.get(i);}
+		}
+	}
+	else
+	{
+		rank = std::numeric_limits<size_t>::max();
+
+		// we do not own  decide who broad cast
+		v_cl.min(rank);
+		v_cl.execute();
+	}
+
+	// now we broad cast the best solution across processors
+
+	v_cl.Bcast(best_sol,rank);
+	v_cl.execute();
+}
+
+void cmaes_myprctile(openfpm::vector<fun_index> & f_obj, double (& perc)[2], double (& res)[2])
+{
+	double sar[lambda];
+	double availablepercentiles[lambda];
+	int idx[hist_size];
+	int i,k;
+
+	for (size_t i = 0 ; i < lambda ; i++)
+	{
+		availablepercentiles[i] = 0.0;
+		sar[i] = f_obj.get(i).f;
+	}
+	std::sort(&sar[0],&sar[lambda]);
+
+	for (size_t i = 0 ; i < 2 ; i++)
+	{
+		if (perc[i] <= (100.0*0.5/lambda))
+		{res[i] = sar[0];}
+		else if (perc[i] >= (100.0*(lambda-0.5)/lambda) )
+		{res[i] = sar[lambda-1];}
+		else
+		{
+			for (size_t j = 0 ; j < lambda ; j++)
+			{availablepercentiles[j] = 100.0 * ((double(j)+1.0)-0.5) / lambda;}
+
+			for (k = 0 ; k < lambda ; k++)
+			{if(availablepercentiles[k] >= perc[i]) {break;}}
+			k-=1;
+
+			res[i] = sar[k] + (sar[k+1]-sar[k]) * (perc[i]
+							-availablepercentiles[k]) / (availablepercentiles[k+1] - availablepercentiles[k]);
+		}
+	}
+}
+
+double maxval(double (& buf)[hist_size], bool (& mask)[hist_size])
+{
+	double max = 0.0;
+	for (size_t i = 0 ; i < hist_size ; i++)
+	{
+		if (buf[i] > max && mask[i] == true)
+		{max = buf[i];}
+	}
+
+	return max;
+}
+
+double minval(double (& buf)[hist_size], bool (& mask)[hist_size])
+{
+	double min = std::numeric_limits<double>::max();
+	for (size_t i = 0 ; i < hist_size ; i++)
+	{
+		if (buf[i] < min && mask[i] == true)
+		{min = buf[i];}
+	}
+
+	return min;
+}
+
+void cmaes_intobounds(Eigen::VectorXd & x, Eigen::VectorXd & xout,bool (& idx)[dim], bool & idx_any)
+{
+	idx_any = false;
+	for (size_t i = 0; i < dim ; i++)
+	{
+		if(x(i) < -5.0)
+		{
+			xout(i) = -5.0;
+			idx[i] = true;
+			idx_any = true;
+		}
+		else if (x(i) > 5.0)
+		{
+			xout(i) = 5.0;
+			idx[i] = true;
+			idx_any = true;
+		}
+		else
+		{
+			xout(i) = x(i);
+			idx[i] = false;
+		}
+	}
+}
+
+void cmaes_handlebounds(openfpm::vector<fun_index> & f_obj,
+						double sigma,
+						double & validfit,
+						Eigen::VectorXd (& arxvalid)[lambda],
+						Eigen::VectorXd (& arx)[lambda],
+						Eigen::MatrixXd & C,
+						Eigen::VectorXd & xmean,
+						Eigen::VectorXd & xold,
+						double (& weight)[dim],
+						double (& fithist)[hist_size],
+						bool & iniphase,
+						double & validfitval,
+						double mu_eff,
+						int step,
+						int last_restart)
+{
+	double val[2];
+	double value;
+	double diag[dim];
+	double meandiag;
+	int i,k,maxI;
+	bool mask[hist_size];
+	bool idx[dim];
+	Eigen::VectorXd tx(dim);
+	int dfitidx[hist_size];
+	double dfitsort[hist_size];
+	double prct[2] = {25.0,75.0};
+	bool idx_any;
+
+	for (size_t i = 0 ; i < hist_size ; i++)
+	{
+		dfitsort[i] = 0.0;
+		dfitidx[i] = 0;
+
+		if (fithist[i] > 0.0)
+		{mask[i] = true;}
+		else
+		{mask[i] = false;}
+	}
+
+	for (size_t i = 0 ; i < dim ; i++)
+	{diag[i] = C(i,i);}
+
+	maxI = 0;
+
+	meandiag = C.trace()/dim;
+
+	cmaes_myprctile(f_obj, prct, val);
+	value = (val[1] - val[0]) / dim / meandiag / (sigma*sigma);
+
+	if (value >= std::numeric_limits<double>::max())
+	{
+		auto & v_cl = create_vcluster();
+		std::cout << "Process " << v_cl.rank() << " warning: Non-finite fitness range" << std::endl;
+		value = maxval(fithist,mask);
+	}
+	else if(value == 0.0)
+	{
+		value = minval(fithist,mask);
+	}
+	else if (validfit == 0.0)
+	{
+		for (size_t i = 0 ; i < hist_size ; i++)
+		{fithist[i] = -1.0;}
+		validfit = 1;
+	}
+
+	for (size_t i = 0; i < hist_size ; i++)
+	{
+		if(fithist[i] < 0.0)
+		{
+			fithist[i] = value;
+			maxI = i;
+			break;
+		}
+		else if(i == hist_size-1)
+		{
+			for (size_t k = 0 ; k < hist_size-1 ; k++)
+			{fithist[k] = fithist[k+1];}
+			fithist[i] = value;
+			maxI = i;
+		}
+	}
+
+	cmaes_intobounds(xmean,tx,idx,idx_any);
+
+	if (iniphase)
+	{
+		if (idx_any)
+		{
+			if(maxI == 1)
+			{value = fithist[0];}
+			else
+			{
+				openfpm::vector<fun_index> fitsort(maxI+1);
+				for (size_t i = 0 ; i <= maxI; i++)
+				{
+					fitsort.get(i).f = fithist[i];
+					fitsort.get(i).id = i;
+				}
+
+				fitsort.sort();
+				for (size_t k = 0; k <= maxI ; k++)
+				{fitsort.get(k).f = fithist[fitsort.get(k).id];}
+
+				if ((maxI+1) % 2 == 0)
+				{value = (fitsort.get(maxI/2).f+fitsort.get(maxI/2+1).f)/2.0;}
+				else
+				{value = fitsort.get(maxI/2).f;}
+			}
+			for (size_t i = 0 ; i < dim ; i++)
+			{
+				diag[i] = diag[i]/meandiag;
+				weight[i] = 2.0002 * value / diag[i];
+			}
+			if (validfitval == 1.0 && step-last_restart > 2)
+			{
+				iniphase = false;
+			}
+		}
+	}
+
+	if(idx_any)
+	{
+		tx = xmean - tx;
+		for(size_t i = 0 ; i < dim ; i++)
+		{
+			idx[i] = (idx[i] && (fabs(tx(i)) > 3.0*std::max(1.0,sqrt(dim)/mu_eff) * sigma * sqrt(diag[i])));
+			idx[i] = (idx[i] && (std::copysign(1.0,tx(i)) == std::copysign(1.0,(xmean(i)-xold(i)))) );
+		}
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (idx[i] == true)
+			{
+				weight[i] = pow(1.2,(std::max(1.0,mu_eff/10.0/dim)))*weight[i];
+			}
+		}
+	}
+	double arpenalty[lambda];
+	for (size_t i = 0 ; i < lambda ; i++)
+	{
+		arpenality[i] = 0.0;
+		for (size_t j = 0 ; j < dim ; j++)
+		{
+			arpenalty[i] += weight[j] * (arxvalid[i](j) - arx[i](j))*(arxvalid[i](j) - arx[i](j));
+		}
+		f_obj.get(i).f += arpenalty[i];
+	}
+//	fitness%sel = fitness%raw + bnd%arpenalty;
+}
+
+void cma_step(particle_type & vd, int step,  double & best,
+			  int & best_i, openfpm::vector<double> & best_sol,
+			  int & stop_cond)
+{
+	Eigen::VectorXd xmean(dim);
+	Eigen::VectorXd mean_z(dim);
+	Eigen::VectorXd arxvalid[lambda];
+	Eigen::VectorXd arx[lambda];
+
+	for (size_t i = 0 ; i < lambda ; i++)
+	{
+		arx[i].resize(dim);
+		arxvalid[i].resize(dim);
+	}
+
+	double best_sample = std::numeric_limits<double>::max();
+	openfpm::vector<double> best_sample_sol(dim);
+
+	openfpm::vector<fun_index> f_obj(lambda);
+
+	int counteval = step*lambda;
+
+	auto it = vd.getDomainIterator();
 	while (it.isNext())
 	{
 		auto p = it.get();
 
-		fill_vector(vd.getPos(p),pos);
+		if (vd.getProp<stop>(p) == true)
+		{++it;continue;}
 
-		int max_i;
-		vd.getProp<D>(p).diagonal().maxCoeff(&max_i,&max_i);
+		// fill the mean vector;
 
-		eigen_v = vd.getProp<B>(p).col(max_i);
+		fill_vector(vd.getPos(p),xmean);
 
-		////////// DEBUG ///////////////
+		for (size_t j = 0 ; j < lambda ; j++)
+		{
+			vd.getProp<Zeta>(p)[j] = generateGaussianVector<dim>();
 
-		Eigen::VectorXd debug(dim);
-		Eigen::VectorXd debug2(dim);
+			Eigen::VectorXd & debug4 = vd.getProp<Zeta>(p)[j];
 
-		debug2 = vd.getProp<Cov_m>(p)*debug;
+			arx[j] = xmean + vd.getProp<sigma>(p)*vd.getProp<B>(p)*vd.getProp<D>(p)*vd.getProp<Zeta>(p)[j];
 
-		///////////////////////////////////
-		T = best_sol_v - pos;
+			double & debug6 = vd.getProp<sigma>(p);
 
-		// Now we rotate
-		create_rotmat(eigen_v,T,R);
+			Eigen::MatrixXd & debug7 = vd.getProp<B>(p);
+
+			// sample point has to be inside -5.0 and 5.0
+			for (size_t i = 0 ; i < dim ; i++)
+			{
+				if (arx[j](i) < -5.0)
+				{arxvalid[j](i) = -5.0;}
+				else if (arx[j](i) > 5.0)
+				{arxvalid[j](i) = 5.0;}
+				else
+				{arxvalid[j](i) = arx[j](i);}
+			}
+
+			f_obj.get(j).f = hybrid_composition<dim>(arxvalid[j]);
+			f_obj.get(j).id = j;
+
+			// Get the best ever
+			if (f_obj.get(0).f < best_sample)
+			{
+				best_sample = f_obj.get(0).f;
+
+			    // Copy the new mean as position of the particle
+			    for (size_t i = 0 ; i < dim ; i++)
+			    {best_sample_sol.get(i) = arxvalid[j](i);}
+			}
+		}
+
+		// Add penalities for out of bound points
+		cmaes_handlebounds(f_obj,vd.getProp<sigma>(p),
+						   vd.getProp<validfit>(p),arxvalid,
+						   arx,vd.getProp<Cov_m>(p),
+						   xmean,vd.getProp<xold>(p),vd.getProp<weight>(p),
+						   vd.getProp<fithist>(p),vd.getProp<iniphase>(p),
+						   vd.getProp<validfit>(p),mu_eff,
+						   step,vd.getProp<last_restart>(p));
+
+		f_obj.sort();
+
+		for (size_t j = 0 ; j < lambda ; j++)
+		{vd.getProp<ord>(p)[j] = f_obj.get(j).id;}
+
+		// Calculate weighted mean
+
+		if (step == 5)
+		{
+			Eigen::VectorXd (& debug4)[lambda] = vd.getProp<Zeta>(p);
+
+			int debug = 0;
+		}
+
+		xmean.setZero();
+		mean_z.setZero();
+		for (size_t j = 0 ; j < mu ; j++)
+		{
+			xmean += weight_sample(j)*arx[vd.getProp<ord>(p)[j]];
+			mean_z += weight_sample(j)*vd.getProp<Zeta>(p)[vd.getProp<ord>(p)[j]];
+		}
+
+		vd.getProp<xold>(p) = xmean;
 
 		++it;
 	}
+
+	// Find the best point across processors
+	broadcast_best_solution(vd,best_sol,best,best_sample,best_sample_sol);
+
+	stop_cond = 1;
+
+	// Particle swarm update
+
+	auto it2 = vd.getDomainIterator();
+	while (it2.isNext())
+	{
+		auto p = it2.get();
+
+		if (vd.getProp<stop>(p) == true)
+		{++it2;continue;}
+
+		// There are still particles to process
+		stop_cond = 0;
+
+		vd.getProp<path_s>(p) = vd.getProp<path_s>(p)*(1.0 - cs) + sqrt(cs*(2.0-cs)*mu_eff)*vd.getProp<B>(p)*mean_z;
+
+		double hsig = vd.getProp<path_s>(p).norm()/(1-pow(1-cs,2*counteval/lambda))/dim < 2.0 + 4.0/(dim+1);
+
+		vd.getProp<path_c>(p) = (1-cc)*vd.getProp<path_c>(p) + hsig * sqrt(cc*(2-cc)*mu_eff)*(vd.getProp<B>(p)*vd.getProp<D>(p)*mean_z);
+
+		if (step % N_pso == 0)
+		{
+			Eigen::MatrixXd C_pso(dim,dim);
+			updatePso(best_sol,vd.getProp<sigma>(p),xmean,vd.getProp<B>(p),vd.getProp<D>(p),C_pso);
+
+			// Adapt covariance matrix C
+			vd.getProp<Cov_m>(p) = (1.0-ccov+(1.0-hsig)*ccov*cc*(2.0-cc)/mu_eff)*vd.getProp<Cov_m>(p) +
+									ccov*(1.0/mu_eff)*(vd.getProp<path_c>(p)*vd.getProp<path_c>(p).transpose());
+
+			for (size_t i = 0 ; i < mu ; i++)
+			{vd.getProp<Cov_m>(p) += ccov*(1.0-1.0/mu_eff)*(vd.getProp<B>(p)*vd.getProp<D>(p)*vd.getProp<Zeta>(p)[vd.getProp<ord>(p)[i]])*weight_sample(i)*
+										  (vd.getProp<B>(p)*vd.getProp<D>(p)*vd.getProp<Zeta>(p)[vd.getProp<ord>(p)[i]]).transpose();
+			}
+
+	    	vd.getProp<Cov_m>(p) = psoWeight*vd.getProp<Cov_m>(p) + (1.0 - psoWeight)*C_pso;
+	    }
+	    else
+	    {
+			// Adapt covariance matrix C
+			vd.getProp<Cov_m>(p) = (1.0-ccov+(1.0-hsig)*ccov*cc*(2.0-cc)/mu_eff)*vd.getProp<Cov_m>(p) +
+									ccov*(1.0/mu_eff)*(vd.getProp<path_c>(p)*vd.getProp<path_c>(p).transpose());
+
+			for (size_t i = 0 ; i < mu ; i++)
+			{vd.getProp<Cov_m>(p) += ccov*(1.0-1.0/mu_eff)*(vd.getProp<B>(p)*vd.getProp<D>(p)*vd.getProp<Zeta>(p)[vd.getProp<ord>(p)[i]])*weight_sample(i)*
+				                          (vd.getProp<B>(p)*vd.getProp<D>(p)*vd.getProp<Zeta>(p)[vd.getProp<ord>(p)[i]]).transpose();
+			}
+	    }
+
+		// Numeric error
+
+		double smaller = std::numeric_limits<double>::max();
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (vd.getProp<sigma>(p)*sqrt(vd.getProp<D>(p).diagonal()[i]) > 5.0)
+			{
+				if (smaller > 5.0/sqrt(vd.getProp<D>(p).diagonal()[i]))
+				{smaller = 5.0/sqrt(vd.getProp<D>(p).diagonal()[i]);}
+			}
+		}
+		if (smaller != std::numeric_limits<double>::max())
+		{vd.getProp<sigma>(p) = smaller;}
+
+		//Adapt step-size sigma
+		vd.getProp<sigma>(p) = vd.getProp<sigma>(p)*exp((cs/d_amps)*(vd.getProp<path_s>(p).norm()/chiN - 1));
+
+		auto & v_cl = create_vcluster();
+		std::cout << vd.getProp<sigma>(p) <<  "  " << v_cl.rank() << std::endl;
+
+		// Update B and D from C
+
+		if (counteval - eigeneval > lambda/(ccov)/dim/10)
+		{
+			eigeneval = counteval;
+
+			Eigen::MatrixXd trUp = vd.getProp<Cov_m>(p).triangularView<Eigen::Upper>();
+			Eigen::MatrixXd trDw = vd.getProp<Cov_m>(p).triangularView<Eigen::StrictlyUpper>();
+			vd.getProp<Cov_m>(p) = trUp + trDw.transpose();
+
+			// Eigen decomposition
+			Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eig_solver;
+
+			eig_solver.compute(vd.getProp<Cov_m>(p));
+
+			for (size_t i = 0 ; i < eig_solver.eigenvalues().size() ; i++)
+			{vd.getProp<D>(p).diagonal()[i] = sqrt(eig_solver.eigenvalues()[i]);}
+			vd.getProp<B>(p) = eig_solver.eigenvectors();
+
+			// Make first component always positive
+			for (size_t i = 0 ; i < dim ; i++)
+			{
+				if (vd.getProp<B>(p)(0,i) < 0)
+				{vd.getProp<B>(p).col(i) = - vd.getProp<B>(p).col(i);}
+			}
+
+			Eigen::MatrixXd tmp = vd.getProp<B>(p).transpose();
+			Eigen::MatrixXd & debug3 = vd.getProp<Cov_m>(p);
+
+			int debug = 0;
+		}
+
+		Eigen::MatrixXd & debug1 = vd.getProp<B>(p);
+		Eigen::DiagonalMatrix<double,Eigen::Dynamic> & debug2 = vd.getProp<D>(p);
+
+	    // Escape flat fitness, or better terminate?
+	    if (f_obj.get(0).f == f_obj.get(std::ceil(0.7*lambda)).f )
+	    {
+	    	vd.getProp<sigma>(p) = vd.getProp<sigma>(p)*exp(0.2+cs/d_amps);
+	    	std::cout << "warning: flat fitness, consider reformulating the objective";
+	    }
+
+	    // Copy the new mean as position of the particle
+	    for (size_t i = 0 ; i < dim ; i++)
+	    {
+	    	// Check we do not go out od bound
+
+	    	vd.getPos(p)[i] = xmean(i);
+	    }
+
+//	    std::cout << "Best solution: " << f_obj.get(0).f << "   " << vd.getProp<sigma>(p) << std::endl;
+
+	    double debug_sigma = vd.getProp<sigma>(p);
+	    Eigen::DiagonalMatrix<double,Eigen::Dynamic> & debug_d = vd.getProp<D>(p);
+
+	    // Stop conditions
+	    bool stop_tol = true;
+	    bool stop_tolX = true;
+	    for (size_t i = 0 ; i < dim ; i++)
+	    {
+	    	stop_tol &= vd.getProp<sigma>(p)*std::max(fabs(vd.getProp<path_c>(p)(i)),sqrt(vd.getProp<D>(p).diagonal()[i])) < stopTolX;
+	    	stop_tolX &= vd.getProp<sigma>(p)*sqrt(vd.getProp<D>(p).diagonal()[i]) > stopTolUpX;
+	    }
+
+	    vd.getProp<stop>(p) = stop_tol | stop_tolX;
+
+	    if (vd.getProp<stop>(p) == true)
+	    {
+	    	std::cout << "Stopped" << std::endl;
+	    }
+
+		++it2;
+	}
+
+	auto & v_cl = create_vcluster();
+	v_cl.min(stop_cond);
+	v_cl.execute();
 }
+
 
 
 int main(int argc, char* argv[])
@@ -458,8 +872,7 @@ int main(int argc, char* argv[])
     // initialize the library
 	openfpm_init(&argc,&argv);
 
-//	write_million_point_on_file();
-//	return 0;
+	auto & v_cl = create_vcluster();
 
 	// Here we define our domain a 2D box with internals from 0 to 1.0 for x and y
 	Box<dim,double> domain;
@@ -475,10 +888,12 @@ int main(int argc, char* argv[])
 	for (size_t i = 0 ; i < dim ; i++)
     {bc[i] = NON_PERIODIC;};
 
+	prepare_f15<dim>();
+
 	// extended boundary around the domain, and the processor domain
 	Ghost<dim,double> g(0.0);
 
-    particle_type vd(1,domain,bc,g);
+    particle_type vd(v_cl.size(),domain,bc,g);
 
     // Initialize constants
 
@@ -489,17 +904,25 @@ int main(int argc, char* argv[])
     init_weight();
 
     // Strategy parameter setting: Adaptation
-    cc = (4.0 + mu_eff/dim) / (dim+4.0 + 2.0*mu_eff/dim);
-    cs = (mu_eff+2) / (dim+mu_eff+5);
-    c1 = 2.0 / ((dim+1.3)*(dim+1.3)+mu_eff);
-    c_mu = std::min(1-c1, 2 * (mu_eff-2+1/mu_eff) / ((dim+2)*(dim+2)+mu_eff));
-    d_amps = 1 + 2*std::max(0.0, sqrt((mu_eff-1)/(dim+1))-1) + cs;
+    cc = 4.0 / (dim+4.0);
+    cs = (mu_eff+2.0) / (dim+mu_eff+3.0);
+    ccov = (1.0/mu_eff) * 2.0/((dim+1.41)*(dim+1.41)) +
+    	   (1.0 - 1.0/mu_eff)* std::min(1.0,(2.0*mu_eff-1.0)/((dim+2.0)*(dim+2.0) + mu_eff));
+    d_amps = 1 + 2*std::max(0.0, sqrt((mu_eff-1.0)/(dim+1))-1) + cs;
 
     chiN = sqrt(dim)*(1.0-1.0/(4.0*dim)+1.0/(21.0*dim*dim));
 
 	//! \cond [assign position] \endcond
 
-	auto it = vd.getDomainIterator();
+
+	// initialize the srand
+	int seed = 24756*v_cl.rank()*v_cl.rank();
+	srand(seed);
+
+	for (size_t k = 0 ; k < 100 ; k++)
+	{
+
+		auto it = vd.getDomainIterator();
 
 	while (it.isNext())
 	{
@@ -508,10 +931,10 @@ int main(int argc, char* argv[])
 		for (size_t i = 0 ; i < dim ; i++)
 		{
 			// we define x, assign a random position between 0.0 and 1.0
-			vd.getPos(p)[i] = 1.0/*(double)rand() / RAND_MAX*/;
+			vd.getPos(p)[i] = 10.0*(double)rand() / RAND_MAX - 5.0;
 		}
 
-		vd.getProp<sigma>(p) = 0.5;
+		vd.getProp<sigma>(p) = 2.0;
 
 		// Initialize the covariant Matrix,B and D to identity
 
@@ -525,6 +948,16 @@ int main(int argc, char* argv[])
 		vd.getProp<path_s>(p).setZero(dim);
 		vd.getProp<path_c>(p).resize(dim);
 		vd.getProp<path_c>(p).setZero(dim);
+		vd.getProp<stop>(p) = false;
+		vd.getProp<iniphase>(p) = true;
+		vd.getProp<last_restart>(p) = 0;
+
+		// Initialize the bound history
+
+		for (size_t i = 0 ; i < hist_size ; i++)
+		{vd.getProp<fithist>(p)[i] = -1.0;}
+		vd.getProp<fithist>(p)[0] = 1.0;
+		vd.getProp<validfit>(p) = 0.0;
 
 		// next particle
 		++it;
@@ -533,23 +966,21 @@ int main(int argc, char* argv[])
 	double best = 0.0;
 	int best_i = 0;
 
-	openfpm::vector<double> best_sol;
+	best = std::numeric_limits<double>::max();
+	openfpm::vector<double> best_sol(dim);
 	// now do several iteration
 
-	for (size_t i = 0 ; i < 100 ; i++)
+	int stop_cond = 0;
+	int i = 0;
+	while (stop_cond == 0)
 	{
 		// sample offspring
-		cma_step(vd,i+1,best,best_i);
+		cma_step(vd,i+1,best,best_i,best_sol,stop_cond);
 
-		// Find the best point across processors
-		broadcast_best_solution(vd,best_sol,best,best_i);
+		i++;
+	}
 
-		// Generate the rotational Matrix
-		rotate_covariant_matrix_and_bias(vd,best_sol);
-
-		//create_rotmat();
-
-		// Rotate the Covariant MAtrix
+	std::cout << "Best solution: " << best << std::endl;
 	}
 
 	openfpm_finalize();

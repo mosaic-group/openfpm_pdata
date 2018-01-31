@@ -602,18 +602,6 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 
 protected:
 
-	/*! \brief Get the point where it start the origin of the grid of the sub-domain i
-	 *
-	 * \param i sub-domain
-	 *
-	 * \return the point
-	 *
-	 */
-	Point<dim,St> getOffset(size_t i)
-	{
-		return pmul(Point<dim,St>(gdb_ext.get(i).origin), cd_sm.getCellBox().getP2());
-	}
-
 	/*! \brief Given a local sub-domain i with a local grid Domain + ghost return the part of the local grid that is domain
 	 *
 	 * \param i sub-domain
@@ -685,6 +673,18 @@ public:
 	inline const Box<dim,St> getDomain() const
 	{
 		return domain;
+	}
+
+	/*! \brief Get the point where it start the origin of the grid of the sub-domain i
+	 *
+	 * \param i sub-domain
+	 *
+	 * \return the point
+	 *
+	 */
+	Point<dim,St> getOffset(size_t i)
+	{
+		return pmul(Point<dim,St>(gdb_ext.get(i).origin), cd_sm.getCellBox().getP2()) + getDomain().getP1();
 	}
 
     /*! \brief Get the spacing of the grid in direction i

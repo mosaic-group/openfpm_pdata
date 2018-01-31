@@ -568,11 +568,6 @@ public:
 
 				while (it.isNext())
 				{
-					//auto key = it.get();
-
-					//if (g.template get<0>(key) != 1)
-						//std::cout << "WRONG???????" << std::endl;
-
 					++it;
 					count++;
 				}
@@ -581,13 +576,11 @@ public:
 
 				Point<dim,St> p;
 				for (size_t n = 0; n < dim; n++)
-					p.get(n) = g.getGrid().getBox().getHigh(n);
-
-				//std::cout << "G after resize: (" << g.getGrid().getBox().getLow(0) << "; " << g.getGrid().getBox().getLow(1) << "); (" << g.getGrid().getBox().getHigh(0) << "; " << g.getGrid().getBox().getHigh(1) << ")" << std::endl;
+				{p.get(n) = g.getGrid().getBox().getHigh(n);}
 
 				Point<dim,St> point;
 				for (size_t n = 0; n < dim; n++)
-					point.get(n) = (b.getHigh(n) + b.getLow(n))/2;
+				{point.get(n) = (b.getHigh(n) + b.getLow(n))/2;}
 
 				for (size_t j = 0; j < gdb_ext.size(); j++)
 				{
@@ -612,7 +605,6 @@ public:
 							std::string str = key.to_string();
 							grid_key_dx<dim> key2 = key - start;
 
-							//std::cout << "Key: " << str << std::endl;
 							loc_grid.get(j).get_o(key) = g.get_o(key2);
 							count2++;
 
@@ -622,7 +614,6 @@ public:
 				}
 			}
 		}
-		//std::cout << "Count after: " << count2 << std::endl;
 	}
 
 	/*! \brief Label intersection grids for mappings
