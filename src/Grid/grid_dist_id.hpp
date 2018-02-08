@@ -1596,7 +1596,7 @@ public:
 	 * \return a Grid iterator
 	 *
 	 */
-	inline grid_dist_id_iterator_dec<Decomposition> getGridIterator(grid_key_dx<dim> & start, grid_key_dx<dim> & stop)
+	inline grid_dist_id_iterator_dec<Decomposition> getGridIterator(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop)
 	{
 		grid_dist_id_iterator_dec<Decomposition> it_dec(getDecomposition(), g_sz, start, stop);
 		return it_dec;
@@ -1688,7 +1688,7 @@ public:
 	 *
 	 */
 	grid_dist_iterator<dim,device_grid,
-	decltype(device_grid::type_of_subiterator()),
+	grid_key_dx_iterator<dim>,
 	FIXED>
 	getDomainGhostIterator() const
 	{
@@ -1696,7 +1696,7 @@ public:
 		check_valid(this,8);
 #endif
 		grid_dist_iterator<dim,device_grid,
-							decltype(device_grid::type_of_subiterator()),
+							grid_key_dx_iterator<dim>,
 							FIXED> it(loc_grid,gdb_ext);
 
 		return it;

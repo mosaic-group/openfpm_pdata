@@ -205,6 +205,25 @@ public:
 	 * \return an iterator to the grid
 	 *
 	 */
+	auto getGridGhostIterator(size_t lvl) -> decltype(gd_array.get(lvl).getGridIterator(grid_key_dx<dim>(),grid_key_dx<dim>()))
+	{
+		grid_key_dx<dim> key_start;
+		grid_key_dx<dim> key_stop;
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			key_start.set_d(i,g_int.getLow(i));
+			key_stop.set_d(i,g_int.gethigh(i) + getGridInfoVoid(lvl).size(i) -1);
+		}
+
+		return gd_array.get(lvl).getGridIterator();
+	}
+
+	/*! \brief Get an iterator to the grid
+	 *
+	 * \return an iterator to the grid
+	 *
+	 */
 	auto getGridIterator(size_t lvl) -> decltype(gd_array.get(lvl).getGridIterator())
 	{
 		return gd_array.get(lvl).getGridIterator();
@@ -229,6 +248,35 @@ public:
 		return gd_array.get(lvl).getGridIterator(start,stop);
 	}
 
+
+	/*! \brief return an iterator over the level lvl
+	 *
+	 * \param lvl level
+	 *
+	 * \return an iterator over the level lvl selected
+	 *
+	 */
+	grid_dist_iterator<dim,device_grid,decltype(device_grid::type_of_subiterator()),FREE>
+	getDomainIterator(size_t lvl) const
+	{
+		return gd_array.get(lvl).getDomainIterator();
+	}
+
+    /*! \brief return an iterator over the level lvl
+     *
+     * \param lvl level
+     *
+     * \return an iterator over the level lvl selected
+     *
+     */
+    grid_dist_iterator<dim,device_grid,
+	grid_key_dx_iterator<dim>,
+    FIXED>
+    getDomainGhostIterator(size_t lvl) const
+    {
+            return gd_array.get(lvl).getDomainGhostIterator();
+    }
+
 	/*! \brief Get domain iterator
 	 *
 	 * \return an iterator over all the grid levels
@@ -247,18 +295,23 @@ public:
 		return grid_dist_amr_key_iterator<dim,device_grid,decltype(device_grid::type_of_subiterator())>(git);
 	}
 
-	/*! \brief return an iterator over the level lvl
-	 *
-	 * \param lvl level
-	 *
-	 * \return an iterator over the level lvl selected
-	 *
-	 */
-	grid_dist_iterator<dim,device_grid,decltype(device_grid::type_of_subiterator()),FREE>
-	getDomainIterator(size_t lvl) const
-	{
-		return gd_array.get(lvl).getDomainIterator();
-	}
+    /*! \brief Get domain iterator
+     *
+     * \return an iterator over all the grid levels
+     *
+     */
+    grid_dist_amr_key_iterator<dim,device_grid, grid_key_dx_iterator<dim>>
+    getDomainGhostIterator()
+    {
+            git.clear();
+
+            for (size_t i = 0 ; i < gd_array.size() ; i++)
+            {
+                    git.add(gd_array.get(i).getDomainIterator());
+            }
+
+            return grid_dist_amr_key_iterator<dim,device_grid,grid_key_dx_iterator<dim>>(git);
+    }
 
 	/*! \brief Get the reference of the selected element
 	 *
