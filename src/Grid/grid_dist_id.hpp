@@ -830,7 +830,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		for (size_t i = 0 ; i < dim ; i++)
 		{
 			if (g_sz[i] < 2)
-				std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " distrobuted grids with size smaller than 2 are not supported\n";
+				std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " distributed grids with size smaller than 2 are not supported\n";
 		}
 	}
 
@@ -1074,6 +1074,36 @@ public:
 	size_t size() const
 	{
 		return ginfo_v.size();
+	}
+
+	/*! \brief set the background value
+	 *
+	 * You can use this function make sense in case of sparse in case of dense
+	 * it does nothing
+	 *
+	 */
+	void setBackgroundValue(T & bv)
+	{
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{meta_copy<T>::meta_copy_(bv,loc_grid.get(i).getBackgroundValue());}
+	}
+
+	/*! \brief Return the local total number of points inserted in the grid
+	 *
+	 * in case of dense grid it return the number of local points, in case of
+	 * sparse it return the number of inserted points
+	 *
+	 * \return number of points
+	 *
+	 */
+	size_t size_local_inserted() const
+	{
+		size_t lins = 0;
+
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{lins += loc_grid.get(i).size_inserted();}
+
+		return lins;
 	}
 
 	/*! \brief Return the total number of points in the grid
@@ -1599,6 +1629,22 @@ public:
 	inline grid_dist_id_iterator_dec<Decomposition> getGridIterator(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop)
 	{
 		grid_dist_id_iterator_dec<Decomposition> it_dec(getDecomposition(), g_sz, start, stop);
+		return it_dec;
+	}
+
+	/*! /brief Get a grid Iterator running also on ghost area
+	 *
+	 * In case of dense grid getGridIterator is equivalent to getDomainIterator
+	 * in case if sparse distributed grid getDomainIterator go across all the
+	 * inserted point get grid iterator run across all grid points independently
+	 * that the point has been insert or not
+	 *
+	 * \return a Grid iterator
+	 *
+	 */
+	inline grid_dist_id_iterator_dec<Decomposition,true> getGridGhostIterator(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop)
+	{
+		grid_dist_id_iterator_dec<Decomposition,true> it_dec(getDecomposition(), g_sz, start, stop);
 		return it_dec;
 	}
 
@@ -2197,11 +2243,19 @@ public:
 		prp_names = names;
 	}
 
+	/*! \brief It delete all the points
+	 *
+	 * This function on dense does nothing in case of dense grid but in case of
+	 * sparse_grid it kills all the points
+	 *
+	 */
+	void clear()
+	{
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{loc_grid.get(i).clear();}
+	}
 
 	/*! \brief It move all the grid parts that do not belong to the local processor to the respective processor
-	 *
-	 *
-	 *
 	 *
 	 */
 	void map()

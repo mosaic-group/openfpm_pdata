@@ -19,7 +19,7 @@
  * \tparam dec Decomposition type
  *
  */
-template<typename Decomposition>
+template<typename Decomposition, bool ghost_or_domain = false>
 class grid_dist_id_iterator_dec
 {
 	//! grid list counter
@@ -52,7 +52,7 @@ class grid_dist_id_iterator_dec
 
 		// When the grid has size 0 potentially all the other informations are garbage
 		while (g_c < gdb_ext.size() &&
-			   (gdb_ext.get(g_c).Dbox.isValid() == false || compute_subset<Decomposition>(gdb_ext,g_c,start,stop,start_c,stop_c) == false ))
+			   (gdb_ext.get(g_c).Dbox.isValid() == false || compute_subset<Decomposition,ghost_or_domain>(gdb_ext,g_c,start,stop,start_c,stop_c) == false ))
 		{g_c++;}
 
 		// get the next grid iterator
@@ -161,7 +161,7 @@ class grid_dist_id_iterator_dec
 	 *
 	 */
 
-	inline grid_dist_id_iterator_dec<Decomposition> & operator++()
+	inline grid_dist_id_iterator_dec<Decomposition,ghost_or_domain> & operator++()
 	{
 		++a_it;
 

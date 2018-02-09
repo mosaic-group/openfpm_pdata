@@ -95,7 +95,7 @@ class grid_dist_id_iterator_dec_skin : protected grid_skin_iterator_bc<Decomposi
 				grid_key_dx<Decomposition::dims> start_c;
 				grid_key_dx<Decomposition::dims> stop_c;
 
-				if (compute_subset<Decomposition>(gdb_ext,gc,start,stop,start_c,stop_c) == true)
+				if (compute_subset<Decomposition,false>(gdb_ext,gc,start,stop,start_c,stop_c) == true)
 				{
 					// Convert global coordinate start_c stop_c into local
 					// and calculate the grid sizes

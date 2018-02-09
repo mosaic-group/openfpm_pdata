@@ -67,42 +67,18 @@ class grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,Decomposition,Memory,device_grid>
 	//! Moving offsets
 	openfpm::vector<openfpm::vector<offset_mv<dim>>> mv_off;
 
-public:
-
-
-	/*! \brief Constructor
+	/*! \brief Initialize the others levels
 	 *
-	 * \param domain Simulation domain
-	 * \param g ghost extension
+	 * \param n_lvl number of levels
+	 * \param g_sz_lvl grid size on each level
 	 *
 	 */
-	grid_dist_amr(const Box<dim,St> & domain, const Ghost<dim,long int> & g)
-	:domain(domain),g_int(g)
+	void initialize_other(size_t n_lvl, size_t (& g_sz_lvl)[dim])
 	{
-	}
-
-	/*! \brief Initialize the amr grid
-	 *
-	 * \param n_lvl maximum number of levels (0 mean no additional levels)
-	 * \param g_sz coarsest grid size on each direction
-	 *
-	 */
-	void initLevels(size_t n_lvl,const size_t (& g_sz)[dim])
-	{
-		size_t g_sz_lvl[dim];
-
-		for (size_t i = 0; i < dim ; i++)
-		{g_sz_lvl[i] = g_sz[i];}
-
-		// Add the coarse level
-		gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(g_sz,domain,g_int));
-
 		for (size_t i = 0; i < n_lvl - 1 ; i++)
 		{
 			for (size_t j = 0 ; j < dim ; j++)
-			{
-				g_sz_lvl[j] = (g_sz_lvl[j]-1)*2 + 1;
-			}
+			{g_sz_lvl[j] = (g_sz_lvl[j]-1)*2 + 1;}
 
 			gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(gd_array.get(0).getDecomposition(),g_sz_lvl,g_int));
 		}
@@ -159,6 +135,59 @@ public:
 		}
 	}
 
+public:
+
+
+	/*! \brief Constructor
+	 *
+	 * \param domain Simulation domain
+	 * \param g ghost extension
+	 *
+	 */
+	grid_dist_amr(const Box<dim,St> & domain, const Ghost<dim,long int> & g)
+	:domain(domain),g_int(g)
+	{
+	}
+
+	/*! \brief Initialize the amr grid
+	 *
+	 * \param dec Decomposition (this parameter is useful in case we want to constrain the AMR to an external decomposition)
+	 * \param n_lvl maximum number of levels (0 mean no additional levels)
+	 * \param g_sz coarsest grid size on each direction
+	 *
+	 */
+	void initLevels(const Decomposition & dec, size_t n_lvl,const size_t (& g_sz)[dim])
+	{
+		size_t g_sz_lvl[dim];
+
+		for (size_t i = 0; i < dim ; i++)
+		{g_sz_lvl[i] = g_sz[i];}
+
+		// Add the coarse level
+		gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(dec,g_sz));
+
+		initialize_other(n_lvl,g_sz_lvl);
+	}
+
+	/*! \brief Initialize the amr grid
+	 *
+	 * \param n_lvl maximum number of levels (0 mean no additional levels)
+	 * \param g_sz coarsest grid size on each direction
+	 *
+	 */
+	void initLevels(size_t n_lvl,const size_t (& g_sz)[dim])
+	{
+		size_t g_sz_lvl[dim];
+
+		for (size_t i = 0; i < dim ; i++)
+		{g_sz_lvl[i] = g_sz[i];}
+
+		// Add the coarse level
+		gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(g_sz,domain,g_int));
+
+		initialize_other(n_lvl,g_sz_lvl);
+	}
+
 
 	grid_dist_amr_key_iterator<dim,device_grid,
 							   decltype(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>::type_of_subiterator()),
@@ -205,7 +234,7 @@ public:
 	 * \return an iterator to the grid
 	 *
 	 */
-	auto getGridGhostIterator(size_t lvl) -> decltype(gd_array.get(lvl).getGridIterator(grid_key_dx<dim>(),grid_key_dx<dim>()))
+	auto getGridGhostIterator(size_t lvl) -> decltype(gd_array.get(lvl).getGridGhostIterator(grid_key_dx<dim>(),grid_key_dx<dim>()))
 	{
 		grid_key_dx<dim> key_start;
 		grid_key_dx<dim> key_stop;
@@ -213,10 +242,10 @@ public:
 		for (size_t i = 0 ; i < dim ; i++)
 		{
 			key_start.set_d(i,g_int.getLow(i));
-			key_stop.set_d(i,g_int.gethigh(i) + getGridInfoVoid(lvl).size(i) -1);
+			key_stop.set_d(i,g_int.getHigh(i) + getGridInfoVoid(lvl).size(i) -1);
 		}
 
-		return gd_array.get(lvl).getGridIterator();
+		return gd_array.get(lvl).getGridGhostIterator(key_start,key_stop);
 	}
 
 	/*! \brief Get an iterator to the grid
@@ -477,6 +506,40 @@ public:
 		{
 			gd_array.get(i).template ghost_put<op,prp...>();
 		}
+	}
+
+	/*! \brief Return the number of inserted points on a particular level
+	 *
+	 * \return the number of inserted points
+	 *
+	 */
+	size_t size_inserted(size_t lvl)
+	{
+		return gd_array.get(lvl).size_local_inserted();
+	}
+
+	/*! \brief set the background value
+	 *
+	 * You can use this function make sense in case of sparse in case of dense
+	 * it does nothing
+	 *
+	 */
+	void setBackgroundValue(T & bv)
+	{
+		for (size_t i = 0 ; i < getNLvl() ; i++)
+		{gd_array.get(i).setBackgroundValue(bv);}
+	}
+
+	/*! \brief delete all the points in the grid
+	 *
+	 * In case of sparse grid in delete all the inserted points, in case
+	 * of dense it does nothing
+	 *
+	 */
+	void clear()
+	{
+		for (size_t i = 0 ; i < getNLvl() ; i++)
+		{gd_array.get(i).clear();}
 	}
 
 	/*! \brief Get an object containing the grid informations for a specific level

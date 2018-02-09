@@ -302,6 +302,119 @@ void Test3D_amr_child_parent_get(grid & amr_g, Box<3,float> & domain, size_t coa
 	BOOST_REQUIRE_EQUAL(match,true);
 }
 
+
+template <typename grid>
+void Test3D_amr_ghost_it(grid & amr_g, Box<3,float> & domain, size_t coars_g, size_t n_lvl)
+{
+	size_t g_sz[3] = {coars_g,coars_g,coars_g};
+
+	size_t tot = coars_g*coars_g*coars_g;
+	size_t correct_result = 0;
+	size_t fact = 1;
+
+	for (size_t i = 0 ; i <  n_lvl ; i++)
+	{
+		correct_result += tot*fact;
+		fact *= 8;
+	}
+
+	amr_g.initLevels(n_lvl,g_sz);
+
+	//////// Add something /////
+
+	for (size_t i = 0 ; i < amr_g.getNLvl() ; i++)
+	{
+		// Fill the AMR with something
+
+		size_t count = 0;
+
+		auto it = amr_g.getGridGhostIterator(i);
+
+		while (it.isNext())
+		{
+			auto key = it.get_dist();
+			auto gkey = it.get();
+			auto akey = amr_g.getAMRKey(i,key);
+
+			amr_g.template insert<0>(akey) = gkey.get(0);
+			amr_g.template insert<1>(akey) = gkey.get(1);
+			amr_g.template insert<2>(akey) = gkey.get(2);
+
+			if (gkey.get(0) == -1 || gkey.get(0) == (long int)amr_g.getGridInfoVoid(i).size(0) ||
+				gkey.get(1) == -1 || gkey.get(1) == (long int)amr_g.getGridInfoVoid(i).size(1) ||
+				gkey.get(2) == -1 || gkey.get(2) == (long int)amr_g.getGridInfoVoid(i).size(2))
+			{count++;}
+
+			++it;
+		}
+
+		size_t tot = (amr_g.getGridInfoVoid(i).size(0) + 2)*
+				     (amr_g.getGridInfoVoid(i).size(1) + 2)*
+				     (amr_g.getGridInfoVoid(i).size(2) + 2) - amr_g.getGridInfoVoid(i).size();
+
+		auto & v_cl = create_vcluster();
+
+		if (v_cl.size() == 1)
+		{
+			v_cl.sum(count);
+			v_cl.execute();
+
+			BOOST_REQUIRE_EQUAL(tot,count);
+		}
+
+		bool match = true;
+		auto it2 = amr_g.getDomainIterator(i);
+
+		while (it2.isNext())
+		{
+			auto key = it2.get();
+
+			// move -x
+
+			auto key_m1 = key.move(0,-1);
+			auto key_gm1 = it2.getGKey(key_m1);
+			match &= amr_g.template get<0>(i,key_m1) == key_gm1.get(0);
+
+			// move +x
+
+			auto key_p1 = key.move(0,1);
+			auto key_gp1 = it2.getGKey(key_p1);
+			match &= amr_g.template get<0>(i,key_p1) == key_gp1.get(0);
+
+			// move -y
+
+			key_m1 = key.move(1,-1);
+			key_gm1 = it2.getGKey(key_m1);
+			match &= amr_g.template get<1>(i,key_m1) == key_gm1.get(1);
+
+			// move +y
+
+			key_p1 = key.move(1,1);
+			key_gp1 = it2.getGKey(key_p1);
+			match &= amr_g.template get<1>(i,key_p1) == key_gp1.get(1);
+
+			// move -z
+
+			key_m1 = key.move(2,-1);
+			key_gm1 = it2.getGKey(key_m1);
+			match &= amr_g.template get<2>(i,key_m1) == key_gm1.get(2);
+
+			// move +z
+
+			key_p1 = key.move(2,1);
+			key_gp1 = it2.getGKey(key_p1);
+			match &= amr_g.template get<2>(i,key_p1) == key_gp1.get(2);
+
+			++it2;
+		}
+
+		BOOST_REQUIRE_EQUAL(match,true);
+	}
+}
+
+
+
+
 template <typename> struct Debug;
 
 BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test )
@@ -336,6 +449,32 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_test )
 	Test3D_amr_create_levels(amr_g2,domain3,k,4);
 }
 
+BOOST_AUTO_TEST_CASE( grid_dist_amr_ghost_it_test )
+{
+	// Domain
+	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	long int k = 16*16*16*create_vcluster().getProcessingUnits();
+	k = std::pow(k, 1/3.);
+
+	Ghost<3,long int> g(1);
+	grid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g(domain3,g);
+
+	Test3D_amr_ghost_it(amr_g,domain3,k,4);
+
+	sgrid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g2(domain3,g);
+
+	Test3D_amr_ghost_it(amr_g2,domain3,k,4);
+
+	for (size_t i = 0 ; i < amr_g2.getNLvl() ; i++)
+	{BOOST_REQUIRE(amr_g2.size_inserted(i) != 0ul);}
+
+	amr_g2.clear();
+
+	for (size_t i = 0 ; i < amr_g2.getNLvl() ; i++)
+	{BOOST_REQUIRE_EQUAL(amr_g2.size_inserted(i),0ul);}
+}
+
 
 BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test_low_res )
 {
@@ -352,6 +491,39 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test_low_res )
 	sgrid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g2(domain3,g);
 
 	Test3D_amr_child_parent_get(amr_g2,domain3,k,4);
+}
+
+BOOST_AUTO_TEST_CASE( grid_dist_amr_test_background_value )
+{
+	// Domain
+	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	Ghost<3,long int> g(1);
+
+	sgrid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g2(domain3,g);
+
+	size_t g_sz[3] = {4,4,4};
+
+	amr_g2.initLevels(4,g_sz);
+
+	aggregate<long int,long int,long int> bck;
+	bck.get<0>() = -57;
+	bck.get<1>() = -90;
+	bck.get<2>() = -123;
+
+	amr_g2.setBackgroundValue(bck);
+
+	// Get a non existent point to check that
+	// the background value work
+
+	grid_dist_key_dx<3> key(0,grid_key_dx<3>({0,0,0}));
+	long int bck0 = amr_g2.get<0>(2,key);
+	BOOST_REQUIRE_EQUAL(bck0,-57);
+	long int bck1 = amr_g2.get<1>(2,key);
+	BOOST_REQUIRE_EQUAL(bck1,-90);
+	long int bck2 = amr_g2.get<2>(2,key);
+	BOOST_REQUIRE_EQUAL(bck2,-123);
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()
