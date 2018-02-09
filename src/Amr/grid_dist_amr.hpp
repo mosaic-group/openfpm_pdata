@@ -67,6 +67,9 @@ class grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,Decomposition,Memory,device_grid>
 	//! Moving offsets
 	openfpm::vector<openfpm::vector<offset_mv<dim>>> mv_off;
 
+	// background level
+	T bck;
+
 	/*! \brief Initialize the others levels
 	 *
 	 * \param n_lvl number of levels
@@ -81,6 +84,7 @@ class grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,Decomposition,Memory,device_grid>
 			{g_sz_lvl[j] = (g_sz_lvl[j]-1)*2 + 1;}
 
 			gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(gd_array.get(0).getDecomposition(),g_sz_lvl,g_int));
+			gd_array.last().setBackgroundValue(bck);
 		}
 
 		// Here we calculate the offset to move one level up and one level down
@@ -528,6 +532,8 @@ public:
 	{
 		for (size_t i = 0 ; i < getNLvl() ; i++)
 		{gd_array.get(i).setBackgroundValue(bv);}
+
+		meta_copy<T>::meta_copy_(bv,bck);
 	}
 
 	/*! \brief delete all the points in the grid

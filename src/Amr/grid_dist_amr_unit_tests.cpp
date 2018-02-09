@@ -524,6 +524,17 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_test_background_value )
 	long int bck2 = amr_g2.get<2>(2,key);
 	BOOST_REQUIRE_EQUAL(bck2,-123);
 
+	// Now we insert that point and we check the subsequent point
+	amr_g2.insert<0>(2,key) = 5;
+
+	grid_dist_key_dx<3> key2(0,grid_key_dx<3>({1,0,0}));
+	bck0 = amr_g2.get<0>(2,key2);
+	BOOST_REQUIRE_EQUAL(bck0,-57);
+	bck1 = amr_g2.get<1>(2,key2);
+	BOOST_REQUIRE_EQUAL(bck1,-90);
+	bck2 = amr_g2.get<2>(2,key2);
+	BOOST_REQUIRE_EQUAL(bck2,-123);
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()
