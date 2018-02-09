@@ -548,6 +548,16 @@ public:
 		{gd_array.get(i).clear();}
 	}
 
+	/*! \brief Get Decomposition
+	 *
+	 * \return get the decomposition
+	 *
+	 */
+	const Decomposition & getDecomposition()
+	{
+		gd_array.get(0).getDecompositon();
+	}
+
 	/*! \brief Get an object containing the grid informations for a specific level
 	 *
 	 * \param lvl level
