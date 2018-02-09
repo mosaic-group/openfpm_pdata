@@ -168,7 +168,7 @@ public:
 		{g_sz_lvl[i] = g_sz[i];}
 
 		// Add the coarse level
-		gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(dec,g_sz));
+		gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(dec,g_sz,g_int));
 
 		initialize_other(n_lvl,g_sz_lvl);
 	}
@@ -555,7 +555,7 @@ public:
 	 */
 	const Decomposition & getDecomposition()
 	{
-		gd_array.get(0).getDecompositon();
+		gd_array.get(0).getDecomposition();
 	}
 
 	/*! \brief Get an object containing the grid informations for a specific level
