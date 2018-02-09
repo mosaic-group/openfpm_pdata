@@ -555,7 +555,7 @@ public:
 	 */
 	const Decomposition & getDecomposition()
 	{
-		gd_array.get(0).getDecomposition();
+		return gd_array.get(0).getDecomposition();
 	}
 
 	/*! \brief Get an object containing the grid informations for a specific level
