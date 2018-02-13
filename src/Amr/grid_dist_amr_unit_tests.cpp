@@ -535,6 +535,16 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_test_background_value )
 	bck2 = amr_g2.get<2>(2,key2);
 	BOOST_REQUIRE_EQUAL(bck2,-123);
 
+	auto & g_dist_lvl2 = amr_g2.getDistGrid(2);
+	g_dist_lvl2.get_loc_grid(0).internal_clear_cache();
+
+	bck0 = amr_g2.get<0>(2,key2);
+	BOOST_REQUIRE_EQUAL(bck0,-57);
+	bck1 = amr_g2.get<1>(2,key2);
+	BOOST_REQUIRE_EQUAL(bck1,-90);
+	bck2 = amr_g2.get<2>(2,key2);
+	BOOST_REQUIRE_EQUAL(bck2,-123);
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()

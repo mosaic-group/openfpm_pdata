@@ -72,7 +72,7 @@ class grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,Decomposition,Memory,device_grid>
 
 	/*! \brief Initialize the others levels
 	 *
-	 * \param n_lvl number of levels
+	 * \param n_grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>lvl number of levels
 	 * \param g_sz_lvl grid size on each level
 	 *
 	 */
@@ -453,8 +453,19 @@ public:
 
 	//////////////////////////////////////
 
-	//////////////////// Remove functions
+	/*! \brief Get the internal distributed grid
+	 *
+	 * \param lvl level
+	 *
+	 * \return the internal distributed grid
+	 *
+	 */
+	grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & getDistGrid(size_t lvl)
+	{
+		return gd_array.get(lvl);
+	}
 
+	//////////////////// Remove functions
 
 	/*! \brief Remove a grid point (this function make sense only in case of
 	 *         sparse grid)
