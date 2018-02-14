@@ -65,7 +65,6 @@ echo "$base" > install_dir
 
 # Needed for build library
 AC_PROG_RANLIB
-AM_PROG_AR
 
 # Checks for programs.
 AC_PROG_CXX
