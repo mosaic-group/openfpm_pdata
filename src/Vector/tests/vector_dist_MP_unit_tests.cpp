@@ -5,10 +5,12 @@
  *      Author: i-bird
  */
 
-#ifndef SRC_VECTOR_VECTOR_DIST_MP_UNIT_TESTS_HPP_
-#define SRC_VECTOR_VECTOR_DIST_MP_UNIT_TESTS_HPP_
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 
 #include "Vector/vector_dist_multiphase_functions.hpp"
+#include "VCluster/VCluster.hpp"
+#include "Vector/vector_dist.hpp"
 
 BOOST_AUTO_TEST_SUITE( vector_dist_multiphase_test )
 
@@ -426,4 +428,3 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_sym_test )
 
 BOOST_AUTO_TEST_SUITE_END()
 
-#endif /* SRC_VECTOR_VECTOR_DIST_MP_UNIT_TESTS_HPP_ */

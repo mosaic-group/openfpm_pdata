@@ -1,6 +1,3 @@
-#ifndef GRID_DIST_UNIT_TEST_HPP
-#define GRID_DIST_UNIT_TEST_HPP
-
 #define BOOST_TEST_DYN_LINK
 #include <boost/test/unit_test.hpp>
 
@@ -8,14 +5,10 @@
 #include "grid_dist_id.hpp"
 #include "data_type/aggregate.hpp"
 
+extern void print_test_v(std::string test, size_t sz);
 
 BOOST_AUTO_TEST_SUITE( grid_dist_id_test )
 
-void print_test(std::string test, size_t sz)
-{
-	if (create_vcluster().getProcessUnitID() == 0)
-		std::cout << test << " " << sz << "\n";
-}
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter3D_test)
 {
@@ -38,7 +31,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter3D_test)
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 21;
 
-	print_test( "Testing 3D grid converter k<=",k);
+	print_test_v( "Testing 3D grid converter k<=",k);
 
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
@@ -166,7 +159,7 @@ void Test2D(const Box<2,float> & domain, long int k)
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 21;
 
-	print_test( "Testing 2D grid k<=",k);
+	print_test_v( "Testing 2D grid k<=",k);
 
 	// 2D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
@@ -287,7 +280,7 @@ void Test1D(const Box<1,float> & domain, long int k)
 	if (v_cl.getProcessingUnits() > 48)
 		return;
 
-	print_test( "Testing 1D grid k<=",k);
+	print_test_v( "Testing 1D grid k<=",k);
 
 	// 1D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
@@ -404,7 +397,7 @@ void Test3D_sub(const Box<3,float> & domain, long int k)
 	if (create_vcluster().getProcessingUnits() > 32)
 		return;
 
-	print_test( "Testing 3D grid sub k<=",k);
+	print_test_v( "Testing 3D grid sub k<=",k);
 
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
@@ -513,7 +506,7 @@ void Test3D(const Box<3,float> & domain, long int k)
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 21;
 
-	print_test( "Testing 3D grid k<=",k);
+	print_test_v( "Testing 3D grid k<=",k);
 
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
@@ -626,7 +619,7 @@ void Test3D_gg(const Box<3,float> & domain, long int k, long int gk)
 	if (create_vcluster().getProcessingUnits() > 32)
 		return;
 
-	print_test( "Testing 3D grid k<=",k);
+	print_test_v( "Testing 3D grid k<=",k);
 
 	// 3D test
 	for ( ; k > 64 ; k /= 2 )
@@ -677,7 +670,7 @@ void Test3D_domain(const Box<3,float> & domain, long int k, const periodicity<3>
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 21;
 
-	print_test( "Testing 3D grid shift domain k<=",k);
+	print_test_v( "Testing 3D grid shift domain k<=",k);
 
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
@@ -782,7 +775,7 @@ void Test2D_complex(const Box<2,float> & domain, long int k)
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 21;
 
-	print_test( "Testing 2D complex grid k<=",k);
+	print_test_v( "Testing 2D complex grid k<=",k);
 
 	// 2D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
@@ -946,7 +939,7 @@ void Test3D_complex(const Box<3,float> & domain, long int k)
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 21;
 
-	print_test( "Testing 3D grid complex k<=",k);
+	print_test_v( "Testing 3D grid complex k<=",k);
 
 	// 2D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
@@ -1112,7 +1105,7 @@ void Test3D_dup(const Box<3,float> & domain, long int k)
 	if ( v_cl.getProcessingUnits() > 32 )
 		return;
 
-	print_test( "Testing 3D duplicate topology complex k<=",k);
+	print_test_v( "Testing 3D duplicate topology complex k<=",k);
 
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
@@ -1215,7 +1208,7 @@ void Test3D_periodic(const Box<3,float> & domain, long int k)
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 21;
 
-	print_test( "Testing grid periodic k<=",k);
+	print_test_v( "Testing grid periodic k<=",k);
 
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
@@ -1372,7 +1365,7 @@ void Test3D_periodic_put(const Box<3,float> & domain, long int k)
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 21;
 
-	print_test( "Testing grid periodic put k<=",k);
+	print_test_v( "Testing grid periodic put k<=",k);
 
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
@@ -1492,7 +1485,7 @@ void Test_grid_copy(const Box<3,float> & domain, long int k)
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 21;
 
-	print_test( "Testing grid copy k<=",k);
+	print_test_v( "Testing grid copy k<=",k);
 
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
@@ -1983,4 +1976,3 @@ BOOST_AUTO_TEST_CASE ( grid_overflow_round_off_error )
 
 BOOST_AUTO_TEST_SUITE_END()
 
-#endif

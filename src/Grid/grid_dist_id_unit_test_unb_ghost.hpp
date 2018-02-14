@@ -17,7 +17,7 @@ void Test3D_unb_ghost(const Box<3,float> & domain, long int k)
 	if (create_vcluster().getProcessingUnits() > 48)
 		return;
 
-	print_test( "Testing 3D grid unbound ghost k<=",k);
+	print_test_v( "Testing 3D grid unbound ghost k<=",k);
 
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
@@ -132,7 +132,7 @@ void Test3D_unb_ghost_periodic(const Box<3,float> & domain, long int k)
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 21;
 
-	print_test( "Testing grid periodic unbound ghost k<=",k);
+	print_test_v( "Testing grid periodic unbound ghost k<=",k);
 
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )

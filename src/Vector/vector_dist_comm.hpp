@@ -321,7 +321,7 @@ class vector_dist_comm
 				{
 					if (box_f.get(i).get(j).isInside(v_pos.get(key)) == true)
 					{
-						size_t lin_id = box_cmb.get(i).lin();
+						size_t lin_id = dec.convertShift(box_cmb.get(i));
 
 						o_part_loc.add();
 						o_part_loc.template get<0>(o_part_loc.size()-1) = key;
@@ -444,7 +444,7 @@ class vector_dist_comm
 			// Buffer must retained and survive the destruction of the
 			// vector
 			if (hsmem.get(i).ref() == 0)
-				hsmem.get(i).incRef();
+			{hsmem.get(i).incRef();}
 
 			// Set the memory for retain the send buffer
 			g_pos_send.get(i).setMemory(hsmem.get(i));
@@ -932,27 +932,15 @@ public:
 			cl_param_calculateSym<dim,St>(box,cd_sm,g,pad);
 
 			for (size_t i = 0 ; i < dim ; i++)
-				div[i] = cd_sm.getDiv()[i] - 2*pad;
+			{div[i] = cd_sm.getDiv()[i] - 2*pad;}
+
+			// Create the sub-domains
+			dec.setParameters(div, box, bc, g, gdist);
 		}
 		else
 		{
-			// Create a valid decomposition of the space
-			// Get the number of processor and calculate the number of sub-domain
-			// for decomposition
-			size_t n_proc = v_cl.getProcessingUnits();
-			size_t n_sub = n_proc * getDecompositionGranularity();
-
-			// Calculate the maximum number (before merging) of sub-domain on
-			// each dimension
-
-			for (size_t i = 0; i < dim; i++)
-			{
-				div[i] = openfpm::math::round_big_2(pow(n_sub, 1.0 / dim));
-			}
+			dec.setGoodParameters(box, bc, g, getDecompositionGranularity(), gdist);
 		}
-
-		// Create the sub-domains
-		dec.setParameters(div, box, bc, g, gdist);
 		dec.decompose();
 	}
 

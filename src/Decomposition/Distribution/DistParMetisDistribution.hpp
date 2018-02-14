@@ -272,9 +272,7 @@ public:
 
 	/*! \brief return number of moved vertices in all iterations so far
 	 *
-	 * \param id vertex id
-	 *
-	 * \return vector with x, y, z
+	 * \return number of moved vertices
 	 *
 	 */
 	size_t getMaxMovedV()

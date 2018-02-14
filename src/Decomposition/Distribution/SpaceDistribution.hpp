@@ -10,6 +10,7 @@
 
 #include "util/mathutil.hpp"
 #include "NN/CellList/CellDecomposer.hpp"
+#include "Grid/grid_key_dx_iterator_hilbert.hpp"
 
 /*! \brief Class that distribute sub-sub-domains across processors using an hilbert curve
  *         to divide the space
@@ -63,6 +64,7 @@ public:
 	 *
 	 */
 	SpaceDistribution(SpaceDistribution<dim,T> && pm)
+	:v_cl(pm.v_cl)
 	{
 		this->operator=(pm);
 	}

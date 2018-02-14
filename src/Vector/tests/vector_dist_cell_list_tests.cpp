@@ -6,10 +6,14 @@
  */
 
 #include "config.h"
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
+#include "Point_test.hpp"
+#include "Vector/performance/vector_dist_performance_common.hpp"
+#include "Vector/vector_dist.hpp"
 
-#ifndef SRC_VECTOR_VECTOR_DIST_CELL_LIST_TESTS_HPP_
-#define SRC_VECTOR_VECTOR_DIST_CELL_LIST_TESTS_HPP_
-
+extern void print_test_v(std::string test, size_t sz);
+extern long int decrement(long int k, long int step);
 
 ///////////////////////// test hilb ///////////////////////////////
 
@@ -128,7 +132,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 
 		std::string str("Testing " + std::to_string(dim) + "D vector's forces (random vs hilb celllist) k<=");
 
-		vector_dist_test::print_test_v(str,k);
+		print_test_v(str,k);
 
 		//For different number of particles
 		for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2 )
@@ -252,7 +256,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 
 		std::string str("Testing " + std::to_string(dim) + "D vector's forces (random vs reorder) k<=");
 
-		vector_dist_test::print_test_v(str,k);
+		print_test_v(str,k);
 
 		//For different number of particles
 		for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2 )
@@ -366,7 +370,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
-	print_test("Testing 3D periodic vector symmetric cell-list k=",k);
+	print_test_v("Testing 3D periodic vector symmetric cell-list k=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list k=" << k );
 
 	Box<3,float> box({-L,-L,-L},{L,L,L});
@@ -575,7 +579,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
-	print_test("Testing 3D periodic vector symmetric crs cell-list k=",k);
+	print_test_v("Testing 3D periodic vector symmetric crs cell-list k=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric crs cell-list k=" << k );
 
 	Box<3,float> box({-L,-L,-L},{L,L,L});
@@ -803,7 +807,7 @@ void test_vd_symmetric_verlet_list()
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
-	print_test("Testing 3D periodic vector symmetric cell-list k=",k);
+	print_test_v("Testing 3D periodic vector symmetric cell-list k=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric verlet-list k=" << k );
 
 	Box<3,float> box({-L,-L,-L},{L,L,L});
@@ -1012,7 +1016,7 @@ void vector_sym_verlet_list_nb()
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
-	print_test("Testing 3D periodic vector symmetric cell-list no bottom k=",k);
+	print_test_v("Testing 3D periodic vector symmetric cell-list no bottom k=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list no bottom k=" << k );
 
 	Box<3,float> box({-L,-L,-L},{L,L,L});
@@ -1424,7 +1428,7 @@ void test_csr_verlet_list()
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
-	print_test("Testing 3D periodic vector symmetric cell-list k=",k);
+	print_test_v("Testing 3D periodic vector symmetric cell-list k=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list k=" << k );
 
 	Box<3,float> box({-L,-L,-L},{L,L,L});
@@ -1484,7 +1488,7 @@ void test_csr_verlet_list_override()
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
-	print_test("Testing 3D periodic vector symmetric cell-list k=",k);
+	print_test_v("Testing 3D periodic vector symmetric cell-list k=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list k=" << k );
 
 	Box<3,float> box({-L,-L,-L},{L,L,L});
@@ -1574,7 +1578,7 @@ void test_vd_symmetric_crs_verlet()
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
-	print_test("Testing 3D periodic vector symmetric cell-list k=",k);
+	print_test_v("Testing 3D periodic vector symmetric cell-list k=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list k=" << k );
 
 	Box<3,float> box({-L,-L,-L},{L,L,L});
@@ -1671,7 +1675,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_checking_unloaded_processors )
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
-	print_test("Testing 3D periodic vector symmetric cell-list (unload processors) k=",k);
+	print_test_v("Testing 3D periodic vector symmetric cell-list (unload processors) k=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list (unload processors) k=" << k );
 
 	Box<3,float> box({0,0,0},{L,L,L});
@@ -1760,7 +1764,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_list_multi_type )
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
-	print_test("Testing 3D periodic vector symmetric cell-list k=",k);
+	print_test_v("Testing 3D periodic vector symmetric cell-list k=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list k=" << k );
 
 	Box<3,float> box({-L,-L,-L},{L,L,L});
@@ -1850,4 +1854,3 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_list_multi_type )
 	BOOST_REQUIRE_EQUAL(ret,true);
 }
 
-#endif /* SRC_VECTOR_VECTOR_DIST_CELL_LIST_TESTS_HPP_ */

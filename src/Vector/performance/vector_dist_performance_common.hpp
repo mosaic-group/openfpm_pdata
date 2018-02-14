@@ -8,6 +8,7 @@
 #ifndef SRC_VECTOR_PERFORMANCE_VECTOR_DIST_PERFORMANCE_COMMON_HPP_
 #define SRC_VECTOR_PERFORMANCE_VECTOR_DIST_PERFORMANCE_COMMON_HPP_
 
+#include "Vector/vector_dist.hpp"
 
 /*! \brief Calculate and put particles' forces
  *

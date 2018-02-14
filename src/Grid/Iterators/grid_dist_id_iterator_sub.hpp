@@ -302,7 +302,7 @@ class grid_dist_iterator_sub
 										int sx = uhi[0]+1;\
 										int sxsy = (uhi[0]+1)*(uhi[1]+1);
 
-#define ITERATE_3D_M(n_pt)				int i = lo[2];\
+#define ITERATE_3D_M(n_pt)			int i = lo[2];\
 									for ( ; i <= hi[2] ; i+=1)\
 									{\
 										int j = lo[1];\

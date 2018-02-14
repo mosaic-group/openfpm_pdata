@@ -304,6 +304,7 @@ public:
 	 *
 	 */
 	ParMetisDistribution(ParMetisDistribution<dim,T> && pm)
+	:v_cl(pm.v_cl)
 	{
 		this->operator=(pm);
 	}

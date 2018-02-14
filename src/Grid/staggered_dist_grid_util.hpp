@@ -147,7 +147,11 @@ struct extends<T[N1][N2][N3]>
 		return N1 * N2 * N3;
 	}
 
-	//! number of indexes
+	/*! number of indexes
+	 *
+	 * \return 3
+	 *
+	 */
 	static inline size_t dim()
 	{
 		return 3;
@@ -164,7 +168,11 @@ struct extends<T[N1][N2][N3][N4]>
 		return N1 * N2 * N3 * N4;
 	}
 
-	//! number of indexes
+	/*! number of indexes
+	 *
+	 * \return 4
+	 *
+	 */
 	static inline size_t dim()
 	{
 		return 4;
@@ -181,7 +189,11 @@ struct extends<T[N1][N2][N3][N4][N5]>
 		return N1 * N2 * N3 * N4 * N5;
 	}
 
-	//! number of indexes
+	/*! number of indexes
+	 *
+	 * \return 5
+	 *
+	 */
 	static inline size_t dim()
 	{
 		return 5;
@@ -198,7 +210,11 @@ struct extends<T[N1][N2][N3][N4][N5][N6]>
 		return N1 * N2 * N3 * N4 * N5 * N6;
 	}
 
-	//! number of indexes
+	/*! number of indexes
+	 *
+	 * \return 6
+	 *
+	 */
 	static inline size_t dim()
 	{
 		return 6;
@@ -215,7 +231,11 @@ struct extends<T[N1][N2][N3][N4][N5][N6][N7]>
 		return N1 * N2 * N3 * N4 * N5 * N6 * N7;
 	}
 
-	//! number of indexes
+	/*! number of indexes
+	 *
+	 * \return 7
+	 *
+	 */
 	static inline size_t dim()
 	{
 		return 7;
@@ -226,13 +246,21 @@ struct extends<T[N1][N2][N3][N4][N5][N6][N7]>
 template<typename T,size_t N1,size_t N2,size_t N3,size_t N4,size_t N5, size_t N6, size_t N7, size_t N8>
 struct extends<T[N1][N2][N3][N4][N5][N6][N7][N8]>
 {
-	//! number of elements
+	/*! number of elements
+	 *
+	 * \return the number of elements as N1*N2*N3*.........
+	 *
+	 */
 	static inline size_t mul()
 	{
 		return N1 * N2 * N3 * N4 * N5 * N6 * N7 * N8;
 	}
 
-	//! number of indexes
+	/*! number of indexes
+	 *
+	 * \return 8
+	 *
+	 */
 	static inline size_t dim()
 	{
 		return 8;
@@ -243,13 +271,21 @@ struct extends<T[N1][N2][N3][N4][N5][N6][N7][N8]>
 template<typename T,size_t N1,size_t N2,size_t N3,size_t N4,size_t N5, size_t N6, size_t N7, size_t N8, size_t N9>
 struct extends<T[N1][N2][N3][N4][N5][N6][N7][N8][N9]>
 {
-	//! number of elements
+	/*! number of elements
+	 *
+	 * \return the number of elements as N1*N2*N3*.........
+	 *
+	 */
 	static inline size_t mul()
 	{
 		return N1 * N2 * N3 * N4 * N5 * N6 * N7 * N8 * N9;
 	}
 
-	//! number of indexes
+	/*! number of indexes
+	 *
+	 * \return 9
+	 *
+	 */
 	static inline size_t dim()
 	{
 		return 9;
@@ -260,13 +296,21 @@ struct extends<T[N1][N2][N3][N4][N5][N6][N7][N8][N9]>
 template<typename T,size_t N1,size_t N2,size_t N3,size_t N4,size_t N5, size_t N6, size_t N7, size_t N8, size_t N9, size_t N10>
 struct extends<T[N1][N2][N3][N4][N5][N6][N7][N8][N9][N10]>
 {
-	//! number of elements
+	/*! number of elements
+	 *
+	 * \return the number of elements as N1*N2*N3*.........
+	 *
+	 */
 	static inline size_t mul()
 	{
 		return N1 * N2 * N3 * N4 * N5 * N6 * N7 * N8 * N9 * N10;
 	}
 
-	//! number of indexes
+	/*! number of indexes
+	 *
+	 * \return 10
+	 *
+	 */
 	static inline size_t dim()
 	{
 		return 10;
@@ -286,7 +330,7 @@ struct extends<T[N1][N2][N3][N4][N5][N6][N7][N8][N9][N10]>
 template<typename T>
 struct write_stag
 {
-	/*! \brieg write the staggered grid
+	/*! \brief write the staggered grid
 	 *
 	 * \tparam p_val property we are going to write
 	 * \tparam sg staggered grid type
@@ -332,7 +376,7 @@ struct write_stag
 template<typename T,size_t N1>
 struct write_stag<T[N1]>
 {
-	/*! \brieg write the staggered grid
+	/*! \brief write the staggered grid
 	 *
 	 * \tparam p_val property we are going to write
 	 * \tparam sg staggered grid type
@@ -374,7 +418,7 @@ struct write_stag<T[N1]>
 template<typename T,size_t N1,size_t N2>
 struct write_stag<T[N1][N2]>
 {
-	/*! \brieg write the staggered grid
+	/*! \brief write the staggered grid
 	 *
 	 * \tparam p_val property we are going to write
 	 * \tparam sg staggered grid type
@@ -431,15 +475,26 @@ struct write_stag<T[N1][N2]>
 template<unsigned int dim, typename v, bool has_pM = has_posMask<v>::value>
 class stag_set_position
 {
+	//! vector containing the position of the properties in the cells (staggered properties are staggered)
+	// within the cell
 	openfpm::vector<comb<dim>> (& pos_prp)[boost::fusion::result_of::size<v>::type::value];
 
 public:
 
+	/*! \brief Constructor
+	 *
+	 * \param vector of the staggered position (It is going to be filled by this class)
+	 *
+	 */
 	stag_set_position( openfpm::vector<comb<dim>> (& pos_prp)[boost::fusion::result_of::size<v>::type::value])
 	:pos_prp(pos_prp)
 	{}
 
-	//! It call the copy function for each property
+	/*! It calculate the staggered position for every property
+	 *
+	 * \param t property
+	 *
+	 */
 	template<typename T>
 	void operator()(T& t) const
 	{
@@ -519,15 +574,28 @@ template<unsigned int dim, typename v>
 class stag_set_position<dim,v,false>
 {
 private:
+
+	//! vector containing the position of the properties in the cells (staggered properties are staggered)
+	// within the cell
 	openfpm::vector<comb<dim>> (& pos_prp)[boost::fusion::result_of::size<v>::type::value];
 
 
 public:
+
+	/*! \brief Constructor
+	 *
+	 * \param vector of the staggered position (It is going to be filled by this class)
+	 *
+	 */
 	stag_set_position( openfpm::vector<comb<dim>> (& pos_prp)[boost::fusion::result_of::size<v>::type::value])
 	:pos_prp(pos_prp)
 	{}
 
-	//! It call the copy function for each property
+	/*! It calculate the staggered position for every property
+	 *
+	 * \param t property
+	 *
+	 */
 	template<typename T>
 	void operator()(T& t) const
 	{

@@ -35,6 +35,8 @@
 #include "NN/CellList/ParticleIt_Cells.hpp"
 #include "NN/CellList/ProcKeys.hpp"
 
+#define DEC_GRAN(gr) ((size_t)gr << 32)
+
 #define VECTOR_DIST_ERROR_OBJECT std::runtime_error("Runtime vector distributed error");
 
 #ifdef SE_CLASS3
@@ -50,8 +52,6 @@
 
 #define NO_ID false
 #define ID true
-
-#define DEC_GRAN(gr) ((size_t)gr << 32)
 
 // Perform a ghost get or a ghost put
 #define GET	1

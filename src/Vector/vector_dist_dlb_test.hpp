@@ -8,6 +8,9 @@
 #ifndef SRC_VECTOR_VECTOR_DIST_DLB_TEST_HPP_
 #define SRC_VECTOR_VECTOR_DIST_DLB_TEST_HPP_
 
+#include "DLB/LB_Model.hpp"
+#include "vector_dist.hpp"
+
 BOOST_AUTO_TEST_SUITE( vector_dist_dlb_test )
 
 template<typename vector_type>

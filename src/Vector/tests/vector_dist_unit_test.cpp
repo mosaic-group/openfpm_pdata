@@ -5,15 +5,51 @@
  *      Author: Pietro Incardona
  */
 
-#ifndef VECTOR_DIST_UNIT_TEST_HPP_
-#define VECTOR_DIST_UNIT_TEST_HPP_
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 
 #include "config.h"
 
 #include <random>
 #include "Vector/vector_dist.hpp"
 #include "data_type/aggregate.hpp"
+#include "vector_dist_util_unit_tests.hpp"
+#include "Point_test.hpp"
 #include "Vector/performance/vector_dist_performance_common.hpp"
+
+/*! \brief Print a string about the test
+ *
+ * \param test string to print
+ * \param sz size
+ *
+ */
+void print_test_v(std::string test, size_t sz)
+{
+	if (create_vcluster().getProcessUnitID() == 0)
+		std::cout << test << " " << sz << "\n";
+}
+
+/*! \brief Get next testing step decrementing the size
+ *
+ * \param k actual size
+ * \param step
+ *
+ * \return the next step
+ *
+ */
+long int decrement(long int k, long int step)
+{
+	if (k <= 32)
+	{
+		return 1;
+	}
+	else if (k - 2*step+1 <= 0)
+	{
+		return k - 32;
+	}
+	else
+		return step;
+}
 
 /*! \brief Count the total number of particles
  *
@@ -50,48 +86,6 @@ template<unsigned int dim, template <typename> class layout> size_t total_n_part
 	return cnt;
 }
 
-/*! \brief Count local and non local
- *
- * \param vd distributed vector
- * \param it iterator
- * \param bc boundary conditions
- * \param box domain box
- * \param dom_ext domain + ghost box
- * \param l_cnt local particles counter
- * \param nl_cnt non local particles counter
- * \param n_out out of domain + ghost particles counter
- *
- */
-template<unsigned int dim,typename vector_dist> inline void count_local_n_local(vector_dist & vd, vector_dist_iterator & it, size_t (& bc)[dim] , Box<dim,float> & box, Box<dim,float> & dom_ext, size_t & l_cnt, size_t & nl_cnt, size_t & n_out)
-{
-	const CartDecomposition<dim,float> & ct = vd.getDecomposition();
-
-	while (it.isNext())
-	{
-		auto key = it.get();
-		// Check if it is in the domain
-		if (box.isInsideNP(vd.getPos(key)) == true)
-		{
-			// Check if local
-			if (ct.isLocalBC(vd.getPos(key),bc) == true)
-				l_cnt++;
-			else
-				nl_cnt++;
-		}
-		else
-		{
-			nl_cnt++;
-		}
-
-		Point<dim,float> xp = vd.getPos(key);
-
-		// Check that all particles are inside the Domain + Ghost part
-		if (dom_ext.isInside(xp) == false)
-				n_out++;
-
-		++it;
-	}
-}
 
 BOOST_AUTO_TEST_SUITE( vector_dist_test )
 
@@ -292,25 +286,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_inte )
 	Test2D_ghost<vector>(box2);
 }
 
-void print_test_v(std::string test, size_t sz)
-{
-	if (create_vcluster().getProcessUnitID() == 0)
-		std::cout << test << " " << sz << "\n";
-}
 
-long int decrement(long int k, long int step)
-{
-	if (k <= 32)
-	{
-		return 1;
-	}
-	else if (k - 2*step+1 <= 0)
-	{
-		return k - 32;
-	}
-	else
-		return step;
-}
 
 BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 {
@@ -1892,10 +1868,6 @@ BOOST_AUTO_TEST_CASE( vector_of_vector_dist )
 }
 
 
-#include "vector_dist_cell_list_tests.hpp"
-#include "vector_dist_NN_tests.hpp"
-#include "vector_dist_complex_prp_unit_test.hpp"
 
 BOOST_AUTO_TEST_SUITE_END()
 
-#endif /* VECTOR_DIST_UNIT_TEST_HPP_ */

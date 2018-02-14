@@ -5,8 +5,13 @@
  *      Author: i-bird
  */
 
-#ifndef SRC_VECTOR_VECTOR_DIST_NN_TESTS_HPP_
-#define SRC_VECTOR_VECTOR_DIST_NN_TESTS_HPP_
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
+
+#include "VCluster/VCluster.hpp"
+#include "Vector/vector_dist.hpp"
+
+extern void print_test_v(std::string test, size_t sz);
 
 template<typename VerletList>
 void test_full_nn(long int k)
@@ -25,7 +30,7 @@ void test_full_nn(long int k)
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
-	print_test("Testing 3D full NN search k=",k);
+	print_test_v("Testing 3D full NN search k=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D full NN search k=" << k );
 
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
@@ -248,7 +253,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_iteration )
 
     long int k = 750 * v_cl.getProcessingUnits();
 
-	print_test("Testing 3D particle cell iterator=",k);
+	print_test_v("Testing 3D particle cell iterator=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D full NN search k=" << k );
 
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
@@ -314,4 +319,3 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_iteration )
 	BOOST_REQUIRE_EQUAL((long int)count,k);
 }
 
-#endif /* SRC_VECTOR_VECTOR_DIST_NN_TESTS_HPP_ */

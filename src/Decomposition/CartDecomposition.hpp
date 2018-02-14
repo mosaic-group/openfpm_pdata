@@ -41,6 +41,50 @@
 
 #define CARTDEC_ERROR 2000lu
 
+/*! \brief It spread the sub-sub-domain on a regular cartesian grid of size dim
+ *
+ * \warning this function only guarantee that the division on each direction is
+ *          2^n with some n and does not guarantee that the number of
+ *          sub-sub-domain is preserved
+ *
+ * \param div number of division on each direction as output
+ * \param n_sub number of sub-domain
+ * \param dim_r dimension reduction
+ *
+ */
+template<unsigned int dim> static void nsub_to_div2(size_t (& div)[dim], size_t n_sub, size_t dim_r)
+{
+	for (size_t i = 0; i < dim; i++)
+	{
+		if (i < dim_r)
+		{div[i] = openfpm::math::round_big_2(pow(n_sub, 1.0 / dim_r));}
+		else
+		{div[i] = 1;}
+	}
+}
+
+/*! \brief It spread the sub-sub-domain on a regular cartesian grid of size dim
+ *
+ * \warning this function only guarantee that the division on each direction is
+ *          2^n with some n and does not guarantee that the number of
+ *          sub-sub-domain is preserved
+ *
+ * \param div number of division on each direction as output
+ * \param n_sub number of sub-domain
+ * \param dim_r dimension reduction
+ *
+ */
+template<unsigned int dim> static void nsub_to_div(size_t (& div)[dim], size_t n_sub, size_t dim_r)
+{
+	for (size_t i = 0; i < dim; i++)
+	{
+		if (i < dim_r)
+		{div[i] = std::floor(pow(n_sub, 1.0 / dim_r));}
+		else
+		{div[i] = 1;}
+	}
+}
+
 #define COMPUTE_SKIN_SUB 1
 
 /**
@@ -352,13 +396,13 @@ public:
 			// calculate the sub-divisions
 			size_t div[dim];
 			for (size_t i = 0; i < dim; i++)
-				div[i] = (size_t) ((bound.getHigh(i) - bound.getLow(i)) / cd.getCellBox().getP2()[i]);
+			{div[i] = (size_t) ((bound.getHigh(i) - bound.getLow(i)) / cd.getCellBox().getP2()[i]);}
 
 			// Initialize the geo_cell structure
 			ie_ghost<dim,T>::Initialize_geo_cell(bound,div);
 
 			// Initialize shift vectors
-			ie_ghost<dim,T>::generateShiftVectors(domain);
+			ie_ghost<dim,T>::generateShiftVectors(domain,bc);
 		}
 	}
 
@@ -512,9 +556,7 @@ public:
 	 \endverbatim
 
 	 *
-	 *
-	 *
-	 * \param ghost margins for each dimensions (p1 negative part) (p2 positive part)
+	 * ghost margins for each dimensions (p1 negative part) (p2 positive part)
 	 *
 	 *
 	 \verbatim
@@ -1045,6 +1087,77 @@ public:
 		}
 	}
 
+	/*! \brief Set the best parameters for the decomposition
+	 *
+	 * It based on number of processors and dimensionality find a "good" parameter setting
+	 *
+	 * \param domain_ domain to decompose
+	 * \param bc boundary conditions
+	 * \param ghost Ghost size
+	 * \param sec_dist Distribution grid. The distribution grid help in reducing the underlying
+	 *                 distribution problem simplifying decomposition problem. This is done in order to
+	 *                 reduce the load/balancing dynamic load balancing problem
+	 *
+	 * \param dec_gran number of sub-sub-domain for each processor
+	 *
+	 */
+	void setGoodParameters(::Box<dim,T> domain_,
+						   const size_t (& bc)[dim],
+						   const Ghost<dim,T> & ghost,
+						   size_t dec_gran,
+						   const grid_sm<dim,void> & sec_dist = grid_sm<dim,void>())
+	{
+		size_t div[dim];
+
+		// Create a valid decomposition of the space
+		// Get the number of processor and calculate the number of sub-domain
+		// for decomposition
+		size_t n_proc = v_cl.getProcessingUnits();
+		size_t n_sub = n_proc * dec_gran;
+
+		// Calculate the maximum number (before merging) of sub-domain on
+		// each dimension
+
+		nsub_to_div2(div,n_sub,dim);
+
+/*		for (size_t i = 0; i < dim; i++)
+		{
+			div[i] = openfpm::math::round_big_2(pow(n_sub, 1.0 / dim));
+		}*/
+
+		if (dim > 3)
+		{
+			long int dim_r = dim-1;
+			do
+			{
+				// Check for adjustment
+				size_t tot_size = 1;
+				for (size_t i = 0 ; i < dim ; i++)
+				{tot_size *= div[i];}
+
+				// the granularity is too coarse increase the divisions
+				if (tot_size / n_proc > 0.75*dec_gran )
+				{break;}
+
+				nsub_to_div(div,n_sub,dim_r);
+
+				dim_r--;
+			} while(dim_r > 0);
+		}
+
+		setParameters(div,domain_,bc,ghost,sec_dist);
+	}
+
+	/*! \brief return the parameters of the decomposition
+	 *
+	 * \param div_ number of divisions in each dimension
+	 *
+	 */
+	void getParameters(size_t (& div_)[dim])
+	{
+		for (size_t i = 0 ; i < dim ; i++)
+		{div_[i] = this->gr.size(i);}
+	}
 
 	/*! \brief Set the parameter of the decomposition
 	 *
@@ -1057,7 +1170,11 @@ public:
 	 *                 reduce the load/balancing dynamic load balancing problem
 	 *
 	 */
-	void setParameters(const size_t (& div_)[dim], ::Box<dim,T> domain_, const size_t (& bc)[dim] ,const Ghost<dim,T> & ghost, const grid_sm<dim,void> & sec_dist = grid_sm<dim,void>())
+	void setParameters(const size_t (& div_)[dim],
+					   ::Box<dim,T> domain_,
+						const size_t (& bc)[dim],
+						const Ghost<dim,T> & ghost,
+						const grid_sm<dim,void> & sec_dist = grid_sm<dim,void>())
 	{
 		// set the boundary conditions
 		for (size_t i = 0 ; i < dim ; i++)

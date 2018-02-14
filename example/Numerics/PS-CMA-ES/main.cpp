@@ -1,24 +1,138 @@
 /*!
- * \page PS-CMA-ES Particle swarm CMA Evolution strategy
+ *
+ * \page PS_CMA_ES Particle swarm CMA-ES Evolution strategy
  *
  *
  * [TOC]
  *
- *
- * # Optimization # {#Opti_cma_es}
+ * # Optimization {#Opti_cma_es}
  *
  *
  * In this example we show how to code PS-CMA-ES. This is just a simple variation to the
  * CMA-ES, where you have multiple CMA-ES running. The the best solution across them is
  * used to produce a drift velocity toward that point.
  *
+ * ## Introduction {#ps_cme_es}
  *
+ * In this example we try to find the global optimum of a function. In particular we are
+ * using the function F15 from the CEC 2005 benchmark test, to validate that PS-CMA-ES work.
+ * This example contain multiple files:
+ *
+ * * f15_cec_const.hpp definitions of constants for the F15 function
+ * * f15_cec_fun.hpp the function itself
+ *
+ * The function is quite complicated and for reference please refere to the function
+ *  F15 "Hybrid Composition" in the CEC 2005 test. The function can be called with
+ *  hybrid_composition<dim>(x) where dim is the dimensionality and x is the point
+ *   where is evaluated the function. The dimensionality can go from 1 to 50.
+ *
+ * Considering to have a function \f$ f \f$ from \f$ \mathbb{R}^{dim} \f$ to \f$ \mathbb{R} \f$,
+ * the algorithm use a set of particles to find in parallel the global optimum of a function.
+ *  The algorithm rather than try to find the global optimum
+ * sampling point randomly in the space, it uses a set of particles each of them having a gaussian
+ * sampling distribution \f$ e^{\sigma \cdot x^tCx} \f$ with C a \f$ dim \cdot dim \f$ matrix.
+ * At each step for each particle p **lambda** points are sampled using the sampling
+ * distribution centered on the particle position. The covariant matrix and sigma are is subsequently
+ * adjusted to favor sampling around the best sampled points. In order to do this the algorithm
+ * need the eigen-value decomposition of \f$ C = B^{t}DB \f$ where \f$ D \f$ is a diagonal
+ * Matrix and \f$ B \f$ is the Matrix of the Eigen-vector. In order to reduce or increase
+ * the sampling area the sigma is instead used. The algorithm use the vector **path_s** to
+ * detect stagnation of the particle movement, and use **path_c**(a transfomed version of **path_s**)
+ * to refine the sampling covariant matrix from the fact that the particle is "moving" toward that
+ * direction. PS-CMA-ES is just a variation in which every **N_pos** CMA-Es steps the CMA-ES is
+ * sampling distribution and position is biased toward the best founded point across all independent
+ * CMA-ES.
+ *
+ * Explain the CMA-ES algorithm in detail is out of the purpose of this tutorial example.
+ * We will briefly go across the main step. For a full reference of the CMA-ES
+ * algoritm please refers to <a href="https://arxiv.org/abs/1604.00772">this paper</a>.
+ * While for PS-CMA-ES refers to <a href="http://mosaic.mpi-cbg.de/docs/Mueller2009a.pdf">this paper</a>.
+ *
+ *
+ * ## Inclusions {#inclusions_and_constants}
+ *
+ * In this example we use a set of particles so we will use **vector_dist**, we will use
+ * Eigen dense matrix. Because the standard dense matrix are not compatible with
+ * the vector_dist we will use **EMatrix** that are simple wrapper to Eigen::Matrix
+ * but compatible with vector_dist. Because EMatrix are compatible with all the
+ * Eigen value functions we can use them in all Eigen functions. For CMA-ES algorithm
+ * we also need Eigen-value eigen-vector decomposition and Jacobi-Rotation for the
+ * particle-swarm part.
+ *
+ * \snippet Numerics/PS-CMA-ES/main.cpp ps_cma_es_inclusion
+ *
+ * PS-CMA-ES require several properties to be stored on the particles, some has been already
+ * explained. Here we explain the others.
+ *
+ * * **Zeta** contain the lambda sampled points (before apply the covariant matrix tranformation)
+ *        so it contain points samples on a gaussian of sigma=1 centered in zero
+ *
+ * * **ord** Contain the sequrnce if we want the lambda generated points in order from the best to
+ *       the worst
+ *
+ * * **stop** If a flag that indicate that the CMA-ES reached some stop criteria
+ *
+ * * **fithist** It contain historical information about the particles to penalize them in case the
+ *       go out of boundary. It is 1:1 taken from cmaes.m (production version)
+ *       <a href="https://www.lri.fr/~hansen/cmaes_inmatlab.html">this paper</a> (or Google it)
+ *
+ * * **weight** Same concept of fithist other information to penalize particles going out of
+ *       the boundary
+ *
+ * * **validfit** Same concept of fithist other information to penalize particles going out of
+ *       the boundary
+ *
+ * * **xold** It contain the previous position of the particles used in several calculations
+ *
+ * * **last_restart** CMA-ES The CMA-ES sigma become very small the CMA-ES converged. At this point
+ *       we can do two things, one is to stop the CMA-ES, the other is to restart-it to explore
+ *       better the space. In case it restart. this parameter indicate at which iteration happen the
+ *       last restart.
+ *
+ * * **iniphase** Same concept of fithist other information to penalize particles going out of
+ *       the boundary
+ *
+ * * **xmean_st** This contain the new position of the particle it will be stored as particle position
+ *       at the end of the CMA-ES step
+ *
+ * * **xmean_st** This contain the new position of the particle in a space where we do not apply the
+ *       covariant transformation. (In practice is a weighted sum of the Zeta samples points)
+ *
+ * \snippet Numerics/PS-CMA-ES/main.cpp def_part_set
+ *
+ * ## Parameters {#ps_cma_par}
+ *
+ * CMA-ES and further PS-CMA-ES require some parameters in order to work. refers to the
+ * papers above to have a full explanation, but here is a short one
+ *
+ * * **dim** Dimensionality of the test function
+ *
+ * * **lambda** number of sample points taken at each iteration by CMA-ES
+ *              suggested to use \f$ 4+floor(3*log(dim)) \f$
+ *
+ * * **mu** only mu best points are considered to adapt the Covariant matrix
+ *
+ * * **psoWeight** How much the pso step bias the particle positions
+ *
+ * * **N_pso** Number of CMA-ES step before do a PSO step (200 give the possibility
+ *   to the CMA-ES to explore the neighborhood and narrow down at least a funnel)
+ *
+ * * **stopTolX** stop criteria for CMA-ES. When the the sampling area is small enough
+ *   stop
+ *
+ * * **StopToUpX** stop criteria is the sampling area become too big
+ *
+ * * **restart_cma** If the CMA-ES reach a stop criteria reinitialize and restart
+ *
+ * * **hist_size** size of the array fit_hist (default should be mainly fine)
  *
  */
 
+//! [ps_cma_es_inclusion]
+
 #define EIGEN_USE_LAPACKE
 #include "Vector/vector_dist.hpp"
-#include "Eigen/Dense"
+#include "DMatrix/EMatrix.hpp"
 #include <Eigen/Eigenvalues>
 #include <Eigen/Jacobi>
 #include <limits>
@@ -26,33 +140,25 @@
 #include <f15_cec_fun.hpp>
 #include <boost/math/special_functions/sign.hpp>
 
+//! [ps_cma_es_inclusion]
 
+//! [parameters]
+
+// PARAMETERS
 constexpr int dim = 10;
-// set this to 4+std::floor(3*log(dim))
+// when you set dim set also lambda to to 4+std::floor(3*log(dim))
 constexpr int lambda = 7;
 constexpr int mu = lambda/2;
+double psoWeight = 0.7;
+// number of cma-step before pso step
+int N_pso = 200;
+double stopTolX = 2e-11;
+double stopTolUpX = 2000.0;
+int restart_cma = 1;
+size_t max_fun_eval = 30000000;
 constexpr int hist_size = 21;
 
-constexpr int sigma = 0;
-constexpr int Cov_m = 2;
-constexpr int B = 3;
-constexpr int D = 4;
-constexpr int Zeta = 5;
-constexpr int path_s = 6;
-constexpr int path_c = 7;
-constexpr int ord = 8;
-constexpr int stop = 9;
-constexpr int fithist = 10;
-constexpr int weight = 11;
-constexpr int validfit = 12;
-constexpr int xold = 13;
-constexpr int last_restart = 14;
-constexpr int iniphase = 15;
-constexpr int xmean_st = 16;
-constexpr int meanz_st = 17;
-
-const double c_m = 1.0;
-
+// Convenient global variables (Their value is set after)
 double mu_eff = 1.0;
 double cs = 1.0;
 double cc = 1.0;
@@ -63,16 +169,32 @@ double stop_fitness = 1.0;
 int eigeneval = 0;
 double t_c = 0.1;
 double b = 0.1;
-double psoWeight = 0.7;
-// number of cma-step before pso step
-int N_pso = 200;
-double stopTolX = 2e-11;
-double stopTolUpX = 2000.0;
-int restart_cma = 1;
-size_t max_fun_eval = 1000000;
+
+//! [parameters]
+
+//! [def_part_set]
+
+//////////// definitions of the particle set
+
+constexpr int sigma = 0;
+constexpr int Cov_m = 1;
+constexpr int B = 2;
+constexpr int D = 3;
+constexpr int Zeta = 4;
+constexpr int path_s = 5;
+constexpr int path_c = 6;
+constexpr int ord = 7;
+constexpr int stop = 8;
+constexpr int fithist = 9;
+constexpr int weight = 10;
+constexpr int validfit = 11;
+constexpr int xold = 12;
+constexpr int last_restart = 13;
+constexpr int iniphase = 14;
+constexpr int xmean_st = 15;
+constexpr int meanz_st = 16;
 
 typedef vector_dist<dim,double, aggregate<double,
-										 Eigen::VectorXd[lambda],
 										 Eigen::MatrixXd,
 										 Eigen::MatrixXd,
 										 Eigen::DiagonalMatrix<double,Eigen::Dynamic>,
@@ -89,6 +211,8 @@ typedef vector_dist<dim,double, aggregate<double,
 										 bool,
 										 Eigen::VectorXd,
 										 Eigen::VectorXd> > particle_type;
+
+//! [def_part_set]
 
 
 double generateGaussianNoise(double mu, double sigma)
@@ -622,8 +746,6 @@ double adjust_sigma(double sigma, Eigen::MatrixXd & C)
 		{sigma = 5.0/sqrt(C(i,i));}
 	}
 
-	//if(any(vd.getProp<sigma>(p)*sqrt(diag) > maxdx)) sigma = minval(maxdx/sqrt(diag));
-
 	return sigma;
 }
 
@@ -668,14 +790,7 @@ void cma_step(particle_type & vd, int step,  double & best,
 		for (size_t j = 0 ; j < lambda ; j++)
 		{
 			vd.getProp<Zeta>(p)[j] = generateGaussianVector<dim>();
-
-			Eigen::VectorXd & debug4 = vd.getProp<Zeta>(p)[j];
-
 			arx[j] = xmean + vd.getProp<sigma>(p)*vd.getProp<B>(p)*vd.getProp<D>(p)*vd.getProp<Zeta>(p)[j];
-
-			double & debug6 = vd.getProp<sigma>(p);
-
-			Eigen::MatrixXd & debug7 = vd.getProp<B>(p);
 
 			// sample point has to be inside -5.0 and 5.0
 			for (size_t i = 0 ; i < dim ; i++)
@@ -803,11 +918,7 @@ void cma_step(particle_type & vd, int step,  double & best,
 		{vd.getProp<sigma>(p) = smaller;}
 
 		//Adapt step-size sigma
-		Eigen::VectorXd & debug_ps = vd.getProp<path_s>(p);
 		vd.getProp<sigma>(p) = vd.getProp<sigma>(p)*exp((cs/d_amps)*(vd.getProp<path_s>(p).norm()/chiN - 1));
-
-//		auto & v_cl = create_vcluster();
-//		std::cout << vd.getProp<sigma>(p) <<  "  " << v_cl.rank() << std::endl;
 
 		// Update B and D from C
 
@@ -834,36 +945,11 @@ void cma_step(particle_type & vd, int step,  double & best,
 			}
 
 			Eigen::MatrixXd tmp = vd.getProp<B>(p).transpose();
-			Eigen::MatrixXd & debug3 = vd.getProp<Cov_m>(p);
-			double debug_sigma = vd.getProp<sigma>(p);
-
-			if (step % 161 == 0)
-			{
-				//Adapt step-size sigma
-				Eigen::VectorXd & debug_ps = vd.getProp<path_s>(p);
-				Eigen::MatrixXd & debug4 = vd.getProp<Cov_m>(p);
-
-				int debug = 0;
-			}
-
-			int debug = 0;
 		}
-
-		Eigen::MatrixXd & debug1 = vd.getProp<B>(p);
-		Eigen::DiagonalMatrix<double,Eigen::Dynamic> & debug2 = vd.getProp<D>(p);
 
 	    // Copy the new mean as position of the particle
 	    for (size_t i = 0 ; i < dim ; i++)
-	    {
-	    	// Check we do not go out od bound
-
-	    	vd.getPos(p)[i] = xmean(i);
-	    }
-
-//	    std::cout << "Best solution: " << f_obj.get(0).f << "   " << vd.getProp<sigma>(p) << std::endl;
-
-	    double debug_sigma = vd.getProp<sigma>(p);
-	    Eigen::DiagonalMatrix<double,Eigen::Dynamic> & debug_d = vd.getProp<D>(p);
+	    {vd.getPos(p)[i] = xmean(i);}
 
 	    vd.getProp<sigma>(p) = adjust_sigma(vd.getProp<sigma>(p),vd.getProp<Cov_m>(p));
 
@@ -872,8 +958,6 @@ void cma_step(particle_type & vd, int step,  double & best,
 	    bool stop_tolX = true;
 	    for (size_t i = 0 ; i < dim ; i++)
 	    {
-	    	double debug1 = std::max(fabs(vd.getProp<path_c>(p)(i)),sqrt(vd.getProp<Cov_m>(p)(i,i)));
-
 	    	stop_tol &= (vd.getProp<sigma>(p)*std::max(fabs(vd.getProp<path_c>(p)(i)),sqrt(vd.getProp<Cov_m>(p)(i,i)))) < stopTolX;
 	    	stop_tolX &= vd.getProp<sigma>(p)*sqrt(vd.getProp<D>(p).diagonal()[i]) > stopTolUpX;
 	    }
@@ -891,9 +975,7 @@ void cma_step(particle_type & vd, int step,  double & best,
 	    }
 
 	    if (vd.getProp<stop>(p) == true)
-	    {
-	    	std::cout << "Stopped" << std::endl;
-	    }
+	    {std::cout << "Stopped" << std::endl;}
 
 	    if (restart_cma && vd.getProp<stop>(p) == true)
 	    {
@@ -1039,6 +1121,9 @@ int main(int argc, char* argv[])
 		// next particle
 		++it;
 	}
+
+	if (v_cl.rank() == 0)
+	{std::cout << "Starting PS-CMA-ES" << std::endl;}
 
 	double best = 0.0;
 	int best_i = 0;

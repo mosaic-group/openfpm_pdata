@@ -314,10 +314,10 @@ public:
 	}
 
 
-	/*! \brief Constructor set the sub-domain grid and the position in local coordinates
+	/*! \brief Constructor
 	 *
-	 * \param g_c sub-domain
-	 * \param key key
+	 * \param dg array of local grid
+	 * \param key actual position linearized
 	 *
 	 */
 	inline grid_dist_g_dx(device_grid * dg, size_t key)
@@ -330,6 +330,7 @@ public:
 
 	/*! \brief convert the key to string
 	 *
+	 * \return a string representing the position
 	 *
 	 */
 	std::string to_string()

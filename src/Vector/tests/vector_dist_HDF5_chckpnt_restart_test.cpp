@@ -4,16 +4,15 @@
  *  Created on: Jun 12, 2016
  *      Author: Yaroslav Zaluzhnyi
  */
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 
-#ifndef SRC_VECTOR_VECTOR_DIST_HDF5_CHCKPNT_RESTART_TEST_HPP_
-#define SRC_VECTOR_VECTOR_DIST_HDF5_CHCKPNT_RESTART_TEST_HPP_
-
-#include "vector_dist.hpp"
+#include "Vector/vector_dist.hpp"
 #include "Packer_Unpacker/Pack_selector.hpp"
 #include "Packer_Unpacker/Packer.hpp"
 #include "Packer_Unpacker/Unpacker.hpp"
 #include "Vector/performance/vector_dist_performance_util.hpp"
-
+#include "NN/CellList/CellList_util.hpp"
 
 #include "hdf5.h"
 
@@ -177,5 +176,3 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
 
 BOOST_AUTO_TEST_SUITE_END()
 
-
-#endif /* SRC_VECTOR_VECTOR_DIST_HDF5_CHCKPNT_RESTART_TEST_HPP_ */
