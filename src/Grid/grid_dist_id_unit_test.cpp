@@ -1879,8 +1879,6 @@ BOOST_AUTO_TEST_CASE ( grid_basic_functions )
 
 	grid_dist_id<2, double, aggregate<double>> grid(sz,domain,g,bc);
 
-	std::cout << "Offset: " << grid.getOffset(0).toString() << std::endl;
-
 	BOOST_REQUIRE_EQUAL(grid.getOffset(0)[0],-1.25);
 	BOOST_REQUIRE_EQUAL(grid.getOffset(0)[1],-1.25);
 }
