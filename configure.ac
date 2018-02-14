@@ -64,7 +64,7 @@ INCLUDES_PATH=" "
 echo "$base" > install_dir
 
 # Needed for build library
-AC_PROG_RANLIB
+LT_INIT
 
 # Checks for programs.
 AC_PROG_CXX
