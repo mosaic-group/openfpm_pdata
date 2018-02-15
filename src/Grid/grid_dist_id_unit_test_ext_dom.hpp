@@ -23,7 +23,7 @@ void Test3D_extended_grid(const Box<3,float> & domain, long int k)
 	if ( v_cl.getProcessingUnits() > 32 )
 		return;
 
-	print_test( "Testing 3D extended grid k<=",k);
+	print_test_v( "Testing 3D extended grid k<=",k);
 
 	// factor
 	float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);

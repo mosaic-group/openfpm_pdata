@@ -9,6 +9,7 @@
  * \subpage Grid_2_solve_eq
  * \subpage Grid_3_gs
  * \subpage Grid_3_gs_3D
+ * \subpage Grid_3_gs_3D_vector
  *
  */
 

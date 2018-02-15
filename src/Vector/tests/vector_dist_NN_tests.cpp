@@ -5,11 +5,16 @@
  *      Author: i-bird
  */
 
-#ifndef SRC_VECTOR_VECTOR_DIST_NN_TESTS_HPP_
-#define SRC_VECTOR_VECTOR_DIST_NN_TESTS_HPP_
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 
+#include "VCluster/VCluster.hpp"
+#include "Vector/vector_dist.hpp"
 
-BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
+extern void print_test_v(std::string test, size_t sz);
+
+template<typename VerletList>
+void test_full_nn(long int k)
 {
 	Vcluster & v_cl = create_vcluster();
 
@@ -22,16 +27,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
-#ifdef TEST_COVERAGE_MODE
-    long int k = 50 * v_cl.getProcessingUnits();
-#else
-    long int k = 750 * v_cl.getProcessingUnits();
-#endif
-
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
-	print_test("Testing 3D full NN search k=",k);
+	print_test_v("Testing 3D full NN search k=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D full NN search k=" << k );
 
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
@@ -134,14 +133,14 @@ BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
 
 		///////////////////////////////////
 
-		auto NNv = vd.getVerlet(r_cut*1.0001);
+		auto NNv = vd.template getVerlet<VerletList>(r_cut*1.0001);
 
 		it = vd.getDomainIterator();
 
 		while (it.isNext())
 		{
 			Point<3,float> xp = vd.getPos(it.get());
-			auto Np = NNv.getNNIterator<NO_CHECK>(it.get().getKey());
+			auto Np = NNv.template getNNIterator<NO_CHECK>(it.get().getKey());
 
 			list_idx2.get(it.get().getKey()).clear();
 
@@ -185,7 +184,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
 		while (it.isNext())
 		{
 			Point<3,float> xp = vd.getPos(it.get());
-			auto Np = NNv.getNNIterator<NO_CHECK>(it.get().getKey());
+			auto Np = NNv.template getNNIterator<NO_CHECK>(it.get().getKey());
 
 			list_idx2.get(it.get().getKey()).clear();
 
@@ -221,6 +220,24 @@ BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
 	}
 }
 
+BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
+{
+	auto & v_cl = create_vcluster();
+
+#ifdef TEST_COVERAGE_MODE
+    long int k = 50 * v_cl.getProcessingUnits();
+#else
+    long int k = 750 * v_cl.getProcessingUnits();
+#endif
+
+	test_full_nn<VERLET_MEMFAST(3,float)>(k);
+
+	k /= 2;
+	test_full_nn<VERLET_MEMBAL(3,float)>(k);
+	k /= 2;
+	test_full_nn<VERLET_MEMMW(3,float)>(k);
+}
+
 BOOST_AUTO_TEST_CASE( vector_dist_particle_iteration )
 {
 	Vcluster & v_cl = create_vcluster();
@@ -236,7 +253,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_iteration )
 
     long int k = 750 * v_cl.getProcessingUnits();
 
-	print_test("Testing 3D particle cell iterator=",k);
+	print_test_v("Testing 3D particle cell iterator=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D full NN search k=" << k );
 
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
@@ -302,4 +319,3 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_iteration )
 	BOOST_REQUIRE_EQUAL((long int)count,k);
 }
 
-#endif /* SRC_VECTOR_VECTOR_DIST_NN_TESTS_HPP_ */

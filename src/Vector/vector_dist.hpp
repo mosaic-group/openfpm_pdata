@@ -35,6 +35,8 @@
 #include "NN/CellList/ParticleIt_Cells.hpp"
 #include "NN/CellList/ProcKeys.hpp"
 
+#define DEC_GRAN(gr) ((size_t)gr << 32)
+
 #define VECTOR_DIST_ERROR_OBJECT std::runtime_error("Runtime vector distributed error");
 
 #ifdef SE_CLASS3
@@ -51,8 +53,6 @@
 #define NO_ID false
 #define ID true
 
-#define DEC_GRAN(gr) ((size_t)gr << 32)
-
 // Perform a ghost get or a ghost put
 #define GET	1
 #define PUT 2
@@ -61,8 +61,13 @@
 #define NO_GHOST 0
 #define WITH_GHOST 2
 
+#define GCL_NON_SYMMETRIC 0
+#define GCL_SYMMETRIC 1
+#define GCL_HILBERT 2
+
+
 //! General function t get a cell-list
-template<unsigned int dim, typename St, typename CellL, typename Vector>
+template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
 struct gcl
 {
 	/*! \brief Get the Cell list based on the type
@@ -81,8 +86,8 @@ struct gcl
 };
 
 //! General function t get a cell-list
-template<unsigned int dim, typename St, typename Vector, typename Mem_type>
-struct gcl<dim,St,CellList_gen<dim, St, Process_keys_hilb,Mem_type, shift<dim, St> >,Vector>
+template<unsigned int dim, typename St, typename CellL, typename Vector>
+struct gcl<dim,St,CellL,Vector,GCL_HILBERT>
 {
 	/*! \brief Get the Cell list based on the type
 	 *
@@ -93,20 +98,53 @@ struct gcl<dim,St,CellList_gen<dim, St, Process_keys_hilb,Mem_type, shift<dim, S
 	 * \return the constructed cell-list
 	 *
 	 */
-	static inline CellList_gen<dim, St, Process_keys_hilb, Mem_type, shift<dim, St> > get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
+	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
 	{
 		return vd.getCellList_hilb(r_cut,g);
 	}
 };
 
-#define CELL_MEMFAST(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> >
-#define CELL_MEMBAL(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_bal, shift<dim, St> >
-#define CELL_MEMMW(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_mw, shift<dim, St> >
+//! General function t get a cell-list
+template<unsigned int dim, typename St, typename CellL, typename Vector>
+struct gcl<dim,St,CellL,Vector,GCL_SYMMETRIC>
+{
+	/*! \brief Get the Cell list based on the type
+	 *
+	 * \param vd Distributed vector
+	 * \param r_cut Cut-off radius
+	 * \param g Ghost
+	 *
+	 * \return the constructed cell-list
+	 *
+	 */
+	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
+	{
+		return vd.getCellListSym(r_cut);
+	}
+};
 
-#define CELL_MEMFAST_HILB(dim,St) CellList_gen<dim, St, Process_keys_hilb, Mem_fast, shift<dim, St> >
-#define CELL_MEMBAL_HILB(dim,St) CellList_gen<dim, St, Process_keys_hilb, Mem_bal, shift<dim, St> >
-#define CELL_MEMMW_HILB(dim,St) CellList_gen<dim, St, Process_keys_hilb, Mem_mw, shift<dim, St> >
+#define CELL_MEMFAST(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St> >
+#define CELL_MEMBAL(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_bal<>, shift<dim, St> >
+#define CELL_MEMMW(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_mw<>, shift<dim, St> >
 
+#define CELL_MEMFAST_HILB(dim,St) CellList_gen<dim, St, Process_keys_hilb, Mem_fast<>, shift<dim, St> >
+#define CELL_MEMBAL_HILB(dim,St) CellList_gen<dim, St, Process_keys_hilb, Mem_bal<>, shift<dim, St> >
+#define CELL_MEMMW_HILB(dim,St) CellList_gen<dim, St, Process_keys_hilb, Mem_mw<>, shift<dim, St> >
+
+#define VERLET_MEMFAST(dim,St) VerletList<dim,St,Mem_fast<>,shift<dim,St> >
+#define VERLET_MEMBAL(dim,St)  VerletList<dim,St,Mem_bal<>,shift<dim,St> >
+#define VERLET_MEMMW(dim,St)   VerletList<dim,St,Mem_mw<>,shift<dim,St> >
+
+#define VERLET_MEMFAST_INT(dim,St) VerletList<dim,St,Mem_fast<unsigned int>,shift<dim,St> >
+#define VERLET_MEMBAL_INT(dim,St)  VerletList<dim,St,Mem_bal<unsigned int>,shift<dim,St> >
+#define VERLET_MEMMW_INT(dim,St)   VerletList<dim,St,Mem_mw<unsigned int>,shift<dim,St> >
+
+enum reorder_opt
+{
+	NO_REORDER = 0,
+	HILBERT = 1,
+	LINEAR = 2
+};
 
 /*! \brief Distributed vector
  *
@@ -133,13 +171,19 @@ struct gcl<dim,St,CellList_gen<dim, St, Process_keys_hilb,Mem_type, shift<dim, S
  *
  */
 
-template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St>, typename Memory = HeapMemory>
-class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory>
+template<unsigned int dim,
+         typename St,
+		 typename prop,
+		 typename layout = typename memory_traits_lin<prop>::type,
+		 template <typename> class layout_base = memory_traits_lin,
+		 typename Decomposition = CartDecomposition<dim,St>,
+		 typename Memory = HeapMemory>
+class vector_dist : public vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>
 {
 public:
 
 	//! Self type
-	typedef vector_dist<dim,St,prop,Decomposition,Memory> self;
+	typedef vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> self;
 
 	//! property object
 	typedef prop value_type;
@@ -151,11 +195,11 @@ private:
 
 	//! Particle position vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector<Point<dim, St>> v_pos;
+	openfpm::vector<Point<dim, St>,Memory> v_pos;
 
 	//! Particle properties vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector<prop> v_prp;
+	openfpm::vector<prop,Memory,layout,layout_base> v_prp;
 
 	//! Virtual cluster
 	Vcluster & v_cl;
@@ -231,6 +275,51 @@ private:
 		}
 	}
 
+	/*! \brief Reorder based on hilbert space filling curve
+	 *
+	 * \param v_pos_dest reordered vector of position
+	 * \param v_prp_dest reordered vector of properties
+	 * \param m order of the space filling curve
+	 * \param cell_list cell-list
+	 *
+	 */
+	template<typename CellL, typename sfc_it>
+	void reorder_sfc(openfpm::vector<Point<dim,St>> & v_pos_dest,
+						 openfpm::vector<prop> & v_prp_dest,
+						 sfc_it & h_it,
+						 CellL & cell_list)
+	{
+		v_pos_dest.resize(v_pos.size());
+		v_prp_dest.resize(v_prp.size());
+
+		//Index for v_pos_dest
+		size_t count = 0;
+
+		grid_key_dx<dim> ksum;
+
+		for (size_t i = 0; i < dim ; i++)
+		{ksum.set_d(i,cell_list.getPadding(i));}
+
+		while (h_it.isNext())
+		{
+		  auto key = h_it.get();
+		  key += ksum;
+
+		  size_t lin = cell_list.getGrid().LinId(key);
+
+		  // for each particle in the Cell "lin"
+		  for (size_t i = 0; i < cell_list.getNelements(lin); i++)
+		  {
+			  //reorder
+			  auto v = cell_list.get(lin,i);
+			  v_pos_dest.get(count) = v_pos.get(v);
+			  v_prp_dest.get(count) = v_prp.get(v);
+
+			  count++;
+		  }
+		  ++h_it;
+		}
+	}
 
 public:
 
@@ -247,9 +336,9 @@ public:
 	 * \return itself
 	 *
 	 */
-	vector_dist<dim,St,prop,Decomposition,Memory> & operator=(const vector_dist<dim,St,prop,Decomposition,Memory> & v)
+	vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & operator=(const vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & v)
 	{
-		static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory>>(v));
+		static_cast<vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>>(v));
 
 		g_m = v.g_m;
 		v_pos = v.v_pos;
@@ -271,9 +360,9 @@ public:
 	 * \return itself
 	 *
 	 */
-	vector_dist<dim,St,prop,Decomposition,Memory> & operator=(vector_dist<dim,St,prop,Decomposition,Memory> && v)
+	vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & operator=(vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> && v)
 	{
-		static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory> >(v));
+		static_cast<vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> >(v));
 
 		g_m = v.g_m;
 		v_pos.swap(v.v_pos);
@@ -294,8 +383,8 @@ public:
 	 * \param v vector to copy
 	 *
 	 */
-	vector_dist(const vector_dist<dim,St,prop,Decomposition,Memory> & v)
-	:vector_dist_comm<dim,St,prop,Decomposition,Memory>(v.getDecomposition()),v_cl(v.v_cl) SE_CLASS3_VDIST_CONSTRUCTOR
+	vector_dist(const vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & v)
+	:vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>(v.getDecomposition()),v_cl(v.v_cl) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -309,7 +398,7 @@ public:
 	 * \param v vector to copy
 	 *
 	 */
-	vector_dist(vector_dist<dim,St,prop,Decomposition,Memory> && v) noexcept
+	vector_dist(vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> && v) noexcept
 	:v_cl(v.v_cl) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
@@ -330,7 +419,7 @@ public:
 	 *
 	 */
 	vector_dist(const Decomposition & dec, size_t np) :
-	vector_dist_comm<dim,St,prop,Decomposition,Memory>(dec), v_cl(create_vcluster()) SE_CLASS3_VDIST_CONSTRUCTOR
+	vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>(dec), v_cl(create_vcluster()) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -874,7 +963,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, Mem_fast, shift<dim, St> > > CellL getCellListSym(St r_cut)
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > > CellL getCellListSym(St r_cut)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -918,7 +1007,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> > >
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St> > >
 	CellL getCellList(St r_cut, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
@@ -945,7 +1034,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast, shift<dim, St> > >
+	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast<>, shift<dim, St> > >
 	CellL getCellList_hilb(St r_cut)
 	{
 #ifdef SE_CLASS3
@@ -995,7 +1084,7 @@ public:
 		}
 		else
 		{
-			CellL cli_tmp = gcl<dim,St,CellL,self>::get(*this,r_cut,getDecomposition().getGhost());
+			CellL cli_tmp = gcl<dim,St,CellL,self,GCL_NON_SYMMETRIC>::get(*this,r_cut,getDecomposition().getGhost());
 
 			cell_list.swap(cli_tmp);
 		}
@@ -1008,7 +1097,7 @@ public:
 	 * \param cell_list Cell list to update
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, Mem_fast, shift<dim, St> > > void updateCellListSym(CellL & cell_list)
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > > void updateCellListSym(CellL & cell_list)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -1032,7 +1121,7 @@ public:
 		}
 		else
 		{
-			CellL cli_tmp = gcl<dim,St,CellL,self>::get(*this,r_cut,getDecomposition().getGhost());
+			CellL cli_tmp = gcl<dim,St,CellL,self,GCL_SYMMETRIC>::get(*this,r_cut,getDecomposition().getGhost());
 
 			cell_list.swap(cli_tmp);
 		}
@@ -1054,7 +1143,7 @@ public:
 	 * \return the CellList
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast, shift<dim, St> > >
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St> > >
 	CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
@@ -1073,7 +1162,8 @@ public:
 		// Processor bounding box
 		cl_param_calculate(pbox, div, r_cut, enlarge);
 
-		cell_list.Initialize(pbox, div, g_m);
+		cell_list.Initialize(pbox, div);
+		cell_list.set_gm(g_m);
 		cell_list.set_ndec(getDecomposition().get_ndec());
 
 		updateCellList(cell_list,no_se3);
@@ -1096,7 +1186,7 @@ public:
 	 * \return The Cell-list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
+	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast<>, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -1113,7 +1203,8 @@ public:
 		// Processor bounding box
 		cl_param_calculate(pbox,div, r_cut, enlarge);
 
-		cell_list.Initialize(pbox, div, g_m);
+		cell_list.Initialize(pbox, div);
+		cell_list.set_gm(g_m);
 		cell_list.set_ndec(getDecomposition().get_ndec());
 
 		updateCellList(cell_list);
@@ -1128,13 +1219,14 @@ public:
 	 * \return the verlet list
 	 *
 	 */
-	VerletList<dim,St,FAST,shift<dim,St> > getVerletSym(St r_cut)
+	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St> >>
+	VerletL getVerletSym(St r_cut)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
 
-		VerletList<dim,St,FAST,shift<dim,St>> ver;
+		VerletL ver;
 
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
@@ -1153,7 +1245,8 @@ public:
 	 * \return the verlet list
 	 *
 	 */
-	VerletList<dim,St,FAST,shift<dim,St> > getVerletCrs(St r_cut)
+	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St> >>
+	VerletL getVerletCrs(St r_cut)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -1167,7 +1260,7 @@ public:
 		se3.getNN();
 #endif
 
-		VerletList<dim,St,FAST,shift<dim,St>> ver;
+		VerletL ver;
 
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
@@ -1205,13 +1298,14 @@ public:
 	 * \return a VerletList object
 	 *
 	 */
-	VerletList<dim,St,FAST,shift<dim,St> > getVerlet(St r_cut)
+	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St> >>
+	VerletL getVerlet(St r_cut)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
 
-		VerletList<dim,St,FAST,shift<dim,St>> ver;
+		VerletL ver;
 
 		// get the processor bounding box
 		Box<dim, St> bt = getDecomposition().getProcessorBounds();
@@ -1238,7 +1332,7 @@ public:
 	 * \param opt option like VL_SYMMETRIC and VL_NON_SYMMETRIC or VL_CRS_SYMMETRIC
 	 *
 	 */
-	void updateVerlet(VerletList<dim,St,FAST,shift<dim,St> > & ver, St r_cut, size_t opt = VL_NON_SYMMETRIC)
+	template<typename Mem_type> void updateVerlet(VerletList<dim,St,Mem_type,shift<dim,St> > & ver, St r_cut, size_t opt = VL_NON_SYMMETRIC)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -1256,9 +1350,9 @@ public:
 				ver.update(getDecomposition().getDomain(),r_cut,v_pos,g_m, opt);
 			else
 			{
-				VerletList<dim,St,FAST,shift<dim,St> > ver_tmp;
+				VerletList<dim,St,Mem_type,shift<dim,St> > ver_tmp;
 
-				ver_tmp = getVerlet(r_cut);
+				ver_tmp = getVerlet<VerletList<dim,St,Mem_type,shift<dim,St> >>(r_cut);
 				ver.swap(ver);
 			}
 		}
@@ -1297,9 +1391,9 @@ public:
 			}
 			else
 			{
-				VerletList<dim,St,FAST,shift<dim,St> > ver_tmp;
+				VerletList<dim,St,Mem_type,shift<dim,St> > ver_tmp;
 
-				ver_tmp = getVerletCrs(r_cut);
+				ver_tmp = getVerletCrs<VerletList<dim,St,Mem_type,shift<dim,St> >>(r_cut);
 				ver.swap(ver_tmp);
 			}
 		}
@@ -1315,9 +1409,9 @@ public:
 				ver.update(getDecomposition().getDomain(),r_cut,v_pos,g_m, opt);
 			else
 			{
-				VerletList<dim,St,FAST,shift<dim,St> > ver_tmp;
+				VerletList<dim,St,Mem_type,shift<dim,St> > ver_tmp;
 
-				ver_tmp = getVerlet(r_cut);
+				ver_tmp = getVerlet<VerletList<dim,St,Mem_type,shift<dim,St> >>(r_cut);
 				ver.swap(ver_tmp);
 			}
 		}
@@ -1331,9 +1425,10 @@ public:
 	 * \param m an order of a hilbert curve
 	 *
 	 */
-	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_fast,shift<dim,St> > > void reorder (int32_t m)
+	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_bal<>,shift<dim,St> > >
+	void reorder (int32_t m, reorder_opt opt = reorder_opt::HILBERT)
 	{
-		reorder(m,getDecomposition().getGhost());
+		reorder<CellL>(m,getDecomposition().getGhost(),opt);
 	}
 
 
@@ -1349,7 +1444,8 @@ public:
 	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
 	 *
 	 */
-	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_fast,shift<dim,St> > > void reorder(int32_t m, const Ghost<dim,St> & enlarge)
+	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_bal<>,shift<dim,St> > >
+	void reorder(int32_t m, const Ghost<dim,St> & enlarge, reorder_opt opt = reorder_opt::HILBERT)
 	{
 		// reset the ghost part
 		v_pos.resize(g_m);
@@ -1373,7 +1469,8 @@ public:
 			div[i] = 1 << m;
 		}
 
-		cell_list.Initialize(pbox,div,g_m);
+		cell_list.Initialize(pbox,div);
+		cell_list.set_gm(g_m);
 
 		// for each particle add the particle to the cell list
 
@@ -1396,38 +1493,24 @@ public:
 		openfpm::vector<Point<dim,St>> v_pos_dest;
 		openfpm::vector<prop> v_prp_dest;
 
-		v_pos_dest.resize(v_pos.size());
-		v_prp_dest.resize(v_prp.size());
-
-		//hilberts curve iterator
-		grid_key_dx_iterator_hilbert<dim> h_it(m);
-
-		//Index for v_pos_dest
-		size_t count = 0;
-
-		grid_key_dx<dim> ksum;
-
-		for (size_t i = 0; i < dim ; i++)
-			ksum.set_d(i,cell_list.getPadding(i));
-
-		while (h_it.isNext())
+		if (opt == reorder_opt::HILBERT)
 		{
-		  auto key = h_it.get();
-		  key += ksum;
+			grid_key_dx_iterator_hilbert<dim> h_it(m);
 
-		  size_t lin = cell_list.getGrid().LinId(key);
+			reorder_sfc<CellL,grid_key_dx_iterator_hilbert<dim>>(v_pos_dest,v_prp_dest,h_it,cell_list);
+		}
+		else if (opt == reorder_opt::LINEAR)
+		{
+			grid_sm<dim,void> gs(div);
+			grid_key_dx_iterator<dim> h_it(gs);
 
-		  // for each particle in the Cell "lin"
-		  for (size_t i = 0; i < cell_list.getNelements(lin); i++)
-		  {
-			  //reorder
-			  auto v = cell_list.get(lin,i);
-			  v_pos_dest.get(count) = v_pos.get(v);
-			  v_prp_dest.get(count) = v_prp.get(v);
-
-			  count++;
-		  }
-		  ++h_it;
+			reorder_sfc<CellL,grid_key_dx_iterator<dim>>(v_pos_dest,v_prp_dest,h_it,cell_list);
+		}
+		else
+		{
+			// We do nothing, we second swap nullify the first
+			v_pos.swap(v_pos_dest);
+			v_prp.swap(v_prp_dest);
 		}
 
 		v_pos.swap(v_pos_dest);
@@ -1614,7 +1697,7 @@ public:
 	 */
 	inline Decomposition & getDecomposition()
 	{
-		return vector_dist_comm<dim,St,prop,Decomposition,Memory>::getDecomposition();
+		return vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>::getDecomposition();
 	}
 
 	/*! \brief Get the decomposition
@@ -1624,7 +1707,7 @@ public:
 	 */
 	inline const Decomposition & getDecomposition() const
 	{
-		return vector_dist_comm<dim,St,prop,Decomposition,Memory>::getDecomposition();
+		return vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>::getDecomposition();
 	}
 
 	/*! \brief It move all the particles that does not belong to the local processor to the respective processor
@@ -1639,9 +1722,17 @@ public:
 	 *
 	 *
 	 */
-	template<unsigned int ... prp> void map_list()
+	template<unsigned int ... prp> void map_list(size_t opt = NONE)
 	{
-		this->template map_list_<prp...>(v_pos,v_prp,g_m);
+#ifdef SE_CLASS3
+		se3.map_pre();
+#endif
+
+		this->template map_list_<prp...>(v_pos,v_prp,g_m,opt);
+
+#ifdef SE_CLASS3
+		se3.map_post();
+#endif
 	}
 
 
@@ -1655,13 +1746,13 @@ public:
 	 *
 	 *
 	 */
-	template<typename obp = KillParticle> void map()
+	template<typename obp = KillParticle> void map(size_t opt = NONE)
 	{
 #ifdef SE_CLASS3
 		se3.map_pre();
 #endif
 
-		this->template map_<obp>(v_pos,v_prp,g_m);
+		this->template map_<obp>(v_pos,v_prp,g_m,opt);
 
 #ifdef SE_CLASS3
 		se3.map_post();
@@ -2134,7 +2225,7 @@ public:
 	 * \return Particle iterator
 	 *
 	 */
-	template<typename vrl> openfpm::vector_key_iterator_seq<typename vrl::local_index_t> getParticleIteratorCRS(vrl & NN)
+	template<typename vrl> openfpm::vector_key_iterator_seq<typename vrl::Mem_type_type::loc_index> getParticleIteratorCRS(vrl & NN)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -2145,7 +2236,7 @@ public:
 #endif
 
 		// First we check that
-		return openfpm::vector_key_iterator_seq<typename vrl::local_index_t>(NN.getParticleSeq());
+		return openfpm::vector_key_iterator_seq<typename vrl::Mem_type_type::loc_index>(NN.getParticleSeq());
 	}
 
 	/*! \brief Return from which cell we have to start in case of CRS interation

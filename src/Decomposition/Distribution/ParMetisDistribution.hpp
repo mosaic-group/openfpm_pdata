@@ -304,6 +304,7 @@ public:
 	 *
 	 */
 	ParMetisDistribution(ParMetisDistribution<dim,T> && pm)
+	:v_cl(pm.v_cl)
 	{
 		this->operator=(pm);
 	}
@@ -638,6 +639,7 @@ public:
 		verticesGotWeights = dist.verticesGotWeights;
 		sub_sub_owner = dist.sub_sub_owner;
 		m2g = dist.m2g;
+		parmetis_graph = dist.parmetis_graph;
 
 		return *this;
 	}
@@ -655,6 +657,7 @@ public:
 		verticesGotWeights = dist.verticesGotWeights;
 		sub_sub_owner.swap(dist.sub_sub_owner);
 		m2g.swap(dist.m2g);
+		parmetis_graph = dist.parmetis_graph;
 
 		return *this;
 	}

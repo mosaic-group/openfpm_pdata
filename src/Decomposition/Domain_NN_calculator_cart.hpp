@@ -121,7 +121,7 @@ class domain_nn_calculator_cart
 		// +2 is padding
 
 		for (size_t j = 0 ; j < dim ; j++)
-			sz[j] = proc_box.getHigh(j) - proc_box.getLow(j) + 2 + 1;
+		{sz[j] = proc_box.getHigh(j) - proc_box.getLow(j) + 2 + 1;}
 
 		gs.setDimensions(sz);
 
@@ -130,7 +130,7 @@ class domain_nn_calculator_cart
 		g.setMemory();
 
 		for (size_t i = 0 ; i < dim ; i++)
-			one.set_d(i,1);
+		{one.set_d(i,1);}
 
 		// Calculate the csr neighborhood
 		openfpm::vector<std::pair<grid_key_dx<dim>,grid_key_dx<dim>>> csr;
@@ -191,7 +191,7 @@ class domain_nn_calculator_cart
 				sub_keys.last().NN_subsub.resize(g.template get<0>(key).size());
 
 				for (size_t i = 0 ; i < g.template get<0>(key).size() ; i++)
-					sub_keys.last().NN_subsub.get(i) = g.template get<0>(key).get(i) - one;
+				{sub_keys.last().NN_subsub.get(i) = g.template get<0>(key).get(i) - one;}
 			}
 
 			++it;

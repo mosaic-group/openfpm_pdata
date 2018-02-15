@@ -1,19 +1,25 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.1.0]
+## [1.1.0] February 2018
 
 ### Added
 
 - Interface for Multi-vector dynamic load balancing
+- Increaded performance for grid ghost get
+- Introduced forms to increase the performance of the grid iterator in case of stencil code (see example 5_GrayScott)
+- EMatrix wrapped eigen matrices compatibles with vector_dist_id
+- General tuning for high dimension vector_dist_id (up to 50 dimensions)
+- Added Discrete element Method example (8_DEM)
 
 ### Fixed
 
 - Installation/detection of PETSC
-- 2D Fixing IO in binary for vector
 - CRITICAL-BUG scalar product in combination with vector product is broken (it return 0)
+- Fixing 2D IO in binary for vector
+- Fixing 1D grid writer in ASCII mode
 
-## [1.0.0] 13 September 2017
+## [1.0.0] 13 September 2017 (Codename: Vortex)
 
 ### Added
 - Introduced getDomainIterator for Cell-list

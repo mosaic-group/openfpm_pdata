@@ -8,7 +8,6 @@
 #ifndef ORB_HPP_
 #define ORB_HPP_
 
-#include "data_type/scalar.hpp"
 #include "util/mathutil.hpp"
 
 /*! \brief this class is a functor for "for_each" algorithm
@@ -77,7 +76,7 @@ struct do_when_dim_gr_i<dim,i,ORB,typename boost::enable_if< boost::mpl::bool_<(
  *
  */
 
-template<typename T> class ORB_node : public scalar<T>
+template<typename T> class ORB_node : public aggregate<T>
 {
 public:
 

@@ -5,15 +5,51 @@
  *      Author: Pietro Incardona
  */
 
-#ifndef VECTOR_DIST_UNIT_TEST_HPP_
-#define VECTOR_DIST_UNIT_TEST_HPP_
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 
 #include "config.h"
 
 #include <random>
 #include "Vector/vector_dist.hpp"
 #include "data_type/aggregate.hpp"
+#include "vector_dist_util_unit_tests.hpp"
+#include "Point_test.hpp"
 #include "Vector/performance/vector_dist_performance_common.hpp"
+
+/*! \brief Print a string about the test
+ *
+ * \param test string to print
+ * \param sz size
+ *
+ */
+void print_test_v(std::string test, size_t sz)
+{
+	if (create_vcluster().getProcessUnitID() == 0)
+		std::cout << test << " " << sz << "\n";
+}
+
+/*! \brief Get next testing step decrementing the size
+ *
+ * \param k actual size
+ * \param step
+ *
+ * \return the next step
+ *
+ */
+long int decrement(long int k, long int step)
+{
+	if (k <= 32)
+	{
+		return 1;
+	}
+	else if (k - 2*step+1 <= 0)
+	{
+		return k - 32;
+	}
+	else
+		return step;
+}
 
 /*! \brief Count the total number of particles
  *
@@ -21,7 +57,7 @@
  * \param bc boundary conditions
  *
  */
-template<unsigned int dim> size_t total_n_part_lc(vector_dist<dim,float, Point_test<float>, CartDecomposition<dim,float> > & vd, size_t (& bc)[dim])
+template<unsigned int dim, template <typename> class layout> size_t total_n_part_lc(vector_dist<dim,float, Point_test<float>,typename layout<Point_test<float>>::type, layout, CartDecomposition<dim,float> > & vd, size_t (& bc)[dim])
 {
 	Vcluster & v_cl = vd.getVC();
 	auto it2 = vd.getDomainIterator();
@@ -50,48 +86,6 @@ template<unsigned int dim> size_t total_n_part_lc(vector_dist<dim,float, Point_t
 	return cnt;
 }
 
-/*! \brief Count local and non local
- *
- * \param vd distributed vector
- * \param it iterator
- * \param bc boundary conditions
- * \param box domain box
- * \param dom_ext domain + ghost box
- * \param l_cnt local particles counter
- * \param nl_cnt non local particles counter
- * \param n_out out of domain + ghost particles counter
- *
- */
-template<unsigned int dim,typename vector_dist> inline void count_local_n_local(vector_dist & vd, vector_dist_iterator & it, size_t (& bc)[dim] , Box<dim,float> & box, Box<dim,float> & dom_ext, size_t & l_cnt, size_t & nl_cnt, size_t & n_out)
-{
-	const CartDecomposition<dim,float> & ct = vd.getDecomposition();
-
-	while (it.isNext())
-	{
-		auto key = it.get();
-		// Check if it is in the domain
-		if (box.isInsideNP(vd.getPos(key)) == true)
-		{
-			// Check if local
-			if (ct.isLocalBC(vd.getPos(key),bc) == true)
-				l_cnt++;
-			else
-				nl_cnt++;
-		}
-		else
-		{
-			nl_cnt++;
-		}
-
-		Point<dim,float> xp = vd.getPos(key);
-
-		// Check that all particles are inside the Domain + Ghost part
-		if (dom_ext.isInside(xp) == false)
-				n_out++;
-
-		++it;
-	}
-}
 
 BOOST_AUTO_TEST_SUITE( vector_dist_test )
 
@@ -101,6 +95,7 @@ void print_test(std::string test, size_t sz)
 		std::cout << test << " " << sz << "\n";
 }
 
+template<typename vector>
 void Test2D_ghost(Box<2,float> & box)
 {
 	// Communication object
@@ -150,7 +145,7 @@ void Test2D_ghost(Box<2,float> & box)
 	size_t bc[2]={NON_PERIODIC,NON_PERIODIC};
 
 	// Vector of particles
-	vector_dist<2,float, Point_test<float> > vd(g_info.size(),box,bc,g);
+	vector vd(g_info.size(),box,bc,g);
 
 	// size_t
 	size_t cobj = 0;
@@ -194,16 +189,16 @@ void Test2D_ghost(Box<2,float> & box)
 		auto key = v_it2.get();
 
 		// fill with the processor ID where these particle live
-		vd.getProp<p::s>(key) = vd.getPos(key)[0] + vd.getPos(key)[1] * 16.0f;
-		vd.getProp<p::v>(key)[0] = v_cl.getProcessUnitID();
-		vd.getProp<p::v>(key)[1] = v_cl.getProcessUnitID();
-		vd.getProp<p::v>(key)[2] = v_cl.getProcessUnitID();
+		vd.template getProp<p::s>(key) = vd.getPos(key)[0] + vd.getPos(key)[1] * 16.0f;
+		vd.template getProp<p::v>(key)[0] = v_cl.getProcessUnitID();
+		vd.template getProp<p::v>(key)[1] = v_cl.getProcessUnitID();
+		vd.template getProp<p::v>(key)[2] = v_cl.getProcessUnitID();
 
 		++v_it2;
 	}
 
 	// do a ghost get
-	vd.ghost_get<p::s,p::v>();
+	vd.template ghost_get<p::s,p::v>();
 
 	//! [Redistribute the particles and sync the ghost properties]
 
@@ -224,7 +219,7 @@ void Test2D_ghost(Box<2,float> & box)
 		auto key = g_it.get();
 
 		// Check the received data
-		BOOST_REQUIRE_EQUAL(vd.getPos(key)[0] + vd.getPos(key)[1] * 16.0f,vd.getProp<p::s>(key));
+		BOOST_REQUIRE_EQUAL(vd.getPos(key)[0] + vd.getPos(key)[1] * 16.0f,vd.template getProp<p::s>(key));
 
 		bool is_in = false;
 		size_t b = 0;
@@ -247,7 +242,7 @@ void Test2D_ghost(Box<2,float> & box)
 		BOOST_REQUIRE_EQUAL(is_in,true);
 
 		// Check that the particle come from the correct processor
-		BOOST_REQUIRE_EQUAL(vd.getProp<p::v>(key)[0],dec.getEGhostBoxProcessor(lb));
+		BOOST_REQUIRE_EQUAL(vd.template getProp<p::v>(key)[0],dec.getEGhostBoxProcessor(lb));
 
 		n_part++;
 		++g_it;
@@ -271,32 +266,27 @@ void Test2D_ghost(Box<2,float> & box)
 
 BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 {
+	typedef vector_dist<2,float, Point_test<float>> vector;
+
 	Box<2,float> box({0.0,0.0},{1.0,1.0});
-	Test2D_ghost(box);
+	Test2D_ghost<vector>(box);
 
 	Box<2,float> box2({-1.0,-1.0},{2.5,2.5});
-	Test2D_ghost(box2);
+	Test2D_ghost<vector>(box2);
 }
 
-void print_test_v(std::string test, size_t sz)
+BOOST_AUTO_TEST_CASE( vector_dist_ghost_inte )
 {
-	if (create_vcluster().getProcessUnitID() == 0)
-		std::cout << test << " " << sz << "\n";
+	typedef vector_dist<2,float, Point_test<float>,memory_traits_inte<Point_test<float>>::type,memory_traits_inte> vector;
+
+	Box<2,float> box({0.0,0.0},{1.0,1.0});
+	Test2D_ghost<vector>(box);
+
+	Box<2,float> box2({-1.0,-1.0},{2.5,2.5});
+	Test2D_ghost<vector>(box2);
 }
 
-long int decrement(long int k, long int step)
-{
-	if (k <= 32)
-	{
-		return 1;
-	}
-	else if (k - 2*step+1 <= 0)
-	{
-		return k - 32;
-	}
-	else
-		return step;
-}
+
 
 BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 {
@@ -741,7 +731,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 	}
 }
 
-BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
+void test_random_walk(size_t opt)
 {
 	Vcluster & v_cl = create_vcluster();
 
@@ -775,7 +765,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 		Ghost<3,float> ghost(0.01 / factor);
 
 		// Distributed vector
-		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box,bc,ghost);
+		vector_dist<3,float, Point_test<float> > vd(k,box,bc,ghost);
 
 		auto it = vd.getIterator();
 
@@ -809,7 +799,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 				++it;
 			}
 
-			vd.map();
+			vd.map(opt);
 
 			vd.ghost_get<0>();
 
@@ -819,6 +809,16 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
 			BOOST_REQUIRE_EQUAL((size_t)k,cnt);
 		}
 	}
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk )
+{
+	test_random_walk(NONE);
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_random_walk_local_map )
+{
+	test_random_walk(MAP_LOCAL);
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_periodic_map )
@@ -835,7 +835,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map )
 	Ghost<3,float> ghost(0.05 / factor);
 
 	// Distributed vector
-	vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(1,box,bc,ghost);
+	vector_dist<3,float, Point_test<float> > vd(1,box,bc,ghost);
 
 	// put particles al 1.0, check that they go to 0.0
 
@@ -886,7 +886,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_not_periodic_map )
 	Ghost<3,float> ghost(0.05 / factor);
 
 	// Distributed vector
-	vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(1,box,bc,ghost);
+	vector_dist<3,float, Point_test<float> > vd(1,box,bc,ghost);
 
 	// put particles al 1.0, check that they go to 0.0
 
@@ -941,7 +941,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_out_of_bound_policy )
 	Ghost<3,float> ghost(0.05 / factor);
 
 	// Distributed vector
-	vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(100,box,bc,ghost);
+	vector_dist<3,float, Point_test<float> > vd(100,box,bc,ghost);
 
 	// put particles at out of the boundary, they must be detected and and killed
 
@@ -1025,7 +1025,7 @@ void Test_interacting(Box<3,float> & box)
 		Ghost<3,float> ghost(r_cut);
 
 		// Distributed vector
-		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(k,box,bc,ghost);
+		vector_dist<3,float, Point_test<float> > vd(k,box,bc,ghost);
 
 		auto it = vd.getIterator();
 
@@ -1165,7 +1165,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_grid_iterator )
 		Ghost<3,float> ghost(1.0/(Ng-2));
 
 		// Distributed vector
-		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(0,box,bc,ghost);
+		vector_dist<3,float, Point_test<float> > vd(0,box,bc,ghost);
 
 		// Put particles on a grid creating a Grid iterator
 		auto it = vd.getGridIterator(sz);
@@ -1239,7 +1239,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 		Ghost<3,float> ghost(third_dist*1.1);
 
 		// Distributed vector
-		vector_dist<3,float, Point_test<float>, CartDecomposition<3,float> > vd(0,box,bc,ghost);
+		vector_dist<3,float, Point_test<float> > vd(0,box,bc,ghost);
 
 		// Put particles on a grid creating a Grid iterator
 		auto it = vd.getGridIterator(sz);
@@ -1284,7 +1284,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 
 		// Create a verlet list for each particle
 
-		VerletList<3,float,FAST,shift<3,float>> verlet = vd.getVerlet(third_dist);
+		VerletList<3,float,Mem_fast<>,shift<3,float>> verlet = vd.getVerlet(third_dist);
 
 		bool correct = true;
 
@@ -1868,10 +1868,6 @@ BOOST_AUTO_TEST_CASE( vector_of_vector_dist )
 }
 
 
-#include "vector_dist_cell_list_tests.hpp"
-#include "vector_dist_NN_tests.hpp"
-#include "vector_dist_complex_prp_unit_test.hpp"
 
 BOOST_AUTO_TEST_SUITE_END()
 
-#endif /* VECTOR_DIST_UNIT_TEST_HPP_ */

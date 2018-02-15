@@ -11,9 +11,11 @@
 #include "NN/CellList/CellListM.hpp"
 #include "NN/VerletList/VerletListM.hpp"
 
-template<typename Vector, typename CL, typename T> VerletList<Vector::dims,typename Vector::stype,FAST,shift<Vector::dims,typename Vector::stype>> createVerlet(Vector & v, Vector & v1, CL & cl, T r_cut)
+template<typename Vector, typename CL, typename T>
+VerletList<Vector::dims,typename Vector::stype,Mem_fast<>,shift<Vector::dims,typename Vector::stype>>
+createVerlet(Vector & v, Vector & v1, CL & cl, T r_cut)
 {
-	VerletList<Vector::dims,typename Vector::stype,FAST,shift<Vector::dims,typename Vector::stype>> ver;
+	VerletList<Vector::dims,typename Vector::stype,Mem_fast<>,shift<Vector::dims,typename Vector::stype>> ver;
 
 	ver.Initialize(cl,r_cut,v.getPosVector(),v1.getPosVector(),v.size_local());
 
@@ -72,9 +74,11 @@ template<unsigned int nbit, typename Vector, typename T> CellListM<Vector::dims,
 
 /////// Symmetric version
 
-template<typename Vector,typename CL, typename T> VerletList<Vector::dims,typename Vector::stype,FAST,shift<Vector::dims,typename Vector::stype>> createVerletSym(Vector & v, Vector & v1, CL & cl, T r_cut)
+template<typename Vector,typename CL, typename T>
+VerletList<Vector::dims,typename Vector::stype,Mem_fast<>,shift<Vector::dims,typename Vector::stype>>
+createVerletSym(Vector & v, Vector & v1, CL & cl, T r_cut)
 {
-	VerletList<Vector::dims,typename Vector::stype,FAST,shift<Vector::dims,typename Vector::stype>> ver;
+	VerletList<Vector::dims,typename Vector::stype,Mem_fast<>,shift<Vector::dims,typename Vector::stype>> ver;
 
 	ver.Initialize(cl,r_cut,v.getPosVector(),v1.getPosVector(),v.size_local());
 
@@ -88,7 +92,7 @@ template<unsigned int sh_byte, typename Vector, typename Vector1 ,typename CL, t
 	openfpm::vector<pos_v<Vector::dims,typename Vector::stype>> v_phases;
 
 	for (size_t i = 0 ; i < phases.size() ; i++)
-		v_phases.add(pos_v<Vector::dims,typename Vector::stype>(phases.get(i).getPosVector()));
+	{v_phases.add(pos_v<Vector::dims,typename Vector::stype>(phases.get(i).getPosVector()));}
 
 	ver.Initialize(cl,pp,r_cut,v.getPosVector(),v_phases,v.size_local(),VL_SYMMETRIC);
 

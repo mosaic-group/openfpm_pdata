@@ -80,6 +80,15 @@ template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::ve
 		SpaceBox<Decomposition::dims, typename Decomposition::stype> sp = dec.getSubDomain(i);
 		SpaceBox<Decomposition::dims, typename Decomposition::stype> sp_g = dec.getSubDomainWithGhost(i);
 
+		// Because of round off we expand for safety the ghost area
+		// std::nextafter return the next bigger or smaller representable floating
+		// point number
+		for (size_t i = 0 ; i < Decomposition::dims ; i++)
+		{
+			sp_g.setLow(i,std::nextafter(sp_g.getLow(i),sp_g.getLow(i) - 1.0));
+			sp_g.setHigh(i,std::nextafter(sp_g.getHigh(i),sp_g.getHigh(i) + 1.0));
+		}
+
 		// Convert from SpaceBox<dim,St> to SpaceBox<dim,long int>
 		SpaceBox<Decomposition::dims,long int> sp_t = cd_sm.convertDomainSpaceIntoGridUnits(sp,dec.periodicity());
 		SpaceBox<Decomposition::dims,long int> sp_tg = cd_sm.convertDomainSpaceIntoGridUnits(sp_g,dec.periodicity());
@@ -124,7 +133,7 @@ template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::ve
 
 	// fill the spacing
 	for (size_t i = 0 ; i < dim ; i++)
-		spacing[i] = cd_sm.getCellBox().getP2()[i];
+	{spacing[i] = cd_sm.getCellBox().getP2()[i];}
 }
 
 /*! \brief it store a box, its unique id and the sub-domain from where it come from

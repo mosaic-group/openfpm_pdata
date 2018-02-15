@@ -9,16 +9,16 @@ OBJ = main.o
 %.o: %.cpp
 	$(CC) -O3 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
 
-gray_scott: $(OBJ)
+ps_cma_es: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
-all: gray_scott
+all: ps_cma_es
 
 run: all
-	mpirun -np 4 ./gray_scott
+	mpirun -np 2 ./ps_cma_es
 
 .PHONY: clean all run
 
 clean:
-	rm -f *.o *~ core gray_scott
+	rm -f *.o *~ core ps_cma_es
 
