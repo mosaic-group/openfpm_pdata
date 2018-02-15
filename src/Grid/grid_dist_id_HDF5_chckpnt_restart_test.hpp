@@ -71,12 +71,12 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
 	size_t sum = 0;
 
 	for (size_t i = 0; i < count_total.size(); i++)
-		sum += count_total.get(i);
+	{sum += count_total.get(i);}
 
 	timer t;
 	t.start();
 	// Save the grid
-    g_dist.save("grid_dist_id.h5");
+    g_dist.save("grid_dist_id.h5" + std::to_string(v_cl.getProcessingUnits()));
 	t.stop();
 }
 
@@ -108,22 +108,13 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 	// Distributed grid with id decomposition
 	grid_dist_id<2, float, aggregate<float>, CartDecomposition<2,float>> g_dist(sz,domain,g);
 
-	g_dist.getDecomposition().write("Before_load_grid_decomposition");
-	g_dist.write("Before_Loaded_grid");
-
-	timer t;
-	t.start();
-	// Save the grid
-	g_dist.load("grid_dist_id.h5");
-	t.stop();
-
-	g_dist.write("Loaded_grid");
-	g_dist.getDecomposition().write("Loaded_grid_decomposition");
+	g_dist.load("grid_dist_id.h5" + std::to_string(v_cl.getProcessingUnits()));
 
 	auto it = g_dist.getDomainIterator();
 
 	size_t count = 0;
 
+	bool match = true;
 	while (it.isNext())
 	{
 		//key
@@ -134,7 +125,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 
 		auto keyg = g_dist.getGKey(key);
 
-		BOOST_REQUIRE_EQUAL(g_dist.template get<0>(key), keyg.get(0));
+		match &= g_dist.template get<0>(key) == keyg.get(0);
 
 		++it;
 		count++;
@@ -150,6 +141,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 		sum += count_total.get(i);
 
 	BOOST_REQUIRE_EQUAL(sum, (size_t)k*k);
+	BOOST_REQUIRE_EQUAL(match,true);
 }
 
 
