@@ -155,8 +155,6 @@ BOOST_AUTO_TEST_CASE( amr_grid_dist_id_iterator_test_use_2D)
 		// periodicity
 		periodicity<2> pr = {{PERIODIC,PERIODIC}};
 
-		float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/2.0f);
-
 		// Ghost
 		Ghost<2,long int> g(1);
 

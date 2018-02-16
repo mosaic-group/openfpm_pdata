@@ -1734,7 +1734,7 @@ public:
 	 *
 	 */
 	grid_dist_iterator<dim,device_grid,
-	grid_key_dx_iterator<dim>,
+	decltype(device_grid::type_of_iterator()),
 	FIXED>
 	getDomainGhostIterator() const
 	{
@@ -1742,7 +1742,7 @@ public:
 		check_valid(this,8);
 #endif
 		grid_dist_iterator<dim,device_grid,
-							grid_key_dx_iterator<dim>,
+							decltype(device_grid::type_of_iterator()),
 							FIXED> it(loc_grid,gdb_ext);
 
 		return it;

@@ -58,8 +58,13 @@ class grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,Decomposition,Memory,device_grid>
 
 	typedef decltype(device_grid::type_of_subiterator()) device_sub_it;
 
-	//! Iterator for each distributed grid
+	typedef decltype(device_grid::type_of_iterator()) device_it;
+
+	//! Domain iterator for each distributed grid
 	openfpm::vector<grid_dist_iterator<dim,device_grid,device_sub_it,FREE>> git;
+
+	//! Domain and ghost iterator for each distributed grid
+	openfpm::vector<grid_dist_iterator<dim,device_grid,device_it,FIXED>> git_g;
 
 	//! Iterator for each distributed grid
 	openfpm::vector<grid_dist_iterator_sub<dim,device_grid>> git_sub;
@@ -303,7 +308,7 @@ public:
      *
      */
     grid_dist_iterator<dim,device_grid,
-	grid_key_dx_iterator<dim>,
+	decltype(device_grid::type_of_iterator()),
     FIXED>
     getDomainGhostIterator(size_t lvl) const
     {
@@ -333,17 +338,19 @@ public:
      * \return an iterator over all the grid levels
      *
      */
-    grid_dist_amr_key_iterator<dim,device_grid, grid_key_dx_iterator<dim>>
+    grid_dist_amr_key_iterator<dim,device_grid, decltype(device_grid::type_of_iterator()),
+    		                   grid_dist_iterator<dim,device_grid,decltype(device_grid::type_of_iterator()),FIXED>>
     getDomainGhostIterator()
     {
-            git.clear();
+            git_g.clear();
 
             for (size_t i = 0 ; i < gd_array.size() ; i++)
             {
-                    git.add(gd_array.get(i).getDomainIterator());
+                    git_g.add(gd_array.get(i).getDomainGhostIterator());
             }
 
-            return grid_dist_amr_key_iterator<dim,device_grid,grid_key_dx_iterator<dim>>(git);
+            return grid_dist_amr_key_iterator<dim,device_grid,decltype(device_grid::type_of_iterator()),
+            		                          grid_dist_iterator<dim,device_grid,decltype(device_grid::type_of_iterator()),FIXED>>(git_g);
     }
 
 	/*! \brief Get the reference of the selected element

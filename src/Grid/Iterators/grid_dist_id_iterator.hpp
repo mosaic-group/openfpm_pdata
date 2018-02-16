@@ -235,7 +235,6 @@ class grid_dist_iterator<dim,device_grid,device_sub_it,FREE,stencil>
 		size_t sub_id = k.getSub();
 
 		grid_key_dx<dim> k_glob = k.getKey();
-//		gList.get(sub_id).convert_key(k_glob,k.getKey());
 
 		// shift
 		k_glob = k_glob + gdb_ext.get(sub_id).origin;
@@ -405,13 +404,12 @@ class grid_dist_iterator<dim,device_grid,device_sub_it,FIXED,stencil>
 	 * \return the global position in the grid
 	 *
 	 */
-	inline grid_key_dx<dim> getGKey(const grid_dist_key_dx<dim> & k)
+	inline grid_key_dx<dim> getGKey(const grid_dist_key_dx<dim,typename device_grid::base_key> & k)
 	{
 		// Get the sub-domain id
 		size_t sub_id = k.getSub();
 
-		grid_key_dx<dim> k_glob;
-		gList.get(sub_id).convert_key(k_glob,k.getKey());
+		grid_key_dx<dim> k_glob = k.getKey();
 
 		// shift
 		k_glob = k_glob + gdb_ext.get(sub_id).origin;

@@ -414,6 +414,95 @@ void Test3D_amr_ghost_it(grid & amr_g, Box<3,float> & domain, size_t coars_g, si
 
 
 
+template <typename grid>
+void Test3D_amr_domain_ghost_it(grid & amr_g, Box<3,float> & domain, size_t coars_g, size_t n_lvl)
+{
+	size_t g_sz[3] = {coars_g,coars_g,coars_g};
+
+	size_t tot = coars_g*coars_g*coars_g;
+	size_t correct_result = 0;
+	size_t fact = 1;
+
+	for (size_t i = 0 ; i <  n_lvl ; i++)
+	{
+		correct_result += tot*fact;
+		fact *= 8;
+	}
+
+	amr_g.initLevels(n_lvl,g_sz);
+
+	size_t total_all_level = 0;
+
+	//////// Add something /////
+
+	for (size_t i = 0 ; i < amr_g.getNLvl() ; i++)
+	{
+		// Fill the AMR with something
+
+		size_t count = 0;
+
+		auto it = amr_g.getGridGhostIterator(i);
+
+		while (it.isNext())
+		{
+			auto key = it.get_dist();
+			auto gkey = it.get();
+			auto akey = amr_g.getAMRKey(i,key);
+
+			amr_g.template insert<0>(akey) = gkey.get(0);
+			amr_g.template insert<1>(akey) = gkey.get(1);
+			amr_g.template insert<2>(akey) = gkey.get(2);
+
+			count++;
+
+			++it;
+		}
+
+		size_t tot = (amr_g.getGridInfoVoid(i).size(0) + 2)*
+				     (amr_g.getGridInfoVoid(i).size(1) + 2)*
+				     (amr_g.getGridInfoVoid(i).size(2) + 2);
+
+		auto & v_cl = create_vcluster();
+
+		if (v_cl.size() == 1)
+		{
+			v_cl.sum(count);
+			v_cl.execute();
+
+			BOOST_REQUIRE_EQUAL(tot,count);
+		}
+
+		bool match = true;
+		auto it2 = amr_g.getDomainGhostIterator(i);
+
+		while (it2.isNext())
+		{
+			auto key = it2.get();
+			auto key_g = it2.getGKey(key);
+			match &= amr_g.template get<0>(i,key) == key_g.get(0);
+
+			total_all_level++;
+
+			++it2;
+		}
+
+		BOOST_REQUIRE_EQUAL(match,true);
+	}
+
+	// test the total iterator
+
+	size_t gtot_count = 0;
+	auto tot_it = amr_g.getDomainGhostIterator();
+
+	while (tot_it.isNext())
+	{
+		gtot_count++;
+
+		++tot_it;
+	}
+
+	BOOST_REQUIRE_EQUAL(gtot_count,total_all_level);
+}
 
 template <typename> struct Debug;
 
@@ -475,6 +564,31 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_ghost_it_test )
 	{BOOST_REQUIRE_EQUAL(amr_g2.size_inserted(i),0ul);}
 }
 
+BOOST_AUTO_TEST_CASE( grid_dist_amr_domain_ghost_it_test )
+{
+	// Domain
+	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	long int k = 16*16*16*create_vcluster().getProcessingUnits();
+	k = std::pow(k, 1/3.);
+
+	Ghost<3,long int> g(1);
+	grid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g(domain3,g);
+
+	Test3D_amr_domain_ghost_it(amr_g,domain3,k,4);
+
+	sgrid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g2(domain3,g);
+
+	Test3D_amr_domain_ghost_it(amr_g2,domain3,k,4);
+
+	for (size_t i = 0 ; i < amr_g2.getNLvl() ; i++)
+	{BOOST_REQUIRE(amr_g2.size_inserted(i) != 0ul);}
+
+	amr_g2.clear();
+
+	for (size_t i = 0 ; i < amr_g2.getNLvl() ; i++)
+	{BOOST_REQUIRE_EQUAL(amr_g2.size_inserted(i),0ul);}
+}
 
 BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test_low_res )
 {
