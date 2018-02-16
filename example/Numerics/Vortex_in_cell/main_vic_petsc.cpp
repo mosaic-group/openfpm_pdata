@@ -65,7 +65,7 @@
 		7) interpolate velocity u to particles
 		8) move particles accordingly to the velocity and save the old position in x_old
 
-		9) Interpolate vorticity on mesh on the particles
+		9) Interpolate vorticity on mesh from the particles
 		10) calculate velocity u from the vorticity w
 		11) calculate the right-hand-side on grid and interpolate on particles
 		12) interpolate velocity u to particles
