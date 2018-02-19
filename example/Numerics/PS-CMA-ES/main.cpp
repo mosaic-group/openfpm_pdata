@@ -1,11 +1,17 @@
 /*!
  *
+ * \page Numerics Numerics
+ *
+ * \subpage PS_CMA_ES
+ * \subpage Vortex_in_cell_petsc
+ * \subpage Stokes_flow
+ *
  * \page PS_CMA_ES Particle swarm CMA-ES Evolution strategy
  *
  *
  * [TOC]
  *
- * # Optimization {#Opti_cma_es}
+ * # Black box optimization {#Opti_cma_es}
  *
  *
  * In this example we show how to code PS-CMA-ES. This is just a simple variation to the
@@ -170,9 +176,9 @@ int eigeneval = 0;
 double t_c = 0.1;
 double b = 0.1;
 
-//! [parameters]
+//! \cond [parameters] \endcond
 
-//! [def_part_set]
+//! \cond [def_part_set] \endcond
 
 //////////// definitions of the particle set
 
@@ -212,8 +218,23 @@ typedef vector_dist<dim,double, aggregate<double,
 										 EVectorXd,
 										 EVectorXd> > particle_type;
 
-//! [def_part_set]
+//! \cond [def_part_set] \endcond
 
+/*!
+ *
+ * \page PS_CMA_ES Particle swarm CMA-ES Evolution strategy
+ *
+ * ## Random number generator {#ps_cma_rnd}
+ *
+ * The random number generator function generate numbers distributed on a gaussian with
+ * \f$ \sigma = 1 \f$ centered in zero. this function  is used to generate the CMA-ES
+ * offsprings (the samples in the searching area).
+ *
+ * \snippet Numerics/PS-CMA-ES/main.cpp rand_gen
+ *
+ */
+
+//! \cond [rand_gen] \endcond
 
 double generateGaussianNoise(double mu, double sigma)
 {
@@ -254,6 +275,8 @@ EVectorXd generateGaussianVector()
 
 	return tmp;
 }
+
+//! [rand_gen]
 
 template<unsigned int dim>
 void fill_vector(double (& f)[dim], EVectorXd & ev)
@@ -311,6 +334,19 @@ double weight_sample(int i)
 	return wm[i];
 }
 
+/*!
+ *
+ * \page PS_CMA_ES Particle swarm CMA-ES Evolution strategy
+ *
+ * ## Create rotational matrix {#ps_rot_mat}
+ *
+ * In this function we generate the rotation Matrix R for the covariant matrix
+ *
+ * \snippet Numerics/PS-CMA-ES/main.cpp ps_cma_es_rotmat
+ *
+ */
+
+//! \cond [ps_cma_es_rotmat] \endcond
 
 void create_rotmat(EVectorXd & S,EVectorXd & T, EMatrixXd & R)
 {
@@ -398,6 +434,24 @@ void create_rotmat(EVectorXd & S,EVectorXd & T, EMatrixXd & R)
 	Check = R*S;
 }
 
+//! \cond [ps_cma_es_rotmat] \endcond
+
+/*!
+ *
+ * \page PS_CMA_ES Particle swarm CMA-ES Evolution strategy
+ *
+ * ## Particle swarm update {#pso_up}
+ *
+ * In this function we bias the each CMA based on the best solution
+ * founded so far. We also call the rotation Matrix procedure to construct the rotation
+ * for the covariant Matrix
+ *
+ * \snippet Numerics/PS-CMA-ES/main.cpp ps_cma_es_uppso
+ *
+ */
+
+//! \cond [ps_cma_es_uppso] \endcond
+
 void updatePso(openfpm::vector<double> & best_sol,
 			   double sigma,
 			   EVectorXd & xmean,
@@ -454,6 +508,26 @@ void updatePso(openfpm::vector<double> & best_sol,
 	  }
 }
 
+//! \cond [ps_cma_es_uppso] \endcond
+
+/*!
+ *
+ * \page PS_CMA_ES Particle swarm CMA-ES Evolution strategy
+ *
+ * ## Broadcast best {#broadcast_best}
+ *
+ * In this function we update the best solution found so far. This involve communicate
+ * the best solution found in this iteration consistently on all processor using the numfion
+ * **min**. if the best solution is still better continue otherwise, do another reduction
+ * to find the consensus on which processor brodcast the best solution. Finally broadcast
+ * the best solution.
+ *
+ * \snippet Numerics/PS-CMA-ES/main.cpp ps_cma_es_bs
+ *
+ */
+
+//! \cond [ps_cma_es_bs] \endcond
+
 void broadcast_best_solution(particle_type & vd,
 							 openfpm::vector<double> & best_sol,
 							 double & best,
@@ -503,6 +577,29 @@ void broadcast_best_solution(particle_type & vd,
 	v_cl.execute();
 }
 
+//! \cond [ps_cma_es_bs] \endcond
+
+/*!
+ *
+ * \page PS_CMA_ES Particle swarm CMA-ES Evolution strategy
+ *
+ * ## Boundary condition handling ## {#bc_handle}
+ *
+ * These two functions handle boundary conditions introduciona a penalization term in case
+ * the particle go out of boundary. This penalization term is based on the history of the
+ * CMA-ES evolution. Because these boundary conditionsa are not fully understood are taken
+ * 1:1 from the cmaes.m production code.
+ *
+ * \snippet Numerics/PS-CMA-ES/main.cpp ps_cma_es_prctle
+ *
+ * \snippet Numerics/PS-CMA-ES/main.cpp ps_cma_es_intobounds
+ *
+ * \snippet Numerics/PS-CMA-ES/main.cpp ps_cma_es_handlebounds
+ *
+ */
+
+//! \cond [ps_cma_es_prctle] \endcond
+
 void cmaes_myprctile(openfpm::vector<fun_index> & f_obj, double (& perc)[2], double (& res)[2])
 {
 	double sar[lambda];
@@ -538,6 +635,8 @@ void cmaes_myprctile(openfpm::vector<fun_index> & f_obj, double (& perc)[2], dou
 	}
 }
 
+//! \cond [ps_cma_es_prctle] \endcond
+
 double maxval(double (& buf)[hist_size], bool (& mask)[hist_size])
 {
 	double max = 0.0;
@@ -561,6 +660,8 @@ double minval(double (& buf)[hist_size], bool (& mask)[hist_size])
 
 	return min;
 }
+
+//! \cond [ps_cma_es_intobound] \endcond
 
 void cmaes_intobounds(EVectorXd & x, EVectorXd & xout,bool (& idx)[dim], bool & idx_any)
 {
@@ -586,6 +687,10 @@ void cmaes_intobounds(EVectorXd & x, EVectorXd & xout,bool (& idx)[dim], bool & 
 		}
 	}
 }
+
+//! \cond [ps_cma_es_intobound] \endcond
+
+//! \cond [ps_cma_es_handlebounds] \endcond
 
 void cmaes_handlebounds(openfpm::vector<fun_index> & f_obj,
 						double sigma,
@@ -738,6 +843,8 @@ void cmaes_handlebounds(openfpm::vector<fun_index> & f_obj,
 //	fitness%sel = fitness%raw + bnd%arpenalty;
 }
 
+//! \cond [ps_cma_es_handlebounds] \endcond
+
 double adjust_sigma(double sigma, EMatrixXd & C)
 {
 	for (size_t i = 0 ; i < dim ; i++)
@@ -749,6 +856,24 @@ double adjust_sigma(double sigma, EMatrixXd & C)
 	return sigma;
 }
 
+/*!
+ *
+ * \page PS_CMA_ES Particle swarm CMA-ES Evolution strategy
+ *
+ * ## CMA-ES step ## {#cma_es_step}
+ *
+ * In this function we do a full iteration of CMA-ES. We sample around the actual position
+ * of the particle (or center of the sampling distribution), we sort the generated sample
+ * from the best to the worst. We handle the boundary conditions, we pdate the path vectors
+ * the we adapt sigma, the covariant matrix and we recalculate the eigen-value eigen-vector
+ * decomposition of the covariant matrix. Every **N_pso** steps we perform a particle
+ * swarm adjustment. This function also handle several stop-and-restart conditions
+ *
+ * \snippet Numerics/PS-CMA-ES/main.cpp ps_cma_es_step
+ *
+ */
+
+//! \cond [ps_cma_es_step] \endcond
 
 void cma_step(particle_type & vd, int step,  double & best,
 			  int & best_i, openfpm::vector<double> & best_sol,
@@ -1027,7 +1152,20 @@ void cma_step(particle_type & vd, int step,  double & best,
 	fun_eval += fe;
 }
 
+//! \cond [ps_cma_es_step] \endcond
 
+/*!
+ *
+ * \page PS_CMA_ES Particle swarm CMA-ES Evolution strategy
+ *
+ * ## Main ## {#cma_es_main}
+ *
+ * The main function initialize the global variable and the CMA-ES particles. The main loop is set to
+ * terminate if the global optimum is found. For the F15 the global optimum value is known and is 120.0
+ *
+ * \snippet Numerics/PS-CMA-ES/main.cpp ps_cma_es_step
+ *
+ */
 
 int main(int argc, char* argv[])
 {
@@ -1159,11 +1297,12 @@ int main(int argc, char* argv[])
 	//! \cond [finalize] \endcond
 
 	/*!
-	 * \page Vector_0_simple Vector 0 simple
 	 *
-	 * ## Full code ## {#code_e0_sim}
+	 * \page PS_CMA_ES Particle swarm CMA-ES Evolution strategy
 	 *
-	 * \include Vector/0_simple/main.cpp
+	 * ## Full code ## {#code_ps_cma_es}
+	 *
+	 * \include Numerics/PS-CMA-ES/main.cpp
 	 *
 	 */
 }
