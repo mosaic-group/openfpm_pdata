@@ -195,22 +195,22 @@ constexpr int xmean_st = 15;
 constexpr int meanz_st = 16;
 
 typedef vector_dist<dim,double, aggregate<double,
-										 Eigen::MatrixXd,
-										 Eigen::MatrixXd,
+										 EMatrixXd,
+										 EMatrixXd,
 										 Eigen::DiagonalMatrix<double,Eigen::Dynamic>,
-										 Eigen::VectorXd[lambda],
-										 Eigen::VectorXd,
-										 Eigen::VectorXd,
+										 EVectorXd[lambda],
+										 EVectorXd,
+										 EVectorXd,
 										 int[lambda],
 										 int,
 										 double [hist_size],
 										 double [dim],
 										 double,
-										 Eigen::VectorXd,
+										 EVectorXd,
 										 int,
 										 bool,
-										 Eigen::VectorXd,
-										 Eigen::VectorXd> > particle_type;
+										 EVectorXd,
+										 EVectorXd> > particle_type;
 
 //! [def_part_set]
 
@@ -242,9 +242,9 @@ double generateGaussianNoise(double mu, double sigma)
 }
 
 template<unsigned int dim>
-Eigen::VectorXd generateGaussianVector()
+EVectorXd generateGaussianVector()
 {
-	Eigen::VectorXd tmp;
+	EVectorXd tmp;
 	tmp.resize(dim);
 
 	for (size_t i = 0 ; i < dim ; i++)
@@ -256,13 +256,13 @@ Eigen::VectorXd generateGaussianVector()
 }
 
 template<unsigned int dim>
-void fill_vector(double (& f)[dim], Eigen::VectorXd & ev)
+void fill_vector(double (& f)[dim], EVectorXd & ev)
 {
 	for (size_t i = 0 ; i < dim ; i++)
 	{ev(i) = f[i];}
 }
 
-void fill_vector(const double * f, Eigen::VectorXd & ev)
+void fill_vector(const double * f, EVectorXd & ev)
 {
 	for (size_t i = 0 ; i < ev.size() ; i++)
 	{ev(i) = f[i];}
@@ -312,19 +312,19 @@ double weight_sample(int i)
 }
 
 
-void create_rotmat(Eigen::VectorXd & S,Eigen::VectorXd & T, Eigen::MatrixXd & R)
+void create_rotmat(EVectorXd & S,EVectorXd & T, EMatrixXd & R)
 {
-	Eigen::VectorXd S_work(dim);
-	Eigen::VectorXd T_work(dim);
-	Eigen::VectorXd S_sup(dim);
-	Eigen::VectorXd T_sup(dim);
+	EVectorXd S_work(dim);
+	EVectorXd T_work(dim);
+	EVectorXd S_sup(dim);
+	EVectorXd T_sup(dim);
 
-	Eigen::MatrixXd R_tar(dim,dim);
-	Eigen::MatrixXd R_tmp(dim,dim);
-	Eigen::MatrixXd R_sup(dim,dim);
+	EMatrixXd R_tar(dim,dim);
+	EMatrixXd R_tmp(dim,dim);
+	EMatrixXd R_sup(dim,dim);
 	double G_S,G_C;
-	Eigen::MatrixXd S_tmp(2,2);
-	Eigen::MatrixXd T_tmp(2,2);
+	EMatrixXd S_tmp(2,2);
+	EMatrixXd T_tmp(2,2);
 	int p,q,i;
 
 	S_work = S;
@@ -394,30 +394,30 @@ void create_rotmat(Eigen::VectorXd & S,Eigen::VectorXd & T, Eigen::MatrixXd & R)
 
 	// Check the rotation
 
-	Eigen::VectorXd Check(dim);
+	EVectorXd Check(dim);
 	Check = R*S;
 }
 
 void updatePso(openfpm::vector<double> & best_sol,
 			   double sigma,
-			   Eigen::VectorXd & xmean,
-			   Eigen::VectorXd & xold,
-			   Eigen::MatrixXd & B,
+			   EVectorXd & xmean,
+			   EVectorXd & xold,
+			   EMatrixXd & B,
 			   Eigen::DiagonalMatrix<double,Eigen::Dynamic> & D,
-			   Eigen::MatrixXd & C_pso)
+			   EMatrixXd & C_pso)
 {
-	Eigen::VectorXd best_sol_ei(dim);
+	EVectorXd best_sol_ei(dim);
 
 	double bias_weight = psoWeight;
 	fill_vector(&best_sol.get(0),best_sol_ei);
-	Eigen::VectorXd gb_vec = best_sol_ei-xmean;
+	EVectorXd gb_vec = best_sol_ei-xmean;
 	double gb_vec_length = sqrt(gb_vec.transpose() * gb_vec);
-	Eigen::VectorXd b_main = B.col(dim-1);
-	Eigen::VectorXd bias(dim);
+	EVectorXd b_main = B.col(dim-1);
+	EVectorXd bias(dim);
 	bias.setZero();
 
 	// Rotation Matrix
-	Eigen::MatrixXd R(dim,dim);
+	EMatrixXd R(dim,dim);
 
 	if (gb_vec_length > 0.0)
 	{
@@ -436,10 +436,10 @@ void updatePso(openfpm::vector<double> & best_sol,
 
 	  if (psoWeight < 1.0)
 	  {
-		  Eigen::MatrixXd B_rot(dim,dim);
+		  EMatrixXd B_rot(dim,dim);
 		  Eigen::DiagonalMatrix<double,Eigen::Dynamic> D_square(dim);
 
-		  Eigen::VectorXd gb_vec_old = best_sol_ei - xold;
+		  EVectorXd gb_vec_old = best_sol_ei - xold;
 		  create_rotmat(b_main,gb_vec_old,R);
 		  for (size_t i = 0 ; i < dim ; i++)
 		  {B_rot.col(i) = R*B.col(i);}
@@ -448,8 +448,8 @@ void updatePso(openfpm::vector<double> & best_sol,
 		  {D_square.diagonal()[i] = D.diagonal()[i] * D.diagonal()[i];}
 		  C_pso = B_rot * D_square * B_rot.transpose();
 
-		  Eigen::MatrixXd trUp = C_pso.triangularView<Eigen::Upper>();
-		  Eigen::MatrixXd trDw = C_pso.triangularView<Eigen::StrictlyUpper>();
+		  EMatrixXd trUp = C_pso.triangularView<Eigen::Upper>();
+		  EMatrixXd trDw = C_pso.triangularView<Eigen::StrictlyUpper>();
 		  C_pso = trUp + trDw.transpose();
 	  }
 }
@@ -562,7 +562,7 @@ double minval(double (& buf)[hist_size], bool (& mask)[hist_size])
 	return min;
 }
 
-void cmaes_intobounds(Eigen::VectorXd & x, Eigen::VectorXd & xout,bool (& idx)[dim], bool & idx_any)
+void cmaes_intobounds(EVectorXd & x, EVectorXd & xout,bool (& idx)[dim], bool & idx_any)
 {
 	idx_any = false;
 	for (size_t i = 0; i < dim ; i++)
@@ -590,11 +590,11 @@ void cmaes_intobounds(Eigen::VectorXd & x, Eigen::VectorXd & xout,bool (& idx)[d
 void cmaes_handlebounds(openfpm::vector<fun_index> & f_obj,
 						double sigma,
 						double & validfit,
-						Eigen::VectorXd (& arxvalid)[lambda],
-						Eigen::VectorXd (& arx)[lambda],
-						Eigen::MatrixXd & C,
-						Eigen::VectorXd & xmean,
-						Eigen::VectorXd & xold,
+						EVectorXd (& arxvalid)[lambda],
+						EVectorXd (& arx)[lambda],
+						EMatrixXd & C,
+						EVectorXd & xmean,
+						EVectorXd & xold,
 						double (& weight)[dim],
 						double (& fithist)[hist_size],
 						bool & iniphase,
@@ -610,7 +610,7 @@ void cmaes_handlebounds(openfpm::vector<fun_index> & f_obj,
 	int i,k,maxI;
 	bool mask[hist_size];
 	bool idx[dim];
-	Eigen::VectorXd tx(dim);
+	EVectorXd tx(dim);
 	int dfitidx[hist_size];
 	double dfitsort[hist_size];
 	double prct[2] = {25.0,75.0};
@@ -738,7 +738,7 @@ void cmaes_handlebounds(openfpm::vector<fun_index> & f_obj,
 //	fitness%sel = fitness%raw + bnd%arpenalty;
 }
 
-double adjust_sigma(double sigma, Eigen::MatrixXd & C)
+double adjust_sigma(double sigma, EMatrixXd & C)
 {
 	for (size_t i = 0 ; i < dim ; i++)
 	{
@@ -755,10 +755,10 @@ void cma_step(particle_type & vd, int step,  double & best,
 			  size_t & fun_eval)
 {
 	size_t fe = 0;
-	Eigen::VectorXd xmean(dim);
-	Eigen::VectorXd mean_z(dim);
-	Eigen::VectorXd arxvalid[lambda];
-	Eigen::VectorXd arx[lambda];
+	EVectorXd xmean(dim);
+	EVectorXd mean_z(dim);
+	EVectorXd arxvalid[lambda];
+	EVectorXd arx[lambda];
 
 	for (size_t i = 0 ; i < lambda ; i++)
 	{
@@ -781,7 +781,7 @@ void cma_step(particle_type & vd, int step,  double & best,
 		if (vd.getProp<stop>(p) == true)
 		{++it;continue;}
 
-		Eigen::VectorXd (& arz)[lambda] = vd.getProp<Zeta>(p);
+		EVectorXd (& arz)[lambda] = vd.getProp<Zeta>(p);
 
 		// fill the mean vector;
 
@@ -877,7 +877,7 @@ void cma_step(particle_type & vd, int step,  double & best,
 
 		if (step % N_pso == 0)
 		{
-			Eigen::MatrixXd C_pso(dim,dim);
+			EMatrixXd C_pso(dim,dim);
 			updatePso(best_sol,vd.getProp<sigma>(p),xmean,vd.getProp<xold>(p),vd.getProp<B>(p),vd.getProp<D>(p),C_pso);
 
 			// Adapt covariance matrix C
@@ -924,12 +924,12 @@ void cma_step(particle_type & vd, int step,  double & best,
 
 		if (calc_bd)
 		{
-			Eigen::MatrixXd trUp = vd.getProp<Cov_m>(p).triangularView<Eigen::Upper>();
-			Eigen::MatrixXd trDw = vd.getProp<Cov_m>(p).triangularView<Eigen::StrictlyUpper>();
+			EMatrixXd trUp = vd.getProp<Cov_m>(p).triangularView<Eigen::Upper>();
+			EMatrixXd trDw = vd.getProp<Cov_m>(p).triangularView<Eigen::StrictlyUpper>();
 			vd.getProp<Cov_m>(p) = trUp + trDw.transpose();
 
 			// Eigen decomposition
-			Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eig_solver;
+			Eigen::SelfAdjointEigenSolver<EMatrixXd> eig_solver;
 
 			eig_solver.compute(vd.getProp<Cov_m>(p));
 
@@ -944,7 +944,7 @@ void cma_step(particle_type & vd, int step,  double & best,
 				{vd.getProp<B>(p).col(i) = - vd.getProp<B>(p).col(i);}
 			}
 
-			Eigen::MatrixXd tmp = vd.getProp<B>(p).transpose();
+			EMatrixXd tmp = vd.getProp<B>(p).transpose();
 		}
 
 	    // Copy the new mean as position of the particle
