@@ -438,9 +438,9 @@ echo -e "\033[1m ./configure $options $configure_options \033[0m "
 echo ""
 
 if [ x"$platform" = x"linux" ]; then
-  bash_library="export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH"
+  bash_library="export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:/$install_base/openfpm_devices/lib:/$install_base/openfpm_vcluster/lib"
 else
-  bash_library="export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH"
+  bash_library="export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:/$install_base/openfpm_devices/lib:/$install_base/openfpm_vcluster/lib"
 fi
 
 bash_path="export PATH=\""
