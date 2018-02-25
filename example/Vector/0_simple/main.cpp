@@ -147,7 +147,7 @@ int main(int argc, char* argv[])
 
 	//! \cond [vector instantiation] \endcond
 
-        vector_dist<2,float, aggregate<float,float[3],float[3][3]> > vd(4096,domain,bc,g);
+    vector_dist<2,float, aggregate<float,float[3],float[3][3]> > vd(4096,domain,bc,g);
 
 	// the scalar is the element at position 0 in the aggregate
 	const int scalar = 0;

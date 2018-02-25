@@ -18,6 +18,13 @@
  * CMA-ES, where you have multiple CMA-ES running. The the best solution across them is
  * used to produce a drift velocity toward that point.
  *
+ * \htmlonly
+ * <a href="#" onclick="hide_show('vector-video-3')" >Simulation video 1</a><br>
+ * <div style="display:none" id="vector-video-3">
+ * <video id="vid3" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/3_PS_CMA_ES/ps_cma_es.mp4" type="video/mp4"></video>
+ * </div>
+ * \endhtmlonly
+ *
  * ## Introduction {#ps_cme_es}
  *
  * In this example we try to find the global optimum of a function. In particular we are
