@@ -92,16 +92,20 @@ class grid_dist_iterator_sub
 		grid_key_dx<dim> start_c;
 		grid_key_dx<dim> stop_c;
 
-		// When the grid has size 0 potentially all the other informations are garbage
-		while (g_c < gList.size() &&
-			   (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false || compute_subset(g_c,start_c,stop_c) == false ))
-		{g_c++;}
-
-		// get the next grid iterator
-		if (g_c < gList.size())
+		do
 		{
-			a_it.reinitialize(gList.get(g_c).getIterator(start_c,stop_c));
-		}
+			// When the grid has size 0 potentially all the other informations are garbage
+			while (g_c < gList.size() &&
+				   (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false || compute_subset(g_c,start_c,stop_c) == false ))
+			{g_c++;}
+
+			// get the next grid iterator
+			if (g_c < gList.size())
+			{
+				a_it.reinitialize(gList.get(g_c).getIterator(start_c,stop_c));
+				if (a_it.isNext() == false)	{g_c++;}
+			}
+		} while (g_c < gList.size() && a_it.isNext() == false);
 	}
 
 	public:

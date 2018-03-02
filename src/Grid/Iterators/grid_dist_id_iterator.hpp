@@ -66,14 +66,18 @@ class grid_dist_iterator<dim,device_grid,device_sub_it,FREE,stencil>
 	 */
 	void selectValidGrid()
 	{
-		// When the grid has size 0 potentially all the other informations are garbage
-		while (g_c < gList.size() && (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false ) ) g_c++;
-
-		// get the next grid iterator
-		if (g_c < gList.size())
+		do
 		{
-			a_it.reinitialize(gList.get(g_c).getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2()));
-		}
+			// When the grid has size 0 potentially all the other informations are garbage
+			while (g_c < gList.size() && (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false ) ) g_c++;
+
+			// get the next grid iterator
+			if (g_c < gList.size())
+			{
+				a_it.reinitialize(gList.get(g_c).getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2()));
+			}
+		} while (g_c < gList.size() && a_it.isNext() == false);
+
 	}
 
 	public:
@@ -285,14 +289,20 @@ class grid_dist_iterator<dim,device_grid,device_sub_it,FIXED,stencil>
 	 */
 	void selectValidGrid()
 	{
-		// When the grid has size 0 potentially all the other informations are garbage
-		while (g_c < gList.size() && (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false ) ) g_c++;
 
-		// get the next grid iterator
-		if (g_c < gList.size())
+		do
 		{
-			a_it.reinitialize(gList.get(g_c).getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2()));
-		}
+			// When the grid has size 0 potentially all the other informations are garbage
+			while (g_c < gList.size() && (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false ) ) g_c++;
+
+			// get the next grid iterator
+			if (g_c < gList.size())
+			{
+				a_it.reinitialize(gList.get(g_c).getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2()));
+				if (a_it.isNext() == false)	{g_c++;}
+			}
+
+		} while (g_c < gList.size() && a_it.isNext() == false);
 	}
 
 	public:
