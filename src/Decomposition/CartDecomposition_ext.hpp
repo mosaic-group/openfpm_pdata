@@ -8,6 +8,11 @@
 #ifndef SRC_DECOMPOSITION_CARTDECOMPOSITION_EXT_HPP_
 #define SRC_DECOMPOSITION_CARTDECOMPOSITION_EXT_HPP_
 
+#include "memory/HeapMemory.hpp"
+#include "Decomposition/Distribution/ParMetisDistribution.hpp"
+#include "Space/Ghost.hpp"
+#include "Decomposition/nn_processor.hpp"
+
 template<unsigned int dim, typename T, typename Memory = HeapMemory, typename Distribution = ParMetisDistribution<dim, T>>
 class CartDecomposition;
 

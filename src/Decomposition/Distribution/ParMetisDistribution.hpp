@@ -13,6 +13,7 @@
 #include "SubdomainGraphNodes.hpp"
 #include "parmetis_util.hpp"
 #include "Graph/ids.hpp"
+#include "Graph/CartesianGraphFactory.hpp"
 
 #define PARMETIS_DISTRIBUTION_ERROR 100002
 

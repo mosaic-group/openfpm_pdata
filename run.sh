@@ -37,11 +37,8 @@ then
 
  source /etc/profile
  echo "$PATH"
- module load eigen/3.2.0
- module load suitesparse/4.2.1-gnu-multimkl
- module load boost/1.60.0
- module load gcc/5.3.0
- module load openmpi/1.10.2-gnu
+ module load gcc/5.5.0
+ module load openmpi/3.0.0-gnu5.5
  module unload bullxmpi
 
  if [ x"$6" != x"" ]; then

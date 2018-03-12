@@ -1,9 +1,12 @@
+
 #define BOOST_TEST_DYN_LINK
 #include <boost/test/unit_test.hpp>
 
 #include "Point_test.hpp"
-#include "grid_dist_id.hpp"
+#include "Grid/grid_dist_id.hpp"
 #include "data_type/aggregate.hpp"
+#include "grid_dist_id_unit_test_ext_dom.hpp"
+#include "grid_dist_id_unit_test_unb_ghost.hpp"
 
 extern void print_test_v(std::string test, size_t sz);
 
@@ -1664,9 +1667,6 @@ void Test_ghost_correction(Box<3,double> & domain, long int k, long int g_)
 
     BOOST_REQUIRE_EQUAL(is_inside,true);
 }
-
-#include "grid_dist_id_unit_test_ext_dom.hpp"
-#include "grid_dist_id_unit_test_unb_ghost.hpp"
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_iterator_test_use)
 {

@@ -5,8 +5,8 @@
  *      Author: Yaroslav Zaluzhnyi
  */
 
-#ifndef SRC_GRID_GRID_DIST_ID_HDF5_CHCKPNT_RESTART_TEST_HPP_
-#define SRC_GRID_GRID_DIST_ID_HDF5_CHCKPNT_RESTART_TEST_HPP_
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 
 #include "Grid/grid_dist_id.hpp"
 
@@ -147,4 +147,3 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 
 BOOST_AUTO_TEST_SUITE_END()
 
-#endif /* SRC_GRID_GRID_DIST_ID_HDF5_CHCKPNT_RESTART_TEST_HPP_ */

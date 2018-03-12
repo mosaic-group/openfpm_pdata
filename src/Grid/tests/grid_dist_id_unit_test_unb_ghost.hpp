@@ -5,9 +5,6 @@
  *      Author: i-bird
  */
 
-#ifndef SRC_GRID_GRID_DIST_ID_UNIT_TEST_UNB_GHOST_HPP_
-#define SRC_GRID_GRID_DIST_ID_UNIT_TEST_UNB_GHOST_HPP_
-
 void Test3D_unb_ghost(const Box<3,float> & domain, long int k)
 {
 	long int big_step = k / 30;
@@ -267,4 +264,3 @@ void Test3D_unb_ghost_periodic(const Box<3,float> & domain, long int k)
 }
 
 
-#endif /* SRC_GRID_GRID_DIST_ID_UNIT_TEST_UNB_GHOST_HPP_ */
