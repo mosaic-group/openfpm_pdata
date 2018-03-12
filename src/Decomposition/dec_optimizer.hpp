@@ -43,6 +43,70 @@ class dec_optimizer
 
 private:
 
+	template <unsigned int p_sub, unsigned int p_id>
+	size_t optimize_grid(grid_key_dx<dim> & start_p,
+					Graph & graph,
+					long int pr_id,
+					openfpm::vector<Box<dim,size_t>> & lb,
+					openfpm::vector< openfpm::vector<size_t> > & box_nn_processor,
+					const Ghost<dim,long int> & ghe,
+					const size_t (& bc)[dim],
+					bool init_sub_id = true,
+					size_t sub_id = 0)
+	{
+		// queue
+		openfpm::vector<size_t> v_q;
+
+		// box list 2
+		openfpm::vector< openfpm::vector<size_t> > box_nn_processor2;
+
+		// Create an hyper-cube
+		HyperCube<dim> hyp;
+
+		// Get the wavefront combinations
+		std::vector<comb<dim>> w_comb = hyp.getCombinations_R(dim-1);
+
+		// wavefronts
+		openfpm::vector<wavefront<dim>> v_w(w_comb.size());
+
+		// fill the sub decomposition with negative number
+
+		if (init_sub_id == true)
+			fill_domain<p_sub>(graph,gh.getBox(),-1);
+
+		// push the first domain
+		v_q.add(gh.LinId(start_p));
+
+		while (v_q.size() != 0)
+		{
+			// Box
+			Box<dim,size_t> box;
+
+			// Get the grid_key position from the linearized id
+			start_p = gh.InvLinId(v_q.get(0));
+
+			// Initialize the wavefronts from the domain start_p
+			InitializeWavefront(start_p,v_w);
+
+			// Create the biggest box containing the domain
+			expand_from_point<p_sub,p_id>(v_q.get(0),graph,box,v_w,w_comb);
+
+			// Add the created box to the list of boxes
+			lb.add(box);
+
+			// fill the domain
+			fill_domain<p_sub>(graph,box,sub_id);
+
+			// add the surrounding sub-domain to the queue
+			add_to_queue<p_sub,p_id>(v_q,v_w,graph,w_comb,pr_id,bc);
+
+			// increment the sub_id
+			sub_id++;
+		}
+
+		return sub_id;
+	}
+
 	/*! \brief Expand one wavefront
 	 *
 	 * \param v_w wavefronts
@@ -485,63 +549,29 @@ private:
 	 * \param init_sub_id when true p_sub property is initially set to -1 [default true]
 	 * \param sub_id starting sub_id to enumerate them [default 0]
 	 * \param bc boundary conditions
+	 * \param isGrid indicate that the passed graph is a grid
 	 *
 	 * \return last assigned sub-id
 	 *
 	 */
-	template <unsigned int p_sub, unsigned int p_id> size_t optimize(grid_key_dx<dim> & start_p, Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & lb, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor , const Ghost<dim,long int> & ghe ,const size_t (& bc)[dim], bool init_sub_id = true, size_t sub_id = 0)
+	template <unsigned int p_sub, unsigned int p_id>
+	size_t optimize(grid_key_dx<dim> & start_p,
+					Graph & graph,
+					long int pr_id,
+					openfpm::vector<Box<dim,size_t>> & lb,
+					openfpm::vector< openfpm::vector<size_t> > & box_nn_processor,
+					const Ghost<dim,long int> & ghe,
+					const size_t (& bc)[dim],
+					bool init_sub_id = true,
+					size_t sub_id = 0,
+					bool isGrid = true)
 	{
-		// queue
-		openfpm::vector<size_t> v_q;
-
-		// box list 2
-		openfpm::vector< openfpm::vector<size_t> > box_nn_processor2;
-
-		// Create an hyper-cube
-		HyperCube<dim> hyp;
-
-		// Get the wavefront combinations
-		std::vector<comb<dim>> w_comb = hyp.getCombinations_R(dim-1);
-
-		// wavefronts
-		openfpm::vector<wavefront<dim>> v_w(w_comb.size());
-
-		// fill the sub decomposition with negative number
-
-		if (init_sub_id == true)
-			fill_domain<p_sub>(graph,gh.getBox(),-1);
-
-		// push the first domain
-		v_q.add(gh.LinId(start_p));
-
-		while (v_q.size() != 0)
+		if (isGrid == true)
 		{
-			// Box
-			Box<dim,size_t> box;
-
-			// Get the grid_key position from the linearized id
-			start_p = gh.InvLinId(v_q.get(0));
-
-			// Initialize the wavefronts from the domain start_p
-			InitializeWavefront(start_p,v_w);
-
-			// Create the biggest box containing the domain
-			expand_from_point<p_sub,p_id>(v_q.get(0),graph,box,v_w,w_comb);
-
-			// Add the created box to the list of boxes
-			lb.add(box);
-
-			// fill the domain
-			fill_domain<p_sub>(graph,box,sub_id);
-
-			// add the surrounding sub-domain to the queue
-			add_to_queue<p_sub,p_id>(v_q,v_w,graph,w_comb,pr_id,bc);
-
-			// increment the sub_id
-			sub_id++;
+			return optimize_grid<p_sub,p_id>(start_p,graph,pr_id,lb,box_nn_processor,ghe,bc,init_sub_id,sub_id);
 		}
 
-		return sub_id;
+		return 0;
 	}
 
 	/*! \brief Construct the sub-domain processor list
@@ -622,7 +652,12 @@ public:
 	 * \param bc boundary conditions
 	 *
 	 */
-	template <unsigned int p_sub, unsigned int p_id> void optimize(grid_key_dx<dim> & start_p, Graph & graph, const Ghost<dim,long int> & ghe , const size_t (& bc)[dim])
+	template <unsigned int p_sub, unsigned int p_id>
+	void optimize(grid_key_dx<dim> & start_p,
+				  Graph & graph,
+				  const Ghost<dim,long int> & ghe,
+				  const size_t (& bc)[dim],
+				  bool isGrid = true)
 	{
 		// temporal vector
 		openfpm::vector<Box<dim,size_t>> tmp;
@@ -631,7 +666,7 @@ public:
 		openfpm::vector< openfpm::vector<size_t> > box_nn_processor;
 
 		// optimize
-		optimize<p_sub,p_id>(start_p,graph,-1,tmp, box_nn_processor,ghe,bc);
+		optimize<p_sub,p_id>(start_p,graph,-1,tmp, box_nn_processor,ghe,bc,isGrid);
 	}
 
 	/*! \brief optimize the graph
@@ -650,7 +685,14 @@ public:
 	 * \param ghe ghost size
 	 *
 	 */
-	template <unsigned int p_sub, unsigned int p_id> void optimize(Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & lb, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor, const Ghost<dim,long int> & ghe, const size_t (& bc)[dim])
+	template <unsigned int p_sub, unsigned int p_id>
+	void optimize(Graph & graph,
+				  long int pr_id,
+				  openfpm::vector<Box<dim,size_t>> & lb,
+				  openfpm::vector< openfpm::vector<size_t> > & box_nn_processor,
+				  const Ghost<dim,long int> & ghe,
+				  const size_t (& bc)[dim],
+				  bool isGrid = true)
 	{
 		grid_key_dx<dim> key_seed;
 		key_seed.zero();
@@ -658,7 +700,7 @@ public:
 		// if processor is -1 call optimize with -1 to do on all processors and exit
 		if (pr_id == -1)
 		{
-			optimize<p_sub,p_id>(key_seed,graph,pr_id,lb,box_nn_processor,ghe,bc);
+			optimize<p_sub,p_id>(key_seed,graph,pr_id,lb,box_nn_processor,ghe,bc,isGrid);
 
 			// Construct box box_nn_processor from the constructed domain
 			construct_box_nn_processor<p_id>(graph,box_nn_processor,lb,ghe,bc,pr_id);
@@ -676,7 +718,7 @@ public:
 		while (key_seed.isValid())
 		{
 			// optimize
-			sub_id = optimize<p_sub,p_id>(key_seed,graph,pr_id,lb,box_nn_processor,ghe,bc,false,sub_id);
+			sub_id = optimize<p_sub,p_id>(key_seed,graph,pr_id,lb,box_nn_processor,ghe,bc,false,sub_id,isGrid);
 
 			// new seed
 			key_seed = search_seed<p_id,p_sub>(graph,pr_id);

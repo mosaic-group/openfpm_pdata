@@ -666,6 +666,26 @@ public:
 	{
 		return metis_graph.get_ndec();
 	}
+
+	/*! \brief Parmetis distribution is distribute sub-sub-domain on a regular grid
+	 *
+	 * \return true
+	 *
+	 */
+	constexpr bool isRegularGrid()
+	{
+		return true;
+	}
+
+	/*! \brief Parmetis distribution is not for high scalability
+	 *
+	 * \return true
+	 *
+	 */
+	constexpr bool isHighScal()
+	{
+		return false;
+	}
 };
 
 #endif /* SRC_DECOMPOSITION_METISDISTRIBUTION_HPP_ */

@@ -681,6 +681,26 @@ public:
 	{
 		parmetis_graph.setDistTol(tol);
 	}
+
+	/*! \brief Parmetis distribution is distribute sub-sub-domain on a regular grid
+	 *
+	 * \return true
+	 *
+	 */
+	constexpr bool isRegularGrid()
+	{
+		return true;
+	}
+
+	/*! \brief Parmetis distribution is not for high scalability
+	 *
+	 * \return true
+	 *
+	 */
+	constexpr bool isHighScal()
+	{
+		return false;
+	}
 };
 
 #endif /* SRC_DECOMPOSITION_PARMETISDISTRIBUTION_HPP_ */

@@ -294,8 +294,11 @@ public:
 			spacing[i] = (bs.getHigh(i) - bs.getLow(i)) / gr.size(i);
 		}
 
-		// fill the structure that store the processor id for each sub-domain
-		fine_s.resize(gr.size());
+		if (dist.isHighScal() == false)
+		{
+			// fill the structure that store the processor id for each sub-sub-domain
+			fine_s.resize(gr.size());
+		}
 
 		// Optimize the decomposition creating bigger spaces
 		// And reducing Ghost over-stress
@@ -311,8 +314,14 @@ public:
 			ghe.setHigh(i,static_cast<long int>(ghost.getHigh(i)/spacing[i]) + 1);
 		}
 
-		// optimize the decomposition
-		d_o.template optimize<nm_v::sub_id, nm_v::proc_id>(dist.getGraph(), p_id, loc_box, box_nn_processor,ghe,bc);
+		// optimize the decomposition as regular grid
+		d_o.template optimize<nm_v::sub_id, nm_v::proc_id>(dist.getGraph(),
+														   p_id,
+														   loc_box,
+														   box_nn_processor,
+														   ghe,
+														   bc,
+														   dist.isRegularGrid());
 
 		// Initialize
 		if (loc_box.size() > 0)
@@ -356,22 +365,25 @@ public:
 		// running dec_optimizer (before merging sub-domains)
 
 
-		grid_key_dx_iterator<dim> git(gr);
-
-		while (git.isNext())
+		if (dist.isRegularGrid())
 		{
-			auto key = git.get();
-			grid_key_dx<dim> key2;
+			grid_key_dx_iterator<dim> git(gr);
 
-			for (size_t i = 0 ; i < dim ; i++)
-				key2.set_d(i,key.get(i) / magn[i]);
+			while (git.isNext())
+			{
+				auto key = git.get();
+				grid_key_dx<dim> key2;
 
-			size_t lin = gr_dist.LinId(key2);
-			size_t lin2 = gr.LinId(key);
+				for (size_t i = 0 ; i < dim ; i++)
+				{key2.set_d(i,key.get(i) / magn[i]);}
 
-			fine_s.get(lin2) = dist.getGraph().template vertex_p<nm_v::proc_id>(lin);
+				size_t lin = gr_dist.LinId(key2);
+				size_t lin2 = gr.LinId(key);
 
-			++git;
+				fine_s.get(lin2) = dist.getGraph().template vertex_p<nm_v::proc_id>(lin);
+
+				++git;
+			}
 		}
 
 		Initialize_geo_cell_lists();
@@ -962,6 +974,11 @@ public:
 	 */
 	template<typename Mem> size_t inline processorID(const encapc<1, Point<dim,T>, Mem> & p) const
 	{
+		if (dist.isHighScal() == true)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << ", Error high scalability distributions does not allow global mapping" << std::endl;
+			return 0;
+		}
 		return fine_s.get(cd.template getCell(p));
 	}
 
@@ -974,6 +991,11 @@ public:
 	 */
 	size_t inline processorID(const Point<dim,T> &p) const
 	{
+		if (dist.isHighScal() == true)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << ", Error high scalability distributions does not allow global mapping" << std::endl;
+			return 0;
+		}
 		return fine_s.get(cd.getCell(p));
 	}
 
@@ -986,6 +1008,11 @@ public:
 	 */
 	size_t inline processorID(const T (&p)[dim]) const
 	{
+		if (dist.isHighScal() == true)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << ", Error high scalability distributions does not allow global mapping" << std::endl;
+			return 0;
+		}
 		return fine_s.get(cd.getCell(p));
 	}
 
@@ -1000,6 +1027,11 @@ public:
 	 */
 	template<typename Mem> size_t inline processorIDBC(encapc<1, Point<dim,T>, Mem> p)
 	{
+		if (dist.isHighScal() == true)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << ", Error high scalability distributions does not allow global mapping" << std::endl;
+			return 0;
+		}
 		Point<dim,T> pt = p;
 		applyPointBC(pt);
 
@@ -1017,6 +1049,11 @@ public:
 	 */
 	template<typename ofb> size_t inline processorIDBC(const Point<dim,T> &p) const
 	{
+		if (dist.isHighScal() == true)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << ", Error high scalability distributions does not allow global mapping" << std::endl;
+			return 0;
+		}
 		Point<dim,T> pt = p;
 		applyPointBC(pt);
 
@@ -1034,6 +1071,11 @@ public:
 	 */
 	template<typename ofb> size_t inline processorIDBC(const T (&p)[dim]) const
 	{
+		if (dist.isHighScal() == true)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << ", Error high scalability distributions does not allow global mapping" << std::endl;
+			return 0;
+		}
 		Point<dim,T> pt = p;
 		applyPointBC(pt);
 

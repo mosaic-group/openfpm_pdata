@@ -11,6 +11,7 @@
 #include "config.h"
 #include "SpaceDistribution.hpp"
 #include <unistd.h>
+#include "P4EstDistribution.hpp"
 
 /*! \brief Set a sphere as high computation cost
  *
@@ -422,6 +423,106 @@ BOOST_AUTO_TEST_CASE( Space_distribution_test)
 	//! [refine with dist_parmetis the decomposition]
 }
 
+BOOST_AUTO_TEST_CASE( p4est_distribution_test)
+{
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() != 3)
+		return;
+
+	//! [Initialize a P4est Cartesian graph and decompose]
+
+	P4estDistribution<3, float> pmet_dist(v_cl);
+
+	// Physical domain
+	Box<3, float> box( { 0.0, 0.0, 0.0 }, { 10.0, 10.0, 10.0 });
+
+	// Grid info
+	grid_sm<3, void> info( { GS_SIZE, GS_SIZE, GS_SIZE });
+
+	// Initialize Cart graph and decompose
+	pmet_dist.createCartGraph(info,box);
+
+	// First create the center of the weights distribution, check it is coherent to the size of the domain
+	Point<3, float> center( { 2.0, 2.0, 2.0 });
+
+	// It produces a sphere of radius 2.0
+	// with high computation cost (5) inside the sphere and (1) outside
+	setSphereComputationCosts(pmet_dist, info, center, 2.0f, 5ul, 1ul);
+
+	// first decomposition
+	pmet_dist.decompose();
+
+	//! [Initialize a ParMetis Cartesian graph and decompose]
+
+	// write the first decomposition
+	pmet_dist.write("vtk_dist_parmetis_distribution_0");
+
+	// Check
+	if (v_cl.getProcessUnitID() == 0)
+	{
+
+	#ifdef HAVE_OSX
+
+		bool test = compare("vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_osx_test.vtk");
+		BOOST_REQUIRE_EQUAL(true,test);
+
+	#else
+
+		bool test = compare("vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_test.vtk");
+		BOOST_REQUIRE_EQUAL(true,test);
+
+	#endif
+
+	}
+
+	//! [refine with dist_parmetis the decomposition]
+
+	float stime = 0.0, etime = 10.0, tstep = 0.1;
+
+	// Shift of the sphere at each iteration
+	Point<3, float> shift( { tstep, tstep, tstep });
+
+	size_t iter = 1;
+
+	for(float t = stime; t < etime; t = t + tstep, iter++)
+	{
+		if(t < etime/2)
+		center += shift;
+		else
+		center -= shift;
+
+		setSphereComputationCosts(pmet_dist, info, center, 2.0f, 5, 1);
+
+		// With some regularity refine and write the parmetis distribution
+		if ((size_t)iter % 10 == 0)
+		{
+			pmet_dist.refine();
+
+			std::stringstream str;
+			str << "vtk_dist_parmetis_distribution_" << iter;
+			pmet_dist.write(str.str());
+
+			// Check
+			if (v_cl.getProcessUnitID() == 0)
+			{
+#ifdef HAVE_OSX
+				bool test = compare(str.str() + ".vtk",std::string("src/Decomposition/Distribution/test_data/") + str.str() + "_osx_test.vtk");
+				BOOST_REQUIRE_EQUAL(true,test);
+
+#else
+
+				bool test = compare(str.str() + ".vtk",std::string("src/Decomposition/Distribution/test_data/") + str.str() + "_test.vtk");
+				BOOST_REQUIRE_EQUAL(true,test);
+
+#endif
+
+			}
+		}
+	}
+
+	//! [refine with dist_parmetis the decomposition]
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 
