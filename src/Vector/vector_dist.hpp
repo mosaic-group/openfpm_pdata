@@ -1107,7 +1107,7 @@ public:
 		// but in the worst case we take the maximum
 		St r_cut = 0;
 		for (size_t i = 0 ; i < dim ; i++)
-			r_cut = std::max(r_cut,cell_list.getCellBox().getHigh(i));
+		{r_cut = std::max(r_cut,cell_list.getCellBox().getHigh(i));}
 
 		// Here we have to check that the Cell-list has been constructed
 		// from the same decomposition
