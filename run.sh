@@ -47,7 +47,7 @@ then
    source $HOME/openfpm_vars_master
  fi
 
- salloc --nodes=$4 --ntasks-per-node=$5 --time=00:15:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np $3 src/pdata --report_level=no"
+ salloc --nodes=$4 --ntasks-per-node=$5 --time=00:35:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np $3 src/pdata --report_level=no"
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ; 
