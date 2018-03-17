@@ -7,13 +7,14 @@ LDIR =
 OPT=
 OBJ_VIC_PETSC = main_vic_petsc.o
 
+all: vic_petsc
+
 vic_petsc_test: OPT += -DTEST_RUN
 vic_petsc_test: vic_petsc
 
 %.o: %.cpp
 	$(CC) -O3 $(OPT) -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
 
-all: vic_petsc
 
 vic_petsc: $(OBJ_VIC_PETSC)
 	$(CC) -o $@ $^ $(LIBS_PATH) $(LIBS_SE2)

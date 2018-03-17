@@ -1012,6 +1012,18 @@ int main(int argc, char* argv[])
 
 	vd.map();
 
+	//////// Number of particles
+	//
+	//
+	//
+
+	size_t tot_part = vd.size_local();
+
+	auto & v_cl = create_vcluster();
+	v_cl.sum(tot_part);
+	v_cl.execute();
+	std::cout << "SUM: " << tot_part << std::endl;
+
 	// Now that we fill the vector with particles
 	ModelCustom md;
 

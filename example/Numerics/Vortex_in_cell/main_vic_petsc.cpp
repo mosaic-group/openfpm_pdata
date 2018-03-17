@@ -120,6 +120,7 @@
 constexpr int x = 0;
 constexpr int y = 1;
 constexpr int z = 2;
+constexpr unsigned int phi = 0;
 
 // The type of the grids
 typedef grid_dist_id<3,float,aggregate<float[3]>> grid_type;
@@ -327,7 +328,7 @@ const bool poisson_nn_helm::boundary[] = {PERIODIC,PERIODIC,PERIODIC};
  *
  * # Step 2: Helmotz-hodge projection # {#vic_hlm_proj}
  *
- * The Helnotz hodge projection is required in order to make the vorticity divergent
+ * The Helmotz-hodge projection is required in order to make the vorticity divergent
  * free. The Helmotz-holde projection work in this way. A field can be divided into
  * a curl-free part and a divergent-free part.
  *
@@ -413,8 +414,6 @@ const bool poisson_nn_helm::boundary[] = {PERIODIC,PERIODIC,PERIODIC};
  * \nabla \cdot w = 0 \f$ we can rewrite (5) in a conservative way \f$  \frac{Dw}{dt} = div(w \otimes v) \f$ ).
  * Is also good to notice that the solution that you get is the one with \f$ \int w  = 0 \f$
  *
- *
- *
  * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp solve_petsc
  *
  * ## Correction ## {#vort_correction}
@@ -436,26 +435,14 @@ const bool poisson_nn_helm::boundary[] = {PERIODIC,PERIODIC,PERIODIC};
  * domain simulation domain
  *
  */
-void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain, petsc_solver<double> & solver, petsc_solver<double>::return_type & x_ , bool init)
+void helmotz_hodge_projection(grid_dist_id<3,float,aggregate<float>> & psi,
+							  FDScheme<poisson_nn_helm> & fd,
+							  grid_type & gr,
+							  const Box<3,float> & domain,
+							  petsc_solver<double> & solver,
+							  petsc_solver<double>::return_type & x_ ,
+							  bool init)
 {
-	///////////////////////////////////////////////////////////////
-
-	 //! \cond [poisson_obj_eq] \endcond
-
-	// Convenient constant
-	constexpr unsigned int phi = 0;
-
-	// We define a field phi_f
-	typedef Field<phi,poisson_nn_helm> phi_f;
-
-	// We assemble the poisson equation doing the
-	// poisson of the Laplacian of phi using Laplacian
-	// central scheme (where the both derivative use central scheme, not
-	// forward composed backward like usually)
-	typedef Lap<phi_f,poisson_nn_helm,CENTRAL_SYM> poisson;
-
-	//! \cond [poisson_obj_eq] \endcond
-
 	//! \cond [calc_div_vort] \endcond
 
 	// ghost get
@@ -463,9 +450,6 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain, petsc
 
 	// ghost size of the psi function
     Ghost<3,long int> g(2);
-
-	// Here we create a distributed grid to store the result of the helmotz projection
-	grid_dist_id<3,float,aggregate<float>> psi(gr.getDecomposition(),gr.getGridInfo().getSize(),g);
 
 	// Calculate the divergence of the vortex field
 	auto it = gr.getDomainIterator();	
@@ -483,24 +467,12 @@ void helmotz_hodge_projection(grid_type & gr, const Box<3,float> & domain, petsc
 
 	//! \cond [calc_div_vort] \endcond
 
-
 	calc_and_print_max_div_and_int(gr);
-
 
 	//! \cond [create_fdscheme] \endcond
 
-	// In order to create a matrix that represent the poisson equation we have to indicate
-	// we have to indicate the maximum extension of the stencil and we we need an extra layer
-	// of points in case we have to impose particular boundary conditions.
-	Ghost<3,long int> stencil_max(2);
-
-	// Here we define our Finite difference disctetization scheme object
-	FDScheme<poisson_nn_helm> fd(stencil_max, domain, psi);
-
-	// impose the poisson equation, using right hand side psi on the full domain (psi.getDomainIterator)
-	// the template paramereter instead define which property of phi carry the righ-hand-side
-	// in this case phi has only one property, so the property 0 carry the right hand side
-	fd.template impose_dit<0>(poisson(),psi,psi.getDomainIterator());
+	fd.new_b();
+	fd.template impose_dit_b<0>(psi,psi.getDomainIterator());
 
 	//! \cond [create_fdscheme] \endcond
 
@@ -683,31 +655,15 @@ void remesh(particles_type & vd, grid_type & gr,Box<3,float> & domain)
  *
  */
 
-void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc_solver<double>::return_type (& phi_s)[3],petsc_solver<double> & solver)
+void comp_vel(grid_dist_id<3,float,aggregate<float>> & gr_ps,
+		      grid_dist_id<3,float,aggregate<float[3]>> & phi_v,
+			  FDScheme<poisson_nn_helm> & fd,
+		      Box<3,float> & domain,
+			  grid_type & g_vort,
+			  grid_type & g_vel,
+			  petsc_solver<double>::return_type (& phi_s)[3],
+			  petsc_solver<double> & solver)
 {
-	//! \cond [poisson_obj_eq] \endcond
-
-	// Convenient constant
-	constexpr unsigned int phi = 0;
-
-	// We define a field phi_f
-	typedef Field<phi,poisson_nn_helm> phi_f;
-
-	// We assemble the poisson equation doing the
-	// poisson of the Laplacian of phi using Laplacian
-	// central scheme (where the both derivative use central scheme, not
-	// forward composed backward like usually)
-	typedef Lap<phi_f,poisson_nn_helm,CENTRAL_SYM> poisson;
-
-	//! \cond [poisson_obj_eq] \endcond
-
-	// Maximum size of the stencil
-	Ghost<3,long int> g(2);
-
-	// Here we create a distributed grid to store the result
-	grid_dist_id<3,float,aggregate<float>> gr_ps(g_vort.getDecomposition(),g_vort.getGridInfo().getSize(),g);
-	grid_dist_id<3,float,aggregate<float[3]>> phi_v(g_vort.getDecomposition(),g_vort.getGridInfo().getSize(),g);
-
 	// We calculate and print the maximum divergence of the vorticity
 	// and the integral of it
 	calc_and_print_max_div_and_int(g_vort);
@@ -731,14 +687,9 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 			++it2;
 		}
 
-		// Maximum size of the stencil
-		Ghost<3,long int> stencil_max(2);
-
-		// Finite difference scheme
-		FDScheme<poisson_nn_helm> fd(stencil_max, domain, gr_ps);
-
 		// impose the poisson equation using gr_ps = vorticity for the right-hand-side (on the full domain)
-		fd.template impose_dit<phi>(poisson(),gr_ps,gr_ps.getDomainIterator());
+		fd.new_b();
+		fd.template impose_dit_b<phi>(gr_ps,gr_ps.getDomainIterator());
 
 		solver.setAbsTol(0.01);
 
@@ -1071,7 +1022,10 @@ void rk_step2(particles_type & particles)
  *
  */
 
-template<typename grid, typename vector> void do_step(vector & particles,
+template<typename grid, typename vector> void do_step(grid_dist_id<3,float,aggregate<float>> & psi,
+													  grid_dist_id<3,float,aggregate<float[3]>> & phi_v,
+													  FDScheme<poisson_nn_helm> & fd,
+													  vector & particles,
 		                                              grid & g_vort,
 													  grid & g_vel,
 													  grid & g_dvort,
@@ -1094,7 +1048,7 @@ template<typename grid, typename vector> void do_step(vector & particles,
 	//! \cond [step_56] \endcond
 
 	// Calculate velocity from vorticity
-	comp_vel(domain,g_vort,g_vel,phi_s,solver);
+	comp_vel(psi,phi_v,fd,domain,g_vort,g_vel,phi_s,solver);
 	calc_rhs(g_vort,g_vel,g_dvort);
 
 	//! \cond [step_56] \endcond
@@ -1209,6 +1163,37 @@ int main(int argc, char* argv[])
 	grid_type g_dvort(g_vort.getDecomposition(),szu,g);
 	particles_type particles(g_vort.getDecomposition(),0);
 
+	// Construct an FDScheme is heavy so we construct it here
+	// We also construct distributed temporal grids here because
+	// they are expensive
+
+	// Here we create temporal distributed grid, create a distributed grid is expensive we do it once outside
+	// And the vectorial phi_v
+	grid_dist_id<3,float,aggregate<float>> psi(g_vort.getDecomposition(),g_vort.getGridInfo().getSize(),g);
+	grid_dist_id<3,float,aggregate<float[3]>> phi_v(g_vort.getDecomposition(),g_vort.getGridInfo().getSize(),g);
+
+	//! \cond [poisson_obj_eq] \endcond
+
+	// In order to create a matrix that represent the poisson equation we have to indicate
+	// we have to indicate the maximum extension of the stencil and we we need an extra layer
+	// of points in case we have to impose particular boundary conditions.
+	Ghost<3,long int> stencil_max(2);
+
+	// We define a field phi_f
+	typedef Field<phi,poisson_nn_helm> phi_f;
+
+	// We assemble the poisson equation doing the
+	// poisson of the Laplacian of phi using Laplacian
+	// central scheme (where the both derivative use central scheme, not
+	// forward composed backward like usually)
+	typedef Lap<phi_f,poisson_nn_helm,CENTRAL_SYM> poisson;
+
+	FDScheme<poisson_nn_helm> fd(stencil_max, domain, psi);
+
+	fd.template impose_dit<0>(poisson(),psi,psi.getDomainIterator());
+
+	//! \cond [poisson_obj_eq] \endcond
+
 	// It store the solution to compute velocity
 	// It is used as initial guess every time we call the solver
 	Vector<double,PETSC_BASE> phi_s[3];
@@ -1231,7 +1216,7 @@ int main(int argc, char* argv[])
 	petsc_solver<double> solver;
 
 	// Do the helmotz projection step 2
-	helmotz_hodge_projection(g_vort,domain,solver,x_,true);
+	helmotz_hodge_projection(psi,fd,g_vort,domain,solver,x_,true);
 
 	// initialize the particle on a mesh step 3
 	remesh(particles,g_vort,domain);
@@ -1289,13 +1274,13 @@ int main(int argc, char* argv[])
 	for ( ; i < nsteps ; i++)
 	{
 		// do step 4-5-6-7
-		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s,solver);
+		do_step(psi,phi_v,fd,particles,g_vort,g_vel,g_dvort,domain,inte,phi_s,solver);
 
 		// do step 8
 		rk_step1(particles);
 
 		// do step 9-10-11-12
-		do_step(particles,g_vort,g_vel,g_dvort,domain,inte,phi_s,solver);
+		do_step(psi,phi_v,fd,particles,g_vort,g_vel,g_dvort,domain,inte,phi_s,solver);
 
 		// do step 13
 		rk_step2(particles);
@@ -1306,7 +1291,7 @@ int main(int argc, char* argv[])
 		g_vort.template ghost_put<add_,vorticity>();
 
 		// helmotz-hodge projection
-		helmotz_hodge_projection(g_vort,domain,solver,x_,false);
+		helmotz_hodge_projection(psi,fd,g_vort,domain,solver,x_,false);
 
 		remesh(particles,g_vort,domain);
 

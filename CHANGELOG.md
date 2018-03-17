@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - EMatrix wrapped eigen matrices compatibles with vector_dist_id
 - General tuning for high dimension vector_dist_id (up to 50 dimensions)
 - Added Discrete element Method example (8_DEM)
+- Introduced map(LOCAL) for fast communication in case we have small moovement
 
 ### Fixed
 

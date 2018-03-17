@@ -90,7 +90,7 @@ private:
 	 * \param dec Non-extended decomposition
 	 *
 	 */
-	void extend_fines(const CartDecomposition<dim,T> & dec)
+	void extend_fines(const CartDecomposition<dim,T,Memory,Distribution> & dec)
 	{
 		// Extension, first we calculate the extensions of the new domain compared
 		// to the old one in cell units (each cell unit is a sub-sub-domain)

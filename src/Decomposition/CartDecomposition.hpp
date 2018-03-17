@@ -629,7 +629,7 @@ public:
      * \param cart object to copy
 	 *
 	 */
-	CartDecomposition(const CartDecomposition<dim,T,Memory> & cart)
+	CartDecomposition(const CartDecomposition<dim,T,Memory,Distribution> & cart)
 	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),dist(v_cl),ref_cnt(0)
 	{
 		this->operator=(cart);
@@ -640,7 +640,7 @@ public:
      * \param cart object to copy
 	 *
 	 */
-	CartDecomposition(CartDecomposition<dim,T,Memory> && cart)
+	CartDecomposition(CartDecomposition<dim,T,Memory,Distribution> && cart)
 	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),dist(v_cl),ref_cnt(0)
 	{
 		this->operator=(cart);
@@ -792,9 +792,9 @@ public:
 	 * \return a duplicated decomposition with different ghost boxes
 	 *
 	 */
-	CartDecomposition<dim,T,Memory> duplicate(const Ghost<dim,T> & g) const
+	CartDecomposition<dim,T,Memory,Distribution> duplicate(const Ghost<dim,T> & g) const
 	{
-		CartDecomposition<dim,T,Memory> cart(v_cl);
+		CartDecomposition<dim,T,Memory,Distribution> cart(v_cl);
 
 		cart.box_nn_processor = box_nn_processor;
 		cart.sub_domains = sub_domains;
@@ -828,9 +828,9 @@ public:
 	 * \return a duplicated CartDecomposition object
 	 *
 	 */
-	CartDecomposition<dim,T,Memory> duplicate() const
+	CartDecomposition<dim,T,Memory,Distribution> duplicate() const
 	{
-		CartDecomposition<dim,T,Memory> cart(v_cl);
+		CartDecomposition<dim,T,Memory,Distribution> cart(v_cl);
 
 		(static_cast<ie_loc_ghost<dim,T>*>(&cart))->operator=(static_cast<ie_loc_ghost<dim,T>>(*this));
 		(static_cast<nn_prcs<dim,T>*>(&cart))->operator=(static_cast<nn_prcs<dim,T>>(*this));
@@ -904,7 +904,7 @@ public:
 	 * \return itself
 	 *
 	 */
-	CartDecomposition<dim,T,Memory> & operator=(CartDecomposition && cart)
+	CartDecomposition<dim,T,Memory,Distribution> & operator=(CartDecomposition && cart)
 	{
 		static_cast<ie_loc_ghost<dim,T>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T>>(cart));
 		static_cast<nn_prcs<dim,T>*>(this)->operator=(static_cast<nn_prcs<dim,T>>(cart));
