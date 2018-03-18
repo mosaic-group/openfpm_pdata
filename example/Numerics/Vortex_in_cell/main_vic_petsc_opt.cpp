@@ -1,111 +1,31 @@
-/*! \page Vortex_in_cell_petsc Vortex in Cell 3D
+/*! \page Vortex_in_cell_petsc_opt Vortex in Cell 3D (Optimization)
  *
- * # Vortex in Cell 3D ring with ringlets # {#vic_ringlets}
+ * # Vortex in Cell 3D ring with ringlets optimization # {#vic_ringlets_optimization}
  *
  * In this example we solve the Navier-Stokes equation in the vortex formulation in 3D
- * for an incompressible fluid. (bold symbols are vectorial quantity)
+ * for an incompressible fluid. This example
+ * has the following changes compared to \ref Vortex_in_cell_petsc
  *
- * \htmlonly
- * <a href="#" onclick="hide_show('vector-video-1')" >Video 1</a>
- * <div style="display:none" id="vector-video-1">
- * <video id="vid1" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/3_Vortex_in_cell/vortex_in_cell.mp4"></video>
- * <script>video_anim('vid1',100,230)</script>
- * </div>
- * <a href="#" onclick="hide_show('vector-video-2')" >Video 2</a>
- * <div style="display:none" id="vector-video-2">
- * <video id="vid2" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/3_Vortex_in_cell/vortex_in_cell_iso.mp4"></video>
- * <script>video_anim('vid2',21,1590)</script>
- * </div>
- * \endhtmlonly
- *
- * ## Numerical method ## {#num_vic_mt}
- *
- * In this code we solve the Navier-stokes equation for incompressible fluid in the
- * vorticity formulation. We first recall the Navier-stokes equation in vorticity formulation
- *
- * \f$ \nabla \times \boldsymbol u = - \boldsymbol w \f$
- *
- * \f$  \frac{\displaystyle D \boldsymbol w}{\displaystyle dt} = ( \boldsymbol w \cdot \vec \nabla) \boldsymbol u + \nu \nabla^{2} \boldsymbol w \f$    (5)
- *
- * Where \f$w\f$ is the vorticity and \f$u\f$ is the velocity of the fluid.
- * With Reynold number defined as \f$Re = \frac{uL}{\nu}\f$. The algorithm can be expressed with the following pseudo code.
- *
- * \verbatim
-
-	1) Initialize the vortex ring on grid
-	2) Do an helmotz hodge projection to make the vorticity divergent free
-	3) Initialize particles on the same position as the grid or remesh
-
-	while (t < t_end) do
-		4) Interpolate vorticity from the particles to mesh
-		5) calculate velocity u from the vorticity w
-		6) calculate the right-hand-side on grid and interpolate on particles
-		7) interpolate velocity u to particles
-		8) move particles accordingly to the velocity
-		9) interpolate the vorticity into mesh and reinitialize the particles
-		   in a grid like position
-	end while
-
-   \endverbatim
- *
- * This pseudo code show how to solve the equation above using euler integration.
- * In case of Runge-kutta of order two the pseudo code change into
+ * * Constructing grid is expensive in particular with a lot of cores. For this
+ *   reason we create the grid in the main function rather  than in the **comp_vel**
+ *   function and **helmotz_hodge_projection**
  *
  *
- * \verbatim
-
-	1) Initialize the vortex ring on grid
-	2) Do an helmotz hodge projection to make the vorticity divergent free
-	3) Initialize particles on the same position as the grid or remesh
-
-	while (t < t_end) do
-		4) Interpolate vorticity from the particles to mesh
-		5) calculate velocity u from the vorticity w
-		6) calculate the right-hand-side on grid and interpolate on particles
-		7) interpolate velocity u to particles
-		8) move particles accordingly to the velocity and save the old position in x_old
-
-		9) Interpolate vorticity on mesh from the particles
-		10) calculate velocity u from the vorticity w
-		11) calculate the right-hand-side on grid and interpolate on particles
-		12) interpolate velocity u to particles
-		13) move particles accordingly to the velocity starting from x_old
-		14) interpolate the vorticity into mesh and reinitialize the particles
-		   in a grid like position
-	end while
-
-   \endverbatim
+ * * Constructing also FDScheme is expensive so we construct it once in the main. We set
+ *   the left hand side to the poisson operator, and inside the functions **comp_vel**
+ *   and **helmotz_hodge_projection** just write the right hand side with **impose_dit_b**
  *
- * In the following we explain how each step is implemented in the code
+ * \snippet Numerics/Vortex_in_cell/main_vic_petsc_opt.cpp construct grids
  *
- * ## Inclusion ## {#num_vic_inc}
+ * \snippet Numerics/Vortex_in_cell/main_vic_petsc_opt.cpp create b
  *
- * This example code need several components. First because is a particle
- * mesh example we have to activate **grid_dist_id.hpp** and **vector_dist_id.hpp**.
- * Because we use a finite-difference scheme and linear-algebra to calculate the
- * velocity out of the vorticity, we have to include **FDScheme.hpp** to produce
- * from the finite difference scheme a matrix that represent the linear-system
- * to solve. **SparseMatrix.hpp** is the Sparse-Matrix that will contain the linear
- * system to solve in order to get the velocity out of the vorticity.
- * **Vector.hpp** is the data-structure that contain the solution of the
- * linear system. **petsc_solver.hpp** is the library to use in order invert the linear system.
- * Because we have to interpolate between particles and grid we the to include
- * **interpolate.hpp** as interpolation kernel we use the mp4, so we include the
- * **mp4_kernel.hpp**
- *
- * For convenience we also define the particles type and the grid type and some
- * convenient constants
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp inclusion
- *
- *
+ * Another optimization that we do is to use a Hilbert space-filling curve as sub-sub-domain
+ * distribution strategy
  *
  */
 
 //#define SE_CLASS1
 //#define PRINT_STACKTRACE
-
-//! \cond [inclusion] \endcond
 
 #include "interpolation/interpolation.hpp"
 #include "Grid/grid_dist_id.hpp"
@@ -116,6 +36,7 @@
 #include "Solvers/petsc_solver.hpp"
 #include "interpolation/mp4_kernel.hpp"
 #include "Solvers/petsc_solver_AMG_report.hpp"
+#include "Decomposition/Distribution/SpaceDistribution.hpp"
 
 constexpr int x = 0;
 constexpr int y = 1;
@@ -123,10 +44,15 @@ constexpr int z = 2;
 constexpr unsigned int phi = 0;
 
 // The type of the grids
-typedef grid_dist_id<3,float,aggregate<float[3]>> grid_type;
+typedef grid_dist_id<3,float,aggregate<float[3]>,CartDecomposition<3,float,HeapMemory,SpaceDistribution<3,float>>> grid_type;
+
+// The type of the grids
+typedef grid_dist_id<3,float,aggregate<float>,CartDecomposition<3,float,HeapMemory,SpaceDistribution<3,float>>> grid_type_s;
 
 // The type of the particles
-typedef vector_dist<3,float,aggregate<float[3],float[3],float[3],float[3],float[3]>> particles_type;
+typedef vector_dist<3,float,aggregate<float[3],float[3],float[3],float[3],float[3]>,memory_traits_lin<aggregate<float[3],float[3],float[3],float[3],float[3]>>::type,memory_traits_lin,CartDecomposition<3,float,HeapMemory,SpaceDistribution<3,float>>> particles_type;
+
+typedef vector_dist<3,float,aggregate<float>,memory_traits_lin<aggregate<float>>::type,memory_traits_lin,CartDecomposition<3,float,HeapMemory,SpaceDistribution<3,float>>> particles_type_s;
 
 // radius of the torus
 float ringr1 = 1.0;
@@ -157,12 +83,8 @@ constexpr int rhs_part = 2;
 constexpr unsigned int old_vort = 3;
 constexpr unsigned int old_pos = 4;
 
-//! \cond [inclusion] \endcond
-
 template<typename grid> void calc_and_print_max_div_and_int(grid & g_vort)
 {
-	//! \cond [sanity_int_div] \endcond
-
 	g_vort.template ghost_get<vorticity>();
 	auto it5 = g_vort.getDomainIterator();
 
@@ -199,40 +121,8 @@ template<typename grid> void calc_and_print_max_div_and_int(grid & g_vort)
 
 	if (v_cl.getProcessUnitID() == 0)
 	{std::cout << "Max div for vorticity " << max_vort << "   Integral: " << int_vort[0] << "  " << int_vort[1] << "   " << int_vort[2] << std::endl;}
-
-	//! \cond [sanity_int_div] \endcond
 }
 
-/*! \page Vortex_in_cell_petsc Vortex in Cell 3D
- *
- * # Step 1: Initialization of the vortex ring # {#vic_ring_init}
- *
- * In this function we initialize the vortex ring. The vortex ring is
- * initialized accordingly to these formula.
- *
- * \f$ w(t = 0) =  \frac{\Gamma}{\pi \sigma^{2}} e^{-(s/ \sigma)^2} \f$
- *
- * \f$ s^2 = (z-z_c)^{2} + ((x-x_c)^2 + (y-y_c)^2 - R^2) \f$
- *
- * \f$ \Gamma = \nu Re \f$
- *
- * With this initialization the vortex ring look like the one in figure
- *
- * \image html int_vortex_arrow_small.jpg "Vortex ring initialization the arrow indicate the direction where the vortex point while the colors indicate the magnitude from blue (low) to red (high)"
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp init_vort
- *
- *
- *
- */
-
-//! \cond [init_vort] \endcond
-
-/*
- * gr is the grid where we are initializing the vortex ring
- * domain is the simulation domain
- *
- */
 void init_ring(grid_type & gr, const Box<3,float> & domain)
 {
 	// To add some noise to the vortex ring we create two random
@@ -288,16 +178,6 @@ void init_ring(grid_type & gr, const Box<3,float> & domain)
 	}
 }
 
-//! \cond [init_vort] \endcond
-
-//! \cond [poisson_syseq] \endcond
-
-// Specification of the poisson equation for the helmotz-hodge projection
-// 3D (dims = 3). The field is a scalar value (nvar = 1), bournary are periodic
-// type of the the space is float. The grid type that store \psi
-// The others indicate which kind of Matrix to use to construct the linear system and
-// which kind of vector to construct for the right hand side. Here we use a PETSC Sparse Matrix
-// and PETSC vector. NORMAL_GRID indicate that is a standard grid (non-staggered)
 struct poisson_nn_helm
 {
 		//! 3D Stystem
@@ -309,7 +189,7 @@ struct poisson_nn_helm
         //! type of the spatial coordinates
         typedef float stype;
         //! grid that store \psi
-        typedef grid_dist_id<3,float,aggregate<float>> b_grid;
+        typedef grid_type_s b_grid;
         //! Sparse matrix used to sove the linear system (we use PETSC)
         typedef SparseMatrix<double,int,PETSC_BASE> SparseMatrix_type;
         //! Vector to solve the system (PETSC)
@@ -321,121 +201,8 @@ struct poisson_nn_helm
 //! boundary conditions are PERIODIC
 const bool poisson_nn_helm::boundary[] = {PERIODIC,PERIODIC,PERIODIC};
 
-//! \cond [poisson_syseq] \endcond
 
-
-/*! \page Vortex_in_cell_petsc Vortex in Cell 3D
- *
- * # Step 2: Helmotz-hodge projection # {#vic_hlm_proj}
- *
- * The Helmotz-hodge projection is required in order to make the vorticity divergent
- * free. The Helmotz-holde projection work in this way. A field can be divided into
- * a curl-free part and a divergent-free part.
- *
- * \f$ w = w_{rot} + w_{div} \f$
- *
- * with
- *
- * \f$ \vec \nabla \times w_{rot} = 0 \f$
- *
- * \f$  \nabla \cdot w_{div} = 0 \f$
- *
- * To have a vorticity divergent free we have to get the component (3) \f$w_{div} = w - w_{rot}\f$.
- * In particular it hold
- *
- * \f$ \nabla \cdot w = \nabla \cdot w_{rot} \f$
- *
- * Bacause \f$ \vec \nabla \times w_{rot} = 0 \f$ we can introduce a field \f$ \psi \f$
- * such that
- *
- * (2) \f$ w_{rot} = \vec \nabla \psi \f$
- *
- * Doing the  \f$  \nabla \cdot \vec \nabla \psi \f$ we obtain
- *
- * \f$ \nabla \cdot \vec \nabla \psi = \nabla^{2} \psi = \nabla \cdot w_{rot} = \nabla \cdot w \f$
- *
- * so we lead to this equation
- *
- * (1) \f$ \nabla^{2} \psi = \nabla \cdot w  \f$
- *
- * Solving the equation for \f$ \psi \f$ we can obtain \f$ w_{rot} \f$ doing the gradient of \f$ \psi \f$
- * and finally correct \f$ w \f$ obtaining \f$ w_{div} \f$
- *
- * The **helmotz_hodge_projection** function do this correction to the vorticity
- *
- * In particular it solve the equation (1) it calculate \f$ w_{rot} \f$
- * using (2) and correct the vorticity using using (3)
- *
- *
- * ## Poisson equation ##
- *
- * To solve a poisson equation on a grid using finite-difference, we need to create
- * an object that carry information about the system of equations
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp poisson_syseq
- *
- * Once created this object we can define the equation we are trying to solve.
- * In particular the code below define the left-hand-side of the equation \f$ \nabla^{2} \psi \f$
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp poisson_obj_eq
- *
- * Before to construct the linear system we also calculate the divergence of the
- * vorticity \f$ \nabla \cdot w \f$ that will be the right-hand-side
- * of the equation
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp calc_div_vort
- *
- * Finally we can create the object FDScheme using the object **poisson_nn_helm**
- * as template variable. In addition to the constructor we have to specify the maximum extension of the stencil, the domain and the
- * grid that will store the result. At this point we can impose an equation to construct
- * our SparseMatrix. In this example we are imposing the poisson equation with right hand
- * side equal to the divergence of vorticity (note: to avoid to create another field we use
- *  \f$ \psi \f$ to preliminary store the divergence of the vorticity). Imposing the
- *  equations produce an invertible SparseMatrix **A** and a right-hand-side Vector **b**.
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp create_fdscheme
- *
- * Because we need \f$ x = A^{-1}b \f$. We have to invert and solve a linear system.
- * In this case we use the Conjugate-gradient-Method an iterative solver. Such method
- * is controlled by two parameters. One is the tollerance that determine when the
- * method is converged, the second one is the maximum number of iterations to avoid that
- * the method go into infinite loop. After we set the parameters of the solver we can the
- * the solution **x**. Finaly we copy back the solution **x** into the grid \f$ \psi \f$.
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp solve_petsc
- *
- * ### Note ###
- *
- * Because we are solving the poisson equation in periodic boundary conditions the Matrix has
- * determinat equal to zero. This mean that \f$ \psi \f$ has no unique solution (if it has one).
- * In order to recover one, we have to ensure that the integral of the righ hand side or vorticity
- * is zero. (In our case is the case). We have to ensure that across time the integral of the
- * vorticity is conserved. (In our case is the case if we consider the \f$ \nu = 0 \f$ and \f$
- * \nabla \cdot w = 0 \f$ we can rewrite (5) in a conservative way \f$  \frac{Dw}{dt} = div(w \otimes v) \f$ ).
- * Is also good to notice that the solution that you get is the one with \f$ \int w  = 0 \f$
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp solve_petsc
- *
- * ## Correction ## {#vort_correction}
- *
- * After we got our solution for \f$ \psi \f$ we can calculate the correction of the vorticity
- * doing the gradient of \f$ \psi \f$.
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp vort_correction
- *
- * We also do a sanity check and we control that the vorticity remain
- * divergent-free. Getting the maximum value of the divergence and printing out
- * its value
- *
- *
- */
-
-/*
- * gr vorticity grid where we apply the correction
- * domain simulation domain
- *
- */
-void helmotz_hodge_projection(grid_dist_id<3,float,aggregate<float>> & psi,
+void helmotz_hodge_projection(grid_dist_id<3,float,aggregate<float>,CartDecomposition<3,float,HeapMemory,SpaceDistribution<3,float>>> & psi,
 							  FDScheme<poisson_nn_helm> & fd,
 							  grid_type & gr,
 							  const Box<3,float> & domain,
@@ -443,8 +210,6 @@ void helmotz_hodge_projection(grid_dist_id<3,float,aggregate<float>> & psi,
 							  petsc_solver<double>::return_type & x_ ,
 							  bool init)
 {
-	//! \cond [calc_div_vort] \endcond
-
 	// ghost get
 	gr.template ghost_get<vorticity>();
 
@@ -465,18 +230,14 @@ void helmotz_hodge_projection(grid_dist_id<3,float,aggregate<float>> & psi,
 		++it;
 	}
 
-	//! \cond [calc_div_vort] \endcond
-
 	calc_and_print_max_div_and_int(gr);
 
-	//! \cond [create_fdscheme] \endcond
+	//! \cond [create b] \endcond
 
 	fd.new_b();
 	fd.template impose_dit_b<0>(psi,psi.getDomainIterator());
 
-	//! \cond [create_fdscheme] \endcond
-
-	//! \cond [solve_petsc] \endcond
+	//! \cond [create b] \endcond
 
 	timer tm_solve;
 	if (init == true)
@@ -520,10 +281,6 @@ void helmotz_hodge_projection(grid_dist_id<3,float,aggregate<float>> & psi,
 	// copy the solution x to the grid psi
 	fd.template copy<phi>(x_,psi);
 
-	//! \cond [solve_petsc] \endcond
-
-	//! \cond [vort_correction] \endcond
-
 	psi.template ghost_get<phi>();
 
 	// Correct the vorticity to make it divergence free
@@ -541,28 +298,8 @@ void helmotz_hodge_projection(grid_dist_id<3,float,aggregate<float>> & psi,
 		++it2;
 	}
 
-	//! \cond [vort_correction] \endcond
-
 	calc_and_print_max_div_and_int(gr);
 }
-
-
-/*! \page Vortex_in_cell_petsc Vortex in Cell 3D
- *
- * # Step 3: Remeshing vorticity # {#vic_remesh_vort}
- *
- * After that we initialized the vorticity on the grid, we initialize the particles
- * in a grid like position and we interpolate the vorticity on particles. Because
- * of the particles position being in a grid-like position and the symmetry of the
- * interpolation kernels, the re-mesh step simply reduce to initialize the particle
- * in a grid like position and assign the property vorticity of the particles equal to the
- * grid vorticity.
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp remesh_part
- *
- */
-
-//! \cond [remesh_part] \endcond
 
 void remesh(particles_type & vd, grid_type & gr,Box<3,float> & domain)
 {
@@ -600,63 +337,9 @@ void remesh(particles_type & vd, grid_type & gr,Box<3,float> & domain)
 	vd.map();
 }
 
-//! \cond [remesh_part] \endcond
 
-
-/*! \page Vortex_in_cell_petsc Vortex in Cell 3D
- *
- * # Step 5: Compute velocity from vorticity # {#vic_vel_from_vort}
- *
- * Computing the velocity from vorticity is done in the following way. Given
- *
- * \f$ \vec \nabla \times u = -w \f$
- *
- * We intrododuce the stream line function defined as
- *
- * \f$ \nabla \times \phi = u \f$ (7)
- *
- * \f$ \nabla \cdot \phi = 0 \f$
- *
- * We obtain
- *
- * \f$ \nabla \times \nabla \times \phi = -w = \vec \nabla (\nabla \cdot  \phi) - \nabla^{2} \phi  \f$
- *
- * Because the divergence of \f$ \phi \f$ is defined to be zero we have
- *
- * \f$ \nabla^{2} \phi = w \f$
- *
- * The velocity can be recovered by the equation (7)
- *
- * Putting into code what explained before, we again generate a poisson
- * object
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp poisson_obj_eq
- *
- * In order to calculate the velocity out of the vorticity, we solve a poisson
- * equation like we did in helmotz-projection equation, but we do it for each
- * component \f$ i \f$ of the vorticity. Qnce we have the solution in **psi_s**
- * we copy the result back into the grid **gr_ps**. We than calculate the
- * quality of the solution printing the norm infinity of the residual and
- * finally we save in the grid vector vield **phi_v** the compinent \f$ i \f$
- * (Copy from phi_s to phi_v is necessary because in phi_s is not a grid
- * and cannot be used as a grid like object)
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp solve_poisson_comp
- *
- * We save the component \f$ i \f$ of \f$ \phi \f$ into **phi_v**
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp copy_to_phi_v
- *
- * Once we filled phi_v we can implement (7) and calculate the curl of **phi_v**
- * to recover the velocity v
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp curl_phi_v
- *
- *
- */
-
-void comp_vel(grid_dist_id<3,float,aggregate<float>> & gr_ps,
-		      grid_dist_id<3,float,aggregate<float[3]>> & phi_v,
+void comp_vel(grid_type_s & gr_ps,
+		      grid_type & phi_v,
 			  FDScheme<poisson_nn_helm> & fd,
 		      Box<3,float> & domain,
 			  grid_type & g_vort,
@@ -718,10 +401,6 @@ void comp_vel(grid_dist_id<3,float,aggregate<float>> & gr_ps,
 		// copy the solution to grid
 		fd.template copy<phi>(phi_s[i],gr_ps);
 
-		//! \cond [solve_poisson_comp] \endcond
-
-		//! \cond [copy_to_phi_v] \endcond
-
 		auto it3 = gr_ps.getDomainIterator();
 
 		// calculate the velocity from the curl of phi
@@ -733,11 +412,7 @@ void comp_vel(grid_dist_id<3,float,aggregate<float>> & gr_ps,
 
 			++it3;
 		}
-
-		//! \cond [copy_to_phi_v] \endcond
 	}
-
-	//! \cond [curl_phi_v] \endcond
 
 	phi_v.ghost_get<phi>();
 
@@ -765,8 +440,6 @@ void comp_vel(grid_dist_id<3,float,aggregate<float>> & gr_ps,
 
 		++it3;
 	}
-
-	//! \cond [curl_phi_v] \endcond
 }
 
 
@@ -805,22 +478,7 @@ template<unsigned int prp> void set_zero(particles_type & vd)
 	}
 }
 
-/*! \page Vortex_in_cell_petsc Vortex in Cell 3D
- *
- * # Step 6: Compute right hand side # {#vic_rhs_calc}
- *
- * Computing the right hand side is performed calculating the term
- * \f$ (w \cdot \nabla) u \f$. For the nabla operator we use second
- * order finite difference central scheme. The commented part is the
- * term \f$ \nu \nabla^{2} w \f$ that we said to neglect
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp calc_rhs
- *
- */
 
-//! \cond [calc_rhs] \endcond
-
-// Calculate the right hand side of the vorticity formulation
 template<typename grid> void calc_rhs(grid & g_vort, grid & g_vel, grid & g_dwp)
 {
 	// usefull constant
@@ -882,27 +540,6 @@ template<typename grid> void calc_rhs(grid & g_vort, grid & g_vel, grid & g_dwp)
 	}
 }
 
-//! \cond [calc_rhs] \endcond
-
-/*! \page Vortex_in_cell_petsc Vortex in Cell 3D
- *
- * # Step 8: Runge-Kutta # {#vic_runge_kutta1}
- *
- * Here we do the first step of the runge kutta update. In particular we
- * update the vorticity and position of the particles. The right-hand-side
- * of the vorticity update is calculated on the grid and interpolated
- *  on the particles. The Runge-Kutta of order two
- * require the following update for the vorticity and position as first step
- *
- * \f$ \boldsymbol w = \boldsymbol w + \frac{1}{2} \boldsymbol {rhs} \delta t \f$
- *
- * \f$ \boldsymbol x = \boldsymbol x + \frac{1}{2} \boldsymbol u \delta t \f$
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp runge_kutta_1
- *
- */
-
-//! \cond [runge_kutta_1] \endcond
 
 void rk_step1(particles_type & particles)
 {
@@ -945,27 +582,6 @@ void rk_step1(particles_type & particles)
 	particles.map();
 }
 
-//! \cond [runge_kutta_1] \endcond
-
-/*! \page Vortex_in_cell_petsc Vortex in Cell 3D
- *
- * # Step 13: Runge-Kutta # {#vic_runge_kutta2}
- *
- * Here we do the second step of the Runge-Kutta update. In particular we
- * update the vorticity and position of the particles. The right-hand-side
- * of the vorticity update is calculated on the grid and interpolated
- *  on the particles. The Runge-Kutta of order two
- * require the following update for the vorticity and position as first step
- *
- * \f$ \boldsymbol w = \boldsymbol w + \frac{1}{2} \boldsymbol {rhs} \delta t \f$
- *
- * \f$ \boldsymbol x = \boldsymbol x + \frac{1}{2} \boldsymbol u \delta t \f$
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp runge_kutta_2
- *
- */
-
-//! \cond [runge_kutta_2] \endcond
 
 void rk_step2(particles_type & particles)
 {
@@ -998,32 +614,8 @@ void rk_step2(particles_type & particles)
 	particles.map();
 }
 
-
-
-//! \cond [runge_kutta_2] \endcond
-
-/*! \page Vortex_in_cell_petsc Vortex in Cell 3D
- *
- * # Step 4-5-6-7: Do step # {#vic_do_step}
- *
- * The do step function assemble multiple steps some of them already explained.
- * First we interpolate the vorticity from particles to mesh
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp do_step_p2m
- *
- * than we calculate velocity out of vorticity and the right-hand-side
- * recalling step 5 and 6
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp step_56
- *
- * Finally we interpolate velocity and right-hand-side back to particles
- *
- * \snippet Numerics/Vortex_in_cell/main_vic_petsc.cpp inte_m2p
- *
- */
-
-template<typename grid, typename vector> void do_step(grid_dist_id<3,float,aggregate<float>> & psi,
-													  grid_dist_id<3,float,aggregate<float[3]>> & phi_v,
+template<typename grid, typename vector> void do_step(grid_type_s & psi,
+													  grid_type & phi_v,
 													  FDScheme<poisson_nn_helm> & fd,
 													  vector & particles,
 		                                              grid & g_vort,
@@ -1036,24 +628,14 @@ template<typename grid, typename vector> void do_step(grid_dist_id<3,float,aggre
 {
 	constexpr int rhs = 0;
 
-	//! \cond [do_step_p2m] \endcond
-
 	set_zero<vorticity>(g_vort);
 	inte.template p2m<vorticity,vorticity>(particles,g_vort);
 
 	g_vort.template ghost_put<add_,vorticity>();
 
-	//! \cond [do_step_p2m] \endcond
-
-	//! \cond [step_56] \endcond
-
 	// Calculate velocity from vorticity
 	comp_vel(psi,phi_v,fd,domain,g_vort,g_vel,phi_s,solver);
 	calc_rhs(g_vort,g_vel,g_dvort);
-
-	//! \cond [step_56] \endcond
-
-	//! \cond [inte_m2p] \endcond
 
 	g_dvort.template ghost_get<rhs>();
 	g_vel.template ghost_get<velocity>();
@@ -1084,7 +666,7 @@ template<typename vector, typename grid> void check_point_and_save(vector & part
 
 	// In order to reduce the size of the saved data we apply a threshold.
 	// We only save particles with vorticity higher than 0.1
-	vector_dist<3,float,aggregate<float>> part_save(particles.getDecomposition(),0);
+	particles_type_s part_save(particles.getDecomposition(),0);
 
 	auto it_s = particles.getDomainIterator();
 
@@ -1115,28 +697,9 @@ template<typename vector, typename grid> void check_point_and_save(vector & part
 
 	part_save.map();
 
-	// Save and HDF5 file for checkpoint restart
 	particles.save("check_point");
 }
 
-/*! \page Vortex_in_cell_petsc Vortex in Cell 3D
- *
- * # Main # {#vic_main}
- *
- * The main function as usual call the function **openfpm_init** it define
- * the domain where the simulation take place. The ghost size of the grid
- * the size of the grid in grid units on each direction, the periodicity
- * of the domain, in this case PERIODIC in each dimension and we create
- * our basic data structure for the simulation. A grid for the vorticity
- * **g_vort** a grid for the velocity **g_vel** a grid for the right-hand-side
- * of the vorticity update, and the **particles** vector. Additionally
- * we define the data structure **phi_s[3]** that store the velocity solution
- * in the previous time-step. keeping track of the previous solution for
- * the velocity help the interative-solver to find the solution more quickly.
- * Using the old velocity configuration as initial guess the solver will
- * converge in few iterations refining the old one.
- *
- */
 int main(int argc, char* argv[])
 {
 	// Initialize
@@ -1158,6 +721,8 @@ int main(int argc, char* argv[])
 
 	periodicity<3> bc = {{PERIODIC,PERIODIC,PERIODIC}};
 
+	//! \cond [construct grids] \endcond
+
 	grid_type g_vort(szu,domain,g,bc);
 	grid_type g_vel(g_vort.getDecomposition(),szu,g);
 	grid_type g_dvort(g_vort.getDecomposition(),szu,g);
@@ -1169,10 +734,8 @@ int main(int argc, char* argv[])
 
 	// Here we create temporal distributed grid, create a distributed grid is expensive we do it once outside
 	// And the vectorial phi_v
-	grid_dist_id<3,float,aggregate<float>> psi(g_vort.getDecomposition(),g_vort.getGridInfo().getSize(),g);
-	grid_dist_id<3,float,aggregate<float[3]>> phi_v(g_vort.getDecomposition(),g_vort.getGridInfo().getSize(),g);
-
-	//! \cond [poisson_obj_eq] \endcond
+	grid_type_s psi(g_vort.getDecomposition(),g_vort.getGridInfo().getSize(),g);
+	grid_type phi_v(g_vort.getDecomposition(),g_vort.getGridInfo().getSize(),g);
 
 	// In order to create a matrix that represent the poisson equation we have to indicate
 	// we have to indicate the maximum extension of the stencil and we we need an extra layer
@@ -1192,7 +755,7 @@ int main(int argc, char* argv[])
 
 	fd.template impose_dit<0>(poisson(),psi,psi.getDomainIterator());
 
-	//! \cond [poisson_obj_eq] \endcond
+	//! \cond [construct grids] \endcond
 
 	// It store the solution to compute velocity
 	// It is used as initial guess every time we call the solver

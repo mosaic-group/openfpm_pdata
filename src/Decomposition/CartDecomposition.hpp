@@ -865,7 +865,7 @@ public:
 	 * \return itself
 	 *
 	 */
-	CartDecomposition<dim,T,Memory> & operator=(const CartDecomposition & cart)
+	CartDecomposition<dim,T,Memory, Distribution> & operator=(const CartDecomposition & cart)
 	{
 		static_cast<ie_loc_ghost<dim,T>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T>>(cart));
 		static_cast<nn_prcs<dim,T>*>(this)->operator=(static_cast<nn_prcs<dim,T>>(cart));
