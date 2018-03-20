@@ -429,6 +429,8 @@ void Test3D_amr_domain_ghost_it(grid & amr_g, Box<3,float> & domain, size_t coar
 		fact *= 8;
 	}
 
+	std::cout << "Test g_sz: " << g_sz[0] << " " << g_sz[1] << " " << g_sz[2] << std::endl;
+
 	amr_g.initLevels(n_lvl,g_sz);
 
 	size_t total_all_level = 0;
@@ -458,6 +460,8 @@ void Test3D_amr_domain_ghost_it(grid & amr_g, Box<3,float> & domain, size_t coar
 			++it;
 		}
 
+		std::cout << count << std::endl;
+
 		size_t tot = (amr_g.getGridInfoVoid(i).size(0) + 2)*
 				     (amr_g.getGridInfoVoid(i).size(1) + 2)*
 				     (amr_g.getGridInfoVoid(i).size(2) + 2);
@@ -472,6 +476,7 @@ void Test3D_amr_domain_ghost_it(grid & amr_g, Box<3,float> & domain, size_t coar
 			BOOST_REQUIRE_EQUAL(tot,count);
 		}
 
+		size_t amr_cnt = 0;
 		bool match = true;
 		auto it2 = amr_g.getDomainGhostIterator(i);
 
@@ -482,10 +487,12 @@ void Test3D_amr_domain_ghost_it(grid & amr_g, Box<3,float> & domain, size_t coar
 			match &= amr_g.template get<0>(i,key) == key_g.get(0);
 
 			total_all_level++;
+			amr_cnt++;
 
 			++it2;
 		}
 
+		BOOST_REQUIRE_EQUAL(amr_cnt,count);
 		BOOST_REQUIRE_EQUAL(match,true);
 	}
 
@@ -659,6 +666,41 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_test_background_value )
 	bck2 = amr_g2.get<2>(2,key2);
 	BOOST_REQUIRE_EQUAL(bck2,-123);
 
+}
+
+
+BOOST_AUTO_TEST_CASE( grid_dist_amr_get_domain_ghost_check )
+{
+	// Domain
+	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	Ghost<3,long int> g(1);
+
+	sgrid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g2(domain3,g);
+
+	size_t g_sz[3] = {4,4,4};
+
+	amr_g2.initLevels(4,g_sz);
+
+	// This point is on a ghost
+
+	grid_dist_key_dx<3> key(0,grid_key_dx<3>({0,0,0}));
+
+	amr_g2.template insert<0>(1,key) = 555;
+
+	auto dgit = amr_g2.getDomainGhostIterator();
+
+	int cnt = 0;
+	while (dgit.isNext())
+	{
+		auto key = dgit.get();
+
+		cnt++;
+
+		++dgit;
+	}
+
+	BOOST_REQUIRE_EQUAL(cnt,1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

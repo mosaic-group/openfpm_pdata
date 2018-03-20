@@ -643,8 +643,8 @@ public:
 	{
 #ifdef SE_CLASS1
 
-		if (key.getLvl() >= getNLvl() - 1)
-		{std::cerr << __FILE__ << ":" << __LINE__ << " error: we are already at the last level, we cannot go one level down" << std::endl;}
+		if (key.getLvl() == 0)
+		{std::cerr << __FILE__ << ":" << __LINE__ << " error: we are already at the top level, we cannot go one level up" << std::endl;}
 
 #endif
 
