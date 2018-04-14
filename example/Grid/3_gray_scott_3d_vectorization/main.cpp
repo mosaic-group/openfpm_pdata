@@ -117,11 +117,14 @@ void step(grid_dist_id<3, double, aggregate<double>> & OldU,
 		  grid_dist_id<3, double, aggregate<double>> & NewU,
 		  grid_dist_id<3, double, aggregate<double>> & NewV,
 		  grid_key_dx<3> (& star_stencil_3D)[7],
-		  Vc::double_v uFactor, Vc::double_v vFactor, double deltaT, double F, double K)
+		  double uFactor_s, double vFactor_s, double deltaT, double F, double K)
 {
 #ifndef FORTRAN_UPDATE
 
 	//! \cond [cpp_update] \endcond
+
+	Vc::double uFactor = uFactor_s;
+	Vc::double vFactor = vFactor_s;
 
 	WHILE_M(OldU,star_stencil_3D)
 			auto & U_old = GET_GRID_M(OldU);
@@ -183,9 +186,6 @@ void step(grid_dist_id<3, double, aggregate<double>> & OldU,
 #else
 
 	//! \cond [fort_update] \endcond
-
-	double uFactor_s = uFactor[0];
-	double vFactor_s = vFactor[0];
 
 	auto & ginfo = OldU.getLocalGridsInfo();
 
@@ -294,8 +294,8 @@ int main(int argc, char* argv[])
 
 	// because we assume that spacing[x] == spacing[y] we use formula 2
 	// and we calculate the prefactor of Eq 2
-	Vc::double_v uFactor = deltaT * du/(spacing[x]*spacing[x]);
-	Vc::double_v vFactor = deltaT * dv/(spacing[x]*spacing[x]);
+	double uFactor = deltaT * du/(spacing[x]*spacing[x]);
+	double vFactor = deltaT * dv/(spacing[x]*spacing[x]);
 
 	timer tot_sim;
 	tot_sim.start();
