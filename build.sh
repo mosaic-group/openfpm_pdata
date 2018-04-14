@@ -81,8 +81,8 @@ then
 
  source /etc/profile
  echo "$PATH"
- module load gcc/5.5.0
- module load openmpi/3.0.0-gnu5.5
+ module load gcc/7.1.0
+ module load openmpi/3.0.0-gnu7.1
  module unload bullxmpi
  
  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/incard/PARMETIS/lib:/home/incard/METIS/lib:/home/incard/HDF5/lib"
