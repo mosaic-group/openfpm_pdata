@@ -303,7 +303,7 @@ struct fun_index
 	double f;
 	int id;
 
-	bool operator<(const fun_index & tmp)
+	bool operator<(const fun_index & tmp) const
 	{
 		return f < tmp.f;
 	}
