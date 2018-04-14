@@ -1,7 +1,12 @@
 #include "Grid/grid_dist_id.hpp"
 #include "data_type/aggregate.hpp"
 #include "timer.hpp"
+
+#define FORTRAN_UPDATE
+
+#ifndef FORTRAN_UPDATE
 #include "Vc/Vc"
+#endif
 
 /*!
  *
@@ -10,6 +15,11 @@
  * # Solving a gray scott-system in 3D # {#e3_gs_gray_scott_vector}
  *
  * This example is just an improved version of the previous 3D Gray scott example.
+ * It can use VCDevel library for vectorization in C++ or Fortran multi-array code update. For the first case
+ * the library VCDevel must be installed. It can be installed using the command ./script/install_VCDEVEL.sh
+ * /where/are/the/dependencies/directory and changing the Makefile to include the VCDevel library
+ * like show in the Makefile. By default this example use fortran update because does not require
+ * external libraries.
  * In particular we do the following improvements we separate U and V in two grids
  * in order to vectorize. Every loop now handle 4 double in case of AVX-256 and 2 double
  * in case of SSE. We also avoid to use the function copy and we alternate the use of the
@@ -36,7 +46,6 @@
 
 //! \cond [constants] \endcond
 
-//#define FORTRAN_UPDATE
 
 constexpr int x = 0;
 constexpr int y = 1;
