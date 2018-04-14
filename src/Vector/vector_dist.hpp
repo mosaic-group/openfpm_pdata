@@ -123,6 +123,27 @@ struct gcl<dim,St,CellL,Vector,GCL_SYMMETRIC>
 	}
 };
 
+/////////////////// GCL anisotropic ///////////////////////////////////////////
+
+//! General function t get a cell-list
+template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
+struct gcl_An
+{
+	/*! \brief Get the Cell list based on the type
+	 *
+	 * \param vd Distributed vector
+	 * \param r_cut Cut-off radius
+	 * \param g Ghost
+	 *
+	 * \return the constructed cell-list
+	 *
+	 */
+	static inline CellL get(Vector & vd, const size_t (& div)[dim], const size_t (& pad)[dim], const Ghost<dim,St> & g)
+	{
+		return vd.template getCellListSym<CellL>(div,pad);
+	}
+};
+
 #define CELL_MEMFAST(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St> >
 #define CELL_MEMBAL(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_bal<>, shift<dim, St> >
 #define CELL_MEMMW(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_mw<>, shift<dim, St> >
@@ -996,6 +1017,52 @@ public:
 		return cell_list;
 	}
 
+	/*! \brief Construct a cell list symmetric based on a cut of radius
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 *
+	 * \return the Cell list
+	 *
+	 */
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
+	CellL getCellListSym(const size_t (& div)[dim],
+						 const size_t (& pad)[dim])
+	{
+#ifdef SE_CLASS1
+		if (!(opt & BIND_DEC_TO_GHOST))
+		{
+			if (getDecomposition().getGhost().getLow(dim-1) == 0.0)
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, If you construct a vector without BIND_DEC_TO_GHOST the ghost must be full without reductions " << std::endl;
+				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+			}
+		}
+#endif
+
+		size_t pad_max = pad[0];
+		for (size_t i = 1 ; i < dim ; i++)
+		{if (pad[i] > pad_max)	{pad_max = pad[i];}}
+
+		// Cell list
+		CellL cell_list;
+
+		CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
+		cd_sm.setDimensions(getDecomposition().getDomain(),div,pad_max);
+
+		// Processor bounding box
+		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+
+		// Ghost padding extension
+		Ghost<dim,size_t> g_ext(0);
+		cell_list.Initialize(cd_sm,pbox,pad_max);
+		cell_list.set_ndec(getDecomposition().get_ndec());
+
+		updateCellListSym(cell_list);
+
+		return cell_list;
+	}
 
 	/*! \brief Construct a cell list starting from the stored particles
 	 *
@@ -1070,7 +1137,7 @@ public:
 		// but in the worst case we take the maximum
 		St r_cut = 0;
 		for (size_t i = 0 ; i < dim ; i++)
-			r_cut = std::max(r_cut,cell_list.getCellBox().getHigh(i));
+		{r_cut = std::max(r_cut,cell_list.getCellBox().getHigh(i));}
 
 		// Here we have to check that the Cell-list has been constructed
 		// from the same decomposition
@@ -1097,17 +1164,12 @@ public:
 	 * \param cell_list Cell list to update
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > > void updateCellListSym(CellL & cell_list)
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
+	void updateCellListSym(CellL & cell_list)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
-
-		// This function assume equal spacing in all directions
-		// but in the worst case we take the maximum
-		St r_cut = 0;
-		for (size_t i = 0 ; i < dim ; i++)
-		{r_cut = std::max(r_cut,cell_list.getCellBox().getHigh(i));}
 
 		// Here we have to check that the Cell-list has been constructed
 		// from the same decomposition
@@ -1121,7 +1183,10 @@ public:
 		}
 		else
 		{
-			CellL cli_tmp = gcl<dim,St,CellL,self,GCL_SYMMETRIC>::get(*this,r_cut,getDecomposition().getGhost());
+			CellL cli_tmp = gcl_An<dim,St,CellL,self,GCL_SYMMETRIC>::get(*this,
+																		 cell_list.getDivWP(),
+																		 cell_list.getPadding(),
+																		 getDecomposition().getGhost());
 
 			cell_list.swap(cli_tmp);
 		}

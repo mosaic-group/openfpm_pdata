@@ -716,7 +716,7 @@ int main(int argc, char* argv[])
 	// Grid points on x=128 y=64 z=64
 	// if we use Re = 7500
 	//  long int sz[] = {1600,400,400};
-	long int sz[] = {96,96,96};
+	long int sz[] = {128,128,128};
 	size_t szu[] = {(size_t)sz[0],(size_t)sz[1],(size_t)sz[2]};
 
 	periodicity<3> bc = {{PERIODIC,PERIODIC,PERIODIC}};

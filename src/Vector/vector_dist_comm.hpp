@@ -268,26 +268,40 @@ class vector_dist_comm
 	 *
 	 * \param v_pos vector of particle positions
 	 * \param v_prp vector of particles properties
+	 * \param opt options
 	 *
 	 */
 	void local_ghost_from_opart(openfpm::vector<Point<dim, St>> & v_pos,
-			                    openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp)
+			                    openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+								size_t opt)
 	{
 		// get the shift vectors
 		const openfpm::vector<Point<dim, St>> & shifts = dec.getShiftVectors();
 
-		for (size_t i = 0 ; i < o_part_loc.size() ; i++)
+		if (!(opt & NO_POSITION))
 		{
-			size_t lin_id = o_part_loc.get<1>(i);
-			size_t key = o_part_loc.template get<0>(i);
+			for (size_t i = 0 ; i < o_part_loc.size() ; i++)
+			{
+				size_t lin_id = o_part_loc.get<1>(i);
+				size_t key = o_part_loc.template get<0>(i);
 
-			Point<dim, St> p = v_pos.get(key);
-			// shift
-			p -= shifts.get(lin_id);
+				Point<dim, St> p = v_pos.get(key);
+				// shift
+				p -= shifts.get(lin_id);
 
-			// add this particle shifting its position
-			v_pos.add(p);
-			v_prp.get(lg_m+i) = v_prp.get(key);
+				// add this particle shifting its position
+				v_pos.add(p);
+				v_prp.get(lg_m+i) = v_prp.get(key);
+			}
+		}
+		else
+		{
+			for (size_t i = 0 ; i < o_part_loc.size() ; i++)
+			{
+				size_t key = o_part_loc.template get<0>(i);
+
+				v_prp.get(lg_m+i) = v_prp.get(key);
+			}
 		}
 	}
 
@@ -417,7 +431,7 @@ class vector_dist_comm
 		else
 		{
 			if (opt & SKIP_LABELLING)
-			{local_ghost_from_opart(v_pos,v_prp);}
+			{local_ghost_from_opart(v_pos,v_prp,opt);}
 			else
 			{local_ghost_from_dec(v_pos,v_prp,g_m);}
 		}
@@ -690,6 +704,9 @@ class vector_dist_comm
 	{
 		// reset lbl_p
 		lbl_p.clear();
+		o_part_loc.clear();
+		g_opart.clear();
+		g_opart.resize(dec.getNNProcessors());
 
 		// resize the label buffer
 		prc_sz.resize(v_cl.getProcessingUnits());

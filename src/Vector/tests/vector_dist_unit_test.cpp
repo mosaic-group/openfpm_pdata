@@ -1821,6 +1821,70 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 	}
 }
 
+BOOST_AUTO_TEST_CASE( vector_fixing_noposition_and_keep_prop )
+{
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 48)
+		return;
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	// Box
+	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// ghost
+	Ghost<3,float> ghost(0.1);
+
+	vector_dist<3,float, aggregate<double,double>> vd(4096,box,bc,ghost);
+
+	auto it = vd.getDomainIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.getPos(key)[0] = ((double)rand())/RAND_MAX;
+		vd.getPos(key)[1] = ((double)rand())/RAND_MAX;
+		vd.getPos(key)[2] = ((double)rand())/RAND_MAX;
+
+		++it;
+	}
+
+	vd.map();
+
+	vd.ghost_get<>();
+	size_t local = vd.getPosVector().size();
+
+	vd.ghost_get<>(KEEP_PROPERTIES | NO_POSITION);
+
+	size_t local2 = vd.getPosVector().size();
+
+	BOOST_REQUIRE_EQUAL(local,local2);
+
+	// Check now that map reset
+
+	vd.map();
+
+	local = vd.getPosVector().size();
+	BOOST_REQUIRE_EQUAL(local,vd.size_local());
+	vd.ghost_get<>(KEEP_PROPERTIES  | NO_POSITION);
+
+	local2 = vd.getPosVector().size();
+
+	BOOST_REQUIRE_EQUAL(local,local2);
+
+	vd.ghost_get<>(KEEP_PROPERTIES);
+	BOOST_REQUIRE_EQUAL(local,vd.getPosVector().size());
+	BOOST_REQUIRE_EQUAL(vd.getPropVector().size(),local);
+
+	vd.ghost_get<0>(KEEP_PROPERTIES);
+	BOOST_REQUIRE_EQUAL(local,vd.getPosVector().size());
+	BOOST_REQUIRE_EQUAL(vd.getPropVector().size(),local);
+}
+
+
 BOOST_AUTO_TEST_CASE( vector_of_vector_dist )
 {
 	Vcluster & v_cl = create_vcluster();
@@ -1866,7 +1930,6 @@ BOOST_AUTO_TEST_CASE( vector_of_vector_dist )
 
 	BOOST_REQUIRE_EQUAL(cnt,4*4096ul);
 }
-
 
 
 BOOST_AUTO_TEST_SUITE_END()

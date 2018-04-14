@@ -105,7 +105,7 @@ AC_DEFUN([AX_LIB_PETSC], [
 			AX_OPENMP([CFLAGS="$OPENMP_CFLAGS"
 				   LDFLAGS="$OPENMP_LDFLAGS"],[])
                         CFLAGS="$CFLAGS -I$with_petsc/include $HDF5_INCLUDE $METIS_INCLUDE "
-                        LDFLAGS="$LDFLAGS -L$with_petsc/lib $HDF5_LDFLAGS  $HDF5_LIBS $METIS_LIB -lmetis "
+                        LDFLAGS="$LDFLAGS -L$with_petsc/lib $HDF5_LDFLAGS  $HDF5_LIBS $METIS_LIB -lmetis $SUITESPARSE_LIBS"
 			CC=$CXX
 
                         AC_LANG_SAVE
