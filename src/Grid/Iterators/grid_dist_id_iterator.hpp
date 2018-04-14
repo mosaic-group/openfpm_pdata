@@ -59,9 +59,6 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	//! stop point (is the grid size)
 	grid_key_dx<dim> stop;
 
-	// device grid pointer
-	device_grid * dg;
-
 	/*! \brief from g_c increment g_c until you find a valid grid
 	 *
 	 */
@@ -243,18 +240,6 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	template<unsigned int id> inline grid_dist_lin_dx getStencil()
 	{
 		return grid_dist_lin_dx(g_c,a_it.template getStencil<id>());
-	}
-
-	/*! \brief Return the stencil point offset
-	 *
-	 * \tparam id
-	 *
-	 * \return linearized distributed key
-	 *
-	 */
-	template<unsigned int id> inline grid_dist_g_dx<device_grid> getStencilGrid()
-	{
-		return grid_dist_g_dx<device_grid>(dg,a_it.template getStencil<id>());
 	}
 };
 

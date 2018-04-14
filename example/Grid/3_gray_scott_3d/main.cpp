@@ -166,7 +166,7 @@ int main(int argc, char* argv[])
 	for (size_t i = 0; i < timeSteps; ++i)
 	{
 		if (i % 300 == 0)
-			std::cout << "STEP: " << i << std::endl;
+		{std::cout << "STEP: " << i << std::endl;}
 
 		//! \cond [stencil get and use] \endcond
 
@@ -175,15 +175,15 @@ int main(int argc, char* argv[])
 		while (it.isNext())
 		{
 			// center point
-			auto Cp = it.getStencilGrid<0>();
+			auto Cp = it.getStencil<0>();
 
 			// plus,minus X,Y,Z
-			auto mx = it.getStencilGrid<1>();
-			auto px = it.getStencilGrid<2>();
-			auto my = it.getStencilGrid<3>();
-			auto py = it.getStencilGrid<4>();
-			auto mz = it.getStencilGrid<5>();
-			auto pz = it.getStencilGrid<6>();
+			auto mx = it.getStencil<1>();
+			auto px = it.getStencil<2>();
+			auto my = it.getStencil<3>();
+			auto py = it.getStencil<4>();
+			auto mz = it.getStencil<5>();
+			auto pz = it.getStencil<6>();
 
 			// update based on Eq 2
 			New.get<U>(Cp) = Old.get<U>(Cp) + uFactor * (

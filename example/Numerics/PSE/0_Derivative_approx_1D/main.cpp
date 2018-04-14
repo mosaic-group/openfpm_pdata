@@ -100,7 +100,7 @@ int main(int argc, char* argv[])
 	// we create a set of N+1 particles to have a fully covered domain of particles between 0.0 and 4.0
 	// Suppose we have a spacing given by 1.0 you need 4 +1 particles to cover your domain
 	//
-	vector_dist<1,double, aggregate<double>, CartDecomposition<1,double> > vd(Npart+1,box,bc,g);
+	vector_dist<1,double, aggregate<double> > vd(Npart+1,box,bc,g);
 
 	//
 	// ### WIKI 4 ###

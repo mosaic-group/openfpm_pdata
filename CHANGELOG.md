@@ -9,9 +9,9 @@ All notable changes to this project will be documented in this file.
 - Increaded performance for grid ghost get
 - Introduced forms to increase the performance of the grid iterator in case of stencil code (see example 5_GrayScott)
 - EMatrix wrapped eigen matrices compatibles with vector_dist_id
-- General tuning for high dimension vector_dist_id (up to 50 dimensions)
+- General tuning for high dimension vector_dist_id (up to 50 dimensions) + PS_CMA_ES (Particle-Swarm Covariant Matrix Adaptation Evolution Strategy) example in Numerics
 - Added Discrete element Method example (8_DEM)
-- Introduced map(LOCAL) for fast communication in case we have small moovement
+- Introduced map(LOCAL) for fast communication in case we have small movement
 
 ### Fixed
 

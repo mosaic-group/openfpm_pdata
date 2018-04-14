@@ -237,7 +237,11 @@ int main(int argc, char* argv[])
 	//! \cond [create multi-phase multi verlet] \endcond
 
 	// This function create an "Empty" Multiphase Cell List from all the phases
-	auto CL_all = createCellListM<2>(phases,r_cut);
+
+	// We just create a cell list with slightly bigget r_cut to avoid error in Verlet creation
+	// because of round off errors
+	float r_cut2 = r_cut*1.00001;
+	auto CL_all = createCellListM<2>(phases,r_cut2);
 
 	// This create a Verlet-list between phase0 and all the other phases
 	auto NNver0_all = createVerletM<2>(0,phases.get(0),phases,CL_all,r_cut);

@@ -76,7 +76,8 @@ constexpr int force = 1;
 
 //! \cond [calc forces vl] \endcond
 
-void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, VerletList<3, double, FAST, shift<3, double> > & NN, double sigma12, double sigma6, double r_cut)
+template<typename VerletList>
+void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, VerletList & NN, double sigma12, double sigma6, double r_cut)
 {
 	// Reset force on the ghost
 
@@ -186,7 +187,8 @@ void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, Ve
 
 //! \cond [calc energy vl] \endcond
 
-double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, VerletList<3, double, FAST, shift<3, double> > & NN, double sigma12, double sigma6, double r_cut)
+template<typename VerletList>
+double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, VerletList & NN, double sigma12, double sigma6, double r_cut)
 {
 	double E = 0.0;
 

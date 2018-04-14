@@ -14,7 +14,7 @@
 #include "VCluster/VCluster.hpp"
 #include "Graph/ids.hpp"
 
-#define PARMETSI_ERROR_OBJECT std::runtime_error("Runtime Parmetis error");
+#define PARMETIS_ERROR_OBJECT std::runtime_error("Runtime Parmetis error");
 
 
 /*! \brief Metis graph structure
@@ -213,6 +213,16 @@ public:
 	Parmetis(Vcluster & v_cl, size_t nc)
 	:v_cl(v_cl), nc(nc),n_dec(0)
 	{
+#ifdef SE_CLASS1
+
+		if (sizeof(idx_t) != 8)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Error detected invalid installation of Parmetis. OpenFPM support Parmetis/Metis version with 64 bit idx_t" << std::endl;
+			ACTION_ON_ERROR(PARMETIS_ERROR_OBJECT);
+		}
+
+#endif
+
 		// TODO Move into VCluster
 		MPI_Comm_dup(MPI_COMM_WORLD, &comm);
 
@@ -246,16 +256,6 @@ public:
 	 */
 	~Parmetis()
 	{
-#ifdef SE_CLASS1
-
-		if (sizeof(idx_t) != 8)
-		{
-			std::cerr << __FILE__ << ":" << __LINE__ << " Error detected invalid installation of Parmetis. OpenFPM support Parmetis/Metis version with 64 bit idx_t" << std::endl;
-			ACTION_ON_ERROR(PARMETIS_ERROR_OBJECT);
-		}
-
-#endif
-
 		// Deallocate the Mg structure
 		if (Mg.nvtxs != NULL)
 		{

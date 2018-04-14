@@ -167,7 +167,7 @@ void step(grid_dist_id<3, double, aggregate<double>> & OldU,
 
 			out1.store(&U_new.get<0>(Cp),Vc::Unaligned);
 			out2.store(&V_new.get<0>(Cp),Vc::Unaligned);
-	END_LOOP_M
+	END_LOOP_M(Vc::double_v::Size)
 
 	//! \cond [cpp_update] \endcond
 
