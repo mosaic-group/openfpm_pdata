@@ -27,7 +27,7 @@ if [ "$2" == "taurus" ]; then
 
     source /etc/profile
     echo "$PATH"
-    module load gcc/4.9.3
+    module load gcc/7.1.0
     module load intel/2017.0.020
 
     echo "3" > input_install
