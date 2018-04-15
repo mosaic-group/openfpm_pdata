@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 - CRITICAL-BUG scalar product in combination with vector product is broken (it return 0)
 - Fixing 2D IO in binary for vector
 - Fixing 1D grid writer in ASCII mode
+- Fixing Intel compilation of Linear algebra
 
 ## [1.0.0] 13 September 2017 (Codename: Vortex)
 
