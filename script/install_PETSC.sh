@@ -99,7 +99,7 @@ else
 fi
 
 if [ ! -d "$1/SUITESPARSE" ]; then
-  ./script/install_SUITESPARSE.sh $1 $2
+  CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_SUITESPARSE.sh $1 $2
   if [ $? -eq 0 ]; then
     configure_options="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
   fi
