@@ -188,7 +188,7 @@ if [ x"$configure_options" == x"" ]; then
 fi
 if [ $sq -eq 0 ]; then
   unset commands
-  commands[0]="continue"
+#  commands[0]="continue"
   possible_solutions "${commands[@]}"
 fi
 

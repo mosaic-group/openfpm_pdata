@@ -30,7 +30,7 @@ function possible_solutions {
  if [ -a input_install ]; then
    eval ${commands[$possible_solutions_ret]} < input_install
  else
-     eval ${commands[$possible_solutions_ret]}
+   eval ${commands[$possible_solutions_ret]}
  fi
  possible_solutions_command=${commands[$possible_solutions_ret]}
 }
@@ -59,7 +59,9 @@ function possible_solutions_no_continue {
  if [ -a input_install ]; then
    eval ${commands[$possible_solutions_ret]} < input_install
  else
-   eval ${commands[$possible_solutions_ret]}
+   if [ x"${commands[$possible_solutions_ret]}" != x"Accept and continue" ]; then
+     eval ${commands[$possible_solutions_ret]}
+   fi
  fi
  possible_solutions_command=${commands[$possible_solutions_ret]}
 }
