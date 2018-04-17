@@ -101,20 +101,27 @@ else
  echo "Compiling general"
 
  source ~/.bashrc
+ 
+ installation_dir=""
+ if [ x"$2" == x"sbalzarini-mac-15" ]; then
+  installation_dir="--prefix=/Users/jenkins/openfpm_install"
+ else
+  installation_dir="--prefix=/home/jenkins/openfpm_install"
+ fi
 
  mkdir $HOME/$branch
  if [ x"$4" == x"full" ]; then
-  ./install -i $HOME/$branch  -s -c "--prefix=/Users/jenkins/openfpm_install"
+  ./install -i $HOME/$branch  -s -c "$installation_dir"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
  elif [ x"$3" == x"numerics" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
-  ./install -i $HOME/$branch  -m -s -c "--prefix=/home/jenkins/openfpm_install"
+  ./install -i $HOME/$branch  -m -s -c "$installation_dir"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
   make $3
  else
-  ./install -i $HOME/$branch -m -s -c "--prefix=/Users/jenkins/openfpm_install --no-recursion"
+  ./install -i $HOME/$branch -m -s -c "$installation_dir --no-recursion"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
   make $3
