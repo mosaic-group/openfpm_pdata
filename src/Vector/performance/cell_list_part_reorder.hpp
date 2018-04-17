@@ -15,6 +15,7 @@
 #include "cl_part_performance_graph.hpp"
 #include <functional>
 
+
 BOOST_AUTO_TEST_SUITE( celllist_part_reorder_performance_test )
 
 ///////////////////// INPUT DATA //////////////////////
@@ -66,7 +67,7 @@ template<unsigned int dim> void cell_list_part_reorder_random_benchmark(size_t c
 	cl_time_rand_dev.resize(cl_r_cutoff.size());
 
 	std::string str("Testing " + std::to_string(dim) + "D vector, no-order, Cell-list");
-	print_test_v(str);
+	print_test_v(str,0);
 
 	{
 		//For different r_cut
@@ -105,7 +106,7 @@ template<unsigned int dim> void cell_list_part_reorder_random_benchmark(size_t c
 				for (size_t i = 0; i < dim; i++)
 					bc[i] = PERIODIC;
 
-				vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
+				vector_dist<dim,float, aggregate<float[dim]> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
 
 				// Initialize a dist vector
 				vd_initialize<dim>(vd, v_cl, k_int);
@@ -184,7 +185,7 @@ template<unsigned int dim> void cell_list_part_reorder_hilbert_benchmark(size_t 
 
 		// Print test
 		std::string str("Testing " + std::to_string(dim) + "D vector, Hilbert curve reordering, Cell-List");
-		print_test_v(str);
+		print_test_v(str,0);
 
 		// For different r_cut
 		for (size_t r = 0; r < cl_r_cutoff.size(); r++ )
@@ -221,7 +222,7 @@ template<unsigned int dim> void cell_list_part_reorder_hilbert_benchmark(size_t 
 					for (size_t i = 0; i < dim; i++)
 						bc[i] = PERIODIC;
 
-					vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
+					vector_dist<dim,float, aggregate<float[dim]> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
 
 					// Initialize a dist vector
 					vd_initialize<dim>(vd, v_cl, k_int);

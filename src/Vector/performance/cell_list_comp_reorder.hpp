@@ -66,7 +66,7 @@ template<unsigned int dim> void cell_list_comp_reorder_random_benchmark(size_t c
 	cl_time_create_rand_dev.resize(cl_r_cutoff.size());
 
 	std::string str("Testing " + std::to_string(dim) + "D vector, no order, cell-list");
-	print_test_v(str);
+	print_test_v(str,0);
 
 	{
 		//For different r_cut
@@ -105,7 +105,7 @@ template<unsigned int dim> void cell_list_comp_reorder_random_benchmark(size_t c
 				for (size_t i = 0; i < dim; i++)
 					bc[i] = PERIODIC;
 
-				vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
+				vector_dist<dim,float, aggregate<float[dim]> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
 
 				// Initialize a dist vector
 				vd_initialize<dim>(vd, v_cl, k_int);
@@ -165,7 +165,7 @@ template<unsigned int dim> void cell_list_comp_reorder_hilbert_benchmark(size_t 
 	cl_time_create_dev.resize(cl_r_cutoff.size());
 
 	std::string str("Testing " + std::to_string(dim) + "D vector, Hilbert comp reorder, cell list");
-	print_test_v(str);
+	print_test_v(str,0);
 
 	{
 		//For different r_cut
@@ -204,7 +204,7 @@ template<unsigned int dim> void cell_list_comp_reorder_hilbert_benchmark(size_t 
 				for (size_t i = 0; i < dim; i++)
 					bc[i] = PERIODIC;
 
-				vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
+				vector_dist<dim,float, aggregate<float[dim]> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
 
 				// Initialize a dist vector
 				vd_initialize<dim>(vd, v_cl, k_int);
