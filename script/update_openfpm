@@ -4,10 +4,8 @@ source script/show_solutions
 
 function update_openfpm()
 {
-  echo -e "\033[1;5;31m WARNING: the update will destroy any changes in the OpenFPM source code  \033[0m"
+  echo -e "\033[1;5;31m WARNING: the update will destroy any changes you made in the OpenFPM source code  \033[0m"
   
-  commands[0]="Continue"
-  commands[0]="${commands[@]}"
   possible_solutions "${commands[@]}"
 
   ## Get the name of the updating branch
@@ -16,25 +14,24 @@ function update_openfpm()
   echo "Checking for update from $url_update"
   rm tmp_brc
   wget -O tmp_brc $url_update
-  branch=$(cat tmp_brc)
-  echo "Update branch $branch"
-  if [ x"$branch" == x"" ]; then
+  repo=$(cat tmp_brc)
+  echo "Update repo $repo"
+  if [ x"$repo" == x"" ]; then
     echo -e "\033[1m There are no-updates \033[0m"
     return
   fi
 
-  actual_branch=$(git branch | grep \* | cut -d ' ' -f2)
 
-  if [ x"$branch" == x"$actual_branch" ]; then
+  git remote set-url origin "$repo"
 
-   git remote update
-   n_commit=$(git rev-list --count origin/$branch...$branch)
+  git remote update
+  n_commit=$(git rev-list --count origin/master...master)
 
-    if [ $n_commit -eq 0 ]; then
-      echo -e "\033[1m There are no-updates \033[0m"
-      return
-    fi
+  if [ $n_commit -eq 0 ]; then
+    echo -e "\033[1m There are no-updates \033[0m"
+    return
   fi
+
 
   dir_prev_inst=$(cat dependencies_dir)
   for_opt=$(cat foward_options)
@@ -50,7 +47,6 @@ function update_openfpm()
   git submodule foreach 'git stash'
 
   git pull origin
-  git checkout $branch
   git submodule update
 
   #### Check if we have to force upgrade
