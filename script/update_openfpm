@@ -42,12 +42,18 @@ function update_openfpm()
     for_opt="-c $for_opt"
   fi
 
+  if [ x"$1" == x"update" ]; then
+    git stash -u
+    git submodule foreach 'git stash'
 
-  git stash -u
-  git submodule foreach 'git stash'
+    git pull origin master
+  else
 
-  git pull origin
-  git submodule update
+    rm -rf {,.[!.],..?}*
+    echo "Cloning Repo: $repo"
+    git clone $repo .
+
+  fi
 
   #### Check if we have to force upgrade
   force_up=$(cat force_upgrade)
