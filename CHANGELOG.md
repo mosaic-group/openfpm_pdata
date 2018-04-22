@@ -11,6 +11,8 @@ All notable changes to this project will be documented in this file.
 - EMatrix wrapped eigen matrices compatibles with vector_dist_id
 - General tuning for high dimension vector_dist_id (up to 50 dimensions) + PS_CMA_ES (Particle-Swarm Covariant Matrix Adaptation Evolution Strategy) example in Numerics
 - Added Discrete element Method example (8_DEM)
+- Added serial_to_parallel example VCluster (2_serial_to_parallel). The example it show how to port a serial example into openfpm gradually swtiching from
+  a serial section to a parallel section
 - Introduced map(LOCAL) for fast communication in case we have small movement
 
 ### Fixed
