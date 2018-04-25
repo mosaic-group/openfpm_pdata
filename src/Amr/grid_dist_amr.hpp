@@ -53,11 +53,16 @@ class grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,Decomposition,Memory,device_grid>
 	//! Ghost integer
 	Ghost<dim,long int> g_int;
 
+	//! Boundary conditions of the structure
+	periodicity<dim> bc;
+
 	//! array of grids
 	openfpm::vector<grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>> gd_array;
 
+	//! Type of structure sub-grid iterator
 	typedef decltype(device_grid::type_of_subiterator()) device_sub_it;
 
+	//! Type of structure for the grid iterator
 	typedef decltype(device_grid::type_of_iterator()) device_it;
 
 	//! Domain iterator for each distributed grid
@@ -72,7 +77,7 @@ class grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,Decomposition,Memory,device_grid>
 	//! Moving offsets
 	openfpm::vector<openfpm::vector<offset_mv<dim>>> mv_off;
 
-	// background level
+	//! background level
 	T bck;
 
 	/*! \brief Initialize the others levels
@@ -156,6 +161,22 @@ public:
 	grid_dist_amr(const Box<dim,St> & domain, const Ghost<dim,long int> & g)
 	:domain(domain),g_int(g)
 	{
+		// set boundary consitions to non periodic
+
+		for (size_t i = 0; i < dim ; i++)
+		{bc.bc[i] = NON_PERIODIC;}
+	}
+
+	/*! \brief Constructor
+	 *
+	 * \param domain Simulation domain
+	 * \param g ghost extension
+	 * \param bc boundary conditions
+	 *
+	 */
+	grid_dist_amr(const Box<dim,St> & domain, const Ghost<dim,long int> & g, periodicity<dim> & bc)
+	:domain(domain),g_int(g),bc(bc)
+	{
 	}
 
 	/*! \brief Initialize the amr grid
@@ -173,7 +194,7 @@ public:
 		{g_sz_lvl[i] = g_sz[i];}
 
 		// Add the coarse level
-		gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(dec,g_sz,g_int));
+		gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(dec,g_sz,g_int,bc));
 
 		initialize_other(n_lvl,g_sz_lvl);
 	}
@@ -192,7 +213,7 @@ public:
 		{g_sz_lvl[i] = g_sz[i];}
 
 		// Add the coarse level
-		gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(g_sz,domain,g_int));
+		gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(g_sz,domain,g_int,bc));
 
 		initialize_other(n_lvl,g_sz_lvl);
 	}

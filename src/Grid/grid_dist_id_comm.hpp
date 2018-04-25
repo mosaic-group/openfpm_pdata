@@ -184,6 +184,18 @@ class grid_dist_id_comm
 	//! Stores the size of the elements added for each processor that communicate with us (local processor)
 	openfpm::vector<size_t> recv_sz_map;
 
+	//! List of processor to send to
+	openfpm::vector<size_t> send_prc_queue;
+
+	//! Pointer to the memory to send
+	openfpm::vector<void *> send_pointer;
+
+	//! size to send
+	openfpm::vector<size_t> send_size;
+
+	//! receiving buffers in case of dynamic
+	openfpm::vector<BHeapMemory> recv_buffers;
+
 	//! For each near processor, outgoing intersection grid
 	//! \warning m_oGrid is assumed to be an ordered list
 	//! first id is grid
@@ -260,17 +272,6 @@ class grid_dist_id_comm
 				auto & gd = loc_grid.get(sub_id_dst_gdb_ext);
 				gd.copy_to(loc_grid.get(sub_id_src_gdb_ext),bx_src,bx_dst);
 
-/*				const auto & gs = loc_grid.get(sub_id_src_gdb_ext);
-				auto & gd = loc_grid.get(sub_id_dst_gdb_ext);
-
-				while (sub_src.isNext())
-				{
-					// Option 1
-					gd.set(sub_dst.get(),gs,sub_src.get());
-
-					++sub_src;
-					++sub_dst;
-				}*/
 			}
 		}
 	}
@@ -630,6 +631,227 @@ public:
 		grids_reconstruct(m_oGrid_recv,loc_grid,gdb_ext,cd_sm);
 	}
 
+	/* Send or queue the the information
+	 *
+	 * This function send or queue the information to the other processor. In case the
+	 * device grid is a compressed format like in multi-resolution the communication is
+	 * queued because the other side does not know the size of the communication. If is
+	 * not compressed the other side know the size so a direct send is done
+	 *
+	 */
+	void send_or_queue(size_t prc, char * pointer, char * pointer2)
+	{
+		if (device_grid::isCompressed() == false)
+		{v_cl.send(prc,0,pointer,(char *)pointer2 - (char *)pointer);}
+		else
+		{
+			send_prc_queue.add(prc);
+			send_pointer.add(pointer);
+			send_size.add(pointer2-pointer);
+		}
+	}
+
+	static void * receive_dynamic(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
+	{
+		grid_dist_id_comm * gd = static_cast<grid_dist_id_comm *>(ptr);
+
+		gd->recv_buffers.add();
+
+		gd->recv_buffers.last().resize(msg_i);
+		return gd->recv_buffers.last().getPointer();
+	}
+
+	/* Send or queue the the information
+	 *
+	 * This function send or queue the information to the other processor. In case the
+	 * device grid is a compressed format like in multi-resolution the communication is
+	 * queued because the other side does not know the size of the communication. If is
+	 * not compressed the other side know the size so a direct send is done
+	 *
+	 */
+	template <typename prp_object>
+	void queue_recv_data(const openfpm::vector<ep_box_grid<dim>> & eg_box,
+			    		 std::vector<size_t> & prp_recv,
+						 ExtPreAlloc<Memory> & prRecv_prp)
+	{
+		if (device_grid::isCompressed() == false)
+		{
+			//! Receive the information from each processors
+			for ( size_t i = 0 ; i < eg_box.size() ; i++ )
+			{
+				prp_recv.push_back(eg_box.get(i).recv_pnt * sizeof(prp_object) + sizeof(size_t)*eg_box.get(i).n_r_box);
+			}
+
+			size_t tot_recv = ExtPreAlloc<Memory>::calculateMem(prp_recv);
+
+			//! Resize the receiving buffer
+			g_recv_prp_mem.resize(tot_recv);
+
+			// queue the receives
+			for ( size_t i = 0 ; i < eg_box.size() ; i++ )
+			{
+				prRecv_prp.allocate(prp_recv[i]);
+				v_cl.recv(eg_box.get(i).prc,0,prRecv_prp.getPointer(),prp_recv[i]);
+			}
+		}
+		else
+		{
+			// It is not possible to calculate the total information so we have to receive
+
+			v_cl.sendrecvMultipleMessagesNBX(send_prc_queue.size(),&send_size.get(0),
+											 &send_prc_queue.get(0),&send_pointer.get(0),
+											 receive_dynamic,this);
+		}
+	}
+
+	template<unsigned ... prp>
+	void merge_received_data(openfpm::vector<device_grid> & loc_grid,
+							const openfpm::vector<ep_box_grid<dim>> & eg_box,
+							const std::vector<size_t> & prp_recv,
+							ExtPreAlloc<Memory> & prRecv_prp,
+							std::unordered_map<size_t,size_t> & g_id_to_external_ghost_box,
+							const openfpm::vector<e_box_multi<dim>> & eb_gid_list)
+	{
+		if (device_grid::isCompressed() == false)
+		{
+			// wait to receive communication
+			v_cl.execute();
+
+			Unpack_stat ps;
+
+			// Unpack the object
+			for ( size_t i = 0 ; i < eg_box.size() ; i++ )
+			{
+				size_t mark_here = ps.getOffset();
+
+				// for each external ghost box
+				while (ps.getOffset() - mark_here < prp_recv[i])
+				{
+					// Unpack the ghost box global-id
+
+					size_t g_id;
+					Unpacker<size_t,HeapMemory>::unpack(prRecv_prp,g_id,ps);
+
+					size_t l_id = 0;
+					// convert the global id into local id
+					auto key = g_id_to_external_ghost_box.find(g_id);
+
+					if (key != g_id_to_external_ghost_box.end()) // FOUND
+					{l_id = key->second;}
+					else
+					{
+						// NOT FOUND
+
+						// It must be always found, if not it mean that the processor has no-idea of
+						// what is stored and conseguently do not know how to unpack, print a critical error
+						// and return
+
+						std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " Critical, cannot unpack object, because received data cannot be interpreted\n";
+
+						return;
+					}
+
+
+					// we unpack into the last eb_gid_list that is always big enought to
+					// unpack the information
+
+					size_t le_id = eb_gid_list.get(l_id).eb_list.last();
+
+					// Get the external ghost box associated with the packed information
+					Box<dim,size_t> box = eg_box.get(i).bid.get(le_id).l_e_box;
+					size_t sub_id = eg_box.get(i).bid.get(le_id).sub;
+
+					// sub-grid where to unpack
+					auto sub2 = loc_grid.get(sub_id).getIterator(box.getKP1(),box.getKP2());
+
+					// Unpack
+					Unpacker<device_grid,HeapMemory>::template unpack<decltype(sub2),prp...>(prRecv_prp,sub2,loc_grid.get(sub_id),ps);
+
+					// Copy the information on the other grid
+					for (long int j = 0 ; j < (long int)eb_gid_list.get(l_id).eb_list.size() - 1 ; j++)
+					{
+						size_t nle_id = eb_gid_list.get(l_id).eb_list.get(j);
+						size_t n_sub_id = eg_box.get(i).bid.get(nle_id).sub;
+
+						Box<dim,size_t> box = eg_box.get(i).bid.get(nle_id).l_e_box;
+						Box<dim,size_t> rbox = eg_box.get(i).bid.get(nle_id).lr_e_box;
+
+						loc_grid.get(n_sub_id).copy_to(loc_grid.get(sub_id),rbox,box);
+					}
+				}
+			}
+		}
+		else
+		{
+			Unpack_stat ps;
+
+			// Unpack the object
+			for ( size_t i = 0 ; i < recv_buffers.size() ; i++ )
+			{
+				size_t mark_here = ps.getOffset();
+
+				ExtPreAlloc<BHeapMemory> mem(recv_buffers.get(i).size(),recv_buffers.get(i));
+
+				// for each external ghost box
+				while (ps.getOffset() - mark_here < recv_buffers.get(i).size())
+				{
+					// Unpack the ghost box global-id
+
+					size_t g_id;
+					Unpacker<size_t,BHeapMemory>::unpack(mem,g_id,ps);
+
+					size_t l_id = 0;
+					// convert the global id into local id
+					auto key = g_id_to_external_ghost_box.find(g_id);
+
+					if (key != g_id_to_external_ghost_box.end()) // FOUND
+					{l_id = key->second;}
+					else
+					{
+						// NOT FOUND
+
+						// It must be always found, if not it mean that the processor has no-idea of
+						// what is stored and conseguently do not know how to unpack, print a critical error
+						// and return
+
+						std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " Critical, cannot unpack object, because received data cannot be interpreted\n";
+
+						return;
+					}
+
+
+					// we unpack into the last eb_gid_list that is always big enought to
+					// unpack the information
+
+					size_t le_id = eb_gid_list.get(l_id).eb_list.last();
+
+					// Get the external ghost box associated with the packed information
+					Box<dim,size_t> box = eg_box.get(i).bid.get(le_id).l_e_box;
+					size_t sub_id = eg_box.get(i).bid.get(le_id).sub;
+
+					// sub-grid where to unpack
+					auto sub2 = loc_grid.get(sub_id).getIterator(box.getKP1(),box.getKP2());
+
+					// Unpack
+					Unpacker<device_grid,BHeapMemory>::template unpack<decltype(sub2),prp...>(mem,sub2,loc_grid.get(sub_id),ps);
+
+					// Copy the information on the other grid
+					for (long int j = 0 ; j < (long int)eb_gid_list.get(l_id).eb_list.size() - 1 ; j++)
+					{
+						size_t nle_id = eb_gid_list.get(l_id).eb_list.get(j);
+						size_t n_sub_id = eg_box.get(i).bid.get(nle_id).sub;
+
+						Box<dim,size_t> box = eg_box.get(i).bid.get(nle_id).l_e_box;
+						Box<dim,size_t> rbox = eg_box.get(i).bid.get(nle_id).lr_e_box;
+
+						loc_grid.get(n_sub_id).copy_to(loc_grid.get(sub_id),rbox,box);
+					}
+				}
+			}
+		}
+	}
+
+
 	/*! \brief It fill the ghost part of the grids
 	 *
 	 * \param ig_box internal ghost box
@@ -726,121 +948,25 @@ public:
 
 			void * pointer2 = prAlloc_prp.getPointerEnd();
 
-			v_cl.send(ig_box.get(i).prc,0,pointer,(char *)pointer2 - (char *)pointer);
+			// This function send (or queue for sending) the information
+			send_or_queue(ig_box.get(i).prc,(char *)pointer,(char *)pointer2);
 		}
 
 		// Calculate the total information to receive from each processors
 		std::vector<size_t> prp_recv;
 
-		//! Receive the information from each processors
-		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
-		{
-			prp_recv.push_back(eg_box.get(i).recv_pnt * sizeof(prp_object) + sizeof(size_t)*eg_box.get(i).n_r_box);
-		}
-
-		size_t tot_recv = ExtPreAlloc<Memory>::calculateMem(prp_recv);
-
-		//! Resize the receiving buffer
-		g_recv_prp_mem.resize(tot_recv);
-
 		// Create an object of preallocated memory for properties
 		ExtPreAlloc<Memory> & prRecv_prp = *(new ExtPreAlloc<Memory>(tot_recv,g_recv_prp_mem));
 		prRecv_prp.incRef();
 
-		// queue the receives
-		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
-		{
-			prRecv_prp.allocate(prp_recv[i]);
-			v_cl.recv(eg_box.get(i).prc,0,prRecv_prp.getPointer(),prp_recv[i]);
-		}
-
 		// Before wait for the communication to complete we sync the local ghost
 		// in order to overlap with communication
 
+		queue_recv_data<prp_object>(eg_box,prp_recv,prRecv_prp);
+
 		ghost_get_local<prp...>(loc_ig_box,loc_eg_box,gdb_ext,loc_grid,g_id_to_external_ghost_box);
 
-		// wait to receive communication
-		v_cl.execute();
-
-		Unpack_stat ps;
-
-		// Unpack the object
-		for ( size_t i = 0 ; i < eg_box.size() ; i++ )
-		{
-			size_t mark_here = ps.getOffset();
-
-			// for each external ghost box
-			while (ps.getOffset() - mark_here < prp_recv[i])
-			{
-				// Unpack the ghost box global-id
-
-				size_t g_id;
-				Unpacker<size_t,HeapMemory>::unpack(prRecv_prp,g_id,ps);
-
-				size_t l_id = 0;
-				// convert the global id into local id
-				auto key = g_id_to_external_ghost_box.find(g_id);
-
-				if (key != g_id_to_external_ghost_box.end()) // FOUND
-				{l_id = key->second;}
-				else
-				{
-					// NOT FOUND
-
-					// It must be always found, if not it mean that the processor has no-idea of
-					// what is stored and conseguently do not know how to unpack, print a critical error
-					// and return
-
-					std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " Critical, cannot unpack object, because received data cannot be interpreted\n";
-
-					return;
-				}
-
-
-				// we unpack into the last eb_gid_list that is always big enought to
-				// unpack the information
-
-				size_t le_id = eb_gid_list.get(l_id).eb_list.last();
-
-				// Get the external ghost box associated with the packed information
-				Box<dim,size_t> box = eg_box.get(i).bid.get(le_id).l_e_box;
-				size_t sub_id = eg_box.get(i).bid.get(le_id).sub;
-
-				// sub-grid where to unpack
-				auto sub2 = loc_grid.get(sub_id).getIterator(box.getKP1(),box.getKP2());
-
-				// Unpack
-				Unpacker<device_grid,HeapMemory>::template unpack<decltype(sub2),prp...>(prRecv_prp,sub2,loc_grid.get(sub_id),ps);
-
-				// Copy the information on the other grid
-				for (long int j = 0 ; j < (long int)eb_gid_list.get(l_id).eb_list.size() - 1 ; j++)
-				{
-					size_t nle_id = eb_gid_list.get(l_id).eb_list.get(j);
-					size_t n_sub_id = eg_box.get(i).bid.get(nle_id).sub;
-
-					Box<dim,size_t> box = eg_box.get(i).bid.get(nle_id).l_e_box;
-					Box<dim,size_t> rbox = eg_box.get(i).bid.get(nle_id).lr_e_box;
-
-					loc_grid.get(n_sub_id).copy_to(loc_grid.get(sub_id),rbox,box);
-
-					// sub-grid where to unpack
-/*					grid_key_dx_iterator_sub<dim> src(loc_grid.get(sub_id).getGrid(),rbox.getKP1(),rbox.getKP2());
-					grid_key_dx_iterator_sub<dim> dst(loc_grid.get(n_sub_id).getGrid(),box.getKP1(),box.getKP2());
-
-					while (src.isNext())
-					{
-						auto key_src = src.get();
-						auto key_dst = dst.get();
-
-						loc_grid.get(n_sub_id).get_o(key_dst) = loc_grid.get(sub_id).get_o(key_src);
-
-						++src;
-						++dst;
-					}*/
-
-				}
-			}
-		}
+		merge_received_data<prp ...>(loc_grid,eg_box,prp_recv,prRecv_prp,g_id_to_external_ghost_box,eb_gid_list);
 	}
 
 	/*! \brief It merge the information in the ghost with the

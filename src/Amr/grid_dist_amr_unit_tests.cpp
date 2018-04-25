@@ -126,7 +126,7 @@ inline bool gr_is_inside(const grid_key_dx<dim> & key, const size_t (& sz)[dim])
 }
 
 template <typename grid>
-void Test3D_amr_child_parent_get(grid & amr_g, Box<3,float> & domain, size_t coars_g, size_t n_lvl)
+void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain, size_t coars_g, size_t n_lvl)
 {
 	const int x = 0;
 	const int y = 1;
@@ -189,7 +189,6 @@ void Test3D_amr_child_parent_get(grid & amr_g, Box<3,float> & domain, size_t coa
 	}
 
 	amr_g.template ghost_get<0,1,2>();
-	amr_g.write("amr_write_test");
 
 	// now we check that move space work
 
@@ -302,6 +301,157 @@ void Test3D_amr_child_parent_get(grid & amr_g, Box<3,float> & domain, size_t coa
 	BOOST_REQUIRE_EQUAL(match,true);
 }
 
+
+template <typename grid>
+void Test3D_amr_child_parent_get_periodic(grid & amr_g, Box<3,float> & domain, size_t coars_g, size_t n_lvl)
+{
+	const int x = 0;
+	const int y = 1;
+	const int z = 2;
+
+	size_t g_sz[3] = {coars_g,coars_g,coars_g};
+
+	size_t tot = coars_g*coars_g*coars_g;
+	size_t correct_result = 0;
+	size_t fact = 1;
+
+	for (size_t i = 0 ; i <  n_lvl ; i++)
+	{
+		correct_result += tot*fact;
+		fact *= 8;
+	}
+
+	amr_g.initLevels(n_lvl,g_sz);
+
+	//////// Add something /////
+
+	for (size_t i = 0 ; i < amr_g.getNLvl() ; i++)
+	{
+		// Fill the AMR with something
+
+		size_t count = 0;
+
+		auto it = amr_g.getGridIterator(i);
+
+		while (it.isNext())
+		{
+			auto key = it.get_dist();
+			auto akey = amr_g.getAMRKey(i,key);
+
+			amr_g.template insert<0>(akey) = 3.0;
+
+			count++;
+
+			++it;
+		}
+	}
+
+	////////////////////////////
+
+	std::string test = amr_g.getSpacing(0).toString();
+
+	// Iterate across all the levels initialized
+	auto it = amr_g.getDomainIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+		auto gkey = it.getGKey();
+
+		amr_g.template insert<0>(key) = gkey.get(0);
+		amr_g.template insert<1>(key) = gkey.get(1);
+		amr_g.template insert<2>(key) = gkey.get(2);
+
+		++it;
+	}
+
+	amr_g.write("amr_gg_before_");
+	amr_g.template ghost_get<0,1,2>();
+	amr_g.write("amr_gg_after_");
+
+	amr_g.getDistGrid(0).getDecomposition().write("DEC_OUT");
+
+	// now we check that move space work
+
+	auto it2 = amr_g.getDomainIterator();
+
+	bool match = true;
+	while (it2.isNext())
+	{
+		auto key = it2.get();
+		auto gkey = it2.getGKey();
+
+		auto key_px = key.moveSpace(x,1);
+		auto key_mx = key.moveSpace(x,-1);
+		auto key_py = key.moveSpace(y,1);
+		auto key_my = key.moveSpace(y,-1);
+		auto key_pz = key.moveSpace(z,1);
+		auto key_mz = key.moveSpace(z,-1);
+
+		match &= amr_g.template get<0>(key_px) == openfpm::math::positive_modulo(gkey.get(0) + 1,amr_g.getGridInfoVoid(it2.getLvl()).size(0));
+		match &= amr_g.template get<1>(key_px) == gkey.get(1);
+		match &= amr_g.template get<2>(key_px) == gkey.get(2);
+
+		match &= amr_g.template get<0>(key_mx) == openfpm::math::positive_modulo(gkey.get(0) - 1,amr_g.getGridInfoVoid(it2.getLvl()).size(0));
+		match &= amr_g.template get<1>(key_mx) == gkey.get(1);
+		match &= amr_g.template get<2>(key_mx) == gkey.get(2);
+
+		match &= amr_g.template get<0>(key_py) == gkey.get(0);
+		match &= amr_g.template get<1>(key_py) == openfpm::math::positive_modulo(gkey.get(1) + 1,amr_g.getGridInfoVoid(it2.getLvl()).size(1));
+		match &= amr_g.template get<2>(key_py) == gkey.get(2);
+
+		match &= amr_g.template get<0>(key_my) == gkey.get(0);
+		match &= amr_g.template get<1>(key_my) == openfpm::math::positive_modulo(gkey.get(1) - 1,amr_g.getGridInfoVoid(it2.getLvl()).size(1));
+		match &= amr_g.template get<2>(key_my) == gkey.get(2);
+
+		match &= amr_g.template get<0>(key_pz) == gkey.get(0);
+		match &= amr_g.template get<1>(key_pz) == gkey.get(1);
+		match &= amr_g.template get<2>(key_pz) == openfpm::math::positive_modulo(gkey.get(2) + 1,amr_g.getGridInfoVoid(it2.getLvl()).size(2));
+
+		match &= amr_g.template get<0>(key_mz) == gkey.get(0);
+		match &= amr_g.template get<1>(key_mz) == gkey.get(1);
+		match &= amr_g.template get<2>(key_mz) == openfpm::math::positive_modulo(gkey.get(2) - 1,amr_g.getGridInfoVoid(it2.getLvl()).size(2));
+
+		// Test to go to all the levels down
+
+		size_t lvl = it2.getLvl();
+
+		if (lvl < amr_g.getNLvl() - 1)
+		{
+			auto key_l1 = key;
+			amr_g.moveLvlDw(key_l1);
+			auto key_gl1 = amr_g.getGKey(key_l1);
+
+			for (size_t s = 0 ; s < 3 ; s++)
+			{
+				match &= key_gl1.get(s) >> 1 == gkey.get(s);
+				match &= amr_g.template get<0>(key_l1) == key_gl1.get(0);
+				match &= amr_g.template get<1>(key_l1) == key_gl1.get(1);
+				match &= amr_g.template get<2>(key_l1) == key_gl1.get(2);
+			}
+		}
+
+		if (lvl != 0)
+		{
+			auto key_l1 = key;
+			amr_g.moveLvlUp(key_l1);
+			auto key_gl1 = amr_g.getGKey(key_l1);
+
+			for (size_t s = 0 ; s < 3 ; s++)
+			{
+				match &= gkey.get(s) >> 1 == key_gl1.get(s);
+
+				match &= amr_g.template get<0>(key_l1) == key_gl1.get(0);
+				match &= amr_g.template get<1>(key_l1) == key_gl1.get(1);
+				match &= amr_g.template get<2>(key_l1) == key_gl1.get(2);
+			}
+		}
+
+		++it2;
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+}
 
 template <typename grid>
 void Test3D_amr_ghost_it(grid & amr_g, Box<3,float> & domain, size_t coars_g, size_t n_lvl)
@@ -429,8 +579,6 @@ void Test3D_amr_domain_ghost_it(grid & amr_g, Box<3,float> & domain, size_t coar
 		fact *= 8;
 	}
 
-	std::cout << "Test g_sz: " << g_sz[0] << " " << g_sz[1] << " " << g_sz[2] << std::endl;
-
 	amr_g.initLevels(n_lvl,g_sz);
 
 	size_t total_all_level = 0;
@@ -459,8 +607,6 @@ void Test3D_amr_domain_ghost_it(grid & amr_g, Box<3,float> & domain, size_t coar
 
 			++it;
 		}
-
-		std::cout << count << std::endl;
 
 		size_t tot = (amr_g.getGridInfoVoid(i).size(0) + 2)*
 				     (amr_g.getGridInfoVoid(i).size(1) + 2)*
@@ -513,7 +659,7 @@ void Test3D_amr_domain_ghost_it(grid & amr_g, Box<3,float> & domain, size_t coar
 
 template <typename> struct Debug;
 
-BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test )
+BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test_nop )
 {
 	// Domain
 	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
@@ -524,7 +670,23 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test )
 	Ghost<3,long int> g(1);
 	grid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g(domain3,g);
 
-	Test3D_amr_child_parent_get(amr_g,domain3,k,4);
+	Test3D_amr_child_parent_get_no_periodic(amr_g,domain3,k,4);
+}
+
+BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test_p )
+{
+	// Domain
+	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	long int k = 16*16*16*create_vcluster().getProcessingUnits();
+	k = std::pow(k, 1/3.);
+
+	periodicity<3> bc = {PERIODIC,PERIODIC,PERIODIC};
+
+	Ghost<3,long int> g(1);
+	grid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g(domain3,g,bc);
+
+	Test3D_amr_child_parent_get_periodic(amr_g,domain3,k,4);
 }
 
 BOOST_AUTO_TEST_CASE( grid_dist_amr_test )
@@ -607,11 +769,11 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test_low_res )
 	Ghost<3,long int> g(1);
 	grid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g(domain3,g);
 
-	Test3D_amr_child_parent_get(amr_g,domain3,k,4);
+	Test3D_amr_child_parent_get_no_periodic(amr_g,domain3,k,4);
 
 	sgrid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g2(domain3,g);
 
-	Test3D_amr_child_parent_get(amr_g2,domain3,k,4);
+	Test3D_amr_child_parent_get_no_periodic(amr_g2,domain3,k,4);
 }
 
 BOOST_AUTO_TEST_CASE( grid_dist_amr_test_background_value )
@@ -693,8 +855,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_get_domain_ghost_check )
 	int cnt = 0;
 	while (dgit.isNext())
 	{
-		auto key = dgit.get();
-
 		cnt++;
 
 		++dgit;
