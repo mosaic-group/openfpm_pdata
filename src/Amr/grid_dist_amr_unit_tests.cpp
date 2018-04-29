@@ -260,6 +260,12 @@ void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain
 			match &= amr_g.template get<2>(key_mz) == gkey.get(2) - 1;
 		}
 
+		if (match == false)
+		{
+			int debug = 0;
+			debug++;
+		}
+
 		// Test to go to all the levels down
 
 		size_t lvl = it2.getLvl();
@@ -293,6 +299,12 @@ void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain
 				match &= amr_g.template get<1>(key_l1) == key_gl1.get(1);
 				match &= amr_g.template get<2>(key_l1) == key_gl1.get(2);
 			}
+		}
+
+		if (match == false)
+		{
+			int debug = 0;
+			debug++;
 		}
 
 		++it2;
@@ -365,11 +377,7 @@ void Test3D_amr_child_parent_get_periodic(grid & amr_g, Box<3,float> & domain, s
 		++it;
 	}
 
-	amr_g.write("amr_gg_before_");
 	amr_g.template ghost_get<0,1,2>();
-	amr_g.write("amr_gg_after_");
-
-	amr_g.getDistGrid(0).getDecomposition().write("DEC_OUT");
 
 	// now we check that move space work
 
@@ -861,6 +869,128 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_get_domain_ghost_check )
 	}
 
 	BOOST_REQUIRE_EQUAL(cnt,1);
+}
+
+template<typename grid_amr>
+void Test3D_ghost_put(grid_amr & g_dist_amr, long int k)
+{
+	// check the consistency of the decomposition
+	bool val = g_dist_amr.getDecomposition().check_consistency();
+	BOOST_REQUIRE_EQUAL(val,true);
+
+	size_t sz[3] = {k,k,k};
+
+	// Grid sm
+	grid_sm<3,void> info(sz);
+
+	size_t count = 0;
+
+	{
+	auto dom = g_dist_amr.getDomainIterator();
+
+	while (dom.isNext())
+	{
+		auto key = dom.get();
+
+		g_dist_amr.template get<0>(key) = -6.0;
+
+		// Count the points
+		count++;
+
+		++dom;
+	}
+	}
+
+	// Set to zero the full grid
+
+	{
+	auto dom = g_dist_amr.getDomainIterator();
+
+	while (dom.isNext())
+	{
+		auto key = dom.get();
+
+		g_dist_amr.template get<0>(key.move(0,1)) += 1.0;
+		g_dist_amr.template get<0>(key.move(0,-1)) += 1.0;
+		g_dist_amr.template get<0>(key.move(1,1)) += 1.0;
+		g_dist_amr.template get<0>(key.move(1,-1)) += 1.0;
+		g_dist_amr.template get<0>(key.move(2,1)) += 1.0;
+		g_dist_amr.template get<0>(key.move(2,-1)) += 1.0;
+
+		++dom;
+	}
+	}
+
+	bool correct = true;
+
+	// Domain + Ghost iterator
+	auto dom_gi = g_dist_amr.getDomainIterator();
+
+	while (dom_gi.isNext())
+	{
+		auto key = dom_gi.get();
+
+		correct &= (g_dist_amr.template get<0>(key) == 0);
+
+		++dom_gi;
+	}
+
+	g_dist_amr.template ghost_put<add_,0>();
+
+	if (count != 0)
+		BOOST_REQUIRE_EQUAL(correct, false);
+
+	// sync the ghosts
+	g_dist_amr.template ghost_get<0>();
+
+	correct = true;
+
+	// Domain + Ghost iterator
+	auto dom_gi2 = g_dist_amr.getDomainIterator();
+
+	while (dom_gi2.isNext())
+	{
+		auto key = dom_gi2.get();
+
+		correct &= (g_dist_amr.template get<0>(key) == 0);
+
+		++dom_gi2;
+	}
+
+	BOOST_REQUIRE_EQUAL(correct, true);
+}
+
+BOOST_AUTO_TEST_CASE( grid_dist_amr_get_domain_ghost_put_check )
+{
+	// Test grid periodic
+
+	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	Vcluster & v_cl = create_vcluster();
+
+	if ( v_cl.getProcessingUnits() > 32 )
+	{return;}
+
+	long int k = 13;
+
+	BOOST_TEST_CHECKPOINT( "Testing grid periodic k<=" << k );
+
+	// grid size
+	size_t sz[3];
+	sz[0] = k;
+	sz[1] = k;
+	sz[2] = k;
+
+	// Ghost
+	Ghost<3,long int> g(1);
+
+	// periodicity
+	periodicity<3> pr = {{PERIODIC,PERIODIC,PERIODIC}};
+
+	// Distributed grid with id decomposition
+	grid_dist_id<3, float, aggregate<long int>> g_dist(sz,domain,g,pr);
+
+	Test3D_ghost_put(g_dist,k);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

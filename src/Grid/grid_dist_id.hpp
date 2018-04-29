@@ -403,7 +403,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		eg_box.resize(dec.getNNProcessors());
 
 		for (size_t i = 0 ; i < eg_box.size() ; i++)
-			eg_box.get(i).prc = dec.IDtoProc(i);
+		{eg_box.get(i).prc = dec.IDtoProc(i);}
 
 		for (size_t i = 0 ; i < box_int_recv.size() ; i++)
 		{
@@ -551,6 +551,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 					pib.bid.add(bid_t);
 					eb_gid_list.add();
 					eb_gid_list.last().eb_list.add(pib.bid.size()-1);
+					eb_gid_list.last().e_id = p_id;
 
 					g_id_to_external_ghost_box[bid_t.g_id] = eb_gid_list.size()-1;
 				}

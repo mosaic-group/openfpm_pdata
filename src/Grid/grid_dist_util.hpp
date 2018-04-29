@@ -494,6 +494,10 @@ struct e_box_multi
 	//! This is the id in eb_list that contain an external ghost box
 	//! able to store the full received box
 	size_t full_match;
+
+	//! It store the id of linked eg_box (eg_box.get(e_id) is valid, this mean that e_id store processor id information)
+	//! \see ProctoID function
+	size_t e_id;
 };
 
 

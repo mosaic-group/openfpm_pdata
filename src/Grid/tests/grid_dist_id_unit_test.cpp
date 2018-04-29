@@ -1284,7 +1284,7 @@ void Test3D_periodic_put(const Box<3,float> & domain, long int k)
 	Vcluster & v_cl = create_vcluster();
 
 	if ( v_cl.getProcessingUnits() > 32 )
-		return;
+	{return;}
 
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
