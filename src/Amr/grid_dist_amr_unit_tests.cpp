@@ -892,7 +892,7 @@ void Test3D_ghost_put(grid_amr & g_dist_amr, long int k)
 	{
 		auto key = dom.get();
 
-		g_dist_amr.template get<0>(key) = -6.0;
+		g_dist_amr.template insert<0>(key) = -6.0;
 
 		// Count the points
 		count++;
@@ -910,12 +910,12 @@ void Test3D_ghost_put(grid_amr & g_dist_amr, long int k)
 	{
 		auto key = dom.get();
 
-		g_dist_amr.template get<0>(key.move(0,1)) += 1.0;
-		g_dist_amr.template get<0>(key.move(0,-1)) += 1.0;
-		g_dist_amr.template get<0>(key.move(1,1)) += 1.0;
-		g_dist_amr.template get<0>(key.move(1,-1)) += 1.0;
-		g_dist_amr.template get<0>(key.move(2,1)) += 1.0;
-		g_dist_amr.template get<0>(key.move(2,-1)) += 1.0;
+		g_dist_amr.template insert<0>(key.move(0,1)) += 1.0;
+		g_dist_amr.template insert<0>(key.move(0,-1)) += 1.0;
+		g_dist_amr.template insert<0>(key.move(1,1)) += 1.0;
+		g_dist_amr.template insert<0>(key.move(1,-1)) += 1.0;
+		g_dist_amr.template insert<0>(key.move(2,1)) += 1.0;
+		g_dist_amr.template insert<0>(key.move(2,-1)) += 1.0;
 
 		++dom;
 	}
@@ -938,7 +938,7 @@ void Test3D_ghost_put(grid_amr & g_dist_amr, long int k)
 	g_dist_amr.template ghost_put<add_,0>();
 
 	if (count != 0)
-		BOOST_REQUIRE_EQUAL(correct, false);
+	{BOOST_REQUIRE_EQUAL(correct, false);}
 
 	// sync the ghosts
 	g_dist_amr.template ghost_get<0>();
@@ -991,6 +991,11 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_get_domain_ghost_put_check )
 	grid_dist_id<3, float, aggregate<long int>> g_dist(sz,domain,g,pr);
 
 	Test3D_ghost_put(g_dist,k);
+
+	// Distributed grid with id decomposition
+//	sgrid_dist_id<3, float, aggregate<long int>> sg_dist(sz,domain,g,pr);
+
+//	Test3D_ghost_put(sg_dist,k);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -27,7 +27,7 @@ struct grid_unpack_selector_with_prp
 	 * \param ps unpack status
 	 *
 	 */
-	template<template<typename,typename> class op, int ... prp> static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims> & sub2, device_grid & gd, Unpack_stat & ps)
+	template<template<typename,typename> class op, typename sub_it_type, int ... prp> static void call_unpack(ExtPreAlloc<Memory> & recv_buf, sub_it_type & sub2, device_grid & gd, Unpack_stat & ps)
 	{
 		std::cerr << __FILE__ << ":" << __LINE__ << " Error: complex properties on grids are not supported yet" << std::endl;
 	}
@@ -49,9 +49,15 @@ struct grid_unpack_selector_with_prp<true,T,device_grid,Memory>
 	 * \param ps unpack status
 	 *
 	 */
-	template<template<typename,typename> class op, unsigned int ... prp> static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims> & sub2, device_grid & gd, Unpack_stat & ps)
+	template<template<typename,typename> class op, typename sub_it_type, unsigned int ... prp>
+	static void call_unpack(ExtPreAlloc<Memory> & recv_buf,
+							sub_it_type & sub2,
+							device_grid & gd,
+							Unpack_stat & ps)
 	{
-		PtrMemory * ptr1;
+		gd.template unpack_with_op<op,Memory,prp ...>(recv_buf,sub2,ps);
+
+/*		PtrMemory * ptr1;
 
 		size_t sz[device_grid::dims];
 
@@ -61,7 +67,7 @@ struct grid_unpack_selector_with_prp<true,T,device_grid,Memory>
 		size_t tot = 1;
 
 		for (size_t i = 0 ; i < device_grid::dims ; i++)
-			tot *= sz[i];
+		{tot *= sz[i];}
 
 		tot *= sizeof(T);
 
@@ -95,7 +101,7 @@ struct grid_unpack_selector_with_prp<true,T,device_grid,Memory>
 			++it_src;
 		}
 
-		ps.addOffset(tot);
+		ps.addOffset(tot);*/
 	}
 };
 
@@ -124,11 +130,15 @@ struct grid_call_serialize_variadic<device_grid, Memory, index_tuple<prp...>>
 	 * \param ps unpack status
 	 *
 	 */
-	template<template<typename,typename> class op, typename T> inline static void call_unpack(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims> & sub2, device_grid & dg, Unpack_stat & ps)
+	template<template<typename,typename> class op, typename sub_it_type, typename T>
+	inline static void call_unpack(ExtPreAlloc<Memory> & recv_buf,
+									sub_it_type & sub2,
+									device_grid & dg,
+									Unpack_stat & ps)
 	{
 		const bool result = has_pack_gen<typename T::type>::value == false;
 
-		grid_unpack_selector_with_prp<result,T,device_grid,Memory>::template call_unpack<op,prp...>(recv_buf,sub2,dg,ps);
+		grid_unpack_selector_with_prp<result,T,device_grid,Memory>::template call_unpack<op,sub_it_type,prp...>(recv_buf,sub2,dg,ps);
 	}
 };
 
@@ -149,10 +159,10 @@ struct grid_unpack_with_prp
 	 * \param ps unpack status
 	 *
 	 */
-	template<unsigned int ... prp> static void unpacking(ExtPreAlloc<Memory> & recv_buf, grid_key_dx_iterator_sub<device_grid::dims> & sub2, device_grid & dg, Unpack_stat & ps)
+	template<typename sub_it_type, unsigned int ... prp> static void unpacking(ExtPreAlloc<Memory> & recv_buf, sub_it_type & sub2, device_grid & dg, Unpack_stat & ps)
 	{
 		typedef index_tuple<prp...> ind_prop_to_pack;
-		grid_call_serialize_variadic<device_grid,Memory,ind_prop_to_pack>::template call_unpack<op,T>(recv_buf, sub2, dg, ps);
+		grid_call_serialize_variadic<device_grid,Memory,ind_prop_to_pack>::template call_unpack<op,sub_it_type,T>(recv_buf, sub2, dg, ps);
 	}
 };
 
@@ -322,8 +332,9 @@ class grid_dist_id_comm
 				if (bx_dst.isValid() == false)
 					continue;
 
-				grid_key_dx_iterator_sub<dim> sub_src(loc_grid.get(i).getGrid(),bx_src.getKP1(),bx_src.getKP2());
-				grid_key_dx_iterator_sub<dim> sub_dst(loc_grid.get(sub_id_dst).getGrid(),bx_dst.getKP1(),bx_dst.getKP2());
+				auto & gd2 = loc_grid.get(sub_id_dst);
+				gd2.template copy_to_op<op,prp...>(loc_grid.get(i),bx_src,bx_dst);
+
 
 #ifdef SE_CLASS1
 
@@ -335,17 +346,6 @@ class grid_dist_id_comm
 
 #endif
 
-				const auto & gs = loc_grid.get(i);
-				auto & gd = loc_grid.get(sub_id_dst);
-
-				while (sub_src.isNext())
-				{
-					// write the object in the last element
-					object_s_di_op<op,decltype(gs.get_o(sub_src.get())),decltype(gd.get_o(sub_dst.get())),OBJ_ENCAP,prp...>(gs.get_o(sub_src.get()),gd.get_o(sub_dst.get()));
-
-					++sub_src;
-					++sub_dst;
-				}
 			}
 		}
 	}
@@ -642,9 +642,9 @@ class grid_dist_id_comm
 					box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
 
 					// sub-grid where to unpack
-					grid_key_dx_iterator_sub<dim> sub2(loc_grid.get(sub_id).getGrid(),box.getKP1(),box.getKP2());
+					auto sub2 = loc_grid.get(sub_id).getIterator(box.getKP1(),box.getKP2());
 
-					grid_unpack_with_prp<op,prp_object,device_grid,Memory>::template unpacking<prp...>(prRecv_prp,sub2,loc_grid.get(sub_id),ps);
+					grid_unpack_with_prp<op,prp_object,device_grid,Memory>::template unpacking<decltype(sub2),prp...>(prRecv_prp,sub2,loc_grid.get(sub_id),ps);
 				}
 			}
 		}
@@ -1117,8 +1117,8 @@ public:
 
 				// Pack a size_t for the internal ghost id
 				Packer<size_t,HeapMemory>::packRequest(req);
-				// Create a sub grid iterator spanning the internal ghost layer
-				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_eg_box.getKP1(),g_eg_box.getKP2());
+				// Create a sub grid iterator spanning the external ghost layer
+				auto sub_it = loc_grid.get(sub_id).getIterator(g_eg_box.getKP1(),g_eg_box.getKP2());
 				// and pack the internal ghost grid
 				Packer<device_grid,HeapMemory>::template packRequest<decltype(sub_it),prp...>(loc_grid.get(sub_id),sub_it,req);
 			}
@@ -1159,8 +1159,8 @@ public:
 
 				// Pack a size_t for the internal ghost id
 				Packer<size_t,HeapMemory>::pack(prAlloc_prp,g_id,sts);
-				// Create a sub grid iterator spanning the internal ghost layer
-				grid_key_dx_iterator_sub<dim> sub_it(loc_grid.get(sub_id).getGrid(),g_eg_box.getKP1(),g_eg_box.getKP2());
+				// Create a sub grid iterator spanning the external ghost layer
+				auto sub_it = loc_grid.get(sub_id).getIterator(g_eg_box.getKP1(),g_eg_box.getKP2());
 				// and pack the internal ghost grid
 				Packer<device_grid,HeapMemory>::template pack<decltype(sub_it),prp...>(prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
 			}
