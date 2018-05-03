@@ -2020,7 +2020,8 @@ public:
 		// Convert the local external ghost boxes into grid unit boxes
 		create_local_eg_box();
 
-		grid_dist_id_comm<dim,St,T,Decomposition,Memory,device_grid>::template ghost_put_<op,prp...>(ig_box,
+		grid_dist_id_comm<dim,St,T,Decomposition,Memory,device_grid>::template ghost_put_<op,prp...>(dec,
+																									 ig_box,
 																									 eg_box,
 																									 loc_ig_box,
 																									 loc_eg_box,

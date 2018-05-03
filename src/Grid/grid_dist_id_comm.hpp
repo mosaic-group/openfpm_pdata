@@ -56,52 +56,6 @@ struct grid_unpack_selector_with_prp<true,T,device_grid,Memory>
 							Unpack_stat & ps)
 	{
 		gd.template unpack_with_op<op,Memory,prp ...>(recv_buf,sub2,ps);
-
-/*		PtrMemory * ptr1;
-
-		size_t sz[device_grid::dims];
-
-		for (size_t i = 0 ; i < device_grid::dims ; i++)
-			sz[i] = sub2.getStop().get(i) - sub2.getStart().get(i) + 1;
-
-		size_t tot = 1;
-
-		for (size_t i = 0 ; i < device_grid::dims ; i++)
-		{tot *= sz[i];}
-
-		tot *= sizeof(T);
-
-#ifdef SE_CLASS1
-
-		if (ps.getOffset() + tot > recv_buf.size())
-			std::cerr << __FILE__ << ":" << __LINE__ << " Error: overflow in the receiving buffer for ghost_put" << std::endl;
-
-#endif
-
-		// add the received particles to the vector
-		ptr1 = new PtrMemory(((char *)recv_buf.getPointerBase()+ps.getOffset()),tot);
-
-		// create vector representation to a piece of memory already allocated
-		grid_cpu<device_grid::dims,T,PtrMemory,typename memory_traits_lin<T>::type> gs;
-
-		gs.setMemory(*ptr1);
-
-		// resize with the number of elements
-		gs.resize(sz);
-
-		// Merge the information
-
-		auto it_src = gs.getIterator();
-
-		while (sub2.isNext())
-		{
-			object_s_di_op<op,decltype(gs.get_o(it_src.get())),decltype(gd.get_o(sub2.get())),OBJ_ENCAP,prp...>(gs.get_o(it_src.get()),gd.get_o(sub2.get()));
-
-			++sub2;
-			++it_src;
-		}
-
-		ps.addOffset(tot);*/
 	}
 };
 
@@ -205,6 +159,9 @@ class grid_dist_id_comm
 
 	//! receiving buffers in case of dynamic
 	openfpm::vector<BHeapMemory> recv_buffers;
+
+	//! receiving processors
+	openfpm::vector<size_t> recv_proc;
 
 	//! For each near processor, outgoing intersection grid
 	//! \warning m_oGrid is assumed to be an ordered list
@@ -335,7 +292,6 @@ class grid_dist_id_comm
 				auto & gd2 = loc_grid.get(sub_id_dst);
 				gd2.template copy_to_op<op,prp...>(loc_grid.get(i),bx_src,bx_dst);
 
-
 #ifdef SE_CLASS1
 
 				if (loc_ig_box.get(sub_id_dst).bid.get(k).sub != i)
@@ -377,6 +333,7 @@ class grid_dist_id_comm
 		gd->recv_buffers.add();
 
 		gd->recv_buffers.last().resize(msg_i);
+		gd->recv_proc.add(i);
 		return gd->recv_buffers.last().getPointer();
 	}
 
@@ -468,7 +425,11 @@ class grid_dist_id_comm
 		}
 		else
 		{
-			std::cout << "TO DO" << std::endl;
+			// It is not possible to calculate the total information so we have to receive
+
+			v_cl.sendrecvMultipleMessagesNBX(send_prc_queue.size(),&send_size.get(0),
+											 &send_prc_queue.get(0),&send_pointer.get(0),
+											 receive_dynamic,this);
 		}
 	}
 
@@ -535,6 +496,8 @@ class grid_dist_id_comm
 		}
 	}
 
+
+
 	template<unsigned ... prp>
 	void merge_received_data_get(openfpm::vector<device_grid> & loc_grid,
 							const openfpm::vector<ep_box_grid<dim>> & eg_box,
@@ -592,7 +555,7 @@ class grid_dist_id_comm
 
 
 	template<template<typename,typename> class op, unsigned ... prp>
-	void merge_received_data_put(openfpm::vector<device_grid> & loc_grid,
+	void merge_received_data_put(Decomposition & dec, openfpm::vector<device_grid> & loc_grid,
 							const openfpm::vector<ip_box_grid<dim>> & ig_box,
 							const std::vector<size_t> & prp_recv,
 							ExtPreAlloc<Memory> & prRecv_prp,
@@ -650,10 +613,8 @@ class grid_dist_id_comm
 		}
 		else
 		{
-			std::cout << "TO DO" << std::endl;
-
 			// Unpack the object
-/*			for ( size_t i = 0 ; i < recv_buffers.size() ; i++ )
+			for ( size_t i = 0 ; i < recv_buffers.size() ; i++ )
 			{
 				Unpack_stat ps;
 				size_t mark_here = ps.getOffset();
@@ -665,11 +626,46 @@ class grid_dist_id_comm
 				{
 					// Unpack the ghost box global-id
 
-					unpack_data_to_ext_ghost<BHeapMemory,prp ...>(mem,loc_grid,i,
-																eg_box,g_id_to_external_ghost_box,eb_gid_list,
-																ps);
+					// Unpack the ghost box global-id
+
+					size_t g_id;
+					Unpacker<size_t,BHeapMemory>::unpack(mem,g_id,ps);
+
+					size_t pid = dec.ProctoID(recv_proc.get(i));
+
+					size_t l_id = 0;
+					// convert the global id into local id
+					auto key = g_id_to_internal_ghost_box.get(pid).find(g_id);
+					if (key != g_id_to_internal_ghost_box.get(pid).end()) // FOUND
+					{l_id = key->second;}
+					else
+					{
+						// NOT FOUND
+
+						// It must be always found, if not it mean that the processor has no-idea of
+						// what is stored and conseguently do not know how to unpack, print a critical error
+						// and return
+
+						std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " Critical, cannot unpack object, because received data cannot be interpreted\n";
+
+						return;
+					}
+
+					// Get the internal ghost box associated with the packed information
+					Box<dim,size_t> box = ig_box.get(pid).bid.get(l_id).box;
+					size_t sub_id = ig_box.get(pid).bid.get(l_id).sub;
+					box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
+
+					// sub-grid where to unpack
+					auto sub2 = loc_grid.get(sub_id).getIterator(box.getKP1(),box.getKP2());
+
+					grid_unpack_with_prp<op,prp_object,device_grid,BHeapMemory>::template unpacking<decltype(sub2),prp...>(mem,sub2,loc_grid.get(sub_id),ps);
+
+//					unpack_data_to_ext_ghost_op<op,BHeapMemory,prp ...>(mem,loc_grid,i,
+//																ig_box,g_id_to_internal_ghost_box,eb_gid_list,
+//																ps);
 				}
-			}*/
+			}
 		}
 	}
 
@@ -953,7 +949,6 @@ public:
 		grids_reconstruct(m_oGrid_recv,loc_grid,gdb_ext,cd_sm);
 	}
 
-
 	/*! \brief It fill the ghost part of the grids
 	 *
 	 * \param ig_box internal ghost box
@@ -977,6 +972,12 @@ public:
 	{
 		// Sending property object
 		typedef object<typename object_creator<typename T::type,prp...>::type> prp_object;
+
+		recv_buffers.clear();
+		recv_proc.clear();
+		send_prc_queue.clear();
+		send_pointer.clear();
+		send_size.clear();
 
 		size_t req = 0;
 
@@ -1086,7 +1087,8 @@ public:
 	 *
 	 */
 	template<template<typename,typename> class op,int... prp>
-	void ghost_put_(const openfpm::vector<ip_box_grid<dim>> & ig_box,
+	void ghost_put_(Decomposition & dec,
+			        const openfpm::vector<ip_box_grid<dim>> & ig_box,
 					const openfpm::vector<ep_box_grid<dim>> & eg_box,
 					const openfpm::vector<i_lbox_grid<dim>> & loc_ig_box,
 					const openfpm::vector<e_lbox_grid<dim>> & loc_eg_box,
@@ -1096,6 +1098,12 @@ public:
 	{
 		// Sending property object
 		typedef object<typename object_creator<typename T::type,prp...>::type> prp_object;
+
+		recv_buffers.clear();
+		recv_proc.clear();
+		send_prc_queue.clear();
+		send_pointer.clear();
+		send_size.clear();
 
 		size_t req = 0;
 
@@ -1217,7 +1225,7 @@ public:
 
 		ghost_put_local<op,prp...>(loc_ig_box,loc_eg_box,gdb_ext,loc_grid,g_id_to_internal_ghost_box);
 
-		merge_received_data_put<op,prp ...>(loc_grid,ig_box,prp_recv,prRecv_prp,gdb_ext,g_id_to_internal_ghost_box);
+		merge_received_data_put<op,prp ...>(dec,loc_grid,ig_box,prp_recv,prRecv_prp,gdb_ext,g_id_to_internal_ghost_box);
 
 		// wait to receive communication
 /*		v_cl.execute();

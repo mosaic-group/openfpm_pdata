@@ -885,12 +885,11 @@ void Test3D_ghost_put(grid_amr & g_dist_amr, long int k)
 
 	size_t count = 0;
 
-	{
-	auto dom = g_dist_amr.getDomainIterator();
+	auto dom = g_dist_amr.getGridIterator();
 
 	while (dom.isNext())
 	{
-		auto key = dom.get();
+		auto key = dom.get_dist();
 
 		g_dist_amr.template insert<0>(key) = -6.0;
 
@@ -898,7 +897,6 @@ void Test3D_ghost_put(grid_amr & g_dist_amr, long int k)
 		count++;
 
 		++dom;
-	}
 	}
 
 	// Set to zero the full grid
@@ -993,9 +991,9 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_get_domain_ghost_put_check )
 	Test3D_ghost_put(g_dist,k);
 
 	// Distributed grid with id decomposition
-//	sgrid_dist_id<3, float, aggregate<long int>> sg_dist(sz,domain,g,pr);
+	sgrid_dist_id<3, float, aggregate<long int>> sg_dist(sz,domain,g,pr);
 
-//	Test3D_ghost_put(sg_dist,k);
+	Test3D_ghost_put(sg_dist,k);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
