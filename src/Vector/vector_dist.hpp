@@ -363,7 +363,7 @@ public:
 #endif
 
 		if (opt >> 32 != 0)
-			this->setDecompositionGranularity(opt >> 32);
+		{this->setDecompositionGranularity(opt >> 32);}
 
 		check_parameters(box);
 

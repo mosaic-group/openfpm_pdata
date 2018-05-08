@@ -175,7 +175,6 @@ class grid_dist_id_comm
 	//! Memory for the ghost sending buffer
 	Memory g_recv_prp_mem;
 
-
 	/*! \brief Sync the local ghost part
 	 *
 	 * \tparam prp... properties to sync
@@ -223,16 +222,13 @@ class grid_dist_id_comm
 				if (bx_dst.isValid() == false)
 					continue;
 
-/*				grid_key_dx_iterator_sub<dim> sub_src(loc_grid.get(sub_id_src_gdb_ext).getGrid(),bx_src.getKP1(),bx_src.getKP2());
-				grid_key_dx_iterator_sub<dim> sub_dst(loc_grid.get(sub_id_dst_gdb_ext).getGrid(),bx_dst.getKP1(),bx_dst.getKP2());*/
-
 #ifdef SE_CLASS1
 
 				if (loc_eg_box.get(sub_id_dst).bid.get(k).sub != i)
-					std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination are not correctly linked" << "\n";
+				{std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination are not correctly linked" << "\n";}
 
-				if (sub_src.getVolume() != sub_dst.getVolume())
-					std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination does not match in size" << "\n";
+				if (bx_src.getVolume() != bx_dst.getVolume())
+				{std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination does not match in size" << "\n";}
 
 #endif
 
@@ -289,18 +285,18 @@ class grid_dist_id_comm
 				if (bx_dst.isValid() == false)
 					continue;
 
-				auto & gd2 = loc_grid.get(sub_id_dst);
-				gd2.template copy_to_op<op,prp...>(loc_grid.get(i),bx_src,bx_dst);
-
 #ifdef SE_CLASS1
 
 				if (loc_ig_box.get(sub_id_dst).bid.get(k).sub != i)
 					std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination are not correctly linked" << "\n";
 
-				if (sub_src.getVolume() != sub_dst.getVolume())
-					std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination does not match in size" << "\n";
+				if (bx_src.getVolume() != bx_dst.getVolume())
+				{std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination does not match in size" << "\n";}
 
 #endif
+
+				auto & gd2 = loc_grid.get(sub_id_dst);
+				gd2.template copy_to_op<op,prp...>(loc_grid.get(i),bx_src,bx_dst);
 
 			}
 		}
@@ -660,14 +656,11 @@ class grid_dist_id_comm
 					auto sub2 = loc_grid.get(sub_id).getIterator(box.getKP1(),box.getKP2());
 
 					grid_unpack_with_prp<op,prp_object,device_grid,BHeapMemory>::template unpacking<decltype(sub2),prp...>(mem,sub2,loc_grid.get(sub_id),ps);
-
-//					unpack_data_to_ext_ghost_op<op,BHeapMemory,prp ...>(mem,loc_grid,i,
-//																ig_box,g_id_to_internal_ghost_box,eb_gid_list,
-//																ps);
 				}
 			}
 		}
 	}
+
 
 public:
 
@@ -684,44 +677,17 @@ public:
 								  openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
 								  CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm)
 	{
-		size_t count2 = 0;
 		for (size_t a = 0; a < m_oGrid_recv.size(); a++)
 		{
 			for (size_t k = 0; k < m_oGrid_recv.get(a).size(); k++)
 			{
 				device_grid g = m_oGrid_recv.get(a).template get<0>(k);
 
-				size_t count = 0;
-
-
-				auto it = g.getIterator();
-
-				while (it.isNext())
-				{
-					//auto key = it.get();
-
-					//if (g.template get<0>(key) != 1)
-						//std::cout << "WRONG???????" << std::endl;
-
-					++it;
-					count++;
-				}
-
 				SpaceBox<dim,long int> b = m_oGrid_recv.get(a).template get<1>(k);
-
-				//device_grid gr_send(sz);
-				//gr_send.setMemory();
-
-				//std::cout << "B: (" << b.getLow(0) << "; " << b.getLow(1) << "); (" << b.getHigh(0) << "; " << b.getHigh(1) << "); " << "G: (" << g.getGrid().getBox().getHigh(0) << "; " << g.getGrid().getBox().getHigh(1) << ")" << std::endl;
-
-				// Set the dimensions of the local grid
-				//g.resize(l_res);
 
 				Point<dim,St> p;
 				for (size_t n = 0; n < dim; n++)
 					p.get(n) = g.getGrid().getBox().getHigh(n);
-
-				//std::cout << "G after resize: (" << g.getGrid().getBox().getLow(0) << "; " << g.getGrid().getBox().getLow(1) << "); (" << g.getGrid().getBox().getHigh(0) << "; " << g.getGrid().getBox().getHigh(1) << ")" << std::endl;
 
 				Point<dim,St> point;
 				for (size_t n = 0; n < dim; n++)
@@ -738,9 +704,6 @@ public:
 						grid_key_dx<dim> start = b.getKP1() - grid_key_dx<dim>(gdb_ext.get(j).origin.asArray());
 						grid_key_dx<dim> stop = b.getKP2() - grid_key_dx<dim>(gdb_ext.get(j).origin.asArray());
 
-						std::string start2 = start.to_string();
-						std::string stop2 = stop.to_string();
-
 						auto it = loc_grid.get(j).getSubIterator(start,stop);
 
 						// Copy selected elements into a local grid
@@ -752,7 +715,6 @@ public:
 
 							//std::cout << "Key: " << str << std::endl;
 							loc_grid.get(j).get_o(key) = g.get_o(key2);
-							count2++;
 
 							++it;
 						}
@@ -783,10 +745,10 @@ public:
 												openfpm::vector<openfpm::vector<aggregate<device_grid,SpaceBox<dim,long int>>>> & lbl_b,
 												openfpm::vector<size_t> & prc_sz)
 	{
+		lbl_b.clear();
+
 		// resize the label buffer
 		lbl_b.resize(v_cl.getProcessingUnits());
-
-		size_t count2 = 0;
 
 		// Label all the intersection grids with the processor id where they should go
 
@@ -814,7 +776,6 @@ public:
 
 				if (intersect == true)
 				{
-					count2++;
 					auto inte_box_cont = cd_sm.convertCellUnitsIntoDomainSpace(inte_box);
 
 					// Get processor ID that store intersection box
@@ -936,7 +897,7 @@ public:
 		for (size_t i = 0; i < v_cl.getProcessingUnits(); i++)
 		{
 			if (m_oGrid.get(i).size() != 0)
-				m_oGrid_new.add(m_oGrid.get(i));
+			{m_oGrid_new.add(m_oGrid.get(i));}
 		}
 
 		// Vector for receiving of intersection grids
@@ -1176,8 +1137,6 @@ public:
 
 			void * pointer2 = prAlloc_prp.getPointerEnd();
 
-//			v_cl.send(ig_box.get(i).prc,0,pointer,(char *)pointer2 - (char *)pointer);
-
 			// This function send (or queue for sending) the information
 			send_or_queue(ig_box.get(i).prc,(char *)pointer,(char *)pointer2);
 		}
@@ -1190,88 +1149,12 @@ public:
 
 		queue_recv_data_put<prp_object>(ig_box,prp_recv,prRecv_prp);
 
-/*
-
-		// Receive the information from each processors
-		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
-		{
-			prp_recv.push_back(0);
-
-			// for each external ghost box
-			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
-			{
-				// External ghost box
-				Box<dim,size_t> g_ig_box = ig_box.get(i).bid.get(j).box;
-				prp_recv[prp_recv.size()-1] += g_ig_box.getVolumeKey() * sizeof(prp_object) + sizeof(size_t);
-			}
-		}
-
-		size_t tot_recv = ExtPreAlloc<Memory>::calculateMem(prp_recv);
-
-		//! Resize the receiving buffer
-		g_recv_prp_mem.resize(tot_recv);
-
-		prRecv_prp.incRef();
-
-		// queue the receives
-		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
-		{
-			prRecv_prp.allocate(prp_recv[i]);
-			v_cl.recv(ig_box.get(i).prc,0,prRecv_prp.getPointer(),prp_recv[i]);
-		}*/
-
 		// Before wait for the communication to complete we sync the local ghost
 		// in order to overlap with communication
 
 		ghost_put_local<op,prp...>(loc_ig_box,loc_eg_box,gdb_ext,loc_grid,g_id_to_internal_ghost_box);
 
 		merge_received_data_put<op,prp ...>(dec,loc_grid,ig_box,prp_recv,prRecv_prp,gdb_ext,g_id_to_internal_ghost_box);
-
-		// wait to receive communication
-/*		v_cl.execute();
-
-		Unpack_stat ps;
-
-		// Unpack the object
-		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
-		{
-			// for each external ghost box
-			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
-			{
-				// Unpack the ghost box global-id
-
-				size_t g_id;
-				Unpacker<size_t,HeapMemory>::unpack(prRecv_prp,g_id,ps);
-
-				size_t l_id = 0;
-				// convert the global id into local id
-				auto key = g_id_to_internal_ghost_box.get(i).find(g_id);
-				if (key != g_id_to_internal_ghost_box.get(i).end()) // FOUND
-				{l_id = key->second;}
-				else
-				{
-					// NOT FOUND
-
-					// It must be always found, if not it mean that the processor has no-idea of
-					// what is stored and conseguently do not know how to unpack, print a critical error
-					// and return
-
-					std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " Critical, cannot unpack object, because received data cannot be interpreted\n";
-
-					return;
-				}
-
-				// Get the internal ghost box associated with the packed information
-				Box<dim,size_t> box = ig_box.get(i).bid.get(l_id).box;
-				size_t sub_id = ig_box.get(i).bid.get(l_id).sub;
-				box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
-
-				// sub-grid where to unpack
-				grid_key_dx_iterator_sub<dim> sub2(loc_grid.get(sub_id).getGrid(),box.getKP1(),box.getKP2());
-
-				grid_unpack_with_prp<op,prp_object,device_grid,Memory>::template unpacking<prp...>(prRecv_prp,sub2,loc_grid.get(sub_id),ps);
-			}
-		}*/
 	}
 
 	/*! \brief Constructor

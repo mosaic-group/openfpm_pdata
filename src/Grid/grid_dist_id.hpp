@@ -40,7 +40,7 @@ struct Box_fix
 	size_t r_sub;
 };
 
-#define GRID_SUB_UNIT_FACTOR 64
+#define NO_GDB_EXT_SWITCH 0x1000
 
 /*! \brief This is a distributed grid
  *
@@ -240,6 +240,9 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 
 	//! Local external ghost boxes in grid units
 	openfpm::vector<e_lbox_grid<dim>> loc_eg_box;
+
+	//! Number of sub-sub-domain for each processor
+	size_t v_sub_unit_factor = 64;
 
 	/*! \brief Call-back to allocate buffer to receive incoming objects (external ghost boxes)
 	 *
@@ -920,7 +923,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		// Get the number of processor and calculate the number of sub-domain
 		// for decomposition
 		size_t n_proc = v_cl.getProcessingUnits();
-		size_t n_sub = n_proc * GRID_SUB_UNIT_FACTOR;
+		size_t n_sub = n_proc * v_sub_unit_factor;
 
 		// Calculate the maximum number (before merging) of sub-domain on
 		// each dimension
@@ -967,6 +970,9 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		// Create local grid
 		Create(bx,g,use_bx_def);
 	}
+
+	// Ghost as integer
+	Ghost<dim,long int> gint = Ghost<dim,long int>(0);
 
 protected:
 
@@ -1020,6 +1026,16 @@ protected:
 		}
 
 		return gc;
+	}
+
+	/*! \brief Set the minimum number of sub-domain per processor
+	 *
+	 * \param n_sub
+	 *
+	 */
+	void setDecompositionGranularity(size_t n_sub)
+	{
+		this->v_sub_unit_factor = n_sub;
 	}
 
 public:
@@ -1203,7 +1219,10 @@ public:
 
 		dec.setParameters(g.getDecomposition(),ghost,this->domain);
 
-		InitializeStructures(g.getGridInfoVoid().getSize());
+		// an empty
+		openfpm::vector<Box<dim,long int>> empty;
+
+		InitializeStructures(g.getGridInfoVoid().getSize(),empty,gh,false);
 	}
 
     /*! It constructs a grid of a specified size, defined on a specified Box space, forcing to follow a specified decomposition and with a specified ghost size
@@ -1269,8 +1288,11 @@ public:
 		ghost = convert_ghost(g,cd_sm);
 		this->dec = dec.duplicate(ghost);
 
+		// an empty
+		openfpm::vector<Box<dim,long int>> empty;
+
 		// Initialize structures
-		InitializeStructures(g_sz);
+		InitializeStructures(g_sz,empty,g,false);
 	}
 
     /*! It construct a grid of a specified size, defined on a specified Box space, forcing to follow a specified decomposition, and having a specified ghost size
@@ -1293,8 +1315,11 @@ public:
 		ghost = convert_ghost(g,cd_sm);
 		this->dec = dec.duplicate(ghost);
 
+		// an empty
+		openfpm::vector<Box<dim,long int>> empty;
+
 		// Initialize structures
-		InitializeStructures(g_sz);
+		InitializeStructures(g_sz,empty,g,false);
 	}
 
     /*! It construct a grid of a specified size, defined on a specified Box space, and having a specified ghost size
@@ -1306,8 +1331,8 @@ public:
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g)
-	:grid_dist_id(g_sz,domain,g,create_non_periodic<dim>())
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g, size_t opt = 0)
+	:grid_dist_id(g_sz,domain,g,create_non_periodic<dim>(),opt)
 	{
 	}
 
@@ -1320,8 +1345,8 @@ public:
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
-	:grid_dist_id(g_sz,domain,g,create_non_periodic<dim>())
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g, size_t opt = 0)
+	:grid_dist_id(g_sz,domain,g,create_non_periodic<dim>(),opt)
 	{
 	}
 
@@ -1335,12 +1360,15 @@ public:
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g, const periodicity<dim> & p)
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g, const periodicity<dim> & p, size_t opt = 0)
 	:domain(domain),ghost(g),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
 #endif
+
+		if (opt >> 32 != 0)
+		{this->setDecompositionGranularity(opt >> 32);}
 
 		InitializeCellDecomposer(g_sz,p.bc);
 		InitializeDecomposition(g_sz, p.bc);
@@ -1358,19 +1386,27 @@ public:
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g, const periodicity<dim> & p)
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g, const periodicity<dim> & p, size_t opt = 0)
 	:domain(domain),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
 #endif
+
+		if (opt >> 32 != 0)
+		{this->setDecompositionGranularity(opt >> 32);}
+
 		InitializeCellDecomposer(g_sz,p.bc);
 
 		ghost = convert_ghost(g,cd_sm);
 
 		InitializeDecomposition(g_sz,p.bc);
+
+		// an empty
+		openfpm::vector<Box<dim,long int>> empty;
+
 		// Initialize structures
-		InitializeStructures(g_sz);
+		InitializeStructures(g_sz,empty,g,false);
 	}
 
 	/*! \brief It construct a grid on the full domain restricted
@@ -1392,7 +1428,7 @@ public:
 				 const Ghost<dim,long int> & g,
 				 const periodicity<dim> & p,
 				 openfpm::vector<Box<dim,long int>> & bx_def)
-	:domain(domain),ghost(g),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
+	:domain(domain),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz),gint(g)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
@@ -1558,6 +1594,8 @@ public:
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
+		gdb_ext_global.clear();
+
 		v_cl.SGather(gdb_ext,gdb_ext_global,0);
 		v_cl.execute();
 
@@ -2260,8 +2298,16 @@ public:
 	/*! \brief It move all the grid parts that do not belong to the local processor to the respective processor
 	 *
 	 */
-	void map()
+	void map(size_t opt = 0)
 	{
+		if (!(opt & NO_GDB_EXT_SWITCH))
+		{
+			gdb_ext_old = gdb_ext;
+			loc_grid_old = loc_grid;
+
+			InitializeStructures(g_sz,bx_def,gint,bx_def.size() != 0);
+		}
+
 		getGlobalGridsInfo(gdb_ext_global);
 
 		this->template map_(dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global);
@@ -2294,7 +2340,7 @@ public:
 		h5l.load<device_grid>(filename,loc_grid_old,gdb_ext_old);
 
 		// Map the distributed grid
-		map();
+		map(NO_GDB_EXT_SWITCH);
 	}
 
 	/*! \brief This is a meta-function return which type of sub iterator a grid produce

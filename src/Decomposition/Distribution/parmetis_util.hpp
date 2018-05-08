@@ -328,7 +328,7 @@ public:
 		}
 
 		if (is_openfpm_init() == true)
-			MPI_Comm_free(&comm);
+		{MPI_Comm_free(&comm);}
 	}
 
 	/*! \brief Set the Sub-graph
@@ -526,8 +526,7 @@ public:
 	 */
 	const Parmetis<Graph> & operator=(const Parmetis<Graph> & pm)
 	{
-		comm = pm.comm;
-		v_cl = pm.v_cl;
+		MPI_Comm_dup(pm.comm, &comm);
 		p_id = pm.p_id;
 		nc = pm.nc;
 
@@ -545,8 +544,7 @@ public:
 	 */
 	const Parmetis<Graph> & operator=(Parmetis<Graph> && pm)
 	{
-		comm = pm.comm;
-		v_cl = pm.v_cl;
+		MPI_Comm_dup(pm.comm, &comm);
 		p_id = pm.p_id;
 		nc = pm.nc;
 

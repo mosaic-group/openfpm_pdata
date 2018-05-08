@@ -665,6 +665,94 @@ void Test3D_amr_domain_ghost_it(grid & amr_g, Box<3,float> & domain, size_t coar
 	BOOST_REQUIRE_EQUAL(gtot_count,total_all_level);
 }
 
+template<typename grid_amr>
+void Test3D_ghost_put(grid_amr & g_dist_amr, long int k)
+{
+	size_t sz[3] = {k,k,k};
+
+	g_dist_amr.initLevels(4,sz);
+
+	// Grid sm
+	grid_sm<3,void> info(sz);
+
+	size_t count = 0;
+
+	for (size_t i = 0 ; i < g_dist_amr.getNLvl() ; i++)
+	{
+		auto dom = g_dist_amr.getGridIterator(i);
+
+		while (dom.isNext())
+		{
+			auto key = dom.get_dist();
+
+			g_dist_amr.template insert<0>(i,key) = -6.0;
+
+			// Count the points
+			count++;
+
+			++dom;
+		}
+	}
+
+	// Set to zero the full grid
+
+	{
+	auto dom = g_dist_amr.getDomainIterator();
+
+	while (dom.isNext())
+	{
+		auto key = dom.get();
+
+		g_dist_amr.template insert<0>(key.moveSpace(0,1)) += 1.0;
+		g_dist_amr.template insert<0>(key.moveSpace(0,-1)) += 1.0;
+		g_dist_amr.template insert<0>(key.moveSpace(1,1)) += 1.0;
+		g_dist_amr.template insert<0>(key.moveSpace(1,-1)) += 1.0;
+		g_dist_amr.template insert<0>(key.moveSpace(2,1)) += 1.0;
+		g_dist_amr.template insert<0>(key.moveSpace(2,-1)) += 1.0;
+
+		++dom;
+	}
+	}
+
+	bool correct = true;
+
+	// Domain + Ghost iterator
+	auto dom_gi = g_dist_amr.getDomainIterator();
+
+	while (dom_gi.isNext())
+	{
+		auto key = dom_gi.get();
+
+		correct &= (g_dist_amr.template get<0>(key) == 0);
+
+		++dom_gi;
+	}
+
+	g_dist_amr.template ghost_put<add_,0>();
+
+	if (count != 0)
+	{BOOST_REQUIRE_EQUAL(correct, false);}
+
+	// sync the ghosts
+	g_dist_amr.template ghost_get<0>();
+
+	correct = true;
+
+	// Domain + Ghost iterator
+	auto dom_gi2 = g_dist_amr.getDomainIterator();
+
+	while (dom_gi2.isNext())
+	{
+		auto key = dom_gi2.get();
+
+		correct &= (g_dist_amr.template get<0>(key) == 0);
+
+		++dom_gi2;
+	}
+
+	BOOST_REQUIRE_EQUAL(correct, true);
+}
+
 template <typename> struct Debug;
 
 BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test_nop )
@@ -838,127 +926,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_test_background_value )
 
 }
 
-
 BOOST_AUTO_TEST_CASE( grid_dist_amr_get_domain_ghost_check )
-{
-	// Domain
-	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
-
-	Ghost<3,long int> g(1);
-
-	sgrid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g2(domain3,g);
-
-	size_t g_sz[3] = {4,4,4};
-
-	amr_g2.initLevels(4,g_sz);
-
-	// This point is on a ghost
-
-	grid_dist_key_dx<3> key(0,grid_key_dx<3>({0,0,0}));
-
-	amr_g2.template insert<0>(1,key) = 555;
-
-	auto dgit = amr_g2.getDomainGhostIterator();
-
-	int cnt = 0;
-	while (dgit.isNext())
-	{
-		cnt++;
-
-		++dgit;
-	}
-
-	BOOST_REQUIRE_EQUAL(cnt,1);
-}
-
-template<typename grid_amr>
-void Test3D_ghost_put(grid_amr & g_dist_amr, long int k)
-{
-	// check the consistency of the decomposition
-	bool val = g_dist_amr.getDecomposition().check_consistency();
-	BOOST_REQUIRE_EQUAL(val,true);
-
-	size_t sz[3] = {k,k,k};
-
-	// Grid sm
-	grid_sm<3,void> info(sz);
-
-	size_t count = 0;
-
-	auto dom = g_dist_amr.getGridIterator();
-
-	while (dom.isNext())
-	{
-		auto key = dom.get_dist();
-
-		g_dist_amr.template insert<0>(key) = -6.0;
-
-		// Count the points
-		count++;
-
-		++dom;
-	}
-
-	// Set to zero the full grid
-
-	{
-	auto dom = g_dist_amr.getDomainIterator();
-
-	while (dom.isNext())
-	{
-		auto key = dom.get();
-
-		g_dist_amr.template insert<0>(key.move(0,1)) += 1.0;
-		g_dist_amr.template insert<0>(key.move(0,-1)) += 1.0;
-		g_dist_amr.template insert<0>(key.move(1,1)) += 1.0;
-		g_dist_amr.template insert<0>(key.move(1,-1)) += 1.0;
-		g_dist_amr.template insert<0>(key.move(2,1)) += 1.0;
-		g_dist_amr.template insert<0>(key.move(2,-1)) += 1.0;
-
-		++dom;
-	}
-	}
-
-	bool correct = true;
-
-	// Domain + Ghost iterator
-	auto dom_gi = g_dist_amr.getDomainIterator();
-
-	while (dom_gi.isNext())
-	{
-		auto key = dom_gi.get();
-
-		correct &= (g_dist_amr.template get<0>(key) == 0);
-
-		++dom_gi;
-	}
-
-	g_dist_amr.template ghost_put<add_,0>();
-
-	if (count != 0)
-	{BOOST_REQUIRE_EQUAL(correct, false);}
-
-	// sync the ghosts
-	g_dist_amr.template ghost_get<0>();
-
-	correct = true;
-
-	// Domain + Ghost iterator
-	auto dom_gi2 = g_dist_amr.getDomainIterator();
-
-	while (dom_gi2.isNext())
-	{
-		auto key = dom_gi2.get();
-
-		correct &= (g_dist_amr.template get<0>(key) == 0);
-
-		++dom_gi2;
-	}
-
-	BOOST_REQUIRE_EQUAL(correct, true);
-}
-
-BOOST_AUTO_TEST_CASE( grid_dist_amr_get_domain_ghost_put_check )
 {
 	// Test grid periodic
 
@@ -986,14 +954,16 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_get_domain_ghost_put_check )
 	periodicity<3> pr = {{PERIODIC,PERIODIC,PERIODIC}};
 
 	// Distributed grid with id decomposition
-	grid_dist_id<3, float, aggregate<long int>> g_dist(sz,domain,g,pr);
+	grid_dist_amr<3, float, aggregate<long int>> g_dist(domain,g,pr);
 
 	Test3D_ghost_put(g_dist,k);
 
 	// Distributed grid with id decomposition
-	sgrid_dist_id<3, float, aggregate<long int>> sg_dist(sz,domain,g,pr);
+	sgrid_dist_amr<3, float, aggregate<long int>> sg_dist(domain,g,pr);
 
 	Test3D_ghost_put(sg_dist,k);
 }
+
+
 
 BOOST_AUTO_TEST_SUITE_END()

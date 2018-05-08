@@ -116,6 +116,9 @@ inline void create_gdb_ext(openfpm::vector<GBoxes<Decomposition::dims>> & gdb_ex
 						   const Ghost<Decomposition::dims,long int> & exp,
 						   bool use_bx_def)
 {
+	gdb_ext.clear();
+	gdb_ext_markers.clear();
+
 	// Get the number of local grid needed
 	size_t n_grid = dec.getNSubDomain();
 

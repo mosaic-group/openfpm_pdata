@@ -762,7 +762,10 @@ public:
 		cart.cd = cd;
 		cart.domain = domain;
 		for (size_t i = 0 ; i < dim ; i++)
-		{cart.spacing[i] = spacing[i];};
+		{
+			cart.spacing[i] = spacing[i];
+			cart.magn[i] = magn[i];
+		};
 
 		cart.bbox = bbox;
 		cart.ghost = g;
@@ -800,8 +803,13 @@ public:
 		cart.gr = gr;
 		cart.cd = cd;
 		cart.domain = domain;
+		cart.gr_dist = gr_dist;
+		cart.dist = dist;
 		for (size_t i = 0 ; i < dim ; i++)
-		{cart.spacing[i] = spacing[i];};
+		{
+			cart.spacing[i] = spacing[i];
+			cart.magn[i] = magn[i];
+		};
 
 		cart.ghost = ghost;
 
@@ -832,9 +840,14 @@ public:
 		gr = cart.gr;
 		cd = cart.cd;
 		domain = cart.domain;
+		gr_dist = cart.gr_dist;
+		dist = cart.dist;
 
 		for (size_t i = 0 ; i < dim ; i++)
-		{spacing[i] = cart.spacing[i];};
+		{
+			spacing[i] = cart.spacing[i];
+			magn[i] = cart.magn[i];
+		};
 
 		ghost = cart.ghost;
 
@@ -864,9 +877,15 @@ public:
 		fine_s.swap(cart.fine_s);
 		gr = cart.gr;
 		cd = cart.cd;
+		gr_dist = cart.gr_dist;
+		dist = cart.dist;
+
 		domain = cart.domain;
 		for (size_t i = 0 ; i < dim ; i++)
-		{spacing[i] = cart.spacing[i];};
+		{
+			spacing[i] = cart.spacing[i];
+			magn[i] = cart.magn[i];
+		};
 
 		ghost = cart.ghost;
 
