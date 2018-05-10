@@ -18,7 +18,8 @@
 
 BOOST_AUTO_TEST_SUITE( grid_dist_id_dlb_test )
 
-BOOST_AUTO_TEST_CASE( grid_dist_dlb_test )
+template<typename grid, typename vector>
+void test_vector_grid_dlb()
 {
 	// Domain
 	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
@@ -27,30 +28,30 @@ BOOST_AUTO_TEST_CASE( grid_dist_dlb_test )
 
 	size_t sz[3] = {37,37,37};
 
-	grid_dist_id<3,float,aggregate<long int,long int,long int>> gdist(sz,domain3,g,DEC_GRAN(128));
+	grid gdist(sz,domain3,g,DEC_GRAN(128));
 
 
 	aggregate<long int,long int,long int> bck;
-	bck.get<0>() = -57;
-	bck.get<1>() = -90;
-	bck.get<2>() = -123;
+	bck.template get<0>() = -57;
+	bck.template get<1>() = -90;
+	bck.template get<2>() = -123;
 
 	gdist.setBackgroundValue(bck);
 
-	vector_dist<3,float,aggregate<long int, long int> > vd(gdist.getDecomposition(),0);
+	vector vd(gdist.getDecomposition(),0);
 
 	// we fill the grid with a gaussian
 
-	auto it = gdist.getDomainIterator();
+	auto it = gdist.getGridIterator();
 
 	while (it.isNext())
 	{
-		auto p = it.get();
-		auto gkey = it.getGKey(p);
+		auto p = it.get_dist();
+		auto gkey = it.get();
 
-		gdist.get<0>(p) = gkey.get(0);
-		gdist.get<1>(p) = gkey.get(1);
-		gdist.get<2>(p) = gkey.get(2);
+		gdist.template insert<0>(p) = gkey.get(0);
+		gdist.template insert<1>(p) = gkey.get(1);
+		gdist.template insert<2>(p) = gkey.get(2);
 
 		++it;
 	}
@@ -98,9 +99,9 @@ BOOST_AUTO_TEST_CASE( grid_dist_dlb_test )
 			auto p = it.get();
 			auto gkey = it.getGKey(p);
 
-			check &= gdist.get<0>(p) == gkey.get(0);
-			check &= gdist.get<1>(p) == gkey.get(1);
-			check &= gdist.get<2>(p) == gkey.get(2);
+			check &= gdist.template get<0>(p) == gkey.get(0);
+			check &= gdist.template get<1>(p) == gkey.get(1);
+			check &= gdist.template get<2>(p) == gkey.get(2);
 
 			++it;
 		}
@@ -130,6 +131,20 @@ BOOST_AUTO_TEST_CASE( grid_dist_dlb_test )
 		}
 		vd.map();
 	}
+}
+
+BOOST_AUTO_TEST_CASE( grid_dist_dlb_test )
+{
+//	typedef grid_dist_id<3,float,aggregate<long int,long int,long int>> grid_dense;
+//	typedef vector_dist<3,float,aggregate<long int, long int> > particles;
+
+//	test_vector_grid_dlb<grid_dense,particles>();
+
+	typedef sgrid_dist_id<3,float,aggregate<long int,long int,long int>> grid_sparse;
+	typedef vector_dist<3,float,aggregate<long int, long int> > particles;
+
+	test_vector_grid_dlb<grid_sparse,particles>();
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()

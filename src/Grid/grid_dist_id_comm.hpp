@@ -701,10 +701,25 @@ public:
 
 					if (sub.isInside(point) == true)
 					{
+
+
 						grid_key_dx<dim> start = b.getKP1() - grid_key_dx<dim>(gdb_ext.get(j).origin.asArray());
 						grid_key_dx<dim> stop = b.getKP2() - grid_key_dx<dim>(gdb_ext.get(j).origin.asArray());
 
-						auto it = loc_grid.get(j).getSubIterator(start,stop);
+						Box<dim,size_t> box_src;
+						Box<dim,size_t> box_dst;
+
+						for(size_t i = 0 ; i < dim ; i++)
+						{
+							box_dst.setLow(i,start.get(i));
+							box_dst.setHigh(i,stop.get(i));
+							box_src.setLow(i,0);
+							box_src.setHigh(i,stop.get(i)-start.get(i));
+						}
+
+						loc_grid.get(j).copy_to(g,box_src,box_dst);
+
+/*						auto it = loc_grid.get(j).getIterator(start,stop);
 
 						// Copy selected elements into a local grid
 						while (it.isNext())
@@ -717,7 +732,7 @@ public:
 							loc_grid.get(j).get_o(key) = g.get_o(key2);
 
 							++it;
-						}
+						}*/
 					}
 				}
 			}
@@ -810,21 +825,23 @@ public:
 					grid_key_dx<dim> start = inte_box_local.getKP1();
 					grid_key_dx<dim> stop = inte_box_local.getKP2();
 
-					Point<dim,St> p1;
-					for (size_t n = 0; n < dim; n++)
-						p1.get(n) = gr_send.getGrid().getBox().getLow(n);
+//					auto it = gr.getIterator(start,stop);
 
-					Point<dim,St> p2;
-					for (size_t n = 0; n < dim; n++)
-						p2.get(n) = gr_send.getGrid().getBox().getHigh(n);
+					Box<dim,size_t> box_src;
+					Box<dim,size_t> box_dst;
 
-					std::string start2 = start.to_string();
-					std::string stop2 = stop.to_string();
+					for(size_t i = 0 ; i < dim ; i++)
+					{
+						box_src.setLow(i,start.get(i));
+						box_src.setHigh(i,stop.get(i));
+						box_dst.setLow(i,0);
+						box_dst.setHigh(i,stop.get(i)-start.get(i));
+					}
 
-					auto it = gr.getSubIterator(start,stop);
+					gr_send.copy_to(gr,box_src,box_dst);
 
 					// Copy selected elements into a new sub-grid
-					while (it.isNext())
+/*					while (it.isNext())
 					{
 						auto key = it.get();
 						grid_key_dx<dim> key2 = key - start;
@@ -833,7 +850,7 @@ public:
 						gr_send.get_o(key2) = gr.get_o(key);
 
 						++it;
-					}
+					}*/
 
 					aggregate<device_grid,SpaceBox<dim,long int>> aggr;
 
