@@ -681,7 +681,7 @@ public:
 		{
 			for (size_t k = 0; k < m_oGrid_recv.get(a).size(); k++)
 			{
-				device_grid g = m_oGrid_recv.get(a).template get<0>(k);
+				device_grid & g = m_oGrid_recv.get(a).template get<0>(k);
 
 				SpaceBox<dim,long int> b = m_oGrid_recv.get(a).template get<1>(k);
 

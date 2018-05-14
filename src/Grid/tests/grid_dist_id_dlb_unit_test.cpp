@@ -103,6 +103,12 @@ void test_vector_grid_dlb()
 			check &= gdist.template get<1>(p) == gkey.get(1);
 			check &= gdist.template get<2>(p) == gkey.get(2);
 
+			if (check == false)
+			{
+				int debug = 0;
+				debug++;
+			}
+
 			++it;
 		}
 
@@ -144,6 +150,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_dlb_test )
 	typedef vector_dist<3,float,aggregate<long int, long int> > particles;
 
 	test_vector_grid_dlb<grid_sparse,particles>();
+
 
 }
 
