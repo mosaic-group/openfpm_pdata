@@ -194,7 +194,7 @@ public:
 		{g_sz_lvl[i] = g_sz[i];}
 
 		// Add the coarse level
-		gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(dec,g_sz,g_int,bc));
+		gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(dec,g_sz,g_int));
 
 		initialize_other(n_lvl,g_sz_lvl);
 	}
@@ -709,13 +709,13 @@ public:
 	 * \param output filename output
 	 *
 	 */
-	bool write(std::string output)
+	bool write(std::string output, size_t opt = VTK_WRITER | FORMAT_ASCII )
 	{
 		bool ret = true;
 
 		for (size_t i = 0 ; i < gd_array.size() ; i++)
 		{
-			ret &= gd_array.get(i).write(output + "_" + std::to_string(i));
+			ret &= gd_array.get(i).write(output + "_" + std::to_string(i),opt);
 		}
 
 		return ret;

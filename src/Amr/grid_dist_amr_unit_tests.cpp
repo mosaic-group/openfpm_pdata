@@ -964,6 +964,42 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_get_domain_ghost_check )
 	Test3D_ghost_put(sg_dist,k);
 }
 
+BOOST_AUTO_TEST_CASE( grid_dist_amr_ghost_put_create )
+{
+	// Test grid periodic
 
+	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	Vcluster & v_cl = create_vcluster();
+
+	if ( v_cl.getProcessingUnits() > 32 )
+	{return;}
+
+	long int k = 13;
+
+	BOOST_TEST_CHECKPOINT( "Testing grid periodic k<=" << k );
+
+	// grid size
+	size_t sz[3];
+	sz[0] = k;
+	sz[1] = k;
+	sz[2] = k;
+
+	// Ghost
+	Ghost<3,long int> g(1);
+
+	// periodicity
+	periodicity<3> pr = {{PERIODIC,PERIODIC,PERIODIC}};
+
+	// Distributed grid with id decomposition
+	grid_dist_amr<3, float, aggregate<long int>> g_dist(domain,g,pr);
+
+	Test3D_ghost_put(g_dist,k);
+
+	// Distributed grid with id decomposition
+	sgrid_dist_amr<3, float, aggregate<long int>> sg_dist(domain,g,pr);
+
+	Test3D_ghost_put(sg_dist,k);
+}
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -2142,7 +2142,7 @@ public:
 	 * \return true if the write operation succeed
 	 *
 	 */
-	bool write(std::string output, size_t opt = VTK_WRITER | FORMAT_ASCII)
+	bool write(std::string output, size_t opt = VTK_WRITER | FORMAT_ASCII )
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2158,7 +2158,11 @@ public:
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{
 			Point<dim,St> offset = getOffset(i);
-			vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).Dbox);
+
+			if (opt & PRINT_GHOST)
+			{vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).GDbox);}
+			else
+			{vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).Dbox);}
 		}
 		vtk_g.write(output + "_" + std::to_string(v_cl.getProcessUnitID()) + ".vtk", prp_names, "grids", ft);
 
@@ -2246,6 +2250,8 @@ public:
 	 */
 	void debugPrint()
 	{
+		size_t tot_volume = 0;
+
 		std::cout << "-------- External Ghost boxes ---------- " << std::endl;
 
 		for (size_t i = 0 ; i < eg_box.size() ; i++)
@@ -2255,11 +2261,15 @@ public:
 			for (size_t j = 0; j < eg_box.get(i).bid.size() ; j++)
 			{
 				std::cout << " Box: " << eg_box.get(i).bid.get(j).g_e_box.toString() << "   Id: " << eg_box.get(i).bid.get(j).g_id << std::endl;
+				tot_volume += eg_box.get(i).bid.get(j).g_e_box.getVolumeKey();
 			}
 		}
 
+		std::cout << "TOT volume external ghost " << tot_volume << std::endl;
+
 		std::cout << "-------- Internal Ghost boxes ---------- " << std::endl;
 
+		tot_volume = 0;
 		for (size_t i = 0 ; i < ig_box.size() ; i++)
 		{
 			std::cout << "Processor: " << ig_box.get(i).prc << " Boxes:" << std::endl;
@@ -2267,8 +2277,11 @@ public:
 			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
 			{
 				std::cout << " Box: " << ig_box.get(i).bid.get(j).box.toString() << "   Id: " << ig_box.get(i).bid.get(j).g_id << std::endl;
+				tot_volume += ig_box.get(i).bid.get(j).box.getVolumeKey();
 			}
 		}
+
+		std::cout << "TOT volume internal ghost " << tot_volume << std::endl;
 	}
 
 	/*! \brief Set the properties names

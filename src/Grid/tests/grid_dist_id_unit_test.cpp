@@ -1925,5 +1925,209 @@ BOOST_AUTO_TEST_CASE( grid_dist_domain_ghost_put_check )
 }
 
 
+template<typename grid_amr>
+void TestXD_ghost_put_create(grid_amr & g_dist_amr, long int k)
+{
+	// check the consistency of the decomposition
+	bool val = g_dist_amr.getDecomposition().check_consistency();
+	BOOST_REQUIRE_EQUAL(val,true);
+
+	size_t count = 0;
+
+	auto dom = g_dist_amr.getGridIterator();
+
+	while (dom.isNext())
+	{
+		auto key = dom.get_dist();
+
+		g_dist_amr.template insert<1>(key) = 1;
+
+		// Count the points
+		count++;
+
+		++dom;
+	}
+
+	// Fill the ghost
+	g_dist_amr.template ghost_get<1>();
+
+	// Now we count the ghost point
+
+	size_t g_point = 0;
+
+	auto itg = g_dist_amr.getDomainGhostIterator();
+
+	while (itg.isNext())
+	{
+		g_point++;
+
+		++itg;
+	}
+
+	{
+	auto it = g_dist_amr.getDomainIterator();
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+
+		g_dist_amr.remove(p);
+		g_point--;
+
+		++it;
+	}
+	}
+
+	// A domain iterator should not produce points
+
+	{
+	auto it = g_dist_amr.getDomainIterator();
+
+	size_t cnt = 0;
+	while (it.isNext())
+	{
+		cnt++;
+
+		++it;
+	}
+
+	BOOST_REQUIRE_EQUAL(cnt,0);
+	}
+
+	g_dist_amr.template ghost_put<add_,1>();
+
+	{
+	auto it = g_dist_amr.getDomainIterator();
+
+	bool check = true;
+
+	size_t cnt = 0;
+	while (it.isNext())
+	{
+		auto p = it.get();
+
+		cnt += g_dist_amr.template get<1>(p);
+
+		check &= (g_dist_amr.template get<1>(p) >= 1);
+
+		++it;
+	}
+
+	// Sum all the points
+	auto & v_cl = create_vcluster();
+
+	v_cl.sum(g_point);
+	v_cl.sum(cnt);
+	v_cl.execute();
+
+
+	BOOST_REQUIRE_EQUAL(g_point,cnt);
+	BOOST_REQUIRE_EQUAL(check,true);
+	}
+}
+
+BOOST_AUTO_TEST_CASE( grid_dist_domain_ghost_2D_put_create_check )
+{
+	// Test grid periodic
+
+	Box<2,float> domain({0.0,0.0},{1.0,1.0});
+
+	Vcluster & v_cl = create_vcluster();
+
+	if ( v_cl.getProcessingUnits() > 32 )
+	{return;}
+
+	long int k = 13;
+
+	BOOST_TEST_CHECKPOINT( "Testing grid periodic k<=" << k );
+
+	// grid size
+	size_t sz[2];
+	sz[0] = k;
+	sz[1] = k;
+
+	// Ghost
+	Ghost<2,long int> g(1);
+
+	// periodicity
+	periodicity<2> pr = {{PERIODIC,PERIODIC}};
+
+	// Distributed grid with id decomposition
+	sgrid_dist_id<2, float, aggregate<long int, int>> sg_dist(sz,domain,g,pr);
+
+	TestXD_ghost_put_create(sg_dist,k);
+
+	k = 7;
+	sz[0] = k;
+	sz[1] = k;
+
+	// Distributed grid with id decomposition
+	sgrid_dist_id<2, float, aggregate<long int, int>> sg_dist2(sz,domain,g,pr);
+
+	TestXD_ghost_put_create(sg_dist2,k);
+
+	k = 23;
+	sz[0] = k;
+	sz[1] = k;
+
+	// Distributed grid with id decomposition
+	sgrid_dist_id<2, float, aggregate<long int, int>> sg_dist3(sz,domain,g,pr);
+
+	TestXD_ghost_put_create(sg_dist3,k);
+}
+
+BOOST_AUTO_TEST_CASE( grid_dist_domain_ghost_3D_put_create_check )
+{
+	// Test grid periodic
+
+	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	Vcluster & v_cl = create_vcluster();
+
+	if ( v_cl.getProcessingUnits() > 32 )
+	{return;}
+
+	long int k = 13;
+
+	BOOST_TEST_CHECKPOINT( "Testing grid periodic k<=" << k );
+
+	// grid size
+	size_t sz[3];
+	sz[0] = k;
+	sz[1] = k;
+	sz[2] = k;
+
+	// Ghost
+	Ghost<3,long int> g(1);
+
+	// periodicity
+	periodicity<3> pr = {{PERIODIC,PERIODIC,PERIODIC}};
+
+	// Distributed grid with id decomposition
+	sgrid_dist_id<3, float, aggregate<long int, int>> sg_dist(sz,domain,g,pr);
+
+	TestXD_ghost_put_create(sg_dist,k);
+
+	k = 7;
+	sz[0] = k;
+	sz[1] = k;
+	sz[2] = k;
+
+	// Distributed grid with id decomposition
+	sgrid_dist_id<3, float, aggregate<long int, int>> sg_dist2(sz,domain,g,pr);
+
+	TestXD_ghost_put_create(sg_dist2,k);
+
+	k = 23;
+	sz[0] = k;
+	sz[1] = k;
+	sz[2] = k;
+
+	// Distributed grid with id decomposition
+	sgrid_dist_id<3, float, aggregate<long int, int>> sg_dist3(sz,domain,g,pr);
+
+	TestXD_ghost_put_create(sg_dist3,k);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 

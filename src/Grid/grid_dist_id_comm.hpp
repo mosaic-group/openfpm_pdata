@@ -11,7 +11,6 @@
 #include "Vector/vector_dist_ofb.hpp"
 #include "data_type/scalar.hpp"
 
-
 /*! \brief Unpack selector
  *
  *
@@ -233,6 +232,7 @@ class grid_dist_id_comm
 #endif
 
 				auto & gd = loc_grid.get(sub_id_dst_gdb_ext);
+				gd.remove(bx_dst);
 				gd.copy_to(loc_grid.get(sub_id_src_gdb_ext),bx_src,bx_dst);
 
 			}
@@ -488,6 +488,7 @@ class grid_dist_id_comm
 			Box<dim,size_t> box = eg_box.get(ei).bid.get(nle_id).l_e_box;
 			Box<dim,size_t> rbox = eg_box.get(ei).bid.get(nle_id).lr_e_box;
 
+			loc_grid.get(n_sub_id).remove(box);
 			loc_grid.get(n_sub_id).copy_to(loc_grid.get(sub_id),rbox,box);
 		}
 	}
@@ -602,7 +603,6 @@ class grid_dist_id_comm
 
 					// sub-grid where to unpack
 					auto sub2 = loc_grid.get(sub_id).getIterator(box.getKP1(),box.getKP2());
-
 					grid_unpack_with_prp<op,prp_object,device_grid,Memory>::template unpacking<decltype(sub2),prp...>(prRecv_prp,sub2,loc_grid.get(sub_id),ps);
 				}
 			}
@@ -654,7 +654,6 @@ class grid_dist_id_comm
 
 					// sub-grid where to unpack
 					auto sub2 = loc_grid.get(sub_id).getIterator(box.getKP1(),box.getKP2());
-
 					grid_unpack_with_prp<op,prp_object,device_grid,BHeapMemory>::template unpacking<decltype(sub2),prp...>(mem,sub2,loc_grid.get(sub_id),ps);
 				}
 			}
@@ -718,21 +717,6 @@ public:
 						}
 
 						loc_grid.get(j).copy_to(g,box_src,box_dst);
-
-/*						auto it = loc_grid.get(j).getIterator(start,stop);
-
-						// Copy selected elements into a local grid
-						while (it.isNext())
-						{
-							auto key = it.get();
-							std::string str = key.to_string();
-							grid_key_dx<dim> key2 = key - start;
-
-							//std::cout << "Key: " << str << std::endl;
-							loc_grid.get(j).get_o(key) = g.get_o(key2);
-
-							++it;
-						}*/
 					}
 				}
 			}
@@ -839,18 +823,6 @@ public:
 					}
 
 					gr_send.copy_to(gr,box_src,box_dst);
-
-					// Copy selected elements into a new sub-grid
-/*					while (it.isNext())
-					{
-						auto key = it.get();
-						grid_key_dx<dim> key2 = key - start;
-						std::string str = key.to_string();
-
-						gr_send.get_o(key2) = gr.get_o(key);
-
-						++it;
-					}*/
 
 					aggregate<device_grid,SpaceBox<dim,long int>> aggr;
 

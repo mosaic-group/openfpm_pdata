@@ -294,7 +294,7 @@ class grid_dist_iterator<dim,device_grid,device_sub_it,FIXED,stencil>
 		do
 		{
 			// When the grid has size 0 potentially all the other informations are garbage
-			while (g_c < gList.size() && (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false) ) g_c++;
+			while (g_c < gList.size() && (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).GDbox.isValid() == false) ) g_c++;
 
 			// get the next grid iterator
 			if (g_c < gList.size())
