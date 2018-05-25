@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
 	 * Before and after. The blue arrows in the first image indicate the vector field
 	 * for the real particles. In the second image instead the red arrow indicate the
 	 * vector field for the real particle. The blue arrow indicate the ghosts. We can
-	 * note that the blue arrow doea not contain the correct vector. The reason is that
+	 * note that the blue arrow does not contain the correct vector. The reason is that
 	 * when we used **ghost_get** we synchronized the scalar, and the tensor, but not the vector.
 	 *
 	 * \see \ref e1_part_ghost

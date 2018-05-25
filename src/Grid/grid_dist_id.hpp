@@ -1880,6 +1880,43 @@ public:
 		return loc_grid.get(v1.getSub()).remove(v1.getKey());
 	}
 
+	/*! \brief remove an element in the grid
+	 *
+	 * In case of dense grid this function print a warning, in case of sparse
+	 * grid this function remove a grid point.
+	 *
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return a reference to the inserted element
+	 *
+	 */
+	template <typename bg_key> inline void remove_no_flush(const grid_dist_key_dx<dim,bg_key> & v1)
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return loc_grid.get(v1.getSub()).remove_no_flush(v1.getKey());
+	}
+
+	/*! \brief remove an element in the grid
+	 *
+	 * In case of dense grid this function print a warning, in case of sparse
+	 * grid this function remove a grid point.
+	 *
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return a reference to the inserted element
+	 *
+	 */
+	inline void flush_remove()
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{loc_grid.get(i).flush_remove();}
+	}
+
 	/*! \brief insert an element in the grid
 	 *
 	 * In case of dense grid this function is equivalent to get, in case of sparse
@@ -2129,6 +2166,37 @@ public:
 		k_glob = k_glob + gdb_ext.get(sub_id).origin;
 
 		return k_glob;
+	}
+
+	/*! \brief Add the computation cost on the decomposition using a resolution function
+	 *
+	 *
+	 * \param md Model to use
+	 * \param ts It is an optional parameter approximately should be the number of ghost get between two
+	 *           rebalancing at first decomposition this number can be ignored (default = 1) because not used
+	 *
+	 */
+	template <typename Model>inline void addComputationCosts(Model md=Model(), size_t ts = 1)
+	{
+		CellDecomposer_sm<dim, St, shift<dim,St>> cdsm;
+
+		Decomposition & dec = getDecomposition();
+		auto & dist = getDecomposition().getDistribution();
+
+		cdsm.setDimensions(dec.getDomain(), dec.getDistGrid().getSize(), 0);
+
+		// Invert the id to positional
+
+		Point<dim,St> p;
+		for (size_t i = 0; i < dist.getNOwnerSubSubDomains() ; i++)
+		{
+			dist.getSubSubDomainPos(i,p);
+			dec.setSubSubDomainComputationCost(dist.getOwnerSubSubDomain(i) , 1 + md.resolution(p));
+		}
+
+		dec.computeCommunicationAndMigrationCosts(ts);
+
+		dist.setDistTol(md.distributionTol());
 	}
 
 	/*! \brief Write the distributed grid information

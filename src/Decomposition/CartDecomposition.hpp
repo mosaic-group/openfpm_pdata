@@ -255,7 +255,7 @@ public:
 
 		// Optimize the decomposition creating bigger spaces
 		// And reducing Ghost over-stress
-		dec_optimizer<dim, Graph_CSR<nm_v, nm_e>> d_o(dist.getGraph(), gr_dist.getSize());
+		dec_optimizer<dim, Graph_CSR<nm_v<dim>, nm_e>> d_o(dist.getGraph(), gr_dist.getSize());
 
 		// Ghost
 		Ghost<dim,long int> ghe;
@@ -268,7 +268,7 @@ public:
 		}
 
 		// optimize the decomposition
-		d_o.template optimize<nm_v::sub_id, nm_v::proc_id>(dist.getGraph(), p_id, loc_box, box_nn_processor,ghe,bc);
+		d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(dist.getGraph(), p_id, loc_box, box_nn_processor,ghe,bc);
 
 		// Initialize
 		if (loc_box.size() > 0)
@@ -325,7 +325,7 @@ public:
 			size_t lin = gr_dist.LinId(key2);
 			size_t lin2 = gr.LinId(key);
 
-			fine_s.get(lin2) = dist.getGraph().template vertex_p<nm_v::proc_id>(lin);
+			fine_s.get(lin2) = dist.getGraph().template vertex_p<nm_v_proc_id>(lin);
 
 			++git;
 		}

@@ -16,7 +16,7 @@
 
 int main(int argc, char ** argv)
 {
-	CartesianGraphFactory<2,Graph_CSR<nm_v,nm_e>> g_factory;
+	CartesianGraphFactory<2,Graph_CSR<nm_v<2>,nm_e>> g_factory;
 
 	// Cartesian grid
 	size_t sz[2] = {20,20};
@@ -28,19 +28,19 @@ int main(int argc, char ** argv)
 
 	// Graph to decompose
 
-	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,1,0,1>(sz,box,bc);
+	Graph_CSR<nm_v<2>,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,1,0,1>(sz,box,bc);
 
 	// Convert the graph to metis
 
-	Metis<Graph_CSR<nm_v,nm_e>> met(g,4);
+	Metis<Graph_CSR<nm_v<2>,nm_e>> met(g,4);
 
 	// decompose
 
-	met.decompose<nm_v::id>();
+	met.decompose<nm_v_id>();
 
 	// Write the decomposition
 
-	VTKWriter<Graph_CSR<nm_v,nm_e>,VTK_GRAPH> vtk(g);
+	VTKWriter<Graph_CSR<nm_v<2>,nm_e>,VTK_GRAPH> vtk(g);
 	vtk.write("Metis/vtk_partition.vtk");
 }
 

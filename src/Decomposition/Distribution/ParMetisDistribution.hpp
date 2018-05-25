@@ -47,10 +47,10 @@ class ParMetisDistribution
 	Box<dim, T> domain;
 
 	//! Global sub-sub-domain graph
-	Graph_CSR<nm_v, nm_e> gp;
+	Graph_CSR<nm_v<dim>, nm_e> gp;
 
 	//! Convert the graph to parmetis format
-	Parmetis<Graph_CSR<nm_v, nm_e>> parmetis_graph;
+	Parmetis<Graph_CSR<nm_v<dim>, nm_e>> parmetis_graph;
 
 	//! Id of the sub-sub-domain where we set the costs
 	openfpm::vector<size_t> sub_sub_owner;
@@ -114,10 +114,10 @@ class ParMetisDistribution
 				auto v_id = m2g.find(l)->second.id;
 
 				// Update proc id in the vertex (using the old map)
-				gp.template vertex_p<nm_v::proc_id>(v_id) = partitions.get(i).get(k);
+				gp.template vertex_p<nm_v_proc_id>(v_id) = partitions.get(i).get(k);
 
 				if (partitions.get(i).get(k) == (long int)v_cl.getProcessUnitID())
-					sub_sub_owner.add(v_id);
+				{sub_sub_owner.add(v_id);}
 
 				// Add vertex to temporary structure of distribution (needed to update main graph)
 				v_per_proc.get(partitions.get(i).get(k)).add(getVertexGlobalId(l));
@@ -137,12 +137,12 @@ class ParMetisDistribution
 
 		for (size_t i = 0 ; i < gp.getNVertex(); ++i)
 		{
-			size_t pid = gp.template vertex_p<nm_v::proc_id>(i);
+			size_t pid = gp.template vertex_p<nm_v_proc_id>(i);
 
 			rid j = rid(vtxdist.get(pid).id + cnt.get(pid));
 			gid gi = gid(i);
 
-			gp.template vertex_p<nm_v::id>(i) = j.id;
+			gp.template vertex_p<nm_v_id>(i) = j.id;
 			cnt.get(pid)++;
 
 			setMapId(j,gi);
@@ -325,8 +325,8 @@ public:
 		domain = dom;
 
 		// Create a cartesian grid graph
-		CartesianGraphFactory<dim, Graph_CSR<nm_v, nm_e>> g_factory_part;
-		gp = g_factory_part.template construct<NO_EDGE, nm_v::id, T, dim - 1, 0>(gr.getSize(), domain, bc);
+		CartesianGraphFactory<dim, Graph_CSR<nm_v<dim>, nm_e>> g_factory_part;
+		gp = g_factory_part.template construct<NO_EDGE, nm_v_id, T, dim - 1, 0>(gr.getSize(), domain, bc);
 		initLocalToGlobalMap();
 
 		//! Get the number of processing units
@@ -351,12 +351,12 @@ public:
 		{
 			for (size_t i = 0; i < gp.getNVertex(); i++)
 			{
-				gp.vertex(i).template get<nm_v::x>()[2] = 0.0;
+				gp.vertex(i).template get<nm_v_x>()[2] = 0.0;
 			}
 		}
 		for (size_t i = 0; i < gp.getNVertex(); i++)
 		{
-			gp.vertex(i).template get<nm_v::global_id>() = i;
+			gp.vertex(i).template get<nm_v_global_id>() = i;
 		}
 
 	}
@@ -364,7 +364,7 @@ public:
 	/*! \brief Get the current graph (main)
 	 *
 	 */
-	Graph_CSR<nm_v, nm_e> & getGraph()
+	Graph_CSR<nm_v<dim>, nm_e> & getGraph()
 	{
 		return gp;
 	}
@@ -463,10 +463,10 @@ public:
 #endif
 
 		// Copy the geometrical informations inside the pos vector
-		pos[0] = gp.vertex(id).template get<nm_v::x>()[0];
-		pos[1] = gp.vertex(id).template get<nm_v::x>()[1];
+		pos[0] = gp.vertex(id).template get<nm_v_x>()[0];
+		pos[1] = gp.vertex(id).template get<nm_v_x>()[1];
 		if (dim == 3)
-			pos[2] = gp.vertex(id).template get<nm_v::x>()[2];
+			pos[2] = gp.vertex(id).template get<nm_v_x>()[2];
 	}
 
 	/*! \brief Function that set the weight of the vertex
@@ -478,15 +478,15 @@ public:
 	inline void setComputationCost(size_t id, size_t weight)
 	{
 		if (!verticesGotWeights)
-			verticesGotWeights = true;
+		{verticesGotWeights = true;}
 
 #ifdef SE_CLASS1
 		if (id >= gp.getNVertex())
-			std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
+		{std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";}
 #endif
 
 		// Update vertex in main graph
-		gp.vertex(id).template get<nm_v::computation>() = weight;
+		gp.vertex(id).template get<nm_v_computation>() = weight;
 	}
 
 	/*! \brief Checks if weights are used on the vertices
@@ -510,7 +510,7 @@ public:
 			std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
 #endif
 
-		return gp.vertex(id).template get<nm_v::computation>();
+		return gp.vertex(id).template get<nm_v_computation>();
 	}
 
 	/*! \brief Compute the processor load counting the total weights of its vertices
@@ -526,7 +526,7 @@ public:
 
 
 		for (rid i = vtxdist.get(p_id); i < vtxdist.get(p_id+1) ; ++i)
-			load += gp.vertex(m2g.find(i)->second.id).template get<nm_v::computation>();
+			load += gp.vertex(m2g.find(i)->second.id).template get<nm_v_computation>();
 
 		//std::cout << v_cl.getProcessUnitID() << " weight " << load << " size " << sub_g.getNVertex() << "\n";
 		return load;
@@ -544,7 +544,7 @@ public:
 			std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << gp.getNVertex() << ")\n";
 #endif
 
-		gp.vertex(id).template get<nm_v::migration>() = migration;
+		gp.vertex(id).template get<nm_v_migration>() = migration;
 	}
 
 	/*! \brief Set communication cost of the edge id
@@ -622,7 +622,7 @@ public:
 	 */
 	void write(const std::string & file)
 	{
-		VTKWriter<Graph_CSR<nm_v, nm_e>, VTK_GRAPH> gv2(gp);
+		VTKWriter<Graph_CSR<nm_v<dim>, nm_e>, VTK_GRAPH> gv2(gp);
 		gv2.write(std::to_string(v_cl.getProcessUnitID()) + "_" + file + ".vtk");
 	}
 
@@ -659,6 +659,18 @@ public:
 		parmetis_graph = dist.parmetis_graph;
 
 		return *this;
+	}
+
+	/*! \brief return the the position of the sub-sub-domain
+	 *
+	 * \param i sub-sub-domain id
+	 * \param p point
+	 *
+	 */
+	void getSubSubDomainPos(size_t j, Point<dim,T> & p)
+	{
+		for (size_t i = 0 ; i < dim ; i++)
+		{p.get(i) = gp.template vertex_p<0>(sub_sub_owner.get(j))[i];}
 	}
 
 	/*! \brief Get the decomposition counter

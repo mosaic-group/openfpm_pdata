@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE( Metis_test_use)
 	if (v_cl.getProcessUnitID() != 0)
 		return;
 
-	CartesianGraphFactory<3,Graph_CSR<nm_v,nm_e>> g_factory;
+	CartesianGraphFactory<3,Graph_CSR<nm_v<3>,nm_e>> g_factory;
 	CartesianGraphFactory<3,Graph_CSR<nm_part_v,nm_part_e>> g_factory_part;
 
 	// Cartesian grid
@@ -46,26 +46,26 @@ BOOST_AUTO_TEST_CASE( Metis_test_use)
 	size_t bc[] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 
 	// Graph to decompose
-	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,2,0>(sz,box,bc);
+	Graph_CSR<nm_v<3>,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,2,0>(sz,box,bc);
 
 	// Processor graph
 	Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.construct<NO_EDGE,NO_VERTEX_ID,float,2>(sz,box,bc);
 
 	// Convert the graph to metis
 
-	Metis<Graph_CSR<nm_v,nm_e>> met(g,8);
+	Metis<Graph_CSR<nm_v<3>,nm_e>> met(g,8);
 
 	// decompose
 
 	met.decompose<nm_part_v::id>(gp);
-	met.decompose<nm_v::proc_id>();
+	met.decompose<nm_v_proc_id>();
 
 	// Write the VTK file
 
 	VTKWriter<Graph_CSR<nm_part_v,nm_part_e>,VTK_GRAPH> vtk(gp);
 	vtk.write("vtk_metis_util_gp.vtk");
 
-	VTKWriter<Graph_CSR<nm_v,nm_e>,VTK_GRAPH> vtk2(g);
+	VTKWriter<Graph_CSR<nm_v<3>,nm_e>,VTK_GRAPH> vtk2(g);
 	vtk2.write("vtk_metis_util_g.vtk");
 
 	// check that match

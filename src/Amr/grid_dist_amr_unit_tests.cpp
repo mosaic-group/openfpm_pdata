@@ -668,7 +668,7 @@ void Test3D_amr_domain_ghost_it(grid & amr_g, Box<3,float> & domain, size_t coar
 template<typename grid_amr>
 void Test3D_ghost_put(grid_amr & g_dist_amr, long int k)
 {
-	size_t sz[3] = {k,k,k};
+	size_t sz[3] = {(size_t)k,(size_t)k,(size_t)k};
 
 	g_dist_amr.initLevels(4,sz);
 
@@ -941,12 +941,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_get_domain_ghost_check )
 
 	BOOST_TEST_CHECKPOINT( "Testing grid periodic k<=" << k );
 
-	// grid size
-	size_t sz[3];
-	sz[0] = k;
-	sz[1] = k;
-	sz[2] = k;
-
 	// Ghost
 	Ghost<3,long int> g(1);
 
@@ -978,12 +972,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_ghost_put_create )
 	long int k = 13;
 
 	BOOST_TEST_CHECKPOINT( "Testing grid periodic k<=" << k );
-
-	// grid size
-	size_t sz[3];
-	sz[0] = k;
-	sz[1] = k;
-	sz[2] = k;
 
 	// Ghost
 	Ghost<3,long int> g(1);

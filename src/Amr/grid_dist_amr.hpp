@@ -15,7 +15,87 @@
 #define AMR_IMPL_PATCHES 2
 #define AMR_IMPL_OPENVDB 3
 
+template<typename Decomposition, typename garray>
+class Decomposition_encap
+{
+	Decomposition & dec;
+	garray & gd_array;
 
+public:
+
+	Decomposition_encap(Decomposition & dec, garray & gd_array)
+	:dec(dec),gd_array(gd_array)
+	{}
+
+	Decomposition & internal_dec() const
+	{
+		return dec;
+	}
+
+	/*! \brief Start decomposition
+	 *
+	 */
+	void decompose()
+	{
+		dec.decompose();
+
+		for(size_t i = 0 ; i < gd_array.size() ; i++)
+		{
+			Ghost<Decomposition::dims,typename Decomposition::stype> gold = gd_array.get(i).getDecomposition().getGhost();
+			gd_array.get(i).getDecomposition() = dec.duplicate(gold);
+		}
+	}
+
+	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
+	 *
+	 * \param ts number of time step from the previous load balancing
+	 *
+	 */
+	void refine(size_t ts)
+	{
+		dec.refine();
+
+		for(size_t i = 0 ; i < gd_array.size() ; i++)
+		{
+			Ghost<Decomposition::dims,typename Decomposition::stype> gold = gd_array.get(i).getDecomposition().getGhost();
+			gd_array.get(i).getDecomposition() = dec.duplicate(gold);
+		}
+	}
+
+	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
+	 *
+	 * \param ts number of time step from the previous load balancing
+	 *
+	 */
+	void redecompose(size_t ts)
+	{
+		dec.redecompose();
+
+		for(size_t i = 0 ; i < gd_array.size() ; i++)
+		{
+			Ghost<Decomposition::dims,typename Decomposition::stype> gold = gd_array.get(i).getDecomposition().getGhost();
+			gd_array.get(i).getDecomposition() = dec.duplicate(gold);
+		}
+	}
+
+	auto getDistribution() -> decltype(dec.getDistribution())
+	{
+		return dec.getDistribution();
+	}
+
+	Decomposition_encap<Decomposition,garray> operator=(const Decomposition_encap<Decomposition,garray> & de) const
+	{
+		for(size_t i = 0 ; i < gd_array.size() ; i++)
+		{gd_array.get(i).getDecomposition() = de.dec;}
+
+		return *this;
+	}
+
+	bool write(std::string output) const
+	{
+		return dec.write(output);
+	}
+};
 
 template<unsigned int dim, typename St, typename T, unsigned int impl=AMR_IMPL_TRIVIAL ,typename Decomposition = CartDecomposition<dim,St>,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T> >
 class grid_dist_amr
@@ -97,56 +177,7 @@ class grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,Decomposition,Memory,device_grid>
 			gd_array.last().setBackgroundValue(bck);
 		}
 
-		// Here we calculate the offset to move one level up and one level down
-		// in global coordinated moving one level up is multiply the coordinates by 2
-		// and moving one level down is dividing by 2. In local coordinates is the same
-		// with the exception that because of the decomposition you can have an offset
-		// look at the picture below
-		//
-		// (-1)  (0)
-		//  * |   *     *    coarse level
-		//  * |*  *  *  *    finer level
-		//    |(0)(1)
-		//
-		//  Line of the decomposition
-		//
-		// The coarse level point 0 in local coordinates converted to the finer level is not
-		// just 2*0 = 0 but is 2*(0) + 1 so a formula like 2*x+offset is required. here we calculate
-		// these offset. In the case of moving from finer to coarse is the same the formula is
-		// Integer_round(x+1)/2 - 1
-		//
-		mv_off.resize(gd_array.size());
-
-		for (size_t i = 1 ; i < gd_array.size() ; i++)
-		{
-			auto & g_box_c = gd_array.get(i-1).getLocalGridsInfo();
-			auto & g_box_f = gd_array.get(i).getLocalGridsInfo();
-
-#ifdef SE_CLASS1
-
-			if (g_box_c.size() != g_box_f.size())
-			{
-				std::cerr << __FILE__ << ":" << __LINE__ << " error it seem that the AMR construction between level " <<
-						i << " and " << i-1 << " is inconsistent" << std::endl;
-			}
-
-#endif
-
-			mv_off.get(i-1).resize(g_box_f.size());
-			mv_off.get(i).resize(g_box_f.size());
-
-			for (size_t j = 0 ; j < g_box_f.size() ; j++)
-			{
-				for (size_t s = 0 ; s < dim ; s++)
-				{
-					size_t d_orig_c = g_box_c.get(j).origin.get(s);
-					size_t d_orig_f = g_box_f.get(j).origin.get(s);
-
-					mv_off.get(i-1).get(j).dw.get(s) = d_orig_c*2 - d_orig_f;
-					mv_off.get(i).get(j).up.get(s) = d_orig_c*2 - d_orig_f;
-				}
-			}
-		}
+		recalculate_mvoff();
 	}
 
 public:
@@ -201,11 +232,83 @@ public:
 
 	/*! \brief Initialize the amr grid
 	 *
+	 * \param dec Decomposition (this parameter is useful in case we want to constrain the AMR to an external decomposition)
 	 * \param n_lvl maximum number of levels (0 mean no additional levels)
 	 * \param g_sz coarsest grid size on each direction
 	 *
 	 */
-	void initLevels(size_t n_lvl,const size_t (& g_sz)[dim])
+	void initLevels(const Decomposition_encap<Decomposition,decltype(gd_array)> & dec, size_t n_lvl,const size_t (& g_sz)[dim])
+	{
+		initLevels(dec.internal_dec(),n_lvl,g_sz);
+	}
+
+	/*! \brief Recalculate the offset array for the moveLvlUp and moveLvlDw
+	 *
+	 *
+	 *
+	 */
+	void recalculate_mvoff()
+	{
+		// Here we calculate the offset to move one level up and one level down
+		// in global coordinated moving one level up is multiply the coordinates by 2
+		// and moving one level down is dividing by 2. In local coordinates is the same
+		// with the exception that because of the decomposition you can have an offset
+		// look at the picture below
+		//
+		// (-1)  (0)
+		//  * |   *     *    coarse level
+		//  * |*  *  *  *    finer level
+		//    |(0)(1)
+		//
+		//  Line of the decomposition
+		//
+		// The coarse level point 0 in local coordinates converted to the finer level is not
+		// just 2*0 = 0 but is 2*(0) + 1 so a formula like 2*x+offset is required. here we calculate
+		// these offset. In the case of moving from finer to coarse is the same the formula is
+		// Integer_round(x+1)/2 - 1
+		//
+		mv_off.resize(gd_array.size());
+
+		for (size_t i = 1 ; i < gd_array.size() ; i++)
+		{
+			auto & g_box_c = gd_array.get(i-1).getLocalGridsInfo();
+			auto & g_box_f = gd_array.get(i).getLocalGridsInfo();
+
+#ifdef SE_CLASS1
+
+			if (g_box_c.size() != g_box_f.size())
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " error it seem that the AMR construction between level " <<
+						i << " and " << i-1 << " is inconsistent" << std::endl;
+			}
+
+#endif
+
+			mv_off.get(i-1).resize(g_box_f.size());
+			mv_off.get(i).resize(g_box_f.size());
+
+			for (size_t j = 0 ; j < g_box_f.size() ; j++)
+			{
+				for (size_t s = 0 ; s < dim ; s++)
+				{
+					size_t d_orig_c = g_box_c.get(j).origin.get(s);
+					size_t d_orig_f = g_box_f.get(j).origin.get(s);
+
+					mv_off.get(i-1).get(j).dw.get(s) = d_orig_c*2 - d_orig_f;
+					mv_off.get(i).get(j).up.get(s) = d_orig_c*2 - d_orig_f;
+				}
+			}
+		}
+	}
+
+	/*! \brief Initialize the amr grid
+	 *
+	 * \param n_lvl maximum number of levels (0 mean no additional levels)
+	 * \param g_sz coarsest grid size on each direction
+	 * \param opt options
+	 *
+	 */
+	void initLevels(size_t n_lvl,const size_t (& g_sz)[dim], size_t opt = 0)
 	{
 		size_t g_sz_lvl[dim];
 
@@ -213,9 +316,46 @@ public:
 		{g_sz_lvl[i] = g_sz[i];}
 
 		// Add the coarse level
-		gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(g_sz,domain,g_int,bc));
+		gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(g_sz,domain,g_int,bc,opt));
 
 		initialize_other(n_lvl,g_sz_lvl);
+	}
+
+	/*! \brief Add the computation cost on the decomposition using a resolution function
+	 *
+	 *
+	 * \param md Model to use
+	 * \param ts It is an optional parameter approximately should be the number of ghost get between two
+	 *           rebalancing at first decomposition this number can be ignored (default = 1) because not used
+	 *
+	 */
+	template <typename Model>inline void addComputationCosts(Model md=Model(), size_t ts = 1)
+	{
+		gd_array.get(0).addComputationCosts(md,ts);
+	}
+
+	/*! \brief Get the object that store the information about the decomposition
+	 *
+	 * \return the decomposition object
+	 *
+	 */
+	Decomposition_encap<Decomposition,decltype(gd_array)> getDecomposition()
+	{
+		Decomposition_encap<Decomposition,decltype(gd_array)> tmp(gd_array.get(0).getDecomposition(),gd_array);
+
+		return tmp;
+	}
+
+	/*! \brief Get the underlying grid level
+	 *
+	 * \param lvl level
+	 *
+	 * \return the grid level
+	 *
+	 */
+	grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & getLevel(size_t lvl)
+	{
+		return gd_array.get(lvl);
 	}
 
 
@@ -538,6 +678,19 @@ public:
 		}
 	}
 
+	/*! \brief It move all the grid parts that do not belong to the local processor to the respective processor
+	 *
+	 */
+	void map(size_t opt = 0)
+	{
+		for (size_t i = 0 ; i < gd_array.size() ; i++)
+		{
+			gd_array.get(i).map();
+		}
+
+		recalculate_mvoff();
+	}
+
 	/*! \brief Apply the ghost put
 	 *
 	 * \tparam prp... Properties to apply ghost put
@@ -585,16 +738,6 @@ public:
 	{
 		for (size_t i = 0 ; i < getNLvl() ; i++)
 		{gd_array.get(i).clear();}
-	}
-
-	/*! \brief Get Decomposition
-	 *
-	 * \return get the decomposition
-	 *
-	 */
-	const Decomposition & getDecomposition()
-	{
-		return gd_array.get(0).getDecomposition();
 	}
 
 	/*! \brief Get an object containing the grid informations for a specific level

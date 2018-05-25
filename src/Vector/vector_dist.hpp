@@ -1729,7 +1729,7 @@ public:
 		cdsm.setDimensions(dec.getDomain(), dec.getDistGrid().getSize(), 0);
 
 		for (size_t i = 0; i < dist.getNOwnerSubSubDomains() ; i++)
-			dec.setSubSubDomainComputationCost(dist.getOwnerSubSubDomain(i) , 1);
+		{dec.setSubSubDomainComputationCost(dist.getOwnerSubSubDomain(i) , 1);}
 
 		auto it = getDomainIterator();
 

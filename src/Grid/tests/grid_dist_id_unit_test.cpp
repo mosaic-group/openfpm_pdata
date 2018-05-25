@@ -1806,7 +1806,7 @@ void Test3D_ghost_put(grid_amr & g_dist_amr, long int k)
 	bool val = g_dist_amr.getDecomposition().check_consistency();
 	BOOST_REQUIRE_EQUAL(val,true);
 
-	size_t sz[3] = {k,k,k};
+	size_t sz[3] = {(size_t)k,(size_t)k,(size_t)k};
 
 	// Grid sm
 	grid_sm<3,void> info(sz);
@@ -1971,11 +1971,13 @@ void TestXD_ghost_put_create(grid_amr & g_dist_amr, long int k)
 	{
 		auto p = it.get();
 
-		g_dist_amr.remove(p);
+		g_dist_amr.remove_no_flush(p);
 		g_point--;
 
 		++it;
 	}
+
+	g_dist_amr.flush_remove();
 	}
 
 	// A domain iterator should not produce points
@@ -1991,7 +1993,7 @@ void TestXD_ghost_put_create(grid_amr & g_dist_amr, long int k)
 		++it;
 	}
 
-	BOOST_REQUIRE_EQUAL(cnt,0);
+	BOOST_REQUIRE_EQUAL(cnt,0ul);
 	}
 
 	g_dist_amr.template ghost_put<add_,1>();
@@ -2023,6 +2025,51 @@ void TestXD_ghost_put_create(grid_amr & g_dist_amr, long int k)
 
 	BOOST_REQUIRE_EQUAL(g_point,cnt);
 	BOOST_REQUIRE_EQUAL(check,true);
+	}
+
+	// We finally remove all domain points
+
+	{
+	auto it = g_dist_amr.getDomainIterator();
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+
+		g_dist_amr.remove_no_flush(p);
+
+		++it;
+	}
+
+	g_dist_amr.flush_remove();
+
+	size_t cnt = 0;
+	auto it2 = g_dist_amr.getDomainGhostIterator();
+
+	while (it2.isNext())
+	{
+
+		cnt++;
+
+		++it2;
+	}
+
+	BOOST_REQUIRE(cnt != 0);
+
+	g_dist_amr.template ghost_get<1>();
+
+	cnt = 0;
+	auto it3 = g_dist_amr.getDomainGhostIterator();
+
+	while (it3.isNext())
+	{
+		cnt++;
+
+		++it3;
+	}
+
+	BOOST_REQUIRE_EQUAL(cnt,0ul);
+
 	}
 }
 

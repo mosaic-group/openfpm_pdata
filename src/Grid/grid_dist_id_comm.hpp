@@ -477,6 +477,7 @@ class grid_dist_id_comm
 		auto sub2 = loc_grid.get(sub_id).getIterator(box.getKP1(),box.getKP2());
 
 		// Unpack
+		loc_grid.get(sub_id).remove(box);
 		Unpacker<device_grid,mem>::template unpack<decltype(sub2),prp...>(emem,sub2,loc_grid.get(sub_id),ps);
 
 		// Copy the information on the other grid
@@ -676,6 +677,10 @@ public:
 								  openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
 								  CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm)
 	{
+		// Clear the information of the grid
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{loc_grid.get(i).clear();}
+
 		for (size_t a = 0; a < m_oGrid_recv.size(); a++)
 		{
 			for (size_t k = 0; k < m_oGrid_recv.get(a).size(); k++)
