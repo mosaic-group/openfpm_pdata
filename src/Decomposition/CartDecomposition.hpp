@@ -347,7 +347,7 @@ public:
 		if (bound.isValidN() == true)
 		{
 			// Not necessary, but I prefer
-			bound.enlarge(ghost);
+			//bound.enlarge(ghost);
 
 			// calculate the sub-divisions
 			size_t div[dim];
@@ -1584,6 +1584,23 @@ public:
 		check_valid(this,8);
 #endif
 		return v_cl;
+	}
+
+	/*! \brief Deallocate structures that identify a point to which internal ghost is located
+	 *
+	 */
+	void free_geo_cell()
+	{
+		ie_ghost<dim,T>::free_geo_cell();
+	}
+
+	/*! \brief Deallocate structures that identify a point to which internal ghost is located
+	 *
+	 */
+	void free_fines()
+	{
+		fine_s.clear();
+		fine_s.shrink_to_fit();
 	}
 
 	/*! \brief function to check the consistency of the information of the decomposition

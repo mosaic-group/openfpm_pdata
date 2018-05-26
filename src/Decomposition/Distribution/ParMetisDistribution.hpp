@@ -615,6 +615,22 @@ public:
 		return gp.getNChilds(id);
 	}
 
+	/*! \brief In case we do not do Dynamic load balancing this this data-structure it is safe to eliminate the full internal graph
+	 *
+	 *
+	 *
+	 */
+	void destroy_internal_graph()
+	{
+		gp.destroy();
+		partitions.clear();
+		partitions.shrink_to_fit();
+		v_per_proc.clear();
+		v_per_proc.shrink_to_fit();
+		m2g.clear();
+		m2g.rehash(0);
+	}
+
 	/*! \brief Print the current distribution and save it to VTK file
 	 *
 	 * \param file filename

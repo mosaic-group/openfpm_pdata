@@ -86,7 +86,7 @@ public:
 	Decomposition_encap<Decomposition,garray> operator=(const Decomposition_encap<Decomposition,garray> & de) const
 	{
 		for(size_t i = 0 ; i < gd_array.size() ; i++)
-		{gd_array.get(i).getDecomposition() = de.dec;}
+		{gd_array.get(i).getDecomposition() = de.gd_array.get(i).getDecomposition();}
 
 		return *this;
 	}
@@ -137,7 +137,12 @@ class grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,Decomposition,Memory,device_grid>
 	periodicity<dim> bc;
 
 	//! array of grids
-	openfpm::vector<grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>> gd_array;
+	//
+	openfpm::vector<grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>,
+								 HeapMemory,
+								 typename memory_traits_lin<grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>>::type,
+								 memory_traits_lin,
+								 openfpm::grow_policy_identity,STD_VECTOR> gd_array;
 
 	//! Type of structure sub-grid iterator
 	typedef decltype(device_grid::type_of_subiterator()) device_sub_it;
@@ -175,6 +180,10 @@ class grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,Decomposition,Memory,device_grid>
 
 			gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(gd_array.get(0).getDecomposition(),g_sz_lvl,g_int));
 			gd_array.last().setBackgroundValue(bck);
+
+			gd_array.last().getDecomposition().free_geo_cell();
+			gd_array.last().getDecomposition().getDistribution().destroy_internal_graph();
+			gd_array.last().getDecomposition().free_fines();
 		}
 
 		recalculate_mvoff();

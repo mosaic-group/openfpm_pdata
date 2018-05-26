@@ -199,6 +199,14 @@ protected:
 		geo_cell.Initialize(domain,div);
 	}
 
+	/*! \brief Deallocate structures that identify a point to which internal ghost is located
+	 *
+	 */
+	void free_geo_cell()
+	{
+		geo_cell.destroy();
+	}
+
 	/*! \brief Create the box_nn_processor_int (bx part)  structure
 	 *
 	 * For each sub-domain of the local processor it store the intersection between the enlarged
