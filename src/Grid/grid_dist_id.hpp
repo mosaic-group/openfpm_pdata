@@ -306,6 +306,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		return flp;
 	}
 
+
 	/*! \brief Create per-processor internal ghost boxes list in grid units and g_id_to_external_ghost_box
 	 *
 	 */
@@ -369,6 +370,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 
 		init_i_g_box = true;
 	}
+
 
 	/*! \brief Create per-processor internal ghost box list in grid units
 	 *
@@ -563,7 +565,6 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 
 		init_e_g_box = true;
 	}
-
 
 	/*! \brief Create local internal ghost box in grid units
 	 *
@@ -1036,6 +1037,23 @@ protected:
 	void setDecompositionGranularity(size_t n_sub)
 	{
 		this->v_sub_unit_factor = n_sub;
+	}
+
+	void reset_ghost_structures()
+	{
+		g_id_to_internal_ghost_box.clear();
+		ig_box.clear();
+		init_i_g_box = false;
+
+		eg_box.clear();
+		eb_gid_list.clear();
+		init_e_g_box = false;
+
+		init_local_i_g_box = false;
+		loc_ig_box.clear();
+
+		init_local_e_g_box = false;
+		loc_eg_box.clear();
 	}
 
 public:
@@ -2394,7 +2412,11 @@ public:
 		this->template map_(dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global);
 
 		loc_grid_old.clear();
+		loc_grid_old.shrink_to_fit();
 		gdb_ext_old.clear();
+
+		// reset ghost structure to recalculate
+		reset_ghost_structures();
 	}
 
 	/*! \brief Save the grid state on HDF5
