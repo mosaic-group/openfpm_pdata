@@ -171,7 +171,7 @@ class grid_dist_id_comm
 	//! Memory for the ghost sending buffer
 	Memory g_send_prp_mem;
 
-	//! Memory for the ghost sending buffer
+	//! Memory for the ghost receiving buffer
 	Memory g_recv_prp_mem;
 
 	/*! \brief Sync the local ghost part
@@ -1014,7 +1014,7 @@ public:
 		std::vector<size_t> prp_recv;
 
 		// Create an object of preallocated memory for properties
-		ExtPreAlloc<Memory> & prRecv_prp = *(new ExtPreAlloc<Memory>(tot_recv,g_recv_prp_mem));
+		ExtPreAlloc<Memory> & prRecv_prp = *(new ExtPreAlloc<Memory>(g_recv_prp_mem.size(),g_recv_prp_mem));
 		prRecv_prp.incRef();
 
 		// Before wait for the communication to complete we sync the local ghost

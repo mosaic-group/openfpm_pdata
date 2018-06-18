@@ -235,6 +235,7 @@ public:
 
 		// Add the coarse level
 		gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(dec,g_sz,g_int));
+		gd_array.last().setBackgroundValue(bck);
 
 		initialize_other(n_lvl,g_sz_lvl);
 	}

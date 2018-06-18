@@ -11,6 +11,9 @@
 #include "Grid/grid_dist_id.hpp"
 #include "Point_test.hpp"
 
+////////////////////////////////////// THEESE TEST ARE BROKEN TO REMPOVE OR FIX ////
+
+
 const int x = 0;
 const int y = 1;
 const int z = 2;
@@ -34,7 +37,7 @@ BOOST_AUTO_TEST_CASE( sgrid_dist_id_basic_test_2D)
 
 	sgrid_dist_id<2,double,Point_test<float>> sg(sz,domain,g,bc);
 
-	// create a grid iterator over a bilion point
+	// create a grid iterator
 
 	auto it = sg.getGridIterator();
 

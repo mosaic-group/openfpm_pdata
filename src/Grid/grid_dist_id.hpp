@@ -1798,9 +1798,13 @@ public:
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
+		grid_key_dx<dim> stop;
+		for (size_t i = 0 ; i < dim ; i++)
+		{stop.set_d(i,0);}
+
 		grid_dist_iterator<dim,device_grid,
 							decltype(device_grid::type_of_iterator()),
-							FIXED> it(loc_grid,gdb_ext);
+							FIXED> it(loc_grid,gdb_ext,stop);
 
 		return it;
 	}
@@ -2399,6 +2403,10 @@ public:
 	 */
 	void map(size_t opt = 0)
 	{
+		// Save the background values
+		T bv;
+		meta_copy<T>::meta_copy_(bv,loc_grid.get(0).getBackgroundValue());
+
 		if (!(opt & NO_GDB_EXT_SWITCH))
 		{
 			gdb_ext_old = gdb_ext;
@@ -2417,6 +2425,9 @@ public:
 
 		// reset ghost structure to recalculate
 		reset_ghost_structures();
+
+		// Reset the background values
+		setBackgroundValue(bv);
 	}
 
 	/*! \brief Save the grid state on HDF5
