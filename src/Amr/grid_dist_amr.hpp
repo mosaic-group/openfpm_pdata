@@ -247,7 +247,7 @@ public:
 	 * \param g_sz coarsest grid size on each direction
 	 *
 	 */
-	void initLevels(const Decomposition_encap<Decomposition,decltype(gd_array)> & dec, size_t n_lvl,const size_t (& g_sz)[dim])
+	template<typename TT> void initLevels(const Decomposition_encap<Decomposition,TT> & dec, size_t n_lvl,const size_t (& g_sz)[dim])
 	{
 		initLevels(dec.internal_dec(),n_lvl,g_sz);
 	}
@@ -384,7 +384,10 @@ public:
 			for (size_t j = 0 ; j < dim ; j++)
 			{
 				start.set_d(j,0);
-				stop.set_d(j,getGridInfoVoid(i).size(j) - 2);
+				if (bc.bc[j] == NON_PERIODIC)
+				{stop.set_d(j,getGridInfoVoid(i).size(j) - 2);}
+				else
+				{stop.set_d(j,getGridInfoVoid(i).size(j) - 1);}
 			}
 
 			git_sub.add(gd_array.get(i).getSubDomainIterator(start,stop));
@@ -403,7 +406,10 @@ public:
 		for (size_t j = 0 ; j < dim ; j++)
 		{
 			start.set_d(j,0);
-			stop.set_d(j,getGridInfoVoid(lvl).size(j) - 2);
+			if (bc.bc[j] == NON_PERIODIC)
+			{stop.set_d(j,getGridInfoVoid(lvl).size(j) - 2);}
+			else
+			{stop.set_d(j,getGridInfoVoid(lvl).size(j) - 1);}
 		}
 
 		return gd_array.get(lvl).getSubDomainIterator(start,stop);
@@ -451,7 +457,10 @@ public:
 		for (size_t j = 0 ; j < dim ; j++)
 		{
 			start.set_d(j,0);
-			stop.set_d(j,getGridInfoVoid(lvl).size(j) - 2);
+			if (bc[j] == NON_PERIODIC)
+			{stop.set_d(j,getGridInfoVoid(lvl).size(j) - 2);}
+			else
+			{stop.set_d(j,getGridInfoVoid(lvl).size(j) - 1);}
 		}
 
 		return gd_array.get(lvl).getGridIterator(start,stop);
