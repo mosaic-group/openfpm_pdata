@@ -176,7 +176,12 @@ class grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,Decomposition,Memory,device_grid>
 		for (size_t i = 0; i < n_lvl - 1 ; i++)
 		{
 			for (size_t j = 0 ; j < dim ; j++)
-			{g_sz_lvl[j] = (g_sz_lvl[j]-1)*2 + 1;}
+			{
+				if (bc.bc[j] == NON_PERIODIC)
+				{g_sz_lvl[j] = (g_sz_lvl[j]-1)*2 + 1;}
+				else
+				{g_sz_lvl[j] = (g_sz_lvl[j]-1)*2;}
+			}
 
 			gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(gd_array.get(0).getDecomposition(),g_sz_lvl,g_int));
 			gd_array.last().setBackgroundValue(bck);
@@ -457,7 +462,7 @@ public:
 		for (size_t j = 0 ; j < dim ; j++)
 		{
 			start.set_d(j,0);
-			if (bc[j] == NON_PERIODIC)
+			if (bc.bc[j] == NON_PERIODIC)
 			{stop.set_d(j,getGridInfoVoid(lvl).size(j) - 2);}
 			else
 			{stop.set_d(j,getGridInfoVoid(lvl).size(j) - 1);}
