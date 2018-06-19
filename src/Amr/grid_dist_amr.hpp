@@ -180,7 +180,7 @@ class grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,Decomposition,Memory,device_grid>
 				if (bc.bc[j] == NON_PERIODIC)
 				{g_sz_lvl[j] = (g_sz_lvl[j]-1)*2 + 1;}
 				else
-				{g_sz_lvl[j] = (g_sz_lvl[j]-1)*2;}
+				{g_sz_lvl[j] = g_sz_lvl[j]*2;}
 			}
 
 			gd_array.add(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(gd_array.get(0).getDecomposition(),g_sz_lvl,g_int));
