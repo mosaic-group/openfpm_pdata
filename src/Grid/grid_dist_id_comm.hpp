@@ -432,9 +432,18 @@ class grid_dist_id_comm
 		{
 			// It is not possible to calculate the total information so we have to receive
 
-			v_cl.sendrecvMultipleMessagesNBX(send_prc_queue.size(),&send_size.get(0),
+			if (send_prc_queue.size() == 0)
+			{
+				v_cl.sendrecvMultipleMessagesNBX(send_prc_queue.size(),NULL,
+											 NULL,NULL,
+											 receive_dynamic,this);
+			}
+			else
+			{
+				v_cl.sendrecvMultipleMessagesNBX(send_prc_queue.size(),&send_size.get(0),
 											 &send_prc_queue.get(0),&send_pointer.get(0),
 											 receive_dynamic,this);
+			}
 		}
 	}
 
