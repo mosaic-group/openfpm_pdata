@@ -670,7 +670,7 @@ public:
 	{
 		// Get the number of elements in the cell
 
-		size_t e;
+		size_t e = -1;
 		size_t cl = fine_s.getCell(p);
 		size_t n_ele = fine_s.getNelements(cl);
 
@@ -953,6 +953,7 @@ public:
 		cart.commCostSet = commCostSet;
 		cart.cd = cd;
 		cart.domain = domain;
+		cart.sub_domains_global = sub_domains_global;
 		for (size_t i = 0 ; i < dim ; i++)
 		{cart.spacing[i] = spacing[i];};
 
@@ -988,6 +989,7 @@ public:
 		commCostSet = cart.commCostSet;
 		cd = cart.cd;
 		domain = cart.domain;
+		sub_domains_global = cart.sub_domains_global;
 
 		for (size_t i = 0 ; i < dim ; i++)
 		{
@@ -1027,6 +1029,8 @@ public:
 		commCostSet = cart.commCostSet;
 		cd = cart.cd;
 		domain = cart.domain;
+		sub_domains_global.swap(cart.sub_domains_global);
+
 		for (size_t i = 0 ; i < dim ; i++)
 		{
 			spacing[i] = cart.spacing[i];

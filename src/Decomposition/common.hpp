@@ -120,6 +120,11 @@ struct Box_map
 	Box<dim,T> box;
 
 	long int prc;
+
+	static bool noPointers()
+	{
+		return true;
+	}
 };
 
 //! Case for local ghost box

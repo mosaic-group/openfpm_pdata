@@ -373,8 +373,8 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 	const openfpm::vector<std::pair<size_t, size_t>> & vp_id1 = dec.template ghost_processorID_pair<typename CartDecomposition<3, double>::lc_processor_id, typename CartDecomposition<3, double>::shift_id>(p1, UNIQUE);
 	const openfpm::vector<std::pair<size_t, size_t>> & vp_id2 = dec.template ghost_processorID_pair<typename CartDecomposition<3, double>::lc_processor_id, typename CartDecomposition<3, double>::shift_id>(p2, UNIQUE);
 
-	BOOST_REQUIRE_EQUAL(proc1,1);
-	BOOST_REQUIRE_EQUAL(proc2,2);
+	BOOST_REQUIRE_EQUAL(proc1,1ul);
+	BOOST_REQUIRE_EQUAL(proc2,2ul);
 
 	if (vcl.rank() == 2)
 	{
