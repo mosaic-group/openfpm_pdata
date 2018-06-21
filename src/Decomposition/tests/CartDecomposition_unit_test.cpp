@@ -341,6 +341,53 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_ext_non_periodic_test)
 	}
 }
 
+BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idbc_and_ghost )
+{
+	// Vcluster
+	Vcluster & vcl = create_vcluster();
+
+	if (vcl.size() != 3)
+	{return;}
+
+	CartDecomposition<3, double> dec(vcl);
+
+	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
+
+	// Physical domain
+	Box<3, double> box( { -0.01, -0.01, 0.0 }, { 0.01, 0.01, 0.003 });
+
+	Ghost<3,double> g(0.0015);
+
+	dec.setGoodParameters(box, bc, g, 512);
+
+	dec.decompose();
+
+	// Now we check the point
+
+	Point<3,double> p1({-0.0067499999999999999237,-0.0012499999999999995923,0.001250000000000000026});
+	Point<3,double> p2({-0.0067499999999999999237,-0.0012499999999999993755,0.001250000000000000026});
+
+	size_t proc1 = dec.processorIDBC(p1);
+	size_t proc2 = dec.processorIDBC(p2);
+
+	const openfpm::vector<std::pair<size_t, size_t>> & vp_id1 = dec.template ghost_processorID_pair<typename CartDecomposition<3, double>::lc_processor_id, typename CartDecomposition<3, double>::shift_id>(p1, UNIQUE);
+	const openfpm::vector<std::pair<size_t, size_t>> & vp_id2 = dec.template ghost_processorID_pair<typename CartDecomposition<3, double>::lc_processor_id, typename CartDecomposition<3, double>::shift_id>(p2, UNIQUE);
+
+	BOOST_REQUIRE_EQUAL(proc1,1);
+	BOOST_REQUIRE_EQUAL(proc2,2);
+
+	if (vcl.rank() == 2)
+	{
+		BOOST_REQUIRE(vp_id2.size() != 0);
+		BOOST_REQUIRE(vp_id1.size() == 0);
+	}
+
+	if (vcl.rank() == 1)
+	{
+		BOOST_REQUIRE(vp_id2.size() == 0 );
+		BOOST_REQUIRE(vp_id1.size() != 0 );
+	}
+}
 
 BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test_dist_grid)
 {

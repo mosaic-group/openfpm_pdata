@@ -131,7 +131,6 @@ template<unsigned int dim> static void nsub_to_div(size_t (& div)[dim], size_t n
 template<unsigned int dim, typename T, typename Memory, typename Distribution>
 class CartDecomposition: public ie_loc_ghost<dim, T>, public nn_prcs<dim, T>, public ie_ghost<dim, T>, public domain_nn_calculator_cart<dim>
 {
-
 public:
 
 	//! Type of the domain we are going to decompose
@@ -163,15 +162,15 @@ protected:
 	//! the set of all local sub-domain as vector
 	openfpm::vector<SpaceBox<dim, T>> sub_domains;
 
-	//! the global set of all sub-domains as vector of 'sub_domains' vectors
-	mutable openfpm::vector<openfpm::vector<SpaceBox<dim, T>>> sub_domains_global;
+	//! the remote set of all sub-domains as vector of 'sub_domains' vectors
+	mutable openfpm::vector<Box_map<dim, T>> sub_domains_global;
 
 	//! for each sub-domain, contain the list of the neighborhood processors
 	openfpm::vector<openfpm::vector<long unsigned int> > box_nn_processor;
 
 	//! Structure that contain for each sub-sub-domain box the processor id
 	//! exist for efficient global communication
-	openfpm::vector<size_t> fine_s;
+	CellList<dim,T,Mem_fast<>,shift<dim,T>> fine_s;
 
 	//! Structure that store the cartesian grid information
 	grid_sm<dim, void> gr;
@@ -269,8 +268,78 @@ protected:
 		return sub_d;
 	}
 
+	void collect_all_sub_domains(openfpm::vector<Box_map<dim,T>> & sub_domains_global)
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+
+		sub_domains_global.clear();
+		openfpm::vector<Box_map<dim,T>> bm;
+
+		for (size_t i = 0 ; i < sub_domains.size() ; i++)
+		{
+			Box_map<dim,T> tmp;
+			tmp.box = ::SpaceBox<dim,T>(sub_domains.get(i));
+			tmp.prc = v_cl.rank();
+
+			bm.add(tmp);
+
+		}
+
+		v_cl.SGather(bm,sub_domains_global,0);
+
+		size_t size = sub_domains_global.size();
+
+		v_cl.max(size);
+		v_cl.execute();
+
+		sub_domains_global.resize(size);
+
+		v_cl.Bcast(sub_domains_global,0);
+		v_cl.execute();
+	}
 
 public:
+
+	void initialize_fine_s(const ::Box<dim,T> & domain)
+	{
+		fine_s.clear();
+		size_t div_g[dim];
+
+		// We reduce the size of the cells by a factor 8 in 3d 4 in 2d
+		for (size_t i = 0 ; i < dim ; i++)
+		{div_g[i] = gr.size(i)/2;}
+
+		fine_s.Initialize(domain,div_g);
+	}
+
+	void construct_fine_s()
+	{
+		collect_all_sub_domains(sub_domains_global);
+
+		// now draw all sub-domains in fine-s
+
+		for (size_t i = 0 ; i < sub_domains_global.size() ; i++)
+		{
+
+			// get the cells this box span
+			const grid_key_dx<dim> p1 = fine_s.getCellGrid(sub_domains_global.get(i).box.getP1());
+			const grid_key_dx<dim> p2 = fine_s.getCellGrid(sub_domains_global.get(i).box.getP2());
+
+			// Get the grid and the sub-iterator
+			auto & gi = fine_s.getGrid();
+			grid_key_dx_iterator_sub<dim> g_sub(gi,p1,p2);
+
+			// add the box-id to the cell list
+			while (g_sub.isNext())
+			{
+				auto key = g_sub.get();
+				fine_s.addCell(gi.LinId(key),i);
+				++g_sub;
+			}
+		}
+	}
 
 	/*! \brief Constructor, it decompose and distribute the sub-domains across the processors
 	 *
@@ -295,7 +364,7 @@ public:
 		}
 
 		// fill the structure that store the processor id for each sub-domain
-		fine_s.resize(gr.size());
+		initialize_fine_s(domain);
 
 		// Optimize the decomposition creating bigger spaces
 		// And reducing Ghost over-stress
@@ -355,8 +424,13 @@ public:
 		// with sub-sub-domain we mean the sub-domain decomposition before
 		// running dec_optimizer (before merging sub-domains)
 
+		///////////////////////////////// TODO //////////////////////////////////////////
 
-		grid_key_dx_iterator<dim> git(gr);
+		construct_fine_s();
+
+		/////////////////////////////////////////////////////////////////////////////////
+
+/*		grid_key_dx_iterator<dim> git(gr);
 
 		while (git.isNext())
 		{
@@ -364,15 +438,17 @@ public:
 			grid_key_dx<dim> key2;
 
 			for (size_t i = 0 ; i < dim ; i++)
-				key2.set_d(i,key.get(i) / magn[i]);
+			{key2.set_d(i,key.get(i) / magn[i]);}
 
 			size_t lin = gr_dist.LinId(key2);
 			size_t lin2 = gr.LinId(key);
 
+			// Here we draw the fine_s in the cell-list
+
 			fine_s.get(lin2) = dist.getGraph().template vertex_p<nm_v::proc_id>(lin);
 
 			++git;
-		}
+		}*/
 
 		Initialize_geo_cell_lists();
 	}
@@ -589,6 +665,38 @@ public:
 
 		ie_loc_ghost<dim,T>::create(sub_domains,domain,ghost,bc);
 	}
+
+	template<typename T2> inline size_t processorID_impl(T2 & p) const
+	{
+		// Get the number of elements in the cell
+
+		size_t e;
+		size_t cl = fine_s.getCell(p);
+		size_t n_ele = fine_s.getNelements(cl);
+
+		for (size_t i = 0 ; i < n_ele ; i++)
+		{
+			e = fine_s.get(cl,i);
+
+			if (sub_domains_global.get(e).box.isInsideNP(p) == true)
+			{
+				break;
+			}
+		}
+
+#ifdef SE_CLASS1
+
+		if (n_ele == 0)
+		{
+			std::cout << __FILE__ << ":" << __LINE__ << " I cannot detect in which processor this particle go" << std::endl;
+			return -1;
+		}
+
+#endif
+
+		return sub_domains_global.get(e).prc;
+	}
+
 
 public:
 
@@ -962,7 +1070,7 @@ public:
 	 */
 	template<typename Mem> size_t inline processorID(const encapc<1, Point<dim,T>, Mem> & p) const
 	{
-		return fine_s.get(cd.template getCell(p));
+		return processorID_impl(p);
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -974,7 +1082,7 @@ public:
 	 */
 	size_t inline processorID(const Point<dim,T> &p) const
 	{
-		return fine_s.get(cd.getCell(p));
+		return processorID_impl(p);
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -986,7 +1094,7 @@ public:
 	 */
 	size_t inline processorID(const T (&p)[dim]) const
 	{
-		return fine_s.get(cd.getCell(p));
+		return processorID_impl(p);
 	}
 
 	/*! \brief Given a point return in which processor the point/particle should go
@@ -1003,7 +1111,8 @@ public:
 		Point<dim,T> pt = p;
 		applyPointBC(pt);
 
-		return fine_s.get(cd.getCell(pt));
+
+		return processorID_impl(p);
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -1015,12 +1124,14 @@ public:
 	 * \return processorID
 	 *
 	 */
-	template<typename ofb> size_t inline processorIDBC(const Point<dim,T> &p) const
+	size_t inline processorIDBC(const Point<dim,T> &p) const
 	{
 		Point<dim,T> pt = p;
 		applyPointBC(pt);
 
-		return fine_s.get(cd.getCell(p));
+		// Get the number of elements in the cell
+
+		return processorID_impl(p);
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -1032,12 +1143,12 @@ public:
 	 * \return processorID
 	 *
 	 */
-	template<typename ofb> size_t inline processorIDBC(const T (&p)[dim]) const
+	size_t inline processorIDBC(const T (&p)[dim]) const
 	{
 		Point<dim,T> pt = p;
 		applyPointBC(pt);
 
-		return fine_s.get(cd.getCell(p));
+		return processorID_impl(p);
 	}
 
 	/*! \brief Get the periodicity on i dimension
@@ -1452,10 +1563,10 @@ public:
 		return sub_domains;
 	}
 
-	openfpm::vector<openfpm::vector<SpaceBox<dim, T>>> & getSubDomainsGlobal()
+/*	openfpm::vector<openfpm::vector<SpaceBox<dim, T>>> & getSubDomainsGlobal()
 	{
 		return sub_domains_global;
-	}
+	}*/
 
 	/*! \brief Check if the particle is local
 	 *

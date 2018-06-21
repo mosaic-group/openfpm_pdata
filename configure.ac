@@ -232,6 +232,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
 )
 AC_LANG_POP([C++])
 CXXFLAGS="$my_save_cflags"
+
 AC_SUBST([AM_CXXFLAGS])
 
 

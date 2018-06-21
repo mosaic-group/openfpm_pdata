@@ -328,7 +328,7 @@ class grid_dist_id_comm
 				// create 2 sub grid iterator
 
 				if (bx_dst.isValid() == false)
-					continue;
+				{continue;}
 
 				grid_key_dx_iterator_sub<dim> sub_src(loc_grid.get(i).getGrid(),bx_src.getKP1(),bx_src.getKP2());
 				grid_key_dx_iterator_sub<dim> sub_dst(loc_grid.get(sub_id_dst).getGrid(),bx_dst.getKP1(),bx_dst.getKP2());
