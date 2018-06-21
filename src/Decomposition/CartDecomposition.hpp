@@ -1116,7 +1116,7 @@ public:
 		applyPointBC(pt);
 
 
-		return processorID_impl(p);
+		return processorID_impl(pt);
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -1135,7 +1135,7 @@ public:
 
 		// Get the number of elements in the cell
 
-		return processorID_impl(p);
+		return processorID_impl(pt);
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -1152,7 +1152,7 @@ public:
 		Point<dim,T> pt = p;
 		applyPointBC(pt);
 
-		return processorID_impl(p);
+		return processorID_impl(pt);
 	}
 
 	/*! \brief Get the periodicity on i dimension

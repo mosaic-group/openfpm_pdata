@@ -725,7 +725,7 @@ class vector_dist_comm
 
 			// Check if the particle is inside the domain
 			if (dec.getDomain().isInside(v_pos.get(key)) == true)
-			{p_id = dec.processorIDBC(v_pos.get(key));}
+			{p_id = dec.processorID(v_pos.get(key));}
 			else
 			{p_id = obp::out(key, v_cl.getProcessUnitID());}
 
