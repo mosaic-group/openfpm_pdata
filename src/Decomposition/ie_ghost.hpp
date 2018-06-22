@@ -839,7 +839,7 @@ public:
 		{
 			size_t bid = cell_it.get();
 
-			if (vb_int.get(bid).box.isInside(p) == true)
+			if (vb_int.get(bid).box.isInsideNP(p) == true)
 			{
 				ids.add(id::id(vb_int.get(bid),bid));
 			}
@@ -883,7 +883,7 @@ public:
 		{
 			size_t bid = cell_it.get();
 
-			if (vb_int.get(bid).box.isInside(p) == true)
+			if (vb_int.get(bid).box.isInsideNP(p) == true)
 			{
 				ids_p.add(std::pair<size_t,size_t>(id1::id(vb_int.get(bid),bid),id2::id(vb_int.get(bid),bid)));
 			}
@@ -926,7 +926,7 @@ public:
 		{
 			size_t bid = cell_it.get();
 
-			if (vb_int.get(bid).box.isInside(p) == true)
+			if (vb_int.get(bid).box.isInsideNP(p) == true)
 			{
 				ids.add(id::id(vb_int.get(bid),bid));
 			}

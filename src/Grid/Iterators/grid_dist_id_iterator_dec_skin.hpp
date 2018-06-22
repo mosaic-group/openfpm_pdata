@@ -252,12 +252,6 @@ class grid_dist_id_iterator_dec_skin : protected grid_skin_iterator_bc<Decomposi
 		// shift
 		k_glob = k_glob + gdb_ext.get(sub_id).origin;
 
-		if (k_glob.get(0) > 11)
-		{
-			int debug = 0;
-			debug++;
-		}
-
 		return k_glob;
 	}
 

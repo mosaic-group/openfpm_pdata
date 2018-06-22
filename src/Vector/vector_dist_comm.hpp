@@ -204,8 +204,8 @@ class vector_dist_comm
 		return end_id;
 	}
 
-	//! Flags that indicate that the function createShiftBox() has been called
-	bool is_shift_box_created = false;
+	//! From which decomposition the shift boxes are calculated
+	long int shift_box_ndec = -1;
 
 	//! this map is used to check if a combination is already present
 	std::unordered_map<size_t, size_t> map_cmb;
@@ -226,11 +226,11 @@ class vector_dist_comm
 	 */
 	void createShiftBox()
 	{
-		if (is_shift_box_created == true)
+		if (shift_box_ndec == (long int)dec.get_ndec())
 			return;
 
 		// Add local particles coming from periodic boundary, the only boxes that count are the one
-		// touching the border, filter them
+		// touching the border
 		for (size_t i = 0; i < dec.getNLocalSub(); i++)
 		{
 			size_t Nl = dec.getLocalNIGhost(i);
@@ -261,7 +261,7 @@ class vector_dist_comm
 			}
 		}
 
-		is_shift_box_created = true;
+		shift_box_ndec = dec.get_ndec();
 	}
 
 	/*! \brief Local ghost from labeled particles
@@ -333,7 +333,7 @@ class vector_dist_comm
 			{
 				for (size_t j = 0; j < box_f.get(i).size(); j++)
 				{
-					if (box_f.get(i).get(j).isInside(v_pos.get(key)) == true)
+					if (box_f.get(i).get(j).isInsideNP(v_pos.get(key)) == true)
 					{
 						size_t lin_id = dec.convertShift(box_cmb.get(i));
 

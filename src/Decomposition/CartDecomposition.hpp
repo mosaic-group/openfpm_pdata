@@ -853,7 +853,7 @@ public:
 		for (size_t i = 0 ; i < dim ; i++)
 		{
 			if (bc[i] == PERIODIC)
-				pt[i] = openfpm::math::periodic_l(pt[i],domain.getHigh(i),domain.getLow(i));
+			{pt[i] = openfpm::math::periodic_l(pt[i],domain.getHigh(i),domain.getLow(i));}
 		}
 	}
 
@@ -871,7 +871,7 @@ public:
 		for (size_t i = 0 ; i < dim ; i++)
 		{
 			if (bc[i] == PERIODIC)
-				pt.get(i) = openfpm::math::periodic_l(pt.get(i),domain.getHigh(i),domain.getLow(i));
+			{pt.get(i) = openfpm::math::periodic_l(pt.get(i),domain.getHigh(i),domain.getLow(i));}
 		}
 	}
 
@@ -889,7 +889,7 @@ public:
 		for (size_t i = 0 ; i < dim ; i++)
 		{
 			if (bc[i] == PERIODIC)
-				pt.template get<0>()[i] = openfpm::math::periodic_l(pt.template get<0>()[i],domain.getHigh(i),domain.getLow(i));
+			{pt.template get<0>()[i] = openfpm::math::periodic_l(pt.template get<0>()[i],domain.getHigh(i),domain.getLow(i));}
 		}
 	}
 
