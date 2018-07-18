@@ -1,5 +1,3 @@
-#ifndef GRID_DIST_UNIT_TEST_HPP
-#define GRID_DIST_UNIT_TEST_HPP
 
 #define BOOST_TEST_DYN_LINK
 #include <boost/test/unit_test.hpp>
@@ -1758,4 +1756,3 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_periodic_put_test )
 
 BOOST_AUTO_TEST_SUITE_END()
 
-#endif
