@@ -130,11 +130,17 @@ struct gcl<dim,St,CellList_gen<dim, St, Process_keys_hilb,Mem_type, shift<dim, S
  * \tparam prop properties the vector element store in OpenFPM data structure format
  * \tparam Decomposition Decomposition strategy to use CartDecomposition ...
  * \tparam Memory Memory pool where store the information HeapMemory ...
+ * \tparam Memory layout
  *
  */
 
-template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St>, typename Memory = HeapMemory>
-class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory>
+template<unsigned int dim,
+         typename St,
+         typename prop,
+         typename Decomposition = CartDecomposition<dim,St>,
+         typename Memory = HeapMemory,
+         template<typename> class layout_base = memory_traits_lin>
+class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>
 {
 public:
 
@@ -151,11 +157,11 @@ private:
 
 	//! Particle position vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector<Point<dim, St>> v_pos;
+	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> v_pos;
 
 	//! Particle properties vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector<prop> v_prp;
+	openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> v_prp;
 
 	//! Virtual cluster
 	Vcluster & v_cl;
@@ -2114,5 +2120,7 @@ public:
 #endif
 };
 
+
+template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St>> using vector_dist_gpu = vector_dist<dim,St,prop,Decomposition,CudaMemory,memory_traits_inte>;
 
 #endif /* VECTOR_HPP_ */
