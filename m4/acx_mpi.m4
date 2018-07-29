@@ -67,6 +67,39 @@ if test x = x"$MPILIBS"; then
                         AC_TRY_LINK([],[      call MPI_Init], [MPILIBS=" "
                                 AC_MSG_RESULT(yes)], [AC_MSG_RESULT(no)])])
 fi
+
+INC_PATH=$(mpic++ --showme:compile)
+LIB_DIRS=$(mpic++ --showme:libdirs)
+LIBS_MPI_LIST=$(mpic++ --showme:libs)
+
+IFS=' ' read -r -a array <<< "$INC_PATH"
+MPI_INC_PATH=""
+for element in "${array[[@]]}"
+do
+    if [[ x"$element" != x"-pthread" ]]; then
+        MPI_INC_PATH="$MPI_INC_PATH $element"
+    fi
+done
+
+IFS=' ' read -r -a array <<< "$LIB_DIRS"
+MPI_LIB_DIRS=""
+for element in "${array[[@]]}"
+do
+    MPI_LIB_DIRS="$MPI_LIB_DIRS -L$element"
+done
+
+IFS=' ' read -r -a array <<< "$LIBS"
+LIBS_MPI_LIST=""
+for element in "${array[[@]]}"
+do
+    MPI_LIBS="$LIBS_MPI_LIST -l$element"
+done
+
+
+AC_SUBST(MPI_INC_PATH)
+AC_SUBST(MPI_LIB_DIRS)
+AC_SUBST(MPI_LIBS)
+
 if test x = x"$MPILIBS"; then
         AC_CHECK_LIB(mpi, MPI_Init, [MPILIBS="-lmpi"])
 fi

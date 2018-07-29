@@ -136,7 +136,7 @@ class nn_prcs
 	 * \return the pointer where to store the message
 	 *
 	 */
-	static void * message_alloc(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
+	static void * message_alloc(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, size_t ri, size_t tag, void * ptr)
 	{
 		// cast the pointer
 		nn_prcs<dim,T> * cd = static_cast< nn_prcs<dim,T> *>(ptr);

@@ -23,7 +23,7 @@ struct KillParticle
 	 * \return -1
 	 *
 	 */
-	static size_t out(size_t pp_id, size_t p_id)
+	static long int out(size_t pp_id, size_t p_id)
 	{
 		return -1;
 	}
@@ -40,7 +40,7 @@ struct KillParticleWithWarning
 	 * \return -1
 	 *
 	 */
-	static size_t out(size_t pp_id, size_t p_id)
+	static long int out(size_t pp_id, size_t p_id)
 	{
 		std::cerr << "Warning: " << __FILE__ << ":" << __LINE__ << " out of bound particle detected ";
 
@@ -59,7 +59,7 @@ struct Nothing
 	 * \return -1
 	 *
 	 */
-	static size_t out(size_t pp_id, size_t p_id)
+	static long int out(size_t pp_id, size_t p_id)
 	{
 		return -1;
 	}
@@ -76,7 +76,7 @@ struct Error
 	 * \return -1
 	 *
 	 */
-	static size_t out(size_t pp_id, size_t p_id)
+	static long int out(size_t pp_id, size_t p_id)
 	{
 		std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " out of bound particle detected ";
 

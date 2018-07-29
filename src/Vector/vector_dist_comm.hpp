@@ -586,8 +586,8 @@ class vector_dist_comm
 	void fill_send_map_buf(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
 			               openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
 			               openfpm::vector<size_t> & prc_sz_r,
-			               openfpm::vector<openfpm::vector<Point<dim,St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>> & m_pos,
-			               openfpm::vector<openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base>> & m_prp)
+			               openfpm::vector<openfpm::vector<Point<dim,St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base,openfpm::grow_policy_identity>> & m_pos,
+			               openfpm::vector<openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base,openfpm::grow_policy_identity>> & m_prp)
 	{
 		m_prp.resize(prc_sz_r.size());
 		m_pos.resize(prc_sz_r.size());
@@ -1138,18 +1138,18 @@ public:
 		}
 
 		//! position vector
-		openfpm::vector<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>> m_pos;
+		openfpm::vector<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base,openfpm::grow_policy_identity>> m_pos;
 		//! properties vector
-		openfpm::vector<openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base>> m_prp;
+		openfpm::vector<openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base,openfpm::grow_policy_identity>> m_prp;
 
 		fill_send_map_buf(v_pos,v_prp, prc_sz_r, m_pos, m_prp);
 
-		v_cl.SSendRecv<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>,
+		v_cl.SSendRecv<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base,openfpm::grow_policy_identity>,
 					   openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>,
 					   layout_base>
 					   (m_pos,v_pos,prc_r,prc_recv_map,recv_sz_map);
 
-		v_cl.SSendRecv<openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base>,
+		v_cl.SSendRecv<openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base,openfpm::grow_policy_identity>,
 					   openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base>,
 					   layout_base>
 					   (m_prp,v_prp,prc_r,prc_recv_map,recv_sz_map);

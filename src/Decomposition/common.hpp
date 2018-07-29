@@ -83,6 +83,9 @@ struct Box_sub
 
 	//! see ie_ghost follow sector explanation
 	comb<dim> cmb;
+
+	Box_sub()
+	{cmb.zero();}
 };
 
 //! Particular case for local internal ghost boxes

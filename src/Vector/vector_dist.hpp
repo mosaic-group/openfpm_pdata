@@ -34,6 +34,7 @@
 #include "Vector/vector_map_iterator.hpp"
 #include "NN/CellList/ParticleIt_Cells.hpp"
 #include "NN/CellList/ProcKeys.hpp"
+#include "Vector/vector_dist_gpu.hpp"
 
 #define VECTOR_DIST_ERROR_OBJECT std::runtime_error("Runtime vector distributed error");
 
@@ -1584,7 +1585,7 @@ public:
 	 */
 	inline Decomposition & getDecomposition()
 	{
-		return vector_dist_comm<dim,St,prop,Decomposition,Memory>::getDecomposition();
+		return vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>::getDecomposition();
 	}
 
 	/*! \brief Get the decomposition
@@ -1594,7 +1595,7 @@ public:
 	 */
 	inline const Decomposition & getDecomposition() const
 	{
-		return vector_dist_comm<dim,St,prop,Decomposition,Memory>::getDecomposition();
+		return vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>::getDecomposition();
 	}
 
 	/*! \brief It move all the particles that does not belong to the local processor to the respective processor
@@ -1797,7 +1798,8 @@ public:
 		if ((opt & 0x0FFF0000) == CSV_WRITER)
 		{
 			// CSVWriter test
-			CSVWriter<openfpm::vector<Point<dim,St>>, openfpm::vector<prop> > csv_writer;
+			CSVWriter<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>,
+			          openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> > csv_writer;
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".csv"));
 
@@ -1812,7 +1814,9 @@ public:
 				ft = file_type::BINARY;
 
 			// VTKWriter for a set of points
-			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim,St>>, openfpm::vector<prop>>, VECTOR_POINTS> vtk_writer;
+			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>,
+									   openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base>>,
+			                           VECTOR_POINTS> vtk_writer;
 			vtk_writer.add(v_pos,v_prp,g_m);
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtk"));

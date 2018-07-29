@@ -119,6 +119,10 @@ IMMDX_LIB_METIS([],[echo "Cannot detect metis, use the --with-metis option if it
 
 #########
 
+## Check for MPI
+
+ACX_MPI()
+
 ## Check for HDF5
 
 AX_LIB_HDF5([parallel])

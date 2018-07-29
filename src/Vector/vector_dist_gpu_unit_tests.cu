@@ -4,6 +4,7 @@
 #include "VCluster/VCluster.hpp"
 #include <Vector/vector_dist.hpp>
 
+
 BOOST_AUTO_TEST_SUITE( vector_dist_gpu_test )
 
 void print_test(std::string test, size_t sz)
@@ -14,6 +15,11 @@ void print_test(std::string test, size_t sz)
 
 BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
 {
+	auto & v_cl = create_vcluster();
+
+	if (v_cl.size() > 16)
+	{return;}
+
 	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
 
 	// set the ghost based on the radius cut off (make just a little bit smaller than the spacing)
@@ -34,10 +40,51 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
 		vd.getPos(p)[1] = (float)rand() / RAND_MAX;
 		vd.getPos(p)[2] = (float)rand() / RAND_MAX;
 
+		vd.template getProp<0>(p) = vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2];
+
+		vd.template getProp<1>(p)[0] = vd.getPos(p)[0] + vd.getPos(p)[1];
+		vd.template getProp<1>(p)[1] = vd.getPos(p)[1] + vd.getPos(p)[2];
+		vd.template getProp<1>(p)[2] = vd.getPos(p)[2] + vd.getPos(p)[3];
+
 		++it;
 	}
 
+	// Ok we redistribute the particles
 	vd.map();
+
+	size_t size_l = vd.size_local();
+
+	v_cl.sum(size_l);
+	v_cl.execute();
+
+	BOOST_REQUIRE_EQUAL(size_l,1000);
+
+
+	auto & ct = vd.getDecomposition();
+
+	bool noOut = true;
+	size_t cnt = 0;
+
+	auto it2 = vd.getDomainIterator();
+
+	while (it2.isNext())
+	{
+		auto p = it2.get();
+
+		noOut &= ct.isLocal(vd.getPos(p));
+
+		cnt++;
+		++it2;
+	}
+
+	BOOST_REQUIRE_EQUAL(noOut,true);
+	BOOST_REQUIRE_EQUAL(cnt,vd.size_local());
+
+	vd.write("test_out_gpu");
+
+	// now we offload all the properties
+
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()

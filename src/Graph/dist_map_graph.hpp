@@ -401,7 +401,7 @@ class DistGraph_CSR
 	 * \param ri Request id
 	 * \param ptr Void pointer parameter for additional data to pass to the call-back
 	 */
-	static void * gr_receive(size_t msg_i, size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
+	static void * gr_receive(size_t msg_i, size_t total_msg, size_t total_p, size_t i, size_t ri, size_t tag, void * ptr)
 	{
 		openfpm::vector<HeapMemory> *v = static_cast<openfpm::vector<HeapMemory> *>(ptr);
 
@@ -420,7 +420,7 @@ class DistGraph_CSR
 	 * \param ri Request id
 	 * \param ptr Void pointer parameter for additional data to pass to the call-back
 	 */
-	static void * on_receive(size_t msg_i, size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
+	static void * on_receive(size_t msg_i, size_t total_msg, size_t total_p, size_t i, size_t ri, size_t tag, void * ptr)
 	{
 		openfpm::vector<openfpm::vector<size_t>> *v = static_cast<openfpm::vector<openfpm::vector<size_t>> *>(ptr);
 

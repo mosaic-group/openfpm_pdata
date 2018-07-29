@@ -26,6 +26,17 @@ public:
 	static const int stop = 1;
 };
 
+///// Unfortunately it seem that nvcc it specialize incorrectly this data structure so we have to specialize for the broken cases
+
+template<unsigned int dim>
+struct is_typedef_and_data_same<true,wavefront<dim>>
+{
+	enum
+	{
+		value = 1
+	};
+};
+
 /*! \brief This class take a graph representing the space decomposition and produce a
  *         simplified version
  *
