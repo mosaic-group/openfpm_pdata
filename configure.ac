@@ -406,7 +406,7 @@ if test x"$NVCC_EXIST" = x"yes"; then
 
   AC_MSG_RESULT($gpu_support)
   if test x"$gpu_support" = x"yes"; then
-	AC_DEFINE([GPU],[],[GPU support])
+	AC_DEFINE([CUDA_GPU],[],[GPU support])
   else
 	CUDA_LIBS=""
 	CUDA_CFLAGS=""

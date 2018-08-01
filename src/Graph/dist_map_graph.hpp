@@ -326,9 +326,9 @@ class DistGraph_CSR
 	{
 		// If v1 and v2 does not satisfy some criteria return
 		if (CheckPolicy::valid(v1, v.size()) == false)
-			return NO_EDGE;
+		{return (size_t)NO_EDGE;}
 		if (CheckPolicy::valid(v2, v.size()) == false)
-			return NO_EDGE;
+		{return (size_t)NO_EDGE;}
 
 		// get the number of adjacent vertex
 		size_t id_x_end = v_l.template get<0>(v1);

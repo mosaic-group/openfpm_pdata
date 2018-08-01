@@ -8,6 +8,7 @@
 #ifndef VECTOR_HPP_
 #define VECTOR_HPP_
 
+#include "config.h"
 #include "HDF5_wr/HDF5_wr.hpp"
 #include "VCluster/VCluster.hpp"
 #include "Space/Shape/Point.hpp"
@@ -34,7 +35,8 @@
 #include "Vector/vector_map_iterator.hpp"
 #include "NN/CellList/ParticleIt_Cells.hpp"
 #include "NN/CellList/ProcKeys.hpp"
-#include "Vector/vector_dist_gpu.hpp"
+#include "Vector/vector_dist_kernel.hpp"
+#include "NN/CellList/cuda/CellList_gpu.hpp"
 
 #define VECTOR_DIST_ERROR_OBJECT std::runtime_error("Runtime vector distributed error");
 
@@ -146,7 +148,7 @@ class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory,lay
 public:
 
 	//! Self type
-	typedef vector_dist<dim,St,prop,Decomposition,Memory> self;
+	typedef vector_dist<dim,St,prop,Decomposition,Memory,layout_base> self;
 
 	//! property object
 	typedef prop value_type;
@@ -163,6 +165,14 @@ private:
 	//! Particle properties vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
 	openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> v_prp;
+
+#ifdef CUDA_GPU
+
+	openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> v_prp_out;
+
+	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> v_pos_out;
+
+#endif
 
 	//! Virtual cluster
 	Vcluster & v_cl;
@@ -915,6 +925,76 @@ public:
 		return getCellList<CellL>(r_cut, g,no_se3);
 	}
 
+#ifdef CUDA_GPU
+
+	/*! \brief Construct a cell list starting from the stored particles, this version of cell-list can be offloaded with
+	 *         the function toGPU
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 *
+	 * \return the Cell list
+	 *
+	 */
+	CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> getCellListGPU(St r_cut, bool no_se3 = false)
+	{
+#ifdef SE_CLASS3
+		if (no_se3 == false)
+		{se3.getNN();}
+#endif
+#ifdef SE_CLASS1
+		check_ghost_compatible_rcut(r_cut);
+#endif
+
+		// Get ghost and anlarge by 1%
+		Ghost<dim,St> g = getDecomposition().getGhost();
+		g.magnify(1.013);
+
+		return getCellListGPU(r_cut, g,no_se3);
+	}
+
+	/*! \brief Construct a cell list starting from the stored particles
+	 *
+	 * It differ from the get getCellList for an additional parameter, in case the
+	 * domain + ghost is not big enough to contain additional padding particles, a Cell list
+	 * with bigger space can be created
+	 * (padding particles in general are particles added by the user out of the domains)
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
+	 *
+	 * \return the CellList
+	 *
+	 */
+	CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> getCellListGPU(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
+	{
+#ifdef SE_CLASS3
+		if (no_se3 == false)
+		{se3.getNN();}
+#endif
+
+		// Division array
+		size_t div[dim];
+
+		// get the processor bounding box
+		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+
+		// Processor bounding box
+		cl_param_calculate(pbox, div, r_cut, enlarge);
+
+		CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> cell_list(pbox,div);
+
+		v_prp_out.resize(v_pos.size());
+		v_pos_out.resize(v_pos.size());
+
+		cell_list.template construct<decltype(v_pos),decltype(v_prp)>(v_pos,v_pos_out,v_prp,v_prp_out);
+
+		return cell_list;
+	}
+
+#endif
+
 	/*! \brief Construct an hilbert cell list starting from the stored particles
 	 *
 	 * \tparam CellL CellList type to construct
@@ -1544,6 +1624,24 @@ public:
 		return vector_dist_iterator(0, g_m);
 	}
 
+#ifdef CUDA_GPU
+
+	/*! \brief Get an iterator that traverse the particles in the domain
+	 *
+	 * \return an iterator
+	 *
+	 */
+	ite_gpu<1> getDomainIteratorGPU(size_t n_thr = 1024) const
+	{
+#ifdef SE_CLASS3
+		se3.getIterator();
+#endif
+
+		return v_pos.getGPUIteratorTo(n_thr);
+	}
+
+#endif
+
 	/*! \brief Get an iterator that traverse the particles in the domain
 	 *
 	 * \return an iterator
@@ -1824,8 +1922,6 @@ public:
 			// Write the VTK file
 			return vtk_writer.write(output,prp_names,"particles",ft);
 		}
-
-		return false;
 	}
 
 	/*! \brief Delete the particles on the ghost
@@ -2113,6 +2209,80 @@ public:
 			key.set_d(i,key.get(i) + 1);
 		return key;
 	}
+
+
+#ifdef CUDA_GPU
+
+		/*! \brief Convert the grid into a data-structure compatible for computing into GPU
+		 *
+		 *  The object created can be considered like a reference of the original
+		 *
+		 * \return an usable vector in the kernel
+		 *
+		 */
+		template<unsigned int ... prp> vector_dist_ker<dim,St,prop> toKernel()
+		{
+			vector_dist_ker<dim,St,prop> v(v_pos.toKernel(), v_prp.toKernel());
+
+			return v;
+		}
+
+		/*! \brief Convert the grid into a data-structure compatible for computing into GPU
+		 *
+		 *  In comparison with toGPU return a version sorted better for coalesced memory
+		 *
+		 * \return an usable vector in the kernel
+		 *
+		 */
+		template<unsigned int ... prp> vector_dist_ker<dim,St,prop> toKernel_sorted()
+		{
+			vector_dist_ker<dim,St,prop> v(v_pos_out.toKernel(), v_prp_out.toKernel());
+
+			return v;
+		}
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 */
+		template<unsigned int ... prp> void deviceToHostProp()
+		{
+			v_prp.template deviceToHost<prp ...>();
+		}
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 */
+		void deviceToHostPos()
+		{
+			v_pos.template deviceToHost<0>();
+		}
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 */
+		template<unsigned int ... prp> void hostToDeviceProp()
+		{
+			v_prp.template deviceToHost<prp ...>();
+		}
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 */
+		void hostToDevicePos()
+		{
+			v_pos.template hostToDevice<0>();
+		}
+
+#endif
+
 
 #ifdef SE_CLASS3
 
