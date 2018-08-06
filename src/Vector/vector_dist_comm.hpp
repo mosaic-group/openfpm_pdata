@@ -17,6 +17,8 @@
 
 #define BIND_DEC_TO_GHOST 1
 
+#define MAP_ON_DEVICE 1000
+
 /*! \brief compute the communication options from the ghost_get/put options
  *
  *
@@ -750,12 +752,19 @@ class vector_dist_comm
 	 * \param v_pos vector of particle positions
 	 * \param lbl_p Particle labeled
 	 * \param prc_sz For each processor the number of particles to send
+	 * \param opt options
 	 *
 	 */
 	template<typename obp> void labelParticleProcessor(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
 			                                           openfpm::vector<aggregate<size_t,size_t,size_t>> & lbl_p,
-			                                           openfpm::vector<size_t> & prc_sz)
+			                                           openfpm::vector<size_t> & prc_sz,
+			                                           size_t opt)
 	{
+		if (opt == MAP_ON_DEVICE)
+		{
+
+		}
+
 		// reset lbl_p
 		lbl_p.clear();
 
@@ -1135,9 +1144,10 @@ public:
 	 * \param v_pos vector of particle positions
 	 * \param v_prp vector of particle properties
 	 * \param g_m ghost marker
+	 * \param opt options
 	 *
 	 */
-	template<unsigned int ... prp> void map_list_(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & g_m)
+	template<unsigned int ... prp> void map_list_(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & g_m, size_t opt)
 	{
 		typedef KillParticle obp;
 
@@ -1149,7 +1159,7 @@ public:
 		v_prp.resize(g_m);
 
 		// Contain the processor id of each particle (basically where they have to go)
-		labelParticleProcessor<obp>(v_pos,m_opart, prc_sz);
+		labelParticleProcessor<obp>(v_pos,m_opart, prc_sz,opt);
 
 		// Calculate the sending buffer size for each processor, put this information in
 		// a contiguous buffer
@@ -1200,7 +1210,8 @@ public:
 	 */
 	template<typename obp = KillParticle>
 	void map_(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
-			  openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp, size_t & g_m)
+			  openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp, size_t & g_m,
+			  size_t opt)
 	{
 		// Processor communication size
 		openfpm::vector<size_t> prc_sz(v_cl.getProcessingUnits());
@@ -1210,7 +1221,7 @@ public:
 		v_prp.resize(g_m);
 
 		// Contain the processor id of each particle (basically where they have to go)
-		labelParticleProcessor<obp>(v_pos,m_opart, prc_sz);
+		labelParticleProcessor<obp>(v_pos,m_opart, prc_sz,opt);
 
 		// Calculate the sending buffer size for each processor, put this information in
 		// a contiguous buffer

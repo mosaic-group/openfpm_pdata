@@ -376,4 +376,38 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
 }
 
 
+BOOST_AUTO_TEST_CASE( vector_dist_map_on_gpu_test)
+{
+	auto & v_cl = create_vcluster();
+
+	if (v_cl.size() > 16)
+	{return;}
+
+	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// set the ghost based on the radius cut off (make just a little bit smaller than the spacing)
+	Ghost<3,float> g(0.1);
+
+	// Boundary conditions
+	size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+
+	vector_dist_gpu<3,float,aggregate<float,float[3],float[3]>> vd(1000,domain,bc,g);
+
+	auto it = vd.getDomainIterator();
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+
+		vd.getPos(p)[0] = (float)rand() / RAND_MAX;
+		vd.getPos(p)[1] = (float)rand() / RAND_MAX;
+		vd.getPos(p)[2] = (float)rand() / RAND_MAX;
+
+		++it;
+	}
+
+	// Ok we redistribute the particles (CPU based)
+	vd.map(MAP_ON_DEVICE);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

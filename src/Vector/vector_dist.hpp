@@ -1706,11 +1706,12 @@ public:
 	 *
 	 * \tparam prp properties to communicate
 	 *
+	 * \param opt options
 	 *
 	 */
-	template<unsigned int ... prp> void map_list()
+	template<unsigned int ... prp> void map_list(size_t opt = 0)
 	{
-		this->template map_list_<prp...>(v_pos,v_prp,g_m);
+		this->template map_list_<prp...>(v_pos,v_prp,g_m,opt);
 	}
 
 
@@ -1722,15 +1723,16 @@ public:
 	 * elements out the local processor. Or just after initialization if each processor
 	 * contain non local particles
 	 *
+	 * \param opt options
 	 *
 	 */
-	template<typename obp = KillParticle> void map()
+	template<typename obp = KillParticle> void map(size_t opt = 0)
 	{
 #ifdef SE_CLASS3
 		se3.map_pre();
 #endif
 
-		this->template map_<obp>(v_pos,v_prp,g_m);
+		this->template map_<obp>(v_pos,v_prp,g_m,opt);
 
 #ifdef SE_CLASS3
 		se3.map_post();
