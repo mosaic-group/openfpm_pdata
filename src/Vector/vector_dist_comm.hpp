@@ -54,7 +54,7 @@ class vector_dist_comm
 	size_t v_sub_unit_factor = 64;
 
 	//! definition of the send vector for position
-	typedef openfpm::vector<Point<dim, St>, Memory> send_pos_vector;
+	typedef openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> send_pos_vector;
 
 	//! VCluster
 	Vcluster & v_cl;
@@ -111,7 +111,7 @@ class vector_dist_comm
 	size_t lg_m;
 
 	//! Sending buffer
-	openfpm::vector<HeapMemory> hsmem;
+	openfpm::vector<Memory> hsmem;
 
 	//! Receiving buffer
 	openfpm::vector<HeapMemory> hrmem;
@@ -267,7 +267,8 @@ class vector_dist_comm
 	 * \param v_prp vector of particles properties
 	 *
 	 */
-	void local_ghost_from_opart(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp)
+	void local_ghost_from_opart(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
+			                    openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp)
 	{
 		// get the shift vectors
 		const openfpm::vector<Point<dim, St>> & shifts = dec.getShiftVectors();
@@ -294,7 +295,9 @@ class vector_dist_comm
 	 * \param g_m ghost marker
 	 *
 	 */
-	void local_ghost_from_dec(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t g_m)
+	void local_ghost_from_dec(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
+			                  openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+			                  size_t g_m)
 	{
 		o_part_loc.clear();
 
@@ -395,7 +398,10 @@ class vector_dist_comm
 	 * \param opt options
 	 *
 	 */
-	void add_loc_particles_bc(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp ,size_t & g_m, size_t opt)
+	void add_loc_particles_bc(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
+			                  openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp ,
+			                  size_t & g_m,
+			                  size_t opt)
 	{
 		// Create the shift boxes
 		createShiftBox();
@@ -408,9 +414,9 @@ class vector_dist_comm
 		else
 		{
 			if (opt & SKIP_LABELLING)
-				local_ghost_from_opart(v_pos,v_prp);
+			{local_ghost_from_opart(v_pos,v_prp);}
 			else
-				local_ghost_from_dec(v_pos,v_prp,g_m);
+			{local_ghost_from_dec(v_pos,v_prp,g_m);}
 		}
 	}
 
@@ -420,7 +426,8 @@ class vector_dist_comm
 	 * \param g_pos_send Send buffer to fill
 	 *
 	 */
-	void fill_send_ghost_pos_buf(openfpm::vector<Point<dim, St>> & v_pos,openfpm::vector<send_pos_vector> & g_pos_send)
+	void fill_send_ghost_pos_buf(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
+			                     openfpm::vector<send_pos_vector> & g_pos_send)
 	{
 		// get the shift vectors
 		const openfpm::vector<Point<dim, St>> & shifts = dec.getShiftVectors();
@@ -516,7 +523,7 @@ class vector_dist_comm
 	 *
 	 *
 	 */
-	void resize_retained_buffer(openfpm::vector<HeapMemory> & rt_buf, size_t nbf)
+	void resize_retained_buffer(openfpm::vector<Memory> & rt_buf, size_t nbf)
 	{
 		// Release all the buffer that are going to be deleted
 		for (size_t i = nbf ; i < rt_buf.size() ; i++)
@@ -526,6 +533,76 @@ class vector_dist_comm
 
 		hsmem.resize(nbf);
 	}
+
+	/*! \brief Set the buffer for each property
+	 *
+	 *
+	 */
+	template<typename send_vector, typename v_mpl>
+	struct set_mem_retained_buffers_inte
+	{
+		openfpm::vector<send_vector> & g_send_prp;
+
+		size_t i;
+
+		openfpm::vector<Memory> & hsmem;
+
+		size_t j;
+
+		set_mem_retained_buffers_inte(openfpm::vector<send_vector> & g_send_prp, size_t i ,
+				                      openfpm::vector<Memory> & hsmem, size_t j)
+		:g_send_prp(g_send_prp),i(i),hsmem(hsmem),j(j){}
+
+		//! It call the setMemory function for each property
+		template<typename T>
+		inline void operator()(T& t)
+		{
+			typedef typename boost::mpl::at<v_mpl,T>::type prp_ms;
+
+			g_send_prp.get(i).template setMemory<prp_ms::value>(hsmem.get(j));
+
+			j++;
+		}
+	};
+
+	template<bool inte_or_lin,typename send_vector, typename v_mpl>
+	struct set_mem_retained_buffers
+	{
+		static inline size_t set_mem_retained_buffers_(openfpm::vector<send_vector> & g_send_prp,
+				     	 	 	 	 	 	 openfpm::vector<openfpm::vector<aggregate<size_t,size_t>>> & g_opart,
+											 size_t i,
+											 openfpm::vector<Memory> & hsmem,
+											 size_t j)
+		{
+			// Set the memory for retain the send buffer
+			g_send_prp.get(i).setMemory(hsmem.get(j));
+
+			// resize the sending vector (No allocation is produced)
+			g_send_prp.get(i).resize(g_opart.get(i).size());
+
+			return j+1;
+		}
+	};
+
+	template<typename send_vector, typename v_mpl>
+	struct set_mem_retained_buffers<true,send_vector,v_mpl>
+	{
+		static inline size_t set_mem_retained_buffers_(openfpm::vector<send_vector> & g_send_prp,
+											 openfpm::vector<openfpm::vector<aggregate<size_t,size_t>>> & g_opart,
+				 	 	 	 	 	 	 	 size_t i,
+				 	 	 	 	 	 	 	 openfpm::vector<Memory> & hsmem,
+				 	 	 	 	 	 	 	 size_t j)
+		{
+			set_mem_retained_buffers_inte<send_vector,v_mpl> smrbi(g_send_prp,i,hsmem,j);
+
+			boost::mpl::for_each_ref<v_mpl>(smrbi);
+
+			// resize the sending vector (No allocation is produced)
+			g_send_prp.get(i).resize(g_opart.get(i).size());
+
+			return smrbi.j;
+		}
+	};
 
 	/*! \brief This function fill the send buffer for properties after the particles has been label with labelParticles
 	 *
@@ -537,25 +614,33 @@ class vector_dist_comm
 	 * \param g_send_prp Send buffer to fill
 	 *
 	 */
-	template<typename send_vector, typename prp_object, int ... prp> void fill_send_ghost_prp_buf(openfpm::vector<prop> & v_prp, openfpm::vector<send_vector> & g_send_prp)
+	template<typename send_vector, typename prp_object, int ... prp>
+	void fill_send_ghost_prp_buf(openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+			                     openfpm::vector<send_vector> & g_send_prp)
 	{
+		size_t factor = 1;
+
+		typedef typename to_boost_vmpl<prp...>::type v_mpl;
+
+		if (is_layout_inte<layout_base<prop>>::value == true) {factor *= sizeof...(prp);}
+
 		// create a number of send buffers equal to the near processors
 		g_send_prp.resize(g_opart.size());
 
-		resize_retained_buffer(hsmem,g_send_prp.size());
+		resize_retained_buffer(hsmem,g_send_prp.size()*factor);
 
-		for (size_t i = 0; i < g_send_prp.size(); i++)
+		for (size_t i = 0; i < hsmem.size(); i++)
 		{
 			// Buffer must retained and survive the destruction of the
 			// vector
 			if (hsmem.get(i).ref() == 0)
-				hsmem.get(i).incRef();
+			{hsmem.get(i).incRef();}
+		}
 
-			// Set the memory for retain the send buffer
-			g_send_prp.get(i).setMemory(hsmem.get(i));
-
-			// resize the sending vector (No allocation is produced)
-			g_send_prp.get(i).resize(g_opart.get(i).size());
+		size_t j = 0;
+		for (size_t i = 0; i < g_send_prp.size(); i++)
+		{
+			j = set_mem_retained_buffers<is_layout_inte<layout_base<prop>>::value,send_vector,v_mpl>::set_mem_retained_buffers_(g_send_prp,g_opart,i,hsmem,j);
 		}
 
 		// Fill the send buffer
@@ -564,9 +649,9 @@ class vector_dist_comm
 			for (size_t j = 0; j < g_opart.get(i).size(); j++)
 			{
 				// source object type
-				typedef encapc<1, prop, typename openfpm::vector<prop>::layout_type> encap_src;
+				typedef decltype(v_prp.get(g_opart.get(i).template get<0>(j))) encap_src;
 				// destination object type
-				typedef encapc<1, prp_object, typename openfpm::vector<prp_object>::layout_type> encap_dst;
+				typedef decltype(g_send_prp.get(i).get(j)) encap_dst;
 
 				// Copy only the selected properties
 				object_si_d<encap_src, encap_dst, OBJ_ENCAP, prp...>(v_prp.get(g_opart.get(i).template get<0>(j)), g_send_prp.get(i).get(j));
@@ -731,7 +816,10 @@ class vector_dist_comm
 	 * \param g_m ghost marker
 	 *
 	 */
-	void labelParticlesGhost(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, openfpm::vector<size_t> & prc, size_t & g_m)
+	void labelParticlesGhost(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
+			                 openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+			                 openfpm::vector<size_t> & prc,
+			                 size_t & g_m)
 	{
 		// Buffer that contain for each processor the id of the particle to send
 		g_opart.clear();
@@ -946,25 +1034,28 @@ public:
 	 * \param g_m marker between real and ghost particles
 	 *
 	 */
-	template<int ... prp> inline void ghost_get_(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & g_m, size_t opt = WITH_POSITION)
+	template<int ... prp> inline void ghost_get_(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
+												 openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+												 size_t & g_m,
+												 size_t opt = WITH_POSITION)
 	{
 		// Sending property object
 		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;
 
 		// send vector for each processor
-		typedef openfpm::vector<prp_object> send_vector;
+		typedef openfpm::vector<prp_object,Memory,typename layout_base<prp_object>::type,layout_base> send_vector;
 
 		if (!(opt & NO_POSITION))
-			v_pos.resize(g_m);
+		{v_pos.resize(g_m);}
 
 		// reset the ghost part
 
 		if (!(opt & SKIP_LABELLING))
-			v_prp.resize(g_m);
+		{v_prp.resize(g_m);}
 
 		// Label all the particles
 		if ((opt & SKIP_LABELLING) == false)
-			labelParticlesGhost(v_pos,v_prp,prc_g_opart,g_m);
+		{labelParticlesGhost(v_pos,v_prp,prc_g_opart,g_m);}
 
 		// Send and receive ghost particle information
 		{
@@ -1003,13 +1094,13 @@ public:
 			if (opt & SKIP_LABELLING)
 			{
             	size_t opt_ = compute_options(opt);
-				v_cl.SSendRecv(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_get,opt_);
+				v_cl.SSendRecv<send_pos_vector,decltype(v_pos),layout_base>(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_get,opt_);
 			}
 			else
 			{
 				prc_recv_get.clear();
 				recv_sz_get.clear();
-				v_cl.SSendRecv(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_get);
+				v_cl.SSendRecv<send_pos_vector,decltype(v_pos),layout_base>(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_get);
 			}
 
             // fill g_opart_sz
