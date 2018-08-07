@@ -8,6 +8,11 @@
 #ifndef SRC_DECOMPOSITION_CARTDECOMPOSITION_EXT_HPP_
 #define SRC_DECOMPOSITION_CARTDECOMPOSITION_EXT_HPP_
 
+#include "memory/HeapMemory.hpp"
+#include "Decomposition/Distribution/ParMetisDistribution.hpp"
+#include "Space/Ghost.hpp"
+#include "Decomposition/nn_processor.hpp"
+
 template<unsigned int dim, typename T, typename Memory = HeapMemory, typename Distribution = ParMetisDistribution<dim, T>>
 class CartDecomposition;
 
@@ -85,7 +90,7 @@ private:
 	 * \param dec Non-extended decomposition
 	 *
 	 */
-	void extend_fines(const CartDecomposition<dim,T> & dec)
+/*	void extend_fines(const CartDecomposition<dim,T,Memory,Distribution> & dec)
 	{
 		// Extension, first we calculate the extensions of the new domain compared
 		// to the old one in cell units (each cell unit is a sub-sub-domain)
@@ -147,6 +152,12 @@ private:
 
 		// the new extended CellDecomposer must be consistent with the old cellDecomposer.
 		this->cd.setDimensions(dec.cd,ext);
+	}*/
+
+	void reconstruct_fine_s_from_extended_domain(const ::Box<dim,T> & ext_domain)
+	{
+		this->initialize_fine_s(ext_domain);
+		this->construct_fine_s();
 	}
 
 public:
@@ -214,7 +225,8 @@ public:
 
 		// Calculate fine_s structure for the extended domain
 		// update the cell decomposer and gr
-		extend_fines(dec);
+//		extend_fines(dec);
+		reconstruct_fine_s_from_extended_domain(ext_domain);
 
 		// Get the old sub-sub-domain grid extension
 

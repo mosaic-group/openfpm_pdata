@@ -112,6 +112,15 @@ public:
 
 	//! \cond [pack request] \endcond
 
+	//! \cond [noPointers] \endcond
+
+	static bool noPointers()
+	{
+		return false;
+	}
+
+	//! \cond [noPointers] \endcond
+
 	//! \cond [pack serialize] \endcond
 
 	//! Serialize the data structure
@@ -210,11 +219,12 @@ public:
  *
  * \page Vector_4_complex_prop_ser Vector 4 property serialization
  *
- * In order to make my_struct serializable we need 3 methods
+ * In order to make my_struct serializable we need 4 methods
  *
  * * **packRequest** This method indicate how many byte are needed to serialize this structure
  * * **pack** This method serialize the data-structure
  * * **unpack** This method de-serialize the data structure
+ * * **noPointers()** a static method that inform the OpenFPM sub-system that the structure has no pointers inside 
  *
  * ### packRequest ###
  *
@@ -293,6 +303,12 @@ public:
  * * we assign the created std::string to str
  *
  * \snippet Vector/4_complex_prop/main_ser.cpp unpacker ser other
+ *
+ * ### noPointers ###
+ *
+ * This method inform the sub-system that the custom structure does not have pointers
+ *
+ * \snippet Vector/4_complex_prop/main_ser.cpp noPointers
  *
  * ### Constructor and destructor and operator= ###
  *

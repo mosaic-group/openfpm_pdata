@@ -34,12 +34,12 @@ if [ x"$platform" == x"cygwin" ]; then
 fi
 
 echo "Compiling SuiteSparse without CUDA (old variable $CUDA)"
-make "CUDA=no" "BLAS=-L$1/OPENBLAS/lib -lopenblas" "LAPACK="
+LDLIBS="$STS_LIB -lm" LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$1/OPENBLAS/lib"  make -j $2 "CUDA=no" "BLAS=-L$1/OPENBLAS/lib -lopenblas -pthread" "LAPACK="
 if [ $? != 0 ]; then
   echo "Failed to compile SuiteSparse"
   exit 1
 fi
-make install "CUDA=no" "INSTALL=$1/SUITESPARSE" "INSTALL_LIB=$1/SUITESPARSE/lib" "INSTALL_INCLUDE=$1/SUITESPARSE/include" "BLAS=-L$1/OPENBLAS/lib -lopenblas" "LAPACK="
+make install "CUDA=no" "INSTALL=$1/SUITESPARSE" "INSTALL_LIB=$1/SUITESPARSE/lib" "INSTALL_INCLUDE=$1/SUITESPARSE/include" "BLAS=-L$1/OPENBLAS/lib -lopenblas -pthread" "LAPACK="
 # Mark the installation
 echo 1 > $1/SUITESPARSE/version
 rm -rf SuiteSparse

@@ -7,6 +7,7 @@
  *
  * \subpage VCluster_0_simple
  * \subpage VCluster_1_semantic
+ * \subpage VCluster_2_serial_and_parallel
  *
  */
 

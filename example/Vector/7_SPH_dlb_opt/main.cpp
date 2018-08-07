@@ -1012,6 +1012,18 @@ int main(int argc, char* argv[])
 
 	vd.map();
 
+	//////// Number of particles
+	//
+	//
+	//
+
+	size_t tot_part = vd.size_local();
+
+	auto & v_cl = create_vcluster();
+	v_cl.sum(tot_part);
+	v_cl.execute();
+	std::cout << "SUM: " << tot_part << std::endl;
+
 	// Now that we fill the vector with particles
 	ModelCustom md;
 
@@ -1118,6 +1130,7 @@ int main(int argc, char* argv[])
 		{
 			vd.deleteGhost();
 			vd.write_frame("Geometry",write,VTK_WRITER | FORMAT_BINARY);
+                        vd.getDecomposition().write("dec" + std::to_string(write));
 			vd.ghost_get<type,rho,Pressure,velocity>(SKIP_LABELLING);
 			write++;
 

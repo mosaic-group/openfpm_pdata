@@ -17,7 +17,6 @@
 #define SE_CLASS3
 #define THROW_ON_ERROR
 #include "Memleak_check.hpp"
-#include "data_type/scalar.hpp"
 #include "Grid/grid_dist_id.hpp"
 #include "Decomposition/CartDecomposition.hpp"
 #include "Point_test.hpp"
@@ -72,7 +71,7 @@ int main(int argc, char* argv[])
 	// * g: ghost extension
 	//
 	//
-	grid_dist_id<3, float, scalar<float[3]>, CartDecomposition<3,float>> * g_dist = new grid_dist_id<3, float, scalar<float[3]>, CartDecomposition<3,float>>(sz,domain,g);
+	grid_dist_id<3, float, aggregate<float[3]>, CartDecomposition<3,float>> * g_dist = new grid_dist_id<3, float, aggregate<float[3]> >(sz,domain,g);
 
 	//
 	// ### WIKI 6 ###

@@ -249,6 +249,79 @@ class grid_dist_iterator_sub
 	{
 		return stop;
 	}
+
+	/*! \brief Return the number of local grids
+	 *
+	 *
+	 */
+	inline size_t N_loc_grid()
+	{
+		return gList.size();
+	}
+
+	/*! \brief Return the component j of the starting point (P1) of the domain part
+	 *         for the local grid i
+	 *
+	 * \param i local grid
+	 * \param j dimension
+	 *
+	 *
+	 */
+	inline size_t loc_grid_info_start(size_t i,size_t j)
+	{
+		return gdb_ext.get(i).DBox.getLow(i);
+	}
+
+	/*! \brief Return the component j of the stop point (P2) of the domain part
+	 *         for the local grid i
+	 *
+	 * \param i local grid
+	 * \param j dimension
+	 *
+	 *
+	 */
+	inline size_t loc_grid_info_size(size_t i,size_t j)
+	{
+		return gdb_ext.get(i).GDBox.getHigh(i);
+	}
 };
+
+
+//////// MACRO in 3D
+
+#define WHILE_M(grid,stencil) auto & ginfo = grid.getLocalGridsInfo();\
+								 for (size_t s = 0 ; s < grid.getN_loc_grid() ; s++)\
+								 {\
+									 auto it = grid.get_loc_grid_iterator_stencil(s,stencil);\
+\
+										int lo[3] = {(int)ginfo.get(s).Dbox.getLow(0),(int)ginfo.get(s).Dbox.getLow(1),(int)ginfo.get(s).Dbox.getLow(2)};\
+										int hi[3] = {(int)ginfo.get(s).Dbox.getHigh(0),(int)ginfo.get(s).Dbox.getHigh(1),(int)ginfo.get(s).Dbox.getHigh(2)};\
+\
+										int uhi[3] = {(int)ginfo.get(s).GDbox.getHigh(0),(int)ginfo.get(s).GDbox.getHigh(1),(int)ginfo.get(s).GDbox.getHigh(2)};\
+\
+										int sx = uhi[0]+1;\
+										int sxsy = (uhi[0]+1)*(uhi[1]+1);
+
+#define ITERATE_3D_M(n_pt)			int i = lo[2];\
+									for ( ; i <= hi[2] ; i+=1)\
+									{\
+										int j = lo[1];\
+										for ( ; j <= hi[1] ; j+=1)\
+										{\
+											int k = lo[0];\
+											for ( ; k <= hi[0] ; k+=n_pt)\
+											{
+
+
+#define GET_GRID_M(grid)	grid.get_loc_grid(s);
+
+
+#define END_LOOP_M(n_pt) 					it.private_sum<n_pt>();\
+								}\
+								it.private_adjust( - k + sx + lo[0]);\
+							}\
+							it.private_adjust(- j*sx + sxsy + lo[1]*sx);\
+						}\
+					}
 
 #endif /* SRC_GRID_GRID_DIST_ID_ITERATOR_SUB_HPP_ */

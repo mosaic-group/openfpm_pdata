@@ -4,11 +4,10 @@
  *  Created on: Feb 24, 2016
  *      Author: i-bird
  */
-
-#ifndef SRC_GRID_GRID_DIST_ID_UNIT_TEST_EXT_DOM_HPP_
-#define SRC_GRID_GRID_DIST_ID_UNIT_TEST_EXT_DOM_HPP_
-
 #include "Decomposition/CartDecomposition_ext.hpp"
+#include "Grid/grid_dist_id.hpp"
+
+extern void print_test_v(std::string test, size_t sz);
 
 // Test duplicated topology
 
@@ -23,7 +22,7 @@ void Test3D_extended_grid(const Box<3,float> & domain, long int k)
 	if ( v_cl.getProcessingUnits() > 32 )
 		return;
 
-	print_test( "Testing 3D extended grid k<=",k);
+	print_test_v( "Testing 3D extended grid k<=",k);
 
 	// factor
 	float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
@@ -147,5 +146,3 @@ void Test3D_extended_grid(const Box<3,float> & domain, long int k)
 	}
 }
 
-
-#endif /* SRC_GRID_GRID_DIST_ID_UNIT_TEST_EXT_DOM_HPP_ */

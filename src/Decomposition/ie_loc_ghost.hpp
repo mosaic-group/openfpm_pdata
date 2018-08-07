@@ -159,7 +159,7 @@ class ie_loc_ghost
 		// that must be adjusted, each of this boxes define a shift in case of periodic boundary condition
 		for (long int i = dim-1 ; i >= 0 ; i--)
 		{
-			std::vector<comb<dim>> cmbs = hyp.getCombinations_R(i);
+			std::vector<comb<dim>> cmbs = hyp.getCombinations_R_bc(i,bc);
 
 			for (size_t j = 0 ; j < cmbs.size() ; j++)
 			{

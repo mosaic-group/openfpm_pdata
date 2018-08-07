@@ -1,7 +1,7 @@
-#ifndef CARTDECOMPOSITION_UNIT_TEST_HPP
-#define CARTDECOMPOSITION_UNIT_TEST_HPP
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 
-#include "CartDecomposition.hpp"
+#include "Decomposition/CartDecomposition.hpp"
 #include "util/mathutil.hpp"
 
 BOOST_AUTO_TEST_SUITE (CartDecomposition_test)
@@ -341,6 +341,149 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_ext_non_periodic_test)
 	}
 }
 
+BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idbc_and_ghost )
+{
+	// Vcluster
+	Vcluster & vcl = create_vcluster();
+
+	if (vcl.size() != 3)
+	{return;}
+
+	CartDecomposition<3, double> dec(vcl);
+
+	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
+
+	// Physical domain
+	Box<3, double> box( { -0.01, -0.01, 0.0 }, { 0.01, 0.01, 0.003 });
+
+	Ghost<3,double> g(0.0015);
+
+	dec.setGoodParameters(box, bc, g, 512);
+
+	dec.decompose();
+
+	// Now we check the point
+
+	Point<3,double> p1({-0.0067499999999999999237,-0.0012499999999999995923,0.001250000000000000026});
+	Point<3,double> p2({-0.0067499999999999999237,-0.0012499999999999993755,0.001250000000000000026});
+
+	size_t proc1 = dec.processorIDBC(p1);
+	size_t proc2 = dec.processorIDBC(p2);
+
+	const openfpm::vector<std::pair<size_t, size_t>> & vp_id1 = dec.template ghost_processorID_pair<typename CartDecomposition<3, double>::lc_processor_id, typename CartDecomposition<3, double>::shift_id>(p1, UNIQUE);
+	const openfpm::vector<std::pair<size_t, size_t>> & vp_id2 = dec.template ghost_processorID_pair<typename CartDecomposition<3, double>::lc_processor_id, typename CartDecomposition<3, double>::shift_id>(p2, UNIQUE);
+
+	if (proc1 != proc2)
+	{
+		if (vcl.rank() == proc2)
+		{
+			BOOST_REQUIRE(vp_id2.size() != 0);
+			BOOST_REQUIRE(vp_id1.size() == 0);
+		}
+
+		if (vcl.rank() == proc1)
+		{
+			BOOST_REQUIRE(vp_id2.size() == 0 );
+			BOOST_REQUIRE(vp_id1.size() != 0 );
+		}
+	}
+}
+
+BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idbc_and_ghost2 )
+{
+	// Vcluster
+	Vcluster & vcl = create_vcluster();
+
+	CartDecomposition<3, double> dec(vcl);
+
+	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
+
+	// Physical domain
+	Box<3, double> box( { -0.01, -0.01, 0.0 }, { 0.01, 0.01, 0.003 });
+
+	Ghost<3,double> g(0.0015);
+
+	dec.setGoodParameters(box, bc, g, 512);
+
+	dec.decompose();
+
+	// Now we check the point
+
+	for (size_t j = 0 ; j < 3 ; j++ )
+	{
+		for (size_t i = 0 ; i < dec.getNSubDomain() ; i++)
+		{
+			Point<3,double> p1;
+			Point<3,double> p2;
+
+			p1.get(0) = SpaceBox<3,double>(dec.getSubDomains().get(i)).getLow(0);
+			p1.get(1) = SpaceBox<3,double>(dec.getSubDomains().get(i)).getLow(1);
+			p1.get(2) = SpaceBox<3,double>(dec.getSubDomains().get(i)).getLow(2);
+
+			p2 = p1;
+
+			p2.get(j) = std::nextafter(SpaceBox<3,double>(dec.getSubDomains().get(i)).getLow(j),-1.0);
+
+			size_t proc1 = dec.processorIDBC(p1);
+			size_t proc2 = dec.processorIDBC(p2);
+
+			BOOST_REQUIRE(proc1 < vcl.size());
+			BOOST_REQUIRE(proc2 < vcl.size());
+
+			const openfpm::vector<std::pair<size_t, size_t>> & vp_id1 = dec.template ghost_processorID_pair<typename CartDecomposition<3, double>::lc_processor_id, typename CartDecomposition<3, double>::shift_id>(p1, UNIQUE);
+			const openfpm::vector<std::pair<size_t, size_t>> & vp_id2 = dec.template ghost_processorID_pair<typename CartDecomposition<3, double>::lc_processor_id, typename CartDecomposition<3, double>::shift_id>(p2, UNIQUE);
+
+			if (proc1 != proc2)
+			{
+				if (vcl.rank() == proc2)
+				{
+					BOOST_REQUIRE(vp_id2.size() != 0);
+					BOOST_REQUIRE(vp_id1.size() == 0);
+				}
+
+				if (vcl.rank() == proc1)
+				{
+					BOOST_REQUIRE(vp_id2.size() == 0 );
+					BOOST_REQUIRE(vp_id1.size() != 0 );
+				}
+			}
+
+
+			p1.get(0) = std::nextafter(SpaceBox<3,double>(dec.getSubDomains().get(i)).getHigh(0),SpaceBox<3,double>(dec.getSubDomains().get(i)).getLow(0));
+			p1.get(1) = std::nextafter(SpaceBox<3,double>(dec.getSubDomains().get(i)).getHigh(1),SpaceBox<3,double>(dec.getSubDomains().get(i)).getLow(1));
+			p1.get(2) = std::nextafter(SpaceBox<3,double>(dec.getSubDomains().get(i)).getHigh(2),SpaceBox<3,double>(dec.getSubDomains().get(i)).getLow(2));
+
+			p2 = p1;
+
+			p2.get(j) = std::nextafter(SpaceBox<3,double>(dec.getSubDomains().get(i)).getHigh(j),1.0);
+
+			proc1 = dec.processorIDBC(p1);
+			proc2 = dec.processorIDBC(p2);
+
+			BOOST_REQUIRE(proc1 < vcl.size());
+			BOOST_REQUIRE(proc2 < vcl.size());
+
+			const openfpm::vector<std::pair<size_t, size_t>> & vp_id3 = dec.template ghost_processorID_pair<typename CartDecomposition<3, double>::lc_processor_id, typename CartDecomposition<3, double>::shift_id>(p1, UNIQUE);
+			const openfpm::vector<std::pair<size_t, size_t>> & vp_id4 = dec.template ghost_processorID_pair<typename CartDecomposition<3, double>::lc_processor_id, typename CartDecomposition<3, double>::shift_id>(p2, UNIQUE);
+
+			if (proc1 != proc2)
+			{
+				if (vcl.rank() == proc2)
+				{
+					BOOST_REQUIRE(vp_id4.size() != 0);
+					BOOST_REQUIRE(vp_id3.size() == 0);
+				}
+
+				if (vcl.rank() == proc1)
+				{
+					BOOST_REQUIRE(vp_id4.size() == 0 );
+					BOOST_REQUIRE(vp_id3.size() != 0 );
+				}
+			}
+
+		}
+	}
+}
 
 BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test_dist_grid)
 {
@@ -414,6 +557,135 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test_dist_grid)
 	BOOST_REQUIRE_EQUAL(val,true);
 }
 
+BOOST_AUTO_TEST_CASE( CartDecomposition_nsub_algo_functions_test)
+{
+	size_t n_sub = 64*2;
+	size_t div[3];
+
+	nsub_to_div2<3>(div,n_sub,3);
+
+	BOOST_REQUIRE_EQUAL(div[0],8ul);
+	BOOST_REQUIRE_EQUAL(div[1],8ul);
+	BOOST_REQUIRE_EQUAL(div[2],8ul);
+
+	nsub_to_div2<3>(div,n_sub,2);
+
+	BOOST_REQUIRE_EQUAL(div[0],16ul);
+	BOOST_REQUIRE_EQUAL(div[1],16ul);
+	BOOST_REQUIRE_EQUAL(div[2],1ul);
+
+	nsub_to_div2<3>(div,n_sub,1);
+
+	BOOST_REQUIRE_EQUAL(div[0],128ul);
+	BOOST_REQUIRE_EQUAL(div[1],1ul);
+	BOOST_REQUIRE_EQUAL(div[2],1ul);
+
+	n_sub = 64*3;
+	nsub_to_div<3>(div,n_sub,3);
+
+	BOOST_REQUIRE_EQUAL(div[0],5ul);
+	BOOST_REQUIRE_EQUAL(div[1],5ul);
+	BOOST_REQUIRE_EQUAL(div[2],5ul);
+
+	nsub_to_div<3>(div,n_sub,2);
+
+	BOOST_REQUIRE_EQUAL(div[0],13ul);
+	BOOST_REQUIRE_EQUAL(div[1],13ul);
+	BOOST_REQUIRE_EQUAL(div[2],1ul);
+
+	nsub_to_div<3>(div,n_sub,1);
+
+	BOOST_REQUIRE_EQUAL(div[0],192ul);
+	BOOST_REQUIRE_EQUAL(div[1],1ul);
+	BOOST_REQUIRE_EQUAL(div[2],1ul);
+
+	// Test high dimension cart decomposition subdivision
+
+	Box<50,double> domain;
+	size_t bc[50];
+	Ghost<50,double> ghost(0.01);
+
+	for(size_t i = 0 ; i < 50 ; i++)
+	{
+		domain.setLow(i,0.0);
+		domain.setHigh(i,1.0);
+		bc[i] = NON_PERIODIC;
+	}
+
+	CartDecomposition<50,double> dec(create_vcluster());
+
+	dec.setGoodParameters(domain,bc,ghost,64);
+
+	size_t div2[50];
+	dec.getParameters(div2);
+
+	auto & v_cl = create_vcluster();
+	if (v_cl.size() == 1)
+	{
+		for (size_t i = 0 ; i < 50 ; i++)
+		{
+			if (i < 6)
+			{BOOST_REQUIRE_EQUAL(div2[i],2ul);}
+			else
+			{BOOST_REQUIRE_EQUAL(div2[i],1ul);}
+		}
+	}
+
+	if (v_cl.size() == 2)
+	{
+		for (size_t i = 0 ; i < 50 ; i++)
+		{
+			if (i < 7)
+			{BOOST_REQUIRE_EQUAL(div2[i],2ul);}
+			else
+			{BOOST_REQUIRE_EQUAL(div2[i],1ul);}
+		}
+	}
+
+	if (v_cl.size() == 3)
+	{
+		for (size_t i = 0 ; i < 50 ; i++)
+		{
+			if (i < 2)
+			{BOOST_REQUIRE_EQUAL(div2[i],13ul);}
+			else
+			{BOOST_REQUIRE_EQUAL(div2[i],1ul);}
+		}
+	}
+
+	if (v_cl.size() == 4)
+	{
+		for (size_t i = 0 ; i < 50 ; i++)
+		{
+			if (i < 8)
+			{BOOST_REQUIRE_EQUAL(div2[i],2ul);}
+			else
+			{BOOST_REQUIRE_EQUAL(div2[i],1ul);}
+		}
+	}
+
+	if (v_cl.size() == 5)
+	{
+		for (size_t i = 0 ; i < 50 ; i++)
+		{
+			if (i < 8)
+			{BOOST_REQUIRE_EQUAL(div2[i],2ul);}
+			else
+			{BOOST_REQUIRE_EQUAL(div2[i],1ul);}
+		}
+	}
+
+	if (v_cl.size() == 6)
+	{
+		for (size_t i = 0 ; i < 50 ; i++)
+		{
+			if (i < 3)
+			{BOOST_REQUIRE_EQUAL(div2[i],7ul);}
+			else
+			{BOOST_REQUIRE_EQUAL(div2[i],1ul);}
+		}
+	}
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
-#endif

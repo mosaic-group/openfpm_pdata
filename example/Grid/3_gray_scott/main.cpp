@@ -321,7 +321,7 @@ int main(int argc, char* argv[])
 		// visualization
 		if (i % 100 == 0)
 		{
-			Old.write("output",count);
+			Old.write_frame("output",count);
 			count++;
 		}
 	}

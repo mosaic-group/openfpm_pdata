@@ -48,7 +48,7 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	size_t g_c;
 
 	//! List of the grids we are going to iterate
-	const openfpm::vector<device_grid> & gList;
+	openfpm::vector<device_grid> & gList;
 
 	//! Extension of each grid: domain and ghost + domain
 	const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
@@ -65,7 +65,8 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	void selectValidGrid()
 	{
 		// When the grid has size 0 potentially all the other informations are garbage
-		while (g_c < gList.size() && (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false ) ) g_c++;
+		while (g_c < gList.size() && (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false ) )
+		{g_c++;}
 
 		// get the next grid iterator
 		if (g_c < gList.size())
@@ -83,7 +84,7 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 * \param stop end point
 	 *
 	 */
-	grid_dist_iterator(const openfpm::vector<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, const grid_key_dx<dim> & stop)
+	grid_dist_iterator(openfpm::vector<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, const grid_key_dx<dim> & stop)
 	:g_c(0),gList(gk),gdb_ext(gdb_ext),stop(stop)
 	{
 		// Initialize the current iterator
@@ -100,7 +101,7 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 * \param stencil_pnt stencil points
 	 *
 	 */
-	grid_dist_iterator(const openfpm::vector<device_grid> & gk,
+	grid_dist_iterator(openfpm::vector<device_grid> & gk,
 			           const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
 					   const grid_key_dx<dim> & stop,
 					   const grid_key_dx<dim> (& stencil_pnt)[stencil::nsp])
@@ -151,7 +152,7 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 		// If there are no other grid stop
 
 		if (g_c >= gList.size())
-			return false;
+		{return false;}
 
 		return true;
 	}

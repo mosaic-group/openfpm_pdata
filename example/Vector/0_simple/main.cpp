@@ -14,6 +14,7 @@
  * \subpage Vector_6_complex_usage
  * \subpage Vector_7_sph_dlb
  * \subpage Vector_7_sph_dlb_opt
+ * \subpage Vector_8_DEM
  *
  */
 
@@ -146,7 +147,7 @@ int main(int argc, char* argv[])
 
 	//! \cond [vector instantiation] \endcond
 
-	vector_dist<2,float, aggregate<float,float[3],float[3][3]> > vd(4096,domain,bc,g);
+    vector_dist<2,float, aggregate<float,float[3],float[3][3]> > vd(4096,domain,bc,g);
 
 	// the scalar is the element at position 0 in the aggregate
 	const int scalar = 0;
@@ -287,7 +288,7 @@ int main(int argc, char* argv[])
 		vd.template getProp<tensor>(p)[1][2] = 1.0;
 		vd.template getProp<tensor>(p)[2][0] = 1.0;
 		vd.template getProp<tensor>(p)[2][1] = 1.0;
-		vd.template getProp<tensor>(p)[2][2] = 1.0;
+        vd.template getProp<tensor>(p)[2][2] = 1.0;
 
 		// increment the counter
 		cnt++;

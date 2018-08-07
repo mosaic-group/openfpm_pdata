@@ -10,6 +10,8 @@
 
 #include "common.hpp"
 #include "nn_processor.hpp"
+#include "Decomposition/shift_vect_converter.hpp"
+
 
 /*! \brief structure that store and compute the internal and external local ghost box
  *
@@ -38,7 +40,7 @@ class ie_ghost
 	openfpm::vector<p_box<dim,T> > vb_int;
 
 	//! Cell-list that store the geometrical information of the internal ghost boxes
-	CellList<dim,T,Mem_fast,shift<dim,T>> geo_cell;
+	CellList<dim,T,Mem_fast<>,shift<dim,T>> geo_cell;
 
 	//! shift vectors
 	openfpm::vector<Point<dim,T>> shifts;
@@ -49,6 +51,8 @@ class ie_ghost
 	//! Temporal buffers to return temporal information
 	openfpm::vector<size_t> ids;
 
+	//! shift converter
+	shift_vect_converter<dim,T> sc_convert;
 
 	/*! \brief Given a local sub-domain i, it give the id of such sub-domain in the sent list
 	 *         for the processor p_id
@@ -153,35 +157,9 @@ protected:
 	 * \param domain box that describe the domain
 	 *
 	 */
-	void generateShiftVectors(const Box<dim,T> & domain)
+	void generateShiftVectors(const Box<dim,T> & domain, size_t (& bc)[dim])
 	{
-		shifts.resize(openfpm::math::pow(3,dim));
-
-		HyperCube<dim> hyp;
-
-		for (long int i = dim-1 ; i >= 0 ; i--)
-		{
-			std::vector<comb<dim>> cmbs = hyp.getCombinations_R(i);
-
-			for (size_t j = 0 ; j < cmbs.size() ; j++)
-			{
-				for (size_t k = 0 ; k < dim ; k++)
-				{
-					switch (cmbs[j][k])
-					{
-					case 1:
-						shifts.get(cmbs[j].lin()).template get<0>()[k] = -(domain.getHigh(k) - domain.getLow(k));
-						break;
-					case 0:
-						shifts.get(cmbs[j].lin()).template get<0>()[k] = 0;
-						break;
-					case -1:
-						shifts.get(cmbs[j].lin()).template get<0>()[k] = (domain.getHigh(k) - domain.getLow(k));
-						break;
-					}
-				}
-			}
-		}
+		sc_convert.generateShiftVectors(domain,bc,shifts);
 	}
 
 	/*! \brief Initialize the geo cell list structure
@@ -196,7 +174,7 @@ protected:
 	void Initialize_geo_cell(const Box<dim,T> & domain, const size_t (&div)[dim])
 	{
 		// Initialize the geo_cell structure
-		geo_cell.Initialize(domain,div);
+		geo_cell.Initialize(domain,div,0);
 	}
 
 	/*! \brief Create the box_nn_processor_int (bx part)  structure
@@ -371,7 +349,7 @@ protected:
 						b_int.lc_proc = lc_proc;
 
 						// fill the shift id
-						b_int.shift_id = nn_p_box_pos.get(k).lin();
+						b_int.shift_id = convertShift(nn_p_box_pos.get(k));
 
 						//
 						// Updating
@@ -529,6 +507,20 @@ public:
 	const openfpm::vector<Point<dim,T>> & getShiftVectors()
 	{
 		return shifts;
+	}
+
+	/*! It return the converted shift vector
+	 *
+	 * In high dimensions the number of shifts vectors explode exponentially, so we are
+	 * expecting that some of the boundary is non periodic to reduce the numbers of shift
+	 * vectors
+	 *
+	 * \return the shift vectors
+	 *
+	 */
+	size_t convertShift(const comb<dim> & cmb)
+	{
+		return sc_convert.linId(cmb);
 	}
 
 	/*! \brief Get the number of Internal ghost boxes for one processor
@@ -798,7 +790,7 @@ public:
 		{
 			size_t bid = cell_it.get();
 
-			if (vb_int.get(bid).box.isInside(p) == true)
+			if (vb_int.get(bid).box.isInsideNP(p) == true)
 			{
 				ids_p.add(std::pair<size_t,size_t>(id1::id(vb_int.get(bid),bid),id2::id(vb_int.get(bid),bid)));
 			}
@@ -847,7 +839,7 @@ public:
 		{
 			size_t bid = cell_it.get();
 
-			if (vb_int.get(bid).box.isInside(p) == true)
+			if (vb_int.get(bid).box.isInsideNP(p) == true)
 			{
 				ids.add(id::id(vb_int.get(bid),bid));
 			}
@@ -891,7 +883,7 @@ public:
 		{
 			size_t bid = cell_it.get();
 
-			if (vb_int.get(bid).box.isInside(p) == true)
+			if (vb_int.get(bid).box.isInsideNP(p) == true)
 			{
 				ids_p.add(std::pair<size_t,size_t>(id1::id(vb_int.get(bid),bid),id2::id(vb_int.get(bid),bid)));
 			}
@@ -934,7 +926,7 @@ public:
 		{
 			size_t bid = cell_it.get();
 
-			if (vb_int.get(bid).box.isInside(p) == true)
+			if (vb_int.get(bid).box.isInsideNP(p) == true)
 			{
 				ids.add(id::id(vb_int.get(bid),bid));
 			}

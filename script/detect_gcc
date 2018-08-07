@@ -193,7 +193,7 @@ function detect_compiler()
           dgc_ret=1
           icpc_found=1
         elif [ $dgc_major -lt 17 ]; then
-          echo -e "icpc $dgc_major.$dgc_middle.$dgc_minor  \033[91;5;1m FAILED \033[0m your icpc version is too old intel 16.0.2 at least required"
+          echo -e "icpc $dgc_major.$dgc_middle.$dgc_minor  \033[91;5;1m FAILED \033[0m your icpc version is too old intel 17.0.X at least required"
           dgc_ret=0
           icpc_found=0
         elif [ $dgc_middle -gt 0  ]; then

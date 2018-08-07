@@ -422,11 +422,6 @@ BOOST_AUTO_TEST_CASE( Space_distribution_test)
 	//! [refine with dist_parmetis the decomposition]
 }
 
-void print_test_v(std::string test, size_t sz)
-{
-	if (create_vcluster().getProcessUnitID() == 0)
-		std::cout << test << " " << sz << "\n";
-}
 
 BOOST_AUTO_TEST_SUITE_END()
 

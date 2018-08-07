@@ -232,6 +232,8 @@ public:
 	 *
 	 * \param id vertex id
 	 *
+	 * \return the weight of the vertex
+	 *
 	 */
 	size_t getVertexWeight(size_t id)
 	{
@@ -260,9 +262,7 @@ public:
 
 	/*! \brief return number of moved vertices in all iterations so far
 	 *
-	 * \param id vertex id
-	 *
-	 * \return vector with x, y, z
+	 * \return number of moved vertices
 	 *
 	 */
 	size_t getTotalMovedV()
@@ -272,9 +272,7 @@ public:
 
 	/*! \brief return number of moved vertices in all iterations so far
 	 *
-	 * \param id vertex id
-	 *
-	 * \return vector with x, y, z
+	 * \return number of moved vertices
 	 *
 	 */
 	size_t getMaxMovedV()
@@ -310,6 +308,8 @@ public:
 
 	/*! \brief Returns total number of sub-sub-domains in the distribution graph
 	 *
+	 * \return number od sub-sub-domain
+	 *
 	 */
 	size_t getNSubSubDomains()
 	{
@@ -319,6 +319,9 @@ public:
 	/*! \brief Returns total number of neighbors of the sub-sub-domain id
 	 *
 	 * \param id id of the sub-sub-domain
+	 *
+	 * \return the number of neighborhood sub-sub-domain
+	 *
 	 */
 	size_t getNSubSubDomainNeighbors(size_t id)
 	{
@@ -330,6 +333,8 @@ public:
 
 	/*! \brief Print current graph and save it to file
 	 *
+	 * \param file file
+	 *
 	 */
 	void write(const std::string & file)
 	{
@@ -337,6 +342,13 @@ public:
 		gv2.write(std::to_string(file + ".vtk"));
 	}
 
+	/*! \brief copy operator
+	 *
+	 * \param dist object to copy
+	 *
+	 * \return itself
+	 *
+	 */
 	const DistParMetisDistribution<dim, T> & operator=(const DistParMetisDistribution<dim, T> & dist)
 	{
 		v_cl = dist.v_cl;
@@ -351,6 +363,13 @@ public:
 		return *this;
 	}
 
+	/*! \brief copy operator
+	 *
+	 * \param dist object to copy
+	 *
+	 * \return itself
+	 *
+	 */
 	const DistParMetisDistribution<dim, T> & operator=(DistParMetisDistribution<dim, T> && dist)
 	{
 		v_cl = dist.v_cl;

@@ -214,6 +214,11 @@ struct nm_part_v
 		boost::fusion::at_c<1>(data) = p.template get<1>();
 	}
 
+	static inline bool noPointers()
+	{
+		return true;
+	}
+
 };
 
 /*! \brief Reduced edge graph node
@@ -239,6 +244,11 @@ struct nm_part_e
 	{
 		static const std::string name[];
 	};
+
+	static inline bool noPointers()
+	{
+		return true;
+	}
 };
 
 

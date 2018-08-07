@@ -5,10 +5,10 @@
  *      Author: i-bird
  */
 
-#ifndef SRC_GRID_STAGGERED_GRID_DIST_UNIT_TEST_HPP_
-#define SRC_GRID_STAGGERED_GRID_DIST_UNIT_TEST_HPP_
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 
-#include "staggered_dist_grid.hpp"
+#include "Grid/staggered_dist_grid.hpp"
 #include "Point_test.hpp"
 
 BOOST_AUTO_TEST_SUITE( staggered_grid_dist_id_test )
@@ -55,4 +55,3 @@ BOOST_AUTO_TEST_CASE( staggered_grid_dist_unit_test)
 
 BOOST_AUTO_TEST_SUITE_END()
 
-#endif /* SRC_GRID_STAGGERED_GRID_DIST_UNIT_TEST_HPP_ */

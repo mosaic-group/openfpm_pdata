@@ -195,7 +195,7 @@ template<unsigned int dim> void grid_iterator_benchmark(openfpm::vector<size_t> 
 														   openfpm::vector<double> & time_iterator_stencil_dev)
 {
 	std::string str("Testing " + std::to_string(dim) + "D grid iterator stencil and normal");
-	print_test_v(str);
+	print_test_v(str,0);
 
 	{
 		//For different grid sizes

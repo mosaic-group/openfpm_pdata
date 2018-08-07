@@ -1,7 +1,29 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.0.0] 13 September 2017
+## [1.1.0] February 2018
+
+### Added
+
+- Interface for Multi-vector dynamic load balancing
+- Increaded performance for grid ghost get
+- Introduced forms to increase the performance of the grid iterator in case of stencil code (see example 5_GrayScott)
+- EMatrix wrapped eigen matrices compatibles with vector_dist_id
+- General tuning for high dimension vector_dist_id (up to 50 dimensions) + PS_CMA_ES (Particle-Swarm Covariant Matrix Adaptation Evolution Strategy) example in Numerics
+- Added Discrete element Method example (8_DEM)
+- Added serial_to_parallel example VCluster (2_serial_to_parallel). The example it show how to port a serial example into openfpm gradually swtiching from
+  a serial section to a parallel section
+- Introduced map(LOCAL) for fast communication in case we have small movement
+
+### Fixed
+
+- Installation/detection of PETSC
+- CRITICAL-BUG scalar product in combination with vector product is broken (it return 0)
+- Fixing 2D IO in binary for vector
+- Fixing 1D grid writer in ASCII mode
+- Fixing Intel compilation of Linear algebra
+
+## [1.0.0] 13 September 2017 (Codename: Vortex)
 
 ### Added
 - Introduced getDomainIterator for Cell-list

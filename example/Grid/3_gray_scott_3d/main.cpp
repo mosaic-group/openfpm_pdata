@@ -6,6 +6,8 @@
  *
  * \page Grid_3_gs_3D Gray Scott in 3D
  *
+ * [TOC]
+ *
  * # Solving a gray scott-system in 3D # {#e3_gs_gray_scott}
  *
  * This example is just an extension of the 2D Gray scott example.
@@ -17,9 +19,25 @@
  * <img src="http://ppmcore.mpi-cbg.de/web/images/examples/gray_scott_3d/gs_alpha.png"/>
  * \endhtmlonly
  *
+ * More or less this example is the adaptation of the previous example to 3D
+ * with the improvement of using stencil iterator.
+ *
+ * ## Stencil iterator {#e3_gs_grat_scott_si}
+ *
+ * Stencil iterator require that you define a stencil,
+ *
+ * \snippet Grid/3_gray_scott_3d/main.cpp stencil def
+ *
+ * once is defined it is
+ * possible get and use a stencil iterator
+ *
+ * \snippet Grid/3_gray_scott_3d/main.cpp stencil get and use
+ *
+ * The rest of the example remain the same with the exception
+ * that the code has been extended in 3D.
+ *
  * \see \ref Grid_2_solve_eq
  *
- * \snippet Grid/3_gray_scott/main.cpp constants
  * 
  */
 
@@ -107,29 +125,13 @@ int main(int argc, char* argv[])
         size_t timeSteps = 5000;
 
 	// K and F (Physical constant in the equation)
-        double K = 0.014;
-        double F = 0.053;
-
-	//! \cond [init lib] \endcond
-
-	/*!
-	 * \page Grid_3_gs_3D Gray Scott in 3D
-	 *
-	 * Here we create 2 distributed grid in 2D Old and New. In particular because we want that
-	 * the second grid is distributed across processors in the same way we pass the decomposition
-	 * of the Old grid to the New one in the constructor with **Old.getDecomposition()**. Doing this,
-	 * we force the two grid to have the same decomposition.
-	 *
-	 * \snippet Grid/3_gray_scott/main.cpp init grid
-	 *
-	 */
-
-	//! \cond [init grid] \endcond
+        double K = 0.053;
+        double F = 0.014;
 
 	grid_dist_id<3, double, aggregate<double,double>> Old(sz,domain,g,bc);
 
 	// New grid with the decomposition of the old grid
-        grid_dist_id<3, double, aggregate<double,double>> New(Old.getDecomposition(),sz,g);
+    grid_dist_id<3, double, aggregate<double,double>> New(Old.getDecomposition(),sz,g);
 
 	
 	// spacing of the grid on x and y
@@ -149,45 +151,70 @@ int main(int argc, char* argv[])
 	timer tot_sim;
 	tot_sim.start();
 
+	//! \cond [stencil def] \endcond
+
+	static grid_key_dx<3> star_stencil_3D[7] = {{0,0,0},
+                                         	    {0,0,-1},
+												{0,0,1},
+												{0,-1,0},
+												{0,1,0},
+												{-1,0,0},
+												{1,0,0}};
+
+	//! \cond [stencil def] \endcond
+
 	for (size_t i = 0; i < timeSteps; ++i)
 	{
 		if (i % 300 == 0)
-			std::cout << "STEP: " << i << std::endl;
+		{std::cout << "STEP: " << i << std::endl;}
 
-		auto it = Old.getDomainIterator();
+		//! \cond [stencil get and use] \endcond
+
+		auto it = Old.getDomainIteratorStencil(star_stencil_3D);
 
 		while (it.isNext())
 		{
-			auto key = it.get();
+			// center point
+			auto Cp = it.getStencil<0>();
+
+			// plus,minus X,Y,Z
+			auto mx = it.getStencil<1>();
+			auto px = it.getStencil<2>();
+			auto my = it.getStencil<3>();
+			auto py = it.getStencil<4>();
+			auto mz = it.getStencil<5>();
+			auto pz = it.getStencil<6>();
 
 			// update based on Eq 2
-			New.get<U>(key) = Old.get<U>(key) + uFactor * (
-										Old.get<U>(key.move(x,1)) +
-										Old.get<U>(key.move(x,-1)) +
-										Old.get<U>(key.move(y,1)) +
-										Old.get<U>(key.move(y,-1)) +
-										Old.get<U>(key.move(z,1)) +
-										Old.get<U>(key.move(z,-1)) -
-										6.0*Old.get<U>(key)) +
-										- deltaT * Old.get<U>(key) * Old.get<V>(key) * Old.get<V>(key) +
-										- deltaT * F * (Old.get<U>(key) - 1.0);
+			New.get<U>(Cp) = Old.get<U>(Cp) + uFactor * (
+										Old.get<U>(mz) +
+										Old.get<U>(pz) +
+										Old.get<U>(my) +
+										Old.get<U>(py) +
+										Old.get<U>(mx) +
+										Old.get<U>(px) -
+										6.0*Old.get<U>(Cp)) +
+										- deltaT * Old.get<U>(Cp) * Old.get<V>(Cp) * Old.get<V>(Cp) +
+										- deltaT * F * (Old.get<U>(Cp) - 1.0);
 
 
 			// update based on Eq 2
-			New.get<V>(key) = Old.get<V>(key) + vFactor * (
-										Old.get<V>(key.move(x,1)) +
-										Old.get<V>(key.move(x,-1)) +
-										Old.get<V>(key.move(y,1)) +
-										Old.get<V>(key.move(y,-1)) +
-										Old.get<V>(key.move(z,1)) +
-                                                                                Old.get<V>(key.move(z,-1)) -
-										6*Old.get<V>(key)) +
-										deltaT * Old.get<U>(key) * Old.get<V>(key) * Old.get<V>(key) +
-										- deltaT * (F+K) * Old.get<V>(key);
+			New.get<V>(Cp) = Old.get<V>(Cp) + vFactor * (
+										Old.get<V>(mz) +
+										Old.get<V>(pz) +
+										Old.get<V>(my) +
+										Old.get<V>(py) +
+										Old.get<V>(mx) +
+                                        Old.get<V>(px) -
+										6*Old.get<V>(Cp)) +
+										deltaT * Old.get<U>(Cp) * Old.get<V>(Cp) * Old.get<V>(Cp) +
+										- deltaT * (F+K) * Old.get<V>(Cp);
 
 			// Next point in the grid
 			++it;
 		}
+
+		//! \cond [stencil get and use] \endcond
 
 		// Here we copy New into the old grid in preparation of the new step
 		// It would be better to alternate, but using this we can show the usage
@@ -199,11 +226,11 @@ int main(int argc, char* argv[])
 		// After copy we synchronize again the ghost part U and V
 		Old.ghost_get<U,V>();
 
-		// Every 30 time step we output the configuration for
+		// Every 500 time step we output the configuration for
 		// visualization
-		if (i % 60 == 0)
+		if (i % 500 == 0)
 		{
-			Old.write_frame("output",count,VTK_WRITER | FORMAT_BINARY);
+			Old.save("output_" + std::to_string(count));
 			count++;
 		}
 	}
@@ -229,4 +256,13 @@ int main(int argc, char* argv[])
 	openfpm_finalize();
 
 	//! \cond [finalize] \endcond
+
+	/*!
+	 * \page Grid_3_gs_3D Gray Scott in 3D
+	 *
+	 * # Full code # {#code}
+	 *
+	 * \include Grid/3_gray_scott_3d/main.cpp
+	 *
+	 */
 }

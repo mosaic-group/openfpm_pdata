@@ -18,6 +18,7 @@ if [ "$2" == "windows10" ]; then
 
     branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)    
 
+    git pull origin master
     ./install -i "/home/jenkins/$branch" < input_install
 
 fi

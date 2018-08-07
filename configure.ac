@@ -64,8 +64,7 @@ INCLUDES_PATH=" "
 echo "$base" > install_dir
 
 # Needed for build library
-AC_PROG_RANLIB
-AM_PROG_AR
+LT_INIT
 
 # Checks for programs.
 AC_PROG_CXX
@@ -138,14 +137,6 @@ fi
 
 AX_LIB_HILBERT([],[echo "Cannot detect libhilbert, use the --with-libhilbert option if it is not installed in the default location"
                     exit 210])
-
-##########
-
-## Check for PETSC
-
-AX_LIB_PETSC()
-
-## Check for quadmath
 
 
 have_quad_lib=no
@@ -245,6 +236,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
 )
 AC_LANG_POP([C++])
 CXXFLAGS="$my_save_cflags"
+
 AC_SUBST([AM_CXXFLAGS])
 
 
@@ -376,6 +368,12 @@ AX_LAPACK([],[])
 ###### Checking for SUITESPARSE
 
 AX_SUITESPARSE([],[])
+
+##########
+
+## Check for PETSC
+
+AX_LIB_PETSC()
 
 ###### Checking for EIGEN
 

@@ -5,9 +5,6 @@
  *      Author: i-bird
  */
 
-#ifndef SRC_GRID_GRID_DIST_ID_UNIT_TEST_UNB_GHOST_HPP_
-#define SRC_GRID_GRID_DIST_ID_UNIT_TEST_UNB_GHOST_HPP_
-
 void Test3D_unb_ghost(const Box<3,float> & domain, long int k)
 {
 	long int big_step = k / 30;
@@ -17,7 +14,7 @@ void Test3D_unb_ghost(const Box<3,float> & domain, long int k)
 	if (create_vcluster().getProcessingUnits() > 48)
 		return;
 
-	print_test( "Testing 3D grid unbound ghost k<=",k);
+	print_test_v( "Testing 3D grid unbound ghost k<=",k);
 
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
@@ -34,9 +31,7 @@ void Test3D_unb_ghost(const Box<3,float> & domain, long int k)
 		Ghost<3,float> g(0.49);
 
 		// Distributed grid with id decomposition
-		grid_dist_id<3, float, scalar<float>, CartDecomposition<3,float>> g_dist(sz,domain,g);
-
-		g_dist.getDecomposition().write("no_bound_decomposition");
+		grid_dist_id<3, float, aggregate<float>, CartDecomposition<3,float>> g_dist(sz,domain,g);
 
 		// check the consistency of the decomposition
 		bool val = g_dist.getDecomposition().check_consistency();
@@ -132,7 +127,7 @@ void Test3D_unb_ghost_periodic(const Box<3,float> & domain, long int k)
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 21;
 
-	print_test( "Testing grid periodic unbound ghost k<=",k);
+	print_test_v( "Testing grid periodic unbound ghost k<=",k);
 
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
@@ -267,4 +262,3 @@ void Test3D_unb_ghost_periodic(const Box<3,float> & domain, long int k)
 }
 
 
-#endif /* SRC_GRID_GRID_DIST_ID_UNIT_TEST_UNB_GHOST_HPP_ */

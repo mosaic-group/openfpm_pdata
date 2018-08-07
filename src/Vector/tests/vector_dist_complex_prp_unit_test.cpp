@@ -4,10 +4,15 @@
  *  Created on: Sep 18, 2016
  *      Author: i-bird
  */
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 
-#ifndef SRC_VECTOR_VECTOR_DIST_COMPLEX_PRP_UNIT_TEST_HPP_
-#define SRC_VECTOR_VECTOR_DIST_COMPLEX_PRP_UNIT_TEST_HPP_
+#include "Vector/vector_dist.hpp"
+#include "Vector/performance/vector_dist_performance_util.hpp"
+#include "vector_dist_util_unit_tests.hpp"
 
+extern void print_test_v(std::string test, size_t sz);
+extern long int decrement(long int k, long int step);
 
 BOOST_AUTO_TEST_CASE( vector_dist_periodic_complex_prp_test_use_3d )
 {
@@ -232,4 +237,3 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_complex_prp_test_use_3d )
 }
 
 
-#endif /* SRC_VECTOR_VECTOR_DIST_COMPLEX_PRP_UNIT_TEST_HPP_ */

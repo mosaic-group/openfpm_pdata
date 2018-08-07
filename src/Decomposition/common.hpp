@@ -84,6 +84,7 @@ struct Box_sub
 	//! see ie_ghost follow sector explanation
 	comb<dim> cmb;
 
+	//! Constructor reset cmb
 	Box_sub()
 	{cmb.zero();}
 };
@@ -108,6 +109,19 @@ struct Box_sub_k
 	:sub(0),k(-1)
 	{
 		cmb.zero();
+	}
+};
+
+template<unsigned int dim,typename T>
+struct Box_map
+{
+	Box<dim,T> box;
+
+	long int prc;
+
+	static bool noPointers()
+	{
+		return true;
 	}
 };
 

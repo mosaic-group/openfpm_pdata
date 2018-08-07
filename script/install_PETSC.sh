@@ -57,7 +57,9 @@ configure_options_hypre=""
 
 
 if [ -d "$1/PARMETIS" ]; then
-  configure_options="$configure_options --with-parmetis=yes  --with-parmetis-dir=$1/PARMETIS "
+  if [ x"$CXX" != x"icpc" ]; then
+    configure_options="$configure_options --with-parmetis=yes  --with-parmetis-dir=$1/PARMETIS "
+  fi
   configure_options_superlu="-DTPL_PARMETIS_INCLUDE_DIRS=$1/PARMETIS/include;$1/METIS/include -DTPL_PARMETIS_LIBRARIES=$1/PARMETIS/lib/libparmetis.a;$1/METIS/lib/libmetis.so $configure_options_superlu"
 fi
 
@@ -88,18 +90,26 @@ if [ ! -d "$1/OPENBLAS" ]; then
     configure_trilinos_options="$configure_trilinos_options -D TPL_ENABLE_BLAS=ON -D BLAS_LIBRARY_NAMES=openblas -D BLAS_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_LAPACK=ON -D LAPACK_LIBRARY_NAMES=openblas -D LAPACK_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_Netcdf=OFF -DTPL_ENABLE_GLM=OFF -D TPL_ENABLE_X11=OFF  "
     configure_options_superlu="$configure_options_superlu -Denable_blaslib=OFF  -DTPL_BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a "
     configure_options_hypre="--with-blas-libs=-lopenblas --with-blas-lib-dirs=$1/OPENBLAS/lib --with-lapack-libs=-lopenblas  --with-lapack-lib-dirs=$1/OPENBLAS/lib "
-    configure_options_scalapack="$configure_options_scalapack -D LAPACK_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a -D BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a"
+    if [ x"$CXX" == x"icpc" -a x"$platform" != x"OSX" ]; then
+      configure_options_scalapack="$configure_options_scalapack -D LAPACK_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a -D BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a;libgfortran.so "
+    else
+      configure_options_scalapack="$configure_options_scalapack -D LAPACK_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a -D BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a"
+    fi
   fi
 else
     configure_options="$configure_options --with-blas-lib=$1/OPENBLAS/lib/libopenblas.a --with-lapack-lib=$1/OPENBLAS/lib/libopenblas.a"
     configure_trilinos_options="$configure_trilinos_options -D TPL_ENABLE_BLAS=ON -D BLAS_LIBRARY_NAMES=openblas -D BLAS_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_LAPACK=ON -D LAPACK_LIBRARY_NAMES=openblas -D LAPACK_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_Netcdf=OFF -DTPL_ENABLE_GLM=OFF -D TPL_ENABLE_X11=OFF  "
     configure_options_superlu="$configure_options_superlu -Denable_blaslib=OFF  -DTPL_BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a "
     configure_options_hypre="--with-blas-libs=-lopenblas --with-blas-lib-dirs=$1/OPENBLAS/lib --with-lapack-libs=-lopenblas  --with-lapack-lib-dirs=$1/OPENBLAS/lib "
-    configure_options_scalapack="$configure_options_scalapack -D LAPACK_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a -D BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a"
+    if [ x"$CXX" == x"icpc" -a x"$platform" != x"OSX" ]; then
+      configure_options_scalapack="$configure_options_scalapack -D LAPACK_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a -D BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a;libgfortran.so "
+    else
+      configure_options_scalapack="$configure_options_scalapack -D LAPACK_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a -D BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a"
+    fi
 fi
 
 if [ ! -d "$1/SUITESPARSE" ]; then
-  ./script/install_SUITESPARSE.sh $1
+  CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_SUITESPARSE.sh $1 $2
   if [ $? -eq 0 ]; then
     configure_options="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
   fi
@@ -216,8 +226,8 @@ if [ ! -d "$1/SCALAPACK" ]; then
   cd scalapack-2.0.2
   mkdir build
   cd build
-  echo "cmake -D CMAKE_EXE_LINKER_FLAGS=-pthread  -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_Fortran_FLAGS_RELEASE=-fpic -D MPI_C_COMPILER_FLAGS=-fpic -D MPI_Fortran_COMPILER_FLAGS=-fpic -D CMAKE_C_FLAGS=-fpic -D CMAKE_INSTALL_PREFIX="$1/SCALAPACK" $configure_options_scalapack ../."
-  cmake -D CMAKE_EXE_LINKER_FLAGS=-pthread  -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_Fortran_FLAGS_RELEASE=-fpic -D MPI_C_COMPILER_FLAGS=-fpic -D MPI_Fortran_COMPILER_FLAGS=-fpic -D CMAKE_C_FLAGS=-fpic -D CMAKE_INSTALL_PREFIX="$1/SCALAPACK" $configure_options_scalapack ../.
+  echo "cmake CMAKE_EXE_LINKER_FLAGS=-lgfortran  -D CMAKE_EXE_LINKER_FLAGS=-pthread  -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_Fortran_FLAGS_RELEASE=-fpic -D MPI_C_COMPILER_FLAGS=-fpic -D MPI_Fortran_COMPILER_FLAGS=-fpic -D CMAKE_C_FLAGS=-fpic -D CMAKE_INSTALL_PREFIX="$1/SCALAPACK" $configure_options_scalapack ../."
+  cmake CMAKE_EXE_LINKER_FLAGS=-lgfortran  -D CMAKE_EXE_LINKER_FLAGS=-pthread  -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_Fortran_FLAGS_RELEASE=-fpic -D MPI_C_COMPILER_FLAGS=-fpic -D MPI_Fortran_COMPILER_FLAGS=-fpic -D CMAKE_C_FLAGS=-fpic -D CMAKE_INSTALL_PREFIX="$1/SCALAPACK" $configure_options_scalapack ../.
   make -j $2
   if [ $? -eq 0 ]; then
     make install
@@ -233,7 +243,7 @@ if [ x"$CXX" != x"icpc" ]; then
   if [ ! -d "$1/MUMPS" ]; then
     rm MUMPS_5.0.1.tar.gz
     rm -rf MUMPS_5.0.1
-    wget http://ppmcore.mpi-cbg.de/upload/MUMPS_5.0.1.tar.gz
+    wget http://openfpm.mpi-cbg.de/upload/MUMPS_5.0.1.tar.gz
     if [ $? -ne 0 ]; then
       echo -e "\033[91;5;1m FAILED! Installation requires an Internet connection \033[0m"
       exit 1
@@ -269,13 +279,13 @@ if [ x"$CXX" != x"icpc" ]; then
       cp -r lib $1/MUMPS
 
       MUMPS_extra_lib="-L$1/MUMPS/lib -ldmumps -lmumps_common -lpord -pthread "
-      configure_options="$configure_options --with-mumps=yes --with-mumps-include=$1/MUMPS/include"
+      configure_options="$configure_options --with-mumps=yes --with-mumps-include=$1/MUMPS/include/"
 
     fi
   else
     echo "MUMPS is already installed"
     MUMPS_extra_lib="-L$1/MUMPS/lib -ldmumps -lmumps_common -lpord -pthread "
-    configure_options="$configure_options --with-mumps=yes --with-mumps-include=$1/MUMPS/include"
+    configure_options="$configure_options --with-mumps=yes --with-mumps-include=$1/MUMPS/include/"
   fi
 fi
 
@@ -362,15 +372,28 @@ fi
 tar -xf petsc-lite-3.7.6.tar.gz
 cd petsc-3.7.6
 
-echo "./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc --with-cxx-dialect=C++11 $petsc_openmp  --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC --with-debugging=0"
+if [ x"$CXX" != x"icpc" ]; then
 
-function haveProg() {
-    [ -x "$(command -v $1)" ]
-}
+  echo "./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc --with-cxx-dialect=C++11 $petsc_openmp  --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib"  --prefix=$1/PETSC --with-debugging=0"
 
+  function haveProg() {
+      [ -x "$(command -v $1)" ]
+  }
 
+  $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib" --prefix=$1/PETSC --with-debugging=0
 
-$python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --with-mumps-lib="$MUMPS_extra_lib" --prefix=$1/PETSC --with-debugging=0
+else
+
+  echo "./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc --with-cxx-dialect=C++11 $petsc_openmp  --with-mpi-dir=$mpi_dir $configure_options  --prefix=$1/PETSC --with-debugging=0"
+
+  function haveProg() {
+      [ -x "$(command -v $1)" ]
+  }
+
+  $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --prefix=$1/PETSC --with-debugging=0
+
+fi
+
 make all test
 make install
 

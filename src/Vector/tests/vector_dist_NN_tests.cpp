@@ -5,11 +5,16 @@
  *      Author: i-bird
  */
 
-#ifndef SRC_VECTOR_VECTOR_DIST_NN_TESTS_HPP_
-#define SRC_VECTOR_VECTOR_DIST_NN_TESTS_HPP_
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 
+#include "VCluster/VCluster.hpp"
+#include "Vector/vector_dist.hpp"
 
-BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
+extern void print_test_v(std::string test, size_t sz);
+
+template<typename VerletList>
+void test_full_nn(long int k)
 {
 	Vcluster & v_cl = create_vcluster();
 
@@ -22,16 +27,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
     std::default_random_engine eg;
     std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
-#ifdef TEST_COVERAGE_MODE
-    long int k = 50 * v_cl.getProcessingUnits();
-#else
-    long int k = 750 * v_cl.getProcessingUnits();
-#endif
-
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
 
-	print_test("Testing 3D full NN search k=",k);
+	print_test_v("Testing 3D full NN search k=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D full NN search k=" << k );
 
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
@@ -134,14 +133,14 @@ BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
 
 		///////////////////////////////////
 
-		auto NNv = vd.getVerlet(r_cut*1.0001);
+		auto NNv = vd.template getVerlet<VerletList>(r_cut*1.0001);
 
 		it = vd.getDomainIterator();
 
 		while (it.isNext())
 		{
 			Point<3,float> xp = vd.getPos(it.get());
-			auto Np = NNv.getNNIterator<NO_CHECK>(it.get().getKey());
+			auto Np = NNv.template getNNIterator<NO_CHECK>(it.get().getKey());
 
 			list_idx2.get(it.get().getKey()).clear();
 
@@ -185,7 +184,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
 		while (it.isNext())
 		{
 			Point<3,float> xp = vd.getPos(it.get());
-			auto Np = NNv.getNNIterator<NO_CHECK>(it.get().getKey());
+			auto Np = NNv.template getNNIterator<NO_CHECK>(it.get().getKey());
 
 			list_idx2.get(it.get().getKey()).clear();
 
@@ -221,6 +220,24 @@ BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
 	}
 }
 
+BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
+{
+	auto & v_cl = create_vcluster();
+
+#ifdef TEST_COVERAGE_MODE
+    long int k = 50 * v_cl.getProcessingUnits();
+#else
+    long int k = 750 * v_cl.getProcessingUnits();
+#endif
+
+	test_full_nn<VERLET_MEMFAST(3,float)>(k);
+
+	k /= 2;
+	test_full_nn<VERLET_MEMBAL(3,float)>(k);
+	k /= 2;
+	test_full_nn<VERLET_MEMMW(3,float)>(k);
+}
+
 BOOST_AUTO_TEST_CASE( vector_dist_particle_iteration )
 {
 	Vcluster & v_cl = create_vcluster();
@@ -236,7 +253,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_iteration )
 
     long int k = 750 * v_cl.getProcessingUnits();
 
-	print_test("Testing 3D particle cell iterator=",k);
+	print_test_v("Testing 3D particle cell iterator=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D full NN search k=" << k );
 
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
@@ -302,4 +319,163 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_iteration )
 	BOOST_REQUIRE_EQUAL((long int)count,k);
 }
 
-#endif /* SRC_VECTOR_VECTOR_DIST_NN_TESTS_HPP_ */
+BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_update_with_limit )
+{
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 12)
+		return;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+    long int k = 750 * v_cl.getProcessingUnits();
+
+	print_test_v("Testing 3D particle cell-list with radius at limit= ",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D particle cell-list with radius at limit= " << k );
+
+	Box<3,float> box({0.0,0.0,0.0},{0.1,0.39,0.39});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	float r_cut = 0.1;
+
+	// ghost
+	Ghost<3,float> ghost(r_cut);
+
+	typedef  aggregate<float> part_prop;
+
+	// Distributed vector
+	vector_dist<3,float, part_prop > vd(k,box,bc,ghost);
+
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.getPos(key)[0] = ud(eg);
+		vd.getPos(key)[1] = ud(eg);
+		vd.getPos(key)[2] = ud(eg);
+
+		// Fill some properties randomly
+
+		vd.getProp<0>(key) = 0.0;
+
+		++it;
+	}
+
+	vd.map();
+
+	// sync the ghost
+	vd.ghost_get<0>();
+
+	auto NN = vd.getCellListSym(r_cut);
+
+	auto cell1 = NN.getCellBox();
+
+	vd.getDecomposition().decompose();
+	vd.map();
+
+	vd.updateCellListSym(NN);
+
+	auto cell2 = NN.getCellBox();
+
+	BOOST_REQUIRE_EQUAL(cell1.getHigh(0),cell2.getHigh(0));
+	BOOST_REQUIRE_EQUAL(cell1.getHigh(1),cell2.getHigh(1));
+	BOOST_REQUIRE_EQUAL(cell1.getHigh(2),cell2.getHigh(2));
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_particle_getCellListSym_with_div )
+{
+	Vcluster & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 12)
+		return;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+    long int k = 750 * v_cl.getProcessingUnits();
+
+	print_test_v("Testing 3D particle getCellListSym with div =",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D particle getCellListSym with div = " << k );
+
+	Box<3,float> box({0.0,0.0,0.0},{0.1,0.39,0.39});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	float r_cut = 0.1;
+
+	// ghost
+	Ghost<3,float> ghost(r_cut);
+
+	typedef  aggregate<float> part_prop;
+
+	// Distributed vector
+	vector_dist<3,float, part_prop > vd(k,box,bc,ghost);
+
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.getPos(key)[0] = ud(eg);
+		vd.getPos(key)[1] = ud(eg);
+		vd.getPos(key)[2] = ud(eg);
+
+		// Fill some properties randomly
+
+		vd.getProp<0>(key) = 0.0;
+
+		++it;
+	}
+
+	vd.map();
+
+	// sync the ghost
+	vd.ghost_get<0>();
+
+	auto NN1 = vd.getCellListSym(r_cut);
+
+	size_t div_wp[3] = {NN1.getDivWP()[0],NN1.getDivWP()[1],NN1.getDivWP()[2]};
+	size_t pad[3] = {NN1.getPadding()[0],NN1.getPadding()[1],NN1.getPadding()[2]};
+
+	auto NN2 = vd.getCellListSym(div_wp,pad);
+
+	// Check that the two Cell list are identical
+
+	// grid info
+	size_t div[3] = {NN1.getInternalGrid().getSize()[0],
+					 NN1.getInternalGrid().getSize()[1],
+					 NN1.getInternalGrid().getSize()[2]};
+
+	grid_sm<3,void> g_info(div);
+
+	bool match = true;
+
+	// Create a grid iterator
+	grid_key_dx_iterator<3> g_it(g_info);
+
+	while (g_it.isNext())
+	{
+		size_t cell = g_info.LinId(g_it.get());
+		size_t n_ele1 = NN1.getNelements(cell);
+		size_t n_ele2 = NN2.getNelements(cell);
+
+		match &= n_ele1 == n_ele2;
+
+		++g_it;
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+}

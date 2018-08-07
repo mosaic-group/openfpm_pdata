@@ -12,7 +12,7 @@ if [ ! -d "$1/OPENBLAS"  ]; then
   exit 1
 fi
 
-./script/install_SUITESPARSE.sh $1 $2
+CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_SUITESPARSE.sh $1 $2
 if [ ! -d "$1/SUITESPARSE"  ]; then
   exit 1
 fi
