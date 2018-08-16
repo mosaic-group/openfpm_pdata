@@ -1,5 +1,7 @@
 SUBDIRS = src images openfpm_data openfpm_io openfpm_devices openfpm_vcluster openfpm_numerics
 
+ACLOCAL_AMFLAGS = -I m4
+
 bin_PROGRAMS =
 
 pdata:
@@ -20,6 +22,8 @@ io:
 numerics:
 	cd openfpm_numerics/src && make
 
+actual_test:
+	cd src && make actual_test
 
 
 

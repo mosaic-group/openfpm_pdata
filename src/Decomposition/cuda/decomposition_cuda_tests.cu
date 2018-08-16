@@ -8,13 +8,15 @@
 
 BOOST_AUTO_TEST_SUITE( decomposition_to_gpu_test )
 
+
 BOOST_AUTO_TEST_CASE( decomposition_to_gpu_test_use )
 {
+	auto & v_cl = create_vcluster();
+
 	// Vcluster
 	Vcluster & vcl = create_vcluster();
 
-	//! [Create CartDecomposition]
-	CartDecomposition<3, float> dec(vcl);
+	CartDecomposition<3, float, CudaMemory, memory_traits_inte> dec(vcl);
 
 	// Physical domain
 	Box<3, float> box( { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
@@ -39,7 +41,38 @@ BOOST_AUTO_TEST_CASE( decomposition_to_gpu_test_use )
 	dec.setParameters(div,box,bc,g);
 	dec.decompose();
 
-	dec.toKernel()
+	openfpm::vector_gpu<Point<3,float>> vg;
+	vg.resize(10000);
+
+	for (size_t i = 0 ; i < 10000 ; i++)
+	{
+		vg.template get<0>(i)[0] = (float)rand()/RAND_MAX;
+		vg.template get<0>(i)[1] = (float)rand()/RAND_MAX;
+		vg.template get<0>(i)[2] = (float)rand()/RAND_MAX;
+	}
+
+	vg.hostToDevice<0>();
+
+	// process on GPU the processor ID for each particles
+
+	auto ite = vg.getGPUIterator();
+
+	openfpm::vector_gpu<aggregate<int,int>> proc_id_out;
+	proc_id_out.resize(vg.size());
+
+	process_id_proc_each_part<decltype(dec.toKernel()),decltype(vg.toKernel()),decltype(proc_id_out.toKernel())>
+	<<<ite.wthr,ite.thr>>>
+	(dec.toKernel(),vg.toKernel(),proc_id_out.toKernel(),v_cl.rank());
+
+	proc_id_out.deviceToHost<0>();
+
+	bool match = true;
+	for (size_t i = 0 ; i < proc_id_out.size() ; i++)
+	{
+		Point<3,float> xp = vg.template get<0>(i);
+
+		match &= proc_id_out.template get<0>(i) == dec.processorIDBC(xp);
+	}
 }
 
 BOOST_AUTO_TEST_SUITE_END()

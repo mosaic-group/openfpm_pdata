@@ -159,7 +159,7 @@ struct gcl_An
 #define VERLET_MEMBAL(dim,St)  VerletList<dim,St,Mem_bal<>,shift<dim,St> >
 #define VERLET_MEMMW(dim,St)   VerletList<dim,St,Mem_mw<>,shift<dim,St> >
 
-#define VERLET_MEMFAST_INT(dim,St) VerletList<dim,St,Mem_fast<unsigned int>,shift<dim,St> >
+#define VERLET_MEMFAST_INT(dim,St) VerletList<dim,St,Mem_fast<HeapMemory,unsigned int>,shift<dim,St> >
 #define VERLET_MEMBAL_INT(dim,St)  VerletList<dim,St,Mem_bal<unsigned int>,shift<dim,St> >
 #define VERLET_MEMMW_INT(dim,St)   VerletList<dim,St,Mem_mw<unsigned int>,shift<dim,St> >
 
@@ -368,9 +368,10 @@ public:
 	 * \return itself
 	 *
 	 */
-	vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & operator=(const vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & v)
+	vector_dist<dim,St,prop,Decomposition,Memory,layout_base> &
+	operator=(const vector_dist<dim,St,prop,Decomposition,Memory,layout_base> & v)
 	{
-		static_cast<vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>>(v));
+		static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>>(v));
 
 		g_m = v.g_m;
 		v_pos = v.v_pos;
@@ -392,9 +393,10 @@ public:
 	 * \return itself
 	 *
 	 */
-	vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & operator=(vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> && v)
+	vector_dist<dim,St,prop,Decomposition,Memory,layout_base> &
+	operator=(vector_dist<dim,St,prop,Decomposition,Memory,layout_base> && v)
 	{
-		static_cast<vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> >(v));
+		static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base> >(v));
 
 		g_m = v.g_m;
 		v_pos.swap(v.v_pos);
@@ -415,8 +417,8 @@ public:
 	 * \param v vector to copy
 	 *
 	 */
-	vector_dist(const vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & v)
-	:vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>(v.getDecomposition()),v_cl(v.v_cl) SE_CLASS3_VDIST_CONSTRUCTOR
+	vector_dist(const vector_dist<dim,St,prop,Decomposition,Memory,layout_base> & v)
+	:vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>(v.getDecomposition()),v_cl(v.v_cl) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -430,7 +432,7 @@ public:
 	 * \param v vector to copy
 	 *
 	 */
-	vector_dist(vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> && v) noexcept
+	vector_dist(vector_dist<dim,St,prop,Decomposition,Memory,layout_base> && v) noexcept
 	:v_cl(v.v_cl) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
@@ -451,7 +453,7 @@ public:
 	 *
 	 */
 	vector_dist(const Decomposition & dec, size_t np) :
-	vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>(dec), v_cl(create_vcluster()) SE_CLASS3_VDIST_CONSTRUCTOR
+	vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>(dec), v_cl(create_vcluster()) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);

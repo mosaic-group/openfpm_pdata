@@ -115,14 +115,16 @@ struct Box_sub_k
 template<unsigned int dim,typename T>
 struct Box_map
 {
-	Box<dim,T> box;
+	typedef boost::fusion::vector<Box<dim,T>,long int> type;
 
-	long int prc;
+	type data;
 
 	static bool noPointers()
 	{
 		return true;
 	}
+
+	static const unsigned int max_prop = 2;
 };
 
 //! Case for local ghost box

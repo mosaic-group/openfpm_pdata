@@ -8,6 +8,13 @@
 #ifndef SRC_VECTOR_VECTOR_DIST_COMM_HPP_
 #define SRC_VECTOR_VECTOR_DIST_COMM_HPP_
 
+#if defined(CUDA_GPU) && defined(__NVCC__)
+#include "util/cuda/moderngpu/kernel_mergesort.hxx"
+#include "Vector/cuda/vector_dist_cuda_funcs.cuh"
+#endif
+
+#include "Vector/util/vector_dist_funcs.hpp"
+
 #define SKIP_LABELLING 512
 #define KEEP_PROPERTIES 512
 
@@ -17,7 +24,7 @@
 
 #define BIND_DEC_TO_GHOST 1
 
-#define MAP_ON_DEVICE 1000
+#define MAP_ON_DEVICE 1024
 #define MAP_LOCAL 2
 
 /*! \brief compute the communication options from the ghost_get/put options
@@ -73,7 +80,10 @@ class vector_dist_comm
 	//! first id particle id
 	//! second id shift id
 	//! third id is the processor id
-	openfpm::vector<aggregate<size_t,size_t,size_t>> m_opart;
+	openfpm::vector<aggregate<int,int,int>,
+					Memory,
+					typename layout_base<aggregate<int,int,int>>::type,
+					layout_base > m_opart;
 
 	//! Per processor ordered particles id for ghost_get (see prc_g_opart)
 	//! For each processor the internal vector store the id of the
@@ -119,15 +129,6 @@ class vector_dist_comm
 	//! Receiving buffer
 	openfpm::vector<HeapMemory> hrmem;
 
-	//! process the particle without properties
-	struct proc_without_prp
-	{
-		//! process the particle
-		template<typename T1, typename T2> inline static void proc(size_t lbl, size_t cnt, size_t id, T1 & v_prp, T2 & m_prp)
-		{
-			m_prp.get(lbl).set(cnt, v_prp.get(id));
-		}
-	};
 
 	//! process the particle with properties
 	template<typename prp_object, int ... prp>
@@ -146,62 +147,41 @@ class vector_dist_comm
 		}
 	};
 
-	//! It process one particle
-	template<typename proc_class, typename T1, typename T2, typename T3, typename T4> inline void process_map_particle(size_t i, long int & end, long int & id_end, T1 & m_pos, T2 & m_prp, T3 & v_pos, T4 & v_prp, openfpm::vector<size_t> & cnt)
+	/*! \brief Calculate sending buffer size for each processor
+	 *
+	 * \param prc_sz_r processor size
+	 * \param prc_r processor ids
+	 *
+	 */
+	inline void calc_send_buffers(openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int>>::type,layout_base> & prc_sz,
+								  openfpm::vector<size_t> & prc_sz_r,
+								  openfpm::vector<size_t> & prc_r,
+								  size_t opt)
 	{
-		long int prc_id = m_opart.template get<2>(i);
-		size_t id = m_opart.template get<0>(i);
-
-		if (prc_id >= 0)
+		if (opt & MAP_ON_DEVICE)
 		{
-			size_t lbl = p_map_req.get(prc_id);
-
-			m_pos.get(lbl).set(cnt.get(lbl), v_pos.get(id));
-			proc_class::proc(lbl,cnt.get(lbl),id,v_prp,m_prp);
-
-			cnt.get(lbl)++;
-
-			// swap the particle
-			long int id_valid = get_end_valid(end,id_end);
-
-			if (id_valid > 0 && (long int)id < id_valid)
+			for (size_t i = 0; i < prc_sz.size()-1 ; i++)
 			{
-				v_pos.set(id,v_pos.get(id_valid));
-				v_prp.set(id,v_prp.get(id_valid));
+				prc_r.add(prc_sz.template get<1>(i));
+				prc_sz_r.add(prc_sz.template get<0>(i+1) - prc_sz.template get<0>(i));
 			}
 		}
 		else
 		{
-			// swap the particle
-			long int id_valid = get_end_valid(end,id_end);
+			// Calculate the sending buffer size for each processor, put this information in
+			// a contiguous buffer
 
-			if (id_valid > 0 && (long int)id < id_valid)
+			p_map_req.resize(v_cl.getProcessingUnits());
+			for (size_t i = 0; i < v_cl.getProcessingUnits(); i++)
 			{
-				v_pos.set(id,v_pos.get(id_valid));
-				v_prp.set(id,v_prp.get(id_valid));
+				if (prc_sz.template get<0>(i) != 0)
+				{
+					p_map_req.get(i) = prc_r.size();
+					prc_r.add(i);
+					prc_sz_r.add(prc_sz.template get<0>(i));
+				}
 			}
 		}
-	}
-
-	/*! \brief Return a valid particle starting from end and tracing back
-	 *
-	 * \param end actual opart particle pointer
-	 * \param end_id actual end particle point
-	 *
-	 * \return a valid particle
-	 *
-	 */
-	inline size_t get_end_valid(long int & end, long int & end_id)
-	{
-		end_id--;
-
-		while (end >= 0 && end_id >= 0 && (long int)m_opart.template get<0>(end) == end_id)
-		{
-			end_id--;
-			end--;
-		}
-
-		return end_id;
 	}
 
 	//! From which decomposition the shift boxes are calculated
@@ -272,7 +252,8 @@ class vector_dist_comm
 	 *
 	 */
 	void local_ghost_from_opart(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
-			                    openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp)
+			                    openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+			                    size_t opt)
 	{
 		// get the shift vectors
 		const openfpm::vector<Point<dim, St>> & shifts = dec.getShiftVectors();
@@ -575,7 +556,7 @@ class vector_dist_comm
 		{
 			typedef typename boost::mpl::at<v_mpl,T>::type prp_ms;
 
-			g_send_prp.get(i).template setMemory<prp_ms::value>(hsmem.get(j));
+			g_send_prp.get(i).template setMemory<T::value>(hsmem.get(j));
 
 			j++;
 		}
@@ -611,7 +592,7 @@ class vector_dist_comm
 		{
 			set_mem_retained_buffers_inte<send_vector,v_mpl> smrbi(g_send_prp,i,hsmem,j);
 
-			boost::mpl::for_each_ref<v_mpl>(smrbi);
+			boost::mpl::for_each_ref<boost::mpl::range_c<int,0,boost::mpl::size<v_mpl>::type::value>>(smrbi);
 
 			// resize the sending vector (No allocation is produced)
 			g_send_prp.get(i).resize(g_opart.get(i).size());
@@ -682,13 +663,17 @@ class vector_dist_comm
 	 * \param prc_sz_r For each processor in the list the size of the message to send
 	 * \param m_pos sending buffer for position
 	 * \param m_prp sending buffer for properties
+	 * \param offset from where start the list of the particles that migrate in o_part
+	 *        This parameter is used only in case of MAP_ON_DEVICE option
 	 *
 	 */
 	void fill_send_map_buf(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
 			               openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
 			               openfpm::vector<size_t> & prc_sz_r,
 			               openfpm::vector<openfpm::vector<Point<dim,St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base,openfpm::grow_policy_identity>> & m_pos,
-			               openfpm::vector<openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base,openfpm::grow_policy_identity>> & m_prp)
+			               openfpm::vector<openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base,openfpm::grow_policy_identity>> & m_prp,
+			               size_t offset,
+			               size_t opt)
 	{
 		m_prp.resize(prc_sz_r.size());
 		m_pos.resize(prc_sz_r.size());
@@ -702,16 +687,42 @@ class vector_dist_comm
 			cnt.get(i) = 0;
 		}
 
-		// end vector point
-		long int id_end = v_pos.size();
-
-		// end opart point
-		long int end = m_opart.size()-1;
-
-		// Run through all the particles and fill the sending buffer
-		for (size_t i = 0; i < m_opart.size(); i++)
+		if (opt & MAP_ON_DEVICE)
 		{
-			process_map_particle<proc_without_prp>(i,end,id_end,m_pos,m_prp,v_pos,v_prp,cnt);
+#if defined(CUDA_GPU) && defined(__NVCC__)
+
+			for (size_t i = 0 ; i < m_pos.size() ; i++)
+			{
+				auto ite = m_pos.get(i).getGPUIterator();
+
+				process_map_particles<decltype(m_opart.toKernel()),decltype(m_pos.get(i).toKernel()),decltype(m_prp.get(i).toKernel()),
+						                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>
+				<<<ite.wthr,ite.thr>>>
+				(m_opart.toKernel(),m_pos.get(i).toKernel(), m_prp.get(i).toKernel(),
+						            v_pos.toKernel(),v_prp.toKernel(),offset);
+
+				offset += prc_sz_r.size();
+			}
+
+#else
+
+			std::cout << __FILE__ << ":" << __LINE__ << " error MAP_ON_DEVICE require that you compile with NVCC, but it seem compiled with a normal compiler" << std::endl;
+
+#endif
+		}
+		else
+		{
+			// end vector point
+			long int id_end = v_pos.size();
+
+			// end opart point
+			long int end = m_opart.size()-1;
+
+			// Run through all the particles and fill the sending buffer
+			for (size_t i = 0; i < m_opart.size(); i++)
+			{
+				process_map_particle<proc_without_prp>(i,end,id_end,m_opart,p_map_req,m_pos,m_prp,v_pos,v_prp,cnt);
+			}
 		}
 
 		v_pos.resize(v_pos.size() - m_opart.size());
@@ -759,7 +770,7 @@ class vector_dist_comm
 		// Run through all the particles and fill the sending buffer
 		for (size_t i = 0; i < m_opart.size(); i++)
 		{
-			process_map_particle<proc_with_prp<prp_object,prp...>>(i,end,id_end,m_pos,m_prp,v_pos,v_prp,cnt);
+			process_map_particle<proc_with_prp<prp_object,prp...>>(i,end,id_end,m_opart,p_map_req,m_pos,m_prp,v_pos,v_prp,cnt);
 		}
 
 		v_pos.resize(v_pos.size() - m_opart.size());
@@ -775,63 +786,100 @@ class vector_dist_comm
 	 *
 	 */
 	template<typename obp> void labelParticleProcessor(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
-			                                           openfpm::vector<aggregate<size_t,size_t,size_t>> & lbl_p,
-			                                           openfpm::vector<size_t> & prc_sz,
+			                                           openfpm::vector<aggregate<int,int,int>,
+			                                                           Memory,
+			                                                           typename layout_base<aggregate<int,int,int>>::type,
+			                                                           layout_base> & lbl_p,
+			                                           openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int>>::type,layout_base> & prc_sz,
 			                                           size_t opt)
 	{
 		if (opt == MAP_ON_DEVICE)
 		{
+#ifdef __NVCC__
 
+			// Map directly on gpu
+
+			lbl_p.resize(v_pos.size());
+
+			// labelling kernel
+
+			auto ite = v_pos.getGPUIterator();
+
+			// label particle processor
+			process_id_proc_each_part<decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(lbl_p.toKernel())><<<ite.wthr,ite.thr>>>(dec.toKernel(),v_pos.toKernel(),lbl_p.toKernel(),v_cl.rank());
+
+			// sort particles
+			mergesort((int *)lbl_p.template getDeviceBuffer<1>(),(int *)lbl_p.template getDeviceBuffer<0>(), lbl_p.size(), mgpu::template less_t<int>(), v_cl.getmgpuContext());
+
+			CudaMemory mem;
+			mem.allocate(sizeof(int));
+
+			// Find the buffer bases
+			find_buffer_offsets<decltype(lbl_p.toKernel()),decltype(prc_sz.toKernel())><<<ite.wthr,ite.thr>>>
+					           (lbl_p.toKernel(),(int *)mem.getDevicePointer(),prc_sz.toKernel());
+
+			// Trasfer the number of offsets on CPU
+			mem.deviceToHost();
+
+			int noff = *(int *)mem.getPointer();
+
+#else
+
+			std::cout << __FILE__ << ":" << __LINE__ << " error, it seems you tried to call map with MAP_ON_DEVICE option, this requires to compile the program with NVCC" << std::endl;
+
+#endif
 		}
-
-		// reset lbl_p
-		lbl_p.clear();
-		o_part_loc.clear();
-		g_opart.clear();
-		g_opart.resize(dec.getNNProcessors());
-
-		// resize the label buffer
-		prc_sz.resize(v_cl.getProcessingUnits());
-
-		auto it = v_pos.getIterator();
-
-		// Label all the particles with the processor id where they should go
-		while (it.isNext())
+		else
 		{
-			auto key = it.get();
+			// reset lbl_p
+			lbl_p.clear();
+			o_part_loc.clear();
+			g_opart.clear();
+			g_opart.resize(dec.getNNProcessors());
 
-			// Apply the boundary conditions
-			dec.applyPointBC(v_pos.get(key));
+			// resize the label buffer
+			prc_sz.resize(v_cl.getProcessingUnits());
 
-			size_t p_id = 0;
+			auto it = v_pos.getIterator();
 
-			// Check if the particle is inside the domain
-			if (dec.getDomain().isInside(v_pos.get(key)) == true)
-			{p_id = dec.processorID(v_pos.get(key));}
-			else
-			{p_id = obp::out(key, v_cl.getProcessUnitID());}
-
-			// Particle to move
-			if (p_id != v_cl.getProcessUnitID())
+			// Label all the particles with the processor id where they should go
+			while (it.isNext())
 			{
-				if ((long int) p_id != -1)
-				{
-					prc_sz.get(p_id)++;
-					lbl_p.add();
-					lbl_p.last().template get<0>() = key;
-					lbl_p.last().template get<2>() = p_id;
-				}
+				auto key = it.get();
+
+				// Apply the boundary conditions
+				dec.applyPointBC(v_pos.get(key));
+
+				size_t p_id = 0;
+
+				// Check if the particle is inside the domain
+				if (dec.getDomain().isInside(v_pos.get(key)) == true)
+				{p_id = dec.processorID(v_pos.get(key));}
 				else
+				{p_id = obp::out(key, v_cl.getProcessUnitID());}
+
+				// Particle to move
+				if (p_id != v_cl.getProcessUnitID())
 				{
-					lbl_p.add();
-					lbl_p.last().template get<0>() = key;
-					lbl_p.last().template get<2>() = p_id;
+					if ((long int) p_id != -1)
+					{
+						prc_sz.template get<0>(p_id)++;
+						lbl_p.add();
+						lbl_p.last().template get<0>() = key;
+						lbl_p.last().template get<2>() = p_id;
+					}
+					else
+					{
+						lbl_p.add();
+						lbl_p.last().template get<0>() = key;
+						lbl_p.last().template get<2>() = p_id;
+					}
 				}
+
+				// Add processors and add size
+
+				++it;
 			}
-
-			// Add processors and add size
-
-			++it;
 		}
 	}
 
@@ -914,7 +962,7 @@ class vector_dist_comm
 	static void * message_alloc_map(size_t msg_i, size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
 	{
 		// cast the pointer
-		vector_dist_comm<dim, St, prop,layout,layout_base, Decomposition, Memory> * vd = static_cast<vector_dist_comm<dim, St, prop, layout, layout_base, Decomposition, Memory> *>(ptr);
+		vector_dist_comm<dim, St, prop, Decomposition, Memory, layout_base> * vd = static_cast<vector_dist_comm<dim, St, prop, Decomposition, Memory, layout_base> *>(ptr);
 
 		vd->recv_mem_gm.resize(vd->v_cl.getProcessingUnits());
 		vd->recv_mem_gm.get(i).resize(msg_i);
@@ -929,7 +977,7 @@ public:
 	 * \param v vector to copy
 	 *
 	 */
-	vector_dist_comm(const vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> & v)
+	vector_dist_comm(const vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base> & v)
 	:v_cl(create_vcluster()),dec(create_vcluster()),lg_m(0)
 	{
 		this->operator=(v);
@@ -1162,13 +1210,13 @@ public:
 		typedef KillParticle obp;
 
 		// Processor communication size
-		openfpm::vector<size_t> prc_sz(v_cl.getProcessingUnits());
+		openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int>>::type,layout_base> prc_sz(v_cl.getProcessingUnits());
 
 		// map completely reset the ghost part
 		v_pos.resize(g_m);
 		v_prp.resize(g_m);
 
-		// Contain the processor id of each particle (basically where they have to go)
+		// m_opart, Contain the processor id of each particle (basically where they have to go)
 		labelParticleProcessor<obp>(v_pos,m_opart, prc_sz,opt);
 
 		// Calculate the sending buffer size for each processor, put this information in
@@ -1179,11 +1227,11 @@ public:
 
 		for (size_t i = 0; i < v_cl.getProcessingUnits(); i++)
 		{
-			if (prc_sz.get(i) != 0)
+			if (prc_sz.template get<0>(i) != 0)
 			{
 				p_map_req.get(i) = prc_r.size();
 				prc_r.add(i);
-				prc_sz_r.add(prc_sz.get(i));
+				prc_sz_r.add(prc_sz.template get<0>(i));
 			}
 		}
 
@@ -1235,7 +1283,7 @@ public:
 			  size_t opt)
 	{
 		// Processor communication size
-		openfpm::vector<size_t> prc_sz(v_cl.getProcessingUnits());
+		openfpm::vector<aggregate<unsigned int, unsigned int>,Memory,typename layout_base<aggregate<unsigned int, unsigned int>>::type,layout_base> prc_sz(v_cl.getProcessingUnits());
 
 		// map completely reset the ghost part
 		v_pos.resize(g_m);
@@ -1244,28 +1292,19 @@ public:
 		// Contain the processor id of each particle (basically where they have to go)
 		labelParticleProcessor<obp>(v_pos,m_opart, prc_sz,opt);
 
-		// Calculate the sending buffer size for each processor, put this information in
-		// a contiguous buffer
-		p_map_req.resize(v_cl.getProcessingUnits());
 		openfpm::vector<size_t> prc_sz_r;
 		openfpm::vector<size_t> prc_r;
 
-		for (size_t i = 0; i < v_cl.getProcessingUnits(); i++)
-		{
-			if (prc_sz.get(i) != 0)
-			{
-				p_map_req.get(i) = prc_r.size();
-				prc_r.add(i);
-				prc_sz_r.add(prc_sz.get(i));
-			}
-		}
+		// Calculate the sending buffer size for each processor, put this information in
+		// a contiguous buffer
+		calc_send_buffers(prc_sz,prc_sz_r,prc_r,opt);
 
 		//! position vector
 		openfpm::vector<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base,openfpm::grow_policy_identity>> m_pos;
 		//! properties vector
 		openfpm::vector<openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base,openfpm::grow_policy_identity>> m_prp;
 
-		fill_send_map_buf(v_pos,v_prp, prc_sz_r, m_pos, m_prp);
+		fill_send_map_buf(v_pos,v_prp, prc_sz_r, m_pos, m_prp,prc_sz_r.get(0),opt);
 
 		v_cl.SSendRecv<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base,openfpm::grow_policy_identity>,
 					   openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>,
@@ -1309,7 +1348,7 @@ public:
 	 * \return iteself
 	 *
 	 */
-	vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> & operator=(const vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> & vc)
+	vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base> & operator=(const vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base> & vc)
 	{
 		dec = vc.dec;
 
@@ -1323,7 +1362,7 @@ public:
 	 * \return itself
 	 *
 	 */
-	vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> & operator=(vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> && vc)
+	vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base> & operator=(vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base> && vc)
 	{
 		dec = vc.dec;
 

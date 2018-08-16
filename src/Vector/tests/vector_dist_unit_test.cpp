@@ -57,7 +57,8 @@ long int decrement(long int k, long int step)
  * \param bc boundary conditions
  *
  */
-template<unsigned int dim, template <typename> class layout> size_t total_n_part_lc(vector_dist<dim,float, Point_test<float>,typename layout<Point_test<float>>::type, layout, CartDecomposition<dim,float> > & vd, size_t (& bc)[dim])
+template<unsigned int dim, template <typename> class layout>
+size_t total_n_part_lc(vector_dist<dim,float, Point_test<float>, CartDecomposition<dim,float>, HeapMemory, layout > & vd, size_t (& bc)[dim])
 {
 	Vcluster & v_cl = vd.getVC();
 	auto it2 = vd.getDomainIterator();
@@ -277,7 +278,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 
 BOOST_AUTO_TEST_CASE( vector_dist_ghost_inte )
 {
-	typedef vector_dist<2,float, Point_test<float>,memory_traits_inte<Point_test<float>>::type,memory_traits_inte> vector;
+	typedef vector_dist<2,float, Point_test<float>,CartDecomposition<2,float>,HeapMemory,memory_traits_inte> vector;
 
 	Box<2,float> box({0.0,0.0},{1.0,1.0});
 	Test2D_ghost<vector>(box);

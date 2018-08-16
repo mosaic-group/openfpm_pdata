@@ -38,6 +38,7 @@
 #include "CartDecomposition_ext.hpp"
 #include "data_type/aggregate.hpp"
 #include "Domain_NN_calculator_cart.hpp"
+#include "cuda/CartDecomposition_gpu.cuh"
 
 #define CARTDEC_ERROR 2000lu
 
@@ -128,7 +129,7 @@ template<unsigned int dim> static void nsub_to_div(size_t (& div)[dim], size_t n
  *
  */
 
-template<unsigned int dim, typename T, typename Memory, typename Distribution>
+template<unsigned int dim, typename T, typename Memory, template <typename> class layout_base, typename Distribution>
 class CartDecomposition: public ie_loc_ghost<dim, T>, public nn_prcs<dim, T>, public ie_ghost<dim, T>, public domain_nn_calculator_cart<dim>
 {
 public:
@@ -140,12 +141,15 @@ public:
 	typedef SpaceBox<dim, T> Box;
 
 	//! This class is base of itself
-	typedef CartDecomposition<dim,T,Memory,Distribution> base_type;
+	typedef CartDecomposition<dim,T,Memory,layout_base,Distribution> base_type;
 
 	//! This class admit a class defined on an extended domain
-	typedef CartDecomposition_ext<dim,T,Memory,Distribution> extended_type;
+	typedef CartDecomposition_ext<dim,T,Memory,layout_base,Distribution> extended_type;
 
 protected:
+
+	//! bool that indicate whenever the buffer has been already transfer to device
+	bool host_dev_transfer = false;
 
 	//! Indicate the communication weight has been set
 	bool commCostSet = false;
@@ -163,14 +167,14 @@ protected:
 	openfpm::vector<SpaceBox<dim, T>> sub_domains;
 
 	//! the remote set of all sub-domains as vector of 'sub_domains' vectors
-	mutable openfpm::vector<Box_map<dim, T>> sub_domains_global;
+	mutable openfpm::vector<Box_map<dim, T>,Memory,typename layout_base<Box_map<dim, T>>::type,layout_base> sub_domains_global;
 
 	//! for each sub-domain, contain the list of the neighborhood processors
 	openfpm::vector<openfpm::vector<long unsigned int> > box_nn_processor;
 
 	//! Structure that contain for each sub-sub-domain box the processor id
 	//! exist for efficient global communication
-	CellList<dim,T,Mem_fast<>,shift<dim,T>> fine_s;
+	CellList<dim,T,Mem_fast<Memory,int>,shift<dim,T>> fine_s;
 
 	//! Structure that store the cartesian grid information
 	grid_sm<dim, void> gr;
@@ -268,26 +272,24 @@ protected:
 		return sub_d;
 	}
 
-	void collect_all_sub_domains(openfpm::vector<Box_map<dim,T>> & sub_domains_global)
+	void collect_all_sub_domains(openfpm::vector<Box_map<dim,T>,Memory,typename layout_base<Box_map<dim, T>>::type,layout_base> & sub_domains_global)
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
 
 		sub_domains_global.clear();
-		openfpm::vector<Box_map<dim,T>> bm;
+		openfpm::vector<Box_map<dim,T>,Memory,typename layout_base<Box_map<dim, T>>::type,layout_base> bm;
 
 		for (size_t i = 0 ; i < sub_domains.size() ; i++)
 		{
-			Box_map<dim,T> tmp;
-			tmp.box = ::SpaceBox<dim,T>(sub_domains.get(i));
-			tmp.prc = v_cl.rank();
+			bm.add();
 
-			bm.add(tmp);
-
+			bm.template get<0>(bm.size()-1) = ::SpaceBox<dim,T>(sub_domains.get(i));
+			bm.template get<1>(bm.size()-1) = v_cl.rank();
 		}
 
-		v_cl.SGather(bm,sub_domains_global,0);
+		v_cl.SGather<decltype(bm),decltype(sub_domains_global),layout_base>(bm,sub_domains_global,0);
 
 		size_t size = sub_domains_global.size();
 
@@ -324,8 +326,8 @@ public:
 		{
 
 			// get the cells this box span
-			const grid_key_dx<dim> p1 = fine_s.getCellGrid(sub_domains_global.get(i).box.getP1());
-			const grid_key_dx<dim> p2 = fine_s.getCellGrid(sub_domains_global.get(i).box.getP2());
+			const grid_key_dx<dim> p1 = fine_s.getCellGrid(sub_domains_global.template get<0>(i).getP1());
+			const grid_key_dx<dim> p2 = fine_s.getCellGrid(sub_domains_global.template get<0>(i).getP2());
 
 			// Get the grid and the sub-iterator
 			auto & gi = fine_s.getGrid();
@@ -336,9 +338,12 @@ public:
 			{
 				auto key = g_sub.get();
 				fine_s.addCell(gi.LinId(key),i);
+
 				++g_sub;
 			}
 		}
+
+		host_dev_transfer = false;
 	}
 
 	/*! \brief Constructor, it decompose and distribute the sub-domains across the processors
@@ -427,28 +432,6 @@ public:
 		///////////////////////////////// TODO //////////////////////////////////////////
 
 		construct_fine_s();
-
-		/////////////////////////////////////////////////////////////////////////////////
-
-/*		grid_key_dx_iterator<dim> git(gr);
-
-		while (git.isNext())
-		{
-			auto key = git.get();
-			grid_key_dx<dim> key2;
-
-			for (size_t i = 0 ; i < dim ; i++)
-			{key2.set_d(i,key.get(i) / magn[i]);}
-
-			size_t lin = gr_dist.LinId(key2);
-			size_t lin2 = gr.LinId(key);
-
-			// Here we draw the fine_s in the cell-list
-
-			fine_s.get(lin2) = dist.getGraph().template vertex_p<nm_v::proc_id>(lin);
-
-			++git;
-		}*/
 
 		Initialize_geo_cell_lists();
 	}
@@ -666,7 +649,7 @@ public:
 		ie_loc_ghost<dim,T>::create(sub_domains,domain,ghost,bc);
 	}
 
-	template<typename T2> inline size_t processorID_impl(T2 & p) const
+/*	template<typename T2> inline size_t processorID_impl(T2 & p) const
 	{
 		// Get the number of elements in the cell
 
@@ -678,7 +661,7 @@ public:
 		{
 			e = fine_s.get(cl,i);
 
-			if (sub_domains_global.get(e).box.isInsideNP(p) == true)
+			if (sub_domains_global.template get<0>(e).isInsideNP(p) == true)
 			{
 				break;
 			}
@@ -694,8 +677,8 @@ public:
 
 #endif
 
-		return sub_domains_global.get(e).prc;
-	}
+		return sub_domains_global.template get<1>(e);
+	}*/
 
 
 public:
@@ -737,7 +720,7 @@ public:
      * \param cart object to copy
 	 *
 	 */
-	CartDecomposition(const CartDecomposition<dim,T,Memory,Distribution> & cart)
+	CartDecomposition(const CartDecomposition<dim,T,Memory,layout_base,Distribution> & cart)
 	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),dist(v_cl),ref_cnt(0)
 	{
 		this->operator=(cart);
@@ -748,7 +731,7 @@ public:
      * \param cart object to copy
 	 *
 	 */
-	CartDecomposition(CartDecomposition<dim,T,Memory,Distribution> && cart)
+	CartDecomposition(CartDecomposition<dim,T,Memory,layout_base,Distribution> && cart)
 	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),dist(v_cl),ref_cnt(0)
 	{
 		this->operator=(cart);
@@ -900,9 +883,9 @@ public:
 	 * \return a duplicated decomposition with different ghost boxes
 	 *
 	 */
-	CartDecomposition<dim,T,Memory,Distribution> duplicate(const Ghost<dim,T> & g) const
+	CartDecomposition<dim,T,Memory,layout_base,Distribution> duplicate(const Ghost<dim,T> & g) const
 	{
-		CartDecomposition<dim,T,Memory,Distribution> cart(v_cl);
+		CartDecomposition<dim,T,Memory,layout_base,Distribution> cart(v_cl);
 
 		cart.box_nn_processor = box_nn_processor;
 		cart.sub_domains = sub_domains;
@@ -936,9 +919,9 @@ public:
 	 * \return a duplicated CartDecomposition object
 	 *
 	 */
-	CartDecomposition<dim,T,Memory,Distribution> duplicate() const
+	CartDecomposition<dim,T,Memory,layout_base,Distribution> duplicate() const
 	{
-		CartDecomposition<dim,T,Memory,Distribution> cart(v_cl);
+		CartDecomposition<dim,T,Memory,layout_base,Distribution> cart(v_cl);
 
 		(static_cast<ie_loc_ghost<dim,T>*>(&cart))->operator=(static_cast<ie_loc_ghost<dim,T>>(*this));
 		(static_cast<nn_prcs<dim,T>*>(&cart))->operator=(static_cast<nn_prcs<dim,T>>(*this));
@@ -974,7 +957,7 @@ public:
 	 * \return itself
 	 *
 	 */
-	CartDecomposition<dim,T,Memory, Distribution> & operator=(const CartDecomposition & cart)
+	CartDecomposition<dim,T,Memory, layout_base, Distribution> & operator=(const CartDecomposition & cart)
 	{
 		static_cast<ie_loc_ghost<dim,T>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T>>(cart));
 		static_cast<nn_prcs<dim,T>*>(this)->operator=(static_cast<nn_prcs<dim,T>>(cart));
@@ -1014,7 +997,7 @@ public:
 	 * \return itself
 	 *
 	 */
-	CartDecomposition<dim,T,Memory,Distribution> & operator=(CartDecomposition && cart)
+	CartDecomposition<dim,T,Memory,layout_base, Distribution> & operator=(CartDecomposition && cart)
 	{
 		static_cast<ie_loc_ghost<dim,T>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T>>(cart));
 		static_cast<nn_prcs<dim,T>*>(this)->operator=(static_cast<nn_prcs<dim,T>>(cart));
@@ -1074,7 +1057,7 @@ public:
 	 */
 	template<typename Mem> size_t inline processorID(const encapc<1, Point<dim,T>, Mem> & p) const
 	{
-		return processorID_impl(p);
+		return processorID_impl(p,fine_s,sub_domains_global);
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -1086,7 +1069,7 @@ public:
 	 */
 	size_t inline processorID(const Point<dim,T> &p) const
 	{
-		return processorID_impl(p);
+		return processorID_impl(p,fine_s,sub_domains_global);
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -1098,7 +1081,7 @@ public:
 	 */
 	size_t inline processorID(const T (&p)[dim]) const
 	{
-		return processorID_impl(p);
+		return processorID_impl(p,fine_s,sub_domains_global);
 	}
 
 	/*! \brief Given a point return in which processor the point/particle should go
@@ -1116,7 +1099,7 @@ public:
 		applyPointBC(pt);
 
 
-		return processorID_impl(pt);
+		return processorID_impl(pt,fine_s,sub_domains_global);
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -1135,7 +1118,7 @@ public:
 
 		// Get the number of elements in the cell
 
-		return processorID_impl(pt);
+		return processorID_impl(pt,fine_s,sub_domains_global);
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -1152,7 +1135,7 @@ public:
 		Point<dim,T> pt = p;
 		applyPointBC(pt);
 
-		return processorID_impl(pt);
+		return processorID_impl(pt,fine_s,sub_domains_global);
 	}
 
 	/*! \brief Get the periodicity on i dimension
@@ -1838,6 +1821,12 @@ public:
 			std::cout << ::SpaceBox<dim, T>(sub_domains.get(p)).toString() << "\n";
 		}
 
+		std::cout << "Subdomains global\n";
+		for (size_t p = 0; p < sub_domains_global.size(); p++)
+		{
+			std::cout << ::SpaceBox<dim, T>(sub_domains_global.template get<0>(p)).toString() << " proc:" << sub_domains_global.template get<1>(p) << "\n";
+		}
+
 		std::cout << "External ghost box\n";
 
 		for (size_t p = 0; p<nn_prcs < dim, T>::getNNProcessors(); p++)
@@ -1988,6 +1977,33 @@ public:
 	const CellDecomposer_sm<dim, T, shift<dim,T>> & getCellDecomposer()
 	{
 		return cd;
+	}
+
+
+	/*! \brief convert to a structure usable in a device kernel
+	 *
+	 * \return a data-structure that can be used directy on GPU
+	 *
+	 */
+	CartDecomposition_gpu<dim,T,Memory,layout_base> toKernel()
+	{
+		if (host_dev_transfer == false)
+		{
+			fine_s.hostToDevice();
+			sub_domains_global.template hostToDevice<0,1>();
+			host_dev_transfer = true;
+		}
+
+		int bc_[dim];
+
+		for (int i = 0 ; i < dim ; i++)	{bc_[i] = this->periodicity(i);}
+
+		CartDecomposition_gpu<dim,T,Memory,layout_base> cdg(fine_s.toKernel(),
+												sub_domains_global.toKernel(),
+												getDomain(),
+												bc_);
+
+		return cdg;
 	}
 
 	//! friend classes

@@ -406,8 +406,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_map_on_gpu_test)
 		++it;
 	}
 
-	// Ok we redistribute the particles (CPU based)
+	// Ok we redistribute the particles (GPU based)
 	vd.map(MAP_ON_DEVICE);
+
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()

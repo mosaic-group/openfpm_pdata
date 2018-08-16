@@ -381,9 +381,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_dlb_metis_test_part )
 	test_dlb_vector<vector_dist<3,
 	                            float,
 								aggregate<float>,
-								memory_traits_lin<aggregate<float>>::type,
-								memory_traits_lin,
-	                            CartDecomposition<3,float,HeapMemory,MetisDistribution<3,float>>>>();
+	                            CartDecomposition<3,float,HeapMemory,memory_traits_lin,MetisDistribution<3,float>>>>();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

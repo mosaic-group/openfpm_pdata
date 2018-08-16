@@ -2127,8 +2127,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
 		size_t pah = p.getKey()/4;
 		ret &= phases.get(ph).getPropRead<1>(pah) == vd.getPropRead<0>(p);
 
-		vd.getPropRead<3>(p).sort();
-		phases.get(ph).getPropRead<4>(pah).sort();
+		vd.getPropWrite<3>(p).sort();
+		phases.get(ph).getPropWrite<4>(pah).sort();
 
 		ret &= vd.getPropRead<3>(p).size() == phases.get(ph).getPropRead<4>(pah).size();
 
