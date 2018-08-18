@@ -6,11 +6,11 @@ if [ -d "$1/MPI" ]; then
   echo "MPI already installed"
   exit 0
 fi
-rm -rf openmpi-2.1.1
-rm openmpi-2.1.1.tar.bz2
-wget http://ppmcore.mpi-cbg.de/upload/openmpi-2.1.1.tar.bz2
-tar -xvf openmpi-2.1.1.tar.bz2
-cd openmpi-2.1.1
+rm -rf openmpi-3.1.1
+rm openmpi-3.1.1.tar.gz
+wget http://ppmcore.mpi-cbg.de/upload/openmpi-3.1.1.tar.gz
+tar -xvf openmpi-3.1.1.tar.gz
+cd openmpi-3.1.1
 
 #
 #                  --disable-mca-dso \
@@ -25,10 +25,10 @@ cd openmpi-2.1.1
 #
 #
 
-./configure --prefix=$1/MPI --enable-mpi-fortran=yes CC=$3 CXX=$4 F77=$4 FC=$5
+./configure --with-cuda --prefix=$1/MPI --enable-mpi-fortran=yes CC=$3 CXX=$4 F77=$4 FC=$5
 make -j $2
 make install
 
 # Mark the installation
-echo 2 > $1/MPI/version
+echo 3 > $1/MPI/version
 

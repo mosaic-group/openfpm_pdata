@@ -189,7 +189,7 @@ function remove_old()
 
     if [ -d $1/MPI ]; then
         version=$(cat $1/MPI/version)
-        if [ x"$version" != x"2"  ]; then
+        if [ x"$version" != x"3"  ]; then
             echo -e "\033[1;34;5m  -------------------------------------------------------------------------------------- \033[0m"
             echo -e "\033[1;34;5m  MPI has been updated to version 2.1.1, the component will be updated automatically      \033[0m"
             echo -e "\033[1;34;5m  -------------------------------------------------------------------------------------- \033[0m"

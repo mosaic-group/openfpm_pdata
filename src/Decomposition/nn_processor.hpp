@@ -23,7 +23,7 @@ template<unsigned int dim, typename T>
 class nn_prcs
 {
 	//! Virtual cluster
-	Vcluster & v_cl;
+	Vcluster<> & v_cl;
 
 	//! List of adjacent processors
 	openfpm::vector<size_t> nn_processors;
@@ -271,7 +271,7 @@ class nn_prcs
 public:
 
 	//! Constructor require Vcluster
-	nn_prcs(Vcluster & v_cl)
+	nn_prcs(Vcluster<> & v_cl)
 	:v_cl(v_cl),recv_cnt(0),aBC(false)
 	{}
 
