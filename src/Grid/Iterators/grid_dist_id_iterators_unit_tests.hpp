@@ -93,7 +93,7 @@ void Test2D_sub(const Box<2,float> & domain, long int k)
 		}
 
 		// Get the virtual cluster machine
-		Vcluster & vcl = g_dist.getVC();
+		Vcluster<> & vcl = g_dist.getVC();
 
 		// reduce
 		vcl.sum(count);
@@ -149,7 +149,7 @@ void Test3D_decit(const Box<3,float> & domain, long int k)
 {
 	size_t k_bck = k;
 	{
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 
 		if ( v_cl.getProcessingUnits() > 32 )
 			return;
@@ -216,7 +216,7 @@ void Test3D_decit(const Box<3,float> & domain, long int k)
 	k = k_bck;
 
 	{
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 
 		if ( v_cl.getProcessingUnits() > 32 )
 			return;
@@ -292,7 +292,7 @@ void Test3D_stencil(const Box<3,float> & domain, long int k)
 											 {1,0,0}};
 
 	{
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 
 		if ( v_cl.getProcessingUnits() > 32 )
 			return;
@@ -393,7 +393,7 @@ void Test3D_fast_vect(const Box<3,float> & domain, long int k)
 											 {1,0,0}};
 
 	{
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 
 		if ( v_cl.getProcessingUnits() > 32 )
 			return;
@@ -478,7 +478,7 @@ void Test3D_fast_vect(const Box<3,float> & domain, long int k)
 void Test3D_decskinit(const Box<3,float> & domain, long int k)
 {
 	{
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 
 		if ( v_cl.getProcessingUnits() > 32 )
 			return;

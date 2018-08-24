@@ -167,7 +167,7 @@ public:
 	 * \param v_cl VCluster
 	 *
 	 */
-	CartDecomposition_ext(Vcluster & v_cl)
+	CartDecomposition_ext(Vcluster<> & v_cl)
 	:CartDecomposition<dim,T,Memory,layout_base,Distribution>(v_cl)
 	{
 	}

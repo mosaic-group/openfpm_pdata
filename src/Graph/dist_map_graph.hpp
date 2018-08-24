@@ -209,7 +209,7 @@ template<typename V, typename E = no_edge,
 class DistGraph_CSR
 {
 	//! Vcluster communication object
-	Vcluster & vcl;
+	Vcluster<> & vcl;
 
 	//! Distribution vector
 	openfpm::vector<idx_t> vtxdist;
@@ -1147,7 +1147,7 @@ public:
 	 * \param gg distributed graph to copy
 	 *
 	 */
-	DistGraph_CSR(Vcluster & vcl, DistGraph_CSR<V, E, Memory> && g) :
+	DistGraph_CSR(Vcluster<> & vcl, DistGraph_CSR<V, E, Memory> && g) :
 			vcl(vcl)
 	{
 		swap(g);

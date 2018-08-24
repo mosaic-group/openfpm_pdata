@@ -12,7 +12,7 @@
 
 void create_decomposition2x2(openfpm::vector<openfpm::vector<long unsigned int>> & box_nn_processor, openfpm::vector<SpaceBox<2,float>> & sub_domains)
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	box_nn_processor.add();
 
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_SUITE( nn_processor_test )
 
 BOOST_AUTO_TEST_CASE( nn_processor_np_test)
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	/*!
 	 *
@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE( nn_processor_np_test)
 BOOST_AUTO_TEST_CASE( nn_processor_box_periodic_test)
 {
 	// Vcluster
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	/*!
 	 *

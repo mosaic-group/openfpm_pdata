@@ -177,7 +177,7 @@ template<unsigned int dim, typename St, typename T, typename Decomposition = Car
 class grid_dist_id_comm
 {
 	//! VCluster
-	Vcluster & v_cl;
+	Vcluster<> & v_cl;
 
 	//! Maps the processor id with the communication request into map procedure
 	openfpm::vector<size_t> p_map_req;

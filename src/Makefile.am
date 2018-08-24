@@ -3,14 +3,21 @@ LINKLIBS = $(HDF5_LDFLAGS)  $(HDF5_LIBS) $(OPENMP_LDFLAGS) $(LIBHILBERT_LIB)  $(
 FLAGS_NVCC = -Xcudafe "--display_error_number --diag_suppress=2885 --diag_suppress=2887  --diag_suppress=2888 --diag_suppress=186 --diag_suppress=111"  $(NVCCFLAGS) $(INCLUDES_PATH) $(HDF5_CPPFLAGS) $(BOOST_CPPFLAGS)  $(MPI_INC_PATH) $(PETSC_INCLUDE) $(LIBHILBERT_INCLUDE) $(PARMETIS_INCLUDE) $(METIS_INCLUDE)  -g --expt-extended-lambda
 
 noinst_PROGRAMS = pdata actual_test
-pdata_SOURCES = main.cpp Vector/cuda/vector_dist_cuda_func_test.cu Decomposition/cuda/decomposition_cuda_tests.cu Vector/vector_dist_gpu_unit_tests.cu  Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp Grid/tests/grid_dist_id_unit_test.cpp Grid/tests/staggered_grid_dist_unit_test.cpp Vector/tests/vector_dist_cell_list_tests.cpp Vector/tests/vector_dist_complex_prp_unit_test.cpp Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp Vector/tests/vector_dist_MP_unit_tests.cpp Vector/tests/vector_dist_NN_tests.cpp Vector/tests/vector_dist_unit_test.cpp  pdata_performance.cpp Decomposition/tests/CartDecomposition_unit_test.cpp Decomposition/tests/shift_vect_converter_tests.cpp Vector/performance/vector_dist_performance_util.cpp  lib/pdata.cpp test_multiple_o.cpp ../openfpm_devices/src/memory/CudaMemory.cu  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp
+if BUILDCUDA
+pdata_SOURCES = initialize/initialize_wrapper_cuda.cu
+actual_test_SOURCES = initialize/initialize_wrapper_cuda.cu
+else
+pdata_SOURCES = initialize/initialize_wrapper_cpu.cpp
+actual_test_SOURCES = initialize/initialize_wrapper_cpu.cpp
+endif
+pdata_SOURCES += main.cpp Vector/cuda/vector_dist_cuda_func_test.cu Decomposition/cuda/decomposition_cuda_tests.cu Vector/cuda/vector_dist_gpu_unit_tests.cu Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp Grid/tests/grid_dist_id_unit_test.cpp Grid/tests/staggered_grid_dist_unit_test.cpp Vector/tests/vector_dist_cell_list_tests.cpp Vector/tests/vector_dist_complex_prp_unit_test.cpp Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp Vector/tests/vector_dist_MP_unit_tests.cpp Vector/tests/vector_dist_NN_tests.cpp Vector/tests/vector_dist_unit_test.cpp  pdata_performance.cpp Decomposition/tests/CartDecomposition_unit_test.cpp Decomposition/tests/shift_vect_converter_tests.cpp Vector/performance/vector_dist_performance_util.cpp  lib/pdata.cpp test_multiple_o.cpp ../openfpm_devices/src/memory/CudaMemory.cu  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp
 pdata_CXXFLAGS = -Wno-unknown-pragmas $(BOOST_CPPFLAGS) $(HDF5_CPPFLAGS) $(OPENMP_CFLAGS) $(AM_CXXFLAGS) $(LIBHILBERT_INCLUDE) $(PETSC_INCLUDE) $(CUDA_CFLAGS) $(INCLUDES_PATH) $(PARMETIS_INCLUDE) $(METIS_INCLUDE) $(H5PART_INCLUDE) -DPARALLEL_IO  -Wno-unused-local-typedefs
 pdata_CFLAGS = $(CUDA_CFLAGS)
 pdata_LDADD = $(LINKLIBS) -lparmetis -lmetis
 
-actual_test_SOURCES = Vector/cuda/vector_dist_cuda_func_test.cu Vector/vector_dist_gpu_unit_tests.cu vector_ main_single.cpp  lib/pdata.cpp test_multiple_o.cpp ../openfpm_devices/src/memory/CudaMemory.cu  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp
+actual_test_SOURCES = Vector/cuda/vector_dist_cuda_func_test.cu Vector/cuda/vector_dist_gpu_unit_tests.cu vector_ main_single.cpp  lib/pdata.cpp test_multiple_o.cpp ../openfpm_devices/src/memory/CudaMemory.cu  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp
 actual_test_CXXFLAGS = -Wno-unknown-pragmas $(BOOST_CPPFLAGS) $(HDF5_CPPFLAGS) $(OPENMP_CFLAGS) $(AM_CXXFLAGS) $(LIBHILBERT_INCLUDE) $(PETSC_INCLUDE) $(CUDA_CFLAGS) $(INCLUDES_PATH) $(PARMETIS_INCLUDE) $(METIS_INCLUDE) $(H5PART_INCLUDE) -DPARALLEL_IO  -Wno-unused-local-typedefs
-actual_test_CFLAGS = $(CUDA_CFLAGS)
+actual_test_CFLAGS = $(CUDA_CFLAGS) -IDIOCANE
 actual_test_LDADD = $(LINKLIBS) -lparmetis -lmetis
 
 

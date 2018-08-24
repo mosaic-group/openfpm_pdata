@@ -103,7 +103,7 @@ class DistParmetis
 	MPI_Comm comm = (MPI_Comm)NULL;
 
 	//! VCluster
-	Vcluster & v_cl;
+	Vcluster<> & v_cl;
 
 	//! Process rank information
 	int p_id = 0;
@@ -178,7 +178,7 @@ public:
 	 * \param nc number of partitions
 	 *
 	 */
-	DistParmetis(Vcluster & v_cl, size_t nc) :
+	DistParmetis(Vcluster<> & v_cl, size_t nc) :
 			v_cl(v_cl), nc(nc)
 	{
 		// TODO Move into VCluster

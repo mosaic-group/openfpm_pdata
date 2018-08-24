@@ -136,7 +136,7 @@ template<unsigned int dim, unsigned int prp, typename T, typename V> void cross_
  * \param v_cl Global vcluster
  * \param k_int Number of particles
  */
-template<unsigned int dim, typename v_dist> void vd_initialize(v_dist & vd, Vcluster & v_cl, size_t k_int)
+template<unsigned int dim, typename v_dist> void vd_initialize(v_dist & vd, Vcluster<> & v_cl, size_t k_int)
 {
 	// The random generator engine
 	std::default_random_engine eg(v_cl.getProcessUnitID()*4313);
@@ -166,7 +166,7 @@ template<unsigned int dim, typename v_dist> void vd_initialize(v_dist & vd, Vclu
  * \param v_cl Global vcluster
  * \param k_int Number of particles
  */
-template<unsigned int dim, typename v_dist> void vd_initialize_double(v_dist & vd,v_dist & vd2, Vcluster & v_cl, size_t k_int)
+template<unsigned int dim, typename v_dist> void vd_initialize_double(v_dist & vd,v_dist & vd2, Vcluster<> & v_cl, size_t k_int)
 {
 	// The random generator engine
 	std::default_random_engine eg(v_cl.getProcessUnitID()*4313);

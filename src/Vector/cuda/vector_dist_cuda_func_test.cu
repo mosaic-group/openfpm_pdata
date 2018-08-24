@@ -9,13 +9,16 @@ BOOST_AUTO_TEST_SUITE( vector_dist_gpu_util_func_test )
 
 BOOST_AUTO_TEST_CASE( vector_dist_gpu_find_buffer_offsets_test )
 {
-	openfpm::vector_gpu<aggregate<int>> vgp;
+	openfpm::vector_gpu<aggregate<int,int>> vgp;
 	openfpm::vector_gpu<aggregate<int,int>> offs;
 
 	vgp.resize(200000);
 
 	for (size_t k = 0 ; k < vgp.size() ; k++)
-	{vgp.template get<0>(k) = k / 1000;}
+	{
+		vgp.template get<0>(k) = k / 1000;
+		vgp.template get<1>(k) = k / 1000;
+	}
 
 	offs.resize(220);
 

@@ -16,7 +16,7 @@ extern void print_test_v(std::string test, size_t sz);
 template<typename VerletList>
 void test_full_nn(long int k)
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 12)
 		return;
@@ -240,7 +240,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
 
 BOOST_AUTO_TEST_CASE( vector_dist_particle_iteration )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 12)
 		return;
@@ -321,7 +321,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_iteration )
 
 BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_update_with_limit )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 12)
 		return;
@@ -392,7 +392,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_update_with_limit )
 
 BOOST_AUTO_TEST_CASE( vector_dist_particle_getCellListSym_with_div )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 12)
 		return;

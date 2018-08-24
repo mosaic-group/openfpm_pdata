@@ -24,7 +24,7 @@ template<unsigned int dim, typename T>
 class SpaceDistribution
 {
 	//! Vcluster
-	Vcluster & v_cl;
+	Vcluster<> & v_cl;
 
 	//! Structure that store the cartesian grid information
 	grid_sm<dim, void> gr;
@@ -42,7 +42,7 @@ public:
 	 *
 	 * \param v_cl Vcluster to use as communication object in this class
 	 */
-	SpaceDistribution(Vcluster & v_cl)
+	SpaceDistribution(Vcluster<> & v_cl)
 	:v_cl(v_cl)
 	{
 	}

@@ -197,7 +197,7 @@ protected:
 	size_t magn[dim];
 
 	//! Runtime virtual cluster machine
-	Vcluster & v_cl;
+	Vcluster<> & v_cl;
 
 	//! Create distribution
 	Distribution dist;
@@ -353,7 +353,7 @@ public:
 	 * \param opt option (one option is to construct)
 	 *
 	 */
-	void createSubdomains(Vcluster & v_cl, const size_t (& bc)[dim], size_t opt = 0)
+	void createSubdomains(Vcluster<> & v_cl, const size_t (& bc)[dim], size_t opt = 0)
 	{
 		int p_id = v_cl.getProcessUnitID();
 
@@ -708,7 +708,7 @@ public:
 	 * \param v_cl Virtual cluster, used internally to handle or pipeline communication
 	 *
 	 */
-	CartDecomposition(Vcluster & v_cl)
+	CartDecomposition(Vcluster<> & v_cl)
 	:nn_prcs<dim, T>(v_cl), v_cl(v_cl), dist(v_cl),ref_cnt(0)
 	{
 		// Reset the box to zero
@@ -1622,6 +1622,31 @@ public:
 		return processorID<Mem>(pt) == v_cl.getProcessUnitID();
 	}
 
+	/*! \brief Check if the particle is local considering boundary conditions
+	 *
+	 * \warning if the particle id outside the domain and non periodic boundary the result
+	 *          is unreliable
+	 *
+	 *
+	 * \param p object position
+	 * \param bc boundary conditions
+	 *
+	 * \return true if it is local
+	 *
+	 */
+	bool isLocalBC(const Point<dim,T> & p, const size_t (& bc)[dim]) const
+	{
+		Point<dim,T> pt = p;
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (bc[i] == PERIODIC)
+				pt.get(i) = openfpm::math::periodic_l(p[i],domain.getHigh(i),domain.getLow(i));
+		}
+
+		return processorID(pt) == v_cl.getProcessUnitID();
+	}
+
 	/*! \brief Get the domain Cells
 	 *
 	 * It return all the cells-id that are inside the processor-domain
@@ -1789,7 +1814,7 @@ public:
 	 * \return the Virtual cluster machine
 	 *
 	 */
-	Vcluster & getVC() const
+	Vcluster<> & getVC() const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);

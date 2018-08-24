@@ -102,7 +102,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
 
 	//! Communicator class
-	Vcluster & v_cl;
+	Vcluster<> & v_cl;
 
 	//! properties names
 	openfpm::vector<std::string> prp_names;
@@ -1268,7 +1268,7 @@ public:
 	 * \return the Virtual cluster machine
 	 *
 	 */
-	Vcluster & getVC()
+	Vcluster<> & getVC()
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);

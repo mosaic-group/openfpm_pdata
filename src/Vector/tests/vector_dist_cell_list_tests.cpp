@@ -19,7 +19,7 @@ extern long int decrement(long int k, long int step);
 
 void test_reorder_sfc(reorder_opt opt)
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 48)
 		return;
@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_reorder_2d_test )
 
 BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 48)
 		return;
@@ -225,7 +225,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 
 BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 48)
 		return;
@@ -352,7 +352,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 
 BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 24)
 		return;
@@ -562,7 +562,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 
 BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 24)
 		return;
@@ -789,7 +789,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 template<typename VerletList>
 void test_vd_symmetric_verlet_list()
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 24)
 		return;
@@ -998,7 +998,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list )
 template<typename VerletList>
 void vector_sym_verlet_list_nb()
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 24)
 		return;
@@ -1410,7 +1410,7 @@ template<typename VerletList, typename part_prop> void test_crs_full(vector_dist
 template<typename VerletList>
 void test_csr_verlet_list()
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 24)
 		return;
@@ -1470,7 +1470,7 @@ void test_csr_verlet_list()
 template<typename VerletList>
 void test_csr_verlet_list_override()
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 24)
 		return;
@@ -1558,7 +1558,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_verlet_list_dec_override )
 template <typename VerletList>
 void test_vd_symmetric_crs_verlet()
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 24)
 		return;
@@ -1657,7 +1657,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_verlet_list_partit )
 
 BOOST_AUTO_TEST_CASE( vector_dist_checking_unloaded_processors )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 24)
 		return;
@@ -1746,7 +1746,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_checking_unloaded_processors )
 
 BOOST_AUTO_TEST_CASE( vector_dist_cell_list_multi_type )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 24)
 		return;
@@ -1858,7 +1858,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_list_multi_type )
 
 BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 24)
 	{return;}

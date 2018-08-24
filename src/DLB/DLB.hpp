@@ -69,7 +69,7 @@ public:
 private:
 
 	//! Runtime virtual cluster machine
-	Vcluster & v_cl;
+	Vcluster<> & v_cl;
 
 	//! Structure that will contain all the timings
 	Times timeInfo;
@@ -165,7 +165,7 @@ public:
 	 *
 	 * \param v_cl virtual cluster object
 	 */
-	DLB(Vcluster & v_cl) :
+	DLB(Vcluster<> & v_cl) :
 			v_cl(v_cl)
 	{
 	}

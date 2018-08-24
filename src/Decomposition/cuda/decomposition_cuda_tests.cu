@@ -14,7 +14,7 @@ BOOST_AUTO_TEST_CASE( decomposition_to_gpu_test_use )
 	auto & v_cl = create_vcluster();
 
 	// Vcluster
-	Vcluster & vcl = create_vcluster();
+	Vcluster<> & vcl = create_vcluster();
 
 	CartDecomposition<3, float, CudaMemory, memory_traits_inte> dec(vcl);
 

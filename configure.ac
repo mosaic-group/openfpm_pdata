@@ -412,6 +412,7 @@ if test x"$NVCC_EXIST" = x"yes"; then
   fi
 else
   gpu_support=no
+  INITIALIZATION_SOURCE="initialize_openfpm.cpp"
 fi
 
 if test x$gpu_support = x"no"; then

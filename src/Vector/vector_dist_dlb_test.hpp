@@ -16,7 +16,7 @@ BOOST_AUTO_TEST_SUITE( vector_dist_dlb_test )
 template<typename vector_type>
 void mp_test_template(vector_type & vd0, vector_type & vd1, vector_type & vd2, vector_type & vd3)
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	// Only processor 0 initialy add particles on a corner of a domain
 
@@ -213,7 +213,7 @@ void mp_test_template(vector_type & vd0, vector_type & vd1, vector_type & vd2, v
 
 template<typename vector_type> void test_dlb_vector()
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 8)
 		return;
@@ -314,7 +314,7 @@ template<typename vector_type> void test_dlb_vector()
 
 template<typename vector_type> void test_dlb_multi_phase_vector()
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 8)
 		return;
@@ -335,7 +335,7 @@ template<typename vector_type> void test_dlb_multi_phase_vector()
 
 template<typename vector_type> void test_dlb_multi_phase_v_vector()
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 8)
 		return;

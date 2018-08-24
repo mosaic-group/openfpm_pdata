@@ -60,7 +60,7 @@ long int decrement(long int k, long int step)
 template<unsigned int dim, template <typename> class layout>
 size_t total_n_part_lc(vector_dist<dim,float, Point_test<float>, CartDecomposition<dim,float>, HeapMemory, layout > & vd, size_t (& bc)[dim])
 {
-	Vcluster & v_cl = vd.getVC();
+	Vcluster<> & v_cl = vd.getVC();
 	auto it2 = vd.getDomainIterator();
 	const CartDecomposition<3,float> & ct = vd.getDecomposition();
 
@@ -100,7 +100,7 @@ template<typename vector>
 void Test2D_ghost(Box<2,float> & box)
 {
 	// Communication object
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	typedef Point_test<float> p;
 
@@ -291,7 +291,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_inte )
 
 BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
     // set the seed
 	// create the random generator engine
@@ -366,7 +366,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 
 BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
     // set the seed
 	// create the random generator engine
@@ -443,7 +443,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_3d )
 
 BOOST_AUTO_TEST_CASE( vector_dist_iterator_fixed_dec_3d )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
     // set the seed
 	// create the random generator engine
@@ -520,7 +520,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_fixed_dec_3d )
 
 BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
     // set the seed
 	// create the random generator engine
@@ -628,7 +628,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_2d )
 
 BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
     // set the seed
 	// create the random generator engine
@@ -734,7 +734,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_test_use_3d )
 
 void test_random_walk(size_t opt)
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
     // set the seed
 	// create the random generator engine
@@ -925,7 +925,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_not_periodic_map )
 
 BOOST_AUTO_TEST_CASE( vector_dist_out_of_bound_policy )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 8)
 		return;
@@ -985,7 +985,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_out_of_bound_policy )
 
 void Test_interacting(Box<3,float> & box)
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 8)
 		return;
@@ -1150,7 +1150,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_grid_iterator )
 	// 3D test
 	for ( ; k > 8*big_step ; k-= (k > 2*big_step)?big_step:small_step )
 	{
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 
 		const size_t Ng = k;
 
@@ -1219,7 +1219,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 	// 3D test
 	for ( ; k > 8*big_step ; k-= (k > 2*big_step)?big_step:small_step )
 	{
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 
 		const size_t Ng = k;
 
@@ -1328,7 +1328,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 
 BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 3)
 		return;
@@ -1452,7 +1452,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_periodic_map_list )
 
 BOOST_AUTO_TEST_CASE( vector_dist_ghost_with_ghost_buffering )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 3)
 		return;
@@ -1634,7 +1634,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_with_ghost_buffering )
 
 BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	long int k = 25*25*25*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);
@@ -1824,7 +1824,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 
 BOOST_AUTO_TEST_CASE( vector_fixing_noposition_and_keep_prop )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 48)
 		return;
@@ -1888,7 +1888,7 @@ BOOST_AUTO_TEST_CASE( vector_fixing_noposition_and_keep_prop )
 
 BOOST_AUTO_TEST_CASE( vector_of_vector_dist )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 48)
 		return;

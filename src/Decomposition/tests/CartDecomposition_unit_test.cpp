@@ -55,7 +55,7 @@ void setComputationCosts3D(CartDecomposition<3, float> &dec, size_t n_v, Point<3
 BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test)
 {
 	// Vcluster
-	Vcluster & vcl = create_vcluster();
+	Vcluster<> & vcl = create_vcluster();
 
 	CartDecomposition<3, float> dec(vcl);
 
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test)
 BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 {
 	// Vcluster
-	Vcluster & vcl = create_vcluster();
+	Vcluster<> & vcl = create_vcluster();
 
 	//! [Create CartDecomposition]
 	CartDecomposition<3, float> dec(vcl);
@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 BOOST_AUTO_TEST_CASE( CartDecomposition_ext_non_periodic_test)
 {
 	// Vcluster
-	Vcluster & vcl = create_vcluster();
+	Vcluster<> & vcl = create_vcluster();
 
 	CartDecomposition<3,float> dec(vcl);
 
@@ -344,7 +344,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_ext_non_periodic_test)
 BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idbc_and_ghost )
 {
 	// Vcluster
-	Vcluster & vcl = create_vcluster();
+	Vcluster<> & vcl = create_vcluster();
 
 	if (vcl.size() != 3)
 	{return;}
@@ -392,7 +392,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idbc_and_ghost2 )
 {
 	// Vcluster
-	Vcluster & vcl = create_vcluster();
+	Vcluster<> & vcl = create_vcluster();
 
 	CartDecomposition<3, double> dec(vcl);
 
@@ -488,7 +488,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test_dist_grid)
 {
 	// Vcluster
-	Vcluster & vcl = create_vcluster();
+	Vcluster<> & vcl = create_vcluster();
 
 	CartDecomposition<3, float> dec(vcl);
 

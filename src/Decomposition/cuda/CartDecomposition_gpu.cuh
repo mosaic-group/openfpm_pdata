@@ -20,6 +20,7 @@ __global__ void process_id_proc_each_part(cartdec_gpu cdg, particles_type parts,
 	Point<3,float> xp = parts.template get<0>(p);
 
 	int pr = cdg.processorIDBC(xp);
+
 	output.template get<1>(p) = (pr == rank)?-1:pr;
 	output.template get<0>(p) = p;
 }
@@ -54,6 +55,8 @@ __device__ __host__ inline int processorID_impl(T2 & p, fine_s_type & fine_s, vs
 	}
 
 #endif
+
+
 
 	return sub_domains_global.template get<1>(e);
 }

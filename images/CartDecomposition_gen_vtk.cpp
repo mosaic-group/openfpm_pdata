@@ -13,7 +13,7 @@ int main(int argc, char ** argv)
 	openfpm_init(&argc,&argv);
 
 	// Vcluster
-	Vcluster & vcl = create_vcluster();
+	Vcluster<> & vcl = create_vcluster();
 
 	//! [Create CartDecomposition vtk gen]
 	CartDecomposition<2,float> dec(vcl);

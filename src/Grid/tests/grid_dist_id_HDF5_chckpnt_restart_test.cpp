@@ -23,7 +23,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
 	// Domain
 	Box<2,float> domain({0.0,0.0},{1.0,1.0});
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	// Skip this test on big scale
 	if (v_cl.getProcessingUnits() >= 32)
@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 	// Domain
 	Box<2,float> domain({0.0,0.0},{1.0,1.0});
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	// Skip this test on big scale
 	if (v_cl.getProcessingUnits() >= 32)

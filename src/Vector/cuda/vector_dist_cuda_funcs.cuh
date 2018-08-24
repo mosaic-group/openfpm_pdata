@@ -17,11 +17,11 @@ __global__  void find_buffer_offsets(vector_type vd, int * cnt, vector_type_offs
 
     if (p >= vd.size() - 1) return;
 
-    if (vd.template get<0>(p) != vd.template get<0>(p+1))
+    if (vd.template get<1>(p) != vd.template get<1>(p+1))
 	{
     	int i = atomicAdd(cnt, 1);
     	offs.template get<0>(i) = p+1;
-    	offs.template get<1>(i) = vd.template get<0>(p);
+    	offs.template get<1>(i) = vd.template get<1>(p);
 	}
 }
 

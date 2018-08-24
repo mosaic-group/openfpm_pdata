@@ -17,7 +17,7 @@ template<unsigned int dim, typename T>
 class DistParMetisDistribution
 {
 	//! Vcluster
-	Vcluster & v_cl;
+	Vcluster<> & v_cl;
 
 	//! Structure that store the cartesian grid information
 	grid_sm<dim, void> gr;
@@ -73,7 +73,7 @@ public:
 	 *
 	 * @param v_cl Vcluster to use as communication object in this class
 	 */
-	DistParMetisDistribution(Vcluster & v_cl) :
+	DistParMetisDistribution(Vcluster<> & v_cl) :
 			v_cl(v_cl), parmetis_graph(v_cl, v_cl.getProcessingUnits()), vtxdist(v_cl.getProcessingUnits() + 1), partitions(v_cl.getProcessingUnits()), v_per_proc(v_cl.getProcessingUnits())
 
 	{

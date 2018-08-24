@@ -234,7 +234,7 @@ private:
 #endif
 
 	//! Virtual cluster
-	Vcluster & v_cl;
+	Vcluster<Memory> & v_cl;
 
 	//! option used to create this vector
 	size_t opt = 0;
@@ -453,7 +453,7 @@ public:
 	 *
 	 */
 	vector_dist(const Decomposition & dec, size_t np) :
-	vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>(dec), v_cl(create_vcluster()) SE_CLASS3_VDIST_CONSTRUCTOR
+	vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>(dec), v_cl(create_vcluster<Memory>()) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -480,7 +480,7 @@ public:
 	 *
 	 */
 	vector_dist(size_t np, Box<dim, St> box, const size_t (&bc)[dim], const Ghost<dim, St> & g, size_t opt = 0, const grid_sm<dim,void> & gdist = grid_sm<dim,void>())
-	:v_cl(create_vcluster()),opt(opt) SE_CLASS3_VDIST_CONSTRUCTOR
+	:v_cl(create_vcluster<Memory>()),opt(opt) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -2265,7 +2265,7 @@ public:
 	 *
 	 */
 
-	Vcluster & getVC()
+	Vcluster<> & getVC()
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2496,7 +2496,7 @@ public:
 		 */
 		template<unsigned int ... prp> void hostToDeviceProp()
 		{
-			v_prp.template deviceToHost<prp ...>();
+			v_prp.template hostToDevice<prp ...>();
 		}
 
 		/*! \brief Move the memory from the device to host memory
@@ -2523,6 +2523,6 @@ public:
 };
 
 
-template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St>> using vector_dist_gpu = vector_dist<dim,St,prop,Decomposition,CudaMemory,memory_traits_inte>;
+template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte>> using vector_dist_gpu = vector_dist<dim,St,prop,Decomposition,CudaMemory,memory_traits_inte>;
 
 #endif /* VECTOR_HPP_ */

@@ -140,7 +140,7 @@ class ie_ghost
 	* \note To an explanation about the sectors see getShiftVectors
 	*
 	*/
-	inline size_t ebx_ibx_form(size_t k, size_t b, size_t p_id, const comb<dim> & c ,size_t N_b, Vcluster & v_cl, const bool ei)
+	inline size_t ebx_ibx_form(size_t k, size_t b, size_t p_id, const comb<dim> & c ,size_t N_b, Vcluster<> & v_cl, const bool ei)
 	{
 		comb<dim> cext = c;
 
@@ -192,7 +192,7 @@ protected:
 	 * \see calculateGhostBoxes
 	 *
 	 */
-	void create_box_nn_processor_ext(Vcluster & v_cl,
+	void create_box_nn_processor_ext(Vcluster<> & v_cl,
 			                         Ghost<dim,T> & ghost,
 									 openfpm::vector<SpaceBox<dim,T>> & sub_domains,
 									 const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
@@ -293,7 +293,7 @@ protected:
 	 * \see calculateGhostBoxes
 	 *
 	 */
-	void create_box_nn_processor_int(Vcluster & v_cl,
+	void create_box_nn_processor_int(Vcluster<> & v_cl,
 			                         Ghost<dim,T> & ghost,
 									 openfpm::vector<SpaceBox<dim,T>> & sub_domains,
 									 const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,

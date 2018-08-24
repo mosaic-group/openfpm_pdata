@@ -3,7 +3,7 @@
 #include <boost/test/unit_test.hpp>
 #include "VCluster/VCluster.hpp"
 #include <Vector/vector_dist.hpp>
-
+#include "Vector/tests/vector_dist_util_unit_tests.hpp"
 
 BOOST_AUTO_TEST_SUITE( vector_dist_gpu_test )
 
@@ -403,13 +403,97 @@ BOOST_AUTO_TEST_CASE( vector_dist_map_on_gpu_test)
 		vd.getPos(p)[1] = (float)rand() / RAND_MAX;
 		vd.getPos(p)[2] = (float)rand() / RAND_MAX;
 
+		vd.template getProp<0>(p) = vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2];
+
+		vd.template getProp<1>(p)[0] = vd.getPos(p)[0];
+		vd.template getProp<1>(p)[1] = vd.getPos(p)[1];
+		vd.template getProp<1>(p)[2] = vd.getPos(p)[2];
+
+		vd.template getProp<2>(p)[0] = vd.getPos(p)[0] + vd.getPos(p)[1];
+		vd.template getProp<2>(p)[1] = vd.getPos(p)[0] + vd.getPos(p)[2];
+		vd.template getProp<2>(p)[2] = vd.getPos(p)[1] + vd.getPos(p)[2];
+
 		++it;
 	}
+
+	// move on device
+	vd.hostToDevicePos();
+	vd.hostToDeviceProp<0,1,2>();
 
 	// Ok we redistribute the particles (GPU based)
 	vd.map(MAP_ON_DEVICE);
 
+	// Reset the host part
 
+	auto it3 = vd.getDomainIterator();
+
+	while (it3.isNext())
+	{
+		auto p = it3.get();
+
+		vd.getPos(p)[0] = 1.0;
+		vd.getPos(p)[1] = 1.0;
+		vd.getPos(p)[2] = 1.0;
+
+		vd.template getProp<0>(p) = 0.0;
+
+		vd.template getProp<0>(p) = 0.0;
+		vd.template getProp<0>(p) = 0.0;
+		vd.template getProp<0>(p) = 0.0;
+
+		vd.template getProp<0>(p) = 0.0;
+		vd.template getProp<0>(p) = 0.0;
+		vd.template getProp<0>(p) = 0.0;
+
+		++it3;
+	}
+
+	// we move from Device to CPU
+
+	vd.deviceToHostPos();
+	vd.deviceToHostProp<0,1,2>();
+
+	// Check
+
+	auto it2 = vd.getDomainIterator();
+
+	bool match = true;
+	while (it2.isNext())
+	{
+		auto p = it2.get();
+
+		match &= vd.template getProp<0>(p) == vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2];
+
+		match &= vd.template getProp<1>(p)[0] == vd.getPos(p)[0];
+		match &= vd.template getProp<1>(p)[1] == vd.getPos(p)[1];
+		match &= vd.template getProp<1>(p)[2] == vd.getPos(p)[2];
+
+		match &= vd.template getProp<2>(p)[0] == vd.getPos(p)[0] + vd.getPos(p)[1];
+		match &= vd.template getProp<2>(p)[1] == vd.getPos(p)[0] + vd.getPos(p)[2];
+		match &= vd.template getProp<2>(p)[2] == vd.getPos(p)[1] + vd.getPos(p)[2];
+
+		++it2;
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+
+	// count local particles
+
+	size_t l_cnt = 0;
+	size_t nl_cnt = 0;
+	size_t n_out = 0;
+
+	// Domain + ghost box
+	Box<3,float> dom_ext = domain;
+	dom_ext.enlarge(g);
+
+	auto it5 = vd.getDomainIterator();
+	count_local_n_local<3>(vd,it5,bc,domain,dom_ext,l_cnt,nl_cnt,n_out);
+
+	BOOST_REQUIRE_EQUAL(n_out,0);
+	BOOST_REQUIRE_EQUAL(l_cnt,vd.size_local());
+
+	vd.write("gpu_write_test");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

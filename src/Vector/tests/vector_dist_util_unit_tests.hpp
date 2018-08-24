@@ -23,7 +23,7 @@
  */
 template<unsigned int dim,typename vector_dist> inline void count_local_n_local(vector_dist & vd, vector_dist_iterator & it, size_t (& bc)[dim] , Box<dim,float> & box, Box<dim,float> & dom_ext, size_t & l_cnt, size_t & nl_cnt, size_t & n_out)
 {
-	const CartDecomposition<dim,float> & ct = vd.getDecomposition();
+	auto & ct = vd.getDecomposition();
 
 	while (it.isNext())
 	{
@@ -31,8 +31,10 @@ template<unsigned int dim,typename vector_dist> inline void count_local_n_local(
 		// Check if it is in the domain
 		if (box.isInsideNP(vd.getPos(key)) == true)
 		{
+			Point<dim,typename vector_dist::stype> xp = vd.getPos(key);
+
 			// Check if local
-			if (ct.isLocalBC(vd.getPos(key),bc) == true)
+			if (ct.isLocalBC(xp,bc) == true)
 				l_cnt++;
 			else
 				nl_cnt++;

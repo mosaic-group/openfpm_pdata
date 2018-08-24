@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_SUITE (Distribution_test)
 
 BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() != 3)
 	return;
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 
 BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() != 3)
 	return;
@@ -286,7 +286,7 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 
 BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() != 3)
 		return;
@@ -387,7 +387,7 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 
 BOOST_AUTO_TEST_CASE( Space_distribution_test)
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() != 3)
 		return;
