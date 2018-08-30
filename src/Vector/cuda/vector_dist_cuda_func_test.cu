@@ -4,8 +4,197 @@
 #include "Vector/map_vector.hpp"
 #include "Vector/cuda/vector_dist_cuda_funcs.cuh"
 #include "Vector/util/vector_dist_funcs.hpp"
+#include "Decomposition/CartDecomposition.hpp"
+#include "util/cuda/scan_cuda.cuh"
+
+#define SUB_UNIT_FACTOR 1024
 
 BOOST_AUTO_TEST_SUITE( vector_dist_gpu_util_func_test )
+
+BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
+{
+	auto & v_cl = create_vcluster();
+
+	// Vcluster
+	Vcluster<> & vcl = create_vcluster();
+
+	CartDecomposition<3, float, CudaMemory, memory_traits_inte> dec(vcl);
+
+	// Physical domain
+	Box<3, float> box( { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
+	size_t div[3];
+
+	// Get the number of processor and calculate the number of sub-domain
+	// for each processor (SUB_UNIT_FACTOR=64)
+	size_t n_proc = vcl.getProcessingUnits();
+	size_t n_sub = n_proc * SUB_UNIT_FACTOR;
+
+	// Set the number of sub-domains on each dimension (in a scalable way)
+	for (int i = 0; i < 3; i++)
+	{	div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/3));}
+
+	// Define ghost
+	Ghost<3, float> g(0.1);
+
+	// Boundary conditions
+	size_t bc[] = { PERIODIC, PERIODIC, PERIODIC };
+
+	// Decompose
+	dec.setParameters(div,box,bc,g);
+	dec.decompose();
+
+	// Get the local boxes
+
+	int nsub = dec.getNSubDomain();
+	int n_part = 10000 / nsub;
+
+	openfpm::vector_gpu<Point<3,float>> vg;
+	vg.resize(nsub*n_part);
+
+	for (size_t k = 0 ; k < nsub ; k++)
+	{
+		SpaceBox<3,float> sp = dec.getSubDomain(k);
+
+		for (size_t j = 0 ; j < n_part ; j++)
+		{
+			vg.template get<0>(k*n_part+j)[0] = (sp.getHigh(0) - sp.getLow(0))*((float)rand()/RAND_MAX) + sp.getLow(0);
+			vg.template get<0>(k*n_part+j)[1] = (sp.getHigh(1) - sp.getLow(1))*((float)rand()/RAND_MAX) + sp.getLow(1);
+			vg.template get<0>(k*n_part+j)[2] = (sp.getHigh(2) - sp.getLow(2))*((float)rand()/RAND_MAX) + sp.getLow(2);
+		}
+	}
+
+	vg.hostToDevice<0>();
+
+	// process on GPU the processor ID for each particles
+
+	auto ite = vg.getGPUIterator();
+
+	openfpm::vector_gpu<aggregate<unsigned int>> proc_id_out;
+	proc_id_out.resize(vg.size()+1);
+	proc_id_out.template get<0>(proc_id_out.size()-1) = 0;
+	proc_id_out.template hostToDevice(proc_id_out.size()-1,proc_id_out.size()-1);
+
+	num_proc_ghost_each_part<3,float,decltype(dec.toKernel()),decltype(vg.toKernel()),decltype(proc_id_out.toKernel())>
+	<<<ite.wthr,ite.thr>>>
+	(dec.toKernel(),vg.toKernel(),proc_id_out.toKernel());
+
+	proc_id_out.deviceToHost<0>();
+
+	bool match = true;
+	for (size_t i = 0 ; i < vg.size() ; i++)
+	{
+		Point<3,float> xp = vg.template get<0>(i);
+
+		match &= proc_id_out.template get<0>(i) == dec.ghost_processorID_N(xp);
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+
+	////////////////////////// We now create the scan //////////////////////////////////////
+
+    openfpm::vector<aggregate<unsigned int>,
+                    CudaMemory,
+                    typename memory_traits_inte<aggregate<unsigned int>>::type,
+                    memory_traits_inte> starts;
+
+    starts.resize(proc_id_out.size());
+
+	// scan
+	scan<unsigned int,unsigned int>(proc_id_out,starts);
+	starts.deviceToHost<0>(starts.size()-1,starts.size()-1);
+
+	size_t sz = starts.template get<0>(starts.size()-1);
+
+	///////////////////////// We now test //////////////////////////
+
+    openfpm::vector<aggregate<unsigned int,unsigned int>,
+                    CudaMemory,
+                    typename memory_traits_inte<aggregate<unsigned int,unsigned int>>::type,
+                    memory_traits_inte> output;
+
+    output.resize(sz);
+
+	ite = vg.getGPUIterator();
+
+	// we compute processor id for each particle
+	proc_label_id_ghost<3,float,decltype(dec.toKernel()),decltype(vg.toKernel()),decltype(starts.toKernel()),decltype(output.toKernel())>
+	<<<ite.wthr,ite.thr>>>
+	(dec.toKernel(),vg.toKernel(),starts.toKernel(),output.toKernel());
+
+	output.template deviceToHost<0,1>();
+
+	for (size_t i = 0 ; i < output.size() ; i++)
+	{
+		std::cout << output.template get<0>(i) << "   " << output.template get<1>(i) << std::endl;
+	}
+}
+
+BOOST_AUTO_TEST_CASE( decomposition_to_gpu_test_use )
+{
+	auto & v_cl = create_vcluster();
+
+	// Vcluster
+	Vcluster<> & vcl = create_vcluster();
+
+	CartDecomposition<3, float, CudaMemory, memory_traits_inte> dec(vcl);
+
+	// Physical domain
+	Box<3, float> box( { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
+	size_t div[3];
+
+	// Get the number of processor and calculate the number of sub-domain
+	// for each processor (SUB_UNIT_FACTOR=64)
+	size_t n_proc = vcl.getProcessingUnits();
+	size_t n_sub = n_proc * SUB_UNIT_FACTOR;
+
+	// Set the number of sub-domains on each dimension (in a scalable way)
+	for (int i = 0; i < 3; i++)
+	{	div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/3));}
+
+	// Define ghost
+	Ghost<3, float> g(0.01);
+
+	// Boundary conditions
+	size_t bc[] = { PERIODIC, PERIODIC, PERIODIC };
+
+	// Decompose
+	dec.setParameters(div,box,bc,g);
+	dec.decompose();
+
+	openfpm::vector_gpu<Point<3,float>> vg;
+	vg.resize(10000);
+
+	for (size_t i = 0 ; i < 10000 ; i++)
+	{
+		vg.template get<0>(i)[0] = (float)rand()/RAND_MAX;
+		vg.template get<0>(i)[1] = (float)rand()/RAND_MAX;
+		vg.template get<0>(i)[2] = (float)rand()/RAND_MAX;
+	}
+
+	vg.hostToDevice<0>();
+
+	// process on GPU the processor ID for each particles
+
+	auto ite = vg.getGPUIterator();
+
+	openfpm::vector_gpu<aggregate<int,int>> proc_id_out;
+	proc_id_out.resize(vg.size());
+
+	process_id_proc_each_part<decltype(dec.toKernel()),decltype(vg.toKernel()),decltype(proc_id_out.toKernel())>
+	<<<ite.wthr,ite.thr>>>
+	(dec.toKernel(),vg.toKernel(),proc_id_out.toKernel(),v_cl.rank());
+
+	proc_id_out.deviceToHost<0>();
+
+	bool match = true;
+	for (size_t i = 0 ; i < proc_id_out.size() ; i++)
+	{
+		Point<3,float> xp = vg.template get<0>(i);
+
+		match &= proc_id_out.template get<0>(i) == dec.processorIDBC(xp);
+	}
+}
+
 
 BOOST_AUTO_TEST_CASE( vector_dist_gpu_find_buffer_offsets_test )
 {

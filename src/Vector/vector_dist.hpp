@@ -2394,7 +2394,7 @@ public:
 	 * \return Particle iterator
 	 *
 	 */
-	template<typename vrl> openfpm::vector_key_iterator_seq<typename vrl::Mem_type_type::loc_index> getParticleIteratorCRS(vrl & NN)
+	template<typename vrl> openfpm::vector_key_iterator_seq<typename vrl::Mem_type_type::local_index_type> getParticleIteratorCRS(vrl & NN)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -2405,7 +2405,7 @@ public:
 #endif
 
 		// First we check that
-		return openfpm::vector_key_iterator_seq<typename vrl::Mem_type_type::loc_index>(NN.getParticleSeq());
+		return openfpm::vector_key_iterator_seq<typename vrl::Mem_type_type::local_index_type>(NN.getParticleSeq());
 	}
 
 	/*! \brief Return from which cell we have to start in case of CRS interation

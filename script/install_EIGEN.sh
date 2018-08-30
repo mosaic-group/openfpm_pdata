@@ -17,16 +17,19 @@ if [ ! -d "$1/SUITESPARSE"  ]; then
   exit 1
 fi
 
-wget http://ppmcore.mpi-cbg.de/upload/eigen-3.3.1.tar.bz2
-rm -rf eigen-eigen-f562a193118d
-tar -xf eigen-3.3.1.tar.bz2
+rm -rf eigen-3.3.5.tar.bz2
+wget http://ppmcore.mpi-cbg.de/upload/eigen-3.3.5.tar.bz2
+rm -rf eigen-eigen-b3f3d4950030/
+tar -xf eigen-3.3.5.tar.bz2
 
-cd eigen-eigen-f562a193118d
+cd eigen-eigen-b3f3d4950030/
 mkdir $1/EIGEN/
 mv Eigen $1/EIGEN/Eigen
 
 cd ..
-rm -rf eigen-eigen-f562a193118d
+rm -rf eigen-eigen-b3f3d4950030/
+
+touch $1/EIGEN/signature_of_eigen3_matrix_library
 
 # Mark the installation
-echo 1 > $1/EIGEN/version
+echo 2 > $1/EIGEN/version

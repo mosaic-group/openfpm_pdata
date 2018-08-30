@@ -130,7 +130,7 @@ template<unsigned int dim> static void nsub_to_div(size_t (& div)[dim], size_t n
  */
 
 template<unsigned int dim, typename T, typename Memory, template <typename> class layout_base, typename Distribution>
-class CartDecomposition: public ie_loc_ghost<dim, T>, public nn_prcs<dim, T>, public ie_ghost<dim, T>, public domain_nn_calculator_cart<dim>
+class CartDecomposition: public ie_loc_ghost<dim, T>, public nn_prcs<dim, T>, public ie_ghost<dim,T,Memory,layout_base>, public domain_nn_calculator_cart<dim>
 {
 public:
 
@@ -458,10 +458,10 @@ public:
 			{div[i] = (size_t) ((bound.getHigh(i) - bound.getLow(i)) / cd.getCellBox().getP2()[i]);}
 
 			// Initialize the geo_cell structure
-			ie_ghost<dim,T>::Initialize_geo_cell(bound,div);
+			ie_ghost<dim,T,Memory,layout_base>::Initialize_geo_cell(bound,div);
 
 			// Initialize shift vectors
-			ie_ghost<dim,T>::generateShiftVectors(domain,bc);
+			ie_ghost<dim,T,Memory,layout_base>::generateShiftVectors(domain,bc);
 		}
 	}
 
@@ -643,8 +643,8 @@ public:
 		// Intersect all the local sub-domains with the sub-domains of the contiguous processors
 
 		// create the internal structures that store ghost information
-		ie_ghost<dim, T>::create_box_nn_processor_ext(v_cl, ghost, sub_domains, box_nn_processor, *this);
-		ie_ghost<dim, T>::create_box_nn_processor_int(v_cl, ghost, sub_domains, box_nn_processor, *this);
+		ie_ghost<dim, T,Memory,layout_base>::create_box_nn_processor_ext(v_cl, ghost, sub_domains, box_nn_processor, *this);
+		ie_ghost<dim, T,Memory,layout_base>::create_box_nn_processor_int(v_cl, ghost, sub_domains, box_nn_processor, *this);
 
 		ie_loc_ghost<dim,T>::create(sub_domains,domain,ghost,bc);
 	}
@@ -776,9 +776,9 @@ public:
 		 * \return processor id
 		 *
 		 */
-		inline static size_t id(p_box<dim, T> & p, size_t b_id)
+		template<typename encap_type> inline static size_t id(const encap_type & p, size_t b_id)
 		{
-			return p.proc;
+			return p.template get<proc_>();
 		}
 	};
 
@@ -796,9 +796,9 @@ public:
 		 * \return local processor id
 		 *
 		 */
-		inline static size_t id(p_box<dim, T> & p, size_t b_id)
+		template<typename encap_type> inline static size_t id(const encap_type & p, size_t b_id)
 		{
-			return p.lc_proc;
+			return p.template get<lc_proc_>();
 		}
 	};
 
@@ -816,9 +816,9 @@ public:
 		 * \return shift_id id
 		 *
 		 */
-		inline static size_t id(p_box<dim,T> & p, size_t b_id)
+		template<typename encap_type> inline static size_t id(const encap_type & p, size_t b_id)
 		{
-			return p.shift_id;
+			return p.template get<shift_id_>();
 		}
 	};
 
@@ -925,7 +925,7 @@ public:
 
 		(static_cast<ie_loc_ghost<dim,T>*>(&cart))->operator=(static_cast<ie_loc_ghost<dim,T>>(*this));
 		(static_cast<nn_prcs<dim,T>*>(&cart))->operator=(static_cast<nn_prcs<dim,T>>(*this));
-		(static_cast<ie_ghost<dim,T>*>(&cart))->operator=(static_cast<ie_ghost<dim,T>>(*this));
+		(static_cast<ie_ghost<dim,T,Memory,layout_base>*>(&cart))->operator=(static_cast<ie_ghost<dim,T,Memory,layout_base>>(*this));
 
 		cart.sub_domains = sub_domains;
 		cart.box_nn_processor = box_nn_processor;
@@ -961,7 +961,7 @@ public:
 	{
 		static_cast<ie_loc_ghost<dim,T>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T>>(cart));
 		static_cast<nn_prcs<dim,T>*>(this)->operator=(static_cast<nn_prcs<dim,T>>(cart));
-		static_cast<ie_ghost<dim,T>*>(this)->operator=(static_cast<ie_ghost<dim,T>>(cart));
+		static_cast<ie_ghost<dim,T,Memory,layout_base>*>(this)->operator=(static_cast<ie_ghost<dim,T,Memory,layout_base>>(cart));
 
 		sub_domains = cart.sub_domains;
 		box_nn_processor = cart.box_nn_processor;
@@ -1001,7 +1001,7 @@ public:
 	{
 		static_cast<ie_loc_ghost<dim,T>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T>>(cart));
 		static_cast<nn_prcs<dim,T>*>(this)->operator=(static_cast<nn_prcs<dim,T>>(cart));
-		static_cast<ie_ghost<dim,T>*>(this)->operator=(static_cast<ie_ghost<dim,T>>(cart));
+		static_cast<ie_ghost<dim,T,Memory,layout_base>*>(this)->operator=(static_cast<ie_ghost<dim,T,Memory,layout_base>>(cart));
 
 		sub_domains.swap(cart.sub_domains);
 		box_nn_processor.swap(cart.box_nn_processor);
@@ -1314,7 +1314,7 @@ public:
 		fine_s.clear();
 		loc_box.clear();
 		nn_prcs<dim, T>::reset();
-		ie_ghost<dim, T>::reset();
+		ie_ghost<dim,T,Memory,layout_base>::reset();
 		ie_loc_ghost<dim, T>::reset();
 	}
 
@@ -1549,11 +1549,6 @@ public:
 	{
 		return sub_domains;
 	}
-
-/*	openfpm::vector<openfpm::vector<SpaceBox<dim, T>>> & getSubDomainsGlobal()
-	{
-		return sub_domains_global;
-	}*/
 
 	/*! \brief Check if the particle is local
 	 *
@@ -1803,7 +1798,7 @@ public:
 		vtk_box1.write(output + std::string("subdomains_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
 		nn_prcs<dim, T>::write(output);
-		ie_ghost<dim, T>::write(output, v_cl.getProcessUnitID());
+		ie_ghost<dim,T,Memory,layout_base>::write(output, v_cl.getProcessUnitID());
 		ie_loc_ghost<dim, T>::write(output, v_cl.getProcessUnitID());
 
 		return true;
@@ -1856,9 +1851,9 @@ public:
 
 		for (size_t p = 0; p<nn_prcs < dim, T>::getNNProcessors(); p++)
 		{
-			for (size_t i = 0; i<ie_ghost < dim, T>::getProcessorNEGhost(p); i++)
+			for (size_t i = 0; i<ie_ghost <dim,T,Memory,layout_base>::getProcessorNEGhost(p); i++)
 			{
-				std::cout << ie_ghost<dim, T>::getProcessorEGhostBox(p, i).toString() << "   prc=" << nn_prcs<dim, T>::IDtoProc(p) << "   id=" << ie_ghost<dim, T>::getProcessorEGhostId(p, i) << "\n";
+				std::cout << ie_ghost<dim,T,Memory,layout_base>::getProcessorEGhostBox(p, i).toString() << "   prc=" << nn_prcs<dim, T>::IDtoProc(p) << "   id=" << ie_ghost<dim,T,Memory,layout_base>::getProcessorEGhostId(p, i) << "\n";
 			}
 		}
 
@@ -1866,9 +1861,9 @@ public:
 
 		for (size_t p = 0; p<nn_prcs < dim, T>::getNNProcessors(); p++)
 		{
-			for (size_t i = 0; i<ie_ghost < dim, T>::getProcessorNIGhost(p); i++)
+			for (size_t i = 0; i<ie_ghost<dim,T,Memory,layout_base>::getProcessorNIGhost(p); i++)
 			{
-				std::cout << ie_ghost<dim, T>::getProcessorIGhostBox(p, i).toString() << "   prc=" << nn_prcs<dim, T>::IDtoProc(p) << "   id=" << ie_ghost<dim, T>::getProcessorIGhostId(p, i) << "\n";
+				std::cout << ie_ghost<dim,T,Memory,layout_base>::getProcessorIGhostBox(p, i).toString() << "   prc=" << nn_prcs<dim, T>::IDtoProc(p) << "   id=" << ie_ghost<dim,T,Memory,layout_base>::getProcessorIGhostId(p, i) << "\n";
 			}
 		}
 	}
@@ -1888,7 +1883,7 @@ public:
 		if (static_cast<nn_prcs<dim,T>*>(this)->is_equal(static_cast<nn_prcs<dim,T>&>(cart)) == false)
 			return false;
 
-		if (static_cast<ie_ghost<dim,T>*>(this)->is_equal(static_cast<ie_ghost<dim,T>&>(cart)) == false)
+		if (static_cast<ie_ghost<dim,T,Memory,layout_base>*>(this)->is_equal(static_cast<ie_ghost<dim,T,Memory,layout_base>&>(cart)) == false)
 			return false;
 
 		if (sub_domains != cart.sub_domains)
@@ -1934,7 +1929,7 @@ public:
 		if (static_cast<nn_prcs<dim,T>*>(this)->is_equal(static_cast<nn_prcs<dim,T>&>(cart)) == false)
 			return false;
 
-		if (static_cast<ie_ghost<dim,T>*>(this)->is_equal_ng(static_cast<ie_ghost<dim,T>&>(cart)) == false)
+		if (static_cast<ie_ghost<dim,T,Memory,layout_base>*>(this)->is_equal_ng(static_cast<ie_ghost<dim,T,Memory,layout_base>&>(cart)) == false)
 			return false;
 
 		if (sub_domains != cart.sub_domains)
@@ -2024,6 +2019,7 @@ public:
 		for (int i = 0 ; i < dim ; i++)	{bc_[i] = this->periodicity(i);}
 
 		CartDecomposition_gpu<dim,T,Memory,layout_base> cdg(fine_s.toKernel(),
+															ie_ghost<dim,T,Memory,layout_base>::toKernel(),
 												sub_domains_global.toKernel(),
 												getDomain(),
 												bc_);

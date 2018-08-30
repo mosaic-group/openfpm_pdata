@@ -10,6 +10,47 @@
 
 #include "Vector/util/vector_dist_funcs.hpp"
 
+template<unsigned int dim, typename St, typename decomposition_type, typename vector_type, typename start_type, typename output_type>
+__global__ void proc_label_id_ghost(decomposition_type dec,vector_type vd, start_type starts, output_type out)
+{
+	int p = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (p >= vd.size()) return;
+
+    Point<dim,St> xp = vd.template get<0>(p);
+
+    unsigned int base = starts.template get<0>(p);
+
+    dec.ghost_processor_ID(xp,out,base,p);
+}
+
+template<unsigned int dim, typename St, typename decomposition_type, typename vector_type,  typename output_type>
+__global__ void num_proc_ghost_each_part(decomposition_type dec, vector_type vd,  output_type out)
+{
+	int p = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (p >= vd.size()) return;
+
+    Point<dim,St> xp = vd.template get<0>(p);
+
+    out.template get<0>(p) = dec.ghost_processorID_N(xp);
+}
+
+template<typename cartdec_gpu, typename particles_type, typename vector_out>
+__global__ void process_id_proc_each_part(cartdec_gpu cdg, particles_type parts, vector_out output , int rank)
+{
+    int p = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (p >= parts.size()) return;
+
+	Point<3,float> xp = parts.template get<0>(p);
+
+	int pr = cdg.processorIDBC(xp);
+
+	output.template get<1>(p) = (pr == rank)?-1:pr;
+	output.template get<0>(p) = p;
+}
+
 template<typename vector_type,typename vector_type_offs>
 __global__  void find_buffer_offsets(vector_type vd, int * cnt, vector_type_offs offs)
 {

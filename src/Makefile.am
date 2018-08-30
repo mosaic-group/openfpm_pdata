@@ -17,7 +17,7 @@ pdata_LDADD = $(LINKLIBS) -lparmetis -lmetis
 
 actual_test_SOURCES = Vector/cuda/vector_dist_cuda_func_test.cu Vector/cuda/vector_dist_gpu_unit_tests.cu vector_ main_single.cpp  lib/pdata.cpp test_multiple_o.cpp ../openfpm_devices/src/memory/CudaMemory.cu  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp
 actual_test_CXXFLAGS = -Wno-unknown-pragmas $(BOOST_CPPFLAGS) $(HDF5_CPPFLAGS) $(OPENMP_CFLAGS) $(AM_CXXFLAGS) $(LIBHILBERT_INCLUDE) $(PETSC_INCLUDE) $(CUDA_CFLAGS) $(INCLUDES_PATH) $(PARMETIS_INCLUDE) $(METIS_INCLUDE) $(H5PART_INCLUDE) -DPARALLEL_IO  -Wno-unused-local-typedefs
-actual_test_CFLAGS = $(CUDA_CFLAGS) -IDIOCANE
+actual_test_CFLAGS = $(CUDA_CFLAGS)
 actual_test_LDADD = $(LINKLIBS) -lparmetis -lmetis
 
 

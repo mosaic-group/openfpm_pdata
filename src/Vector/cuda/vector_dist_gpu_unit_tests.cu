@@ -5,6 +5,8 @@
 #include <Vector/vector_dist.hpp>
 #include "Vector/tests/vector_dist_util_unit_tests.hpp"
 
+#define SUB_UNIT_FACTOR 1024
+
 BOOST_AUTO_TEST_SUITE( vector_dist_gpu_test )
 
 void print_test(std::string test, size_t sz)
@@ -375,7 +377,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
 
 }
 
-
 BOOST_AUTO_TEST_CASE( vector_dist_map_on_gpu_test)
 {
 	auto & v_cl = create_vcluster();
@@ -421,7 +422,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_map_on_gpu_test)
 	vd.hostToDeviceProp<0,1,2>();
 
 	// Ok we redistribute the particles (GPU based)
-	vd.map(MAP_ON_DEVICE);
+	vd.map(RUN_ON_DEVICE);
 
 	// Reset the host part
 
@@ -494,6 +495,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_map_on_gpu_test)
 	BOOST_REQUIRE_EQUAL(l_cnt,vd.size_local());
 
 	vd.write("gpu_write_test");
+
+	vd.ghost_get<0,1,2>(RUN_ON_DEVICE);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

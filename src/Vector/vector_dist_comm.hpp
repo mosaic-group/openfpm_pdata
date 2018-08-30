@@ -11,6 +11,7 @@
 #if defined(CUDA_GPU) && defined(__NVCC__)
 #include "util/cuda/moderngpu/kernel_mergesort.hxx"
 #include "Vector/cuda/vector_dist_cuda_funcs.cuh"
+#include "util/cuda/scan_cuda.cuh"
 #endif
 
 #include "Vector/util/vector_dist_funcs.hpp"
@@ -24,7 +25,7 @@
 
 #define BIND_DEC_TO_GHOST 1
 
-#define MAP_ON_DEVICE 1024
+#define RUN_ON_DEVICE 1024
 #define MAP_LOCAL 2
 
 /*! \brief compute the communication options from the ghost_get/put options
@@ -164,7 +165,7 @@ class vector_dist_comm
 								  openfpm::vector<size_t> & prc_r,
 								  size_t opt)
 	{
-		if (opt & MAP_ON_DEVICE)
+		if (opt & RUN_ON_DEVICE)
 		{
 			size_t prev_off = 0;
 			for (size_t i = 0; i < prc_sz.size() ; i++)
@@ -673,7 +674,7 @@ class vector_dist_comm
 	 * \param m_pos sending buffer for position
 	 * \param m_prp sending buffer for properties
 	 * \param offset from where start the list of the particles that migrate in o_part
-	 *        This parameter is used only in case of MAP_ON_DEVICE option
+	 *        This parameter is used only in case of RUN_ON_DEVICE option
 	 *
 	 */
 	void fill_send_map_buf(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
@@ -696,7 +697,7 @@ class vector_dist_comm
 			cnt.get(i) = 0;
 		}
 
-		if (opt & MAP_ON_DEVICE)
+		if (opt & RUN_ON_DEVICE)
 		{
 #if defined(CUDA_GPU) && defined(__NVCC__)
 
@@ -736,7 +737,7 @@ class vector_dist_comm
 
 #else
 
-			std::cout << __FILE__ << ":" << __LINE__ << " error MAP_ON_DEVICE require that you compile with NVCC, but it seem compiled with a normal compiler" << std::endl;
+			std::cout << __FILE__ << ":" << __LINE__ << " error RUN_ON_DEVICE require that you compile with NVCC, but it seem compiled with a normal compiler" << std::endl;
 
 #endif
 		}
@@ -823,7 +824,7 @@ class vector_dist_comm
 			                                           openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int>>::type,layout_base> & prc_sz,
 			                                           size_t opt)
 	{
-		if (opt == MAP_ON_DEVICE)
+		if (opt == RUN_ON_DEVICE)
 		{
 #ifdef __NVCC__
 
@@ -855,6 +856,7 @@ class vector_dist_comm
 			// get also the last element from lbl_p;
 			lbl_p.template deviceToHost<1>(lbl_p.size()-1,lbl_p.size()-1);
 
+			mem.deviceToHost();
 			int noff = *(int *)mem.getPointer();
 			prc_sz.resize(noff+1);
 			prc_sz.template get<0>(prc_sz.size()-1) = lbl_p.size();
@@ -862,7 +864,7 @@ class vector_dist_comm
 
 #else
 
-			std::cout << __FILE__ << ":" << __LINE__ << " error, it seems you tried to call map with MAP_ON_DEVICE option, this requires to compile the program with NVCC" << std::endl;
+			std::cout << __FILE__ << ":" << __LINE__ << " error, it seems you tried to call map with RUN_ON_DEVICE option, this requires to compile the program with NVCC" << std::endl;
 
 #endif
 		}
@@ -930,57 +932,98 @@ class vector_dist_comm
 	 * \param v_prp vector of particle properties
 	 * \param prc for each particle it label the processor id (the owner of the particle, or where it should go the particle)
 	 * \param g_m ghost marker
+	 * \param opt ghost_get options
 	 *
 	 */
 	void labelParticlesGhost(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
 			                 openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
 			                 openfpm::vector<size_t> & prc,
-			                 size_t & g_m)
+			                 size_t & g_m,
+			                 size_t opt)
 	{
 		// Buffer that contain for each processor the id of the particle to send
 		g_opart.clear();
 		g_opart.resize(dec.getNNProcessors());
 		prc_g_opart.clear();
 
-		// Iterate over all particles
-		auto it = v_pos.getIteratorTo(g_m);
-		while (it.isNext())
+		if (opt & RUN_ON_DEVICE)
 		{
-			auto key = it.get();
+#if defined(CUDA_GPU) && defined(__NVCC__)
 
-			// Given a particle, it return which processor require it (first id) and shift id, second id
-			// For an explanation about shifts vectors please consult getShiftVector in ie_ghost
-			const openfpm::vector<std::pair<size_t, size_t>> & vp_id = dec.template ghost_processorID_pair<typename Decomposition::lc_processor_id, typename Decomposition::shift_id>(v_pos.get(key), UNIQUE);
+            openfpm::vector<aggregate<unsigned int>,
+                            Memory,
+                            typename layout_base<aggregate<unsigned int>>::type,
+                            layout_base> proc_id_out;
+			proc_id_out.resize(v_pos.size());
 
-			for (size_t i = 0; i < vp_id.size(); i++)
+			auto ite = v_pos.getGPUIterator();
+
+			// First we have to see how many entry each particle produce
+			num_proc_ghost_each_part<3,float,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(proc_id_out.toKernel())>
+			<<<ite.wthr,ite.thr>>>
+			(dec.toKernel(),v_pos.toKernel(),proc_id_out.toKernel());
+
+            openfpm::vector<aggregate<unsigned int>,
+                            Memory,
+                            typename layout_base<aggregate<unsigned int>>::type,
+                            layout_base> starts;
+
+			// scan
+			scan<unsigned int,unsigned int>(proc_id_out,starts);
+
+			// we compute processor id for each particle
+
+
+			// we do a sort
+
+#else
+
+			std::cout << __FILE__ << ":" << __LINE__ << " error: to use gpu computation you must compile vector_dist.hpp with NVCC" << std::endl;
+
+#endif
+		}
+		else
+		{
+			// Iterate over all particles
+			auto it = v_pos.getIteratorTo(g_m);
+			while (it.isNext())
 			{
-				// processor id
-				size_t p_id = vp_id.get(i).first;
+				auto key = it.get();
 
-				// add particle to communicate
-				g_opart.get(p_id).add();
-				g_opart.get(p_id).last().template get<0>() = key;
-				g_opart.get(p_id).last().template get<1>() = vp_id.get(i).second;
+				// Given a particle, it return which processor require it (first id) and shift id, second id
+				// For an explanation about shifts vectors please consult getShiftVector in ie_ghost
+				const openfpm::vector<std::pair<size_t, size_t>> & vp_id = dec.template ghost_processorID_pair<typename Decomposition::lc_processor_id, typename Decomposition::shift_id>(v_pos.get(key), UNIQUE);
+
+				for (size_t i = 0; i < vp_id.size(); i++)
+				{
+					// processor id
+					size_t p_id = vp_id.get(i).first;
+
+					// add particle to communicate
+					g_opart.get(p_id).add();
+					g_opart.get(p_id).last().template get<0>() = key;
+					g_opart.get(p_id).last().template get<1>() = vp_id.get(i).second;
+				}
+
+				++it;
 			}
 
-			++it;
-		}
+			// remove all zero entry and construct prc (the list of the sending processors)
+			openfpm::vector<openfpm::vector<aggregate<size_t,size_t>>> g_opart_f;
 
-		// remove all zero entry and construct prc (the list of the sending processors)
-		openfpm::vector<openfpm::vector<aggregate<size_t,size_t>>> g_opart_f;
-
-		// count the non zero element
-		for (size_t i = 0 ; i < g_opart.size() ; i++)
-		{
-			if (g_opart.get(i).size() != 0)
+			// count the non zero element
+			for (size_t i = 0 ; i < g_opart.size() ; i++)
 			{
-				g_opart_f.add();
-				g_opart.get(i).swap(g_opart_f.last());
-				prc.add(dec.IDtoProc(i));
+				if (g_opart.get(i).size() != 0)
+				{
+					g_opart_f.add();
+					g_opart.get(i).swap(g_opart_f.last());
+					prc.add(dec.IDtoProc(i));
+				}
 			}
-		}
 
-		g_opart.swap(g_opart_f);
+			g_opart.swap(g_opart_f);
+		}
 	}
 
 	/*! \brief Call-back to allocate buffer to receive incoming elements (particles)
@@ -1159,7 +1202,7 @@ public:
 
 		// Label all the particles
 		if ((opt & SKIP_LABELLING) == false)
-		{labelParticlesGhost(v_pos,v_prp,prc_g_opart,g_m);}
+		{labelParticlesGhost(v_pos,v_prp,prc_g_opart,g_m,opt);}
 
 		// Send and receive ghost particle information
 		{
@@ -1344,14 +1387,14 @@ public:
 		fill_send_map_buf(v_pos,v_prp, prc_sz_r, m_pos, m_prp,prc_sz,opt);
 
 		size_t opt_ = 0;
-		if (opt & MAP_ON_DEVICE)
+		if (opt & RUN_ON_DEVICE)
 		{
 #if defined(CUDA_GPU) && defined(__NVCC__)
-			// Before doing the communication on MAP_ON_DEVICE we have to be sure that the previous kernels complete
+			// Before doing the communication on RUN_ON_DEVICE we have to be sure that the previous kernels complete
 			cudaDeviceSynchronize();
 			opt_ |= MPI_GPU_DIRECT;
 #else
-			std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option MAP_ON_DEVICE you must compile with NVCC" << std::endl;
+			std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option RUN_ON_DEVICE you must compile with NVCC" << std::endl;
 #endif
 		}
 

@@ -8,24 +8,7 @@
 #ifndef CARTDECOMPOSITION_GPU_HPP_
 #define CARTDECOMPOSITION_GPU_HPP_
 
-#ifdef __NVCC__
-
-template<typename cartdec_gpu, typename particles_type, typename vector_out>
-__global__ void process_id_proc_each_part(cartdec_gpu cdg, particles_type parts, vector_out output , int rank)
-{
-    int p = threadIdx.x + blockIdx.x * blockDim.x;
-
-    if (p >= parts.size()) return;
-
-	Point<3,float> xp = parts.template get<0>(p);
-
-	int pr = cdg.processorIDBC(xp);
-
-	output.template get<1>(p) = (pr == rank)?-1:pr;
-	output.template get<0>(p) = p;
-}
-
-#endif
+#include "ie_ghost_gpu.cuh"
 
 template<typename T2, typename fine_s_type, typename vsub_domain_type>
 __device__ __host__ inline int processorID_impl(T2 & p, fine_s_type & fine_s, vsub_domain_type & sub_domains_global)
@@ -62,7 +45,7 @@ __device__ __host__ inline int processorID_impl(T2 & p, fine_s_type & fine_s, vs
 }
 
 template<unsigned int dim, typename T, typename Memory, template <typename> class layout_base>
-class CartDecomposition_gpu
+class CartDecomposition_gpu : public ie_ghost_gpu<dim,T,Memory,layout_base>
 {
 	CellList_cpu_ker<dim,T,Mem_fast_ker<Memory,memory_traits_lin,int>,shift<dim,T>> clk;
 
@@ -93,17 +76,18 @@ class CartDecomposition_gpu
 public:
 
 	CartDecomposition_gpu(CellList_cpu_ker<dim,T,Mem_fast_ker<Memory,memory_traits_lin,int>,shift<dim,T>> clk,
+						  ie_ghost_gpu<dim,T,Memory,layout_base> ieg,
 						  openfpm::vector_gpu_ker<Box_map<dim, T>,layout_base> sub_domains_global,
 						  const Box<dim,T> & domain,
 						  const int (& bc)[dim])
-	:clk(clk),domain(domain),sub_domains_global(sub_domains_global)
+	:ie_ghost_gpu<dim,T,Memory,layout_base>(ieg),clk(clk),domain(domain),sub_domains_global(sub_domains_global)
 	{
 		for (int s = 0 ; s < dim ; s++)
 		{this->bc[s] = bc[s];}
 	}
 
 	CartDecomposition_gpu(const CartDecomposition_gpu<dim,T,Memory,layout_base> & dec)
-	:clk(dec.clk),domain(dec.domain)
+	:ie_ghost_gpu<dim,T,Memory,layout_base>(dec),clk(dec.clk),domain(dec.domain)
 	{
 		for (int s = 0 ; s < dim ; s++)
 		{this->bc[s] = dec.bc[s];}
@@ -125,7 +109,6 @@ public:
 
 		return processorID_impl(pt,clk,sub_domains_global);
 	}
-
 };
 
 #endif /* CARTDECOMPOSITION_GPU_HPP_ */
