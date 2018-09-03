@@ -14,8 +14,8 @@ constexpr unsigned int lc_proc_ = 0;
 constexpr unsigned int proc_ = 1;
 constexpr unsigned int shift_id_ = 2;
 
-template<unsigned int dim, typename T, typename cell_list_type, typename vb_int_box_type, typename vb_int_type>
-__device__ __host__ inline unsigned int ghost_processorID_N_impl(const Point<dim,T> & p, cell_list_type & geo_cell, vb_int_box_type & vb_int_box, vb_int_type & vb_int)
+template<unsigned int dim, typename T, typename cell_list_type, typename vb_int_box_type>
+__device__ __host__ inline unsigned int ghost_processorID_N_impl(const Point<dim,T> & p, cell_list_type & geo_cell, vb_int_box_type & vb_int_proc)
 {
 	unsigned int cell = geo_cell.getCell(p);
 	unsigned int sz = geo_cell.getNelements(cell);
@@ -26,8 +26,13 @@ __device__ __host__ inline unsigned int ghost_processorID_N_impl(const Point<dim
 	{
 		unsigned int bid = geo_cell.get(cell,i);
 
-		if (Box<dim,T>(vb_int_box.get(bid)).isInsideNP(p) == true)
-		{n++;}
+		unsigned int sz2 = vb_int_proc.template get<0>(bid).size();
+
+		for (int j = 0 ; j < sz2 ; j++)
+		{
+			if (Box<dim,T>(vb_int_proc.template get<0>(bid).get(j)).isInsideNP(p) == true)
+			{n++;}
+		}
 	}
 
 	return n;
@@ -49,28 +54,20 @@ class ie_ghost_gpu
 	CellList_cpu_ker<dim,T,Mem_fast_ker<Memory,memory_traits_lin,int>,shift<dim,T>> geo_cell;
 
 	//! internal ghost box
-	openfpm::vector_gpu_ker<Box<dim, T>,layout_base> vb_int_box;
-
-	//! internal ghost box
-	openfpm::vector_gpu_ker<aggregate<unsigned int,unsigned int,unsigned int>,layout_base> vb_int;
-
-	// maximum rank
-	unsigned int max_rank;
+	openfpm::vector_gpu_ker<aggregate<openfpm::vector_gpu_ker<Box<dim, T>,layout_base>,int>,layout_base> vb_int_proc;
 
 public:
 
 
 	ie_ghost_gpu(CellList_cpu_ker<dim,T,Mem_fast_ker<Memory,memory_traits_lin,int>,shift<dim,T>> geo_cell,
-			     openfpm::vector_gpu_ker<Box<dim, T>,layout_base> vb_int_box,
-			     openfpm::vector_gpu_ker<aggregate<unsigned int,unsigned int,unsigned int>,layout_base> vb_int,
-			     unsigned int max_rank)
-	:geo_cell(geo_cell),vb_int_box(vb_int_box),vb_int(vb_int),max_rank(max_rank)
+				 openfpm::vector_gpu_ker<aggregate<openfpm::vector_gpu_ker<Box<dim, T>,layout_base>,int>,layout_base> vb_int_proc)
+	:geo_cell(geo_cell),vb_int_proc(vb_int_proc)
 	{
 
 	}
 
 	ie_ghost_gpu(const ie_ghost_gpu<dim,T,Memory,layout_base> & ieg)
-	:geo_cell(ieg.geo_cell),vb_int_box(ieg.vb_int_box),vb_int(ieg.vb_int),max_rank(ieg.max_rank)
+	:geo_cell(ieg.geo_cell),vb_int_proc(ieg.vb_int_proc)
 	{}
 
 	/*! \brief Get the cell from the particle position
@@ -90,7 +87,7 @@ public:
 	 */
 	__device__ inline unsigned int ghost_processorID_N(const Point<dim,T> & p)
 	{
-		return ghost_processorID_N_impl(p,geo_cell,vb_int_box,vb_int);
+		return ghost_processorID_N_impl(p,geo_cell,vb_int_proc);
 	}
 
 	/*! \brief Get the number of processor a particle must sent
@@ -109,12 +106,17 @@ public:
 		{
 			unsigned int bid = geo_cell.get(cell,i);
 
-			if (Box<dim,T>(vb_int_box.get(bid)).isInsideNP(p) == true)
-			{
-				output.template get<0>(base+n) = vb_int.template get<proc_>(bid);
-				output.template get<1>(base+n) = pi;
+			unsigned int sz2 = vb_int_proc.template get<0>(bid).size();
 
-				n++;
+			for (int j = 0 ; j < sz2 ; j++)
+			{
+				if (Box<dim,T>(vb_int_proc.template get<0>(bid).get(j)).isInsideNP(p) == true)
+				{
+					output.template get<0>(base+n) = vb_int_proc.template get<1>(bid);
+					output.template get<1>(base+n) = pi;
+
+					n++;
+				}
 			}
 		}
 	}

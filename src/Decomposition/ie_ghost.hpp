@@ -52,7 +52,7 @@ class ie_ghost
 	typedef openfpm::vector<Box<dim,T>,Memory,typename layout_base<Box<dim,T>>::type,layout_base> proc_boxes;
 
 	//! internal ghost Boxes for each processor
-	openfpm::vector<aggregate<proc_boxes>,Memory,typename layout_base<aggregate<proc_boxes>>::type,layout_base> vb_int_proc;
+	openfpm::vector<aggregate<proc_boxes,int>,Memory,typename layout_base<aggregate<proc_boxes,int>>::type,layout_base> vb_int_proc;
 
 	//! shift vectors
 	openfpm::vector<Point<dim,T>> shifts;
@@ -814,7 +814,7 @@ public:
 	 */
 	inline unsigned int ghost_processorID_N(const Point<dim,T> & p)
 	{
-		return ghost_processorID_N_impl(p,geo_cell,vb_int_box,vb_int);
+		return ghost_processorID_N_impl(p,geo_cell,vb_int_proc);
 	}
 
 	/*! \brief Given a position it return if the position belong to any neighborhood processor ghost
@@ -1149,7 +1149,8 @@ public:
 			host_dev_transfer = true;
 		}
 
-		ie_ghost_gpu<dim,T,Memory,layout_base> igg(geo_cell.toKernel(),vb_int_box.toKernel(),vb_int.toKernel(),create_vcluster().size());
+		ie_ghost_gpu<dim,T,Memory,layout_base> igg(geo_cell.toKernel(),
+													vb_int_proc.toKernel());
 
 		return igg;
 	}
