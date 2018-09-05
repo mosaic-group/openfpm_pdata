@@ -13,6 +13,26 @@
 #include "Decomposition/shift_vect_converter.hpp"
 #include "Decomposition/cuda/ie_ghost_gpu.cuh"
 
+//! Processor id and box id
+struct proc_box_id
+{
+	size_t proc_id;
+	size_t box_id;
+	size_t shift_id;
+
+	//! operator to reorder
+	bool operator<(const proc_box_id & pbi) const
+	{
+		if (proc_id < pbi.proc_id)
+		{return true;}
+		else if (proc_id == pbi.proc_id)
+		{
+			return shift_id < pbi.shift_id;
+		}
+
+		return false;
+	}
+};
 
 /*! \brief structure that store and compute the internal and external local ghost box
  *
@@ -293,17 +313,15 @@ protected:
 				}
 			}
 		}
-
-//		construct_vb_int_proc();
 	}
 
 	/*! \brief construct the vb_int_proc box
 	 *
 	 *
 	 */
-/*	void construct_vb_int_proc()
+	void construct_vb_int_proc(const nn_prcs<dim,T> & nn_p)
 	{
-		vb_int_proc.resize(proc_int_box.size());
+		vb_int_proc.resize_no_device(proc_int_box.size());
 
 		for (size_t i = 0 ; i < proc_int_box.size() ; i++)
 		{
@@ -317,8 +335,10 @@ protected:
 					vb_int_proc.template get<0>(i).template get<1>(j)[k] = proc_int_box.get(i).ibx.get(j).bx.getHigh(k);
 				}
 			}
+
+			vb_int_proc.template get<1>(i) = nn_p.IDtoProc(i);
 		}
-	}*/
+	}
 
 	/*! \brief Create the box_nn_processor_int (nbx part) structure, the geo_cell list and proc_int_box
 	 *
@@ -446,16 +466,85 @@ protected:
 						while (g_sub.isNext())
 						{
 							auto key = g_sub.get();
-							geo_cell.addCell(gi.LinId(key),vb_int.size()-1);
-							geo_cell_proc.addCell(gi.LinId(key),p_id);
+							size_t cell = gi.LinId(key);
+
+							geo_cell.addCell(cell,vb_int.size()-1);
+
+							// Check if p_id already exist at that cell
+							// and we add it only if does not exist
+
+							size_t nc = geo_cell_proc.getNelements(cell);
+
+							bool found = false;
+							for (size_t s = 0; s < nc ; s++)
+							{
+								if (geo_cell_proc.get(cell,s) == lc_proc)
+								{
+									found = true;
+									break;
+								}
+							}
+
+							if (found == false)
+							{geo_cell_proc.addCell(cell,lc_proc);}
+
 							++g_sub;
 						}
 					}
 				}
 			}
 		}
+
+		construct_vb_int_proc(nn_p);
+
+		reorder_geo_cell();
 	}
 
+	/*! \brief in this function we reorder the cells by processors
+	 *
+	 * In practice every processor in the list is ordered. the geo_cell give
+	 *
+	 * 7 boxes the first 2 boxes are related to processor 0 and the next 2 to processor 4, the other 3 must me related
+	 * to another processor different from 0 and 4. This simplify the procedure to get a unique list of processor ids
+	 * indicating on which processor a particle must be replicated as ghost
+	 *
+	 */
+	void reorder_geo_cell()
+	{
+		openfpm::vector<proc_box_id> tmp_sort;
+
+		size_t div[dim];
+
+		for (size_t i = 0 ; i < dim ; i++)	{div[i] = geo_cell.getDiv()[i];}
+
+		grid_sm<dim,void> gs(div);
+
+		grid_key_dx_iterator<dim> it(gs);
+
+		while (it.isNext())
+		{
+			size_t cell = gs.LinId(it.get());
+
+			size_t sz = geo_cell.getNelements(cell);
+			tmp_sort.resize(sz);
+
+			for (size_t i = 0 ; i < sz ; i++)
+			{
+				tmp_sort.get(i).box_id = geo_cell.get(cell,i);
+				tmp_sort.get(i).proc_id = vb_int.template get<proc_>(tmp_sort.get(i).box_id);
+				tmp_sort.get(i).shift_id = vb_int.template get<shift_id_>(tmp_sort.get(i).box_id);
+			}
+
+			tmp_sort.sort();
+
+			// now we set again the cell in an ordered way
+
+			for (size_t i = 0 ; i < sz ; i++)
+			{geo_cell.get(cell,i) = tmp_sort.get(i).box_id;}
+
+			++it;
+		}
+	}
 
 public:
 
@@ -812,9 +901,21 @@ public:
 	 * \param p position of the particle
 	 *
 	 */
+	template<typename output_type> inline void ghost_processor_ID(const Point<dim,T> & p, output_type & output, unsigned int base, unsigned int pi)
+	{
+		ID_operation<output_type> op(output);
+
+		ghost_processorID_general_impl(p,base,pi,geo_cell,vb_int_box,vb_int,op);
+	}
+
+	/*! \brief Get the number of processor a particle must sent
+	 *
+	 * \param p position of the particle
+	 *
+	 */
 	inline unsigned int ghost_processorID_N(const Point<dim,T> & p)
 	{
-		return ghost_processorID_N_impl(p,geo_cell,vb_int_proc);
+		return ghost_processorID_N_impl(p,geo_cell,vb_int_box,vb_int);
 	}
 
 	/*! \brief Given a position it return if the position belong to any neighborhood processor ghost
@@ -1143,14 +1244,20 @@ public:
 		if (host_dev_transfer == false)
 		{
 			geo_cell.hostToDevice();
+			geo_cell_proc.hostToDevice();
 			vb_int_box.template hostToDevice<0,1>();
 			vb_int.template hostToDevice<0,1,2>();
+
+			for (size_t i = 0 ; i < vb_int_proc.size() ; i++)
+			{vb_int_proc.template get<0>(i). template hostToDevice<0,1>();}
+			vb_int_proc.template hostToDevice<0,1>();
 
 			host_dev_transfer = true;
 		}
 
 		ie_ghost_gpu<dim,T,Memory,layout_base> igg(geo_cell.toKernel(),
-													vb_int_proc.toKernel());
+													vb_int_box.toKernel(),
+													vb_int.toKernel());
 
 		return igg;
 	}

@@ -649,37 +649,6 @@ public:
 		ie_loc_ghost<dim,T>::create(sub_domains,domain,ghost,bc);
 	}
 
-/*	template<typename T2> inline size_t processorID_impl(T2 & p) const
-	{
-		// Get the number of elements in the cell
-
-		size_t e = -1;
-		size_t cl = fine_s.getCell(p);
-		size_t n_ele = fine_s.getNelements(cl);
-
-		for (size_t i = 0 ; i < n_ele ; i++)
-		{
-			e = fine_s.get(cl,i);
-
-			if (sub_domains_global.template get<0>(e).isInsideNP(p) == true)
-			{
-				break;
-			}
-		}
-
-#ifdef SE_CLASS1
-
-		if (n_ele == 0)
-		{
-			std::cout << __FILE__ << ":" << __LINE__ << " I cannot detect in which processor this particle go" << std::endl;
-			return -1;
-		}
-
-#endif
-
-		return sub_domains_global.template get<1>(e);
-	}*/
-
 
 public:
 

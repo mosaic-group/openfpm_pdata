@@ -18,7 +18,9 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 	// Vcluster
 	Vcluster<> & vcl = create_vcluster();
 
-	CartDecomposition<3, float, CudaMemory, memory_traits_inte> dec(vcl);
+	typedef CartDecomposition<3, float, CudaMemory, memory_traits_inte> dec_type;
+
+	dec_type dec(vcl);
 
 	// Physical domain
 	Box<3, float> box( { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
@@ -86,7 +88,12 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 		Point<3,float> xp = vg.template get<0>(i);
 
 		match &= proc_id_out.template get<0>(i) == dec.ghost_processorID_N(xp);
+
+		const openfpm::vector<std::pair<size_t, size_t>> & vp_id = dec.template ghost_processorID_pair<typename dec_type::lc_processor_id, typename dec_type::shift_id>(xp, UNIQUE);
+
+		match &= proc_id_out.template get<0>(i) == vp_id.size();
 	}
+
 
 	BOOST_REQUIRE_EQUAL(match,true);
 
@@ -105,11 +112,11 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 
 	size_t sz = starts.template get<0>(starts.size()-1);
 
-	///////////////////////// We now test //////////////////////////
+	///////////////////////// we collect the processor and shift id //////////////////////////
 
-    openfpm::vector<aggregate<unsigned int,unsigned int>,
+    openfpm::vector<aggregate<unsigned int,unsigned int,unsigned int>,
                     CudaMemory,
-                    typename memory_traits_inte<aggregate<unsigned int,unsigned int>>::type,
+                    typename memory_traits_inte<aggregate<unsigned int,unsigned int,unsigned int>>::type,
                     memory_traits_inte> output;
 
     output.resize(sz);
@@ -121,12 +128,61 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 	<<<ite.wthr,ite.thr>>>
 	(dec.toKernel(),vg.toKernel(),starts.toKernel(),output.toKernel());
 
-	output.template deviceToHost<0,1>();
+	output.template deviceToHost<0,1,2>();
 
-	for (size_t i = 0 ; i < output.size() ; i++)
+	//////////////////// TESTING //////////////////////////
+
+	starts.deviceToHost<0>();
+
+	match = true;
+
+	for (size_t i = 0 ; i < starts.size() - 1 ; i++)
 	{
-		std::cout << output.template get<0>(i) << "   " << output.template get<1>(i) << std::endl;
+		size_t base = starts.template get<0>(i);
+		size_t sz = starts.template get<0>(i+1) - base;
+
+		if (sz != 0)
+		{
+			size_t pid = output.template get<1>(base);
+			Point<3,float> xp = vg.template get<0>(pid);
+
+			openfpm::vector<proc_box_id> tmp_sort1;
+			openfpm::vector<proc_box_id> tmp_sort2;
+
+			const openfpm::vector<std::pair<size_t, size_t>> & vp_id = dec.template ghost_processorID_pair<typename dec_type::lc_processor_id, typename dec_type::shift_id>(xp, UNIQUE);
+
+			tmp_sort1.resize(vp_id.size());
+
+			for (size_t j = 0 ; j < vp_id.size() ; j++)
+			{
+				tmp_sort1.get(j).proc_id = dec.IDtoProc(vp_id.get(j).first);
+				tmp_sort1.get(j).box_id = 0;
+				tmp_sort1.get(j).shift_id = vp_id.get(j).second;
+			}
+
+			tmp_sort1.sort();
+
+			tmp_sort2.resize(sz);
+			for (size_t j = 0 ; j < sz ; j++)
+			{
+				tmp_sort2.get(j).proc_id = output.template get<0>(base+j);
+				tmp_sort2.get(j).box_id = 0;
+				tmp_sort2.get(j).shift_id = output.template get<2>(base+j);
+			}
+
+			tmp_sort2.sort();
+
+			match &= tmp_sort1.size() == tmp_sort2.size();
+
+			for (size_t j = 0 ; j < tmp_sort1.size() ; j++)
+			{
+				match &= tmp_sort1.get(j).proc_id == tmp_sort2.get(j).proc_id;
+				match &= tmp_sort1.get(j).shift_id == tmp_sort2.get(j).shift_id;
+			}
+		}
 	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
 }
 
 BOOST_AUTO_TEST_CASE( decomposition_to_gpu_test_use )
@@ -337,6 +393,8 @@ BOOST_AUTO_TEST_CASE(vector_dist_gpu_map_fill_send_buffer_test)
 		offset += m_pos.get(i).size();
     }
 }
+
+
 
 BOOST_AUTO_TEST_SUITE_END()
 
