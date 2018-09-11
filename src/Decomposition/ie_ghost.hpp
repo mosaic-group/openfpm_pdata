@@ -66,16 +66,10 @@ class ie_ghost
 	//! Cell-list that store the geometrical information of the internal ghost boxes
 	CellList<dim,T,Mem_fast<Memory,int>,shift<dim,T>> geo_cell;
 
-	//! Cell-list that store the geometrical information of the internal ghost boxes (on a processor based lavel)
-	CellList<dim,T,Mem_fast<Memory,int>,shift<dim,T>> geo_cell_proc;
-
 	typedef openfpm::vector<Box<dim,T>,Memory,typename layout_base<Box<dim,T>>::type,layout_base> proc_boxes;
 
-	//! internal ghost Boxes for each processor
-	openfpm::vector<aggregate<proc_boxes,int>,Memory,typename layout_base<aggregate<proc_boxes,int>>::type,layout_base> vb_int_proc;
-
 	//! shift vectors
-	openfpm::vector<Point<dim,T>> shifts;
+	openfpm::vector<Point<dim,T>,Memory,typename layout_base<Point<dim,T>>::type,layout_base> shifts;
 
 	//! Temporal buffers to return temporal information for ghost_processorID
 	openfpm::vector<std::pair<size_t,size_t>> ids_p;
@@ -84,7 +78,7 @@ class ie_ghost
 	openfpm::vector<size_t> ids;
 
 	//! shift converter
-	shift_vect_converter<dim,T> sc_convert;
+	shift_vect_converter<dim,T,Memory,layout_base> sc_convert;
 
 	//! host to device transfer
 	bool host_dev_transfer = false;
@@ -210,9 +204,6 @@ protected:
 	{
 		// Initialize the geo_cell structure
 		geo_cell.Initialize(domain,div,0);
-
-		// Initialize the geo_cell structure
-		geo_cell_proc.Initialize(domain,div,0);
 	}
 
 	/*! \brief Create the box_nn_processor_int (bx part)  structure
@@ -315,30 +306,6 @@ protected:
 		}
 	}
 
-	/*! \brief construct the vb_int_proc box
-	 *
-	 *
-	 */
-	void construct_vb_int_proc(const nn_prcs<dim,T> & nn_p)
-	{
-		vb_int_proc.resize_no_device(proc_int_box.size());
-
-		for (size_t i = 0 ; i < proc_int_box.size() ; i++)
-		{
-			vb_int_proc.template get<0>(i).resize(proc_int_box.get(i).ibx.size());
-
-			for (size_t j = 0 ; j < proc_int_box.get(i).ibx.size() ; j++)
-			{
-				for (size_t k = 0 ; k < dim ; k++)
-				{
-					vb_int_proc.template get<0>(i).template get<0>(j)[k] = proc_int_box.get(i).ibx.get(j).bx.getLow(k);
-					vb_int_proc.template get<0>(i).template get<1>(j)[k] = proc_int_box.get(i).ibx.get(j).bx.getHigh(k);
-				}
-			}
-
-			vb_int_proc.template get<1>(i) = nn_p.IDtoProc(i);
-		}
-	}
 
 	/*! \brief Create the box_nn_processor_int (nbx part) structure, the geo_cell list and proc_int_box
 	 *
@@ -470,32 +437,12 @@ protected:
 
 							geo_cell.addCell(cell,vb_int.size()-1);
 
-							// Check if p_id already exist at that cell
-							// and we add it only if does not exist
-
-							size_t nc = geo_cell_proc.getNelements(cell);
-
-							bool found = false;
-							for (size_t s = 0; s < nc ; s++)
-							{
-								if (geo_cell_proc.get(cell,s) == lc_proc)
-								{
-									found = true;
-									break;
-								}
-							}
-
-							if (found == false)
-							{geo_cell_proc.addCell(cell,lc_proc);}
-
 							++g_sub;
 						}
 					}
 				}
 			}
 		}
-
-		construct_vb_int_proc(nn_p);
 
 		reorder_geo_cell();
 	}
@@ -641,7 +588,7 @@ public:
 	 * \return the shift vectors
 	 *
 	 */
-	const openfpm::vector<Point<dim,T>> & getShiftVectors()
+	const openfpm::vector<Point<dim,T>,Memory,typename layout_base<Point<dim,T>>::type,layout_base> & getShiftVectors()
 	{
 		return shifts;
 	}
@@ -1244,13 +1191,9 @@ public:
 		if (host_dev_transfer == false)
 		{
 			geo_cell.hostToDevice();
-			geo_cell_proc.hostToDevice();
 			vb_int_box.template hostToDevice<0,1>();
 			vb_int.template hostToDevice<0,1,2>();
-
-			for (size_t i = 0 ; i < vb_int_proc.size() ; i++)
-			{vb_int_proc.template get<0>(i). template hostToDevice<0,1>();}
-			vb_int_proc.template hostToDevice<0,1>();
+			shifts.template hostToDevice<0>();
 
 			host_dev_transfer = true;
 		}

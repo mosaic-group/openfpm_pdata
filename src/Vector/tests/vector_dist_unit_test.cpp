@@ -278,7 +278,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost )
 
 BOOST_AUTO_TEST_CASE( vector_dist_ghost_inte )
 {
-	typedef vector_dist<2,float, Point_test<float>,CartDecomposition<2,float>,HeapMemory,memory_traits_inte> vector;
+	typedef vector_dist_soa<2,float, Point_test<float>> vector;
 
 	Box<2,float> box({0.0,0.0},{1.0,1.0});
 	Test2D_ghost<vector>(box);

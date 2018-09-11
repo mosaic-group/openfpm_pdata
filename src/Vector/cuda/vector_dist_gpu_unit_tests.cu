@@ -494,9 +494,18 @@ BOOST_AUTO_TEST_CASE( vector_dist_map_on_gpu_test)
 	BOOST_REQUIRE_EQUAL(n_out,0);
 	BOOST_REQUIRE_EQUAL(l_cnt,vd.size_local());
 
-	vd.write("gpu_write_test");
+	vd.deviceToHostPos();
+	vd.deviceToHostProp<0,1,2>();
+
+	vd.write("gpu_write_before_test");
 
 	vd.ghost_get<0,1,2>(RUN_ON_DEVICE);
+
+	vd.deviceToHostPos();
+	vd.deviceToHostProp<0,1,2>();
+
+	vd.write("gpu_write_after_test");
 }
+
 
 BOOST_AUTO_TEST_SUITE_END()

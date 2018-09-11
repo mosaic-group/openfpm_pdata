@@ -2524,5 +2524,6 @@ public:
 
 
 template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte>> using vector_dist_gpu = vector_dist<dim,St,prop,Decomposition,CudaMemory,memory_traits_inte>;
+template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St,HeapMemory,memory_traits_inte>> using vector_dist_soa = vector_dist<dim,St,prop,Decomposition,HeapMemory,memory_traits_inte>;
 
 #endif /* VECTOR_HPP_ */

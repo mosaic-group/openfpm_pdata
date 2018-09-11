@@ -6,10 +6,359 @@
 #include "Vector/util/vector_dist_funcs.hpp"
 #include "Decomposition/CartDecomposition.hpp"
 #include "util/cuda/scan_cuda.cuh"
+#include "util/cuda/moderngpu/kernel_scan.hxx"
 
 #define SUB_UNIT_FACTOR 1024
 
 BOOST_AUTO_TEST_SUITE( vector_dist_gpu_util_func_test )
+
+BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
+{
+	typedef aggregate<float,float[3],float[3][3]> prop;
+
+	openfpm::vector_gpu<prop> v_prp;
+	v_prp.resize(10000);
+
+	openfpm::vector_gpu<Point<3,float>> v_pos;
+	v_pos.resize(10000);
+
+	openfpm::vector_gpu<aggregate<unsigned int,unsigned int>> o_part_loc;
+
+	for (size_t i = 0 ; i < v_prp.size() ; i++)
+	{
+		v_pos.template get<0>(i)[0] = (float)rand()/RAND_MAX;
+		v_pos.template get<0>(i)[1] = (float)rand()/RAND_MAX;
+		v_pos.template get<0>(i)[2] = (float)rand()/RAND_MAX;
+
+		v_prp.template get<0>(i) = i+12345;
+
+		v_prp.template get<1>(i)[0] = i;
+		v_prp.template get<1>(i)[1] = i+20000;
+		v_prp.template get<1>(i)[2] = i+50000;
+
+		v_prp.template get<2>(i)[0][0] = i+60000;
+		v_prp.template get<2>(i)[0][1] = i+70000;
+		v_prp.template get<2>(i)[0][2] = i+80000;
+		v_prp.template get<2>(i)[1][0] = i+90000;
+		v_prp.template get<2>(i)[1][1] = i+100000;
+		v_prp.template get<2>(i)[1][2] = i+110000;
+		v_prp.template get<2>(i)[2][0] = i+120000;
+		v_prp.template get<2>(i)[2][1] = i+130000;
+	}
+
+	openfpm::vector_gpu<Box<3,float>> box_f_dev;
+	openfpm::vector_gpu<aggregate<unsigned int>> box_f_sv;
+
+	box_f_dev.resize(4);
+	box_f_sv.resize(4);
+
+	box_f_dev.template get<0>(0)[0] = 0.0;
+	box_f_dev.template get<0>(0)[1] = 0.0;
+	box_f_dev.template get<0>(0)[2] = 0.0;
+	box_f_dev.template get<1>(0)[0] = 0.5;
+	box_f_dev.template get<1>(0)[1] = 1.0;
+	box_f_dev.template get<1>(0)[2] = 1.0;
+	box_f_sv.template get<0>(0) = 0;
+
+	box_f_dev.template get<0>(1)[0] = 0.0;
+	box_f_dev.template get<0>(1)[1] = 0.0;
+	box_f_dev.template get<0>(1)[2] = 0.0;
+	box_f_dev.template get<1>(1)[0] = 0.3;
+	box_f_dev.template get<1>(1)[1] = 1.0;
+	box_f_dev.template get<1>(1)[2] = 1.0;
+	box_f_sv.template get<0>(1) = 1;
+
+	box_f_dev.template get<0>(2)[0] = 0.0;
+	box_f_dev.template get<0>(2)[1] = 0.0;
+	box_f_dev.template get<0>(2)[2] = 0.0;
+	box_f_dev.template get<1>(2)[0] = 0.2;
+	box_f_dev.template get<1>(2)[1] = 1.0;
+	box_f_dev.template get<1>(2)[2] = 1.0;
+	box_f_sv.template get<0>(2) = 2;
+
+	box_f_dev.template get<0>(3)[0] = 0.0;
+	box_f_dev.template get<0>(3)[1] = 0.0;
+	box_f_dev.template get<0>(3)[2] = 0.0;
+	box_f_dev.template get<1>(3)[0] = 0.1;
+	box_f_dev.template get<1>(3)[1] = 1.0;
+	box_f_dev.template get<1>(3)[2] = 1.0;
+	box_f_sv.template get<0>(3) = 3;
+
+	// Label the internal (assigned) particles
+	auto ite = v_pos.getGPUIteratorTo(v_pos.size());
+
+	o_part_loc.resize(v_pos.size()+1);
+	o_part_loc.template get<0>(o_part_loc.size()-1) = 0;
+	o_part_loc.template hostToDevice<0>(o_part_loc.size()-1,o_part_loc.size()-1);
+
+	box_f_dev.hostToDevice<0,1>();
+	box_f_sv.hostToDevice<0>();
+	v_pos.hostToDevice<0>();
+	v_prp.hostToDevice<0,1,2>();
+
+	// label particle processor
+	num_shift_ghost_each_part<3,float,decltype(box_f_dev.toKernel()),decltype(v_pos.toKernel()),decltype(o_part_loc.toKernel())>
+	<<<ite.wthr,ite.thr>>>
+	(box_f_dev.toKernel(),v_pos.toKernel(),o_part_loc.toKernel());
+
+	o_part_loc.deviceToHost<0>();
+
+	bool match = true;
+
+	for (size_t i = 0 ; i < v_pos.size() ; i++)
+	{
+		if (v_pos.template get<0>(i)[0] >= 0.5)
+		{match &= o_part_loc.template get<0>(i) == 0;}
+		else if (v_pos.template get<0>(i)[0] >= 0.3)
+		{match &= o_part_loc.template get<0>(i) == 1;}
+		else if (v_pos.template get<0>(i)[0] >= 0.2)
+		{match &= o_part_loc.template get<0>(i) == 2;}
+		else if (v_pos.template get<0>(i)[0] >= 0.1)
+		{match &= o_part_loc.template get<0>(i) == 3;}
+		else
+		{match &= o_part_loc.template get<0>(i) == 4;}
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+
+	openfpm::vector_gpu<aggregate<unsigned int>> starts;
+	starts.resize(o_part_loc.size());
+
+	auto & v_cl = create_vcluster();
+	mgpu::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
+
+	starts.deviceToHost<0>(starts.size()-1,starts.size()-1);
+	size_t tot = starts.template get<0>(o_part_loc.size()-1);
+
+	openfpm::vector<Point<3,float>,CudaMemory,typename memory_traits_inte<Point<3,float>>::type,memory_traits_inte> shifts;
+
+	shifts.resize(4);
+
+	shifts.template get<0>(0)[0] = 10.0;
+	shifts.template get<0>(0)[1] = 0.0;
+	shifts.template get<0>(0)[2] = 0.0;
+
+	shifts.template get<0>(1)[0] = 20.0;
+	shifts.template get<0>(1)[1] = 0.0;
+	shifts.template get<0>(1)[2] = 0.0;
+
+	shifts.template get<0>(2)[0] = 30.0;
+	shifts.template get<0>(2)[1] = 0.0;
+	shifts.template get<0>(2)[2] = 0.0;
+
+	shifts.template get<0>(3)[0] = 40.0;
+	shifts.template get<0>(3)[1] = 0.0;
+	shifts.template get<0>(3)[2] = 0.0;
+
+	size_t old = v_pos.size();
+	v_pos.resize(v_pos.size() + tot);
+
+	shifts.template hostToDevice<0>();
+	openfpm::vector_gpu<aggregate<unsigned int,unsigned int>> o_part_loc2;
+	o_part_loc2.resize(tot);
+
+	shift_ghost_each_part<3,float,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),
+			                     decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),
+			                     decltype(starts.toKernel()),decltype(shifts.toKernel()),
+			                     decltype(o_part_loc2.toKernel())>
+	<<<ite.wthr,ite.thr>>>
+	(box_f_dev.toKernel(),box_f_sv.toKernel(),
+	 v_pos.toKernel(),v_prp.toKernel(),
+	 starts.toKernel(),shifts.toKernel(),o_part_loc2.toKernel(),old);
+
+	v_pos.deviceToHost<0>();
+	o_part_loc2.deviceToHost<0,1>();
+
+	size_t base = old;
+	size_t base_o = 0;
+	for (size_t i = 0 ; i < old ; i++)
+	{
+		if (v_pos.template get<0>(i)[0] >= 0.5)
+		{}
+		else if (v_pos.template get<0>(i)[0] >= 0.3)
+		{
+			for (size_t j = 0 ; j < o_part_loc.template get<0>(i) ; j++)
+			{
+				match &= v_pos.template get<0>(base)[0] < 1.0 - (j+1.0)*10.0;
+				match &= v_pos.template get<0>(base)[0] >= -(j+1.0)*10.0;
+
+				match &= o_part_loc2.template get<0>(base_o) == i;
+				match &= o_part_loc2.template get<1>(base_o) == j;
+
+				base++;
+				base_o++;
+			}
+		}
+		else if (v_pos.template get<0>(i)[0] >= 0.2)
+		{
+			for (size_t j = 0 ; j < o_part_loc.template get<0>(i) ; j++)
+			{
+				match &= v_pos.template get<0>(base)[0] < 1.0 - (j+1.0)*10.0;
+				match &= v_pos.template get<0>(base)[0] >= -(j+1.0)*10.0;
+
+				match &= o_part_loc2.template get<0>(base_o) == i;
+				match &= o_part_loc2.template get<1>(base_o) == j;
+
+				base++;
+				base_o++;
+			}
+		}
+		else if (v_pos.template get<0>(i)[0] >= 0.1)
+		{
+			for (size_t j = 0 ; j < o_part_loc.template get<0>(i) ; j++)
+			{
+				match &= v_pos.template get<0>(base)[0] < 1.0 - (j+1.0)*10.0;
+				match &= v_pos.template get<0>(base)[0] >= -(j+1.0)*10.0;
+
+				match &= o_part_loc2.template get<0>(base_o) == i;
+				match &= o_part_loc2.template get<1>(base_o) == j;
+
+				base++;
+				base_o++;
+			}
+		}
+		else
+		{
+			for (size_t j = 0 ; j < o_part_loc.template get<0>(i) ; j++)
+			{
+				match &= v_pos.template get<0>(base)[0] < 1.0 - (j+1.0)*10.0;
+				match &= v_pos.template get<0>(base)[0] >= -(j+1.0)*10.0;
+
+				match &= o_part_loc2.template get<0>(base_o) == i;
+				match &= o_part_loc2.template get<1>(base_o) == j;
+
+				base++;
+				base_o++;
+			}
+		}
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+}
+
+BOOST_AUTO_TEST_CASE( vector_ghost_fill_send_buffer_test )
+{
+	typedef aggregate<float,float[3],float[3][3]> prop;
+
+	// Sending property object
+	typedef object<typename object_creator<typename prop::type, 0,1,2>::type> prp_object;
+
+	// send vector for each processor
+	typedef openfpm::vector<prp_object,CudaMemory,typename memory_traits_inte<prp_object>::type,memory_traits_inte> send_vector;
+
+	openfpm::vector<send_vector> g_send_prp;
+
+	auto & v_cl = create_vcluster();
+
+	// Vcluster
+	Vcluster<> & vcl = create_vcluster();
+
+	openfpm::vector_gpu<prop> v_prp;
+	v_prp.resize(10000);
+
+	openfpm::vector_gpu<aggregate<unsigned int,unsigned int,unsigned int>> g_opart_device;
+
+	for (size_t i = 0 ; i < v_prp.size() ; i++)
+	{
+		v_prp.template get<0>(i) = i+12345;
+
+		v_prp.template get<1>(i)[0] = i;
+		v_prp.template get<1>(i)[1] = i+20000;
+		v_prp.template get<1>(i)[2] = i+50000;
+
+		v_prp.template get<2>(i)[0][0] = i+60000;
+		v_prp.template get<2>(i)[0][1] = i+70000;
+		v_prp.template get<2>(i)[0][2] = i+80000;
+		v_prp.template get<2>(i)[1][0] = i+90000;
+		v_prp.template get<2>(i)[1][1] = i+100000;
+		v_prp.template get<2>(i)[1][2] = i+110000;
+		v_prp.template get<2>(i)[2][0] = i+120000;
+		v_prp.template get<2>(i)[2][1] = i+130000;
+		v_prp.template get<2>(i)[2][2] = i+140000;
+	}
+
+	v_prp.hostToDevice<0,1,2>();
+
+	g_opart_device.resize(2*10000*3);
+
+	for (size_t i = 0 ; i < 3 ; i++)
+	{
+		for (size_t j = 0 ; j < 10000 ; j++)
+		{
+			g_opart_device.template get<0>(i*2*10000 + j*2) = i;
+			g_opart_device.template get<0>(i*2*10000 + j*2+1) = i;
+
+			g_opart_device.template get<1>(i*2*10000 + j*2) = j;
+			g_opart_device.template get<1>(i*2*10000 + j*2+1) = j;
+
+			g_opart_device.template get<2>(i*2*10000 + j*2) = 0;
+			g_opart_device.template get<2>(i*2*10000 + j*2+1) = 0;
+		}
+	}
+
+	g_opart_device.hostToDevice<0,1,2>();
+
+	g_send_prp.resize(3);
+
+	bool match = true;
+	size_t offset = 0;
+
+	for (size_t i = 0 ; i < 3 ; i++)
+	{
+		g_send_prp.get(i).resize(2*10000);
+
+		auto ite = g_send_prp.get(i).getGPUIterator();
+
+		process_ghost_particles_prp<decltype(g_opart_device.toKernel()),decltype(g_send_prp.get(i).toKernel()),decltype(v_prp.toKernel()),0,1,2>
+		<<<ite.wthr,ite.thr>>>
+		(g_opart_device.toKernel(), g_send_prp.get(i).toKernel(),
+		 v_prp.toKernel(),offset);
+
+		offset += g_send_prp.get(i).size();
+
+		///////////// TEST ////////////
+
+		g_send_prp.get(i).deviceToHost<0,1,2>();
+
+		for (size_t j = 0 ; j < 10000 ; j++)
+		{
+			match &= g_send_prp.get(i).template get<0>(2*j) == j+12345;
+
+			match &= g_send_prp.get(i).template get<1>(2*j)[0] == j;
+			match &= g_send_prp.get(i).template get<1>(2*j)[1] == j+20000;
+			match &= g_send_prp.get(i).template get<1>(2*j)[2] == j+50000;
+
+			match &= g_send_prp.get(i).template get<2>(2*j)[0][0] == j+60000;
+			match &= g_send_prp.get(i).template get<2>(2*j)[0][1] == j+70000;
+			match &= g_send_prp.get(i).template get<2>(2*j)[0][2] == j+80000;
+			match &= g_send_prp.get(i).template get<2>(2*j)[1][0] == j+90000;
+			match &= g_send_prp.get(i).template get<2>(2*j)[1][1] == j+100000;
+			match &= g_send_prp.get(i).template get<2>(2*j)[1][2] == j+110000;
+			match &= g_send_prp.get(i).template get<2>(2*j)[2][0] == j+120000;
+			match &= g_send_prp.get(i).template get<2>(2*j)[2][1] == j+130000;
+			match &= g_send_prp.get(i).template get<2>(2*j)[2][2] == j+140000;
+
+
+			match = g_send_prp.get(i).template get<0>(2*j+1) == j+12345;
+
+			match = g_send_prp.get(i).template get<1>(2*j+1)[0] == j;
+			match = g_send_prp.get(i).template get<1>(2*j+1)[1] == j+20000;
+			match = g_send_prp.get(i).template get<1>(2*j+1)[2] == j+50000;
+
+			match = g_send_prp.get(i).template get<2>(2*j+1)[0][0] == j+60000;
+			match = g_send_prp.get(i).template get<2>(2*j+1)[0][1] == j+70000;
+			match = g_send_prp.get(i).template get<2>(2*j+1)[0][2] == j+80000;
+			match = g_send_prp.get(i).template get<2>(2*j+1)[1][0] == j+90000;
+			match = g_send_prp.get(i).template get<2>(2*j+1)[1][1] == j+100000;
+			match = g_send_prp.get(i).template get<2>(2*j+1)[1][2] == j+110000;
+			match = g_send_prp.get(i).template get<2>(2*j+1)[2][0] == j+120000;
+			match = g_send_prp.get(i).template get<2>(2*j+1)[2][1] == j+130000;
+			match = g_send_prp.get(i).template get<2>(2*j+1)[2][2] == j+140000;
+		}
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+}
 
 BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 {
@@ -114,9 +463,9 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 
 	///////////////////////// we collect the processor and shift id //////////////////////////
 
-    openfpm::vector<aggregate<unsigned int,unsigned int,unsigned int>,
+    openfpm::vector<aggregate<unsigned int,long unsigned int>,
                     CudaMemory,
-                    typename memory_traits_inte<aggregate<unsigned int,unsigned int,unsigned int>>::type,
+                    typename memory_traits_inte<aggregate<unsigned int,long unsigned int>>::type,
                     memory_traits_inte> output;
 
     output.resize(sz);
@@ -128,7 +477,7 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 	<<<ite.wthr,ite.thr>>>
 	(dec.toKernel(),vg.toKernel(),starts.toKernel(),output.toKernel());
 
-	output.template deviceToHost<0,1,2>();
+	output.template deviceToHost<0,1>();
 
 	//////////////////// TESTING //////////////////////////
 
@@ -143,7 +492,7 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 
 		if (sz != 0)
 		{
-			size_t pid = output.template get<1>(base);
+			size_t pid = output.template get<1>(base) & 0xFFFFFFFF;
 			Point<3,float> xp = vg.template get<0>(pid);
 
 			openfpm::vector<proc_box_id> tmp_sort1;
@@ -167,7 +516,7 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 			{
 				tmp_sort2.get(j).proc_id = output.template get<0>(base+j);
 				tmp_sort2.get(j).box_id = 0;
-				tmp_sort2.get(j).shift_id = output.template get<2>(base+j);
+				tmp_sort2.get(j).shift_id = output.template get<1>(base+j) >> 32;
 			}
 
 			tmp_sort2.sort();
@@ -274,7 +623,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_find_buffer_offsets_test )
 	auto ite = vgp.getGPUIterator();
 	vgp.hostToDevice<0>();
 
-	find_buffer_offsets<decltype(vgp.toKernel()),decltype(offs.toKernel())><<<ite.wthr,ite.thr>>>(vgp.toKernel(),(int *)mem.getDevicePointer(),offs.toKernel());
+	find_buffer_offsets<1,decltype(vgp.toKernel()),decltype(offs.toKernel())><<<ite.wthr,ite.thr>>>(vgp.toKernel(),(int *)mem.getDevicePointer(),offs.toKernel());
 
 	offs.template deviceToHost<0,1>();
 

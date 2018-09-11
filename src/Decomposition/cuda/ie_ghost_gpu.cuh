@@ -26,8 +26,7 @@ struct ID_operation
 	__device__ __host__ inline void op(unsigned int base, unsigned int n, unsigned int proc_act, unsigned int shift_act, unsigned int pi)
 	{
 		output.template get<0>(base + n) = proc_act;
-		output.template get<1>(base + n) = pi;
-		output.template get<2>(base + n) = shift_act;
+		output.template get<1>(base + n) = (unsigned long int)pi + (((unsigned long int)shift_act) << 32);
 	}
 };
 

@@ -16,7 +16,7 @@
  * handle such case
  *
  */
-template<unsigned int dim, typename T>
+template<unsigned int dim, typename T, typename Memory, template<typename> class layout_base>
 class shift_vect_converter
 {
 	//! Indicate which indexes are non_periodic
@@ -33,7 +33,8 @@ class shift_vect_converter
 	 * \param domain box that describe the domain
 	 *
 	 */
-	void generateShiftVectors_ld(const Box<dim,T> & domain, size_t (& bc)[dim], openfpm::vector<Point<dim,T>> & shifts)
+	void generateShiftVectors_ld(const Box<dim,T> & domain, size_t (& bc)[dim],
+			                     openfpm::vector<Point<dim,T>,Memory,typename layout_base<Point<dim,T>>::type,layout_base> & shifts)
 	{
 		shifts.resize(openfpm::math::pow(3,dim));
 
@@ -69,7 +70,8 @@ class shift_vect_converter
 	 * \param domain box that describe the domain
 	 *
 	 */
-	void generateShiftVectors_hd(const Box<dim,T> & domain, size_t (& bc)[dim], openfpm::vector<Point<dim,T>> & shifts)
+	void generateShiftVectors_hd(const Box<dim,T> & domain, size_t (& bc)[dim],
+			                     openfpm::vector<Point<dim,T>,Memory,typename layout_base<Point<dim,T>>::type,layout_base> & shifts)
 	{
 		// get the indexes of the free degree of freedom
 		for (size_t i = 0 ; i < dim ; i++)
@@ -123,7 +125,8 @@ public:
 	 * \param domain box that describe the domain
 	 *
 	 */
-	void generateShiftVectors(const Box<dim,T> & domain, size_t (& bc)[dim], openfpm::vector<Point<dim,T>> & shifts)
+	void generateShiftVectors(const Box<dim,T> & domain, size_t (& bc)[dim],
+			                  openfpm::vector<Point<dim,T>,Memory,typename layout_base<Point<dim,T>>::type,layout_base> & shifts)
 	{
 		if (dim < 10)
 		{generateShiftVectors_ld(domain,bc,shifts);}
