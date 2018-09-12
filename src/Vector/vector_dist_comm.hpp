@@ -310,9 +310,14 @@ class vector_dist_comm
 
 				auto ite = o_part_loc.getGPUIterator();
 
+				size_t old = v_pos.size();
+
+				v_pos.resize(v_pos.size() + o_part_loc.size(),DATA_ON_DEVICE);
+				v_prp.resize(v_prp.size() + o_part_loc.size(),DATA_ON_DEVICE);
+
 				process_ghost_particles_local<true,dim,decltype(o_part_loc.toKernel()),decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(shifts.toKernel())>
 				<<<ite.wthr,ite.thr>>>
-				(o_part_loc.toKernel(),v_pos.toKernel(),v_prp.toKernel(),shifts.toKernel(),v_pos.size());
+				(o_part_loc.toKernel(),v_pos.toKernel(),v_prp.toKernel(),shifts.toKernel(),old);
 
 #else
 				std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option RUN_ON_DEVICE you must compile with NVCC" << std::endl;

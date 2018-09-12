@@ -191,6 +191,9 @@ __global__ void shift_ghost_each_part(vector_of_box box_f, vector_of_shifts box_
     			output.template get<0>(base_o+n) = p;
     			output.template get<1>(base_o+n) = shift_id;
     		}
+
+    		v_prp.set(base+n,v_prp.get(p));
+
     		n++;
     	}
     }
