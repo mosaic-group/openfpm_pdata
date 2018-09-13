@@ -34,6 +34,7 @@ struct proc_box_id
 	}
 };
 
+
 /*! \brief structure that store and compute the internal and external local ghost box
  *
  * \tparam dim is the dimensionality of the physical domain we are going to decompose.
@@ -517,6 +518,7 @@ public:
 		proc_int_box.swap(ie.proc_int_box);
 		vb_ext.swap(ie.vb_ext);
 		vb_int.swap(ie.vb_int);
+		vb_int_box.swap(ie.vb_int_box);
 		geo_cell.swap(ie.geo_cell);
 		shifts.swap(ie.shifts);
 		ids_p.swap(ie.ids_p);
@@ -532,12 +534,38 @@ public:
 		proc_int_box = ie.proc_int_box;
 		vb_ext = ie.vb_ext;
 		vb_int = ie.vb_int;
+		vb_int_box = ie.vb_int_box;
 		geo_cell = ie.geo_cell;
 		shifts = ie.shifts;
 		ids_p = ie.ids_p;
 		ids = ie.ids;
 
 		return *this;
+	}
+
+
+
+	/*! \brief duplicate this structure changing layout and Memory
+	 *
+	 * \return a structure with Memory type and layout changed
+	 *
+	 */
+	template<typename Memory2, template <typename> class layout_base2>
+	inline ie_ghost<dim,T,Memory2,layout_base2> duplicate()
+	{
+		ie_ghost<dim,T,Memory2,layout_base2> tmp;
+
+		tmp.private_get_box_nn_processor_int() = box_nn_processor_int;
+		tmp.private_get_proc_int_box() = proc_int_box;
+		tmp.private_get_vb_ext() = vb_ext;
+		tmp.private_get_vb_int() = vb_int;
+		tmp.private_get_vb_int_box() = vb_int_box;
+		tmp.private_geo_cell() = geo_cell;
+		tmp.private_get_shifts() = shifts;
+		tmp.private_get_ids_p() = ids_p;
+		tmp.private_get_ids() = ids;
+
+		return tmp;
 	}
 
 	/*! It return the shift vector
@@ -1179,6 +1207,102 @@ public:
 		shifts.clear();
 		ids_p.clear();
 		ids.clear();
+	}
+
+	/*! \brief Return the internal data structure box_nn_processor_int
+	 *
+	 * \return box_nn_processor_int
+	 *
+	 */
+	inline openfpm::vector< openfpm::vector< Box_proc<dim,T> > > & private_get_box_nn_processor_int()
+	{
+		return box_nn_processor_int;
+	}
+
+	/*! \brief Return the internal data structure proc_int_box
+	 *
+	 * \return proc_int_box
+	 *
+	 */
+	inline openfpm::vector< Box_dom<dim,T> > & private_get_proc_int_box()
+	{
+		return proc_int_box;
+	}
+
+	/*! \brief Return the internal data structure vb_ext
+	 *
+	 * \return vb_ext
+	 *
+	 */
+	inline openfpm::vector<p_box<dim,T> > & private_get_vb_ext()
+	{
+		return vb_ext;
+	}
+
+	/*! \brief Return the internal data structure vb_int
+	 *
+	 * \return vb_int
+	 *
+	 */
+	inline openfpm::vector<aggregate<unsigned int,unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int,unsigned int>>::type,layout_base> &
+	private_get_vb_int()
+	{
+		return vb_int;
+	}
+
+	/*! \brief Return the internal data structure vb_int_box
+	 *
+	 * \return vb_int_box
+	 *
+	 */
+	inline openfpm::vector<Box<dim,T>,Memory,typename layout_base<Box<dim,T>>::type,layout_base> &
+	private_get_vb_int_box()
+	{
+		return vb_int_box;
+	}
+
+	/*! \brief Return the internal data structure proc_int_box
+	 *
+	 * \return proc_int_box
+	 *
+	 */
+	inline CellList<dim,T,Mem_fast<Memory,int>,shift<dim,T>> &
+	private_geo_cell()
+	{
+		return geo_cell;
+	}
+
+	/*! \brief Return the internal data structure shifts
+	 *
+	 * \return shifts
+	 *
+	 */
+	inline openfpm::vector<Point<dim,T>,Memory,typename layout_base<Point<dim,T>>::type,layout_base> &
+	private_get_shifts()
+	{
+		return shifts;
+	}
+
+	/*! \brief Return the internal data structure ids_p
+	 *
+	 * \return ids_p
+	 *
+	 */
+	inline openfpm::vector<std::pair<size_t,size_t>> &
+	private_get_ids_p()
+	{
+		return ids_p;
+	}
+
+	/*! \brief Return the internal data structure ids_p
+	 *
+	 * \return ids_p
+	 *
+	 */
+	inline openfpm::vector<size_t> &
+	private_get_ids()
+	{
+		return ids;
 	}
 
 	/*! \brief toKernel() Convert this data-structure into a kernel usable data-structure

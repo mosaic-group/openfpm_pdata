@@ -390,7 +390,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_map_on_gpu_test)
 	Ghost<3,float> g(0.1);
 
 	// Boundary conditions
-	size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
 	vector_dist_gpu<3,float,aggregate<float,float[3],float[3]>> vd(1000,domain,bc,g);
 
@@ -497,14 +497,140 @@ BOOST_AUTO_TEST_CASE( vector_dist_map_on_gpu_test)
 	vd.deviceToHostPos();
 	vd.deviceToHostProp<0,1,2>();
 
-	vd.write("gpu_write_before_test");
+	// To test we copy on a cpu distributed vector and we do a map
 
+	vector_dist<3,float,aggregate<float,float[3],float[3]>> vd_cpu(vd.getDecomposition().duplicate_convert<HeapMemory,memory_traits_lin>(),0);
+
+	auto itc = vd.getDomainIterator();
+
+	while (itc.isNext())
+	{
+		auto p = itc.get();
+
+		vd_cpu.add();
+
+		vd_cpu.getLastPos()[0] = vd.getPos(p)[0];
+		vd_cpu.getLastPos()[1] = vd.getPos(p)[1];
+		vd_cpu.getLastPos()[2] = vd.getPos(p)[2];
+
+		vd_cpu.getLastProp<0>() = vd.getProp<0>(p);
+
+		vd_cpu.getLastProp<1>()[0] = vd.getProp<1>(p)[0];
+		vd_cpu.getLastProp<1>()[1] = vd.getProp<1>(p)[1];
+		vd_cpu.getLastProp<1>()[2] = vd.getProp<1>(p)[2];
+
+		vd_cpu.getLastProp<2>()[0] = vd.getProp<2>(p)[0];
+		vd_cpu.getLastProp<2>()[1] = vd.getProp<2>(p)[1];
+		vd_cpu.getLastProp<2>()[2] = vd.getProp<2>(p)[2];
+
+		++itc;
+	}
+
+	vd_cpu.ghost_get<0,1,2>();
 	vd.ghost_get<0,1,2>(RUN_ON_DEVICE);
 
 	vd.deviceToHostPos();
 	vd.deviceToHostProp<0,1,2>();
 
-	vd.write("gpu_write_after_test");
+	vd.write("write_test");
+	vd_cpu.write("write_test2");
+
+	match = true;
+
+	// Particle on the gpu ghost and cpu ghost are not ordered in the same way so we have to reorder
+
+	struct part
+	{
+		Point<3,float> xp;
+
+		float prp0;
+		float prp1[3];
+		float prp2[3];
+
+		bool operator<(const part & tmp) const
+		{
+			if (xp.get(0) < tmp.xp.get(0))
+			{return true;}
+			else if (xp.get(0) > tmp.xp.get(0))
+			{return false;}
+
+			if (xp.get(1) < tmp.xp.get(1))
+			{return true;}
+			else if (xp.get(1) > tmp.xp.get(1))
+			{return false;}
+
+			if (xp.get(2) < tmp.xp.get(2))
+			{return true;}
+			else if (xp.get(2) > tmp.xp.get(2))
+			{return false;}
+
+			return false;
+		}
+	};
+
+	openfpm::vector<part> cpu_sort;
+	openfpm::vector<part> gpu_sort;
+
+	cpu_sort.resize(vd_cpu.size_local_with_ghost() - vd_cpu.size_local());
+	gpu_sort.resize(vd.size_local_with_ghost() - vd.size_local());
+
+	size_t cnt = 0;
+
+	auto itc2 = vd.getGhostIterator();
+	while (itc2.isNext())
+	{
+		auto p = itc2.get();
+
+		cpu_sort.get(cnt).xp.get(0) = vd_cpu.getPos(p)[0];
+		gpu_sort.get(cnt).xp.get(0) = vd.getPos(p)[0];
+		cpu_sort.get(cnt).xp.get(1) = vd_cpu.getPos(p)[1];
+		gpu_sort.get(cnt).xp.get(1) = vd.getPos(p)[1];
+		cpu_sort.get(cnt).xp.get(2) = vd_cpu.getPos(p)[2];
+		gpu_sort.get(cnt).xp.get(2) = vd.getPos(p)[2];
+
+		cpu_sort.get(cnt).prp0 = vd_cpu.getProp<0>(p);
+		gpu_sort.get(cnt).prp0 = vd.getProp<0>(p);
+
+		cpu_sort.get(cnt).prp1[0] = vd_cpu.getProp<1>(p)[0];
+		gpu_sort.get(cnt).prp1[0] = vd.getProp<1>(p)[0];
+		cpu_sort.get(cnt).prp1[1] = vd_cpu.getProp<1>(p)[1];
+		gpu_sort.get(cnt).prp1[1] = vd.getProp<1>(p)[1];
+		cpu_sort.get(cnt).prp1[2] = vd_cpu.getProp<1>(p)[2];
+		gpu_sort.get(cnt).prp1[2] = vd.getProp<1>(p)[2];
+
+		cpu_sort.get(cnt).prp2[0] = vd_cpu.getProp<2>(p)[0];
+		gpu_sort.get(cnt).prp2[0] = vd.getProp<2>(p)[0];
+		cpu_sort.get(cnt).prp2[1] = vd_cpu.getProp<2>(p)[1];
+		gpu_sort.get(cnt).prp2[1] = vd.getProp<2>(p)[1];
+		cpu_sort.get(cnt).prp2[2] = vd_cpu.getProp<2>(p)[2];
+		gpu_sort.get(cnt).prp2[2] = vd.getProp<2>(p)[2];
+
+		++cnt;
+		++itc2;
+	}
+
+	cpu_sort.sort();
+	gpu_sort.sort();
+
+	for (size_t i = 0 ; i < cpu_sort.size() ; i++)
+	{
+		match &= cpu_sort.get(i).xp.get(0) == gpu_sort.get(i).xp.get(0);
+		match &= cpu_sort.get(i).xp.get(1) == gpu_sort.get(i).xp.get(1);
+		match &= cpu_sort.get(i).xp.get(2) == gpu_sort.get(i).xp.get(2);
+
+		match &= cpu_sort.get(i).prp0 == gpu_sort.get(i).prp0;
+		match &= cpu_sort.get(i).prp1[0] == gpu_sort.get(i).prp1[0];
+		match &= cpu_sort.get(i).prp1[1] == gpu_sort.get(i).prp1[1];
+		match &= cpu_sort.get(i).prp1[2] == gpu_sort.get(i).prp1[2];
+
+		match &= cpu_sort.get(i).prp2[0] == gpu_sort.get(i).prp2[0];
+		match &= cpu_sort.get(i).prp2[1] == gpu_sort.get(i).prp2[1];
+		match &= cpu_sort.get(i).prp2[2] == gpu_sort.get(i).prp2[2];
+	}
+
+
+
+	BOOST_REQUIRE_EQUAL(match,true);
 }
 
 

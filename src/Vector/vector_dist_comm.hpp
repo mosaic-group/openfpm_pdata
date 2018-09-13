@@ -16,6 +16,7 @@
 #endif
 
 #include "Vector/util/vector_dist_funcs.hpp"
+#include "cuda/vector_dist_comm_util_funcs.cuh"
 
 #define SKIP_LABELLING 512
 #define KEEP_PROPERTIES 512
@@ -282,8 +283,8 @@ class vector_dist_comm
 		}
 
 		// move box_f_dev and box_f_sv to device
-		box_f_dev.template deviceToHost<0,1>();
-		box_f_sv.template deviceToHost<0>();
+		box_f_dev.template hostToDevice<0,1>();
+		box_f_sv.template hostToDevice<0>();
 
 		shift_box_ndec = dec.get_ndec();
 	}
@@ -306,7 +307,10 @@ class vector_dist_comm
 		{
 			if (opt & RUN_ON_DEVICE)
 			{
-#if defined(CUDA_GPU) && defined(__NVCC__)
+				local_ghost_from_opart_impl<true,dim,St,prop,Memory,layout_base,std::is_same<Memory,CudaMemory>::value>
+				::run(o_part_loc,shifts,v_pos,v_prp,opt);
+
+/*#if defined(CUDA_GPU) && defined(__NVCC__)
 
 				auto ite = o_part_loc.getGPUIterator();
 
@@ -321,7 +325,7 @@ class vector_dist_comm
 
 #else
 				std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option RUN_ON_DEVICE you must compile with NVCC" << std::endl;
-#endif
+#endif*/
 			}
 			else
 			{
@@ -344,7 +348,10 @@ class vector_dist_comm
 		{
 			if (opt & RUN_ON_DEVICE)
 			{
-#if defined(CUDA_GPU) && defined(__NVCC__)
+				local_ghost_from_opart_impl<false,dim,St,prop,Memory,layout_base,std::is_same<Memory,CudaMemory>::value>
+				::run(o_part_loc,shifts,v_pos,v_prp,opt);
+
+/*#if defined(CUDA_GPU) && defined(__NVCC__)
 
 				auto ite = o_part_loc.getGPUIterator();
 
@@ -354,7 +361,7 @@ class vector_dist_comm
 
 #else
 				std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option RUN_ON_DEVICE you must compile with NVCC" << std::endl;
-#endif
+#endif*/
 			}
 			else
 			{
@@ -386,7 +393,10 @@ class vector_dist_comm
 
 		if (opt & RUN_ON_DEVICE)
 		{
-#if defined(CUDA_GPU) && defined(__NVCC__)
+			local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,std::is_same<Memory,CudaMemory>::value>
+			::run(o_part_loc,shifts,box_f_dev,box_f_sv,v_cl,v_pos,v_prp,g_m,opt);
+
+/*#if defined(CUDA_GPU) && defined(__NVCC__)
 
 			o_part_loc.resize(g_m+1);
 			o_part_loc.template get<0>(o_part_loc.size()-1) = 0;
@@ -424,7 +434,7 @@ class vector_dist_comm
 
 #else
 				std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option RUN_ON_DEVICE you must compile with NVCC" << std::endl;
-#endif
+#endif*/
 
 		}
 		else
@@ -1130,7 +1140,11 @@ class vector_dist_comm
 
 		if (opt & RUN_ON_DEVICE)
 		{
-#if defined(CUDA_GPU) && defined(__NVCC__)
+			labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,
+			                         Decomposition,std::is_same<Memory,CudaMemory>::value>
+			::run(dec,g_opart_device,v_cl,v_pos,v_prp,prc,prc_sz,prc_offset,g_m,opt);
+
+/*#if defined(CUDA_GPU) && defined(__NVCC__)
 
             openfpm::vector<aggregate<unsigned int>,
                             Memory,
@@ -1208,7 +1222,7 @@ class vector_dist_comm
 
 			std::cout << __FILE__ << ":" << __LINE__ << " error: to use gpu computation you must compile vector_dist.hpp with NVCC" << std::endl;
 
-#endif
+#endif*/
 		}
 		else
 		{
@@ -1244,10 +1258,10 @@ class vector_dist_comm
 			{
 				if (g_opart.get(i).size() != 0)
 				{
+					prc_sz.add(g_opart.get(i).size());
 					g_opart_f.add();
 					g_opart.get(i).swap(g_opart_f.last());
 					prc.add(dec.IDtoProc(i));
-					prc_sz.add(g_opart.get(i).size());
 				}
 			}
 

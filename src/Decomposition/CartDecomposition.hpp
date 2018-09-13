@@ -919,6 +919,44 @@ public:
 		return cart;
 	}
 
+	/*! \brief It create another object that contain the same information and act in the same way
+	 *
+	 * \return a duplicated CartDecomposition object
+	 *
+	 */
+	template<typename Memory2, template <typename> class layout_base2>
+	CartDecomposition<dim,T,Memory2,layout_base2,Distribution> duplicate_convert() const
+	{
+		CartDecomposition<dim,T> cart(v_cl);
+
+		(static_cast<ie_loc_ghost<dim,T>*>(&cart))->operator=(static_cast<ie_loc_ghost<dim,T>>(*this));
+		(static_cast<nn_prcs<dim,T>*>(&cart))->operator=(static_cast<nn_prcs<dim,T>>(*this));
+		ie_ghost<dim,T,Memory,layout_base> * ptr = static_cast<ie_ghost<dim,T,Memory,layout_base> *>((CartDecomposition<dim,T,Memory,layout_base,Distribution> *)this);
+		(static_cast<ie_ghost<dim,T,Memory2,layout_base2>*>(&cart))->operator=(ptr->template duplicate<Memory2,layout_base2>());
+
+		cart.private_get_sub_domains() = sub_domains;
+		cart.private_get_box_nn_processor() = box_nn_processor;
+		cart.private_get_fine_s() = fine_s;
+		cart.private_get_gr() = gr;
+		cart.private_get_gr_dist() = gr_dist;
+		cart.private_get_dist() = dist;
+		cart.private_get_commCostSet() = commCostSet;
+		cart.private_get_cd() = cd;
+		cart.private_get_domain() = domain;
+		cart.private_get_sub_domains_global() = sub_domains_global;
+		for (size_t i = 0 ; i < dim ; i++)
+		{cart.private_get_spacing(i) = spacing[i];};
+
+		cart.private_get_ghost() = ghost;
+
+		cart.private_get_bbox() = bbox;
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{cart.private_get_bc(i) = this->bc[i];}
+
+		return cart;
+	}
+
 	/*! \brief Copy the element
 	 *
 	 * \param cart element to copy
@@ -1999,6 +2037,145 @@ public:
 	//! friend classes
 	friend extended_type;
 
+	/*! \brief Return the internal data structure sub_domains
+	 *
+	 * \return sub_domains
+	 *
+	 */
+	openfpm::vector<SpaceBox<dim, T>> & private_get_sub_domains()
+	{
+		return sub_domains;
+	}
+
+	/*! \brief Return the internal data structure box_nn_processor
+	 *
+	 * \return box_nn_processor
+	 *
+	 */
+	openfpm::vector<openfpm::vector<long unsigned int> > & private_get_box_nn_processor()
+	{
+		return box_nn_processor;
+	}
+
+	/*! \brief Return the internal data structure fine_s
+	 *
+	 * \return fine_s
+	 *
+	 */
+	CellList<dim,T,Mem_fast<Memory,int>,shift<dim,T>> & private_get_fine_s()
+	{
+		return fine_s;
+	}
+
+	/*! \brief Return the internal data structure gr
+	 *
+	 * \return gr
+	 *
+	 */
+	grid_sm<dim, void> & private_get_gr()
+	{
+		return gr;
+	}
+
+	/*! \brief Return the internal data structure gr_dist
+	 *
+	 * \return gr_dist
+	 *
+	 */
+	grid_sm<dim, void> & private_get_gr_dist()
+	{
+		return gr_dist;
+	}
+
+	/*! \brief Return the internal data structure dist
+	 *
+	 * \return dist
+	 *
+	 */
+	Distribution & private_get_dist()
+	{
+		return dist;
+	}
+
+	/*! \brief Return the internal data structure commCostSet
+	 *
+	 * \return commCostSet
+	 *
+	 */
+	bool & private_get_commCostSet()
+	{
+		return commCostSet;
+	}
+
+	/*! \brief Return the internal data structure cd
+	 *
+	 * \return cd
+	 *
+	 */
+	CellDecomposer_sm<dim, T, shift<dim,T>> & private_get_cd()
+	{
+		return cd;
+	}
+
+	/*! \brief Return the internal data structure domain
+	 *
+	 * \return domain
+	 *
+	 */
+	::Box<dim,T> & private_get_domain()
+	{
+		return domain;
+	}
+
+	/*! \brief Return the internal data structure sub_domains_global
+	 *
+	 * \return sub_domains_global
+	 *
+	 */
+	openfpm::vector<Box_map<dim, T>,Memory,typename layout_base<Box_map<dim, T>>::type,layout_base> & private_get_sub_domains_global()
+	{
+		return sub_domains_global;
+	}
+
+	/*! \brief Return the internal data structure spacing
+	 *
+	 * \return spacing
+	 *
+	 */
+	T & private_get_spacing(int i)
+	{
+		return spacing[i];
+	}
+
+	/*! \brief Return the internal data structure ghost
+	 *
+	 * \return ghost
+	 *
+	 */
+	Ghost<dim,T> & private_get_ghost()
+	{
+		return ghost;
+	}
+
+	/*! \brief Return the internal data structure bbox
+	 *
+	 * \return bbox
+	 *
+	 */
+	::Box<dim,T> & private_get_bbox()
+	{
+		return bbox;
+	}
+
+	/*! \brief Return the internal data structure bc
+	 *
+	 * \return bc
+	 *
+	 */
+	size_t & private_get_bc(int i)
+	{
+		return bc[i];
+	}
 };
 
 
