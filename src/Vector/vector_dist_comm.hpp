@@ -1433,7 +1433,7 @@ public:
 		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;
 
 		// send vector for each processor
-		typedef openfpm::vector<prp_object,Memory,typename layout_base<prp_object>::type,layout_base> send_vector;
+		typedef openfpm::vector<prp_object,Memory,typename layout_base<prp_object>::type,layout_base,openfpm::grow_policy_identity> send_vector;
 
 		// Processor communication size
 		openfpm::vector<aggregate<unsigned int, unsigned int>,Memory,typename layout_base<aggregate<unsigned int, unsigned int>>::type,layout_base> prc_offset;
