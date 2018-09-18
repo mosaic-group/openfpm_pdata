@@ -914,7 +914,7 @@ public:
 		cart.bbox = bbox;
 
 		for (size_t i = 0 ; i < dim ; i++)
-			cart.bc[i] = this->bc[i];
+		{cart.bc[i] = this->bc[i];}
 
 		return cart;
 	}

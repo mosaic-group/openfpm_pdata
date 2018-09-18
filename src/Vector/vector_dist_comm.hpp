@@ -282,9 +282,13 @@ class vector_dist_comm
 			}
 		}
 
+#ifdef CUDA_GPU
+
 		// move box_f_dev and box_f_sv to device
 		box_f_dev.template hostToDevice<0,1>();
 		box_f_sv.template hostToDevice<0>();
+
+#endif
 
 		shift_box_ndec = dec.get_ndec();
 	}
@@ -309,23 +313,6 @@ class vector_dist_comm
 			{
 				local_ghost_from_opart_impl<true,dim,St,prop,Memory,layout_base,std::is_same<Memory,CudaMemory>::value>
 				::run(o_part_loc,shifts,v_pos,v_prp,opt);
-
-/*#if defined(CUDA_GPU) && defined(__NVCC__)
-
-				auto ite = o_part_loc.getGPUIterator();
-
-				size_t old = v_pos.size();
-
-				v_pos.resize(v_pos.size() + o_part_loc.size(),DATA_ON_DEVICE);
-				v_prp.resize(v_prp.size() + o_part_loc.size(),DATA_ON_DEVICE);
-
-				process_ghost_particles_local<true,dim,decltype(o_part_loc.toKernel()),decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(shifts.toKernel())>
-				<<<ite.wthr,ite.thr>>>
-				(o_part_loc.toKernel(),v_pos.toKernel(),v_prp.toKernel(),shifts.toKernel(),old);
-
-#else
-				std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option RUN_ON_DEVICE you must compile with NVCC" << std::endl;
-#endif*/
 			}
 			else
 			{
@@ -350,18 +337,6 @@ class vector_dist_comm
 			{
 				local_ghost_from_opart_impl<false,dim,St,prop,Memory,layout_base,std::is_same<Memory,CudaMemory>::value>
 				::run(o_part_loc,shifts,v_pos,v_prp,opt);
-
-/*#if defined(CUDA_GPU) && defined(__NVCC__)
-
-				auto ite = o_part_loc.getGPUIterator();
-
-				process_ghost_particles_local<false,dim,decltype(o_part_loc.toKernel()),decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(shifts.toKernel())>
-				<<<ite.wthr,ite.thr>>>
-				(o_part_loc.toKernel(),v_pos.toKernel(),v_prp.toKernel(),shifts.toKernel(),v_pos.size());
-
-#else
-				std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option RUN_ON_DEVICE you must compile with NVCC" << std::endl;
-#endif*/
 			}
 			else
 			{
@@ -395,47 +370,6 @@ class vector_dist_comm
 		{
 			local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,std::is_same<Memory,CudaMemory>::value>
 			::run(o_part_loc,shifts,box_f_dev,box_f_sv,v_cl,v_pos,v_prp,g_m,opt);
-
-/*#if defined(CUDA_GPU) && defined(__NVCC__)
-
-			o_part_loc.resize(g_m+1);
-			o_part_loc.template get<0>(o_part_loc.size()-1) = 0;
-			o_part_loc.template hostToDevice(o_part_loc.size()-1,o_part_loc.size()-1);
-
-			// Label the internal (assigned) particles
-			auto ite = v_pos.getGPUIteratorTo(g_m);
-
-			// label particle processor
-			num_shift_ghost_each_part<dim,St,decltype(box_f_dev.toKernel()),decltype(v_pos.toKernel()),decltype(o_part_loc.toKernel())>
-			<<<ite.wthr,ite.thr>>>
-			(box_f_dev.toKernel(),v_pos.toKernel(),o_part_loc.toKernel());
-
-			openfpm::vector<aggregate<unsigned int>,Memory,typename layout_base<aggregate<unsigned int>>::type,layout_base> starts;
-			starts.resize(o_part_loc.size());
-			mgpu::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
-
-			o_part_loc.template deviceToHost<0>(o_part_loc.size()-1,o_part_loc.size()-1);
-			size_t total = o_part_loc.template get<0>(o_part_loc.size()-1);
-			size_t old = v_pos.size();
-
-			v_pos.resize(v_pos.size() + total);
-
-			// Label the internal (assigned) particles
-			ite = v_pos.getGPUIteratorTo(g_m);
-
-			shift_ghost_each_part<dim,St,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),
-					                     decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),
-					                     decltype(starts.toKernel()),decltype(shifts.toKernel()),
-					                     decltype(o_part_loc.toKernel())>
-			<<<ite.wthr,ite.thr>>>
-			(box_f_dev.toKernel(),box_f_sv.toKernel(),
-			 v_pos.toKernel(),v_prp.toKernel(),
-			 starts.toKernel(),shifts.toKernel(),o_part_loc.toKernel(),old);
-
-#else
-				std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option RUN_ON_DEVICE you must compile with NVCC" << std::endl;
-#endif*/
-
 		}
 		else
 		{
@@ -1027,7 +961,7 @@ class vector_dist_comm
 			auto ite = v_pos.getGPUIterator();
 
 			// label particle processor
-			process_id_proc_each_part<decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(lbl_p.toKernel())><<<ite.wthr,ite.thr>>>(dec.toKernel(),v_pos.toKernel(),lbl_p.toKernel(),v_cl.rank());
+			process_id_proc_each_part<dim,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(lbl_p.toKernel())><<<ite.wthr,ite.thr>>>(dec.toKernel(),v_pos.toKernel(),lbl_p.toKernel(),v_cl.rank());
 
 			// sort particles
 			mergesort((int *)lbl_p.template getDeviceBuffer<1>(),(int *)lbl_p.template getDeviceBuffer<0>(), lbl_p.size(), mgpu::template less_t<int>(), v_cl.getmgpuContext());
@@ -1133,6 +1067,10 @@ class vector_dist_comm
 			                 size_t & g_m,
 			                 size_t opt)
 	{
+#ifdef EXTREA_TRACE_PRE_COMM
+		Extrae_user_function (1);
+#endif
+
 		// Buffer that contain for each processor the id of the particle to send
 		g_opart.clear();
 		g_opart.resize(dec.getNNProcessors());
@@ -1143,86 +1081,6 @@ class vector_dist_comm
 			labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,
 			                         Decomposition,std::is_same<Memory,CudaMemory>::value>
 			::run(dec,g_opart_device,v_cl,v_pos,v_prp,prc,prc_sz,prc_offset,g_m,opt);
-
-/*#if defined(CUDA_GPU) && defined(__NVCC__)
-
-            openfpm::vector<aggregate<unsigned int>,
-                            Memory,
-                            typename layout_base<aggregate<unsigned int>>::type,
-                            layout_base> proc_id_out;
-
-			proc_id_out.resize(v_pos.size()+1);
-			proc_id_out.template get<0>(proc_id_out.size()-1) = 0;
-			proc_id_out.template hostToDevice(proc_id_out.size()-1,proc_id_out.size()-1);
-
-			auto ite = v_pos.getGPUIterator();
-
-			// First we have to see how many entry each particle produce
-			num_proc_ghost_each_part<3,float,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(proc_id_out.toKernel())>
-			<<<ite.wthr,ite.thr>>>
-			(dec.toKernel(),v_pos.toKernel(),proc_id_out.toKernel());
-
-            openfpm::vector<aggregate<unsigned int>,
-                            Memory,
-                            typename layout_base<aggregate<unsigned int>>::type,
-                            layout_base> starts;
-
-			// scan
-			scan<unsigned int,unsigned int>(proc_id_out,starts);
-			starts.resize(proc_id_out.size());
-			starts.template deviceToHost<0>(starts.size()-1,starts.size()-1);
-			size_t sz = starts.template get<0>(starts.size()-1);
-
-			// we compute processor id for each particle
-
-		    g_opart_device.resize(sz);
-
-			ite = v_pos.getGPUIterator();
-
-			// we compute processor id for each particle
-			proc_label_id_ghost<3,float,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(starts.toKernel()),decltype(g_opart_device.toKernel())>
-			<<<ite.wthr,ite.thr>>>
-			(dec.toKernel(),v_pos.toKernel(),starts.toKernel(),g_opart_device.toKernel());
-
-			// sort particles
-			mergesort((int *)g_opart_device.template getDeviceBuffer<0>(),(long unsigned int *)g_opart_device.template getDeviceBuffer<1>(), g_opart_device.size(), mgpu::template less_t<int>(), v_cl.getmgpuContext());
-
-			CudaMemory mem;
-			mem.allocate(sizeof(int));
-			mem.fill(0);
-			prc_offset.resize(v_cl.size());
-
-			// Find the buffer bases
-			find_buffer_offsets<0,decltype(g_opart_device.toKernel()),decltype(prc_offset.toKernel())><<<ite.wthr,ite.thr>>>
-					           (g_opart_device.toKernel(),(int *)mem.getDevicePointer(),prc_offset.toKernel());
-
-			// Trasfer the number of offsets on CPU
-			mem.deviceToHost();
-			prc_offset.template deviceToHost<0,1>();
-			g_opart_device.template deviceToHost<0>(g_opart_device.size()-1,g_opart_device.size()-1);
-
-			int noff = *(int *)mem.getPointer();
-			prc_offset.resize(noff+1);
-			prc_offset.template get<0>(prc_offset.size()-1) = g_opart_device.size();
-			prc_offset.template get<1>(prc_offset.size()-1) = g_opart_device.template get<0>(g_opart_device.size()-1);
-			prc.resize(noff+1);
-			prc_sz.resize(noff+1);
-
-			size_t base_offset = 0;
-
-			// Transfert to prc the list of processors
-			prc.resize(noff+1);
-			for (size_t i = 0 ; i < noff+1 ; i++)
-			{
-				prc.get(i) = prc_offset.template get<1>(i);
-				prc_sz.get(i) = prc_offset.template get<0>(i) - base_offset;
-				base_offset = prc_offset.template get<0>(i);
-			}
-#else
-
-			std::cout << __FILE__ << ":" << __LINE__ << " error: to use gpu computation you must compile vector_dist.hpp with NVCC" << std::endl;
-
-#endif*/
 		}
 		else
 		{
@@ -1267,6 +1125,9 @@ class vector_dist_comm
 
 			g_opart.swap(g_opart_f);
 		}
+#ifdef EXTREA_TRACE_PRE_COMM
+		Extrae_user_function (0);
+#endif
 	}
 
 	/*! \brief Call-back to allocate buffer to receive incoming elements (particles)

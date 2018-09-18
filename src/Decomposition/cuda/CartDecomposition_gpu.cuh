@@ -109,6 +109,37 @@ public:
 
 		return processorID_impl(pt,clk,sub_domains_global);
 	}
+
+	/*! \brief Apply boundary condition to the point
+	 *
+	 * If the particle go out to the right, bring back the particle on the left
+	 * in case of periodic, nothing in case of non periodic
+	 *
+	 * \param pt encapsulated point object (it's coordinated are changed according the
+	 *        the explanation before)
+	 *
+	 */
+	template<typename Mem> __device__ void applyPointBC(encapc<1,Point<dim,T>,Mem> && pt) const
+	{
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (bc[i] == PERIODIC)
+			{pt.template get<0>()[i] = openfpm::math::periodic_l(pt.template get<0>()[i],domain.getHigh(i),domain.getLow(i));}
+		}
+	}
+
+
+	/*! \brief Given a point return in which processor the particle should go
+	 *
+	 * \param p point
+	 *
+	 * \return processorID
+	 *
+	 */
+	__device__ int inline processorID(const Point<dim,T> &pt)
+	{
+		return processorID_impl(pt,clk,sub_domains_global);
+	}
 };
 
 #endif /* CARTDECOMPOSITION_GPU_HPP_ */

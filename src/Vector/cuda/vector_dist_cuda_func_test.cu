@@ -730,7 +730,7 @@ BOOST_AUTO_TEST_CASE( decomposition_to_gpu_test_use )
 	openfpm::vector_gpu<aggregate<int,int>> proc_id_out;
 	proc_id_out.resize(vg.size());
 
-	process_id_proc_each_part<decltype(dec.toKernel()),decltype(vg.toKernel()),decltype(proc_id_out.toKernel())>
+	process_id_proc_each_part<3,float,decltype(dec.toKernel()),decltype(vg.toKernel()),decltype(proc_id_out.toKernel())>
 	<<<ite.wthr,ite.thr>>>
 	(dec.toKernel(),vg.toKernel(),proc_id_out.toKernel(),v_cl.rank());
 

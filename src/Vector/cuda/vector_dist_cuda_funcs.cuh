@@ -36,16 +36,17 @@ __global__ void num_proc_ghost_each_part(decomposition_type dec, vector_type vd,
     out.template get<0>(p) = dec.ghost_processorID_N(xp);
 }
 
-template<typename cartdec_gpu, typename particles_type, typename vector_out>
+template<unsigned int dim, typename St, typename cartdec_gpu, typename particles_type, typename vector_out>
 __global__ void process_id_proc_each_part(cartdec_gpu cdg, particles_type parts, vector_out output , int rank)
 {
     int p = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (p >= parts.size()) return;
 
-	Point<3,float> xp = parts.template get<0>(p);
+    cdg.applyPointBC(parts.get(p));
+	Point<dim,St> xp = parts.template get<0>(p);
 
-	int pr = cdg.processorIDBC(xp);
+	int pr = cdg.processorID(xp);
 
 	output.template get<1>(p) = (pr == rank)?-1:pr;
 	output.template get<0>(p) = p;

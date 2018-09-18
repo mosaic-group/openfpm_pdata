@@ -62,7 +62,7 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 			auto ite = v_pos.getGPUIterator();
 
 			// First we have to see how many entry each particle produce
-			num_proc_ghost_each_part<3,float,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(proc_id_out.toKernel())>
+			num_proc_ghost_each_part<3,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(proc_id_out.toKernel())>
 			<<<ite.wthr,ite.thr>>>
 			(dec.toKernel(),v_pos.toKernel(),proc_id_out.toKernel());
 
@@ -84,7 +84,7 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 			ite = v_pos.getGPUIterator();
 
 			// we compute processor id for each particle
-			proc_label_id_ghost<3,float,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(starts.toKernel()),decltype(g_opart_device.toKernel())>
+			proc_label_id_ghost<3,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(starts.toKernel()),decltype(g_opart_device.toKernel())>
 			<<<ite.wthr,ite.thr>>>
 			(dec.toKernel(),v_pos.toKernel(),starts.toKernel(),g_opart_device.toKernel());
 

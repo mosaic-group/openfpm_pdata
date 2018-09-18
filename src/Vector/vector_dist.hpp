@@ -68,6 +68,25 @@
 #define GCL_SYMMETRIC 1
 #define GCL_HILBERT 2
 
+template<bool is_gpu_celllist>
+struct gcl_standard_no_symmetric_impl
+{
+	template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
+	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
+	{
+		return vd.template getCellList<CellL>(r_cut);
+	}
+};
+
+template<>
+struct gcl_standard_no_symmetric_impl<true>
+{
+	template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
+	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
+	{
+		return vd.getCellListGPU(r_cut);
+	}
+};
 
 //! General function t get a cell-list
 template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
@@ -84,7 +103,7 @@ struct gcl
 	 */
 	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
 	{
-		return vd.template getCellList<CellL>(r_cut);
+		return gcl_standard_no_symmetric_impl<is_gpu_celllist<CellL>::value>::template get<dim,St,CellL,Vector,impl>(vd,r_cut,g);
 	}
 };
 
@@ -492,6 +511,7 @@ public:
 		check_parameters(box);
 
 		init_structures(np);
+
 		this->init_decomposition(box,bc,g,opt,gdist);
 
 #ifdef SE_CLASS3
@@ -1173,6 +1193,7 @@ public:
 		return cell_list;
 	}
 
+
 #endif
 
 	/*! \brief Construct an hilbert cell list starting from the stored particles
@@ -1228,7 +1249,7 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list(v_pos,cell_list,g_m,CL_NON_SYMMETRIC);
+			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,g_m,CL_NON_SYMMETRIC);
 
 			cell_list.set_gm(g_m);
 		}
@@ -1260,7 +1281,7 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list(v_pos,cell_list,g_m,CL_SYMMETRIC);
+			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,g_m,CL_SYMMETRIC);
 
 			cell_list.set_gm(g_m);
 		}
@@ -2194,7 +2215,8 @@ public:
 		if ((opt & 0x0FFF0000) == CSV_WRITER)
 		{
 			// CSVWriter test
-			CSVWriter<openfpm::vector<Point<dim, St>>, openfpm::vector<prop> > csv_writer;
+			CSVWriter<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>,
+					  openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> > csv_writer;
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".csv"));
 
@@ -2209,7 +2231,8 @@ public:
 				ft = file_type::BINARY;
 
 			// VTKWriter for a set of points
-			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim,St>>, openfpm::vector<prop>>, VECTOR_POINTS> vtk_writer;
+			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>,
+									   openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base>>, VECTOR_POINTS> vtk_writer;
 			vtk_writer.add(v_pos,v_prp,g_m);
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtk"));
