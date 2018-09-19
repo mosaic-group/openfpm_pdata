@@ -1190,6 +1190,8 @@ public:
 
 		cell_list.template construct<decltype(v_pos),decltype(v_prp)>(v_pos,v_pos_out,v_prp,v_prp_out);
 
+		cell_list.set_ndec(getDecomposition().get_ndec());
+
 		return cell_list;
 	}
 
@@ -2288,7 +2290,7 @@ public:
 	 *
 	 */
 
-	Vcluster<> & getVC()
+	Vcluster<Memory> & getVC()
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2301,7 +2303,7 @@ public:
 	 * \return the particle position vector
 	 *
 	 */
-	const openfpm::vector<Point<dim,St>> & getPosVector() const
+	const openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & getPosVector() const
 	{
 		return v_pos;
 	}
@@ -2311,7 +2313,7 @@ public:
 	 * \return the particle position vector
 	 *
 	 */
-	openfpm::vector<Point<dim,St>> & getPosVector()
+	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & getPosVector()
 	{
 		return v_pos;
 	}
@@ -2321,7 +2323,7 @@ public:
 	 * \return the particle property vector
 	 *
 	 */
-	const openfpm::vector<prop> & getPropVector() const
+	const openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & getPropVector() const
 	{
 		return v_prp;
 	}
@@ -2331,7 +2333,7 @@ public:
 	 * \return the particle property vector
 	 *
 	 */
-	openfpm::vector<prop> & getPropVector()
+	openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & getPropVector()
 	{
 		return v_prp;
 	}

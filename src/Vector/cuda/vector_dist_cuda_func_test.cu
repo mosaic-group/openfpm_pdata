@@ -888,7 +888,5 @@ BOOST_AUTO_TEST_CASE(vector_dist_gpu_map_fill_send_buffer_test)
     }
 }
 
-
-
 BOOST_AUTO_TEST_SUITE_END()
 

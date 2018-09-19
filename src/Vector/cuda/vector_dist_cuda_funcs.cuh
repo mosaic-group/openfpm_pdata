@@ -9,6 +9,7 @@
 #define VECTOR_DIST_CUDA_FUNCS_CUH_
 
 #include "Vector/util/vector_dist_funcs.hpp"
+#include "util/cuda/moderngpu/kernel_reduce.hxx"
 
 template<unsigned int dim, typename St, typename decomposition_type, typename vector_type, typename start_type, typename output_type>
 __global__ void proc_label_id_ghost(decomposition_type dec,vector_type vd, start_type starts, output_type out)
@@ -198,6 +199,23 @@ __global__ void shift_ghost_each_part(vector_of_box box_f, vector_of_shifts box_
     		n++;
     	}
     }
+}
+
+template<unsigned int prp, typename vector_type>
+auto reduce(vector_type & vd) -> typename std::remove_reference<decltype(vd.template getProp<prp>(0))>::type
+{
+	typedef typename std::remove_reference<decltype(vd.template getProp<prp>(0))>::type reduce_type;
+
+	CudaMemory mem;
+	mem.allocate(sizeof(reduce_type));
+
+	mgpu::reduce((reduce_type *)vd.getPropVector(). template getDeviceBuffer<prp>(),
+			            vd.size_local(), (reduce_type *)mem.getDevicePointer() ,
+			            mgpu::plus_t<reduce_type>(), vd.getVC().getmgpuContext());
+
+	mem.deviceToHost();
+
+	return *(reduce_type *)(mem.getPointer());
 }
 
 #endif /* VECTOR_DIST_CUDA_FUNCS_CUH_ */

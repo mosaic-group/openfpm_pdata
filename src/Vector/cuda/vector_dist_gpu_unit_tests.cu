@@ -378,12 +378,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
 
 	auto NN = vd.getCellListGPU(0.1);
 	auto NN_cpu = vd.getCellList(0.1);
+	check_cell_list_cpu_and_gpu(vd,NN,NN_cpu);
 
 	auto NN_up = vd.getCellListGPU(0.1);
 	NN_up.clear();
 	vd.updateCellList(NN_up);
-
-	check_cell_list_cpu_and_gpu(vd,NN,NN_cpu);
 	check_cell_list_cpu_and_gpu(vd,NN_up,NN_cpu);
 
 	// We check if we opotain the same result from updateCellList
@@ -680,8 +679,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_map_on_gpu_test)
 {
 	vdist_calc_gpu_test<float>();
 	vdist_calc_gpu_test<double>();
+}
 
-/*	auto & v_cl = create_vcluster();
+BOOST_AUTO_TEST_CASE(vector_dist_reduce)
+{
+	auto & v_cl = create_vcluster();
 
 	if (v_cl.size() > 16)
 	{return;}
@@ -694,260 +696,43 @@ BOOST_AUTO_TEST_CASE( vector_dist_map_on_gpu_test)
 	// Boundary conditions
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
-	vector_dist_gpu<3,float,aggregate<float,float[3],float[3]>> vd(1000,domain,bc,g);
+	vector_dist_gpu<3,float,aggregate<float,double,int,size_t>> vd(5000*v_cl.size(),domain,bc,g);
 
 	auto it = vd.getDomainIterator();
 
-	while (it.isNext())
+	float fc = 1.0;
+	double dc = 1.0;
+	int ic = 1.0;
+	size_t sc = 1.0;
+
+	while(it.isNext())
 	{
 		auto p = it.get();
 
-		vd.getPos(p)[0] = (float)rand() / RAND_MAX;
-		vd.getPos(p)[1] = (float)rand() / RAND_MAX;
-		vd.getPos(p)[2] = (float)rand() / RAND_MAX;
+		vd.template getProp<0>(p) = fc;
+		vd.template getProp<1>(p) = dc;
+		vd.template getProp<2>(p) = ic;
+		vd.template getProp<3>(p) = sc;
 
-		vd.template getProp<0>(p) = vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2];
-
-		vd.template getProp<1>(p)[0] = vd.getPos(p)[0];
-		vd.template getProp<1>(p)[1] = vd.getPos(p)[1];
-		vd.template getProp<1>(p)[2] = vd.getPos(p)[2];
-
-		vd.template getProp<2>(p)[0] = vd.getPos(p)[0] + vd.getPos(p)[1];
-		vd.template getProp<2>(p)[1] = vd.getPos(p)[0] + vd.getPos(p)[2];
-		vd.template getProp<2>(p)[2] = vd.getPos(p)[1] + vd.getPos(p)[2];
+		fc += 1.0;
+		dc += 1.0;
+		ic += 1;
+		sc += 1;
 
 		++it;
 	}
 
-	// move on device
-	vd.hostToDevicePos();
-	vd.hostToDeviceProp<0,1,2>();
-
-	// Ok we redistribute the particles (GPU based)
-	vd.map(RUN_ON_DEVICE);
-
-	vd.deviceToHostPos();
-	vd.deviceToHostProp<0,1,2>();
-
-	vd.write("write_start");
-
-	// Reset the host part
-
-	auto it3 = vd.getDomainIterator();
-
-	while (it3.isNext())
-	{
-		auto p = it3.get();
-
-		vd.getPos(p)[0] = 1.0;
-		vd.getPos(p)[1] = 1.0;
-		vd.getPos(p)[2] = 1.0;
-
-		vd.template getProp<0>(p) = 0.0;
-
-		vd.template getProp<0>(p) = 0.0;
-		vd.template getProp<0>(p) = 0.0;
-		vd.template getProp<0>(p) = 0.0;
-
-		vd.template getProp<0>(p) = 0.0;
-		vd.template getProp<0>(p) = 0.0;
-		vd.template getProp<0>(p) = 0.0;
-
-		++it3;
-	}
-
-	// we move from Device to CPU
-
-	vd.deviceToHostPos();
-	vd.deviceToHostProp<0,1,2>();
-
-	// Check
-
-	auto it2 = vd.getDomainIterator();
-
-	bool match = true;
-	while (it2.isNext())
-	{
-		auto p = it2.get();
-
-		match &= vd.template getProp<0>(p) == vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2];
-
-		match &= vd.template getProp<1>(p)[0] == vd.getPos(p)[0];
-		match &= vd.template getProp<1>(p)[1] == vd.getPos(p)[1];
-		match &= vd.template getProp<1>(p)[2] == vd.getPos(p)[2];
-
-		match &= vd.template getProp<2>(p)[0] == vd.getPos(p)[0] + vd.getPos(p)[1];
-		match &= vd.template getProp<2>(p)[1] == vd.getPos(p)[0] + vd.getPos(p)[2];
-		match &= vd.template getProp<2>(p)[2] == vd.getPos(p)[1] + vd.getPos(p)[2];
-
-		++it2;
-	}
-
-	BOOST_REQUIRE_EQUAL(match,true);
-
-	// count local particles
-
-	size_t l_cnt = 0;
-	size_t nl_cnt = 0;
-	size_t n_out = 0;
-
-	// Domain + ghost box
-	Box<3,float> dom_ext = domain;
-	dom_ext.enlarge(g);
-
-	auto it5 = vd.getDomainIterator();
-	count_local_n_local<3>(vd,it5,bc,domain,dom_ext,l_cnt,nl_cnt,n_out);
-
-	BOOST_REQUIRE_EQUAL(n_out,0);
-	BOOST_REQUIRE_EQUAL(l_cnt,vd.size_local());
-
-	// we do 10 gpu steps (using a cpu vector to check that map and ghost get work as expented)
-
-	for (size_t i = 0 ; i < 10 ; i++)
-	{
-		vd.map(RUN_ON_DEVICE);
-
-		vd.deviceToHostPos();
-		vd.deviceToHostProp<0,1,2>();
-
-		vd.write_frame("write_ggg",i);
-
-
-		// To test we copy on a cpu distributed vector and we do a map
-
-		vector_dist<3,float,aggregate<float,float[3],float[3]>> vd_cpu(vd.getDecomposition().duplicate_convert<HeapMemory,memory_traits_lin>(),0);
-
-		auto itc = vd.getDomainIterator();
-
-		while (itc.isNext())
-		{
-			auto p = itc.get();
-
-			vd_cpu.add();
-
-			vd_cpu.getLastPos()[0] = vd.getPos(p)[0];
-			vd_cpu.getLastPos()[1] = vd.getPos(p)[1];
-			vd_cpu.getLastPos()[2] = vd.getPos(p)[2];
-
-			vd_cpu.getLastProp<0>() = vd.getProp<0>(p);
-
-			vd_cpu.getLastProp<1>()[0] = vd.getProp<1>(p)[0];
-			vd_cpu.getLastProp<1>()[1] = vd.getProp<1>(p)[1];
-			vd_cpu.getLastProp<1>()[2] = vd.getProp<1>(p)[2];
-
-			vd_cpu.getLastProp<2>()[0] = vd.getProp<2>(p)[0];
-			vd_cpu.getLastProp<2>()[1] = vd.getProp<2>(p)[1];
-			vd_cpu.getLastProp<2>()[2] = vd.getProp<2>(p)[2];
-
-			++itc;
-		}
-
-		vd_cpu.ghost_get<0,1,2>();
-		vd.ghost_get<0,1,2>(RUN_ON_DEVICE);
-
-		vd.deviceToHostPos();
-		vd.deviceToHostProp<0,1,2>();
-
-		match = true;
-
-		// Particle on the gpu ghost and cpu ghost are not ordered in the same way so we have to reorder
-
-		struct part
-		{
-			Point<3,float> xp;
-
-			float prp0;
-			float prp1[3];
-			float prp2[3];
-
-			bool operator<(const part & tmp) const
-			{
-				if (xp.get(0) < tmp.xp.get(0))
-				{return true;}
-				else if (xp.get(0) > tmp.xp.get(0))
-				{return false;}
-
-				if (xp.get(1) < tmp.xp.get(1))
-				{return true;}
-				else if (xp.get(1) > tmp.xp.get(1))
-				{return false;}
-
-				if (xp.get(2) < tmp.xp.get(2))
-				{return true;}
-				else if (xp.get(2) > tmp.xp.get(2))
-				{return false;}
-
-				return false;
-			}
-		};
-
-		openfpm::vector<part> cpu_sort;
-		openfpm::vector<part> gpu_sort;
-
-		cpu_sort.resize(vd_cpu.size_local_with_ghost() - vd_cpu.size_local());
-		gpu_sort.resize(vd.size_local_with_ghost() - vd.size_local());
-
-		size_t cnt = 0;
-
-		auto itc2 = vd.getGhostIterator();
-		while (itc2.isNext())
-		{
-			auto p = itc2.get();
-
-			cpu_sort.get(cnt).xp.get(0) = vd_cpu.getPos(p)[0];
-			gpu_sort.get(cnt).xp.get(0) = vd.getPos(p)[0];
-			cpu_sort.get(cnt).xp.get(1) = vd_cpu.getPos(p)[1];
-			gpu_sort.get(cnt).xp.get(1) = vd.getPos(p)[1];
-			cpu_sort.get(cnt).xp.get(2) = vd_cpu.getPos(p)[2];
-			gpu_sort.get(cnt).xp.get(2) = vd.getPos(p)[2];
-
-			cpu_sort.get(cnt).prp0 = vd_cpu.getProp<0>(p);
-			gpu_sort.get(cnt).prp0 = vd.getProp<0>(p);
-
-			cpu_sort.get(cnt).prp1[0] = vd_cpu.getProp<1>(p)[0];
-			gpu_sort.get(cnt).prp1[0] = vd.getProp<1>(p)[0];
-			cpu_sort.get(cnt).prp1[1] = vd_cpu.getProp<1>(p)[1];
-			gpu_sort.get(cnt).prp1[1] = vd.getProp<1>(p)[1];
-			cpu_sort.get(cnt).prp1[2] = vd_cpu.getProp<1>(p)[2];
-			gpu_sort.get(cnt).prp1[2] = vd.getProp<1>(p)[2];
-
-			cpu_sort.get(cnt).prp2[0] = vd_cpu.getProp<2>(p)[0];
-			gpu_sort.get(cnt).prp2[0] = vd.getProp<2>(p)[0];
-			cpu_sort.get(cnt).prp2[1] = vd_cpu.getProp<2>(p)[1];
-			gpu_sort.get(cnt).prp2[1] = vd.getProp<2>(p)[1];
-			cpu_sort.get(cnt).prp2[2] = vd_cpu.getProp<2>(p)[2];
-			gpu_sort.get(cnt).prp2[2] = vd.getProp<2>(p)[2];
-
-			++cnt;
-			++itc2;
-		}
-
-		cpu_sort.sort();
-		gpu_sort.sort();
-
-		for (size_t i = 0 ; i < cpu_sort.size() ; i++)
-		{
-			match &= cpu_sort.get(i).xp.get(0) == gpu_sort.get(i).xp.get(0);
-			match &= cpu_sort.get(i).xp.get(1) == gpu_sort.get(i).xp.get(1);
-			match &= cpu_sort.get(i).xp.get(2) == gpu_sort.get(i).xp.get(2);
-
-			match &= cpu_sort.get(i).prp0 == gpu_sort.get(i).prp0;
-			match &= cpu_sort.get(i).prp1[0] == gpu_sort.get(i).prp1[0];
-			match &= cpu_sort.get(i).prp1[1] == gpu_sort.get(i).prp1[1];
-			match &= cpu_sort.get(i).prp1[2] == gpu_sort.get(i).prp1[2];
-
-			match &= cpu_sort.get(i).prp2[0] == gpu_sort.get(i).prp2[0];
-			match &= cpu_sort.get(i).prp2[1] == gpu_sort.get(i).prp2[1];
-			match &= cpu_sort.get(i).prp2[2] == gpu_sort.get(i).prp2[2];
-		}
-
-		BOOST_REQUIRE_EQUAL(match,true);
-
-		// move particles on gpu
-
-		auto ite = vd.getDomainIteratorGPU();
-		move_parts_gpu_test<3,decltype(vd.toKernel())><<<ite.wthr,ite.thr>>>(vd.toKernel());
-	}*/
+	vd.template hostToDeviceProp<0,1,2,3>();
+
+	float redf = reduce<0>(vd);
+	double redd = reduce<1>(vd);
+	int redi = reduce<2>(vd);
+	size_t reds = reduce<3>(vd);
+
+	BOOST_REQUIRE_EQUAL(redf,(vd.size_local()+1.0)*(vd.size_local())/2.0);
+	BOOST_REQUIRE_EQUAL(redd,(vd.size_local()+1.0)*(vd.size_local())/2.0);
+	BOOST_REQUIRE_EQUAL(redi,(vd.size_local()+1)*(vd.size_local())/2);
+	BOOST_REQUIRE_EQUAL(reds,(vd.size_local()+1)*(vd.size_local())/2);
 }
 
 
