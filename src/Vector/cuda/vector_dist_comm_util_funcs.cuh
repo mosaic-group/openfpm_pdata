@@ -8,14 +8,24 @@
 #ifndef VECTOR_DIST_COMM_UTIL_FUNCS_HPP_
 #define VECTOR_DIST_COMM_UTIL_FUNCS_HPP_
 
-template<unsigned int dim, typename St, typename prop, typename Memory, template<typename> class layout_base, typename Decomposition, bool is_ok_cuda>
+template<unsigned int dim, typename St, typename prop, typename Memory, template<typename> class layout_base, typename Decomposition, typename scan_type, bool is_ok_cuda>
 struct labelParticlesGhost_impl
 {
-	static void run(Decomposition & dec,
-		    		openfpm::vector<aggregate<unsigned int,unsigned long int>,
-		                    CudaMemory,
-		                    typename memory_traits_inte<aggregate<unsigned int,unsigned long int>>::type,
-		                    memory_traits_inte> & g_opart_device,
+	static void run(CudaMemory & mem,
+					scan_type & sc,
+					Decomposition & dec,
+					openfpm::vector<aggregate<unsigned int,unsigned long int>,
+							CudaMemory,
+							typename memory_traits_inte<aggregate<unsigned int,unsigned long int>>::type,
+							memory_traits_inte> & g_opart_device,
+				    openfpm::vector<aggregate<unsigned int>,
+				                            Memory,
+				                            typename layout_base<aggregate<unsigned int>>::type,
+				                            layout_base> & proc_id_out,
+				    openfpm::vector<aggregate<unsigned int>,
+				                             Memory,
+				                             typename layout_base<aggregate<unsigned int>>::type,
+				                             layout_base> & starts,
 		            Vcluster<Memory> & v_cl,
 					openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
             		openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
@@ -31,14 +41,24 @@ struct labelParticlesGhost_impl
 
 
 
-template<unsigned int dim, typename St, typename prop, typename Memory, template<typename> class layout_base, typename Decomposition>
-struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,true>
+template<unsigned int dim, typename St, typename prop, typename Memory, template<typename> class layout_base, typename Decomposition, typename scan_type>
+struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,scan_type,true>
 {
-	static void run(Decomposition & dec,
+	static void run(CudaMemory & mem,
+					scan_type & sc,
+					Decomposition & dec,
 					openfpm::vector<aggregate<unsigned int,unsigned long int>,
 							CudaMemory,
 							typename memory_traits_inte<aggregate<unsigned int,unsigned long int>>::type,
 							memory_traits_inte> & g_opart_device,
+				    openfpm::vector<aggregate<unsigned int>,
+				                            Memory,
+				                            typename layout_base<aggregate<unsigned int>>::type,
+				                            layout_base> & proc_id_out,
+				    openfpm::vector<aggregate<unsigned int>,
+				                             Memory,
+				                             typename layout_base<aggregate<unsigned int>>::type,
+				                             layout_base> & starts,
 					Vcluster<Memory> & v_cl,
 					openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
             		openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
@@ -50,10 +70,6 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 	{
 #if defined(CUDA_GPU) && defined(__NVCC__)
 
-            openfpm::vector<aggregate<unsigned int>,
-                            Memory,
-                            typename layout_base<aggregate<unsigned int>>::type,
-                            layout_base> proc_id_out;
 
 			proc_id_out.resize(v_pos.size()+1);
 			proc_id_out.template get<0>(proc_id_out.size()-1) = 0;
@@ -62,17 +78,12 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 			auto ite = v_pos.getGPUIterator();
 
 			// First we have to see how many entry each particle produce
-			num_proc_ghost_each_part<3,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(proc_id_out.toKernel())>
+			num_proc_ghost_each_part<dim,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(proc_id_out.toKernel())>
 			<<<ite.wthr,ite.thr>>>
 			(dec.toKernel(),v_pos.toKernel(),proc_id_out.toKernel());
 
-            openfpm::vector<aggregate<unsigned int>,
-                            Memory,
-                            typename layout_base<aggregate<unsigned int>>::type,
-                            layout_base> starts;
-
 			// scan
-			scan<unsigned int,unsigned int>(proc_id_out,starts);
+			sc.scan_(proc_id_out,starts);
 			starts.resize(proc_id_out.size());
 			starts.template deviceToHost<0>(starts.size()-1,starts.size()-1);
 			size_t sz = starts.template get<0>(starts.size()-1);
@@ -84,14 +95,13 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 			ite = v_pos.getGPUIterator();
 
 			// we compute processor id for each particle
-			proc_label_id_ghost<3,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(starts.toKernel()),decltype(g_opart_device.toKernel())>
+			proc_label_id_ghost<dim,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(starts.toKernel()),decltype(g_opart_device.toKernel())>
 			<<<ite.wthr,ite.thr>>>
 			(dec.toKernel(),v_pos.toKernel(),starts.toKernel(),g_opart_device.toKernel());
 
 			// sort particles
 			mergesort((int *)g_opart_device.template getDeviceBuffer<0>(),(long unsigned int *)g_opart_device.template getDeviceBuffer<1>(), g_opart_device.size(), mgpu::template less_t<int>(), v_cl.getmgpuContext());
 
-			CudaMemory mem;
 			mem.allocate(sizeof(int));
 			mem.fill(0);
 			prc_offset.resize(v_cl.size());
@@ -179,6 +189,7 @@ struct local_ghost_from_dec_impl
 					openfpm::vector<Box<dim, St>,Memory,typename layout_base<Box<dim,St>>::type,layout_base> & box_f_dev,
 					openfpm::vector<aggregate<unsigned int>,Memory,typename layout_base<aggregate<unsigned int>>::type,layout_base> & box_f_sv,
 					Vcluster<Memory> & v_cl,
+					openfpm::vector<aggregate<unsigned int>,Memory,typename layout_base<aggregate<unsigned int>>::type,layout_base> & starts,
 					openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
             		openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
             		size_t & g_m,
@@ -197,6 +208,7 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 					openfpm::vector<Box<dim, St>,Memory,typename layout_base<Box<dim,St>>::type,layout_base> & box_f_dev,
 					openfpm::vector<aggregate<unsigned int>,Memory,typename layout_base<aggregate<unsigned int>>::type,layout_base> & box_f_sv,
 					Vcluster<Memory> & v_cl,
+					openfpm::vector<aggregate<unsigned int>,Memory,typename layout_base<aggregate<unsigned int>>::type,layout_base> & starts,
 					openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
             		openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
             		size_t & g_m,
@@ -216,7 +228,7 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 		<<<ite.wthr,ite.thr>>>
 		(box_f_dev.toKernel(),v_pos.toKernel(),o_part_loc.toKernel());
 
-		openfpm::vector<aggregate<unsigned int>,Memory,typename layout_base<aggregate<unsigned int>>::type,layout_base> starts;
+//		openfpm::vector<aggregate<unsigned int>,Memory,typename layout_base<aggregate<unsigned int>>::type,layout_base> starts;
 		starts.resize(o_part_loc.size());
 		mgpu::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
 

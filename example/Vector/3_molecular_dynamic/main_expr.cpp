@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 
 
 	openfpm_init(&argc,&argv);
-	Vcluster & vcl = create_vcluster();
+	Vcluster<> & vcl = create_vcluster();
 
 	size_t sz[3] = {10,10,10};
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});

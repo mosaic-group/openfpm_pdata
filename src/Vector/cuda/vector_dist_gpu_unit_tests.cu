@@ -57,8 +57,8 @@ __global__  void calculate_force(vector_dist_ker<3, float, aggregate<float, floa
 
     while (it.isNext())
     {
-    	auto q1 = it.get();
-    	auto q2 = it.get_orig();
+    	auto q1 = it.get_sort();
+    	auto q2 = it.get();
 
     	if (q2 == p) {++it; continue;}
 
@@ -104,7 +104,7 @@ __global__  void calculate_force_full_sort(vector_dist_ker<3, float, aggregate<f
 
     while (it.isNext())
     {
-    	auto q1 = it.get();
+    	auto q1 = it.get_sort();
 
     	if (q1 == p) {++it; continue;}
 
@@ -364,12 +364,13 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
 		BOOST_REQUIRE_CLOSE(vd.template getProp<1>(p)[1],vd.getPos(p)[0] + vd.getPos(p)[2],0.01);
 		BOOST_REQUIRE_CLOSE(vd.template getProp<1>(p)[2],vd.getPos(p)[1] + vd.getPos(p)[2],0.01);
 
-		//std::cout << "PROP 0 " << vd.template getProp<0>(p) << "   " << vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2] << std::endl;
-
 		++it4;
 	}
 
 	// here we do a ghost_get
+	vd.ghost_get<0>();
+
+	// Doube ghost get to check crashes
 	vd.ghost_get<0>();
 
 	// we re-offload what we received
@@ -419,7 +420,7 @@ void vdist_calc_gpu_test()
 	// Boundary conditions
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
-	vector_dist_gpu<3,St,aggregate<float,float[3],float[3]>> vd(1000,domain,bc,g);
+	vector_dist_gpu<3,St,aggregate<St,St[3],St[3]>> vd(1000,domain,bc,g);
 
 	auto it = vd.getDomainIterator();
 
@@ -540,7 +541,7 @@ void vdist_calc_gpu_test()
 
 		// To test we copy on a cpu distributed vector and we do a map
 
-		vector_dist<3,St,aggregate<float,float[3],float[3]>> vd_cpu(vd.getDecomposition().template duplicate_convert<HeapMemory,memory_traits_lin>(),0);
+		vector_dist<3,St,aggregate<St,St[3],St[3]>> vd_cpu(vd.getDecomposition().template duplicate_convert<HeapMemory,memory_traits_lin>(),0);
 
 		auto itc = vd.getDomainIterator();
 
@@ -581,9 +582,10 @@ void vdist_calc_gpu_test()
 		{
 			Point<3,St> xp;
 
-			float prp0;
-			float prp1[3];
-			float prp2[3];
+
+			St prp0;
+			St prp1[3];
+			St prp2[3];
 
 			bool operator<(const part & tmp) const
 			{

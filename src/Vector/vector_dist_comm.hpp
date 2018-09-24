@@ -11,10 +11,10 @@
 #if defined(CUDA_GPU) && defined(__NVCC__)
 #include "util/cuda/moderngpu/kernel_mergesort.hxx"
 #include "Vector/cuda/vector_dist_cuda_funcs.cuh"
-#include "util/cuda/scan_cuda.cuh"
 #include "util/cuda/moderngpu/kernel_scan.hxx"
 #endif
 
+#include "util/cuda/scan_cuda.cuh"
 #include "Vector/util/vector_dist_funcs.hpp"
 #include "cuda/vector_dist_comm_util_funcs.cuh"
 
@@ -88,6 +88,9 @@ class vector_dist_comm
 	//! It map the processor id with the communication request into map procedure
 	openfpm::vector<size_t> p_map_req;
 
+	//! scan functionality required for gpu
+	scan<unsigned int,unsigned int> sc;
+
 	//! For each near processor, outgoing particle id
 	//! \warning opart is assumed to be an ordered list
 	//! first id particle id
@@ -144,16 +147,31 @@ class vector_dist_comm
 	//! The same as recv_sz_get but for map
 	openfpm::vector<size_t> recv_sz_map;
 
+	//! temporary buffer to processors ids
+    openfpm::vector<aggregate<unsigned int>,
+                            Memory,
+                            typename layout_base<aggregate<unsigned int>>::type,
+                            layout_base> proc_id_out;
+
+    //! temporary buffer for the scan result
+	openfpm::vector<aggregate<unsigned int>,
+                             Memory,
+                             typename layout_base<aggregate<unsigned int>>::type,
+                             layout_base> starts;
+
+	//! Processor communication size
+	openfpm::vector<aggregate<unsigned int, unsigned int>,Memory,typename layout_base<aggregate<unsigned int, unsigned int>>::type,layout_base> prc_offset;
+
+
+	//! Temporary CudaMemory to do stuff
+	CudaMemory mem;
+
 	//! Local ghost marker (across the ghost particles it mark from where we have the)
 	//! replicated ghost particles that are local
 	size_t lg_m;
 
 	//! Sending buffer
-	openfpm::vector<Memory> hsmem;
-
-	//! Receiving buffer
-	openfpm::vector<HeapMemory> hrmem;
-
+	openfpm::vector_fr<Memory> hsmem;
 
 	//! process the particle with properties
 	template<typename prp_object, int ... prp>
@@ -233,6 +251,9 @@ class vector_dist_comm
 
 	//! Id of the local particle to replicate for ghost_get
 	openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int>>::type,layout_base> o_part_loc;
+
+	//! Processor communication size
+	openfpm::vector<aggregate<unsigned int, unsigned int>,Memory,typename layout_base<aggregate<unsigned int, unsigned int>>::type,layout_base> prc_sz;
 
 	/*! \brief For every internal ghost box we create a structure that order such internal local ghost box in
 	 *         shift vectors
@@ -369,7 +390,7 @@ class vector_dist_comm
 		if (opt & RUN_ON_DEVICE)
 		{
 			local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,std::is_same<Memory,CudaMemory>::value>
-			::run(o_part_loc,shifts,box_f_dev,box_f_sv,v_cl,v_pos,v_prp,g_m,opt);
+			::run(o_part_loc,shifts,box_f_dev,box_f_sv,v_cl,starts,v_pos,v_prp,g_m,opt);
 		}
 		else
 		{
@@ -623,7 +644,7 @@ class vector_dist_comm
 	 *
 	 *
 	 */
-	void resize_retained_buffer(openfpm::vector<Memory> & rt_buf, size_t nbf)
+	void resize_retained_buffer(openfpm::vector_fr<Memory> & rt_buf, size_t nbf)
 	{
 		// Release all the buffer that are going to be deleted
 		for (size_t i = nbf ; i < rt_buf.size() ; i++)
@@ -645,12 +666,12 @@ class vector_dist_comm
 
 		size_t i;
 
-		openfpm::vector<Memory> & hsmem;
+		openfpm::vector_fr<Memory> & hsmem;
 
 		size_t j;
 
 		set_mem_retained_buffers_inte(openfpm::vector<send_vector> & g_send_prp, size_t i ,
-				                      openfpm::vector<Memory> & hsmem, size_t j)
+				                      openfpm::vector_fr<Memory> & hsmem, size_t j)
 		:g_send_prp(g_send_prp),i(i),hsmem(hsmem),j(j)
 		{}
 
@@ -670,7 +691,7 @@ class vector_dist_comm
 		static inline size_t set_mem_retained_buffers_(openfpm::vector<send_vector> & g_send_prp,
 				     	 	 	 	 	 	 openfpm::vector<size_t> & prc_sz,
 											 size_t i,
-											 openfpm::vector<Memory> & hsmem,
+											 openfpm::vector_fr<Memory> & hsmem,
 											 size_t j)
 		{
 			// Set the memory for retain the send buffer
@@ -689,17 +710,19 @@ class vector_dist_comm
 		static inline size_t set_mem_retained_buffers_(openfpm::vector<send_vector> & g_send_prp,
 											 openfpm::vector<size_t> & prc_sz,
 				 	 	 	 	 	 	 	 size_t i,
-				 	 	 	 	 	 	 	 openfpm::vector<Memory> & hsmem,
+				 	 	 	 	 	 	 	 openfpm::vector_fr<Memory> & hsmem,
 				 	 	 	 	 	 	 	 size_t j)
 		{
 			set_mem_retained_buffers_inte<send_vector,v_mpl> smrbi(g_send_prp,i,hsmem,j);
 
 			boost::mpl::for_each_ref<boost::mpl::range_c<int,0,boost::mpl::size<v_mpl>::type::value>>(smrbi);
 
-			g_send_prp.get(i).resize(prc_sz.get(i));
-
-			// resize the sending vector (No allocation is produced)
-			g_send_prp.get(i).resize(prc_sz.get(i));
+			// if we do not send properties do not reallocate
+			if (boost::mpl::size<v_mpl>::type::value != 0)
+			{
+				// resize the sending vector (No allocation is produced)
+				g_send_prp.get(i).resize(prc_sz.get(i));
+			}
 
 			return smrbi.j;
 		}
@@ -752,17 +775,20 @@ class vector_dist_comm
 
 			size_t offset = 0;
 
-			// Fill the sending buffers
-			for (size_t i = 0 ; i < g_send_prp.size() ; i++)
+			if (sizeof...(prp) != 0)
 			{
-				auto ite = g_send_prp.get(i).getGPUIterator();
+				// Fill the sending buffers
+				for (size_t i = 0 ; i < g_send_prp.size() ; i++)
+				{
+					auto ite = g_send_prp.get(i).getGPUIterator();
 
-				process_ghost_particles_prp<decltype(g_opart_device.toKernel()),decltype(g_send_prp.get(i).toKernel()),decltype(v_prp.toKernel()),prp...>
-				<<<ite.wthr,ite.thr>>>
-				(g_opart_device.toKernel(), g_send_prp.get(i).toKernel(),
-				 v_prp.toKernel(),offset);
+					process_ghost_particles_prp<decltype(g_opart_device.toKernel()),decltype(g_send_prp.get(i).toKernel()),decltype(v_prp.toKernel()),prp...>
+					<<<ite.wthr,ite.thr>>>
+					(g_opart_device.toKernel(), g_send_prp.get(i).toKernel(),
+					 v_prp.toKernel(),offset);
 
-				offset += prc_sz.get(i);
+					offset += prc_sz.get(i);
+				}
 			}
 
 #else
@@ -966,7 +992,6 @@ class vector_dist_comm
 			// sort particles
 			mergesort((int *)lbl_p.template getDeviceBuffer<1>(),(int *)lbl_p.template getDeviceBuffer<0>(), lbl_p.size(), mgpu::template less_t<int>(), v_cl.getmgpuContext());
 
-			CudaMemory mem;
 			mem.allocate(sizeof(int));
 			mem.fill(0);
 
@@ -1079,8 +1104,8 @@ class vector_dist_comm
 		if (opt & RUN_ON_DEVICE)
 		{
 			labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,
-			                         Decomposition,std::is_same<Memory,CudaMemory>::value>
-			::run(dec,g_opart_device,v_cl,v_pos,v_prp,prc,prc_sz,prc_offset,g_m,opt);
+			                         Decomposition,scan<unsigned int,unsigned int>,std::is_same<Memory,CudaMemory>::value>
+			::run(mem,sc,dec,g_opart_device,proc_id_out,starts,v_cl,v_pos,v_prp,prc,prc_sz,prc_offset,g_m,opt);
 		}
 		else
 		{
@@ -1296,9 +1321,6 @@ public:
 		// send vector for each processor
 		typedef openfpm::vector<prp_object,Memory,typename layout_base<prp_object>::type,layout_base,openfpm::grow_policy_identity> send_vector;
 
-		// Processor communication size
-		openfpm::vector<aggregate<unsigned int, unsigned int>,Memory,typename layout_base<aggregate<unsigned int, unsigned int>>::type,layout_base> prc_offset;
-
 		// elements to send for each processors
 		openfpm::vector<size_t> prc_sz;
 
@@ -1480,8 +1502,7 @@ public:
 			  openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp, size_t & g_m,
 			  size_t opt)
 	{
-		// Processor communication size
-		openfpm::vector<aggregate<unsigned int, unsigned int>,Memory,typename layout_base<aggregate<unsigned int, unsigned int>>::type,layout_base> prc_sz(v_cl.getProcessingUnits());
+		prc_sz.resize(v_cl.getProcessingUnits());
 
 		// map completely reset the ghost part
 		v_pos.resize(g_m);

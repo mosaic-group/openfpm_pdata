@@ -10,15 +10,18 @@
 #include "Plot/util.hpp"
 #include "timer.hpp"
 
+typedef float real_number;
+
+
 /*!
- * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list
+ * \page Vector_3_md_dyn Vector 3 molecular dynamic with cell-list on GPU
  *
  * [TOC]
  *
  * # Molecular Dynamic with Lennard-Jones potential # {#e3_md}
  *
  * This example show a simple Lennard-Jones molecular dynamic simulation in a stable regime.
- * Particle feel each other by the potential.
+ * Particle feel each other by the potential. In this example we are going to use GPU instead of CPU
  *
  * \f$ V(x_p,x_q) = 4( (\frac{\sigma}{r})^{12} - (\frac{\sigma}{r})^6  ) \f$
  *
@@ -34,6 +37,7 @@
 
 constexpr int velocity = 0;
 constexpr int force = 1;
+constexpr int energy = 2;
 
 //! \cond [constants] \endcond
 
@@ -56,7 +60,130 @@ constexpr int force = 1;
 
 //! \cond [calc forces] \endcond
 
-template<typename CellList> void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList & NN, double sigma12, double sigma6, double r_cut2)
+template<typename vector_dist_type,typename NN_type>
+__global__ void calc_force_gpu(vector_dist_type vd, NN_type NN, real_number sigma12, real_number sigma6, real_number r_cut2)
+{
+	auto p = GET_PARTICLE(vd);
+
+	// Get the position xp of the particle
+	Point<3,real_number> xp = vd.getPos(p);
+
+	// Reset the force counter
+	vd.template getProp<force>(p)[0] = 0.0;
+	vd.template getProp<force>(p)[1] = 0.0;
+	vd.template getProp<force>(p)[2] = 0.0;
+
+
+
+	// Get an iterator over the neighborhood particles of p
+	auto Np = NN.getNNIterator(NN.getCell(vd.getPos(p)));
+
+	// For each neighborhood particle ...
+	while (Np.isNext())
+	{
+		// ... q
+		auto q = Np.get();
+
+		// if (p == q) skip this particle
+		if (q == p)	{++Np; continue;};
+
+		// Get the position of p
+		Point<3,real_number> xq = vd.getPos(q);
+
+		// Get the distance between p and q
+		Point<3,real_number> r = xp - xq;
+
+		// take the norm of this vector
+		real_number rn = norm2(r);
+
+		if (rn > r_cut2)
+		{++Np; continue;};
+
+		// Calculate the force, using pow is slower
+		Point<3,real_number> f = 24.0*(2.0 *sigma12 / (rn*rn*rn*rn*rn*rn*rn) -  sigma6 / (rn*rn*rn*rn)) * r;
+
+		// we sum the force produced by q on p
+		vd.template getProp<force>(p)[0] += f.get(0);
+		vd.template getProp<force>(p)[1] += f.get(1);
+		vd.template getProp<force>(p)[2] += f.get(2);
+
+		// Next neighborhood
+		++Np;
+	}
+}
+
+template<typename vector_dist_type>
+__global__ void update_velocity_position(vector_dist_type vd, real_number dt)
+{
+	auto p = GET_PARTICLE(vd);
+
+	// here we calculate v(tn + 0.5)
+	vd.template getProp<velocity>(p)[0] += 0.5*dt*vd.template getProp<force>(p)[0];
+	vd.template getProp<velocity>(p)[1] += 0.5*dt*vd.template getProp<force>(p)[1];
+	vd.template getProp<velocity>(p)[2] += 0.5*dt*vd.template getProp<force>(p)[2];
+
+	// here we calculate x(tn + 1)
+	vd.getPos(p)[0] += vd.template getProp<velocity>(p)[0]*dt;
+	vd.getPos(p)[1] += vd.template getProp<velocity>(p)[1]*dt;
+	vd.getPos(p)[2] += vd.template getProp<velocity>(p)[2]*dt;
+}
+
+template<typename vector_dist_type>
+__global__ void update_velocity(vector_dist_type vd, real_number dt)
+{
+	auto p = GET_PARTICLE(vd);
+
+	// here we calculate v(tn + 1)
+	vd.template getProp<velocity>(p)[0] += 0.5*dt*vd.template getProp<force>(p)[0];
+	vd.template getProp<velocity>(p)[1] += 0.5*dt*vd.template getProp<force>(p)[1];
+	vd.template getProp<velocity>(p)[2] += 0.5*dt*vd.template getProp<force>(p)[2];
+}
+
+template<typename vector_dist_type,typename NN_type>
+__global__ void particle_energy(vector_dist_type vd, NN_type NN, real_number sigma12, real_number sigma6, real_number shift, real_number r_cut2)
+{
+	auto p = GET_PARTICLE(vd);
+
+	// Get the position of the particle p
+	Point<3,real_number> xp = vd.getPos(p);
+
+	// Get an iterator over the neighborhood of the particle p
+	auto Np = NN.getNNIterator(NN.getCell(vd.getPos(p)));
+
+	real_number E = 0;
+
+	// For each neighborhood of the particle p
+	while (Np.isNext())
+	{
+		// Neighborhood particle q
+		auto q = Np.get();
+
+		// if p == q skip this particle
+		if (q == p)	{++Np; continue;};
+
+		// Get position of the particle q
+		Point<3,real_number> xq = vd.getPos(q);
+
+		// take the normalized direction
+		real_number rn = norm2(xp - xq);
+
+		if (rn > r_cut2)
+		{++Np;continue;}
+
+		// potential energy (using pow is slower)
+		E += 2.0 * ( sigma12 / (rn*rn*rn*rn*rn*rn) - sigma6 / ( rn*rn*rn) ) - shift;
+
+		// Next neighborhood
+		++Np;
+	}
+
+	// Kinetic energy of the particle given by its actual speed
+	vd.template getProp<energy>(p) = E + (vd.template getProp<velocity>(p)[0]*vd.template getProp<velocity>(p)[0] +
+			vd.template getProp<velocity>(p)[1]*vd.template getProp<velocity>(p)[1] +
+			vd.template getProp<velocity>(p)[2]*vd.template getProp<velocity>(p)[2]) / 2;
+}
+
+template<typename CellList> void calc_forces(vector_dist_gpu<3,real_number, aggregate<real_number[3],real_number[3],real_number> > & vd, CellList & NN, real_number sigma12, real_number sigma6, real_number r_cut2)
 {
 
 //! \cond [calc forces] \endcond
@@ -98,61 +225,9 @@ template<typename CellList> void calc_forces(vector_dist<3,double, aggregate<dou
 	//! \cond [force calc] \endcond
 
 	// Get an iterator over particles
-	auto it2 = vd.getDomainIterator();
+	auto it2 = vd.getDomainIteratorGPU();
 
-	// For each particle p ...
-	while (it2.isNext())
-	{
-		// ... get the particle p
-		auto p = it2.get();
-
-		// Get the position xp of the particle
-		Point<3,double> xp = vd.getPos(p);
-
-		// Reset the force counter
-		vd.template getProp<force>(p)[0] = 0.0;
-		vd.template getProp<force>(p)[1] = 0.0;
-		vd.template getProp<force>(p)[2] = 0.0;
-
-		// Get an iterator over the neighborhood particles of p
-		auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(p)));
-
-		// For each neighborhood particle ...
-		while (Np.isNext())
-		{
-			// ... q
-			auto q = Np.get();
-
-			// if (p == q) skip this particle
-			if (q == p.getKey())	{++Np; continue;};
-
-			// Get the position of p
-			Point<3,double> xq = vd.getPos(q);
-
-			// Get the distance between p and q
-			Point<3,double> r = xp - xq;
-
-			// take the norm of this vector
-			double rn = norm2(r);
-
-			if (rn > r_cut2)
-			{++Np; continue;};
-
-			// Calculate the force, using pow is slower
-			Point<3,double> f = 24.0*(2.0 *sigma12 / (rn*rn*rn*rn*rn*rn*rn) -  sigma6 / (rn*rn*rn*rn)) * r;
-
-			// we sum the force produced by q on p
-			vd.template getProp<force>(p)[0] += f.get(0);
-			vd.template getProp<force>(p)[1] += f.get(1);
-			vd.template getProp<force>(p)[2] += f.get(2);
-
-			// Next neighborhood
-			++Np;
-		}
-
-		// Next particle
-		++it2;
-	}
+	calc_force_gpu<<<it2.wthr,it2.thr>>>(vd.toKernel(),NN.toKernel(),sigma12,sigma6,r_cut2);
 
 	//! \cond [force calc] \endcond
 
@@ -176,10 +251,10 @@ template<typename CellList> void calc_forces(vector_dist<3,double, aggregate<dou
 
 //! \cond [calc energy] \endcond
 
-template<typename CellList> double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, CellList & NN, double sigma12, double sigma6, double r_cut2)
+template<typename CellList> real_number calc_energy(vector_dist_gpu<3,real_number, aggregate<real_number[3],real_number[3],real_number> > & vd, CellList & NN, real_number sigma12, real_number sigma6, real_number r_cut2)
 {
-        double rc = r_cut2;
-        double shift = 2.0 * ( sigma12 / (rc*rc*rc*rc*rc*rc) - sigma6 / ( rc*rc*rc) );
+        real_number rc = r_cut2;
+        real_number shift = 2.0 * ( sigma12 / (rc*rc*rc*rc*rc*rc) - sigma6 / ( rc*rc*rc) );
 
 //! \cond [calc energy] \endcond
 
@@ -197,8 +272,7 @@ template<typename CellList> double calc_energy(vector_dist<3,double, aggregate<d
 
 	//! \cond [up cell ene] \endcond
 
-	double E = 0.0;
-//	vd.updateCellList(NN);
+	vd.updateCellList(NN);
 
 	//! \cond [up cell ene] \endcond
 
@@ -219,61 +293,16 @@ template<typename CellList> double calc_energy(vector_dist<3,double, aggregate<d
 
 	//! \cond [energy calc comp] \endcond
 
-	// Get the iterator
-	auto it2 = vd.getDomainIterator();
+	auto it2 = vd.getDomainIteratorGPU();
 
-	// For each particle ...
-	while (it2.isNext())
-	{
-		// ... p
-		auto p = it2.get();
-
-		// Get the position of the particle p
-		Point<3,double> xp = vd.getPos(p);
-
-		// Get an iterator over the neighborhood of the particle p
-		auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(p)));
-
-		// For each neighborhood of the particle p
-		while (Np.isNext())
-		{
-			// Neighborhood particle q
-			auto q = Np.get();
-
-			// if p == q skip this particle
-			if (q == p.getKey())	{++Np; continue;};
-
-			// Get position of the particle q
-			Point<3,double> xq = vd.getPos(q);
-
-			// take the normalized direction
-			double rn = norm2(xp - xq);
-
-			if (rn > r_cut2)
-			{++Np;continue;}
-
-			// potential energy (using pow is slower)
-			E += 2.0 * ( sigma12 / (rn*rn*rn*rn*rn*rn) - sigma6 / ( rn*rn*rn) ) - shift;
-
-			// Next neighborhood
-			++Np;
-		}
-
-		// Kinetic energy of the particle given by its actual speed
-		E +=   (vd.template getProp<velocity>(p)[0]*vd.template getProp<velocity>(p)[0] +
-				vd.template getProp<velocity>(p)[1]*vd.template getProp<velocity>(p)[1] +
-				vd.template getProp<velocity>(p)[2]*vd.template getProp<velocity>(p)[2]) / 2;
-
-		// Next Particle
-		++it2;
-	}
+	particle_energy<<<it2.wthr,it2.thr>>>(vd.toKernel(),NN.toKernel(),sigma12,sigma6,shift,r_cut2);
 
 	//! \cond [energy calc comp] \endcond
 
 //! \cond [calc energy2] \endcond
 
 	// Calculated energy
-	return E;
+	return reduce<energy>(vd);
 }
 
 //! \cond [calc energy2] \endcond
@@ -301,11 +330,11 @@ int main(int argc, char* argv[])
 
 	openfpm_init(&argc,&argv);
 
-	double sigma = 0.1;
-	double r_cut = 3.0*sigma;
+	real_number sigma = 0.01;
+	real_number r_cut = 3.0*sigma;
 
 	// we will use it do place particles on a 10x10x10 Grid like
-	size_t sz[3] = {10,10,10};
+	size_t sz[3] = {100,100,100};
 
 	// domain
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
@@ -316,12 +345,12 @@ int main(int argc, char* argv[])
 	// ghost, big enough to contain the interaction radius
 	Ghost<3,float> ghost(r_cut);
 
-	double dt = 0.0005;
-	double sigma12 = pow(sigma,12);
-	double sigma6 = pow(sigma,6);
+	real_number dt = 0.00005;
+	real_number sigma12 = pow(sigma,12);
+	real_number sigma6 = pow(sigma,6);
 
-	openfpm::vector<double> x;
-	openfpm::vector<openfpm::vector<double>> y;
+	openfpm::vector<real_number> x;
+	openfpm::vector<openfpm::vector<real_number>> y;
 
 	//! \cond [constants run] \endcond
 
@@ -339,7 +368,7 @@ int main(int argc, char* argv[])
 
 	//! \cond [vect create] \endcond
 
-	vector_dist<3,double, aggregate<double[3],double[3]> > vd(0,box,bc,ghost);
+	vector_dist_gpu<3,real_number, aggregate<real_number[3],real_number[3],real_number> > vd(0,box,bc,ghost);
 
 	//! \cond [vect create] \endcond
 
@@ -388,8 +417,11 @@ int main(int argc, char* argv[])
 		++it;
 	}
 
-	vd.map();
-	vd.ghost_get<>();
+	vd.hostToDevicePos();
+	vd.hostToDeviceProp<velocity,force>();
+
+	vd.map(RUN_ON_DEVICE);
+	vd.ghost_get<>(RUN_ON_DEVICE);
 
 	//! \cond [vect grid] \endcond
 
@@ -438,7 +470,7 @@ int main(int argc, char* argv[])
 	//! \cond [md steps] \endcond
 
 	// Get the Cell list structure
-	auto NN = vd.getCellList<CELL_MEMBAL(3,double)>(r_cut);
+	auto NN = vd.getCellListGPU(r_cut);
 
 	// The standard
 	// auto NN = vd.getCellList(r_cut);
@@ -448,64 +480,41 @@ int main(int argc, char* argv[])
 	unsigned long int f = 0;
 
 	// MD time stepping
-	for (size_t i = 0; i < 10000 ; i++)
+	for (size_t i = 0; i < 100 ; i++)
 	{
 		// Get the iterator
-		auto it3 = vd.getDomainIterator();
+		auto it3 = vd.getDomainIteratorGPU();
 
-		// integrate velicity and space based on the calculated forces (Step1)
-		while (it3.isNext())
-		{
-			auto p = it3.get();
-
-			// here we calculate v(tn + 0.5)
-			vd.template getProp<velocity>(p)[0] += 0.5*dt*vd.template getProp<force>(p)[0];
-			vd.template getProp<velocity>(p)[1] += 0.5*dt*vd.template getProp<force>(p)[1];
-			vd.template getProp<velocity>(p)[2] += 0.5*dt*vd.template getProp<force>(p)[2];
-
-			// here we calculate x(tn + 1)
-			vd.getPos(p)[0] += vd.template getProp<velocity>(p)[0]*dt;
-			vd.getPos(p)[1] += vd.template getProp<velocity>(p)[1]*dt;
-			vd.getPos(p)[2] += vd.template getProp<velocity>(p)[2]*dt;
-
-			++it3;
-		}
+		update_velocity_position<<<it3.wthr,it3.thr>>>(vd.toKernel(),dt);
 
 		// Because we moved the particles in space we have to map them and re-sync the ghost
-		vd.map();
-		vd.template ghost_get<>();
+		vd.map(RUN_ON_DEVICE);
+		vd.template ghost_get<>(RUN_ON_DEVICE);
 
 		// calculate forces or a(tn + 1) Step 2
 		calc_forces(vd,NN,sigma12,sigma6,r_cut*r_cut);
 
 
 		// Integrate the velocity Step 3
-		auto it4 = vd.getDomainIterator();
+		auto it4 = vd.getDomainIteratorGPU();
 
-		while (it4.isNext())
-		{
-			auto p = it4.get();
-
-			// here we calculate v(tn + 1)
-			vd.template getProp<velocity>(p)[0] += 0.5*dt*vd.template getProp<force>(p)[0];
-			vd.template getProp<velocity>(p)[1] += 0.5*dt*vd.template getProp<force>(p)[1];
-			vd.template getProp<velocity>(p)[2] += 0.5*dt*vd.template getProp<force>(p)[2];
-
-			++it4;
-		}
+		update_velocity<<<it4.wthr,it4.thr>>>(vd.toKernel(),dt);
 
 		// After every iteration collect some statistic about the configuration
 		if (i % 100 == 0)
-		{	
+		{
+			vd.deviceToHostPos();
+			vd.deviceToHostProp<0,1,2>();
+
 			// We write the particle position for visualization (Without ghost)
 			vd.deleteGhost();
-			vd.write("particles_",f);
+			vd.write_frame("particles_",f);
 
 			// we resync the ghost
-			vd.ghost_get<>();
+			vd.ghost_get<>(RUN_ON_DEVICE);
 
 			// We calculate the energy
-			double energy = calc_energy(vd,NN,sigma12,sigma6,r_cut*r_cut);
+			real_number energy = calc_energy(vd,NN,sigma12,sigma6,r_cut*r_cut);
 			auto & vcl = create_vcluster();
 			vcl.sum(energy);
 			vcl.execute();
@@ -593,6 +602,7 @@ int main(int argc, char* argv[])
 	 */
 
 	//! \cond [finalize] \endcond
+
 
 	openfpm_finalize();
 

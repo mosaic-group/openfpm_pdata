@@ -1,6 +1,16 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] December 2018
+
+### Added
+
+- Adding GPU support (see example 3_molecular_dynamic_gpu)
+
+### Changed
+
+- The type Vcluster now is templated and the standard Vcluster is Vcluster<>
+
 ## [1.1.0] February 2018
 
 ### Added

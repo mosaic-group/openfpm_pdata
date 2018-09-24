@@ -600,8 +600,10 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 
     starts.resize(proc_id_out.size());
 
+    scan<unsigned int,unsigned int> sc;
+
 	// scan
-	scan<unsigned int,unsigned int>(proc_id_out,starts);
+	sc.scan_(proc_id_out,starts);
 	starts.deviceToHost<0>(starts.size()-1,starts.size()-1);
 
 	size_t sz = starts.template get<0>(starts.size()-1);
