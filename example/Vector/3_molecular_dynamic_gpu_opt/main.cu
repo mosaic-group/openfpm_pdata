@@ -73,8 +73,6 @@ __global__ void calc_force_gpu(vector_dist_type vd, NN_type NN, real_number sigm
 	vd.template getProp<force>(p)[1] = 0.0;
 	vd.template getProp<force>(p)[2] = 0.0;
 
-
-
 	// Get an iterator over the neighborhood particles of p
 	auto Np = NN.getNNIterator(NN.getCell(vd.getPos(p)));
 
@@ -331,7 +329,7 @@ int main(int argc, char* argv[])
 	openfpm_init(&argc,&argv);
 
 	real_number sigma = 0.01;
-	real_number r_cut = 3.0*sigma;
+	real_number r_cut =3.0*sigma;
 
 	// we will use it do place particles on a 10x10x10 Grid like
 	size_t sz[3] = {100,100,100};
@@ -480,7 +478,7 @@ int main(int argc, char* argv[])
 	unsigned long int f = 0;
 
 	// MD time stepping
-	for (size_t i = 0; i < 100 ; i++)
+	for (size_t i = 0; i < 1000 ; i++)
 	{
 		// Get the iterator
 		auto it3 = vd.getDomainIteratorGPU();
@@ -494,6 +492,7 @@ int main(int argc, char* argv[])
 		// calculate forces or a(tn + 1) Step 2
 		calc_forces(vd,NN,sigma12,sigma6,r_cut*r_cut);
 
+		std::cout << "STEP " << std::endl;
 
 		// Integrate the velocity Step 3
 		auto it4 = vd.getDomainIteratorGPU();

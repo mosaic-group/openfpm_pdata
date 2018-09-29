@@ -44,6 +44,24 @@ __device__ __host__ inline int processorID_impl(T2 & p, fine_s_type & fine_s, vs
 	return sub_domains_global.template get<1>(e);
 }
 
+/*! \brief Apply boundary condition to the point
+ *
+ * If the particle go out to the right, bring back the particle on the left
+ * in case of periodic, nothing in case of non periodic
+ *
+ * \param pt encapsulated point object (it's coordinated are changed according the
+ *        the explanation before)
+ *
+ */
+template<unsigned int dim, typename St, typename Mem> inline __device__ void applyPointBC_no_dec(Box<dim,St> & domain, periodicity_int<dim> & bc, encapc<1,Point<dim,St>,Mem> && pt)
+{
+	for (size_t i = 0 ; i < dim ; i++)
+	{
+		if (bc.bc[i] == PERIODIC)
+		{pt.template get<0>()[i] = openfpm::math::periodic_l(pt.template get<0>()[i],domain.getHigh(i),domain.getLow(i));}
+	}
+}
+
 template<unsigned int dim, typename T, typename Memory, template <typename> class layout_base>
 class CartDecomposition_gpu : public ie_ghost_gpu<dim,T,Memory,layout_base>
 {

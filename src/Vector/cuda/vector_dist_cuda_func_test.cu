@@ -729,12 +729,14 @@ BOOST_AUTO_TEST_CASE( decomposition_to_gpu_test_use )
 
 	auto ite = vg.getGPUIterator();
 
-	openfpm::vector_gpu<aggregate<int,int>> proc_id_out;
+	openfpm::vector_gpu<aggregate<int,int,int>> proc_id_out;
 	proc_id_out.resize(vg.size());
 
-	process_id_proc_each_part<3,float,decltype(dec.toKernel()),decltype(vg.toKernel()),decltype(proc_id_out.toKernel())>
+	openfpm::vector_gpu<aggregate<int,int,int>> dev_counter;
+
+	process_id_proc_each_part<3,float,decltype(dec.toKernel()),decltype(vg.toKernel()),decltype(proc_id_out.toKernel()),decltype(dev_counter.toKernel())>
 	<<<ite.wthr,ite.thr>>>
-	(dec.toKernel(),vg.toKernel(),proc_id_out.toKernel(),v_cl.rank());
+	(dec.toKernel(),vg.toKernel(),proc_id_out.toKernel(),dev_counter.toKernel(),v_cl.rank());
 
 	proc_id_out.deviceToHost<0>();
 
@@ -790,6 +792,44 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_find_buffer_offsets_test )
 	{
 		BOOST_REQUIRE_EQUAL(ofv.get(i),(i+1)*1000);
 		BOOST_REQUIRE_EQUAL(ofv2.get(i),i);
+	}
+}
+
+BOOST_AUTO_TEST_CASE(vector_dist_reorder_lbl)
+{
+	openfpm::vector_gpu<aggregate<int,int,int>> lbl_p;
+	openfpm::vector_gpu<aggregate<int>> starts;
+
+	lbl_p.resize(100);
+	starts.resize(10);
+
+	for (int i = 0 ; i < 10 ; i++) // <------ particle id
+	{
+		for (int j = 0 ; j < 10 ; j++) // <----- processor
+		{
+			lbl_p.template get<2>(i*10+j) = i;
+			lbl_p.template get<1>(i*10+j) = j;
+		}
+		starts.template get<0>(i) = (i*10);
+	}
+
+	// move lbl and starts to gpu
+	starts.template hostToDevice<0>();
+	lbl_p.template hostToDevice<1,2>();
+
+	auto ite = lbl_p.getGPUIterator();
+
+	reorder_lbl<decltype(lbl_p.toKernel()),decltype(starts.toKernel())><<<ite.wthr,ite.thr>>>(lbl_p.toKernel(),starts.toKernel());
+
+	starts.template deviceToHost<0>();
+	lbl_p.template deviceToHost<0,1,2>();
+
+	for (int i = 0 ; i < 10 ; i++) // <------ particle id
+	{
+		for (int j = 0 ; j < 10 ; j++) // <----- processor
+		{
+			BOOST_REQUIRE_EQUAL(lbl_p.template get<0>(j*10+i),i*10+j);
+		}
 	}
 }
 

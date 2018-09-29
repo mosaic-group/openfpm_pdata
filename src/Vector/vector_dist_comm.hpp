@@ -8,6 +8,8 @@
 #ifndef SRC_VECTOR_VECTOR_DIST_COMM_HPP_
 #define SRC_VECTOR_VECTOR_DIST_COMM_HPP_
 
+//#define TEST1
+
 #if defined(CUDA_GPU) && defined(__NVCC__)
 #include "util/cuda/moderngpu/kernel_mergesort.hxx"
 #include "Vector/cuda/vector_dist_cuda_funcs.cuh"
@@ -203,6 +205,7 @@ class vector_dist_comm
 	{
 		if (opt & RUN_ON_DEVICE)
 		{
+#ifndef TEST1
 			size_t prev_off = 0;
 			for (size_t i = 0; i < prc_sz.size() ; i++)
 			{
@@ -213,6 +216,21 @@ class vector_dist_comm
 				}
 				prev_off = prc_sz.template get<0>(i);
 			}
+#else
+
+			// Calculate the sending buffer size for each processor, put this information in
+			// a contiguous buffer
+
+			for (size_t i = 0; i < v_cl.getProcessingUnits(); i++)
+			{
+				if (prc_sz.template get<0>(i) != 0 && v_cl.rank() != i)
+				{
+					prc_r.add(i);
+					prc_sz_r.add(prc_sz.template get<0>(i));
+				}
+			}
+
+#endif
 		}
 		else
 		{
@@ -830,6 +848,7 @@ class vector_dist_comm
 	void fill_send_map_buf(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
 			               openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
 			               openfpm::vector<size_t> & prc_sz_r,
+			               openfpm::vector<size_t> & prc_r,
 			               openfpm::vector<openfpm::vector<Point<dim,St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base,openfpm::grow_policy_identity>> & m_pos,
 			               openfpm::vector<openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base,openfpm::grow_policy_identity>> & m_prp,
 			               openfpm::vector<aggregate<unsigned int, unsigned int>,Memory,typename layout_base<aggregate<unsigned int, unsigned int>>::type,layout_base> & prc_sz,
@@ -849,16 +868,21 @@ class vector_dist_comm
 
 		if (opt & RUN_ON_DEVICE)
 		{
+			if (v_cl.size() == 1)
+			{return;}
+
 #if defined(CUDA_GPU) && defined(__NVCC__)
 
 			// The first part of m_opart and prc_sz contain the local particles
+
+			#ifndef TEST1
 
 			v_pos_tmp.resize(prc_sz.template get<0>(0));
 			v_prp_tmp.resize(prc_sz.template get<0>(0));
 
 			auto ite = v_pos_tmp.getGPUIterator();
 
-			// fi;l v_pos_tmp and v_prp_tmp with local particles
+			// fill v_pos_tmp and v_prp_tmp with local particles
 			process_map_particles<decltype(m_opart.toKernel()),decltype(v_pos_tmp.toKernel()),decltype(v_prp_tmp.toKernel()),
 					                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>
 			<<<ite.wthr,ite.thr>>>
@@ -885,6 +909,44 @@ class vector_dist_comm
 			v_pos_tmp.swap(v_pos);
 			v_prp_tmp.swap(v_prp);
 
+			#else
+
+			int rank = v_cl.rank();
+
+			v_pos_tmp.resize(prc_sz.template get<0>(rank));
+			v_prp_tmp.resize(prc_sz.template get<0>(rank));
+
+			auto ite = v_pos_tmp.getGPUIterator();
+
+			starts.template deviceToHost<0>();
+			size_t offset = starts.template get<0>(rank);
+
+			// fill v_pos_tmp and v_prp_tmp with local particles
+			process_map_particles<decltype(m_opart.toKernel()),decltype(v_pos_tmp.toKernel()),decltype(v_prp_tmp.toKernel()),
+					                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>
+			<<<ite.wthr,ite.thr>>>
+			(m_opart.toKernel(),v_pos_tmp.toKernel(), v_prp_tmp.toKernel(),
+					            v_pos.toKernel(),v_prp.toKernel(),offset);
+
+			// Fill the sending buffers
+			for (size_t i = 0 ; i < m_pos.size() ; i++)
+			{
+				size_t offset = starts.template get<0>(prc_r.template get<0>(i));
+
+				auto ite = m_pos.get(i).getGPUIterator();
+
+				process_map_particles<decltype(m_opart.toKernel()),decltype(m_pos.get(i).toKernel()),decltype(m_prp.get(i).toKernel()),
+						                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>
+				<<<ite.wthr,ite.thr>>>
+				(m_opart.toKernel(),m_pos.get(i).toKernel(), m_prp.get(i).toKernel(),
+						            v_pos.toKernel(),v_prp.toKernel(),offset);
+			}
+
+			// old local particles with the actual local particles
+			v_pos_tmp.swap(v_pos);
+			v_prp_tmp.swap(v_prp);
+
+			#endif
 #else
 
 			std::cout << __FILE__ << ":" << __LINE__ << " error RUN_ON_DEVICE require that you compile with NVCC, but it seem compiled with a normal compiler" << std::endl;
@@ -984,10 +1046,32 @@ class vector_dist_comm
 
 			// labelling kernel
 
+			prc_sz.template fill<0>(0);
+
+			// we have one process we can skip ...
+			if (v_cl.size() == 1)
+			{
+				auto ite = v_pos.getGPUIterator();
+
+				// ... but we have to apply the boundary conditions
+
+				periodicity_int<dim> bc;
+
+				for (size_t i = 0 ; i < dim ; i++)	{bc.bc[i] = dec.periodicity(i);}
+
+				apply_bc_each_part<dim,St,decltype(v_pos.toKernel())><<<ite.wthr,ite.thr>>>(dec.getDomain(),bc,v_pos.toKernel());
+
+				return;
+			}
+
 			auto ite = v_pos.getGPUIterator();
 
 			// label particle processor
-			process_id_proc_each_part<dim,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(lbl_p.toKernel())><<<ite.wthr,ite.thr>>>(dec.toKernel(),v_pos.toKernel(),lbl_p.toKernel(),v_cl.rank());
+			process_id_proc_each_part<dim,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(lbl_p.toKernel()),decltype(prc_sz.toKernel())>
+			<<<ite.wthr,ite.thr>>>
+			(dec.toKernel(),v_pos.toKernel(),lbl_p.toKernel(),prc_sz.toKernel(),v_cl.rank());
+
+			#ifndef TEST1
 
 			// sort particles
 			mergesort((int *)lbl_p.template getDeviceBuffer<1>(),(int *)lbl_p.template getDeviceBuffer<0>(), lbl_p.size(), mgpu::template less_t<int>(), v_cl.getmgpuContext());
@@ -1010,6 +1094,21 @@ class vector_dist_comm
 			prc_sz.resize(noff+1);
 			prc_sz.template get<0>(prc_sz.size()-1) = lbl_p.size();
 			prc_sz.template get<1>(prc_sz.size()-1) = lbl_p.template get<1>(lbl_p.size()-1);
+
+			#else
+
+			starts.resize(v_cl.size());
+			mgpu::scan((unsigned int *)prc_sz.template getDeviceBuffer<0>(), prc_sz.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
+
+			// move prc_sz to host
+			prc_sz.template deviceToHost<0>();
+
+			ite = lbl_p.getGPUIterator();
+
+			// we order lbl_p
+			reorder_lbl<decltype(lbl_p.toKernel()),decltype(starts.toKernel())><<<ite.wthr,ite.thr>>>(lbl_p.toKernel(),starts.toKernel());
+
+			#endif
 
 #else
 
@@ -1455,8 +1554,6 @@ public:
 			}
 		}
 
-		// In case we have receive option
-
 		if (opt & MAP_LOCAL)
 		{
 			// if the map is local we indicate that we receive only from the neighborhood processors
@@ -1523,7 +1620,7 @@ public:
 		//! properties vector
 		openfpm::vector<openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base,openfpm::grow_policy_identity>> m_prp;
 
-		fill_send_map_buf(v_pos,v_prp, prc_sz_r, m_pos, m_prp,prc_sz,opt);
+		fill_send_map_buf(v_pos,v_prp, prc_sz_r,prc_r, m_pos, m_prp,prc_sz,opt);
 
 		size_t opt_ = 0;
 		if (opt & RUN_ON_DEVICE)

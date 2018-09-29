@@ -13,6 +13,25 @@
 
 #include "Vector/map_vector.hpp"
 
+
+/*! \brief Boundary conditions
+ *
+ *
+ */
+template<unsigned int dim> struct periodicity
+{
+	size_t bc[dim];
+};
+
+/*! \brief Boundary conditions
+ *
+ *
+ */
+template<unsigned int dim> struct periodicity_int
+{
+	int bc[dim];
+};
+
 /*! \brief for each sub-domain box sub contain the real the sub-domain id
  *
  * When we apply boundary conditions real sub-domains are copied along the border

@@ -618,6 +618,11 @@ public:
 	 */
 	const openfpm::vector<Point<dim,T>,Memory,typename layout_base<Point<dim,T>>::type,layout_base> & getShiftVectors()
 	{
+		if (host_dev_transfer == false)
+		{
+			shifts.template hostToDevice<0>();
+		}
+
 		return shifts;
 	}
 

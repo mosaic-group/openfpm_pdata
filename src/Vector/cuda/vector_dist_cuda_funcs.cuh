@@ -10,6 +10,7 @@
 
 #include "Vector/util/vector_dist_funcs.hpp"
 #include "util/cuda/moderngpu/kernel_reduce.hxx"
+#include "Decomposition/common.hpp"
 
 template<unsigned int dim, typename St, typename decomposition_type, typename vector_type, typename start_type, typename output_type>
 __global__ void proc_label_id_ghost(decomposition_type dec,vector_type vd, start_type starts, output_type out)
@@ -37,8 +38,30 @@ __global__ void num_proc_ghost_each_part(decomposition_type dec, vector_type vd,
     out.template get<0>(p) = dec.ghost_processorID_N(xp);
 }
 
-template<unsigned int dim, typename St, typename cartdec_gpu, typename particles_type, typename vector_out>
-__global__ void process_id_proc_each_part(cartdec_gpu cdg, particles_type parts, vector_out output , int rank)
+template<unsigned int dim, typename St, typename particles_type>
+__global__ void apply_bc_each_part(Box<dim,St> domain, periodicity_int<dim> bc, particles_type parts)
+{
+    int p = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (p >= parts.size()) return;
+
+    applyPointBC_no_dec(domain,bc,parts.get(p));
+}
+
+template<typename vector_pos_type, typename vector_prp_type, typename stns_type, unsigned int ... prp>
+__global__ void merge_sort_part(vector_pos_type vd_pos, vector_prp_type vd_prp,
+		                        vector_pos_type v_pos_ord, vector_prp_type vd_prp_ord,
+		                        stns_type nss)
+{
+	int p = threadIdx.x + blockIdx.x * blockDim.x;
+
+	if (p >= vd_pos.size()) return;
+
+	vd_prp.template set<prp...>(p,vd_prp_ord,nss.template get<0>(p));
+}
+
+template<unsigned int dim, typename St, typename cartdec_gpu, typename particles_type, typename vector_out, typename prc_sz_type>
+__global__ void process_id_proc_each_part(cartdec_gpu cdg, particles_type parts, vector_out output, prc_sz_type prc_sz , int rank)
 {
     int p = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -49,8 +72,14 @@ __global__ void process_id_proc_each_part(cartdec_gpu cdg, particles_type parts,
 
 	int pr = cdg.processorID(xp);
 
+#ifndef TEST1
 	output.template get<1>(p) = (pr == rank)?-1:pr;
 	output.template get<0>(p) = p;
+#else
+	output.template get<1>(p) = pr;
+	int nl = atomicAdd(&prc_sz.template get<0>(pr), 1);
+	output.template get<2>(p) = nl;
+#endif
 }
 
 template<unsigned int prp_off, typename vector_type,typename vector_type_offs>
@@ -58,7 +87,7 @@ __global__  void find_buffer_offsets(vector_type vd, int * cnt, vector_type_offs
 {
     int p = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (p >= vd.size() - 1) return;
+    if (p >= (int)vd.size() - 1) return;
 
     if (vd.template get<prp_off>(p) != vd.template get<prp_off>(p+1))
 	{
@@ -199,6 +228,18 @@ __global__ void shift_ghost_each_part(vector_of_box box_f, vector_of_shifts box_
     		n++;
     	}
     }
+}
+
+template<typename vector_lbl_type, typename starts_type>
+__global__  void reorder_lbl(vector_lbl_type m_opart, starts_type starts)
+{
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (i >= m_opart.size()) return;
+
+    int pr = m_opart.template get<1>(i);
+
+    m_opart.template get<0>(starts.template get<0>(pr) + m_opart.template get<2>(i)) = i;
 }
 
 template<unsigned int prp, typename vector_type>

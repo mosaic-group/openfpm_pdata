@@ -70,6 +70,8 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,sca
 	{
 #if defined(CUDA_GPU) && defined(__NVCC__)
 
+			if (v_cl.size() == 1)
+			{return;}
 
 			proc_id_out.resize(v_pos.size()+1);
 			proc_id_out.template get<0>(proc_id_out.size()-1) = 0;
@@ -113,12 +115,22 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,sca
 			// Trasfer the number of offsets on CPU
 			mem.deviceToHost();
 			prc_offset.template deviceToHost<0,1>();
-			g_opart_device.template deviceToHost<0>(g_opart_device.size()-1,g_opart_device.size()-1);
+			if (g_opart_device.size() != 0)
+			{g_opart_device.template deviceToHost<0>(g_opart_device.size()-1,g_opart_device.size()-1);}
 
 			int noff = *(int *)mem.getPointer();
+
+			// In this case we do not have communications at all
+			if (g_opart_device.size() == 0)
+			{noff = -1;}
+
 			prc_offset.resize(noff+1);
 			prc_offset.template get<0>(prc_offset.size()-1) = g_opart_device.size();
-			prc_offset.template get<1>(prc_offset.size()-1) = g_opart_device.template get<0>(g_opart_device.size()-1);
+			if (g_opart_device.size() != 0)
+			{prc_offset.template get<1>(prc_offset.size()-1) = g_opart_device.template get<0>(g_opart_device.size()-1);}
+			else
+			{prc_offset.template get<1>(prc_offset.size()-1) = 0;}
+
 			prc.resize(noff+1);
 			prc_sz.resize(noff+1);
 
@@ -228,7 +240,6 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 		<<<ite.wthr,ite.thr>>>
 		(box_f_dev.toKernel(),v_pos.toKernel(),o_part_loc.toKernel());
 
-//		openfpm::vector<aggregate<unsigned int>,Memory,typename layout_base<aggregate<unsigned int>>::type,layout_base> starts;
 		starts.resize(o_part_loc.size());
 		mgpu::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
 

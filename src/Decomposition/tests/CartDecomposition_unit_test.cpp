@@ -485,6 +485,8 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 	}
 }
 
+
+
 BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test_dist_grid)
 {
 	// Vcluster

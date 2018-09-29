@@ -274,6 +274,8 @@ void check_cell_list_cpu_and_gpu(vector_type & vd, CellList_type & NN, CellList_
 
 	test = check_force(NN_cpu,vd);
 	BOOST_REQUIRE_EQUAL(test,true);
+
+	vd.template merge_sort<1>(NN);
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
@@ -291,7 +293,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
 	// Boundary conditions
 	size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 
-	vector_dist_gpu<3,float,aggregate<float,float[3],float[3]>> vd(1000,domain,bc,g);
+	vector_dist_gpu<3,float,aggregate<float,float[3],float[3]>> vd(10000,domain,bc,g);
 
 	auto it = vd.getDomainIterator();
 
@@ -314,7 +316,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
 	v_cl.sum(size_l);
 	v_cl.execute();
 
-	BOOST_REQUIRE_EQUAL(size_l,1000);
+	BOOST_REQUIRE_EQUAL(size_l,10000);
 
 
 	auto & ct = vd.getDecomposition();
@@ -370,7 +372,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
 	// here we do a ghost_get
 	vd.ghost_get<0>();
 
-	// Doube ghost get to check crashes
+	// Double ghost get to check crashes
 	vd.ghost_get<0>();
 
 	// we re-offload what we received
@@ -385,23 +387,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
 	NN_up.clear();
 	vd.updateCellList(NN_up);
 	check_cell_list_cpu_and_gpu(vd,NN_up,NN_cpu);
-
-	// We check if we opotain the same result from updateCellList
-
-
-
-	// check
-
-	// Now we do a ghost_get from CPU
-
-	// Than we offload on GPU
-
-	// We construct a Cell-list
-
-	// We calculate force on CPU and GPU to check if they match
-
-
-
 }
 
 template<typename St>
@@ -532,6 +517,8 @@ void vdist_calc_gpu_test()
 	for (size_t i = 0 ; i < 10 ; i++)
 	{
 		vd.map(RUN_ON_DEVICE);
+
+		CUDA_SAFE(cudaGetLastError());
 
 		vd.deviceToHostPos();
 		vd.template deviceToHostProp<0,1,2>();

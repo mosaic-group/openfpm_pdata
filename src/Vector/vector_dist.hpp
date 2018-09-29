@@ -1840,7 +1840,25 @@ public:
 		se3.getIterator();
 #endif
 
-		return v_pos.getGPUIteratorTo(n_thr);
+		return v_pos.getGPUIteratorTo(g_m,n_thr);
+	}
+
+	/*! \brief Merge the properties calculated on the sorted vector on the original vector
+	 *
+	 * \parameter Cell-list from which has been constructed the sorted vector
+	 *
+	 */
+	template<unsigned int ... prp> void merge_sort(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> & cl, size_t n_thr = 1024)
+	{
+#if defined(__NVCC__)
+
+		auto ite = v_pos.getGPUIteratorTo(g_m,n_thr);
+
+		merge_sort_part<decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortedToSorted().toKernel()),prp...>
+		<<<ite.wthr,ite.thr>>>
+		(v_pos.toKernel(),v_prp.toKernel(),v_pos_out.toKernel(),v_prp_out.toKernel(),cl.getNonSortedToSorted().toKernel());
+
+#endif
 	}
 
 #endif
