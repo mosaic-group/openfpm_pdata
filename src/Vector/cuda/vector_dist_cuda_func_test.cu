@@ -833,6 +833,146 @@ BOOST_AUTO_TEST_CASE(vector_dist_reorder_lbl)
 	}
 }
 
+BOOST_AUTO_TEST_CASE(vector_dist_merge_sort)
+{
+	openfpm::vector_gpu<aggregate<float[3],float[3],float[3]>> v_prp;
+	openfpm::vector_gpu<Point<3,float>> v_pos;
+
+	openfpm::vector_gpu<aggregate<float[3],float[3],float[3]>> v_prp_out;
+	openfpm::vector_gpu<Point<3,float>> v_pos_out;
+
+	openfpm::vector_gpu<aggregate<int>> ns_to_s;
+
+	v_prp.resize(10000);
+	v_pos.resize(10000);
+	v_prp_out.resize(10000);
+	v_pos_out.resize(10000);
+	ns_to_s.resize(10000);
+
+	for (int i = 0 ; i < 10000 ; i++) // <------ particle id
+	{
+		v_pos.template get<0>(i)[0] = i;
+		v_pos.template get<0>(i)[1] = i+10000;
+		v_pos.template get<0>(i)[2] = i+20000;
+
+		v_prp.template get<0>(i)[0] = i+60123;
+		v_prp.template get<0>(i)[1] = i+73543;
+		v_prp.template get<0>(i)[2] = i+82432;
+
+		v_prp.template get<1>(i)[0] = i+80123;
+		v_prp.template get<1>(i)[1] = i+93543;
+		v_prp.template get<1>(i)[2] = i+102432;
+
+		v_prp.template get<2>(i)[0] = i+110123;
+		v_prp.template get<2>(i)[1] = i+123543;
+		v_prp.template get<2>(i)[2] = i+132432;
+
+		v_prp_out.template get<0>(i)[0] = 0;
+		v_prp_out.template get<0>(i)[1] = 0;
+		v_prp_out.template get<0>(i)[2] = 0;
+
+		v_prp_out.template get<1>(i)[0] = 0;
+		v_prp_out.template get<1>(i)[1] = 0;
+		v_prp_out.template get<1>(i)[2] = 0;
+
+		v_prp_out.template get<2>(i)[0] = 0;
+		v_prp_out.template get<2>(i)[1] = 0;
+		v_prp_out.template get<2>(i)[2] = 0;
+
+		ns_to_s.template get<0>(i) = 10000-i-1;
+	}
+
+	v_prp.template hostToDevice<0,1,2>();
+	v_prp_out.template hostToDevice<0,1,2>();
+	v_pos.template hostToDevice<0>();
+	v_pos_out.template hostToDevice<0>();
+	ns_to_s.template hostToDevice<0>();
+
+	auto ite = v_pos.getGPUIterator();
+
+	merge_sort_part<false,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(ns_to_s.toKernel()),0><<<ite.wthr,ite.thr>>>(v_pos.toKernel(),v_prp.toKernel(),
+																								 v_pos_out.toKernel(),v_prp_out.toKernel(),
+																								 ns_to_s.toKernel());
+
+	v_prp_out.template deviceToHost<0,1,2>();
+
+	bool match = true;
+	for (int i = 0 ; i < 10000 ; i++) // <------ particle id
+	{
+		match &= v_prp_out.template get<0>(10000-i-1)[0] == v_prp.template get<0>(i)[0];
+		match &= v_prp_out.template get<0>(10000-i-1)[1] == v_prp.template get<0>(i)[1];
+		match &= v_prp_out.template get<0>(10000-i-1)[2] == v_prp.template get<0>(i)[2];
+
+		match &= v_prp_out.template get<1>(10000-i-1)[0] == 0;
+		match &= v_prp_out.template get<1>(10000-i-1)[1] == 0;
+		match &= v_prp_out.template get<1>(10000-i-1)[2] == 0;
+
+		match &= v_prp_out.template get<2>(10000-i-1)[0] == 0;
+		match &= v_prp_out.template get<2>(10000-i-1)[1] == 0;
+		match &= v_prp_out.template get<2>(10000-i-1)[2] == 0;
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+
+	merge_sort_part<false,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(ns_to_s.toKernel()),1,2><<<ite.wthr,ite.thr>>>(v_pos.toKernel(),v_prp.toKernel(),
+																								 v_pos_out.toKernel(),v_prp_out.toKernel(),
+																								 ns_to_s.toKernel());
+
+	v_prp_out.template deviceToHost<0,1,2>();
+	v_pos_out.template deviceToHost<0>();
+
+	for (int i = 0 ; i < 10000 ; i++) // <------ particle id
+	{
+		match &= v_prp_out.template get<0>(10000-i-1)[0] == v_prp.template get<0>(i)[0];
+		match &= v_prp_out.template get<0>(10000-i-1)[1] == v_prp.template get<0>(i)[1];
+		match &= v_prp_out.template get<0>(10000-i-1)[2] == v_prp.template get<0>(i)[2];
+
+		match &= v_prp_out.template get<1>(10000-i-1)[0] == v_prp.template get<1>(i)[0];
+		match &= v_prp_out.template get<1>(10000-i-1)[1] == v_prp.template get<1>(i)[1];
+		match &= v_prp_out.template get<1>(10000-i-1)[2] == v_prp.template get<1>(i)[2];
+
+		match &= v_prp_out.template get<2>(10000-i-1)[0] == v_prp.template get<2>(i)[0];
+		match &= v_prp_out.template get<2>(10000-i-1)[1] == v_prp.template get<2>(i)[1];
+		match &= v_prp_out.template get<2>(10000-i-1)[2] == v_prp.template get<2>(i)[2];
+
+
+		match &= v_pos_out.template get<0>(10000-i-1)[0] == 0;
+		match &= v_pos_out.template get<0>(10000-i-1)[1] == 0;
+		match &= v_pos_out.template get<0>(10000-i-1)[2] == 0;
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+
+	merge_sort_part<true,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(ns_to_s.toKernel())><<<ite.wthr,ite.thr>>>(v_pos.toKernel(),v_prp.toKernel(),
+																								 v_pos_out.toKernel(),v_prp_out.toKernel(),
+																								 ns_to_s.toKernel());
+
+	v_prp_out.template deviceToHost<0,1,2>();
+	v_pos_out.template deviceToHost<0>();
+
+	for (int i = 0 ; i < 10000 ; i++) // <------ particle id
+	{
+		match &= v_prp_out.template get<0>(10000-i-1)[0] == v_prp.template get<0>(i)[0];
+		match &= v_prp_out.template get<0>(10000-i-1)[1] == v_prp.template get<0>(i)[1];
+		match &= v_prp_out.template get<0>(10000-i-1)[2] == v_prp.template get<0>(i)[2];
+
+		match &= v_prp_out.template get<1>(10000-i-1)[0] == v_prp.template get<1>(i)[0];
+		match &= v_prp_out.template get<1>(10000-i-1)[1] == v_prp.template get<1>(i)[1];
+		match &= v_prp_out.template get<1>(10000-i-1)[2] == v_prp.template get<1>(i)[2];
+
+		match &= v_prp_out.template get<2>(10000-i-1)[0] == v_prp.template get<2>(i)[0];
+		match &= v_prp_out.template get<2>(10000-i-1)[1] == v_prp.template get<2>(i)[1];
+		match &= v_prp_out.template get<2>(10000-i-1)[2] == v_prp.template get<2>(i)[2];
+
+
+		match &= v_pos_out.template get<0>(10000-i-1)[0] == v_pos.template get<0>(i)[0];
+		match &= v_pos_out.template get<0>(10000-i-1)[1] == v_pos.template get<0>(i)[1];
+		match &= v_pos_out.template get<0>(10000-i-1)[2] == v_pos.template get<0>(i)[2];
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+}
+
 BOOST_AUTO_TEST_CASE(vector_dist_gpu_map_fill_send_buffer_test)
 {
 	openfpm::vector_gpu<aggregate<int,int>> m_opart;

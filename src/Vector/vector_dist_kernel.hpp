@@ -13,6 +13,7 @@
 #define POS_PROP -1
 
 #define GET_PARTICLE(vd) blockDim.x*blockIdx.x + threadIdx.x; if (blockDim.x*blockIdx.x + threadIdx.x > vd.size()) {return;};
+#define GET_PARTICLE_SORT(NN) NN.getDomainSortIds().template get<0>(blockDim.x*blockIdx.x + threadIdx.x); if (blockDim.x*blockIdx.x + threadIdx.x > NN.getDomainSortIds().size()) {return;};
 
 template<unsigned int dim,
          typename St,

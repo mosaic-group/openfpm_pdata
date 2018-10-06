@@ -90,9 +90,11 @@ __global__  void calculate_force(vector_dist_ker<3, float, aggregate<float, floa
 
 template<typename CellList_type>
 __global__  void calculate_force_full_sort(vector_dist_ker<3, float, aggregate<float, float[3], float [3]>> vd,
-		                         	 	   CellList_type cl)
+		                         	 	   CellList_type cl, int rank)
 {
-	auto p = GET_PARTICLE(vd);
+	auto p = GET_PARTICLE_SORT(cl);
+
+	unsigned int ns_id = cl.getSortToNonSort().template get<0>(p);
 
 	Point<3,float> xp = vd.getPos(p);
 
@@ -266,16 +268,32 @@ void check_cell_list_cpu_and_gpu(vector_type & vd, CellList_type & NN, CellList_
 	bool test = check_force(NN_cpu,vd);
 	BOOST_REQUIRE_EQUAL(test,true);
 
+	// We reset the property 1 on device
+
+	auto rst = vd.getDomainIterator();
+
+	while (rst.isNext())
+	{
+		auto p = rst.get();
+
+		vd.template getProp<1>(p)[0] = 0.0;
+		vd.template getProp<1>(p)[1] = 0.0;
+		vd.template getProp<1>(p)[2] = 0.0;
+
+		++rst;
+	}
+
+	vd.template hostToDeviceProp<1>();
+
 	// We do exactly the same test as before, but now we completely use the sorted version
 
-	calculate_force_full_sort<decltype(NN.toKernel())><<<it5.wthr,it5.thr>>>(vd.toKernel_sorted(),NN.toKernel());
+	calculate_force_full_sort<decltype(NN.toKernel())><<<it5.wthr,it5.thr>>>(vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
 
+	vd.template merge_sort<1>(NN);
 	vd.template deviceToHostProp<1>();
 
 	test = check_force(NN_cpu,vd);
 	BOOST_REQUIRE_EQUAL(test,true);
-
-	vd.template merge_sort<1>(NN);
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)

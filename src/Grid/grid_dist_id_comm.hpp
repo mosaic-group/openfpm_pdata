@@ -822,6 +822,10 @@ public:
 										 openfpm::vector<device_grid> & loc_grid,
 										 std::unordered_map<size_t,size_t> & g_id_to_external_ghost_box)
 	{
+#ifdef PROFILE_SCOREP
+		SCOREP_USER_REGION("ghost_get",SCOREP_USER_REGION_TYPE_FUNCTION)
+#endif
+
 		size_t req = 0;
 
 		ExtPreAlloc<Memory> * prRecv_prp = NULL;

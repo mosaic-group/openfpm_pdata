@@ -1414,6 +1414,10 @@ public:
 												 size_t & g_m,
 												 size_t opt = WITH_POSITION)
 	{
+#ifdef PROFILE_SCOREP
+		SCOREP_USER_REGION("ghost_get",SCOREP_USER_REGION_TYPE_FUNCTION)
+#endif
+
 		// Sending property object
 		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;
 
@@ -1436,34 +1440,32 @@ public:
 		{labelParticlesGhost(v_pos,v_prp,prc_g_opart,prc_sz,prc_offset,g_m,opt);}
 
 		// Send and receive ghost particle information
-		{
-			openfpm::vector<send_vector> g_send_prp;
-			fill_send_ghost_prp_buf<send_vector, prp_object, prp...>(v_prp,prc_sz,g_send_prp,opt);
+		openfpm::vector<send_vector> g_send_prp;
+		fill_send_ghost_prp_buf<send_vector, prp_object, prp...>(v_prp,prc_sz,g_send_prp,opt);
 
 #if defined(CUDA_GPU) && defined(__NVCC__)
-			cudaDeviceSynchronize();
+		cudaDeviceSynchronize();
 #endif
 
-			// if there are no properties skip
-			// SSendRecvP send everything when we do not give properties
+		// if there are no properties skip
+		// SSendRecvP send everything when we do not give properties
 
-			if (sizeof...(prp) != 0)
+		if (sizeof...(prp) != 0)
+		{
+			size_t opt_ = compute_options(opt);
+			if (opt & SKIP_LABELLING)
 			{
-				size_t opt_ = compute_options(opt);
-                if (opt & SKIP_LABELLING)
-                {
-                	op_ssend_gg_recv_merge opm(g_m);
-                    v_cl.template SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
-                }
-                else
-                {v_cl.template SSendRecvP<send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get,recv_sz_get_byte,opt_);}
-
-                // fill g_opart_sz
-                g_opart_sz.resize(prc_g_opart.size());
-
-				for (size_t i = 0 ; i < prc_g_opart.size() ; i++)
-					g_opart_sz.get(i) = g_send_prp.get(i).size();
+				op_ssend_gg_recv_merge opm(g_m);
+				v_cl.template SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
 			}
+			else
+			{v_cl.template SSendRecvP<send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get,recv_sz_get_byte,opt_);}
+
+			// fill g_opart_sz
+			g_opart_sz.resize(prc_g_opart.size());
+
+			for (size_t i = 0 ; i < prc_g_opart.size() ; i++)
+				g_opart_sz.get(i) = g_send_prp.get(i).size();
 		}
 
 		if (!(opt & NO_POSITION))
@@ -1599,6 +1601,10 @@ public:
 			  openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp, size_t & g_m,
 			  size_t opt)
 	{
+#ifdef PROFILE_SCOREP
+		SCOREP_USER_REGION("map",SCOREP_USER_REGION_TYPE_FUNCTION)
+#endif
+
 		prc_sz.resize(v_cl.getProcessingUnits());
 
 		// map completely reset the ghost part

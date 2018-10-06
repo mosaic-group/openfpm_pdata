@@ -80,7 +80,7 @@ __global__ void calc_force_gpu(vector_dist_type vd, NN_type NN, real_number sigm
 	while (Np.isNext())
 	{
 		// ... q
-		auto q = Np.get();
+		auto q = Np.get_sort();
 
 		// if (p == q) skip this particle
 		if (q == p)	{++Np; continue;};
@@ -225,7 +225,7 @@ template<typename CellList> void calc_forces(vector_dist_gpu<3,real_number, aggr
 	// Get an iterator over particles
 	auto it2 = vd.getDomainIteratorGPU();
 
-	calc_force_gpu<<<it2.wthr,it2.thr>>>(vd.toKernel(),NN.toKernel(),sigma12,sigma6,r_cut2);
+	calc_force_gpu<<<it2.wthr,it2.thr>>>(vd.toKernel_sorted(),NN.toKernel(),sigma12,sigma6,r_cut2);
 
 	//! \cond [force calc] \endcond
 

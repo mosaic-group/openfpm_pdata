@@ -1188,7 +1188,7 @@ public:
 		v_prp_out.resize(v_pos.size());
 		v_pos_out.resize(v_pos.size());
 
-		cell_list.template construct<decltype(v_pos),decltype(v_prp)>(v_pos,v_pos_out,v_prp,v_prp_out);
+		cell_list.template construct<decltype(v_pos),decltype(v_prp)>(v_pos,v_pos_out,v_prp,v_prp_out,v_cl.getmgpuContext(),g_m);
 
 		cell_list.set_ndec(getDecomposition().get_ndec());
 
@@ -1251,7 +1251,7 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,g_m,CL_NON_SYMMETRIC);
+			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getmgpuContext(),g_m,CL_NON_SYMMETRIC);
 
 			cell_list.set_gm(g_m);
 		}
@@ -1283,7 +1283,7 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,g_m,CL_SYMMETRIC);
+			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getmgpuContext(),g_m,CL_SYMMETRIC);
 
 			cell_list.set_gm(g_m);
 		}
@@ -1854,7 +1854,90 @@ public:
 
 		auto ite = v_pos.getGPUIteratorTo(g_m,n_thr);
 
-		merge_sort_part<decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortedToSorted().toKernel()),prp...>
+		merge_sort_part<false,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortToSort().toKernel()),prp...>
+		<<<ite.wthr,ite.thr>>>
+		(v_pos.toKernel(),v_prp.toKernel(),v_pos_out.toKernel(),v_prp_out.toKernel(),cl.getNonSortToSort().toKernel());
+
+#endif
+	}
+
+	/*! \brief print a vector type property
+	 *
+	 * \param print_sorted (Print the sorted version)
+	 *
+	 * \tparam property
+	 *
+	 */
+	template<unsigned int prp>
+	void debugPrintVector(bool print_sorted = false)
+	{
+		if (print_sorted == false)
+		{this->v_prp.template deviceToHost<prp>();}
+		else
+		{this->v_prp_out.template deviceToHost<prp>();}
+
+		auto it = this->getDomainIterator();
+
+		while(it.isNext())
+		{
+			auto p = it.get();
+
+			for (size_t i = 0 ; i < std::extent<typename boost::mpl::at<typename prop::type,boost::mpl::int_<prp>>::type>::value ; i++)
+			{
+				if (print_sorted == false)
+				{std::cout << v_prp.template get<prp>(p.getKey())[i] << "   ";}
+				else
+				{std::cout << v_prp_out.template get<prp>(p.getKey())[i] << "   ";}
+			}
+
+			std::cout << std::endl;
+
+			++it;
+		}
+	}
+
+	/*! \brief print a scalar type property
+	 *
+	 * \param print_sorted (Print the sorted version)
+	 *
+	 * \tparam property
+	 *
+	 */
+	template<unsigned int prp>
+	void debugPrintScalar(bool print_sorted = false)
+	{
+		if (print_sorted == false)
+		{this->v_prp.template deviceToHost<prp>();}
+		else
+		{this->v_prp_out.template deviceToHost<prp>();}
+
+		auto it = this->getDomainIterator();
+
+		while(it.isNext())
+		{
+			auto p = it.get();
+
+			if (print_sorted == false)
+			{std::cout << v_prp_out.template get<prp>(p.getKey()) << "   " << std::endl;}
+			else
+			{std::cout << v_prp_out.template get<prp>(p.getKey()) << "   " << std::endl;}
+
+			++it;
+		}
+	}
+
+	/*! \brief Merge the properties calculated on the sorted vector on the original vector
+	 *
+	 * \parameter Cell-list from which has been constructed the sorted vector
+	 *
+	 */
+	template<unsigned int ... prp> void merge_sort_with_pos(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> & cl, size_t n_thr = 1024)
+	{
+#if defined(__NVCC__)
+
+		auto ite = v_pos.getGPUIteratorTo(g_m,n_thr);
+
+		merge_sort_part<true,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortedToSorted().toKernel()),prp...>
 		<<<ite.wthr,ite.thr>>>
 		(v_pos.toKernel(),v_prp.toKernel(),v_pos_out.toKernel(),v_prp_out.toKernel(),cl.getNonSortedToSorted().toKernel());
 

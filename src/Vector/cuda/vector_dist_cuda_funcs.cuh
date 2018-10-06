@@ -48,7 +48,7 @@ __global__ void apply_bc_each_part(Box<dim,St> domain, periodicity_int<dim> bc, 
     applyPointBC_no_dec(domain,bc,parts.get(p));
 }
 
-template<typename vector_pos_type, typename vector_prp_type, typename stns_type, unsigned int ... prp>
+template<bool merge_pos, typename vector_pos_type, typename vector_prp_type, typename stns_type, unsigned int ... prp>
 __global__ void merge_sort_part(vector_pos_type vd_pos, vector_prp_type vd_prp,
 		                        vector_pos_type v_pos_ord, vector_prp_type vd_prp_ord,
 		                        stns_type nss)
@@ -56,6 +56,11 @@ __global__ void merge_sort_part(vector_pos_type vd_pos, vector_prp_type vd_prp,
 	int p = threadIdx.x + blockIdx.x * blockDim.x;
 
 	if (p >= vd_pos.size()) return;
+
+	if (merge_pos == true)
+	{
+		vd_pos.template set<0>(p,v_pos_ord,nss.template get<0>(p));
+	}
 
 	vd_prp.template set<prp...>(p,vd_prp_ord,nss.template get<0>(p));
 }
