@@ -220,7 +220,9 @@ void Test2D_ghost(Box<2,float> & box)
 		auto key = g_it.get();
 
 		// Check the received data
-		BOOST_REQUIRE_EQUAL(vd.getPos(key)[0] + vd.getPos(key)[1] * 16.0f,vd.template getProp<p::s>(key));
+		float prp = vd.template getProp<p::s>(key);
+		float prp2 = vd.getPos(key)[0] + vd.getPos(key)[1] * 16.0f;
+		BOOST_REQUIRE_EQUAL(prp2,prp);
 
 		bool is_in = false;
 		size_t b = 0;

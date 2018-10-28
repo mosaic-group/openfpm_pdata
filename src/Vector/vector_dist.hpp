@@ -231,6 +231,8 @@ public:
 	//! property object
 	typedef prop value_type;
 
+	typedef Decomposition Decomposition_type;
+
 private:
 
 	//! Ghost marker, all the particle with id > g_m are ghost all with g_m < are real particle
@@ -1251,7 +1253,7 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getmgpuContext(),g_m,CL_NON_SYMMETRIC);
+			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getmgpuContext(false),g_m,CL_NON_SYMMETRIC);
 
 			cell_list.set_gm(g_m);
 		}
@@ -1605,6 +1607,7 @@ public:
 
 	/*! \brief Construct a cell list starting from the stored particles and reorder a vector according to the Hilberts curve
 	 *
+	 * \warning it kill the ghost and invalidate cell-lists
 	 *
 	 *It differs from the reorder(m) for an additional parameter, in case the
 	 * domain + ghost is not big enough to contain additional padding particles, a Cell list
@@ -1683,6 +1686,47 @@ public:
 			v_pos.swap(v_pos_dest);
 			v_prp.swap(v_prp_dest);
 		}
+
+		v_pos.swap(v_pos_dest);
+		v_prp.swap(v_prp_dest);
+	}
+
+	/*! \brief Construct a cell list starting from the stored particles and reorder a vector according to the Hilberts curve
+	 *
+	 * \warning it kill the ghost and invalidate cell-lists
+	 *
+	 *It differs from the reorder(m) for an additional parameter, in case the
+	 * domain + ghost is not big enough to contain additional padding particles, a Cell list
+	 * with bigger space can be created
+	 * (padding particles in general are particles added by the user out of the domains)
+	 *
+	 * \param m order of a curve
+	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
+	 *
+	 */
+	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_bal<>,shift<dim,St> > >
+	void reorder_rcut(St r_cut)
+	{
+		// reset the ghost part
+		v_pos.resize(g_m);
+		v_prp.resize(g_m);
+
+		auto cell_list = getCellList<CellL>(r_cut);
+
+		// Use cell_list to reorder v_pos
+
+		//destination vector
+		openfpm::vector<Point<dim,St>> v_pos_dest;
+		openfpm::vector<prop> v_prp_dest;
+
+		size_t div[dim];
+		for (size_t i = 0 ; i < dim ; i++)
+		{div[i] = cell_list.getGrid().size(i) - 2*cell_list.getPadding()[i];}
+
+		grid_sm<dim,void> gs(div);
+		grid_key_dx_iterator<dim> h_it(gs);
+
+		reorder_sfc<CellL,grid_key_dx_iterator<dim>>(v_pos_dest,v_prp_dest,h_it,cell_list);
 
 		v_pos.swap(v_pos_dest);
 		v_prp.swap(v_prp_dest);
@@ -2149,7 +2193,8 @@ public:
 
 		while (it.isNext())
 		{
-			size_t v = cdsm.getCell(vd.getPos(it.get()));
+			Point<dim,St> p = vd.getPos(it.get());
+			size_t v = cdsm.getCell(p);
 
 			md.addComputation(dec,vd,v,it.get().getKey());
 
@@ -2633,6 +2678,11 @@ public:
 		void hostToDevicePos()
 		{
 			v_pos.template hostToDevice<0>();
+		}
+
+		void set_g_m(size_t g_m)
+		{
+			this->g_m = g_m;
 		}
 
 #endif

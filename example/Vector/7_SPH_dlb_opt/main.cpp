@@ -325,9 +325,9 @@ struct ModelCustom
 	template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p)
 	{
                 if (vd.template getProp<type>(p) == FLUID )
-                        dec.addComputationCost(v,4);
+                {dec.addComputationCost(v,4);}
                 else
-                        dec.addComputationCost(v,3);
+                {dec.addComputationCost(v,3);}
 	}
 
 	template<typename Decomposition> inline void applyModel(Decomposition & dec, size_t v)
@@ -335,7 +335,7 @@ struct ModelCustom
 		dec.setSubSubDomainComputationCost(v, dec.getSubSubDomainComputationCost(v) * dec.getSubSubDomainComputationCost(v));
 	}
 
-        float distributionTol()
+    float distributionTol()
 	{
 		return 1.01;
 	}
@@ -344,19 +344,19 @@ struct ModelCustom
 //! Second model for dynamic load balancing
 struct ModelCustom2
 {
-        template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p)
-        {
-            dec.addComputationCost(v,vd.template getProp<nn_num>(p) + 4);
-        }
+	template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p)
+	{
+		dec.addComputationCost(v,vd.template getProp<nn_num>(p) + 4);
+	}
 
-        template<typename Decomposition> inline void applyModel(Decomposition & dec, size_t v)
-        {
-        }
+	template<typename Decomposition> inline void applyModel(Decomposition & dec, size_t v)
+	{
+	}
 
-        float distributionTol()
-        {
-                return 1.01;
-        }
+	float distributionTol()
+	{
+			return 1.01;
+	}
 };
 
 inline void EqState(particles & vd)
@@ -383,11 +383,11 @@ inline double Wab(double r)
 	r /= H;
 
 	if (r < 1.0)
-		return (1.0 - 3.0/2.0*r*r + 3.0/4.0*r*r*r)*a2;
+	{return (1.0 - 3.0/2.0*r*r + 3.0/4.0*r*r*r)*a2;}
 	else if (r < 2.0)
-		return (1.0/4.0*(2.0 - r*r)*(2.0 - r*r)*(2.0 - r*r))*a2;
+	{return (1.0/4.0*(2.0 - r*r)*(2.0 - r*r)*(2.0 - r*r))*a2;}
 	else
-		return 0.0;
+	{return 0.0;}
 }
 
 const double c1 = -3.0/M_PI/H/H/H/H;
@@ -662,7 +662,7 @@ double calc_deltaT(particles & vd, double ViscDtMax)
 	//-dt new value of time step.
 	double dt=double(CFLnumber)*std::min(dt_f,dt_cv);
 	if(dt<double(DtMin))
-		dt=double(DtMin);
+	{dt=double(DtMin);}
 
 	return dt;
 }
@@ -745,11 +745,6 @@ void verlet_int(particles & vd, double dt, double & max_disp)
 			vd.template getProp<rho>(a) < RhoMin || vd.template getProp<rho>(a) > RhoMax)
 	    {
 	                   to_remove.add(a.getKey());
-
-
-	                   /*! \cond [big_number_set] \endcond */
-
-	                   /*! \cond [big_number_set] \endcond */
 	    }
 
 	    vd.template getProp<velocity_prev>(a)[0] = velX;

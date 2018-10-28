@@ -40,7 +40,7 @@ class shift_vect_converter
 
 		HyperCube<dim> hyp;
 
-		for (long int i = dim-1 ; i >= 0 ; i--)
+		for (long int i = dim ; i >= 0 ; i--)
 		{
 			std::vector<comb<dim>> cmbs = hyp.getCombinations_R(i);
 

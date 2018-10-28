@@ -13,7 +13,8 @@
 #define POS_PROP -1
 
 #define GET_PARTICLE(vd) blockDim.x*blockIdx.x + threadIdx.x; if (blockDim.x*blockIdx.x + threadIdx.x > vd.size()) {return;};
-#define GET_PARTICLE_SORT(NN) NN.getDomainSortIds().template get<0>(blockDim.x*blockIdx.x + threadIdx.x); if (blockDim.x*blockIdx.x + threadIdx.x > NN.getDomainSortIds().size()) {return;};
+#define GET_PARTICLE_SORT(p,NN) if (blockDim.x*blockIdx.x + threadIdx.x >= NN.get_g_m()) {return;}\
+							  else{p = NN.getDomainSortIds().template get<0>(blockDim.x*blockIdx.x + threadIdx.x);}
 
 template<unsigned int dim,
          typename St,
@@ -42,6 +43,13 @@ public:
 	vector_dist_ker(const openfpm::vector_gpu_ker<Point<dim,St>,memory_traits_inte> & v_pos, const openfpm::vector_gpu_ker<prop,memory_traits_inte> & v_prp)
 	:v_pos(v_pos),v_prp(v_prp)
 	{}
+
+	/*! \brief return the number of particles (excluding ghost)
+	 *
+	 * \return the number of particles
+	 *
+	 */
+	__device__ int size_local() {return g_m;}
 
 	/*! \brief return the number of particles
 	 *

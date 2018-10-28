@@ -93,10 +93,90 @@ void test_reorder_sfc(reorder_opt opt)
 	}
 }
 
+///////////////////////// test hilb ///////////////////////////////
+
+void test_reorder_cl()
+{
+	Vcluster<> & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 48)
+		return;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+#ifdef TEST_COVERAGE_MODE
+    long int k = 24288 * v_cl.getProcessingUnits();
+#else
+    long int k = 524288 * v_cl.getProcessingUnits();
+#endif
+
+	long int big_step = k / 4;
+	big_step = (big_step == 0)?1:big_step;
+
+	print_test_v( "Testing 2D vector with sfc curve reordering k<=",k);
+
+	// 2D test
+	for ( ; k >= 2 ; k-= decrement(k,big_step) )
+	{
+		BOOST_TEST_CHECKPOINT( "Testing 2D vector with sfc curve reordering k=" << k );
+
+		Box<2,float> box({0.0,0.0},{1.0,1.0});
+
+		// Boundary conditions
+		size_t bc[2]={NON_PERIODIC,NON_PERIODIC};
+
+		vector_dist<2,float, Point_test<float> > vd(k,box,bc,Ghost<2,float>(0.01));
+
+		auto it = vd.getIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			vd.getPos(key)[0] = ud(eg);
+			vd.getPos(key)[1] = ud(eg);
+
+			++it;
+		}
+
+		vd.map();
+
+		// in case of SE_CLASS3 get a cell-list without ghost get is an error
+
+		// Create first cell list
+
+		auto NN1 = vd.getCellList(0.01,true);
+
+		//Reorder a vector
+		vd.reorder_rcut(0.01);
+
+		// Create second cell list
+		auto NN2 = vd.getCellList(0.01,true);
+
+		//Check equality of cell sizes
+		for (size_t i = 0 ; i < NN1.getGrid().size() ; i++)
+		{
+			size_t n1 = NN1.getNelements(i);
+			size_t n2 = NN2.getNelements(i);
+
+			BOOST_REQUIRE_EQUAL(n1,n2);
+		}
+	}
+}
+
 BOOST_AUTO_TEST_CASE( vector_dist_reorder_2d_test )
 {
 	test_reorder_sfc(reorder_opt::HILBERT);
 	test_reorder_sfc(reorder_opt::LINEAR);
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_reorder_cl_test )
+{
+	test_reorder_cl();
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
@@ -104,7 +184,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_hilb_forces_test )
 	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 48)
-		return;
+	{return;}
 
 	///////////////////// INPUT DATA //////////////////////
 

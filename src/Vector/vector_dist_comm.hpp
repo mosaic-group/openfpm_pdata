@@ -149,6 +149,9 @@ class vector_dist_comm
 	//! The same as recv_sz_get but for map
 	openfpm::vector<size_t> recv_sz_map;
 
+	//! elements sent for each processors (ghost_get)
+	openfpm::vector<size_t> prc_sz_gg;
+
 	//! temporary buffer to processors ids
     openfpm::vector<aggregate<unsigned int>,
                             Memory,
@@ -1125,7 +1128,7 @@ class vector_dist_comm
 			g_opart.resize(dec.getNNProcessors());
 
 			// resize the label buffer
-			prc_sz.resize(v_cl.getProcessingUnits());
+			prc_sz.template fill<0>(0);
 
 			auto it = v_pos.getIterator();
 
@@ -1196,6 +1199,7 @@ class vector_dist_comm
 #endif
 
 		// Buffer that contain for each processor the id of the particle to send
+		prc_sz.clear();
 		g_opart.clear();
 		g_opart.resize(dec.getNNProcessors());
 		prc_g_opart.clear();
@@ -1424,9 +1428,6 @@ public:
 		// send vector for each processor
 		typedef openfpm::vector<prp_object,Memory,typename layout_base<prp_object>::type,layout_base,openfpm::grow_policy_identity> send_vector;
 
-		// elements to send for each processors
-		openfpm::vector<size_t> prc_sz;
-
 		if (!(opt & NO_POSITION))
 		{v_pos.resize(g_m);}
 
@@ -1437,35 +1438,37 @@ public:
 
 		// Label all the particles
 		if ((opt & SKIP_LABELLING) == false)
-		{labelParticlesGhost(v_pos,v_prp,prc_g_opart,prc_sz,prc_offset,g_m,opt);}
+		{labelParticlesGhost(v_pos,v_prp,prc_g_opart,prc_sz_gg,prc_offset,g_m,opt);}
 
-		// Send and receive ghost particle information
-		openfpm::vector<send_vector> g_send_prp;
-		fill_send_ghost_prp_buf<send_vector, prp_object, prp...>(v_prp,prc_sz,g_send_prp,opt);
-
-#if defined(CUDA_GPU) && defined(__NVCC__)
-		cudaDeviceSynchronize();
-#endif
-
-		// if there are no properties skip
-		// SSendRecvP send everything when we do not give properties
-
-		if (sizeof...(prp) != 0)
 		{
-			size_t opt_ = compute_options(opt);
-			if (opt & SKIP_LABELLING)
+			// Send and receive ghost particle information
+			openfpm::vector<send_vector> g_send_prp;
+			fill_send_ghost_prp_buf<send_vector, prp_object, prp...>(v_prp,prc_sz_gg,g_send_prp,opt);
+
+	#if defined(CUDA_GPU) && defined(__NVCC__)
+			cudaDeviceSynchronize();
+	#endif
+
+			// if there are no properties skip
+			// SSendRecvP send everything when we do not give properties
+
+			if (sizeof...(prp) != 0)
 			{
-				op_ssend_gg_recv_merge opm(g_m);
-				v_cl.template SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
+				size_t opt_ = compute_options(opt);
+				if (opt & SKIP_LABELLING)
+				{
+					op_ssend_gg_recv_merge opm(g_m);
+					v_cl.template SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
+				}
+				else
+				{v_cl.template SSendRecvP<send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get,recv_sz_get_byte,opt_);}
+
+				// fill g_opart_sz
+				g_opart_sz.resize(prc_g_opart.size());
+
+				for (size_t i = 0 ; i < prc_g_opart.size() ; i++)
+					g_opart_sz.get(i) = g_send_prp.get(i).size();
 			}
-			else
-			{v_cl.template SSendRecvP<send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get,recv_sz_get_byte,opt_);}
-
-			// fill g_opart_sz
-			g_opart_sz.resize(prc_g_opart.size());
-
-			for (size_t i = 0 ; i < prc_g_opart.size() ; i++)
-				g_opart_sz.get(i) = g_send_prp.get(i).size();
 		}
 
 		if (!(opt & NO_POSITION))
@@ -1473,7 +1476,7 @@ public:
 			// Sending buffer for the ghost particles position
 			openfpm::vector<send_pos_vector> g_pos_send;
 
-			fill_send_ghost_pos_buf(v_pos,prc_sz,g_pos_send,opt);
+			fill_send_ghost_pos_buf(v_pos,prc_sz_gg,g_pos_send,opt);
 
 #if defined(CUDA_GPU) && defined(__NVCC__)
 			cudaDeviceSynchronize();

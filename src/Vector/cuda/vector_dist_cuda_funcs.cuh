@@ -10,6 +10,7 @@
 
 #include "Vector/util/vector_dist_funcs.hpp"
 #include "util/cuda/moderngpu/kernel_reduce.hxx"
+#include "util/cuda/moderngpu/kernel_scan.hxx"
 #include "Decomposition/common.hpp"
 
 template<unsigned int dim, typename St, typename decomposition_type, typename vector_type, typename start_type, typename output_type>
@@ -99,6 +100,20 @@ __global__  void find_buffer_offsets(vector_type vd, int * cnt, vector_type_offs
     	int i = atomicAdd(cnt, 1);
     	offs.template get<0>(i) = p+1;
     	offs.template get<1>(i) = vd.template get<1>(p);
+	}
+}
+
+template<unsigned int prp_off, typename vector_type,typename vector_type_offs>
+__global__  void find_buffer_offsets_no_prc(vector_type vd, int * cnt, vector_type_offs offs)
+{
+    int p = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (p >= (int)vd.size() - 1) return;
+
+    if (vd.template get<prp_off>(p) != vd.template get<prp_off>(p+1))
+	{
+    	int i = atomicAdd(cnt, 1);
+    	offs.template get<0>(i) = p+1;
 	}
 }
 
@@ -247,7 +262,15 @@ __global__  void reorder_lbl(vector_lbl_type m_opart, starts_type starts)
     m_opart.template get<0>(starts.template get<0>(pr) + m_opart.template get<2>(i)) = i;
 }
 
-template<unsigned int prp, typename vector_type>
+template<typename red_type>
+struct _add_: mgpu::plus_t<red_type>
+{};
+
+template<typename red_type>
+struct _max_: mgpu::maximum_t<red_type>
+{};
+
+template<unsigned int prp, template <typename> class op, typename vector_type>
 auto reduce(vector_type & vd) -> typename std::remove_reference<decltype(vd.template getProp<prp>(0))>::type
 {
 	typedef typename std::remove_reference<decltype(vd.template getProp<prp>(0))>::type reduce_type;
@@ -257,11 +280,117 @@ auto reduce(vector_type & vd) -> typename std::remove_reference<decltype(vd.temp
 
 	mgpu::reduce((reduce_type *)vd.getPropVector(). template getDeviceBuffer<prp>(),
 			            vd.size_local(), (reduce_type *)mem.getDevicePointer() ,
-			            mgpu::plus_t<reduce_type>(), vd.getVC().getmgpuContext());
+			            op<reduce_type>(), vd.getVC().getmgpuContext());
 
 	mem.deviceToHost();
 
 	return *(reduce_type *)(mem.getPointer());
+}
+
+template<typename vector_type>
+__global__ void create_index(vector_type vd)
+{
+	int i = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (i >= vd.size()) return;
+
+    vd.template get<0>(i) = i;
+}
+
+template<unsigned int dim, typename vector_pos_type, typename vector_prp_type, typename scan_type>
+__global__ void copy_new_to_old(vector_pos_type vd_pos_dst, vector_prp_type vd_prp_dst, vector_pos_type vd_pos_src, vector_prp_type vd_prp_src, scan_type idx)
+{
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (i >= vd_prp_dst.size()) return;
+
+    for (unsigned int k = 0 ; k < dim ; k++)
+    {vd_pos_dst.template get<0>(i)[k] = vd_pos_src.template get<0>(idx.template get<0>(i))[k];}
+
+    vd_prp_dst.set(i,vd_prp_src,idx.template get<0>(i));
+}
+
+/*! \brief Remove the particles marked on the properties prp (particles marked has has property set to 1, the others to 0)
+ *
+ * \warning the function is destructive on prp, it mean that after destruction the prp of the particles can contain garbage
+ *
+ * \tparam prp property that indicate the particles to remove
+ *
+ * \param vd distributed vector
+ *
+ */
+template<unsigned int prp, typename vector_type>
+void remove_marked(vector_type & vd)
+{
+	// This function make sense only if prp is an int or unsigned int
+	if (std::is_same< typename boost::mpl::at<typename vector_type::value_type::type,boost::mpl::int_<prp>>::type, int >::value == false &&
+		std::is_same< typename boost::mpl::at<typename vector_type::value_type::type,boost::mpl::int_<prp>>::type, unsigned int >::value == false &&
+		std::is_same< typename boost::mpl::at<typename vector_type::value_type::type,boost::mpl::int_<prp>>::type, float >::value == false &&
+		std::is_same< typename boost::mpl::at<typename vector_type::value_type::type,boost::mpl::int_<prp>>::type, double >::value == false &&
+		std::is_same< typename boost::mpl::at<typename vector_type::value_type::type,boost::mpl::int_<prp>>::type, size_t >::value == false)
+	{
+		std::cout << __FILE__ << ":" << __LINE__ << " error, the function remove_marked work only if is an integer or unsigned int" << std::endl;
+		return;
+	}
+
+	typedef typename boost::mpl::at<typename vector_type::value_type::type,boost::mpl::int_<prp>>::type remove_type;
+
+	// first we do a scan of the property
+	openfpm::vector_gpu<aggregate<unsigned int>> idx;
+	idx.resize(vd.size_local());
+
+	auto ite = idx.getGPUIterator();
+
+	create_index<<<ite.wthr,ite.thr>>>(idx.toKernel());
+
+	// sort particles, so the particles to remove stay at the end
+	mergesort((remove_type *)vd.getPropVector().template getDeviceBuffer<prp>(),(unsigned int *)idx.template getDeviceBuffer<0>(), idx.size(), mgpu::template less_t<remove_type>(), vd.getVC().getmgpuContext());
+
+	openfpm::vector_gpu<aggregate<int>> mark;
+	mark.resize(1);
+
+	CudaMemory mem;
+	mem.allocate(sizeof(int));
+	mem.fill(0);
+
+	// mark point, particle that stay and to remove
+	find_buffer_offsets_no_prc<prp,decltype(vd.getPropVector().toKernel()),decltype(mark.toKernel())><<<ite.wthr,ite.thr>>>
+			           (vd.getPropVector().toKernel(),(int *)mem.getDevicePointer(),mark.toKernel());
+
+	mem.deviceToHost();
+
+	// we have no particles to remove
+	if (*(int *)mem.getPointer() == 0)
+	{return;}
+
+	// Get the mark point
+	mark.template deviceToHost<0>();
+
+	// than create an equivalent buffer prop and pos
+
+	typename std::remove_reference<decltype(vd.getPosVector())>::type vd_pos_new;
+	typename std::remove_reference<decltype(vd.getPropVector())>::type vd_prp_new;
+
+	// resize them
+
+	vd_pos_new.resize(mark.template get<0>(0));
+	vd_prp_new.resize(mark.template get<0>(0));
+
+	auto & vd_pos_old = vd.getPosVector();
+	auto & vd_prp_old = vd.getPropVector();
+
+	// now we copy from the old vector to the new one
+
+	ite = vd_pos_old.getGPUIterator();
+
+	copy_new_to_old<vector_type::dims><<<ite.wthr,ite.thr>>>(vd_pos_new.toKernel(),vd_prp_new.toKernel(),vd_pos_old.toKernel(),vd_prp_old.toKernel(),idx.toKernel());
+
+	// and we swap
+
+	vd.set_g_m(vd_pos_new.size());
+
+	vd.getPosVector().swap(vd_pos_new);
+	vd.getPropVector().swap(vd_prp_new);
 }
 
 #endif /* VECTOR_DIST_CUDA_FUNCS_CUH_ */

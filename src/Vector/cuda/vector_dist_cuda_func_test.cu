@@ -7,6 +7,7 @@
 #include "Decomposition/CartDecomposition.hpp"
 #include "util/cuda/scan_cuda.cuh"
 #include "util/cuda/moderngpu/kernel_scan.hxx"
+#include "Vector/vector_dist.hpp"
 
 #define SUB_UNIT_FACTOR 1024
 
@@ -1068,6 +1069,125 @@ BOOST_AUTO_TEST_CASE(vector_dist_gpu_map_fill_send_buffer_test)
 
 		offset += m_pos.get(i).size();
     }
+}
+
+template<unsigned int prp>
+void vector_dist_remove_marked_type()
+{
+	auto & v_cl = create_vcluster();
+
+	if (v_cl.size() > 16)
+	{return;}
+
+	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// set the ghost based on the radius cut off (make just a little bit smaller than the spacing)
+	Ghost<3,float> g(0.1);
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	vector_dist_gpu<3,float,aggregate<float,float,int,int>> vd(5000*v_cl.size(),domain,bc,g);
+
+	auto it = vd.getDomainIterator();
+
+	float fc = 1.0;
+	float dc = 1.0;
+	int ic = 1;
+	int sc = 1;
+
+	while(it.isNext())
+	{
+		auto p = it.get();
+
+		vd.template getProp<0>(p) = fc;
+		vd.template getProp<1>(p) = dc;
+		vd.template getProp<2>(p) = ic;
+		vd.template getProp<3>(p) = sc;
+
+		vd.template getProp<prp>(p) = (ic % 3 == 0);
+
+		fc += 1.0;
+		dc += 1.0;
+		ic += 1;
+		sc += 1;
+
+		++it;
+	}
+
+	size_t sz = vd.size_local() - vd.size_local()/3;
+
+	vd.template hostToDeviceProp<0,1,2,3>();
+
+	remove_marked<prp>(vd);
+
+	BOOST_REQUIRE_EQUAL(vd.size_local(),sz);
+
+	vd.template deviceToHostProp<0,1,2,3>();
+
+	auto it2 = vd.getDomainIterator();
+
+	// There should not be number divisible by 3
+
+	bool test = true;
+
+	while(it2.isNext())
+	{
+		auto p = it2.get();
+
+		if (prp != 0)
+		{test &= ((int)vd.template getProp<0>(p) % 3 != 0);}
+
+		if (prp != 1)
+		{test &= ((int)vd.template getProp<1>(p) % 3 != 0);}
+
+		if (prp != 2)
+		{test &= ((int)vd.template getProp<2>(p) % 3 != 0);}
+
+		if (prp != 3)
+		{test &= ((int)vd.template getProp<3>(p) % 3 != 0);}
+
+		if (test == false)
+		{
+			if (prp != 0)
+			{std::cout << (int)vd.template getProp<0>(p) << std::endl;}
+
+			if (prp != 1)
+			{std::cout << (int)vd.template getProp<1>(p) << std::endl;}
+
+			if (prp != 2)
+			{std::cout << (int)vd.template getProp<2>(p) << std::endl;}
+
+			if (prp != 3)
+			{std::cout << (int)vd.template getProp<3>(p) << std::endl;}
+
+			break;
+		}
+
+		++it2;
+	}
+
+	BOOST_REQUIRE_EQUAL(test,true);
+
+
+	// We test where we do not remove anything
+
+	size_t size_old = vd.size_local();
+
+	// Because remove_marked is destructive we have to reset the property
+	vd.getPropVector().template fill<prp>(0);
+
+	remove_marked<prp>(vd);
+
+	BOOST_REQUIRE_EQUAL(vd.size_local(),size_old);
+}
+
+BOOST_AUTO_TEST_CASE(vector_dist_remove_marked)
+{
+	vector_dist_remove_marked_type<0>();
+	vector_dist_remove_marked_type<1>();
+	vector_dist_remove_marked_type<2>();
+	vector_dist_remove_marked_type<3>();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
