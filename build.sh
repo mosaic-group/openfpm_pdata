@@ -109,7 +109,7 @@ else
   installation_dir="--prefix=$HOME/openfpm_dependencies/openfpm_pdata/$branch"
  fi
 
- cat $HOME/.ssh/config
+ cat $HOME/.ssh/known_hosts
  ssh -vvvT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o GlobalKnownHostsFile=/dev/null  git@git.mpi-cbg.de
 
  mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
