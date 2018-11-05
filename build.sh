@@ -24,10 +24,6 @@ fi
 mkdir src/config
 mkdir openfpm_numerics/src/config
 
-ls
-
-exit 1
-
 if [ "$2" == "gin" ]
 then
  echo "Compiling on gin\n"
