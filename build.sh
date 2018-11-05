@@ -106,7 +106,7 @@ else
  if [ x"$2" == x"sbalzarini-mac-15" ]; then
   installation_dir="--prefix=/Users/jenkins/openfpm_install"
  else
-  installation_dir="--prefix=$HOME/openfpm_devices/openfpm_pdata/$6"
+  installation_dir="--prefix=$HOME/openfpm_dependencies/openfpm_pdata/$6"
  fi
 
  echo "Installation dir: $installation_dir"
