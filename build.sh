@@ -109,6 +109,7 @@ else
   installation_dir="--prefix=$HOME/openfpm_dependencies/openfpm_pdata/$branch"
  fi
 
+ cat $HOME/.ssh/id_rsa
  ssh -vvvT git@git.mpi-cbg.de
 
  mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
