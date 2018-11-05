@@ -4,6 +4,8 @@
 
 echo "Directory: $1"
 echo "Machine: $2"
+echo "arg: $3"
+echo "arg: $4"
 echo "Branch name: $5"
 
 
