@@ -110,7 +110,7 @@ else
  fi
 
  cat $HOME/.ssh/id_rsa
- ssh -vvvT git@git.mpi-cbg.de
+ ssh -vvvT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o GlobalKnownHostsFile=/dev/null  git@git.mpi-cbg.de
 
  mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
  if [ x"$4" == x"full" ]; then
