@@ -109,6 +109,8 @@ else
   installation_dir="--prefix=/home/jenkins/openfpm_install"
  fi
 
+ echo "Installation dir: $installation_dir"
+
  exit 1
 
  mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
