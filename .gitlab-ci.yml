@@ -1,0 +1,60 @@
+centos_build:
+  stage: build
+  tags:
+    - centos
+  artifacts:
+    paths:
+      - ./openfpm_data/build/src/mem_map
+  script:
+    - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata NO $CI_COMMIT_REF_NAME
+
+      #centos_run:
+      #  stage: test
+      #  tags:
+      #    - centos
+      #  dependencies:
+      #    - centos_build
+      #  script:
+      #    - ./openfpm_data/build/src/mem_map
+      #    - ./success.sh 2 centos openfpm_devices
+
+mac_build:
+  stage: build
+  tags:
+    - mac
+  artifacts:
+    paths:
+      - ./openfpm_data/build/src/mem_map
+  script:
+    - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata NO $CI_COMMIT_REF_NAME
+
+      #mac_run:
+      #  stage: test
+      #  tags:
+      #    - mac
+      #  dependencies:
+      #    - mac_build
+      #  script:
+      #    - ./openfpm_data/build/src/mem_map
+      #    - ./success.sh 2 mac openfpm_devices
+
+ubuntu_build:
+  stage: build
+  tags:
+    - ubuntu
+  artifacts:
+    paths:
+      - ./openfpm_data/build/src/mem_map
+  script:
+    - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_EXECUTABLE_TAGS pdata NO $CI_COMMIT_REF_NAME
+
+      #ubuntu_run:
+      #  stage: test
+      #  tags:
+      #    - ubuntu
+      #  dependencies:
+      #    - ubuntu_build
+      #  script:
+      #    - ./openfpm_data/build/src/mem_map
+      #    - ./success.sh 2 ubuntu openfpm_devices
+
