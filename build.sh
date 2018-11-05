@@ -109,8 +109,6 @@ else
   installation_dir="--prefix=$HOME/openfpm_dependencies/openfpm_pdata/$branch"
  fi
 
- cat $HOME/.ssh/id_rsa.pub
-
  mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
  if [ x"$4" == x"full" ]; then
   ./install -i $HOME/$branch  -s -c "$installation_dir"
