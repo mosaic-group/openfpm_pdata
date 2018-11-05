@@ -6,12 +6,12 @@ echo "Directory: $1"
 echo "Machine: $2"
 echo "arg: $3"
 echo "arg: $4"
-echo "Branch name: $5"
+echo "Branch name: $6"
 
-if [ x"$5" == x"" ]; then
+if [ x"$6" == x"" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
 else
-  branch=$5
+  branch=$6
 fi
 
 #### If you have a dep_dir file change the branch name to the dep_dir
