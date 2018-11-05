@@ -21,6 +21,8 @@ if [ x"$dep_dir" != x"" ]; then
   set -- "${@:1:4}" "$dep_dir"
 fi
 
+echo "BBBBBBBBBBBBBBBBBBBBB $6"
+
 mkdir src/config
 mkdir openfpm_numerics/src/config
 
