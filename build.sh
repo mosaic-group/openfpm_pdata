@@ -23,6 +23,7 @@ fi
 mkdir src/config
 mkdir openfpm_numerics/src/config
 
+exit 1
 
 if [ "$2" == "gin" ]
 then
