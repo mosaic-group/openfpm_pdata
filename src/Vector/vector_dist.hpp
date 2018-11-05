@@ -246,13 +246,12 @@ private:
 	//! the second element contain unassigned particles
 	openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> v_prp;
 
-#ifdef CUDA_GPU
-
+	//! reordered v_pos buffer
 	openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> v_prp_out;
 
+	//! reordered v_prp buffer
 	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> v_pos_out;
 
-#endif
 
 	//! Virtual cluster
 	Vcluster<Memory> & v_cl;

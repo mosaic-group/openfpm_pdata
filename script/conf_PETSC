@@ -20,7 +20,7 @@ function conf_PETSC()
 	    lin_alg_dir="$lin_alg_dir -L$i_dir/OPENBLAS/lib"
 	    lin_alg_lib="$lin_alg_lib -lopenblas"
 	    lin_alg_inc="$lin_alg_inc -I$i_dir/OPENBLAS/include"
-	    configure_blas_option="--with-blas=-L$i_dir/OPENBLAS/lib -lopenblas"
+	    configure_blas_option="--with-blas=-L$i_dir/OPENBLAS/"
 	fi
 	if [ -d "$i_dir/SCALAPACK" ]; then
 	    lin_alg_dir="$lin_alg_dir -L$i_dir/SCALAPACK/lib"

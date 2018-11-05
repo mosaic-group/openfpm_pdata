@@ -104,6 +104,9 @@ ${DEFINE_HAVE_SYS_TYPES_H}
 /* Define to 1 if you have the <unistd.h> header file. */
 ${DEFINE_HAVE_UNISTD_H}
 
+/* Test TinyObjLoader */
+${DEFINE_HAVE_TINYOBJLOADER}
+
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #define LT_OBJDIR ".libs/"
 

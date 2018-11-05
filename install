@@ -275,7 +275,7 @@ if [ -d "$i_dir/PARMETIS" ]; then
     configure_options=" $configure_options --with-parmetis=$i_dir/PARMETIS "
 fi
 if [ -d "$i_dir/HDF5" ]; then
-    configure_options=" $configure_options --with-hdf5=$i_dir/HDF5/bin/h5pcc "
+    configure_options=" $configure_options --with-hdf5=$i_dir/HDF5/ "
 fi
 if [ -d "$i_dir/LIBHILBERT" ]; then
     configure_options=" $configure_options --with-libhilbert=$i_dir/LIBHILBERT "
@@ -378,7 +378,7 @@ else
                 exit 1
             fi
             ./script/install_HDF5.sh $i_dir $ncore
-            configure_options=" $configure_options --with-hdf5=$i_dir/HDF5/bin/h5pcc "
+            configure_options=" $configure_options --with-hdf5=$i_dir/HDF5/ "
             HDF5_installed=1
         elif [ $conf_err -eq 210 ]; then
             echo "LIBHILBERT not found try to install"

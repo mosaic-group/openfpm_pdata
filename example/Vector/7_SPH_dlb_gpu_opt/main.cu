@@ -407,8 +407,6 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 	calc_forces_gpu<<<part.wthr,part.thr>>>(vd.toKernel_sorted(),NN.toKernel(),W_dap,cbar);
 
 	vd.merge_sort<force,drho,red>(NN);
-//	vd.merge_sort<rho>(NN);
-//	vd.merge_sort<red>(NN);
 
 	max_visc = reduce<red,_max_>(vd);
 }
