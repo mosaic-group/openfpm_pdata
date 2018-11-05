@@ -109,7 +109,9 @@ else
   installation_dir="--prefix=/home/jenkins/openfpm_install"
  fi
 
- mkdir $HOME/$branch
+ exit 1
+
+ mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
  if [ x"$4" == x"full" ]; then
   ./install -i $HOME/$branch  -s -c "$installation_dir"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
