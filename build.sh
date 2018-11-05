@@ -109,6 +109,7 @@ else
   installation_dir="--prefix=$HOME/openfpm_dependencies/openfpm_pdata/$6"
  fi
 
+ echo "AAAAAAAAAAAAAAAAAAAAAAAA $6"
  echo "Installation dir: $installation_dir"
 
  exit 1
