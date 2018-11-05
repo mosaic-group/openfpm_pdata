@@ -18,7 +18,7 @@ fi
 
 dep_dir=$(cat dep_dir)
 if [ x"$dep_dir" != x"" ]; then
-  set -- "${@:1:5}" "$dep_dir"
+  branch=$dep_dir
 fi
 
 mkdir src/config
@@ -106,12 +106,8 @@ else
  if [ x"$2" == x"sbalzarini-mac-15" ]; then
   installation_dir="--prefix=/Users/jenkins/openfpm_install"
  else
-  installation_dir="--prefix=$HOME/openfpm_dependencies/openfpm_pdata/$6"
+  installation_dir="--prefix=$HOME/openfpm_dependencies/openfpm_pdata/$branch"
  fi
-
- echo "Installation dir: $installation_dir"
-
- exit 1
 
  mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
  if [ x"$4" == x"full" ]; then
