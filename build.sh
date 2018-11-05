@@ -21,8 +21,6 @@ if [ x"$dep_dir" != x"" ]; then
   set -- "${@:1:5}" "$dep_dir"
 fi
 
-echo "BBBBBBBBBBBBBBBBBBBBB $6"
-
 mkdir src/config
 mkdir openfpm_numerics/src/config
 
@@ -111,7 +109,6 @@ else
   installation_dir="--prefix=$HOME/openfpm_dependencies/openfpm_pdata/$6"
  fi
 
- echo "AAAAAAAAAAAAAAAAAAAAAAAA $6"
  echo "Installation dir: $installation_dir"
 
  exit 1
