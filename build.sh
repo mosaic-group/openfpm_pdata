@@ -8,6 +8,8 @@ echo "arg: $3"
 echo "arg: $4"
 echo "Branch name: $6"
 
+echo "CCCCCCCCCCCCCCCCCCC $6"
+
 if [ x"$6" == x"" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
 else
