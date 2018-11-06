@@ -117,6 +117,7 @@ else
 
  mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
  if [ x"$4" == x"full" ]; then
+  echo "Installing with: ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch  -s -c \"$installation_dir\"  "
   ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch  -s -c "$installation_dir"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch

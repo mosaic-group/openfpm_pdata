@@ -6,7 +6,7 @@ centos_build:
     paths:
       - ./openfpm_data/build/src/mem_map
   script:
-    - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata NO $CI_COMMIT_REF_NAME
+    - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata full $CI_COMMIT_REF_NAME
 
 centos_run:
   stage: test
@@ -26,7 +26,7 @@ mac_build:
     paths:
       - ./openfpm_data/build/src/mem_map
   script:
-    - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata NO $CI_COMMIT_REF_NAME
+    - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata full  $CI_COMMIT_REF_NAME
 
 mac_run:
   stage: test
@@ -46,7 +46,7 @@ ubuntu_build:
     paths:
       - ./openfpm_data/build/src/mem_map
   script:
-    - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_EXECUTABLE_TAGS pdata NO $CI_COMMIT_REF_NAME
+    - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_EXECUTABLE_TAGS pdata full $CI_COMMIT_REF_NAME
 
 ubuntu_run:
   stage: test
