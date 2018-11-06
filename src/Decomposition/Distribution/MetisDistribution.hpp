@@ -13,6 +13,20 @@
 
 #define METIS_DISTRIBUTION_ERROR_OBJECT std::runtime_error("Metis runtime error");
 
+/*! \brief sub-domain list and weight
+ *
+ */
+struct met_sub_w
+{
+	//! sub-domain id
+	size_t id;
+
+	//! sub-domain weight / assignment (it depend in which context is used)
+	size_t w;
+
+	static bool noPointers() {return true;}
+};
+
 /*! \brief Class that distribute sub-sub-domains across processors using Metis Library
  *
  * Given a graph and setting Computational cost, Communication cost (on the edge) and
@@ -46,20 +60,6 @@ class MetisDistribution
 
 	//! Metis decomposer utility
 	Metis<Graph_CSR<nm_v, nm_e>> metis_graph;
-
-	/*! \brief sub-domain list and weight
-	 *
-	 */
-	struct met_sub_w
-	{
-		//! sub-domain id
-		size_t id;
-
-		//! sub-domain weight / assignment (it depend in which context is used)
-		size_t w;
-
-		static bool noPointers() {return true;}
-	};
 
 	//! unordered map that map global sub-sub-domain to owned_cost_sub id
 	std::unordered_map<size_t,size_t> owner_scs;
