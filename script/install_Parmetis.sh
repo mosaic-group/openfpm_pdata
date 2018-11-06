@@ -5,7 +5,7 @@ discover_os
 
 # check if the directory $1/PARMETIS exist
 
-if [ -d "$1/PARMETIS" ]; then
+if [ -f "$1/PARMETIS/include/parmetis.h" ]; then
   echo "PARMETIS is already installed"
   exit 0
 fi
