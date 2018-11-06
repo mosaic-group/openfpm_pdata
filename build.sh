@@ -113,6 +113,7 @@ else
  #ssh -vvvT -o StrictHostKeyChecking=no  -o UserKnownHostsFile=/dev/null -o GlobalKnownHostsFile=/dev/null  git@git.mpi-cbg.de
  # force ssh to not use HostKey verification
  echo "StrictHostKeyChecking=no" > $HOME/.ssh/config
+ chmod 600 $HOME/.ssh/config
  ssh -vvvT  git@git.mpi-cbg.de
 
  mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
