@@ -55,10 +55,13 @@ while getopts di:smhc:nu FLAG; do
 	      echo "Fowarding options $OPTARG to configure script"
 	      configure_options=$OPTARG
 	      ;;
-        m)
-          echo "Skip to make the testing"
-          nomake=1
-          ;;
+            m)
+              echo "Skip compilation of the test"
+              nomake=1
+              ;;
+	    g)
+	      echo "Installing with GPU support"
+	      gpu_support=1
 	    u)
 	      echo "Updating openfpm"
 	      update_openfpm=1
@@ -289,7 +292,7 @@ fi
 
 ### MPI compilers must be in your PATH folder
 
-set_mpi $i_dir $ncore $CC $CXX $F77 $FC
+set_mpi $i_dir $ncore $CC $CXX $F77 $FC $gpu_support
 
 ### METIS and ParMETIS must be installed independently from sistem wide installation
 
@@ -334,7 +337,7 @@ else
                 echo "Error the installation of MPI failed"
                 exit 1
             fi
-            ./script/install_MPI.sh $i_dir $ncore $CC $CXX $F77 $FC
+            ./script/install_MPI.sh $i_dir $ncore  $CC $CXX $F77 $FC $gpu_support
             MPI_installed=1
             export PATH="$i_dir/MPI/bin:$PATH"
             configure_options="$configure_options CXX=mpic++ "
