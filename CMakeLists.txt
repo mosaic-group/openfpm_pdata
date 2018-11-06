@@ -142,8 +142,6 @@ file(WRITE error_code "0")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/config/config_cmake.h.in ${CMAKE_CURRENT_SOURCE_DIR}/src/config/config.h)
 
-include_directories(SYSTEM ${MPI_INCLUDE_PATH})
-
 add_subdirectory (src)
 add_subdirectory (openfpm_devices)
 add_subdirectory (images)

@@ -16,6 +16,7 @@ add_library(ofpm_pdata STATIC lib/pdata.cpp)
 
 if (CUDA_FOUND)
 	target_compile_options(pdata PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe "--display_error_number --diag_suppress=2885 --diag_suppress=2887  --diag_suppress=2888 --diag_suppress=186 --diag_suppress=111" --expt-extended-lambda>)
+	target_include_directories (pdata PUBLIC ${MPI_C_INCLUDE_DIRS})
 endif()
 
 target_include_directories (pdata PUBLIC ${CUDA_INCLUDE_DIRS})
