@@ -534,10 +534,13 @@ if [ $? != 0 ]; then
 	# Read the error code and exit with that
 	if [ -f ../error_code ]; then
 	  ecod=$(cat ../error_code)
-	  echo "Analyze error $ecod"
-	  exit $ecod
+	  if [ x"$ecod" == x"0" ]; then
+	    exit 1
+	  else
+	    echo "Analyze error $ecod"
+	    exit $ecod
+	  fi
 	else
-	  echo "General error"
 	  exit 1
 	fi
 fi
