@@ -62,6 +62,7 @@ while getopts di:smhc:nu FLAG; do
 	    g)
 	      echo "Installing with GPU support"
 	      gpu_support=1
+	      ;;
 	    u)
 	      echo "Updating openfpm"
 	      update_openfpm=1
