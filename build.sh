@@ -47,24 +47,24 @@ then
  export PATH="/usr/local/binutils/bin/:$PATH"
 
  mkdir $HOME/$branch
- if [ x"$4" == x"full" ]; then
+ if [ x"$5" == x"full" ]; then
   CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$branch  -s -c "--prefix=/home/jenkins/openfpm_install"
   echo "Moving environment variable"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
- elif [ x"$3" == x"numerics" ]; then
+ elif [ x"$4" == x"numerics" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
   CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$branch  -m -s -c "--prefix=/home/jenkins/openfpm_install"
   echo "Moving environment variable"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
-  make $3
+  make -j 12
  else
   CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$branch  -m -s -c "--prefix=/home/jenkins/openfpm_install --no-recursion"
   echo "Moving environment variables"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
-  make $3
+  make -j 12
  fi
 
  if [ $? -ne 0 ]; then
@@ -93,7 +93,7 @@ then
  ./install -m -i "/scratch/p_ppm/$branch" -s -c"CXX=mpic++ --no-recursion"
  mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
  source $HOME/openfpm_vars_$branch
- make $3
+ make -j 24
 
 
  if [ $? -ne 0 ]; then
@@ -117,23 +117,23 @@ else
  chmod 600 $HOME/.ssh/config
 
  mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
- if [ x"$4" == x"full" ]; then
+ if [ x"$5" == x"full" ]; then
   echo "Installing with: ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch  -s -c \"$installation_dir\"  "
   ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch  -s -c "$installation_dir"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
- elif [ x"$3" == x"numerics" ]; then
+ elif [ x"$4" == x"numerics" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
   ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch  -m -s -c "$installation_dir"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
-  make $3
+  make -j 4
  else
   echo "Installing with: ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch -m -s -c \"$installation_dir --no-recursion\""
   ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch -m -s -c "$installation_dir --no-recursion"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
-  make $3
+  make -j 4
  fi
 
  if [ $? -ne 0 ]; then
