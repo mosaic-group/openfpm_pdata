@@ -326,6 +326,7 @@ if [ $install_req -eq 0 ]; then
 else
     while [ $conf_err -ne 0 ]
     do
+	pwd
         ./configure $options $configure_options "$configure_blas_option"
         conf_err=$?
 
