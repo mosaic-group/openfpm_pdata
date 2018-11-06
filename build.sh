@@ -106,29 +106,32 @@ else
  if [ x"$2" == x"sbalzarini-mac-15" ]; then
   installation_dir="--prefix=/Users/jenkins/openfpm_install"
  else
-  installation_dir="--prefix=$HOME/openfpm_dependencies/openfpm_pdata/$branch"
+  installation_dir="--prefix=$HOME/openfpm_install/$branch"
  fi
 
  #ssh -vvvT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o GlobalKnownHostsFile=/dev/null  git@git.mpi-cbg.de
  #ssh -vvvT -o StrictHostKeyChecking=no  -o UserKnownHostsFile=/dev/null -o GlobalKnownHostsFile=/dev/null  git@git.mpi-cbg.de
  # force ssh to not use HostKey verification
+ cat $HOME/.ssh/id_rsa.pub
  echo "StrictHostKeyChecking=no" > $HOME/.ssh/config
  chmod 600 $HOME/.ssh/config
- ssh -vvvT  git@git.mpi-cbg.de
+ rm -rf $HOME/METIS
 
  mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
  if [ x"$4" == x"full" ]; then
-  ./install -i $HOME/$branch  -s -c "$installation_dir"
+  ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch  -s -c "$installation_dir"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
  elif [ x"$3" == x"numerics" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
-  ./install -i $HOME/$branch  -m -s -c "$installation_dir"
+  ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch  -m -s -c "$installation_dir"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
   make $3
  else
-  ./install -i $HOME/$branch -m -s -c "$installation_dir --no-recursion"
+  echo "$installation_dir"
+  exit 1
+  ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch -m -s -c "$installation_dir --no-recursion"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
   make $3
