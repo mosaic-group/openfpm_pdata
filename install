@@ -269,14 +269,8 @@ fi
 lin_alg_dir=""
 lin_alg_lib=""
 lin_alg_inc=""
-if [ -d "$i_dir/METIS" ]; then
-    configure_options=" $configure_options --with-metis=$i_dir/METIS "
-fi
 if [ -d "$i_dir/BOOST" ]; then
     configure_options=" $configure_options --with-boost=$i_dir/BOOST "
-fi
-if [ -d "$i_dir/PARMETIS" ]; then
-    configure_options=" $configure_options --with-parmetis=$i_dir/PARMETIS "
 fi
 if [ -d "$i_dir/HDF5" ]; then
     configure_options=" $configure_options --with-hdf5=$i_dir/HDF5/ "
