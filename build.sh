@@ -4,8 +4,9 @@
 
 echo "Directory: $1"
 echo "Machine: $2"
-echo "arg: $3"
-echo "arg: $4"
+echo "make target: $3"
+echo "project calling: $4"
+echo "compilation type: $5"
 echo "Branch name: $6"
 
 rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/PARMETIS
