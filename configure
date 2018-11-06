@@ -531,10 +531,13 @@ cmake ../. $conf_options
 if [ $? != 0 ]; then
 	#ok something went wrong the install script analyze the return code to potentially fix the problem automatically
 	# Read the error code and exit with that
-	ecod=$(cat ../error_code)
-	echo "Analyze error $ecod"
-
-	exit $ecod
+	if [ -f ../error_code ]; then
+	  ecod=$(cat ../error_code)
+	  echo "Analyze error $ecod"
+	  exit $ecod
+	else
+	  exit 1
+	fi
 fi
 
 cd ..
