@@ -537,6 +537,7 @@ if [ $? != 0 ]; then
 	  echo "Analyze error $ecod"
 	  exit $ecod
 	else
+	  echo "General error"
 	  exit 1
 	fi
 fi
