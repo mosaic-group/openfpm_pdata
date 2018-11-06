@@ -129,7 +129,7 @@ else
   source $HOME/openfpm_vars_$branch
   make $3
  else
-  echo "$installation_dir"
+  echo "Installing with: ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch -m -s -c \"$installation_dir --no-recursion\""
   exit 1
   ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch -m -s -c "$installation_dir --no-recursion"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
