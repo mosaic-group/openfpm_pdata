@@ -9,7 +9,6 @@ echo "project calling: $4"
 echo "compilation type: $5"
 echo "Branch name: $6"
 
-rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/PARMETIS
 
 if [ x"$6" == x"" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
@@ -135,7 +134,7 @@ else
   fi
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
-  make -j 4
+  make -j 1
  else
   echo "Installing with: ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch -m -s -c \"$installation_dir --no-recursion\""
   ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch -m -s -c "$installation_dir --no-recursion"
@@ -145,7 +144,7 @@ else
   fi
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
-  make -j 4
+  make -j 1
  fi
 
  if [ $? -ne 0 ]; then
