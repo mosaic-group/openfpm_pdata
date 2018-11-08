@@ -40,7 +40,7 @@ if(ENABLE_GPU)
 	find_package(CUDA)
 endif()
 
-find_package(Boost 1.52.0 unit_test_framework iostreams program_options)
+find_package(Boost 1.52.0 COMPONENTS unit_test_framework iostreams program_options)
 find_package(MPI)
 find_package(PETSc)
 find_package(HDF5)
