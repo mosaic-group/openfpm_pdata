@@ -31,6 +31,7 @@ target_include_directories (pdata PUBLIC ${PARMETIS_ROOT}/include)
 target_include_directories (pdata PUBLIC ${METIS_ROOT}/include)
 target_include_directories (pdata PUBLIC ${HDF5_ROOT}/include)
 target_include_directories (pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
+target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
 
 target_link_libraries(pdata ${Boost_LIBRARIES})
 target_link_libraries(pdata -L${METIS_ROOT}/lib metis)
