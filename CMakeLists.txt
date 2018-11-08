@@ -26,6 +26,7 @@ set(PARMETIS_DIR ${PARMETIS_ROOT})
 set(OPENBLAS_ROOT CACHE PATH "Root path for blas library")
 
 set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CUDA_STANDARD 11)
 
 if (OPENBLAS_ROOT)
 	set(OPENBLAS_DIR "{OPENBLAS_ROOT}")
@@ -40,7 +41,7 @@ if(ENABLE_GPU)
 	find_package(CUDA)
 endif()
 
-find_package(Boost 1.52.0 COMPONENTS unit_test_framework iostreams program_options)
+find_package(Boost 1.66.0 COMPONENTS unit_test_framework iostreams program_options)
 find_package(MPI)
 find_package(PETSc)
 find_package(HDF5)
