@@ -332,6 +332,7 @@ do
   -prefix=* | --prefix=* | --prefi=* | --pref=* | --pre=* | --pr=* | --p=*)
     prefix=$ac_optarg
     conf_options="$conf_options -DCMAKE_INSTALL_PREFIX=$ac_optarg"
+    echo "$prefix" > install_dir
     ;;
 
   -program-prefix | --program-prefix | --program-prefi | --program-pref \
@@ -547,13 +548,16 @@ fi
 
 cd ..
 
-echo "SUBDIRS := build
+echo "all:
+	\$(MAKE) -C build \$@
 
-all: \$(SUBDIRS)
-\$(SUBDIRS):
-	\$(MAKE) -C \$@
+clean:
+	\$(MAKE) -C build \$@
 
-.PHONY: all \$(SUBDIRS)" > Makefile
+install:
+	\$(MAKE) -C build \$@
+
+.PHONY: all clean install" > Makefile
 
 echo "$0 $@" > config.log
 

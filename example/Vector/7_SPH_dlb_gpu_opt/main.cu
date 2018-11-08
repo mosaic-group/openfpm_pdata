@@ -68,7 +68,7 @@ typedef float real_number;
 #define FLUID 1
 
 // initial spacing between particles dp in the formulas
-const real_number dp = 0.0085;
+const real_number dp = 0.00425;
 // Maximum height of the fluid water
 // is going to be calculated and filled later on
 real_number h_swl = 0.0;
@@ -80,7 +80,7 @@ const real_number coeff_sound = 20.0;
 const real_number gamma_ = 7.0;
 
 // sqrt(3.0*dp*dp) support of the kernel
-const real_number H = 0.0147224318643;
+const real_number H = 0.00736121593217;
 
 // Eta in the formulas
 const real_number Eta2 = 0.01 * H*H;
@@ -94,10 +94,12 @@ const real_number visco = 0.1;
 real_number cbar = 0.0;
 
 // Mass of the fluid particles
-const real_number MassFluid = 0.000614125;
+const real_number MassFluid = 0.0000767656;
 
 // Mass of the boundary particles
-const real_number MassBound = 0.000614125;
+const real_number MassBound = 0.0000767656;
+
+//
 
 // End simulation time
 #ifdef TEST_RUN
@@ -447,7 +449,7 @@ real_number calc_deltaT(particles & vd, real_number ViscDtMax)
 	max_acceleration_and_velocity(vd,Maxacc,Maxvel);
 
 	//-dt1 depends on force per unit mass.
-	const real_number dt_f = (Maxacc)?sqrt(H/Maxacc):std::numeric_limits<int>::max();
+	const real_number dt_f = (Maxacc)?sqrt(H/Maxacc):std::numeric_limits<float>::max();
 
 	//-dt2 combines the Courant and the viscous time-step controls.
 	const real_number dt_cv = H/(std::max(cbar,Maxvel*10.f) + H*ViscDtMax);
@@ -717,7 +719,7 @@ int main(int argc, char* argv[])
 
 	// Here we define our domain a 2D box with internals from 0 to 1.0 for x and y
 	Box<3,real_number> domain({-0.05,-0.05,-0.05},{1.7010,0.7065,0.5025});
-	size_t sz[3] = {207,90,66};
+	size_t sz[3] = {413,179,131};
 
 	// Fill W_dap
 	W_dap = 1.0/Wab(H/1.5);
@@ -728,7 +730,7 @@ int main(int argc, char* argv[])
 	// extended boundary around the domain, and the processor domain
 	Ghost<3,real_number> g(2*H);
 
-	particles vd(0,domain,bc,g,DEC_GRAN(512));
+	particles vd(0,domain,bc,g,DEC_GRAN(128));
 
 	//! \cond [draw fluid] \endcond
 

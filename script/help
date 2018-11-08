@@ -7,6 +7,7 @@ function HELP {
   echo -e " \033[1mOptions:\033[0m"
   echo -e "    \033[1;34m-n\033[0m upgrade openfpm, it upgrades openfpm to the new version"
   echo -e "    \033[1;34m-u\033[0m update openfpm, it updates the current openfpm release with the latest bug fixes"
+  echo -e "    \033[1;34m-g\033[0m enable GPU"
   echo -e "    \033[1;34m-i\033[0m directory Set the directory where to install the required dependencies"
   echo -e "    \033[1;34m-d\033[0m disable installation of requirements"
   echo -e "    \033[1;34m-s\033[0m skip user input"
