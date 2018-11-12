@@ -47,7 +47,7 @@
 # 3. If shared library linking fails, test with static library linking
 
 # Load pkg-config module (provided by CMake)
-find_package(PkgConfig REQUIRED)
+find_package(PkgConfig)
 
 # Find PETSc pkg-config file. Note: craypetsc_real is on Cray systems
 set(ENV{PKG_CONFIG_PATH} "$ENV{CRAY_PETSC_PREFIX_DIR}/lib/pkgconfig:$ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib/pkgconfig:$ENV{PETSC_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
@@ -208,5 +208,4 @@ else()
     REQUIRED_VARS PETSC_FOUND
     FAIL_MESSAGE "PETSc could not be found. Be sure to set PETSC_DIR.")
 endif()
-
 
