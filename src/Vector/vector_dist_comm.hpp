@@ -292,13 +292,13 @@ class vector_dist_comm
 			unsigned int box_f_sv;
 			Box<dim,St> box_f_dev;
 
-			bool operator<(const sh_box & tmp)
+			bool operator<(const sh_box & tmp) const
 			{
 				return shift_id < tmp.shift_id;
 			}
 
 		};
-		openfpm::vector<struct sh_box> reord_shift;
+		openfpm::vector<sh_box> reord_shift;
 
 		// Add local particles coming from periodic boundary, the only boxes that count are the one
 		// touching the border
