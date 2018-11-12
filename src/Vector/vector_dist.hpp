@@ -1192,6 +1192,7 @@ public:
 		cell_list.template construct<decltype(v_pos),decltype(v_prp)>(v_pos,v_pos_out,v_prp,v_prp_out,v_cl.getmgpuContext(),g_m);
 
 		cell_list.set_ndec(getDecomposition().get_ndec());
+		cell_list.set_gm(g_m);
 
 		return cell_list;
 	}

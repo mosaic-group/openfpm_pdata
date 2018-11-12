@@ -8,7 +8,7 @@
 #ifndef SRC_VECTOR_VECTOR_DIST_COMM_HPP_
 #define SRC_VECTOR_VECTOR_DIST_COMM_HPP_
 
-//#define TEST1
+#define TEST1
 
 #if defined(CUDA_GPU) && defined(__NVCC__)
 #include "util/cuda/moderngpu/kernel_mergesort.hxx"
@@ -285,6 +285,21 @@ class vector_dist_comm
 		if (shift_box_ndec == (long int)dec.get_ndec())
 			return;
 
+		struct sh_box
+		{
+			size_t shift_id;
+
+			unsigned int box_f_sv;
+			Box<dim,St> box_f_dev;
+
+			bool operator<(const sh_box & tmp)
+			{
+				return shift_id < tmp.shift_id;
+			}
+
+		};
+		openfpm::vector<struct sh_box> reord_shift;
+
 		// Add local particles coming from periodic boundary, the only boxes that count are the one
 		// touching the border
 		for (size_t i = 0; i < dec.getNLocalSub(); i++)
@@ -307,21 +322,30 @@ class vector_dist_comm
 					box_f.last().add(dec.getLocalIGhostBox(i, j));
 					box_cmb.add(dec.getLocalIGhostPos(i, j));
 					map_cmb[dec.getLocalIGhostPos(i, j).lin()] = box_f.size() - 1;
-
-					box_f_dev.add(dec.getLocalIGhostBox(i, j));
-					box_f_sv.add();
-					box_f_sv.template get<0>(box_f_sv.size()-1) = dec.convertShift(dec.getLocalIGhostPos(i, j));
 				}
 				else
 				{
 					// we have it
 					box_f.get(it->second).add(dec.getLocalIGhostBox(i, j));
-
-					box_f_dev.add(dec.getLocalIGhostBox(i, j));
-					box_f_sv.template get<0>(box_f_sv.size()-1) = dec.convertShift(dec.getLocalIGhostPos(i, j));
 				}
 
+				reord_shift.add();
+				reord_shift.last().shift_id = dec.getLocalIGhostPos(i, j).lin();
+				reord_shift.last().box_f_dev = dec.getLocalIGhostBox(i, j);
+				reord_shift.last().box_f_sv = dec.convertShift(dec.getLocalIGhostPos(i, j));
 			}
+		}
+
+		// now we sort box_f by shift_id, the reason is that we have to avoid duplicated particles
+		reord_shift.sort();
+
+		box_f_dev.resize(reord_shift.size());
+		box_f_sv.resize(reord_shift.size());
+
+		for (size_t i = 0 ; i < reord_shift.size() ; i++)
+		{
+			box_f_dev.get(i) = reord_shift.get(i).box_f_dev;
+			box_f_sv.template get<0>(i) = reord_shift.get(i).box_f_sv;
 		}
 
 #ifdef CUDA_GPU
@@ -547,7 +571,7 @@ class vector_dist_comm
 		const openfpm::vector<Point<dim,St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & shifts = dec.getShiftVectors();
 
 		// create a number of send buffers equal to the near processors
-		g_pos_send.resize(g_opart.size());
+		g_pos_send.resize(prc_sz.size());
 
 		resize_retained_buffer(hsmem,g_pos_send.size());
 
@@ -894,7 +918,7 @@ class vector_dist_comm
 
 			size_t offset = prc_sz.template get<0>(0);
 
-			// Fill the sending fuffers
+			// Fill the sending buffers
 			for (size_t i = 0 ; i < m_pos.size() ; i++)
 			{
 				auto ite = m_pos.get(i).getGPUIterator();
@@ -1074,6 +1098,7 @@ class vector_dist_comm
 			<<<ite.wthr,ite.thr>>>
 			(dec.toKernel(),v_pos.toKernel(),lbl_p.toKernel(),prc_sz.toKernel(),v_cl.rank());
 
+
 			#ifndef TEST1
 
 			// sort particles
@@ -1123,9 +1148,10 @@ class vector_dist_comm
 		{
 			// reset lbl_p
 			lbl_p.clear();
+			prc_sz_gg.clear();
 			o_part_loc.clear();
 			g_opart.clear();
-			g_opart.resize(dec.getNNProcessors());
+			prc_g_opart.clear();
 
 			// resize the label buffer
 			prc_sz.template fill<0>(0);

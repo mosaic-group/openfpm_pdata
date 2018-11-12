@@ -63,7 +63,7 @@ __global__ void merge_sort_part(vector_pos_type vd_pos, vector_prp_type vd_prp,
 		vd_pos.template set<0>(p,v_pos_ord,nss.template get<0>(p));
 	}
 
-	vd_prp.template set<prp...>(p,vd_prp_ord,nss.template get<0>(p));
+	vd_prp.template set<prp ...>(p,vd_prp_ord,nss.template get<0>(p));
 }
 
 template<unsigned int dim, typename St, typename cartdec_gpu, typename particles_type, typename vector_out, typename prc_sz_type>
@@ -99,7 +99,7 @@ __global__  void find_buffer_offsets(vector_type vd, int * cnt, vector_type_offs
 	{
     	int i = atomicAdd(cnt, 1);
     	offs.template get<0>(i) = p+1;
-    	offs.template get<1>(i) = vd.template get<1>(p);
+    	offs.template get<1>(i) = vd.template get<prp_off>(p);
 	}
 }
 
@@ -184,12 +184,13 @@ __global__ void process_ghost_particles_local(vector_g_opart_type g_opart, vecto
     v_prp.set(base+i,v_prp.get(pid));
 }
 
-template<unsigned int dim, typename St, typename vector_of_box, typename vector_type,  typename output_type>
-__global__ void num_shift_ghost_each_part(vector_of_box box_f, vector_type vd,  output_type out)
+template<unsigned int dim, typename St, typename vector_of_box, typename vector_of_shifts, typename vector_type,  typename output_type>
+__global__ void num_shift_ghost_each_part(vector_of_box box_f, vector_of_shifts box_f_sv, vector_type vd,  output_type out, unsigned int g_m)
 {
+	unsigned int old_shift = (unsigned int)-1;
 	int p = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (p >= vd.size()) return;
+    if (p >= g_m) return;
 
     Point<dim,St> xp = vd.template get<0>(p);
 
@@ -197,8 +198,14 @@ __global__ void num_shift_ghost_each_part(vector_of_box box_f, vector_type vd,  
 
     for (unsigned int i = 0 ; i < box_f.size() ; i++)
     {
-    	if (Box<dim,St>(box_f.get(i)).isInsideNP(xp) == true)
-    	{n++;}
+    	unsigned int shift_actual = box_f_sv.template get<0>(i);
+    	bool sw = (old_shift == shift_actual)?true:false;
+
+    	if (Box<dim,St>(box_f.get(i)).isInsideNP(xp) == true && sw == false)
+    	{
+    		old_shift = shift_actual;
+    		n++;
+    	}
     }
 
     out.template get<0>(p) = n;
@@ -217,6 +224,7 @@ __global__ void shift_ghost_each_part(vector_of_box box_f, vector_of_shifts box_
 		                              start_type start, shifts_type shifts,
 		                              output_type output, unsigned int offset)
 {
+	unsigned int old_shift = (unsigned int)-1;
 	int p = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (p >= v_pos.size()) return;
@@ -231,20 +239,23 @@ __global__ void shift_ghost_each_part(vector_of_box box_f, vector_of_shifts box_
 
     for (unsigned int i = 0 ; i < box_f.size() ; i++)
     {
-    	if (Box<dim,St>(box_f.get(i)).isInsideNP(xp) == true)
+    	unsigned int shift_actual = box_f_sv.template get<0>(i);
+    	bool sw = (old_shift == shift_actual)?true:false;
+
+    	if (Box<dim,St>(box_f.get(i)).isInsideNP(xp) == true && sw == false)
     	{
-    		unsigned int shift_id = box_f_sv.template get<0>(i);
 
 #pragma unroll
     		for (unsigned int j = 0 ; j < dim ; j++)
     		{
-    			v_pos.template get<0>(base+n)[j] = xp.get(j) - shifts.template get<0>(shift_id)[j];
+    			v_pos.template get<0>(base+n)[j] = xp.get(j) - shifts.template get<0>(shift_actual)[j];
     			output.template get<0>(base_o+n) = p;
-    			output.template get<1>(base_o+n) = shift_id;
+    			output.template get<1>(base_o+n) = shift_actual;
     		}
 
     		v_prp.set(base+n,v_prp.get(p));
 
+    		old_shift = shift_actual;
     		n++;
     	}
     }

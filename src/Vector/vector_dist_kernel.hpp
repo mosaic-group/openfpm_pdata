@@ -12,7 +12,7 @@
 
 #define POS_PROP -1
 
-#define GET_PARTICLE(vd) blockDim.x*blockIdx.x + threadIdx.x; if (blockDim.x*blockIdx.x + threadIdx.x > vd.size()) {return;};
+#define GET_PARTICLE(vd) blockDim.x*blockIdx.x + threadIdx.x; if (blockDim.x*blockIdx.x + threadIdx.x >= vd.size()) {return;};
 #define GET_PARTICLE_SORT(p,NN) if (blockDim.x*blockIdx.x + threadIdx.x >= NN.get_g_m()) {return;}\
 							  else{p = NN.getDomainSortIds().template get<0>(blockDim.x*blockIdx.x + threadIdx.x);}
 

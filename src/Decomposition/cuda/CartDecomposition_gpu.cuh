@@ -105,7 +105,7 @@ public:
 	}
 
 	CartDecomposition_gpu(const CartDecomposition_gpu<dim,T,Memory,layout_base> & dec)
-	:ie_ghost_gpu<dim,T,Memory,layout_base>(dec),clk(dec.clk),domain(dec.domain)
+	:ie_ghost_gpu<dim,T,Memory,layout_base>(dec),clk(dec.clk),domain(dec.domain),sub_domains_global(dec.sub_domains_global)
 	{
 		for (int s = 0 ; s < dim ; s++)
 		{this->bc[s] = dec.bc[s];}

@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 	// Vcluster
 	Vcluster<> & vcl = create_vcluster();
 
-	CartDecomposition<3, double> dec(vcl);
+	CartDecomposition<3, double, CudaMemory,memory_traits_inte> dec(vcl);
 
 	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
 
@@ -87,6 +87,8 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 			mem2.allocate(2*sizeof(unsigned int));
 			test_ghost_n<decltype(gpudec)><<<1,1>>>(p1,p2,gpudec,(unsigned int *)mem2.getDevicePointer());
 
+			mem2.deviceToHost();
+
 			unsigned int tot = ((unsigned int *)mem2.getPointer())[0] + ((unsigned int *)mem2.getPointer())[1];
 
 			openfpm::vector_gpu<aggregate<int,int>> vd;
@@ -119,11 +121,15 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 
 			test_proc_idbc<decltype(gpudec)><<<1,1>>>(p1,p2,gpudec,(unsigned int *)mem.getDevicePointer());
 
+			mem.deviceToHost();
+
 			BOOST_REQUIRE(((unsigned int *)mem.getPointer())[0] < vcl.size());
 			BOOST_REQUIRE(((unsigned int *)mem.getPointer())[1] < vcl.size());
 
 			mem2.allocate(2*sizeof(unsigned int));
 			test_ghost_n<decltype(gpudec)><<<1,1>>>(p1,p2,gpudec,(unsigned int *)mem2.getDevicePointer());
+
+			mem2.deviceToHost();
 
 			tot = ((unsigned int *)mem2.getPointer())[0] + ((unsigned int *)mem2.getPointer())[1];
 
@@ -132,7 +138,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 
 			if (((unsigned int *)mem.getPointer())[0] != ((unsigned int *)mem.getPointer())[1])
 			{
-				if (vcl.rank() == ((unsigned int *)mem.getPointer())[2])
+				if (vcl.rank() == ((unsigned int *)mem.getPointer())[1])
 				{
 					BOOST_REQUIRE(((unsigned int *)mem2.getPointer())[1] != 0);
 					BOOST_REQUIRE(((unsigned int *)mem2.getPointer())[0] == 0);

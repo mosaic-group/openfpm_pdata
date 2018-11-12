@@ -448,12 +448,17 @@ protected:
 		reorder_geo_cell();
 	}
 
-	/*! \brief in this function we reorder the cells by processors
+	/*! \brief in this function we reorder the list in each cells by processor id
 	 *
-	 * In practice every processor in the list is ordered. the geo_cell give
+	 * suppose in one cell we have 7 boxes each box contain the processor id
 	 *
-	 * 7 boxes the first 2 boxes are related to processor 0 and the next 2 to processor 4, the other 3 must me related
-	 * to another processor different from 0 and 4. This simplify the procedure to get a unique list of processor ids
+	 * 1,5,9,5,1,1,6
+	 *
+	 * after reorder we have the following sequence
+	 *
+	 * 1,1,1,5,5,6,9
+	 *
+	 * This simplify the procedure to get a unique list of processor ids
 	 * indicating on which processor a particle must be replicated as ghost
 	 *
 	 */

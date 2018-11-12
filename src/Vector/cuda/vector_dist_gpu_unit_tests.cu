@@ -50,8 +50,6 @@ __global__  void calculate_force(vector_dist_ker<3, float, aggregate<float, floa
 
     auto it = cl.getNNIterator(cl.getCell(xp));
 
-    auto cell = cl.getCell(xp);
-
     Point<3,float> force1({0.0,0.0,0.0});
     Point<3,float> force2({0.0,0.0,0.0});
 
@@ -95,13 +93,9 @@ __global__  void calculate_force_full_sort(vector_dist_ker<3, float, aggregate<f
 	unsigned int p;
 	GET_PARTICLE_SORT(p,cl);
 
-	unsigned int ns_id = cl.getSortToNonSort().template get<0>(p);
-
 	Point<3,float> xp = vd.getPos(p);
 
     auto it = cl.getNNIterator(cl.getCell(xp));
-
-    auto cell = cl.getCell(xp);
 
     Point<3,float> force1({0.0,0.0,0.0});
 
@@ -158,6 +152,12 @@ bool check_force(CellList_type & NN_cpu, vector_type & vd)
 	    	Point<3,float> r2 = xq_2 - xp;
 
 	    	// Normalize
+
+	    	if (r2.norm() == 0)
+	    	{
+	    		int debug = 0;
+	    		debug++;
+	    	}
 
 	    	r2 /= r2.norm();
 	    	force += vd.template getProp<0>(q)*r2;
@@ -314,15 +314,23 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
 
 	vector_dist_gpu<3,float,aggregate<float,float[3],float[3]>> vd(10000,domain,bc,g);
 
+	srand(55067*create_vcluster().rank());
+
 	auto it = vd.getDomainIterator();
 
 	while (it.isNext())
 	{
 		auto p = it.get();
 
-		vd.getPos(p)[0] = (float)rand() / RAND_MAX;
-		vd.getPos(p)[1] = (float)rand() / RAND_MAX;
-		vd.getPos(p)[2] = (float)rand() / RAND_MAX;
+		int x = rand();
+		int y = rand();
+		int z = rand();
+
+		vd.getPos(p)[0] = (float)x / RAND_MAX;
+		vd.getPos(p)[1] = (float)y / RAND_MAX;
+		vd.getPos(p)[2] = (float)z / RAND_MAX;
+
+		Point<3,float> xp = vd.getPos(p);
 
 		++it;
 	}
@@ -357,8 +365,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
 
 	BOOST_REQUIRE_EQUAL(noOut,true);
 	BOOST_REQUIRE_EQUAL(cnt,vd.size_local());
-
-	vd.write("test_out_gpu");
 
 	// now we offload all the properties
 
@@ -426,6 +432,7 @@ void vdist_calc_gpu_test()
 
 	vector_dist_gpu<3,St,aggregate<St,St[3],St[3]>> vd(1000,domain,bc,g);
 
+	srand(v_cl.rank()*10000);
 	auto it = vd.getDomainIterator();
 
 	while (it.isNext())
@@ -458,8 +465,6 @@ void vdist_calc_gpu_test()
 
 	vd.deviceToHostPos();
 	vd.template deviceToHostProp<0,1,2>();
-
-	vd.write("write_start");
 
 	// Reset the host part
 
@@ -542,9 +547,6 @@ void vdist_calc_gpu_test()
 		vd.deviceToHostPos();
 		vd.template deviceToHostProp<0,1,2>();
 
-		vd.write_frame("write_ggg",i);
-
-
 		// To test we copy on a cpu distributed vector and we do a map
 
 		vector_dist<3,St,aggregate<St,St[3],St[3]>> vd_cpu(vd.getDecomposition().template duplicate_convert<HeapMemory,memory_traits_lin>(),0);
@@ -619,6 +621,8 @@ void vdist_calc_gpu_test()
 
 		cpu_sort.resize(vd_cpu.size_local_with_ghost() - vd_cpu.size_local());
 		gpu_sort.resize(vd.size_local_with_ghost() - vd.size_local());
+
+		BOOST_REQUIRE_EQUAL(cpu_sort.size(),gpu_sort.size());
 
 		size_t cnt = 0;
 

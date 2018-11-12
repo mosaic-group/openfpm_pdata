@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
+
 ########################### Executables
 
 if(CUDA_FOUND)
@@ -15,6 +16,9 @@ if ( CMAKE_COMPILER_IS_GNUCC )
 endif()
 
 add_library(ofpm_pdata STATIC lib/pdata.cpp)
+
+add_test(NAME pdata_3_proc COMMAND mpirun -np 3 ./pdata)
+add_test(NAME pdata_4_proc COMMAND mpirun -np 4 ./pdata)
 
 ###########################
 

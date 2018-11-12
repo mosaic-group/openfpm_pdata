@@ -108,28 +108,38 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,sca
 			mem.fill(0);
 			prc_offset.resize(v_cl.size());
 
+			ite = g_opart_device.getGPUIterator();
+
 			// Find the buffer bases
 			find_buffer_offsets<0,decltype(g_opart_device.toKernel()),decltype(prc_offset.toKernel())><<<ite.wthr,ite.thr>>>
 					           (g_opart_device.toKernel(),(int *)mem.getDevicePointer(),prc_offset.toKernel());
 
 			// Trasfer the number of offsets on CPU
 			mem.deviceToHost();
-			prc_offset.template deviceToHost<0,1>();
-			if (g_opart_device.size() != 0)
-			{g_opart_device.template deviceToHost<0>(g_opart_device.size()-1,g_opart_device.size()-1);}
-
 			int noff = *(int *)mem.getPointer();
 
-			// In this case we do not have communications at all
-			if (g_opart_device.size() == 0)
-			{noff = -1;}
+			// create the terminal of prc_offset
+			prc_offset.resize(noff+1,DATA_ON_DEVICE);
 
-			prc_offset.resize(noff+1);
+			// Move the last processor index on device (id)
+			if (g_opart_device.size() != 0)
+			{g_opart_device.template deviceToHost<0>(g_opart_device.size()-1,g_opart_device.size()-1);}
 			prc_offset.template get<0>(prc_offset.size()-1) = g_opart_device.size();
 			if (g_opart_device.size() != 0)
 			{prc_offset.template get<1>(prc_offset.size()-1) = g_opart_device.template get<0>(g_opart_device.size()-1);}
 			else
 			{prc_offset.template get<1>(prc_offset.size()-1) = 0;}
+
+			prc_offset.template hostToDevice<0,1>(prc_offset.size()-1,prc_offset.size()-1);
+
+			// Here we reorder the offsets in ascending order
+			mergesort((int *)prc_offset.template getDeviceBuffer<0>(),(int *)prc_offset.template getDeviceBuffer<1>(), prc_offset.size(), mgpu::template less_t<int>(), v_cl.getmgpuContext());
+
+			prc_offset.template deviceToHost<0,1>();
+
+			// In this case we do not have communications at all
+			if (g_opart_device.size() == 0)
+			{noff = -1;}
 
 			prc.resize(noff+1);
 			prc_sz.resize(noff+1);
@@ -236,9 +246,9 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 		auto ite = v_pos.getGPUIteratorTo(g_m);
 
 		// label particle processor
-		num_shift_ghost_each_part<dim,St,decltype(box_f_dev.toKernel()),decltype(v_pos.toKernel()),decltype(o_part_loc.toKernel())>
+		num_shift_ghost_each_part<dim,St,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),decltype(v_pos.toKernel()),decltype(o_part_loc.toKernel())>
 		<<<ite.wthr,ite.thr>>>
-		(box_f_dev.toKernel(),v_pos.toKernel(),o_part_loc.toKernel());
+		(box_f_dev.toKernel(),box_f_sv.toKernel(),v_pos.toKernel(),o_part_loc.toKernel(),g_m);
 
 		starts.resize(o_part_loc.size());
 		mgpu::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
