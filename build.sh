@@ -134,7 +134,7 @@ else
   fi
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
-  make -j 1
+  make -j 8
  else
   echo "Installing with: ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch -m -s -c \"$installation_dir --no-recursion\""
   ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch -m -s -c "$installation_dir --no-recursion"
@@ -144,7 +144,7 @@ else
   fi
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
-  make -j 1
+  make -j 8
  fi
 
  if [ $? -ne 0 ]; then
