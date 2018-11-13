@@ -120,8 +120,8 @@ if(PARMETIS_INCLUDE_DIR AND METIS_INCLUDE_DIR AND
     ${PARMETIS_LIBRARY} ${METIS_LIBRARY} ${MPI_C_LIBRARIES})
 
   # Build and run test program
-  include(CheckCSourceRuns)
-  check_c_source_runs("
+  include(CheckCSourceCompiles)
+  check_c_source_compiles("
 #include \"mpi.h\"
 #define METIS_EXPORT
 #include \"parmetis.h\"
