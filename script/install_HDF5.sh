@@ -6,7 +6,7 @@ discover_os
 
 # check if the directory $1/HDF5 exist
 
-if [ -d "$1/HDF5" ]; then
+if [ -d "$1/HDF5" -a -f "$1/HDF5/include/hdf5.h" ]; then
   echo "HDF5 is already installed"
   exit 0
 fi
