@@ -9,7 +9,7 @@ echo "make target: $4"
 echo "compilation type: $5"
 echo "Branch name: $6"
 
-if [ x"$2" == x"ubuntu"  ]; then
+if [ x"$3" == x"ubuntu"  ]; then
 	echo "UBUNTU"
 fi
 
