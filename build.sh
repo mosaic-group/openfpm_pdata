@@ -10,8 +10,13 @@ echo "compilation type: $5"
 echo "Branch name: $6"
 
 if [ x"$3" == x"ubuntu"  ]; then
-	echo "UBUNTU"
+	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$6/OPENBLAS
 fi
+
+if [ x"$3" == x"osx"  ]; then
+        rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$6/OPENBLAS
+fi
+
 
 if [ x"$6" == x"" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
