@@ -4,6 +4,7 @@
 
 echo "Directory: $1"
 echo "Machine: $2"
+echo "Num of processors: $3"
 echo "Branch: $6"
 
 exit 1
@@ -28,7 +29,7 @@ then
    exit 0;
  fi
 
- mpirun -np $3 ./src/pdata
+ mpirun -np $3 ./build/src/pdata
  if [ $? -ne 0 ]; then 
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
@@ -63,7 +64,7 @@ else
 
  source $HOME/openfpm_vars_$6
 
- mpirun -np $3 ./src/pdata
+ mpirun -np $3 ./build/src/pdata
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
