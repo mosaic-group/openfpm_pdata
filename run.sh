@@ -62,7 +62,7 @@ else
    exit 0;
  fi
 
- source $HOME/openfpm_vars_$6
+ source $HOME/openfpm_vars_$7
 
  mpirun -np $3 ./build/src/pdata
  if [ $? -ne 0 ]; then
