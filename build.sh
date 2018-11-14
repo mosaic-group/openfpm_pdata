@@ -3,9 +3,9 @@
 # Make a directory in /tmp/OpenFPM_pdata
 
 echo "Directory: $1"
-echo "Machine: $2"
-echo "make target: $3"
-echo "project calling: $4"
+echo "OS Type: $2"
+echo "OS: $3"
+echo "make target: $4"
 echo "compilation type: $5"
 echo "Branch name: $6"
 
