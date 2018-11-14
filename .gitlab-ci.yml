@@ -4,7 +4,7 @@ centos_build:
     - centos
   artifacts:
     paths:
-      - ./openfpm_data/build/src/mem_map
+      - ./build/src/pdata
   script:
     - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata full $CI_COMMIT_REF_NAME
 
@@ -15,7 +15,7 @@ centos_run:
   dependencies:
     - centos_build
   script:
-    - ./openfpm_data/build/src/mem_map
+    - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata full $CI_COMMIT_REF_NAME
     - ./success.sh 2 centos openfpm_pdata
 
 mac_build:
@@ -24,7 +24,7 @@ mac_build:
     - mac
   artifacts:
     paths:
-      - ./openfpm_data/build/src/mem_map
+      - ./build/src/pdata
   script:
     - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata full  $CI_COMMIT_REF_NAME
 
@@ -35,7 +35,7 @@ mac_run:
   dependencies:
     - mac_build
   script:
-    - ./openfpm_data/build/src/mem_map
+    - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata full $CI_COMMIT_REF_NAME
     - ./success.sh 2 mac openfpm_pdata
 
 ubuntu_build:
@@ -44,7 +44,7 @@ ubuntu_build:
     - ubuntu
   artifacts:
     paths:
-      - ./openfpm_data/build/src/mem_map
+      - ./build/src/pdata
   script:
     - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_EXECUTABLE_TAGS pdata full $CI_COMMIT_REF_NAME
 
@@ -55,6 +55,6 @@ ubuntu_run:
   dependencies:
     - ubuntu_build
   script:
-    - ./openfpm_data/build/src/mem_map
+    - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata full $CI_COMMIT_REF_NAME
     - ./success.sh 2 ubuntu openfpm_pdata
 

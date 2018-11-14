@@ -6,6 +6,8 @@ echo "Directory: $1"
 echo "Machine: $2"
 echo "Branch: $6"
 
+exit 1
+
 if [ "$2" == "gin" ]
 then
  source "$HOME/.bashrc"
