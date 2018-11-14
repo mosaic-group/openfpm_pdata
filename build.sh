@@ -9,8 +9,7 @@ echo "project calling: $4"
 echo "compilation type: $5"
 echo "Branch name: $6"
 
-echo "AAAAAAA $2"
-if [ x"$2" == x"ubuntu,"  ]; then
+if [ x"$2" == x"ubuntu"  ]; then
 	echo "UBUNTU"
 fi
 
