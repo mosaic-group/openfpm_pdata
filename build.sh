@@ -10,6 +10,10 @@ echo "compilation type: $5"
 echo "Branch name: $6"
 
 
+if [ x"$2" == x"ubuntu,"  ]; then
+	echo "UBUNTU"
+fi
+
 if [ x"$6" == x"" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
 else

@@ -504,7 +504,7 @@ echo ""
 installation_report=""
 lin_alg_installed=""
 
-if [ -d "$i_dir/PETSC" ]; then
+if [ -d "$1/PETSC" -a -f "$1/PETSC/include/petsc.h" ]; then
   installation_report="$installation_report \033[92;1mPETSC\033[0m Installed: \033[1m $i_dir/PETSC \033[0m\n"
   bash_library="$bash_library:$i_dir/PETSC/lib"
   lin_alg_installed="y"
