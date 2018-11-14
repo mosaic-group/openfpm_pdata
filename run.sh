@@ -5,7 +5,7 @@
 echo "Directory: $1"
 echo "Machine: $2"
 echo "Num of processors: $4"
-echo "Branch: $6"
+echo "Branch: $7"
 
 
 if [ "$2" == "gin" ]
