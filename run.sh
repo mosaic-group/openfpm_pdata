@@ -17,7 +17,7 @@ then
    exit 1 ;
  fi
 
- if [ x"$6" != x"" ]; then
+ if [ x"$7" != x"" ]; then
    source $HOME/openfpm_vars_$6
  else
    source $HOME/openfpm_vars_master
