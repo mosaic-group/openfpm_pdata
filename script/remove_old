@@ -141,38 +141,18 @@ function remove_old()
         fi
     fi
 
-    if [ -d $1/SUPERLU_DIST ]; then
-        version=$(cat $1/SUPERLU_DIST/version)
-        if [ x"$version" != x"1"  ]; then
-            echo -e "\033[1;34;5m  ---------------------------------------------------------------------------------------------------------- \033[0m"
-            echo -e "\033[1;34;5m  SuperLU (Distributed) has been updated to version 5.2.1, the component will be updated automatically      \033[0m"
-            echo -e "\033[1;34;5m  ---------------------------------------------------------------------------------------------------------- \033[0m"
-            sleep 5
-            rm -rf $1/SUPERLU_DIST
-            rm -rf $1/PETSC
-        fi
-    fi
-
-    if [ -d $1/HYPRE ]; then
-        version=$(cat $1/HYPRE/version)
-        if [ x"$version" != x"1"  ]; then
-            echo -e "\033[1;34;5m  ------------------------------------------------------------------------------------------- \033[0m"
-            echo -e "\033[1;34;5m  HYPRE has been updated to version 2.11.2, the component will be updated automatically      \033[0m"
-            echo -e "\033[1;34;5m  ------------------------------------------------------------------------------------------- \033[0m"
-            sleep 5
-            rm -rf $1/HYPRE
-            rm -rf $1/PETSC
-        fi
-    fi
-
     if [ -d $1/PETSC ]; then
         version=$(cat $1/PETSC/version)
-        if [ x"$version" != x"1"  ]; then
+        if [ x"$version" != x"2"  ]; then
             echo -e "\033[1;34;5m  -------------------------------------------------------------------------------------- \033[0m"
-            echo -e "\033[1;34;5m  PETSC has been updated to version 3.7.6, the component will be updated automatically      \033[0m"
+            echo -e "\033[1;34;5m  PETSC has been updated to version 3.10.2, the component will be updated automatically      \033[0m"
             echo -e "\033[1;34;5m  -------------------------------------------------------------------------------------- \033[0m"
             sleep 5
             rm -rf $1/PETSC
+	    rm -rf $1/HYPRE
+	    rm -rf $1/MUMPS
+	    rm -rf $1/SUPERLU_DIST
+	    rm -rf $1/TRILINOS
         fi
     fi
 

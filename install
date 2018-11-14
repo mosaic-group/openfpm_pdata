@@ -211,7 +211,7 @@ echo -e "Installing requirements into: $i_dir "
 
 ### Installing PETSC
 
-if [ ! -d "$i_dir/PETSC" -o ! -d "$i_dir/EIGEN" ]; then
+if [ ! -d "$i_dir/PETSC" -o ! -f "$i_dir/PETSC/include/petsc.h" -o ! -d "$i_dir/EIGEN" ]; then
     echo -e "\033[1;34m Optional packages  \033[0m"
     echo -e "\033[1mDo you want to install linear algebra packages ?(y/n)\033[0m"
     echo "Installation can take long time (90 minutes on i7-3612QM 4 cores)"
@@ -522,13 +522,6 @@ echo -e "\033[1;34;5m --------------------------------  \033[0m"
 
 installation_report=""
 
-if [ -d "$i_dir/TRILINOS" ]; then
-  installation_report="$installation_report \033[92;1mTRILINOS\033[0m Installed: \033[1m $i_dir/TRILINOS \033[0m\n"
-  bash_library="$bash_library:$i_dir/TRILINOS/lib"
-else
-  installation_report="$installation_report \033[91;1mTRILINOS\033[0m Installed: \033[1m NO \033[0m\n"
-fi
-
 if [ -d "$i_dir/OPENBLAS" ]; then
   installation_report="$installation_report \033[92;1mOPENBLAS\033[0m Installed: \033[1m $i_dir/OPENBLAS \033[0m\n"
   bash_library="$bash_library:$i_dir/OPENBLAS/lib"
@@ -541,34 +534,6 @@ if [ -d "$i_dir/SUITESPARSE" ]; then
   bash_library="$bash_library:$i_dir/SUITESPARSE/lib"
 else
   installation_report="$installation_report \033[91;1mSUITESPARSE\033[0m Installed: \033[1m NO \033[0m\n"
-fi
-
-if [ -d "$i_dir/SCALAPACK" ]; then
-  installation_report="$installation_report \033[92;1mSCALAPACK\033[0m Installed: \033[1m $i_dir/SCALAPACK \033[0m\n"
-  bash_library="$bash_library:$i_dir/SCALAPACK/lib"
-else
-  installation_report="$installation_report \033[91;1mSCALAPACK\033[0m Installed: \033[1m NO \033[0m\n"
-fi
-
-if [ -d "$i_dir/MUMPS" ]; then
-  installation_report="$installation_report \033[92;1mMUMPS\033[0m Installed: \033[1m $i_dir/MUMPS \033[0m\n"
-  bash_library="$bash_library:$i_dir/MUMPS/lib"
-else
-  installation_report="$installation_report \033[91;1mMUMPS\033[0m Installed: \033[1m NO \033[0m\n"
-fi
-
-if [ -d "$i_dir/SUPERLU_DIST" ]; then
-  installation_report="$installation_report \033[92;1mSUPERLU_DIST\033[0m Installed: \033[1m $i_dir/SUPERLU_DIST \033[0m\n"
-  bash_library="$bash_library:$i_dir/SUPERLU_DIST/lib"
-else
-  installation_report="$installation_report \033[91;1mSUPERLU_DIST\033[0m Installed: \033[1m NO \033[0m\n"
-fi
-
-if [ -d "$i_dir/HYPRE" ]; then
-  installation_report="$installation_report \033[92;1mHYPRE\033[0m Installed: \033[1m $i_dir/HYPRE \033[0m\n"
-  bash_library="$bash_library:$i_dir/HYPRE/lib"
-else
-  installation_report="$installation_report \033[91;1mHYPRE\033[0m Installed: \033[1m NO \033[0m\n"
 fi
 
 bash_path="$bash_path\$PATH\""
