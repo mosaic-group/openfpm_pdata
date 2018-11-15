@@ -138,6 +138,12 @@ else()
 	message( FATAL_ERROR "LibHilbert is required in order to install OpenFPM")
 endif()
 
+message(info "The system is: ${CMAKE_HOST_SYSTEM}" )
+
+if(CMAKE_HOST_SYSTEM STREQUAL "osx")
+	set(DEFINE_HAVE_OSX "#define HAVE_OSX")
+endif()
+
 if(TINYOBJLOADER_FOUND)
 	set(DEFINE_HAVE_TINYOBJLOADER "#define HAVE_TINYOBJLOADER 1")
 endif()
