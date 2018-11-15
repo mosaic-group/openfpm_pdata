@@ -10,7 +10,7 @@ echo "compilation type: $5"
 echo "Branch name: $6"
 
 if [ x"$3" == x"ubuntu"  ]; then
-	rm -rf ./script/install_MPI.sh $HOME/openfpm_dependencies/openfpm_pdata/MPI
+	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/MPI
 	./script/install_MPI.sh $HOME/openfpm_dependencies/openfpm_pdata/$6/ 8
 fi
 
