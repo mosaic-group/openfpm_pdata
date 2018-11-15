@@ -10,7 +10,7 @@ echo "compilation type: $5"
 echo "Branch name: $6"
 
 if [ x"$3" == x"ubuntu"  ]; then
-	export PATH="$PATH:$HOME/openfpm_dependencies/openfpm_pdata/$6/MPI/bin"
+	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$6/MPI/bin/:$PATH"
 	echo "$PATH"
 	which mpic++
 fi
