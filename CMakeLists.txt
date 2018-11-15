@@ -138,9 +138,7 @@ else()
 	message( FATAL_ERROR "LibHilbert is required in order to install OpenFPM")
 endif()
 
-message(info "The system is: ${CMAKE_HOST_SYSTEM}" )
-
-if(CMAKE_HOST_SYSTEM STREQUAL "osx")
+if(APPLE)
 	set(DEFINE_HAVE_OSX "#define HAVE_OSX")
 endif()
 
