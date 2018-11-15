@@ -11,6 +11,7 @@ echo "Branch name: $6"
 
 if [ x"$3" == x"ubuntu"  ]; then
 	export PATH="$PATH:$HOME/openfpm_dependencies/openfpm_pdata/$6/bin"
+	which mpic++
 fi
 
 #if [ x"$3" == x"osx"  ]; then
