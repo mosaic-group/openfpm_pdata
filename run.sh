@@ -63,6 +63,8 @@ else
  fi
 
  source $HOME/openfpm_vars_$7
+ which mpic++
+ ldd ./build/src/pdata
 
  mpirun --oversubscribe -np $4 ./build/src/pdata
  if [ $? -ne 0 ]; then
