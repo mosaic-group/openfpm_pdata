@@ -17,6 +17,7 @@ fi
 
 #if [ x"$3" == x"osx"  ]; then
 #        rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$6/OPENBLAS
+#
 #fi
 
 if [ x"$6" == x"" ]; then
