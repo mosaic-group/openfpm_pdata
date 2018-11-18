@@ -4,7 +4,7 @@ centos_build:
     - centos
   artifacts:
     paths:
-      - ./build/src/pdata
+      - ./build/src/vcluster
   script:
     - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata full $CI_COMMIT_REF_NAME
 
@@ -16,9 +16,6 @@ centos_run:
     - centos_build
   script:
     - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS 1 pdata full $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS 3 pdata full $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS 4 pdata full $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS 5 pdata full $CI_COMMIT_REF_NAME
 
 
 mac_build:
@@ -27,7 +24,7 @@ mac_build:
     - mac
   artifacts:
     paths:
-      - ./build/src/pdata
+      - ./build/src/vcluster
   script:
     - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata full  $CI_COMMIT_REF_NAME
 
@@ -39,9 +36,6 @@ mac_run:
     - mac_build
   script:
     - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS 1 pdata full $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS 3 pdata full $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS 4 pdata full $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS 5 pdata full $CI_COMMIT_REF_NAME
 
 ubuntu_build:
   stage: build
@@ -49,7 +43,7 @@ ubuntu_build:
     - ubuntu
   artifacts:
     paths:
-      - ./build/src/pdata
+      - ./build/src/vcluster
   script:
     - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata full $CI_COMMIT_REF_NAME
 
@@ -61,7 +55,4 @@ ubuntu_run:
     - ubuntu_build
   script:
     - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS 1 pdata full $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS 3 pdata full $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS 4 pdata full $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS 5 pdata full $CI_COMMIT_REF_NAME
 
