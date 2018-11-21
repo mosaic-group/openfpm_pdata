@@ -283,7 +283,7 @@ class vector_dist_comm
 	void createShiftBox()
 	{
 		if (shift_box_ndec == (long int)dec.get_ndec())
-			return;
+		{return;}
 
 		struct sh_box
 		{

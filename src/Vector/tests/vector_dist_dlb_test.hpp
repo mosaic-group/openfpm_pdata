@@ -9,7 +9,7 @@
 #define SRC_VECTOR_VECTOR_DIST_DLB_TEST_HPP_
 
 #include "DLB/LB_Model.hpp"
-#include "vector_dist.hpp"
+#include "Vector/vector_dist.hpp"
 
 BOOST_AUTO_TEST_SUITE( vector_dist_dlb_test )
 
@@ -218,8 +218,8 @@ template<typename vector_type> void test_dlb_vector()
 	if (v_cl.getProcessingUnits() > 8)
 		return;
 
-	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
-	Ghost<3,float> g(0.1);
+	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Ghost<3,double> g(0.1);
 	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
 
 	vector_type vd(0,domain,bc,g,DEC_GRAN(2048));
@@ -232,21 +232,37 @@ template<typename vector_type> void test_dlb_vector()
 		{
 			vd.add();
 
-			vd.getLastPos()[0] = ((float)rand())/RAND_MAX * 0.3;
-			vd.getLastPos()[1] = ((float)rand())/RAND_MAX * 0.3;
-			vd.getLastPos()[2] = ((float)rand())/RAND_MAX * 0.3;
+			vd.getLastPos()[0] = ((double)rand())/RAND_MAX * 0.3;
+			vd.getLastPos()[1] = ((double)rand())/RAND_MAX * 0.3;
+			vd.getLastPos()[2] = ((double)rand())/RAND_MAX * 0.3;
 		}
 	}
 
 	vd.map();
 	vd.template ghost_get<>();
 
+	// Get the neighborhood of each particles
+
+	auto VV = vd.getVerlet(0.01);
+
+	// store the number of neighborhood for each particles
+
+	auto it = vd.getDomainIterator();
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+
+		vd.template getProp<0>(p) = VV.getNNPart(p.getKey());
+
+		++it;
+	}
+
 	ModelSquare md;
 	md.factor = 10;
 	vd.addComputationCosts(md);
 	vd.getDecomposition().decompose();
 	vd.map();
-
 
 	vd.addComputationCosts(md);
 
@@ -257,15 +273,15 @@ template<typename vector_type> void test_dlb_vector()
 
 	for (size_t i = 0 ; i < loads.size() ; i++)
 	{
-		float load_f = load;
-		float load_fc = loads.get(i);
+		double load_f = load;
+		double load_fc = loads.get(i);
 
 		BOOST_REQUIRE_CLOSE(load_f,load_fc,7.0);
 	}
 
 	BOOST_REQUIRE(vd.size_local() != 0);
 
-	Point<3,float> v({1.0,1.0,1.0});
+	Point<3,double> v({1.0,1.0,1.0});
 
 	for (size_t i = 0 ; i < 25 ; i++)
 	{
@@ -284,6 +300,23 @@ template<typename vector_type> void test_dlb_vector()
 			++it;
 		}
 		vd.map();
+		vd.template ghost_get<>();
+
+		auto VV2 = vd.getVerlet(0.01);
+
+		auto it2 = vd.getDomainIterator();
+
+		bool match = true;
+		while (it2.isNext())
+		{
+			auto p = it2.get();
+
+			match &= vd.template getProp<0>(p) == VV2.getNNPart(p.getKey());
+
+			++it2;
+		}
+
+		BOOST_REQUIRE_EQUAL(match,true);
 
 		ModelSquare md;
 		vd.addComputationCosts(md);
@@ -303,8 +336,8 @@ template<typename vector_type> void test_dlb_vector()
 
 		for (size_t i = 0 ; i < loads.size() ; i++)
 		{
-			float load_f = load;
-			float load_fc = loads.get(i);
+			double load_f = load;
+			double load_fc = loads.get(i);
 
 			BOOST_REQUIRE_CLOSE(load_f,load_fc,10.0);
 		}
@@ -363,7 +396,7 @@ template<typename vector_type> void test_dlb_multi_phase_v_vector()
 
 BOOST_AUTO_TEST_CASE( vector_dist_dlb_test_part )
 {
-	test_dlb_vector<vector_dist<3,float,aggregate<float>>>();
+	test_dlb_vector<vector_dist<3,double,aggregate<double>>>();
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_dlb_multi_phase_test_part )
@@ -379,9 +412,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_dlb_multi_phase_v_test_part )
 BOOST_AUTO_TEST_CASE( vector_dist_dlb_metis_test_part )
 {
 	test_dlb_vector<vector_dist<3,
-	                            float,
-								aggregate<float>,
-	                            CartDecomposition<3,float,HeapMemory,memory_traits_lin,MetisDistribution<3,float>>>>();
+	                            double,
+								aggregate<double>,
+	                            CartDecomposition<3,double,HeapMemory,memory_traits_lin,MetisDistribution<3,double>>>>();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

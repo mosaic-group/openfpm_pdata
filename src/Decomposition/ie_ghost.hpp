@@ -1213,6 +1213,7 @@ public:
 		proc_int_box.clear();
 		vb_ext.clear();
 		vb_int.clear();
+		vb_int_box.clear();
 		geo_cell.clear();
 		shifts.clear();
 		ids_p.clear();
