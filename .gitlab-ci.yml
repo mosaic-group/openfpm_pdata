@@ -4,7 +4,7 @@ centos_build:
     - centos
   artifacts:
     paths:
-      - ./build/src/vcluster
+      - ./build/src/pdata
   script:
     - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata full $CI_COMMIT_REF_NAME
 
@@ -24,7 +24,7 @@ mac_build:
     - mac
   artifacts:
     paths:
-      - ./build/src/vcluster
+      - ./build/src/pdata
   script:
     - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata full  $CI_COMMIT_REF_NAME
 
@@ -43,7 +43,7 @@ ubuntu_build:
     - ubuntu
   artifacts:
     paths:
-      - ./build/src/vcluster
+      - ./build/src/pdata
   script:
     - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata full $CI_COMMIT_REF_NAME
 
