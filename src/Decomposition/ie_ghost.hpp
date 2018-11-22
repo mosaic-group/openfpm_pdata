@@ -1339,6 +1339,15 @@ public:
 
 		return igg;
 	}
+
+	/*! \brief Notify that the next toKernel() data-structures must be re-offloaded
+	 *
+	 *
+	 */
+	void reset_host_dev_transfer()
+	{
+		host_dev_transfer = false;
+	}
 };
 
 

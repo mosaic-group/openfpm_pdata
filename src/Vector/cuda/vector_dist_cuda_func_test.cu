@@ -1197,5 +1197,6 @@ BOOST_AUTO_TEST_CASE(vector_dist_remove_marked)
 	vector_dist_remove_marked_type<3>();
 }
 
+
 BOOST_AUTO_TEST_SUITE_END()
 

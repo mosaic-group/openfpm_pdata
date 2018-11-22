@@ -1018,7 +1018,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > > CellL getCellListSym(St r_cut)
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>,decltype(v_pos) > > CellL getCellListSym(St r_cut)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -1108,7 +1108,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St> > >
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St>, decltype(v_pos) > >
 	CellL getCellList(St r_cut, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
@@ -1471,7 +1471,7 @@ public:
 	 * \return a VerletList object
 	 *
 	 */
-	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St> >>
+	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St>,decltype(v_pos) >>
 	VerletL getVerlet(St r_cut)
 	{
 #ifdef SE_CLASS3
@@ -1526,7 +1526,7 @@ public:
 				VerletList<dim,St,Mem_type,shift<dim,St> > ver_tmp;
 
 				ver_tmp = getVerlet<VerletList<dim,St,Mem_type,shift<dim,St> >>(r_cut);
-				ver.swap(ver);
+				ver.swap(ver_tmp);
 			}
 		}
 		else if (opt == VL_CRS_SYMMETRIC)
@@ -2514,7 +2514,7 @@ public:
 	 * \return Particle iterator
 	 *
 	 */
-	template<typename cli> ParticleItCRS_Cells<dim,cli> getParticleIteratorCRS_Cell(cli & NN)
+	template<typename cli> ParticleItCRS_Cells<dim,cli,decltype(v_pos)> getParticleIteratorCRS_Cell(cli & NN)
 	{
 #ifdef SE_CLASS3
 		se3.getIterator();
@@ -2540,7 +2540,7 @@ public:
 		getDecomposition().setNNParameters(shift,gs);
 
 		// First we check that
-		return ParticleItCRS_Cells<dim,cli>(NN,getDecomposition().getCRSDomainCells(),
+		return ParticleItCRS_Cells<dim,cli,decltype(v_pos)>(NN,getDecomposition().getCRSDomainCells(),
 				                               getDecomposition().getCRSAnomDomainCells(),
 											   NN.getNNc_sym());
 	}

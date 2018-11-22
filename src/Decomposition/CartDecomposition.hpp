@@ -647,6 +647,10 @@ public:
 		ie_ghost<dim, T,Memory,layout_base>::create_box_nn_processor_int(v_cl, ghost, sub_domains, box_nn_processor, *this);
 
 		ie_loc_ghost<dim,T>::create(sub_domains,domain,ghost,bc);
+
+		// Ghost box information must be re-offloaded
+		host_dev_transfer = false;
+		ie_ghost<dim, T,Memory,layout_base>::reset_host_dev_transfer();
 	}
 
 
