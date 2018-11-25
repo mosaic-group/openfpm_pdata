@@ -87,7 +87,7 @@ fi
 
 #### OK here we check if we can configure work with SUITESPARSE
 echo "Testing if PETSC work with SUITESPARSE"
-conigure_options2="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
+configure_options2="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
 test_configure_options    
 
 if [ $? -eq 0 ]; then
