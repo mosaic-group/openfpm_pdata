@@ -9,26 +9,23 @@ comp_type=$4
 branch=$5
 
 echo "Directory: $workspace"
-echo "OS Type: $hostname"
+echo "Machine: $hostname"
 echo "make target: $target"
 echo "compilation type: $comp_type"
 echo "Branch name: $branch"
 
-
-if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
-	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$6/MPI/bin/:$PATH"
+if [ x"$hostname" == x"cifarm-centos-node"  ]; then
+	#we retest PETSC installation
+        rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/PETSC
 fi
 
 if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
-        export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$6/MPI/bin/:$PATH"
 	export PATH="/usr/local/bin:$PATH"
 fi
 
 
 if [ x"$branch" == x"" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
-else
-  branch=$6
 fi
 
 #### If you have a dep_dir file change the branch name to the dep_dir
@@ -157,6 +154,7 @@ else
     curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
     exit 1 ;
   fi
+  ls $HOME
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
   make -j 8

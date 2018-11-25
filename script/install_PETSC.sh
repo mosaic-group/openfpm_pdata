@@ -18,7 +18,7 @@ source script/discover_os
 source script/solve_python
 discover_os
 
-function test_configure_options {
+function test_configure_options() {
   $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options2 --prefix=$1/PETSC --with-debugging=0
 }
 
