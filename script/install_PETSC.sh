@@ -19,7 +19,7 @@ source script/solve_python
 discover_os
 
 function test_configure_options {
-  $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $1 --prefix=$1/PETSC --with-debugging=0
+  $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options2 --prefix=$1/PETSC --with-debugging=0
 }
 
 function haveProg() {
@@ -83,15 +83,17 @@ fi
 
 if [ ! -d "$1/SUITESPARSE" ]; then
   CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_SUITESPARSE.sh $1 $2
-  if [ $? -eq 0 ]; then
-    #### OK here we check if we can configure with SUITESPARSE
-   
+fi
 
-    configure_options="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
-  fi
-else
+#### OK here we check if we can configure work with SUITESPARSE
+echo "Testing if PETSC work with SUITESPARSE"
+conigure_options2="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
+test_configure_options    
+
+if [ $? -eq 0 ]; then
   configure_options="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
 fi
+
 
 configure_options="$configure_options --download-scalapack --download-mumps"
 configure_options="$configure_options --download-superlu_dist"
