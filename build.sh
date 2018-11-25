@@ -2,22 +2,27 @@
 
 # Make a directory in /tmp/OpenFPM_pdata
 
-echo "Directory: $1"
-echo "OS Type: $2"
-echo "OS: $3"
-echo "make target: $4"
-echo "compilation type: $5"
-echo "Branch name: $6"
+workspace=$1
+hostname=$(hostname)
+target=$3
+comp_type=$4
+branch=$5
+
+echo "Directory: $workspace"
+echo "OS Type: $hostname"
+echo "make target: $target"
+echo "compilation type: $comp_type"
+echo "Branch name: $branch"
 
 exit 1
 
-if [ x"$3" == x"ubuntu"  ]; then
+if [ x"$hostname" == x"ubuntu"  ]; then
 #	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$6/*
 #	./script/install_MPI.sh $HOME/openfpm_dependencies/openfpm_pdata/$6/ 8
 	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$6/MPI/bin/:$PATH"
 fi
 
-#if [ x"$3" == x"osx"  ]; then
+#if [ x"$hostname" == x"osx"  ]; then
 #        rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$6/OPENBLAS
 #fi
 
@@ -37,7 +42,7 @@ fi
 mkdir src/config
 mkdir openfpm_numerics/src/config
 
-if [ "$2" == "gin" ]
+if [ "$hostname" == "gin" ]
 then
  echo "Compiling on gin\n"
 
@@ -57,12 +62,12 @@ then
  export PATH="/usr/local/binutils/bin/:$PATH"
 
  mkdir $HOME/$branch
- if [ x"$5" == x"full" ]; then
+ if [ x"$comp_type" == x"full" ]; then
   CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$branch  -s -c "--prefix=/home/jenkins/openfpm_install"
   echo "Moving environment variable"
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
- elif [ x"$4" == x"numerics" ]; then
+ elif [ x"$comp_type" == x"numerics" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
   CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$branch  -m -s -c "--prefix=/home/jenkins/openfpm_install"
   echo "Moving environment variable"
@@ -78,17 +83,17 @@ then
  fi
 
  if [ $? -ne 0 ]; then
-   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
+   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
  fi
 
 
  if [ $? -ne 0 ]; then
-   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
+   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ; 
  fi
 
-elif [ "$2" == "taurus" ]
+elif [ "$hostname" == "taurus" ]
 then
  echo "Compiling on taurus"
 
@@ -107,7 +112,7 @@ then
 
 
  if [ $? -ne 0 ]; then
-   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
+   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ; 
  fi
 else
@@ -116,7 +121,7 @@ else
  source ~/.bashrc
  
  installation_dir=""
- if [ x"$2" == x"sbalzarini-mac-15" ]; then
+ if [ x"$hostname" == x"sbalzarini-mac-15" ]; then
   installation_dir="--prefix=/Users/jenkins/openfpm_install"
  else
   installation_dir="--prefix=$HOME/openfpm_install/$branch"
@@ -127,20 +132,20 @@ else
  chmod 600 $HOME/.ssh/config
 
  mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
- if [ x"$5" == x"full" ]; then
+ if [ x"$comp_type" == x"full" ]; then
   echo "Installing with: ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch  -s -c \"$installation_dir\"  "
   ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch  -s -c "$installation_dir"
   if [ $? -ne 0 ]; then
-    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
+    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
     exit 1 ;
   fi
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
- elif [ x"$4" == x"numerics" ]; then
+ elif [ x"$comp_type" == x"numerics" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
   ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch  -m -s -c "$installation_dir"
   if [ $? -ne 0 ]; then
-    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
+    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
     exit 1 ;
   fi
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
@@ -150,7 +155,7 @@ else
   echo "Installing with: ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch -m -s -c \"$installation_dir --no-recursion\""
   ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch -m -s -c "$installation_dir --no-recursion"
   if [ $? -ne 0 ]; then
-    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
+    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
     exit 1 ;
   fi
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
@@ -159,7 +164,7 @@ else
  fi
 
  if [ $? -ne 0 ]; then
-   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
+   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
  fi
 
