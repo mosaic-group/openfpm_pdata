@@ -16,17 +16,12 @@ echo "Branch name: $branch"
 
 exit 1
 
-if [ x"$hostname" == x"ubuntu"  ]; then
-#	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$6/*
-#	./script/install_MPI.sh $HOME/openfpm_dependencies/openfpm_pdata/$6/ 8
+if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
 	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$6/MPI/bin/:$PATH"
 fi
 
-#if [ x"$hostname" == x"osx"  ]; then
-#        rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$6/OPENBLAS
-#fi
 
-if [ x"$6" == x"" ]; then
+if [ x"$branch" == x"" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
 else
   branch=$6

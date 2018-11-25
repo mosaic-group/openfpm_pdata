@@ -3,7 +3,7 @@
 parallel (
 
 
-"cifarm-ubuntu" : {node ('cifarm-ubuntu')
+"cifarm-ubuntu-node" : {node ('cifarm-ubuntu-node')
                   {
                     deleteDir()
 
@@ -45,7 +45,6 @@ parallel (
 "cifarm-mac-node" : {node ('cifarm-mac-node')
                   {
                     deleteDir()
-                    env.PATH = "/usr/local/bin:${env.PATH}"
                
                     int ntry = 5
                     while (ntry != 0)
@@ -87,7 +86,6 @@ parallel (
 "cifarm-centos-node" : {node ('cifarm-centos-node')
                   {
                     deleteDir()
-                    env.PATH = "/usr/local/bin:${env.PATH}"
 
                     int ntry = 5
                     while (ntry != 0)
