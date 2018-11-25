@@ -14,7 +14,7 @@ echo "make target: $target"
 echo "compilation type: $comp_type"
 echo "Branch name: $branch"
 
-if [ x"$hostname" == x"cifarm-centos-node"  ]; then
+if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
 	#we retest PETSC installation
         rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/PETSC
 fi
