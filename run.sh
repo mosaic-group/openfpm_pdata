@@ -2,40 +2,45 @@
 
 # Make a directory in /tmp/OpenFPM_pdata
 
-echo "Directory: $1"
-echo "Machine: $2"
-echo "Num of processors: $3"
-echo "Branch: $6"
+workspace=$1
+hostname=$2
+nproc=$3
+ntask_per_node=$5
+nodes=$4
+branch=$6
 
-exit 1
+echo "Directory: workspace"
+echo "Machine: $hostname"
+echo "Num of processors: $nproc"
+echo "Branch: $branch"
 
-if [ "$2" == "gin" ]
+if [ "$hostname" == "gin" ]
 then
  source "$HOME/.bashrc"
  module load gcc/4.9.2
  if [ $? -ne 0 ]; then
-   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
+   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
  fi
 
- if [ x"$7" != x"" ]; then
-   source $HOME/openfpm_vars_$7
+ if [ x"$branch" != x"" ]; then
+   source $HOME/openfpm_vars_$branch
  else
    source $HOME/openfpm_vars_master
  fi
 
 
- if [ x"$3" == x"no_test" ]; then
+ if [ x"$nproc" == x"no_test" ]; then
    exit 0;
  fi
 
- mpirun -np $3 ./build/src/pdata
+ mpirun -np $nproc ./build/src/pdata
  if [ $? -ne 0 ]; then 
-   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
+   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
  fi
 
-elif [ "$2" == "taurus" ]
+elif [ "$hostname" == "taurus" ]
 then
 
  source /etc/profile
@@ -44,30 +49,30 @@ then
  module load openmpi/3.0.0-gnu5.5
  module unload bullxmpi
 
- if [ x"$6" != x"" ]; then
-   source $HOME/openfpm_vars_$6
+ if [ x"$branch" != x"" ]; then
+   source $HOME/openfpm_vars_$branch
  else
    source $HOME/openfpm_vars_master
  fi
 
- salloc --nodes=$4 --ntasks-per-node=$5 --time=00:35:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np $3 src/pdata --report_level=no"
+ salloc --nodes=$nodes --ntasks-per-node=$nstask_per_node --time=00:35:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np $nproc src/pdata --report_level=no"
  if [ $? -ne 0 ]; then
-   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
+   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ; 
  fi
 
 else
 
  echo "Running general machine"
- if [ x"$3" == x"no_test" ]; then
+ if [ x"$hostname" == x"no_test" ]; then
    exit 0;
  fi
 
- source $HOME/openfpm_vars_$7
+ source $HOME/openfpm_vars_$branch
 
- mpirun --oversubscribe -np $4 ./build/src/pdata
+ mpirun --oversubscribe -np $nproc ./build/src/pdata
  if [ $? -ne 0 ]; then
-   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
+   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
  fi
 fi
