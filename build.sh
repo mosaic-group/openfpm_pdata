@@ -9,6 +9,8 @@ echo "make target: $4"
 echo "compilation type: $5"
 echo "Branch name: $6"
 
+exit 1
+
 if [ x"$3" == x"ubuntu"  ]; then
 #	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$6/*
 #	./script/install_MPI.sh $HOME/openfpm_dependencies/openfpm_pdata/$6/ 8
