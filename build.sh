@@ -19,6 +19,11 @@ if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
 	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$6/MPI/bin/:$PATH"
 fi
 
+if [ x"$hostname" == x"cifarm-mac-node"  ]; then
+        export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$6/MPI/bin/:$PATH"
+	export PATH="/usr/local/bin:$PATH"
+fi
+
 
 if [ x"$branch" == x"" ]; then
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
