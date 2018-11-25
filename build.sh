@@ -19,7 +19,7 @@ if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
 	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$6/MPI/bin/:$PATH"
 fi
 
-if [ x"$hostname" == x"cifarm-mac-node"  ]; then
+if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
         export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$6/MPI/bin/:$PATH"
 	export PATH="/usr/local/bin:$PATH"
 fi
