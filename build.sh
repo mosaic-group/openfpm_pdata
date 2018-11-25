@@ -14,7 +14,6 @@ echo "make target: $target"
 echo "compilation type: $comp_type"
 echo "Branch name: $branch"
 
-exit 1
 
 if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
 	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$6/MPI/bin/:$PATH"

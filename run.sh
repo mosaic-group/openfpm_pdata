@@ -7,7 +7,6 @@ echo "Machine: $2"
 echo "Num of processors: $4"
 echo "Branch: $7"
 
-
 exit 1
 
 if [ "$2" == "gin" ]
