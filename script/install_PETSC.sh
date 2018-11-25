@@ -18,6 +18,10 @@ source script/discover_os
 source script/solve_python
 discover_os
 
+function test_configure_options {
+  $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $1 --prefix=$1/PETSC --with-debugging=0
+}
+
 function haveProg() {
     [ -x "$(command -v $1)" ]
 }
@@ -48,21 +52,17 @@ fi
 MUMPS_extra_libs=""
 
 configure_options=""
-configure_options_superlu=""
-configure_trilinos_options=" -D TPL_ENABLE_MPI=ON "
-configure_options_hypre=""
 
-### Here we install OpenBLAS and SUITESPARSE
 
 configure_options="$configure_options --download-metis --download-parmetis"
 
 if [ -d "$1/BOOST" ]; then
+
+  ### We check incrementaly the options
   configure_options="$configure_options --with-boost=yes --with-boost-dir=$1/BOOST "
-  configure_trilinos_options="$configure_trilinos_options -D TPL_ENABLE_Boost=ON  -D TPL_ENABLE_BoostLib=ON  -D Boost_INCLUDE_DIRS=$1/BOOST/include -D BoostLib_LIBRARY_DIRS=$1/BOOST/lib -D BoostLib_INCLUDE_DIRS=$1/BOOST/include"
 fi
 
 if [ -d "$1/MPI" ]; then
-  configure_trilinos_options="$configure_trilinos_options -D MPI_BASE_DIR=$1/MPI "
   mpi_dir="$1/MPI"
 else
   mpi_dir=$(dirname "$(dirname "$(which mpic++)")")
@@ -76,20 +76,17 @@ if [ ! -d "$1/OPENBLAS" ]; then
   ./script/install_OPENBLAS.sh $1
   if [ $? -eq 0 ]; then
     configure_options="$configure_options --with-blas-lib=$1/OPENBLAS/lib/libopenblas.a --with-lapack-lib=$1/OPENBLAS/lib/libopenblas.a"
-    configure_trilinos_options="$configure_trilinos_options -D TPL_ENABLE_BLAS=ON -D BLAS_LIBRARY_NAMES=openblas -D BLAS_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_LAPACK=ON -D LAPACK_LIBRARY_NAMES=openblas -D LAPACK_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_Netcdf=OFF -DTPL_ENABLE_GLM=OFF -D TPL_ENABLE_X11=OFF  "
-    configure_options_superlu="$configure_options_superlu -Denable_blaslib=OFF  -DTPL_BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a "
-    configure_options_hypre="--with-blas-libs=-lopenblas --with-blas-lib-dirs=$1/OPENBLAS/lib --with-lapack-libs=-lopenblas  --with-lapack-lib-dirs=$1/OPENBLAS/lib "
   fi
 else
     configure_options="$configure_options --with-blas-lib=$1/OPENBLAS/lib/libopenblas.a --with-lapack-lib=$1/OPENBLAS/lib/libopenblas.a"
-    configure_trilinos_options="$configure_trilinos_options -D TPL_ENABLE_BLAS=ON -D BLAS_LIBRARY_NAMES=openblas -D BLAS_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_LAPACK=ON -D LAPACK_LIBRARY_NAMES=openblas -D LAPACK_LIBRARY_DIRS=$1/OPENBLAS/lib -D TPL_ENABLE_Netcdf=OFF -DTPL_ENABLE_GLM=OFF -D TPL_ENABLE_X11=OFF  "
-    configure_options_superlu="$configure_options_superlu -Denable_blaslib=OFF  -DTPL_BLAS_LIBRARIES=$1/OPENBLAS/lib/libopenblas.a "
-    configure_options_hypre="--with-blas-libs=-lopenblas --with-blas-lib-dirs=$1/OPENBLAS/lib --with-lapack-libs=-lopenblas  --with-lapack-lib-dirs=$1/OPENBLAS/lib "
 fi
 
 if [ ! -d "$1/SUITESPARSE" ]; then
   CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_SUITESPARSE.sh $1 $2
   if [ $? -eq 0 ]; then
+    #### OK here we check if we can configure with SUITESPARSE
+   
+
     configure_options="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
   fi
 else
