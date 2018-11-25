@@ -4,8 +4,8 @@
 
 echo "Directory: $1"
 echo "Machine: $2"
-echo "Num of processors: $4"
-echo "Branch: $7"
+echo "Num of processors: $3"
+echo "Branch: $6"
 
 exit 1
 
