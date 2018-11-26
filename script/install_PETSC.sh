@@ -131,7 +131,7 @@ else
 
 fi
 
-make all test
+make all
 make install
 
 # if empty remove the folder
