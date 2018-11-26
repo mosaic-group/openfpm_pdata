@@ -94,7 +94,6 @@ parallel (
                       }
                     }
 
-
                     stage ('build centos')
                     {
                       sh "./build.sh $WORKSPACE $NODE_NAME pdata 0 $BRANCH_NAME"
