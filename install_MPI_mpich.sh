@@ -28,10 +28,10 @@ cd mpich-3.3
 
 if [ x"$6" == x"1" ]; then
    echo "Installing MPI with GPU support"
-  ./configure --with-cuda --prefix=$1/MPI --enable-mpi-fortran=yes CC=$3 CXX=$4 F77=$5 FC=$5
+  ./configure --prefix=$1/MPI --enable-fortran CC=$3 CXX=$4 F77=$5 FC=$5
 else
   echo "Installing MPI without GPU support"
-  ./configure --prefix=$1/MPI --enable-mpi-fortran=yes CC=$3 CXX=$4 F77=$5 FC=$5
+  ./configure --prefix=$1/MPI --enable-fortran CC=$3 CXX=$4 F77=$5 FC=$5
 fi
 make -j $2
 make install

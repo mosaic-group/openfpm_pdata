@@ -19,7 +19,9 @@ source script/solve_python
 discover_os
 
 function test_configure_options() {
+  cd petsc-3.10.2
   $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options2 --with-debugging=0
+  cd ..
 }
 
 function haveProg() {
@@ -44,6 +46,16 @@ else
   ldflags_petsc=
 fi
 
+#### Download and uncompress petsc
+
+rm petsc-lite-3.10.2.tar.gz
+rm -rf petsc-3.10.2
+wget http://ppmcore.mpi-cbg.de/upload/petsc-lite-3.10.2.tar.gz
+if [ $? -ne 0 ]; then
+  echo -e "\033[91;5;1m FAILED! Installation requires an Internet connection \033[0m"
+  exit 1
+fi
+tar -xf petsc-lite-3.10.2.tar.gz
 
 ####
 

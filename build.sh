@@ -14,10 +14,15 @@ echo "make target: $target"
 echo "compilation type: $comp_type"
 echo "Branch name: $branch"
 
-#if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
+if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
 	#we retest PETSC installation
-#        rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/PETSC
-#fi
+        rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/PETSC
+	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/MPI
+	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/PARMETIS
+	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/HDF5
+
+	install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/ 4
+fi
 
 if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 	export PATH="/usr/local/bin:$PATH"
