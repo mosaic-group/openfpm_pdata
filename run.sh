@@ -14,6 +14,16 @@ echo "Machine: $hostname"
 echo "Num of processors: $nproc"
 echo "Branch: $branch"
 
+if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
+        mpi_options="--oversubscribe"
+fi
+
+if [ x"$hostname" == x"cifarm-ubuntu-node.mpi-cbg.de"  ]; then
+        mpi_options="--mca btl self,vader"
+fi
+
+
+
 if [ "$hostname" == "gin" ]
 then
  source "$HOME/.bashrc"
@@ -70,7 +80,7 @@ else
 
  source $HOME/openfpm_vars_$branch
 
- mpirun --oversubscribe --mca btl self,vader -np $nproc ./build/src/pdata
+ mpirun $mpi_options -np $nproc ./build/src/pdata
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
