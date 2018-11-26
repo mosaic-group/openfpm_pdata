@@ -105,9 +105,9 @@ parallel (
                       parallel (
                       "p1" : {sh "./run.sh $WORKSPACE $NODE_NAME 1 0 0  $BRANCH_NAME"},
                       "p2" : {sh "./run.sh $WORKSPACE $NODE_NAME 2 0 0  $BRANCH_NAME"},
-                      "p3" : {sh "./run.sh $WORKSPACE $NODE_NAME 3 0 0  $BRANCH_NAME"},
-                      "p4" : {sh "./run.sh $WORKSPACE $NODE_NAME 5 0 0  $BRANCH_NAME"}
+                      "p3" : {sh "./run.sh $WORKSPACE $NODE_NAME 3 0 0  $BRANCH_NAME"}
                       )
+		      sh "./run.sh $WORKSPACE $NODE_NAME 5 0 0  $BRANCH_NAME"
                       sh "./success.sh 2 gin opefpm_pdata"
                     }
                   }
