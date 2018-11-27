@@ -249,8 +249,16 @@ __global__ void shift_ghost_each_part(vector_of_box box_f, vector_of_shifts box_
     		for (unsigned int j = 0 ; j < dim ; j++)
     		{
     			v_pos.template get<0>(base+n)[j] = xp.get(j) - shifts.template get<0>(shift_actual)[j];
+    		}
+
+    		if (base_o + n < output.size())
+    		{
     			output.template get<0>(base_o+n) = p;
     			output.template get<1>(base_o+n) = shift_actual;
+    		}
+    		else
+    		{
+    			printf("OVERFLOW \n");
     		}
 
     		v_prp.set(base+n,v_prp.get(p));

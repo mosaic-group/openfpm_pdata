@@ -79,6 +79,10 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,sca
 
 			auto ite = v_pos.getGPUIterator();
 
+			// no work to do return
+			if (ite.wthr.x == 0)
+			{return;}
+
 			// First we have to see how many entry each particle produce
 			num_proc_ghost_each_part<dim,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(proc_id_out.toKernel())>
 			<<<ite.wthr,ite.thr>>>
@@ -262,6 +266,9 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 
 		// Label the internal (assigned) particles
 		ite = v_pos.getGPUIteratorTo(g_m);
+
+		// resize o_part_loc
+		o_part_loc.resize(total);
 
 		shift_ghost_each_part<dim,St,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),
 									 decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),

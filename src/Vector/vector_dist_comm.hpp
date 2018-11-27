@@ -948,12 +948,16 @@ class vector_dist_comm
 			starts.template deviceToHost<0>();
 			size_t offset = starts.template get<0>(rank);
 
-			// fill v_pos_tmp and v_prp_tmp with local particles
-			process_map_particles<decltype(m_opart.toKernel()),decltype(v_pos_tmp.toKernel()),decltype(v_prp_tmp.toKernel()),
+			// no work to do
+			if (ite.wthr.x != 0)
+			{
+				// fill v_pos_tmp and v_prp_tmp with local particles
+				process_map_particles<decltype(m_opart.toKernel()),decltype(v_pos_tmp.toKernel()),decltype(v_prp_tmp.toKernel()),
 					                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>
-			<<<ite.wthr,ite.thr>>>
-			(m_opart.toKernel(),v_pos_tmp.toKernel(), v_prp_tmp.toKernel(),
+				<<<ite.wthr,ite.thr>>>
+				(m_opart.toKernel(),v_pos_tmp.toKernel(), v_prp_tmp.toKernel(),
 					            v_pos.toKernel(),v_prp.toKernel(),offset);
+			}
 
 			// Fill the sending buffers
 			for (size_t i = 0 ; i < m_pos.size() ; i++)
@@ -962,11 +966,17 @@ class vector_dist_comm
 
 				auto ite = m_pos.get(i).getGPUIterator();
 
-				process_map_particles<decltype(m_opart.toKernel()),decltype(m_pos.get(i).toKernel()),decltype(m_prp.get(i).toKernel()),
+				// no work to do
+				if (ite.wthr.x != 0)
+				{
+
+					process_map_particles<decltype(m_opart.toKernel()),decltype(m_pos.get(i).toKernel()),decltype(m_prp.get(i).toKernel()),
 						                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>
-				<<<ite.wthr,ite.thr>>>
-				(m_opart.toKernel(),m_pos.get(i).toKernel(), m_prp.get(i).toKernel(),
+					<<<ite.wthr,ite.thr>>>
+					(m_opart.toKernel(),m_pos.get(i).toKernel(), m_prp.get(i).toKernel(),
 						            v_pos.toKernel(),v_prp.toKernel(),offset);
+
+				}
 			}
 
 			// old local particles with the actual local particles
@@ -1075,11 +1085,17 @@ class vector_dist_comm
 
 			prc_sz.template fill<0>(0);
 
+			auto ite = v_pos.getGPUIterator();
+			if (ite.wthr.x == 0)
+			{
+				starts.resize(v_cl.size());
+				starts.template fill<0>(0);
+				return;
+			}
+
 			// we have one process we can skip ...
 			if (v_cl.size() == 1)
 			{
-				auto ite = v_pos.getGPUIterator();
-
 				// ... but we have to apply the boundary conditions
 
 				periodicity_int<dim> bc;
@@ -1090,8 +1106,6 @@ class vector_dist_comm
 
 				return;
 			}
-
-			auto ite = v_pos.getGPUIterator();
 
 			// label particle processor
 			process_id_proc_each_part<dim,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(lbl_p.toKernel()),decltype(prc_sz.toKernel())>
@@ -1220,10 +1234,6 @@ class vector_dist_comm
 			                 size_t & g_m,
 			                 size_t opt)
 	{
-#ifdef EXTREA_TRACE_PRE_COMM
-		Extrae_user_function (1);
-#endif
-
 		// Buffer that contain for each processor the id of the particle to send
 		prc_sz.clear();
 		g_opart.clear();
