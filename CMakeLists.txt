@@ -80,6 +80,10 @@ if(SE_CLASS3)
 	set(DEFINE_SE_CLASS3 "#define SE_CLASS3")
 endif()
 
+if(PETSC_FOUND)
+	set(DEFINE_HAVE_PETSC "#define HAVE_PETSC")
+endif()
+
 if(CUDA_FOUND)
 	set(DEFINE_CUDA_GPU "#define CUDA_GPU")
 endif()
