@@ -53,6 +53,7 @@ find_package(ParMetis)
 find_package(TinyObjLoader )
 find_package(BLAS)
 find_package(LAPACK)
+find_package(Eigen3)
 
 if(PROFILE_WITH_SCOREP)
 	set(CMAKE_CXX_COMPILER_LAUNCHER "scorep")
@@ -131,7 +132,7 @@ else()
 	message( FATAL_ERROR "HDF5 with parallel support is required in order to install OpenFPM" )
 endif()
 
-if(EIGEN_FOUND)
+if(EIGEN3_FOUND)
 	set(DEFINE_HAVE_EIGEN "#define HAVE_EIGEN")
 endif()
 
