@@ -434,7 +434,7 @@ cp example.mk example/example.mk
 
 if [ $nomake -eq 0 ]; then
   make clean
-  make -j $ncore
+  make VERBOSE=1  -j $ncore
 fi
 
 if [ $? -ne 0 ]; then
