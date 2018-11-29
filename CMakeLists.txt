@@ -44,6 +44,7 @@ if(ENABLE_GPU)
 	find_package(CUDA)
 endif()
 
+message("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB ${OPENBLAS_ROOT}")
 message("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA $ENV{LD_LIBRARY_PATH}")
 
 find_package(Boost 1.68.0 COMPONENTS unit_test_framework iostreams program_options)
