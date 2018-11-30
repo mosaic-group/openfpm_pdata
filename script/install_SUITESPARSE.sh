@@ -7,7 +7,7 @@ discover_os
 
 # check if the directory $1/SUITESPARSE exist
 
-if [ -d "$1/SUITESPARSE" ]; then
+if [ -d "$1/SUITESPARSE"  -a -f "$1/SUITESPARSE/include/umfpack.h" ]; then
   echo "SUITESPARSE is already installed"
   exit 0
 fi

@@ -13,7 +13,7 @@ if [ ! -d "$1/OPENBLAS"  ]; then
 fi
 
 CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_SUITESPARSE.sh $1 $2
-if [ ! -d "$1/SUITESPARSE"  ]; then
+if [ ! -d "$1/SUITESPARSE"  -o ! -f "$1/SUITESPARSE/include/umfpack.h" ]; then
   exit 1
 fi
 
