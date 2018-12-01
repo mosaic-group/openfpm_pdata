@@ -14,9 +14,9 @@ echo "make target: $target"
 echo "compilation type: $comp_type"
 echo "Branch name: $branch"
 
+rm -rf $HOME/openfpm_dependencies/openfpm_pdata/0
 
 if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
-	#we retest PETSC installation
 	./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/ 4
 	echo 4 > $HOME/openfpm_dependencies/openfpm_pdata/$branch/MPI/version
 fi
