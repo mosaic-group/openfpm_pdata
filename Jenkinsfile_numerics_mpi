@@ -24,7 +24,7 @@ parallel (
 
                     stage ('build_centos')
                     {
-                      sh "./build.sh $WORKSPACE $NODE_NAME numerics 0"
+                      sh "./build.sh $WORKSPACE $NODE_NAME numerics numerics 0"
                     }
 
                     stage ('run_gin')
@@ -65,7 +65,7 @@ parallel (
 
                     stage ('build mac')
                     {
-                      sh "./build.sh $WORKSPACE $NODE_NAME numerics 0"
+                      sh "./build.sh $WORKSPACE $NODE_NAME numerics numerics 0"
                     }
 
                     stage ('run mac')
@@ -103,7 +103,7 @@ parallel (
 
                     stage ('build ubuntu')
                     {
-                      sh "./build.sh $WORKSPACE $NODE_NAME numerics 0"
+                      sh "./build.sh $WORKSPACE $NODE_NAME numerics numerics 0"
                     }
 
                     stage ('run ubuntu')
