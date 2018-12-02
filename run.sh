@@ -80,6 +80,8 @@ else
 
  source $HOME/openfpm_vars_$branch
 
+  mpirun --version
+
  mpirun $mpi_options -np $nproc ./build/src/pdata
  if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
