@@ -532,9 +532,9 @@ fi
 cd build
 
 ## remove enerything
-echo "Calling cmake ../. $conf_options"
+echo "Calling CXX=mpic++ CC=mpicc cmake ../. $conf_options"
 rm ../error_code
-cmake ../. $conf_options
+CXX=mpic++ CC=mpicc cmake ../. $conf_options
 if [ $? != 0 ]; then
 	#ok something went wrong the install script analyze the return code to potentially fix the problem automatically
 	# Read the error code and exit with that
