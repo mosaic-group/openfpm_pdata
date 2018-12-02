@@ -46,12 +46,6 @@ endif()
 
 find_package(Boost 1.68.0 COMPONENTS unit_test_framework iostreams program_options)
 find_package(MPI)
-
-if (MPI_FOUND)
-	set(ENV{CXX} mpic++)
-	set(ENV{CC} mpicc}
-endif()
-
 find_package(PETSc)
 find_package(HDF5)
 find_package(Eigen3)
