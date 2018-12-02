@@ -22,12 +22,12 @@ parallel (
                     }
 
 
-                    stage ('build_centos')
+                    stage ('build centos')
                     {
                       sh "./build.sh $WORKSPACE $NODE_NAME numerics numerics"
                     }
 
-                    stage ('run_gin')
+                    stage ('run centos')
                     {
 		      parallel (
                       "1" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 1 0 0 numerics"},
