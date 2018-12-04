@@ -10,6 +10,7 @@
 
 #include <boost/test/unit_test.hpp>
 #include "grid_dist_amr.hpp"
+#include "Point_test.hpp"
 
 BOOST_AUTO_TEST_SUITE( grid_dist_amr_test )
 
@@ -299,12 +300,6 @@ void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain
 				match &= amr_g.template get<1>(key_l1) == key_gl1.get(1);
 				match &= amr_g.template get<2>(key_l1) == key_gl1.get(2);
 			}
-		}
-
-		if (match == false)
-		{
-			int debug = 0;
-			debug++;
 		}
 
 		++it2;
@@ -988,6 +983,109 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_ghost_put_create )
 	sgrid_dist_amr<3, float, aggregate<long int>> sg_dist(domain,g,pr);
 
 	Test3D_ghost_put(sg_dist,k);
+}
+
+constexpr int x = 0;
+constexpr int y = 0;
+
+BOOST_AUTO_TEST_CASE( grid_dist_amr_unperturbed )
+{
+	periodicity<2> bc = {NON_PERIODIC, NON_PERIODIC};
+
+	// Domain
+	Box<2,double> domain({-0.3,-0.3},{1.0,1.0});
+
+	// grid size
+	size_t sz[2];
+	sz[0] = 2;
+	sz[1] = 2;
+
+	// Ghost
+	Ghost<2,long int> g(1);
+
+	sgrid_dist_amr<2,double,Point_test<float>> sg(domain,g,bc);
+	sg.initLevels(10,sz);
+
+	// create a grid iterator over a bilion point and draw a spere
+
+
+	openfpm::vector<size_t> lvl;
+	lvl.resize(sg.getNLvl());
+
+	for (size_t i = 0 ; i < sg.getNLvl() ; i++)
+	{lvl.get(i) = 0;}
+
+	for (size_t i = 0 ; i < sg.getNLvl() ; i++)
+	{
+		auto it = sg.getGridIterator(i);
+
+		int radius = sg.size(i,0) * (i + 6)/(sg.getNLvl()+6);
+		radius /= 2;
+
+		while(it.isNext())
+		{
+			auto gkey = it.get();
+			auto key = it.get_dist();
+
+			size_t sx = gkey.get(0) - 50;
+			size_t sy = gkey.get(1) - 50;
+
+			if (sx*sx + sy*sy < radius*radius)
+			{
+				sg.template insert<0>(i,key) = 1.0;
+				lvl.get(i)++;
+			}
+
+			++it;
+		}
+	}
+
+	// Reduce on all processors
+
+	Vcluster & v_cl = create_vcluster();
+	for (size_t i = 0 ; i < sg.getNLvl() ; i++)
+	{v_cl.sum(lvl.get(i));}
+	v_cl.execute();
+
+	// now we insert point asking for an unperturbed iterator
+
+	openfpm::vector<size_t> lvl2;
+	lvl2.resize(sg.getNLvl());
+
+	for (size_t i = 0 ; i < sg.getNLvl() ; i++)
+	{lvl2.get(i) = 0;}
+
+	auto it4 = sg.getDomainIterator();
+
+	while (it4.isNext())
+	{
+		auto key = it4.get();
+
+		sg.template insert<0>(key.moveSpace(x,1)) = 1.0;
+		sg.template insert<0>(key.moveSpace(x,-1)) = 1.0;
+		sg.template insert<0>(key.moveSpace(y,1)) = 1.0;
+		sg.template insert<0>(key.moveSpace(y,-1)) = 1.0;
+		sg.template insert<0>(key) = 1.0;
+
+		lvl2.get(key.getLvl())++;
+		if (key.getLvl() < sg.getNLvl() - 1 )
+		{
+			sg.moveLvlDw(key);
+			sg.template insert<0>(key) = 1.0;
+			sg.template insert<0>(key.moveSpace(x,1)) = 1.0;
+			sg.template insert<0>(key.moveSpace(x,-1)) = 1.0;
+			sg.template insert<0>(key.moveSpace(y,1)) = 1.0;
+			sg.template insert<0>(key.moveSpace(y,-1)) = 1.0;
+		}
+		++it4;
+	}
+
+	for (size_t i = 0 ; i < sg.getNLvl() ; i++)
+	{v_cl.sum(lvl2.get(i));}
+	v_cl.execute();
+
+	for (size_t i = 0 ; i < sg.getNLvl() ; i++)
+	{BOOST_REQUIRE_EQUAL(lvl.get(i),lvl2.get(i));}
 }
 
 BOOST_AUTO_TEST_SUITE_END()

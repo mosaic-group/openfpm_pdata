@@ -670,7 +670,7 @@ public:
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
-		return gd_array.get(v1.getLvl()).remove(v1.getKey());
+		gd_array.get(v1.getLvl()).remove(v1.getKey());
 	}
 
 	/*! \brief Remove a grid point (this function make sense only in case of
@@ -684,7 +684,7 @@ public:
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
-		return gd_array.get(lvl).remove(v1);
+		gd_array.get(lvl).remove(v1);
 	}
 
 	//////////////////////////////////////
@@ -774,6 +774,18 @@ public:
 	const grid_sm<dim,void> & getGridInfoVoid(size_t lvl) const
 	{
 		return gd_array.get(lvl).getGridInfoVoid();
+	}
+
+	/*! \brief Get an object containing the grid informations for a specific level
+	 *
+	 * \param lvl level
+	 *
+	 * \return an information object about this grid
+	 *
+	 */
+	const size_t size(size_t lvl,size_t i) const
+	{
+		return gd_array.get(lvl).size(i);
 	}
 
 	/*! \brief Return the maximum number of levels in the AMR struct

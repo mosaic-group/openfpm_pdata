@@ -105,6 +105,4 @@ static void Test2D_core(grid_dist_id<2, float, scalar<float>> & g_dist, const si
 	BOOST_REQUIRE_EQUAL(match,true);
 }
 
-
-
 #endif /* SRC_GRID_TESTS_GRID_DIST_ID_UTIL_TESTS_HPP_ */

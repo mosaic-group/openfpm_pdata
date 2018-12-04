@@ -233,5 +233,71 @@ BOOST_AUTO_TEST_CASE( sgrid_dist_id_basic_test)
 	BOOST_REQUIRE_EQUAL(match,true);
 }
 
+BOOST_AUTO_TEST_CASE( sgrid_dist_id_unpertubed_iterator )
+{
+	periodicity<3> bc = {NON_PERIODIC, NON_PERIODIC, NON_PERIODIC};
+
+	// Domain
+	Box<3,double> domain({-0.3,-0.3,-0.3},{1.0,1.0,1.0});
+
+	// grid size
+	size_t sz[3];
+	sz[0] = 100;
+	sz[1] = 100;
+	sz[2] = 100;
+
+	// Ghost
+	Ghost<3,long int> g(1);
+
+	sgrid_dist_id<3,double,Point_test<float>> sg(sz,domain,g,bc);
+
+	// create a grid iterator over a bilion point and draw a spere
+
+	auto it = sg.getGridIterator();
+
+	size_t cnt = 0;
+
+	while(it.isNext())
+	{
+		auto gkey = it.get();
+		auto key = it.get_dist();
+
+		size_t sx = gkey.get(0) - 50;
+		size_t sy = gkey.get(1) - 50;
+		size_t sz = gkey.get(2) - 50;
+
+		if (sx*sx + sy*sy + sz*sz < 50*50)
+		{
+			sg.template insert<0>(key) = 1.0;
+			cnt++;
+		}
+
+		++it;
+	}
+
+	// now we insert point asking for an unperturbed iterator
+
+	size_t cnt2 = 0;
+	auto it4 = sg.getDomainIterator();
+
+	while (it4.isNext())
+	{
+		auto key = it4.get();
+
+		sg.template insert<0>(key.move(x,1)) = 1.0;
+		sg.template insert<0>(key.move(x,-1)) = 1.0;
+		sg.template insert<0>(key.move(y,1)) = 1.0;
+		sg.template insert<0>(key.move(y,-1)) = 1.0;
+		sg.template insert<0>(key.move(z,1)) = 1.0;
+		sg.template insert<0>(key.move(z,-1)) = 1.0;
+		sg.template insert<0>(key) = 1.0;
+
+		cnt2++;
+
+		++it4;
+	}
+
+	BOOST_REQUIRE_EQUAL(cnt,cnt2);
+}
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -44,6 +44,9 @@ class grid_dist_iterator
 	//! stop point (is the grid size)
 	grid_key_dx<dim> stop;
 
+	//! Type of iteration options
+	iterator_type opt;
+
 	/*! \brief from g_c increment g_c until you find a valid grid
 	 *
 	 */
@@ -65,7 +68,7 @@ class grid_dist_iterator
 			// get the next grid iterator
 			if (g_c < gList.size())
 			{
-				a_it.reinitialize(gList.get(g_c).getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2()));
+				a_it.reinitialize(gList.get(g_c).getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2(),opt));
 				if (a_it.isNext() == false)	{g_c++;}
 			}
 		} while (g_c < gList.size() && a_it.isNext() == false);
@@ -83,8 +86,9 @@ class grid_dist_iterator
 	 */
 	grid_dist_iterator(const openfpm::vector<device_grid> & gk,
 					   const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
-					   const grid_key_dx<dim> & stop)
-	:g_c(0),gList(gk),gdb_ext(gdb_ext),stop(stop)
+					   const grid_key_dx<dim> & stop,
+					   iterator_type opt = iterator_type::normal)
+	:g_c(0),gList(gk),gdb_ext(gdb_ext),stop(stop),opt(opt)
 	{
 		// Initialize the current iterator
 		// with the first grid
@@ -104,8 +108,9 @@ class grid_dist_iterator
 	grid_dist_iterator(const openfpm::vector<device_grid> & gk,
 			           const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
 					   const grid_key_dx<dim> & stop,
-					   const grid_key_dx<dim> (& stencil_pnt)[stencil::nsp])
-	:g_c(0),gList(gk),gdb_ext(gdb_ext),a_it(stencil_pnt),stop(stop)
+					   const grid_key_dx<dim> (& stencil_pnt)[stencil::nsp],
+					   iterator_type opt = iterator_type::normal)
+	:g_c(0),gList(gk),gdb_ext(gdb_ext),a_it(stencil_pnt),stop(stop),opt(opt)
 	{
 		// Initialize the current iterator
 		// with the first grid
@@ -114,12 +119,12 @@ class grid_dist_iterator
 
 	//! Copy constructor
 	grid_dist_iterator(const grid_dist_iterator<dim,device_grid,device_sub_it,impl,stencil> & g)
-	:g_c(g.g_c),gList(g.gList),gdb_ext(g.gdb_ext),a_it(g.a_it),stop(g.stop)
+	:g_c(g.g_c),gList(g.gList),gdb_ext(g.gdb_ext),a_it(g.a_it),stop(g.stop),opt(g.opt)
 	{}
 
 	//! Copy constructor
 	grid_dist_iterator(grid_dist_iterator<dim,device_grid,device_sub_it,impl,stencil> && g)
-	:g_c(g.g_c),gList(g.gList),gdb_ext(g.gdb_ext),a_it(g.a_it),stop(g.stop)
+	:g_c(g.g_c),gList(g.gList),gdb_ext(g.gdb_ext),a_it(g.a_it),stop(g.stop),opt(g.opt)
 	{}
 
 	//! Destructor

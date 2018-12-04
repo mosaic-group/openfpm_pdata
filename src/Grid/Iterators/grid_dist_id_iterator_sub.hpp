@@ -149,9 +149,13 @@ class grid_dist_iterator_sub
 	 * \param stop position
 	 * \param gk std::vector of the local grid
 	 * \param gdb_ext information about the local grids
+	 * \param opt unused
 	 *
 	 */
-	grid_dist_iterator_sub(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop ,const openfpm::vector<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
+	grid_dist_iterator_sub(const grid_key_dx<dim> & start,
+			               const grid_key_dx<dim> & stop,
+						   const openfpm::vector<device_grid> & gk,
+						   const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
 	:g_c(0),gList(gk),gdb_ext(gdb_ext),start(start),stop(stop)
 	{
 		// Initialize the current iterator

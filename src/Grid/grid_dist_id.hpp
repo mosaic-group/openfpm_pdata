@@ -1646,6 +1646,15 @@ public:
 		v_cl.execute();
 	}
 
+	/*! \brief Save the the headers of each local grids
+	 *
+	 *
+	 */
+	void saveHeaders() const
+	{
+		for (size_t i = 0 ; i < loc_grid.size(); i++)
+		{loc_grid.get(i).saveHeaders();}
+	}
 
 	/*! \brief It return an iterator that span the full grid domain (each processor span its local domain)
 	 *
@@ -1736,7 +1745,7 @@ public:
 	 */
 	grid_dist_iterator<dim,device_grid,
 					   decltype(device_grid::type_of_subiterator()),FREE>
-	getDomainIterator() const
+	getDomainIterator(iterator_type opt = iterator_type::normal) const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1747,9 +1756,15 @@ public:
 		one.one();
 		stop = stop - one;
 
+		if (opt == iterator_type::normal)
+		{
+			saveHeaders();
+			opt = iterator_type::normal_presaved;
+		}
+
 		grid_dist_iterator<dim,device_grid,
 							decltype(device_grid::type_of_subiterator()),
-							FREE> it(loc_grid,gdb_ext,stop);
+							FREE> it(loc_grid,gdb_ext,stop,opt);
 
 		return it;
 	}
@@ -1766,7 +1781,8 @@ public:
 						decltype(device_grid::template type_of_subiterator<stencil_offset_compute<dim,Np>>()),
 						FREE,
 						stencil_offset_compute<dim,Np> >
-	getDomainIteratorStencil(const grid_key_dx<dim> (& stencil_pnt)[Np]) const
+	getDomainIteratorStencil(const grid_key_dx<dim> (& stencil_pnt)[Np],
+							 iterator_type opt = iterator_type::normal) const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1776,6 +1792,12 @@ public:
 		grid_key_dx<dim> one;
 		one.one();
 		stop = stop - one;
+
+		if (opt == iterator_type::normal)
+		{
+			saveHeaders();
+			opt = iterator_type::normal_presaved;
+		}
 
 		grid_dist_iterator<dim,device_grid,
 						   decltype(device_grid::template type_of_subiterator<stencil_offset_compute<dim,Np>>()),
@@ -1793,7 +1815,7 @@ public:
 	grid_dist_iterator<dim,device_grid,
 	decltype(device_grid::type_of_iterator()),
 	FIXED>
-	getDomainGhostIterator() const
+	getDomainGhostIterator(iterator_type opt = iterator_type::normal) const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1801,6 +1823,12 @@ public:
 		grid_key_dx<dim> stop;
 		for (size_t i = 0 ; i < dim ; i++)
 		{stop.set_d(i,0);}
+
+		if (opt == iterator_type::normal)
+		{
+			saveHeaders();
+			opt = iterator_type::normal_presaved;
+		}
 
 		grid_dist_iterator<dim,device_grid,
 							decltype(device_grid::type_of_iterator()),
@@ -1823,11 +1851,19 @@ public:
 	 */
 	grid_dist_iterator_sub<dim,device_grid>
 	getSubDomainIterator(const grid_key_dx<dim> & start,
-						 const grid_key_dx<dim> & stop) const
+						 const grid_key_dx<dim> & stop,
+						 iterator_type opt = iterator_type::normal) const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
+
+		if (opt == iterator_type::normal)
+		{
+			saveHeaders();
+			opt = iterator_type::normal_presaved;
+		}
+
 		grid_dist_iterator_sub<dim,device_grid> it(start,stop,loc_grid,gdb_ext);
 
 		return it;
@@ -1845,8 +1881,21 @@ public:
 	 * \return an iterator on the sub-part of the grid
 	 *
 	 */
-	grid_dist_iterator_sub<dim,device_grid> getSubDomainIterator(const long int (& start)[dim], const long int (& stop)[dim]) const
+	grid_dist_iterator_sub<dim,device_grid>
+	getSubDomainIterator(const long int (& start)[dim],
+			             const long int (& stop)[dim],
+						 iterator_type opt = iterator_type::normal) const
 	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+
+		if (opt == iterator_type::normal)
+		{
+			saveHeaders();
+			opt = iterator_type::normal_presaved;
+		}
+
 		grid_dist_iterator_sub<dim,device_grid> it(grid_key_dx<dim>(start),grid_key_dx<dim>(stop),loc_grid,gdb_ext);
 
 		return it;
