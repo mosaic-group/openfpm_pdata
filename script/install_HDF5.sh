@@ -6,10 +6,6 @@ discover_os
 
 # check if the directory $1/HDF5 exist
 
-if [ -d "$1/HDF5" ]; then
-  echo "HDF5 is already installed"
-  exit 0
-fi
 
 if [ ! -d "$1/ZLIB"  -a x"$platform" != x"cygwin" ]; then
   rm zlib-1.2.11.tar.gz
@@ -34,6 +30,11 @@ if [ ! -d "$1/ZLIB"  -a x"$platform" != x"cygwin" ]; then
 
 else
   echo "ZLIB is already installed"
+fi
+
+if [ -d "$1/HDF5" ]; then
+  echo "HDF5 is already installed"
+  exit 0
 fi
 
 ### 1.8.19 does not compile on CYGWIN

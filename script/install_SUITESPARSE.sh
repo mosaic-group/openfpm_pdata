@@ -22,9 +22,13 @@ fi
 cd SuiteSparse
 
 if [ x"$CXX" == x"icpc" ]; then
-    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/$1/OPENBLAS/lib"
     STS_LIB="-shared-intel -lrt -lifcore"
 fi
+
+if [ x"$CXX" == x"g++" ]; then
+    OPT_GPP=" -shared -fPIC "
+fi
+
 
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$1/OPENBLAS/lib"
 
@@ -34,7 +38,7 @@ if [ x"$platform" == x"cygwin" ]; then
 fi
 
 echo "Compiling SuiteSparse without CUDA (old variable $CUDA)"
-LDLIBS="$STS_LIB -lm" LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$1/OPENBLAS/lib"  make -j $2 "CUDA=no" "BLAS=-L$1/OPENBLAS/lib -lopenblas -pthread" "LAPACK="
+LDLIBS="$STS_LIB -lm" LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$1/OPENBLAS/lib"  make "AUTOCC=no" "CXX=$CXX" "CC=$CC" "CPPFLAGS=$OPT_GPP"  -j $2 "CUDA=no" "BLAS=-L$1/OPENBLAS/lib -lopenblas -pthread" "LAPACK="
 if [ $? != 0 ]; then
   echo "Failed to compile SuiteSparse"
   exit 1

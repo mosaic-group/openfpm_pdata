@@ -209,10 +209,10 @@
  */
 
 // A constant to indicate boundary particles
-#define BOUNDARY 1
+#define BOUNDARY 0
 
 // A constant to indicate fluid particles
-#define FLUID 0
+#define FLUID 1
 
 // initial spacing between particles dp in the formulas
 const double dp = 0.0085;
@@ -1130,7 +1130,6 @@ int main(int argc, char* argv[])
 		{
 			vd.deleteGhost();
 			vd.write_frame("Geometry",write,VTK_WRITER | FORMAT_BINARY);
-                        vd.getDecomposition().write("dec" + std::to_string(write));
 			vd.ghost_get<type,rho,Pressure,velocity>(SKIP_LABELLING);
 			write++;
 

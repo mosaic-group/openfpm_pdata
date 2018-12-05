@@ -182,7 +182,7 @@ public:
 			v_cl(v_cl), nc(nc)
 	{
 		// TODO Move into VCluster
-		MPI_Comm_dup(MPI_COMM_WORLD, &comm);
+		MPI_Comm_dup(v_cl.getMPIComm(), &comm);
 
 		// Nullify Mg
 		Mg.nvtxs = NULL;

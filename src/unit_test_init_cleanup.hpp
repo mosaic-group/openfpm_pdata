@@ -19,7 +19,7 @@ struct ut_start
     {
     	BOOST_TEST_MESSAGE("Initialize global VCluster");
 
-    	openfpm_init(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv);
+    	openfpm_init(&boost::unit_test::framework::master_test_suite().argc,&boost::unit_test::framework::master_test_suite().argv,init_options::in_situ_visualization);
 
 #ifdef PERFORMANCE_TEST
     	test_dir = getenv("OPENFPM_PERFORMANCE_TEST_DIR");
