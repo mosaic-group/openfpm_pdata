@@ -23,7 +23,7 @@ add_test(NAME pdata_4_proc COMMAND mpirun -np 4 ./pdata)
 ###########################
 
 if (CUDA_FOUND)
-	target_compile_options(pdata PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe "--display_error_number --diag_suppress=611 --diag_suppress=2885 --diag_suppress=2886  --diag_suppress=2887  --diag_suppress=2888 --diag_suppress=186 --diag_suppress=111" --expt-extended-lambda>)
+	target_compile_options(pdata PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcudafe "--display_error_number --diag_suppress=611 --diag_suppress=2885 --diag_suppress=2886  --diag_suppress=2887  --diag_suppress=2888 --diag_suppress=186 --diag_suppress=111" --expt-extended-lambda>)
 	target_include_directories (pdata PUBLIC ${MPI_C_INCLUDE_DIRS})
 endif()
 

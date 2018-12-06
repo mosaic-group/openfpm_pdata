@@ -218,13 +218,15 @@ class domain_nn_calculator_cart
 		for (size_t i = 0 ; i < anom.size() ; i++)
 		{
 			anom_lin.add();
-			anom_lin.last().subsub = gs.LinId(anom.get(i).subsub + shift);
+			grid_key_dx<dim> tmp = anom.get(i).subsub + shift;
+			anom_lin.last().subsub = gs.LinId(tmp);
 
 			long int self_cell = -1;
 
 			for (size_t j = 0 ; j < anom.get(i).NN_subsub.size() ; j++)
 			{
-				anom_lin.get(i).NN_subsub.add((long int)gs.LinId(anom.get(i).NN_subsub.get(j) + shift) - anom_lin.get(i).subsub);
+				grid_key_dx<dim> tmp = anom.get(i).NN_subsub.get(j) + shift;
+				anom_lin.get(i).NN_subsub.add((long int)gs.LinId(tmp) - anom_lin.get(i).subsub);
 
 				// This indicate that for example in the neighborhood of one cell it-self is included in the list
 				// For example the cell 100 is in the neighborhood of the cell 100
@@ -278,12 +280,18 @@ public:
 
 			dom_cells_lin.clear();
 			for (size_t i = 0 ; i < dom_cells.size() ; i++)
-				dom_cells_lin.add(gs.LinId(dom_cells.get(i) + shift));
+			{
+				grid_key_dx<dim> tmp = dom_cells.get(i) + shift;
+				dom_cells_lin.add(gs.LinId(tmp));
+			}
 
 
 			dom_lin.clear();
 			for (size_t i = 0 ; i < dom.size() ; i++)
-				dom_lin.add(gs.LinId(dom.get(i) + shift));
+			{
+				grid_key_dx<dim> tmp = dom.get(i) + shift;
+				dom_lin.add(gs.LinId(tmp));
+			}
 
 			linearize_subsub(anom,anom_lin,shift,gs);
 		}

@@ -66,9 +66,9 @@ function detect_compiler()
         # we check if the detection is garbage
         echo "$major" | egrep -q '^[0-9]+$'
         if [ $? == 0 ]; then
-           dgc_major=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\1/g')
-           dgc_middle=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\2/g')
-           dgc_minor=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\3/g')
+           dgc_major=$(g++ --version | grep LLVM | sed 's/.* \([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\1/g')
+           dgc_middle=$(g++ --version | grep LLVM | sed 's/.* \([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\2/g')
+           dgc_minor=$(g++ --version | grep LLVM | sed 's/.* \([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\3/g')
 
            if [ $dgc_major -gt 6 ]; then
              echo -e "clang++ $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
