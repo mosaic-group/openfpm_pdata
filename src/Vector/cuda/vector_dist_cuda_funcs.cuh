@@ -283,7 +283,7 @@ struct _max_: mgpu::maximum_t<red_type>
 {};
 
 template<unsigned int prp, template <typename> class op, typename vector_type>
-auto reduce(vector_type & vd) -> typename std::remove_reference<decltype(vd.template getProp<prp>(0))>::type
+auto reduce_local(vector_type & vd) -> typename std::remove_reference<decltype(vd.template getProp<prp>(0))>::type
 {
 	typedef typename std::remove_reference<decltype(vd.template getProp<prp>(0))>::type reduce_type;
 

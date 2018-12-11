@@ -411,7 +411,7 @@ fi
 
 ### Create example.mk
 install_base=$(cat install_dir)
-openmp_flags="$(cat openmp_flags) $(cat openfpm_flags)"
+openmp_flags="$(cat openmp_flags)"
 
 if [ -d "$i_dir/HDF5/lib" ]; then
   hdf5_lib=$i_dir/HDF5/lib
