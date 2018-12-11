@@ -1,17 +1,34 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [2.0.0] December 2018
+## [2.0.0] December 2018 (Codename Elisa)
 
 ### Added
 
-- Adding GPU support (see example 3_molecular_dynamic_gpu)
+- Adding GPU support (see example 1_gpu_first_step
+				  3_molecular_dynamic_gpu 
+                                  7_sph_dlb_gpu 
+                                  7_sph_dlb_gpu_opt)
+
+### Fixed 
+
+- Detection of clang 10.0.0 on mac-osx mojave
+- In VTK binary format all 64 bit types are casted to 32 bit. Either the long/unsigned_long are bugged in Paraview we tested, either I do not understand how they work.
 
 ### Changed
 
 - The type Vcluster now is templated and the standard Vcluster is Vcluster<>
+           Most probably you have to change in your code from Vcluster to Vcluster<>
 
-## [1.1.0] February 2018
+## [1.1.1] December 2018 (Codename Poisson)
+
+### Fixed 
+
+- Detection of clang 10.0.0 on mac-osx mojave
+
+## [1.0.X ] End of life (Theese versions are not enymore supported)
+
+## [1.1.0] February 2018 (Condename Ring)
 
 ### Added
 

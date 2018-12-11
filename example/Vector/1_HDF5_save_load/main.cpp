@@ -1,5 +1,5 @@
 /*!
- * \page Vector_1_HDF5 HDF5 save and load
+ * \page Vector_1_HDF5 Vector 1 HDF5 save and load
  *
  *
  * [TOC]

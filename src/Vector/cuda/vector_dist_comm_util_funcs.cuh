@@ -277,7 +277,7 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 		<<<ite.wthr,ite.thr>>>
 		(box_f_dev.toKernel(),box_f_sv.toKernel(),
 		 v_pos.toKernel(),v_prp.toKernel(),
-		 starts.toKernel(),shifts.toKernel(),o_part_loc.toKernel(),old);
+		 starts.toKernel(),shifts.toKernel(),o_part_loc.toKernel(),old,g_m);
 
 #else
 		std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option RUN_ON_DEVICE you must compile with NVCC" << std::endl;

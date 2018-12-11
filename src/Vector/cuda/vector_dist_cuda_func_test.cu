@@ -166,7 +166,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 	<<<ite.wthr,ite.thr>>>
 	(box_f_dev.toKernel(),box_f_sv.toKernel(),
 	 v_pos.toKernel(),v_prp.toKernel(),
-	 starts.toKernel(),shifts.toKernel(),o_part_loc2.toKernel(),old);
+	 starts.toKernel(),shifts.toKernel(),o_part_loc2.toKernel(),old,v_pos.size());
 
 	v_pos.deviceToHost<0>();
 	o_part_loc2.deviceToHost<0,1>();

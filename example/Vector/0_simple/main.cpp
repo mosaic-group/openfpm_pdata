@@ -4,8 +4,10 @@
  * \subpage Vector_1_celllist
  * \subpage Vector_1_ghost_get
  * \subpage Vector_1_HDF5
+ * \subpage Vector_1_gpu_first_step
  * \subpage Vector_2_expression
  * \subpage Vector_3_md
+ * \subpage Vector_3_md_dyn_gpu
  * \subpage Vector_4_reo_root
  * \subpage Vector_4_cp
  * \subpage Vector_4_mp_cl
@@ -14,6 +16,7 @@
  * \subpage Vector_6_complex_usage
  * \subpage Vector_7_sph_dlb
  * \subpage Vector_7_sph_dlb_opt
+ * \subpage Vector_7_sph_dlb_gpu_opt
  * \subpage Vector_8_DEM
  *
  */
