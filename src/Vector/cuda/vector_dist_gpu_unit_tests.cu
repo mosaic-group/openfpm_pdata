@@ -736,20 +736,20 @@ BOOST_AUTO_TEST_CASE(vector_dist_reduce)
 
 	vd.template hostToDeviceProp<0,1,2,3>();
 
-	float redf = reduce<0,_add_>(vd);
-	double redd = reduce<1,_add_>(vd);
-	int redi = reduce<2,_add_>(vd);
-	size_t reds = reduce<3,_add_>(vd);
+	float redf = reduce_local<0,_add_>(vd);
+	double redd = reduce_local<1,_add_>(vd);
+	int redi = reduce_local<2,_add_>(vd);
+	size_t reds = reduce_local<3,_add_>(vd);
 
 	BOOST_REQUIRE_EQUAL(redf,(vd.size_local()+1.0)*(vd.size_local())/2.0);
 	BOOST_REQUIRE_EQUAL(redd,(vd.size_local()+1.0)*(vd.size_local())/2.0);
 	BOOST_REQUIRE_EQUAL(redi,(vd.size_local()+1)*(vd.size_local())/2);
 	BOOST_REQUIRE_EQUAL(reds,(vd.size_local()+1)*(vd.size_local())/2);
 
-	float redf2 = reduce<0,_max_>(vd);
-	double redd2 = reduce<1,_max_>(vd);
-	int redi2 = reduce<2,_max_>(vd);
-	size_t reds2 = reduce<3,_max_>(vd);
+	float redf2 = reduce_local<0,_max_>(vd);
+	double redd2 = reduce_local<1,_max_>(vd);
+	int redi2 = reduce_local<2,_max_>(vd);
+	size_t reds2 = reduce_local<3,_max_>(vd);
 
 	BOOST_REQUIRE_EQUAL(redf2,vd.size_local());
 	BOOST_REQUIRE_EQUAL(redd2,vd.size_local());
