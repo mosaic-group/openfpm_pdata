@@ -304,7 +304,7 @@ template<typename vector_type> void test_dlb_vector()
 
 		//////////////////////////////////
 		
-		if (vcl.rank() == 0)
+		if (create_vcluster().rank() == 0)
 		{
 			return;
 		}
