@@ -6,7 +6,7 @@ centos_build:
     paths:
       - ./build/src/pdata
   script:
-    - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata full $CI_COMMIT_REF_NAME
+    - ./build.sh $CI_PROJECT_DIR unused pdata full $CI_COMMIT_REF_NAME
 
 centos_run:
   stage: test
@@ -15,7 +15,7 @@ centos_run:
   dependencies:
     - centos_build
   script:
-    - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS 1 pdata full $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 1 pdata full $CI_COMMIT_REF_NAME
 
 
 mac_build:
@@ -26,7 +26,7 @@ mac_build:
     paths:
       - ./build/src/pdata
   script:
-    - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata full  $CI_COMMIT_REF_NAME
+    - ./build.sh $CI_PROJECT_DIR unused pdata full  $CI_COMMIT_REF_NAME
 
 mac_run:
   stage: test
@@ -35,7 +35,7 @@ mac_run:
   dependencies:
     - mac_build
   script:
-    - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS 1 pdata full $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 1 pdata full $CI_COMMIT_REF_NAME
 
 ubuntu_build:
   stage: build
@@ -45,7 +45,7 @@ ubuntu_build:
     paths:
       - ./build/src/pdata
   script:
-    - ./build.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS pdata full $CI_COMMIT_REF_NAME
+    - ./build.sh $CI_PROJECT_DIR unused pdata full $CI_COMMIT_REF_NAME
 
 ubuntu_run:
   stage: test
@@ -54,5 +54,5 @@ ubuntu_run:
   dependencies:
     - ubuntu_build
   script:
-    - ./run.sh $CI_PROJECT_DIR $CI_RUNNER_TAGS 1 pdata full $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 1 pdata full $CI_COMMIT_REF_NAME
 

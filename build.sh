@@ -21,6 +21,10 @@ if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
 	echo 4 > $HOME/openfpm_dependencies/openfpm_pdata/$branch/MPI/version
 fi
 
+if [ x"$hostname" == x"cifarm-ubuntu-node.mpi-cbg.de"  ]; then
+	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/full
+fi
+
 if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 	export PATH="/usr/local/bin:$PATH"
 fi
