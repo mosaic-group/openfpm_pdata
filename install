@@ -361,7 +361,11 @@ else
             elif [ x"$CXX" == x"clang++" ]; then
               ./script/install_BOOST.sh $i_dir $ncore darwin
             else
-              ./script/install_BOOST.sh $i_dir $ncore gcc
+	      if [ x"$CXX" == x"gcc" ]; then
+              	./script/install_BOOST.sh $i_dir $ncore gcc
+	      else
+		./script/install_BOOST.sh $i_dir $ncore gcc $(which $CXX) $dgc_major $dgc_middle
+	      fi
             fi
             BOOST_installed=1
             configure_options=" $configure_options --with-boost=$i_dir/BOOST "

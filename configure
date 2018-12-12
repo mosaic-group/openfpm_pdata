@@ -230,7 +230,7 @@ do
         if [ x"$CXX" == x"" ]; then
                 conf_options="$conf_options"
         else
-                conf_options="$conf_options -DCUDA_HOST_COMPILER=$CXX"
+		conf_options="$conf_options -DCMAKE_CUDA_HOST_COMPILER=$(which $CXX)"
         fi
        conf_options="$conf_options -DENABLE_GPU=ON"
        ;;
