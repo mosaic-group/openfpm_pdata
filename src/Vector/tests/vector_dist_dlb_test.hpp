@@ -302,15 +302,6 @@ template<typename vector_type> void test_dlb_vector()
 		vd.map();
 		vd.template ghost_get<>();
 
-		//////////////////////////////////
-		
-		if (create_vcluster().rank() == 0)
-		{
-			return;
-		}
-		
-		/////////////////////////////////
-
 		auto VV2 = vd.getVerlet(0.01);
 
 		auto it2 = vd.getDomainIterator();
