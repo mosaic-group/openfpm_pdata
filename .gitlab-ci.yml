@@ -16,6 +16,7 @@ centos_run:
     - centos_build
   script:
     - ./run.sh $CI_PROJECT_DIR unused 1 pdata full $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 2 pdata full $CI_COMMIT_REF_NAME
 
 
       #mac_build:
@@ -55,4 +56,5 @@ ubuntu_run:
     - ubuntu_build
   script:
     - ./run.sh $CI_PROJECT_DIR unused 1 pdata full $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 2 pdata full $CI_COMMIT_REF_NAME
 
