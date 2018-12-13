@@ -305,6 +305,7 @@ template<typename vector_type> void test_dlb_vector()
 		if (create_vcluster().rank() == 0)
 		{
 			std::cout << "Activating Crash " << std::endl;
+			return;
 		}
 
 		auto VV2 = vd.getVerlet(0.01);
