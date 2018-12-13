@@ -8,6 +8,7 @@
  * \subpage Vector_2_expression
  * \subpage Vector_3_md
  * \subpage Vector_3_md_dyn_gpu
+ * \subpage Vector_3_md_dyn_gpu_opt
  * \subpage Vector_4_reo_root
  * \subpage Vector_4_cp
  * \subpage Vector_4_mp_cl
