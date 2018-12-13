@@ -423,7 +423,7 @@ VECTORS x float
 0.625000 0.875000 0.000000
 0.750000 0.875000 0.000000
 0.875000 0.875000 0.000000
-SCALARS migration unsigned_long
+SCALARS migration unsigned_int
 LOOKUP_TABLE default
 0
 0
@@ -489,7 +489,7 @@ LOOKUP_TABLE default
 0
 0
 0
-SCALARS computation unsigned_long
+SCALARS computation unsigned_int
 LOOKUP_TABLE default
 0
 0
@@ -555,7 +555,7 @@ LOOKUP_TABLE default
 0
 0
 0
-SCALARS global_id unsigned_long
+SCALARS global_id unsigned_int
 LOOKUP_TABLE default
 0
 0
@@ -621,7 +621,7 @@ LOOKUP_TABLE default
 0
 0
 0
-SCALARS id unsigned_long
+SCALARS id unsigned_int
 LOOKUP_TABLE default
 0
 0
@@ -687,7 +687,7 @@ LOOKUP_TABLE default
 0
 0
 0
-SCALARS sub_id long
+SCALARS sub_id int
 LOOKUP_TABLE default
 -1
 0
@@ -753,7 +753,7 @@ LOOKUP_TABLE default
 -1
 15
 -1
-SCALARS proc_id unsigned_long
+SCALARS proc_id unsigned_int
 LOOKUP_TABLE default
 0
 1
@@ -820,7 +820,7 @@ LOOKUP_TABLE default
 1
 0
 CELL_DATA 288
-SCALARS communication unsigned_long
+SCALARS communication unsigned_int
 LOOKUP_TABLE default
 0
 0
@@ -1110,7 +1110,7 @@ LOOKUP_TABLE default
 0
 0
 0
-SCALARS srcgid unsigned_long
+SCALARS srcgid unsigned_int
 LOOKUP_TABLE default
 0
 0
@@ -1400,7 +1400,7 @@ LOOKUP_TABLE default
 0
 0
 0
-SCALARS dstgid unsigned_long
+SCALARS dstgid unsigned_int
 LOOKUP_TABLE default
 0
 0
