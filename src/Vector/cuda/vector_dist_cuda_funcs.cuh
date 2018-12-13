@@ -373,7 +373,13 @@ void remove_marked(vector_type & vd)
 
 	// we have no particles to remove
 	if (*(int *)mem.getPointer() != 1)
-	{return;}
+	{
+		if (*(int *)mem.getPointer() >= 2)
+		{
+			std::cout << __FILE__ << ":" << __LINE__ << " error: removing marked particle. Carefull particle must be marked with 1 or 0, no other numbers" << std::endl;
+		}
+		return;
+	}
 
 	// Get the mark point
 	mark.template deviceToHost<0>();
