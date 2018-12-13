@@ -104,11 +104,11 @@ __global__  void find_buffer_offsets(vector_type vd, int * cnt, vector_type_offs
 }
 
 template<unsigned int prp_off, typename vector_type,typename vector_type_offs>
-__global__  void find_buffer_offsets_no_prc(vector_type vd, int * cnt, vector_type_offs offs)
+__global__  void find_buffer_offsets_no_prc(vector_type vd, int * cnt, vector_type_offs offs, int g_m)
 {
     int p = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (p >= (int)vd.size() - 1) return;
+    if (p >= (int)g_m - 1) return;
 
     if (vd.template get<prp_off>(p) != vd.template get<prp_off>(p+1))
 	{
@@ -367,12 +367,12 @@ void remove_marked(vector_type & vd)
 
 	// mark point, particle that stay and to remove
 	find_buffer_offsets_no_prc<prp,decltype(vd.getPropVector().toKernel()),decltype(mark.toKernel())><<<ite.wthr,ite.thr>>>
-			           (vd.getPropVector().toKernel(),(int *)mem.getDevicePointer(),mark.toKernel());
+			           (vd.getPropVector().toKernel(),(int *)mem.getDevicePointer(),mark.toKernel(),vd.size_local());
 
 	mem.deviceToHost();
 
 	// we have no particles to remove
-	if (*(int *)mem.getPointer() == 0)
+	if (*(int *)mem.getPointer() != 1)
 	{return;}
 
 	// Get the mark point
