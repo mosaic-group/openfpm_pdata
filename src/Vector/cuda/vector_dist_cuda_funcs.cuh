@@ -104,11 +104,11 @@ __global__  void find_buffer_offsets(vector_type vd, int * cnt, vector_type_offs
 }
 
 template<unsigned int prp_off, typename vector_type,typename vector_type_offs>
-__global__  void find_buffer_offsets_no_prc(vector_type vd, int * cnt, vector_type_offs offs)
+__global__  void find_buffer_offsets_no_prc(vector_type vd, int * cnt, vector_type_offs offs, int g_m)
 {
     int p = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (p >= (int)vd.size() - 1) return;
+    if (p >= (int)g_m - 1) return;
 
     if (vd.template get<prp_off>(p) != vd.template get<prp_off>(p+1))
 	{
@@ -222,12 +222,12 @@ template<unsigned int dim, typename St,
 __global__ void shift_ghost_each_part(vector_of_box box_f, vector_of_shifts box_f_sv,
 		                              vector_type_pos v_pos, vector_type_prp v_prp,
 		                              start_type start, shifts_type shifts,
-		                              output_type output, unsigned int offset)
+		                              output_type output, unsigned int offset,unsigned int g_m)
 {
 	unsigned int old_shift = (unsigned int)-1;
 	int p = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (p >= v_pos.size()) return;
+    if (p >= g_m) return;
 
     Point<dim,St> xp = v_pos.template get<0>(p);
 
@@ -251,15 +251,8 @@ __global__ void shift_ghost_each_part(vector_of_box box_f, vector_of_shifts box_
     			v_pos.template get<0>(base+n)[j] = xp.get(j) - shifts.template get<0>(shift_actual)[j];
     		}
 
-    		if (base_o + n < output.size())
-    		{
-    			output.template get<0>(base_o+n) = p;
-    			output.template get<1>(base_o+n) = shift_actual;
-    		}
-    		else
-    		{
-    			printf("OVERFLOW \n");
-    		}
+    		output.template get<0>(base_o+n) = p;
+    		output.template get<1>(base_o+n) = shift_actual;
 
     		v_prp.set(base+n,v_prp.get(p));
 
@@ -290,7 +283,7 @@ struct _max_: mgpu::maximum_t<red_type>
 {};
 
 template<unsigned int prp, template <typename> class op, typename vector_type>
-auto reduce(vector_type & vd) -> typename std::remove_reference<decltype(vd.template getProp<prp>(0))>::type
+auto reduce_local(vector_type & vd) -> typename std::remove_reference<decltype(vd.template getProp<prp>(0))>::type
 {
 	typedef typename std::remove_reference<decltype(vd.template getProp<prp>(0))>::type reduce_type;
 
@@ -374,13 +367,19 @@ void remove_marked(vector_type & vd)
 
 	// mark point, particle that stay and to remove
 	find_buffer_offsets_no_prc<prp,decltype(vd.getPropVector().toKernel()),decltype(mark.toKernel())><<<ite.wthr,ite.thr>>>
-			           (vd.getPropVector().toKernel(),(int *)mem.getDevicePointer(),mark.toKernel());
+			           (vd.getPropVector().toKernel(),(int *)mem.getDevicePointer(),mark.toKernel(),vd.size_local());
 
 	mem.deviceToHost();
 
 	// we have no particles to remove
-	if (*(int *)mem.getPointer() == 0)
-	{return;}
+	if (*(int *)mem.getPointer() != 1)
+	{
+		if (*(int *)mem.getPointer() >= 2)
+		{
+			std::cout << __FILE__ << ":" << __LINE__ << " error: removing marked particle. Carefull particle must be marked with 1 or 0, no other numbers" << std::endl;
+		}
+		return;
+	}
 
 	// Get the mark point
 	mark.template deviceToHost<0>();

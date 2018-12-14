@@ -70,12 +70,8 @@ parallel (
 
                     stage ('run mac')
                     {
-                      parallel (
-                      "1" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 1 0 0 numerics"},
-                      "2" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 2 0 0 numerics"},
-                      "3" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 3 0 0 numerics"},
-                      "4" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 4 0 0 numerics"}
-                      )
+                      sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 1 0 0 numerics"
+                      sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 2 0 0 numerics"
                       sh "./success.sh 2 sbalzarini-mac-15 openfpm_numerics"
                     }
                   }

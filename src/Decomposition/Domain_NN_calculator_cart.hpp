@@ -217,8 +217,8 @@ class domain_nn_calculator_cart
 		anom_lin.clear();
 		for (size_t i = 0 ; i < anom.size() ; i++)
 		{
-			anom_lin.add();
 			grid_key_dx<dim> tmp = anom.get(i).subsub + shift;
+			anom_lin.add();
 			anom_lin.last().subsub = gs.LinId(tmp);
 
 			long int self_cell = -1;
@@ -281,7 +281,7 @@ public:
 			dom_cells_lin.clear();
 			for (size_t i = 0 ; i < dom_cells.size() ; i++)
 			{
-				grid_key_dx<dim> tmp = dom_cells.get(i) + shift;
+				grid_key_dx<dim> tmp =  dom_cells.get(i) + shift;
 				dom_cells_lin.add(gs.LinId(tmp));
 			}
 

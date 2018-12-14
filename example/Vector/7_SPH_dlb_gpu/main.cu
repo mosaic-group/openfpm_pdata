@@ -1,5 +1,4 @@
-/*!
- * \page Vector_7_sph_dlb_gpu Vector 7 SPH Dam break simulation with Dynamic load balacing on GPU
+/*! \page Vector_7_sph_dlb_gpu Vector 7 SPH Dam break simulation with Dynamic load balacing on Multi-GPU
  *
  *
  * [TOC]
@@ -8,50 +7,26 @@
  * # SPH with Dynamic load Balancing on GPU # {#SPH_dlb_gpu}
  *
  *
- * This example show the classical SPH Dam break simulation with Load Balancing and Dynamic load balancing. With
- * Load balancing and Dynamic load balancing we indicate the possibility of the system to re-adapt the domain
- * decomposition to keep all the processor load and reduce idle time.
+ * This example show the classical SPH Dam break simulation with load balancing and dynamic load balancing. The main difference with
+ * \ref{SPH_dlb} is that here we use GPU and 1.2 Millions particles.
  *
  * \htmlonly
  * <a href="#" onclick="hide_show('vector-video-3')" >Simulation video 1</a><br>
  * <div style="display:none" id="vector-video-3">
- * <video id="vid3" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_speed.mp4" type="video/mp4"></video>
+ * <video id="vid3" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_gpu1.mp4" type="video/mp4"></video>
  * </div>
  * <a href="#" onclick="hide_show('vector-video-4')" >Simulation video 2</a><br>
  * <div style="display:none" id="vector-video-4">
- * <video id="vid4" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_speed2.mp4" type="video/mp4"></video>
+ * <video id="vid4" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_gpu2.mp4" type="video/mp4"></video>
  * </div>
- * <a href="#" onclick="hide_show('vector-video-15')" >Simulation dynamic load balancing video 1</a><br>
+ * <a href="#" onclick="hide_show('vector-video-15')" >Simulation video 3</a><br>
  * <div style="display:none" id="vector-video-15">
- * <video id="vid15" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_dlb.mp4" type="video/mp4"></video>
- * </div>
- * <a href="#" onclick="hide_show('vector-video-16')" >Simulation dynamic load balancing video 2</a><br>
- * <div style="display:none" id="vector-video-16">
- * <video id="vid16" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_dlb2.mp4" type="video/mp4"></video>
- * </div>
- * <a href="#" onclick="hide_show('vector-video-17')" >Simulation countour prospective 1</a><br>
- * <div style="display:none" id="vector-video-17">
- * <video id="vid17" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_zoom.mp4" type="video/mp4"></video>
- * </div>
- * <a href="#" onclick="hide_show('vector-video-18')" >Simulation countour prospective 2</a><br>
- * <div style="display:none" id="vector-video-18">
- * <video id="vid18" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_back.mp4" type="video/mp4"></video>
- * </div>
- * <a href="#" onclick="hide_show('vector-video-19')" >Simulation countour prospective 3</a><br>
- * <div style="display:none" id="vector-video-19">
- * <video id="vid19" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_all.mp4" type="video/mp4"></video>
+ * <video id="vid15" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_gpu3.mp4" type="video/mp4"></video>
  * </div>
  * \endhtmlonly
  *
- * \htmlonly
- * <img src="http://ppmcore.mpi-cbg.de/web/images/examples/7_SPH_dlb/dam_break_all.jpg"/>
- * \endhtmlonly
  *
- * ## GPU ## {#e7_sph_inclusion}
- *
- * This example does not differ from the example in \ref{SPH_dlb}
- *
- * \snippet Vector/7_SPH_dlb_gpu/main.cpp inclusion
+ * \snippet Vector/7_SPH_dlb_gpu_opt/main.cpp inclusion
  *
  */
 
@@ -550,7 +525,7 @@ __global__ void verlet_int_gpu(vector_dist_type vd, real_number dt, real_number 
 
     // Check if the particle go out of range in space and in density
     if (vd.getPos(a)[0] <  0.000263878 || vd.getPos(a)[1] < 0.000263878 || vd.getPos(a)[2] < 0.000263878 ||
-        vd.getPos(a)[0] >  0.000263878+1.59947 || vd.getPos(a)[1] > 0.000263878+0.672972 || vd.getPos(a)[2] > 0.000263878+0.903944 ||
+        vd.getPos(a)[0] >  0.000263878+1.59947 || vd.getPos(a)[1] > 0.000263878+0.672972 || vd.getPos(a)[2] > 0.50 ||
 		vd.template getProp<rho>(a) < RhoMin || vd.template getProp<rho>(a) > RhoMax)
     {vd.template getProp<red>(a) = 1;}
     else
@@ -629,7 +604,7 @@ __global__ void euler_int_gpu(vector_type vd,real_number dt, real_number dt205)
 
     // Check if the particle go out of range in space and in density
     if (vd.getPos(a)[0] <  0.000263878 || vd.getPos(a)[1] < 0.000263878 || vd.getPos(a)[2] < 0.000263878 ||
-        vd.getPos(a)[0] >  0.000263878+1.59947 || vd.getPos(a)[1] > 0.000263878+0.672972 || vd.getPos(a)[2] > 0.000263878+0.903944 ||
+        vd.getPos(a)[0] >  0.000263878+1.59947 || vd.getPos(a)[1] > 0.000263878+0.672972 || vd.getPos(a)[2] > 0.50 ||
 		vd.template getProp<rho>(a) < RhoMin || vd.template getProp<rho>(a) > RhoMax)
     {vd.template getProp<red>(a) = 1;}
     else

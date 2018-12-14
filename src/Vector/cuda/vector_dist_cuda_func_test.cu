@@ -166,7 +166,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 	<<<ite.wthr,ite.thr>>>
 	(box_f_dev.toKernel(),box_f_sv.toKernel(),
 	 v_pos.toKernel(),v_prp.toKernel(),
-	 starts.toKernel(),shifts.toKernel(),o_part_loc2.toKernel(),old);
+	 starts.toKernel(),shifts.toKernel(),o_part_loc2.toKernel(),old,v_pos.size());
 
 	v_pos.deviceToHost<0>();
 	o_part_loc2.deviceToHost<0,1>();
@@ -1094,9 +1094,27 @@ void vector_dist_remove_marked_type()
 	// Boundary conditions
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
-	vector_dist_gpu<3,float,aggregate<float,float,int,int>> vd(5000*v_cl.size(),domain,bc,g);
+	vector_dist_gpu<3,float,aggregate<float,float,int,int>> vd(50000*v_cl.size(),domain,bc,g);
+
+	// Fill the position
 
 	auto it = vd.getDomainIterator();
+
+	while(it.isNext())
+	{
+		auto p = it.get();
+
+		vd.getPos(p)[0] = (float)rand() / RAND_MAX;
+		vd.getPos(p)[1] = (float)rand() / RAND_MAX;
+		vd.getPos(p)[2] = (float)rand() / RAND_MAX;
+
+		++it;
+	}
+
+	vd.map();
+	vd.template ghost_get<>();
+
+	it = vd.getDomainIterator();
 
 	float fc = 1.0;
 	float dc = 1.0;

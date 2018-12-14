@@ -1567,6 +1567,12 @@ public:
 	 */
 	template<unsigned int ... prp> void map_list_(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & g_m, size_t opt)
 	{
+		if (opt & RUN_ON_DEVICE)
+		{
+			std::cout << "Error: " << __FILE__ << ":" << __LINE__ << " map_list is unsupported on device (coming soon)" << std::endl;
+			return;
+		}
+
 		typedef KillParticle obp;
 
 		// Processor communication size

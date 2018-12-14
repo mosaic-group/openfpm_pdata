@@ -1,57 +1,37 @@
-/*!
- * \page Vector_7_sph_dlb_gpu Vector 7 SPH Dam break simulation with Dynamic load balacing on GPU
+/*! \page Vector_7_sph_dlb_gpu_opt Vector 7 SPH Dam break simulation with Dynamic load balacing on Multi-GPU (optimized version)
  *
  *
  * [TOC]
  *
  *
- * # SPH with Dynamic load Balancing on GPU # {#SPH_dlb_gpu}
+ * # SPH with Dynamic load Balancing on GPU # {#SPH_dlb_gpu_opt}
  *
  *
- * This example show the classical SPH Dam break simulation with Load Balancing and Dynamic load balancing. With
- * Load balancing and Dynamic load balancing we indicate the possibility of the system to re-adapt the domain
- * decomposition to keep all the processor load and reduce idle time.
+ * This example show the classical SPH Dam break simulation with load balancing and dynamic load balancing. The main difference with
+ * \ref{SPH_dlb} is that here we use GPU and 1.2 Millions particles. Simulate 1.5 second should be duable on a 1050Ti within a couple
+ * of hours.
  *
  * \htmlonly
  * <a href="#" onclick="hide_show('vector-video-3')" >Simulation video 1</a><br>
  * <div style="display:none" id="vector-video-3">
- * <video id="vid3" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_speed.mp4" type="video/mp4"></video>
+ * <video id="vid3" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_gpu1.mp4" type="video/mp4"></video>
  * </div>
  * <a href="#" onclick="hide_show('vector-video-4')" >Simulation video 2</a><br>
  * <div style="display:none" id="vector-video-4">
- * <video id="vid4" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_speed2.mp4" type="video/mp4"></video>
+ * <video id="vid4" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_gpu2.mp4" type="video/mp4"></video>
  * </div>
- * <a href="#" onclick="hide_show('vector-video-15')" >Simulation dynamic load balancing video 1</a><br>
+ * <a href="#" onclick="hide_show('vector-video-15')" >Simulation video 3</a><br>
  * <div style="display:none" id="vector-video-15">
- * <video id="vid15" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_dlb.mp4" type="video/mp4"></video>
- * </div>
- * <a href="#" onclick="hide_show('vector-video-16')" >Simulation dynamic load balancing video 2</a><br>
- * <div style="display:none" id="vector-video-16">
- * <video id="vid16" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_dlb2.mp4" type="video/mp4"></video>
- * </div>
- * <a href="#" onclick="hide_show('vector-video-17')" >Simulation countour prospective 1</a><br>
- * <div style="display:none" id="vector-video-17">
- * <video id="vid17" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_zoom.mp4" type="video/mp4"></video>
- * </div>
- * <a href="#" onclick="hide_show('vector-video-18')" >Simulation countour prospective 2</a><br>
- * <div style="display:none" id="vector-video-18">
- * <video id="vid18" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_back.mp4" type="video/mp4"></video>
- * </div>
- * <a href="#" onclick="hide_show('vector-video-19')" >Simulation countour prospective 3</a><br>
- * <div style="display:none" id="vector-video-19">
- * <video id="vid19" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_all.mp4" type="video/mp4"></video>
+ * <video id="vid15" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_gpu3.mp4" type="video/mp4"></video>
  * </div>
  * \endhtmlonly
  *
- * \htmlonly
- * <img src="http://ppmcore.mpi-cbg.de/web/images/examples/7_SPH_dlb/dam_break_all.jpg"/>
- * \endhtmlonly
  *
  * ## GPU ## {#e7_sph_inclusion}
  *
- * This example does not differ from the example in \ref{SPH_dlb}
+ * This example is the port on GPU of the following example \ref{SPH_dlb}
  *
- * \snippet Vector/7_SPH_dlb_gpu/main.cpp inclusion
+ * \snippet Vector/7_SPH_dlb_gpu_opt/main.cpp inclusion
  *
  */
 
@@ -163,7 +143,7 @@ const int red = 8;
 const int red2 = 9;
 
 // Type of the vector containing particles
-typedef vector_dist_gpu<3,real_number,aggregate<size_t,real_number,  real_number,    real_number,     real_number,     real_number[3], real_number[3], real_number[3], real_number, real_number>> particles;
+typedef vector_dist_gpu<3,real_number,aggregate<unsigned int,real_number,  real_number,    real_number,     real_number,     real_number[3], real_number[3], real_number[3], real_number, real_number>> particles;
 //                                              |          |             |               |                |                |               |               |               |            |
 //                                              |          |             |               |                |                |               |               |               |            |
 //                                             type      density       density        Pressure          delta            force          velocity        velocity        reduction     another
@@ -410,7 +390,7 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 
 	vd.merge_sort<force,drho,red>(NN);
 
-	max_visc = reduce<red,_max_>(vd);
+	max_visc = reduce_local<red,_max_>(vd);
 }
 
 template<typename vector_type>
@@ -432,8 +412,8 @@ void max_acceleration_and_velocity(particles & vd, real_number & max_acc, real_n
 
 	max_acceleration_and_velocity_gpu<<<part.wthr,part.thr>>>(vd.toKernel());
 
-	max_acc = reduce<red,_max_>(vd);
-	max_vel = reduce<red2,_max_>(vd);
+	max_acc = reduce_local<red,_max_>(vd);
+	max_vel = reduce_local<red2,_max_>(vd);
 
 	Vcluster<> & v_cl = create_vcluster();
 	v_cl.max(max_acc);
@@ -509,8 +489,8 @@ __global__ void verlet_int_gpu(vector_dist_type vd, real_number dt, real_number 
 	vd.template getProp<rho>(a) = vd.template getProp<rho_prev>(a) + dt2*vd.template getProp<drho>(a);
 
     // Check if the particle go out of range in space and in density
-    if (vd.getPos(a)[0] <  0.000263878 || vd.getPos(a)[1] < 0.000263878 || vd.getPos(a)[2] < 0.000263878 ||
-        vd.getPos(a)[0] >  0.000263878+1.59947 || vd.getPos(a)[1] > 0.000263878+0.672972 || vd.getPos(a)[2] > 0.000263878+0.903944 ||
+    if (vd.getPos(a)[0] <  0.0 || vd.getPos(a)[1] < 0.0 || vd.getPos(a)[2] < 0.0 ||
+        vd.getPos(a)[0] >  1.61 || vd.getPos(a)[1] > 0.68 || vd.getPos(a)[2] > 0.50 ||
 		vd.template getProp<rho>(a) < RhoMin || vd.template getProp<rho>(a) > RhoMax)
     {vd.template getProp<red>(a) = 1;}
     else
@@ -588,8 +568,8 @@ __global__ void euler_int_gpu(vector_type vd,real_number dt, real_number dt205)
    	vd.template getProp<rho>(a) = vd.template getProp<rho>(a) + dt*vd.template getProp<drho>(a);
 
     // Check if the particle go out of range in space and in density
-    if (vd.getPos(a)[0] <  0.000263878 || vd.getPos(a)[1] < 0.000263878 || vd.getPos(a)[2] < 0.000263878 ||
-        vd.getPos(a)[0] >  0.000263878+1.59947 || vd.getPos(a)[1] > 0.000263878+0.672972 || vd.getPos(a)[2] > 0.000263878+0.903944 ||
+    if (vd.getPos(a)[0] <  0.0 || vd.getPos(a)[1] < 0.0 || vd.getPos(a)[2] < 0.0 ||
+        vd.getPos(a)[0] >  1.61 || vd.getPos(a)[1] > 0.68 || vd.getPos(a)[2] > 0.50 ||
 		vd.template getProp<rho>(a) < RhoMin || vd.template getProp<rho>(a) > RhoMax)
     {vd.template getProp<red>(a) = 1;}
     else
@@ -718,8 +698,8 @@ int main(int argc, char* argv[])
 	probes.add({0.754,0.31,0.02});
 
 	// Here we define our domain a 2D box with internals from 0 to 1.0 for x and y
-	Box<3,real_number> domain({-0.05,-0.05,-0.05},{1.7010,0.7065,0.5025});
-	size_t sz[3] = {413,179,131};
+	Box<3,real_number> domain({-0.05,-0.05,-0.05},{1.7010,0.7065,0.511});
+	size_t sz[3] = {413,179,133};
 
 	// Fill W_dap
 	W_dap = 1.0/Wab(H/1.5);
@@ -939,7 +919,7 @@ int main(int argc, char* argv[])
 			vd.deviceToHostPos();
 			vd.deviceToHostProp<type,rho,rho_prev,Pressure,drho,force,velocity,velocity_prev,red,red2>();
 
-			vd.write_frame("Geometry",write);
+			vd.write_frame("Geometry",write,VTK_WRITER | FORMAT_BINARY);
 			write++;
 
 			if (v_cl.getProcessUnitID() == 0)
