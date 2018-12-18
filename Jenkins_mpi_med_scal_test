@@ -1,6 +1,6 @@
 #!groovy
 
-"cifarm-ubuntu-node" : {node ('cifarm-ubuntu-node')
+node ('cifarm-ubuntu-node')
 {
   deleteDir()
   checkout scm
