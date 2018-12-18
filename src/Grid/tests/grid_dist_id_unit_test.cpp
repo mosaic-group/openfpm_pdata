@@ -290,8 +290,6 @@ void Test1D(const Box<1,float> & domain, long int k)
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 1D grid k=" << k );
 
-		//! [Create and access a distributed grid]
-
 		// grid size
 		size_t sz[1];
 		sz[0] = k;
@@ -328,8 +326,6 @@ void Test1D(const Box<1,float> & domain, long int k)
 
 			++dom;
 		}
-
-		//! [Create and access a distributed grid]
 
 		// Get the virtual cluster machine
 		Vcluster<> & vcl = g_dist.getVC();

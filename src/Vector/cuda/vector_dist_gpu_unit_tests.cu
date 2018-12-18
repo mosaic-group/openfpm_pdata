@@ -430,7 +430,13 @@ void vdist_calc_gpu_test()
 	// Boundary conditions
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
+	//! [Create a gpu vector]
+
 	vector_dist_gpu<3,St,aggregate<St,St[3],St[3]>> vd(1000,domain,bc,g);
+
+	//! [Create a gpu vector]
+
+	//! [Fill gpu vector and move to GPU]
 
 	srand(v_cl.rank()*10000);
 	auto it = vd.getDomainIterator();
@@ -462,6 +468,8 @@ void vdist_calc_gpu_test()
 
 	// Ok we redistribute the particles (GPU based)
 	vd.map(RUN_ON_DEVICE);
+
+	//! [Fill gpu vector and move to GPU]
 
 	vd.deviceToHostPos();
 	vd.template deviceToHostProp<0,1,2>();
@@ -577,7 +585,12 @@ void vdist_calc_gpu_test()
 		}
 
 		vd_cpu.template ghost_get<0,1,2>();
+
+		//! [Fill the ghost on GPU]
+
 		vd.template ghost_get<0,1,2>(RUN_ON_DEVICE);
+
+		//! [Fill the ghost on GPU]
 
 		vd.deviceToHostPos();
 		vd.template deviceToHostProp<0,1,2>();

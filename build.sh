@@ -17,18 +17,19 @@ echo "Branch name: $branch"
 rm -rf $HOME/openfpm_dependencies/openfpm_pdata/0
 
 if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
-	./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/ 4
+	./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_io/$branch/ 4
 	echo 4 > $HOME/openfpm_dependencies/openfpm_pdata/$branch/MPI/version
-	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/full
 fi
 
 if [ x"$hostname" == x"cifarm-ubuntu-node.mpi-cbg.de"  ]; then
-	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/full
+        ./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_io/$branch/ 4
+        echo 4 > $HOME/openfpm_dependencies/openfpm_pdata/$branch/MPI/version
 fi
 
 if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 	export PATH="/usr/local/bin:$PATH"
-	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/full
+        ./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_io/$branch/ 4
+        echo 4 > $HOME/openfpm_dependencies/openfpm_io/$branch/MPI/version
 fi
 
 

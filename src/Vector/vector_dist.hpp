@@ -191,20 +191,29 @@ enum reorder_opt
 
 /*! \brief Distributed vector
  *
- * This class reppresent a distributed vector, the distribution of the structure
+ * This class represent a distributed vector, the distribution of the structure
  * is based on the positional information of the elements the vector store
  *
  * ## Create a vector of random elements on each processor 2D
- * \snippet vector_dist_unit_test.hpp Create a vector of random elements on each processor 2D
+ * \snippet Vector/tests/vector_dist_unit_test.cpp Create a vector of random elements on each processor 2D
  *
  * ## Create a vector of random elements on each processor 3D
- * \snippet vector_dist_unit_test.hpp Create a vector of random elements on each processor 3D
+ * \snippet Vector/tests/vector_dist_unit_test.cpp Create a vector of random elements on each processor 3D
  *
  * ## Create a vector of elements distributed on a grid like way
- * \snippet vector_dist_unit_test.hpp Create a vector of elements distributed on a grid like way
+ * \snippet Vector/tests/vector_dist_unit_test.cpp Create a vector of elements distributed on a grid like way
  *
  * ## Redistribute the particles and sync the ghost properties
- * \snippet vector_dist_unit_test.hpp Redistribute the particles and sync the ghost properties
+ * \snippet Vector/tests/vector_dist_unit_test.cpp Redistribute the particles and sync the ghost properties
+ *
+ * ## Create a gpu distributed vector [St = float or double]
+ * \snippet Vector/cuda/vector_dist_gpu_unit_tests.cu Create a gpu vector
+ *
+ * ## Fill a GPU vector_dist on CPU and move the information to GPU and redistribute [St = float or double]
+ * \snippet Vector/cuda/vector_dist_gpu_unit_tests.cu Fill gpu vector and move to GPU
+ *
+ * ## Fill the ghost on GPU
+ * \snippet Vector/cuda/vector_dist_gpu_unit_tests.cu Fill the ghost on GPU
  *
  * \tparam dim Dimensionality of the space where the elements lives
  * \tparam St type of space float, double ...

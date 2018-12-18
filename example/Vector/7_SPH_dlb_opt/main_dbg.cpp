@@ -1,22 +1,3 @@
-/*!
- * \page Vector_7_sph_dlb_dbg Vector 7 SPH Dam break simulation (Debugging video)
- *
- *
- * [TOC]
- *
- *
- * # SPH with Dynamic load Balancing (Debugging video) # {#SPH_dlb}
- *
- * \htmlonly
- * <img src="http://ppmcore.mpi-cbg.de/web/images/examples/7_SPH_dlb/dam_break_all.jpg"/>
- * \endhtmlonly
- *
- * ## Inclusion ## {#e7_sph_inclusion}
- *
- *
- * \snippet Vector/7_SPH_dlb/main.cpp inclusion
- *
- */
 
 //#define SE_CLASS1
 //#define STOP_ON_ERROR

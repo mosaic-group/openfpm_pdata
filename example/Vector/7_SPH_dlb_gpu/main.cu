@@ -8,7 +8,7 @@
  *
  *
  * This example show the classical SPH Dam break simulation with load balancing and dynamic load balancing. The main difference with
- * \ref{SPH_dlb} is that here we use GPU and 1.2 Millions particles.
+ * \ref SPH_dlb is that here we use GPUs and 1.2 Millions particles.
  *
  * \htmlonly
  * <a href="#" onclick="hide_show('vector-video-3')" >Simulation video 1</a><br>
@@ -25,8 +25,21 @@
  * </div>
  * \endhtmlonly
  *
+ * This example use all the features explained in example \ref e3_md_gpu. Additionally this example show how to remove particles
+ * on GPU using a bulk remove function on GPU
  *
- * \snippet Vector/7_SPH_dlb_gpu_opt/main.cpp inclusion
+ * ## Bulk remove
+ *
+ * On SPH we have the necessity to remove particles that go out of bound. OpenFPM provide the function \b remove_marked \b .
+ *
+ * \snippet Vector/7_SPH_dlb_gpu/main.cu remove_marked_part
+ *
+ * where vd is the vector_dist_gpu red is the property that mark which particle must be removed. We mark the particle to be removed in the function kernel
+ * We check if the particle go out of the region of interest or their density go critically far from the rest density
+ *
+ * \snippet Vector/7_SPH_dlb_gpu/main.cu mark_to_remove_kernel
+ *
+ * \include Vector/7_SPH_dlb_gpu_opt/main.cu
  *
  */
 
@@ -523,7 +536,9 @@ __global__ void verlet_int_gpu(vector_dist_type vd, real_number dt, real_number 
 	vd.template getProp<velocity>(a)[2] = vd.template getProp<velocity_prev>(a)[2] + vd.template getProp<force>(a)[2]*dt2;
 	vd.template getProp<rho>(a) = vd.template getProp<rho_prev>(a) + dt2*vd.template getProp<drho>(a);
 
-    // Check if the particle go out of range in space and in density
+	//! \cond [mark_to_remove_kernel] \endcond
+
+    // Check if the particle go out of range in space and in density, if they do mark them to remove it later
     if (vd.getPos(a)[0] <  0.000263878 || vd.getPos(a)[1] < 0.000263878 || vd.getPos(a)[2] < 0.000263878 ||
         vd.getPos(a)[0] >  0.000263878+1.59947 || vd.getPos(a)[1] > 0.000263878+0.672972 || vd.getPos(a)[2] > 0.50 ||
 		vd.template getProp<rho>(a) < RhoMin || vd.template getProp<rho>(a) > RhoMax)
@@ -531,6 +546,7 @@ __global__ void verlet_int_gpu(vector_dist_type vd, real_number dt, real_number 
     else
     {vd.template getProp<red>(a) = 0;}
 
+    //! \cond [mark_to_remove_kernel] \endcond
 
     vd.template getProp<velocity_prev>(a)[0] = velX;
     vd.template getProp<velocity_prev>(a)[1] = velY;
@@ -550,8 +566,12 @@ void verlet_int(particles & vd, real_number dt)
 
 	verlet_int_gpu<<<part.wthr,part.thr>>>(vd.toKernel(),dt,dt2,dt205);
 
+	//! \cond [remove_marked_part] \endcond
+
 	// remove the particles marked
 	remove_marked<red>(vd);
+
+	//! \cond [remove_marked_part] \endcond
 
 	// increment the iteration counter
 	cnt++;

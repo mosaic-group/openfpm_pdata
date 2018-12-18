@@ -4,7 +4,7 @@
  * [TOC]
  *
  *
- * # SPH with Dynamic load Balancing on GPU # {#SPH_dlb_gpu_opt}
+ * # SPH with Dynamic load Balancing on GPU (Optimized) # {#SPH_dlb_gpu_opt}
  *
  *
  * This example show the classical SPH Dam break simulation with load balancing and dynamic load balancing. The main difference with
@@ -29,9 +29,11 @@
  *
  * ## GPU ## {#e7_sph_inclusion}
  *
- * This example is the port on GPU of the following example \ref{SPH_dlb}
+ * This example is an optimization of the example \ref SPH_dlb_gpu all the optimization operated on this example has been explained
+ * here \ref e3_md_gpu_opt so we will not go into the details
  *
- * \snippet Vector/7_SPH_dlb_gpu_opt/main.cpp inclusion
+ * we report the full code here
+ *
  *
  */
 
