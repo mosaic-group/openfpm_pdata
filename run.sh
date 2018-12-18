@@ -3,11 +3,15 @@
 # Make a directory in /tmp/OpenFPM_pdata
 
 workspace=$1
-hostname=$2
+hostname=$(hostname)
 nproc=$3
 ntask_per_node=$5
 nodes=$4
 branch=$6
+
+if [ x"$branch" == x"" ]; then
+  branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
+fi
 
 echo "Directory: workspace"
 echo "Machine: $hostname"

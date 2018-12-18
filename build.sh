@@ -8,13 +8,16 @@ target=$3
 comp_type=$4
 branch=$5
 
+if [ x"$branch" == x"" ]; then
+  branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
+fi
+
 echo "Directory: $workspace"
 echo "Machine: $hostname"
 echo "make target: $target"
 echo "compilation type: $comp_type"
 echo "Branch name: $branch"
 
-rm -rf $HOME/openfpm_dependencies/openfpm_pdata/0
 
 if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
 	./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_io/$branch/ 4
@@ -30,11 +33,6 @@ if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 	export PATH="/usr/local/bin:$PATH"
         ./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_io/$branch/ 4
         echo 4 > $HOME/openfpm_dependencies/openfpm_io/$branch/MPI/version
-fi
-
-
-if [ x"$branch" == x"" ]; then
-  branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
 fi
 
 #### If you have a dep_dir file change the branch name to the dep_dir
