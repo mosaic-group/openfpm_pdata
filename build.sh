@@ -9,6 +9,7 @@ comp_type=$4
 branch=$5
 
 if [ x"$branch" == x"" ]; then
+  echo "Getting branch from git"
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
 fi
 
