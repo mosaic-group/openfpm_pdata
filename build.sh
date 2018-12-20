@@ -21,7 +21,6 @@ echo "Branch name: $branch"
 
 
 if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then 
-	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
 	./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/ 4
 	echo 4 > $HOME/openfpm_dependencies/openfpm_pdata/$branch/MPI/version
 fi

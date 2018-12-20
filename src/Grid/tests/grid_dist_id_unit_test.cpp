@@ -1212,7 +1212,7 @@ void Test3D_periodic(const Box<3,float> & domain, long int k)
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
 	{
-		BOOST_TEST_CHECKPOINT( "Testing grid periodick<=" << k );
+		BOOST_TEST_CHECKPOINT( "Testing grid periodic k<=" << k );
 
 		// grid size
 		size_t sz[3];

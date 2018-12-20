@@ -242,7 +242,8 @@ class ParMetisDistribution
 
 		//! Prepare vector of arrays to contain all partitions
 		partitions.get(p_id).resize(nl_vertex);
-		std::copy(partition, partition + nl_vertex, &partitions.get(p_id).get(0));
+		if (nl_vertex != 0)
+		{std::copy(partition, partition + nl_vertex, &partitions.get(p_id).get(0));}
 
 		// Reset data structure to keep trace of new vertices distribution in processors (needed to update main graph)
 		for (size_t i = 0; i < Np; ++i)

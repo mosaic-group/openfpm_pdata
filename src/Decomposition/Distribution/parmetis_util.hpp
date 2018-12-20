@@ -328,7 +328,7 @@ public:
 		}
 
 		if (is_openfpm_init() == true)
-			MPI_Comm_free(&comm);
+		{MPI_Comm_free(&comm);}
 	}
 
 	/*! \brief Set the Sub-graph
