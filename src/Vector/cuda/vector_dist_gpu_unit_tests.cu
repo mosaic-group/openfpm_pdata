@@ -896,12 +896,6 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda)
 
 			match &= vd.template getProp<0>(p) == VV2.getNNPart(p.getKey());
 
-			if (match == false)
-			{
-				std::cout << vd.template getProp<0>(p) << "   " << VV2.getNNPart(p.getKey()) << std::endl;
-				break;
-			}
-
 			++it2;
 		}
 
@@ -931,6 +925,232 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda)
 			double load_fc = loads.get(i);
 
 			BOOST_REQUIRE_CLOSE(load_f,load_fc,10.0);
+		}
+	}
+}
+
+BOOST_AUTO_TEST_CASE(vector_dist_keep_prop_on_cuda)
+{
+	typedef vector_dist_gpu<3,double,aggregate<double,double[3],double[3][3]>> vector_type;
+
+	Vcluster<> & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 8)
+		return;
+
+	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Ghost<3,double> g(0.1);
+	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
+
+	vector_type vd(0,domain,bc,g,DEC_GRAN(2048));
+
+	// Only processor 0 initialy add particles on a corner of a domain
+
+	if (v_cl.getProcessUnitID() == 0)
+	{
+		for(size_t i = 0 ; i < 50000 ; i++)
+		{
+			vd.add();
+
+			vd.getLastPos()[0] = ((double)rand())/RAND_MAX * 0.3;
+			vd.getLastPos()[1] = ((double)rand())/RAND_MAX * 0.3;
+			vd.getLastPos()[2] = ((double)rand())/RAND_MAX * 0.3;
+		}
+	}
+
+	// Move to GPU
+	vd.hostToDevicePos();
+	vd.template hostToDeviceProp<0>();
+
+	vd.map(RUN_ON_DEVICE);
+	vd.template ghost_get<>(RUN_ON_DEVICE);
+
+	// now move to CPU
+
+	vd.deviceToHostPos();
+	vd.template deviceToHostProp<0>();
+
+	// Get the neighborhood of each particles
+
+	auto VV = vd.getVerlet(0.01);
+
+	// store the number of neighborhood for each particles
+
+	auto it = vd.getDomainIterator();
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+
+		vd.template getProp<0>(p) = 0.0;
+
+		vd.template getProp<1>(p)[0] = 1000.0;
+		vd.template getProp<1>(p)[1] = 2000.0;
+		vd.template getProp<1>(p)[2] = 3000.0;
+
+		vd.template getProp<2>(p)[0][0] = 6000,0;
+		vd.template getProp<2>(p)[0][1] = 7000.0;
+		vd.template getProp<2>(p)[0][2] = 8000.0;
+		vd.template getProp<2>(p)[1][0] = 9000.0;
+		vd.template getProp<2>(p)[1][1] = 10000.0;
+		vd.template getProp<2>(p)[1][2] = 11000.0;
+		vd.template getProp<2>(p)[2][0] = 12000.0;
+		vd.template getProp<2>(p)[2][1] = 13000.0;
+		vd.template getProp<2>(p)[2][2] = 14000.0;
+
+		++it;
+	}
+
+	// Move to GPU
+	vd.template hostToDeviceProp<0,1,2>();
+
+	ModelSquare md;
+	md.factor = 10;
+	vd.addComputationCosts(md);
+	vd.getDecomposition().decompose();
+	vd.map(RUN_ON_DEVICE);
+
+	vd.deviceToHostPos();
+	// Move info to CPU for addComputationcosts
+
+	vd.addComputationCosts(md);
+
+	openfpm::vector<size_t> loads;
+	size_t load = vd.getDecomposition().getDistribution().getProcessorLoad();
+	v_cl.allGather(load,loads);
+	v_cl.execute();
+
+	for (size_t i = 0 ; i < loads.size() ; i++)
+	{
+		double load_f = load;
+		double load_fc = loads.get(i);
+
+		BOOST_REQUIRE_CLOSE(load_f,load_fc,7.0);
+	}
+
+	BOOST_REQUIRE(vd.size_local() != 0);
+
+	Point<3,double> v({1.0,1.0,1.0});
+
+	int base = 0;
+
+	for (size_t i = 0 ; i < 25 ; i++)
+	{
+		// move particles to CPU and move the particles by 0.1
+
+		vd.deviceToHostPos();
+
+		if (i % 2 == 0)
+		{
+
+			auto it = vd.getDomainIterator();
+
+			while (it.isNext())
+			{
+				auto p = it.get();
+
+				vd.getPos(p)[0] += v.get(0) * 0.09;
+				vd.getPos(p)[1] += v.get(1) * 0.09;
+				vd.getPos(p)[2] += v.get(2) * 0.09;
+
+				++it;
+			}
+
+			//Back to GPU
+			vd.hostToDevicePos();
+			vd.map(RUN_ON_DEVICE);
+			vd.template ghost_get<>(RUN_ON_DEVICE);
+			vd.deviceToHostPos();
+			vd.template deviceToHostProp<0,1,2>();
+
+			ModelSquare md;
+			vd.addComputationCosts(md);
+			vd.getDecomposition().redecompose(200);
+			vd.map(RUN_ON_DEVICE);
+
+			BOOST_REQUIRE(vd.size_local() != 0);
+
+			vd.template ghost_get<0>(RUN_ON_DEVICE);
+			vd.deviceToHostPos();
+			vd.template deviceToHostProp<0,1,2>();
+
+			vd.addComputationCosts(md);
+
+			openfpm::vector<size_t> loads;
+			size_t load = vd.getDecomposition().getDistribution().getProcessorLoad();
+			v_cl.allGather(load,loads);
+			v_cl.execute();
+
+			for (size_t i = 0 ; i < loads.size() ; i++)
+			{
+				double load_f = load;
+				double load_fc = loads.get(i);
+
+				BOOST_REQUIRE_CLOSE(load_f,load_fc,10.0);
+			}
+		}
+		else
+		{
+
+			auto it2 = vd.getDomainIterator();
+
+			bool match = true;
+			while (it2.isNext())
+			{
+				auto p = it2.get();
+
+				vd.template getProp<0>(p) += 1;
+
+				vd.template getProp<1>(p)[0] += 1.0;
+				vd.template getProp<1>(p)[1] += 1.0;
+				vd.template getProp<1>(p)[2] += 1.0;
+
+				vd.template getProp<2>(p)[0][0] += 1.0;
+				vd.template getProp<2>(p)[0][1] += 1.0;
+				vd.template getProp<2>(p)[0][2] += 1.0;
+				vd.template getProp<2>(p)[1][0] += 1.0;
+				vd.template getProp<2>(p)[1][1] += 1.0;
+				vd.template getProp<2>(p)[1][2] += 1.0;
+				vd.template getProp<2>(p)[2][0] += 1.0;
+				vd.template getProp<2>(p)[2][1] += 1.0;
+				vd.template getProp<2>(p)[2][2] += 1.0;
+
+				++it2;
+			}
+
+			++base;
+
+			vd.template ghost_get<0,1,2>(RUN_ON_DEVICE | KEEP_PROPERTIES);
+			vd.template deviceToHostProp<0,1,2>();
+
+			// Check that the ghost contain the correct information
+
+			auto itg = vd.getGhostIterator();
+
+			while (itg.isNext())
+			{
+				auto p = itg.get();
+
+				match &= vd.template getProp<0>(p) == base;
+
+				match &= vd.template getProp<1>(p)[0] == base + 1000.0;
+				match &= vd.template getProp<1>(p)[1] == base + 2000.0;
+				match &= vd.template getProp<1>(p)[2] == base + 3000.0;
+
+				match &= vd.template getProp<2>(p)[0][0] == base + 6000.0;
+				match &= vd.template getProp<2>(p)[0][1] == base + 7000.0;
+				match &= vd.template getProp<2>(p)[0][2] == base + 8000.0;
+				match &= vd.template getProp<2>(p)[1][0] == base + 9000.0;
+				match &= vd.template getProp<2>(p)[1][1] == base + 10000.0;
+				match &= vd.template getProp<2>(p)[1][2] == base + 11000.0;
+				match &= vd.template getProp<2>(p)[2][0] == base + 12000.0;
+				match &= vd.template getProp<2>(p)[2][1] == base + 13000.0;
+				match &= vd.template getProp<2>(p)[2][2] == base + 14000.0;
+
+				++itg;
+			}
+
+			BOOST_REQUIRE_EQUAL(match,true);
 		}
 	}
 }

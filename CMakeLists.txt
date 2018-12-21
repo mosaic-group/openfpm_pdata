@@ -41,6 +41,13 @@ set(HDF5_PREFER_PARALLEL TRUE)
 if(ENABLE_GPU)
 	enable_language(CUDA)
 	find_package(CUDA)
+
+	if (CUDA_VERSION_MAJOR EQUAL 9 AND CUDA_VERSION_MINOR EQUAL 2)
+		message("CUDA is compatible")
+	else()
+		message(FATAL_ERROR "CUDA is incompatible, version 9.2 is only supported")
+	endif()
+
 endif()
 
 
