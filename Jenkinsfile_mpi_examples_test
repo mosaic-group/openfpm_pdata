@@ -2,22 +2,22 @@
 
 parallel (
 
-"gin" : {node ('gin')
+"cifarm-ubuntu-node" : {node ('cifarm-ubuntu-node')
         {
          deleteDir()
          checkout scm
-         stage ('build_gin')
+         stage ('build ubuntu')
          {
           sh "./build.sh $WORKSPACE $NODE_NAME pdata full  && make install"
          }
 
-         stage ('run_example_gin')
+         stage ('run example ubuntu')
          {
           sh "export PATH=\"/usr/local/binutils/bin/:$PATH\" && source $HOME/openfpm_vars_master && cd example && make"
          }
        }},
 
-"sb15" : {node ('sbalzarini-mac-15')
+"cifarm-mac-node" : {node ('cifarm-mac-node')
          {
           deleteDir()
           checkout scm
@@ -32,6 +32,23 @@ parallel (
            sh "source $HOME/openfpm_vars_master && cd example && make"
 	  }
          }
+         },
+
+"cifarm-centos-node" : {node ('cifarm-centos-node')
+        {
+         deleteDir()
+         checkout scm
+         stage ('build centos')
+         {
+          sh "./build.sh $WORKSPACE $NODE_NAME pdata full  && make install"
          }
+
+         stage ('run example centos')
+         {
+          sh "export PATH=\"/usr/local/binutils/bin/:$PATH\" && source $HOME/openfpm_vars_master && cd example && make"
+         }
+       }},
+
+
 )
 

@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
 	// and non-periodic boundary conditions
 	//
 	openfpm_init(&argc,&argv);
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
     size_t bc[1]={NON_PERIODIC};
 	Ghost<1,double> g(12*eps);

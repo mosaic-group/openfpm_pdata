@@ -44,15 +44,27 @@ constexpr int z = 2;
 constexpr unsigned int phi = 0;
 
 // The type of the grids
-typedef grid_dist_id<3,float,aggregate<float[3]>,CartDecomposition<3,float,HeapMemory,SpaceDistribution<3,float>>> grid_type;
+typedef grid_dist_id<3,float,aggregate<float[3]>,CartDecomposition<3,float,HeapMemory,memory_traits_lin,SpaceDistribution<3,float>>> grid_type;
 
 // The type of the grids
-typedef grid_dist_id<3,float,aggregate<float>,CartDecomposition<3,float,HeapMemory,SpaceDistribution<3,float>>> grid_type_s;
+typedef grid_dist_id<3,float,aggregate<float>,CartDecomposition<3,float,HeapMemory,memory_traits_lin,SpaceDistribution<3,float>>> grid_type_s;
 
 // The type of the particles
-typedef vector_dist<3,float,aggregate<float[3],float[3],float[3],float[3],float[3]>,memory_traits_lin<aggregate<float[3],float[3],float[3],float[3],float[3]>>::type,memory_traits_lin,CartDecomposition<3,float,HeapMemory,SpaceDistribution<3,float>>> particles_type;
+typedef vector_dist<3,
+		            float,
+		            aggregate<float[3],float[3],float[3],float[3],float[3]>,
+		            CartDecomposition<3,float,HeapMemory,
+		                              memory_traits_lin,SpaceDistribution<3,float>>,
+		            HeapMemory,
+		            memory_traits_lin> particles_type;
 
-typedef vector_dist<3,float,aggregate<float>,memory_traits_lin<aggregate<float>>::type,memory_traits_lin,CartDecomposition<3,float,HeapMemory,SpaceDistribution<3,float>>> particles_type_s;
+typedef vector_dist<3,
+					float,
+					aggregate<float>,
+					CartDecomposition<3,float,HeapMemory,
+					                  memory_traits_lin,SpaceDistribution<3,float>>,
+					HeapMemory,
+					memory_traits_lin> particles_type_s;
 
 // radius of the torus
 float ringr1 = 1.0;
@@ -112,7 +124,7 @@ template<typename grid> void calc_and_print_max_div_and_int(grid & g_vort)
 		++it5;
 	}
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 	v_cl.max(max_vort);
 	v_cl.sum(int_vort[0]);
 	v_cl.sum(int_vort[1]);
@@ -202,7 +214,7 @@ struct poisson_nn_helm
 const bool poisson_nn_helm::boundary[] = {PERIODIC,PERIODIC,PERIODIC};
 
 
-void helmotz_hodge_projection(grid_dist_id<3,float,aggregate<float>,CartDecomposition<3,float,HeapMemory,SpaceDistribution<3,float>>> & psi,
+void helmotz_hodge_projection(grid_dist_id<3,float,aggregate<float>,CartDecomposition<3,float,HeapMemory,memory_traits_lin,SpaceDistribution<3,float>>> & psi,
 							  FDScheme<poisson_nn_helm> & fd,
 							  grid_type & gr,
 							  const Box<3,float> & domain,
