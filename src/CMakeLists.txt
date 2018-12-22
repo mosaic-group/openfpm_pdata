@@ -55,6 +55,7 @@ target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config
 target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_devices/src/)
 target_include_directories (ofpm_pdata PUBLIC ${Boost_INCLUDE_DIRS})
 
+target_compile_definitions(pdata PRIVATE ${MPI_VENDOR})
 
 if(PETSC_FOUND)
 	target_link_libraries(pdata ${PETSC_LIBRARIES})

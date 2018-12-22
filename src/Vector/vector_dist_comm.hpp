@@ -20,9 +20,6 @@
 #include "Vector/util/vector_dist_funcs.hpp"
 #include "cuda/vector_dist_comm_util_funcs.cuh"
 
-#define SKIP_LABELLING 512
-#define KEEP_PROPERTIES 512
-
 #define NO_POSITION 1
 #define WITH_POSITION 2
 #define NO_CHANGE_ELEMENTS 4
@@ -1493,8 +1490,16 @@ public:
 				size_t opt_ = compute_options(opt);
 				if (opt & SKIP_LABELLING)
 				{
-					op_ssend_gg_recv_merge opm(g_m);
-					v_cl.template SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
+					if (opt & RUN_ON_DEVICE)
+					{
+						op_ssend_gg_recv_merge_run_device opm(g_m);
+						v_cl.template SSendRecvP_op<op_ssend_gg_recv_merge_run_device,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
+					}
+					else
+					{
+						op_ssend_gg_recv_merge opm(g_m);
+						v_cl.template SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
+					}
 				}
 				else
 				{v_cl.template SSendRecvP<send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get,recv_sz_get_byte,opt_);}

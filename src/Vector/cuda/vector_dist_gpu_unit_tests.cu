@@ -970,9 +970,6 @@ BOOST_AUTO_TEST_CASE(vector_dist_keep_prop_on_cuda)
 	vd.deviceToHostPos();
 	vd.template deviceToHostProp<0>();
 
-	// Get the neighborhood of each particles
-
-	auto VV = vd.getVerlet(0.01);
 
 	// store the number of neighborhood for each particles
 
@@ -1036,12 +1033,11 @@ BOOST_AUTO_TEST_CASE(vector_dist_keep_prop_on_cuda)
 
 	for (size_t i = 0 ; i < 25 ; i++)
 	{
-		// move particles to CPU and move the particles by 0.1
-
-		vd.deviceToHostPos();
-
 		if (i % 2 == 0)
 		{
+			// move particles to CPU and move the particles by 0.1
+
+			vd.deviceToHostPos();
 
 			auto it = vd.getDomainIterator();
 
@@ -1091,6 +1087,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_keep_prop_on_cuda)
 		}
 		else
 		{
+			vd.template deviceToHostProp<0,1,2>();
 
 			auto it2 = vd.getDomainIterator();
 
@@ -1117,6 +1114,8 @@ BOOST_AUTO_TEST_CASE(vector_dist_keep_prop_on_cuda)
 
 				++it2;
 			}
+
+			vd.template hostToDeviceProp<0,1,2>();
 
 			++base;
 

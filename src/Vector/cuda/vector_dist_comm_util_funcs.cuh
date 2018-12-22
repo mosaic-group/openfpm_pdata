@@ -8,6 +8,9 @@
 #ifndef VECTOR_DIST_COMM_UTIL_FUNCS_HPP_
 #define VECTOR_DIST_COMM_UTIL_FUNCS_HPP_
 
+#define SKIP_LABELLING 512
+#define KEEP_PROPERTIES 512
+
 template<unsigned int dim, typename St, typename prop, typename Memory, template<typename> class layout_base, typename Decomposition, typename scan_type, bool is_ok_cuda>
 struct labelParticlesGhost_impl
 {
@@ -195,7 +198,11 @@ struct local_ghost_from_opart_impl<with_pos,dim,St,prop,Memory,layout_base,true>
 				size_t old = v_pos.size();
 
 				v_pos.resize(v_pos.size() + o_part_loc.size(),DATA_ON_DEVICE);
-				v_prp.resize(v_prp.size() + o_part_loc.size(),DATA_ON_DEVICE);
+
+				if (!(opt & SKIP_LABELLING))
+				{
+					v_prp.resize(v_prp.size() + o_part_loc.size(),DATA_ON_DEVICE);
+				}
 
 				process_ghost_particles_local<with_pos,dim,decltype(o_part_loc.toKernel()),decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(shifts.toKernel())>
 				<<<ite.wthr,ite.thr>>>
