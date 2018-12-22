@@ -1,0 +1,37 @@
+#!groovy
+
+parallel (
+
+"gin" : {node ('gin')
+        {
+         deleteDir()
+         checkout scm
+         stage ('build_gin')
+         {
+          sh "./build.sh $WORKSPACE $NODE_NAME pdata full  && make install"
+         }
+
+         stage ('run_example_gin')
+         {
+          sh "export PATH=\"/usr/local/binutils/bin/:$PATH\" && source $HOME/openfpm_vars_master && cd example && make"
+         }
+       }},
+
+"sb15" : {node ('sbalzarini-mac-15')
+         {
+          deleteDir()
+          checkout scm
+          env.PATH = "/usr/local/bin:${env.PATH}"
+          stage ('build_sb15')
+          {
+           sh "./build.sh $WORKSPACE $NODE_NAME pdata full && make install"
+          }
+
+          stage ('run_example_sb15')
+          {
+           sh "source $HOME/openfpm_vars_master && cd example && make"
+	  }
+         }
+         }
+)
+
