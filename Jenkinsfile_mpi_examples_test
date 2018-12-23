@@ -22,7 +22,7 @@ parallel (
           deleteDir()
           checkout scm
           env.PATH = "/usr/local/bin:${env.PATH}"
-          stage ('build_sb15')
+          stage ('build mac')
           {
            sh "./build.sh $WORKSPACE $NODE_NAME pdata full && make install"
           }
