@@ -1,7 +1,15 @@
 include ../../example.mk
 
+CUDA_CC=
+ifeq (, $(shell which nvcc))
+        CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
+        INCLUDE_PATH_NVCC=
+else
+        CUDA_CC=nvcc
+endif
+
 CC_SCOREP=scorep --nocompiler  --cuda --mpp=mpi nvcc
-CC=nvcc #${CC_SCOREP}
+CC=$(CUDA_CC) #${CC_SCOREP}
 CC_MPI=mpic++
 
 LDIR =

@@ -43,6 +43,8 @@
  *
  */
 
+#ifdef __NVCC__
+
 #include "Vector/vector_dist.hpp"
 #include <math.h>
 #include "Draw/DrawParticles.hpp"
@@ -991,3 +993,11 @@ int main(int argc, char* argv[])
 	openfpm_finalize();
 }
  
+#else
+
+int main(int argc, char* argv[])
+{
+        return 0;
+}
+
+#endif

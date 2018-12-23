@@ -425,15 +425,15 @@ elif [ -d "$i_dir/HDF5/lib64" ]; then
 fi
 
 echo "INCLUDE_PATH=-Wno-deprecated-declarations $openmp_flags  -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" > example.mk
-echo "LIBS_PATH= $openmp_flags -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib -L$hdf5_lib -L$i_dir/LIBHILBERT/lib  $lin_alg_dir" >> example.mk
+echo "LIBS_PATH= $openmp_flags -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib -L$hdf5_lib -L$i_dir/LIBHILBERT/lib  $lin_alg_dir " >> example.mk
 if [ x"$gpu_support" == x"1" ]; then
-    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lhdf5 -llibhilbert $(cat cuda_lib) $lin_alg_lib" >> example.mk
+    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lhdf5 -llibhilbert $(cat cuda_lib) $lin_alg_lib $(cat mpi_libs) -ldl" >> example.mk
     echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lhdf5 -llibhilbert $(cat cuda_lib) $lin_alg_lib" >> example.mk
 else
-    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lhdf5 -llibhilbert  $lin_alg_lib" >> example.mk
+    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lhdf5 -llibhilbert  $lin_alg_lib $(cat mpi_libs) -ldl" >> example.mk
     echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lhdf5 -llibhilbert $lin_alg_lib" >> example.mk
 fi
-echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" $(cat openmp_flags) -Xcudafe \"--display_error_number --diag_suppress=2885  --diag_suppress=2886 --diag_suppress=2887  --diag_suppress=2888 --diag_suppress=186 --diag_suppress=111\" --expt-extended-lambda -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" >> example.mk
+echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" $(cat openmp_flags) -Xcudafe \"--display_error_number --diag_suppress=2885  --diag_suppress=2886 --diag_suppress=2887  --diag_suppress=2888 --diag_suppress=186 --diag_suppress=111\" --expt-extended-lambda -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc -I$(cat mpi_include_dirs)" >> example.mk
 cp example.mk src/example.mk
 cp example.mk example/example.mk
 
@@ -534,7 +534,8 @@ else
   installation_report="$installation_report \033[91;1mOPENBLAS\033[0m Installed: \033[1m NO \033[0m\n"
 fi
 
-if [ -d "$i_dir/SUITESPARSE" ]; then
+
+if [ -d "$i_dir/SUITESPARSE"  -a -f "$i_dir/SUITESPARSE/include/umfpack.h" ]; then
   installation_report="$installation_report \033[92;1mSUITESPARSE\033[0m Installed: \033[1m $i_dir/SUITESPARSE \033[0m\n"
   bash_library="$bash_library:$i_dir/SUITESPARSE/lib"
 else
@@ -576,8 +577,8 @@ fi
 echo ""
 echo -e "\033[1m source $HOME/openfpm_vars \033[0m"
 echo ""
-echo -e "\033[91;1m if you have in your .bashrc or .bash_profile old openfpm setting, please remove it\033[0m"
 echo ""
+echo -e "Remember to do: \033[91;5;1m make install \033[0m"
 echo ""
 if [ x"$inst_lin_alg" == "y" -a x"$lin_alg_installed" == x"" ]; then
   conf_err=1
