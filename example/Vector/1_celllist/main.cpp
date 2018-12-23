@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
 	//! \cond [Initialization and parameters] \endcond
 
 	openfpm_init(&argc,&argv);
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	// we will place the particles on a grid like way with 128 particles on each direction
 	size_t sz[3] = {128,128,128};

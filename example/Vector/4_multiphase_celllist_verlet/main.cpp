@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
 	openfpm_init(&argc,&argv);
 
 	// Vcluster for general usage
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	// The domain
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});

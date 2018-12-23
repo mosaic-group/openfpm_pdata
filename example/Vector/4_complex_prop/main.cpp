@@ -284,7 +284,7 @@ int main(int argc, char* argv[])
 
 	size_t fg = vd.size_local();
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 	if (v_cl.getProcessUnitID() == 0)
 	{
 		for ( ; fg < vd.size_local()+4 ; fg++)

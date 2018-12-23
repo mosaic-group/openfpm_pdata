@@ -153,6 +153,10 @@ else()
 	message( FATAL_ERROR "LibHilbert is required in order to install OpenFPM")
 endif()
 
+if(SUITESPARSE_FOUND)
+	set(DEFINE_HAVE_SUITESPARSE "#define HAVE_SUITESPARSE")
+endif()
+
 if(APPLE)
 	set(DEFINE_HAVE_OSX "#define HAVE_OSX")
 endif()

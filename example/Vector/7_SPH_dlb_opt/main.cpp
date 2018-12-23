@@ -641,7 +641,7 @@ void max_acceleration_and_velocity(particles & vd, double & max_acc, double & ma
 	max_acc = sqrt(max_acc);
 	max_vel = sqrt(max_vel);
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 	v_cl.max(max_acc);
 	v_cl.max(max_vel);
 	v_cl.execute();
@@ -757,7 +757,7 @@ void verlet_int(particles & vd, double dt, double & max_disp)
 
 	/*! \cond [max_across_proc] \endcond */
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 	v_cl.max(max_disp);
 	v_cl.execute();
 
@@ -848,7 +848,7 @@ void euler_int(particles & vd, double dt, double & max_disp)
 		++part;
 	}
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 	v_cl.max(max_disp);
 	v_cl.execute();
 
@@ -1040,7 +1040,7 @@ int main(int argc, char* argv[])
 	double max_disp;
 	while (t <= t_end)
 	{
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 		timer it_time;
 
 		/*! \cond [update_verlet] \endcond */

@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 	//! \cond [initialization] \endcond
 
 	openfpm_init(&argc,&argv);
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 	
 	//! \cond [initialization] \endcond
 

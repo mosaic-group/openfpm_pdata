@@ -393,7 +393,7 @@ int main(int argc, char* argv[])
 
 	// Get the maximum across processor to calculate the norm infinity of the error
 	// Norm infinity of the error is the maximum error across all the grid points
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 	v_cl.max(error);
 	v_cl.execute();
 

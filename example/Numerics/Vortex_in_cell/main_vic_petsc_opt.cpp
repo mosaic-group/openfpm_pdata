@@ -406,7 +406,7 @@ void comp_vel(grid_type_s & gr_ps,
 		solError serr;
 		serr = solver.get_residual_error(phi_s[i],b);
 
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 		if (v_cl.getProcessUnitID() == 0)
 		{std::cout << "Solved component " << i << "  Error: " << serr.err_inf << std::endl;}
 
@@ -665,7 +665,7 @@ template<typename vector, typename grid> void check_point_and_save(vector & part
 																   grid & g_dvort,
 																   size_t i)
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() < 24)
 	{
@@ -775,7 +775,7 @@ int main(int argc, char* argv[])
 	Vector<double,PETSC_BASE> x_;
 
 	// Parallel object
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	// print out the spacing of the grid
 	if (v_cl.getProcessUnitID() == 0)

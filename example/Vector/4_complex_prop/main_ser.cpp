@@ -504,7 +504,7 @@ int main(int argc, char* argv[])
 
 	size_t fg = vd.size_local();
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	// Only the master processor print
 	if (v_cl.getProcessUnitID() == 0)

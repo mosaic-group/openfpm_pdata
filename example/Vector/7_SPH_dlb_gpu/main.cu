@@ -438,7 +438,7 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 
 	calc_forces_gpu<<<part.wthr,part.thr>>>(vd.toKernel(),NN.toKernel(),W_dap,cbar);
 
-	max_visc = reduce<red,_max_>(vd);
+	max_visc = reduce_local<red,_max_>(vd);
 }
 
 template<typename vector_type>
@@ -460,8 +460,8 @@ void max_acceleration_and_velocity(particles & vd, real_number & max_acc, real_n
 
 	max_acceleration_and_velocity_gpu<<<part.wthr,part.thr>>>(vd.toKernel());
 
-	max_acc = reduce<red,_max_>(vd);
-	max_vel = reduce<red2,_max_>(vd);
+	max_acc = reduce_local<red,_max_>(vd);
+	max_vel = reduce_local<red2,_max_>(vd);
 
 	Vcluster<> & v_cl = create_vcluster();
 	v_cl.max(max_acc);

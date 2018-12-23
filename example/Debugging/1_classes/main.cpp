@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
 	// * throw_on_allocation throw when one allocation is reached, producing the termination of the program and a core dump (if no try catch is set-up)
 	//
 	openfpm_init(&argc,&argv);
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	throw_on_alloc(10);
 	// message_on_alloc(10);
