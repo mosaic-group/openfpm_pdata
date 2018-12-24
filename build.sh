@@ -26,12 +26,14 @@ if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
 fi
 
 if [ x"$hostname" == x"cifarm-ubuntu-node.mpi-cbg.de"  ]; then
-	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
+#	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
+	echo "Continue"
 fi
 
 if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 	export PATH="/usr/local/bin:$PATH"
-	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
+#	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
+	echo "Continue"
 fi
 
 #### If you have a dep_dir file change the branch name to the dep_dir
