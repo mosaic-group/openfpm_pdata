@@ -14,7 +14,7 @@ function conf_PETSC()
 	    lin_alg_inc="$lin_alg_inc -I$i_dir/OPENBLAS/include"
 	    configure_blas_option="--with-blas=$i_dir/OPENBLAS/"
 	fi
-	if [ -d "$1/SUITESPARSE"  -a -f "$1/SUITESPARSE/include/umfpack.h" ]; then
+	if [ -d "$i_dir/SUITESPARSE"  -a -f "$i_dir/SUITESPARSE/include/umfpack.h" ]; then
 	    lin_alg_dir="$lin_alg_dir -L$i_dir/SUITESPARSE/lib"
 	    lin_alg_inc="$lin_alg_inc -I$i_dir/SUITESPARSE/include"
 	    lin_alg_lib="$lin_alg_lib -lumfpack -lamd -lbtf -lcamd -lccolamd -lcholmod -lcolamd -lcxsparse -lklu -ldl -lrbio -lspqr -lsuitesparseconfig"
