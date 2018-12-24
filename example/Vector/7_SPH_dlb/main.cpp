@@ -1443,7 +1443,7 @@ int main(int argc, char* argv[])
 		if (write < t*100)
 		{
 			// sensor_pressure calculation require ghost and update cell-list
-			vd.map(RUN_ON_DEVICE);
+			vd.map();
 			vd.ghost_get<type,rho,Pressure,velocity>(RUN_ON_DEVICE);
 			vd.updateCellList(NN);
 
