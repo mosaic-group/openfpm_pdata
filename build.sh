@@ -26,14 +26,12 @@ if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
 fi
 
 if [ x"$hostname" == x"cifarm-ubuntu-node.mpi-cbg.de"  ]; then
-        ./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/ 4
-        echo 4 > $HOME/openfpm_dependencies/openfpm_pdata/$branch/MPI/version
+	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
 fi
 
 if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 	export PATH="/usr/local/bin:$PATH"
-        ./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/ 4
-        echo 4 > $HOME/openfpm_dependencies/openfpm_io/$branch/MPI/version
+	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
 fi
 
 #### If you have a dep_dir file change the branch name to the dep_dir
