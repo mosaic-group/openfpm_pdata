@@ -13,7 +13,7 @@ parallel (
 
          stage ('run example ubuntu')
          {
-          sh "export PATH=\"/usr/local/binutils/bin/:$PATH\" && source $HOME/openfpm_vars_master && cd example && make run"
+          sh "export PATH=\"/usr/local/binutils/bin/:$PATH\" && . $HOME/openfpm_vars_master && cd example && make run"
          }
        }},
 
@@ -29,7 +29,7 @@ parallel (
 
           stage ('run mac')
           {
-           sh "source $HOME/openfpm_vars_master && cd example && make"
+           sh ". $HOME/openfpm_vars_master && cd example && make"
 	  }
          }
          },
@@ -45,7 +45,7 @@ parallel (
 
          stage ('run example centos')
          {
-          sh "export PATH=\"/usr/local/binutils/bin/:$PATH\" && source $HOME/openfpm_vars_master && cd example && make run"
+          sh "export PATH=\"/usr/local/binutils/bin/:$PATH\" && . $HOME/openfpm_vars_master && cd example && make run"
          }
        }},
 
