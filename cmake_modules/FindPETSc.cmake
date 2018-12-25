@@ -175,6 +175,9 @@ show :
   # We are done with the temporary Makefile, calling PETSC_GET_VARIABLE after this point is invalid!
   file (REMOVE ${petsc_config_makefile})
 
+  execute_process(COMMAND ${MPI_C_COMPILER} --showme:compile OUTPUT_VARIABLE mpi_compile_options ERROR_VARIABLE mpi_compile_error)
+  set(petsc_cpp_line ${petsc_cpp_line} ${mpi_compile_options})
+
   include (ResolveCompilerPaths)
   # Extract include paths and libraries from compile command line
   resolve_includes (petsc_includes_all "${petsc_cpp_line}")
