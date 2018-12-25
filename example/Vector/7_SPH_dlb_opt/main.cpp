@@ -465,7 +465,7 @@ inline double Pi(const Point<3,double> & dr, double rr2, Point<3,double> & dv, d
 }
 
 
-template<typename VerletList> inline double calc_forces(particles & vd, VerletList & NN, double & max_visc)
+template<typename VerletList> inline void calc_forces(particles & vd, VerletList & NN, double & max_visc)
 {
 	/*! \cond [reset_particles] \endcond */
 
