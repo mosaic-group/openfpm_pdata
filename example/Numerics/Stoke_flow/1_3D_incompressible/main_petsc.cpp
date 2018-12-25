@@ -31,6 +31,10 @@
 
 //! \cond [def system] \endcond
 
+#include "config.h"
+
+#ifdef HAVE_PETSC
+
 #include "Grid/grid_dist_id.hpp"
 #include "Matrix/SparseMatrix.hpp"
 #include "Vector/Vector.hpp"
@@ -502,3 +506,12 @@ int main(int argc, char* argv[])
 	 *
 	 */
 }
+
+#else
+
+int main(int argc, char* argv[])
+{
+        return 0;
+}
+
+#endif

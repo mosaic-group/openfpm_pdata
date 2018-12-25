@@ -139,6 +139,7 @@ else
  if [ x"$comp_type" == x"full" ]; then
   echo "Installing with: ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch  -s -c \"$installation_dir\"  "
   ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch  -s -c "$installation_dir"
+  make install
   if [ $? -ne 0 ]; then
     curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
     exit 1 ;
