@@ -91,6 +91,10 @@
  *
  */
 
+#include "config.h"
+
+#ifdef HAVE_PETSC
+
 //#define SE_CLASS1
 //#define PRINT_STACKTRACE
 
@@ -1285,3 +1289,12 @@ int main(int argc, char* argv[])
 	openfpm_finalize();
 }
 
+
+#else
+
+int main(int argc, char* argv[])
+{
+        return 0;
+}
+
+#endif

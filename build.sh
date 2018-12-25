@@ -146,7 +146,6 @@ else
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
  elif [ x"$comp_type" == x"numerics" ]; then
-  branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
   ./install -i $HOME/openfpm_dependencies/openfpm_pdata/$branch  -m -s -c "$installation_dir"
 
   if [ $? -ne 0 ]; then
