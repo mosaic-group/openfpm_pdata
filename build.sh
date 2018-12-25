@@ -166,7 +166,11 @@ else
   fi
   mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
   source $HOME/openfpm_vars_$branch
-  make VERBOSE=1  -j 8
+
+  echo "------------- DEBUGGING ------------------"
+  echo "$PATH"
+  echo "-------------------------------------------"
+  make VERBOSE=1 -j 8
  fi
 
  if [ $? -ne 0 ]; then
