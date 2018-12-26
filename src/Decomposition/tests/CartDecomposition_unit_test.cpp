@@ -523,7 +523,6 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test_dist_grid)
 	// Decompose
 	dec.setParameters(div,box,bc,g,gsub);
 	dec.decompose();
-	dec.write("Test_sub_dist2");
 
 	// For each calculated ghost box
 	for (size_t i = 0; i < dec.getNIGhostBox(); i++)
