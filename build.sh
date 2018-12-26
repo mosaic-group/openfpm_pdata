@@ -33,12 +33,12 @@ fi
 if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 	export PATH="/usr/local/bin:$PATH"
 #	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
-	echo "Continue"
+	echo ""
 fi
 
 if [ x"$hostname" == x"falcon1"  ]; then
 #       rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
-        echo "Continue"
+        echo "falcon1 settings"
 	dependency_dir=/projects/ppm/rundeck/openfpm_dependencies/
 else
 	dependency_dir=$HOME/openfpm_dependencies/openfpm_pdata/$branch
