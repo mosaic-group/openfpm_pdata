@@ -37,8 +37,6 @@ if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 #	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
 fi
 
-echo "Debug $hostname"
-
 if [ x"$hostname" == x"falcon1" ]; then
 #       rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
         echo "falcon1 settings"

@@ -1657,10 +1657,6 @@ void Test_ghost_correction(Box<3,double> & domain, long int k, long int g_)
         ++it2;
     }
 
-
-    grid.getDecomposition().write("dec_set_for_adj");
-    grid.write("dec_for_adj");
-
     BOOST_REQUIRE_EQUAL(is_inside,true);
 }
 

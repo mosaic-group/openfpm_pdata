@@ -27,68 +27,17 @@ if [ x"$hostname" == x"cifarm-ubuntu-node.mpi-cbg.de"  ]; then
 fi
 
 
-
-if [ "$hostname" == "gin" ]
-then
- source "$HOME/.bashrc"
- module load gcc/4.9.2
- if [ $? -ne 0 ]; then
-   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
-   exit 1 ;
- fi
-
- if [ x"$branch" != x"" ]; then
-   source $HOME/openfpm_vars_$branch
- else
-   source $HOME/openfpm_vars_master
- fi
-
-
- if [ x"$nproc" == x"no_test" ]; then
+echo "Running general machine"
+if [ x"$hostname" == x"no_test" ]; then
    exit 0;
- fi
+fi
 
- mpirun -np $nproc ./build/src/pdata
- if [ $? -ne 0 ]; then 
+source $HOME/openfpm_vars_$branch
+
+mpirun $mpi_options -np $nproc ./build/src/pdata
+if [ $? -ne 0 ]; then
    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
    exit 1 ;
- fi
-
-elif [ "$hostname" == "taurus" ]
-then
-
- source /etc/profile
- echo "$PATH"
- module load gcc/5.5.0
- module load openmpi/3.0.0-gnu5.5
- module unload bullxmpi
-
- if [ x"$branch" != x"" ]; then
-   source $HOME/openfpm_vars_$branch
- else
-   source $HOME/openfpm_vars_master
- fi
-
- salloc --nodes=$nodes --ntasks-per-node=$nstask_per_node --time=00:35:00 --mem-per-cpu=1900 --partition=haswell bash -c "ulimit -s unlimited && mpirun -np $nproc src/pdata --report_level=no"
- if [ $? -ne 0 ]; then
-   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
-   exit 1 ; 
- fi
-
-else
-
- echo "Running general machine"
- if [ x"$hostname" == x"no_test" ]; then
-   exit 0;
- fi
-
- source $HOME/openfpm_vars_$branch
-
- mpirun $mpi_options -np $nproc ./build/src/pdata
- if [ $? -ne 0 ]; then
-   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
-   exit 1 ;
- fi
 fi
 
 

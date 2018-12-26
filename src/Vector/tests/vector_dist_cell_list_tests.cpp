@@ -729,9 +729,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 	vd.ghost_get<0,2>();
 	vd2.ghost_get<0,2>();
 
-	vd2.write("CRS_output");
-	vd2.getDecomposition().write("CRS_output_dec");
-
 	auto NN = vd.getCellList(r_cut);
 	auto p_it = vd.getDomainIterator();
 

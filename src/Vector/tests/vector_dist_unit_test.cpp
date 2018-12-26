@@ -1065,13 +1065,7 @@ void Test_interacting(Box<3,float> & box)
 			}
 
 			vd.map();
-
-			vd.write("Without_ghost");
-
 			vd.ghost_get<0>();
-
-			vd.write("With_ghost");
-			vd.getDecomposition().write("With_dec_ghost");
 
 			// get the cell list with a cutoff radius
 
