@@ -19,6 +19,7 @@ echo "Machine: $hostname"
 echo "make target: $target"
 echo "compilation type: $comp_type"
 echo "Branch name: $branch"
+echo "GPU compilation: $with_gpu"
 
 
 if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
