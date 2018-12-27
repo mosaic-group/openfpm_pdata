@@ -49,6 +49,7 @@ target_link_libraries(pdata -L${HDF5_ROOT}/lib hdf5 hdf5_hl)
 target_link_libraries(pdata -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
 target_link_libraries(pdata ${PETSC_LIBRARIES})
 
+target_include_directories (ofpm_pdata PUBLIC ${CUDA_INCLUDE_DIRS})
 target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
 target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
