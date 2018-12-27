@@ -1,3 +1,5 @@
+#define PRINT_RANK_TO_GPU
+
 #include "initialize_wrapper.hpp"
 #include "VCluster/VCluster.hpp"
 
