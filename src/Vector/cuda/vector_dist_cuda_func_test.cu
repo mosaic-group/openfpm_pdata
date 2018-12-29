@@ -1,4 +1,7 @@
 #define BOOST_TEST_DYN_LINK
+
+#define TEST1
+
 #include <boost/test/unit_test.hpp>
 #include "VCluster/VCluster.hpp"
 #include "Vector/map_vector.hpp"

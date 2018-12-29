@@ -28,7 +28,7 @@ __global__ void test_ghost(Point<3,double> p1 ,Point<3,double> p2 , dec_type dec
 		dec.ghost_processor_ID(p1,g_id,0,i);
 	}
 
-	for (unsigned int i = 0 ; i < ng_id[0] ; i++)
+	for (unsigned int i = 0 ; i < ng_id[1] ; i++)
 	{
 		dec.ghost_processor_ID(p1,g_id,ng_id[0],i);
 	}
@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 			tot = ((unsigned int *)mem2.getPointer())[0] + ((unsigned int *)mem2.getPointer())[1];
 
 			vd.resize(tot);
-			test_ghost<decltype(gpudec),decltype(vd)><<<1,1>>>(p1,p2,gpudec,(unsigned int *)mem2.getDevicePointer(),vd);
+			test_ghost<decltype(gpudec),decltype(vd.toKernel())><<<1,1>>>(p1,p2,gpudec,(unsigned int *)mem2.getDevicePointer(),vd.toKernel());
 
 			if (((unsigned int *)mem.getPointer())[0] != ((unsigned int *)mem.getPointer())[1])
 			{
