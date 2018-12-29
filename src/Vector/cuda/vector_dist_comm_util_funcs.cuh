@@ -204,10 +204,13 @@ struct local_ghost_from_opart_impl<with_pos,dim,St,prop,Memory,layout_base,true>
 					v_prp.resize(v_prp.size() + o_part_loc.size(),DATA_ON_DEVICE);
 				}
 
-				process_ghost_particles_local<with_pos,dim,decltype(o_part_loc.toKernel()),decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(shifts.toKernel())>
-				<<<ite.wthr,ite.thr>>>
-				(o_part_loc.toKernel(),v_pos.toKernel(),v_prp.toKernel(),shifts.toKernel(),old);
 
+				if (ite.wthr.x != 0)
+				{
+					process_ghost_particles_local<with_pos,dim,decltype(o_part_loc.toKernel()),decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(shifts.toKernel())>
+					<<<ite.wthr,ite.thr>>>
+					(o_part_loc.toKernel(),v_pos.toKernel(),v_prp.toKernel(),shifts.toKernel(),old);
+				}
 #else
 				std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option RUN_ON_DEVICE you must compile with NVCC" << std::endl;
 #endif
