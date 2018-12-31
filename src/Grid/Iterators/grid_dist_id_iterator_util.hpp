@@ -22,6 +22,9 @@
  */
 template<typename Decomposition> static inline bool compute_subset(const openfpm::vector<GBoxes<Decomposition::dims>> & gdb_ext, size_t g_c, grid_key_dx<Decomposition::dims> & start, grid_key_dx<Decomposition::dims> & stop, grid_key_dx<Decomposition::dims> & start_c, grid_key_dx<Decomposition::dims> & stop_c)
 {
+	if (gdb_ext.get(g_c).Dbox.isValid() == false)
+	{return false;}
+
 	// Intersect the grid keys
 
 	for (size_t i = 0 ; i < Decomposition::dims ; i++)
@@ -29,18 +32,18 @@ template<typename Decomposition> static inline bool compute_subset(const openfpm
 		long int start_p = gdb_ext.get(g_c).Dbox.getP1().get(i) + gdb_ext.get(g_c).origin.get(i);
 		long int stop_p = gdb_ext.get(g_c).Dbox.getP2().get(i) + gdb_ext.get(g_c).origin.get(i);
 		if (start.get(i) <= start_p)
-			start_c.set_d(i,gdb_ext.get(g_c).Dbox.getP1().get(i));
+		{start_c.set_d(i,gdb_ext.get(g_c).Dbox.getP1().get(i));}
 		else if (start.get(i) <= stop_p)
-			start_c.set_d(i,start.get(i) - gdb_ext.get(g_c).origin.get(i));
+		{start_c.set_d(i,start.get(i) - gdb_ext.get(g_c).origin.get(i));}
 		else
-			return false;
+		{return false;}
 
 		if (stop.get(i) >= stop_p)
-			stop_c.set_d(i,gdb_ext.get(g_c).Dbox.getP2().get(i));
+		{stop_c.set_d(i,gdb_ext.get(g_c).Dbox.getP2().get(i));}
 		else if (stop.get(i) >= start_p)
-			stop_c.set_d(i,stop.get(i) - gdb_ext.get(g_c).origin.get(i));
+		{stop_c.set_d(i,stop.get(i) - gdb_ext.get(g_c).origin.get(i));}
 		else
-			return false;
+		{return false;}
 	}
 
 	return true;
