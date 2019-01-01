@@ -338,6 +338,9 @@ else
                 echo "Error the installation of MPI failed"
                 exit 1
             fi
+	    if [ $call_test_working_mpi_options -eq 1 ]; then
+	    	test_working_mpi_options
+    	    fi
             ./script/install_MPI.sh $i_dir $ncore $gpu_support $CC $CXX $F77 $FC "$openmpi_working_options"
             MPI_installed=1
             export PATH="$i_dir/MPI/bin:$PATH"
