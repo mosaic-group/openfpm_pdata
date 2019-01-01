@@ -770,7 +770,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_reduce)
 	BOOST_REQUIRE_EQUAL(reds2,vd.size_local());
 }
 
-BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda)
+void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 {
 	typedef vector_dist_gpu<3,double,aggregate<double>> vector_type;
 
@@ -789,7 +789,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda)
 
 	if (v_cl.getProcessUnitID() == 0)
 	{
-		for(size_t i = 0 ; i < 50000 ; i++)
+		for(size_t i = 0 ; i < k ; i++)
 		{
 			vd.add();
 
@@ -813,7 +813,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda)
 
 	// Get the neighborhood of each particles
 
-	auto VV = vd.getVerlet(0.01);
+	auto VV = vd.getVerlet(r_cut);
 
 	// store the number of neighborhood for each particles
 
@@ -885,7 +885,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda)
 		vd.deviceToHostPos();
 		vd.template deviceToHostProp<0>();
 
-		auto VV2 = vd.getVerlet(0.01);
+		auto VV2 = vd.getVerlet(r_cut);
 
 		auto it2 = vd.getDomainIterator();
 
@@ -928,6 +928,28 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda)
 		}
 	}
 }
+
+BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda)
+{
+	vector_dist_dlb_on_cuda_impl(50000,0.01);
+}
+
+BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda2)
+{
+	if (create_vcluster().size() < 3)
+	{return;};
+
+	vector_dist_dlb_on_cuda_impl(1000000,0.01);
+}
+
+BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda3)
+{
+	if (create_vcluster().size() < 8)
+	{return;}
+
+	vector_dist_dlb_on_cuda_impl(15000000,0.005);
+}
+
 
 BOOST_AUTO_TEST_CASE(vector_dist_keep_prop_on_cuda)
 {
