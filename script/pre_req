@@ -264,6 +264,12 @@ if haveProg mpirun; then
     fi
 
   fi
+
+  # invalidate MPI, must be reinstalled
+  if [ call_test_working_mpi_options -eq 1 ]; then
+    MPI_valid=
+  fi
+
 else
   echo -e "No MPI"
 fi
