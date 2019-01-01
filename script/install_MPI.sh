@@ -2,6 +2,11 @@
 
 # check if the directory $1/MPI exist
 
+if [ -d "$1/MPI" ]; then
+  echo "MPI already installed"
+  exit 0
+fi
+
 ./script/download_MPI.sh
 
 #
