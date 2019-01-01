@@ -173,6 +173,8 @@ fi
 
 MPI_valid=no
 if haveProg mpirun; then
+
+  call_test_working_mpi_options=0
   # Here we check if we are running openmpi  mpich or unknown
 
   version=$(mpirun --version 2>&1 | grep mpirun | sed 's/.*Open MPI.*/openmpi/g')
@@ -275,6 +277,7 @@ else
 fi
 
 if [ x"$MPI_valid" == x"yes"  ]; then
+
   ## Check for potential problem in the MPI installation
 
   if [ -d $1/MPI ]; then
