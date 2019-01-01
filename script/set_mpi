@@ -13,3 +13,27 @@ function set_mpi()
 
 }
 
+function is_openmpi_cuda_aware()
+{
+  output=$(ompi_info --parsable --all | grep mpi_built_with_cuda_support:value)
+  cuda_mpi_support=$(echo $output | sed 's/mca:mpi:base:param:mpi_built_with_cuda_support:value:\(.*\)/\1/g')
+}
+
+function get_openmpi_compilation_options()
+{
+	output=$(ompi_info --config | grep "Configure command line:")
+	list=$(echo $output | sed 's/Configure command line:\(.*\)/\1/g')
+	arr=($list)
+
+	openmpi_compilation_options=()
+	for opt in ${arr[@]}; do
+		opt_filter=$(echo $opt | sed "s/'\(.*\)'/\1/g" )
+		openmpi_compilation_options+=("$opt_filter")
+	done
+}
+
+function test_working_mpi_options()
+{
+	
+}
+

@@ -258,6 +258,32 @@ if haveProg mpirun; then
 
   if [ x"$version" == x"openmpi" ]; then
 
+    # Check if we are compiling with GPU support
+
+    if [ x"$gpu_support" == x"1" ]; then
+	
+	is_openmpi_cuda_aware
+
+	if [ x"$cuda_mpi_support" == x"false" ]; then
+		echo -e " \033[91;5;1m OpenMPI has been compiled without GPU support \033[0m"
+		echo -e "\033[1m OpenFPM use GPUDirect RDMA to move data from one GPU to another GPU (intranode and extranode) without moving the data on host. This feature requires that OpenMPI is compiled with CUDA support. OpenFPM can works also without this feature using GPUDirect old version (1.0). In practice it requires that MPI work with host pinned memory allocated with CUDA. This feature has been introduced with CUDA 5.0 in 2010. At best of our knowledge this feature should work without special compilation options for OpenMPI. On the other end we found several problems with GPUDirect v1.0 and Infiniband cards, when OpenMPI is not compiled with CUDA support. If you are on a super-computer or a machine you did not set-up, we suggest to re-install OpenMPI with CUDA support using the same options used to compile the one detected (option 1). Alternatively you can reinstall OpenMPI using the default options (option 2), or use the OpenMPI detected (option 3) \033[0m"
+
+		unset commands
+  		commands[0]="Reinstall MPI and mirror the one detected"
+		commands[1]="Reinstall MPI, use the default arguments"
+		commands[2]="Continue with the detected one"
+  		possible_solutions_no_execute "${commands[@]}"
+
+		if [ x"$possible_solutions_ret" == x"0" ]; then
+			get_openmpi_compilation_options
+			test_working_mpi_options
+			./script/install_MPI.sh $i_dir $ncore $gpu_support $CC $CXX $F77 $FC '"$openmpi_working_options"'
+		elif [ x"$possible_solutions_ret" == x"1" ]; then
+			./script/install_MPI.sh $i_dir $ncore $gpu_support $CC $CXX $F77 $FC 
+		fi
+	fi
+    fi
+
     major=$(mpirun --version 2>&1 | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
     middle=$(mpirun --version 2>&1 | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
     minor=$(mpirun --version 2>&1 | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')

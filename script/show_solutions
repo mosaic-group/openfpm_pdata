@@ -66,3 +66,28 @@ function possible_solutions_no_continue {
  possible_solutions_command=${commands[$possible_solutions_ret]}
 }
 
+function possible_solutions_no_execute {
+
+ if [ $sq -eq 1 ]; then
+   return
+ fi
+
+ sol=1
+ echo "Possible solutions:"
+ for com in "$@"
+ do
+   echo "$sol $com"
+   sol=`expr $sol + 1`
+ done
+ echo "$sol exit the script"
+ echo -e "\033[1;34;5mChoose the solution:\033[0m"
+ read choose
+ if [ x"$choose" = x"$sol" ]; then
+  exit 1
+ fi
+ possible_solutions_ret=`expr $choose - 1`
+ possible_solutions_command=${commands[$possible_solutions_ret]}
+}
+
+
+
