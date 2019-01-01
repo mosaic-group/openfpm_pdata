@@ -8,13 +8,11 @@ function pre_req()
 {
 source script/discover_package_manager
 source script/discover_os
-source script/solve_autoconf
 source script/solve_gpp
 source script/solve_gfortran
 source script/solve_cmake
 source script/solve_git
 source script/solve_wget
-source script/solve_automake
 source script/solve_brew
 source script/solve_gsed
 source script/solve_libtool
@@ -142,80 +140,6 @@ else
     exit 1
   fi
 fi
-## autoconf
-if haveProg autoconf; then
-  echo -e "autoconf\033[92;1m SUCCESS \033[0m"
-else
-  echo >&2
-  echo -e "autoconf\033[91;5;1m FAILED \033[0m"
-  echo "OpenFPM require autoconf but it's not installed, searching a solution..."
-  solve_autoconf $platform
-  if haveProg autoconf; then
-    echo -e "autoconf\033[92;1m SUCCESS \033[0m"
-  else
-    echo -e "autoconf\033[91;5;1m FAILED \033[0m"
-    exit 1
-  fi
-fi
-## autoheader
-if haveProg autoheader; then
-  echo -e "autoheader\033[92;1m SUCCESS \033[0m"
-else
-  echo >&2
-  echo -e "autoheader\033[91;5;1m FAILED \033[0m"
-  echo "OpenFPM require autoheader but it's not installed, searching a solution..."
-  solve_autoconf $platform
-  if haveProg autoheader; then
-    echo -e "autoheader\033[92;1m SUCCESS \033[0m"
-  else
-    echo -e "autoheader\033[91;5;1m FAILED \033[0m"
-    exit 1
-  fi
-fi
-## automake
-if haveProg automake; then
-  echo -e "automake\033[92;1m SUCCESS \033[0m"
-else
-  echo >&2
-  echo -e "automake\033[91;5;1m FAILED \033[0m"
-  echo "OpenFPM require automake but it's not installed, searching a solution..."
-  solve_automake $platform
-  if haveProg automake; then
-    echo -e "automake\033[92;1m SUCCESS \033[0m"
-  else
-    echo "automake\033[91;5;1m FAILED \033[0m"
-    exit 1
-  fi
-fi
-## libtoolize or glibtoolize
-opt1=1
-opt2=1
-if haveProg libtoolize; then
-  opt1=0
-fi
-if haveProg glibtoolize; then
-  opt2=0
-fi
-if [ $opt1 -ne 0 -a $opt2 -ne 0 ]; then
-  echo >&2
-  echo -e "libtool\033[91;5;1m FAILED \033[0m"
-  echo "OpenFPM require libtool but it's not installed, searching a solution..."
-  solve_libtool $platform
-  if haveProg libtoolize; then
-    opt1=0
-  fi
-  if haveProg glibtoolize; then
-    opt2=0
-  fi
-  if [ $opt1 -ne 0 -a $opt2 -ne 0 ]; then
-    echo -e "libtool\033[91;5;1m FAILED \033[0m"
-    exit 1
-  else
-    echo -e "libtool\033[92;1m SUCCESS \033[0m"
-  fi
-else
-  echo -e "libtool\033[92;1m SUCCESS \033[0m"
-fi
 #### Detecting g++
 detect_compiler
 if [ $dgc_ret -eq 0 ]; then
@@ -281,6 +205,8 @@ if haveProg mpirun; then
 		elif [ x"$possible_solutions_ret" == x"1" ]; then
 			./script/install_MPI.sh $i_dir $ncore $gpu_support $CC $CXX $F77 $FC 
 		fi
+	else
+		echo "OpenMPI is CUDA aware"
 	fi
     fi
 
