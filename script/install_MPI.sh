@@ -8,24 +8,15 @@ if [ -d "$1/MPI" ]; then
 fi
 
 ./script/download_MPI.sh
-
-#
-#                  --disable-mca-dso \
-#                 --disable-sysv-shmem \
-#                 --enable-cxx-exceptions \
-#                 --with-threads=posix \
-#                 --without-cs-fs \
-#                 --with-mpi-param_check=always \
-#                 --enable-contrib-no-build=vt,libompitrace \
-#
-#--enable-mca-no-build=paffinity,installdirs-windows,timer-windows,shmem-sysv
-#
-#
-
+cd openmpi-3.1.3
 
 if [ x"$3" == x"1" ]; then
    echo "Installing MPI with GPU support"
-   ./configure --with-cuda --prefix=$1/MPI --enable-mpi-fortran=yes CC=$4 CXX=$5 F77=$6 FC=$7 $8
+
+   # Detect where is nvcc
+   cuda_location=$(dirname $(dirname $(which nvcc)) )
+
+   ./configure --with-cuda=$cuda_location --prefix=$1/MPI --enable-mpi-fortran=yes CC=$4 CXX=$5 F77=$6 FC=$7 $8
 else
    echo "Installing MPI without GPU support"
    ./configure --prefix=$1/MPI --enable-mpi-fortran=yes CC=$4 CXX=$5 F77=$6 FC=$7 $8

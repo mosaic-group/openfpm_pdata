@@ -266,8 +266,8 @@ if haveProg mpirun; then
   fi
 
   # invalidate MPI, must be reinstalled
-  if [ call_test_working_mpi_options -eq 1 ]; then
-    MPI_valid=
+  if [ $call_test_working_mpi_options -eq 1 ]; then
+    MPI_valid=no
   fi
 
 else
