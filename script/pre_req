@@ -198,12 +198,12 @@ if haveProg mpirun; then
 		commands[2]="Continue with the detected one"
   		possible_solutions_no_execute "${commands[@]}"
 
+		# Remove old MPI
+		rm -rf $i_dir/MPI
+
 		if [ x"$possible_solutions_ret" == x"0" ]; then
 			get_openmpi_compilation_options
 			test_working_mpi_options
-			./script/install_MPI.sh $i_dir $ncore $gpu_support $CC $CXX $F77 $FC '"$openmpi_working_options"'
-		elif [ x"$possible_solutions_ret" == x"1" ]; then
-			./script/install_MPI.sh $i_dir $ncore $gpu_support $CC $CXX $F77 $FC 
 		fi
 	else
 		echo "OpenMPI is CUDA aware"
