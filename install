@@ -331,21 +331,8 @@ else
 
         echo "Configure script terminated with $conf_err"
 
-        ## if MPI or METIS installation required install it
-        if [ $conf_err -eq 200  ]; then
-            echo "MPI not found try to install, $MPI_installed"
-            if [ $MPI_installed -eq 1 ]; then
-                echo "Error the installation of MPI failed"
-                exit 1
-            fi
-	    if [ $call_test_working_mpi_options -eq 1 ]; then
-	    	test_working_mpi_options
-    	    fi
-            ./script/install_MPI.sh $i_dir $ncore $gpu_support $CC $CXX $F77 $FC "$openmpi_working_options"
-            MPI_installed=1
-            export PATH="$i_dir/MPI/bin:$PATH"
-            configure_options="$configure_options CXX=mpic++ "
-        elif [ $conf_err -eq 201  ]; then
+        ## if METIS installation required install it
+        if [ $conf_err -eq 201  ]; then
             echo "Metis not found try to install"
             if [ $METIS_installed -eq 1  ]; then
                 echo "Error the installation of METIS failed"
