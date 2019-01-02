@@ -175,6 +175,7 @@ if [ -d "$i_dir/MPI" ]; then
         export PATH="$i_dir/MPI/bin:$PATH"
 fi
 
+is_mpi_openmpi=0
 MPI_valid=no
 if haveProg mpirun; then
 
@@ -188,6 +189,7 @@ if haveProg mpirun; then
 
   if [ x"$version" == x"openmpi" ]; then
 
+    is_mpi_openmpi=1
     # Check if we are compiling with GPU support
 
     if [ x"$gpu_support" == x"1" ]; then
