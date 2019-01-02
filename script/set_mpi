@@ -3,7 +3,7 @@
 function set_mpi()
 {
   if [ x"$MPI_valid" == x"yes" ]; then
-	if [ is_mpi_openmpi -eq 1 ]; then
+	if [ $is_mpi_openmpi -eq 1 ]; then
 		configure_options="$configure_options CXX=mpic++ --mpivendor=openmpi"
 	else
         	configure_options="$configure_options CXX=mpic++ "
