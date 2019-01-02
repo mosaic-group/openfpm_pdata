@@ -171,6 +171,10 @@ else
   echo -e "gfortran \033[92;1m SUCCESS \033[0m"
 fi
 
+if [ -d "$i_dir/MPI" ]; then
+        export PATH="$i_dir/MPI/bin:$PATH"
+fi
+
 MPI_valid=no
 if haveProg mpirun; then
 
@@ -194,11 +198,15 @@ if haveProg mpirun; then
 		echo -e " \033[91;5;1m OpenMPI has been compiled without GPU support \033[0m"
 		echo -e "\033[1m OpenFPM use GPUDirect RDMA to move data from one GPU to another GPU (intranode and extranode) without moving the data on host. This feature requires that OpenMPI is compiled with CUDA support. OpenFPM can works also without this feature using GPUDirect old version (1.0). In practice it requires that MPI work with host pinned memory allocated with CUDA. This feature has been introduced with CUDA 5.0 in 2010. At best of our knowledge this feature should work without special compilation options for OpenMPI. On the other end we found several problems with GPUDirect v1.0 and Infiniband cards, when OpenMPI is not compiled with CUDA support. If you are on a super-computer or a machine you did not set-up, we suggest to re-install OpenMPI with CUDA support using the same options used to compile the one detected (option 1). Alternatively you can reinstall OpenMPI using the default options (option 2), or use the OpenMPI detected (option 3) \033[0m"
 
-		unset commands
-  		commands[0]="Reinstall MPI and mirror the one detected"
-		commands[1]="Reinstall MPI, use the default arguments"
-		commands[2]="Continue with the detected one"
-  		possible_solutions_no_execute "${commands[@]}"
+                if [ $sq -eq 0 ]; then
+                        unset commands
+                        commands[0]="Reinstall MPI and mirror the one detected"
+                        commands[1]="Reinstall MPI, use the default arguments"
+                        commands[2]="Continue with the detected one"
+                        possible_solutions_no_execute "${commands[@]}"
+		else
+			possible_solutions_ret=0
+                fi
 
 		# Remove old MPI
 		rm -rf $i_dir/MPI
