@@ -115,8 +115,6 @@ endif()
 
 if(MPI_FOUND)
 	set(DEFINE_HAVE_MPI "#define HAVE_MPI")
-	file(WRITE mpi_include_dirs ${MPI_C_INCLUDE_DIRS})
-	file(WRITE mpi_libs ${MPI_C_LIBRARIES})
 else()
 	file(WRITE error_code "200")
 	message( FATAL_ERROR "MPI is required in order to install OpenFPM" )

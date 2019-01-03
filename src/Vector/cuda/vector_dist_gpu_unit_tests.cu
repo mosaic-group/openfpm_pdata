@@ -936,7 +936,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda)
 
 BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda2)
 {
-	if (create_vcluster().size() < 3)
+	if (create_vcluster().size() <= 3)
 	{return;};
 
 	vector_dist_dlb_on_cuda_impl(1000000,0.01);
