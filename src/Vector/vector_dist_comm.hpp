@@ -16,7 +16,6 @@
 #include "util/cuda/moderngpu/kernel_scan.hxx"
 #endif
 
-#include "util/cuda/scan_cuda.cuh"
 #include "Vector/util/vector_dist_funcs.hpp"
 #include "cuda/vector_dist_comm_util_funcs.cuh"
 
@@ -86,9 +85,6 @@ class vector_dist_comm
 
 	//! It map the processor id with the communication request into map procedure
 	openfpm::vector<size_t> p_map_req;
-
-	//! scan functionality required for gpu
-	scan<unsigned int,unsigned int> sc;
 
 	//! For each near processor, outgoing particle id
 	//! \warning opart is assumed to be an ordered list
@@ -1240,8 +1236,8 @@ class vector_dist_comm
 		if (opt & RUN_ON_DEVICE)
 		{
 			labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,
-			                         Decomposition,scan<unsigned int,unsigned int>,std::is_same<Memory,CudaMemory>::value>
-			::run(mem,sc,dec,g_opart_device,proc_id_out,starts,v_cl,v_pos,v_prp,prc,prc_sz,prc_offset,g_m,opt);
+			                         Decomposition,std::is_same<Memory,CudaMemory>::value>
+			::run(mem,dec,g_opart_device,proc_id_out,starts,v_cl,v_pos,v_prp,prc,prc_sz,prc_offset,g_m,opt);
 		}
 		else
 		{

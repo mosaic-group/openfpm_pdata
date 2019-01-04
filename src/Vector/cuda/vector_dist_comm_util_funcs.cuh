@@ -11,11 +11,10 @@
 #define SKIP_LABELLING 512
 #define KEEP_PROPERTIES 512
 
-template<unsigned int dim, typename St, typename prop, typename Memory, template<typename> class layout_base, typename Decomposition, typename scan_type, bool is_ok_cuda>
+template<unsigned int dim, typename St, typename prop, typename Memory, template<typename> class layout_base, typename Decomposition, bool is_ok_cuda>
 struct labelParticlesGhost_impl
 {
 	static void run(CudaMemory & mem,
-					scan_type & sc,
 					Decomposition & dec,
 					openfpm::vector<aggregate<unsigned int,unsigned long int>,
 							CudaMemory,
@@ -44,11 +43,10 @@ struct labelParticlesGhost_impl
 
 
 
-template<unsigned int dim, typename St, typename prop, typename Memory, template<typename> class layout_base, typename Decomposition, typename scan_type>
-struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,scan_type,true>
+template<unsigned int dim, typename St, typename prop, typename Memory, template<typename> class layout_base, typename Decomposition>
+struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,true>
 {
 	static void run(CudaMemory & mem,
-					scan_type & sc,
 					Decomposition & dec,
 					openfpm::vector<aggregate<unsigned int,unsigned long int>,
 							CudaMemory,
@@ -92,8 +90,9 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,sca
 			dec.toKernel(),v_pos.toKernel(),proc_id_out.toKernel());
 
 			// scan
-			sc.scan_(proc_id_out,starts);
+			//sc.scan_(proc_id_out,starts);
 			starts.resize(proc_id_out.size());
+			mgpu::scan((unsigned int *)proc_id_out.template getDeviceBuffer<0>(), proc_id_out.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
 			starts.template deviceToHost<0>(starts.size()-1,starts.size()-1);
 			size_t sz = starts.template get<0>(starts.size()-1);
 
