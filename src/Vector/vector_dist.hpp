@@ -1907,9 +1907,9 @@ public:
 
 		auto ite = v_pos.getGPUIteratorTo(g_m,n_thr);
 
-		merge_sort_part<false,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortToSort().toKernel()),prp...>
-		<<<ite.wthr,ite.thr>>>
-		(v_pos.toKernel(),v_prp.toKernel(),v_pos_out.toKernel(),v_prp_out.toKernel(),cl.getNonSortToSort().toKernel());
+		CUDA_LAUNCH((merge_sort_part<false,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortToSort().toKernel()),prp...>),
+		ite.wthr,ite.thr,
+		v_pos.toKernel(),v_prp.toKernel(),v_pos_out.toKernel(),v_prp_out.toKernel(),cl.getNonSortToSort().toKernel());
 
 #endif
 	}
@@ -1990,9 +1990,9 @@ public:
 
 		auto ite = v_pos.getGPUIteratorTo(g_m,n_thr);
 
-		merge_sort_part<true,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortedToSorted().toKernel()),prp...>
-		<<<ite.wthr,ite.thr>>>
-		(v_pos.toKernel(),v_prp.toKernel(),v_pos_out.toKernel(),v_prp_out.toKernel(),cl.getNonSortedToSorted().toKernel());
+		CUDA_LAUNCH((merge_sort_part<true,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortedToSorted().toKernel()),prp...>),
+		ite.wthr,ite.thr,
+		v_pos.toKernel(),v_prp.toKernel(),v_pos_out.toKernel(),v_prp_out.toKernel(),cl.getNonSortedToSorted().toKernel());
 
 #endif
 	}

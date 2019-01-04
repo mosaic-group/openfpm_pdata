@@ -87,9 +87,9 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,sca
 			{return;}
 
 			// First we have to see how many entry each particle produce
-			num_proc_ghost_each_part<dim,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(proc_id_out.toKernel())>
-			<<<ite.wthr,ite.thr>>>
-			(dec.toKernel(),v_pos.toKernel(),proc_id_out.toKernel());
+			CUDA_LAUNCH((num_proc_ghost_each_part<dim,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(proc_id_out.toKernel())>),
+			ite.wthr,ite.thr,
+			dec.toKernel(),v_pos.toKernel(),proc_id_out.toKernel());
 
 			// scan
 			sc.scan_(proc_id_out,starts);
@@ -104,9 +104,9 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,sca
 			ite = v_pos.getGPUIterator();
 
 			// we compute processor id for each particle
-			proc_label_id_ghost<dim,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(starts.toKernel()),decltype(g_opart_device.toKernel())>
-			<<<ite.wthr,ite.thr>>>
-			(dec.toKernel(),v_pos.toKernel(),starts.toKernel(),g_opart_device.toKernel());
+			CUDA_LAUNCH((proc_label_id_ghost<dim,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(starts.toKernel()),decltype(g_opart_device.toKernel())>),
+			ite.wthr,ite.thr,
+			dec.toKernel(),v_pos.toKernel(),starts.toKernel(),g_opart_device.toKernel());
 
 			// sort particles
 			mergesort((int *)g_opart_device.template getDeviceBuffer<0>(),(long unsigned int *)g_opart_device.template getDeviceBuffer<1>(), g_opart_device.size(), mgpu::template less_t<int>(), v_cl.getmgpuContext());
@@ -118,8 +118,9 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,sca
 			ite = g_opart_device.getGPUIterator();
 
 			// Find the buffer bases
-			find_buffer_offsets<0,decltype(g_opart_device.toKernel()),decltype(prc_offset.toKernel())><<<ite.wthr,ite.thr>>>
-					           (g_opart_device.toKernel(),(int *)mem.getDevicePointer(),prc_offset.toKernel());
+			CUDA_LAUNCH((find_buffer_offsets<0,decltype(g_opart_device.toKernel()),decltype(prc_offset.toKernel())>),
+					    ite.wthr,ite.thr,
+					    g_opart_device.toKernel(),(int *)mem.getDevicePointer(),prc_offset.toKernel());
 
 			// Trasfer the number of offsets on CPU
 			mem.deviceToHost();
@@ -207,9 +208,9 @@ struct local_ghost_from_opart_impl<with_pos,dim,St,prop,Memory,layout_base,true>
 
 				if (ite.wthr.x != 0)
 				{
-					process_ghost_particles_local<with_pos,dim,decltype(o_part_loc.toKernel()),decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(shifts.toKernel())>
-					<<<ite.wthr,ite.thr>>>
-					(o_part_loc.toKernel(),v_pos.toKernel(),v_prp.toKernel(),shifts.toKernel(),old);
+					CUDA_LAUNCH((process_ghost_particles_local<with_pos,dim,decltype(o_part_loc.toKernel()),decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(shifts.toKernel())>),
+					ite.wthr,ite.thr,
+					o_part_loc.toKernel(),v_pos.toKernel(),v_prp.toKernel(),shifts.toKernel(),old);
 				}
 #else
 				std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option RUN_ON_DEVICE you must compile with NVCC" << std::endl;
@@ -260,9 +261,9 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 		auto ite = v_pos.getGPUIteratorTo(g_m);
 
 		// label particle processor
-		num_shift_ghost_each_part<dim,St,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),decltype(v_pos.toKernel()),decltype(o_part_loc.toKernel())>
-		<<<ite.wthr,ite.thr>>>
-		(box_f_dev.toKernel(),box_f_sv.toKernel(),v_pos.toKernel(),o_part_loc.toKernel(),g_m);
+		CUDA_LAUNCH((num_shift_ghost_each_part<dim,St,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),decltype(v_pos.toKernel()),decltype(o_part_loc.toKernel())>),
+		ite.wthr,ite.thr,
+		box_f_dev.toKernel(),box_f_sv.toKernel(),v_pos.toKernel(),o_part_loc.toKernel(),g_m);
 
 		starts.resize(o_part_loc.size());
 		mgpu::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
@@ -280,12 +281,12 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 		// resize o_part_loc
 		o_part_loc.resize(total);
 
-		shift_ghost_each_part<dim,St,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),
+		CUDA_LAUNCH((shift_ghost_each_part<dim,St,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),
 									 decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),
 									 decltype(starts.toKernel()),decltype(shifts.toKernel()),
-									 decltype(o_part_loc.toKernel())>
-		<<<ite.wthr,ite.thr>>>
-		(box_f_dev.toKernel(),box_f_sv.toKernel(),
+									 decltype(o_part_loc.toKernel())>),
+		ite.wthr,ite.thr,
+		box_f_dev.toKernel(),box_f_sv.toKernel(),
 		 v_pos.toKernel(),v_prp.toKernel(),
 		 starts.toKernel(),shifts.toKernel(),o_part_loc.toKernel(),old,g_m);
 

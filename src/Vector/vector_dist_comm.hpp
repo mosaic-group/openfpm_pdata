@@ -597,9 +597,9 @@ class vector_dist_comm
 			{
 				auto ite = g_pos_send.get(i).getGPUIterator();
 
-				process_ghost_particles_pos<dim,decltype(g_opart_device.toKernel()),decltype(g_pos_send.get(i).toKernel()),decltype(v_pos.toKernel()),decltype(shifts.toKernel())>
-				<<<ite.wthr,ite.thr>>>
-				(g_opart_device.toKernel(), g_pos_send.get(i).toKernel(),
+				CUDA_LAUNCH((process_ghost_particles_pos<dim,decltype(g_opart_device.toKernel()),decltype(g_pos_send.get(i).toKernel()),decltype(v_pos.toKernel()),decltype(shifts.toKernel())>),
+				ite.wthr,ite.thr,
+				g_opart_device.toKernel(), g_pos_send.get(i).toKernel(),
 				 v_pos.toKernel(),shifts.toKernel(),offset);
 
 				offset += prc_sz.get(i);
@@ -824,9 +824,9 @@ class vector_dist_comm
 				{
 					auto ite = g_send_prp.get(i).getGPUIterator();
 
-					process_ghost_particles_prp<decltype(g_opart_device.toKernel()),decltype(g_send_prp.get(i).toKernel()),decltype(v_prp.toKernel()),prp...>
-					<<<ite.wthr,ite.thr>>>
-					(g_opart_device.toKernel(), g_send_prp.get(i).toKernel(),
+					CUDA_LAUNCH((process_ghost_particles_prp<decltype(g_opart_device.toKernel()),decltype(g_send_prp.get(i).toKernel()),decltype(v_prp.toKernel()),prp...>),
+					ite.wthr,ite.thr,
+					g_opart_device.toKernel(), g_send_prp.get(i).toKernel(),
 					 v_prp.toKernel(),offset);
 
 					offset += prc_sz.get(i);
@@ -949,10 +949,10 @@ class vector_dist_comm
 			if (ite.wthr.x != 0)
 			{
 				// fill v_pos_tmp and v_prp_tmp with local particles
-				process_map_particles<decltype(m_opart.toKernel()),decltype(v_pos_tmp.toKernel()),decltype(v_prp_tmp.toKernel()),
-					                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>
-				<<<ite.wthr,ite.thr>>>
-				(m_opart.toKernel(),v_pos_tmp.toKernel(), v_prp_tmp.toKernel(),
+				CUDA_LAUNCH((process_map_particles<decltype(m_opart.toKernel()),decltype(v_pos_tmp.toKernel()),decltype(v_prp_tmp.toKernel()),
+					                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>),
+				ite.wthr,ite.thr,
+				m_opart.toKernel(),v_pos_tmp.toKernel(), v_prp_tmp.toKernel(),
 					            v_pos.toKernel(),v_prp.toKernel(),offset);
 			}
 
@@ -967,10 +967,10 @@ class vector_dist_comm
 				if (ite.wthr.x != 0)
 				{
 
-					process_map_particles<decltype(m_opart.toKernel()),decltype(m_pos.get(i).toKernel()),decltype(m_prp.get(i).toKernel()),
-						                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>
-					<<<ite.wthr,ite.thr>>>
-					(m_opart.toKernel(),m_pos.get(i).toKernel(), m_prp.get(i).toKernel(),
+					CUDA_LAUNCH((process_map_particles<decltype(m_opart.toKernel()),decltype(m_pos.get(i).toKernel()),decltype(m_prp.get(i).toKernel()),
+						                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>),
+					ite.wthr,ite.thr,
+					m_opart.toKernel(),m_pos.get(i).toKernel(), m_prp.get(i).toKernel(),
 						            v_pos.toKernel(),v_prp.toKernel(),offset);
 
 				}
@@ -1099,15 +1099,15 @@ class vector_dist_comm
 
 				for (size_t i = 0 ; i < dim ; i++)	{bc.bc[i] = dec.periodicity(i);}
 
-				apply_bc_each_part<dim,St,decltype(v_pos.toKernel())><<<ite.wthr,ite.thr>>>(dec.getDomain(),bc,v_pos.toKernel());
+				CUDA_LAUNCH((apply_bc_each_part<dim,St,decltype(v_pos.toKernel())>),ite.wthr,ite.thr,dec.getDomain(),bc,v_pos.toKernel());
 
 				return;
 			}
 
 			// label particle processor
-			process_id_proc_each_part<dim,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(lbl_p.toKernel()),decltype(prc_sz.toKernel())>
-			<<<ite.wthr,ite.thr>>>
-			(dec.toKernel(),v_pos.toKernel(),lbl_p.toKernel(),prc_sz.toKernel(),v_cl.rank());
+			CUDA_LAUNCH((process_id_proc_each_part<dim,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(lbl_p.toKernel()),decltype(prc_sz.toKernel())>),
+			ite.wthr,ite.thr,
+			dec.toKernel(),v_pos.toKernel(),lbl_p.toKernel(),prc_sz.toKernel(),v_cl.rank());
 
 
 			#ifndef TEST1
@@ -1145,7 +1145,7 @@ class vector_dist_comm
 			ite = lbl_p.getGPUIterator();
 
 			// we order lbl_p
-			reorder_lbl<decltype(lbl_p.toKernel()),decltype(starts.toKernel())><<<ite.wthr,ite.thr>>>(lbl_p.toKernel(),starts.toKernel());
+			CUDA_LAUNCH((reorder_lbl<decltype(lbl_p.toKernel()),decltype(starts.toKernel())>),ite.wthr,ite.thr,lbl_p.toKernel(),starts.toKernel());
 
 			#endif
 
