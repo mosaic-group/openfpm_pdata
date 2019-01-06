@@ -39,19 +39,20 @@ __global__  void initialize_props(vector_dist_ker<3, float, aggregate<float, flo
 	vd.template getProp<1>(p)[2] = vd.getPos(p)[1] + vd.getPos(p)[2];
 }
 
-template<typename CellList_type>
-__global__  void calculate_force(vector_dist_ker<3, float, aggregate<float, float[3], float [3]>> vd,
-		                         vector_dist_ker<3, float, aggregate<float, float[3], float [3]>> vd_sort,
-		                         CellList_type cl)
+template<typename T,typename CellList_type>
+__global__  void calculate_force(vector_dist_ker<3, T, aggregate<T, T[3], T [3]>> vd,
+		                         vector_dist_ker<3, T, aggregate<T, T[3], T [3]>> vd_sort,
+		                         CellList_type cl,
+		                         int rank)
 {
 	auto p = GET_PARTICLE(vd);
 
-	Point<3,float> xp = vd.getPos(p);
+	Point<3,T> xp = vd.getPos(p);
 
     auto it = cl.getNNIterator(cl.getCell(xp));
 
-    Point<3,float> force1({0.0,0.0,0.0});
-    Point<3,float> force2({0.0,0.0,0.0});
+    Point<3,T> force1({0.0,0.0,0.0});
+    Point<3,T> force2({0.0,0.0,0.0});
 
     while (it.isNext())
     {
@@ -60,11 +61,11 @@ __global__  void calculate_force(vector_dist_ker<3, float, aggregate<float, floa
 
     	if (q2 == p) {++it; continue;}
 
-    	Point<3,float> xq_1 = vd_sort.getPos(q1);
-    	Point<3,float> xq_2 = vd.getPos(q2);
+    	Point<3,T> xq_1 = vd_sort.getPos(q1);
+    	Point<3,T> xq_2 = vd.getPos(q2);
 
-    	Point<3,float> r1 = xq_1 - xp;
-    	Point<3,float> r2 = xq_2 - xp;
+    	Point<3,T> r1 = xq_1 - xp;
+    	Point<3,T> r2 = xq_2 - xp;
 
     	// Normalize
 
@@ -86,18 +87,18 @@ __global__  void calculate_force(vector_dist_ker<3, float, aggregate<float, floa
     vd.template getProp<2>(p)[2] = force2.get(2);
 }
 
-template<typename CellList_type>
-__global__  void calculate_force_full_sort(vector_dist_ker<3, float, aggregate<float, float[3], float [3]>> vd,
+template<typename T, typename CellList_type>
+__global__  void calculate_force_full_sort(vector_dist_ker<3, T, aggregate<T, T[3], T [3]>> vd,
 		                         	 	   CellList_type cl, int rank)
 {
 	unsigned int p;
 	GET_PARTICLE_SORT(p,cl);
 
-	Point<3,float> xp = vd.getPos(p);
+	Point<3,T> xp = vd.getPos(p);
 
     auto it = cl.getNNIterator(cl.getCell(xp));
 
-    Point<3,float> force1({0.0,0.0,0.0});
+    Point<3,T> force1({0.0,0.0,0.0});
 
     while (it.isNext())
     {
@@ -105,9 +106,9 @@ __global__  void calculate_force_full_sort(vector_dist_ker<3, float, aggregate<f
 
     	if (q1 == p) {++it; continue;}
 
-    	Point<3,float> xq_1 = vd.getPos(q1);
+    	Point<3,T> xq_1 = vd.getPos(q1);
 
-    	Point<3,float> r1 = xq_1 - xp;
+    	Point<3,T> r1 = xq_1 - xp;
 
     	// Normalize
 
@@ -126,6 +127,8 @@ __global__  void calculate_force_full_sort(vector_dist_ker<3, float, aggregate<f
 template<typename CellList_type, typename vector_type>
 bool check_force(CellList_type & NN_cpu, vector_type & vd)
 {
+	typedef typename vector_type::stype St;
+
 	auto it6 = vd.getDomainIterator();
 
 	bool match = true;
@@ -134,11 +137,11 @@ bool check_force(CellList_type & NN_cpu, vector_type & vd)
 	{
 		auto p = it6.get();
 
-		Point<3,float> xp = vd.getPos(p);
+		Point<3,St> xp = vd.getPos(p);
 
 		// Calculate on CPU
 
-		Point<3,float> force({0.0,0.0,0.0});
+		Point<3,St> force({0.0,0.0,0.0});
 
 		auto NNc = NN_cpu.getNNIterator(NN_cpu.getCell(xp));
 
@@ -148,16 +151,10 @@ bool check_force(CellList_type & NN_cpu, vector_type & vd)
 
 	    	if (q == p.getKey()) {++NNc; continue;}
 
-	    	Point<3,float> xq_2 = vd.getPos(q);
-	    	Point<3,float> r2 = xq_2 - xp;
+	    	Point<3,St> xq_2 = vd.getPos(q);
+	    	Point<3,St> r2 = xq_2 - xp;
 
 	    	// Normalize
-
-	    	if (r2.norm() == 0)
-	    	{
-	    		int debug = 0;
-	    		debug++;
-	    	}
 
 	    	r2 /= r2.norm();
 	    	force += vd.template getProp<0>(q)*r2;
@@ -260,9 +257,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_ghost_get )
 template<typename vector_type, typename CellList_type, typename CellList_type_cpu>
 void check_cell_list_cpu_and_gpu(vector_type & vd, CellList_type & NN, CellList_type_cpu & NN_cpu)
 {
-	auto it5 = vd.getDomainIteratorGPU();
+	auto it5 = vd.getDomainIteratorGPU(32);
 
-	calculate_force<decltype(NN.toKernel())><<<it5.wthr,it5.thr>>>(vd.toKernel(),vd.toKernel_sorted(),NN.toKernel());
+	calculate_force<typename vector_type::stype,decltype(NN.toKernel())><<<it5.wthr,it5.thr>>>(vd.toKernel(),vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
 
 	vd.template deviceToHostProp<1,2>();
 
@@ -288,7 +285,7 @@ void check_cell_list_cpu_and_gpu(vector_type & vd, CellList_type & NN, CellList_
 
 	// We do exactly the same test as before, but now we completely use the sorted version
 
-	calculate_force_full_sort<decltype(NN.toKernel())><<<it5.wthr,it5.thr>>>(vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
+	calculate_force_full_sort<typename vector_type::stype,decltype(NN.toKernel())><<<it5.wthr,it5.thr>>>(vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
 
 	vd.template merge_sort<1>(NN);
 	vd.template deviceToHostProp<1>();
@@ -772,7 +769,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_reduce)
 
 void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 {
-	typedef vector_dist_gpu<3,double,aggregate<double>> vector_type;
+	typedef vector_dist_gpu<3,double,aggregate<double,double[3],double[3]>> vector_type;
 
 	Vcluster<> & v_cl = create_vcluster();
 
@@ -881,9 +878,14 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 		//Back to GPU
 		vd.hostToDevicePos();
 		vd.map(RUN_ON_DEVICE);
-		vd.template ghost_get<>(RUN_ON_DEVICE);
+		vd.template ghost_get<0>(RUN_ON_DEVICE);
 		vd.deviceToHostPos();
-		vd.template deviceToHostProp<0>();
+		vd.template deviceToHostProp<0,1,2>();
+
+		// Check calc forces
+		auto NN_gpu = vd.getCellListGPU(r_cut);
+		auto NN_cpu = vd.getCellList(r_cut);
+		check_cell_list_cpu_and_gpu(vd,NN_gpu,NN_cpu);
 
 		auto VV2 = vd.getVerlet(r_cut);
 

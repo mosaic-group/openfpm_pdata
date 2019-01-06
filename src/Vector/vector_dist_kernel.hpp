@@ -116,6 +116,27 @@ public:
 		return v_prp.template get<id>(vec_key);
 	}
 
+	/*! \brief Return the internal position vector
+	 *
+	 *
+	 * \return the position vector
+	 *
+	 */
+	__device__ openfpm::vector_gpu_ker<Point<dim,St>,memory_traits_inte> & getPosVector()
+	{
+		return v_pos;
+	}
+
+	/*! \return the internal property vector
+	 *
+	 * \return the property vector
+	 *
+	 */
+	__device__ openfpm::vector_gpu_ker<prop,memory_traits_inte> & getPropVector()
+	{
+		return v_prp;
+	}
+
 };
 
 #endif
