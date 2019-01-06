@@ -927,7 +927,29 @@ int main(int argc, char* argv[])
 			vd.deviceToHostPos();
 			vd.deviceToHostProp<type,rho,rho_prev,Pressure,drho,force,velocity,velocity_prev,red,red2>();
 
-			vd.write_frame("Geometry",write,VTK_WRITER | FORMAT_BINARY);
+			// We copy on another vector with less properties to reduce the size of the output
+			vector_dist_gpu<3,real_number,aggregate<unsigned int,real_number[3]>> vd_out(vd.getDecomposition(),0);
+
+			auto ito = vd.getDomainIterator();
+
+			while(ito.isNext())
+			{
+				auto p = ito.get();
+
+				vd_out.add();
+
+				vd_out.getLastPos()[0] = vd.getPos(p)[0];
+				vd_out.getLastPos()[1] = vd.getPos(p)[1];
+				vd_out.getLastPos()[2] = vd.getPos(p)[2];
+
+				vd_out.template getLastProp<1>()[0] = vd.template getProp<velocity>(p)[0];
+				vd_out.template getLastProp<1>()[1] = vd.template getProp<velocity>(p)[1];
+				vd_out.template getLastProp<1>()[2] = vd.template getProp<velocity>(p)[2];
+
+				++ito;
+			}
+
+			vd_out.write_frame("Particles",write,VTK_WRITER | FORMAT_BINARY);
 			write++;
 
 			if (v_cl.getProcessUnitID() == 0)
