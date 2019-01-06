@@ -865,6 +865,10 @@ int main(int argc, char* argv[])
 		{
 			vd.map(RUN_ON_DEVICE);
 
+			// Rebalancer for now work on CPU , so move to CPU
+            vd.deviceToHostPos();
+            vd.template deviceToHostProp<type>();
+
 			it_reb = 0;
 			ModelCustom md;
 			vd.addComputationCosts(md);
