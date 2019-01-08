@@ -8,9 +8,13 @@ else
         CUDA_CC=nvcc
 endif
 
-CC_SCOREP=scorep --nocompiler  --cuda --mpp=mpi nvcc
-CC=$(CUDA_CC) #${CC_SCOREP}
-CC_MPI=mpic++
+ifeq ($(PROFILE),ON)
+	CC=scorep --nocompiler  --cuda --mpp=mpi nvcc
+	CC_MPI=mpic++
+else
+	CC=$(CUDA_CC)
+	CC_MPI=mpic++
+endif
 
 LDIR =
 OPT=

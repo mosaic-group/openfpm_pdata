@@ -13,8 +13,12 @@ else
         CUDA_CC_LINK=nvcc
 endif
 
-
-CC=mpic++
+ifeq ($(PROFILE),ON)
+	CUDA_CC=scorep --nocompiler  --cuda --mpp=mpi nvcc
+	CUDA_CC_LINK=nvcc
+else
+	CUDA_CC_LINK=nvcc
+endif
 
 LDIR =
 OPT=

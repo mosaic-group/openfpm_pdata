@@ -292,6 +292,9 @@ class vector_dist_comm
 
 		};
 		openfpm::vector<sh_box> reord_shift;
+		box_f.clear();
+		map_cmb.clear();
+		box_cmb.clear();
 
 		// Add local particles coming from periodic boundary, the only boxes that count are the one
 		// touching the border

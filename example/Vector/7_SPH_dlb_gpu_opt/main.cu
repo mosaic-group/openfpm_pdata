@@ -348,7 +348,7 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 		real_number r2 = norm2(dr);
 
 		// if they interact
-		if (r2 < FourH2)
+		if (r2 < FourH2 && dr >= 1e-8)
 		{
 			real_number r = sqrt(r2);
 
@@ -941,6 +941,8 @@ int main(int argc, char* argv[])
 				vd_out.getLastPos()[0] = vd.getPos(p)[0];
 				vd_out.getLastPos()[1] = vd.getPos(p)[1];
 				vd_out.getLastPos()[2] = vd.getPos(p)[2];
+
+				vd_out.template getLastProp<0>() = vd.template getProp<type>(p);
 
 				vd_out.template getLastProp<1>()[0] = vd.template getProp<velocity>(p)[0];
 				vd_out.template getLastProp<1>()[1] = vd.template getProp<velocity>(p)[1];
