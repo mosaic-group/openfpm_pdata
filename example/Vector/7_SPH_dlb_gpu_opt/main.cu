@@ -39,6 +39,7 @@
 
 #ifdef __NVCC__
 
+#define OPENMPI
 #include "Vector/vector_dist.hpp"
 #include <math.h>
 #include "Draw/DrawParticles.hpp"
@@ -52,7 +53,7 @@ typedef float real_number;
 #define FLUID 1
 
 // initial spacing between particles dp in the formulas
-const real_number dp = 0.00425;
+const real_number dp = 0.00425 / 2;
 // Maximum height of the fluid water
 // is going to be calculated and filled later on
 real_number h_swl = 0.0;
@@ -64,7 +65,7 @@ const real_number coeff_sound = 20.0;
 const real_number gamma_ = 7.0;
 
 // sqrt(3.0*dp*dp) support of the kernel
-const real_number H = 0.00736121593217;
+const real_number H = 0.00736121593217 / 2;
 
 // Eta in the formulas
 const real_number Eta2 = 0.01 * H*H;
@@ -78,10 +79,10 @@ const real_number visco = 0.1;
 real_number cbar = 0.0;
 
 // Mass of the fluid particles
-const real_number MassFluid = 0.0000767656;
+const real_number MassFluid = 0.0000767656 / 8;
 
 // Mass of the boundary particles
-const real_number MassBound = 0.0000767656;
+const real_number MassBound = 0.0000767656 / 8;
 
 //
 
@@ -89,7 +90,7 @@ const real_number MassBound = 0.0000767656;
 #ifdef TEST_RUN
 const real_number t_end = 0.001;
 #else
-const real_number t_end = 1.50;
+const real_number t_end = 0.001;
 #endif
 
 // Gravity acceleration
@@ -348,7 +349,7 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 		real_number r2 = norm2(dr);
 
 		// if they interact
-		if (r2 < FourH2 && dr >= 1e-8)
+		if (r2 < FourH2 && r2 >= 1e-16)
 		{
 			real_number r = sqrt(r2);
 
@@ -703,7 +704,7 @@ int main(int argc, char* argv[])
 
 	// Here we define our domain a 2D box with internals from 0 to 1.0 for x and y
 	Box<3,real_number> domain({-0.05,-0.05,-0.05},{1.7010,0.7065,0.511});
-	size_t sz[3] = {413,179,133};
+	size_t sz[3] = {825,357,265};
 
 	// Fill W_dap
 	W_dap = 1.0/Wab(H/1.5);
@@ -843,6 +844,7 @@ int main(int argc, char* argv[])
 	vd.hostToDevicePos();
 	vd.template hostToDeviceProp<type,rho,rho_prev,Pressure,velocity>();
 
+
 	vd.ghost_get<type,rho,Pressure,velocity>(RUN_ON_DEVICE);
 
 	auto NN = vd.getCellListGPU(2*H / 2.0);
@@ -880,6 +882,9 @@ int main(int argc, char* argv[])
 
 		vd.map(RUN_ON_DEVICE);
 
+        // make sort
+        vd.make_sort(NN);
+
 		// Calculate pressure from the density
 		EqState(vd);
 
@@ -913,7 +918,7 @@ int main(int argc, char* argv[])
 		{
 			// Sensor pressure require update ghost, so we ensure that particles are distributed correctly
 			// and ghost are updated
-			vd.map(RUN_ON_DEVICE);
+/*			vd.map(RUN_ON_DEVICE);
 			vd.ghost_get<type,rho,Pressure,velocity>(RUN_ON_DEVICE);
 			vd.updateCellList(NN);
 
@@ -951,7 +956,7 @@ int main(int argc, char* argv[])
 				++ito;
 			}
 
-			vd_out.write_frame("Particles",write,VTK_WRITER | FORMAT_BINARY);
+			vd_out.write_frame("Particles",write,VTK_WRITER | FORMAT_BINARY);*/
 			write++;
 
 			if (v_cl.getProcessUnitID() == 0)

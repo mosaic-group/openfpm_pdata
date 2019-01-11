@@ -14,10 +14,11 @@ else
 endif
 
 ifeq ($(PROFILE),ON)
-	CUDA_CC=scorep --nocompiler  --cuda --mpp=mpi nvcc
-	CUDA_CC_LINK=nvcc
+        CUDA_CC=scorep --nocompiler  --cuda --mpp=mpi nvcc
+        CUDA_CC_LINK=scorep --nocompiler  --cuda --mpp=mpi nvcc
 else
-	CUDA_CC_LINK=nvcc
+        CUDA_CC=nvcc
+        CUDA_CC_LINK=nvcc
 endif
 
 LDIR =

@@ -1823,6 +1823,7 @@ public:
 		return this->ig_box;
 	}
 
+
 	//! Define friend classes
 	//\cond
 	friend grid_dist_id<dim,St,T,typename Decomposition::extended_type,Memory,device_grid>;
