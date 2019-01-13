@@ -43,6 +43,7 @@
 #include "Vector/vector_dist.hpp"
 #include <math.h>
 #include "Draw/DrawParticles.hpp"
+#include <cuda_profiler_api.h>
 
 typedef float real_number;
 
@@ -88,9 +89,9 @@ const real_number MassBound = 0.0000767656 / 8;
 
 // End simulation time
 #ifdef TEST_RUN
-const real_number t_end = 0.001;
+const real_number t_end = 0.0005;
 #else
-const real_number t_end = 0.001;
+const real_number t_end = 0.0005;
 #endif
 
 // Gravity acceleration
@@ -226,11 +227,11 @@ inline __device__ __host__ void DWab(Point<3,real_number> & dx, Point<3,real_num
 
     real_number qq2 = qq * qq;
     real_number fac1 = (c1*qq + d1*qq2)/r;
-    real_number b1 = (qq < 1.0)?1.0f:0.0f;
+    real_number b1 = (qq < 1.0f)?1.0f:0.0f;
 
-    real_number wqq = (2.0 - qq);
+    real_number wqq = (2.0f - qq);
     real_number fac2 = c2 * wqq * wqq / r;
-    real_number b2 = (qq >= 1.0 && qq < 2.0)?1.0f:0.0f;
+    real_number b2 = (qq >= 1.0f && qq < 2.0f)?1.0f:0.0f;
 
     real_number factor = (b1*fac1 + b2*fac2);
 
@@ -257,14 +258,14 @@ inline __device__ __host__  real_number Tensile(real_number r, real_number rhoa,
 	    real_number wqq2=qq*qq;
 	    real_number wqq3=wqq2*qq;
 
-	    wab=a2*(1.0f-1.5f*wqq2+0.75f*wqq3);
+	    wab+=a2*(1.0f-1.5f*wqq2+0.75f*wqq3);
 	}
 
 	//-Tensile correction.
 	real_number fab=wab*W_dap;
 	fab*=fab; fab*=fab; //fab=fab^4
-	const real_number tensilp1=(prs1/(rhoa*rhoa))*(prs1>0? 0.01: -0.2);
-	const real_number tensilp2=(prs2/(rhob*rhob))*(prs2>0? 0.01: -0.2);
+	const real_number tensilp1=(prs1/(rhoa*rhoa))*(prs1>0.0f? 0.01f: -0.2f);
+	const real_number tensilp2=(prs2/(rhob*rhob))*(prs2>0.0f? 0.01f: -0.2f);
 
 	return (fab*(tensilp1+tensilp2));
 }
@@ -285,7 +286,7 @@ inline __device__ __host__ real_number Pi(const Point<3,real_number> & dr, real_
 		return pi_visc;
     }
 	else
-		return 0.0;
+		return 0.0f;
 }
 
 template<typename particles_type, typename NN_type>
@@ -295,7 +296,7 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 	unsigned int a;
 	GET_PARTICLE_SORT(a,NN);
 
-	real_number max_visc = 0.0;
+	real_number max_visc = 0.0f;
 
 	// Get the position xp of the particle
 	Point<3,real_number> xa = vd.getPos(a);
@@ -304,7 +305,7 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 	unsigned int typea = vd.getProp<type>(a);
 
 	// Take the mass of the particle dependently if it is FLUID or BOUNDARY
-	real_number massa = (vd.getProp<type>(a) == FLUID)?MassFluid:MassBound;
+	//real_number massa = (typea == FLUID)?MassFluid:MassBound;
 
 	// Get the density of the of the particle a
 	real_number rhoa = vd.getProp<rho>(a);
@@ -316,10 +317,10 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 	Point<3,real_number> va = vd.getProp<velocity>(a);
 
 	Point<3,real_number> force_;
-	force_.get(0) = 0.0;
-	force_.get(1) = 0.0;
+	force_.get(0) = 0.0f;
+	force_.get(1) = 0.0f;
 	force_.get(2) = -gravity;
-	real_number drho_ = 0.0;
+	real_number drho_ = 0.0f;
 
 	// Get an iterator over the neighborhood particles of p
 	auto Np = NN.getNNIteratorBox(NN.getCell(xa));
@@ -345,20 +346,19 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 
 		// Get the distance between p and q
 		Point<3,real_number> dr = xa - xb;
+		Point<3,real_number> v_rel = va - vb;
 		// take the norm of this vector
 		real_number r2 = norm2(dr);
 
 		// if they interact
-		if (r2 < FourH2 && r2 >= 1e-16)
+		if (r2 < FourH2 && r2 >= 1e-18f)
 		{
-			real_number r = sqrt(r2);
-
-			Point<3,real_number> v_rel = va - vb;
+			real_number r = sqrtf(r2);
 
 			Point<3,real_number> DW;
 			DWab(dr,DW,r);
 
-			real_number factor = - massb*((vd.getProp<Pressure>(a) + vd.getProp<Pressure>(b)) / (rhoa * rhob) + Tensile(r,rhoa,rhob,Pa,Pb,W_dap) + Pi(dr,r2,v_rel,rhoa,rhob,massb,cbar,max_visc));
+			real_number factor = - massb*((Pa + Pb) / (rhoa * rhob) + Tensile(r,rhoa,rhob,Pa,Pb,W_dap) + Pi(dr,r2,v_rel,rhoa,rhob,massb,cbar,max_visc));
 
 			// Bound - Bound does not produce any change
 			factor = (typea == BOUNDARY && typeb == BOUNDARY)?0.0f:factor;
@@ -386,7 +386,7 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 
 template<typename CellList> inline void calc_forces(particles & vd, CellList & NN, real_number & max_visc, size_t cnt)
 {
-	auto part = vd.getDomainIteratorGPU(32);
+	auto part = vd.getDomainIteratorGPU(64);
 
 	// Update the cell-list
 	vd.updateCellList(NN);
@@ -695,6 +695,8 @@ int main(int argc, char* argv[])
     // initialize the library
 	openfpm_init(&argc,&argv);
 
+	cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
+
 	// It contain for each time-step the value detected by the probes
 	openfpm::vector<openfpm::vector<real_number>> press_t;
 	openfpm::vector<Point<3,real_number>> probes;
@@ -852,6 +854,8 @@ int main(int argc, char* argv[])
 	timer tot_sim;
 	tot_sim.start();
 
+	cudaProfilerStart();
+
 	size_t write = 0;
 	size_t it = 0;
 	size_t it_reb = 0;
@@ -972,7 +976,10 @@ int main(int argc, char* argv[])
 	tot_sim.stop();
 	std::cout << "Time to complete: " << tot_sim.getwct() << " seconds" << std::endl;
 
+
 	openfpm_finalize();
+
+	cudaProfilerStop();
 }
  
 #else
