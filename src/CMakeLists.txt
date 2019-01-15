@@ -15,6 +15,7 @@ if ( CMAKE_COMPILER_IS_GNUCC )
     target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
 endif()
 
+
 add_library(ofpm_pdata STATIC lib/pdata.cpp)
 
 add_test(NAME pdata_3_proc COMMAND mpirun -np 3 ./pdata)
@@ -144,6 +145,9 @@ install(FILES DLB/DLB.hpp DLB/LB_Model.hpp
 
 install(FILES config/config.h
         DESTINATION openfpm_pdata/include/config )
+
+install(FILES lib/pdata.hpp
+        DESTINATION openfpm_pdata/include/lib )
 
 install(FILES Debug/debug.hpp
 	DESTINATION openfpm_pdata/include/Debug )

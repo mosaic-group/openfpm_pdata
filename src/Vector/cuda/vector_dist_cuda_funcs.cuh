@@ -12,6 +12,7 @@
 #include "util/cuda/moderngpu/kernel_reduce.hxx"
 #include "util/cuda/moderngpu/kernel_scan.hxx"
 #include "Decomposition/common.hpp"
+#include "lib/pdata.hpp"
 
 template<unsigned int dim, typename St, typename decomposition_type, typename vector_type, typename start_type, typename output_type>
 __global__ void proc_label_id_ghost(decomposition_type dec,vector_type vd, start_type starts, output_type out)
@@ -349,6 +350,8 @@ void remove_marked(vector_type & vd)
 
 	// first we do a scan of the property
 	openfpm::vector_gpu<aggregate<unsigned int>> idx;
+
+	idx.setMemory(mem_tmp);
 	idx.resize(vd.size_local());
 
 	auto ite = idx.getGPUIterator();

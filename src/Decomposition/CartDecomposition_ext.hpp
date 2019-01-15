@@ -218,6 +218,10 @@ public:
 	 */
 	void setParameters(const CartDecomposition<dim,T,Memory,layout_base,Distribution> & dec, const Ghost<dim,T> & g, const ::Box<dim,T> & ext_domain)
 	{
+		// Set the decomposition parameters
+		this->gr.setDimensions(dec.gr.getSize());
+		this->cd.setDimensions(ext_domain, dec.gr.getSize(), 0);
+
 		this->box_nn_processor = dec.box_nn_processor;
 
 		// Calculate new sub-domains for extended domain
@@ -225,7 +229,6 @@ public:
 
 		// Calculate fine_s structure for the extended domain
 		// update the cell decomposer and gr
-//		extend_fines(dec);
 		reconstruct_fine_s_from_extended_domain(ext_domain);
 
 		// Get the old sub-sub-domain grid extension

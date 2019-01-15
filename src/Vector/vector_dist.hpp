@@ -1243,7 +1243,7 @@ public:
 	 * \param no_se3 avoid se class 3 checking
 	 *
 	 */
-	template<typename CellL> void updateCellList(CellL & cell_list, bool no_se3 = false)
+	template<typename CellL> void updateCellList(CellL & cell_list, bool no_se3 = false, cl_construct_opt opt = cl_construct_opt::Full)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -1262,7 +1262,7 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getmgpuContext(false),g_m,CL_NON_SYMMETRIC);
+			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getmgpuContext(false),g_m,CL_NON_SYMMETRIC,opt);
 
 			cell_list.set_gm(g_m);
 		}
@@ -1294,7 +1294,7 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getmgpuContext(),g_m,CL_SYMMETRIC);
+			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getmgpuContext(),g_m,CL_SYMMETRIC,cl_construct_opt::Full);
 
 			cell_list.set_gm(g_m);
 		}
@@ -2693,6 +2693,26 @@ public:
 		{
 			this->g_m = g_m;
 		}
+
+        /*! \brief this function sort the vector
+         *
+         * \warning this function kill the ghost (and invalidate the Cell-list)
+         *
+         * \param NN Cell-list to use to reorder
+         *
+         */
+        void make_sort(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> & NN)
+        {
+                deleteGhost();
+
+                updateCellList(NN,false,cl_construct_opt::Only_reorder);
+
+                // construct a cell-list forcing to create a sorted version without ghost
+
+                // swap the sorted with the non-sorted
+                v_pos.swap(v_pos_out);
+                v_prp.swap(v_prp_out);
+        }
 
 #endif
 

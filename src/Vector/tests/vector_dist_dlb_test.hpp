@@ -239,7 +239,20 @@ template<typename vector_type> void test_dlb_vector()
 	}
 
 	vd.map();
+
+	////////////// DEBUG ////////////////////////
+
+	vd.write("bug_test_init_before");
+
+	/////////////////////////////////////////////
+
 	vd.template ghost_get<>();
+
+	////////////// DEBUG ////////////////////////
+
+	vd.write("bug_test_init_after");
+
+	/////////////////////////////////////////////
 
 	// Get the neighborhood of each particles
 
@@ -260,9 +273,23 @@ template<typename vector_type> void test_dlb_vector()
 
 	ModelSquare md;
 	md.factor = 10;
+	vd.map();
+
+	////////////// DEBUG ////////////////////////
+
+	vd.write("bug_test_before_dlb");
+
+	/////////////////////////////////////////////
+
 	vd.addComputationCosts(md);
 	vd.getDecomposition().decompose();
 	vd.map();
+
+	////////////// DEBUG ////////////////////////
+
+	vd.write("bug_test_after_dlb");
+
+	/////////////////////////////////////////////
 
 	vd.addComputationCosts(md);
 
@@ -299,8 +326,23 @@ template<typename vector_type> void test_dlb_vector()
 
 			++it;
 		}
+
 		vd.map();
+
+		////////////// DEBUG ////////////////////////
+
+		vd.write_frame("bug_test_before",i);
+
+		/////////////////////////////////////////////
+
 		vd.template ghost_get<>();
+
+		////////////// DEBUG ////////////////////////
+
+		vd.getDecomposition().write("dec_test");
+		vd.write_frame("bug_test_after",i);
+
+		/////////////////////////////////////////////
 
 		auto VV2 = vd.getVerlet(0.01);
 
