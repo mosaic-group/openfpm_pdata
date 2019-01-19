@@ -39,6 +39,8 @@
 
 #ifdef __NVCC__
 
+#define PRINT_STACKTRACE
+#define STOP_ON_ERROR
 #define OPENMPI
 #include "Vector/vector_dist.hpp"
 #include <math.h>
@@ -89,9 +91,9 @@ const real_number MassBound = 0.0000767656 / 8;
 
 // End simulation time
 #ifdef TEST_RUN
-const real_number t_end = 0.0005;
+const real_number t_end = 0.001;
 #else
-const real_number t_end = 0.0005;
+const real_number t_end = 0.001;
 #endif
 
 // Gravity acceleration
@@ -195,7 +197,7 @@ inline void EqState(particles & vd)
 {
 	auto it = vd.getDomainIteratorGPU();
 
-	EqState_gpu<<<it.wthr,it.thr>>>(vd.toKernel(),B);
+	CUDA_LAUNCH(EqState_gpu,it.wthr,it.thr,vd.toKernel(),B);
 }
 
 
@@ -294,6 +296,7 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 {
 	// ... a
 	unsigned int a;
+
 	GET_PARTICLE_SORT(a,NN);
 
 	real_number max_visc = 0.0f;
@@ -391,7 +394,7 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 	// Update the cell-list
 	vd.updateCellList(NN);
 
-	calc_forces_gpu<<<part.wthr,part.thr>>>(vd.toKernel_sorted(),NN.toKernel(),W_dap,cbar);
+	CUDA_LAUNCH(calc_forces_gpu,part.wthr,part.thr,vd.toKernel_sorted(),NN.toKernel(),W_dap,cbar);
 
 	vd.merge_sort<force,drho,red>(NN);
 
@@ -865,6 +868,7 @@ int main(int argc, char* argv[])
 		Vcluster<> & v_cl = create_vcluster();
 		timer it_time;
 
+
 		////// Do rebalancing every 200 timesteps
 		it_reb++;
 		if (it_reb == 300)
@@ -886,6 +890,7 @@ int main(int argc, char* argv[])
 
 		vd.map(RUN_ON_DEVICE);
 
+
         // make sort
         vd.make_sort(NN);
 
@@ -895,6 +900,7 @@ int main(int argc, char* argv[])
 		real_number max_visc = 0.0;
 
 		vd.ghost_get<type,rho,Pressure,velocity>(RUN_ON_DEVICE);
+
 
 		// Calc forces
 		calc_forces(vd,NN,max_visc,cnt);
@@ -922,7 +928,7 @@ int main(int argc, char* argv[])
 		{
 			// Sensor pressure require update ghost, so we ensure that particles are distributed correctly
 			// and ghost are updated
-/*			vd.map(RUN_ON_DEVICE);
+			vd.map(RUN_ON_DEVICE);
 			vd.ghost_get<type,rho,Pressure,velocity>(RUN_ON_DEVICE);
 			vd.updateCellList(NN);
 
@@ -960,7 +966,7 @@ int main(int argc, char* argv[])
 				++ito;
 			}
 
-			vd_out.write_frame("Particles",write,VTK_WRITER | FORMAT_BINARY);*/
+			vd_out.write_frame("Particles",write,VTK_WRITER | FORMAT_BINARY);
 			write++;
 
 			if (v_cl.getProcessUnitID() == 0)

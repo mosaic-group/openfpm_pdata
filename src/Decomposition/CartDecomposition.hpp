@@ -326,8 +326,8 @@ public:
 		{
 
 			// get the cells this box span
-			const grid_key_dx<dim> p1 = fine_s.getCellGrid(sub_domains_global.template get<0>(i).getP1());
-			const grid_key_dx<dim> p2 = fine_s.getCellGrid(sub_domains_global.template get<0>(i).getP2());
+			const grid_key_dx<dim> p1 = fine_s.getCellGrid_me(sub_domains_global.template get<0>(i).getP1());
+			const grid_key_dx<dim> p2 = fine_s.getCellGrid_pe(sub_domains_global.template get<0>(i).getP2());
 
 			// Get the grid and the sub-iterator
 			auto & gi = fine_s.getGrid();

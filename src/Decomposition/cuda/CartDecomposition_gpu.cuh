@@ -19,7 +19,8 @@ __device__ __host__ inline int processorID_impl(T2 & p, fine_s_type & fine_s, vs
 	int cl = fine_s.getCell(p);
 	int n_ele = fine_s.getNelements(cl);
 
-	for (int i = 0 ; i < n_ele ; i++)
+	int i = 0;
+	for ( ; i < n_ele ; i++)
 	{
 		e = fine_s.get(cl,i);
 
@@ -29,11 +30,17 @@ __device__ __host__ inline int processorID_impl(T2 & p, fine_s_type & fine_s, vs
 		}
 	}
 
-#if defined(SE_CLASS1) && !defined(__NVCC__)
+#if defined(SE_CLASS1)
 
 	if (n_ele == 0)
 	{
-		std::cout << __FILE__ << ":" << __LINE__ << " I cannot detect in which processor this particle go" << std::endl;
+		printf("CartDecomposition_gpu.cuh:processorID_impl, error I cannot detect in which processor this particle go");
+		return -1;
+	}
+
+	if (i == n_ele)
+	{
+		printf("CartDecomposition_gpu.cuh:processorID_impl, error I cannot detect in which processor this particle go because of round-off inconsistencies");
 		return -1;
 	}
 
@@ -82,7 +89,7 @@ class CartDecomposition_gpu : public ie_ghost_gpu<dim,T,Memory,layout_base>
 	 *        the explanation before)
 	 *
 	 */
-	__device__ void applyPointBC(Point<dim,T> & pt) const
+	__device__ __host__ void applyPointBC(Point<dim,T> & pt) const
 	{
 		for (int i = 0 ; i < dim ; i++)
 		{
@@ -120,7 +127,7 @@ public:
 	 * \return processorID
 	 *
 	 */
-	__device__ int inline processorIDBC(const Point<dim,T> & p)
+	__device__ __host__ int inline processorIDBC(const Point<dim,T> & p)
 	{
 		Point<dim,T> pt = p;
 		this->applyPointBC(pt);
@@ -137,7 +144,7 @@ public:
 	 *        the explanation before)
 	 *
 	 */
-	template<typename Mem> __device__ void applyPointBC(encapc<1,Point<dim,T>,Mem> && pt) const
+	template<typename Mem> __device__ __host__ void applyPointBC(encapc<1,Point<dim,T>,Mem> && pt) const
 	{
 		for (size_t i = 0 ; i < dim ; i++)
 		{
@@ -154,7 +161,7 @@ public:
 	 * \return processorID
 	 *
 	 */
-	__device__ int inline processorID(const Point<dim,T> &pt)
+	__device__ __host__ int inline processorID(const Point<dim,T> &pt)
 	{
 		return processorID_impl(pt,clk,sub_domains_global);
 	}
