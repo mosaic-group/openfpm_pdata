@@ -42,7 +42,7 @@
 #define PRINT_STACKTRACE
 #define STOP_ON_ERROR
 #define OPENMPI
-#define CUDA_CHECK_LAUNCH
+#define SE_CLASS1
 
 #include "Vector/vector_dist.hpp"
 #include <math.h>
@@ -97,7 +97,7 @@ const real_number MassBound = 0.0000767656 / 8.0;
 #ifdef TEST_RUN
 const real_number t_end = 0.001;
 #else
-const real_number t_end = 0.001;
+const real_number t_end = 1.500;
 #endif
 
 // Gravity acceleration

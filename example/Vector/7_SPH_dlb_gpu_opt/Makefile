@@ -31,7 +31,7 @@ sph_dlb_test: OPT += -DTEST_RUN
 sph_dlb_test: sph_dlb
 
 %.o: %.cu
-	$(CUDA_CC) -O0 -g $(OPT) -use_fast_math  -arch=sm_61 -lineinfo  -g -c -isystem=/home/i-bird/MPI/include --std=c++11 -o $@ $< $(INCLUDE_PATH_NVCC)
+	$(CUDA_CC) -O3 $(OPT) -use_fast_math  -arch=sm_61 -lineinfo  -g -c -isystem=/home/i-bird/MPI/include --std=c++11 -o $@ $< $(INCLUDE_PATH_NVCC)
 
 %.o: %.cpp
 	$(CC) -O3 $(OPT) -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
