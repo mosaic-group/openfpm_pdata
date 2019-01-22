@@ -17,8 +17,8 @@ ifeq ($(PROFILE),ON)
         CUDA_CC=scorep --nocompiler  --cuda --mpp=mpi nvcc
         CUDA_CC_LINK=scorep --nocompiler  --cuda --mpp=mpi nvcc
 else
-        CUDA_CC=nvcc
-        CUDA_CC_LINK=nvcc
+        CUDA_CC=$(CUDA_CC)
+        CUDA_CC_LINK=$(CUDA_CC)
 endif
 
 LDIR =
@@ -31,7 +31,7 @@ sph_dlb_test: OPT += -DTEST_RUN
 sph_dlb_test: sph_dlb
 
 %.o: %.cu
-	$(CUDA_CC) -O3 $(OPT) -use_fast_math  -arch=sm_61 -lineinfo  -g -c -isystem=/home/i-bird/MPI/include --std=c++11 -o $@ $< $(INCLUDE_PATH_NVCC)
+	$(CUDA_CC) -O3 $(OPT) -use_fast_math  -arch=sm_61 -lineinfo  -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH_NVCC)
 
 %.o: %.cpp
 	$(CC) -O3 $(OPT) -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)

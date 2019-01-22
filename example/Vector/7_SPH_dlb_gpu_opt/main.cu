@@ -60,7 +60,7 @@ typedef float real_number;
 #define FLUID 1
 
 // initial spacing between particles dp in the formulas
-const real_number dp = 0.00425 / 2.0;
+const real_number dp = 0.00425;
 // Maximum height of the fluid water
 // is going to be calculated and filled later on
 real_number h_swl = 0.0;
@@ -72,7 +72,7 @@ const real_number coeff_sound = 20.0;
 const real_number gamma_ = 7.0;
 
 // sqrt(3.0*dp*dp) support of the kernel
-const real_number H = 0.00736121593217 / 2.0;
+const real_number H = 0.00736121593217;
 
 // Eta in the formulas
 const real_number Eta2 = 0.01 * H*H;
@@ -86,10 +86,10 @@ const real_number visco = 0.1;
 real_number cbar = 0.0;
 
 // Mass of the fluid particles
-const real_number MassFluid = 0.0000767656 / 8.0;
+const real_number MassFluid = 0.0000767656;
 
 // Mass of the boundary particles
-const real_number MassBound = 0.0000767656 / 8.0;
+const real_number MassBound = 0.0000767656;
 
 //
 
@@ -713,7 +713,7 @@ int main(int argc, char* argv[])
 
 	// Here we define our domain a 2D box with internals from 0 to 1.0 for x and y
 	Box<3,real_number> domain({-0.05,-0.05,-0.05},{1.7010,0.7065,0.511});
-	size_t sz[3] = {2*(413-1)+1,2*(179-1)+1,2*(133-1)+1};
+	size_t sz[3] = {413,179,133};
 
 	// Fill W_dap
 	W_dap = 1.0/Wab(H/1.5);
