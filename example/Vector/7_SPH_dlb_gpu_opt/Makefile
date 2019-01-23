@@ -8,9 +8,11 @@ ifeq (, $(shell which nvcc))
         CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
         INCLUDE_PATH_NVCC=
         CUDA_CC_LINK=mpic++
+	CUDA_OPTIONS=
 else
         CUDA_CC=nvcc
         CUDA_CC_LINK=nvcc
+	CUDA_OPTIONS=-use_fast_math  -arch=sm_61 -lineinfo
 endif
 
 ifeq ($(PROFILE),ON)
@@ -31,7 +33,7 @@ sph_dlb_test: OPT += -DTEST_RUN
 sph_dlb_test: sph_dlb
 
 %.o: %.cu
-	$(CUDA_CC) -O3 $(OPT) -use_fast_math  -arch=sm_61 -lineinfo  -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH_NVCC)
+	$(CUDA_CC) -O3 $(OPT) $(CUDA_OPTIONS)  -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH_NVCC)
 
 %.o: %.cpp
 	$(CC) -O3 $(OPT) -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
