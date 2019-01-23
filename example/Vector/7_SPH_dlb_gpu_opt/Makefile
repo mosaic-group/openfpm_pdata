@@ -20,7 +20,7 @@ ifeq ($(PROFILE),ON)
         CUDA_CC_LINK=scorep --nocompiler  --cuda --mpp=mpi nvcc
 else
 	CUDA_CC:=$(CUDA_CC)
-	CUDA_CC_LINK:=$(CUDA_CC)
+	CUDA_CC_LINK:=$(CUDA_CC_LINK)
 endif
 
 LDIR =
