@@ -5,7 +5,7 @@ include ../../example.mk
 CUDA_CC=
 CUDA_CC_LINK=
 ifeq (, $(shell which nvcc))
-        CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
+        CUDA_CC=mpic++ $(INCLUDE_PATH)
         INCLUDE_PATH_NVCC=
         CUDA_CC_LINK=mpic++
 	CUDA_OPTIONS=
