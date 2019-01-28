@@ -15,7 +15,7 @@ function set_mpi()
         ./script/install_MPI.sh $1 $2 $3 $4 $5 $6 $7 "$openmpi_working_options"
         MPI_installed=1
         export PATH="$1/MPI/bin:$PATH"
-        configure_options="$configure_options CXX=mpic++ --mpivendor=openmpi"
+        configure_options="$configure_options CXX=mpic++ --with-mpivendor=openmpi"
   fi
 
 }
