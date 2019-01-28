@@ -17,7 +17,7 @@ cd OpenBLAS-0.2.20
 
 # configuration
 
-make
+make FC=$FC CC=$CC
 mkdir $1/OPENBLAS
 make install PREFIX=$1/OPENBLAS
 

@@ -94,19 +94,21 @@ else
     configure_options="$configure_options --with-blas-lib=$1/OPENBLAS/lib/libopenblas.a --with-lapack-lib=$1/OPENBLAS/lib/libopenblas.a"
 fi
 
-if [ ! -d "$1/SUITESPARSE" ]; then
+if [ -d "$1/SUITESPARSE"  -a -f "$1/SUITESPARSE/include/umfpack.h" ]; then
   CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_SUITESPARSE.sh $1 $2
 fi
 
 #### OK here we check if we can configure work with SUITESPARSE
-echo "Testing if PETSC work with SUITESPARSE"
-configure_options2="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
-test_configure_options 
+if [ -d "$1/SUITESPARSE"  -a -f "$1/SUITESPARSE/include/umfpack.h" ]; then
+  echo "Testing if PETSC work with SUITESPARSE"
+  configure_options2="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
+  test_configure_options
 
-if [ $error -eq 0 ]; then
-  configure_options="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
+  if [ $error -eq 0 ]; then
+    echo "SUITESPARSE work with PETSC"
+    configure_options="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
+  fi
 fi
-
 
 configure_options="$configure_options --download-scalapack --download-mumps"
 configure_options="$configure_options --download-superlu_dist"
