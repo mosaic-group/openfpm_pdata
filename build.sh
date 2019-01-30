@@ -83,6 +83,10 @@ if [ x"$comp_type" == x"se_class" ]; then
 	foward_options="--enable-se-class1"
 fi
 
+if [ x"$comp_type" == x"intel" ]; then
+	module load parallel_studio_xe/2019u1
+fi
+
 mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
 
 echo "Installing with: ./install $gpu_support  -i $dependency_dir $install_options -s -c \"$installation_dir $foward_options  \"  "
