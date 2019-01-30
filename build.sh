@@ -42,9 +42,17 @@ fi
 if [ x"$hostname" == x"falcon1" ]; then
 #       rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
         echo "falcon1 settings"
+	if [ x"$comp_type" == x"intel" ]; then
+        	module load parallel_studio_xe/2019u1
+        	mkdir $HOME/openfpm_dependencies_intel/openfpm_pdata/$branch
+	else
+        	mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
+	fi
+
 	dependency_dir=/projects/ppm/rundeck/openfpm_dependencies/
 else
 	dependency_dir=$HOME/openfpm_dependencies/openfpm_pdata/$branch
+	mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
 fi
 
 if [ x"$with_gpu" == x"1" ]; then
@@ -83,11 +91,7 @@ if [ x"$comp_type" == x"se_class" ]; then
 	foward_options="--enable-se-class1"
 fi
 
-if [ x"$comp_type" == x"intel" ]; then
-	module load parallel_studio_xe/2019u1
-fi
 
-mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
 
 echo "Installing with: ./install $gpu_support  -i $dependency_dir $install_options -s -c \"$installation_dir $foward_options  \"  "
 ./install $gpu_support -i $dependency_dir $install_options -s -c "$installation_dir $foward_options "
