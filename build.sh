@@ -45,11 +45,11 @@ if [ x"$hostname" == x"falcon1" ]; then
 	if [ x"$comp_type" == x"intel" ]; then
         	module load parallel_studio_xe/2019u1
         	mkdir $HOME/openfpm_dependencies_intel/openfpm_pdata/$branch
+		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies/
 	else
         	mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
+		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies/
 	fi
-
-	dependency_dir=/projects/ppm/rundeck/openfpm_dependencies/
 else
 	dependency_dir=$HOME/openfpm_dependencies/openfpm_pdata/$branch
 	mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
