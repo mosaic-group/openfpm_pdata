@@ -45,7 +45,7 @@ if [ x"$hostname" == x"falcon1" ]; then
 	if [ x"$comp_type" == x"intel" ]; then
         	module load parallel_studio_xe/2019u1
         	mkdir $HOME/openfpm_dependencies_intel/openfpm_pdata/$branch
-		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies/
+		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies_intel/
 	else
         	mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
 		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies/
@@ -82,8 +82,12 @@ installation_dir="--prefix=$HOME/openfpm_install/$branch"
 #chmod 600 $HOME/.ssh/config
 
 install_options=
-if [ x"$comp_type" != x"full" ]; then
-	install_options="-m"
+if [ x"$comp_type" == x"full" ]; then
+        install_options="-s"
+elif [ x"$comp_type" == x"intel" ]; then
+        install_options=" "
+else
+        install_options="-s -m"
 fi
 
 foward_options=
@@ -93,8 +97,8 @@ fi
 
 
 
-echo "Installing with: ./install $gpu_support  -i $dependency_dir $install_options -s -c \"$installation_dir $foward_options  \"  "
-./install $gpu_support -i $dependency_dir $install_options -s -c "$installation_dir $foward_options "
+echo "Installing with: ./install $gpu_support  -i $dependency_dir $install_options -c \"$installation_dir $foward_options  \"  "
+./install $gpu_support -i $dependency_dir $install_options -c "$installation_dir $foward_options "
 if [ $? -ne 0 ]; then
     curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
     exit 1 ;
