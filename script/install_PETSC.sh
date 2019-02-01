@@ -86,7 +86,7 @@ fi
 ### are compiled without optimization enabled, so we provide manual installation for that packages
 
 if [ ! -d "$1/OPENBLAS" ]; then
-  ./script/install_OPENBLAS.sh $1
+  CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_OPENBLAS.sh $1
   if [ $? -eq 0 ]; then
     configure_options="$configure_options --with-blas-lib=$1/OPENBLAS/lib/libopenblas.a --with-lapack-lib=$1/OPENBLAS/lib/libopenblas.a"
   fi

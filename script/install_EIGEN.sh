@@ -7,7 +7,7 @@ if [ -d "$1/EIGEN" ]; then
   exit 0
 fi
 
-./script/install_OPENBLAS.sh $1 $2
+CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_OPENBLAS.sh $1 $2
 if [ ! -d "$1/OPENBLAS"  ]; then
   exit 1
 fi

@@ -70,6 +70,7 @@ endif()
 # will also build with -std=c++11
 target_compile_features(pdata PUBLIC cxx_std_11)
 target_link_libraries(pdata ${MPI_C_LIBRARIES})
+target_link_libraries(pdata m)
 
 install(FILES Decomposition/CartDecomposition.hpp 
 	      Decomposition/shift_vect_converter.hpp 

@@ -394,8 +394,8 @@ else
     done
 
     if [ x"$inst_lin_alg" == x"y" ]; then
-        ./script/install_EIGEN.sh $i_dir $ncore
-        ./script/install_PETSC.sh $i_dir $ncore $CC $CXX $F77 $FC
+        CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_EIGEN.sh $i_dir $ncore
+        CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_PETSC.sh $i_dir $ncore $CC $CXX $F77 $FC
     fi
 
     ### collect PETSC configuration options
