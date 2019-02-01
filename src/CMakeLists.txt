@@ -71,6 +71,7 @@ endif()
 target_compile_features(pdata PUBLIC cxx_std_11)
 target_link_libraries(pdata ${MPI_C_LIBRARIES})
 target_link_libraries(pdata m)
+target_link_libraries(pdata c)
 
 install(FILES Decomposition/CartDecomposition.hpp 
 	      Decomposition/shift_vect_converter.hpp 
