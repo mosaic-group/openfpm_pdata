@@ -18,7 +18,7 @@ echo "Machine: $hostname"
 echo "Num of processors: $nproc"
 echo "Branch: $branch"
 
-if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
+if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  -o x"$hostname" == x"suitcase"  ]; then
         mpi_options="--oversubscribe"
 fi
 
