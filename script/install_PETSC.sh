@@ -132,7 +132,11 @@ if [ x"$CXX" != x"icpc" ]; then
       [ -x "$(command -v $1)" ]
   }
 
-  $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --prefix=$1/PETSC --with-debugging=0
+  if [ x"$platform" != x"cygwin" ]; then
+  	$python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --prefix=$1/PETSC --with-debugging=0
+  else
+	echo "Sorry PETSC installation in not supported on CYGWIN"
+  fi
 
 else
 
