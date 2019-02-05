@@ -1,10 +1,10 @@
-LINKLIBS = $(HDF5_LDFLAGS)  $(HDF5_LIBS) $(OPENMP_LDFLAGS) $(LIBHILBERT_LIB) $(PARMETIS_LIB)  $(METIS_LIB) $(PTHREAD_LIBS) $(OPT_LIBS) $(CUDA_LIBS) $(PETSC_LIB) $(SUITESPARSE_LIBS) $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBIFCORE) $(BOOST_UNIT_TEST_FRAMEWORK_LIB) $(BOOST_CHRONO_LIB) $(BOOST_TIMER_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_LDFLAGS) $(BOOST_IOSTREAMS_LIB)
+LINKLIBS = $(HDF5_LDFLAGS)  $(HDF5_LIBS) $(OPENMP_LDFLAGS) $(LIBHILBERT_LIB) $(PARMETIS_LIB)  $(METIS_LIB) $(PTHREAD_LIBS) $(OPT_LIBS) $(BOOST_LDFLAGS) $(BOOST_IOSTREAMS_LIB) $(CUDA_LIBS) $(PETSC_LIB) $(SUITESPARSE_LIBS) $(LAPACK_LIBS) $(BLAS_LIBS) $(BOOST_UNIT_TEST_FRAMEWORK_LIB) $(BOOST_CHRONO_LIB) $(BOOST_TIMER_LIB) $(BOOST_SYSTEM_LIB) $(LIBIFCORE)
 
 noinst_PROGRAMS = pdata
 pdata_SOURCES = main.cpp Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp Grid/tests/grid_dist_id_unit_test.cpp Grid/tests/staggered_grid_dist_unit_test.cpp Vector/tests/vector_dist_cell_list_tests.cpp Vector/tests/vector_dist_complex_prp_unit_test.cpp Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp Vector/tests/vector_dist_MP_unit_tests.cpp Vector/tests/vector_dist_NN_tests.cpp Vector/tests/vector_dist_unit_test.cpp  pdata_performance.cpp Decomposition/tests/CartDecomposition_unit_test.cpp Decomposition/tests/shift_vect_converter_tests.cpp Vector/performance/vector_dist_performance_util.cpp  lib/pdata.cpp test_multiple_o.cpp ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp
-pdata_CXXFLAGS = $(PARMETIS_INCLUDE) $(METIS_INCLUDE) $(HDF5_CPPFLAGS) $(OPENMP_CFLAGS) $(AM_CXXFLAGS) $(LIBHILBERT_INCLUDE) $(PETSC_INCLUDE) $(CUDA_CFLAGS) $(INCLUDES_PATH) $(H5PART_INCLUDE) $(BOOST_CPPFLAGS) -DPARALLEL_IO  -Wno-unused-local-typedefs
+pdata_CXXFLAGS = $(PARMETIS_INCLUDE) $(METIS_INCLUDE) $(BOOST_CPPFLAGS) $(HDF5_CPPFLAGS) $(OPENMP_CFLAGS) $(AM_CXXFLAGS) $(LIBHILBERT_INCLUDE) $(PETSC_INCLUDE) $(CUDA_CFLAGS) $(INCLUDES_PATH) $(H5PART_INCLUDE) -DPARALLEL_IO  -Wno-unused-local-typedefs
 pdata_CFLAGS = $(CUDA_CFLAGS)
-pdata_LDADD = $(LINKLIBS) -lparmetis -lmetis -lzmq
+pdata_LDADD = $(LINKLIBS) -lparmetis -lmetis
 nobase_include_HEADERS = Decomposition/CartDecomposition.hpp Decomposition/shift_vect_converter.hpp Decomposition/CartDecomposition_ext.hpp  Decomposition/common.hpp Decomposition/Decomposition.hpp  Decomposition/ie_ghost.hpp \
          Decomposition/Domain_NN_calculator_cart.hpp Decomposition/nn_processor.hpp Decomposition/ie_loc_ghost.hpp Decomposition/ORB.hpp \
          Graph/CartesianGraphFactory.hpp \
@@ -18,7 +18,7 @@ nobase_include_HEADERS = Decomposition/CartDecomposition.hpp Decomposition/shift
 
 #testa_SOURCES = Decomposition/Domain_NN_calculator_cart_unit_test.cpp ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp
 #testa_LDADD = $(LINKLIBS)
-#testa_CXXFLAGS = $(OPENMP_CFLAGS) $(AM_CXXFLAGS) $(LIBHILBERT_INCLUDE) $(PETSC_INCLUDE) $(HDF5_CPPFLAGS) $(CUDA_CFLAGS) $(INCLUDES_PATH) $(PARMETIS_INCLUDE) $(METIS_INCLUDE) $(H5PART_INCLUDE) $(BOOST_CPPFLAGS) -DPARALLEL_IO  -Wno-unused-local-typedefs
+#testa_CXXFLAGS = $(OPENMP_CFLAGS) $(AM_CXXFLAGS) $(LIBHILBERT_INCLUDE) $(PETSC_INCLUDE) $(HDF5_CPPFLAGS) $(CUDA_CFLAGS) $(INCLUDES_PATH) $(PARMETIS_INCLUDE) $(METIS_INCLUDE) $(BOOST_CPPFLAGS) $(H5PART_INCLUDE) -DPARALLEL_IO  -Wno-unused-local-typedefs
 
 lib_LIBRARIES = libofpm_pdata.a
 libofpm_pdata_a_SOURCES = lib/pdata.cpp
