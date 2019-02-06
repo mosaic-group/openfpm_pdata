@@ -1,6 +1,7 @@
 #! /bin/bash
 
 source script/discover_os
+discover_os
 
 # check if the directory $1/METIS exist
 
