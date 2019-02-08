@@ -162,13 +162,27 @@ bool check_force(CellList_type & NN_cpu, vector_type & vd)
 			++NNc;
 		}
 
-		match &= fabs(vd.template getProp<1>(p)[0] - vd.template getProp<2>(p)[0]) < 0.0001;
-		match &= fabs(vd.template getProp<1>(p)[1] - vd.template getProp<2>(p)[1]) < 0.0001;
-		match &= fabs(vd.template getProp<1>(p)[2] - vd.template getProp<2>(p)[2]) < 0.0001;
+		match &= fabs(vd.template getProp<1>(p)[0] - vd.template getProp<2>(p)[0]) < 0.0003;
+		match &= fabs(vd.template getProp<1>(p)[1] - vd.template getProp<2>(p)[1]) < 0.0003;
+		match &= fabs(vd.template getProp<1>(p)[2] - vd.template getProp<2>(p)[2]) < 0.0003;
 
-		match &= fabs(vd.template getProp<1>(p)[0] - force.get(0)) < 0.0001;
-		match &= fabs(vd.template getProp<1>(p)[1] - force.get(1)) < 0.0001;
-		match &= fabs(vd.template getProp<1>(p)[2] - force.get(2)) < 0.0001;
+		match &= fabs(vd.template getProp<1>(p)[0] - force.get(0)) < 0.0003;
+		match &= fabs(vd.template getProp<1>(p)[1] - force.get(1)) < 0.0003;
+		match &= fabs(vd.template getProp<1>(p)[2] - force.get(2)) < 0.0003;
+
+		if (match == false)
+		{
+			std::cout << "ERROR: " << vd.template getProp<1>(p)[0]  << "   " << vd.template getProp<2>(p)[0] << std::endl;
+	                std::cout << "ERROR: " << vd.template getProp<1>(p)[1]  << "   " << vd.template getProp<2>(p)[1] << std::endl;
+	                std::cout << "ERROR: " << vd.template getProp<1>(p)[2]  << "   " << vd.template getProp<2>(p)[2] << std::endl;
+
+	                std::cout << "ERROR2: " << vd.template getProp<1>(p)[0] << "   " <<  force.get(0) << std::endl;
+	                std::cout << "ERROR2: " << vd.template getProp<1>(p)[1] << "   " <<  force.get(1) << std::endl;
+	                std::cout << "ERROR2: " << vd.template getProp<1>(p)[2] << "   " <<  force.get(2) << std::endl;
+
+
+			break;
+		}
 
 		++it6;
 	}
