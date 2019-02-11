@@ -226,6 +226,9 @@ do
     se_class3)
        conf_options="$conf_options -DSE_CLASS3=ON"
        ;;
+    test_coverage)
+       conf_options="$conf_options -DTEST_COVERAGE=ON"
+       ;;
     gpu)
         if [ x"$CXX" == x"" ]; then
                 conf_options="$conf_options"
