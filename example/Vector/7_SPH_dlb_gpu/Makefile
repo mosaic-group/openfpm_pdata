@@ -9,8 +9,8 @@ ifeq (, $(shell which nvcc))
         INCLUDE_PATH_NVCC=
 	CUDA_CC_LINK=mpic++
 else
-        CUDA_CC=nvcc
-	CUDA_CC_LINK=nvcc
+        CUDA_CC=nvcc -ccbin=mpic++
+	CUDA_CC_LINK=nvcc -ccbin=mpic++
 endif
 
 CC=mpic++

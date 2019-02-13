@@ -10,8 +10,8 @@ ifeq (, $(shell which nvcc))
         CUDA_CC_LINK=mpic++
 	CUDA_OPTIONS=
 else
-        CUDA_CC=nvcc
-        CUDA_CC_LINK=nvcc
+        CUDA_CC=nvcc -ccbin=mpic++
+        CUDA_CC_LINK=nvcc -ccbin=mpic++
 	CUDA_OPTIONS=-use_fast_math  -arch=sm_61 -lineinfo
 endif
 
