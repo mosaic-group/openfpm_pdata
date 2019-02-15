@@ -95,6 +95,10 @@ if(PETSC_FOUND)
 	set(DEFINE_HAVE_PETSC "#define HAVE_PETSC")
 endif()
 
+if(SCAN_COVERTY)
+	set(DEFINE_SCAN_COVERTY "#define COVERTY_SCAN")
+endif()
+
 if(CUDA_FOUND)
 	set(DEFINE_CUDA_GPU "#define CUDA_GPU")
 endif()
