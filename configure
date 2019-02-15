@@ -232,6 +232,8 @@ do
     scan_coverty)
        conf_options="$conf_options -DSCAN_COVERTY=ON"
        ;;
+    test_performance)
+       conf_options="$conf_options -DTEST_PERFORMANCE=ON"
     gpu)
         if [ x"$CXX" == x"" ]; then
                 conf_options="$conf_options"
