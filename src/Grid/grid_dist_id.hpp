@@ -1780,7 +1780,7 @@ public:
 	{
 		getGlobalGridsInfo(gdb_ext_global);
 
-		this->template map_(dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global);
+		this->map_(dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global);
 
 		loc_grid_old.clear();
 		gdb_ext_old.clear();
