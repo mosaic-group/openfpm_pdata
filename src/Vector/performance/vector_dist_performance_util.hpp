@@ -19,7 +19,6 @@ static inline void warning_set(int & warning_level, double mean, double mean_ref
 {
 	int warning_level_candidate;
 
-	mean = 0;
 	if (mean - mean_ref < -2.0*sigma )
 		warning_level_candidate = -1;
 	else if (mean - mean_ref < 2.0*sigma)
@@ -83,6 +82,7 @@ void addUpdtateTime(GoogleChart & cg);
  */
 static inline void standard_deviation(openfpm::vector<double> measures, double & mean, double & dev)
 {
+	mean = 0;
 	for (size_t i = 0 ; i < measures.size() ; i++)
 		mean += measures.get(i);
 	mean /= measures.size();
