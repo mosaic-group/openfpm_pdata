@@ -1137,8 +1137,7 @@ public:
 
 #ifdef CUDA_GPU
 
-	/*! \brief Construct a cell list starting from the stored particles, this version of cell-list can be offloaded with
-	 *         the function toGPU
+	/*! \brief Construct a cell list starting from the stored particles
 	 *
 	 * \param r_cut interation radius, or size of each cell
 	 *
@@ -1161,6 +1160,7 @@ public:
 
 		return getCellListGPU(r_cut, g,no_se3);
 	}
+
 
 	/*! \brief Construct a cell list starting from the stored particles
 	 *
@@ -1208,6 +1208,41 @@ public:
 
 
 #endif
+
+///////////////////////// Device Interface, this interface always exist it wrap the GPU if you have one or the CPU if you do not have //////////////// 
+
+#ifdef CUDA_GPU
+
+        /*! \brief Construct a cell list from the stored particles
+         *
+         * \param r_cut interation radius, or size of each cell
+         *
+         * \return the Cell list
+         *
+         */
+        auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(getCellListGPU(r_cut,no_se3))
+        {
+                return getCellListGPU(r_cut,no_se3);
+        }
+
+
+#else
+
+	 /*! \brief Construct a cell list from the stored particles
+         *
+         * \param r_cut interation radius, or size of each cell
+         *
+         * \return the Cell list
+         *
+         */
+        auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(getCellList(r_cut, g,no_se3))
+        {
+                return getCellList(r_cut, g,no_se3);
+        }
+
+#endif
+
+////////////////////// End Device Interface ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	/*! \brief Construct an hilbert cell list starting from the stored particles
 	 *
@@ -1999,6 +2034,34 @@ public:
 
 #endif
 
+#ifdef CUDA_GPU
+
+        /*! \brief Get an iterator that traverse the particles in the domain
+         *
+         * \return an iterator
+         *
+         */
+        auto getDomainIteratorDevice(size_t n_thr = 1024) const -> decltype(getDomainIteratorGPU(n_thr))
+        {
+                return getDomainIteratorGPU(n_thr);
+        }
+
+
+#else
+
+        /*! \brief Get an iterator that traverse the particles in the domain
+         *
+         * \return an iterator
+         *
+         */
+        auto getDomainIteratorDevice(size_t n_thr = 1024) const -> decltype(getDomainIterator())
+        {
+                return getDomainIterator();
+        }
+
+
+#endif
+
 	/*! \brief Get an iterator that traverse the particles in the domain
 	 *
 	 * \return an iterator
@@ -2730,5 +2793,6 @@ public:
 
 template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte>> using vector_dist_gpu = vector_dist<dim,St,prop,Decomposition,CudaMemory,memory_traits_inte>;
 template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St,HeapMemory,memory_traits_inte>> using vector_dist_soa = vector_dist<dim,St,prop,Decomposition,HeapMemory,memory_traits_inte>;
+template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte>> using vector_dist_dev = vector_dist<dim,St,prop,Decomposition,CudaMemory,memory_traits_inte>;
 
 #endif /* VECTOR_HPP_ */

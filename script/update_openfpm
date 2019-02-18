@@ -49,6 +49,34 @@ function update_openfpm()
     git pull origin master
   else
 
+    #### New version require new version of CMAKE
+
+    dgc_major=$(cmake --version | grep "cmake version" | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
+    dgc_middle=$(cmake --version | grep "cmake version" | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
+    dgc_minor=$(cmake --version | grep "cmake version" | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
+
+    cmake_result=0
+    if [ $dgc_major -gt 3 ]; then
+        echo -e "cmake $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
+	cmake_result=1
+    elif [ $dgc_major -lt 3 ]; then
+        echo -e "cmake $dgc_major.$dgc_middle.$dgc_minor \033[91;5;1m FAILED \033[0m your cmake $dgc_major.$dgc_middle;$dgc_minor is too old, 3.8.X or higher is required"
+    elif [ $dgc_middle -gt 8  ]; then
+        echo -e "cmake $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
+	cmake_result=1
+    elif [ $dgc_middle -lt 8 ]; then
+        echo -e "cmake $dgc_major.$dgc_middle.$dgc_minor \033[91;5;1m FAILED \033[0m your cmake $dgc_major.$dgc_middle;$dgc_minor is too old, 3.8.X or higher is required"
+    else
+        echo -e "cmake $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
+	cmake_result=1
+    fi
+
+    if [ $cmake_result -ne 0 ]; then
+      echo -e "Upgrade summary\033[91;5;1m FAILED \033[0m"
+      return
+    else
+
+
     rm -rf {,.[!.],..?}*
     echo "Cloning Repo: $repo"
     git clone $repo .
