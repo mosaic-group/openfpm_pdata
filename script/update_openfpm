@@ -74,7 +74,7 @@ function update_openfpm()
     if [ $cmake_result -ne 0 ]; then
       echo -e "Upgrade summary\033[91;5;1m FAILED \033[0m"
       return
-    else
+    fi
 
 
     rm -rf {,.[!.],..?}*
