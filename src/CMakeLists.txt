@@ -89,7 +89,7 @@ target_link_libraries(pdata m)
 target_link_libraries(pdata c)
 if (NOT APPLE)
     target_link_libraries(pdata rt)
-endif (UNIX)
+endif ()
 
 install(FILES Decomposition/CartDecomposition.hpp 
 	      Decomposition/shift_vect_converter.hpp 
@@ -151,8 +151,7 @@ install(FILES Vector/cuda/vector_dist_comm_util_funcs.cuh
 	      Vector/cuda/vector_dist_cuda_funcs.cuh
 	DESTINATION openfpm_pdata/include/Vector/cuda )
 
-install(FILES Graph/CartesianGraphFactory.hpp
-	      Graph/ids.hpp Graph/dist_map_graph.hpp 
+install(FILES Graph/ids.hpp Graph/dist_map_graph.hpp 
 	      Graph/DistGraphFactory.hpp
               DESTINATION openfpm_pdata/include/Graph )
 
