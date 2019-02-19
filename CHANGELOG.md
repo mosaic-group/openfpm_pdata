@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [2.0.0] December 2018 (Codename Elisa)
+## [2.0.0] February 2018 (Codename Elisa)
 
 ### Added
 
