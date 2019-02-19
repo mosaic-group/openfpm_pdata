@@ -1220,9 +1220,9 @@ public:
          * \return the Cell list
          *
          */
-        auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(getCellListGPU(r_cut,no_se3))
+        auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(this->getCellListGPU(r_cut,no_se3))
         {
-                return getCellListGPU(r_cut,no_se3);
+                return this->getCellListGPU(r_cut,no_se3);
         }
 
 
@@ -1235,9 +1235,9 @@ public:
          * \return the Cell list
          *
          */
-        auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(getCellList(r_cut,no_se3))
+        auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(this->getCellList(r_cut,no_se3))
         {
-                return getCellList(r_cut,no_se3);
+                return this->getCellList(r_cut,no_se3);
         }
 
 #endif
@@ -2041,9 +2041,9 @@ public:
          * \return an iterator
          *
          */
-        auto getDomainIteratorDevice(size_t n_thr = 1024) const -> decltype(getDomainIteratorGPU(n_thr))
+        auto getDomainIteratorDevice(size_t n_thr = 1024) const -> decltype(this->getDomainIteratorGPU(n_thr))
         {
-                return getDomainIteratorGPU(n_thr);
+                return this->getDomainIteratorGPU(n_thr);
         }
 
 
