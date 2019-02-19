@@ -2054,9 +2054,9 @@ public:
          * \return an iterator
          *
          */
-        auto getDomainIteratorDevice(size_t n_thr = 1024) const -> decltype(getDomainIterator())
+        auto getDomainIteratorDevice(size_t n_thr = 1024) const -> decltype(this->getDomainIterator())
         {
-                return getDomainIterator();
+                return this->getDomainIterator();
         }
 
 
