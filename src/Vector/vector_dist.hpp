@@ -1235,9 +1235,9 @@ public:
          * \return the Cell list
          *
          */
-        auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(getCellList(r_cut, g,no_se3))
+        auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(getCellList(r_cut,no_se3))
         {
-                return getCellList(r_cut, g,no_se3);
+                return getCellList(r_cut,no_se3);
         }
 
 #endif
