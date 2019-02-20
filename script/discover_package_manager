@@ -68,7 +68,7 @@ fi
 
 function pc_install_command() {
   if [ x"$1" == x"pacman" ]; then
-    pc_install_command_ret="pacman -Sy"
+    pc_install_command_ret="pacman -Syu"
   else
     pc_install_command_ret="$1 install"
   fi
