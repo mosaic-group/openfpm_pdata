@@ -201,7 +201,7 @@ inline void EqState(particles & vd)
 {
 	auto it = vd.getDomainIteratorGPU();
 
-	CUDA_LAUNCH(EqState_gpu,it.wthr,it.thr,vd.toKernel(),B);
+	CUDA_LAUNCH(EqState_gpu,it,vd.toKernel(),B);
 }
 
 
@@ -398,7 +398,7 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 	// Update the cell-list
 	vd.updateCellList(NN);
 
-	CUDA_LAUNCH(calc_forces_gpu,part.wthr,part.thr,vd.toKernel_sorted(),NN.toKernel(),W_dap,cbar);
+	CUDA_LAUNCH(calc_forces_gpu,part,vd.toKernel_sorted(),NN.toKernel(),W_dap,cbar);
 
 	vd.merge_sort<force,drho,red>(NN);
 

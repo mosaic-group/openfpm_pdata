@@ -17,13 +17,13 @@ OBJ = main.o
 gpu_interop:
 
 %.o: %.cu
-	$(CUDA_CC) -O3 -g -c -isystem=/home/i-bird/MPI/include --std=c++11 -o $@ $< $(INCLUDE_PATH_NVCC)
+	$(CUDA_CC) -O3 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH_NVCC)
 
 %.o: %.cpp
-	$(CC) -O3 $(OPT) -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CUDA_CC) -O3 $(OPT) -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
 
 gpu_interop: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
+	$(CUDA_CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 all: gpu_interop
 
