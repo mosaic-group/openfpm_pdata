@@ -9,8 +9,11 @@
 
 #define SE_CLASS1
 #define SE_CLASS2
+// SE_CLASS2 only is unsupported, without SE_CLASS2_ONLY_TRACK
+#define SE_CLASS2_ONLY_TRACK
 #define SE_CLASS3
 #define THROW_ON_ERROR
+#define PRINT_STACKTRACE
 #include "Memleak_check.hpp"
 #include "Vector/vector_dist.hpp"
 #include "Decomposition/CartDecomposition.hpp"
@@ -100,7 +103,7 @@ int main(int argc, char* argv[])
 			vect_dist_key_dx vt(5048);
 			auto it = vd.getPos(vt);
         }
-		catch (size_t e)
+		catch (std::exception e)
 		{
 			std::cerr << "Error notification of overflow \n";
 		}

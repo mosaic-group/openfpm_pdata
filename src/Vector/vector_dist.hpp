@@ -242,6 +242,8 @@ public:
 
 	typedef Decomposition Decomposition_type;
 
+	typedef openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> internal_position_vector_type;
+
 private:
 
 	//! Ghost marker, all the particle with id > g_m are ghost all with g_m < are real particle
@@ -249,7 +251,7 @@ private:
 
 	//! Particle position vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> v_pos;
+	internal_position_vector_type v_pos;
 
 	//! Particle properties vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
@@ -1027,7 +1029,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>,decltype(v_pos) > > CellL getCellListSym(St r_cut)
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>,internal_position_vector_type > > CellL getCellListSym(St r_cut)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))

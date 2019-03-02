@@ -636,7 +636,10 @@ class vector_dist_comm
 	 * \param g_m ghost marker
 	 *
 	 */
-	template<typename send_vector, typename prp_object, int ... prp> void fill_send_ghost_put_prp_buf(openfpm::vector<prop> & v_prp, openfpm::vector<send_vector> & g_send_prp, size_t & g_m)
+	template<typename send_vector, typename prp_object, int ... prp>
+	void fill_send_ghost_put_prp_buf(openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+									 openfpm::vector<send_vector> & g_send_prp,
+									 size_t & g_m)
 	{
 		// create a number of send buffers equal to the near processors
 		// from which we received
@@ -667,9 +670,9 @@ class vector_dist_comm
 			for (size_t j = accum; j < accum + recv_sz_get.get(i); j++)
 			{
 				// source object type
-				typedef encapc<1, prop, typename openfpm::vector<prop>::layout_type> encap_src;
+				typedef encapc<1, prop, typename openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base>::layout_type> encap_src;
 				// destination object type
-				typedef encapc<1, prp_object, typename openfpm::vector<prp_object>::layout_type> encap_dst;
+				typedef encapc<1, prp_object, typename openfpm::vector<prp_object,Memory,typename layout_base<prp_object>::type,layout_base>::layout_type> encap_dst;
 
 				// Copy only the selected properties
 				object_si_d<encap_src, encap_dst, OBJ_ENCAP, prp...>(v_prp.get(j), g_send_prp.get(i).get(j2));
@@ -1764,8 +1767,8 @@ public:
 	 *
 	 */
 	template<template<typename,typename> class op, int ... prp>
-	void ghost_put_(openfpm::vector<Point<dim, St>> & v_pos,
-					openfpm::vector<prop> & v_prp,
+	void ghost_put_(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim, St>>::type,layout_base> & v_pos,
+					openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
 					size_t & g_m,
 					size_t opt)
 	{
@@ -1773,7 +1776,7 @@ public:
 		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;
 
 		// send vector for each processor
-		typedef openfpm::vector<prp_object> send_vector;
+		typedef openfpm::vector<prp_object,Memory,typename layout_base<prp_object>::type,layout_base> send_vector;
 
 		openfpm::vector<send_vector> g_send_prp;
 		fill_send_ghost_put_prp_buf<send_vector, prp_object, prp...>(v_prp,g_send_prp,g_m);

@@ -14,7 +14,10 @@
 
 #define SE_CLASS1
 #define SE_CLASS2
+// SE_CLASS2 is unsupported if not used in combination with SE_CLASS2_TRACK_ONLY
+#define SE_CLASS2_ONLY_TRACK
 #define SE_CLASS3
+#define PRINT_STACKTRACE
 #define THROW_ON_ERROR
 #include "Memleak_check.hpp"
 #include "Grid/grid_dist_id.hpp"
@@ -80,7 +83,7 @@ int main(int argc, char* argv[])
 	//
 
 	if (v_cl.getProcessUnitID() == 0)
-		print_alloc();
+	{print_alloc();}
 
 	//
 	// ### WIKI 5 ###

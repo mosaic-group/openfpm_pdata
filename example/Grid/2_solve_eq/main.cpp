@@ -102,8 +102,8 @@ void init(grid_dist_id<2,double,aggregate<double> > & g_dist, const size_t (& sz
 
 		//! \cond [init field zero] \endcond
 
-		if (key_g.get(0) == 0 || key_g.get(0) == sz[0] ||
-			key_g.get(1) == 0 || key_g.get(1) == sz[1])
+		if (key_g.get(0) < 0 || key_g.get(0) == sz[0] ||
+			key_g.get(1) < 0 || key_g.get(1) == sz[1])
 		{
 			// Boundary part
 			g_dist.template get<0>(key) = 0.0;

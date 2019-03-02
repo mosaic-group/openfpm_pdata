@@ -316,7 +316,7 @@ public:
 	 * \param grid info
 	 * \param dom domain
 	 */
-	void createCartGraph(grid_sm<dim, void> & grid, Box<dim, T> dom)
+	void createCartGraph(grid_sm<dim, void> & grid, Box<dim, T> & dom)
 	{
 		size_t bc[dim];
 

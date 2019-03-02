@@ -861,8 +861,6 @@ int main(int argc, char* argv[])
 	timer tot_sim;
 	tot_sim.start();
 
-	cudaProfilerStart();
-
 	size_t write = 0;
 	size_t it = 0;
 	size_t it_reb = 0;
@@ -988,8 +986,6 @@ int main(int argc, char* argv[])
 
 
 	openfpm_finalize();
-
-	cudaProfilerStop();
 }
  
 #else
