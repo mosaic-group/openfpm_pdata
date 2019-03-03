@@ -2361,7 +2361,22 @@ public:
 	 * \return true if the file has been written without error
 	 *
 	 */
-	inline bool write(std::string out, int opt = VTK_WRITER)
+	inline bool write(std::string out ,int opt = VTK_WRITER)
+	{
+		write(out,"",opt);
+	}
+
+	/*! \brief Output particle position and properties
+	 *
+	 * \param out output filename
+	 * \param meta_info meta information example ("time = 1.234" add the information time to the VTK file)
+	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
+	 *            FORMAT_BINARY. (the default is ASCII format)
+	 *
+	 * \return true if the file has been written without error
+	 *
+	 */
+	inline bool write(std::string out, std::string meta_info ,int opt = VTK_WRITER)
 	{
 
 		if ((opt & 0x0FFF0000) == CSV_WRITER)
@@ -2391,7 +2406,7 @@ public:
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtk"));
 
 			// Write the VTK file
-			return vtk_writer.write(output,prp_names,"particles",ft);
+			return vtk_writer.write(output,prp_names,"particles","",ft);
 		}
 	}
 
@@ -2426,6 +2441,7 @@ public:
 	 *
 	 * \param out output
 	 * \param iteration (we can append the number at the end of the file_name)
+	 * \param meta_info meta information example ("time = 1.234" add the information time to the VTK file)
 	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
 	 *            FORMAT_BINARY. (the default is ASCII format)
 	 *
@@ -2433,6 +2449,22 @@ public:
 	 *
 	 */
 	inline bool write_frame(std::string out, size_t iteration, int opt = VTK_WRITER)
+	{
+		write_frame(out,iteration,"",opt);
+	}
+
+	/*! \brief Output particle position and properties
+	 *
+	 * \param out output
+	 * \param iteration (we can append the number at the end of the file_name)
+	 * \param meta_info meta information example ("time = 1.234" add the information time to the VTK file)
+	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
+	 *            FORMAT_BINARY. (the default is ASCII format)
+	 *
+	 * \return if the file has been written correctly
+	 *
+	 */
+	inline bool write_frame(std::string out, size_t iteration, std::string meta_info, int opt = VTK_WRITER)
 	{
 		if ((opt & 0x0FFF0000) == CSV_WRITER)
 		{
@@ -2460,7 +2492,7 @@ public:
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtk"));
 
 			// Write the VTK file
-			return vtk_writer.write(output,prp_names,"particles",ft);
+			return vtk_writer.write(output,prp_names,"","particles",ft);
 		}
 	}
 
