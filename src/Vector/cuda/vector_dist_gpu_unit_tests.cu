@@ -1192,4 +1192,66 @@ BOOST_AUTO_TEST_CASE(vector_dist_keep_prop_on_cuda)
 	}
 }
 
+
+BOOST_AUTO_TEST_CASE(vector_dist_compare_host_device)
+{
+	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Ghost<3,double> g(0.1);
+	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
+
+	if (create_vcluster().size() >= 16)
+	{return;}
+
+	vector_dist_gpu<3,double,aggregate<double,double[3],double[3][3]>> vdg(10000,domain,bc,g,DEC_GRAN(128));
+
+	auto it = vdg.getDomainIterator();
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+
+		vdg.getPos(p)[0] = (double)rand() / RAND_MAX;
+		vdg.getPos(p)[1] = (double)rand() / RAND_MAX;
+		vdg.getPos(p)[2] = (double)rand() / RAND_MAX;
+
+		vdg.template getProp<0>(p) = (double)rand() / RAND_MAX;
+
+		vdg.template getProp<1>(p)[0] = (double)rand() / RAND_MAX;
+		vdg.template getProp<1>(p)[1] = (double)rand() / RAND_MAX;
+		vdg.template getProp<1>(p)[2] = (double)rand() / RAND_MAX;
+
+		vdg.template getProp<2>(p)[0][0] = (double)rand() / RAND_MAX;
+		vdg.template getProp<2>(p)[0][1] = (double)rand() / RAND_MAX;
+		vdg.template getProp<2>(p)[0][2] = (double)rand() / RAND_MAX;
+		vdg.template getProp<2>(p)[1][0] = (double)rand() / RAND_MAX;
+		vdg.template getProp<2>(p)[1][1] = (double)rand() / RAND_MAX;
+		vdg.template getProp<2>(p)[1][2] = (double)rand() / RAND_MAX;
+		vdg.template getProp<2>(p)[2][0] = (double)rand() / RAND_MAX;
+		vdg.template getProp<2>(p)[2][1] = (double)rand() / RAND_MAX;
+		vdg.template getProp<2>(p)[2][2] = (double)rand() / RAND_MAX;
+
+		++it;
+	}
+
+	vdg.map();
+
+	vdg.hostToDeviceProp<0,1,2>();
+	vdg.hostToDevicePos();
+
+	bool test = vdg.compareHostAndDevicePos(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,true);
+
+	vdg.getPos(100)[0] = 0.99999999;
+
+	test = vdg.compareHostAndDevicePos(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,false);
+
+	vdg.hostToDevicePos();
+	vdg.getPos(100)[0] = 0.99999999;
+
+	test = vdg.compareHostAndDevicePos(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,true);
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()

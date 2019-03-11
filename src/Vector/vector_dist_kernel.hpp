@@ -139,6 +139,15 @@ public:
 
 };
 
+// This is a tranformation node for vector_distributed for the algorithm toKernel_tranform
+template<template <typename> class layout_base, typename T>
+struct toKernel_transform<layout_base,T,2>
+{
+	typedef typename apply_transform<layout_base,typename T::value_type>::type aggr;
+
+	typedef vector_dist_ker<T::dims,typename T::stype,aggr> type;
+};
+
 #endif
 
 #endif /* VECTOR_DIST_GPU_HPP_ */

@@ -232,17 +232,6 @@ template<unsigned int dim,
          template<typename> class layout_base = memory_traits_lin>
 class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>
 {
-public:
-
-	//! Self type
-	typedef vector_dist<dim,St,prop,Decomposition,Memory,layout_base> self;
-
-	//! property object
-	typedef prop value_type;
-
-	typedef Decomposition Decomposition_type;
-
-	typedef openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> internal_position_vector_type;
 
 private:
 
@@ -251,7 +240,7 @@ private:
 
 	//! Particle position vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	internal_position_vector_type v_pos;
+	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> v_pos;
 
 	//! Particle properties vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
@@ -386,11 +375,26 @@ private:
 
 public:
 
+	//! Self type
+	typedef vector_dist<dim,St,prop,Decomposition,Memory,layout_base> self;
+
+	//! property object
+	typedef prop value_type;
+
+	typedef Decomposition Decomposition_type;
+
+	typedef decltype(v_pos) internal_position_vector_type;
+
+	typedef CellList<dim, St, Mem_fast<>, shift<dim, St>, internal_position_vector_type > CellList_type;
+
 	//! space type
 	typedef St stype;
 
 	//! dimensions of space
 	static const unsigned int dims = dim;
+
+	//!
+	typedef int yes_i_am_vector_dist;
 
 	/*! \brief Operator= for distributed vector
 	 *
@@ -441,6 +445,11 @@ public:
 
 		return *this;
 	}
+
+	// default constructor (structure contain garbage)
+	vector_dist()
+	:v_cl(create_vcluster<Memory>()),opt(opt)
+	{}
 
 
 	/*! \brief Copy Constructor
@@ -2809,6 +2818,32 @@ public:
                 // swap the sorted with the non-sorted
                 v_pos.swap(v_pos_out);
                 v_prp.swap(v_prp_out);
+        }
+
+        /*! \brief This function compare if the host and device buffer position match up to some tolerance
+         *
+         * \tparam prp property to check
+         *
+         * \param tol tollerance absolute
+         *
+         */
+        bool compareHostAndDevicePos(St tol, St near  = -1.0, bool silent = false)
+        {
+        	return compare_host_device<Point<dim,St>,0>::compare(v_pos,tol,near,silent);
+        }
+
+
+        /*! \brief This function compare if the host and device buffer position match up to some tolerance
+         *
+         * \tparam prp property to check
+         *
+         * \param tol tollerance absolute
+         *
+         */
+        template<unsigned int prp>
+        void compareHostAndDeviceProp(St tol)
+        {
+
         }
 
 #endif

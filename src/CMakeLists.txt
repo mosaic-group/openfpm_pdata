@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 ########################### Executables
 
 if(CUDA_FOUND)
-	set(CUDA_SOURCES Vector/cuda/vector_dist_cuda_func_test.cu Decomposition/cuda/decomposition_cuda_tests.cu Vector/cuda/vector_dist_gpu_unit_tests.cu ../openfpm_devices/src/memory/CudaMemory.cu)
+	set(CUDA_SOURCES Vector/cuda/vector_dist_gpu_MP_tests.cu Vector/cuda/vector_dist_cuda_func_test.cu Decomposition/cuda/decomposition_cuda_tests.cu Vector/cuda/vector_dist_gpu_unit_tests.cu ../openfpm_devices/src/memory/CudaMemory.cu)
 else()
 	set(CUDA_SOURCES)
 endif()
@@ -97,7 +97,7 @@ install(FILES Decomposition/CartDecomposition.hpp
 	      Decomposition/common.hpp 
 	      Decomposition/Decomposition.hpp  
 	      Decomposition/ie_ghost.hpp
-              Decomposition/Domain_NN_calculator_cart.hpp 
+          Decomposition/Domain_NN_calculator_cart.hpp 
 	      Decomposition/nn_processor.hpp Decomposition/ie_loc_ghost.hpp 
 	      Decomposition/ORB.hpp
 	      Decomposition/dec_optimizer.hpp

@@ -864,6 +864,10 @@ BOOST_AUTO_TEST_CASE(vector_dist_merge_sort)
 		v_pos_out.template get<0>(i)[1] = i+10000;
 		v_pos_out.template get<0>(i)[2] = i+20000;
 
+		v_pos.template get<0>(i)[0] = 0;
+		v_pos.template get<0>(i)[1] = 0;
+		v_pos.template get<0>(i)[2] = 0;
+
 		v_prp_out.template get<0>(i)[0] = i+60123;
 		v_prp_out.template get<0>(i)[1] = i+73543;
 		v_prp_out.template get<0>(i)[2] = i+82432;
@@ -943,7 +947,6 @@ BOOST_AUTO_TEST_CASE(vector_dist_merge_sort)
 		match &= v_prp_out.template get<2>(10000-i-1)[0] == v_prp.template get<2>(i)[0];
 		match &= v_prp_out.template get<2>(10000-i-1)[1] == v_prp.template get<2>(i)[1];
 		match &= v_prp_out.template get<2>(10000-i-1)[2] == v_prp.template get<2>(i)[2];
-
 
 		match &= v_pos.template get<0>(10000-i-1)[0] == 0;
 		match &= v_pos.template get<0>(10000-i-1)[1] == 0;
