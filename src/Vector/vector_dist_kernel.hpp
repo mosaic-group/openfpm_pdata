@@ -26,11 +26,11 @@ class vector_dist_ker
 
 	//! Particle position vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector_gpu_ker<Point<dim,St>,memory_traits_inte> v_pos;
+	mutable openfpm::vector_gpu_ker<Point<dim,St>,memory_traits_inte> v_pos;
 
 	//! Particle properties vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector_gpu_ker<prop,memory_traits_inte> v_prp;
+	mutable openfpm::vector_gpu_ker<prop,memory_traits_inte> v_prp;
 
 public:
 

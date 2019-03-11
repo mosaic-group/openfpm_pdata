@@ -2373,6 +2373,8 @@ public:
 	inline bool write(std::string out ,int opt = VTK_WRITER)
 	{
 		write(out,"",opt);
+
+		return true;
 	}
 
 	/*! \brief Output particle position and properties
