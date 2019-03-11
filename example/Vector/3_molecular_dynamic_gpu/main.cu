@@ -96,8 +96,6 @@ constexpr int energy = 2;
 template<typename vector_dist_type,typename NN_type>
 __global__ void calc_force_gpu(vector_dist_type vd, NN_type NN, real_number sigma12, real_number sigma6, real_number r_cut2)
 {
-	if (blockIdx.x == 0 && threadIdx.x == 0)
-	{printf("AAAAA %ld ",vd.size());}
 	auto p = GET_PARTICLE(vd);
 
 	// Get the position xp of the particle

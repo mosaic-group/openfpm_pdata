@@ -2372,9 +2372,7 @@ public:
 	 */
 	inline bool write(std::string out ,int opt = VTK_WRITER)
 	{
-		write(out,"",opt);
-
-		return true;
+		return write(out,"",opt);
 	}
 
 	/*! \brief Output particle position and properties
@@ -2461,7 +2459,7 @@ public:
 	 */
 	inline bool write_frame(std::string out, size_t iteration, int opt = VTK_WRITER)
 	{
-		write_frame(out,iteration,"",opt);
+		return write_frame(out,iteration,"",opt);
 	}
 
 	/*! \brief Output particle position and properties
@@ -2503,7 +2501,7 @@ public:
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtk"));
 
 			// Write the VTK file
-			return vtk_writer.write(output,prp_names,"","particles",ft);
+			return vtk_writer.write(output,prp_names,"particles","",ft);
 		}
 	}
 
@@ -2738,7 +2736,7 @@ public:
 		 */
 		template<unsigned int ... prp> vector_dist_ker<dim,St,prop> toKernel()
 		{
-			vector_dist_ker<dim,St,prop> v(v_pos.toKernel(), v_prp.toKernel());
+			vector_dist_ker<dim,St,prop> v(g_m,v_pos.toKernel(), v_prp.toKernel());
 
 			return v;
 		}
@@ -2752,7 +2750,7 @@ public:
 		 */
 		template<unsigned int ... prp> vector_dist_ker<dim,St,prop> toKernel_sorted()
 		{
-			vector_dist_ker<dim,St,prop> v(v_pos_out.toKernel(), v_prp_out.toKernel());
+			vector_dist_ker<dim,St,prop> v(g_m,v_pos_out.toKernel(), v_prp_out.toKernel());
 
 			return v;
 		}
