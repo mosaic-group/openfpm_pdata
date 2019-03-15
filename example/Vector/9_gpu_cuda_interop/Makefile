@@ -23,7 +23,7 @@ gpu_interop:
 	$(CUDA_CC) -O3 $(OPT) -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
 
 gpu_interop: $(OBJ)
-	$(CUDA_CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
+	$(CUDA_CC_LINK) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 all: gpu_interop
 
