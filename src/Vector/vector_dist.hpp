@@ -233,6 +233,11 @@ template<unsigned int dim,
 class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>
 {
 
+public:
+
+	//! Self type
+	typedef vector_dist<dim,St,prop,Decomposition,Memory,layout_base> self;
+
 private:
 
 	//! Ghost marker, all the particle with id > g_m are ghost all with g_m < are real particle
@@ -374,9 +379,6 @@ private:
 	}
 
 public:
-
-	//! Self type
-	typedef vector_dist<dim,St,prop,Decomposition,Memory,layout_base> self;
 
 	//! property object
 	typedef prop value_type;
