@@ -90,7 +90,8 @@ void init(grid_dist_id<2,double,aggregate<double> > & g_dist, const size_t (& sz
 		/*!
 		 * \page Grid_2_solve_eq Solve equation
 		 *
-		 * Initialize to 0, domain + boundary
+		 * Initialize to 0, domain + boundary (Careful the end of the domain is at the point -1 and the point sz, where
+		 * sz is the grid size in that dimension )
 		 *
 		 * \snippet Grid/2_solve_eq/main.cpp init field zero
 		 *

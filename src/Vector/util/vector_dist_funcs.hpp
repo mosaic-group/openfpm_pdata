@@ -131,11 +131,13 @@ __device__ inline void process_ghost_device_particle_prp(unsigned int i, unsigne
 	object_si_d<encap_src, encap_dst, OBJ_ENCAP, prp...>(v_prp.get(id), m_prp.get(i));
 }
 
+
+
 template<typename base_type, unsigned int prp>
 struct compare_host_device
 {
 	template<typename St, typename vector_type>
-	static bool compare(vector_type & v_prp,St & tol, bool silent = false)
+	static bool compare(vector_type & v_prp,St & tol, St & near, bool silent = false)
 	{
 		bool ret = true;
 
@@ -165,13 +167,11 @@ struct compare_host_device
 		{
 			auto p = it.get();
 
-			if (fabs(tmp.get(p) - v_prp.get(p)) >= tol)
+			if (fabs(tmp.template get<0>(p) - v_prp.template get<prp>(p)) >= tol && (fabs(tmp.template get<0>(p)) > near && fabs(v_prp.template get<prp>(p)) ) )
 			{
-				if (silent == false)
-				{
-					std::cout << "Host and Device buffer differ over set tollerance: " << "Host[" << p.getKey() << "]=" << tmp.get(p) <<
-						   "  Device[" << p.getKey() << "]="<< v_prp.get(p) << "  differ more than: " << tol << std::endl;
-				}
+				std::cout << "Host and Device buffer differ over set tollerance: " << "Host[" << p << "]="  << tmp.template get<0>(p)
+				                                                                   << "  Device[" << p << "]="<< v_prp.template get<0>(p) <<
+				                                                                   "  differ more than: " << tol << std::endl;
 				ret = false;
 			}
 
@@ -185,7 +185,7 @@ struct compare_host_device
 		{
 			auto p = it.get();
 
-			v_prp.template get<prp>(p) = tmp.get<0>(p);
+			v_prp.template get<prp>(p) = tmp.template get<0>(p);
 
 			++it;
 		}
@@ -262,8 +262,10 @@ template<typename base_type,unsigned int N1, unsigned int prp>
 struct compare_host_device<base_type[N1],prp>
 {
 	template<typename St, typename vector_type>
-	static void compare(vector_type & v_prp,St & tol)
+	static bool compare(vector_type & v_prp,St & tol, St & near, bool silent = false)
 	{
+		bool ret = true;
+
 		// Create a temporal
 		openfpm::vector<aggregate<base_type[N1]>> tmp;
 
@@ -276,7 +278,10 @@ struct compare_host_device<base_type[N1],prp>
 		{
 			auto p = it.get();
 
-			tmp.get(p) = v_prp.get(p);
+			for (size_t j = 0 ; j < N1 ; j++)
+			{
+				tmp.template get<0>(p)[j] = v_prp.template get<prp>(p)[j];
+			}
 
 			++it;
 		}
@@ -292,9 +297,12 @@ struct compare_host_device<base_type[N1],prp>
 
 			for (size_t j = 0 ; j < N1 ; j++)
 			{
-				if (fabs(tmp.get(p)[j] - v_prp.get(p)[j]) >= tol)
+				if (fabs(tmp.template get<0>(p)[j] - v_prp.template get<prp>(p)[j]) >= tol && (fabs(tmp.template get<0>(p)[j]) > near && fabs(v_prp.template get<prp>(p)[j]) ) )
 				{
-					std::cout << "Host and Device buffer differ over set tollerance: " << "Host[" << p.getKey() << "]=" << tmp.get(p)[j] << "  Device[" << p.getKey() << "]="<< v_prp.get(p)[j] << "  differ more than: " << tol << std::endl;
+					std::cout << "Host and Device buffer differ over set tollerance: " << "Host[" << p << "]="  << tmp.template get<0>(p)[j]
+					                                                                   << "  Device[" << p << "]="<< v_prp.template get<prp>(p)[j] <<
+					                                                                   "  differ more than: " << tol << std::endl;
+					ret = false;
 				}
 			}
 
@@ -310,11 +318,13 @@ struct compare_host_device<base_type[N1],prp>
 
 			for (size_t j = 0 ; j < N1 ; j++)
 			{
-				v_prp.template get<prp>(p)[j] = tmp.get<0>(p)[j];
+				v_prp.template get<prp>(p)[j] = tmp.template get<0>(p)[j];
 			}
 
 			++it;
 		}
+
+		return ret;
 	}
 };
 
@@ -322,21 +332,29 @@ template<typename base_type,unsigned int N1 , unsigned int N2, unsigned int prp>
 struct compare_host_device<base_type[N1][N2],prp>
 {
 	template<typename St, typename vector_type>
-	void compare(vector_type & v_prp,St & tol)
+	static bool compare(vector_type & v_prp,St & tol, St & near, bool silent = false)
 	{
+		bool ret = true;
+
 		// Create a temporal
 		openfpm::vector<aggregate<base_type[N1][N2]>> tmp;
 
 		tmp.resize(v_prp.size());
 
 		// move host memory to tmp
-		auto it = this->getIterator();
+		auto it = v_prp.getIterator();
 
 		while (it.isNext())
 		{
 			auto p = it.get();
 
-			tmp.template get<0>(p) = v_prp.template get<prp>(p);
+			for (size_t j = 0 ; j < N1 ; j++)
+			{
+				for (size_t k = 0 ; k < N2 ; k++)
+				{
+					tmp.template get<0>(p)[j][k] = v_prp.template get<prp>(p)[j][k];
+				}
+			}
 
 			++it;
 		}
@@ -354,10 +372,12 @@ struct compare_host_device<base_type[N1][N2],prp>
 			{
 				for (size_t k = 0 ; k < N2 ; k++)
 				{
-					if (fabs(tmp.template get(p)[j][k] - v_prp.get(p)[j][k]) >= tol)
+					if (fabs(tmp.template get<0>(p)[j][k] - v_prp.template get<prp>(p)[j][k]) >= tol && (fabs(tmp.template get<0>(p)[j][k]) > near && fabs(v_prp.template get<prp>(p)[j][k]) ) )
 					{
-						std::cout << "Host and Device buffer differ over set tollerance: " << "Host[" << p.getKey() << "][" << j << "][" << k << "]=" << tmp.template get<0>(p)[j][k]
-						                                                                 << "  Device[" << p.getKey() << "][" << j << "][" << k << "]=" << v_prp.template get<prp>(p)[j][k] << "  differ more than: " << tol << std::endl;
+						std::cout << "Host and Device buffer differ over set tollerance: " << "Host[" << p << "]["  << j << "][" << k << "]=" << tmp.template get<0>(p)[j][k]
+						                                                                 << "  Device[" << p << "][" << j << "][" << k << "]=" << v_prp.template get<prp>(p)[j][k] << "  differ more than: " << tol << std::endl;
+
+						ret = false;
 					}
 				}
 			}
@@ -382,6 +402,8 @@ struct compare_host_device<base_type[N1][N2],prp>
 
 			++it;
 		}
+
+		return ret;
 	}
 };
 

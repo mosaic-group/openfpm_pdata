@@ -1251,6 +1251,57 @@ BOOST_AUTO_TEST_CASE(vector_dist_compare_host_device)
 
 	test = vdg.compareHostAndDevicePos(0.00001,0.00000001);
 	BOOST_REQUIRE_EQUAL(test,true);
+
+	////////////////////////////////////////////////// PROP VECTOR
+
+	test = vdg.compareHostAndDeviceProp<1>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,true);
+
+	vdg.getProp<1>(103)[0] = 0.99999999;
+
+	test = vdg.compareHostAndDeviceProp<1>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,false);
+
+	vdg.hostToDeviceProp<1>();
+	vdg.getProp<1>(103)[0] = 0.99999999;
+
+	test = vdg.compareHostAndDeviceProp<1>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,true);
+
+	////////////////////////////////////////////////// PROP scalar
+
+
+	test = vdg.compareHostAndDeviceProp<0>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,true);
+
+	vdg.getProp<0>(105) = 0.99999999;
+
+	test = vdg.compareHostAndDeviceProp<0>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,false);
+
+	vdg.hostToDeviceProp<0>();
+	vdg.getProp<0>(105) = 0.99999999;
+
+	test = vdg.compareHostAndDeviceProp<0>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,true);
+
+
+	////////////////////////////////////////////////// PROP scalar
+
+
+	test = vdg.compareHostAndDeviceProp<2>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,true);
+
+	vdg.getProp<2>(108)[1][2] = 0.99999999;
+
+	test = vdg.compareHostAndDeviceProp<2>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,false);
+
+	vdg.hostToDeviceProp<2>();
+	vdg.getProp<2>(108)[1][2] = 0.99999999;
+
+	test = vdg.compareHostAndDeviceProp<2>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,true);
 }
 
 

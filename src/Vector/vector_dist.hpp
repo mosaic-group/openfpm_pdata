@@ -2843,10 +2843,10 @@ public:
          *
          */
         template<unsigned int prp>
-        void compareHostAndDeviceProp(St tol, St near  = -1.0, bool silent = false)
+        bool compareHostAndDeviceProp(St tol, St near  = -1.0, bool silent = false)
         {
         	return compare_host_device<typename boost::mpl::at<typename prop::type,
-        							            boost::mpl::int_<0> >::type,prp>::compare(v_prp,tol,near,silent);
+        							            boost::mpl::int_<prp> >::type,prp>::compare(v_prp,tol,near,silent);
         }
 
 #endif
