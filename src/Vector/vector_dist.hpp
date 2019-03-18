@@ -2417,7 +2417,7 @@ public:
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtk"));
 
 			// Write the VTK file
-			return vtk_writer.write(output,prp_names,"particles","",ft);
+			return vtk_writer.write(output,prp_names,"particles",meta_info,ft);
 		}
 	}
 
@@ -2503,7 +2503,7 @@ public:
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtk"));
 
 			// Write the VTK file
-			return vtk_writer.write(output,prp_names,"particles","",ft);
+			return vtk_writer.write(output,prp_names,"particles",meta_info,ft);
 		}
 	}
 
