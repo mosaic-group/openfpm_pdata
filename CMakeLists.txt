@@ -18,6 +18,7 @@ set(TINYOBJLOADER_ROOT CACHE PATH "TinyObjLoader library path")
 set(SE_CLASS1 CACHE BOOL "Activate compilation with SE_CLASS1")
 set(SE_CLASS2 CACHE BOOL "Activate compilation with SE_CLASS2")
 set(SE_CLASS3 CACHE BOOL "Activate compilation with SE_CLASS3")
+set(ACTION_ON_ERROR CACHE STRING "Action to perform in case of error")
 set(PROFILE_WITH_SCOREP CACHE BOOL "Enable profiling with scorep")
 set(ENV{PETSC_DIR} ${PETSC_ROOT})
 set(ENV{HDF5_ROOT} ${HDF5_ROOT})
@@ -81,6 +82,10 @@ endif()
 
 if(SE_CLASS1)
 	set(DEFINE_SE_CLASS1 "#define SE_CLASS1")
+endif()
+
+if(ACTION_ON_ERROR)
+	set(DEFINE_ACTION_ON_ERROR "#define ${ACTION_ON_ERROR}")
 endif()
 
 if(SE_CLASS2)

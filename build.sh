@@ -92,7 +92,7 @@ fi
 
 foward_options=
 if [ x"$comp_type" == x"se_class" ]; then
-	foward_options="--enable-se-class1"
+	foward_options="--enable-se-class1 --with-action-on-error=STOP_ON_ERROR"
 fi
 
 
