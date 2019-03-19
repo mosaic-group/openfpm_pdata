@@ -232,8 +232,8 @@ struct compare_host_device<Point<N1,base_type>,prp>
 			{
 				if (fabs(tmp.template get<0>(p)[j] - v_pos.template get<0>(p)[j]) >= tol && (fabs(tmp.template get<0>(p)[j]) > near && fabs(v_pos.template get<0>(p)[j]) ) )
 				{
-					std::cout << "Host and Device buffer differ over set tollerance: " << "Host[" << p << "]="  << tmp.template get<0>(p)[j]
-					                                                                   << "  Device[" << p << "]="<< v_pos.template get<0>(p)[j] <<
+					std::cout << "Host and Device buffer differ over set tollerance: " << "Host[" << p << "][" << j <<"]="  << tmp.template get<0>(p)[j]
+					                                                                 << "  Device[" << p << "][" << j << "]=" << v_pos.template get<0>(p)[j] <<
 					                                                                   "  differ more than: " << tol << std::endl;
 					ret = false;
 				}
