@@ -316,7 +316,7 @@ public:
 	 * \param grid info
 	 * \param dom domain
 	 */
-	void createCartGraph(grid_sm<dim, void> & grid, Box<dim, T> dom)
+	void createCartGraph(grid_sm<dim, void> & grid, Box<dim, T> & dom)
 	{
 		size_t bc[dim];
 
@@ -649,7 +649,6 @@ public:
 	const ParMetisDistribution<dim,T> & operator=(ParMetisDistribution<dim,T> && dist)
 	{
 		is_distributed = dist.is_distributed;
-		v_cl = dist.v_cl;
 		gr = dist.gr;
 		domain = dist.domain;
 		gp.swap(dist.gp);

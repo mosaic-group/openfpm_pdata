@@ -42,9 +42,17 @@ fi
 if [ x"$hostname" == x"falcon1" ]; then
 #       rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
         echo "falcon1 settings"
-	dependency_dir=/projects/ppm/rundeck/openfpm_dependencies/
+	if [ x"$comp_type" == x"intel" ]; then
+        	module load parallel_studio_xe/2019u1
+        	mkdir $HOME/openfpm_dependencies_intel/openfpm_pdata/$branch
+		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies_intel/
+	else
+        	mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
+		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies/
+	fi
 else
 	dependency_dir=$HOME/openfpm_dependencies/openfpm_pdata/$branch
+	mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
 fi
 
 if [ x"$with_gpu" == x"1" ]; then
@@ -73,39 +81,36 @@ installation_dir="--prefix=$HOME/openfpm_install/$branch"
 #echo "StrictHostKeyChecking=no" > $HOME/.ssh/config
 #chmod 600 $HOME/.ssh/config
 
-mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
+install_options=
 if [ x"$comp_type" == x"full" ]; then
-  echo "Installing with: ./install -i $dependency_dir -s -c \"$installation_dir\"  "
-  ./install -i $dependency_dir  -s -c "$installation_dir"
-  make install
-  if [ $? -ne 0 ]; then
-    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
-    exit 1 ;
-  fi
-  mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
-  source $HOME/openfpm_vars_$branch
-elif [ x"$comp_type" == x"numerics" ]; then
-  ./install -i $dependency_dir  -m -s -c "$installation_dir"
-
-  if [ $? -ne 0 ]; then
-    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
-    exit 1 ;
-  fi
-  mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
-  source $HOME/openfpm_vars_$branch
-  make VERBOSE=1  -j 8
+        install_options="-s"
+elif [ x"$comp_type" == x"intel" ]; then
+        install_options=" "
 else
-  echo "Installing with: ./install $gpu_support  -i $dependency_dir -m -s -c \"$installation_dir --no-recursion\""
-  ./install $gpu_support -i $dependency_dir -m -s -c "$installation_dir"
+        install_options="-s -m"
+fi
 
-  if [ $? -ne 0 ]; then
+foward_options=
+if [ x"$comp_type" == x"se_class" ]; then
+	foward_options="--enable-se-class1 --with-action-on-error=STOP_ON_ERROR"
+fi
+
+
+
+echo "Installing with: ./install $gpu_support  -i $dependency_dir $install_options -c \"$installation_dir $foward_options  \"  "
+./install $gpu_support -i $dependency_dir $install_options -c "$installation_dir $foward_options "
+if [ $? -ne 0 ]; then
     curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
     exit 1 ;
-  fi
-  mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
-  source $HOME/openfpm_vars_$branch
+fi
 
-  make VERBOSE=1 -j 8
+# Check of we have to do a make install
+if [ x"$comp_type" == x"full" ]; then
+    make install
+else
+    mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
+    source $HOME/openfpm_vars_$branch
+    make VERBOSE=1  -j 8
 fi
 
 if [ $? -ne 0 ]; then

@@ -12,7 +12,7 @@
 
 #define POS_PROP -1
 
-#define GET_PARTICLE(vd) blockDim.x*blockIdx.x + threadIdx.x; if (blockDim.x*blockIdx.x + threadIdx.x >= vd.size()) {return;};
+#define GET_PARTICLE(vd) blockDim.x*blockIdx.x + threadIdx.x; if (blockDim.x*blockIdx.x + threadIdx.x >= vd.size_local()) {return;};
 #define GET_PARTICLE_SORT(p,NN) if (blockDim.x*blockIdx.x + threadIdx.x >= NN.get_g_m()) {return;}\
 							  else{p = NN.getDomainSortIds().template get<0>(blockDim.x*blockIdx.x + threadIdx.x);}
 
@@ -26,11 +26,11 @@ class vector_dist_ker
 
 	//! Particle position vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector_gpu_ker<Point<dim,St>,memory_traits_inte> v_pos;
+	mutable openfpm::vector_gpu_ker<Point<dim,St>,memory_traits_inte> v_pos;
 
 	//! Particle properties vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector_gpu_ker<prop,memory_traits_inte> v_prp;
+	mutable openfpm::vector_gpu_ker<prop,memory_traits_inte> v_prp;
 
 public:
 
@@ -40,8 +40,8 @@ public:
 	//! dimensions of space
 	static const unsigned int dims = dim;
 
-	vector_dist_ker(const openfpm::vector_gpu_ker<Point<dim,St>,memory_traits_inte> & v_pos, const openfpm::vector_gpu_ker<prop,memory_traits_inte> & v_prp)
-	:v_pos(v_pos),v_prp(v_prp)
+	vector_dist_ker(int g_m, const openfpm::vector_gpu_ker<Point<dim,St>,memory_traits_inte> & v_pos, const openfpm::vector_gpu_ker<prop,memory_traits_inte> & v_prp)
+	:g_m(g_m),v_pos(v_pos),v_prp(v_prp)
 	{}
 
 	/*! \brief return the number of particles (excluding ghost)
@@ -137,6 +137,15 @@ public:
 		return v_prp;
 	}
 
+};
+
+// This is a tranformation node for vector_distributed for the algorithm toKernel_tranform
+template<template <typename> class layout_base, typename T>
+struct toKernel_transform<layout_base,T,2>
+{
+	typedef typename apply_transform<layout_base,typename T::value_type>::type aggr;
+
+	typedef vector_dist_ker<T::dims,typename T::stype,aggr> type;
 };
 
 #endif

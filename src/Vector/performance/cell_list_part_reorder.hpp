@@ -73,7 +73,7 @@ template<unsigned int dim> void cell_list_part_reorder_random_benchmark(size_t c
 		//For different r_cut
 		for (size_t r = 0; r < cl_r_cutoff.size(); r++ )
 		{
-			Vcluster & v_cl = create_vcluster();
+			Vcluster<> & v_cl = create_vcluster();
 
 			//Cut-off radius
 			float r_cut = cl_r_cutoff.get(r);
@@ -190,7 +190,7 @@ template<unsigned int dim> void cell_list_part_reorder_hilbert_benchmark(size_t 
 		// For different r_cut
 		for (size_t r = 0; r < cl_r_cutoff.size(); r++ )
 		{
-			Vcluster & v_cl = create_vcluster();
+			Vcluster<> & v_cl = create_vcluster();
 
 			// Cut-off radius
 			float r_cut = cl_r_cutoff.get(r);

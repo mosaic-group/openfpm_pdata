@@ -168,6 +168,8 @@ void test_reorder_cl()
 	}
 }
 
+BOOST_AUTO_TEST_SUITE( vector_dist_cell_list_test_suite )
+
 BOOST_AUTO_TEST_CASE( vector_dist_reorder_2d_test )
 {
 	test_reorder_sfc(reorder_opt::HILBERT);
@@ -1931,9 +1933,20 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_list_multi_type )
 	BOOST_REQUIRE_EQUAL(ret,true);
 }
 
+// Point and global id
+struct point_and_gid
+{
+	size_t id;
+	Point<3,float> xq;
 
+	bool operator<(const struct point_and_gid & pag) const
+	{
+		return (id < pag.id);
+	}
+};
 
-BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
+template<typename vector_dist_mp>
+void test_vector_dist_particle_NN_MP_iteration()
 {
 	Vcluster<> & v_cl = create_vcluster();
 
@@ -1966,22 +1979,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
 	// ghost
 	Ghost<3,float> ghost(r_cut);
 
-	// Point and global id
-	struct point_and_gid
-	{
-		size_t id;
-		Point<3,float> xq;
-
-		bool operator<(const struct point_and_gid & pag) const
-		{
-			return (id < pag.id);
-		}
-	};
-
-	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
+//	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
 
 	// Distributed vector
-	vector_dist<3,float, part_prop > vd(k,box,bc,ghost,BIND_DEC_TO_GHOST);
+	vector_dist_mp vd(k,box,bc,ghost,BIND_DEC_TO_GHOST);
 	size_t start = vd.init_size_accum(k);
 
 	auto it = vd.getIterator();
@@ -1990,15 +1991,15 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
 	{
 		auto key = it.get();
 
-		vd.getPosWrite(key)[0] = ud(eg);
-		vd.getPosWrite(key)[1] = ud(eg);
-		vd.getPosWrite(key)[2] = ud(eg);
+		vd.template getPosWrite(key)[0] = ud(eg);
+		vd.template getPosWrite(key)[1] = ud(eg);
+		vd.template getPosWrite(key)[2] = ud(eg);
 
 		// Fill some properties randomly
 
-		vd.getPropWrite<0>(key) = 0;
-		vd.getPropWrite<1>(key) = 0;
-		vd.getPropWrite<2>(key) = key.getKey() + start;
+		vd.template getPropWrite<0>(key) = 0;
+		vd.template getPropWrite<1>(key) = 0;
+		vd.template getPropWrite<2>(key) = key.getKey() + start;
 
 		++it;
 	}
@@ -2006,7 +2007,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
 	vd.map();
 
 	// sync the ghost
-	vd.ghost_get<0,2>();
+	vd.template ghost_get<0,2>();
 
 	auto NN = vd.getCellList(r_cut);
 	auto p_it = vd.getDomainIterator();
@@ -2040,10 +2041,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
 
 			if (distance < r_cut )
 			{
-				vd.getPropWrite<0>(p)++;
-				vd.getPropWrite<3>(p).add();
-				vd.getPropWrite<3>(p).last().xq = xq;
-				vd.getPropWrite<3>(p).last().id = vd.getPropWrite<2>(q);
+				vd.template getPropWrite<0>(p)++;
+				vd.template getPropWrite<3>(p).add();
+				vd.template getPropWrite<3>(p).last().xq = xq;
+				vd.template getPropWrite<3>(p).last().id = vd.template getPropWrite<2>(q);
 			}
 
 			++Np;
@@ -2054,11 +2055,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
 
 	// We now divide the particles on 4 phases
 
-	openfpm::vector<vector_dist<3,float, part_prop >> phases;
-	phases.add( vector_dist<3,float, part_prop >(vd.getDecomposition(),0));
-	phases.add( vector_dist<3,float, part_prop >(phases.get(0).getDecomposition(),0));
-	phases.add( vector_dist<3,float, part_prop >(phases.get(0).getDecomposition(),0));
-	phases.add( vector_dist<3,float, part_prop >(phases.get(0).getDecomposition(),0));
+	openfpm::vector<vector_dist_mp> phases;
+	phases.add( vector_dist_mp(vd.getDecomposition(),0));
+	phases.add( vector_dist_mp(phases.get(0).getDecomposition(),0));
+	phases.add( vector_dist_mp(phases.get(0).getDecomposition(),0));
+	phases.add( vector_dist_mp(phases.get(0).getDecomposition(),0));
 
 	auto it2 = vd.getDomainIterator();
 
@@ -2073,6 +2074,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
 			phases.get(0).getLastPos()[1] = vd.getPos(p)[1];
 			phases.get(0).getLastPos()[2] = vd.getPos(p)[2];
 
+			phases.get(0).template getLastProp<1>() = 0;
+
 			phases.get(0).template getLastProp<2>() = vd.template getProp<2>(p);
 		}
 		else if (p.getKey() % 4 == 1)
@@ -2081,6 +2084,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
 			phases.get(1).getLastPos()[0] = vd.getPos(p)[0];
 			phases.get(1).getLastPos()[1] = vd.getPos(p)[1];
 			phases.get(1).getLastPos()[2] = vd.getPos(p)[2];
+
+			phases.get(1).template getLastProp<1>() = 0;
 
 			phases.get(1).template getLastProp<2>() = vd.template getProp<2>(p);
 		}
@@ -2091,6 +2096,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
 			phases.get(2).getLastPos()[1] = vd.getPos(p)[1];
 			phases.get(2).getLastPos()[2] = vd.getPos(p)[2];
 
+			phases.get(2).template getLastProp<1>() = 0;
+
 			phases.get(2).template getLastProp<2>() = vd.template getProp<2>(p);
 		}
 		else
@@ -2099,6 +2106,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
 			phases.get(3).getLastPos()[0] = vd.getPos(p)[0];
 			phases.get(3).getLastPos()[1] = vd.getPos(p)[1];
 			phases.get(3).getLastPos()[2] = vd.getPos(p)[2];
+
+			phases.get(3).template getLastProp<1>() = 0;
 
 			phases.get(3).template getLastProp<2>() = vd.template getProp<2>(p);
 		}
@@ -2110,7 +2119,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
 
 	for (size_t i = 0 ; i < phases.size() ; i++)
 	{
-		phases.get(i).ghost_get<0,2>();
+		phases.get(i).template ghost_get<0,1,2>();
 	}
 
 	openfpm::vector<CellList<3, float, Mem_fast<>, shift<3, float> >> NN_ptr;
@@ -2157,16 +2166,16 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
 
 					if (distance < r_cut )
 					{
-						phases.get(i).getPropWrite<1>(p)++;
-						phases.get(j).getPropWrite<1>(q)++;
+						phases.get(i).template getPropWrite<1>(p)++;
+						phases.get(j).template getPropWrite<1>(q)++;
 
-						phases.get(i).getPropWrite<4>(p).add();
-						phases.get(j).getPropWrite<4>(q).add();
+						phases.get(i).template getPropWrite<4>(p).add();
+						phases.get(j).template getPropWrite<4>(q).add();
 
-						phases.get(i).getPropWrite<4>(p).last().xq = xq;
-						phases.get(j).getPropWrite<4>(q).last().xq = xp;
-						phases.get(i).getPropWrite<4>(p).last().id = phases.get(j).getProp<2>(q);
-						phases.get(j).getPropWrite<4>(q).last().id = phases.get(i).getProp<2>(p);
+						phases.get(i).template getPropWrite<4>(p).last().xq = xq;
+						phases.get(j).template getPropWrite<4>(q).last().xq = xp;
+						phases.get(i).template getPropWrite<4>(p).last().id = phases.get(j).template getProp<2>(q);
+						phases.get(j).template getPropWrite<4>(q).last().id = phases.get(i).template getProp<2>(p);
 					}
 
 					++Np;
@@ -2179,8 +2188,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
 
 	for (size_t i = 0 ; i < phases.size() ; i++)
 	{
-		phases.get(i).ghost_put<add_,1>();
-		phases.get(i).ghost_put<merge_,4>();
+		phases.get(i).template ghost_put<add_,1>();
+		phases.get(i).template ghost_put<merge_,4>();
 	}
 
 	auto p_it3 = vd.getDomainIterator();
@@ -2202,26 +2211,26 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
 		{ph = 3;}
 
 		size_t pah = p.getKey()/4;
-		ret &= phases.get(ph).getPropRead<1>(pah) == vd.getPropRead<0>(p);
+		ret &= phases.get(ph).template getPropRead<1>(pah) == vd.template getPropRead<0>(p);
 
-		vd.getPropWrite<3>(p).sort();
-		phases.get(ph).getPropWrite<4>(pah).sort();
+		vd.template getPropWrite<3>(p).sort();
+		phases.get(ph).template getPropWrite<4>(pah).sort();
 
-		ret &= vd.getPropRead<3>(p).size() == phases.get(ph).getPropRead<4>(pah).size();
+		ret &= vd.template getPropRead<3>(p).size() == phases.get(ph).template getPropRead<4>(pah).size();
 
-		for (size_t i = 0 ; i < vd.getPropRead<3>(p).size() ; i++)
-			ret &= vd.getPropRead<3>(p).get(i).id == phases.get(ph).getPropRead<4>(pah).get(i).id;
+		for (size_t i = 0 ; i < vd.template getPropRead<3>(p).size() ; i++)
+			ret &= vd.template getPropRead<3>(p).get(i).id == phases.get(ph).template getPropRead<4>(pah).get(i).id;
 
 		if (ret == false)
 		{
-			std::cout << "Error on particle: " << vd.getPropRead<2>(p) << "   " << v_cl.rank() << std::endl;
+			std::cout << "Error on particle: " << vd.template getPropRead<2>(p) << "   " << v_cl.rank() << std::endl;
 
-			std::cout << vd.getPropRead<3>(p).size() << "   " << phases.get(ph).getPropRead<4>(pah).size() << "  " << v_cl.rank() << std::endl;
+			std::cout << vd.template getPropRead<3>(p).size() << "   " << phases.get(ph).template getPropRead<4>(pah).size() << "  " << v_cl.rank() << std::endl;
 
-			for (size_t i = 0 ; i < vd.getPropRead<3>(p).size() ; i++)
-				std::cout << vd.getPropRead<3>(p).get(i).id << "    " << phases.get(ph).getPropRead<4>(pah).get(i).id << "  " << v_cl.rank() << std::endl;
+			for (size_t i = 0 ; i < vd.template getPropRead<3>(p).size() ; i++)
+				std::cout << vd.template getPropRead<3>(p).get(i).id << "    " << phases.get(ph).template getPropRead<4>(pah).get(i).id << "  " << v_cl.rank() << std::endl;
 
-			std::cout << phases.get(ph).getPropRead<1>(pah) << "  A  " << vd.getPropRead<0>(p) << std::endl;
+			std::cout << phases.get(ph).template getPropRead<1>(pah) << "  A  " << vd.template getPropRead<0>(p) << std::endl;
 
 			break;
 		}
@@ -2231,3 +2240,12 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
 
 	BOOST_REQUIRE_EQUAL(ret,true);
 }
+
+BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
+{
+	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
+
+	test_vector_dist_particle_NN_MP_iteration<vector_dist<3,float, part_prop >>();
+}
+
+BOOST_AUTO_TEST_SUITE_END()

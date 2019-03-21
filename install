@@ -394,8 +394,8 @@ else
     done
 
     if [ x"$inst_lin_alg" == x"y" ]; then
-        ./script/install_EIGEN.sh $i_dir $ncore
-        ./script/install_PETSC.sh $i_dir $ncore $CC $CXX $F77 $FC
+        CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_EIGEN.sh $i_dir $ncore
+        CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_PETSC.sh $i_dir $ncore $CC $CXX $F77 $FC
     fi
 
     ### collect PETSC configuration options
@@ -407,6 +407,9 @@ fi
 ### Create example.mk
 install_base=$(cat install_dir)
 openmp_flags="$(cat openmp_flags)"
+cuda_include_dirs=$(cat cuda_include)
+mpi_include_dirs=$(cat mpi_include)
+mpi_libs=$(cat mpi_libs)
 
 if [ -d "$i_dir/HDF5/lib" ]; then
   hdf5_lib=$i_dir/HDF5/lib
@@ -414,14 +417,14 @@ elif [ -d "$i_dir/HDF5/lib64" ]; then
   hdf5_lib=$i_dir/HDF5/lib64
 fi
 
-echo "INCLUDE_PATH=-Wno-deprecated-declarations $openmp_flags  -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" > example.mk
-echo "LIBS_PATH= $openmp_flags -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib -L$hdf5_lib -L$i_dir/LIBHILBERT/lib  $lin_alg_dir " >> example.mk
+echo "INCLUDE_PATH=$cuda_include_dirs -Wno-deprecated-declarations $openmp_flags  -I.  -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" > example.mk
+echo "LIBS_PATH=$openmp_flags -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib -L$hdf5_lib -L$i_dir/LIBHILBERT/lib  $lin_alg_dir " >> example.mk
 if [ x"$gpu_support" == x"1" ]; then
-    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lhdf5 -llibhilbert $(cat cuda_lib) $lin_alg_lib $(cat mpi_libs) -ldl" >> example.mk
-    echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lhdf5 -llibhilbert $(cat cuda_lib) $lin_alg_lib" >> example.mk
+    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert $(cat cuda_lib) $lin_alg_lib -ldl" >> example.mk
+    echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert $(cat cuda_lib) $lin_alg_lib" >> example.mk
 else
-    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lhdf5 -llibhilbert  $lin_alg_lib $(cat mpi_libs) -ldl" >> example.mk
-    echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lhdf5 -llibhilbert $lin_alg_lib" >> example.mk
+    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert  $lin_alg_lib -ldl" >> example.mk
+    echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert $lin_alg_lib" >> example.mk
 fi
 echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" $(cat openmp_flags) -Xcudafe \"--display_error_number --diag_suppress=2885  --diag_suppress=2886 --diag_suppress=2887  --diag_suppress=2888 --diag_suppress=186 --diag_suppress=111\" --expt-extended-lambda -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" >> example.mk
 cp example.mk src/example.mk
@@ -441,7 +444,7 @@ echo ""
 echo -e "\033[1m ./configure $options $configure_options \033[0m "
 echo ""
 
-if [ x"$platform" = x"linux" ]; then
+if [ x"$platform" == x"linux" -o x"$platform" == x"cygwin" ]; then
   bash_library="export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:/$install_base/openfpm_devices/lib:/$install_base/openfpm_vcluster/lib"
 else
   bash_library="export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:/$install_base/openfpm_devices/lib:/$install_base/openfpm_vcluster/lib"
@@ -457,7 +460,7 @@ echo ""
 
 if [ -d "$i_dir/MPI" ]; then
   installation_report="$installation_report \033[92;1mMPI\033[0m Installed: \033[1m $i_dir/MPI \033[0m\n"
-  bash_path="$bash_path:$i_dir/MPI/bin:"
+  bash_path="$bash_path$i_dir/MPI/bin:"
   bash_library="$bash_library:$i_dir/MPI/lib"
 elif [ $MPI_System_prv -eq 1 ]; then
   installation_report="$installation_report \033[92;1mMPI\033[0m Installed: \033[1m System installation \033[0m\n"

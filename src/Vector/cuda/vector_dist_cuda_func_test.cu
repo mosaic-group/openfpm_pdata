@@ -864,6 +864,10 @@ BOOST_AUTO_TEST_CASE(vector_dist_merge_sort)
 		v_pos_out.template get<0>(i)[1] = i+10000;
 		v_pos_out.template get<0>(i)[2] = i+20000;
 
+		v_pos.template get<0>(i)[0] = 0;
+		v_pos.template get<0>(i)[1] = 0;
+		v_pos.template get<0>(i)[2] = 0;
+
 		v_prp_out.template get<0>(i)[0] = i+60123;
 		v_prp_out.template get<0>(i)[1] = i+73543;
 		v_prp_out.template get<0>(i)[2] = i+82432;
@@ -943,7 +947,6 @@ BOOST_AUTO_TEST_CASE(vector_dist_merge_sort)
 		match &= v_prp_out.template get<2>(10000-i-1)[0] == v_prp.template get<2>(i)[0];
 		match &= v_prp_out.template get<2>(10000-i-1)[1] == v_prp.template get<2>(i)[1];
 		match &= v_prp_out.template get<2>(10000-i-1)[2] == v_prp.template get<2>(i)[2];
-
 
 		match &= v_pos.template get<0>(10000-i-1)[0] == 0;
 		match &= v_pos.template get<0>(10000-i-1)[1] == 0;
@@ -1218,6 +1221,277 @@ BOOST_AUTO_TEST_CASE(vector_dist_remove_marked)
 	vector_dist_remove_marked_type<3>();
 }
 
+
+BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration_gpu )
+{
+	typedef  aggregate<size_t,size_t,size_t> part_prop;
+
+	Vcluster<> & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 24)
+	{return;}
+
+	float L = 1000.0;
+
+    // set the seed
+	// create the random generator engine
+    std::default_random_engine eg;
+    eg.seed(v_cl.rank()*4533);
+    std::uniform_real_distribution<float> ud(-L,L);
+
+    long int k = 4096 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 4;
+	big_step = (big_step == 0)?1:big_step;
+
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list k=" << k );
+
+	Box<3,float> box({-L,-L,-L},{L,L,L});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	float r_cut = 100.0;
+
+	// ghost
+	Ghost<3,float> ghost(r_cut);
+
+	// Distributed vector
+	vector_dist_gpu<3,float,part_prop> vd(k,box,bc,ghost,BIND_DEC_TO_GHOST);
+	size_t start = vd.init_size_accum(k);
+
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.getPosWrite(key)[0] = ud(eg);
+		vd.getPosWrite(key)[1] = ud(eg);
+		vd.getPosWrite(key)[2] = ud(eg);
+
+		// Fill some properties randomly
+
+		vd.template getPropWrite<0>(key) = 0;
+		vd.template getPropWrite<1>(key) = 0;
+		vd.template getPropWrite<2>(key) = key.getKey() + start;
+
+		++it;
+	}
+
+	vd.map();
+
+	// sync the ghost
+	vd.template ghost_get<0,2>();
+
+	auto NN = vd.getCellList(r_cut);
+	auto p_it = vd.getDomainIterator();
+
+	while (p_it.isNext())
+	{
+		auto p = p_it.get();
+
+		Point<3,float> xp = vd.getPosRead(p);
+
+		auto Np = NN.getNNIterator(NN.getCell(xp));
+
+		while (Np.isNext())
+		{
+			auto q = Np.get();
+
+			if (p.getKey() == q)
+			{
+				++Np;
+				continue;
+			}
+
+			// repulsive
+
+			Point<3,float> xq = vd.getPosRead(q);
+			Point<3,float> f = (xp - xq);
+
+			float distance = f.norm();
+
+			// Particle should be inside 2 * r_cut range
+
+			if (distance < r_cut )
+			{
+				vd.template getPropWrite<0>(p)++;
+			}
+
+			++Np;
+		}
+
+		++p_it;
+	}
+
+	// We now divide the particles on 4 phases
+
+	openfpm::vector<vector_dist_gpu<3,float,part_prop>> phases;
+	phases.add( vector_dist_gpu<3,float,part_prop>(vd.getDecomposition(),0));
+	phases.add( vector_dist_gpu<3,float,part_prop>(phases.get(0).getDecomposition(),0));
+	phases.add( vector_dist_gpu<3,float,part_prop>(phases.get(0).getDecomposition(),0));
+	phases.add( vector_dist_gpu<3,float,part_prop>(phases.get(0).getDecomposition(),0));
+
+	auto it2 = vd.getDomainIterator();
+
+	while (it2.isNext())
+	{
+		auto p = it2.get();
+
+		if (p.getKey() % 4 == 0)
+		{
+			phases.get(0).add();
+			phases.get(0).getLastPos()[0] = vd.getPos(p)[0];
+			phases.get(0).getLastPos()[1] = vd.getPos(p)[1];
+			phases.get(0).getLastPos()[2] = vd.getPos(p)[2];
+
+			phases.get(0).getLastProp<1>() = 0;
+
+			phases.get(0).template getLastProp<2>() = vd.template getProp<2>(p);
+		}
+		else if (p.getKey() % 4 == 1)
+		{
+			phases.get(1).add();
+			phases.get(1).getLastPos()[0] = vd.getPos(p)[0];
+			phases.get(1).getLastPos()[1] = vd.getPos(p)[1];
+			phases.get(1).getLastPos()[2] = vd.getPos(p)[2];
+
+			phases.get(1).getLastProp<1>() = 0;
+
+			phases.get(1).template getLastProp<2>() = vd.template getProp<2>(p);
+		}
+		else if (p.getKey() % 4 == 2)
+		{
+			phases.get(2).add();
+			phases.get(2).getLastPos()[0] = vd.getPos(p)[0];
+			phases.get(2).getLastPos()[1] = vd.getPos(p)[1];
+			phases.get(2).getLastPos()[2] = vd.getPos(p)[2];
+
+			phases.get(2).getLastProp<1>() = 0;
+
+			phases.get(2).template getLastProp<2>() = vd.template getProp<2>(p);
+		}
+		else
+		{
+			phases.get(3).add();
+			phases.get(3).getLastPos()[0] = vd.getPos(p)[0];
+			phases.get(3).getLastPos()[1] = vd.getPos(p)[1];
+			phases.get(3).getLastPos()[2] = vd.getPos(p)[2];
+
+			phases.get(3).getLastProp<1>() = 0;
+
+			phases.get(3).template getLastProp<2>() = vd.template getProp<2>(p);
+		}
+
+		++it2;
+	}
+
+	// now we synchronize the ghosts
+
+	for (size_t i = 0 ; i < phases.size() ; i++)
+	{
+		phases.get(i).template ghost_get<0,1,2>();
+	}
+
+	typedef decltype(phases.get(0).getCellListSym(r_cut)) cell_list_type;
+
+	openfpm::vector<cell_list_type> NN_ptr;
+
+	for (size_t i = 0 ; i < phases.size() ; i++)
+	{
+		NN_ptr.add(phases.get(i).getCellListSym(r_cut));
+	}
+
+	// We now interact all the phases
+
+	for (size_t i = 0 ; i < phases.size() ; i++)
+	{
+		for (size_t j = 0 ; j < phases.size() ; j++)
+		{
+			auto p_it2 = phases.get(i).getDomainIterator();
+
+			while (p_it2.isNext())
+			{
+				auto p = p_it2.get();
+
+				Point<3,float> xp = phases.get(i).getPosRead(p);
+
+				auto Np = NN_ptr.get(j).getNNIteratorSymMP<NO_CHECK>(NN_ptr.get(j).getCell(xp),p.getKey(),phases.get(i).getPosVector(),phases.get(j).getPosVector());
+
+				while (Np.isNext())
+				{
+					auto q = Np.get();
+
+					if (p.getKey() == q && i == j)
+					{
+						++Np;
+						continue;
+					}
+
+					// repulsive
+
+					Point<3,float> xq = phases.get(j).getPosRead(q);
+					Point<3,float> f = (xp - xq);
+
+					float distance = f.norm();
+
+					// Particle should be inside r_cut range
+
+					if (distance < r_cut )
+					{
+						phases.get(i).template getPropWrite<1>(p)++;
+						phases.get(j).template getPropWrite<1>(q)++;
+					}
+
+					++Np;
+				}
+
+				++p_it2;
+			}
+		}
+	}
+
+	for (size_t i = 0 ; i < phases.size() ; i++)
+	{
+		phases.get(i).template ghost_put<add_,1>();
+	}
+
+	auto p_it3 = vd.getDomainIterator();
+
+	bool ret = true;
+	while (p_it3.isNext())
+	{
+		auto p = p_it3.get();
+
+		int ph;
+
+		if (p.getKey() % 4 == 0)
+		{ph = 0;}
+		else if (p.getKey() % 4 == 1)
+		{ph = 1;}
+		else if (p.getKey() % 4 == 2)
+		{ph = 2;}
+		else
+		{ph = 3;}
+
+		size_t pah = p.getKey()/4;
+		ret &= phases.get(ph).template getPropRead<1>(pah) == vd.template getPropRead<0>(p);
+
+		if (ret == false)
+		{
+			std::cout << "Error on particle: " << vd.template getPropRead<2>(p) << "   " << v_cl.rank() << std::endl;
+
+			std::cout << "phase " << ph << " particle " << pah << "   " <<  phases.get(ph).template getPropRead<1>(pah) << "  A  " << vd.template getPropRead<0>(p) << std::endl;
+
+			break;
+		}
+
+		++p_it3;
+	}
+
+	BOOST_REQUIRE_EQUAL(ret,true);
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 

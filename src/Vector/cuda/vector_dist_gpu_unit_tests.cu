@@ -162,13 +162,27 @@ bool check_force(CellList_type & NN_cpu, vector_type & vd)
 			++NNc;
 		}
 
-		match &= fabs(vd.template getProp<1>(p)[0] - vd.template getProp<2>(p)[0]) < 0.0001;
-		match &= fabs(vd.template getProp<1>(p)[1] - vd.template getProp<2>(p)[1]) < 0.0001;
-		match &= fabs(vd.template getProp<1>(p)[2] - vd.template getProp<2>(p)[2]) < 0.0001;
+		match &= fabs(vd.template getProp<1>(p)[0] - vd.template getProp<2>(p)[0]) < 0.0003;
+		match &= fabs(vd.template getProp<1>(p)[1] - vd.template getProp<2>(p)[1]) < 0.0003;
+		match &= fabs(vd.template getProp<1>(p)[2] - vd.template getProp<2>(p)[2]) < 0.0003;
 
-		match &= fabs(vd.template getProp<1>(p)[0] - force.get(0)) < 0.0001;
-		match &= fabs(vd.template getProp<1>(p)[1] - force.get(1)) < 0.0001;
-		match &= fabs(vd.template getProp<1>(p)[2] - force.get(2)) < 0.0001;
+		match &= fabs(vd.template getProp<1>(p)[0] - force.get(0)) < 0.0003;
+		match &= fabs(vd.template getProp<1>(p)[1] - force.get(1)) < 0.0003;
+		match &= fabs(vd.template getProp<1>(p)[2] - force.get(2)) < 0.0003;
+
+		if (match == false)
+		{
+			std::cout << "ERROR: " << vd.template getProp<1>(p)[0]  << "   " << vd.template getProp<2>(p)[0] << std::endl;
+	                std::cout << "ERROR: " << vd.template getProp<1>(p)[1]  << "   " << vd.template getProp<2>(p)[1] << std::endl;
+	                std::cout << "ERROR: " << vd.template getProp<1>(p)[2]  << "   " << vd.template getProp<2>(p)[2] << std::endl;
+
+	                std::cout << "ERROR2: " << vd.template getProp<1>(p)[0] << "   " <<  force.get(0) << std::endl;
+	                std::cout << "ERROR2: " << vd.template getProp<1>(p)[1] << "   " <<  force.get(1) << std::endl;
+	                std::cout << "ERROR2: " << vd.template getProp<1>(p)[2] << "   " <<  force.get(2) << std::endl;
+
+
+			break;
+		}
 
 		++it6;
 	}
@@ -1177,5 +1191,118 @@ BOOST_AUTO_TEST_CASE(vector_dist_keep_prop_on_cuda)
 		}
 	}
 }
+
+
+BOOST_AUTO_TEST_CASE(vector_dist_compare_host_device)
+{
+	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Ghost<3,double> g(0.1);
+	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
+
+	if (create_vcluster().size() >= 16)
+	{return;}
+
+	vector_dist_gpu<3,double,aggregate<double,double[3],double[3][3]>> vdg(10000,domain,bc,g,DEC_GRAN(128));
+
+	auto it = vdg.getDomainIterator();
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+
+		vdg.getPos(p)[0] = (double)rand() / RAND_MAX;
+		vdg.getPos(p)[1] = (double)rand() / RAND_MAX;
+		vdg.getPos(p)[2] = (double)rand() / RAND_MAX;
+
+		vdg.template getProp<0>(p) = (double)rand() / RAND_MAX;
+
+		vdg.template getProp<1>(p)[0] = (double)rand() / RAND_MAX;
+		vdg.template getProp<1>(p)[1] = (double)rand() / RAND_MAX;
+		vdg.template getProp<1>(p)[2] = (double)rand() / RAND_MAX;
+
+		vdg.template getProp<2>(p)[0][0] = (double)rand() / RAND_MAX;
+		vdg.template getProp<2>(p)[0][1] = (double)rand() / RAND_MAX;
+		vdg.template getProp<2>(p)[0][2] = (double)rand() / RAND_MAX;
+		vdg.template getProp<2>(p)[1][0] = (double)rand() / RAND_MAX;
+		vdg.template getProp<2>(p)[1][1] = (double)rand() / RAND_MAX;
+		vdg.template getProp<2>(p)[1][2] = (double)rand() / RAND_MAX;
+		vdg.template getProp<2>(p)[2][0] = (double)rand() / RAND_MAX;
+		vdg.template getProp<2>(p)[2][1] = (double)rand() / RAND_MAX;
+		vdg.template getProp<2>(p)[2][2] = (double)rand() / RAND_MAX;
+
+		++it;
+	}
+
+	vdg.map();
+
+	vdg.hostToDeviceProp<0,1,2>();
+	vdg.hostToDevicePos();
+
+	bool test = vdg.compareHostAndDevicePos(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,true);
+
+	vdg.getPos(100)[0] = 0.99999999;
+
+	test = vdg.compareHostAndDevicePos(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,false);
+
+	vdg.hostToDevicePos();
+	vdg.getPos(100)[0] = 0.99999999;
+
+	test = vdg.compareHostAndDevicePos(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,true);
+
+	////////////////////////////////////////////////// PROP VECTOR
+
+	test = vdg.compareHostAndDeviceProp<1>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,true);
+
+	vdg.getProp<1>(103)[0] = 0.99999999;
+
+	test = vdg.compareHostAndDeviceProp<1>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,false);
+
+	vdg.hostToDeviceProp<1>();
+	vdg.getProp<1>(103)[0] = 0.99999999;
+
+	test = vdg.compareHostAndDeviceProp<1>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,true);
+
+	////////////////////////////////////////////////// PROP scalar
+
+
+	test = vdg.compareHostAndDeviceProp<0>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,true);
+
+	vdg.getProp<0>(105) = 0.99999999;
+
+	test = vdg.compareHostAndDeviceProp<0>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,false);
+
+	vdg.hostToDeviceProp<0>();
+	vdg.getProp<0>(105) = 0.99999999;
+
+	test = vdg.compareHostAndDeviceProp<0>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,true);
+
+
+	////////////////////////////////////////////////// PROP scalar
+
+
+	test = vdg.compareHostAndDeviceProp<2>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,true);
+
+	vdg.getProp<2>(108)[1][2] = 0.99999999;
+
+	test = vdg.compareHostAndDeviceProp<2>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,false);
+
+	vdg.hostToDeviceProp<2>();
+	vdg.getProp<2>(108)[1][2] = 0.99999999;
+
+	test = vdg.compareHostAndDeviceProp<2>(0.00001,0.00000001);
+	BOOST_REQUIRE_EQUAL(test,true);
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()

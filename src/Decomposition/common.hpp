@@ -105,7 +105,10 @@ struct Box_sub
 
 	//! Constructor reset cmb
 	Box_sub()
-	{cmb.zero();}
+	{
+		r_sub = (size_t)-1;
+		cmb.zero();
+	}
 };
 
 //! Particular case for local internal ghost boxes

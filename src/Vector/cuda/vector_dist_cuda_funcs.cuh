@@ -329,7 +329,7 @@ void remove_marked(vector_type & vd)
 
 	auto ite = idx.getGPUIterator();
 
-	CUDA_LAUNCH(create_index,ite.wthr,ite.thr,idx.toKernel());
+	CUDA_LAUNCH(create_index,ite,idx.toKernel());
 
 	// sort particles, so the particles to remove stay at the end
 	mergesort((remove_type *)vd.getPropVector().template getDeviceBuffer<prp>(),(unsigned int *)idx.template getDeviceBuffer<0>(), idx.size(), mgpu::template less_t<remove_type>(), vd.getVC().getmgpuContext());
@@ -342,7 +342,7 @@ void remove_marked(vector_type & vd)
 	mem.fill(0);
 
 	// mark point, particle that stay and to remove
-	CUDA_LAUNCH((find_buffer_offsets_no_prc<prp,decltype(vd.getPropVector().toKernel()),decltype(mark.toKernel())>),ite.wthr,ite.thr,
+	CUDA_LAUNCH((find_buffer_offsets_no_prc<prp,decltype(vd.getPropVector().toKernel()),decltype(mark.toKernel())>),ite,
 			     vd.getPropVector().toKernel(),(int *)mem.getDevicePointer(),mark.toKernel(),vd.size_local());
 
 	mem.deviceToHost();
@@ -377,7 +377,7 @@ void remove_marked(vector_type & vd)
 
 	ite = vd_pos_old.getGPUIterator();
 
-	CUDA_LAUNCH((copy_new_to_old<vector_type::dims>),ite.wthr,ite.thr,vd_pos_new.toKernel(),vd_prp_new.toKernel(),vd_pos_old.toKernel(),vd_prp_old.toKernel(),idx.toKernel());
+	CUDA_LAUNCH((copy_new_to_old<vector_type::dims>),ite,vd_pos_new.toKernel(),vd_prp_new.toKernel(),vd_pos_old.toKernel(),vd_prp_old.toKernel(),idx.toKernel());
 
 	// and we swap
 

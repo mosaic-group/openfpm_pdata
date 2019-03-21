@@ -1210,7 +1210,7 @@ public:
 	 * \param dec_gran number of sub-sub-domain for each processor
 	 *
 	 */
-	void setGoodParameters(::Box<dim,T> domain_,
+	void setGoodParameters(::Box<dim,T> & domain_,
 						   const size_t (& bc)[dim],
 						   const Ghost<dim,T> & ghost,
 						   size_t dec_gran,
@@ -1245,7 +1245,7 @@ public:
 				{tot_size *= div[i];}
 
 				// the granularity is too coarse increase the divisions
-				if (tot_size / n_proc > 0.75*dec_gran )
+				if (tot_size / n_proc > (unsigned int long)(0.75*dec_gran) )
 				{break;}
 
 				nsub_to_div(div,n_sub,dim_r);
@@ -1280,7 +1280,7 @@ public:
 	 *
 	 */
 	void setParameters(const size_t (& div_)[dim],
-					   ::Box<dim,T> domain_,
+					   ::Box<dim,T> & domain_,
 						const size_t (& bc)[dim],
 						const Ghost<dim,T> & ghost,
 						const grid_sm<dim,void> & sec_dist = grid_sm<dim,void>())

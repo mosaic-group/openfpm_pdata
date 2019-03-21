@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 ########################### Executables
 
 if(CUDA_FOUND)
-	set(CUDA_SOURCES Vector/cuda/vector_dist_cuda_func_test.cu Decomposition/cuda/decomposition_cuda_tests.cu Vector/cuda/vector_dist_gpu_unit_tests.cu ../openfpm_devices/src/memory/CudaMemory.cu)
+	set(CUDA_SOURCES Vector/cuda/vector_dist_gpu_MP_tests.cu Vector/cuda/vector_dist_cuda_func_test.cu Decomposition/cuda/decomposition_cuda_tests.cu Vector/cuda/vector_dist_gpu_unit_tests.cu ../openfpm_devices/src/memory/CudaMemory.cu)
 else()
 	set(CUDA_SOURCES)
 endif()
@@ -13,6 +13,9 @@ add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp Debug/debug_t
 
 if ( CMAKE_COMPILER_IS_GNUCC )
     target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
+    if (TEST_COVERAGE)
+        target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fprofile-arcs -ftest-coverage>)
+    endif()
 endif()
 
 
@@ -24,10 +27,16 @@ add_test(NAME pdata_4_proc COMMAND mpirun -np 4 ./pdata)
 ###########################
 
 if (CUDA_FOUND)
-	target_compile_options(pdata PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcudafe "--display_error_number --diag_suppress=611 --diag_suppress=2885 --diag_suppress=2886  --diag_suppress=2887  --diag_suppress=2888 --diag_suppress=186 --diag_suppress=111" --expt-extended-lambda>)
+	target_compile_options(pdata PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: ${WARNING_SUPPRESSION_AND_OPTION_NVCC}>)
 	target_include_directories (pdata PUBLIC ${MPI_C_INCLUDE_DIRS})
+        if (TEST_COVERAGE)
+		target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler "-fprofile-arcs -ftest-coverage">)
+        endif()
 endif()
 
+if(TEST_PERFORMANCE)
+        target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_numerics/src/)
+endif()
 target_include_directories (pdata PUBLIC ${PARMETIS_ROOT}/include)
 target_include_directories (pdata PUBLIC ${METIS_ROOT}/include)
 target_include_directories (pdata PUBLIC ${CUDA_INCLUDE_DIRS})
@@ -50,6 +59,12 @@ target_link_libraries(pdata -L${HDF5_ROOT}/lib hdf5 hdf5_hl)
 target_link_libraries(pdata -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
 target_link_libraries(pdata ${PETSC_LIBRARIES})
 
+if (TEST_COVERAGE)
+    target_link_libraries(pdata -lgcov --coverage)
+endif()
+
+
+
 target_include_directories (ofpm_pdata PUBLIC ${CUDA_INCLUDE_DIRS})
 target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
@@ -70,6 +85,11 @@ endif()
 # will also build with -std=c++11
 target_compile_features(pdata PUBLIC cxx_std_11)
 target_link_libraries(pdata ${MPI_C_LIBRARIES})
+target_link_libraries(pdata m)
+target_link_libraries(pdata c)
+if (NOT APPLE)
+    target_link_libraries(pdata rt)
+endif ()
 
 install(FILES Decomposition/CartDecomposition.hpp 
 	      Decomposition/shift_vect_converter.hpp 
@@ -77,7 +97,7 @@ install(FILES Decomposition/CartDecomposition.hpp
 	      Decomposition/common.hpp 
 	      Decomposition/Decomposition.hpp  
 	      Decomposition/ie_ghost.hpp
-              Decomposition/Domain_NN_calculator_cart.hpp 
+          Decomposition/Domain_NN_calculator_cart.hpp 
 	      Decomposition/nn_processor.hpp Decomposition/ie_loc_ghost.hpp 
 	      Decomposition/ORB.hpp
 	      Decomposition/dec_optimizer.hpp
@@ -131,8 +151,7 @@ install(FILES Vector/cuda/vector_dist_comm_util_funcs.cuh
 	      Vector/cuda/vector_dist_cuda_funcs.cuh
 	DESTINATION openfpm_pdata/include/Vector/cuda )
 
-install(FILES Graph/CartesianGraphFactory.hpp
-	      Graph/ids.hpp Graph/dist_map_graph.hpp 
+install(FILES Graph/ids.hpp Graph/dist_map_graph.hpp 
 	      Graph/DistGraphFactory.hpp
               DESTINATION openfpm_pdata/include/Graph )
 

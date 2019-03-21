@@ -39,7 +39,7 @@ enum debug_iterator
  *
  */
 template<typename vector_dist_type, typename functor_test, typename functor_print>
-bool debug_find(vector_dist_type vd, functor_test fun_test, functor_print fun_print,
+bool debug_find(vector_dist_type & vd, functor_test fun_test, functor_print fun_print,
 		        debug_iterator it = debug_iterator::DOMAIN_IT, debug_run type_of_run = debug_run::HOST,
 		        bool print = true)
 {

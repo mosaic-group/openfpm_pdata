@@ -365,6 +365,12 @@ int main(int argc, char* argv[])
 	// save in vtk binary format
 	vd.write("particles_bin",VTK_WRITER | FORMAT_BINARY);
 
+	// save in vtk format with time
+	vd.write("particles_with_time","time=1.234");
+
+	// save in vtk format with time
+	vd.write("particles_with_time_bin","time=1.234",VTK_WRITER | FORMAT_BINARY);
+
 	//! \cond [vtk] \endcond
 
 	/*!

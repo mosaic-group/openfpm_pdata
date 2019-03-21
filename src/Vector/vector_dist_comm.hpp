@@ -598,7 +598,7 @@ class vector_dist_comm
 				auto ite = g_pos_send.get(i).getGPUIterator();
 
 				CUDA_LAUNCH((process_ghost_particles_pos<dim,decltype(g_opart_device.toKernel()),decltype(g_pos_send.get(i).toKernel()),decltype(v_pos.toKernel()),decltype(shifts.toKernel())>),
-				ite.wthr,ite.thr,
+				ite,
 				g_opart_device.toKernel(), g_pos_send.get(i).toKernel(),
 				 v_pos.toKernel(),shifts.toKernel(),offset);
 
@@ -637,7 +637,10 @@ class vector_dist_comm
 	 * \param g_m ghost marker
 	 *
 	 */
-	template<typename send_vector, typename prp_object, int ... prp> void fill_send_ghost_put_prp_buf(openfpm::vector<prop> & v_prp, openfpm::vector<send_vector> & g_send_prp, size_t & g_m)
+	template<typename send_vector, typename prp_object, int ... prp>
+	void fill_send_ghost_put_prp_buf(openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+									 openfpm::vector<send_vector> & g_send_prp,
+									 size_t & g_m)
 	{
 		// create a number of send buffers equal to the near processors
 		// from which we received
@@ -668,9 +671,9 @@ class vector_dist_comm
 			for (size_t j = accum; j < accum + recv_sz_get.get(i); j++)
 			{
 				// source object type
-				typedef encapc<1, prop, typename openfpm::vector<prop>::layout_type> encap_src;
+				typedef encapc<1, prop, typename openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base>::layout_type> encap_src;
 				// destination object type
-				typedef encapc<1, prp_object, typename openfpm::vector<prp_object>::layout_type> encap_dst;
+				typedef encapc<1, prp_object, typename openfpm::vector<prp_object,Memory,typename layout_base<prp_object>::type,layout_base>::layout_type> encap_dst;
 
 				// Copy only the selected properties
 				object_si_d<encap_src, encap_dst, OBJ_ENCAP, prp...>(v_prp.get(j), g_send_prp.get(i).get(j2));
@@ -825,7 +828,7 @@ class vector_dist_comm
 					auto ite = g_send_prp.get(i).getGPUIterator();
 
 					CUDA_LAUNCH((process_ghost_particles_prp<decltype(g_opart_device.toKernel()),decltype(g_send_prp.get(i).toKernel()),decltype(v_prp.toKernel()),prp...>),
-					ite.wthr,ite.thr,
+					ite,
 					g_opart_device.toKernel(), g_send_prp.get(i).toKernel(),
 					 v_prp.toKernel(),offset);
 
@@ -951,7 +954,7 @@ class vector_dist_comm
 				// fill v_pos_tmp and v_prp_tmp with local particles
 				CUDA_LAUNCH((process_map_particles<decltype(m_opart.toKernel()),decltype(v_pos_tmp.toKernel()),decltype(v_prp_tmp.toKernel()),
 					                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>),
-				ite.wthr,ite.thr,
+				ite,
 				m_opart.toKernel(),v_pos_tmp.toKernel(), v_prp_tmp.toKernel(),
 					            v_pos.toKernel(),v_prp.toKernel(),offset);
 			}
@@ -969,7 +972,7 @@ class vector_dist_comm
 
 					CUDA_LAUNCH((process_map_particles<decltype(m_opart.toKernel()),decltype(m_pos.get(i).toKernel()),decltype(m_prp.get(i).toKernel()),
 						                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>),
-					ite.wthr,ite.thr,
+					ite,
 					m_opart.toKernel(),m_pos.get(i).toKernel(), m_prp.get(i).toKernel(),
 						            v_pos.toKernel(),v_prp.toKernel(),offset);
 
@@ -1099,14 +1102,14 @@ class vector_dist_comm
 
 				for (size_t i = 0 ; i < dim ; i++)	{bc.bc[i] = dec.periodicity(i);}
 
-				CUDA_LAUNCH((apply_bc_each_part<dim,St,decltype(v_pos.toKernel())>),ite.wthr,ite.thr,dec.getDomain(),bc,v_pos.toKernel());
+				CUDA_LAUNCH((apply_bc_each_part<dim,St,decltype(v_pos.toKernel())>),ite,dec.getDomain(),bc,v_pos.toKernel());
 
 				return;
 			}
 
 			// label particle processor
 			CUDA_LAUNCH((process_id_proc_each_part<dim,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(lbl_p.toKernel()),decltype(prc_sz.toKernel())>),
-			ite.wthr,ite.thr,
+			ite,
 			dec.toKernel(),v_pos.toKernel(),lbl_p.toKernel(),prc_sz.toKernel(),v_cl.rank());
 
 
@@ -1145,7 +1148,7 @@ class vector_dist_comm
 			ite = lbl_p.getGPUIterator();
 
 			// we order lbl_p
-			CUDA_LAUNCH((reorder_lbl<decltype(lbl_p.toKernel()),decltype(starts.toKernel())>),ite.wthr,ite.thr,lbl_p.toKernel(),starts.toKernel());
+			CUDA_LAUNCH((reorder_lbl<decltype(lbl_p.toKernel()),decltype(starts.toKernel())>),ite,lbl_p.toKernel(),starts.toKernel());
 
 			#endif
 
@@ -1765,8 +1768,8 @@ public:
 	 *
 	 */
 	template<template<typename,typename> class op, int ... prp>
-	void ghost_put_(openfpm::vector<Point<dim, St>> & v_pos,
-					openfpm::vector<prop> & v_prp,
+	void ghost_put_(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim, St>>::type,layout_base> & v_pos,
+					openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
 					size_t & g_m,
 					size_t opt)
 	{
@@ -1774,7 +1777,7 @@ public:
 		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;
 
 		// send vector for each processor
-		typedef openfpm::vector<prp_object> send_vector;
+		typedef openfpm::vector<prp_object,Memory,typename layout_base<prp_object>::type,layout_base> send_vector;
 
 		openfpm::vector<send_vector> g_send_prp;
 		fill_send_ghost_put_prp_buf<send_vector, prp_object, prp...>(v_prp,g_send_prp,g_m);

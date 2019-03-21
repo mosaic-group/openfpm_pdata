@@ -5,7 +5,7 @@ ifeq (, $(shell which nvcc))
         CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
         INCLUDE_PATH_NVCC=
 else
-        CUDA_CC=nvcc
+        CUDA_CC=nvcc -ccbin=mpic++
 endif
 
 ifeq ($(PROFILE),ON)

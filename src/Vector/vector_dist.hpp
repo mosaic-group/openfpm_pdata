@@ -232,15 +232,11 @@ template<unsigned int dim,
          template<typename> class layout_base = memory_traits_lin>
 class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>
 {
+
 public:
 
 	//! Self type
 	typedef vector_dist<dim,St,prop,Decomposition,Memory,layout_base> self;
-
-	//! property object
-	typedef prop value_type;
-
-	typedef Decomposition Decomposition_type;
 
 private:
 
@@ -384,11 +380,23 @@ private:
 
 public:
 
+	//! property object
+	typedef prop value_type;
+
+	typedef Decomposition Decomposition_type;
+
+	typedef decltype(v_pos) internal_position_vector_type;
+
+	typedef CellList<dim, St, Mem_fast<>, shift<dim, St>, internal_position_vector_type > CellList_type;
+
 	//! space type
 	typedef St stype;
 
 	//! dimensions of space
 	static const unsigned int dims = dim;
+
+	//!
+	typedef int yes_i_am_vector_dist;
 
 	/*! \brief Operator= for distributed vector
 	 *
@@ -439,6 +447,11 @@ public:
 
 		return *this;
 	}
+
+	// default constructor (structure contain garbage)
+	vector_dist()
+	:v_cl(create_vcluster<Memory>()),opt(opt)
+	{}
 
 
 	/*! \brief Copy Constructor
@@ -1027,7 +1040,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>,decltype(v_pos) > > CellL getCellListSym(St r_cut)
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>,internal_position_vector_type > > CellL getCellListSym(St r_cut)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -1137,8 +1150,7 @@ public:
 
 #ifdef CUDA_GPU
 
-	/*! \brief Construct a cell list starting from the stored particles, this version of cell-list can be offloaded with
-	 *         the function toGPU
+	/*! \brief Construct a cell list starting from the stored particles
 	 *
 	 * \param r_cut interation radius, or size of each cell
 	 *
@@ -1161,6 +1173,7 @@ public:
 
 		return getCellListGPU(r_cut, g,no_se3);
 	}
+
 
 	/*! \brief Construct a cell list starting from the stored particles
 	 *
@@ -1208,6 +1221,41 @@ public:
 
 
 #endif
+
+///////////////////////// Device Interface, this interface always exist it wrap the GPU if you have one or the CPU if you do not have //////////////// 
+
+#ifdef CUDA_GPU
+
+        /*! \brief Construct a cell list from the stored particles
+         *
+         * \param r_cut interation radius, or size of each cell
+         *
+         * \return the Cell list
+         *
+         */
+        auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(this->getCellListGPU(r_cut,no_se3))
+        {
+                return this->getCellListGPU(r_cut,no_se3);
+        }
+
+
+#else
+
+	 /*! \brief Construct a cell list from the stored particles
+         *
+         * \param r_cut interation radius, or size of each cell
+         *
+         * \return the Cell list
+         *
+         */
+        auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(this->getCellList(r_cut,no_se3))
+        {
+                return this->getCellList(r_cut,no_se3);
+        }
+
+#endif
+
+////////////////////// End Device Interface ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	/*! \brief Construct an hilbert cell list starting from the stored particles
 	 *
@@ -1908,7 +1956,7 @@ public:
 		auto ite = v_pos.getGPUIteratorTo(g_m,n_thr);
 
 		CUDA_LAUNCH((merge_sort_part<false,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortToSort().toKernel()),prp...>),
-		ite.wthr,ite.thr,
+		ite,
 		v_pos.toKernel(),v_prp.toKernel(),v_pos_out.toKernel(),v_prp_out.toKernel(),cl.getNonSortToSort().toKernel());
 
 #endif
@@ -1991,11 +2039,39 @@ public:
 		auto ite = v_pos.getGPUIteratorTo(g_m,n_thr);
 
 		CUDA_LAUNCH((merge_sort_part<true,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortedToSorted().toKernel()),prp...>),
-		ite.wthr,ite.thr,
+		ite,
 		v_pos.toKernel(),v_prp.toKernel(),v_pos_out.toKernel(),v_prp_out.toKernel(),cl.getNonSortedToSorted().toKernel());
 
 #endif
 	}
+
+#endif
+
+#ifdef CUDA_GPU
+
+        /*! \brief Get an iterator that traverse the particles in the domain
+         *
+         * \return an iterator
+         *
+         */
+        auto getDomainIteratorDevice(size_t n_thr = 1024) const -> decltype(this->getDomainIteratorGPU(n_thr))
+        {
+                return this->getDomainIteratorGPU(n_thr);
+        }
+
+
+#else
+
+        /*! \brief Get an iterator that traverse the particles in the domain
+         *
+         * \return an iterator
+         *
+         */
+        auto getDomainIteratorDevice(size_t n_thr = 1024) const -> decltype(this->getDomainIterator())
+        {
+                return this->getDomainIterator();
+        }
+
 
 #endif
 
@@ -2296,7 +2372,22 @@ public:
 	 * \return true if the file has been written without error
 	 *
 	 */
-	inline bool write(std::string out, int opt = VTK_WRITER)
+	inline bool write(std::string out ,int opt = VTK_WRITER)
+	{
+		return write(out,"",opt);
+	}
+
+	/*! \brief Output particle position and properties
+	 *
+	 * \param out output filename
+	 * \param meta_info meta information example ("time = 1.234" add the information time to the VTK file)
+	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
+	 *            FORMAT_BINARY. (the default is ASCII format)
+	 *
+	 * \return true if the file has been written without error
+	 *
+	 */
+	inline bool write(std::string out, std::string meta_info ,int opt = VTK_WRITER)
 	{
 
 		if ((opt & 0x0FFF0000) == CSV_WRITER)
@@ -2326,7 +2417,7 @@ public:
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtk"));
 
 			// Write the VTK file
-			return vtk_writer.write(output,prp_names,"particles",ft);
+			return vtk_writer.write(output,prp_names,"particles",meta_info,ft);
 		}
 	}
 
@@ -2361,6 +2452,7 @@ public:
 	 *
 	 * \param out output
 	 * \param iteration (we can append the number at the end of the file_name)
+	 * \param meta_info meta information example ("time = 1.234" add the information time to the VTK file)
 	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
 	 *            FORMAT_BINARY. (the default is ASCII format)
 	 *
@@ -2368,6 +2460,22 @@ public:
 	 *
 	 */
 	inline bool write_frame(std::string out, size_t iteration, int opt = VTK_WRITER)
+	{
+		return write_frame(out,iteration,"",opt);
+	}
+
+	/*! \brief Output particle position and properties
+	 *
+	 * \param out output
+	 * \param iteration (we can append the number at the end of the file_name)
+	 * \param meta_info meta information example ("time = 1.234" add the information time to the VTK file)
+	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
+	 *            FORMAT_BINARY. (the default is ASCII format)
+	 *
+	 * \return if the file has been written correctly
+	 *
+	 */
+	inline bool write_frame(std::string out, size_t iteration, std::string meta_info, int opt = VTK_WRITER)
 	{
 		if ((opt & 0x0FFF0000) == CSV_WRITER)
 		{
@@ -2395,7 +2503,7 @@ public:
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtk"));
 
 			// Write the VTK file
-			return vtk_writer.write(output,prp_names,"particles",ft);
+			return vtk_writer.write(output,prp_names,"particles",meta_info,ft);
 		}
 	}
 
@@ -2630,7 +2738,7 @@ public:
 		 */
 		template<unsigned int ... prp> vector_dist_ker<dim,St,prop> toKernel()
 		{
-			vector_dist_ker<dim,St,prop> v(v_pos.toKernel(), v_prp.toKernel());
+			vector_dist_ker<dim,St,prop> v(g_m,v_pos.toKernel(), v_prp.toKernel());
 
 			return v;
 		}
@@ -2644,7 +2752,7 @@ public:
 		 */
 		template<unsigned int ... prp> vector_dist_ker<dim,St,prop> toKernel_sorted()
 		{
-			vector_dist_ker<dim,St,prop> v(v_pos_out.toKernel(), v_prp_out.toKernel());
+			vector_dist_ker<dim,St,prop> v(g_m,v_pos_out.toKernel(), v_prp_out.toKernel());
 
 			return v;
 		}
@@ -2714,6 +2822,33 @@ public:
                 v_prp.swap(v_prp_out);
         }
 
+        /*! \brief This function compare if the host and device buffer position match up to some tolerance
+         *
+         * \tparam prp property to check
+         *
+         * \param tol tollerance absolute
+         *
+         */
+        bool compareHostAndDevicePos(St tol, St near  = -1.0, bool silent = false)
+        {
+        	return compare_host_device<Point<dim,St>,0>::compare(v_pos,tol,near,silent);
+        }
+
+
+        /*! \brief This function compare if the host and device buffer position match up to some tolerance
+         *
+         * \tparam prp property to check
+         *
+         * \param tol tollerance absolute
+         *
+         */
+        template<unsigned int prp>
+        bool compareHostAndDeviceProp(St tol, St near  = -1.0, bool silent = false)
+        {
+        	return compare_host_device<typename boost::mpl::at<typename prop::type,
+        							            boost::mpl::int_<prp> >::type,prp>::compare(v_prp,tol,near,silent);
+        }
+
 #endif
 
 
@@ -2730,5 +2865,6 @@ public:
 
 template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte>> using vector_dist_gpu = vector_dist<dim,St,prop,Decomposition,CudaMemory,memory_traits_inte>;
 template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St,HeapMemory,memory_traits_inte>> using vector_dist_soa = vector_dist<dim,St,prop,Decomposition,HeapMemory,memory_traits_inte>;
+template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte>> using vector_dist_dev = vector_dist<dim,St,prop,Decomposition,CudaMemory,memory_traits_inte>;
 
 #endif /* VECTOR_HPP_ */

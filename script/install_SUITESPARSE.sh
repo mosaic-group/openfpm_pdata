@@ -12,6 +12,7 @@ if [ -d "$1/SUITESPARSE"  -a -f "$1/SUITESPARSE/include/umfpack.h" ]; then
   exit 0
 fi
 
+rm SuiteSparse-5.3.0.tar.gz
 wget http://ppmcore.mpi-cbg.de/upload/SuiteSparse-5.3.0.tar.gz
 rm -rf SuiteSparse
 tar -xf SuiteSparse-5.3.0.tar.gz

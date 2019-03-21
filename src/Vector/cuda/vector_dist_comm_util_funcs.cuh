@@ -86,7 +86,7 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 
 			// First we have to see how many entry each particle produce
 			CUDA_LAUNCH((num_proc_ghost_each_part<dim,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(proc_id_out.toKernel())>),
-			ite.wthr,ite.thr,
+			ite,
 			dec.toKernel(),v_pos.toKernel(),proc_id_out.toKernel());
 
 			// scan
@@ -104,7 +104,7 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 
 			// we compute processor id for each particle
 			CUDA_LAUNCH((proc_label_id_ghost<dim,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(starts.toKernel()),decltype(g_opart_device.toKernel())>),
-			ite.wthr,ite.thr,
+			ite,
 			dec.toKernel(),v_pos.toKernel(),starts.toKernel(),g_opart_device.toKernel());
 
 			// sort particles
@@ -118,7 +118,7 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 
 			// Find the buffer bases
 			CUDA_LAUNCH((find_buffer_offsets<0,decltype(g_opart_device.toKernel()),decltype(prc_offset.toKernel())>),
-					    ite.wthr,ite.thr,
+					    ite,
 					    g_opart_device.toKernel(),(int *)mem.getDevicePointer(),prc_offset.toKernel());
 
 			// Trasfer the number of offsets on CPU
@@ -208,7 +208,7 @@ struct local_ghost_from_opart_impl<with_pos,dim,St,prop,Memory,layout_base,true>
 				if (ite.wthr.x != 0)
 				{
 					CUDA_LAUNCH((process_ghost_particles_local<with_pos,dim,decltype(o_part_loc.toKernel()),decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(shifts.toKernel())>),
-					ite.wthr,ite.thr,
+					ite,
 					o_part_loc.toKernel(),v_pos.toKernel(),v_prp.toKernel(),shifts.toKernel(),old);
 				}
 #else
@@ -261,7 +261,7 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 
 		// label particle processor
 		CUDA_LAUNCH((num_shift_ghost_each_part<dim,St,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),decltype(v_pos.toKernel()),decltype(o_part_loc.toKernel())>),
-		ite.wthr,ite.thr,
+		ite,
 		box_f_dev.toKernel(),box_f_sv.toKernel(),v_pos.toKernel(),o_part_loc.toKernel(),g_m);
 
 		starts.resize(o_part_loc.size());
@@ -284,7 +284,7 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 									 decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),
 									 decltype(starts.toKernel()),decltype(shifts.toKernel()),
 									 decltype(o_part_loc.toKernel())>),
-		ite.wthr,ite.thr,
+		ite,
 		box_f_dev.toKernel(),box_f_sv.toKernel(),
 		 v_pos.toKernel(),v_prp.toKernel(),
 		 starts.toKernel(),shifts.toKernel(),o_part_loc.toKernel(),old,g_m);

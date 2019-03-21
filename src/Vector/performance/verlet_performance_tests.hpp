@@ -73,7 +73,7 @@ template<unsigned int dim> void vd_verlet_random_benchmark(size_t k_start,
 		//For different r_cut
 		for (size_t r = 0; r < r_cutoff.size(); r++ )
 		{
-			Vcluster & v_cl = create_vcluster();
+			Vcluster<> & v_cl = create_vcluster();
 
 			//Cut-off radius
 			float r_cut = r_cutoff.get(r);
@@ -175,7 +175,7 @@ template<unsigned int dim> void vd_verlet_hilbert_benchmark(size_t k_start, size
 	// For different r_cut
 	for (size_t r = 0; r < r_cutoff.size(); r++ )
 	{
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 
 		//Cut-off radius
 		float r_cut = r_cutoff.get(r);
