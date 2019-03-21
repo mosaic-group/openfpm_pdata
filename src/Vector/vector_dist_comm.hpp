@@ -1125,6 +1125,8 @@ class vector_dist_comm
 			find_buffer_offsets<1,decltype(lbl_p.toKernel()),decltype(prc_sz.toKernel())><<<ite.wthr,ite.thr>>>
 					           (lbl_p.toKernel(),(int *)mem.getDevicePointer(),prc_sz.toKernel());
 
+#error "should not be here"
+
 			// Trasfer the number of offsets on CPU
 			mem.deviceToHost();
 			prc_sz.template deviceToHost<0,1>();
