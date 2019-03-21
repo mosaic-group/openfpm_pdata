@@ -351,7 +351,6 @@ public:
 	 */
 	const DistParMetisDistribution<dim, T> & operator=(const DistParMetisDistribution<dim, T> & dist)
 	{
-		v_cl = dist.v_cl;
 		gr = dist.gr;
 		domain = dist.domain;
 		g = dist.g;
@@ -372,7 +371,6 @@ public:
 	 */
 	const DistParMetisDistribution<dim, T> & operator=(DistParMetisDistribution<dim, T> && dist)
 	{
-		v_cl = dist.v_cl;
 		gr = dist.gr;
 		domain = dist.domain;
 		g.swap(dist.g);
