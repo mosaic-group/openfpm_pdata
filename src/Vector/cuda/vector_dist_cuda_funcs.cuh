@@ -13,6 +13,7 @@
 #include "util/cuda/moderngpu/kernel_scan.hxx"
 #include "Decomposition/common.hpp"
 #include "lib/pdata.hpp"
+#include "util/cuda/kernels.cuh"
 
 template<unsigned int dim, typename St, typename decomposition_type, typename vector_type, typename start_type, typename output_type>
 __global__ void proc_label_id_ghost(decomposition_type dec,vector_type vd, start_type starts, output_type out)
@@ -89,34 +90,6 @@ __global__ void process_id_proc_each_part(cartdec_gpu cdg, particles_type parts,
 #endif
 }
 
-template<unsigned int prp_off, typename vector_type,typename vector_type_offs>
-__global__  void find_buffer_offsets(vector_type vd, int * cnt, vector_type_offs offs)
-{
-    int p = threadIdx.x + blockIdx.x * blockDim.x;
-
-    if (p >= (int)vd.size() - 1) return;
-
-    if (vd.template get<prp_off>(p) != vd.template get<prp_off>(p+1))
-	{
-    	int i = atomicAdd(cnt, 1);
-    	offs.template get<0>(i) = p+1;
-    	offs.template get<1>(i) = vd.template get<prp_off>(p);
-	}
-}
-
-template<unsigned int prp_off, typename vector_type,typename vector_type_offs>
-__global__  void find_buffer_offsets_no_prc(vector_type vd, int * cnt, vector_type_offs offs, int g_m)
-{
-    int p = threadIdx.x + blockIdx.x * blockDim.x;
-
-    if (p >= (int)g_m - 1) return;
-
-    if (vd.template get<prp_off>(p) != vd.template get<prp_off>(p+1))
-	{
-    	int i = atomicAdd(cnt, 1);
-    	offs.template get<0>(i) = p+1;
-	}
-}
 
 template<typename vector_m_opart_type, typename vector_pos_type_out, typename vector_prp_type_out,
 		 typename vector_pos_type_in,  typename vector_prp_type_in>

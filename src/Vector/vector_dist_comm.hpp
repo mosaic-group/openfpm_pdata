@@ -14,6 +14,7 @@
 #include "util/cuda/moderngpu/kernel_mergesort.hxx"
 #include "Vector/cuda/vector_dist_cuda_funcs.cuh"
 #include "util/cuda/moderngpu/kernel_scan.hxx"
+#include "util/cuda/kernels.cuh"
 #endif
 
 #include "Vector/util/vector_dist_funcs.hpp"

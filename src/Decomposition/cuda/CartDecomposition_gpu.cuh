@@ -10,8 +10,12 @@
 
 #include "ie_ghost_gpu.cuh"
 
-template<typename T2, typename fine_s_type, typename vsub_domain_type>
-__device__ __host__ inline int processorID_impl(T2 & p, fine_s_type & fine_s, vsub_domain_type & sub_domains_global)
+template<unsigned int dim, typename bc_type, typename T2, typename fine_s_type, typename vsub_domain_type, typename box_type>
+__device__ __host__ inline int processorID_impl(T2 & p,
+												fine_s_type & fine_s,
+												vsub_domain_type & sub_domains_global,
+												const box_type & domain,
+												const bc_type (& bc)[dim])
 {
 	// Get the number of elements in the cell
 
@@ -24,7 +28,7 @@ __device__ __host__ inline int processorID_impl(T2 & p, fine_s_type & fine_s, vs
 	{
 		e = fine_s.get(cl,i);
 
-		if (sub_domains_global.template get<0>(e).isInsideNP(p) == true)
+		if (sub_domains_global.template get<0>(e).isInsideNP_with_border(p,domain,bc) == true)
 		{
 			break;
 		}
@@ -34,13 +38,13 @@ __device__ __host__ inline int processorID_impl(T2 & p, fine_s_type & fine_s, vs
 
 	if (n_ele == 0)
 	{
-		printf("CartDecomposition_gpu.cuh:processorID_impl, error I cannot detect in which processor this particle go");
+		printf("CartDecomposition_gpu.cuh:processorID_impl, error I cannot detect in which processor this particle go \n");
 		return -1;
 	}
 
 	if (i == n_ele)
 	{
-		printf("CartDecomposition_gpu.cuh:processorID_impl, error I cannot detect in which processor this particle go because of round-off inconsistencies");
+		printf("CartDecomposition_gpu.cuh:processorID_impl, error I cannot detect in which processor this particle go because of round-off inconsistencies \n");
 		return -1;
 	}
 
@@ -132,7 +136,7 @@ public:
 		Point<dim,T> pt = p;
 		this->applyPointBC(pt);
 
-		return processorID_impl(pt,clk,sub_domains_global);
+		return processorID_impl(pt,clk,sub_domains_global,domain,bc);
 	}
 
 	/*! \brief Apply boundary condition to the point
@@ -163,7 +167,7 @@ public:
 	 */
 	__device__ __host__ int inline processorID(const Point<dim,T> &pt)
 	{
-		return processorID_impl(pt,clk,sub_domains_global);
+		return processorID_impl(pt,clk,sub_domains_global,domain,bc);
 	}
 };
 

@@ -1068,7 +1068,7 @@ public:
 	 */
 	template<typename Mem> size_t inline processorID(const encapc<1, Point<dim,T>, Mem> & p) const
 	{
-		return processorID_impl(p,fine_s,sub_domains_global);
+		return processorID_impl(p,fine_s,sub_domains_global,getDomain(),bc);
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -1080,7 +1080,7 @@ public:
 	 */
 	size_t inline processorID(const Point<dim,T> &p) const
 	{
-		return processorID_impl(p,fine_s,sub_domains_global);
+		return processorID_impl(p,fine_s,sub_domains_global,getDomain(),bc);
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -1092,7 +1092,7 @@ public:
 	 */
 	size_t inline processorID(const T (&p)[dim]) const
 	{
-		return processorID_impl(p,fine_s,sub_domains_global);
+		return processorID_impl(p,fine_s,sub_domains_global,getDomain(),bc);
 	}
 
 	/*! \brief Given a point return in which processor the point/particle should go
@@ -1110,7 +1110,7 @@ public:
 		applyPointBC(pt);
 
 
-		return processorID_impl(pt,fine_s,sub_domains_global);
+		return processorID_impl(pt,fine_s,sub_domains_global,getDomain(),bc);
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -1129,7 +1129,7 @@ public:
 
 		// Get the number of elements in the cell
 
-		return processorID_impl(pt,fine_s,sub_domains_global);
+		return processorID_impl(pt,fine_s,sub_domains_global,getDomain(),bc);
 	}
 
 	/*! \brief Given a point return in which processor the particle should go
@@ -1146,7 +1146,7 @@ public:
 		Point<dim,T> pt = p;
 		applyPointBC(pt);
 
-		return processorID_impl(pt,fine_s,sub_domains_global);
+		return processorID_impl(pt,fine_s,sub_domains_global,getDomain(),bc);
 	}
 
 	/*! \brief Get the periodicity on i dimension
