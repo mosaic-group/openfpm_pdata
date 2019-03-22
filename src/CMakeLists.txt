@@ -9,7 +9,7 @@ else()
 	set(CUDA_SOURCES)
 endif()
 
-add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp Debug/debug_test.cpp Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp Grid/tests/grid_dist_id_unit_test.cpp Grid/tests/staggered_grid_dist_unit_test.cpp Vector/tests/vector_dist_cell_list_tests.cpp Vector/tests/vector_dist_complex_prp_unit_test.cpp Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp Vector/tests/vector_dist_MP_unit_tests.cpp Vector/tests/vector_dist_NN_tests.cpp Vector/tests/vector_dist_unit_test.cpp  pdata_performance.cpp Decomposition/tests/CartDecomposition_unit_test.cpp Decomposition/tests/shift_vect_converter_tests.cpp Vector/performance/vector_dist_performance_util.cpp  lib/pdata.cpp test_multiple_o.cpp  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp)
+add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp Debug/debug_test.cpp Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp Grid/tests/grid_dist_id_unit_test.cpp Grid/tests/staggered_grid_dist_unit_test.cpp Vector/tests/vector_dist_cell_list_tests.cpp Vector/tests/vector_dist_complex_prp_unit_test.cpp Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp Vector/tests/vector_dist_MP_unit_tests.cpp Vector/tests/vector_dist_NN_tests.cpp Vector/tests/vector_dist_unit_test.cpp  pdata_performance.cpp Decomposition/tests/CartDecomposition_unit_test.cpp Decomposition/tests/shift_vect_converter_tests.cpp Vector/performance/vector_dist_performance_util.cpp  lib/pdata.cpp test_multiple_o.cpp  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp DCPSE/MonomialBasis.hpp DCPSE/MonomialBasisElement.hpp DCPSE/tests/MonomialBasis_unit_tests.cpp DCPSE/Vandermonde.hpp)
 
 if ( CMAKE_COMPILER_IS_GNUCC )
     target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
@@ -63,7 +63,13 @@ if (TEST_COVERAGE)
     target_link_libraries(pdata -lgcov --coverage)
 endif()
 
-
+# Debug!
+# Hack found at https://github.com/LLNL/scr/issues/130#issuecomment-402815952
+IF(MPI_CXX_FOUND)
+	INCLUDE_DIRECTORIES(${MPI_CXX_INCLUDE_PATH})
+#	LIST(APPEND SCR_EXTERNAL_LIBS ${MPI_CXX_LIBRARIES})
+	target_link_libraries(pdata ${MPI_CXX_LIBRARIES})
+ENDIF(MPI_CXX_FOUND)
 
 target_include_directories (ofpm_pdata PUBLIC ${CUDA_INCLUDE_DIRS})
 target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
