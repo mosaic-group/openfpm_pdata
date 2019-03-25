@@ -22,7 +22,7 @@ public:
     Vandermonde(const Point<dim, T> &point, const std::vector<Point<dim, T>> &neighbours,
                 const MonomialBasis<dim> &monomialBasis);
 
-    MatrixType & getMatrix(MatrixType &M);
+    MatrixType &getMatrix(MatrixType &M);
 
 private:
     void computeOffsets(const std::vector<Point<dim, T>> &neighbours);
@@ -34,9 +34,14 @@ private:
 
 template<unsigned int dim, typename T, typename MatrixType>
 Vandermonde<dim, T, MatrixType>::Vandermonde(const Point<dim, T> &point, const std::vector<Point<dim, T>> &neighbours,
-                                 const MonomialBasis<dim> &monomialBasis) : point(point),
-                                                                            monomialBasis(monomialBasis)
+                                             const MonomialBasis<dim> &monomialBasis) : point(point),
+                                                                                        monomialBasis(monomialBasis)
 {
+    // First check that the number of points given is enough for building the Vandermonde matrix
+    if (neighbours.size() < monomialBasis.size())
+    {
+        ACTION_ON_ERROR(std::length_error("Not enough neighbour points passed for Vandermonde matrix construction!"));
+    }
     // Compute the offsets from point to all neighbours (and store them)
     computeOffsets(neighbours);
     // Compute eps for this point
@@ -55,7 +60,7 @@ void Vandermonde<dim, T, MatrixType>::computeOffsets(const std::vector<Point<dim
 }
 
 template<unsigned int dim, typename T, typename MatrixType>
-MatrixType & Vandermonde<dim, T, MatrixType>::getMatrix(MatrixType &M)
+MatrixType &Vandermonde<dim, T, MatrixType>::getMatrix(MatrixType &M)
 {
     // Build the Vandermonde matrix, row-by-row
     VandermondeRowBuilder<dim, T> vrb(monomialBasis);
