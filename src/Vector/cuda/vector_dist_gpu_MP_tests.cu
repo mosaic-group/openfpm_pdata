@@ -673,7 +673,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_test_simplified )
 
 BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_cl_test )
 {
-/*	if (create_vcluster().getProcessingUnits() > 24)
+	if (create_vcluster().getProcessingUnits() > 24)
 	{return;}
 
 	// The domain
@@ -777,7 +777,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_cl_test )
 		}
 	}
 
-	BOOST_REQUIRE_EQUAL(match,true);*/
+	BOOST_REQUIRE_EQUAL(match,true);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

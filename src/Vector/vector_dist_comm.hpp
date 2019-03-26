@@ -20,14 +20,14 @@
 #include "Vector/util/vector_dist_funcs.hpp"
 #include "cuda/vector_dist_comm_util_funcs.cuh"
 
-#define NO_POSITION 1
-#define WITH_POSITION 2
-#define NO_CHANGE_ELEMENTS 4
+constexpr int NO_POSITION = 1;
+constexpr int WITH_POSITION = 2;
+constexpr int NO_CHANGE_ELEMENTS = 4;
 
-#define BIND_DEC_TO_GHOST 1
+constexpr int BIND_DEC_TO_GHOST = 1;
 
-#define RUN_ON_DEVICE 1024
-#define MAP_LOCAL 2
+constexpr int RUN_ON_DEVICE = 1024;
+constexpr int MAP_LOCAL = 2;
 
 /*! \brief compute the communication options from the ghost_get/put options
  *
