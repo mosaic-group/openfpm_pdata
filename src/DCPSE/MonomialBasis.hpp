@@ -8,20 +8,20 @@
 #include <vector>
 #include <Grid/grid_sm.hpp>
 #include <Grid/iterators/grid_key_dx_iterator_sub_bc.hpp>
-#include "MonomialBasisElement.hpp"
+#include "Monomial.hpp"
 
 template<unsigned int dim>
 class MonomialBasis
 {
 private:
-    std::vector<MonomialBasisElement<dim>> basis;
+    std::vector<Monomial<dim>> basis;
 
 public:
     MonomialBasis(std::vector<unsigned int> degrees, unsigned int convergenceOrder);
 
     MonomialBasis(unsigned int degrees[dim], unsigned int convergenceOrder);
 
-    explicit MonomialBasis(const std::vector<MonomialBasisElement<dim>> &basis) : basis(basis) {}
+    explicit MonomialBasis(const std::vector<Monomial<dim>> &basis) : basis(basis) {}
 
     MonomialBasis(const MonomialBasis &other);
 
@@ -29,9 +29,13 @@ public:
 
     unsigned int size() const;
 
-    MonomialBasisElement<dim> &getElement(unsigned int i);
+    Monomial<dim> &getElement(unsigned int i);
 
-    const std::vector<MonomialBasisElement<dim>> &getElements() const;
+    const std::vector<Monomial<dim>> &getElements() const;
+
+    MonomialBasis<dim> getDerivative(Point<dim, unsigned int> differentialOrder);
+
+    bool operator==(const MonomialBasis &other) const;
 
     template<typename charT, typename traits>
     friend std::basic_ostream<charT, traits> &
@@ -65,13 +69,13 @@ MonomialBasis<dim>::MonomialBasis(unsigned int *degrees, unsigned int convergenc
 template<unsigned int dim>
 MonomialBasis<dim>::MonomialBasis(const MonomialBasis &other)
 {
-    basis = other.basis; // Here it works because both std::vector and MonomialBasisElement perform a deep copy.
+    basis = other.basis; // Here it works because both std::vector and Monomial perform a deep copy.
 }
 
 template<unsigned int dim>
 MonomialBasis<dim> &MonomialBasis<dim>::operator=(const MonomialBasis &other)
 {
-    basis = other.basis; // Here it works because both std::vector and MonomialBasisElement perform a deep copy.
+    basis = other.basis; // Here it works because both std::vector and Monomial perform a deep copy.
     return *this;
 }
 
@@ -82,7 +86,7 @@ unsigned int MonomialBasis<dim>::size() const
 }
 
 template<unsigned int dim>
-MonomialBasisElement<dim> &MonomialBasis<dim>::getElement(unsigned int i)
+Monomial<dim> &MonomialBasis<dim>::getElement(unsigned int i)
 {
     return basis[i];
 }
@@ -115,7 +119,7 @@ void MonomialBasis<dim>::generateBasis(std::vector<unsigned int> m, unsigned int
     while (it.isNext())
     {
         Point<dim, long int> p = it.get().get_k();
-        MonomialBasisElement<dim> candidateBasisElement(p);
+        Monomial<dim> candidateBasisElement(p);
         // Filter out the elements which don't fullfil the theoretical condition for being in the vandermonde matrix
         if (candidateBasisElement.order() < orderLimit && candidateBasisElement.order() >= alphaMin)
         {
@@ -126,9 +130,26 @@ void MonomialBasis<dim>::generateBasis(std::vector<unsigned int> m, unsigned int
 }
 
 template<unsigned int dim>
-const std::vector<MonomialBasisElement<dim>> &MonomialBasis<dim>::getElements() const
+const std::vector<Monomial<dim>> &MonomialBasis<dim>::getElements() const
 {
     return basis;
+}
+
+template<unsigned int dim>
+MonomialBasis<dim> MonomialBasis<dim>::getDerivative(const Point<dim, unsigned int> differentialOrder)
+{
+    std::vector<Monomial<dim>> derivatives;
+    for (const auto & monomial : getElements())
+    {
+        derivatives.push_back(monomial.getDerivative(differentialOrder));
+    }
+    return MonomialBasis<dim>(derivatives);
+}
+
+template<unsigned int dim>
+bool MonomialBasis<dim>::operator==(const MonomialBasis &other) const
+{
+    return basis == other.basis;
 }
 
 #endif //OPENFPM_PDATA_MONOMIALBASIS_H

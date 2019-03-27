@@ -20,7 +20,7 @@ public:
     void buildRow(EMatrix<T, Eigen::Dynamic, Eigen::Dynamic> &M, unsigned int row, Point<dim, T> x, T eps);
 
 private:
-    T computePower(MonomialBasisElement<dim> mbe, Point<dim, T> x);
+    T computePower(Monomial<dim> mbe, Point<dim, T> x);
 };
 
 template<unsigned int dim, typename T>
@@ -37,7 +37,7 @@ void VandermondeRowBuilder<dim, T>::buildRow(EMatrix<T, Eigen::Dynamic, Eigen::D
 }
 
 template<unsigned int dim, typename T>
-T VandermondeRowBuilder<dim, T>::computePower(MonomialBasisElement<dim> mbe, Point<dim, T> x)
+T VandermondeRowBuilder<dim, T>::computePower(Monomial<dim> mbe, Point<dim, T> x)
 {
     T res = 1;
     for (int i = 0; i < dim; ++i)
