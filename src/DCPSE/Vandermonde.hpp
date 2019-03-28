@@ -83,7 +83,6 @@ void Vandermonde<dim, T, MatrixType>::computeEps(T factor)
     }
     avgNeighbourSpacing /= offsets.size();
     eps = factor * avgNeighbourSpacing;
-    std::cout << "eps=" << eps << std::endl;
 }
 
 template<unsigned int dim, typename T, typename MatrixType>

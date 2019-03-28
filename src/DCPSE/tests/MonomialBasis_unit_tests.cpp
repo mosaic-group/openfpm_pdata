@@ -140,6 +140,7 @@ BOOST_AUTO_TEST_SUITE(MonomialBasis_tests)
         {
             MonomialBasis<2> mb({1, 1}, 2);
 //            std::cout << mb << std::endl;
+//            std::cout << mb.size() << std::endl;
 
             // Check that the basis contains all the elements it is supposed to contain
             std::vector<Monomial<2>> control;
@@ -152,6 +153,8 @@ BOOST_AUTO_TEST_SUITE(MonomialBasis_tests)
             control.emplace_back(Point<2, unsigned int>({1, 2}));
             control.emplace_back(Point<2, unsigned int>({3, 0}));
             control.emplace_back(Point<2, unsigned int>({0, 3}));
+
+            BOOST_REQUIRE_EQUAL(mb.size(), control.size());
 
             auto first = mb.getElements().begin();
             auto last = mb.getElements().end();
