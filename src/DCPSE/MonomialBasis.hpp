@@ -114,7 +114,8 @@ void MonomialBasis<dim>::generateBasis(std::vector<unsigned int> m, unsigned int
     grid_key_dx_iterator_sub_bc<dim> it(grid, start, stop, bc);
 
     // Finally compute alpha_min
-    unsigned char alphaMin = static_cast<unsigned char>(!(mSum % 2)); // if mSum is even, alpha_min must be 1
+//    unsigned char alphaMin = static_cast<unsigned char>(!(mSum % 2)); // if mSum is even, alpha_min must be 1
+    unsigned char alphaMin = 0; // we want to always have 1 in the basis
 
     while (it.isNext())
     {
