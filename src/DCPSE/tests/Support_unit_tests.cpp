@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_SUITE(Support_tests)
         auto supportPoints = support.getSupport(itPoint, 20);
 //        for (const auto &pt : supportPoints)
 //        {
-//            std::cout << pt.toString() << std::endl;
+//            std::cout << pt.toPointString() << std::endl;
 //        }
         BOOST_REQUIRE_GE(supportPoints.size(), 20);
     }
