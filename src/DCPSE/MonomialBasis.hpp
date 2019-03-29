@@ -17,9 +17,11 @@ private:
     std::vector<Monomial<dim>> basis;
 
 public:
-    MonomialBasis(std::vector<unsigned int> degrees, unsigned int convergenceOrder);
+    MonomialBasis(const std::vector<unsigned int> &degrees, unsigned int convergenceOrder);
 
     MonomialBasis(unsigned int degrees[dim], unsigned int convergenceOrder);
+
+//    explicit MonomialBasis(Point<dim, unsigned int> degrees, unsigned int convergenceOrder);
 
     explicit MonomialBasis(const std::vector<Monomial<dim>> &basis) : basis(basis) {}
 
@@ -29,11 +31,13 @@ public:
 
     unsigned int size() const;
 
+    const Monomial<dim> &getElement(unsigned int i) const;
+
     Monomial<dim> &getElement(unsigned int i);
 
     const std::vector<Monomial<dim>> &getElements() const;
 
-    MonomialBasis<dim> getDerivative(Point<dim, unsigned int> differentialOrder);
+    MonomialBasis<dim> getDerivative(Point<dim, unsigned int> differentialOrder) const;
 
     bool operator==(const MonomialBasis &other) const;
 
@@ -57,7 +61,7 @@ private:
 //// Definitions below
 
 template<unsigned int dim>
-MonomialBasis<dim>::MonomialBasis(std::vector<unsigned int> degrees, unsigned int convergenceOrder)
+MonomialBasis<dim>::MonomialBasis(const std::vector<unsigned int> &degrees, unsigned int convergenceOrder)
 {
     generateBasis(degrees, convergenceOrder);
 }
@@ -83,6 +87,12 @@ template<unsigned int dim>
 unsigned int MonomialBasis<dim>::size() const
 {
     return basis.size();
+}
+
+template<unsigned int dim>
+const Monomial<dim> &MonomialBasis<dim>::getElement(unsigned int i) const
+{
+    return basis[i];
 }
 
 template<unsigned int dim>
@@ -137,10 +147,10 @@ const std::vector<Monomial<dim>> &MonomialBasis<dim>::getElements() const
 }
 
 template<unsigned int dim>
-MonomialBasis<dim> MonomialBasis<dim>::getDerivative(const Point<dim, unsigned int> differentialOrder)
+MonomialBasis<dim> MonomialBasis<dim>::getDerivative(const Point<dim, unsigned int> differentialOrder) const
 {
     std::vector<Monomial<dim>> derivatives;
-    for (const auto & monomial : getElements())
+    for (const auto &monomial : getElements())
     {
         derivatives.push_back(monomial.getDerivative(differentialOrder));
     }
@@ -152,5 +162,9 @@ bool MonomialBasis<dim>::operator==(const MonomialBasis &other) const
 {
     return basis == other.basis;
 }
+
+//template<unsigned int dim>
+//MonomialBasis<dim>::MonomialBasis(Point<dim, unsigned int> degrees, unsigned int convergenceOrder)
+//        : MonomialBasis(degrees.asArray(), convergenceOrder) {}
 
 #endif //OPENFPM_PDATA_MONOMIALBASIS_H

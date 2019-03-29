@@ -9,7 +9,7 @@ else()
 	set(CUDA_SOURCES)
 endif()
 
-add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp Debug/debug_test.cpp Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp Grid/tests/grid_dist_id_unit_test.cpp Grid/tests/staggered_grid_dist_unit_test.cpp Vector/tests/vector_dist_cell_list_tests.cpp Vector/tests/vector_dist_complex_prp_unit_test.cpp Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp Vector/tests/vector_dist_MP_unit_tests.cpp Vector/tests/vector_dist_NN_tests.cpp Vector/tests/vector_dist_unit_test.cpp  pdata_performance.cpp Decomposition/tests/CartDecomposition_unit_test.cpp Decomposition/tests/shift_vect_converter_tests.cpp Vector/performance/vector_dist_performance_util.cpp  lib/pdata.cpp test_multiple_o.cpp  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp DCPSE/MonomialBasis.hpp DCPSE/Monomial.hpp DCPSE/tests/MonomialBasis_unit_tests.cpp DCPSE/Vandermonde.hpp DCPSE/VandermondeRowBuilder.hpp DCPSE/tests/Vandermonde_unit_tests.cpp DCPSE/Support.hpp DCPSE/tests/Support_unit_tests.cpp)
+add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp Debug/debug_test.cpp Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp Grid/tests/grid_dist_id_unit_test.cpp Grid/tests/staggered_grid_dist_unit_test.cpp Vector/tests/vector_dist_cell_list_tests.cpp Vector/tests/vector_dist_complex_prp_unit_test.cpp Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp Vector/tests/vector_dist_MP_unit_tests.cpp Vector/tests/vector_dist_NN_tests.cpp Vector/tests/vector_dist_unit_test.cpp  pdata_performance.cpp Decomposition/tests/CartDecomposition_unit_test.cpp Decomposition/tests/shift_vect_converter_tests.cpp Vector/performance/vector_dist_performance_util.cpp  lib/pdata.cpp test_multiple_o.cpp  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp DCPSE/MonomialBasis.hpp DCPSE/Monomial.hpp DCPSE/tests/MonomialBasis_unit_tests.cpp DCPSE/Vandermonde.hpp DCPSE/VandermondeRowBuilder.hpp DCPSE/tests/Vandermonde_unit_tests.cpp DCPSE/Support.hpp DCPSE/tests/Support_unit_tests.cpp DCPSE/DcpseRhs.hpp DCPSE/tests/DcpseRhs_unit_tests.cpp)
 
 if ( CMAKE_COMPILER_IS_GNUCC )
     target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
@@ -49,7 +49,9 @@ target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
 target_include_directories (pdata PUBLIC ${PETSC_INCLUDES})
 target_include_directories (pdata PUBLIC ${HDF5_ROOT}/include)
 target_include_directories (pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
-target_include_directories (pdata PUBLIC ${EIGEN3_INCLUDE_DIR})
+if(EIGEN3_FOUND)
+	target_include_directories (pdata PUBLIC ${EIGEN3_INCLUDE_DIR})
+endif()
 
 target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
 

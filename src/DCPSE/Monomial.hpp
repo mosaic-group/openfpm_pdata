@@ -42,6 +42,9 @@ public:
     template<typename T>
     T evaluate(const Point<dim, T> x) const;
 
+    template<typename T>
+    T evaluate(const T x[dim]) const;
+
     Monomial<dim> getDerivative(const Point<dim, unsigned int> differentialOrder) const;
 
     template<typename charT, typename traits>
@@ -153,6 +156,13 @@ Monomial<dim> Monomial<dim>::getDerivative(const Point<dim, unsigned int> differ
         );
     }
     return Monomial(res);
+}
+
+template<unsigned int dim>
+template<typename T>
+T Monomial<dim>::evaluate(const T x[dim]) const
+{
+    return evaluate(Point<dim, T>(x));
 }
 
 
