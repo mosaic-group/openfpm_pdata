@@ -90,7 +90,7 @@ function update_openfpm()
     sh autogen.sh
     # Reconfigure
     conf_command=$(cat config.log)
-    $(conf_command)
+    $conf_command
     if [ $? -ne 0 ]; then
       echo -e "Update summary\033[91;5;1m FAILED \033[0m"
       return
