@@ -88,6 +88,9 @@ function update_openfpm()
   if [ x"$1" == x"update" -a x"$force_up" == x"" ]; then
     source $HOME/openfpm_vars
     sh autogen.sh
+    # Reconfigure
+    conf_command=$(cat config.log)
+    $(conf_command)
     if [ $? -ne 0 ]; then
       echo -e "Update summary\033[91;5;1m FAILED \033[0m"
       return
