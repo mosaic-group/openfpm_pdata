@@ -77,38 +77,38 @@ BOOST_AUTO_TEST_SUITE(MonomialBasis_tests)
         {
             Monomial<3> monomial(Point<3, unsigned int>({6, 6, 6}));
             Monomial<3> derivative = monomial.getDerivative(Point<3, double>({3, 0, 0}));
-            Monomial<3> expected(Point<3, unsigned int>({3, 6, 6}));
+            Monomial<3> expected(Point<3, unsigned int>({3, 6, 6}), 6*5*4);
             BOOST_REQUIRE_EQUAL(derivative, expected);
         }
         {
             Monomial<3> monomial(Point<3, unsigned int>({6, 6, 6}));
             Monomial<3> derivative = monomial.getDerivative(Point<3, double>({0, 3, 0}));
-            Monomial<3> expected(Point<3, unsigned int>({6, 3, 6}));
+            Monomial<3> expected(Point<3, unsigned int>({6, 3, 6}), 6*5*4);
             BOOST_REQUIRE_EQUAL(derivative, expected);
         }
         {
             Monomial<3> monomial(Point<3, unsigned int>({6, 6, 6}));
             Monomial<3> derivative = monomial.getDerivative(Point<3, double>({0, 0, 3}));
-            Monomial<3> expected(Point<3, unsigned int>({6, 6, 3}));
+            Monomial<3> expected(Point<3, unsigned int>({6, 6, 3}), 6*5*4);
             BOOST_REQUIRE_EQUAL(derivative, expected);
         }
         // Test for correctly differentiating beyond degree
         {
             Monomial<3> monomial(Point<3, unsigned int>({6, 6, 6}));
             Monomial<3> derivative = monomial.getDerivative(Point<3, double>({7, 0, 0}));
-            Monomial<3> expected(Point<3, unsigned int>({0, 6, 6}));
+            Monomial<3> expected(Point<3, unsigned int>({0, 6, 6}), 0);
             BOOST_REQUIRE_EQUAL(derivative, expected);
         }
         {
             Monomial<3> monomial(Point<3, unsigned int>({6, 6, 6}));
             Monomial<3> derivative = monomial.getDerivative(Point<3, double>({0, 7, 0}));
-            Monomial<3> expected(Point<3, unsigned int>({6, 0, 6}));
+            Monomial<3> expected(Point<3, unsigned int>({6, 0, 6}), 0);
             BOOST_REQUIRE_EQUAL(derivative, expected);
         }
         {
             Monomial<3> monomial(Point<3, unsigned int>({6, 6, 6}));
             Monomial<3> derivative = monomial.getDerivative(Point<3, double>({0, 0, 7}));
-            Monomial<3> expected(Point<3, unsigned int>({6, 6, 0}));
+            Monomial<3> expected(Point<3, unsigned int>({6, 6, 0}), 0);
             BOOST_REQUIRE_EQUAL(derivative, expected);
         }
     }

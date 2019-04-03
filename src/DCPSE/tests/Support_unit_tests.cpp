@@ -7,17 +7,16 @@
 #include <boost/test/unit_test.hpp>
 #include "Vector/vector_dist.hpp"
 #include <Space/Shape/Point.hpp>
-#include "DCPSE/Support.hpp"
+#include "DCPSE/SupportBuilder.hpp"
 
 BOOST_AUTO_TEST_SUITE(Support_tests)
 
-    BOOST_AUTO_TEST_CASE(Support_2D_1_0_2spacing_test)
+    BOOST_AUTO_TEST_CASE(SupportBuilder_2D_1_0_2spacing_test)
     {
         // Here build some easy domain and get some points around a given one
         size_t edgeSemiSize = 100;
         const size_t sz[2] = {2 * edgeSemiSize, 2 * edgeSemiSize};
         Box<2, double> box({-1.1, -1.1}, {1.1, 1.1});
-//        Box<2, double> innerDomain({-1.0, -1.0}, {1.0, 1.0});
         size_t bc[2] = {NON_PERIODIC, NON_PERIODIC};
         double spacing[2];
         spacing[0] = 1.0 / (sz[0] - 1);
@@ -58,18 +57,18 @@ BOOST_AUTO_TEST_SUITE(Support_tests)
 //        BOOST_REQUIRE_CLOSE(pos[0], 0, 1e-16);
 //        BOOST_REQUIRE_CLOSE(pos[1], 0, 1e-16);
 
-        // Now that domain is built and populated, let's test Support
+        // Now that domain is built and populated, let's test SupportBuilder
         // We use (0,0) as initial point
-        Support<2, double, aggregate<double>> support(domain, {1,0}, 2*spacing[0]);
-        auto supportPoints = support.getSupport(itPoint, 6);
-//        for (const auto &pt : supportPoints)
-//        {
-//            std::cout << pt.toString() << std::endl;
-//        }
-        BOOST_REQUIRE_GE(supportPoints.size(), 6);
+        SupportBuilder<2, double, aggregate<double>> supportBuilder(domain, {1,0}, 2*spacing[0]);
+        auto support = supportBuilder.getSupport(itPoint, 6);
+        for (const auto &off : support.getOffsets())
+        {
+            std::cout << off.toString() << std::endl;
+        }
+        BOOST_REQUIRE_GE(support.size(), 6);
     }
 
-    BOOST_AUTO_TEST_CASE(Support_2D_2_2_2spacing_test)
+    BOOST_AUTO_TEST_CASE(SupportBuilder_2D_2_2_2spacing_test)
     {
         // Here build some easy domain and get some points around a given one
         size_t edgeSemiSize = 25;
@@ -118,15 +117,21 @@ BOOST_AUTO_TEST_SUITE(Support_tests)
 //        BOOST_REQUIRE_CLOSE(pos[0], 0, 1e-16);
 //        BOOST_REQUIRE_CLOSE(pos[1], 0, 1e-16);
 
-        // Now that domain is built and populated, let's test Support
+        // Now that domain is built and populated, let's test SupportBuilder
         // We use (0,0) as initial point
-        Support<2, double, aggregate<double>> support(domain, {2,2}, 2*spacing[0]);
-        auto supportPoints = support.getSupport(itPoint, 20);
-//        for (const auto &pt : supportPoints)
+        SupportBuilder<2, double, aggregate<double>> supportBuilder(domain, {2,2}, 2*spacing[0]);
+        auto supportPoints = supportBuilder.getSupport(itPoint, 20);
+//        for (const auto &k : supportPoints)
 //        {
+//            Point<2, double> pt = domain.getPos(k);
 //            std::cout << pt.toString() << std::endl;
 //        }
         BOOST_REQUIRE_GE(supportPoints.size(), 20);
     }
+
+//    BOOST_AUTO_TEST_CASE(Support_CopyConstructor_test)
+//    {
+//
+//    }
 
 BOOST_AUTO_TEST_SUITE_END()

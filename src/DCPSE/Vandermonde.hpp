@@ -8,13 +8,14 @@
 #include "../../openfpm_numerics/src/DMatrix/EMatrix.hpp"
 #include "MonomialBasis.hpp"
 #include "VandermondeRowBuilder.hpp"
+#include "Support.hpp"
 
 template<unsigned int dim, typename T, typename MatrixType>
 class Vandermonde
 {
 private:
     const Point<dim, T> point;
-    std::vector<Point<dim, T>> offsets;
+    const std::vector<Point<dim, T>> offsets;
     const MonomialBasis<dim> monomialBasis;
     T eps;
 
@@ -22,41 +23,72 @@ public:
     Vandermonde(const Point<dim, T> &point, const std::vector<Point<dim, T>> &neighbours,
                 const MonomialBasis<dim> &monomialBasis);
 
+    template<typename Prop>
+    Vandermonde(const Support<dim, T, Prop> &support,
+                const MonomialBasis<dim> &monomialBasis);
+
     MatrixType &getMatrix(MatrixType &M);
 
+    T getEps();
+
 private:
-    void computeOffsets(const std::vector<Point<dim, T>> &neighbours);
+    static std::vector<Point<dim, T>>
+    computeOffsets(const Point<dim, T> &point, const std::vector<Point<dim, T>> &neighbours);
 
     void computeEps(T factor);
 
-    static T computeAbsSum(Point<dim, T> &x);
+    static T computeAbsSum(const Point<dim, T> &x);
+
+    void initialize();
 };
 
 template<unsigned int dim, typename T, typename MatrixType>
-Vandermonde<dim, T, MatrixType>::Vandermonde(const Point<dim, T> &point, const std::vector<Point<dim, T>> &neighbours,
-                                             const MonomialBasis<dim> &monomialBasis) : point(point),
-                                                                                        monomialBasis(monomialBasis)
+void Vandermonde<dim, T, MatrixType>::initialize()
 {
     // First check that the number of points given is enough for building the Vandermonde matrix
-    if (neighbours.size() < monomialBasis.size())
+    if (offsets.size() < monomialBasis.size())
     {
         ACTION_ON_ERROR(std::length_error("Not enough neighbour points passed for Vandermonde matrix construction!"));
     }
-    // Compute the offsets from point to all neighbours (and store them)
-    computeOffsets(neighbours);
     // Compute eps for this point
     computeEps(2);
 }
 
 template<unsigned int dim, typename T, typename MatrixType>
-void Vandermonde<dim, T, MatrixType>::computeOffsets(const std::vector<Point<dim, T>> &neighbours)
+Vandermonde<dim, T, MatrixType>::Vandermonde(const Point<dim, T> &point, const std::vector<Point<dim, T>> &neighbours,
+                                             const MonomialBasis<dim> &monomialBasis)
+        : point(point),
+          offsets(computeOffsets(point, neighbours)),
+          monomialBasis(monomialBasis)
 {
+    initialize();
+}
+
+template<unsigned int dim, typename T, typename MatrixType>
+template<typename Prop>
+Vandermonde<dim, T, MatrixType>::Vandermonde(const Support<dim, T, Prop> &support,
+                                             const MonomialBasis<dim> &monomialBasis)
+        : point(support.getReferencePoint()),
+          offsets(support.getOffsets()),
+          monomialBasis(monomialBasis)
+{
+    initialize();
+}
+
+
+template<unsigned int dim, typename T, typename MatrixType>
+std::vector<Point<dim, T>>
+Vandermonde<dim, T, MatrixType>::computeOffsets(const Point<dim, T> &point,
+                                                const std::vector<Point<dim, T>> &neighbours)
+{
+    std::vector<Point<dim, T>> offsets;
     for (auto &other : neighbours)
     {
         Point<dim, T> curOffset(point);
         curOffset -= other;
         offsets.push_back(curOffset);
     }
+    return offsets;
 }
 
 template<unsigned int dim, typename T, typename MatrixType>
@@ -86,14 +118,20 @@ void Vandermonde<dim, T, MatrixType>::computeEps(T factor)
 }
 
 template<unsigned int dim, typename T, typename MatrixType>
-T Vandermonde<dim, T, MatrixType>::computeAbsSum(Point<dim, T> &x)
+T Vandermonde<dim, T, MatrixType>::computeAbsSum(const Point<dim, T> &x)
 {
     T absSum = 0;
-    for (const auto elem : x.asArray())
+    for (unsigned int i = 0; i < dim; ++i)
     {
-        absSum += abs(elem);
+        absSum += abs(x.value(i));
     }
     return absSum;
+}
+
+template<unsigned int dim, typename T, typename MatrixType>
+T Vandermonde<dim, T, MatrixType>::getEps()
+{
+    return eps;
 }
 
 #endif //OPENFPM_PDATA_VANDERMONDE_HPP

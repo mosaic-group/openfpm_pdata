@@ -8,7 +8,7 @@
 #include "../../openfpm_numerics/src/DMatrix/EMatrix.hpp"
 #include "MonomialBasis.hpp"
 
-template<unsigned int dim, typename T, typename MatrixType>
+template<unsigned int dim>
 class DcpseRhs
 {
 private:
@@ -18,29 +18,30 @@ private:
 public:
     DcpseRhs(const MonomialBasis<dim> &monomialBasis, const Point<dim, unsigned int> &differentialSignature);
 
+    template<typename T, typename MatrixType>
     MatrixType &getVector(MatrixType &b);
 };
 
 // Definitions below
 
-template<unsigned int dim, typename T, typename MatrixType>
-DcpseRhs<dim, T, MatrixType>::DcpseRhs(const MonomialBasis<dim> &monomialBasis,
-                                       const Point<dim, unsigned int> &differentialSignature)
+template<unsigned int dim>
+DcpseRhs<dim>::DcpseRhs(const MonomialBasis<dim> &monomialBasis,
+                        const Point<dim, unsigned int> &differentialSignature)
         : differentialSignature(differentialSignature), derivatives(monomialBasis.getDerivative(differentialSignature))
 {
     unsigned int order = (Monomial<dim>(differentialSignature)).order();
     if (order % 2 == 0)
     {
         sign = 1;
-    }
-    else
+    } else
     {
         sign = -1;
     }
 }
 
-template<unsigned int dim, typename T, typename MatrixType>
-MatrixType &DcpseRhs<dim, T, MatrixType>::getVector(MatrixType &b)
+template<unsigned int dim>
+template<typename T, typename MatrixType>
+MatrixType &DcpseRhs<dim>::getVector(MatrixType &b)
 {
     // The given vector V should have the right dimensions
     assert(b.cols() == 1);
@@ -48,7 +49,7 @@ MatrixType &DcpseRhs<dim, T, MatrixType>::getVector(MatrixType &b)
     for (unsigned int i = 0; i < derivatives.size(); ++i)
     {
         const Monomial<dim> dm = derivatives.getElement(i);
-        b(i,0) = sign * dm.evaluate(Point<2, double>({0,0}));
+        b(i, 0) = sign * dm.evaluate(Point<dim, T>(0));
     }
     return b;
 }

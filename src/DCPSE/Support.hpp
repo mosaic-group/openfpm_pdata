@@ -1,12 +1,9 @@
 //
-// Created by tommaso on 25/03/19.
+// Created by tommaso on 29/03/19.
 //
 
 #ifndef OPENFPM_PDATA_SUPPORT_HPP
 #define OPENFPM_PDATA_SUPPORT_HPP
-
-// This is to automatically get the right support (set of particles) for doing DCPSE on a given particle.
-// todo: This could be enhanced to support an algorithm for choosing the support in a smart way (to lower condition num)
 
 #include <Space/Shape/Point.hpp>
 #include <Vector/vector_dist.hpp>
@@ -14,150 +11,103 @@
 template<unsigned int dim, typename T, typename Prop>
 class Support
 {
+    // This class is basically a wrapper around a point and a set of offsets.
+    // Offsets are stored as they are the data that is mostly required in DCPSE, so we
+    // pre-compute and store them, while the positions can be re-computed everytime is
+    // necessary (it should almost never be the case) (todo: check if this is required)
+
 private:
-    vector_dist<dim, T, Prop> &domain;
-    CellList<dim, T, Mem_fast<HeapMemory, local_index_>> cellList;
-    const Point<dim, unsigned int> differentialOrder;
+    const vector_dist<dim, T, Prop> &domain;
+    const size_t referencePointKey;
+    const std::vector<size_t> keys;
+    const std::vector<Point<dim, T>> offsets;
 
 public:
-    Support(vector_dist<dim, T, Prop> &domain, Point<dim, unsigned int> differentialOrder, T rCut);
+    Support(const vector_dist<dim, T, Prop> &domain, const size_t &referencePoint, const std::vector<size_t> &keys)
+            : domain(domain),
+              referencePointKey(referencePoint),
+              keys(keys),
+              offsets(computeOffsets(referencePoint, keys)) {}
 
-    Support(vector_dist<dim, T, Prop> &domain, unsigned int differentialOrder[dim], T rCut);
+    Support(const Support<dim, T, Prop> &other);
 
-    std::vector<Point<dim, T>>
-    getSupport(vector_dist_iterator itPoint, unsigned int requiredSize);
+    Support<dim, T, Prop> &operator=(const Support<dim, T, Prop> &other);
+
+    size_t size();
+
+    const Point<dim, T> getReferencePoint() const;
+
+    const size_t getReferencePointKey() const;
+
+    const std::vector<size_t> &getKeys() const;
+
+    const std::vector<Point<dim, T>> &getOffsets() const;
 
 private:
-    size_t getCellLinId(const grid_key_dx<dim> &cellKey);
-
-    size_t getNumElementsInCell(const grid_key_dx<dim> &cellKey);
-
-    size_t getNumElementsInSetOfCells(const std::set<grid_key_dx<dim>> &set);
-
-    void enlargeSetOfCellsUntilSize(std::set<grid_key_dx<dim>> &set, unsigned int requiredSize);
-
-    std::vector<Point<dim, T>> getPointsInSetOfCells(std::set<grid_key_dx<dim>> set);
-
-    bool isCellKeyInBounds(grid_key_dx<dim> key);
+    std::vector<Point<dim, T>>
+    computeOffsets(const size_t referencePoint, const std::vector<size_t> &keys);
 };
 
-// Method definitions below
-
 template<unsigned int dim, typename T, typename Prop>
-Support<dim, T, Prop>::Support(vector_dist<dim, T, Prop> &domain, const Point<dim, unsigned int> differentialOrder,
-                               T rCut) : domain(domain), differentialOrder(differentialOrder)
+std::vector<Point<dim, T>>
+Support<dim, T, Prop>::computeOffsets(const size_t referencePoint, const std::vector<size_t> &keys)
 {
-    cellList = domain.template getCellList<CellList<dim, T, Mem_fast<HeapMemory, local_index_>>>(rCut);
-}
-
-template<unsigned int dim, typename T, typename Prop>
-std::vector<Point<dim, T>> Support<dim, T, Prop>::getSupport(vector_dist_iterator itPoint, unsigned int requiredSize)
-{
-    // Get spatial position from point iterator
-    vect_dist_key_dx p = itPoint.get();
-    Point<dim, T> pos = domain.getPos(p.getKey());
-
-    // Get cell containing current point and add it to the set of cell keys
-    grid_key_dx<dim> curCellKey = cellList.getCellGrid(pos); // Here get the key of the cell where the current point is
-    std::set<grid_key_dx<dim>> supportCells;
-    supportCells.insert(curCellKey);
-
-    // Make sure to consider a set of cells providing enough points for the support
-    enlargeSetOfCellsUntilSize(supportCells, requiredSize);
-
-    // Now return all the points from the support into a vector
-    return getPointsInSetOfCells(supportCells);
-}
-
-template<unsigned int dim, typename T, typename Prop>
-size_t Support<dim, T, Prop>::getNumElementsInCell(const grid_key_dx<dim> &cellKey)
-{
-    const size_t curCellId = getCellLinId(cellKey);
-    size_t numElements = cellList.getNelements(curCellId);
-    return numElements;
-}
-
-template<unsigned int dim, typename T, typename Prop>
-size_t Support<dim, T, Prop>::getNumElementsInSetOfCells(const std::set<grid_key_dx<dim>> &set)
-{
-    size_t tot = 0;
-    for (const auto cell : set)
+    std::vector<Point<dim, T>> offsets;
+    for (auto &otherK : keys)
     {
-        tot += getNumElementsInCell(cell);
+        Point<dim, T> curOffset(domain.getPos(referencePoint));
+        curOffset -= domain.getPos(otherK);
+        offsets.push_back(curOffset);
     }
-    return tot;
+    return offsets;
 }
 
 template<unsigned int dim, typename T, typename Prop>
-void Support<dim, T, Prop>::enlargeSetOfCellsUntilSize(std::set<grid_key_dx<dim>> &set, unsigned int requiredSize)
+const Point<dim, T> Support<dim, T, Prop>::getReferencePoint() const
 {
-    while (getNumElementsInSetOfCells(set) < requiredSize)
-    {
-        auto tmpSet = set;
-        for (const auto el : tmpSet)
-        {
-            for (unsigned int i = 0; i < dim; ++i)
-            {
-                if (differentialOrder.value(i) != 0)
-                {
-                    // TODO: here check not to go out of bound with the grid keys!
-                    const auto pOneEl = el.move(i, +1);
-                    const auto mOneEl = el.move(i, -1);
-                    if (isCellKeyInBounds(pOneEl))
-                    {
-                        set.insert(pOneEl);
-                    }
-                    if (isCellKeyInBounds(mOneEl))
-                    {
-                        set.insert(mOneEl);
-                    }
-                }
-            }
-        }
-    }
+    return domain.getPos(referencePointKey);
 }
 
 template<unsigned int dim, typename T, typename Prop>
-size_t Support<dim, T, Prop>::getCellLinId(const grid_key_dx<dim> &cellKey)
+const std::vector<Point<dim, T>> &Support<dim, T, Prop>::getOffsets() const
 {
-    mem_id id = cellList.getGrid().LinId(cellKey);
-    return static_cast<size_t>(id);
+    return offsets;
 }
 
 template<unsigned int dim, typename T, typename Prop>
-std::vector<Point<dim, T>> Support<dim, T, Prop>::getPointsInSetOfCells(std::set<grid_key_dx<dim>> set)
+size_t Support<dim, T, Prop>::size()
 {
-    std::vector<Point<dim, T>> points;
-    for (const auto cellKey : set)
-    {
-        const size_t cellLinId = getCellLinId(cellKey);
-        const size_t elemsInCell = getNumElementsInCell(cellKey);
-        for (size_t k = 0; k < elemsInCell; ++k)
-        {
-            auto el = cellList.get(cellLinId, k);
-            Point<dim, T> pos = domain.getPos(el);
-            points.push_back(pos);
-        }
-    }
-    return points;
+    return offsets.size();
 }
 
 template<unsigned int dim, typename T, typename Prop>
-Support<dim, T, Prop>::Support(vector_dist<dim, T, Prop> &domain, unsigned int *differentialOrder, T rCut)
-        : Support(domain, Point<dim, unsigned int>(differentialOrder), rCut) {}
+Support<dim, T, Prop>::Support(const Support<dim, T, Prop> &other)
+        : domain(other.domain),
+          referencePointKey(other.referencePointKey),
+          keys(other.keys),
+          offsets(other.offsets)
+{}
 
 template<unsigned int dim, typename T, typename Prop>
-bool Support<dim, T, Prop>::isCellKeyInBounds(grid_key_dx<dim> key)
+Support<dim, T, Prop> &Support<dim, T, Prop>::operator=(const Support<dim, T, Prop> &other)
 {
-    const size_t *cellGridSize = cellList.getGrid().getSize();
-    for (size_t i = 0; i < dim; ++i)
-    {
-        if (key.value(i) < 0 || key.value(i) >= cellGridSize[i])
-        {
-            return false;
-        }
-    }
-    return true;
+    domain = other.domain;
+    referencePointKey = other.referencePointKey;
+    keys = other.keys;
+    offsets = other.offsets;
+    return *this;
+}
+
+template<unsigned int dim, typename T, typename Prop>
+const size_t Support<dim, T, Prop>::getReferencePointKey() const
+{
+    return referencePointKey;
+}
+
+template<unsigned int dim, typename T, typename Prop>
+const std::vector<size_t> &Support<dim, T, Prop>::getKeys() const
+{
+    return keys;
 }
 
 #endif //OPENFPM_PDATA_SUPPORT_HPP

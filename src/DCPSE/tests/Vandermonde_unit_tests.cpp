@@ -82,6 +82,7 @@ BOOST_AUTO_TEST_SUITE(Vandermonde_tests)
         neighbours.push_back({-1,1});
         neighbours.push_back({0,1});
         neighbours.push_back({0,-1});
+
         // ...and get the matrix V
         Vandermonde<2, double, EMatrix<double, Eigen::Dynamic, Eigen::Dynamic>> vandermonde(x, neighbours, mb);
         vandermonde.getMatrix(V);

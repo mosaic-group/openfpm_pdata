@@ -17,17 +17,18 @@ class Monomial
 private:
     unsigned int sum = 0;
     Point<dim, unsigned int> exponents;
+    unsigned int scalar = 1;
 
 public:
     Monomial();
 
-    explicit Monomial(const Point<dim, unsigned int> &other);
+    explicit Monomial(const Point<dim, unsigned int> &other, unsigned int scalar = 1);
 
-    explicit Monomial(const Point<dim, long int> &other);
+    explicit Monomial(const Point<dim, long int> &other, unsigned int scalar = 1);
 
     explicit Monomial(const unsigned int other[dim]);
 
-    Monomial(const Monomial<dim> &other) : Monomial(other.exponents) {}
+    Monomial(const Monomial<dim> &other);
 
     Monomial<dim> &operator=(const Monomial<dim> &other);
 
@@ -51,7 +52,7 @@ public:
     friend std::basic_ostream<charT, traits> &
     operator<<(std::basic_ostream<charT, traits> &lhs, Monomial<dim> const &rhs)
     {
-        return lhs << rhs.exponents.toString();
+        return lhs << rhs.scalar << " : " << rhs.exponents.toString();
     }
 
 private:
@@ -68,14 +69,15 @@ Monomial<dim>::Monomial()
 }
 
 template<unsigned int dim>
-Monomial<dim>::Monomial(const Point<dim, unsigned int> &other)
-        : exponents(other)
+Monomial<dim>::Monomial(const Point<dim, unsigned int> &other, unsigned int scalar)
+        : exponents(other), scalar(scalar)
 {
     updateSum();
 }
 
 template<unsigned int dim>
-Monomial<dim>::Monomial(const Point<dim, long int> &other)
+Monomial<dim>::Monomial(const Point<dim, long int> &other, unsigned int scalar)
+        : scalar(scalar)
 {
     for (size_t i = 0; i < other.nvals; ++i)
     {
@@ -89,10 +91,17 @@ Monomial<dim>::Monomial(const unsigned int other[dim])
         : Monomial(Point<3, unsigned int>(other)) {}
 
 template<unsigned int dim>
+Monomial<dim>::Monomial(const Monomial<dim> &other)
+        : exponents(other.exponents),
+          sum(other.sum),
+          scalar(other.scalar) {}
+
+template<unsigned int dim>
 Monomial<dim> &Monomial<dim>::operator=(const Monomial<dim> &other)
 {
     exponents = other.exponents;
     sum = other.sum;
+    scalar = other.scalar;
     return *this;
 }
 
@@ -130,14 +139,14 @@ template<unsigned int dim>
 bool Monomial<dim>::operator==
         (const Monomial<dim> &other) const
 {
-    return exponents == other.exponents;
+    return (exponents == other.exponents) && (scalar == other.scalar);
 }
 
 template<unsigned int dim>
 template<typename T>
 T Monomial<dim>::evaluate(const Point<dim, T> x) const
 {
-    T res = 1;
+    T res = scalar;
     for (unsigned int i = 0; i < dim; ++i)
     {
         res *= pow(x.value(i), getExponent(i));
@@ -148,14 +157,19 @@ T Monomial<dim>::evaluate(const Point<dim, T> x) const
 template<unsigned int dim>
 Monomial<dim> Monomial<dim>::getDerivative(const Point<dim, unsigned int> differentialOrder) const
 {
-    Point<dim, unsigned int> res(exponents);
+    unsigned int s = scalar;
+    Point<dim, unsigned int> e(exponents);
     for (unsigned int i = 0; i < dim; ++i)
     {
-        res.get(i) = static_cast<unsigned int>(
-                std::max(static_cast<int>(res.value(i)) - static_cast<int>(differentialOrder.value(i)), 0)
-        );
+        unsigned int origExp = e.value(i);
+        int targetExp = static_cast<int>(origExp) - static_cast<int>(differentialOrder.value(i));
+        for (int k = origExp; k > targetExp && k >= 0; --k)
+        {
+            s *= k;
+        }
+        e.get(i) = static_cast<unsigned int>(std::max(targetExp, 0));
     }
-    return Monomial(res);
+    return Monomial(e, s);
 }
 
 template<unsigned int dim>

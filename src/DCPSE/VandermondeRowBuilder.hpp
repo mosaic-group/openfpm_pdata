@@ -12,39 +12,27 @@ template <unsigned int dim, typename T>
 class VandermondeRowBuilder
 {
 private:
-    MonomialBasis<dim> monomialBasis;
+    const MonomialBasis<dim> monomialBasis;
 
 public:
     VandermondeRowBuilder(const MonomialBasis<dim> &monomialBasis) : monomialBasis(monomialBasis) {}
 
-    void buildRow(EMatrix<T, Eigen::Dynamic, Eigen::Dynamic> &M, unsigned int row, Point<dim, T> x, T eps);
-
-private:
-    T computePower(Monomial<dim> mbe, Point<dim, T> x);
+    template <typename MatrixType>
+    void buildRow(MatrixType &M, unsigned int row, Point<dim, T> x, T eps);
 };
 
 template<unsigned int dim, typename T>
-void VandermondeRowBuilder<dim, T>::buildRow(EMatrix<T, Eigen::Dynamic, Eigen::Dynamic> &M, unsigned int row, Point<dim, T> x, T eps)
+template <typename MatrixType>
+void VandermondeRowBuilder<dim, T>::buildRow(MatrixType &M, unsigned int row, Point<dim, T> x, T eps)
 {
     unsigned int col = 0;
     for (auto& basisElement : monomialBasis.getElements())
     {
-        auto & mbe = monomialBasis.getElement(col);
-        M(row, col) = computePower(mbe, x);
-        M(row, col) /= pow(eps, mbe.order());
+        Monomial<dim> m = monomialBasis.getElement(col);
+        M(row, col) = m.evaluate(x);
+        M(row, col) /= pow(eps, m.order());
         ++col;
     }
-}
-
-template<unsigned int dim, typename T>
-T VandermondeRowBuilder<dim, T>::computePower(Monomial<dim> mbe, Point<dim, T> x)
-{
-    T res = 1;
-    for (int i = 0; i < dim; ++i)
-    {
-        res *= pow(x.value(i), mbe.getExponent(i));
-    }
-    return res;
 }
 
 #endif //OPENFPM_PDATA_VANDERMONDEROW_HPP
