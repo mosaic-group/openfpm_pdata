@@ -61,10 +61,10 @@ BOOST_AUTO_TEST_SUITE(Support_tests)
         // We use (0,0) as initial point
         SupportBuilder<2, double, aggregate<double>> supportBuilder(domain, {1,0}, 2*spacing[0]);
         auto support = supportBuilder.getSupport(itPoint, 6);
-        for (const auto &off : support.getOffsets())
-        {
-            std::cout << off.toString() << std::endl;
-        }
+//        for (const auto &off : support.getOffsets())
+//        {
+//            std::cout << off.toString() << std::endl;
+//        }
         BOOST_REQUIRE_GE(support.size(), 6);
     }
 

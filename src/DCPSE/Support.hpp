@@ -23,6 +23,8 @@ private:
     const std::vector<Point<dim, T>> offsets;
 
 public:
+    Support() {};
+
     Support(const vector_dist<dim, T, Prop> &domain, const size_t &referencePoint, const std::vector<size_t> &keys)
             : domain(domain),
               referencePointKey(referencePoint),
@@ -30,8 +32,6 @@ public:
               offsets(computeOffsets(referencePoint, keys)) {}
 
     Support(const Support<dim, T, Prop> &other);
-
-    Support<dim, T, Prop> &operator=(const Support<dim, T, Prop> &other);
 
     size_t size();
 
@@ -85,18 +85,7 @@ Support<dim, T, Prop>::Support(const Support<dim, T, Prop> &other)
         : domain(other.domain),
           referencePointKey(other.referencePointKey),
           keys(other.keys),
-          offsets(other.offsets)
-{}
-
-template<unsigned int dim, typename T, typename Prop>
-Support<dim, T, Prop> &Support<dim, T, Prop>::operator=(const Support<dim, T, Prop> &other)
-{
-    domain = other.domain;
-    referencePointKey = other.referencePointKey;
-    keys = other.keys;
-    offsets = other.offsets;
-    return *this;
-}
+          offsets(other.offsets) {}
 
 template<unsigned int dim, typename T, typename Prop>
 const size_t Support<dim, T, Prop>::getReferencePointKey() const
