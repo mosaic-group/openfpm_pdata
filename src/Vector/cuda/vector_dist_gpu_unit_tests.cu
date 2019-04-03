@@ -308,7 +308,8 @@ void check_cell_list_cpu_and_gpu(vector_type & vd, CellList_type & NN, CellList_
 	BOOST_REQUIRE_EQUAL(test,true);
 }
 
-BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
+template<typename CellList_type>
+void vector_dist_gpu_test_impl()
 {
 	auto & v_cl = create_vcluster();
 
@@ -415,7 +416,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
 	vd.hostToDevicePos();
 	vd.template hostToDeviceProp<0>();
 
-	auto NN = vd.getCellListGPU(0.1);
+	auto NN = vd.template getCellListGPU<CellList_type>(0.1);
 	auto NN_cpu = vd.getCellList(0.1);
 	check_cell_list_cpu_and_gpu(vd,NN,NN_cpu);
 
@@ -423,6 +424,16 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
 	NN_up.clear();
 	vd.updateCellList(NN_up);
 	check_cell_list_cpu_and_gpu(vd,NN_up,NN_cpu);
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
+{
+	vector_dist_gpu_test_impl<CellList_gpu<3,float,CudaMemory,shift_only<3, float>>>();
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_gpu_test_sparse)
+{
+	vector_dist_gpu_test_impl<CELLLIST_GPU_SPARSE<3,float>>();
 }
 
 template<typename St>

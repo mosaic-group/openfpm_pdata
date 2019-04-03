@@ -311,7 +311,7 @@ public:
 
 		// We reduce the size of the cells by a factor 8 in 3d 4 in 2d
 		for (size_t i = 0 ; i < dim ; i++)
-		{div_g[i] = gr.size(i)/2;}
+		{div_g[i] = (gr.size(i) == 1)?1:gr.size(i)/2;}
 
 		fine_s.Initialize(domain,div_g);
 	}

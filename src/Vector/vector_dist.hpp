@@ -40,6 +40,8 @@
 
 #define DEC_GRAN(gr) ((size_t)gr << 32)
 
+template<unsigned int dim,typename St> using CELLLIST_GPU_SPARSE = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>,unsigned int,int,true>;
+
 #define VECTOR_DIST_ERROR_OBJECT std::runtime_error("Runtime vector distributed error");
 
 #ifdef SE_CLASS3
@@ -57,16 +59,16 @@
 #define ID true
 
 // Perform a ghost get or a ghost put
-#define GET	1
-#define PUT 2
+constexpr int GET = 1;
+constexpr int PUT = 2;
 
 // Write the particles with ghost
-#define NO_GHOST 0
-#define WITH_GHOST 2
+constexpr int NO_GHOST = 0;
+constexpr int WITH_GHOST = 2;
 
-#define GCL_NON_SYMMETRIC 0
-#define GCL_SYMMETRIC 1
-#define GCL_HILBERT 2
+constexpr int GCL_NON_SYMMETRIC = 0;
+constexpr int GCL_SYMMETRIC = 1;
+constexpr int GCL_HILBERT = 2;
 
 template<bool is_gpu_celllist>
 struct gcl_standard_no_symmetric_impl
@@ -1157,7 +1159,8 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> getCellListGPU(St r_cut, bool no_se3 = false)
+	template<typename CellType = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>>>
+	CellType getCellListGPU(St r_cut, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -1171,7 +1174,7 @@ public:
 		Ghost<dim,St> g = getDecomposition().getGhost();
 		g.magnify(1.013);
 
-		return getCellListGPU(r_cut, g,no_se3);
+		return getCellListGPU<CellType>(r_cut, g,no_se3);
 	}
 
 
@@ -1190,7 +1193,8 @@ public:
 	 * \return the CellList
 	 *
 	 */
-	CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> getCellListGPU(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
+	template<typename CellType = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>>>
+	CellType getCellListGPU(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -1206,7 +1210,7 @@ public:
 		// Processor bounding box
 		cl_param_calculate(pbox, div, r_cut, enlarge);
 
-		CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> cell_list(pbox,div);
+		CellType cell_list(pbox,div);
 
 		v_prp_out.resize(v_pos.size());
 		v_pos_out.resize(v_pos.size());
@@ -1949,7 +1953,8 @@ public:
 	 * \parameter Cell-list from which has been constructed the sorted vector
 	 *
 	 */
-	template<unsigned int ... prp> void merge_sort(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> & cl, size_t n_thr = 1024)
+	template<unsigned int ... prp,typename id_1, typename id_2, bool is_sparse>
+	void merge_sort(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>,id_1,id_2,is_sparse> & cl, size_t n_thr = 1024)
 	{
 #if defined(__NVCC__)
 

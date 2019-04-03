@@ -1928,6 +1928,28 @@ BOOST_AUTO_TEST_CASE( vector_of_vector_dist )
 	BOOST_REQUIRE_EQUAL(cnt,4*4096ul);
 }
 
+BOOST_AUTO_TEST_CASE( vector_high_dimension )
+{
+	// Here we define our domain a 2D box with internals from 0 to 1.0 for x and y
+	Box<10,double> domain;
+
+	for (size_t i = 0 ; i < 10 ; i++)
+	{
+		domain.setLow(i,0.0);
+		domain.setHigh(i,1.0);
+	}
+
+	// Here we define the boundary conditions of our problem
+	size_t bc[10];
+	for (size_t i = 0 ; i < 10 ; i++)
+    {bc[i] = NON_PERIODIC;};
+
+	// extended boundary around the domain, and the processor domain
+	Ghost<10,double> g(0.0);
+
+	// we check if the constructor does not stuck
+	vector_dist<10,double, aggregate<double,double[10]> > vd(16,domain,bc,g);
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 
