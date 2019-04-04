@@ -134,7 +134,6 @@ void Dcpse<dim, T, list...>::computeDifferentialOperator(vector_dist<dim, T, agg
         Dfxp /= pow(eps, differentialOrder);
         //
         T trueDfxp = particles.template getProp<2>(xpK);
-//        std::cout << xp.toString() << " : " << "f(x)=" << fxp << ", Df(x)=" << Dfxp << ", check(Df(x))="<<  trueDfxp << std::endl; // debug
         // Store Dfxp in the right position
         particles.template getProp<DfValuePos>(xpK) = Dfxp;
         //
@@ -158,6 +157,7 @@ T Dcpse<dim, T, list...>::computeKernel(Point<dim, T> x, EMatrix<T, Eigen::Dynam
         res += coeff * mbValue * expFactor;
         ++counter;
     }
+    return res;
 }
 
 template<unsigned int dim, typename T, typename... list>
