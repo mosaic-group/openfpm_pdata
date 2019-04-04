@@ -115,6 +115,7 @@ void Vandermonde<dim, T, MatrixType>::computeEps(T factor)
     }
     avgNeighbourSpacing /= offsets.size();
     eps = factor * avgNeighbourSpacing;
+    assert(eps != 0);
 }
 
 template<unsigned int dim, typename T, typename MatrixType>
@@ -123,7 +124,7 @@ T Vandermonde<dim, T, MatrixType>::computeAbsSum(const Point<dim, T> &x)
     T absSum = 0;
     for (unsigned int i = 0; i < dim; ++i)
     {
-        absSum += abs(x.value(i));
+        absSum += fabs(x.value(i));
     }
     return absSum;
 }
