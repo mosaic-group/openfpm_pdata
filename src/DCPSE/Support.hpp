@@ -65,7 +65,7 @@ Support<dim, T, Prop>::computeOffsets(const size_t referencePoint, const std::ve
 template<unsigned int dim, typename T, typename Prop>
 const Point<dim, T> Support<dim, T, Prop>::getReferencePoint() const
 {
-    return domain.getPos(referencePointKey);
+    return Point<dim, T>(domain.getPos(referencePointKey));
 }
 
 template<unsigned int dim, typename T, typename Prop>
