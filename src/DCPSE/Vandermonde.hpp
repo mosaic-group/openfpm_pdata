@@ -5,7 +5,6 @@
 #ifndef OPENFPM_PDATA_VANDERMONDE_HPP
 #define OPENFPM_PDATA_VANDERMONDE_HPP
 
-#include "../../openfpm_numerics/src/DMatrix/EMatrix.hpp"
 #include "MonomialBasis.hpp"
 #include "VandermondeRowBuilder.hpp"
 #include "Support.hpp"

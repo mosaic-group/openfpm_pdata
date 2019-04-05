@@ -5,11 +5,13 @@
 #define BOOST_TEST_DYN_LINK
 
 #include <boost/test/unit_test.hpp>
-#include <DCPSE/MonomialBasis.hpp>
 #include <DCPSE/DcpseRhs.hpp>
 #include "../../openfpm_numerics/src/DMatrix/EMatrix.hpp"
 
 BOOST_AUTO_TEST_SUITE(DcpseRhs_tests)
+
+// If EIGEN is not present, EMatrix is not available and we don't need to build this test
+#ifdef HAVE_EIGEN
 
     BOOST_AUTO_TEST_CASE(DcpseRhs_dx_test)
     {
@@ -95,5 +97,7 @@ BOOST_AUTO_TEST_SUITE(DcpseRhs_tests)
         BOOST_REQUIRE_CLOSE(b(8), Dmb.getElement(8).evaluate(p0), 1e-16);
         BOOST_REQUIRE_CLOSE(b(9), Dmb.getElement(9).evaluate(p0), 1e-16);
     }
+
+#endif // HAVE_EIGEN
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -156,7 +156,10 @@ else()
 endif()
 
 if(EIGEN3_FOUND)
-	set(DEFINE_HAVE_EIGEN "#define HAVE_EIGEN")
+    message("-- EIGEN3 found.")
+    set(DEFINE_HAVE_EIGEN "#define HAVE_EIGEN")
+else()
+    message("-- EIGEN3 not found!")
 endif()
 
 if(LIBHILBERT_FOUND)

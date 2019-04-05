@@ -5,7 +5,6 @@
 #ifndef OPENFPM_PDATA_VANDERMONDEROW_HPP
 #define OPENFPM_PDATA_VANDERMONDEROW_HPP
 
-#include "../../openfpm_numerics/src/DMatrix/EMatrix.hpp"
 #include "MonomialBasis.hpp"
 
 template <unsigned int dim, typename T>

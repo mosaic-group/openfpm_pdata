@@ -30,6 +30,9 @@ void check_small_or_close_abs(T value, T expected, T absTolerance)
 
 BOOST_AUTO_TEST_SUITE(Dcpse_tests)
 
+// If EIGEN is not present, EMatrix is not available and we don't need to build this test
+#ifdef HAVE_EIGEN
+
     BOOST_AUTO_TEST_CASE(Dcpse_2D_test)
     {
         int rank;
@@ -417,5 +420,7 @@ BOOST_AUTO_TEST_SUITE(Dcpse_tests)
         }
         BOOST_REQUIRE(check);
     }
+
+#endif // HAVE_EIGEN
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -6,7 +6,6 @@
 
 #include <boost/test/unit_test.hpp>
 #include <Space/Shape/Point.hpp>
-#include <DCPSE/Monomial.hpp>
 #include <DCPSE/MonomialBasis.hpp>
 
 BOOST_AUTO_TEST_SUITE(MonomialBasis_tests)
