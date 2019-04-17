@@ -9,6 +9,7 @@
 #define SRC_GRID_GRID_DIST_UTIL_HPP_
 
 #include "NN/CellList/CellDecomposer.hpp"
+#include "Decomposition/common.hpp"
 
 /*! \brief get cellDecomposer parameters
  *
@@ -29,14 +30,6 @@ template<unsigned int dim> void getCellDecomposerPar(size_t (& c_g)[dim], const 
 	}
 }
 
-/*! \brief
- *
- *
- */
-template<unsigned int dim> struct periodicity
-{
-	size_t bc[dim];
-};
 
 /*! \brief Create NON_PERIODIC data structure
  *

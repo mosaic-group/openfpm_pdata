@@ -23,7 +23,7 @@ template<unsigned int dim, typename T>
 class nn_prcs
 {
 	//! Virtual cluster
-	Vcluster & v_cl;
+	Vcluster<> & v_cl;
 
 	//! List of adjacent processors
 	openfpm::vector<size_t> nn_processors;
@@ -136,7 +136,7 @@ class nn_prcs
 	 * \return the pointer where to store the message
 	 *
 	 */
-	static void * message_alloc(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
+	static void * message_alloc(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, size_t ri, size_t tag, void * ptr)
 	{
 		// cast the pointer
 		nn_prcs<dim,T> * cd = static_cast< nn_prcs<dim,T> *>(ptr);
@@ -271,7 +271,7 @@ class nn_prcs
 public:
 
 	//! Constructor require Vcluster
-	nn_prcs(Vcluster & v_cl)
+	nn_prcs(Vcluster<> & v_cl)
 	:v_cl(v_cl),recv_cnt(0),aBC(false)
 	{}
 

@@ -82,11 +82,11 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_save_test )
 	}
 
 	// Save the vector
-    vd.save("vector_dist.h5");
+    vd.save("vector_dist" + std::to_string(create_vcluster().size()) + ".h5");
 
     vector_dist<dim,float, aggregate<float[dim]> > vd2(0,box,bc,ghost);
 
-    vd2.load("vector_dist.h5");
+    vd2.load("vector_dist" + std::to_string(create_vcluster().size())  + ".h5");
 
     // Check that vd and vd2 match
 
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_hdf5_load_test )
 {
 #ifndef SE_CLASS3
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	Box<dim,float> box;
 

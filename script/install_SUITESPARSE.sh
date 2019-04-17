@@ -7,14 +7,15 @@ discover_os
 
 # check if the directory $1/SUITESPARSE exist
 
-if [ -d "$1/SUITESPARSE" ]; then
+if [ -d "$1/SUITESPARSE"  -a -f "$1/SUITESPARSE/include/umfpack.h" ]; then
   echo "SUITESPARSE is already installed"
   exit 0
 fi
 
-wget http://ppmcore.mpi-cbg.de/upload/SuiteSparse-4.5.5.tar.gz
+rm SuiteSparse-5.3.0.tar.gz
+wget http://ppmcore.mpi-cbg.de/upload/SuiteSparse-5.3.0.tar.gz
 rm -rf SuiteSparse
-tar -xf SuiteSparse-4.5.5.tar.gz
+tar -xf SuiteSparse-5.3.0.tar.gz
 if [ $? != 0 ]; then
   echo "Failed to download SuiteSparse"
   exit 1
@@ -38,7 +39,7 @@ if [ x"$platform" == x"cygwin" ]; then
 fi
 
 echo "Compiling SuiteSparse without CUDA (old variable $CUDA)"
-LDLIBS="$STS_LIB -lm" LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$1/OPENBLAS/lib"  make "AUTOCC=no" "CXX=$CXX" "CC=$CC" "CPPFLAGS=$OPT_GPP"  -j $2 "CUDA=no" "BLAS=-L$1/OPENBLAS/lib -lopenblas -pthread" "LAPACK="
+LDLIBS="$STS_LIB -lm" LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$1/OPENBLAS/lib"  make -j $2 "CUDA=no" "BLAS=-L$1/OPENBLAS/lib -lopenblas -pthread" "LAPACK=-lopenblas"
 if [ $? != 0 ]; then
   echo "Failed to compile SuiteSparse"
   exit 1
@@ -47,4 +48,4 @@ make install "CUDA=no" "INSTALL=$1/SUITESPARSE" "INSTALL_LIB=$1/SUITESPARSE/lib"
 # Mark the installation
 echo 1 > $1/SUITESPARSE/version
 rm -rf SuiteSparse
-rm SuiteSparse-4.5.5.tar.gz
+rm SuiteSparse-5.3.0.tar.gz

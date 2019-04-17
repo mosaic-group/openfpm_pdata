@@ -194,7 +194,7 @@ int main(int argc, char* argv[])
 #endif
 	double mu = 0.5;
 	double max_vel;
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	Box<3,double> domain({0.0,0.0,0.0},{17.04,6.0,6.6});
 	Ghost<3,double> g(cutoff + skin);

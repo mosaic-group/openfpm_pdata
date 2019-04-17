@@ -20,7 +20,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter3D_test)
 	// Domain
 	Box<3,float> domain({-0.3,-0.3,-0.3},{1.0,1.0,1.0});
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	// Skip this test on big scale
 	if (v_cl.getProcessingUnits() >= 32)
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter_test)
 	// Domain
 	Box<2,float> domain({0.0,0.0},{1.0,1.0});
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	// Skip this test on big scale
 	if (v_cl.getProcessingUnits() >= 32)
@@ -212,7 +212,7 @@ void Test2D(const Box<2,float> & domain, long int k)
 		//! [Create and access a distributed grid]
 
 		// Get the virtual cluster machine
-		Vcluster & vcl = g_dist.getVC();
+		Vcluster<> & vcl = g_dist.getVC();
 
 		// reduce
 		vcl.sum(count);
@@ -275,7 +275,7 @@ void Test2D(const Box<2,float> & domain, long int k)
 
 void Test1D(const Box<1,float> & domain, long int k)
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 	long int big_step = k / 30;
 	big_step = (big_step == 0)?1:big_step;
 	long int small_step = 21;
@@ -289,8 +289,6 @@ void Test1D(const Box<1,float> & domain, long int k)
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 1D grid k=" << k );
-
-		//! [Create and access a distributed grid]
 
 		// grid size
 		size_t sz[1];
@@ -329,10 +327,8 @@ void Test1D(const Box<1,float> & domain, long int k)
 			++dom;
 		}
 
-		//! [Create and access a distributed grid]
-
 		// Get the virtual cluster machine
-		Vcluster & vcl = g_dist.getVC();
+		Vcluster<> & vcl = g_dist.getVC();
 
 		// reduce
 		vcl.sum(count);
@@ -452,7 +448,7 @@ void Test3D_sub(const Box<3,float> & domain, long int k)
 		}
 
 		// Get the virtual cluster machine
-		Vcluster & vcl = g_dist.getVC();
+		Vcluster<> & vcl = g_dist.getVC();
 
 		// reduce
 		vcl.sum(count);
@@ -557,7 +553,7 @@ void Test3D(const Box<3,float> & domain, long int k)
 		}
 
 		// Get the virtual cluster machine
-		Vcluster & vcl = g_dist.getVC();
+		Vcluster<> & vcl = g_dist.getVC();
 
 		// reduce
 		vcl.sum(count);
@@ -845,7 +841,7 @@ void Test2D_complex(const Box<2,float> & domain, long int k)
 		//! [Create and access a distributed grid complex]
 
 		// Get the virtual cluster machine
-		Vcluster & vcl = g_dist.getVC();
+		Vcluster<> & vcl = g_dist.getVC();
 
 		// reduce
 		vcl.sum(count);
@@ -1007,7 +1003,7 @@ void Test3D_complex(const Box<3,float> & domain, long int k)
 		}
 
 		// Get the virtual cluster machine
-		Vcluster & vcl = g_dist.getVC();
+		Vcluster<> & vcl = g_dist.getVC();
 
 		// reduce
 		vcl.sum(count);
@@ -1103,7 +1099,7 @@ void Test3D_dup(const Box<3,float> & domain, long int k)
 	long int small_step = 21;
 	long int k_old = k;
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if ( v_cl.getProcessingUnits() > 32 )
 		return;
@@ -1202,7 +1198,7 @@ void Test3D_dup(const Box<3,float> & domain, long int k)
 
 void Test3D_periodic(const Box<3,float> & domain, long int k)
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if ( v_cl.getProcessingUnits() > 32 )
 		return;
@@ -1216,7 +1212,7 @@ void Test3D_periodic(const Box<3,float> & domain, long int k)
 	// 3D test
 	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
 	{
-		BOOST_TEST_CHECKPOINT( "Testing grid periodick<=" << k );
+		BOOST_TEST_CHECKPOINT( "Testing grid periodic k<=" << k );
 
 		// grid size
 		size_t sz[3];
@@ -1274,7 +1270,7 @@ void Test3D_periodic(const Box<3,float> & domain, long int k)
 		}
 
 		// Get the virtual cluster machine
-		Vcluster & vcl = g_dist.getVC();
+		Vcluster<> & vcl = g_dist.getVC();
 
 		// reduce
 		vcl.sum(count);
@@ -1359,7 +1355,7 @@ void Test3D_periodic(const Box<3,float> & domain, long int k)
 
 void Test3D_periodic_put(const Box<3,float> & domain, long int k)
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if ( v_cl.getProcessingUnits() > 32 )
 		return;
@@ -1479,7 +1475,7 @@ void Test_grid_copy(const Box<3,float> & domain, long int k)
 {
 	typedef Point_test<float> p;
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if ( v_cl.getProcessingUnits() > 32 )
 		return;
@@ -1588,7 +1584,7 @@ void Test_grid_copy(const Box<3,float> & domain, long int k)
 void Test_ghost_correction(Box<3,double> & domain, long int k, long int g_)
 {
 	size_t sz[3] = {(size_t)k,(size_t)k,(size_t)k};
-	periodicity<3> bc = {PERIODIC,PERIODIC,PERIODIC};
+	periodicity<3> bc = {{PERIODIC,PERIODIC,PERIODIC}};
 
 	Ghost<3,long int> g(g_);
 
@@ -1660,10 +1656,6 @@ void Test_ghost_correction(Box<3,double> & domain, long int k, long int g_)
 
         ++it2;
     }
-
-
-    grid.getDecomposition().write("dec_set_for_adj");
-    grid.write("dec_for_adj");
 
     BOOST_REQUIRE_EQUAL(is_inside,true);
 }
@@ -1872,7 +1864,7 @@ BOOST_AUTO_TEST_CASE ( grid_basic_functions )
 	{return;}
 
 	size_t sz[2] = {(size_t)8,(size_t)8};
-	periodicity<2> bc = {PERIODIC,PERIODIC};
+	periodicity<2> bc = {{PERIODIC,PERIODIC}};
 
 	Ghost<2,long int> g(1);
 	Box<2,double> domain({-1.0,-1.0},{1.0,1.0});
@@ -1893,7 +1885,7 @@ BOOST_AUTO_TEST_CASE ( grid_overflow_round_off_error )
 
     size_t sz[2] = {numGridPoint,numGridPoint};
 
-    periodicity<2> bc = {PERIODIC,PERIODIC};
+    periodicity<2> bc = {{PERIODIC,PERIODIC}};
 
     Ghost<2,double> g(3.0*(domain.getHigh(0) - domain.getLow(0))/numGridPoint + 0.001);
 

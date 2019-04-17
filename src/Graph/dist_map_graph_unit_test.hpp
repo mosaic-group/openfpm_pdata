@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use)
 {
 
 	//! Vcluster
-	Vcluster & vcl = create_vcluster();
+	Vcluster<> & vcl = create_vcluster();
 
 	if(vcl.getProcessingUnits() != 4)
 		return;
@@ -241,7 +241,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use)
 BOOST_AUTO_TEST_CASE( dist_map_graph_use_redistribution)
 {
 	//! Vcluster
-	Vcluster & vcl = create_vcluster();
+	Vcluster<> & vcl = create_vcluster();
 
 	if(vcl.getProcessingUnits() != 4)
 		return;
@@ -324,7 +324,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_redistribution)
 BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)
 {
 	// Vcluster
-	Vcluster & vcl = create_vcluster();
+	Vcluster<> & vcl = create_vcluster();
 
 	if(vcl.getProcessingUnits() != 4)
 		return;
@@ -480,7 +480,7 @@ BOOST_AUTO_TEST_CASE( dist_map_graph_use_free_add)
 BOOST_AUTO_TEST_CASE( dist_map_graph_use_multi_free_add)
 {
 	// Vcluster
-	Vcluster & vcl = create_vcluster();
+	Vcluster<> & vcl = create_vcluster();
 
 	if(vcl.getProcessingUnits() != 4)
 		return;

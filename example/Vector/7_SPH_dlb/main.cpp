@@ -454,10 +454,9 @@ inline double Pi(const Point<3,double> & dr, double rr2, Point<3,double> & dv, d
 
 /*! \cond [calc_forces] \endcond */
 
-template<typename CellList> inline double calc_forces(particles & vd, CellList & NN, double & max_visc)
+template<typename CellList> inline void calc_forces(particles & vd, CellList & NN, double & max_visc)
 {
 	auto part = vd.getDomainIterator();
-	double visc = 0;
 
 	// Update the cell-list
 	vd.updateCellList(NN);
@@ -583,7 +582,7 @@ template<typename CellList> inline double calc_forces(particles & vd, CellList &
 					Point<3,double> DW;
 					DWab(dr,DW,r,false);
 
-					double factor = - massb*((vd.getProp<Pressure>(a) + vd.getProp<Pressure>(b)) / (rhoa * rhob) + Tensile(r,rhoa,rhob,Pa,Pb) + Pi(dr,r2,v_rel,rhoa,rhob,massb,visc));
+					double factor = - massb*((vd.getProp<Pressure>(a) + vd.getProp<Pressure>(b)) / (rhoa * rhob) + Tensile(r,rhoa,rhob,Pa,Pb) + Pi(dr,r2,v_rel,rhoa,rhob,massb,max_visc));
 
 					vd.getProp<force>(a)[0] += factor * DW.get(0);
 					vd.getProp<force>(a)[1] += factor * DW.get(1);
@@ -644,7 +643,7 @@ void max_acceleration_and_velocity(particles & vd, double & max_acc, double & ma
 	max_acc = sqrt(max_acc);
 	max_vel = sqrt(max_vel);
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 	v_cl.max(max_acc);
 	v_cl.max(max_vel);
 	v_cl.execute();
@@ -759,7 +758,8 @@ void verlet_int(particles & vd, double dt)
 	    	vd.template getProp<velocity>(a)[0] = 0.0;
 	    	vd.template getProp<velocity>(a)[1] = 0.0;
 	    	vd.template getProp<velocity>(a)[2] = 0.0;
-	    	vd.template getProp<rho>(a) = vd.template getProp<rho_prev>(a) + dt2*vd.template getProp<drho>(a);
+	    	double rhonew = vd.template getProp<rho_prev>(a) + dt2*vd.template getProp<drho>(a);
+	    	vd.template getProp<rho>(a) = (rhonew < rho_zero)?rho_zero:rhonew;
 
 		    vd.template getProp<rho_prev>(a) = rhop;
 
@@ -836,7 +836,8 @@ void euler_int(particles & vd, double dt)
 	    	vd.template getProp<velocity>(a)[0] = 0.0;
 	    	vd.template getProp<velocity>(a)[1] = 0.0;
 	    	vd.template getProp<velocity>(a)[2] = 0.0;
-	    	vd.template getProp<rho>(a) = vd.template getProp<rho>(a) + dt*vd.template getProp<drho>(a);
+	    	double rhonew = vd.template getProp<rho>(a) + dt*vd.template getProp<drho>(a);
+	    	vd.template getProp<rho>(a) = (rhonew < rho_zero)?rho_zero:rhonew;
 
 		    vd.template getProp<rho_prev>(a) = rhop;
 
@@ -919,7 +920,7 @@ inline void sensor_pressure(Vector & vd,
                             openfpm::vector<openfpm::vector<double>> & press_t,
                             openfpm::vector<Point<3,double>> & probes)
 {
-    Vcluster & v_cl = create_vcluster();
+    Vcluster<> & v_cl = create_vcluster();
 
     press_t.add();
 
@@ -1390,7 +1391,7 @@ int main(int argc, char* argv[])
 	double t = 0.0;
 	while (t <= t_end)
 	{
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 		timer it_time;
 
 		////// Do rebalancing every 200 timesteps
@@ -1441,19 +1442,24 @@ int main(int argc, char* argv[])
 
 		if (write < t*100)
 		{
+			// sensor_pressure calculation require ghost and update cell-list
+			vd.map();
+			vd.ghost_get<type,rho,Pressure,velocity>(RUN_ON_DEVICE);
+			vd.updateCellList(NN);
+
 			// calculate the pressure at the sensor points
 			sensor_pressure(vd,NN,press_t,probes);
 
-			vd.write("Geometry",write);
+			vd.write_frame("Geometry",write);
 			write++;
 
 			if (v_cl.getProcessUnitID() == 0)
-				std::cout << "TIME: " << t << "  write " << it_time.getwct() << "   " << v_cl.getProcessUnitID() << "   " << cnt << std::endl;
+			{std::cout << "TIME: " << t << "  write " << it_time.getwct() << "   " << v_cl.getProcessUnitID() << "   " << cnt << "   Max visc: " << max_visc << std::endl;}
 		}
 		else
 		{
 			if (v_cl.getProcessUnitID() == 0)
-				std::cout << "TIME: " << t << "  " << it_time.getwct() << "   " << v_cl.getProcessUnitID() << "   " << cnt << std::endl;
+			{std::cout << "TIME: " << t << "  " << it_time.getwct() << "   " << v_cl.getProcessUnitID() << "   " << cnt << "    Max visc: " << max_visc << std::endl;}
 		}
 	}
 

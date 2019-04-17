@@ -52,6 +52,6 @@ int main(int argc, char* argv[])
 #include "Graph/DistGraphFactory.hpp"
 #include "Decomposition/nn_processor_unit_test.hpp"
 #include "Vector/se_class3_vector_unit_tests.hpp"
-#include "Vector/vector_dist_dlb_test.hpp"
+#include "Vector/tests/vector_dist_dlb_test.hpp"
 #include "Decomposition/Domain_NN_calculator_cart_unit_test.hpp"
 //#include "antoniol_test_isolation.hpp"

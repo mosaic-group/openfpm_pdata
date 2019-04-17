@@ -235,7 +235,7 @@ int main(int argc, char* argv[])
 	openfpm::vector<openfpm::vector<double>> y;
 
 	openfpm_init(&argc,&argv);
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	// we will use it do place particles on a 40x40x40 Grid like
 	size_t sz[3] = {40,40,40};

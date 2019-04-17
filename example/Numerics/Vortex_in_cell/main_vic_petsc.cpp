@@ -102,6 +102,10 @@
  *
  */
 
+#include "config.h"
+
+#ifdef HAVE_PETSC
+
 //#define SE_CLASS1
 //#define PRINT_STACKTRACE
 
@@ -189,7 +193,7 @@ template<typename grid> void calc_and_print_max_div_and_int(grid & g_vort)
 		++it5;
 	}
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 	v_cl.max(max_vort);
 	v_cl.sum(int_vort[0]);
 	v_cl.sum(int_vort[1]);
@@ -760,7 +764,7 @@ void comp_vel(Box<3,float> & domain, grid_type & g_vort,grid_type & g_vel, petsc
 		solError serr;
 		serr = solver.get_residual_error(phi_s[i],b);
 
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 		if (v_cl.getProcessUnitID() == 0)
 		{std::cout << "Solved component " << i << "  Error: " << serr.err_inf << std::endl;}
 
@@ -1117,7 +1121,7 @@ template<typename vector, typename grid> void check_point_and_save(vector & part
 																   grid & g_dvort,
 																   size_t i)
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() < 24)
 	{
@@ -1215,7 +1219,7 @@ int main(int argc, char* argv[])
 	Vector<double,PETSC_BASE> x_;
 
 	// Parallel object
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	// print out the spacing of the grid
 	if (v_cl.getProcessUnitID() == 0)
@@ -1323,3 +1327,11 @@ int main(int argc, char* argv[])
 	openfpm_finalize();
 }
 
+#else
+
+int main(int argc, char* argv[])
+{
+        return 0;
+}
+
+#endif

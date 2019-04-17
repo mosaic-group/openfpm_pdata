@@ -116,7 +116,7 @@ VECTORS x float
 3.000000 0.000000 0.000000
 3.000000 1.000000 0.000000
 CELL_DATA 40
-SCALARS prop unsigned_long
+SCALARS prop unsigned_int
 LOOKUP_TABLE default
 0
 0

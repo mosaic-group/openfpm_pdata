@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 
 	//! \cond [create] \endcond
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 	long int N_prc = v_cl.getProcessingUnits();
 
 	//! \cond [create] \endcond

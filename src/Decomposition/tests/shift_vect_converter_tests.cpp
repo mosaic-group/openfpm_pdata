@@ -18,7 +18,7 @@ BOOST_AUTO_TEST_CASE( shift_vect_converter_tests_use )
 {
 	{
 	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
-	shift_vect_converter<3,double> svc;
+	shift_vect_converter<3,double,HeapMemory,memory_traits_lin> svc;
 	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
 
 	openfpm::vector<Point<3,double>> sv;
@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE( shift_vect_converter_tests_use )
 	bc[17] = PERIODIC;
 	bc[23] = PERIODIC;
 
-	shift_vect_converter<50,double> svc;
+	shift_vect_converter<50,double,HeapMemory,memory_traits_lin> svc;
 
 	svc.generateShiftVectors(domain,bc,sv);
 

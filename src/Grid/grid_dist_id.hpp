@@ -60,7 +60,7 @@ struct Box_fix
  * ### Synchronize a distributed grid for complex structures
  * \snippet grid_dist_id_unit_test.cpp Synchronized distributed grid complex
  * ### Usage of a grid dist iterator sub
- * \snippet grid_dist_id_unit_test.cpp Usage of a sub_grid iterator
+ * \snippet grid_dist_id_iterators_unit_tests.hpp Usage of a sub_grid iterator
  * ### Construct two grid with the same decomposition
  * \snippet grid_dist_id_unit_test.cpp Construct two grid with the same decomposition
  *
@@ -102,7 +102,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
 
 	//! Communicator class
-	Vcluster & v_cl;
+	Vcluster<> & v_cl;
 
 	//! properties names
 	openfpm::vector<std::string> prp_names;
@@ -1268,7 +1268,7 @@ public:
 	 * \return the Virtual cluster machine
 	 *
 	 */
-	Vcluster & getVC()
+	Vcluster<> & getVC()
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1780,7 +1780,7 @@ public:
 	{
 		getGlobalGridsInfo(gdb_ext_global);
 
-		this->template map_(dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global);
+		this->map_(dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global);
 
 		loc_grid_old.clear();
 		gdb_ext_old.clear();
@@ -1822,6 +1822,7 @@ public:
 	{
 		return this->ig_box;
 	}
+
 
 	//! Define friend classes
 	//\cond

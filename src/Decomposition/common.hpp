@@ -13,6 +13,25 @@
 
 #include "Vector/map_vector.hpp"
 
+
+/*! \brief Boundary conditions
+ *
+ *
+ */
+template<unsigned int dim> struct periodicity
+{
+	size_t bc[dim];
+};
+
+/*! \brief Boundary conditions
+ *
+ *
+ */
+template<unsigned int dim> struct periodicity_int
+{
+	int bc[dim];
+};
+
 /*! \brief for each sub-domain box sub contain the real the sub-domain id
  *
  * When we apply boundary conditions real sub-domains are copied along the border
@@ -87,6 +106,7 @@ struct Box_sub
 	//! Constructor reset cmb
 	Box_sub()
 	{
+		r_sub = (size_t)-1;
 		cmb.zero();
 	}
 };
@@ -114,18 +134,22 @@ struct Box_sub_k
 	}
 };
 
-template<unsigned int dim,typename T>
+template<unsigned int dim,typename T> using Box_map = aggregate<Box<dim,T>,long int>;
+
+/*template<unsigned int dim,typename T>
 struct Box_map
 {
-	Box<dim,T> box;
+	typedef boost::fusion::vector<Box<dim,T>,long int> type;
 
-	long int prc;
+	type data;
 
 	static bool noPointers()
 	{
 		return true;
 	}
-};
+
+	static const unsigned int max_prop = 2;
+};*/
 
 //! Case for local ghost box
 template<unsigned int dim, typename T>

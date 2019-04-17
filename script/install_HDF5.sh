@@ -6,6 +6,10 @@ discover_os
 
 # check if the directory $1/HDF5 exist
 
+if [ -d "$1/HDF5" -a -f "$1/HDF5/include/hdf5.h" ]; then
+  echo "HDF5 is already installed"
+  exit 0
+fi
 
 if [ ! -d "$1/ZLIB"  -a x"$platform" != x"cygwin" ]; then
   rm zlib-1.2.11.tar.gz

@@ -39,7 +39,7 @@ class ParMetisDistribution
 	bool is_distributed = false;
 
 	//! Vcluster
-	Vcluster & v_cl;
+	Vcluster<> & v_cl;
 
 	//! Structure that store the cartesian grid information
 	grid_sm<dim, void> gr;
@@ -213,7 +213,7 @@ class ParMetisDistribution
 	 * \param ri Request id
 	 * \param ptr Void pointer parameter for additional data to pass to the call-back
 	 */
-	static void * message_receive(size_t msg_i, size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
+	static void * message_receive(size_t msg_i, size_t total_msg, size_t total_p, size_t i, size_t ri, size_t tag, void * ptr)
 	{
 		openfpm::vector < openfpm::vector < idx_t >> *v = static_cast<openfpm::vector<openfpm::vector<idx_t>> *>(ptr);
 
@@ -242,7 +242,8 @@ class ParMetisDistribution
 
 		//! Prepare vector of arrays to contain all partitions
 		partitions.get(p_id).resize(nl_vertex);
-		std::copy(partition, partition + nl_vertex, &partitions.get(p_id).get(0));
+		if (nl_vertex != 0)
+		{std::copy(partition, partition + nl_vertex, &partitions.get(p_id).get(0));}
 
 		// Reset data structure to keep trace of new vertices distribution in processors (needed to update main graph)
 		for (size_t i = 0; i < Np; ++i)
@@ -283,7 +284,7 @@ public:
 	 *
 	 * \param v_cl Vcluster to use as communication object in this class
 	 */
-	ParMetisDistribution(Vcluster & v_cl)
+	ParMetisDistribution(Vcluster<> & v_cl)
 	:is_distributed(false),v_cl(v_cl), parmetis_graph(v_cl, v_cl.getProcessingUnits()), vtxdist(v_cl.getProcessingUnits() + 1), partitions(v_cl.getProcessingUnits()), v_per_proc(v_cl.getProcessingUnits())
 	{
 	}
@@ -315,7 +316,7 @@ public:
 	 * \param grid info
 	 * \param dom domain
 	 */
-	void createCartGraph(grid_sm<dim, void> & grid, Box<dim, T> dom)
+	void createCartGraph(grid_sm<dim, void> & grid, Box<dim, T> & dom)
 	{
 		size_t bc[dim];
 
@@ -648,7 +649,6 @@ public:
 	const ParMetisDistribution<dim,T> & operator=(ParMetisDistribution<dim,T> && dist)
 	{
 		is_distributed = dist.is_distributed;
-		v_cl = dist.v_cl;
 		gr = dist.gr;
 		domain = dist.domain;
 		gp.swap(dist.gp);

@@ -50,9 +50,7 @@ int main(int argc, char* argv[])
 	// randomly in the domain, we create a Box that define our domain, boundary conditions, and ghost
 	//
 	openfpm_init(&argc,&argv);
-	Vcluster & v_cl = create_vcluster();
-	
-	typedef Point<2,float> s;
+	Vcluster<> & v_cl = create_vcluster();
 
 	// set the seed
 	// create the random generator engine

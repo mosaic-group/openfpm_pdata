@@ -325,9 +325,9 @@ struct ModelCustom
 	template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p)
 	{
                 if (vd.template getProp<type>(p) == FLUID )
-                        dec.addComputationCost(v,4);
+                {dec.addComputationCost(v,4);}
                 else
-                        dec.addComputationCost(v,3);
+                {dec.addComputationCost(v,3);}
 	}
 
 	template<typename Decomposition> inline void applyModel(Decomposition & dec, size_t v)
@@ -335,7 +335,7 @@ struct ModelCustom
 		dec.setSubSubDomainComputationCost(v, dec.getSubSubDomainComputationCost(v) * dec.getSubSubDomainComputationCost(v));
 	}
 
-        float distributionTol()
+    float distributionTol()
 	{
 		return 1.01;
 	}
@@ -344,19 +344,19 @@ struct ModelCustom
 //! Second model for dynamic load balancing
 struct ModelCustom2
 {
-        template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p)
-        {
-            dec.addComputationCost(v,vd.template getProp<nn_num>(p) + 4);
-        }
+	template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p)
+	{
+		dec.addComputationCost(v,vd.template getProp<nn_num>(p) + 4);
+	}
 
-        template<typename Decomposition> inline void applyModel(Decomposition & dec, size_t v)
-        {
-        }
+	template<typename Decomposition> inline void applyModel(Decomposition & dec, size_t v)
+	{
+	}
 
-        float distributionTol()
-        {
-                return 1.01;
-        }
+	float distributionTol()
+	{
+			return 1.01;
+	}
 };
 
 inline void EqState(particles & vd)
@@ -383,11 +383,11 @@ inline double Wab(double r)
 	r /= H;
 
 	if (r < 1.0)
-		return (1.0 - 3.0/2.0*r*r + 3.0/4.0*r*r*r)*a2;
+	{return (1.0 - 3.0/2.0*r*r + 3.0/4.0*r*r*r)*a2;}
 	else if (r < 2.0)
-		return (1.0/4.0*(2.0 - r*r)*(2.0 - r*r)*(2.0 - r*r))*a2;
+	{return (1.0/4.0*(2.0 - r*r)*(2.0 - r*r)*(2.0 - r*r))*a2;}
 	else
-		return 0.0;
+	{return 0.0;}
 }
 
 const double c1 = -3.0/M_PI/H/H/H/H;
@@ -465,7 +465,7 @@ inline double Pi(const Point<3,double> & dr, double rr2, Point<3,double> & dv, d
 }
 
 
-template<typename VerletList> inline double calc_forces(particles & vd, VerletList & NN, double & max_visc)
+template<typename VerletList> inline void calc_forces(particles & vd, VerletList & NN, double & max_visc)
 {
 	/*! \cond [reset_particles] \endcond */
 
@@ -641,7 +641,7 @@ void max_acceleration_and_velocity(particles & vd, double & max_acc, double & ma
 	max_acc = sqrt(max_acc);
 	max_vel = sqrt(max_vel);
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 	v_cl.max(max_acc);
 	v_cl.max(max_vel);
 	v_cl.execute();
@@ -662,7 +662,7 @@ double calc_deltaT(particles & vd, double ViscDtMax)
 	//-dt new value of time step.
 	double dt=double(CFLnumber)*std::min(dt_f,dt_cv);
 	if(dt<double(DtMin))
-		dt=double(DtMin);
+	{dt=double(DtMin);}
 
 	return dt;
 }
@@ -745,11 +745,6 @@ void verlet_int(particles & vd, double dt, double & max_disp)
 			vd.template getProp<rho>(a) < RhoMin || vd.template getProp<rho>(a) > RhoMax)
 	    {
 	                   to_remove.add(a.getKey());
-
-
-	                   /*! \cond [big_number_set] \endcond */
-
-	                   /*! \cond [big_number_set] \endcond */
 	    }
 
 	    vd.template getProp<velocity_prev>(a)[0] = velX;
@@ -762,7 +757,7 @@ void verlet_int(particles & vd, double dt, double & max_disp)
 
 	/*! \cond [max_across_proc] \endcond */
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 	v_cl.max(max_disp);
 	v_cl.execute();
 
@@ -853,7 +848,7 @@ void euler_int(particles & vd, double dt, double & max_disp)
 		++part;
 	}
 
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 	v_cl.max(max_disp);
 	v_cl.execute();
 
@@ -1045,7 +1040,7 @@ int main(int argc, char* argv[])
 	double max_disp;
 	while (t <= t_end)
 	{
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 		timer it_time;
 
 		/*! \cond [update_verlet] \endcond */

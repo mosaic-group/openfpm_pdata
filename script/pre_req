@@ -8,13 +8,11 @@ function pre_req()
 {
 source script/discover_package_manager
 source script/discover_os
-source script/solve_autoconf
 source script/solve_gpp
 source script/solve_gfortran
 source script/solve_cmake
 source script/solve_git
 source script/solve_wget
-source script/solve_automake
 source script/solve_brew
 source script/solve_gsed
 source script/solve_libtool
@@ -142,80 +140,6 @@ else
     exit 1
   fi
 fi
-## autoconf
-if haveProg autoconf; then
-  echo -e "autoconf\033[92;1m SUCCESS \033[0m"
-else
-  echo >&2
-  echo -e "autoconf\033[91;5;1m FAILED \033[0m"
-  echo "OpenFPM require autoconf but it's not installed, searching a solution..."
-  solve_autoconf $platform
-  if haveProg autoconf; then
-    echo -e "autoconf\033[92;1m SUCCESS \033[0m"
-  else
-    echo -e "autoconf\033[91;5;1m FAILED \033[0m"
-    exit 1
-  fi
-fi
-## autoheader
-if haveProg autoheader; then
-  echo -e "autoheader\033[92;1m SUCCESS \033[0m"
-else
-  echo >&2
-  echo -e "autoheader\033[91;5;1m FAILED \033[0m"
-  echo "OpenFPM require autoheader but it's not installed, searching a solution..."
-  solve_autoconf $platform
-  if haveProg autoheader; then
-    echo -e "autoheader\033[92;1m SUCCESS \033[0m"
-  else
-    echo -e "autoheader\033[91;5;1m FAILED \033[0m"
-    exit 1
-  fi
-fi
-## automake
-if haveProg automake; then
-  echo -e "automake\033[92;1m SUCCESS \033[0m"
-else
-  echo >&2
-  echo -e "automake\033[91;5;1m FAILED \033[0m"
-  echo "OpenFPM require automake but it's not installed, searching a solution..."
-  solve_automake $platform
-  if haveProg automake; then
-    echo -e "automake\033[92;1m SUCCESS \033[0m"
-  else
-    echo "automake\033[91;5;1m FAILED \033[0m"
-    exit 1
-  fi
-fi
-## libtoolize or glibtoolize
-opt1=1
-opt2=1
-if haveProg libtoolize; then
-  opt1=0
-fi
-if haveProg glibtoolize; then
-  opt2=0
-fi
-if [ $opt1 -ne 0 -a $opt2 -ne 0 ]; then
-  echo >&2
-  echo -e "libtool\033[91;5;1m FAILED \033[0m"
-  echo "OpenFPM require libtool but it's not installed, searching a solution..."
-  solve_libtool $platform
-  if haveProg libtoolize; then
-    opt1=0
-  fi
-  if haveProg glibtoolize; then
-    opt2=0
-  fi
-  if [ $opt1 -ne 0 -a $opt2 -ne 0 ]; then
-    echo -e "libtool\033[91;5;1m FAILED \033[0m"
-    exit 1
-  else
-    echo -e "libtool\033[92;1m SUCCESS \033[0m"
-  fi
-else
-  echo -e "libtool\033[92;1m SUCCESS \033[0m"
-fi
 #### Detecting g++
 detect_compiler
 if [ $dgc_ret -eq 0 ]; then
@@ -247,8 +171,15 @@ else
   echo -e "gfortran \033[92;1m SUCCESS \033[0m"
 fi
 
+if [ -d "$i_dir/MPI" ]; then
+        export PATH="$i_dir/MPI/bin:$PATH"
+fi
+
+is_mpi_openmpi=0
 MPI_valid=no
 if haveProg mpirun; then
+
+  call_test_working_mpi_options=0
   # Here we check if we are running openmpi  mpich or unknown
 
   version=$(mpirun --version 2>&1 | grep mpirun | sed 's/.*Open MPI.*/openmpi/g')
@@ -257,6 +188,39 @@ if haveProg mpirun; then
   fi
 
   if [ x"$version" == x"openmpi" ]; then
+
+    is_mpi_openmpi=1
+    # Check if we are compiling with GPU support
+
+    if [ x"$gpu_support" == x"1" ]; then
+	
+	is_openmpi_cuda_aware
+
+	if [ x"$cuda_mpi_support" == x"false" ]; then
+		echo -e " \033[91;5;1m OpenMPI has been compiled without GPU support \033[0m"
+		echo -e "\033[1m OpenFPM use GPUDirect RDMA to move data from one GPU to another GPU (intranode and extranode) without moving the data on host. This feature requires that OpenMPI is compiled with CUDA support. OpenFPM can works also without this feature using GPUDirect old version (1.0). In practice it requires that MPI work with host pinned memory allocated with CUDA. This feature has been introduced with CUDA 5.0 in 2010. At best of our knowledge this feature should work without special compilation options for OpenMPI. On the other end we found several problems with GPUDirect v1.0 and Infiniband cards, when OpenMPI is not compiled with CUDA support. If you are on a super-computer or a machine you did not set-up, we suggest to re-install OpenMPI with CUDA support using the same options used to compile the one detected (option 1). Alternatively you can reinstall OpenMPI using the default options (option 2), or use the OpenMPI detected (option 3) \033[0m"
+
+                if [ $sq -eq 0 ]; then
+                        unset commands
+                        commands[0]="Reinstall MPI and mirror the one detected"
+                        commands[1]="Reinstall MPI, use the default arguments"
+                        commands[2]="Continue with the detected one"
+                        possible_solutions_no_execute "${commands[@]}"
+		else
+			possible_solutions_ret=0
+                fi
+
+		# Remove old MPI
+		rm -rf $i_dir/MPI
+
+		if [ x"$possible_solutions_ret" == x"0" ]; then
+			get_openmpi_compilation_options
+			call_test_working_mpi_options=1
+		fi
+	else
+		echo "OpenMPI is CUDA aware"
+	fi
+    fi
 
     major=$(mpirun --version 2>&1 | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
     middle=$(mpirun --version 2>&1 | grep mpirun | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
@@ -312,11 +276,18 @@ if haveProg mpirun; then
     fi
 
   fi
+
+  # invalidate MPI, must be reinstalled
+  if [ $call_test_working_mpi_options -eq 1 ]; then
+    MPI_valid=no
+  fi
+
 else
   echo -e "No MPI"
 fi
 
 if [ x"$MPI_valid" == x"yes"  ]; then
+
   ## Check for potential problem in the MPI installation
 
   if [ -d $1/MPI ]; then

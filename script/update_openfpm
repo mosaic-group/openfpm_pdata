@@ -1,4 +1,3 @@
-#! /bin/bash
 
 source script/show_solutions
 
@@ -46,8 +45,36 @@ function update_openfpm()
     git stash -u
     git submodule foreach 'git stash'
 
-    git pull origin master
+    git pull --no-edit origin master
   else
+
+    #### New version require new version of CMAKE
+
+    dgc_major=$(cmake --version | grep "cmake version" | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
+    dgc_middle=$(cmake --version | grep "cmake version" | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
+    dgc_minor=$(cmake --version | grep "cmake version" | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
+
+    cmake_result=0
+    if [ $dgc_major -gt 3 ]; then
+        echo -e "cmake $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
+	cmake_result=1
+    elif [ $dgc_major -lt 3 ]; then
+        echo -e "cmake $dgc_major.$dgc_middle.$dgc_minor \033[91;5;1m FAILED \033[0m your cmake $dgc_major.$dgc_middle;$dgc_minor is too old, 3.8.X or higher is required"
+    elif [ $dgc_middle -gt 8  ]; then
+        echo -e "cmake $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
+	cmake_result=1
+    elif [ $dgc_middle -lt 8 ]; then
+        echo -e "cmake $dgc_major.$dgc_middle.$dgc_minor \033[91;5;1m FAILED \033[0m your cmake $dgc_major.$dgc_middle;$dgc_minor is too old, 3.8.X or higher is required"
+    else
+        echo -e "cmake $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
+	cmake_result=1
+    fi
+
+    if [ $cmake_result -ne 0 ]; then
+      echo -e "Upgrade summary\033[91;5;1m FAILED \033[0m"
+      return
+    fi
+
 
     rm -rf {,.[!.],..?}*
     echo "Cloning Repo: $repo"
@@ -61,26 +88,33 @@ function update_openfpm()
   if [ x"$1" == x"update" -a x"$force_up" == x"" ]; then
     source $HOME/openfpm_vars
     sh autogen.sh
-    ./config.status
+    # Reconfigure
+    conf_command=$(cat config.log)
+    $conf_command
     if [ $? -ne 0 ]; then
       echo -e "Update summary\033[91;5;1m FAILED \033[0m"
+      return
     fi
     make
     if [ $? -ne 0 ]; then
       echo -e "Update summary\033[91;5;1m FAILED \033[0m"
+      return
     else
       echo -e "Update summary\033[92;5;1m SUCCEED \033[0m"
       echo -e "To make the update active do: \033[1m make install \033[0m"
+      return
     fi
   else
     #### Remove .deps for fresh install
     ./install $dir_prev_inst $for_opt
     if [ $? -ne 0 ]; then
       echo -e "Upgrade summary\033[91;5;1m FAILED \033[0m"
+      return
     else
       echo -e "Upgrade summary\033[92;5;1m SUCCEED \033[0m"
       echo -e "To make the upgrade active do: \033[1m make install \033[0m"
       rm force_upgrade
+      return
     fi
   fi
   

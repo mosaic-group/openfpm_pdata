@@ -388,6 +388,9 @@ int main(int argc, char* argv[])
 		++it;
 	}
 
+	vd.map();
+	vd.ghost_get<>();
+
 	//! \cond [vect grid] \endcond
 
 	/*!

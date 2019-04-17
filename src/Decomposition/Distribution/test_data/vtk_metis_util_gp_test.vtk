@@ -3718,7 +3718,7 @@ LINES 2688 8064
 2 511 503
 2 511 447
 POINT_DATA 512
-SCALARS id unsigned_long
+SCALARS id unsigned_int
 LOOKUP_TABLE default
 4
 4
@@ -4232,7 +4232,7 @@ LOOKUP_TABLE default
 1
 1
 1
-SCALARS sub_id unsigned_long
+SCALARS sub_id unsigned_int
 LOOKUP_TABLE default
 0
 0

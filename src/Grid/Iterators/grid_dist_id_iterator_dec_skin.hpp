@@ -101,7 +101,7 @@ class grid_dist_id_iterator_dec_skin : protected grid_skin_iterator_bc<Decomposi
 					// and calculate the grid sizes
 					size_t sz[Decomposition::dims];
 					for (size_t j = 0 ; j < Decomposition::dims ; j++)
-						sz[j] = gdb_ext.get(gc).GDbox.getHigh(j) + 1;
+					{sz[j] = gdb_ext.get(gc).GDbox.getHigh(j) + 1;}
 
 					grid_sm<Decomposition::dims,void> g_sm(sz);
 
@@ -112,15 +112,6 @@ class grid_dist_id_iterator_dec_skin : protected grid_skin_iterator_bc<Decomposi
 		}
 	}
 
-	/*! \brief Get the actual key
-	 *
-	 * \return the actual key
-	 *
-	 */
-	inline grid_dist_key_dx<Decomposition::dims> get_int()
-	{
-		return grid_dist_key_dx<Decomposition::dims>(g_c,a_it.get());
-	}
 
 	public:
 
@@ -216,8 +207,8 @@ class grid_dist_id_iterator_dec_skin : protected grid_skin_iterator_bc<Decomposi
 	{
 		// If there are no other grid stop
 
-		if (g_c >= gdb_ext.size())
-			return false;
+		if (a_its_p >= a_its.size())
+		{return false;}
 
 		return true;
 	}
@@ -253,6 +244,16 @@ class grid_dist_id_iterator_dec_skin : protected grid_skin_iterator_bc<Decomposi
 		k_glob = k_glob + gdb_ext.get(sub_id).origin;
 
 		return k_glob;
+	}
+
+	/*! \brief Get the actual key
+	 *
+	 * \return the actual key
+	 *
+	 */
+	inline grid_dist_key_dx<Decomposition::dims> get_int()
+	{
+		return grid_dist_key_dx<Decomposition::dims>(g_c,a_it.get());
 	}
 
 	/*! \brief Copy operator=

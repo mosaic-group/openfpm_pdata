@@ -11,6 +11,28 @@
 #include "common.hpp"
 #include "nn_processor.hpp"
 #include "Decomposition/shift_vect_converter.hpp"
+#include "Decomposition/cuda/ie_ghost_gpu.cuh"
+
+//! Processor id and box id
+struct proc_box_id
+{
+	size_t proc_id;
+	size_t box_id;
+	size_t shift_id;
+
+	//! operator to reorder
+	bool operator<(const proc_box_id & pbi) const
+	{
+		if (proc_id < pbi.proc_id)
+		{return true;}
+		else if (proc_id == pbi.proc_id)
+		{
+			return shift_id < pbi.shift_id;
+		}
+
+		return false;
+	}
+};
 
 
 /*! \brief structure that store and compute the internal and external local ghost box
@@ -21,7 +43,7 @@
  * \see CartDecomposition
  *
  */
-template<unsigned int dim, typename T>
+template<unsigned int dim, typename T, typename Memory, template<typename> class layout_base >
 class ie_ghost
 {
 	//! for each sub-domain (first vector), contain the list (nested vector) of the neighborhood processors
@@ -37,13 +59,18 @@ class ie_ghost
 	openfpm::vector<p_box<dim,T> > vb_ext;
 
 	//! Internal ghost boxes for this processor domain
-	openfpm::vector<p_box<dim,T> > vb_int;
+	openfpm::vector<aggregate<unsigned int,unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int,unsigned int>>::type,layout_base> vb_int;
+
+	//! Internal ghost boxes for this processor domain
+	openfpm::vector<Box<dim,T>,Memory,typename layout_base<Box<dim,T>>::type,layout_base> vb_int_box;
 
 	//! Cell-list that store the geometrical information of the internal ghost boxes
-	CellList<dim,T,Mem_fast<>,shift<dim,T>> geo_cell;
+	CellList<dim,T,Mem_fast<Memory,int>,shift<dim,T>> geo_cell;
+
+	typedef openfpm::vector<Box<dim,T>,Memory,typename layout_base<Box<dim,T>>::type,layout_base> proc_boxes;
 
 	//! shift vectors
-	openfpm::vector<Point<dim,T>> shifts;
+	openfpm::vector<Point<dim,T>,Memory,typename layout_base<Point<dim,T>>::type,layout_base> shifts;
 
 	//! Temporal buffers to return temporal information for ghost_processorID
 	openfpm::vector<std::pair<size_t,size_t>> ids_p;
@@ -52,7 +79,10 @@ class ie_ghost
 	openfpm::vector<size_t> ids;
 
 	//! shift converter
-	shift_vect_converter<dim,T> sc_convert;
+	shift_vect_converter<dim,T,Memory,layout_base> sc_convert;
+
+	//! host to device transfer
+	bool host_dev_transfer = false;
 
 	/*! \brief Given a local sub-domain i, it give the id of such sub-domain in the sent list
 	 *         for the processor p_id
@@ -140,7 +170,7 @@ class ie_ghost
 	* \note To an explanation about the sectors see getShiftVectors
 	*
 	*/
-	inline size_t ebx_ibx_form(size_t k, size_t b, size_t p_id, const comb<dim> & c ,size_t N_b, Vcluster & v_cl, const bool ei)
+	inline size_t ebx_ibx_form(size_t k, size_t b, size_t p_id, const comb<dim> & c ,size_t N_b, Vcluster<> & v_cl, const bool ei)
 	{
 		comb<dim> cext = c;
 
@@ -192,7 +222,7 @@ protected:
 	 * \see calculateGhostBoxes
 	 *
 	 */
-	void create_box_nn_processor_ext(Vcluster & v_cl,
+	void create_box_nn_processor_ext(Vcluster<> & v_cl,
 			                         Ghost<dim,T> & ghost,
 									 openfpm::vector<SpaceBox<dim,T>> & sub_domains,
 									 const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
@@ -277,6 +307,7 @@ protected:
 		}
 	}
 
+
 	/*! \brief Create the box_nn_processor_int (nbx part) structure, the geo_cell list and proc_int_box
 	 *
 	 * This structure store for each sub-domain of this processors the boxes that come from the intersection
@@ -293,7 +324,7 @@ protected:
 	 * \see calculateGhostBoxes
 	 *
 	 */
-	void create_box_nn_processor_int(Vcluster & v_cl,
+	void create_box_nn_processor_int(Vcluster<> & v_cl,
 			                         Ghost<dim,T> & ghost,
 									 openfpm::vector<SpaceBox<dim,T>> & sub_domains,
 									 const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
@@ -336,20 +367,24 @@ protected:
 					n_sub.enlarge(ghost);
 
 					// Intersect with the local sub-domain
-					p_box<dim,T> b_int;
-					bool intersect = n_sub.Intersect(l_sub,b_int.box);
+					Box<dim,T> b_int;
+					bool intersect = n_sub.Intersect(l_sub,b_int);
 
 					// store if it intersect
 					if (intersect == true)
 					{
+						vb_int.add();
+
+						size_t last = vb_int.size() - 1;
+
 						// the box fill with the processor id
-						b_int.proc = p_id;
+						vb_int.template get<proc_>(last) = p_id;
 
 						// fill the local processor id
-						b_int.lc_proc = lc_proc;
+						vb_int.template get<lc_proc_>(last) = lc_proc;
 
 						// fill the shift id
-						b_int.shift_id = convertShift(nn_p_box_pos.get(k));
+						vb_int.template get<shift_id_>(last) = convertShift(nn_p_box_pos.get(k));
 
 						//
 						// Updating
@@ -364,12 +399,12 @@ protected:
 
 						// add the box to the near processor sub-domain intersections
 						openfpm::vector< ::Box<dim,T> > & p_box_int = box_nn_processor_int.get(i).get(j).nbx;
-						p_box_int.add(b_int.box);
-						vb_int.add(b_int);
+						p_box_int.add(b_int);
+						vb_int_box.add(b_int);
 
 						// store the box in proc_int_box storing from which sub-domain they come from
 						Box_sub<dim,T> sb;
-						sb.bx = b_int.box;
+						sb.bx = b_int;
 						sb.sub = i;
 						sb.r_sub = r_sub.get(k);
 						sb.cmb = nn_p_box_pos.get(k);
@@ -388,8 +423,8 @@ protected:
 						// update the geo_cell list
 
 						// get the cells this box span
-						const grid_key_dx<dim> p1 = geo_cell.getCellGrid(b_int.box.getP1());
-						const grid_key_dx<dim> p2 = geo_cell.getCellGrid(b_int.box.getP2());
+						const grid_key_dx<dim> p1 = geo_cell.getCellGrid(b_int.getP1());
+						const grid_key_dx<dim> p2 = geo_cell.getCellGrid(b_int.getP2());
 
 						// Get the grid and the sub-iterator
 						auto & gi = geo_cell.getGrid();
@@ -399,15 +434,70 @@ protected:
 						while (g_sub.isNext())
 						{
 							auto key = g_sub.get();
-							geo_cell.addCell(gi.LinId(key),vb_int.size()-1);
+							size_t cell = gi.LinId(key);
+
+							geo_cell.addCell(cell,vb_int.size()-1);
+
 							++g_sub;
 						}
 					}
 				}
 			}
 		}
+
+		reorder_geo_cell();
 	}
 
+	/*! \brief in this function we reorder the list in each cells by processor id
+	 *
+	 * suppose in one cell we have 7 boxes each box contain the processor id
+	 *
+	 * 1,5,9,5,1,1,6
+	 *
+	 * after reorder we have the following sequence
+	 *
+	 * 1,1,1,5,5,6,9
+	 *
+	 * This simplify the procedure to get a unique list of processor ids
+	 * indicating on which processor a particle must be replicated as ghost
+	 *
+	 */
+	void reorder_geo_cell()
+	{
+		openfpm::vector<proc_box_id> tmp_sort;
+
+		size_t div[dim];
+
+		for (size_t i = 0 ; i < dim ; i++)	{div[i] = geo_cell.getDiv()[i];}
+
+		grid_sm<dim,void> gs(div);
+
+		grid_key_dx_iterator<dim> it(gs);
+
+		while (it.isNext())
+		{
+			size_t cell = gs.LinId(it.get());
+
+			size_t sz = geo_cell.getNelements(cell);
+			tmp_sort.resize(sz);
+
+			for (size_t i = 0 ; i < sz ; i++)
+			{
+				tmp_sort.get(i).box_id = geo_cell.get(cell,i);
+				tmp_sort.get(i).proc_id = vb_int.template get<proc_>(tmp_sort.get(i).box_id);
+				tmp_sort.get(i).shift_id = vb_int.template get<shift_id_>(tmp_sort.get(i).box_id);
+			}
+
+			tmp_sort.sort();
+
+			// now we set again the cell in an ordered way
+
+			for (size_t i = 0 ; i < sz ; i++)
+			{geo_cell.get(cell,i) = tmp_sort.get(i).box_id;}
+
+			++it;
+		}
+	}
 
 public:
 
@@ -415,24 +505,25 @@ public:
 	ie_ghost() {};
 
 	//! Copy constructor
-	ie_ghost(const ie_ghost<dim,T> & ie)
+	ie_ghost(const ie_ghost<dim,T,Memory,layout_base> & ie)
 	{
-		this->operator =(ie);
+		this->operator=(ie);
 	}
 
 	//! Copy constructor
-	ie_ghost(ie_ghost<dim,T> && ie)
+	ie_ghost(ie_ghost<dim,T,Memory,layout_base> && ie)
 	{
 		this->operator=(ie);
 	}
 
 	//! Copy operator
-	inline ie_ghost<dim,T> & operator=(ie_ghost<dim,T> && ie)
+	inline ie_ghost<dim,T,Memory,layout_base> & operator=(ie_ghost<dim,T,Memory,layout_base> && ie)
 	{
 		box_nn_processor_int.swap(ie.box_nn_processor_int);
 		proc_int_box.swap(ie.proc_int_box);
 		vb_ext.swap(ie.vb_ext);
 		vb_int.swap(ie.vb_int);
+		vb_int_box.swap(ie.vb_int_box);
 		geo_cell.swap(ie.geo_cell);
 		shifts.swap(ie.shifts);
 		ids_p.swap(ie.ids_p);
@@ -442,18 +533,44 @@ public:
 	}
 
 	//! Copy operator
-	inline ie_ghost<dim,T> & operator=(const ie_ghost<dim,T> & ie)
+	inline ie_ghost<dim,T,Memory,layout_base> & operator=(const ie_ghost<dim,T,Memory,layout_base> & ie)
 	{
 		box_nn_processor_int = ie.box_nn_processor_int;
 		proc_int_box = ie.proc_int_box;
 		vb_ext = ie.vb_ext;
 		vb_int = ie.vb_int;
+		vb_int_box = ie.vb_int_box;
 		geo_cell = ie.geo_cell;
 		shifts = ie.shifts;
 		ids_p = ie.ids_p;
 		ids = ie.ids;
 
 		return *this;
+	}
+
+
+
+	/*! \brief duplicate this structure changing layout and Memory
+	 *
+	 * \return a structure with Memory type and layout changed
+	 *
+	 */
+	template<typename Memory2, template <typename> class layout_base2>
+	inline ie_ghost<dim,T,Memory2,layout_base2> duplicate()
+	{
+		ie_ghost<dim,T,Memory2,layout_base2> tmp;
+
+		tmp.private_get_box_nn_processor_int() = box_nn_processor_int;
+		tmp.private_get_proc_int_box() = proc_int_box;
+		tmp.private_get_vb_ext() = vb_ext;
+		tmp.private_get_vb_int() = vb_int;
+		tmp.private_get_vb_int_box() = vb_int_box;
+		tmp.private_geo_cell() = geo_cell;
+		tmp.private_get_shifts() = shifts;
+		tmp.private_get_ids_p() = ids_p;
+		tmp.private_get_ids() = ids;
+
+		return tmp;
 	}
 
 	/*! It return the shift vector
@@ -504,8 +621,13 @@ public:
 	 * \return the shift vectors
 	 *
 	 */
-	const openfpm::vector<Point<dim,T>> & getShiftVectors()
+	const openfpm::vector<Point<dim,T>,Memory,typename layout_base<Point<dim,T>>::type,layout_base> & getShiftVectors()
 	{
+		if (host_dev_transfer == false)
+		{
+			shifts.template hostToDevice<0>();
+		}
+
 		return shifts;
 	}
 
@@ -682,9 +804,9 @@ public:
 	 * \return the internal ghost box
 	 *
 	 */
-	inline const ::Box<dim,T> & getIGhostBox(size_t b_id) const
+	inline ::Box<dim,T> getIGhostBox(size_t b_id) const
 	{
-		return vb_int.get(b_id).box;
+		return vb_int_box.get(b_id);
 	}
 
 	/*! \brief Given the internal ghost box id, it return the near processor at witch belong
@@ -697,7 +819,7 @@ public:
 	 */
 	inline size_t getIGhostBoxProcessor(size_t b_id) const
 	{
-		return vb_int.get(b_id).proc;
+		return vb_int.template get<proc_>(b_id);
 	}
 
 	/*! \brief Get the number of the calculated external ghost boxes
@@ -759,6 +881,28 @@ public:
 		return geo_cell.getCellIterator(geo_cell.getCell(p));
 	}
 
+	/*! \brief Get the number of processor a particle must sent
+	 *
+	 * \param p position of the particle
+	 *
+	 */
+	template<typename output_type> inline void ghost_processor_ID(const Point<dim,T> & p, output_type & output, unsigned int base, unsigned int pi)
+	{
+		ID_operation<output_type> op(output);
+
+		ghost_processorID_general_impl(p,base,pi,geo_cell,vb_int_box,vb_int,op);
+	}
+
+	/*! \brief Get the number of processor a particle must sent
+	 *
+	 * \param p position of the particle
+	 *
+	 */
+	inline unsigned int ghost_processorID_N(const Point<dim,T> & p)
+	{
+		return ghost_processorID_N_impl(p,geo_cell,vb_int_box,vb_int);
+	}
+
 	/*! \brief Given a position it return if the position belong to any neighborhood processor ghost
 	 * (Internal ghost)
 	 *
@@ -790,7 +934,7 @@ public:
 		{
 			size_t bid = cell_it.get();
 
-			if (vb_int.get(bid).box.isInsideNP(p) == true)
+			if (Box<dim,T>(vb_int_box.get(bid)).isInsideNP(p) == true)
 			{
 				ids_p.add(std::pair<size_t,size_t>(id1::id(vb_int.get(bid),bid),id2::id(vb_int.get(bid),bid)));
 			}
@@ -839,7 +983,7 @@ public:
 		{
 			size_t bid = cell_it.get();
 
-			if (vb_int.get(bid).box.isInsideNP(p) == true)
+			if (Box<dim,T>(vb_int_box.get(bid)).isInsideNP(p) == true)
 			{
 				ids.add(id::id(vb_int.get(bid),bid));
 			}
@@ -883,7 +1027,7 @@ public:
 		{
 			size_t bid = cell_it.get();
 
-			if (vb_int.get(bid).box.isInsideNP(p) == true)
+			if (Box<dim,T>(vb_int_box.get(bid)).isInsideNP(p) == true)
 			{
 				ids_p.add(std::pair<size_t,size_t>(id1::id(vb_int.get(bid),bid),id2::id(vb_int.get(bid),bid)));
 			}
@@ -990,7 +1134,7 @@ public:
 	 * \return true if they are equal
 	 *
 	 */
-	bool is_equal(ie_ghost<dim,T> & ig)
+	bool is_equal(ie_ghost<dim,T,Memory,layout_base> & ig)
 	{
 		if (getNEGhostBox() != ig.getNEGhostBox())
 			return false;
@@ -1055,7 +1199,7 @@ public:
 	 * \return true if they are equal
 	 *
 	 */
-	bool is_equal_ng(ie_ghost<dim,T> & ig)
+	bool is_equal_ng(ie_ghost<dim,T,Memory,layout_base> & ig)
 	{
 		return true;
 	}
@@ -1069,10 +1213,140 @@ public:
 		proc_int_box.clear();
 		vb_ext.clear();
 		vb_int.clear();
+		vb_int_box.clear();
 		geo_cell.clear();
 		shifts.clear();
 		ids_p.clear();
 		ids.clear();
+	}
+
+	/*! \brief Return the internal data structure box_nn_processor_int
+	 *
+	 * \return box_nn_processor_int
+	 *
+	 */
+	inline openfpm::vector< openfpm::vector< Box_proc<dim,T> > > & private_get_box_nn_processor_int()
+	{
+		return box_nn_processor_int;
+	}
+
+	/*! \brief Return the internal data structure proc_int_box
+	 *
+	 * \return proc_int_box
+	 *
+	 */
+	inline openfpm::vector< Box_dom<dim,T> > & private_get_proc_int_box()
+	{
+		return proc_int_box;
+	}
+
+	/*! \brief Return the internal data structure vb_ext
+	 *
+	 * \return vb_ext
+	 *
+	 */
+	inline openfpm::vector<p_box<dim,T> > & private_get_vb_ext()
+	{
+		return vb_ext;
+	}
+
+	/*! \brief Return the internal data structure vb_int
+	 *
+	 * \return vb_int
+	 *
+	 */
+	inline openfpm::vector<aggregate<unsigned int,unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int,unsigned int>>::type,layout_base> &
+	private_get_vb_int()
+	{
+		return vb_int;
+	}
+
+	/*! \brief Return the internal data structure vb_int_box
+	 *
+	 * \return vb_int_box
+	 *
+	 */
+	inline openfpm::vector<Box<dim,T>,Memory,typename layout_base<Box<dim,T>>::type,layout_base> &
+	private_get_vb_int_box()
+	{
+		return vb_int_box;
+	}
+
+	/*! \brief Return the internal data structure proc_int_box
+	 *
+	 * \return proc_int_box
+	 *
+	 */
+	inline CellList<dim,T,Mem_fast<Memory,int>,shift<dim,T>> &
+	private_geo_cell()
+	{
+		return geo_cell;
+	}
+
+	/*! \brief Return the internal data structure shifts
+	 *
+	 * \return shifts
+	 *
+	 */
+	inline openfpm::vector<Point<dim,T>,Memory,typename layout_base<Point<dim,T>>::type,layout_base> &
+	private_get_shifts()
+	{
+		return shifts;
+	}
+
+	/*! \brief Return the internal data structure ids_p
+	 *
+	 * \return ids_p
+	 *
+	 */
+	inline openfpm::vector<std::pair<size_t,size_t>> &
+	private_get_ids_p()
+	{
+		return ids_p;
+	}
+
+	/*! \brief Return the internal data structure ids_p
+	 *
+	 * \return ids_p
+	 *
+	 */
+	inline openfpm::vector<size_t> &
+	private_get_ids()
+	{
+		return ids;
+	}
+
+	/*! \brief toKernel() Convert this data-structure into a kernel usable data-structure
+	 *
+	 * \return
+	 *
+	 */
+	ie_ghost_gpu<dim,T,Memory,layout_base> toKernel()
+	{
+		if (host_dev_transfer == false)
+		{
+			geo_cell.hostToDevice();
+			vb_int_box.template hostToDevice<0,1>();
+			vb_int.template hostToDevice<0,1,2>();
+			shifts.template hostToDevice<0>();
+
+			host_dev_transfer = true;
+		}
+
+		ie_ghost_gpu<dim,T,Memory,layout_base> igg(geo_cell.toKernel(),
+													vb_int_box.toKernel(),
+													vb_int.toKernel());
+
+		return igg;
+	}
+
+	/*! \brief Notify that the next toKernel() data-structures must be re-offloaded
+	 *
+	 *
+	 */
+	void reset_host_dev_transfer()
+	{
+		host_dev_transfer = false;
 	}
 };
 

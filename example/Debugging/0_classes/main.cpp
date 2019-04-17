@@ -9,8 +9,11 @@
 
 #define SE_CLASS1
 #define SE_CLASS2
+// SE_CLASS2 only is unsupported, without SE_CLASS2_ONLY_TRACK
+#define SE_CLASS2_ONLY_TRACK
 #define SE_CLASS3
 #define THROW_ON_ERROR
+#define PRINT_STACKTRACE
 #include "Memleak_check.hpp"
 #include "Vector/vector_dist.hpp"
 #include "Decomposition/CartDecomposition.hpp"
@@ -43,7 +46,7 @@ int main(int argc, char* argv[])
 	// randomly in the domain, we create a Box that define our domain, boundary conditions and ghost
 	//
 	openfpm_init(&argc,&argv);
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 	
 	typedef Point<2,float> s;
 
@@ -87,7 +90,7 @@ int main(int argc, char* argv[])
 	// decomposition
 	//
 	{
-		vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > vd(4096,box,bc,g);
+		vector_dist<2,float, Point_test<float> > vd(4096,box,bc,g);
 
 		//
 		// ### WIKI 6 ###
@@ -100,7 +103,7 @@ int main(int argc, char* argv[])
 			vect_dist_key_dx vt(5048);
 			auto it = vd.getPos(vt);
         }
-		catch (size_t e)
+		catch (std::exception e)
 		{
 			std::cerr << "Error notification of overflow \n";
 		}
@@ -112,8 +115,8 @@ int main(int argc, char* argv[])
 	// we create, now two of them using new
 	//
 
-	vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > * vd1 = new vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> >(4096,box,bc,g);
-	vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> > * vd2 = new vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> >(4096,box,bc,g);
+	vector_dist<2,float, Point_test<float> > * vd1 = new vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> >(4096,box,bc,g);
+	vector_dist<2,float, Point_test<float> > * vd2 = new vector_dist<2,float, Point_test<float>, CartDecomposition<2,float> >(4096,box,bc,g);
 
 	//
 	// ### WIKI 8 ###

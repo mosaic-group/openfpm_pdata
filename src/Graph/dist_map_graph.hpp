@@ -209,7 +209,7 @@ template<typename V, typename E = no_edge,
 class DistGraph_CSR
 {
 	//! Vcluster communication object
-	Vcluster & vcl;
+	Vcluster<> & vcl;
 
 	//! Distribution vector
 	openfpm::vector<idx_t> vtxdist;
@@ -326,9 +326,9 @@ class DistGraph_CSR
 	{
 		// If v1 and v2 does not satisfy some criteria return
 		if (CheckPolicy::valid(v1, v.size()) == false)
-			return NO_EDGE;
+		{return (size_t)NO_EDGE;}
 		if (CheckPolicy::valid(v2, v.size()) == false)
-			return NO_EDGE;
+		{return (size_t)NO_EDGE;}
 
 		// get the number of adjacent vertex
 		size_t id_x_end = v_l.template get<0>(v1);
@@ -401,7 +401,7 @@ class DistGraph_CSR
 	 * \param ri Request id
 	 * \param ptr Void pointer parameter for additional data to pass to the call-back
 	 */
-	static void * gr_receive(size_t msg_i, size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
+	static void * gr_receive(size_t msg_i, size_t total_msg, size_t total_p, size_t i, size_t ri, size_t tag, void * ptr)
 	{
 		openfpm::vector<HeapMemory> *v = static_cast<openfpm::vector<HeapMemory> *>(ptr);
 
@@ -420,7 +420,7 @@ class DistGraph_CSR
 	 * \param ri Request id
 	 * \param ptr Void pointer parameter for additional data to pass to the call-back
 	 */
-	static void * on_receive(size_t msg_i, size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
+	static void * on_receive(size_t msg_i, size_t total_msg, size_t total_p, size_t i, size_t ri, size_t tag, void * ptr)
 	{
 		openfpm::vector<openfpm::vector<size_t>> *v = static_cast<openfpm::vector<openfpm::vector<size_t>> *>(ptr);
 
@@ -1147,7 +1147,7 @@ public:
 	 * \param gg distributed graph to copy
 	 *
 	 */
-	DistGraph_CSR(Vcluster & vcl, DistGraph_CSR<V, E, Memory> && g) :
+	DistGraph_CSR(Vcluster<> & vcl, DistGraph_CSR<V, E, Memory> && g) :
 			vcl(vcl)
 	{
 		swap(g);

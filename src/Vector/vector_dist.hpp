@@ -8,6 +8,7 @@
 #ifndef VECTOR_HPP_
 #define VECTOR_HPP_
 
+#include "config.h"
 #include "HDF5_wr/HDF5_wr.hpp"
 #include "VCluster/VCluster.hpp"
 #include "Space/Shape/Point.hpp"
@@ -34,6 +35,8 @@
 #include "Vector/vector_map_iterator.hpp"
 #include "NN/CellList/ParticleIt_Cells.hpp"
 #include "NN/CellList/ProcKeys.hpp"
+#include "Vector/vector_dist_kernel.hpp"
+#include "NN/CellList/cuda/CellList_gpu.hpp"
 
 #define DEC_GRAN(gr) ((size_t)gr << 32)
 
@@ -65,6 +68,25 @@
 #define GCL_SYMMETRIC 1
 #define GCL_HILBERT 2
 
+template<bool is_gpu_celllist>
+struct gcl_standard_no_symmetric_impl
+{
+	template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
+	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
+	{
+		return vd.template getCellList<CellL>(r_cut);
+	}
+};
+
+template<>
+struct gcl_standard_no_symmetric_impl<true>
+{
+	template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
+	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
+	{
+		return vd.getCellListGPU(r_cut);
+	}
+};
 
 //! General function t get a cell-list
 template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
@@ -81,7 +103,7 @@ struct gcl
 	 */
 	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
 	{
-		return vd.template getCellList<CellL>(r_cut);
+		return gcl_standard_no_symmetric_impl<is_gpu_celllist<CellL>::value>::template get<dim,St,CellL,Vector,impl>(vd,r_cut,g);
 	}
 };
 
@@ -156,7 +178,7 @@ struct gcl_An
 #define VERLET_MEMBAL(dim,St)  VerletList<dim,St,Mem_bal<>,shift<dim,St> >
 #define VERLET_MEMMW(dim,St)   VerletList<dim,St,Mem_mw<>,shift<dim,St> >
 
-#define VERLET_MEMFAST_INT(dim,St) VerletList<dim,St,Mem_fast<unsigned int>,shift<dim,St> >
+#define VERLET_MEMFAST_INT(dim,St) VerletList<dim,St,Mem_fast<HeapMemory,unsigned int>,shift<dim,St> >
 #define VERLET_MEMBAL_INT(dim,St)  VerletList<dim,St,Mem_bal<unsigned int>,shift<dim,St> >
 #define VERLET_MEMMW_INT(dim,St)   VerletList<dim,St,Mem_mw<unsigned int>,shift<dim,St> >
 
@@ -169,45 +191,52 @@ enum reorder_opt
 
 /*! \brief Distributed vector
  *
- * This class reppresent a distributed vector, the distribution of the structure
+ * This class represent a distributed vector, the distribution of the structure
  * is based on the positional information of the elements the vector store
  *
  * ## Create a vector of random elements on each processor 2D
- * \snippet vector_dist_unit_test.hpp Create a vector of random elements on each processor 2D
+ * \snippet Vector/tests/vector_dist_unit_test.cpp Create a vector of random elements on each processor 2D
  *
  * ## Create a vector of random elements on each processor 3D
- * \snippet vector_dist_unit_test.hpp Create a vector of random elements on each processor 3D
+ * \snippet Vector/tests/vector_dist_unit_test.cpp Create a vector of random elements on each processor 3D
  *
  * ## Create a vector of elements distributed on a grid like way
- * \snippet vector_dist_unit_test.hpp Create a vector of elements distributed on a grid like way
+ * \snippet Vector/tests/vector_dist_unit_test.cpp Create a vector of elements distributed on a grid like way
  *
  * ## Redistribute the particles and sync the ghost properties
- * \snippet vector_dist_unit_test.hpp Redistribute the particles and sync the ghost properties
+ * \snippet Vector/tests/vector_dist_unit_test.cpp Redistribute the particles and sync the ghost properties
+ *
+ * ## Create a gpu distributed vector [St = float or double]
+ * \snippet Vector/cuda/vector_dist_gpu_unit_tests.cu Create a gpu vector
+ *
+ * ## Fill a GPU vector_dist on CPU and move the information to GPU and redistribute [St = float or double]
+ * \snippet Vector/cuda/vector_dist_gpu_unit_tests.cu Fill gpu vector and move to GPU
+ *
+ * ## Fill the ghost on GPU
+ * \snippet Vector/cuda/vector_dist_gpu_unit_tests.cu Fill the ghost on GPU
  *
  * \tparam dim Dimensionality of the space where the elements lives
  * \tparam St type of space float, double ...
  * \tparam prop properties the vector element store in OpenFPM data structure format
  * \tparam Decomposition Decomposition strategy to use CartDecomposition ...
  * \tparam Memory Memory pool where store the information HeapMemory ...
+ * \tparam Memory layout
  *
  */
 
 template<unsigned int dim,
          typename St,
-		 typename prop,
-		 typename layout = typename memory_traits_lin<prop>::type,
-		 template <typename> class layout_base = memory_traits_lin,
-		 typename Decomposition = CartDecomposition<dim,St>,
-		 typename Memory = HeapMemory>
-class vector_dist : public vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>
+         typename prop,
+         typename Decomposition = CartDecomposition<dim,St>,
+         typename Memory = HeapMemory,
+         template<typename> class layout_base = memory_traits_lin>
+class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>
 {
+
 public:
 
 	//! Self type
-	typedef vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> self;
-
-	//! property object
-	typedef prop value_type;
+	typedef vector_dist<dim,St,prop,Decomposition,Memory,layout_base> self;
 
 private:
 
@@ -216,14 +245,21 @@ private:
 
 	//! Particle position vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector<Point<dim, St>,Memory> v_pos;
+	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> v_pos;
 
 	//! Particle properties vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector<prop,Memory,layout,layout_base> v_prp;
+	openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> v_prp;
+
+	//! reordered v_pos buffer
+	openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> v_prp_out;
+
+	//! reordered v_prp buffer
+	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> v_pos_out;
+
 
 	//! Virtual cluster
-	Vcluster & v_cl;
+	Vcluster<Memory> & v_cl;
 
 	//! option used to create this vector
 	size_t opt = 0;
@@ -344,11 +380,23 @@ private:
 
 public:
 
+	//! property object
+	typedef prop value_type;
+
+	typedef Decomposition Decomposition_type;
+
+	typedef decltype(v_pos) internal_position_vector_type;
+
+	typedef CellList<dim, St, Mem_fast<>, shift<dim, St>, internal_position_vector_type > CellList_type;
+
 	//! space type
 	typedef St stype;
 
 	//! dimensions of space
 	static const unsigned int dims = dim;
+
+	//!
+	typedef int yes_i_am_vector_dist;
 
 	/*! \brief Operator= for distributed vector
 	 *
@@ -357,9 +405,10 @@ public:
 	 * \return itself
 	 *
 	 */
-	vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & operator=(const vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & v)
+	vector_dist<dim,St,prop,Decomposition,Memory,layout_base> &
+	operator=(const vector_dist<dim,St,prop,Decomposition,Memory,layout_base> & v)
 	{
-		static_cast<vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>>(v));
+		static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>>(v));
 
 		g_m = v.g_m;
 		v_pos = v.v_pos;
@@ -381,9 +430,10 @@ public:
 	 * \return itself
 	 *
 	 */
-	vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & operator=(vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> && v)
+	vector_dist<dim,St,prop,Decomposition,Memory,layout_base> &
+	operator=(vector_dist<dim,St,prop,Decomposition,Memory,layout_base> && v)
 	{
-		static_cast<vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory> >(v));
+		static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base> >(v));
 
 		g_m = v.g_m;
 		v_pos.swap(v.v_pos);
@@ -398,14 +448,19 @@ public:
 		return *this;
 	}
 
+	// default constructor (structure contain garbage)
+	vector_dist()
+	:v_cl(create_vcluster<Memory>()),opt(opt)
+	{}
+
 
 	/*! \brief Copy Constructor
 	 *
 	 * \param v vector to copy
 	 *
 	 */
-	vector_dist(const vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> & v)
-	:vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>(v.getDecomposition()),v_cl(v.v_cl) SE_CLASS3_VDIST_CONSTRUCTOR
+	vector_dist(const vector_dist<dim,St,prop,Decomposition,Memory,layout_base> & v)
+	:vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>(v.getDecomposition()),v_cl(v.v_cl) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -419,7 +474,7 @@ public:
 	 * \param v vector to copy
 	 *
 	 */
-	vector_dist(vector_dist<dim,St,prop,layout,layout_base,Decomposition,Memory> && v) noexcept
+	vector_dist(vector_dist<dim,St,prop,Decomposition,Memory,layout_base> && v) noexcept
 	:v_cl(v.v_cl) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
@@ -440,7 +495,7 @@ public:
 	 *
 	 */
 	vector_dist(const Decomposition & dec, size_t np) :
-	vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>(dec), v_cl(create_vcluster()) SE_CLASS3_VDIST_CONSTRUCTOR
+	vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>(dec), v_cl(create_vcluster<Memory>()) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -467,7 +522,7 @@ public:
 	 *
 	 */
 	vector_dist(size_t np, Box<dim, St> box, const size_t (&bc)[dim], const Ghost<dim, St> & g, size_t opt = 0, const grid_sm<dim,void> & gdist = grid_sm<dim,void>())
-	:v_cl(create_vcluster()),opt(opt) SE_CLASS3_VDIST_CONSTRUCTOR
+	:v_cl(create_vcluster<Memory>()),opt(opt) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -479,6 +534,7 @@ public:
 		check_parameters(box);
 
 		init_structures(np);
+
 		this->init_decomposition(box,bc,g,opt,gdist);
 
 #ifdef SE_CLASS3
@@ -984,7 +1040,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > > CellL getCellListSym(St r_cut)
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>,internal_position_vector_type > > CellL getCellListSym(St r_cut)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -1074,7 +1130,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St> > >
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St>, decltype(v_pos) > >
 	CellL getCellList(St r_cut, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
@@ -1091,6 +1147,115 @@ public:
 
 		return getCellList<CellL>(r_cut, g,no_se3);
 	}
+
+#ifdef CUDA_GPU
+
+	/*! \brief Construct a cell list starting from the stored particles
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 *
+	 * \return the Cell list
+	 *
+	 */
+	CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> getCellListGPU(St r_cut, bool no_se3 = false)
+	{
+#ifdef SE_CLASS3
+		if (no_se3 == false)
+		{se3.getNN();}
+#endif
+#ifdef SE_CLASS1
+		check_ghost_compatible_rcut(r_cut);
+#endif
+
+		// Get ghost and anlarge by 1%
+		Ghost<dim,St> g = getDecomposition().getGhost();
+		g.magnify(1.013);
+
+		return getCellListGPU(r_cut, g,no_se3);
+	}
+
+
+	/*! \brief Construct a cell list starting from the stored particles
+	 *
+	 * It differ from the get getCellList for an additional parameter, in case the
+	 * domain + ghost is not big enough to contain additional padding particles, a Cell list
+	 * with bigger space can be created
+	 * (padding particles in general are particles added by the user out of the domains)
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
+	 *
+	 * \return the CellList
+	 *
+	 */
+	CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> getCellListGPU(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
+	{
+#ifdef SE_CLASS3
+		if (no_se3 == false)
+		{se3.getNN();}
+#endif
+
+		// Division array
+		size_t div[dim];
+
+		// get the processor bounding box
+		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+
+		// Processor bounding box
+		cl_param_calculate(pbox, div, r_cut, enlarge);
+
+		CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> cell_list(pbox,div);
+
+		v_prp_out.resize(v_pos.size());
+		v_pos_out.resize(v_pos.size());
+
+		cell_list.template construct<decltype(v_pos),decltype(v_prp)>(v_pos,v_pos_out,v_prp,v_prp_out,v_cl.getmgpuContext(),g_m);
+
+		cell_list.set_ndec(getDecomposition().get_ndec());
+		cell_list.set_gm(g_m);
+
+		return cell_list;
+	}
+
+
+#endif
+
+///////////////////////// Device Interface, this interface always exist it wrap the GPU if you have one or the CPU if you do not have //////////////// 
+
+#ifdef CUDA_GPU
+
+        /*! \brief Construct a cell list from the stored particles
+         *
+         * \param r_cut interation radius, or size of each cell
+         *
+         * \return the Cell list
+         *
+         */
+        auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(this->getCellListGPU(r_cut,no_se3))
+        {
+                return this->getCellListGPU(r_cut,no_se3);
+        }
+
+
+#else
+
+	 /*! \brief Construct a cell list from the stored particles
+         *
+         * \param r_cut interation radius, or size of each cell
+         *
+         * \return the Cell list
+         *
+         */
+        auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(this->getCellList(r_cut,no_se3))
+        {
+                return this->getCellList(r_cut,no_se3);
+        }
+
+#endif
+
+////////////////////// End Device Interface ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	/*! \brief Construct an hilbert cell list starting from the stored particles
 	 *
@@ -1126,7 +1291,7 @@ public:
 	 * \param no_se3 avoid se class 3 checking
 	 *
 	 */
-	template<typename CellL> void updateCellList(CellL & cell_list, bool no_se3 = false)
+	template<typename CellL> void updateCellList(CellL & cell_list, bool no_se3 = false, cl_construct_opt opt = cl_construct_opt::Full)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -1145,7 +1310,7 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list(v_pos,cell_list,g_m,CL_NON_SYMMETRIC);
+			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getmgpuContext(false),g_m,CL_NON_SYMMETRIC,opt);
 
 			cell_list.set_gm(g_m);
 		}
@@ -1177,7 +1342,7 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list(v_pos,cell_list,g_m,CL_SYMMETRIC);
+			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getmgpuContext(),g_m,CL_SYMMETRIC,cl_construct_opt::Full);
 
 			cell_list.set_gm(g_m);
 		}
@@ -1363,7 +1528,7 @@ public:
 	 * \return a VerletList object
 	 *
 	 */
-	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St> >>
+	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St>,decltype(v_pos) >>
 	VerletL getVerlet(St r_cut)
 	{
 #ifdef SE_CLASS3
@@ -1418,7 +1583,7 @@ public:
 				VerletList<dim,St,Mem_type,shift<dim,St> > ver_tmp;
 
 				ver_tmp = getVerlet<VerletList<dim,St,Mem_type,shift<dim,St> >>(r_cut);
-				ver.swap(ver);
+				ver.swap(ver_tmp);
 			}
 		}
 		else if (opt == VL_CRS_SYMMETRIC)
@@ -1499,6 +1664,7 @@ public:
 
 	/*! \brief Construct a cell list starting from the stored particles and reorder a vector according to the Hilberts curve
 	 *
+	 * \warning it kill the ghost and invalidate cell-lists
 	 *
 	 *It differs from the reorder(m) for an additional parameter, in case the
 	 * domain + ghost is not big enough to contain additional padding particles, a Cell list
@@ -1577,6 +1743,47 @@ public:
 			v_pos.swap(v_pos_dest);
 			v_prp.swap(v_prp_dest);
 		}
+
+		v_pos.swap(v_pos_dest);
+		v_prp.swap(v_prp_dest);
+	}
+
+	/*! \brief Construct a cell list starting from the stored particles and reorder a vector according to the Hilberts curve
+	 *
+	 * \warning it kill the ghost and invalidate cell-lists
+	 *
+	 *It differs from the reorder(m) for an additional parameter, in case the
+	 * domain + ghost is not big enough to contain additional padding particles, a Cell list
+	 * with bigger space can be created
+	 * (padding particles in general are particles added by the user out of the domains)
+	 *
+	 * \param m order of a curve
+	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
+	 *
+	 */
+	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_bal<>,shift<dim,St> > >
+	void reorder_rcut(St r_cut)
+	{
+		// reset the ghost part
+		v_pos.resize(g_m);
+		v_prp.resize(g_m);
+
+		auto cell_list = getCellList<CellL>(r_cut);
+
+		// Use cell_list to reorder v_pos
+
+		//destination vector
+		openfpm::vector<Point<dim,St>> v_pos_dest;
+		openfpm::vector<prop> v_prp_dest;
+
+		size_t div[dim];
+		for (size_t i = 0 ; i < dim ; i++)
+		{div[i] = cell_list.getGrid().size(i) - 2*cell_list.getPadding()[i];}
+
+		grid_sm<dim,void> gs(div);
+		grid_key_dx_iterator<dim> h_it(gs);
+
+		reorder_sfc<CellL,grid_key_dx_iterator<dim>>(v_pos_dest,v_prp_dest,h_it,cell_list);
 
 		v_pos.swap(v_pos_dest);
 		v_prp.swap(v_prp_dest);
@@ -1721,6 +1928,153 @@ public:
 		return vector_dist_iterator(0, g_m);
 	}
 
+#ifdef CUDA_GPU
+
+	/*! \brief Get an iterator that traverse the particles in the domain
+	 *
+	 * \return an iterator
+	 *
+	 */
+	ite_gpu<1> getDomainIteratorGPU(size_t n_thr = 1024) const
+	{
+#ifdef SE_CLASS3
+		se3.getIterator();
+#endif
+
+		return v_pos.getGPUIteratorTo(g_m,n_thr);
+	}
+
+	/*! \brief Merge the properties calculated on the sorted vector on the original vector
+	 *
+	 * \parameter Cell-list from which has been constructed the sorted vector
+	 *
+	 */
+	template<unsigned int ... prp> void merge_sort(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> & cl, size_t n_thr = 1024)
+	{
+#if defined(__NVCC__)
+
+		auto ite = v_pos.getGPUIteratorTo(g_m,n_thr);
+
+		CUDA_LAUNCH((merge_sort_part<false,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortToSort().toKernel()),prp...>),
+		ite,
+		v_pos.toKernel(),v_prp.toKernel(),v_pos_out.toKernel(),v_prp_out.toKernel(),cl.getNonSortToSort().toKernel());
+
+#endif
+	}
+
+	/*! \brief print a vector type property
+	 *
+	 * \param print_sorted (Print the sorted version)
+	 *
+	 * \tparam property
+	 *
+	 */
+	template<unsigned int prp>
+	void debugPrintVector(bool print_sorted = false)
+	{
+		if (print_sorted == false)
+		{this->v_prp.template deviceToHost<prp>();}
+		else
+		{this->v_prp_out.template deviceToHost<prp>();}
+
+		auto it = this->getDomainIterator();
+
+		while(it.isNext())
+		{
+			auto p = it.get();
+
+			for (size_t i = 0 ; i < std::extent<typename boost::mpl::at<typename prop::type,boost::mpl::int_<prp>>::type>::value ; i++)
+			{
+				if (print_sorted == false)
+				{std::cout << v_prp.template get<prp>(p.getKey())[i] << "   ";}
+				else
+				{std::cout << v_prp_out.template get<prp>(p.getKey())[i] << "   ";}
+			}
+
+			std::cout << std::endl;
+
+			++it;
+		}
+	}
+
+	/*! \brief print a scalar type property
+	 *
+	 * \param print_sorted (Print the sorted version)
+	 *
+	 * \tparam property
+	 *
+	 */
+	template<unsigned int prp>
+	void debugPrintScalar(bool print_sorted = false)
+	{
+		if (print_sorted == false)
+		{this->v_prp.template deviceToHost<prp>();}
+		else
+		{this->v_prp_out.template deviceToHost<prp>();}
+
+		auto it = this->getDomainIterator();
+
+		while(it.isNext())
+		{
+			auto p = it.get();
+
+			if (print_sorted == false)
+			{std::cout << v_prp_out.template get<prp>(p.getKey()) << "   " << std::endl;}
+			else
+			{std::cout << v_prp_out.template get<prp>(p.getKey()) << "   " << std::endl;}
+
+			++it;
+		}
+	}
+
+	/*! \brief Merge the properties calculated on the sorted vector on the original vector
+	 *
+	 * \parameter Cell-list from which has been constructed the sorted vector
+	 *
+	 */
+	template<unsigned int ... prp> void merge_sort_with_pos(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> & cl, size_t n_thr = 1024)
+	{
+#if defined(__NVCC__)
+
+		auto ite = v_pos.getGPUIteratorTo(g_m,n_thr);
+
+		CUDA_LAUNCH((merge_sort_part<true,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortedToSorted().toKernel()),prp...>),
+		ite,
+		v_pos.toKernel(),v_prp.toKernel(),v_pos_out.toKernel(),v_prp_out.toKernel(),cl.getNonSortedToSorted().toKernel());
+
+#endif
+	}
+
+#endif
+
+#ifdef CUDA_GPU
+
+        /*! \brief Get an iterator that traverse the particles in the domain
+         *
+         * \return an iterator
+         *
+         */
+        auto getDomainIteratorDevice(size_t n_thr = 1024) const -> decltype(this->getDomainIteratorGPU(n_thr))
+        {
+                return this->getDomainIteratorGPU(n_thr);
+        }
+
+
+#else
+
+        /*! \brief Get an iterator that traverse the particles in the domain
+         *
+         * \return an iterator
+         *
+         */
+        auto getDomainIteratorDevice(size_t n_thr = 1024) const -> decltype(this->getDomainIterator())
+        {
+                return this->getDomainIterator();
+        }
+
+
+#endif
+
 	/*! \brief Get an iterator that traverse the particles in the domain
 	 *
 	 * \return an iterator
@@ -1762,7 +2116,7 @@ public:
 	 */
 	inline Decomposition & getDecomposition()
 	{
-		return vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>::getDecomposition();
+		return vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>::getDecomposition();
 	}
 
 	/*! \brief Get the decomposition
@@ -1772,7 +2126,7 @@ public:
 	 */
 	inline const Decomposition & getDecomposition() const
 	{
-		return vector_dist_comm<dim,St,prop,layout,layout_base,Decomposition,Memory>::getDecomposition();
+		return vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>::getDecomposition();
 	}
 
 	/*! \brief It move all the particles that does not belong to the local processor to the respective processor
@@ -1785,6 +2139,7 @@ public:
 	 *
 	 * \tparam prp properties to communicate
 	 *
+	 * \param opt options
 	 *
 	 */
 	template<unsigned int ... prp> void map_list(size_t opt = NONE)
@@ -1809,6 +2164,7 @@ public:
 	 * elements out the local processor. Or just after initialization if each processor
 	 * contain non local particles
 	 *
+	 * \param opt options
 	 *
 	 */
 	template<typename obp = KillParticle> void map(size_t opt = NONE)
@@ -1922,7 +2278,8 @@ public:
 
 		while (it.isNext())
 		{
-			size_t v = cdsm.getCell(vd.getPos(it.get()));
+			Point<dim,St> p = vd.getPos(it.get());
+			size_t v = cdsm.getCell(p);
 
 			md.addComputation(dec,vd,v,it.get().getKey());
 
@@ -2015,13 +2372,29 @@ public:
 	 * \return true if the file has been written without error
 	 *
 	 */
-	inline bool write(std::string out, int opt = VTK_WRITER)
+	inline bool write(std::string out ,int opt = VTK_WRITER)
+	{
+		return write(out,"",opt);
+	}
+
+	/*! \brief Output particle position and properties
+	 *
+	 * \param out output filename
+	 * \param meta_info meta information example ("time = 1.234" add the information time to the VTK file)
+	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
+	 *            FORMAT_BINARY. (the default is ASCII format)
+	 *
+	 * \return true if the file has been written without error
+	 *
+	 */
+	inline bool write(std::string out, std::string meta_info ,int opt = VTK_WRITER)
 	{
 
 		if ((opt & 0x0FFF0000) == CSV_WRITER)
 		{
 			// CSVWriter test
-			CSVWriter<openfpm::vector<Point<dim,St>>, openfpm::vector<prop> > csv_writer;
+			CSVWriter<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>,
+			          openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> > csv_writer;
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".csv"));
 
@@ -2036,16 +2409,16 @@ public:
 				ft = file_type::BINARY;
 
 			// VTKWriter for a set of points
-			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim,St>>, openfpm::vector<prop>>, VECTOR_POINTS> vtk_writer;
+			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>,
+									   openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base>>,
+			                           VECTOR_POINTS> vtk_writer;
 			vtk_writer.add(v_pos,v_prp,g_m);
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtk"));
 
 			// Write the VTK file
-			return vtk_writer.write(output,prp_names,"particles",ft);
+			return vtk_writer.write(output,prp_names,"particles",meta_info,ft);
 		}
-
-		return false;
 	}
 
 	/*! \brief Delete the particles on the ghost
@@ -2079,6 +2452,7 @@ public:
 	 *
 	 * \param out output
 	 * \param iteration (we can append the number at the end of the file_name)
+	 * \param meta_info meta information example ("time = 1.234" add the information time to the VTK file)
 	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
 	 *            FORMAT_BINARY. (the default is ASCII format)
 	 *
@@ -2087,10 +2461,27 @@ public:
 	 */
 	inline bool write_frame(std::string out, size_t iteration, int opt = VTK_WRITER)
 	{
+		return write_frame(out,iteration,"",opt);
+	}
+
+	/*! \brief Output particle position and properties
+	 *
+	 * \param out output
+	 * \param iteration (we can append the number at the end of the file_name)
+	 * \param meta_info meta information example ("time = 1.234" add the information time to the VTK file)
+	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
+	 *            FORMAT_BINARY. (the default is ASCII format)
+	 *
+	 * \return if the file has been written correctly
+	 *
+	 */
+	inline bool write_frame(std::string out, size_t iteration, std::string meta_info, int opt = VTK_WRITER)
+	{
 		if ((opt & 0x0FFF0000) == CSV_WRITER)
 		{
 			// CSVWriter test
-			CSVWriter<openfpm::vector<Point<dim, St>>, openfpm::vector<prop> > csv_writer;
+			CSVWriter<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>,
+					  openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> > csv_writer;
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".csv"));
 
@@ -2105,13 +2496,14 @@ public:
 				ft = file_type::BINARY;
 
 			// VTKWriter for a set of points
-			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim,St>>, openfpm::vector<prop>>, VECTOR_POINTS> vtk_writer;
+			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>,
+									   openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base>>, VECTOR_POINTS> vtk_writer;
 			vtk_writer.add(v_pos,v_prp,g_m);
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtk"));
 
 			// Write the VTK file
-			return vtk_writer.write(output,prp_names,"particles",ft);
+			return vtk_writer.write(output,prp_names,"particles",meta_info,ft);
 		}
 	}
 
@@ -2161,7 +2553,7 @@ public:
 	 *
 	 */
 
-	Vcluster & getVC()
+	Vcluster<Memory> & getVC()
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2174,7 +2566,7 @@ public:
 	 * \return the particle position vector
 	 *
 	 */
-	const openfpm::vector<Point<dim,St>> & getPosVector() const
+	const openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & getPosVector() const
 	{
 		return v_pos;
 	}
@@ -2184,7 +2576,7 @@ public:
 	 * \return the particle position vector
 	 *
 	 */
-	openfpm::vector<Point<dim,St>> & getPosVector()
+	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & getPosVector()
 	{
 		return v_pos;
 	}
@@ -2194,7 +2586,7 @@ public:
 	 * \return the particle property vector
 	 *
 	 */
-	const openfpm::vector<prop> & getPropVector() const
+	const openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & getPropVector() const
 	{
 		return v_prp;
 	}
@@ -2204,7 +2596,7 @@ public:
 	 * \return the particle property vector
 	 *
 	 */
-	openfpm::vector<prop> & getPropVector()
+	openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & getPropVector()
 	{
 		return v_prp;
 	}
@@ -2239,7 +2631,7 @@ public:
 	 * \return Particle iterator
 	 *
 	 */
-	template<typename cli> ParticleItCRS_Cells<dim,cli> getParticleIteratorCRS_Cell(cli & NN)
+	template<typename cli> ParticleItCRS_Cells<dim,cli,decltype(v_pos)> getParticleIteratorCRS_Cell(cli & NN)
 	{
 #ifdef SE_CLASS3
 		se3.getIterator();
@@ -2265,7 +2657,7 @@ public:
 		getDecomposition().setNNParameters(shift,gs);
 
 		// First we check that
-		return ParticleItCRS_Cells<dim,cli>(NN,getDecomposition().getCRSDomainCells(),
+		return ParticleItCRS_Cells<dim,cli,decltype(v_pos)>(NN,getDecomposition().getCRSDomainCells(),
 				                               getDecomposition().getCRSAnomDomainCells(),
 											   NN.getNNc_sym());
 	}
@@ -2290,7 +2682,7 @@ public:
 	 * \return Particle iterator
 	 *
 	 */
-	template<typename vrl> openfpm::vector_key_iterator_seq<typename vrl::Mem_type_type::loc_index> getParticleIteratorCRS(vrl & NN)
+	template<typename vrl> openfpm::vector_key_iterator_seq<typename vrl::Mem_type_type::local_index_type> getParticleIteratorCRS(vrl & NN)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -2301,7 +2693,7 @@ public:
 #endif
 
 		// First we check that
-		return openfpm::vector_key_iterator_seq<typename vrl::Mem_type_type::loc_index>(NN.getParticleSeq());
+		return openfpm::vector_key_iterator_seq<typename vrl::Mem_type_type::local_index_type>(NN.getParticleSeq());
 	}
 
 	/*! \brief Return from which cell we have to start in case of CRS interation
@@ -2334,6 +2726,132 @@ public:
 		return key;
 	}
 
+
+#ifdef CUDA_GPU
+
+		/*! \brief Convert the grid into a data-structure compatible for computing into GPU
+		 *
+		 *  The object created can be considered like a reference of the original
+		 *
+		 * \return an usable vector in the kernel
+		 *
+		 */
+		template<unsigned int ... prp> vector_dist_ker<dim,St,prop> toKernel()
+		{
+			vector_dist_ker<dim,St,prop> v(g_m,v_pos.toKernel(), v_prp.toKernel());
+
+			return v;
+		}
+
+		/*! \brief Convert the grid into a data-structure compatible for computing into GPU
+		 *
+		 *  In comparison with toGPU return a version sorted better for coalesced memory
+		 *
+		 * \return an usable vector in the kernel
+		 *
+		 */
+		template<unsigned int ... prp> vector_dist_ker<dim,St,prop> toKernel_sorted()
+		{
+			vector_dist_ker<dim,St,prop> v(g_m,v_pos_out.toKernel(), v_prp_out.toKernel());
+
+			return v;
+		}
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 */
+		template<unsigned int ... prp> void deviceToHostProp()
+		{
+			v_prp.template deviceToHost<prp ...>();
+		}
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 */
+		void deviceToHostPos()
+		{
+			v_pos.template deviceToHost<0>();
+		}
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 */
+		template<unsigned int ... prp> void hostToDeviceProp()
+		{
+			v_prp.template hostToDevice<prp ...>();
+		}
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 */
+		void hostToDevicePos()
+		{
+			v_pos.template hostToDevice<0>();
+		}
+
+		void set_g_m(size_t g_m)
+		{
+			this->g_m = g_m;
+		}
+
+        /*! \brief this function sort the vector
+         *
+         * \warning this function kill the ghost (and invalidate the Cell-list)
+         *
+         * \param NN Cell-list to use to reorder
+         *
+         */
+        void make_sort(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> & NN)
+        {
+                deleteGhost();
+
+                updateCellList(NN,false,cl_construct_opt::Only_reorder);
+
+                // construct a cell-list forcing to create a sorted version without ghost
+
+                // swap the sorted with the non-sorted
+                v_pos.swap(v_pos_out);
+                v_prp.swap(v_prp_out);
+        }
+
+        /*! \brief This function compare if the host and device buffer position match up to some tolerance
+         *
+         * \tparam prp property to check
+         *
+         * \param tol tollerance absolute
+         *
+         */
+        bool compareHostAndDevicePos(St tol, St near  = -1.0, bool silent = false)
+        {
+        	return compare_host_device<Point<dim,St>,0>::compare(v_pos,tol,near,silent);
+        }
+
+
+        /*! \brief This function compare if the host and device buffer position match up to some tolerance
+         *
+         * \tparam prp property to check
+         *
+         * \param tol tollerance absolute
+         *
+         */
+        template<unsigned int prp>
+        bool compareHostAndDeviceProp(St tol, St near  = -1.0, bool silent = false)
+        {
+        	return compare_host_device<typename boost::mpl::at<typename prop::type,
+        							            boost::mpl::int_<prp> >::type,prp>::compare(v_prp,tol,near,silent);
+        }
+
+#endif
+
+
 #ifdef SE_CLASS3
 
 	se_class3_vector<prop::max_prop,dim,St,Decomposition,self> & get_se_class3()
@@ -2344,5 +2862,9 @@ public:
 #endif
 };
 
+
+template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte>> using vector_dist_gpu = vector_dist<dim,St,prop,Decomposition,CudaMemory,memory_traits_inte>;
+template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St,HeapMemory,memory_traits_inte>> using vector_dist_soa = vector_dist<dim,St,prop,Decomposition,HeapMemory,memory_traits_inte>;
+template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte>> using vector_dist_dev = vector_dist<dim,St,prop,Decomposition,CudaMemory,memory_traits_inte>;
 
 #endif /* VECTOR_HPP_ */

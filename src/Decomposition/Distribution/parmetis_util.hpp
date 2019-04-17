@@ -108,7 +108,7 @@ class Parmetis
 	MPI_Comm comm = (MPI_Comm)NULL;
 
 	//! VCluster
-	Vcluster & v_cl;
+	Vcluster<> & v_cl;
 
 	//! Process rank information
 	int p_id = 0;
@@ -210,7 +210,7 @@ public:
 	 * \param nc number of partitions
 	 *
 	 */
-	Parmetis(Vcluster & v_cl, size_t nc)
+	Parmetis(Vcluster<> & v_cl, size_t nc)
 	:v_cl(v_cl), nc(nc),n_dec(0)
 	{
 #ifdef SE_CLASS1
@@ -328,7 +328,7 @@ public:
 		}
 
 		if (is_openfpm_init() == true)
-			MPI_Comm_free(&comm);
+		{MPI_Comm_free(&comm);}
 	}
 
 	/*! \brief Set the Sub-graph

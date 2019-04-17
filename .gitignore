@@ -74,3 +74,4 @@ install_dir
 **/*.vtk
 !**/test_data/*.vtk
 *.csv
+/Default/

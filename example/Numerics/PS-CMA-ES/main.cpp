@@ -143,6 +143,20 @@
 
 //! [ps_cma_es_inclusion]
 
+// This example need EIGEN, if we do not have NOP the full example
+
+#include "config.h"
+
+#ifndef HAVE_EIGEN
+
+int main(int argc, char* argv[])
+{
+	return 0;
+}
+
+#else
+
+
 #define EIGEN_USE_LAPACKE
 #include "Vector/vector_dist.hpp"
 #include "DMatrix/EMatrix.hpp"
@@ -1313,3 +1327,5 @@ int main(int argc, char* argv[])
 	 *
 	 */
 }
+
+#endif

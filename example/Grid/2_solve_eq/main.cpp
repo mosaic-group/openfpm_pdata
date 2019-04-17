@@ -90,7 +90,8 @@ void init(grid_dist_id<2,double,aggregate<double> > & g_dist, const size_t (& sz
 		/*!
 		 * \page Grid_2_solve_eq Solve equation
 		 *
-		 * Initialize to 0, domain + boundary
+		 * Initialize to 0, domain + boundary (Careful the end of the domain is at the point -1 and the point sz, where
+		 * sz is the grid size in that dimension )
 		 *
 		 * \snippet Grid/2_solve_eq/main.cpp init field zero
 		 *
@@ -102,8 +103,8 @@ void init(grid_dist_id<2,double,aggregate<double> > & g_dist, const size_t (& sz
 
 		//! \cond [init field zero] \endcond
 
-		if (key_g.get(0) == 0 || key_g.get(0) == sz[0] ||
-			key_g.get(1) == 0 || key_g.get(1) == sz[1])
+		if (key_g.get(0) < 0 || key_g.get(0) == sz[0] ||
+			key_g.get(1) < 0 || key_g.get(1) == sz[1])
 		{
 			// Boundary part
 			g_dist.template get<0>(key) = 0.0;
@@ -393,7 +394,7 @@ int main(int argc, char* argv[])
 
 	// Get the maximum across processor to calculate the norm infinity of the error
 	// Norm infinity of the error is the maximum error across all the grid points
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 	v_cl.max(error);
 	v_cl.execute();
 

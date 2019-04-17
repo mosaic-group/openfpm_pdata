@@ -100,6 +100,7 @@ void grid_interpolation_benchmark(openfpm::vector<size_t> & nk_grid,
 
 		std::cout << "Time particles to mesh " << time_interpolation_p2m_mean.last() << std::endl;
 
+		measures.clear();
 		for (size_t j = 0 ; j < GRID_INTERPOLATION_TESTS ; j++)
 		{
 

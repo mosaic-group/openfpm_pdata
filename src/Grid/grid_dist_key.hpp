@@ -1,6 +1,8 @@
 #ifndef GRID_DIST_KEY_DX_HPP
 #define GRID_DIST_KEY_DX_HPP
 
+#include "Grid/map_grid.hpp"
+
 /*! \brief Grid key for a distributed grid
  *
  * It contain from which local sub-domain grid come from, and the local grid_key_dx

@@ -16,7 +16,7 @@ extern long int decrement(long int k, long int step);
 
 BOOST_AUTO_TEST_CASE( vector_dist_periodic_complex_prp_test_use_3d )
 {
-	Vcluster & v_cl = create_vcluster();
+	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 48)
 		return;

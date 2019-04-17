@@ -6,29 +6,24 @@ if [ -d "$1/MPI" ]; then
   echo "MPI already installed"
   exit 0
 fi
-rm -rf openmpi-2.1.1
-rm openmpi-2.1.1.tar.bz2
-wget http://ppmcore.mpi-cbg.de/upload/openmpi-2.1.1.tar.bz2
-tar -xvf openmpi-2.1.1.tar.bz2
-cd openmpi-2.1.1
 
-#
-#                  --disable-mca-dso \
-#                 --disable-sysv-shmem \
-#                 --enable-cxx-exceptions \
-#                 --with-threads=posix \
-#                 --without-cs-fs \
-#                 --with-mpi-param_check=always \
-#                 --enable-contrib-no-build=vt,libompitrace \
-#
-#--enable-mca-no-build=paffinity,installdirs-windows,timer-windows,shmem-sysv
-#
-#
+./script/download_MPI.sh
+cd openmpi-3.1.3
 
-./configure --prefix=$1/MPI --enable-mpi-fortran=yes CC=$3 CXX=$4 F77=$4 FC=$5
+if [ x"$3" == x"1" ]; then
+   echo "Installing MPI with GPU support"
+
+   # Detect where is nvcc
+   cuda_location=$(dirname $(dirname $(which nvcc)) )
+
+   ./configure --with-cuda=$cuda_location --prefix=$1/MPI --enable-mpi-fortran=yes CC=$4 CXX=$5 F77=$6 FC=$7 $8
+else
+   echo "Installing MPI without GPU support"
+   ./configure --prefix=$1/MPI --enable-mpi-fortran=yes CC=$4 CXX=$5 F77=$6 FC=$7 $8
+fi
 make -j $2
 make install
 
 # Mark the installation
-echo 2 > $1/MPI/version
+echo 4 > $1/MPI/version
 

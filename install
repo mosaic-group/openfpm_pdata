@@ -36,8 +36,9 @@ sq=0
 nomake=0
 update_openfpm=0
 upgrade_openfpm=0
+gpu_support=0
 
-while getopts di:smhc:nu FLAG; do
+while getopts di:smghc:nu FLAG; do
 	case $FLAG in
 	    d)
 	      echo "Disable depencencies installation"
@@ -55,10 +56,14 @@ while getopts di:smhc:nu FLAG; do
 	      echo "Fowarding options $OPTARG to configure script"
 	      configure_options=$OPTARG
 	      ;;
-        m)
-          echo "Skip to make the testing"
-          nomake=1
-          ;;
+            m)
+              echo "Skip compilation of the test"
+              nomake=1
+              ;;
+	    g)
+	      echo "Installing with GPU support"
+	      gpu_support=1
+	      ;;
 	    u)
 	      echo "Updating openfpm"
 	      update_openfpm=1
@@ -176,7 +181,6 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-
 ## check for options
 
 echo -e "\033[1;34;5mDEPENCENCIES INSTALLATION DIR      \033[0m"
@@ -208,7 +212,7 @@ echo -e "Installing requirements into: $i_dir "
 
 ### Installing PETSC
 
-if [ ! -d "$i_dir/PETSC" -o ! -d "$i_dir/EIGEN" ]; then
+if [ ! -d "$i_dir/PETSC" -o ! -f "$i_dir/PETSC/include/petsc.h" -o ! -d "$i_dir/EIGEN" ]; then
     echo -e "\033[1;34m Optional packages  \033[0m"
     echo -e "\033[1mDo you want to install linear algebra packages ?(y/n)\033[0m"
     echo "Installation can take long time (90 minutes on i7-3612QM 4 cores)"
@@ -266,17 +270,11 @@ fi
 lin_alg_dir=""
 lin_alg_lib=""
 lin_alg_inc=""
-if [ -d "$i_dir/METIS" ]; then
-    configure_options=" $configure_options --with-metis=$i_dir/METIS "
-fi
 if [ -d "$i_dir/BOOST" ]; then
     configure_options=" $configure_options --with-boost=$i_dir/BOOST "
 fi
-if [ -d "$i_dir/PARMETIS" ]; then
-    configure_options=" $configure_options --with-parmetis=$i_dir/PARMETIS "
-fi
 if [ -d "$i_dir/HDF5" ]; then
-    configure_options=" $configure_options --with-hdf5=$i_dir/HDF5/bin/h5pcc "
+    configure_options=" $configure_options --with-hdf5=$i_dir/HDF5/ "
 fi
 if [ -d "$i_dir/LIBHILBERT" ]; then
     configure_options=" $configure_options --with-libhilbert=$i_dir/LIBHILBERT "
@@ -290,7 +288,7 @@ fi
 
 ### MPI compilers must be in your PATH folder
 
-set_mpi $i_dir $ncore $CC $CXX $F77 $FC
+set_mpi $i_dir $ncore $gpu_support $CC $CXX $F77 $FC
 
 ### METIS and ParMETIS must be installed independently from sistem wide installation
 
@@ -299,6 +297,10 @@ configure_options=" $configure_options --with-parmetis=$i_dir/PARMETIS "
 
 ./script/install_Metis.sh $i_dir $CC $CXX $ncore
 configure_options=" $configure_options --with-metis=$i_dir/METIS "
+
+if [ x"$gpu_support" == x"1" ]; then
+	configure_options=" $configure_options --enable-gpu "
+fi
 
 MPI_installed=0
 MPI_System_prv=1
@@ -317,28 +319,20 @@ HDF5_System_prv=1
 LIBHILBERT_installed=0
 conf_err=1
 
+
 if [ $install_req -eq 0 ]; then
     ./configure $options $configure_options "$configure_blas_option"
 else
     while [ $conf_err -ne 0 ]
     do
+	pwd
         ./configure $options $configure_options "$configure_blas_option"
         conf_err=$?
 
         echo "Configure script terminated with $conf_err"
 
-        ## if MPI or METIS installation required install it
-        if [ $conf_err -eq 200  ]; then
-            echo "MPI not found try to install, $MPI_installed"
-            if [ $MPI_installed -eq 1 ]; then
-                echo "Error the installation of MPI failed"
-                exit 1
-            fi
-            ./script/install_MPI.sh $i_dir $ncore $CC $CXX $F77 $FC
-            MPI_installed=1
-            export PATH="$i_dir/MPI/bin:$PATH"
-            configure_options="$configure_options CXX=mpic++ "
-        elif [ $conf_err -eq 201  ]; then
+        ## if METIS installation required install it
+        if [ $conf_err -eq 201  ]; then
             echo "Metis not found try to install"
             if [ $METIS_installed -eq 1  ]; then
                 echo "Error the installation of METIS failed"
@@ -358,7 +352,11 @@ else
             elif [ x"$CXX" == x"clang++" ]; then
               ./script/install_BOOST.sh $i_dir $ncore darwin
             else
-              ./script/install_BOOST.sh $i_dir $ncore gcc
+	      if [ x"$CXX" == x"gcc" ]; then
+              	./script/install_BOOST.sh $i_dir $ncore gcc
+	      else
+		./script/install_BOOST.sh $i_dir $ncore gcc $(which $CXX) $dgc_major $dgc_middle
+	      fi
             fi
             BOOST_installed=1
             configure_options=" $configure_options --with-boost=$i_dir/BOOST "
@@ -378,7 +376,7 @@ else
                 exit 1
             fi
             ./script/install_HDF5.sh $i_dir $ncore
-            configure_options=" $configure_options --with-hdf5=$i_dir/HDF5/bin/h5pcc "
+            configure_options=" $configure_options --with-hdf5=$i_dir/HDF5/ "
             HDF5_installed=1
         elif [ $conf_err -eq 210 ]; then
             echo "LIBHILBERT not found try to install"
@@ -396,8 +394,8 @@ else
     done
 
     if [ x"$inst_lin_alg" == x"y" ]; then
-        ./script/install_EIGEN.sh $i_dir $ncore
-        ./script/install_PETSC.sh $i_dir $ncore $CC $CXX $F77 $FC
+        CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_EIGEN.sh $i_dir $ncore
+        CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_PETSC.sh $i_dir $ncore $CC $CXX $F77 $FC
     fi
 
     ### collect PETSC configuration options
@@ -408,7 +406,10 @@ fi
 
 ### Create example.mk
 install_base=$(cat install_dir)
-openmp_flags="$(cat openmp_flags) $(cat openfpm_flags)"
+openmp_flags="$(cat openmp_flags)"
+cuda_include_dirs=$(cat cuda_include)
+mpi_include_dirs=$(cat mpi_include)
+mpi_libs=$(cat mpi_libs)
 
 if [ -d "$i_dir/HDF5/lib" ]; then
   hdf5_lib=$i_dir/HDF5/lib
@@ -416,16 +417,22 @@ elif [ -d "$i_dir/HDF5/lib64" ]; then
   hdf5_lib=$i_dir/HDF5/lib64
 fi
 
-echo "INCLUDE_PATH= $openmp_flags  -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" > example.mk
-echo "LIBS_PATH= $openmp_flags -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib -L$hdf5_lib -L$i_dir/LIBHILBERT/lib  $lin_alg_dir" >> example.mk
-echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lhdf5 -llibhilbert  $lin_alg_lib" >> example.mk
-echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lhdf5 -llibhilbert $lin_alg_lib" >> example.mk
+echo "INCLUDE_PATH=$cuda_include_dirs -Wno-deprecated-declarations $openmp_flags  -I.  -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" > example.mk
+echo "LIBS_PATH=$openmp_flags -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib -L$hdf5_lib -L$i_dir/LIBHILBERT/lib  $lin_alg_dir " >> example.mk
+if [ x"$gpu_support" == x"1" ]; then
+    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert $(cat cuda_lib) $lin_alg_lib -ldl" >> example.mk
+    echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert $(cat cuda_lib) $lin_alg_lib" >> example.mk
+else
+    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert  $lin_alg_lib -ldl" >> example.mk
+    echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert $lin_alg_lib" >> example.mk
+fi
+echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" $(cat openmp_flags) -Xcudafe \"--display_error_number --diag_suppress=2885  --diag_suppress=2886 --diag_suppress=2887  --diag_suppress=2888 --diag_suppress=186 --diag_suppress=111\" --expt-extended-lambda -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" >> example.mk
 cp example.mk src/example.mk
 cp example.mk example/example.mk
 
 if [ $nomake -eq 0 ]; then
   make clean
-  make -j $ncore
+  make VERBOSE=1  -j $ncore
 fi
 
 if [ $? -ne 0 ]; then
@@ -437,7 +444,7 @@ echo ""
 echo -e "\033[1m ./configure $options $configure_options \033[0m "
 echo ""
 
-if [ x"$platform" = x"linux" ]; then
+if [ x"$platform" == x"linux" -o x"$platform" == x"cygwin" ]; then
   bash_library="export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:/$install_base/openfpm_devices/lib:/$install_base/openfpm_vcluster/lib"
 else
   bash_library="export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:/$install_base/openfpm_devices/lib:/$install_base/openfpm_vcluster/lib"
@@ -453,7 +460,7 @@ echo ""
 
 if [ -d "$i_dir/MPI" ]; then
   installation_report="$installation_report \033[92;1mMPI\033[0m Installed: \033[1m $i_dir/MPI \033[0m\n"
-  bash_path="$bash_path:$i_dir/MPI/bin:"
+  bash_path="$bash_path$i_dir/MPI/bin:"
   bash_library="$bash_library:$i_dir/MPI/lib"
 elif [ $MPI_System_prv -eq 1 ]; then
   installation_report="$installation_report \033[92;1mMPI\033[0m Installed: \033[1m System installation \033[0m\n"
@@ -495,7 +502,7 @@ echo ""
 installation_report=""
 lin_alg_installed=""
 
-if [ -d "$i_dir/PETSC" ]; then
+if [ -d "$i_dir/PETSC" -a -f "$i_dir/PETSC/include/petsc.h" ]; then
   installation_report="$installation_report \033[92;1mPETSC\033[0m Installed: \033[1m $i_dir/PETSC \033[0m\n"
   bash_library="$bash_library:$i_dir/PETSC/lib"
   lin_alg_installed="y"
@@ -513,13 +520,6 @@ echo -e "\033[1;34;5m --------------------------------  \033[0m"
 
 installation_report=""
 
-if [ -d "$i_dir/TRILINOS" ]; then
-  installation_report="$installation_report \033[92;1mTRILINOS\033[0m Installed: \033[1m $i_dir/TRILINOS \033[0m\n"
-  bash_library="$bash_library:$i_dir/TRILINOS/lib"
-else
-  installation_report="$installation_report \033[91;1mTRILINOS\033[0m Installed: \033[1m NO \033[0m\n"
-fi
-
 if [ -d "$i_dir/OPENBLAS" ]; then
   installation_report="$installation_report \033[92;1mOPENBLAS\033[0m Installed: \033[1m $i_dir/OPENBLAS \033[0m\n"
   bash_library="$bash_library:$i_dir/OPENBLAS/lib"
@@ -527,39 +527,12 @@ else
   installation_report="$installation_report \033[91;1mOPENBLAS\033[0m Installed: \033[1m NO \033[0m\n"
 fi
 
-if [ -d "$i_dir/SUITESPARSE" ]; then
+
+if [ -d "$i_dir/SUITESPARSE"  -a -f "$i_dir/SUITESPARSE/include/umfpack.h" ]; then
   installation_report="$installation_report \033[92;1mSUITESPARSE\033[0m Installed: \033[1m $i_dir/SUITESPARSE \033[0m\n"
   bash_library="$bash_library:$i_dir/SUITESPARSE/lib"
 else
   installation_report="$installation_report \033[91;1mSUITESPARSE\033[0m Installed: \033[1m NO \033[0m\n"
-fi
-
-if [ -d "$i_dir/SCALAPACK" ]; then
-  installation_report="$installation_report \033[92;1mSCALAPACK\033[0m Installed: \033[1m $i_dir/SCALAPACK \033[0m\n"
-  bash_library="$bash_library:$i_dir/SCALAPACK/lib"
-else
-  installation_report="$installation_report \033[91;1mSCALAPACK\033[0m Installed: \033[1m NO \033[0m\n"
-fi
-
-if [ -d "$i_dir/MUMPS" ]; then
-  installation_report="$installation_report \033[92;1mMUMPS\033[0m Installed: \033[1m $i_dir/MUMPS \033[0m\n"
-  bash_library="$bash_library:$i_dir/MUMPS/lib"
-else
-  installation_report="$installation_report \033[91;1mMUMPS\033[0m Installed: \033[1m NO \033[0m\n"
-fi
-
-if [ -d "$i_dir/SUPERLU_DIST" ]; then
-  installation_report="$installation_report \033[92;1mSUPERLU_DIST\033[0m Installed: \033[1m $i_dir/SUPERLU_DIST \033[0m\n"
-  bash_library="$bash_library:$i_dir/SUPERLU_DIST/lib"
-else
-  installation_report="$installation_report \033[91;1mSUPERLU_DIST\033[0m Installed: \033[1m NO \033[0m\n"
-fi
-
-if [ -d "$i_dir/HYPRE" ]; then
-  installation_report="$installation_report \033[92;1mHYPRE\033[0m Installed: \033[1m $i_dir/HYPRE \033[0m\n"
-  bash_library="$bash_library:$i_dir/HYPRE/lib"
-else
-  installation_report="$installation_report \033[91;1mHYPRE\033[0m Installed: \033[1m NO \033[0m\n"
 fi
 
 bash_path="$bash_path\$PATH\""
@@ -597,8 +570,8 @@ fi
 echo ""
 echo -e "\033[1m source $HOME/openfpm_vars \033[0m"
 echo ""
-echo -e "\033[91;1m if you have in your .bashrc or .bash_profile old openfpm setting, please remove it\033[0m"
 echo ""
+echo -e "Remember to do: \033[91;5;1m make install \033[0m"
 echo ""
 if [ x"$inst_lin_alg" == "y" -a x"$lin_alg_installed" == x"" ]; then
   conf_err=1

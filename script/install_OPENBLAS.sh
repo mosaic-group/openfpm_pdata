@@ -7,8 +7,8 @@ if [ -d "$1/OPENBLAS" ]; then
   exit 0
 fi
 
+rm -rf OpenBLAS-0.2.20.tar.gz
 wget http://ppmcore.mpi-cbg.de/upload/OpenBLAS-0.2.20.tar.gz
-rm -rf OpenBLAS-0.2.20
 tar -xf OpenBLAS-0.2.20.tar.gz
 cd OpenBLAS-0.2.20
 
@@ -17,7 +17,7 @@ cd OpenBLAS-0.2.20
 
 # configuration
 
-make
+make FC=$FC CC=$CC
 mkdir $1/OPENBLAS
 make install PREFIX=$1/OPENBLAS
 
@@ -26,7 +26,7 @@ make install PREFIX=$1/OPENBLAS
 if [ ! "$(ls -A $1/OPENBLAS)" ]; then
    rm -rf $1/OPENBLAS
 else
-   rm -rf OpenBLAS-0.2.19
+   rm -rf OpenBLAS-0.2.20
    echo 1 > $1/OPENBLAS/version
    exit 0
 fi

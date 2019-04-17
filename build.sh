@@ -2,136 +2,119 @@
 
 # Make a directory in /tmp/OpenFPM_pdata
 
-echo "Directory: $1"
-echo "Machine: $2"
-echo "Branch name: $5"
+workspace=$1
+hostname=$(hostname)
+target=$3
+comp_type=$4
+branch=$5
+with_gpu=$6
 
-
-if [ x"$5" == x"" ]; then
+if [ x"$branch" == x"" ]; then
+  echo "Getting branch from git"
   branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
+fi
+
+echo "Directory: $workspace"
+echo "Machine: $hostname"
+echo "make target: $target"
+echo "compilation type: $comp_type"
+echo "Branch name: $branch"
+echo "GPU compilation: $with_gpu"
+
+
+if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
+	echo "CentOS node"
+	./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/ 4
+	echo 4 > $HOME/openfpm_dependencies/openfpm_pdata/$branch/MPI/version
+fi
+
+if [ x"$hostname" == x"cifarm-ubuntu-node.mpi-cbg.de"  ]; then
+#	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
+	echo "Ubuntu node"
+fi
+
+if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
+	echo "Mac node"
+	export PATH="/usr/local/bin:$PATH"
+#	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
+fi
+
+if [ x"$hostname" == x"falcon1" ]; then
+#       rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
+        echo "falcon1 settings"
+	if [ x"$comp_type" == x"intel" ]; then
+        	module load parallel_studio_xe/2019u1
+        	mkdir $HOME/openfpm_dependencies_intel/openfpm_pdata/$branch
+		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies_intel/
+	else
+        	mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
+		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies/
+	fi
 else
-  branch=$5
+	dependency_dir=$HOME/openfpm_dependencies/openfpm_pdata/$branch
+	mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
+fi
+
+if [ x"$with_gpu" == x"1" ]; then
+	gpu_support=-g
+else
+	gpu_support=
 fi
 
 #### If you have a dep_dir file change the branch name to the dep_dir
 
 dep_dir=$(cat dep_dir)
 if [ x"$dep_dir" != x"" ]; then
-  set -- "${@:1:4}" "$dep_dir"
+  branch=$dep_dir
 fi
 
 mkdir src/config
 mkdir openfpm_numerics/src/config
 
+echo "Compiling general"
 
-if [ "$2" == "gin" ]
-then
- echo "Compiling on gin\n"
-
- source "$HOME/.bashrc"
-
- ## Check if MPI folder exist if not copy MPICH
-
- if [ ! -d $HOME/$branch/MPI ]; then
-   echo "COPY MPICH"
-   cp -R $HOME/MPI $HOME/$branch/MPI
-   echo 2 > $HOME/$branch/MPI/version
- fi
-
- ### Activate MPI and binutils ###
-
- export PATH="$PATH:$HOME/$branch/MPI/bin"
- export PATH="/usr/local/binutils/bin/:$PATH"
-
- mkdir $HOME/$branch
- if [ x"$4" == x"full" ]; then
-  CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$branch  -s -c "--prefix=/home/jenkins/openfpm_install"
-  echo "Moving environment variable"
-  mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
-  source $HOME/openfpm_vars_$branch
- elif [ x"$3" == x"numerics" ]; then
-  branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
-  CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$branch  -m -s -c "--prefix=/home/jenkins/openfpm_install"
-  echo "Moving environment variable"
-  mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
-  source $HOME/openfpm_vars_$branch
-  make $3
- else
-  CC=gcc-4.9.2 CXX=g++-4.9.2 FC=gfortran-4.9.2 F77=gfortran-4.9.2 ./install -i $HOME/$branch  -m -s -c "--prefix=/home/jenkins/openfpm_install --no-recursion"
-  echo "Moving environment variables"
-  mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
-  source $HOME/openfpm_vars_$branch
-  make $3
- fi
-
- if [ $? -ne 0 ]; then
-   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
-   exit 1 ;
- fi
-
-
- if [ $? -ne 0 ]; then
-   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
-   exit 1 ; 
- fi
-
-elif [ "$2" == "taurus" ]
-then
- echo "Compiling on taurus"
-
- source /etc/profile
- echo "$PATH"
- module load gcc/7.1.0
- module load openmpi/3.0.0-gnu7.1
+source ~/.bashrc
  
- export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/incard/PARMETIS/lib:/home/incard/METIS/lib:/home/incard/HDF5/lib"
+installation_dir="--prefix=$HOME/openfpm_install/$branch"
 
- mkdir /scratch/p_ppm/$branch
- ./install -m -i "/scratch/p_ppm/$branch" -s -c"CXX=mpic++ --no-recursion"
- mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
- source $HOME/openfpm_vars_$branch
- make $3
+# force ssh to not use HostKey verification
+#echo "StrictHostKeyChecking=no" > $HOME/.ssh/config
+#chmod 600 $HOME/.ssh/config
 
-
- if [ $? -ne 0 ]; then
-   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
-   exit 1 ; 
- fi
+install_options=
+if [ x"$comp_type" == x"full" ]; then
+        install_options="-s"
+elif [ x"$comp_type" == x"intel" ]; then
+        install_options=" "
 else
- echo "Compiling general"
-
- source ~/.bashrc
- 
- installation_dir=""
- if [ x"$2" == x"sbalzarini-mac-15" ]; then
-  installation_dir="--prefix=/Users/jenkins/openfpm_install"
- else
-  installation_dir="--prefix=/home/jenkins/openfpm_install"
- fi
-
- mkdir $HOME/$branch
- if [ x"$4" == x"full" ]; then
-  ./install -i $HOME/$branch  -s -c "$installation_dir"
-  mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
-  source $HOME/openfpm_vars_$branch
- elif [ x"$3" == x"numerics" ]; then
-  branch=$(git ls-remote --heads origin | grep $(git rev-parse HEAD) | cut -d / -f 3)
-  ./install -i $HOME/$branch  -m -s -c "$installation_dir"
-  mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
-  source $HOME/openfpm_vars_$branch
-  make $3
- else
-  ./install -i $HOME/$branch -m -s -c "$installation_dir --no-recursion"
-  mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
-  source $HOME/openfpm_vars_$branch
-  make $3
- fi
-
- if [ $? -ne 0 ]; then
-   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$2 failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
-   exit 1 ;
- fi
-
+        install_options="-s -m"
 fi
 
+foward_options=
+if [ x"$comp_type" == x"se_class" ]; then
+	foward_options="--enable-se-class1 --with-action-on-error=STOP_ON_ERROR"
+fi
+
+
+
+echo "Installing with: ./install $gpu_support  -i $dependency_dir $install_options -c \"$installation_dir $foward_options  \"  "
+./install $gpu_support -i $dependency_dir $install_options -c "$installation_dir $foward_options "
+if [ $? -ne 0 ]; then
+    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
+    exit 1 ;
+fi
+
+# Check of we have to do a make install
+if [ x"$comp_type" == x"full" ]; then
+    make install
+else
+    mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
+    source $HOME/openfpm_vars_$branch
+    make VERBOSE=1  -j 8
+fi
+
+if [ $? -ne 0 ]; then
+   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
+   exit 1 ;
+fi
 

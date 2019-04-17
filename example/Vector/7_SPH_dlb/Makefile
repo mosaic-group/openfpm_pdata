@@ -7,6 +7,7 @@ OPT=
 
 OBJ = main.o
 
+sph_dlb:
 sph_dlb_test: OPT += -DTEST_RUN
 sph_dlb_test: sph_dlb
 

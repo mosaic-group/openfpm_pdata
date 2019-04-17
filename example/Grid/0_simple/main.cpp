@@ -270,7 +270,7 @@ PX,Y Processor X, sub-domain Y</pre><p>The point # has</p>
 	//! \cond [reduce] \endcond
 
 	// Get the VCluster object
-	Vcluster & vcl = create_vcluster();
+	Vcluster<> & vcl = create_vcluster();
 
 	// queue an operation of sum for the counter count
 	vcl.sum(count);

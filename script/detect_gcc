@@ -4,26 +4,13 @@ function haveProg() {
     [ -x "$(command -v $1)" ]
 }
 
-function gpp_clang()
-{
-    if [ x"$possible_solutions_command" == x"g++" ]; then
-        CXX=g++
-        CC=gcc
-        F77=gfortran
-        FC=gfortran
-    else
-        CXX=clang++
-        CC=clang
-        F77=gfortran
-        FC=gfortran
-    fi
-}
 
 function detect_compiler()
 {
     gpp_found=0
     icpc_found=0
     dgc_ret=0
+
 
      if [ x"$CXX" != x"" -o x"$CC" != x"" -o x"$F77" != x"" -o x"$FC" != x"" ]; then
 
@@ -65,6 +52,7 @@ function detect_compiler()
         return
     fi
 
+
     # First we try to understand if g++ command line is linked to clang
     if haveProg g++; then
 
@@ -78,9 +66,9 @@ function detect_compiler()
         # we check if the detection is garbage
         echo "$major" | egrep -q '^[0-9]+$'
         if [ $? == 0 ]; then
-           dgc_major=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\1/g')
-           dgc_middle=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\2/g')
-           dgc_minor=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\3/g')
+           dgc_major=$(g++ --version | grep LLVM | sed 's/.* \([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\1/g')
+           dgc_middle=$(g++ --version | grep LLVM | sed 's/.* \([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\2/g')
+           dgc_minor=$(g++ --version | grep LLVM | sed 's/.* \([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\3/g')
 
            if [ $dgc_major -gt 6 ]; then
              echo -e "clang++ $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
@@ -110,6 +98,7 @@ function detect_compiler()
            dgc_ret=2
         fi
       fi
+
 
       g++ --version | grep "g++" > /dev/null 2>&1
       if [ $? == 0 -a $gpp_found -ne 1 ]; then
@@ -146,6 +135,7 @@ function detect_compiler()
           gpp_found=0
         fi
       fi
+
 
       g++ --version | grep "clang" > /dev/null 2>&1
       if [ $? == 0 -a $gpp_found -ne 1 ]; then
@@ -224,11 +214,17 @@ function detect_compiler()
           FC=ifort
           dgc_compiler=icpc
         else
-          gpp_clang
+          CXX=g++
+          CC=gcc
+          F77=gfortran
+          FC=gfortran
         fi
         dgc_ret=1
     elif [ $gpp_found -eq 1 ]; then
-        gpp_clang
+        CXX=g++
+        CC=gcc
+        F77=gfortran
+        FC=gfortran
     elif [ $icpc_found -eq 1 ]; then
           CXX=icpc
           CC=icc

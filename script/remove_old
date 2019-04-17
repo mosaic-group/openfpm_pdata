@@ -76,10 +76,10 @@ function remove_old()
     ## Check the installed version of the dependencies
 
     if [ -d $1/BOOST ]; then
-    	is_update=$(cat $1/BOOST/include/boost/version.hpp | grep "#define BOOST_VERSION 106300")
+    	is_update=$(cat $1/BOOST/include/boost/version.hpp | grep "#define BOOST_VERSION 106800")
     	if [ x"$is_update" == x"" ]; then
             echo -e "\033[1;34;5m  --------------------------------------------------------------------------- \033[0m"
-            echo -e "\033[1;34;5m  Boost has been updated to 1.63, the component will be updated automatically \033[0m"
+            echo -e "\033[1;34;5m  Boost has been updated to 1.68, the component will be updated automatically \033[0m"
             echo -e "\033[1;34;5m  --------------------------------------------------------------------------- \033[0m"
             sleep 5
             rm -rf $1/BOOST/include
@@ -141,38 +141,18 @@ function remove_old()
         fi
     fi
 
-    if [ -d $1/SUPERLU_DIST ]; then
-        version=$(cat $1/SUPERLU_DIST/version)
-        if [ x"$version" != x"1"  ]; then
-            echo -e "\033[1;34;5m  ---------------------------------------------------------------------------------------------------------- \033[0m"
-            echo -e "\033[1;34;5m  SuperLU (Distributed) has been updated to version 5.2.1, the component will be updated automatically      \033[0m"
-            echo -e "\033[1;34;5m  ---------------------------------------------------------------------------------------------------------- \033[0m"
-            sleep 5
-            rm -rf $1/SUPERLU_DIST
-            rm -rf $1/PETSC
-        fi
-    fi
-
-    if [ -d $1/HYPRE ]; then
-        version=$(cat $1/HYPRE/version)
-        if [ x"$version" != x"1"  ]; then
-            echo -e "\033[1;34;5m  ------------------------------------------------------------------------------------------- \033[0m"
-            echo -e "\033[1;34;5m  HYPRE has been updated to version 2.11.2, the component will be updated automatically      \033[0m"
-            echo -e "\033[1;34;5m  ------------------------------------------------------------------------------------------- \033[0m"
-            sleep 5
-            rm -rf $1/HYPRE
-            rm -rf $1/PETSC
-        fi
-    fi
-
     if [ -d $1/PETSC ]; then
         version=$(cat $1/PETSC/version)
-        if [ x"$version" != x"1"  ]; then
+        if [ x"$version" != x"2"  ]; then
             echo -e "\033[1;34;5m  -------------------------------------------------------------------------------------- \033[0m"
-            echo -e "\033[1;34;5m  PETSC has been updated to version 3.7.6, the component will be updated automatically      \033[0m"
+            echo -e "\033[1;34;5m  PETSC has been updated to version 3.10.2, the component will be updated automatically      \033[0m"
             echo -e "\033[1;34;5m  -------------------------------------------------------------------------------------- \033[0m"
             sleep 5
             rm -rf $1/PETSC
+	    rm -rf $1/HYPRE
+	    rm -rf $1/MUMPS
+	    rm -rf $1/SUPERLU_DIST
+	    rm -rf $1/TRILINOS
         fi
     fi
 
@@ -189,9 +169,9 @@ function remove_old()
 
     if [ -d $1/MPI ]; then
         version=$(cat $1/MPI/version)
-        if [ x"$version" != x"2"  ]; then
+        if [ x"$version" != x"4"  ]; then
             echo -e "\033[1;34;5m  -------------------------------------------------------------------------------------- \033[0m"
-            echo -e "\033[1;34;5m  MPI has been updated to version 2.1.1, the component will be updated automatically      \033[0m"
+            echo -e "\033[1;34;5m  MPI has been updated to version 3.1.3, the component will be updated automatically      \033[0m"
             echo -e "\033[1;34;5m  -------------------------------------------------------------------------------------- \033[0m"
             sleep 5
             rm -rf $1/MPI/include
@@ -201,6 +181,7 @@ function remove_old()
             rm -rf $1/MPI/share
             rm -rf $1/MPI
             rm -rf $1/HDF5
+	    rm -rf $1/ZLIB
             rm -rf $1/PARMETIS
             rm -rf $1/PETSC
             rm -rf $1/TRILINOS
@@ -212,10 +193,10 @@ function remove_old()
 
     if [ -d $1/EIGEN ]; then
         version=$(cat $1/EIGEN/version)
-        if [ x"$version" != x"1"  ]; then
-            echo -e "\033[1;34;5m  ---------------------------------------------------------------------- \033[0m"
-            echo -e "\033[1;34;5m  EIGEN has been updated, the component will be updated automatically    \033[0m"
-            echo -e "\033[1;34;5m  ---------------------------------------------------------------------- \033[0m"
+        if [ x"$version" != x"2"  ]; then
+            echo -e "\033[1;34;5m  -------------------------------------------------------------------------------- \033[0m"
+            echo -e "\033[1;34;5m  EIGEN has been updated to 3.3.5 , the component will be updated automatically    \033[0m"
+            echo -e "\033[1;34;5m  -------------------------------------------------------------------------------- \033[0m"
             sleep 5
             rm -rf $1/EIGEN/Eigen
             rm -rf $1/EIGEN

@@ -98,7 +98,7 @@ template<unsigned int dim, typename T, typename loc_wg=openfpm::vector<float>, t
 class ORB
 {
 	// Virtual cluster
-	Vcluster & v_cl;
+	Vcluster<> & v_cl;
 
 	// particle coordinate accumulator
 	openfpm::vector<T> cm;

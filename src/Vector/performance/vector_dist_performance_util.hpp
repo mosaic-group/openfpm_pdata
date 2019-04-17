@@ -82,6 +82,7 @@ void addUpdtateTime(GoogleChart & cg);
  */
 static inline void standard_deviation(openfpm::vector<double> measures, double & mean, double & dev)
 {
+	mean = 0;
 	for (size_t i = 0 ; i < measures.size() ; i++)
 		mean += measures.get(i);
 	mean /= measures.size();

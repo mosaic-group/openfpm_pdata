@@ -93,7 +93,7 @@ void Test2D_sub(const Box<2,float> & domain, long int k)
 		}
 
 		// Get the virtual cluster machine
-		Vcluster & vcl = g_dist.getVC();
+		Vcluster<> & vcl = g_dist.getVC();
 
 		// reduce
 		vcl.sum(count);
@@ -149,7 +149,7 @@ void Test3D_decit(const Box<3,float> & domain, long int k)
 {
 	size_t k_bck = k;
 	{
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 
 		if ( v_cl.getProcessingUnits() > 32 )
 			return;
@@ -216,7 +216,7 @@ void Test3D_decit(const Box<3,float> & domain, long int k)
 	k = k_bck;
 
 	{
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 
 		if ( v_cl.getProcessingUnits() > 32 )
 			return;
@@ -292,7 +292,7 @@ void Test3D_stencil(const Box<3,float> & domain, long int k)
 											 {1,0,0}};
 
 	{
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 
 		if ( v_cl.getProcessingUnits() > 32 )
 			return;
@@ -393,7 +393,7 @@ void Test3D_fast_vect(const Box<3,float> & domain, long int k)
 											 {1,0,0}};
 
 	{
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 
 		if ( v_cl.getProcessingUnits() > 32 )
 			return;
@@ -478,10 +478,10 @@ void Test3D_fast_vect(const Box<3,float> & domain, long int k)
 void Test3D_decskinit(const Box<3,float> & domain, long int k)
 {
 	{
-		Vcluster & v_cl = create_vcluster();
+		Vcluster<> & v_cl = create_vcluster();
 
 		if ( v_cl.getProcessingUnits() > 32 )
-			return;
+		{return;}
 
 		long int big_step = k / 30;
 		big_step = (big_step == 0)?1:big_step;
@@ -501,7 +501,7 @@ void Test3D_decskinit(const Box<3,float> & domain, long int k)
 			sz[2] = k;
 
 			if (k <= 9)
-				continue;
+			{continue;}
 
 			// factor
 			float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
@@ -510,7 +510,21 @@ void Test3D_decskinit(const Box<3,float> & domain, long int k)
 			Ghost<3,float> g(0.01 / factor);
 
 			// Distributed grid with id decomposition
-			grid_dist_id<3, float, Point_test<float>, CartDecomposition<3,float>> g_dist(sz,domain,g);
+			grid_dist_id<3, float, aggregate<float>, CartDecomposition<3,float>> g_dist(sz,domain,g);
+
+			// Set all the grid to zero
+
+			auto it = g_dist.getDomainIterator();
+
+			while (it.isNext())
+			{
+				auto p = it.get();
+				auto gp = it.getGKey(p);
+
+				g_dist.template get<0>(p) = 0.0;
+
+				++it;
+			}
 
 			// check the consistency of the decomposition
 			bool val = g_dist.getDecomposition().check_consistency();
@@ -536,6 +550,7 @@ void Test3D_decskinit(const Box<3,float> & domain, long int k)
 			while (it_dec.isNext())
 			{
 				auto key_dec = it_dec.get();
+				auto key_dec_loc = it_dec.get_int();
 
 				// one of the coordinate has to be or 3 or 8, none of
 				// None of the coordinates must be bigger that
@@ -545,11 +560,13 @@ void Test3D_decskinit(const Box<3,float> & domain, long int k)
 				for (size_t i = 0; i < 3 ; i++)
 				{
 					if (key_dec.get(i) == 3 || key_dec.get(i) == k - 3)
-						eight_or_three = true;
+					{eight_or_three = true;}
 
 					if (key_dec.get(i) > k - 3 || key_dec.get(i) < 3 )
-						good = false;
+					{good = false;}
 				}
+
+				g_dist.template get<0>(key_dec_loc) = 1.0;
 
 				tot_good &= (eight_or_three) || good;
 

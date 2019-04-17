@@ -13,7 +13,7 @@
 #include "Space/Ghost.hpp"
 #include "Decomposition/nn_processor.hpp"
 
-template<unsigned int dim, typename T, typename Memory = HeapMemory, typename Distribution = ParMetisDistribution<dim, T>>
+template<unsigned int dim, typename T, typename Memory = HeapMemory, template<typename> class layout_base = memory_traits_lin, typename Distribution = ParMetisDistribution<dim, T>>
 class CartDecomposition;
 
 /**
@@ -38,8 +38,8 @@ class CartDecomposition;
  *
  */
 
-template<unsigned int dim, typename T, typename Memory = HeapMemory, typename Distribution = ParMetisDistribution<dim, T>>
-class CartDecomposition_ext: public CartDecomposition<dim,T,Memory,Distribution>
+template<unsigned int dim, typename T, typename Memory = HeapMemory, template<typename> class layout_base = memory_traits_lin, typename Distribution = ParMetisDistribution<dim, T>>
+class CartDecomposition_ext: public CartDecomposition<dim,T,Memory,layout_base,Distribution>
 {
 private:
 
@@ -51,7 +51,7 @@ private:
 	 * \param ext_dom Extended domain
 	 *
 	 */
-	void extend_subdomains(const CartDecomposition<dim,T,Memory,Distribution> & dec, const ::Box<dim,T> & ext_dom)
+	void extend_subdomains(const CartDecomposition<dim,T,Memory,layout_base,Distribution> & dec, const ::Box<dim,T> & ext_dom)
 	{
 		// Box
 		typedef ::Box<dim,T> b;
@@ -167,13 +167,13 @@ public:
 	 * \param v_cl VCluster
 	 *
 	 */
-	CartDecomposition_ext(Vcluster & v_cl)
-	:CartDecomposition<dim,T,Memory,Distribution>(v_cl)
+	CartDecomposition_ext(Vcluster<> & v_cl)
+	:CartDecomposition<dim,T,Memory,layout_base,Distribution>(v_cl)
 	{
 	}
 
 	//! The non-extended decomposition base class
-	typedef CartDecomposition<dim,T,Memory,Distribution> base_type;
+	typedef CartDecomposition<dim,T,Memory,layout_base,Distribution> base_type;
 
 	/*! \brief It create another object that contain the same decomposition information but with different ghost boxes and an extended domain
 	 *
@@ -216,8 +216,12 @@ public:
 	 * \return a duplicated decomposition with different ghost boxes and an extended domain
 	 *
 	 */
-	void setParameters(const CartDecomposition<dim,T,Memory,Distribution> & dec, const Ghost<dim,T> & g, const ::Box<dim,T> & ext_domain)
+	void setParameters(const CartDecomposition<dim,T,Memory,layout_base,Distribution> & dec, const Ghost<dim,T> & g, const ::Box<dim,T> & ext_domain)
 	{
+		// Set the decomposition parameters
+		this->gr.setDimensions(dec.gr.getSize());
+		this->cd.setDimensions(ext_domain, dec.gr.getSize(), 0);
+
 		this->box_nn_processor = dec.box_nn_processor;
 
 		// Calculate new sub-domains for extended domain
@@ -225,7 +229,6 @@ public:
 
 		// Calculate fine_s structure for the extended domain
 		// update the cell decomposer and gr
-//		extend_fines(dec);
 		reconstruct_fine_s_from_extended_domain(ext_domain);
 
 		// Get the old sub-sub-domain grid extension
