@@ -2747,6 +2747,20 @@ public:
 		return key;
 	}
 
+	void set_g_m(size_t g_m)
+	{
+		this->g_m = g_m;
+	}
+
+	/* \brief set the capacity of the internal vector (advanced use only)
+	 *
+	 *
+	 */
+	void setCapacity(size_t np)
+	{
+		v_pos.reserve(np);
+		v_prp.reserve(np);
+	}
 
 #ifdef CUDA_GPU
 
@@ -2818,20 +2832,6 @@ public:
 			v_pos.template hostToDevice<0>();
 		}
 
-		void set_g_m(size_t g_m)
-		{
-			this->g_m = g_m;
-		}
-
-		/* \brief set the capacity of the internal vector (advanced use only)
-		 *
-		 *
-		 */
-		void setCapacity(size_t np)
-		{
-			v_pos.reserve(np);
-			v_prp.reserve(np);
-		}
 
         /*! \brief this function sort the vector
          *
