@@ -378,6 +378,19 @@ private:
 		}
 	}
 
+	/*! /brief set shared memory
+	 *
+	 *
+	 */
+	void set_shm()
+	{
+		if (global_option == init_options::in_situ_visualization)
+		{
+			v_pos.init_shmem("/tmp",v_cl.rank());
+			v_prp.init_shmem("/home",v_cl.rank());
+		}
+	}
+
 public:
 
 	//! property object
@@ -451,7 +464,9 @@ public:
 	// default constructor (structure contain garbage)
 	vector_dist()
 	:v_cl(create_vcluster<Memory>()),opt(opt)
-	{}
+	{
+		set_shm();
+	}
 
 
 	/*! \brief Copy Constructor
@@ -465,6 +480,8 @@ public:
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
 #endif
+
+		set_shm();
 
 		this->operator=(v);
 	}
@@ -480,6 +497,8 @@ public:
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
 #endif
+
+		set_shm();
 
 		this->operator=(v);
 
@@ -500,6 +519,7 @@ public:
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
 #endif
+		set_shm();
 
 		init_structures(np);
 
@@ -527,6 +547,7 @@ public:
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
 #endif
+		set_shm();
 
 		if (opt >> 32 != 0)
 			this->setDecompositionGranularity(opt >> 32);
@@ -2800,6 +2821,16 @@ public:
 		void set_g_m(size_t g_m)
 		{
 			this->g_m = g_m;
+		}
+
+		/* \brief set the capacity of the internal vector (advanced use only)
+		 *
+		 *
+		 */
+		void setCapacity(size_t np)
+		{
+			v_pos.reserve(np);
+			v_prp.reserve(np);
 		}
 
         /*! \brief this function sort the vector
