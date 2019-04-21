@@ -29,13 +29,16 @@ parallel (
 
                     stage ('run centos')
                     {
-		      parallel (
-                      "1" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 1 0 0 numerics"},
-                      "2" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 2 0 0 numerics"},
-                      "3" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 3 0 0 numerics"},
-                      "4" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 4 0 0 numerics"}
-                      )
+                      timeout(30)
+                      {
+		        parallel (
+                        "1" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 1 0 0 numerics"},
+                        "2" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 2 0 0 numerics"},
+                        "3" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 3 0 0 numerics"},
+                        "4" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 4 0 0 numerics"}
+                        )
                       sh "./success.sh 2 gin openfpm_numerics"
+                      }
                     }
                   }
                  },
@@ -70,9 +73,12 @@ parallel (
 
                     stage ('run mac')
                     {
-                      sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 1 0 0 numerics"
-                      sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 2 0 0 numerics"
-                      sh "./success.sh 2 sbalzarini-mac-15 openfpm_numerics"
+                      timeout(30)
+                      {
+                        sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 1 0 0 numerics"
+                        sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 2 0 0 numerics"
+                        sh "./success.sh 2 sbalzarini-mac-15 openfpm_numerics"
+                      }
                     }
                   }
                  },
@@ -104,13 +110,16 @@ parallel (
 
                     stage ('run ubuntu')
                     {
-		      parallel (
-                      "1" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 1 0 0 numerics"},
-                      "2" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 2 0 0 numerics"},
-                      "3" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 3 0 0 numerics"},
-                      "4" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 4 0 0 numerics"}
-                      )
-                      sh "./success.sh 2 gin openfpm_numerics"
+                      timeout(30)
+                      {
+		        parallel (
+                        "1" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 1 0 0 numerics"},
+                        "2" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 2 0 0 numerics"},
+                        "3" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 3 0 0 numerics"},
+                        "4" : {sh "cd openfpm_numerics && ./run.sh $WORKSPACE $NODE_NAME 4 0 0 numerics"}
+                        )
+                        sh "./success.sh 2 gin openfpm_numerics"
+                      }
                     }
                   }
                  }
