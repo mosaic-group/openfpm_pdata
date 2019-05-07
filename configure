@@ -125,6 +125,8 @@ if [ ! -d "build" ]; then
   mkdir build
 fi
 
+echo "/usr/local" > install_dir
+
 ##### Go over all options
 for ac_option
 do

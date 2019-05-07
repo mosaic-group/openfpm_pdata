@@ -42,7 +42,6 @@
 #define PRINT_STACKTRACE
 #define STOP_ON_ERROR
 #define OPENMPI
-#define SE_CLASS1
 
 #include "Vector/vector_dist.hpp"
 #include <math.h>
