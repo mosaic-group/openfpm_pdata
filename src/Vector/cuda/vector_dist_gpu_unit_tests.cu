@@ -176,9 +176,9 @@ bool check_force(CellList_type & NN_cpu, vector_type & vd)
 	                std::cout << "ERROR: " << vd.template getProp<1>(p)[1]  << "   " << vd.template getProp<2>(p)[1] << std::endl;
 	                std::cout << "ERROR: " << vd.template getProp<1>(p)[2]  << "   " << vd.template getProp<2>(p)[2] << std::endl;
 
-	                std::cout << "ERROR2: " << vd.template getProp<1>(p)[0] << "   " <<  force.get(0) << std::endl;
-	                std::cout << "ERROR2: " << vd.template getProp<1>(p)[1] << "   " <<  force.get(1) << std::endl;
-	                std::cout << "ERROR2: " << vd.template getProp<1>(p)[2] << "   " <<  force.get(2) << std::endl;
+	                std::cout << p.getKey() << " ERROR2: " << vd.template getProp<1>(p)[0] << "   " <<  force.get(0) << std::endl;
+	                std::cout << p.getKey() << " ERROR2: " << vd.template getProp<1>(p)[1] << "   " <<  force.get(1) << std::endl;
+	                std::cout << p.getKey() << " ERROR2: " << vd.template getProp<1>(p)[2] << "   " <<  force.get(2) << std::endl;
 
 
 			break;
@@ -420,10 +420,107 @@ void vector_dist_gpu_test_impl()
 	auto NN_cpu = vd.getCellList(0.1);
 	check_cell_list_cpu_and_gpu(vd,NN,NN_cpu);
 
-	auto NN_up = vd.getCellListGPU(0.1);
+	auto NN_up = vd.template getCellListGPU<CellList_type>(0.1);
+
 	NN_up.clear();
 	vd.updateCellList(NN_up);
 	check_cell_list_cpu_and_gpu(vd,NN_up,NN_cpu);
+}
+
+template<typename CellList_type>
+void vector_dist_gpu_make_sort_test_impl()
+{
+	auto & v_cl = create_vcluster();
+
+	if (v_cl.size() > 16)
+	{return;}
+
+	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// set the ghost based on the radius cut off (make just a little bit smaller than the spacing)
+	Ghost<3,float> g(0.1);
+
+	// Boundary conditions
+	size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+
+	vector_dist_gpu<3,float,aggregate<float,float[3],float[3]>> vd(10000,domain,bc,g);
+
+	srand(55067*create_vcluster().rank());
+
+	auto it = vd.getDomainIterator();
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+
+		int x = rand();
+		int y = rand();
+		int z = rand();
+
+		vd.getPos(p)[0] = (float)x / RAND_MAX;
+		vd.getPos(p)[1] = (float)y / RAND_MAX;
+		vd.getPos(p)[2] = (float)z / RAND_MAX;
+
+		++it;
+	}
+
+	vd.hostToDevicePos();
+
+	// Ok we redistribute the particles
+	vd.map(RUN_ON_DEVICE);
+
+	auto it3 = vd.getDomainIteratorGPU();
+
+	initialize_props<<<it3.wthr,it3.thr>>>(vd.toKernel());
+
+	// Here we get do a make sort
+	auto NN = vd.template getCellListGPU<CellList_type>(0.1);
+	vd.make_sort(NN);
+
+	openfpm::vector_gpu<aggregate<float,float[3],float[3]>> tmp_prp = vd.getPropVector();
+	openfpm::vector_gpu<Point<3,float>> tmp_pos = vd.getPosVector();
+
+	vd.deviceToHostPos();
+	tmp_pos.template deviceToHost<0>();
+
+	// here we do a ghost_get
+	vd.ghost_get<0>(RUN_ON_DEVICE);
+
+	// Here we get do a make sort
+	NN = vd.template getCellListGPU<CellList_type>(0.1);
+
+	vd.make_sort_from(NN);
+
+	// Check
+
+	tmp_pos.deviceToHost<0>();
+	vd.deviceToHostPos();
+
+	bool match = true;
+	for (size_t i = 0 ; i < vd.size_local() ; i++)
+	{
+		Point<3,float> p1 = vd.getPos(i)[0];
+		Point<3,float> p2 = tmp_pos.template get<0>(i);
+
+		// They must be in the same cell
+		auto c1 = NN.getCell(p1);
+		auto c2 = NN.getCell(p1);
+
+		match &= c1 == c2;
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+}
+
+
+BOOST_AUTO_TEST_CASE(vector_dist_gpu_make_sort_sparse)
+{
+	vector_dist_gpu_make_sort_test_impl<CELLLIST_GPU_SPARSE<3,float>>();
+}
+
+BOOST_AUTO_TEST_CASE(vector_dist_gpu_make_sort)
+{
+	vector_dist_gpu_make_sort_test_impl<CellList_gpu<3,float,CudaMemory,shift_only<3, float>>>();
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
@@ -792,6 +889,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_reduce)
 	BOOST_REQUIRE_EQUAL(reds2,vd.size_local());
 }
 
+template<typename CellList_type>
 void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 {
 	typedef vector_dist_gpu<3,double,aggregate<double,double[3],double[3]>> vector_type;
@@ -908,7 +1006,7 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 		vd.template deviceToHostProp<0,1,2>();
 
 		// Check calc forces
-		auto NN_gpu = vd.getCellListGPU(r_cut);
+		auto NN_gpu = vd.template getCellListGPU<CellList_type>(r_cut);
 		auto NN_cpu = vd.getCellList(r_cut);
 		check_cell_list_cpu_and_gpu(vd,NN_gpu,NN_cpu);
 
@@ -958,7 +1056,12 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 
 BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda)
 {
-	vector_dist_dlb_on_cuda_impl(50000,0.01);
+	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,unsigned int,int,false>>(50000,0.01);
+}
+
+BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda_sparse)
+{
+	vector_dist_dlb_on_cuda_impl<CELLLIST_GPU_SPARSE<3,double>>(50000,0.01);
 }
 
 BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda2)
@@ -966,7 +1069,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda2)
 	if (create_vcluster().size() <= 3)
 	{return;};
 
-	vector_dist_dlb_on_cuda_impl(1000000,0.01);
+	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,unsigned int,int,false>>(1000000,0.01);
 }
 
 BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda3)
@@ -974,7 +1077,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda3)
 	if (create_vcluster().size() < 8)
 	{return;}
 
-	vector_dist_dlb_on_cuda_impl(15000000,0.005);
+	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,unsigned int,int,false>>(15000000,0.005);
 }
 
 

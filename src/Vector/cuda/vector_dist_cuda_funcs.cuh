@@ -68,6 +68,20 @@ __global__ void merge_sort_part(vector_pos_type vd_pos, vector_prp_type vd_prp,
 	vd_prp.template set<prp ...>(p,vd_prp_ord,nss.template get<0>(p));
 }
 
+template<typename vector_pos_type, typename vector_prp_type, typename stns_type, unsigned int ... prp>
+__global__ void merge_sort_all(vector_pos_type vd_pos, vector_prp_type vd_prp,
+		                        vector_pos_type v_pos_ord, vector_prp_type vd_prp_ord,
+		                        stns_type nss)
+{
+	int p = threadIdx.x + blockIdx.x * blockDim.x;
+
+	if (p >= vd_pos.size()) return;
+
+	vd_pos.template set<0>(p,v_pos_ord,nss.template get<0>(p));
+
+	vd_prp.set(p,vd_prp_ord,nss.template get<0>(p));
+}
+
 template<unsigned int dim, typename St, typename cartdec_gpu, typename particles_type, typename vector_out, typename prc_sz_type>
 __global__ void process_id_proc_each_part(cartdec_gpu cdg, particles_type parts, vector_out output, prc_sz_type prc_sz , int rank)
 {

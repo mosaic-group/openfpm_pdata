@@ -29,6 +29,9 @@ constexpr int BIND_DEC_TO_GHOST = 1;
 constexpr int RUN_ON_DEVICE = 1024;
 constexpr int MAP_LOCAL = 2;
 
+constexpr int GHOST_SYNC = 0;
+constexpr int GHOST_ASYNC = 1;
+
 /*! \brief compute the communication options from the ghost_get/put options
  *
  *
@@ -51,6 +54,168 @@ inline static size_t compute_options(size_t opt)
 
 	return opt_;
 }
+
+/*! \brief template selector for asynchronous or not asynchronous
+ *
+ * \tparam impl implementation
+ * \tparam prp properties
+ *
+ */
+template<unsigned int impl, template<typename> class layout_base, unsigned int ... prp>
+struct ghost_exchange_comm_impl
+{
+	template<typename Vcluster_type, typename vector_prop_type,
+	         typename vector_pos_type, typename send_vector,
+	         typename prc_recv_get_type, typename prc_g_opart_type,
+	         typename recv_sz_get_type, typename recv_sz_get_byte_type,
+	         typename g_opart_sz_type>
+	static inline void sendrecv_prp(Vcluster_type & v_cl,
+						 openfpm::vector<send_vector> & g_send_prp,
+						 vector_prop_type & v_prp,
+						 vector_pos_type & v_pos,
+						 prc_g_opart_type & prc_g_opart,
+						 prc_recv_get_type & prc_recv_get,
+						 recv_sz_get_type & recv_sz_get,
+						 recv_sz_get_byte_type & recv_sz_get_byte,
+						 g_opart_sz_type & g_opart_sz,
+						 size_t g_m,
+						 size_t opt)
+	{
+		// if there are no properties skip
+		// SSendRecvP send everything when we do not give properties
+
+		if (sizeof...(prp) != 0)
+		{
+			size_t opt_ = compute_options(opt);
+			if (opt & SKIP_LABELLING)
+			{
+				if (opt & RUN_ON_DEVICE)
+				{
+					op_ssend_gg_recv_merge_run_device opm(g_m);
+					v_cl.template SSendRecvP_op<op_ssend_gg_recv_merge_run_device,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
+				}
+				else
+				{
+					op_ssend_gg_recv_merge opm(g_m);
+					v_cl.template SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
+				}
+			}
+			else
+			{v_cl.template SSendRecvP<send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get,recv_sz_get_byte,opt_);}
+
+			// fill g_opart_sz
+			g_opart_sz.resize(prc_g_opart.size());
+
+			for (size_t i = 0 ; i < prc_g_opart.size() ; i++)
+				g_opart_sz.get(i) = g_send_prp.get(i).size();
+		}
+	}
+
+	template<typename Vcluster_type, typename vector_prop_type,
+		     typename vector_pos_type, typename send_pos_vector,
+		     typename prc_recv_get_type, typename prc_g_opart_type,
+		     typename recv_sz_get_type>
+	static inline void sendrecv_pos(Vcluster_type & v_cl,
+									openfpm::vector<send_pos_vector> & g_pos_send,
+									vector_prop_type & v_prp,
+									vector_pos_type & v_pos,
+									prc_recv_get_type & prc_recv_get,
+									recv_sz_get_type & recv_sz_get,
+									prc_g_opart_type & prc_g_opart,
+									size_t opt)
+	{
+		size_t opt_ = compute_options(opt);
+		if (opt & SKIP_LABELLING)
+		{
+			v_cl.template SSendRecv<send_pos_vector,decltype(v_pos),layout_base>(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_get,opt_);
+		}
+		else
+		{
+			prc_recv_get.clear();
+			recv_sz_get.clear();
+			v_cl.template SSendRecv<send_pos_vector,decltype(v_pos),layout_base>(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_get,opt_);
+		}
+	}
+};
+
+
+template<template<typename> class layout_base, unsigned int ... prp>
+struct ghost_exchange_comm_impl<GHOST_ASYNC,layout_base, prp ... >
+{
+	template<typename Vcluster_type, typename vector_prop_type,
+	         typename vector_pos_type, typename send_vector,
+	         typename prc_recv_get_type, typename prc_g_opart_type,
+	         typename recv_sz_get_type, typename recv_sz_get_byte_type,
+	         typename g_opart_sz_type>
+	static inline void sendrecv_prp(Vcluster_type & v_cl,
+						 openfpm::vector<send_vector> & g_send_prp,
+						 vector_prop_type & v_prp,
+						 vector_pos_type & v_pos,
+						 prc_g_opart_type & prc_g_opart,
+						 prc_recv_get_type & prc_recv_get,
+						 recv_sz_get_type & recv_sz_get,
+						 recv_sz_get_byte_type & recv_sz_get_byte,
+						 g_opart_sz_type & g_opart_sz,
+						 size_t g_m,
+						 size_t opt)
+	{
+		// if there are no properties skip
+		// SSendRecvP send everything when we do not give properties
+
+		if (sizeof...(prp) != 0)
+		{
+			size_t opt_ = compute_options(opt);
+			if (opt & SKIP_LABELLING)
+			{
+				if (opt & RUN_ON_DEVICE)
+				{
+					op_ssend_gg_recv_merge_run_device opm(g_m);
+					v_cl.template SSendRecvP_opAsync<op_ssend_gg_recv_merge_run_device,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
+				}
+				else
+				{
+					op_ssend_gg_recv_merge opm(g_m);
+					v_cl.template SSendRecvP_opAsync<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
+				}
+			}
+			else
+			{v_cl.template SSendRecvPAsync<send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get,recv_sz_get_byte,opt_);}
+
+			// fill g_opart_sz
+			g_opart_sz.resize(prc_g_opart.size());
+
+			for (size_t i = 0 ; i < prc_g_opart.size() ; i++)
+				g_opart_sz.get(i) = g_send_prp.get(i).size();
+		}
+	}
+
+	template<typename Vcluster_type, typename vector_prop_type,
+		     typename vector_pos_type, typename send_pos_vector,
+		     typename prc_recv_get_type, typename prc_g_opart_type,
+		     typename recv_sz_get_type>
+	static inline void sendrecv_pos(Vcluster_type & v_cl,
+									openfpm::vector<send_pos_vector> & g_pos_send,
+									vector_prop_type & v_prp,
+									vector_pos_type & v_pos,
+									prc_recv_get_type & prc_recv_get,
+									recv_sz_get_type & recv_sz_get,
+									prc_g_opart_type & prc_g_opart,
+									size_t opt)
+	{
+		size_t opt_ = compute_options(opt);
+		if (opt & SKIP_LABELLING)
+		{
+			v_cl.template SSendRecvAsync<send_pos_vector,decltype(v_pos),layout_base>(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_get,opt_);
+		}
+		else
+		{
+			prc_recv_get.clear();
+			recv_sz_get.clear();
+			v_cl.template SSendRecvAsync<send_pos_vector,decltype(v_pos),layout_base>(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_get,opt_);
+		}
+	}
+};
+
 
 /*! \brief This class is an helper for the communication of vector_dist
  *
@@ -1451,7 +1616,7 @@ public:
 	 * \param g_m marker between real and ghost particles
 	 *
 	 */
-	template<int ... prp> inline void ghost_get_(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
+	template<unsigned int impl, int ... prp> inline void ghost_get_(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
 												 openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
 												 size_t & g_m,
 												 size_t opt = WITH_POSITION)
@@ -1490,31 +1655,9 @@ public:
 			// if there are no properties skip
 			// SSendRecvP send everything when we do not give properties
 
-			if (sizeof...(prp) != 0)
-			{
-				size_t opt_ = compute_options(opt);
-				if (opt & SKIP_LABELLING)
-				{
-					if (opt & RUN_ON_DEVICE)
-					{
-						op_ssend_gg_recv_merge_run_device opm(g_m);
-						v_cl.template SSendRecvP_op<op_ssend_gg_recv_merge_run_device,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
-					}
-					else
-					{
-						op_ssend_gg_recv_merge opm(g_m);
-						v_cl.template SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
-					}
-				}
-				else
-				{v_cl.template SSendRecvP<send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,prc_recv_get,recv_sz_get,recv_sz_get_byte,opt_);}
-
-				// fill g_opart_sz
-				g_opart_sz.resize(prc_g_opart.size());
-
-				for (size_t i = 0 ; i < prc_g_opart.size() ; i++)
-					g_opart_sz.get(i) = g_send_prp.get(i).size();
-			}
+			ghost_exchange_comm_impl<impl,layout_base,prp ...>::template
+			sendrecv_prp(v_cl,g_send_prp,v_prp,v_pos,prc_g_opart,
+					 prc_recv_get,recv_sz_get,recv_sz_get_byte,g_opart_sz,g_m,opt);
 		}
 
 		if (!(opt & NO_POSITION))
@@ -1528,17 +1671,9 @@ public:
 			cudaDeviceSynchronize();
 #endif
 
-			size_t opt_ = compute_options(opt);
-			if (opt & SKIP_LABELLING)
-			{
-				v_cl.template SSendRecv<send_pos_vector,decltype(v_pos),layout_base>(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_get,opt_);
-			}
-			else
-			{
-				prc_recv_get.clear();
-				recv_sz_get.clear();
-				v_cl.template SSendRecv<send_pos_vector,decltype(v_pos),layout_base>(g_pos_send,v_pos,prc_g_opart,prc_recv_get,recv_sz_get,opt_);
-			}
+			ghost_exchange_comm_impl<impl,layout_base,prp ...>::template
+			sendrecv_pos(v_cl,g_pos_send,v_prp,v_pos,prc_recv_get,recv_sz_get,prc_g_opart,opt);
+
 
             // fill g_opart_sz
             g_opart_sz.resize(prc_g_opart.size());

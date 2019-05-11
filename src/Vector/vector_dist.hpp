@@ -40,7 +40,9 @@
 
 #define DEC_GRAN(gr) ((size_t)gr << 32)
 
+#ifdef CUDA_GPU
 template<unsigned int dim,typename St> using CELLLIST_GPU_SPARSE = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>,unsigned int,int,true>;
+#endif
 
 #define VECTOR_DIST_ERROR_OBJECT std::runtime_error("Runtime vector distributed error");
 
@@ -86,7 +88,7 @@ struct gcl_standard_no_symmetric_impl<true>
 	template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
 	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
 	{
-		return vd.getCellListGPU(r_cut);
+		return vd.template getCellListGPU<CellL>(r_cut);
 	}
 };
 
@@ -1042,7 +1044,8 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>,internal_position_vector_type > > CellL getCellListSym(St r_cut)
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>,internal_position_vector_type > >
+	CellL getCellListSym(St r_cut)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -1323,6 +1326,7 @@ public:
 			CellL cli_tmp = gcl<dim,St,CellL,self,GCL_NON_SYMMETRIC>::get(*this,r_cut,getDecomposition().getGhost());
 
 			cell_list.swap(cli_tmp);
+			cell_list.re_setBoxNN();
 		}
 	}
 
@@ -2206,7 +2210,7 @@ public:
 		se3.template ghost_get_pre<prp...>(opt);
 #endif
 
-		this->template ghost_get_<prp...>(v_pos,v_prp,g_m,opt);
+		this->template ghost_get_<GHOST_SYNC,prp...>(v_pos,v_prp,g_m,opt);
 
 #ifdef SE_CLASS3
 
@@ -2215,6 +2219,39 @@ public:
 		se3.template ghost_get_post<prp...>(opt);
 #endif
 	}
+
+
+	/*! \brief It synchronize the properties and position of the ghost particles
+	 *
+	 * \tparam prp list of properties to get synchronize
+	 *
+	 * \param opt options WITH_POSITION, it send also the positional information of the particles
+	 *
+	 */
+	template<int ... prp> inline void Ighost_get(size_t opt = WITH_POSITION)
+	{
+#ifdef SE_CLASS1
+		if (getDecomposition().getProcessorBounds().isValid() == false && size_local() != 0)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Error the processor " << v_cl.getProcessUnitID() << " has particles, but is supposed to be unloaded" << std::endl;
+			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+		}
+#endif
+
+#ifdef SE_CLASS3
+		se3.template ghost_get_pre<prp...>(opt);
+#endif
+
+		this->template ghost_get_<GHOST_ASYNC,prp...>(v_pos,v_prp,g_m,opt);
+
+#ifdef SE_CLASS3
+
+		this->template ghost_get_<prop::max_prop_real>(v_pos,v_prp,g_m,opt | KEEP_PROPERTIES);
+
+		se3.template ghost_get_post<prp...>(opt);
+#endif
+	}
+
 
 	/*! \brief It synchronize the properties and position of the ghost particles
 	 *
@@ -2814,7 +2851,8 @@ public:
          * \param NN Cell-list to use to reorder
          *
          */
-        void make_sort(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> & NN)
+		template<typename CellList_type>
+        void make_sort(CellList_type & NN)
         {
                 deleteGhost();
 
@@ -2825,6 +2863,30 @@ public:
                 // swap the sorted with the non-sorted
                 v_pos.swap(v_pos_out);
                 v_prp.swap(v_prp_out);
+        }
+
+        /*! \brief this function sort the vector
+         *
+         * \note this function does not kill the ghost and does not invalidate the Cell-list)
+         *
+         * \param NN Cell-list to use to reorder
+         *
+         */
+		template<typename CellList_type>
+        void make_sort_from(CellList_type & cl)
+        {
+#if defined(__NVCC__)
+
+			auto ite = v_pos.getGPUIteratorTo(g_m);
+
+			CUDA_LAUNCH((merge_sort_all<decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortToSort().toKernel())>),
+					ite,
+					v_pos_out.toKernel(),v_prp_out.toKernel(),v_pos.toKernel(),v_prp.toKernel(),cl.getNonSortToSort().toKernel());
+
+			v_pos.swap(v_pos_out);
+			v_prp.swap(v_prp_out);
+
+#endif
         }
 
         /*! \brief This function compare if the host and device buffer position match up to some tolerance

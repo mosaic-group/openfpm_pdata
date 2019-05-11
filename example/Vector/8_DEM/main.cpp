@@ -1,5 +1,5 @@
-#define CHECKFOR_POSNAN
-#define CHECKFOR_PROPNAN
+//#define CHECKFOR_POSNAN
+//#define CHECKFOR_PROPNAN
 
 /*!
  * \page Vector_8_DEM Vector 8 Discrete element method
@@ -530,7 +530,7 @@ int main(int argc, char* argv[])
 				u_ij.get(1) = parts.getProp<cpd>(p)[cidx + 1];
 				u_ij.get(2) = parts.getProp<cpd>(p)[cidx + 2];
 
-				Point<3,double> F_nij = sqrt(delta_ij/2/R) * (k_n*delta_ij*n_ij - gamma_t*m_eff*v_nij);
+				Point<3,double> F_nij = sqrt(delta_ij/2/R) * (k_n*delta_ij*n_ij - gamma_n*m_eff*v_nij);
 				dF_n = dF_n + F_nij;
 
 				Point<3,double> F_tij = sqrt(delta_ij/2/R) * (-k_t*u_ij - gamma_t*m_eff*v_tij);

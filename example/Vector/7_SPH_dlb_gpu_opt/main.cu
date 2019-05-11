@@ -44,6 +44,8 @@
 #define OPENMPI
 //#define SE_CLASS1
 
+#define USE_LOW_REGISTER_ITERATOR
+
 #include "Vector/vector_dist.hpp"
 #include <math.h>
 #include "Draw/DrawParticles.hpp"
@@ -97,7 +99,7 @@ const real_number MassBound = 0.0000767656;
 #ifdef TEST_RUN
 const real_number t_end = 0.001;
 #else
-const real_number t_end = 0.10;
+const real_number t_end = 1.5;
 #endif
 
 // Gravity acceleration
@@ -341,8 +343,8 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 		// Get the position xp of the particle
 		Point<3,real_number> xb = vd.getPos(b);
 
-		// if (p == q) skip this particle
-		if (a == b)	{++Np; continue;};
+		// if (p == q) skip this particle this condition should be done in the r^2 = 0
+		//if (a == b)	{++Np; continue;};
 
         unsigned int typeb = vd.getProp<type>(b);
 
@@ -393,7 +395,7 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 
 template<typename CellList> inline void calc_forces(particles & vd, CellList & NN, real_number & max_visc, size_t cnt)
 {
-	auto part = vd.getDomainIteratorGPU(64);
+	auto part = vd.getDomainIteratorGPU(96);
 
 	// Update the cell-list
 	vd.updateCellList(NN);
@@ -856,7 +858,8 @@ int main(int argc, char* argv[])
 
 	vd.ghost_get<type,rho,Pressure,velocity>(RUN_ON_DEVICE);
 
-	auto NN = vd.getCellListGPU(2*H / 2.0);
+	auto NN = vd.getCellListGPU/*<CELLLIST_GPU_SPARSE<3,float>>*/(2*H / 2.0);
+	NN.setBoxNN(2);
 
 	timer tot_sim;
 	tot_sim.start();
@@ -892,9 +895,9 @@ int main(int argc, char* argv[])
 
 		vd.map(RUN_ON_DEVICE);
 
-
-        // make sort
-        vd.make_sort(NN);
+		// it sort the vector (doesn not seem to produce some advantage)
+		// note force calculation is anyway sorted calculation
+		vd.make_sort(NN);
 
 		// Calculate pressure from the density
 		EqState(vd);
