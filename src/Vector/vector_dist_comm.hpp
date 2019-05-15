@@ -18,6 +18,7 @@
 
 #include "Vector/util/vector_dist_funcs.hpp"
 #include "cuda/vector_dist_comm_util_funcs.cuh"
+#include "util/cuda/scan_ofp.cuh"
 
 #define NO_POSITION 1
 #define WITH_POSITION 2
@@ -1139,7 +1140,7 @@ class vector_dist_comm
 			#else
 
 			starts.resize(v_cl.size());
-			mgpu::scan((unsigned int *)prc_sz.template getDeviceBuffer<0>(), prc_sz.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
+			openfpm::scan((unsigned int *)prc_sz.template getDeviceBuffer<0>(), prc_sz.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
 
 			// move prc_sz to host
 			prc_sz.template deviceToHost<0>();

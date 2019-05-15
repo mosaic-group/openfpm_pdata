@@ -11,6 +11,7 @@
 #include "util/cuda/scan_cuda.cuh"
 #include "util/cuda/moderngpu/kernel_scan.hxx"
 #include "Vector/vector_dist.hpp"
+#include "util/cuda/scan_ofp.cuh"
 
 #define SUB_UNIT_FACTOR 1024
 
@@ -129,7 +130,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 	starts.resize(o_part_loc.size());
 
 	auto & v_cl = create_vcluster();
-	mgpu::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
+	openfpm::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
 
 	starts.deviceToHost<0>(starts.size()-1,starts.size()-1);
 	size_t tot = starts.template get<0>(o_part_loc.size()-1);
