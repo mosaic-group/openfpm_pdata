@@ -338,16 +338,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_iterator_test_use_2d )
 			++it;
 		}
 
-		///////// induce crash //
-		
-		if (v_cl.rank() == 0)
-		{
-			std::cout << "CRASH" << std::endl;
-			return;
-		}
-
-		//
-
 		vd.map();
 
 		//! [Create a vector of random elements on each processor 2D]
