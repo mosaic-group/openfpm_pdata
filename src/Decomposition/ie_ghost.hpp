@@ -100,7 +100,7 @@ class ie_ghost
 	 *         for the processor p_id
 	 *
 	 */
-	inline size_t link_ebx_ibx(const nn_prcs<dim,T> & nn_p, size_t p_id, size_t i)
+	inline size_t link_ebx_ibx(const nn_prcs<dim,T,layout_base,Memory> & nn_p, size_t p_id, size_t i)
 	{
 		// Search for the correct id
 		size_t k = 0;
@@ -224,9 +224,9 @@ protected:
 	 */
 	void create_box_nn_processor_ext(Vcluster<> & v_cl,
 			                         Ghost<dim,T> & ghost,
-									 openfpm::vector<SpaceBox<dim,T>> & sub_domains,
+									 openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> & sub_domains,
 									 const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
-									 const nn_prcs<dim,T> & nn_p)
+									 const nn_prcs<dim,T,layout_base,Memory> & nn_p)
 	{
 		box_nn_processor_int.resize(sub_domains.size());
 		proc_int_box.resize(nn_p.getNNProcessors());
@@ -326,9 +326,9 @@ protected:
 	 */
 	void create_box_nn_processor_int(Vcluster<> & v_cl,
 			                         Ghost<dim,T> & ghost,
-									 openfpm::vector<SpaceBox<dim,T>> & sub_domains,
+									 openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> & sub_domains,
 									 const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
-									 const nn_prcs<dim,T> & nn_p)
+									 const nn_prcs<dim,T,layout_base,Memory> & nn_p)
 	{
 		box_nn_processor_int.resize(sub_domains.size());
 		proc_int_box.resize(nn_p.getNNProcessors());

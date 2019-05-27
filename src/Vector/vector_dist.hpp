@@ -1307,9 +1307,7 @@ public:
 
 		// This function assume equal spacing in all directions
 		// but in the worst case we take the maximum
-		St r_cut = 0;
-		for (size_t i = 0 ; i < dim ; i++)
-		{r_cut = std::max(r_cut,cell_list.getCellBox().getHigh(i));}
+		St r_cut = cell_list.getCellBox().getRcut();
 
 		// Here we have to check that the Cell-list has been constructed
 		// from the same decomposition
@@ -2243,6 +2241,26 @@ public:
 #endif
 
 		this->template ghost_get_<GHOST_ASYNC,prp...>(v_pos,v_prp,g_m,opt);
+	}
+
+	/*! \brief It synchronize the properties and position of the ghost particles
+	 *
+	 * \tparam prp list of properties to get synchronize
+	 *
+	 * \param opt options WITH_POSITION, it send also the positional information of the particles
+	 *
+	 */
+	template<int ... prp> inline void ghost_wait(size_t opt = WITH_POSITION)
+	{
+#ifdef SE_CLASS1
+		if (getDecomposition().getProcessorBounds().isValid() == false && size_local() != 0)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Error the processor " << v_cl.getProcessUnitID() << " has particles, but is supposed to be unloaded" << std::endl;
+			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+		}
+#endif
+
+		this->template ghost_wait_<prp...>(v_pos,v_prp,g_m,opt);
 
 #ifdef SE_CLASS3
 
@@ -2251,7 +2269,6 @@ public:
 		se3.template ghost_get_post<prp...>(opt);
 #endif
 	}
-
 
 	/*! \brief It synchronize the properties and position of the ghost particles
 	 *

@@ -39,6 +39,7 @@
 #include "data_type/aggregate.hpp"
 #include "Domain_NN_calculator_cart.hpp"
 #include "cuda/CartDecomposition_gpu.cuh"
+#include "Domain_icells_cart.hpp"
 
 #define CARTDEC_ERROR 2000lu
 
@@ -130,7 +131,11 @@ template<unsigned int dim> static void nsub_to_div(size_t (& div)[dim], size_t n
  */
 
 template<unsigned int dim, typename T, typename Memory, template <typename> class layout_base, typename Distribution>
-class CartDecomposition: public ie_loc_ghost<dim, T>, public nn_prcs<dim, T>, public ie_ghost<dim,T,Memory,layout_base>, public domain_nn_calculator_cart<dim>
+class CartDecomposition: public ie_loc_ghost<dim, T,layout_base, Memory>,
+						 public nn_prcs<dim, T,layout_base,Memory>,
+						 public ie_ghost<dim,T,Memory,layout_base>,
+						 public domain_nn_calculator_cart<dim>,
+						 public domain_icell_calculator<dim,T,layout_base,Memory>
 {
 public:
 
@@ -164,7 +169,7 @@ protected:
 			openfpm::vect_isel<SpaceBox<dim, T>>::value>::access_key acc_key;
 
 	//! the set of all local sub-domain as vector
-	openfpm::vector<SpaceBox<dim, T>> sub_domains;
+	openfpm::vector<SpaceBox<dim, T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> sub_domains;
 
 	//! the remote set of all sub-domains as vector of 'sub_domains' vectors
 	mutable openfpm::vector<Box_map<dim, T>,Memory,typename layout_base<Box_map<dim, T>>::type,layout_base> sub_domains_global;
@@ -421,8 +426,8 @@ public:
 			proc_box.enclose(loc_box.get(s));
 		}
 
-		nn_prcs<dim,T>::create(box_nn_processor, sub_domains);
-		nn_prcs<dim,T>::applyBC(domain,ghost,bc);
+		nn_prcs<dim,T,layout_base,Memory>::create(box_nn_processor, sub_domains);
+		nn_prcs<dim,T,layout_base,Memory>::applyBC(domain,ghost,bc);
 
 		// fill fine_s structure
 		// fine_s structure contain the processor id for each sub-sub-domain
@@ -646,7 +651,7 @@ public:
 		ie_ghost<dim, T,Memory,layout_base>::create_box_nn_processor_ext(v_cl, ghost, sub_domains, box_nn_processor, *this);
 		ie_ghost<dim, T,Memory,layout_base>::create_box_nn_processor_int(v_cl, ghost, sub_domains, box_nn_processor, *this);
 
-		ie_loc_ghost<dim,T>::create(sub_domains,domain,ghost,bc);
+		ie_loc_ghost<dim,T,layout_base,Memory>::create(sub_domains,domain,ghost,bc);
 
 		// Ghost box information must be re-offloaded
 		host_dev_transfer = false;
@@ -682,7 +687,7 @@ public:
 	 *
 	 */
 	CartDecomposition(Vcluster<> & v_cl)
-	:nn_prcs<dim, T>(v_cl), v_cl(v_cl), dist(v_cl),ref_cnt(0)
+	:nn_prcs<dim, T, layout_base,Memory>(v_cl), v_cl(v_cl), dist(v_cl),ref_cnt(0)
 	{
 		// Reset the box to zero
 		bbox.zero();
@@ -694,7 +699,7 @@ public:
 	 *
 	 */
 	CartDecomposition(const CartDecomposition<dim,T,Memory,layout_base,Distribution> & cart)
-	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),dist(v_cl),ref_cnt(0)
+	:nn_prcs<dim,T,layout_base,Memory>(cart.v_cl),v_cl(cart.v_cl),dist(v_cl),ref_cnt(0)
 	{
 		this->operator=(cart);
 	}
@@ -705,7 +710,7 @@ public:
 	 *
 	 */
 	CartDecomposition(CartDecomposition<dim,T,Memory,layout_base,Distribution> && cart)
-	:nn_prcs<dim,T>(cart.v_cl),v_cl(cart.v_cl),dist(v_cl),ref_cnt(0)
+	:nn_prcs<dim,T,layout_base,Memory>(cart.v_cl),v_cl(cart.v_cl),dist(v_cl),ref_cnt(0)
 	{
 		this->operator=(cart);
 	}
@@ -878,8 +883,8 @@ public:
 		for (size_t i = 0 ; i < dim ; i++)
 			cart.bc[i] = bc[i];
 
-		(static_cast<nn_prcs<dim,T> &>(cart)).create(box_nn_processor, sub_domains);
-		(static_cast<nn_prcs<dim,T> &>(cart)).applyBC(domain,ghost,bc);
+		(static_cast<nn_prcs<dim,T,layout_base,Memory> &>(cart)).create(box_nn_processor, sub_domains);
+		(static_cast<nn_prcs<dim,T,layout_base,Memory> &>(cart)).applyBC(domain,ghost,bc);
 
 		cart.Initialize_geo_cell_lists();
 		cart.calculateGhostBoxes();
@@ -896,8 +901,8 @@ public:
 	{
 		CartDecomposition<dim,T,Memory,layout_base,Distribution> cart(v_cl);
 
-		(static_cast<ie_loc_ghost<dim,T>*>(&cart))->operator=(static_cast<ie_loc_ghost<dim,T>>(*this));
-		(static_cast<nn_prcs<dim,T>*>(&cart))->operator=(static_cast<nn_prcs<dim,T>>(*this));
+		(static_cast<ie_loc_ghost<dim,T, layout_base,Memory>*>(&cart))->operator=(static_cast<ie_loc_ghost<dim,T,layout_base,Memory>>(*this));
+		(static_cast<nn_prcs<dim,T,layout_base,Memory>*>(&cart))->operator=(static_cast<nn_prcs<dim,T,layout_base,Memory>>(*this));
 		(static_cast<ie_ghost<dim,T,Memory,layout_base>*>(&cart))->operator=(static_cast<ie_ghost<dim,T,Memory,layout_base>>(*this));
 
 		cart.sub_domains = sub_domains;
@@ -933,8 +938,8 @@ public:
 	{
 		CartDecomposition<dim,T> cart(v_cl);
 
-		(static_cast<ie_loc_ghost<dim,T>*>(&cart))->operator=(static_cast<ie_loc_ghost<dim,T>>(*this));
-		(static_cast<nn_prcs<dim,T>*>(&cart))->operator=(static_cast<nn_prcs<dim,T>>(*this));
+		(static_cast<ie_loc_ghost<dim,T,layout_base2,Memory2>*>(&cart))->operator=(static_cast<ie_loc_ghost<dim,T,layout_base,Memory>>(*this));
+		(static_cast<nn_prcs<dim,T,layout_base2,Memory2>*>(&cart))->operator=(static_cast<nn_prcs<dim,T,layout_base,Memory>>(*this));
 		ie_ghost<dim,T,Memory,layout_base> * ptr = static_cast<ie_ghost<dim,T,Memory,layout_base> *>((CartDecomposition<dim,T,Memory,layout_base,Distribution> *)this);
 		(static_cast<ie_ghost<dim,T,Memory2,layout_base2>*>(&cart))->operator=(ptr->template duplicate<Memory2,layout_base2>());
 
@@ -970,8 +975,8 @@ public:
 	 */
 	CartDecomposition<dim,T,Memory, layout_base, Distribution> & operator=(const CartDecomposition & cart)
 	{
-		static_cast<ie_loc_ghost<dim,T>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T>>(cart));
-		static_cast<nn_prcs<dim,T>*>(this)->operator=(static_cast<nn_prcs<dim,T>>(cart));
+		static_cast<ie_loc_ghost<dim,T,layout_base,Memory>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T,layout_base,Memory>>(cart));
+		static_cast<nn_prcs<dim,T,layout_base,Memory>*>(this)->operator=(static_cast<nn_prcs<dim,T,layout_base,Memory>>(cart));
 		static_cast<ie_ghost<dim,T,Memory,layout_base>*>(this)->operator=(static_cast<ie_ghost<dim,T,Memory,layout_base>>(cart));
 
 		sub_domains = cart.sub_domains;
@@ -1010,8 +1015,8 @@ public:
 	 */
 	CartDecomposition<dim,T,Memory,layout_base, Distribution> & operator=(CartDecomposition && cart)
 	{
-		static_cast<ie_loc_ghost<dim,T>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T>>(cart));
-		static_cast<nn_prcs<dim,T>*>(this)->operator=(static_cast<nn_prcs<dim,T>>(cart));
+		static_cast<ie_loc_ghost<dim,T,layout_base,Memory>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T,layout_base,Memory>>(cart));
+		static_cast<nn_prcs<dim,T,layout_base,Memory>*>(this)->operator=(static_cast<nn_prcs<dim,T,layout_base,Memory>>(cart));
 		static_cast<ie_ghost<dim,T,Memory,layout_base>*>(this)->operator=(static_cast<ie_ghost<dim,T,Memory,layout_base>>(cart));
 
 		sub_domains.swap(cart.sub_domains);
@@ -1324,9 +1329,9 @@ public:
 		box_nn_processor.clear();
 		fine_s.clear();
 		loc_box.clear();
-		nn_prcs<dim, T>::reset();
+		nn_prcs<dim, T,layout_base,Memory>::reset();
 		ie_ghost<dim,T,Memory,layout_base>::reset();
-		ie_loc_ghost<dim, T>::reset();
+		ie_loc_ghost<dim, T,layout_base,Memory>::reset();
 	}
 
 	/*! \brief Start decomposition
@@ -1347,6 +1352,14 @@ public:
 
 		domain_nn_calculator_cart<dim>::reset();
 		domain_nn_calculator_cart<dim>::setParameters(proc_box);
+
+		domain_icell_calculator<dim,T,layout_base,Memory>
+		::CalculateInternalCells(v_cl,
+								 ie_ghost<dim, T,Memory,layout_base>::private_get_vb_int_box(),
+								 sub_domains,
+								 this->getProcessorBounds(),
+								 this->getGhost().getRcut(),
+								 this->getGhost());
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call
@@ -1556,7 +1569,8 @@ public:
 		return domain;
 	}
 
-	openfpm::vector<SpaceBox<dim, T>> getSubDomains() const
+	const openfpm::vector<SpaceBox<dim, T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> &
+	getSubDomains() const
 	{
 		return sub_domains;
 	}
@@ -1808,9 +1822,9 @@ public:
 		vtk_box1.add(sub_domains);
 		vtk_box1.write(output + std::string("subdomains_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
-		nn_prcs<dim, T>::write(output);
+		nn_prcs<dim, T,layout_base,Memory>::write(output);
 		ie_ghost<dim,T,Memory,layout_base>::write(output, v_cl.getProcessUnitID());
-		ie_loc_ghost<dim, T>::write(output, v_cl.getProcessUnitID());
+		ie_loc_ghost<dim, T,layout_base,Memory>::write(output, v_cl.getProcessUnitID());
 
 		return true;
 	}
@@ -1835,7 +1849,7 @@ public:
 	 */
 	bool check_consistency()
 	{
-		if (ie_loc_ghost<dim, T>::check_consistency(getNSubDomain()) == false)
+		if (ie_loc_ghost<dim, T,layout_base,Memory>::check_consistency(getNSubDomain()) == false)
 			return false;
 
 		return true;
@@ -1860,21 +1874,21 @@ public:
 
 		std::cout << "External ghost box\n";
 
-		for (size_t p = 0; p<nn_prcs < dim, T>::getNNProcessors(); p++)
+		for (size_t p = 0; p<nn_prcs < dim, T, layout_base, Memory>::getNNProcessors(); p++)
 		{
 			for (size_t i = 0; i<ie_ghost <dim,T,Memory,layout_base>::getProcessorNEGhost(p); i++)
 			{
-				std::cout << ie_ghost<dim,T,Memory,layout_base>::getProcessorEGhostBox(p, i).toString() << "   prc=" << nn_prcs<dim, T>::IDtoProc(p) << "   id=" << ie_ghost<dim,T,Memory,layout_base>::getProcessorEGhostId(p, i) << "\n";
+				std::cout << ie_ghost<dim,T,Memory,layout_base>::getProcessorEGhostBox(p, i).toString() << "   prc=" << nn_prcs<dim, T, layout_base,Memory>::IDtoProc(p) << "   id=" << ie_ghost<dim,T,Memory,layout_base>::getProcessorEGhostId(p, i) << "\n";
 			}
 		}
 
 		std::cout << "Internal ghost box\n";
 
-		for (size_t p = 0; p<nn_prcs < dim, T>::getNNProcessors(); p++)
+		for (size_t p = 0; p<nn_prcs < dim, T, layout_base, Memory>::getNNProcessors(); p++)
 		{
 			for (size_t i = 0; i<ie_ghost<dim,T,Memory,layout_base>::getProcessorNIGhost(p); i++)
 			{
-				std::cout << ie_ghost<dim,T,Memory,layout_base>::getProcessorIGhostBox(p, i).toString() << "   prc=" << nn_prcs<dim, T>::IDtoProc(p) << "   id=" << ie_ghost<dim,T,Memory,layout_base>::getProcessorIGhostId(p, i) << "\n";
+				std::cout << ie_ghost<dim,T,Memory,layout_base>::getProcessorIGhostBox(p, i).toString() << "   prc=" << nn_prcs<dim, T, layout_base, Memory>::IDtoProc(p) << "   id=" << ie_ghost<dim,T,Memory,layout_base>::getProcessorIGhostId(p, i) << "\n";
 			}
 		}
 	}
@@ -1888,10 +1902,10 @@ public:
 	 */
 	bool is_equal(CartDecomposition<dim,T,Memory> & cart)
 	{
-		if (static_cast<ie_loc_ghost<dim,T>*>(this)->is_equal(static_cast<ie_loc_ghost<dim,T>&>(cart)) == false)
+		if (static_cast<ie_loc_ghost<dim,T,layout_base,Memory>*>(this)->is_equal(static_cast<ie_loc_ghost<dim,T,layout_base,Memory>&>(cart)) == false)
 			return false;
 
-		if (static_cast<nn_prcs<dim,T>*>(this)->is_equal(static_cast<nn_prcs<dim,T>&>(cart)) == false)
+		if (static_cast<nn_prcs<dim,T,layout_base,Memory>*>(this)->is_equal(static_cast<nn_prcs<dim,T, layout_base,Memory>&>(cart)) == false)
 			return false;
 
 		if (static_cast<ie_ghost<dim,T,Memory,layout_base>*>(this)->is_equal(static_cast<ie_ghost<dim,T,Memory,layout_base>&>(cart)) == false)
@@ -1934,10 +1948,10 @@ public:
 	 */
 	bool is_equal_ng(CartDecomposition<dim,T,Memory> & cart)
 	{
-		if (static_cast<ie_loc_ghost<dim,T>*>(this)->is_equal_ng(static_cast<ie_loc_ghost<dim,T>&>(cart)) == false)
+		if (static_cast<ie_loc_ghost<dim,T,layout_base,Memory>*>(this)->is_equal_ng(static_cast<ie_loc_ghost<dim,T,layout_base,Memory>&>(cart)) == false)
 			return false;
 
-		if (static_cast<nn_prcs<dim,T>*>(this)->is_equal(static_cast<nn_prcs<dim,T>&>(cart)) == false)
+		if (static_cast<nn_prcs<dim,T,layout_base,Memory>*>(this)->is_equal(static_cast<nn_prcs<dim,T,layout_base,Memory>&>(cart)) == false)
 			return false;
 
 		if (static_cast<ie_ghost<dim,T,Memory,layout_base>*>(this)->is_equal_ng(static_cast<ie_ghost<dim,T,Memory,layout_base>&>(cart)) == false)

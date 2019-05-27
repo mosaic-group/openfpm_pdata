@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE( nn_processor_np_test)
 
 	create_decomposition2x2(box_nn_processor,sub_domains);
 
-	nn_prcs<2,float> nnp(v_cl);
+	nn_prcs<2,float,memory_traits_lin,HeapMemory> nnp(v_cl);
 	nnp.create(box_nn_processor, sub_domains);
 
 	BOOST_REQUIRE_EQUAL(nnp.getNNProcessors(),3ul);
@@ -241,7 +241,7 @@ BOOST_AUTO_TEST_CASE( nn_processor_box_periodic_test)
 
 	//////////////
 
-	nn_prcs<2,float> nnp(v_cl);
+	nn_prcs<2,float,memory_traits_lin,HeapMemory> nnp(v_cl);
 	nnp.create(box_nn_processor, sub_domains);
 
 	// check that nn_processor contain the correct boxes
@@ -388,12 +388,6 @@ BOOST_AUTO_TEST_CASE( nn_processor_box_periodic_test)
 		bv.add(Box<2,float>({1.0,0.5},{1.5,1.0}));
 		bv.add(Box<2,float>({0.0,-0.5},{0.5,0.0}));
 		bv.add(Box<2,float>({1.0,-0.5},{1.5,0.0}));
-
-/*		for (size_t i = 0 ; i < nnp.getNearSubdomains(2).size() ; i++)
-		{
-			Box<2,float> b = nnp.getNearSubdomains(2).get(i);
-			std::cout << "BOX: " << b.toString() << std::endl;
-		}*/
 
 		ret = nnp.getNearSubdomains(2) == bv;
 		BOOST_REQUIRE_EQUAL(ret,true);
