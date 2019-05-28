@@ -541,6 +541,9 @@ bash_library="$bash_library\""
 
 ##### Writing openfpm_vars file
 
+# in cygwin we have to add to PATH additional directories
+
+bash_path="$i_dir/BOOST/bin:$i_dir/HDF5/bin:$bash_path"
 echo "$bash_path" > $HOME/openfpm_vars
 echo "$bash_library" >> $HOME/openfpm_vars
 

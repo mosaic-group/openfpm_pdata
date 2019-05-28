@@ -1,5 +1,5 @@
 This Package contain the examples. In order to compile the examples go in the root folder where you installed
-OpenFPM  (example /usr/local/OpenFPM_install) and copy from there the file example.mk
+OpenFPM  (example the defaukt would be /usr/local/openfpm_pdata/include) and copy from there the file example.mk
 
 compile the examples with
 
