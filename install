@@ -536,14 +536,18 @@ else
   installation_report="$installation_report \033[91;1mSUITESPARSE\033[0m Installed: \033[1m NO \033[0m\n"
 fi
 
-bash_path="$bash_path\$PATH\""
+# in cygwin we have to add to PATH additional directories
+if [ x"$platform" == x"cygwin" ]; then
+	bash_path="$bash_path:$i_dir/BOOST/bin:$i_dir/HDF5/bin"
+fi
+
+bash_path="$bash_path:\$PATH\""
 bash_library="$bash_library\""
 
 ##### Writing openfpm_vars file
 
 # in cygwin we have to add to PATH additional directories
 
-bash_path="$i_dir/BOOST/bin:$i_dir/HDF5/bin:$bash_path"
 echo "$bash_path" > $HOME/openfpm_vars
 echo "$bash_library" >> $HOME/openfpm_vars
 
