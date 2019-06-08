@@ -77,7 +77,7 @@ target_include_directories (pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
 target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
 
 target_link_libraries(pdata ${Boost_LIBRARIES})
-target_link_libraries(pdata -L${PARMETIS_ROOT}/lib parmetis)
+target_link_libraries(pdata ${PARMETIS_LIBRARIES})
 target_link_libraries(pdata -L${METIS_ROOT}/lib metis)
 target_link_libraries(pdata -L${HDF5_ROOT}/lib hdf5 hdf5_hl)
 target_link_libraries(pdata -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})

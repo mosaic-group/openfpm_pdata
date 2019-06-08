@@ -37,6 +37,8 @@
 #include "NN/CellList/ProcKeys.hpp"
 #include "Vector/vector_dist_kernel.hpp"
 #include "NN/CellList/cuda/CellList_gpu.hpp"
+#include "lib/pdata.hpp"
+#include "cuda/vector_dist_operators_list_ker.hpp"
 
 #define DEC_GRAN(gr) ((size_t)gr << 32)
 
@@ -193,6 +195,30 @@ enum reorder_opt
 	LINEAR = 2
 };
 
+template<typename vector, unsigned int impl>
+struct cell_list_selector
+{
+	typedef decltype(std::declval<vector>().getCellListGPU(0.0).toKernel()) ctype;
+
+	static ctype get(vector & v,
+			typename vector::stype & r_cut)
+	{
+		return v.getCellListGPU(r_cut).toKernel();
+	}
+};
+
+template<typename vector>
+struct cell_list_selector<vector,comp_host>
+{
+	typedef decltype(std::declval<vector>().getCellList(0.0)) ctype;
+
+	static ctype get(vector & v,
+			typename vector::stype & r_cut)
+	{
+		return v.getCellList(r_cut);
+	}
+};
+
 /*! \brief Distributed vector
  *
  * This class represent a distributed vector, the distribution of the structure
@@ -227,14 +253,14 @@ enum reorder_opt
  * \tparam Memory layout
  *
  */
-
 template<unsigned int dim,
          typename St,
          typename prop,
          typename Decomposition = CartDecomposition<dim,St>,
          typename Memory = HeapMemory,
          template<typename> class layout_base = memory_traits_lin>
-class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>
+class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>,
+					private vector_dist_ker_list<vector_dist_ker<dim,St,prop,layout_base>>
 {
 
 public:
@@ -540,6 +566,7 @@ public:
 		init_structures(np);
 
 		this->init_decomposition(box,bc,g,opt,gdist);
+
 
 #ifdef SE_CLASS3
 		se3.Initialize();
@@ -1123,6 +1150,22 @@ public:
 		updateCellListSym(cell_list);
 
 		return cell_list;
+	}
+
+	/*! \brief Construct a cell list starting from the stored particles
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 * \param no_se3 avoid SE_CLASS3 checking
+	 *
+	 * \return the Cell list
+	 *
+	 */
+	template<unsigned int impl>
+	typename cell_list_selector<self,impl>::ctype getCellListDev(St r_cut)
+	{
+		return cell_list_selector<self,impl>::get(*this,r_cut);
 	}
 
 	/*! \brief Construct a cell list starting from the stored particles
@@ -2157,6 +2200,8 @@ public:
 
 		this->template map_list_<prp...>(v_pos,v_prp,g_m,opt);
 
+		this->update(this->toKernel());
+
 #ifdef SE_CLASS3
 		se3.map_post();
 #endif
@@ -2181,6 +2226,8 @@ public:
 #endif
 
 		this->template map_<obp>(v_pos,v_prp,g_m,opt);
+
+		this->update(this->toKernel());
 
 #ifdef SE_CLASS3
 		se3.map_post();
@@ -2209,6 +2256,8 @@ public:
 #endif
 
 		this->template ghost_get_<GHOST_SYNC,prp...>(v_pos,v_prp,g_m,opt);
+
+		this->update(this->toKernel());
 
 #ifdef SE_CLASS3
 
@@ -2261,6 +2310,8 @@ public:
 #endif
 
 		this->template ghost_wait_<prp...>(v_pos,v_prp,g_m,opt);
+
+		this->update(this->toKernel());
 
 #ifdef SE_CLASS3
 
@@ -2505,6 +2556,8 @@ public:
 		v_prp.resize(rs);
 
 		g_m = rs;
+
+		this->update(this->toKernel());
 	}
 
 	/*! \brief Output particle position and properties
@@ -2795,11 +2848,22 @@ public:
 		 * \return an usable vector in the kernel
 		 *
 		 */
-		template<unsigned int ... prp> vector_dist_ker<dim,St,prop> toKernel()
+		template<unsigned int ... prp> vector_dist_ker<dim,St,prop,layout_base> toKernel()
 		{
-			vector_dist_ker<dim,St,prop> v(g_m,v_pos.toKernel(), v_prp.toKernel());
+			vector_dist_ker<dim,St,prop,layout_base> v(g_m,v_pos.toKernel(), v_prp.toKernel());
 
 			return v;
+		}
+
+		/*! \brief Return the internal vector_dist_ker_list structure
+		 *
+		 *
+		 *
+		 * \return
+		 */
+		vector_dist_ker_list<vector_dist_ker<dim,St,prop,layout_base>> & private_get_vector_dist_ker_list()
+		{
+			return *this;
 		}
 
 		/*! \brief Convert the grid into a data-structure compatible for computing into GPU
@@ -2809,9 +2873,9 @@ public:
 		 * \return an usable vector in the kernel
 		 *
 		 */
-		template<unsigned int ... prp> vector_dist_ker<dim,St,prop> toKernel_sorted()
+		template<unsigned int ... prp> vector_dist_ker<dim,St,prop,layout_base> toKernel_sorted()
 		{
-			vector_dist_ker<dim,St,prop> v(g_m,v_pos_out.toKernel(), v_prp_out.toKernel());
+			vector_dist_ker<dim,St,prop,layout_base> v(g_m,v_pos_out.toKernel(), v_prp_out.toKernel());
 
 			return v;
 		}

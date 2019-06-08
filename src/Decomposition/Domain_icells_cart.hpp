@@ -175,26 +175,14 @@ class domain_icell_calculator
 
 			auto ite = g.getGPUIterator(p1,p2,256);
 
+			if (ite.wthr.x == 0)
+			{continue;}
+
 			vsi.setGPUInsertBuffer(ite.nblocks(),256);
 
-			insert_icell<dim><<<ite.wthr,ite.thr>>>(vsi.toKernel(),cld,ite.start,p2);
+			CUDA_LAUNCH((insert_icell<dim>),ite,vsi.toKernel(),cld,ite.start,p2);
 
 			vsi.template flush<>(v_cl.getmgpuContext(),flust_type::FLUSH_ON_DEVICE);
-
-			////////////////////////// DEBUG ////////////////////////
-
-			vsi.private_get_vct_index().template deviceToHost<0>();
-			auto & test = vsi.private_get_vct_index();
-
-			for (int k = 0 ; k < test.size() - 1 ; k++)
-			{
-				if (test.template get<0>(k) > test.template get<0>(k+1))
-				{
-					std::cout << "BBBBBBUUUUUUUUUUUUUUUGGGGGGG" << std::endl;
-				}
-			}
-
-			/////////////////////////////////////////////////////////
 		}
 
 		// calculate the number of kernel launch
@@ -211,17 +199,18 @@ class domain_icell_calculator
 			auto p1 = cld.getCell(bx.getP1());
 			auto p2 = cld.getCell(pp2);
 
-
 			auto ite = g.getGPUIterator(p1,p2,256);
+
+			if (ite.wthr.x == 0)
+			{continue;}
 
 			vs.setGPUInsertBuffer(ite.nblocks(),256);
 			vsi.setGPURemoveBuffer(ite.nblocks(),256);
 
-			insert_remove_icell<dim><<<ite.wthr,ite.thr>>>(vs.toKernel(),vsi.toKernel(),cld,ite.start,p2);
+			CUDA_LAUNCH(insert_remove_icell<dim>,ite,vs.toKernel(),vsi.toKernel(),cld,ite.start,p2);
 
 			vs.template flush<>(v_cl.getmgpuContext(),flust_type::FLUSH_ON_DEVICE);
 			vsi.flush_remove(v_cl.getmgpuContext(),flust_type::FLUSH_ON_DEVICE);
-
 		}
 
 		vs.swapIndexVector(icells);

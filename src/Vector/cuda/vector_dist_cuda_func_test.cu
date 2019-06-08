@@ -1262,6 +1262,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration_gpu )
 
 	// Distributed vector
 	vector_dist_gpu<3,float,part_prop> vd(k,box,bc,ghost,BIND_DEC_TO_GHOST);
+
 	size_t start = vd.init_size_accum(k);
 
 	auto it = vd.getIterator();
