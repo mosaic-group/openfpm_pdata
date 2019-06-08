@@ -219,6 +219,12 @@ struct cell_list_selector<vector,comp_host>
 	}
 };
 
+#ifdef CUDA_GPU
+typedef vector_dist_ker<dim,St,prop,layout_base> vdlk_type;
+#else
+typedef int vdlk_type;
+#endif
+
 /*! \brief Distributed vector
  *
  * This class represent a distributed vector, the distribution of the structure
@@ -260,7 +266,7 @@ template<unsigned int dim,
          typename Memory = HeapMemory,
          template<typename> class layout_base = memory_traits_lin>
 class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>,
-					private vector_dist_ker_list<vector_dist_ker<dim,St,prop,layout_base>>
+					private vector_dist_ker_list<vdlk_type>
 {
 
 public:
@@ -2200,7 +2206,9 @@ public:
 
 		this->template map_list_<prp...>(v_pos,v_prp,g_m,opt);
 
+#ifdef CUDA_GPU
 		this->update(this->toKernel());
+#endif
 
 #ifdef SE_CLASS3
 		se3.map_post();
@@ -2227,7 +2235,9 @@ public:
 
 		this->template map_<obp>(v_pos,v_prp,g_m,opt);
 
+#ifdef CUDA_GPU
 		this->update(this->toKernel());
+#endif
 
 #ifdef SE_CLASS3
 		se3.map_post();
@@ -2257,7 +2267,9 @@ public:
 
 		this->template ghost_get_<GHOST_SYNC,prp...>(v_pos,v_prp,g_m,opt);
 
+#ifdef CUDA_GPU
 		this->update(this->toKernel());
+#endif
 
 #ifdef SE_CLASS3
 
@@ -2311,7 +2323,9 @@ public:
 
 		this->template ghost_wait_<prp...>(v_pos,v_prp,g_m,opt);
 
+#ifdef CUDA_GPU
 		this->update(this->toKernel());
+#endif
 
 #ifdef SE_CLASS3
 
@@ -2557,7 +2571,9 @@ public:
 
 		g_m = rs;
 
+#ifdef CUDA_GPU
 		this->update(this->toKernel());
+#endif
 	}
 
 	/*! \brief Output particle position and properties
@@ -2996,6 +3012,40 @@ public:
         	return compare_host_device<typename boost::mpl::at<typename prop::type,
         							            boost::mpl::int_<prp> >::type,prp>::compare(v_prp,tol,near,silent);
         }
+
+#else
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 */
+		template<unsigned int ... prp> void deviceToHostProp()
+		{}
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 */
+		void deviceToHostPos()
+		{}
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 */
+		template<unsigned int ... prp> void hostToDeviceProp()
+		{}
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 */
+		void hostToDevicePos()
+		{}
 
 #endif
 
