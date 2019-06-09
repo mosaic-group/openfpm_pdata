@@ -219,12 +219,6 @@ struct cell_list_selector<vector,comp_host>
 	}
 };
 
-#ifdef CUDA_GPU
-typedef vector_dist_ker<dim,St,prop,layout_base> vdlk_type;
-#else
-typedef int vdlk_type;
-#endif
-
 /*! \brief Distributed vector
  *
  * This class represent a distributed vector, the distribution of the structure
@@ -266,7 +260,11 @@ template<unsigned int dim,
          typename Memory = HeapMemory,
          template<typename> class layout_base = memory_traits_lin>
 class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>,
-					private vector_dist_ker_list<vdlk_type>
+#ifdef CUDA_GPU
+					private vector_dist_ker_list<vector_dist_ker<dim,St,prop,layout_base>>
+#else
+					private vector_dist_ker_list<int>
+#endif
 {
 
 public:
