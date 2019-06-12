@@ -11,10 +11,11 @@
 template<typename T>
 struct ref_wrap
 {
+	bool is_sorted;
 	T & v;
 
-	ref_wrap(T & v)
-	:v(v)
+	ref_wrap(T & v, bool is_sorted)
+	:v(v),is_sorted(is_sorted)
 	{}
 
 	ref_wrap & operator=(const ref_wrap<T> & rw)
@@ -44,9 +45,9 @@ public:
 	 *
 	 *
 	 */
-	void add(vector_dist_ker_type & v)
+	void add(vector_dist_ker_type & v, bool is_sorted)
 	{
-		ref_wrap<vector_dist_ker_type> rw(v);
+		ref_wrap<vector_dist_ker_type> rw(v,is_sorted);
 
 		vkers.add(rw);
 
@@ -66,7 +67,17 @@ public:
 	{
 		for (size_t i = 0 ; i < vkers.size() ; i++)
 		{
-			vkers.get(i).v = v;
+			if (vkers.get(i).is_sorted == false)
+			{vkers.get(i).v = v;}
+		}
+	}
+
+	void update_sort(const vector_dist_ker_type & vs)
+	{
+		for (size_t i = 0 ; i < vkers.size() ; i++)
+		{
+			if (vkers.get(i).is_sorted == true)
+			{vkers.get(i).v = vs;}
 		}
 	}
 

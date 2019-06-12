@@ -1270,6 +1270,10 @@ public:
 		cell_list.set_ndec(getDecomposition().get_ndec());
 		cell_list.set_gm(g_m);
 
+#ifdef CUDA_GPU
+		this->update_sort(this->toKernel_sorted());
+#endif
+
 		return cell_list;
 	}
 
@@ -2725,6 +2729,46 @@ public:
 	openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & getPropVector()
 	{
 		return v_prp;
+	}
+
+	/*! \brief return the position vector of all the particles
+	 *
+	 * \return the particle position vector
+	 *
+	 */
+	const openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & getPosVectorSort() const
+	{
+		return v_pos_out;
+	}
+
+	/*! \brief return the position vector of all the particles
+	 *
+	 * \return the particle position vector
+	 *
+	 */
+	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & getPosVectorSort()
+	{
+		return v_pos_out;
+	}
+
+	/*! \brief return the property vector of all the particles
+	 *
+	 * \return the particle property vector
+	 *
+	 */
+	const openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & getPropVectorSort() const
+	{
+		return v_prp_out;
+	}
+
+	/*! \brief return the property vector of all the particles
+	 *
+	 * \return the particle property vector
+	 *
+	 */
+	openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & getPropVectorSort()
+	{
+		return v_prp_out;
 	}
 
 	/*! \brief It return the sum of the particles in the previous processors
