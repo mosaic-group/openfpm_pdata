@@ -10,27 +10,39 @@
 
 #define FREE 1
 #define FIXED 2
+#define ITERATION_ISOLATION 4
 
 #include "Grid/grid_dist_key.hpp"
 #include "VCluster/VCluster.hpp"
 #include "util/GBoxes.hpp"
 
-
-/*! \brief Distributed grid iterator
- *
- * Iterator across the local elements of the distributed grid
- *
- * \tparam dim dimensionality of the grid
- * \tparam device_grid type of basic grid
- * \tparam impl implementation
- *
- */
-template<unsigned int dim, typename device_grid, int impl,typename stencil = no_stencil >
-class grid_dist_iterator
+template<bool is_free>
+struct selvg
 {
-
+	template<typename a_it_type, typename gdb_ext_type, typename gList_type>
+	static inline void call(a_it_type & a_it, gdb_ext_type & gdb_ext, gList_type & gList, size_t & g_c)
+	{
+		if (gdb_ext.get(g_c).Dbox.isValid() == false)
+		{g_c++;}
+		else
+		{
+			a_it.reinitialize(gList.get(g_c).getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2()));
+			if (a_it.isNext() == false)	{g_c++;}
+		}
+	}
 };
 
+template<>
+struct selvg<false>
+{
+	template<typename a_it_type, typename gdb_ext_type, typename gList_type>
+	static inline void call(a_it_type & a_it, gdb_ext_type & gdb_ext, gList_type & gList, size_t & g_c)
+	{
+		// Full iterator (no subset)
+		a_it.reinitialize(gList.get(g_c).getIterator());
+		if (a_it.isNext() == false)	{g_c++;}
+	}
+};
 
 /*! \brief Distributed grid iterator
  *
@@ -38,23 +50,24 @@ class grid_dist_iterator
  *
  * \tparam dim dimensionality of the grid
  * \tparam device_grid type of basic grid
- * \tparam impl implementation
+ * \tparam stencil it inject the code to calculate stencil offset
+ * \tparam sub_iterator it indicate the sub-iterator type of the device_grid
  *
  */
-template<unsigned int dim, typename device_grid, typename stencil>
-class grid_dist_iterator<dim,device_grid,FREE,stencil>
+template<unsigned int dim, typename device_grid, typename device_sub_it, int impl, typename stencil  = no_stencil >
+class grid_dist_iterator
 {
 	//! grid list counter
 	size_t g_c;
 
 	//! List of the grids we are going to iterate
-	openfpm::vector<device_grid> & gList;
+	const openfpm::vector<device_grid> & gList;
 
 	//! Extension of each grid: domain and ghost + domain
 	const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
 
 	//! Actual iterator
-	grid_key_dx_iterator_sub<dim,stencil> a_it;
+	device_sub_it a_it;
 
 	//! stop point (is the grid size)
 	grid_key_dx<dim> stop;
@@ -64,15 +77,44 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 */
 	void selectValidGrid()
 	{
-		// When the grid has size 0 potentially all the other informations are garbage
-		while (g_c < gList.size() && (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false ) )
-		{g_c++;}
-
-		// get the next grid iterator
-		if (g_c < gList.size())
+		do
 		{
-			a_it.reinitialize(gList.get(g_c).getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2()));
-		}
+			if (impl == FREE)
+			{
+				// When the grid has size 0 potentially all the other informations are garbage
+				while (g_c < gList.size() && (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false ) ) g_c++;
+			}
+			else
+			{
+				// When the grid has size 0 potentially all the other informations are garbage
+				while (g_c < gList.size() && (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).GDbox.isValid() == false) ) g_c++;
+			}
+
+			// get the next grid iterator
+			if (g_c < gList.size())
+			{
+				// Sub iterator are used
+/*				if (impl == FREE)
+				{
+					if (gdb_ext.get(g_c).Dbox.isValid() == false)
+					{g_c++;}
+					else
+					{
+						a_it.reinitialize(gList.get(g_c).getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2()));
+						if (a_it.isNext() == false)	{g_c++;}
+					}
+				}
+				else
+				{
+					// Full iterator (no subset)
+					a_it.reinitialize(gList.get(g_c).getIterator());
+					if (a_it.isNext() == false)	{g_c++;}
+				}*/
+
+				selvg<impl == FREE>::call(a_it,gdb_ext,gList,g_c);
+			}
+		} while (g_c < gList.size() && a_it.isNext() == false);
+
 	}
 
 	public:
@@ -84,13 +126,16 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 * \param stop end point
 	 *
 	 */
-	grid_dist_iterator(openfpm::vector<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, const grid_key_dx<dim> & stop)
+	grid_dist_iterator(const openfpm::vector<device_grid> & gk,
+					   const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
+					   const grid_key_dx<dim> & stop)
 	:g_c(0),gList(gk),gdb_ext(gdb_ext),stop(stop)
 	{
 		// Initialize the current iterator
 		// with the first grid
 		selectValidGrid();
 	}
+
 
 	/*! \brief Constructor of the distributed grid iterator with
 	 *         stencil support
@@ -112,7 +157,17 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 		selectValidGrid();
 	}
 
-	// Destructor
+	//! Copy constructor
+	grid_dist_iterator(const grid_dist_iterator<dim,device_grid,device_sub_it,impl,stencil> & g)
+	:g_c(g.g_c),gList(g.gList),gdb_ext(g.gdb_ext),a_it(g.a_it),stop(g.stop)
+	{}
+
+	//! Copy constructor
+	grid_dist_iterator(grid_dist_iterator<dim,device_grid,device_sub_it,impl,stencil> && g)
+	:g_c(g.g_c),gList(g.gList),gdb_ext(g.gdb_ext),a_it(g.a_it),stop(g.stop)
+	{}
+
+	//! Destructor
 	~grid_dist_iterator()
 	{
 	}
@@ -122,8 +177,7 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 * \return the next grid_key
 	 *
 	 */
-
-	inline grid_dist_iterator<dim,device_grid,FREE,stencil> & operator++()
+	inline grid_dist_iterator<dim,device_grid,device_sub_it,impl,stencil> & operator++()
 	{
 		++a_it;
 
@@ -147,7 +201,7 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 * \return true if there is the next, false otherwise
 	 *
 	 */
-	inline bool isNext()
+	inline bool isNext() const
 	{
 		// If there are no other grid stop
 
@@ -162,9 +216,9 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 * \return the actual key
 	 *
 	 */
-	inline grid_dist_key_dx<dim> get()
+	inline grid_dist_key_dx<dim, typename device_grid::base_key> get() const
 	{
-		return grid_dist_key_dx<dim>(g_c,a_it.get());
+		return grid_dist_key_dx<dim,typename device_grid::base_key>(g_c,a_it.get());
 	}
 
 	/*! \brief it return the stop point of the iterator
@@ -217,7 +271,7 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 * \return the global position in the grid
 	 *
 	 */
-	inline grid_key_dx<dim> getGKey(const grid_dist_key_dx<dim> & k)
+	inline grid_key_dx<dim> getGKey(const grid_dist_key_dx<dim,typename device_grid::base_key> & k)
 	{
 		// Get the sub-domain id
 		size_t sub_id = k.getSub();
@@ -244,178 +298,5 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 };
 
 
-/*! \brief Distributed grid iterator
- *
- * Iterator across the local elements of the distributed grid
- *
- * \tparam dim dimensionality of the grid
- * \tparam device_grid type of basic grid
- * \tparam impl implementation
- *
- */
-template<unsigned int dim, typename device_grid,typename stencil>
-class grid_dist_iterator<dim,device_grid,FIXED,stencil>
-{
-	//! grid list counter
-	size_t g_c;
-
-	//! List of the grids we are going to iterate
-	const openfpm::vector<device_grid> & gList;
-
-	//! Extension of each grid: domain and ghost + domain
-	const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
-
-	//! Actual iterator
-	grid_key_dx_iterator<dim,stencil> a_it;
-
-	/*! \brief from g_c increment g_c until you find a valid grid
-	 *
-	 */
-	void selectValidGrid()
-	{
-		// When the grid has size 0 potentially all the other informations are garbage
-		while (g_c < gList.size() && (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false ) ) g_c++;
-
-		// get the next grid iterator
-		if (g_c < gList.size())
-		{
-			a_it.reinitialize(gList.get(g_c).getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2()));
-		}
-	}
-
-	public:
-
-	/*! \brief Copy operator=
-	*
-	* \param tmp iterator to copy
-	*
-	* \return itself
-	*
-	*/
-	grid_dist_iterator<dim,device_grid,FIXED> & operator=(const grid_dist_iterator<dim,device_grid,FIXED> & tmp)
-	{
-		g_c = tmp.g_c;
-		gList = tmp.gList;
-		gdb_ext = tmp.gdb_ext;
-		a_it.reinitialize(tmp.a_it);
-
-		return *this;
-	}
-
-	/*! \brief Constructor of the distributed grid iterator
-	 *
-	 * \param gk std::vector of the local grid
-	 * \param gdb_ext information about the local grids
-	 *
-	 */
-	grid_dist_iterator(const openfpm::vector<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
-	:g_c(0),gList(gk),gdb_ext(gdb_ext)
-	{
-		// Initialize the current iterator
-		// with the first grid
-		selectValidGrid();
-	}
-
-	// Destructor
-	~grid_dist_iterator()
-	{
-	}
-
-	/*! \brief Get the next element
-	 *
-	 * \return the next grid_key
-	 *
-	 */
-
-	grid_dist_iterator<dim,device_grid,FIXED> &  operator++()
-	{
-		++a_it;
-
-		// check if a_it is at the end
-
-		if (a_it.isNext() == true)
-			return *this;
-		else
-		{
-			// switch to the new grid
-			g_c++;
-			selectValidGrid();
-		}
-
-		return *this;
-	}
-
-	/*! \brief Check if there is the next element
-	 *
-	 * \return true if there is the next, false otherwise
-	 *
-	 */
-	bool isNext()
-	{
-		// If there are no other grid stop
-
-		if (g_c >= gList.size())
-			return false;
-
-		return true;
-	}
-
-	/*! \brief Get the actual key
-	 *
-	 * \return the actual key
-	 *
-	 */
-	grid_dist_key_dx<dim> get()
-	{
-		return grid_dist_key_dx<dim>(g_c,a_it.get());
-	}
-
-	/*! \brief Get the boxes
-	 *
-	 *  Get the boxes that define the local grids
-	 *
-	 * \return Vector of local boxes
-	 *
-	 */
-	inline const openfpm::vector<GBoxes<device_grid::dims>> & getGBoxes()
-	{
-		return gdb_ext;
-	}
-
-	/*! \brief Convert a g_dist_key_dx into a global key
-	 *
-	 * \see grid_dist_key_dx
-	 * \see grid_dist_iterator
-	 *
-	 * \param k local coordinates to convert into global
-	 *
-	 * \return the global position in the grid
-	 *
-	 */
-	inline grid_key_dx<dim> getGKey(const grid_dist_key_dx<dim> & k)
-	{
-		// Get the sub-domain id
-		size_t sub_id = k.getSub();
-
-		grid_key_dx<dim> k_glob = k.getKey();
-
-		// shift
-		k_glob = k_glob + gdb_ext.get(sub_id).origin;
-
-		return k_glob;
-	}
-
-	/*! \brief Return the stencil point offset
-	 *
-	 * \tparam id
-	 *
-	 * \return linearized distributed key
-	 *
-	 */
-	template<unsigned int id> inline grid_dist_lin_dx getStencil()
-	{
-		return grid_dist_lin_dx(g_c,a_it.template getStencil<id>());
-	}
-};
 
 #endif /* GRID_DIST_ID_ITERATOR_SUB_HPP_ */

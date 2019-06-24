@@ -26,10 +26,10 @@ class DistParMetisDistribution
 	Box<dim, T> domain;
 
 	//! Processor sub-sub-domain graph
-	DistGraph_CSR<nm_v, nm_e> g;
+	DistGraph_CSR<nm_v<dim>, nm_e> g;
 
 	//! Convert the graph to parmetis format
-	DistParmetis<DistGraph_CSR<nm_v, nm_e>> parmetis_graph;
+	DistParmetis<DistGraph_CSR<nm_v<dim>, nm_e>> parmetis_graph;
 
 	//! Init vtxdist needed for Parmetis
 	openfpm::vector<idx_t> vtxdist;
@@ -91,20 +91,20 @@ public:
 		domain = dom;
 
 		//! Create sub graph
-		DistGraphFactory<dim, DistGraph_CSR<nm_v, nm_e>> dist_g_factory;
+		DistGraphFactory<dim, DistGraph_CSR<nm_v<dim>, nm_e>> dist_g_factory;
 		g = dist_g_factory.template construct<NO_EDGE, T, dim - 1, 0>(gr.getSize(), domain);
 		g.getDecompositionVector(vtxdist);
 
 		if (dim == 2)
 			for (size_t i = 0; i < g.getNVertex(); i++)
-				g.vertex(i).template get<nm_v::x>()[2] = 0;
+				g.vertex(i).template get<nm_v_x>()[2] = 0;
 
 	}
 
 	/*! \brief Get the current graph (main)
 	 *
 	 */
-	DistGraph_CSR<nm_v, nm_e> & getGraph()
+	DistGraph_CSR<nm_v<dim>, nm_e> & getGraph()
 	{
 		return g;
 	}
@@ -118,7 +118,7 @@ public:
 		parmetis_graph.initSubGraph(g);
 
 		//! Decompose
-		parmetis_graph.decompose<nm_v::proc_id>(g);
+		parmetis_graph.template decompose<nm_v_proc_id>(g);
 
 		//! Get result partition for this processors
 		idx_t *partition = parmetis_graph.getPartition();
@@ -143,7 +143,7 @@ public:
 		parmetis_graph.reset(g);
 
 		//! Refine
-		parmetis_graph.refine<nm_v::proc_id>(g);
+		parmetis_graph.template refine<nm_v_proc_id>(g);
 
 		//! Get result partition for this processors
 		idx_t *partition = parmetis_graph.getPartition();
@@ -194,10 +194,10 @@ public:
 			std::cerr << __FILE__ << ":" << __LINE__ << " Position - Such vertex doesn't exist (id = " << id << ", " << "total size = " << g.getNVertex() << ")\n";
 #endif
 
-		pos[0] = g.vertex(id).template get<nm_v::x>()[0];
-		pos[1] = g.vertex(id).template get<nm_v::x>()[1];
+		pos[0] = g.vertex(id).template get<nm_v_x>()[0];
+		pos[1] = g.vertex(id).template get<nm_v_x>()[1];
 		if (dim == 3)
-			pos[2] = g.vertex(id).template get<nm_v::x>()[2];
+			pos[2] = g.vertex(id).template get<nm_v_x>()[2];
 	}
 
 	/*! \brief Function that set the weight of the vertex
@@ -215,7 +215,7 @@ public:
 #endif
 
 		// If the vertex is inside this processor update the value
-		g.vertex(id).template get<nm_v::computation>() = weight;
+		g.vertex(id).template get<nm_v_computation>() = weight;
 
 	}
 
@@ -242,7 +242,7 @@ public:
 			std::cerr << __FILE__ << ":" << __LINE__ << "Such vertex doesn't exist (id = " << id << ", " << "total size = " << g.getTotNVertex() << ")\n";
 #endif
 
-		return g.vertex(id).template get<nm_v::computation>();
+		return g.vertex(id).template get<nm_v_computation>();
 	}
 
 	/*! \brief Compute the processor load counting the total weights of its vertices
@@ -255,7 +255,7 @@ public:
 
 		for (size_t i = 0; i < g.getNVertex(); i++)
 		{
-			load += g.vertex(i).template get<nm_v::computation>();
+			load += g.vertex(i).template get<nm_v_computation>();
 		}
 		return load;
 	}
@@ -292,7 +292,7 @@ public:
 			std::cerr << __FILE__ << ":" << __LINE__ << "Migration - Such vertex doesn't exist (id = " << id << ", " << "total size = " << g.getNVertex() << ")\n";
 #endif
 
-		g.vertex(id).template get<nm_v::migration>() = migration;
+		g.vertex(id).template get<nm_v_migration>() = migration;
 	}
 
 	/*! \brief Set communication cost of the edge id
@@ -338,7 +338,7 @@ public:
 	 */
 	void write(const std::string & file)
 	{
-		VTKWriter<DistGraph_CSR<nm_v, nm_e>, DIST_GRAPH> gv2(g);
+		VTKWriter<DistGraph_CSR<nm_v<dim>, nm_e>, DIST_GRAPH> gv2(g);
 		gv2.write(std::to_string(file + ".vtk"));
 	}
 

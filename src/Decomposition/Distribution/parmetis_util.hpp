@@ -174,8 +174,8 @@ class Parmetis
 			gid idx = m2g.find(i)->second;
 
 			// Add weight to vertex and migration cost
-			Mg.vwgt[j] = g.vertex(idx.id).template get<nm_v::computation>();
-			Mg.vsize[j] = g.vertex(idx.id).template get<nm_v::migration>();
+			Mg.vwgt[j] = g.vertex(idx.id).template get<nm_v_computation>();
+			Mg.vsize[j] = g.vertex(idx.id).template get<nm_v_migration>();
 
 			// Calculate the starting point in the adjacency list
 			Mg.xadj[id] = prev;
@@ -186,7 +186,7 @@ class Parmetis
 
 				size_t child = g.getChild(idx.id, s);
 
-				Mg.adjncy[prev + s] = g.vertex(child).template get<nm_v::id>();
+				Mg.adjncy[prev + s] = g.vertex(child).template get<nm_v_id>();
 				Mg.adjwgt[prev + s] = g.getChildEdge(idx.id, s).template get<nm_e::communication>();
 			}
 

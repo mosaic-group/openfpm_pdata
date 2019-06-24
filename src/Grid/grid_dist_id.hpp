@@ -22,6 +22,9 @@
 #include "hdf5.h"
 #include "grid_dist_id_comm.hpp"
 #include "HDF5_wr/HDF5_wr.hpp"
+#include "SparseGrid/SparseGrid.hpp"
+
+template <typename> struct Debug;
 
 //! Internal ghost box sent to construct external ghost box into the other processors
 template<unsigned int dim>
@@ -37,7 +40,7 @@ struct Box_fix
 	size_t r_sub;
 };
 
-#define GRID_SUB_UNIT_FACTOR 64
+#define NO_GDB_EXT_SWITCH 0x1000
 
 /*! \brief This is a distributed grid
  *
@@ -86,6 +89,17 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	//! Space Decomposition
 	Decomposition dec;
 
+	//! gdb_ext markers
+	//! In the case where the grid is defined everywhere
+	//! gdb_ext_marker is useless and so is empty
+	//! in the case we have a grid defined on a smaller set
+	//! of boxes gbd_ext_markers indicate the division across
+	//! subdomains. For example Sub-domain 0 produce 2 grid
+	//! Sub-domain 1 produce 3 grid Sub-domain 2 produce 2 grid
+	//! Sub-domain 3 produce 1 grid
+	//! gdb_ext_markers contain 0,2,5,7,8
+	openfpm::vector<size_t> gdb_ext_markers;
+
 	//! Extension of each grid: Domain and ghost + domain
 	openfpm::vector<GBoxes<device_grid::dims>> gdb_ext;
 
@@ -111,6 +125,76 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	//! It is unique across all the near processor
 	std::unordered_map<size_t,size_t> g_id_to_external_ghost_box;
 
+	/*! Link a received external ghost box to the linked eg_box.
+	 * When the grid is defined everywhere for each received external ghost box
+	 * exists one eg_box linked to it that contain the information
+	 * on how to transfer the information to the associated sub-domain grid.
+	 * Unfortunately when we specify where the grid is defined, a received external
+	 * ghost box can be linked to multiple sub-domain grids (one sub-domain can have multiple
+	 * sub grids).
+	 * So in standard situation (grid defined everywhere)
+	 * a received external ghost box is linked to a single
+	 * eg_box entry and eb_gid_list play mainly no role.
+	 * (play no role but must be filled ghost_get expect this structure to be
+	 * filled consistently, it will be clear later how to do it in this case).
+	 * When the grid is not defined everywhere a received ghost box can be linked
+	 * to multiple external ghost boxes. (Like in figure)
+	 *
+	 * \verbatim
+  +--------------------------------------------+------
+  |        Sub-domain                          | Another sub-domain
+  |          +------+           +---------+    |
+  |          |      |           |         |    |
+  |          |      |           |         |    |
+  |          |      |           |         |    |
+  |          |  3   |           |    4    |    |
+  |   empty  |      |    empty  |         |    |
+  |          |      |           |         |    |
+  |          |      |           |         |    |
+  |          |      |           |         |    |                         1
+  |          |      |           |         |    |
++-+-----+----+------+-----------+---------+----+-----+-----   Processor bound
+        |***##########*********#############****|****|
+        |                                            |                   0
+        |                                            |
+        |                                            |
+        |                  9                         |
+        |                                            |
+        |                                            |
+        |                                            |
+        +--------------------------------------------+
+
+	 * \endverbatim
+	 *
+	 * As we can see here the grid number 9 on processo 0 has an internal ghost box
+	 * The internal ghost-box is sent to processor 1 and is a received external
+	 * ghost box. This external ghost box is partially shared in two separated grids.
+	 * It is important to note that 3 and 4 are grid defined externally and are
+	 * not defined by the sub-domain border. It is important also to note that the sub-domain
+	 * granularity in processor 1 define the granularity of the internal ghost box in
+	 * processor 0 and consequently every external ghost box in processor 1 is linked
+	 *  uniquely with one internal ghost box in processor 0. On the other hand if we have
+	 *  a secondary granularity define by external boxes like 3 and 4 this is not anymore
+	 *  true and one internal ghost box in 0 can be linked with multiple grids.
+	 *  The granularity of the space division is different from the granularity of where
+	 *  the grid is defined. Space decomposition exist independently from the data-structure
+	 *  and can be shared across multiple data-structure this mean that cannot be redefined
+	 *  based on where is the grid definitions.
+	 * The internal ghost box could be redefined in order to respect the granularity.
+	 * We do not do this for 3 main reason.
+	 *
+	 * 1) The definition box must be communicated across processors.
+	 * 2) An interprocessor global-id link must be established with lower sub-domain
+	 *    granularty
+	 * 3) Despite the points * are not linked, but must be anyway sent
+	 *    to processor 1, this mean that make not too much sense to increase
+	 *    the granularity in advance on processor 0, but it is better receive
+	 *    the information an than solve the lower granularity locally
+	 *    on processor 1
+	 *
+	 */
+	openfpm::vector<e_box_multi<dim>> eb_gid_list;
+
 	//! It map a global ghost id (g_id) to the internal ghost box information
 	//! (is unique for processor), it is not unique across all the near processor
 	openfpm::vector<std::unordered_map<size_t,size_t>> g_id_to_internal_ghost_box;
@@ -127,11 +211,41 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	//! Grid informations object without type
 	grid_sm<dim,void> ginfo_v;
 
+	//! Set of boxes that define where the grid is defined
+	openfpm::vector<Box<dim,long int>> bx_def;
+
+	//! Indicate if we have to use bx_def to define the grid
+	bool use_bx_def = false;
+
 	//! Indicate if the local internal ghost box has been initialized
 	bool init_local_i_g_box = false;
 
 	//! Indicate if the local external ghost box has been initialized
 	bool init_local_e_g_box = false;
+
+	//! Flag that indicate if the external ghost box has been initialized
+	bool init_e_g_box = false;
+
+	//! Flag that indicate if the internal ghost box has been initialized
+	bool init_i_g_box = false;
+
+	//! Flag that indicate if the internal and external ghost box has been fixed
+	bool init_fix_ie_g_box = false;
+
+	//! Internal ghost boxes in grid units
+	openfpm::vector<ip_box_grid<dim>> ig_box;
+
+	//! External ghost boxes in grid units
+	openfpm::vector<ep_box_grid<dim>> eg_box;
+
+	//! Local internal ghost boxes in grid units
+	openfpm::vector<i_lbox_grid<dim>> loc_ig_box;
+
+	//! Local external ghost boxes in grid units
+	openfpm::vector<e_lbox_grid<dim>> loc_eg_box;
+
+	//! Number of sub-sub-domain for each processor
+	size_t v_sub_unit_factor = 64;
 
 	/*! \brief Call-back to allocate buffer to receive incoming objects (external ghost boxes)
 	 *
@@ -247,6 +361,9 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	 */
 	void create_ig_box()
 	{
+		// temporal vector used for computation
+		openfpm::vector_std<result_box<dim>> ibv;
+
 		if (init_i_g_box == true)	return;
 
 		// Get the grid info
@@ -267,42 +384,42 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 				::Box<dim,St> ib_dom = dec.getProcessorIGhostBox(i,j);
 				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom,dec.periodicity());
 
-				// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
-				if (ib.isValid() == false)
-					continue;
+				// Here we intersect the internal ghost box with the definition boxes
+				// this operation make sense when the grid is not defined in the full
+				// domain and we have to intersect the internal ghost box with all the box
+				// that define where the grid is defined
+				bx_intersect<dim>(bx_def,use_bx_def,ib,ibv);
 
-				size_t sub_id = dec.getProcessorIGhostSub(i,j);
-				size_t r_sub = dec.getProcessorIGhostSSub(i,j);
+				for (size_t k = 0 ; k < ibv.size() ; k++)
+				{
+					// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
+					if (ibv.get(k).bx.isValid() == false)
+					{continue;}
 
-				auto & n_box = dec.getNearSubdomains(dec.IDtoProc(i));
+					// save the box and the sub-domain id (it is calculated as the linearization of P1)
+					::Box<dim,size_t> cvt = ibv.get(k).bx;
 
-				Box<dim,long int> sub = gdb_ext.get(sub_id).Dbox;
-				sub += gdb_ext.get(sub_id).origin;
+					i_box_id<dim> bid_t;
+					bid_t.box = cvt;
+					bid_t.g_id = dec.getProcessorIGhostId(i,j) | (k) << 52;
 
-				set_for_adjustment(sub,
-						           n_box.get(r_sub),dec.getProcessorIGhostPos(i,j),
-								   ib,ghost_int);
+					bid_t.sub = convert_to_gdb_ext(dec.getProcessorIGhostSub(i,j),
+							                       ibv.get(k).id,
+												   gdb_ext,
+												   gdb_ext_markers);
 
-				if (ib.isValid() == false)
-					continue;
+					bid_t.cmb = dec.getProcessorIGhostPos(i,j);
+					bid_t.r_sub = dec.getProcessorIGhostSSub(i,j);
+					pib.bid.add(bid_t);
 
-				// save the box and the sub-domain id (it is calculated as the linearization of P1)
-				::Box<dim,size_t> cvt = ib;
-
-				i_box_id<dim> bid_t;
-				bid_t.box = cvt;
-				bid_t.g_id = dec.getProcessorIGhostId(i,j);
-				bid_t.sub = dec.getProcessorIGhostSub(i,j);
-				bid_t.cmb = dec.getProcessorIGhostPos(i,j);
-				bid_t.r_sub = dec.getProcessorIGhostSSub(i,j);
-				pib.bid.add(bid_t);
-
-				g_id_to_internal_ghost_box.get(i)[bid_t.g_id] = pib.bid.size()-1;
+					g_id_to_internal_ghost_box.get(i)[bid_t.g_id | (k) << 52 ] = pib.bid.size()-1;
+				}
 			}
 		}
 
 		init_i_g_box = true;
 	}
+
 
 	/*! \brief Create per-processor internal ghost box list in grid units
 	 *
@@ -340,40 +457,172 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		eg_box.resize(dec.getNNProcessors());
 
 		for (size_t i = 0 ; i < eg_box.size() ; i++)
-			eg_box.get(i).prc = dec.IDtoProc(i);
+		{eg_box.get(i).prc = dec.IDtoProc(i);}
 
 		for (size_t i = 0 ; i < box_int_recv.size() ; i++)
 		{
+			size_t pib_cnt = 0;
 			size_t p_id = dec.ProctoID(prc_recv.get(i));
 			auto&& pib = eg_box.get(p_id);
 			pib.prc = prc_recv.get(i);
 
+			eg_box.get(p_id).recv_pnt = 0;
+			eg_box.get(p_id).n_r_box = box_int_recv.get(i).size();
+
 			// For each received internal ghost box
 			for (size_t j = 0 ; j < box_int_recv.get(i).size() ; j++)
 			{
+				size_t vol_recv = box_int_recv.get(i).get(j).bx.getVolumeKey();
+
+				eg_box.get(p_id).recv_pnt += vol_recv;
 				size_t send_list_id = box_int_recv.get(i).get(j).r_sub;
 
-				// Get the list of the sent sub-domains
-				// and recover the id of the sub-domain from
-				// the sent list
-				const openfpm::vector<size_t> & s_sub = dec.getSentSubdomains(p_id);
-				size_t sub_id = s_sub.get(send_list_id);
+				if (use_bx_def == true)
+				{
+					// First we understand if the internal ghost box sent intersect
+					// some local extended sub-domain.
 
-				e_box_id<dim> bid_t;
-				bid_t.sub = sub_id;
-				bid_t.cmb = box_int_recv.get(i).get(j).cmb;
-				bid_t.cmb.sign_flip();
-				::Box<dim,long int> ib = flip_box(box_int_recv.get(i).get(j).bx,box_int_recv.get(i).get(j).cmb);
-				bid_t.g_e_box = ib;
-				bid_t.g_id = box_int_recv.get(i).get(j).g_id;
-				// Translate in local coordinate
-				Box<dim,long int> tb = ib;
-				tb -= gdb_ext.get(sub_id).origin;
-				bid_t.l_e_box = tb;
+					// eb_gid_list, for an explanation check the declaration
+					eb_gid_list.add();
+					eb_gid_list.last().e_id = p_id;
 
-				pib.bid.add(bid_t);
+					// Now we have to check if a received external ghost box intersect one
+					// or more sub-grids
+					for (size_t k = 0 ; k < gdb_ext.size() ; k++)
+					{
+						Box<dim,long int> bx = gdb_ext.get(k).GDbox;
+						bx += gdb_ext.get(k).origin;
 
-				g_id_to_external_ghost_box[bid_t.g_id] = pib.bid.size()-1;
+						Box<dim,long int> output;
+						Box<dim,long int> flp_i = flip_box(box_int_recv.get(i).get(j).bx,box_int_recv.get(i).get(j).cmb);
+
+						// it intersect one sub-grid
+						if (bx.Intersect(flp_i,output))
+						{
+							// link
+
+							size_t g_id = box_int_recv.get(i).get(j).g_id;
+							add_eg_box<dim>(k,box_int_recv.get(i).get(j).cmb,output,
+									g_id,
+									gdb_ext.get(k).origin,
+									box_int_recv.get(i).get(j).bx.getP1(),
+									pib.bid);
+
+							eb_gid_list.last().eb_list.add(pib.bid.size() - 1);
+
+							g_id_to_external_ghost_box[g_id] = eb_gid_list.size() - 1;
+						}
+					}
+
+					// now we check if exist a full match across the full intersected
+					// ghost parts
+
+					bool no_match = true;
+					for (size_t k = 0 ; k < eb_gid_list.last().eb_list.size() ; k++)
+					{
+						size_t eb_id = eb_gid_list.last().eb_list.get(k);
+
+						if (pib.bid.get(eb_id).g_e_box == box_int_recv.get(i).get(j).bx)
+						{
+							// full match found
+
+							eb_gid_list.last().full_match = eb_id;
+							no_match = false;
+
+							break;
+						}
+					}
+
+					// This is the case where a full match has not been found. In this case we
+					// generate an additional gdb_ext and local grid with only external ghost
+
+					if (no_match == true)
+					{
+						// Create a grid with the same size of the external ghost
+
+						size_t sz[dim];
+						for (size_t s = 0 ; s < dim ; s++)
+						{sz[s] = box_int_recv.get(i).get(j).bx.getHigh(s) - box_int_recv.get(i).get(j).bx.getLow(s) + 1;}
+
+						// Add an unlinked gdb_ext
+						// An unlinked gdb_ext is an empty domain with only a external ghost
+						// part
+						Box<dim,long int> output = flip_box(box_int_recv.get(i).get(j).bx,box_int_recv.get(i).get(j).cmb);
+
+						GBoxes<dim> tmp;
+						tmp.GDbox = box_int_recv.get(i).get(j).bx;
+						tmp.GDbox -= tmp.GDbox.getP1();
+						tmp.origin = output.getP1();
+						for (size_t i = 0 ; i < dim ; i++)
+						{
+							// we set an invalid box, there is no-domain
+							tmp.Dbox.setLow(i,0);
+							tmp.Dbox.setHigh(i,-1);
+						}
+						tmp.k = -1;
+						gdb_ext.add(tmp);
+
+						// create the local grid
+
+						loc_grid.add();
+						loc_grid.last().resize(sz);
+
+						// Add an external ghost box
+
+						size_t g_id = box_int_recv.get(i).get(j).g_id;
+						add_eg_box<dim>(gdb_ext.size()-1,box_int_recv.get(i).get(j).cmb,output,
+								g_id,
+								gdb_ext.get(gdb_ext.size()-1).origin,
+								box_int_recv.get(i).get(j).bx.getP1(),
+								pib.bid);
+
+						// now we map the received ghost box to the information of the
+						// external ghost box created
+						eb_gid_list.last().full_match = pib.bid.size() - 1;
+						eb_gid_list.last().eb_list.add(pib.bid.size() - 1);
+						g_id_to_external_ghost_box[g_id] = eb_gid_list.size() - 1;
+					}
+
+					// now we create lr_e_box
+
+					size_t fm = eb_gid_list.last().full_match;
+					size_t sub_id = pib.bid.get(fm).sub;
+
+					for ( ; pib_cnt < pib.bid.size() ; pib_cnt++)
+					{
+						pib.bid.get(pib_cnt).lr_e_box -= gdb_ext.get(sub_id).origin;
+					}
+
+				}
+				else
+				{
+					// Get the list of the sent sub-domains
+					// and recover the id of the sub-domain from
+					// the sent list
+					const openfpm::vector<size_t> & s_sub = dec.getSentSubdomains(p_id);
+
+					size_t sub_id = s_sub.get(send_list_id);
+
+					e_box_id<dim> bid_t;
+					bid_t.sub = sub_id;
+					bid_t.cmb = box_int_recv.get(i).get(j).cmb;
+					bid_t.cmb.sign_flip();
+					::Box<dim,long int> ib = flip_box(box_int_recv.get(i).get(j).bx,box_int_recv.get(i).get(j).cmb);
+					bid_t.g_e_box = ib;
+					bid_t.g_id = box_int_recv.get(i).get(j).g_id;
+					// Translate in local coordinate
+					Box<dim,long int> tb = ib;
+					tb -= gdb_ext.get(sub_id).origin;
+					bid_t.l_e_box = tb;
+
+					pib.bid.add(bid_t);
+					eb_gid_list.add();
+					eb_gid_list.last().eb_list.add(pib.bid.size()-1);
+					eb_gid_list.last().e_id = p_id;
+					eb_gid_list.last().full_match = pib.bid.size()-1;
+
+					g_id_to_external_ghost_box[bid_t.g_id] = eb_gid_list.size()-1;
+				}
 			}
 		}
 
@@ -385,6 +634,8 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	 */
 	void create_local_ig_box()
 	{
+		openfpm::vector_std<result_box<dim>> ibv;
+
 		// Get the grid info
 		auto g = cd_sm.getGrid();
 
@@ -398,34 +649,101 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 
 			for (size_t j = 0 ; j < dec.getLocalNIGhost(i) ; j++)
 			{
-				// Get the internal ghost boxes and transform into grid units
-				::Box<dim,St> ib_dom = dec.getLocalIGhostBox(i,j);
-				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom,dec.periodicity());
+				if (use_bx_def == true)
+				{
+					// Get the internal ghost boxes and transform into grid units
+					::Box<dim,St> ib_dom = dec.getLocalIGhostBox(i,j);
+					::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom,dec.periodicity());
 
-				// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
-				if (ib.isValid() == false)
-					continue;
+					// Here we intersect the internal ghost box with the definition boxes
+					// this operation make sense when the grid is not defined in the full
+					// domain and we have to intersect the internal ghost box with all the box
+					// that define where the grid is defined
+					bx_intersect<dim>(bx_def,use_bx_def,ib,ibv);
 
-				size_t sub_id = i;
-				size_t r_sub = dec.getLocalIGhostSub(i,j);
+					for (size_t k = 0 ; k < ibv.size() ; k++)
+					{
+						// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
+						if (ibv.get(k).bx.isValid() == false)
+							continue;
 
-				Box<dim,long int> sub = gdb_ext.get(sub_id).Dbox;
-				sub += gdb_ext.get(sub_id).origin;
+						pib.bid.add();
+						pib.bid.last().box = ibv.get(k).bx;
 
-				set_for_adjustment(sub,dec.getSubDomain(r_sub),
-						           dec.getLocalIGhostPos(i,j),ib,ghost_int);
+						pib.bid.last().sub_gdb_ext = convert_to_gdb_ext(i,
+																ibv.get(k).id,
+																gdb_ext,
+																gdb_ext_markers);
 
-				// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
-				if (ib.isValid() == false)
-					continue;
+						pib.bid.last().sub = dec.getLocalIGhostSub(i,j);
 
-				pib.bid.add();
-				pib.bid.last().box = ib;
-				pib.bid.last().sub = dec.getLocalIGhostSub(i,j);
-				pib.bid.last().k = dec.getLocalIGhostE(i,j);
-				pib.bid.last().cmb = dec.getLocalIGhostPos(i,j);
+						// It will be filled later
+						/*pib.bid.last().k.add(-1)/*dec.getLocalIGhostE(i,j)*/;
+						pib.bid.last().cmb = dec.getLocalIGhostPos(i,j);
+					}
+				}
+				else
+				{
+					// Get the internal ghost boxes and transform into grid units
+					::Box<dim,St> ib_dom = dec.getLocalIGhostBox(i,j);
+					::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom,dec.periodicity());
+
+					// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
+					if (ib.isValid() == false)
+						continue;
+
+					pib.bid.add();
+					pib.bid.last().box = ib;
+					pib.bid.last().sub = dec.getLocalIGhostSub(i,j);
+					pib.bid.last().k.add(dec.getLocalIGhostE(i,j));
+					pib.bid.last().cmb = dec.getLocalIGhostPos(i,j);
+					pib.bid.last().sub_gdb_ext = i;
+				}
 			}
+
+			if (use_bx_def == true)
+			{
+				// unfortunately boxes that define where the grid is located can generate
+				// additional internal ghost boxes
+
+				for (size_t j = gdb_ext_markers.get(i) ; j < gdb_ext_markers.get(i+1) ; j++)
+				{
+					// intersect within box in the save sub-domain
+
+					for (size_t k = gdb_ext_markers.get(i) ; k < gdb_ext_markers.get(i+1) ; k++)
+					{
+						if (j == k)	{continue;}
+
+						// extend k and calculate the internal ghost box
+						Box<dim,long int> bx_e =  gdb_ext.get(k).GDbox;
+						bx_e += gdb_ext.get(k).origin;
+						Box<dim,long int> bx = gdb_ext.get(j).Dbox;
+						bx += gdb_ext.get(j).origin;
+
+						Box<dim,long int> output;
+						if (bx.Intersect(bx_e, output) == true)
+						{
+							pib.bid.add();
+
+							pib.bid.last().box = output;
+
+							pib.bid.last().sub_gdb_ext = j;
+							pib.bid.last().sub = i;
+
+//							if (use_bx_def == true)
+//							{pib.bid.last().k = -1;}
+//							else
+//							{pib.bid.last().k = dec.getLocalIGhostE(i,j);}
+							// these ghost always in the quadrant zero
+							pib.bid.last().cmb.zero();
+
+						}
+					}
+				}
+			}
+
 		}
+
 
 		init_local_i_g_box = true;
 	}
@@ -447,23 +765,127 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		{
 			for (size_t j = 0 ; j < loc_ig_box.get(i).bid.size() ; j++)
 			{
-				size_t k = loc_ig_box.get(i).bid.get(j).sub;
-				auto & pib = loc_eg_box.get(k);
+				long int volume_linked = 0;
 
-				size_t s = loc_ig_box.get(i).bid.get(j).k;
-				pib.bid.resize(dec.getLocalNEGhost(k));
+				size_t le_sub = loc_ig_box.get(i).bid.get(j).sub;
+				auto & pib = loc_eg_box.get(le_sub);
 
-				pib.bid.get(s).box = flip_box(loc_ig_box.get(i).bid.get(j).box,loc_ig_box.get(i).bid.get(j).cmb);
-				pib.bid.get(s).sub = dec.getLocalEGhostSub(k,s);
-				pib.bid.get(s).cmb = loc_ig_box.get(i).bid.get(j).cmb;
-				pib.bid.get(s).cmb.sign_flip();
-				pib.bid.get(s).k = j;
-				pib.bid.get(s).initialized = true;
+				if (use_bx_def == true)
+				{
+
+					// We check if an external local ghost box intersect one
+					// or more sub-grids
+					for (size_t k = 0 ; k < gdb_ext.size() ; k++)
+					{
+						Box<dim,long int> bx = gdb_ext.get(k).Dbox;
+						bx += gdb_ext.get(k).origin;
+
+						Box<dim,long int> gbx = gdb_ext.get(k).GDbox;
+						gbx += gdb_ext.get(k).origin;
+
+						Box<dim,long int> output;
+						Box<dim,long int> flp_i = flip_box(loc_ig_box.get(i).bid.get(j).box,loc_ig_box.get(i).bid.get(j).cmb);
+
+						bool intersect_domain = bx.Intersect(flp_i,output);
+						bool intersect_gdomain = gbx.Intersect(flp_i,output);
+
+						// it intersect one sub-grid
+						if (intersect_domain == false && intersect_gdomain == true)
+						{
+							// fill the link variable
+							loc_ig_box.get(i).bid.get(j).k.add(pib.bid.size());
+							size_t s = loc_ig_box.get(i).bid.get(j).k.last();
+
+							Box<dim,long int> flp_i = flip_box(loc_ig_box.get(i).bid.get(j).box,loc_ig_box.get(i).bid.get(j).cmb);
+							comb<dim> cmb = loc_ig_box.get(i).bid.get(j).cmb;
+							cmb.sign_flip();
+
+							add_loc_eg_box(le_sub,
+										   loc_ig_box.get(i).bid.get(j).sub_gdb_ext,
+										   j,
+										   k,
+										   pib.bid,
+										   flp_i,
+										   cmb);
+
+
+							volume_linked += pib.bid.last().box.getVolumeKey();
+						}
+					}
+
+/*					if (volume_linked != loc_ig_box.get(i).bid.get(j).box.getVolumeKey())
+					{
+						// Create a grid with the same size of the external ghost
+						// and mark all the linked points
+
+						size_t sz[dim];
+						for (size_t s = 0 ; s < dim ; s++)
+						{sz[s] = loc_ig_box.get(i).bid.get(j).box.getHigh(s) - loc_ig_box.get(i).bid.get(j).box.getLow(s) + 1;}
+
+						// Add an unlinked gdb_ext
+						// An unlinked gdb_ext is an empty domain with only a ghost
+						// part
+						GBoxes<dim> tmp;
+						tmp.GDbox = loc_ig_box.get(i).bid.get(j).box;
+						tmp.GDbox -= tmp.GDbox.getP1();
+						tmp.origin = loc_ig_box.get(i).bid.get(j).box.getP1();
+						for (size_t i = 0 ; i < dim ; i++)
+						{
+							// we set an invalid box, there is no-domain
+							tmp.Dbox.setLow(i,0);
+							tmp.Dbox.setHigh(i,-1);
+						}
+						tmp.k = -1;
+						gdb_ext.add(tmp);
+
+						// create the local grid
+
+						loc_grid.add();
+						loc_grid.last().resize(sz);
+
+						// Add an external ghost box
+
+						Box<dim,long int> output = flip_box(loc_ig_box.get(i).bid.get(j).box,loc_ig_box.get(i).bid.get(j).cmb);
+
+						// fill the link variable
+						loc_ig_box.get(i).bid.get(j).k = pib.bid.size();
+
+						comb<dim> cmb = loc_ig_box.get(i).bid.get(j).cmb;
+						cmb.sign_flip();
+						size_t s = loc_ig_box.get(i).bid.get(j).k;
+
+
+						add_loc_eg_box(le_sub,
+									   dec.getLocalEGhostSub(le_sub,s),
+									   j,
+									   gdb_ext.size() - 1,
+									   pib.bid,
+									   output,
+									   cmb);
+					}*/
+				}
+				else
+				{
+					size_t k = loc_ig_box.get(i).bid.get(j).sub;
+					auto & pib = loc_eg_box.get(k);
+
+					size_t s = loc_ig_box.get(i).bid.get(j).k.get(0);
+					pib.bid.resize(dec.getLocalNEGhost(k));
+
+					pib.bid.get(s).box = flip_box(loc_ig_box.get(i).bid.get(j).box,loc_ig_box.get(i).bid.get(j).cmb);
+					pib.bid.get(s).sub = dec.getLocalEGhostSub(k,s);
+					pib.bid.get(s).cmb = loc_ig_box.get(i).bid.get(j).cmb;
+					pib.bid.get(s).cmb.sign_flip();
+					pib.bid.get(s).k = j;
+					pib.bid.get(s).initialized = true;
+					pib.bid.get(s).sub_gdb_ext = k;
+				}
 			}
 		}
 
 		init_local_e_g_box = true;
 	}
+
 
 	/*! \brief Check the grid has a valid size
 	 *
@@ -475,20 +897,24 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		for (size_t i = 0 ; i < dim ; i++)
 		{
 			if (g_sz[i] < 2)
-				std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " distrobuted grids with size smaller than 2 are not supported\n";
+				std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " distributed grids with size smaller than 2 are not supported\n";
 		}
 	}
 
 	/*! \brief Create the grids on memory
 	 *
+	 * \param bx_def Where the grid is defined
+	 * \param use_bx_def use the array that define where the grid is defined
+	 *
 	 */
-	void Create()
+	void Create(openfpm::vector<Box<dim,long int>> & bx_def,
+			    const Ghost<dim,long int> & g,
+			    bool use_bx_def)
 	{
-		// Get the number of local grid needed
-		size_t n_grid = dec.getNSubDomain();
-
 		// create gdb
-		create_gdb_ext<dim,Decomposition>(gdb_ext,dec,cd_sm);
+		create_gdb_ext<dim,Decomposition>(gdb_ext,gdb_ext_markers,dec,cd_sm,bx_def,g,use_bx_def);
+
+		size_t n_grid = gdb_ext.size();
 
 		// create local grids for each hyper-cube
 		loc_grid.resize(n_grid);
@@ -499,7 +925,6 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		// Allocate the grids
 		for (size_t i = 0 ; i < n_grid ; i++)
 		{
-
 			SpaceBox<dim,long int> sp_tg = gdb_ext.get(i).GDbox;
 
 			// Get the size of the local grid
@@ -508,25 +933,13 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 			// for example a 1D box (interval) from 0 to 3 in one dimension have
 			// the points 0,1,2,3 = so a total of 4 points
 			for (size_t j = 0 ; j < dim ; j++)
-				l_res[j] = (sp_tg.getHigh(j) >= 0)?(sp_tg.getHigh(j)+1):0;
+			{l_res[j] = (sp_tg.getHigh(j) >= 0)?(sp_tg.getHigh(j)+1):0;}
 
 			// Set the dimensions of the local grid
 			loc_grid.get(i).resize(l_res);
 		}
 	}
 
-	/*! \brief Default Copy constructor on this class make no sense and is unsafe, this definition disable it
-	 *
-	 * \param g grid to copy
-	 *
-	 */
-	grid_dist_id(const grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & g)
-	:v_cl(g.v_cl)
-	{
-#ifdef SE_CLASS2
-		check_new(this,8,GRID_DIST_EVENT,4);
-#endif
-	}
 
     /*! \brief Initialize the Cell decomposer of the grid enforcing perfect overlap of the cells
 	 *
@@ -573,7 +986,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		// Get the number of processor and calculate the number of sub-domain
 		// for decomposition
 		size_t n_proc = v_cl.getProcessingUnits();
-		size_t n_sub = n_proc * GRID_SUB_UNIT_FACTOR;
+		size_t n_sub = n_proc * v_sub_unit_factor;
 
 		// Calculate the maximum number (before merging) of sub-domain on
 		// each dimension
@@ -593,12 +1006,36 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	 */
 	inline void InitializeStructures(const size_t (& g_sz)[dim])
 	{
+		// an empty
+		openfpm::vector<Box<dim,long int>> empty;
+
+		// Ghost zero
+		Ghost<dim,long int> zero;
+
+		InitializeStructures(g_sz,empty,zero,false);
+	}
+
+	/*! \brief Initialize the grid
+	 *
+	 * \param g_sz Global size of the grid
+	 * \param g ghost extension of the grid in integer unit
+	 * \param bx set of boxes that define where is defined the grid
+	 *
+	 */
+	inline void InitializeStructures(const size_t (& g_sz)[dim],
+			                         openfpm::vector<Box<dim,long int>> & bx,
+									 const Ghost<dim,long int> & g,
+									 bool use_bx_def)
+	{
 		// fill the global size of the grid
 		for (size_t i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
 
 		// Create local grid
-		Create();
+		Create(bx,g,use_bx_def);
 	}
+
+	// Ghost as integer
+	Ghost<dim,long int> gint = Ghost<dim,long int>(0);
 
 protected:
 
@@ -640,6 +1077,33 @@ protected:
 		}
 
 		return gc;
+	}
+
+	/*! \brief Set the minimum number of sub-domain per processor
+	 *
+	 * \param n_sub
+	 *
+	 */
+	void setDecompositionGranularity(size_t n_sub)
+	{
+		this->v_sub_unit_factor = n_sub;
+	}
+
+	void reset_ghost_structures()
+	{
+		g_id_to_internal_ghost_box.clear();
+		ig_box.clear();
+		init_i_g_box = false;
+
+		eg_box.clear();
+		eb_gid_list.clear();
+		init_e_g_box = false;
+
+		init_local_i_g_box = false;
+		loc_ig_box.clear();
+
+		init_local_e_g_box = false;
+		loc_eg_box.clear();
 	}
 
 public:
@@ -709,6 +1173,36 @@ public:
 		return ginfo_v.size();
 	}
 
+	/*! \brief set the background value
+	 *
+	 * You can use this function make sense in case of sparse in case of dense
+	 * it does nothing
+	 *
+	 */
+	void setBackgroundValue(T & bv)
+	{
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{meta_copy<T>::meta_copy_(bv,loc_grid.get(i).getBackgroundValue());}
+	}
+
+	/*! \brief Return the local total number of points inserted in the grid
+	 *
+	 * in case of dense grid it return the number of local points, in case of
+	 * sparse it return the number of inserted points
+	 *
+	 * \return number of points
+	 *
+	 */
+	size_t size_local_inserted() const
+	{
+		size_t lins = 0;
+
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{lins += loc_grid.get(i).size_inserted();}
+
+		return lins;
+	}
+
 	/*! \brief Return the total number of points in the grid
 	 *
 	 * \param i direction
@@ -719,6 +1213,40 @@ public:
 	size_t size(size_t i) const
 	{
 		return ginfo_v.size(i);
+	}
+
+	/*! \brief Default Copy constructor on this class make no sense and is unsafe, this definition disable it
+	 *
+	 * \param g grid to copy
+	 *
+	 */
+	grid_dist_id(const grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & g)
+	:grid_dist_id_comm<dim,St,T,Decomposition,Memory,device_grid>(g),
+	 domain(g.domain),
+	 ghost(g.ghost),
+	 loc_grid(g.loc_grid),
+	 loc_grid_old(g.loc_grid_old),
+	 dec(g.dec),
+	 gdb_ext_markers(g.gdb_ext_markers),
+	 gdb_ext(g.gdb_ext),
+	 gdb_ext_global(g.gdb_ext_global),
+	 gdb_ext_old(g.gdb_ext_old),
+	 cd_sm(g.cd_sm),
+	 v_cl(g.v_cl),
+	 prp_names(g.prp_names),
+	 g_id_to_external_ghost_box(g.g_id_to_external_ghost_box),
+	 g_id_to_internal_ghost_box(g.g_id_to_internal_ghost_box),
+	 ginfo(g.ginfo),
+	 ginfo_v(g.ginfo_v),
+	 init_local_i_g_box(g.init_local_i_g_box),
+	 init_local_e_g_box(g.init_local_e_g_box)
+	{
+#ifdef SE_CLASS2
+		check_new(this,8,GRID_DIST_EVENT,4);
+#endif
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{g_sz[i] = g.g_sz[i];}
 	}
 
 	/*! \brief This constructor is special, it construct an expanded grid that perfectly overlap with the previous
@@ -772,7 +1300,10 @@ public:
 
 		dec.setParameters(g.getDecomposition(),ghost,this->domain);
 
-		InitializeStructures(g.getGridInfoVoid().getSize());
+		// an empty
+		openfpm::vector<Box<dim,long int>> empty;
+
+		InitializeStructures(g.getGridInfoVoid().getSize(),empty,gh,false);
 	}
 
     /*! It constructs a grid of a specified size, defined on a specified Box space, forcing to follow a specified decomposition and with a specified ghost size
@@ -793,6 +1324,9 @@ public:
 #endif
 
 		InitializeCellDecomposer(g_sz,dec.periodicity());
+
+		this->dec = dec.duplicate(ghost);
+
 		InitializeStructures(g_sz);
 	}
 
@@ -813,6 +1347,9 @@ public:
 #endif
 
 		InitializeCellDecomposer(g_sz,dec.periodicity());
+
+		this->dec = dec.duplicate(ghost);
+
 		InitializeStructures(g_sz);
 	}
 
@@ -839,8 +1376,11 @@ public:
 		ghost = convert_ghost(g,cd_sm);
 		this->dec = dec.duplicate(ghost);
 
+		// an empty
+		openfpm::vector<Box<dim,long int>> empty;
+
 		// Initialize structures
-		InitializeStructures(g_sz);
+		InitializeStructures(g_sz,empty,g,false);
 	}
 
     /*! It construct a grid of a specified size, defined on a specified Box space, forcing to follow a specified decomposition, and having a specified ghost size
@@ -863,9 +1403,13 @@ public:
 		InitializeCellDecomposer(g_sz,dec.periodicity());
 
 		ghost = convert_ghost(g,cd_sm);
+		this->dec = dec.duplicate(ghost);
+
+		// an empty
+		openfpm::vector<Box<dim,long int>> empty;
 
 		// Initialize structures
-		InitializeStructures(g_sz);
+		InitializeStructures(g_sz,empty,g,false);
 	}
 
     /*! It construct a grid of a specified size, defined on a specified Box space, and having a specified ghost size
@@ -877,9 +1421,8 @@ public:
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain,
-			     const Ghost<dim,St> & g)
-	:grid_dist_id(g_sz,domain,g,create_non_periodic<dim>())
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g, size_t opt = 0)
+	:grid_dist_id(g_sz,domain,g,create_non_periodic<dim>(),opt)
 	{
 	}
 
@@ -892,8 +1435,8 @@ public:
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g)
-	:grid_dist_id(g_sz,domain,g,create_non_periodic<dim>())
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g, size_t opt = 0)
+	:grid_dist_id(g_sz,domain,g,create_non_periodic<dim>(),opt)
 	{
 	}
 
@@ -907,19 +1450,21 @@ public:
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain,
-			     const Ghost<dim,St> & g, const periodicity<dim> & p)
-	:domain(domain),ghost(g),ghost_int(INVALID_GHOST),dec(create_vcluster()),v_cl(create_vcluster()),
-	 ginfo(g_sz),ginfo_v(g_sz)
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g, const periodicity<dim> & p, size_t opt = 0)
+	:domain(domain),ghost(g),ghost_int(INVALID_GHOST),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
 #endif
 
+		if (opt >> 32 != 0)
+		{this->setDecompositionGranularity(opt >> 32);}
+
 		InitializeCellDecomposer(g_sz,p.bc);
 		InitializeDecomposition(g_sz, p.bc);
 		InitializeStructures(g_sz);
 	}
+
 
     /*! It construct a grid of a specified size, defined on a specified Box space, having a specified ghost size and periodicity
      *
@@ -931,21 +1476,62 @@ public:
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain,
-			     const Ghost<dim,long int> & g, const periodicity<dim> & p)
-	:domain(domain),ghost_int(g),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),
-	 ginfo_v(g_sz)
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g, const periodicity<dim> & p, size_t opt = 0)
+	:domain(domain),ghost_int(g),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,GRID_DIST_EVENT,4);
 #endif
+
+		if (opt >> 32 != 0)
+		{this->setDecompositionGranularity(opt >> 32);}
+
 		InitializeCellDecomposer(g_sz,p.bc);
 
 		ghost = convert_ghost(g,cd_sm);
 
 		InitializeDecomposition(g_sz,p.bc);
+
+		// an empty
+		openfpm::vector<Box<dim,long int>> empty;
+
 		// Initialize structures
-		InitializeStructures(g_sz);
+		InitializeStructures(g_sz,empty,g,false);
+	}
+
+	/*! \brief It construct a grid on the full domain restricted
+	 *         to the set of boxes specified
+	 *
+	 * In particular the grid is defined in the space equal to the
+	 *  domain intersected the boxes defined by bx
+	 *
+	 * \param g_sz grid size on each dimension
+	 * \param domain where the grid is constructed
+	 * \param g ghost size
+	 * \param p periodicity of the grid
+	 * \param bx set of boxes where the grid is defined
+	 *
+	 *
+	 */
+	grid_dist_id(const size_t (& g_sz)[dim],
+			     const Box<dim,St> & domain,
+				 const Ghost<dim,long int> & g,
+				 const periodicity<dim> & p,
+				 openfpm::vector<Box<dim,long int>> & bx_def)
+	:domain(domain),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz),gint(g)
+	{
+#ifdef SE_CLASS2
+		check_new(this,8,GRID_DIST_EVENT,4);
+#endif
+
+		InitializeCellDecomposer(g_sz,p.bc);
+
+		ghost = convert_ghost(g,cd_sm);
+
+		InitializeDecomposition(g_sz, p.bc);
+		InitializeStructures(g_sz,bx_def,g,true);
+		this->bx_def = bx_def;
+		this->use_bx_def = true;
 	}
 
 	/*! \brief Get an object containing the grid informations
@@ -1098,6 +1684,8 @@ public:
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
+		gdb_ext_global.clear();
+
 		v_cl.SGather(gdb_ext,gdb_ext_global,0);
 		v_cl.execute();
 
@@ -1136,7 +1724,10 @@ public:
 	 * \return the iterator
 	 *
 	 */
-	grid_dist_iterator<dim,device_grid,FREE> getOldDomainIterator() const
+	grid_dist_iterator<dim,device_grid,
+					   decltype(device_grid::type_of_subiterator()),
+					   FREE>
+	getOldDomainIterator() const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1147,9 +1738,67 @@ public:
 		one.one();
 		stop = stop - one;
 
-		grid_dist_iterator<dim,device_grid,FREE> it(loc_grid_old,gdb_ext_old,stop);
+		grid_dist_iterator<dim,device_grid,
+							decltype(device_grid::type_of_subiterator()),
+							FREE> it(loc_grid_old,gdb_ext_old,stop);
 
 		return it;
+	}
+
+	/*! /brief Get a grid Iterator
+	 *
+	 * In case of dense grid getGridIterator is equivalent to getDomainIterator
+	 * in case if sparse distributed grid getDomainIterator go across all the
+	 * inserted point get grid iterator run across all grid points independently
+	 * that the point has been insert or not
+	 *
+	 * \return a Grid iterator
+	 *
+	 */
+	inline grid_dist_id_iterator_dec<Decomposition> getGridIterator(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop)
+	{
+		grid_dist_id_iterator_dec<Decomposition> it_dec(getDecomposition(), g_sz, start, stop);
+		return it_dec;
+	}
+
+	/*! /brief Get a grid Iterator running also on ghost area
+	 *
+	 * In case of dense grid getGridIterator is equivalent to getDomainIterator
+	 * in case if sparse distributed grid getDomainIterator go across all the
+	 * inserted point get grid iterator run across all grid points independently
+	 * that the point has been insert or not
+	 *
+	 * \return a Grid iterator
+	 *
+	 */
+	inline grid_dist_id_iterator_dec<Decomposition,true> getGridGhostIterator(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop)
+	{
+		grid_dist_id_iterator_dec<Decomposition,true> it_dec(getDecomposition(), g_sz, start, stop);
+		return it_dec;
+	}
+
+	/*! /brief Get a grid Iterator
+	 *
+	 * In case of dense grid getGridIterator is equivalent to getDomainIterator
+	 * in case if sparse distributed grid getDomainIterator go across all the
+	 * inserted point get grid iterator run across all grid points independently
+	 * that the point has been insert or not
+	 *
+	 * \return a Grid iterator
+	 *
+	 */
+	inline grid_dist_id_iterator_dec<Decomposition> getGridIterator()
+	{
+		grid_key_dx<dim> start;
+		grid_key_dx<dim> stop;
+		for (size_t i = 0; i < dim; i++)
+		{
+			start.set_d(i, 0);
+			stop.set_d(i, g_sz[i] - 1);
+		}
+
+		grid_dist_id_iterator_dec<Decomposition> it_dec(getDecomposition(), g_sz, start, stop);
+		return it_dec;
 	}
 
 	/*! \brief It return an iterator that span the full grid domain (each processor span its local domain)
@@ -1157,7 +1806,9 @@ public:
 	 * \return the iterator
 	 *
 	 */
-	grid_dist_iterator<dim,device_grid,FREE> getDomainIterator() const
+	grid_dist_iterator<dim,device_grid,
+					   decltype(device_grid::type_of_subiterator()),FREE>
+	getDomainIterator() const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1168,7 +1819,9 @@ public:
 		one.one();
 		stop = stop - one;
 
-		grid_dist_iterator<dim,device_grid,FREE> it(loc_grid,gdb_ext,stop);
+		grid_dist_iterator<dim,device_grid,
+							decltype(device_grid::type_of_subiterator()),
+							FREE> it(loc_grid,gdb_ext,stop);
 
 		return it;
 	}
@@ -1181,7 +1834,10 @@ public:
 	 *
 	 */
 	template<unsigned int Np>
-	grid_dist_iterator<dim,device_grid,FREE,stencil_offset_compute<dim,Np>>
+	grid_dist_iterator<dim,device_grid,
+						decltype(device_grid::template type_of_subiterator<stencil_offset_compute<dim,Np>>()),
+						FREE,
+						stencil_offset_compute<dim,Np> >
 	getDomainIteratorStencil(const grid_key_dx<dim> (& stencil_pnt)[Np]) const
 	{
 #ifdef SE_CLASS2
@@ -1193,7 +1849,10 @@ public:
 		one.one();
 		stop = stop - one;
 
-		grid_dist_iterator<dim,device_grid,FREE,stencil_offset_compute<dim,Np>> it(loc_grid,gdb_ext,stop,stencil_pnt);
+		grid_dist_iterator<dim,device_grid,
+						   decltype(device_grid::template type_of_subiterator<stencil_offset_compute<dim,Np>>()),
+						   FREE,
+						   stencil_offset_compute<dim,Np>> it(loc_grid,gdb_ext,stop,stencil_pnt);
 
 		return it;
 	}
@@ -1203,12 +1862,21 @@ public:
 	 * \return the iterator
 	 *
 	 */
-	grid_dist_iterator<dim,device_grid,FIXED> getDomainGhostIterator() const
+	grid_dist_iterator<dim,device_grid,
+	decltype(device_grid::type_of_iterator()),
+	FIXED>
+	getDomainGhostIterator() const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
-		grid_dist_iterator<dim,device_grid,FIXED> it(loc_grid,gdb_ext);
+		grid_key_dx<dim> stop;
+		for (size_t i = 0 ; i < dim ; i++)
+		{stop.set_d(i,0);}
+
+		grid_dist_iterator<dim,device_grid,
+							decltype(device_grid::type_of_iterator()),
+							FIXED> it(loc_grid,gdb_ext,stop);
 
 		return it;
 	}
@@ -1225,7 +1893,9 @@ public:
 	 * \return the sub-domain iterator
 	 *
 	 */
-	grid_dist_iterator_sub<dim,device_grid> getSubDomainIterator(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop) const
+	grid_dist_iterator_sub<dim,device_grid>
+	getSubDomainIterator(const grid_key_dx<dim> & start,
+						 const grid_key_dx<dim> & stop) const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1286,21 +1956,86 @@ public:
 		return false;
 	}
 
-	/*! \brief Get the reference of the selected element
+	/*! \brief remove an element in the grid
 	 *
-	 * \tparam p property to get (is an integer)
+	 * In case of dense grid this function print a warning, in case of sparse
+	 * grid this function remove a grid point.
+	 *
 	 * \param v1 grid_key that identify the element in the grid
 	 *
-	 * \return the selected element
+	 * \return a reference to the inserted element
 	 *
 	 */
-	template <unsigned int p = 0>inline auto get(const grid_dist_key_dx<dim> & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	template <typename bg_key> inline void remove(const grid_dist_key_dx<dim,bg_key> & v1)
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
-		return loc_grid.get(v1.getSub()).template get<p>(v1.getKey());
+		return loc_grid.get(v1.getSub()).remove(v1.getKey());
 	}
+
+	/*! \brief remove an element in the grid
+	 *
+	 * In case of dense grid this function print a warning, in case of sparse
+	 * grid this function remove a grid point.
+	 *
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return a reference to the inserted element
+	 *
+	 */
+	template <typename bg_key> inline void remove_no_flush(const grid_dist_key_dx<dim,bg_key> & v1)
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return loc_grid.get(v1.getSub()).remove_no_flush(v1.getKey());
+	}
+
+	/*! \brief remove an element in the grid
+	 *
+	 * In case of dense grid this function print a warning, in case of sparse
+	 * grid this function remove a grid point.
+	 *
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return a reference to the inserted element
+	 *
+	 */
+	inline void flush_remove()
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{loc_grid.get(i).flush_remove();}
+	}
+
+	/*! \brief insert an element in the grid
+	 *
+	 * In case of dense grid this function is equivalent to get, in case of sparse
+	 * grid this function insert a grid point. When the point already exist it return
+	 * a reference to the already existing point
+	 *
+	 * \tparam p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return a reference to the inserted element
+	 *
+	 */
+	template <unsigned int p,typename bg_key>inline auto insert(const grid_dist_key_dx<dim,bg_key> & v1)
+	-> typename std::add_lvalue_reference
+	<
+		decltype(loc_grid.get(v1.getSub()).template insert<p>(v1.getKey()))
+	>::type
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+
+		return loc_grid.get(v1.getSub()).template insert<p>(v1.getKey());
+	}
+
 
 	/*! \brief Get the reference of the selected element
 	 *
@@ -1310,7 +2045,28 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p = 0>inline auto get(const grid_dist_key_dx<dim> & v1) -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	template <unsigned int p, typename bg_key>
+	inline auto get(const grid_dist_key_dx<dim,bg_key> & v1) const
+	-> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		return loc_grid.get(v1.getSub()).template get<p>(v1.getKey());
+	}
+
+
+	/*! \brief Get the reference of the selected element
+	 *
+	 * \tparam p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return the selected element
+	 *
+	 */
+	template <unsigned int p, typename bg_key>
+	inline auto get(const grid_dist_key_dx<dim,bg_key> & v1)
+	-> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1408,27 +2164,6 @@ public:
 		return this->template get<p>(v1);
 	}
 
-	//! Flag that indicate if the external ghost box has been initialized
-	bool init_e_g_box = false;
-
-	//! Flag that indicate if the internal ghost box has been initialized
-	bool init_i_g_box = false;
-
-	//! Flag that indicate if the internal and external ghost box has been fixed
-	bool init_fix_ie_g_box = false;
-
-	//! Internal ghost boxes in grid units
-	openfpm::vector<ip_box_grid<dim>> ig_box;
-
-	//! External ghost boxes in grid units
-	openfpm::vector<ep_box_grid<dim>> eg_box;
-
-	//! Local internal ghost boxes in grid units
-	openfpm::vector<i_lbox_grid<dim>> loc_ig_box;
-
-	//! Local external ghost boxes in grid units
-	openfpm::vector<e_lbox_grid<dim>> loc_eg_box;
-
 	/*! \brief It synchronize the ghost parts
 	 *
 	 * \tparam prp... Properties to synchronize
@@ -1457,6 +2192,8 @@ public:
 																								  loc_ig_box,
 																								  loc_eg_box,
 																								  gdb_ext,
+																								  eb_gid_list,
+																								  use_bx_def,
 																								  loc_grid,
 																								  g_id_to_external_ghost_box);
 	}
@@ -1484,7 +2221,8 @@ public:
 		// Convert the local external ghost boxes into grid unit boxes
 		create_local_eg_box();
 
-		grid_dist_id_comm<dim,St,T,Decomposition,Memory,device_grid>::template ghost_put_<op,prp...>(ig_box,
+		grid_dist_id_comm<dim,St,T,Decomposition,Memory,device_grid>::template ghost_put_<op,prp...>(dec,
+																									 ig_box,
 																									 eg_box,
 																									 loc_ig_box,
 																									 loc_eg_box,
@@ -1588,6 +2326,37 @@ public:
 		return k_glob;
 	}
 
+	/*! \brief Add the computation cost on the decomposition using a resolution function
+	 *
+	 *
+	 * \param md Model to use
+	 * \param ts It is an optional parameter approximately should be the number of ghost get between two
+	 *           rebalancing at first decomposition this number can be ignored (default = 1) because not used
+	 *
+	 */
+	template <typename Model>inline void addComputationCosts(Model md=Model(), size_t ts = 1)
+	{
+		CellDecomposer_sm<dim, St, shift<dim,St>> cdsm;
+
+		Decomposition & dec = getDecomposition();
+		auto & dist = getDecomposition().getDistribution();
+
+		cdsm.setDimensions(dec.getDomain(), dec.getDistGrid().getSize(), 0);
+
+		// Invert the id to positional
+
+		Point<dim,St> p;
+		for (size_t i = 0; i < dist.getNOwnerSubSubDomains() ; i++)
+		{
+			dist.getSubSubDomainPos(i,p);
+			dec.setSubSubDomainComputationCost(dist.getOwnerSubSubDomain(i) , 1 + md.resolution(p));
+		}
+
+		dec.computeCommunicationAndMigrationCosts(ts);
+
+		dist.setDistTol(md.distributionTol());
+	}
+
 	/*! \brief Write the distributed grid information
 	 *
 	 * * grid_X.vtk Output each local grids for each local processor X
@@ -1599,11 +2368,12 @@ public:
 	 * \return true if the write operation succeed
 	 *
 	 */
-	bool write(std::string output, size_t opt = VTK_WRITER | FORMAT_ASCII)
+	bool write(std::string output, size_t opt = VTK_WRITER | FORMAT_ASCII )
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
+
 		file_type ft = file_type::ASCII;
 
 		if (opt & FORMAT_BINARY)
@@ -1614,7 +2384,11 @@ public:
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{
 			Point<dim,St> offset = getOffset(i);
-			vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).Dbox);
+
+			if (opt & PRINT_GHOST)
+			{vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).GDbox);}
+			else
+			{vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).Dbox);}
 		}
 		vtk_g.write(output + "_" + std::to_string(v_cl.getProcessUnitID()) + ".vtk", prp_names, "grids", ft);
 
@@ -1732,6 +2506,8 @@ public:
 	 */
 	void debugPrint()
 	{
+		size_t tot_volume = 0;
+
 		std::cout << "-------- External Ghost boxes ---------- " << std::endl;
 
 		for (size_t i = 0 ; i < eg_box.size() ; i++)
@@ -1741,11 +2517,15 @@ public:
 			for (size_t j = 0; j < eg_box.get(i).bid.size() ; j++)
 			{
 				std::cout << " Box: " << eg_box.get(i).bid.get(j).g_e_box.toString() << "   Id: " << eg_box.get(i).bid.get(j).g_id << std::endl;
+				tot_volume += eg_box.get(i).bid.get(j).g_e_box.getVolumeKey();
 			}
 		}
 
+		std::cout << "TOT volume external ghost " << tot_volume << std::endl;
+
 		std::cout << "-------- Internal Ghost boxes ---------- " << std::endl;
 
+		tot_volume = 0;
 		for (size_t i = 0 ; i < ig_box.size() ; i++)
 		{
 			std::cout << "Processor: " << ig_box.get(i).prc << " Boxes:" << std::endl;
@@ -1753,8 +2533,11 @@ public:
 			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
 			{
 				std::cout << " Box: " << ig_box.get(i).bid.get(j).box.toString() << "   Id: " << ig_box.get(i).bid.get(j).g_id << std::endl;
+				tot_volume += ig_box.get(i).bid.get(j).box.getVolumeKey();
 			}
 		}
+
+		std::cout << "TOT volume internal ghost " << tot_volume << std::endl;
 	}
 
 	/*! \brief Set the properties names
@@ -1769,23 +2552,55 @@ public:
 		prp_names = names;
 	}
 
+	/*! \brief It delete all the points
+	 *
+	 * This function on dense does nothing in case of dense grid but in case of
+	 * sparse_grid it kills all the points
+	 *
+	 */
+	void clear()
+	{
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{loc_grid.get(i).clear();}
+	}
 
 	/*! \brief It move all the grid parts that do not belong to the local processor to the respective processor
 	 *
-	 *
-	 *
-	 *
 	 */
-	void map()
+	void map(size_t opt = 0)
 	{
+		// Save the background values
+		T bv;
+		meta_copy<T>::meta_copy_(bv,loc_grid.get(0).getBackgroundValue());
+
+		if (!(opt & NO_GDB_EXT_SWITCH))
+		{
+			gdb_ext_old = gdb_ext;
+			loc_grid_old = loc_grid;
+
+			InitializeStructures(g_sz,bx_def,gint,bx_def.size() != 0);
+		}
+
 		getGlobalGridsInfo(gdb_ext_global);
 
 		this->map_(dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global);
 
 		loc_grid_old.clear();
+		loc_grid_old.shrink_to_fit();
 		gdb_ext_old.clear();
+
+		// reset ghost structure to recalculate
+		reset_ghost_structures();
+
+		// Reset the background values
+		setBackgroundValue(bv);
 	}
 
+	/*! \brief Save the grid state on HDF5
+	 *
+	 * \param filename output filename
+	 *
+	 */
 	inline void save(const std::string & filename) const
 	{
 		HDF5_writer<GRID_DIST> h5s;
@@ -1793,6 +2608,11 @@ public:
 		h5s.save(filename,loc_grid,gdb_ext);
 	}
 
+	/*! \brief Reload the grid from HDF5 file
+	 *
+	 * \param filename output filename
+	 *
+	 */
 	inline void load(const std::string & filename)
 	{
 		HDF5_reader<GRID_DIST> h5l;
@@ -1800,7 +2620,18 @@ public:
 		h5l.load<device_grid>(filename,loc_grid_old,gdb_ext_old);
 
 		// Map the distributed grid
-		map();
+		map(NO_GDB_EXT_SWITCH);
+	}
+
+	/*! \brief This is a meta-function return which type of sub iterator a grid produce
+	 *
+	 * \return the type of the sub-grid iterator
+	 *
+	 */
+	template <typename stencil = no_stencil>
+	static grid_dist_iterator_sub<dim,device_grid> type_of_subiterator()
+	{
+		return grid_key_dx_iterator_sub<dim, stencil>();
 	}
 
 	/*! \brief Get the internal local ghost box
@@ -1831,5 +2662,7 @@ public:
 };
 
 
+template<unsigned int dim, typename St, typename T>
+using sgrid_dist_id = grid_dist_id<dim,St,T,CartDecomposition<dim,St>,HeapMemory,sgrid_cpu<dim,T,HeapMemory>>;
 
 #endif

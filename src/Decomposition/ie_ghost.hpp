@@ -204,7 +204,15 @@ protected:
 	void Initialize_geo_cell(const Box<dim,T> & domain, const size_t (&div)[dim])
 	{
 		// Initialize the geo_cell structure
-		geo_cell.Initialize(domain,div,0);
+		geo_cell.Initialize(domain,div,1);
+	}
+
+	/*! \brief Deallocate structures that identify a point to which internal ghost is located
+	 *
+	 */
+	void free_geo_cell()
+	{
+		geo_cell.destroy();
 	}
 
 	/*! \brief Create the box_nn_processor_int (bx part)  structure
@@ -423,8 +431,8 @@ protected:
 						// update the geo_cell list
 
 						// get the cells this box span
-						const grid_key_dx<dim> p1 = geo_cell.getCellGrid(b_int.getP1());
-						const grid_key_dx<dim> p2 = geo_cell.getCellGrid(b_int.getP2());
+						const grid_key_dx<dim> p1 = geo_cell.getCellGrid_me(b_int.getP1());
+						const grid_key_dx<dim> p2 = geo_cell.getCellGrid_pe(b_int.getP2());
 
 						// Get the grid and the sub-iterator
 						auto & gi = geo_cell.getGrid();

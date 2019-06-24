@@ -149,9 +149,9 @@ class Metis
 		for (size_t i = 0; i < g.getNVertex(); i++)
 		{
 			// Add weight to vertex and migration cost
-			Mg.vwgt[i] = g.vertex(i).template get<nm_v::computation>();
+			Mg.vwgt[i] = g.vertex(i).template get<nm_v_computation>();
 			Mg.vwgt[i] = (Mg.vwgt[i] == 0)?1:Mg.vwgt[i];
-			Mg.vsize[i] = g.vertex(i).template get<nm_v::migration>();
+			Mg.vsize[i] = g.vertex(i).template get<nm_v_migration>();
 			Mg.vsize[i] = (Mg.vsize[i] == 0)?1:Mg.vsize[i];
 
 			// Calculate the starting point in the adjacency list

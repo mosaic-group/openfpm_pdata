@@ -378,7 +378,7 @@ public:
 
 		// Optimize the decomposition creating bigger spaces
 		// And reducing Ghost over-stress
-		dec_optimizer<dim, Graph_CSR<nm_v, nm_e>> d_o(dist.getGraph(), gr_dist.getSize());
+		dec_optimizer<dim, Graph_CSR<nm_v<dim>, nm_e>> d_o(dist.getGraph(), gr_dist.getSize());
 
 		// Ghost
 		Ghost<dim,long int> ghe;
@@ -391,7 +391,7 @@ public:
 		}
 
 		// optimize the decomposition
-		d_o.template optimize<nm_v::sub_id, nm_v::proc_id>(dist.getGraph(), p_id, loc_box, box_nn_processor,ghe,bc);
+		d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(dist.getGraph(), p_id, loc_box, box_nn_processor,ghe,bc);
 
 		// Initialize
 		if (loc_box.size() > 0)
@@ -454,9 +454,6 @@ public:
 		// Check if the box is valid
 		if (bound.isValidN() == true)
 		{
-			// Not necessary, but I prefer
-			bound.enlarge(ghost);
-
 			// calculate the sub-divisions
 			size_t div[dim];
 			for (size_t i = 0; i < dim; i++)
@@ -873,7 +870,10 @@ public:
 		cart.cd = cd;
 		cart.domain = domain;
 		for (size_t i = 0 ; i < dim ; i++)
-		{cart.spacing[i] = spacing[i];};
+		{
+			cart.spacing[i] = spacing[i];
+			cart.magn[i] = magn[i];
+		};
 
 		cart.bbox = bbox;
 		cart.ghost = g;
@@ -916,7 +916,10 @@ public:
 		cart.domain = domain;
 		cart.sub_domains_global = sub_domains_global;
 		for (size_t i = 0 ; i < dim ; i++)
-		{cart.spacing[i] = spacing[i];};
+		{
+			cart.spacing[i] = spacing[i];
+			cart.magn[i] = magn[i];
+		};
 
 		cart.ghost = ghost;
 
@@ -1027,6 +1030,9 @@ public:
 		dist = cart.dist;
 		commCostSet = cart.commCostSet;
 		cd = cart.cd;
+		gr_dist = cart.gr_dist;
+		dist = cart.dist;
+
 		domain = cart.domain;
 		sub_domains_global.swap(cart.sub_domains_global);
 
@@ -1840,6 +1846,23 @@ public:
 		check_valid(this,8);
 #endif
 		return v_cl;
+	}
+
+	/*! \brief Deallocate structures that identify a point to which internal ghost is located
+	 *
+	 */
+	void free_geo_cell()
+	{
+		ie_ghost<dim,T,Memory,layout_base>::free_geo_cell();
+	}
+
+	/*! \brief Deallocate structures that identify a point to which internal ghost is located
+	 *
+	 */
+	void free_fines()
+	{
+		fine_s.clear();
+		fine_s.destroy();
 	}
 
 	/*! \brief function to check the consistency of the information of the decomposition

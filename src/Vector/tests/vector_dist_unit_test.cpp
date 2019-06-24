@@ -1951,5 +1951,24 @@ BOOST_AUTO_TEST_CASE( vector_high_dimension )
 	vector_dist<10,double, aggregate<double,double[10]> > vd(16,domain,bc,g);
 }
 
+BOOST_AUTO_TEST_CASE ( vector_of_cell_list_compile_test )
+{
+	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Ghost<3,double> g(0.1);
+	size_t bc[3] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+
+	vector_dist<3,double,aggregate<float,float[3]>> vd(100,domain,bc,g);
+
+	std::vector<decltype(vd.getCellList(0.1))> vector_of_celllist;
+
+	typedef vector_dist<3,double,aggregate<float,float[3]>> my_particles;
+	std::vector<decltype(std::declval<my_particles>().getCellList(0.0))> vector_of_celllist2;
+
+	vector_of_celllist.push_back(vd.getCellList(0.1));
+
+	vector_of_celllist2.push_back(vd.getCellList(0.1));
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()
 

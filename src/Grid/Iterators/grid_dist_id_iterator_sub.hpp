@@ -40,7 +40,7 @@ class grid_dist_iterator_sub
 	const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
 
 	//! Actual iterator
-	grid_key_dx_iterator_sub<dim> a_it;
+	decltype(device_grid::type_of_subiterator()) a_it;
 
 	//! start key
 	grid_key_dx<dim> start;
@@ -92,16 +92,20 @@ class grid_dist_iterator_sub
 		grid_key_dx<dim> start_c;
 		grid_key_dx<dim> stop_c;
 
-		// When the grid has size 0 potentially all the other informations are garbage
-		while (g_c < gList.size() &&
-			   (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false || compute_subset(g_c,start_c,stop_c) == false ))
-		{g_c++;}
-
-		// get the next grid iterator
-		if (g_c < gList.size())
+		do
 		{
-			a_it.reinitialize(gList.get(g_c).getIterator(start_c,stop_c));
-		}
+			// When the grid has size 0 potentially all the other informations are garbage
+			while (g_c < gList.size() &&
+				   (gList.get(g_c).size() == 0 || gdb_ext.get(g_c).Dbox.isValid() == false || compute_subset(g_c,start_c,stop_c) == false ))
+			{g_c++;}
+
+			// get the next grid iterator
+			if (g_c < gList.size())
+			{
+				a_it.reinitialize(gList.get(g_c).getIterator(start_c,stop_c));
+				if (a_it.isNext() == false)	{g_c++;}
+			}
+		} while (g_c < gList.size() && a_it.isNext() == false);
 	}
 
 	public:
@@ -111,7 +115,8 @@ class grid_dist_iterator_sub
 	* \param tmp iterator to copy
 	*
 	*/
-	grid_dist_iterator_sub<dim,device_grid> & operator=(const grid_dist_iterator_sub<dim,device_grid> & tmp)
+	grid_dist_iterator_sub<dim,device_grid> &
+	operator=(const grid_dist_iterator_sub<dim,device_grid> & tmp)
 	{
 		g_c = tmp.g_c;
 		gList = tmp.gList;

@@ -504,7 +504,7 @@ public:
 	/*! \brief Considering that sub-domains has N internal local ghost box identified
 	 *         with the 0 <= k < N that come from the intersection of 2 sub-domains i and j
 	 *         where j is enlarged, given the sub-domain i and the id k of the internal box,
-	 *         it return the id of the other sub-domain that produced the intersection
+	 *         it return the id j of the other sub-domain that produced the intersection
 	 *
 	 * \param i sub-domain
 	 * \param k id
@@ -519,7 +519,7 @@ public:
 	/*! \brief Considering that sub-domains has N external local ghost box identified
 	 *         with the 0 <= k < N that come from the intersection of 2 sub-domains i and j
 	 *         where i is enlarged, given the sub-domain i and the id k of the external box,
-	 *         it return the id of the other sub-domain that produced the intersection
+	 *         it return the id of the other sub-domain j that produced the intersection
 	 *
 	 * \param i sub-domain
 	 * \param k id

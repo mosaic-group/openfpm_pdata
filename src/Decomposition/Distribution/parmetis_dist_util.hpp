@@ -143,8 +143,8 @@ class DistParmetis
 			size_t idx = sub_g.nodeById(j);
 
 			// Add weight to vertex and migration cost
-			Mg.vwgt[i] = sub_g.vertex(idx).template get<nm_v::computation>();
-			Mg.vsize[i] = sub_g.vertex(idx).template get<nm_v::migration>();
+			Mg.vwgt[i] = sub_g.vertex(idx).template get<nm_v_computation>();
+			Mg.vsize[i] = sub_g.vertex(idx).template get<nm_v_migration>();
 
 			// Calculate the starting point in the adjacency list
 			Mg.xadj[id] = prev;
