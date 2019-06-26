@@ -23,8 +23,11 @@
 #include "grid_dist_id_comm.hpp"
 #include "HDF5_wr/HDF5_wr.hpp"
 #include "SparseGrid/SparseGrid.hpp"
+#ifdef __NVCC__
+#include "SparseGridGpu/SparseGridGpu.hpp"
+#include "cuda/grid_dist_id_kernels.cuh"
+#endif
 
-template <typename> struct Debug;
 
 //! Internal ghost box sent to construct external ghost box into the other processors
 template<unsigned int dim>
@@ -114,6 +117,9 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 
 	//! Structure that divide the space into cells
 	CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
+
+	//! size of the insert pool on gpu
+	size_t gpu_insert_pool_size;
 
 	//! Communicator class
 	Vcluster<> & v_cl;
@@ -553,11 +559,11 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 						tmp.GDbox = box_int_recv.get(i).get(j).bx;
 						tmp.GDbox -= tmp.GDbox.getP1();
 						tmp.origin = output.getP1();
-						for (size_t i = 0 ; i < dim ; i++)
+						for (size_t s = 0 ; s < dim ; s++)
 						{
 							// we set an invalid box, there is no-domain
-							tmp.Dbox.setLow(i,0);
-							tmp.Dbox.setHigh(i,-1);
+							tmp.Dbox.setLow(s,0);
+							tmp.Dbox.setHigh(s,-1);
 						}
 						tmp.k = -1;
 						gdb_ext.add(tmp);
@@ -1183,6 +1189,19 @@ public:
 	{
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{meta_copy<T>::meta_copy_(bv,loc_grid.get(i).getBackgroundValue());}
+	}
+
+	/*! \brief set the background value
+	 *
+	 * You can use this function make sense in case of sparse in case of dense
+	 * it does nothing
+	 *
+	 */
+	template<unsigned int p>
+	void setBackgroundValue(const typename boost::mpl::at<typename T::type,boost::mpl::int_<p>>::type & bv)
+	{
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{loc_grid.get(i).template setBackgroundValue<p>(bv);}
 	}
 
 	/*! \brief Return the local total number of points inserted in the grid
@@ -1992,6 +2011,16 @@ public:
 		return loc_grid.get(v1.getSub()).remove_no_flush(v1.getKey());
 	}
 
+
+	template<typename ... v_reduce>
+	void flush(flush_type opt = flush_type::FLUSH_ON_HOST)
+	{
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{
+			loc_grid.get(i).template flush<v_reduce ...>(v_cl.getmgpuContext(),opt);
+		}
+	}
+
 	/*! \brief remove an element in the grid
 	 *
 	 * In case of dense grid this function print a warning, in case of sparse
@@ -2654,6 +2683,73 @@ public:
 		return this->ig_box;
 	}
 
+#ifdef __NVCC__
+
+	/*! \brief Set the size of the gpu insert buffer pool
+	 *
+	 * \param size of the insert pool
+	 *
+	 */
+	void setInsertBuffer(size_t n_pool)
+	{
+		gpu_insert_pool_size = n_pool;
+	}
+
+	template<typename func_t,typename it_t, typename ... args_t>
+	void iterateGridGPU(it_t & it, args_t ... args)
+	{
+		while(it.isNextGrid())
+		{
+			Box<dim,size_t> b = it.getGridBox();
+
+			size_t i = it.getGridId();
+
+			auto ite = loc_grid.get(i).getGridGPUIterator(b.getKP1(),b.getKP2());
+
+			loc_grid.get(i).setGPUInsertBuffer(ite.nblocks(),gpu_insert_pool_size);
+			loc_grid.get(i).initializeGPUInsertBuffer();
+
+			grid_apply_functor<<<ite.wthr,ite.thr>>>(loc_grid.get(i).toKernel(),ite,func_t(),args...);
+
+			it.nextGrid();
+		}
+	}
+
+	template<typename func_t, typename ... args_t>
+	void iterateGPU(args_t ... args)
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			auto & sp = loc_grid.get(i);
+
+			// TODO Launch a kernel on every sparse grid GPU
+		}
+	}
+
+	/*! \brief Move the memory from the device to host memory
+	 *
+	 */
+	template<unsigned int ... prp> void deviceToHost()
+	{
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{
+			loc_grid.get(i).template deviceToHost<prp ...>();
+		}
+	}
+
+	/*! \brief Move the memory from the device to host memory
+	 *
+	 */
+	template<unsigned int ... prp> void hostToDevice()
+	{
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{
+			loc_grid.get(i).template hostToDevice<prp ...>();
+		}
+	}
+
+#endif
+
 
 	//! Define friend classes
 	//\cond
@@ -2664,5 +2760,10 @@ public:
 
 template<unsigned int dim, typename St, typename T>
 using sgrid_dist_id = grid_dist_id<dim,St,T,CartDecomposition<dim,St>,HeapMemory,sgrid_cpu<dim,T,HeapMemory>>;
+
+#ifdef __NVCC__
+template<unsigned int dim, typename St, typename T>
+using sgrid_dist_id_gpu = grid_dist_id<dim,St,T,CartDecomposition<dim,St,CudaMemory,memory_traits_inte>,CudaMemory,SparseGridGpu<dim,T>>;
+#endif
 
 #endif

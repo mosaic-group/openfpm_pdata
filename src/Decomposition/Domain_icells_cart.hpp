@@ -156,7 +156,7 @@ class domain_icell_calculator
 		openfpm::vector_sparse_gpu<aggregate<unsigned int>> vs;
 		openfpm::vector_sparse_gpu<aggregate<unsigned int>> vsi;
 
-		vs.template getBackground<0>() = 0;
+		vs.template setBackground<0>(0);
 
 		// insert Domain cells
 
@@ -182,7 +182,7 @@ class domain_icell_calculator
 
 			CUDA_LAUNCH((insert_icell<dim>),ite,vsi.toKernel(),cld,ite.start,p2);
 
-			vsi.template flush<>(v_cl.getmgpuContext(),flust_type::FLUSH_ON_DEVICE);
+			vsi.template flush<>(v_cl.getmgpuContext(),flush_type::FLUSH_ON_DEVICE);
 		}
 
 		// calculate the number of kernel launch
@@ -209,8 +209,8 @@ class domain_icell_calculator
 
 			CUDA_LAUNCH(insert_remove_icell<dim>,ite,vs.toKernel(),vsi.toKernel(),cld,ite.start,p2);
 
-			vs.template flush<>(v_cl.getmgpuContext(),flust_type::FLUSH_ON_DEVICE);
-			vsi.flush_remove(v_cl.getmgpuContext(),flust_type::FLUSH_ON_DEVICE);
+			vs.template flush<>(v_cl.getmgpuContext(),flush_type::FLUSH_ON_DEVICE);
+			vsi.flush_remove(v_cl.getmgpuContext(),flush_type::FLUSH_ON_DEVICE);
 		}
 
 		vs.swapIndexVector(icells);

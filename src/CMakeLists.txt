@@ -4,7 +4,9 @@ cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 ########################### Executables
 
 if(CUDA_FOUND)
-	set(CUDA_SOURCES Vector/cuda/vector_dist_gpu_MP_tests.cu 
+	set(CUDA_SOURCES 
+		Grid/tests/sgrid_dist_id_gpu_unit_tests.cu
+		Vector/cuda/vector_dist_gpu_MP_tests.cu 
 					 Vector/cuda/vector_dist_cuda_func_test.cu
 					 Decomposition/cuda/decomposition_cuda_tests.cu
 					 Vector/cuda/vector_dist_gpu_unit_tests.cu

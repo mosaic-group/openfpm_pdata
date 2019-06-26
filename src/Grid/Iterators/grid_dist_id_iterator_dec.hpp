@@ -155,6 +155,56 @@ class grid_dist_id_iterator_dec
 	{
 	}
 
+	/*! \brief Return true if we point to a valid grid
+	 *
+	 * \return true if valid grid
+	 *
+	 */
+	inline bool isNextGrid()
+	{
+		return g_c < gdb_ext.size();
+	}
+
+	/*! \brief Return the index of the grid in which we are iterating
+	 *
+	 *
+	 */
+	inline size_t getGridId()
+	{
+		return g_c;
+	}
+
+	/*! \brief next grid
+	 *
+	 *
+	 */
+	inline void nextGrid()
+	{
+		g_c++;
+		selectValidGrid();
+	}
+
+	/*! \brief Return the actual pointed grid
+	 *
+	 * \return the grid index
+	 *
+	 */
+	inline Box<Decomposition::dims,size_t> getGridBox()
+	{
+		Box<Decomposition::dims,size_t> bx;
+
+		auto start = a_it.getStart();
+		auto stop = a_it.getStop();
+
+		for (int i = 0 ; i < Decomposition::dims ; i++)
+		{
+			bx.setHigh(i,stop.get(i));
+			bx.setLow(i,start.get(i));
+		}
+
+		return bx;
+	}
+
 	/*! \brief Get the next element
 	 *
 	 * \return the next grid_key
