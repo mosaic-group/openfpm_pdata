@@ -223,6 +223,13 @@ void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain
 			match &= amr_g.template get<0>(key_px) == gkey.get(0) + 1;
 			match &= amr_g.template get<1>(key_px) == gkey.get(1);
 			match &= amr_g.template get<2>(key_px) == gkey.get(2);
+
+
+			if (match == false)
+			{
+				int debug = 0;
+				debug++;
+			}
 		}
 
 		if (gr_is_inside(key_gmx,amr_g.getGridInfoVoid(it2.getLvl()).getSize()) == true)
@@ -230,6 +237,13 @@ void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain
 			match &= amr_g.template get<0>(key_mx) == gkey.get(0) - 1;
 			match &= amr_g.template get<1>(key_mx) == gkey.get(1);
 			match &= amr_g.template get<2>(key_mx) == gkey.get(2);
+
+
+			if (match == false)
+			{
+				int debug = 0;
+				debug++;
+			}
 		}
 
 		if (gr_is_inside(key_gpy,amr_g.getGridInfoVoid(it2.getLvl()).getSize()) == true)
@@ -237,6 +251,13 @@ void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain
 			match &= amr_g.template get<0>(key_py) == gkey.get(0);
 			match &= amr_g.template get<1>(key_py) == gkey.get(1) + 1;
 			match &= amr_g.template get<2>(key_py) == gkey.get(2);
+
+
+			if (match == false)
+			{
+				int debug = 0;
+				debug++;
+			}
 		}
 
 		if (gr_is_inside(key_gmy,amr_g.getGridInfoVoid(it2.getLvl()).getSize()) == true)
@@ -244,6 +265,13 @@ void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain
 			match &= amr_g.template get<0>(key_my) == gkey.get(0);
 			match &= amr_g.template get<1>(key_my) == gkey.get(1) - 1;
 			match &= amr_g.template get<2>(key_my) == gkey.get(2);
+
+
+			if (match == false)
+			{
+				int debug = 0;
+				debug++;
+			}
 		}
 
 		if (gr_is_inside(key_gpz,amr_g.getGridInfoVoid(it2.getLvl()).getSize()) == true)
@@ -251,6 +279,13 @@ void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain
 			match &= amr_g.template get<0>(key_pz) == gkey.get(0);
 			match &= amr_g.template get<1>(key_pz) == gkey.get(1);
 			match &= amr_g.template get<2>(key_pz) == gkey.get(2) + 1;
+
+
+			if (match == false)
+			{
+				int debug = 0;
+				debug++;
+			}
 		}
 
 		if (gr_is_inside(key_gmz,amr_g.getGridInfoVoid(it2.getLvl()).getSize()) == true)
@@ -258,13 +293,15 @@ void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain
 			match &= amr_g.template get<0>(key_mz) == gkey.get(0);
 			match &= amr_g.template get<1>(key_mz) == gkey.get(1);
 			match &= amr_g.template get<2>(key_mz) == gkey.get(2) - 1;
+
+
+			if (match == false)
+			{
+				int debug = 0;
+				debug++;
+			}
 		}
 
-		if (match == false)
-		{
-			int debug = 0;
-			debug++;
-		}
 
 		// Test to go to all the levels down
 

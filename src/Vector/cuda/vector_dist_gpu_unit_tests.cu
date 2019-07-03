@@ -1,4 +1,5 @@
 #define BOOST_TEST_DYN_LINK
+#define PRINT_STACKTRACE
 #include <boost/test/unit_test.hpp>
 #include "VCluster/VCluster.hpp"
 #include <Vector/vector_dist.hpp>
@@ -488,6 +489,8 @@ void vector_dist_gpu_make_sort_test_impl()
 	// Here we get do a make sort
 	NN = vd.template getCellListGPU<CellList_type>(0.1);
 
+	CUDA_CHECK()
+
 	vd.make_sort_from(NN);
 
 	// Check
@@ -498,7 +501,7 @@ void vector_dist_gpu_make_sort_test_impl()
 	bool match = true;
 	for (size_t i = 0 ; i < vd.size_local() ; i++)
 	{
-		Point<3,float> p1 = vd.getPos(i)[0];
+		Point<3,float> p1 = vd.getPos(i);
 		Point<3,float> p2 = tmp_pos.template get<0>(i);
 
 		// They must be in the same cell

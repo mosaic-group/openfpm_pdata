@@ -71,7 +71,12 @@ struct Box_fix
  * \snippet grid_dist_id_unit_test.cpp Construct two grid with the same decomposition
  *
  */
-template<unsigned int dim, typename St, typename T, typename Decomposition = CartDecomposition<dim,St>,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T> >
+template<unsigned int dim,
+		 typename St,
+		 typename T,
+		 typename Decomposition = CartDecomposition<dim,St>,
+		 typename Memory=HeapMemory ,
+		 typename device_grid=grid_cpu<dim,T> >
 class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,device_grid>
 {
 	//! Domain
@@ -333,7 +338,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 							Box<dim,long int> & ib,
 							Ghost<dim,long int> & g)
 	{
-		if (g.isInvalidGhost() == true)
+		if (g.isInvalidGhost() == true || use_bx_def == true)
 		{return;}
 
 		// Convert from SpaceBox<dim,St> to SpaceBox<dim,long int>
@@ -362,6 +367,8 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		}
 	}
 
+
+
 	/*! \brief Create per-processor internal ghost boxes list in grid units and g_id_to_external_ghost_box
 	 *
 	 */
@@ -389,6 +396,18 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 				// Get the internal ghost boxes and transform into grid units
 				::Box<dim,St> ib_dom = dec.getProcessorIGhostBox(i,j);
 				::Box<dim,long int> ib = cd_sm.convertDomainSpaceIntoGridUnits(ib_dom,dec.periodicity());
+
+				size_t sub_id = dec.getProcessorIGhostSub(i,j);
+				size_t r_sub = dec.getProcessorIGhostSSub(i,j);
+
+				auto & n_box = dec.getNearSubdomains(dec.IDtoProc(i));
+
+				Box<dim,long int> sub = gdb_ext.get(sub_id).Dbox;
+				sub += gdb_ext.get(sub_id).origin;
+
+				set_for_adjustment(sub,
+						           n_box.get(r_sub),dec.getProcessorIGhostPos(i,j),
+						           ib,ghost_int);
 
 				// Here we intersect the internal ghost box with the definition boxes
 				// this operation make sense when the grid is not defined in the full
@@ -698,6 +717,19 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 					if (ib.isValid() == false)
 						continue;
 
+					size_t sub_id = i;
+					size_t r_sub = dec.getLocalIGhostSub(i,j);
+
+					Box<dim,long int> sub = gdb_ext.get(sub_id).Dbox;
+					sub += gdb_ext.get(sub_id).origin;
+
+					set_for_adjustment(sub,dec.getSubDomain(r_sub),
+							           dec.getLocalIGhostPos(i,j),ib,ghost_int);
+
+					// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
+					if (ib.isValid() == false)
+					continue;
+
 					pib.bid.add();
 					pib.bid.last().box = ib;
 					pib.bid.last().sub = dec.getLocalIGhostSub(i,j);
@@ -818,57 +850,6 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 							volume_linked += pib.bid.last().box.getVolumeKey();
 						}
 					}
-
-/*					if (volume_linked != loc_ig_box.get(i).bid.get(j).box.getVolumeKey())
-					{
-						// Create a grid with the same size of the external ghost
-						// and mark all the linked points
-
-						size_t sz[dim];
-						for (size_t s = 0 ; s < dim ; s++)
-						{sz[s] = loc_ig_box.get(i).bid.get(j).box.getHigh(s) - loc_ig_box.get(i).bid.get(j).box.getLow(s) + 1;}
-
-						// Add an unlinked gdb_ext
-						// An unlinked gdb_ext is an empty domain with only a ghost
-						// part
-						GBoxes<dim> tmp;
-						tmp.GDbox = loc_ig_box.get(i).bid.get(j).box;
-						tmp.GDbox -= tmp.GDbox.getP1();
-						tmp.origin = loc_ig_box.get(i).bid.get(j).box.getP1();
-						for (size_t i = 0 ; i < dim ; i++)
-						{
-							// we set an invalid box, there is no-domain
-							tmp.Dbox.setLow(i,0);
-							tmp.Dbox.setHigh(i,-1);
-						}
-						tmp.k = -1;
-						gdb_ext.add(tmp);
-
-						// create the local grid
-
-						loc_grid.add();
-						loc_grid.last().resize(sz);
-
-						// Add an external ghost box
-
-						Box<dim,long int> output = flip_box(loc_ig_box.get(i).bid.get(j).box,loc_ig_box.get(i).bid.get(j).cmb);
-
-						// fill the link variable
-						loc_ig_box.get(i).bid.get(j).k = pib.bid.size();
-
-						comb<dim> cmb = loc_ig_box.get(i).bid.get(j).cmb;
-						cmb.sign_flip();
-						size_t s = loc_ig_box.get(i).bid.get(j).k;
-
-
-						add_loc_eg_box(le_sub,
-									   dec.getLocalEGhostSub(le_sub,s),
-									   j,
-									   gdb_ext.size() - 1,
-									   pib.bid,
-									   output,
-									   cmb);
-					}*/
 				}
 				else
 				{
@@ -1243,6 +1224,7 @@ public:
 	:grid_dist_id_comm<dim,St,T,Decomposition,Memory,device_grid>(g),
 	 domain(g.domain),
 	 ghost(g.ghost),
+	 ghost_int(g.ghost_int),
 	 loc_grid(g.loc_grid),
 	 loc_grid_old(g.loc_grid_old),
 	 dec(g.dec),
