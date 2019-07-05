@@ -1010,7 +1010,7 @@ int main(int argc, char* argv[])
 	//! \cond [Initialization and parameters] \endcond
 
     // initialize the library
-	openfpm_init(&argc,&argv);
+	openfpm_init(&argc,&argv,init_options::in_situ_visualization);
 
 	// It contain for each time-step the value detected by the probes
 	openfpm::vector<openfpm::vector<double>> press_t;
@@ -1072,6 +1072,11 @@ int main(int argc, char* argv[])
 	//! \cond [vector inst] \endcond
 
 	particles vd(0,domain,bc,g,DEC_GRAN(512));
+
+//	vd.setCapacity(200000);
+
+//	openfpm_finalize();
+
 
 	//! \cond [vector inst] \endcond
 
@@ -1353,6 +1358,8 @@ int main(int argc, char* argv[])
 	 */
 
 	//! \cond [load balancing] \endcond
+
+	openfpm_finalize();
 
 	// Now that we fill the vector with particles
 	ModelCustom md;
