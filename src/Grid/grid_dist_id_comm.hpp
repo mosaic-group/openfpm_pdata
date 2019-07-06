@@ -10,6 +10,7 @@
 
 #include "Vector/vector_dist_ofb.hpp"
 #include "Grid/copy_grid_fast.hpp"
+#include "grid_dist_util.hpp"
 
 /*! \brief Unpack selector
  *
@@ -190,6 +191,7 @@ class grid_dist_id_comm
 											  const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
 											  openfpm::vector<device_grid> & loc_grid,
 											  std::unordered_map<size_t,size_t> & g_id_to_external_ghost_box,
+											  const grid_sm<dim,void> & ginfo,
 											  bool use_bx_def)
 	{
 		grid_key_dx<dim> cnt[1];
@@ -201,12 +203,7 @@ class grid_dist_id_comm
 			//! For all the internal ghost boxes of each sub-domain
 			for (size_t j = 0 ; j < loc_ig_box.get(i).bid.size() ; j++)
 			{
-				Box<dim,size_t> bx_src = loc_ig_box.get(i).bid.get(j).box;
-
 				size_t sub_id_src_gdb_ext = loc_ig_box.get(i).bid.get(j).sub_gdb_ext;
-
-				// convert into local
-				bx_src -= gdb_ext.get(sub_id_src_gdb_ext).origin;
 
 				// sub domain connected with external box
 				size_t sub_id_dst = loc_ig_box.get(i).bid.get(j).sub;
@@ -216,7 +213,7 @@ class grid_dist_id_comm
 				{
 					size_t k = loc_ig_box.get(i).bid.get(j).k.get(v);
 
-					Box<dim,size_t> bx_dst = loc_eg_box.get(sub_id_dst).bid.get(k).box;
+					Box<dim,size_t> bx_dst = loc_eg_box.get(sub_id_dst).bid.get(k).ebox;
 
 					// convert into local
 					size_t sub_id_dst_gdb_ext = loc_eg_box.get(sub_id_dst).bid.get(k).sub_gdb_ext;
@@ -239,6 +236,9 @@ class grid_dist_id_comm
 					{std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination does not match in size" << "\n";}
 
 	#endif
+
+					Box<dim,size_t>  bx_src = flip_box(loc_eg_box.get(sub_id_dst).bid.get(k).ebox,loc_eg_box.get(sub_id_dst).bid.get(k).cmb,ginfo);
+					bx_src -= gdb_ext.get(sub_id_src_gdb_ext).origin;
 
 					auto & gd = loc_grid.get(sub_id_dst_gdb_ext);
 					gd.remove(bx_dst);
@@ -274,7 +274,7 @@ class grid_dist_id_comm
 				if (loc_eg_box.get(i).bid.get(j).initialized == false)
 					continue;
 
-				Box<dim,size_t> bx_src = loc_eg_box.get(i).bid.get(j).box;
+				Box<dim,size_t> bx_src = loc_eg_box.get(i).bid.get(j).ebox;
 				// convert into local
 				bx_src -= gdb_ext.get(i).origin;
 
@@ -951,6 +951,7 @@ public:
 										 const openfpm::vector<e_box_multi<dim>> & eb_gid_list,
 										 bool use_bx_def,
 										 openfpm::vector<device_grid> & loc_grid,
+										 const grid_sm<dim,void> & ginfo,
 										 std::unordered_map<size_t,size_t> & g_id_to_external_ghost_box)
 	{
 #ifdef PROFILE_SCOREP
@@ -1054,7 +1055,7 @@ public:
 
 		queue_recv_data_get<prp_object>(eg_box,prp_recv,prRecv_prp);
 
-		ghost_get_local<prp...>(loc_ig_box,loc_eg_box,gdb_ext,loc_grid,g_id_to_external_ghost_box,use_bx_def);
+		ghost_get_local<prp...>(loc_ig_box,loc_eg_box,gdb_ext,loc_grid,g_id_to_external_ghost_box,ginfo,use_bx_def);
 
 		merge_received_data_get<prp ...>(loc_grid,eg_box,prp_recv,prRecv_prp,g_id_to_external_ghost_box,eb_gid_list);
 	}

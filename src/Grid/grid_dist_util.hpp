@@ -245,6 +245,41 @@ template <unsigned int dim> struct e_box_id
 	size_t sub;
 };
 
+/*! \brief flip box just convert and internal ghost box into an external ghost box and the other way around
+ *
+ * \param box to convert
+ * \param cmb sector position of the box
+ *
+ * \return the converted box
+ *
+ */
+template<unsigned int dim, typename T, typename idT>
+Box<dim,long int> flip_box(const Box<dim,idT> & box, const comb<dim> & cmb, const grid_sm<dim,T> & ginfo)
+{
+	Box<dim,long int> flp;
+
+	for (size_t i = 0 ; i < dim; i++)
+	{
+		if (cmb[i] == 0)
+		{
+			flp.setLow(i,box.getLow(i));
+			flp.setHigh(i,box.getHigh(i));
+		}
+		else if (cmb[i] == 1)
+		{
+			flp.setLow(i,box.getLow(i) + ginfo.size(i));
+			flp.setHigh(i,box.getHigh(i) + ginfo.size(i));
+		}
+		else if (cmb[i] == -1)
+		{
+			flp.setLow(i,box.getLow(i) - ginfo.size(i));
+			flp.setHigh(i,box.getHigh(i) - ginfo.size(i));
+		}
+	}
+
+	return flp;
+}
+
 /*! \brief convert to sub-domain id
  *
  * In case the grid is not defined everywhere the ids returned by getProcessorIGhostSub
@@ -274,7 +309,7 @@ inline size_t convert_to_gdb_ext(size_t sub_id,
 template <unsigned int dim> struct e_lbox_id
 {
 	//! Box defining the external ghost box in local coordinates
-	::Box<dim,long int> box;
+	::Box<dim,long int> ebox;
 
 	//! Has this external ghost box initialized
 	bool initialized = false;
@@ -310,12 +345,12 @@ template<unsigned int dim> inline void add_loc_eg_box(size_t le_sub,
 											   size_t j,
 											   size_t k,
 		                                       openfpm::vector<e_lbox_id<dim>> & bid,
-		                                       const Box<dim,long int> & box,
+		                                       const Box<dim,long int> & ebox,
 											   comb<dim> & cmb)
 {
 	bid.add();
 
-	bid.last().box = box;
+	bid.last().ebox = ebox;
 
 	bid.last().sub = se;
 	bid.last().sub_gdb_ext = k;

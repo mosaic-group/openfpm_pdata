@@ -100,15 +100,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_test )
 		phases.get(i).ghost_get<>();
 	}
 
-	////////////// DEBUG //////////////////////
-
-	for (size_t i = 0 ; i < 4 ; i++)
-	{
-		phases.get(i).write("PORCA" + std::to_string(i));
-	}
-
-	///////////////////////////////////////////
-
 	// Get the cell list of the phase 0 and 1
 	auto CL_phase0 = phases.get(0).getCellList(r_cut);
 	auto CL_phase1 = phases.get(1).getCellList(r_cut);

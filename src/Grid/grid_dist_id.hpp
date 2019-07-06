@@ -286,40 +286,6 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		return g->recv_mem_gg.get(lc_id).getPointer();
 	}
 
-	/*! \brief flip box just convert and internal ghost box into an external ghost box
-	 *
-	 * \param box to convert
-	 * \param cmb sector position of the box
-	 *
-	 * \return the converted box
-	 *
-	 */
-	Box<dim,long int> flip_box(const Box<dim,long int> & box, const comb<dim> & cmb)
-	{
-		Box<dim,long int> flp;
-
-		for (size_t i = 0 ; i < dim; i++)
-		{
-			if (cmb[i] == 0)
-			{
-				flp.setLow(i,box.getLow(i));
-				flp.setHigh(i,box.getHigh(i));
-			}
-			else if (cmb[i] == 1)
-			{
-				flp.setLow(i,box.getLow(i) + ginfo.size(i));
-				flp.setHigh(i,box.getHigh(i) + ginfo.size(i));
-			}
-			else if (cmb[i] == -1)
-			{
-				flp.setLow(i,box.getLow(i) - ginfo.size(i));
-				flp.setHigh(i,box.getHigh(i) - ginfo.size(i));
-			}
-		}
-
-		return flp;
-	}
-
 	/*! \brief this function is for optimization of the ghost size
 	 *
 	 * Because the decomposition work in continuum and discrete ghost is
@@ -519,7 +485,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 						bx += gdb_ext.get(k).origin;
 
 						Box<dim,long int> output;
-						Box<dim,long int> flp_i = flip_box(box_int_recv.get(i).get(j).bx,box_int_recv.get(i).get(j).cmb);
+						Box<dim,long int> flp_i = flip_box(box_int_recv.get(i).get(j).bx,box_int_recv.get(i).get(j).cmb,ginfo);
 
 						// it intersect one sub-grid
 						if (bx.Intersect(flp_i,output))
@@ -572,7 +538,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 						// Add an unlinked gdb_ext
 						// An unlinked gdb_ext is an empty domain with only a external ghost
 						// part
-						Box<dim,long int> output = flip_box(box_int_recv.get(i).get(j).bx,box_int_recv.get(i).get(j).cmb);
+						Box<dim,long int> output = flip_box(box_int_recv.get(i).get(j).bx,box_int_recv.get(i).get(j).cmb,ginfo);
 
 						GBoxes<dim> tmp;
 						tmp.GDbox = box_int_recv.get(i).get(j).bx;
@@ -632,7 +598,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 					bid_t.sub = sub_id;
 					bid_t.cmb = box_int_recv.get(i).get(j).cmb;
 					bid_t.cmb.sign_flip();
-					::Box<dim,long int> ib = flip_box(box_int_recv.get(i).get(j).bx,box_int_recv.get(i).get(j).cmb);
+					::Box<dim,long int> ib = flip_box(box_int_recv.get(i).get(j).bx,box_int_recv.get(i).get(j).cmb,ginfo);
 					bid_t.g_e_box = ib;
 					bid_t.g_id = box_int_recv.get(i).get(j).g_id;
 					// Translate in local coordinate
@@ -690,7 +656,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 					{
 						// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it
 						if (ibv.get(k).bx.isValid() == false)
-							continue;
+						{continue;}
 
 						pib.bid.add();
 						pib.bid.last().box = ibv.get(k).bx;
@@ -703,7 +669,6 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 						pib.bid.last().sub = dec.getLocalIGhostSub(i,j);
 
 						// It will be filled later
-						/*pib.bid.last().k.add(-1)/*dec.getLocalIGhostE(i,j)*/;
 						pib.bid.last().cmb = dec.getLocalIGhostPos(i,j);
 					}
 				}
@@ -822,7 +787,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 						gbx += gdb_ext.get(k).origin;
 
 						Box<dim,long int> output;
-						Box<dim,long int> flp_i = flip_box(loc_ig_box.get(i).bid.get(j).box,loc_ig_box.get(i).bid.get(j).cmb);
+						Box<dim,long int> flp_i = flip_box(loc_ig_box.get(i).bid.get(j).box,loc_ig_box.get(i).bid.get(j).cmb,ginfo);
 
 						bool intersect_domain = bx.Intersect(flp_i,output);
 						bool intersect_gdomain = gbx.Intersect(flp_i,output);
@@ -834,7 +799,6 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 							loc_ig_box.get(i).bid.get(j).k.add(pib.bid.size());
 							size_t s = loc_ig_box.get(i).bid.get(j).k.last();
 
-							Box<dim,long int> flp_i = flip_box(loc_ig_box.get(i).bid.get(j).box,loc_ig_box.get(i).bid.get(j).cmb);
 							comb<dim> cmb = loc_ig_box.get(i).bid.get(j).cmb;
 							cmb.sign_flip();
 
@@ -843,11 +807,11 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 										   j,
 										   k,
 										   pib.bid,
-										   flp_i,
+										   output,
 										   cmb);
 
 
-							volume_linked += pib.bid.last().box.getVolumeKey();
+							volume_linked += pib.bid.last().ebox.getVolumeKey();
 						}
 					}
 				}
@@ -859,7 +823,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 					size_t s = loc_ig_box.get(i).bid.get(j).k.get(0);
 					pib.bid.resize(dec.getLocalNEGhost(k));
 
-					pib.bid.get(s).box = flip_box(loc_ig_box.get(i).bid.get(j).box,loc_ig_box.get(i).bid.get(j).cmb);
+					pib.bid.get(s).ebox = flip_box(loc_ig_box.get(i).bid.get(j).box,loc_ig_box.get(i).bid.get(j).cmb,ginfo);
 					pib.bid.get(s).sub = dec.getLocalEGhostSub(k,s);
 					pib.bid.get(s).cmb = loc_ig_box.get(i).bid.get(j).cmb;
 					pib.bid.get(s).cmb.sign_flip();
@@ -2206,6 +2170,7 @@ public:
 																								  eb_gid_list,
 																								  use_bx_def,
 																								  loc_grid,
+																								  ginfo_v,
 																								  g_id_to_external_ghost_box);
 	}
 
