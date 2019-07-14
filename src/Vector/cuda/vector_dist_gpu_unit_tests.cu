@@ -1,5 +1,5 @@
 #define BOOST_TEST_DYN_LINK
-#define PRINT_STACKTRACE
+#include "config.h"
 #include <boost/test/unit_test.hpp>
 #include "VCluster/VCluster.hpp"
 #include <Vector/vector_dist.hpp>
@@ -1598,6 +1598,43 @@ BOOST_AUTO_TEST_CASE(vector_dist_compare_host_device)
 
 	test = vdg.compareHostAndDeviceProp<2>(0.00001,0.00000001);
 	BOOST_REQUIRE_EQUAL(test,true);
+}
+
+template<typename vT>
+__global__ void launch_overflow(vT vs, vT vs2)
+{
+	vs2.template getProp<1>(57)[0];
+}
+
+BOOST_AUTO_TEST_CASE(vector_dist_overflow_se_class1)
+{
+	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Ghost<3,double> g(0.1);
+	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
+
+	if (create_vcluster().size() >= 16)
+	{return;}
+
+	std::cout << "****** TEST ERROR MESSAGE BEGIN ********" << std::endl;
+
+	vector_dist_gpu<3,double,aggregate<double,double[3],double[3][3]>> vdg(0,domain,bc,g,DEC_GRAN(128));
+	vector_dist_gpu<3,double,aggregate<double,double[3],double[3][3]>> vdg2(0,domain,bc,g,DEC_GRAN(128));
+
+
+	vdg.setCapacity(100);
+
+	ite_gpu<1> ite;
+
+	ite.wthr.x = 1;
+	ite.wthr.y = 1;
+	ite.wthr.z = 1;
+	ite.thr.x = 1;
+	ite.thr.y = 1;
+	ite.thr.z = 1;
+
+	CUDA_LAUNCH(launch_overflow,ite,vdg.toKernel(),vdg2.toKernel());
+
+	std::cout << "****** TEST ERROR MESSAGE END ********" << std::endl;
 }
 
 

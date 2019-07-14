@@ -224,6 +224,9 @@ class grid_dist_id_comm
 					if (bx_dst.isValid() == false)
 						continue;
 
+					Box<dim,size_t>  bx_src = flip_box(loc_eg_box.get(sub_id_dst).bid.get(k).ebox,loc_eg_box.get(sub_id_dst).bid.get(k).cmb,ginfo);
+					bx_src -= gdb_ext.get(sub_id_src_gdb_ext).origin;
+
 	#ifdef SE_CLASS1
 
 					if (use_bx_def == false)
@@ -236,9 +239,6 @@ class grid_dist_id_comm
 					{std::cerr << "Error " << __FILE__ << ":" << __LINE__ << " source and destination does not match in size" << "\n";}
 
 	#endif
-
-					Box<dim,size_t>  bx_src = flip_box(loc_eg_box.get(sub_id_dst).bid.get(k).ebox,loc_eg_box.get(sub_id_dst).bid.get(k).cmb,ginfo);
-					bx_src -= gdb_ext.get(sub_id_src_gdb_ext).origin;
 
 					auto & gd = loc_grid.get(sub_id_dst_gdb_ext);
 					gd.remove(bx_dst);

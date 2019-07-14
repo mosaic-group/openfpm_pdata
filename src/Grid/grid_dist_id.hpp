@@ -293,12 +293,12 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	 *  rounding-off error can produce ghost bigger than the discrete selected
 	 *   one. This function adjust for this round-off error
 	 *
-	 * \param sub_domain the sub-domain
+	 * \param sub_id sub-domain id
 	 * \param sub_domain_other the other sub-domain
 	 * \param ib internal ghost box to adjust
 	 *
 	 */
-	void set_for_adjustment(const Box<dim,long int> & sub_domain,
+	void set_for_adjustment(size_t sub_id,
 							const Box<dim,St> & sub_domain_other,
 							const comb<dim> & cmb,
 							Box<dim,long int> & ib,
@@ -306,6 +306,14 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	{
 		if (g.isInvalidGhost() == true || use_bx_def == true)
 		{return;}
+
+		Box<dim,long int> sub_domain;
+
+		if (use_bx_def == false)
+		{
+			sub_domain = gdb_ext.get(sub_id).Dbox;
+			sub_domain += gdb_ext.get(sub_id).origin;
+		}
 
 		// Convert from SpaceBox<dim,St> to SpaceBox<dim,long int>
 		Box<dim,long int> sub_domain_other_exp = cd_sm.convertDomainSpaceIntoGridUnits(sub_domain_other,dec.periodicity());
@@ -368,10 +376,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 
 				auto & n_box = dec.getNearSubdomains(dec.IDtoProc(i));
 
-				Box<dim,long int> sub = gdb_ext.get(sub_id).Dbox;
-				sub += gdb_ext.get(sub_id).origin;
-
-				set_for_adjustment(sub,
+				set_for_adjustment(sub_id,
 						           n_box.get(r_sub),dec.getProcessorIGhostPos(i,j),
 						           ib,ghost_int);
 
@@ -685,10 +690,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 					size_t sub_id = i;
 					size_t r_sub = dec.getLocalIGhostSub(i,j);
 
-					Box<dim,long int> sub = gdb_ext.get(sub_id).Dbox;
-					sub += gdb_ext.get(sub_id).origin;
-
-					set_for_adjustment(sub,dec.getSubDomain(r_sub),
+					set_for_adjustment(sub_id,dec.getSubDomain(r_sub),
 							           dec.getLocalIGhostPos(i,j),ib,ghost_int);
 
 					// Check if ib is valid if not it mean that the internal ghost does not contain information so skip it

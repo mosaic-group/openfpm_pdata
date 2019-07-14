@@ -78,6 +78,9 @@ public:
 	//! tag the type as a vector that run on kernel
 	typedef int vector_kernel;
 
+	//! Indicate this structure has a function to check the device pointer
+	typedef int yes_has_check_device_pointer;
+
 	vector_dist_ker(int g_m, const openfpm::vector_gpu_ker<Point<dim,St>,layout_base> & v_pos,
 							 const openfpm::vector_gpu_ker<typename apply_transform<layout_base,prop>::type,layout_base> & v_prp)
 	:g_m(g_m),v_pos(v_pos),v_prp(v_prp)
@@ -274,6 +277,40 @@ public:
 
 		return cv.check;
 	}
+
+#ifdef SE_CLASS1
+
+		/*! \brief Check if the device pointer is owned by this structure
+		 *
+		 * \return a structure pointer check with information about the match
+		 *
+		 */
+		pointer_check check_device_pointer(void * ptr)
+		{
+			pointer_check pc;
+
+			pc.match = false;
+
+			// we check the position vector and the property vector
+			pc = v_pos.check_device_pointer(ptr);
+
+			if (pc.match == true)
+			{
+				pc.match_str = std::string("Particle index overflow in position (v_pos): ") + "\n" + pc.match_str;
+				return pc;
+			}
+
+			pc = v_prp.check_device_pointer(ptr);
+			if (pc.match == true)
+			{
+				pc.match_str = std::string("Particle index overflow in properties (v_prp): ") + "\n" + pc.match_str;
+				return pc;
+			}
+
+			return pc;
+		}
+
+#endif
 };
 
 // This is a tranformation node for vector_distributed for the algorithm toKernel_tranform

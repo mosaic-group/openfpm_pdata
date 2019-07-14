@@ -429,7 +429,7 @@ public:
 	//! dimensions of space
 	static const unsigned int dims = dim;
 
-	//!
+	//! yes I am vector dist
 	typedef int yes_i_am_vector_dist;
 
 	/*! \brief Operator= for distributed vector
@@ -2487,6 +2487,17 @@ public:
 		HDF5_reader<VECTOR_DIST> h5l;
 
 		h5l.load(filename,v_pos,v_prp,g_m);
+	}
+
+	/*! \brief Reserve space for the internal vectors
+	 *
+	 * \param
+	 *
+	 */
+	void setCapacity(unsigned int ns)
+	{
+		v_pos.reserve(ns);
+		v_prp.reserve(ns);
 	}
 
 	/*! \brief Output particle position and properties
