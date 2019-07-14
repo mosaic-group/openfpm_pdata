@@ -8,6 +8,8 @@
 #ifndef AMR_GRID_AMR_DIST_HPP_
 #define AMR_GRID_AMR_DIST_HPP_
 
+#define OPENFPM_DATA_ENABLE_IO_MODULE
+
 #include "Grid/grid_dist_id.hpp"
 #include "Amr/grid_dist_amr_key_iterator.hpp"
 
