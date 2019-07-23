@@ -8,6 +8,8 @@
 #ifndef SRC_VECTOR_VECTOR_DIST_VERLET_PERFORMANCE_TESTS_HPP_
 #define SRC_VECTOR_VECTOR_DIST_VERLET_PERFORMANCE_TESTS_HPP_
 
+#include "util/stat/common_statistics.hpp"
+
 /*! \brief Print a string about the test
  *
  * \param test string to print

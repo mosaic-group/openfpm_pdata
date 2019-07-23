@@ -8,92 +8,13 @@
 #ifndef SRC_VECTOR_VECTOR_DIST_PERFORMANCE_UTIL_HPP_
 #define SRC_VECTOR_VECTOR_DIST_PERFORMANCE_UTIL_HPP_
 
+#include <boost/property_tree/ptree.hpp>
 #include "Plot/GoogleChart.hpp"
 #include "vector_dist_performance_common.hpp"
 
 // Number of tests
 #define N_VERLET_TEST 3
 #define N_STAT_TEST 30
-
-static inline void warning_set(int & warning_level, double mean, double mean_ref, double sigma)
-{
-	int warning_level_candidate;
-
-	if (mean - mean_ref < -2.0*sigma )
-		warning_level_candidate = -1;
-	else if (mean - mean_ref < 2.0*sigma)
-		warning_level_candidate = 0;
-	else if (mean - mean_ref < 3.0*sigma)
-		warning_level_candidate = 1;
-	else
-		warning_level_candidate = 2;
-
-	if (warning_level_candidate > warning_level)
-		warning_level = warning_level_candidate;
-}
-
-static inline void addchartarea(std::string & chart_area, int lvl)
-{
-	std::string color;
-
-	if (lvl == -1)
-	{
-		chart_area = std::string(",chartArea: {\
-		    backgroundColor: {\
-		        stroke: '#00FF00',\
-		        strokeWidth: 6\
-		    }\
-		}");
-	}
-	else if (lvl == 0)
-	{
-		// NOTHING TO DO
-	}
-	else if (lvl == 1)
-	{
-		chart_area = std::string(",chartArea: {\
-		    backgroundColor: {\
-		        stroke: '#FFFF00',\
-		        strokeWidth: 6\
-		    }\
-		}");
-	}
-	else if (lvl == 2)
-	{
-		chart_area = std::string(",chartArea: {\
-		    backgroundColor: {\
-		        stroke: '#FF0000',\
-		        strokeWidth: 6\
-		    }\
-		}");
-	}
-
-}
-
-void addUpdtateTime(GoogleChart & cg);
-
-/*! \brief Standard deviation
- *
- * \param measures set of measures
- * \param mean the mean of the measures
- *
- * \return the standard deviation
- *
- */
-static inline void standard_deviation(openfpm::vector<double> measures, double & mean, double & dev)
-{
-	mean = 0;
-	for (size_t i = 0 ; i < measures.size() ; i++)
-		mean += measures.get(i);
-	mean /= measures.size();
-
-	dev = 0;
-	for (size_t i = 0 ; i < measures.size() ; i++)
-		dev += (measures.get(i) - mean)*(measures.get(i) - mean);
-
-	dev = sqrt(dev / (measures.size() - 1));
-}
-
 
 
 /*! \brief Benchmark particles' forces time
@@ -146,7 +67,8 @@ template<typename V> double benchmark_reorder(V & vd, size_t m)
  *
  * \return real time
  */
-template<typename T, typename V> double benchmark_get_celllist(T & NN, V & vd, float r_cut)
+template<typename T, typename V>
+double benchmark_get_celllist(T & NN, V & vd, float r_cut)
 {
 	// Cell list timer
 	timer t;
@@ -289,6 +211,5 @@ extern void StandardPerformanceGraph(std::string file_mean,
 							  std::string x_string,
 							  std::string y_string,
 							  bool use_log);
-
 
 #endif /* SRC_VECTOR_VECTOR_DIST_PERFORMANCE_UTIL_HPP_ */

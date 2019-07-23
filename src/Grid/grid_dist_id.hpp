@@ -2059,7 +2059,8 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p = 0>inline auto get(grid_dist_g_dx<device_grid> & v1) const -> typename std::add_lvalue_reference<decltype(v1.getSub()->template get<p>(v1.getKey()))>::type
+	template <unsigned int p = 0>
+	inline auto get(const grid_dist_g_dx<device_grid> & v1) const -> typename std::add_lvalue_reference<decltype(v1.getSub()->template get<p>(v1.getKey()))>::type
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2075,7 +2076,8 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p = 0>inline auto get(grid_dist_g_dx<device_grid> & v1) -> typename std::add_lvalue_reference<decltype(v1.getSub()->template get<p>(v1.getKey()))>::type
+	template <unsigned int p = 0>
+	inline auto get(const grid_dist_g_dx<device_grid> & v1) -> typename std::add_lvalue_reference<decltype(v1.getSub()->template get<p>(v1.getKey()))>::type
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2091,7 +2093,8 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p = 0>inline auto get(const grid_dist_lin_dx & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	template <unsigned int p = 0>
+	inline auto get(const grid_dist_lin_dx & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2107,7 +2110,8 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p = 0>inline auto get(const grid_dist_lin_dx & v1) -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	template <unsigned int p = 0>
+	inline auto get(const grid_dist_lin_dx & v1) -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2123,7 +2127,8 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p = 0>inline auto getProp(const grid_dist_key_dx<dim> & v1) const -> decltype(this->template get<p>(v1))
+	template <unsigned int p = 0>
+	inline auto getProp(const grid_dist_key_dx<dim> & v1) const -> decltype(this->template get<p>(v1))
 	{
 		return this->template get<p>(v1);
 	}
@@ -2136,7 +2141,8 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p = 0>inline auto getProp(const grid_dist_key_dx<dim> & v1) -> decltype(this->template get<p>(v1))
+	template <unsigned int p = 0>
+	inline auto getProp(const grid_dist_key_dx<dim> & v1) -> decltype(this->template get<p>(v1))
 	{
 		return this->template get<p>(v1);
 	}

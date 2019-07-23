@@ -308,7 +308,7 @@ public:
 	 *
 	 *
 	 */
-	inline device_grid * getSub()
+	inline device_grid * getSub() const
 	{
 		return dg;
 	}

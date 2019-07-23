@@ -89,6 +89,11 @@ target_link_libraries(pdata -L${HDF5_ROOT}/lib hdf5 hdf5_hl)
 target_link_libraries(pdata -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
 target_link_libraries(pdata ${PETSC_LIBRARIES})
 
+if (TEST_PERFORMANCE)
+	target_link_libraries(pdata  ${Boost_FILESYSTEM_LIBRARY})
+        target_link_libraries(pdata ${Boost_SYSTEM_LIBRARY})
+endif()
+
 if (TEST_COVERAGE)
     target_link_libraries(pdata -lgcov --coverage)
 endif()

@@ -30,6 +30,8 @@ set(SuiteSparse_ROOT ${SUITESPARSE_ROOT})
 
 set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_CUDA_STANDARD 11)
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O3")
 
 if (OPENBLAS_ROOT)
 	set(ENV{LD_LIBRARY_PATH} "$ENV{LD_LIBRARY_PATH}:${OPENBLAS_ROOT}/lib")
@@ -57,7 +59,7 @@ if(ENABLE_GPU)
 endif()
 
 
-find_package(Boost 1.68.0 COMPONENTS unit_test_framework iostreams program_options)
+find_package(Boost 1.68.0 COMPONENTS unit_test_framework iostreams program_options system filesystem)
 find_package(MPI)
 find_package(PETSc)
 find_package(HDF5)
