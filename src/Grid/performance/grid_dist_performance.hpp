@@ -342,21 +342,24 @@ BOOST_AUTO_TEST_CASE(grid_iterator_performance_write_report_final)
 	report_grid_iterator.graphs.add("graphs.graph(2).x.data(0).source","performance.interpolation.m2p(#).grid.x");
 	report_grid_iterator.graphs.add("graphs.graph(2).options.log_y","true");
 
-	boost::property_tree::xml_writer_settings<std::string> settings(' ', 4);
-	boost::property_tree::write_xml("grid_performance.xml", report_grid_iterator.graphs,std::locale(),settings);
-
-	GoogleChart cg;
-
-	std::string file_xml_ref(test_dir);
-	file_xml_ref += std::string("/openfpm_pdata/grid_performance_ref.xml");
-
-	StandardXMLPerformanceGraph("grid_performance.xml",file_xml_ref,cg);
-
-	if (create_vcluster().getProcessUnitID() == 0)
+	if (create_vcluster().rank() == 0)
 	{
-		addUpdtateTime(cg);
+		boost::property_tree::xml_writer_settings<std::string> settings(' ', 4);
+		boost::property_tree::write_xml("grid_performance.xml", report_grid_iterator.graphs,std::locale(),settings);
 
-		cg.write("grid_performance.html");
+		GoogleChart cg;
+
+		std::string file_xml_ref(test_dir);
+		file_xml_ref += std::string("/openfpm_pdata/grid_performance_ref.xml");
+
+		StandardXMLPerformanceGraph("grid_performance.xml",file_xml_ref,cg);
+
+		if (create_vcluster().getProcessUnitID() == 0)
+		{
+			addUpdtateTime(cg,create_vcluster().size());
+
+			cg.write("grid_performance.html");
+		}
 	}
 }
 

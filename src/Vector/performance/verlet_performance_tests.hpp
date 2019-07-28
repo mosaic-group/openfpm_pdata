@@ -10,6 +10,14 @@
 
 #include "util/stat/common_statistics.hpp"
 
+// Property tree
+struct report_verlet_tests
+{
+	boost::property_tree::ptree graphs;
+};
+
+report_verlet_tests report_vl;
+
 /*! \brief Print a string about the test
  *
  * \param test string to print
@@ -22,7 +30,7 @@ void print_test_v(std::string test, size_t sz)
 		std::cout << test << " " << sz << "\n";
 }
 
-BOOST_AUTO_TEST_SUITE( verletlist_part_reorder_performance_test )
+BOOST_AUTO_TEST_SUITE( verletlist_performance_test )
 
 ///////////////////// INPUT DATA //////////////////////
 
@@ -39,17 +47,6 @@ size_t k_min = 15000;
 
 // Numbers of particles vector
 openfpm::vector<size_t> n_particles;
-// Vectors to store the data for 2D
-openfpm::vector<openfpm::vector<double>> time_force_mean;
-openfpm::vector<openfpm::vector<double>> time_force_dev;
-openfpm::vector<openfpm::vector<double>> time_create_mean;
-openfpm::vector<openfpm::vector<double>> time_create_dev;
-
-// Vectors to store the data for 3D
-openfpm::vector<openfpm::vector<double>> time_force_mean_2;
-openfpm::vector<openfpm::vector<double>> time_force_dev_2;
-openfpm::vector<openfpm::vector<double>> time_create_mean_2;
-openfpm::vector<openfpm::vector<double>> time_create_dev_2;
 
 /*! \brief Function for verlet test without an Hilbert curve reordering (unordered positioning)
  *
@@ -57,17 +54,8 @@ openfpm::vector<openfpm::vector<double>> time_create_dev_2;
 template<unsigned int dim> void vd_verlet_random_benchmark(size_t k_start,
 		                                                   size_t k_min,
 														   openfpm::vector<float> & r_cutoff,
-														   openfpm::vector<size_t> & n_particles,
-														   openfpm::vector<openfpm::vector<double>> & time_force_mean,
-														   openfpm::vector<openfpm::vector<double>> & time_create_mean,
-														   openfpm::vector<openfpm::vector<double>> & time_force_dev,
-														   openfpm::vector<openfpm::vector<double>> & time_create_dev)
+														   openfpm::vector<size_t> & n_particles)
 {
-	time_force_mean.resize(r_cutoff.size());
-	time_create_mean.resize(r_cutoff.size());
-	time_force_dev.resize(r_cutoff.size());
-	time_create_dev.resize(r_cutoff.size());
-
 	std::string str("Testing " + std::to_string(dim) + "D vector no-order, Verlet-list");
 	print_test_v(str,0);
 
@@ -80,15 +68,22 @@ template<unsigned int dim> void vd_verlet_random_benchmark(size_t k_start,
 			//Cut-off radius
 			float r_cut = r_cutoff.get(r);
 
+			report_vl.graphs.put("performance.verletlist.getVerletList" + std::to_string(dim) + "D(" + std::to_string(r) + ").rcut",r_cut);
+
 			//Number of particles
 			size_t k = k_start * v_cl.getProcessingUnits();
 
 			//Counter number for amounts of particles
 			size_t k_count = 1 + log2(k/k_min);
 
+			int c = 0;
+
 			for (size_t k_int = k ; k_int >= k_min ; k_int/=2 )
 			{
 				BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector without an Hilbert curve reordering k=" << k_int );
+
+				report_vl.graphs.put("performance.verletlist.getVerletList" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").n",k_int);
+				report_vl.graphs.put("performance.verletlist.calc_forces" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").n",k_int);
 
 				if (n_particles.size() < k_count)
 					n_particles.add(k_int);
@@ -119,12 +114,11 @@ template<unsigned int dim> void vd_verlet_random_benchmark(size_t k_start,
 				double sum_verlet_mean = 0;
 				double sum_verlet_dev = 0;
 				for (size_t n = 0 ; n < N_STAT_TEST; n++)
-					measures.add(benchmark_get_verlet(vd,r_cut));
+				{measures.add(benchmark_get_verlet(vd,r_cut));}
 				standard_deviation(measures,sum_verlet_mean,sum_verlet_dev);
 
-				//Average total time
-				time_create_mean.get(r).add(sum_verlet_mean);
-				time_create_dev.get(r).add(sum_verlet_dev);
+				report_vl.graphs.put("performance.verletlist.getVerletList" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").mean",sum_verlet_mean);
+				report_vl.graphs.put("performance.verletlist.getVerletList" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").dev",sum_verlet_dev);
 
 				//Calculate forces
 
@@ -134,276 +128,99 @@ template<unsigned int dim> void vd_verlet_random_benchmark(size_t k_start,
 
 				measures.clear();
 				for (size_t l = 0 ; l < N_STAT_TEST ; l++)
-					measures.add(benchmark_calc_forces<dim>(NN,vd,r_cut));
+				{measures.add(benchmark_calc_forces<dim>(NN,vd,r_cut));}
 				standard_deviation(measures,sum_fr_mean,sum_fr_dev);
-				time_force_mean.get(r).add(sum_fr_mean);
-				time_force_dev.get(r).add(sum_fr_dev);
+
+				report_vl.graphs.put("performance.verletlist.calc_forces" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").mean",sum_fr_mean);
+				report_vl.graphs.put("performance.verletlist.calc_forces" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").dev",sum_fr_dev);
 
 				if (v_cl.getProcessUnitID() == 0)
-					std::cout << "Particles: " << k_int << "," << "cut-off: " << r_cut << " time to construct a Verlet list = " << sum_verlet_mean << " dev: " << sum_verlet_dev << "    calculate force = " << sum_fr_mean << " dev: " << sum_fr_dev << std::endl;
+				{std::cout << "Particles: " << k_int << "," << "cut-off: " << r_cut << " time to construct a Verlet list = " << sum_verlet_mean << " dev: " << sum_verlet_dev << "    calculate force = " << sum_fr_mean << " dev: " << sum_fr_dev << std::endl;}
+
+				c++;
 			}
 		}
 	}
 }
 
-/*! \brief Function for verlet test with an Hilbert curve reordering
- *
- */
-template<unsigned int dim> void vd_verlet_hilbert_benchmark(size_t k_start, size_t k_min, double ghost_part,openfpm::vector<float> & r_cutoff, openfpm::vector<size_t> & n_particles, openfpm::vector<size_t> &orders, openfpm::vector<openfpm::vector<openfpm::vector<double>>> &time_hilb, openfpm::vector<openfpm::vector<openfpm::vector<double>>> &time_total_hilb)
-{
-	time_hilb.resize(r_cutoff.size());
-	for (size_t r = 0; r < time_hilb.size(); r++)
-	{
-		time_hilb.get(r).resize(n_particles.size());
-		for (size_t k = 0; k < time_hilb.get(r).size(); k++)
-		{
-			time_hilb.get(r).get(k).resize(orders.size());
-		}
-	}
-
-	time_total_hilb.resize(r_cutoff.size());
-	for (size_t r = 0; r < time_total_hilb.size(); r++)
-	{
-		time_total_hilb.get(r).resize(n_particles.size());
-		for (size_t k = 0; k < time_total_hilb.get(r).size(); k++)
-		{
-			time_total_hilb.get(r).get(k).resize(orders.size());
-		}
-	}
-
-	std::string str("Testing " + std::to_string(dim) + "D vector, Hilbert curve reordering, Verlet-list");
-	print_test_v(str,0);
-
-	// For different r_cut
-	for (size_t r = 0; r < r_cutoff.size(); r++ )
-	{
-		Vcluster<> & v_cl = create_vcluster();
-
-		//Cut-off radius
-		float r_cut = r_cutoff.get(r);
-
-		// Number of particles
-		size_t k = k_start * v_cl.getProcessingUnits();
-
-		//For different curve orders
-		for ( size_t i = 0; i < orders.size(); i++)
-		{
-			size_t m = orders.get(i);
-			size_t part = 0;
-
-			for (size_t k_int = k ; k_int >= k_min ; k_int/=2, part++ )
-			{
-				BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector with an Hilbert curve reordering k=" << k_int );
-
-				Box<dim,float> box;
-
-				for (size_t i = 0; i < dim; i++)
-				{
-					box.setLow(i,0.0);
-					box.setHigh(i,1.0);
-				}
-
-				// Boundary conditions
-				size_t bc[dim];
-
-				for (size_t i = 0; i < dim; i++)
-					bc[i] = PERIODIC;
-
-				vector_dist<dim,float, aggregate<float[dim]>, CartDecomposition<dim,float> > vd(k_int,box,bc,Ghost<dim,float>(ghost_part));
-
-				// Initialize a dist vector
-				vd_initialize<dim>(vd, v_cl, k_int);
-
-				vd.template ghost_get<0>();
-
-				//Reorder a vector
-
-				double sum_reorder = 0;
-				for (size_t h = 0 ; h < N_VERLET_TEST; h++)
-					sum_reorder += benchmark_reorder(vd,m);
-				sum_reorder /= N_VERLET_TEST;
-
-				//Get verlet list
-
-				double sum_verlet = 0;
-
-				for (size_t n = 0 ; n < N_VERLET_TEST; n++)
-					sum_verlet += benchmark_get_verlet(vd,r_cut);
-				sum_verlet /= N_VERLET_TEST;
-				//Average total time
-				time_total_hilb.get(r).get(part).get(i) = sum_verlet;
-
-				//Calculate forces
-
-				auto NN = vd.getCellList(r_cut);
-				double sum_forces = 0;
-
-				for (size_t l = 0 ; l < N_VERLET_TEST; l++)
-					sum_forces += benchmark_calc_forces<dim>(NN,vd,r_cut);
-				sum_forces /= N_VERLET_TEST;
-				time_hilb.get(r).get(part).get(i) = sum_forces;
-
-				if (v_cl.getProcessUnitID() == 0)
-					std::cout << "Order = " << m << ", Cut-off = " << r_cut << ", Particles = " << k_int << ". Time to reorder: " << sum_reorder << " time to get the verlet-list: " << sum_verlet << " time to calculate forces: " << sum_forces << std::endl;
-			}
-		}
-	}
-}
-
-
-/*! \brief Function for verlet performance report
- *
- */
-template<unsigned int dim> void vd_verlet_performance_write_report(GoogleChart & cg,
-																   openfpm::vector<float> & r_cutoff,
-		                                                           openfpm::vector<size_t> & n_particles,
-																   openfpm::vector<openfpm::vector<double>> time_force_mean,
-																   openfpm::vector<openfpm::vector<double>> time_force_dev,
-																   openfpm::vector<openfpm::vector<double>> time_create_mean,
-																   openfpm::vector<openfpm::vector<double>> time_create_dev)
-{
-	{
-	std::string file_mean(test_dir);
-	std::string file_var(test_dir);
-	file_mean += std::string("/openfpm_pdata/verlet_comp_force_mean_" + std::to_string(dim) + std::string("_ref"));
-	file_var += std::string("/openfpm_pdata/verlet_comp_force_dev_" + std::to_string(dim) + std::string("_ref"));
-
-	std::string file_mean_save = std::string("verlet_comp_force_mean_" + std::to_string(dim) + std::to_string("_ref"));
-	std::string file_var_save = std::string("verlet_comp_force_dev_" + std::to_string(dim) + std::to_string("_ref"));
-
-	openfpm::vector<size_t> xp = n_particles;
-
-	openfpm::vector<openfpm::vector<openfpm::vector<double>>> yp_mean;
-	openfpm::vector<openfpm::vector<openfpm::vector<double>>> yp_dev;
-
-	openfpm::vector<std::string> names;
-	openfpm::vector<std::string> gnames;
-
-	yp_mean.resize(time_force_mean.size());
-	yp_dev.resize(time_force_dev.size());
-	for (size_t i = 0 ; i < yp_mean.size() ; i++)
-	{
-		yp_mean.get(i).resize(time_force_mean.get(i).size());
-		yp_dev.get(i).resize(time_force_dev.get(i).size());
-
-		for (size_t j = 0 ; j < yp_mean.get(i).size() ; j++)
-		{
-			yp_mean.get(i).get(j).resize(1);
-			yp_dev.get(i).get(j).resize(1);
-
-			yp_mean.get(i).get(j).get(0) = time_force_mean.get(i).get(j);
-			yp_dev.get(i).get(j).get(0) = time_force_dev.get(i).get(j);
-		}
-	}
-
-	names.add("Force verlet");
-
-	for (size_t i = 0 ; i < r_cutoff.size() ; i++)
-		gnames.add("Verlet-list performance, cut-off radius: " + std::to_string(r_cutoff.get(i)));
-
-	std::string y_string = std::string("Time to calculate forces (s)");
-	std::string x_string = std::string("Number of particles");
-
-	std::string str("<h1>Verlet-list " + std::to_string(dim) + "-D performance test force calculation: </h1>");
-	cg.addHTML(str);
-
-	StandardPerformanceGraph(file_mean,
-			                 file_var,
-							 file_mean_save,
-							 file_var_save,
-							 cg,
-							 xp,
-							 yp_mean,
-							 yp_dev,
-							 names,
-							 gnames,
-							 x_string,
-							 y_string,
-							 true);
-	}
-	//////////////////// TIME TO CREATE //////////////////////////
-
-	{
-	std::string file_mean(test_dir);
-	std::string file_var(test_dir);
-	file_mean += std::string("/openfpm_pdata/verlet_comp_create_mean_" + std::to_string(dim) + std::string("_ref"));
-	file_var += std::string("/openfpm_pdata/verlet_comp_create_dev_" + std::to_string(dim) + std::string("_ref"));
-
-	std::string file_mean_save = std::string("verlet_comp_create_mean_" + std::to_string(dim) + std::to_string("_ref"));
-	std::string file_var_save = std::string("verlet_comp_create_dev_" + std::to_string(dim) + std::to_string("_ref"));
-
-	openfpm::vector<size_t> xp = n_particles;
-
-	openfpm::vector<openfpm::vector<openfpm::vector<double>>> yp_mean;
-	openfpm::vector<openfpm::vector<openfpm::vector<double>>> yp_dev;
-
-	openfpm::vector<std::string> names;
-	openfpm::vector<std::string> gnames;
-
-	yp_mean.resize(time_create_mean.size());
-	yp_dev.resize(time_create_dev.size());
-	for (size_t i = 0 ; i < yp_mean.size() ; i++)
-	{
-		yp_mean.get(i).resize(time_create_mean.get(i).size());
-		yp_dev.get(i).resize(time_create_dev.get(i).size());
-
-		for (size_t j = 0 ; j < yp_mean.get(i).size() ; j++)
-		{
-			yp_mean.get(i).get(j).resize(1);
-			yp_dev.get(i).get(j).resize(1);
-
-			yp_mean.get(i).get(j).get(0) = time_create_mean.get(i).get(j);
-			yp_dev.get(i).get(j).get(0) = time_create_dev.get(i).get(j);
-		}
-	}
-
-	names.add("Create verlet");
-
-	for (size_t i = 0 ; i < r_cutoff.size() ; i++)
-		gnames.add("Verlet-list performance, cut-off radius: " + std::to_string(r_cutoff.get(i)));
-
-	std::string y_string = std::string("Time to construct a verlet-list (s)");
-	std::string x_string = std::string("Number of particles");
-
-	std::string str("<h1>Verlet-list " + std::to_string(dim) + "-D performance test force calculation: </h1>");
-	cg.addHTML(str);
-
-	StandardPerformanceGraph(file_mean,
-			                 file_var,
-							 file_mean_save,
-							 file_var_save,
-							 cg,
-							 xp,
-							 yp_mean,
-							 yp_dev,
-							 names,
-							 gnames,
-							 x_string,
-							 y_string,
-							 true);
-	}
-}
 
 BOOST_AUTO_TEST_CASE( vector_dist_verlet_test )
 {
 	//Benchmark test for 2D and 3D
-	vd_verlet_random_benchmark<3>(k_start,k_min,r_cutoff,n_particles,time_force_mean,time_create_mean,time_force_dev,time_create_dev);
-	vd_verlet_random_benchmark<2>(k_start,k_min,r_cutoff,n_particles,time_force_mean_2,time_create_mean_2,time_force_dev_2,time_create_dev_2);
+	vd_verlet_random_benchmark<3>(k_start,k_min,r_cutoff,n_particles);
+	vd_verlet_random_benchmark<2>(k_start,k_min,r_cutoff,n_particles);
 }
 
 BOOST_AUTO_TEST_CASE(vector_dist_verlet_performance_write_report)
 {
-	GoogleChart cg;
-
-	//Write report for 2D and 3D
-	vd_verlet_performance_write_report<3>(cg,r_cutoff,n_particles,time_force_mean,time_force_dev,time_create_mean,time_create_dev);
-	vd_verlet_performance_write_report<2>(cg,r_cutoff,n_particles,time_force_mean_2,time_force_dev_2,time_create_mean_2,time_create_dev_2);
-
-	if (create_vcluster().getProcessUnitID() == 0)
+	//For different r_cut
+	for (size_t r = 0; r < r_cutoff.size(); r++ )
 	{
-		addUpdtateTime(cg);
+		report_vl.graphs.put("graphs.graph(" + std::to_string(r) + ").type","line");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(r) + ").title","getVerletList 3D performance r_cut=" + std::to_string(r_cutoff.get(r)));
+		report_vl.graphs.add("graphs.graph(" + std::to_string(r) + ").x.title","number of particles");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(r) + ").y.title","Time seconds");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(r) + ").y.data(0).source","performance.verletlist.getVerletList3D(" + std::to_string(r) + ").npart(#).mean");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(r) + ").x.data(0).source","performance.verletlist.getVerletList3D(" + std::to_string(r) + ").npart(#).n");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(r) + ").y.data(0).title","Verlet-list");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(r) + ").options.log_y","true");
+	}
 
-		cg.write("Verletlist_comp.html");
+	//For different r_cut
+	for (size_t r = 0; r < r_cutoff.size(); r++ )
+	{
+		report_vl.graphs.put("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").type","line");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").title","calc_force 3D performance r_cut=" + std::to_string(r_cutoff.get(r)));
+		report_vl.graphs.add("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").x.title","number of particles");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").y.title","Time seconds");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").y.data(0).source","performance.verletlist.calc_forces3D(" + std::to_string(r) + ").npart(#).mean");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").x.data(0).source","performance.verletlist.calc_forces3D(" + std::to_string(r) + ").npart(#).n");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").y.data(0).title","Verlet-list");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").options.log_y","true");
+	}
+
+	//For different r_cut
+	for (size_t r = 0; r < r_cutoff.size(); r++ )
+	{
+		report_vl.graphs.put("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").type","line");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").title","getVerletList 2D performance r_cut=" + std::to_string(r_cutoff.get(r)));
+		report_vl.graphs.add("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").x.title","number of particles");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").y.title","Time seconds");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").y.data(0).source","performance.verletlist.getVerletList2D(" + std::to_string(r) + ").npart(#).mean");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").x.data(0).source","performance.verletlist.getVerletList2D(" + std::to_string(r) + ").npart(#).n");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").y.data(0).title","Verlet-list");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").options.log_y","true");
+	}
+
+	//For different r_cut
+	for (size_t r = 0; r < r_cutoff.size(); r++ )
+	{
+		report_vl.graphs.put("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").type","line");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").title","calc_force 2D performance r_cut=" + std::to_string(r_cutoff.get(r)));
+		report_vl.graphs.add("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").x.title","number of particles");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").y.title","Time seconds");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").y.data(0).source","performance.verletlist.calc_forces2D(" + std::to_string(r) + ").npart(#).mean");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").x.data(0).source","performance.verletlist.calc_forces2D(" + std::to_string(r) + ").npart(#).n");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").y.data(0).title","Verlet-list");
+		report_vl.graphs.add("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").options.log_y","true");
+	}
+
+	if (create_vcluster().rank() == 0)
+	{
+		boost::property_tree::xml_writer_settings<std::string> settings(' ', 4);
+		boost::property_tree::write_xml("verletlist_performance.xml", report_vl.graphs,std::locale(),settings);
+
+		std::string file_xml_ref(test_dir);
+		file_xml_ref += std::string("/openfpm_pdata/verletlist_performance_ref.xml");
+
+		GoogleChart cg;
+
+		StandardXMLPerformanceGraph("verletlist_performance.xml",file_xml_ref,cg);
+
+		addUpdtateTime(cg,create_vcluster().size());
+
+		if (create_vcluster().getProcessUnitID() == 0)
+		{cg.write("verletlist_performance.html");}
 	}
 }
 

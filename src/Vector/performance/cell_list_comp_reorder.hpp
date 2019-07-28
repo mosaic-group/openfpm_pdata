@@ -12,7 +12,6 @@
 #include "data_type/aggregate.hpp"
 #include "Plot/GoogleChart.hpp"
 #include "vector_dist_performance_util.hpp"
-#include "cl_comp_performance_graph.hpp"
 
 // Property tree
 struct report_cell_list_func_tests
@@ -38,24 +37,6 @@ size_t k_min = 15000;
 
 // Numbers of particles vector
 openfpm::vector<size_t> n_particles;
-// Vectors to store the data for 2D
-openfpm::vector<openfpm::vector<double>> time_rand_mean;
-openfpm::vector<openfpm::vector<double>> time_hilb_mean;
-openfpm::vector<openfpm::vector<double>> time_rand_dev;
-openfpm::vector<openfpm::vector<double>> time_hilb_dev;
-openfpm::vector<openfpm::vector<double>> time_create_rand_mean;
-openfpm::vector<openfpm::vector<double>> time_create_hilb_mean;
-openfpm::vector<openfpm::vector<double>> time_create_rand_dev;
-openfpm::vector<openfpm::vector<double>> time_create_hilb_dev;
-// Vectors to store the data for 3D
-openfpm::vector<openfpm::vector<double>> time_rand_2_mean;
-openfpm::vector<openfpm::vector<double>> time_hilb_2_mean;
-openfpm::vector<openfpm::vector<double>> time_rand_2_dev;
-openfpm::vector<openfpm::vector<double>> time_hilb_2_dev;
-openfpm::vector<openfpm::vector<double>> time_create_rand_2_mean;
-openfpm::vector<openfpm::vector<double>> time_create_hilb_2_mean;
-openfpm::vector<openfpm::vector<double>> time_create_rand_2_dev;
-openfpm::vector<openfpm::vector<double>> time_create_hilb_2_dev;
 
 /*! \brief Function for random cell list test
  *
@@ -63,19 +44,8 @@ openfpm::vector<openfpm::vector<double>> time_create_hilb_2_dev;
 template<unsigned int dim> void cell_list_getCellList_calc_force_benchmark(size_t cl_k_start,
 		                                                                size_t cl_k_min,
 																		openfpm::vector<float> & cl_r_cutoff,
-																		openfpm::vector<size_t> & cl_n_particles,
-																		openfpm::vector<openfpm::vector<double>> & cl_time_rand_mean,
-																		openfpm::vector<openfpm::vector<double>> & cl_time_rand_dev,
-																		openfpm::vector<openfpm::vector<double>> & cl_time_create_rand_mean,
-																		openfpm::vector<openfpm::vector<double>> & cl_time_create_rand_dev)
+																		openfpm::vector<size_t> & cl_n_particles)
 {
-	report_cl_funcs.graphs.put("performance.celllist.dim",std::to_string(dim));
-
-	cl_time_rand_mean.resize(cl_r_cutoff.size());
-	cl_time_create_rand_mean.resize(cl_r_cutoff.size());
-	cl_time_rand_dev.resize(cl_r_cutoff.size());
-	cl_time_create_rand_dev.resize(cl_r_cutoff.size());
-
 	std::string str("Testing " + std::to_string(dim) + "D vector, no order, cell-list");
 	print_test_v(str,0);
 
@@ -104,6 +74,8 @@ template<unsigned int dim> void cell_list_getCellList_calc_force_benchmark(size_
 				BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector with a random cell list k=" << k_int );
 
 				report_cl_funcs.graphs.put("performance.celllist.getCellList" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").n",k_int);
+				report_cl_funcs.graphs.put("performance.celllist.calc_forces" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").n",k_int);
+
 
 				if (cl_n_particles.size() < k_count)
 					cl_n_particles.add(k_int);
@@ -143,9 +115,6 @@ template<unsigned int dim> void cell_list_getCellList_calc_force_benchmark(size_
 				standard_deviation(measures,sum_cl_mean,sum_cl_dev);
 				//Average total time
 
-				cl_time_create_rand_mean.get(r).add(sum_cl_mean);
-				cl_time_create_rand_dev.get(r).add(sum_cl_dev);
-
 				report_cl_funcs.graphs.put("performance.celllist.getCellList" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").mean",sum_cl_mean);
 				report_cl_funcs.graphs.put("performance.celllist.getCellList" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").dev",sum_cl_dev);
 
@@ -158,9 +127,6 @@ template<unsigned int dim> void cell_list_getCellList_calc_force_benchmark(size_
 				for (size_t l = 0 ; l < N_STAT_TEST; l++)
 				{measures.add(benchmark_calc_forces<dim>(NN,vd,r_cut));}
 				standard_deviation(measures,sum_fr_mean,sum_fr_dev);
-
-				cl_time_rand_mean.get(r).add(sum_fr_mean);
-				cl_time_rand_dev.get(r).add(sum_fr_dev);
 
 				report_cl_funcs.graphs.put("performance.celllist.calc_forces" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").mean",sum_fr_mean);
 				report_cl_funcs.graphs.put("performance.celllist.calc_forces" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").dev",sum_fr_dev);
@@ -180,18 +146,9 @@ template<unsigned int dim> void cell_list_getCellList_calc_force_benchmark(size_
 template<unsigned int dim> void cell_list_getCellList_hilb_calc_force_benchmark(size_t cl_k_start,
 		                                                                 size_t cl_k_min,
 																		 openfpm::vector<float> & cl_r_cutoff,
-																		 openfpm::vector<size_t> & cl_n_particles,
-																		 openfpm::vector<openfpm::vector<double>> & cl_time_force_mean,
-																		 openfpm::vector<openfpm::vector<double>> & cl_time_force_dev,
-																		 openfpm::vector<openfpm::vector<double>> & cl_time_create_mean,
-																		 openfpm::vector<openfpm::vector<double>> & cl_time_create_dev)
+																		 openfpm::vector<size_t> & cl_n_particles)
 {
 	report_cl_funcs.graphs.put("performance.celllist.dim",std::to_string(dim));
-
-	cl_time_force_mean.resize(cl_r_cutoff.size());
-	cl_time_create_mean.resize(cl_r_cutoff.size());
-	cl_time_force_dev.resize(cl_r_cutoff.size());
-	cl_time_create_dev.resize(cl_r_cutoff.size());
 
 	std::string str("Testing " + std::to_string(dim) + "D vector, Hilbert comp reorder, cell list");
 	print_test_v(str,0);
@@ -221,6 +178,7 @@ template<unsigned int dim> void cell_list_getCellList_hilb_calc_force_benchmark(
 				BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector with an Hilbert cell list k=" << k_int );
 
 				report_cl_funcs.graphs.put("performance.celllist.getCellList_hilb" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").n",k_int);
+				report_cl_funcs.graphs.put("performance.celllist.calc_forces_hilb" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").n",k_int);
 
 				if (cl_n_particles.size() < k_count)
 					cl_n_particles.add(k_int);
@@ -258,8 +216,6 @@ template<unsigned int dim> void cell_list_getCellList_hilb_calc_force_benchmark(
 				{measures.add(benchmark_get_celllist_hilb(NN,vd,r_cut));}
 				standard_deviation(measures,sum_cl_mean,sum_cl_dev);
 				//Average total time
-				cl_time_create_mean.get(r).add(sum_cl_mean);
-				cl_time_create_dev.get(r).add(sum_cl_dev);
 
 				report_cl_funcs.graphs.put("performance.celllist.getCellList_hilb" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").mean",sum_cl_mean);
 				report_cl_funcs.graphs.put("performance.celllist.getCellList_hilb" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").dev",sum_cl_dev);
@@ -276,9 +232,6 @@ template<unsigned int dim> void cell_list_getCellList_hilb_calc_force_benchmark(
 				for (size_t l = 0 ; l < N_STAT_TEST; l++)
 				{measures.add(benchmark_calc_forces_hilb<dim>(NN,vd,r_cut));}
 				standard_deviation(measures,sum_fr_mean,sum_fr_dev);
-
-				cl_time_force_mean.get(r).add(sum_fr_mean);
-				cl_time_force_dev.get(r).add(sum_fr_dev);
 
 				report_cl_funcs.graphs.put("performance.celllist.calc_forces_hilb" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").mean",sum_fr_mean);
 				report_cl_funcs.graphs.put("performance.celllist.calc_forces_hilb" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").dev",sum_fr_dev);
@@ -300,21 +253,13 @@ BOOST_AUTO_TEST_CASE( vector_dist_celllist_random_test )
 	cell_list_getCellList_calc_force_benchmark<3>(k_start,
 			                                   k_min,
 											   r_cutoff,
-											   n_particles,
-											   time_rand_mean,
-											   time_rand_dev,
-											   time_create_rand_mean,
-											   time_create_rand_dev);
+											   n_particles);
 
 
 	cell_list_getCellList_calc_force_benchmark<2>(k_start,
 			                                   k_min,
 											   r_cutoff,
-											   n_particles,
-											   time_rand_2_mean,
-											   time_rand_2_dev,
-											   time_create_rand_2_mean,
-											   time_create_rand_2_dev);
+											   n_particles);
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_celllist_hilbert_test )
@@ -323,69 +268,24 @@ BOOST_AUTO_TEST_CASE( vector_dist_celllist_hilbert_test )
 	cell_list_getCellList_hilb_calc_force_benchmark<3>(k_start,
 			                                    k_min,
 												r_cutoff,
-												n_particles,
-												time_hilb_mean,
-												time_hilb_dev,
-												time_create_hilb_mean,
-												time_create_hilb_dev);
+												n_particles);
 
 	cell_list_getCellList_hilb_calc_force_benchmark<2>(k_start,
 			                                    k_min,
 												r_cutoff,
-												n_particles,
-												time_hilb_2_mean,
-												time_hilb_2_dev,
-												time_create_hilb_2_mean,
-												time_create_hilb_2_dev);
+												n_particles);
 }
 
-/*! \brief Function for cell list hilb performance report
- *
- */
-template<unsigned int dim> void cell_list_comp_reorder_report(GoogleChart & cg,
-		                                                      openfpm::vector<float> & cl_r_cutoff,
-															  openfpm::vector<size_t> & cl_n_particles,
-															  openfpm::vector<openfpm::vector<double>> & cl_time_hilb_mean,
-															  openfpm::vector<openfpm::vector<double>> & cl_time_rand_mean,
-															  openfpm::vector<openfpm::vector<double>> & cl_time_hilb_dev,
-															  openfpm::vector<openfpm::vector<double>> & cl_time_rand_dev,
-															  openfpm::vector<openfpm::vector<double>> & cl_time_create_hilb_mean,
-															  openfpm::vector<openfpm::vector<double>> & cl_time_create_rand_mean,
-															  openfpm::vector<openfpm::vector<double>> & cl_time_create_hilb_dev,
-															  openfpm::vector<openfpm::vector<double>> & cl_time_create_rand_dev,
-															  double & warning_level,
-															  double & norm)
-{
-	cl_comp_normal_vs_hilbert_force_time<dim>(cg,
-			                                  cl_n_particles,
-											  cl_r_cutoff,
-											  cl_time_hilb_mean,
-											  cl_time_rand_mean,
-											  cl_time_hilb_dev,
-											  cl_time_rand_dev,
-											  warning_level,
-											  norm);
-
-	cl_comp_normal_vs_hilbert_create_time<dim>(cg,
-			                                   cl_n_particles,
-											   cl_r_cutoff,
-											   cl_time_create_hilb_mean,
-											   cl_time_create_rand_mean,
-											   cl_time_create_hilb_dev,
-											   cl_time_create_rand_dev,
-											   warning_level,
-											   norm);
-}
 
 BOOST_AUTO_TEST_CASE(vector_dist_cl_performance_write_report)
 {
 	// Create a graphs
 
 	//For different r_cut
-/*	for (size_t r = 0; r < r_cutoff.size(); r++ )
+	for (size_t r = 0; r < r_cutoff.size(); r++ )
 	{
 		report_cl_funcs.graphs.put("graphs.graph(" + std::to_string(r) + ").type","line");
-		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(r) + ").title","getCellList performance r_cut=" + std::to_string(r_cutoff.get(r)));
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(r) + ").title","getCellList 3D performance r_cut=" + std::to_string(r_cutoff.get(r)));
 		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(r) + ").x.title","number of particles");
 		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(r) + ").y.title","Time seconds");
 		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(r) + ").y.data(0).source","performance.celllist.getCellList_hilb3D(" + std::to_string(r) + ").npart(#).mean");
@@ -397,61 +297,70 @@ BOOST_AUTO_TEST_CASE(vector_dist_cl_performance_write_report)
 		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(r) + ").options.log_y","true");
 	}
 
-	boost::property_tree::xml_writer_settings<std::string> settings(' ', 4);
-	boost::property_tree::write_xml("celllist_performance.xml", report_cl_funcs.graphs,std::locale(),settings);*/
-
-	GoogleChart cg;
-
-	std::string file_xml_ref(test_dir);
-	file_xml_ref += std::string("/openfpm_pdata/celllist_performance_ref.xml");
-
-	StandardXMLPerformanceGraph("celllist_performance.xml",file_xml_ref,cg);
-
-	addUpdtateTime(cg);
-
-	cg.write("celllist_performance.html");
-
-/*
-	GoogleChart cg;
-
-	double warning_level = 0;
-	double norm = 0;
-
-	//Write report for 2D and 3D
-	cell_list_comp_reorder_report<3>(cg,
-			                         r_cutoff,
-									 n_particles,
-									 time_hilb_mean,
-									 time_rand_mean,
-									 time_hilb_dev,
-									 time_rand_dev,
-									 time_create_hilb_mean,
-									 time_create_rand_mean,
-									 time_create_hilb_dev,
-									 time_create_rand_dev,
-									 warning_level,
-									 norm);
-
-	cell_list_comp_reorder_report<2>(cg,
-			                         r_cutoff,
-									 n_particles,
-									 time_hilb_2_mean,
-									 time_rand_2_mean,
-									 time_rand_2_dev,
-									 time_hilb_2_dev,
-									 time_create_hilb_2_mean,
-									 time_create_rand_2_mean,
-									 time_create_hilb_2_dev,
-									 time_create_rand_2_dev,
-									 warning_level,
-									 norm);
-
-	addUpdtateTime(cg);
-
-	if (create_vcluster().getProcessUnitID() == 0)
+	//For different r_cut
+	for (size_t r = 0; r < r_cutoff.size(); r++ )
 	{
-		cg.write("Celllist_comp_ord.html");
-	}*/
+		report_cl_funcs.graphs.put("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").type","line");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").title","calc_force 3D performance (Note hilbert require space filling curve pre-calculation) r_cut=" + std::to_string(r_cutoff.get(r)));
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").x.title","number of particles");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").y.title","Time seconds");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").y.data(0).source","performance.celllist.calc_forces_hilb3D(" + std::to_string(r) + ").npart(#).mean");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").x.data(0).source","performance.celllist.calc_forces_hilb3D(" + std::to_string(r) + ").npart(#).n");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").y.data(0).title","Cell-list hilbert");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").y.data(1).source","performance.celllist.calc_forces3D(" + std::to_string(r) + ").npart(#).mean");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").x.data(1).source","performance.celllist.calc_forces3D(" + std::to_string(r) + ").npart(#).n");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").y.data(1).title","Cell-list normal");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(r_cutoff.size() + r) + ").options.log_y","true");
+	}
+
+	//For different r_cut
+	for (size_t r = 0; r < r_cutoff.size(); r++ )
+	{
+		report_cl_funcs.graphs.put("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").type","line");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").title","getCellList 2D performance r_cut=" + std::to_string(r_cutoff.get(r)));
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").x.title","number of particles");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").y.title","Time seconds");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").y.data(0).source","performance.celllist.getCellList_hilb2D(" + std::to_string(r) + ").npart(#).mean");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").x.data(0).source","performance.celllist.getCellList_hilb2D(" + std::to_string(r) + ").npart(#).n");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").y.data(0).title","Cell-list hilbert");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").y.data(1).source","performance.celllist.getCellList2D(" + std::to_string(r) + ").npart(#).mean");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").x.data(1).source","performance.celllist.getCellList2D(" + std::to_string(r) + ").npart(#).n");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").y.data(1).title","Cell-list normal");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(2*r_cutoff.size() + r) + ").options.log_y","true");
+	}
+
+	//For different r_cut
+	for (size_t r = 0; r < r_cutoff.size(); r++ )
+	{
+		report_cl_funcs.graphs.put("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").type","line");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").title","calc_force 2D performance (Note hilbert require space filling curve pre-calculation) r_cut=" + std::to_string(r_cutoff.get(r)));
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").x.title","number of particles");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").y.title","Time seconds");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").y.data(0).source","performance.celllist.calc_forces_hilb2D(" + std::to_string(r) + ").npart(#).mean");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").x.data(0).source","performance.celllist.calc_forces_hilb2D(" + std::to_string(r) + ").npart(#).n");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").y.data(0).title","Cell-list hilbert");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").y.data(1).source","performance.celllist.calc_forces2D(" + std::to_string(r) + ").npart(#).mean");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").x.data(1).source","performance.celllist.calc_forces2D(" + std::to_string(r) + ").npart(#).n");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").y.data(1).title","Cell-list normal");
+		report_cl_funcs.graphs.add("graphs.graph(" + std::to_string(3*r_cutoff.size() + r) + ").options.log_y","true");
+	}
+
+	if (create_vcluster().rank() == 0)
+	{
+		boost::property_tree::xml_writer_settings<std::string> settings(' ', 4);
+		boost::property_tree::write_xml("celllist_performance.xml", report_cl_funcs.graphs,std::locale(),settings);
+
+		GoogleChart cg;
+
+		std::string file_xml_ref(test_dir);
+		file_xml_ref += std::string("/openfpm_pdata/celllist_performance_ref.xml");
+
+		StandardXMLPerformanceGraph("celllist_performance.xml",file_xml_ref,cg);
+
+		addUpdtateTime(cg,create_vcluster().size());
+
+		cg.write("celllist_performance.html");
+	}
 }
 
 

@@ -12,9 +12,15 @@
 #include "Vector/vector_dist.hpp"
 #include "data_type/aggregate.hpp"
 #include "Plot/GoogleChart.hpp"
-#include "cl_part_performance_graph.hpp"
 #include <functional>
 
+// Property tree
+struct report_cell_list_preord_tests
+{
+	boost::property_tree::ptree graphs;
+};
+
+report_cell_list_preord_tests report_cl_preo;
 
 BOOST_AUTO_TEST_SUITE( celllist_part_reorder_performance_test )
 
@@ -37,20 +43,6 @@ size_t k_min = 15000;
 
 // Numbers of particles vector
 openfpm::vector<size_t> n_particles;
-// Vectors to store the data for 2D
-openfpm::vector<openfpm::vector<double>> time_rand_mean;
-openfpm::vector<openfpm::vector<openfpm::vector<double>>> time_hilb_mean;
-openfpm::vector<openfpm::vector<double>> time_rand_dev;
-openfpm::vector<openfpm::vector<openfpm::vector<double>>> time_hilb_dev;
-openfpm::vector<openfpm::vector<openfpm::vector<double>>> time_reorder_mean;
-openfpm::vector<openfpm::vector<openfpm::vector<double>>> time_reorder_dev;
-// Vectors to store the data for 3D
-openfpm::vector<openfpm::vector<double>> time_rand_2_mean;
-openfpm::vector<openfpm::vector<openfpm::vector<double>>> time_hilb_2_mean;
-openfpm::vector<openfpm::vector<double>> time_rand_2_dev;
-openfpm::vector<openfpm::vector<openfpm::vector<double>>> time_hilb_2_dev;
-openfpm::vector<openfpm::vector<openfpm::vector<double>>> time_reorder_2_mean;
-openfpm::vector<openfpm::vector<openfpm::vector<double>>> time_reorder_2_dev;
 
 
 /*! \brief Function for cell list test without an Hilbert curve reordering (unordered positioning)
@@ -59,13 +51,8 @@ openfpm::vector<openfpm::vector<openfpm::vector<double>>> time_reorder_2_dev;
 template<unsigned int dim> void cell_list_part_reorder_random_benchmark(size_t cl_k_start,
 		                                                                size_t cl_k_min,
 																		openfpm::vector<float> & cl_r_cutoff,
-																		openfpm::vector<size_t> & cl_n_particles,
-																		openfpm::vector<openfpm::vector<double>> & cl_time_rand_mean,
-																		openfpm::vector<openfpm::vector<double>> & cl_time_rand_dev)
+																		openfpm::vector<size_t> & cl_n_particles)
 {
-	cl_time_rand_mean.resize(cl_r_cutoff.size());
-	cl_time_rand_dev.resize(cl_r_cutoff.size());
-
 	std::string str("Testing " + std::to_string(dim) + "D vector, no-order, Cell-list");
 	print_test_v(str,0);
 
@@ -78,16 +65,22 @@ template<unsigned int dim> void cell_list_part_reorder_random_benchmark(size_t c
 			//Cut-off radius
 			float r_cut = cl_r_cutoff.get(r);
 
+			report_cl_preo.graphs.put("performance.celllist.calc_forces_reordered" + std::to_string(dim) + "D(" + std::to_string(r) + ").rcut",r_cut);
+
 			//Number of particles
 			size_t k = cl_k_start * v_cl.getProcessingUnits();
 
 			//Counter number for amounts of particles
 			size_t k_count = 1 + log2(k/cl_k_min);
 
+			int c = 0;
+
 			//For different number of particles
 			for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2 )
 			{
 				BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector without an Hilbert curve reordering k=" << k_int );
+
+				report_cl_preo.graphs.put("performance.celllist.calc_forces_reordered" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").n",k_int);
 
 				if (cl_n_particles.size() < k_count)
 					cl_n_particles.add(k_int);
@@ -126,14 +119,16 @@ template<unsigned int dim> void cell_list_part_reorder_random_benchmark(size_t c
 
 				openfpm::vector<double> measures;
 				for ( ; l < N_STAT_TEST; l++)
-					measures.add(benchmark_calc_forces<dim>(NN,vd,r_cut));
+				{measures.add(benchmark_calc_forces<dim>(NN,vd,r_cut));}
 				standard_deviation(measures,sum_fr_mean,sum_fr_dev);
 
-				cl_time_rand_mean.get(r).add(sum_fr_mean);
-				cl_time_rand_dev.get(r).add(sum_fr_dev);
+				report_cl_preo.graphs.put("performance.celllist.calc_forces_reordered" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").mean",sum_fr_mean);
+				report_cl_preo.graphs.put("performance.celllist.calc_forces_reordered" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").dev",sum_fr_dev);
 
 				if (v_cl.getProcessUnitID() == 0)
-					std::cout << "Cut-off = " << r_cut << ", Particles = " << k_int << " time to calculate forces: " << sum_fr_mean << " dev: " << sum_fr_dev << std::endl;
+				{std::cout << "Cut-off = " << r_cut << ", Particles = " << k_int << " time to calculate forces: " << sum_fr_mean << " dev: " << sum_fr_dev << std::endl;}
+
+				c++;
 			}
 		}
 	}
@@ -149,40 +144,9 @@ template<unsigned int dim> void cell_list_part_reorder_hilbert_benchmark(size_t 
 																		 double dist,
 																		 openfpm::vector<float> & cl_r_cutoff,
 																		 openfpm::vector<size_t> & cl_n_particles,
-																		 openfpm::vector<size_t> &cl_orders,
-																		 openfpm::vector<openfpm::vector<openfpm::vector<double>>> &cl_time_hilb_mean,
-																		 openfpm::vector<openfpm::vector<openfpm::vector<double>>> &cl_time_reorder_hilb_mean,
-																		 openfpm::vector<openfpm::vector<openfpm::vector<double>>> &cl_time_hilb_dev,
-																		 openfpm::vector<openfpm::vector<openfpm::vector<double>>> &cl_time_reorder_hilb_dev)
+																		 openfpm::vector<size_t> &cl_orders)
 {
 	{
-		cl_time_hilb_mean.resize(cl_r_cutoff.size());
-		cl_time_hilb_dev.resize(cl_r_cutoff.size());
-		for (size_t r = 0; r < cl_time_hilb_mean.size(); r++)
-		{
-			cl_time_hilb_mean.get(r).resize(cl_n_particles.size());
-			cl_time_hilb_dev.get(r).resize(cl_n_particles.size());
-			for (size_t k = 0; k < cl_time_hilb_mean.get(r).size(); k++)
-			{
-				cl_time_hilb_mean.get(r).get(k).resize(cl_orders.size());
-				cl_time_hilb_dev.get(r).get(k).resize(cl_orders.size());
-			}
-		}
-
-
-		cl_time_reorder_hilb_mean.resize(cl_r_cutoff.size());
-		cl_time_reorder_hilb_dev.resize(cl_r_cutoff.size());
-		for (size_t r = 0; r < cl_time_reorder_hilb_mean.size(); r++)
-		{
-			cl_time_reorder_hilb_mean.get(r).resize(cl_n_particles.size());
-			cl_time_reorder_hilb_dev.get(r).resize(cl_n_particles.size());
-			for (size_t k = 0; k < cl_time_reorder_hilb_mean.get(r).size(); k++)
-			{
-				cl_time_reorder_hilb_mean.get(r).get(k).resize(cl_orders.size());
-				cl_time_reorder_hilb_dev.get(r).get(k).resize(cl_orders.size());
-			}
-		}
-
 		// Print test
 		std::string str("Testing " + std::to_string(dim) + "D vector, Hilbert curve reordering, Cell-List");
 		print_test_v(str,0);
@@ -204,9 +168,14 @@ template<unsigned int dim> void cell_list_part_reorder_hilbert_benchmark(size_t 
 				size_t m = cl_orders.get(i);
 				size_t part = 0;
 
+				int c = 0;
+
 				for (size_t k_int = k ; k_int >= cl_k_min ; k_int/=2, part++ )
 				{
 					BOOST_TEST_CHECKPOINT( "Testing " << dim << "D vector with an Hilbert curve reordering k=" << k_int );
+
+					report_cl_preo.graphs.put("performance.celllist.calc_forces_hilb(" + std::to_string(m) + ")_reordered" + std::to_string(dim) + "D(" + std::to_string(r) + ").rcut",r_cut);
+					report_cl_preo.graphs.put("performance.celllist.calc_forces_hilb(" + std::to_string(m) + ")_reordered" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").n",k_int);
 
 					Box<dim,float> box;
 
@@ -220,7 +189,7 @@ template<unsigned int dim> void cell_list_part_reorder_hilbert_benchmark(size_t 
 					size_t bc[dim];
 
 					for (size_t i = 0; i < dim; i++)
-						bc[i] = PERIODIC;
+					{bc[i] = PERIODIC;}
 
 					vector_dist<dim,float, aggregate<float[dim]> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
 
@@ -235,12 +204,8 @@ template<unsigned int dim> void cell_list_part_reorder_hilbert_benchmark(size_t 
 					openfpm::vector<double> measures;
 
 					for (size_t h = 0 ; h < N_STAT_TEST; h++)
-						measures.add(benchmark_reorder(vd,m));
+					{measures.add(benchmark_reorder(vd,m));}
 					standard_deviation(measures,sum_reorder_mean,sum_reorder_dev);
-
-					//Average reorder time
-					cl_time_reorder_hilb_mean.get(r).get(part).get(i) = sum_reorder_mean;
-					cl_time_reorder_hilb_dev.get(r).get(part).get(i) = sum_reorder_dev;
 
 					vd.template ghost_get<0>();
 
@@ -256,15 +221,16 @@ template<unsigned int dim> void cell_list_part_reorder_hilbert_benchmark(size_t 
 					measures.clear();
 
 					for (size_t l = 0 ; l < N_STAT_TEST ; l++)
-						measures.add(benchmark_calc_forces<dim>(NN,vd,r_cut));
+					{measures.add(benchmark_calc_forces<dim>(NN,vd,r_cut));}
 					standard_deviation(measures,sum_fr_mean,sum_fr_dev);
 
-					cl_time_hilb_mean.get(r).get(part).get(i) = sum_fr_mean;
-					cl_time_hilb_dev.get(r).get(part).get(i) = sum_fr_dev;
-
+					report_cl_preo.graphs.put("performance.celllist.calc_forces_hilb(" + std::to_string(m) + ")_reordered" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").mean",sum_fr_mean);
+					report_cl_preo.graphs.put("performance.celllist.calc_forces_hilb(" + std::to_string(m) + ")_reordered" + std::to_string(dim) + "D(" + std::to_string(r) + ").npart(" + std::to_string(c) + ").dev",sum_fr_dev);
 
 					if (v_cl.getProcessUnitID() == 0)
-						std::cout << "Cut-off = " << r_cut << ", Particles = " << k_int << ". Time to reorder: " << sum_reorder_mean << " dev: " << sum_reorder_dev << "      time calculate forces: " << sum_fr_mean << " dev: " << sum_fr_dev << std::endl;
+					{std::cout << "Cut-off = " << r_cut << ", Particles = " << k_int << ". Time to reorder: " << sum_reorder_mean << " dev: " << sum_reorder_dev << "      time calculate forces: " << sum_fr_mean << " dev: " << sum_fr_dev << std::endl;}
+
+					c++;
 				}
 			}
 		}
@@ -272,53 +238,11 @@ template<unsigned int dim> void cell_list_part_reorder_hilbert_benchmark(size_t 
 }
 
 
-
-/*! \brief Function for cell list performance report
- *
- */
-template<unsigned int dim> void cell_list_part_reorder_report(GoogleChart & cg,
-		                                                      size_t n_moving,
-		                                                      openfpm::vector<float> & cl_r_cutoff,
-															  openfpm::vector<size_t> & cl_n_particles,
-															  openfpm::vector<size_t> cl_orders,
-															  openfpm::vector<openfpm::vector<openfpm::vector<double>>> cl_time_hilb_mean,
-															  openfpm::vector<openfpm::vector<double>> cl_time_rand_mean,
-															  openfpm::vector<openfpm::vector<openfpm::vector<double>>> cl_time_reorder_mean,
-															  openfpm::vector<openfpm::vector<openfpm::vector<double>>> cl_time_hilb_dev,
-															  openfpm::vector<openfpm::vector<double>> cl_time_rand_dev,
-															  openfpm::vector<openfpm::vector<openfpm::vector<double>>> cl_time_reorder_dev)
-{
-	openfpm::vector<size_t> x;
-
-	for (size_t i = 0; i < cl_n_particles.size() ; i++)
-		x.add(cl_n_particles.get(i));
-
-	// Speedup graphs data
-
-	cl_part_time<dim>(cg,
-			          cl_n_particles,
-					  cl_r_cutoff,
-					  cl_orders,
-					  cl_time_hilb_mean,
-					  cl_time_rand_mean,
-					  cl_time_hilb_dev,
-					  cl_time_rand_dev);
-
-	cl_part_reorder_time<dim>(cg,
-			                  cl_n_particles,
-							  cl_r_cutoff,
-							  cl_orders,
-							  cl_time_reorder_mean,
-							  cl_time_reorder_dev);
-}
-
-
-
 BOOST_AUTO_TEST_CASE( vector_dist_cl_random_test )
 {
 	//Benchmark test for 2D and 3D
-	cell_list_part_reorder_random_benchmark<3>(k_start,k_min,r_cutoff,n_particles,time_rand_mean,time_rand_dev);
-	cell_list_part_reorder_random_benchmark<2>(k_start,k_min,r_cutoff,n_particles,time_rand_2_mean,time_rand_2_dev);
+	cell_list_part_reorder_random_benchmark<3>(k_start,k_min,r_cutoff,n_particles);
+	cell_list_part_reorder_random_benchmark<2>(k_start,k_min,r_cutoff,n_particles);
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_cl_hilbert_test )
@@ -330,11 +254,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_hilbert_test )
 												dist,
 												r_cutoff,
 												n_particles,
-												orders,
-												time_hilb_mean,
-												time_reorder_mean,
-												time_hilb_dev,
-												time_reorder_dev);
+												orders);
 
 	cell_list_part_reorder_hilbert_benchmark<2>(k_start,
 			                                    k_min,
@@ -342,46 +262,70 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_hilbert_test )
 												dist,
 												r_cutoff,
 												n_particles,
-												orders,
-												time_hilb_2_mean,
-												time_reorder_2_mean,
-												time_hilb_2_dev,
-												time_reorder_2_dev);
+												orders);
 }
 
 BOOST_AUTO_TEST_CASE(vector_dist_cl_performance_write_report)
 {
-	GoogleChart cg;
+	// Create a graphs
 
-	//Write report for 2D and 3D
-	cell_list_part_reorder_report<3>(cg,
-			                         n_moving,
-			                         r_cutoff,
-									 n_particles,
-									 orders,
-									 time_hilb_mean,
-									 time_rand_mean,
-									 time_reorder_mean,
-									 time_hilb_dev,
-									 time_rand_dev,
-									 time_reorder_dev);
+	//For different r_cut
+	for (size_t r = 0; r < r_cutoff.size(); r++ )
+	{
+		report_cl_preo.graphs.put("graphs.graph(" + std::to_string(r) + ").type","line");
+		report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r) + ").title","calc_force 3D with reordered particles performance r_cut=" + std::to_string(r_cutoff.get(r)));
+		report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r) + ").x.title","number of particles");
+		report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r) + ").y.title","Time seconds");
+		for (size_t i  = 0 ; i < orders.size() ; i++)
+		{
+			size_t m = orders.get(i);
+			report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r) + ").y.data(" + std::to_string(i+1) + ").source","performance.celllist.calc_forces_hilb(" + std::to_string(m) + ")_reordered3D(" + std::to_string(r) + ").npart(#).mean");
+			report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r) + ").x.data(" + std::to_string(i+1) + ").source","performance.celllist.calc_forces_hilb(" + std::to_string(m) + ")_reordered3D(" + std::to_string(r) + ").npart(#).n");
+			report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r) + ").y.data(" + std::to_string(i+1) + ").title","Hilbert(" + std::to_string(m) + ") reorder");
+		}
+		report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r) + ").y.data(0).source","performance.celllist.calc_forces_reordered3D(" + std::to_string(r) + ").npart(#).mean");
+		report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r) + ").x.data(0).source","performance.celllist.calc_forces_reordered3D(" + std::to_string(r) + ").npart(#).n");
+		report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r) + ").y.data(0).title","Random reorder");
+		report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r) + ").options.log_y","true");
+	}
 
-	cell_list_part_reorder_report<2>(cg,
-			                         n_moving,
-			                         r_cutoff,
-									 n_particles,
-									 orders,
-									 time_hilb_2_mean,
-									 time_rand_2_mean,
-									 time_reorder_2_mean,
-									 time_hilb_2_dev,
-									 time_rand_2_dev,
-									 time_reorder_2_dev);
+	//For different r_cut
+	for (size_t r = 0; r < r_cutoff.size(); r++ )
+	{
+		report_cl_preo.graphs.put("graphs.graph(" + std::to_string(r + r_cutoff.size()) + ").type","line");
+		report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r + r_cutoff.size()) + ").title","calc_force 2D with reordered particles performance r_cut=" + std::to_string(r_cutoff.get(r)));
+		report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r + r_cutoff.size()) + ").x.title","number of particles");
+		report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r + r_cutoff.size()) + ").y.title","Time seconds");
+		for (size_t i  = 0 ; i < orders.size() ; i++)
+		{
+			size_t m = orders.get(i);
+			report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r + r_cutoff.size()) + ").y.data(" + std::to_string(i+1) + ").source","performance.celllist.calc_forces_hilb(" + std::to_string(m) + ")_reordered2D(" + std::to_string(r) + ").npart(#).mean");
+			report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r + r_cutoff.size()) + ").x.data(" + std::to_string(i+1) + ").source","performance.celllist.calc_forces_hilb(" + std::to_string(m) + ")_reordered2D(" + std::to_string(r) + ").npart(#).n");
+			report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r + r_cutoff.size()) + ").y.data(" + std::to_string(i+1) + ").title","Hilbert(" + std::to_string(m) + ") reorder");
+		}
+		report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r + r_cutoff.size()) + ").y.data(0).source","performance.celllist.calc_forces_reordered2D(" + std::to_string(r) + ").npart(#).mean");
+		report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r + r_cutoff.size()) + ").x.data(0).source","performance.celllist.calc_forces_reordered2D(" + std::to_string(r) + ").npart(#).n");
+		report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r + r_cutoff.size()) + ").y.data(0).title","Random reorder");
+		report_cl_preo.graphs.add("graphs.graph(" + std::to_string(r + r_cutoff.size()) + ").options.log_y","true");
+	}
 
-	addUpdtateTime(cg);
+	if (create_vcluster().rank() == 0)
+	{
+		boost::property_tree::xml_writer_settings<std::string> settings(' ', 4);
+		boost::property_tree::write_xml("celllist_partreo_performance.xml", report_cl_preo.graphs,std::locale(),settings);
 
-	if (create_vcluster().getProcessUnitID() == 0)
-		cg.write("Celllist_part_ord.html");
+		std::string file_xml_ref(test_dir);
+		file_xml_ref += std::string("/openfpm_pdata/celllist_partreo_performance_ref.xml");
+
+		GoogleChart cg;
+
+		StandardXMLPerformanceGraph("celllist_partreo_performance.xml",file_xml_ref,cg);
+
+		addUpdtateTime(cg,create_vcluster().size());
+
+		if (create_vcluster().getProcessUnitID() == 0)
+		{cg.write("celllist_part_ord.html");}
+	}
 }
 
 BOOST_AUTO_TEST_SUITE_END()
