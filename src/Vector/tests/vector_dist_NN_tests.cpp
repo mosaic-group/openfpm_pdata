@@ -272,6 +272,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_shmem_test )
 	// Distributed vector
 	vector_dist<3,float, part_prop > vd(0,box,bc,ghost);
 
+	vd.visualize();
+
 	vd.setCapacity(10000);
 	vd.resize(1000);
 

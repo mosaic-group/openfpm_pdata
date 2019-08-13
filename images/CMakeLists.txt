@@ -6,13 +6,13 @@ if(CUDA_FOUND)
 	set(CUDA_SOURCES ../openfpm_devices/src/memory/CudaMemory.cu)
 endif()
 
-add_executable(cart_dec CartDecomposition_gen_vtk.cpp ../src/lib/pdata.cpp ${CUDA_SOURCES} ../openfpm_devices/src/memory/HeapMemory.cpp  ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp)
+add_executable(cart_dec CartDecomposition_gen_vtk.cpp ../src/lib/pdata.cpp ${CUDA_SOURCES} ../openfpm_devices/src/memory/ShmAllocator_manager.cpp ../openfpm_devices/src/memory/SemManager.cpp ../openfpm_devices/src/memory/ShmAllocator.cpp ../openfpm_devices/src/memory/HeapMemory.cpp  ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp)
 
-add_executable(metis_dec Metis_gen_vtk.cpp ../src/lib/pdata.cpp ${CUDA_SOURCES}  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp)
+add_executable(metis_dec Metis_gen_vtk.cpp ../src/lib/pdata.cpp ${CUDA_SOURCES} ../openfpm_devices/src/memory/ShmAllocator_manager.cpp ../openfpm_devices/src/memory/SemManager.cpp ../openfpm_devices/src/memory/ShmAllocator.cpp ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp)
 
-add_executable(dom_box  domain_gen_vtk.cpp ../src/lib/pdata.cpp ${CUDA_SOURCES}  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp)
+add_executable(dom_box  domain_gen_vtk.cpp ../src/lib/pdata.cpp ${CUDA_SOURCES} ../openfpm_devices/src/memory/ShmAllocator_manager.cpp ../openfpm_devices/src/memory/SemManager.cpp ../openfpm_devices/src/memory/ShmAllocator.cpp  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp)
 
-add_executable(vector_dist vector.cpp ${CUDA_SOURCES}  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_devices/src/Memleak_check.cpp)
+add_executable(vector_dist vector.cpp ${CUDA_SOURCES} ../openfpm_devices/src/memory/ShmAllocator_manager.cpp ../openfpm_devices/src/memory/SemManager.cpp ../openfpm_devices/src/memory/ShmAllocator.cpp ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_devices/src/Memleak_check.cpp)
 
 ###########################
 

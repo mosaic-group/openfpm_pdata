@@ -1073,9 +1073,8 @@ int main(int argc, char* argv[])
 
 	particles vd(0,domain,bc,g,DEC_GRAN(512));
 
-//	vd.setCapacity(200000);
+	vd.setCapacity(200000);
 
-//	openfpm_finalize();
 
 
 	//! \cond [vector inst] \endcond
@@ -1358,8 +1357,6 @@ int main(int argc, char* argv[])
 	 */
 
 	//! \cond [load balancing] \endcond
-
-	openfpm_finalize();
 
 	// Now that we fill the vector with particles
 	ModelCustom md;

@@ -37,6 +37,7 @@
 #include "NN/CellList/ProcKeys.hpp"
 #include "Vector/vector_dist_kernel.hpp"
 #include "NN/CellList/cuda/CellList_gpu.hpp"
+#include "memory/ShmAllocator_manager.hpp"
 
 #define DEC_GRAN(gr) ((size_t)gr << 32)
 
@@ -257,6 +258,11 @@ private:
 	//! reordered v_prp buffer
 	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> v_pos_out;
 
+	//! Shared memory handle for position vector
+	handle_shmem hpos;
+
+	//! Shared memory handle for property vector
+	handle_shmem hprp;
 
 	//! Virtual cluster
 	Vcluster<Memory> & v_cl;
@@ -378,18 +384,7 @@ private:
 		}
 	}
 
-	/*! /brief set shared memory
-	 *
-	 *
-	 */
-	void set_shm()
-	{
-		if (global_option == init_options::in_situ_visualization)
-		{
-			v_pos.init_shmem("/tmp",v_cl.rank());
-			v_prp.init_shmem("/home",v_cl.rank());
-		}
-	}
+
 
 public:
 
@@ -465,7 +460,6 @@ public:
 	vector_dist()
 	:v_cl(create_vcluster<Memory>()),opt(opt)
 	{
-		set_shm();
 	}
 
 
@@ -481,8 +475,6 @@ public:
 		check_new(this,8,VECTOR_DIST_EVENT,4);
 #endif
 
-		set_shm();
-
 		this->operator=(v);
 	}
 
@@ -497,8 +489,6 @@ public:
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
 #endif
-
-		set_shm();
 
 		this->operator=(v);
 
@@ -519,7 +509,6 @@ public:
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
 #endif
-		set_shm();
 
 		init_structures(np);
 
@@ -547,7 +536,6 @@ public:
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
 #endif
-		set_shm();
 
 		if (opt >> 32 != 0)
 			this->setDecompositionGranularity(opt >> 32);
@@ -568,6 +556,26 @@ public:
 #ifdef SE_CLASS2
 		check_delete(this);
 #endif
+		create_shmanager().destroy(hpos);
+		create_shmanager().destroy(hprp);
+	}
+
+
+
+	/*! /brief set shared memory
+	 *
+	 *
+	 */
+	void visualize()
+	{
+		if (global_option == init_options::in_situ_visualization)
+		{
+			hpos = create_shmanager().create("/tmp",v_cl.rank());
+			hprp = create_shmanager().create("/home",v_cl.rank());
+
+			v_pos.init_shmem(hpos);
+			v_prp.init_shmem(hprp);
+		}
 	}
 
 	/*! \brief remove all the elements
