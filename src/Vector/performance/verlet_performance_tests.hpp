@@ -104,7 +104,7 @@ template<unsigned int dim> void vd_verlet_random_benchmark(size_t k_start,
 				vector_dist<dim,float, aggregate<float[dim]> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
 
 				// Initialize a dist vector
-				vd_initialize<dim>(vd, v_cl, k_int);
+				vd_initialize<dim>(vd, v_cl);
 
 				vd.template ghost_get<0>();
 

@@ -102,7 +102,7 @@ template<unsigned int dim> void cell_list_part_reorder_random_benchmark(size_t c
 				vector_dist<dim,float, aggregate<float[dim]> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
 
 				// Initialize a dist vector
-				vd_initialize<dim>(vd, v_cl, k_int);
+				vd_initialize<dim>(vd, v_cl);
 
 				vd.template ghost_get<0>();
 
@@ -194,15 +194,14 @@ template<unsigned int dim> void cell_list_part_reorder_hilbert_benchmark(size_t 
 					vector_dist<dim,float, aggregate<float[dim]> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
 
 					// Initialize a dist vector
-					vd_initialize<dim>(vd, v_cl, k_int);
 
+					vd_initialize<dim>(vd, v_cl);
 					//Reorder a vector
 
 					double sum_reorder_mean = 0;
 					double sum_reorder_dev = 0;
 
 					openfpm::vector<double> measures;
-
 					for (size_t h = 0 ; h < N_STAT_TEST; h++)
 					{measures.add(benchmark_reorder(vd,m));}
 					standard_deviation(measures,sum_reorder_mean,sum_reorder_dev);

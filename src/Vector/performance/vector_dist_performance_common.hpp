@@ -133,10 +133,9 @@ template<unsigned int dim, unsigned int prp, typename T, typename V> void cross_
 /*! \brief Initialize a distributed vector
  *
  * \param vd Distributed vector
- * \param v_cl Global vcluster
- * \param k_int Number of particles
  */
-template<unsigned int dim, typename v_dist> void vd_initialize(v_dist & vd, Vcluster<> & v_cl, size_t k_int)
+template<unsigned int dim, typename v_dist>
+void vd_initialize(v_dist & vd, Vcluster<HeapMemory> & v_cl)
 {
 	// The random generator engine
 	std::default_random_engine eg(v_cl.getProcessUnitID()*4313);
@@ -151,12 +150,42 @@ template<unsigned int dim, typename v_dist> void vd_initialize(v_dist & vd, Vclu
 		auto key = it.get();
 
 		for (size_t i = 0; i < dim; i++)
-			vd.getPos(key)[i] = ud(eg);
+		{vd.getPos(key)[i] = ud(eg);}
 
 		++it;
 	}
 
 	vd.map();
+}
+
+/*! \brief Initialize a distributed vector
+ *
+ * \param vd Distributed vector
+ * \param box where to initialize
+ * \param npart number of particles to add
+ *
+ */
+template<unsigned int dim, typename v_dist>
+void vd_initialize_box_nomap(v_dist & vd, const Box<dim,typename v_dist::stype> & box, Vcluster<HeapMemory> & v_cl, int npart)
+{
+	// The random generator engine
+	std::default_random_engine eg(v_cl.getProcessUnitID()*4313);
+	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+	size_t n = vd.size_local();
+	size_t n_stop = n + npart;
+
+	auto it = vd.getIterator(n,n_stop);
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		for (size_t i = 0; i < dim; i++)
+		{vd.getPos(key)[i] = (box.getHigh(i) - box.getLow(i))*ud(eg) + box.getLow(i);}
+
+		++it;
+	}
 }
 
 

@@ -92,12 +92,12 @@ template<unsigned int dim> void cell_list_getCellList_calc_force_benchmark(size_
 				size_t bc[dim];
 
 				for (size_t i = 0; i < dim; i++)
-					bc[i] = PERIODIC;
+				{bc[i] = PERIODIC;}
 
 				vector_dist<dim,float, aggregate<float[dim]> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
 
 				// Initialize a dist vector
-				vd_initialize<dim>(vd, v_cl, k_int);
+				vd_initialize<dim>(vd, v_cl);
 
 				vd.template ghost_get<0>();
 
@@ -200,7 +200,7 @@ template<unsigned int dim> void cell_list_getCellList_hilb_calc_force_benchmark(
 				vector_dist<dim,float, aggregate<float[dim]> > vd(k_int,box,bc,Ghost<dim,float>(r_cut));
 
 				// Initialize a dist vector
-				vd_initialize<dim>(vd, v_cl, k_int);
+				vd_initialize<dim>(vd, v_cl);
 
 				vd.template ghost_get<0>();
 

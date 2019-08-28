@@ -555,7 +555,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 							tmp.Dbox.setLow(s,0);
 							tmp.Dbox.setHigh(s,-1);
 						}
-						tmp.k = -1;
+						tmp.k = (size_t)-1;
 						gdb_ext.add(tmp);
 
 						// create the local grid
@@ -2659,7 +2659,7 @@ public:
 
 			size_t i = it.getGridId();
 
-			auto ite = loc_grid.get(i).getGridGPUIterator(b.getKP1(),b.getKP2());
+			auto ite = loc_grid.get(i).getGridGPUIterator(b.getKP1int(),b.getKP2int());
 
 			loc_grid.get(i).setGPUInsertBuffer(ite.nblocks(),gpu_insert_pool_size);
 			loc_grid.get(i).initializeGPUInsertBuffer();

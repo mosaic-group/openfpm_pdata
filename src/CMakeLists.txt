@@ -11,7 +11,8 @@ if(CUDA_FOUND)
 					 Decomposition/cuda/decomposition_cuda_tests.cu
 					 Vector/cuda/vector_dist_gpu_unit_tests.cu
 					 ../openfpm_devices/src/memory/CudaMemory.cu
-					 Decomposition/cuda/Domain_icells_cart_unit_test.cu)
+					 Decomposition/cuda/Domain_icells_cart_unit_test.cu
+					 Amr/tests/amr_base_gpu_unit_tests.cu)
 else()
 	set(CUDA_SOURCES)
 endif()

@@ -13,6 +13,10 @@
 #include "Grid/grid_dist_id.hpp"
 #include "Amr/grid_dist_amr_key_iterator.hpp"
 
+#ifdef __NVCC__
+#include "SparseGridGpu/SparseGridGpu.hpp"
+#endif
+
 #define AMR_IMPL_TRIVIAL 1
 #define AMR_IMPL_PATCHES 2
 #define AMR_IMPL_OPENVDB 3
@@ -99,7 +103,13 @@ public:
 	}
 };
 
-template<unsigned int dim, typename St, typename T, unsigned int impl=AMR_IMPL_TRIVIAL ,typename Decomposition = CartDecomposition<dim,St>,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T> >
+template<unsigned int dim,
+		 typename St,
+		 typename T,
+		 unsigned int impl=AMR_IMPL_TRIVIAL ,
+		 typename Decomposition = CartDecomposition<dim,St>,
+		 typename Memory=HeapMemory ,
+		 typename device_grid=grid_cpu<dim,T> >
 class grid_dist_amr
 {
 
@@ -126,7 +136,12 @@ struct offset_mv
  * \tparam Decomposition type of decomposition
  *
  */
-template<unsigned int dim, typename St, typename T,typename Decomposition,typename Memory, typename device_grid >
+template<unsigned int dim,
+		 typename St,
+		 typename T,
+		 typename Decomposition,
+		 typename Memory,
+		 typename device_grid >
 class grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,Decomposition,Memory,device_grid>
 {
 	//! Simulation domain
@@ -893,5 +908,12 @@ public:
 
 template<unsigned int dim, typename St, typename T>
 using sgrid_dist_amr = grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,CartDecomposition<dim,St>,HeapMemory,sgrid_cpu<dim,T,HeapMemory>>;
+
+#ifdef __NVCC__
+
+template<unsigned int dim, typename St, typename T, unsigned int blockEdgeSize = 8>
+using sgrid_dist_amr_gpu = grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,CartDecomposition<dim,St,CudaMemory,memory_traits_inte>,CudaMemory,SparseGridGpu<dim,T,blockEdgeSize>>;
+
+#endif
 
 #endif /* AMR_GRID_AMR_DIST_HPP_ */

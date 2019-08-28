@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_SUITE( performance )
 #include "Vector/performance/verlet_performance_tests.hpp"
 #include "Vector/performance/cell_list_part_reorder.hpp"
 #include "Vector/performance/cell_list_comp_reorder.hpp"
-
+#include "Vector/performance/vector_dist_gg_map_performance.hpp"
 #include "Grid/performance/grid_dist_performance.hpp"
 
 BOOST_AUTO_TEST_SUITE_END()

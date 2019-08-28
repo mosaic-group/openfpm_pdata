@@ -1895,6 +1895,22 @@ public:
 		return vector_dist_iterator(0, v_pos.size());
 	}
 
+	/*! \brief Get an iterator that traverse domain and ghost particles
+	 *
+	 * \param start particle
+	 * \param stop particle
+	 *
+	 * \return an iterator
+	 *
+	 */
+	vector_dist_iterator getIterator(size_t start, size_t stop)
+	{
+#ifdef SE_CLASS3
+		se3.getIterator();
+#endif
+		return vector_dist_iterator(start, stop);
+	}
+
 	/*! /brief Get a grid Iterator
 	 *
 	 * Usefull function to place particles on a grid or grid-like (grid + noise)
