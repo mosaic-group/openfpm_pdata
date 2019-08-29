@@ -451,7 +451,7 @@ int main(int argc, char* argv[])
 	unsigned long int f = 0;
 
 	// MD time stepping
-	for (size_t i = 0; i < 10000 ; i++)
+	for (size_t i = 0; i < 1000000 ; i++)
 	{
 		// Get the iterator
 		auto it3 = vd.getDomainIterator();
