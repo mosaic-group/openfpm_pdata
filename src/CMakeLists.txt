@@ -18,7 +18,6 @@ if ( CMAKE_COMPILER_IS_GNUCC )
     endif()
 endif()
 
-
 add_library(ofpm_pdata STATIC lib/pdata.cpp)
 
 add_test(NAME pdata_3_proc COMMAND mpirun -np 3 ./pdata)
