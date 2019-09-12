@@ -93,24 +93,6 @@ class grid_dist_iterator
 			// get the next grid iterator
 			if (g_c < gList.size())
 			{
-				// Sub iterator are used
-/*				if (impl == FREE)
-				{
-					if (gdb_ext.get(g_c).Dbox.isValid() == false)
-					{g_c++;}
-					else
-					{
-						a_it.reinitialize(gList.get(g_c).getIterator(gdb_ext.get(g_c).Dbox.getKP1(),gdb_ext.get(g_c).Dbox.getKP2()));
-						if (a_it.isNext() == false)	{g_c++;}
-					}
-				}
-				else
-				{
-					// Full iterator (no subset)
-					a_it.reinitialize(gList.get(g_c).getIterator());
-					if (a_it.isNext() == false)	{g_c++;}
-				}*/
-
 				selvg<impl == FREE>::call(a_it,gdb_ext,gList,g_c);
 			}
 		} while (g_c < gList.size() && a_it.isNext() == false);
@@ -276,12 +258,12 @@ class grid_dist_iterator
 		// Get the sub-domain id
 		size_t sub_id = k.getSub();
 
-		grid_key_dx<dim> k_glob = k.getKey();
+		auto k_glob = k.getKey();
 
 		// shift
-		k_glob = k_glob + gdb_ext.get(sub_id).origin;
+		auto k_glob2 = k_glob + gdb_ext.get(sub_id).origin;
 
-		return k_glob;
+		return k_glob2;
 	}
 
 	/*! \brief Return the stencil point offset

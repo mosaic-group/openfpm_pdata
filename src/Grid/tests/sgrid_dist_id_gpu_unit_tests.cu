@@ -8,8 +8,8 @@ BOOST_AUTO_TEST_SUITE( sgrid_gpu_test_suite )
 template<unsigned int p>
 struct insert_kernel
 {
-	template<typename SparseGridGpu_type>
-	__device__ void operator()(SparseGridGpu_type & sg, ite_gpu<SparseGridGpu_type::d> & ite, float c)
+	template<typename SparseGridGpu_type, typename ite_type>
+	__device__ void operator()(SparseGridGpu_type & sg, ite_type & ite, float c)
 	{
 	    sg.init();
 
@@ -30,22 +30,34 @@ struct insert_kernel
 	    {return;}
 	    if (SparseGridGpu_type::d >= 2 && y+ite.start.get(1) > ite.stop.get(1))
 	    {return;}
-	    if (SparseGridGpu_type::d >= 3 && z+ite.start.get(1) > ite.stop.get(2))
+	    if (SparseGridGpu_type::d >= 3 && z+ite.start.get(2) > ite.stop.get(2))
 	    {return;}
 
-	    grid_key_dx<SparseGridGpu_type::d, size_t> coord({x+ite.start.get(0), y+ite.start.get(1), z+ite.start.get(2)});
+	    grid_key_dx<SparseGridGpu_type::d, size_t> coord;
+	    grid_key_dx<SparseGridGpu_type::d, size_t> coord_glob;
 
-	//    size_t pos = sg.getLinId(coord);
-	//    printf("insertValues: bDim=(%d,%d), bId=(%d,%d), tId=(%d,%d) : "
-	//           "pos=%ld, coord={%d,%d}, value=%d\n",
-	//           bDimX, bDimY,
-	//           bIdX, bIdY,
-	//           tIdX, tIdY,
-	//           pos,
-	//           x, y,
-	//           x); //debug
+	    if (SparseGridGpu_type::d >= 2)
+	    {
+	    	coord.set_d(0,x+ite.start.get(0));
+	    	coord_glob.set_d(0,x+ite.start.get(0)+ite.origin.get(0));
+	    	coord.set_d(1,y+ite.start.get(1));
+	    	coord_glob.set_d(1,y+ite.start.get(1)+ite.origin.get(1));
+	    }
+	    else if (SparseGridGpu_type::d >= 3)
+	    {
+		    coord.set_d(0,x+ite.start.get(0));
+		    coord_glob.set_d(0,x+ite.start.get(0)+ite.origin.get(0));
+		    coord.set_d(1,y+ite.start.get(1));
+		    coord_glob.set_d(1,y+ite.start.get(1)+ite.origin.get(1));
+		    coord.set_d(2,z+ite.start.get(2));
+		    coord_glob.set_d(2,z+ite.start.get(2)+ite.origin.get(2));
+	    }
 
-	    sg.template insert<p>(coord) = c;
+
+	    if (SparseGridGpu_type::d >= 2)
+	    {sg.template insert<p>(coord) = c + coord_glob.get(0) + coord_glob.get(1);}
+	    else
+	    {sg.template insert<p>(coord) = c + coord_glob.get(0) + coord_glob.get(1) + coord_glob.get(2);}
 
 	    __syncthreads();
 
@@ -80,35 +92,6 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_base )
 
 	gdist.template setBackgroundValue<0>(666);
 
-	/////// CPU insert
-
-/*	auto it = gdist.getGridIterator(box.getKP1(),box.getKP2());
-
-	while (it.isNext())
-	{
-		auto p = it.get_dist();
-
-		gdist.template insert<0>(p) = 1.0;
-
-		++it;
-	}
-
-	gdist.template flush<>();
-
-	Box<2,size_t> box2({0,0},{15,15});
-	auto it2 = gdist.getGridIterator(box2.getKP1(),box2.getKP2());
-
-	while (it2.isNext())
-	{
-		auto p = it2.get_dist();
-
-		std::cout << gdist.template get<0>(p) << std::endl;
-
-		++it2;
-	}*/
-
-	/////// host to device
-
 	/////// GPU insert + flush
 
 	Box<2,size_t> box({1,1},{1,1});
@@ -116,7 +99,7 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_base )
 
 	/////// GPU Run kernel
 
-	gdist.setInsertBuffer(128);
+	gdist.setInsertBuffer(1);
 
 	float c = 5.0;
 
@@ -137,16 +120,24 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_base )
 
 			if (p2.get(0) == box.getLow(0) && p2.get(1) == box.getLow(1))
 			{
-				BOOST_REQUIRE_EQUAL(gdist.template get<0>(p), 5.0);
+				BOOST_REQUIRE_EQUAL(gdist.template get<0>(p), 7.0);
 			}
 			else
 			{
+				if (gdist.template get<0>(p) != 666.0)
+				{
+					float f = gdist.template get<0>(p);
+					std::cout << "ERROR: " << gdist.template get<0>(p) << std::endl;
+				}
+
 				BOOST_REQUIRE_EQUAL(gdist.template get<0>(p), 666.0);
 			}
 
 			++it;
 		}
 	}
+
+	return;
 
 	//
 
@@ -189,14 +180,50 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_base )
 			++it;
 		}
 	}
-
-	////////////////////////////////////
-
-	gdist.setInsertBuffer(128);
-	gdist.template iterateGPU<stencil_kernel<0>>();
-
-
 }
 
+
+BOOST_AUTO_TEST_CASE( sgrid_gpu_test_output )
+{
+	auto & v_cl = create_vcluster();
+
+	if (v_cl.size() > 3){return;}
+
+	size_t sz[2] = {17,17};
+	periodicity<2> bc = {PERIODIC,PERIODIC};
+
+	Ghost<2,long int> g(1);
+
+	Box<2,float> domain({0.0,0.0},{1.0,1.0});
+
+	sgrid_dist_id_gpu<2,float,aggregate<float>> gdist(sz,domain,g,bc);
+
+	gdist.template setBackgroundValue<0>(666);
+
+	/////// GPU insert + flush
+
+	Box<2,size_t> box({1,1},{15,15});
+	auto it = gdist.getGridIterator(box.getKP1(),box.getKP2());
+
+	/////// GPU Run kernel
+
+	gdist.setInsertBuffer(128);
+
+	float c = 5.0;
+
+	gdist.template iterateGridGPU<insert_kernel<0>>(it,c);
+	gdist.template flush<smax_<0>>(flush_type::FLUSH_ON_DEVICE);
+
+	gdist.template deviceToHost<0>();
+
+	gdist.write("sgrid_gpu_output");
+
+	std::string file_test("sgrid_gpu_output_" + std::to_string(v_cl.size()) + "_" + std::to_string(v_cl.rank())  + ".vtk");
+	std::string file("sgrid_gpu_output_" + std::to_string(v_cl.rank()) + ".vtk");
+
+	bool test = compare(file,"test_data/" + file_test);
+
+	BOOST_REQUIRE_EQUAL(true,test);
+}
 
 BOOST_AUTO_TEST_SUITE_END()

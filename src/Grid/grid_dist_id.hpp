@@ -26,6 +26,7 @@
 #ifdef __NVCC__
 #include "SparseGridGpu/SparseGridGpu.hpp"
 #include "cuda/grid_dist_id_kernels.cuh"
+#include "Grid/cuda/grid_dist_id_iterator_gpu.cuh"
 #endif
 
 
@@ -1134,8 +1135,8 @@ public:
 	 */
 	void setBackgroundValue(T & bv)
 	{
-		for (size_t i = 0 ; i < loc_grid.size() ; i++)
-		{meta_copy<T>::meta_copy_(bv,loc_grid.get(i).getBackgroundValue());}
+		setBackground_impl<T,decltype(loc_grid)> func(bv,loc_grid);
+		boost::mpl::for_each_ref< boost::mpl::range_c<int,0,T::max_prop>>(func);
 	}
 
 	/*! \brief set the background value
@@ -1715,7 +1716,7 @@ public:
 	/*! /brief Get a grid Iterator
 	 *
 	 * In case of dense grid getGridIterator is equivalent to getDomainIterator
-	 * in case if sparse distributed grid getDomainIterator go across all the
+	 * in case of sparse grid getDomainIterator go across all the
 	 * inserted point get grid iterator run across all grid points independently
 	 * that the point has been insert or not
 	 *
@@ -1727,6 +1728,47 @@ public:
 		grid_dist_id_iterator_dec<Decomposition> it_dec(getDecomposition(), g_sz, start, stop);
 		return it_dec;
 	}
+
+#ifdef __NVCC__
+
+	/*! /brief Get a grid Iterator in GPU
+	 *
+	 * In case of dense grid getGridIterator is equivalent to getDomainIteratorGPU
+	 * in case of sparse distributed grid getDomainIterator go across all the
+	 * inserted point getGridIteratorGPU run across all grid points independently
+	 * that the point has been insert or not
+	 *
+	 * \param start point
+	 * \param stop point
+	 *
+	 * \return a Grid iterator
+	 *
+	 */
+	inline grid_dist_id_iterator_gpu<Decomposition,openfpm::vector<device_grid>>
+	getGridIteratorGPU(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop)
+	{
+		grid_dist_id_iterator_gpu<Decomposition,openfpm::vector<device_grid>> it_dec(loc_grid,getDecomposition(), g_sz, start, stop);
+		return it_dec;
+	}
+
+	/*! /brief Get a grid Iterator in GPU
+	 *
+	 * In case of dense grid getGridIterator is equivalent to getDomainIteratorGPU
+	 * in case of sparse distributed grid getDomainIterator go across all the
+	 * inserted point getGridIteratorGPU run across all grid points independently
+	 * that the point has been insert or not
+	 *
+	 * \return a Grid iterator
+	 *
+	 */
+	inline grid_dist_id_iterator_gpu<Decomposition,openfpm::vector<device_grid>>
+	getGridIteratorGPU()
+	{
+		grid_dist_id_iterator_gpu<Decomposition,openfpm::vector<device_grid>> it_dec(loc_grid,getDecomposition(), g_sz);
+		return it_dec;
+	}
+
+#endif
 
 	/*! /brief Get a grid Iterator running also on ghost area
 	 *
@@ -2642,6 +2684,8 @@ public:
 
 	/*! \brief Set the size of the gpu insert buffer pool
 	 *
+	 * Indicate the maximum number of inserts each GPU block can do
+	 *
 	 * \param size of the insert pool
 	 *
 	 */
@@ -2664,7 +2708,12 @@ public:
 			loc_grid.get(i).setGPUInsertBuffer(ite.nblocks(),gpu_insert_pool_size);
 			loc_grid.get(i).initializeGPUInsertBuffer();
 
-			grid_apply_functor<<<ite.wthr,ite.thr>>>(loc_grid.get(i).toKernel(),ite,func_t(),args...);
+			ite_gpu_dist<dim> itd = ite;
+
+			for (int j = 0 ; j < dim ; j++)
+			{itd.origin.set_d(j,gdb_ext.get(i).origin.get(j));}
+
+			grid_apply_functor<<<ite.wthr,ite.thr>>>(loc_grid.get(i).toKernel(),itd,func_t(),args...);
 
 			it.nextGrid();
 		}

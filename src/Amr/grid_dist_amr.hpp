@@ -466,6 +466,20 @@ public:
 		return gd_array.get(lvl).getGridIterator();
 	}
 
+#ifdef __NVCC__
+
+	/*! \brief Get an iterator to the grid
+	 *
+	 * \return an iterator to the grid
+	 *
+	 */
+	auto getGridIteratorGPU(size_t lvl) -> decltype(gd_array.get(lvl).getGridIteratorGPU())
+	{
+		return gd_array.get(lvl).getGridIteratorGPU();
+	}
+
+#endif
+
 	/*! \brief Get an iterator to the grid
 	 *
 	 * \return an iterator to the grid
@@ -912,7 +926,7 @@ using sgrid_dist_amr = grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,CartDecomposition
 #ifdef __NVCC__
 
 template<unsigned int dim, typename St, typename T, unsigned int blockEdgeSize = 8>
-using sgrid_dist_amr_gpu = grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,CartDecomposition<dim,St,CudaMemory,memory_traits_inte>,CudaMemory,SparseGridGpu<dim,T,blockEdgeSize>>;
+using sgrid_dist_amr_gpu = grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,CartDecomposition<dim,St,CudaMemory,memory_traits_inte>,CudaMemory,SparseGridGpu<dim,T,blockEdgeSize,IntPow<blockEdgeSize,dim>::value >>;
 
 #endif
 
