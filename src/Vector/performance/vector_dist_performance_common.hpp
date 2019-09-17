@@ -166,16 +166,13 @@ void vd_initialize(v_dist & vd, Vcluster<HeapMemory> & v_cl)
  *
  */
 template<unsigned int dim, typename v_dist>
-void vd_initialize_box_nomap(v_dist & vd, const Box<dim,typename v_dist::stype> & box, Vcluster<HeapMemory> & v_cl, int npart)
+void vd_initialize_box_nomap(v_dist & vd, const Box<dim,typename v_dist::stype> & box, Vcluster<HeapMemory> & v_cl,int start, int stop)
 {
 	// The random generator engine
 	std::default_random_engine eg(v_cl.getProcessUnitID()*4313);
 	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
-	size_t n = vd.size_local();
-	size_t n_stop = n + npart;
-
-	auto it = vd.getIterator(n,n_stop);
+	auto it = vd.getIterator(start,stop);
 
 	while (it.isNext())
 	{

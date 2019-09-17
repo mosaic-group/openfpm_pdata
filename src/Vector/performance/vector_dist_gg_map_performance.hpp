@@ -45,9 +45,12 @@ double benchmark_map(size_t k_int, Vcluster<HeapMemory> & v_cl)
 	for (size_t i = 0; i < dim; i++)
 	{bc[i] = PERIODIC;}
 
-	vector_dist<dim,float, aggregate<float[dim]> > vd(k_int,box,bc,Ghost<dim,float>(0.1));
+	vector_dist<dim,float, aggregate<float[dim]> > vd(v_cl.size()*v_cl.size()*k_int,box,bc,Ghost<dim,float>(0.1));
 
 	auto & dec = vd.getDecomposition();
+
+	int start = 0;
+	int stop = k_int;
 
 	for (size_t i = 0 ; i < v_cl.size() ; i++)
 	{
@@ -60,7 +63,10 @@ double benchmark_map(size_t k_int, Vcluster<HeapMemory> & v_cl)
 		{
 			// generate all particles in the near processor
 
-			vd_initialize_box_nomap<dim>(vd,nn_box.get(0),v_cl,k_int);
+			vd_initialize_box_nomap<dim>(vd,nn_box.get(0),v_cl,start,stop);
+
+			start += k_int;
+			stop += k_int;
 		}
 	}
 
