@@ -155,7 +155,25 @@ BOOST_AUTO_TEST_CASE(vector_dist_gg_map_performance_write_report)
 	report_ggm.graphs.add("graphs.graph.y.data(0).source","performance.map_3D.npart(#).mean");
 	report_ggm.graphs.add("graphs.graph.x.data(0).source","performance.map_3D.npart(#).n");
 	report_ggm.graphs.add("graphs.graph.y.data(0).title","Map function");
-	report_ggm.graphs.add("graphs.graph.options.log_y","true");
+	report_ggm.graphs.add("graphs.graph.options.log_y","false");
+
+	if (create_vcluster().rank() == 0)
+	{
+		boost::property_tree::xml_writer_settings<std::string> settings(' ', 4);
+		boost::property_tree::write_xml("particles_map_performance.xml", report_ggm.graphs,std::locale(),settings);
+
+		std::string file_xml_ref(test_dir);
+		file_xml_ref += std::string("/openfpm_pdata/particles_map_performance_ref.xml");
+
+		GoogleChart cg;
+
+		StandardXMLPerformanceGraph("particles_map_performance.xml",file_xml_ref,cg);
+
+		addUpdtateTime(cg,create_vcluster().size());
+
+		if (create_vcluster().getProcessUnitID() == 0)
+		{cg.write("particles_map_performance.html");}
+	}
 }
 
 BOOST_AUTO_TEST_SUITE_END()
