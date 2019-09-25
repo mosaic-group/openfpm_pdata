@@ -158,7 +158,7 @@ class grid_dist_id_comm
 	openfpm::vector<size_t> send_size;
 
 	//! receiving buffers in case of dynamic
-	openfpm::vector<BMemory<HeapMemory>> recv_buffers;
+	openfpm::vector<BMemory<Memory>> recv_buffers;
 
 	//! receiving processors
 	openfpm::vector<size_t> recv_proc;
@@ -553,7 +553,7 @@ class grid_dist_id_comm
 					// Unpack the ghost box global-id
 
 
-					unpack_data_to_ext_ghost<HeapMemory,prp ...>(prRecv_prp,loc_grid,i,
+					unpack_data_to_ext_ghost<Memory,prp ...>(prRecv_prp,loc_grid,i,
 																eg_box,g_id_to_external_ghost_box,eb_gid_list,
 																ps);
 				}
@@ -567,14 +567,14 @@ class grid_dist_id_comm
 				Unpack_stat ps;
 				size_t mark_here = ps.getOffset();
 
-				ExtPreAlloc<BMemory<HeapMemory>> mem(recv_buffers.get(i).size(),recv_buffers.get(i));
+				ExtPreAlloc<BMemory<Memory>> mem(recv_buffers.get(i).size(),recv_buffers.get(i));
 
 				// for each external ghost box
 				while (ps.getOffset() - mark_here < recv_buffers.get(i).size())
 				{
 					// Unpack the ghost box global-id
 
-					unpack_data_to_ext_ghost<BMemory<HeapMemory>,prp ...>(mem,loc_grid,i,
+					unpack_data_to_ext_ghost<BMemory<Memory>,prp ...>(mem,loc_grid,i,
 																eg_box,g_id_to_external_ghost_box,eb_gid_list,
 																ps);
 				}
@@ -969,6 +969,11 @@ public:
 
 		size_t req = 0;
 
+		// first we initialize the pack buffer on all internal grids
+
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{loc_grid.get(i).packReset();}
+
 		// Calculating the size to pack all the data to send
 		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
 		{
@@ -994,6 +999,10 @@ public:
 				Packer<device_grid,Memory>::template packRequest<decltype(sub_it),prp...>(loc_grid.get(sub_id),sub_it,req);
 			}
 		}
+
+		// Finalize calculation
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{loc_grid.get(i).packCalculate(req,v_cl.getmgpuContext());}
 
 		// resize the property buffer memory
 		g_send_prp_mem.resize(req);
