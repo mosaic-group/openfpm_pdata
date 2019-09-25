@@ -56,19 +56,31 @@ function detect_compiler()
     # First we try to understand if g++ command line is linked to clang
     if haveProg g++; then
 
+      is_apple_llvm=no
+      prefix_search=""
       g++ --version | grep "Apple LLVM" >/dev/null 2>&1
       if [ $? == 0 ]; then
+         is_apple_llvm=yes
+         prefix_search="LLVM"
+      fi
+      g++ --version | grep "Apple clang" >/dev/null 2>&1
+      if [ $? == 0 ]; then
+         is_apple_llvm=yes
+         prefix_search="clang"
+      fi
+
+      if [ x"$is_apple_llvm" == x"yes" ]; then
         echo "Apple LLVM based g++"
 
         # we try the detect the version
-        major=$(g++ --version | grep LLVM | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\1/g')
+        major=$(g++ --version | grep $prefix_search | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\1/g')
 
         # we check if the detection is garbage
         echo "$major" | egrep -q '^[0-9]+$'
         if [ $? == 0 ]; then
-           dgc_major=$(g++ --version | grep LLVM | sed 's/.* \([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\1/g')
-           dgc_middle=$(g++ --version | grep LLVM | sed 's/.* \([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\2/g')
-           dgc_minor=$(g++ --version | grep LLVM | sed 's/.* \([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\3/g')
+           dgc_major=$(g++ --version | grep $prefix_search | sed 's/.* \([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\1/g')
+           dgc_middle=$(g++ --version | grep $prefix_search | sed 's/.* \([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\2/g')
+           dgc_minor=$(g++ --version | grep $prefix_search | sed 's/.* \([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*(clang.*/\3/g')
 
            if [ $dgc_major -gt 6 ]; then
              echo -e "clang++ $dgc_major.$dgc_middle.$dgc_minor \033[92;1m SUCCESS \033[0m"
