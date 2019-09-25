@@ -969,7 +969,7 @@ public:
 
 		size_t req = 0;
 
-		// Create a packing request vector
+		// Calculating the size to pack all the data to send
 		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
 		{
 			// for each ghost box
@@ -986,12 +986,12 @@ public:
 				g_ig_box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
 
 				// Pack a size_t for the internal ghost id
-				Packer<size_t,HeapMemory>::packRequest(req);
+				Packer<size_t,Memory>::packRequest(req);
 				// Create a sub grid iterator spanning the internal ghost layer
 				auto sub_it = loc_grid.get(sub_id).getIterator(g_ig_box.getKP1(),g_ig_box.getKP2());
 
-				// and pack the internal ghost grid
-				Packer<device_grid,HeapMemory>::template packRequest<decltype(sub_it),prp...>(loc_grid.get(sub_id),sub_it,req);
+				// get the size to pack
+				Packer<device_grid,Memory>::template packRequest<decltype(sub_it),prp...>(loc_grid.get(sub_id),sub_it,req);
 			}
 		}
 
@@ -1029,11 +1029,11 @@ public:
 				size_t g_id = ig_box.get(i).bid.get(j).g_id;
 
 				// Pack a size_t for the internal ghost id
-				Packer<size_t,HeapMemory>::pack(prAlloc_prp,g_id,sts);
+				Packer<size_t,Memory>::pack(prAlloc_prp,g_id,sts);
 				// Create a sub grid iterator spanning the internal ghost layer
 				auto sub_it = loc_grid.get(sub_id).getIterator(g_ig_box.getKP1(),g_ig_box.getKP2());
 				// and pack the internal ghost grid
-				Packer<device_grid,HeapMemory>::template pack<decltype(sub_it),prp...>(prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
+				Packer<device_grid,Memory>::template pack<decltype(sub_it),prp...>(prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
 			}
 			// send the request
 

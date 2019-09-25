@@ -736,10 +736,6 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 							pib.bid.last().sub_gdb_ext = j;
 							pib.bid.last().sub = i;
 
-//							if (use_bx_def == true)
-//							{pib.bid.last().k = -1;}
-//							else
-//							{pib.bid.last().k = dec.getLocalIGhostE(i,j);}
 							// these ghost always in the quadrant zero
 							pib.bid.last().cmb.zero();
 
@@ -2711,7 +2707,10 @@ public:
 			ite_gpu_dist<dim> itd = ite;
 
 			for (int j = 0 ; j < dim ; j++)
-			{itd.origin.set_d(j,gdb_ext.get(i).origin.get(j));}
+			{
+				itd.origin.set_d(j,gdb_ext.get(i).origin.get(j));
+				itd.start_base.set_d(j,0);
+			}
 
 			grid_apply_functor<<<ite.wthr,ite.thr>>>(loc_grid.get(i).toKernel(),itd,func_t(),args...);
 
