@@ -1,15 +1,15 @@
 [submodule "openfpm_vcluster"]
 	path = openfpm_vcluster
-	url = ssh://git@git.mpi-cbg.de/openfpm/openfpm_vcluster.git
+	url = https://github.com/IBirdSoft/openfpm_vcluster_2.0.0.git
 [submodule "openfpm_devices"]
 	path = openfpm_devices
-	url = ssh://git@git.mpi-cbg.de/openfpm/openfpm_devices.git
+	url = https://github.com/IBirdSoft/openfpm_devices_2.0.0.git
 [submodule "openfpm_io"]
 	path = openfpm_io
-	url = ssh://git@git.mpi-cbg.de/openfpm/openfpm_io.git
+	url = https://github.com/IBirdSoft/openfpm_io_2.0.0.git
 [submodule "openfpm_data"]
 	path = openfpm_data
-	url = ssh://git@git.mpi-cbg.de/openfpm/openfpm_data.git
+	url = https://github.com/IBirdSoft/openfpm_data_2.0.0.git
 [submodule "openfpm_numerics"]
 	path = openfpm_numerics
-	url = ssh://git@git.mpi-cbg.de/openfpm/openfpm_numerics.git
+	url = https://github.com/IBirdSoft/openfpm_numerics_2.0.0.git
