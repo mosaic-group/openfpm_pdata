@@ -207,19 +207,24 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_ghost_get )
 
 	/////// GPU insert + flush
 
-	Box<2,size_t> box({1,1},{1,1});
+	Box<2,size_t> box({1,1},{15,15});
 	auto it = gdist.getGridIterator(box.getKP1(),box.getKP2());
 
 	/////// GPU Run kernel
 
-	gdist.setInsertBuffer(1);
+	gdist.setInsertBuffer(225);
 
 	float c = 5.0;
 
 	gdist.template iterateGridGPU<insert_kernel2D<0>>(it,c);
 	gdist.template flush<smax_<0>>(flush_type::FLUSH_ON_DEVICE);
 
-//	gdist.template ghost_get<0>();
+	gdist.template deviceToHost<0>();
+//	gdist.write("broken");
+
+	gdist.template ghost_get<0>(RUN_ON_DEVICE);
 }
+
+
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -26,7 +26,6 @@ constexpr int NO_CHANGE_ELEMENTS = 4;
 
 constexpr int BIND_DEC_TO_GHOST = 1;
 
-constexpr int RUN_ON_DEVICE = 1024;
 constexpr int MAP_LOCAL = 2;
 
 constexpr int GHOST_SYNC = 0;
@@ -1173,6 +1172,9 @@ class vector_dist_comm
 		}
 		else
 		{
+			// if no properties must be sent skip this step
+			if (sizeof...(prp) == 0)	{return;}
+
 			// Fill the send buffer
 			for (size_t i = 0; i < g_opart.size(); i++)
 			{

@@ -2190,7 +2190,7 @@ public:
 	 * \tparam prp... Properties to synchronize
 	 *
 	 */
-	template<int... prp> void ghost_get()
+	template<int... prp> void ghost_get(size_t opt = 0)
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2217,7 +2217,8 @@ public:
 																								  use_bx_def,
 																								  loc_grid,
 																								  ginfo_v,
-																								  g_id_to_external_ghost_box);
+																								  g_id_to_external_ghost_box,
+																								  opt);
 	}
 
 	/*! \brief It synchronize the ghost parts

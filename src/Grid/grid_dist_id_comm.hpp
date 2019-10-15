@@ -175,6 +175,13 @@ class grid_dist_id_comm
 	//! Memory for the ghost receiving buffer
 	Memory g_recv_prp_mem;
 
+	//! send pointers
+	openfpm::vector<void *> pointers;
+	openfpm::vector<void *> pointers2;
+
+	//! Receiving option
+	size_t opt;
+
 	/*! \brief Sync the local ghost part
 	 *
 	 * \tparam prp... properties to sync
@@ -339,6 +346,10 @@ class grid_dist_id_comm
 
 		gd->recv_buffers.last().resize(msg_i);
 		gd->recv_proc.add(i);
+
+		if (gd->opt & RUN_ON_DEVICE)
+		{return gd->recv_buffers.last().getDevicePointer();}
+
 		return gd->recv_buffers.last().getPointer();
 	}
 
@@ -463,11 +474,15 @@ class grid_dist_id_comm
 									const openfpm::vector<ep_box_grid<dim>> & eg_box,
 									const std::unordered_map<size_t,size_t> & g_id_to_external_ghost_box,
 									const openfpm::vector<e_box_multi<dim>> & eb_gid_list,
-									Unpack_stat & ps)
+									Unpack_stat & ps,
+									size_t opt)
 	{
 		// Unpack the ghost box global-id
 
 		size_t g_id;
+		// we move from device to host the gid
+		if (opt & RUN_ON_DEVICE)
+		{emem.deviceToHost(ps.getOffset(),ps.getOffset()+sizeof(size_t));}
 		Unpacker<size_t,mem>::unpack(emem,g_id,ps);
 
 		size_t l_id = 0;
@@ -505,7 +520,7 @@ class grid_dist_id_comm
 
 		// Unpack
 		loc_grid.get(sub_id).remove(box);
-		Unpacker<device_grid,mem>::template unpack<decltype(sub2),prp...>(emem,sub2,loc_grid.get(sub_id),ps);
+		Unpacker<device_grid,mem>::template unpack<decltype(sub2),decltype(v_cl.getmgpuContext()),prp...>(emem,sub2,loc_grid.get(sub_id),ps,v_cl.getmgpuContext());
 
 		// Copy the information on the other grid
 		for (long int j = 0 ; j < (long int)eb_gid_list.get(l_id).eb_list.size() ; j++)
@@ -533,7 +548,8 @@ class grid_dist_id_comm
 							const std::vector<size_t> & prp_recv,
 							ExtPreAlloc<Memory> & prRecv_prp,
 							const std::unordered_map<size_t,size_t> & g_id_to_external_ghost_box,
-							const openfpm::vector<e_box_multi<dim>> & eb_gid_list)
+							const openfpm::vector<e_box_multi<dim>> & eb_gid_list,
+							size_t opt)
 	{
 		if (device_grid::isCompressed() == false)
 		{
@@ -555,7 +571,7 @@ class grid_dist_id_comm
 
 					unpack_data_to_ext_ghost<Memory,prp ...>(prRecv_prp,loc_grid,i,
 																eg_box,g_id_to_external_ghost_box,eb_gid_list,
-																ps);
+																ps,opt);
 				}
 			}
 		}
@@ -576,7 +592,7 @@ class grid_dist_id_comm
 
 					unpack_data_to_ext_ghost<BMemory<Memory>,prp ...>(mem,loc_grid,i,
 																eg_box,g_id_to_external_ghost_box,eb_gid_list,
-																ps);
+																ps,opt);
 				}
 			}
 		}
@@ -952,7 +968,8 @@ public:
 										 bool use_bx_def,
 										 openfpm::vector<device_grid> & loc_grid,
 										 const grid_sm<dim,void> & ginfo,
-										 std::unordered_map<size_t,size_t> & g_id_to_external_ghost_box)
+										 std::unordered_map<size_t,size_t> & g_id_to_external_ghost_box,
+										 size_t opt)
 	{
 #ifdef PROFILE_SCOREP
 		SCOREP_USER_REGION("ghost_get",SCOREP_USER_REGION_TYPE_FUNCTION)
@@ -966,6 +983,8 @@ public:
 		send_prc_queue.clear();
 		send_pointer.clear();
 		send_size.clear();
+
+		this->opt = opt;
 
 		size_t req = 0;
 
@@ -1002,7 +1021,7 @@ public:
 
 		// Finalize calculation
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
-		{loc_grid.get(i).packCalculate(req,v_cl.getmgpuContext());}
+		{loc_grid.get(i).template packCalculate<prp ...>(req,v_cl.getmgpuContext());}
 
 		// resize the property buffer memory
 		g_send_prp_mem.resize(req);
@@ -1015,12 +1034,21 @@ public:
 		// Pack information
 		Pack_stat sts;
 
+		pointers.clear();
+		pointers2.clear();
+
 		// Pack the information for each processor and send it
 		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
 		{
 
 			sts.mark();
-			void * pointer = prAlloc_prp.getPointerEnd();
+
+			void * pointer;
+
+			if (opt & RUN_ON_DEVICE)
+			{pointer = prAlloc_prp.getDevicePointerEnd();}
+			else
+			{pointer = prAlloc_prp.getPointerEnd();}
 
 			// for each ghost box
 			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
@@ -1039,6 +1067,7 @@ public:
 
 				// Pack a size_t for the internal ghost id
 				Packer<size_t,Memory>::pack(prAlloc_prp,g_id,sts);
+				prAlloc_prp.hostToDevice(prAlloc_prp.getOffset(),prAlloc_prp.getOffsetEnd());
 				// Create a sub grid iterator spanning the internal ghost layer
 				auto sub_it = loc_grid.get(sub_id).getIterator(g_ig_box.getKP1(),g_ig_box.getKP2());
 				// and pack the internal ghost grid
@@ -1046,10 +1075,24 @@ public:
 			}
 			// send the request
 
-			void * pointer2 = prAlloc_prp.getPointerEnd();
+			void * pointer2;
 
+			if (opt & RUN_ON_DEVICE)
+			{pointer2 = prAlloc_prp.getDevicePointerEnd();}
+			else
+			{pointer2 = prAlloc_prp.getPointerEnd();}
+
+			pointers.add(pointer);
+			pointers2.add(pointer2);
+		}
+
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{loc_grid.get(i).template packFinalize<prp ...>(prAlloc_prp,sts);}
+
+		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
+		{
 			// This function send (or queue for sending) the information
-			send_or_queue(ig_box.get(i).prc,(char *)pointer,(char *)pointer2);
+			send_or_queue(ig_box.get(i).prc,(char *)pointers.get(i),(char *)pointers2.get(i));
 		}
 
 		// Calculate the total information to receive from each processors
@@ -1064,9 +1107,15 @@ public:
 
 		queue_recv_data_get<prp_object>(eg_box,prp_recv,prRecv_prp);
 
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{loc_grid.get(i).removeCopyReset();}
+
 		ghost_get_local<prp...>(loc_ig_box,loc_eg_box,gdb_ext,loc_grid,g_id_to_external_ghost_box,ginfo,use_bx_def);
 
-		merge_received_data_get<prp ...>(loc_grid,eg_box,prp_recv,prRecv_prp,g_id_to_external_ghost_box,eb_gid_list);
+		merge_received_data_get<prp ...>(loc_grid,eg_box,prp_recv,prRecv_prp,g_id_to_external_ghost_box,eb_gid_list,opt);
+
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{loc_grid.get(i).removeCopyFinalize(v_cl.getmgpuContext());}
 	}
 
 	/*! \brief It merge the information in the ghost with the
