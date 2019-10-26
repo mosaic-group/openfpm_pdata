@@ -222,7 +222,7 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_ghost_get )
 	gdist.template deviceToHost<0>();
 //	gdist.write("broken");
 
-	gdist.template ghost_get<0>(RUN_ON_DEVICE);
+//	gdist.template ghost_get<0>(RUN_ON_DEVICE);
 }
 
 

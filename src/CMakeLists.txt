@@ -127,7 +127,8 @@ if (NOT APPLE)
     target_link_libraries(pdata rt)
 endif ()
 
-install(FILES Decomposition/CartDecomposition.hpp 
+install(FILES Decomposition/CartDecomposition.hpp
+       	      Decomposition/Domain_icells_cart.hpp	
 	      Decomposition/shift_vect_converter.hpp 
 	      Decomposition/CartDecomposition_ext.hpp  
 	      Decomposition/common.hpp 
@@ -185,6 +186,7 @@ install(FILES Vector/util/vector_dist_funcs.hpp
 
 install(FILES Vector/cuda/vector_dist_comm_util_funcs.cuh
 	      Vector/cuda/vector_dist_cuda_funcs.cuh
+	      Vector/cuda/vector_dist_operators_list_ker.hpp
 	DESTINATION openfpm_pdata/include/Vector/cuda )
 
 install(FILES Graph/ids.hpp Graph/dist_map_graph.hpp 

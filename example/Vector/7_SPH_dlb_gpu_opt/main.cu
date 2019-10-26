@@ -482,7 +482,7 @@ __global__ void verlet_int_gpu(vector_dist_type vd, real_number dt, real_number 
 		return;
 	}
 
-	//-Calculate displacement and update position / Calcula desplazamiento y actualiza posicion.
+	//-Calculate displacement and update position
 	real_number dx = vd.template getProp<velocity>(a)[0]*dt + vd.template getProp<force>(a)[0]*dt205;
     real_number dy = vd.template getProp<velocity>(a)[1]*dt + vd.template getProp<force>(a)[1]*dt205;
     real_number dz = vd.template getProp<velocity>(a)[2]*dt + vd.template getProp<force>(a)[2]*dt205;

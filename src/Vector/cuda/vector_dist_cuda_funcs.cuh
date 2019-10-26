@@ -14,6 +14,7 @@
 #include "Decomposition/common.hpp"
 #include "lib/pdata.hpp"
 #include "util/cuda/kernels.cuh"
+#include "util/cuda/scan_ofp.cuh"
 
 template<unsigned int dim, typename St, typename decomposition_type, typename vector_type, typename start_type, typename output_type>
 __global__ void proc_label_id_ghost(decomposition_type dec,vector_type vd, start_type starts, output_type out)
@@ -399,6 +400,62 @@ void remove_marked(vector_type & vd)
 
 	vd.getPosVector().swap(vd_pos_new);
 	vd.getPropVector().swap(vd_prp_new);
+}
+
+template<unsigned int prp, typename functor, typename particles_type, typename out_type>
+__global__ void mark_indexes(particles_type vd, out_type out)
+{
+	auto a = GET_PARTICLE(vd);
+
+	out.template getProp<0>(a) = functor::check(vd.template getProp<prp>(a)) == true;
+}
+
+template<typename out_type, typename ids_type>
+__global__ void fill_indexes(out_type scan, ids_type ids)
+{
+	unsigned int p = threadIdx.x + blockIdx.x * blockDim.x;
+
+	if (p >= scan.size()-1)	{return;}
+
+	auto sp = scan.template get<0>(p);
+	auto spp = scan.template get<0>(p+1);
+
+	if (sp != spp)
+	ids.template get<0>(scan.template get<0>(p)) = p;
+}
+
+/*! \brief get the particle index that satify the functor condition
+ *
+ * This function can be used to collect the indexes of the particles of a particular type.
+ * Write a functor that return true when a particle of a particular type is identified
+ * and ids will contain the indexes for which the functor return true.
+ *
+ * \tparam prp property to pass to the functor
+ *
+ * \param vd distributed vector
+ *
+ */
+template<typename functor, typename vector_type, typename ids_type>
+void get_indexes_sorted(vector_type & vd, ids_type & ids, mgpu::ofp_context_t & context)
+{
+	// first we do a scan of the property
+	openfpm::vector_gpu<aggregate<unsigned int>> scan;
+
+	scan.setMemory(mem_tmp);
+	scan.resize(vd.size_local_with_ghost()+1);
+
+	auto ite = scan.getGPUIterator();
+
+	CUDA_LAUNCH(mark_indexes,ite,vd.toKernel(),scan.toKernel());
+
+	openfpm::scan(scan.template getDeviceBuffer<0>(),scan.size(),scan.template getDeviceBuffer<0>(),context);
+
+	// get the number of marked particles
+	scan.template deviceToHost<0>(scan.size()-1,scan.size()-1);
+	size_t nf = scan.template get<0>(scan.size()-1);
+	ids.resize(nf);
+
+	CUDA_LAUNCH(fill_indexes,ite,scan.toKernel(),ids.toKernel());
 }
 
 #endif /* VECTOR_DIST_CUDA_FUNCS_CUH_ */
