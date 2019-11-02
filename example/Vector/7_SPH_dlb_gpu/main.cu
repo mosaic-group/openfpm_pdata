@@ -91,7 +91,7 @@ const real_number MassBound = 0.000614125;
 #ifdef TEST_RUN
 const real_number t_end = 0.001;
 #else
-const real_number t_end = 0.003;
+const real_number t_end = 1.5;
 #endif
 
 // Gravity acceleration

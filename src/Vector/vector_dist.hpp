@@ -74,7 +74,7 @@ constexpr int GCL_NON_SYMMETRIC = 0;
 constexpr int GCL_SYMMETRIC = 1;
 constexpr int GCL_HILBERT = 2;
 
-template<bool is_gpu_celllist>
+template<bool is_gpu_celllist, unsigned int ... prp>
 struct gcl_standard_no_symmetric_impl
 {
 	template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
@@ -84,18 +84,18 @@ struct gcl_standard_no_symmetric_impl
 	}
 };
 
-template<>
-struct gcl_standard_no_symmetric_impl<true>
+template<unsigned int ... prp>
+struct gcl_standard_no_symmetric_impl<true,prp...>
 {
 	template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
 	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
 	{
-		return vd.template getCellListGPU<CellL>(r_cut);
+		return vd.template getCellListGPU<CellL,prp...>(r_cut);
 	}
 };
 
 //! General function t get a cell-list
-template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
+template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl, unsigned int ... prp>
 struct gcl
 {
 	/*! \brief Get the Cell list based on the type
@@ -109,7 +109,7 @@ struct gcl
 	 */
 	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
 	{
-		return gcl_standard_no_symmetric_impl<is_gpu_celllist<CellL>::value>::template get<dim,St,CellL,Vector,impl>(vd,r_cut,g);
+		return gcl_standard_no_symmetric_impl<is_gpu_celllist<CellL>::value,prp ...>::template get<dim,St,CellL,Vector,impl>(vd,r_cut,g);
 	}
 };
 
@@ -1209,7 +1209,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellType = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>>>
+	template<typename CellType = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>>,unsigned int ... prp>
 	CellType getCellListGPU(St r_cut, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
@@ -1243,7 +1243,7 @@ public:
 	 * \return the CellList
 	 *
 	 */
-	template<typename CellType = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>>>
+	template<typename CellType = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>>, unsigned int ... prp>
 	CellType getCellListGPU(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
@@ -1265,7 +1265,7 @@ public:
 		v_prp_out.resize(v_pos.size());
 		v_pos_out.resize(v_pos.size());
 
-		cell_list.template construct<decltype(v_pos),decltype(v_prp)>(v_pos,v_pos_out,v_prp,v_prp_out,v_cl.getmgpuContext(),g_m);
+		cell_list.template construct<decltype(v_pos),decltype(v_prp),prp ...>(v_pos,v_pos_out,v_prp,v_prp_out,v_cl.getmgpuContext(),g_m);
 
 		cell_list.set_ndec(getDecomposition().get_ndec());
 		cell_list.set_gm(g_m);
@@ -1349,7 +1349,8 @@ public:
 	 * \param no_se3 avoid se class 3 checking
 	 *
 	 */
-	template<typename CellL> void updateCellList(CellL & cell_list, bool no_se3 = false, cl_construct_opt opt = cl_construct_opt::Full)
+	template<unsigned int ... prp,typename CellL>
+	void updateCellList(CellL & cell_list, bool no_se3 = false, cl_construct_opt opt = cl_construct_opt::Full)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -1366,7 +1367,7 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getmgpuContext(false),g_m,CL_NON_SYMMETRIC,opt);
+			populate_cell_list<dim,St,prop,Memory,layout_base,CellL,prp ...>(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getmgpuContext(false),g_m,CL_NON_SYMMETRIC,opt);
 
 			cell_list.set_gm(g_m);
 		}
@@ -2987,6 +2988,19 @@ public:
 		template<unsigned int ... prp> void deviceToHostProp()
 		{
 			v_prp.template deviceToHost<prp ...>();
+		}
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 * \param start point
+		 * \param stop point (included)
+		 *
+		 */
+		template<unsigned int ... prp> void deviceToHostProp(size_t start, size_t stop)
+		{
+			v_prp.template deviceToHost<prp ...>(start,stop);
 		}
 
 		/*! \brief Move the memory from the device to host memory

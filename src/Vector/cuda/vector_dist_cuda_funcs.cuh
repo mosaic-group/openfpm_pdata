@@ -298,8 +298,8 @@ __global__ void create_index(vector_type vd)
     vd.template get<0>(i) = i;
 }
 
-template<unsigned int dim, typename vector_pos_type, typename vector_prp_type, typename scan_type>
-__global__ void copy_new_to_old(vector_pos_type vd_pos_dst, vector_prp_type vd_prp_dst, vector_pos_type vd_pos_src, vector_prp_type vd_prp_src, scan_type idx)
+template<unsigned int dim, typename vector_pos_type, typename vector_prp_type, typename ids_type>
+__global__ void copy_new_to_old(vector_pos_type vd_pos_dst, vector_prp_type vd_prp_dst, vector_pos_type vd_pos_src, vector_prp_type vd_prp_src, ids_type idx)
 {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -309,6 +309,34 @@ __global__ void copy_new_to_old(vector_pos_type vd_pos_dst, vector_prp_type vd_p
     {vd_pos_dst.template get<0>(i)[k] = vd_pos_src.template get<0>(idx.template get<0>(i))[k];}
 
     vd_prp_dst.set(i,vd_prp_src,idx.template get<0>(i));
+}
+
+template<unsigned int dim, unsigned int prp, typename vector_pos_type, typename vector_prp_type, typename scan_type>
+__global__ void copy_new_to_old_by_scan(vector_pos_type vd_pos_dst, vector_prp_type vd_prp_dst, vector_pos_type vd_pos_src, vector_prp_type vd_prp_src, scan_type scan)
+{
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (i >= scan.size()) return;
+
+    auto sc = scan.template get<0>(i);
+
+    if (vd_prp_src.template get<prp>(i) == 0) return;
+
+    for (unsigned int k = 0 ; k < dim ; k++)
+    {vd_pos_dst.template get<0>(sc)[k] = vd_pos_src.template get<0>(i)[k];}
+
+    vd_prp_dst.set(sc,vd_prp_src,i);
+}
+
+
+template<unsigned int prp,typename vector_type>
+__global__ void flip_one_to_zero(vector_type vd)
+{
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (i >= vd.size_local()) return;
+
+    vd.template getProp<prp>(i) = (vd.template getProp<prp>(i) == 0);
 }
 
 /*! \brief Remove the particles marked on the properties prp (particles marked has has property set to 1, the others to 0)
@@ -336,65 +364,49 @@ void remove_marked(vector_type & vd)
 
 	typedef typename boost::mpl::at<typename vector_type::value_type::type,boost::mpl::int_<prp>>::type remove_type;
 
-	// first we do a scan of the property
-	openfpm::vector_gpu<aggregate<unsigned int>> idx;
+	// because we mark the one to remove we flip the one to zero and the zeros to one
+
+	auto ite = vd.getDomainIteratorGPU();
+
+	CUDA_LAUNCH((flip_one_to_zero<prp>),ite,vd.toKernel());
+
+	// first we scan
+
+	openfpm::vector_gpu<aggregate<remove_type>> idx;
 
 	idx.setMemory(mem_tmp);
 	idx.resize(vd.size_local());
 
-	auto ite = idx.getGPUIterator();
+	openfpm::scan((remove_type *)vd.getPropVector().template getDeviceBuffer<prp>(),vd.size_local(),(remove_type *)idx.template getDeviceBuffer<0>(),vd.getVC().getmgpuContext());
 
-	CUDA_LAUNCH(create_index,ite,idx.toKernel());
+	// Check if we marked something
 
-	// sort particles, so the particles to remove stay at the end
-	mergesort((remove_type *)vd.getPropVector().template getDeviceBuffer<prp>(),(unsigned int *)idx.template getDeviceBuffer<0>(), idx.size(), mgpu::template less_t<remove_type>(), vd.getVC().getmgpuContext());
+	idx.template deviceToHost<0>(idx.size()-1,idx.size()-1);
+	vd.template deviceToHostProp<prp>(vd.size_local()-1,vd.size_local()-1);
 
-	openfpm::vector_gpu<aggregate<int>> mark;
-	mark.resize(1);
+	int n_marked = vd.size_local() - (vd.template getProp<prp>(vd.size_local()-1) + idx.template get<0>(idx.size()-1));
 
-	CudaMemory mem;
-	mem.allocate(sizeof(int));
-	mem.fill(0);
-
-	// mark point, particle that stay and to remove
-	CUDA_LAUNCH((find_buffer_offsets_no_prc<prp,decltype(vd.getPropVector().toKernel()),decltype(mark.toKernel())>),ite,
-			     vd.getPropVector().toKernel(),(int *)mem.getDevicePointer(),mark.toKernel(),vd.size_local());
-
-	mem.deviceToHost();
-
-	// we have no particles to remove
-	if (*(int *)mem.getPointer() != 1)
+	if (n_marked == 0)
 	{
-		if (*(int *)mem.getPointer() >= 2)
-		{
-			std::cout << __FILE__ << ":" << __LINE__ << " error: removing marked particle. Carefull particle must be marked with 1 or 0, no other numbers" << std::endl;
-		}
+		// No particle has been marked Nothing to do
+
 		return;
 	}
 
-	// Get the mark point
-	mark.template deviceToHost<0>();
-
-	// than create an equivalent buffer prop and pos
+	/////////////////////////////////
 
 	typename std::remove_reference<decltype(vd.getPosVector())>::type vd_pos_new;
 	typename std::remove_reference<decltype(vd.getPropVector())>::type vd_prp_new;
 
 	// resize them
 
-	vd_pos_new.resize(mark.template get<0>(0));
-	vd_prp_new.resize(mark.template get<0>(0));
+	vd_pos_new.resize(vd.size_local() - n_marked);
+	vd_prp_new.resize(vd.size_local() - n_marked);
 
 	auto & vd_pos_old = vd.getPosVector();
 	auto & vd_prp_old = vd.getPropVector();
 
-	// now we copy from the old vector to the new one
-
-	ite = vd_pos_old.getGPUIterator();
-
-	CUDA_LAUNCH((copy_new_to_old<vector_type::dims>),ite,vd_pos_new.toKernel(),vd_prp_new.toKernel(),vd_pos_old.toKernel(),vd_prp_old.toKernel(),idx.toKernel());
-
-	// and we swap
+	CUDA_LAUNCH((copy_new_to_old_by_scan<vector_type::dims,prp>),ite,vd_pos_new.toKernel(),vd_prp_new.toKernel(),vd_pos_old.toKernel(),vd_prp_old.toKernel(),idx.toKernel());
 
 	vd.set_g_m(vd_pos_new.size());
 
@@ -405,9 +417,11 @@ void remove_marked(vector_type & vd)
 template<unsigned int prp, typename functor, typename particles_type, typename out_type>
 __global__ void mark_indexes(particles_type vd, out_type out)
 {
-	auto a = GET_PARTICLE(vd);
+	unsigned int p = threadIdx.x + blockIdx.x * blockDim.x;
 
-	out.template getProp<0>(a) = functor::check(vd.template getProp<prp>(a)) == true;
+	if (p >= vd.size())	{return;}
+
+	out.template get<0>(p) = functor::check(vd.template get<prp>(p)) == true;
 }
 
 template<typename out_type, typename ids_type>
@@ -435,20 +449,20 @@ __global__ void fill_indexes(out_type scan, ids_type ids)
  * \param vd distributed vector
  *
  */
-template<typename functor, typename vector_type, typename ids_type>
-void get_indexes_sorted(vector_type & vd, ids_type & ids, mgpu::ofp_context_t & context)
+template<unsigned int prp, typename functor, typename vector_type, typename ids_type>
+void get_indexes_by_type(vector_type & vd, ids_type & ids, mgpu::ofp_context_t & context)
 {
 	// first we do a scan of the property
 	openfpm::vector_gpu<aggregate<unsigned int>> scan;
 
 	scan.setMemory(mem_tmp);
-	scan.resize(vd.size_local_with_ghost()+1);
+	scan.resize(vd.size()+1);
 
 	auto ite = scan.getGPUIterator();
 
-	CUDA_LAUNCH(mark_indexes,ite,vd.toKernel(),scan.toKernel());
+	CUDA_LAUNCH((mark_indexes<prp,functor>),ite,vd.toKernel(),scan.toKernel());
 
-	openfpm::scan(scan.template getDeviceBuffer<0>(),scan.size(),scan.template getDeviceBuffer<0>(),context);
+	openfpm::scan((unsigned int *)scan.template getDeviceBuffer<0>(),scan.size(),(unsigned int *)scan.template getDeviceBuffer<0>(),context);
 
 	// get the number of marked particles
 	scan.template deviceToHost<0>(scan.size()-1,scan.size()-1);

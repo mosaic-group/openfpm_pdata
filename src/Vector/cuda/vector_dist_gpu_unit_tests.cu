@@ -1488,6 +1488,14 @@ BOOST_AUTO_TEST_CASE(vector_dist_keep_prop_on_cuda)
 	}
 }
 
+struct type_is_one
+{
+	__device__ static bool check(int c)
+	{
+		return c == 1;
+	}
+};
+
 BOOST_AUTO_TEST_CASE(vector_dist_get_index_set)
 {
 	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
@@ -1496,6 +1504,8 @@ BOOST_AUTO_TEST_CASE(vector_dist_get_index_set)
 
 	if (create_vcluster().size() >= 16)
 	{return;}
+
+	Vcluster<> & v_cl = create_vcluster();
 
 	vector_dist_gpu<3,double,aggregate<int,double>> vdg(10000,domain,bc,g,DEC_GRAN(128));
 
@@ -1521,70 +1531,30 @@ BOOST_AUTO_TEST_CASE(vector_dist_get_index_set)
 	vdg.hostToDeviceProp<0,1>();
 	vdg.hostToDevicePos();
 
-/*	bool test = vdg.compareHostAndDevicePos(0.00001,0.00000001);
-	BOOST_REQUIRE_EQUAL(test,true);
+	auto cl = vdg.getCellListGPU(0.1);
 
-	vdg.getPos(100)[0] = 0.99999999;
+	// than we get a cell-list to force reorder
 
-	test = vdg.compareHostAndDevicePos(0.00001,0.00000001);
-	BOOST_REQUIRE_EQUAL(test,false);
+	openfpm::vector_gpu<aggregate<unsigned int>> ids;
 
-	vdg.hostToDevicePos();
-	vdg.getPos(100)[0] = 0.99999999;
+	get_indexes_by_type<0,type_is_one>(vdg.getPropVectorSort(),ids,v_cl.getmgpuContext());
 
-	test = vdg.compareHostAndDevicePos(0.00001,0.00000001);
-	BOOST_REQUIRE_EQUAL(test,true);
+	// test
 
-	////////////////////////////////////////////////// PROP VECTOR
+	ids.template deviceToHost<0>();
 
-	test = vdg.compareHostAndDeviceProp<1>(0.00001,0.00000001);
-	BOOST_REQUIRE_EQUAL(test,true);
+	auto & vs = vdg.getPropVectorSort();
+	vs.template deviceToHost<0>();
 
-	vdg.getProp<1>(103)[0] = 0.99999999;
+	bool match = true;
 
-	test = vdg.compareHostAndDeviceProp<1>(0.00001,0.00000001);
-	BOOST_REQUIRE_EQUAL(test,false);
+	for (int i = 0 ; i < ids.size() ; i++)
+	{
+		if (vs.template get<0>(ids.template get<0>(i)) != 1)
+		{match = false;}
+	}
 
-	vdg.hostToDeviceProp<1>();
-	vdg.getProp<1>(103)[0] = 0.99999999;
-
-	test = vdg.compareHostAndDeviceProp<1>(0.00001,0.00000001);
-	BOOST_REQUIRE_EQUAL(test,true);
-
-	////////////////////////////////////////////////// PROP scalar
-
-
-	test = vdg.compareHostAndDeviceProp<0>(0.00001,0.00000001);
-	BOOST_REQUIRE_EQUAL(test,true);
-
-	vdg.getProp<0>(105) = 0.99999999;
-
-	test = vdg.compareHostAndDeviceProp<0>(0.00001,0.00000001);
-	BOOST_REQUIRE_EQUAL(test,false);
-
-	vdg.hostToDeviceProp<0>();
-	vdg.getProp<0>(105) = 0.99999999;
-
-	test = vdg.compareHostAndDeviceProp<0>(0.00001,0.00000001);
-	BOOST_REQUIRE_EQUAL(test,true);
-
-
-	////////////////////////////////////////////////// PROP scalar
-
-
-	test = vdg.compareHostAndDeviceProp<2>(0.00001,0.00000001);
-	BOOST_REQUIRE_EQUAL(test,true);
-
-	vdg.getProp<2>(108)[1][2] = 0.99999999;
-
-	test = vdg.compareHostAndDeviceProp<2>(0.00001,0.00000001);
-	BOOST_REQUIRE_EQUAL(test,false);
-
-	vdg.hostToDeviceProp<2>();
-	vdg.getProp<2>(108)[1][2] = 0.99999999;
-
-	test = vdg.compareHostAndDeviceProp<2>(0.00001,0.00000001);
-	BOOST_REQUIRE_EQUAL(test,true);*/
+	BOOST_REQUIRE_EQUAL(match,true);
 }
 
 BOOST_AUTO_TEST_CASE(vector_dist_compare_host_device)

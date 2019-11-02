@@ -16,6 +16,10 @@
 #define GET_PARTICLE_SORT(p,NN) if (blockDim.x*blockIdx.x + threadIdx.x >= NN.get_g_m()) {return;}\
 							  else{p = NN.getDomainSortIds().template get<0>(blockDim.x*blockIdx.x + threadIdx.x);}
 
+
+#define GET_PARTICLE_BY_ID(p,ids) if (blockDim.x*blockIdx.x + threadIdx.x >= ids.size()) {return;}\
+							  else{p = ids.template get<0>(blockDim.x*blockIdx.x + threadIdx.x);}
+
 /*! \brief this class is a functor for "for_each" algorithm
  *
  * This class is a functor for "for_each" algorithm. For each
