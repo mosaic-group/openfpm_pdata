@@ -15,6 +15,7 @@
 #include "lib/pdata.hpp"
 #include "util/cuda/kernels.cuh"
 #include "util/cuda/scan_ofp.cuh"
+#include "memory/CudaMemory.cuh"
 
 template<unsigned int dim, typename St, typename decomposition_type, typename vector_type, typename start_type, typename output_type>
 __global__ void proc_label_id_ghost(decomposition_type dec,vector_type vd, start_type starts, output_type out)
@@ -339,6 +340,7 @@ __global__ void flip_one_to_zero(vector_type vd)
     vd.template getProp<prp>(i) = (vd.template getProp<prp>(i) == 0);
 }
 
+
 /*! \brief Remove the particles marked on the properties prp (particles marked has has property set to 1, the others to 0)
  *
  * \warning the function is destructive on prp, it mean that after destruction the prp of the particles can contain garbage
@@ -374,6 +376,9 @@ void remove_marked(vector_type & vd)
 
 	openfpm::vector_gpu<aggregate<remove_type>> idx;
 
+	if (mem_tmp.ref() == 0)
+	{mem_tmp.incRef();}
+
 	idx.setMemory(mem_tmp);
 	idx.resize(vd.size_local());
 
@@ -398,6 +403,11 @@ void remove_marked(vector_type & vd)
 	typename std::remove_reference<decltype(vd.getPosVector())>::type vd_pos_new;
 	typename std::remove_reference<decltype(vd.getPropVector())>::type vd_prp_new;
 
+	// we reuse memory. this give us the possibility to avoid allocation and make the remove faster
+
+	vd_pos_new.setMemory(exp_tmp);
+	vd_prp_new.setMemoryArray(exp_tmp2);
+
 	// resize them
 
 	vd_pos_new.resize(vd.size_local() - n_marked);
@@ -410,18 +420,18 @@ void remove_marked(vector_type & vd)
 
 	vd.set_g_m(vd_pos_new.size());
 
-	vd.getPosVector().swap(vd_pos_new);
-	vd.getPropVector().swap(vd_prp_new);
+	vd.getPosVector().swap_nomode(vd_pos_new);
+	vd.getPropVector().swap_nomode(vd_prp_new);
 }
 
 template<unsigned int prp, typename functor, typename particles_type, typename out_type>
-__global__ void mark_indexes(particles_type vd, out_type out)
+__global__ void mark_indexes(particles_type vd, out_type out, unsigned int g_m)
 {
 	unsigned int p = threadIdx.x + blockIdx.x * blockDim.x;
 
 	if (p >= vd.size())	{return;}
 
-	out.template get<0>(p) = functor::check(vd.template get<prp>(p)) == true;
+	out.template get<0>(p) = functor::check(vd.template get<prp>(p)) == true && p < g_m;
 }
 
 template<typename out_type, typename ids_type>
@@ -435,7 +445,7 @@ __global__ void fill_indexes(out_type scan, ids_type ids)
 	auto spp = scan.template get<0>(p+1);
 
 	if (sp != spp)
-	ids.template get<0>(scan.template get<0>(p)) = p;
+	{ids.template get<0>(scan.template get<0>(p)) = p;}
 }
 
 /*! \brief get the particle index that satify the functor condition
@@ -450,7 +460,7 @@ __global__ void fill_indexes(out_type scan, ids_type ids)
  *
  */
 template<unsigned int prp, typename functor, typename vector_type, typename ids_type>
-void get_indexes_by_type(vector_type & vd, ids_type & ids, mgpu::ofp_context_t & context)
+void get_indexes_by_type(vector_type & vd, ids_type & ids, size_t end ,mgpu::ofp_context_t & context)
 {
 	// first we do a scan of the property
 	openfpm::vector_gpu<aggregate<unsigned int>> scan;
@@ -460,7 +470,7 @@ void get_indexes_by_type(vector_type & vd, ids_type & ids, mgpu::ofp_context_t &
 
 	auto ite = scan.getGPUIterator();
 
-	CUDA_LAUNCH((mark_indexes<prp,functor>),ite,vd.toKernel(),scan.toKernel());
+	CUDA_LAUNCH((mark_indexes<prp,functor>),ite,vd.toKernel(),scan.toKernel(),end);
 
 	openfpm::scan((unsigned int *)scan.template getDeviceBuffer<0>(),scan.size(),(unsigned int *)scan.template getDeviceBuffer<0>(),context);
 

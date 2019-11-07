@@ -473,8 +473,34 @@ void vector_dist_gpu_make_sort_test_impl()
 
 	initialize_props<<<it3.wthr,it3.thr>>>(vd.toKernel());
 
-	// Here we get do a make sort
+	// Here we check make sort does not mess-up particles we use a Cell-List to check that
+	// the two cell-list constructed are identical
+
+	vd.deviceToHostPos();
+
+	auto NN_cpu1 = vd.getCellList(0.1);
 	auto NN = vd.template getCellListGPU<CellList_type>(0.1);
+	vd.make_sort(NN);
+
+	vd.deviceToHostPos();
+
+	auto NN_cpu2 = vd.getCellList(0.1);
+
+	// here we compare the two cell-lists
+
+	bool match = true;
+	for (size_t i = 0 ; i < NN_cpu1.getNCells() ; i++)
+	{
+		match &= NN_cpu1.getNelements(i) == NN_cpu2.getNelements(i);
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+
+	// In this second step we check that we can use make_sort_from to check we can sort partifcles even
+	// when ghost are filled
+
+	// Here we get do a make sort
+	NN = vd.template getCellListGPU<CellList_type>(0.1);
 	vd.make_sort(NN);
 
 	openfpm::vector_gpu<aggregate<float,float[3],float[3]>> tmp_prp = vd.getPropVector();
@@ -498,7 +524,7 @@ void vector_dist_gpu_make_sort_test_impl()
 	tmp_pos.deviceToHost<0>();
 	vd.deviceToHostPos();
 
-	bool match = true;
+	match = true;
 	for (size_t i = 0 ; i < vd.size_local() ; i++)
 	{
 		Point<3,float> p1 = vd.getPos(i);
@@ -1537,7 +1563,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_get_index_set)
 
 	openfpm::vector_gpu<aggregate<unsigned int>> ids;
 
-	get_indexes_by_type<0,type_is_one>(vdg.getPropVectorSort(),ids,v_cl.getmgpuContext());
+	get_indexes_by_type<0,type_is_one>(vdg.getPropVectorSort(),ids,vdg.size_local(),v_cl.getmgpuContext());
 
 	// test
 

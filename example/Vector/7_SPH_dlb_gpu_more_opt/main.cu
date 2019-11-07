@@ -297,13 +297,13 @@ inline __device__ __host__ real_number Pi(const Point<3,real_number> & dr, real_
 		return 0.0f;
 }
 
-template<typename particles_type, typename NN_type>
-__global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap, real_number cbar)
+template<typename particles_type, typename fluid_ids_type,typename NN_type>
+__global__ void calc_forces_fluid_gpu(particles_type vd, fluid_ids_type fids, NN_type NN, real_number W_dap, real_number cbar)
 {
 	// ... a
 	unsigned int a;
 
-	GET_PARTICLE_SORT(a,NN);
+	GET_PARTICLE_BY_ID(a,fids);
 
 	real_number max_visc = 0.0f;
 
@@ -312,9 +312,6 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 
 	// Type of the particle
 	unsigned int typea = vd.getProp<type>(a);
-
-	// Take the mass of the particle dependently if it is FLUID or BOUNDARY
-	//real_number massa = (typea == FLUID)?MassFluid:MassBound;
 
 	// Get the density of the of the particle a
 	real_number rhoa = vd.getProp<rho>(a);
@@ -344,7 +341,7 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 		Point<3,real_number> xb = vd.getPos(b);
 
 		// if (p == q) skip this particle this condition should be done in the r^2 = 0
-		if (a == b)	{++Np; continue;};
+		//if (a == b)	{++Np; continue;};
 
         unsigned int typeb = vd.getProp<type>(b);
 
@@ -393,14 +390,108 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 	vd.template getProp<drho>(a) = drho_;
 }
 
-template<typename CellList> inline void calc_forces(particles & vd, CellList & NN, real_number & max_visc, size_t cnt)
+template<typename particles_type, typename fluid_ids_type,typename NN_type>
+__global__ void calc_forces_border_gpu(particles_type vd, fluid_ids_type fbord, NN_type NN, real_number W_dap, real_number cbar)
 {
-	auto part = vd.getDomainIteratorGPU(96);
+	// ... a
+	unsigned int a;
 
+	GET_PARTICLE_BY_ID(a,fbord);
+
+	real_number max_visc = 0.0f;
+
+	// Get the position xp of the particle
+	Point<3,real_number> xa = vd.getPos(a);
+
+	// Type of the particle
+	unsigned int typea = vd.getProp<type>(a);
+
+	// Get the Velocity of the particle a
+	Point<3,real_number> va = vd.getProp<velocity>(a);
+
+	real_number drho_ = 0.0f;
+
+	// Get an iterator over the neighborhood particles of p
+	auto Np = NN.getNNIteratorBox(NN.getCell(xa));
+
+	// For each neighborhood particle
+	while (Np.isNext() == true)
+	{
+		// ... q
+		auto b = Np.get_sort();
+
+		// Get the position xp of the particle
+		Point<3,real_number> xb = vd.getPos(b);
+
+		// if (p == q) skip this particle this condition should be done in the r^2 = 0
+		//if (a == b)	{++Np; continue;};
+
+        unsigned int typeb = vd.getProp<type>(b);
+
+        real_number massb = (typeb == FLUID)?MassFluid:MassBound;
+        Point<3,real_number> vb = vd.getProp<velocity>(b);
+
+		// Get the distance between p and q
+		Point<3,real_number> dr = xa - xb;
+		Point<3,real_number> v_rel = va - vb;
+		// take the norm of this vector
+		real_number r2 = norm2(dr);
+
+		// if they interact
+		if (r2 < FourH2 && r2 >= 1e-16)
+		{
+			real_number r = sqrtf(r2);
+
+			Point<3,real_number> DW;
+			DWab(dr,DW,r);
+
+			real_number scal = massb*(v_rel.get(0)*DW.get(0)+v_rel.get(1)*DW.get(1)+v_rel.get(2)*DW.get(2));
+			scal = (typea == BOUNDARY && typeb == BOUNDARY)?0.0f:scal;
+
+			drho_ += scal;
+		}
+
+		++Np;
+	}
+
+	vd.getProp<red>(a) = max_visc;
+
+	vd.template getProp<drho>(a) = drho_;
+}
+
+struct type_is_fluid
+{
+	__device__ static bool check(int c)
+	{
+		return c == FLUID;
+	}
+};
+
+struct type_is_border
+{
+        __device__ static bool check(int c)
+        {
+                return c == BOUNDARY;
+        }
+};
+
+template<typename CellList> inline void calc_forces(particles & vd, CellList & NN, real_number & max_visc, size_t cnt, openfpm::vector_gpu<aggregate<int>> & fluid_ids, openfpm::vector_gpu<aggregate<int>> & border_ids)
+{
 	// Update the cell-list
-	vd.updateCellList(NN);
+	vd.updateCellList<type,rho,Pressure,velocity>(NN);
 
-	CUDA_LAUNCH(calc_forces_gpu,part,vd.toKernel_sorted(),NN.toKernel(),W_dap,cbar);
+	// get the particles fluid ids
+	get_indexes_by_type<type,type_is_fluid>(vd.getPropVectorSort(),fluid_ids,vd.size_local(),vd.getVC().getmgpuContext());
+
+	// get the particles fluid ids
+	get_indexes_by_type<type,type_is_border>(vd.getPropVectorSort(),border_ids,vd.size_local(),vd.getVC().getmgpuContext());
+
+
+	auto part = fluid_ids.getGPUIterator(96);
+	CUDA_LAUNCH(calc_forces_fluid_gpu,part,vd.toKernel_sorted(),fluid_ids.toKernel(),NN.toKernel(),W_dap,cbar);
+
+	part = border_ids.getGPUIterator(96);
+	CUDA_LAUNCH(calc_forces_border_gpu,part,vd.toKernel_sorted(),border_ids.toKernel(),NN.toKernel(),W_dap,cbar);
 
 	vd.merge_sort<force,drho,red>(NN);
 
@@ -506,9 +597,13 @@ __global__ void verlet_int_gpu(vector_dist_type vd, real_number dt, real_number 
     if (vd.getPos(a)[0] <  0.0 || vd.getPos(a)[1] < 0.0 || vd.getPos(a)[2] < 0.0 ||
         vd.getPos(a)[0] >  1.61 || vd.getPos(a)[1] > 0.68 || vd.getPos(a)[2] > 0.50 ||
 		vd.template getProp<rho>(a) < RhoMin || vd.template getProp<rho>(a) > RhoMax)
-    {vd.template getProp<red>(a) = 1;}
+    {
+    	vd.template getProp<red>(a) = 1;
+    }
     else
-    {vd.template getProp<red>(a) = 0;}
+    {
+    	vd.template getProp<red>(a) = 0;
+    }
 
 
     vd.template getProp<velocity_prev>(a)[0] = velX;
@@ -704,6 +799,9 @@ int main(int argc, char* argv[])
     // initialize the library
 	openfpm_init(&argc,&argv);
 
+	openfpm::vector_gpu<aggregate<int>> fluid_ids;
+	openfpm::vector_gpu<aggregate<int>> border_ids;
+
 	cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
 
 	// It contain for each time-step the value detected by the probes
@@ -859,7 +957,7 @@ int main(int argc, char* argv[])
 	vd.ghost_get<type,rho,Pressure,velocity>(RUN_ON_DEVICE);
 
 	auto NN = vd.getCellListGPU/*<CELLLIST_GPU_SPARSE<3,float>>*/(2*H / 2.0);
-	//NN.setBoxNN(2);
+	NN.setBoxNN(2);
 
 	timer tot_sim;
 	tot_sim.start();
@@ -895,10 +993,6 @@ int main(int argc, char* argv[])
 
 		vd.map(RUN_ON_DEVICE);
 
-		// it sort the vector (doesn not seem to produce some advantage)
-		// note force calculation is anyway sorted calculation
-		vd.make_sort(NN);
-
 		// Calculate pressure from the density
 		EqState(vd);
 
@@ -908,7 +1002,7 @@ int main(int argc, char* argv[])
 
 
 		// Calc forces
-		calc_forces(vd,NN,max_visc,cnt);
+		calc_forces(vd,NN,max_visc,cnt,fluid_ids,border_ids);
 
 		// Get the maximum viscosity term across processors
 		v_cl.max(max_visc);
