@@ -321,6 +321,7 @@ int main(int argc, char* argv[])
 		// visualization
 		if (i % 100 == 0)
 		{
+			Old.ghost_get<U,V>();
 			Old.write_frame("output",count);
 			count++;
 		}
