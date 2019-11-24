@@ -220,9 +220,12 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_ghost_get )
 	gdist.template flush<smax_<0>>(flush_type::FLUSH_ON_DEVICE);
 
 	gdist.template deviceToHost<0>();
-//	gdist.write("broken");
+	gdist.write("before_ghost");
 
-//	gdist.template ghost_get<0>(RUN_ON_DEVICE);
+	gdist.template ghost_get<0>(RUN_ON_DEVICE);
+
+	gdist.template deviceToHost<0>();
+	gdist.write("after_ghost");
 }
 
 

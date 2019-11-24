@@ -1,15 +1,17 @@
-/*! \page Vector_7_sph_dlb_gpu_opt Vector 7 SPH Dam break simulation with Dynamic load balacing on Multi-GPU (optimized version)
+/*! \page Vector_7_sph_dlb_gpu_more_opt Vector 7 SPH Dam break simulation with Dynamic load balacing on Multi-GPU (more optimized version)
  *
  *
  * [TOC]
  *
  *
- * # SPH with Dynamic load Balancing on GPU (Optimized) # {#SPH_dlb_gpu_opt}
+ * # SPH with Dynamic load Balancing on GPU (More Optimized) # {#SPH_dlb_gpu_more_opt}
  *
  *
  * This example show the classical SPH Dam break simulation with load balancing and dynamic load balancing. The main difference with
- * \ref{SPH_dlb} is that here we use GPU and 1.2 Millions particles. Simulate 1.5 second should be duable on a 1050Ti within a couple
- * of hours.
+ * \ref{SPH_dlb_gpu_opt} is that here we use 2 kernel to calculate forces one for fluid and one for boundaries. Also we use the function
+ * get_indexes_by_type to get the indexes of the fluid and boundary particles and use these two set to launch two distinct kernel
+ * (one over fluid and one over boundary) to calculate forces and density change. set. Simulate 1.5 second should be duable on mobile
+ *  1050Ti in about 1 hour and 7 minutes
  *
  * \htmlonly
  * <a href="#" onclick="hide_show('vector-video-3')" >Simulation video 1</a><br>
@@ -27,10 +29,19 @@
  * \endhtmlonly
  *
  *
- * ## GPU ## {#e7_sph_inclusion}
+ * ## get_indexes_by_type ## {#e7_sph_more_opt_gibt}
  *
- * This example is an optimization of the example \ref SPH_dlb_gpu all the optimization operated on this example has been explained
- * here \ref e3_md_gpu_opt so we will not go into the details
+ * This function can be used to get the indexes of a certain type on a particle set and save such indexes in an openfpm::vector<aggregate<unsigned int>>
+ * the constructed set of indices can be used to run a kernel on a specific set of particles.
+ *
+ * \snippet Vector/7_SPH_dlb_gpu_more_opt/main.cu get indexes by type
+ *
+ * the function get_indexes_by_type has three arguments the first is the vector of the properties of the particles. In
+ * this case because we use the sorted particles to calculate forces, so we have to get the indexes for the sorted
+ * particles with vd.getPropVectorSort(). In case we want to use the non sorted we use vd.getPropVector(). The second
+ * argument is the output containing the indexes of the particles types we want to get. Because the vector can contain
+ * ghost particles and real particles setting with the third argument we indicate we want only real particles and no ghost particles
+ * The last argument is the GPU context handle
  *
  * we report the full code here
  *
@@ -480,18 +491,21 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 	// Update the cell-list
 	vd.updateCellList<type,rho,Pressure,velocity>(NN);
 
+	//! \cond [get indexes by type] \endcond
+
 	// get the particles fluid ids
 	get_indexes_by_type<type,type_is_fluid>(vd.getPropVectorSort(),fluid_ids,vd.size_local(),vd.getVC().getmgpuContext());
 
 	// get the particles fluid ids
 	get_indexes_by_type<type,type_is_border>(vd.getPropVectorSort(),border_ids,vd.size_local(),vd.getVC().getmgpuContext());
 
-
 	auto part = fluid_ids.getGPUIterator(96);
 	CUDA_LAUNCH(calc_forces_fluid_gpu,part,vd.toKernel_sorted(),fluid_ids.toKernel(),NN.toKernel(),W_dap,cbar);
 
 	part = border_ids.getGPUIterator(96);
 	CUDA_LAUNCH(calc_forces_border_gpu,part,vd.toKernel_sorted(),border_ids.toKernel(),NN.toKernel(),W_dap,cbar);
+
+	//! \cond [get indexes by type] \endcond
 
 	vd.merge_sort<force,drho,red>(NN);
 

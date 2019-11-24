@@ -137,7 +137,7 @@ template<unsigned int dim, typename St, typename T, typename Decomposition = Car
 class grid_dist_id_comm
 {
 	//! VCluster
-	Vcluster<> & v_cl;
+	Vcluster<Memory> & v_cl;
 
 	//! Maps the processor id with the communication request into map procedure
 	openfpm::vector<size_t> p_map_req;
@@ -1108,14 +1108,14 @@ public:
 		queue_recv_data_get<prp_object>(eg_box,prp_recv,prRecv_prp);
 
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
-		{loc_grid.get(i).removeCopyReset();}
+		{loc_grid.get(i).removeAddUnpackReset();}
 
 		ghost_get_local<prp...>(loc_ig_box,loc_eg_box,gdb_ext,loc_grid,g_id_to_external_ghost_box,ginfo,use_bx_def);
 
 		merge_received_data_get<prp ...>(loc_grid,eg_box,prp_recv,prRecv_prp,g_id_to_external_ghost_box,eb_gid_list,opt);
 
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
-		{loc_grid.get(i).removeCopyFinalize(v_cl.getmgpuContext());}
+		{loc_grid.get(i).template removeAddUnpackFinalize<prp ...>(v_cl.getmgpuContext());}
 	}
 
 	/*! \brief It merge the information in the ghost with the
@@ -1249,7 +1249,7 @@ public:
 	 *
 	 */
 	grid_dist_id_comm()
-	:v_cl(create_vcluster())
+	:v_cl(create_vcluster<Memory>())
 	{
 
 	}

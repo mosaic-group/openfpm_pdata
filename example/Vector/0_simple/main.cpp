@@ -19,6 +19,7 @@
  * \subpage Vector_7_sph_dlb_opt
  * \subpage Vector_7_sph_dlb_gpu
  * \subpage Vector_7_sph_dlb_gpu_opt
+ * \subpage Vector_7_sph_dlb_gpu_more_opt
  * \subpage Vector_8_DEM
  * \subpage Vector_9_gpu_cuda_interop
  *

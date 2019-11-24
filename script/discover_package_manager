@@ -15,16 +15,6 @@ if [ x"$1" == x"osx" ]; then
             discover_package_ret="sudo brew"
             echo 'Package Manager: '"$discover_package_manager_ret"
             return
-        else
-            if [ ! -w $brew_idir ]; then
-                echo -e "\033[43;30;1;5mWARNING: \033[0m $brew_idir is not writtable, brew require that $brew_idir is writtable and $brew_idir/bin is in your PATH, otherwise it will be not possible to install with brew"
-                commands[0]="sudo chown -R $USER $brew_idir && chmod -R u+w $brew_idir"
-                possible_solutions "${commands[@]}"
-            fi
-        fi
-        if [ ! -w  ]; then
-            echo -e "\033[43,33;5mWARNING: \033[0m $brew_idir is not writtable, brew require that $brew_idir is writtable and $brew_idir/bin is in your PATH, otherwise it will be not possible to install with brew"
-            sleep 10
         fi
         echo echo 'Package Manager: '"$discover_package_manager_ret"
         return
