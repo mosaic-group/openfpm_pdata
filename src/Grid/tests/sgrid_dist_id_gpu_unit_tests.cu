@@ -212,7 +212,6 @@ void sgrid_ghost_get(size_t (& sz)[2],size_t (& sz2)[2])
 	gdist.template flush<smax_<0>>(flush_type::FLUSH_ON_DEVICE);
 
 	gdist.template deviceToHost<0>();
-	gdist.write("before_ghost");
 
 	gdist.template ghost_get<0>(RUN_ON_DEVICE);
 
@@ -286,8 +285,6 @@ void sgrid_ghost_get(size_t (& sz)[2],size_t (& sz2)[2])
 
 		++it2;
 	}
-
-	gdist.write("after_ghost");
 
 	BOOST_REQUIRE_EQUAL(match,true);
 }
