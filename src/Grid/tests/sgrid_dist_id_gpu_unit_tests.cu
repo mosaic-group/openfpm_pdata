@@ -71,8 +71,6 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_base )
 
 	/////// GPU Run kernel
 
-	gdist.setInsertBuffer(1);
-
 	float c = 5.0;
 
 	gdist.template iterateGridGPU<insert_kernel2D<0>>(it,c);
@@ -110,7 +108,6 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_base )
 	Box<2,size_t> box3({3,3},{11,11});
 
 	auto it3 = gdist.getGridIterator(box3.getKP1(),box3.getKP2());
-	gdist.setInsertBuffer(128);
 
 	gdist.template iterateGridGPU<insert_kernel2D<0>>(it3,c);
 	gdist.template flush<smax_<0>>(flush_type::FLUSH_ON_DEVICE);
@@ -173,8 +170,6 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_output )
 
 	/////// GPU Run kernel
 
-	gdist.setInsertBuffer(128);
-
 	float c = 5.0;
 
 	gdist.template iterateGridGPU<insert_kernel2D<0>>(it,c);
@@ -192,9 +187,8 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_output )
 	BOOST_REQUIRE_EQUAL(true,test);
 }
 
-BOOST_AUTO_TEST_CASE( sgrid_gpu_test_ghost_get )
+void sgrid_ghost_get(size_t (& sz)[2],size_t (& sz2)[2])
 {
-	size_t sz[2] = {17,17};
 	periodicity<2> bc = {PERIODIC,PERIODIC};
 
 	Ghost<2,long int> g(1);
@@ -207,12 +201,10 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_ghost_get )
 
 	/////// GPU insert + flush
 
-	Box<2,size_t> box({1,1},{15,15});
+	Box<2,size_t> box({1,1},{sz2[0],sz2[1]});
 	auto it = gdist.getGridIterator(box.getKP1(),box.getKP2());
 
 	/////// GPU Run kernel
-
-	gdist.setInsertBuffer(225);
 
 	float c = 5.0;
 
@@ -225,7 +217,93 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_ghost_get )
 	gdist.template ghost_get<0>(RUN_ON_DEVICE);
 
 	gdist.template deviceToHost<0>();
+
+	// Now we check that ghost is correct
+
+	auto it2 = gdist.getDomainIterator();
+
+	bool match = true;
+
+	while (it2.isNext())
+	{
+		auto p = it2.get();
+
+		auto key = it2.getGKey(p);
+
+		auto p_xp1 = p.move(0,1);
+		auto p_xm1 = p.move(0,-1);
+		auto p_yp1 = p.move(1,1);
+		auto p_ym1 = p.move(1,-1);
+
+		auto key_xp1 = key.move(0,1);
+		auto key_xm1 = key.move(0,-1);
+		auto key_yp1 = key.move(1,1);
+		auto key_ym1 = key.move(1,-1);
+
+		if (box.isInside(key_xp1.toPoint()))
+		{
+			match &= gdist.template get<0>(p_xp1) == c + key_xp1.get(0) + key_xp1.get(1);
+
+			if (match == false)
+			{
+				std::cout << gdist.template get<0>(p_xp1) << "   " << c + key_xp1.get(0) + key_xp1.get(1) << std::endl;
+				break;
+			}
+		}
+
+		if (box.isInside(key_xm1.toPoint()))
+		{
+			match &= gdist.template get<0>(p_xm1) == c + key_xm1.get(0) + key_xm1.get(1);
+
+			if (match == false)
+			{
+				std::cout << gdist.template get<0>(p_xm1) << "   " << c + key_xm1.get(0) + key_xm1.get(1) << std::endl;
+				break;
+			}
+		}
+
+		if (box.isInside(key_yp1.toPoint()))
+		{
+			match &= gdist.template get<0>(p_yp1) == c + key_yp1.get(0) + key_yp1.get(1);
+
+			if (match == false)
+			{
+				std::cout << gdist.template get<0>(p_yp1) << "   " << c + key_yp1.get(0) + key_yp1.get(1) << std::endl;
+				break;
+			}
+		}
+
+		if (box.isInside(key_ym1.toPoint()))
+		{
+			match &= gdist.template get<0>(p_ym1) == c + key_ym1.get(0) + key_ym1.get(1);
+
+			if (match == false)
+			{
+				std::cout << gdist.template get<0>(p_ym1) << "   " << c + key_ym1.get(0) + key_ym1.get(1) << std::endl;
+				break;
+			}
+		}
+
+		++it2;
+	}
+
 	gdist.write("after_ghost");
+
+	BOOST_REQUIRE_EQUAL(match,true);
+}
+
+BOOST_AUTO_TEST_CASE( sgrid_gpu_test_ghost_get )
+{
+	size_t sz[2] = {17,17};
+	size_t sz6[2] = {15,15};
+	sgrid_ghost_get(sz,sz6);
+
+	size_t sz2[2] = {170,170};
+	size_t sz3[2] = {15,15};
+	sgrid_ghost_get(sz2,sz3);
+
+	size_t sz4[2] = {168,168};
+	sgrid_ghost_get(sz2,sz4);
 }
 
 

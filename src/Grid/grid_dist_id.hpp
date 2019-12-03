@@ -124,8 +124,8 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	//! Structure that divide the space into cells
 	CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
 
-	//! size of the insert pool on gpu
-	size_t gpu_insert_pool_size;
+	//! number of insert each GPU thread does
+	size_t gpu_n_insert_thread;
 
 	//! Communicator class
 	Vcluster<> & v_cl;
@@ -2679,21 +2679,24 @@ public:
 
 #ifdef __NVCC__
 
-	/*! \brief Set the size of the gpu insert buffer pool
+	/*! \brief Set the number inserts each GPU thread do
 	 *
-	 * Indicate the maximum number of inserts each GPU block can do
-	 *
-	 * \param size of the insert pool
+	 * \param n_ins number of insert per thread
 	 *
 	 */
-	void setInsertBuffer(size_t n_pool)
+	void setNumberOfInsertPerThread(size_t n_ins)
 	{
-		gpu_insert_pool_size = n_pool;
+		gpu_n_insert_thread = n_ins;
 	}
 
 	template<typename func_t,typename it_t, typename ... args_t>
 	void iterateGridGPU(it_t & it, args_t ... args)
 	{
+		// setGPUInsertBuffer must be called in anycase even with 0 points to insert
+		// the loop "it.isNextGrid()" does not guarantee to call it for all local grids
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{loc_grid.get(i).setGPUInsertBuffer(0ul,1ul);}
+
 		while(it.isNextGrid())
 		{
 			Box<dim,size_t> b = it.getGridBox();
@@ -2702,7 +2705,7 @@ public:
 
 			auto ite = loc_grid.get(i).getGridGPUIterator(b.getKP1int(),b.getKP2int());
 
-			loc_grid.get(i).setGPUInsertBuffer(ite.nblocks(),gpu_insert_pool_size);
+			loc_grid.get(i).setGPUInsertBuffer(ite.nblocks(),ite.nthrs());
 			loc_grid.get(i).initializeGPUInsertBuffer();
 
 			ite_gpu_dist<dim> itd = ite;
@@ -2713,20 +2716,9 @@ public:
 				itd.start_base.set_d(j,0);
 			}
 
-			grid_apply_functor<<<ite.wthr,ite.thr>>>(loc_grid.get(i).toKernel(),itd,func_t(),args...);
+			CUDA_LAUNCH((grid_apply_functor),ite,loc_grid.get(i).toKernel(),itd,func_t(),args...);
 
 			it.nextGrid();
-		}
-	}
-
-	template<typename func_t, typename ... args_t>
-	void iterateGPU(args_t ... args)
-	{
-		for (int i = 0 ; i < loc_grid.size() ; i++)
-		{
-			auto & sp = loc_grid.get(i);
-
-			// TODO Launch a kernel on every sparse grid GPU
 		}
 	}
 

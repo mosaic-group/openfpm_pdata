@@ -201,6 +201,9 @@ class grid_dist_id_comm
 											  const grid_sm<dim,void> & ginfo,
 											  bool use_bx_def)
 	{
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{loc_grid.get(i).packReset();}
+
 		grid_key_dx<dim> cnt[1];
 		cnt[0].zero();
 
@@ -252,6 +255,11 @@ class grid_dist_id_comm
 					gd.copy_to(loc_grid.get(sub_id_src_gdb_ext),bx_src,bx_dst);
 				}
 			}
+		}
+
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{
+			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getmgpuContext());
 		}
 	}
 

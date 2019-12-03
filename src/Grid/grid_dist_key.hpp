@@ -9,10 +9,10 @@ template<bool impl, typename grid_key_base, unsigned int dim>
 class move_impl
 {
 public:
-	static grid_dist_key_dx<dim> move(grid_key_base & key, size_t sub, size_t i, size_t s)
+	static grid_dist_key_dx<dim,grid_key_base> move(grid_key_base & key, size_t sub, size_t i, int s)
 	{
 		key.set_d(i,key.get(i) + s);
-		return grid_dist_key_dx<dim>(sub,key);
+		return grid_dist_key_dx<dim,grid_key_base>(sub,key);
 	}
 };
 
@@ -20,7 +20,7 @@ template<typename grid_key_base, unsigned int dim>
 class move_impl<false,grid_key_base,dim>
 {
 public:
-	static grid_dist_key_dx<dim> move(grid_key_base & key, size_t sub, size_t i, size_t s)
+	static grid_dist_key_dx<dim> move(grid_key_base & key, size_t sub, size_t i, int s)
 	{
 		std::cout << __FILE__ << ":" << __LINE__ << " Error move a key is not supported"
 				" directly acting on the grid key, please use the move function from the grid method" << std::endl;
@@ -119,19 +119,13 @@ public:
 	 * \return new key
 	 *
 	 */
-	inline grid_dist_key_dx<dim> move(size_t i,size_t s) const
+	inline grid_dist_key_dx<dim,base_key> move(size_t i,int s) const
 	{
-//		std::is_same<base_key,grid_key_dx<dim>>::value
-
 		auto key = getKey();
 
-		return move_impl<std::is_same<base_key,grid_key_dx<dim>>::value,
+		return move_impl<has_set_d<base_key>::value,
 				 decltype(this->getKey()),
 				 dim>::move(key,getSub(),i,s);
-
-/*		grid_key_dx<dim> key = getKey();
-		key.set_d(i,key.get(i) + s);
-		return grid_dist_key_dx<dim>(getSub(),key);*/
 	}
 
 	/*! \brief Create a new key moving the old one
