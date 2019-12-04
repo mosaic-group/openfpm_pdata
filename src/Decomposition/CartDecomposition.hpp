@@ -1824,7 +1824,7 @@ public:
 	bool write(std::string output) const
 	{
 		//! subdomains_X.vtk domain for the local processor (X) as union of sub-domain
-		VTKWriter<openfpm::vector<::SpaceBox<dim, T>>, VECTOR_BOX> vtk_box1;
+		VTKWriter<openfpm::vector<SpaceBox<dim, T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base>, VECTOR_BOX> vtk_box1;
 		vtk_box1.add(sub_domains);
 		vtk_box1.write(output + std::string("subdomains_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
