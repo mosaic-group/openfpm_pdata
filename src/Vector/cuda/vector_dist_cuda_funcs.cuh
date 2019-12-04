@@ -406,7 +406,7 @@ void remove_marked(vector_type & vd)
 	// we reuse memory. this give us the possibility to avoid allocation and make the remove faster
 
 	vd_pos_new.setMemory(exp_tmp);
-	vd_prp_new.setMemoryArray(exp_tmp2);
+	vd_prp_new.setMemoryArray(&exp_tmp2);
 
 	// resize them
 
