@@ -37,9 +37,9 @@ else
 fi
 
 ### 1.8.19 does not compile on CYGWIN
-wget http://ppmcore.mpi-cbg.de/upload/hdf5-1.8.19.tar.gz
-tar -xf hdf5-1.8.19.tar.gz
-cd hdf5-1.8.19
+wget http://ppmcore.mpi-cbg.de/upload/hdf5-1.10.5.tar.gz
+tar -xf hdf5-1.10.5.tar.gz
+cd hdf5-1.10.5
 
 if [ x"$platform" != x"cygwin" ]; then
         CC=mpicc ./configure --with-zlib=$1/ZLIB --enable-parallel --prefix=$1/HDF5
