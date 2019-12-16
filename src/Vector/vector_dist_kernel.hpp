@@ -113,7 +113,7 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	__device__ inline auto getPos(int vec_key) -> decltype(v_pos.template get<0>(vec_key))
+	__device__ __host__ inline auto getPos(int vec_key) -> decltype(v_pos.template get<0>(vec_key))
 	{
 		return v_pos.template get<0>(vec_key);
 	}
@@ -127,7 +127,7 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	__device__ inline auto getPos(const vect_dist_key_dx & vec_key) -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	__device__ __host__ inline auto getPos(const vect_dist_key_dx & vec_key) -> decltype(v_pos.template get<0>(vec_key.getKey()))
 	{
 		return v_pos.template get<0>(vec_key.getKey());
 	}
@@ -141,7 +141,7 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	__device__ inline auto getPos(int vec_key) const -> decltype(v_pos.template get<0>(vec_key))
+	__device__ __host__ inline auto getPos(int vec_key) const -> decltype(v_pos.template get<0>(vec_key))
 	{
 		return v_pos.template get<0>(vec_key);
 	}
@@ -155,7 +155,7 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	__device__ inline auto getPos(const vect_dist_key_dx & vec_key) const -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	__device__ __host__ inline auto getPos(const vect_dist_key_dx & vec_key) const -> decltype(v_pos.template get<0>(vec_key.getKey()))
 	{
 		return v_pos.template get<0>(vec_key.getKey());
 	}
@@ -170,7 +170,7 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> __device__  inline auto getProp(int vec_key) -> decltype(v_prp.template get<id>(vec_key))
+	template<unsigned int id> __device__ __host__ inline auto getProp(int vec_key) -> decltype(v_prp.template get<id>(vec_key))
 	{
 		return v_prp.template get<id>(vec_key);
 	}
@@ -185,7 +185,7 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> __device__  inline auto getProp(const vect_dist_key_dx & vec_key) -> decltype(v_prp.template get<id>(vec_key.getKey()))
+	template<unsigned int id> __device__ __host__ inline auto getProp(const vect_dist_key_dx & vec_key) -> decltype(v_prp.template get<id>(vec_key.getKey()))
 	{
 		return v_prp.template get<id>(vec_key.getKey());
 	}
@@ -200,7 +200,7 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> __device__  inline auto getProp(int vec_key) const -> decltype(v_prp.template get<id>(vec_key))
+	template<unsigned int id> __device__  __host__ inline auto getProp(int vec_key) const -> decltype(v_prp.template get<id>(vec_key))
 	{
 		return v_prp.template get<id>(vec_key);
 	}
@@ -215,7 +215,7 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> __device__  inline auto getProp(const vect_dist_key_dx & vec_key) const -> decltype(v_prp.template get<id>(vec_key.getKey()))
+	template<unsigned int id> __device__ __host__  inline auto getProp(const vect_dist_key_dx & vec_key) const -> decltype(v_prp.template get<id>(vec_key.getKey()))
 	{
 		return v_prp.template get<id>(vec_key.getKey());
 	}
