@@ -117,11 +117,12 @@ const bool lid_nn::boundary[] = {NON_PERIODIC,NON_PERIODIC};
 //! \cond [def equation] \endcond
 
 // Constant Field
+template<typename lid_nn>
 struct eta
 {
-	typedef void const_field;
-
-	static float val()	{return 1.0;}
+  typedef void const_field;
+  typedef lid_nn sys_eqs_type;
+  static float get(grid_dist_key_dx<lid_nn::dims> & key,comb<lid_nn::dims> imp_pos) {return 1.0;}
 };
 
 // Convenient constants
@@ -138,23 +139,23 @@ typedef Field<P,lid_nn> Prs;					// Definition 3 Prs
 
 // Eq1 V_x
 
-typedef mul<eta,Lap<v_x,lid_nn>,lid_nn> eta_lap_vx;       // Step 1
-typedef D<x,Prs,lid_nn> p_x;                              // Step 2
-typedef minus<p_x,lid_nn> m_p_x;                          // Step 3
-typedef sum<eta_lap_vx,m_p_x,lid_nn> vx_eq;               // Step 4
+typedef mul<eta<lid_nn>,Lap<v_x>> eta_lap_vx;       // Step 1
+typedef D<x,Prs> p_x;                              // Step 2
+typedef minus<p_x> m_p_x;                          // Step 3
+typedef sum<eta_lap_vx,m_p_x> vx_eq;               // Step 4
 
 // Eq2 V_y
 
-typedef mul<eta,Lap<v_y,lid_nn>,lid_nn> eta_lap_vy;
-typedef D<y,Prs,lid_nn> p_y;
-typedef minus<p_y,lid_nn> m_p_y;
-typedef sum<eta_lap_vy,m_p_y,lid_nn> vy_eq;
+typedef mul<eta<lid_nn>,Lap<v_y>> eta_lap_vy;
+typedef D<y,Prs> p_y;
+typedef minus<p_y> m_p_y;
+typedef sum<eta_lap_vy,m_p_y> vy_eq;
 
 // Eq3 Incompressibility
 
-typedef D<x,v_x,lid_nn,FORWARD> dx_vx;                   // Step 5
-typedef D<y,v_y,lid_nn,FORWARD> dy_vy;                   // Step 6
-typedef sum<dx_vx,dy_vy,lid_nn> ic_eq;                   // Step 7
+typedef D<x,v_x,FORWARD> dx_vx;                   // Step 5
+typedef D<y,v_y,FORWARD> dy_vy;                   // Step 6
+typedef sum<dx_vx,dy_vy> ic_eq;                   // Step 7
 
 //! \cond [def equation] \endcond
 
@@ -195,11 +196,11 @@ typedef sum<dx_vx,dy_vy,lid_nn> ic_eq;                   // Step 7
 // Equation for boundary conditions
 
 // Directional Avg
-typedef Avg<x,v_y,lid_nn> avg_vy;
-typedef Avg<y,v_x,lid_nn> avg_vx;
+typedef Avg<x,v_y> avg_vy;
+typedef Avg<y,v_x> avg_vx;
 
-typedef Avg<x,v_y,lid_nn,FORWARD> avg_vy_f;
-typedef Avg<y,v_x,lid_nn,FORWARD> avg_vx_f;
+typedef Avg<x,v_y,FORWARD> avg_vy_f;
+typedef Avg<y,v_x,FORWARD> avg_vx_f;
 
 // Usefull constants (as MACRO)
 #define EQ_1 0
@@ -329,27 +330,27 @@ int main(int argc, char* argv[])
 
 	//! \cond [impose eq dom] \endcond
 
-	fd.impose(ic_eq(),0.0, EQ_3, {0,0},{sz[0]-2,sz[1]-2},true);
-	fd.impose(Prs(),  0.0, EQ_3, {0,0},{0,0});
+	fd.impose<EQ_3>(ic_eq(),0.0, {0,0},{sz[0]-2,sz[1]-2},true);
+	fd.impose<EQ_3>(Prs(),  0.0, {0,0},{0,0});
 
 	// Here we impose the Eq1 and Eq2
-	fd.impose(vx_eq(),0.0, EQ_1, {1,0},{sz[0]-2,sz[1]-2});
-	fd.impose(vy_eq(),0.0, EQ_2, {0,1},{sz[0]-2,sz[1]-2});
+	fd.impose<EQ_1>(vx_eq(),0.0, {1,0},{sz[0]-2,sz[1]-2});
+	fd.impose<EQ_2>(vy_eq(),0.0, {0,1},{sz[0]-2,sz[1]-2});
 
 	// v_x and v_y
 	// Imposing B1
-	fd.impose(v_x(),0.0, EQ_1, {0,0},{0,sz[1]-2});
-	fd.impose(avg_vy_f(),0.0, EQ_2 , {-1,0},{-1,sz[1]-1});
+	fd.impose<EQ_1>(v_x(),0.0, {0,0},{0,sz[1]-2});
+	fd.impose<EQ_2>(avg_vy_f(),0.0 , {-1,0},{-1,sz[1]-1});
 	// Imposing B2
-	fd.impose(v_x(),0.0, EQ_1, {sz[0]-1,0},{sz[0]-1,sz[1]-2});
-	fd.impose(avg_vy(),1.0, EQ_2,    {sz[0]-1,0},{sz[0]-1,sz[1]-1});
+	fd.impose<EQ_1>(v_x(),0.0, {sz[0]-1,0},{sz[0]-1,sz[1]-2});
+	fd.impose<EQ_2>(avg_vy(),1.0,    {sz[0]-1,0},{sz[0]-1,sz[1]-1});
 
 	// Imposing B3
-	fd.impose(avg_vx_f(),0.0, EQ_1, {0,-1},{sz[0]-1,-1});
-	fd.impose(v_y(), 0.0, EQ_2, {0,0},{sz[0]-2,0});
+	fd.impose<EQ_1>(avg_vx_f(),0.0, {0,-1},{sz[0]-1,-1});
+	fd.impose<EQ_2>(v_y(), 0.0, {0,0},{sz[0]-2,0});
 	// Imposing B4
-	fd.impose(avg_vx(),0.0, EQ_1,   {0,sz[1]-1},{sz[0]-1,sz[1]-1});
-	fd.impose(v_y(), 0.0, EQ_2, {0,sz[1]-1},{sz[0]-2,sz[1]-1});
+	fd.impose<EQ_1>(avg_vx(),0.0,   {0,sz[1]-1},{sz[0]-1,sz[1]-1});
+	fd.impose<EQ_2>(v_y(), 0.0, {0,sz[1]-1},{sz[0]-2,sz[1]-1});
 
 	// When we pad the grid, there are points of the grid that are not
 	// touched by the previous condition. Mathematically this lead
@@ -358,14 +359,14 @@ int main(int argc, char* argv[])
 	//
 
 	// Padding pressure
-	fd.impose(Prs(), 0.0, EQ_3, {-1,-1},{sz[0]-1,-1});
-	fd.impose(Prs(), 0.0, EQ_3, {-1,sz[1]-1},{sz[0]-1,sz[1]-1});
-	fd.impose(Prs(), 0.0, EQ_3, {-1,0},{-1,sz[1]-2});
-	fd.impose(Prs(), 0.0, EQ_3, {sz[0]-1,0},{sz[0]-1,sz[1]-2});
+	fd.impose<EQ_3>(Prs(), 0.0, {-1,-1},{sz[0]-1,-1});
+	fd.impose<EQ_3>(Prs(), 0.0, {-1,sz[1]-1},{sz[0]-1,sz[1]-1});
+	fd.impose<EQ_3>(Prs(), 0.0, {-1,0},{-1,sz[1]-2});
+	fd.impose<EQ_3>(Prs(), 0.0, {sz[0]-1,0},{sz[0]-1,sz[1]-2});
 
 	// Impose v_x Padding Impose v_y padding
-	fd.impose(v_x(), 0.0, EQ_1, {-1,-1},{-1,sz[1]-1});
-	fd.impose(v_y(), 0.0, EQ_2, {-1,-1},{sz[0]-1,-1});
+	fd.impose<EQ_1>(v_x(), 0.0, {-1,-1},{-1,sz[1]-1});
+	fd.impose<EQ_2>(v_y(), 0.0, {-1,-1},{sz[0]-1,-1});
 
 	//! \cond [impose eq dom] \endcond
 
