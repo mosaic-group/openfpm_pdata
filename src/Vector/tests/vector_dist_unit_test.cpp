@@ -104,6 +104,11 @@ void Test2D_ghost(Box<2,float> & box)
 
 	typedef Point_test<float> p;
 
+	if (create_vcluster().rank() == 0)
+	{
+		return;
+	}
+
 	// Get the default minimum number of sub-sub-domain per processor (granularity of the decomposition)
 	size_t n_sub = 64 * v_cl.getProcessingUnits();
 	// Convert the request of having a minimum n_sub number of sub-sub domain into grid decompsition of the space
