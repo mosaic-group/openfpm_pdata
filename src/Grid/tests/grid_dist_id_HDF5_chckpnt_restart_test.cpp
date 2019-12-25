@@ -14,7 +14,6 @@ BOOST_AUTO_TEST_SUITE( gd_hdf5_chckpnt_rstrt_test )
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
 {
-
 	// Input data
 	size_t k = 2400;
 
@@ -76,13 +75,12 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_save_test )
 	timer t;
 	t.start();
 	// Save the grid
-    g_dist.save("grid_dist_id.h5" + std::to_string(v_cl.getProcessingUnits()));
+  	g_dist.save("grid_dist_id.h5" + std::to_string(v_cl.getProcessingUnits()));
 	t.stop();
 }
 
 BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 {
-
 	// Input data
 	size_t k = 2400;
 

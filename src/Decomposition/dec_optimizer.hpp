@@ -83,7 +83,7 @@ private:
 	{
 		// expand the intersection of the wavefronts
 
-		std::vector<comb<dim>> q_comb = SubHyperCube<dim,dim-1>::getCombinations_R(w_comb[d],dim-2);
+		std::vector<comb<dim>> q_comb = SubHyperCube<dim,dim-1>::getCombinations_R(w_comb[d],(int)dim-2);
 
 		// Eliminate the w_comb[d] direction
 
@@ -352,7 +352,7 @@ private:
 
 					if (dim >= 2)
 					{
-						std::vector<comb<dim>> q_comb = SubHyperCube<dim,dim-1>::getCombinations_R(w_comb[d],dim-2);
+						std::vector<comb<dim>> q_comb = SubHyperCube<dim,dim-1>::getCombinations_R(w_comb[d],(int)dim-2);
 
 						// Eliminate the w_comb[d] direction
 

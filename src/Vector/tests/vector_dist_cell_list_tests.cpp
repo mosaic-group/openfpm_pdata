@@ -15,6 +15,18 @@
 extern void print_test_v(std::string test, size_t sz);
 extern long int decrement(long int k, long int step);
 
+// Point and global id
+struct point_and_gid
+{
+	size_t id;
+	Point<3,float> xq;
+
+	bool operator<(const struct point_and_gid & pag) const
+	{
+		return (id < pag.id);
+	}
+};
+
 ///////////////////////// test hilb ///////////////////////////////
 
 void test_reorder_sfc(reorder_opt opt)
@@ -432,6 +444,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 	}
 }
 
+
 BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 {
 	Vcluster<> & v_cl = create_vcluster();
@@ -464,18 +477,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 
 	// ghost
 	Ghost<3,float> ghost(r_cut);
-
-	// Point and global id
-	struct point_and_gid
-	{
-		size_t id;
-		Point<3,float> xq;
-
-		bool operator<(const struct point_and_gid & pag) const
-		{
-			return (id < pag.id);
-		}
-	};
 
 	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
 
@@ -642,6 +643,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 	BOOST_REQUIRE_EQUAL(ret,true);
 }
 
+#if 0
+
 BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 {
 	Vcluster<> & v_cl = create_vcluster();
@@ -677,18 +680,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 	ghost2.setLow(0,0.0);
 	ghost2.setLow(1,0.0);
 	ghost2.setLow(2,0.0);
-
-	// Point and global id
-	struct point_and_gid
-	{
-		size_t id;
-		Point<3,float> xq;
-
-		bool operator<(const struct point_and_gid & pag) const
-		{
-			return (id < pag.id);
-		}
-	};
 
 	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
 
@@ -899,18 +890,6 @@ void test_vd_symmetric_verlet_list()
 	// ghost
 	Ghost<3,float> ghost(r_cut);
 
-	// Point and global id
-	struct point_and_gid
-	{
-		size_t id;
-		Point<3,float> xq;
-
-		bool operator<(const struct point_and_gid & pag) const
-		{
-			return (id < pag.id);
-		}
-	};
-
 	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
 
 	// Distributed vector
@@ -1109,18 +1088,6 @@ void vector_sym_verlet_list_nb()
 	Ghost<3,float> ghost(r_cut);
 	Ghost<3,float> ghost2(r_cut);
 	ghost2.setLow(2,0.0);
-
-	// Point and global id
-	struct point_and_gid
-	{
-		size_t id;
-		Point<3,float> xq;
-
-		bool operator<(const struct point_and_gid & pag) const
-		{
-			return (id < pag.id);
-		}
-	};
 
 	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
 
@@ -1524,18 +1491,6 @@ void test_csr_verlet_list()
 	ghost2.setLow(1,0.0);
 	ghost2.setLow(2,0.0);
 
-	// Point and global id
-	struct point_and_gid
-	{
-		size_t id;
-		Point<3,float> xq;
-
-		bool operator<(const struct point_and_gid & pag) const
-		{
-			return (id < pag.id);
-		}
-	};
-
 	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
 
 	// Distributed vector
@@ -1583,18 +1538,6 @@ void test_csr_verlet_list_override()
 	ghost2.setLow(0,0.0);
 	ghost2.setLow(1,0.0);
 	ghost2.setLow(2,0.0);
-
-	// Point and global id
-	struct point_and_gid
-	{
-		size_t id;
-		Point<3,float> xq;
-
-		bool operator<(const struct point_and_gid & pag) const
-		{
-			return (id < pag.id);
-		}
-	};
 
 	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
 
@@ -1933,17 +1876,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_list_multi_type )
 	BOOST_REQUIRE_EQUAL(ret,true);
 }
 
-// Point and global id
-struct point_and_gid
-{
-	size_t id;
-	Point<3,float> xq;
-
-	bool operator<(const struct point_and_gid & pag) const
-	{
-		return (id < pag.id);
-	}
-};
 
 template<typename vector_dist_mp>
 void test_vector_dist_particle_NN_MP_iteration()
@@ -2247,5 +2179,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration )
 
 	test_vector_dist_particle_NN_MP_iteration<vector_dist<3,float, part_prop >>();
 }
+
+
+#endif
 
 BOOST_AUTO_TEST_SUITE_END()

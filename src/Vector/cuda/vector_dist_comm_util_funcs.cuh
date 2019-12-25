@@ -8,6 +8,13 @@
 #ifndef VECTOR_DIST_COMM_UTIL_FUNCS_HPP_
 #define VECTOR_DIST_COMM_UTIL_FUNCS_HPP_
 
+#include "Vector/map_vector.hpp"
+#include "memory/CudaMemory.cuh"
+#include "VCluster/VCluster.hpp"
+#ifdef __NVCC__
+#include "Vector/cuda/vector_dist_cuda_funcs.cuh"
+#endif
+
 #define SKIP_LABELLING 512
 #define KEEP_PROPERTIES 512
 

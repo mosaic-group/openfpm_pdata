@@ -75,8 +75,12 @@ class domain_icell_calculator
 
 	typedef int ids_type;
 
-	openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> icells;
-	openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> dcells;
+#ifdef __NVCC__
+
+	openfpm::vector_gpu<aggregate<ids_type>> icells;
+	openfpm::vector_gpu<aggregate<ids_type>> dcells;
+
+#endif
 
 	CellDecomposer_sm<dim,T,shift<dim,T>> cd;
 
@@ -219,12 +223,14 @@ class domain_icell_calculator
 #endif
 	}
 
+#ifdef __NVCC__
+
 	/*! \brief Return the list of the internal cells
 	 *
 	 * \return the list of the internal cells
 	 *
 	 */
-	openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> & getIcells()
+	openfpm::vector_gpu<aggregate<ids_type>> & getIcells()
 	{
 		return icells;
 	}
@@ -234,10 +240,12 @@ class domain_icell_calculator
 	 * \return the list of the internal cells
 	 *
 	 */
-	openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> & getDcells()
+	openfpm::vector_gpu<aggregate<ids_type>> & getDcells()
 	{
 		return dcells;
 	}
+
+#endif
 
 	/*! \brief Given a cell index return the cell box
 	 *

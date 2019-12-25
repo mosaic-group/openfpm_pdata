@@ -17,19 +17,19 @@ if [ ! -d "$1/SUITESPARSE"  -o ! -f "$1/SUITESPARSE/include/umfpack.h" ]; then
   exit 1
 fi
 
-rm -rf eigen-3.3.5.tar.bz2
-wget http://ppmcore.mpi-cbg.de/upload/eigen-3.3.5.tar.bz2
-rm -rf eigen-eigen-b3f3d4950030/
-tar -xf eigen-3.3.5.tar.bz2
+rm -rf eigen-3.3.7.tar.gz
+wget http://ppmcore.mpi-cbg.de/upload/eigen-3.3.7.tar.gz
+rm -rf eigen-3.3.7/
+tar -xf eigen-3.3.7.tar.gz
 
-cd eigen-eigen-b3f3d4950030/
+cd eigen-3.3.7/
 mkdir $1/EIGEN/
 mv Eigen $1/EIGEN/Eigen
 
 cd ..
-rm -rf eigen-eigen-b3f3d4950030/
+rm -rf eigen-3.3.7/
 
 touch $1/EIGEN/signature_of_eigen3_matrix_library
 
 # Mark the installation
-echo 2 > $1/EIGEN/version
+echo 3 > $1/EIGEN/version

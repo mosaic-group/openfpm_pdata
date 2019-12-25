@@ -86,7 +86,7 @@ public:
 	 * \return new key
 	 *
 	 */
-	inline grid_dist_amr_key<dim> moveSpace(size_t d,size_t s)
+	inline grid_dist_amr_key<dim> moveSpace(size_t d,long int s)
 	{
 		return grid_dist_amr_key<dim>(lvl,key.move(d,s));
 	}

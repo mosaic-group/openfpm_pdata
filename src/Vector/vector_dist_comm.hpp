@@ -17,8 +17,91 @@
 #include "util/cuda/kernels.cuh"
 #endif
 
-#include "Vector/util/vector_dist_funcs.hpp"
 #include "cuda/vector_dist_comm_util_funcs.cuh"
+#include "Vector/util/vector_dist_funcs.hpp"
+
+#ifdef __NVCC__
+
+template<bool is_gpu_ready>
+struct process_map_particles_impl
+{
+	template<typename ite_type, typename mogrid_type, typename position_type, typename property_type>
+	static inline void process(ite_type & ite,
+				 mogrid_type & m_opart,
+				 position_type & v_pos_tmp, property_type & v_prp_tmp,
+			     position_type & v_pos, property_type & v_prp, unsigned int offset)
+	{
+		// fill v_pos_tmp and v_prp_tmp with local particles
+		CUDA_LAUNCH((process_map_particles<decltype(m_opart.toKernel()),decltype(v_pos_tmp.toKernel()),decltype(v_prp_tmp.toKernel()),
+			                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>),
+		ite,
+		m_opart.toKernel(),v_pos_tmp.toKernel(), v_prp_tmp.toKernel(),
+			            v_pos.toKernel(),v_prp.toKernel(),offset);
+	}
+
+        template<typename ite_type, typename mogrid_type, typename position_type, typename property_type, typename position_type_arr, typename property_type_arr>
+        static inline void process_arr(ite_type & ite,
+                                 mogrid_type & m_opart,
+                                 position_type_arr & m_pos, property_type_arr & m_prp,
+                             position_type & v_pos, property_type & v_prp, unsigned int offset, unsigned int i)
+        {
+                // fill v_pos_tmp and v_prp_tmp with local particles
+
+		CUDA_LAUNCH((process_map_particles<decltype(m_opart.toKernel()),decltype(m_pos.get(i).toKernel()),decltype(m_prp.get(i).toKernel()),
+	                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>),
+					ite,
+					m_opart.toKernel(),m_pos.get(i).toKernel(), m_prp.get(i).toKernel(),
+						            v_pos.toKernel(),v_prp.toKernel(),offset);
+        }
+
+};
+
+template<>
+struct process_map_particles_impl<false>
+{
+	template<typename ite_type, typename mogrid_type, typename position_type, typename property_type>
+	static inline void process(ite_type & ite,
+				 mogrid_type & m_opart,
+				 position_type & v_pos_tmp, property_type & v_prp_tmp,
+			     position_type & v_pos, property_type & v_prp, unsigned int offset)
+	{
+		std::cout << __FILE__ << ":" << __LINE__ << " Error cannot map complex objects on GPU " << std::endl;
+	}
+
+        template<typename ite_type, typename mogrid_type, typename position_type, typename property_type, typename position_type_arr, typename property_type_arr>
+        static inline void process_arr(ite_type & ite,
+                                 mogrid_type & m_opart,
+                                 position_type_arr & v_pos_tmp, property_type_arr & v_prp_tmp,
+                             position_type & v_pos, property_type & v_prp, unsigned int offset, unsigned int i)
+        {
+		std::cout << __FILE__ << ":" << __LINE__ << " Error cannot map complex objects on GPU " << std::endl;
+        }
+};
+
+template<bool is_gpu_ready, unsigned int ... prp>
+struct process_ghost_particles_prp_impl
+{
+	template<typename ite_type, typename g_opart_type, typename g_send_prp_type, typename v_prp_type>
+	static inline void process(ite_type & ite, g_opart_type & g_opart_device, g_send_prp_type & g_send_prp, v_prp_type & v_prp, unsigned int offset, unsigned int i)
+	{
+		CUDA_LAUNCH((process_ghost_particles_prp<decltype(g_opart_device.toKernel()),decltype(g_send_prp.get(i).toKernel()),decltype(v_prp.toKernel()),prp...>),
+                                        ite,
+                                        g_opart_device.toKernel(), g_send_prp.get(i).toKernel(),
+                                         v_prp.toKernel(),offset);
+	}
+};
+
+template<unsigned int ... prp>
+struct process_ghost_particles_prp_impl<false,prp ... >
+{
+        template<typename ite_type, typename g_opart_type, typename g_send_prp_type, typename v_prp_type>
+        static inline void process(ite_type & ite, g_opart_type & g_opart, g_send_prp_type & g_send_prp, v_prp_type & v_prp, unsigned int offset, unsigned int i)
+        {
+		std::cout << __FILE__ << ":" << __LINE__ << " Error cannot map complex objects on GPU " << std::endl;
+        }
+};
+
+#endif
 
 constexpr int NO_POSITION = 1;
 constexpr int WITH_POSITION = 2;
@@ -1155,10 +1238,12 @@ class vector_dist_comm
 				{
 					auto ite = g_send_prp.get(i).getGPUIterator();
 
-					CUDA_LAUNCH((process_ghost_particles_prp<decltype(g_opart_device.toKernel()),decltype(g_send_prp.get(i).toKernel()),decltype(v_prp.toKernel()),prp...>),
-					ite,
-					g_opart_device.toKernel(), g_send_prp.get(i).toKernel(),
-					 v_prp.toKernel(),offset);
+					process_ghost_particles_prp_impl<!has_pack_agg<prop>::result::value,prp ...>::process(ite,g_opart_device, g_send_prp,v_prp,offset,i);
+
+//					CUDA_LAUNCH((process_ghost_particles_prp<decltype(g_opart_device.toKernel()),decltype(g_send_prp.get(i).toKernel()),decltype(v_prp.toKernel()),prp...>),
+//					ite,
+//					g_opart_device.toKernel(), g_send_prp.get(i).toKernel(),
+//					 v_prp.toKernel(),offset);
 
 					offset += prc_sz.get(i);
 				}
@@ -1282,12 +1367,13 @@ class vector_dist_comm
 			// no work to do
 			if (ite.wthr.x != 0)
 			{
+				process_map_particles_impl<!has_pack_agg<prop>::result::value>::process(ite,m_opart,v_pos_tmp,v_prp_tmp,v_pos,v_prp,offset);
 				// fill v_pos_tmp and v_prp_tmp with local particles
-				CUDA_LAUNCH((process_map_particles<decltype(m_opart.toKernel()),decltype(v_pos_tmp.toKernel()),decltype(v_prp_tmp.toKernel()),
-					                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>),
-				ite,
-				m_opart.toKernel(),v_pos_tmp.toKernel(), v_prp_tmp.toKernel(),
-					            v_pos.toKernel(),v_prp.toKernel(),offset);
+			//	CUDA_LAUNCH((process_map_particles<decltype(m_opart.toKernel()),decltype(v_pos_tmp.toKernel()),decltype(v_prp_tmp.toKernel()),
+			//		                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>),
+			//	ite,
+			//	m_opart.toKernel(),v_pos_tmp.toKernel(), v_prp_tmp.toKernel(),
+			//		            v_pos.toKernel(),v_prp.toKernel(),offset);
 			}
 
 			// Fill the sending buffers
@@ -1300,12 +1386,12 @@ class vector_dist_comm
 				// no work to do
 				if (ite.wthr.x != 0)
 				{
-
-					CUDA_LAUNCH((process_map_particles<decltype(m_opart.toKernel()),decltype(m_pos.get(i).toKernel()),decltype(m_prp.get(i).toKernel()),
-						                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>),
-					ite,
-					m_opart.toKernel(),m_pos.get(i).toKernel(), m_prp.get(i).toKernel(),
-						            v_pos.toKernel(),v_prp.toKernel(),offset);
+					process_map_particles_impl<!has_pack_agg<prop>::result::value>::process_arr(ite,m_opart,m_pos,m_prp,v_pos,v_prp,offset,i);
+				//	CUDA_LAUNCH((process_map_particles<decltype(m_opart.toKernel()),decltype(m_pos.get(i).toKernel()),decltype(m_prp.get(i).toKernel()),
+				//		                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>),
+				//	ite,
+				//	m_opart.toKernel(),m_pos.get(i).toKernel(), m_prp.get(i).toKernel(),
+				//		            v_pos.toKernel(),v_prp.toKernel(),offset);
 
 				}
 			}

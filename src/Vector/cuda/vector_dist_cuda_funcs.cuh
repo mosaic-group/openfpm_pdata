@@ -16,6 +16,7 @@
 #include "util/cuda/kernels.cuh"
 #include "util/cuda/scan_ofp.cuh"
 #include "memory/CudaMemory.cuh"
+#include "Vector/map_vector.hpp"
 
 template<unsigned int dim, typename St, typename decomposition_type, typename vector_type, typename start_type, typename output_type>
 __global__ void proc_label_id_ghost(decomposition_type dec,vector_type vd, start_type starts, output_type out)

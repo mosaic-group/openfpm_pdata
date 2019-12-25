@@ -8,6 +8,8 @@
 #ifndef VECTOR_DIST_FUNCS_HPP_
 #define VECTOR_DIST_FUNCS_HPP_
 
+#include "VCluster/VCluster.hpp"
+
 //! process the particle without properties
 struct proc_without_prp
 {

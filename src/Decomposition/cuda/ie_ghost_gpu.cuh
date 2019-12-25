@@ -8,7 +8,13 @@
 #ifndef IE_GHOST_GPU_CUH_
 #define IE_GHOST_GPU_CUH_
 
+#include "Decomposition/common.hpp"
 #include "data_type/aggregate.hpp"
+#include "Space/Shape/Point.hpp"
+#include "Space/Shape/Box.hpp"
+#include "NN/CellList/cuda/CellList_cpu_ker.cuh"
+#include "NN/Mem_type/MemFast.hpp"
+#include "NN/CellList/CellDecomposer.hpp"
 
 constexpr unsigned int lc_proc_ = 0;
 constexpr unsigned int proc_ = 1;

@@ -58,9 +58,6 @@ BOOST_AUTO_TEST_CASE( debug_util_test_use )
 	if (v_cl.getProcessingUnits() != 1)
 	{return;}
 
-	// Boundary conditions
-	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
-
 	// Box
 	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 
