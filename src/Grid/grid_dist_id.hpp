@@ -23,7 +23,7 @@
 #include "grid_dist_id_comm.hpp"
 #include "HDF5_wr/HDF5_wr.hpp"
 #include "SparseGrid/SparseGrid.hpp"
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__HIPCC__)
 #include "SparseGridGpu/SparseGridGpu.hpp"
 #include "cuda/grid_dist_id_kernels.cuh"
 #include "Grid/cuda/grid_dist_id_iterator_gpu.cuh"
@@ -1725,7 +1725,7 @@ public:
 		return it_dec;
 	}
 
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__HIPCC__)
 
 	/*! /brief Get a grid Iterator in GPU
 	 *
@@ -2677,7 +2677,7 @@ public:
 		return this->ig_box;
 	}
 
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__HIPCC__)
 
 	/*! \brief Set the number inserts each GPU thread do
 	 *
@@ -2757,7 +2757,7 @@ public:
 template<unsigned int dim, typename St, typename T>
 using sgrid_dist_id = grid_dist_id<dim,St,T,CartDecomposition<dim,St>,HeapMemory,sgrid_cpu<dim,T,HeapMemory>>;
 
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__HIPCC__)
 template<unsigned int dim, typename St, typename T>
 using sgrid_dist_id_gpu = grid_dist_id<dim,St,T,CartDecomposition<dim,St,CudaMemory,memory_traits_inte>,CudaMemory,SparseGridGpu<dim,T>>;
 #endif

@@ -102,6 +102,7 @@ if(UNIX AND NOT APPLE AND NOT CYGWIN)
         PATH_SUFFIXES bin
         NO_DEFAULT_PATH
         )
+
     if(NOT HIP_HIPCC_EXECUTABLE)
         # Now search in default paths
         find_program(HIP_HIPCC_EXECUTABLE hipcc)

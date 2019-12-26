@@ -13,7 +13,7 @@
 #include "Grid/grid_dist_id.hpp"
 #include "Amr/grid_dist_amr_key_iterator.hpp"
 
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__HIPCC__)
 #include "SparseGridGpu/SparseGridGpu.hpp"
 #endif
 
@@ -466,7 +466,7 @@ public:
 		return gd_array.get(lvl).getGridIterator();
 	}
 
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__HIPCC__)
 
 	/*! \brief Get an iterator to the grid
 	 *
@@ -923,7 +923,7 @@ public:
 template<unsigned int dim, typename St, typename T>
 using sgrid_dist_amr = grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,CartDecomposition<dim,St>,HeapMemory,sgrid_cpu<dim,T,HeapMemory>>;
 
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__HIPCC__)
 
 template<unsigned int dim, typename St, typename T, unsigned int blockEdgeSize = 8>
 using sgrid_dist_amr_gpu = grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,CartDecomposition<dim,St,CudaMemory,memory_traits_inte>,CudaMemory,SparseGridGpu<dim,T,blockEdgeSize,IntPow<blockEdgeSize,dim>::value >>;

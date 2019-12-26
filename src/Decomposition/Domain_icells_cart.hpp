@@ -15,7 +15,7 @@
 #include "Vector/map_vector_sparse.hpp"
 #include <iomanip>
 
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__HIPCC__)
 
 template<unsigned int dim, typename vector_sparse_type, typename CellDecomposer_type>
 __global__ void insert_icell(vector_sparse_type vs, CellDecomposer_type cld, grid_key_dx<dim,int> start,grid_key_dx<dim,int> stop)
@@ -75,7 +75,7 @@ class domain_icell_calculator
 
 	typedef int ids_type;
 
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__HIPCC__)
 
 	openfpm::vector_gpu<aggregate<ids_type>> icells;
 	openfpm::vector_gpu<aggregate<ids_type>> dcells;
@@ -129,7 +129,7 @@ class domain_icell_calculator
 								T r_cut,
 								const Ghost<dim,T> & enlarge)
 	{
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__HIPCC__)
 
 		// Division array
 		size_t div[dim];
@@ -223,7 +223,7 @@ class domain_icell_calculator
 #endif
 	}
 
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__HIPCC__)
 
 	/*! \brief Return the list of the internal cells
 	 *

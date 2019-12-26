@@ -106,7 +106,7 @@
  *
  */
 
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__HIPCC__)
 
 //! \cond [using_openmpi] \endcond
 #define OPENMPI

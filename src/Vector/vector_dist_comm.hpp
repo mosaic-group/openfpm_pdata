@@ -10,7 +10,7 @@
 
 #define TEST1
 
-#if defined(CUDA_GPU) && defined(__NVCC__)
+#if defined(CUDA_GPU) && (defined(__NVCC__) || defined(__HIPCC__))
 #include "util/cuda/moderngpu/kernel_mergesort.hxx"
 #include "Vector/cuda/vector_dist_cuda_funcs.cuh"
 #include "util/cuda/moderngpu/kernel_scan.hxx"
@@ -20,7 +20,7 @@
 #include "cuda/vector_dist_comm_util_funcs.cuh"
 #include "Vector/util/vector_dist_funcs.hpp"
 
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__HIPCC__)
 
 template<bool is_gpu_ready>
 struct process_map_particles_impl
@@ -990,7 +990,7 @@ class vector_dist_comm
 
 		if (opt & RUN_ON_DEVICE)
 		{
-#if defined(CUDA_GPU) && defined(__NVCC__)
+#if defined(CUDA_GPU) && (defined(__NVCC__) || defined(__HIPCC__))
 
 			size_t offset = 0;
 
@@ -1227,7 +1227,7 @@ class vector_dist_comm
 
 		if (opt & RUN_ON_DEVICE)
 		{
-#if defined(CUDA_GPU) && defined(__NVCC__)
+#if defined(CUDA_GPU) && (defined(__NVCC__) || defined(__HIPCC__))
 
 			size_t offset = 0;
 
@@ -1314,7 +1314,7 @@ class vector_dist_comm
 			if (v_cl.size() == 1)
 			{return;}
 
-#if defined(CUDA_GPU) && defined(__NVCC__)
+#if defined(CUDA_GPU) && (defined(__NVCC__) || defined(__HIPCC__))
 
 			// The first part of m_opart and prc_sz contain the local particles
 
@@ -1492,7 +1492,7 @@ class vector_dist_comm
 	{
 		if (opt == RUN_ON_DEVICE)
 		{
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__HIPCC__)
 
 			// Map directly on gpu
 
@@ -1901,7 +1901,7 @@ public:
 
 			fill_send_ghost_prp_buf<send_vector, prp_object, prp...>(v_prp,prc_sz_gg,g_send_prp,opt);
 
-	#if defined(CUDA_GPU) && defined(__NVCC__)
+	#if defined(CUDA_GPU) && (defined(__NVCC__) || defined(__HIPCC__))
 			cudaDeviceSynchronize();
 	#endif
 
@@ -1920,7 +1920,7 @@ public:
 
 			fill_send_ghost_pos_buf(v_pos,prc_sz_gg,g_pos_send,opt,impl == GHOST_ASYNC);
 
-#if defined(CUDA_GPU) && defined(__NVCC__)
+#if defined(CUDA_GPU) && (defined(__NVCC__) || defined(__HIPCC__))
 			cudaDeviceSynchronize();
 #endif
 
@@ -2106,7 +2106,7 @@ public:
 		size_t opt_ = 0;
 		if (opt & RUN_ON_DEVICE)
 		{
-#if defined(CUDA_GPU) && defined(__NVCC__)
+#if defined(CUDA_GPU) && (defined(__NVCC__) || defined(__HIPCC__))
 			// Before doing the communication on RUN_ON_DEVICE we have to be sure that the previous kernels complete
 			cudaDeviceSynchronize();
 			opt_ |= MPI_GPU_DIRECT;

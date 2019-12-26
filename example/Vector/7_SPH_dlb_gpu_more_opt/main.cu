@@ -48,7 +48,7 @@
  *
  */
 
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__HIPCC__)
 
 #define PRINT_STACKTRACE
 #define STOP_ON_ERROR

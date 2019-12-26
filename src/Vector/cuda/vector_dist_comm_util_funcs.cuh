@@ -11,7 +11,7 @@
 #include "Vector/map_vector.hpp"
 #include "memory/CudaMemory.cuh"
 #include "VCluster/VCluster.hpp"
-#ifdef __NVCC__
+#if defined(__NVCC__) || defined(__HIPCC__)
 #include "Vector/cuda/vector_dist_cuda_funcs.cuh"
 #endif
 
@@ -76,7 +76,7 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
             		size_t & g_m,
             		size_t opt)
 	{
-#if defined(CUDA_GPU) && defined(__NVCC__)
+#if defined(CUDA_GPU) && (defined(__NVCC__) || defined(__HIPCC__))
 
 			if (v_cl.size() == 1)
 			{return;}
@@ -198,7 +198,7 @@ struct local_ghost_from_opart_impl<with_pos,dim,St,prop,Memory,layout_base,true>
             		openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
             		size_t opt)
 	{
-#if defined(CUDA_GPU) && defined(__NVCC__)
+#if defined(CUDA_GPU) && (defined(__NVCC__) || defined(__HIPCC__))
 
 				auto ite = o_part_loc.getGPUIterator();
 
@@ -257,7 +257,7 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
             		size_t & g_m,
             		size_t opt)
 	{
-#if defined(CUDA_GPU) && defined(__NVCC__)
+#if defined(CUDA_GPU) && (defined(__NVCC__) || defined(__HIPCC__))
 
 		o_part_loc.resize(g_m+1);
 		o_part_loc.template get<0>(o_part_loc.size()-1) = 0;

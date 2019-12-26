@@ -65,7 +65,6 @@ if ( HIP_ENABLE AND HIP_FOUND )
 
 
 	hip_add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} ${CPP_SOURCES})
-
 else()
 
 	add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} ${CPP_SOURCES})
