@@ -3,33 +3,19 @@ cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
 ########################### Executables
 
-if(CUDA_FOUND)
 
-	if ( HIP_ENABLE )
+if ( HIP_ENABLE OR CUDA_FOUND)
 
-		set(CUDA_SOURCES
-                        Grid/tests/sgrid_dist_id_gpu_unit_tests_hipified.cpp
-                        Vector/cuda/vector_dist_gpu_MP_tests_hipified.cpp
-                                         Vector/cuda/vector_dist_cuda_func_test_hipified.cpp
-                                         Decomposition/cuda/decomposition_cuda_tests_hipified.cpp
-                                         Vector/cuda/vector_dist_gpu_unit_tests_hipified.cpp
-                                         ../openfpm_devices/src/memory/CudaMemory_hipified.cpp
-                                         Decomposition/cuda/Domain_icells_cart_unit_test_hipified.cpp
-                                         Amr/tests/amr_base_gpu_unit_tests_hipified.cpp)
+	set(CUDA_SOURCES 
+		Grid/tests/sgrid_dist_id_gpu_unit_tests.cu
+		Vector/cuda/vector_dist_gpu_MP_tests.cu 
+		Vector/cuda/vector_dist_cuda_func_test.cu
+		Decomposition/cuda/decomposition_cuda_tests.cu
+		Vector/cuda/vector_dist_gpu_unit_tests.cu
+		../openfpm_devices/src/memory/CudaMemory.cu
+		Decomposition/cuda/Domain_icells_cart_unit_test.cu
+		Amr/tests/amr_base_gpu_unit_tests.cu)
 
-	else()
-
-		set(CUDA_SOURCES 
-			Grid/tests/sgrid_dist_id_gpu_unit_tests.cu
-			Vector/cuda/vector_dist_gpu_MP_tests.cu 
-					 Vector/cuda/vector_dist_cuda_func_test.cu
-					 Decomposition/cuda/decomposition_cuda_tests.cu
-					 Vector/cuda/vector_dist_gpu_unit_tests.cu
-					 ../openfpm_devices/src/memory/CudaMemory.cu
-					 Decomposition/cuda/Domain_icells_cart_unit_test.cu
-					 Amr/tests/amr_base_gpu_unit_tests.cu)
-
-	endif()
 else()
 	set(CUDA_SOURCES)
 endif()
