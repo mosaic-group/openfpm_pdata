@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import sys
+import shutil
 from pathlib import Path
 
 # export PATH="/home/i-bird/Desktop/MOSAIC/OpenFPM_project/HIP/hipify-clang/dist/:$PATH"
@@ -40,6 +41,8 @@ parser.add_argument('--compile_command', help='The command used to compile (it i
 parser.add_argument('--build_path',help='The path where is the compile_commands.json')
 parser.add_argument('--add_includes',help='Add additional includes directories (or compilation options) examples --add_includes= " -I/include/dir1 -I/include/dir2" Warning the space at the beginning is fundamental')
 parser.add_argument('--remove-hipyfied',help='Remove hipyfied files')
+parser.add_argument('--restore',help='Restore original files',action='store_true')
+
 
 args = parser.parse_args()
 
@@ -47,6 +50,7 @@ print('Starting')
 print('compile_command: ' + str(args.compile_command))
 print('add_includes: ' + str(args.add_includes))
 print('exclude_directories: ' + str(args.exclude_directories))
+print("Restore: " + str(args.restore))
 
 if args.compile_command == None:
     sys.exit('Error! you must pass the option --compile_command')
@@ -101,6 +105,21 @@ for command in commands:
 for i in range(len(files_to_convert)):
     print('[' + str(i+1) + '/' + str(len(files_to_convert)) + ']   ' + 'Converting CUDA File:' + str(files_to_convert[i]))
 
+    #Safe the original
+
+    if not os.path.exists(str(files_to_convert[i]) + "_original"):
+        shutil.copy(files_to_convert[i],str(files_to_convert[i]) + "_original")
+    else:
+        print("SKIPPING Original saving")
+
+    #if os.path.exists(os.path.splitext(files_to_convert[i])[0] + "original.cuh"):
+    #    os.remove(os.path.splitext(files_to_convert[i])[0] + "original.cuh")
+
+    if args.restore is True:
+        if os.path.exists(str(files_to_convert[i]) + "_original"):
+            shutil.copy(str(files_to_convert[i]) + "_original",files_to_convert[i])
+        continue
+
     hip_com = "hipify-clang -D__NVCC__ -D__CUDACC_VER_MAJOR__=10 -D__CUDACC_VER_MINOR__=1 -D__CUDACC_VER_MINOR__ -D__CUDACC_VER_BUILD__=243 " + str(files_to_convert[i])
     hip_com += " -o " + os.path.splitext(files_to_convert[i])[0] + '_hipified.hpp'
     hip_com += " -p " + args.build_path
@@ -121,6 +140,19 @@ for i in range(len(files_to_convert)):
 
 for i in range(len(cudaFileToParse)):
     print('[' + str(i+1) + '/' + str(len(cudaFileToParse)) + ']   ' + 'Converting CUDA File:' + cudaFileToParse[i])
+
+    #Safe the original
+    if not os.path.exists(str(cudaFileToParse[i]) + "_original"):
+        shutil.copy(cudaFileToParse[i],str(cudaFileToParse[i]) + "_original")
+    else:
+        print("SKIPPING Original saving")
+
+    if args.restore is True:
+        if os.path.exists(str(cudaFileToParse[i]) + "_original"):
+            shutil.copy(str(cudaFileToParse[i]) + "_original",cudaFileToParse[i])
+        continue
+
+
     hip_com = "hipify-clang -D__NVCC__ -D__CUDACC_VER_MAJOR__=10 -D__CUDACC_VER_MINOR__=1 -D__CUDACC_VER_MINOR__ -D__CUDACC_VER_BUILD__=243 " + cudaFileToParse[i]
     hip_com += " -o " + os.path.splitext(cudaFileToParse[i])[0] + '_hipified.cpp'
     hip_com += " -p " + args.build_path
@@ -132,4 +164,27 @@ for i in range(len(cudaFileToParse)):
     stream = os.popen(commands[i])
     output = stream.read()
     print('----------------------------------------------------------------------------')
+
+if args.restore is True:
+    sys.exit(0)
+
+###############3 Replace
+
+for i in range(len(files_to_convert)):
+    if os.path.exists(os.path.splitext(files_to_convert[i])[0] + '_hipified.hpp'):
+        shutil.move(os.path.splitext(files_to_convert[i])[0] + '_hipified.hpp',files_to_convert[i])
+    print('----------------------------------------------------------------------------')
+
+# Parse Json file
+
+
+[cudaFileToParse,commands] = unique(cudaFileToParse,commands)
+
+
+for i in range(len(cudaFileToParse)):
+    if os.path.exists(os.path.splitext(cudaFileToParse[i])[0] + '_hipified.cpp'):
+        shutil.move(os.path.splitext(cudaFileToParse[i])[0] + '_hipified.cpp',cudaFileToParse[i])
+    print('----------------------------------------------------------------------------')
+
+
 
