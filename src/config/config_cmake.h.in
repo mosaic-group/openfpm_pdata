@@ -165,3 +165,20 @@ ${DEFINE_TEST_COVERAGE_MODE}
 #define VERSION "1.0.0"
 
 #define OPENFPM_PDATA
+
+#ifdef __HIPCC__
+// We try to fool boost
+#include "hip/hip_runtime.h"
+#define __CUDACC__
+#define __CUDACC_VER_MAJOR__ 10
+#define __CUDACC_VER_MINOR__  2
+#define __CUDACC_VER_BUILD__ 243
+#endif
+#include "/home/i-bird/BOOST/include/boost/config.hpp"
+
+#ifdef __HIPCC__
+// End try to fool boost
+#undef __CUDACC__
+#endif
+
+

@@ -11,14 +11,18 @@
 #define TEST1
 
 #if defined(CUDA_GPU) && (defined(__NVCC__) || defined(__HIPCC__))
-#include "util/cuda/moderngpu/kernel_mergesort.hxx"
 #include "Vector/cuda/vector_dist_cuda_funcs.cuh"
-#include "util/cuda/moderngpu/kernel_scan.hxx"
 #include "util/cuda/kernels.cuh"
 #endif
 
 #include "cuda/vector_dist_comm_util_funcs.cuh"
 #include "Vector/util/vector_dist_funcs.hpp"
+
+#ifdef __HIPCC__
+#define DEVICE_SYNC hipDeviceSynchronize()
+#else
+#define DEVICE_SYNC cudaDeviceSynchronize()
+#endif
 
 #if defined(__NVCC__) || defined(__HIPCC__)
 
@@ -1559,7 +1563,7 @@ class vector_dist_comm
 			#else
 
 			starts.resize(v_cl.size());
-			mgpu::scan((unsigned int *)prc_sz.template getDeviceBuffer<0>(), prc_sz.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
+			openfpm::scan((unsigned int *)prc_sz.template getDeviceBuffer<0>(), prc_sz.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
 
 			// move prc_sz to host
 			prc_sz.template deviceToHost<0>();
@@ -1902,7 +1906,7 @@ public:
 			fill_send_ghost_prp_buf<send_vector, prp_object, prp...>(v_prp,prc_sz_gg,g_send_prp,opt);
 
 	#if defined(CUDA_GPU) && (defined(__NVCC__) || defined(__HIPCC__))
-			cudaDeviceSynchronize();
+			DEVICE_SYNC;
 	#endif
 
 			// if there are no properties skip
@@ -1921,7 +1925,7 @@ public:
 			fill_send_ghost_pos_buf(v_pos,prc_sz_gg,g_pos_send,opt,impl == GHOST_ASYNC);
 
 #if defined(CUDA_GPU) && (defined(__NVCC__) || defined(__HIPCC__))
-			cudaDeviceSynchronize();
+			DEVICE_SYNC;
 #endif
 
 			ghost_exchange_comm_impl<impl,layout_base,prp ...>::template
@@ -2108,7 +2112,7 @@ public:
 		{
 #if defined(CUDA_GPU) && (defined(__NVCC__) || defined(__HIPCC__))
 			// Before doing the communication on RUN_ON_DEVICE we have to be sure that the previous kernels complete
-			cudaDeviceSynchronize();
+			DEVICE_SYNC;
 			opt_ |= MPI_GPU_DIRECT;
 #else
 			std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option RUN_ON_DEVICE you must compile with NVCC" << std::endl;

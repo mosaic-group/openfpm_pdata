@@ -18,6 +18,12 @@ if ( HIP_ENABLE AND HIP_FOUND )
 
         hip_add_executable(vector_dist vector.cpp ${CUDA_SOURCES}  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_devices/src/Memleak_check.cpp)
 
+        #target_include_directories (pdata PUBLIC ${MPI_C_INCLUDE_DIRS}) # Well ........ it does not work, work around line below
+        set_property(TARGET cart_dec PROPERTY COMPILE_FLAGS "-I${MPI_C_INCLUDE_DIRS}")
+	set_property(TARGET metis_dec PROPERTY COMPILE_FLAGS "-I${MPI_C_INCLUDE_DIRS}")
+	set_property(TARGET dom_box PROPERTY COMPILE_FLAGS "-I${MPI_C_INCLUDE_DIRS}")
+	set_property(TARGET vector_dist PROPERTY COMPILE_FLAGS "-I${MPI_C_INCLUDE_DIRS}")
+
 else()
 
 	add_executable(cart_dec CartDecomposition_gen_vtk.cpp ../src/lib/pdata.cpp ${CUDA_SOURCES} ../openfpm_devices/src/memory/HeapMemory.cpp  ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp)
@@ -28,6 +34,10 @@ else()
 
 	add_executable(vector_dist vector.cpp ${CUDA_SOURCES}  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_devices/src/Memleak_check.cpp)
 
+endif()
+
+if (HIP_FOUND)
+        SET(CMAKE_EXE_LINKER_FLAGS  "--amdgpu-target=${AMD_ARCH_COMPILE}")
 endif()
 
 ###########################
@@ -41,6 +51,7 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_vcluster/src/)
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_io/src/)
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/../src/config)
+include_directories (${HIP_ROOT_DIR}/include)
 if (PETSC_FOUND)
 	include_directories (${PETSC_INCLUDES})
 endif()

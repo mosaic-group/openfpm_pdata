@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 
 # export PATH="/home/i-bird/Desktop/MOSAIC/OpenFPM_project/HIP/hipify-clang/dist/:$PATH"
-# python script/py/code-transform.py --json "build/compile_commands.json" --compile_command "/usr/local/cuda/bin/nvcc -ccbin=/home/i-bird/MPI/bin/mpic++" --build_path "/home/i-bird/Desktop/MOSAIC/OpenFPM_project/openfpm_bianucci_flush_fix/openfpm_pdata/build" --add_includes " -I/home/i-bird/MPI/include -I/home/i-bird/Desktop/MOSAIC/OpenFPM_project/openfpm_bianucci_flush_hip_test/openfpm_pdata/openfpm_numerics/src/" --directory "/home/i-bird/Desktop/MOSAIC/OpenFPM_project/openfpm_bianucci_flush_hip_test/openfpm_pdata" --exclude_directories="/home/i-bird/Desktop/MOSAIC/OpenFPM_project/openfpm_bianucci_flush_hip_test/openfpm_pdata/openfpm_data/src/util/cuda/cub"
+# python script/py/code-transform.py --json "build/compile_commands.json" --compile_command "/usr/local/cuda/bin/nvcc -ccbin=/home/i-bird/MPI/bin/mpic++" --build_path "/home/i-bird/Desktop/MOSAIC/OpenFPM_project/openfpm_bianucci_flush_hip_test/openfpm_pdata/build" --add_includes " -I/home/i-bird/MPI/include -I/home/i-bird/Desktop/MOSAIC/OpenFPM_project/openfpm_bianucci_flush_hip_test/openfpm_pdata/openfpm_numerics/src/" --directory "/home/i-bird/Desktop/MOSAIC/OpenFPM_project/openfpm_bianucci_flush_hip_test/openfpm_pdata" --exclude_directories="/home/i-bird/Desktop/MOSAIC/OpenFPM_project/openfpm_bianucci_flush_hip_test/openfpm_pdata/openfpm_data/src/util/cuda/cub"
 
 cudaExtension = ".cu"
 cudaFileToParse=[]
@@ -120,7 +120,7 @@ for i in range(len(files_to_convert)):
             shutil.copy(str(files_to_convert[i]) + "_original",files_to_convert[i])
         continue
 
-    hip_com = "hipify-clang -D__NVCC__ -D__CUDACC_VER_MAJOR__=10 -D__CUDACC_VER_MINOR__=1 -D__CUDACC_VER_MINOR__ -D__CUDACC_VER_BUILD__=243 " + str(files_to_convert[i])
+    hip_com = "hipify-clang -D__HIPIFY__  -D__NVCC__ -D__CUDACC_VER_MAJOR__=10 -D__CUDACC_VER_MINOR__=1 -D__CUDACC_VER_MINOR__ -D__CUDACC_VER_BUILD__=243 " + str(files_to_convert[i])
     hip_com += " -o " + os.path.splitext(files_to_convert[i])[0] + '_hipified.hpp'
     hip_com += " -p " + args.build_path
     if args.add_includes != None :
@@ -153,7 +153,7 @@ for i in range(len(cudaFileToParse)):
         continue
 
 
-    hip_com = "hipify-clang -D__NVCC__ -D__CUDACC_VER_MAJOR__=10 -D__CUDACC_VER_MINOR__=1 -D__CUDACC_VER_MINOR__ -D__CUDACC_VER_BUILD__=243 " + cudaFileToParse[i]
+    hip_com = "hipify-clang -D__HIPIFY__  -D__NVCC__ -D__CUDACC_VER_MAJOR__=10 -D__CUDACC_VER_MINOR__=1 -D__CUDACC_VER_MINOR__ -D__CUDACC_VER_BUILD__=243 " + cudaFileToParse[i]
     hip_com += " -o " + os.path.splitext(cudaFileToParse[i])[0] + '_hipified.cpp'
     hip_com += " -p " + args.build_path
     if args.add_includes != None :

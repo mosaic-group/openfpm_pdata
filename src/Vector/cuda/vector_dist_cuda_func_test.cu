@@ -1,5 +1,7 @@
 #define BOOST_TEST_DYN_LINK
 
+#include <hip/hip_runtime.h>
+#include "config.h"
 #define TEST1
 
 #include <boost/test/unit_test.hpp>
@@ -9,7 +11,6 @@
 #include "Vector/util/vector_dist_funcs.hpp"
 #include "Decomposition/CartDecomposition.hpp"
 #include "util/cuda/scan_cuda.cuh"
-#include "util/cuda/moderngpu/kernel_scan.hxx"
 #include "Vector/vector_dist.hpp"
 
 #define SUB_UNIT_FACTOR 1024
@@ -30,9 +31,9 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 
 	for (size_t i = 0 ; i < v_prp.size() ; i++)
 	{
-		v_pos.template get<0>(i)[0] = (float)rand()/RAND_MAX;
-		v_pos.template get<0>(i)[1] = (float)rand()/RAND_MAX;
-		v_pos.template get<0>(i)[2] = (float)rand()/RAND_MAX;
+		v_pos.template get<0>(i)[0] = (double)rand()/RAND_MAX;
+		v_pos.template get<0>(i)[1] = (double)rand()/RAND_MAX;
+		v_pos.template get<0>(i)[2] = (double)rand()/RAND_MAX;
 
 		v_prp.template get<0>(i) = i+12345;
 
@@ -101,9 +102,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 	v_prp.hostToDevice<0,1,2>();
 
 	// label particle processor
-	num_shift_ghost_each_part<3,float,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),decltype(v_pos.toKernel()),decltype(o_part_loc.toKernel())>
-	<<<ite.wthr,ite.thr>>>
-	(box_f_dev.toKernel(),box_f_sv.toKernel(),v_pos.toKernel(),o_part_loc.toKernel(),v_pos.size());
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(num_shift_ghost_each_part<3,float,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),decltype(v_pos.toKernel()),decltype(o_part_loc.toKernel())>), dim3(ite.wthr), dim3(ite.thr), 0, 0, box_f_dev.toKernel(),box_f_sv.toKernel(),v_pos.toKernel(),o_part_loc.toKernel(),v_pos.size());
 
 	o_part_loc.deviceToHost<0>();
 
@@ -129,7 +128,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 	starts.resize(o_part_loc.size());
 
 	auto & v_cl = create_vcluster();
-	mgpu::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
+	openfpm::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
 
 	starts.deviceToHost<0>(starts.size()-1,starts.size()-1);
 	size_t tot = starts.template get<0>(o_part_loc.size()-1);
@@ -162,12 +161,10 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 	openfpm::vector_gpu<aggregate<unsigned int,unsigned int>> o_part_loc2;
 	o_part_loc2.resize(tot);
 
-	shift_ghost_each_part<3,float,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(shift_ghost_each_part<3,float,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),
 			                     decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),
 			                     decltype(starts.toKernel()),decltype(shifts.toKernel()),
-			                     decltype(o_part_loc2.toKernel())>
-	<<<ite.wthr,ite.thr>>>
-	(box_f_dev.toKernel(),box_f_sv.toKernel(),
+			                     decltype(o_part_loc2.toKernel())>), dim3(ite.wthr), dim3(ite.thr), 0, 0, box_f_dev.toKernel(),box_f_sv.toKernel(),
 	 v_pos.toKernel(),v_prp.toKernel(),
 	 starts.toKernel(),shifts.toKernel(),o_part_loc2.toKernel(),old,old);
 
@@ -352,9 +349,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 
 	ite = o_part_loc2.getGPUIterator();
 
-	process_ghost_particles_local<true,3,decltype(o_part_loc2.toKernel()),decltype(v_pos2.toKernel()),decltype(v_prp2.toKernel()),decltype(shifts.toKernel())>
-	<<<ite.wthr,ite.thr>>>
-	(o_part_loc2.toKernel(),v_pos2.toKernel(),v_prp2.toKernel(),shifts.toKernel(),old);
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(process_ghost_particles_local<true,3,decltype(o_part_loc2.toKernel()),decltype(v_pos2.toKernel()),decltype(v_prp2.toKernel()),decltype(shifts.toKernel())>), dim3(ite.wthr), dim3(ite.thr), 0, 0, o_part_loc2.toKernel(),v_pos2.toKernel(),v_prp2.toKernel(),shifts.toKernel(),old);
 
 	v_pos2.template deviceToHost<0>();
 	v_prp2.template deviceToHost<0,1,2>();
@@ -458,9 +453,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_fill_send_buffer_test )
 
 		auto ite = g_send_prp.get(i).getGPUIterator();
 
-		process_ghost_particles_prp<decltype(g_opart_device.toKernel()),decltype(g_send_prp.get(i).toKernel()),decltype(v_prp.toKernel()),0,1,2>
-		<<<ite.wthr,ite.thr>>>
-		(g_opart_device.toKernel(), g_send_prp.get(i).toKernel(),
+		hipLaunchKernelGGL(HIP_KERNEL_NAME(process_ghost_particles_prp<decltype(g_opart_device.toKernel()),decltype(g_send_prp.get(i).toKernel()),decltype(v_prp.toKernel()),0,1,2>), dim3(ite.wthr), dim3(ite.thr), 0, 0, g_opart_device.toKernel(), g_send_prp.get(i).toKernel(),
 		 v_prp.toKernel(),offset);
 
 		offset += g_send_prp.get(i).size();
@@ -557,9 +550,9 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 
 		for (size_t j = 0 ; j < n_part ; j++)
 		{
-			vg.template get<0>(k*n_part+j)[0] = (sp.getHigh(0) - sp.getLow(0))*((float)rand()/RAND_MAX) + sp.getLow(0);
-			vg.template get<0>(k*n_part+j)[1] = (sp.getHigh(1) - sp.getLow(1))*((float)rand()/RAND_MAX) + sp.getLow(1);
-			vg.template get<0>(k*n_part+j)[2] = (sp.getHigh(2) - sp.getLow(2))*((float)rand()/RAND_MAX) + sp.getLow(2);
+			vg.template get<0>(k*n_part+j)[0] = (sp.getHigh(0) - sp.getLow(0))*((double)rand()/RAND_MAX) + sp.getLow(0);
+			vg.template get<0>(k*n_part+j)[1] = (sp.getHigh(1) - sp.getLow(1))*((double)rand()/RAND_MAX) + sp.getLow(1);
+			vg.template get<0>(k*n_part+j)[2] = (sp.getHigh(2) - sp.getLow(2))*((double)rand()/RAND_MAX) + sp.getLow(2);
 		}
 	}
 
@@ -574,9 +567,7 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 	proc_id_out.template get<0>(proc_id_out.size()-1) = 0;
 	proc_id_out.template hostToDevice(proc_id_out.size()-1,proc_id_out.size()-1);
 
-	num_proc_ghost_each_part<3,float,decltype(dec.toKernel()),decltype(vg.toKernel()),decltype(proc_id_out.toKernel())>
-	<<<ite.wthr,ite.thr>>>
-	(dec.toKernel(),vg.toKernel(),proc_id_out.toKernel());
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(num_proc_ghost_each_part<3,float,decltype(dec.toKernel()),decltype(vg.toKernel()),decltype(proc_id_out.toKernel())>), dim3(ite.wthr), dim3(ite.thr), 0, 0, dec.toKernel(),vg.toKernel(),proc_id_out.toKernel());
 
 	proc_id_out.deviceToHost<0>();
 
@@ -624,9 +615,7 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 	ite = vg.getGPUIterator();
 
 	// we compute processor id for each particle
-	proc_label_id_ghost<3,float,decltype(dec.toKernel()),decltype(vg.toKernel()),decltype(starts.toKernel()),decltype(output.toKernel())>
-	<<<ite.wthr,ite.thr>>>
-	(dec.toKernel(),vg.toKernel(),starts.toKernel(),output.toKernel());
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(proc_label_id_ghost<3,float,decltype(dec.toKernel()),decltype(vg.toKernel()),decltype(starts.toKernel()),decltype(output.toKernel())>), dim3(ite.wthr), dim3(ite.thr), 0, 0, dec.toKernel(),vg.toKernel(),starts.toKernel(),output.toKernel());
 
 	output.template deviceToHost<0,1>();
 
@@ -722,9 +711,9 @@ BOOST_AUTO_TEST_CASE( decomposition_to_gpu_test_use )
 
 	for (size_t i = 0 ; i < 10000 ; i++)
 	{
-		vg.template get<0>(i)[0] = (float)rand()/RAND_MAX;
-		vg.template get<0>(i)[1] = (float)rand()/RAND_MAX;
-		vg.template get<0>(i)[2] = (float)rand()/RAND_MAX;
+		vg.template get<0>(i)[0] = (double)rand()/RAND_MAX;
+		vg.template get<0>(i)[1] = (double)rand()/RAND_MAX;
+		vg.template get<0>(i)[2] = (double)rand()/RAND_MAX;
 	}
 
 	vg.hostToDevice<0>();
@@ -742,9 +731,7 @@ BOOST_AUTO_TEST_CASE( decomposition_to_gpu_test_use )
 	dev_counter.fill<1>(0);
 	dev_counter.fill<2>(0);
 
-	process_id_proc_each_part<3,float,decltype(dec.toKernel()),decltype(vg.toKernel()),decltype(proc_id_out.toKernel()),decltype(dev_counter.toKernel())>
-	<<<ite.wthr,ite.thr>>>
-	(dec.toKernel(),vg.toKernel(),proc_id_out.toKernel(),dev_counter.toKernel(),v_cl.rank());
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(process_id_proc_each_part<3,float,decltype(dec.toKernel()),decltype(vg.toKernel()),decltype(proc_id_out.toKernel()),decltype(dev_counter.toKernel())>), dim3(ite.wthr), dim3(ite.thr), 0, 0, dec.toKernel(),vg.toKernel(),proc_id_out.toKernel(),dev_counter.toKernel(),v_cl.rank());
 
 
 	proc_id_out.deviceToHost<0>();
@@ -781,7 +768,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_find_buffer_offsets_test )
 	auto ite = vgp.getGPUIterator();
 	vgp.hostToDevice<0,1>();
 
-	CUDA_LAUNCH((find_buffer_offsets<1,decltype(vgp.toKernel()),decltype(offs.toKernel())>),ite,vgp.toKernel(),(int *)mem.getDevicePointer(),offs.toKernel());
+	hipLaunchKernelGGL(HIP_KERNEL_NAME((find_buffer_offsets<1,decltype(vgp.toKernel()),decltype(offs.toKernel())>)), dim3(), dim3(), 0, 0, vgp.toKernel(),(int *)mem.getDevicePointer(),offs.toKernel());
 
 	offs.template deviceToHost<0,1>();
 
@@ -832,7 +819,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_reorder_lbl)
 
 	auto ite = lbl_p.getGPUIterator();
 
-	reorder_lbl<decltype(lbl_p.toKernel()),decltype(starts.toKernel())><<<ite.wthr,ite.thr>>>(lbl_p.toKernel(),starts.toKernel());
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(reorder_lbl<decltype(lbl_p.toKernel()),decltype(starts.toKernel())>), dim3(ite.wthr), dim3(ite.thr), 0, 0, lbl_p.toKernel(),starts.toKernel());
 
 	starts.template deviceToHost<0>();
 	lbl_p.template deviceToHost<0,1,2>();
@@ -907,7 +894,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_merge_sort)
 
 	auto ite = v_pos.getGPUIterator();
 
-	merge_sort_part<false,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(ns_to_s.toKernel()),0><<<ite.wthr,ite.thr>>>(v_pos.toKernel(),v_prp.toKernel(),
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(merge_sort_part<false,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(ns_to_s.toKernel()),0>), dim3(ite.wthr), dim3(ite.thr), 0, 0, v_pos.toKernel(),v_prp.toKernel(),
 																								 v_pos_out.toKernel(),v_prp_out.toKernel(),
 																								 ns_to_s.toKernel());
 
@@ -931,7 +918,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_merge_sort)
 
 	BOOST_REQUIRE_EQUAL(match,true);
 
-	merge_sort_part<false,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(ns_to_s.toKernel()),1,2><<<ite.wthr,ite.thr>>>(v_pos.toKernel(),v_prp.toKernel(),
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(merge_sort_part<false,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(ns_to_s.toKernel()),1,2>), dim3(ite.wthr), dim3(ite.thr), 0, 0, v_pos.toKernel(),v_prp.toKernel(),
 																								 v_pos_out.toKernel(),v_prp_out.toKernel(),
 																								 ns_to_s.toKernel());
 
@@ -959,7 +946,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_merge_sort)
 
 	BOOST_REQUIRE_EQUAL(match,true);
 
-	merge_sort_part<true,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(ns_to_s.toKernel())><<<ite.wthr,ite.thr>>>(v_pos.toKernel(),v_prp.toKernel(),
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(merge_sort_part<true,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(ns_to_s.toKernel())>), dim3(ite.wthr), dim3(ite.thr), 0, 0, v_pos.toKernel(),v_prp.toKernel(),
 																								 v_pos_out.toKernel(),v_prp_out.toKernel(),
 																								 ns_to_s.toKernel());
 
@@ -1009,22 +996,22 @@ BOOST_AUTO_TEST_CASE(vector_dist_gpu_map_fill_send_buffer_test)
 
     for (size_t i = 0 ; i < v_pos.size() ; i++)
     {
-    	v_pos.template get<0>(i)[0] = (float)rand()/RAND_MAX;
-    	v_pos.template get<0>(i)[1] = (float)rand()/RAND_MAX;
-    	v_pos.template get<0>(i)[2] = (float)rand()/RAND_MAX;
+    	v_pos.template get<0>(i)[0] = (double)rand()/RAND_MAX;
+    	v_pos.template get<0>(i)[1] = (double)rand()/RAND_MAX;
+    	v_pos.template get<0>(i)[2] = (double)rand()/RAND_MAX;
 
-    	v_prp.template get<0>(i) = 5.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<1>(i)[0] = 10.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<1>(i)[1] = 11.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[0][0] = 40.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[0][1] = 50.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[0][2] = 60.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[1][0] = 70.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[1][1] = 80.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[1][2] = 150.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[2][0] = 160.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[2][1] = 170.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[2][2] = 340.0 + (float)rand()/RAND_MAX;
+    	v_prp.template get<0>(i) = 5.0 + (double)rand()/RAND_MAX;
+    	v_prp.template get<1>(i)[0] = 10.0 + (double)rand()/RAND_MAX;
+    	v_prp.template get<1>(i)[1] = 11.0 + (double)rand()/RAND_MAX;
+    	v_prp.template get<2>(i)[0][0] = 40.0 + (double)rand()/RAND_MAX;
+    	v_prp.template get<2>(i)[0][1] = 50.0 + (double)rand()/RAND_MAX;
+    	v_prp.template get<2>(i)[0][2] = 60.0 + (double)rand()/RAND_MAX;
+    	v_prp.template get<2>(i)[1][0] = 70.0 + (double)rand()/RAND_MAX;
+    	v_prp.template get<2>(i)[1][1] = 80.0 + (double)rand()/RAND_MAX;
+    	v_prp.template get<2>(i)[1][2] = 150.0 + (double)rand()/RAND_MAX;
+    	v_prp.template get<2>(i)[2][0] = 160.0 + (double)rand()/RAND_MAX;
+    	v_prp.template get<2>(i)[2][1] = 170.0 + (double)rand()/RAND_MAX;
+    	v_prp.template get<2>(i)[2][2] = 340.0 + (double)rand()/RAND_MAX;
 
     	int seg = i / 10000;
     	m_opart.template get<1>(i) = seg;
@@ -1049,10 +1036,8 @@ BOOST_AUTO_TEST_CASE(vector_dist_gpu_map_fill_send_buffer_test)
     {
     	auto ite = m_pos.get(i).getGPUIterator();
 
-		process_map_particles<decltype(m_opart.toKernel()),decltype(m_pos.get(i).toKernel()),decltype(m_prp.get(i).toKernel()),
-																		   decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>
-						<<<ite.wthr,ite.thr>>>
-						(m_opart.toKernel(),m_pos.get(i).toKernel(), m_prp.get(i).toKernel(),
+		hipLaunchKernelGGL(HIP_KERNEL_NAME(process_map_particles<decltype(m_opart.toKernel()),decltype(m_pos.get(i).toKernel()),decltype(m_prp.get(i).toKernel()),
+																		   decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>), dim3(ite.wthr), dim3(ite.thr), 0, 0, m_opart.toKernel(),m_pos.get(i).toKernel(), m_prp.get(i).toKernel(),
 											v_pos.toKernel(),v_prp.toKernel(),offset);
 
 		m_pos.get(i).deviceToHost<0>();
@@ -1114,9 +1099,9 @@ void vector_dist_remove_marked_type()
 	{
 		auto p = it.get();
 
-		vd.getPos(p)[0] = (float)rand() / RAND_MAX;
-		vd.getPos(p)[1] = (float)rand() / RAND_MAX;
-		vd.getPos(p)[2] = (float)rand() / RAND_MAX;
+		vd.getPos(p)[0] = (double)rand() / RAND_MAX;
+		vd.getPos(p)[1] = (double)rand() / RAND_MAX;
+		vd.getPos(p)[2] = (double)rand() / RAND_MAX;
 
 		++it;
 	}

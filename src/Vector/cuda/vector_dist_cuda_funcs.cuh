@@ -9,14 +9,15 @@
 #define VECTOR_DIST_CUDA_FUNCS_CUH_
 
 #include "Vector/util/vector_dist_funcs.hpp"
-#include "util/cuda/moderngpu/kernel_reduce.hxx"
-#include "util/cuda/moderngpu/kernel_scan.hxx"
 #include "Decomposition/common.hpp"
 #include "lib/pdata.hpp"
 #include "util/cuda/kernels.cuh"
 #include "util/cuda/scan_ofp.cuh"
 #include "memory/CudaMemory.cuh"
 #include "Vector/map_vector.hpp"
+#ifdef __NVCC__
+#include "util/cuda/moderngpu/kernel_reduce.hxx"
+#endif
 
 template<unsigned int dim, typename St, typename decomposition_type, typename vector_type, typename start_type, typename output_type>
 __global__ void proc_label_id_ghost(decomposition_type dec,vector_type vd, start_type starts, output_type out)
@@ -265,12 +266,22 @@ __global__  void reorder_lbl(vector_lbl_type m_opart, starts_type starts)
     m_opart.template get<0>(starts.template get<0>(pr) + m_opart.template get<2>(i)) = i;
 }
 
+#ifdef __HIPCC__
+#define GPU_PLUS_T rocprim::plus<red_type>
+#define GPU_MAX_T rocprim::maximum<red_type>
+#define NAMESPACE_PRIM rocprim
+#else
+#define GPU_PLUS_T mgpu::plus_t<red_type>
+#define GPU_MAX_T mgpu::maximum_t<red_type>
+#define NAMESPACE_PRIM mgpu
+#endif
+
 template<typename red_type>
-struct _add_: mgpu::plus_t<red_type>
+struct _add_: GPU_PLUS_T
 {};
 
 template<typename red_type>
-struct _max_: mgpu::maximum_t<red_type>
+struct _max_: GPU_MAX_T
 {};
 
 template<unsigned int prp, template <typename> class op, typename vector_type>
@@ -281,9 +292,17 @@ auto reduce_local(vector_type & vd) -> typename std::remove_reference<decltype(v
 	CudaMemory mem;
 	mem.allocate(sizeof(reduce_type));
 
+#ifdef __HIPCC__
+
+        std::cout << __FILE__ << ":" << __LINE__ << " error reduce must be constructed for HIPCC" << std::endl;
+
+#else
+
 	mgpu::reduce((reduce_type *)vd.getPropVector(). template getDeviceBuffer<prp>(),
 			            vd.size_local(), (reduce_type *)mem.getDevicePointer() ,
 			            op<reduce_type>(), vd.getVC().getmgpuContext());
+
+#endif
 
 	mem.deviceToHost();
 

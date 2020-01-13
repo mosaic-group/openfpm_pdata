@@ -8,6 +8,7 @@
 
 #define BOOST_TEST_DYN_LINK
 
+#include "config.h"
 #include <boost/test/unit_test.hpp>
 #include "grid_dist_amr.hpp"
 

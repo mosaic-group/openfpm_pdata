@@ -51,9 +51,15 @@ if ( HIP_ENABLE AND HIP_FOUND )
 
 
 	hip_add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} ${CPP_SOURCES})
+	hip_add_library(ofpm_pdata STATIC lib/pdata.cpp)
+
+	target_include_directories (pdata PUBLIC ${HIP_ROOT_DIR}/include)
+	#target_include_directories (pdata PUBLIC ${MPI_C_INCLUDE_DIRS}) # Well ........ it does not work, work around line below
+	set_property(TARGET pdata PROPERTY COMPILE_FLAGS "-I${MPI_C_INCLUDE_DIRS}")
 else()
 
 	add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} ${CPP_SOURCES})
+	add_library(ofpm_pdata STATIC lib/pdata.cpp)
 
 endif()
 
@@ -65,7 +71,6 @@ if ( CMAKE_COMPILER_IS_GNUCC )
 endif()
 
 
-add_library(ofpm_pdata STATIC lib/pdata.cpp)
 
 add_test(NAME pdata_3_proc COMMAND mpirun -np 3 ./pdata)
 add_test(NAME pdata_4_proc COMMAND mpirun -np 4 ./pdata)
@@ -79,6 +84,7 @@ if (CUDA_FOUND)
 		target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler "-fprofile-arcs -ftest-coverage">)
         endif()
 endif()
+
 
 if(TEST_PERFORMANCE)
         target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_numerics/src/)
@@ -95,9 +101,11 @@ target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
 target_include_directories (pdata PUBLIC ${PETSC_INCLUDES})
 target_include_directories (pdata PUBLIC ${HDF5_ROOT}/include)
 target_include_directories (pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
-target_include_directories (pdata PUBLIC ${HIP_INCLUDE_DIRS})
-
 target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
+
+if (HIP_ENABLE)
+        SET(CMAKE_EXE_LINKER_FLAGS  "--amdgpu-target=${AMD_ARCH_COMPILE}")
+endif()
 
 target_link_libraries(pdata ${Boost_LIBRARIES})
 target_link_libraries(pdata ${PARMETIS_LIBRARIES})
@@ -129,7 +137,6 @@ target_compile_definitions(pdata PRIVATE ${MPI_VENDOR})
 if(PETSC_FOUND)
 	target_link_libraries(pdata ${PETSC_LIBRARIES})
 endif()
-
 
 
 # Request that particles be built with -std=c++11

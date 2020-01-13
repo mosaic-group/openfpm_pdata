@@ -24,7 +24,7 @@
 #include "HDF5_wr/HDF5_wr.hpp"
 #include "SparseGrid/SparseGrid.hpp"
 #if defined(__NVCC__) || defined(__HIPCC__)
-#include "SparseGridGpu/SparseGridGpu.hpp"
+#include "SparseGridGpu/SparseGridGpu.cuh"
 #include "cuda/grid_dist_id_kernels.cuh"
 #include "Grid/cuda/grid_dist_id_iterator_gpu.cuh"
 #endif

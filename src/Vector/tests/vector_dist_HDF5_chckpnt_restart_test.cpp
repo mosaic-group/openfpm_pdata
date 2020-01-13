@@ -4,6 +4,9 @@
  *  Created on: Jun 12, 2016
  *      Author: Yaroslav Zaluzhnyi
  */
+
+#include "config.h"
+
 #define BOOST_TEST_DYN_LINK
 #include <boost/test/unit_test.hpp>
 

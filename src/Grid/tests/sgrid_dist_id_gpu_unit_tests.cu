@@ -1,5 +1,9 @@
 #define BOOST_TEST_DYN_LINK
 
+
+#include <hip/hip_runtime.h>
+#include "config.h"
+
 #include <boost/test/unit_test.hpp>
 #include "Grid/grid_dist_id.hpp"
 

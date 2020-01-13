@@ -14,7 +14,7 @@
 #include "Amr/grid_dist_amr_key_iterator.hpp"
 
 #if defined(__NVCC__) || defined(__HIPCC__)
-#include "SparseGridGpu/SparseGridGpu.hpp"
+#include "SparseGridGpu/SparseGridGpu.cuh"
 #endif
 
 #define AMR_IMPL_TRIVIAL 1

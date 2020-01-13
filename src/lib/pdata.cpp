@@ -4,6 +4,9 @@
  *  Created on: Feb 5, 2016
  *      Author: Pietro Incardona
  */
+#include "config.h"
+
+
 #include "pdata.hpp"
 #include "SubdomainGraphNodes.hpp"
 #include "memory/CudaMemory.cuh"

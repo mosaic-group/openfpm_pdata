@@ -484,7 +484,7 @@ public:
 
 	// default constructor (structure contain garbage)
 	vector_dist()
-	:v_cl(create_vcluster<Memory>()),opt(opt)
+	:v_cl(create_vcluster<Memory>())
 	{}
 
 

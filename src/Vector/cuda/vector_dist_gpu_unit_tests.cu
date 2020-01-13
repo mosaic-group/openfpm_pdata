@@ -1,4 +1,6 @@
 #define BOOST_TEST_DYN_LINK
+
+#include <hip/hip_runtime.h>
 #include "config.h"
 #include <boost/test/unit_test.hpp>
 #include "VCluster/VCluster.hpp"
@@ -213,9 +215,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_ghost_get )
 	{
 		auto p = it.get();
 
-		vd.getPos(p)[0] = (float)rand() / RAND_MAX;
-		vd.getPos(p)[1] = (float)rand() / RAND_MAX;
-		vd.getPos(p)[2] = (float)rand() / RAND_MAX;
+		vd.getPos(p)[0] = (double)rand() / RAND_MAX;
+		vd.getPos(p)[1] = (double)rand() / RAND_MAX;
+		vd.getPos(p)[2] = (double)rand() / RAND_MAX;
 
 		vd.template getProp<0>(p) = vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2];
 
@@ -273,7 +275,7 @@ void check_cell_list_cpu_and_gpu(vector_type & vd, CellList_type & NN, CellList_
 {
 	auto it5 = vd.getDomainIteratorGPU(32);
 
-	calculate_force<typename vector_type::stype,decltype(NN.toKernel())><<<it5.wthr,it5.thr>>>(vd.toKernel(),vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(calculate_force<typename vector_type::stype,decltype(NN.toKernel())>), dim3(it5.wthr), dim3(it5.thr), 0, 0, vd.toKernel(),vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
 
 	vd.template deviceToHostProp<1,2>();
 
@@ -299,7 +301,7 @@ void check_cell_list_cpu_and_gpu(vector_type & vd, CellList_type & NN, CellList_
 
 	// We do exactly the same test as before, but now we completely use the sorted version
 
-	calculate_force_full_sort<typename vector_type::stype,decltype(NN.toKernel())><<<it5.wthr,it5.thr>>>(vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(calculate_force_full_sort<typename vector_type::stype,decltype(NN.toKernel())>), dim3(it5.wthr), dim3(it5.thr), 0, 0, vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
 
 	vd.template merge_sort<1>(NN);
 	vd.template deviceToHostProp<1>();
@@ -338,9 +340,9 @@ void vector_dist_gpu_test_impl()
 		int y = rand();
 		int z = rand();
 
-		vd.getPos(p)[0] = (float)x / RAND_MAX;
-		vd.getPos(p)[1] = (float)y / RAND_MAX;
-		vd.getPos(p)[2] = (float)z / RAND_MAX;
+		vd.getPos(p)[0] = (double)x / RAND_MAX;
+		vd.getPos(p)[1] = (double)y / RAND_MAX;
+		vd.getPos(p)[2] = (double)z / RAND_MAX;
 
 		Point<3,float> xp = vd.getPos(p);
 
@@ -385,7 +387,7 @@ void vector_dist_gpu_test_impl()
 	// offload to device
 	vd.hostToDevicePos();
 
-	initialize_props<<<it3.wthr,it3.thr>>>(vd.toKernel());
+	hipLaunchKernelGGL(initialize_props, dim3(it3.wthr), dim3(it3.thr), 0, 0, vd.toKernel());
 
 	// now we check what we initialized
 
@@ -457,9 +459,9 @@ void vector_dist_gpu_make_sort_test_impl()
 		int y = rand();
 		int z = rand();
 
-		vd.getPos(p)[0] = (float)x / RAND_MAX;
-		vd.getPos(p)[1] = (float)y / RAND_MAX;
-		vd.getPos(p)[2] = (float)z / RAND_MAX;
+		vd.getPos(p)[0] = (double)x / RAND_MAX;
+		vd.getPos(p)[1] = (double)y / RAND_MAX;
+		vd.getPos(p)[2] = (double)z / RAND_MAX;
 
 		++it;
 	}
@@ -471,7 +473,7 @@ void vector_dist_gpu_make_sort_test_impl()
 
 	auto it3 = vd.getDomainIteratorGPU();
 
-	initialize_props<<<it3.wthr,it3.thr>>>(vd.toKernel());
+	hipLaunchKernelGGL(initialize_props, dim3(it3.wthr), dim3(it3.thr), 0, 0, vd.toKernel());
 
 	// Here we check make sort does not mess-up particles we use a Cell-List to check that
 	// the two cell-list constructed are identical
@@ -592,9 +594,9 @@ void vdist_calc_gpu_test()
 	{
 		auto p = it.get();
 
-		vd.getPos(p)[0] = (St)rand() / RAND_MAX;
-		vd.getPos(p)[1] = (St)rand() / RAND_MAX;
-		vd.getPos(p)[2] = (St)rand() / RAND_MAX;
+		vd.getPos(p)[0] = (double)rand() / RAND_MAX;
+		vd.getPos(p)[1] = (double)rand() / RAND_MAX;
+		vd.getPos(p)[2] = (double)rand() / RAND_MAX;
 
 		vd.template getProp<0>(p) = vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2];
 
@@ -697,7 +699,7 @@ void vdist_calc_gpu_test()
 	{
 		vd.map(RUN_ON_DEVICE);
 
-		CUDA_SAFE(cudaGetLastError());
+		CUDA_SAFE(hipGetLastError());
 
 		vd.deviceToHostPos();
 		vd.template deviceToHostProp<0,1,2>();
@@ -843,7 +845,7 @@ void vdist_calc_gpu_test()
 		// move particles on gpu
 
 		auto ite = vd.getDomainIteratorGPU();
-		move_parts_gpu_test<3,decltype(vd.toKernel())><<<ite.wthr,ite.thr>>>(vd.toKernel());
+		hipLaunchKernelGGL(HIP_KERNEL_NAME(move_parts_gpu_test<3,decltype(vd.toKernel())>), dim3(ite.wthr), dim3(ite.thr), 0, 0, vd.toKernel());
 	}
 }
 
@@ -1726,7 +1728,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_overflow_se_class1)
 	ite.thr.y = 1;
 	ite.thr.z = 1;
 
-	CUDA_LAUNCH(launch_overflow,ite,vdg.toKernel(),vdg2.toKernel());
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(launch_overflow), dim3(), dim3(), 0, 0, vdg.toKernel(),vdg2.toKernel());
 
 	std::cout << "****** TEST ERROR MESSAGE END ********" << std::endl;
 }

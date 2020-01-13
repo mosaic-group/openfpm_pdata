@@ -1,4 +1,7 @@
 #define BOOST_TEST_DYN_LINK
+
+#include <hip/hip_runtime.h>
+#include "config.h"
 #include <boost/test/unit_test.hpp>
 
 #include "VCluster/VCluster.hpp"
@@ -76,7 +79,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 			CudaMemory mem;
 			mem.allocate(2*sizeof(unsigned int));
 
-			test_proc_idbc<decltype(gpudec)><<<1,1>>>(p1,p2,gpudec,(unsigned int *)mem.getDevicePointer());
+			hipLaunchKernelGGL(HIP_KERNEL_NAME(test_proc_idbc<decltype(gpudec)>), dim3(1), dim3(1), 0, 0, p1,p2,gpudec,(unsigned int *)mem.getDevicePointer());
 
 			mem.deviceToHost();
 
@@ -85,7 +88,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 
 			CudaMemory mem2;
 			mem2.allocate(2*sizeof(unsigned int));
-			test_ghost_n<decltype(gpudec)><<<1,1>>>(p1,p2,gpudec,(unsigned int *)mem2.getDevicePointer());
+			hipLaunchKernelGGL(HIP_KERNEL_NAME(test_ghost_n<decltype(gpudec)>), dim3(1), dim3(1), 0, 0, p1,p2,gpudec,(unsigned int *)mem2.getDevicePointer());
 
 			mem2.deviceToHost();
 
@@ -93,7 +96,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 
 			openfpm::vector_gpu<aggregate<int,int>> vd;
 			vd.resize(tot);
-			test_ghost<decltype(gpudec),decltype(vd.toKernel())><<<1,1>>>(p1,p2,gpudec,(unsigned int *)mem2.getDevicePointer(),vd.toKernel());
+			hipLaunchKernelGGL(HIP_KERNEL_NAME(test_ghost<decltype(gpudec),decltype(vd.toKernel())>), dim3(1), dim3(1), 0, 0, p1,p2,gpudec,(unsigned int *)mem2.getDevicePointer(),vd.toKernel());
 
 			if (((unsigned int *)mem.getPointer())[0] != ((unsigned int *)mem.getPointer())[1])
 			{
@@ -119,7 +122,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 
 			p2.get(j) = std::nextafter(SpaceBox<3,double>(dec.getSubDomains().get(i)).getHigh(j),1.0);
 
-			test_proc_idbc<decltype(gpudec)><<<1,1>>>(p1,p2,gpudec,(unsigned int *)mem.getDevicePointer());
+			hipLaunchKernelGGL(HIP_KERNEL_NAME(test_proc_idbc<decltype(gpudec)>), dim3(1), dim3(1), 0, 0, p1,p2,gpudec,(unsigned int *)mem.getDevicePointer());
 
 			mem.deviceToHost();
 
@@ -127,14 +130,14 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 			BOOST_REQUIRE(((unsigned int *)mem.getPointer())[1] < vcl.size());
 
 			mem2.allocate(2*sizeof(unsigned int));
-			test_ghost_n<decltype(gpudec)><<<1,1>>>(p1,p2,gpudec,(unsigned int *)mem2.getDevicePointer());
+			hipLaunchKernelGGL(HIP_KERNEL_NAME(test_ghost_n<decltype(gpudec)>), dim3(1), dim3(1), 0, 0, p1,p2,gpudec,(unsigned int *)mem2.getDevicePointer());
 
 			mem2.deviceToHost();
 
 			tot = ((unsigned int *)mem2.getPointer())[0] + ((unsigned int *)mem2.getPointer())[1];
 
 			vd.resize(tot);
-			test_ghost<decltype(gpudec),decltype(vd.toKernel())><<<1,1>>>(p1,p2,gpudec,(unsigned int *)mem2.getDevicePointer(),vd.toKernel());
+			hipLaunchKernelGGL(HIP_KERNEL_NAME(test_ghost<decltype(gpudec),decltype(vd.toKernel())>), dim3(1), dim3(1), 0, 0, p1,p2,gpudec,(unsigned int *)mem2.getDevicePointer(),vd.toKernel());
 
 			if (((unsigned int *)mem.getPointer())[0] != ((unsigned int *)mem.getPointer())[1])
 			{

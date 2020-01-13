@@ -32,4 +32,4 @@ rm -rf eigen-3.3.7/
 touch $1/EIGEN/signature_of_eigen3_matrix_library
 
 # Mark the installation
-echo 3 > $1/EIGEN/version
+echo 3 > $1/EIGEN/version_eigen

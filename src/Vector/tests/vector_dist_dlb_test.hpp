@@ -30,32 +30,32 @@ void mp_test_template(vector_type & vd0, vector_type & vd1, vector_type & vd2, v
 			vd3.add();
 
 			// coverty[dont_call]
-			vd0.getLastPos()[0] = ((float)rand())/RAND_MAX * 0.3;
+			vd0.getLastPos()[0] = ((double)rand())/RAND_MAX * 0.3;
 			// coverty[dont_call]
-			vd0.getLastPos()[1] = ((float)rand())/RAND_MAX * 0.3;
+			vd0.getLastPos()[1] = ((double)rand())/RAND_MAX * 0.3;
 			// coverty[dont_call]
-			vd0.getLastPos()[2] = ((float)rand())/RAND_MAX * 0.3;
+			vd0.getLastPos()[2] = ((double)rand())/RAND_MAX * 0.3;
 
 			// coverty[dont_call]
-			vd1.getLastPos()[0] = ((float)rand())/RAND_MAX * 0.3 + 0.1;
+			vd1.getLastPos()[0] = ((double)rand())/RAND_MAX * 0.3 + 0.1;
 			// coverty[dont_call]
-			vd1.getLastPos()[1] = ((float)rand())/RAND_MAX * 0.3 + 0.1;
+			vd1.getLastPos()[1] = ((double)rand())/RAND_MAX * 0.3 + 0.1;
 			// coverty[dont_call]
-			vd1.getLastPos()[2] = ((float)rand())/RAND_MAX * 0.3 + 0.1;
+			vd1.getLastPos()[2] = ((double)rand())/RAND_MAX * 0.3 + 0.1;
 
 			// coverty[dont_call]
-			vd2.getLastPos()[0] = ((float)rand())/RAND_MAX * 0.3 + 0.2;
+			vd2.getLastPos()[0] = ((double)rand())/RAND_MAX * 0.3 + 0.2;
 			// coverty[dont_call]
-			vd2.getLastPos()[1] = ((float)rand())/RAND_MAX * 0.3 + 0.2;
+			vd2.getLastPos()[1] = ((double)rand())/RAND_MAX * 0.3 + 0.2;
 			// coverty[dont_call]
-			vd2.getLastPos()[2] = ((float)rand())/RAND_MAX * 0.3 + 0.2;
+			vd2.getLastPos()[2] = ((double)rand())/RAND_MAX * 0.3 + 0.2;
 
 			// coverty[dont_call]
-			vd3.getLastPos()[0] = ((float)rand())/RAND_MAX * 0.3 + 0.3;
+			vd3.getLastPos()[0] = ((double)rand())/RAND_MAX * 0.3 + 0.3;
 			// coverty[dont_call]
-			vd3.getLastPos()[1] = ((float)rand())/RAND_MAX * 0.3 + 0.3;
+			vd3.getLastPos()[1] = ((double)rand())/RAND_MAX * 0.3 + 0.3;
 			// coverty[dont_call]
-			vd3.getLastPos()[2] = ((float)rand())/RAND_MAX * 0.3 + 0.3;
+			vd3.getLastPos()[2] = ((double)rand())/RAND_MAX * 0.3 + 0.3;
 		}
 	}
 
