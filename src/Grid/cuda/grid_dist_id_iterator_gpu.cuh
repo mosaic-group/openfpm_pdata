@@ -12,6 +12,7 @@
 #include "Grid/Iterators/grid_dist_id_iterator.hpp"
 #include "Grid/grid_dist_util.hpp"
 #include "Grid/Iterators/grid_dist_id_iterator_util.hpp"
+#include "Grid/cuda/grid_dist_id_kernels.cuh"
 
 /*! \brief Given the decomposition it create an iterator
  *

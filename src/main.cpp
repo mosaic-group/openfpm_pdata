@@ -1,4 +1,5 @@
 #include <iostream>
+#include <thread>
 
 size_t debug_tot_call = 0;
 
@@ -10,6 +11,15 @@ size_t debug_tot_call = 0;
 
 #define NO_WARNING
 #include "Graph/CartesianGraphFactory.hpp"
+
+void timeout_cycle()
+{
+	// 6 seconds
+	std::this_thread::sleep_for (std::chrono::seconds(900));
+
+	std::cout << "Time Out" << std::endl;
+	std::exit(1);
+}
 
 #define BOOST_DISABLE_ASSERTS
 
@@ -23,10 +33,12 @@ size_t debug_tot_call = 0;
 // initialization function:
 bool init_unit_test()
 {
+  std::thread to (timeout_cycle);
+  to.detach();
   return true;
 }
 
-// entry point:
+// entry point
 int main(int argc, char* argv[])
 {
   return boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
