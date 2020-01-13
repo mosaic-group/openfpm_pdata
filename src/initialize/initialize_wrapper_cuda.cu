@@ -1,7 +1,5 @@
 #define PRINT_RANK_TO_GPU
 
-
-#include <hip/hip_runtime.h>
 #include "initialize_wrapper.hpp"
 #include "VCluster/VCluster.hpp"
 
