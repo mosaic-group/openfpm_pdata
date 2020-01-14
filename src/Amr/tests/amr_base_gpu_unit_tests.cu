@@ -191,4 +191,43 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_amr_gpu )
 	BOOST_REQUIRE_EQUAL(count_c,correct_result_cell);*/
 }
 
+
+BOOST_AUTO_TEST_CASE( grid_dist_id_amr_gpu_link_test )
+{
+	auto & v_cl = create_vcluster();
+
+	// Domain
+	Box<2,float> domain({0.0,0.0},{1.0,1.0});
+
+	Ghost<2,long int> g(1);
+	sgrid_dist_amr_gpu<2,float,aggregate<float>> amr_g(domain,g);
+
+	size_t g_sz[2] = {17,17};
+
+	size_t n_lvl = 2;
+
+	amr_g.initLevels(n_lvl,g_sz);
+
+//	auto it = amr_g.getGridIteratorGPU(i);
+//	it.setGPUInsertBuffer(4);
+
+	/////////////////////////////////////////////////////////////
+
+	auto & lvl_zero = amr_g.getDistGrid(0).get_loc_grid(0);
+	auto & lvl_one = amr_g.getDistGrid(1).get_loc_grid(0);
+
+	grid_key_dx<2> k({8,8});
+	grid_key_dx<2> k2({16,16});
+
+	lvl_zero.insertFlush<0>(k) = 1.0;
+	lvl_one.insertFlush<0>(k2) = 5.0;
+
+	lvl_one.template hostToDevice<0>();
+	lvl_one.tagBoundaries(v_cl.getmgpuContext());
+
+	/////////////////////////////////////////////////////////////
+
+
+}
+
 BOOST_AUTO_TEST_SUITE_END()

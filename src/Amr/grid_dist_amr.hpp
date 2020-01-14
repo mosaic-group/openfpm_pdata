@@ -718,6 +718,21 @@ public:
 		return gd_array.get(lvl).remove(v1);
 	}
 
+	/*! \brief construct level connections for padding particles
+	 *
+	 *
+	 *
+	 *
+	 */
+	void construct_level_connections()
+	{
+		for (int lvl = 0 ; lvl < gd_array.size() ; lvl++)
+		{
+			gd_array.get(lvl).construct_link(gd_array.get(lvl-1),gd_array.get(lvl+1));
+		}
+	}
+
+
 	//////////////////////////////////////
 
 	/*! \brief It synchronize the ghost parts

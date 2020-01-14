@@ -80,6 +80,8 @@ template<unsigned int dim,
 		 typename device_grid=grid_cpu<dim,T> >
 class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,device_grid>
 {
+	typedef grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> self;
+
 	//! Domain
 	Box<dim,St> domain;
 
@@ -2585,6 +2587,20 @@ public:
 	{
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{loc_grid.get(i).clear();}
+	}
+
+	/*! \brief construct link between levels
+	 *
+	 * \praram grid_up grid level up
+	 * \param grid_dw grid level down
+	 *
+	 */
+	void construct_link(self & grid_up, self & grid_dw)
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			loc_grid.get(i).construct_link(grid_up.get(i).grid_dw.get(i));
+		}
 	}
 
 	/*! \brief It move all the grid parts that do not belong to the local processor to the respective processor
