@@ -109,12 +109,6 @@ void Test2D_ghost(Box<2,float> & box)
 	// Convert the request of having a minimum n_sub number of sub-sub domain into grid decompsition of the space
 	size_t sz = CartDecomposition<2,float>::getDefaultGrid(n_sub);
 
-	if (v_cl.rank() == 0)
-	{
-		std::cout << "CRASH" << std::endl;
-		return;
-	}
-
 	//! [Create a vector of elements distributed on a grid like way]
 
 	size_t g_div[]= {sz,sz};
