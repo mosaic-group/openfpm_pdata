@@ -115,18 +115,6 @@ class grid_dist_amr
 
 };
 
-/*! \brief It contain the offset necessary to move to coarser and finer level grids
- *
- */
-template<unsigned int dim>
-struct offset_mv
-{
-	//! offset to move up on an upper grid (coarse)
-	Point<dim,long int> up;
-
-	//! offset to move on the lower grid (finer)
-	Point<dim,long int> dw;
-};
 
 /*! \brief AMR Adaptive Multi Resolution Grid
  *
@@ -466,6 +454,16 @@ public:
 		return gd_array.get(lvl).getGridIterator();
 	}
 
+	/*! \brief Get an iterator to the grid
+	 *
+	 * \return an iterator to the grid
+	 *
+	 */
+	auto getGridIterator(size_t lvl, grid_key_dx<dim> & start, grid_key_dx<dim> & stop) -> decltype(gd_array.get(lvl).getGridIterator(start,stop))
+	{
+		return gd_array.get(lvl).getGridIterator(start,stop);
+	}
+
 #ifdef __NVCC__
 
 	/*! \brief Get an iterator to the grid
@@ -718,6 +716,41 @@ public:
 		return gd_array.get(lvl).remove(v1);
 	}
 
+	/*! \brief construct level connections for padding particles
+	 *
+	 *
+	 */
+	void construct_level_connections()
+	{
+		for (int lvl = 0 ; lvl < gd_array.size() ; lvl++)
+		{
+			if (lvl == 0)
+			{
+				gd_array.get(lvl).construct_link_dw(gd_array.get(lvl+1),mv_off.get(lvl));
+			}
+			else if (lvl == gd_array.size() - 1)
+			{gd_array.get(lvl).construct_link_up(gd_array.get(lvl-1));}
+			else
+			{
+				gd_array.get(lvl).construct_link_dw(gd_array.get(lvl+1),mv_off.get(lvl));
+			}
+		}
+	}
+
+	/*! \brief construct level connections for padding particles
+	 *
+	 * \tparam stencil_type type of stencil
+	 *
+	 */
+    template<typename stencil_type>
+    void tagBoundaries()
+	{
+		for (int lvl = 0 ; lvl < gd_array.size() ; lvl++)
+		{
+			gd_array.get(lvl).template tagBoundaries<stencil_type>();
+		}
+	}
+
 	//////////////////////////////////////
 
 	/*! \brief It synchronize the ghost parts
@@ -918,6 +951,32 @@ public:
 
 		return ret;
 	}
+
+#ifdef __NVCC__
+
+	/*! \brief Move the memory from the device to host memory
+	 *
+	 */
+	template<unsigned int ... prp> void deviceToHost()
+	{
+		for (size_t i = 0 ; i < gd_array.size() ; i++)
+		{
+			gd_array.get(i).template deviceToHost<prp ...>();
+		}
+	}
+
+	/*! \brief Move the memory from the device to host memory
+	 *
+	 */
+	template<unsigned int ... prp> void hostToDevice()
+	{
+		for (size_t i = 0 ; i < gd_array.size() ; i++)
+		{
+			gd_array.get(i).template hostToDevice<prp ...>();
+		}
+	}
+
+#endif
 };
 
 template<unsigned int dim, typename St, typename T>

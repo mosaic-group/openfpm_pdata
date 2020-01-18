@@ -29,6 +29,18 @@
 #include "Grid/cuda/grid_dist_id_iterator_gpu.cuh"
 #endif
 
+/*! \brief It contain the offset necessary to move to coarser and finer level grids
+ *
+ */
+template<unsigned int dim>
+struct offset_mv
+{
+	//! offset to move up on an upper grid (coarse)
+	Point<dim,long int> up;
+
+	//! offset to move on the lower grid (finer)
+	Point<dim,long int> dw;
+};
 
 //! Internal ghost box sent to construct external ghost box into the other processors
 template<unsigned int dim>
@@ -80,6 +92,8 @@ template<unsigned int dim,
 		 typename device_grid=grid_cpu<dim,T> >
 class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,device_grid>
 {
+	typedef grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> self;
+
 	//! Domain
 	Box<dim,St> domain;
 
@@ -2030,7 +2044,8 @@ public:
 	 *
 	 * In case of dense grid this function is equivalent to get, in case of sparse
 	 * grid this function insert a grid point. When the point already exist it return
-	 * a reference to the already existing point
+	 * a reference to the already existing point. In case of massive insert Sparse grids
+	 * it give a reference to the inserted element in the insert buffer
 	 *
 	 * \tparam p property to get (is an integer)
 	 * \param v1 grid_key that identify the element in the grid
@@ -2051,6 +2066,35 @@ public:
 		return loc_grid.get(v1.getSub()).template insert<p>(v1.getKey());
 	}
 
+
+	/*! \brief insert an element in the grid
+	 *
+	 * In case of dense grid this function is equivalent to get, in case of sparse
+	 * grid this function insert a grid point. When the point already exist it return
+	 * a reference to the already existing point. In case of massive insert Sparse grids
+	 * The point is inserted immediately and a reference to the inserted element is returned
+	 *
+	 * \warning This function is not fast an unlucky insert can potentially cost O(N) where N is the number
+	 *          of points (worst case)
+	 *
+	 * \tparam p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return a reference to the inserted element
+	 *
+	 */
+	template <unsigned int p,typename bg_key>inline auto insertFlush(const grid_dist_key_dx<dim,bg_key> & v1)
+	-> typename std::add_lvalue_reference
+	<
+		decltype(loc_grid.get(v1.getSub()).template insertFlush<p>(v1.getKey()))
+	>::type
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+
+		return loc_grid.get(v1.getSub()).template insertFlush<p>(v1.getKey());
+	}
 
 	/*! \brief Get the reference of the selected element
 	 *
@@ -2585,6 +2629,67 @@ public:
 	{
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{loc_grid.get(i).clear();}
+	}
+
+	/*! \brief construct link between levels
+	 *
+	 * \praram grid_up grid level up
+	 * \param grid_dw grid level down
+	 *
+	 */
+	void construct_link(self & grid_up, self & grid_dw)
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			loc_grid.get(i).construct_link(grid_up.get_loc_grid(i),grid_dw.get_loc_grid(i),v_cl.getmgpuContext());
+		}
+	}
+
+	/*! \brief construct link between current and the level down
+	 *
+	 *
+	 * \param grid_dw grid level down
+	 *
+	 */
+	void construct_link_dw(self & grid_dw, openfpm::vector<offset_mv<dim>> & mvof)
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			Point<dim,int> p_dw;
+			for(int j = 0 ; j < dim ; j++)
+			{p_dw.get(j) = mvof.get(i).dw.get(j);}
+
+			loc_grid.get(i).construct_link_dw(grid_dw.get_loc_grid(i),p_dw,v_cl.getmgpuContext());
+		}
+	}
+
+	/*! \brief construct link between current and the level up
+	 *
+	 *
+	 * \param grid_dw grid level down
+	 *
+	 */
+	void construct_link_up(self & grid_up)
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			loc_grid.get(i).construct_link_up(grid_up.get_loc_grid(i),v_cl.getmgpuContext());
+		}
+	}
+
+	/*! \brief construct link between current and the level up
+	 *
+	 *
+	 * \param grid_dw grid level down
+	 *
+	 */
+    template<typename stencil_type>
+    void tagBoundaries()
+    {
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			loc_grid.get(i).template tagBoundaries<stencil_type>(v_cl.getmgpuContext());
+		}
 	}
 
 	/*! \brief It move all the grid parts that do not belong to the local processor to the respective processor

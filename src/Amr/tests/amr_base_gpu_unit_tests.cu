@@ -191,4 +191,138 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_amr_gpu )
 	BOOST_REQUIRE_EQUAL(count_c,correct_result_cell);*/
 }
 
+BOOST_AUTO_TEST_CASE( grid_dist_id_amr_gpu_link_test )
+{
+	auto & v_cl = create_vcluster();
+
+	// Domain
+	Box<2,float> domain({0.0,0.0},{1.0,1.0});
+
+	Ghost<2,long int> g(1);
+	sgrid_dist_amr_gpu<2,float,aggregate<float>> amr_g(domain,g);
+
+	size_t g_sz[2] = {17,17};
+
+	size_t n_lvl = 3;
+
+	amr_g.initLevels(n_lvl,g_sz);
+
+	grid_key_dx<2> start({5,5});
+	grid_key_dx<2> start_lvl_dw({9,9});
+	grid_key_dx<2> stop_lvl_dw({12,12});
+	grid_key_dx<2> start_lvl_dw2({19,19});
+	grid_key_dx<2> stop_lvl_dw2({23,23});
+
+	auto it = amr_g.getGridIterator(0,start,start);
+	auto it2 = amr_g.getGridIterator(1,start_lvl_dw,stop_lvl_dw);
+	auto it3 = amr_g.getGridIterator(2,start_lvl_dw2,stop_lvl_dw2);
+//	it.setGPUInsertBuffer(4);
+
+	auto & lvl_0 = amr_g.getDistGrid(0);
+	auto & lvl_1 = amr_g.getDistGrid(1);
+	auto & lvl_2 = amr_g.getDistGrid(2);
+
+	// Add points in level 0
+
+	while (it.isNext())
+	{
+		auto key = it.get_dist();
+
+		lvl_0.template insertFlush<0>(key) = 1.0;
+
+		++it;
+	}
+
+	while (it2.isNext())
+	{
+		auto key = it2.get_dist();
+
+		lvl_1.template insertFlush<0>(key) = 2.0;
+
+		++it2;
+	}
+
+	while (it3.isNext())
+	{
+		auto key = it3.get_dist();
+
+		lvl_2.template insertFlush<0>(key) = 3.0;
+
+		++it3;
+	}
+
+	amr_g.hostToDevice<0>();
+	amr_g.tagBoundaries<NNStar<2>>();
+	amr_g.construct_level_connections();
+
+	/////////////////////////////////////////////////////////////
+
+	auto & lvl_zero_d = amr_g.getDistGrid(0);
+	auto & lvl_one_d = amr_g.getDistGrid(1);
+	auto & lvl_two_d = amr_g.getDistGrid(2);
+
+	// For each local grid
+
+	for (int i = 0 ; i < lvl_zero_d.getN_loc_grid() ; i++)
+	{
+
+		// Check
+		auto & lvl_zero = lvl_zero_d.get_loc_grid(i);
+		auto & lvl_one = lvl_one_d.get_loc_grid(i);
+		auto & lvl_two = lvl_two_d.get_loc_grid(i);
+
+		auto & offs_dw_link = lvl_zero.getDownLinksOffsets();
+		auto & dw_links = lvl_zero.getDownLinks();
+
+		BOOST_REQUIRE_EQUAL(offs_dw_link.size(),1);
+		BOOST_REQUIRE_EQUAL(dw_links.size(),4);
+
+		auto & indexL0 = lvl_zero.private_get_blockMap().getIndexBuffer();
+		auto & indexL1 = lvl_one.private_get_blockMap().getIndexBuffer();
+		auto & indexL2 = lvl_two.private_get_blockMap().getIndexBuffer();
+
+		auto & dataL0 = lvl_zero.private_get_blockMap().getDataBuffer();
+		auto & dataL1 = lvl_one.private_get_blockMap().getDataBuffer();
+		auto & dataL2 = lvl_two.private_get_blockMap().getDataBuffer();
+
+		dw_links.template deviceToHost<0,1>();
+
+		BOOST_REQUIRE_EQUAL(dataL1.template get<0>(dw_links.template get<0>(0))[dw_links.template get<1>(0)],2);
+		BOOST_REQUIRE_EQUAL(dataL1.template get<0>(dw_links.template get<0>(1))[dw_links.template get<1>(1)],2);
+		BOOST_REQUIRE_EQUAL(dataL1.template get<0>(dw_links.template get<0>(2))[dw_links.template get<1>(2)],2);
+		BOOST_REQUIRE_EQUAL(dataL1.template get<0>(dw_links.template get<0>(3))[dw_links.template get<1>(3)],2);
+
+		auto & offs_dw_link_1 = lvl_one.getDownLinksOffsets();
+		auto & dw_links_1 = lvl_one.getDownLinks();
+
+		BOOST_REQUIRE_EQUAL(offs_dw_link_1.size(),12);
+		BOOST_REQUIRE_EQUAL(dw_links_1.size(),9);
+
+		dw_links_1.template deviceToHost<0,1>();
+
+		BOOST_REQUIRE_EQUAL(dataL2.template get<0>(dw_links_1.template get<0>(0))[dw_links_1.template get<1>(0)],3);
+		BOOST_REQUIRE_EQUAL(dataL2.template get<0>(dw_links_1.template get<0>(1))[dw_links_1.template get<1>(1)],3);
+		BOOST_REQUIRE_EQUAL(dataL2.template get<0>(dw_links_1.template get<0>(2))[dw_links_1.template get<1>(2)],3);
+		BOOST_REQUIRE_EQUAL(dataL2.template get<0>(dw_links_1.template get<0>(3))[dw_links_1.template get<1>(3)],3);
+		BOOST_REQUIRE_EQUAL(dataL2.template get<0>(dw_links_1.template get<0>(4))[dw_links_1.template get<1>(4)],3);
+		BOOST_REQUIRE_EQUAL(dataL2.template get<0>(dw_links_1.template get<0>(5))[dw_links_1.template get<1>(5)],3);
+		BOOST_REQUIRE_EQUAL(dataL2.template get<0>(dw_links_1.template get<0>(6))[dw_links_1.template get<1>(6)],3);
+		BOOST_REQUIRE_EQUAL(dataL2.template get<0>(dw_links_1.template get<0>(7))[dw_links_1.template get<1>(7)],3);
+		BOOST_REQUIRE_EQUAL(dataL2.template get<0>(dw_links_1.template get<0>(8))[dw_links_1.template get<1>(8)],3);
+	}
+
+/*	grid_key_dx<2> k({8,8});
+	grid_key_dx<2> k2({16,16});
+
+	lvl_zero.insertFlush<0>(k) = 1.0;
+	lvl_one.insertFlush<0>(k2) = 5.0;
+
+	lvl_one.template hostToDevice<0>();
+	lvl_one.tagBoundaries(v_cl.getmgpuContext());*/
+
+	/////////////////////////////////////////////////////////////
+
+
+}
+
 BOOST_AUTO_TEST_SUITE_END()

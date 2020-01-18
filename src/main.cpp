@@ -34,8 +34,8 @@ void timeout_cycle()
 // initialization function:
 bool init_unit_test()
 {
-  std::thread to (timeout_cycle);
-  to.detach();
+//  std::thread to (timeout_cycle);
+//  to.detach();
   return true;
 }
 
