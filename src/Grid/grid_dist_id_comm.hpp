@@ -374,6 +374,10 @@ class grid_dist_id_comm
 			    		 std::vector<size_t> & prp_recv,
 						 ExtPreAlloc<Memory> & prRecv_prp)
 	{
+#ifdef __NVCC__
+		cudaDeviceSynchronize();
+#endif
+
 		if (device_grid::isCompressed() == false)
 		{
 			//! Receive the information from each processors
