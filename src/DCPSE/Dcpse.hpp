@@ -1,12 +1,10 @@
 //
 // Created by tommaso on 29/03/19.
 //
-
 #ifndef OPENFPM_PDATA_DCPSE_HPP
 #define OPENFPM_PDATA_DCPSE_HPP
 
 #ifdef HAVE_EIGEN
-
 #include "Vector/vector_dist.hpp"
 #include "MonomialBasis.hpp"
 #include "../../openfpm_numerics/src/DMatrix/EMatrix.hpp"
@@ -370,7 +368,6 @@ void Dcpse<dim, T, list...>::initializeStaticSize(vector_dist<dim, T, aggregate<
         ++it;
     }
 }
-
-#endif // HAVE_EIGEN
-
+#endif
 #endif //OPENFPM_PDATA_DCPSE_HPP
+
