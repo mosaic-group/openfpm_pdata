@@ -50,6 +50,14 @@ MatrixType &DcpseRhs<dim>::getVector(MatrixType &b)
         const Monomial<dim> dm = derivatives.getElement(i);
         b(i, 0) = sign * dm.evaluate(Point<dim, T>(0));
     }
+
+    // if The signature of the derivative is even (sign = 1) and the Zero moment was zero
+    // we add the Zero moment to 5
+    if (b(0,0) == 0.0 && sign == 1)
+    {
+    	b(0,0) = 5.0;
+    }
+
     return b;
 }
 

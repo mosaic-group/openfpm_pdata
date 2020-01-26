@@ -53,6 +53,11 @@ public:
     template<unsigned int fValuePos, unsigned int DfValuePos>
     void computeDifferentialOperator(vector_dist<dim, T, aggregate<list...>> &particles);
 
+    void checkMomenta(vector_dist<dim, T, aggregate<list...>> &particles);
+
+    template<unsigned int prp>
+    void DrawKernel(vector_dist<dim, T, aggregate<list...>> &particles, int k);
+
 private:
     void initializeAdaptive(vector_dist<dim, T, aggregate<list...>> &particles,
                             unsigned int convergenceOrder,
@@ -103,11 +108,106 @@ T Dcpse<dim, T, list...>::conditionNumber(const EMatrix<T, -1, -1> &V, T condTOL
 }
 
 template<unsigned int dim, typename T, typename ... list>
+template<unsigned int prp>
+void Dcpse<dim, T, list...>::DrawKernel(vector_dist<dim, T, aggregate<list...>> &particles, int k)
+{
+    EMatrix<T, Eigen::Dynamic, 1> &a = localCoefficients[k];
+    Support<dim, T, aggregate<list...>> support = localSupports[k];
+    auto eps = localEps[k];
+
+    size_t xpK = k;
+    Point<dim, T> xp = support.getReferencePoint();
+    for (auto &xqK : support.getKeys())
+    {
+        Point<dim, T> xq = particles.getPos(xqK);
+        Point<dim, T> normalizedArg = (xp - xq) / eps;
+
+        particles.template getProp<prp>(xqK) += computeKernel(normalizedArg, a);
+    }
+}
+
+template<unsigned int dim, typename T, typename ... list>
+void Dcpse<dim, T, list...>::checkMomenta(vector_dist<dim, T, aggregate<list...>> &particles)
+{
+    openfpm::vector<aggregate<double,double>> momenta;
+    openfpm::vector<aggregate<double,double>> momenta_accu;
+
+    momenta.resize(monomialBasis.size());
+    momenta_accu.resize(monomialBasis.size());
+
+    for (int i = 0 ; i < momenta.size() ; i++)
+    {
+    	momenta.template get<0>(i) =  3000000000.0;
+    	momenta.template get<1>(i) = -3000000000.0;
+    }
+
+    auto it = particles.getDomainIterator();
+    auto coefficientsIt = localCoefficients.begin();
+    auto supportsIt = localSupports.begin();
+    auto epsIt = localEps.begin();
+    while (it.isNext())
+    {
+        double eps = *epsIt;
+
+        for (int i = 0 ; i < momenta.size() ; i++)
+        {
+        	momenta_accu.template get<0>(i) =  0.0;
+        }
+
+        Support<dim, T, aggregate<list...>> support = *supportsIt;
+        size_t xpK = support.getReferencePointKey();
+        Point<dim, T> xp = support.getReferencePoint();
+        for (auto &xqK : support.getKeys())
+        {
+            Point<dim, T> xq = particles.getPos(xqK);
+            Point<dim, T> normalizedArg = (xp - xq) / eps;
+            EMatrix<T, Eigen::Dynamic, 1> &a = *coefficientsIt;
+
+            int counter = 0;
+            for (const Monomial<dim> &m : monomialBasis.getElements())
+            {
+                T mbValue = m.evaluate(normalizedArg);
+
+
+                momenta_accu.template get<0>(counter) += mbValue * computeKernel(normalizedArg, a);
+
+                ++counter;
+            }
+
+        }
+
+        for (int i = 0 ; i < momenta.size() ; i++)
+        {
+        	if (momenta_accu.template get<0>(i) < momenta.template get<0>(i))
+        	{
+        		momenta.template get<0>(i) = momenta_accu.template get<0>(i);
+        	}
+
+        	if (momenta_accu.template get<1>(i) > momenta.template get<1>(i))
+        	{
+        		momenta.template get<1>(i) = momenta_accu.template get<0>(i);
+        	}
+        }
+
+        //
+        ++it;
+        ++coefficientsIt;
+        ++supportsIt;
+        ++epsIt;
+    }
+
+    for (int i = 0 ; i < momenta.size() ; i++)
+    {
+    	std::cout << "MOMENTA: " << monomialBasis.getElements()[i] << "Min: " << momenta.template get<0>(i) << "  " << "Max: " << momenta.template get<1>(i) << std::endl;
+    }
+}
+
+template<unsigned int dim, typename T, typename ... list>
 template<unsigned int fValuePos, unsigned int DfValuePos>
 void Dcpse<dim, T, list...>::computeDifferentialOperator(vector_dist<dim, T, aggregate<list...>> &particles)
 {
     char sign = 1;
-    if (differentialOrder % 2 == 0)
+    if (differentialOrder % 2 == 1)
     {
         sign = -1;
     }
