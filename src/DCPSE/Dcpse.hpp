@@ -205,7 +205,7 @@ template<unsigned int fValuePos, unsigned int DfValuePos>
 void Dcpse<dim, T, list...>::computeDifferentialOperator(vector_dist<dim, T, aggregate<list...>> &particles)
 {
     char sign = 1;
-    if (differentialOrder % 2 == 1)
+    if (differentialOrder % 2 == 0)
     {
         sign = -1;
     }
