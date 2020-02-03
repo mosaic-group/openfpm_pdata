@@ -2688,7 +2688,12 @@ public:
     {
 		for (int i = 0 ; i < loc_grid.size() ; i++)
 		{
-			loc_grid.get(i).template tagBoundaries<stencil_type>(v_cl.getmgpuContext());
+			// we limit to the domain subset for tagging
+
+			Box_check<dim,unsigned int> chk(gdb_ext.get(i).Dbox);
+
+
+			loc_grid.get(i).template tagBoundaries<stencil_type>(v_cl.getmgpuContext(),chk);
 		}
 	}
 

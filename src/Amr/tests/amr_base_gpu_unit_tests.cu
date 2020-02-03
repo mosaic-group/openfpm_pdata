@@ -376,8 +376,9 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_amr_gpu_link_test_more_dense )
 	}
 
 	amr_g.hostToDevice<0>();
-	amr_g.ghost_get<0>();
+	amr_g.ghost_get<0>(RUN_ON_DEVICE);
 	amr_g.tagBoundaries<NNStar<2>>();
+	amr_g.ghost_get<0>(RUN_ON_DEVICE);
 	amr_g.construct_level_connections();
 	amr_g.deviceToHost<0>();
 	amr_g.write("TESTOUT");

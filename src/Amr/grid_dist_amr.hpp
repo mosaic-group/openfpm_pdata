@@ -758,11 +758,11 @@ public:
 	 * \tparam prp... Properties to synchronize
 	 *
 	 */
-	template<int... prp> void ghost_get()
+	template<int... prp> void ghost_get(size_t opt = 0)
 	{
 		for (size_t i = 0 ; i < gd_array.size() ; i++)
 		{
-			gd_array.get(i).template ghost_get<prp...>();
+			gd_array.get(i).template ghost_get<prp...>(opt);
 		}
 	}
 

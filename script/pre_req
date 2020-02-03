@@ -308,33 +308,6 @@ if [ x"$MPI_valid" == x"yes"  ]; then
     fi
   fi
 
-  #### Detect a potential dangerous situation ###
-  #### In which g++ is different from mpic++ ###
-
-  output_mpi=$(mpic++ --version)
-  output_gcc=$($dgc_compiler --version)
-
-  if [ x"$output_mpi" != x"$output_gcc" ]; then
-    echo -e "\033[91;5;1m MPI dangerous installation \033[0m"
-    echo -e "Performing a \033[1m  \"mpic++ --version\" \033[0m, we detect that your installed mpic++ does not wrap the standard command g++"
-    echo "In general we strongly disencourage to override the default compiler(s), this configuration not only is not supported by OpenFPM, but can lead potentialy to several problems at system level. For the following reasons"
-    echo -e "\033[1m 1) All system wide dependencies become potentially useless \033[0m"
-    echo -e "\033[1m 2) A package maneger (apt-get or brew) installing a packege from source can potentialy generate incompatible system packages \033[0m"
-    echo -e "\033[1m 3) It is not easy to discover which compiler has been used to compile one dependency \033[0m"
-    echo -e "For just the time of the installation the installer will realign mpic++ to g++, unfortunately this could be not enough to ensure that all the dependencies has been compiled with the same compiler"
-    echo -e "\033[1m Installation will resume in 20 seconds \033[0m"
-    export OMPI_CXX=g++
-    sleep 20
-  fi
-
-  output_mpi=$(mpic++ --version)
-  output_gcc=$($dgc_compiler --version)
-
-  if [ x"$output_mpi" != x"$output_gcc" ]; then
-    echo -e "\033[91;5;1m MPI dangerous installation \033[0m"
-    echo -e "\033[1m The realign operation failed the installation will continue \033[0m"
-    sleep 10
-  fi
 fi
 
 }
