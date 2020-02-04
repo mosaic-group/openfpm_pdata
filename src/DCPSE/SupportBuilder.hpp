@@ -152,7 +152,7 @@ std::vector<size_t> SupportBuilder<dim, T, Prop>::getPointsInSetOfCells(std::set
 
             reord pr;
 
-            pr.dist = xp.distance(xp);
+            pr.dist = xp.distance(xq);
             pr.offset = el;
 
             rp.add(pr);
