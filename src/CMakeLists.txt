@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 if(CUDA_FOUND)
 	set(CUDA_SOURCES Vector/cuda/vector_dist_gpu_MP_tests.cu Vector/cuda/vector_dist_cuda_func_test.cu Decomposition/cuda/decomposition_cuda_tests.cu Vector/cuda/vector_dist_gpu_unit_tests.cu ../openfpm_devices/src/memory/CudaMemory.cu)
 else()
-	set(CUDA_SOURCES)
+	set(CUDA_SOURCES Vector/vector_dist_subset.hpp)
 endif()
 
 add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp Debug/debug_test.cpp Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp Grid/tests/grid_dist_id_unit_test.cpp Grid/tests/staggered_grid_dist_unit_test.cpp Vector/tests/vector_dist_cell_list_tests.cpp Vector/tests/vector_dist_complex_prp_unit_test.cpp Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp Vector/tests/vector_dist_MP_unit_tests.cpp Vector/tests/vector_dist_NN_tests.cpp Vector/tests/vector_dist_unit_test.cpp  pdata_performance.cpp Decomposition/tests/CartDecomposition_unit_test.cpp Decomposition/tests/shift_vect_converter_tests.cpp Vector/performance/vector_dist_performance_util.cpp  lib/pdata.cpp test_multiple_o.cpp  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp DCPSE/MonomialBasis.hpp DCPSE/Monomial.hpp DCPSE/tests/MonomialBasis_unit_tests.cpp DCPSE/Vandermonde.hpp DCPSE/VandermondeRowBuilder.hpp DCPSE/tests/Vandermonde_unit_tests.cpp DCPSE/SupportBuilder.hpp DCPSE/tests/Support_unit_tests.cpp DCPSE/DcpseRhs.hpp DCPSE/tests/DcpseRhs_unit_tests.cpp DCPSE/Support.hpp DCPSE/DcpseDiagonalScalingMatrix.hpp DCPSE/Dcpse.hpp DCPSE/tests/Dcpse_unit_tests.cpp)
