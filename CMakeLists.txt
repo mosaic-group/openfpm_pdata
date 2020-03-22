@@ -78,6 +78,7 @@ find_package(BLAS)
 find_package(LAPACK)
 find_package(Eigen3)
 find_package(SuiteSparse OPTIONAL_COMPONENTS UMFPACK)
+find_package(Vc)
 
 if(PROFILE_WITH_SCOREP)
 	set(CMAKE_CXX_COMPILER_LAUNCHER "scorep")

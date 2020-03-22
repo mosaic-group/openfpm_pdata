@@ -117,6 +117,7 @@ with_lapack
 with_suitesparse
 with_petsc
 with_eigen
+with_vcdevel
 enable_gpu
 '
 

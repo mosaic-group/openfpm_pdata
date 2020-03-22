@@ -7,10 +7,10 @@ if [ -d "$1/VCDEVEL" ]; then
   exit 0
 fi
 
-wget http://ppmcore.mpi-cbg.de/upload/Vc-1.3.2.tar.gz
+wget http://ppmcore.mpi-cbg.de/upload/Vc-1.4.1.tar.gz
 #rm -rf Vc
-tar -xf Vc-1.3.2.tar.gz
-cd Vc-1.3.2
+tar -xf Vc-1.4.1.tar.gz
+cd Vc-1.4.1
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=$1/VCDEVEL ..
