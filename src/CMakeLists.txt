@@ -165,6 +165,11 @@ install(FILES Grid/grid_dist_id.hpp
 	      Grid/staggered_dist_grid_copy.hpp
 	      DESTINATION openfpm_pdata/include/Grid/ )
 
+install(FILES Amr/grid_dist_amr_key_iterator.hpp 
+	      Amr/grid_dist_amr_key.hpp
+	      Amr/grid_dist_amr.hpp
+	      DESTINATION openfpm_pdata/include/Amr/ )
+
 install(FILES Grid/Iterators/grid_dist_id_iterator_util.hpp
               Grid/Iterators/grid_dist_id_iterator_dec.hpp
               Grid/Iterators/grid_dist_id_iterator_dec_skin.hpp

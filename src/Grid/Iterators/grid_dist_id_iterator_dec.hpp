@@ -40,6 +40,8 @@ class grid_dist_id_iterator_dec
 	//! Spacing
 	typename Decomposition::stype spacing[Decomposition::dims];
 
+	//! Domain
+	Box<Decomposition::dims,typename Decomposition::stype> domain;
 
 	/*! \brief from g_c increment g_c until you find a valid grid
 	 *
@@ -96,6 +98,8 @@ class grid_dist_id_iterator_dec
 		start = tmp.start;
 		stop = tmp.stop;
 
+		domain = tmp.domain;
+
 		return *this;
 	}
 
@@ -118,6 +122,8 @@ class grid_dist_id_iterator_dec
 	grid_dist_id_iterator_dec(Decomposition & dec, const size_t (& sz)[Decomposition::dims])
 	:g_c(0)
 	{
+		domain = dec.getDomain();
+
 		// Initialize start and stop
 		start.zero();
 		for (size_t i = 0 ; i < Decomposition::dims ; i++)
@@ -142,6 +148,8 @@ class grid_dist_id_iterator_dec
 	grid_dist_id_iterator_dec(Decomposition & dec, const size_t (& sz)[Decomposition::dims], grid_key_dx<Decomposition::dims> start, grid_key_dx<Decomposition::dims> stop)
 	:g_c(0),start(start),stop(stop)
 	{
+		domain = dec.getDomain();
+
 		// From the decomposition construct gdb_ext
 		create_gdb_ext<Decomposition::dims,Decomposition>(gdb_ext,dec,sz,dec.getDomain(),spacing);
 
@@ -274,6 +282,24 @@ class grid_dist_id_iterator_dec
 		k_glob = k_glob + gdb_ext.get(sub_id).origin;
 
 		return k_glob;
+	}
+
+	/*! \brief Return the point coordinates
+	 *
+	 * \return the point
+	 *
+	 */
+	inline Point<Decomposition::dims,typename Decomposition::stype> getPoint()
+	{
+		Point<Decomposition::dims,typename Decomposition::stype> p;
+		auto key = this->get();
+
+		for (int i = 0 ; i < Decomposition::dims ; i++)
+		{
+			p.get(i) = spacing[i] * key.get(i) + domain.getLow(i);
+		}
+
+		return p;
 	}
 
 	/*! \brief Get the actual grid key for a distributed grid

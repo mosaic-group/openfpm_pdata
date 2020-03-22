@@ -93,6 +93,16 @@ public:
 		return key;
 	}
 
+	/*! \brief Get the reference key
+	 *
+	 * \return the local key
+	 *
+	 */
+	inline const base_key & getKeyRef() const
+	{
+		return key;
+	}
+
 	/* \brief Check if two key are the same
 	 *
 	 * \param key_t key to check

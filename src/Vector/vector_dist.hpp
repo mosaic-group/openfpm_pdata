@@ -2029,7 +2029,7 @@ public:
 		se3.getIterator();
 #endif
 
-		return v_pos.getGPUIteratorTo(size_local(),n_thr);
+		return v_pos.getGPUIteratorTo(v_pos.size(),n_thr);
 	}
 
 	/*! \brief Merge the properties calculated on the sorted vector on the original vector

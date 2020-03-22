@@ -729,10 +729,11 @@ public:
 				gd_array.get(lvl).construct_link_dw(gd_array.get(lvl+1),mv_off.get(lvl));
 			}
 			else if (lvl == gd_array.size() - 1)
-			{gd_array.get(lvl).construct_link_up(gd_array.get(lvl-1));}
+			{gd_array.get(lvl).construct_link_up(gd_array.get(lvl-1),mv_off.get(lvl));}
 			else
 			{
 				gd_array.get(lvl).construct_link_dw(gd_array.get(lvl+1),mv_off.get(lvl));
+				gd_array.get(lvl).construct_link_up(gd_array.get(lvl-1),mv_off.get(lvl));
 			}
 		}
 	}
@@ -873,6 +874,31 @@ public:
 		}
 
 		key.setLvl(lvl+1);
+	}
+
+	/*! \brief Move down (to finer level) the key
+	 *
+	 * \param i level
+	 * \param key of grid at level i
+	 *
+	 */
+	template<typename bg_key>
+	void moveLvlDw(int i, grid_dist_key_dx<dim,bg_key> & key)
+	{
+#ifdef SE_CLASS1
+
+		if (i >= this->getNLvl() - 1)
+		{std::cerr << __FILE__ << ":" << __LINE__ << " error: we are already at the last level, we cannot go one level down" << std::endl;}
+
+#endif
+
+		auto & key_ref = key.getKeyRef();
+		size_t lvl = i;
+
+		for (size_t j = 0 ; j < dim ; j++)
+		{
+			key_ref.set_d(j,(key_ref.get(j) << 1) + mv_off.get(i).get(key.getSub()).dw.get(j) );
+		}
 	}
 
 	/*! \brief From a distributed key it return a AMR key that contain also the grid level

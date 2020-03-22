@@ -340,7 +340,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_amr_gpu_link_test_more_dense )
 	auto it = amr_g.getGridIterator(0,start,stop);
 	auto it2 = amr_g.getGridIterator(1,start_lvl_dw,stop_lvl_dw);
 	auto it3 = amr_g.getGridIterator(2,start_lvl_dw2,stop_lvl_dw2);
-//	it.setGPUInsertBuffer(4);
 
 	auto & lvl_0 = amr_g.getDistGrid(0);
 	auto & lvl_1 = amr_g.getDistGrid(1);
@@ -391,6 +390,18 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_amr_gpu_link_test_more_dense )
 
 	// For each local grid
 
+	size_t tot_dw_offs_12 = 0;
+	size_t tot_dw_lk_12 = 0;
+
+	size_t tot_dw_offs_23 = 0;
+	size_t tot_dw_lk_23 = 0;
+
+	size_t tot_up_offs_12 = 0;
+	size_t tot_up_lk_12 = 0;
+
+	size_t tot_up_offs_23 = 0;
+	size_t tot_up_lk_23 = 0;
+
 	for (int i = 0 ; i < lvl_zero_d.getN_loc_grid() ; i++)
 	{
 
@@ -402,8 +413,14 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_amr_gpu_link_test_more_dense )
 		auto & offs_dw_link = lvl_zero.getDownLinksOffsets();
 		auto & dw_links = lvl_zero.getDownLinks();
 
-		BOOST_REQUIRE_EQUAL(offs_dw_link.size(),(i+1)*56);
-		BOOST_REQUIRE_EQUAL(dw_links.size(),(i+1)*56*4);
+		auto & offs_up_link = lvl_one.getUpLinksOffsets();
+		auto & up_links = lvl_one.getUpLinks();
+
+		tot_dw_offs_12 += offs_dw_link.size();
+		tot_dw_lk_12 += dw_links.size();
+
+		tot_up_offs_12 += offs_up_link.size();
+		tot_up_lk_12 += up_links.size();
 
 		auto & indexL0 = lvl_zero.private_get_blockMap().getIndexBuffer();
 		auto & indexL1 = lvl_one.private_get_blockMap().getIndexBuffer();
@@ -414,25 +431,69 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_amr_gpu_link_test_more_dense )
 		auto & dataL2 = lvl_two.private_get_blockMap().getDataBuffer();
 
 		dw_links.template deviceToHost<0,1>();
+		up_links.template deviceToHost<0,1>();
 
 		for (int i = 0 ; i < dw_links.size(); i++)
 		{
-			BOOST_REQUIRE_EQUAL(dataL1.template get<0>(dw_links.template get<0>(0))[dw_links.template get<1>(0)],2);
+			BOOST_REQUIRE_EQUAL(dataL1.template get<0>(dw_links.template get<0>(i))[dw_links.template get<1>(i)],2);
+		}
+
+		for (int i = 0 ; i < up_links.size(); i++)
+		{
+			BOOST_REQUIRE_EQUAL(dataL0.template get<0>(up_links.template get<0>(i))[up_links.template get<1>(i)],1);
 		}
 
 		auto & offs_dw_link_1 = lvl_one.getDownLinksOffsets();
 		auto & dw_links_1 = lvl_one.getDownLinks();
 
-		BOOST_REQUIRE_EQUAL(offs_dw_link_1.size(),116);
-		BOOST_REQUIRE_EQUAL(dw_links_1.size(),116*4);
+		auto & offs_up_link_1 = lvl_two.getUpLinksOffsets();
+		auto & up_links_1 = lvl_two.getUpLinks();
+
+		tot_dw_offs_23 += offs_dw_link_1.size();
+		tot_dw_lk_23 += dw_links_1.size();
+
+		tot_up_offs_23 += offs_up_link_1.size();
+		tot_up_lk_23 += up_links_1.size();
 
 		dw_links_1.template deviceToHost<0,1>();
+		up_links_1.template deviceToHost<0,1>();
 
 		for (int i = 0 ; i < dw_links_1.size(); i++)
 		{
-			BOOST_REQUIRE_EQUAL(dataL2.template get<0>(dw_links_1.template get<0>(0))[dw_links_1.template get<1>(0)],3);
+			BOOST_REQUIRE_EQUAL(dataL2.template get<0>(dw_links_1.template get<0>(i))[dw_links_1.template get<1>(i)],3);
+		}
+
+		for (int i = 0 ; i < up_links_1.size(); i++)
+		{
+			BOOST_REQUIRE_EQUAL(dataL1.template get<0>(up_links_1.template get<0>(i))[up_links_1.template get<1>(i)],2);
 		}
 	}
+
+	v_cl.sum(tot_dw_offs_12);
+	v_cl.sum(tot_dw_lk_12);
+
+	v_cl.sum(tot_dw_offs_23);
+	v_cl.sum(tot_dw_lk_23);
+
+	v_cl.sum(tot_up_offs_12);
+	v_cl.sum(tot_up_lk_12);
+
+	v_cl.sum(tot_up_offs_23);
+	v_cl.sum(tot_up_lk_23);
+
+	v_cl.execute();
+
+	BOOST_REQUIRE_EQUAL(tot_dw_offs_12,56);
+	BOOST_REQUIRE_EQUAL(tot_dw_lk_12,56*4);
+
+	BOOST_REQUIRE_EQUAL(tot_dw_offs_23,116);
+	BOOST_REQUIRE_EQUAL(tot_dw_lk_23,116*4);
+
+	BOOST_REQUIRE_EQUAL(tot_up_offs_12,116);
+	BOOST_REQUIRE_EQUAL(tot_up_lk_12,116);
+
+	BOOST_REQUIRE_EQUAL(tot_up_offs_23,236);
+	BOOST_REQUIRE_EQUAL(tot_up_lk_23,236);
 
 	/////////////////////////////////////////////////////////////
 }

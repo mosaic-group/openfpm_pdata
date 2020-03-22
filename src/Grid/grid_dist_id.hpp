@@ -2209,6 +2209,43 @@ public:
 	 * \return the selected element
 	 *
 	 */
+	template <typename bg_key>
+	inline Point<dim,St> getPos(const grid_dist_key_dx<dim,bg_key> & v1)
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+		Point<dim,St> p;
+
+		for (int i = 0 ; i < dim ; i++)
+		{
+			p.get(i) = (gdb_ext.get(v1.getSub()).origin.get(i) + v1.getKeyRef().get(i)) * this->spacing(i);
+		}
+
+		return p;
+	}
+
+	/*! \brief Check if the point exist
+	 *
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return the true if the point exist
+	 *
+	 */
+	template<typename bg_key>
+	inline bool existPoint(const grid_dist_key_dx<dim,bg_key> & v1) const
+	{
+		return loc_grid.get(v1.getSub()).existPoint(v1.getKey());
+	}
+
+	/*! \brief Get the reference of the selected element
+	 *
+	 * \tparam p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return the selected element
+	 *
+	 */
 	template <unsigned int p = 0>
 	inline auto getProp(const grid_dist_key_dx<dim> & v1) const -> decltype(this->template get<p>(v1))
 	{
@@ -2347,13 +2384,42 @@ public:
 					// center point
 					auto Cp = it.template getStencil<0>();
 
-					dst.get_o(Cp) = src.get_o(Cp);
+					dst.insert_o(Cp) = src.get_o(Cp);
 
 					++it;
 				}
 			}
 		}
 
+		return *this;
+	}
+
+	/*! \brief Copy the give grid into this grid
+	 *
+	 * It copy the first grid into the given grid (No ghost)
+	 *
+	 * \warning the Decomposition must be ensured to be the same, otherwise crashes can happen, if you want to copy the grid independently from the decomposition please use the operator equal
+	 *
+	 * \param g Grid to copy
+	 * \param use_memcpy use memcpy function if possible
+	 *
+	 * \return itself
+	 *
+	 */
+	grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & copy_sparse(grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> & g, bool use_memcpy = true)
+	{
+		grid_key_dx<dim> cnt[1];
+		cnt[0].zero();
+
+		size_t ele_id;
+
+		for (size_t i = 0 ; i < this->getN_loc_grid() ; i++)
+		{
+			auto & dst = this->get_loc_grid(i);
+			auto & src = g.get_loc_grid(i);
+
+			dst = src;
+		}
 		return *this;
 	}
 
@@ -2659,7 +2725,7 @@ public:
 			for(int j = 0 ; j < dim ; j++)
 			{p_dw.get(j) = mvof.get(i).dw.get(j);}
 
-			loc_grid.get(i).construct_link_dw(grid_dw.get_loc_grid(i),p_dw,v_cl.getmgpuContext());
+			loc_grid.get(i).construct_link_dw(grid_dw.get_loc_grid(i),gdb_ext.get(i).Dbox,p_dw,v_cl.getmgpuContext());
 		}
 	}
 
@@ -2669,11 +2735,15 @@ public:
 	 * \param grid_dw grid level down
 	 *
 	 */
-	void construct_link_up(self & grid_up)
+	void construct_link_up(self & grid_up, openfpm::vector<offset_mv<dim>> & mvof)
 	{
 		for (int i = 0 ; i < loc_grid.size() ; i++)
 		{
-			loc_grid.get(i).construct_link_up(grid_up.get_loc_grid(i),v_cl.getmgpuContext());
+			Point<dim,int> p_up;
+			for(int j = 0 ; j < dim ; j++)
+			{p_up.get(j) = mvof.get(i).up.get(j);}
+
+			loc_grid.get(i).construct_link_up(grid_up.get_loc_grid(i),gdb_ext.get(i).Dbox,p_up,v_cl.getmgpuContext());
 		}
 	}
 
