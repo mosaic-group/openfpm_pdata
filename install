@@ -317,6 +317,7 @@ EIGEN_System_prv=1
 HDF5_installed=0
 HDF5_System_prv=1
 LIBHILBERT_installed=0
+VCDEVEL_installed=0
 conf_err=1
 
 
@@ -387,6 +388,15 @@ else
             ./script/install_LIBHILBERT.sh $i_dir $ncore
             configure_options=" $configure_options --with-libhilbert=$i_dir/LIBHILBERT "
             LIBHILBERT_installed=1
+        elif [ $conf_err -eq 211 ]; then
+            echo "VCDEVEL not found try to install"
+            if [ $LIBHILBERT_installed -eq 1 ]; then
+                echo "Error the installation of VCDEVEL failed"
+                exit 1
+            fi
+            ./script/install_VCDEVEL.sh $i_dir $ncore
+            configure_options=" $configure_options --with-vcdevel=$i_dir/VCDEVEL "
+            VCDEVEL_installed=1
         elif [ $conf_err -ne 0 ]; then
             echo "I do not know how to recover from this error"
             exit 1

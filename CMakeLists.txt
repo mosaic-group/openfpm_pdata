@@ -184,6 +184,13 @@ if(SUITESPARSE_FOUND AND SuiteSparse_UMFPACK_FOUND)
 	set(DEFINE_HAVE_SUITESPARSE "#define HAVE_SUITESPARSE")
 endif()
 
+if (Vc_FOUND)
+	set(DEFINE_HAVE_VCDEVEL)
+else()
+	file(WRITE error_code "211")
+	message( FATAL_ERROR "Vc is required in roder to install OpenFPM")
+endif()
+
 if(APPLE)
 	set(DEFINE_HAVE_OSX "#define HAVE_OSX")
 endif()

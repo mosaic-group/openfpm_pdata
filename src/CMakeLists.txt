@@ -84,6 +84,7 @@ target_include_directories (pdata PUBLIC ${PETSC_INCLUDES})
 target_include_directories (pdata PUBLIC ${HDF5_ROOT}/include)
 target_include_directories (pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
 
+target_include_directories(pdata PUBLIC ${Vc_INCLUDE_DIR})
 target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
 
 target_link_libraries(pdata ${Boost_LIBRARIES})
@@ -92,6 +93,7 @@ target_link_libraries(pdata -L${METIS_ROOT}/lib metis)
 target_link_libraries(pdata -L${HDF5_ROOT}/lib hdf5 hdf5_hl)
 target_link_libraries(pdata -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
 target_link_libraries(pdata ${PETSC_LIBRARIES})
+target_link_libraries(pdata ${Vc_LIBRARIES})
 
 if (TEST_PERFORMANCE)
 	target_link_libraries(pdata  ${Boost_FILESYSTEM_LIBRARY})
