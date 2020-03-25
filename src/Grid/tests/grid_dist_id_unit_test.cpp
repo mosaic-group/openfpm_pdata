@@ -53,6 +53,8 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter3D_test)
 		// Distributed grid with id decomposition
 		grid_dist_id<3, float, aggregate<float>, CartDecomposition<3,float>> g_dist(sz,domain,g);
 
+		auto ghost_start = g_dist.getLocalGridsInfo().get(0).Dbox.getKP1();
+
 		// get the decomposition
 		auto & dec = g_dist.getDecomposition();
 
