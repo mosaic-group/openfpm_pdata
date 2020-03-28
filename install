@@ -288,7 +288,7 @@ if [ x"$platform" = x"linux" ]; then
 fi
 
 ### MPI compilers must be in your PATH folder
-
+call_test_working_mpi_options=0
 set_mpi $i_dir $ncore $gpu_support $CC $CXX $F77 $FC
 
 ### METIS and ParMETIS must be installed independently from sistem wide installation
