@@ -111,7 +111,12 @@ else
     echo "Make install partial"
     mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
     source $HOME/openfpm_vars_$branch
-    make VERBOSE=1  -j 8
+    if [ x"$hostname" == x"suitcase" ]; then
+      echo "Running make on 2 cores"
+      make VERBOSE=1 -j 2
+    else
+      make VERBOSE=1 -j 8
+    fi
 fi
 
 if [ $? -ne 0 ]; then
