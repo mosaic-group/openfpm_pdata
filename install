@@ -291,6 +291,10 @@ fi
 call_test_working_mpi_options=0
 set_mpi $i_dir $ncore $gpu_support $CC $CXX $F77 $FC
 
+if [ -d "$i_dir/MPI" ]; then
+    configure_options=" $configure_options --with-mpi=$i_dir/MPI "
+fi
+
 ### METIS and ParMETIS must be installed independently from sistem wide installation
 
 ./script/install_Parmetis.sh $i_dir $ncore

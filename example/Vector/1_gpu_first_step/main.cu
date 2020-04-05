@@ -112,7 +112,7 @@
 #define OPENMPI
 //! \cond [using_openmpi] \endcond
 
-//#define SCAN_WITH_CUB <------ MODERNGPU is broken on RTX use CUB library for scan
+#define SCAN_WITH_CUB <------ MODERNGPU is broken on RTX use CUB library for scan
 //#define EXTERNAL_SET_GPU <----- In case you want to distribute the GPUs differently from the default
 
 #include "Vector/vector_dist.hpp"

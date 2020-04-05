@@ -117,6 +117,7 @@ with_lapack
 with_suitesparse
 with_petsc
 with_eigen
+with_mpi
 enable_gpu
 '
 
@@ -482,6 +483,9 @@ do
       ;;
       mpivendor)
       conf_options="$conf_options -DMPI_VENDOR=$ac_optarg"
+      ;;
+      mpi)
+      conf_options="$conf_options -DMPI_C_COMPILER=$ac_optarg/bin/mpicc -DMPI_CXX_COMPILER=$ac_optarg/bin/mpic++ -DMPI_Fortran_COMPILER=mpif90"
       ;;
       *) ac_unrecognized_opts="$ac_unrecognized_opts$ac_unrecognized_sep--with-$ac_useropt_orig"
 	 ac_unrecognized_sep=', ';;

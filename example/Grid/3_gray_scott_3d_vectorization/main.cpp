@@ -233,7 +233,7 @@ int main(int argc, char* argv[])
 	Box<3,double> domain({0.0,0.0},{2.5,2.5,2.5});
 	
 	// grid size
-        size_t sz[3] = {256,256,256};
+        size_t sz[3] = {128,128,128};
 
 	// Define periodicity of the grid
 	periodicity<3> bc = {PERIODIC,PERIODIC,PERIODIC};
@@ -242,7 +242,7 @@ int main(int argc, char* argv[])
 	Ghost<3,long int> g(1);
 	
 	// deltaT
-	double deltaT = 1;
+	double deltaT = 1.0;
 
 	// Diffusion constant for specie U
 	double du = 2*1e-5;
@@ -310,7 +310,7 @@ int main(int argc, char* argv[])
 
 	for (size_t i = 0; i < timeSteps; ++i)
 	{
-		if (i % 300 == 0)
+		if (i % 1 == 0)
 			std::cout << "STEP: " << i << std::endl;
 
 		/*!
@@ -375,12 +375,12 @@ int main(int argc, char* argv[])
 		//! \cond [save hdf5] \endcond
 
 		// Every 2000 time step we output the configuration on hdf5
-		if (i % 2000 == 0)
+/*		if (i % 2000 == 0)
 		{
 			OldU.save("output_u_" + std::to_string(count));
 			OldV.save("output_v_" + std::to_string(count));
 			count++;
-		}
+		}*/
 
 		//! \cond [save hdf5] \endcond
 	}
