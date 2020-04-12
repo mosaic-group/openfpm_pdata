@@ -878,27 +878,29 @@ public:
 
 	/*! \brief Move down (to finer level) the key
 	 *
-	 * \param i level
-	 * \param key of grid at level i
+	 * \param lvl level
+	 * \param key multi-resolution AMR key
 	 *
 	 */
-	template<typename bg_key>
-	void moveLvlDw(int i, grid_dist_key_dx<dim,bg_key> & key)
+	grid_dist_key_dx<dim> moveDw(int lvl, const grid_dist_key_dx<dim> & key)
 	{
 #ifdef SE_CLASS1
 
-		if (i >= this->getNLvl() - 1)
+		if (lvl >= getNLvl() - 1)
 		{std::cerr << __FILE__ << ":" << __LINE__ << " error: we are already at the last level, we cannot go one level down" << std::endl;}
 
 #endif
 
-		auto & key_ref = key.getKeyRef();
-		size_t lvl = i;
+		grid_dist_key_dx<dim> out;
 
-		for (size_t j = 0 ; j < dim ; j++)
+		for (size_t i = 0 ; i < dim ; i++)
 		{
-			key_ref.set_d(j,(key_ref.get(j) << 1) + mv_off.get(i).get(key.getSub()).dw.get(j) );
+			out.getKeyRef().set_d(i,(key.getKeyRef().get(i) << 1) + mv_off.get(lvl).get(key.getSub()).dw.get(i) );
 		}
+
+		out.setSub(key.getSub());
+
+		return out;
 	}
 
 	/*! \brief From a distributed key it return a AMR key that contain also the grid level
@@ -935,6 +937,33 @@ public:
 		}
 
 		key.setLvl(lvl-1);
+	}
+
+	/*! \brief Move up (to coarser level) the key
+	 *
+	 * \param lvl level
+	 * \param key multi-resolution AMR key
+	 *
+	 */
+	grid_dist_key_dx<dim> moveUp(int lvl, const grid_dist_key_dx<dim> & key)
+	{
+#ifdef SE_CLASS1
+
+		if (lvl == 0)
+		{std::cerr << __FILE__ << ":" << __LINE__ << " error: we are already at the top level, we cannot go one level up" << std::endl;}
+
+#endif
+
+		grid_dist_key_dx<dim> out;
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			out.getKeyRef().set_d(i,(key.getKeyRef().get(i) - mv_off.get(lvl).get(key.getSub()).up.get(i)) >> 1);
+		}
+
+		out.setSub(key.getSub());
+
+		return out;
 	}
 
 	/*! \brief Get the position on the grid in global coordinates

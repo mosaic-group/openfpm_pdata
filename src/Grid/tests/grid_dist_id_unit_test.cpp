@@ -1276,6 +1276,8 @@ void Test3D_periodic(const Box<3,float> & domain, long int k)
 	}
 }
 
+
+
 // Test grid periodic
 
 void Test3D_periodic_put(const Box<3,float> & domain, long int k)

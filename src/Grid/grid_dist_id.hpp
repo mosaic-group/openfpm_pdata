@@ -2490,6 +2490,65 @@ public:
 		dist.setDistTol(md.distributionTol());
 	}
 
+	/*! \brief apply a convolution using the stencil N
+	 *
+	 *
+	 */
+	template<unsigned int prop_src, unsigned int prop_dst, unsigned int stencil_size, unsigned int N, typename lambda_f, typename ... ArgsT >
+	void conv(int (& stencil)[N][dim], grid_key_dx<3> start, grid_key_dx<3> stop , lambda_f func, ArgsT ... args)
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			Box<dim,long int> inte;
+
+			Box<dim,long int> base;
+			for (int j = 0 ; j < dim ; j++)
+			{
+				base.setLow(j,(long int)start.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+				base.setHigh(j,(long int)stop.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+			}
+
+			Box<dim,long int> dom = gdb_ext.get(i).Dbox;
+
+			bool overlap = dom.Intersect(base,inte);
+
+			if (overlap == true)
+			{
+				loc_grid.get(i).template conv<prop_src,prop_dst,stencil_size>(stencil,inte.getKP1(),inte.getKP2(),func,args...);
+			}
+		}
+	}
+
+	/*! \brief apply a convolution using the stencil N
+	 *
+	 *
+	 */
+	template<unsigned int prop_src1, unsigned int prop_src2, unsigned int prop_dst1, unsigned int prop_dst2, unsigned int stencil_size, unsigned int N, typename lambda_f, typename ... ArgsT >
+	void conv2(int (& stencil)[N][dim], grid_key_dx<3> start, grid_key_dx<3> stop , lambda_f func, ArgsT ... args)
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			Box<dim,long int> inte;
+
+			Box<dim,long int> base;
+			for (int j = 0 ; j < dim ; j++)
+			{
+				base.setLow(j,(long int)start.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+				base.setHigh(j,(long int)stop.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+			}
+
+			Box<dim,long int> dom = gdb_ext.get(i).Dbox;
+
+			bool overlap = dom.Intersect(base,inte);
+
+			if (overlap == true)
+			{
+				loc_grid.get(i).template conv2<prop_src1,prop_src2,prop_dst1,prop_dst2,stencil_size>(stencil,inte.getKP1(),inte.getKP2(),func,args...);
+			}
+		}
+	}
+
+
 	/*! \brief Write the distributed grid information
 	 *
 	 * * grid_X.vtk Output each local grids for each local processor X
@@ -2501,7 +2560,7 @@ public:
 	 * \return true if the write operation succeed
 	 *
 	 */
-	bool write(std::string output, size_t opt = VTK_WRITER | FORMAT_ASCII )
+	bool write(std::string output, size_t opt = VTK_WRITER | FORMAT_BINARY )
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2598,9 +2657,9 @@ public:
 	 *
 	 */
 	template<unsigned int Np>
-	grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,Np>> get_loc_grid_iterator_stencil(size_t i,const grid_key_dx<dim> (& stencil_pnt)[Np])
+	grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,Np>,typename device_grid::linearizer_type> get_loc_grid_iterator_stencil(size_t i,const grid_key_dx<dim> (& stencil_pnt)[Np])
 	{
-		return grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,Np>>(loc_grid.get(i).getGrid(),
+		return grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,Np>,typename device_grid::linearizer_type>(loc_grid.get(i).getGrid(),
 													 gdb_ext.get(i).Dbox.getKP1(),
 													 gdb_ext.get(i).Dbox.getKP2(),
 													 stencil_pnt);
@@ -2936,6 +2995,10 @@ public:
 
 template<unsigned int dim, typename St, typename T>
 using sgrid_dist_id = grid_dist_id<dim,St,T,CartDecomposition<dim,St>,HeapMemory,sgrid_cpu<dim,T,HeapMemory>>;
+
+template<unsigned int dim, typename St, typename T>
+using sgrid_dist_soa = grid_dist_id<dim,St,T,CartDecomposition<dim,St>,HeapMemory,sgrid_soa<dim,T,HeapMemory>>;
+
 
 #ifdef __NVCC__
 template<unsigned int dim, typename St, typename T>
