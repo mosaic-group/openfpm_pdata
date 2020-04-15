@@ -1783,9 +1783,9 @@ public:
 		this->map_(dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global);
 
 		loc_grid_old.clear();
+
 		gdb_ext_old.clear();
 	}
-
 	inline void save(const std::string & filename) const
 	{
 		HDF5_writer<GRID_DIST> h5s;
@@ -1799,8 +1799,16 @@ public:
 
 		h5l.load<device_grid>(filename,loc_grid_old,gdb_ext_old);
 
-		// Map the distributed grid
-		map();
+		if (v_cl.size() != 1)
+		{
+			// Map the distributed grid
+			map();
+		}
+		else
+		{
+			loc_grid.swap(loc_grid_old);
+			gdb_ext_old.swap(gdb_ext);
+		}
 	}
 
 	/*! \brief Get the internal local ghost box

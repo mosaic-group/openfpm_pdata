@@ -10,6 +10,15 @@
 
 #include "util/cuda/scan_ofp.cuh"
 
+#define NO_POSITION 1
+#define WITH_POSITION 2
+#define NO_CHANGE_ELEMENTS 4
+
+#define BIND_DEC_TO_GHOST 1
+
+#define RUN_ON_DEVICE 1024
+#define MAP_LOCAL 2
+
 #define SKIP_LABELLING 512
 #define KEEP_PROPERTIES 512
 
@@ -199,7 +208,8 @@ struct local_ghost_from_opart_impl<with_pos,dim,St,prop,Memory,layout_base,true>
 
 				size_t old = v_pos.size();
 
-				v_pos.resize(v_pos.size() + o_part_loc.size(),DATA_ON_DEVICE);
+				if (!(opt & NO_POSITION))
+				{v_pos.resize(v_pos.size() + o_part_loc.size(),DATA_ON_DEVICE);}
 
 				if (!(opt & SKIP_LABELLING))
 				{

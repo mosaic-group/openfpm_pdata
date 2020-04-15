@@ -20,15 +20,6 @@
 #include "cuda/vector_dist_comm_util_funcs.cuh"
 #include "util/cuda/scan_ofp.cuh"
 
-#define NO_POSITION 1
-#define WITH_POSITION 2
-#define NO_CHANGE_ELEMENTS 4
-
-#define BIND_DEC_TO_GHOST 1
-
-#define RUN_ON_DEVICE 1024
-#define MAP_LOCAL 2
-
 /*! \brief compute the communication options from the ghost_get/put options
  *
  *

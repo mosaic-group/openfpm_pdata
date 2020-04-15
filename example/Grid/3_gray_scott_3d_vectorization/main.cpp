@@ -2,7 +2,7 @@
 #include "data_type/aggregate.hpp"
 #include "timer.hpp"
 
-#define FORTRAN_UPDATE
+//#define FORTRAN_UPDATE
 
 #ifndef FORTRAN_UPDATE
 #include "Vc/Vc"
@@ -119,12 +119,15 @@ void step(grid_dist_id<3, double, aggregate<double>> & OldU,
 		  grid_key_dx<3> (& star_stencil_3D)[7],
 		  double uFactor_s, double vFactor_s, double deltaT, double F, double K)
 {
+	timer tt;
+	tt.start();
+
 #ifndef FORTRAN_UPDATE
 
 	//! \cond [cpp_update] \endcond
 
-	Vc::double uFactor = uFactor_s;
-	Vc::double vFactor = vFactor_s;
+	Vc::double_v uFactor = uFactor_s;
+	Vc::double_v vFactor = vFactor_s;
 
 	WHILE_M(OldU,star_stencil_3D)
 			auto & U_old = GET_GRID_M(OldU);
@@ -221,6 +224,9 @@ void step(grid_dist_id<3, double, aggregate<double>> & OldU,
 	//! \cond [fort_update] \endcond
 
 #endif
+
+	tt.stop();
+	std::cout << tt.getwct() << std::endl;
 }
 
 //! \cond [vectorization] \endcond

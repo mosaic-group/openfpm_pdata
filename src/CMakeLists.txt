@@ -58,6 +58,9 @@ target_link_libraries(pdata ${HDF5_LIBRARIES})
 target_link_libraries(pdata -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
 target_link_libraries(pdata ${PETSC_LIBRARIES})
 
+add_definitions(-DSCAN_WITH_CUB)
+#add_definitions(-DMAKE_CELLLIST_DETERMINISTIC)
+
 if (TEST_COVERAGE)
     target_link_libraries(pdata -lgcov --coverage)
 endif()

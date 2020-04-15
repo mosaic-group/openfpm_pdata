@@ -721,7 +721,6 @@ public:
 					{
 						auto key = it.get();
 						grid_key_dx<dim> key2 = key - start;
-						std::string str = key.to_string();
 
 						gr_send.get_o(key2) = gr.get_o(key);
 
