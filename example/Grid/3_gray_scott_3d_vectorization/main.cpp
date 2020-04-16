@@ -2,7 +2,7 @@
 #include "data_type/aggregate.hpp"
 #include "timer.hpp"
 
-//#define FORTRAN_UPDATE
+#define FORTRAN_UPDATE
 
 #ifndef FORTRAN_UPDATE
 #include "Vc/Vc"
