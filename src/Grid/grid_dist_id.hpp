@@ -2411,8 +2411,6 @@ public:
 		grid_key_dx<dim> cnt[1];
 		cnt[0].zero();
 
-		size_t ele_id;
-
 		for (size_t i = 0 ; i < this->getN_loc_grid() ; i++)
 		{
 			auto & dst = this->get_loc_grid(i);
@@ -2523,6 +2521,35 @@ public:
 	 *
 	 *
 	 */
+	template<unsigned int prop_src, unsigned int prop_dst, unsigned int stencil_size, typename lambda_f, typename ... ArgsT >
+	void conv_cross(grid_key_dx<3> start, grid_key_dx<3> stop , lambda_f func, ArgsT ... args)
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			Box<dim,long int> inte;
+
+			Box<dim,long int> base;
+			for (int j = 0 ; j < dim ; j++)
+			{
+				base.setLow(j,(long int)start.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+				base.setHigh(j,(long int)stop.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+			}
+
+			Box<dim,long int> dom = gdb_ext.get(i).Dbox;
+
+			bool overlap = dom.Intersect(base,inte);
+
+			if (overlap == true)
+			{
+				loc_grid.get(i).template conv_cross<prop_src,prop_dst,stencil_size>(inte.getKP1(),inte.getKP2(),func,args...);
+			}
+		}
+	}
+
+	/*! \brief apply a convolution using the stencil N
+	 *
+	 *
+	 */
 	template<unsigned int prop_src1, unsigned int prop_src2, unsigned int prop_dst1, unsigned int prop_dst2, unsigned int stencil_size, unsigned int N, typename lambda_f, typename ... ArgsT >
 	void conv2(int (& stencil)[N][dim], grid_key_dx<3> start, grid_key_dx<3> stop , lambda_f func, ArgsT ... args)
 	{
@@ -2548,6 +2575,34 @@ public:
 		}
 	}
 
+	/*! \brief apply a convolution using the stencil N
+	 *
+	 *
+	 */
+	template<unsigned int prop_src1, unsigned int prop_src2, unsigned int prop_dst1, unsigned int prop_dst2, unsigned int stencil_size, typename lambda_f, typename ... ArgsT >
+	void conv_cross2(grid_key_dx<3> start, grid_key_dx<3> stop , lambda_f func, ArgsT ... args)
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			Box<dim,long int> inte;
+
+			Box<dim,long int> base;
+			for (int j = 0 ; j < dim ; j++)
+			{
+				base.setLow(j,(long int)start.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+				base.setHigh(j,(long int)stop.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+			}
+
+			Box<dim,long int> dom = gdb_ext.get(i).Dbox;
+
+			bool overlap = dom.Intersect(base,inte);
+
+			if (overlap == true)
+			{
+				loc_grid.get(i).template conv_cross2<prop_src1,prop_src2,prop_dst1,prop_dst2,stencil_size>(inte.getKP1(),inte.getKP2(),func,args...);
+			}
+		}
+	}
 
 	/*! \brief Write the distributed grid information
 	 *
@@ -2657,7 +2712,8 @@ public:
 	 *
 	 */
 	template<unsigned int Np>
-	grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,Np>,typename device_grid::linearizer_type> get_loc_grid_iterator_stencil(size_t i,const grid_key_dx<dim> (& stencil_pnt)[Np])
+	grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,Np>,typename device_grid::linearizer_type>
+	get_loc_grid_iterator_stencil(size_t i,const grid_key_dx<dim> (& stencil_pnt)[Np])
 	{
 		return grid_key_dx_iterator_sub<dim,stencil_offset_compute<dim,Np>,typename device_grid::linearizer_type>(loc_grid.get(i).getGrid(),
 													 gdb_ext.get(i).Dbox.getKP1(),

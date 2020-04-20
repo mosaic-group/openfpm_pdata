@@ -66,64 +66,37 @@ __global__ void insert_remove_icell(vector_sparse_type vs, vector_sparse_type vs
 	vsi.flush_block_remove(b, threadIdx.x == 0 & threadIdx.y == 0 & threadIdx.z == 0);
 }
 
-#endif
-
-template<unsigned int dim, typename T, template<typename> class layout_base , typename Memory>
-class domain_icell_calculator
+template<unsigned int dim, typename T, template<typename> class layout_base , typename Memory, typename cnt_type, typename ids_type, bool is_gpu>
+struct CalculateInternalCells_impl
 {
-	typedef unsigned int cnt_type;
-
-	typedef int ids_type;
-
-	openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> icells;
-	openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> dcells;
-
-	CellDecomposer_sm<dim,T,shift<dim,T>> cd;
-
-	public:
-
-	/*! \brief Calculate the subdomain that are in the skin part of the domain
-	 *
-       \verbatim
-
-		+---+---+---+---+---+---+
-		| 1 | 2 | 3 | 4 | 5 | 6 |
-		+---+---+---+---+---+---+
-		|28 |               | 7 |
-		+---+               +---+
-		|27 |               | 8 |
-		+---+               +---+
-		|26 |               | 9 |
-		+---+   DOM1        +---+
-		|25 |               |10 |
-		+---+               +---+
-		|24 |               |11 |
-		+---+           +---+---+
-		|23 |           |13 |12 |
-		+---+-----------+---+---+
-		|22 |           |14 |
-		+---+           +---+
-		|21 |   DOM2    |15 |
-		+---+---+---+---+---+
-		|20 |19 |18 | 17|16 |
-		+---+---+---+---+---+    <----- Domain end here
-                                      |
-                        ^             |
-                        |_____________|
-
-
-       \endverbatim
-	 *
-	 * It does it on GPU or CPU
-	 *
-	 */
 	template<typename VCluster_type>
-	void CalculateInternalCells(VCluster_type & v_cl,
-								openfpm::vector<Box<dim,T>,Memory,typename layout_base<Box<dim,T>>::type,layout_base> & ig_box,
-								openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim,T>>::type,layout_base> & domain,
-								Box<dim,T> & pbox,
-								T r_cut,
-								const Ghost<dim,T> & enlarge)
+	static void CalculateInternalCells(VCluster_type & v_cl,
+			openfpm::vector<Box<dim,T>,Memory,typename layout_base<Box<dim,T>>::type,layout_base> & ig_box,
+			openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim,T>>::type,layout_base> & domain,
+			Box<dim,T> & pbox,
+			T r_cut,
+			const Ghost<dim,T> & enlarge,
+			CellDecomposer_sm<dim,T,shift<dim,T>> & cd,
+			openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> & icells,
+			openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> & dcells)
+	{
+
+	}
+};
+
+template<unsigned int dim, typename T, template<typename> class layout_base , typename Memory, typename cnt_type, typename ids_type>
+struct CalculateInternalCells_impl<dim,T,layout_base,Memory,cnt_type,ids_type,true>
+{
+	template<typename VCluster_type>
+	static void CalculateInternalCells(VCluster_type & v_cl,
+			openfpm::vector<Box<dim,T>,Memory,typename layout_base<Box<dim,T>>::type,layout_base> & ig_box,
+			openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim,T>>::type,layout_base> & domain,
+			Box<dim,T> & pbox,
+			T r_cut,
+			const Ghost<dim,T> & enlarge,
+			CellDecomposer_sm<dim,T,shift<dim,T>> & cd,
+			openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> & icells,
+			openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> & dcells)
 	{
 #ifdef __NVCC__
 
@@ -216,6 +189,71 @@ class domain_icell_calculator
 		vs.swapIndexVector(icells);
 		vsi.swapIndexVector(dcells);
 
+#endif
+	}
+};
+
+#endif
+
+template<unsigned int dim, typename T, template<typename> class layout_base , typename Memory>
+class domain_icell_calculator
+{
+	typedef unsigned int cnt_type;
+
+	typedef int ids_type;
+
+	openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> icells;
+	openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> dcells;
+
+	CellDecomposer_sm<dim,T,shift<dim,T>> cd;
+
+	public:
+
+	/*! \brief Calculate the subdomain that are in the skin part of the domain
+	 *
+       \verbatim
+
+		+---+---+---+---+---+---+
+		| 1 | 2 | 3 | 4 | 5 | 6 |
+		+---+---+---+---+---+---+
+		|28 |               | 7 |
+		+---+               +---+
+		|27 |               | 8 |
+		+---+               +---+
+		|26 |               | 9 |
+		+---+   DOM1        +---+
+		|25 |               |10 |
+		+---+               +---+
+		|24 |               |11 |
+		+---+           +---+---+
+		|23 |           |13 |12 |
+		+---+-----------+---+---+
+		|22 |           |14 |
+		+---+           +---+
+		|21 |   DOM2    |15 |
+		+---+---+---+---+---+
+		|20 |19 |18 | 17|16 |
+		+---+---+---+---+---+    <----- Domain end here
+                                      |
+                        ^             |
+                        |_____________|
+
+
+       \endverbatim
+	 *
+	 * It does it on GPU or CPU
+	 *
+	 */
+	template<typename VCluster_type>
+	void CalculateInternalCells(VCluster_type & v_cl,
+								openfpm::vector<Box<dim,T>,Memory,typename layout_base<Box<dim,T>>::type,layout_base> & ig_box,
+								openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim,T>>::type,layout_base> & domain,
+								Box<dim,T> & pbox,
+								T r_cut,
+								const Ghost<dim,T> & enlarge)
+	{
+#ifdef __NVCC__
+		CalculateInternalCells_impl<dim,T,layout_base,Memory,cnt_type,ids_type,std::is_same<Memory,CudaMemory>::value>::CalculateInternalCells(v_cl,ig_box,domain,pbox,r_cut,enlarge,cd,icells,dcells);
 #endif
 	}
 
