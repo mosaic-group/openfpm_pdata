@@ -209,9 +209,9 @@ class grid_dist_iterator_sub
 	 * \return the actual key
 	 *
 	 */
-	inline grid_dist_key_dx<dim> get()
+	inline grid_dist_key_dx<dim,typename device_grid::base_key> get()
 	{
-		return grid_dist_key_dx<dim>(g_c,a_it.get());
+		return grid_dist_key_dx<dim,typename device_grid::base_key>(g_c,a_it.get());
 	}
 
 	/*! \brief Convert a g_dist_key_dx into a global key

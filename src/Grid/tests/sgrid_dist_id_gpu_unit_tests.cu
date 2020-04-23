@@ -287,9 +287,6 @@ void sgrid_ghost_get(size_t (& sz)[2],size_t (& sz2)[2])
 		++it2;
 	}
 
-	gdist.write("after_ghost");
-
-	gdist.getDecomposition().write("sgrid_dec");
 
 	BOOST_REQUIRE_EQUAL(match,true);
 }
@@ -309,5 +306,82 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_ghost_get )
 }
 
 
+BOOST_AUTO_TEST_CASE( sgrid_gpu_test_conv2_test )
+{
+	size_t sz[2] = {164,164};
+	periodicity<2> bc = {PERIODIC,PERIODIC};
+
+	Ghost<2,long int> g(1);
+
+	Box<2,float> domain({0.0,0.0},{1.0,1.0});
+
+	sgrid_dist_id_gpu<2,float,aggregate<float,float,float,float>> gdist(sz,domain,g,bc);
+
+	gdist.template setBackgroundValue<0>(666);
+	gdist.template setBackgroundValue<1>(666);
+	gdist.template setBackgroundValue<2>(666);
+	gdist.template setBackgroundValue<3>(666);
+
+	/////// GPU insert + flush
+
+	Box<2,size_t> box({1,1},{sz[0],sz[1]});
+
+	/////// GPU Run kernel
+
+	float c = 5.0;
+
+	auto it = gdist.getGridIterator(box.getKP1(),box.getKP2());
+	gdist.template iterateGridGPU<insert_kernel2D<0>>(it,c);
+	gdist.template flush<smax_<0>>(flush_type::FLUSH_ON_DEVICE);
+
+	auto it2 = gdist.getGridIterator(box.getKP1(),box.getKP2());
+	gdist.template iterateGridGPU<insert_kernel2D<1>>(it2,c+1000);
+	gdist.template flush<smax_<0>,smax_<1>>(flush_type::FLUSH_ON_DEVICE);
+
+	gdist.template ghost_get<0,1>(RUN_ON_DEVICE);
+
+	// Now run the convolution
+
+	typedef typename GetCpBlockType<decltype(gdist),0,1>::type CpBlockType;
+
+	gdist.template conv2<0,1,2,3,1>({2,2},{(int)sz[0]-2,(int)sz[1]-2},[] __device__ (float & u_out, float & v_out, CpBlockType & u, CpBlockType & v,int i, int j){
+		u_out = u(i+1,j) - u(i-1,j) + u(i,j+1) - u(i,j-1);
+		v_out = v(i+1,j) - v(i-1,j) + v(i,j+1) - v(i,j-1);
+	});
+
+	gdist.deviceToHost<0,1,2,3>();
+
+	// Now we check that ghost is correct
+
+	auto it3 = gdist.getSubDomainIterator({2,2},{(int)sz[0]-2,(int)sz[1]-2});
+
+	bool match = true;
+
+	while (it3.isNext())
+	{
+		auto p = it3.get();
+
+		auto p_xp1 = p.move(0,1);
+		auto p_xm1 = p.move(0,-1);
+		auto p_yp1 = p.move(1,1);
+		auto p_ym1 = p.move(1,-1);
+
+		float sub1 = gdist.template get<2>(p);
+		float sub2 = gdist.template get<3>(p);
+
+		if (sub1 != 2.0 || sub2 != 4.0)
+		{
+			std::cout << sub1 << "  " << sub2 << std::endl;
+			std::cout << gdist.template get<0>(p_xp1) << "   " << gdist.template get<0>(p_xm1) << std::endl;
+			std::cout << gdist.template get<1>(p_xp1) << "   " << gdist.template get<1>(p_xm1) << std::endl;
+			break;
+		}
+
+		++it3;
+	}
+
+
+	BOOST_REQUIRE_EQUAL(match,true);
+}
 
 BOOST_AUTO_TEST_SUITE_END()
