@@ -23,6 +23,9 @@ struct ite_gpu_dist
 
 	grid_key_dx<dim,int> origin;
 
+	ite_gpu_dist()
+	{}
+
 	ite_gpu_dist(ite_gpu<dim> & ite)
 	{
 		thr = ite.thr;
@@ -71,6 +74,12 @@ __global__ void grid_apply_functor(grid_type g, ite_gpu_type ite, func_t f, args
 	f(g,ite,args...);
 }
 
+template<typename grid_type, typename ite_gpu_type,typename func_t,typename ... args_t>
+__global__ void grid_apply_functor_shared_bool(grid_type g, ite_gpu_type ite, func_t f, args_t ... args)
+{
+	__shared__ bool is_empty_block;
 
+	f(g,ite,is_empty_block,args...);
+}
 
 #endif /* GRID_DIST_ID_KERNELS_CUH_ */

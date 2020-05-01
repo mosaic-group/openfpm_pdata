@@ -454,15 +454,15 @@ BOOST_AUTO_TEST_CASE( sparse_grid_fast_stencil_vectorized_simplified_conv2)
                                                                 Vc::double_v (& u)[7],Vc::double_v (& v)[7],
                                                                 unsigned char * mask){
 
-                                                                                                                                     u_out = u[0] + uFactor *(u[1] + u[2] +
-                                                                                                                                                                                  u[3] + u[4] +
-                                                                                                                                                                                  u[5] + u[6] - 6.0*u[0]) - deltaT * u[0]*v[0]*v[0]
-                                                                                                                                                                                - deltaT * F * (u[0] - 1.0);
+																													 u_out = u[0] + uFactor *(u[1] + u[2] +
+																																								  u[3] + u[4] +
+																																								  u[5] + u[6] - 6.0*u[0]) - deltaT * u[0]*v[0]*v[0]
+																																								- deltaT * F * (u[0] - 1.0);
 
-                                                                                                                                     v_out = v[0] + vFactor *(v[1] + v[2] +
-                                                                                                                                                                                  v[3] + v[4] +
-                                                                                                                                                                                  v[5] + v[6] - 6.0*v[0]) + deltaT * u[0]*v[0]*v[0]
-                                                                                                                                                                                - deltaT * (F+K) * v[0];
+																													 v_out = v[0] + vFactor *(v[1] + v[2] +
+																																								  v[3] + v[4] +
+																																								  v[5] + v[6] - 6.0*v[0]) + deltaT * u[0]*v[0]*v[0]
+																																								- deltaT * (F+K) * v[0];
                                                                                      };
 
     grid.conv2<U,V,U_next,V_next,1>(stencil,{0,0,0},{(long int)sz[0]-1,(long int)sz[1]-1,(long int)sz[2]-1},func);
@@ -501,7 +501,19 @@ BOOST_AUTO_TEST_CASE( sparse_grid_fast_stencil_vectorized_simplified_conv2)
 																	- deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
 																	- deltaT * F * (grid.get<U>(Cp) - 1.0) - grid.get<U_next>(Cp)) > 0.000000001 )
 			{
+				std::cout << "U: " << grid.get<U>(Cp) + uFactor * (
+						grid.get<U>(mz) +
+						grid.get<U>(pz) +
+						grid.get<U>(my) +
+						grid.get<U>(py) +
+						grid.get<U>(mx) +
+						grid.get<U>(px) -
+						6.0*grid.get<U>(Cp)) +
+						- deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
+						- deltaT * F * (grid.get<U>(Cp) - 1.0) << " != " << grid.get<U_next>(Cp) << "  " << Cp.to_string() << std::endl;
+
 				match = false;
+				break;
 			}
 
 			// update based on Eq 2
@@ -516,7 +528,18 @@ BOOST_AUTO_TEST_CASE( sparse_grid_fast_stencil_vectorized_simplified_conv2)
 																	deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
 																	- deltaT * (F+K) * grid.get<V>(Cp) - grid.get<V_next>(Cp)) > 0.000000001 )
 			{
+				std::cout << "V: " << grid.get<V>(Cp) + vFactor * (
+						grid.get<V>(mz) +
+						grid.get<V>(pz) +
+						grid.get<V>(my) +
+						grid.get<V>(py) +
+						grid.get<V>(mx) +
+						grid.get<V>(px) -
+						6*grid.get<V>(Cp)) +
+						deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
+						- deltaT * (F+K) * grid.get<V>(Cp) << "!= " << grid.get<V_next>(Cp) << "  " << Cp.to_string() << std::endl;
 				match = false;
+				break;
 			}
 
 			++it;
@@ -675,7 +698,18 @@ BOOST_AUTO_TEST_CASE( sparse_grid_fast_stencil_vectorized_simplified_conv2_cross
 																	- deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
 																	- deltaT * F * (grid.get<U>(Cp) - 1.0) - grid.get<U_next>(Cp)) > 0.000000001 )
 			{
+				std::cout << "U: " << grid.get<U>(Cp) + uFactor * (
+						grid.get<U>(mz) +
+						grid.get<U>(pz) +
+						grid.get<U>(my) +
+						grid.get<U>(py) +
+						grid.get<U>(mx) +
+						grid.get<U>(px) -
+						6.0*grid.get<U>(Cp)) +
+						- deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
+						- deltaT * F * (grid.get<U>(Cp) - 1.0) << " != " << grid.get<U_next>(Cp) << "  " << Cp.to_string() << std::endl;
 				match = false;
+				break;
 			}
 
 			// update based on Eq 2
@@ -690,7 +724,19 @@ BOOST_AUTO_TEST_CASE( sparse_grid_fast_stencil_vectorized_simplified_conv2_cross
 																	deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
 																	- deltaT * (F+K) * grid.get<V>(Cp) - grid.get<V_next>(Cp)) > 0.000000001 )
 			{
+				std::cout << "V: " << grid.get<V>(Cp) + vFactor * (
+						grid.get<V>(mz) +
+						grid.get<V>(pz) +
+						grid.get<V>(my) +
+						grid.get<V>(py) +
+						grid.get<V>(mx) +
+						grid.get<V>(px) -
+						6*grid.get<V>(Cp)) +
+						deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
+						- deltaT * (F+K) * grid.get<V>(Cp)  << " != " << grid.get<V_next>(Cp) << " key: " << Cp.to_string() << std::endl;
+
 				match = false;
+				break;
 			}
 
 			++it;

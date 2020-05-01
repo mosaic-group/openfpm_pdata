@@ -14,6 +14,26 @@
 #include "Grid/Iterators/grid_dist_id_iterator_util.hpp"
 #include "Grid/cuda/grid_dist_id_kernels.cuh"
 
+template<unsigned int impl>
+struct launch_call_impl
+{
+	template<typename loc_grid_type, typename ite_type, typename itd_type, typename functor_type, typename ... argsT>
+	inline static void call(loc_grid_type & loc_grid, ite_type & ite , itd_type & itd, functor_type functor, argsT ... args)
+	{
+		CUDA_LAUNCH(grid_apply_functor,ite,loc_grid.toKernel(), itd, functor, args... );
+	}
+};
+
+template<>
+struct launch_call_impl<1>
+{
+	template<typename loc_grid_type, typename ite_type, typename itd_type, typename functor_type,typename ... argsT>
+	inline static void call(loc_grid_type & loc_grid, ite_type & ite, itd_type & itd, functor_type functor, argsT ... args)
+	{
+		CUDA_LAUNCH(grid_apply_functor_shared_bool,ite,loc_grid.toKernel(), itd, functor, args... );
+	}
+};
+
 /*! \brief Given the decomposition it create an iterator
  *
  * Iterator across the local elements of the distributed grid
@@ -187,31 +207,53 @@ class grid_dist_id_iterator_gpu
 	 * \param argsType arguments
 	 *
 	 */
-	template<typename func_t, typename ... argsType >
+	template<unsigned int impl = 0, typename func_t, typename ... argsType >
 	inline void launch(func_t functor,argsType ... args)
 	{
 		for (g_c = 0 ; g_c < gdb_ext.size() ; g_c++)
 		{
-			grid_key_dx<Decomposition::dims,int> start;
-			grid_key_dx<Decomposition::dims,int> stop;
+			ite_gpu_dist<Decomposition::dims> itd;
+			ite_gpu<Decomposition::dims> ite;
+
+			// intersect
+
+			Box<Decomposition::dims,int> range_box(start,stop);
+			Box<Decomposition::dims,int> kbox;
+			range_box -= gdb_ext.get(g_c).origin;
+			range_box.Intersect(gdb_ext.get(g_c).Dbox,kbox);
 
 			auto & lg = loc_grids.get(g_c);
 
 			for (int i = 0 ; i < Decomposition::dims ; i++)
 			{
-				start.set_d(i,(gdb_ext.get(g_c).Dbox.getKP1().get(i) / lg.getBlockEdgeSize())*lg.getBlockEdgeSize() );
-				stop.set_d(i, gdb_ext.get(g_c).Dbox.getKP2().get(i));
+				ite.start.set_d(i,(kbox.getKP1().get(i) / lg.getBlockEdgeSize())*lg.getBlockEdgeSize() );
+				ite.stop.set_d(i,  kbox.getKP2().get(i));
 			}
 
-			auto ite = loc_grids.get(g_c).getGridGPUIterator(start,stop);
-
-			ite_gpu_dist<Decomposition::dims> itd = ite;
+			// the thread extensions are
 
 			for (int i = 0 ; i < Decomposition::dims ; i++)
 			{
-				itd.origin.set_d(i,gdb_ext.get(g_c).origin.get(i));
-				itd.start_base.set_d(i,gdb_ext.get(g_c).Dbox.getKP1().get(i) % lg.getBlockEdgeSize());
+				itd.origin.set_d(i,gdb_ext.get(g_c).origin.get(i) + ite.start.get(i));
+				itd.start_base.set_d(i,kbox.getKP1().get(i) % lg.getBlockEdgeSize() + ite.start.get(i));
 			}
+
+			ite.thr.x = lg.getBlockEdgeSize();
+			ite.wthr.x = (ite.stop.get(0) - ite.start.get(0) + 1) / lg.getBlockEdgeSize() + ((ite.stop.get(0) - ite.start.get(0) + 1) % lg.getBlockEdgeSize() != 0);
+
+			ite.thr.y = lg.getBlockEdgeSize();
+			ite.wthr.y = (ite.stop.get(1) - ite.start.get(1) + 1) / lg.getBlockEdgeSize() + ((ite.stop.get(1) - ite.start.get(1) + 1) % lg.getBlockEdgeSize() != 0);
+
+			if (Decomposition::dims > 2)
+			{
+				ite.thr.z = lg.getBlockEdgeSize();
+				ite.wthr.z = (ite.stop.get(2) - ite.start.get(2) + 1) / lg.getBlockEdgeSize() + ((ite.stop.get(2) - ite.start.get(2) + 1) % lg.getBlockEdgeSize() != 0);
+			}
+
+			itd.wthr = ite.wthr;
+			itd.thr = ite.thr;
+			itd.start = ite.start;
+			itd.stop = ite.stop;
 
 			if (nSlot != -1)
 			{
@@ -219,7 +261,9 @@ class grid_dist_id_iterator_gpu
 			}
 
 			if (ite.nblocks() != 0)
-			{CUDA_LAUNCH(grid_apply_functor,ite,loc_grids.get(g_c).toKernel(), itd, functor, args... );}
+			{
+				launch_call_impl<impl>::call(loc_grids.get(g_c),ite,itd,functor,args...);
+			}
 		}
 	}
 

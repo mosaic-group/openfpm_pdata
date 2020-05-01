@@ -7,6 +7,9 @@
 #include "VCluster/VCluster.hpp"
 #include "Space/SpaceBox.hpp"
 #include "util/mathutil.hpp"
+#ifdef __NVCC__
+#include "SparseGridGpu/SparseGridGpu.hpp"
+#endif
 #include "Iterators/grid_dist_id_iterator_dec.hpp"
 #include "Iterators/grid_dist_id_iterator.hpp"
 #include "Iterators/grid_dist_id_iterator_sub.hpp"
@@ -24,7 +27,6 @@
 #include "HDF5_wr/HDF5_wr.hpp"
 #include "SparseGrid/SparseGrid.hpp"
 #ifdef __NVCC__
-#include "SparseGridGpu/SparseGridGpu.hpp"
 #include "cuda/grid_dist_id_kernels.cuh"
 #include "Grid/cuda/grid_dist_id_iterator_gpu.cuh"
 #endif
@@ -1741,6 +1743,24 @@ public:
 
 #ifdef __NVCC__
 
+	template<typename lambda_t1, typename lambda_t2>
+	void addPoints(lambda_t1 f1, lambda_t2 f2)
+	{
+		auto it = getGridIteratorGPU();
+		it.setGPUInsertBuffer(1);
+
+		it.template launch<1>(launch_insert_sparse(),f1,f2);
+	}
+
+	template<typename lambda_t1, typename lambda_t2>
+	void addPoints(grid_key_dx<dim> k1, grid_key_dx<dim> k2, lambda_t1 f1, lambda_t2 f2)
+	{
+		auto it = getGridIteratorGPU(k1,k2);
+		it.setGPUInsertBuffer(1);
+
+		it.template launch<1>(launch_insert_sparse(),f1,f2);
+	}
+
 	/*! /brief Get a grid Iterator in GPU
 	 *
 	 * In case of dense grid getGridIterator is equivalent to getDomainIteratorGPU
@@ -2570,7 +2590,7 @@ public:
 
 			if (overlap == true)
 			{
-				loc_grid.get(i).template conv2<prop_src1,prop_src2,prop_dst1,prop_dst2,stencil_size>(stencil,inte.getKP1(),inte.getKP2(),func,args...);
+				loc_grid.get(i).template conv2<prop_src1,prop_src2,prop_dst1,prop_dst2,stencil_size>(stencil,inte.getKP1(),inte.getKP2(),func,create_vcluster().rank(),args...);
 			}
 		}
 	}

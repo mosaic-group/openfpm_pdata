@@ -16,6 +16,167 @@
 #include "VCluster/VCluster.hpp"
 #include "util/GBoxes.hpp"
 
+#ifdef __NVCC__
+#include "SparseGridGpu/encap_num.hpp"
+#endif
+
+template<unsigned int dim>
+struct launch_insert_sparse_lambda_call
+{
+	template<typename ec_type, typename lambda_t,typename coord_type>
+	__device__ inline static void call(ec_type & ec,lambda_t f, coord_type coord)
+	{
+		printf("Not implemented in this direction \n");
+	}
+
+	template<typename ite_type>
+	__device__ inline static bool set_keys(grid_key_dx<3,int> & key, grid_key_dx<3,int> & keyg, ite_type & itg)
+	{
+		return false;
+	}
+};
+
+template<>
+struct launch_insert_sparse_lambda_call<3>
+{
+	template<typename grid_type, typename lambda_t1, typename lambda_t2,typename itd_type, typename coord_type>
+	__device__ inline static void call(grid_type & grid,
+									   lambda_t1 f1, lambda_t2 f2,
+									   unsigned int blockId,
+									   itd_type itd,
+									   coord_type & key,
+									   coord_type & keyg,unsigned int offset, bool & is_block_empty)
+	{
+#ifdef __NVCC__
+
+	    bool is_active = f1(keyg.get(0),keyg.get(1),keyg.get(2));
+	    is_active &= key.get(0) >= itd.start_base.get(0) && key.get(1) >= itd.start_base.get(1) && key.get(2) >= itd.start_base.get(2);
+
+	    if (is_active == true)
+	    {is_block_empty = false;}
+
+	    __syncthreads();
+
+	    if (is_block_empty == false)
+	    {
+	    	auto ec = grid.insertBlock(blockId);
+	    	enc_num<decltype(grid.insertBlock(blockId))> ecn(ec,offset);
+
+	        if ( is_active == true)
+	        {
+	        	f2(ecn,keyg.get(0),keyg.get(1),keyg.get(2));
+	        	ec.template get<grid_type::pMask>()[offset] = 1;
+	        }
+	    }
+
+#endif
+	}
+
+	template<typename ite_type>
+	__device__ inline static bool set_keys(grid_key_dx<3,int> & key, grid_key_dx<3,int> & keyg, ite_type & itg)
+	{
+#ifdef __NVCC__
+
+		key.set_d(0,threadIdx.x + blockIdx.x * blockDim.x + itg.start.get(0));
+		key.set_d(1,threadIdx.y + blockIdx.y * blockDim.y + itg.start.get(1));
+		key.set_d(2,threadIdx.z + blockIdx.z * blockDim.z + itg.start.get(2));
+
+		keyg.set_d(0,key.get(0) + itg.origin.get(0));
+		keyg.set_d(1,key.get(1) + itg.origin.get(1));
+		keyg.set_d(2,key.get(2) + itg.origin.get(2));
+
+		if (key.get(0) > itg.stop.get(0) || key.get(1) > itg.stop.get(1) || key.get(2) > itg.stop.get(2))
+		{return true;}
+#endif
+		return false;
+	}
+};
+
+template<>
+struct launch_insert_sparse_lambda_call<2>
+{
+	template<typename grid_type, typename lambda_t1, typename lambda_t2,typename itd_type, typename coord_type>
+	__device__ inline static void call(grid_type & grid,
+									   lambda_t1 f1, lambda_t2 f2,
+									   unsigned int blockId,
+									   itd_type itd,
+									   coord_type & key,
+									   coord_type & keyg,unsigned int offset, bool & is_block_empty)
+	{
+#ifdef __NVCC__
+
+	    bool is_active = f1(keyg.get(0),keyg.get(1));
+	    is_active &= key.get(0) >= itd.start_base.get(0) && key.get(1) >= itd.start_base.get(1);
+
+	    if (is_active == true)
+	    {is_block_empty = false;}
+
+	    __syncthreads();
+
+	    if (is_block_empty == false)
+	    {
+	    	auto ec = grid.insertBlock(blockId);
+	    	enc_num<decltype(grid.insertBlock(blockId))> ecn(ec,offset);
+
+	        if ( is_active == true)
+	        {
+	        	f2(ecn,keyg.get(0),keyg.get(1));
+	        	ec.template get<grid_type::pMask>()[offset] = 1;
+	        }
+	    }
+
+#endif
+	}
+
+	template<typename ite_type>
+	__device__ inline static bool set_keys(grid_key_dx<2,int> & key, grid_key_dx<2,int> & keyg, ite_type & itg)
+	{
+#ifdef __NVCC__
+		key.set_d(0,threadIdx.x + blockIdx.x * blockDim.x + itg.start.get(0));
+		key.set_d(1,threadIdx.y + blockIdx.y * blockDim.y + itg.start.get(1));
+
+		keyg.set_d(0,key.get(0) + itg.origin.get(0));
+		keyg.set_d(1,key.get(1) + itg.origin.get(1));
+
+		if (key.get(0) > itg.stop.get(0) || key.get(1) > itg.stop.get(1))
+		{return true;}
+#endif
+		return false;
+	}
+};
+
+struct launch_insert_sparse
+{
+	template<typename grid_type, typename ite_type, typename lambda_f1, typename lambda_f2>
+	__device__ void operator()(grid_type & grid, ite_type itg, bool & is_block_empty, lambda_f1 f1, lambda_f2 f2)
+	{
+#ifdef __NVCC__
+
+		grid_key_dx<grid_type::dims,int> key;
+		grid_key_dx<grid_type::dims,int> keyg;
+
+		if (launch_insert_sparse_lambda_call<grid_type::dims>::set_keys(key,keyg,itg) == true)	{return;}
+
+	    if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
+	    {is_block_empty = true;}
+
+	    grid.init();
+
+	    int offset = 0;
+	    grid_key_dx<grid_type::dims,int> blk;
+	    bool out = grid.template getInsertBlockOffset<ite_type>(itg,key,blk,offset);
+
+	    auto blockId = grid.getBlockLinId(blk);
+
+	    launch_insert_sparse_lambda_call<grid_type::dims>::call(grid,f1,f2,blockId,itg,key,keyg,offset,is_block_empty);
+
+	    __syncthreads();
+
+	    grid.flush_block_insert();
+#endif
+	}
+};
+
 template<bool is_free>
 struct selvg
 {

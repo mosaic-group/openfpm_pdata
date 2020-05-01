@@ -202,7 +202,7 @@ class grid_dist_id_comm
 											  bool use_bx_def)
 	{
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
-		{loc_grid.get(i).packReset();}
+		{loc_grid.get(i).copyRemoveReset();}
 
 		grid_key_dx<dim> cnt[1];
 		cnt[0].zero();
@@ -259,7 +259,12 @@ class grid_dist_id_comm
 
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{
-			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getmgpuContext());
+			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getmgpuContext(), rem_copy_opt::PHASE1);
+		}
+
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{
+			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getmgpuContext(), rem_copy_opt::PHASE2);
 		}
 	}
 
