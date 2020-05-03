@@ -266,6 +266,11 @@ class grid_dist_id_comm
 		{
 			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getmgpuContext(), rem_copy_opt::PHASE2);
 		}
+
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{
+			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getmgpuContext(), rem_copy_opt::PHASE3);
+		}
 	}
 
 	/*! \brief Sync the local ghost part
