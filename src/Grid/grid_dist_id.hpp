@@ -1572,7 +1572,7 @@ public:
 	 * \return the global position in the grid
 	 *
 	 */
-	inline grid_key_dx<dim> getGKey(const grid_dist_key_dx<dim> & k)
+	inline grid_key_dx<dim> getGKey(const grid_dist_key_dx<dim> & k) const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
