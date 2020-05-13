@@ -8,8 +8,7 @@
 #ifndef VECTOR_DIST_COMM_UTIL_FUNCS_HPP_
 #define VECTOR_DIST_COMM_UTIL_FUNCS_HPP_
 
-#define SKIP_LABELLING 512
-#define KEEP_PROPERTIES 512
+#include "util/common_pdata.hpp"
 
 template<unsigned int dim, typename St, typename prop, typename Memory, template<typename> class layout_base, typename Decomposition, bool is_ok_cuda>
 struct labelParticlesGhost_impl

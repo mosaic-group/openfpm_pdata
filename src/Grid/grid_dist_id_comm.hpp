@@ -11,6 +11,7 @@
 #include "Vector/vector_dist_ofb.hpp"
 #include "Grid/copy_grid_fast.hpp"
 #include "grid_dist_util.hpp"
+#include "util/common_pdata.hpp"
 
 /*! \brief Unpack selector
  *
@@ -1129,10 +1130,10 @@ public:
 
 		queue_recv_data_get<prp_object>(eg_box,prp_recv,prRecv_prp);
 
+		ghost_get_local<prp...>(loc_ig_box,loc_eg_box,gdb_ext,loc_grid,g_id_to_external_ghost_box,ginfo,use_bx_def);
+
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{loc_grid.get(i).removeAddUnpackReset();}
-
-		ghost_get_local<prp...>(loc_ig_box,loc_eg_box,gdb_ext,loc_grid,g_id_to_external_ghost_box,ginfo,use_bx_def);
 
 		merge_received_data_get<prp ...>(loc_grid,eg_box,prp_recv,prRecv_prp,g_id_to_external_ghost_box,eb_gid_list,opt);
 

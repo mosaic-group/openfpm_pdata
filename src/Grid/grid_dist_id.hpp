@@ -7,6 +7,7 @@
 #include "VCluster/VCluster.hpp"
 #include "Space/SpaceBox.hpp"
 #include "util/mathutil.hpp"
+#include "VTKWriter/VTKWriter.hpp"
 #ifdef __NVCC__
 #include "SparseGridGpu/SparseGridGpu.hpp"
 #endif
@@ -17,7 +18,6 @@
 #include "NN/CellList/CellDecomposer.hpp"
 #include "util/object_util.hpp"
 #include "memory/ExtPreAlloc.hpp"
-#include "VTKWriter/VTKWriter.hpp"
 #include "Packer_Unpacker/Packer.hpp"
 #include "Packer_Unpacker/Unpacker.hpp"
 #include "Decomposition/CartDecomposition.hpp"
@@ -2696,6 +2696,29 @@ public:
 			{vtk_g.add(loc_grid.get(i),offset,cd_sm.getCellBox().getP2(),gdb_ext.get(i).Dbox);}
 		}
 		vtk_g.write(output + "_" + std::to_string(v_cl.getProcessUnitID()) + ".vtk", prp_names, "grids", ft);
+
+		return true;
+	}
+
+	/*! \brief Write all grids indigually
+	 *
+	 * \param output files
+	 *
+	 */
+	bool write_debug(std::string output)
+	{
+		for (int i = 0 ; i < getN_loc_grid() ; i++)
+		{
+			Point<dim,St> sp;
+			Point<dim,St> offset;
+
+			for (int j = 0 ; j < dim ; j++)
+			{sp.get(j) = this->spacing(j);}
+
+			offset = gdb_ext.get(i).origin;
+
+			get_loc_grid(i).write_debug(output + "_" + std::to_string(i) + "_" + std::to_string(v_cl.getProcessUnitID()) + ".vtk",sp,offset);
+		}
 
 		return true;
 	}

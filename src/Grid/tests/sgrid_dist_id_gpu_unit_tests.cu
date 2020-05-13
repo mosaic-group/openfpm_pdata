@@ -287,7 +287,6 @@ void sgrid_ghost_get(size_t (& sz)[2],size_t (& sz2)[2])
 		++it2;
 	}
 
-
 	BOOST_REQUIRE_EQUAL(match,true);
 }
 
@@ -347,6 +346,7 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_conv2_test )
 	gdist.template flush<smax_<0>,smax_<1>>(flush_type::FLUSH_ON_DEVICE);
 	gdist.template ghost_get<0,1>(RUN_ON_DEVICE);
 
+
 	// Now run the convolution
 
 	typedef typename GetCpBlockType<decltype(gdist),0,1>::type CpBlockType;
@@ -387,6 +387,8 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_conv2_test )
 
 		++it3;
 	}
+
+	gdist.write("SGRID");
 
 	BOOST_REQUIRE_EQUAL(match,true);
 }
@@ -431,6 +433,7 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_conv2_test_3d )
 			        );
 
 	gdist.template flush<smax_<0>,smax_<1>>(flush_type::FLUSH_ON_DEVICE);
+
 	gdist.template ghost_get<0,1>(RUN_ON_DEVICE);
 
 	for (int i = 0 ; i < 10 ; i++)
