@@ -3098,6 +3098,32 @@ public:
 		}
 	}
 
+	/*! \brief Remove the points
+	 *
+	 * \param box Remove all the points in the box
+	 *
+	 */
+	void removePoints(Box<dim,size_t> & box)
+	{
+		Box<dim,long int> box_i = box;
+
+		for (size_t i = 0 ; i < loc_grid.size() ; i++)
+		{
+			Box<dim,long int> bx = gdb_ext.get(i).Dbox + gdb_ext.get(i).origin;
+
+			Box<dim,long int> bout;
+			bool inte = bx.Intersect(box,bout);
+			bout -= gdb_ext.get(i).origin;
+
+			if (inte == true)
+			{
+				loc_grid.get(i).copyRemoveReset();
+				loc_grid.get(i).remove(bout);
+				loc_grid.get(i).removePoints(v_cl.getmgpuContext());
+			}
+		}
+	}
+
 	/*! \brief Move the memory from the device to host memory
 	 *
 	 */

@@ -200,7 +200,8 @@ class grid_dist_id_comm
 											  openfpm::vector<device_grid> & loc_grid,
 											  std::unordered_map<size_t,size_t> & g_id_to_external_ghost_box,
 											  const grid_sm<dim,void> & ginfo,
-											  bool use_bx_def)
+											  bool use_bx_def,
+											  size_t opt)
 	{
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{loc_grid.get(i).copyRemoveReset();}
@@ -258,19 +259,24 @@ class grid_dist_id_comm
 			}
 		}
 
+		rem_copy_opt opt_ = rem_copy_opt::NONE_OPT;
+		if (opt & SKIP_LABELLING == true)
+		{opt_ = rem_copy_opt::KEEP_GEOMETRY;}
+
+
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{
-			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getmgpuContext(), rem_copy_opt::PHASE1);
+			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getmgpuContext(), rem_copy_opt::PHASE1 | opt_);
 		}
 
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{
-			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getmgpuContext(), rem_copy_opt::PHASE2);
+			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getmgpuContext(), rem_copy_opt::PHASE2 | opt_);
 		}
 
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{
-			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getmgpuContext(), rem_copy_opt::PHASE3);
+			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getmgpuContext(), rem_copy_opt::PHASE3 | opt_);
 		}
 	}
 
@@ -1130,7 +1136,7 @@ public:
 
 		queue_recv_data_get<prp_object>(eg_box,prp_recv,prRecv_prp);
 
-		ghost_get_local<prp...>(loc_ig_box,loc_eg_box,gdb_ext,loc_grid,g_id_to_external_ghost_box,ginfo,use_bx_def);
+		ghost_get_local<prp...>(loc_ig_box,loc_eg_box,gdb_ext,loc_grid,g_id_to_external_ghost_box,ginfo,use_bx_def,opt);
 
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{loc_grid.get(i).removeAddUnpackReset();}
