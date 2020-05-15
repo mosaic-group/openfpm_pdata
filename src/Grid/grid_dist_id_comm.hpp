@@ -1017,106 +1017,135 @@ public:
 
 		size_t req = 0;
 
-		// first we initialize the pack buffer on all internal grids
-
-		for (size_t i = 0 ; i < loc_grid.size() ; i++)
-		{loc_grid.get(i).packReset();}
-
-		// Calculating the size to pack all the data to send
-		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
-		{
-			// for each ghost box
-			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
-			{
-				// And linked sub-domain
-				size_t sub_id = ig_box.get(i).bid.get(j).sub;
-				// Internal ghost box
-				Box<dim,long int> g_ig_box = ig_box.get(i).bid.get(j).box;
-
-				if (g_ig_box.isValid() == false)
-				{continue;}
-
-				g_ig_box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
-
-				// Pack a size_t for the internal ghost id
-				Packer<size_t,Memory>::packRequest(req);
-				// Create a sub grid iterator spanning the internal ghost layer
-				auto sub_it = loc_grid.get(sub_id).getIterator(g_ig_box.getKP1(),g_ig_box.getKP2());
-
-				// get the size to pack
-				Packer<device_grid,Memory>::template packRequest<decltype(sub_it),prp...>(loc_grid.get(sub_id),sub_it,req);
-			}
-		}
-
-		// Finalize calculation
-		for (size_t i = 0 ; i < loc_grid.size() ; i++)
-		{loc_grid.get(i).template packCalculate<prp ...>(req,v_cl.getmgpuContext());}
-
-		// resize the property buffer memory
-		g_send_prp_mem.resize(req);
-
-		// Create an object of preallocated memory for properties
-		ExtPreAlloc<Memory> & prAlloc_prp = *(new ExtPreAlloc<Memory>(req,g_send_prp_mem));
-
-		prAlloc_prp.incRef();
-
 		// Pack information
 		Pack_stat sts;
 
-		pointers.clear();
-		pointers2.clear();
+		// We check if skip labelling is possible in this condition
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{opt &= (loc_grid.get(i).isSkipLabellingPossible())?(int)-1:~SKIP_LABELLING;}
 
-		// Pack the information for each processor and send it
-		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
+		if (!(opt & SKIP_LABELLING))
 		{
+			// first we initialize the pack buffer on all internal grids
 
-			sts.mark();
+			for (size_t i = 0 ; i < loc_grid.size() ; i++)
+			{loc_grid.get(i).packReset();}
 
-			void * pointer;
-
-			if (opt & RUN_ON_DEVICE)
-			{pointer = prAlloc_prp.getDevicePointerEnd();}
-			else
-			{pointer = prAlloc_prp.getPointerEnd();}
-
-			// for each ghost box
-			for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
+			// Calculating the size to pack all the data to send
+			for ( size_t i = 0 ; i < ig_box.size() ; i++ )
 			{
-				// we pack only if it is valid
-				if (ig_box.get(i).bid.get(j).box.isValid() == false)
-					continue;
+				// for each ghost box
+				for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
+				{
+					// And linked sub-domain
+					size_t sub_id = ig_box.get(i).bid.get(j).sub;
+					// Internal ghost box
+					Box<dim,long int> g_ig_box = ig_box.get(i).bid.get(j).box;
 
-				// And linked sub-domain
-				size_t sub_id = ig_box.get(i).bid.get(j).sub;
-				// Internal ghost box
-				Box<dim,size_t> g_ig_box = ig_box.get(i).bid.get(j).box;
-				g_ig_box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
-				// Ghost box global id
-				size_t g_id = ig_box.get(i).bid.get(j).g_id;
+					if (g_ig_box.isValid() == false)
+					{continue;}
 
-				// Pack a size_t for the internal ghost id
-				Packer<size_t,Memory>::pack(prAlloc_prp,g_id,sts);
-				prAlloc_prp.hostToDevice(prAlloc_prp.getOffset(),prAlloc_prp.getOffsetEnd());
-				// Create a sub grid iterator spanning the internal ghost layer
-				auto sub_it = loc_grid.get(sub_id).getIterator(g_ig_box.getKP1(),g_ig_box.getKP2());
-				// and pack the internal ghost grid
-				Packer<device_grid,Memory>::template pack<decltype(sub_it),prp...>(prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
+					g_ig_box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
+
+					// Pack a size_t for the internal ghost id
+					Packer<size_t,Memory>::packRequest(req);
+					// Create a sub grid iterator spanning the internal ghost layer
+					auto sub_it = loc_grid.get(sub_id).getIterator(g_ig_box.getKP1(),g_ig_box.getKP2());
+
+					// get the size to pack
+					Packer<device_grid,Memory>::template packRequest<decltype(sub_it),prp...>(loc_grid.get(sub_id),sub_it,req);
+				}
 			}
-			// send the request
 
-			void * pointer2;
+			// Finalize calculation
+			for (size_t i = 0 ; i < loc_grid.size() ; i++)
+			{loc_grid.get(i).template packCalculate<prp ...>(req,v_cl.getmgpuContext());}
 
-			if (opt & RUN_ON_DEVICE)
-			{pointer2 = prAlloc_prp.getDevicePointerEnd();}
-			else
-			{pointer2 = prAlloc_prp.getPointerEnd();}
+			// resize the property buffer memory
+			g_send_prp_mem.resize(req);
 
-			pointers.add(pointer);
-			pointers2.add(pointer2);
+			// Create an object of preallocated memory for properties
+			ExtPreAlloc<Memory> & prAlloc_prp = *(new ExtPreAlloc<Memory>(req,g_send_prp_mem));
+
+			prAlloc_prp.incRef();
+
+			pointers.clear();
+			pointers2.clear();
+
+			// Pack the information for each processor and send it
+			for ( size_t i = 0 ; i < ig_box.size() ; i++ )
+			{
+
+				sts.mark();
+
+				void * pointer;
+
+				if (opt & RUN_ON_DEVICE)
+				{pointer = prAlloc_prp.getDevicePointerEnd();}
+				else
+				{pointer = prAlloc_prp.getPointerEnd();}
+
+				// for each ghost box
+				for (size_t j = 0 ; j < ig_box.get(i).bid.size() ; j++)
+				{
+					// we pack only if it is valid
+					if (ig_box.get(i).bid.get(j).box.isValid() == false)
+						continue;
+
+					// And linked sub-domain
+					size_t sub_id = ig_box.get(i).bid.get(j).sub;
+					// Internal ghost box
+					Box<dim,size_t> g_ig_box = ig_box.get(i).bid.get(j).box;
+					g_ig_box -= gdb_ext.get(sub_id).origin.template convertPoint<size_t>();
+					// Ghost box global id
+					size_t g_id = ig_box.get(i).bid.get(j).g_id;
+
+					// Pack a size_t for the internal ghost id
+					Packer<size_t,Memory>::pack(prAlloc_prp,g_id,sts);
+					prAlloc_prp.hostToDevice(prAlloc_prp.getOffset(),prAlloc_prp.getOffsetEnd());
+					// Create a sub grid iterator spanning the internal ghost layer
+					auto sub_it = loc_grid.get(sub_id).getIterator(g_ig_box.getKP1(),g_ig_box.getKP2());
+					// and pack the internal ghost grid
+					Packer<device_grid,Memory>::template pack<decltype(sub_it),prp...>(prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
+				}
+				// send the request
+
+				void * pointer2;
+
+				if (opt & RUN_ON_DEVICE)
+				{pointer2 = prAlloc_prp.getDevicePointerEnd();}
+				else
+				{pointer2 = prAlloc_prp.getPointerEnd();}
+
+				pointers.add(pointer);
+				pointers2.add(pointer2);
+			}
+
+			for (size_t i = 0 ; i < loc_grid.size() ; i++)
+			{
+				rem_copy_opt opt_ = rem_copy_opt::NONE_OPT;
+				if (opt & SKIP_LABELLING == true)
+				{opt_ = rem_copy_opt::KEEP_GEOMETRY;}
+
+				loc_grid.get(i).template packFinalize<prp ...>(prAlloc_prp,sts,opt_,true);
+			}
 		}
+		else
+		{
+			req = g_send_prp_mem.size();
 
-		for (size_t i = 0 ; i < loc_grid.size() ; i++)
-		{loc_grid.get(i).template packFinalize<prp ...>(prAlloc_prp,sts);}
+			// Create an object of preallocated memory for properties
+			ExtPreAlloc<Memory> & prAlloc_prp = *(new ExtPreAlloc<Memory>(req,g_send_prp_mem));
+
+			for (size_t i = 0 ; i < loc_grid.size() ; i++)
+			{
+				rem_copy_opt opt_ = rem_copy_opt::NONE_OPT;
+				if (opt & SKIP_LABELLING)
+				{opt_ = rem_copy_opt::KEEP_GEOMETRY;}
+
+				loc_grid.get(i).template packFinalize<prp ...>(prAlloc_prp,sts,opt_,true);
+			}
+		}
 
 		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
 		{

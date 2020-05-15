@@ -663,6 +663,13 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_skip_labelling )
 	typedef typename GetCpBlockType<decltype(gdist),0,1>::type CpBlockType;
 
 	gdist.template conv2<0,1,0,1,1>({0,0,0},{(int)sz[0]-1,(int)sz[1]-1,(int)sz[2]-1},[] __device__ (float & u_out, float & v_out, CpBlockType & u, CpBlockType & v,int i, int j, int k){
+		u_out = 1*u(i,j,k);
+		v_out = 1*v(i,j,k);
+	});
+
+	gdist.template ghost_get<0,1>(RUN_ON_DEVICE | SKIP_LABELLING);
+
+	gdist.template conv2<0,1,0,1,1>({0,0,0},{(int)sz[0]-1,(int)sz[1]-1,(int)sz[2]-1},[] __device__ (float & u_out, float & v_out, CpBlockType & u, CpBlockType & v,int i, int j, int k){
 		u_out = 5*u(i,j,k);
 		v_out = 5*v(i,j,k);
 	});
