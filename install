@@ -390,7 +390,7 @@ else
             LIBHILBERT_installed=1
         elif [ $conf_err -eq 211 ]; then
             echo "VCDEVEL not found try to install"
-            if [ $LIBHILBERT_installed -eq 1 ]; then
+            if [ $VCDEVEL_installed -eq 1 ]; then
                 echo "Error the installation of VCDEVEL failed"
                 exit 1
             fi
