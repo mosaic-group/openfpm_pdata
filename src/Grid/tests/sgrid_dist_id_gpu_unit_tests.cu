@@ -676,6 +676,13 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_skip_labelling )
 
 	gdist.template ghost_get<0,1>(RUN_ON_DEVICE | SKIP_LABELLING);
 
+	gdist.template conv2<0,1,0,1,1>({0,0,0},{(int)sz[0]-1,(int)sz[1]-1,(int)sz[2]-1},[] __device__ (float & u_out, float & v_out, CpBlockType & u, CpBlockType & v,int i, int j, int k){
+		u_out = 2*u(i,j,k);
+		v_out = 2*v(i,j,k);
+	});
+
+	gdist.template ghost_get<0,1>(RUN_ON_DEVICE | SKIP_LABELLING);
+
 	gdist.template conv2<0,1,2,3,1>({2,2,2},{(int)sz[0]-3,(int)sz[1]-3,(int)sz[2]-3},[] __device__ (float & u_out, float & v_out, CpBlockType & u, CpBlockType & v,int i, int j, int k){
 		u_out = u(i+1,j,k) - u(i-1,j,k) + u(i,j+1,k) - u(i,j-1,k) + u(i,j,k+1) - u(i,j,k-1);
 		v_out = v(i+1,j,k) - v(i-1,j,k) + v(i,j+1,k) - v(i,j-1,k) + v(i,j,k+1) - v(i,j,k-1);
@@ -704,7 +711,7 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_skip_labelling )
 		float sub1 = gdist.template get<2>(p);
 		float sub2 = gdist.template get<3>(p);
 
-		if (sub1 != 6.0*5 || sub2 != 6.0*5)
+		if (sub1 != 6.0*10.0 || sub2 != 6.0*10.0)
 		{
 			std::cout << sub1 << "  " << sub2 << std::endl;
 			std::cout << gdist.template get<0>(p_xp1) << "   " << gdist.template get<0>(p_xm1) << std::endl;

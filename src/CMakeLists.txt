@@ -193,6 +193,9 @@ install(FILES Vector/se_class3_vector.hpp
 	      Vector/vector_dist_kernel.hpp
 	      DESTINATION openfpm_pdata/include/Vector )
 
+install(FILES util/common_pdata.hpp
+	      DESTINATION openfpm_pdata/include/util)
+
 install(FILES Vector/Iterators/vector_dist_iterator.hpp
 	      DESTINATION openfpm_pdata/include/Vector/Iterators/ )
 

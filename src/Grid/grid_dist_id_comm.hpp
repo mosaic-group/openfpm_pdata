@@ -203,8 +203,15 @@ class grid_dist_id_comm
 											  bool use_bx_def,
 											  size_t opt)
 	{
-		for (size_t i = 0 ; i < loc_grid.size() ; i++)
-		{loc_grid.get(i).copyRemoveReset();}
+		rem_copy_opt opt_ = rem_copy_opt::NONE_OPT;
+		if (opt & SKIP_LABELLING)
+		{opt_ = rem_copy_opt::KEEP_GEOMETRY;}
+
+		if (opt_ != rem_copy_opt::KEEP_GEOMETRY)
+		{
+			for (size_t i = 0 ; i < loc_grid.size() ; i++)
+			{loc_grid.get(i).copyRemoveReset();}
+		}
 
 		grid_key_dx<dim> cnt[1];
 		cnt[0].zero();
@@ -258,11 +265,6 @@ class grid_dist_id_comm
 				}
 			}
 		}
-
-		rem_copy_opt opt_ = rem_copy_opt::NONE_OPT;
-		if (opt & SKIP_LABELLING == true)
-		{opt_ = rem_copy_opt::KEEP_GEOMETRY;}
-
 
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{
