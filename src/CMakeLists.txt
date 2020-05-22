@@ -9,7 +9,7 @@ else()
 	set(CUDA_SOURCES)
 endif()
 
-add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp Debug/debug_test.cpp Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp Grid/tests/grid_dist_id_unit_test.cpp Grid/tests/staggered_grid_dist_unit_test.cpp Vector/tests/vector_dist_cell_list_tests.cpp Vector/tests/vector_dist_complex_prp_unit_test.cpp Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp Vector/tests/vector_dist_MP_unit_tests.cpp Vector/tests/vector_dist_NN_tests.cpp Vector/tests/vector_dist_unit_test.cpp  pdata_performance.cpp Decomposition/tests/CartDecomposition_unit_test.cpp Decomposition/tests/shift_vect_converter_tests.cpp Vector/performance/vector_dist_performance_util.cpp  lib/pdata.cpp test_multiple_o.cpp  ../openfpm_devices/src/memory/ShmAllocator_manager.cpp ../openfpm_devices/src/memory/SemManager.cpp ../openfpm_devices/src/memory/ShmAllocator.cpp ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp)
+add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp Debug/debug_test.cpp Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp Grid/tests/grid_dist_id_unit_test.cpp Grid/tests/staggered_grid_dist_unit_test.cpp Vector/tests/vector_dist_cell_list_tests.cpp Vector/tests/vector_dist_complex_prp_unit_test.cpp Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp Vector/tests/vector_dist_MP_unit_tests.cpp Vector/tests/vector_dist_NN_tests.cpp Vector/tests/vector_dist_unit_test.cpp  pdata_performance.cpp Decomposition/tests/CartDecomposition_unit_test.cpp Decomposition/tests/shift_vect_converter_tests.cpp Vector/performance/vector_dist_performance_util.cpp  lib/pdata.cpp test_multiple_o.cpp  ../openfpm_devices/src/memory/ShmAllocator_manager.cpp ../openfpm_devices/src/memory/SemManager.cpp ../openfpm_devices/src/memory/ShmAllocator.cpp ../openfpm_devices/src/memory/ShmBuffer.cpp ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_vcluster/src/VCluster/InVis.cpp ../openfpm_devices/src/Memleak_check.cpp)
 
 if ( CMAKE_COMPILER_IS_GNUCC )
     target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
@@ -37,6 +37,9 @@ endif()
 if(TEST_PERFORMANCE)
         target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_numerics/src/)
 endif()
+
+set(JAVA_HOME /usr/lib/jvm/adoptopenjdk-11-hotspot-amd64)
+
 target_include_directories (pdata PUBLIC ${PARMETIS_ROOT}/include)
 target_include_directories (pdata PUBLIC ${METIS_ROOT}/include)
 target_include_directories (pdata PUBLIC ${CUDA_INCLUDE_DIRS})
@@ -49,9 +52,12 @@ target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
 target_include_directories (pdata PUBLIC ${PETSC_INCLUDES})
 target_include_directories (pdata PUBLIC ${HDF5_ROOT}/include)
 target_include_directories (pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
+target_include_directories (pdata PUBLIC ${JAVA_HOME}/include ${JAVA_HOME}/include/linux)
+
 
 target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
 
+target_link_libraries(pdata ${JAVA_HOME}/lib/server/libjvm.so)
 target_link_libraries(pdata ${Boost_LIBRARIES})
 target_link_libraries(pdata -L${PARMETIS_ROOT}/lib parmetis)
 target_link_libraries(pdata -L${METIS_ROOT}/lib metis)

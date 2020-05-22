@@ -6,16 +6,17 @@ if(CUDA_FOUND)
 	set(CUDA_SOURCES ../openfpm_devices/src/memory/CudaMemory.cu)
 endif()
 
-add_executable(cart_dec CartDecomposition_gen_vtk.cpp ../src/lib/pdata.cpp ${CUDA_SOURCES} ../openfpm_devices/src/memory/ShmAllocator_manager.cpp ../openfpm_devices/src/memory/SemManager.cpp ../openfpm_devices/src/memory/ShmAllocator.cpp ../openfpm_devices/src/memory/HeapMemory.cpp  ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp)
+add_executable(cart_dec CartDecomposition_gen_vtk.cpp ../src/lib/pdata.cpp ${CUDA_SOURCES} ../openfpm_devices/src/memory/ShmAllocator_manager.cpp ../openfpm_devices/src/memory/SemManager.cpp ../openfpm_devices/src/memory/ShmAllocator.cpp ../../openfpm_devices/src/memory/ShmBuffer.cpp ../openfpm_devices/src/memory/HeapMemory.cpp  ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_vcluster/src/VCluster/InVis.cpp ../openfpm_devices/src/Memleak_check.cpp)
 
-add_executable(metis_dec Metis_gen_vtk.cpp ../src/lib/pdata.cpp ${CUDA_SOURCES} ../openfpm_devices/src/memory/ShmAllocator_manager.cpp ../openfpm_devices/src/memory/SemManager.cpp ../openfpm_devices/src/memory/ShmAllocator.cpp ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp)
+add_executable(metis_dec Metis_gen_vtk.cpp ../src/lib/pdata.cpp ${CUDA_SOURCES} ../openfpm_devices/src/memory/ShmAllocator_manager.cpp ../openfpm_devices/src/memory/SemManager.cpp ../openfpm_devices/src/memory/ShmAllocator.cpp ../../openfpm_devices/src/memory/ShmBuffer.cpp ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_vcluster/src/VCluster/InVis.cpp ../openfpm_devices/src/Memleak_check.cpp)
 
-add_executable(dom_box  domain_gen_vtk.cpp ../src/lib/pdata.cpp ${CUDA_SOURCES} ../openfpm_devices/src/memory/ShmAllocator_manager.cpp ../openfpm_devices/src/memory/SemManager.cpp ../openfpm_devices/src/memory/ShmAllocator.cpp  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp)
+add_executable(dom_box  domain_gen_vtk.cpp ../src/lib/pdata.cpp ${CUDA_SOURCES} ../openfpm_devices/src/memory/ShmAllocator_manager.cpp ../openfpm_devices/src/memory/SemManager.cpp ../openfpm_devices/src/memory/ShmAllocator.cpp  ../../openfpm_devices/src/memory/ShmBuffer.cpp ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_vcluster/src/VCluster/InVis.cpp ../openfpm_devices/src/Memleak_check.cpp)
 
-add_executable(vector_dist vector.cpp ${CUDA_SOURCES} ../openfpm_devices/src/memory/ShmAllocator_manager.cpp ../openfpm_devices/src/memory/SemManager.cpp ../openfpm_devices/src/memory/ShmAllocator.cpp ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_devices/src/Memleak_check.cpp)
+add_executable(vector_dist vector.cpp ${CUDA_SOURCES} ../openfpm_devices/src/memory/ShmAllocator_manager.cpp ../openfpm_devices/src/memory/SemManager.cpp ../openfpm_devices/src/memory/ShmAllocator.cpp ../../openfpm_devices/src/memory/ShmBuffer.cpp ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_vcluster/src/VCluster/InVis.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_devices/src/Memleak_check.cpp)
 
 ###########################
 
+set(JAVA_HOME /usr/lib/jvm/adoptopenjdk-11-hotspot-amd64)
 
 include_directories (${CUDA_INCLUDE_DIRS})
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
@@ -25,6 +26,7 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_vcluster/src/)
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_io/src/)
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/../src/config)
+include_directories (${JAVA_HOME}/include ${JAVA_HOME}/include/linux)
 if (PETSC_FOUND)
 	include_directories (${PETSC_INCLUDES})
 endif()
@@ -36,6 +38,7 @@ include_directories (${Boost_INCLUDE_DIRS})
 include_directories(${HDF5_ROOT}/include)
 include_directories (${LIBHILBERT_INCLUDE_DIRS})
 
+target_link_libraries(cart_dec ${JAVA_HOME}/lib/server/libjvm.so)
 target_link_libraries(cart_dec ${Boost_LIBRARIES})
 target_link_libraries(cart_dec -L${PARMETIS_ROOT}/lib parmetis)
 target_link_libraries(cart_dec -L${METIS_ROOT}/lib metis)
@@ -44,6 +47,7 @@ target_link_libraries(cart_dec ${HDF5_LIBRARIES})
 target_link_libraries(cart_dec -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
 target_link_libraries(cart_dec ${MPI_C_LIBRARIES})
 
+target_link_libraries(metis_dec ${JAVA_HOME}/lib/server/libjvm.so)
 target_link_libraries(metis_dec ${Boost_LIBRARIES})
 target_link_libraries(metis_dec -L${PARMETIS_ROOT}/lib parmetis)
 target_link_libraries(metis_dec -L${METIS_ROOT}/lib metis)
@@ -52,6 +56,7 @@ target_link_libraries(metis_dec ${HDF5_LIBRARIES})
 target_link_libraries(metis_dec -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
 target_link_libraries(metis_dec ${MPI_C_LIBRARIES})
 
+target_link_libraries(dom_box ${JAVA_HOME}/lib/server/libjvm.so)
 target_link_libraries(dom_box ${Boost_LIBRARIES})
 target_link_libraries(dom_box -L${PARMETIS_ROOT}/lib parmetis)
 target_link_libraries(dom_box -L${METIS_ROOT}/lib metis)
@@ -60,6 +65,7 @@ target_link_libraries(dom_box ${HDF5_LIBRARIES})
 target_link_libraries(dom_box -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
 target_link_libraries(dom_box ${MPI_C_LIBRARIES})
 
+target_link_libraries(vector_dist ${JAVA_HOME}/lib/server/libjvm.so)
 target_link_libraries(vector_dist ${Boost_LIBRARIES})
 target_link_libraries(vector_dist -L${PARMETIS_ROOT}/lib parmetis)
 target_link_libraries(vector_dist -L${METIS_ROOT}/lib metis)
