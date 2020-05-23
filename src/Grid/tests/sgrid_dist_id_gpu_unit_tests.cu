@@ -297,8 +297,6 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_ghost_get )
 	size_t sz6[2] = {15,15};
 	sgrid_ghost_get(sz,sz6);
 
-	return;
-
 	size_t sz2[2] = {170,170};
 	size_t sz3[2] = {15,15};
 	sgrid_ghost_get(sz2,sz3);
@@ -678,6 +676,11 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_skip_labelling )
 	});
 
 	gdist.template ghost_get<0,1>(RUN_ON_DEVICE | SKIP_LABELLING);
+
+	//////////////////////////////////// DEBUG ///////////////////////////////
+	gdist.deviceToHost<0,1,2,3>();
+	gdist.write_debug("DEBUG");
+	//////////////////////////////////////////////////////////////////////////
 
 	gdist.template conv2<0,1,0,1,1>({0,0,0},{(int)sz[0]-1,(int)sz[1]-1,(int)sz[2]-1},[] __device__ (float & u_out, float & v_out, CpBlockType & u, CpBlockType & v,int i, int j, int k){
 		u_out = 2*u(i,j,k);

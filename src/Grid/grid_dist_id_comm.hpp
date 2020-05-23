@@ -161,8 +161,19 @@ class grid_dist_id_comm
 	//! receiving buffers in case of dynamic
 	openfpm::vector<BMemory<Memory>> recv_buffers;
 
+	struct rp_id
+	{
+		int p_id;
+		int i;
+
+		bool operator<(rp_id & tmp)
+		{
+			return p_id < tmp.p_id;
+		}
+	};
+
 	//! receiving processors
-	openfpm::vector<size_t> recv_proc;
+	openfpm::vector<rp_id> recv_proc;
 
 	//! For each near processor, outgoing intersection grid
 	//! \warning m_oGrid is assumed to be an ordered list
@@ -372,7 +383,9 @@ class grid_dist_id_comm
 		gd->recv_buffers.add();
 
 		gd->recv_buffers.last().resize(msg_i);
-		gd->recv_proc.add(i);
+		gd->recv_proc.add();
+		gd->recv_proc.last().p_id = i;
+		gd->recv_proc.last().i = gd->recv_proc.size()-1;
 
 		if (gd->opt & RUN_ON_DEVICE)
 		{return gd->recv_buffers.last().getDevicePointer();}
@@ -433,6 +446,20 @@ class grid_dist_id_comm
 											 &send_prc_queue.get(0),&send_pointer.get(0),
 											 receive_dynamic,this);
 			}
+
+			// Reorder what we received
+
+			recv_proc.sort();
+
+			openfpm::vector<BMemory<Memory>> tmp;
+			tmp.resize(recv_proc.size());
+
+			for (int i = 0 ; i < recv_proc.size() ; i++)
+			{
+				tmp.get(i).swap(recv_buffers.get(recv_proc.get(i).i));
+			}
+
+			recv_buffers.swap(tmp);
 		}
 	}
 
@@ -549,9 +576,13 @@ class grid_dist_id_comm
 		// sub-grid where to unpack
 		auto sub2 = loc_grid.get(sub_id).getIterator(box.getKP1(),box.getKP2());
 
+		rem_copy_opt opt_ = rem_copy_opt::NONE_OPT;
+		if (opt & SKIP_LABELLING)
+		{opt_ = rem_copy_opt::KEEP_GEOMETRY;}
+
 		// Unpack
 		loc_grid.get(sub_id).remove(box);
-		Unpacker<device_grid,mem>::template unpack<decltype(sub2),decltype(v_cl.getmgpuContext()),prp...>(emem,sub2,loc_grid.get(sub_id),ps,v_cl.getmgpuContext());
+		Unpacker<device_grid,mem>::template unpack<decltype(sub2),decltype(v_cl.getmgpuContext()),prp...>(emem,sub2,loc_grid.get(sub_id),ps,v_cl.getmgpuContext(),opt_);
 
 		// Copy the information on the other grid
 		for (long int j = 0 ; j < (long int)eb_gid_list.get(l_id).eb_list.size() ; j++)
@@ -706,7 +737,7 @@ class grid_dist_id_comm
 					size_t g_id;
 					Unpacker<size_t,BMemory<HeapMemory>>::unpack(mem,g_id,ps);
 
-					size_t pid = dec.ProctoID(recv_proc.get(i));
+					size_t pid = dec.ProctoID(recv_proc.get(i).p_id);
 
 					size_t l_id = 0;
 					// convert the global id into local id
@@ -1174,8 +1205,12 @@ public:
 
 		merge_received_data_get<prp ...>(loc_grid,eg_box,prp_recv,prRecv_prp,g_id_to_external_ghost_box,eb_gid_list,opt);
 
+		rem_copy_opt opt_ = rem_copy_opt::NONE_OPT;
+		if (opt & SKIP_LABELLING)
+		{opt_ = rem_copy_opt::KEEP_GEOMETRY;}
+
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
-		{loc_grid.get(i).template removeAddUnpackFinalize<prp ...>(v_cl.getmgpuContext());}
+		{loc_grid.get(i).template removeAddUnpackFinalize<prp ...>(v_cl.getmgpuContext(),opt_);}
 	}
 
 	/*! \brief It merge the information in the ghost with the
