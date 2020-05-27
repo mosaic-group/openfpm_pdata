@@ -327,6 +327,21 @@ public:
 			delete[] Mg.wgtflag;
 		}
 
+		if (Mg.objval != NULL)
+		{
+			delete[] Mg.objval;
+		}
+
+		if (Mg.itr != NULL)
+		{
+			delete[] Mg.itr;
+		}
+
+		if (Mg.vsize != NULL)
+		{
+			delete[] Mg.vsize;
+		}
+
 		if (is_openfpm_init() == true)
 		{MPI_Comm_free(&comm);}
 	}
@@ -526,6 +541,7 @@ public:
 	 */
 	const Parmetis<Graph> & operator=(const Parmetis<Graph> & pm)
 	{
+		if (comm != MPI_COMM_NULL){MPI_Comm_free(&comm);}
 		MPI_Comm_dup(pm.comm, &comm);
 		p_id = pm.p_id;
 		nc = pm.nc;
@@ -547,6 +563,7 @@ public:
 	const Parmetis<Graph> & operator=(Parmetis<Graph> && pm)
 	{
 		// TODO Move into VCluster
+		if (comm != MPI_COMM_NULL){MPI_Comm_free(&comm);}
 		MPI_Comm_dup(pm.comm, &comm);
 		p_id = pm.p_id;
 		nc = pm.nc;

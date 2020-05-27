@@ -13,6 +13,8 @@ add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp Debug/debug_t
 
 if ( CMAKE_COMPILER_IS_GNUCC )
     target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
+    #target_compile_options(pdata PRIVATE "-fsanitize=address")
+    #    target_link_options(pdata PRIVATE "-fsanitize=address")
     if (TEST_COVERAGE)
         target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fprofile-arcs -ftest-coverage>)
     endif()

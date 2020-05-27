@@ -494,8 +494,8 @@ public:
 	 * \param np number of particles
 	 *
 	 */
-	vector_dist(const Decomposition & dec, size_t np) :
-	vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>(dec), v_cl(create_vcluster<Memory>()) SE_CLASS3_VDIST_CONSTRUCTOR
+	vector_dist(const Decomposition & dec, size_t np)
+	:vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>(dec), v_cl(create_vcluster<Memory>()) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
