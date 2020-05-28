@@ -145,6 +145,64 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 }
 
 
+BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test_diff_proc )
+{
+
+	// Input data
+	size_t k = 200;
+
+	float ghost_part = 0.0;
+
+	// Domain
+	Box<2,float> domain({0.0,0.0},{1.0,1.0});
+
+	Vcluster<> & v_cl = create_vcluster();
+
+	// Skip this test on big scale
+	if (v_cl.getProcessingUnits() >= 32)
+		return;
+
+	// grid size
+	size_t sz[2];
+	sz[0] = k;
+	sz[1] = k;
+
+	// Ghost
+	Ghost<2,float> g(3);
+
+	// Distributed grid with id decomposition
+	grid_dist_id<2, float, aggregate<float>> g_dist(sz,domain,g);
+
+	g_dist.load("test_data/test_data_single.h5");
+
+	auto it = g_dist.getDomainIterator();
+
+	size_t count = 0;
+
+	bool match = true;
+	while (it.isNext())
+	{
+		//key
+		auto key = it.get();
+
+		//BOOST_CHECK_CLOSE(g_dist.template get<0>(key),1,0.0001);
+		//std::cout << "Element: " << g_dist.template get<0>(key) << std::endl;
+
+		auto keyg = g_dist.getGKey(key);
+
+		match &= g_dist.template get<0>(key) == keyg.get(0);
+
+		++it;
+		count++;
+	}
+
+	v_cl.sum(count);
+	v_cl.execute();
+
+	BOOST_REQUIRE_EQUAL(count, (size_t)k*k);
+	BOOST_REQUIRE_EQUAL(match,true);
+}
+
 BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_2GB_save_test )
 {
 	float ghost_part = 0.0;
