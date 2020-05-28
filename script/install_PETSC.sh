@@ -112,6 +112,17 @@ fi
 
 configure_options="$configure_options --download-scalapack --download-mumps"
 configure_options="$configure_options --download-superlu_dist"
+
+#### OK here we check if we can configure work with SUITESPARSE
+echo "Testing if PETSC work with SUPERLU"
+configure_options2="$configure_options --download-superlu_dist "
+test_configure_options
+
+if [ $error -eq 0 ]; then
+  echo "SUITESPARSE work with PETSC"
+  configure_options="$configure_options --download-superlu_dist "
+fi
+
 configure_options="$configure_options --download-hypre"
 
 rm petsc-lite-3.10.2.tar.gz
