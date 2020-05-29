@@ -105,6 +105,9 @@ target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
 
 if (HIP_ENABLE)
         SET(CMAKE_EXE_LINKER_FLAGS  "--amdgpu-target=${AMD_ARCH_COMPILE}")
+	SET(CMAKE_CXX_FLAGS "--amdgpu-target=${AMD_ARCH_COMPILE}")
+	target_include_directories(pdata PUBLIC ${HIPCUB_ROOT}/include )
+	target_include_directories(pdata PUBLIC ${ROCMPRIM_ROOT}/include )
 endif()
 
 target_link_libraries(pdata ${Boost_LIBRARIES})
