@@ -1,3 +1,5 @@
+
+#include <hip/hip_runtime.h>
 #include "config.h"
 
 #define BOOST_TEST_DYN_LINK
@@ -561,7 +563,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_test )
 	openfpm::vector_gpu<aggregate<float>> output;
 	output.resize(100 * phases.size());
 
-	vdmkt<<<1,1>>>(phases.toKernel(),output.toKernel());
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(vdmkt), dim3(1), dim3(1), 0, 0, phases.toKernel(),output.toKernel());
 
 	output.template deviceToHost<0>();
 
@@ -653,7 +655,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_test_simplified )
 	openfpm::vector_gpu<aggregate<float>> output;
 	output.resize(100 * phases.size());
 
-	vdmkt_simple<<<1,1>>>(phases.toKernel(),output.toKernel());
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(vdmkt_simple), dim3(1), dim3(1), 0, 0, phases.toKernel(),output.toKernel());
 
 	output.template deviceToHost<0>();
 
@@ -762,7 +764,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_cl_test )
 	output.resize(tot);
 	output2.resize(tot_g);
 
-	vdmkt_simple_cl<<<1,1>>>(phases.toKernel(),output.toKernel(),cl_ph.toKernel(),output2.toKernel());
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(vdmkt_simple_cl), dim3(1), dim3(1), 0, 0, phases.toKernel(),output.toKernel(),cl_ph.toKernel(),output2.toKernel());
 
 	output.template deviceToHost<0>();
 

@@ -50,10 +50,9 @@ endif()
 
 set(ENV{PATH} "$ENV{PATH}:${HDF5_ROOT}/bin")
 set(HDF5_PREFER_PARALLEL TRUE)
-
+find_package(MPI)
 
 if(ENABLE_GPU)
-	set(CMAKE_CUDA_HOST_COMPILER mpic++)
 	enable_language(CUDA)
 	find_package(CUDA)
 	if (CMAKE_EXPORT_COMPILE_COMMANDS==OFF)
@@ -82,7 +81,6 @@ if ( HIP_ENABLE )
 endif()
 
 find_package(Boost 1.68.0 COMPONENTS unit_test_framework iostreams program_options system filesystem)
-find_package(MPI)
 find_package(PETSc)
 find_package(HDF5)
 find_package(Eigen3)

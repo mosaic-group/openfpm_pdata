@@ -236,11 +236,7 @@ do
        conf_options="$conf_options -DTEST_PERFORMANCE=ON"
        ;;
     gpu)
-        if [ x"$CXX" == x"" ]; then
-                conf_options="$conf_options"
-        else
-		conf_options="$conf_options -DCMAKE_CUDA_HOST_COMPILER=$(which $CXX)"
-        fi
+       conf_options="$conf_options -DCMAKE_CUDA_HOST_COMPILER=$(which $CXX)"
        conf_options="$conf_options -DENABLE_GPU=ON"
        ;;
     *) ac_unrecognized_opts="$ac_unrecognized_opts$ac_unrecognized_sep--enable-$ac_useropt_orig"

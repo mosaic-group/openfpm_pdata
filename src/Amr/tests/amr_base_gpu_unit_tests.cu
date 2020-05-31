@@ -11,6 +11,8 @@
  *  Created on: Oct 5, 2017
  *      Author: i-bird
  */
+
+#include <hip/hip_runtime.h>
 #include "config.h"
 
 #define BOOST_TEST_DYN_LINK

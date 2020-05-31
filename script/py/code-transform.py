@@ -9,13 +9,27 @@ from pathlib import Path
 # python script/py/code-transform.py --json "build/compile_commands.json" --compile_command "/usr/local/cuda/bin/nvcc -ccbin=/home/i-bird/MPI/bin/mpic++" --build_path "/home/i-bird/Desktop/MOSAIC/OpenFPM_project/openfpm_bianucci_flush_hip_test/openfpm_pdata/build" --add_includes " -I/home/i-bird/MPI/include -I/home/i-bird/Desktop/MOSAIC/OpenFPM_project/openfpm_bianucci_flush_hip_test/openfpm_pdata/openfpm_numerics/src/ -I/home/ibird/PETSC/include" --directory "/home/i-bird/Desktop/MOSAIC/OpenFPM_project/openfpm_bianucci_flush_hip_test/openfpm_pdata" --exclude_directories="/home/i-bird/Desktop/MOSAIC/OpenFPM_project/openfpm_bianucci_flush_hip_test/openfpm_pdata/openfpm_data/src/util/cuda/cub"
 
 
-# python script/py/code-transform.py --json "build/compile_commands.json" --compile_command "/usr/local/cuda/bin/nvcc -ccbin=/home/ibird/MPI/bin/mpic++" --build_path "/home/ibird/openfpm_pdata/build" --add_includes " -DSE_CLASS2 -I/home/i-bird/MPI/include -I/home/ibird/openfpm_pdata/openfpm_numerics/src/ -I/home/ibird/PETSC/include" --directory "/home/ibird/openfpm_pdata" --exclude_directories="/home/ibird/openfpm_pdata/openfpm_data/src/util/cuda/cub"
+# CREATE COMPILE_COMMANDS
+
+# source openfpm_vars
+
+
+#cmake ../.  -DMPI_VENDOR=openmpi -DPARMETIS_ROOT=/home/ibird/PARMETIS -DMETIS_ROOT=/home/ibird/METIS -DBOOST_ROOT=/home/ibird/BOOST -DHDF5_ROOT=/home/ibird/HDF5/ -DLIBHILBERT_ROOT=/home/ibird/LIBHILBERT -DPETSC_ROOT=/home/ibird/PETSC -DSUITESPARSE_ROOT=/home/ibird/SUITESPARSE -DEIGEN3_ROOT=/home/ibird/EIGEN -DOPENBLAS_ROOT=/home/ibird/OPENBLAS/ -DCMAKE_CUDA_HOST_COMPILER=/home/ibird/MPI/bin/mpic++ -DENABLE_GPU=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+# Transform
 
 # To make it work /home/ibird/BOOST/include/boost/config/detail/select_compiler_config.hpp remove from __clang__ !defined(__CUDA__)
 
-# cmake ../.  -DCMAKE_INSTALL_PREFIX=/usr/local/openfpm_sparse_cl -DBOOST_ROOT=/home/ibird/BOOST -DHDF5_ROOT=/home/ibird/HDF5/ -DLIBHILBERT_ROOT=/home/ibird/LIBHILBERT -DMPI_VENDOR=openmpi -DPARMETIS_ROOT=/home/ibird/PARMETIS -DMETIS_ROOT=/home/ibird/METIS -DPETSC_ROOT=/home/ibird/PETSC -DSUITESPARSE_ROOT=/home/ibird/SUITESPARSE -DEIGEN3_ROOT=/home/ibird/EIGEN -DOPENBLAS_ROOT=/home/ibird/OPENBLAS/ -DCMAKE_BUILD_TYPE=Release -DHIP_ENABLE=ON -DAMD_ARCH_COMPILE=gfx900 -DHIPCUB_ROOT=/home/i-bird/Desktop/MOSAIC/OpenFPM_project/HIP/HIPCUB_install/ -DROCMPRIM_ROOT=/opt/rocm-3.1.0/rocprim/ -DENABLE_GPU=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+# python3 script/py/code-transform.py --json "build/compile_commands.json" --compile_command "/usr/local/cuda/bin/nvcc -ccbin=/home/ibird/MPI/bin/mpic++" --build_path "/home/ibird/openfpm_pdata/build" --add_includes " -DSE_CLASS2 -I/home/i-bird/MPI/include -I/home/ibird/openfpm_pdata/openfpm_numerics/src/  -I/home/ibird/PETSC/include" --directory "/home/ibird/openfpm_pdata" --exclude_directories="/home/ibird/openfpm_pdata/openfpm_data/src/util/cuda/cub"
 
-# SE_CLASS2 must be used to convert CudaMemory.cu
+#COMPILE with HIP
+
+# rm files in build
+
+# cmake ../.  -DCMAKE_INSTALL_PREFIX=/usr/local/openfpm_sparse_cl -DBOOST_ROOT=/home/ibird/BOOST -DHDF5_ROOT=/home/ibird/HDF5/ -DLIBHILBERT_ROOT=/home/ibird/LIBHILBERT -DMPI_VENDOR=openmpi -DPARMETIS_ROOT=/home/ibird/PARMETIS -DMETIS_ROOT=/home/ibird/METIS -DPETSC_ROOT=/home/ibird/PETSC -DSUITESPARSE_ROOT=/home/ibird/SUITESPARSE -DEIGEN3_ROOT=/home/ibird/EIGEN -DOPENBLAS_ROOT=/home/ibird/OPENBLAS/ -DCMAKE_BUILD_TYPE=Release -DHIP_ENABLE=ON -DAMD_ARCH_COMPILE=gfx900 -DHIPCUB_ROOT=/home/i-bird/Desktop/MOSAIC/OpenFPM_project/HIP/HIPCUB_install/ -DROCMPRIM_ROOT=/opt/rocm-3.1.0/rocprim/ -DENABLE_GPU=OFF
+
+# cmake ../.  -DBOOST_ROOT=/home/ibird/BOOST -DHDF5_ROOT=/home/ibird/HDF5/ -DLIBHILBERT_ROOT=/home/ibird/LIBHILBERT -DMPI_VENDOR=openmpi -DPARMETIS_ROOT=/home/ibird/PARMETIS -DMETIS_ROOT=/home/ibird/METIS -DPETSC_ROOT=/home/ibird/PETSC -DSUITESPARSE_ROOT=/home/ibird/SUITESPARSE -DEIGEN3_ROOT=/home/ibird/EIGEN -DOPENBLAS_ROOT=/home/ibird/OPENBLAS/ -DCMAKE_BUILD_TYPE=Release -DHIP_ENABLE=ON -DAMD_ARCH_COMPILE=gfx900 -DHIPCUB_ROOT=/opt/rocm/hipcub -DROCMPRIM_ROOT=/opt/rocm/rocprim/ -DENABLE_GPU=OFF
+
 
 cudaExtension = ".cu"
 cudaFileToParse=[]

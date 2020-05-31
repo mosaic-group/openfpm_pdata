@@ -8,6 +8,7 @@
 #ifndef SRC_VECTOR_VECTOR_DIST_PERFORMANCE_UTIL_HPP_
 #define SRC_VECTOR_VECTOR_DIST_PERFORMANCE_UTIL_HPP_
 
+#include "util/cuda_util.hpp"
 #include <boost/property_tree/ptree.hpp>
 #include "Plot/GoogleChart.hpp"
 #include "vector_dist_performance_common.hpp"

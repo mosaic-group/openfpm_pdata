@@ -326,7 +326,7 @@ public:
 
 				// fill properties
 
-				boost::mpl::for_each<boost::mpl::range_c<int, 0, sizeof...(pos)> >(flp);
+				boost::mpl::for_each_ref<boost::mpl::range_c<int, 0, sizeof...(pos)> >(flp);
 
 				// set map global to local in the graph, needed because vertex is already created without addVertex method
 
@@ -478,7 +478,7 @@ public:
 
 				// fill properties
 
-				boost::mpl::for_each<boost::mpl::range_c<int, 0, sizeof...(pos)> >(flp);
+				boost::mpl::for_each_ref<boost::mpl::range_c<int, 0, sizeof...(pos)> >(flp);
 
 				// set map global to local in the graph, needed because vertex is already created without addVertex method
 

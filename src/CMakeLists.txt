@@ -53,6 +53,8 @@ if ( HIP_ENABLE AND HIP_FOUND )
 	hip_add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} ${CPP_SOURCES})
 	hip_add_library(ofpm_pdata STATIC lib/pdata.cpp)
 
+	target_compile_definitions(pdata PUBLIC BOOST_GPU_ENABLED="__device__ __host__")
+
 	target_include_directories (pdata PUBLIC ${HIP_ROOT_DIR}/include)
 	#target_include_directories (pdata PUBLIC ${MPI_C_INCLUDE_DIRS}) # Well ........ it does not work, work around line below
 	set_property(TARGET pdata PROPERTY COMPILE_FLAGS "-I${MPI_C_INCLUDE_DIRS}")

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
 ########################### Executables
 
-if(CUDA_FOUND)
+if(CUDA_FOUND OR HIP_ENABLE)
 	set(CUDA_SOURCES ../openfpm_devices/src/memory/CudaMemory.cu)
 endif()
 
@@ -23,6 +23,11 @@ if ( HIP_ENABLE AND HIP_FOUND )
 	set_property(TARGET metis_dec PROPERTY COMPILE_FLAGS "-I${MPI_C_INCLUDE_DIRS}")
 	set_property(TARGET dom_box PROPERTY COMPILE_FLAGS "-I${MPI_C_INCLUDE_DIRS}")
 	set_property(TARGET vector_dist PROPERTY COMPILE_FLAGS "-I${MPI_C_INCLUDE_DIRS}")
+
+	target_compile_definitions(cart_dec PUBLIC BOOST_GPU_ENABLED="__device__ __host__")
+	target_compile_definitions(metis_dec PUBLIC BOOST_GPU_ENABLED="__device__ __host__")
+	target_compile_definitions(dom_box PUBLIC BOOST_GPU_ENABLED="__device__ __host__")
+	target_compile_definitions(vector_dist PUBLIC BOOST_GPU_ENABLED="__device__ __host__")
 
 else()
 
