@@ -174,7 +174,6 @@ ${DEFINE_TEST_COVERAGE_MODE}
 #define __CUDACC_VER_MINOR__  2
 #define __CUDACC_VER_BUILD__ 243
 #endif
-#include "/home/i-bird/BOOST/include/boost/config.hpp"
 
 #ifdef __HIPCC__
 // End try to fool boost
