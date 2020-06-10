@@ -6,8 +6,8 @@ add_definitions(-DSCAN_WITH_CUB)
 
 if(CUDA_FOUND)
 	set(CUDA_SOURCES 
-		Grid/tests/sgrid_dist_id_gpu_unit_tests.cu
-		Vector/cuda/vector_dist_gpu_MP_tests.cu 
+				Grid/tests/sgrid_dist_id_gpu_unit_tests.cu
+				Vector/cuda/vector_dist_gpu_MP_tests.cu 
 					 Vector/cuda/vector_dist_cuda_func_test.cu
 					 Decomposition/cuda/decomposition_cuda_tests.cu
 					 Vector/cuda/vector_dist_gpu_unit_tests.cu
@@ -62,7 +62,7 @@ if (CUDA_FOUND)
 	target_compile_options(pdata PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: ${WARNING_SUPPRESSION_AND_OPTION_NVCC} >)
 	target_include_directories (pdata PUBLIC ${MPI_C_INCLUDE_DIRS})
         if (TEST_COVERAGE)
-		target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler "-fprofile-arcs -ftest-coverage">)
+		target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler "-fprofile-arcs -ftest-coverage" >)
         endif()
 	if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 		#		target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -G>)

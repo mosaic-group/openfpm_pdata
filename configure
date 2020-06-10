@@ -483,7 +483,7 @@ do
       conf_options="$conf_options -DMPI_VENDOR=$ac_optarg"
       ;;
       vcdevel)
-      conf_options="$conf_options -DCMAKE_PREFIX_PATH=$ac_optarg"
+      conf_options="$conf_options -DVc_ROOT=$ac_optarg"
       ;;
       *) ac_unrecognized_opts="$ac_unrecognized_opts$ac_unrecognized_sep--with-$ac_useropt_orig"
 	 ac_unrecognized_sep=', ';;

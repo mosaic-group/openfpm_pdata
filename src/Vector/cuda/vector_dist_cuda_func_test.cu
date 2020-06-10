@@ -48,6 +48,8 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 		v_prp.template get<2>(i)[1][2] = i+110000;
 		v_prp.template get<2>(i)[2][0] = i+120000;
 		v_prp.template get<2>(i)[2][1] = i+130000;
+		v_prp.template get<2>(i)[2][1] = i+140000;
+		v_prp.template get<2>(i)[2][2] = i+150000;
 	}
 
 	openfpm::vector_gpu<Box<3,float>> box_f_dev;
@@ -240,6 +242,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 				match &= v_prp.template get<2>(base)[2][0] == v_prp.template get<2>(i)[2][0];
 				match &= v_prp.template get<2>(base)[2][1] == v_prp.template get<2>(i)[2][1];
 				match &= v_prp.template get<2>(base)[2][2] == v_prp.template get<2>(i)[2][2];
+
 
 				base++;
 				base_o++;
@@ -604,10 +607,9 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 
     starts.resize(proc_id_out.size());
 
-    scan<unsigned int,unsigned int> sc;
+    mgpu::ofp_context_t ctx;
+    openfpm::scan((unsigned int *)proc_id_out.template getDeviceBuffer<0>(),proc_id_out.size(),(unsigned int *)starts.template getDeviceBuffer<0>(),ctx);
 
-	// scan
-	sc.scan_(proc_id_out,starts);
 	starts.deviceToHost<0>(starts.size()-1,starts.size()-1);
 
 	size_t sz = starts.template get<0>(starts.size()-1);
