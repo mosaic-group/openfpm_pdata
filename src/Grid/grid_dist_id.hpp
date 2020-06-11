@@ -121,6 +121,9 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	//! Receiving buffer for particles ghost get
 	openfpm::vector<HeapMemory> recv_mem_gg;
 
+    //! Shared memory handle for properties
+    handle_shmem hprp;
+
 	//! Grid informations object
 	grid_sm<dim,T> ginfo;
 
@@ -1587,6 +1590,53 @@ public:
 
 		return k_glob;
 	}
+
+    /*! /brief set shared memory
+     *
+     *
+     */
+    void visualize()
+    {
+        if (global_option == init_options::in_situ_visualization)
+        {
+            for(int i = 0; i < loc_grid.size(); i++) {
+                hprp = create_shmanager().create("/home/aryaman/temp" + std::to_string(v_cl.rank()), i);
+
+                device_grid tmp;
+                tmp.setMemory();
+                tmp.init_shmem(hprp);
+
+                tmp.resize(loc_grid.get(i).getGrid().getSize());
+
+                // Copy
+                grid_key_dx <dim> cnt[1];
+                cnt[0].zero();
+
+                auto &dst = tmp;
+                auto &src = loc_grid.get(i);
+
+                auto it = this->get_loc_grid_iterator_stencil(i, cnt);
+
+                while (it.isNext()) {
+                    // center point
+                    auto Cp = it.template getStencil<0>();
+
+                    dst.get_o(Cp) = src.get_o(Cp);
+
+                    ++it;
+                }
+
+                loc_grid.get(i).swap(tmp);
+            }
+
+//            openfpm::vector<GBoxes<device_grid::dims>> tmpBox;
+//            tmpBox.init_shmem(...);
+//            tmpBox = gdb_ext;
+//
+//            tmpBox.swap(gdb_ext);
+        }
+
+    }
 
 	/*! \brief Write the distributed grid information
 	 *
