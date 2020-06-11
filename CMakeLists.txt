@@ -66,6 +66,8 @@ if(ENABLE_GPU)
 	endif()
 endif()
 
+set(Vc_DIR "${Vc_ROOT}/lib/cmake/Vc/")
+message("Searching Vc in ${Vc_DIR}")
 
 find_package(Boost 1.68.0 COMPONENTS unit_test_framework iostreams program_options system filesystem)
 find_package(MPI)
