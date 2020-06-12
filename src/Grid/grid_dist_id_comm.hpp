@@ -166,7 +166,7 @@ class grid_dist_id_comm
 		int p_id;
 		int i;
 
-		bool operator<(rp_id & tmp)
+		bool operator<(const rp_id & tmp) const
 		{
 			return p_id < tmp.p_id;
 		}
