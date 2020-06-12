@@ -13,7 +13,7 @@ fi
 ## Remove old download
 rm metis-5.1.0.tar.gz
 rm -rf metis-5.1.0
-wget http://ppmcore.mpi-cbg.de/upload/metis-5.1.0.tar.gz
+wget http://openfpm.mpi-cbg.de/upload/metis-5.1.0_32.tar.gz
 tar -xf metis-5.1.0.tar.gz
 cd metis-5.1.0
 
@@ -39,5 +39,5 @@ make -j $4
 make install
 
 # Mark the installation
-echo 1 > $1/METIS/version
+echo 2 > $1/METIS/version
 
