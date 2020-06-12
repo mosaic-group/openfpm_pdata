@@ -14,8 +14,8 @@ fi
 rm metis-5.1.0.tar.gz
 rm -rf metis-5.1.0
 wget http://openfpm.mpi-cbg.de/upload/metis-5.1.0_32.tar.gz
-tar -xf metis-5.1.0.tar.gz
-cd metis-5.1.0
+tar -xf metis-5.1.0_32.tar.gz
+cd metis-5.1.0_32
 
 if [ x"$platform" == x"cygwin" ]; then
 	shared_opt="-DSHARED=OFF"
