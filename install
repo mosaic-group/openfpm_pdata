@@ -28,8 +28,6 @@ if [ x"$HOME" == x"" ]; then
 	 exit 1
 fi
 
-## If 
-
 install_req=1
 i_dir=""
 sq=0
