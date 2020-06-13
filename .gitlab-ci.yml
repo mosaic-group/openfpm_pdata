@@ -6,7 +6,7 @@ centos_build:
     paths:
       - ./build/src/pdata
       - ./build/openfpm_numerics/src/numerics
-      - ./test
+      - ./openfpm_numerics/test
   script:
     - ./build.sh $CI_PROJECT_DIR unused pdata 0 $CI_COMMIT_REF_NAME
 
@@ -54,7 +54,7 @@ ubuntu_build:
     paths:
       - ./build/src/pdata
       - ./build/openfpm_numerics/src/numerics
-      - ./test
+      - ./openfpm_numerics/test
   script:
     - ./build.sh $CI_PROJECT_DIR unused pdata 0 $CI_COMMIT_REF_NAME
 
