@@ -5,6 +5,7 @@ centos_build:
   artifacts:
     paths:
       - ./build/src/pdata
+      - ./build/openfpm_numerics/src/numerics
   script:
     - ./build.sh $CI_PROJECT_DIR unused pdata 0 $CI_COMMIT_REF_NAME
 
@@ -51,6 +52,7 @@ ubuntu_build:
   artifacts:
     paths:
       - ./build/src/pdata
+      - ./build/openfpm_numerics/src/numerics
   script:
     - ./build.sh $CI_PROJECT_DIR unused pdata 0 $CI_COMMIT_REF_NAME
 
