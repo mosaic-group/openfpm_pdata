@@ -113,6 +113,8 @@ fi
 
 remove_old $i_dir $configure_options
 
+exit 1
+
 ## Check and try to install the prerequisites
 
 pre_req
@@ -215,7 +217,6 @@ echo -e "Installing requirements into: $i_dir "
 if [ ! -d "$i_dir/PETSC" -o ! -f "$i_dir/PETSC/include/petsc.h" -o ! -d "$i_dir/EIGEN" ]; then
     echo -e "\033[1;34m Optional packages  \033[0m"
     echo -e "\033[1mDo you want to install linear algebra packages ?(y/n)\033[0m"
-    echo "Installation can take long time (90 minutes on i7-3612QM 4 cores)"
     if [ $sq -eq 0 ]; then
       read inst_lin_alg
     else
