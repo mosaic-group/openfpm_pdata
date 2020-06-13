@@ -113,7 +113,6 @@ fi
 
 remove_old $i_dir $configure_options
 
-exit 1
 
 ## Check and try to install the prerequisites
 

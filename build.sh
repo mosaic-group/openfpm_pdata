@@ -24,7 +24,7 @@ echo "GPU compilation: $with_gpu"
 if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
 	echo "CentOS node"
 	./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/ 4
-	echo 4 > $HOME/openfpm_dependencies/openfpm_pdata/$branch/MPI/version
+	echo 5 > $HOME/openfpm_dependencies/openfpm_pdata/$branch/MPI/version
 fi
 
 if [ x"$hostname" == x"cifarm-ubuntu-node.mpi-cbg.de"  ]; then
