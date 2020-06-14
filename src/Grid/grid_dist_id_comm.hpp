@@ -1157,7 +1157,7 @@ public:
 			for (size_t i = 0 ; i < loc_grid.size() ; i++)
 			{
 				rem_copy_opt opt_ = rem_copy_opt::NONE_OPT;
-				if (opt & SKIP_LABELLING == true)
+				if (opt & SKIP_LABELLING)
 				{opt_ = rem_copy_opt::KEEP_GEOMETRY;}
 
 				loc_grid.get(i).template packFinalize<prp ...>(prAlloc_prp,sts,opt_,true);
