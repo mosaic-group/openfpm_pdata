@@ -570,8 +570,8 @@ public:
 	{
 		if (global_option == init_options::in_situ_visualization)
 		{
-			hpos = create_shmanager().create("/",v_cl.rank());
-			hprp = create_shmanager().create("/home",v_cl.rank());
+			hpos = create_shmanager().create("/",v_cl.shmRank());
+			hprp = create_shmanager().create("/home",v_cl.shmRank());
 
 			v_pos.init_shmem(hpos);
 			v_prp.init_shmem(hprp);
