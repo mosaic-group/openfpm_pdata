@@ -677,11 +677,6 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_skip_labelling )
 
 	gdist.template ghost_get<0,1>(RUN_ON_DEVICE | SKIP_LABELLING);
 
-	//////////////////////////////////// DEBUG ///////////////////////////////
-	gdist.deviceToHost<0,1,2,3>();
-	gdist.write_debug("DEBUG");
-	//////////////////////////////////////////////////////////////////////////
-
 	gdist.template conv2<0,1,0,1,1>({0,0,0},{(int)sz[0]-1,(int)sz[1]-1,(int)sz[2]-1},[] __device__ (float & u_out, float & v_out, CpBlockType & u, CpBlockType & v,int i, int j, int k){
 		u_out = 2*u(i,j,k);
 		v_out = 2*v(i,j,k);
@@ -729,6 +724,90 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_skip_labelling )
 		++it3;
 	}
 
+	BOOST_REQUIRE_EQUAL(match,true);
+}
+
+BOOST_AUTO_TEST_CASE( sgrid_gpu_test_conv_background )
+{
+	size_t sz[3] = {60,60,60};
+	periodicity<3> bc = {PERIODIC,PERIODIC,PERIODIC};
+
+	Ghost<3,long int> g(1);
+
+	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	sgrid_dist_id_gpu<3,float,aggregate<float,float,float,float>> gdist(sz,domain,g,bc);
+
+	gdist.template setBackgroundValue<0>(666);
+	gdist.template setBackgroundValue<1>(666);
+	gdist.template setBackgroundValue<2>(666);
+	gdist.template setBackgroundValue<3>(666);
+
+	/////// GPU insert + flush
+
+	Box<3,size_t> box({1,1,1},{sz[0]-1,sz[1]-1,sz[2]-1});
+
+	/////// GPU Run kernel
+
+	float c = 5.0;
+
+	typedef typename GetAddBlockType<decltype(gdist)>::type InsertBlockT;
+
+	gdist.addPoints(box.getKP1(),box.getKP2(),
+			        [] __device__ (int i, int j, int k)
+			        {
+						return (i == 30 && j == 30 && k == 30);
+			        },
+			        [c] __device__ (InsertBlockT & data, int i, int j, int k)
+			        {
+			        	data.template get<0>() = 0;
+			        	data.template get<1>() = 0;
+			        }
+			        );
+
+	gdist.template flush<smax_<0>,smax_<1>>(flush_type::FLUSH_ON_DEVICE);
+
+	gdist.template ghost_get<0,1>(RUN_ON_DEVICE);
+
+	// Now run the convolution
+
+	typedef typename GetCpBlockType<decltype(gdist),0,1>::type CpBlockType;
+
+	gdist.template conv2<0,1,2,3,1>({0,0,0},{(int)sz[0]-1,(int)sz[1]-1,(int)sz[2]-1},[] __device__ (float & u_out, float & v_out, CpBlockType & u, CpBlockType & v,int i, int j, int k){
+		u_out = u(i+1,j,k) + u(i,j+1,k) + u(i,j,k+1);
+		v_out = v(i+1,j,k) + v(i,j+1,k) + v(i,j,k+1);
+	});
+
+	gdist.deviceToHost<0,1,2,3>();
+
+	// Now we check that ghost is correct
+
+	auto it3 = gdist.getDomainIterator();
+
+	bool match = true;
+
+	int count = 0;
+
+	while (it3.isNext())
+	{
+		auto p = it3.get();
+
+		float sub1 = gdist.template get<2>(p);
+		float sub2 = gdist.template get<3>(p);
+
+		if (sub1 != 3*666.0 || sub2 != 3*666.0)
+		{
+			std::cout << sub1 << " " << sub2 << std::endl;
+			match = false;
+			break;
+		}
+
+		count++;
+
+		++it3;
+	}
+
+	BOOST_REQUIRE(count == 0 || count == 1);
 	BOOST_REQUIRE_EQUAL(match,true);
 }
 
