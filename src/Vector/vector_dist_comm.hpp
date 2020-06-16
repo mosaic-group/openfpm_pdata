@@ -19,6 +19,7 @@
 
 #include "Vector/util/vector_dist_funcs.hpp"
 #include "cuda/vector_dist_comm_util_funcs.cuh"
+#include "util/cuda/scan_ofp.cuh"
 
 constexpr int NO_POSITION = 1;
 constexpr int WITH_POSITION = 2;

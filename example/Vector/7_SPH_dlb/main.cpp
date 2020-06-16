@@ -949,7 +949,7 @@ inline void sensor_pressure(Vector & vd,
 				}
 
 				// Get the position of the neighborhood particle q
-				Point<3,double> xq = vd.template getPos(q);
+				Point<3,double> xq = vd.getPos(q);
 
 				// Calculate the contribution of the particle to the pressure
 				// of the probe

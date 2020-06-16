@@ -40,11 +40,13 @@
 #ifdef __NVCC__
 
 #define PRINT_STACKTRACE
-#define STOP_ON_ERROR
+//#define STOP_ON_ERROR
 #define OPENMPI
 //#define SE_CLASS1
 
 //#define USE_LOW_REGISTER_ITERATOR
+//#define SCAN_WITH_CUB <------ In case you want to use CUB for scan operations
+//#define EXTERNAL_SET_GPU <----- In case you want to distribute the GPUs differently from the default
 
 #include "Vector/vector_dist.hpp"
 #include <math.h>
@@ -701,6 +703,20 @@ inline void sensor_pressure(Vector & vd,
 
 int main(int argc, char* argv[])
 {
+    // OpenFPM GPU distribution
+
+    // OpenFPM by default select GPU 0 for process 0, gpu 1 for process 1 and so on ... . In case of multi-node is the same each node has
+    // has a group of processes and these group of processes are distributed across the available GPU on that node.
+
+    // If you want to override this behaviour use #define EXTERNAL_SET_GPU at the very beginning of the program and use
+    // cudaSetDevice to select the GPU for that particular process before openfpm_init
+    // Note: To get the process number do MPI_Init and and use the MPI_Comm_rank. VCluster is not available before openfpm_init
+    // A code snippet in case we want to skip GPU 0
+    // MPI_Init(&argc,&argv);
+    // int rank;
+    // MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    // cudaSetDevice(1+rank);
+
     // initialize the library
 	openfpm_init(&argc,&argv);
 

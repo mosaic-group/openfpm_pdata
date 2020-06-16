@@ -7,6 +7,10 @@ endif ()
 
 enable_testing()
 
+if (POLICY CMP0074)
+  cmake_policy(SET CMP0074 NEW)
+endif()
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake_modules/)
 
 set(BOOST_INCLUDE ${Boost_INCLUDE_DIR} CACHE PATH "Include directory for BOOST")
@@ -208,6 +212,7 @@ file(WRITE cuda_lib "${CUDA_cudart_static_LIBRARY} ${CUDA_cudadevrt_LIBRARY}")
 file(WRITE cuda_include "-I${CUDA_INCLUDE_DIRS}")
 file(WRITE mpi_include "-I${MPI_C_INCLUDE_DIRS}")
 file(WRITE mpi_libs "${MPI_C_LINK_FLAGS} ${MPI_C_LIBRARIES}")
+file(WRITE cuda_suppress_wr "${WARNING_SUPPRESSION_AND_OPTION_NVCC_TEXT}")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/config/config_cmake.h.in ${CMAKE_CURRENT_SOURCE_DIR}/src/config/config.h)
 

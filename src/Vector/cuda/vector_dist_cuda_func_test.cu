@@ -11,6 +11,7 @@
 #include "util/cuda/scan_cuda.cuh"
 #include "util/cuda/moderngpu/kernel_scan.hxx"
 #include "Vector/vector_dist.hpp"
+#include "util/cuda/scan_ofp.cuh"
 
 #define SUB_UNIT_FACTOR 1024
 

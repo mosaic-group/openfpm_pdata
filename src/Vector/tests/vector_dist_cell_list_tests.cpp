@@ -1991,9 +1991,9 @@ void test_vector_dist_particle_NN_MP_iteration()
 	{
 		auto key = it.get();
 
-		vd.template getPosWrite(key)[0] = ud(eg);
-		vd.template getPosWrite(key)[1] = ud(eg);
-		vd.template getPosWrite(key)[2] = ud(eg);
+		vd.getPosWrite(key)[0] = ud(eg);
+		vd.getPosWrite(key)[1] = ud(eg);
+		vd.getPosWrite(key)[2] = ud(eg);
 
 		// Fill some properties randomly
 
