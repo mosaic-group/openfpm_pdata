@@ -1,5 +1,5 @@
-
 #define BOOST_TEST_DYN_LINK
+#include "config.h"
 #include <boost/test/unit_test.hpp>
 #include "VCluster/VCluster.hpp"
 #include <Vector/vector_dist.hpp>
@@ -176,9 +176,9 @@ bool check_force(CellList_type & NN_cpu, vector_type & vd)
 	                std::cout << "ERROR: " << vd.template getProp<1>(p)[1]  << "   " << vd.template getProp<2>(p)[1] << std::endl;
 	                std::cout << "ERROR: " << vd.template getProp<1>(p)[2]  << "   " << vd.template getProp<2>(p)[2] << std::endl;
 
-	                std::cout << "ERROR2: " << vd.template getProp<1>(p)[0] << "   " <<  force.get(0) << std::endl;
-	                std::cout << "ERROR2: " << vd.template getProp<1>(p)[1] << "   " <<  force.get(1) << std::endl;
-	                std::cout << "ERROR2: " << vd.template getProp<1>(p)[2] << "   " <<  force.get(2) << std::endl;
+	                std::cout << p.getKey() << " ERROR2: " << vd.template getProp<1>(p)[0] << "   " <<  force.get(0) << std::endl;
+	                std::cout << p.getKey() << " ERROR2: " << vd.template getProp<1>(p)[1] << "   " <<  force.get(1) << std::endl;
+	                std::cout << p.getKey() << " ERROR2: " << vd.template getProp<1>(p)[2] << "   " <<  force.get(2) << std::endl;
 
 
 			break;
@@ -308,7 +308,8 @@ void check_cell_list_cpu_and_gpu(vector_type & vd, CellList_type & NN, CellList_
 	BOOST_REQUIRE_EQUAL(test,true);
 }
 
-BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
+template<typename CellList_type>
+void vector_dist_gpu_test_impl()
 {
 	auto & v_cl = create_vcluster();
 
@@ -415,14 +416,149 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
 	vd.hostToDevicePos();
 	vd.template hostToDeviceProp<0>();
 
-	auto NN = vd.getCellListGPU(0.1);
+	auto NN = vd.template getCellListGPU<CellList_type>(0.1);
 	auto NN_cpu = vd.getCellList(0.1);
 	check_cell_list_cpu_and_gpu(vd,NN,NN_cpu);
 
-	auto NN_up = vd.getCellListGPU(0.1);
+	auto NN_up = vd.template getCellListGPU<CellList_type>(0.1);
+
 	NN_up.clear();
 	vd.updateCellList(NN_up);
 	check_cell_list_cpu_and_gpu(vd,NN_up,NN_cpu);
+}
+
+template<typename CellList_type>
+void vector_dist_gpu_make_sort_test_impl()
+{
+	auto & v_cl = create_vcluster();
+
+	if (v_cl.size() > 16)
+	{return;}
+
+	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// set the ghost based on the radius cut off (make just a little bit smaller than the spacing)
+	Ghost<3,float> g(0.1);
+
+	// Boundary conditions
+	size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+
+	vector_dist_gpu<3,float,aggregate<float,float[3],float[3]>> vd(10000,domain,bc,g);
+
+	srand(55067*create_vcluster().rank());
+
+	auto it = vd.getDomainIterator();
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+
+		int x = rand();
+		int y = rand();
+		int z = rand();
+
+		vd.getPos(p)[0] = (float)x / RAND_MAX;
+		vd.getPos(p)[1] = (float)y / RAND_MAX;
+		vd.getPos(p)[2] = (float)z / RAND_MAX;
+
+		++it;
+	}
+
+	vd.hostToDevicePos();
+
+	// Ok we redistribute the particles
+	vd.map(RUN_ON_DEVICE);
+
+	auto it3 = vd.getDomainIteratorGPU();
+
+	initialize_props<<<it3.wthr,it3.thr>>>(vd.toKernel());
+
+	// Here we check make sort does not mess-up particles we use a Cell-List to check that
+	// the two cell-list constructed are identical
+
+	vd.deviceToHostPos();
+
+	auto NN_cpu1 = vd.getCellList(0.1);
+	auto NN = vd.template getCellListGPU<CellList_type>(0.1);
+	vd.make_sort(NN);
+
+	vd.deviceToHostPos();
+
+	auto NN_cpu2 = vd.getCellList(0.1);
+
+	// here we compare the two cell-lists
+
+	bool match = true;
+	for (size_t i = 0 ; i < NN_cpu1.getNCells() ; i++)
+	{
+		match &= NN_cpu1.getNelements(i) == NN_cpu2.getNelements(i);
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+
+	// In this second step we check that we can use make_sort_from to check we can sort partifcles even
+	// when ghost are filled
+
+	// Here we get do a make sort
+	NN = vd.template getCellListGPU<CellList_type>(0.1);
+	vd.make_sort(NN);
+
+	openfpm::vector_gpu<aggregate<float,float[3],float[3]>> tmp_prp = vd.getPropVector();
+	openfpm::vector_gpu<Point<3,float>> tmp_pos = vd.getPosVector();
+
+	vd.deviceToHostPos();
+	tmp_pos.template deviceToHost<0>();
+
+	// here we do a ghost_get
+	vd.ghost_get<0>(RUN_ON_DEVICE);
+
+	// Here we get do a make sort
+	NN = vd.template getCellListGPU<CellList_type>(0.1);
+
+	CUDA_CHECK()
+
+	vd.make_sort_from(NN);
+
+	// Check
+
+	tmp_pos.deviceToHost<0>();
+	vd.deviceToHostPos();
+
+	match = true;
+	for (size_t i = 0 ; i < vd.size_local() ; i++)
+	{
+		Point<3,float> p1 = vd.getPos(i);
+		Point<3,float> p2 = tmp_pos.template get<0>(i);
+
+		// They must be in the same cell
+		auto c1 = NN.getCell(p1);
+		auto c2 = NN.getCell(p1);
+
+		match &= c1 == c2;
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+}
+
+
+BOOST_AUTO_TEST_CASE(vector_dist_gpu_make_sort_sparse)
+{
+	vector_dist_gpu_make_sort_test_impl<CELLLIST_GPU_SPARSE<3,float>>();
+}
+
+BOOST_AUTO_TEST_CASE(vector_dist_gpu_make_sort)
+{
+	vector_dist_gpu_make_sort_test_impl<CellList_gpu<3,float,CudaMemory,shift_only<3, float>>>();
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
+{
+	vector_dist_gpu_test_impl<CellList_gpu<3,float,CudaMemory,shift_only<3, float>>>();
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_gpu_test_sparse)
+{
+	vector_dist_gpu_test_impl<CELLLIST_GPU_SPARSE<3,float>>();
 }
 
 template<typename St>
@@ -781,6 +917,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_reduce)
 	BOOST_REQUIRE_EQUAL(reds2,vd.size_local());
 }
 
+template<typename CellList_type>
 void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 {
 	typedef vector_dist_gpu<3,double,aggregate<double,double[3],double[3]>> vector_type;
@@ -897,7 +1034,7 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 		vd.template deviceToHostProp<0,1,2>();
 
 		// Check calc forces
-		auto NN_gpu = vd.getCellListGPU(r_cut);
+		auto NN_gpu = vd.template getCellListGPU<CellList_type>(r_cut);
 		auto NN_cpu = vd.getCellList(r_cut);
 		check_cell_list_cpu_and_gpu(vd,NN_gpu,NN_cpu);
 
@@ -945,9 +1082,194 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 	}
 }
 
+template<typename CellList_type>
+void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
+{
+	typedef vector_dist_gpu<3,double,aggregate<double,double[3],double[3]>> vector_type;
+
+	Vcluster<> & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 8)
+		return;
+
+	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Ghost<3,double> g(0.1);
+	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
+
+	vector_type vd(0,domain,bc,g,DEC_GRAN(2048));
+
+	// Only processor 0 initialy add particles on a corner of a domain
+
+	if (v_cl.getProcessUnitID() == 0)
+	{
+		for(size_t i = 0 ; i < k ; i++)
+		{
+			vd.add();
+
+			vd.getLastPos()[0] = ((double)rand())/RAND_MAX * 0.3;
+			vd.getLastPos()[1] = ((double)rand())/RAND_MAX * 0.3;
+			vd.getLastPos()[2] = ((double)rand())/RAND_MAX * 0.3;
+		}
+	}
+
+	// Move to GPU
+	vd.hostToDevicePos();
+	vd.template hostToDeviceProp<0>();
+
+	vd.map(RUN_ON_DEVICE);
+	vd.template Ighost_get<>(RUN_ON_DEVICE);
+	vd.template ghost_wait<>(RUN_ON_DEVICE);
+
+	// now move to CPU
+
+	vd.deviceToHostPos();
+	vd.template deviceToHostProp<0>();
+
+	// Get the neighborhood of each particles
+
+	auto VV = vd.getVerlet(r_cut);
+
+	// store the number of neighborhood for each particles
+
+	auto it = vd.getDomainIterator();
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+
+		vd.template getProp<0>(p) = VV.getNNPart(p.getKey());
+
+		++it;
+	}
+
+	// Move to GPU
+	vd.template hostToDeviceProp<0>();
+
+	ModelSquare md;
+	md.factor = 10;
+	vd.addComputationCosts(md);
+	vd.getDecomposition().decompose();
+	vd.map(RUN_ON_DEVICE);
+
+	vd.deviceToHostPos();
+	// Move info to CPU for addComputationcosts
+
+	vd.addComputationCosts(md);
+
+	openfpm::vector<size_t> loads;
+	size_t load = vd.getDecomposition().getDistribution().getProcessorLoad();
+	v_cl.allGather(load,loads);
+	v_cl.execute();
+
+	for (size_t i = 0 ; i < loads.size() ; i++)
+	{
+		double load_f = load;
+		double load_fc = loads.get(i);
+
+		BOOST_REQUIRE_CLOSE(load_f,load_fc,7.0);
+	}
+
+	BOOST_REQUIRE(vd.size_local() != 0);
+
+	Point<3,double> v({1.0,1.0,1.0});
+
+	for (size_t i = 0 ; i < 25 ; i++)
+	{
+		// move particles to CPU and move the particles by 0.1
+
+		vd.deviceToHostPos();
+
+		auto it = vd.getDomainIterator();
+
+		while (it.isNext())
+		{
+			auto p = it.get();
+
+			vd.getPos(p)[0] += v.get(0) * 0.09;
+			vd.getPos(p)[1] += v.get(1) * 0.09;
+			vd.getPos(p)[2] += v.get(2) * 0.09;
+
+			++it;
+		}
+
+		//Back to GPU
+		vd.hostToDevicePos();
+		vd.map(RUN_ON_DEVICE);
+		vd.template Ighost_get<0>(RUN_ON_DEVICE);
+		vd.template ghost_wait<0>(RUN_ON_DEVICE);
+		vd.deviceToHostPos();
+		vd.template deviceToHostProp<0,1,2>();
+
+		// Check calc forces
+		auto NN_gpu = vd.template getCellListGPU<CellList_type>(r_cut);
+		auto NN_cpu = vd.getCellList(r_cut);
+		check_cell_list_cpu_and_gpu(vd,NN_gpu,NN_cpu);
+
+		auto VV2 = vd.getVerlet(r_cut);
+
+		auto it2 = vd.getDomainIterator();
+
+		bool match = true;
+		while (it2.isNext())
+		{
+			auto p = it2.get();
+
+			match &= vd.template getProp<0>(p) == VV2.getNNPart(p.getKey());
+
+			++it2;
+		}
+
+		BOOST_REQUIRE_EQUAL(match,true);
+
+		ModelSquare md;
+		vd.addComputationCosts(md);
+		vd.getDecomposition().redecompose(200);
+		vd.map(RUN_ON_DEVICE);
+
+		BOOST_REQUIRE(vd.size_local() != 0);
+
+//		vd.template ghost_get<0>(RUN_ON_DEVICE);
+		if (i == 9)
+		{
+			int debug = 0;
+			debug++;
+		}
+//		vd.template ghost_get<0>(RUN_ON_DEVICE);
+		vd.template Ighost_get<0>(RUN_ON_DEVICE);
+		vd.template ghost_wait<0>(RUN_ON_DEVICE);
+		vd.deviceToHostPos();
+		vd.template deviceToHostProp<0>();
+
+		vd.addComputationCosts(md);
+
+		openfpm::vector<size_t> loads;
+		size_t load = vd.getDecomposition().getDistribution().getProcessorLoad();
+		v_cl.allGather(load,loads);
+		v_cl.execute();
+
+		for (size_t i = 0 ; i < loads.size() ; i++)
+		{
+			double load_f = load;
+			double load_fc = loads.get(i);
+
+			BOOST_REQUIRE_CLOSE(load_f,load_fc,10.0);
+		}
+	}
+}
+
+BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda_async)
+{
+	vector_dist_dlb_on_cuda_impl_async<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,unsigned int,int,false>>(50000,0.01);
+}
+
 BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda)
 {
-	vector_dist_dlb_on_cuda_impl(50000,0.01);
+	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,unsigned int,int,false>>(50000,0.01);
+}
+
+BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda_sparse)
+{
+	vector_dist_dlb_on_cuda_impl<CELLLIST_GPU_SPARSE<3,double>>(50000,0.01);
 }
 
 BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda2)
@@ -955,7 +1277,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda2)
 	if (create_vcluster().size() <= 3)
 	{return;};
 
-	vector_dist_dlb_on_cuda_impl(1000000,0.01);
+	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,unsigned int,int,false>>(1000000,0.01);
 }
 
 BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda3)
@@ -963,7 +1285,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda3)
 	if (create_vcluster().size() < 8)
 	{return;}
 
-	vector_dist_dlb_on_cuda_impl(15000000,0.005);
+	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,unsigned int,int,false>>(15000000,0.005);
 }
 
 
@@ -1192,6 +1514,74 @@ BOOST_AUTO_TEST_CASE(vector_dist_keep_prop_on_cuda)
 	}
 }
 
+struct type_is_one
+{
+	__device__ static bool check(int c)
+	{
+		return c == 1;
+	}
+};
+
+BOOST_AUTO_TEST_CASE(vector_dist_get_index_set)
+{
+	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Ghost<3,double> g(0.1);
+	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
+
+	if (create_vcluster().size() >= 16)
+	{return;}
+
+	Vcluster<> & v_cl = create_vcluster();
+
+	vector_dist_gpu<3,double,aggregate<int,double>> vdg(10000,domain,bc,g,DEC_GRAN(128));
+
+	auto it = vdg.getDomainIterator();
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+
+		vdg.getPos(p)[0] = (double)rand() / RAND_MAX;
+		vdg.getPos(p)[1] = (double)rand() / RAND_MAX;
+		vdg.getPos(p)[2] = (double)rand() / RAND_MAX;
+
+		vdg.template getProp<0>(p) = (int)((double)rand() / RAND_MAX / 0.5);
+
+		vdg.template getProp<1>(p) = (double)rand() / RAND_MAX;
+
+		++it;
+	}
+
+	vdg.map();
+
+	vdg.hostToDeviceProp<0,1>();
+	vdg.hostToDevicePos();
+
+	auto cl = vdg.getCellListGPU(0.1);
+
+	// than we get a cell-list to force reorder
+
+	openfpm::vector_gpu<aggregate<unsigned int>> ids;
+
+	get_indexes_by_type<0,type_is_one>(vdg.getPropVectorSort(),ids,vdg.size_local(),v_cl.getmgpuContext());
+
+	// test
+
+	ids.template deviceToHost<0>();
+
+	auto & vs = vdg.getPropVectorSort();
+	vs.template deviceToHost<0>();
+
+	bool match = true;
+
+	for (int i = 0 ; i < ids.size() ; i++)
+	{
+		if (vs.template get<0>(ids.template get<0>(i)) != 1)
+		{match = false;}
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+}
 
 BOOST_AUTO_TEST_CASE(vector_dist_compare_host_device)
 {
@@ -1331,6 +1721,61 @@ __global__ void assign_to_ghost(vector_dist_type vds)
 
 BOOST_AUTO_TEST_CASE(vector_dist_domain_and_ghost_test)
 {
+        Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+        Ghost<3,double> g(0.1);
+        size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
+
+        if (create_vcluster().size() >= 16)
+        {return;}
+
+        vector_dist_gpu<3,double,aggregate<double,double[3],double[3][3]>> vdg(10000,domain,bc,g,DEC_GRAN(128));
+
+        auto ite = vdg.getDomainAndGhostIteratorGPU();
+
+        CUDA_LAUNCH(assign_to_ghost,ite,vdg.toKernel());
+
+        vdg.template deviceToHostProp<0,1,2>();
+
+
+        auto it = vdg.getDomainAndGhostIterator();
+
+        bool check = true;
+
+        while (it.isNext())
+        {
+                auto k = it.get();
+
+                check &= vdg.template getProp<0>(k) == 1000.0 + k.getKey();
+
+                check &= vdg.template getProp<1>(k)[0] == 2000.0 + k.getKey();
+                check &= vdg.template getProp<1>(k)[1] == 3000.0 + k.getKey();
+                check &= vdg.template getProp<1>(k)[2] == 4000.0 + k.getKey();
+
+                check &= vdg.template getProp<2>(k)[0][0] == 12000.0 + k.getKey();
+                check &= vdg.template getProp<2>(k)[0][1] == 13000.0 + k.getKey();
+                check &= vdg.template getProp<2>(k)[0][2] == 14000.0 + k.getKey();
+                check &= vdg.template getProp<2>(k)[1][0] == 22000.0 + k.getKey();
+                check &= vdg.template getProp<2>(k)[1][1] == 23000.0 + k.getKey();
+                check &= vdg.template getProp<2>(k)[1][2] == 24000.0 + k.getKey();
+                check &= vdg.template getProp<2>(k)[2][0] == 32000.0 + k.getKey();
+                check &= vdg.template getProp<2>(k)[2][1] == 33000.0 + k.getKey();
+                check &= vdg.template getProp<2>(k)[2][2] == 34000.0 + k.getKey();
+
+                ++it;
+        }
+
+
+        BOOST_REQUIRE_EQUAL(check,true);
+}
+
+template<typename vT>
+__global__ void launch_overflow(vT vs, vT vs2)
+{
+	vs2.template getProp<1>(57)[0];
+}
+
+BOOST_AUTO_TEST_CASE(vector_dist_overflow_se_class1)
+{
 	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
 	Ghost<3,double> g(0.1);
 	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
@@ -1338,44 +1783,27 @@ BOOST_AUTO_TEST_CASE(vector_dist_domain_and_ghost_test)
 	if (create_vcluster().size() >= 16)
 	{return;}
 
-	vector_dist_gpu<3,double,aggregate<double,double[3],double[3][3]>> vdg(10000,domain,bc,g,DEC_GRAN(128));
+	std::cout << "****** TEST ERROR MESSAGE BEGIN ********" << std::endl;
 
-	auto ite = vdg.getDomainAndGhostIteratorGPU();
-
-	CUDA_LAUNCH(assign_to_ghost,ite,vdg.toKernel());
-
-	vdg.template deviceToHostProp<0,1,2>();
+	vector_dist_gpu<3,double,aggregate<double,double[3],double[3][3]>> vdg(0,domain,bc,g,DEC_GRAN(128));
+	vector_dist_gpu<3,double,aggregate<double,double[3],double[3][3]>> vdg2(0,domain,bc,g,DEC_GRAN(128));
 
 
-	auto it = vdg.getDomainAndGhostIterator();
+	vdg.setCapacity(100);
 
-	bool check = true;
+	ite_gpu<1> ite;
 
-	while (it.isNext())
-	{
-		auto k = it.get();
+	ite.wthr.x = 1;
+	ite.wthr.y = 1;
+	ite.wthr.z = 1;
+	ite.thr.x = 1;
+	ite.thr.y = 1;
+	ite.thr.z = 1;
 
-		check &= vdg.template getProp<0>(k) == 1000.0 + k.getKey();
+	CUDA_LAUNCH(launch_overflow,ite,vdg.toKernel(),vdg2.toKernel());
 
-		check &= vdg.template getProp<1>(k)[0] == 2000.0 + k.getKey();
-		check &= vdg.template getProp<1>(k)[1] == 3000.0 + k.getKey();
-		check &= vdg.template getProp<1>(k)[2] == 4000.0 + k.getKey();
-
-		check &= vdg.template getProp<2>(k)[0][0] == 12000.0 + k.getKey();
-		check &= vdg.template getProp<2>(k)[0][1] == 13000.0 + k.getKey();
-		check &= vdg.template getProp<2>(k)[0][2] == 14000.0 + k.getKey();
-		check &= vdg.template getProp<2>(k)[1][0] == 22000.0 + k.getKey();
-		check &= vdg.template getProp<2>(k)[1][1] == 23000.0 + k.getKey();
-		check &= vdg.template getProp<2>(k)[1][2] == 24000.0 + k.getKey();
-		check &= vdg.template getProp<2>(k)[2][0] == 32000.0 + k.getKey();
-		check &= vdg.template getProp<2>(k)[2][1] == 33000.0 + k.getKey();
-		check &= vdg.template getProp<2>(k)[2][2] == 34000.0 + k.getKey();
-
-		++it;
-	}
-
-
-	BOOST_REQUIRE_EQUAL(check,true);
+	std::cout << "****** TEST ERROR MESSAGE END ********" << std::endl;
 }
+
 
 BOOST_AUTO_TEST_SUITE_END()

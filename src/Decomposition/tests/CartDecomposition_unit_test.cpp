@@ -3,6 +3,7 @@
 
 #include "Decomposition/CartDecomposition.hpp"
 #include "util/mathutil.hpp"
+#include "nn_processor_unit_test.hpp"
 
 BOOST_AUTO_TEST_SUITE (CartDecomposition_test)
 

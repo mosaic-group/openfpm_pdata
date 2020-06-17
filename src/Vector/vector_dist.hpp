@@ -37,8 +37,14 @@
 #include "NN/CellList/ProcKeys.hpp"
 #include "Vector/vector_dist_kernel.hpp"
 #include "NN/CellList/cuda/CellList_gpu.hpp"
+#include "lib/pdata.hpp"
+#include "cuda/vector_dist_operators_list_ker.hpp"
 
 #define DEC_GRAN(gr) ((size_t)gr << 32)
+
+#ifdef CUDA_GPU
+template<unsigned int dim,typename St> using CELLLIST_GPU_SPARSE = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>,unsigned int,int,true>;
+#endif
 
 #define VECTOR_DIST_ERROR_OBJECT std::runtime_error("Runtime vector distributed error");
 
@@ -57,18 +63,18 @@
 #define ID true
 
 // Perform a ghost get or a ghost put
-#define GET	1
-#define PUT 2
+constexpr int GET = 1;
+constexpr int PUT = 2;
 
 // Write the particles with ghost
-#define NO_GHOST 0
-#define WITH_GHOST 2
+constexpr int NO_GHOST = 0;
+constexpr int WITH_GHOST = 2;
 
-#define GCL_NON_SYMMETRIC 0
-#define GCL_SYMMETRIC 1
-#define GCL_HILBERT 2
+constexpr int GCL_NON_SYMMETRIC = 0;
+constexpr int GCL_SYMMETRIC = 1;
+constexpr int GCL_HILBERT = 2;
 
-template<bool is_gpu_celllist>
+template<bool is_gpu_celllist, unsigned int ... prp>
 struct gcl_standard_no_symmetric_impl
 {
 	template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
@@ -78,18 +84,18 @@ struct gcl_standard_no_symmetric_impl
 	}
 };
 
-template<>
-struct gcl_standard_no_symmetric_impl<true>
+template<unsigned int ... prp>
+struct gcl_standard_no_symmetric_impl<true,prp...>
 {
 	template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
 	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
 	{
-		return vd.getCellListGPU(r_cut);
+		return vd.template getCellListGPU<CellL,prp...>(r_cut);
 	}
 };
 
 //! General function t get a cell-list
-template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
+template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl, unsigned int ... prp>
 struct gcl
 {
 	/*! \brief Get the Cell list based on the type
@@ -103,7 +109,7 @@ struct gcl
 	 */
 	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
 	{
-		return gcl_standard_no_symmetric_impl<is_gpu_celllist<CellL>::value>::template get<dim,St,CellL,Vector,impl>(vd,r_cut,g);
+		return gcl_standard_no_symmetric_impl<is_gpu_celllist<CellL>::value,prp ...>::template get<dim,St,CellL,Vector,impl>(vd,r_cut,g);
 	}
 };
 
@@ -189,6 +195,30 @@ enum reorder_opt
 	LINEAR = 2
 };
 
+template<typename vector, unsigned int impl>
+struct cell_list_selector
+{
+	typedef decltype(std::declval<vector>().getCellListGPU(0.0).toKernel()) ctype;
+
+	static ctype get(vector & v,
+			typename vector::stype & r_cut)
+	{
+		return v.getCellListGPU(r_cut).toKernel();
+	}
+};
+
+template<typename vector>
+struct cell_list_selector<vector,comp_host>
+{
+	typedef decltype(std::declval<vector>().getCellList(0.0)) ctype;
+
+	static ctype get(vector & v,
+			typename vector::stype & r_cut)
+	{
+		return v.getCellList(r_cut);
+	}
+};
+
 /*! \brief Distributed vector
  *
  * This class represent a distributed vector, the distribution of the structure
@@ -223,14 +253,18 @@ enum reorder_opt
  * \tparam Memory layout
  *
  */
-
 template<unsigned int dim,
          typename St,
          typename prop,
          typename Decomposition = CartDecomposition<dim,St>,
          typename Memory = HeapMemory,
          template<typename> class layout_base = memory_traits_lin>
-class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>
+class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>,
+#ifdef CUDA_GPU
+					private vector_dist_ker_list<vector_dist_ker<dim,St,prop,layout_base>>
+#else
+					private vector_dist_ker_list<int>
+#endif
 {
 
 public:
@@ -395,7 +429,7 @@ public:
 	//! dimensions of space
 	static const unsigned int dims = dim;
 
-	//!
+	//! yes I am vector dist
 	typedef int yes_i_am_vector_dist;
 
 	/*! \brief Operator= for distributed vector
@@ -529,13 +563,14 @@ public:
 #endif
 
 		if (opt >> 32 != 0)
-			this->setDecompositionGranularity(opt >> 32);
+		{this->setDecompositionGranularity(opt >> 32);}
 
 		check_parameters(box);
 
 		init_structures(np);
 
 		this->init_decomposition(box,bc,g,opt,gdist);
+
 
 #ifdef SE_CLASS3
 		se3.Initialize();
@@ -1040,7 +1075,8 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>,internal_position_vector_type > > CellL getCellListSym(St r_cut)
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>,internal_position_vector_type > >
+	CellL getCellListSym(St r_cut)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -1130,6 +1166,22 @@ public:
 	 * \return the Cell list
 	 *
 	 */
+	template<unsigned int impl>
+	typename cell_list_selector<self,impl>::ctype getCellListDev(St r_cut)
+	{
+		return cell_list_selector<self,impl>::get(*this,r_cut);
+	}
+
+	/*! \brief Construct a cell list starting from the stored particles
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 * \param no_se3 avoid SE_CLASS3 checking
+	 *
+	 * \return the Cell list
+	 *
+	 */
 	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St>, decltype(v_pos) > >
 	CellL getCellList(St r_cut, bool no_se3 = false)
 	{
@@ -1157,7 +1209,8 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> getCellListGPU(St r_cut, bool no_se3 = false)
+	template<typename CellType = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>>,unsigned int ... prp>
+	CellType getCellListGPU(St r_cut, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -1171,7 +1224,7 @@ public:
 		Ghost<dim,St> g = getDecomposition().getGhost();
 		g.magnify(1.013);
 
-		return getCellListGPU(r_cut, g,no_se3);
+		return getCellListGPU<CellType>(r_cut, g,no_se3);
 	}
 
 
@@ -1190,7 +1243,8 @@ public:
 	 * \return the CellList
 	 *
 	 */
-	CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> getCellListGPU(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
+	template<typename CellType = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>>, unsigned int ... prp>
+	CellType getCellListGPU(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -1206,15 +1260,19 @@ public:
 		// Processor bounding box
 		cl_param_calculate(pbox, div, r_cut, enlarge);
 
-		CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> cell_list(pbox,div);
+		CellType cell_list(pbox,div);
 
 		v_prp_out.resize(v_pos.size());
 		v_pos_out.resize(v_pos.size());
 
-		cell_list.template construct<decltype(v_pos),decltype(v_prp)>(v_pos,v_pos_out,v_prp,v_prp_out,v_cl.getmgpuContext(),g_m);
+		cell_list.template construct<decltype(v_pos),decltype(v_prp),prp ...>(v_pos,v_pos_out,v_prp,v_prp_out,v_cl.getmgpuContext(),g_m);
 
 		cell_list.set_ndec(getDecomposition().get_ndec());
 		cell_list.set_gm(g_m);
+
+#ifdef CUDA_GPU
+		this->update_sort(this->toKernel_sorted());
+#endif
 
 		return cell_list;
 	}
@@ -1291,7 +1349,8 @@ public:
 	 * \param no_se3 avoid se class 3 checking
 	 *
 	 */
-	template<typename CellL> void updateCellList(CellL & cell_list, bool no_se3 = false, cl_construct_opt opt = cl_construct_opt::Full)
+	template<unsigned int ... prp,typename CellL>
+	void updateCellList(CellL & cell_list, bool no_se3 = false, cl_construct_opt opt = cl_construct_opt::Full)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -1300,9 +1359,7 @@ public:
 
 		// This function assume equal spacing in all directions
 		// but in the worst case we take the maximum
-		St r_cut = 0;
-		for (size_t i = 0 ; i < dim ; i++)
-		{r_cut = std::max(r_cut,cell_list.getCellBox().getHigh(i));}
+		St r_cut = cell_list.getCellBox().getRcut();
 
 		// Here we have to check that the Cell-list has been constructed
 		// from the same decomposition
@@ -1310,7 +1367,7 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getmgpuContext(false),g_m,CL_NON_SYMMETRIC,opt);
+			populate_cell_list<dim,St,prop,Memory,layout_base,CellL,prp ...>(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getmgpuContext(false),g_m,CL_NON_SYMMETRIC,opt);
 
 			cell_list.set_gm(g_m);
 		}
@@ -1319,6 +1376,7 @@ public:
 			CellL cli_tmp = gcl<dim,St,CellL,self,GCL_NON_SYMMETRIC>::get(*this,r_cut,getDecomposition().getGhost());
 
 			cell_list.swap(cli_tmp);
+			cell_list.re_setBoxNN();
 		}
 	}
 
@@ -1838,6 +1896,22 @@ public:
 		return vector_dist_iterator(0, v_pos.size());
 	}
 
+	/*! \brief Get an iterator that traverse domain and ghost particles
+	 *
+	 * \param start particle
+	 * \param stop particle
+	 *
+	 * \return an iterator
+	 *
+	 */
+	vector_dist_iterator getIterator(size_t start, size_t stop)
+	{
+#ifdef SE_CLASS3
+		se3.getIterator();
+#endif
+		return vector_dist_iterator(start, stop);
+	}
+
 	/*! /brief Get a grid Iterator
 	 *
 	 * Usefull function to place particles on a grid or grid-like (grid + noise)
@@ -1963,7 +2037,8 @@ public:
 	 * \parameter Cell-list from which has been constructed the sorted vector
 	 *
 	 */
-	template<unsigned int ... prp> void merge_sort(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> & cl, size_t n_thr = 1024)
+	template<unsigned int ... prp,typename id_1, typename id_2, bool is_sparse>
+	void merge_sort(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>,id_1,id_2,is_sparse> & cl, size_t n_thr = 1024)
 	{
 #if defined(__NVCC__)
 
@@ -2164,6 +2239,10 @@ public:
 
 		this->template map_list_<prp...>(v_pos,v_prp,g_m,opt);
 
+#ifdef CUDA_GPU
+		this->update(this->toKernel());
+#endif
+
 #ifdef SE_CLASS3
 		se3.map_post();
 #endif
@@ -2188,6 +2267,10 @@ public:
 #endif
 
 		this->template map_<obp>(v_pos,v_prp,g_m,opt);
+
+#ifdef CUDA_GPU
+		this->update(this->toKernel());
+#endif
 
 #ifdef SE_CLASS3
 		se3.map_post();
@@ -2215,7 +2298,67 @@ public:
 		se3.template ghost_get_pre<prp...>(opt);
 #endif
 
-		this->template ghost_get_<prp...>(v_pos,v_prp,g_m,opt);
+		this->template ghost_get_<GHOST_SYNC,prp...>(v_pos,v_prp,g_m,opt);
+
+#ifdef CUDA_GPU
+		this->update(this->toKernel());
+#endif
+
+#ifdef SE_CLASS3
+
+		this->template ghost_get_<prop::max_prop_real>(v_pos,v_prp,g_m,opt | KEEP_PROPERTIES);
+
+		se3.template ghost_get_post<prp...>(opt);
+#endif
+	}
+
+
+	/*! \brief It synchronize the properties and position of the ghost particles
+	 *
+	 * \tparam prp list of properties to get synchronize
+	 *
+	 * \param opt options WITH_POSITION, it send also the positional information of the particles
+	 *
+	 */
+	template<int ... prp> inline void Ighost_get(size_t opt = WITH_POSITION)
+	{
+#ifdef SE_CLASS1
+		if (getDecomposition().getProcessorBounds().isValid() == false && size_local() != 0)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Error the processor " << v_cl.getProcessUnitID() << " has particles, but is supposed to be unloaded" << std::endl;
+			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+		}
+#endif
+
+#ifdef SE_CLASS3
+		se3.template ghost_get_pre<prp...>(opt);
+#endif
+
+		this->template ghost_get_<GHOST_ASYNC,prp...>(v_pos,v_prp,g_m,opt);
+	}
+
+	/*! \brief It synchronize the properties and position of the ghost particles
+	 *
+	 * \tparam prp list of properties to get synchronize
+	 *
+	 * \param opt options WITH_POSITION, it send also the positional information of the particles
+	 *
+	 */
+	template<int ... prp> inline void ghost_wait(size_t opt = WITH_POSITION)
+	{
+#ifdef SE_CLASS1
+		if (getDecomposition().getProcessorBounds().isValid() == false && size_local() != 0)
+		{
+			std::cerr << __FILE__ << ":" << __LINE__ << " Error the processor " << v_cl.getProcessUnitID() << " has particles, but is supposed to be unloaded" << std::endl;
+			ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+		}
+#endif
+
+		this->template ghost_wait_<prp...>(v_pos,v_prp,g_m,opt);
+
+#ifdef CUDA_GPU
+		this->update(this->toKernel());
+#endif
 
 #ifdef SE_CLASS3
 
@@ -2377,6 +2520,17 @@ public:
 		h5l.load(filename,v_pos,v_prp,g_m);
 	}
 
+	/*! \brief Reserve space for the internal vectors
+	 *
+	 * \param
+	 *
+	 */
+	void setCapacity(unsigned int ns)
+	{
+		v_pos.reserve(ns);
+		v_prp.reserve(ns);
+	}
+
 	/*! \brief Output particle position and properties
 	 *
 	 * \param out output filename
@@ -2460,6 +2614,10 @@ public:
 		v_prp.resize(rs);
 
 		g_m = rs;
+
+#ifdef CUDA_GPU
+		this->update(this->toKernel());
+#endif
 	}
 
 	/*! \brief Output particle position and properties
@@ -2615,6 +2773,46 @@ public:
 		return v_prp;
 	}
 
+	/*! \brief return the position vector of all the particles
+	 *
+	 * \return the particle position vector
+	 *
+	 */
+	const openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & getPosVectorSort() const
+	{
+		return v_pos_out;
+	}
+
+	/*! \brief return the position vector of all the particles
+	 *
+	 * \return the particle position vector
+	 *
+	 */
+	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & getPosVectorSort()
+	{
+		return v_pos_out;
+	}
+
+	/*! \brief return the property vector of all the particles
+	 *
+	 * \return the particle property vector
+	 *
+	 */
+	const openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & getPropVectorSort() const
+	{
+		return v_prp_out;
+	}
+
+	/*! \brief return the property vector of all the particles
+	 *
+	 * \return the particle property vector
+	 *
+	 */
+	openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & getPropVectorSort()
+	{
+		return v_prp_out;
+	}
+
 	/*! \brief It return the sum of the particles in the previous processors
 	 *
 	 * \return the particles number
@@ -2750,11 +2948,22 @@ public:
 		 * \return an usable vector in the kernel
 		 *
 		 */
-		template<unsigned int ... prp> vector_dist_ker<dim,St,prop> toKernel()
+		template<unsigned int ... prp> vector_dist_ker<dim,St,prop,layout_base> toKernel()
 		{
-			vector_dist_ker<dim,St,prop> v(g_m,v_pos.toKernel(), v_prp.toKernel());
+			vector_dist_ker<dim,St,prop,layout_base> v(g_m,v_pos.toKernel(), v_prp.toKernel());
 
 			return v;
+		}
+
+		/*! \brief Return the internal vector_dist_ker_list structure
+		 *
+		 *
+		 *
+		 * \return
+		 */
+		vector_dist_ker_list<vector_dist_ker<dim,St,prop,layout_base>> & private_get_vector_dist_ker_list()
+		{
+			return *this;
 		}
 
 		/*! \brief Convert the grid into a data-structure compatible for computing into GPU
@@ -2764,9 +2973,9 @@ public:
 		 * \return an usable vector in the kernel
 		 *
 		 */
-		template<unsigned int ... prp> vector_dist_ker<dim,St,prop> toKernel_sorted()
+		template<unsigned int ... prp> vector_dist_ker<dim,St,prop,layout_base> toKernel_sorted()
 		{
-			vector_dist_ker<dim,St,prop> v(g_m,v_pos_out.toKernel(), v_prp_out.toKernel());
+			vector_dist_ker<dim,St,prop,layout_base> v(g_m,v_pos_out.toKernel(), v_prp_out.toKernel());
 
 			return v;
 		}
@@ -2779,6 +2988,19 @@ public:
 		template<unsigned int ... prp> void deviceToHostProp()
 		{
 			v_prp.template deviceToHost<prp ...>();
+		}
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 * \param start point
+		 * \param stop point (included)
+		 *
+		 */
+		template<unsigned int ... prp> void deviceToHostProp(size_t start, size_t stop)
+		{
+			v_prp.template deviceToHost<prp ...>(start,stop);
 		}
 
 		/*! \brief Move the memory from the device to host memory
@@ -2823,7 +3045,8 @@ public:
          * \param NN Cell-list to use to reorder
          *
          */
-        void make_sort(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> & NN)
+		template<typename CellList_type>
+        void make_sort(CellList_type & NN)
         {
                 deleteGhost();
 
@@ -2834,6 +3057,30 @@ public:
                 // swap the sorted with the non-sorted
                 v_pos.swap(v_pos_out);
                 v_prp.swap(v_prp_out);
+        }
+
+        /*! \brief this function sort the vector
+         *
+         * \note this function does not kill the ghost and does not invalidate the Cell-list)
+         *
+         * \param NN Cell-list to use to reorder
+         *
+         */
+		template<typename CellList_type>
+        void make_sort_from(CellList_type & cl)
+        {
+#if defined(__NVCC__)
+
+			auto ite = v_pos.getGPUIteratorTo(g_m);
+
+			CUDA_LAUNCH((merge_sort_all<decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortToSort().toKernel())>),
+					ite,
+					v_pos_out.toKernel(),v_prp_out.toKernel(),v_pos.toKernel(),v_prp.toKernel(),cl.getNonSortToSort().toKernel());
+
+			v_pos.swap(v_pos_out);
+			v_prp.swap(v_prp_out);
+
+#endif
         }
 
         /*! \brief This function compare if the host and device buffer position match up to some tolerance
@@ -2862,6 +3109,40 @@ public:
         	return compare_host_device<typename boost::mpl::at<typename prop::type,
         							            boost::mpl::int_<prp> >::type,prp>::compare(v_prp,tol,near,silent);
         }
+
+#else
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 */
+		template<unsigned int ... prp> void deviceToHostProp()
+		{}
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 */
+		void deviceToHostPos()
+		{}
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 */
+		template<unsigned int ... prp> void hostToDeviceProp()
+		{}
+
+		/*! \brief Move the memory from the device to host memory
+		 *
+		 * \tparam property to move use POS_PROP for position property
+		 *
+		 */
+		void hostToDevicePos()
+		{}
 
 #endif
 

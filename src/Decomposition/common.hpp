@@ -108,6 +108,8 @@ struct Box_sub
 	{
 		r_sub = (size_t)-1;
 		cmb.zero();
+
+		sub = (size_t)-1;
 	}
 };
 

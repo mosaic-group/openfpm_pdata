@@ -19,7 +19,7 @@
  * \see CartDecomposition
  *
  */
-template<unsigned int dim, typename T>
+template<unsigned int dim, typename T, template <typename> class layout_base, typename Memory>
 class nn_prcs
 {
 	//! Virtual cluster
@@ -139,7 +139,7 @@ class nn_prcs
 	static void * message_alloc(size_t msg_i ,size_t total_msg, size_t total_p, size_t i, size_t ri, size_t tag, void * ptr)
 	{
 		// cast the pointer
-		nn_prcs<dim,T> * cd = static_cast< nn_prcs<dim,T> *>(ptr);
+		nn_prcs<dim,T,layout_base,Memory> * cd = static_cast< nn_prcs<dim,T,layout_base,Memory> *>(ptr);
 
 		cd->nn_processor_subdomains[i].bx.resize(msg_i / sizeof(::Box<dim,T>) );
 
@@ -276,14 +276,14 @@ public:
 	{}
 
 	//! Constructor from another nn_prcs
-	nn_prcs(const nn_prcs<dim,T> & ilg)
+	nn_prcs(const nn_prcs<dim,T,layout_base,Memory> & ilg)
 	:v_cl(ilg.v_cl),recv_cnt(0),aBC(false)
 	{
 		this->operator=(ilg);
 	};
 
 	//! Constructor from temporal ie_loc_ghost
-	nn_prcs(nn_prcs<dim,T> && ilg)
+	nn_prcs(nn_prcs<dim,T,layout_base,Memory> && ilg)
 	:v_cl(ilg.v_cl),recv_cnt(0),aBC(false)
 	{
 		this->operator=(ilg);
@@ -321,7 +321,7 @@ public:
 	 * \return itself
 	 *
 	 */
-	nn_prcs<dim,T> & operator=(const nn_prcs<dim,T> & nnp)
+	nn_prcs<dim,T,layout_base,Memory> & operator=(const nn_prcs<dim,T,layout_base,Memory> & nnp)
 	{
 		nn_processors = nnp.nn_processors;
 		nn_processor_subdomains = nnp.nn_processor_subdomains;
@@ -338,12 +338,88 @@ public:
 	 * \return itself
 	 *
 	 */
-	nn_prcs<dim,T> & operator=(nn_prcs<dim,T> && nnp)
+	nn_prcs<dim,T,layout_base,Memory> & operator=(nn_prcs<dim,T,layout_base,Memory> && nnp)
 	{
 		nn_processors.swap(nnp.nn_processors);
 		nn_processor_subdomains.swap(nnp.nn_processor_subdomains);
 		proc_adj_box.swap(nnp.proc_adj_box);
 		boxes = nnp.boxes;
+
+		return *this;
+	}
+
+	/*! \brief Copy the object
+	 *
+	 * \param nnp object to copy
+	 *
+	 * \return itself
+	 *
+	 */
+	template<typename Memory2, template <typename> class layout_base2>
+	nn_prcs<dim,T,layout_base,Memory> & operator=(const nn_prcs<dim,T,layout_base2,Memory2> & nnp)
+	{
+		nn_processors = nnp.private_get_nn_processors();
+		nn_processor_subdomains = nnp.private_get_nn_processor_subdomains();
+		proc_adj_box = nnp.private_get_proc_adj_box();
+		boxes = nnp.private_get_boxes();
+
+		return *this;
+	}
+
+	/*! \brief Return the internal nn_processor struct
+	 *
+	 * \return the internal nn_processor struct
+	 *
+	 */
+	openfpm::vector<size_t> & private_get_nn_processors()
+	{
+		return nn_processors;
+	}
+
+	/*! \brief Return the internal nn_processor_subdomains
+	 *
+	 * \return the internal nn_processor_subdomains
+	 *
+	 */
+	std::unordered_map<size_t, N_box<dim,T>> & private_get_nn_processor_subdomains()
+	{
+		return nn_processor_subdomains;
+	}
+
+	/*! \brief Return the internal proc_adj_box
+	 *
+	 * \return the internal proc_adj_box
+	 *
+	 */
+	openfpm::vector<openfpm::vector<size_t>> & private_get_proc_adj_box()
+	{
+		return proc_adj_box;
+	}
+
+	/*! \brief Return the internal boxes structure
+	 *
+	 * \return the internal boxes structure
+	 *
+	 */
+	openfpm::vector< openfpm::vector< ::SpaceBox<dim,T>> > & private_get_boxes()
+	{
+		return boxes;
+	}
+
+	/*! \brief Copy the object
+	 *
+	 * \param nnp object to copy
+	 *
+	 * \return itself
+	 *
+	 */
+	template<typename Memory2, template <typename> class layout_base2>
+	nn_prcs<dim,T,layout_base,Memory> & operator=(nn_prcs<dim,T,layout_base2,Memory2> && nnp)
+	{
+		nn_processors.swap(nnp.private_get_nn_processors());
+		nn_processor_subdomains.swap(nnp.private_get_nn_processor_subdomains());
+		proc_adj_box.swap(nnp.private_get_proc_adj_box());
+		boxes = nnp.private_get_boxes();
 
 		return *this;
 	}
@@ -354,7 +430,8 @@ public:
 	 * \param sub_domains list of local sub-domains
 	 *
 	 */
-	void create(const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor, const openfpm::vector<SpaceBox<dim,T>> & sub_domains)
+	void create(const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
+			    const openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> & sub_domains)
 	{
 		// produce the list of the adjacent processor (nn_processors) list
 		for (size_t i = 0 ;  i < box_nn_processor.size() ; i++)
@@ -412,7 +489,7 @@ public:
 		nn_processor_subdomains.reserve(nn_processors.size());
 
 		// Get the sub-domains of the near processors
-		v_cl.sendrecvMultipleMessagesNBX(nn_processors,boxes,nn_prcs<dim,T>::message_alloc, this ,NEED_ALL_SIZE);
+		v_cl.sendrecvMultipleMessagesNBX(nn_processors,boxes,nn_prcs<dim,T,layout_base,Memory>::message_alloc, this ,NEED_ALL_SIZE);
 
 		// Add to all the received sub-domains the information that they live in the central sector
 		for ( auto it = nn_processor_subdomains.begin(); it != nn_processor_subdomains.end(); ++it )
@@ -645,7 +722,7 @@ public:
 	 * \return true if they are equal
 	 *
 	 */
-	bool is_equal(nn_prcs<dim,T> & np)
+	bool is_equal(nn_prcs<dim,T,layout_base,Memory> & np)
 	{
 		if (np.getNNProcessors() != getNNProcessors())
 			return false;

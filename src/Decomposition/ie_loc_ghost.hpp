@@ -23,7 +23,7 @@
  * \see CartDecomposition
  *
  */
-template<unsigned int dim, typename T>
+template<unsigned int dim, typename T, template <typename> class layout_base, typename Memory>
 class ie_loc_ghost
 {
 	//! It contain the calculated local ghost boxes
@@ -40,7 +40,7 @@ class ie_loc_ghost
 	 *
 	 */
 	void create_loc_ghost_ebox(Ghost<dim,T> & ghost,
-			                   openfpm::vector<SpaceBox<dim,T>> & sub_domains,
+			                   openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> & sub_domains,
 							   openfpm::vector<Box_loc_sub<dim,T>> & sub_domains_prc)
 	{
 		comb<dim> zero;
@@ -101,7 +101,7 @@ class ie_loc_ghost
 	 *
 	 */
 	void create_loc_ghost_ibox(Ghost<dim,T> & ghost,
-			                   openfpm::vector<SpaceBox<dim,T>> & sub_domains,
+			                   openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> & sub_domains,
 							   openfpm::vector<Box_loc_sub<dim,T>> & sub_domains_prc)
 	{
 		comb<dim> zero;
@@ -163,7 +163,7 @@ class ie_loc_ghost
 
 			for (size_t j = 0 ; j < cmbs.size() ; j++)
 			{
-				if (nn_prcs<dim,T>::check_valid(cmbs[j],bc) == false)
+				if (nn_prcs<dim,T,layout_base,Memory>::check_valid(cmbs[j],bc) == false)
 					continue;
 
 				Box<dim,T> bp;
@@ -249,7 +249,7 @@ public:
 	 * \param bc Boundary conditions
 	 *
 	 */
-	void create(openfpm::vector<SpaceBox<dim,T>> & sub_domains, Box<dim,T> & domain , Ghost<dim,T> & ghost , const size_t (&bc)[dim] )
+	void create(openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> & sub_domains, Box<dim,T> & domain , Ghost<dim,T> & ghost , const size_t (&bc)[dim] )
 	{
 		// It will store local sub-domains + borders
 		openfpm::vector<Box_loc_sub<dim,T>> sub_domains_prc;
@@ -275,13 +275,13 @@ public:
 	ie_loc_ghost()	{};
 
 	//! Constructor from another ie_loc_ghost
-	ie_loc_ghost(const ie_loc_ghost<dim,T> & ilg)
+	ie_loc_ghost(const ie_loc_ghost<dim,T,layout_base,Memory> & ilg)
 	{
 		this->operator=(ilg);
 	};
 
 	//! Constructor from temporal ie_loc_ghost
-	ie_loc_ghost(ie_loc_ghost<dim,T> && ilg)
+	ie_loc_ghost(ie_loc_ghost<dim,T,layout_base,Memory> && ilg)
 	{
 		this->operator=(ilg);
 	}
@@ -293,7 +293,7 @@ public:
 	 * \return itself
 	 *
 	 */
-	ie_loc_ghost<dim,T> & operator=(const ie_loc_ghost<dim,T> & ilg)
+	ie_loc_ghost<dim,T,layout_base,Memory> & operator=(const ie_loc_ghost<dim,T,layout_base,Memory> & ilg)
 	{
 		loc_ghost_box = ilg.loc_ghost_box;
 		return *this;
@@ -306,10 +306,48 @@ public:
 	 * \return itself
 	 *
 	 */
-	ie_loc_ghost<dim,T> & operator=(ie_loc_ghost<dim,T> && ilg)
+	ie_loc_ghost<dim,T,layout_base,Memory> & operator=(ie_loc_ghost<dim,T,layout_base,Memory> && ilg)
 	{
 		loc_ghost_box.swap(ilg.loc_ghost_box);
 		return *this;
+	}
+
+	/*! \brief copy the ie_loc_ghost
+	 *
+	 * \param ilg object to copy
+	 *
+	 * \return itself
+	 *
+	 */
+	template<template <typename> class layout_base2, typename Memory2>
+	ie_loc_ghost<dim,T,layout_base,Memory> & operator=(const ie_loc_ghost<dim,T,layout_base2,Memory2> & ilg)
+	{
+		loc_ghost_box = ilg.private_get_loc_ghost_box();
+		return *this;
+	}
+
+	/*! \brief copy the ie_loc_ghost
+	 *
+	 * \param ilg object to copy
+	 *
+	 * \return itself
+	 *
+	 */
+	template<template <typename> class layout_base2, typename Memory2>
+	ie_loc_ghost<dim,T,layout_base,Memory> & operator=(ie_loc_ghost<dim,T,layout_base2,Memory2> && ilg)
+	{
+		loc_ghost_box.swap(ilg.private_get_loc_ghost_box());
+		return *this;
+	}
+
+	/*! \brief Get the internal loc_ghost_box
+	 *
+	 * \return the internal loc_ghost_box
+	 *
+	 */
+	inline openfpm::vector<lBox_dom<dim,T>> & private_get_loc_ghost_box()
+	{
+		return loc_ghost_box;
 	}
 
 	/*! \brief Get the number of local sub-domains
@@ -466,7 +504,7 @@ public:
 	/*! \brief Considering that sub-domains has N internal local ghost box identified
 	 *         with the 0 <= k < N that come from the intersection of 2 sub-domains i and j
 	 *         where j is enlarged, given the sub-domain i and the id k of the internal box,
-	 *         it return the id of the other sub-domain that produced the intersection
+	 *         it return the id j of the other sub-domain that produced the intersection
 	 *
 	 * \param i sub-domain
 	 * \param k id
@@ -481,7 +519,7 @@ public:
 	/*! \brief Considering that sub-domains has N external local ghost box identified
 	 *         with the 0 <= k < N that come from the intersection of 2 sub-domains i and j
 	 *         where i is enlarged, given the sub-domain i and the id k of the external box,
-	 *         it return the id of the other sub-domain that produced the intersection
+	 *         it return the id of the other sub-domain j that produced the intersection
 	 *
 	 * \param i sub-domain
 	 * \param k id
@@ -590,7 +628,7 @@ public:
 	 * \return true if they match
 	 *
 	 */
-	bool is_equal(ie_loc_ghost<dim,T> & ilg)
+	bool is_equal(ie_loc_ghost<dim,T,layout_base,Memory> & ilg)
 	{
 		if (ilg.loc_ghost_box.size() != loc_ghost_box.size())
 			return false;
@@ -637,7 +675,7 @@ public:
 	 *         ghost part
 	 *
 	 */
-	bool is_equal_ng(ie_loc_ghost<dim,T> & ilg)
+	bool is_equal_ng(ie_loc_ghost<dim,T,layout_base,Memory> & ilg)
 	{
 		return true;
 	}

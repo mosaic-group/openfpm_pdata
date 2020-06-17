@@ -1,15 +1,47 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
+add_definitions(-DSCAN_WITH_CUB)
 
 ########################### Executables
 
 if(CUDA_FOUND)
-	set(CUDA_SOURCES Vector/cuda/vector_dist_gpu_MP_tests.cu Vector/cuda/vector_dist_cuda_func_test.cu Decomposition/cuda/decomposition_cuda_tests.cu Vector/cuda/vector_dist_gpu_unit_tests.cu ../openfpm_devices/src/memory/CudaMemory.cu)
+	set(CUDA_SOURCES 
+				Grid/tests/sgrid_dist_id_gpu_unit_tests.cu
+				Vector/cuda/vector_dist_gpu_MP_tests.cu 
+					 Vector/cuda/vector_dist_cuda_func_test.cu
+					 Decomposition/cuda/decomposition_cuda_tests.cu
+					 Vector/cuda/vector_dist_gpu_unit_tests.cu
+					 ../openfpm_devices/src/memory/CudaMemory.cu
+					 Decomposition/cuda/Domain_icells_cart_unit_test.cu
+					 Amr/tests/amr_base_gpu_unit_tests.cu)
 else()
 	set(CUDA_SOURCES)
 endif()
 
-add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp Debug/debug_test.cpp Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp Grid/tests/grid_dist_id_unit_test.cpp Grid/tests/staggered_grid_dist_unit_test.cpp Vector/tests/vector_dist_cell_list_tests.cpp Vector/tests/vector_dist_complex_prp_unit_test.cpp Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp Vector/tests/vector_dist_MP_unit_tests.cpp Vector/tests/vector_dist_NN_tests.cpp Vector/tests/vector_dist_unit_test.cpp  pdata_performance.cpp Decomposition/tests/CartDecomposition_unit_test.cpp Decomposition/tests/shift_vect_converter_tests.cpp Vector/performance/vector_dist_performance_util.cpp  lib/pdata.cpp test_multiple_o.cpp  ../openfpm_devices/src/memory/HeapMemory.cpp ../openfpm_devices/src/memory/PtrMemory.cpp ../openfpm_vcluster/src/VCluster/VCluster.cpp ../openfpm_devices/src/Memleak_check.cpp)
+add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
+														  Amr/grid_dist_amr_unit_tests.cpp
+														  Amr/tests/amr_base_unit_tests.cpp
+														  Debug/debug_test.cpp
+														  Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp
+														  Grid/tests/grid_dist_id_unit_test.cpp
+														  Grid/tests/sgrid_dist_id_unit_tests.cpp
+														  Grid/tests/grid_dist_id_dlb_unit_test.cpp
+														  Grid/tests/staggered_grid_dist_unit_test.cpp
+														  Vector/tests/vector_dist_cell_list_tests.cpp
+														  Vector/tests/vector_dist_complex_prp_unit_test.cpp
+														  Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp 
+														  Vector/tests/vector_dist_MP_unit_tests.cpp 
+														  Vector/tests/vector_dist_NN_tests.cpp 
+														  Vector/tests/vector_dist_unit_test.cpp  
+														  pdata_performance.cpp 
+														  Decomposition/tests/CartDecomposition_unit_test.cpp 
+														  Decomposition/tests/shift_vect_converter_tests.cpp 
+														  Vector/performance/vector_dist_performance_util.cpp  
+														  lib/pdata.cpp test_multiple_o.cpp  
+														  ../openfpm_devices/src/memory/HeapMemory.cpp 
+														  ../openfpm_devices/src/memory/PtrMemory.cpp 
+														  ../openfpm_vcluster/src/VCluster/VCluster.cpp 
+														  ../openfpm_devices/src/Memleak_check.cpp)
 
 if ( CMAKE_COMPILER_IS_GNUCC )
     target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
@@ -31,6 +63,9 @@ if (CUDA_FOUND)
         if (TEST_COVERAGE)
 		target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler "-fprofile-arcs -ftest-coverage" >)
         endif()
+	if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+		#		target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -G>)
+	endif()
 endif()
 
 if(TEST_PERFORMANCE)
@@ -49,14 +84,21 @@ target_include_directories (pdata PUBLIC ${PETSC_INCLUDES})
 target_include_directories (pdata PUBLIC ${HDF5_ROOT}/include)
 target_include_directories (pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
 
+target_include_directories(pdata PUBLIC ${Vc_INCLUDE_DIR})
 target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
 
 target_link_libraries(pdata ${Boost_LIBRARIES})
-target_link_libraries(pdata -L${PARMETIS_ROOT}/lib parmetis)
+target_link_libraries(pdata ${PARMETIS_LIBRARIES})
 target_link_libraries(pdata -L${METIS_ROOT}/lib metis)
 target_link_libraries(pdata ${HDF5_LIBRARIES})
 target_link_libraries(pdata -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
 target_link_libraries(pdata ${PETSC_LIBRARIES})
+target_link_libraries(pdata ${Vc_LIBRARIES})
+
+if (TEST_PERFORMANCE)
+	target_link_libraries(pdata  ${Boost_FILESYSTEM_LIBRARY})
+        target_link_libraries(pdata ${Boost_SYSTEM_LIBRARY})
+endif()
 
 add_definitions(-DSCAN_WITH_CUB)
 #add_definitions(-DMAKE_CELLLIST_DETERMINISTIC)
@@ -93,7 +135,8 @@ if (NOT APPLE)
     target_link_libraries(pdata rt)
 endif ()
 
-install(FILES Decomposition/CartDecomposition.hpp 
+install(FILES Decomposition/CartDecomposition.hpp
+       	      Decomposition/Domain_icells_cart.hpp	
 	      Decomposition/shift_vect_converter.hpp 
 	      Decomposition/CartDecomposition_ext.hpp  
 	      Decomposition/common.hpp 
@@ -127,6 +170,15 @@ install(FILES Grid/grid_dist_id.hpp
 	      Grid/staggered_dist_grid_copy.hpp
 	      DESTINATION openfpm_pdata/include/Grid/ )
 
+install(FILES Grid/cuda/grid_dist_id_kernels.cuh
+	      Grid/cuda/grid_dist_id_iterator_gpu.cuh
+	DESTINATION openfpm_pdata/include/Grid/cuda/ )
+
+install(FILES Amr/grid_dist_amr_key_iterator.hpp 
+	      Amr/grid_dist_amr_key.hpp
+	      Amr/grid_dist_amr.hpp
+	      DESTINATION openfpm_pdata/include/Amr/ )
+
 install(FILES Grid/Iterators/grid_dist_id_iterator_util.hpp
               Grid/Iterators/grid_dist_id_iterator_dec.hpp
               Grid/Iterators/grid_dist_id_iterator_dec_skin.hpp
@@ -143,6 +195,9 @@ install(FILES Vector/se_class3_vector.hpp
 	      Vector/vector_dist_kernel.hpp
 	      DESTINATION openfpm_pdata/include/Vector )
 
+install(FILES util/common_pdata.hpp
+	      DESTINATION openfpm_pdata/include/util)
+
 install(FILES Vector/Iterators/vector_dist_iterator.hpp
 	      DESTINATION openfpm_pdata/include/Vector/Iterators/ )
 
@@ -151,6 +206,7 @@ install(FILES Vector/util/vector_dist_funcs.hpp
 
 install(FILES Vector/cuda/vector_dist_comm_util_funcs.cuh
 	      Vector/cuda/vector_dist_cuda_funcs.cuh
+	      Vector/cuda/vector_dist_operators_list_ker.hpp
 	DESTINATION openfpm_pdata/include/Vector/cuda )
 
 install(FILES Graph/ids.hpp Graph/dist_map_graph.hpp 

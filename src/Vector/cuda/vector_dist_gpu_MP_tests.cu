@@ -471,14 +471,12 @@ __global__ void vdmkt_simple_cl(mp_vector_type mp_v, output_type ot, cl_type cl,
 	{
 		for (int j = 0 ; j < cl.get(i).getNCells() ; j++)
 		{
-//			printf("VVVVVVVV %d \n",cl.get(i).getNelements(j));
 			for (int k = 0 ; k < cl.get(i).getNelements(j) ; k++)
 			{
 				auto s = cl.get(i).get(j,k);
 
 				ot2.template get<0>(k) = s;
 
-//				printf("GGGGGG %d   %d \n",s,i);
 				k++;
 			}
 		}

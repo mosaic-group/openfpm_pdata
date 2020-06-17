@@ -27,10 +27,15 @@
  *
  */
 
-/* \brief Sub-domain vertex graph node
- *
- */
+constexpr unsigned int nm_v_x = 0;
+constexpr unsigned int nm_v_migration = 1;
+constexpr unsigned int nm_v_computation = 2;
+constexpr unsigned int nm_v_global_id = 3;
+constexpr unsigned int nm_v_id = 4;
+constexpr unsigned int nm_v_sub_id = 5;
+constexpr unsigned int nm_v_proc_id = 6;
 
+template<unsigned int dim>
 struct nm_v
 {
 	//! The node contain 3 unsigned long integer for communication computation memory and id
@@ -74,9 +79,8 @@ struct nm_v
 
 	inline nm_v(const nm_v & p)
 	{
-		boost::fusion::at_c<0>(data)[0] = boost::fusion::at_c<0>(p.data)[0];
-		boost::fusion::at_c<0>(data)[1] = boost::fusion::at_c<0>(p.data)[1];
-		boost::fusion::at_c<0>(data)[2] = boost::fusion::at_c<0>(p.data)[2];
+		for (size_t i = 0 ; i < dim ; i++)
+		{boost::fusion::at_c<0>(data)[i] = boost::fusion::at_c<0>(p.data)[i];}
 		boost::fusion::at_c<1>(data) = boost::fusion::at_c<1>(p.data);
 		boost::fusion::at_c<2>(data) = boost::fusion::at_c<2>(p.data);
 		boost::fusion::at_c<3>(data) = boost::fusion::at_c<3>(p.data);
@@ -85,16 +89,15 @@ struct nm_v
 		boost::fusion::at_c<6>(data) = boost::fusion::at_c<6>(p.data);
 	}
 
-	template<unsigned int dim, typename Mem> inline nm_v(const encapc<dim, nm_v, Mem> & p)
+	template<unsigned int dime, typename Mem> inline nm_v(const encapc<dime, nm_v, Mem> & p)
 	{
 		this->operator=(p);
 	}
 
-	template<unsigned int dim, typename Mem> inline nm_v & operator=(const encapc<dim, nm_v, Mem> & p)
+	template<unsigned int dime, typename Mem> inline nm_v & operator=(const encapc<dime, nm_v, Mem> & p)
 	{
-		boost::fusion::at_c<0>(data)[0] = p.template get<0>()[0];
-		boost::fusion::at_c<0>(data)[1] = p.template get<0>()[1];
-		boost::fusion::at_c<0>(data)[2] = p.template get<0>()[2];
+		for (size_t i = 0 ; i < dim ; i++)
+		{boost::fusion::at_c<0>(data)[i] = boost::fusion::at_c<0>(p.data)[i];}
 		boost::fusion::at_c<1>(data) = p.template get<1>();
 		boost::fusion::at_c<2>(data) = p.template get<2>();
 		boost::fusion::at_c<3>(data) = p.template get<3>();

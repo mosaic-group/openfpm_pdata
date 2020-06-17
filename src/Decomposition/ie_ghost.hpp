@@ -100,7 +100,7 @@ class ie_ghost
 	 *         for the processor p_id
 	 *
 	 */
-	inline size_t link_ebx_ibx(const nn_prcs<dim,T> & nn_p, size_t p_id, size_t i)
+	inline size_t link_ebx_ibx(const nn_prcs<dim,T,layout_base,Memory> & nn_p, size_t p_id, size_t i)
 	{
 		// Search for the correct id
 		size_t k = 0;
@@ -204,7 +204,15 @@ protected:
 	void Initialize_geo_cell(const Box<dim,T> & domain, const size_t (&div)[dim])
 	{
 		// Initialize the geo_cell structure
-		geo_cell.Initialize(domain,div,0);
+		geo_cell.Initialize(domain,div,1);
+	}
+
+	/*! \brief Deallocate structures that identify a point to which internal ghost is located
+	 *
+	 */
+	void free_geo_cell()
+	{
+		geo_cell.destroy();
 	}
 
 	/*! \brief Create the box_nn_processor_int (bx part)  structure
@@ -224,9 +232,9 @@ protected:
 	 */
 	void create_box_nn_processor_ext(Vcluster<> & v_cl,
 			                         Ghost<dim,T> & ghost,
-									 openfpm::vector<SpaceBox<dim,T>> & sub_domains,
+									 openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> & sub_domains,
 									 const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
-									 const nn_prcs<dim,T> & nn_p)
+									 const nn_prcs<dim,T,layout_base,Memory> & nn_p)
 	{
 		box_nn_processor_int.resize(sub_domains.size());
 		proc_int_box.resize(nn_p.getNNProcessors());
@@ -326,9 +334,9 @@ protected:
 	 */
 	void create_box_nn_processor_int(Vcluster<> & v_cl,
 			                         Ghost<dim,T> & ghost,
-									 openfpm::vector<SpaceBox<dim,T>> & sub_domains,
+									 openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> & sub_domains,
 									 const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
-									 const nn_prcs<dim,T> & nn_p)
+									 const nn_prcs<dim,T,layout_base,Memory> & nn_p)
 	{
 		box_nn_processor_int.resize(sub_domains.size());
 		proc_int_box.resize(nn_p.getNNProcessors());
@@ -423,8 +431,8 @@ protected:
 						// update the geo_cell list
 
 						// get the cells this box span
-						const grid_key_dx<dim> p1 = geo_cell.getCellGrid(b_int.getP1());
-						const grid_key_dx<dim> p2 = geo_cell.getCellGrid(b_int.getP2());
+						const grid_key_dx<dim> p1 = geo_cell.getCellGrid_me(b_int.getP1());
+						const grid_key_dx<dim> p2 = geo_cell.getCellGrid_pe(b_int.getP2());
 
 						// Get the grid and the sub-iterator
 						auto & gi = geo_cell.getGrid();

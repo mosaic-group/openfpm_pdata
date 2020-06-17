@@ -9,18 +9,10 @@
 
 #include "vector_dist_performance_util.hpp"
 #include "Plot/GoogleChart.hpp"
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/foreach.hpp>
+#include "util/performance/performance_util.hpp"
 
-void addUpdtateTime(GoogleChart & cg)
-{
-    time_t t = time(0);   // get time now
-    struct tm * now = localtime( & t );
-
-    std::stringstream str;
-
-    str << "<h3>Updated: " << now->tm_mday << "/" << now->tm_mon + 1 << "/" << now->tm_year+1900 << "     " << now->tm_hour << ":" << now->tm_min << ":" << now->tm_sec << std::endl;
-
-	cg.addHTML(str.str());
-}
 
 /*! \brief Draw a standard performance graph
  *

@@ -33,7 +33,7 @@ class SpaceDistribution
 	Box<dim, T> domain;
 
 	//! Global sub-sub-domain graph
-	Graph_CSR<nm_v, nm_e> gp;
+	Graph_CSR<nm_v<dim>, nm_e> gp;
 
 
 public:
@@ -86,24 +86,24 @@ public:
 		domain = dom;
 
 		// Create a cartesian grid graph
-		CartesianGraphFactory<dim, Graph_CSR<nm_v, nm_e>> g_factory_part;
-		gp = g_factory_part.template construct<NO_EDGE, nm_v::id, T, dim - 1, 0>(gr.getSize(), domain, bc);
+		CartesianGraphFactory<dim, Graph_CSR<nm_v<dim>, nm_e>> g_factory_part;
+		gp = g_factory_part.template construct<NO_EDGE, nm_v_id, T, dim - 1, 0>(gr.getSize(), domain, bc);
 
 		// Init to 0.0 axis z (to fix in graphFactory)
 		if (dim < 3)
 		{
 			for (size_t i = 0; i < gp.getNVertex(); i++)
-				gp.vertex(i).template get<nm_v::x>()[2] = 0.0;
+				gp.vertex(i).template get<nm_v_x>()[2] = 0.0;
 		}
 		for (size_t i = 0; i < gp.getNVertex(); i++)
-			gp.vertex(i).template get<nm_v::global_id>() = i;
+			gp.vertex(i).template get<nm_v_global_id>() = i;
 
 	}
 
 	/*! \brief Get the current graph (main)
 	 *
 	 */
-	Graph_CSR<nm_v, nm_e> & getGraph()
+	Graph_CSR<nm_v<dim>, nm_e> & getGraph()
 	{
 		return gp;
 	}
@@ -212,7 +212,7 @@ public:
 		{
 			auto key = it2.get();
 
-			gp.template vertex_p<nm_v::proc_id>(gr.LinId(key)) = g.template get<0>(key);
+			gp.template vertex_p<nm_v_proc_id>(gr.LinId(key)) = g.template get<0>(key);
 
 			++it2;
 		}
@@ -253,10 +253,10 @@ public:
 #endif
 
 		// Copy the geometrical informations inside the pos vector
-		pos[0] = gp.vertex(id).template get<nm_v::x>()[0];
-		pos[1] = gp.vertex(id).template get<nm_v::x>()[1];
+		pos[0] = gp.vertex(id).template get<nm_v_x>()[0];
+		pos[1] = gp.vertex(id).template get<nm_v_x>()[1];
 		if (dim == 3)
-			pos[2] = gp.vertex(id).template get<nm_v::x>()[2];
+			pos[2] = gp.vertex(id).template get<nm_v_x>()[2];
 	}
 
 	/*! \brief Function that set the weight of the vertex
@@ -357,7 +357,7 @@ public:
 	 */
 	void write(const std::string & file)
 	{
-		VTKWriter<Graph_CSR<nm_v, nm_e>, VTK_GRAPH> gv2(gp);
+		VTKWriter<Graph_CSR<nm_v<dim>, nm_e>, VTK_GRAPH> gv2(gp);
 		gv2.write(std::to_string(v_cl.getProcessUnitID()) + "_" + file + ".vtk");
 	}
 

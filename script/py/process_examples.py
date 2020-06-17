@@ -7,7 +7,7 @@ from os import listdir
 from os.path import isdir, join
 from pack_examples import pack_example
 
-parser = argparse.ArgumentParser(description='Pack the examples, generate the vtk files to generate images, create the markdown pages for the wiki')
+parser = argparse.ArgumentParser(description='Pack the examples')
 parser.add_argument('directory', help='directory where are located the examples')
 args = parser.parse_args()
 

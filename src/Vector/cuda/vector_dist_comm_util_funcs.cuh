@@ -8,19 +8,18 @@
 #ifndef VECTOR_DIST_COMM_UTIL_FUNCS_HPP_
 #define VECTOR_DIST_COMM_UTIL_FUNCS_HPP_
 
-#include "util/cuda/scan_ofp.cuh"
+#include "util/common_pdata.hpp"
 
-#define NO_POSITION 1
-#define WITH_POSITION 2
-#define NO_CHANGE_ELEMENTS 4
+constexpr int NO_POSITION = 1;
+constexpr int WITH_POSITION = 2;
+constexpr int NO_CHANGE_ELEMENTS = 4;
 
-#define BIND_DEC_TO_GHOST 1
+constexpr int BIND_DEC_TO_GHOST = 1;
 
-#define RUN_ON_DEVICE 1024
-#define MAP_LOCAL 2
+constexpr int MAP_LOCAL = 2;
 
-#define SKIP_LABELLING 512
-#define KEEP_PROPERTIES 512
+constexpr int GHOST_SYNC = 0;
+constexpr int GHOST_ASYNC = 1;
 
 template<unsigned int dim, typename St, typename prop, typename Memory, template<typename> class layout_base, typename Decomposition, bool is_ok_cuda>
 struct labelParticlesGhost_impl

@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 
 			p2 = p1;
 
-			p2.get(j) = std::nextafter(SpaceBox<3,double>(dec.getSubDomains().get(i)).getLow(j),-1.0);
+//			p2.get(j) = std::nextafter(SpaceBox<3,double>(dec.getSubDomains().get(i)).getLow(j),-1.0);
 
 			auto gpudec = dec.toKernel();
 

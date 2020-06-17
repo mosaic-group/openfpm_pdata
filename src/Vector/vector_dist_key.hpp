@@ -29,7 +29,7 @@ public:
 	 * \param key the local key
 	 *
 	 */
-	inline void setKey(size_t key)
+	__device__ __host__ inline void setKey(size_t key)
 	{
 		this->key = key;
 	}
@@ -39,7 +39,7 @@ public:
 	 * \return the local key
 	 *
 	 */
-	inline size_t getKey() const
+	__device__ __host__ inline size_t getKey() const
 	{
 		return key;
 	}
@@ -65,13 +65,13 @@ public:
 	}*/
 
 	//! Default constructor
-	inline vect_dist_key_dx()
+	__device__ __host__ inline vect_dist_key_dx()
 	{
 		/* coverity[uninit_member] */
 	}
 
 	//! Default constructor
-	inline vect_dist_key_dx(size_t key)
+	__device__ __host__ inline vect_dist_key_dx(size_t key)
 	:key(key)
 	{
 	}

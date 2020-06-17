@@ -701,8 +701,6 @@ template<typename VerletList> inline double calc_forces(particles & vd, VerletLi
 
 /*		if (sum1 != sum2)
 		{
-			std::cout << "PORCA TROIA: " << std::endl;
-
 			break;
 		}*/
 

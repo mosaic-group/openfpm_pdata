@@ -1,5 +1,4 @@
 #include "Grid/grid_dist_id.hpp"
-#include "data_type/aggregate.hpp"
 
 /*! \page grid Grid
  *
