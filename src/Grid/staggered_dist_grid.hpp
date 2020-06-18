@@ -151,7 +151,7 @@ public:
 
 		typedef boost::mpl::vector_c<unsigned int,pos ... > v_pos_type;
 
-		interp_points<dim,v_pos_type,typename Grid_dst::value_type::type> itp(interp_pos,c_prp);
+		interp_points<dim,T::max_prop_real,v_pos_type,typename Grid_dst::value_type::type> itp(interp_pos,c_prp);
 		boost::mpl::for_each_ref<v_pos_type>(itp);
 
 		// shift the start and stop by the padding
