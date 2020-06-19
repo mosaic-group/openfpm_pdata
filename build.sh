@@ -21,11 +21,11 @@ echo "Branch name: $branch"
 echo "GPU compilation: $with_gpu"
 
 
-if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
+if [ x"$hostname" == x"cifarm-centos-node"  ]; then
 	echo "CentOS node"
 fi
 
-if [ x"$hostname" == x"cifarm-ubuntu-node.mpi-cbg.de"  ]; then
+if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
 #	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
 	echo "Ubuntu node"
 	./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/ 4
