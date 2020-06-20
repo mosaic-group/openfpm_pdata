@@ -500,7 +500,7 @@ int main(int argc, char* argv[])
             GoogleChart cg;
         
             // add a line plot
-            cg.AddLines(x,y,options);
+            cg.AddLinesGraphT(x,y,options);
         
             // write the plot file
             cg.write("PSE_plot.html");
