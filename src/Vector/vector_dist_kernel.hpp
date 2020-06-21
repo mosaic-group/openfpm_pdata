@@ -8,7 +8,7 @@
 #ifndef VECTOR_DIST_GPU_HPP_
 #define VECTOR_DIST_GPU_HPP_
 
-#define POS_PROP -1
+constexpr unsigned int POS_PROP = (unsigned int)-1;
 
 #ifdef CUDA_GPU
 
