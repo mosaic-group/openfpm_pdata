@@ -2015,7 +2015,7 @@ public:
 		se3.getIterator();
 #endif
 
-		return v_pos.getGPUIteratorTo(g_m,n_thr);
+		return v_pos.getGPUIteratorTo(g_m-1,n_thr);
 	}
 
 	/*! \brief Get an iterator that traverse the particles in the domain
@@ -2029,7 +2029,7 @@ public:
 		se3.getIterator();
 #endif
 
-		return v_pos.getGPUIteratorTo(v_pos.size(),n_thr);
+		return v_pos.getGPUIteratorTo(v_pos.size()-1,n_thr);
 	}
 
 	/*! \brief Merge the properties calculated on the sorted vector on the original vector
@@ -2042,7 +2042,7 @@ public:
 	{
 #if defined(__NVCC__)
 
-		auto ite = v_pos.getGPUIteratorTo(g_m,n_thr);
+		auto ite = v_pos.getGPUIteratorTo(g_m-1,n_thr);
 
 		CUDA_LAUNCH((merge_sort_part<false,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortToSort().toKernel()),prp...>),
 		ite,
@@ -2125,7 +2125,7 @@ public:
 	{
 #if defined(__NVCC__)
 
-		auto ite = v_pos.getGPUIteratorTo(g_m,n_thr);
+		auto ite = v_pos.getGPUIteratorTo(g_m-1,n_thr);
 
 		CUDA_LAUNCH((merge_sort_part<true,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortedToSorted().toKernel()),prp...>),
 		ite,
@@ -3071,7 +3071,7 @@ public:
         {
 #if defined(__NVCC__)
 
-			auto ite = v_pos.getGPUIteratorTo(g_m);
+			auto ite = v_pos.getGPUIteratorTo(g_m-1);
 
 			CUDA_LAUNCH((merge_sort_all<decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortToSort().toKernel())>),
 					ite,

@@ -1161,6 +1161,12 @@ void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 	v_cl.allGather(load,loads);
 	v_cl.execute();
 
+	//////////////////////////// DEBUG ///////////////////
+
+	vd.getDecomposition().write("DEBUG");
+
+	//////////////////////////////////////////////////////
+
 	for (size_t i = 0 ; i < loads.size() ; i++)
 	{
 		double load_f = load;

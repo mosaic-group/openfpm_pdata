@@ -364,6 +364,9 @@ void remove_marked(vector_type & vd)
 		return;
 	}
 
+	if (vd.size_local() == 0)
+	{return;}
+
 	typedef typename boost::mpl::at<typename vector_type::value_type::type,boost::mpl::int_<prp>>::type remove_type;
 
 	// because we mark the one to remove we flip the one to zero and the zeros to one

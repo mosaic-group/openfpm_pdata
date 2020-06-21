@@ -126,10 +126,13 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 
 			ite = g_opart_device.getGPUIterator();
 
-			// Find the buffer bases
-			CUDA_LAUNCH((find_buffer_offsets<0,decltype(g_opart_device.toKernel()),decltype(prc_offset.toKernel())>),
+			if (ite.wthr.x != 0)
+			{
+				// Find the buffer bases
+				CUDA_LAUNCH((find_buffer_offsets<0,decltype(g_opart_device.toKernel()),decltype(prc_offset.toKernel())>),
 					    ite,
 					    g_opart_device.toKernel(),(int *)mem.getDevicePointer(),prc_offset.toKernel());
+			}
 
 			// Trasfer the number of offsets on CPU
 			mem.deviceToHost();

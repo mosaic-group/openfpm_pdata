@@ -8,9 +8,9 @@
 #ifndef VECTOR_DIST_GPU_HPP_
 #define VECTOR_DIST_GPU_HPP_
 
-#ifdef CUDA_GPU
-
 #define POS_PROP -1
+
+#ifdef CUDA_GPU
 
 #define GET_PARTICLE(vd) blockDim.x*blockIdx.x + threadIdx.x; if (blockDim.x*blockIdx.x + threadIdx.x >= vd.size_local()) {return;};
 #define GET_PARTICLE_SORT(p,NN) if (blockDim.x*blockIdx.x + threadIdx.x >= NN.get_g_m()) {return;}\

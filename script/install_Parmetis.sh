@@ -25,6 +25,7 @@ else
   sed_command=sed
 fi
 
+$sed_command -i "/#define\sIDXTYPEWIDTH\s32/c\#define IDXTYPEWIDTH 64" metis/include/metis.h
 
 make config prefix=$1/PARMETIS
 make -j $2
@@ -44,5 +45,5 @@ if [ x"$platform" == x"cygwin" ]; then
 fi
 
 # Mark the installation
-echo 2 > $1/PARMETIS/version
+echo 3 > $1/PARMETIS/version
 
