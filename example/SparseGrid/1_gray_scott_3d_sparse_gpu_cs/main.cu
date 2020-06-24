@@ -150,8 +150,13 @@ int main(int argc, char* argv[])
 	// Diffusion constant for specie V
 	double dv = 1*1e-5;
 
+#ifdef TEST_RUN
+        // Number of timesteps
+        size_t timeSteps = 300;
+#else
 	// Number of timesteps
         size_t timeSteps = 150000;
+#endif
 
 	// K and F (Physical constant in the equation)
         double K = 0.053;
@@ -170,8 +175,7 @@ int main(int argc, char* argv[])
 	init(grid,domain);
 
 	// sync the ghost
-	size_t count = 0;
-	grid.template ghost_get<U,V>();
+	grid.template ghost_get<U,V>(RUN_ON_DEVICE);
 
 	// because we assume that spacing[x] == spacing[y] we use formula 2
 	// and we calculate the prefactor of Eq 2

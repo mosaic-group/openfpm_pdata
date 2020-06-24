@@ -12,6 +12,9 @@ else
         CUDA_CC_LINK=nvcc -ccbin=mpic++
 endif
 
+gray_scott_sparse_gpu_test: OPT += -DTEST_RUN
+gray_scott_sparse_gpu_test: gray_scott_sparse_gpu
+
 CC=mpic++
 
 LDIR =
@@ -19,14 +22,14 @@ LDIR =
 OBJ = main.o
 
 %.o: %.cu
-	$(CUDA_CC) -O3 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH_NVCC)
+	$(CUDA_CC) $(OPT) -O3 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH_NVCC)
 
 gray_scott_sparse_gpu: $(OBJ)
 	$(CUDA_CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 all: gray_scott_sparse_gpu
 
-run: all
+run: gray_scott_sparse_gpu_test
 	mpirun -np 4 ./gray_scott_sparse_gpu
 
 .PHONY: clean all run

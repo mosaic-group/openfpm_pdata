@@ -151,7 +151,11 @@ int main(int argc, char* argv[])
 	float dv = 1*1e-5;
 
 	// Number of timesteps
+#ifdef TEST_RUN
+	size_t timeSteps = 300;
+#else
         size_t timeSteps = 15000;
+#endif
 
 	// K and F (Physical constant in the equation)
     float K = 0.053;
@@ -172,12 +176,15 @@ int main(int argc, char* argv[])
 	float uFactor = deltaT * du/(spacing[x]*spacing[x]);
 	float vFactor = deltaT * dv/(spacing[x]*spacing[x]);
 
+	auto & v_cl = create_vcluster();
+
 	timer tot_sim;
 	tot_sim.start();
 
 	for (size_t i = 0; i < timeSteps ; ++i)
 	{
-		std::cout << "STEP: " << i << std::endl;
+		if (v_cl.rank() == 0)
+		{std::cout << "STEP: " << i << std::endl;}
 /*		if (i % 300 == 0)
 		{
 			std::cout << "STEP: " << i << std::endl;

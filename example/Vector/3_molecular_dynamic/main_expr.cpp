@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
 		if (i % 100 == 0)
 		{
 			vd.deleteGhost();
-			vd.write("particles_",f);
+			vd.write_frame("particles_",f);
 			vd.ghost_get<>();
 
 			vd.updateCellList(NN);

@@ -498,7 +498,7 @@ int main(int argc, char* argv[])
                 {
                         // We write the particle position for visualization (Without ghost)
                         vd.deleteGhost();
-                        vd.write("particles_",f);
+                        vd.write_frame("particles_",f);
 
                         // we resync the ghost
                         vd.ghost_get<>();

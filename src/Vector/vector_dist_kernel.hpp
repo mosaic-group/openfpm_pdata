@@ -255,10 +255,6 @@ public:
 	 */
 	__host__ ite_gpu<1> getDomainIteratorGPU(size_t n_thr = 1024) const
 	{
-#ifdef SE_CLASS3
-		se3.getIterator();
-#endif
-
 		return v_pos.getGPUIteratorTo(g_m,n_thr);
 	}
 

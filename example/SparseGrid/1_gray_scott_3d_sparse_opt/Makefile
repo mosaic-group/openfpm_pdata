@@ -5,16 +5,18 @@ CC=mpic++
 LDIR =
 
 OBJ = main.o
+gray_scott_sparse_opt_test: OPT += -DTEST_RUN
+gray_scott_sparse_opt_test: gray_scott_sparse_opt
 
 %.o: %.cpp
-	$(CC) -mavx -g  -O3 -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -mavx -O3 -g $(OPT) -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
 
 gray_scott_sparse_opt: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 all: gray_scott_sparse_opt
 
-run: all
+run: gray_scott_sparse_opt_test
 	mpirun -np 4 ./gray_scott_sparse_opt
 
 .PHONY: clean all run

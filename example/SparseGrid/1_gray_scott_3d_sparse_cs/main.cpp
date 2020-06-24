@@ -192,8 +192,13 @@ int main(int argc, char* argv[])
 	// Diffusion constant for specie V
 	double dv = 1*1e-5;
 
+#ifdef TEST_RUN
+        // Number of timesteps
+        size_t timeSteps = 200;
+#else
 	// Number of timesteps
         size_t timeSteps = 150000;
+#endif
 
 	// K and F (Physical constant in the equation)
         double K = 0.053;
@@ -218,6 +223,8 @@ int main(int argc, char* argv[])
 	// and we calculate the prefactor of Eq 2
 	double uFactor = deltaT * du/(spacing[x]*spacing[x]);
 	double vFactor = deltaT * dv/(spacing[x]*spacing[x]);
+
+	auto & v_cl = create_vcluster();
 
 	Old.write("Init_condition");
 
@@ -389,7 +396,8 @@ int main(int argc, char* argv[])
 			count++;
 		}
 
-                std::cout << "STEP: " << i  << "   " << std::endl;
+		if (v_cl.rank() == 0)
+		{std::cout << "STEP: " << i  << "   " << std::endl;}
                 if (i % 300 == 0)
                 {
                         Old.write_frame("out",i);

@@ -127,7 +127,11 @@ int main(int argc, char* argv[])
 	double dv = 1*1e-5;
 
 	// Number of timesteps
+#ifdef TEST_RUN
+	size_t timeSteps = 200;
+#else
         size_t timeSteps = 5000;
+#endif
 
 	// K and F (Physical constant in the equation)
         double K = 0.053;
@@ -158,9 +162,12 @@ int main(int argc, char* argv[])
 	timer tot_sim;
 	tot_sim.start();
 
-	for (size_t i = 0; i < 100/*timeSteps*/; ++i)
+	auto & v_cl = create_vcluster(); 
+
+	for (size_t i = 0; i < timeSteps; ++i)
 	{
-		std::cout << "STEP: " << i << std::endl;
+		if (v_cl.rank() == 0)
+		{std::cout << "STEP: " << i << std::endl;}
 /*		if (i % 300 == 0)
 		{
 			std::cout << "STEP: " << i << std::endl;
