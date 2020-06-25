@@ -2,7 +2,7 @@
 
 # check if the directory $1/VCDEVEL exist
 
-if [ -d "$1/VCDEVEL" && -f "$1/VCDEVEL/include/Vc/Vc" ]; then
+if [ -d "$1/VCDEVEL" -a -f "$1/VCDEVEL/include/Vc/Vc" ]; then
   echo "VCDEVEL already installed"
   exit 0
 fi
