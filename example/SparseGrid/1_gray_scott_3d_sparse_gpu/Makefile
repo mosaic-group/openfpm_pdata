@@ -25,7 +25,7 @@ OBJ = main.o
 	$(CUDA_CC) -O3 $(OPT) -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH_NVCC)
 
 gray_scott_sparse_gpu: $(OBJ)
-	$(CUDA_CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
+	$(CUDA_CC_LINK) -o $@ $^ $(LIBS_PATH) $(LIBS)
 
 all: gray_scott_sparse_gpu
 
