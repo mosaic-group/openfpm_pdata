@@ -32,7 +32,7 @@
  *
  */
 
-#ifndef __NVCC__
+#ifdef __NVCC__
 
 constexpr int U = 0;
 constexpr int V = 1;
