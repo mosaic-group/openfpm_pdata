@@ -61,6 +61,8 @@
  *
  */
 
+#ifdef __NVCC__
+
 constexpr int U = 0;
 constexpr int V = 1;
 
@@ -281,3 +283,13 @@ int main(int argc, char* argv[])
 	 *
 	 */
 }
+
+#else
+
+int main(int argc, char* argv[])
+{
+        return 0;
+}
+
+#endif
+
