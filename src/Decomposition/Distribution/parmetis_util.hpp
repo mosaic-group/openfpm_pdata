@@ -327,6 +327,21 @@ public:
 			delete[] Mg.wgtflag;
 		}
 
+		if (Mg.itr != NULL)
+		{
+			delete[] Mg.itr;
+		}
+
+		if (Mg.vsize != NULL)
+		{
+			delete[] Mg.vsize;
+		}
+
+		if (Mg.objval != NULL)
+		{
+			delete[] Mg.objval;
+		}
+
 		if (is_openfpm_init() == true)
 		{MPI_Comm_free(&comm);}
 	}
@@ -354,8 +369,6 @@ public:
 
 		// construct the adjacency list
 		constructAdjList(g, m2g);
-
-		//reset(g, vtxdist, m2g, w);
 	}
 
 	/*! \brief Decompose the graph
@@ -444,6 +457,66 @@ public:
 		if (Mg.part != NULL)
 		{
 			delete[] Mg.part;
+		}
+
+		if (Mg.vsize != NULL)
+		{
+			delete[] Mg.vsize;
+		}
+
+		if (Mg.options != NULL)
+		{
+			delete[] Mg.options;
+		}
+
+		if (Mg.ncon != NULL)
+		{
+			delete[] Mg.ncon;
+		}
+
+		if (Mg.edgecut != NULL)
+		{
+			delete[] Mg.edgecut;
+		}
+
+		if (Mg.wgtflag != NULL)
+		{
+			delete[] Mg.wgtflag;
+		}
+
+		if (Mg.numflag != NULL)
+		{
+			delete[] Mg.numflag;
+		}
+
+		if (Mg.nparts != NULL)
+		{
+			delete[] Mg.nparts;
+		}
+
+		if (Mg.nvtxs != NULL)
+		{
+			delete[] Mg.nvtxs;
+		}
+
+		if (Mg.objval != NULL)
+		{
+			delete[] Mg.objval;
+		}
+
+		if (Mg.ubvec != NULL)
+		{
+			delete[] Mg.ubvec;
+		}
+
+		if(Mg.itr != NULL)
+		{
+			delete[] Mg.itr;
+		}
+
+		if (Mg.tpwgts != NULL)
+		{
+			delete[] Mg.tpwgts;
 		}
 
 		setDefaultParameters(vgw);
