@@ -143,6 +143,8 @@ class Parmetis
 		// Put the total communication size to NULL
 
 		Mg.nvtxs[0] = nvertex;
+		if (Mg.part != NULL)
+		{delete[] Mg.part;}
 		Mg.part = new idx_t[nvertex];
 
 		size_t nedge = 0;
@@ -154,6 +156,16 @@ class Parmetis
 		}
 
 		// create xadj, adjlist, vwgt, adjwgt and vsize
+		if (Mg.xadj != NULL)
+		{delete[] Mg.xadj;}
+		if (Mg.adjncy != NULL)
+		{delete[] Mg.adjncy;}
+		if (Mg.vwgt != NULL)
+		{delete[] Mg.vwgt;}
+		if (Mg.adjwgt != NULL)
+		{delete[] Mg.adjwgt;}
+		if (Mg.vsize != NULL)
+		{delete[] Mg.vsize;}
 		Mg.xadj = new idx_t[nvertex + 1];
 		Mg.adjncy = new idx_t[nedge];
 		Mg.vwgt = new idx_t[nvertex];
@@ -434,91 +446,6 @@ public:
 
 		// Deallocate the graph structures
 
-		if (Mg.xadj != NULL)
-		{
-			delete[] Mg.xadj;
-		}
-
-		if (Mg.adjncy != NULL)
-		{
-			delete[] Mg.adjncy;
-		}
-
-		if (Mg.vwgt != NULL)
-		{
-			delete[] Mg.vwgt;
-		}
-
-		if (Mg.adjwgt != NULL)
-		{
-			delete[] Mg.adjwgt;
-		}
-
-		if (Mg.part != NULL)
-		{
-			delete[] Mg.part;
-		}
-
-		if (Mg.vsize != NULL)
-		{
-			delete[] Mg.vsize;
-		}
-
-		if (Mg.options != NULL)
-		{
-			delete[] Mg.options;
-		}
-
-		if (Mg.ncon != NULL)
-		{
-			delete[] Mg.ncon;
-		}
-
-		if (Mg.edgecut != NULL)
-		{
-			delete[] Mg.edgecut;
-		}
-
-		if (Mg.wgtflag != NULL)
-		{
-			delete[] Mg.wgtflag;
-		}
-
-		if (Mg.numflag != NULL)
-		{
-			delete[] Mg.numflag;
-		}
-
-		if (Mg.nparts != NULL)
-		{
-			delete[] Mg.nparts;
-		}
-
-		if (Mg.nvtxs != NULL)
-		{
-			delete[] Mg.nvtxs;
-		}
-
-		if (Mg.objval != NULL)
-		{
-			delete[] Mg.objval;
-		}
-
-		if (Mg.ubvec != NULL)
-		{
-			delete[] Mg.ubvec;
-		}
-
-		if(Mg.itr != NULL)
-		{
-			delete[] Mg.itr;
-		}
-
-		if (Mg.tpwgts != NULL)
-		{
-			delete[] Mg.tpwgts;
-		}
-
 		setDefaultParameters(vgw);
 
 		// construct the adjacency list
@@ -531,24 +458,36 @@ public:
 	 */
 	void setDefaultParameters(bool w)
 	{
+		if (Mg.nvtxs != NULL)
+		{delete[] Mg.nvtxs;}
 		Mg.nvtxs = new idx_t[1];
 
 		// Set the number of constrains
+		if (Mg.ncon != NULL)
+		{delete[] Mg.ncon;}
 		Mg.ncon = new idx_t[1];
 		Mg.ncon[0] = 1;
 
 		// Set to null the weight of the vertex (init after in constructAdjList) (can be removed)
+		if (Mg.vwgt != NULL)
+		{delete[] Mg.vwgt;}
 		Mg.vwgt = NULL;
 
 		// Set to null the weight of the edge (init after in constructAdjList) (can be removed)
+		if (Mg.adjwgt != NULL)
+		{delete[] Mg.adjwgt;}
 		Mg.adjwgt = NULL;
 
 		// Set the total number of partitions
+		if (Mg.nparts != NULL)
+		{delete[] Mg.nparts;}
 		Mg.nparts = new idx_t[1];
 		Mg.nparts[0] = nc;
 
 		//! Set option for the graph partitioning (set as default)
 
+		if (Mg.options != NULL)
+		{delete[] Mg.options;}
 		Mg.options = new idx_t[4];
 		Mg.options[0] = 0;
 		Mg.options[1] = 0;
@@ -558,13 +497,21 @@ public:
 		//! is an output vector containing the partition for each vertex
 
 		//! adaptiveRepart itr value
+		if(Mg.itr != NULL)
+		{delete[] Mg.itr;}
 		Mg.itr = new real_t[1];
 		Mg.itr[0] = 1000.0;
 
+		if (Mg.objval != NULL)
+		{delete[] Mg.objval;}
 		Mg.objval = new idx_t[1];
 
 		//! init tpwgts to have balanced vertices and ubvec
 
+		if (Mg.tpwgts != NULL)
+		{delete[] Mg.tpwgts;}
+		if (Mg.ubvec != NULL)
+		{delete[] Mg.ubvec;}
 		Mg.tpwgts = new real_t[Mg.nparts[0]];
 		Mg.ubvec = new real_t[Mg.nparts[0]];
 
@@ -574,14 +521,20 @@ public:
 			Mg.ubvec[s] = dist_tol;
 		}
 
+		if (Mg.edgecut != NULL)
+		{delete[] Mg.edgecut;}
 		Mg.edgecut = new idx_t[1];
 		Mg.edgecut[0] = 0;
 
 		//! This is used to indicate the numbering scheme that is used for the vtxdist, xadj, adjncy, and part arrays. (0 for C-style, start from 0 index)
+		if (Mg.numflag != NULL)
+		{delete[] Mg.numflag;}
 		Mg.numflag = new idx_t[1];
 		Mg.numflag[0] = 0;
 
 		//! This is used to indicate if the graph is weighted. wgtflag can take one of four values:
+		if (Mg.wgtflag != NULL)
+		{delete[] Mg.wgtflag;}
 		Mg.wgtflag = new idx_t[1];
 
 		if (w)

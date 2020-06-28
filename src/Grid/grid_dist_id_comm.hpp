@@ -505,6 +505,8 @@ class grid_dist_id_comm
 				prRecv_prp.allocate(prp_recv[i]);
 				v_cl.recv(ig_box.get(i).prc,0,prRecv_prp.getPointer(),prp_recv[i]);
 			}
+
+			prRecv_prp.decRef();
 		}
 		else
 		{
@@ -1099,7 +1101,9 @@ public:
 
 			// Create an object of preallocated memory for properties
 			ExtPreAlloc<Memory> & prAlloc_prp = *(new ExtPreAlloc<Memory>(req,g_send_prp_mem));
-
+			// Necessary. We do not want this memory to be destroyed untill is going out of scope
+			// P.S. Packer shaoe this memory with data-structures and data structures if they see the
+			// reference counter to zero they destriy this memory
 			prAlloc_prp.incRef();
 
 			pointers.clear();
@@ -1162,6 +1166,9 @@ public:
 
 				loc_grid.get(i).template packFinalize<prp ...>(prAlloc_prp,sts,opt_,true);
 			}
+
+			prAlloc_prp.decRef();
+			delete &prAlloc_prp;
 		}
 		else
 		{
@@ -1169,6 +1176,7 @@ public:
 
 			// Create an object of preallocated memory for properties
 			ExtPreAlloc<Memory> & prAlloc_prp = *(new ExtPreAlloc<Memory>(req,g_send_prp_mem));
+			prAlloc_prp.incRef();
 
 			for (size_t i = 0 ; i < loc_grid.size() ; i++)
 			{
@@ -1178,6 +1186,9 @@ public:
 
 				loc_grid.get(i).template packFinalize<prp ...>(prAlloc_prp,sts,opt_,true);
 			}
+
+			prAlloc_prp.decRef();
+			delete &prAlloc_prp;
 		}
 
 		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
@@ -1211,6 +1222,9 @@ public:
 
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{loc_grid.get(i).template removeAddUnpackFinalize<prp ...>(v_cl.getmgpuContext(),opt_);}
+
+		prRecv_prp.decRef();
+		delete &prRecv_prp;
 	}
 
 	/*! \brief It merge the information in the ghost with the
@@ -1328,6 +1342,7 @@ public:
 
 		// Create an object of preallocated memory for properties
 		ExtPreAlloc<Memory> & prRecv_prp = *(new ExtPreAlloc<Memory>(tot_recv,g_recv_prp_mem));
+		prRecv_prp.incRef();
 
 		queue_recv_data_put<prp_object>(ig_box,prp_recv,prRecv_prp);
 
@@ -1337,6 +1352,11 @@ public:
 		ghost_put_local<op,prp...>(loc_ig_box,loc_eg_box,gdb_ext,loc_grid,g_id_to_internal_ghost_box);
 
 		merge_received_data_put<op,prp ...>(dec,loc_grid,ig_box,prp_recv,prRecv_prp,gdb_ext,g_id_to_internal_ghost_box);
+
+		prRecv_prp.decRef();
+		prAlloc_prp.decRef();
+		delete &prAlloc_prp;
+		delete &prRecv_prp;
 	}
 
 	/*! \brief Constructor
