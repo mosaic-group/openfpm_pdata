@@ -177,47 +177,8 @@ class Metis
 		Mg.xadj[id] = prev;
 	}
 
-public:
 
-	/*! \brief Constructor
-	 *
-	 * Construct a metis graph from Graph_CSR
-	 *
-	 * \param g Graph we want to convert to decompose
-	 * \param nc number of partitions
-	 * \param useWeights tells if weights are used or not
-	 *
-	 */
-	Metis(Graph & g, size_t nc, bool useWeights)
-	:g(g),n_dec(0)
-	{
-		initMetisGraph(nc,useWeights);
-	}
-
-	/*! \brief Constructor
-	 *
-	 * Construct a metis graph from Graph_CSR
-	 *
-	 * \param g Graph we want to convert to decompose
-	 * \param nc number of partitions
-	 *
-	 */
-	Metis(Graph & g, size_t nc)
-	:g(g),n_dec(0)
-	{
-		initMetisGraph(nc,false);
-	}
-
-	/*! \brief Constructor
-	 *
-	 * This constructor does not initialize the internal metis graph
-	 * you have to use initMetisGraph to initialize
-	 *
-	 * \param g Graph we want to convert to decompose
-	 *
-	 */
-	Metis(Graph & g)
-	:g(g),n_dec(0)
+	void reset_pointer()
 	{
 		Mg.nvtxs = NULL;
 		Mg.ncon = NULL;
@@ -234,6 +195,53 @@ public:
 		Mg.vsize = NULL;
 	}
 
+public:
+
+	/*! \brief Constructor
+	 *
+	 * Construct a metis graph from Graph_CSR
+	 *
+	 * \param g Graph we want to convert to decompose
+	 * \param nc number of partitions
+	 * \param useWeights tells if weights are used or not
+	 *
+	 */
+	Metis(Graph & g, size_t nc, bool useWeights)
+	:g(g),n_dec(0)
+	{
+		reset_pointer();
+		initMetisGraph(nc,useWeights);
+	}
+
+	/*! \brief Constructor
+	 *
+	 * Construct a metis graph from Graph_CSR
+	 *
+	 * \param g Graph we want to convert to decompose
+	 * \param nc number of partitions
+	 *
+	 */
+	Metis(Graph & g, size_t nc)
+	:g(g),n_dec(0)
+	{
+		reset_pointer();
+		initMetisGraph(nc,false);
+	}
+
+	/*! \brief Constructor
+	 *
+	 * This constructor does not initialize the internal metis graph
+	 * you have to use initMetisGraph to initialize
+	 *
+	 * \param g Graph we want to convert to decompose
+	 *
+	 */
+	Metis(Graph & g)
+	:g(g),n_dec(0)
+	{
+		reset_pointer();
+	}
+
 
 	/*! \brief Initialize the METIS graph
 	 *
@@ -246,24 +254,34 @@ public:
 
 		// Get the number of vertex
 
+		if (Mg.nvtxs != NULL)
+		{delete[] Mg.nvtxs;}
 		Mg.nvtxs = new idx_t[1];
 		Mg.nvtxs[0] = g.getNVertex();
 
 		// Set the number of constrains
 
+		if (Mg.ncon != NULL)
+		{delete[] Mg.ncon;}
 		Mg.ncon = new idx_t[1];
 		Mg.ncon[0] = 1;
 
 		// Set to null the weight of the vertex
 
+		if (Mg.vwgt != NULL)
+		{delete[] Mg.vwgt;}
 		Mg.vwgt = NULL;
 
 		// Put the total communication size to NULL
 
+		if (Mg.vsize != NULL)
+		{delete[] Mg.vsize;}
 		Mg.vsize = NULL;
 
 		// Set to null the weight of the edge
 
+		if (Mg.adjwgt != NULL)
+		{delete[] Mg.adjwgt;}
 		Mg.adjwgt = NULL;
 
 		// construct the adjacency list
@@ -274,25 +292,36 @@ public:
 
 		// Set the total number of partitions
 
+		if (Mg.nparts != NULL)
+		{delete[] Mg.nparts;}
 		Mg.nparts = new idx_t[1];
 		Mg.nparts[0] = nc;
 
 		// Set to null the desired weight for each partition (one for each constrain)
 
+		if (Mg.tpwgts != NULL)
+		{delete[] Mg.tpwgts;}
 		Mg.tpwgts = NULL;
 
 		//! Set to null the partition load imbalance tolerance
-
+		if (Mg.ubvec != NULL)
+		{delete[] Mg.ubvec;}
 		Mg.ubvec = NULL;
 
 		//! Set tp null additional option for the graph partitioning
 
+		if (Mg.options != NULL)
+		{delete[] Mg.options;}
 		Mg.options = NULL;
 
 		//! set the objective value
+		if (Mg.objval != NULL)
+		{delete[] Mg.objval;}
 		Mg.objval = new idx_t[1];
 
 		//! Is an output vector containing the partition for each vertex
+		if (Mg.part != NULL)
+		{delete[] Mg.part;}
 		Mg.part = new idx_t[g.getNVertex()];
 
 		for (size_t i = 0; i < g.getNVertex(); i++)
