@@ -1607,7 +1607,7 @@ public:
 		file_type ft = file_type::ASCII;
 
 		if (opt & FORMAT_BINARY)
-			ft = file_type::BINARY;
+		{ft = file_type::BINARY;}
 
 		// Create a writer and write
 		VTKWriter<boost::mpl::pair<device_grid,float>,VECTOR_GRIDS> vtk_g;
@@ -1769,6 +1769,17 @@ public:
 		prp_names = names;
 	}
 
+	/*! \brief Set the properties names
+	 *
+	 * It is useful to specify name for the properties in vtk writers
+	 *
+	 * \param names set of properties names
+	 *
+	 */
+	const openfpm::vector<std::string> & getPropNames()
+	{
+		return prp_names;
+	}
 
 	/*! \brief It move all the grid parts that do not belong to the local processor to the respective processor
 	 *

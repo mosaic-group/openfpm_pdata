@@ -121,6 +121,19 @@ public:
 	{
 	}
 
+    /*! It constructs a grid of a specified size, defined on a specified Box space, forcing to follow a specified decomposition and with a specified ghost size
+     *
+     * \param dec Decomposition
+     * \param g_sz grid size on each dimension
+     * \param ghost Ghost part
+     *
+     */
+    staggered_grid_dist(const Decomposition & dec,
+    		     const size_t (& g_sz)[dim],
+				 const Ghost<dim,St> & ghost)
+    :grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(dec,g_sz,ghost)
+    {}
+
 	/*! \brief set the staggered positions of the properties
 	 *
 	 * \tparam property p

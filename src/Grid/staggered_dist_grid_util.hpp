@@ -717,7 +717,7 @@ public:
 			vtk_w.add(g_dst,offset,spacing,dom);
 		}
 
-		vtk_w.write("vtk_grids_st_" + std::to_string(p_id) + "_" + std::to_string(p_val) + ".vtk");
+		vtk_w.write("vtk_grids_st_" + std::to_string(p_id) + "_" + std::to_string(p_val) + ".vtk",st_g.getPropNames(),"grids",file_type::BINARY);
 	}
 
 	template<unsigned int p_val> void out_staggered()
