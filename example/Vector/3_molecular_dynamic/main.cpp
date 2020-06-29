@@ -478,7 +478,6 @@ int main(int argc, char* argv[])
 		// calculate forces or a(tn + 1) Step 2
 		calc_forces(vd,NN,sigma12,sigma6,r_cut*r_cut);
 
-
 		// Integrate the velocity Step 3
 		auto it4 = vd.getDomainIterator();
 
@@ -494,33 +493,33 @@ int main(int argc, char* argv[])
 			++it4;
 		}
 
-		// After every iteration collect some statistic about the configuration
-		if (i % 100 == 0)
-		{	
-			// We write the particle position for visualization (Without ghost)
-			vd.deleteGhost();
-			vd.write("particles_",f);
+                // After every iteration collect some statistic about the configuration
+                if (i % 100 == 0)
+                {
+                        // We write the particle position for visualization (Without ghost)
+                        vd.deleteGhost();
+                        vd.write("particles_",f);
 
-			// we resync the ghost
-			vd.ghost_get<>();
+                        // we resync the ghost
+                        vd.ghost_get<>();
 
-			// We calculate the energy
-			double energy = calc_energy(vd,NN,sigma12,sigma6,r_cut*r_cut);
-			auto & vcl = create_vcluster();
-			vcl.sum(energy);
-			vcl.execute();
+                        // We calculate the energy
+                        double energy = calc_energy(vd,NN,sigma12,sigma6,r_cut*r_cut);
+                        auto & vcl = create_vcluster();
+                        vcl.sum(energy);
+                        vcl.execute();
 
-			// we save the energy calculated at time step i c contain the time-step y contain the energy
-			x.add(i);
-			y.add({energy});
+                        // we save the energy calculated at time step i c contain the time-step y contain the energy
+                        x.add(i);
+                        y.add({energy});
 
-			// We also print on terminal the value of the energy
-			// only one processor (master) write on terminal
-			if (vcl.getProcessUnitID() == 0)
-				std::cout << "Energy: " << energy << std::endl;
+                        // We also print on terminal the value of the energy
+                        // only one processor (master) write on terminal
+                        if (vcl.getProcessUnitID() == 0)
+                                std::cout << "Energy: " << energy << std::endl;
 
-			f++;
-		}
+                        f++;
+                }
 	}
 
 	//! \cond [md steps] \endcond

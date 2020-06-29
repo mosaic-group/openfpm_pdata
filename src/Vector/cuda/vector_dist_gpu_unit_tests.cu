@@ -1304,5 +1304,78 @@ BOOST_AUTO_TEST_CASE(vector_dist_compare_host_device)
 	BOOST_REQUIRE_EQUAL(test,true);
 }
 
+template<typename vector_dist_type>
+__global__ void assign_to_ghost(vector_dist_type vds)
+{
+	int i = threadIdx.x + blockIdx.x * blockDim.x;
+
+	if (i >= vds.size())	{return;}
+
+	vds.template getProp<0>(i) = 1000.0 + i;
+
+	vds.template getProp<1>(i)[0] = 2000.0 + i;
+	vds.template getProp<1>(i)[1] = 3000.0 + i;
+	vds.template getProp<1>(i)[2] = 4000.0 + i;
+
+	vds.template getProp<2>(i)[0][0] = 12000.0 + i;
+	vds.template getProp<2>(i)[0][1] = 13000.0 + i;
+	vds.template getProp<2>(i)[0][2] = 14000.0 + i;
+	vds.template getProp<2>(i)[1][0] = 22000.0 + i;
+	vds.template getProp<2>(i)[1][1] = 23000.0 + i;
+	vds.template getProp<2>(i)[1][2] = 24000.0 + i;
+	vds.template getProp<2>(i)[2][0] = 32000.0 + i;
+	vds.template getProp<2>(i)[2][1] = 33000.0 + i;
+	vds.template getProp<2>(i)[2][2] = 34000.0 + i;
+
+}
+
+BOOST_AUTO_TEST_CASE(vector_dist_domain_and_ghost_test)
+{
+	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Ghost<3,double> g(0.1);
+	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
+
+	if (create_vcluster().size() >= 16)
+	{return;}
+
+	vector_dist_gpu<3,double,aggregate<double,double[3],double[3][3]>> vdg(10000,domain,bc,g,DEC_GRAN(128));
+
+	auto ite = vdg.getDomainAndGhostIteratorGPU();
+
+	CUDA_LAUNCH(assign_to_ghost,ite,vdg.toKernel());
+
+	vdg.template deviceToHostProp<0,1,2>();
+
+
+	auto it = vdg.getDomainAndGhostIterator();
+
+	bool check = true;
+
+	while (it.isNext())
+	{
+		auto k = it.get();
+
+		check &= vdg.template getProp<0>(k) == 1000.0 + k.getKey();
+
+		check &= vdg.template getProp<1>(k)[0] == 2000.0 + k.getKey();
+		check &= vdg.template getProp<1>(k)[1] == 3000.0 + k.getKey();
+		check &= vdg.template getProp<1>(k)[2] == 4000.0 + k.getKey();
+
+		check &= vdg.template getProp<2>(k)[0][0] == 12000.0 + k.getKey();
+		check &= vdg.template getProp<2>(k)[0][1] == 13000.0 + k.getKey();
+		check &= vdg.template getProp<2>(k)[0][2] == 14000.0 + k.getKey();
+		check &= vdg.template getProp<2>(k)[1][0] == 22000.0 + k.getKey();
+		check &= vdg.template getProp<2>(k)[1][1] == 23000.0 + k.getKey();
+		check &= vdg.template getProp<2>(k)[1][2] == 24000.0 + k.getKey();
+		check &= vdg.template getProp<2>(k)[2][0] == 32000.0 + k.getKey();
+		check &= vdg.template getProp<2>(k)[2][1] == 33000.0 + k.getKey();
+		check &= vdg.template getProp<2>(k)[2][2] == 34000.0 + k.getKey();
+
+		++it;
+	}
+
+
+	BOOST_REQUIRE_EQUAL(check,true);
+}
 
 BOOST_AUTO_TEST_SUITE_END()

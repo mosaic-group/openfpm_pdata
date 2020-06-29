@@ -11,6 +11,7 @@
 #include "util/cuda/scan_cuda.cuh"
 #include "util/cuda/moderngpu/kernel_scan.hxx"
 #include "Vector/vector_dist.hpp"
+#include "util/cuda/scan_ofp.cuh"
 
 #define SUB_UNIT_FACTOR 1024
 
@@ -129,7 +130,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 	starts.resize(o_part_loc.size());
 
 	auto & v_cl = create_vcluster();
-	mgpu::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
+	openfpm::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
 
 	starts.deviceToHost<0>(starts.size()-1,starts.size()-1);
 	size_t tot = starts.template get<0>(o_part_loc.size()-1);
@@ -779,16 +780,20 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_find_buffer_offsets_test )
 	mem.fill(0);
 
 	auto ite = vgp.getGPUIterator();
-	vgp.hostToDevice<0>();
+	vgp.hostToDevice<0,1>();
 
-	find_buffer_offsets<1,decltype(vgp.toKernel()),decltype(offs.toKernel())><<<ite.wthr,ite.thr>>>(vgp.toKernel(),(int *)mem.getDevicePointer(),offs.toKernel());
+	CUDA_LAUNCH((find_buffer_offsets<1,decltype(vgp.toKernel()),decltype(offs.toKernel())>),ite,vgp.toKernel(),(int *)mem.getDevicePointer(),offs.toKernel());
 
 	offs.template deviceToHost<0,1>();
+
+	mem.deviceToHost();
+	int n_ele = *(int *)mem.getPointer();
+	BOOST_REQUIRE_EQUAL(n_ele,199);
 
 	openfpm::vector<int> ofv;
 	openfpm::vector<int> ofv2;
 
-	for (size_t i = 0 ; i < ofv.size() ; i++)
+	for (size_t i = 0 ; i < n_ele ; i++)
 	{
 		ofv.add(offs.template get<0>(i));
 		ofv2.add(offs.template get<1>(i));

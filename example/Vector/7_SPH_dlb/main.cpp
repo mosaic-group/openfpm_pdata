@@ -949,7 +949,7 @@ inline void sensor_pressure(Vector & vd,
 				}
 
 				// Get the position of the neighborhood particle q
-				Point<3,double> xq = vd.template getPos(q);
+				Point<3,double> xq = vd.getPos(q);
 
 				// Calculate the contribution of the particle to the pressure
 				// of the probe
@@ -1444,7 +1444,7 @@ int main(int argc, char* argv[])
 		{
 			// sensor_pressure calculation require ghost and update cell-list
 			vd.map();
-			vd.ghost_get<type,rho,Pressure,velocity>(RUN_ON_DEVICE);
+			vd.ghost_get<type,rho,Pressure,velocity>();
 			vd.updateCellList(NN);
 
 			// calculate the pressure at the sensor points

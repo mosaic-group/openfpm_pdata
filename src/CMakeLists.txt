@@ -18,7 +18,6 @@ if ( CMAKE_COMPILER_IS_GNUCC )
     endif()
 endif()
 
-
 add_library(ofpm_pdata STATIC lib/pdata.cpp)
 
 add_test(NAME pdata_3_proc COMMAND mpirun -np 3 ./pdata)
@@ -27,10 +26,10 @@ add_test(NAME pdata_4_proc COMMAND mpirun -np 4 ./pdata)
 ###########################
 
 if (CUDA_FOUND)
-	target_compile_options(pdata PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcudafe "--display_error_number --diag_suppress=611 --diag_suppress=2885 --diag_suppress=2886  --diag_suppress=2887  --diag_suppress=2888 --diag_suppress=186 --diag_suppress=111" --expt-extended-lambda>)
+	target_compile_options(pdata PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: ${WARNING_SUPPRESSION_AND_OPTION_NVCC} >)
 	target_include_directories (pdata PUBLIC ${MPI_C_INCLUDE_DIRS})
         if (TEST_COVERAGE)
-		target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler "-fprofile-arcs -ftest-coverage">)
+		target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler "-fprofile-arcs -ftest-coverage" >)
         endif()
 endif()
 
@@ -58,7 +57,7 @@ target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
 target_link_libraries(pdata ${Boost_LIBRARIES})
 target_link_libraries(pdata -L${PARMETIS_ROOT}/lib parmetis)
 target_link_libraries(pdata -L${METIS_ROOT}/lib metis)
-target_link_libraries(pdata -L${HDF5_ROOT}/lib hdf5 hdf5_hl)
+target_link_libraries(pdata ${HDF5_LIBRARIES})
 target_link_libraries(pdata -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
 target_link_libraries(pdata ${PETSC_LIBRARIES})
 

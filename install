@@ -426,7 +426,8 @@ else
     echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert  $lin_alg_lib -ldl" >> example.mk
     echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert $lin_alg_lib" >> example.mk
 fi
-echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" $(cat openmp_flags) -Xcudafe \"--display_error_number --diag_suppress=2885  --diag_suppress=2886 --diag_suppress=2887  --diag_suppress=2888 --diag_suppress=186 --diag_suppress=111\" --expt-extended-lambda -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" >> example.mk
+sup_cuda_wr=$(cat cuda_suppress_wr)
+echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" $(cat openmp_flags) $sup_cuda_wr --expt-extended-lambda -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" >> example.mk
 cp example.mk src/example.mk
 cp example.mk example/example.mk
 
@@ -535,10 +536,17 @@ else
   installation_report="$installation_report \033[91;1mSUITESPARSE\033[0m Installed: \033[1m NO \033[0m\n"
 fi
 
-bash_path="$bash_path\$PATH\""
+# in cygwin we have to add to PATH additional directories
+if [ x"$platform" == x"cygwin" ]; then
+	bash_path="$bash_path:$i_dir/BOOST/bin:$i_dir/HDF5/bin"
+fi
+
+bash_path="$bash_path:\$PATH\""
 bash_library="$bash_library\""
 
 ##### Writing openfpm_vars file
+
+# in cygwin we have to add to PATH additional directories
 
 echo "$bash_path" > $HOME/openfpm_vars
 echo "$bash_library" >> $HOME/openfpm_vars

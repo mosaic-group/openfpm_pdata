@@ -1944,6 +1944,20 @@ public:
 		return v_pos.getGPUIteratorTo(g_m,n_thr);
 	}
 
+	/*! \brief Get an iterator that traverse the particles in the domain
+	 *
+	 * \return an iterator
+	 *
+	 */
+	ite_gpu<1> getDomainAndGhostIteratorGPU(size_t n_thr = 1024) const
+	{
+#ifdef SE_CLASS3
+		se3.getIterator();
+#endif
+
+		return v_pos.getGPUIteratorTo(v_pos.size(),n_thr);
+	}
+
 	/*! \brief Merge the properties calculated on the sorted vector on the original vector
 	 *
 	 * \parameter Cell-list from which has been constructed the sorted vector
