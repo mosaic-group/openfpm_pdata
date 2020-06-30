@@ -50,6 +50,8 @@ constexpr unsigned int phi = 0;
 // The type of the grids
 typedef grid_dist_id<3,float,aggregate<float[3]>,CartDecomposition<3,float,HeapMemory,memory_traits_lin,SpaceDistribution<3,float>>> grid_type;
 
+typedef grid_dist_id<3,float,aggregate<unsigned short int>,CartDecomposition<3,float,HeapMemory,memory_traits_lin,SpaceDistribution<3,float>>> grid_type_vis;
+
 // The type of the grids
 typedef grid_dist_id<3,float,aggregate<float>,CartDecomposition<3,float,HeapMemory,memory_traits_lin,SpaceDistribution<3,float>>> grid_type_s;
 
@@ -719,7 +721,9 @@ template<typename vector, typename grid> void check_point_and_save(vector & part
 int main(int argc, char* argv[])
 {
 	// Initialize
-	openfpm_init(&argc,&argv);
+//    openfpm_init(&argc,&argv);
+
+    openfpm_init(&argc,&argv, init_options::in_situ_visualization);
 	{
 	// Domain, a rectangle
 	// For the grid 1600x400x400 use
@@ -742,6 +746,8 @@ int main(int argc, char* argv[])
 	grid_type g_vort(szu,domain,g,bc);
 	grid_type g_vel(g_vort.getDecomposition(),szu,g);
 	grid_type g_dvort(g_vort.getDecomposition(),szu,g);
+	grid_type_vis g_vis(g_vort.getDecomposition(),szu,g);
+	g_vis.visualize();
 	particles_type particles(g_vort.getDecomposition(),0);
 
 	// Construct an FDScheme is heavy so we construct it here
@@ -852,6 +858,8 @@ int main(int argc, char* argv[])
 	// Time Integration
 	for ( ; i < nsteps ; i++)
 	{
+        if (v_cl.getProcessUnitID() == 0)
+	    std::cout<<"In the time loop " <<std::endl;
 		// do step 4-5-6-7
 		do_step(psi,phi_v,fd,particles,g_vort,g_vel,g_dvort,domain,inte,phi_s,solver);
 
@@ -880,6 +888,52 @@ int main(int argc, char* argv[])
 
 		// every 100 steps write the output
 		if (i % 100 == 0)		{check_point_and_save(particles,g_vort,g_vel,g_dvort,i);}
+
+
+        //find max and min velocity
+        auto it1 = g_vel.getDomainIterator();
+		float maxVel = 0.0f;
+		float minVel = 65535.0f;
+
+		while(it1.isNext())
+        {
+		    auto key = it1.get();
+
+            float curVel = (float) sqrt( g_vel.template get<velocity>(key)[0] * g_vel.template get<velocity>(key)[0] +
+                                       g_vel.template get<velocity>(key)[1] * g_vel.template get<velocity>(key)[1] +
+                                       g_vel.template get<velocity>(key)[2] * g_vel.template get<velocity>(key)[2] );
+
+            if(curVel > maxVel)
+            {
+                maxVel = curVel;
+            }
+
+            if(curVel < minVel)
+            {
+                minVel = curVel;
+            }
+            ++it1;
+        }
+
+        if (v_cl.getProcessUnitID() == 0)
+		std::cout<<"The maximum velocity is "<<maxVel << " and the minimum is " << minVel <<std::endl;
+
+        // calculate the magnitude of velocity
+        auto it2 = g_vel.getDomainIterator();
+        while (it2.isNext())
+		{
+			auto key = it2.get();
+
+			float curVel = (float) sqrt( g_vel.template get<velocity>(key)[0] * g_vel.template get<velocity>(key)[0] +
+                                                               g_vel.template get<velocity>(key)[1] * g_vel.template get<velocity>(key)[1] +
+                                                               g_vel.template get<velocity>(key)[2] * g_vel.template get<velocity>(key)[2] );
+
+			float scaled = (curVel / (maxVel - minVel)) * 65535;
+			// copy
+			g_vis.get<0>(key) = (unsigned short)(scaled);
+
+			++it2;
+		}
 
 	}
 	}
