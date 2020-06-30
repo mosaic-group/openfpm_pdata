@@ -83,17 +83,23 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	//! Old local grids
 	mutable openfpm::vector<device_grid> loc_grid_old;
 
+    //! Shared memory handles for grids to be visualized
+    std::vector<handle_shmem> hgrids;
+
 	//! Space Decomposition
 	Decomposition dec;
 
 	//! Extension of each grid: Domain and ghost + domain
-	openfpm::vector<GBoxes<device_grid::dims>> gdb_ext;
+	openfpm::vector_ofp<GBoxes<device_grid::dims>> gdb_ext;
 
 	//! Global gdb_ext
-	mutable openfpm::vector<GBoxes<device_grid::dims>> gdb_ext_global;
+	mutable openfpm::vector_ofp<GBoxes<device_grid::dims>> gdb_ext_global;
 
 	//! Extension of each old grid (old): Domain and ghost + domain
-	openfpm::vector<GBoxes<device_grid::dims>> gdb_ext_old;
+	openfpm::vector_ofp<GBoxes<device_grid::dims>> gdb_ext_old;
+
+	//! Shared memory handle for storing grid extents
+	handle_shmem hgdb = {-1};
 
 	//! Size of the grid on each dimension
 	size_t g_sz[dim];
@@ -120,9 +126,6 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 
 	//! Receiving buffer for particles ghost get
 	openfpm::vector<HeapMemory> recv_mem_gg;
-
-    //! Shared memory handle for properties
-    handle_shmem hprp;
 
 	//! Grid informations object
 	grid_sm<dim,T> ginfo;
@@ -1083,7 +1086,7 @@ public:
 	 * \return The information about the local grids
 	 *
 	 */
-	const openfpm::vector<GBoxes<device_grid::dims>> & getLocalGridsInfo()
+	const openfpm::vector_ofp<GBoxes<device_grid::dims>> & getLocalGridsInfo()
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1096,7 +1099,7 @@ public:
 	 * \param gdb_ext_global where to store the grid infos
 	 *
 	 */
-	void getGlobalGridsInfo(openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_global) const
+	void getGlobalGridsInfo(openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext_global) const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -1263,6 +1266,11 @@ public:
 #ifdef SE_CLASS2
 		check_delete(this);
 #endif
+		create_shmanager().destroy(hgdb);
+		for(int i = 0; i < hgrids.size(); i++)
+		{
+		    create_shmanager().destroy(hgrids[i]);
+		}
 		dec.decRef();
 	}
 
@@ -1600,11 +1608,11 @@ public:
         if (global_option == init_options::in_situ_visualization)
         {
             for(int i = 0; i < loc_grid.size(); i++) {
-                hprp = create_shmanager().create("/home/aryaman/temp" + std::to_string(v_cl.rank()), i);
+                hgrids.push_back(create_shmanager().create("/home/aryaman/temp" + std::to_string(v_cl.shmRank()), i+1));
 
                 device_grid tmp;
                 tmp.setMemory();
-                tmp.init_shmem(hprp);
+                tmp.init_shmem(hgrids[hgrids.size()-1]);
 
                 tmp.resize(loc_grid.get(i).getGrid().getSize());
 
@@ -1629,11 +1637,16 @@ public:
                 loc_grid.get(i).swap(tmp);
             }
 
-//            openfpm::vector<GBoxes<device_grid::dims>> tmpBox;
-//            tmpBox.init_shmem(...);
-//            tmpBox = gdb_ext;
-//
-//            tmpBox.swap(gdb_ext);
+            std::cout << "gdb_ext has " << gdb_ext.get(0).toString() << std::endl;
+            hgdb = create_shmanager().create("/home/aryaman/temp" + std::to_string(v_cl.shmRank()), 0);
+            openfpm::vector_ofp<GBoxes<device_grid::dims>> tmpBox;
+            tmpBox.init_shmem(hgdb);
+            tmpBox = gdb_ext;
+
+            tmpBox.swap(gdb_ext);
+
+            std::cout << "gdb_ext after swapping has " << gdb_ext.get(0).toString() << std::endl;
+
         }
 
     }

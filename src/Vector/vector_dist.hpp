@@ -259,10 +259,10 @@ private:
 	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> v_pos_out;
 
 	//! Shared memory handle for position vector
-	handle_shmem hpos;
+	handle_shmem hpos = {-1};
 
 	//! Shared memory handle for property vector
-	handle_shmem hprp;
+	handle_shmem hprp = {-1};
 
 	//! Virtual cluster
 	Vcluster<Memory> & v_cl;

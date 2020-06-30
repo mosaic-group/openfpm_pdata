@@ -51,7 +51,7 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	openfpm::vector<device_grid> & gList;
 
 	//! Extension of each grid: domain and ghost + domain
-	const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
+	const openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext;
 
 	//! Actual iterator
 	grid_key_dx_iterator_sub<dim,stencil> a_it;
@@ -84,7 +84,7 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 * \param stop end point
 	 *
 	 */
-	grid_dist_iterator(openfpm::vector<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext, const grid_key_dx<dim> & stop)
+	grid_dist_iterator(openfpm::vector<device_grid> & gk, const openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext, const grid_key_dx<dim> & stop)
 	:g_c(0),gList(gk),gdb_ext(gdb_ext),stop(stop)
 	{
 		// Initialize the current iterator
@@ -102,7 +102,7 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 *
 	 */
 	grid_dist_iterator(openfpm::vector<device_grid> & gk,
-			           const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
+			           const openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext,
 					   const grid_key_dx<dim> & stop,
 					   const grid_key_dx<dim> (& stencil_pnt)[stencil::nsp])
 	:g_c(0),gList(gk),gdb_ext(gdb_ext),a_it(stencil_pnt),stop(stop)
@@ -202,7 +202,7 @@ class grid_dist_iterator<dim,device_grid,FREE,stencil>
 	 * \return Vector of local boxes
 	 *
 	 */
-	inline const openfpm::vector<GBoxes<device_grid::dims>> & getGBoxes()
+	inline const openfpm::vector_ofp<GBoxes<device_grid::dims>> & getGBoxes()
 	{
 		return gdb_ext;
 	}
@@ -263,7 +263,7 @@ class grid_dist_iterator<dim,device_grid,FIXED,stencil>
 	const openfpm::vector<device_grid> & gList;
 
 	//! Extension of each grid: domain and ghost + domain
-	const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
+	const openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext;
 
 	//! Actual iterator
 	grid_key_dx_iterator<dim,stencil> a_it;
@@ -308,7 +308,7 @@ class grid_dist_iterator<dim,device_grid,FIXED,stencil>
 	 * \param gdb_ext information about the local grids
 	 *
 	 */
-	grid_dist_iterator(const openfpm::vector<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
+	grid_dist_iterator(const openfpm::vector<device_grid> & gk, const openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext)
 	:g_c(0),gList(gk),gdb_ext(gdb_ext)
 	{
 		// Initialize the current iterator
@@ -377,7 +377,7 @@ class grid_dist_iterator<dim,device_grid,FIXED,stencil>
 	 * \return Vector of local boxes
 	 *
 	 */
-	inline const openfpm::vector<GBoxes<device_grid::dims>> & getGBoxes()
+	inline const openfpm::vector_ofp<GBoxes<device_grid::dims>> & getGBoxes()
 	{
 		return gdb_ext;
 	}

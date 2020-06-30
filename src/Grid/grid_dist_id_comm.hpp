@@ -214,7 +214,7 @@ class grid_dist_id_comm
 	 */
 	template<int... prp> void ghost_get_local(const openfpm::vector<i_lbox_grid<dim>> & loc_ig_box,
 											  const openfpm::vector<e_lbox_grid<dim>> & loc_eg_box,
-											  const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
+											  const openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext,
 											  openfpm::vector<device_grid> & loc_grid,
 											  std::unordered_map<size_t,size_t> & g_id_to_external_ghost_box)
 	{
@@ -297,7 +297,7 @@ class grid_dist_id_comm
 	 */
 	template<template<typename,typename> class op, int... prp> void ghost_put_local(const openfpm::vector<i_lbox_grid<dim>> & loc_ig_box,
 											  const openfpm::vector<e_lbox_grid<dim>> & loc_eg_box,
-											  const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
+											  const openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext,
 											  openfpm::vector<device_grid> & loc_grid,
 											  openfpm::vector<std::unordered_map<size_t,size_t>> & g_id_to_external_ghost_box)
 	{
@@ -369,7 +369,7 @@ class grid_dist_id_comm
 								ExtPreAlloc<Memory> ** prRecv_prp,
 								const openfpm::vector<ip_box_grid<dim>> & ig_box,
 								const openfpm::vector<ep_box_grid<dim>> & eg_box,
-								const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
+								const openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext,
 								openfpm::vector<device_grid> & loc_grid,
 								size_t & req)
 	{
@@ -551,7 +551,7 @@ public:
 	 */
 	inline void grids_reconstruct(openfpm::vector<openfpm::vector<aggregate<device_grid,SpaceBox<dim,long int>>>> & m_oGrid_recv,
 			                      openfpm::vector<device_grid> & loc_grid,
-								  openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
+								  openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext,
 								  CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm)
 	{
 		size_t count2 = 0;
@@ -631,9 +631,9 @@ public:
 	inline void labelIntersectionGridsProcessor(Decomposition & dec,
 												CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm,
 												openfpm::vector<device_grid> & loc_grid_old,
-												openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
-												openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_old,
-												openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_global,
+												openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext,
+												openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext_old,
+												openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext_global,
 												openfpm::vector<openfpm::vector<aggregate<device_grid,SpaceBox<dim,long int>>>> & lbl_b,
 												openfpm::vector<size_t> & prc_sz)
 	{
@@ -757,9 +757,9 @@ public:
 			  CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm,
 			  openfpm::vector<device_grid> & loc_grid,
 			  openfpm::vector<device_grid> & loc_grid_old,
-			  openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
-			  openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_old,
-			  openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_global)
+			  openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext,
+			  openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext_old,
+			  openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext_global)
 	{
 		// Processor communication size
 		openfpm::vector<size_t> prc_sz(v_cl.getProcessingUnits());
@@ -818,7 +818,7 @@ public:
 									     const openfpm::vector<ep_box_grid<dim>> & eg_box,
 										 const openfpm::vector<i_lbox_grid<dim>> & loc_ig_box,
 										 const openfpm::vector<e_lbox_grid<dim>> & loc_eg_box,
-			                             const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
+			                             const openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext,
 										 openfpm::vector<device_grid> & loc_grid,
 										 std::unordered_map<size_t,size_t> & g_id_to_external_ghost_box)
 	{
@@ -865,7 +865,7 @@ public:
 					const openfpm::vector<ep_box_grid<dim>> & eg_box,
 					const openfpm::vector<i_lbox_grid<dim>> & loc_ig_box,
 					const openfpm::vector<e_lbox_grid<dim>> & loc_eg_box,
-			        const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
+			        const openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext,
 					openfpm::vector<device_grid> & loc_grid,
 					openfpm::vector<std::unordered_map<size_t,size_t>> & g_id_to_internal_ghost_box)
 	{

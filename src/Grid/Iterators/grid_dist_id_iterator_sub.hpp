@@ -37,7 +37,7 @@ class grid_dist_iterator_sub
 	const openfpm::vector<device_grid> & gList;
 
 	//! Extension of each grid: domain and ghost + domain
-	const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext;
+	const openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext;
 
 	//! Actual iterator
 	grid_key_dx_iterator_sub<dim> a_it;
@@ -146,7 +146,7 @@ class grid_dist_iterator_sub
 	 * \param gdb_ext information about the local grids
 	 *
 	 */
-	grid_dist_iterator_sub(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop ,const openfpm::vector<device_grid> & gk, const openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
+	grid_dist_iterator_sub(const grid_key_dx<dim> & start, const grid_key_dx<dim> & stop ,const openfpm::vector<device_grid> & gk, const openfpm::vector_ofp<GBoxes<device_grid::dims>> & gdb_ext)
 	:g_c(0),gList(gk),gdb_ext(gdb_ext),start(start),stop(stop)
 	{
 		// Initialize the current iterator

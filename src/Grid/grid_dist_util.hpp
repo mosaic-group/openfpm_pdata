@@ -58,7 +58,7 @@ template<unsigned int dim> periodicity<dim> create_non_periodic()
  * \param cd_sm CellDecomposer the size of cell is equal to the distance between grid points
  *
  */
-template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::vector<GBoxes<Decomposition::dims>> & gdb_ext, Decomposition & dec, CellDecomposer_sm<Decomposition::dims,typename Decomposition::stype,shift<dim,typename Decomposition::stype>> & cd_sm)
+template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::vector_ofp<GBoxes<Decomposition::dims>> & gdb_ext, Decomposition & dec, CellDecomposer_sm<Decomposition::dims,typename Decomposition::stype,shift<dim,typename Decomposition::stype>> & cd_sm)
 {
 	// Get the number of local grid needed
 	size_t n_grid = dec.getNSubDomain();
@@ -109,7 +109,7 @@ template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::ve
  * \param bc boundary conditions
  *
  */
-template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::vector<GBoxes<dim>> & gdb_ext, Decomposition & dec, const size_t (& sz)[dim], const Box<Decomposition::dims,typename Decomposition::stype> & domain, typename Decomposition::stype (& spacing)[dim])
+template<int dim, typename Decomposition> inline void create_gdb_ext(openfpm::vector_ofp<GBoxes<dim>> & gdb_ext, Decomposition & dec, const size_t (& sz)[dim], const Box<Decomposition::dims,typename Decomposition::stype> & domain, typename Decomposition::stype (& spacing)[dim])
 {
 	// Create the cell decomposer
 	CellDecomposer_sm<Decomposition::dims,typename Decomposition::stype, shift<Decomposition::dims,typename Decomposition::stype>> cd_sm;

@@ -26,7 +26,7 @@ class grid_dist_id_iterator_dec
 	size_t g_c;
 
 	//! Extension of each grid: domain and ghost + domain
-	openfpm::vector<GBoxes<Decomposition::dims>> gdb_ext;
+	openfpm::vector_ofp<GBoxes<Decomposition::dims>> gdb_ext;
 
 	//! Actual iterator
 	grid_key_dx_iterator_sub<Decomposition::dims> a_it;

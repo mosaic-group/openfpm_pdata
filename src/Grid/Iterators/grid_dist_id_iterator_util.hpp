@@ -20,7 +20,7 @@
  * \return false if the sub-set does not contain points
  *
  */
-template<typename Decomposition> static inline bool compute_subset(const openfpm::vector<GBoxes<Decomposition::dims>> & gdb_ext, size_t g_c, grid_key_dx<Decomposition::dims> & start, grid_key_dx<Decomposition::dims> & stop, grid_key_dx<Decomposition::dims> & start_c, grid_key_dx<Decomposition::dims> & stop_c)
+template<typename Decomposition> static inline bool compute_subset(const openfpm::vector_ofp<GBoxes<Decomposition::dims>> & gdb_ext, size_t g_c, grid_key_dx<Decomposition::dims> & start, grid_key_dx<Decomposition::dims> & stop, grid_key_dx<Decomposition::dims> & start_c, grid_key_dx<Decomposition::dims> & stop_c)
 {
 	if (gdb_ext.get(g_c).Dbox.isValid() == false)
 	{return false;}

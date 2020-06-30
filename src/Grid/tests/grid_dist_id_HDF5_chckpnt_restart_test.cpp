@@ -144,6 +144,5 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 	BOOST_REQUIRE_EQUAL(match,true);
 }
 
-
 BOOST_AUTO_TEST_SUITE_END()
 

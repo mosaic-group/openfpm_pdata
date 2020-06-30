@@ -30,7 +30,7 @@ class grid_dist_id_iterator_dec_skin : protected grid_skin_iterator_bc<Decomposi
 	size_t g_c;
 
 	//! Extension of each grid: domain and ghost + domain
-	openfpm::vector<GBoxes<Decomposition::dims>> gdb_ext;
+	openfpm::vector_ofp<GBoxes<Decomposition::dims>> gdb_ext;
 
 	//! Internal grid sub-iterator
 	grid_key_dx_iterator_sub<Decomposition::dims> a_it;
