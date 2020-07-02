@@ -159,8 +159,90 @@ public:
         return vector_dist_iterator(0, g_m);
     }
 
+	/*! \brief Construct a cell list starting from the stored particles
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 * \param no_se3 avoid SE_CLASS3 checking
+	 *
+	 * \return the Cell list
+	 *
+	 */
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St>, typename std::remove_reference<decltype(vd.getPosVector())>::type > >
+	CellL getCellList(St r_cut, bool no_se3 = false)
+	{
+#ifdef SE_CLASS3
+		if (no_se3 == false)
+		{se3.getNN();}
+#endif
+#ifdef SE_CLASS1
+		check_ghost_compatible_rcut(r_cut);
+#endif
 
+		// Get ghost and anlarge by 1%
+		Ghost<dim,St> g = vd.getDecomposition().getGhost();
+		g.magnify(1.013);
 
+		return getCellList<CellL>(r_cut, g,no_se3);
+	}
+
+	/*! \brief Construct a cell list starting from the stored particles
+	 *
+	 * It differ from the get getCellList for an additional parameter, in case the
+	 * domain + ghost is not big enough to contain additional padding particles, a Cell list
+	 * with bigger space can be created
+	 * (padding particles in general are particles added by the user out of the domains)
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
+	 * \param no_se3 avoid se_class3 cheking default false
+	 *
+	 * \return the CellList
+	 *
+	 */
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St> > >
+	CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
+	{
+#ifdef SE_CLASS3
+		if (no_se3 == false)
+		{se3.getNN();}
+#endif
+
+		CellL cell_list;
+
+		// Division array
+		size_t div[dim];
+
+		// get the processor bounding box
+		Box<dim, St> pbox = vd.getDecomposition().getProcessorBounds();
+
+		// Processor bounding box
+		cl_param_calculate(pbox, div, r_cut, enlarge);
+
+		cell_list.Initialize(pbox, div);
+		cell_list.set_gm(g_m);
+		cell_list.set_ndec(vd.getDecomposition().get_ndec());
+
+		cell_list.clear();
+
+		auto it = getDomainIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			Point<dim,St> pos = getPos(key);
+
+			cell_list.add(pos, key.getKey());
+
+			++it;
+		}
+
+		return cell_list;
+	}
 };
 
 #endif //OPENFPM_PDATA_VECTOR_DIST_SUBSET_HPP
