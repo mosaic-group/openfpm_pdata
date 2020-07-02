@@ -42,7 +42,10 @@
 #define PRINT_STACKTRACE
 //#define STOP_ON_ERROR
 #define OPENMPI
-//#define SCAN_WITH_CUB <------ MODERNGPU is broken on RTX use CUB library for scan
+//#define SE_CLASS1
+
+//#define USE_LOW_REGISTER_ITERATOR
+//#define SCAN_WITH_CUB <------ In case you want to use CUB for scan operations
 //#define EXTERNAL_SET_GPU <----- In case you want to distribute the GPUs differently from the default
 
 #include "Vector/vector_dist.hpp"
@@ -98,7 +101,7 @@ const real_number MassBound = 0.0000767656;
 #ifdef TEST_RUN
 const real_number t_end = 0.001;
 #else
-const real_number t_end = 1.500;
+const real_number t_end = 1.5;
 #endif
 
 // Gravity acceleration
@@ -342,7 +345,7 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 		// Get the position xp of the particle
 		Point<3,real_number> xb = vd.getPos(b);
 
-		// if (p == q) skip this particle
+		// if (p == q) skip this particle this condition should be done in the r^2 = 0
 		if (a == b)	{++Np; continue;};
 
         unsigned int typeb = vd.getProp<type>(b);
@@ -394,7 +397,7 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 
 template<typename CellList> inline void calc_forces(particles & vd, CellList & NN, real_number & max_visc, size_t cnt)
 {
-	auto part = vd.getDomainIteratorGPU(64);
+	auto part = vd.getDomainIteratorGPU(96);
 
 	// Update the cell-list
 	vd.updateCellList(NN);
@@ -481,7 +484,7 @@ __global__ void verlet_int_gpu(vector_dist_type vd, real_number dt, real_number 
 		return;
 	}
 
-	//-Calculate displacement and update position / Calcula desplazamiento y actualiza posicion.
+	//-Calculate displacement and update position
 	real_number dx = vd.template getProp<velocity>(a)[0]*dt + vd.template getProp<force>(a)[0]*dt205;
     real_number dy = vd.template getProp<velocity>(a)[1]*dt + vd.template getProp<force>(a)[1]*dt205;
     real_number dz = vd.template getProp<velocity>(a)[2]*dt + vd.template getProp<force>(a)[2]*dt205;
@@ -871,7 +874,8 @@ int main(int argc, char* argv[])
 
 	vd.ghost_get<type,rho,Pressure,velocity>(RUN_ON_DEVICE);
 
-	auto NN = vd.getCellListGPU(2*H / 2.0);
+	auto NN = vd.getCellListGPU/*<CELLLIST_GPU_SPARSE<3,float>>*/(2*H / 2.0);
+	//NN.setBoxNN(2);
 
 	timer tot_sim;
 	tot_sim.start();
@@ -907,9 +911,9 @@ int main(int argc, char* argv[])
 
 		vd.map(RUN_ON_DEVICE);
 
-
-        // make sort
-        vd.make_sort(NN);
+		// it sort the vector (doesn not seem to produce some advantage)
+		// note force calculation is anyway sorted calculation
+		vd.make_sort(NN);
 
 		// Calculate pressure from the density
 		EqState(vd);

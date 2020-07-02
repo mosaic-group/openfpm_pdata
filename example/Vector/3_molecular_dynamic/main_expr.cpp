@@ -114,11 +114,11 @@ int main(int argc, char* argv[])
 		if (i % 100 == 0)
 		{
 			vd.deleteGhost();
-			vd.write("particles_",f);
+			vd.write_frame("particles_",f);
 			vd.ghost_get<>();
 
 			vd.updateCellList(NN);
-			Point<2,double> E = rsum(applyKernel_in_sim(vd,NN,lp) + (v_velocity * v_velocity)/2.0,vd).get();
+			Point<2,double> E = rsum(applyKernel_in_sim(vd,NN,lp) + (v_velocity * v_velocity)/2.0).get();
 
 			vcl.sum(E.get(0));vcl.sum(E.get(1));
 			vcl.execute();

@@ -16,8 +16,8 @@ else
 endif
 
 ifeq ($(PROFILE),ON)
-        CUDA_CC=scorep --nocompiler  --cuda --mpp=mpi nvcc
-        CUDA_CC_LINK=scorep --nocompiler  --cuda --mpp=mpi nvcc
+        CUDA_CC=scorep --nocompiler  --cuda --mpp=mpi nvcc -ccbin=mpic++
+        CUDA_CC_LINK=scorep --nocompiler  --cuda --mpp=mpi nvcc -ccbin=mpic++
 else
 	CUDA_CC:=$(CUDA_CC)
 	CUDA_CC_LINK:=$(CUDA_CC_LINK)

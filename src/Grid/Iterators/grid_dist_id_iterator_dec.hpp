@@ -19,7 +19,7 @@
  * \tparam dec Decomposition type
  *
  */
-template<typename Decomposition>
+template<typename Decomposition, bool ghost_or_domain = false>
 class grid_dist_id_iterator_dec
 {
 	//! grid list counter
@@ -40,6 +40,8 @@ class grid_dist_id_iterator_dec
 	//! Spacing
 	typename Decomposition::stype spacing[Decomposition::dims];
 
+	//! Domain
+	Box<Decomposition::dims,typename Decomposition::stype> domain;
 
 	/*! \brief from g_c increment g_c until you find a valid grid
 	 *
@@ -52,7 +54,7 @@ class grid_dist_id_iterator_dec
 
 		// When the grid has size 0 potentially all the other informations are garbage
 		while (g_c < gdb_ext.size() &&
-			   (gdb_ext.get(g_c).Dbox.isValid() == false || compute_subset<Decomposition>(gdb_ext,g_c,start,stop,start_c,stop_c) == false ))
+			   (gdb_ext.get(g_c).Dbox.isValid() == false || compute_subset<Decomposition,ghost_or_domain>(gdb_ext,g_c,start,stop,start_c,stop_c) == false ))
 		{g_c++;}
 
 		// get the next grid iterator
@@ -96,6 +98,8 @@ class grid_dist_id_iterator_dec
 		start = tmp.start;
 		stop = tmp.stop;
 
+		domain = tmp.domain;
+
 		return *this;
 	}
 
@@ -118,6 +122,8 @@ class grid_dist_id_iterator_dec
 	grid_dist_id_iterator_dec(Decomposition & dec, const size_t (& sz)[Decomposition::dims])
 	:g_c(0)
 	{
+		domain = dec.getDomain();
+
 		// Initialize start and stop
 		start.zero();
 		for (size_t i = 0 ; i < Decomposition::dims ; i++)
@@ -142,6 +148,8 @@ class grid_dist_id_iterator_dec
 	grid_dist_id_iterator_dec(Decomposition & dec, const size_t (& sz)[Decomposition::dims], grid_key_dx<Decomposition::dims> start, grid_key_dx<Decomposition::dims> stop)
 	:g_c(0),start(start),stop(stop)
 	{
+		domain = dec.getDomain();
+
 		// From the decomposition construct gdb_ext
 		create_gdb_ext<Decomposition::dims,Decomposition>(gdb_ext,dec,sz,dec.getDomain(),spacing);
 
@@ -155,13 +163,63 @@ class grid_dist_id_iterator_dec
 	{
 	}
 
+	/*! \brief Return true if we point to a valid grid
+	 *
+	 * \return true if valid grid
+	 *
+	 */
+	inline bool isNextGrid()
+	{
+		return g_c < gdb_ext.size();
+	}
+
+	/*! \brief Return the index of the grid in which we are iterating
+	 *
+	 *
+	 */
+	inline size_t getGridId()
+	{
+		return g_c;
+	}
+
+	/*! \brief next grid
+	 *
+	 *
+	 */
+	inline void nextGrid()
+	{
+		g_c++;
+		selectValidGrid();
+	}
+
+	/*! \brief Return the actual pointed grid
+	 *
+	 * \return the grid index
+	 *
+	 */
+	inline Box<Decomposition::dims,size_t> getGridBox()
+	{
+		Box<Decomposition::dims,size_t> bx;
+
+		auto start = a_it.getStart();
+		auto stop = a_it.getStop();
+
+		for (int i = 0 ; i < Decomposition::dims ; i++)
+		{
+			bx.setHigh(i,stop.get(i));
+			bx.setLow(i,start.get(i));
+		}
+
+		return bx;
+	}
+
 	/*! \brief Get the next element
 	 *
 	 * \return the next grid_key
 	 *
 	 */
 
-	inline grid_dist_id_iterator_dec<Decomposition> & operator++()
+	inline grid_dist_id_iterator_dec<Decomposition,ghost_or_domain> & operator++()
 	{
 		++a_it;
 
@@ -224,6 +282,24 @@ class grid_dist_id_iterator_dec
 		k_glob = k_glob + gdb_ext.get(sub_id).origin;
 
 		return k_glob;
+	}
+
+	/*! \brief Return the point coordinates
+	 *
+	 * \return the point
+	 *
+	 */
+	inline Point<Decomposition::dims,typename Decomposition::stype> getPoint()
+	{
+		Point<Decomposition::dims,typename Decomposition::stype> p;
+		auto key = this->get();
+
+		for (int i = 0 ; i < Decomposition::dims ; i++)
+		{
+			p.get(i) = spacing[i] * key.get(i) + domain.getLow(i);
+		}
+
+		return p;
 	}
 
 	/*! \brief Get the actual grid key for a distributed grid

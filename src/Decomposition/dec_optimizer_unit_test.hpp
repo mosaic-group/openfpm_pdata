@@ -22,7 +22,7 @@ BOOST_AUTO_TEST_SUITE( dec_optimizer_test )
 
 BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_np)
 {
-	CartesianGraphFactory<3,Graph_CSR<nm_v,nm_e>> g_factory;
+	CartesianGraphFactory<3,Graph_CSR<nm_v<3>,nm_e>> g_factory;
 	CartesianGraphFactory<3,Graph_CSR<nm_part_v,nm_part_e>> g_factory_part;
 
 	// Cartesian grid
@@ -35,30 +35,30 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_np)
 	size_t bc[] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 
 	// Graph to decompose
-	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,2,0>(sz,box,bc);
+	Graph_CSR<nm_v<3>,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,2,0>(sz,box,bc);
 
 	// Processor graph
 	Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.construct<NO_EDGE,NO_VERTEX_ID,float,2>(sz,box,bc);
 
 	// Convert the graph to metis
-	Metis<Graph_CSR<nm_v,nm_e>> met(g,16);
+	Metis<Graph_CSR<nm_v<3>,nm_e>> met(g,16);
 
 	// decompose
 	met.decompose<nm_part_v::id>(gp);
-	met.decompose<nm_v::id>();
+	met.decompose<nm_v_id>();
 
 	// optimize
-	dec_optimizer<3,Graph_CSR<nm_v,nm_e>> d_o(g,sz);
+	dec_optimizer<3,Graph_CSR<nm_v<3>,nm_e>> d_o(g,sz);
 
 	Ghost<3,size_t> ghe(1);
 
 	grid_key_dx<3> keyZero(0,0,0);
-	d_o.optimize<nm_v::sub_id,nm_v::id>(keyZero,g,ghe,bc);
+	d_o.optimize<nm_v_sub_id,nm_v_id>(keyZero,g,ghe,bc);
 }
 
 BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_p)
 {
-	CartesianGraphFactory<3,Graph_CSR<nm_v,nm_e>> g_factory;
+	CartesianGraphFactory<3,Graph_CSR<nm_v<3>,nm_e>> g_factory;
 	CartesianGraphFactory<3,Graph_CSR<nm_part_v,nm_part_e>> g_factory_part;
 
 	// Cartesian grid
@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_p)
 	size_t bc[] = {PERIODIC,PERIODIC,PERIODIC};
 
 	// Graph to decompose
-	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,2,0>(sz,box,bc);
+	Graph_CSR<nm_v<3>,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,2,0>(sz,box,bc);
 
 	// Processor graph
 	Graph_CSR<nm_part_v,nm_part_e> gp = g_factory_part.construct<NO_EDGE,NO_VERTEX_ID,float,2>(sz,box,bc);
@@ -97,13 +97,13 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_p)
 
 				grid_key_dx<3> key(i,j,k);
 				gp.vertex(gs.LinId(key)).get<nm_part_v::id>() = id;
-				g.vertex(gs.LinId(key)).get<nm_v::id>() = id;
+				g.vertex(gs.LinId(key)).get<nm_v_id>() = id;
 			}
 		}
 	}
 
 	// optimize
-	dec_optimizer<3,Graph_CSR<nm_v,nm_e>> d_o(g,sz);
+	dec_optimizer<3,Graph_CSR<nm_v<3>,nm_e>> d_o(g,sz);
 
 	grid_key_dx<3> keyZero(0,0,0);
 
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_p)
 	Ghost<3,size_t> ghe(1);
 
 	// gp,p_id,loc_box,box_nn_processor,bc
-	d_o.optimize<nm_v::sub_id,nm_v::id>(g,-1,dec_o,box_nn_processor,ghe,bc);
+	d_o.optimize<nm_v_sub_id,nm_v_id>(g,-1,dec_o,box_nn_processor,ghe,bc);
 
 	BOOST_REQUIRE_EQUAL(box_nn_processor.size(),8ul);
 
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_disconnected_subdomains_np)
 	if (vcl.getProcessingUnits() != 3)
 		return;
 
-	CartesianGraphFactory<2,Graph_CSR<nm_v,nm_e>> g_factory;
+	CartesianGraphFactory<2,Graph_CSR<nm_v<2>,nm_e>> g_factory;
 
 	// Cartesian grid
 	size_t sz[2] = {GS_SIZE,GS_SIZE};
@@ -153,7 +153,7 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_disconnected_subdomains_np)
 	size_t bc[] = {NON_PERIODIC,NON_PERIODIC};
 
 	// Graph to decompose
-	Graph_CSR<nm_v,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,1,0>(sz,box,bc);
+	Graph_CSR<nm_v<2>,nm_e> g = g_factory.construct<nm_e::communication,NO_VERTEX_ID,float,1,0>(sz,box,bc);
 
 	SimpleRNG rng;
 
@@ -163,14 +163,14 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_disconnected_subdomains_np)
 	{
 		auto vk = vit.get();
 
-		g.vertex_p<nm_v::proc_id>(vk) = rng.GetUniform() * 2.9999;
-		g.vertex_p<nm_v::sub_id>(vk) = 100;
+		g.vertex_p<nm_v_proc_id>(vk) = rng.GetUniform() * 2.9999;
+		g.vertex_p<nm_v_sub_id>(vk) = 100;
 
 		++vit;
 	}
 
 	// optimize
-	dec_optimizer<2,Graph_CSR<nm_v,nm_e>> d_o(g,sz);
+	dec_optimizer<2,Graph_CSR<nm_v<2>,nm_e>> d_o(g,sz);
 
 	// set of Boxes produced by the decomposition optimizer
 	openfpm::vector<::Box<2, size_t>> loc_box;
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_disconnected_subdomains_np)
 	openfpm::vector<openfpm::vector<long unsigned int> > box_nn_processor;
 
 	Ghost<2,size_t> ghe(1);
-	d_o.optimize<nm_v::sub_id, nm_v::proc_id>(g, vcl.getProcessUnitID(), loc_box, box_nn_processor,ghe,bc);
+	d_o.optimize<nm_v_sub_id, nm_v_proc_id>(g, vcl.getProcessUnitID(), loc_box, box_nn_processor,ghe,bc);
 
 	std::stringstream str_g;
 	str_g << "dec_optimizer_disc_graph" << vcl.getProcessUnitID() << ".vtk";
@@ -191,7 +191,7 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_disconnected_subdomains_np)
 	std::stringstream str_st;
 	str_st << "src/Decomposition/Distribution/test_data/dec_optimizer_disc_sub" << vcl.getProcessUnitID() << "_test.vtk";
 
-	VTKWriter<Graph_CSR<nm_v,nm_e>,VTK_GRAPH> wrt(g);
+	VTKWriter<Graph_CSR<nm_v<2>,nm_e>,VTK_GRAPH> wrt(g);
 	wrt.write("dec_optimizer_disc_graph" + std::to_string(vcl.getProcessUnitID()) + ".vtk");
 
 	VTKWriter<openfpm::vector<::Box<2, size_t>>, VECTOR_BOX> vtk_box1;

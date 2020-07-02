@@ -51,7 +51,7 @@ __device__ __host__ inline int processorID_impl(T2 & p,
 #endif
 
 
-	/* coverty[negative_returns] */
+	// coverty[negative_returns]
 	return sub_domains_global.template get<1>(e);
 }
 

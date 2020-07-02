@@ -19,7 +19,7 @@ source script/solve_python
 discover_os
 
 function test_configure_options() {
-  cd petsc-3.10.2
+  cd petsc-3.12.3
   $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options2 --with-debugging=0
   error=$?
   cd ..
@@ -49,14 +49,14 @@ fi
 
 #### Download and uncompress petsc
 
-rm petsc-lite-3.10.2.tar.gz
-rm -rf petsc-3.10.2
-wget http://ppmcore.mpi-cbg.de/upload/petsc-lite-3.10.2.tar.gz
+rm petsc-lite-3.12.3.tar.gz
+rm -rf petsc-3.12.3
+wget http://ppmcore.mpi-cbg.de/upload/petsc-lite-3.12.3.tar.gz
 if [ $? -ne 0 ]; then
   echo -e "\033[91;5;1m FAILED! Installation requires an Internet connection \033[0m"
   exit 1
 fi
-tar -xf petsc-lite-3.10.2.tar.gz
+tar -xf petsc-lite-3.12.3.tar.gz
 
 ####
 
@@ -112,17 +112,28 @@ fi
 
 configure_options="$configure_options --download-scalapack --download-mumps"
 configure_options="$configure_options --download-superlu_dist"
+
+#### OK here we check if we can configure work with SUITESPARSE
+echo "Testing if PETSC work with SUPERLU"
+configure_options2="$configure_options --download-superlu_dist "
+test_configure_options
+
+if [ $error -eq 0 ]; then
+  echo "SUITESPARSE work with PETSC"
+  configure_options="$configure_options --download-superlu_dist "
+fi
+
 configure_options="$configure_options --download-hypre"
 
-rm petsc-lite-3.10.2.tar.gz
-rm -rf petsc-3.10.2
-wget http://ppmcore.mpi-cbg.de/upload/petsc-lite-3.10.2.tar.gz
+rm petsc-lite-3.12.3.tar.gz
+rm -rf petsc-3.12.3
+wget http://ppmcore.mpi-cbg.de/upload/petsc-lite-3.12.3.tar.gz
 if [ $? -ne 0 ]; then
   echo -e "\033[91;5;1m FAILED! Installation requires an Internet connection \033[0m"
   exit 1
 fi
-tar -xf petsc-lite-3.10.2.tar.gz
-cd petsc-3.10.2
+tar -xf petsc-lite-3.12.3.tar.gz
+cd petsc-3.12.3
 
 if [ x"$CXX" != x"icpc" ]; then
 
@@ -158,7 +169,7 @@ if [ ! "$(ls -A $1/PETSC)" ]; then
    rm -rf $1/PETSC
 else
    #Mark the installation
-   echo 2 > $1/PETSC/version
+   echo 3 > $1/PETSC/version
    exit 0
 fi
 

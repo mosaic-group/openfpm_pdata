@@ -559,6 +559,8 @@ class DistGraph_CSR
 		openfpm::vector<size_t> size;
 		openfpm::vector<void *> ptr;
 		openfpm::vector<HeapMemory> packs(vcl.getProcessingUnits());
+		openfpm::vector<HeapMemory *> to_release;
+		openfpm::vector<ExtPreAlloc<HeapMemory> *> to_release_ext;
 
 		// Total number of vertex to send
 		size_t nvts = 0;
@@ -613,8 +615,10 @@ class DistGraph_CSR
 			HeapMemory & pmem = *(new HeapMemory());
 //			pmem.allocate(req);
 			ExtPreAlloc<HeapMemory> & mem = *(new ExtPreAlloc<HeapMemory>(req, pmem));
-
 			mem.incRef();
+
+			to_release.add(&pmem);
+			to_release_ext.add(&mem);
 
 			Pack_stat sts;
 			size_t e_it = 0;
@@ -656,6 +660,14 @@ class DistGraph_CSR
 
 		// Exchange informations through processors
 		vcl.sendrecvMultipleMessagesNBX(prc.size(), (size_t *)size.getPointer(), (size_t *)prc.getPointer(), (void **)ptr.getPointer(), gr_receive, &packs, NONE);
+
+		for (int i = 0 ; i < to_release_ext.size(); i++)
+		{
+			to_release_ext.get(i)->decRef();
+			delete to_release_ext.get(i);
+
+			delete to_release.get(i);
+		}
 
 		for (size_t i = 0; i < vcl.getProcessingUnits(); i++)
 		{

@@ -362,7 +362,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cl_random_vs_reorder_forces_test )
 			vector_dist<dim,float, aggregate<float[dim], float[dim]> > vd(k_int,box,bc,Ghost<dim,float>(ghost_part));
 
 			// Initialize vd
-			vd_initialize<dim,decltype(vd)>(vd, v_cl, k_int);
+			vd_initialize<dim,decltype(vd)>(vd, v_cl);
 
 			vd.ghost_get<0>();
 

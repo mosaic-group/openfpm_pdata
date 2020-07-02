@@ -1,3 +1,5 @@
+#define SCAN_WITH_CUB
+
 /*!
  * \page Vector_3_md_dyn_gpu Vector 3 molecular dynamic on GPU
  *

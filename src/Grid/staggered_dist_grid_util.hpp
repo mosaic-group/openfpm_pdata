@@ -822,7 +822,7 @@ template<typename Eqs_sys, typename it1_type, typename it2_type> bool checkItera
  * \tparam v_prp_type vector with the properties
  *
  */
-template<unsigned int dim, typename v_prp_id, typename v_prp_type>
+template<unsigned int dim, unsigned int n_prop, typename v_prp_id, typename v_prp_type>
 struct interp_points
 {
 /*#ifdef SE_CLASS3
@@ -843,7 +843,7 @@ struct interp_points
 	openfpm::vector<std::vector<comb<dim>>> (& interp_pts)[v_size::value];
 
 	// staggered position for each property
-	const openfpm::vector<comb<dim>> (&stag_pos)[v_size::value];
+	const openfpm::vector<comb<dim>> (&stag_pos)[n_prop];
 
 	/*! \brief constructor
 	 *
@@ -853,7 +853,7 @@ struct interp_points
 	 * \param staggered position for each property and components
 	 *
 	 */
-	inline interp_points(openfpm::vector<std::vector<comb<dim>>> (& interp_pts)[v_size::value],const openfpm::vector<comb<dim>> (&stag_pos)[v_size::value])
+	inline interp_points(openfpm::vector<std::vector<comb<dim>>> (& interp_pts)[v_size::value],const openfpm::vector<comb<dim>> (&stag_pos)[n_prop])
 	:interp_pts(interp_pts),stag_pos(stag_pos){};
 
 	//! It call the copy function for each property
@@ -862,13 +862,14 @@ struct interp_points
 	{
 		// This is the type of the object we have to copy
 		typedef typename boost::mpl::at_c<v_prp_type,T::value>::type prp_type;
+		typedef typename boost::mpl::at<v_prp_id,T>::type p_id;
 
-		interp_pts[T::value].resize(stag_pos[T::value].size());
+		interp_pts[T::value].resize(stag_pos[p_id::value].size());
 
-		for (size_t i = 0 ; i < stag_pos[T::value].size() ; i++)
+		for (size_t i = 0 ; i < stag_pos[p_id::value].size() ; i++)
 		{
 			// Create the interpolation points
-			interp_pts[T::value].get(i) = SubHyperCube<dim,dim - std::rank<prp_type>::value>::getCombinations_R(stag_pos[T::value].get(i),0);
+			interp_pts[T::value].get(i) = SubHyperCube<dim,dim - std::rank<prp_type>::value>::getCombinations_R(stag_pos[p_id::value].get(i),0);
 
 			// interp_point are -1,0,1, map the -1 to 0 and 1 to -1
 			for (size_t j = 0 ; j < interp_pts[T::value].get(i).size() ; j++)

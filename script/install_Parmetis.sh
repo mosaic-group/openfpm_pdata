@@ -45,5 +45,5 @@ if [ x"$platform" == x"cygwin" ]; then
 fi
 
 # Mark the installation
-echo 1 > $1/PARMETIS/version
+echo 3 > $1/PARMETIS/version
 

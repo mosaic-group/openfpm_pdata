@@ -26,20 +26,22 @@
 
 extern const char * test_dir;
 
-// XML report
-boost::property_tree::ptree pt;
 
 #ifdef PERFORMANCE_TEST
 
+#include "../../openfpm_numerics/src/interpolation/interpolation.hpp"
+#include "Grid/grid_dist_id.hpp"
+#include "Plot/GoogleChart.hpp"
+#include "interpolation/mp4_kernel.hpp"
 #include "Vector/performance/vector_dist_performance_util.hpp"
+#include "util/performance/performance_util.hpp"
 
 BOOST_AUTO_TEST_SUITE( performance )
-
 
 #include "Vector/performance/verlet_performance_tests.hpp"
 #include "Vector/performance/cell_list_part_reorder.hpp"
 #include "Vector/performance/cell_list_comp_reorder.hpp"
-
+#include "Vector/performance/vector_dist_gg_map_performance.hpp"
 #include "Grid/performance/grid_dist_performance.hpp"
 
 BOOST_AUTO_TEST_SUITE_END()

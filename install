@@ -1,5 +1,6 @@
 #! /bin/bash
 
+
 source script/help
 source script/discover_os
 source script/show_solutions
@@ -27,8 +28,6 @@ if [ x"$HOME" == x"" ]; then
 	 echo -e "Your $HOME folder is empty \033[91;5;1m FAILED \033[0m"
 	 exit 1
 fi
-
-## If 
 
 install_req=1
 i_dir=""
@@ -112,6 +111,7 @@ if [ $upgrade_openfpm -eq 1 ]; then
 fi
 
 remove_old $i_dir $configure_options
+
 
 ## Check and try to install the prerequisites
 
@@ -215,7 +215,6 @@ echo -e "Installing requirements into: $i_dir "
 if [ ! -d "$i_dir/PETSC" -o ! -f "$i_dir/PETSC/include/petsc.h" -o ! -d "$i_dir/EIGEN" ]; then
     echo -e "\033[1;34m Optional packages  \033[0m"
     echo -e "\033[1mDo you want to install linear algebra packages ?(y/n)\033[0m"
-    echo "Installation can take long time (90 minutes on i7-3612QM 4 cores)"
     if [ $sq -eq 0 ]; then
       read inst_lin_alg
     else
@@ -287,7 +286,7 @@ if [ x"$platform" = x"linux" ]; then
 fi
 
 ### MPI compilers must be in your PATH folder
-
+call_test_working_mpi_options=0
 set_mpi $i_dir $ncore $gpu_support $CC $CXX $F77 $FC
 
 ### METIS and ParMETIS must be installed independently from sistem wide installation
@@ -317,6 +316,7 @@ EIGEN_System_prv=1
 HDF5_installed=0
 HDF5_System_prv=1
 LIBHILBERT_installed=0
+VCDEVEL_installed=0
 conf_err=1
 
 
@@ -387,6 +387,15 @@ else
             ./script/install_LIBHILBERT.sh $i_dir $ncore
             configure_options=" $configure_options --with-libhilbert=$i_dir/LIBHILBERT "
             LIBHILBERT_installed=1
+        elif [ $conf_err -eq 211 ]; then
+            echo "VCDEVEL not found try to install"
+            if [ $VCDEVEL_installed -eq 1 ]; then
+                echo "Error the installation of VCDEVEL failed"
+                exit 1
+            fi
+            ./script/install_VCDEVEL.sh $i_dir $ncore
+            configure_options=" $configure_options --with-vcdevel=$i_dir/VCDEVEL "
+            VCDEVEL_installed=1
         elif [ $conf_err -ne 0 ]; then
             echo "I do not know how to recover from this error"
             exit 1
@@ -417,17 +426,16 @@ elif [ -d "$i_dir/HDF5/lib64" ]; then
   hdf5_lib=$i_dir/HDF5/lib64
 fi
 
-echo "INCLUDE_PATH=$cuda_include_dirs -Wno-deprecated-declarations $openmp_flags  -I.  -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" > example.mk
-echo "LIBS_PATH=$openmp_flags -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib -L$hdf5_lib -L$i_dir/LIBHILBERT/lib  $lin_alg_dir " >> example.mk
+echo "INCLUDE_PATH=$cuda_include_dirs -Wno-deprecated-declarations $openmp_flags  -I.  -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/VCDEVEL/include  -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" > example.mk
+echo "LIBS_PATH=$openmp_flags -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/VCDEVEL/lib  -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib -L$hdf5_lib -L$i_dir/LIBHILBERT/lib  $lin_alg_dir " >> example.mk
 if [ x"$gpu_support" == x"1" ]; then
-    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert $(cat cuda_lib) $lin_alg_lib -ldl" >> example.mk
-    echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert $(cat cuda_lib) $lin_alg_lib" >> example.mk
+    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $(cat cuda_lib) $lin_alg_lib -ldl" >> example.mk
+    echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $(cat cuda_lib) $lin_alg_lib" >> example.mk
 else
-    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert  $lin_alg_lib -ldl" >> example.mk
-    echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert $lin_alg_lib" >> example.mk
+    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $lin_alg_lib -ldl" >> example.mk
+    echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $lin_alg_lib" >> example.mk
 fi
-sup_cuda_wr=$(cat cuda_suppress_wr)
-echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" $(cat openmp_flags) $sup_cuda_wr --expt-extended-lambda -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" >> example.mk
+echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" $(cat openmp_flags) "$(cat cuda_options)" -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" >> example.mk
 cp example.mk src/example.mk
 cp example.mk example/example.mk
 

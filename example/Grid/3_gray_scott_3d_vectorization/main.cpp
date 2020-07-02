@@ -76,12 +76,12 @@ void init(grid_dist_id<3,double,aggregate<double> > & OldU,
 		auto key = it.get();
 
 		// Old values U and V
-		OldU.get(key) = 1.0;
-		OldV.get(key) = 0.0;
+		OldU.get<0>(key) = 1.0;
+		OldV.get<0>(key) = 0.0;
 
 		// Old values U and V
-		NewU.get(key) = 0.0;
-		NewV.get(key) = 0.0;
+		NewU.get<0>(key) = 0.0;
+		NewV.get<0>(key) = 0.0;
 
 		++it;
 	}
@@ -102,8 +102,8 @@ void init(grid_dist_id<3,double,aggregate<double> > & OldU,
 	{
 		auto key = it_init.get();
 
-        OldU.get(key) = 0.5 + (((double)std::rand())/RAND_MAX -0.5)/10.0;
-        OldV.get(key) = 0.25 + (((double)std::rand())/RAND_MAX -0.5)/20.0;
+        OldU.get<0>(key) = 0.5 + (((double)std::rand())/RAND_MAX -0.5)/10.0;
+        OldV.get<0>(key) = 0.25 + (((double)std::rand())/RAND_MAX -0.5)/20.0;
 
 		++it_init;
 	}
@@ -119,12 +119,13 @@ void step(grid_dist_id<3, double, aggregate<double>> & OldU,
 		  grid_key_dx<3> (& star_stencil_3D)[7],
 		  double uFactor_s, double vFactor_s, double deltaT, double F, double K)
 {
+
 #ifndef FORTRAN_UPDATE
 
 	//! \cond [cpp_update] \endcond
 
-	Vc::double uFactor = uFactor_s;
-	Vc::double vFactor = vFactor_s;
+	Vc::double_v uFactor = uFactor_s;
+	Vc::double_v vFactor = vFactor_s;
 
 	WHILE_M(OldU,star_stencil_3D)
 			auto & U_old = GET_GRID_M(OldU);
@@ -233,7 +234,7 @@ int main(int argc, char* argv[])
 	Box<3,double> domain({0.0,0.0},{2.5,2.5,2.5});
 	
 	// grid size
-        size_t sz[3] = {256,256,256};
+        size_t sz[3] = {128,128,128};
 
 	// Define periodicity of the grid
 	periodicity<3> bc = {PERIODIC,PERIODIC,PERIODIC};
@@ -242,7 +243,7 @@ int main(int argc, char* argv[])
 	Ghost<3,long int> g(1);
 	
 	// deltaT
-	double deltaT = 1;
+	double deltaT = 1.0;
 
 	// Diffusion constant for specie U
 	double du = 2*1e-5;
@@ -300,6 +301,8 @@ int main(int argc, char* argv[])
 	timer tot_sim;
 	tot_sim.start();
 
+	auto & v_cl = create_vcluster();
+
 	static grid_key_dx<3> star_stencil_3D[7] = {{0,0,0},
                                          	    {0,0,-1},
 						    {0,0,1},
@@ -310,8 +313,10 @@ int main(int argc, char* argv[])
 
 	for (size_t i = 0; i < timeSteps; ++i)
 	{
-		if (i % 300 == 0)
+		if (i % 100 == 0 && v_cl.rank() == 0)
+		{
 			std::cout << "STEP: " << i << std::endl;
+		}
 
 		/*!
 		 * \page Grid_3_gs_3D_vector Gray Scott in 3D fast implementation with vectorization
@@ -375,12 +380,12 @@ int main(int argc, char* argv[])
 		//! \cond [save hdf5] \endcond
 
 		// Every 2000 time step we output the configuration on hdf5
-		if (i % 2000 == 0)
+/*		if (i % 2000 == 0)
 		{
 			OldU.save("output_u_" + std::to_string(count));
 			OldV.save("output_v_" + std::to_string(count));
 			count++;
-		}
+		}*/
 
 		//! \cond [save hdf5] \endcond
 	}

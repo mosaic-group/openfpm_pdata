@@ -53,13 +53,13 @@ class MetisDistribution
 	Box<dim, T> domain;
 
 	//! Global sub-sub-domain graph
-	Graph_CSR<nm_v, nm_e> gp;
+	Graph_CSR<nm_v<dim>, nm_e> gp;
 
 	//! Flag that indicate if we are doing a test (In general it fix the seed)
 	bool testing = false;
 
 	//! Metis decomposer utility
-	Metis<Graph_CSR<nm_v, nm_e>> metis_graph;
+	Metis<Graph_CSR<nm_v<dim>, nm_e>> metis_graph;
 
 	//! unordered map that map global sub-sub-domain to owned_cost_sub id
 	std::unordered_map<size_t,size_t> owner_scs;
@@ -104,7 +104,7 @@ class MetisDistribution
 
 public:
 
-	static constexpr unsigned int computation = nm_v::computation;
+	static constexpr unsigned int computation = nm_v_computation;
 
 	/*! \brief constructor
 	 *
@@ -182,20 +182,20 @@ public:
 		domain = dom;
 
 		// Create a cartesian grid graph
-		CartesianGraphFactory<dim, Graph_CSR<nm_v, nm_e>> g_factory_part;
-		gp = g_factory_part.template construct<NO_EDGE, nm_v::id, T, dim - 1, 0>(gr.getSize(), domain, bc);
+		CartesianGraphFactory<dim, Graph_CSR<nm_v<dim>, nm_e>> g_factory_part;
+		gp = g_factory_part.template construct<NO_EDGE, nm_v_id, T, dim - 1, 0>(gr.getSize(), domain, bc);
 
 		// Init to 0.0 axis z (to fix in graphFactory)
 		if (dim < 3)
 		{
 			for (size_t i = 0; i < gp.getNVertex(); i++)
 			{
-				gp.vertex(i).template get<nm_v::x>()[2] = 0.0;
+				gp.vertex(i).template get<nm_v_x>()[2] = 0.0;
 			}
 		}
 
 		for (size_t i = 0; i < gp.getNVertex(); i++)
-			gp.vertex(i).template get<nm_v::global_id>() = i;
+			gp.vertex(i).template get<nm_v_global_id>() = i;
 	}
 
 	/*! \brief Get the current graph (main)
@@ -203,7 +203,7 @@ public:
 	 * \return the current sub-sub domain Graph
 	 *
 	 */
-	Graph_CSR<nm_v, nm_e> & getGraph()
+	Graph_CSR<nm_v<dim>, nm_e> & getGraph()
 	{
 #ifdef SE_CLASS2
 			check_valid(this,8);
@@ -230,7 +230,7 @@ public:
 			{
 				// we fill the assignment
 				for (size_t i = 0 ; i < recv_ass.size() ; i++)
-					gp.template vertex_p<nm_v::computation>(recv_ass.get(i).id) = recv_ass.get(i).w;
+					gp.template vertex_p<nm_v_computation>(recv_ass.get(i).id) = recv_ass.get(i).w;
 
 				metis_graph.initMetisGraph(v_cl.getProcessingUnits(),true);
 			}
@@ -239,13 +239,13 @@ public:
 			metis_graph.onTest(testing);
 
 			// decompose
-			metis_graph.decompose<nm_v::proc_id>();
+			metis_graph.template decompose<nm_v_proc_id>();
 
 			if (recv_ass.size() != 0)
 			{
 				// we fill the assignment
 				for (size_t i = 0 ; i < recv_ass.size() ; i++)
-					recv_ass.get(i).w = gp.template vertex_p<nm_v::proc_id>(recv_ass.get(i).id);
+					recv_ass.get(i).w = gp.template vertex_p<nm_v_proc_id>(recv_ass.get(i).id);
 			}
 			else
 			{
@@ -255,7 +255,7 @@ public:
 				for (size_t i = 0 ; i < gp.getNVertex() ; i++)
 				{
 					recv_ass.get(i).id = i;
-					recv_ass.get(i).w = gp.template vertex_p<nm_v::proc_id>(i);
+					recv_ass.get(i).w = gp.template vertex_p<nm_v_proc_id>(i);
 				}
 			}
 		}
@@ -277,7 +277,7 @@ public:
 		// Fill the metis graph
 		for (size_t i = 0 ; i < recv_ass.size() ; i++)
 		{
-			gp.template vertex_p<nm_v::proc_id>(recv_ass.get(i).id) = recv_ass.get(i).w;
+			gp.template vertex_p<nm_v_proc_id>(recv_ass.get(i).id) = recv_ass.get(i).w;
 
 			if (recv_ass.get(i).w == v_cl.getProcessUnitID())
 			{
@@ -330,10 +330,10 @@ public:
 		check_overflow(id);
 
 		// Copy the geometrical informations inside the pos vector
-		pos[0] = gp.vertex(id).template get<nm_v::x>()[0];
-		pos[1] = gp.vertex(id).template get<nm_v::x>()[1];
+		pos[0] = gp.vertex(id).template get<nm_v_x>()[0];
+		pos[1] = gp.vertex(id).template get<nm_v_x>()[1];
 		if (dim == 3)
-			pos[2] = gp.vertex(id).template get<nm_v::x>()[2];
+		{pos[2] = gp.vertex(id).template get<nm_v_x>()[2];}
 	}
 
 	/*! \brief function that get the computational cost of the sub-sub-domain
@@ -349,7 +349,7 @@ public:
 			check_valid(this,8);
 #endif
 		check_overflow(id);
-		return gp.vertex(id).template get<nm_v::computation>();
+		return gp.vertex(id).template get<nm_v_computation>();
 	}
 
 
@@ -394,7 +394,7 @@ public:
 		check_overflow(id);
 #endif
 
-		gp.vertex(id).template get<nm_v::migration>() = cost;
+		gp.vertex(id).template get<nm_v_migration>() = cost;
 	}
 
 	/*! \brief Set communication cost between neighborhood sub-sub-domains (weight on the edge)
@@ -522,7 +522,7 @@ public:
 			check_valid(this,8);
 #endif
 
-		VTKWriter<Graph_CSR<nm_v, nm_e>, VTK_GRAPH> gv2(gp);
+		VTKWriter<Graph_CSR<nm_v<dim>, nm_e>, VTK_GRAPH> gv2(gp);
 		gv2.write(std::to_string(v_cl.getProcessUnitID()) + "_" + out + ".vtk");
 
 	}
@@ -545,7 +545,7 @@ public:
 		if (v_cl.getProcessUnitID() == 0)
 		{
 			for (size_t i = 0; i < gp.getNVertex(); i++)
-				loads.get(gp.template vertex_p<nm_v::proc_id>(i)) += gp.template vertex_p<nm_v::computation>(i);
+			{loads.get(gp.template vertex_p<nm_v_proc_id>(i)) += gp.template vertex_p<nm_v_computation>(i);}
 
 			for (size_t i = 0 ; i < v_cl.getProcessingUnits() ; i++)
 			{

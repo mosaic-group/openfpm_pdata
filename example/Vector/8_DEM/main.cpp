@@ -1,5 +1,5 @@
-#define CHECKFOR_POSNAN
-#define CHECKFOR_PROPNAN
+//#define CHECKFOR_POSNAN
+//#define CHECKFOR_PROPNAN
 
 /*!
  * \page Vector_8_DEM Vector 8 Discrete element method

@@ -153,8 +153,8 @@ inline void mirror(vector_dist<1,double, aggregate<double,double> > & vd, vect_d
 		//
 		vd.getLastPos()[0] = 2.0 * box.getHigh(0) - vd.getPos(key)[0];
 
-		// Prolongate the initial condition
-		vd.template getLastProp<0>() = f_xex2(vd.getLastPos()[0]);
+		// no flow boundary condition
+		vd.template getLastProp<0>() = vd.template getProp<0>(key);
 	}
 }
 
@@ -500,7 +500,7 @@ int main(int argc, char* argv[])
             GoogleChart cg;
         
             // add a line plot
-            cg.AddLines(x,y,options);
+            cg.AddLinesGraphT(x,y,options);
         
             // write the plot file
             cg.write("PSE_plot.html");

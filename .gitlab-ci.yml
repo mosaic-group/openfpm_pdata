@@ -1,0 +1,84 @@
+centos_build:
+  stage: build
+  tags:
+    - centos
+  artifacts:
+    paths:
+      - ./build/src/pdata
+      - ./build/openfpm_numerics/src/numerics
+      - ./openfpm_numerics/test
+  script:
+    - ./build.sh $CI_PROJECT_DIR unused pdata 0 $CI_COMMIT_REF_NAME
+
+centos_run:
+  stage: test
+  tags:
+    - centos
+  dependencies:
+    - centos_build
+  script:
+    - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 2 pdata 0 $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 3 pdata 0 $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 4 pdata 0 $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 5 pdata 0 $CI_COMMIT_REF_NAME
+    - cd openfpm_numerics
+    - ./run.sh $CI_PROJECT_DIR unused 1 0 0 numerics
+    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics
+    - ./run.sh $CI_PROJECT_DIR unused 3 0 0 numerics
+    - ./run.sh $CI_PROJECT_DIR unused 4 0 0 numerics
+
+mac_build:
+  stage: build
+  tags:
+    - mac
+  artifacts:
+    paths:
+      - ./build/src/pdata
+      - ./build/openfpm_numerics/src/numerics
+      - ./openfpm_numerics/test
+  script:
+      - ./build.sh $CI_PROJECT_DIR unused pdata 0  $CI_COMMIT_REF_NAME
+
+mac_run:
+  stage: test
+  tags:
+    - mac
+  dependencies:
+    - mac_build
+  script:
+    - ./run.sh $CI_PROJECT_DIR unused 1 0 0 $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 $CI_COMMIT_REF_NAME
+    - cd openfpm_numerics
+    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics
+
+ubuntu_build:
+  stage: build
+  tags:
+    - ubuntu
+  artifacts:
+    paths:
+      - ./build/src/pdata
+      - ./build/openfpm_numerics/src/numerics
+      - ./openfpm_numerics/test
+  script:
+    - ./build.sh $CI_PROJECT_DIR unused pdata 0 $CI_COMMIT_REF_NAME
+
+ubuntu_run:
+  stage: test
+  tags:
+    - ubuntu
+  dependencies:
+    - ubuntu_build
+  script:
+    - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 2 pdata 0 $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 3 pdata 0 $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 4 pdata 0 $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 5 pdata 0 $CI_COMMIT_REF_NAME
+    - cd openfpm_numerics
+    - ./run.sh $CI_PROJECT_DIR unused 1 0 0 numerics
+    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics
+    - ./run.sh $CI_PROJECT_DIR unused 3 0 0 numerics
+    - ./run.sh $CI_PROJECT_DIR unused 4 0 0 numerics
+

@@ -39,5 +39,5 @@ make -j $4
 make install
 
 # Mark the installation
-echo 1 > $1/METIS/version
+echo 3 > $1/METIS/version
 

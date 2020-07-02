@@ -8,10 +8,18 @@
 #ifndef VECTOR_DIST_COMM_UTIL_FUNCS_HPP_
 #define VECTOR_DIST_COMM_UTIL_FUNCS_HPP_
 
-#include "util/cuda/scan_ofp.cuh"
+#include "util/common_pdata.hpp"
 
-#define SKIP_LABELLING 512
-#define KEEP_PROPERTIES 512
+constexpr int NO_POSITION = 1;
+constexpr int WITH_POSITION = 2;
+constexpr int NO_CHANGE_ELEMENTS = 4;
+
+constexpr int BIND_DEC_TO_GHOST = 1;
+
+constexpr int MAP_LOCAL = 2;
+
+constexpr int GHOST_SYNC = 0;
+constexpr int GHOST_ASYNC = 1;
 
 template<unsigned int dim, typename St, typename prop, typename Memory, template<typename> class layout_base, typename Decomposition, bool is_ok_cuda>
 struct labelParticlesGhost_impl
@@ -118,10 +126,13 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 
 			ite = g_opart_device.getGPUIterator();
 
-			// Find the buffer bases
-			CUDA_LAUNCH((find_buffer_offsets<0,decltype(g_opart_device.toKernel()),decltype(prc_offset.toKernel())>),
+			if (ite.wthr.x != 0)
+			{
+				// Find the buffer bases
+				CUDA_LAUNCH((find_buffer_offsets<0,decltype(g_opart_device.toKernel()),decltype(prc_offset.toKernel())>),
 					    ite,
 					    g_opart_device.toKernel(),(int *)mem.getDevicePointer(),prc_offset.toKernel());
+			}
 
 			// Trasfer the number of offsets on CPU
 			mem.deviceToHost();
@@ -199,7 +210,8 @@ struct local_ghost_from_opart_impl<with_pos,dim,St,prop,Memory,layout_base,true>
 
 				size_t old = v_pos.size();
 
-				v_pos.resize(v_pos.size() + o_part_loc.size(),DATA_ON_DEVICE);
+				if (!(opt & NO_POSITION))
+				{v_pos.resize(v_pos.size() + o_part_loc.size(),DATA_ON_DEVICE);}
 
 				if (!(opt & SKIP_LABELLING))
 				{

@@ -1,5 +1,4 @@
 #! /bin/bash
-
 # Make a directory in /tmp/OpenFPM_pdata
 
 workspace=$1
@@ -22,15 +21,14 @@ echo "Branch name: $branch"
 echo "GPU compilation: $with_gpu"
 
 
-if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
+if [ x"$hostname" == x"cifarm-centos-node"  ]; then
 	echo "CentOS node"
-	./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/ 4
-	echo 4 > $HOME/openfpm_dependencies/openfpm_pdata/$branch/MPI/version
 fi
 
-if [ x"$hostname" == x"cifarm-ubuntu-node.mpi-cbg.de"  ]; then
+if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
 #	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
 	echo "Ubuntu node"
+	./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/ 4
 fi
 
 if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
@@ -100,7 +98,7 @@ fi
 echo "Installing with: ./install $gpu_support  -i $dependency_dir $install_options -c \"$installation_dir $foward_options  \"  "
 ./install $gpu_support -i $dependency_dir $install_options -c "$installation_dir $foward_options "
 if [ $? -ne 0 ]; then
-    curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
+    echo "Fail to ./install"
     exit 1 ;
 fi
 
@@ -108,13 +106,19 @@ fi
 if [ x"$comp_type" == x"full" ]; then
     make install
 else
+    echo "Make install partial"
     mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
     source $HOME/openfpm_vars_$branch
-    make VERBOSE=1  -j 8
+    if [ x"$hostname" == x"suitcase" ]; then
+      echo "Running make on 1 cores"
+      make VERBOSE=1 -j 1
+    else
+      make VERBOSE=1 -j 8
+    fi
 fi
 
 if [ $? -ne 0 ]; then
-   curl -X POST --data "payload={\"icon_emoji\": \":jenkins:\", \"username\": \"jenkins\"  , \"attachments\":[{ \"title\":\"Error:\", \"color\": \"#FF0000\", \"text\":\"$hostname failed to complete the openfpm_pdata test \" }] }" https://hooks.slack.com/services/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
+   echo "Fail make install"
    exit 1 ;
 fi
 

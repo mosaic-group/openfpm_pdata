@@ -1928,6 +1928,70 @@ BOOST_AUTO_TEST_CASE( vector_of_vector_dist )
 	BOOST_REQUIRE_EQUAL(cnt,4*4096ul);
 }
 
+BOOST_AUTO_TEST_CASE( vector_high_dimension )
+{
+	// Here we define our domain a 2D box with internals from 0 to 1.0 for x and y
+	Box<10,double> domain;
+
+	for (size_t i = 0 ; i < 10 ; i++)
+	{
+		domain.setLow(i,0.0);
+		domain.setHigh(i,1.0);
+	}
+
+	// Here we define the boundary conditions of our problem
+	size_t bc[10];
+	for (size_t i = 0 ; i < 10 ; i++)
+    {bc[i] = NON_PERIODIC;};
+
+	// extended boundary around the domain, and the processor domain
+	Ghost<10,double> g(0.0);
+
+	// we check if the constructor does not stuck
+	vector_dist<10,double, aggregate<double,double[10]> > vd(16,domain,bc,g);
+}
+
+BOOST_AUTO_TEST_CASE ( vector_of_cell_list_compile_test )
+{
+	auto & v_cl = create_vcluster();
+
+    // set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Ghost<3,double> g(0.1);
+	size_t bc[3] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+
+	vector_dist<3,double,aggregate<float,float[3]>> vd(100,domain,bc,g);
+
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.getPos(key)[0] = ud(eg);
+		vd.getPos(key)[1] = ud(eg);
+		vd.getPos(key)[2] = ud(eg);
+
+		++it;
+	}
+
+	vd.map();
+
+	std::vector<decltype(vd.getCellList(0.1))> vector_of_celllist;
+
+	typedef vector_dist<3,double,aggregate<float,float[3]>> my_particles;
+	std::vector<decltype(std::declval<my_particles>().getCellList(0.0))> vector_of_celllist2;
+
+	vector_of_celllist.push_back(vd.getCellList(0.1));
+
+	vector_of_celllist2.push_back(vd.getCellList(0.1));
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 

@@ -246,8 +246,8 @@ public:
 		for (size_t i = 0 ; i < dim ; i++)
 			this->bc[i] = dec.bc[i];
 
-		(static_cast<nn_prcs<dim,T> &>(*this)).create(this->box_nn_processor, this->sub_domains);
-		(static_cast<nn_prcs<dim,T> &>(*this)).applyBC(ext_domain,g,this->bc);
+		(static_cast<nn_prcs<dim,T,layout_base,Memory> &>(*this)).create(this->box_nn_processor, this->sub_domains);
+		(static_cast<nn_prcs<dim,T, layout_base,Memory> &>(*this)).applyBC(ext_domain,g,this->bc);
 
 		this->Initialize_geo_cell_lists();
 		this->calculateGhostBoxes();

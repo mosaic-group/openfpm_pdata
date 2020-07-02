@@ -143,8 +143,8 @@ class DistParmetis
 			size_t idx = sub_g.nodeById(j);
 
 			// Add weight to vertex and migration cost
-			Mg.vwgt[i] = sub_g.vertex(idx).template get<nm_v::computation>();
-			Mg.vsize[i] = sub_g.vertex(idx).template get<nm_v::migration>();
+			Mg.vwgt[i] = sub_g.vertex(idx).template get<nm_v_computation>();
+			Mg.vsize[i] = sub_g.vertex(idx).template get<nm_v_migration>();
 
 			// Calculate the starting point in the adjacency list
 			Mg.xadj[id] = prev;
@@ -282,6 +282,16 @@ public:
 		{
 			delete[] Mg.wgtflag;
 		}
+
+		if (Mg.itr != NULL)
+		{
+			delete[] Mg.itr;
+		}
+
+		if (Mg.vsize != NULL)
+		{
+			delete[] Mg.vsize;
+		}
 	}
 
 	/*! \brief Set the Sub-graph
@@ -295,20 +305,28 @@ public:
 
 		// Get the number of vertex
 
+		if (Mg.nvtxs != NULL)
+		{delete[] Mg.nvtxs;}
 		Mg.nvtxs = new idx_t[1];
 		Mg.nvtxs[0] = sub_g.getNVertex();
 
 		// Set the number of constrains
 
+		if (Mg.ncon != NULL)
+		{delete[] Mg.ncon;}
 		Mg.ncon = new idx_t[1];
 		Mg.ncon[0] = 1;
 
 		// Set to null the weight of the vertex (init after in constructAdjList) (can be removed)
 
+		if (Mg.vwgt != NULL)
+		{delete[] Mg.vwgt;}
 		Mg.vwgt = NULL;
 
 		// Set to null the weight of the edge (init after in constructAdjList) (can be removed)
 
+		if (Mg.adjwgt != NULL)
+		{delete[] Mg.adjwgt;}
 		Mg.adjwgt = NULL;
 
 		// construct the adjacency list
@@ -317,11 +335,15 @@ public:
 
 		// Set the total number of partitions
 
+		if (Mg.nparts != NULL)
+		{delete[] Mg.nparts;}
 		Mg.nparts = new idx_t[1];
 		Mg.nparts[0] = nc;
 
 		//! Set option for the graph partitioning (set as default)
 
+		if (Mg.options != NULL)
+		{delete[] Mg.options;}
 		Mg.options = new idx_t[4];
 		Mg.options[0] = 0;
 		Mg.options[1] = 0;
@@ -329,11 +351,17 @@ public:
 		Mg.options[3] = 0;
 
 		//! adaptiveRepart itr value
+		if (Mg.itr != NULL)
+		{delete[] Mg.itr;}
 		Mg.itr = new real_t[1];
 		Mg.itr[0] = 1000.0;
 
 		//! init tpwgts to have balanced vertices and ubvec
 
+		if (Mg.tpwgts != NULL)
+		{delete[] Mg.tpwgts;}
+		if (Mg.ubvec != NULL)
+		{delete[] Mg.ubvec;}
 		Mg.tpwgts = new real_t[Mg.nparts[0]];
 		Mg.ubvec = new real_t[Mg.nparts[0]];
 
@@ -343,14 +371,20 @@ public:
 			Mg.ubvec[s] = 1.05;
 		}
 
+		if (Mg.edgecut != NULL)
+		{delete[] Mg.edgecut;}
 		Mg.edgecut = new idx_t[1];
 		Mg.edgecut[0] = 0;
 
 		//! This is used to indicate the numbering scheme that is used for the vtxdist, xadj, adjncy, and part arrays. (0 for C-style, start from 0 index)
+		if (Mg.numflag != NULL)
+		{delete[] Mg.numflag;}
 		Mg.numflag = new idx_t[1];
 		Mg.numflag[0] = 0;
 
 		//! This is used to indicate if the graph is weighted.
+		if (Mg.wgtflag != NULL)
+		{delete[] Mg.wgtflag;}
 		Mg.wgtflag = new idx_t[1];
 		Mg.wgtflag[0] = 3;
 	}

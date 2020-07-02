@@ -78,14 +78,17 @@ int main(int argc, char* argv[])
 		++it;
 	}
 
+	/* coverty[fun_call_w_exception] */
 	vd.write("Vector/vector_before_map",CSV_WRITER);
 
 	vd.map();
 
+	/* coverty[fun_call_w_exception] */
 	vd.write("Vector/vector_after_map",CSV_WRITER);
 	
 	vd.ghost_get<0>();
 
+	/* coverty[fun_call_w_exception] */
 	vd.write("Vector/vector_ghost_fill",CSV_WRITER);
 
 	vd.getDecomposition().write("Vector/vect_decomposition");
