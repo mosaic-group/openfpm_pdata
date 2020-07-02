@@ -82,6 +82,16 @@ public:
         return g_m;
     }
 
+    /*! \brief return the local size of the original vector
+ *
+ * \return local size
+ *
+ */
+    size_t size_local_orig() const
+    {
+        return vd.size_local();
+    }
+
 #ifndef ONLY_READWRITE_GETTER
 
     /*! \brief Get the position of an element
@@ -110,6 +120,34 @@ public:
     inline auto getPos(vect_dist_key_dx vec_key) const -> decltype(vd.getPos(vec_key))
     {
         return vd.getPos(vect_dist_key_dx(pid.template get<0>(vec_key.getKey())));
+    }
+
+    /*! \brief Get the position of an element
+     *
+     * see the vector_dist iterator usage to get an element key
+     *
+     * \param vec_key element
+     *
+     * \return the position of the element in space
+     *
+     */
+    inline auto getPosOrig(vect_dist_key_dx vec_key) -> decltype(vd.getPos(vec_key))
+    {
+        return vd.getPos(vec_key.getKey());
+    }
+
+    /*! \brief Get the position of an element
+     *
+     * see the vector_dist iterator usage to get an element key
+     *
+     * \param vec_key element
+     *
+     * \return the position of the element in space
+     *
+     */
+    inline auto getPosOrig(vect_dist_key_dx vec_key) const -> decltype(vd.getPos(vec_key))
+    {
+        return vd.getPos(vec_key.getKey());
     }
 
     /*! \brief Get the property of an element
@@ -143,6 +181,11 @@ public:
     }
 
 
+	vect_dist_key_dx getOriginKey(vect_dist_key_dx vec_key)
+	{
+		return vect_dist_key_dx(pid.template get<0>(vec_key.getKey()));
+	}
+
 #endif
 
     /*! \brief Get an iterator that traverse the particles in the domain
@@ -175,9 +218,6 @@ public:
 #ifdef SE_CLASS3
 		if (no_se3 == false)
 		{se3.getNN();}
-#endif
-#ifdef SE_CLASS1
-		check_ghost_compatible_rcut(r_cut);
 #endif
 
 		// Get ghost and anlarge by 1%
@@ -236,7 +276,7 @@ public:
 
 			Point<dim,St> pos = getPos(key);
 
-			cell_list.add(pos, key.getKey());
+			cell_list.add(pos,pid.template get<0>(key.getKey()));
 
 			++it;
 		}

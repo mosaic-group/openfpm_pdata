@@ -573,6 +573,16 @@ public:
 	 * \return local size
 	 *
 	 */
+	size_t size_local_orig() const
+	{
+		return g_m;
+	}
+
+	/*! \brief return the local size of the vector
+	 *
+	 * \return local size
+	 *
+	 */
 	size_t size_local_with_ghost() const
 	{
 		return v_pos.size();
@@ -625,6 +635,40 @@ public:
 	 *
 	 */
 	inline auto getPos(size_t vec_key) -> decltype(v_pos.template get<0>(vec_key))
+	{
+#ifdef SE_CLASS3
+		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key);
+#endif
+		return v_pos.template get<0>(vec_key);
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPosOrig(vect_dist_key_dx vec_key) const -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	{
+#ifdef SE_CLASS3
+		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key.getKey());
+#endif
+		return v_pos.template get<0>(vec_key.getKey());
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPosOrig(size_t vec_key) -> decltype(v_pos.template get<0>(vec_key))
 	{
 #ifdef SE_CLASS3
 		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key);
@@ -1030,6 +1074,11 @@ public:
 	}
 
 ////////////////////////////////////////////////////////////////
+
+	vect_dist_key_dx getOriginKey(vect_dist_key_dx vec_key)
+	{
+		return vec_key;
+	}
 
 	/*! \brief Construct a cell list symmetric based on a cut of radius
 	 *
