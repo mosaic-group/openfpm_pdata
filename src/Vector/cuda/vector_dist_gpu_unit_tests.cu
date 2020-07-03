@@ -1806,7 +1806,14 @@ BOOST_AUTO_TEST_CASE(vector_dist_overflow_se_class1)
 	ite.thr.y = 1;
 	ite.thr.z = 1;
 
-	CUDA_LAUNCH(launch_overflow,ite,vdg.toKernel(),vdg2.toKernel());
+	try
+	{
+		CUDA_LAUNCH(launch_overflow,ite,vdg.toKernel(),vdg2.toKernel());
+	}
+	catch(...)
+	{
+		std::cout << "SE_CLASS1 Catch" << std::endl;
+	};
 
 	std::cout << "****** TEST ERROR MESSAGE END ********" << std::endl;
 }
