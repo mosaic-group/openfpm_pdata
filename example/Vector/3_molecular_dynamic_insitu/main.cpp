@@ -392,7 +392,7 @@ int main(int argc, char* argv[])
 	}
 
 	vd.map();
-	vd.ghost_get<>();
+	vd.ghost_get<velocity>();
 
 	//! \cond [vect grid] \endcond
 
@@ -476,10 +476,11 @@ int main(int argc, char* argv[])
 
 		// Because we moved the particles in space we have to map them and re-sync the ghost
 		vd.map();
-		vd.template ghost_get<>();
+		vd.template ghost_get<velocity>();
 
 		// calculate forces or a(tn + 1) Step 2
 		calc_forces(vd,NN,sigma12,sigma6,r_cut*r_cut);
+
 
 
 		// Integrate the velocity Step 3
@@ -505,7 +506,7 @@ int main(int argc, char* argv[])
 			vd.write("particles_",f);
 
 			// we resync the ghost
-			vd.ghost_get<>();
+			vd.ghost_get<velocity>();
 
 			// We calculate the energy
 			double energy = calc_energy(vd,NN,sigma12,sigma6,r_cut*r_cut);

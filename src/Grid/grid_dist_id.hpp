@@ -1634,6 +1634,11 @@ public:
                     ++it;
                 }
 
+//                auto it2 = loc_grid.get(i).getIterator();
+//                auto key = it2.get();
+//                auto &lin = loc_grid.get(i).getGrid();
+//                std::cout << key.to_string() << "lin " << loc_grid.get(i).get<0>(key) << "  " <<  lin.LinId(key);
+
                 loc_grid.get(i).swap(tmp);
             }
 

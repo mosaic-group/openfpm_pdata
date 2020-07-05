@@ -732,6 +732,7 @@ int main(int argc, char* argv[])
 
 	// Ghost (Not important in this case but required)
 	Ghost<3,long int> g(2);
+    Ghost<3,float> g_zero(0);
 
 	// Grid points on x=128 y=64 z=64
 	// if we use Re = 7500
@@ -746,7 +747,7 @@ int main(int argc, char* argv[])
 	grid_type g_vort(szu,domain,g,bc);
 	grid_type g_vel(g_vort.getDecomposition(),szu,g);
 	grid_type g_dvort(g_vort.getDecomposition(),szu,g);
-	grid_type_vis g_vis(g_vort.getDecomposition(),szu,g);
+	grid_type_vis g_vis(g_vort.getDecomposition(),szu,g_zero);
 	g_vis.visualize();
 	particles_type particles(g_vort.getDecomposition(),0);
 
@@ -891,7 +892,7 @@ int main(int argc, char* argv[])
 
 
         //find max and min velocity
-        auto it1 = g_vel.getDomainIterator();
+        auto it1 = g_vort.getDomainIterator();
 		float maxVel = 0.0f;
 		float minVel = 65535.0f;
 
@@ -899,9 +900,9 @@ int main(int argc, char* argv[])
         {
 		    auto key = it1.get();
 
-            float curVel = (float) sqrt( g_vel.template get<velocity>(key)[0] * g_vel.template get<velocity>(key)[0] +
-                                       g_vel.template get<velocity>(key)[1] * g_vel.template get<velocity>(key)[1] +
-                                       g_vel.template get<velocity>(key)[2] * g_vel.template get<velocity>(key)[2] );
+            float curVel = (float) sqrt( g_vort.template get<vorticity>(key)[0] * g_vort.template get<vorticity>(key)[0] +
+                                       g_vort.template get<vorticity>(key)[1] * g_vort.template get<vorticity>(key)[1] +
+                                       g_vort.template get<vorticity>(key)[2] * g_vort.template get<vorticity>(key)[2] );
 
             if(curVel > maxVel)
             {
@@ -919,21 +920,32 @@ int main(int argc, char* argv[])
 		std::cout<<"The maximum velocity is "<<maxVel << " and the minimum is " << minVel <<std::endl;
 
         // calculate the magnitude of velocity
-        auto it2 = g_vel.getDomainIterator();
+        auto it2 = g_vort.getDomainIterator();
+        auto it2_vis = g_vis.getDomainIterator();
         while (it2.isNext())
 		{
 			auto key = it2.get();
+			auto key_vis = it2_vis.get();
 
-			float curVel = (float) sqrt( g_vel.template get<velocity>(key)[0] * g_vel.template get<velocity>(key)[0] +
-                                                               g_vel.template get<velocity>(key)[1] * g_vel.template get<velocity>(key)[1] +
-                                                               g_vel.template get<velocity>(key)[2] * g_vel.template get<velocity>(key)[2] );
+			float curVel = (float) sqrt( g_vort.template get<vorticity>(key)[0] * g_vort.template get<vorticity>(key)[0] +
+                                                               g_vort.template get<vorticity>(key)[1] * g_vort.template get<vorticity>(key)[1] +
+                                                               g_vort.template get<vorticity>(key)[2] * g_vort.template get<vorticity>(key)[2] );
 
 			float scaled = (curVel / (maxVel - minVel)) * 65535;
 			// copy
-			g_vis.get<0>(key) = (unsigned short)(scaled);
+			g_vis.get<0>(key_vis) = (unsigned short)(scaled);
+
+//                std::cout << key.to_string() << "lin " << loc_grid.get(i).get<0>(key) << "  " <<  lin.LinId(key);
+//            auto &lin = g_vis.getGrid();
+
+//			std::cout<<"Value at "<<key.to_string()<<" linearized as "<<g_vis.get<0>(key) << " " << lin.LinId(key);
+//            std::cout<<"Value at "<<key.to_string()<<" is "<< (unsigned short)(scaled) <<std::endl;
 
 			++it2;
+			++it2_vis;
 		}
+
+        g_vis.write_frame("g_vis", i);
 
 	}
 	}
