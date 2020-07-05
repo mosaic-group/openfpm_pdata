@@ -271,6 +271,7 @@ class grid_dist_id_comm
 	#endif
 
 					auto & gd = loc_grid.get(sub_id_dst_gdb_ext);
+
 					gd.remove(bx_dst);
 					gd.copy_to(loc_grid.get(sub_id_src_gdb_ext),bx_src,bx_dst);
 				}
