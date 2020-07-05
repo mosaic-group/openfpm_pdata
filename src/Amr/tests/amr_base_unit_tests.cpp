@@ -118,13 +118,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_amr )
 	vcl.sum(check_count);
 	vcl.execute();
 
-	if (create_vcluster().rank() == 52)
-	{
-		g_dist.write("TEST_AMR_DEBUG");
-
-		g_dist.getDecomposition().write("TEST_AMR_DEC");
-	}
-
 	BOOST_REQUIRE_EQUAL(check,true);
 	BOOST_REQUIRE(check_count >= volume_key);
 }
