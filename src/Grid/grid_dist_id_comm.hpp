@@ -243,7 +243,7 @@ class grid_dist_id_comm
 				{
 					size_t k = loc_ig_box.get(i).bid.get(j).k.get(v);
 
-					Box<dim,size_t> bx_dst = loc_eg_box.get(sub_id_dst).bid.get(k).ebox;
+					Box<dim,long int> bx_dst = loc_eg_box.get(sub_id_dst).bid.get(k).ebox;
 
 					// convert into local
 					size_t sub_id_dst_gdb_ext = loc_eg_box.get(sub_id_dst).bid.get(k).sub_gdb_ext;
@@ -252,9 +252,9 @@ class grid_dist_id_comm
 					// create 2 sub grid iterator
 
 					if (bx_dst.isValid() == false)
-						continue;
+					{continue;}
 
-					Box<dim,size_t>  bx_src = flip_box(loc_eg_box.get(sub_id_dst).bid.get(k).ebox,loc_eg_box.get(sub_id_dst).bid.get(k).cmb,ginfo);
+					Box<dim,long int>  bx_src = flip_box(loc_eg_box.get(sub_id_dst).bid.get(k).ebox,loc_eg_box.get(sub_id_dst).bid.get(k).cmb,ginfo);
 					bx_src -= gdb_ext.get(sub_id_src_gdb_ext).origin;
 
 	#ifdef SE_CLASS1
@@ -320,7 +320,7 @@ class grid_dist_id_comm
 				if (loc_eg_box.get(i).bid.get(j).initialized == false)
 					continue;
 
-				Box<dim,size_t> bx_src = loc_eg_box.get(i).bid.get(j).ebox;
+				Box<dim,long int> bx_src = loc_eg_box.get(i).bid.get(j).ebox;
 				// convert into local
 				bx_src -= gdb_ext.get(i).origin;
 
@@ -330,7 +330,7 @@ class grid_dist_id_comm
 				// local external ghost box connected
 				size_t k = loc_eg_box.get(i).bid.get(j).k;
 
-				Box<dim,size_t> bx_dst = loc_ig_box.get(sub_id_dst).bid.get(k).box;
+				Box<dim,long int> bx_dst = loc_ig_box.get(sub_id_dst).bid.get(k).box;
 
 				// convert into local
 				bx_dst -= gdb_ext.get(sub_id_dst).origin;
@@ -573,7 +573,7 @@ class grid_dist_id_comm
 		size_t ei =	eb_gid_list.get(l_id).e_id;
 
 		// Get the external ghost box associated with the packed information
-		Box<dim,size_t> box = eg_box.get(ei).bid.get(le_id).l_e_box;
+		Box<dim,long int> box = eg_box.get(ei).bid.get(le_id).l_e_box;
 		size_t sub_id = eg_box.get(ei).bid.get(le_id).sub;
 
 		// sub-grid where to unpack
@@ -596,8 +596,8 @@ class grid_dist_id_comm
 //				size_t nle_id = eb_gid_list.get(l_id).eb_list.get(j);
 				size_t n_sub_id = eg_box.get(ei).bid.get(nle_id).sub;
 
-				Box<dim,size_t> box = eg_box.get(ei).bid.get(nle_id).l_e_box;
-				Box<dim,size_t> rbox = eg_box.get(ei).bid.get(nle_id).lr_e_box;
+				Box<dim,long int> box = eg_box.get(ei).bid.get(nle_id).l_e_box;
+				Box<dim,long int> rbox = eg_box.get(ei).bid.get(nle_id).lr_e_box;
 
 				loc_grid.get(n_sub_id).remove(box);
 				loc_grid.get(n_sub_id).copy_to(loc_grid.get(sub_id),rbox,box);
@@ -925,8 +925,8 @@ public:
 					grid_key_dx<dim> start = inte_box_local.getKP1();
 					grid_key_dx<dim> stop = inte_box_local.getKP2();
 
-					Box<dim,size_t> box_src;
-					Box<dim,size_t> box_dst;
+					Box<dim,long int> box_src;
+					Box<dim,long int> box_dst;
 
 					for(size_t i = 0 ; i < dim ; i++)
 					{
