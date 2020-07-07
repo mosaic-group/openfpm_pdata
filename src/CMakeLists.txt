@@ -58,6 +58,9 @@ add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
 														  DCPSE/Dcpse.hpp 
 														  DCPSE/tests/Dcpse_unit_tests.cpp)
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	target_compile_options(pdata PRIVATE -Wno-undefined-var-template -Wno-macro-redefined)
+endif()
 if ( CMAKE_COMPILER_IS_GNUCC )
     target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
     if (TEST_COVERAGE)

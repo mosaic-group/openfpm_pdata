@@ -19,7 +19,7 @@ source script/solve_python
 discover_os
 
 function test_configure_options() {
-  cd petsc-3.12.3
+  cd petsc-3.13.3
   $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options2 --with-debugging=0
   error=$?
   cd ..
@@ -49,14 +49,14 @@ fi
 
 #### Download and uncompress petsc
 
-rm petsc-lite-3.12.3.tar.gz
-rm -rf petsc-3.12.3
-wget http://ppmcore.mpi-cbg.de/upload/petsc-lite-3.12.3.tar.gz
+rm petsc-lite-3.13.3.tar.gz
+rm -rf petsc-3.13.3
+wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-lite-3.13.3.tar.gz
 if [ $? -ne 0 ]; then
   echo -e "\033[91;5;1m FAILED! Installation requires an Internet connection \033[0m"
   exit 1
 fi
-tar -xf petsc-lite-3.12.3.tar.gz
+tar -xf petsc-lite-3.13.3.tar.gz
 
 ####
 
@@ -125,15 +125,15 @@ fi
 
 configure_options="$configure_options --download-hypre"
 
-rm petsc-lite-3.12.3.tar.gz
-rm -rf petsc-3.12.3
-wget http://ppmcore.mpi-cbg.de/upload/petsc-lite-3.12.3.tar.gz
+rm petsc-lite-3.3.tar.gz
+rm -rf petsc-3.13.3
+wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-lite-3.13.3.tar.gz
 if [ $? -ne 0 ]; then
   echo -e "\033[91;5;1m FAILED! Installation requires an Internet connection \033[0m"
   exit 1
 fi
-tar -xf petsc-lite-3.12.3.tar.gz
-cd petsc-3.12.3
+tar -xf petsc-lite-3.13.3.tar.gz
+cd petsc-3.13.3
 
 if [ x"$CXX" != x"icpc" ]; then
 
