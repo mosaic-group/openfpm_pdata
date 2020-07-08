@@ -293,6 +293,23 @@ public:
 
 		return cell_list;
 	}
+
+	/*! \brief Operator= for distributed vector
+	 *
+	 * \param v vector to copy
+	 *
+	 * \return itself
+	 *
+	 */
+	vector_dist_subset<dim,St,prop,Decomposition,Memory,layout_base> &
+	operator=(const vector_dist_subset<dim,St,prop,Decomposition,Memory,layout_base> & v)
+	{
+	    vd = v.vd;
+	    pid = v.pid;
+	    g_m = v.g_m;
+
+		return *this;
+	}
 };
 
 #endif //OPENFPM_PDATA_VECTOR_DIST_SUBSET_HPP

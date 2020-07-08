@@ -278,6 +278,16 @@ public:
 		return cv.check;
 	}
 
+	/*! \brief This vector contain all particles so is not a subset
+	 *
+	 * \return false
+	 *
+	 */
+	__host__ bool isSubset() const
+	{
+		return false;
+	}
+
 #ifdef SE_CLASS1
 
 		/*! \brief Check if the device pointer is owned by this structure
