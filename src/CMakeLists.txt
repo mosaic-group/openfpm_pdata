@@ -42,24 +42,12 @@ add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
 														  ../openfpm_devices/src/memory/HeapMemory.cpp 
 														  ../openfpm_devices/src/memory/PtrMemory.cpp 
 														  ../openfpm_vcluster/src/VCluster/VCluster.cpp 
-														  ../openfpm_devices/src/Memleak_check.cpp
-														  DCPSE/MonomialBasis.hpp 
-														  DCPSE/Monomial.hpp 
-														  DCPSE/tests/MonomialBasis_unit_tests.cpp 
-														  DCPSE/Vandermonde.hpp 
-														  DCPSE/VandermondeRowBuilder.hpp 
-														  DCPSE/tests/Vandermonde_unit_tests.cpp 
-														  DCPSE/SupportBuilder.hpp 
-														  DCPSE/tests/Support_unit_tests.cpp 
-														  DCPSE/DcpseRhs.hpp 
-														  DCPSE/tests/DcpseRhs_unit_tests.cpp 
-														  DCPSE/Support.hpp 
-														  DCPSE/DcpseDiagonalScalingMatrix.hpp 
-														  DCPSE/Dcpse.hpp 
-														  DCPSE/tests/Dcpse_unit_tests.cpp)
+														  ../openfpm_devices/src/Memleak_check.cpp)
 
 if ( CMAKE_COMPILER_IS_GNUCC )
     target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
+    #target_compile_options(pdata PRIVATE "-fsanitize=address")
+    #    target_link_options(pdata PRIVATE "-fsanitize=address")
     if (TEST_COVERAGE)
         target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fprofile-arcs -ftest-coverage>)
     endif()

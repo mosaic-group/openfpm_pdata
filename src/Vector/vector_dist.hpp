@@ -528,8 +528,8 @@ public:
 	 * \param np number of particles
 	 *
 	 */
-	vector_dist(const Decomposition & dec, size_t np) :
-	vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>(dec), v_cl(create_vcluster<Memory>()) SE_CLASS3_VDIST_CONSTRUCTOR
+	vector_dist(const Decomposition & dec, size_t np)
+	:vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>(dec), v_cl(create_vcluster<Memory>()) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -608,6 +608,16 @@ public:
 	 * \return local size
 	 *
 	 */
+	size_t size_local_orig() const
+	{
+		return g_m;
+	}
+
+	/*! \brief return the local size of the vector
+	 *
+	 * \return local size
+	 *
+	 */
 	size_t size_local_with_ghost() const
 	{
 		return v_pos.size();
@@ -660,6 +670,40 @@ public:
 	 *
 	 */
 	inline auto getPos(size_t vec_key) -> decltype(v_pos.template get<0>(vec_key))
+	{
+#ifdef SE_CLASS3
+		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key);
+#endif
+		return v_pos.template get<0>(vec_key);
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPosOrig(vect_dist_key_dx vec_key) const -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	{
+#ifdef SE_CLASS3
+		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key.getKey());
+#endif
+		return v_pos.template get<0>(vec_key.getKey());
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPosOrig(size_t vec_key) -> decltype(v_pos.template get<0>(vec_key))
 	{
 #ifdef SE_CLASS3
 		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key);
@@ -1065,6 +1109,11 @@ public:
 	}
 
 ////////////////////////////////////////////////////////////////
+
+	vect_dist_key_dx getOriginKey(vect_dist_key_dx vec_key)
+	{
+		return vec_key;
+	}
 
 	/*! \brief Construct a cell list symmetric based on a cut of radius
 	 *
@@ -2938,6 +2987,15 @@ public:
 		return key;
 	}
 
+	/*! \brief Indicate that this class is not a subset
+	 *
+	 * \return false
+	 *
+	 */
+	bool isSubset() const
+	{
+		return false;
+	}
 
 #ifdef CUDA_GPU
 
