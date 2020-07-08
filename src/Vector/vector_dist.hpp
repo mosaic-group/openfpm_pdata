@@ -2775,6 +2775,15 @@ public:
 		return key;
 	}
 
+	/*! \brief Indicate that this class is not a subset
+	 *
+	 * \return false
+	 *
+	 */
+	bool isSubset() const
+	{
+		return false;
+	}
 
 #ifdef CUDA_GPU
 

@@ -227,6 +227,16 @@ public:
 		return getCellList<CellL>(r_cut, g,no_se3);
 	}
 
+	/*! \brief Indicate that this class is not a subset
+	 *
+	 * \return false
+	 *
+	 */
+	bool isSubset() const
+	{
+		return true;
+	}
+
 	/*! \brief Construct a cell list starting from the stored particles
 	 *
 	 * It differ from the get getCellList for an additional parameter, in case the
