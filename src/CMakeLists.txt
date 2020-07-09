@@ -182,16 +182,6 @@ install(FILES Decomposition/cuda/ie_ghost_gpu.cuh
 	      Decomposition/cuda/CartDecomposition_gpu.cuh
 	      DESTINATION openfpm_pdata/include/Decomposition/cuda )
 
-install(FILES DCPSE/DcpseDiagonalScalingMatrix.hpp  
-	      DCPSE/Dcpse.hpp  
-	      DCPSE/DcpseRhs.hpp  
-	      DCPSE/MonomialBasis.hpp  
-	      DCPSE/Monomial.hpp  
-	      DCPSE/SupportBuilder.hpp  
-	      DCPSE/Support.hpp
-	      DCPSE/Vandermonde.hpp  
-	      DCPSE/VandermondeRowBuilder.hpp
-	      DESTINATION openfpm_pdata/include/DCPSE/ )
 
 install(FILES Grid/grid_dist_id.hpp 
 	      Grid/grid_dist_id_comm.hpp
