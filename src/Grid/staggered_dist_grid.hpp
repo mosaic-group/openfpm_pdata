@@ -70,6 +70,8 @@ public:
 	//! Properties for each grid point
 	typedef T value_type;
 
+	typedef typename grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>::decomposition decomposition;
+
 	//! Number of dimensions
 	static const unsigned int dims = dim;
 
