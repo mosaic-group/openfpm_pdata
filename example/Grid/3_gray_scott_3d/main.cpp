@@ -144,6 +144,27 @@ int main(int argc, char* argv[])
 	init(Old,New,domain);
 //	Old.write("InitGrayScott");
 
+    auto &v_cl = create_vcluster();
+
+    size_t i = 0;
+
+    if (argc > 1)
+    {
+        // take that argument
+        std::string restart(argv[1]);
+
+        // convert it into number
+        i = std::stoi(restart);
+
+        // load the file
+        Old.load("checkpoint" + std::to_string(i));
+
+        // Print to inform that we are restarting from a
+        // particular position
+        if (v_cl.getProcessUnitID() == 0)
+        {std::cout << "Restarting from " << i << std::endl;}
+    }
+
 	// sync the ghost
 	size_t count = 0;
 	Old.template ghost_get<U,V>();
@@ -171,7 +192,7 @@ int main(int argc, char* argv[])
     float maxConc = 0.8f;
     float minConc = 0.0f;
 
-	for (size_t i = 0; i < timeSteps; ++i)
+	for (; i < timeSteps; ++i)
 	{
 		if (i % 300 == 0)
 		{std::cout << "STEP: " << i << std::endl;}
@@ -236,13 +257,13 @@ int main(int argc, char* argv[])
 
 		// Every 500 time step we output the configuration for
 		// visualization
-		if (i % 500 == 0)
-		{
-			Old.save("output_" + std::to_string(count));
-			Vis_new.write_frame("vis_output", count);
-			Old.write_frame("old_output", count);
-			count++;
-		}
+//		if (i % 500 == 0)
+//		{
+//			Old.save("output_" + std::to_string(count));
+//			Vis_new.write_frame("vis_output", count);
+//			Old.write_frame("old_output", count);
+//			count++;
+//		}
 
         //find max and min velocity
 //        auto it1 = New.getDomainIterator();
@@ -290,6 +311,11 @@ int main(int argc, char* argv[])
 
             ++it2;
             ++it2_vis;
+        }
+
+        if(i == (int)2000/deltaT || i == (int)3000/deltaT || i == (int)4000/deltaT )
+        {
+            Old.save("checkpoint" + std::to_string(i));
         }
 	}
 	
