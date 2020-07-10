@@ -52,6 +52,31 @@ constexpr int z = 2;
 
 //! \cond [constants] \endcond
 
+void draw_box(double x_s, double y_s, double z_s, double x_e, double y_e, double z_e, grid_dist_id<3,double,aggregate<double,double>> & Old, Box<3, double> & domain)
+{
+    long int x_start = Old.size(0)*x_s/domain.getHigh(0);
+    long int y_start = Old.size(1)*y_s/domain.getHigh(1);
+    long int z_start = Old.size(1)*z_s/domain.getHigh(2);
+
+    long int x_stop = Old.size(0)*x_e/domain.getHigh(0);
+    long int y_stop = Old.size(1)*y_e/domain.getHigh(1);
+    long int z_stop = Old.size(1)*z_e/domain.getHigh(2);
+
+    grid_key_dx<3> start({x_start,y_start,z_start});
+    grid_key_dx<3> stop ({x_stop,y_stop,z_stop});
+    auto it_init = Old.getSubDomainIterator(start,stop);
+
+    while (it_init.isNext())
+    {
+        auto key = it_init.get();
+
+        Old.template get<U>(key) = 0.5 + (((double)std::rand())/RAND_MAX -0.5)/10.0;
+        Old.template get<V>(key) = 0.25 + (((double)std::rand())/RAND_MAX -0.5)/20.0;
+
+        ++it_init;
+    }
+}
+
 void init(grid_dist_id<3,double,aggregate<double,double> > & Old, grid_dist_id<3,double,aggregate<double,double> > & New, Box<3,double> & domain)
 {
 	auto it = Old.getDomainIterator();
@@ -72,27 +97,34 @@ void init(grid_dist_id<3,double,aggregate<double,double> > & Old, grid_dist_id<3
 		++it;
 	}
 
-	long int x_start = Old.size(0)*1.55f/domain.getHigh(0);
-	long int y_start = Old.size(1)*1.55f/domain.getHigh(1);
-	long int z_start = Old.size(1)*1.55f/domain.getHigh(2);
+	draw_box(1.55, 1.55, 1.55, 1.85, 1.85, 1.85, Old, domain);
+    draw_box(0.25, 0.25, 0.25, 0.55, 0.55, 0.55, Old, domain);
+    draw_box(1.55, 1.55, 0.25, 1.85, 1.85, 0.55, Old, domain);
+    draw_box(1.55, 0.25, 1.55, 1.85, 0.55, 1.85, Old, domain);
+    draw_box(0.25, 1.55, 1.55, 0.55, 1.85, 1.85, Old, domain);
+    draw_box(1.55, 1.55, 0.25, 1.85, 1.85, 0.55, Old, domain);
 
-	long int x_stop = Old.size(0)*1.85f/domain.getHigh(0);
-	long int y_stop = Old.size(1)*1.85f/domain.getHigh(1);
-	long int z_stop = Old.size(1)*1.85f/domain.getHigh(2);
-
-	grid_key_dx<3> start({x_start,y_start,z_start});
-	grid_key_dx<3> stop ({x_stop,y_stop,z_stop});
-	auto it_init = Old.getSubDomainIterator(start,stop);
-
-	while (it_init.isNext())
-	{
-		auto key = it_init.get();
-
-                Old.template get<U>(key) = 0.5 + (((double)std::rand())/RAND_MAX -0.5)/10.0;
-                Old.template get<V>(key) = 0.25 + (((double)std::rand())/RAND_MAX -0.5)/20.0;
-
-		++it_init;
-	}
+//	long int x_start = Old.size(0)*1.55f/domain.getHigh(0);
+//	long int y_start = Old.size(1)*1.55f/domain.getHigh(1);
+//	long int z_start = Old.size(1)*1.55f/domain.getHigh(2);
+//
+//	long int x_stop = Old.size(0)*1.85f/domain.getHigh(0);
+//	long int y_stop = Old.size(1)*1.85f/domain.getHigh(1);
+//	long int z_stop = Old.size(1)*1.85f/domain.getHigh(2);
+//
+//	grid_key_dx<3> start({x_start,y_start,z_start});
+//	grid_key_dx<3> stop ({x_stop,y_stop,z_stop});
+//	auto it_init = Old.getSubDomainIterator(start,stop);
+//
+//	while (it_init.isNext())
+//	{
+//		auto key = it_init.get();
+//
+//                Old.template get<U>(key) = 0.5 + (((double)std::rand())/RAND_MAX -0.5)/10.0;
+//                Old.template get<V>(key) = 0.25 + (((double)std::rand())/RAND_MAX -0.5)/20.0;
+//
+//		++it_init;
+//	}
 }
 
 
