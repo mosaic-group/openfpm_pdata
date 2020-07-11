@@ -162,6 +162,35 @@ bool check_force(CellList_type & NN_cpu, vector_type & vd)
 			++NNc;
 		}
 
+		if (std::isnan(force.get(0)) == true)
+		{
+			std::cout << "NAN FUCK   " <<  create_vcluster().rank() << std::endl;
+
+			auto NNc = NN_cpu.getNNIterator(NN_cpu.getCell(xp));
+
+			while (NNc.isNext())
+			{
+				auto q = NNc.get();
+
+		    	if (q == p.getKey()) {++NNc; continue;}
+
+		    	Point<3,St> xq_2 = vd.getPos(q);
+		    	Point<3,St> r2 = xq_2 - xp;
+
+		    	// Normalize
+
+		    	std::cout << "R2: " << q << "   " << p.getKey() << "    " << r2.norm() << std::endl;
+
+		    	r2 /= r2.norm();
+
+		    	force += vd.template getProp<0>(q)*r2;
+
+				++NNc;
+			}
+
+			vd.write("FUCK");
+		}
+
 		match &= fabs(vd.template getProp<1>(p)[0] - vd.template getProp<2>(p)[0]) < 0.0003;
 		match &= fabs(vd.template getProp<1>(p)[1] - vd.template getProp<2>(p)[1]) < 0.0003;
 		match &= fabs(vd.template getProp<1>(p)[2] - vd.template getProp<2>(p)[2]) < 0.0003;
@@ -920,12 +949,26 @@ BOOST_AUTO_TEST_CASE(vector_dist_reduce)
 template<typename CellList_type>
 void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 {
+	std::random_device r;
+
+    std::seed_seq seed2{r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank()};
+    std::mt19937 e2(seed2);
+
 	typedef vector_dist_gpu<3,double,aggregate<double,double[3],double[3]>> vector_type;
 
 	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 8)
 		return;
+
+	std::uniform_real_distribution<double> unif(0.0,0.3);
 
 	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
 	Ghost<3,double> g(0.1);
@@ -941,9 +984,9 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 		{
 			vd.add();
 
-			vd.getLastPos()[0] = ((double)rand())/RAND_MAX * 0.3;
-			vd.getLastPos()[1] = ((double)rand())/RAND_MAX * 0.3;
-			vd.getLastPos()[2] = ((double)rand())/RAND_MAX * 0.3;
+			vd.getLastPos()[0] = unif(e2);
+			vd.getLastPos()[1] = unif(e2);
+			vd.getLastPos()[2] = unif(e2);
 		}
 	}
 
