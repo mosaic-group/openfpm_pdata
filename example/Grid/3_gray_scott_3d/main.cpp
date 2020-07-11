@@ -319,7 +319,7 @@ int main(int argc, char* argv[])
 //            ++it1;
 //        }
 
-        if ( i % 200 == 0) std::cout<<"The maximum concentration is "<<maxConc << " and the minimum is " << minConc <<std::endl;
+        if ( i % 100 == 0) std::cout<<"The maximum concentration is "<<maxConc << " and the minimum is " << minConc <<std::endl;
 
         // calculate the magnitude of velocity
         auto it2 = New.getDomainIterator();
@@ -345,10 +345,10 @@ int main(int argc, char* argv[])
             ++it2_vis;
         }
 
-        if(i == (int)2000/deltaT || i == (int)3000/deltaT || i == (int)4000/deltaT )
-        {
-            Old.save("checkpoint" + std::to_string(i));
-        }
+//        if(i == (int)2000/deltaT || i == (int)3000/deltaT || i == (int)4000/deltaT )
+//        {
+//            Old.save("checkpoint" + std::to_string(i));
+//        }
 	}
 	
 	tot_sim.stop();
