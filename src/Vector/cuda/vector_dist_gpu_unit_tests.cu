@@ -69,11 +69,16 @@ __global__  void calculate_force(vector_dist_ker<3, T, aggregate<T, T[3], T [3]>
 
     	// Normalize
 
-    	r1 /= r1.norm();
-    	r2 /= r2.norm();
-
-    	force1 += vd_sort.template getProp<0>(q1)*r1;
-    	force2 += vd.template getProp<0>(q2)*r2;
+    	if (r1.norm() >= 1e-6)
+    	{
+    		r1 /= r1.norm();
+    		force1 += vd_sort.template getProp<0>(q1)*r1;
+    	}
+    	if (r2.norm() >= 1e-6)
+    	{
+    		r2 /= r2.norm();
+    		force2 += vd.template getProp<0>(q2)*r2;
+    	}
 
     	++it;
     }
@@ -112,9 +117,12 @@ __global__  void calculate_force_full_sort(vector_dist_ker<3, T, aggregate<T, T[
 
     	// Normalize
 
-    	r1 /= r1.norm();
+    	if (r1.norm() > 1e-6)
+    	{
+    		r1 /= r1.norm();
 
-    	force1 += vd.template getProp<0>(q1)*r1;
+    		force1 += vd.template getProp<0>(q1)*r1;
+    	}
 
     	++it;
     }
@@ -156,8 +164,11 @@ bool check_force(CellList_type & NN_cpu, vector_type & vd)
 
 	    	// Normalize
 
-	    	r2 /= r2.norm();
-	    	force += vd.template getProp<0>(q)*r2;
+	    	if (r2.norm() > 1e-6)
+	    	{
+	    		r2 /= r2.norm();
+	    		force += vd.template getProp<0>(q)*r2;
+	    	}
 
 			++NNc;
 		}
