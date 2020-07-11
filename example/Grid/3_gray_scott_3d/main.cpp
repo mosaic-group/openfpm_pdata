@@ -96,13 +96,14 @@ void init(grid_dist_id<3,double,aggregate<double,double> > & Old, grid_dist_id<3
 
 		++it;
 	}
+//    draw_box(0.05, 0.05, 0.05, 1.95, 1.95, 1.95, Old, domain);
 
-	draw_box(1.55, 1.55, 1.55, 1.85, 1.85, 1.85, Old, domain);
-    draw_box(0.25, 0.25, 0.25, 0.55, 0.55, 0.55, Old, domain);
-    draw_box(1.55, 1.55, 0.25, 1.85, 1.85, 0.55, Old, domain);
-    draw_box(1.55, 0.25, 1.55, 1.85, 0.55, 1.85, Old, domain);
-    draw_box(0.25, 1.55, 1.55, 0.55, 1.85, 1.85, Old, domain);
-    draw_box(1.55, 1.55, 0.25, 1.85, 1.85, 0.55, Old, domain);
+	draw_box(1.35, 1.35, 1.35, 1.95, 1.95, 1.95, Old, domain);
+    draw_box(0.15, 0.15, 0.15, 0.75, 0.75, 0.75, Old, domain);
+    draw_box(1.35, 1.35, 0.15, 1.95, 1.95, 0.75, Old, domain);
+    draw_box(1.35, 0.15, 1.35, 1.95, 0.75, 1.95, Old, domain);
+    draw_box(0.15, 1.35, 1.35, 0.35, 1.95, 1.95, Old, domain);
+    draw_box(1.35, 1.35, 0.15, 1.95, 1.95, 0.75, Old, domain);
 
 //	long int x_start = Old.size(0)*1.55f/domain.getHigh(0);
 //	long int y_start = Old.size(1)*1.55f/domain.getHigh(1);
@@ -221,33 +222,31 @@ int main(int argc, char* argv[])
 
 	//! \cond [stencil def] \endcond
 
-    float maxConc = 0.8f;
-    float minConc = 0.0f;
 
-	for (; i < timeSteps; ++i)
+    for (; i < timeSteps; ++i)
 	{
-		if (i % 300 == 0)
+        if (i % 300 == 0)
 		{std::cout << "STEP: " << i << std::endl;}
 
-		//! \cond [stencil get and use] \endcond
+        //! \cond [stencil get and use] \endcond
 
-		auto it = Old.getDomainIteratorStencil(star_stencil_3D);
+        auto it = Old.getDomainIteratorStencil(star_stencil_3D);
 
-		while (it.isNext())
+        while (it.isNext())
 		{
-			// center point
-			auto Cp = it.getStencil<0>();
+            // center point
+            auto Cp = it.getStencil<0>();
 
-			// plus,minus X,Y,Z
-			auto mx = it.getStencil<1>();
-			auto px = it.getStencil<2>();
-			auto my = it.getStencil<3>();
-			auto py = it.getStencil<4>();
-			auto mz = it.getStencil<5>();
-			auto pz = it.getStencil<6>();
+            // plus,minus X,Y,Z
+            auto mx = it.getStencil<1>();
+            auto px = it.getStencil<2>();
+            auto my = it.getStencil<3>();
+            auto py = it.getStencil<4>();
+            auto mz = it.getStencil<5>();
+            auto pz = it.getStencil<6>();
 
-			// update based on Eq 2
-			New.get<U>(Cp) = Old.get<U>(Cp) + uFactor * (
+            // update based on Eq 2
+            New.get<U>(Cp) = Old.get<U>(Cp) + uFactor * (
 										Old.get<U>(mz) +
 										Old.get<U>(pz) +
 										Old.get<U>(my) +
@@ -259,8 +258,8 @@ int main(int argc, char* argv[])
 										- deltaT * F * (Old.get<U>(Cp) - 1.0);
 
 
-			// update based on Eq 2
-			New.get<V>(Cp) = Old.get<V>(Cp) + vFactor * (
+            // update based on Eq 2
+            New.get<V>(Cp) = Old.get<V>(Cp) + vFactor * (
 										Old.get<V>(mz) +
 										Old.get<V>(pz) +
 										Old.get<V>(my) +
@@ -271,24 +270,24 @@ int main(int argc, char* argv[])
 										deltaT * Old.get<U>(Cp) * Old.get<V>(Cp) * Old.get<V>(Cp) +
 										- deltaT * (F+K) * Old.get<V>(Cp);
 
-			// Next point in the grid
-			++it;
-		}
+            // Next point in the grid
+            ++it;
+        }
 
-		//! \cond [stencil get and use] \endcond
+        //! \cond [stencil get and use] \endcond
 
-		// Here we copy New into the old grid in preparation of the new step
-		// It would be better to alternate, but using this we can show the usage
-		// of the function copy. To note that copy work only on two grid of the same
-		// decomposition. If you want to copy also the decomposition, or force to be
-		// exactly the same, use Old = New
-		Old.copy(New);
+        // Here we copy New into the old grid in preparation of the new step
+        // It would be better to alternate, but using this we can show the usage
+        // of the function copy. To note that copy work only on two grid of the same
+        // decomposition. If you want to copy also the decomposition, or force to be
+        // exactly the same, use Old = New
+        Old.copy(New);
 
-		// After copy we synchronize again the ghost part U and V
-		Old.ghost_get<U,V>();
+        // After copy we synchronize again the ghost part U and V
+        Old.ghost_get<U,V>();
 
-		// Every 500 time step we output the configuration for
-		// visualization
+        // Every 500 time step we output the configuration for
+        // visualization
 //		if (i % 500 == 0)
 //		{
 //			Old.save("output_" + std::to_string(count));
@@ -298,26 +297,28 @@ int main(int argc, char* argv[])
 //		}
 
         //find max and min velocity
-//        auto it1 = New.getDomainIterator();
+        float maxConc = -1.0f;
+        float minConc = 100000.0f;
+        auto it1 = New.getDomainIterator();
 
 
-//        while(it1.isNext())
-//        {
-//            auto key = it1.get();
-//
-//            float curConc = (float) New.template get<V>(key);
-//
-//            if(curConc > maxConc)
-//            {
-//                maxConc = curConc;
-//            }
-//
-//            if(curConc < minConc)
-//            {
-//                minConc = curConc;
-//            }
-//            ++it1;
-//        }
+        while(it1.isNext())
+        {
+            auto key = it1.get();
+
+            float curConc = (float) New.template get<V>(key);
+
+            if(curConc > maxConc)
+            {
+                maxConc = curConc;
+            }
+
+            if(curConc < minConc)
+            {
+                minConc = curConc;
+            }
+            ++it1;
+        }
 
         if ( i % 100 == 0) std::cout<<"The maximum concentration is "<<maxConc << " and the minimum is " << minConc <<std::endl;
 
