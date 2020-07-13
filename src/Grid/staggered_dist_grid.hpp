@@ -277,7 +277,7 @@ public:
 	 * \return true
 	 *
 	 */
-	bool is_staggered()
+	bool is_staggered() const
 	{
 		return true;
 	}
