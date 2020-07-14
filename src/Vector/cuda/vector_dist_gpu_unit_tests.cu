@@ -69,12 +69,12 @@ __global__  void calculate_force(vector_dist_ker<3, T, aggregate<T, T[3], T [3]>
 
     	// Normalize
 
-    	if (r1.norm() >= 1e-6)
+    	if (r1.norm() > 1e-6)
     	{
     		r1 /= r1.norm();
     		force1 += vd_sort.template getProp<0>(q1)*r1;
     	}
-    	if (r2.norm() >= 1e-6)
+    	if (r2.norm() > 1e-6)
     	{
     		r2 /= r2.norm();
     		force2 += vd.template getProp<0>(q2)*r2;
@@ -171,35 +171,6 @@ bool check_force(CellList_type & NN_cpu, vector_type & vd)
 	    	}
 
 			++NNc;
-		}
-
-		if (std::isnan(force.get(0)) == true)
-		{
-			std::cout << "NAN FUCK   " <<  create_vcluster().rank() << std::endl;
-
-			auto NNc = NN_cpu.getNNIterator(NN_cpu.getCell(xp));
-
-			while (NNc.isNext())
-			{
-				auto q = NNc.get();
-
-		    	if (q == p.getKey()) {++NNc; continue;}
-
-		    	Point<3,St> xq_2 = vd.getPos(q);
-		    	Point<3,St> r2 = xq_2 - xp;
-
-		    	// Normalize
-
-		    	std::cout << "R2: " << q << "   " << p.getKey() << "    " << r2.norm() << std::endl;
-
-		    	r2 /= r2.norm();
-
-		    	force += vd.template getProp<0>(q)*r2;
-
-				++NNc;
-			}
-
-			vd.write("FUCK");
 		}
 
 		match &= fabs(vd.template getProp<1>(p)[0] - vd.template getProp<2>(p)[0]) < 0.0003;
@@ -313,7 +284,7 @@ void check_cell_list_cpu_and_gpu(vector_type & vd, CellList_type & NN, CellList_
 {
 	auto it5 = vd.getDomainIteratorGPU(32);
 
-	calculate_force<typename vector_type::stype,decltype(NN.toKernel())><<<it5.wthr,it5.thr>>>(vd.toKernel(),vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
+	CUDA_LAUNCH((calculate_force<typename vector_type::stype,decltype(NN.toKernel())>),it5,vd.toKernel(),vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
 
 	vd.template deviceToHostProp<1,2>();
 
@@ -339,7 +310,7 @@ void check_cell_list_cpu_and_gpu(vector_type & vd, CellList_type & NN, CellList_
 
 	// We do exactly the same test as before, but now we completely use the sorted version
 
-	calculate_force_full_sort<typename vector_type::stype,decltype(NN.toKernel())><<<it5.wthr,it5.thr>>>(vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
+	CUDA_LAUNCH((calculate_force_full_sort<typename vector_type::stype,decltype(NN.toKernel())>),it5,vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
 
 	vd.template merge_sort<1>(NN);
 	vd.template deviceToHostProp<1>();
@@ -1139,12 +1110,26 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 template<typename CellList_type>
 void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 {
+	std::random_device r;
+
+    std::seed_seq seed2{r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank()};
+    std::mt19937 e2(seed2);
+
 	typedef vector_dist_gpu<3,double,aggregate<double,double[3],double[3]>> vector_type;
 
 	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 8)
 		return;
+
+	std::uniform_real_distribution<double> unif(0.0,0.3);
 
 	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
 	Ghost<3,double> g(0.1);
@@ -1160,9 +1145,9 @@ void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 		{
 			vd.add();
 
-			vd.getLastPos()[0] = ((double)rand())/RAND_MAX * 0.3;
-			vd.getLastPos()[1] = ((double)rand())/RAND_MAX * 0.3;
-			vd.getLastPos()[2] = ((double)rand())/RAND_MAX * 0.3;
+			vd.getLastPos()[0] = unif(e2);
+			vd.getLastPos()[1] = unif(e2);
+			vd.getLastPos()[2] = unif(e2);
 		}
 	}
 
@@ -1214,12 +1199,6 @@ void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 	size_t load = vd.getDecomposition().getDistribution().getProcessorLoad();
 	v_cl.allGather(load,loads);
 	v_cl.execute();
-
-	//////////////////////////// DEBUG ///////////////////
-
-	vd.getDecomposition().write("DEBUG");
-
-	//////////////////////////////////////////////////////
 
 	for (size_t i = 0 ; i < loads.size() ; i++)
 	{
@@ -1289,11 +1268,6 @@ void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 		BOOST_REQUIRE(vd.size_local() != 0);
 
 //		vd.template ghost_get<0>(RUN_ON_DEVICE);
-		if (i == 9)
-		{
-			int debug = 0;
-			debug++;
-		}
 //		vd.template ghost_get<0>(RUN_ON_DEVICE);
 		vd.template Ighost_get<0>(RUN_ON_DEVICE);
 		vd.template ghost_wait<0>(RUN_ON_DEVICE);
