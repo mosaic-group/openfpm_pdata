@@ -48,7 +48,7 @@ if [ x"$platform" = x"linux" -a x"$pcman" = x"apt-get"  ]; then
   ret4=$?
   if [ $ret1 -ne 0 -o $ret2 -ne 0 -o $ret3 -ne 0 -o $ret4 -ne 0 ]; then
     echo "OpenFPM require additional packages in order to install correctly"
-    commands[0]="sudo $pcman install libbz2-dev python-dev libxml2-dev libxslt-dev"
+    commands[0]="sudo $pcman install bzip2 libbz2-dev python-dev libxml2-dev libxslt-dev"
     possible_solutions "${commands[@]}"
   fi
 fi
@@ -68,10 +68,14 @@ if [ x"$platform" = x"linux" -a x"$pcman" = x"yum"  ]; then
   ret3=$?
   rpm -V libxslt-devel
   ret4=$?
-  if [ $ret1 -ne 0 -o $ret2 -ne 0 -o $ret3 -ne 0 -o $ret4 -ne 0 ]; then
+  rpm -V bzip2
+  ret5=$?
+  rpm -V make
+  ret6=$?
+  if [ $ret1 -ne 0 -o $ret2 -ne 0 -o $ret3 -ne 0 -o $ret4 -ne 0 -o $ret5 -ne 0 -o $ret6 -ne 0 ]; then
     echo "OpenFPM require additional packages in order to install correctly"
-    commands[0]="su -c \"$pcman install bzip2-devel python-devel libxml2-devel libxslt-devel\""
-    commands[1]="sudo $pcman install bzip2-devel python-devel libxml2-devel libxslt-devel"
+    commands[0]="su -c \"$pcman install make bzip2 bzip2-devel python-devel libxml2-devel libxslt-devel\""
+    commands[1]="sudo $pcman install make bzip2 bzip2-devel python-devel libxml2-devel libxslt-devel"
     possible_solutions "${commands[@]}"
   fi
 fi
