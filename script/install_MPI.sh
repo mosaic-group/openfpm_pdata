@@ -8,7 +8,7 @@ if [ -d "$1/MPI" ]; then
 fi
 
 ./script/download_MPI.sh
-cd openmpi-4.0.2
+cd openmpi-4.0.4
 
 if [ x"$3" == x"1" ]; then
    echo "Installing MPI with GPU support"
@@ -25,5 +25,5 @@ make -j $2
 make install
 
 # Mark the installation
-echo 5 > $1/MPI/version
+echo 6 > $1/MPI/version
 
