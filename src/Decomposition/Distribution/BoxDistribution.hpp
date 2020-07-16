@@ -50,7 +50,6 @@ void getPrimeFactors(int n, openfpm::vector<int> & fact )
  * \snippet Distribution_unit_tests.hpp Decomposition Metis with weights
  *
  */
-
 template<unsigned int dim, typename T>
 class BoxDistribution
 {
@@ -167,6 +166,7 @@ public:
 	 * \param dom domain (domain where the sub-sub-domains are defined)
 	 *
 	 */
+	// todo example of cartesian graph
 	void createCartGraph(grid_sm<dim, void> & grid, Box<dim, T> dom)
 	{
 #ifdef SE_CLASS2
@@ -186,7 +186,7 @@ public:
 		CartesianGraphFactory<dim, Graph_CSR<nm_v<dim>, nm_e>> g_factory_part;
 		gp = g_factory_part.template construct<NO_EDGE, nm_v_id, T, dim - 1, 0>(gr.getSize(), domain, bc);
 
-		// Init to 0.0 axis z (to fix in graphFactory)
+		// Init to 0.0 axis z (todo fix in graphFactory)
 		if (dim < 3)
 		{
 			for (size_t i = 0; i < gp.getNVertex(); i++)
@@ -228,7 +228,7 @@ public:
                 getPrimeFactors(v_cl.size(),facts);
 
                 size_t div[dim];
-		size_t ln[dim];
+		size_t ln[dim];  // spacing
 
                 for (int i = 0 ; i < dim ; i++)
                 {div[i] = 1;}

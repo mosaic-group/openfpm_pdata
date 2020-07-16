@@ -43,6 +43,8 @@
 
 #define CARTDEC_ERROR 2000lu
 
+wow
+
 /*! \brief It spread the sub-sub-domain on a regular cartesian grid of size dim
  *
  * \warning this function only guarantee that the division on each direction is
@@ -179,7 +181,7 @@ protected:
 
 	//! Structure that contain for each sub-sub-domain box the processor id
 	//! exist for efficient global communication
-	CellList<dim,T,Mem_fast<Memory,int>,shift<dim,T>> fine_s;
+	CellList<dim,T,Mem_fast<Memory,int>,shift<dim,T>> fine_s;  // todo cellist to find particle
 
 	//! Structure that store the cartesian grid information
 	grid_sm<dim, void> gr;
