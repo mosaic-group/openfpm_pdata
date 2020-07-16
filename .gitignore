@@ -1,3 +1,12 @@
+# CLion (Intellij) #
+####################
+.idea/
+cmake-build-debug/
+
+# Compiled examples #
+#####################
+example/Vector/7_SPH_dlb/sph_dlb
+
 # Compiled source #
 ###################
 *.com
