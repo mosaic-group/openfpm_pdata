@@ -2043,10 +2043,14 @@ public:
 #if defined(__NVCC__)
 
 		auto ite = v_pos.getGPUIteratorTo(g_m-1,n_thr);
+		bool has_work = has_work_gpu(ite);
 
-		CUDA_LAUNCH((merge_sort_part<false,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortToSort().toKernel()),prp...>),
-		ite,
-		v_pos.toKernel(),v_prp.toKernel(),v_pos_out.toKernel(),v_prp_out.toKernel(),cl.getNonSortToSort().toKernel());
+		if (has_work == true)
+		{
+			CUDA_LAUNCH((merge_sort_part<false,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortToSort().toKernel()),prp...>),
+			ite,
+			v_pos.toKernel(),v_prp.toKernel(),v_pos_out.toKernel(),v_prp_out.toKernel(),cl.getNonSortToSort().toKernel());
+		}
 
 #endif
 	}
