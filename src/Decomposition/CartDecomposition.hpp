@@ -43,8 +43,6 @@
 
 #define CARTDEC_ERROR 2000lu
 
-wow
-
 /*! \brief It spread the sub-sub-domain on a regular cartesian grid of size dim
  *
  * \warning this function only guarantee that the division on each direction is

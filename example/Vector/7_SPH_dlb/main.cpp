@@ -66,6 +66,10 @@
 #include "Draw/DrawParticles.hpp"
 //! \cond [inclusion] \endcond
 
+using val_t = double;
+using Box3D = Box<3, val_t>;
+constexpr unsigned int REBALANCING_TIME_STEPS_THRESHOLD = 200;
+
 /*!
  * \page Vector_7_sph_dlb Vector 7 SPH Dam break  simulation with Dynamic load balacing
  *
@@ -156,7 +160,7 @@ const double t_end = 1.5;
 // Gravity acceleration
 const double gravity = 9.81;
 
-// Reference densitu 1000Kg/m^3
+// Reference density 1000Kg/m^3
 const double rho_zero = 1000.0;
 
 // Filled later require h_swl, it is b in the formulas
@@ -220,10 +224,7 @@ typedef vector_dist<3,double,aggregate<size_t,double,  double,    double,     do
 
 struct ModelCustom
 {
-	template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec,
-			                                                                     vector & vd,
-																				 size_t v,
-																				 size_t p)
+	template<typename Decomposition, typename vector> inline void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p)
 	{
 		if (vd.template getProp<type>(p) == FLUID)
 			dec.addComputationCost(v,4);
@@ -990,6 +991,78 @@ inline void sensor_pressure(Vector & vd,
 
 /*! \cond [sens_press] \endcond */
 
+/*struct ModelComputationalCosts
+{
+    virtual template<typename Decomposition, typename vector> void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p) = 0;
+    virtual template<typename Decomposition> void applyModel(Decomposition & dec, size_t v) = 0;
+    virtual val_t distributionTol() = 0;
+};
+
+struct ModelDecompose
+{
+    virtual void wow() = 0;
+};
+
+struct ModelDistribute
+{
+    virtual void wow() = 0;
+};*/
+
+void doRebalancing(particles &vd) {
+    // todo refactor this into ...
+	/*ModelCustom md;
+	vd.addComputationCosts(md);
+	vd.getDecomposition().decompose();
+
+	// specify
+	// - how we want to add the computational cost ...
+    struct MyModelForComputationalCosts : ModelComputationalCosts {
+        template<typename Decomposition, typename vector> void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p)
+        {
+          if (vd.template getProp<type>(p) == FLUID)
+            dec.addComputationCost(v,4);
+          else
+            dec.addComputationCost(v,3);
+        }
+
+        template<typename Decomposition> void applyModel(Decomposition & dec, size_t v)
+        {
+          dec.setSubSubDomainComputationCost(v, dec.getSubSubDomainComputationCost(v) * dec.getSubSubDomainComputationCost(v));
+        }
+
+        val_t distributionTol()
+        {
+          return 1.01;
+        }
+    };
+    MyModelForComputationalCosts mcc;
+
+	// - how we want to decompose ...
+	DecompositionStrategy decomposition;
+	struct MyDecompositionModel : ModelDecompose {
+        void wow() {
+          std::cout << "calling decompose model!" << std::endl;
+        }
+	};
+    MyDecompositionModel mde;
+
+	// - how we want to distribute ...
+	DistributionStrategy distribution;
+    struct MyDistributionModel : ModelDistribute {
+        void wow() {
+          std::cout << "calling distribution model!" << std::endl;
+        }
+    };
+    MyDistributionModel mdi;
+
+	// ... then do it!
+	vd.addComputationCosts(mcc);
+	decomposition.decompose(vd, mde);
+	distribution.distribute(decomposition, mdi);*/
+}
+
+// todo given x, y of particle, where is (in computational domain) it ?
+
 int main(int argc, char* argv[])
 {
 	/*!
@@ -1020,7 +1093,7 @@ int main(int argc, char* argv[])
 	probes.add({0.754,0.31,0.02});
 
 	// Here we define our domain a 2D box with internals from 0 to 1.0 for x and y
-	Box<3,double> domain({-0.05,-0.05,-0.05},{1.7010,0.7065,0.5025});
+	Box3D domain({-0.05,-0.05,-0.05},{1.7010,0.7065,0.5025});
 	size_t sz[3] = {207,90,66};
 
 	// Fill W_dap
@@ -1071,7 +1144,7 @@ int main(int argc, char* argv[])
 
 	//! \cond [vector inst] \endcond
 
-	particles vd(0,domain,bc,g,DEC_GRAN(512));
+	particles vd(0,domain,bc,g,DEC_GRAN(512));  // todo, what is DEC_GRAN ?
 
 	//! \cond [vector inst] \endcond
 
@@ -1113,7 +1186,7 @@ int main(int argc, char* argv[])
 
 	// You can ignore all these dp/2.0 is a trick to reach the same initialization
 	// of Dual-SPH that use a different criteria to draw particles
-	Box<3,double> fluid_box({dp/2.0,dp/2.0,dp/2.0},{0.4+dp/2.0,0.67-dp/2.0,0.3+dp/2.0});
+	Box3D fluid_box({dp/2.0,dp/2.0,dp/2.0},{0.4+dp/2.0,0.67-dp/2.0,0.3+dp/2.0});
 
 	// return an iterator to the fluid particles to add to vd
 	auto fluid_it = DrawParticles::DrawBox(vd,sz,domain,fluid_box);
@@ -1189,14 +1262,14 @@ int main(int argc, char* argv[])
 	//! \cond [draw recipient] \endcond
 
 	// Recipient
-	Box<3,double> recipient1({0.0,0.0,0.0},{1.6+dp/2.0,0.67+dp/2.0,0.4+dp/2.0});
-	Box<3,double> recipient2({dp,dp,dp},{1.6-dp/2.0,0.67-dp/2.0,0.4+dp/2.0});
+	Box3D recipient1({0.0,0.0,0.0},{1.6+dp/2.0,0.67+dp/2.0,0.4+dp/2.0});
+	Box3D recipient2({dp,dp,dp},{1.6-dp/2.0,0.67-dp/2.0,0.4+dp/2.0});
 
-	Box<3,double> obstacle1({0.9,0.24-dp/2.0,0.0},{1.02+dp/2.0,0.36,0.45+dp/2.0});
-	Box<3,double> obstacle2({0.9+dp,0.24+dp/2.0,0.0},{1.02-dp/2.0,0.36-dp,0.45-dp/2.0});
-	Box<3,double> obstacle3({0.9+dp,0.24,0.0},{1.02,0.36,0.45});
+	Box3D obstacle1({0.9,0.24-dp/2.0,0.0},{1.02+dp/2.0,0.36,0.45+dp/2.0});
+	Box3D obstacle2({0.9+dp,0.24+dp/2.0,0.0},{1.02-dp/2.0,0.36-dp,0.45-dp/2.0});
+	Box3D obstacle3({0.9+dp,0.24,0.0},{1.02,0.36,0.45});
 
-	openfpm::vector<Box<3,double>> holes;
+	openfpm::vector<Box3D> holes;
 	holes.add(recipient2);
 	holes.add(obstacle1);
 	auto bound_box = DrawParticles::DrawSkin(vd,sz,domain,holes,recipient1);
@@ -1355,10 +1428,7 @@ int main(int argc, char* argv[])
 	//! \cond [load balancing] \endcond
 
 	// Now that we fill the vector with particles
-	ModelCustom md;
-
-	vd.addComputationCosts(md);
-	vd.getDecomposition().decompose();
+	doRebalancing(vd);
 	vd.map();
 
 	//! \cond [load balancing] \endcond
@@ -1396,14 +1466,12 @@ int main(int argc, char* argv[])
 
 		////// Do rebalancing every 200 timesteps
 		it_reb++;
-		if (it_reb == 200)
+		if (it_reb == REBALANCING_TIME_STEPS_THRESHOLD)
 		{
 			vd.map();
 
 			it_reb = 0;
-			ModelCustom md;
-			vd.addComputationCosts(md);
-			vd.getDecomposition().decompose();
+			doRebalancing(vd);
 
 			if (v_cl.getProcessUnitID() == 0)
 				std::cout << "REBALANCED " << std::endl;

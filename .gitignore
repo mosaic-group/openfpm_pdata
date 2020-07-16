@@ -1,3 +1,8 @@
+# Debug #
+#########
+.debug
+debug/
+
 # CLion (Intellij) #
 ####################
 .idea/
