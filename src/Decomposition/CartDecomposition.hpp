@@ -889,6 +889,8 @@ public:
 		cart.Initialize_geo_cell_lists();
 		cart.calculateGhostBoxes();
 
+		cart.collect_all_sub_domains(cart.sub_domains_global);
+
 		return cart;
 	}
 
