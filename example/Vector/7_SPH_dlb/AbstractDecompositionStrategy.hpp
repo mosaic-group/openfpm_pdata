@@ -1,14 +1,14 @@
 #ifndef OPENFPM_PDATA_ABSTRACT_DECOMPOSITION_STRATEGY_HPP
 #define OPENFPM_PDATA_ABSTRACT_DECOMPOSITION_STRATEGY_HPP
 
-#include <utility>
 #include <cmath>
 #include <initializer_list>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include "DLB/DLB.hpp"
-#include "Decomposition/Domain_icells_cart.hpp"
 #include "Decomposition/Decomposition.hpp"
+#include "Decomposition/Domain_icells_cart.hpp"
 #include "Decomposition/common.hpp"
 #include "Decomposition/dec_optimizer.hpp"
 #include "Decomposition/ie_ghost.hpp"
@@ -37,7 +37,7 @@ class AbstractDecompositionStrategy
   : public ie_loc_ghost<dim, T, layout_base, Memory>,
     public nn_prcs<dim, T, layout_base, Memory>,
     public ie_ghost<dim, T, Memory, layout_base>,
-    public domain_icell_calculator<dim,T,layout_base,Memory> {
+    public domain_icell_calculator<dim, T, layout_base, Memory> {
   //! Type of the domain we are going to decompose
   using domain_type = T;
 
@@ -47,10 +47,10 @@ class AbstractDecompositionStrategy
 public:
   //! Structure that decompose the space into cells without creating them
   //! useful to convert positions to CellId or sub-domain id in this case
-  CellDecomposer_sm<dim, T, shift<dim,T>> cd;  // todo private
+  CellDecomposer_sm<dim, T, shift<dim, T>> cd;  // todo private
 
   //! ghost info
-  Ghost<dim,T> ghost;  // todo private
+  Ghost<dim, T> ghost;  // todo private
 
   /*! \brief Abstract decomposition constructor
    *
@@ -105,7 +105,7 @@ public:
       gh_v *= b_s;
     }
 
-    const size_t norm = (size_t) (1.0 / gh_v);
+    const size_t norm = (size_t)(1.0 / gh_v);
     float migration = pow(b_s, dim);
 
     return std::make_pair(migration, norm);
@@ -124,9 +124,7 @@ public:
    */
   const grid_sm<dim, void> getDistGrid() { return gr_dist; }
 
-  unsigned int getDim() const {
-    return dim;
-  }
+  unsigned int getDim() const { return dim; }
 
   /*! \brief Delete the decomposition and reset the data-structure
    *
@@ -142,26 +140,21 @@ public:
     ie_loc_ghost<dim, T, layout_base, Memory>::reset();
   }
 
-    /*! \brief Return the bounding box containing union of all the sub-domains for the local processor
-     *
-     * \return The bounding box
-     *
-     */
-    ::Box<dim, T> & getProcessorBounds()
-    {
-      return bbox;
-    }
+  /*! \brief Return the bounding box containing union of all the sub-domains for
+   * the local processor
+   *
+   * \return The bounding box
+   *
+   */
+  ::Box<dim, T>& getProcessorBounds() { return bbox; }
 
-    /*! \brief Return the ghost
-	 *
-	 *
-	 * \return the ghost extension
-	 *
-	 */
-    const Ghost<dim,T> & getGhost() const
-    {
-      return ghost;
-    }
+  /*! \brief Return the ghost
+   *
+   *
+   * \return the ghost extension
+   *
+   */
+  const Ghost<dim, T>& getGhost() const { return ghost; }
 
   /*! \brief Start decomposition
    *
@@ -175,20 +168,22 @@ public:
   }
 
   void onEnd() {
-    domain_icell_calculator<dim,T,layout_base,Memory>
-    ::CalculateInternalCells(v_cl,
-                             ie_ghost<dim, T,Memory,layout_base>::private_get_vb_int_box(),
-                             sub_domains,
-                             this->getProcessorBounds(),
-                             this->getGhost().getRcut(),
-                             this->getGhost());
+    domain_icell_calculator<dim, T, layout_base, Memory>::
+        CalculateInternalCells(
+            v_cl,
+            ie_ghost<dim, T, Memory, layout_base>::private_get_vb_int_box(),
+            sub_domains,
+            this->getProcessorBounds(),
+            this->getGhost().getRcut(),
+            this->getGhost());
   }
+
 protected:
   //! rectangular domain to decompose
   ::Box<dim, T> domain;
 
-    //! Processor bounding box
-    ::Box<dim,T> bbox;
+  //! Processor bounding box
+  ::Box<dim, T> bbox;
 
   //! Structure that store the cartesian grid information
   grid_sm<dim, void> gr_dist;
@@ -213,9 +208,10 @@ private:
   openfpm::vector<::Box<dim, size_t>> loc_box;
 
   //! Processor domain bounding box
-  ::Box<dim,size_t> proc_box;
+  ::Box<dim, size_t> proc_box;
 
-  /*! \brief Constructor, it decompose and distribute the sub-domains across the processors
+  /*! \brief Constructor, it decompose and distribute the sub-domains across the
+   * processors
    *
    * \param v_cl Virtual cluster, used internally for communications
    * \param bc boundary conditions
@@ -236,26 +232,23 @@ private:
   +----------------------------------------------------+
   |                                                    |
   |                 Processor 8                        |
-  |                 Sub+domain 0                       +-----------------------------------+
-  |                                                    |                                   |
-  |                                                    |                                   |
-  ++--------------+---+---------------------------+----+        Processor 9                |
-   |              |   |     B8_0                  |    |        Subdomain 0                |
-   |              +------------------------------------+                                   |
-   |              |   |                           |    |                                   |
-   |              |   |                           |B9_0|                                   |
-   |              | B |    Local processor        |    |                                   |
-   | Processor 5  | 5 |    Subdomain 0            |    |                                   |
-   | Subdomain 0  | _ |                           +----------------------------------------+
-   |              | 0 |                           |    |                                   |
-   |              |   |                           |    |                                   |
-   |              |   |                           |    |        Processor 9                |
-   |              |   |                           |B9_1|        Subdomain 1                |
-   |              |   |                           |    |                                   |
-   |              |   |                           |    |                                   |
-   |              |   |                           |    |                                   |
-   +--------------+---+---------------------------+----+                                   |
-                             |                                   |
+  |                 Sub+domain 0 +-----------------------------------+ | | | |
+|                                   |
+  ++--------------+---+---------------------------+----+        Processor 9 | |
+|   |     B8_0                  |    |        Subdomain 0                | |
++------------------------------------+                                   | | |
+|                           |    |                                   | | |   |
+|B9_0|                                   | |              | B |    Local
+processor        |    |                                   | | Processor 5  | 5 |
+Subdomain 0            |    |                                   | | Subdomain 0
+| _ |                           +----------------------------------------+ | | 0
+|                           |    |                                   | | |   |
+|    |                                   | |              |   | |    | Processor
+9                | |              |   |                           |B9_1|
+Subdomain 1                | |              |   |                           | |
+| |              |   |                           |    | | |              |   |
+|    |                                   |
+   +--------------+---+---------------------------+----+ | | |
                              +-----------------------------------+
 
 
@@ -268,27 +261,21 @@ private:
 
       +----------------------------------------------------+
       |                 Processor 8                        |
-      |                 Subdomain 0                        +-----------------------------------+
-      |                                                    |                                   |
-      |           +---------------------------------------------+                              |
-      |           |         G8_0                           |    |                              |
-  +-----+---------------+------------------------------------+    |   Processor 9                |
-  |                 |   |                                    |    |   Subdomain 0                |
-  |                 |   |                                    |G9_0|                              |
-  |                 |   |                                    |    |                              |
-  |                 |   |                                    |    |                              |
-  |                 |   |        Local processor             |    |                              |
-  |  Processor 5    |   |        Sub+domain 0                |    |                              |
-  |  Subdomain 0    |   |                                    +-----------------------------------+
-  |                 |   |                                    |    |                              |
-  |                 | G |                                    |    |                              |
-  |                 | 5 |                                    |    |   Processor 9                |
-  |                 | | |                                    |    |   Subdomain 1                |
-  |                 | 0 |                                    |G9_1|                              |
-  |                 |   |                                    |    |                              |
-  |                 |   |                                    |    |                              |
-  +---------------------+------------------------------------+    |                              |
-            |                                        |    |                              |
+      |                 Subdomain 0 +-----------------------------------+ | | |
+      |           +---------------------------------------------+ | | | G8_0 |
+|                              |
+  +-----+---------------+------------------------------------+    |   Processor
+9                | |                 |   |                                    |
+|   Subdomain 0                | |                 |   | |G9_0| | | |   | |    |
+| |                 |   |                                    |    | | | |   |
+Local processor             |    |                              | |  Processor 5
+|   |        Sub+domain 0                |    |                              |
+  |  Subdomain 0    |   | +-----------------------------------+ | |   | |    | |
+  |                 | G |                                    |    | | | | 5 | |
+|   Processor 9                | |                 | | | |    |   Subdomain 1 |
+  |                 | 0 |                                    |G9_1| | | |   | |
+|                              | |                 |   | |    | |
+  +---------------------+------------------------------------+    | | | |    | |
             +----------------------------------------+----+------------------------------+
 
    \endverbatim
