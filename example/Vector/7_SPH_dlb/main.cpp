@@ -212,7 +212,9 @@ const int velocity_prev = 7;
 /*! \cond [vector_dist_def] \endcond */
 
 // Type of the vector containing particles
-typedef vector_dist<3,double,aggregate<size_t,double,  double,    double,     double,     double[3], double[3], double[3]>> particles;
+constexpr unsigned int SPACE_N_DIM = 3;
+using SpaceType = double;
+typedef vector_dist<SPACE_N_DIM, SpaceType, aggregate<size_t,double,  double,    double,     double,     double[3], double[3], double[3]>> particles;
 //                                       |      |        |          |            |            |         |            |
 //                                       |      |        |          |            |            |         |            |
 //                                     type   density   density    Pressure    delta       force     velocity    velocity
@@ -991,10 +993,17 @@ inline void sensor_pressure(Vector & vd,
 
 /*! \cond [sens_press] \endcond */
 
-/*struct ModelComputationalCosts
+/*! \cond [rebalancing] \endcond */
+
+// abstract models
+struct ModelComputationalCosts
 {
-    virtual template<typename Decomposition, typename vector> void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p) = 0;
-    virtual template<typename Decomposition> void applyModel(Decomposition & dec, size_t v) = 0;
+    template<typename Decomposition, typename vector>
+    void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p) {};
+
+    template<typename Decomposition>
+    void applyModel(Decomposition & dec, size_t v) {};
+
     virtual val_t distributionTol() = 0;
 };
 
@@ -1006,62 +1015,71 @@ struct ModelDecompose
 struct ModelDistribute
 {
     virtual void wow() = 0;
-};*/
+};
+
+// concrete models
+struct MyModelForComputationalCosts : ModelComputationalCosts {
+    template<typename Decomposition, typename vector> void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p)
+    {
+      if (vd.template getProp<type>(p) == FLUID)
+        dec.addComputationCost(v,4);
+      else
+        dec.addComputationCost(v,3);
+    }
+
+    template<typename Decomposition> void applyModel(Decomposition & dec, size_t v)
+    {
+      dec.setSubSubDomainComputationCost(v, dec.getSubSubDomainComputationCost(v) * dec.getSubSubDomainComputationCost(v));
+    }
+
+    val_t distributionTol()
+    {
+      return 1.01;
+    }
+};
+
+struct MyDecompositionModel : ModelDecompose {
+    void wow() {
+      std::cout << "calling decompose model!" << std::endl;
+    }
+};
+
+struct MyDistributionModel : ModelDistribute {
+    void wow() {
+      std::cout << "calling distribution model!" << std::endl;
+    }
+};
 
 void doRebalancing(particles &vd) {
-    // todo refactor this into ...
-	/*ModelCustom md;
-	vd.addComputationCosts(md);
-	vd.getDecomposition().decompose();
+	// todo refactor this vd.getDecomposition().decompose();
+
+	Vcluster<> & v_cl = create_vcluster();
 
 	// specify
 	// - how we want to add the computational cost ...
-    struct MyModelForComputationalCosts : ModelComputationalCosts {
-        template<typename Decomposition, typename vector> void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p)
-        {
-          if (vd.template getProp<type>(p) == FLUID)
-            dec.addComputationCost(v,4);
-          else
-            dec.addComputationCost(v,3);
-        }
-
-        template<typename Decomposition> void applyModel(Decomposition & dec, size_t v)
-        {
-          dec.setSubSubDomainComputationCost(v, dec.getSubSubDomainComputationCost(v) * dec.getSubSubDomainComputationCost(v));
-        }
-
-        val_t distributionTol()
-        {
-          return 1.01;
-        }
-    };
     MyModelForComputationalCosts mcc;
 
-	// - how we want to decompose ...
-	DecompositionStrategy decomposition;
-	struct MyDecompositionModel : ModelDecompose {
-        void wow() {
-          std::cout << "calling decompose model!" << std::endl;
-        }
-	};
+    // - how we want to decompose ...
+    CartDecomposition<SPACE_N_DIM, SpaceType> decomposition(v_cl);
     MyDecompositionModel mde;
 
-	// - how we want to distribute ...
-	DistributionStrategy distribution;
-    struct MyDistributionModel : ModelDistribute {
-        void wow() {
-          std::cout << "calling distribution model!" << std::endl;
-        }
-    };
+    // - how we want to distribute ...
+    ParMetisDistribution<SPACE_N_DIM, SpaceType> distribution(v_cl);  // question can use the same Decomposition is using ?
     MyDistributionModel mdi;
 
-	// ... then do it!
-	vd.addComputationCosts(mcc);
-	decomposition.decompose(vd, mde);
-	distribution.distribute(decomposition, mdi);*/
+    // ... then do it!
+    vd.addComputationCosts(mcc);
+    // todo decomposition.decompose(vd, mde);
+    // todo distribution.distribute(decomposition, mdi);
 }
 
+/*! \cond [rebalancing] \endcond */
+
+/*! \cond [find_part] \endcond */
+
 // todo given x, y of particle, where is (in computational domain) it ?
+
+/*! \cond [find_part] \endcond */
 
 int main(int argc, char* argv[])
 {

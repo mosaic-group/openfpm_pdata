@@ -30,7 +30,6 @@
 #include "nn_processor.hpp"
 #include "GraphMLWriter/GraphMLWriter.hpp"
 #include "Distribution/ParMetisDistribution.hpp"
-#include "Distribution/DistParMetisDistribution.hpp"
 #include "Distribution/MetisDistribution.hpp"
 #include "DLB/DLB.hpp"
 #include "util/se_util.hpp"
