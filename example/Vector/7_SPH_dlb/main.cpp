@@ -1054,7 +1054,7 @@ void doRebalancing(particles &vd) {
     MyDecompositionModel mde;
 
     // - how we want to distribute ...
-    ParMetisDistribution<SPACE_N_DIM, SpaceType> dist(v_cl);  // question can use the same Decomposition is using ?
+	AbstractDistributionStrategy<SPACE_N_DIM, SpaceType> dist(v_cl);  // question can use the same Decomposition is using ?
     MyDistributionModel mdi;
 
     // ... then do it!
