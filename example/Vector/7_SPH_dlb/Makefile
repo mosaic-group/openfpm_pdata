@@ -35,5 +35,8 @@ build:
 test:  # todo test with mpi (see run)
 	./$(out) 2>&1 | tee debug/$(shell date +%FT%T | sed -e 's/:/-/g').debug
 
+pretty:
+	find . -regex '.*\.\(cpp\|hpp\|cc\|cxx\)' -exec clang-format -i -style=file {} \;
+
 debug:
 	gdb -ex run --args ./$(out)

@@ -1,14 +1,18 @@
 #ifndef OPENFPM_PDATA_ABSTRACTDISTRIBUTIONSTRATEGY_HPP
 #define OPENFPM_PDATA_ABSTRACTDISTRIBUTIONSTRATEGY_HPP
 
+#include "Decomposition/Domain_NN_calculator_cart.hpp"
 #include "Graph/CartesianGraphFactory.hpp"
 #include "Graph/ids.hpp"
 #include "SubdomainGraphNodes.hpp"
 
 /*! \brief Class that distribute sub-sub-domains across processors
  */
-template <unsigned int dim, typename T>
-class AbstractDistributionStrategy {
+template <
+        unsigned int dim,
+        typename T>
+class AbstractDistributionStrategy :
+public domain_nn_calculator_cart<dim> {
 
 //! It simplify to access the SpaceBox element
 using Box = SpaceBox<dim, T>;
@@ -92,6 +96,15 @@ public:
 
   template <typename DecompositionStrategy, typename Model>
   void distribute(DecompositionStrategy& dec, Model m) {}
+
+  void onEnd() {
+    domain_nn_calculator_cart<dim>::reset();
+    domain_nn_calculator_cart<dim>::setParameters(proc_box);
+  }
+
+private:
+    //! Processor domain bounding box
+    ::Box<dim,size_t> proc_box;
 };
 
 #endif  // OPENFPM_PDATA_ABSTRACTDISTRIBUTIONSTRATEGY_HPP

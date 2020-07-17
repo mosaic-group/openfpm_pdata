@@ -1115,13 +1115,18 @@ void doRebalancing(particles &vd) {
 	mde.finalize<MyDecompositionStrategy, MyDistributionStrategy>(dec, dist);
 	mdi.finalize<MyDistributionStrategy>(dist);
 
-	////////////////////////////////////////////////////////////////// decompose
+	//////////////////////////////////////////////////////////////////// decompose
 	dec.reset();
 	mcc.computeCommunicationAndMigrationCosts<MyDecompositionStrategy, MyDistributionStrategy>(dec, dist);
 	dec.decompose(mde);
 
-	///////////////////////////////////////////////////////////////// distribute
-    dist.distribute<MyDecompositionStrategy, MyDistributionModel>(dec, mdi);
+	/////////////////////////////////////////////////////////////////// distribute
+  dist.distribute<MyDecompositionStrategy, MyDistributionModel>(dec, mdi);
+
+  ///////////////////////////////////////////////////////////// finalize (merge)
+  dec.merge();
+  dist.onEnd();
+  dec.onEnd();
 }
 
 /*! \cond [rebalancing] \endcond */

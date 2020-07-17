@@ -1352,7 +1352,7 @@ public:
 
 		dist.decompose();
 
-		createSubdomains(v_cl,bc);
+		createSubdomains(v_cl, bc);
 
 		calculateGhostBoxes();
 
