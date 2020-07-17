@@ -1018,7 +1018,8 @@ struct ModelDistribute
 
 // concrete models
 struct MyModelForComputationalCosts : ModelComputationalCosts {
-    template<typename Decomposition, typename vector> void addComputation(Decomposition & dec, vector & vd, size_t v, size_t p)
+    template<typename DecompositionStrategy, typename vector>
+    void addComputation(DecompositionStrategy & dec, vector & vd, size_t v, size_t p)
     {
       if (vd.template getProp<type>(p) == FLUID) {
 		  dec.addComputationCost(v, 4);
@@ -1026,12 +1027,40 @@ struct MyModelForComputationalCosts : ModelComputationalCosts {
 		  dec.addComputationCost(v, 3);
       }
     }
+
+	template<typename DecompositionStrategy, typename DistributionStrategy>
+	void init(DecompositionStrategy & dec, DistributionStrategy & dist) {
+		for (size_t i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
+			dec.setSubSubDomainComputationCost(dist.getOwnerSubSubDomain(i), 1);
+		}
+	}
+
+	template<typename particles, typename DecompositionStrategy, typename DistributionStrategy>
+	void calculate(particles & vd, DecompositionStrategy & dec, DistributionStrategy & dist) {
+		CellDecomposer_sm<SPACE_N_DIM, SpaceType, shift<SPACE_N_DIM, SpaceType>> cdsm;
+		cdsm.setDimensions(dec.getDomain(), dec.getDistGrid().getSize(), 0);
+		for (auto it = vd.getDomainIterator(); !it.hasEnded(); ++it) {
+			Point<SPACE_N_DIM, SpaceType> p = vd.getPos(it.get());
+			const size_t v = cdsm.getCell(p);
+			addComputation(dec, vd, v, it.get().getKey());  // todo fault error
+		}
+	}
 };
 
 struct MyDecompositionModel : ModelDecompose {
-	template<typename Decomposition> void applyModel(Decomposition & dec, size_t v)
+	template<typename Decomposition>
+	void applyModel(Decomposition & dec, size_t v)
 	{
 		dec.setSubSubDomainComputationCost(v, dec.getSubSubDomainComputationCost(v) * dec.getSubSubDomainComputationCost(v));
+	}
+
+	template<typename DecompositionStrategy, typename DistributionStrategy>
+	void finalize(DecompositionStrategy & dec, DistributionStrategy & dist) {
+		constexpr size_t ts = 1;
+		dec.computeCommunicationAndMigrationCosts(ts);
+		for (auto i = 0 ; i < dist.getNOwnerSubSubDomains(); i++) {
+			applyModel(dec, dist.getOwnerSubSubDomain(i));  // apply model to all the sub-sub-domains
+		}
 	}
 };
 
@@ -1039,6 +1068,11 @@ struct MyDistributionModel : ModelDistribute {
 	val_t toll()
 	{
 		return 1.01;
+	}
+
+	template<typename DistributionStrategy>
+	void finalize(DistributionStrategy & dist) {
+		dist.setDistTol(toll());
 	}
 };
 
@@ -1061,33 +1095,15 @@ void doRebalancing(particles &vd) {
 
     // ... then do it!
     //////////////////////////////////////////////////////// computational costs
-	// init
-	for (size_t i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
-		dec.setSubSubDomainComputationCost(dist.getOwnerSubSubDomain(i), 1);
-	}
-
-	CellDecomposer_sm<SPACE_N_DIM, SpaceType, shift<SPACE_N_DIM, SpaceType>> cdsm;
-	cdsm.setDimensions(dec.getDomain(), dec.getDistGrid().getSize(), 0);
-    for (auto it = vd.getDomainIterator(); !it.hasEnded(); ++it) {
-      Point<SPACE_N_DIM, SpaceType> p = vd.getPos(it.get());
-      const size_t v = cdsm.getCell(p);
-      mcc.addComputation(dec, vd, v, it.get().getKey());  // todo fault error
-    }
-
-	// finalize
-	constexpr size_t ts = 1;
-	dec.computeCommunicationAndMigrationCosts(ts);
-	for (auto i = 0 ; i < dist.getNOwnerSubSubDomains(); i++) {
-		mde.applyModel(dec, dist.getOwnerSubSubDomain(i));  // apply model to all the sub-sub-domains
-	}
-	dist.setDistTol(mdi.toll());
+	mcc.init<MyDecompositionStrategy, MyDistributionStrategy>(dec, dist);
+	mcc.calculate<particles, MyDecompositionStrategy, MyDistributionStrategy>(vd, dec, dist);
+	mde.finalize<MyDecompositionStrategy, MyDistributionStrategy>(dec, dist);
+	mdi.finalize<MyDistributionStrategy>(dist);
 
 	////////////////////////////////////////////////////////////////// decompose
-	// todo refactor this vd.getDecomposition().decompose();
 	dec.decompose(mde);
 
 	///////////////////////////////////////////////////////////////// distribute
-	// todo refactor this vd.getDecomposition().decompose();
     dist.distribute<MyDecompositionStrategy, MyDistributionModel>(dec, mdi);
 }
 
