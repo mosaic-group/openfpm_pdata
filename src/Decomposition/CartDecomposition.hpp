@@ -30,6 +30,7 @@
 #include "nn_processor.hpp"
 #include "GraphMLWriter/GraphMLWriter.hpp"
 #include "Distribution/ParMetisDistribution.hpp"
+#include "Distribution/DistParMetisDistribution.hpp"
 #include "Distribution/MetisDistribution.hpp"
 #include "DLB/DLB.hpp"
 #include "util/se_util.hpp"
@@ -1347,7 +1348,7 @@ public:
 		reset();
 
 		if (commCostSet == false)
-		{computeCommunicationAndMigrationCosts(1);}
+		{computeCommunicationAndMigrationCosts(1);}  // ... that were already filled by `addComputationCosts`
 
 		dist.decompose();
 

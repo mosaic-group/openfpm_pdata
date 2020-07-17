@@ -60,11 +60,14 @@ class vector_dist_iterator
 	bool isNext()
 	{
 		// If there are no other grid stop
-
 		if (v_it >= stop)
 			return false;
 
 		return true;
+	}
+
+	bool hasEnded() {
+		return (v_it >= stop);
 	}
 
 	/*! \brief Get the actual key
