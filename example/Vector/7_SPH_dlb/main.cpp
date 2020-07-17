@@ -64,6 +64,9 @@
 #include "Vector/vector_dist.hpp"
 #include <math.h>
 #include "Draw/DrawParticles.hpp"
+
+#include "./AbstractDecompositionStrategy.hpp"
+#include "./AbstractDistributionStrategy.hpp"
 //! \cond [inclusion] \endcond
 
 using val_t = double;
@@ -1040,8 +1043,6 @@ struct MyDistributionModel : ModelDistribute {
 };
 
 void doRebalancing(particles &vd) {
-	// todo refactor this vd.getDecomposition().decompose();
-
 	Vcluster<> & v_cl = create_vcluster();
 
 	// specify
@@ -1049,7 +1050,7 @@ void doRebalancing(particles &vd) {
     MyModelForComputationalCosts mcc;
 
     // - how we want to decompose ...
-    CartDecomposition<SPACE_N_DIM, SpaceType> dec(v_cl);
+	AbstractDecompositionStrategy<SPACE_N_DIM, SpaceType> dec(v_cl);
     MyDecompositionModel mde;
 
     // - how we want to distribute ...
@@ -1057,7 +1058,7 @@ void doRebalancing(particles &vd) {
     MyDistributionModel mdi;
 
     // ... then do it!
-    // computational costs
+    //////////////////////////////////////////////////////// computational costs
 	// init
 	for (size_t i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
 		dec.setSubSubDomainComputationCost(dist.getOwnerSubSubDomain(i), 1);
@@ -1079,8 +1080,13 @@ void doRebalancing(particles &vd) {
 	}
 	dist.setDistTol(mdi.toll());
 
-	// todo decomposition.decompose(vd, mde);
-    // todo distribution.distribute(decomposition, mdi);
+	////////////////////////////////////////////////////////////////// decompose
+	// todo refactor this vd.getDecomposition().decompose();
+	dec.decompose(mde);
+
+	///////////////////////////////////////////////////////////////// distribute
+	// todo refactor this vd.getDecomposition().decompose();
+    // dist.distribute(decomposition, mdi);
 }
 
 /*! \cond [rebalancing] \endcond */
