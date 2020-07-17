@@ -1,0 +1,26 @@
+BasedOnStyle: Chromium
+
+AllowShortFunctionsOnASingleLine: true
+AlwaysBreakTemplateDeclarations: true
+
+BinPackArguments: false
+BinPackParameters: false
+
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+ConstructorInitializerIndentWidth: 2
+
+IndentFunctionDeclarationAfterType: false
+
+TabWidth: 2
+IndentWidth: 2
+ColumnLimit: 80
+
+Language: Cpp
+Standard: Cpp11
+AccessModifierOffset: -2
+
+SortUsingDeclarations: true
+SortIncludes: true
+
+# Comments are for developers, they should arrange them
+# ReflowComments: false
