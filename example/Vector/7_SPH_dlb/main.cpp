@@ -1045,6 +1045,21 @@ struct MyModelForComputationalCosts : ModelComputationalCosts {
 			addComputation(dec, vd, v, it.get().getKey());  // todo fault error
 		}
 	}
+
+	/*! \brief Calculate communication and migration costs
+   *
+   * \param ts how many timesteps have passed since last calculation, used to approximate the cost
+   */
+  template<typename DecompositionStrategy, typename DistributionStrategy>
+  void computeCommunicationAndMigrationCosts(DecompositionStrategy & dec, DistributionStrategy & dist, const size_t ts = 1) {
+    float migration;
+    size_t norm;
+    std::tie(migration, norm) = dec.computeCommunicationCosts();
+
+    dist.setMigrationCosts(migration, norm, ts);
+
+    // todo commCostSet = true;
+	}
 };
 
 struct MyDecompositionModel : ModelDecompose {
@@ -1101,6 +1116,8 @@ void doRebalancing(particles &vd) {
 	mdi.finalize<MyDistributionStrategy>(dist);
 
 	////////////////////////////////////////////////////////////////// decompose
+	dec.reset();
+	mcc.computeCommunicationAndMigrationCosts<MyDecompositionStrategy, MyDistributionStrategy>(dec, dist);
 	dec.decompose(mde);
 
 	///////////////////////////////////////////////////////////////// distribute

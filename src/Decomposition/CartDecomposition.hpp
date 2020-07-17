@@ -505,7 +505,7 @@ public:
 				// not directed
 				dist.setCommunicationCost(i, s, 1 /** dist.getSubSubDomainComputationCost(i)*/  *  ts);
 			}
-			prev += dist.getNSubSubDomainNeighbors(i);
+			prev += dist.getNSubSubDomainNeighbors(i);  // todo why prev ?
 		}
 
 		commCostSet = true;

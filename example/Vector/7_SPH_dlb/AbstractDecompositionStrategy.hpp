@@ -1,6 +1,7 @@
 #ifndef OPENFPM_PDATA_ABSTRACT_DECOMPOSITION_STRATEGY_HPP
 #define OPENFPM_PDATA_ABSTRACT_DECOMPOSITION_STRATEGY_HPP
 
+#include <utility>
 #include <cmath>
 #include <initializer_list>
 #include <unordered_map>
@@ -39,15 +40,19 @@ class AbstractDecompositionStrategy
     public ie_ghost<dim, T, Memory, layout_base>,
     public domain_nn_calculator_cart<dim>,
     public domain_icell_calculator<dim, T, layout_base, Memory> {
-public:
-  //! Runtime virtual cluster machine
-  Vcluster<>& v_cl;  // question can be private?
-
   //! Type of the domain we are going to decompose
   using domain_type = T;
 
   //! It simplify to access the SpaceBox element
   using Box = SpaceBox<dim, T>;
+
+public:
+  //! Structure that decompose the space into cells without creating them
+  //! useful to convert positions to CellId or sub-domain id in this case
+  CellDecomposer_sm<dim, T, shift<dim,T>> cd;  // todo private
+
+  //! ghost info
+  Ghost<dim,T> ghost;  // todo private
 
   /*! \brief Abstract decomposition constructor
    *
@@ -89,6 +94,25 @@ public:
    */
   void computeCommunicationAndMigrationCosts(size_t ts) {}
 
+  std::pair<float, size_t> computeCommunicationCosts() {
+    const Box cellBox = cd.getCellBox();
+    const float b_s = static_cast<float>(cellBox.getHigh(0));
+    const float gh_s = static_cast<float>(ghost.getHigh(0));
+
+    // compute the gh_area for 2 dim case
+    float gh_v = (gh_s * b_s);
+
+    // multiply for sub-sub-domain side for each domain
+    for (auto i = 2; i < dim; i++) {
+      gh_v *= b_s;
+    }
+
+    const size_t norm = (size_t) (1.0 / gh_v);
+    float migration = pow(b_s, dim);
+
+    return std::make_pair(migration, norm);
+  }
+
   /*! \brief Return the box of the physical domain
    *
    * \return The physical domain box
@@ -102,57 +126,9 @@ public:
    */
   const grid_sm<dim, void> getDistGrid() { return gr_dist; }
 
-  /*! \brief Start decomposition
-   *
-   */
-  template <typename Model>
-  void decompose(Model m) {
-    reset();
-
-    /* if (commCostSet == false)
-    {computeCommunicationAndMigrationCosts(1);}  // ... that were already filled
-    by `addComputationCosts`
-
-    dist.decompose();
-
-    createSubdomains(v_cl,bc);
-
-    calculateGhostBoxes();
-
-    domain_nn_calculator_cart<dim>::reset();
-    domain_nn_calculator_cart<dim>::setParameters(proc_box);
-
-    domain_icell_calculator<dim,T,layout_base,Memory>
-    ::CalculateInternalCells(v_cl,
-                             ie_ghost<dim,
-    T,Memory,layout_base>::private_get_vb_int_box(), sub_domains,
-                             this->getProcessorBounds(),
-                             this->getGhost().getRcut(),
-                             this->getGhost()); */
+  unsigned int getDim() const {
+    return dim;
   }
-
-protected:
-  //! rectangular domain to decompose
-  ::Box<dim, T> domain;
-
-  //! Structure that store the cartesian grid information
-  grid_sm<dim, void> gr_dist;
-
-private:
-  //! the set of all local sub-domain as vector
-  openfpm::vector<Box, Memory, typename layout_base<Box>::type, layout_base>
-      sub_domains;
-
-  //! for each sub-domain, contain the list of the neighborhood processors
-  openfpm::vector<openfpm::vector<long unsigned int>> box_nn_processor;
-
-  //! Structure that contain for each sub-sub-domain box the processor id
-  //! exist for efficient global communication
-  CellList<dim, T, Mem_fast<Memory, int>, shift<dim, T>>
-      fine_s;  // todo cellist to find particle
-
-  //! set of Boxes produced by the decomposition optimizer
-  openfpm::vector<::Box<dim, size_t>> loc_box;
 
   /*! \brief Delete the decomposition and reset the data-structure
    *
@@ -167,5 +143,39 @@ private:
     ie_ghost<dim, T, Memory, layout_base>::reset();
     ie_loc_ghost<dim, T, layout_base, Memory>::reset();
   }
+
+  /*! \brief Start decomposition
+   *
+   */
+  template <typename Model>
+  void decompose(Model m) {
+    //
+  }
+
+protected:
+  //! rectangular domain to decompose
+  ::Box<dim, T> domain;
+
+  //! Structure that store the cartesian grid information
+  grid_sm<dim, void> gr_dist;
+
+private:
+  //! Runtime virtual cluster machine
+  Vcluster<>& v_cl;  // question can be private?
+
+  //! the set of all local sub-domain as vector
+  openfpm::vector<Box, Memory, typename layout_base<Box>::type, layout_base>
+      sub_domains;
+
+  //! for each sub-domain, contain the list of the neighborhood processors
+  openfpm::vector<openfpm::vector<long unsigned int>> box_nn_processor;
+
+  //! Structure that contain for each sub-sub-domain box the processor id
+  //! exist for efficient global communication
+  CellList<dim, T, Mem_fast<Memory, int>, shift<dim, T>>
+      fine_s;  // todo cellist to find particle
+
+  //! set of Boxes produced by the decomposition optimizer
+  openfpm::vector<::Box<dim, size_t>> loc_box;
 };
 #endif  // OPENFPM_PDATA_ABSTRACT_DECOMPOSITION_STRATEGY_HPP
