@@ -92,7 +92,9 @@ public:
   }
 
   template <typename DecompositionStrategy, typename Model>
-  void distribute(DecompositionStrategy& dec, Model m) {}
+  void distribute(DecompositionStrategy& dec, Model m) {
+    // todo see ParMetisDistribution.hpp:229
+  }
 
   void onEnd() {
     domain_nn_calculator_cart<dim>::reset();

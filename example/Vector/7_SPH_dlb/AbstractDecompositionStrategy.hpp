@@ -86,12 +86,7 @@ public:
   inline size_t getSubSubDomainComputationCost(size_t id) { return 0; }
 
   /*! \brief Calculate communication and migration costs
-   *
-   * \param ts how many timesteps have passed since last calculation, used to
-   * approximate the cost
    */
-  void computeCommunicationAndMigrationCosts(size_t ts) {}
-
   std::pair<float, size_t> computeCommunicationCosts() {
     const Box cellBox = cd.getCellBox();
     const float b_s = static_cast<float>(cellBox.getHigh(0));
@@ -107,6 +102,8 @@ public:
 
     const size_t norm = (size_t)(1.0 / gh_v);
     float migration = pow(b_s, dim);
+
+    costBeenSet = true;
 
     return std::make_pair(migration, norm);
   }
@@ -160,7 +157,9 @@ public:
    *
    */
   template <typename Model>
-  void decompose(Model m) {}
+  void decompose(Model m) {
+    // todo see: ParMetisDistribution.hpp:378
+  }
 
   void merge() {
     createSubdomains();
@@ -178,6 +177,8 @@ public:
             this->getGhost());
   }
 
+  bool shouldSetCosts() { return !costBeenSet; }
+
 protected:
   //! rectangular domain to decompose
   ::Box<dim, T> domain;
@@ -189,6 +190,8 @@ protected:
   grid_sm<dim, void> gr_dist;
 
 private:
+  bool costBeenSet = false;
+
   //! Runtime virtual cluster machine
   Vcluster<>& v_cl;  // question can be private?
 

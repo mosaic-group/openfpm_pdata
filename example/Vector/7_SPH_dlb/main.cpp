@@ -78,10 +78,11 @@
 //#define STOP_ON_ERROR
 
 //! \cond [inclusion] \endcond
+#include "Vector/vector_dist.hpp"
 #include <math.h>
 #include "Draw/DrawParticles.hpp"
-#include "Vector/vector_dist.hpp"
 
+#include "./AbstractStrategyModels.hpp"
 #include "./AbstractDecompositionStrategy.hpp"
 #include "./AbstractDistributionStrategy.hpp"
 //! \cond [inclusion] \endcond
@@ -838,7 +839,7 @@ void verlet_int(particles& vd, double dt) {
     }
 
     //-Calculate displacement and update position / Calcula desplazamiento y
-    //actualiza posicion.
+    // actualiza posicion.
     double dx = vd.template getProp<velocity>(a)[0] * dt +
                 vd.template getProp<force>(a)[0] * dt205;
     double dy = vd.template getProp<velocity>(a)[1] * dt +
@@ -928,7 +929,7 @@ void euler_int(particles& vd, double dt) {
     }
 
     //-Calculate displacement and update position / Calcula desplazamiento y
-    //actualiza posicion.
+    // actualiza posicion.
     double dx = vd.template getProp<velocity>(a)[0] * dt +
                 vd.template getProp<force>(a)[0] * dt205;
     double dy = vd.template getProp<velocity>(a)[1] * dt +
@@ -1083,28 +1084,12 @@ inline void sensor_pressure(Vector& vd,
 
 /*! \cond [rebalancing] \endcond */
 
-// abstract models
-struct ModelComputationalCosts {
-  template <typename Decomposition, typename vector>
-  void addComputation(Decomposition& dec, vector& vd, size_t v, size_t p){};
-};
-
-struct ModelDecompose {
-  template <typename Decomposition>
-  void applyModel(Decomposition& dec, size_t v){};
-};
-
-struct ModelDistribute {
-  virtual val_t toll() = 0;
-};
-
-// concrete models
-struct MyModelForComputationalCosts : ModelComputationalCosts {
+struct MyComputationalCostsModel : ModelComputationalCosts {
   template <typename DecompositionStrategy, typename vector>
-  void addComputation(DecompositionStrategy& dec,
-                      vector& vd,
-                      size_t v,
-                      size_t p) {
+  void addToComputation(DecompositionStrategy& dec,
+                        vector& vd,
+                        size_t v,
+                        size_t p) {
     if (vd.template getProp<type>(p) == FLUID) {
       dec.addComputationCost(v, 4);
     } else {
@@ -1131,15 +1116,10 @@ struct MyModelForComputationalCosts : ModelComputationalCosts {
     for (auto it = vd.getDomainIterator(); !it.hasEnded(); ++it) {
       Point<SPACE_N_DIM, SpaceType> p = vd.getPos(it.get());
       const size_t v = cdsm.getCell(p);
-      addComputation(dec, vd, v, it.get().getKey());  // todo fault error
+      addToComputation(dec, vd, v, it.get().getKey());  // todo fault error
     }
   }
 
-  /*! \brief Calculate communication and migration costs
-   *
-   * \param ts how many timesteps have passed since last calculation, used to
-   * approximate the cost
-   */
   template <typename DecompositionStrategy, typename DistributionStrategy>
   void computeCommunicationAndMigrationCosts(DecompositionStrategy& dec,
                                              DistributionStrategy& dist,
@@ -1149,8 +1129,6 @@ struct MyModelForComputationalCosts : ModelComputationalCosts {
     std::tie(migration, norm) = dec.computeCommunicationCosts();
 
     dist.setMigrationCosts(migration, norm, ts);
-
-    // todo commCostSet = true;
   }
 };
 
@@ -1165,12 +1143,9 @@ struct MyDecompositionModel : ModelDecompose {
 
   template <typename DecompositionStrategy, typename DistributionStrategy>
   void finalize(DecompositionStrategy& dec, DistributionStrategy& dist) {
-    constexpr size_t ts = 1;
-    dec.computeCommunicationAndMigrationCosts(ts);
     for (auto i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
-      applyModel(dec,
-                 dist.getOwnerSubSubDomain(
-                     i));  // apply model to all the sub-sub-domains
+      // apply model to all the sub-sub-domains
+      applyModel(dec, dist.getOwnerSubSubDomain(i));
     }
   }
 };
@@ -1193,7 +1168,7 @@ void doRebalancing(particles& vd) {
 
   // specify
   // - how we want to add the computational cost ...
-  MyModelForComputationalCosts mcc;
+  MyComputationalCostsModel mcc;
 
   // - how we want to decompose ...
   MyDecompositionStrategy dec(v_cl);
@@ -1209,20 +1184,28 @@ void doRebalancing(particles& vd) {
   mcc.init<MyDecompositionStrategy, MyDistributionStrategy>(dec, dist);
   mcc.calculate<particles, MyDecompositionStrategy, MyDistributionStrategy>(
       vd, dec, dist);
+  mcc.computeCommunicationAndMigrationCosts<MyDecompositionStrategy,
+                                            MyDistributionStrategy>(
+      dec, dist, 1);
   mde.finalize<MyDecompositionStrategy, MyDistributionStrategy>(dec, dist);
   mdi.finalize<MyDistributionStrategy>(dist);
 
   //////////////////////////////////////////////////////////////////// decompose
   dec.reset();
-  mcc.computeCommunicationAndMigrationCosts<MyDecompositionStrategy,
-                                            MyDistributionStrategy>(dec, dist);
+  if (dec.shouldSetCosts()) {
+    mcc.computeCommunicationAndMigrationCosts<MyDecompositionStrategy,
+                                              MyDistributionStrategy>(dec,
+                                                                      dist);
+  }
   dec.decompose(mde);
 
   /////////////////////////////////////////////////////////////////// distribute
   dist.distribute<MyDecompositionStrategy, MyDistributionModel>(dec, mdi);
 
-  ///////////////////////////////////////////////////////////// finalize (merge)
+  ///////////////////////////////////////////////////////////////////////  merge
   dec.merge();
+
+  ///////////////////////////////////////////////////////////////////// finalize
   dist.onEnd();
   dec.onEnd();
 }
