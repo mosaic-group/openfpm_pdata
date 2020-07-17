@@ -28,7 +28,7 @@ void Test3D_extended_grid(const Box<3,float> & domain, long int k)
 	float factor = pow(create_vcluster().getProcessingUnits()/2.0f,1.0f/3.0f);
 
 	// This test in order to work must have at least one ghost
-	for ( ; (0.01 / factor) > (domain.getHigh(0) - domain.getLow(0) / k) ; k-= (k > 2*big_step)?big_step:small_step )
+	for ( ; (0.01 / factor) > ((domain.getHigh(0) - domain.getLow(0)) / k) ; k-= (k > 2*big_step)?big_step:small_step )
 	{
 		BOOST_TEST_CHECKPOINT( "Testing 3D extended grid k=" << k );
 
