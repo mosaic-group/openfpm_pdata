@@ -1043,6 +1043,8 @@ struct MyDistributionModel : ModelDistribute {
 };
 
 void doRebalancing(particles &vd) {
+	using MyDecompositionStrategy = AbstractDecompositionStrategy<SPACE_N_DIM, SpaceType>;
+	using MyDistributionStrategy = AbstractDistributionStrategy<SPACE_N_DIM, SpaceType>;
 	Vcluster<> & v_cl = create_vcluster();
 
 	// specify
@@ -1050,11 +1052,11 @@ void doRebalancing(particles &vd) {
     MyModelForComputationalCosts mcc;
 
     // - how we want to decompose ...
-	AbstractDecompositionStrategy<SPACE_N_DIM, SpaceType> dec(v_cl);
+	MyDecompositionStrategy dec(v_cl);
     MyDecompositionModel mde;
 
     // - how we want to distribute ...
-	AbstractDistributionStrategy<SPACE_N_DIM, SpaceType> dist(v_cl);  // question can use the same Decomposition is using ?
+	MyDistributionStrategy dist(v_cl);  // question can use the same Decomposition is using ?
     MyDistributionModel mdi;
 
     // ... then do it!
@@ -1086,7 +1088,7 @@ void doRebalancing(particles &vd) {
 
 	///////////////////////////////////////////////////////////////// distribute
 	// todo refactor this vd.getDecomposition().decompose();
-    // dist.distribute(decomposition, mdi);
+    dist.distribute<MyDecompositionStrategy, MyDistributionModel>(dec, mdi);
 }
 
 /*! \cond [rebalancing] \endcond */

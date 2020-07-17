@@ -49,8 +49,8 @@ public:
 	 */
     void setDistTol(double tol) {}
 
-    template<typename Decomposition, typename Model>
-    void distribute(Decomposition & dec, Model m) {}
+    template<typename DecompositionStrategy, typename Model>
+    void distribute(DecompositionStrategy & dec, Model m) {}
 };
 
 #endif //OPENFPM_PDATA_ABSTRACTDISTRIBUTIONSTRATEGY_HPP
