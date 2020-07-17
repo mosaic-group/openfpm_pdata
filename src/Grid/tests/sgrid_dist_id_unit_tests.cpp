@@ -11,8 +11,6 @@
 #include "Grid/grid_dist_id.hpp"
 #include "Point_test.hpp"
 
-////////////////////////////////////// THEESE TEST ARE BROKEN TO REMPOVE OR FIX ////
-
 
 const int x = 0;
 const int y = 1;
@@ -31,9 +29,9 @@ BOOST_AUTO_TEST_CASE (sgrid_dist_id_soa )
 
 	// grid size
 	size_t sz[3];
-	sz[0] = 100;
-	sz[1] = 100;
-	sz[2] = 100;
+	sz[0] = 1024;
+	sz[1] = 1024;
+	sz[2] = 1024;
 
 	// Ghost
 	Ghost<3,double> g(0.01);
