@@ -10,8 +10,8 @@ fi
 ./script/download_MPI.sh
 cd openmpi-4.0.4
 
-if [ -f mpi_add_options ]; then
-	mpi_options=$(cat mpi_add_options)
+if [ -f ../mpi_add_options ]; then
+	mpi_options=$(cat ../mpi_add_options)
 fi
 
 if [ x"$3" == x"1" ]; then
