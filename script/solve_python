@@ -10,7 +10,7 @@ if [ x"$pcman" = x"" ]; then
         exit 1
 fi
 
-if [ x"$pcman" == x"apt" ]; then
+if [ x"$pcman" == x"apt-get" ]; then
 	apt-cache show python-is-python3 | grep -q "python-is-python3"
 	if [ $? -eq 0 ]; then
 		additional_python_pkg="python-is-python3"
