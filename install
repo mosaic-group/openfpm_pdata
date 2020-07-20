@@ -232,21 +232,6 @@ if [ ! -d "$i_dir/PETSC" -o ! -f "$i_dir/PETSC/include/petsc.h" -o ! -d "$i_dir/
         exit 1
       fi
     fi
-
-    if haveProg python2; then
-      python_command=python2
-    else
-      # we check that python is python2
-      py_ver=$(python --version 2>&1 | grep Python | sed 's/.*\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)/\1/g')
-      
-      if [ $py_ver -eq 3 ]; then
-        # we have to install python2
-	echo -e "\033[1mPETSC require python2 installed, searching a solution to install python2 ... \033[0m"
-        solve_python $platform
-      fi
-      python_command=python
-    fi
-
 fi
 
 #### License and Copyright disclamer
