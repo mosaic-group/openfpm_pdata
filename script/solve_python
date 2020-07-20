@@ -10,10 +10,25 @@ if [ x"$pcman" = x"" ]; then
         exit 1
 fi
 
+if [ x"$pcman" == x"apt" ]; then
+	apt-cache show python-is-python3 | grep -q "python-is-python3"
+	if [ $? -eq 0 ]; then
+		additional_python_pkg="python-is-python3"
+	fi
+        apt-cache show python | grep -q "python"
+        if [ $? -eq 0 ]; then
+                base_python_pkg="python"
+        fi
+        apt-cache show python2 | grep -q "python2"
+        if [ $? -eq 0 ]; then
+                base_python_pkg="python2 $base_python_pkg"
+        fi
+fi
+
 if [ x"$1" = x"linux"  ]; then
 	pc_install_command "$pcman"
-        commands[0]="su -c \"$pc_install_command_ret python\""
-        commands[1]="sudo $pc_install_command_ret python"
+        commands[0]="su -c \"$pc_install_command_ret $base_python_pkg $additional_python_pkg\""
+        commands[1]="sudo $pc_install_command_ret $base_python_pkg $additional_python_pkg"
         possible_solutions "${commands[@]}"
 fi
 }
