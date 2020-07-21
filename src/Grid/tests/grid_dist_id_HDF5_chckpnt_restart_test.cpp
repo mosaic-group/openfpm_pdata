@@ -305,18 +305,9 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_2GB_load_test )
 		//key
 		auto key = it.get();
 
-		//BOOST_CHECK_CLOSE(g_dist.template get<0>(key),1,0.0001);
-		//std::cout << "Element: " << g_dist.template get<0>(key) << std::endl;
-
 		auto keyg = g_dist.getGKey(key);
 
 		match &= g_dist.template get<0>(key) == keyg.get(0);
-
-		if (match == false)
-		{
-			int debug = 0;
-			debug++;
-		}
 
 		++it;
 		count++;
