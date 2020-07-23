@@ -133,13 +133,16 @@ class grid_dist_iterator_sub
 	* \param tmp iterator to copy
 	*
 	*/
-	grid_dist_iterator_sub(const grid_dist_iterator_sub<dim,device_grid> & tmp)
+	grid_dist_iterator_sub(const grid_dist_iterator_sub<dim,device_grid> & tmp, bool reinitialize = true)
 	:g_c(tmp.g_c),gList(tmp.gList),gdb_ext(tmp.gdb_ext),start(tmp.start),stop(tmp.stop)
 	{
 		// get the next grid iterator
 		if (g_c < gList.size())
 		{
-			a_it.reinitialize(tmp.a_it);
+			if (reinitialize == true)
+			{a_it.reinitialize(tmp.a_it);}
+			else
+			{a_it = tmp.a_it;}
 		}
 	}
 
