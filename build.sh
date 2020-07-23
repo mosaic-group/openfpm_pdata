@@ -23,7 +23,7 @@ echo "GPU compilation: $with_gpu"
 
 if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
 	echo "CentOS node"
-	source /etc/scl/conf/devtoolset-7
+	source /opt/rh/devtoolset-7/enable
 fi
 
 if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
