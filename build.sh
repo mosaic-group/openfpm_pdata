@@ -21,7 +21,7 @@ echo "Branch name: $branch"
 echo "GPU compilation: $with_gpu"
 
 
-if [ x"$hostname" == x"cifarm-centos-node"  ]; then
+if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
 	echo "CentOS node"
 	scl enable devtoolset-7
 fi
