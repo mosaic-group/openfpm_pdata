@@ -82,6 +82,11 @@
 #include <math.h>
 #include "Draw/DrawParticles.hpp"
 
+#include "SubdomainGraphNodes.hpp"
+#include "Decomposition/Distribution/parmetis_util.hpp"
+#include "Graph/ids.hpp"
+#include "Graph/CartesianGraphFactory.hpp"
+
 #include "./AbstractStrategyModels.hpp"
 #include "./AbstractDecompositionStrategy.hpp"
 #include "./AbstractDistributionStrategy.hpp"
@@ -1134,19 +1139,19 @@ struct MyComputationalCostsModel : ModelComputationalCosts {
 };
 
 struct MyDecompositionModel : ModelDecompose {
-  template <typename DecompositionStrategy, typename DistributionStrategy>
-  void applyModel(DecompositionStrategy& dec, DistributionStrategy& dist, size_t v) {
+  template <typename DistributionStrategy>
+  void applyModel(DistributionStrategy& dist, size_t v) {
     const size_t id = v;
-    const size_t weight = dec.getSubSubDomainComputationCost(v) *
-                          dec.getSubSubDomainComputationCost(v);
+    const size_t weight = dist.getSubSubDomainComputationCost(v) *
+                          dist.getSubSubDomainComputationCost(v);
     dist.setComputationCost(id, weight);
   }
 
-  template <typename DecompositionStrategy, typename DistributionStrategy>
-  void finalize(DecompositionStrategy& dec, DistributionStrategy& dist) {
+  template <typename DistributionStrategy>
+  void finalize(DistributionStrategy& dist) {
     for (auto i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
       // apply model to all the sub-sub-domains
-      applyModel(dec, dist, dist.getOwnerSubSubDomain(i));
+      applyModel(dist, dist.getOwnerSubSubDomain(i));
     }
   }
 };
@@ -1176,9 +1181,16 @@ void doRebalancing(particles& vd) {
   MyDecompositionModel mde;
 
   // - how we want to distribute ...
-  MyDistributionStrategy dist(
-      v_cl);  // question can use the same Decomposition is using ?
+  MyDistributionStrategy dist(v_cl);  // question can use the same Decomposition is using ?
   MyDistributionModel mdi;
+
+  // ... and our graph
+
+  //! Global sub-sub-domain graph
+  Graph_CSR<nm_v<SPACE_N_DIM>, nm_e> gp;
+
+  //! Convert the graph to parmetis format
+  Parmetis<Graph_CSR<nm_v<SPACE_N_DIM>, nm_e>> parmetis_graph(v_cl, v_cl.getProcessingUnits());
 
   // ... then do it!
   //////////////////////////////////////////////////////// computational costs
@@ -1187,7 +1199,7 @@ void doRebalancing(particles& vd) {
       vd, dec, dist);
   mcc.computeCommunicationAndMigrationCosts<MyDecompositionStrategy,
                                             MyDistributionStrategy>(dec, dist, 1);
-  mde.finalize<MyDecompositionStrategy, MyDistributionStrategy>(dec, dist);
+  mde.finalize<MyDistributionStrategy>(dist);
   mdi.finalize<MyDistributionStrategy>(dist);
 
   //////////////////////////////////////////////////////////////////// decompose
@@ -1197,7 +1209,7 @@ void doRebalancing(particles& vd) {
                                               MyDistributionStrategy>(dec,
                                                                       dist);
   }
-  dec.decompose(mde);
+  dec.decompose(mde, parmetis_graph);
 
   /////////////////////////////////////////////////////////////////// distribute
   dist.distribute<MyDecompositionStrategy, MyDistributionModel>(dec, mdi);

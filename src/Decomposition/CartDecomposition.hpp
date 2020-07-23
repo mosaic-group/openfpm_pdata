@@ -1492,7 +1492,7 @@ public:
 		dist.setComputationCost(id, weight);
 	}
 
-	/*! \brief function that return the computation cost of the sub-sub-domain id
+	/*! \brief function that return the
 	 *
 	 * \param id sub-sub-domain id
 	 *

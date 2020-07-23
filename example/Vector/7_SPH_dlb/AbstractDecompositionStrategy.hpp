@@ -63,15 +63,6 @@ public:
     bbox.zero();  // Reset the box to zero
   }
 
-  /*! \brief function that return the computation cost of the sub-sub-domain id
-   *
-   * \param id sub-sub-domain id
-   *
-   * \return the computational cost
-   *
-   */
-  size_t getSubSubDomainComputationCost(size_t id) { return 0; }
-
   /*! \brief Calculate communication and migration costs
    */
   std::pair<float, size_t> computeCommunicationCosts() {
@@ -108,8 +99,6 @@ public:
    */
   const grid_sm<dim, void> getDistGrid() { return gr_dist; }
 
-  unsigned int getDim() const { return dim; }
-
   /*! \brief Delete the decomposition and reset the data-structure
    *
    *
@@ -143,8 +132,8 @@ public:
   /*! \brief Start decomposition
    *
    */
-  template <typename Model>
-  void decompose(Model m) {
+  template <typename Model, typename Graph>
+  void decompose(Model m, Graph& graph) {
     // todo see: ParMetisDistribution.hpp:378
   }
 
@@ -211,88 +200,6 @@ private:
   void createSubdomains(size_t opt = 0) {}
 
   /*! \brief It calculate the internal ghost boxes
-   *
-   * Example: Processor 10 calculate
-   * B8_0 B9_0 B9_1 and B5_0
-   *
-   *
-   *
-   \verbatim
-
-  +----------------------------------------------------+
-  |                                                    |
-  |                 Processor 8                        |
-  |                 Sub+domain 0 +-----------------------------------+ | | | |
-|                                   |
-  ++--------------+---+---------------------------+----+        Processor 9 | |
-|   |     B8_0                  |    |        Subdomain 0                | |
-+------------------------------------+                                   | | |
-|                           |    |                                   | | |   |
-|B9_0|                                   | |              | B |    Local
-processor        |    |                                   | | Processor 5  | 5 |
-Subdomain 0            |    |                                   | | Subdomain 0
-| _ |                           +----------------------------------------+ | | 0
-|                           |    |                                   | | |   |
-|    |                                   | |              |   | |    | Processor
-9                | |              |   |                           |B9_1|
-Subdomain 1                | |              |   |                           | |
-| |              |   |                           |    | | |              |   |
-|    |                                   |
-   +--------------+---+---------------------------+----+ | | |
-                             +-----------------------------------+
-
-
- \endverbatim
-
-       and also
-       G8_0 G9_0 G9_1 G5_0 (External ghost boxes)
-
-\verbatim
-
-      +----------------------------------------------------+
-      |                 Processor 8                        |
-      |                 Subdomain 0 +-----------------------------------+ | | |
-      |           +---------------------------------------------+ | | | G8_0 |
-|                              |
-  +-----+---------------+------------------------------------+    |   Processor
-9                | |                 |   |                                    |
-|   Subdomain 0                | |                 |   | |G9_0| | | |   | |    |
-| |                 |   |                                    |    | | | |   |
-Local processor             |    |                              | |  Processor 5
-|   |        Sub+domain 0                |    |                              |
-  |  Subdomain 0    |   | +-----------------------------------+ | |   | |    | |
-  |                 | G |                                    |    | | | | 5 | |
-|   Processor 9                | |                 | | | |    |   Subdomain 1 |
-  |                 | 0 |                                    |G9_1| | | |   | |
-|                              | |                 |   | |    | |
-  +---------------------+------------------------------------+    | | | |    | |
-            +----------------------------------------+----+------------------------------+
-
-   \endverbatim
-
-   *
-   * ghost margins for each dimensions (p1 negative part) (p2 positive part)
-   *
-   *
-   \verbatim
-
-               ^ p2[1]
-               |
-               |
-           +----+----+
-           |         |
-           |         |
-   p1[0]<-----+         +----> p2[0]
-           |         |
-           |         |
-           +----+----+
-               |
-               v  p1[1]
-
-   \endverbatim
-
-   *
-   *
    */
   void calculateGhostBoxes() {}
 };

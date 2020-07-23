@@ -54,6 +54,7 @@ public:
   void setMigrationCost(size_t id, size_t migration) {}
 
   /*! \brief function that get the weight of the vertex
+   * (computation cost of the sub-sub-domain id)
    *
    * \param id vertex id
    *
