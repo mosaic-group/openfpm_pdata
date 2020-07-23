@@ -61,6 +61,16 @@ public:
    */
   void setCommunicationCost(size_t v_id, size_t e, size_t communication) {}
 
+  /*! \brief Function that set the weight of the vertex
+   *
+   * \param id vertex id
+   * \param weight to give to the vertex
+   *
+   */
+  void setComputationCost(size_t id, size_t weight) {
+    // todo
+  }
+
   /*! \brief Returns total number of neighbors of the sub-sub-domain id
    *
    * \param id id of the sub-sub-domain

@@ -276,7 +276,7 @@ struct ModelCustom {
   }
 
   template <typename Decomposition>
-  inline void applyModel(Decomposition& dec, size_t v) {
+  void applyModel(Decomposition& dec, size_t v) {
     dec.setSubSubDomainComputationCost(
         v,
         dec.getSubSubDomainComputationCost(v) *
@@ -1097,10 +1097,11 @@ struct MyComputationalCostsModel : ModelComputationalCosts {
     }
   }
 
-  template <typename DecompositionStrategy, typename DistributionStrategy>
-  void init(DecompositionStrategy& dec, DistributionStrategy& dist) {
+  // todo where to use it
+  template <typename DistributionStrategy>
+  void init(DistributionStrategy& dist) {
     for (size_t i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
-      dec.setSubSubDomainComputationCost(dist.getOwnerSubSubDomain(i), 1);
+      dist.setComputationCost(dist.getOwnerSubSubDomain(i), 1);
     }
   }
 
@@ -1133,19 +1134,19 @@ struct MyComputationalCostsModel : ModelComputationalCosts {
 };
 
 struct MyDecompositionModel : ModelDecompose {
-  template <typename Decomposition>
-  void applyModel(Decomposition& dec, size_t v) {
-    dec.setSubSubDomainComputationCost(
-        v,
-        dec.getSubSubDomainComputationCost(v) *
-            dec.getSubSubDomainComputationCost(v));
+  template <typename DecompositionStrategy, typename DistributionStrategy>
+  void applyModel(DecompositionStrategy& dec, DistributionStrategy& dist, size_t v) {
+    const size_t id = v;
+    const size_t weight = dec.getSubSubDomainComputationCost(v) *
+                          dec.getSubSubDomainComputationCost(v);
+    dist.setComputationCost(id, weight);
   }
 
   template <typename DecompositionStrategy, typename DistributionStrategy>
   void finalize(DecompositionStrategy& dec, DistributionStrategy& dist) {
     for (auto i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
       // apply model to all the sub-sub-domains
-      applyModel(dec, dist.getOwnerSubSubDomain(i));
+      applyModel(dec, dist, dist.getOwnerSubSubDomain(i));
     }
   }
 };
@@ -1181,12 +1182,11 @@ void doRebalancing(particles& vd) {
 
   // ... then do it!
   //////////////////////////////////////////////////////// computational costs
-  mcc.init<MyDecompositionStrategy, MyDistributionStrategy>(dec, dist);
+  mcc.init<MyDistributionStrategy>(dist);
   mcc.calculate<particles, MyDecompositionStrategy, MyDistributionStrategy>(
       vd, dec, dist);
   mcc.computeCommunicationAndMigrationCosts<MyDecompositionStrategy,
-                                            MyDistributionStrategy>(
-      dec, dist, 1);
+                                            MyDistributionStrategy>(dec, dist, 1);
   mde.finalize<MyDecompositionStrategy, MyDistributionStrategy>(dec, dist);
   mdi.finalize<MyDistributionStrategy>(dist);
 

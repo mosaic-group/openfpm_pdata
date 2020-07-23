@@ -59,22 +59,16 @@ public:
    *
    */
   AbstractDecompositionStrategy(Vcluster<>& v_cl)
-    : nn_prcs<dim, T, layout_base, Memory>(v_cl), v_cl(v_cl) {}
-
-  /*! \brief Function that set the computational cost for a of a sub-sub domain
-   *
-   * \param id vertex id
-   * \param weight compotational cost
-   *
-   */
-  inline void setSubSubDomainComputationCost(size_t id, size_t weight) {}
+    : nn_prcs<dim, T, layout_base, Memory>(v_cl), v_cl(v_cl) {
+    bbox.zero();  // Reset the box to zero
+  }
 
   /*! \brief Add computation cost i to the subsubdomain with global id gid
    *
    * \param gid global id of the subsubdomain to update
    * \param i Cost increment
    */
-  inline void addComputationCost(size_t gid, size_t i) {}
+  void addComputationCost(size_t gid, size_t i) {}
 
   /*! \brief function that return the computation cost of the sub-sub-domain id
    *
@@ -83,7 +77,7 @@ public:
    * \return the computational cost
    *
    */
-  inline size_t getSubSubDomainComputationCost(size_t id) { return 0; }
+  size_t getSubSubDomainComputationCost(size_t id) { return 0; }
 
   /*! \brief Calculate communication and migration costs
    */
