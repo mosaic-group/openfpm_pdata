@@ -221,7 +221,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/config/config_cmake.h.in ${CMAKE_
 
 add_subdirectory (src)
 add_subdirectory (openfpm_devices)
-add_subdirectory (images)
 add_subdirectory (openfpm_data)
 add_subdirectory (openfpm_io)
 add_subdirectory (openfpm_vcluster)

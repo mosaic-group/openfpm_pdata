@@ -2397,5 +2397,52 @@ BOOST_AUTO_TEST_CASE( grid_dist_domain_ghost_3D_put_create_check )
 	TestXD_ghost_put_create(sg_dist3,k);
 }
 
+BOOST_AUTO_TEST_CASE( grid_dist_ghost_zero_size )
+{
+	// Test grid periodic
+
+	Box<3,float> domain({-1.0,-1.0,-1.0},{1.0,1.0,1.0});
+
+	Vcluster<> & v_cl = create_vcluster();
+
+	if ( v_cl.getProcessingUnits() > 32 )
+	{return;}
+
+	BOOST_TEST_CHECKPOINT( "Testing grid zero ghost");
+
+	// grid size
+	size_t sz[3];
+	sz[0] = 32;
+	sz[1] = 32;
+	sz[2] = 32;
+
+	// Ghost
+	Ghost<3,long int> g(0);
+
+	// periodicity
+	periodicity<3> pr = {{NON_PERIODIC,NON_PERIODIC,NON_PERIODIC}};
+
+	// Distributed grid with id decomposition
+	grid_dist_id<3, float, aggregate<long int, int>> g_dist(sz,domain,g,pr);
+
+	auto it = g_dist.getDomainIterator();
+
+	size_t count = 0;
+
+	while (it.isNext())
+	{
+		auto k = it.get();
+
+		++count;
+
+		++it;
+	}
+
+	v_cl.sum(count);
+	v_cl.execute();
+
+	BOOST_REQUIRE_EQUAL(count,32*32*32);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
