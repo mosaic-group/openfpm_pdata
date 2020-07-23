@@ -1990,7 +1990,7 @@ public:
 	 * \return false
 	 *
 	 */
-	bool is_staggered()
+	bool is_staggered() const
 	{
 		return false;
 	}
