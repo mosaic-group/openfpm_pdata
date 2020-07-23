@@ -63,13 +63,6 @@ public:
     bbox.zero();  // Reset the box to zero
   }
 
-  /*! \brief Add computation cost i to the subsubdomain with global id gid
-   *
-   * \param gid global id of the subsubdomain to update
-   * \param i Cost increment
-   */
-  void addComputationCost(size_t gid, size_t i) {}
-
   /*! \brief function that return the computation cost of the sub-sub-domain id
    *
    * \param id sub-sub-domain id

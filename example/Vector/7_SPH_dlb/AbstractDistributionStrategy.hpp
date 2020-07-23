@@ -53,6 +53,25 @@ public:
    */
   void setMigrationCost(size_t id, size_t migration) {}
 
+  /*! \brief function that get the weight of the vertex
+   *
+   * \param id vertex id
+   *
+   */
+  size_t getSubSubDomainComputationCost(size_t id) {
+    return 0;
+  }
+
+  /*! \brief Add computation cost i to the subsubdomain with global id gid
+   *
+   * \param gid global id of the subsubdomain to update
+   * \param i Cost increment
+   */
+  void addComputationCost(size_t gid, size_t i) {
+    size_t c = getSubSubDomainComputationCost(gid);
+    setComputationCost(gid, c + i);
+  }
+
   /*! \brief Set communication cost of the edge id
    *
    * \param v_id Id of the source vertex of the edge

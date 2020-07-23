@@ -1085,15 +1085,15 @@ inline void sensor_pressure(Vector& vd,
 /*! \cond [rebalancing] \endcond */
 
 struct MyComputationalCostsModel : ModelComputationalCosts {
-  template <typename DecompositionStrategy, typename vector>
-  void addToComputation(DecompositionStrategy& dec,
+  template <typename DistributionStrategy, typename vector>
+  void addToComputation(DistributionStrategy& dist,
                         vector& vd,
                         size_t v,
                         size_t p) {
     if (vd.template getProp<type>(p) == FLUID) {
-      dec.addComputationCost(v, 4);
+      dist.addComputationCost(v, 4);
     } else {
-      dec.addComputationCost(v, 3);
+      dist.addComputationCost(v, 3);
     }
   }
 
@@ -1117,7 +1117,7 @@ struct MyComputationalCostsModel : ModelComputationalCosts {
     for (auto it = vd.getDomainIterator(); !it.hasEnded(); ++it) {
       Point<SPACE_N_DIM, SpaceType> p = vd.getPos(it.get());
       const size_t v = cdsm.getCell(p);
-      addToComputation(dec, vd, v, it.get().getKey());  // todo fault error
+      addToComputation(dist, vd, v, it.get().getKey());
     }
   }
 
