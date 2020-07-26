@@ -84,6 +84,8 @@ if [ x"$comp_type" == x"full" ]; then
         install_options="-s"
 elif [ x"$comp_type" == x"intel" ]; then
         install_options=" "
+elif [ x"comp_type" == x"asan" ]; then
+	foward_options="$foward_options --enable-asan"
 else
         install_options="-s -m"
 fi
@@ -92,8 +94,6 @@ foward_options=
 if [ x"$comp_type" == x"se_class" ]; then
 	foward_options="--enable-se-class1 --with-action-on-error=THROW_ON_ERROR"
 fi
-
-
 
 echo "Installing with: ./install $gpu_support  -i $dependency_dir $install_options -c \"$installation_dir $foward_options  \"  "
 ./install $gpu_support -i $dependency_dir $install_options -c "$installation_dir $foward_options "
