@@ -85,7 +85,7 @@ if [ x"$comp_type" == x"full" ]; then
         install_options="-s"
 elif [ x"$comp_type" == x"intel" ]; then
         install_options=" "
-elif [ x"comp_type" == x"asan" ]; then
+elif [ x"$comp_type" == x"asan" ]; then
 	foward_options="$foward_options --enable-asan"
 else
         install_options="-s -m"
