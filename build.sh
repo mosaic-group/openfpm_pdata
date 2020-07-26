@@ -79,6 +79,7 @@ installation_dir="--prefix=$HOME/openfpm_install/$branch"
 #echo "StrictHostKeyChecking=no" > $HOME/.ssh/config
 #chmod 600 $HOME/.ssh/config
 
+foward_options=
 install_options=
 if [ x"$comp_type" == x"full" ]; then
         install_options="-s"
@@ -90,7 +91,6 @@ else
         install_options="-s -m"
 fi
 
-foward_options=
 if [ x"$comp_type" == x"se_class" ]; then
 	foward_options="--enable-se-class1 --with-action-on-error=THROW_ON_ERROR"
 fi
