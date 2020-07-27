@@ -59,9 +59,7 @@ public:
    * \param id vertex id
    *
    */
-  size_t getSubSubDomainComputationCost(size_t id) {
-    return 0;
-  }
+  size_t getSubSubDomainComputationCost(size_t id) { return 0; }
 
   /*! \brief Add computation cost i to the subsubdomain with global id gid
    *
@@ -131,9 +129,241 @@ public:
     domain_nn_calculator_cart<dim>::setParameters(proc_box);
   }
 
+  /*! \brief Distribution grid
+   *
+   * \return the grid
+   */
+  const grid_sm<dim, void> getDistGrid() { return gr_dist; }
+
+  template <typename Graph>
+  void reset(Graph& graph) {
+    if (is_distributed) {
+      graph.reset(gp, vtxdist, m2g, verticesGotWeights);
+    } else {
+      graph.initSubGraph(gp, vtxdist, m2g, verticesGotWeights);
+    }
+
+    is_distributed = true;
+  }
+
+  openfpm::vector<rid>& getVtxdist() { return vtxdist; }
+
+  /*! \brief Callback of the sendrecv to set the size of the array received
+   *
+   * \param msg_i Index of the message
+   * \param total_msg Total numeber of messages
+   * \param total_p Total number of processors to comunicate with
+   * \param i Processor id
+   * \param ri Request id
+   * \param ptr Void pointer parameter for additional data to pass to the
+   * call-back
+   */
+  static void* message_receive(size_t msg_i,
+                               size_t total_msg,
+                               size_t total_p,
+                               size_t i,
+                               size_t ri,
+                               size_t tag,
+                               void* ptr) {
+    openfpm::vector<openfpm::vector<idx_t>>* v =
+        static_cast<openfpm::vector<openfpm::vector<idx_t>>*>(ptr);
+
+    v->get(i).resize(msg_i / sizeof(idx_t));
+
+    return &(v->get(i).get(0));
+  }
+
+  /*! \brief Get the global id of the vertex given the re-mapped one
+   *
+   * \param remapped id
+   * \return global id
+   *
+   */
+  gid getVertexGlobalId(rid n) { return m2g.find(n)->second; }
+
+  /*! \brief It update the full decomposition
+   *
+   *
+   */
+  template <typename Graph>
+  void postDecomposition(Graph& graph) {
+    //! Get the processor id
+    size_t p_id = v_cl.getProcessUnitID();
+
+    //! Get the number of processing units
+    size_t Np = v_cl.getProcessingUnits();
+
+    // Number of local vertex
+    size_t nl_vertex = vtxdist.get(p_id + 1).id - vtxdist.get(p_id).id;
+
+    //! Get result partition for this processors
+    idx_t* partition = graph.getPartition();
+
+    //! Prepare vector of arrays to contain all partitions
+    partitions.get(p_id).resize(nl_vertex);
+
+    if (nl_vertex != 0) {
+      std::copy(partition, partition + nl_vertex, &partitions.get(p_id).get(0));
+    }
+
+    // Reset data structure to keep trace of new vertices distribution in
+    // processors (needed to update main graph)
+    for (size_t i = 0; i < Np; ++i) {
+      v_per_proc.get(i).clear();
+    }
+
+    // Communicate the local distribution to the other processors
+    // to reconstruct individually the global graph
+    openfpm::vector<size_t> prc;
+    openfpm::vector<size_t> sz;
+    openfpm::vector<void*> ptr;
+
+    for (size_t i = 0; i < Np; i++) {
+      if (i != v_cl.getProcessUnitID()) {
+        partitions.get(i).clear();
+        prc.add(i);
+        sz.add(nl_vertex * sizeof(idx_t));
+        ptr.add(partitions.get(p_id).getPointer());
+      }
+    }
+
+    if (prc.size() == 0) {
+      v_cl.sendrecvMultipleMessagesNBX(
+          0, NULL, NULL, NULL, message_receive, &partitions, NONE);
+    } else {
+      v_cl.sendrecvMultipleMessagesNBX(prc.size(),
+                                       &sz.get(0),
+                                       &prc.get(0),
+                                       &ptr.get(0),
+                                       message_receive,
+                                       &partitions,
+                                       NONE);
+    }
+
+    // Update graphs with the received data
+    updateGraphs();
+  }
+
 private:
+  bool is_distributed = false;
+
   //! Processor domain bounding box
   ::Box<dim, size_t> proc_box;
+
+  //! Global sub-sub-domain graph
+  Graph_CSR<nm_v<dim>, nm_e> gp;
+
+  //! Structure that store the cartesian grid information
+  grid_sm<dim, void> gr_dist;
+
+  //! Init vtxdist needed for Parmetis
+  //
+  // vtxdist is a common array across processor, it indicate how
+  // vertex are distributed across processors
+  //
+  // Example we have 3 processors
+  //
+  // processor 0 has 3 vertices
+  // processor 1 has 5 vertices
+  // processor 2 has 4 vertices
+  //
+  // vtxdist contain, 0,3,8,12
+  //
+  // vtx dist is the unique global-id of the vertices
+  //
+  openfpm::vector<rid> vtxdist;
+
+  //! partitions
+  openfpm::vector<openfpm::vector<idx_t>> partitions;
+
+  //! Init data structure to keep trace of new vertices distribution in
+  //! processors (needed to update main graph)
+  openfpm::vector<openfpm::vector<gid>> v_per_proc;
+
+  //! Hashmap to access to the global position given the re-mapped one (needed
+  //! for access the map)
+  std::unordered_map<rid, gid> m2g;
+
+  //! Id of the sub-sub-domain where we set the costs
+  openfpm::vector<size_t> sub_sub_owner;
+
+  //! Flag to check if weights are used on vertices
+  bool verticesGotWeights = false;
+
+  /*! \brief operator to remap vertex to a new position
+   *
+   * \param n re-mapped position
+   * \param g global position
+   *
+   */
+  void setMapId(rid n, gid g) { m2g[n] = g; }
+
+  /*! \brief Update main graph ad subgraph with the received data of the
+   * partitions from the other processors
+   *
+   */
+  void updateGraphs() {
+    sub_sub_owner.clear();
+
+    size_t Np = v_cl.getProcessingUnits();
+
+    // Init n_vtxdist to gather informations about the new decomposition
+    openfpm::vector<rid> n_vtxdist(Np + 1);
+    for (size_t i = 0; i <= Np; i++)
+      n_vtxdist.get(i).id = 0;
+
+    // Update the main graph with received data from processor i
+    for (size_t i = 0; i < Np; i++) {
+      size_t ndata = partitions.get(i).size();
+      size_t k = 0;
+
+      // Update the main graph with the received informations
+      for (rid l = vtxdist.get(i); k < ndata && l < vtxdist.get(i + 1);
+           k++, ++l) {
+        // Create new n_vtxdist (just count processors vertices)
+        ++n_vtxdist.get(partitions.get(i).get(k) + 1);
+
+        // vertex id from vtx to grobal id
+        auto v_id = m2g.find(l)->second.id;
+
+        // Update proc id in the vertex (using the old map)
+        gp.template vertex_p<nm_v_proc_id>(v_id) = partitions.get(i).get(k);
+
+        if (partitions.get(i).get(k) == (long int)v_cl.getProcessUnitID()) {
+          sub_sub_owner.add(v_id);
+        }
+
+        // Add vertex to temporary structure of distribution (needed to update
+        // main graph)
+        v_per_proc.get(partitions.get(i).get(k)).add(getVertexGlobalId(l));
+      }
+    }
+
+    // Create new n_vtxdist (accumulate the counters)
+    for (size_t i = 2; i <= Np; i++) {
+      n_vtxdist.get(i) += n_vtxdist.get(i - 1);
+    }
+
+    // Copy the new decomposition in the main vtxdist
+    for (size_t i = 0; i <= Np; i++) {
+      vtxdist.get(i) = n_vtxdist.get(i);
+    }
+
+    openfpm::vector<size_t> cnt;
+    cnt.resize(Np);
+
+    for (size_t i = 0; i < gp.getNVertex(); ++i) {
+      size_t pid = gp.template vertex_p<nm_v_proc_id>(i);
+
+      rid j = rid(vtxdist.get(pid).id + cnt.get(pid));
+      gid gi = gid(i);
+
+      gp.template vertex_p<nm_v_id>(i) = j.id;
+      cnt.get(pid)++;
+
+      setMapId(j, gi);
+    }
+  }
 };
 
 #endif  // OPENFPM_PDATA_ABSTRACTDISTRIBUTIONSTRATEGY_HPP

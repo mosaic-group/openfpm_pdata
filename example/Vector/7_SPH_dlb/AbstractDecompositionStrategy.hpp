@@ -93,12 +93,6 @@ public:
    */
   const ::Box<dim, T>& getDomain() const { return domain; }
 
-  /*! \brief Distribution grid
-   *
-   * \return the grid
-   */
-  const grid_sm<dim, void> getDistGrid() { return gr_dist; }
-
   /*! \brief Delete the decomposition and reset the data-structure
    *
    *
@@ -133,8 +127,8 @@ public:
    *
    */
   template <typename Model, typename Graph>
-  void decompose(Model m, Graph& graph) {
-    // todo see: ParMetisDistribution.hpp:378
+  void decompose(Model m, Graph& graph, openfpm::vector<rid>& vtxdist) {
+    graph.decompose(vtxdist);  // decompose
   }
 
   void merge() {
@@ -161,9 +155,6 @@ protected:
 
   //! Processor bounding box
   ::Box<dim, T> bbox;
-
-  //! Structure that store the cartesian grid information
-  grid_sm<dim, void> gr_dist;
 
 private:
   bool costBeenSet = false;

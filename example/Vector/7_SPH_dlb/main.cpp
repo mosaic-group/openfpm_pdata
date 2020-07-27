@@ -1118,7 +1118,7 @@ struct MyComputationalCostsModel : ModelComputationalCosts {
                  DistributionStrategy& dist) {
     CellDecomposer_sm<SPACE_N_DIM, SpaceType, shift<SPACE_N_DIM, SpaceType>>
         cdsm;
-    cdsm.setDimensions(dec.getDomain(), dec.getDistGrid().getSize(), 0);
+    cdsm.setDimensions(dec.getDomain(), dist.getDistGrid().getSize(), 0);
     for (auto it = vd.getDomainIterator(); !it.hasEnded(); ++it) {
       Point<SPACE_N_DIM, SpaceType> p = vd.getPos(it.get());
       const size_t v = cdsm.getCell(p);
@@ -1181,7 +1181,8 @@ void doRebalancing(particles& vd) {
   MyDecompositionModel mde;
 
   // - how we want to distribute ...
-  MyDistributionStrategy dist(v_cl);  // question can use the same Decomposition is using ?
+  MyDistributionStrategy dist(
+      v_cl);  // question can use the same Decomposition is using ?
   MyDistributionModel mdi;
 
   // ... and our graph
@@ -1190,29 +1191,28 @@ void doRebalancing(particles& vd) {
   Graph_CSR<nm_v<SPACE_N_DIM>, nm_e> gp;
 
   //! Convert the graph to parmetis format
-  Parmetis<Graph_CSR<nm_v<SPACE_N_DIM>, nm_e>> parmetis_graph(v_cl, v_cl.getProcessingUnits());
+  Parmetis<Graph_CSR<nm_v<SPACE_N_DIM>, nm_e>> parmetis_graph(
+      v_cl, v_cl.getProcessingUnits());
 
   // ... then do it!
   //////////////////////////////////////////////////////// computational costs
-  mcc.init<MyDistributionStrategy>(dist);
-  mcc.calculate<particles, MyDecompositionStrategy, MyDistributionStrategy>(
-      vd, dec, dist);
-  mcc.computeCommunicationAndMigrationCosts<MyDecompositionStrategy,
-                                            MyDistributionStrategy>(dec, dist, 1);
-  mde.finalize<MyDistributionStrategy>(dist);
-  mdi.finalize<MyDistributionStrategy>(dist);
+  mcc.init(dist);
+  mcc.calculate(vd, dec, dist);
+  mcc.computeCommunicationAndMigrationCosts(dec, dist, 1);
+  mde.finalize(dist);
+  mdi.finalize(dist);
 
   //////////////////////////////////////////////////////////////////// decompose
   dec.reset();
   if (dec.shouldSetCosts()) {
-    mcc.computeCommunicationAndMigrationCosts<MyDecompositionStrategy,
-                                              MyDistributionStrategy>(dec,
-                                                                      dist);
+    mcc.computeCommunicationAndMigrationCosts(dec, dist);
   }
-  dec.decompose(mde, parmetis_graph);
+  dist.reset(parmetis_graph);
+  dec.decompose(mde, parmetis_graph, dist.getVtxdist());
+  dist.postDecomposition(parmetis_graph);
 
   /////////////////////////////////////////////////////////////////// distribute
-  dist.distribute<MyDecompositionStrategy, MyDistributionModel>(dec, mdi);
+  dist.distribute(dec, mdi);
 
   ///////////////////////////////////////////////////////////////////////  merge
   dec.merge();
