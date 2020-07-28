@@ -272,8 +272,38 @@ private:
     return sub_d;
   }
 
+    void collect_all_sub_domains(openfpm::vector<Box_map<dim,T>,Memory,typename layout_base<Box_map<dim, T>>::type,layout_base> & sub_domains_global)
+    {
+#ifdef SE_CLASS2  // todo needed?
+      check_valid(this,8);
+#endif
+
+      sub_domains_global.clear();
+      openfpm::vector<Box_map<dim,T>,Memory,typename layout_base<Box_map<dim, T>>::type,layout_base> bm;
+
+      for (size_t i = 0 ; i < sub_domains.size() ; i++)
+      {
+        bm.add();
+
+        bm.template get<0>(bm.size()-1) = ::SpaceBox<dim,T>(sub_domains.get(i));
+        bm.template get<1>(bm.size()-1) = v_cl.rank();
+      }
+
+      v_cl.SGather<decltype(bm),decltype(sub_domains_global),layout_base>(bm,sub_domains_global,0);
+
+      size_t size = sub_domains_global.size();
+
+      v_cl.max(size);
+      v_cl.execute();
+
+      sub_domains_global.resize(size);
+
+      v_cl.Bcast(sub_domains_global,0);
+      v_cl.execute();
+    }
+
   void construct_fine_s() {
-    // todo collect_all_sub_domains(sub_domains_global);
+    collect_all_sub_domains(sub_domains_global);
 
     // now draw all sub-domains in fine-s
 
