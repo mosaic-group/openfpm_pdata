@@ -87,14 +87,9 @@
 #include "Graph/ids.hpp"
 #include "Graph/CartesianGraphFactory.hpp"
 
-#include "./AbstractStrategyModels.hpp"
-#include "./AbstractDecompositionStrategy.hpp"
-#include "./AbstractDistributionStrategy.hpp"
-//! \cond [inclusion] \endcond
+#include "./MyStuff.hpp"
 
-using val_t = double;
-using Box3D = Box<3, val_t>;
-constexpr unsigned int REBALANCING_TIME_STEPS_THRESHOLD = 200;
+//! \cond [inclusion] \endcond
 
 /*!
  * \page Vector_7_sph_dlb Vector 7 SPH Dam break  simulation with Dynamic load
@@ -145,12 +140,6 @@ constexpr unsigned int REBALANCING_TIME_STEPS_THRESHOLD = 200;
  */
 
 /*! \cond [sim parameters] \endcond */
-
-// A constant to indicate boundary particles
-#define BOUNDARY 0
-
-// A constant to indicate fluid particles
-#define FLUID 1
 
 // initial spacing between particles dp in the formulas
 const double dp = 0.0085;
@@ -215,9 +204,6 @@ double max_fluid_height = 0.0;
 
 // Properties
 
-// FLUID or BOUNDARY
-const size_t type = 0;
-
 // Density
 const int rho = 1;
 
@@ -240,25 +226,6 @@ const int velocity = 6;
 const int velocity_prev = 7;
 
 /*! \cond [sim parameters] \endcond */
-
-/*! \cond [vector_dist_def] \endcond */
-
-// Type of the vector containing particles
-constexpr unsigned int SPACE_N_DIM = 3;
-using SpaceType = double;
-typedef vector_dist<SPACE_N_DIM,
-                    SpaceType,
-                    aggregate<size_t,
-                              double,
-                              double,
-                              double,
-                              double,
-                              double[3],
-                              double[3],
-                              double[3]>>
-    particles;
-
-/*! \cond [vector_dist_def] \endcond */
 
 /*! \cond [model custom] \endcond */
 
@@ -1083,77 +1050,6 @@ inline void sensor_pressure(Vector& vd,
 
 /*! \cond [rebalancing] \endcond */
 
-struct MyComputationalCostsModel : ModelComputationalCosts {
-  template <typename DistributionStrategy, typename vector>
-  void addToComputation(DistributionStrategy& dist,
-                        vector& vd,
-                        size_t v,
-                        size_t p) {
-    if (vd.template getProp<type>(p) == FLUID) {
-      dist.addComputationCost(v, 4);
-    } else {
-      dist.addComputationCost(v, 3);
-    }
-  }
-
-  // todo where to use it
-  template <typename DistributionStrategy>
-  void init(DistributionStrategy& dist) {
-    for (size_t i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
-      dist.setComputationCost(dist.getOwnerSubSubDomain(i), 1);
-    }
-  }
-
-  template <typename particles,
-            typename DecompositionStrategy,
-            typename DistributionStrategy>
-  void calculate(particles& vd,
-                 DecompositionStrategy& dec,
-                 DistributionStrategy& dist) {
-    CellDecomposer_sm<SPACE_N_DIM, SpaceType, shift<SPACE_N_DIM, SpaceType>>
-        cdsm;
-    cdsm.setDimensions(dec.getDomain(), dist.getGrid().getSize(), 0);
-    for (auto it = vd.getDomainIterator(); !it.hasEnded(); ++it) {
-      Point<SPACE_N_DIM, SpaceType> p = vd.getPos(it.get());
-      const size_t v = cdsm.getCell(p);
-      addToComputation(dist, vd, v, it.get().getKey());
-    }
-  }
-
-  template <typename DecompositionStrategy, typename DistributionStrategy>
-  void computeCommunicationAndMigrationCosts(DecompositionStrategy& dec,
-                                             DistributionStrategy& dist,
-                                             const size_t ts = 1) {
-    float migration;
-    size_t norm;
-    std::tie(migration, norm) = dec.computeCommunicationCosts(dist.getGhost());
-    dist.setMigrationCosts(migration, norm, ts);
-  }
-};
-
-struct MyDecompositionModel : ModelDecompose {};
-
-struct MyDistributionModel : ModelDistribute {
-  val_t toll() { return 1.01; }
-  template <typename DistributionStrategy>
-  void applyModel(DistributionStrategy& dist, size_t v) {
-    const size_t id = v;
-    const size_t weight = dist.getSubSubDomainComputationCost(v) *
-                          dist.getSubSubDomainComputationCost(v);
-    dist.setComputationCost(id, weight);
-  }
-
-  template <typename DistributionStrategy, typename Graph>
-  void finalize(DistributionStrategy& dist, Graph& graph) {
-    for (auto i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
-      // apply model to all the sub-sub-domains
-      applyModel(dist, dist.getOwnerSubSubDomain(i));
-    }
-
-    dist.setDistTol(graph, toll());
-  }
-};
-
 void doRebalancing(particles& vd) {
   Vcluster<>& v_cl = create_vcluster();
 
@@ -1162,14 +1058,10 @@ void doRebalancing(particles& vd) {
   MyComputationalCostsModel mcc;
 
   // - how we want to decompose ...
-  using MyDecompositionStrategy =
-      AbstractDecompositionStrategy<SPACE_N_DIM, SpaceType>;
   MyDecompositionStrategy dec(v_cl);
   MyDecompositionModel mde;
 
   // - how we want to distribute ...
-  using MyDistributionStrategy =
-      AbstractDistributionStrategy<SPACE_N_DIM, SpaceType>;
   MyDistributionStrategy dist(v_cl);
   MyDistributionModel mdi;
 
@@ -1179,7 +1071,6 @@ void doRebalancing(particles& vd) {
   Graph_CSR<nm_v<SPACE_N_DIM>, nm_e> gp;
 
   //! Convert the graph to parmetis format
-  using ParmetisGraph = Parmetis<Graph_CSR<nm_v<SPACE_N_DIM>, nm_e>>;
   ParmetisGraph parmetis_graph(v_cl, v_cl.getProcessingUnits());
 
   ////////////////////////////////////////////////////////// computational costs

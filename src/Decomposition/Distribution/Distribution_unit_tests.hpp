@@ -302,7 +302,7 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 	grid_sm<3, void> info( { GS_SIZE, GS_SIZE, GS_SIZE });
 
 	// Initialize Cart graph and decompose
-	pmet_dist.createCartGraph(info,box);
+	pmet_dist.createCartGraph(info, box);
 
 	// First create the center of the weights distribution, check it is coherent to the size of the domain
 	Point<3, float> center( { 2.0, 2.0, 2.0 });

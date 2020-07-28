@@ -56,6 +56,28 @@ public:
    */
   size_t getNSubSubDomains() const { return gp.getNVertex(); }
 
+  /*! \brief function that return the position of the vertex in the space
+   *
+   * \param id vertex id
+   * \param pos vector that will contain x, y, z
+   *
+   */
+  void getSubSubDomainPosition(size_t id, T (&pos)[dim]) {
+#ifdef SE_CLASS1
+    if (id >= gp.getNVertex())
+      std::cerr << __FILE__ << ":" << __LINE__
+                << "Such vertex doesn't exist (id = " << id << ", "
+                << "total size = " << gp.getNVertex() << ")\n";
+#endif
+
+    // Copy the geometrical informations inside the pos vector
+    pos[0] = gp.vertex(id).template get<nm_v_x>()[0];
+    pos[1] = gp.vertex(id).template get<nm_v_x>()[1];
+    if (dim == 3) {
+      pos[2] = gp.vertex(id).template get<nm_v_x>()[2];
+    }
+  }
+
   /*! \brief Set migration cost of the vertex id
    *
    * \param id of the vertex to update
