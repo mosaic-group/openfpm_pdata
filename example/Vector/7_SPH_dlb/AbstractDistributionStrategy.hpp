@@ -1,6 +1,7 @@
 #ifndef OPENFPM_PDATA_ABSTRACTDISTRIBUTIONSTRATEGY_HPP
 #define OPENFPM_PDATA_ABSTRACTDISTRIBUTIONSTRATEGY_HPP
 
+#include "Space/Ghost.hpp"
 #include "Decomposition/Domain_NN_calculator_cart.hpp"
 #include "Graph/CartesianGraphFactory.hpp"
 #include "Graph/ids.hpp"
@@ -8,10 +9,15 @@
 
 /*! \brief Class that distribute sub-sub-domains across processors
  */
-template <unsigned int dim, typename T>
+template <unsigned int dim,
+          typename T,
+          typename Memory = HeapMemory,
+          template <typename> class layout_base = memory_traits_lin>
 class AbstractDistributionStrategy : public domain_nn_calculator_cart<dim> {
   //! It simplify to access the SpaceBox element
   using Box = SpaceBox<dim, T>;
+
+  using DistributionGrid = grid_sm<dim, void>;
 
 public:
   //! Vcluster
@@ -119,21 +125,27 @@ public:
     }
   }
 
-  template <typename DecompositionStrategy, typename Model>
-  void distribute(DecompositionStrategy& dec, Model m) {
-    // todo see ParMetisDistribution.hpp:229
-  }
-
-  void onEnd() {
+  template <typename SubDomains>
+  void onEnd(SubDomains& sub_domains) {
     domain_nn_calculator_cart<dim>::reset();
     domain_nn_calculator_cart<dim>::setParameters(proc_box);
   }
+
+  /*! \brief Get the current graph (main)
+   *
+   */
+  Graph_CSR<nm_v<dim>, nm_e>& getGraph() { return gp; }
+
+  template <typename SubDomains>
+  void createSubdomains(SubDomains& sub_domains, size_t opt = 0) {}
 
   /*! \brief Distribution grid
    *
    * \return the grid
    */
-  const grid_sm<dim, void> getDistGrid() { return gr_dist; }
+  const DistributionGrid getDistGrid() { return gr_dist; }
+
+  const DistributionGrid getGr() { return gr; }
 
   template <typename Graph>
   void reset(Graph& graph) {
@@ -244,6 +256,14 @@ public:
     updateGraphs();
   }
 
+  /*! \brief Return the ghost
+   *
+   *
+   * \return the ghost extension
+   *
+   */
+  Ghost<dim, T>& getGhost() { return ghost; }
+
 private:
   bool is_distributed = false;
 
@@ -253,8 +273,12 @@ private:
   //! Global sub-sub-domain graph
   Graph_CSR<nm_v<dim>, nm_e> gp;
 
+  //! ghost info
+  Ghost<dim, T> ghost;  // todo private
+
   //! Structure that store the cartesian grid information
-  grid_sm<dim, void> gr_dist;
+  DistributionGrid gr;
+  DistributionGrid gr_dist;
 
   //! Init vtxdist needed for Parmetis
   //

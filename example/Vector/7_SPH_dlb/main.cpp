@@ -1132,7 +1132,7 @@ struct MyComputationalCostsModel : ModelComputationalCosts {
                                              const size_t ts = 1) {
     float migration;
     size_t norm;
-    std::tie(migration, norm) = dec.computeCommunicationCosts();
+    std::tie(migration, norm) = dec.computeCommunicationCosts(dist.getGhost());
 
     dist.setMigrationCosts(migration, norm, ts);
   }
@@ -1209,17 +1209,17 @@ void doRebalancing(particles& vd) {
   }
   dist.reset(parmetis_graph);
   dec.decompose(mde, parmetis_graph, dist.getVtxdist());
-  dist.postDecomposition(parmetis_graph);
 
   /////////////////////////////////////////////////////////////////// distribute
-  dist.distribute(dec, mdi);
+  dist.postDecomposition(
+      parmetis_graph);  // todo change name to distribute(...)
 
   ///////////////////////////////////////////////////////////////////////  merge
-  dec.merge();
+  dec.merge(gp, dist.getGhost(), dist.getDistGrid(), dist.getGr());
 
   ///////////////////////////////////////////////////////////////////// finalize
-  dist.onEnd();
-  dec.onEnd();
+  dist.onEnd(dec.getSubDomains());
+  dec.onEnd(dist.getGhost());
 }
 
 /*! \cond [rebalancing] \endcond */
