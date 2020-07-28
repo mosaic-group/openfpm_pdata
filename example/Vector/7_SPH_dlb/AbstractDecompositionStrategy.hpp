@@ -130,7 +130,7 @@ public:
              Ghost& ghost,
              DistributionGrid gr_dist,
              DistributionGrid gr) {
-    createSubdomains(graph, ghost, gr_dist, gr);  // breakpoint
+    createSubdomains(graph, ghost, gr_dist, gr);
     calculateGhostBoxes(ghost);
   }
 
@@ -272,35 +272,43 @@ private:
     return sub_d;
   }
 
-    void collect_all_sub_domains(openfpm::vector<Box_map<dim,T>,Memory,typename layout_base<Box_map<dim, T>>::type,layout_base> & sub_domains_global)
-    {
-#ifdef SE_CLASS2  // todo needed?
-      check_valid(this,8);
+  void collect_all_sub_domains(
+      openfpm::vector<Box_map<dim, T>,
+                      Memory,
+                      typename layout_base<Box_map<dim, T>>::type,
+                      layout_base>& sub_domains_global) {
+#ifdef SE_CLASS2  // question needed?
+    check_valid(this, 8);
 #endif
 
-      sub_domains_global.clear();
-      openfpm::vector<Box_map<dim,T>,Memory,typename layout_base<Box_map<dim, T>>::type,layout_base> bm;
+    sub_domains_global.clear();
+    openfpm::vector<Box_map<dim, T>,
+                    Memory,
+                    typename layout_base<Box_map<dim, T>>::type,
+                    layout_base>
+        bm;
 
-      for (size_t i = 0 ; i < sub_domains.size() ; i++)
-      {
-        bm.add();
+    for (size_t i = 0; i < sub_domains.size(); i++) {
+      bm.add();
 
-        bm.template get<0>(bm.size()-1) = ::SpaceBox<dim,T>(sub_domains.get(i));
-        bm.template get<1>(bm.size()-1) = v_cl.rank();
-      }
-
-      v_cl.SGather<decltype(bm),decltype(sub_domains_global),layout_base>(bm,sub_domains_global,0);
-
-      size_t size = sub_domains_global.size();
-
-      v_cl.max(size);
-      v_cl.execute();
-
-      sub_domains_global.resize(size);
-
-      v_cl.Bcast(sub_domains_global,0);
-      v_cl.execute();
+      bm.template get<0>(bm.size() - 1) =
+          ::SpaceBox<dim, T>(sub_domains.get(i));
+      bm.template get<1>(bm.size() - 1) = v_cl.rank();
     }
+
+    v_cl.SGather<decltype(bm), decltype(sub_domains_global), layout_base>(
+        bm, sub_domains_global, 0);
+
+    size_t size = sub_domains_global.size();
+
+    v_cl.max(size);
+    v_cl.execute();
+
+    sub_domains_global.resize(size);
+
+    v_cl.Bcast(sub_domains_global, 0);
+    v_cl.execute();
+  }
 
   void construct_fine_s() {
     collect_all_sub_domains(sub_domains_global);
@@ -420,24 +428,24 @@ private:
     Initialize_geo_cell_lists();
   }
 
-  void Initialize_geo_cell_lists()
-  {
+  void Initialize_geo_cell_lists() {
     // Get the processor bounding Box
-    ::Box<dim,T> bound = getProcessorBounds();
+    ::Box<dim, T> bound = getProcessorBounds();
 
     // Check if the box is valid
-    if (bound.isValidN() == true)
-    {
+    if (bound.isValidN() == true) {
       // calculate the sub-divisions
       size_t div[dim];
-      for (size_t i = 0; i < dim; i++)
-      {div[i] = (size_t) ((bound.getHigh(i) - bound.getLow(i)) / cd.getCellBox().getP2()[i]);}
+      for (size_t i = 0; i < dim; i++) {
+        div[i] = (size_t)((bound.getHigh(i) - bound.getLow(i)) /
+                          cd.getCellBox().getP2()[i]);
+      }
 
       // Initialize the geo_cell structure
-      ie_ghost<dim,T,Memory,layout_base>::Initialize_geo_cell(bound,div);
+      ie_ghost<dim, T, Memory, layout_base>::Initialize_geo_cell(bound, div);
 
       // Initialize shift vectors
-      ie_ghost<dim,T,Memory,layout_base>::generateShiftVectors(domain,bc);
+      ie_ghost<dim, T, Memory, layout_base>::generateShiftVectors(domain, bc);
     }
   }
 
@@ -446,17 +454,21 @@ private:
 
   template <typename Ghost>
   void calculateGhostBoxes(Ghost& ghost) {
-    // Intersect all the local sub-domains with the sub-domains of the contiguous processors
+    // Intersect all the local sub-domains with the sub-domains of the
+    // contiguous processors
 
     // create the internal structures that store ghost information
-    ie_ghost<dim, T,Memory,layout_base>::create_box_nn_processor_ext(v_cl, ghost, sub_domains, box_nn_processor, *this);
-    ie_ghost<dim, T,Memory,layout_base>::create_box_nn_processor_int(v_cl, ghost, sub_domains, box_nn_processor, *this);
+    ie_ghost<dim, T, Memory, layout_base>::create_box_nn_processor_ext(
+        v_cl, ghost, sub_domains, box_nn_processor, *this);
+    ie_ghost<dim, T, Memory, layout_base>::create_box_nn_processor_int(
+        v_cl, ghost, sub_domains, box_nn_processor, *this);
 
-    ie_loc_ghost<dim,T,layout_base,Memory>::create(sub_domains,domain,ghost,bc);
+    ie_loc_ghost<dim, T, layout_base, Memory>::create(
+        sub_domains, domain, ghost, bc);
 
     // Ghost box information must be re-offloaded
     host_dev_transfer = false;
-    ie_ghost<dim, T,Memory,layout_base>::reset_host_dev_transfer();
+    ie_ghost<dim, T, Memory, layout_base>::reset_host_dev_transfer();
   }
 };
 #endif  // OPENFPM_PDATA_ABSTRACT_DECOMPOSITION_STRATEGY_HPP

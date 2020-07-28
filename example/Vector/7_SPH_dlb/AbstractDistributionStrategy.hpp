@@ -92,7 +92,20 @@ public:
    *
    */
   void setComputationCost(size_t id, size_t weight) {
-    // todo
+    if (!verticesGotWeights) {
+      verticesGotWeights = true;
+    }
+
+#ifdef SE_CLASS1  // question needed?
+    if (id >= gp.getNVertex()) {
+      std::cerr << __FILE__ << ":" << __LINE__
+                << "Such vertex doesn't exist (id = " << id << ", "
+                << "total size = " << gp.getNVertex() << ")\n";
+    }
+#endif
+
+    // Update vertex in main graph
+    gp.vertex(id).template get<nm_v_computation>() = weight;
   }
 
   /*! \brief Returns total number of neighbors of the sub-sub-domain id
@@ -274,7 +287,7 @@ private:
   Graph_CSR<nm_v<dim>, nm_e> gp;
 
   //! ghost info
-  Ghost<dim, T> ghost;  // todo private
+  Ghost<dim, T> ghost;
 
   //! Structure that store the cartesian grid information
   DistributionGrid gr;
