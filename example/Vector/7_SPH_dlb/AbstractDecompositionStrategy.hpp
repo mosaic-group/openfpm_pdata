@@ -131,7 +131,7 @@ public:
              DistributionGrid gr_dist,
              DistributionGrid gr) {
     createSubdomains(graph, ghost, gr_dist, gr);  // breakpoint
-    // todo move to dist calculateGhostBoxes();
+    calculateGhostBoxes(ghost);
   }
 
   template <typename Ghost>
@@ -413,8 +413,20 @@ private:
 
   /*! \brief It calculate the internal ghost boxes
    */
-  void calculateGhostBoxes() {
 
+  template <typename Ghost>
+  void calculateGhostBoxes(Ghost& ghost) {
+    // Intersect all the local sub-domains with the sub-domains of the contiguous processors
+
+    // create the internal structures that store ghost information
+    ie_ghost<dim, T,Memory,layout_base>::create_box_nn_processor_ext(v_cl, ghost, sub_domains, box_nn_processor, *this);
+    ie_ghost<dim, T,Memory,layout_base>::create_box_nn_processor_int(v_cl, ghost, sub_domains, box_nn_processor, *this);
+
+    ie_loc_ghost<dim,T,layout_base,Memory>::create(sub_domains,domain,ghost,bc);
+
+    // Ghost box information must be re-offloaded
+    host_dev_transfer = false;
+    ie_ghost<dim, T,Memory,layout_base>::reset_host_dev_transfer();
   }
 };
 #endif  // OPENFPM_PDATA_ABSTRACT_DECOMPOSITION_STRATEGY_HPP
