@@ -10,12 +10,12 @@
 #include "Graph/CartesianGraphFactory.hpp"
 
 #include "./MyStuff.hpp"
-#include "./MyDistributionStrategy_unit_test.hpp"
+#include "./MyDecompositionStrategy_unit_test.hpp"
 
 int main(int argc, char* argv[]) {
   openfpm_init(&argc, &argv);
 
-  justDoIt(2);
+  CartDecomposition_non_periodic_test(2);
 
   openfpm_finalize();
 }

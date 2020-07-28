@@ -40,7 +40,7 @@ void setSphereComputationCosts(Distribution& dist,
   }
 }
 
-void justDoIt(const unsigned int nProcs) {
+void Parmetis_distribution_test(const unsigned int nProcs) {
   Vcluster<>& v_cl = create_vcluster();
 
   auto nProcUnits = v_cl.getProcessingUnits();
@@ -52,6 +52,7 @@ void justDoIt(const unsigned int nProcs) {
   }
 
   //! [Initialize a ParMetis Cartesian graph and decompose]
+
   MyDistributionStrategy dist(v_cl);
 
   // Physical domain

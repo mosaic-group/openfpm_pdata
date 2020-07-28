@@ -224,8 +224,6 @@ public:
     } else {
       graph.initSubGraph(gp, vtxdist, m2g, verticesGotWeights);
     }
-
-    is_distributed = true;
   }
 
   /*! \brief Refine current decomposition
@@ -293,6 +291,8 @@ public:
    */
   template <typename Graph>
   void distribute(Graph& graph) {
+    reset(graph);
+
     //! Get the processor id
     size_t p_id = v_cl.getProcessUnitID();
 

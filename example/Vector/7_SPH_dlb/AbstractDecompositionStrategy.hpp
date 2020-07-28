@@ -143,6 +143,8 @@ public:
    */
   template <typename Model, typename Graph>
   void decompose(Model m, Graph& graph, openfpm::vector<rid>& vtxdist) {
+    reset();
+
     graph.decompose(vtxdist);  // decompose
   }
 
@@ -167,7 +169,25 @@ public:
   bool shouldSetCosts() { return !costBeenSet; }
 
   SubDomains& getSubDomains() {
-    return sub_domains;  // todo shared?
+    return sub_domains;  // question shared?
+  }
+
+  void setParameters(
+      const size_t (&div_)[dim],
+      ::Box<dim, T>& domain_,
+      const size_t (&bc)[dim],
+      const grid_sm<dim, void>& sec_dist = grid_sm<dim, void>()) {
+    for (size_t i = 0; i < dim; i++) {
+      this->bc[i] = bc[i];  // question std::copy ?
+    }
+
+    // Set the decomposition parameters
+    gr.setDimensions(div_);
+    domain = domain_;
+    cd.setDimensions(domain, div_, 0);
+
+    // calc magnification factor dec-dist
+    calculate_magn(sec_dist);
   }
 
 private:
@@ -382,24 +402,6 @@ private:
         magn[i] = gr.size(i) / gm.size(i);
       }
     }
-  }
-
-  void setParameters(
-      const size_t (&div_)[dim],
-      ::Box<dim, T>& domain_,
-      const size_t (&bc)[dim],
-      const grid_sm<dim, void>& sec_dist = grid_sm<dim, void>()) {
-    for (size_t i = 0; i < dim; i++) {
-      bc[i] = NON_PERIODIC;
-    }
-
-    // Set the decomposition parameters
-    gr.setDimensions(div_);
-    domain = domain_;
-    cd.setDimensions(domain, div_, 0);
-
-    // calc magnification factor dec-dist
-    calculate_magn(sec_dist);
   }
 
   /*! \brief Constructor, it decompose and distribute the sub-domains across the

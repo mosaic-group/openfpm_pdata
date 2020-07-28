@@ -1080,7 +1080,6 @@ void doRebalancing(particles& vd) {
   mdi.finalize(dist, parmetis_graph);
 
   //////////////////////////////////////////////////////////////////// decompose
-  dec.reset();
   dist.reset(parmetis_graph);
   if (dec.shouldSetCosts()) {
     mcc.computeCommunicationAndMigrationCosts(dec, dist);
