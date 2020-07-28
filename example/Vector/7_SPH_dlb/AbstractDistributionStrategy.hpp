@@ -228,6 +228,30 @@ public:
     is_distributed = true;
   }
 
+  /*! \brief Refine current decomposition
+   *
+   * It makes a refinement of the current decomposition using Parmetis function
+   * RefineKWay After that it also does the remapping of the graph
+   *
+   */
+  template <typename Graph>
+  void refine(Graph& graph) {
+    graph.reset(gp, vtxdist, m2g, verticesGotWeights);  // reset
+    graph.refine(vtxdist);                              // refine
+    distribute(graph);
+  }
+
+  /*! \brief Print the current distribution and save it to VTK file
+   *
+   * \param file filename
+   *
+   */
+  void write(const std::string& file) {
+    // todo VTKWriter<Graph_CSR<nm_v<dim>, nm_e>, VTK_GRAPH> gv2(gp);
+    // todo gv2.write(std::to_string(v_cl.getProcessUnitID()) + "_" + file +
+    // ".vtk");
+  }
+
   openfpm::vector<rid>& getVtxdist() { return vtxdist; }
 
   /*! \brief Callback of the sendrecv to set the size of the array received

@@ -96,17 +96,16 @@ void doTest(const unsigned int nProcs = 2) {
   parmetis_graph.decompose(dist.getVtxdist());  // decompose
   dist.distribute(parmetis_graph);              // distribute
 
-  auto ndec = parmetis_graph.get_ndec();
   printMe(v_cl);
-  std::cout << "assert " << ndec << " == 1ul" << std::endl;
+  std::cout << "assert " << parmetis_graph.get_ndec() << " == 1ul" << std::endl;
 
   //! [Initialize a ParMetis Cartesian graph and decompose]
 
   if (amIMaster(v_cl)) {
     // write the first decomposition
-    // todo dist.write("vtk_parmetis_distribution_0");
+
+    dist.write("vtk_parmetis_distribution_0");
     // todo compare
-    // todo BOOST_REQUIRE_EQUAL(true, test);
   }
 
   //! [refine with parmetis the decomposition]
@@ -130,24 +129,27 @@ void doTest(const unsigned int nProcs = 2) {
 
     // With some regularity refine and write the parmetis distribution
     if ((size_t)iter % 10 == 0) {
-      // todo dist.refine();
+      dist.refine(parmetis_graph);
       n_dec++;
-      // todo BOOST_REQUIRE_EQUAL(dist.get_ndec(), n_dec);
+
+      printMe(v_cl);
+      std::cout << "assert " << parmetis_graph.get_ndec() << " == " << n_dec
+                << std::endl;
 
       if (amIMaster(v_cl)) {
         std::stringstream str;
         str << "vtk_parmetis_distribution_" << iter;
 
-        // todo dist.write(str.str());
+        dist.write(str.str());
         // todo compare
-        // todo BOOST_REQUIRE_EQUAL(true, test);
       }
     }
   }
 
   //! [refine with parmetis the decomposition]
 
-  // todo BOOST_REQUIRE_EQUAL(sizeof(ParMetisDistribution<3,SpaceType>),872ul);
+  printMe(v_cl);
+  std::cout << "my size is " << sizeof(MyDistributionStrategy) << std::endl;
 }
 
 int main(int argc, char* argv[]) {
