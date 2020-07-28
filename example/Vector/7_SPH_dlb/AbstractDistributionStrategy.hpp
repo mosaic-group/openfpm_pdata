@@ -27,7 +27,12 @@ public:
    *
    * \param v_cl Vcluster to use as communication object in this class
    */
-  AbstractDistributionStrategy(Vcluster<>& v_cl) : v_cl(v_cl) {}
+  AbstractDistributionStrategy(Vcluster<>& v_cl)
+    : is_distributed(false),
+      v_cl(v_cl),
+      vtxdist(v_cl.getProcessingUnits() + 1),
+      partitions(v_cl.getProcessingUnits()),
+      v_per_proc(v_cl.getProcessingUnits()) {}
 
   /*! \brief Return the global id of the owned sub-sub-domain
    *
@@ -36,28 +41,37 @@ public:
    * \return the global id
    *
    */
-  size_t getOwnerSubSubDomain(size_t id) const { return 0; }
+  size_t getOwnerSubSubDomain(size_t id) const { return sub_sub_owner.get(id); }
 
   /*! \brief Return the total number of sub-sub-domains this processor own
    *
    * \return the total number of sub-sub-domains owned by this processor
    *
    */
-  size_t getNOwnerSubSubDomains() const { return 0; }
+  size_t getNOwnerSubSubDomains() const { return sub_sub_owner.size(); }
 
   /*! \brief Returns total number of sub-sub-domains in the distribution graph
    *
    * \return the total number of sub-sub-domains
    *
    */
-  size_t getNSubSubDomains() const { return 0; }
+  size_t getNSubSubDomains() const { return gp.getNVertex(); }
 
   /*! \brief Set migration cost of the vertex id
    *
    * \param id of the vertex to update
    * \param migration cost of the migration
    */
-  void setMigrationCost(size_t id, size_t migration) {}
+  void setMigrationCost(size_t id, size_t migration) {
+#ifdef SE_CLASS1
+    if (id >= gp.getNVertex())
+      std::cerr << __FILE__ << ":" << __LINE__
+                << "Such vertex doesn't exist (id = " << id << ", "
+                << "total size = " << gp.getNVertex() << ")\n";
+#endif
+
+    gp.vertex(id).template get<nm_v_migration>() = migration;
+  }
 
   /*! \brief function that get the weight of the vertex
    * (computation cost of the sub-sub-domain id)
@@ -65,7 +79,16 @@ public:
    * \param id vertex id
    *
    */
-  size_t getSubSubDomainComputationCost(size_t id) { return 0; }
+  size_t getSubSubDomainComputationCost(size_t id) {
+#ifdef SE_CLASS1
+    if (id >= gp.getNVertex())
+      std::cerr << __FILE__ << ":" << __LINE__
+                << "Such vertex doesn't exist (id = " << id << ", "
+                << "total size = " << gp.getNVertex() << ")\n";
+#endif
+
+    return gp.vertex(id).template get<nm_v_computation>();
+  }
 
   /*! \brief Add computation cost i to the subsubdomain with global id gid
    *
@@ -83,7 +106,19 @@ public:
    * \param e i child of the vertex
    * \param communication Communication value
    */
-  void setCommunicationCost(size_t v_id, size_t e, size_t communication) {}
+  void setCommunicationCost(size_t v_id, size_t e, size_t communication) {
+#ifdef SE_CLASS1
+
+    size_t e_id = v_id + e;
+
+    if (e_id >= gp.getNEdge())
+      std::cerr << "Such edge doesn't exist (id = " << e_id << ", "
+                << "total size = " << gp.getNEdge() << ")\n";
+#endif
+
+    gp.getChildEdge(v_id, e).template get<nm_e::communication>() =
+        communication;
+  }
 
   /*! \brief Function that set the weight of the vertex
    *
@@ -115,14 +150,26 @@ public:
    * \return the number of neighborhood sub-sub-domains for each sub-domain
    *
    */
-  size_t getNSubSubDomainNeighbors(size_t id) { return 0; }
+  size_t getNSubSubDomainNeighbors(size_t id) {
+#ifdef SE_CLASS1
+    if (id >= gp.getNVertex())
+      std::cerr << __FILE__ << ":" << __LINE__
+                << "Such vertex doesn't exist (id = " << id << ", "
+                << "total size = " << gp.getNVertex() << ")\n";
+#endif
+
+    return gp.getNChilds(id);
+  }
 
   /*! \brief Set the tolerance for each partition
    *
    * \param tol tolerance
    *
    */
-  void setDistTol(double tol) {}
+  template <typename Graph>
+  void setDistTol(Graph& graph, double tol) {
+    graph.setDistTol(tol);
+  }
 
   void setMigrationCosts(const float migration,
                          const size_t norm,
@@ -148,9 +195,6 @@ public:
    *
    */
   Graph_CSR<nm_v<dim>, nm_e>& getGraph() { return gp; }
-
-  template <typename SubDomains>
-  void createSubdomains(SubDomains& sub_domains, size_t opt = 0) {}
 
   /*! \brief Distribution grid
    *

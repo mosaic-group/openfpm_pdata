@@ -1159,9 +1159,9 @@ struct MyDecompositionModel : ModelDecompose {
 struct MyDistributionModel : ModelDistribute {
   val_t toll() { return 1.01; }
 
-  template <typename DistributionStrategy>
-  void finalize(DistributionStrategy& dist) {
-    dist.setDistTol(toll());
+  template <typename DistributionStrategy, typename Graph>
+  void finalize(DistributionStrategy& dist, Graph& graph) {
+    dist.setDistTol(graph, toll());
   }
 };
 
@@ -1200,7 +1200,7 @@ void doRebalancing(particles& vd) {
   mcc.calculate(vd, dec, dist);
   mcc.computeCommunicationAndMigrationCosts(dec, dist, 1);
   mde.finalize(dist);
-  mdi.finalize(dist);
+  mdi.finalize(dist, parmetis_graph);
 
   //////////////////////////////////////////////////////////////////// decompose
   dec.reset();

@@ -60,9 +60,23 @@ public:
    *
    */
   AbstractDecompositionStrategy(Vcluster<>& v_cl)
-    : nn_prcs<dim, T, layout_base, Memory>(v_cl), v_cl(v_cl) {
+    : nn_prcs<dim, T, layout_base, Memory>(v_cl), v_cl(v_cl), ref_cnt(0) {
     bbox.zero();  // Reset the box to zero
   }
+
+  //! Destructor
+  ~AbstractDecompositionStrategy() {
+    // question ref counter?
+  }
+
+  //! Increment the reference counter
+  void incRef() { ref_cnt++; }
+
+  //! Decrement the reference counter
+  void decRef() { ref_cnt--; }
+
+  //! Return the reference counter
+  long int ref() { return ref_cnt; }
 
   /*! \brief Calculate communication and migration costs
    */
@@ -152,7 +166,7 @@ public:
     return sub_domains;  // todo shared?
   }
 
-protected:
+private:
   //! Box Spacing
   T spacing[dim];
 
@@ -166,7 +180,9 @@ protected:
   //! Processor bounding box
   ::Box<dim, T> bbox;
 
-private:
+  //! reference counter of the object in case is shared between object
+  long int ref_cnt;
+
   //! bool that indicate whenever the buffer has been already transfer to device
   bool host_dev_transfer = false;
 
