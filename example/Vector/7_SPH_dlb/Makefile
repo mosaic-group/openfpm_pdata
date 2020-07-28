@@ -38,7 +38,7 @@ build:
 	$(CC) -o $(out) $(OBJ)  -L/home/$(USER)/opt/openfpm/openfpm_devices/lib -L/home/$(USER)/opt/openfpm/openfpm_vcluster/lib -L/home/$(USER)/opt/openfpm/dependencies/VCDEVEL/lib  -L/home/$(USER)/opt/openfpm/dependencies/METIS/lib -L/home/$(USER)/opt/openfpm/dependencies/PARMETIS/lib  -L/home/$(USER)/opt/openfpm/dependencies/BOOST/lib -L/home/$(USER)/opt/openfpm/dependencies/HDF5/lib -L/home/$(USER)/opt/openfpm/dependencies/LIBHILBERT/lib    -lvcluster -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc   -lrt -ldl
 
 test:  # todo test with mpi (see run)
-	./$(out) 2>&1 | tee debug/$(shell date +%FT%T | sed -e 's/:/-/g').debug
+	mpirun -np 2 ./$(out) 2>&1 | tee debug/$(shell date +%FT%T | sed -e 's/:/-/g').debug
 
 debug:
 	gdb -ex run --args ./$(out)

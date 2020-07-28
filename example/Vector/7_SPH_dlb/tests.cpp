@@ -15,6 +15,10 @@
 
 bool amIMaster(Vcluster<>& v_cl) { return v_cl.getProcessUnitID() == 0; }
 
+void printMe(Vcluster<>& v_cl) {
+  std::cout << "VCL #" << v_cl.getProcessUnitID() << " ";
+}
+
 template <unsigned int dim, typename Distribution>
 void setSphereComputationCosts(Distribution& dist,
                                grid_sm<dim, void>& gr,
@@ -50,18 +54,19 @@ void setSphereComputationCosts(Distribution& dist,
   }
 }
 
-void doTest() {
+void doTest(const unsigned int nProcs = 2) {
   Vcluster<>& v_cl = create_vcluster();
 
   auto nProcUnits = v_cl.getProcessingUnits();
-  if (nProcUnits != 3) {  // question why 3?
+  if (nProcUnits != nProcs) {  // question why it was 3?
+    printMe(v_cl);
     std::cerr << "# processing units = " << nProcUnits << " != 3 !"
               << std::endl;
     return;
   }
 
   //! [Initialize a ParMetis Cartesian graph and decompose]
-  MyDistributionStrategy pmet_dist(v_cl);
+  MyDistributionStrategy dist(v_cl);
 
   // Physical domain
   Box<3, SpaceType> box({0.0, 0.0, 0.0}, {10.0, 10.0, 10.0});
@@ -70,7 +75,12 @@ void doTest() {
   grid_sm<3, void> info({GS_SIZE, GS_SIZE, GS_SIZE});
 
   // Initialize Cart graph and decompose
-  // todo pmet_dist.createCartGraph(info, box);
+  size_t bc[SPACE_N_DIM];
+  for (size_t i = 0; i < SPACE_N_DIM; i++) {
+    bc[i] = NON_PERIODIC;
+  }
+
+  dist.createCartGraph(bc, info, box);
 
   // First create the center of the weights distribution, check it is coherent
   // to the size of the domain
@@ -78,18 +88,23 @@ void doTest() {
 
   // It produces a sphere of radius 2.0
   // with high computation cost (5) inside the sphere and (1) outside
-  setSphereComputationCosts(pmet_dist, info, center, 2.0f, 5ul, 1ul);
+  setSphereComputationCosts(dist, info, center, 2.0f, 5ul, 1ul);
 
-  // first decomposition
-  // todo pmet_dist.decompose();
+  // first distribution
+  ParmetisGraph parmetis_graph(v_cl, v_cl.getProcessingUnits());
+  dist.reset(parmetis_graph);
+  parmetis_graph.decompose(dist.getVtxdist());  // decompose
+  dist.distribute(parmetis_graph);              // distribute
 
-  // todo BOOST_REQUIRE_EQUAL(pmet_dist.get_ndec(), 1ul);
+  auto ndec = parmetis_graph.get_ndec();
+  printMe(v_cl);
+  std::cout << "assert " << ndec << " == 1ul" << std::endl;
 
   //! [Initialize a ParMetis Cartesian graph and decompose]
 
   if (amIMaster(v_cl)) {
     // write the first decomposition
-    // todo pmet_dist.write("vtk_parmetis_distribution_0");
+    // todo dist.write("vtk_parmetis_distribution_0");
     // todo compare
     // todo BOOST_REQUIRE_EQUAL(true, test);
   }
@@ -111,19 +126,19 @@ void doTest() {
       center -= shift;
     }
 
-    setSphereComputationCosts(pmet_dist, info, center, 2.0f, 5, 1);
+    setSphereComputationCosts(dist, info, center, 2.0f, 5, 1);
 
     // With some regularity refine and write the parmetis distribution
     if ((size_t)iter % 10 == 0) {
-      // todo pmet_dist.refine();
+      // todo dist.refine();
       n_dec++;
-      // todo BOOST_REQUIRE_EQUAL(pmet_dist.get_ndec(), n_dec);
+      // todo BOOST_REQUIRE_EQUAL(dist.get_ndec(), n_dec);
 
       if (amIMaster(v_cl)) {
         std::stringstream str;
         str << "vtk_parmetis_distribution_" << iter;
 
-        // todo pmet_dist.write(str.str());
+        // todo dist.write(str.str());
         // todo compare
         // todo BOOST_REQUIRE_EQUAL(true, test);
       }

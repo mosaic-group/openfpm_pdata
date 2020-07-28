@@ -324,6 +324,8 @@ public:
 
     // Update graphs with the received data
     updateGraphs();
+
+    is_distributed = true;
   }
 
   /*! \brief Return the ghost
@@ -358,22 +360,24 @@ public:
    */
   DGrid getGrid() { return gr; }
 
-  /*! \brief Create the Cartesian graph
-   *
-   * \param grid info
-   * \param dom domain
-   */
-  void createCartGraph(
-      ::Box<dim, T>& domain,
+  void setParameters(
       DGrid& grid_dec,
-      const size_t (&bc)[dim],
       const grid_sm<dim, void>& sec_dist = grid_sm<dim, void>()) {
     if (sec_dist.size(0) != 0) {
       gr.setDimensions(sec_dist.getSize());
     } else {
       gr = grid_dec;
     }
+  }
 
+  /*! \brief Create the Cartesian graph
+   *
+   * \param grid info
+   * \param dom domain
+   */
+  void createCartGraph(const size_t (&bc)[dim],
+                       grid_sm<dim, void>& grid,
+                       ::Box<dim, T>& domain) {
     // Create a cartesian grid graph
     CartesianGraphFactory<dim, Graph_CSR<nm_v<dim>, nm_e>> g_factory_part;
     gp = g_factory_part.template construct<NO_EDGE, nm_v_id, T, dim - 1, 0>(
