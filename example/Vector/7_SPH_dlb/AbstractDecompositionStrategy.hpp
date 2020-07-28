@@ -33,7 +33,8 @@
 template <unsigned int dim,
           typename T,
           typename Memory = HeapMemory,
-          template <typename> class layout_base = memory_traits_lin>
+          template <typename> class layout_base = memory_traits_lin,
+          typename DGrid = grid_sm<dim, void>>
 class AbstractDecompositionStrategy
   : public ie_loc_ghost<dim, T, layout_base, Memory>,
     public nn_prcs<dim, T, layout_base, Memory>,
@@ -77,6 +78,12 @@ public:
 
   //! Return the reference counter
   long int ref() { return ref_cnt; }
+
+  /*! \brief Decomposition grid
+   *
+   * \return the grid
+   */
+  DGrid getGrid() { return gr; }
 
   /*! \brief Calculate communication and migration costs
    */
@@ -139,12 +146,9 @@ public:
     graph.decompose(vtxdist);  // decompose
   }
 
-  template <typename Graph, typename Ghost, typename DistributionGrid>
-  void merge(Graph& graph,
-             Ghost& ghost,
-             DistributionGrid gr_dist,
-             DistributionGrid gr) {
-    createSubdomains(graph, ghost, gr_dist, gr);
+  template <typename Graph, typename Ghost>
+  void merge(Graph& graph, Ghost& ghost, DGrid gr_dist) {
+    createSubdomains(graph, ghost, gr_dist);
     calculateGhostBoxes(ghost);
   }
 
@@ -167,6 +171,9 @@ public:
   }
 
 private:
+  //! Structure that store the cartesian grid information
+  DGrid gr;
+
   //! Box Spacing
   T spacing[dim];
 
@@ -218,8 +225,7 @@ private:
   //! Processor domain bounding box
   ::Box<dim, size_t> proc_box;
 
-  template <typename DistributionGrid>
-  void initialize_fine_s(const ::Box<dim, T>& domain, DistributionGrid gr) {
+  void initialize_fine_s(const ::Box<dim, T>& domain) {
     fine_s.clear();
     size_t div_g[dim];
 
@@ -243,10 +249,9 @@ private:
    * \return the corresponding sub-domain
    *
    */
-  template <typename Memory_bx, typename DistributionGrid>
+  template <typename Memory_bx>
   Box convertDecBoxIntoSubDomain(
-      encapc<1, ::Box<dim, size_t>, Memory_bx> loc_box,
-      DistributionGrid gr) {
+      encapc<1, ::Box<dim, size_t>, Memory_bx> loc_box) {
     // A point with all coordinate to one
     size_t one[dim];
     for (size_t i = 0; i < dim; i++) {
@@ -354,6 +359,49 @@ private:
     host_dev_transfer = false;
   }
 
+  /*! \brief Calculate magnification
+   *
+   * \param gm distribution grid
+   *
+   */
+  void calculate_magn(const grid_sm<dim, void>& gm) {
+    if (gm.size() == 0) {
+      for (size_t i = 0; i < dim; i++) {
+        magn[i] = 1;
+      }
+    } else {
+      for (size_t i = 0; i < dim; i++) {
+        if (gr.size(i) % gm.size(i) != 0) {
+          std::cerr << __FILE__ << ":" << __LINE__
+                    << ".Error the decomposition grid specified as gr.size("
+                    << i << ")=" << gr.size(i)
+                    << " is not multiple of the distribution grid gm.size(" << i
+                    << ")=" << gm.size(i) << std::endl;
+        }
+
+        magn[i] = gr.size(i) / gm.size(i);
+      }
+    }
+  }
+
+  void setParameters(
+      const size_t (&div_)[dim],
+      ::Box<dim, T>& domain_,
+      const size_t (&bc)[dim],
+      const grid_sm<dim, void>& sec_dist = grid_sm<dim, void>()) {
+    for (size_t i = 0; i < dim; i++) {
+      bc[i] = NON_PERIODIC;
+    }
+
+    // Set the decomposition parameters
+    gr.setDimensions(div_);
+    domain = domain_;
+    cd.setDimensions(domain, div_, 0);
+
+    // calc magnification factor dec-dist
+    calculate_magn(sec_dist);
+  }
+
   /*! \brief Constructor, it decompose and distribute the sub-domains across the
    * processors
    *
@@ -362,11 +410,10 @@ private:
    * \param opt option (one option is to construct)
    *
    */
-  template <typename Graph, typename Ghost, typename DistributionGrid>
+  template <typename Graph, typename Ghost>
   void createSubdomains(Graph& graph,
                         Ghost& ghost,
-                        DistributionGrid gr_dist,
-                        DistributionGrid gr,
+                        DGrid gr_dist,
                         size_t opt = 0) {
     int p_id = v_cl.getProcessUnitID();
 
@@ -381,7 +428,7 @@ private:
     }
 
     // fill the structure that store the processor id for each sub-domain
-    initialize_fine_s(domain, gr);
+    initialize_fine_s(domain);
 
     // Optimize the decomposition creating bigger spaces
     // And reducing Ghost over-stress
@@ -403,7 +450,7 @@ private:
 
     // Initialize
     if (loc_box.size() > 0) {
-      bbox = convertDecBoxIntoSubDomain(loc_box.get(0), gr);
+      bbox = convertDecBoxIntoSubDomain(loc_box.get(0));
       proc_box = loc_box.get(0);
       sub_domains.add(bbox);
     } else {
@@ -419,7 +466,7 @@ private:
 
     // convert into sub-domain
     for (size_t s = 1; s < loc_box.size(); s++) {
-      Box sub_d = convertDecBoxIntoSubDomain(loc_box.get(s), gr);
+      Box sub_d = convertDecBoxIntoSubDomain(loc_box.get(s));
 
       // add the sub-domain
       sub_domains.add(sub_d);

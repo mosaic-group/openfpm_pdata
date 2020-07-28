@@ -1322,7 +1322,6 @@ public:
 
 		// init distribution
 		dist.createCartGraph(gr_dist, domain);
-
 	}
 
 	/*! \brief Delete the decomposition and reset the data-structure

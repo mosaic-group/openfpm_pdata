@@ -12,12 +12,11 @@
 template <unsigned int dim,
           typename T,
           typename Memory = HeapMemory,
-          template <typename> class layout_base = memory_traits_lin>
+          template <typename> class layout_base = memory_traits_lin,
+          typename DGrid = grid_sm<dim, void>>
 class AbstractDistributionStrategy : public domain_nn_calculator_cart<dim> {
   //! It simplify to access the SpaceBox element
   using Box = SpaceBox<dim, T>;
-
-  using DistributionGrid = grid_sm<dim, void>;
 
 public:
   //! Vcluster
@@ -196,14 +195,6 @@ public:
    */
   Graph_CSR<nm_v<dim>, nm_e>& getGraph() { return gp; }
 
-  /*! \brief Distribution grid
-   *
-   * \return the grid
-   */
-  const DistributionGrid getDistGrid() { return gr_dist; }
-
-  const DistributionGrid getGr() { return gr; }
-
   template <typename Graph>
   void reset(Graph& graph) {
     if (is_distributed) {
@@ -255,7 +246,7 @@ public:
    *
    */
   template <typename Graph>
-  void postDecomposition(Graph& graph) {
+  void distribute(Graph& graph) {
     //! Get the processor id
     size_t p_id = v_cl.getProcessUnitID();
 
@@ -321,6 +312,81 @@ public:
    */
   Ghost<dim, T>& getGhost() { return ghost; }
 
+  /*! \brief operator to init ids vector
+   *
+   * operator to init ids vector
+   *
+   */
+  void initLocalToGlobalMap() {
+    gid g;
+    rid i;
+    i.id = 0;
+
+    m2g.clear();
+    for (; (size_t)i.id < gp.getNVertex(); ++i) {
+      g.id = i.id;
+
+      m2g.insert({i, g});
+    }
+  }
+
+  /*! \brief Distribution grid
+   *
+   * \return the grid
+   */
+  DGrid getGrid() { return gr; }
+
+  /*! \brief Create the Cartesian graph
+   *
+   * \param grid info
+   * \param dom domain
+   */
+  void createCartGraph(
+      ::Box<dim, T>& domain,
+      DGrid& grid_dec,
+      const size_t (&bc)[dim],
+      const grid_sm<dim, void>& sec_dist = grid_sm<dim, void>()) {
+    if (sec_dist.size(0) != 0) {
+      gr.setDimensions(sec_dist.getSize());
+    } else {
+      gr = grid_dec;
+    }
+
+    // Create a cartesian grid graph
+    CartesianGraphFactory<dim, Graph_CSR<nm_v<dim>, nm_e>> g_factory_part;
+    gp = g_factory_part.template construct<NO_EDGE, nm_v_id, T, dim - 1, 0>(
+        gr.getSize(), domain, bc);
+    initLocalToGlobalMap();
+
+    //! Get the number of processing units
+    size_t Np = v_cl.getProcessingUnits();
+
+    //! Division of vertices in Np graphs
+    //! Put (div+1) vertices in mod graphs
+    //! Put div vertices in the rest of the graphs
+    size_t mod_v = gr.size() % Np;
+    size_t div_v = gr.size() / Np;
+
+    for (size_t i = 0; i <= Np; i++) {
+      if (i < mod_v) {
+        vtxdist.get(i).id = (div_v + 1) * i;
+      } else {
+        vtxdist.get(i).id = (div_v)*i + mod_v;
+      }
+    }
+
+    // Init to 0.0 axis z (todo fix in graphFactory)
+    if (dim < 3) {
+      for (size_t i = 0; i < gp.getNVertex(); i++) {
+        gp.vertex(i).template get<nm_v_x>()[2] = 0.0;
+      }
+    }
+
+    for (size_t i = 0; i < gp.getNVertex(); i++) {
+      gp.vertex(i).template get<nm_v_global_id>() = i;
+    }
+  }
+
 private:
   bool is_distributed = false;
 
@@ -334,8 +400,7 @@ private:
   Ghost<dim, T> ghost;
 
   //! Structure that store the cartesian grid information
-  DistributionGrid gr;
-  DistributionGrid gr_dist;
+  DGrid gr;
 
   //! Init vtxdist needed for Parmetis
   //

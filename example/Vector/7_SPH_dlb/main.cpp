@@ -257,12 +257,6 @@ typedef vector_dist<SPACE_N_DIM,
                               double[3],
                               double[3]>>
     particles;
-//                                       |      |        |          | | | | | |
-//                                       |        |          |            | | |
-//                                       |
-//                                     type   density   density    Pressure
-//                                     delta       force     velocity velocity
-//                                                      at n-1 density at n - 1
 
 /*! \cond [vector_dist_def] \endcond */
 
@@ -1118,7 +1112,7 @@ struct MyComputationalCostsModel : ModelComputationalCosts {
                  DistributionStrategy& dist) {
     CellDecomposer_sm<SPACE_N_DIM, SpaceType, shift<SPACE_N_DIM, SpaceType>>
         cdsm;
-    cdsm.setDimensions(dec.getDomain(), dist.getDistGrid().getSize(), 0);
+    cdsm.setDimensions(dec.getDomain(), dist.getGrid().getSize(), 0);
     for (auto it = vd.getDomainIterator(); !it.hasEnded(); ++it) {
       Point<SPACE_N_DIM, SpaceType> p = vd.getPos(it.get());
       const size_t v = cdsm.getCell(p);
@@ -1133,12 +1127,14 @@ struct MyComputationalCostsModel : ModelComputationalCosts {
     float migration;
     size_t norm;
     std::tie(migration, norm) = dec.computeCommunicationCosts(dist.getGhost());
-
     dist.setMigrationCosts(migration, norm, ts);
   }
 };
 
-struct MyDecompositionModel : ModelDecompose {
+struct MyDecompositionModel : ModelDecompose {};
+
+struct MyDistributionModel : ModelDistribute {
+  val_t toll() { return 1.01; }
   template <typename DistributionStrategy>
   void applyModel(DistributionStrategy& dist, size_t v) {
     const size_t id = v;
@@ -1147,29 +1143,18 @@ struct MyDecompositionModel : ModelDecompose {
     dist.setComputationCost(id, weight);
   }
 
-  template <typename DistributionStrategy>
-  void finalize(DistributionStrategy& dist) {
+  template <typename DistributionStrategy, typename Graph>
+  void finalize(DistributionStrategy& dist, Graph& graph) {
     for (auto i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
       // apply model to all the sub-sub-domains
       applyModel(dist, dist.getOwnerSubSubDomain(i));
     }
-  }
-};
 
-struct MyDistributionModel : ModelDistribute {
-  val_t toll() { return 1.01; }
-
-  template <typename DistributionStrategy, typename Graph>
-  void finalize(DistributionStrategy& dist, Graph& graph) {
     dist.setDistTol(graph, toll());
   }
 };
 
 void doRebalancing(particles& vd) {
-  using MyDecompositionStrategy =
-      AbstractDecompositionStrategy<SPACE_N_DIM, SpaceType>;
-  using MyDistributionStrategy =
-      AbstractDistributionStrategy<SPACE_N_DIM, SpaceType>;
   Vcluster<>& v_cl = create_vcluster();
 
   // specify
@@ -1177,45 +1162,45 @@ void doRebalancing(particles& vd) {
   MyComputationalCostsModel mcc;
 
   // - how we want to decompose ...
+  using MyDecompositionStrategy =
+      AbstractDecompositionStrategy<SPACE_N_DIM, SpaceType>;
   MyDecompositionStrategy dec(v_cl);
   MyDecompositionModel mde;
 
   // - how we want to distribute ...
-  MyDistributionStrategy dist(
-      v_cl);  // question can use the same Decomposition is using ?
+  using MyDistributionStrategy =
+      AbstractDistributionStrategy<SPACE_N_DIM, SpaceType>;
+  MyDistributionStrategy dist(v_cl);
   MyDistributionModel mdi;
 
-  // ... and our graph
+  // ... and our shared information
 
   //! Global sub-sub-domain graph
   Graph_CSR<nm_v<SPACE_N_DIM>, nm_e> gp;
 
   //! Convert the graph to parmetis format
-  Parmetis<Graph_CSR<nm_v<SPACE_N_DIM>, nm_e>> parmetis_graph(
-      v_cl, v_cl.getProcessingUnits());
+  using ParmetisGraph = Parmetis<Graph_CSR<nm_v<SPACE_N_DIM>, nm_e>>;
+  ParmetisGraph parmetis_graph(v_cl, v_cl.getProcessingUnits());
 
-  // ... then do it!
-  //////////////////////////////////////////////////////// computational costs
+  ////////////////////////////////////////////////////////// computational costs
   mcc.init(dist);
   mcc.calculate(vd, dec, dist);
   mcc.computeCommunicationAndMigrationCosts(dec, dist, 1);
-  mde.finalize(dist);
   mdi.finalize(dist, parmetis_graph);
 
   //////////////////////////////////////////////////////////////////// decompose
   dec.reset();
+  dist.reset(parmetis_graph);
   if (dec.shouldSetCosts()) {
     mcc.computeCommunicationAndMigrationCosts(dec, dist);
   }
-  dist.reset(parmetis_graph);
   dec.decompose(mde, parmetis_graph, dist.getVtxdist());
 
   /////////////////////////////////////////////////////////////////// distribute
-  dist.postDecomposition(
-      parmetis_graph);  // todo change name to distribute(...)
+  dist.distribute(parmetis_graph);
 
   ///////////////////////////////////////////////////////////////////////  merge
-  dec.merge(gp, dist.getGhost(), dist.getDistGrid(), dist.getGr());
+  dec.merge(gp, dist.getGhost(), dist.getGrid());
 
   ///////////////////////////////////////////////////////////////////// finalize
   dist.onEnd(dec.getSubDomains());
