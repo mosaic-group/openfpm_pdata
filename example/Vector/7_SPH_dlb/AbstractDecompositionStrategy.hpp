@@ -83,7 +83,7 @@ public:
    *
    * \return the grid
    */
-  DGrid getGrid() { return gr; }
+  DGrid& getGrid() { return gr; }
 
   /*! \brief Calculate communication and migration costs
    */
@@ -143,8 +143,6 @@ public:
    */
   template <typename Model, typename Graph>
   void decompose(Model m, Graph& graph, openfpm::vector<rid>& vtxdist) {
-    reset();
-
     graph.decompose(vtxdist);  // decompose
   }
 
@@ -188,6 +186,23 @@ public:
 
     // calc magnification factor dec-dist
     calculate_magn(sec_dist);
+  }
+  /*! \brief Get the number of local sub-domains
+   *
+   * \return the number of sub-domains
+   *
+   */
+  size_t getNSubDomain() { return sub_domains.size(); }
+
+  /*! \brief function to check the consistency of the information of the
+   * decomposition
+   *
+   * \return false if is inconsistent
+   *
+   */
+  bool check_consistency() {
+    return ie_loc_ghost<dim, T, layout_base, Memory>::check_consistency(
+        getNSubDomain());
   }
 
 private:

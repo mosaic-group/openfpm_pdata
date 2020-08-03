@@ -8,7 +8,25 @@
 void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   Vcluster<>& vcl = create_vcluster();
 
+  // specify
+  // - how we want to add the computational cost ...
+  MyComputationalCostsModel mcc;
+
+  // - how we want to decompose ...
   MyDecompositionStrategy dec(vcl);
+  MyDecompositionModel mde;
+
+  // - how we want to distribute ...
+  MyDistributionStrategy dist(vcl);
+  MyDistributionModel mdi;
+
+  // ... and our shared information
+
+  //! Global sub-sub-domain graph
+  Graph_CSR<nm_v<SPACE_N_DIM>, nm_e> gp;
+
+  //! Convert the graph to parmetis format
+  ParmetisGraph parmetis_graph(vcl, vcl.getProcessingUnits());
 
   // Physical domain
   Box<3, SpaceType> box({0.0, 0.0, 0.0}, {1.0, 1.0, 1.0});
@@ -38,9 +56,48 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   // Boundary conditions
   size_t bc[] = {NON_PERIODIC, NON_PERIODIC, NON_PERIODIC};
 
-  // Decompose
+  // todo why don't we compute comm costs?
+
+  // init
   dec.setParameters(div, box, bc, gsub);
-  // breakpoint dec.decompose();
+  dist.setParameters(dec.getGrid(), gsub);
+  dist.createCartGraph(bc, box);
+
+  // Decompose
+  dec.reset();
+  dist.reset(parmetis_graph);
+  if (dec.shouldSetCosts()) {
+    mcc.computeCommunicationAndMigrationCosts(dec, dist);
+  }
+  dec.decompose(mde, parmetis_graph, dist.getVtxdist());
+
+  // For each calculated ghost box
+  for (size_t i = 0; i < dec.getNIGhostBox(); i++) {
+    SpaceBox<3, float> b = dec.getIGhostBox(i);
+    size_t proc = dec.getIGhostBoxProcessor(i);
+
+    // sample one point inside the box
+    Point<3, float> p = b.rnd();
+
+    // Check that ghost_processorsID return that processor number
+    const openfpm::vector<size_t>& pr =
+        dec.ghost_processorID<CartDecomposition<3, float>::processor_id>(p);
+
+    bool found = isIn(pr, proc);
+    if (!found) {
+      const openfpm::vector<size_t> pr2 =
+          dec.ghost_processorID<CartDecomposition<3, float>::processor_id>(p);
+    }
+
+    printMe(vcl);
+    std::cout << "assert " << found << " == true" << std::endl;
+  }
+
+  // Check the consistency
+  bool val = dec.check_consistency();
+
+  printMe(vcl);
+  std::cout << "assert " << val << " == true" << std::endl;
 }
 
 #endif  // OPENFPM_PDATA_MYDECOMPOSITIONSTRATEGY_UNIT_TEST_HPP

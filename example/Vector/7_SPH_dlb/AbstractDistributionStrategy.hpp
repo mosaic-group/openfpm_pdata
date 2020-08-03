@@ -399,9 +399,7 @@ public:
    * \param grid info
    * \param dom domain
    */
-  void createCartGraph(const size_t (&bc)[dim],
-                       grid_sm<dim, void>& grid,
-                       ::Box<dim, T>& domain) {
+  void createCartGraph(const size_t (&bc)[dim], ::Box<dim, T>& domain) {
     // Create a cartesian grid graph
     CartesianGraphFactory<dim, Graph_CSR<nm_v<dim>, nm_e>> g_factory_part;
     gp = g_factory_part.template construct<NO_EDGE, nm_v_id, T, dim - 1, 0>(
