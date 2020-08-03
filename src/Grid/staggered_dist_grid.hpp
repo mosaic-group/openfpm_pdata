@@ -160,7 +160,7 @@ public:
 	template<unsigned int p> void setStagPosition(openfpm::vector<comb<dim>> & cmb)
 	{
 #ifdef SE_CLASS1
-		if (extends< typename boost::mpl::at<typename T::type,boost::mpl::int_<p> >::type >::mul() != cmb.size())
+		if (extends< typename boost::mpl::at<typename T::type,boost::mpl::int_<p> >::type >::mul() > cmb.size())
 			std::cerr << __FILE__ << ":" << __LINE__ << " error properties has " << extends< typename boost::mpl::at<typename T::type,boost::mpl::int_<p> >::type >::mul() << " components, but " << cmb.size() << "has been defined \n";
 #endif
 		c_prp[p] = cmb;
