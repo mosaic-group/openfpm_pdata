@@ -22,9 +22,6 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
 
   // ... and our shared information
 
-  //! Global sub-sub-domain graph
-  Graph_CSR<nm_v<SPACE_N_DIM>, nm_e> gp;
-
   //! Convert the graph to parmetis format
   ParmetisGraph parmetis_graph(vcl, vcl.getProcessingUnits());
 
@@ -63,7 +60,7 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   dist.setParameters(dec.getGrid(), gsub);
   dist.createCartGraph(bc, box);
 
-  // Decompose
+  //////////////////////////////////////////////////////////////////// decompose
   dec.reset();
   dist.reset(parmetis_graph);
   if (dec.shouldSetCosts()) {
@@ -71,7 +68,18 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   }
   dec.decompose(mde, parmetis_graph, dist.getVtxdist());
 
+  /////////////////////////////////////////////////////////////////// distribute
+  dist.distribute(parmetis_graph);
+
+  ///////////////////////////////////////////////////////////////////////  merge
+  dec.merge(dist.getGraph(), dist.getGhost(), dist.getGrid());
+
+  ///////////////////////////////////////////////////////////////////// finalize
+  dist.onEnd(dec.getSubDomains());
+  dec.onEnd(dist.getGhost());
+
   // For each calculated ghost box
+  printVar(dec.getNIGhostBox());
   for (size_t i = 0; i < dec.getNIGhostBox(); i++) {
     SpaceBox<3, float> b = dec.getIGhostBox(i);
     size_t proc = dec.getIGhostBoxProcessor(i);

@@ -420,7 +420,7 @@ private:
   }
 
   /*! \brief Constructor, it decompose and distribute the sub-domains across the
-   * processors
+   * processorscreateSubdomains
    *
    * \param v_cl Virtual cluster, used internally for communications
    * \param bc boundary conditions
@@ -462,6 +462,7 @@ private:
     }
 
     // optimize the decomposition or merge sub-sub-domain
+    // breakpoint segfault
     d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(
         graph, p_id, loc_box, box_nn_processor, ghe, bc);
 
@@ -500,9 +501,6 @@ private:
     // fine_s structure contain the processor id for each sub-sub-domain
     // with sub-sub-domain we mean the sub-domain decomposition before
     // running dec_optimizer (before merging sub-domains)
-
-    ///////////////////////////////// TODO
-    /////////////////////////////////////////////
 
     construct_fine_s();
     Initialize_geo_cell_lists();
