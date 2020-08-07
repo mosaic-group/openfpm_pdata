@@ -85,6 +85,10 @@ public:
 	//! Indicate this structure has a function to check the device pointer
 	typedef int yes_has_check_device_pointer;
 
+	vector_dist_ker()
+	:g_m(0)
+	{}
+
 	vector_dist_ker(int g_m, const openfpm::vector_gpu_ker<Point<dim,St>,layout_base> & v_pos,
 							 const openfpm::vector_gpu_ker<typename apply_transform<layout_base,prop>::type,layout_base> & v_prp)
 	:g_m(g_m),v_pos(v_pos),v_prp(v_prp)

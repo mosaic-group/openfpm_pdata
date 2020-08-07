@@ -748,6 +748,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_cl_test )
 	for (size_t i = 0 ; i < phases.size() ; i++)
 	{
 		cl_ph.add(phases.get(i).getCellListGPU(0.1));
+		auto & test_cl = cl_ph.get(1);
+		int debug = 0 ;
+		debug++;
 	}
 
 	//
