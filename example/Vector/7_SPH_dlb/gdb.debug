@@ -1,0 +1,21 @@
+--Type <RET> for more, q to quit, c to continue without paging--
+Thread 1 "sph_dlb" received signal SIGSEGV, Segmentation fault.
+0x0000555555579a2f in Mem_fast<HeapMemory, int>::getNelements (
+    this=0x7fffffffbb10, cell_id=-1)
+    at /home/stefano/opt/openfpm/openfpm_data/include/NN/Mem_type/MemFast.hpp:294
+294                     return cl_n.template get<0>(cell_id);
+(gdb) bt
+#0  0x0000555555579a2f in Mem_fast<HeapMemory, int>::getNelements (
+    this=0x7fffffffbb10, cell_id=-1)
+    at /home/stefano/opt/openfpm/openfpm_data/include/NN/Mem_type/MemFast.hpp:294
+#1  0x000055555556e482 in CellList<3u, double, Mem_fast<HeapMemory, int>, shift<3u, double>, openfpm::vector<Point<3u, double>, HeapMemory, memory_c<boost::fusion::vector<double [3]>, 1u, memory>, memory_traits_lin, openfpm::grow_policy_double, 2u> >::getNelements (this=0x7fffffffb8e0, 
+    cell_id=18446744073709551615)
+    at /home/stefano/opt/openfpm/openfpm_data/include/NN/CellList/CellList.hpp:854
+#2  0x000055555555fbc4 in CellIterator<CellList<3u, double, Mem_fast<HeapMemory, int>, shift<3u, double>, openfpm::vector<Point<3u, double>, HeapMemory, memory_c<boost::fusion::vector<double [3]>, 1u, memory>, memory_traits_lin, openfpm::grow_policy_double, 2u> > >::isNext (this=<optimized out>)
+    at /home/stefano/opt/openfpm/openfpm_data/include/NN/CellList/CellNNIterator.hpp:372
+#3  ie_ghost<3u, double, HeapMemory, memory_traits_lin>::ghost_processorID<CartDecomposition<3u, float, HeapMemory, memory_traits_lin, ParMetisDistribution<3u, float> >::processor_id> (this=0x7fffffffb780, p=..., opt=2)
+    at /home/stefano/scratch/openfpm_pdata/src/Decomposition/ie_ghost.hpp:990
+#4  0x000055555555b564 in CartDecomposition_non_periodic_test (nProcs=2)
+    at ./MyDecompositionStrategy_unit_test.hpp:92
+#5  0x000055555555b83a in main (argc=1, argv=0x7fffffffcea8) at tests.cpp:18
+(gdb) 

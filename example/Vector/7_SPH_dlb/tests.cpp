@@ -9,8 +9,7 @@
 #include "Graph/ids.hpp"
 #include "Graph/CartesianGraphFactory.hpp"
 
-#include "./MyStuff.hpp"
-#include "./MyDecompositionStrategy_unit_test.hpp"
+#include "Decomposition/DecompositionStrategy_unit_test.hpp"
 
 int main(int argc, char* argv[]) {
   openfpm_init(&argc, &argv);

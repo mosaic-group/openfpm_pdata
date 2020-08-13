@@ -1,5 +1,5 @@
-#ifndef OPENFPM_PDATA_ABSTRACT_DECOMPOSITION_STRATEGY_HPP
-#define OPENFPM_PDATA_ABSTRACT_DECOMPOSITION_STRATEGY_HPP
+#ifndef SRC_DECOMPOSITION_ABSTRACT_DECOMPOSITION_STRATEGY_HPP
+#define SRC_DECOMPOSITION_ABSTRACT_DECOMPOSITION_STRATEGY_HPP
 
 #include <cmath>
 #include <initializer_list>
@@ -29,6 +29,7 @@
 #include "data_type/aggregate.hpp"
 #include "util/mathutil.hpp"
 #include "util/se_util.hpp"
+#include "util/generic.hpp"
 
 template <unsigned int dim,
           typename T,
@@ -57,7 +58,7 @@ public:
   /*! \brief Abstract decomposition constructor
    *
    * \param v_cl Virtual cluster, used internally to handle or pipeline
-   * communication
+   * comm0unication
    *
    */
   AbstractDecompositionStrategy(Vcluster<>& v_cl)
@@ -167,7 +168,7 @@ public:
   bool shouldSetCosts() { return !costBeenSet; }
 
   SubDomains& getSubDomains() {
-    return sub_domains;  // question shared?
+    return sub_domains;  // question shared? no, just decom
   }
 
   void setParameters(
@@ -176,7 +177,7 @@ public:
       const size_t (&bc)[dim],
       const grid_sm<dim, void>& sec_dist = grid_sm<dim, void>()) {
     for (size_t i = 0; i < dim; i++) {
-      this->bc[i] = bc[i];  // question std::copy ?
+      this->bc[i] = bc[i];  // question std::copy ? yes
     }
 
     // Set the decomposition parameters
@@ -234,7 +235,7 @@ private:
   bool costBeenSet = false;
 
   //! Runtime virtual cluster machine
-  Vcluster<>& v_cl;  // question can be private?
+  Vcluster<>& v_cl;  // question can be private? yes
 
   //! the set of all local sub-domain as vector
   SubDomains sub_domains;
@@ -432,8 +433,6 @@ private:
                         Ghost& ghost,
                         DGrid gr_dist,
                         size_t opt = 0) {
-    int p_id = v_cl.getProcessUnitID();
-
     // Calculate the total number of box and and the spacing
     // on each direction
     // Get the box containing the domain
@@ -456,6 +455,7 @@ private:
     Ghost ghe;
 
     // Set the ghost
+    printVar(dim);
     for (size_t i = 0; i < dim; i++) {
       ghe.setLow(i, static_cast<long int>(ghost.getLow(i) / spacing[i]) - 1);
       ghe.setHigh(i, static_cast<long int>(ghost.getHigh(i) / spacing[i]) + 1);
@@ -464,7 +464,7 @@ private:
     // optimize the decomposition or merge sub-sub-domain
     // breakpoint segfault
     d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(
-        graph, p_id, loc_box, box_nn_processor, ghe, bc);
+        graph, v_cl.getProcessUnitID(), loc_box, box_nn_processor, ghe, bc);
 
     // Initialize
     if (loc_box.size() > 0) {
@@ -549,4 +549,4 @@ private:
     ie_ghost<dim, T, Memory, layout_base>::reset_host_dev_transfer();
   }
 };
-#endif  // OPENFPM_PDATA_ABSTRACT_DECOMPOSITION_STRATEGY_HPP
+#endif  // SRC_DECOMPOSITION_ABSTRACT_DECOMPOSITION_STRATEGY_HPP

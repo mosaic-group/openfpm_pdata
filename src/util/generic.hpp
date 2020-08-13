@@ -28,12 +28,13 @@ void printLn(const T& stuff) {
 }
 
 template <class T>
-void _printVar(const std::string& varName, const T& var) {
+void _printVar(const std::string& varName, const T& var, Vcluster<>& v_cl) {
+  printMe(v_cl);
   print(varName + " ~> ");
   printLn(var);
 }
 
 // use preprocessor # (stringify)
-#define printVar(name) _printVar(#name, (name))
+#define printVar(name) _printVar(#name, (name), create_vcluster())
 
 #endif  // OPENFPM_PDATA_UTILS_HPP

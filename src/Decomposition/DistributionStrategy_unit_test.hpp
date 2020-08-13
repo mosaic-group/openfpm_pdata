@@ -1,9 +1,49 @@
-#ifndef OPENFPM_PDATA_MYDISTRIBUTIONSTRATEGY_UNIT_TEST_HPP
-#define OPENFPM_PDATA_MYDISTRIBUTIONSTRATEGY_UNIT_TEST_HPP
+#ifndef SRC_DECOMPOSITION_MYDISTRIBUTIONSTRATEGY_UNIT_TEST_HPP
+#define SRC_DECOMPOSITION_MYDISTRIBUTIONSTRATEGY_UNIT_TEST_HPP
 
-#include "./utils.hpp"
+#include "Decomposition/AbstractStrategyModels.hpp"
+#include "Decomposition/AbstractDistributionStrategy.hpp"
+#include "util/generic.hpp"
 
 #define GS_SIZE 8
+
+// Properties
+
+// A constant to indicate boundary particles
+#define BOUNDARY 0
+
+// A constant to indicate fluid particles
+#define FLUID 1
+
+// FLUID or BOUNDARY
+const size_t type = 0;
+
+// Type of the vector containing particles
+constexpr unsigned int SPACE_N_DIM = 3;
+using SpaceType = double;
+using ParmetisGraph = Parmetis<Graph_CSR<nm_v<SPACE_N_DIM>, nm_e>>;
+using MyDistributionStrategy =
+AbstractDistributionStrategy<SPACE_N_DIM, SpaceType>;
+struct MyDistributionModel : ModelDistribute {
+    val_t toll() { return 1.01; }
+    template <typename DistributionStrategy>
+    void applyModel(DistributionStrategy& dist, size_t v) {
+      const size_t id = v;
+      const size_t weight = dist.getSubSubDomainComputationCost(v) *
+                            dist.getSubSubDomainComputationCost(v);
+      dist.setComputationCost(id, weight);
+    }
+
+    template <typename DistributionStrategy, typename Graph>
+    void finalize(DistributionStrategy& dist, Graph& graph) {
+      for (auto i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
+        // apply model to all the sub-sub-domains
+        applyModel(dist, dist.getOwnerSubSubDomain(i));
+      }
+
+      dist.setDistTol(graph, toll());
+    }
+};
 
 template <unsigned int dim, typename Distribution>
 void setSphereComputationCosts(Distribution& dist,
@@ -44,7 +84,7 @@ void Parmetis_distribution_test(const unsigned int nProcs) {
   Vcluster<>& v_cl = create_vcluster();
 
   auto nProcUnits = v_cl.getProcessingUnits();
-  if (nProcUnits != nProcs) {  // question why it was 3?
+  if (nProcUnits != nProcs) {
     printMe(v_cl);
     std::cerr << "# processing units = " << nProcUnits << " != 3 !"
               << std::endl;
@@ -67,7 +107,7 @@ void Parmetis_distribution_test(const unsigned int nProcs) {
     bc[i] = NON_PERIODIC;
   }
 
-  dist.createCartGraph(bc, info, box);
+  dist.createCartGraph(bc, box);
 
   // First create the center of the weights distribution, check it is coherent
   // to the size of the domain
@@ -139,4 +179,4 @@ void Parmetis_distribution_test(const unsigned int nProcs) {
   std::cout << "my size is " << sizeof(MyDistributionStrategy) << std::endl;
 }
 
-#endif  // OPENFPM_PDATA_MYDISTRIBUTIONSTRATEGY_UNIT_TEST_HPP
+#endif  // SRC_DECOMPOSITION_MYDISTRIBUTIONSTRATEGY_UNIT_TEST_HPP
