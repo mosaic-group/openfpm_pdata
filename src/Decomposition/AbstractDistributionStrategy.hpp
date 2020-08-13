@@ -152,7 +152,7 @@ public:
       verticesGotWeights = true;
     }
 
-#ifdef SE_CLASS1  // question needed?
+#ifdef SE_CLASS1
     if (id >= gp.getNVertex()) {
       std::cerr << __FILE__ << ":" << __LINE__
                 << "Such vertex doesn't exist (id = " << id << ", "

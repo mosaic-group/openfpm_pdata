@@ -168,7 +168,7 @@ public:
   bool shouldSetCosts() { return !costBeenSet; }
 
   SubDomains& getSubDomains() {
-    return sub_domains;  // question shared? no, just decom
+    return sub_domains;
   }
 
   void setParameters(
@@ -177,7 +177,7 @@ public:
       const size_t (&bc)[dim],
       const grid_sm<dim, void>& sec_dist = grid_sm<dim, void>()) {
     for (size_t i = 0; i < dim; i++) {
-      this->bc[i] = bc[i];  // question std::copy ? yes
+      this->bc[i] = bc[i];  // todo std::copy
     }
 
     // Set the decomposition parameters
@@ -235,7 +235,7 @@ private:
   bool costBeenSet = false;
 
   //! Runtime virtual cluster machine
-  Vcluster<>& v_cl;  // question can be private? yes
+  Vcluster<>& v_cl;
 
   //! the set of all local sub-domain as vector
   SubDomains sub_domains;
@@ -334,10 +334,6 @@ private:
                       Memory,
                       typename layout_base<Box_map<dim, T>>::type,
                       layout_base>& sub_domains_global) {
-#ifdef SE_CLASS2  // question needed?
-    check_valid(this, 8);
-#endif
-
     sub_domains_global.clear();
     openfpm::vector<Box_map<dim, T>,
                     Memory,
