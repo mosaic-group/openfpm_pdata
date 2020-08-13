@@ -2,8 +2,8 @@
 #define SRC_DECOMPOSITION_MYDECOMPOSITIONSTRATEGY_UNIT_TEST_HPP
 
 #include "Decomposition/AbstractStrategyModels.hpp"
-#include "Decomposition/AbstractDecompositionStrategy.hpp"
-#include "Decomposition/AbstractDistributionStrategy.hpp"
+#include "Decomposition/CartDecompositionStrategy.hpp"
+#include "Decomposition/CartDistributionStrategy.hpp"
 #include "util/generic.hpp"
 
 #define SUB_UNIT_FACTOR 1024
