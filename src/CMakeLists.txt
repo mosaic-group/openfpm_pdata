@@ -45,7 +45,8 @@ add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
 														  ../openfpm_devices/src/Memleak_check.cpp)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	target_compile_options(pdata PRIVATE -Wno-undefined-var-template -Wno-macro-redefined)
+	target_compile_options(pdata PRIVATE "-Wno-undefined-var-template")
+	target_compile_options(pdata PRIVATE "-Wno-macro-redefined")
 endif()
 if ( CMAKE_COMPILER_IS_GNUCC )
     target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
