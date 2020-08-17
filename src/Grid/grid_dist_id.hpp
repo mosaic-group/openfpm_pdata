@@ -1025,9 +1025,9 @@ protected:
 	 * \return the ghost in continuous unit
 	 *
 	 */
-	static inline Ghost<dim,float> convert_ghost(const Ghost<dim,long int> & gd, const CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm)
+	static inline Ghost<dim,St> convert_ghost(const Ghost<dim,long int> & gd, const CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm)
 	{
-		Ghost<dim,float> gc;
+		Ghost<dim,St> gc;
 
 		// get the grid spacing
 		Box<dim,St> sp = cd_sm.getCellBox();

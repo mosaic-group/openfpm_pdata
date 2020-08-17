@@ -106,6 +106,19 @@ public:
 	:grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(g_sz,domain,ghost)
 	{}
 
+	/*! \brief Constructor
+	 *
+	 * \param g_sz size of the staggered grid
+	 * \param domain domain
+	 * \param ghost part
+	 *
+	 *
+	 */
+	staggered_grid_dist(const size_t (& g_sz)[dim],
+			            const Box<dim,St> & domain,
+						const Ghost<dim,long int> & ghost)
+	:grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(g_sz,domain,ghost)
+	{}
 
     /*! It construct a grid of a specified size, defined on a specified Box space, having a specified ghost size and periodicity
      *
