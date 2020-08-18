@@ -51,10 +51,6 @@ class AbstractDecompositionStrategy
       vector<Box, Memory, typename layout_base<Box>::type, layout_base>;
 
 public:
-  //! Structure that decompose the space into cells without creating them
-  //! useful to convert positions to CellId or sub-domain id in this case
-  CellDecomposer_sm<dim, T, shift<dim, T>> cd;  // todo private
-
   /*! \brief Abstract decomposition constructor
    *
    * \param v_cl Virtual cluster, used internally to handle or pipeline
@@ -227,14 +223,13 @@ public:
     graph.decompose(vtxdist);  // decompose
   }
 
-  template <typename Graph, typename Ghost>
-  void merge(Graph& graph, Ghost& ghost, DGrid gr_dist) {
+  template <typename Graph>
+  void merge(Graph& graph, Ghost<dim, T>& ghost, DGrid gr_dist) {
     createSubdomains(graph, ghost, gr_dist);
     calculateGhostBoxes(ghost);
   }
 
-  template <typename Ghost>
-  void onEnd(Ghost& ghost) {
+  void onEnd(Ghost<dim, T>& ghost) {
     domain_icell_calculator<dim, T, layout_base, Memory>::
         CalculateInternalCells(
             v_cl,
@@ -288,6 +283,10 @@ public:
   }
 
 private:
+  //! Structure that decompose the space into cells without creating them
+  //! useful to convert positions to CellId or sub-domain id in this case
+  CellDecomposer_sm<dim, T, shift<dim, T>> cd;
+
   //! Structure that store the cartesian grid information
   DGrid gr;
 
@@ -449,7 +448,7 @@ private:
 
     // now draw all sub-domains in fine-s
 
-    for (size_t i = 0; i < sub_domains_global.size(); i++) {
+    for (size_t i = 0; i < sub_domains_global.size(); ++i) {
       // get the cells this box span
       const grid_key_dx<dim> p1 =
           fine_s.getCellGrid_me(sub_domains_global.template get<0>(i).getP1());
@@ -505,9 +504,9 @@ private:
    * \param opt option (one option is to construct)
    *
    */
-  template <typename Graph, typename Ghost>
+  template <typename Graph>
   void createSubdomains(Graph& graph,
-                        Ghost& ghost,
+                        Ghost<dim, T>& ghost,
                         DGrid gr_dist,
                         size_t opt = 0) {
     // Calculate the total number of box and and the spacing
@@ -529,7 +528,7 @@ private:
                                                        gr_dist.getSize());
 
     // Ghost
-    Ghost ghe;
+    Ghost<dim, long int> ghe;
 
     // Set the ghost
     printVar(dim);
