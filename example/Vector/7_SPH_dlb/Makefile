@@ -12,6 +12,7 @@ out = sph_dlb
 sph_dlb:
 sph_dlb_test: OPT += -DTEST_RUN
 sph_dlb_test: sph_dlb
+mpi_nprocs  := 3
 
 %.o: %.cpp
 	$(CC) $(OPT) -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
@@ -25,7 +26,7 @@ pretty:
 	find . -regex '.*\.\(cpp\|hpp\|cc\|cxx\)' -exec clang-format -i -style=file {} \;
 
 run: sph_dlb_test
-	mpirun -np 2 ./sph_dlb
+	mpirun -np $(mpi_nprocs) --use-hwthread-cpus ./sph_dlb
 
 .PHONY: clean all run
 
@@ -38,7 +39,7 @@ build:
 	$(CC) -o $(out) $(OBJ)  -L/home/$(USER)/opt/openfpm/openfpm_devices/lib -L/home/$(USER)/opt/openfpm/openfpm_vcluster/lib -L/home/$(USER)/opt/openfpm/dependencies/VCDEVEL/lib  -L/home/$(USER)/opt/openfpm/dependencies/METIS/lib -L/home/$(USER)/opt/openfpm/dependencies/PARMETIS/lib  -L/home/$(USER)/opt/openfpm/dependencies/BOOST/lib -L/home/$(USER)/opt/openfpm/dependencies/HDF5/lib -L/home/$(USER)/opt/openfpm/dependencies/LIBHILBERT/lib    -lvcluster -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc   -lrt -ldl
 
 test:  # todo test with mpi (see run)
-	mpirun -np 2 ./$(out) 2>&1 | tee debug/$(shell date +%FT%T | sed -e 's/:/-/g').debug
+	mpirun -np $(mpi_nprocs) ./$(out) 2>&1 | tee debug/$(shell date +%FT%T | sed -e 's/:/-/g').debug
 
 debug:
-	gdb -ex run --args ./$(out)
+	mpirun -np $(mpi_nprocs) --use-hwthread-cpus konsole -e gdb -ex run --args ./$(out)

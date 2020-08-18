@@ -71,7 +71,87 @@ public:
     // question ref counter?
   }
 
-  //! Increment the reference counter
+    /*! \brief class to select the returned id by ghost_processorID
+   *
+   */
+    class box_id
+    {
+    public:
+        /*! \brief Return the box id
+         *
+         * \param p structure containing the id informations
+         * \param b_id box_id
+         *
+         * \return box id
+         *
+         */
+        inline static size_t id(p_box<dim, T> & p, size_t b_id)
+        {
+          return b_id;
+        }
+    };
+
+    /*! \brief class to select the returned id by ghost_processorID
+     *
+     */
+    class processor_id
+    {
+    public:
+        /*! \brief Return the processor id
+         *
+         * \param p structure containing the id informations
+         * \param b_id box_id
+         *
+         * \return processor id
+         *
+         */
+        template<typename encap_type> inline static size_t id(const encap_type & p, size_t b_id)
+        {
+          return p.template get<proc_>();
+        }
+    };
+
+    /*! \brief class to select the returned id by ghost_processorID
+     *
+     */
+    class lc_processor_id
+    {
+    public:
+        /*! \brief Return the near processor id
+         *
+         * \param p structure containing the id informations
+         * \param b_id box_id
+         *
+         * \return local processor id
+         *
+         */
+        template<typename encap_type> inline static size_t id(const encap_type & p, size_t b_id)
+        {
+          return p.template get<lc_proc_>();
+        }
+    };
+
+    /*! \brief class to select the returned id by ghost_processorID
+     *
+     */
+    class shift_id
+    {
+    public:
+        /*! \brief Return the shift id
+         *
+         * \param p structure containing the id informations
+         * \param b_id box_id
+         *
+         * \return shift_id id
+         *
+         */
+        template<typename encap_type> inline static size_t id(const encap_type & p, size_t b_id)
+        {
+          return p.template get<shift_id_>();
+        }
+    };
+
+    //! Increment the reference counter
   void incRef() { ref_cnt++; }
 
   //! Decrement the reference counter
@@ -188,6 +268,7 @@ public:
     // calc magnification factor dec-dist
     calculate_magn(sec_dist);
   }
+
   /*! \brief Get the number of local sub-domains
    *
    * \return the number of sub-domains

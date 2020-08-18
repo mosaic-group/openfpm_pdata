@@ -982,8 +982,10 @@ public:
 		ids.clear();
 
 		// Check with geo-cell if a particle is inside one Cell containing boxes
-
 		auto cell_it = geo_cell.getCellIterator(geo_cell.getCell(p));
+
+    auto b = cell_it.isNext();
+		std::cout << "mona " << b << " wow" << std::endl;
 
 		// For each element in the cell, check if the point is inside the box
 		// if it is, store the processor id

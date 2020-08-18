@@ -29,9 +29,9 @@ aggregate<size_t,
         double,
         double,
         double,
-        double[3],
-        double[3],
-        double[3]>>
+        double[SPACE_N_DIM],
+        double[SPACE_N_DIM],
+        double[SPACE_N_DIM]>>
         particles;
 
 using MyDecompositionStrategy =
@@ -83,7 +83,7 @@ struct MyComputationalCostsModel : ModelComputationalCosts {
     void computeCommunicationAndMigrationCosts(DecompositionStrategy& dec,
                                                DistributionStrategy& dist,
                                                const size_t ts = 1) {
-      float migration;
+      SpaceType migration;
       size_t norm;
       std::tie(migration, norm) = dec.computeCommunicationCosts(dist.getGhost());
       dist.setMigrationCosts(migration, norm, ts);
@@ -134,9 +134,9 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   ParmetisGraph parmetis_graph(vcl, vcl.getProcessingUnits());
 
   // Physical domain
-  Box<3, SpaceType> box({0.0, 0.0, 0.0}, {1.0, 1.0, 1.0});
-  size_t div[3];
-  size_t div_sub[3];
+  Box<SPACE_N_DIM, SpaceType> box({0.0, 0.0, 0.0}, {1.0, 1.0, 1.0});
+  size_t div[SPACE_N_DIM];
+  size_t div_sub[SPACE_N_DIM];
 
   // Get the number of processor and calculate the number of sub-domain
   // for each processor (SUB_UNIT_FACTOR=64)
@@ -144,28 +144,26 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   size_t n_sub = n_proc * SUB_UNIT_FACTOR * 4 * 4 * 4;
 
   // Set the number of sub-domains on each dimension (in a scalable way)
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < SPACE_N_DIM; i++) {
     div[i] = openfpm::math::round_big_2(pow(n_sub, 1.0 / 3));
   }
 
   // create a sub_distribution grid
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < SPACE_N_DIM; i++) {
     div_sub[i] = div[i] / 4;
   }
 
-  grid_sm<3, void> gsub(div_sub);
+  grid_sm<SPACE_N_DIM, void> gsub(div_sub);
 
   // Define ghost
-  Ghost<3, SpaceType> g(0.01);
+  Ghost<SPACE_N_DIM, SpaceType> g(0.01);
 
   // Boundary conditions
   size_t bc[] = {NON_PERIODIC, NON_PERIODIC, NON_PERIODIC};
 
-  // todo why don't we compute comm costs?
-
   // init
   dec.setParameters(div, box, bc, gsub);
-  dist.setParameters(dec.getGrid(), gsub);
+  dist.setParameters(dec.getGrid(), g, gsub);
   dist.createCartGraph(bc, box);
 
   //////////////////////////////////////////////////////////////////// decompose
@@ -183,27 +181,27 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   dec.merge(dist.getGraph(), dist.getGhost(), dist.getGrid());
 
   ///////////////////////////////////////////////////////////////////// finalize
-  dist.onEnd(dec.getSubDomains());
+  dist.onEnd();
   dec.onEnd(dist.getGhost());
 
   // For each calculated ghost box
   printVar(dec.getNIGhostBox());
-  for (size_t i = 0; i < dec.getNIGhostBox(); i++) {
-    SpaceBox<3, float> b = dec.getIGhostBox(i);
+  for (size_t i = 0; i < 1 /* dec.getNIGhostBox() */; ++i) {
+    SpaceBox<SPACE_N_DIM, SpaceType> b = dec.getIGhostBox(i);
     size_t proc = dec.getIGhostBoxProcessor(i);
 
     // sample one point inside the box
-    Point<3, float> p = b.rnd();
+    Point<SPACE_N_DIM, SpaceType> p = b.rnd();
 
     // Check that ghost_processorsID return that processor number
     const openfpm::vector<size_t>& pr =
-        dec.ghost_processorID<CartDecomposition<3, float>::processor_id>(p);
+       dec.ghost_processorID<MyDecompositionStrategy::processor_id>(p);
 
     bool found = isIn(pr, proc);
-    if (!found) {
+    /* question why is it useful? if (!found) {
       const openfpm::vector<size_t> pr2 =
-          dec.ghost_processorID<CartDecomposition<3, float>::processor_id>(p);
-    }
+          dec.ghost_processorID<MyDecompositionStrategy::processor_id>(p);
+    } */
 
     printMe(vcl);
     std::cout << "assert " << found << " == true" << std::endl;

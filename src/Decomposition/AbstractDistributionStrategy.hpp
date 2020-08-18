@@ -206,8 +206,7 @@ public:
     }
   }
 
-  template <typename SubDomains>
-  void onEnd(SubDomains& sub_domains) {
+  void onEnd() {
     domain_nn_calculator_cart<dim>::reset();
     domain_nn_calculator_cart<dim>::setParameters(proc_box);
   }
@@ -386,12 +385,15 @@ public:
 
   void setParameters(
       DGrid& grid_dec,
+      const Ghost<dim, T> & ghost,
       const grid_sm<dim, void>& sec_dist = grid_sm<dim, void>()) {
     if (sec_dist.size(0) != 0) {
       gr.setDimensions(sec_dist.getSize());
     } else {
       gr = grid_dec;
     }
+
+    this->ghost = ghost;
   }
 
   /*! \brief Create the Cartesian graph
