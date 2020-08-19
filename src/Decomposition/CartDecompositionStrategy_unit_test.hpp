@@ -141,7 +141,7 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   // Get the number of processor and calculate the number of sub-domain
   // for each processor (SUB_UNIT_FACTOR=64)
   size_t n_proc = vcl.getProcessingUnits();
-  size_t n_sub = n_proc * SUB_UNIT_FACTOR;
+  size_t n_sub = n_proc * SUB_UNIT_FACTOR*4*4*4;
 
   // Set the number of sub-domains on each dimension (in a scalable way)
   for (int i = 0; i < SPACE_N_DIM; i++) {
@@ -186,7 +186,7 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
 
   // For each calculated ghost box
   printVar(dec.getNIGhostBox());
-  for (size_t i = 0; i < 0 /* dec.getNIGhostBox() */; ++i) {
+  for (size_t i = 0; i < dec.getNIGhostBox(); ++i) {
     SpaceBox<SPACE_N_DIM, SpaceType> b = dec.getIGhostBox(i);
     size_t proc = dec.getIGhostBoxProcessor(i);
 

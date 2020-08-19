@@ -62,6 +62,52 @@ public:
     bbox.zero();  // Reset the box to zero
   }
 
+  /*! \brief Copy constructor
+	 *
+     * \param cart object to copy
+	 *
+	 */
+	AbstractDecompositionStrategy(const AbstractDecompositionStrategy<dim,T,Memory,layout_base,DGrid> & cart)
+	:nn_prcs<dim,T,layout_base,Memory>(cart.v_cl),v_cl(cart.v_cl),ref_cnt(0)
+	{
+		this->operator=(cart);
+	}
+
+  /*! \brief Copy the element
+	 *
+	 * \param cart element to copy
+	 *
+	 * \return itself
+	 *
+	 */
+	AbstractDecompositionStrategy<dim,T,Memory, layout_base, DGrid> & operator=(const AbstractDecompositionStrategy & cart) {
+		static_cast<ie_loc_ghost<dim,T,layout_base,Memory>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T,layout_base,Memory>>(cart));
+		static_cast<nn_prcs<dim,T,layout_base,Memory>*>(this)->operator=(static_cast<nn_prcs<dim,T,layout_base,Memory>>(cart));
+		static_cast<ie_ghost<dim,T,Memory,layout_base>*>(this)->operator=(static_cast<ie_ghost<dim,T,Memory,layout_base>>(cart));
+
+		sub_domains = cart.sub_domains;
+		box_nn_processor = cart.box_nn_processor;
+		fine_s = cart.fine_s;
+		gr = cart.gr;
+		cd = cart.cd;
+		domain = cart.domain;
+		sub_domains_global = cart.sub_domains_global;
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			spacing[i] = cart.spacing[i];
+			magn[i] = cart.magn[i];
+		};
+
+		bbox = cart.bbox;
+
+		for (size_t i = 0 ; i < dim ; i++) {
+			bc[i] = cart.bc[i];
+    }
+
+		return *this;
+  }
+
   //! Destructor
   ~AbstractDecompositionStrategy() {
     // question ref counter?
@@ -346,7 +392,7 @@ private:
     size_t div_g[dim];
 
     // We reduce the size of the cells by a factor 8 in 3d 4 in 2d
-    for (size_t i = 0; i < dim; i++) {
+    for (size_t i = 0; i < dim; ++i) {
       div_g[i] = (gr.size(i) == 1) ? 1 : gr.size(i) / 2;
     }
 
@@ -543,11 +589,14 @@ private:
         graph, v_cl.getProcessUnitID(), loc_box, box_nn_processor, ghe, bc);
 
     // Initialize
-    if (loc_box.size() > 0) {
+    if (loc_box.size() > 0)
+    {
       bbox = convertDecBoxIntoSubDomain(loc_box.get(0));
       proc_box = loc_box.get(0);
       sub_domains.add(bbox);
-    } else {
+    }
+    else
+    {
       // invalidate all the boxes
       for (size_t i = 0; i < dim; i++) {
         proc_box.setLow(i, 0.0);
@@ -559,14 +608,16 @@ private:
     }
 
     // convert into sub-domain
+    // todo for (auto sub_d : loc_box().items()) {}
     for (size_t s = 1; s < loc_box.size(); s++) {
-      Box sub_d = convertDecBoxIntoSubDomain(loc_box.get(s));
+      SpaceBox<dim, T> sub_d = convertDecBoxIntoSubDomain(loc_box.get(s));
 
       // add the sub-domain
       sub_domains.add(sub_d);
 
       // Calculate the bound box
       bbox.enclose(sub_d);
+      
       proc_box.enclose(loc_box.get(s));
     }
 
@@ -579,18 +630,36 @@ private:
     // running dec_optimizer (before merging sub-domains)
 
     construct_fine_s();
+    
+    std::cout << "after c" << std::endl;
     Initialize_geo_cell_lists();
+    
+    std::cout << "after init" << std::endl; fine_s.wow();
+
+  }
+
+  template <typename B>
+  void printBbox(B bound) {
+    printMe(v_cl);
+    for (size_t i = 0; i < dim; ++i) {
+      std::cout << bound.getHigh(i) << " " << bound.getLow(i) << std::endl;
+    }
   }
 
   void Initialize_geo_cell_lists() {
+    for (size_t i = 0; i < dim; ++i) {
+      bbox.setHigh(i, 1);  // todo hack
+    }
+
     // Get the processor bounding Box
     ::Box<dim, T> bound = getProcessorBounds();
+    printBbox(bbox);
 
     // Check if the box is valid
-    if (bound.isValidN() == true) {
+    if (bound.isValidN()) {
       // calculate the sub-divisions
       size_t div[dim];
-      for (size_t i = 0; i < dim; i++) {
+      for (size_t i = 0; i < dim; ++i) {
         div[i] = (size_t)((bound.getHigh(i) - bound.getLow(i)) /
                           cd.getCellBox().getP2()[i]);
       }

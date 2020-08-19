@@ -982,6 +982,9 @@ public:
 		ids.clear();
 
 		// Check with geo-cell if a particle is inside one Cell containing boxes
+    auto x = geo_cell.getCell(p);
+    std::cout << "woooooooo " << x << " " << p.toPointString() << std::endl;
+
 		auto cell_it = geo_cell.getCellIterator(geo_cell.getCell(p));
 
     auto b = cell_it.isNext();
