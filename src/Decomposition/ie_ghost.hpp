@@ -983,12 +983,9 @@ public:
 
 		// Check with geo-cell if a particle is inside one Cell containing boxes
     auto x = geo_cell.getCell(p);
-    std::cout << "woooooooo " << x << " " << p.toPointString() << std::endl;
-
 		auto cell_it = geo_cell.getCellIterator(geo_cell.getCell(p));
 
     auto b = cell_it.isNext();
-		std::cout << "mona " << b << " wow" << std::endl;
 
 		// For each element in the cell, check if the point is inside the box
 		// if it is, store the processor id
@@ -1004,9 +1001,10 @@ public:
 			++cell_it;
 		}
 
-		// Make the id unique
+    // Make the id unique
 		if (opt == UNIQUE)
 		{
+      // todo does not work
 			ids_p.sort();
 			ids_p.unique();
 		}
@@ -1042,7 +1040,11 @@ public:
 
 			if (Box<dim,T>(vb_int_box.get(bid)).isInsideNP(p) == true)
 			{
-				ids_p.add(std::pair<size_t,size_t>(id1::id(vb_int.get(bid),bid),id2::id(vb_int.get(bid),bid)));
+				ids_p.add(
+          std::pair<size_t,size_t>(
+            id1::id(vb_int.get(bid), bid),
+            id2::id(vb_int.get(bid), bid))
+          );
 			}
 
 			++cell_it;
@@ -1051,8 +1053,8 @@ public:
 		// Make the id unique
 		if (opt == UNIQUE)
 		{
-			ids_p.sort();
-			ids_p.unique();
+      ids_p.sort();
+      ids_p.unique();
 		}
 
 		return ids_p;
@@ -1094,8 +1096,8 @@ public:
 		// Make the id unique
 		if (opt == UNIQUE)
 		{
-			ids_p.sort();
-			ids_p.unique();
+      ids_p.sort();
+      ids_p.unique();
 		}
 
 		return ids;

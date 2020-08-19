@@ -635,7 +635,6 @@ private:
     Initialize_geo_cell_lists();
     
     std::cout << "after init" << std::endl; fine_s.wow();
-
   }
 
   template <typename B>
