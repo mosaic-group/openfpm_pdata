@@ -1014,9 +1014,8 @@ public:
       ids.erase(last, ids.end()); 
   
       // sort followed by unique, to remove all duplicates
-      std::sort(ids.begin(), ids.end()); // {1 1 2 3 4 4 5}
+      std::sort(ids.begin(), ids.end());
       last = std::unique(ids.begin(), ids.end());
-      // v now holds {1 2 3 4 5 x x}, where 'x' is indeterminate
       ids.erase(last, ids.end());
 		}
 

@@ -15,7 +15,7 @@
 
 int main(int argc, char* argv[]) {
   openfpm_init(&argc, &argv);
-
+  
   CartDecomposition_non_periodic_test(3);
 
   openfpm_finalize();

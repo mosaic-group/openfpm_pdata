@@ -179,7 +179,7 @@ protected:
 
 	//! Structure that contain for each sub-sub-domain box the processor id
 	//! exist for efficient global communication
-	CellList<dim,T,Mem_fast<Memory,int>,shift<dim,T>> fine_s;  // todo cellist to find particle
+	CellList<dim,T,Mem_fast<Memory,int>,shift<dim,T>> fine_s;
 
 	//! Structure that store the cartesian grid information
 	grid_sm<dim, void> gr;
@@ -434,8 +434,6 @@ public:
 		// with sub-sub-domain we mean the sub-domain decomposition before
 		// running dec_optimizer (before merging sub-domains)
 
-		///////////////////////////////// TODO //////////////////////////////////////////
-
 		construct_fine_s();
 
 		Initialize_geo_cell_lists();
@@ -505,7 +503,7 @@ public:
 				// not directed
 				dist.setCommunicationCost(i, s, 1 /** dist.getSubSubDomainComputationCost(i)*/  *  ts);
 			}
-			prev += dist.getNSubSubDomainNeighbors(i);  // todo why prev ?
+			prev += dist.getNSubSubDomainNeighbors(i);
 		}
 
 		commCostSet = true;

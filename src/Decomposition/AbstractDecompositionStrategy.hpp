@@ -297,9 +297,7 @@ public:
       ::Box<dim, T>& domain_,
       const size_t (&bc)[dim],
       const grid_sm<dim, void>& sec_dist = grid_sm<dim, void>()) {
-    for (size_t i = 0; i < dim; i++) {
-      this->bc[i] = bc[i];  // todo std::copy
-    }
+    std::copy(bc, bc + dim, this->bc);
 
     // Set the decomposition parameters
     gr.setDimensions(div_);
@@ -378,8 +376,7 @@ private:
 
   //! Structure that contain for each sub-sub-domain box the processor id
   //! exist for efficient global communication
-  CellList<dim, T, Mem_fast<Memory, int>, shift<dim, T>>
-      fine_s;  // todo cellist to find particle
+  CellList<dim, T, Mem_fast<Memory, int>, shift<dim, T>> fine_s;
 
   //! set of Boxes produced by the decomposition optimizer
   openfpm::vector<::Box<dim, size_t>> loc_box;
@@ -634,14 +631,6 @@ private:
     Initialize_geo_cell_lists();
   }
 
-  template <typename B>
-  void printBbox(B bound) {
-    printMe(v_cl);
-    for (size_t i = 0; i < dim; ++i) {
-      std::cout << bound.getHigh(i) << " " << bound.getLow(i) << std::endl;
-    }
-  }
-
   void Initialize_geo_cell_lists() {
     for (size_t i = 0; i < dim; ++i) {
       bbox.setHigh(i, 1);  // todo hack
@@ -649,7 +638,6 @@ private:
 
     // Get the processor bounding Box
     ::Box<dim, T> bound = getProcessorBounds();
-    printBbox(bbox);
 
     // Check if the box is valid
     if (bound.isValidN()) {
