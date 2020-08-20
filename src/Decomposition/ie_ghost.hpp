@@ -1004,7 +1004,7 @@ public:
     // Make the id unique
 		if (opt == UNIQUE)
 		{
-      // todo does not work ...
+      // todo the following does not work ...
 			// ids_p.sort();
 			// ids_p.unique();
 

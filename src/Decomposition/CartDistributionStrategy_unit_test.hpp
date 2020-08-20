@@ -1,8 +1,8 @@
 #ifndef SRC_DECOMPOSITION_MYDISTRIBUTIONSTRATEGY_UNIT_TEST_HPP
 #define SRC_DECOMPOSITION_MYDISTRIBUTIONSTRATEGY_UNIT_TEST_HPP
 
-#include "Decomposition/AbstractStrategyModels.hpp"
 #include "Decomposition/AbstractDistributionStrategy.hpp"
+#include "Decomposition/AbstractStrategyModels.hpp"
 #include "util/generic.hpp"
 
 #define GS_SIZE 8
@@ -23,35 +23,32 @@ constexpr unsigned int SPACE_N_DIM = 3;
 using SpaceType = double;
 using ParmetisGraph = Parmetis<Graph_CSR<nm_v<SPACE_N_DIM>, nm_e>>;
 using MyDistributionStrategy =
-AbstractDistributionStrategy<SPACE_N_DIM, SpaceType>;
+    AbstractDistributionStrategy<SPACE_N_DIM, SpaceType>;
 struct MyDistributionModel : ModelDistribute {
-    val_t toll() { return 1.01; }
-    template <typename DistributionStrategy>
-    void applyModel(DistributionStrategy& dist, size_t v) {
-      const size_t id = v;
-      const size_t weight = dist.getSubSubDomainComputationCost(v) *
-                            dist.getSubSubDomainComputationCost(v);
-      dist.setComputationCost(id, weight);
+  val_t toll() { return 1.01; }
+  template <typename DistributionStrategy>
+  void applyModel(DistributionStrategy &dist, size_t v) {
+    const size_t id = v;
+    const size_t weight = dist.getSubSubDomainComputationCost(v) *
+                          dist.getSubSubDomainComputationCost(v);
+    dist.setComputationCost(id, weight);
+  }
+
+  template <typename DistributionStrategy, typename Graph>
+  void finalize(DistributionStrategy &dist, Graph &graph) {
+    for (auto i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
+      // apply model to all the sub-sub-domains
+      applyModel(dist, dist.getOwnerSubSubDomain(i));
     }
 
-    template <typename DistributionStrategy, typename Graph>
-    void finalize(DistributionStrategy& dist, Graph& graph) {
-      for (auto i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
-        // apply model to all the sub-sub-domains
-        applyModel(dist, dist.getOwnerSubSubDomain(i));
-      }
-
-      dist.setDistTol(graph, toll());
-    }
+    dist.setDistTol(graph, toll());
+  }
 };
 
 template <unsigned int dim, typename Distribution>
-void setSphereComputationCosts(Distribution& dist,
-                               grid_sm<dim, void>& gr,
-                               Point<3, SpaceType> center,
-                               SpaceType radius,
-                               size_t max_l,
-                               size_t min_l) {
+void setSphereComputationCosts(Distribution &dist, grid_sm<dim, void> &gr,
+                               Point<3, SpaceType> center, SpaceType radius,
+                               size_t max_l, size_t min_l) {
   SpaceType radius2 = radius * radius;
   SpaceType eq;
 
@@ -81,7 +78,7 @@ void setSphereComputationCosts(Distribution& dist,
 }
 
 void Parmetis_distribution_test(const unsigned int nProcs) {
-  Vcluster<>& v_cl = create_vcluster();
+  Vcluster<> &v_cl = create_vcluster();
 
   auto nProcUnits = v_cl.getProcessingUnits();
   if (nProcUnits != nProcs) {
@@ -120,8 +117,8 @@ void Parmetis_distribution_test(const unsigned int nProcs) {
   // first distribution
   ParmetisGraph parmetis_graph(v_cl, v_cl.getProcessingUnits());
   dist.reset(parmetis_graph);
-  parmetis_graph.decompose(dist.getVtxdist());  // decompose
-  dist.distribute(parmetis_graph);              // distribute
+  parmetis_graph.decompose(dist.getVtxdist()); // decompose
+  dist.distribute(parmetis_graph);             // distribute
 
   printMe(v_cl);
   std::cout << "assert " << parmetis_graph.get_ndec() << " == 1ul" << std::endl;
@@ -179,4 +176,4 @@ void Parmetis_distribution_test(const unsigned int nProcs) {
   std::cout << "my size is " << sizeof(MyDistributionStrategy) << std::endl;
 }
 
-#endif  // SRC_DECOMPOSITION_MYDISTRIBUTIONSTRATEGY_UNIT_TEST_HPP
+#endif // SRC_DECOMPOSITION_MYDISTRIBUTIONSTRATEGY_UNIT_TEST_HPP

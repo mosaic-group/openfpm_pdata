@@ -1,17 +1,15 @@
 #ifndef SRC_DECOMPOSITION_ABSTRACTDISTRIBUTIONSTRATEGY_HPP
 #define SRC_DECOMPOSITION_ABSTRACTDISTRIBUTIONSTRATEGY_HPP
 
-#include "Space/Ghost.hpp"
 #include "Decomposition/Domain_NN_calculator_cart.hpp"
 #include "Graph/CartesianGraphFactory.hpp"
 #include "Graph/ids.hpp"
+#include "Space/Ghost.hpp"
 #include "SubdomainGraphNodes.hpp"
 
 /*! \brief Class that distribute sub-sub-domains across processors
  */
-template <unsigned int dim,
-          typename T,
-          typename Memory = HeapMemory,
+template <unsigned int dim, typename T, typename Memory = HeapMemory,
           template <typename> class layout_base = memory_traits_lin,
           typename DGrid = grid_sm<dim, void>>
 class AbstractDistributionStrategy : public domain_nn_calculator_cart<dim> {
@@ -20,18 +18,17 @@ class AbstractDistributionStrategy : public domain_nn_calculator_cart<dim> {
 
 public:
   //! Vcluster
-  Vcluster<>& v_cl;
+  Vcluster<> &v_cl;
 
   /*! Constructor
    *
    * \param v_cl Vcluster to use as communication object in this class
    */
-  AbstractDistributionStrategy(Vcluster<>& v_cl)
-    : is_distributed(false),
-      v_cl(v_cl),
-      vtxdist(v_cl.getProcessingUnits() + 1),
-      partitions(v_cl.getProcessingUnits()),
-      v_per_proc(v_cl.getProcessingUnits()) {}
+  AbstractDistributionStrategy(Vcluster<> &v_cl)
+      : is_distributed(false), v_cl(v_cl),
+        vtxdist(v_cl.getProcessingUnits() + 1),
+        partitions(v_cl.getProcessingUnits()),
+        v_per_proc(v_cl.getProcessingUnits()) {}
 
   /*! \brief Return the global id of the owned sub-sub-domain
    *
@@ -187,13 +184,11 @@ public:
    * \param tol tolerance
    *
    */
-  template <typename Graph>
-  void setDistTol(Graph& graph, double tol) {
+  template <typename Graph> void setDistTol(Graph &graph, double tol) {
     graph.setDistTol(tol);
   }
 
-  void setMigrationCosts(const float migration,
-                         const size_t norm,
+  void setMigrationCosts(const float migration, const size_t norm,
                          const size_t ts) {
     for (auto i = 0; i < getNSubSubDomains(); i++) {
       setMigrationCost(i, norm * migration);
@@ -214,10 +209,9 @@ public:
   /*! \brief Get the current graph (main)
    *
    */
-  Graph_CSR<nm_v<dim>, nm_e>& getGraph() { return gp; }
+  Graph_CSR<nm_v<dim>, nm_e> &getGraph() { return gp; }
 
-  template <typename Graph>
-  void reset(Graph& graph) {
+  template <typename Graph> void reset(Graph &graph) {
     if (is_distributed) {
       graph.reset(gp, vtxdist, m2g, verticesGotWeights);
     } else {
@@ -231,10 +225,9 @@ public:
    * RefineKWay After that it also does the remapping of the graph
    *
    */
-  template <typename Graph>
-  void refine(Graph& graph) {
-    graph.reset(gp, vtxdist, m2g, verticesGotWeights);  // reset
-    graph.refine(vtxdist);                              // refine
+  template <typename Graph> void refine(Graph &graph) {
+    graph.reset(gp, vtxdist, m2g, verticesGotWeights); // reset
+    graph.refine(vtxdist);                             // refine
     distribute(graph);
   }
 
@@ -243,13 +236,13 @@ public:
    * \param file filename
    *
    */
-  void write(const std::string& file) {
+  void write(const std::string &file) {
     // todo VTKWriter<Graph_CSR<nm_v<dim>, nm_e>, VTK_GRAPH> gv2(gp);
     // todo gv2.write(std::to_string(v_cl.getProcessUnitID()) + "_" + file +
     // ".vtk");
   }
 
-  openfpm::vector<rid>& getVtxdist() { return vtxdist; }
+  openfpm::vector<rid> &getVtxdist() { return vtxdist; }
 
   /*! \brief Callback of the sendrecv to set the size of the array received
    *
@@ -261,15 +254,10 @@ public:
    * \param ptr Void pointer parameter for additional data to pass to the
    * call-back
    */
-  static void* message_receive(size_t msg_i,
-                               size_t total_msg,
-                               size_t total_p,
-                               size_t i,
-                               size_t ri,
-                               size_t tag,
-                               void* ptr) {
-    openfpm::vector<openfpm::vector<idx_t>>* v =
-        static_cast<openfpm::vector<openfpm::vector<idx_t>>*>(ptr);
+  static void *message_receive(size_t msg_i, size_t total_msg, size_t total_p,
+                               size_t i, size_t ri, size_t tag, void *ptr) {
+    openfpm::vector<openfpm::vector<idx_t>> *v =
+        static_cast<openfpm::vector<openfpm::vector<idx_t>> *>(ptr);
 
     v->get(i).resize(msg_i / sizeof(idx_t));
 
@@ -288,8 +276,7 @@ public:
    *
    *
    */
-  template <typename Graph>
-  void distribute(Graph& graph) {
+  template <typename Graph> void distribute(Graph &graph) {
     reset(graph);
 
     //! Get the processor id
@@ -302,7 +289,7 @@ public:
     size_t nl_vertex = vtxdist.get(p_id + 1).id - vtxdist.get(p_id).id;
 
     //! Get result partition for this processors
-    idx_t* partition = graph.getPartition();
+    idx_t *partition = graph.getPartition();
 
     //! Prepare vector of arrays to contain all partitions
     partitions.get(p_id).resize(nl_vertex);
@@ -321,7 +308,7 @@ public:
     // to reconstruct individually the global graph
     openfpm::vector<size_t> prc;
     openfpm::vector<size_t> sz;
-    openfpm::vector<void*> ptr;
+    openfpm::vector<void *> ptr;
 
     for (size_t i = 0; i < Np; i++) {
       if (i != v_cl.getProcessUnitID()) {
@@ -333,16 +320,12 @@ public:
     }
 
     if (prc.size() == 0) {
-      v_cl.sendrecvMultipleMessagesNBX(
-          0, NULL, NULL, NULL, message_receive, &partitions, NONE);
+      v_cl.sendrecvMultipleMessagesNBX(0, NULL, NULL, NULL, message_receive,
+                                       &partitions, NONE);
     } else {
-      v_cl.sendrecvMultipleMessagesNBX(prc.size(),
-                                       &sz.get(0),
-                                       &prc.get(0),
-                                       &ptr.get(0),
-                                       message_receive,
-                                       &partitions,
-                                       NONE);
+      v_cl.sendrecvMultipleMessagesNBX(prc.size(), &sz.get(0), &prc.get(0),
+                                       &ptr.get(0), message_receive,
+                                       &partitions, NONE);
     }
 
     // Update graphs with the received data
@@ -357,7 +340,7 @@ public:
    * \return the ghost extension
    *
    */
-  Ghost<dim, T>& getGhost() { return ghost; }
+  Ghost<dim, T> &getGhost() { return ghost; }
 
   /*! \brief operator to init ids vector
    *
@@ -383,10 +366,9 @@ public:
    */
   DGrid getGrid() { return gr; }
 
-  void setParameters(
-      DGrid& grid_dec,
-      const Ghost<dim, T> & ghost,
-      const grid_sm<dim, void>& sec_dist = grid_sm<dim, void>()) {
+  void
+  setParameters(DGrid &grid_dec, const Ghost<dim, T> &ghost,
+                const grid_sm<dim, void> &sec_dist = grid_sm<dim, void>()) {
     if (sec_dist.size(0) != 0) {
       gr.setDimensions(sec_dist.getSize());
     } else {
@@ -401,7 +383,7 @@ public:
    * \param grid info
    * \param dom domain
    */
-  void createCartGraph(const size_t (&bc)[dim], ::Box<dim, T>& domain) {
+  void createCartGraph(const size_t (&bc)[dim], ::Box<dim, T> &domain) {
     // Create a cartesian grid graph
     CartesianGraphFactory<dim, Graph_CSR<nm_v<dim>, nm_e>> g_factory_part;
     gp = g_factory_part.template construct<NO_EDGE, nm_v_id, T, dim - 1, 0>(
@@ -562,4 +544,4 @@ private:
   }
 };
 
-#endif  // SRC_DECOMPOSITION_ABSTRACTDISTRIBUTIONSTRATEGY_HPP
+#endif // SRC_DECOMPOSITION_ABSTRACTDISTRIBUTIONSTRATEGY_HPP

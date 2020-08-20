@@ -22,99 +22,89 @@ const size_t type = 0;
 // Type of the vector containing particles
 constexpr unsigned int SPACE_N_DIM = 3;
 using SpaceType = double;
-typedef vector_dist<SPACE_N_DIM,
-SpaceType,
-aggregate<size_t,
-        double,
-        double,
-        double,
-        double,
-        double[SPACE_N_DIM],
-        double[SPACE_N_DIM],
-        double[SPACE_N_DIM]>>
-        particles;
+typedef vector_dist<
+    SPACE_N_DIM, SpaceType,
+    aggregate<size_t, double, double, double, double, double[SPACE_N_DIM],
+              double[SPACE_N_DIM], double[SPACE_N_DIM]>>
+    particles;
 
 using MyDecompositionStrategy =
-AbstractDecompositionStrategy<SPACE_N_DIM, SpaceType>;
+    AbstractDecompositionStrategy<SPACE_N_DIM, SpaceType>;
 
 using MyDistributionStrategy =
-AbstractDistributionStrategy<SPACE_N_DIM, SpaceType>;
+    AbstractDistributionStrategy<SPACE_N_DIM, SpaceType>;
 
 using ParmetisGraph = Parmetis<Graph_CSR<nm_v<SPACE_N_DIM>, nm_e>>;
 
 struct MyComputationalCostsModel : ModelComputationalCosts {
-    template <typename DistributionStrategy, typename vector>
-    void addToComputation(DistributionStrategy& dist,
-                          vector& vd,
-                          size_t v,
-                          size_t p) {
-      if (vd.template getProp<type>(p) == FLUID) {
-        dist.addComputationCost(v, 4);
-      } else {
-        dist.addComputationCost(v, 3);
-      }
+  template <typename DistributionStrategy, typename vector>
+  void addToComputation(DistributionStrategy &dist, vector &vd, size_t v,
+                        size_t p) {
+    if (vd.template getProp<type>(p) == FLUID) {
+      dist.addComputationCost(v, 4);
+    } else {
+      dist.addComputationCost(v, 3);
     }
+  }
 
-    // todo where to use it
-    template <typename DistributionStrategy>
-    void init(DistributionStrategy& dist) {
-      for (size_t i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
-        dist.setComputationCost(dist.getOwnerSubSubDomain(i), 1);
-      }
+  // todo where to use it
+  template <typename DistributionStrategy>
+  void init(DistributionStrategy &dist) {
+    for (size_t i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
+      dist.setComputationCost(dist.getOwnerSubSubDomain(i), 1);
     }
+  }
 
-    template <typename particles,
-            typename DecompositionStrategy,
+  template <typename particles, typename DecompositionStrategy,
             typename DistributionStrategy>
-    void calculate(particles& vd,
-                   DecompositionStrategy& dec,
-                   DistributionStrategy& dist) {
-      CellDecomposer_sm<SPACE_N_DIM, SpaceType, shift<SPACE_N_DIM, SpaceType>>
-              cdsm;
-      cdsm.setDimensions(dec.getDomain(), dist.getGrid().getSize(), 0);
-      for (auto it = vd.getDomainIterator(); !it.hasEnded(); ++it) {
-        Point<SPACE_N_DIM, SpaceType> p = vd.getPos(it.get());
-        const size_t v = cdsm.getCell(p);
-        addToComputation(dist, vd, v, it.get().getKey());
-      }
+  void calculate(particles &vd, DecompositionStrategy &dec,
+                 DistributionStrategy &dist) {
+    CellDecomposer_sm<SPACE_N_DIM, SpaceType, shift<SPACE_N_DIM, SpaceType>>
+        cdsm;
+    cdsm.setDimensions(dec.getDomain(), dist.getGrid().getSize(), 0);
+    for (auto it = vd.getDomainIterator(); !it.hasEnded(); ++it) {
+      Point<SPACE_N_DIM, SpaceType> p = vd.getPos(it.get());
+      const size_t v = cdsm.getCell(p);
+      addToComputation(dist, vd, v, it.get().getKey());
     }
+  }
 
-    template <typename DecompositionStrategy, typename DistributionStrategy>
-    void computeCommunicationAndMigrationCosts(DecompositionStrategy& dec,
-                                               DistributionStrategy& dist,
-                                               const size_t ts = 1) {
-      SpaceType migration;
-      size_t norm;
-      std::tie(migration, norm) = dec.computeCommunicationCosts(dist.getGhost());
-      dist.setMigrationCosts(migration, norm, ts);
-    }
+  template <typename DecompositionStrategy, typename DistributionStrategy>
+  void computeCommunicationAndMigrationCosts(DecompositionStrategy &dec,
+                                             DistributionStrategy &dist,
+                                             const size_t ts = 1) {
+    SpaceType migration;
+    size_t norm;
+    std::tie(migration, norm) = dec.computeCommunicationCosts(dist.getGhost());
+    dist.setMigrationCosts(migration, norm, ts);
+  }
 };
 
 struct MyDecompositionModel : ModelDecompose {};
 
 struct MyDistributionModel : ModelDistribute {
-    val_t toll() { return 1.01; }
-    template <typename DistributionStrategy>
-    void applyModel(DistributionStrategy& dist, size_t v) {
-      const size_t id = v;
-      const size_t weight = dist.getSubSubDomainComputationCost(v) *
-                            dist.getSubSubDomainComputationCost(v);
-      dist.setComputationCost(id, weight);
+  val_t toll() { return 1.01; }
+  template <typename DistributionStrategy>
+  void applyModel(DistributionStrategy &dist, size_t v) {
+    const size_t id = v;
+    const size_t weight = dist.getSubSubDomainComputationCost(v) *
+                          dist.getSubSubDomainComputationCost(v);
+    dist.setComputationCost(id, weight);
+  }
+
+  template <typename DistributionStrategy, typename Graph>
+  void finalize(DistributionStrategy &dist, Graph &graph) {
+    for (auto i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
+      // apply model to all the sub-sub-domains
+      applyModel(dist, dist.getOwnerSubSubDomain(i));
     }
 
-    template <typename DistributionStrategy, typename Graph>
-    void finalize(DistributionStrategy& dist, Graph& graph) {
-      for (auto i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
-        // apply model to all the sub-sub-domains
-        applyModel(dist, dist.getOwnerSubSubDomain(i));
-      }
-
-      dist.setDistTol(graph, toll());
-    }
+    dist.setDistTol(graph, toll());
+  }
 };
 
 void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
-  Vcluster<>& vcl = create_vcluster();
+  Vcluster<> &vcl = create_vcluster();
 
   // specify
   // - how we want to add the computational cost ...
@@ -141,7 +131,7 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   // Get the number of processor and calculate the number of sub-domain
   // for each processor (SUB_UNIT_FACTOR=64)
   size_t n_proc = vcl.getProcessingUnits();
-  size_t n_sub = n_proc * SUB_UNIT_FACTOR*4*4*4;
+  size_t n_sub = n_proc * SUB_UNIT_FACTOR * 4 * 4 * 4;
 
   // Set the number of sub-domains on each dimension (in a scalable way)
   for (int i = 0; i < SPACE_N_DIM; i++) {
@@ -194,8 +184,8 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
     Point<SPACE_N_DIM, SpaceType> p = b.rnd();
 
     // Check that ghost_processorsID return that processor number
-    const openfpm::vector<size_t>& pr =
-       dec.ghost_processorID<MyDecompositionStrategy::processor_id>(p, UNIQUE);
+    const openfpm::vector<size_t> &pr =
+        dec.ghost_processorID<MyDecompositionStrategy::processor_id>(p, UNIQUE);
 
     printMe(vcl);
     std::cout << "ghost_processorsID " << proc << std::endl;
@@ -221,4 +211,4 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   std::cout << "assert " << val << " == true" << std::endl;
 }
 
-#endif  // SRC_DECOMPOSITION_MYDECOMPOSITIONSTRATEGY_UNIT_TEST_HPP
+#endif // SRC_DECOMPOSITION_MYDECOMPOSITIONSTRATEGY_UNIT_TEST_HPP
