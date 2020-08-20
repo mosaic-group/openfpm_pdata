@@ -26,7 +26,7 @@ pretty:
 	find . -regex '.*\.\(cpp\|hpp\|cc\|cxx\)' -exec clang-format -i -style=file {} \;
 
 run: sph_dlb_test
-	mpirun -np $(mpi_nprocs) --use-hwthread-cpus ./sph_dlb
+	mpirun -np $(mpi_nprocs) --oversubscribe ./sph_dlb
 
 .PHONY: clean all run
 

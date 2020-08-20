@@ -89,7 +89,6 @@ public:
         static_cast<nn_prcs<dim, T, layout_base, Memory>>(cart));
     static_cast<ie_ghost<dim, T, Memory, layout_base> *>(this)->operator=(
         static_cast<ie_ghost<dim, T, Memory, layout_base>>(cart));
-
     sub_domains = cart.sub_domains;
     box_nn_processor = cart.box_nn_processor;
     fine_s = cart.fine_s;
@@ -256,9 +255,6 @@ public:
    */
   ::Box<dim, T> &getProcessorBounds() { return bbox; }
 
-  /*! \brief Start decomposition
-   *
-   */
   template <typename Model, typename Graph>
   void decompose(Model m, Graph &graph, openfpm::vector<rid> &vtxdist) {
     graph.decompose(vtxdist); // decompose

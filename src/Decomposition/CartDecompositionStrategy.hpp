@@ -13,6 +13,38 @@ public:
 
   ~CartDecompositionStrategy() {}
 
+  /*! \brief Copy constructor
+   *
+   * \param cart object to copy
+   *
+   */
+  CartDecompositionStrategy(
+      const CartDecompositionStrategy<dim, SpaceType, AbstractDecompositionStrategy>& cart) {
+    this->operator=(cart);
+  }
+
+  /*! \brief Copy the element
+   *
+   * \param cart element to copy
+   *
+   * \return itself
+   *
+   */
+  CartDecompositionStrategy<dim, SpaceType> &
+  operator=(const AbstractDecompositionStrategy &cart) {
+    // todo
+  }
+
+  template <typename Model, typename Graph>
+  void decompose(Model m, Graph &graph, openfpm::vector<rid> &vtxdist) {
+    // todo decompose
+  }
+
+  template <typename Graph>
+  void merge(Graph &graph, Ghost<dim, SpaceType> &ghost) {
+    // todo decompose
+  }
+
 private:
   AbstractDecompositionStrategy dec;
 };
