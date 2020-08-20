@@ -1004,9 +1004,20 @@ public:
     // Make the id unique
 		if (opt == UNIQUE)
 		{
-      // todo does not work
-			ids_p.sort();
-			ids_p.unique();
+      // todo does not work ...
+			// ids_p.sort();
+			// ids_p.unique();
+
+      // ... possible solution:
+      // remove consecutive (adjacent) duplicates
+      auto last = std::unique(ids.begin(), ids.end());
+      ids.erase(last, ids.end()); 
+  
+      // sort followed by unique, to remove all duplicates
+      std::sort(ids.begin(), ids.end()); // {1 1 2 3 4 4 5}
+      last = std::unique(ids.begin(), ids.end());
+      // v now holds {1 2 3 4 5 x x}, where 'x' is indeterminate
+      ids.erase(last, ids.end());
 		}
 
 		return ids;
