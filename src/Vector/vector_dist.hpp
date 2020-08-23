@@ -264,6 +264,9 @@ private:
 	//! Shared memory handle for property vector
 	handle_shmem hprp = {-1};
 
+	//! Shared memory handle for flag indicating to visualization that particle data is to be rendered
+	handle_shmem dtype_flag = {-1};
+
 	//! Virtual cluster
 	Vcluster<Memory> & v_cl;
 
@@ -558,6 +561,7 @@ public:
 #endif
 		create_shmanager().destroy(hpos);
 		create_shmanager().destroy(hprp);
+		create_shmanager().destroy(dtype_flag);
 	}
 
 
@@ -568,6 +572,14 @@ public:
 	 */
 	void visualize()
 	{
+	    if(v_cl.shmRank() == 0)
+        {
+	        // specify to visualization that particles need to be rendered
+	        dtype_flag = create_shmanager().create("/home/aryaman/datatype", 0);
+	        int * ptr = (int *)create_shmanager().alloc(dtype_flag, sizeof(int));
+	        *ptr = 2; // 1: Grid Data, 2: Particle Data
+        }
+
 		if (global_option == init_options::in_situ_visualization)
 		{
 			hpos = create_shmanager().create("/",v_cl.shmRank());

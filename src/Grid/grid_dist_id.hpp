@@ -86,6 +86,9 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
     //! Shared memory handles for grids to be visualized
     std::vector<handle_shmem> hgrids;
 
+    //! Shared memory handle for flag indicating to visualization that particle data is to be rendered
+    handle_shmem dtype_flag = {-1};
+
 	//! Space Decomposition
 	Decomposition dec;
 
@@ -1271,6 +1274,7 @@ public:
 		{
 		    create_shmanager().destroy(hgrids[i]);
 		}
+		create_shmanager().destroy(dtype_flag);
 		dec.decRef();
 	}
 
@@ -1605,8 +1609,18 @@ public:
      */
     void visualize()
     {
+        std::cout<<"Shm rank is "<<v_cl.shmRank()<<std::endl;
         if (global_option == init_options::in_situ_visualization)
         {
+            if(v_cl.shmRank() == 0)
+            {
+                // specify to visualization that grid data needs to be rendered
+                std::cout<<"Specifying data type"<<std::endl;
+                dtype_flag = create_shmanager().create("/home/aryaman/datatype", 0);
+                int * ptr = (int *)create_shmanager().alloc(dtype_flag, sizeof(int));
+                *ptr = 1; // 1: Grid Data, 2: Particle Data
+            }
+
             for(int i = 0; i < loc_grid.size(); i++) {
                 hgrids.push_back(create_shmanager().create("/home/aryaman/temp" + std::to_string(v_cl.shmRank()), i+1));
 
