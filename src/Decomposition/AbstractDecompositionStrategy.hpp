@@ -560,21 +560,11 @@ private:
       ghe.setHigh(i, static_cast<long int>(ghost.getHigh(i) / spacing[i]) + 1);  // +1
     }
 
-    for (size_t i = 0; i < dim; ++i) {
-      std::cout << "A dim #" << i << ": " << bbox.getLow(i) << " - " << bbox.getHigh(i) << std::endl;
-    }
-
     // optimize the decomposition or merge sub-sub-domain
     d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(
         graph, v_cl.getProcessUnitID(), loc_box, box_nn_processor, ghe, bc);
 
-
-    for (size_t i = 0; i < dim; ++i) {
-      std::cout << "B dim #" << i << ": " << bbox.getLow(i) << " - " << bbox.getHigh(i) << std::endl;
-    }
-
     // Initialize
-    std::cout << loc_box.size() << " wooooooooo" << std::endl;
     if (loc_box.size() > 0)
     {
       bbox = convertDecBoxIntoSubDomain(loc_box.get(0));
@@ -593,10 +583,6 @@ private:
       }
     }
 
-    for (size_t i = 0; i < dim; ++i) {
-      std::cout << "C dim #" << i << ": " << bbox.getLow(i) << " - " << bbox.getHigh(i) << std::endl;
-    }
-
     // convert into sub-domain
 		for (size_t s = 1; s < loc_box.size(); s++)
 		{
@@ -609,10 +595,6 @@ private:
 			bbox.enclose(sub_d);
 			proc_box.enclose(loc_box.get(s));
 		}
-
-    for (size_t i = 0; i < dim; ++i) {
-      std::cout << "D dim #" << i << ": " << bbox.getLow(i) << " - " << bbox.getHigh(i) << std::endl;
-    }
 
     nn_prcs<dim, T, layout_base, Memory>::create(box_nn_processor, sub_domains);
     nn_prcs<dim, T, layout_base, Memory>::applyBC(domain, ghost, bc);
@@ -628,10 +610,6 @@ private:
   }
 
   void Initialize_geo_cell_lists() {
-    for (size_t i = 0; i < dim; ++i) {
-      // bbox.setHigh(i, 1); // todo hack
-    }
-
     // Get the processor bounding Box
     ::Box<dim, T> bound = getProcessorBounds();
 

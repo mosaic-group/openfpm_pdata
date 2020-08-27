@@ -175,7 +175,6 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   dec.onEnd(dist.getGhost());
 
   // For each calculated ghost box
-  printVar(dec.getNIGhostBox());
   for (size_t i = 0; i < dec.getNIGhostBox(); ++i) {
     SpaceBox<SPACE_N_DIM, SpaceType> b = dec.getIGhostBox(i);
     size_t proc = dec.getIGhostBoxProcessor(i);
@@ -186,13 +185,6 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
     // Check that ghost_processorsID return that processor number
     const openfpm::vector<size_t> &pr =
         dec.ghost_processorID<MyDecompositionStrategy::processor_id>(p, UNIQUE);
-
-    printMe(vcl);
-    std::cout << "ghost_processorsID " << proc << std::endl;
-    for (auto x : pr) {
-      std::cout << x << ", ";
-    }
-    std::cout << std::endl;
 
     bool found = isIn(pr, proc);
     /* question why is it useful? if (!found) {
