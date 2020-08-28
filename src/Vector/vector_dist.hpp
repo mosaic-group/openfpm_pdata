@@ -38,6 +38,7 @@
 #include "Vector/vector_dist_kernel.hpp"
 #include "NN/CellList/cuda/CellList_gpu.hpp"
 #include "memory/ShmAllocator_manager.hpp"
+#include "VCluster/InVis.hpp"
 
 #define DEC_GRAN(gr) ((size_t)gr << 32)
 
@@ -575,15 +576,15 @@ public:
 	    if(v_cl.shmRank() == 0)
         {
 	        // specify to visualization that particles need to be rendered
-	        dtype_flag = create_shmanager().create("/home/aryaman/datatype", 0);
+	        dtype_flag = create_shmanager().create(datatype_path, 0);
 	        int * ptr = (int *)create_shmanager().alloc(dtype_flag, sizeof(int));
 	        *ptr = 2; // 1: Grid Data, 2: Particle Data
         }
 
 		if (global_option == init_options::in_situ_visualization)
 		{
-			hpos = create_shmanager().create("/",v_cl.shmRank());
-			hprp = create_shmanager().create("/home",v_cl.shmRank());
+			hpos = create_shmanager().create(particle_pos_shm_path,v_cl.shmRank());
+			hprp = create_shmanager().create(particle_prop_shm_path,v_cl.shmRank());
 
 			v_pos.init_shmem(hpos);
 			v_prp.init_shmem(hprp);

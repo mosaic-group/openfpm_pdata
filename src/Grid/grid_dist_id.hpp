@@ -22,6 +22,7 @@
 #include "hdf5.h"
 #include "grid_dist_id_comm.hpp"
 #include "HDF5_wr/HDF5_wr.hpp"
+#include "VCluster/InVis.hpp"
 
 //! Internal ghost box sent to construct external ghost box into the other processors
 template<unsigned int dim>
@@ -1616,13 +1617,13 @@ public:
             {
                 // specify to visualization that grid data needs to be rendered
                 std::cout<<"Specifying data type"<<std::endl;
-                dtype_flag = create_shmanager().create("/home/aryaman/datatype", 0);
+                dtype_flag = create_shmanager().create(datatype_path, 0);
                 int * ptr = (int *)create_shmanager().alloc(dtype_flag, sizeof(int));
                 *ptr = 1; // 1: Grid Data, 2: Particle Data
             }
 
             for(int i = 0; i < loc_grid.size(); i++) {
-                hgrids.push_back(create_shmanager().create("/home/aryaman/temp" + std::to_string(v_cl.shmRank()), i+1));
+                hgrids.push_back(create_shmanager().create(grid_shm_path + std::to_string(v_cl.shmRank()), i+1));
 
                 device_grid tmp;
                 tmp.setMemory();
@@ -1657,7 +1658,7 @@ public:
             }
 
             std::cout << "gdb_ext has " << gdb_ext.get(0).toString() << std::endl;
-            hgdb = create_shmanager().create("/home/aryaman/temp" + std::to_string(v_cl.shmRank()), 0);
+            hgdb = create_shmanager().create(grid_shm_path + std::to_string(v_cl.shmRank()), 0);
             openfpm::vector_ofp<GBoxes<device_grid::dims>> tmpBox;
             tmpBox.init_shmem(hgdb);
             tmpBox = gdb_ext;
