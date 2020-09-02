@@ -70,13 +70,18 @@ if (TEST_COVERAGE)
 endif()
 
 
-
+target_include_directories (ofpm_pdata PUBLIC ${PETSC_INCLUDES})
 target_include_directories (ofpm_pdata PUBLIC ${CUDA_INCLUDE_DIRS})
 target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
 target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
 target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_devices/src/)
+target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_io/src/)
 target_include_directories (ofpm_pdata PUBLIC ${Boost_INCLUDE_DIRS})
+target_include_directories (ofpm_pdata PUBLIC ${HDF5_ROOT}/include)
+target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_vcluster/src/)
+target_include_directories (ofpm_pdata PUBLIC ${JAVA_HOME}/include ${JAVA_HOME}/include/linux)
+
 
 target_compile_definitions(pdata PRIVATE ${MPI_VENDOR})
 
