@@ -1217,6 +1217,13 @@ void vector_dist_remove_marked_type()
 	remove_marked<prp>(vd);
 
 	BOOST_REQUIRE_EQUAL(vd.size_local(),size_old);
+
+	// Now we try to remove all
+	vd.getPropVector().template fill<prp>(1);
+
+	remove_marked<prp>(vd);
+
+	BOOST_REQUIRE_EQUAL(vd.size_local(),0);
 }
 
 BOOST_AUTO_TEST_CASE(vector_dist_remove_marked)

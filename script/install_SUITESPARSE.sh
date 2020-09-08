@@ -35,7 +35,7 @@ if [ x"$platform" == x"cygwin" ]; then
 fi
 
 echo "Compiling SuiteSparse without CUDA (old variable $CUDA)"
-LDLIBS="$STS_LIB -lm" LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$1/OPENBLAS/lib"  make -j $2 "CUDA=no" "BLAS=-L$1/OPENBLAS/lib -lopenblas -pthread" "LAPACK=-lopenblas"
+LDLIBS="$STS_LIB -lm" LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$1/OPENBLAS/lib"  make library -j $2 "CUDA=no" "BLAS=-L$1/OPENBLAS/lib -lopenblas -pthread" "LAPACK=-lopenblas"
 if [ $? != 0 ]; then
   echo "Failed to compile SuiteSparse"
   exit 1
