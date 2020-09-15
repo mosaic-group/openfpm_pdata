@@ -130,7 +130,8 @@ install(FILES Decomposition/cuda/ie_ghost_gpu.cuh
 install(FILES Grid/grid_dist_id.hpp 
 	      Grid/grid_dist_id_comm.hpp
 	      Grid/grid_dist_util.hpp  
-	      Grid/grid_dist_key.hpp 
+	      Grid/grid_dist_key.hpp
+		  Grid/grid_dist_id_def.hpp
 	      Grid/staggered_dist_grid.hpp 
 	      Grid/staggered_dist_grid_util.hpp 
 	      Grid/staggered_dist_grid_copy.hpp
