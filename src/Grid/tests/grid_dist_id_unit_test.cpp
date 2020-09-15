@@ -1989,67 +1989,74 @@ BOOST_AUTO_TEST_CASE ( grid_in_situ_vis )
     // Distributed grid with id decomposition
     grid_dist_id<3, double, aggregate<double>> g_dist(sz,domain,g);
 
-//    g_dist.visualize();
-//
-//    // check the consistency of the decomposition
-//    bool val = g_dist.getDecomposition().check_consistency();
-//    BOOST_REQUIRE_EQUAL(val,true);
-//
-//    // Grid sm
-//    grid_sm<3,void> info(sz);
-//
-//    // get the domain iterator
-//    size_t count = 0;
-//
-//    auto dom = g_dist.getDomainIterator();
-//
-//    while (dom.isNext())
-//    {
-//        auto key = dom.get();
-//        auto key_g = g_dist.getGKey(key);
-//
-//        g_dist.template get<0>(key) = info.LinId(key_g);
-//
-//        // Count the point
-//        count++;
-//
-//        ++dom;
-//    }
-//
-//    //! [Create and access a distributed grid]
-//
-//    // Get the virtual cluster machine
-//    Vcluster<> & vcl = g_dist.getVC();
-//
-//    // reduce
-//    vcl.sum(count);
-//    vcl.execute();
-//
-//    // Check
-//    BOOST_REQUIRE_EQUAL(count,(size_t)j*j*j);
-//
-//    auto dom2 = g_dist.getDomainIterator();
-//    auto Vis_it = Vis_new->getDomainIterator();
-//
-//    double high = j*j*j-1;
-//    double low = 0;
-//
-//    bool match = true;
-//
-//    // check that the grid store the correct information
-//    while (dom2.isNext())
-//    {
-//        auto key = dom2.get();
-//        auto key_vis = Vis_it.get();
-//        auto key_g = g_dist.getGKey(key);
-//
-//        match &= (Vis_new->get<0>(key_vis) == (info.LinId(key_g)/(high-low)*65535))?true:false;
-//
-//        ++dom2;
-//        ++Vis_it;
-//    }
-//
-//    BOOST_REQUIRE_EQUAL(match,true);
+    g_dist.visualize();
+
+    // check the consistency of the decomposition
+    bool val = g_dist.getDecomposition().check_consistency();
+    BOOST_REQUIRE_EQUAL(val,true);
+
+    // Grid sm
+    grid_sm<3,void> info(sz);
+
+    // get the domain iterator
+    size_t count = 0;
+
+    auto dom = g_dist.getDomainIterator();
+
+    while (dom.isNext())
+    {
+        auto key = dom.get();
+        auto key_g = g_dist.getGKey(key);
+
+        g_dist.template get<0>(key) = info.LinId(key_g);
+
+        // Count the point
+        count++;
+
+        ++dom;
+    }
+
+    g_dist.visualize();
+
+
+    //! [Create and access a distributed grid]
+
+    // Get the virtual cluster machine
+    Vcluster<> & vcl = g_dist.getVC();
+
+    // reduce
+    vcl.sum(count);
+    vcl.execute();
+
+    // Check
+    BOOST_REQUIRE_EQUAL(count,(size_t)j*j*j);
+
+    auto dom2 = g_dist.getDomainIterator();
+    auto Vis_it = Vis_new->getDomainIterator();
+
+    double high = j*j*j-1;
+    double low = 0;
+
+    bool match = true;
+
+    // check that the grid store the correct information
+    while (dom2.isNext())
+    {
+        auto key = dom2.get();
+        auto key_vis = Vis_it.get();
+        auto key_g = g_dist.getGKey(key);
+
+        if(Vis_new->get<0>(key_vis) != (unsigned short int)(info.LinId(key_g)/(high-low)*65535))
+        {
+            std::cout<<"The first one is " << Vis_new->get<0>(key_vis) << " and the second one is " << (info.LinId(key_g)/(high-low)*65535) << std::endl;
+        }
+        match &= (Vis_new->get<0>(key_vis) == (unsigned short int)(info.LinId(key_g)/(high-low)*65535))?true:false;
+
+        ++dom2;
+        ++Vis_it;
+    }
+
+    BOOST_REQUIRE_EQUAL(match,true);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
