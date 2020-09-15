@@ -11,5 +11,4 @@ const std::string nm_v::attributes::name[] = {"x","migration","computation","glo
 const std::string nm_e::attributes::name[] = {"communication","srcgid","dstgid"};
 const std::string nm_part_v::attributes::name[] = {"id","sub_id"};
 const std::string nm_part_e::attributes::name[] = {"id"};
-
-
+grid_dist_id<3, double, aggregate<unsigned short>> *Vis_new = nullptr;

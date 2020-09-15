@@ -1,6 +1,8 @@
 #ifndef COM_UNIT_HPP
 #define COM_UNIT_HPP
 
+#include "lib/pdata.hpp"
+#include "grid_dist_id_def.hpp"
 #include <vector>
 #include <unordered_map>
 #include "Grid/map_grid.hpp"
@@ -66,7 +68,7 @@ struct Box_fix
  * \snippet grid_dist_id_unit_test.cpp Construct two grid with the same decomposition
  *
  */
-template<unsigned int dim, typename St, typename T, typename Decomposition = CartDecomposition<dim,St>,typename Memory=HeapMemory , typename device_grid=grid_cpu<dim,T> >
+template<unsigned int dim, typename St, typename T, typename Decomposition,typename Memory , typename device_grid>
 class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,device_grid>
 {
 	//! Domain
@@ -1604,11 +1606,80 @@ public:
 		return k_glob;
 	}
 
+    template<unsigned int prop = 0>
+    void visualize(scale_vis scale = global, St low = 0, St high = 0)
+    {
+
+        if (global_option != init_options::in_situ_visualization)
+        {
+
+            std::cerr<<__FILE__<<":"<<__LINE__<<" ERROR: In the 'visualize' method. You need to call openfpm_init with 'init_options::in_situ_visualization'. Example: 'openfpm_init(&argc,&argv, init_options::in_situ_visualization);'"<<std::endl;
+            return;
+        }
+
+	    if(Vis_new == nullptr)
+	    {
+            Vis_new = new grid_dist_id<3, double, aggregate<unsigned short>>(getDecomposition(),ginfo.getSize(),Ghost<dim,St>(0.0));
+            Vis_new->to_shared_mem();
+        }
+
+	    if(scale == fixed)
+        {
+	        if(low >= high)
+            {
+	            std::cerr<<__FILE__<<":"<<__LINE__<<" ERROR: In the 'visualize' method. You have chosen to visualize your grid with fixed scaling. Please provide a value of 'high' that is greater than 'low'"<<std::endl;
+                return;
+            }
+        }
+	    else if(scale == global)
+	    {
+            low = std::numeric_limits<St>::max();
+            high = std::numeric_limits<St>::min();
+
+            auto it1 = this->getDomainIterator();
+
+            while(it1.isNext())
+            {
+                auto key = it1.get();
+
+                double cur = (float) this->template get<prop>(key);
+
+                if(cur > high) {high = cur;}
+                if(cur < low) {low = cur;}
+
+                ++it1;
+            }
+            v_cl.max(high);
+            v_cl.min(low);
+            v_cl.execute();
+        }
+
+        // calculate the magnitude of velocity
+        auto it2 = this->getDomainIterator();
+        auto it2_vis = Vis_new->getDomainIterator();
+        while (it2.isNext())
+        {
+            auto key = it2.get();
+            auto key_vis = it2_vis.get();
+
+            double cur = (float) this->template get<prop>(key);
+
+            double scaled = (cur / (high - low)) * 65535;
+            // copy
+            Vis_new->get<0>(key) = (unsigned short)(scaled);
+
+            ++it2;
+            ++it2_vis;
+        }
+    }
+
     /*! /brief set shared memory
      *
      *
      */
-    void visualize()
+
+    void to_shared_mem()
+//    void visualize()
     {
         std::cout<<"Shm rank is "<<v_cl.shmRank()<<std::endl;
         if (global_option == init_options::in_situ_visualization)

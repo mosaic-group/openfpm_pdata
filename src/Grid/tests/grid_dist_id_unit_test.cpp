@@ -1968,25 +1968,26 @@ BOOST_AUTO_TEST_CASE ( grid_overflow_round_off_error )
 BOOST_AUTO_TEST_CASE ( grid_in_situ_vis )
 {
     // Domain
-    Box<2,float> domain({0.0,0.0},{1.0,1.0});
+    Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
 
-    size_t k = 50;
-    print_test_v( "Testing 2D grid in situ visualization k<=",k);
+    size_t j = 50;
+    print_test_v( "Testing 3D grid in situ visualization j<=",j);
 
-    BOOST_TEST_CHECKPOINT( "Testing 2D grid in situ visualization k=" << k );
+    BOOST_TEST_CHECKPOINT( "Testing 3D grid in situ visualization j=" << j );
 
     //! [Create and access a distributed grid]
 
     // grid size
-    size_t sz[2];
-    sz[0] = k;
-    sz[1] = k;
+    size_t sz[3];
+    sz[0] = j;
+    sz[1] = j;
+    sz[2] = j;
 
     // Ghost
-    Ghost<2,float> g(0.1);
+    Ghost<3,double> g(0.1);
 
     // Distributed grid with id decomposition
-    grid_dist_id<2, float, aggregate<float>> g_dist(sz,domain,g);
+    grid_dist_id<3, double, aggregate<double>> g_dist(sz,domain,g);
 
     g_dist.visualize();
 
@@ -1995,7 +1996,7 @@ BOOST_AUTO_TEST_CASE ( grid_in_situ_vis )
     BOOST_REQUIRE_EQUAL(val,true);
 
     // Grid sm
-    grid_sm<2,void> info(sz);
+    grid_sm<3,void> info(sz);
 
     // get the domain iterator
     size_t count = 0;
@@ -2015,6 +2016,9 @@ BOOST_AUTO_TEST_CASE ( grid_in_situ_vis )
         ++dom;
     }
 
+    g_dist.visualize();
+
+
     //! [Create and access a distributed grid]
 
     // Get the virtual cluster machine
@@ -2025,18 +2029,13 @@ BOOST_AUTO_TEST_CASE ( grid_in_situ_vis )
     vcl.execute();
 
     // Check
-    BOOST_REQUIRE_EQUAL(count,(size_t)k*k);
+    BOOST_REQUIRE_EQUAL(count,(size_t)j*j*j);
 
     auto dom2 = g_dist.getDomainIterator();
+    auto Vis_it = Vis_new->getDomainIterator();
 
-    grid_key_dx<2> start = dom2.getStart();
-    grid_key_dx<2> stop = dom2.getStop();
-
-    BOOST_REQUIRE_EQUAL((long int)stop.get(0),(long int)g_dist.size(0)-1);
-    BOOST_REQUIRE_EQUAL((long int)stop.get(1),(long int)g_dist.size(1)-1);
-
-    BOOST_REQUIRE_EQUAL(start.get(0),0);
-    BOOST_REQUIRE_EQUAL(start.get(1),0);
+    double high = j*j*j-1;
+    double low = 0;
 
     bool match = true;
 
@@ -2044,34 +2043,17 @@ BOOST_AUTO_TEST_CASE ( grid_in_situ_vis )
     while (dom2.isNext())
     {
         auto key = dom2.get();
+        auto key_vis = Vis_it.get();
         auto key_g = g_dist.getGKey(key);
 
-        match &= (g_dist.template get<0>(key) == info.LinId(key_g))?true:false;
+        if(Vis_new->get<0>(key_vis) != (unsigned short int)(info.LinId(key_g)/(high-low)*65535))
+        {
+            std::cout<<"The first one is " << Vis_new->get<0>(key_vis) << " and the second one is " << (info.LinId(key_g)/(high-low)*65535) << std::endl;
+        }
+        match &= (Vis_new->get<0>(key_vis) == (unsigned short int)(info.LinId(key_g)/(high-low)*65535))?true:false;
 
         ++dom2;
-    }
-
-    BOOST_REQUIRE_EQUAL(match,true);
-
-    g_dist.template ghost_get<0>();
-
-    // check that the communication is correctly completed
-
-    auto domg = g_dist.getDomainGhostIterator();
-
-    // check that the grid with the ghost past store the correct information
-    while (domg.isNext())
-    {
-        auto key = domg.get();
-        auto key_g = g_dist.getGKey(key);
-
-        // In this case the boundary condition are non periodic
-        if (g_dist.isInside(key_g))
-        {
-            match &= (g_dist.template get<0>(key) == info.LinId(key_g))?true:false;
-        }
-
-        ++domg;
+        ++Vis_it;
     }
 
     BOOST_REQUIRE_EQUAL(match,true);
