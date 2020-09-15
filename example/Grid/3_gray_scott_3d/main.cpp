@@ -167,10 +167,6 @@ int main(int argc, char* argv[])
 	// New grid with the decomposition of the old grid
     grid_dist_id<3, double, aggregate<double,double>> New(Old.getDecomposition(),sz,g);
 
-    grid_dist_id<3, double, aggregate<unsigned short>> Vis_new(Old.getDecomposition(),sz,g);
-
-    Vis_new.visualize();
-
     // spacing of the grid on x and y
 	double spacing[3] = {Old.spacing(0),Old.spacing(1),Old.spacing(2)};
 
@@ -296,60 +292,7 @@ int main(int argc, char* argv[])
 //			count++;
 //		}
 
-        //find max and min velocity
-        float maxConc = -1.0f;
-        float minConc = 100000.0f;
-        auto it1 = New.getDomainIterator();
-
-
-        while(it1.isNext())
-        {
-            auto key = it1.get();
-
-            float curConc = (float) New.template get<V>(key);
-
-            if(curConc > maxConc)
-            {
-                maxConc = curConc;
-            }
-
-            if(curConc < minConc)
-            {
-                minConc = curConc;
-            }
-            ++it1;
-        }
-
-        if ( i % 100 == 0) std::cout<<"The maximum concentration is "<<maxConc << " and the minimum is " << minConc <<std::endl;
-
-        // calculate the magnitude of velocity
-        auto it2 = New.getDomainIterator();
-        auto it2_vis = Vis_new.getDomainIterator();
-        while (it2.isNext())
-        {
-            auto key = it2.get();
-            auto key_vis = it2_vis.get();
-
-            float curConc = (float) New.template get<V>(key);
-
-            float scaled = (curConc / (maxConc - minConc)) * 65535;
-            // copy
-            Vis_new.get<0>(key) = (unsigned short)(scaled);
-
-//                std::cout << key.to_string() << "lin " << loc_grid.get(i).get<0>(key) << "  " <<  lin.LinId(key);
-//            auto &lin = g_vis.getGrid();
-
-//			std::cout<<"Value at "<<key.to_string()<<" linearized as "<<g_vis.get<0>(key) << " " << lin.LinId(key);
-//            std::cout<<"Value at "<<key.to_string()<<" is "<< (unsigned short)(scaled) <<std::endl;
-
-            ++it2;
-            ++it2_vis;
-        }
-
-//        if(i == (int)2000/deltaT || i == (int)3000/deltaT || i == (int)4000/deltaT )
-//        {
-//            Old.save("checkpoint" + std::to_string(i));
-//        }
+    New.visualize<V>();
 	}
 	
 	tot_sim.stop();
