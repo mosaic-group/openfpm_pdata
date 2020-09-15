@@ -1609,6 +1609,14 @@ public:
     template<unsigned int prop = 0>
     void visualize(scale_vis scale = global, St low = 0, St high = 0)
     {
+
+        if (global_option != init_options::in_situ_visualization)
+        {
+
+            std::cerr<<__FILE__<<":"<<__LINE__<<" ERROR: In the 'visualize' method. You need to call openfpm_init with 'init_options::in_situ_visualization'. Example: 'openfpm_init(&argc,&argv, init_options::in_situ_visualization);'"<<std::endl;
+            return;
+        }
+
 	    if(Vis_new == nullptr)
 	    {
             Vis_new = new grid_dist_id<3, double, aggregate<unsigned short>>(getDecomposition(),ginfo.getSize(),Ghost<dim,St>(0.0));
@@ -1619,7 +1627,7 @@ public:
         {
 	        if(low >= high)
             {
-	            std::cerr<<"You have chosen to visualize your grid with fixed scaling. Please provide a value of 'high' that is greater than 'low'"<<std::endl;
+	            std::cerr<<__FILE__<<":"<<__LINE__<<" ERROR: In the 'visualize' method. You have chosen to visualize your grid with fixed scaling. Please provide a value of 'high' that is greater than 'low'"<<std::endl;
                 return;
             }
         }
