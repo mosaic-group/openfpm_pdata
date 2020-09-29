@@ -28,8 +28,11 @@ typedef vector_dist<
               double[SPACE_N_DIM], double[SPACE_N_DIM]>>
     particles;
 
-using MyDecompositionStrategy =
+using AbstractDecStrategy =
     AbstractDecompositionStrategy<SPACE_N_DIM, SpaceType>;
+
+using MyDecompositionStrategy =
+    CartDecompositionStrategy<SPACE_N_DIM, SpaceType>;
 
 using MyDistributionStrategy =
     AbstractDistributionStrategy<SPACE_N_DIM, SpaceType>;
@@ -157,10 +160,10 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   dist.createCartGraph(bc, box);
 
   //////////////////////////////////////////////////////////////////// decompose
-  dec.reset();
+  dec.dec.reset();
   dist.reset(parmetis_graph);
-  if (dec.shouldSetCosts()) {
-    mcc.computeCommunicationAndMigrationCosts(dec, dist);
+  if (dec.dec.shouldSetCosts()) {
+    mcc.computeCommunicationAndMigrationCosts(dec.dec, dist);
   }
   dec.decompose(mde, parmetis_graph, dist.getVtxdist());
 
@@ -172,31 +175,30 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
 
   ///////////////////////////////////////////////////////////////////// finalize
   dist.onEnd();
-  dec.onEnd(dist.getGhost());
+  dec.dec.onEnd(dist.getGhost());
 
   // For each calculated ghost box
-  for (size_t i = 0; i < dec.getNIGhostBox(); ++i) {
-    SpaceBox<SPACE_N_DIM, SpaceType> b = dec.getIGhostBox(i);
-    size_t proc = dec.getIGhostBoxProcessor(i);
+  for (size_t i = 0; i < dec.dec.getNIGhostBox(); ++i) {
+    SpaceBox<SPACE_N_DIM, SpaceType> b = dec.dec.getIGhostBox(i);
+    size_t proc = dec.dec.getIGhostBoxProcessor(i);
 
     // sample one point inside the box
     Point<SPACE_N_DIM, SpaceType> p = b.rnd();
 
     // Check that ghost_processorsID return that processor number
     const openfpm::vector<size_t> &pr =
-        dec.ghost_processorID<MyDecompositionStrategy::processor_id>(p, UNIQUE);
+        dec.dec.ghost_processorID<AbstractDecStrategy::processor_id>(p, UNIQUE);
 
     bool found = isIn(pr, proc);
     const openfpm::vector<size_t> pr2 =
-          dec.ghost_processorID<MyDecompositionStrategy::processor_id>(p);
-    }
+          dec.dec.ghost_processorID<AbstractDecStrategy::processor_id>(p);
 
     printMe(vcl);
     std::cout << "assert " << found << " == true" << std::endl;
   }
 
   // Check the consistency
-  bool val = dec.check_consistency();
+  bool val = dec.dec.check_consistency();
 
   printMe(vcl);
   std::cout << "assert " << val << " == true" << std::endl;

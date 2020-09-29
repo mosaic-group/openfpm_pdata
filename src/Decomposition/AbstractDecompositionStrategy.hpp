@@ -1,7 +1,6 @@
 #ifndef SRC_DECOMPOSITION_ABSTRACT_DECOMPOSITION_STRATEGY_HPP
 #define SRC_DECOMPOSITION_ABSTRACT_DECOMPOSITION_STRATEGY_HPP
 
-#include "Decomposition/dec_optimizer.hpp"
 #include <cmath>
 #include <initializer_list>
 #include <unordered_map>
@@ -41,10 +40,7 @@ class AbstractDecompositionStrategy
       public domain_icell_calculator<dim, T, layout_base, Memory> {
   //! Type of the domain we are going to decompose
   using domain_type = T;
-
-  //! It simplify to access the SpaceBox element
   using Box = SpaceBox<dim, T>;
-
   using SubDomains =
       openfpm::vector<Box, Memory, typename layout_base<Box>::type,
                       layout_base>;
@@ -92,7 +88,6 @@ public:
     sub_domains = cart.sub_domains;
     box_nn_processor = cart.box_nn_processor;
     fine_s = cart.fine_s;
-    gr = cart.gr;
     cd = cart.cd;
     domain = cart.domain;
     sub_domains_global = cart.sub_domains_global;
@@ -196,12 +191,6 @@ public:
   //! Return the reference counter
   long int ref() { return ref_cnt; }
 
-  /*! \brief Decomposition grid
-   *
-   * \return the grid
-   */
-  DGrid &getGrid() { return gr; }
-
   /*! \brief Calculate communication and migration costs
    */
   template <typename Ghost>
@@ -225,6 +214,8 @@ public:
 
     return std::make_pair(migration, norm);
   }
+
+  bool shouldSetCosts() { return !costBeenSet; }
 
   /*! \brief Return the box of the physical domain
    *
@@ -261,10 +252,7 @@ public:
   }
 
   template <typename Graph>
-  void merge(Graph &graph, Ghost<dim, T> &ghost, DGrid gr_dist) {
-    createSubdomains(graph, ghost, gr_dist);
-    calculateGhostBoxes(ghost);
-  }
+  void merge(Graph &graph, Ghost<dim, T> &ghost, DGrid gr_dist) {}
 
   void onEnd(Ghost<dim, T> &ghost) {
     domain_icell_calculator<dim, T, layout_base, Memory>::
@@ -274,24 +262,7 @@ public:
             sub_domains, this->getProcessorBounds(), ghost.getRcut(), ghost);
   }
 
-  bool shouldSetCosts() { return !costBeenSet; }
-
   SubDomains &getSubDomains() { return sub_domains; }
-
-  void
-  setParameters(const size_t (&div_)[dim], ::Box<dim, T> &domain_,
-                const size_t (&bc)[dim],
-                const grid_sm<dim, void> &sec_dist = grid_sm<dim, void>()) {
-    std::copy(bc, bc + dim, this->bc);
-
-    // Set the decomposition parameters
-    gr.setDimensions(div_);
-    domain = domain_;
-    cd.setDimensions(domain, div_, 0);
-
-    // calc magnification factor dec-dist
-    calculate_magn(sec_dist);
-  }
 
   /*! \brief Get the number of local sub-domains
    *
@@ -311,13 +282,10 @@ public:
         getNSubDomain());
   }
 
-private:
+// todo private:
   //! Structure that decompose the space into cells without creating them
   //! useful to convert positions to CellId or sub-domain id in this case
-  CellDecomposer_sm<dim, T, shift<dim, T>> cd;
-
-  //! Structure that store the cartesian grid information
-  DGrid gr;
+  CellDecomposer_sm<dim, T, shift<dim, T>> cd;  // todo abstract ???
 
   //! Box Spacing
   T spacing[dim];
@@ -326,7 +294,7 @@ private:
   //! decomposition
   size_t magn[dim];
 
-  //! rectangular domain to decompose
+  //! (rectangular) domain to decompose
   ::Box<dim, T> domain;
 
   //! Processor bounding box
@@ -368,74 +336,7 @@ private:
   //! Processor domain bounding box
   ::Box<dim, size_t> proc_box;
 
-  void initialize_fine_s(const ::Box<dim, T> &domain) {
-    fine_s.clear();
-    size_t div_g[dim];
-
-    // We reduce the size of the cells by a factor 8 in 3d 4 in 2d
-    for (size_t i = 0; i < dim; ++i) {
-      div_g[i] = (gr.size(i) == 1) ? 1 : gr.size(i) / 2;
-    }
-
-    fine_s.Initialize(domain, div_g);
-  }
-
-  /*! \brief It convert the box from the domain decomposition into sub-domain
-   *
-   * The decomposition box from the domain-decomposition contain the box in
-   * integer coordinates. This box is converted into a continuos box. It also
-   * adjust loc_box if the distribution grid and the decomposition grid are
-   * different.
-   *
-   * \param loc_box local box
-   *
-   * \return the corresponding sub-domain
-   *
-   */
-  template <typename Memory_bx>
-  SpaceBox<dim, T> convertDecBoxIntoSubDomain(
-      encapc<1, ::Box<dim, size_t>, Memory_bx> loc_box) {
-    // A point with all coordinate to one
-    size_t one[dim];
-    for (size_t i = 0; i < dim; i++) {
-      one[i] = 1;
-    }
-
-    SpaceBox<dim, size_t> sub_dc = loc_box;
-    SpaceBox<dim, size_t> sub_dce = sub_dc;
-    sub_dce.expand(one);
-    sub_dce.mul(magn);
-
-    // shrink by one
-    for (size_t i = 0; i < dim; i++) {
-      loc_box.template get<Box::p1>()[i] = sub_dce.getLow(i);
-      loc_box.template get<Box::p2>()[i] = sub_dce.getHigh(i) - 1;
-    }
-
-    SpaceBox<dim, T> sub_d(sub_dce);
-    sub_d.mul(spacing);
-    sub_d += domain.getP1();
-
-    // we add the
-
-    // Fixing sub-domains to cover all the domain
-
-    // Fixing sub_d
-    // if (loc_box) is at the boundary we have to ensure that the box span the
-    // full domain (avoiding rounding off error)
-    for (size_t i = 0; i < dim; i++) {
-      if (sub_dc.getHigh(i) == gr.size(i) - 1) {
-        sub_d.setHigh(i, domain.getHigh(i));
-      }
-
-      if (sub_dc.getLow(i) == 0) {
-        sub_d.setLow(i, domain.getLow(i));
-      }
-    }
-
-    return sub_d;
-  }
-
+// todo private:
   void collect_all_sub_domains(
       openfpm::vector<Box_map<dim, T>, Memory,
                       typename layout_base<Box_map<dim, T>>::type, layout_base>
@@ -461,172 +362,10 @@ private:
     v_cl.max(size);
     v_cl.execute();
 
-    sub_domains_gloabal.resize(size);
+    sub_domains_global.resize(size);
 
     v_cl.Bcast(sub_domains_global, 0);
     v_cl.execute();
-  }
-
-  void construct_fine_s() {
-    collect_all_sub_domains(sub_domains_global);
-
-    // now draw all sub-domains in fine-s
-
-    for (size_t i = 0; i < sub_domains_global.size(); ++i) {
-      // get the cells this box span
-      const grid_key_dx<dim> p1 =
-          fine_s.getCellGrid_me(sub_domains_global.template get<0>(i).getP1());
-      const grid_key_dx<dim> p2 =
-          fine_s.getCellGrid_pe(sub_domains_global.template get<0>(i).getP2());
-
-      // Get the grid and the sub-iterator
-      auto &gi = fine_s.getGrid();
-      grid_key_dx_iterator_sub<dim> g_sub(gi, p1, p2);
-
-      // add the box-id to the cell list
-      while (g_sub.isNext()) {
-        auto key = g_sub.get();
-        fine_s.addCell(gi.LinId(key), i);
-
-        ++g_sub;
-      }
-    }
-
-    host_dev_transfer = false;
-  }
-
-  /*! \brief Calculate magnification
-   *
-   * \param gm distribution grid
-   *
-   */
-  void calculate_magn(const grid_sm<dim, void> &gm) {
-    if (gm.size() == 0) {
-      for (size_t i = 0; i < dim; i++) {
-        magn[i] = 1;
-      }
-    } else {
-      for (size_t i = 0; i < dim; i++) {
-        if (gr.size(i) % gm.size(i) != 0) {
-          std::cerr << __FILE__ << ":" << __LINE__
-                    << ".Error the decomposition grid specified as gr.size("
-                    << i << ")=" << gr.size(i)
-                    << " is not multiple of the distribution grid gm.size(" << i
-                    << ")=" << gm.size(i) << std::endl;
-        }
-
-        magn[i] = gr.size(i) / gm.size(i);
-      }
-    }
-  }
-
-  /*! \brief Constructor, it decompose and distribute the sub-domains across the
-   * processorscreateSubdomains
-   *
-   * \param v_cl Virtual cluster, used internally for communications
-   * \param bc boundary conditions
-   * \param opt option (one option is to construct)
-   *
-   */
-  template <typename Graph>
-  void createSubdomains(Graph &graph, Ghost<dim, T> &ghost, DGrid gr_dist,
-                        size_t opt = 0) {
-    // Calculate the total number of box and and the spacing
-    // on each direction
-    // Get the box containing the domain
-    SpaceBox<dim, T> bs = domain.getBox();
-
-    for (unsigned int i = 0; i < dim; i++) {
-      // Calculate the spacing
-      spacing[i] = (bs.getHigh(i) - bs.getLow(i)) / gr.size(i);
-    }
-
-    // fill the structure that store the processor id for each sub-domain
-    initialize_fine_s(domain);
-
-    // Optimize the decomposition creating bigger spaces
-    // And reducing Ghost over-stress
-    dec_optimizer<dim, Graph_CSR<nm_v<dim>, nm_e>> d_o(graph,
-                                                       gr_dist.getSize());
-
-    // Ghost
-    Ghost<dim, long int> ghe;
-
-    // Set the ghost
-    for (size_t i = 0; i < dim; i++)
-    {
-      ghe.setLow(i, static_cast<long int>(ghost.getLow(i) / spacing[i]) - 1);  // -1
-      ghe.setHigh(i, static_cast<long int>(ghost.getHigh(i) / spacing[i]) + 1);  // +1
-    }
-
-    // optimize the decomposition or merge sub-sub-domain
-    d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(
-        graph, v_cl.getProcessUnitID(), loc_box, box_nn_processor, ghe, bc);
-
-    // Initialize
-    if (loc_box.size() > 0)
-    {
-      bbox = convertDecBoxIntoSubDomain(loc_box.get(0));
-      proc_box = loc_box.get(0);
-      sub_domains.add(bbox);
-    }
-    else
-    {
-      // invalidate all the boxes
-      for (size_t i = 0; i < dim; i++) {
-        proc_box.setLow(i, 0.0);
-        proc_box.setHigh(i, 0);
-
-        bbox.setLow(i, 0.0);
-        bbox.setHigh(i, 0);
-      }
-    }
-
-    // convert into sub-domain
-		for (size_t s = 1; s < loc_box.size(); s++)
-		{
-			SpaceBox<dim,T> sub_d = convertDecBoxIntoSubDomain(loc_box.get(s));
-
-			// add the sub-domain
-			sub_domains.add(sub_d);
-
-			// Calculate the bound box
-			bbox.enclose(sub_d);
-			proc_box.enclose(loc_box.get(s));
-		}
-
-    nn_prcs<dim, T, layout_base, Memory>::create(box_nn_processor, sub_domains);
-    nn_prcs<dim, T, layout_base, Memory>::applyBC(domain, ghost, bc);
-
-    // fill fine_s structure
-    // fine_s structure contain the processor id for each sub-sub-domain
-    // with sub-sub-domain we mean the sub-domain decomposition before
-    // running dec_optimizer (before merging sub-domains)
-
-    construct_fine_s();
-
-    Initialize_geo_cell_lists();
-  }
-
-  void Initialize_geo_cell_lists() {
-    // Get the processor bounding Box
-    ::Box<dim, T> bound = getProcessorBounds();
-
-    // Check if the box is valid
-    if (bound.isValidN()) {
-      // calculate the sub-divisions
-      size_t div[dim];
-      for (size_t i = 0; i < dim; ++i) {
-        div[i] = (size_t)((bound.getHigh(i) - bound.getLow(i)) /
-                          cd.getCellBox().getP2()[i]);
-      }
-
-      // Initialize the geo_cell structure
-      ie_ghost<dim, T, Memory, layout_base>::Initialize_geo_cell(bound, div);
-
-      // Initialize shift vectors
-      ie_ghost<dim, T, Memory, layout_base>::generateShiftVectors(domain, bc);
-    }
   }
 
   /*! \brief It calculate the internal ghost boxes

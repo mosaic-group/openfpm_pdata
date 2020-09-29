@@ -181,32 +181,6 @@ class ie_ghost
 	}
 
 protected:
-
-	/*! \brief Here we generare the shift vectors
-	 *
-	 * \param domain box that describe the domain
-	 *
-	 */
-	void generateShiftVectors(const Box<dim,T> & domain, size_t (& bc)[dim])
-	{
-		sc_convert.generateShiftVectors(domain,bc,shifts);
-	}
-
-	/*! \brief Initialize the geo cell list structure
-	 *
-	 * The geo cell list structure exist to speed up the labelling the points if they fall on some
-	 * internal ghost
-	 *
-	 * \param domain where the cell list is defined
-	 * \param div number of division of the cell list
-	 *
-	 */
-	void Initialize_geo_cell(const Box<dim,T> & domain, const size_t (&div)[dim])
-	{
-		// Initialize the geo_cell structure
-		geo_cell.Initialize(domain,div,1);
-	}
-
 	/*! \brief Deallocate structures that identify a point to which internal ghost is located
 	 *
 	 */
@@ -508,6 +482,32 @@ protected:
 	}
 
 public:
+
+	/*! \brief Initialize the geo cell list structure
+	 *
+	 * The geo cell list structure exist to speed up the labelling the points if they fall on some
+	 * internal ghost
+	 *
+	 * \param domain where the cell list is defined
+	 * \param div number of division of the cell list
+	 *
+	 */
+	void Initialize_geo_cell(const Box<dim,T> & domain, const size_t (&div)[dim])
+	{
+		// Initialize the geo_cell structure
+		geo_cell.Initialize(domain,div,1);
+	}
+
+	/*! \brief Here we generare the shift vectors
+	 *
+	 * \param domain box that describe the domain
+	 *
+	 */
+	void generateShiftVectors(const Box<dim,T> & domain, size_t (& bc)[dim])
+	{
+		sc_convert.generateShiftVectors(domain,bc,shifts);
+	}
+
 
 	//! Default constructor
 	ie_ghost() {};
