@@ -187,10 +187,9 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
         dec.ghost_processorID<MyDecompositionStrategy::processor_id>(p, UNIQUE);
 
     bool found = isIn(pr, proc);
-    /* question why is it useful? if (!found) {
-      const openfpm::vector<size_t> pr2 =
+    const openfpm::vector<size_t> pr2 =
           dec.ghost_processorID<MyDecompositionStrategy::processor_id>(p);
-    } */
+    }
 
     printMe(vcl);
     std::cout << "assert " << found << " == true" << std::endl;

@@ -461,7 +461,7 @@ private:
     v_cl.max(size);
     v_cl.execute();
 
-    sub_domains_global.resize(size);
+    sub_domains_gloabal.resize(size);
 
     v_cl.Bcast(sub_domains_global, 0);
     v_cl.execute();
@@ -553,7 +553,6 @@ private:
     Ghost<dim, long int> ghe;
 
     // Set the ghost
-    printMe(v_cl);
     for (size_t i = 0; i < dim; i++)
     {
       ghe.setLow(i, static_cast<long int>(ghost.getLow(i) / spacing[i]) - 1);  // -1
