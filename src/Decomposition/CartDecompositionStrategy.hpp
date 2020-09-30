@@ -8,6 +8,7 @@ template <unsigned int dim, typename domain_type,
           typename AbstractDecStrategy =
               AbstractDecompositionStrategy<dim, domain_type>, typename Memory = HeapMemory, template <typename> class layout_base = memory_traits_lin>
 class CartDecompositionStrategy {
+
   using Box = SpaceBox<dim, domain_type>;
   using DGrid = grid_sm<dim, void>;
 
@@ -38,9 +39,7 @@ public:
     // todo
   }
 
-  void setParameters(const size_t (&div_)[dim], ::Box<dim, domain_type> &domain_,
-                const size_t (&bc)[dim],
-                const grid_sm<dim, void> &sec_dist = grid_sm<dim, void>()) {
+  void setParameters(const size_t (&div_)[dim], ::Box<dim, domain_type> &domain_, const size_t (&bc)[dim], const grid_sm<dim, void> &sec_dist = grid_sm<dim, void>()) {
     std::copy(bc, bc + dim, dec.bc);
 
     // Set the decomposition parameters
@@ -229,7 +228,7 @@ public:
   }
 
   void construct_fine_s() {
-    dec.collect_all_sub_domains(dec.sub_domains_global);  // todo in this class ??
+    dec.collect_all_sub_domains(dec.sub_domains_global);
 
     // now draw all sub-domains in fine-s
     for (size_t i = 0; i < dec.sub_domains_global.size(); ++i) {

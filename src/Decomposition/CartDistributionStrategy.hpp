@@ -3,17 +3,82 @@
 
 #include "Decomposition/AbstractDistributionStrategy.hpp"
 
-template <unsigned int dim, typename SpaceType,
-          typename AbstractDistributionStrategy =
-              AbstractDistributionStrategy<dim, SpaceType>>
+template <unsigned int dim, typename domain_type,
+          typename AbstractDistStrategy =
+              AbstractDistributionStrategy<dim, domain_type>, typename Memory = HeapMemory,
+          template <typename> class layout_base = memory_traits_lin>
 class CartDistributionStrategy {
 
+  using Box = SpaceBox<dim, domain_type>;
+  using DGrid = grid_sm<dim, void>;
+
 public:
-  CartDistributionStrategy(Vcluster<> &v_cl) : dec(v_cl) {}
+  CartDistributionStrategy(Vcluster<> &v_cl) : dist(v_cl) {}
 
   ~CartDistributionStrategy() {}
 
-private:
-  AbstractDistributionStrategy dec;
+  void setParameters(DGrid &grid_dec, const Ghost<dim, domain_type> &ghost,
+                const grid_sm<dim, void> &sec_dist = grid_sm<dim, void>()) {
+    if (sec_dist.size(0) != 0) {
+      gr.setDimensions(sec_dist.getSize());
+    } else {
+      gr = grid_dec;
+    }
+
+    dist.ghost = ghost;
+  }
+
+  /*! \brief Create the Cartesian graph
+   *
+   * \param grid info
+   * \param dom domain
+   */
+  void createCartGraph(const size_t (&bc)[dim], ::Box<dim, domain_type> &domain) {
+    // Create a cartesian grid graph
+    CartesianGraphFactory<dim, Graph_CSR<nm_v<dim>, nm_e>> g_factory_part;
+    dist.gp = g_factory_part.template construct<NO_EDGE, nm_v_id, domain_type, dim - 1, 0>(gr.getSize(), domain, bc);
+    dist.initLocalToGlobalMap();
+
+    //! Get the number of processing units
+    size_t Np = dist.v_cl.getProcessingUnits();
+
+    //! Division of vertices in Np graphs
+    //! Put (div+1) vertices in mod graphs
+    //! Put div vertices in the rest of the graphs
+    size_t mod_v = gr.size() % Np;
+    size_t div_v = gr.size() / Np;
+
+    for (size_t i = 0; i <= Np; i++) {
+      if (i < mod_v) {
+        dist.vtxdist.get(i).id = (div_v + 1) * i;
+      } else {
+        dist.vtxdist.get(i).id = (div_v)*i + mod_v;
+      }
+    }
+
+    // Init to 0.0 axis z (todo fix in graphFactory)
+    if (dim < 3) {
+      for (size_t i = 0; i < dist.gp.getNVertex(); i++) {
+        dist.gp.vertex(i).template get<nm_v_x>()[2] = 0.0;
+      }
+    }
+
+    for (size_t i = 0; i < dist.gp.getNVertex(); i++) {
+      dist.gp.vertex(i).template get<nm_v_global_id>() = i;
+    }
+  }
+
+  /*! \brief Distribution grid
+   *
+   * \return the grid
+   */
+  DGrid getGrid() { return gr; }
+
+// todo private:
+
+  //! Structure that store the cartesian grid information
+  DGrid gr;
+
+  AbstractDistStrategy dist;
 };
 #endif // SRC_DECOMPOSITION_CART_DISTRIBUTION_STRATEGY_HPP

@@ -1,9 +1,9 @@
-#ifndef SRC_DECOMPOSITION_CARTDECOMPOSITIONSTRATEGY_UNIT_TEST_HPP
-#define SRC_DECOMPOSITION_CARTDECOMPOSITIONSTRATEGY_UNIT_TEST_HPP
+#ifndef SRC_DECOMPOSITION_ORBDECOMPOSITIONSTRATEGY_UNIT_TEST_HPP
+#define SRC_DECOMPOSITION_ORBDECOMPOSITIONSTRATEGY_UNIT_TEST_HPP
 
 #include "Decomposition/AbstractStrategyModels.hpp"
-#include "Decomposition/CartDecompositionStrategy.hpp"
-#include "Decomposition/CartDistributionStrategy.hpp"
+#include "Decomposition/OrbDecompositionStrategy.hpp"
+#include "Decomposition/AbstractDistributionStrategy.hpp"
 #include "util/generic.hpp"
 
 #define SUB_UNIT_FACTOR 1024
@@ -32,10 +32,10 @@ using AbstractDecStrategy =
     AbstractDecompositionStrategy<SPACE_N_DIM, SpaceType>;
 
 using MyDecompositionStrategy =
-    CartDecompositionStrategy<SPACE_N_DIM, SpaceType>;
+    OrbDecompositionStrategy<SPACE_N_DIM, SpaceType>;
 
 using MyDistributionStrategy =
-    CartDistributionStrategy<SPACE_N_DIM, SpaceType>;
+    AbstractDistributionStrategy<SPACE_N_DIM, SpaceType>;
 
 using ParmetisGraph = Parmetis<Graph_CSR<nm_v<SPACE_N_DIM>, nm_e>>;
 
@@ -78,8 +78,8 @@ struct MyComputationalCostsModel : ModelComputationalCosts {
                                              const size_t ts = 1) {
     SpaceType migration;
     size_t norm;
-    std::tie(migration, norm) = dec.computeCommunicationCosts(dist.dist.getGhost());
-    dist.dist.setMigrationCosts(migration, norm, ts);
+    std::tie(migration, norm) = dec.computeCommunicationCosts(dist.getGhost());
+    dist.setMigrationCosts(migration, norm, ts);
   }
 };
 
@@ -106,7 +106,7 @@ struct MyDistributionModel : ModelDistribute {
   }
 };
 
-void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
+void OrbDecomposition_non_periodic_test(const unsigned int nProcs) {
   Vcluster<> &vcl = create_vcluster();
 
   // specify
@@ -161,21 +161,21 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
 
   //////////////////////////////////////////////////////////////////// decompose
   dec.dec.reset();
-  dist.dist.reset(parmetis_graph);
+  dist.reset(parmetis_graph);
   if (dec.dec.shouldSetCosts()) {
     mcc.computeCommunicationAndMigrationCosts(dec.dec, dist);
   }
-  dec.decompose(mde, parmetis_graph, dist.dist.getVtxdist());
+  dec.decompose(mde, parmetis_graph, dist.getVtxdist());
 
   /////////////////////////////////////////////////////////////////// distribute
-  dist.dist.distribute(parmetis_graph);
+  dist.distribute(parmetis_graph);
 
   ///////////////////////////////////////////////////////////////////////  merge
-  dec.merge(dist.dist.getGraph(), dist.dist.getGhost(), dist.getGrid());
+  dec.merge(dist.getGraph(), dist.getGhost(), dist.getGrid());
 
   ///////////////////////////////////////////////////////////////////// finalize
-  dist.dist.onEnd();
-  dec.dec.onEnd(dist.dist.getGhost());
+  dist.onEnd();
+  dec.dec.onEnd(dist.getGhost());
 
   // For each calculated ghost box
   for (size_t i = 0; i < dec.dec.getNIGhostBox(); ++i) {
@@ -204,4 +204,4 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   std::cout << "assert " << val << " == true" << std::endl;
 }
 
-#endif // SRC_DECOMPOSITION_CARTDECOMPOSITIONSTRATEGY_UNIT_TEST_HPP
+#endif // SRC_DECOMPOSITION_ORBDECOMPOSITIONSTRATEGY_UNIT_TEST_HPP

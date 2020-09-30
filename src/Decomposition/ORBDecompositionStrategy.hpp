@@ -3,10 +3,12 @@
 
 #include "Decomposition/AbstractDecompositionStrategy.hpp"
 
-template <unsigned int dim, typename SpaceType,
-          typename AbstractDecompositionStrategy =
-              AbstractDecompositionStrategy<dim, SpaceType>>
+template <unsigned int dim, typename domain_type,
+          typename AbstractDecStrategy =
+              AbstractDecompositionStrategy<dim, domain_type>, typename Memory = HeapMemory, template <typename> class layout_base = memory_traits_lin>
 class OrbDecompositionStrategy {
+
+  using Box = SpaceBox<dim, domain_type>;
 
 public:
   OrbDecompositionStrategy(Vcluster<> &v_cl) : dec(v_cl) {}
@@ -35,6 +37,10 @@ public:
     // todo
   }
 
+  void setParameters(::Box<dim, domain_type> &domain) {
+    dec.domain = domain;
+  }
+
   template <typename Model, typename Graph>
   void decompose(Model m, Graph &graph, openfpm::vector<rid> &vtxdist) {
     // todo decompose
@@ -46,6 +52,6 @@ public:
   }
 
 private:
-  AbstractDecompositionStrategy dec;
+  AbstractDecStrategy dec;
 };
 #endif // SRC_DECOMPOSITION_ORB_DECOMPOSITION_STRATEGY_HPP
