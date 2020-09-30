@@ -260,10 +260,8 @@ public:
 	 * \param dom Box domain
 	 * \param n_sub number of sub-domain to create (it is approximated to the biggest 2^n number)
 	 * \param lp Local position of the particles
-	 *
 	 */
-	ORB(Box dom, size_t n_sub, loc_pos & lp)
-	:v_cl(create_vcluster()),lp(lp)
+	ORB(Box dom, size_t n_sub, loc_pos & lp) : v_cl(create_vcluster()), lp(lp)
 	{
 		typedef ORB<dim,T,loc_wg,loc_pos,Box,Tree> ORB_class;
 

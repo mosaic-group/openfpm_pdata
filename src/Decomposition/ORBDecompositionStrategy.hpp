@@ -37,8 +37,10 @@ public:
     // todo
   }
 
-  void setParameters(::Box<dim, domain_type> &domain) {
-    dec.domain = domain;
+  void setParameters(::Box<dim, domain_type> &domain, const size_t (&bc)[dim]) {
+    std::copy(bc, bc + dim, dec.bc);  // boundary conditions
+
+    dec.domain = domain;  // domain
   }
 
   template <typename Model, typename Graph>

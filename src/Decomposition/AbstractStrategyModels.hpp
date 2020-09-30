@@ -30,6 +30,9 @@ struct ModelDecompose {
 
 struct ModelDistribute {
   virtual val_t toll() = 0;
+
+  template <typename DistributionStrategy, typename Graph>
+  void finalize(DistributionStrategy &dist, Graph &graph){};
 };
 
 #endif // SRC_DECOMPOSITION_ABSTRACT_STRATEGY_MODELS_HPP

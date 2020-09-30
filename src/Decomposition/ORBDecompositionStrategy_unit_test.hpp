@@ -3,7 +3,7 @@
 
 #include "Decomposition/AbstractStrategyModels.hpp"
 #include "Decomposition/OrbDecompositionStrategy.hpp"
-#include "Decomposition/AbstractDistributionStrategy.hpp"
+#include "Decomposition/OrbDistributionStrategy.hpp"
 #include "util/generic.hpp"
 
 #define SUB_UNIT_FACTOR 1024
@@ -19,25 +19,26 @@
 // FLUID or BOUNDARY
 const size_t type = 0;
 
+// n of points sampled
+#define N_POINTS 1024
+
 // Type of the vector containing particles
 constexpr unsigned int SPACE_N_DIM = 3;
-using SpaceType = double;
-typedef vector_dist<
-    SPACE_N_DIM, SpaceType,
-    aggregate<size_t, double, double, double, double, double[SPACE_N_DIM],
-              double[SPACE_N_DIM], double[SPACE_N_DIM]>>
-    particles;
+using domain_type = double;
 
 using AbstractDecStrategy =
-    AbstractDecompositionStrategy<SPACE_N_DIM, SpaceType>;
+    AbstractDecompositionStrategy<SPACE_N_DIM, domain_type>;
 
 using MyDecompositionStrategy =
-    OrbDecompositionStrategy<SPACE_N_DIM, SpaceType>;
+    OrbDecompositionStrategy<SPACE_N_DIM, domain_type>;
 
 using MyDistributionStrategy =
-    AbstractDistributionStrategy<SPACE_N_DIM, SpaceType>;
+    OrbDistributionStrategy<SPACE_N_DIM, domain_type>;
 
 using ParmetisGraph = Parmetis<Graph_CSR<nm_v<SPACE_N_DIM>, nm_e>>;
+
+using MyPoint = Point<SPACE_N_DIM, domain_type>;
+using MyPoints = openfpm::vector<MyPoint>;
 
 struct MyComputationalCostsModel : ModelComputationalCosts {
   template <typename DistributionStrategy, typename vector>
@@ -62,11 +63,11 @@ struct MyComputationalCostsModel : ModelComputationalCosts {
             typename DistributionStrategy>
   void calculate(particles &vd, DecompositionStrategy &dec,
                  DistributionStrategy &dist) {
-    CellDecomposer_sm<SPACE_N_DIM, SpaceType, shift<SPACE_N_DIM, SpaceType>>
+    CellDecomposer_sm<SPACE_N_DIM, domain_type, shift<SPACE_N_DIM, domain_type>>
         cdsm;
     cdsm.setDimensions(dec.getDomain(), dist.getGrid().getSize(), 0);
     for (auto it = vd.getDomainIterator(); !it.hasEnded(); ++it) {
-      Point<SPACE_N_DIM, SpaceType> p = vd.getPos(it.get());
+      Point<SPACE_N_DIM, domain_type> p = vd.getPos(it.get());
       const size_t v = cdsm.getCell(p);
       addToComputation(dist, vd, v, it.get().getKey());
     }
@@ -76,7 +77,7 @@ struct MyComputationalCostsModel : ModelComputationalCosts {
   void computeCommunicationAndMigrationCosts(DecompositionStrategy &dec,
                                              DistributionStrategy &dist,
                                              const size_t ts = 1) {
-    SpaceType migration;
+    domain_type migration;
     size_t norm;
     std::tie(migration, norm) = dec.computeCommunicationCosts(dist.getGhost());
     dist.setMigrationCosts(migration, norm, ts);
@@ -127,71 +128,67 @@ void OrbDecomposition_non_periodic_test(const unsigned int nProcs) {
   ParmetisGraph parmetis_graph(vcl, vcl.getProcessingUnits());
 
   // Physical domain
-  Box<SPACE_N_DIM, SpaceType> box({0.0, 0.0, 0.0}, {1.0, 1.0, 1.0});
-  size_t div[SPACE_N_DIM];
-  size_t div_sub[SPACE_N_DIM];
+  Box<SPACE_N_DIM, domain_type> box({0.0, 0.0, 0.0}, {1.0, 1.0, 1.0});
+  
+  // fill particles
+  MyPoints vp(N_POINTS);
 
-  // Get the number of processor and calculate the number of sub-domain
-  // for each processor (SUB_UNIT_FACTOR=64)
-  size_t n_proc = vcl.getProcessingUnits();
-  size_t n_sub = n_proc * SUB_UNIT_FACTOR * 4 * 4 * 4;
+  // create the random generator engine
+	std::srand(create_vcluster().getProcessUnitID());
+  std::default_random_engine eg;
+  std::uniform_real_distribution<float> ud(0.0, 1.0);
 
-  // Set the number of sub-domains on each dimension (in a scalable way)
-  for (int i = 0; i < SPACE_N_DIM; i++) {
-    div[i] = openfpm::math::round_big_2(pow(n_sub, 1.0 / 3));
-  }
+	auto vp_it = vp.getIterator();
+	while (vp_it.isNext()) {
+		auto key = vp_it.get();
 
-  // create a sub_distribution grid
-  for (int i = 0; i < SPACE_N_DIM; i++) {
-    div_sub[i] = div[i] / 4;
-  }
+		vp.get<p::x>(key)[0] = ud(eg);
+		vp.get<p::x>(key)[1] = ud(eg);
+		vp.get<p::x>(key)[2] = ud(eg);
 
-  grid_sm<SPACE_N_DIM, void> gsub(div_sub);
+		++vp_it;
+	}
 
   // Define ghost
-  Ghost<SPACE_N_DIM, SpaceType> g(0.01);
+  Ghost<SPACE_N_DIM, domain_type> g(0.01);
 
   // Boundary conditions
   size_t bc[] = {NON_PERIODIC, NON_PERIODIC, NON_PERIODIC};
 
   // init
-  dec.setParameters(div, box, bc, gsub);
-  dist.setParameters(dec.getGrid(), g, gsub);
-  dist.createCartGraph(bc, box);
+  dec.setParameters(box, bc);
+  dist.setParameters(g);
 
   //////////////////////////////////////////////////////////////////// decompose
   dec.dec.reset();
-  dist.reset(parmetis_graph);
+  dist.dist.reset(parmetis_graph);
   if (dec.dec.shouldSetCosts()) {
     mcc.computeCommunicationAndMigrationCosts(dec.dec, dist);
   }
   dec.decompose(mde, parmetis_graph, dist.getVtxdist());
 
   /////////////////////////////////////////////////////////////////// distribute
-  dist.distribute(parmetis_graph);
+  dist.dist.distribute(parmetis_graph);
 
   ///////////////////////////////////////////////////////////////////////  merge
-  dec.merge(dist.getGraph(), dist.getGhost(), dist.getGrid());
+  dec.merge(dist.dist.getGraph(), dist.dist.getGhost());
 
   ///////////////////////////////////////////////////////////////////// finalize
-  dist.onEnd();
-  dec.dec.onEnd(dist.getGhost());
+  dist.dist.onEnd();
+  dec.dec.onEnd(dist.dist.getGhost());
 
   // For each calculated ghost box
   for (size_t i = 0; i < dec.dec.getNIGhostBox(); ++i) {
-    SpaceBox<SPACE_N_DIM, SpaceType> b = dec.dec.getIGhostBox(i);
+    SpaceBox<SPACE_N_DIM, domain_type> b = dec.dec.getIGhostBox(i);
     size_t proc = dec.dec.getIGhostBoxProcessor(i);
 
     // sample one point inside the box
-    Point<SPACE_N_DIM, SpaceType> p = b.rnd();
+    Point<SPACE_N_DIM, domain_type> p = b.rnd();
 
     // Check that ghost_processorsID return that processor number
     const openfpm::vector<size_t> &pr =
         dec.dec.ghost_processorID<AbstractDecStrategy::processor_id>(p, UNIQUE);
-
     bool found = isIn(pr, proc);
-    const openfpm::vector<size_t> pr2 =
-          dec.dec.ghost_processorID<AbstractDecStrategy::processor_id>(p);
 
     printMe(vcl);
     std::cout << "assert " << found << " == true" << std::endl;

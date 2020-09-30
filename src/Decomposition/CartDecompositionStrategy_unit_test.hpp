@@ -21,62 +21,25 @@ const size_t type = 0;
 
 // Type of the vector containing particles
 constexpr unsigned int SPACE_N_DIM = 3;
-using SpaceType = double;
-typedef vector_dist<
-    SPACE_N_DIM, SpaceType,
-    aggregate<size_t, double, double, double, double, double[SPACE_N_DIM],
-              double[SPACE_N_DIM], double[SPACE_N_DIM]>>
-    particles;
+using domain_type = double;
 
 using AbstractDecStrategy =
-    AbstractDecompositionStrategy<SPACE_N_DIM, SpaceType>;
+    AbstractDecompositionStrategy<SPACE_N_DIM, domain_type>;
 
 using MyDecompositionStrategy =
-    CartDecompositionStrategy<SPACE_N_DIM, SpaceType>;
+    CartDecompositionStrategy<SPACE_N_DIM, domain_type>;
 
 using MyDistributionStrategy =
-    CartDistributionStrategy<SPACE_N_DIM, SpaceType>;
+    CartDistributionStrategy<SPACE_N_DIM, domain_type>;
 
 using ParmetisGraph = Parmetis<Graph_CSR<nm_v<SPACE_N_DIM>, nm_e>>;
 
 struct MyComputationalCostsModel : ModelComputationalCosts {
-  template <typename DistributionStrategy, typename vector>
-  void addToComputation(DistributionStrategy &dist, vector &vd, size_t v,
-                        size_t p) {
-    if (vd.template getProp<type>(p) == FLUID) {
-      dist.addComputationCost(v, 4);
-    } else {
-      dist.addComputationCost(v, 3);
-    }
-  }
-
-  // todo where to use it
-  template <typename DistributionStrategy>
-  void init(DistributionStrategy &dist) {
-    for (size_t i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
-      dist.setComputationCost(dist.getOwnerSubSubDomain(i), 1);
-    }
-  }
-
-  template <typename particles, typename DecompositionStrategy,
-            typename DistributionStrategy>
-  void calculate(particles &vd, DecompositionStrategy &dec,
-                 DistributionStrategy &dist) {
-    CellDecomposer_sm<SPACE_N_DIM, SpaceType, shift<SPACE_N_DIM, SpaceType>>
-        cdsm;
-    cdsm.setDimensions(dec.getDomain(), dist.getGrid().getSize(), 0);
-    for (auto it = vd.getDomainIterator(); !it.hasEnded(); ++it) {
-      Point<SPACE_N_DIM, SpaceType> p = vd.getPos(it.get());
-      const size_t v = cdsm.getCell(p);
-      addToComputation(dist, vd, v, it.get().getKey());
-    }
-  }
-
   template <typename DecompositionStrategy, typename DistributionStrategy>
   void computeCommunicationAndMigrationCosts(DecompositionStrategy &dec,
                                              DistributionStrategy &dist,
                                              const size_t ts = 1) {
-    SpaceType migration;
+    domain_type migration;
     size_t norm;
     std::tie(migration, norm) = dec.computeCommunicationCosts(dist.dist.getGhost());
     dist.dist.setMigrationCosts(migration, norm, ts);
@@ -87,6 +50,7 @@ struct MyDecompositionModel : ModelDecompose {};
 
 struct MyDistributionModel : ModelDistribute {
   val_t toll() { return 1.01; }
+  
   template <typename DistributionStrategy>
   void applyModel(DistributionStrategy &dist, size_t v) {
     const size_t id = v;
@@ -127,7 +91,7 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   ParmetisGraph parmetis_graph(vcl, vcl.getProcessingUnits());
 
   // Physical domain
-  Box<SPACE_N_DIM, SpaceType> box({0.0, 0.0, 0.0}, {1.0, 1.0, 1.0});
+  Box<SPACE_N_DIM, domain_type> box({0.0, 0.0, 0.0}, {1.0, 1.0, 1.0});
   size_t div[SPACE_N_DIM];
   size_t div_sub[SPACE_N_DIM];
 
@@ -149,7 +113,7 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   grid_sm<SPACE_N_DIM, void> gsub(div_sub);
 
   // Define ghost
-  Ghost<SPACE_N_DIM, SpaceType> g(0.01);
+  Ghost<SPACE_N_DIM, domain_type> g(0.01);
 
   // Boundary conditions
   size_t bc[] = {NON_PERIODIC, NON_PERIODIC, NON_PERIODIC};
@@ -163,7 +127,7 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   dec.dec.reset();
   dist.dist.reset(parmetis_graph);
   if (dec.dec.shouldSetCosts()) {
-    mcc.computeCommunicationAndMigrationCosts(dec.dec, dist);
+    mcc.computeCommunicationAndMigrationCosts(dec, dist);
   }
   dec.decompose(mde, parmetis_graph, dist.dist.getVtxdist());
 
@@ -179,19 +143,16 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
 
   // For each calculated ghost box
   for (size_t i = 0; i < dec.dec.getNIGhostBox(); ++i) {
-    SpaceBox<SPACE_N_DIM, SpaceType> b = dec.dec.getIGhostBox(i);
+    SpaceBox<SPACE_N_DIM, domain_type> b = dec.dec.getIGhostBox(i);
     size_t proc = dec.dec.getIGhostBoxProcessor(i);
 
     // sample one point inside the box
-    Point<SPACE_N_DIM, SpaceType> p = b.rnd();
+    Point<SPACE_N_DIM, domain_type> p = b.rnd();
 
     // Check that ghost_processorsID return that processor number
     const openfpm::vector<size_t> &pr =
         dec.dec.ghost_processorID<AbstractDecStrategy::processor_id>(p, UNIQUE);
-
     bool found = isIn(pr, proc);
-    const openfpm::vector<size_t> pr2 =
-          dec.dec.ghost_processorID<AbstractDecStrategy::processor_id>(p);
 
     printMe(vcl);
     std::cout << "assert " << found << " == true" << std::endl;

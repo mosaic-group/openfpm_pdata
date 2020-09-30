@@ -45,10 +45,32 @@ public:
     // Set the decomposition parameters
     gr.setDimensions(div_);
     dec.domain = domain_;
-    dec.cd.setDimensions(dec.domain, div_, 0);
+    cd.setDimensions(dec.domain, div_, 0);
 
     // calc magnification factor dec-dist
     calculate_magn(sec_dist);
+  }
+
+  template <typename Ghost>
+  std::pair<float, size_t> computeCommunicationCosts(Ghost &ghost) {
+    const Box cellBox = cd.getCellBox();
+    const float b_s = static_cast<float>(cellBox.getHigh(0));
+    const float gh_s = static_cast<float>(ghost.getHigh(0));
+
+    // compute the gh_area for 2 dim case
+    float gh_v = (gh_s * b_s);
+
+    // multiply for sub-sub-domain side for each domain
+    for (auto i = 2; i < dim; i++) {
+      gh_v *= b_s;
+    }
+
+    const size_t norm = (size_t)(1.0 / gh_v);
+    float migration = pow(b_s, dim);
+
+    dec.costBeenSet = true;
+
+    return std::make_pair(migration, norm);
   }
 
   /*! \brief Calculate magnification
@@ -264,7 +286,7 @@ public:
       size_t div[dim];
       for (size_t i = 0; i < dim; ++i) {
         div[i] = (size_t)((bound.getHigh(i) - bound.getLow(i)) /
-                          dec.cd.getCellBox().getP2()[i]);
+                          cd.getCellBox().getP2()[i]);
       }
 
       // Initialize the geo_cell structure
@@ -289,6 +311,10 @@ public:
   DGrid &getGrid() { return gr; }
 
 // todo private:
+  //! Structure that decompose the space into cells without creating them
+  //! useful to convert positions to CellId or sub-domain id in this case
+  CellDecomposer_sm<dim, domain_type, shift<dim, domain_type>> cd;
+
   AbstractDecStrategy dec;
   
   //! Structure that store the cartesian grid information

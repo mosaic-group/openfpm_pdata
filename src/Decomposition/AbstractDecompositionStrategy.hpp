@@ -88,7 +88,6 @@ public:
     sub_domains = cart.sub_domains;
     box_nn_processor = cart.box_nn_processor;
     fine_s = cart.fine_s;
-    cd = cart.cd;
     domain = cart.domain;
     sub_domains_global = cart.sub_domains_global;
 
@@ -191,30 +190,6 @@ public:
   //! Return the reference counter
   long int ref() { return ref_cnt; }
 
-  /*! \brief Calculate communication and migration costs
-   */
-  template <typename Ghost>
-  std::pair<float, size_t> computeCommunicationCosts(Ghost &ghost) {
-    const Box cellBox = cd.getCellBox();
-    const float b_s = static_cast<float>(cellBox.getHigh(0));
-    const float gh_s = static_cast<float>(ghost.getHigh(0));
-
-    // compute the gh_area for 2 dim case
-    float gh_v = (gh_s * b_s);
-
-    // multiply for sub-sub-domain side for each domain
-    for (auto i = 2; i < dim; i++) {
-      gh_v *= b_s;
-    }
-
-    const size_t norm = (size_t)(1.0 / gh_v);
-    float migration = pow(b_s, dim);
-
-    costBeenSet = true;
-
-    return std::make_pair(migration, norm);
-  }
-
   bool shouldSetCosts() { return !costBeenSet; }
 
   /*! \brief Return the box of the physical domain
@@ -283,10 +258,6 @@ public:
   }
 
 // todo private:
-  //! Structure that decompose the space into cells without creating them
-  //! useful to convert positions to CellId or sub-domain id in this case
-  CellDecomposer_sm<dim, T, shift<dim, T>> cd;  // todo abstract ???
-
   //! Box Spacing
   T spacing[dim];
 
