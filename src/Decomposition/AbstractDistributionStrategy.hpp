@@ -238,60 +238,7 @@ public:
    *
    *
    */
-  template <typename Graph>
-  void distribute(Graph &graph) {
-    //! Get the processor id
-    size_t p_id = v_cl.getProcessUnitID();
-
-    //! Get the number of processing units
-    size_t Np = v_cl.getProcessingUnits();
-
-    // Number of local vertex
-    size_t nl_vertex = vtxdist.get(p_id + 1).id - vtxdist.get(p_id).id;
-
-    //! Get result partition for this processors
-    idx_t *partition = graph.getPartition();
-
-    //! Prepare vector of arrays to contain all partitions
-    partitions.get(p_id).resize(nl_vertex);
-
-    if (nl_vertex != 0) {
-      std::copy(partition, partition + nl_vertex, &partitions.get(p_id).get(0));
-    }
-
-    // Reset data structure to keep trace of new vertices distribution in
-    // processors (needed to update main graph)
-    for (size_t i = 0; i < Np; ++i) {
-      v_per_proc.get(i).clear();
-    }
-
-    // Communicate the local distribution to the other processors
-    // to reconstruct individually the global graph
-    openfpm::vector<size_t> prc;
-    openfpm::vector<size_t> sz;
-    openfpm::vector<void *> ptr;
-
-    for (size_t i = 0; i < Np; i++) {
-      if (i != v_cl.getProcessUnitID()) {
-        partitions.get(i).clear();
-        prc.add(i);
-        sz.add(nl_vertex * sizeof(idx_t));
-        ptr.add(partitions.get(p_id).getPointer());
-      }
-    }
-
-    if (prc.size() == 0) {
-      v_cl.sendrecvMultipleMessagesNBX(0, NULL, NULL, NULL, message_receive,
-                                       &partitions, NONE);
-    } else {
-      v_cl.sendrecvMultipleMessagesNBX(prc.size(), &sz.get(0), &prc.get(0),
-                                       &ptr.get(0), message_receive,
-                                       &partitions, NONE);
-    }
-
-    // Update graphs with the received data
-    updateGraphs();
-
+  void distribute() {
     is_distributed = true;
   }
 
@@ -374,73 +321,6 @@ public:
    *
    */
   void setMapId(rid n, gid g) { m2g[n] = g; }
-
-  /*! \brief Update main graph ad subgraph with the received data of the
-   * partitions from the other processors
-   *
-   */
-  void updateGraphs() {
-    sub_sub_owner.clear();
-
-    size_t Np = v_cl.getProcessingUnits();
-
-    // Init n_vtxdist to gather informations about the new decomposition
-    openfpm::vector<rid> n_vtxdist(Np + 1);
-    for (size_t i = 0; i <= Np; i++)
-      n_vtxdist.get(i).id = 0;
-
-    // Update the main graph with received data from processor i
-    for (size_t i = 0; i < Np; i++) {
-      size_t ndata = partitions.get(i).size();
-      size_t k = 0;
-
-      // Update the main graph with the received informations
-      for (rid l = vtxdist.get(i); k < ndata && l < vtxdist.get(i + 1);
-           k++, ++l) {
-        // Create new n_vtxdist (just count processors vertices)
-        ++n_vtxdist.get(partitions.get(i).get(k) + 1);
-
-        // vertex id from vtx to grobal id
-        auto v_id = m2g.find(l)->second.id;
-
-        // Update proc id in the vertex (using the old map)
-        gp.template vertex_p<nm_v_proc_id>(v_id) = partitions.get(i).get(k);
-
-        if (partitions.get(i).get(k) == (long int)v_cl.getProcessUnitID()) {
-          sub_sub_owner.add(v_id);
-        }
-
-        // Add vertex to temporary structure of distribution (needed to update
-        // main graph)
-        v_per_proc.get(partitions.get(i).get(k)).add(getVertexGlobalId(l));
-      }
-    }
-
-    // Create new n_vtxdist (accumulate the counters)
-    for (size_t i = 2; i <= Np; i++) {
-      n_vtxdist.get(i) += n_vtxdist.get(i - 1);
-    }
-
-    // Copy the new decomposition in the main vtxdist
-    for (size_t i = 0; i <= Np; i++) {
-      vtxdist.get(i) = n_vtxdist.get(i);
-    }
-
-    openfpm::vector<size_t> cnt;
-    cnt.resize(Np);
-
-    for (size_t i = 0; i < gp.getNVertex(); ++i) {
-      size_t pid = gp.template vertex_p<nm_v_proc_id>(i);
-
-      rid j = rid(vtxdist.get(pid).id + cnt.get(pid));
-      gid gi = gid(i);
-
-      gp.template vertex_p<nm_v_id>(i) = j.id;
-      cnt.get(pid)++;
-
-      setMapId(j, gi);
-    }
-  }
 };
 
 #endif // SRC_DECOMPOSITION_ABSTRACTDISTRIBUTIONSTRATEGY_HPP
