@@ -193,13 +193,13 @@ public:
      * \return an iterator
      *
      */
-    vector_dist_iterator getDomainIterator() const
+    vector_dist_iterator_subset getDomainIterator() const
     {
 #ifdef SE_CLASS3
         se3.getIterator();
 #endif
 
-        return vector_dist_iterator(0, g_m);
+        return vector_dist_iterator_subset(0, g_m,pid);
     }
 
 	/*! \brief Construct a cell list starting from the stored particles
