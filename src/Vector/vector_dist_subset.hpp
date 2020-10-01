@@ -23,6 +23,15 @@ class vector_dist_subset
 
     size_t g_m = 0;
 
+    void update_gm()
+    {
+    	g_m = 0;
+        for (size_t i = 0 ; i < pid.size() ; i++)
+        {
+            g_m += (pid.template get<0>(i) < vd.size_local())?1:0;
+        }
+    }
+
 public:
 
     //! property object
@@ -45,12 +54,24 @@ public:
                        openfpm::vector<aggregate<int>> & pid)
                        :vd(vd),pid(pid)
     {
-        for (size_t i = 0 ; i < pid.size() ; i++)
-        {
-            g_m += (pid.template get<0>(i) < vd.size_local())?1:0;
-        }
+    	update_gm();
     }
 
+
+    /*! \brief Update the subset indexes
+     *
+     */
+    inline void update(openfpm::vector<aggregate<int>> & pid)
+    {
+    	this->pid.resize(pid.size());
+
+        for (size_t i = 0 ; i < pid.size() ; i++)
+        {
+            this->pid.template get<0>(i) = pid.template get<0>(i);
+        }
+
+        update_gm();
+    }
 
     /*! \brief Get the decomposition
      *
