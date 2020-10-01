@@ -60,13 +60,6 @@ public:
    *
    */
   void getSubSubDomainPosition(size_t id, T (&pos)[dim]) {
-#ifdef SE_CLASS1
-    if (id >= gp.getNVertex())
-      std::cerr << __FILE__ << ":" << __LINE__
-                << "Such vertex doesn't exist (id = " << id << ", "
-                << "total size = " << gp.getNVertex() << ")\n";
-#endif
-
     // Copy the geometrical informations inside the pos vector
     pos[0] = gp.vertex(id).template get<nm_v_x>()[0];
     pos[1] = gp.vertex(id).template get<nm_v_x>()[1];
@@ -97,14 +90,8 @@ public:
    * \param id vertex id
    *
    */
+  // todo mv to cartesian
   size_t getSubSubDomainComputationCost(size_t id) {
-#ifdef SE_CLASS1
-    if (id >= gp.getNVertex())
-      std::cerr << __FILE__ << ":" << __LINE__
-                << "Such vertex doesn't exist (id = " << id << ", "
-                << "total size = " << gp.getNVertex() << ")\n";
-#endif
-
     return gp.vertex(id).template get<nm_v_computation>();
   }
 
@@ -125,15 +112,6 @@ public:
    * \param communication Communication value
    */
   void setCommunicationCost(size_t v_id, size_t e, size_t communication) {
-#ifdef SE_CLASS1
-
-    size_t e_id = v_id + e;
-
-    if (e_id >= gp.getNEdge())
-      std::cerr << "Such edge doesn't exist (id = " << e_id << ", "
-                << "total size = " << gp.getNEdge() << ")\n";
-#endif
-
     gp.getChildEdge(v_id, e).template get<nm_e::communication>() =
         communication;
   }
@@ -148,14 +126,6 @@ public:
     if (!verticesGotWeights) {
       verticesGotWeights = true;
     }
-
-#ifdef SE_CLASS1
-    if (id >= gp.getNVertex()) {
-      std::cerr << __FILE__ << ":" << __LINE__
-                << "Such vertex doesn't exist (id = " << id << ", "
-                << "total size = " << gp.getNVertex() << ")\n";
-    }
-#endif
 
     // Update vertex in main graph
     gp.vertex(id).template get<nm_v_computation>() = weight;
@@ -210,14 +180,6 @@ public:
    *
    */
   Graph_CSR<nm_v<dim>, nm_e> &getGraph() { return gp; }
-
-  template <typename Graph> void reset(Graph &graph) {
-    if (is_distributed) {
-      graph.reset(gp, vtxdist, m2g, verticesGotWeights);
-    } else {
-      graph.initSubGraph(gp, vtxdist, m2g, verticesGotWeights);
-    }
-  }
 
   /*! \brief Refine current decomposition
    *
@@ -276,9 +238,8 @@ public:
    *
    *
    */
-  template <typename Graph> void distribute(Graph &graph) {
-    reset(graph);
-
+  template <typename Graph>
+  void distribute(Graph &graph) {
     //! Get the processor id
     size_t p_id = v_cl.getProcessUnitID();
 
@@ -366,7 +327,7 @@ public:
   //! Processor domain bounding box
   ::Box<dim, size_t> proc_box;
 
-  //! Global sub-sub-domain graph
+  //! Global sub-sub-domain graph todo mv to cartesian
   Graph_CSR<nm_v<dim>, nm_e> gp;
 
   //! ghost info

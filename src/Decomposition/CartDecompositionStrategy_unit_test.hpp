@@ -32,8 +32,6 @@ using MyDecompositionStrategy =
 using MyDistributionStrategy =
     CartDistributionStrategy<SPACE_N_DIM, domain_type>;
 
-using ParmetisGraph = Parmetis<Graph_CSR<nm_v<SPACE_N_DIM>, nm_e>>;
-
 struct MyComputationalCostsModel : ModelComputationalCosts {
   template <typename DecompositionStrategy, typename DistributionStrategy>
   void computeCommunicationAndMigrationCosts(DecompositionStrategy &dec,
@@ -85,11 +83,6 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   MyDistributionStrategy dist(vcl);
   MyDistributionModel mdi;
 
-  // ... and our shared information
-
-  //! Convert the graph to parmetis format
-  ParmetisGraph parmetis_graph(vcl, vcl.getProcessingUnits());
-
   // Physical domain
   Box<SPACE_N_DIM, domain_type> box({0.0, 0.0, 0.0}, {1.0, 1.0, 1.0});
   size_t div[SPACE_N_DIM];
@@ -125,14 +118,14 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
 
   //////////////////////////////////////////////////////////////////// decompose
   dec.dec.reset();
-  dist.dist.reset(parmetis_graph);
+  dist.reset();
   if (dec.dec.shouldSetCosts()) {
     mcc.computeCommunicationAndMigrationCosts(dec, dist);
   }
-  dec.decompose(mde, parmetis_graph, dist.dist.getVtxdist());
+  dec.decompose(mde, dist.getGraph(), dist.dist.getVtxdist());
 
   /////////////////////////////////////////////////////////////////// distribute
-  dist.dist.distribute(parmetis_graph);
+  dist.distribute();
 
   ///////////////////////////////////////////////////////////////////////  merge
   dec.merge(dist.dist.getGraph(), dist.dist.getGhost(), dist.getGrid());

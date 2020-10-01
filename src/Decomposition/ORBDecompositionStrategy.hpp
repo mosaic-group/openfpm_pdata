@@ -2,6 +2,7 @@
 #define SRC_DECOMPOSITION_ORB_DECOMPOSITION_STRATEGY_HPP
 
 #include "Decomposition/AbstractDecompositionStrategy.hpp"
+#include "Decomposition/ORB.hpp"
 
 template <unsigned int dim, typename domain_type,
           typename AbstractDecStrategy =
@@ -45,15 +46,16 @@ public:
 
   template <typename Model, typename Graph>
   void decompose(Model m, Graph &graph, openfpm::vector<rid> &vtxdist) {
-    // todo decompose
+    dec.decompose(m, graph, vtxdist);
   }
 
   template <typename Graph>
   void merge(Graph &graph, Ghost<dim, SpaceType> &ghost) {
-    // todo decompose
+    // todo merge
+    dec.calculateGhostBoxes(ghost);
   }
 
-private:
+// todo private:
   AbstractDecStrategy dec;
 };
 #endif // SRC_DECOMPOSITION_ORB_DECOMPOSITION_STRATEGY_HPP

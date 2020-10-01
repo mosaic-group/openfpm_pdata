@@ -40,18 +40,18 @@ using ParmetisGraph = Parmetis<Graph_CSR<nm_v<SPACE_N_DIM>, nm_e>>;
 using MyPoint = Point<SPACE_N_DIM, domain_type>;
 using MyPoints = openfpm::vector<MyPoint>;
 
+typedef vector_dist<
+    SPACE_N_DIM, SpaceType,
+    aggregate<size_t, double, double, double, double, double[SPACE_N_DIM],
+              double[SPACE_N_DIM], double[SPACE_N_DIM]>>
+    particles;
+
 struct MyComputationalCostsModel : ModelComputationalCosts {
   template <typename DistributionStrategy, typename vector>
-  void addToComputation(DistributionStrategy &dist, vector &vd, size_t v,
-                        size_t p) {
-    if (vd.template getProp<type>(p) == FLUID) {
-      dist.addComputationCost(v, 4);
-    } else {
-      dist.addComputationCost(v, 3);
-    }
+  void addToComputation(DistributionStrategy &dist, size_t v) {
+    dist.addComputationCost(v, 2);
   }
 
-  // todo where to use it
   template <typename DistributionStrategy>
   void init(DistributionStrategy &dist) {
     for (size_t i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
@@ -61,51 +61,19 @@ struct MyComputationalCostsModel : ModelComputationalCosts {
 
   template <typename particles, typename DecompositionStrategy,
             typename DistributionStrategy>
-  void calculate(particles &vd, DecompositionStrategy &dec,
-                 DistributionStrategy &dist) {
+  void computeCommunicationAndMigrationCosts(MyPoints &vd, DecompositionStrategy &dec, DistributionStrategy &dist) {
     CellDecomposer_sm<SPACE_N_DIM, domain_type, shift<SPACE_N_DIM, domain_type>>
-        cdsm;
+        cdsm;  // question can really use this ?
     cdsm.setDimensions(dec.getDomain(), dist.getGrid().getSize(), 0);
-    for (auto it = vd.getDomainIterator(); !it.hasEnded(); ++it) {
-      Point<SPACE_N_DIM, domain_type> p = vd.getPos(it.get());
+    for (auto it = vd.getIterator(); !it.hasEnded(); ++it) {
+      auto p = it.get();
       const size_t v = cdsm.getCell(p);
-      addToComputation(dist, vd, v, it.get().getKey());
+      addToComputation(dist, v);
     }
-  }
-
-  template <typename DecompositionStrategy, typename DistributionStrategy>
-  void computeCommunicationAndMigrationCosts(DecompositionStrategy &dec,
-                                             DistributionStrategy &dist,
-                                             const size_t ts = 1) {
-    domain_type migration;
-    size_t norm;
-    std::tie(migration, norm) = dec.computeCommunicationCosts(dist.getGhost());
-    dist.setMigrationCosts(migration, norm, ts);
   }
 };
 
 struct MyDecompositionModel : ModelDecompose {};
-
-struct MyDistributionModel : ModelDistribute {
-  val_t toll() { return 1.01; }
-  template <typename DistributionStrategy>
-  void applyModel(DistributionStrategy &dist, size_t v) {
-    const size_t id = v;
-    const size_t weight = dist.getSubSubDomainComputationCost(v) *
-                          dist.getSubSubDomainComputationCost(v);
-    dist.setComputationCost(id, weight);
-  }
-
-  template <typename DistributionStrategy, typename Graph>
-  void finalize(DistributionStrategy &dist, Graph &graph) {
-    for (auto i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
-      // apply model to all the sub-sub-domains
-      applyModel(dist, dist.getOwnerSubSubDomain(i));
-    }
-
-    dist.setDistTol(graph, toll());
-  }
-};
 
 void OrbDecomposition_non_periodic_test(const unsigned int nProcs) {
   Vcluster<> &vcl = create_vcluster();
@@ -120,7 +88,6 @@ void OrbDecomposition_non_periodic_test(const unsigned int nProcs) {
 
   // - how we want to distribute ...
   MyDistributionStrategy dist(vcl);
-  MyDistributionModel mdi;
 
   // ... and our shared information
 
@@ -156,6 +123,7 @@ void OrbDecomposition_non_periodic_test(const unsigned int nProcs) {
   size_t bc[] = {NON_PERIODIC, NON_PERIODIC, NON_PERIODIC};
 
   // init
+  mcc.init(dist);
   dec.setParameters(box, bc);
   dist.setParameters(g);
 
@@ -163,7 +131,7 @@ void OrbDecomposition_non_periodic_test(const unsigned int nProcs) {
   dec.dec.reset();
   dist.dist.reset(parmetis_graph);
   if (dec.dec.shouldSetCosts()) {
-    mcc.computeCommunicationAndMigrationCosts(dec.dec, dist);
+    mcc.computeCommunicationAndMigrationCosts(vp, dec, dist);
   }
   dec.decompose(mde, parmetis_graph, dist.getVtxdist());
 

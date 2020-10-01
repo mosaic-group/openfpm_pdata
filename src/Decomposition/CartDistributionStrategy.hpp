@@ -11,9 +11,12 @@ class CartDistributionStrategy {
 
   using Box = SpaceBox<dim, domain_type>;
   using DGrid = grid_sm<dim, void>;
+  using ParmetisGraph = Parmetis<Graph_CSR<nm_v<dim>, nm_e>>;
 
 public:
-  CartDistributionStrategy(Vcluster<> &v_cl) : dist(v_cl) {}
+  CartDistributionStrategy(Vcluster<> &v_cl) : dist(v_cl), graph(v_cl, v_cl.getProcessingUnits()) {
+    //! Convert the graph to parmetis => todo rename ParMetisDistribution
+  }
 
   ~CartDistributionStrategy() {}
 
@@ -68,6 +71,22 @@ public:
     }
   }
 
+  void reset() {
+    if (dist.is_distributed) {
+      graph.reset(dist.gp, dist.vtxdist, dist.m2g, dist.verticesGotWeights);
+    } else {
+      graph.initSubGraph(dist.gp, dist.vtxdist, dist.m2g, dist.verticesGotWeights);
+    }
+  }
+
+  void distribute() {
+    reset();
+
+    dist.distribute(graph);
+  }
+
+  ParmetisGraph& getGraph() { return graph; }
+
   /*! \brief Distribution grid
    *
    * \return the grid
@@ -75,6 +94,8 @@ public:
   DGrid getGrid() { return gr; }
 
 // todo private:
+
+  ParmetisGraph graph;
 
   //! Structure that store the cartesian grid information
   DGrid gr;
