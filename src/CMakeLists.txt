@@ -50,6 +50,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 if ( CMAKE_COMPILER_IS_GNUCC )
     target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
+	target_compile_options(pdata PRIVATE "-Wno-undefined-var-template")
+	target_compile_options(pdata PRIVATE "-Wno-macro-redefined")
     #target_compile_options(pdata PRIVATE "-fsanitize=address")
     #    target_link_options(pdata PRIVATE "-fsanitize=address")
     if (TEST_COVERAGE)
@@ -216,7 +218,8 @@ install(FILES Vector/se_class3_vector.hpp
 	      Vector/vector_dist_ofb.hpp 
 	      Vector/vector_dist_key.hpp
 	      Vector/vector_dist_kernel.hpp
-	      DESTINATION openfpm_pdata/include/Vector )
+		  Vector/vector_dist_subset.hpp
+		DESTINATION openfpm_pdata/include/Vector )
 
 install(FILES util/common_pdata.hpp
 	      DESTINATION openfpm_pdata/include/util)
