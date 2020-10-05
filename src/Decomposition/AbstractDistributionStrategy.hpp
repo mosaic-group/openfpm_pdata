@@ -46,6 +46,10 @@ public:
 
   void onEnd() {}
 
+  void reset() {
+    // todo
+  }
+
   /*! \brief Print the current distribution and save it to VTK file
    *
    * \param file filename

@@ -31,10 +31,11 @@
 #include "util/se_util.hpp"
 
 template <unsigned int dim, typename domain_type, typename Memory = HeapMemory,
-          template <typename> class layout_base = memory_traits_lin,
-          typename DGrid = grid_sm<dim, void>, typename DGraph = Parmetis<Graph_CSR<nm_v<dim>, nm_e>>>
+          template <typename> class layout_base = memory_traits_lin>
 class AbstractDecompositionStrategy {
   using Box = SpaceBox<dim, domain_type>;
+  using Domain = ::Box<dim, domain_type>;
+
 public:
   /*! \brief Abstract decomposition constructor
    *
@@ -81,7 +82,7 @@ public:
 
   bool shouldSetCosts() { return !costBeenSet; }
 
-  void setDomain(::Box<dim, domain_type> &domain_) {
+  void setDomain(Domain &domain_) {
     domain = domain_;
   }
 
@@ -94,24 +95,33 @@ public:
    * \return The physical domain box
    *
    */
-  const ::Box<dim, domain_type> &getDomain() const { return domain; }
+  const Domain &getDomain() const { return domain; }
 
-  /*! \brief Delete the decomposition and reset the data-structure */
-  void reset() {}
+  /*! \brief Return the box of the physical domain
+   *
+   * \return The physical domain box
+   *
+   */
+  const Graph_CSR<nm_v<dim>, nm_e> &getDecompositionGraph() const { return gp; }
 
   void decompose() {}
 
   void onEnd() {}
 
-  DGraph& getDistGraph() {}
+  /*! \brief Delete the decomposition and reset the data-structure */
+  void reset() {
+    // todo
+  }
 
-// todo private:
+private:
+  //! global decomposition graph
+  Graph_CSR<nm_v<dim>, nm_e>& gp;
 
-//! Boundary condition info
+  //! Boundary condition info
   size_t bc[dim];
 
   //! (rectangular) domain to decompose
-  ::Box<dim, domain_type> domain;
+  Domain domain;
 
   //! reference counter of the object in case is shared between object
   long int ref_cnt;
