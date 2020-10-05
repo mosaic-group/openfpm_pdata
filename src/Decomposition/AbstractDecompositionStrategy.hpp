@@ -82,6 +82,8 @@ public:
 
   bool shouldSetCosts() { return !costBeenSet; }
 
+  void computeCommunicationCosts() { costBeenSet = true; }
+
   void setDomain(Domain &domain_) {
     domain = domain_;
   }
@@ -95,7 +97,7 @@ public:
    * \return The physical domain box
    *
    */
-  const Domain &getDomain() const { return domain; }
+  Domain &getDomain() { return domain; }
 
   /*! \brief Return the box of the physical domain
    *
@@ -112,6 +114,11 @@ public:
   void reset() {
     // todo
   }
+
+  Vcluster<> & getVcluster() { return v_cl; }
+
+  //! Box Spacing
+  domain_type spacing[dim];  // todo private
 
 private:
   //! global decomposition graph
