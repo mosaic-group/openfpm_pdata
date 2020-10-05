@@ -113,19 +113,16 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
 
   // init
   dec.setParameters(div, box, bc, gsub);
-  dist.setParameters(dec.getGrid(), g, gsub);
-  dist.createCartGraph(bc, box);
+  dist.setParameters(dec.getGrid(), g, gsub, bc, box);
 
   //////////////////////////////////////////////////////////////////// decompose
-  dec.dec.reset();
+  dec.reset();
   dist.reset();
-  if (dec.dec.shouldSetCosts()) {
-    mcc.computeCommunicationAndMigrationCosts(dec, dist);
-  }
-  dec.decompose(mde, dist.getGraph(), dist.dist.getVtxdist());
+  mcc.computeCommunicationAndMigrationCosts(dec, dist);
+  dec.decompose(dist.getGraph(), dist.dist.getVtxdist());
 
   /////////////////////////////////////////////////////////////////// distribute
-  dist.distribute();
+  dist.distribute(dec.);
 
   //////////////////////////////////////////////////////////////////////// merge
   dec.merge(dist.dist.getGraph(), dist.dist.getGhost(), dist.getGrid());

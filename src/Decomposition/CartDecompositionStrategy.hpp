@@ -37,6 +37,9 @@ class CartDecompositionStrategy
       public domain_icell_calculator<dim, T, layout_base, Memory> {
   using Box = SpaceBox<dim, domain_type>;
   using DGrid = grid_sm<dim, void>;
+  using SubDomains =
+      openfpm::vector<Box, Memory, typename layout_base<Box>::type,
+                      layout_base>;
 
 public:
   CartDecompositionStrategy(Vcluster<> &v_cl)
@@ -160,10 +163,12 @@ public:
     nn_prcs<dim, domain_type, layout_base, Memory>::reset();
     ie_ghost<dim, domain_type, Memory, layout_base>::reset();
     ie_loc_ghost<dim, domain_type, layout_base, Memory>::reset();
+
+    dec.reset();
   }
 
   void decompose(openfpm::vector<rid> &vtxdist) {
-    graph.decompose(vtxdist); // decompose
+    gp.decompose(vtxdist); // decompose
   }
 
   void onEnd(Ghost<dim, domain_type> &ghost) {
@@ -174,7 +179,7 @@ public:
             sub_domains, this->getProcessorBounds(), ghost.getRcut(), ghost);
   }
 
-  void setParameters(const size_t (&div_)[dim], ::Box<dim, domain_type> &domain_, const size_t (&dec.bc)[dim], const grid_sm<dim, void> &sec_dist = grid_sm<dim, void>()) {
+  void setParameters(const size_t (&div_)[dim], ::Box<dim, domain_type> &domain_, const size_t (&bc)[dim], const grid_sm<dim, void> &sec_dist = grid_sm<dim, void>()) {
     dec.setBoundaryConditions(bc);
 
     // Set the decomposition parameters
@@ -326,7 +331,7 @@ public:
    *
    */
   template <typename Graph>
-  void createSubdomains(Graph &graph, Ghost<dim, domain_type> &ghost, DGrid gr_dist,
+  void createSubdomains(Ghost<dim, domain_type> &ghost, DGrid gr_dist,
                         size_t opt = 0) {
     // Calculate the total number of box and and the spacing
     // on each direction
@@ -343,7 +348,7 @@ public:
 
     // Optimize the decomposition creating bigger spaces
     // And reducing Ghost over-stress
-    dec_optimizer<dim, Graph_CSR<nm_v<dim>, nm_e>> d_o(graph,
+    dec_optimizer<dim, Graph_CSR<nm_v<dim>, nm_e>> d_o(gp,
                                                        gr_dist.getSize());
 
     // Ghost
@@ -358,7 +363,7 @@ public:
 
     // optimize the decomposition or merge sub-sub-domain
     d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(
-        graph, dec.v_cl.getProcessUnitID(), dec.loc_box, dec.box_nn_processor, ghe, dec.dec.bc);
+        gp, dec.v_cl.getProcessUnitID(), dec.loc_box, dec.box_nn_processor, ghe, dec.dec.bc);
 
     // Initialize
     if (loc_box.size() > 0)
@@ -556,5 +561,8 @@ public:
   
   //! Structure that store the cartesian grid information
   DGrid gr;
+
+  //! Global sub-sub-domain graph
+	Graph_CSR<nm_v<dim>, nm_e> gp;
 };
 #endif // SRC_DECOMPOSITION_CART_DECOMPOSITION_STRATEGY_HPP

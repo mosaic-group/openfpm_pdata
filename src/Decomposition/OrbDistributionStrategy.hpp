@@ -18,7 +18,13 @@ public:
   ~OrbDistributionStrategy() {}
 
   void setParameters(const Ghost<dim, domain_type> &ghost) {
-    dist.ghost = ghost;
+    dist.setGhost(ghost);
+  }
+
+  void distribute() {
+    // todo: "TrivialDistribuzion" che assegna ad ogni nodo un processore in maniera requenziale
+
+    dist.distribute();
   }
 
 // todo private:

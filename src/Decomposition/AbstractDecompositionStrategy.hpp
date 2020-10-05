@@ -35,9 +35,6 @@ template <unsigned int dim, typename domain_type, typename Memory = HeapMemory,
           typename DGrid = grid_sm<dim, void>, typename DGraph = Parmetis<Graph_CSR<nm_v<dim>, nm_e>>>
 class AbstractDecompositionStrategy {
   using Box = SpaceBox<dim, domain_type>;
-  using SubDomains =
-      openfpm::vector<Box, Memory, typename layout_base<Box>::type,
-                      layout_base>;
 public:
   /*! \brief Abstract decomposition constructor
    *

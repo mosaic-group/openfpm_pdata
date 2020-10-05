@@ -1,7 +1,6 @@
 #ifndef SRC_DECOMPOSITION_ABSTRACTDISTRIBUTIONSTRATEGY_HPP
 #define SRC_DECOMPOSITION_ABSTRACTDISTRIBUTIONSTRATEGY_HPP
 
-#include "Decomposition/Domain_NN_calculator_cart.hpp"
 #include "Graph/CartesianGraphFactory.hpp"
 #include "Graph/ids.hpp"
 #include "Space/Ghost.hpp"
@@ -9,12 +8,8 @@
 
 /*! \brief Class that distribute sub-sub-domains across processors
  */
-template <unsigned int dim, typename T, typename Memory = HeapMemory,
-          template <typename> class layout_base = memory_traits_lin,
-          typename DGrid = grid_sm<dim, void>>
-class AbstractDistributionStrategy : public domain_nn_calculator_cart<dim> {
-  //! It simplify to access the SpaceBox element
-  using Box = SpaceBox<dim, T>;
+template <unsigned int dim, typename T, typename DistributionGraph, typename Memory = HeapMemory, template <typename> class layout_base = memory_traits_lin>
+class AbstractDistributionStrategy {
 
 public:
   //! Vcluster
@@ -30,161 +25,26 @@ public:
         partitions(v_cl.getProcessingUnits()),
         v_per_proc(v_cl.getProcessingUnits()) {}
 
-  /*! \brief Return the global id of the owned sub-sub-domain
-   *
-   * \param id in the list of owned sub-sub-domains
-   *
-   * \return the global id
-   *
-   */
-  size_t getOwnerSubSubDomain(size_t id) const { return sub_sub_owner.get(id); }
-
-  /*! \brief Return the total number of sub-sub-domains this processor own
-   *
-   * \return the total number of sub-sub-domains owned by this processor
-   *
-   */
-  size_t getNOwnerSubSubDomains() const { return sub_sub_owner.size(); }
-
-  /*! \brief Returns total number of sub-sub-domains in the distribution graph
-   *
-   * \return the total number of sub-sub-domains
-   *
-   */
-  size_t getNSubSubDomains() const { return gp.getNVertex(); }
-
-  /*! \brief function that return the position of the vertex in the space
-   *
-   * \param id vertex id
-   * \param pos vector that will contain x, y, z
-   *
-   */
-  void getSubSubDomainPosition(size_t id, T (&pos)[dim]) {
-    // Copy the geometrical informations inside the pos vector
-    pos[0] = gp.vertex(id).template get<nm_v_x>()[0];
-    pos[1] = gp.vertex(id).template get<nm_v_x>()[1];
-    if (dim == 3) {
-      pos[2] = gp.vertex(id).template get<nm_v_x>()[2];
-    }
-  }
-
-  /*! \brief Set migration cost of the vertex id
-   *
-   * \param id of the vertex to update
-   * \param migration cost of the migration
-   */
-  void setMigrationCost(size_t id, size_t migration) {
-#ifdef SE_CLASS1
-    if (id >= gp.getNVertex())
-      std::cerr << __FILE__ << ":" << __LINE__
-                << "Such vertex doesn't exist (id = " << id << ", "
-                << "total size = " << gp.getNVertex() << ")\n";
-#endif
-
-    gp.vertex(id).template get<nm_v_migration>() = migration;
-  }
-
-  /*! \brief function that get the weight of the vertex
-   * (computation cost of the sub-sub-domain id)
-   *
-   * \param id vertex id
-   *
-   */
-  // todo mv to cartesian
-  size_t getSubSubDomainComputationCost(size_t id) {
-    return gp.vertex(id).template get<nm_v_computation>();
-  }
-
-  /*! \brief Add computation cost i to the subsubdomain with global id gid
-   *
-   * \param gid global id of the subsubdomain to update
-   * \param i Cost increment
-   */
-  void addComputationCost(size_t gid, size_t i) {
-    size_t c = getSubSubDomainComputationCost(gid);
-    setComputationCost(gid, c + i);
-  }
-
-  /*! \brief Set communication cost of the edge id
-   *
-   * \param v_id Id of the source vertex of the edge
-   * \param e i child of the vertex
-   * \param communication Communication value
-   */
-  void setCommunicationCost(size_t v_id, size_t e, size_t communication) {
-    gp.getChildEdge(v_id, e).template get<nm_e::communication>() =
-        communication;
-  }
-
-  /*! \brief Function that set the weight of the vertex
-   *
-   * \param id vertex id
-   * \param weight to give to the vertex
-   *
-   */
-  void setComputationCost(size_t id, size_t weight) {
-    if (!verticesGotWeights) {
-      verticesGotWeights = true;
-    }
-
-    // Update vertex in main graph
-    gp.vertex(id).template get<nm_v_computation>() = weight;
-  }
-
-  /*! \brief Returns total number of neighbors of the sub-sub-domain id
-   *
-   * \param id id of the sub-sub-domain
-   *
-   * \return the number of neighborhood sub-sub-domains for each sub-domain
-   *
-   */
-  size_t getNSubSubDomainNeighbors(size_t id) {
-    return gp.getNChilds(id);
-  }
-
   /*! \brief Set the tolerance for each partition
    *
    * \param tol tolerance
    *
    */
-  template <typename Graph> void setDistTol(Graph &graph, double tol) {
+  void setDistTol(double tol) {
     graph.setDistTol(tol);
   }
 
-  void setMigrationCosts(const float migration, const size_t norm,
-                         const size_t ts) {
-    for (auto i = 0; i < getNSubSubDomains(); i++) {
-      setMigrationCost(i, norm * migration);
-
-      for (auto s = 0; s < getNSubSubDomainNeighbors(i); s++) {
-        // We have to remove getSubSubDomainComputationCost(i) otherwise the
-        // graph is not directed
-        setCommunicationCost(i, s, 1 * ts);
-      }
-    }
+  void setGhost(const Ghost<dim, domain_type> &ghost_) {
+    ghost = ghost_;
   }
 
-  void onEnd() {
-    domain_nn_calculator_cart<dim>::reset();
-    domain_nn_calculator_cart<dim>::setParameters(proc_box);
-  }
-
-  /*! \brief Get the current graph (main)
-   *
+  /*! \brief It update the full decomposition
    */
-  Graph_CSR<nm_v<dim>, nm_e> &getGraph() { return gp; }
-
-  /*! \brief Refine current decomposition
-   *
-   * It makes a refinement of the current decomposition using Parmetis function
-   * RefineKWay After that it also does the remapping of the graph
-   * todo refactor
-   */
-  template <typename Graph> void refine(Graph &graph) {
-    graph.reset(gp, vtxdist, m2g, verticesGotWeights); // reset
-    graph.refine(vtxdist);                             // refine
-    distribute(graph);
+  void distribute(Graph_CSR<nm_v<dim>, nm_e>& subSubDomainsGraph) {
+    is_distributed = true;
   }
+
+  void onEnd() {}
 
   /*! \brief Print the current distribution and save it to VTK file
    *
@@ -192,10 +52,16 @@ public:
    *
    */
   void write(const std::string &file) {
-    // todo VTKWriter<Graph_CSR<nm_v<dim>, nm_e>, VTK_GRAPH> gv2(gp);
-    // todo gv2.write(std::to_string(v_cl.getProcessUnitID()) + "_" + file +
-    // ".vtk");
+    // todo
   }
+
+  /*! \brief Return the ghost
+   *
+   *
+   * \return the ghost extension
+   *
+   */
+  Ghost<dim, T> &getGhost() { return ghost; }
 
   openfpm::vector<rid> &getVtxdist() { return vtxdist; }
 
@@ -227,51 +93,16 @@ public:
    */
   gid getVertexGlobalId(rid n) { return m2g.find(n)->second; }
 
-  /*! \brief It update the full decomposition
+  /*! \brief operator to remap vertex to a new position
    *
-   *
-   */
-  void distribute() {
-    is_distributed = true;
-  }
-
-  /*! \brief Return the ghost
-   *
-   *
-   * \return the ghost extension
+   * \param n re-mapped position
+   * \param g global position
    *
    */
-  Ghost<dim, T> &getGhost() { return ghost; }
+  void setMapId(rid n, gid g) { m2g[n] = g; }
 
-  /*! \brief operator to init ids vector
-   *
-   * operator to init ids vector
-   *
-   */
-  void initLocalToGlobalMap() {
-    gid g;
-    rid i;
-    i.id = 0;
-
-    m2g.clear();
-    for (; (size_t)i.id < gp.getNVertex(); ++i) {
-      g.id = i.id;
-
-      m2g.insert({i, g});
-    }
-  }
-
-// todo private:
+private:
   bool is_distributed = false;
-
-  //! Processor domain bounding box
-  ::Box<dim, size_t> proc_box;
-
-  //! Global sub-sub-domain graph todo mv to cartesian
-  Graph_CSR<nm_v<dim>, nm_e> gp;
-
-  //! ghost info
-  Ghost<dim, T> ghost;
 
   //! Init vtxdist needed for Parmetis
   //
@@ -301,19 +132,11 @@ public:
   //! for access the map)
   std::unordered_map<rid, gid> m2g;
 
-  //! Id of the sub-sub-domain where we set the costs
-  openfpm::vector<size_t> sub_sub_owner;
+  // graph of PUs (= processing unit(s))
+  DistributionGraph graph;
 
   //! Flag to check if weights are used on vertices
   bool verticesGotWeights = false;
-
-  /*! \brief operator to remap vertex to a new position
-   *
-   * \param n re-mapped position
-   * \param g global position
-   *
-   */
-  void setMapId(rid n, gid g) { m2g[n] = g; }
 };
 
 #endif // SRC_DECOMPOSITION_ABSTRACTDISTRIBUTIONSTRATEGY_HPP

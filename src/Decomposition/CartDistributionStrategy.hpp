@@ -1,13 +1,14 @@
 #ifndef SRC_DECOMPOSITION_CART_DISTRIBUTION_STRATEGY_HPP
 #define SRC_DECOMPOSITION_CART_DISTRIBUTION_STRATEGY_HPP
 
+#include "Decomposition/Domain_NN_calculator_cart.hpp"
 #include "Decomposition/AbstractDistributionStrategy.hpp"
 
 template <unsigned int dim, typename domain_type,
           typename AbstractDistStrategy =
               AbstractDistributionStrategy<dim, domain_type>, typename Memory = HeapMemory,
           template <typename> class layout_base = memory_traits_lin>
-class CartDistributionStrategy {
+class CartDistributionStrategy : public domain_nn_calculator_cart<dim> {
 
   using Box = SpaceBox<dim, domain_type>;
   using DGrid = grid_sm<dim, void>;
@@ -21,14 +22,148 @@ public:
   ~CartDistributionStrategy() {}
 
   void setParameters(DGrid &grid_dec, const Ghost<dim, domain_type> &ghost,
-                const grid_sm<dim, void> &sec_dist = grid_sm<dim, void>()) {
+                const grid_sm<dim, void> &sec_dist = grid_sm<dim, void>(), const size_t (&bc)[dim], ::Box<dim, domain_type> &box) {
     if (sec_dist.size(0) != 0) {
       gr.setDimensions(sec_dist.getSize());
     } else {
       gr = grid_dec;
     }
 
-    dist.ghost = ghost;
+    dist.setGhost(ghost);
+    createCartGraph(bc, box);
+  }
+
+    /*! \brief Return the global id of the owned sub-sub-domain
+   *
+   * \param id in the list of owned sub-sub-domains
+   *
+   * \return the global id
+   *
+   */
+  size_t getOwnerSubSubDomain(size_t id) const { return sub_sub_owner.get(id); }
+
+  /*! \brief Return the total number of sub-sub-domains this processor own
+   *
+   * \return the total number of sub-sub-domains owned by this processor
+   *
+   */
+  size_t getNOwnerSubSubDomains() const { return sub_sub_owner.size(); }
+
+  /*! \brief Returns total number of sub-sub-domains in the distribution graph
+   *
+   * \return the total number of sub-sub-domains
+   *
+   */
+  size_t getNSubSubDomains() const { return gp.getNVertex(); }
+
+  /*! \brief function that return the position of the vertex in the space
+   *
+   * \param id vertex id
+   * \param pos vector that will contain x, y, z
+   *
+   */
+  void getSubSubDomainPosition(size_t id, T (&pos)[dim]) {
+    // Copy the geometrical informations inside the pos vector
+    pos[0] = gp.vertex(id).template get<nm_v_x>()[0];
+    pos[1] = gp.vertex(id).template get<nm_v_x>()[1];
+    if (dim == 3) {
+      pos[2] = gp.vertex(id).template get<nm_v_x>()[2];
+    }
+  }
+
+  /*! \brief Set migration cost of the vertex id
+   *
+   * \param id of the vertex to update
+   * \param migration cost of the migration
+   */
+  void setMigrationCost(size_t id, size_t migration) {
+    gp.vertex(id).template get<nm_v_migration>() = migration;
+  }
+
+  /*! \brief function that get the weight of the vertex
+   * (computation cost of the sub-sub-domain id)
+   *
+   * \param id vertex id
+   *
+   */
+  size_t getSubSubDomainComputationCost(size_t id) {
+    return gp.vertex(id).template get<nm_v_computation>();
+  }
+
+    /*! \brief Add computation cost i to the subsubdomain with global id gid
+   *
+   * \param gid global id of the subsubdomain to update
+   * \param i Cost increment
+   */
+  void addComputationCost(size_t gid, size_t i) {
+    size_t c = getSubSubDomainComputationCost(gid);
+    setComputationCost(gid, c + i);
+  }
+
+  /*! \brief Set communication cost of the edge id
+   *
+   * \param v_id Id of the source vertex of the edge
+   * \param e i child of the vertex
+   * \param communication Communication value
+   */
+  void setCommunicationCost(size_t v_id, size_t e, size_t communication) {
+    gp.getChildEdge(v_id, e).template get<nm_e::communication>() =
+        communication;
+  }
+
+  /*! \brief Function that set the weight of the vertex
+   *
+   * \param id vertex id
+   * \param weight to give to the vertex
+   *
+   */
+  void setComputationCost(size_t id, size_t weight) {
+    if (!verticesGotWeights) {
+      verticesGotWeights = true;
+    }
+
+    // Update vertex in main graph
+    gp.vertex(id).template get<nm_v_computation>() = weight;
+  }
+
+  /*! \brief Returns total number of neighbors of the sub-sub-domain id
+   *
+   * \param id id of the sub-sub-domain
+   *
+   * \return the number of neighborhood sub-sub-domains for each sub-domain
+   *
+   */
+  size_t getNSubSubDomainNeighbors(size_t id) {
+    return gp.getNChilds(id);
+  }
+
+  void setMigrationCosts(const float migration, const size_t norm,
+                         const size_t ts) {
+    for (auto i = 0; i < getNSubSubDomains(); i++) {
+      setMigrationCost(i, norm * migration);
+
+      for (auto s = 0; s < getNSubSubDomainNeighbors(i); s++) {
+        // We have to remove getSubSubDomainComputationCost(i) otherwise the
+        // graph is not directed
+        setCommunicationCost(i, s, 1 * ts);
+      }
+    }
+  }
+
+  void onEnd() {
+    domain_nn_calculator_cart<dim>::reset();
+    domain_nn_calculator_cart<dim>::setParameters(proc_box);
+  }
+
+  /*! \brief Refine current decomposition
+   *
+   * It makes a refinement of the current decomposition using Parmetis function
+   * RefineKWay After that it also does the remapping of the graph
+   */
+  void refine(Graph_CSR<nm_v<dim>, nm_e>& gp) {
+    graph.reset(gp, vtxdist, m2g, verticesGotWeights); // reset
+    graph.refine(vtxdist);                             // refine
+    distribute();
   }
 
   /*! \brief Create the Cartesian graph
@@ -73,9 +208,9 @@ public:
 
   void reset() {
     if (dist.is_distributed) {
-      graph.reset(dist.gp, dist.vtxdist, dist.m2g, dist.verticesGotWeights);
+      graph.reset(gp, dist.vtxdist, dist.m2g, dist.verticesGotWeights);
     } else {
-      graph.initSubGraph(dist.gp, dist.vtxdist, dist.m2g, dist.verticesGotWeights);
+      graph.initSubGraph(gp, dist.vtxdist, dist.m2g, dist.verticesGotWeights);
     }
   }
 
@@ -135,6 +270,24 @@ public:
     updateGraphs();
 
     dist.distribute();
+  }
+
+  /*! \brief operator to init ids vector
+   *
+   * operator to init ids vector
+   *
+   */
+  void initLocalToGlobalMap() {
+    gid g;
+    rid i;
+    i.id = 0;
+
+    m2g.clear();
+    for (; (size_t)i.id < gp.getNVertex(); ++i) {
+      g.id = i.id;
+
+      m2g.insert({i, g});
+    }
   }
 
   /*! \brief Update main graph ad subgraph with the received data of the
@@ -204,17 +357,26 @@ public:
     }
   }
 
-  ParmetisGraph& getGraph() { return graph; }
-
   /*! \brief Distribution grid
    *
    * \return the grid
    */
   DGrid getGrid() { return gr; }
 
-// todo private:
+  DGraph getGraph() { return graph; }
 
-  ParmetisGraph graph;
+  parmetis_graph;
+
+  // todo private:
+
+  //! Id of the sub-sub-domain where we set the costs
+  openfpm::vector<size_t> sub_sub_owner;
+
+  //! Processor domain bounding box
+  ::Box<dim, size_t> proc_box;
+
+  //! Global sub-sub-domain graph todo mv to cartesian
+  ;
 
   //! Structure that store the cartesian grid information
   DGrid gr;
