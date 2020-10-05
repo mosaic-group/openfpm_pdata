@@ -87,7 +87,7 @@ public:
   void distribute(DecompositionGraph& gp) {
     reset(gp);
 
-    inner().distribute();
+    graph.decompose(getVtxdist());
     postDecomposition(gp);  // todo rename
   }
 
@@ -143,8 +143,6 @@ public:
 
     // Update graphs with the received data
     updateGraphs(gp);
-
-    inner().distribute();
   }
 
   /*! \brief Refine current decomposition

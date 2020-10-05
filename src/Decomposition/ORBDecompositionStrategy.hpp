@@ -52,11 +52,11 @@ public:
   template <typename Point>
   void decompose(openfpm::vector<Point> &points) {
     orb = Orb(dec.domain, dec.v_cl.getProcessingUnits(), points);
-    // todo get graph_csr -> give gp (getTree())
   }
 
-  Orb::Tree& getTree() {
-    return orb->grp;
+  Graph_CSR<nm_v<dim>, nm_e> &getGraph() {
+    auto tree = orb->grp;  // Graph_CSR<ORB_node<T>, no_edge>
+    // todo get leaves only
   }
 
 private:

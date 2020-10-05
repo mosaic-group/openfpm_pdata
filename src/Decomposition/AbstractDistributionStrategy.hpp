@@ -36,8 +36,6 @@ public:
   /*! \brief It update the full decomposition
    */
   void distribute() {
-    graph.decompose(getVtxdist());
-
     is_distributed = true;
   }
 
@@ -46,9 +44,9 @@ public:
   template <typename DecompositionGraph>
   void reset(DecompositionGraph& gp) {
     if (is_distributed) {
-      getGraph().reset(gp, getVtxdist(), m2g, verticesGotWeights);
+      graph.reset(gp, getVtxdist(), m2g, verticesGotWeights);
     } else {
-      getGraph().initSubGraph(gp, getVtxdist(), m2g, verticesGotWeights);
+      graph.initSubGraph(gp, getVtxdist(), m2g, verticesGotWeights);
     }
   }
 

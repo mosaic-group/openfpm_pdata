@@ -89,7 +89,7 @@ public:
   }
 
   void setBoundaryConditions(const size_t (&bc_)[dim]) {
-    // todo std::copy(bc, bc + dim, bc_);
+    std::copy(bc_, bc_ + dim, bc);
   }
 
   void setGhost(const Ghost<dim, domain_type> &ghost_) {
@@ -117,11 +117,6 @@ public:
    */
   Domain &getDomain() { return domain; }
 
-  /*! \brief Return the box of the physical domain
-   *
-   * \return The physical domain box
-   *
-   */
   Graph_CSR<nm_v<dim>, nm_e> &getGraph() { return gp; }
 
   void decompose() {}

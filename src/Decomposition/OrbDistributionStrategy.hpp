@@ -16,12 +16,10 @@ public:
 
   ~OrbDistributionStrategy() {}
 
-  void setParameters(const Ghost<dim, domain_type> &ghost) {
-    dist.setGhost(ghost);
-  }
+  void setParameters() {}
 
   void distribute(DecompositionGraph& gp) {
-    // todo: "TrivialDistribuzion" che assegna ad ogni nodo un processore in maniera requenziale
+    // todo: "TrivialDistribution" che assegna ad ogni nodo un processore in maniera sequenziale
 
     dist.distribute();
   }

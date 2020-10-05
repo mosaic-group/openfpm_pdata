@@ -215,10 +215,8 @@ public:
     reset();
 
     if (inner().shouldSetCosts()) {
-     computeCommunicationAndMigrationCosts(1);
+      computeCommunicationAndMigrationCosts(1);
     }
-
-    // todo get graph_csr ready for give gp
   }
 
   void onEnd() {
@@ -373,7 +371,7 @@ public:
    * \param opt option (one option is to construct)
    *
    */
-  void createSubdomains(grid_sm<dim, void> gr_dist, size_t opt = 0) {
+  void createSubdomains(grid_sm<dim, void> & gr_dist, size_t opt = 0) {
     // Calculate the total number of box and and the spacing
     // on each direction
     // Get the box containing the domain
@@ -498,7 +496,7 @@ public:
     }
   }
 
-  void merge(grid_sm<dim, void> gr_dist) {
+  void merge(grid_sm<dim, void>& gr_dist) {
     createSubdomains(gr_dist);
     calculateGhostBoxes();
   }
