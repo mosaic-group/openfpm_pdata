@@ -139,13 +139,6 @@ public:
    *
    */
   size_t getNSubSubDomainNeighbors(size_t id) {
-#ifdef SE_CLASS1
-    if (id >= gp.getNVertex())
-      std::cerr << __FILE__ << ":" << __LINE__
-                << "Such vertex doesn't exist (id = " << id << ", "
-                << "total size = " << gp.getNVertex() << ")\n";
-#endif
-
     return gp.getNChilds(id);
   }
 
@@ -185,7 +178,7 @@ public:
    *
    * It makes a refinement of the current decomposition using Parmetis function
    * RefineKWay After that it also does the remapping of the graph
-   *
+   * todo refactor
    */
   template <typename Graph> void refine(Graph &graph) {
     graph.reset(gp, vtxdist, m2g, verticesGotWeights); // reset

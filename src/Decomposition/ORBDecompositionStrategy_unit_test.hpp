@@ -116,57 +116,40 @@ void OrbDecomposition_non_periodic_test(const unsigned int nProcs) {
 		++vp_it;
 	}
 
-  // Define ghost
+  // Define ghost todo needed ??
   Ghost<SPACE_N_DIM, domain_type> g(0.01);
 
   // Boundary conditions
   size_t bc[] = {NON_PERIODIC, NON_PERIODIC, NON_PERIODIC};
 
   // init
-  mcc.init(dist);
+  // todo needed mcc.init(dist);
   dec.setParameters(box, bc);
   dist.setParameters(g);
 
+  /* todo
+  1 creo un vector di particles
+  2 chiamo bisect (fino a che # foglie >= # processori)
+  3 trasformo il Tree (alias di Graph_CSR_s) dell'ORB a Parmetis e lo passo a ParmetisDistribution
+  4 distribute()
+  5 NON c'è proprio il passo del merge (in quanto non ci sono sub-sub-domains) ...
+  6 faccio qualche assert
+  */
+
   //////////////////////////////////////////////////////////////////// decompose
   dec.dec.reset();
-  dist.dist.reset(parmetis_graph);
-  if (dec.dec.shouldSetCosts()) {
-    mcc.computeCommunicationAndMigrationCosts(vp, dec, dist);
-  }
-  dec.decompose(mde, parmetis_graph, dist.getVtxdist());
+  dist.dist.reset();
+  dec.decompose(vp);
 
   /////////////////////////////////////////////////////////////////// distribute
-  dist.dist.distribute(parmetis_graph);
-
-  ///////////////////////////////////////////////////////////////////////  merge
-  dec.merge(dist.dist.getGraph(), dist.dist.getGhost());
+  // trasformo il Tree (alias di Graph_CSR_s) dell'ORB a Parmetis e lo passo a ParmetisDistribution
+  dist.distribute(dec.getTree());
 
   ///////////////////////////////////////////////////////////////////// finalize
-  dist.dist.onEnd();
-  dec.dec.onEnd(dist.dist.getGhost());
+  dist.onEnd();
+  dec.onEnd(d);
 
-  // For each calculated ghost box
-  for (size_t i = 0; i < dec.dec.getNIGhostBox(); ++i) {
-    SpaceBox<SPACE_N_DIM, domain_type> b = dec.dec.getIGhostBox(i);
-    size_t proc = dec.dec.getIGhostBoxProcessor(i);
-
-    // sample one point inside the box
-    Point<SPACE_N_DIM, domain_type> p = b.rnd();
-
-    // Check that ghost_processorsID return that processor number
-    const openfpm::vector<size_t> &pr =
-        dec.dec.ghost_processorID<AbstractDecStrategy::processor_id>(p, UNIQUE);
-    bool found = isIn(pr, proc);
-
-    printMe(vcl);
-    std::cout << "assert " << found << " == true" << std::endl;
-  }
-
-  // Check the consistency
-  bool val = dec.dec.check_consistency();
-
-  printMe(vcl);
-  std::cout << "assert " << val << " == true" << std::endl;
+  // todo faccio qualche assert
 }
 
 #endif // SRC_DECOMPOSITION_ORBDECOMPOSITIONSTRATEGY_UNIT_TEST_HPP

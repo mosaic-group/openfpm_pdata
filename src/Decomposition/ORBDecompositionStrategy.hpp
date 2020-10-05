@@ -10,6 +10,7 @@ template <unsigned int dim, typename domain_type,
 class OrbDecompositionStrategy {
 
   using Box = SpaceBox<dim, domain_type>;
+  using Orb = ORB<dim, domain_type>;
 
 public:
   OrbDecompositionStrategy(Vcluster<> &v_cl) : dec(v_cl) {}
@@ -38,24 +39,29 @@ public:
     // todo
   }
 
+  ~OrbDecompositionStrategy() {
+    if (orb) {
+      delete orb;  // todo needed ??
+    }
+  }
+
   void setParameters(::Box<dim, domain_type> &domain, const size_t (&bc)[dim]) {
     std::copy(bc, bc + dim, dec.bc);  // boundary conditions
 
     dec.domain = domain;  // domain
   }
 
-  template <typename Model, typename Graph>
-  void decompose(Model m, Graph &graph, openfpm::vector<rid> &vtxdist) {
-    dec.decompose(m, graph, vtxdist);
+  template <typename Point>
+  void decompose(openfpm::vector<Point> &points) {
+    orb = Orb(dec.domain, dec.v_cl.getProcessingUnits(), points);
   }
 
-  template <typename Graph>
-  void merge(Graph &graph, Ghost<dim, SpaceType> &ghost) {
-    // todo merge
-    dec.calculateGhostBoxes(ghost);
+  Orb::Tree& getTree() {
+    return orb->grp;
   }
 
 // todo private:
   AbstractDecStrategy dec;
+  Orb* orb;
 };
 #endif // SRC_DECOMPOSITION_ORB_DECOMPOSITION_STRATEGY_HPP

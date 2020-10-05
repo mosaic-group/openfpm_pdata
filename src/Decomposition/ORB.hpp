@@ -94,7 +94,7 @@ public:
  *
  */
 
-template<unsigned int dim, typename T, typename loc_wg=openfpm::vector<float>, typename loc_pos=openfpm::vector<Point<dim,T>> , typename Box=Box<dim,T>, template<typename,typename> class Tree=Graph_CSR_s>
+template<unsigned int dim, typename T, typename loc_wg=openfpm::vector<float>, typename loc_pos=openfpm::vector<Point<dim,T>>, typename Box=Box<dim,T>, template<typename,typename> class Tree=Graph_CSR>
 class ORB
 {
 	// Virtual cluster
@@ -188,6 +188,7 @@ class ORB
 			size_t n1 = grp.getChild(lbl,0);
 			size_t n2 = grp.getChild(lbl,1);
 
+      // todo user can have unbalanced tree
 			// get the splitting center of mass
 			T cm = grp.template vertex_p<ORB_node<T>::CM>(lbl);
 

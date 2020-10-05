@@ -87,8 +87,6 @@
 #include "Graph/ids.hpp"
 #include "Graph/CartesianGraphFactory.hpp"
 
-#include "./MyStuff.hpp"
-
 //! \cond [inclusion] \endcond
 
 /*!

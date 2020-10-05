@@ -2,20 +2,47 @@
 #define SRC_DECOMPOSITION_CART_DECOMPOSITION_STRATEGY_HPP
 
 #include "Decomposition/dec_optimizer.hpp"
+#include "DLB/DLB.hpp"
+#include "Decomposition/Decomposition.hpp"
+#include "Decomposition/Domain_icells_cart.hpp"
+#include "Decomposition/common.hpp"
+#include "Decomposition/ie_ghost.hpp"
+#include "Decomposition/ie_loc_ghost.hpp"
+#include "Decomposition/nn_processor.hpp"
+#include "Graph/CartesianGraphFactory.hpp"
+#include "GraphMLWriter/GraphMLWriter.hpp"
+#include "NN/CellList/CellDecomposer.hpp"
+#include "NN/CellList/CellList.hpp"
+#include "Space/Ghost.hpp"
+#include "Space/Shape/Box.hpp"
+#include "Space/Shape/Point.hpp"
+#include "SubdomainGraphNodes.hpp"
+#include "VCluster/VCluster.hpp"
+#include "Vector/map_vector.hpp"
+#include "config.h"
+#include "data_type/aggregate.hpp"
+#include "util/generic.hpp"
+#include "util/mathutil.hpp"
+#include "util/se_util.hpp"
+
 #include "Decomposition/AbstractDecompositionStrategy.hpp"
 
 template <unsigned int dim, typename domain_type,
           typename AbstractDecStrategy =
               AbstractDecompositionStrategy<dim, domain_type>, typename Memory = HeapMemory, template <typename> class layout_base = memory_traits_lin>
-class CartDecompositionStrategy {
-
+class CartDecompositionStrategy
+    : public ie_loc_ghost<dim, T, layout_base, Memory>,
+      public nn_prcs<dim, T, layout_base, Memory>,
+      public ie_ghost<dim, T, Memory, layout_base>,
+      public domain_icell_calculator<dim, T, layout_base, Memory> {
   using Box = SpaceBox<dim, domain_type>;
   using DGrid = grid_sm<dim, void>;
 
 public:
-  CartDecompositionStrategy(Vcluster<> &v_cl) : dec(v_cl) {}
-
-  ~CartDecompositionStrategy() {}
+  CartDecompositionStrategy(Vcluster<> &v_cl)
+      : nn_prcs<dim, domain_type, layout_base, Memory>(v_cl), v_cl(v_cl), dec(v_cl) {
+        bbox.zero(); // Reset the box to zero
+  }
 
   /*! \brief Copy constructor
    *
@@ -23,7 +50,7 @@ public:
    *
    */
   CartDecompositionStrategy(
-      const CartDecompositionStrategy<dim, domain_type, AbstractDecStrategy>& cart) {
+      const CartDecompositionStrategy<dim, domain_type, AbstractDecStrategy>& cart) : nn_prcs<dim, domain_type, layout_base, Memory>(cart.v_cl), v_cl(cart.v_cl) {
     this->operator=(cart);
   }
 
@@ -39,8 +66,116 @@ public:
     // todo
   }
 
+  //! Destructor
+  ~CartDecompositionStrategy() {}
+
+  //! Helpers
+  /*! \brief class to select the returned id by ghost_processorID
+   *
+   */
+  class box_id {
+  public:
+    /*! \brief Return the box id
+     *
+     * \param p structure containing the id informations
+     * \param b_id box_id
+     *
+     * \return box id
+     *
+     */
+    inline static size_t id(p_box<dim, domain_type> &p, size_t b_id) { return b_id; }
+  };
+
+  /*! \brief class to select the returned id by ghost_processorID
+   *
+   */
+  class processor_id {
+  public:
+    /*! \brief Return the processor id
+     *
+     * \param p structure containing the id informations
+     * \param b_id box_id
+     *
+     * \return processor id
+     *
+     */
+    template <typename encap_type>
+    inline static size_t id(const encap_type &p, size_t b_id) {
+      return p.template get<proc_>();
+    }
+  };
+
+  /*! \brief class to select the returned id by ghost_processorID
+   *
+   */
+  class lc_processor_id {
+  public:
+    /*! \brief Return the near processor id
+     *
+     * \param p structure containing the id informations
+     * \param b_id box_id
+     *
+     * \return local processor id
+     *
+     */
+    template <typename encap_type>
+    inline static size_t id(const encap_type &p, size_t b_id) {
+      return p.template get<lc_proc_>();
+    }
+  };
+
+  /*! \brief class to select the returned id by ghost_processorID
+   *
+   */
+  class shift_id {
+  public:
+    /*! \brief Return the shift id
+     *
+     * \param p structure containing the id informations
+     * \param b_id box_id
+     *
+     * \return shift_id id
+     *
+     */
+    template <typename encap_type>
+    inline static size_t id(const encap_type &p, size_t b_id) {
+      return p.template get<shift_id_>();
+    }
+  };
+
+  /*! \brief Return the bounding box containing union of all the sub-domains for
+   * the local processor
+   *
+   * \return The bounding box
+   *
+   */
+  ::Box<dim, domain_type> &getProcessorBounds() { return bbox; }
+
+  void reset() {
+    sub_domains.clear();
+    box_nn_processor.clear();
+    fine_s.clear();
+    loc_box.clear();
+
+    nn_prcs<dim, domain_type, layout_base, Memory>::reset();
+    ie_ghost<dim, domain_type, Memory, layout_base>::reset();
+    ie_loc_ghost<dim, domain_type, layout_base, Memory>::reset();
+  }
+
+  void decompose(openfpm::vector<rid> &vtxdist) {
+    graph.decompose(vtxdist); // decompose
+  }
+
+  void onEnd(Ghost<dim, domain_type> &ghost) {
+    domain_icell_calculator<dim, domain_type, layout_base, Memory>::
+        CalculateInternalCells(
+            v_cl,
+            ie_ghost<dim, domain_type, Memory, layout_base>::private_get_vb_int_box(),
+            sub_domains, this->getProcessorBounds(), ghost.getRcut(), ghost);
+  }
+
   void setParameters(const size_t (&div_)[dim], ::Box<dim, domain_type> &domain_, const size_t (&bc)[dim], const grid_sm<dim, void> &sec_dist = grid_sm<dim, void>()) {
-    std::copy(bc, bc + dim, dec.bc);
+    std::copy(bc, bc + dim, bc);
 
     // Set the decomposition parameters
     gr.setDimensions(div_);
@@ -49,6 +184,26 @@ public:
 
     // calc magnification factor dec-dist
     calculate_magn(sec_dist);
+  }
+
+  SubDomains &getSubDomains() { return sub_domains; }
+
+  /*! \brief Get the number of local sub-domains
+   *
+   * \return the number of sub-domains
+   *
+   */
+  size_t getNSubDomain() { return sub_domains.size(); }
+
+  /*! \brief function to check the consistency of the information of the
+   * decomposition
+   *
+   * \return false if is inconsistent
+   *
+   */
+  bool check_consistency() {
+    return ie_loc_ghost<dim, domain_type, layout_base, Memory>::check_consistency(
+        getNSubDomain());
   }
 
   template <typename Ghost>
@@ -81,7 +236,7 @@ public:
   void calculate_magn(const grid_sm<dim, void> &gm) {
     if (gm.size() == 0) {
       for (size_t i = 0; i < dim; i++) {
-        dec.magn[i] = 1;
+        magn[i] = 1;
       }
     } else {
       for (size_t i = 0; i < dim; i++) {
@@ -93,13 +248,13 @@ public:
                     << ")=" << gm.size(i) << std::endl;
         }
 
-        dec.magn[i] = gr.size(i) / gm.size(i);
+        magn[i] = gr.size(i) / gm.size(i);
       }
     }
   }
 
   void initialize_fine_s(const ::Box<dim, domain_type> &domain) {
-    dec.fine_s.clear();
+    fine_s.clear();
     size_t div_g[dim];
 
     // We reduce the size of the cells by a factor 8 in 3d 4 in 2d
@@ -107,7 +262,7 @@ public:
       div_g[i] = (gr.size(i) == 1) ? 1 : gr.size(i) / 2;
     }
 
-    dec.fine_s.Initialize(domain, div_g);
+    fine_s.Initialize(domain, div_g);
   }
   
   /*! \brief It convert the box from the domain decomposition into sub-domain
@@ -134,7 +289,7 @@ public:
     SpaceBox<dim, size_t> sub_dc = loc_box;
     SpaceBox<dim, size_t> sub_dce = sub_dc;
     sub_dce.expand(one);
-    sub_dce.mul(dec.magn);
+    sub_dce.mul(magn);
 
     // shrink by one
     for (size_t i = 0; i < dim; i++) {
@@ -143,7 +298,7 @@ public:
     }
 
     SpaceBox<dim, domain_type> sub_d(sub_dce);
-    sub_d.mul(dec.spacing);
+    sub_d.mul(spacing);
     sub_d += dec.domain.getP1();
 
     // we add the fixing sub-domains to cover all the domain
@@ -180,7 +335,7 @@ public:
 
     for (unsigned int i = 0; i < dim; i++) {
       // Calculate the spacing
-      dec.spacing[i] = (bs.getHigh(i) - bs.getLow(i)) / gr.size(i);
+      spacing[i] = (bs.getHigh(i) - bs.getLow(i)) / gr.size(i);
     }
 
     // fill the structure that store the processor id for each sub-domain
@@ -206,39 +361,39 @@ public:
         graph, dec.v_cl.getProcessUnitID(), dec.loc_box, dec.box_nn_processor, ghe, dec.bc);
 
     // Initialize
-    if (dec.loc_box.size() > 0)
+    if (loc_box.size() > 0)
     {
-      dec.bbox = convertDecBoxIntoSubDomain(dec.loc_box.get(0));
-      dec.proc_box = dec.loc_box.get(0);
-      dec.sub_domains.add(dec.bbox);
+      bbox = convertDecBoxIntoSubDomain(loc_box.get(0));
+      proc_box = loc_box.get(0);
+      sub_domains.add(bbox);
     }
     else
     {
       // invalidate all the boxes
       for (size_t i = 0; i < dim; i++) {
-        dec.proc_box.setLow(i, 0.0);
-        dec.proc_box.setHigh(i, 0);
+        proc_box.setLow(i, 0.0);
+        proc_box.setHigh(i, 0);
 
-        dec.bbox.setLow(i, 0.0);
-        dec.bbox.setHigh(i, 0);
+        bbox.setLow(i, 0.0);
+        bbox.setHigh(i, 0);
       }
     }
 
     // convert into sub-domain
-		for (size_t s = 1; s < dec.loc_box.size(); s++)
+		for (size_t s = 1; s < loc_box.size(); s++)
 		{
-			SpaceBox<dim, domain_type> sub_d = convertDecBoxIntoSubDomain(dec.loc_box.get(s));
+			SpaceBox<dim, domain_type> sub_d = convertDecBoxIntoSubDomain(loc_box.get(s));
 
 			// add the sub-domain
-			dec.sub_domains.add(sub_d);
+			sub_domains.add(sub_d);
 
 			// Calculate the bound box
-			dec.bbox.enclose(sub_d);
-			dec.proc_box.enclose(dec.loc_box.get(s));
+			bbox.enclose(sub_d);
+			proc_box.enclose(loc_box.get(s));
 		}
 
-    dec.nn_prcs<dim, domain_type, layout_base, Memory>::create(dec.box_nn_processor, dec.sub_domains);
-    dec.nn_prcs<dim, domain_type, layout_base, Memory>::applyBC(dec.domain, ghost, dec.bc);
+    nn_prcs<dim, domain_type, layout_base, Memory>::create(box_nn_processor, sub_domains);
+    nn_prcs<dim, domain_type, layout_base, Memory>::applyBC(dec.domain, ghost, bc);
 
     // fill fine_s structure
     // fine_s structure contain the processor id for each sub-sub-domain
@@ -250,35 +405,35 @@ public:
   }
 
   void construct_fine_s() {
-    dec.collect_all_sub_domains(dec.sub_domains_global);
+    collect_all_sub_domains(sub_domains_global);
 
     // now draw all sub-domains in fine-s
-    for (size_t i = 0; i < dec.sub_domains_global.size(); ++i) {
+    for (size_t i = 0; i < sub_domains_global.size(); ++i) {
       // get the cells this box span
       const grid_key_dx<dim> p1 =
-          dec.fine_s.getCellGrid_me(dec.sub_domains_global.template get<0>(i).getP1());
+          fine_s.getCellGrid_me(sub_domains_global.template get<0>(i).getP1());
       const grid_key_dx<dim> p2 =
-          dec.fine_s.getCellGrid_pe(dec.sub_domains_global.template get<0>(i).getP2());
+          fine_s.getCellGrid_pe(sub_domains_global.template get<0>(i).getP2());
 
       // Get the grid and the sub-iterator
-      auto &gi = dec.fine_s.getGrid();
+      auto &gi = fine_s.getGrid();
       grid_key_dx_iterator_sub<dim> g_sub(gi, p1, p2);
 
       // add the box-id to the cell list
       while (g_sub.isNext()) {
         auto key = g_sub.get();
-        dec.fine_s.addCell(gi.LinId(key), i);
+        fine_s.addCell(gi.LinId(key), i);
 
         ++g_sub;
       }
     }
 
-    dec.host_dev_transfer = false;
+    host_dev_transfer = false;
   }
 
   void Initialize_geo_cell_lists() {
     // Get the processor bounding Box
-    ::Box<dim, domain_type> bound = dec.getProcessorBounds();
+    ::Box<dim, domain_type> bound = getProcessorBounds();
 
     // Check if the box is valid
     if (bound.isValidN()) {
@@ -290,16 +445,11 @@ public:
       }
 
       // Initialize the geo_cell structure
-      dec.ie_ghost<dim, domain_type, Memory, layout_base>::Initialize_geo_cell(bound, div);
+      ie_ghost<dim, domain_type, Memory, layout_base>::Initialize_geo_cell(bound, div);
 
       // Initialize shift vectors
-      dec.ie_ghost<dim, domain_type, Memory, layout_base>::generateShiftVectors(dec.domain, dec.bc);
+      ie_ghost<dim, domain_type, Memory, layout_base>::generateShiftVectors(dec.domain, bc);
     }
-  }
-
-  template <typename Model, typename Graph>
-  void decompose(Model m, Graph &graph, openfpm::vector<rid> &vtxdist) {
-    dec.decompose(m, graph, vtxdist);
   }
 
   template <typename Graph>
@@ -310,7 +460,97 @@ public:
 
   DGrid &getGrid() { return gr; }
 
+  void collect_all_sub_domains(
+      openfpm::vector<Box_map<dim, domain_type>, Memory,
+                      typename layout_base<Box_map<dim, domain_type>>::type, layout_base>
+          &sub_domains_global) {
+    sub_domains_global.clear();
+    openfpm::vector<Box_map<dim, domain_type>, Memory,
+                    typename layout_base<Box_map<dim, domain_type>>::type, layout_base>
+        bm;
+
+    for (size_t i = 0; i < sub_domains.size(); i++) {
+      bm.add();
+
+      bm.template get<0>(bm.size() - 1) =
+          ::SpaceBox<dim, domain_type>(sub_domains.get(i));
+      bm.template get<1>(bm.size() - 1) = v_cl.rank();
+    }
+
+    v_cl.SGather<decltype(bm), decltype(sub_domains_global), layout_base>(
+        bm, sub_domains_global, 0);
+
+    size_t size = sub_domains_global.size();
+
+    v_cl.max(size);
+    v_cl.execute();
+
+    sub_domains_global.resize(size);
+
+    v_cl.Bcast(sub_domains_global, 0);
+    v_cl.execute();
+  }
+
+  /*! \brief It calculate the internal ghost boxes
+   */
+
+  template <typename Ghost> void calculateGhostBoxes(Ghost &ghost) {
+    // Intersect all the local sub-domains with the sub-domains of the
+    // contiguous processors
+
+    // create the internal structures that store ghost information
+    ie_ghost<dim, domain_type, Memory, layout_base>::create_box_nn_processor_ext(
+        v_cl, ghost, sub_domains, box_nn_processor, *this);
+    ie_ghost<dim, domain_type, Memory, layout_base>::create_box_nn_processor_int(
+        v_cl, ghost, sub_domains, box_nn_processor, *this);
+
+    ie_loc_ghost<dim, domain_type, layout_base, Memory>::create(sub_domains, domain,
+                                                      ghost, bc);
+
+    // Ghost box information must be re-offloaded
+    host_dev_transfer = false;
+    ie_ghost<dim, domain_type, Memory, layout_base>::reset_host_dev_transfer();
+  }
+
 // todo private:
+  //! Box Spacing
+  domain_type spacing[dim];
+
+  //! Magnification factor between distribution and
+  //! decomposition
+  size_t magn[dim];
+
+  //! bool that indicate whenever the buffer has been already transfer to device
+  bool host_dev_transfer = false;
+
+  //! Processor bounding box
+  ::Box<dim, domain_type> bbox;
+
+  //! Boundary condition info
+  size_t bc[dim];
+
+  //! the set of all local sub-domain as vector
+  SubDomains sub_domains;
+
+  //! the remote set of all sub-domains as vector of 'sub_domains' vectors
+  mutable openfpm::vector<Box_map<dim, domain_type>, Memory,
+                          typename layout_base<Box_map<dim, domain_type>>::type,
+                          layout_base>
+      sub_domains_global;
+
+  //! for each sub-domain, contain the list of the neighborhood processors
+  openfpm::vector<openfpm::vector<long unsigned int>> box_nn_processor;
+
+  //! Structure that contain for each sub-sub-domain box the processor id
+  //! exist for efficient global communication
+  CellList<dim, domain_type, Mem_fast<Memory, int>, shift<dim, domain_type>> fine_s;
+
+  //! set of Boxes produced by the decomposition optimizer
+  openfpm::vector<::Box<dim, size_t>> loc_box;
+
+  //! Processor domain bounding box
+  ::Box<dim, size_t> proc_box;
+
   //! Structure that decompose the space into cells without creating them
   //! useful to convert positions to CellId or sub-domain id in this case
   CellDecomposer_sm<dim, domain_type, shift<dim, domain_type>> cd;
