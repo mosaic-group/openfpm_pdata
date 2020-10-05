@@ -92,6 +92,11 @@ public:
     std::copy(bc, bc + dim, bc);
   }
 
+  void setParameters(::Box<dim, domain_type> &domain_, const size_t (&bc)[dim]) {
+    setBoundaryConditions(bc);
+    setDomain(domain_);
+  }
+
   /*! \brief Return the box of the physical domain
    *
    * \return The physical domain box

@@ -154,11 +154,8 @@ public:
   ::Box<dim, domain_type> &getProcessorBounds() { return bbox; }
 
   void setParameters(const size_t (&div_)[dim], ::Box<dim, domain_type> &domain_, const size_t (&bc)[dim], const grid_sm<dim, void> &sec_dist = grid_sm<dim, void>()) {
-    inner.setBoundaryConditions(bc);
-
-    // Set the decomposition parameters
+    inner.setParameters(domain_, bc);
     gr.setDimensions(div_);
-    inner.setDomain(domain_);
     cd.setDimensions(inner.getDomain(), div_, 0);
 
     // calc magnification factor dec-dist
