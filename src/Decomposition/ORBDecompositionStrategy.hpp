@@ -46,9 +46,8 @@ public:
   }
 
   void setParameters(::Box<dim, domain_type> &domain, const size_t (&bc)[dim]) {
-    std::copy(bc, bc + dim, dec.bc);  // boundary conditions
-
-    dec.domain = domain;  // domain
+    dec.setBoundaryConditions(bc);
+    dec.setDomain(domain_);
   }
 
   template <typename Point>

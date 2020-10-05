@@ -174,12 +174,12 @@ public:
             sub_domains, this->getProcessorBounds(), ghost.getRcut(), ghost);
   }
 
-  void setParameters(const size_t (&div_)[dim], ::Box<dim, domain_type> &domain_, const size_t (&bc)[dim], const grid_sm<dim, void> &sec_dist = grid_sm<dim, void>()) {
-    std::copy(bc, bc + dim, bc);
+  void setParameters(const size_t (&div_)[dim], ::Box<dim, domain_type> &domain_, const size_t (&dec.bc)[dim], const grid_sm<dim, void> &sec_dist = grid_sm<dim, void>()) {
+    dec.setBoundaryConditions(bc);
 
     // Set the decomposition parameters
     gr.setDimensions(div_);
-    dec.domain = domain_;
+    dec.setDomain(domain_);
     cd.setDimensions(dec.domain, div_, 0);
 
     // calc magnification factor dec-dist
@@ -321,7 +321,7 @@ public:
    * processorscreateSubdomains
    *
    * \param v_cl Virtual cluster, used internally for communications
-   * \param bc boundary conditions
+   * \param dec.bc boundary conditions
    * \param opt option (one option is to construct)
    *
    */
@@ -358,7 +358,7 @@ public:
 
     // optimize the decomposition or merge sub-sub-domain
     d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(
-        graph, dec.v_cl.getProcessUnitID(), dec.loc_box, dec.box_nn_processor, ghe, dec.bc);
+        graph, dec.v_cl.getProcessUnitID(), dec.loc_box, dec.box_nn_processor, ghe, dec.dec.bc);
 
     // Initialize
     if (loc_box.size() > 0)
@@ -393,7 +393,7 @@ public:
 		}
 
     nn_prcs<dim, domain_type, layout_base, Memory>::create(box_nn_processor, sub_domains);
-    nn_prcs<dim, domain_type, layout_base, Memory>::applyBC(dec.domain, ghost, bc);
+    nn_prcs<dim, domain_type, layout_base, Memory>::applyBC(dec.domain, ghost, dec.bc);
 
     // fill fine_s structure
     // fine_s structure contain the processor id for each sub-sub-domain
@@ -448,7 +448,7 @@ public:
       ie_ghost<dim, domain_type, Memory, layout_base>::Initialize_geo_cell(bound, div);
 
       // Initialize shift vectors
-      ie_ghost<dim, domain_type, Memory, layout_base>::generateShiftVectors(dec.domain, bc);
+      ie_ghost<dim, domain_type, Memory, layout_base>::generateShiftVectors(dec.domain, dec.bc);
     }
   }
 
@@ -505,7 +505,7 @@ public:
         v_cl, ghost, sub_domains, box_nn_processor, *this);
 
     ie_loc_ghost<dim, domain_type, layout_base, Memory>::create(sub_domains, domain,
-                                                      ghost, bc);
+                                                      ghost, dec.bc);
 
     // Ghost box information must be re-offloaded
     host_dev_transfer = false;
@@ -525,9 +525,6 @@ public:
 
   //! Processor bounding box
   ::Box<dim, domain_type> bbox;
-
-  //! Boundary condition info
-  size_t bc[dim];
 
   //! the set of all local sub-domain as vector
   SubDomains sub_domains;

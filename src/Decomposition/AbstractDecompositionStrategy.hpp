@@ -32,13 +32,12 @@
 
 template <unsigned int dim, typename domain_type, typename Memory = HeapMemory,
           template <typename> class layout_base = memory_traits_lin,
-          typename DGrid = grid_sm<dim, void>>
+          typename DGrid = grid_sm<dim, void>, typename DGraph = Parmetis<Graph_CSR<nm_v<dim>, nm_e>>>
 class AbstractDecompositionStrategy {
   using Box = SpaceBox<dim, domain_type>;
   using SubDomains =
       openfpm::vector<Box, Memory, typename layout_base<Box>::type,
                       layout_base>;
-
 public:
   /*! \brief Abstract decomposition constructor
    *
@@ -85,6 +84,14 @@ public:
 
   bool shouldSetCosts() { return !costBeenSet; }
 
+  void setDomain(::Box<dim, domain_type> &domain_) {
+    domain = domain_;
+  }
+
+  void setBoundaryConditions(const size_t (&dec.bc)[dim]) {
+    std::copy(bc, bc + dim, bc);
+  }
+
   /*! \brief Return the box of the physical domain
    *
    * \return The physical domain box
@@ -99,7 +106,12 @@ public:
 
   void onEnd() {}
 
+  DGraph& getDistGraph() {}
+
 // todo private:
+
+//! Boundary condition info
+  size_t bc[dim];
 
   //! (rectangular) domain to decompose
   ::Box<dim, domain_type> domain;
