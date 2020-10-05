@@ -23,65 +23,10 @@ const size_t type = 0;
 constexpr unsigned int SPACE_N_DIM = 3;
 using domain_type = double;
 
-using AbstractDecStrategy =
-    AbstractDecompositionStrategy<SPACE_N_DIM, domain_type>;
-
-using MyDecompositionStrategy =
-    CartDecompositionStrategy<SPACE_N_DIM, domain_type>;
-
-using MyDistributionStrategy =
-    CartDistributionStrategy<SPACE_N_DIM, domain_type>;
-
-struct MyComputationalCostsModel : ModelComputationalCosts {
-  template <typename DecompositionStrategy, typename DistributionStrategy>
-  void computeCommunicationAndMigrationCosts(DecompositionStrategy &dec,
-                                             DistributionStrategy &dist,
-                                             const size_t ts = 1) {
-    domain_type migration;
-    size_t norm;
-    std::tie(migration, norm) = dec.computeCommunicationCosts(dist.dist.getGhost());
-    dist.dist.setMigrationCosts(migration, norm, ts);
-  }
-};
-
-struct MyDecompositionModel : ModelDecompose {};
-
-struct MyDistributionModel : ModelDistribute {
-  val_t toll() { return 1.01; }
-  
-  template <typename DistributionStrategy>
-  void applyModel(DistributionStrategy &dist, size_t v) {
-    const size_t id = v;
-    const size_t weight = dist.getSubSubDomainComputationCost(v) *
-                          dist.getSubSubDomainComputationCost(v);
-    dist.setComputationCost(id, weight);
-  }
-
-  template <typename DistributionStrategy, typename Graph>
-  void finalize(DistributionStrategy &dist, Graph &graph) {
-    for (auto i = 0; i < dist.getNOwnerSubSubDomains(); i++) {
-      // apply model to all the sub-sub-domains
-      applyModel(dist, dist.getOwnerSubSubDomain(i));
-    }
-
-    dist.setDistTol(graph, toll());
-  }
-};
-
 void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   Vcluster<> &vcl = create_vcluster();
-
-  // specify
-  // - how we want to add the computational cost ...
-  MyComputationalCostsModel mcc;
-
-  // - how we want to decompose ...
-  MyDecompositionStrategy dec(vcl);
-  MyDecompositionModel mde;
-
-  // - how we want to distribute ...
-  MyDistributionStrategy dist(vcl);
-  MyDistributionModel mdi;
+  CartDecompositionStrategy<SPACE_N_DIM, domain_type> dec(vcl);
+  CartDistributionStrategy<SPACE_N_DIM, domain_type> dist(vcl);
 
   // Physical domain
   Box<SPACE_N_DIM, domain_type> box({0.0, 0.0, 0.0}, {1.0, 1.0, 1.0});
@@ -111,45 +56,42 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   // Boundary conditions
   size_t bc[] = {NON_PERIODIC, NON_PERIODIC, NON_PERIODIC};
 
-  // init
-  dec.setParameters(div, box, bc, gsub);
-  dist.setParameters(dec.getGrid(), g, gsub, bc, box);
+  ///////////////////////////////////////////////////////////////////////// init
+  dec.setParameters(div, box, bc, g, gsub);
+  dist.setParameters(dec.inner().getGraph(), box, dec.getGrid(), bc, gsub);
 
   //////////////////////////////////////////////////////////////////// decompose
-  dec.reset();
-  dist.reset();
-  mcc.computeCommunicationAndMigrationCosts(dec, dist);
-  dec.decompose(dist.getGraph(), dist.dist.getVtxdist());
+  dec.decompose();
 
   /////////////////////////////////////////////////////////////////// distribute
-  dist.distribute(dec.);
+  dist.distribute(dec.inner().getGraph());
 
   //////////////////////////////////////////////////////////////////////// merge
-  dec.merge(dist.dist.getGraph(), dist.dist.getGhost(), dist.getGrid());
+  dec.merge(dist.getGrid());
 
   ///////////////////////////////////////////////////////////////////// finalize
-  dist.dist.onEnd();
-  dec.dec.onEnd(dist.dist.getGhost());
+  dist.onEnd();
+  dec.onEnd();
 
   // For each calculated ghost box
-  for (size_t i = 0; i < dec.dec.getNIGhostBox(); ++i) {
-    SpaceBox<SPACE_N_DIM, domain_type> b = dec.dec.getIGhostBox(i);
-    size_t proc = dec.dec.getIGhostBoxProcessor(i);
+  /* todo for (size_t i = 0; i < dec.inner().getNIGhostBox(); ++i) {
+    SpaceBox<SPACE_N_DIM, domain_type> b = dec.inner().getIGhostBox(i);
+    size_t proc = dec.inner().getIGhostBoxProcessor(i);
 
     // sample one point inside the box
     Point<SPACE_N_DIM, domain_type> p = b.rnd();
 
     // Check that ghost_processorsID return that processor number
     const openfpm::vector<size_t> &pr =
-        dec.dec.ghost_processorID<AbstractDecStrategy::processor_id>(p, UNIQUE);
+        dec.dec.ghost_processorID<CartDecompositionStrategy::AbstractDecStrategy::processor_id>(p, UNIQUE);
     bool found = isIn(pr, proc);
 
     printMe(vcl);
     std::cout << "assert " << found << " == true" << std::endl;
-  }
+  } */
 
   // Check the consistency
-  bool val = dec.dec.check_consistency();
+  bool val = dec.check_consistency();
 
   printMe(vcl);
   std::cout << "assert " << val << " == true" << std::endl;

@@ -3,7 +3,6 @@
 
 #include "Graph/CartesianGraphFactory.hpp"
 #include "Graph/ids.hpp"
-#include "Space/Ghost.hpp"
 #include "SubdomainGraphNodes.hpp"
 
 /*! \brief Class that distribute sub-sub-domains across processors
@@ -20,10 +19,10 @@ public:
    * \param v_cl Vcluster to use as communication object in this class
    */
   AbstractDistributionStrategy(Vcluster<> &v_cl)
-      : is_distributed(false), v_cl(v_cl),
+      : is_distributed(false), v_cl(v_cl), graph(v_cl, v_cl.getProcessingUnits()),
         vtxdist(v_cl.getProcessingUnits() + 1),
-        partitions(v_cl.getProcessingUnits()),
-        v_per_proc(v_cl.getProcessingUnits()) {}
+        _partitions(v_cl.getProcessingUnits()),
+        _v_per_proc(v_cl.getProcessingUnits()) {}
 
   /*! \brief Set the tolerance for each partition
    *
@@ -34,20 +33,29 @@ public:
     graph.setDistTol(tol);
   }
 
-  void setGhost(const Ghost<dim, domain_type> &ghost_) {
-    ghost = ghost_;
-  }
-
   /*! \brief It update the full decomposition
    */
-  void distribute(Graph_CSR<nm_v<dim>, nm_e>& subSubDomainsGraph) {
+  void distribute() {
+    graph.decompose(getVtxdist());
+
     is_distributed = true;
   }
 
   void onEnd() {}
 
-  void reset() {
-    // todo
+  template <typename DecompositionGraph>
+  void reset(DecompositionGraph& gp) {
+    if (is_distributed) {
+      getGraph().reset(gp, getVtxdist(), m2g, verticesGotWeights);
+    } else {
+      getGraph().initSubGraph(gp, getVtxdist(), m2g, verticesGotWeights);
+    }
+  }
+
+  template <typename DecompositionGraph>
+  void refine(DecompositionGraph& gp) {
+    graph.reset(gp, vtxdist, m2g, verticesGotWeights); // reset
+    graph.refine(getVtxdist());
   }
 
   /*! \brief Print the current distribution and save it to VTK file
@@ -59,13 +67,25 @@ public:
     // todo
   }
 
-  /*! \brief Return the ghost
+  /*! \brief operator to init ids vector
    *
-   *
-   * \return the ghost extension
+   * operator to init ids vector
    *
    */
-  Ghost<dim, T> &getGhost() { return ghost; }
+  // todo maybe DecompositionGraph as a template
+  template <typename DecompositionGraph>
+  void initLocalToGlobalMap(DecompositionGraph& gp) {
+    gid g;
+    rid i;
+    i.id = 0;
+
+    m2g.clear();
+    for (; (size_t)i.id < gp.getNVertex(); ++i) {
+      g.id = i.id;
+
+      m2g.insert({i, g});
+    }
+  }
 
   openfpm::vector<rid> &getVtxdist() { return vtxdist; }
 
@@ -109,6 +129,15 @@ public:
 
   DistributionGraph & getGraph() { return graph; }
 
+  openfpm::vector<openfpm::vector<idx_t>> & partitions() { return _partitions; }
+
+  openfpm::vector<openfpm::vector<gid>> & v_per_proc() { return _v_per_proc; }
+
+  // todo private
+  //! Hashmap to access to the global position given the re-mapped one (needed
+  //! for access the map)
+  std::unordered_map<rid, gid> m2g;
+
 private:
   bool is_distributed = false;
 
@@ -130,15 +159,11 @@ private:
   openfpm::vector<rid> vtxdist;
 
   //! partitions
-  openfpm::vector<openfpm::vector<idx_t>> partitions;
+  openfpm::vector<openfpm::vector<idx_t>> _partitions;
 
   //! Init data structure to keep trace of new vertices distribution in
   //! processors (needed to update main graph)
-  openfpm::vector<openfpm::vector<gid>> v_per_proc;
-
-  //! Hashmap to access to the global position given the re-mapped one (needed
-  //! for access the map)
-  std::unordered_map<rid, gid> m2g;
+  openfpm::vector<openfpm::vector<gid>> _v_per_proc;
 
   // graph of PUs (= processing unit(s))
   DistributionGraph graph;

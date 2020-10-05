@@ -5,27 +5,27 @@
 #include "Decomposition/AbstractDistributionStrategy.hpp"
 
 template <unsigned int dim, typename domain_type, typename Memory = HeapMemory,
-          template <typename> class layout_base = memory_traits_lin, DecompositionGraph = Graph_CSR<nm_v<dim>, nm_e>,
+          template <typename> class layout_base = memory_traits_lin, typename DecompositionGraph = Graph_CSR<nm_v<dim>, nm_e>,
           typename AbstractDistStrategy =
               AbstractDistributionStrategy<dim, domain_type, Parmetis<DecompositionGraph>>>
 class CartDistributionStrategy : public domain_nn_calculator_cart<dim> {
 
 public:
-  CartDistributionStrategy(Vcluster<> &v_cl) : dist(v_cl), graph(v_cl, v_cl.getProcessingUnits()) {
-    //! Convert the graph to parmetis => todo rename ParMetisDistribution
-  }
+  CartDistributionStrategy(Vcluster<> &v_cl) : _inner(v_cl) {}
 
   ~CartDistributionStrategy() {}
 
-  void setParameters(grid_sm<dim, void> &gr, const Ghost<dim, domain_type> &ghost, const grid_sm<dim, void> &sec_dist = grid_sm<dim, void>(), const size_t (&bc)[dim], ::Box<dim, domain_type> &box) {
+  void setParameters(DecompositionGraph& gp, ::Box<dim, domain_type> & box,
+            grid_sm<dim, void> &gr,
+            const size_t (& bc)[dim],
+            const grid_sm<dim,void> & sec_dist = grid_sm<dim, void>()) {
     if (sec_dist.size(0) != 0) {
       gr_dist.setDimensions(sec_dist.getSize());
     } else {
       gr_dist = gr;
     }
 
-    inner.setGhost(ghost);
-    createCartGraph(bc, box);
+    createCartGraph(gp, bc, box);
   }
 
   /*! \brief Create the Cartesian graph
@@ -37,10 +37,10 @@ public:
     // Create a cartesian grid graph
     CartesianGraphFactory<dim, DecompositionGraph> g_factory_part;
     gp = g_factory_part.template construct<NO_EDGE, nm_v_id, domain_type, dim - 1, 0>(gr_dist.getSize(), domain, bc);
-    inner.initLocalToGlobalMap();
+    inner().initLocalToGlobalMap(gp);
 
     //! Get the number of processing units
-    size_t Np = inner.getVcluster().getProcessingUnits();
+    size_t Np = inner().getVcluster().getProcessingUnits();
 
     //! Division of vertices in Np graphs
     //! Put (div+1) vertices in mod graphs
@@ -50,9 +50,9 @@ public:
 
     for (size_t i = 0; i <= Np; i++) {
       if (i < mod_v) {
-        inner.getVtxdist().get(i).id = (div_v + 1) * i;
+        inner().getVtxdist().get(i).id = (div_v + 1) * i;
       } else {
-        inner.getVtxdist().get(i).id = (div_v)*i + mod_v;
+        inner().getVtxdist().get(i).id = (div_v)*i + mod_v;
       }
     }
 
@@ -84,51 +84,37 @@ public:
    */
   size_t getNOwnerSubSubDomains() const { return sub_sub_owner.size(); }
 
-  /*! \brief function that return the position of the vertex in the space
-   *
-   * \param id vertex id
-   * \param pos vector that will contain x, y, z
-   *
-   */
-  void getSubSubDomainPosition(size_t id, T (&pos)[dim]) {
-    // Copy the geometrical informations inside the pos vector
-    pos[0] = gp.vertex(id).template get<nm_v_x>()[0];
-    pos[1] = gp.vertex(id).template get<nm_v_x>()[1];
-    if (dim == 3) {
-      pos[2] = gp.vertex(id).template get<nm_v_x>()[2];
-    }
-  }
-
   void distribute(DecompositionGraph& gp) {
     reset(gp);
-    graph.decompose(inner.getVtxdist());  // this is the distributing step
-    postDecomposition();  // todo rename
+
+    inner().distribute();
+    postDecomposition(gp);  // todo rename
   }
 
-  void postDecomposition() {
+  void postDecomposition(DecompositionGraph& gp) {
     //! Get the processor id
-    size_t p_id = inner.getVcluster().getProcessUnitID();
+    size_t p_id = inner().getVcluster().getProcessUnitID();
 
     //! Get the number of processing units
-    size_t Np = inner.getVcluster().getProcessingUnits();
+    size_t Np = inner().getVcluster().getProcessingUnits();
 
     // Number of local vertex
-    size_t nl_vertex = inner.getVtxdist().get(p_id + 1).id - inner.getVtxdist().get(p_id).id;
+    size_t nl_vertex = inner().getVtxdist().get(p_id + 1).id - inner().getVtxdist().get(p_id).id;
 
     //! Get result partition for this processors
-    idx_t *partition = graph.getPartition();
+    idx_t *partition = inner().getGraph().getPartition();
 
     //! Prepare vector of arrays to contain all partitions
-    inner.partitions.get(p_id).resize(nl_vertex);
+    inner().partitions().get(p_id).resize(nl_vertex);
 
     if (nl_vertex != 0) {
-      std::copy(partition, partition + nl_vertex, &inner.partitions.get(p_id).get(0));
+      std::copy(partition, partition + nl_vertex, &inner().partitions().get(p_id).get(0));
     }
 
     // Reset data structure to keep trace of new vertices distribution in
     // processors (needed to update main graph)
     for (size_t i = 0; i < Np; ++i) {
-      inner.v_per_proc.get(i).clear();
+      inner().v_per_proc().get(i).clear();
     }
 
     // Communicate the local distribution to the other processors
@@ -138,27 +124,27 @@ public:
     openfpm::vector<void *> ptr;
 
     for (size_t i = 0; i < Np; i++) {
-      if (i != inner.getVcluster().getProcessUnitID()) {
-        inner.partitions.get(i).clear();
+      if (i != inner().getVcluster().getProcessUnitID()) {
+        inner().partitions().get(i).clear();
         prc.add(i);
         sz.add(nl_vertex * sizeof(idx_t));
-        ptr.add(inner.partitions.get(p_id).getPointer());
+        ptr.add(inner().partitions().get(p_id).getPointer());
       }
     }
 
     if (prc.size() == 0) {
-      inner.getVcluster().sendrecvMultipleMessagesNBX(0, NULL, NULL, NULL, inner.message_receive,
-                                       &inner.partitions, NONE);
+      inner().getVcluster().sendrecvMultipleMessagesNBX(0, NULL, NULL, NULL, inner().message_receive,
+                                       &inner().partitions(), NONE);
     } else {
-      inner.getVcluster().sendrecvMultipleMessagesNBX(prc.size(), &sz.get(0), &prc.get(0),
-                                       &ptr.get(0), inner.message_receive,
-                                       &inner.partitions, NONE);
+      inner().getVcluster().sendrecvMultipleMessagesNBX(prc.size(), &sz.get(0), &prc.get(0),
+                                       &ptr.get(0), inner().message_receive,
+                                       &inner().partitions(), NONE);
     }
 
     // Update graphs with the received data
-    updateGraphs();
+    updateGraphs(gp);
 
-    inner.distribute();
+    inner().distribute();
   }
 
   /*! \brief Refine current decomposition
@@ -167,50 +153,29 @@ public:
    * RefineKWay After that it also does the remapping of the graph
    */
   void refine(DecompositionGraph& gp) {
-    graph.reset(gp, vtxdist, m2g, verticesGotWeights); // reset
-    graph.refine(inner.getVtxdist());                             // refine
-    distribute();
+    inner().refine(gp);  // refine
+    distribute(gp);
   }
 
   void onEnd() {
     domain_nn_calculator_cart<dim>::reset();
     domain_nn_calculator_cart<dim>::setParameters(proc_box);
+
+    inner().onEnd();
   }
 
   void reset(DecompositionGraph& gp) {
-    if (inner.is_distributed) {
-      graph.reset(gp, inner.getVtxdist(), inner.m2g, inner.verticesGotWeights);
-    } else {
-      graph.initSubGraph(gp, inner.getVtxdist(), inner.m2g, inner.verticesGotWeights);
-    }
-  }
-
-  /*! \brief operator to init ids vector
-   *
-   * operator to init ids vector
-   *
-   */
-  void initLocalToGlobalMap() {
-    gid g;
-    rid i;
-    i.id = 0;
-
-    m2g.clear();
-    for (; (size_t)i.id < gp.getNVertex(); ++i) {
-      g.id = i.id;
-
-      m2g.insert({i, g});
-    }
+    inner().reset(gp);
   }
 
   /*! \brief Update main graph ad subgraph with the received data of the
    * partitions from the other processors
    *
    */
-  void updateGraphs() {
-    inner.sub_sub_owner.clear();
+  void updateGraphs(DecompositionGraph& gp) {
+    sub_sub_owner.clear();
 
-    size_t Np = inner.getVcluster().getProcessingUnits();
+    size_t Np = inner().getVcluster().getProcessingUnits();
 
     // Init n_vtxdist to gather informations about the new decomposition
     openfpm::vector<rid> n_vtxdist(Np + 1);
@@ -219,28 +184,28 @@ public:
 
     // Update the main graph with received data from processor i
     for (size_t i = 0; i < Np; i++) {
-      size_t ndata = inner.partitions.get(i).size();
+      size_t ndata = inner().partitions().get(i).size();
       size_t k = 0;
 
       // Update the main graph with the received informations
-      for (rid l = inner.getVtxdist().get(i); k < ndata && l < inner.getVtxdist().get(i + 1);
+      for (rid l = inner().getVtxdist().get(i); k < ndata && l < inner().getVtxdist().get(i + 1);
            k++, ++l) {
         // Create new n_vtxdist (just count processors vertices)
-        ++n_vtxdist.get(inner.partitions.get(i).get(k) + 1);
+        ++n_vtxdist.get(inner().partitions().get(i).get(k) + 1);
 
         // vertex id from vtx to grobal id
-        auto v_id = inner.m2g.find(l)->second.id;
+        auto v_id = inner().m2g.find(l)->second.id;
 
         // Update proc id in the vertex (using the old map)
-        gp.template vertex_p<nm_v_proc_id>(v_id) = inner.partitions.get(i).get(k);
+        gp.template vertex_p<nm_v_proc_id>(v_id) = inner().partitions().get(i).get(k);
 
-        if (inner.partitions.get(i).get(k) == (long int) inner.getVcluster().getProcessUnitID()) {
-          inner.sub_sub_owner.add(v_id);
+        if (inner().partitions().get(i).get(k) == (long int) inner().getVcluster().getProcessUnitID()) {
+          sub_sub_owner.add(v_id);
         }
 
         // Add vertex to temporary structure of distribution (needed to update
         // main graph)
-        inner.v_per_proc.get(inner.partitions.get(i).get(k)).add(inner.getVertexGlobalId(l));
+        inner().v_per_proc().get(inner().partitions().get(i).get(k)).add(inner().getVertexGlobalId(l));
       }
     }
 
@@ -251,7 +216,7 @@ public:
 
     // Copy the new decomposition in the main vtxdist
     for (size_t i = 0; i <= Np; i++) {
-      inner.getVtxdist().get(i) = n_vtxdist.get(i);
+      inner().getVtxdist().get(i) = n_vtxdist.get(i);
     }
 
     openfpm::vector<size_t> cnt;
@@ -260,17 +225,25 @@ public:
     for (size_t i = 0; i < gp.getNVertex(); ++i) {
       size_t pid = gp.template vertex_p<nm_v_proc_id>(i);
 
-      rid j = rid(inner.getVtxdist().get(pid).id + cnt.get(pid));
+      rid j = rid(inner().getVtxdist().get(pid).id + cnt.get(pid));
       gid gi = gid(i);
 
       gp.template vertex_p<nm_v_id>(i) = j.id;
       cnt.get(pid)++;
 
-      inner.setMapId(j, gi);
+      inner().setMapId(j, gi);
     }
   }
 
+  AbstractDistStrategy &inner() {
+    return _inner;
+  }
+
+  grid_sm<dim, void> & getGrid() { return gr_dist; }
+
 private:
+  //! Structure that store the cartesian grid information
+  grid_sm<dim, void> gr_dist;
 
   //! Id of the sub-sub-domain where we set the costs
   openfpm::vector<size_t> sub_sub_owner;
@@ -281,6 +254,6 @@ private:
   //! Structure that store the cartesian grid information
   grid_sm<dim, void> gr;
 
-  AbstractDistStrategy inner;
+  AbstractDistStrategy _inner;
 };
 #endif // SRC_DECOMPOSITION_CART_DISTRIBUTION_STRATEGY_HPP

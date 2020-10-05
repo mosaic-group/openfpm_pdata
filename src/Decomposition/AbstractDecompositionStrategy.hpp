@@ -43,7 +43,7 @@ public:
    * comm0unication
    *
    */
-  AbstractDecompositionStrategy(Vcluster<> &v_cl) : ref_cnt(0) {}
+  AbstractDecompositionStrategy(Vcluster<> &v_cl) : v_cl(v_cl), ref_cnt(0) {}
 
   /*! \brief Copy constructor
    *
@@ -51,9 +51,9 @@ public:
    *
    */
   AbstractDecompositionStrategy(
-      const AbstractDecompositionStrategy<dim, domain_type, Memory, layout_base, DGrid>
-          &cart) : ref_cnt(0) {
-    this->operator=(cart);
+      const AbstractDecompositionStrategy<dim, domain_type, Memory, layout_base>
+          &dec) : ref_cnt(0) {
+    this->operator=(dec);
   }
 
   /*! \brief Copy the element
@@ -63,8 +63,8 @@ public:
    * \return itself
    *
    */
-  AbstractDecompositionStrategy<dim, domain_type, Memory, layout_base, DGrid> &
-  operator=(const AbstractDecompositionStrategy &cart) {
+  AbstractDecompositionStrategy<dim, domain_type, Memory, layout_base> &
+  operator=(const AbstractDecompositionStrategy &dec) {
     // todo
   }
 
@@ -88,13 +88,26 @@ public:
     domain = domain_;
   }
 
-  void setBoundaryConditions(const size_t (&dec.bc)[dim]) {
-    std::copy(bc, bc + dim, bc);
+  void setBoundaryConditions(const size_t (&bc_)[dim]) {
+    // todo std::copy(bc, bc + dim, bc_);
   }
 
-  void setParameters(::Box<dim, domain_type> &domain_, const size_t (&bc)[dim]) {
+  void setGhost(const Ghost<dim, domain_type> &ghost_) {
+    ghost = ghost_;
+  }
+
+  /*! \brief Return the ghost
+   *
+   *
+   * \return the ghost extension
+   *
+   */
+  Ghost<dim, domain_type> &getGhost() { return ghost; }
+
+  void setParameters(::Box<dim, domain_type> &domain_, const size_t (&bc)[dim], const Ghost<dim, domain_type> &ghost_) {
     setBoundaryConditions(bc);
     setDomain(domain_);
+    setGhost(ghost_);
   }
 
   /*! \brief Return the box of the physical domain
@@ -109,28 +122,30 @@ public:
    * \return The physical domain box
    *
    */
-  const Graph_CSR<nm_v<dim>, nm_e> &getDecompositionGraph() const { return gp; }
+  Graph_CSR<nm_v<dim>, nm_e> &getGraph() { return gp; }
 
   void decompose() {}
 
   void onEnd() {}
 
   /*! \brief Delete the decomposition and reset the data-structure */
-  void reset() {
-    // todo
-  }
+  void reset() {}
 
   Vcluster<> & getVcluster() { return v_cl; }
 
   //! Box Spacing
   domain_type spacing[dim];  // todo private
 
-private:
-  //! global decomposition graph
-  Graph_CSR<nm_v<dim>, nm_e>& gp;
-
+  // todo private
   //! Boundary condition info
   size_t bc[dim];
+
+private:
+  //! global decomposition graph
+  Graph_CSR<nm_v<dim>, nm_e> gp;
+
+  //! ghost info
+  Ghost<dim, domain_type> ghost;
 
   //! (rectangular) domain to decompose
   Domain domain;
