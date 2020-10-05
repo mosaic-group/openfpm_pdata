@@ -105,6 +105,10 @@ public:
    */
   void setMapId(rid n, gid g) { m2g[n] = g; }
 
+  Vcluster<> & getVcluster() { return v_cl; }
+
+  DistributionGraph & getGraph() { return graph; }
+
 private:
   bool is_distributed = false;
 

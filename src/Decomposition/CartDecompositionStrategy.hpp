@@ -467,6 +467,93 @@ public:
     v_cl.execute();
   }
 
+  /*! \brief Set migration cost of the vertex id
+   *
+   * \param id of the vertex to update
+   * \param migration cost of the migration
+   */
+  void setMigrationCost(size_t id, size_t migration) {
+    gp.vertex(id).template get<nm_v_migration>() = migration;
+  }
+
+  void setMigrationCosts(const float migration, const size_t norm,
+                         const size_t ts) {
+    for (auto i = 0; i < getNSubSubDomains(); i++) {
+      setMigrationCost(i, norm * migration);
+
+      for (auto s = 0; s < getNSubSubDomainNeighbors(i); s++) {
+        // We have to remove getSubSubDomainComputationCost(i) otherwise the
+        // graph is not directed
+        setCommunicationCost(i, s, 1 * ts);
+      }
+    }
+  }
+
+  /*! \brief Set communication cost of the edge id
+   *
+   * \param v_id Id of the source vertex of the edge
+   * \param e i child of the vertex
+   * \param communication Communication value
+   */
+  void setCommunicationCost(size_t v_id, size_t e, size_t communication) {
+    gp.getChildEdge(v_id, e).template get<nm_e::communication>() =
+        communication;
+  }
+
+  void addComputationCost(size_t gid, size_t i) {
+    size_t c = getSubSubDomainComputationCost(gid);
+    setComputationCost(gid, c + i);
+  }
+
+  /*! \brief Function that set the weight of the vertex
+   *
+   * \param id vertex id
+   * \param weight to give to the vertex
+   *
+   */
+  void setComputationCost(size_t id, size_t weight) {
+    if (!verticesGotWeights) {
+      verticesGotWeights = true;
+    }
+
+    // Update vertex in main graph
+    gp.vertex(id).template get<nm_v_computation>() = weight;
+  }
+
+  /*! \brief function that get the weight of the vertex
+   * (computation cost of the sub-sub-domain id)
+   *
+   * \param id vertex id
+   *
+   */
+  size_t getSubSubDomainComputationCost(size_t id) {
+    return gp.vertex(id).template get<nm_v_computation>();
+  }
+
+  /*! \brief Returns total number of sub-sub-domains in the distribution graph
+   *
+   * \return the total number of sub-sub-domains
+   *
+   */
+  size_t getNSubSubDomains() const { return gp.getNVertex(); }
+
+  /*! \brief Add computation cost i to the subsubdomain with global id gid
+   *
+   * \param gid global id of the subsubdomain to update
+   * \param i Cost increment
+   */
+
+  /*! \brief Returns total number of neighbors of the sub-sub-domain id
+   *
+   * \param id id of the sub-sub-domain
+   *
+   * \return the number of neighborhood sub-sub-domains for each sub-domain
+   *
+   */
+  size_t getNSubSubDomainNeighbors(size_t id) {
+    return gp.getNChilds(id);
+  }
+
   /*! \brief It calculate the internal ghost boxes
    */
 
