@@ -3,14 +3,13 @@
 
 #include "Decomposition/AbstractDistributionStrategy.hpp"
 
-template <unsigned int dim, typename domain_type,
+template <unsigned int dim, typename domain_type, typename Memory = HeapMemory,
+          template <typename> class layout_base = memory_traits_lin,
           typename AbstractDistStrategy =
-              AbstractDistributionStrategy<dim, domain_type>, typename Memory = HeapMemory,
-          template <typename> class layout_base = memory_traits_lin>
+              AbstractDistributionStrategy<dim, domain_type>>
 class OrbDistributionStrategy {
 
   using Box = SpaceBox<dim, domain_type>;
-  using DGrid = grid_sm<dim, void>;
 
 public:
   OrbDistributionStrategy(Vcluster<> &v_cl) : dist(v_cl) {}
@@ -21,14 +20,21 @@ public:
     dist.setGhost(ghost);
   }
 
-  void distribute() {
+  void distribute(DecompositionGraph& gp) {
     // todo: "TrivialDistribuzion" che assegna ad ogni nodo un processore in maniera requenziale
 
     dist.distribute();
   }
 
-// todo private:
+  void reset(DecompositionGraph& gp) {
+    // todo
+  }
 
-  AbstractDistStrategy dist;
+  void onEnd() {
+    // todo
+  }
+
+private:
+  AbstractDistStrategy inner;
 };
 #endif // SRC_DECOMPOSITION_ORB_DISTRIBUTION_STRATEGY_HPP
