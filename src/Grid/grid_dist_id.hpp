@@ -30,6 +30,7 @@
 #include "cuda/grid_dist_id_kernels.cuh"
 #include "Grid/cuda/grid_dist_id_iterator_gpu.cuh"
 #endif
+#include "py/python_numpy_patch.hpp"
 
 /*! \brief It contain the offset necessary to move to coarser and finer level grids
  *
@@ -92,7 +93,7 @@ template<unsigned int dim,
 		 typename Decomposition = CartDecomposition<dim,St>,
 		 typename Memory=HeapMemory ,
 		 typename device_grid=grid_cpu<dim,T> >
-class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,device_grid>
+class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,device_grid>, private numpy_patch_class<device_grid>
 {
 	typedef grid_dist_id<dim,St,T,Decomposition,Memory,device_grid> self;
 
@@ -998,6 +999,8 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 
 		// Create local grid
 		Create(bx,g,use_bx_def);
+
+		this->create_numpy_patches(loc_grid,*this);
 	}
 
 	// Ghost as integer
@@ -1221,10 +1224,6 @@ public:
 	 init_local_i_g_box(g.init_local_i_g_box),
 	 init_local_e_g_box(g.init_local_e_g_box)
 	{
-#ifdef SE_CLASS2
-		check_new(this,8,GRID_DIST_EVENT,4);
-#endif
-
 		for (size_t i = 0 ; i < dim ; i++)
 		{g_sz[i] = g.g_sz[i];}
 	}
@@ -1245,10 +1244,6 @@ public:
 				 Box<dim,size_t> ext)
 	:ghost_int(gh),dec(create_vcluster()),v_cl(create_vcluster())
 	{
-#ifdef SE_CLASS2
-		check_new(this,8,GRID_DIST_EVENT,4);
-#endif
-
 		size_t ext_dim[dim];
 		for (size_t i = 0 ; i < dim ; i++) {ext_dim[i] = g.getGridInfoVoid().size(i) + ext.getKP1().get(i) + ext.getKP2().get(i);}
 
@@ -1299,10 +1294,6 @@ public:
     :domain(dec.getDomain()),ghost(ghost),ghost_int(INVALID_GHOST),dec(dec),v_cl(create_vcluster()),
 	 ginfo(g_sz),ginfo_v(g_sz)
 	{
-#ifdef SE_CLASS2
-		check_new(this,8,GRID_DIST_EVENT,4);
-#endif
-
 		InitializeCellDecomposer(g_sz,dec.periodicity());
 
 		this->dec = dec.duplicate(ghost);
@@ -1322,10 +1313,6 @@ public:
     :domain(dec.getDomain()),ghost(ghost),dec(dec),ginfo(g_sz),
 	 ginfo_v(g_sz),v_cl(create_vcluster()),ghost_int(INVALID_GHOST)
 	{
-#ifdef SE_CLASS2
-		check_new(this,8,GRID_DIST_EVENT,4);
-#endif
-
 		InitializeCellDecomposer(g_sz,dec.periodicity());
 
 		this->dec = dec.duplicate(ghost);
@@ -1347,10 +1334,6 @@ public:
 	:domain(dec.getDomain()),ghost_int(g),dec(create_vcluster()),v_cl(create_vcluster()),
 	 ginfo(g_sz),ginfo_v(g_sz)
 	{
-#ifdef SE_CLASS2
-		check_new(this,8,GRID_DIST_EVENT,4);
-#endif
-
 		InitializeCellDecomposer(g_sz,dec.periodicity());
 
 		ghost = convert_ghost(g,cd_sm);
@@ -1377,9 +1360,6 @@ public:
 	:domain(dec.getDomain()),dec(dec),v_cl(create_vcluster()),ginfo(g_sz),
 	 ginfo_v(g_sz),ghost_int(g)
 	{
-#ifdef SE_CLASS2
-		check_new(this,8,GRID_DIST_EVENT,4);
-#endif
 		InitializeCellDecomposer(g_sz,dec.periodicity());
 
 		ghost = convert_ghost(g,cd_sm);
@@ -1433,10 +1413,6 @@ public:
 	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,St> & g, const periodicity<dim> & p, size_t opt = 0)
 	:domain(domain),ghost(g),ghost_int(INVALID_GHOST),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
 	{
-#ifdef SE_CLASS2
-		check_new(this,8,GRID_DIST_EVENT,4);
-#endif
-
 		if (opt >> 32 != 0)
 		{this->setDecompositionGranularity(opt >> 32);}
 
@@ -1459,10 +1435,6 @@ public:
 	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g, const periodicity<dim> & p, size_t opt = 0)
 	:domain(domain),ghost_int(g),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
 	{
-#ifdef SE_CLASS2
-		check_new(this,8,GRID_DIST_EVENT,4);
-#endif
-
 		if (opt >> 32 != 0)
 		{this->setDecompositionGranularity(opt >> 32);}
 
@@ -1500,10 +1472,6 @@ public:
 				 openfpm::vector<Box<dim,long int>> & bx_def)
 	:domain(domain),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz),gint(g)
 	{
-#ifdef SE_CLASS2
-		check_new(this,8,GRID_DIST_EVENT,4);
-#endif
-
 		InitializeCellDecomposer(g_sz,p.bc);
 
 		ghost = convert_ghost(g,cd_sm);
@@ -1521,9 +1489,6 @@ public:
 	 */
 	const grid_sm<dim,T> & getGridInfo() const
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		return ginfo;
 	}
 
@@ -1534,9 +1499,6 @@ public:
 	 */
 	const grid_sm<dim,void> & getGridInfoVoid() const
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		return ginfo_v;
 	}
 
@@ -1547,9 +1509,6 @@ public:
 	 */
 	Decomposition & getDecomposition()
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		return dec;
 	}
 
@@ -1560,9 +1519,6 @@ public:
 	 */
 	const Decomposition & getDecomposition() const
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		return dec;
 	}
 
@@ -1573,9 +1529,6 @@ public:
 	 */
 	const CellDecomposer_sm<dim,St,shift<dim,St>> & getCellDecomposer() const
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		return cd_sm;
 	}
 
@@ -1588,9 +1541,6 @@ public:
 	 */
 	bool isInside(const grid_key_dx<dim> & gk) const
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		for (size_t i = 0 ; i < dim ; i++)
 		{
 			if (gk.get(i) < 0 || gk.get(i) >= (long int)g_sz[i])
@@ -1607,9 +1557,6 @@ public:
 	 */
 	size_t getLocalDomainSize() const
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		size_t total = 0;
 
 		for (size_t i = 0 ; i < gdb_ext.size() ; i++)
@@ -1627,9 +1574,6 @@ public:
 	 */
 	size_t getLocalDomainWithGhostSize() const
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		size_t total = 0;
 
 		for (size_t i = 0 ; i < gdb_ext.size() ; i++)
@@ -1648,9 +1592,6 @@ public:
 	 */
 	const openfpm::vector<GBoxes<device_grid::dims>> & getLocalGridsInfo()
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		return gdb_ext;
 	}
 
@@ -1661,9 +1602,6 @@ public:
 	 */
 	void getGlobalGridsInfo(openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_global) const
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		gdb_ext_global.clear();
 
 		v_cl.SGather(gdb_ext,gdb_ext_global,0);
@@ -1709,10 +1647,6 @@ public:
 					   FREE>
 	getOldDomainIterator() const
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
-
 		grid_key_dx<dim> stop(ginfo_v.getSize());
 		grid_key_dx<dim> one;
 		one.one();
@@ -1849,10 +1783,6 @@ public:
 					   decltype(device_grid::type_of_subiterator()),FREE>
 	getDomainIterator() const
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
-
 		grid_key_dx<dim> stop(ginfo_v.getSize());
 		grid_key_dx<dim> one;
 		one.one();
@@ -1879,10 +1809,6 @@ public:
 						stencil_offset_compute<dim,Np> >
 	getDomainIteratorStencil(const grid_key_dx<dim> (& stencil_pnt)[Np]) const
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
-
 		grid_key_dx<dim> stop(ginfo_v.getSize());
 		grid_key_dx<dim> one;
 		one.one();
@@ -1906,9 +1832,6 @@ public:
 	FIXED>
 	getDomainGhostIterator() const
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		grid_key_dx<dim> stop;
 		for (size_t i = 0 ; i < dim ; i++)
 		{stop.set_d(i,0);}
@@ -1936,9 +1859,6 @@ public:
 	getSubDomainIterator(const grid_key_dx<dim> & start,
 						 const grid_key_dx<dim> & stop) const
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		grid_dist_iterator_sub<dim,device_grid> it(start,stop,loc_grid,gdb_ext);
 
 		return it;
@@ -1966,9 +1886,6 @@ public:
 	//! Destructor
 	~grid_dist_id()
 	{
-#ifdef SE_CLASS2
-		check_delete(this);
-#endif
 		dec.decRef();
 	}
 
@@ -1979,9 +1896,6 @@ public:
 	 */
 	Vcluster<> & getVC()
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		return v_cl;
 	}
 
@@ -2007,9 +1921,6 @@ public:
 	 */
 	template <typename bg_key> inline void remove(const grid_dist_key_dx<dim,bg_key> & v1)
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		return loc_grid.get(v1.getSub()).remove(v1.getKey());
 	}
 
@@ -2025,9 +1936,6 @@ public:
 	 */
 	template <typename bg_key> inline void remove_no_flush(const grid_dist_key_dx<dim,bg_key> & v1)
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		return loc_grid.get(v1.getSub()).remove_no_flush(v1.getKey());
 	}
 
@@ -2053,9 +1961,6 @@ public:
 	 */
 	inline void flush_remove()
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{loc_grid.get(i).flush_remove();}
 	}
@@ -2079,10 +1984,6 @@ public:
 		decltype(loc_grid.get(v1.getSub()).template insert<p>(v1.getKey()))
 	>::type
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
-
 		return loc_grid.get(v1.getSub()).template insert<p>(v1.getKey());
 	}
 
@@ -2109,10 +2010,6 @@ public:
 		decltype(loc_grid.get(v1.getSub()).template insertFlush<p>(v1.getKey()))
 	>::type
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
-
 		return loc_grid.get(v1.getSub()).template insertFlush<p>(v1.getKey());
 	}
 
@@ -2128,9 +2025,6 @@ public:
 	inline auto get(const grid_dist_key_dx<dim,bg_key> & v1) const
 	-> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		return loc_grid.get(v1.getSub()).template get<p>(v1.getKey());
 	}
 
@@ -2147,9 +2041,6 @@ public:
 	inline auto get(const grid_dist_key_dx<dim,bg_key> & v1)
 	-> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		return loc_grid.get(v1.getSub()).template get<p>(v1.getKey());
 	}
 
@@ -2164,9 +2055,6 @@ public:
 	template <unsigned int p = 0>
 	inline auto get(const grid_dist_g_dx<device_grid> & v1) const -> typename std::add_lvalue_reference<decltype(v1.getSub()->template get<p>(v1.getKey()))>::type
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		return v1.getSub()->template get<p>(v1.getKey());
 	}
 
@@ -2181,9 +2069,6 @@ public:
 	template <unsigned int p = 0>
 	inline auto get(const grid_dist_g_dx<device_grid> & v1) -> typename std::add_lvalue_reference<decltype(v1.getSub()->template get<p>(v1.getKey()))>::type
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		return v1.getSub()->template get<p>(v1.getKey());
 	}
 
@@ -2198,9 +2083,6 @@ public:
 	template <unsigned int p = 0>
 	inline auto get(const grid_dist_lin_dx & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		return loc_grid.get(v1.getSub()).template get<p>(v1.getKey());
 	}
 
@@ -2215,9 +2097,6 @@ public:
 	template <unsigned int p = 0>
 	inline auto get(const grid_dist_lin_dx & v1) -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		return loc_grid.get(v1.getSub()).template get<p>(v1.getKey());
 	}
 
@@ -2232,9 +2111,6 @@ public:
 	template <typename bg_key>
 	inline Point<dim,St> getPos(const grid_dist_key_dx<dim,bg_key> & v1)
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		Point<dim,St> p;
 
 		for (int i = 0 ; i < dim ; i++)
@@ -2293,10 +2169,6 @@ public:
 	 */
 	template<int... prp> void ghost_get(size_t opt = 0)
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
-
 		// Convert the ghost  internal boxes into grid unit boxes
 		create_ig_box();
 
@@ -2329,10 +2201,6 @@ public:
 	 */
 	template<template<typename,typename> class op,int... prp> void ghost_put()
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
-
 		// Convert the ghost  internal boxes into grid unit boxes
 		create_ig_box();
 
@@ -2463,9 +2331,6 @@ public:
 	 */
 	inline grid_key_dx<dim> getGKey(const grid_dist_key_dx<dim> & k)
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		// Get the sub-domain id
 		size_t sub_id = k.getSub();
 
@@ -2675,10 +2540,6 @@ public:
 	 */
 	bool write(std::string output, size_t opt = VTK_WRITER | FORMAT_BINARY )
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
-
 		file_type ft = file_type::ASCII;
 
 		if (opt & FORMAT_BINARY)
@@ -2737,9 +2598,6 @@ public:
 	 */
 	bool write_frame(std::string output, size_t i, size_t opt = VTK_WRITER | FORMAT_ASCII)
 	{
-#ifdef SE_CLASS2
-		check_valid(this,8);
-#endif
 		file_type ft = file_type::ASCII;
 
 		if (opt & FORMAT_BINARY)
@@ -2810,23 +2668,6 @@ public:
 	size_t getN_loc_grid()
 	{
 		return loc_grid.size();
-	}
-
-
-	/*! \brief It return the id of structure in the allocation list
-	 *
-	 * \see print_alloc and SE_CLASS2
-	 *
-	 * \return the id
-	 *
-	 */
-	long int who()
-	{
-#ifdef SE_CLASS2
-		return check_whoami(this,8);
-#else
-			return -1;
-#endif
 	}
 
 	/*! \brief It print the internal ghost boxes and external ghost boxes in global unit

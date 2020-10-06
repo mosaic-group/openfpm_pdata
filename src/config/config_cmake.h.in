@@ -158,6 +158,12 @@ ${DEFINE_STOP_ON_ERROR}
 /* Test coverage mode */
 ${DEFINE_TEST_COVERAGE_MODE}
 
+/* If Python is detected */
+${DEFINE_HAVE_PYTHON_SERVER}
+
+/* If ZeroMQ is detected */
+${DEFINE_HAVE_ZEROMQ}
+
 /* when an error accur continue but avoid unsafe operation */
 /* #undef THROW_ON_ERROR */
 

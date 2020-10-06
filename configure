@@ -107,6 +107,7 @@ enable_se_class1
 enable_se_class2
 enable_se_class3
 with_action_on_error
+with_zeromq
 with_boost
 with_boost_libdir
 with_boost_unit_test_framework
@@ -490,6 +491,9 @@ do
       ;;
       vcdevel)
       conf_options="$conf_options -DVc_ROOT=$ac_optarg"
+      ;;
+      zeromq)
+      conf_options="$conf_options -DZeroMQ_ROOT=$ac_optarg/../ZEROMQ -DCMAKE_PREFIX_PATH=$ac_optarg/share/cmake/cppzmq"
       ;;
       *) ac_unrecognized_opts="$ac_unrecognized_opts$ac_unrecognized_sep--with-$ac_useropt_orig"
 	 ac_unrecognized_sep=', ';;

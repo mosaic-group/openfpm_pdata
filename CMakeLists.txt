@@ -90,6 +90,8 @@ find_package(LAPACK)
 find_package(Eigen3)
 find_package(SuiteSparse OPTIONAL_COMPONENTS UMFPACK)
 find_package(Vc)
+find_package(PythonLibs)
+find_package(cppzmq)
 
 if(PROFILE_WITH_SCOREP)
 	set(CMAKE_CXX_COMPILER_LAUNCHER "scorep")
@@ -208,6 +210,14 @@ endif()
 
 if(TINYOBJLOADER_FOUND)
 	set(DEFINE_HAVE_TINYOBJLOADER "#define HAVE_TINYOBJLOADER 1")
+endif()
+
+if(PYTHONLIBS_FOUND)
+	set (DEFINE_HAVE_PYTHON_SERVER "#define HAVE_PYTHON_SERVER")
+endif()
+
+if(cppzmq_FOUND)
+	set(DEFINE_HAVE_ZEROMQ "#define HAVE_ZEROMQ")
 endif()
 
 file(WRITE error_code "0")

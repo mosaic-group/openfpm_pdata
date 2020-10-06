@@ -27,6 +27,7 @@ add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
 														  Grid/tests/sgrid_dist_id_unit_tests.cpp
 														  Grid/tests/grid_dist_id_dlb_unit_test.cpp
 														  Grid/tests/staggered_grid_dist_unit_test.cpp
+														  Grid/tests/py_server_test_grid.cpp
 														  Vector/tests/vector_dist_cell_list_tests.cpp
 														  Vector/tests/vector_dist_complex_prp_unit_test.cpp
 														  Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp 
@@ -42,6 +43,10 @@ add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
 														  ../openfpm_devices/src/memory/PtrMemory.cpp 
 														  ../openfpm_vcluster/src/VCluster/VCluster.cpp 
 														  )
+if (PYTHONLIBS_FOUND)
+	add_dependencies(pdata py_runner)
+	target_link_libraries(pdata py_runner)
+endif()
 
 if ( CMAKE_COMPILER_IS_GNUCC )
     target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
@@ -89,6 +94,8 @@ target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
 target_include_directories (pdata PUBLIC ${PETSC_INCLUDES})
 target_include_directories (pdata PUBLIC ${HDF5_ROOT}/include)
 target_include_directories (pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
+target_include_directories (pdata PUBLIC ${PYTHON_INCLUDE_PATH})
+target_include_directories (pdata PUBLIC ${cppzmq_INCLUDE_DIR})
 
 target_include_directories(pdata PUBLIC ${Vc_INCLUDE_DIR})
 target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
@@ -100,6 +107,9 @@ target_link_libraries(pdata ${HDF5_LIBRARIES})
 target_link_libraries(pdata -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
 target_link_libraries(pdata ${PETSC_LIBRARIES})
 target_link_libraries(pdata ${Vc_LIBRARIES})
+target_link_libraries(pdata ${PYTHON_LIBRARIES})
+target_link_libraries(pdata ${cppzmq_LIBRARY})
+target_link_libraries(pdata ${ZeroMQ_LIBRARY})
 
 if (TEST_PERFORMANCE)
 	target_link_libraries(pdata  ${Boost_FILESYSTEM_LIBRARY})
