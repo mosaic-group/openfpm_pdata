@@ -103,7 +103,7 @@ class numpy_patch_class
 public:
 
 	template<typename grid_type>
-	inline int create_numpy_patches(openfpm::vector<dev_grid> & dev_g, grid_type & g)
+	inline PyObject * create_numpy_patches(openfpm::vector<dev_grid> & dev_g, grid_type & g)
 	{
 		// This is a macro it return error in case it fail;
 		if(PyArray_API == NULL)
@@ -130,6 +130,8 @@ public:
 
 			boost::mpl::for_each_ref<boost::mpl::range_c<int,0,dev_grid::value_type::max_prop>>(cpy);
 		}
+
+		return 0;
 	}
 };
 
