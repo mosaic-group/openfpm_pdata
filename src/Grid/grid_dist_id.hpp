@@ -26,6 +26,38 @@
 #include "HDF5_wr/HDF5_wr.hpp"
 #include "VCluster/InVis.hpp"
 
+template<bool is_vector>
+struct vis_code
+{
+    template<unsigned int prop, typename vector_type, typename key_type>
+    static float execute(vector_type * vd, key_type & key, vector_visualize vect_vis)
+    {
+        return (float) vd->template get<prop>(key);
+    };
+};
+
+template<>
+struct vis_code<true>
+{
+    template<unsigned int prop, typename vector_type, typename key_type>
+    static inline float execute(vector_type * vd, key_type & key, vector_visualize vect_vis)
+    {
+
+        if(vect_vis == vector_visualize::x_)
+        {return (float) vd->template get<prop>(key)[0];}
+        else if(vect_vis == vector_visualize::y_)
+        {return (float) vd->template get<prop>(key)[1];}
+        else if(vect_vis == vector_visualize::z_)
+        {return (float) vd->template get<prop>(key)[2];}
+        else //magnitude
+        {
+            return (float) sqrt (vd->template get<prop>(key)[0] * vd->template get<prop>(key)[0] +
+                                vd->template get<prop>(key)[1] * vd->template get<prop>(key)[1] +
+                                vd->template get<prop>(key)[2] * vd->template get<prop>(key)[2]);
+        }
+    };
+};
+
 //! Internal ghost box sent to construct external ghost box into the other processors
 template<unsigned int dim>
 struct Box_fix
@@ -1607,7 +1639,7 @@ public:
 	}
 
     template<unsigned int prop = 0>
-    void visualize(scale_vis scale = global, St low = 0, St high = 0)
+    void visualize(scale_vis scale = global, St low = 0, St high = 0, vector_visualize vect_vis = magnitude)
     {
 
         if (global_option != init_options::in_situ_visualization)
@@ -1617,9 +1649,23 @@ public:
             return;
         }
 
+        typedef typename boost::mpl::at<typename T::type,boost::mpl::int_<prop>>::type prop_type;
+        int rank_type = std::rank<prop_type>::value;
+        int vec_dim = 0;
+
+
+        if(rank_type == 1) //The property is a vector
+        {
+            vec_dim = std::extent<prop_type, 0>::value;
+        }
+
+        grid_dist_id<3, St, aggregate<unsigned short>,Decomposition>* Vis_new = (grid_dist_id<3, St, aggregate<unsigned short>,Decomposition> *) Vis_new_void;
+
 	    if(Vis_new == nullptr)
 	    {
-            Vis_new = new grid_dist_id<3, double, aggregate<unsigned short>>(getDecomposition(),ginfo.getSize(),Ghost<dim,St>(0.0));
+            Vis_new = new grid_dist_id<3, St, aggregate<unsigned short>,Decomposition>(getDecomposition(),ginfo.getSize(),Ghost<dim,St>(0.0));
+            //TODO: delete Vis_new_void in destructor of grid_dist_id
+            Vis_new_void = (void *) Vis_new;
             Vis_new->to_shared_mem();
         }
 
@@ -1642,7 +1688,8 @@ public:
             {
                 auto key = it1.get();
 
-                double cur = (float) this->template get<prop>(key);
+                double cur;
+                cur = vis_code<std::rank<prop_type>::value == 1>::template execute<prop>(this,key,vect_vis);
 
                 if(cur > high) {high = cur;}
                 if(cur < low) {low = cur;}
@@ -1662,11 +1709,11 @@ public:
             auto key = it2.get();
             auto key_vis = it2_vis.get();
 
-            double cur = (float) this->template get<prop>(key);
+            double cur = vis_code<std::rank<prop_type>::value == 1>::template execute<prop>(this,key,vect_vis);
 
             double scaled = (cur / (high - low)) * 65535;
             // copy
-            Vis_new->get<0>(key) = (unsigned short)(scaled);
+            Vis_new->template get<0>(key) = (unsigned short)(scaled);
 
             ++it2;
             ++it2_vis;
