@@ -2032,6 +2032,7 @@ BOOST_AUTO_TEST_CASE ( grid_in_situ_vis )
     BOOST_REQUIRE_EQUAL(count,(size_t)j*j*j);
 
     auto dom2 = g_dist.getDomainIterator();
+    grid_dist_id<3, double, aggregate<unsigned short>>* Vis_new = (grid_dist_id<3, double, aggregate<unsigned short>>*) Vis_new_void;
     auto Vis_it = Vis_new->getDomainIterator();
 
     double high = j*j*j-1;
