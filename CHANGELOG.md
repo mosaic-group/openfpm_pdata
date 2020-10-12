@@ -1,6 +1,19 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [3.1.0] 2020 (Codename New Horizons)
+
+- Adding GPU support for ghost_put
+- Adding support for CUDA 11
+
+### Fixed
+
+- Few details in the installation system of linear algebra for OSX
+
+### Changed
+
+- None
+
 ## [3.0.0] 2020 (Codename Sparsity)
 
 - Upgrading all the dependencies: BOOST,PETSC,SUITESPARSE,OPENBLAS

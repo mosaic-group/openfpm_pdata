@@ -1194,7 +1194,7 @@ public:
 		return ginfo_v.size(i);
 	}
 
-	/*! \brief Default Copy constructor on this class make no sense and is unsafe, this definition disable it
+	/*! \brief Copy constructor
 	 *
 	 * \param g grid to copy
 	 *

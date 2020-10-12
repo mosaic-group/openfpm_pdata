@@ -2444,5 +2444,88 @@ BOOST_AUTO_TEST_CASE( grid_dist_ghost_zero_size )
 	BOOST_REQUIRE_EQUAL(count,32*32*32);
 }
 
+BOOST_AUTO_TEST_CASE( grid_dist_copy_construct )
+{
+	// Test grid periodic
+
+	Box<3,float> domain({-1.0,-1.0,-1.0},{1.0,1.0,1.0});
+
+	Vcluster<> & v_cl = create_vcluster();
+
+	if ( v_cl.getProcessingUnits() > 32 )
+	{return;}
+
+	BOOST_TEST_CHECKPOINT( "Testing grid zero ghost");
+
+	// grid size
+	size_t sz[3];
+	sz[0] = 32;
+	sz[1] = 32;
+	sz[2] = 32;
+
+	// Ghost
+	Ghost<3,long int> g(1);
+
+	// periodicity
+	periodicity<3> pr = {{NON_PERIODIC,NON_PERIODIC,NON_PERIODIC}};
+
+	// Distributed grid with id decomposition
+	grid_dist_id<3, float, aggregate<long int, int>> g_dist(sz,domain,g,pr);
+
+
+	auto & gs = g_dist.getGridInfoVoid();
+	auto it = g_dist.getDomainIterator();
+
+	size_t count = 0;
+
+	while (it.isNext())
+	{
+		auto k = it.get();
+		auto gkey = it.getGKey(k);
+
+		g_dist.get<0>(k) = gs.LinId(gkey);
+
+		++it;
+	}
+
+	g_dist.template ghost_get<0>();
+
+	grid_dist_id<3, float, aggregate<long int, int>> g_dist2 = g_dist;
+	grid_dist_id<3, float, aggregate<long int, int>> g_dist3 = grid_dist_id<3, float, aggregate<long int, int>>(sz,domain,g,pr);
+
+	auto it2 = g_dist.getDomainIterator();
+
+	while (it2.isNext())
+	{
+		auto k = it2.get();
+		auto gkey = it2.getGKey(k);
+
+		g_dist2.template get<0>(k) = g_dist.template get<0>(k) + 1;
+		g_dist3.template get<0>(k) = g_dist.template get<0>(k) + 2;
+
+		++it2;
+	}
+
+	g_dist2.template ghost_get<0>();
+	g_dist3.template ghost_get<0>();
+
+	bool match = true;
+
+	auto it3 = g_dist.getDomainIterator();
+
+	while (it3.isNext())
+	{
+		auto k = it3.get();
+		auto gkey = it3.getGKey(k);
+
+		match &= g_dist2.template get<0>(k) == g_dist.template get<0>(k) + 1;
+		match &= g_dist3.template get<0>(k) == g_dist.template get<0>(k) + 2;
+
+		++it3;
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 

@@ -291,10 +291,6 @@ private:
 	//! reordered v_prp buffer
 	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> v_pos_out;
 
-
-	//! Virtual cluster
-	Vcluster<Memory> & v_cl;
-
 	//! option used to create this vector
 	size_t opt = 0;
 
@@ -314,6 +310,8 @@ private:
 	 */
 	void init_structures(size_t np)
 	{
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
+
 		// convert to a local number of elements
 		size_t p_np = np / v_cl.getProcessingUnits();
 
@@ -484,7 +482,6 @@ public:
 
 	// default constructor (structure contain garbage)
 	vector_dist()
-	:v_cl(create_vcluster<Memory>())
 	{}
 
 
@@ -494,7 +491,7 @@ public:
 	 *
 	 */
 	vector_dist(const vector_dist<dim,St,prop,Decomposition,Memory,layout_base> & v)
-	:vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>(v.getDecomposition()),v_cl(v.v_cl) SE_CLASS3_VDIST_CONSTRUCTOR
+	:vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>(v.getDecomposition()) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -509,7 +506,6 @@ public:
 	 *
 	 */
 	vector_dist(vector_dist<dim,St,prop,Decomposition,Memory,layout_base> && v) noexcept
-	:v_cl(v.v_cl) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -529,7 +525,7 @@ public:
 	 *
 	 */
 	vector_dist(const Decomposition & dec, size_t np) :
-	vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>(dec), v_cl(create_vcluster<Memory>()) SE_CLASS3_VDIST_CONSTRUCTOR
+	vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>(dec) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -556,7 +552,7 @@ public:
 	 *
 	 */
 	vector_dist(size_t np, Box<dim, St> box, const size_t (&bc)[dim], const Ghost<dim, St> & g, size_t opt = 0, const grid_sm<dim,void> & gdist = grid_sm<dim,void>())
-	:v_cl(create_vcluster<Memory>()),opt(opt) SE_CLASS3_VDIST_CONSTRUCTOR
+	:opt(opt) SE_CLASS3_VDIST_CONSTRUCTOR
 	{
 #ifdef SE_CLASS2
 		check_new(this,8,VECTOR_DIST_EVENT,4);
@@ -1251,6 +1247,8 @@ public:
 		{se3.getNN();}
 #endif
 
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
+
 		// Division array
 		size_t div[dim];
 
@@ -1357,6 +1355,8 @@ public:
 		{se3.getNN();}
 #endif
 
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
+
 		// This function assume equal spacing in all directions
 		// but in the worst case we take the maximum
 		St r_cut = cell_list.getCellBox().getRcut();
@@ -1393,6 +1393,8 @@ public:
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
+
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
 
 		// Here we have to check that the Cell-list has been constructed
 		// from the same decomposition
@@ -1864,6 +1866,8 @@ public:
 	 */
 	size_t init_size_accum(size_t np)
 	{
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
+
 		size_t accum = 0;
 
 		// convert to a local number of elements
@@ -2291,6 +2295,8 @@ public:
 	template<int ... prp> inline void ghost_get(size_t opt = WITH_POSITION)
 	{
 #ifdef SE_CLASS1
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
+
 		if (getDecomposition().getProcessorBounds().isValid() == false && size_local() != 0)
 		{
 			std::cerr << __FILE__ << ":" << __LINE__ << " Error the processor " << v_cl.getProcessUnitID() << " has particles, but is supposed to be unloaded" << std::endl;
@@ -2327,6 +2333,8 @@ public:
 	template<int ... prp> inline void Ighost_get(size_t opt = WITH_POSITION)
 	{
 #ifdef SE_CLASS1
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
+
 		if (getDecomposition().getProcessorBounds().isValid() == false && size_local() != 0)
 		{
 			std::cerr << __FILE__ << ":" << __LINE__ << " Error the processor " << v_cl.getProcessUnitID() << " has particles, but is supposed to be unloaded" << std::endl;
@@ -2351,6 +2359,8 @@ public:
 	template<int ... prp> inline void ghost_wait(size_t opt = WITH_POSITION)
 	{
 #ifdef SE_CLASS1
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
+
 		if (getDecomposition().getProcessorBounds().isValid() == false && size_local() != 0)
 		{
 			std::cerr << __FILE__ << ":" << __LINE__ << " Error the processor " << v_cl.getProcessUnitID() << " has particles, but is supposed to be unloaded" << std::endl;
@@ -2561,6 +2571,7 @@ public:
 	 */
 	inline bool write(std::string out, std::string meta_info ,int opt = VTK_WRITER)
 	{
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
 
 		if ((opt & 0x0FFF0000) == CSV_WRITER)
 		{
@@ -2653,6 +2664,8 @@ public:
 	 */
 	inline bool write_frame(std::string out, size_t iteration, std::string meta_info, int opt = VTK_WRITER)
 	{
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
+
 		if ((opt & 0x0FFF0000) == CSV_WRITER)
 		{
 			// CSVWriter test
@@ -2734,7 +2747,7 @@ public:
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
-		return v_cl;
+		return create_vcluster<Memory>();;
 	}
 
 	/*! \brief return the position vector of all the particles
@@ -2824,6 +2837,8 @@ public:
 	 */
 	size_t accum()
 	{
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
+
 		openfpm::vector<size_t> accu;
 
 		size_t sz = size_local();
