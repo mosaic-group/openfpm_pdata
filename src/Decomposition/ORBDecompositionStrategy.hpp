@@ -51,7 +51,7 @@ public:
 
   template <typename Point>
   void decompose(openfpm::vector<Point> &points) {
-    orb = Orb(dec.domain, dec.v_cl.getProcessingUnits(), points);
+    orb = Orb(dec.domain, dec.v_cl.getProcessingUnits(), points);  // this takes care of the decomposition
   }
 
   Graph_CSR<nm_v<dim>, nm_e> &getGraph() {

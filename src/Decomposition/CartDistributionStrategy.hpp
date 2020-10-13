@@ -87,7 +87,7 @@ public:
   void distribute(DecompositionGraph& gp) {
     reset(gp);
 
-    graph.decompose(getVtxdist());
+    inner().getGraph().decompose(inner().getVtxdist());
     postDecomposition(gp);  // todo rename
   }
 

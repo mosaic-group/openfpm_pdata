@@ -214,9 +214,9 @@ public:
   void decompose() {
     reset();
 
-    if (inner().shouldSetCosts()) {
+    // if (inner().shouldSetCosts()) {
       computeCommunicationAndMigrationCosts(1);
-    }
+    // }
   }
 
   void onEnd() {
@@ -387,7 +387,7 @@ public:
 
     // Optimize the decomposition creating bigger spaces
     // And reducing Ghost over-stress
-    dec_optimizer<dim, Graph_CSR<nm_v<dim>, nm_e>> d_o(gp,
+    dec_optimizer<dim, Graph_CSR<nm_v<dim>, nm_e>> d_o(inner().getGraph(),
                                                        gr_dist.getSize());
 
     // Ghost
@@ -402,7 +402,7 @@ public:
 
     // optimize the decomposition or merge sub-sub-domain
     d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(
-        gp, inner().getVcluster().getProcessUnitID(), loc_box, box_nn_processor, ghe, inner().bc);
+        inner().getGraph(), inner().getVcluster().getProcessUnitID(), loc_box, box_nn_processor, ghe, inner().bc);
 
     // Initialize
     if (loc_box.size() > 0)
@@ -538,7 +538,7 @@ public:
    * \param migration cost of the migration
    */
   void setMigrationCost(size_t id, size_t migration) {
-    gp.vertex(id).template get<nm_v_migration>() = migration;
+    inner().getGraph().vertex(id).template get<nm_v_migration>() = migration;
   }
 
   void setMigrationCosts(const float migration, const size_t norm,
@@ -561,7 +561,7 @@ public:
    * \param communication Communication value
    */
   void setCommunicationCost(size_t v_id, size_t e, size_t communication) {
-    gp.getChildEdge(v_id, e).template get<nm_e::communication>() =
+    inner().getGraph().getChildEdge(v_id, e).template get<nm_e::communication>() =
         communication;
   }
 
@@ -573,10 +573,10 @@ public:
    */
   void getSubSubDomainPosition(size_t id, domain_type (&pos)[dim]) {
     // Copy the geometrical informations inside the pos vector
-    pos[0] = gp.vertex(id).template get<nm_v_x>()[0];
-    pos[1] = gp.vertex(id).template get<nm_v_x>()[1];
+    pos[0] = inner().getGraph().vertex(id).template get<nm_v_x>()[0];
+    pos[1] = inner().getGraph().vertex(id).template get<nm_v_x>()[1];
     if (dim == 3) {
-      pos[2] = gp.vertex(id).template get<nm_v_x>()[2];
+      pos[2] = inner().getGraph().vertex(id).template get<nm_v_x>()[2];
     }
   }
 
@@ -597,7 +597,7 @@ public:
     // todo }
 
     // Update vertex in main graph
-    gp.vertex(id).template get<nm_v_computation>() = weight;
+    inner().getGraph().vertex(id).template get<nm_v_computation>() = weight;
   }
 
   /*! \brief function that get the weight of the vertex
@@ -607,7 +607,7 @@ public:
    *
    */
   size_t getSubSubDomainComputationCost(size_t id) {
-    return gp.vertex(id).template get<nm_v_computation>();
+    return inner().getGraph().vertex(id).template get<nm_v_computation>();
   }
 
   /*! \brief Returns total number of sub-sub-domains in the distribution graph
@@ -615,7 +615,7 @@ public:
    * \return the total number of sub-sub-domains
    *
    */
-  size_t getNSubSubDomains() const { return gp.getNVertex(); }
+  size_t getNSubSubDomains() { return inner().getGraph().getNVertex(); }
 
   /*! \brief Add computation cost i to the subsubdomain with global id gid
    *
@@ -631,7 +631,7 @@ public:
    *
    */
   size_t getNSubSubDomainNeighbors(size_t id) {
-    return gp.getNChilds(id);
+    return inner().getGraph().getNChilds(id);
   }
 
   /*! \brief It calculate the internal ghost boxes
@@ -703,8 +703,5 @@ private:
 
   //! Structure that store the cartesian grid information
   grid_sm<dim, void> gr;
-
-  //! Global sub-sub-domain graph
-	Graph_CSR<nm_v<dim>, nm_e> gp;
 };
 #endif // SRC_DECOMPOSITION_CART_DECOMPOSITION_STRATEGY_HPP
