@@ -2,6 +2,7 @@
 #########
 .debug
 debug/
+out_obj
 
 # CLion (Intellij) #
 ####################
