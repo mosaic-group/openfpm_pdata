@@ -90,11 +90,11 @@ public:
  * \tparam loc_wg type of structure that store the local weight of particles
  * \tparam loc_pos type of structure that store the local position of particles
  * \tparam Box type of structure that contain the domain extension
- * \tparam Tree type of structure that store the tree structure
+ * \tparam Graph_CSR type of structure that store the tree structure
  *
  */
 
-template<unsigned int dim, typename T, typename loc_wg=openfpm::vector<float>, typename loc_pos=openfpm::vector<Point<dim,T>>, typename Box=Box<dim,T>, template<typename,typename> class Tree=Graph_CSR>
+template<unsigned int dim, typename T, typename loc_wg=openfpm::vector<float>, typename loc_pos=openfpm::vector<Point<dim,T>>, typename Box=Box<dim,T>>
 class ORB
 {
 	// Virtual cluster
@@ -115,7 +115,7 @@ class ORB
 	size_t dim_div;
 
 	// Structure that store the orthogonal bisection tree
-	Tree<ORB_node<T>,no_edge> grp;
+	Graph_CSR<ORB_node<T>, no_edge> grp;
 
 	/*! \brief Calculate the local center of mass on direction dir
 	 *
@@ -252,7 +252,7 @@ class ORB
 
 	// define the friend class bisect_unroll
 
-	friend class bisect_unroll<dim,ORB<dim,T,loc_wg,loc_pos,Box,Tree>>;
+	friend class bisect_unroll<dim, ORB<dim,T,loc_wg,loc_pos,Box>>;
 
 public:
 
@@ -264,7 +264,7 @@ public:
 	 */
 	ORB(Box dom, size_t n_sub, loc_pos & lp) : v_cl(create_vcluster()), lp(lp)
 	{
-		typedef ORB<dim,T,loc_wg,loc_pos,Box,Tree> ORB_class;
+		typedef ORB<dim,T,loc_wg,loc_pos,Box> ORB_class;
 
 		dim_div = 0;
 
@@ -283,10 +283,9 @@ public:
 
 		// unroll bisection cycle
 		bisect_unroll<dim,ORB_class> bu(*this);
-		for (size_t i = 0 ; i < dim_cycle ; i++)
-		{
-			boost::mpl::for_each< boost::mpl::range_c<int,0,dim> >(bu);
+		for (size_t i = 0 ; i < dim_cycle ; i++) {
 			// bu is recreated several time internaly
+			boost::mpl::for_each< boost::mpl::range_c<int,0,dim> >(bu);
 		}
 
 		// calculate and execute the remaining cycles
@@ -317,7 +316,6 @@ public:
 			// To extend on higher dimension create other cases or create runtime
 			// version of local_cm and bisect
 			std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " ORB is not working for dimension bigger than 8";
-
 		}
 	}
 };
