@@ -79,15 +79,15 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
     size_t proc = dec.getIGhostBoxProcessor(i);
 
     // sample one point inside the box
-    /*Point<SPACE_N_DIM, domain_type> p = b.rnd();
+    Point<SPACE_N_DIM, domain_type> p = b.rnd();
 
     // Check that ghost_processorsID return that processor number
     const openfpm::vector<size_t> &pr =
-        dec.dec.ghost_processorID<CartDecompositionStrategy::AbstractDecStrategy::processor_id>(p, UNIQUE);
+        dec.ghost_processorID<CartDecompositionStrategy<SPACE_N_DIM, domain_type>::processor_id>(p, UNIQUE);
     bool found = isIn(pr, proc);
 
     printMe(vcl);
-    std::cout << "assert " << found << " == true" << std::endl;*/
+    std::cout << "assert " << found << " == true" << std::endl;
   }
 
   // Check the consistency
