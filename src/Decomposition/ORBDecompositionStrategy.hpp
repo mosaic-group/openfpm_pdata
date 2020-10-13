@@ -13,7 +13,7 @@ class OrbDecompositionStrategy {
   using Orb = ORB<dim, domain_type>;
 
 public:
-  OrbDecompositionStrategy(Vcluster<> &v_cl) : dec(v_cl) {}
+  OrbDecompositionStrategy(Vcluster<> &v_cl) : _inner(v_cl) {}
 
   ~OrbDecompositionStrategy() {}
 
@@ -41,7 +41,7 @@ public:
 
   ~OrbDecompositionStrategy() {
     if (orb) {
-      delete orb;  // todo needed ??
+      delete orb;
     }
   }
 
@@ -51,16 +51,31 @@ public:
 
   template <typename Point>
   void decompose(openfpm::vector<Point> &points) {
-    orb = Orb(dec.domain, dec.v_cl.getProcessingUnits(), points);  // this takes care of the decomposition
+    orb = Orb(inner().getDomain(), inner().v_cl.getProcessingUnits(), points);  // this takes care of the decomposition
   }
 
   Graph_CSR<nm_v<dim>, nm_e> &getGraph() {
-    auto tree = orb->grp;  // Graph_CSR<ORB_node<T>, no_edge>
-    // todo get leaves only
+    // todo get leaves from auto tree = orb->grp;  // Graph_CSR<ORB_node<T>, no_edge>
+    
+    // todo test only: ~trivial decomposition -> build a graph with n (= proc units) vertices
+
+    // build it
+    if (inner().getGraph().getNVertex() != inner().v_cl.getProcessingUnits()) {
+      // create only necessary vertices in the graph
+      for (auto i = inner().v_cl.getProcessingUnits(); i < inner().v_cl.getProcessingUnits(); ++i) {
+        inner().getGraph().addVertex();
+      }
+    }
+    
+    return inner().getGraph();
+  }
+
+  AbstractDecStrategy &inner() {
+    return _inner;
   }
 
 private:
-  AbstractDecStrategy inner;
+  AbstractDecStrategy _inner;
   Orb* orb;
 };
 #endif // SRC_DECOMPOSITION_ORB_DECOMPOSITION_STRATEGY_HPP

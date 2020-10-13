@@ -74,12 +74,12 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   dec.onEnd();
 
   // For each calculated ghost box
-  /* todo for (size_t i = 0; i < dec.inner().getNIGhostBox(); ++i) {
-    SpaceBox<SPACE_N_DIM, domain_type> b = dec.inner().getIGhostBox(i);
-    size_t proc = dec.inner().getIGhostBoxProcessor(i);
+  for (size_t i = 0; i < dec.getNIGhostBox(); ++i) {
+    SpaceBox<SPACE_N_DIM, domain_type> b = dec.getIGhostBox(i);
+    size_t proc = dec.getIGhostBoxProcessor(i);
 
     // sample one point inside the box
-    Point<SPACE_N_DIM, domain_type> p = b.rnd();
+    /*Point<SPACE_N_DIM, domain_type> p = b.rnd();
 
     // Check that ghost_processorsID return that processor number
     const openfpm::vector<size_t> &pr =
@@ -87,8 +87,8 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
     bool found = isIn(pr, proc);
 
     printMe(vcl);
-    std::cout << "assert " << found << " == true" << std::endl;
-  } */
+    std::cout << "assert " << found << " == true" << std::endl;*/
+  }
 
   // Check the consistency
   bool val = dec.check_consistency();
