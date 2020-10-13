@@ -1051,48 +1051,7 @@ inline void sensor_pressure(Vector& vd,
 void doRebalancing(particles& vd) {
   Vcluster<>& v_cl = create_vcluster();
 
-  // specify
-  // - how we want to add the computational cost ...
-  MyComputationalCostsModel mcc;
-
-  // - how we want to decompose ...
-  MyDecompositionStrategy dec(v_cl);
-  MyDecompositionModel mde;
-
-  // - how we want to distribute ...
-  MyDistributionStrategy dist(v_cl);
-  MyDistributionModel mdi;
-
-  // ... and our shared information
-
-  //! Global sub-sub-domain graph
-  Graph_CSR<nm_v<SPACE_N_DIM>, nm_e> gp;
-
-  //! Convert the graph to parmetis format
-  ParmetisGraph parmetis_graph(v_cl, v_cl.getProcessingUnits());
-
-  ////////////////////////////////////////////////////////// computational costs
-  mcc.init(dist);
-  mcc.calculate(vd, dec, dist);
-  mcc.computeCommunicationAndMigrationCosts(dec, dist, 1);
-  mdi.finalize(dist, parmetis_graph);
-
-  //////////////////////////////////////////////////////////////////// decompose
-  dist.reset(parmetis_graph);
-  if (dec.shouldSetCosts()) {
-    mcc.computeCommunicationAndMigrationCosts(dec, dist);
-  }
-  dec.decompose(mde, parmetis_graph, dist.getVtxdist());
-
-  /////////////////////////////////////////////////////////////////// distribute
-  dist.distribute(parmetis_graph);
-
-  ///////////////////////////////////////////////////////////////////////  merge
-  dec.merge(gp, dist.getGhost(), dist.getGrid());
-
-  ///////////////////////////////////////////////////////////////////// finalize
-  dist.onEnd(dec.getSubDomains());
-  dec.onEnd(dist.getGhost());
+  // todo mcc.calculate(vd, dec, dist);
 }
 
 /*! \cond [rebalancing] \endcond */
@@ -1186,7 +1145,7 @@ int main(int argc, char* argv[]) {
 
   //! \cond [vector inst] \endcond
 
-  particles vd(0, domain, bc, g, DEC_GRAN(512));  // todo, what is DEC_GRAN ?
+  particles vd(0, domain, bc, g, DEC_GRAN(512));
 
   //! \cond [vector inst] \endcond
 
