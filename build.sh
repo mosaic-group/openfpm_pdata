@@ -35,7 +35,7 @@ fi
 if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 	echo "Mac node"
 	export PATH="/usr/local/bin:$PATH"
-#	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
+#	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/PETSC
 fi
 
 if [ x"$hostname" == x"falcon1" ]; then

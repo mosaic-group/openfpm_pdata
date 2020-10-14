@@ -169,7 +169,7 @@ if [ ! "$(ls -A $1/PETSC)" ]; then
    rm -rf $1/PETSC
 else
    #Mark the installation
-   echo 3 > $1/PETSC/version
+   echo 4 > $1/PETSC/version
    exit 0
 fi
 
