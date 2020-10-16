@@ -1947,6 +1947,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 
 			vd.hostToDevicePos();
 			vd.template hostToDeviceProp<0>();
+			std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa " << cudaGetLastError() << std::endl;
 			vd.template ghost_put<add_atomic_,0>(RUN_ON_DEVICE);
 			vd.template deviceToHostProp<0>();
 			vd.deviceToHostPos();

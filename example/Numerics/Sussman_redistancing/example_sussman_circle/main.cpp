@@ -94,7 +94,7 @@
  *
  * These are the header files that we need to include:
  *
- * @snippet examples/example_sussman_circle/main.cpp Include
+ * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Include
  *
  */
 //! @cond [Include] @endcond
@@ -133,7 +133,7 @@
  * * Initializing OpenFPM
  * * Setting the output path and creating an output folder
  *
- * @snippet examples/example_sussman_circle/main.cpp Initialization and output folder
+ * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Initialization and output folder
  *
  */
 //! @cond [Initialization and output folder] @endcond
@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
 	 * * \p y: Second dimension
 	 * * \p Phi_0_grid: Index of property that stores the initial level-set-function
 	 * * \p Phi_SDF_grid: Index of property where the redistancing result should be written to
-	 * @snippet examples/example_sussman_circle/main.cpp Indices grid
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Indices grid
 	 *
 	 */
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -187,7 +187,7 @@ int main(int argc, char* argv[])
 	 *   the post-redistancing Phi_SDF should be written to.
 	 * * Set some property names (optionally. These names show up when opening the grid vtk in Paraview.)
 	 *
-	 * @snippet examples/example_sussman_circle/main.cpp Grid creation
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Grid creation
 	 *
 	 */
 	//! @cond [Grid creation] @endcond
@@ -220,7 +220,7 @@ int main(int argc, char* argv[])
      * \end{cases} @f]
 	 *
 	 * Optionally, we can save this initial grid as a vtk file, if we want to visualize and check it in Paraview.
-	 * @snippet examples/example_sussman_circle/main.cpp Get circle
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Get circle
 	 */
     //! @cond [Get circle] @endcond
 	// Now we initialize the grid with a filled circle. Outside the circle, the value of Phi_0 will be -1, inside +1.
@@ -266,7 +266,7 @@ int main(int argc, char* argv[])
 	 * * \p print_steadyState_iter: If true, the number of the steady-state-iteration, the corresponding change
 	 *                              w.r.t the previous iteration and the residual is printed (Default: false).
 	 *
-	 * @snippet examples/example_sussman_circle/main.cpp Redistancing options
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Redistancing options
 	 */
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//! @cond [Redistancing options] @endcond
@@ -306,7 +306,7 @@ int main(int argc, char* argv[])
 	 * containing the signed distance function in Prop. 2. The vtk-file can be opened in Paraview. If we want, we can
 	 * further save the result as hdf5 file that can be reloaded onto an openFPM grid.
 	 *
-	 * @snippet examples/example_sussman_circle/main.cpp Run redistancing
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Run redistancing
 	 */
 	//! @cond [Run redistancing] @endcond
 	RedistancingSussman<grid_in_type> redist_obj(g_dist, redist_options);   // Instantiation of Sussman-redistancing class
@@ -332,7 +332,7 @@ int main(int argc, char* argv[])
 	 * one, but you can have particles with arbitrary many properties, depending on what you want to use them for
 	 * later on. Here, we exemplarily define 3 properties.
 	 *
-	 * @snippet examples/example_sussman_circle/main.cpp Initialize narrow band
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Initialize narrow band
 	 */
 	//! @cond [Initialize narrow band] @endcond
 	//	Get narrow band: Place particles on interface (narrow band width e.g. 2 grid points on each side of the interface)
@@ -363,7 +363,7 @@ int main(int argc, char* argv[])
 	 * grid points (size_t), physical width (double) or extension of narrow band as physical width inside of object
 	 * and outside the object (double, double).
 	 *
-	 * @snippet examples/example_sussman_circle/main.cpp Instantiate narrow band
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Instantiate narrow band
 	 */
 	//! @cond [Instantiate narrow band] @endcond
 	size_t thickness_of_narrowBand_in_grid_points = 6;
@@ -378,7 +378,7 @@ int main(int argc, char* argv[])
 	 * Again, we can define some indices for better code readability. This is just an example, you may want to choose
 	 * different names and have a different number of properties thus different number of indices.
 	 *
-	 * @snippet examples/example_sussman_circle/main.cpp Indices narrow band
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Indices narrow band
 	 *
 	 */
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -409,7 +409,7 @@ int main(int argc, char* argv[])
 	 *
 	 * We save the particles in a vtk file (open in Paraview) and as hdf5 file (can be loaded back on particles).
 	 *
-	 * @snippet examples/example_sussman_circle/main.cpp Get narrow band
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Get narrow band
 	 */
 	// Get the narrow band. You can decide, if you only want the Phi_SDF saved to your particles or
 	// if you also want the gradients or gradients and magnitude of gradient.
@@ -432,7 +432,7 @@ int main(int argc, char* argv[])
 	 *
 	 * We end with terminating OpenFPM
 	 *
-	 * @snippet examples/example_sussman_circle/main.cpp Terminate
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Terminate
 	 */
 	//! @cond [Terminate] @endcond
 	openfpm_finalize(); // Finalize openFPM library
@@ -445,7 +445,7 @@ int main(int argc, char* argv[])
  *
  * ## Full code ## {#e2d_c_full}
  *
- * @include examples/example_sussman_circle/main.cpp
+ * @include example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp
  */
 
 

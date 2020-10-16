@@ -34,7 +34,7 @@
  *
  * These are the header files that we need to include:
  *
- * @snippet examples/example_sussman_images_3D/main.cpp Include
+ * @snippet example/Numerics/Sussman_redistancing/example_sussman_images_3D/main.cpp Include
  *
  */
 //! @cond [Include] @endcond
@@ -82,7 +82,7 @@
  * * \p Phi_0_grid: Index of property that stores the initial level-set-function
  * * \p Phi_SDF_grid: Index of property where the redistancing result should be written to
  *
- * @snippet examples/example_sussman_images_3D/main.cpp Initialization
+ * @snippet example/Numerics/Sussman_redistancing/example_sussman_images_3D/main.cpp Initialization
  *
  */
 //! @cond [Initialization] @endcond
@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
 	 * This can be useful for example when you want to have an isotropic grid but the underlying image stack is
 	 * anisotropic (as it often happens for the z-resolution of volumetric microscopy image data).
 	 *
-	 * @snippet examples/example_sussman_images_3D/main.cpp Refinement
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_images_3D/main.cpp Refinement
 	 *
 	 */
 	//! @cond [Refinement] @endcond
@@ -151,7 +151,7 @@ int main(int argc, char* argv[])
 	 * We use this stack size and the refinement factor to set the grid size \p sz.
 	 *
 	 *
-	 * @snippet examples/example_sussman_images_3D/main.cpp Size
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_images_3D/main.cpp Size
 	 *
 	 */
 	//! @cond [Size] @endcond
@@ -183,7 +183,7 @@ int main(int argc, char* argv[])
 	 * example_sussman_circle and here: @ref example_sussman_sphere.
 	 *
 	 *
-	 * @snippet examples/example_sussman_images_3D/main.cpp Redistancing
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_images_3D/main.cpp Redistancing
 	 *
 	 */
 	//! @cond [Redistancing] @endcond
@@ -265,7 +265,7 @@ int main(int argc, char* argv[])
  *
  * ## Full code ## {#e2d_img_full}
  *
- * @include examples/example_sussman_images_3D/main.cpp
+ * @include example/Numerics/Sussman_redistancing/example_sussman_images_3D/main.cpp
  */
 
 
