@@ -7,7 +7,7 @@
  *
  * # Load the geometrical object from a binary 2D image #
  * In this example, we will:
- * * Read a 2D binary image from a binary file (for a 2D image volume see @ref example_sussman_images_2D)
+ * * Read a 2D binary image from a binary file (for a 3D image volume see @ref example_sussman_images_3D)
  * * Build a 2D cartesian OpenFPM grid with same dimensions as the image (1 particle for each pixel in x and y) or
  *   refined by arbitrary factor in dimension of choice (e.g. to get a isotropic grid)
  * * Assign pixel value to a grid node property
@@ -19,6 +19,11 @@
  * writes vtk and hdf5 files of:
  * 1.) 2D grid with geometrical object pre-redistancing and post-redistancing (Phi_0 and Phi_SDF, respectively)
  * 2.) particles on narrow band around interface.
+ *
+ * ## Visualization of example output in Paraview ##
+ * @htmlonly
+ * <img src="http://openfpm.mpi-cbg.de/web/images/examples/sussman_redistancing/example_sussman_images_2D_paraview.png" width="1024px"/>
+ * @endhtmlonly
  **/
 
 /**
@@ -68,8 +73,8 @@
  * * Initializing OpenFPM
  * * Setting the output path and creating an output folder
  * This time, we also set the input path and name of the binary image that we want to load onto the grid. For this
- * example we provide 3 simple example images. The binary images have been converted into -1 / +1 values.
- * A jupyter notebook how to do this can be found here:
+ * example we provide 3 simple example images. The original (e.g. tiff) image has been converted into -1 / +1 values.
+ * A jupyter notebook that does this can be found here: @ref image_binary_conversion/image2binary_dolphin.ipynb
  * Optionally, we can define the grid dimensionality and some indices for better code readability later on.
  * * \p x: First dimension
  * * \p y: Second dimension

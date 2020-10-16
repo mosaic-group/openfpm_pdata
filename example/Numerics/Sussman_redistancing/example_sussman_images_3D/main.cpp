@@ -9,7 +9,9 @@
  *
  * # Example for loading a 3D object from an image stack (binary) onto a grid and applying Sussman redistancing #
  *
- * In this example the image stack is read from a binary file. A 3D cartesian grid with same dimensions as image
+ * In this example the image stack is read from a binary file. A jupyter notebook that converts tiff-images into
+ * -1/+1 binary files can be found here: @ref image_binary_conversion/image2binary_dolphin.ipynb.
+ * A 3D cartesian grid with same dimensions as image
  * stack is constructed. The grid resolution can be either 1 grid node for each pixel in x and y) or the resolution
  * can be higher/lower as the image stack. This can be achieved by setting the refinement factor to a value of choice in
  * dimension of choice (e.g. to get a isotropic grid). The pixel value is stored in a property of the grid.
