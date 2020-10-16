@@ -79,8 +79,7 @@
  * * Initializing OpenFPM
  * * Setting the output path and creating an output folder
  * This time, we also set the input path and name of the binary image stack that we want to load onto the grid. For this
- * example we provide 1 simple example image stack. The binary image stack have been converted into -1 / +1 values.
- * A jupyter notebook how to do this can be found here:
+ * example, we provide 1 simple example image stack that has already been converted to a -1 / +1 binary (see jupyter notebook above).
  * Optionally, we can define the grid dimensionality and some indices for better code readability later on.
  * * \p x: First dimension
  * * \p y: Second dimension
