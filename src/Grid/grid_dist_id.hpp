@@ -1669,7 +1669,9 @@ public:
             Vis_new->to_shared_mem();
         }
 
-	    if(scale == fixed)
+        static grid_key_dx<3> star_stencil_3D[1] = {{0,0,0}};
+
+        if(scale == fixed)
         {
 	        if(low >= high)
             {
@@ -1682,14 +1684,14 @@ public:
             low = std::numeric_limits<St>::max();
             high = std::numeric_limits<St>::min();
 
-            auto it1 = this->getDomainIterator();
+            auto it1 = this->getDomainIteratorStencil(star_stencil_3D);;
 
             while(it1.isNext())
             {
-                auto key = it1.get();
+                auto Cp = it1.template getStencil<0>();
 
                 double cur;
-                cur = vis_code<std::rank<prop_type>::value == 1>::template execute<prop>(this,key,vect_vis);
+                cur = vis_code<std::rank<prop_type>::value == 1>::template execute<prop>(this,Cp,vect_vis);
 
                 if(cur > high) {high = cur;}
                 if(cur < low) {low = cur;}
@@ -1702,18 +1704,19 @@ public:
         }
 
         // calculate the magnitude of velocity
-        auto it2 = this->getDomainIterator();
-        auto it2_vis = Vis_new->getDomainIterator();
+        auto it2 = this->getDomainIteratorStencil(star_stencil_3D);
+        auto it2_vis = Vis_new->getDomainIteratorStencil(star_stencil_3D);
         while (it2.isNext())
         {
-            auto key = it2.get();
-            auto key_vis = it2_vis.get();
+            auto Cp = it2.template getStencil<0>();
 
-            double cur = vis_code<std::rank<prop_type>::value == 1>::template execute<prop>(this,key,vect_vis);
+            auto Cp_vis = it2_vis.template getStencil<0>();
+
+            double cur = vis_code<std::rank<prop_type>::value == 1>::template execute<prop>(this,Cp,vect_vis);
 
             double scaled = (cur / (high - low)) * 65535;
             // copy
-            Vis_new->template get<0>(key) = (unsigned short)(scaled);
+            Vis_new->template get<0>(Cp_vis) = (unsigned short)(scaled);
 
             ++it2;
             ++it2_vis;
