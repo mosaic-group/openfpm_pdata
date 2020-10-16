@@ -241,7 +241,7 @@ int main(int argc, char* argv[])
 	Redist_options redist_options;
 	redist_options.sigma                                = 0;
 	redist_options.min_iter                             = 100;
-	redist_options.max_iter                             = 100;
+	redist_options.max_iter                             = 10000;
 	
 	redist_options.convTolChange.value                  = 1e-12;
 	redist_options.convTolChange.check                  = true;
