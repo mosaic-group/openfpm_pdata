@@ -12,7 +12,7 @@
  * In this example the image stack is read from a binary file. A jupyter notebook that converts tiff-images into
  * -1/+1 binary files can be found here:
  * @htmlonly
- * <a href='http://openfpm.mpi-cbg.de/web/images/examples/sussman_redistancing/image2binary_dolphin.ipynb'>image2binary_dolphin.ipynb</a>".
+ * <a href='http://openfpm.mpi-cbg.de/web/images/examples/sussman_redistancing/image2binary_dolphin.ipynb'>image2binary_dolphin.ipynb</a>.
  * @endhtmlonly
  * A 3D cartesian grid with same dimensions as image
  * stack is constructed. The grid resolution can be either 1 grid node for each pixel in x and y) or the resolution

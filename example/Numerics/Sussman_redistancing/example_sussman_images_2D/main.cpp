@@ -76,7 +76,7 @@
  * example we provide 3 simple example images. The original (e.g. tiff) image has been converted into -1 / +1 values.
  * A jupyter notebook that does this can be found here:
  * @htmlonly
- * <a href='http://openfpm.mpi-cbg.de/web/images/examples/sussman_redistancing/image2binary_dolphin.ipynb'>image2binary_dolphin.ipynb</a>".
+ * <a href='http://openfpm.mpi-cbg.de/web/images/examples/sussman_redistancing/image2binary_dolphin.ipynb'>image2binary_dolphin.ipynb</a>.
  * @endhtmlonly
  * Optionally, we can define the grid dimensionality and some indices for better code readability later on.
  * * \p x: First dimension
