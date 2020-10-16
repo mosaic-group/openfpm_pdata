@@ -45,6 +45,11 @@
  * 1.) 3D grid with sphere pre-redistancing and post-redistancing (Phi_0 and Phi_SDF, respectively)
  * 2.) particles on narrow band around interface
  *
+ * ## Visualization of example output in Paraview ##
+ * @htmlonly
+ * <img src="http://openfpm.mpi-cbg.de/web/images/examples/sussman_redistancing/example_sussman_sphere_paraview.png" width="1024px"/>
+ * @endhtmlonly
+ *
  */
 
 /**

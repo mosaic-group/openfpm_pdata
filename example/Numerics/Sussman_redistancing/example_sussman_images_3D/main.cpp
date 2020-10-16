@@ -99,7 +99,7 @@ int main(int argc, char* argv[])
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Now we set the input paths. We need a binary file with the pixel values and a csv file with the
 	// size of the stack (in #pixels / dimension)
-	const std::string path_input        ="../input";
+	const std::string path_input        ="input";
 	const std::string path_to_zstack    = path_input + "/sphere.bin";
 	const std::string path_to_size      = path_input + "/size_sphere.csv";
 	/*
