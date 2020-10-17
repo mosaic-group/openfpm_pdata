@@ -1687,9 +1687,6 @@ public:
 
             auto it1 = this->getDomainIteratorStencil(star_stencil_3D);;
 
-            timer t_firstloop;
-            t_firstloop.start();
-
             while(it1.isNext())
             {
                 auto Cp = it1.template getStencil<0>();
@@ -1703,22 +1700,15 @@ public:
                 ++it1;
             }
 
-            std::cout<<"Time in the first loop is: "<<t_firstloop.getwct()<<std::endl;
-
-            timer t_comm;
-            t_comm.start();
             v_cl.max(high);
             v_cl.min(low);
             v_cl.execute();
-            std::cout<<"Comm time is: "<<t_comm.getwct()<<std::endl;
         }
 
         // calculate the magnitude of velocity
         auto it2 = this->getDomainIteratorStencil(star_stencil_3D);
         auto it2_vis = Vis_new->getDomainIteratorStencil(star_stencil_3D);
 
-        timer t_secondloop;
-        t_secondloop.start();
         while (it2.isNext())
         {
             auto Cp = it2.template getStencil<0>();
@@ -1734,7 +1724,6 @@ public:
             ++it2;
             ++it2_vis;
         }
-        std::cout<<"Time in the second loop is: "<<t_secondloop.getwct()<<std::endl;
     }
 
     /*! /brief set shared memory
