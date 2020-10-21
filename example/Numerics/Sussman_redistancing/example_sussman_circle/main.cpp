@@ -103,24 +103,6 @@
  *
  */
 //! @cond [Include] @endcond
-// Include standard library header files
-#include <iostream>
-#include <typeinfo>
-#include <cmath>
-#include <cstdio>
-
-// Include header files from other libraries
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/expressions.hpp>
-#include <boost/log/utility/setup/file.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>
-
-// Include OpenFPM header files
-#include "Vector/vector_dist.hpp"
-#include "Grid/grid_dist_id.hpp"
-#include "data_type/aggregate.hpp"
-#include "Decomposition/CartDecomposition.hpp"
 
 // Include Redistancing header files
 #include "util/PathsAndFiles.hpp"
@@ -282,10 +264,10 @@ int main(int argc, char* argv[])
 	redist_options.min_iter                             = 100;
 	redist_options.max_iter                             = 10000;
 	
-	redist_options.convTolChange.value                  = 1e-12;
+	redist_options.convTolChange.value                  = 1e-6;
 	redist_options.convTolChange.check                  = true;
 	redist_options.convTolResidual.value                = 1e-6;
-	redist_options.convTolResidual.check                = true;
+	redist_options.convTolResidual.check                = false;
 	
 	redist_options.interval_check_convergence           = 1;
 	redist_options.width_NB_in_grid_points              = 6;

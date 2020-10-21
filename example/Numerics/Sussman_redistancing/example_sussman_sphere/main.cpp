@@ -63,24 +63,6 @@
  *
  */
 //! @cond [Include] @endcond
-// Include standard library header files
-#include <iostream>
-#include <typeinfo>
-#include <cmath>
-#include <cstdio>
-
-// Include header files from other libraries
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/expressions.hpp>
-#include <boost/log/utility/setup/file.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>
-
-// Include OpenFPM header files
-#include "Vector/vector_dist.hpp"
-#include "Grid/grid_dist_id.hpp"
-#include "data_type/aggregate.hpp"
-#include "Decomposition/CartDecomposition.hpp"
 
 // Include level-set-method related header files
 #include "util/PathsAndFiles.hpp"
