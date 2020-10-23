@@ -11,8 +11,6 @@
 #include "Grid/grid_dist_id.hpp"
 #include "Point_test.hpp"
 
-////////////////////////////////////// THEESE TEST ARE BROKEN TO REMPOVE OR FIX ////
-
 
 const int x = 0;
 const int y = 1;
@@ -31,9 +29,9 @@ BOOST_AUTO_TEST_CASE (sgrid_dist_id_soa )
 
 	// grid size
 	size_t sz[3];
-	sz[0] = 100;
-	sz[1] = 100;
-	sz[2] = 100;
+	sz[0] = 1024;
+	sz[1] = 1024;
+	sz[2] = 1024;
 
 	// Ghost
 	Ghost<3,double> g(0.01);
@@ -226,17 +224,6 @@ BOOST_AUTO_TEST_CASE( sgrid_dist_id_basic_test_2D)
 				  4.0*sg.template get<0>(key);
 
 			good &= (lap == 4.0);
-
-			if (good == false)
-			{
-				int debug = 0;
-
-				std::cout << sg.template get<0>(key.move(x,1)) << " " << sg.template get<0>(key.move(x,-1)) << " " <<
-							  sg.template get<0>(key.move(y,1))<< " " << sg.template get<0>(key.move(y,-1)) << " " <<
-							  4.0*sg.template get<0>(key) << std::endl;
-
-				debug++;
-			}
 		}
 
 		++it4;
@@ -501,17 +488,6 @@ BOOST_AUTO_TEST_CASE( sparse_grid_fast_stencil_vectorized_simplified_conv2)
 																	- deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
 																	- deltaT * F * (grid.get<U>(Cp) - 1.0) - grid.get<U_next>(Cp)) > 0.000000001 )
 			{
-				std::cout << "U: " << grid.get<U>(Cp) + uFactor * (
-						grid.get<U>(mz) +
-						grid.get<U>(pz) +
-						grid.get<U>(my) +
-						grid.get<U>(py) +
-						grid.get<U>(mx) +
-						grid.get<U>(px) -
-						6.0*grid.get<U>(Cp)) +
-						- deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
-						- deltaT * F * (grid.get<U>(Cp) - 1.0) << " != " << grid.get<U_next>(Cp) << "  " << Cp.to_string() << std::endl;
-
 				match = false;
 				break;
 			}
@@ -528,16 +504,6 @@ BOOST_AUTO_TEST_CASE( sparse_grid_fast_stencil_vectorized_simplified_conv2)
 																	deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
 																	- deltaT * (F+K) * grid.get<V>(Cp) - grid.get<V_next>(Cp)) > 0.000000001 )
 			{
-				std::cout << "V: " << grid.get<V>(Cp) + vFactor * (
-						grid.get<V>(mz) +
-						grid.get<V>(pz) +
-						grid.get<V>(my) +
-						grid.get<V>(py) +
-						grid.get<V>(mx) +
-						grid.get<V>(px) -
-						6*grid.get<V>(Cp)) +
-						deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
-						- deltaT * (F+K) * grid.get<V>(Cp) << "!= " << grid.get<V_next>(Cp) << "  " << Cp.to_string() << std::endl;
 				match = false;
 				break;
 			}
@@ -698,16 +664,6 @@ BOOST_AUTO_TEST_CASE( sparse_grid_fast_stencil_vectorized_simplified_conv2_cross
 																	- deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
 																	- deltaT * F * (grid.get<U>(Cp) - 1.0) - grid.get<U_next>(Cp)) > 0.000000001 )
 			{
-				std::cout << "U: " << grid.get<U>(Cp) + uFactor * (
-						grid.get<U>(mz) +
-						grid.get<U>(pz) +
-						grid.get<U>(my) +
-						grid.get<U>(py) +
-						grid.get<U>(mx) +
-						grid.get<U>(px) -
-						6.0*grid.get<U>(Cp)) +
-						- deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
-						- deltaT * F * (grid.get<U>(Cp) - 1.0) << " != " << grid.get<U_next>(Cp) << "  " << Cp.to_string() << std::endl;
 				match = false;
 				break;
 			}
@@ -724,17 +680,6 @@ BOOST_AUTO_TEST_CASE( sparse_grid_fast_stencil_vectorized_simplified_conv2_cross
 																	deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
 																	- deltaT * (F+K) * grid.get<V>(Cp) - grid.get<V_next>(Cp)) > 0.000000001 )
 			{
-				std::cout << "V: " << grid.get<V>(Cp) + vFactor * (
-						grid.get<V>(mz) +
-						grid.get<V>(pz) +
-						grid.get<V>(my) +
-						grid.get<V>(py) +
-						grid.get<V>(mx) +
-						grid.get<V>(px) -
-						6*grid.get<V>(Cp)) +
-						deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
-						- deltaT * (F+K) * grid.get<V>(Cp)  << " != " << grid.get<V_next>(Cp) << " key: " << Cp.to_string() << std::endl;
-
 				match = false;
 				break;
 			}

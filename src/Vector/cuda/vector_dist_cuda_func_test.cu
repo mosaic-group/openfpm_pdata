@@ -608,8 +608,7 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 
     starts.resize(proc_id_out.size());
 
-    mgpu::ofp_context_t ctx;
-    openfpm::scan((unsigned int *)proc_id_out.template getDeviceBuffer<0>(),proc_id_out.size(),(unsigned int *)starts.template getDeviceBuffer<0>(),ctx);
+    openfpm::scan((unsigned int *)proc_id_out.template getDeviceBuffer<0>(),proc_id_out.size(),(unsigned int *)starts.template getDeviceBuffer<0>(),v_cl.getmgpuContext());
 
 	starts.deviceToHost<0>(starts.size()-1,starts.size()-1);
 
@@ -1218,6 +1217,13 @@ void vector_dist_remove_marked_type()
 	remove_marked<prp>(vd);
 
 	BOOST_REQUIRE_EQUAL(vd.size_local(),size_old);
+
+	// Now we try to remove all
+	vd.getPropVector().template fill<prp>(1);
+
+	remove_marked<prp>(vd);
+
+	BOOST_REQUIRE_EQUAL(vd.size_local(),0);
 }
 
 BOOST_AUTO_TEST_CASE(vector_dist_remove_marked)

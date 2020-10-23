@@ -30,7 +30,7 @@ constexpr size_t y = 1;
 constexpr size_t z = 2;
 
 constexpr size_t A = 0;
-constexpr size_t B = 0;
+constexpr size_t B = 1;
 
 //! \cond [useful constant] \endcond
 

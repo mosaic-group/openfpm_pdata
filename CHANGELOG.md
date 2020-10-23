@@ -1,7 +1,36 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [2.0.0] February 2018 (Codename Elisa)
+## [3.1.0] 2020 (Codename New Horizons)
+
+- Adding GPU support for ghost_put
+- Adding support for CUDA 11
+
+### Fixed
+
+- Few details in the installation system of linear algebra for OSX
+
+### Changed
+
+- None
+
+## [3.0.0] 2020 (Codename Sparsity)
+
+- Upgrading all the dependencies: BOOST,PETSC,SUITESPARSE,OPENBLAS
+- Adding CPU and GPU sparse grids. Look at the examples SparseGrid in the forlder examples
+- Improving performance of GPU function remove_marked
+
+### Fixed
+
+- Several installation bugs on PETSC installation
+
+### Changed
+
+- Name for GoogleCharts has been changed please look at the examples
+
+## [1.X ] End of life (Theese versions are not enymore supported)
+
+## [2.0.0] February 2019 (Codename Elisa)
 
 ### Added
 

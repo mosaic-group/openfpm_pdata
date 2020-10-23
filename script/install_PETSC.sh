@@ -51,7 +51,7 @@ fi
 
 rm petsc-lite-3.13.3.tar.gz
 rm -rf petsc-3.13.3
-wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-lite-3.13.3.tar.gz
+wget http://ppmcore.mpi-cbg.de/upload/petsc-lite-3.13.3.tar.gz
 if [ $? -ne 0 ]; then
   echo -e "\033[91;5;1m FAILED! Installation requires an Internet connection \033[0m"
   exit 1
@@ -81,9 +81,6 @@ else
   mpi_dir=$(dirname "$(dirname "$(which mpic++)")")
 fi
 
-### It seem that the PETSC --download-packege option has several problems and cannot produce
-### a valid compilation command for most of the packages + it seem also that some library
-### are compiled without optimization enabled, so we provide manual installation for that packages
 
 if [ ! -d "$1/OPENBLAS" ]; then
   CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_OPENBLAS.sh $1
@@ -110,8 +107,22 @@ if [ -d "$1/SUITESPARSE"  -a -f "$1/SUITESPARSE/include/umfpack.h" ]; then
   fi
 fi
 
-configure_options="$configure_options --download-scalapack --download-mumps"
-configure_options="$configure_options --download-superlu_dist"
+configure_options2="$configure_options --download-scalapack"
+test_configure_options
+
+if [ $error -eq 0 ]; then
+  echo "SCALAPACK work with PETSC"
+  configure_options="$configure_options --download-scalapack "
+fi
+
+configure_options2="$configure_options --download-mumps"
+test_configure_options
+
+if [ $error -eq 0 ]; then
+  echo "MUMPS work with PETSC"
+  configure_options="$configure_options --download-mumps"
+fi
+
 
 #### OK here we check if we can configure work with SUITESPARSE
 echo "Testing if PETSC work with SUPERLU"
@@ -123,11 +134,18 @@ if [ $error -eq 0 ]; then
   configure_options="$configure_options --download-superlu_dist "
 fi
 
-configure_options="$configure_options --download-hypre"
+configure_options2="$configure_options --download-hypre"
+test_configure_options
 
-rm petsc-lite-3.3.tar.gz
+if [ $error -eq 0 ]; then
+  echo "HYPRE work with PETSC"
+  configure_options="$configure_options --download-hypre"
+fi
+
+
+rm petsc-lite-3.13.3.tar.gz
 rm -rf petsc-3.13.3
-wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-lite-3.13.3.tar.gz
+wget http://ppmcore.mpi-cbg.de/upload/petsc-lite-3.13.3.tar.gz
 if [ $? -ne 0 ]; then
   echo -e "\033[91;5;1m FAILED! Installation requires an Internet connection \033[0m"
   exit 1

@@ -131,7 +131,20 @@ __device__ inline void process_ghost_device_particle_prp(unsigned int i, unsigne
 	object_si_d<encap_src, encap_dst, OBJ_ENCAP, prp...>(v_prp.get(id), m_prp.get(i));
 }
 
+//! It process one particle
+template<typename T2, typename T4, unsigned int ... prp>
+__device__ inline void process_ghost_device_particle_prp(unsigned int i, unsigned int offset, T2 & m_prp, T4 & v_prp)
+{
+	unsigned int id = i+offset;
 
+	// source object type
+	typedef decltype(v_prp.get(id)) encap_src;
+	// destination object type
+	typedef decltype(m_prp.get(i)) encap_dst;
+
+	// Copy only the selected properties
+	object_si_d<encap_src, encap_dst, OBJ_ENCAP, prp...>(v_prp.get(id), m_prp.get(i));
+}
 
 template<typename base_type, unsigned int prp>
 struct compare_host_device

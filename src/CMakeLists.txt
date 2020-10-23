@@ -42,7 +42,7 @@ add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
 														  ../openfpm_devices/src/memory/HeapMemory.cpp 
 														  ../openfpm_devices/src/memory/PtrMemory.cpp 
 														  ../openfpm_vcluster/src/VCluster/VCluster.cpp 
-														  ../openfpm_devices/src/Memleak_check.cpp)
+														  )
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	target_compile_options(pdata PRIVATE "-Wno-undefined-var-template")

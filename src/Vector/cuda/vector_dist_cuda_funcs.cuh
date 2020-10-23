@@ -130,6 +130,17 @@ __global__  void process_ghost_particles_prp(vector_g_opart_type g_opart, vector
     process_ghost_device_particle_prp<vector_g_opart_type,vector_prp_type_out,vector_prp_type_in,prp...>(i,offset,g_opart,m_prp,v_prp);
 }
 
+template<typename vector_prp_type_out, typename vector_prp_type_in, unsigned int ... prp>
+__global__  void process_ghost_particles_prp_put(vector_prp_type_out m_prp,
+		     	 	 	 	 	 	   	     vector_prp_type_in  v_prp, unsigned int offset)
+{
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (i >= m_prp.size()) return;
+
+    process_ghost_device_particle_prp<vector_prp_type_out,vector_prp_type_in,prp...>(i,offset,m_prp,v_prp);
+}
+
 template<unsigned int dim, typename vector_g_opart_type, typename vector_pos_type_out, typename vector_pos_type_in, typename vector_shift_type_in>
 __global__  void process_ghost_particles_pos(vector_g_opart_type g_opart, vector_pos_type_out m_pos,
 		     	 	 	 	 	 	   	     vector_pos_type_in  v_pos, vector_shift_type_in shifts, unsigned int offset)
@@ -351,7 +362,7 @@ __global__ void flip_one_to_zero(vector_type vd)
  *
  */
 template<unsigned int prp, typename vector_type>
-void remove_marked(vector_type & vd)
+void remove_marked(vector_type & vd, const int n = 1024)
 {
 	// This function make sense only if prp is an int or unsigned int
 	if (std::is_same< typename boost::mpl::at<typename vector_type::value_type::type,boost::mpl::int_<prp>>::type, int >::value == false &&
@@ -371,7 +382,7 @@ void remove_marked(vector_type & vd)
 
 	// because we mark the one to remove we flip the one to zero and the zeros to one
 
-	auto ite = vd.getDomainIteratorGPU();
+	auto ite = vd.getDomainIteratorGPU(n);
 
 	CUDA_LAUNCH((flip_one_to_zero<prp>),ite,vd.toKernel());
 

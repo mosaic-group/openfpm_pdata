@@ -21,6 +21,24 @@
 #include "cuda/vector_dist_comm_util_funcs.cuh"
 #include "util/cuda/scan_ofp.cuh"
 
+template<typename T>
+struct DEBUG
+{
+	static float ret(T & tmp)
+	{
+		return 0.0;
+	}
+};
+
+template<>
+struct DEBUG<float &>
+{
+	static float ret(float & tmp)
+	{
+		return tmp;
+	}
+};
+
 /*! \brief compute the communication options from the ghost_get/put options
  *
  *
@@ -949,7 +967,8 @@ class vector_dist_comm
 	template<typename send_vector, typename prp_object, int ... prp>
 	void fill_send_ghost_put_prp_buf(openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
 									 openfpm::vector<send_vector> & g_send_prp,
-									 size_t & g_m)
+									 size_t & g_m,
+									 size_t opt)
 	{
 		// create a number of send buffers equal to the near processors
 		// from which we received
@@ -980,26 +999,59 @@ class vector_dist_comm
 
 		size_t accum = g_m;
 
-		// Fill the send buffer
-		for (size_t i = 0; i < g_send_prp.size(); i++)
+		if (opt & RUN_ON_DEVICE)
 		{
-			size_t j2 = 0;
-			size_t n_part_recv = get_last_ghost_get_received_parts(i);
+#if defined(CUDA_GPU) && defined(__NVCC__)
 
-			for (size_t j = accum; j < accum + n_part_recv; j++)
+				if (sizeof...(prp) != 0)
+				{
+					// Fill the sending buffers
+					for (size_t i = 0 ; i < g_send_prp.size() ; i++)
+					{
+						size_t n_part_recv = get_last_ghost_get_received_parts(i);
+
+						auto ite = g_send_prp.get(i).getGPUIterator();
+
+						if (ite.nblocks() == 0) {continue;}
+
+						CUDA_LAUNCH((process_ghost_particles_prp_put<decltype(g_send_prp.get(i).toKernel()),decltype(v_prp.toKernel()),prp...>),
+						ite,
+						g_send_prp.get(i).toKernel(),
+						v_prp.toKernel(),accum);
+
+						accum = accum + n_part_recv;
+					}
+				}
+
+#else
+
+				std::cout << __FILE__ << ":" << __LINE__ << " error RUN_ON_DEVICE require that you compile with NVCC, but it seem compiled with a normal compiler" << std::endl;
+
+#endif
+		}
+		else
+		{
+			// Fill the send buffer
+			for (size_t i = 0; i < g_send_prp.size(); i++)
 			{
-				// source object type
-				typedef encapc<1, prop, typename openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base>::layout_type> encap_src;
-				// destination object type
-				typedef encapc<1, prp_object, typename openfpm::vector<prp_object,Memory,typename layout_base<prp_object>::type,layout_base>::layout_type> encap_dst;
+				size_t j2 = 0;
+				size_t n_part_recv = get_last_ghost_get_received_parts(i);
 
-				// Copy only the selected properties
-				object_si_d<encap_src, encap_dst, OBJ_ENCAP, prp...>(v_prp.get(j), g_send_prp.get(i).get(j2));
+				for (size_t j = accum; j < accum + n_part_recv; j++)
+				{
+					// source object type
+					typedef encapc<1, prop, typename openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base>::layout_type> encap_src;
+					// destination object type
+					typedef encapc<1, prp_object, typename openfpm::vector<prp_object,Memory,typename layout_base<prp_object>::type,layout_base>::layout_type> encap_dst;
 
-				j2++;
+					// Copy only the selected properties
+					object_si_d<encap_src, encap_dst, OBJ_ENCAP, prp...>(v_prp.get(j), g_send_prp.get(i).get(j2));
+
+					j2++;
+				}
+
+				accum = accum + n_part_recv;
 			}
-
-			accum = accum + n_part_recv;
 		}
 	}
 
@@ -2106,26 +2158,67 @@ public:
 		typedef openfpm::vector<prp_object,Memory,typename layout_base<prp_object>::type,layout_base> send_vector;
 
 		openfpm::vector<send_vector> g_send_prp;
-		fill_send_ghost_put_prp_buf<send_vector, prp_object, prp...>(v_prp,g_send_prp,g_m);
+		fill_send_ghost_put_prp_buf<send_vector, prp_object, prp...>(v_prp,g_send_prp,g_m,opt);
+
+		if (opt & RUN_ON_DEVICE)
+		{
+#if defined(CUDA_GPU) && defined(__NVCC__)
+			// Before doing the communication on RUN_ON_DEVICE we have to be sure that the previous kernels complete
+			cudaDeviceSynchronize();
+#else
+			std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option RUN_ON_DEVICE you must compile with NVCC" << std::endl;
+#endif
+		}
 
 		// Send and receive ghost particle information
 		if (opt & NO_CHANGE_ELEMENTS)
 		{
 			size_t opt_ = compute_options(opt);
 
-			op_ssend_recv_merge<op> opm(g_opart);
-			v_cl.template SSendRecvP_op<op_ssend_recv_merge<op>,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_recv_get_prp,opm,prc_g_opart,g_opart_sz,opt_);
+			if (opt & RUN_ON_DEVICE)
+			{
+				op_ssend_recv_merge_gpu<op,decltype(g_opart_device),decltype(prc_offset)> opm(g_opart_device,prc_offset);
+				v_cl.template SSendRecvP_op<op_ssend_recv_merge_gpu<op,decltype(g_opart_device),decltype(prc_offset)>,
+				                            send_vector,
+											decltype(v_prp),
+											layout_base,
+											prp...>(g_send_prp,v_prp,prc_recv_get_prp,opm,prc_g_opart,g_opart_sz,opt_);
+			}
+			else
+			{
+				op_ssend_recv_merge<op,decltype(g_opart)> opm(g_opart);
+				v_cl.template SSendRecvP_op<op_ssend_recv_merge<op,decltype(g_opart)>,
+				                            send_vector,
+											decltype(v_prp),
+											layout_base,
+											prp...>(g_send_prp,v_prp,prc_recv_get_prp,opm,prc_g_opart,g_opart_sz,opt_);
+			}
 		}
 		else
 		{
-			op_ssend_recv_merge<op> opm(g_opart);
-			v_cl.template SSendRecvP_op<op_ssend_recv_merge<op>,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,get_last_ghost_get_num_proc_vector(),opm,prc_recv_put,recv_sz_put);
+			size_t opt_ = compute_options(opt);
+
+			if (opt & RUN_ON_DEVICE)
+			{
+				op_ssend_recv_merge_gpu<op,decltype(g_opart_device),decltype(prc_offset)> opm(g_opart_device,prc_offset);
+				v_cl.template SSendRecvP_op<op_ssend_recv_merge_gpu<op,decltype(g_opart_device),decltype(prc_offset)>,
+				                            send_vector,
+											decltype(v_prp),
+											layout_base,
+											prp...>(g_send_prp,v_prp,get_last_ghost_get_num_proc_vector(),opm,prc_recv_put,recv_sz_put,opt_);
+			}
+			else
+			{
+				op_ssend_recv_merge<op,decltype(g_opart)> opm(g_opart);
+				v_cl.template SSendRecvP_op<op_ssend_recv_merge<op,decltype(g_opart)>,
+				                            send_vector,
+											decltype(v_prp),
+											layout_base,
+											prp...>(g_send_prp,v_prp,get_last_ghost_get_num_proc_vector(),opm,prc_recv_put,recv_sz_put,opt_);
+			}
 		}
 
 		// process also the local replicated particles
-
-		size_t i2 = 0;
-
 
 		if (lg_m < v_prp.size() && v_prp.size() - lg_m != o_part_loc.size())
 		{
@@ -2134,14 +2227,19 @@ public:
 		}
 
 
-		for (size_t i = lg_m ; i < v_prp.size() ; i++)
+		if (opt & RUN_ON_DEVICE)
 		{
-			auto dst = v_prp.get(o_part_loc.template get<0>(i2));
-			auto src = v_prp.get(i);
-			copy_cpu_encap_encap_op_prp<op,decltype(v_prp.get(0)),decltype(v_prp.get(0)),prp...> cp(src,dst);
-
-			boost::mpl::for_each_ref< boost::mpl::range_c<int,0,sizeof...(prp)> >(cp);
-			i2++;
+			v_prp.template merge_prp_v_device<op,prop,Memory,
+											  openfpm::grow_policy_double,
+											  layout_base,
+											  decltype(o_part_loc),prp ...>(v_prp,lg_m,o_part_loc);
+		}
+		else
+		{
+			v_prp.template merge_prp_v<op,prop,Memory,
+			                           openfpm::grow_policy_double,
+									   layout_base,
+									   decltype(o_part_loc),prp ...>(v_prp,lg_m,o_part_loc);
 		}
 	}
 };

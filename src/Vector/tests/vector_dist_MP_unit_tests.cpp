@@ -27,6 +27,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_test )
 	// Boundary conditions
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
+	int rank_test = create_vcluster().rank();
 	float r_cut = 51.0;
 
 	// ghost, big enough to contain the interaction radius

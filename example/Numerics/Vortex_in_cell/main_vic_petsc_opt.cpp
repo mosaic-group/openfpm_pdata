@@ -791,9 +791,6 @@ int main(int argc, char* argv[])
 	// initialize the ring step 1
 	init_ring(g_vort,domain);
 
-	openfpm_finalize();
-	return 0;
-
 	x_.resize(g_vort.size(),g_vort.getLocalDomainSize());
 	x_.setZero();
 

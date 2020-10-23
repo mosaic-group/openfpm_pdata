@@ -480,7 +480,7 @@ do
       conf_options="$conf_options -DEIGEN3_ROOT=$ac_optarg"
       ;;
       boost)
-      conf_options="$conf_options -DBOOST_ROOT=$ac_optarg"
+      conf_options="$conf_options -DBOOST_ROOT=$ac_optarg -DBoost_NO_BOOST_CMAKE=ON"
       ;;
       action_on_error)
       conf_options="$conf_options -DACTION_ON_ERROR=$ac_optarg"

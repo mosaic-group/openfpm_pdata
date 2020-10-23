@@ -30,7 +30,7 @@ __global__ void test_ghost(Point<3,double> p1 ,Point<3,double> p2 , dec_type dec
 
 	for (unsigned int i = 0 ; i < ng_id[1] ; i++)
 	{
-		dec.ghost_processor_ID(p1,g_id,ng_id[0],i);
+		dec.ghost_processor_ID(p2,g_id,ng_id[0],i);
 	}
 }
 

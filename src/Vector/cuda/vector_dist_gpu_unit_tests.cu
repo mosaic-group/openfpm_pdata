@@ -69,11 +69,16 @@ __global__  void calculate_force(vector_dist_ker<3, T, aggregate<T, T[3], T [3]>
 
     	// Normalize
 
-    	r1 /= r1.norm();
-    	r2 /= r2.norm();
-
-    	force1 += vd_sort.template getProp<0>(q1)*r1;
-    	force2 += vd.template getProp<0>(q2)*r2;
+    	if (r1.norm() > 1e-6)
+    	{
+    		r1 /= r1.norm();
+    		force1 += vd_sort.template getProp<0>(q1)*r1;
+    	}
+    	if (r2.norm() > 1e-6)
+    	{
+    		r2 /= r2.norm();
+    		force2 += vd.template getProp<0>(q2)*r2;
+    	}
 
     	++it;
     }
@@ -112,9 +117,12 @@ __global__  void calculate_force_full_sort(vector_dist_ker<3, T, aggregate<T, T[
 
     	// Normalize
 
-    	r1 /= r1.norm();
+    	if (r1.norm() > 1e-6)
+    	{
+    		r1 /= r1.norm();
 
-    	force1 += vd.template getProp<0>(q1)*r1;
+    		force1 += vd.template getProp<0>(q1)*r1;
+    	}
 
     	++it;
     }
@@ -156,8 +164,11 @@ bool check_force(CellList_type & NN_cpu, vector_type & vd)
 
 	    	// Normalize
 
-	    	r2 /= r2.norm();
-	    	force += vd.template getProp<0>(q)*r2;
+	    	if (r2.norm() > 1e-6)
+	    	{
+	    		r2 /= r2.norm();
+	    		force += vd.template getProp<0>(q)*r2;
+	    	}
 
 			++NNc;
 		}
@@ -273,7 +284,7 @@ void check_cell_list_cpu_and_gpu(vector_type & vd, CellList_type & NN, CellList_
 {
 	auto it5 = vd.getDomainIteratorGPU(32);
 
-	calculate_force<typename vector_type::stype,decltype(NN.toKernel())><<<it5.wthr,it5.thr>>>(vd.toKernel(),vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
+	CUDA_LAUNCH((calculate_force<typename vector_type::stype,decltype(NN.toKernel())>),it5,vd.toKernel(),vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
 
 	vd.template deviceToHostProp<1,2>();
 
@@ -299,7 +310,7 @@ void check_cell_list_cpu_and_gpu(vector_type & vd, CellList_type & NN, CellList_
 
 	// We do exactly the same test as before, but now we completely use the sorted version
 
-	calculate_force_full_sort<typename vector_type::stype,decltype(NN.toKernel())><<<it5.wthr,it5.thr>>>(vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
+	CUDA_LAUNCH((calculate_force_full_sort<typename vector_type::stype,decltype(NN.toKernel())>),it5,vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
 
 	vd.template merge_sort<1>(NN);
 	vd.template deviceToHostProp<1>();
@@ -920,12 +931,26 @@ BOOST_AUTO_TEST_CASE(vector_dist_reduce)
 template<typename CellList_type>
 void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 {
+	std::random_device r;
+
+    std::seed_seq seed2{r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank()};
+    std::mt19937 e2(seed2);
+
 	typedef vector_dist_gpu<3,double,aggregate<double,double[3],double[3]>> vector_type;
 
 	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 8)
 		return;
+
+	std::uniform_real_distribution<double> unif(0.0,0.3);
 
 	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
 	Ghost<3,double> g(0.1);
@@ -941,9 +966,9 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 		{
 			vd.add();
 
-			vd.getLastPos()[0] = ((double)rand())/RAND_MAX * 0.3;
-			vd.getLastPos()[1] = ((double)rand())/RAND_MAX * 0.3;
-			vd.getLastPos()[2] = ((double)rand())/RAND_MAX * 0.3;
+			vd.getLastPos()[0] = unif(e2);
+			vd.getLastPos()[1] = unif(e2);
+			vd.getLastPos()[2] = unif(e2);
 		}
 	}
 
@@ -1085,12 +1110,26 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 template<typename CellList_type>
 void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 {
+	std::random_device r;
+
+    std::seed_seq seed2{r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank(),
+    					r() + create_vcluster().rank()};
+    std::mt19937 e2(seed2);
+
 	typedef vector_dist_gpu<3,double,aggregate<double,double[3],double[3]>> vector_type;
 
 	Vcluster<> & v_cl = create_vcluster();
 
 	if (v_cl.getProcessingUnits() > 8)
 		return;
+
+	std::uniform_real_distribution<double> unif(0.0,0.3);
 
 	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
 	Ghost<3,double> g(0.1);
@@ -1106,9 +1145,9 @@ void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 		{
 			vd.add();
 
-			vd.getLastPos()[0] = ((double)rand())/RAND_MAX * 0.3;
-			vd.getLastPos()[1] = ((double)rand())/RAND_MAX * 0.3;
-			vd.getLastPos()[2] = ((double)rand())/RAND_MAX * 0.3;
+			vd.getLastPos()[0] = unif(e2);
+			vd.getLastPos()[1] = unif(e2);
+			vd.getLastPos()[2] = unif(e2);
 		}
 	}
 
@@ -1160,12 +1199,6 @@ void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 	size_t load = vd.getDecomposition().getDistribution().getProcessorLoad();
 	v_cl.allGather(load,loads);
 	v_cl.execute();
-
-	//////////////////////////// DEBUG ///////////////////
-
-	vd.getDecomposition().write("DEBUG");
-
-	//////////////////////////////////////////////////////
 
 	for (size_t i = 0 ; i < loads.size() ; i++)
 	{
@@ -1235,11 +1268,6 @@ void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 		BOOST_REQUIRE(vd.size_local() != 0);
 
 //		vd.template ghost_get<0>(RUN_ON_DEVICE);
-		if (i == 9)
-		{
-			int debug = 0;
-			debug++;
-		}
 //		vd.template ghost_get<0>(RUN_ON_DEVICE);
 		vd.template Ighost_get<0>(RUN_ON_DEVICE);
 		vd.template ghost_wait<0>(RUN_ON_DEVICE);
@@ -1806,10 +1834,219 @@ BOOST_AUTO_TEST_CASE(vector_dist_overflow_se_class1)
 	ite.thr.y = 1;
 	ite.thr.z = 1;
 
-	CUDA_LAUNCH(launch_overflow,ite,vdg.toKernel(),vdg2.toKernel());
+	try
+	{
+		CUDA_LAUNCH(launch_overflow,ite,vdg.toKernel(),vdg2.toKernel());
+	}
+	catch(...)
+	{
+		std::cout << "SE_CLASS1 Catch" << std::endl;
+	};
 
 	std::cout << "****** TEST ERROR MESSAGE END ********" << std::endl;
 }
 
+
+BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
+{
+	Vcluster<> & v_cl = create_vcluster();
+
+	long int k = 25*25*25*create_vcluster().getProcessingUnits();
+	k = std::pow(k, 1/3.);
+
+	if (v_cl.getProcessingUnits() > 48)
+		return;
+
+	print_test("Testing 3D periodic ghost put GPU k=",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic ghost put k=" << k );
+
+	long int big_step = k / 30;
+	big_step = (big_step == 0)?1:big_step;
+	long int small_step = 21;
+
+	// 3D test
+	for ( ; k >= 2 ; k-= (k > 2*big_step)?big_step:small_step )
+	{
+		float r_cut = 1.3 / k;
+		float r_g = 1.5 / k;
+
+		Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+		// Boundary conditions
+		size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+		// ghost
+		Ghost<3,float> ghost(r_g);
+
+		typedef  aggregate<float> part_prop;
+
+		// Distributed vector
+		vector_dist_gpu<3,float, part_prop > vd(0,box,bc,ghost);
+
+		auto it = vd.getGridIterator({(size_t)k,(size_t)k,(size_t)k});
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			vd.add();
+
+			vd.getLastPosWrite()[0] = key.get(0)*it.getSpacing(0);
+			vd.getLastPosWrite()[1] = key.get(1)*it.getSpacing(1);
+			vd.getLastPosWrite()[2] = key.get(2)*it.getSpacing(2);
+
+			// Fill some properties randomly
+
+			vd.getLastPropWrite<0>() = 0.0;
+
+			++it;
+		}
+
+		vd.map();
+
+		vd.hostToDevicePos();
+		vd.template hostToDeviceProp<0>();
+		// sync the ghost
+		vd.ghost_get<0>(RUN_ON_DEVICE);
+		vd.template deviceToHostProp<0>();
+		vd.deviceToHostPos();
+
+		{
+			auto NN = vd.getCellList(r_cut);
+			float a = 1.0f*k*k;
+
+			// run trough all the particles + ghost
+
+			auto it2 = vd.getDomainIterator();
+
+			while (it2.isNext())
+			{
+				// particle p
+				auto p = it2.get();
+				Point<3,float> xp = vd.getPos(p);
+
+				// Get an iterator over the neighborhood particles of p
+				auto Np = NN.getNNIterator<NO_CHECK>(NN.getCell(xp));
+
+				// For each neighborhood particle ...
+				while (Np.isNext())
+				{
+					auto q = Np.get();
+					Point<3,float> xq = vd.getPosRead(q);
+
+					float dist = xp.distance(xq);
+
+					if (dist < r_cut)
+						vd.getPropWrite<0>(q) += a*(-dist*dist+r_cut*r_cut);
+
+					++Np;
+				}
+
+				++it2;
+			}
+
+			vd.hostToDevicePos();
+			vd.template hostToDeviceProp<0>();
+			vd.template ghost_put<add_atomic_,0>(RUN_ON_DEVICE);
+			vd.template deviceToHostProp<0>();
+			vd.deviceToHostPos();
+
+			bool ret = true;
+			auto it3 = vd.getDomainIterator();
+
+			float constant = vd.getProp<0>(it3.get());
+			float eps = 0.001;
+
+			while (it3.isNext())
+			{
+				float constant2 = vd.getProp<0>(it3.get());
+				if (fabs(constant - constant2)/constant > eps)
+				{
+					Point<3,float> p = vd.getPosRead(it3.get());
+
+					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "    " << v_cl.getProcessUnitID() << std::endl;
+					ret = false;
+					break;
+				}
+
+				++it3;
+			}
+			BOOST_REQUIRE_EQUAL(ret,true);
+		}
+
+		auto itp = vd.getDomainAndGhostIterator();
+		while (itp.isNext())
+		{
+			auto key = itp.get();
+
+			vd.getPropWrite<0>(key) = 0.0;
+
+			++itp;
+		}
+
+		{
+			auto NN = vd.getCellList(r_cut);
+			float a = 1.0f*k*k;
+
+			// run trough all the particles + ghost
+
+			auto it2 = vd.getDomainIterator();
+
+			while (it2.isNext())
+			{
+				// particle p
+				auto p = it2.get();
+				Point<3,float> xp = vd.getPosRead(p);
+
+				// Get an iterator over the neighborhood particles of p
+				auto Np = NN.getNNIterator<NO_CHECK>(NN.getCell(xp));
+
+				// For each neighborhood particle ...
+				while (Np.isNext())
+				{
+					auto q = Np.get();
+					Point<3,float> xq = vd.getPosRead(q);
+
+					float dist = xp.distance(xq);
+
+					if (dist < r_cut)
+						vd.getPropWrite<0>(q) += a*(-dist*dist+r_cut*r_cut);
+
+					++Np;
+				}
+
+				++it2;
+			}
+
+			vd.hostToDevicePos();
+			vd.template hostToDeviceProp<0>();
+			vd.template ghost_put<add_atomic_,0>(RUN_ON_DEVICE);
+			vd.template deviceToHostProp<0>();
+			vd.deviceToHostPos();
+
+			bool ret = true;
+			auto it3 = vd.getDomainIterator();
+
+			float constant = vd.getPropRead<0>(it3.get());
+			float eps = 0.001;
+
+			while (it3.isNext())
+			{
+				float constant2 = vd.getPropRead<0>(it3.get());
+				if (fabs(constant - constant2)/constant > eps)
+				{
+					Point<3,float> p = vd.getPosRead(it3.get());
+
+					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "    " << v_cl.getProcessUnitID() << std::endl;
+					ret = false;
+					break;
+				}
+
+				++it3;
+			}
+			BOOST_REQUIRE_EQUAL(ret,true);
+		}
+	}
+}
 
 BOOST_AUTO_TEST_SUITE_END()

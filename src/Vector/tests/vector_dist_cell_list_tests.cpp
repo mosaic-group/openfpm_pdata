@@ -607,6 +607,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 	vd.ghost_put<add_,1>();
 	vd.ghost_put<merge_,4>();
 
+	vd.write("DEBUG");
+
 	auto p_it3 = vd.getDomainIterator();
 
 	bool ret = true;

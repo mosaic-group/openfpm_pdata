@@ -23,7 +23,11 @@ echo "GPU compilation: $with_gpu"
 
 if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
 	echo "CentOS node"
+<<<<<<< HEAD
 	source /opt/rh/devtoolset-8/enable
+=======
+	source /opt/rh/devtoolset-7/enable
+>>>>>>> master
 fi
 
 if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
@@ -43,11 +47,10 @@ if [ x"$hostname" == x"falcon1" ]; then
         echo "falcon1 settings"
 	if [ x"$comp_type" == x"intel" ]; then
         	module load parallel_studio_xe/2019u1
-        	mkdir $HOME/openfpm_dependencies_intel/openfpm_pdata/$branch
 		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies_intel/
 	else
-        	mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
-		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies/
+		mkdir /projects/ppm/rundeck/openfpm_dependencies_$branch/
+		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies_$branch/
 	fi
 else
 	dependency_dir=$HOME/openfpm_dependencies/openfpm_pdata/$branch
@@ -80,6 +83,7 @@ installation_dir="--prefix=$HOME/openfpm_install/$branch"
 #echo "StrictHostKeyChecking=no" > $HOME/.ssh/config
 #chmod 600 $HOME/.ssh/config
 
+foward_options=
 install_options=
 if [ x"$comp_type" == x"full" ]; then
         install_options="-s"
@@ -89,12 +93,11 @@ else
         install_options="-s -m"
 fi
 
-foward_options=
 if [ x"$comp_type" == x"se_class" ]; then
-	foward_options="--enable-se-class1 --with-action-on-error=STOP_ON_ERROR"
+	foward_options="--enable-se-class1 --with-action-on-error=THROW_ON_ERROR"
+elif [ x"$comp_type" == x"asan" ]; then
+        foward_options="$foward_options --enable-asan"
 fi
-
-
 
 echo "Installing with: ./install $gpu_support  -i $dependency_dir $install_options -c \"$installation_dir $foward_options  \"  "
 ./install $gpu_support -i $dependency_dir $install_options -c "$installation_dir $foward_options "

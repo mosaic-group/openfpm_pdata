@@ -138,6 +138,14 @@ inline void create_gdb_ext(openfpm::vector<GBoxes<Decomposition::dims>> & gdb_ex
 		SpaceBox<Decomposition::dims,long int> sp_t = cd_sm.convertDomainSpaceIntoGridUnits(sp,dec.periodicity());
 		SpaceBox<Decomposition::dims,long int> sp_tg = cd_sm.convertDomainSpaceIntoGridUnits(sp_g,dec.periodicity());
 
+/*		for (size_t i = 0 ; i < Decomposition::dims ; i++)
+		{
+			if (sp_t.getLow(i) < sp_tg.getLow(i))
+			{sp_tg.setLow(i,sp_t.getLow(i));}
+			if (sp_t.getHigh(i) > sp_tg.getHigh(i))
+			{sp_tg.setHigh(i,sp_t.getHigh(i));}
+		}*/
+
 		if (use_bx_def == true)
 		{
 			// intersect the sub-domain with all the boxes

@@ -390,7 +390,7 @@ public:
 			ghe.setHigh(i,static_cast<long int>(ghost.getHigh(i)/spacing[i]) + 1);
 		}
 
-		// optimize the decomposition
+		// optimize the decomposition or merge sub-sub-domain
 		d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(dist.getGraph(), p_id, loc_box, box_nn_processor,ghe,bc);
 
 		// Initialize
@@ -888,6 +888,8 @@ public:
 
 		cart.Initialize_geo_cell_lists();
 		cart.calculateGhostBoxes();
+
+		cart.collect_all_sub_domains(cart.sub_domains_global);
 
 		return cart;
 	}

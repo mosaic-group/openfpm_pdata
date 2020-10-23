@@ -37,8 +37,8 @@ set(OPENBLAS_ROOT CACHE PATH "Root path for blas library")
 set(SuiteSparse_ROOT ${SUITESPARSE_ROOT})
 
 
-set (CMAKE_CXX_STANDARD 11)
-set (CMAKE_CUDA_STANDARD 11)
+set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O3")
 
@@ -68,8 +68,13 @@ if(ENABLE_GPU)
                 set(WARNING_SUPPRESSION_AND_OPTION_NVCC  -Xcudafe "--display_error_number --diag_suppress=2976 --diag_suppress=2977 --diag_suppress=2978 --diag_suppress=2979 --diag_suppress=1835 --diag_suppress=611 --diag_suppress=186 --diag_suppress=128" --expt-extended-lambda)
                 set(WARNING_SUPPRESSION_AND_OPTION_NVCC_TEXT  "-Xcudafe \"--display_error_number --diag_suppress=2976 --diag_suppress=2977 --diag_suppress=2978 --diag_suppress=2979 --diag_suppress=1835 --diag_suppress=611 --diag_suppress=186 --diag_suppress=128\" --expt-extended-lambda")
 		FILE(WRITE cuda_options "-Xcudafe \"--display_error_number --diag_suppress=2976 --diag_suppress=2977 --diag_suppress=2978 --diag_suppress=2979 --diag_suppress=1835 --diag_suppress=611 --diag_suppress=186 --diag_suppress=128\" --expt-extended-lambda")
+        elseif ( CUDA_VERSION_MAJOR EQUAL 11 AND CUDA_VERSION_MINOR EQUAL 0 )
+                message("CUDA is compatible 11.0")
+                set(WARNING_SUPPRESSION_AND_OPTION_NVCC  -Xcudafe "--display_error_number --diag_suppress=3056 --diag_suppress=3057 --diag_suppress=3058 --diag_suppress=3059 --diag_suppress=611  --diag_suppress=186 --diag_suppress=128" --expt-extended-lambda)
+                set(WARNING_SUPPRESSION_AND_OPTION_NVCC_TEXT  "-Xcudafe \"--display_error_number --diag_suppress=3056 --diag_suppress=3057  --diag_suppress=3058 --diag_suppress=3059 --diag_suppress=611  --diag_suppress=186 --diag_suppress=128\" --expt-extended-lambda")
+                FILE(WRITE cuda_options "-Xcudafe \"--display_error_number --diag_suppress=3056 --diag_suppress=3058 --diag_suppress=3058 --diag_suppress=3059 --diag_suppress=611  --diag_suppress=186 --diag_suppress=128\" --expt-extended-lambda")
 	else()
-		message(FATAL_ERROR "CUDA is incompatible, version 9.2 10.1 and 10.2 is only supported")
+		message(FATAL_ERROR "CUDA is incompatible, version 9.2 10.1 10.2 and 11.0 is only supported")
 	endif()
 endif()
 
@@ -224,7 +229,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/config/config_cmake.h.in ${CMAKE_
 
 add_subdirectory (src)
 add_subdirectory (openfpm_devices)
-add_subdirectory (images)
 add_subdirectory (openfpm_data)
 add_subdirectory (openfpm_io)
 add_subdirectory (openfpm_vcluster)
