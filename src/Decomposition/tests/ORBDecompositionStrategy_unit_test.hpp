@@ -61,23 +61,22 @@ void ORBDecomposition_non_periodic_test(const unsigned int nProcs) {
   }
 
   ///////////////////////////////////////////////////////////////////////// init
-  // dec.setParameters(box);
+  dec.setParameters(box);
 
   //////////////////////////////////////////////////////////////////// decompose
-  ORB<SPACE_N_DIM, domain_type> orb(box, 16, vp);
-  // dec.decompose(vp);
+  dec.decompose(vp);
 
   /////////////////////////////////////////////////////////////////// distribute
-  // dist.distribute(dec.inner().getGraph());
+  dist.distribute(dec.inner().getGraph());
 
   //////////////////////////////////////////////////////////////////////// merge
   // no need (we're NOT using sub(sub)domains)
 
-  // ASSERT: i-th processing unit has i-th vertex
-  // auto myRank = vcl.rank();
-  // auto myLeaf = dec.inner().getGraph().template vertex_p<nm_v_proc_id>(myRank);
-  // printMe(vcl);
-  // std::cout << "assert " << myRank << " == " << myLeaf << std::endl;
+  ASSERT: i-th processing unit has i-th vertex
+  auto myRank = vcl.rank();
+  auto myLeaf = dec.inner().getGraph().template vertex_p<nm_v_proc_id>(myRank);
+  printMe(vcl);
+  std::cout << "assert " << myRank << " == " << myLeaf << std::endl;
 
   // todo more asserts
 }
