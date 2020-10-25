@@ -72,12 +72,12 @@ public:
   }
 
   void decompose(openfpm::vector<Point<dim, domain_type>> points) {
-    // orb = new Orb(inner().getDomain(), inner().getVcluster().getProcessingUnits(), points);  // this takes care of the decomposition
+    orb = new Orb(inner().getDomain(), inner().getVcluster().getProcessingUnits(), points);  // this takes care of the decomposition
   }
 
   Graph_CSR<nm_v<dim>, nm_e> &getGraph() {
     // todo get leaves from auto tree = orb->grp;  // Graph_CSR<ORB_node<T>, no_edge>
-    // todo test only: ~trivial decomposition -> build a graph with n (= proc units) vertices
+    // todo test only: ~trivial decomposition
 
     // build it
     if (inner().getGraph().getNVertex() != inner().v_cl.getProcessingUnits()) {
