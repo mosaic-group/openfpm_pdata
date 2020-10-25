@@ -5,6 +5,7 @@
 # Because we moved to cmake this script emulate the configure script from autotools
 
 conf_options=
+ld_lib_pathopt=
 
 # Avoid depending upon Character Ranges.
 as_cr_letters='abcdefghijklmnopqrstuvwxyz'
@@ -475,6 +476,7 @@ do
       ;;
       suitesparse)
       conf_options="$conf_options -DSUITESPARSE_ROOT=$ac_optarg"
+      ld_lib_pathopt=$ac_optarg/lib
       ;;
       eigen)
       conf_options="$conf_options -DEIGEN3_ROOT=$ac_optarg"
@@ -564,7 +566,7 @@ cd build
 ## remove enerything
 echo "Calling cmake ../. $conf_options"
 rm ../error_code
-cmake ../. $conf_options
+DYLD_LIBRARY_PATH=$ld_lib_pathopt cmake ../. $conf_options
 if [ $? != 0 ]; then
 	#ok something went wrong the install script analyze the return code to potentially fix the problem automatically
 	# Read the error code and exit with that
