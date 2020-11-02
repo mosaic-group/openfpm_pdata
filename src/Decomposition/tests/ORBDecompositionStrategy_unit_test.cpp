@@ -1,10 +1,20 @@
 #ifndef SRC_DECOMPOSITION_ORB_DECOMPOSITIONSTRATEGY_UNIT_TEST_HPP
 #define SRC_DECOMPOSITION_ORB_DECOMPOSITIONSTRATEGY_UNIT_TEST_HPP
 
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
+
+#include "SubdomainGraphNodes.hpp"
+#include "Decomposition/Distribution/parmetis_util.hpp"
+#include "Graph/ids.hpp"
+#include "Graph/CartesianGraphFactory.hpp"
+
 #include "Decomposition/AbstractStrategyModels.hpp"
 #include "Decomposition/ORBDecompositionStrategy.hpp"
 #include "Decomposition/Distribution/SequentialDistributionStrategy.hpp"
 #include "util/generic.hpp"
+
+#include "Vector/vector_dist.hpp"
 
 #define SUB_UNIT_FACTOR 1024
 
@@ -72,7 +82,7 @@ void ORBDecomposition_non_periodic_test(const unsigned int nProcs) {
   //////////////////////////////////////////////////////////////////////// merge
   // no need (we're NOT using sub(sub)domains)
 
-  ASSERT: i-th processing unit has i-th vertex
+  //ASSERT: i-th processing unit has i-th vertex
   auto myRank = vcl.rank();
   auto myLeaf = dec.inner().getGraph().template vertex_p<nm_v_proc_id>(myRank);
   printMe(vcl);
@@ -80,5 +90,14 @@ void ORBDecomposition_non_periodic_test(const unsigned int nProcs) {
 
   // todo more asserts
 }
+
+BOOST_AUTO_TEST_SUITE (ORB_test)
+
+BOOST_AUTO_TEST_CASE( ORB_Decomposition_unit_test)
+{
+  ORBDecomposition_non_periodic_test(3);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
 
 #endif // SRC_DECOMPOSITION_ORB_DECOMPOSITIONSTRATEGY_UNIT_TEST_HPP

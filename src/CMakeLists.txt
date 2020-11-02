@@ -35,7 +35,8 @@ add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
 														  Vector/tests/vector_dist_unit_test.cpp  
 														  pdata_performance.cpp 
 														  Decomposition/tests/CartDecomposition_unit_test.cpp 
-														  Decomposition/tests/shift_vect_converter_tests.cpp 
+														  Decomposition/tests/shift_vect_converter_tests.cpp
+														  Decomposition/tests/ORBDecompositionStrategy_unit_test.cpp
 														  Vector/performance/vector_dist_performance_util.cpp  
 														  lib/pdata.cpp test_multiple_o.cpp  
 														  ../openfpm_devices/src/memory/HeapMemory.cpp 

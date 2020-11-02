@@ -23,7 +23,8 @@ const size_t type = 0;
 constexpr unsigned int SPACE_N_DIM = 3;
 using domain_type = double;
 
-void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
+void CartDecomposition_non_periodic_test(const unsigned int nProcs)
+{
   Vcluster<> &vcl = create_vcluster();
   CartDecompositionStrategy<SPACE_N_DIM, domain_type> dec(vcl);
   CartDistributionStrategy<SPACE_N_DIM, domain_type> dist(vcl);
@@ -44,7 +45,8 @@ void CartDecomposition_non_periodic_test(const unsigned int nProcs) {
   }
 
   // create a sub_distribution grid
-  for (int i = 0; i < SPACE_N_DIM; i++) {
+  for (int i = 0; i < SPACE_N_DIM; i++)
+  {
     div_sub[i] = div[i] / 4;
   }
 

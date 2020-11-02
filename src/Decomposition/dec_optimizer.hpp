@@ -1,6 +1,7 @@
 #ifndef DEC_OPTIMIZER_HPP
 #define DEC_OPTIMIZER_HPP
 
+#include "Space/Ghost.hpp"
 #include "Grid/iterators/grid_key_dx_iterator_sub.hpp"
 #include "Grid/iterators/grid_skin_iterator.hpp"
 

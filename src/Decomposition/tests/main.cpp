@@ -1,3 +1,4 @@
+
 #define PRINT_STACKTRACE
 
 #include <iostream>
@@ -11,7 +12,7 @@
 #include "Graph/ids.hpp"
 #include "Graph/CartesianGraphFactory.hpp"
 
-#include "Decomposition/tests/ORBDecompositionStrategy_unit_test.hpp"
+#include "ORBDecompositionStrategy_unit_test.cpp"
 
 int main(int argc, char* argv[]) {
   openfpm_init(&argc, &argv);
