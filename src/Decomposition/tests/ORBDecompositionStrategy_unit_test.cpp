@@ -77,7 +77,7 @@ void ORBDecomposition_non_periodic_test(const unsigned int nProcs) {
   dec.decompose(vp);
 
   /////////////////////////////////////////////////////////////////// distribute
-  dist.distribute(dec.inner().getGraph());
+  dist.distribute(dec.getGraph());
 
   //////////////////////////////////////////////////////////////////////// merge
   // no need (we're NOT using sub(sub)domains)

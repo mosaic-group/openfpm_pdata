@@ -80,9 +80,9 @@ public:
     // todo test only: ~trivial decomposition
 
     // build it
-    if (inner().getGraph().getNVertex() != inner().v_cl.getProcessingUnits()) {
+    if (inner().getGraph().getNVertex() < inner().v_cl.getProcessingUnits()) {
       // create only necessary vertices in the graph
-      for (auto i = inner().v_cl.getProcessingUnits(); i < inner().v_cl.getProcessingUnits(); ++i) {
+      for (auto i = inner().getGraph().getNVertex(); i < inner().v_cl.getProcessingUnits(); ++i) {
         inner().getGraph().addVertex();
       }
     }
