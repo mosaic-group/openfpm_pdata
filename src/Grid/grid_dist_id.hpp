@@ -2074,10 +2074,7 @@ public:
 	 *
 	 */
 	template <unsigned int p,typename bg_key>inline auto insert(const grid_dist_key_dx<dim,bg_key> & v1)
-	-> typename std::add_lvalue_reference
-	<
-		decltype(loc_grid.get(v1.getSub()).template insert<p>(v1.getKey()))
-	>::type
+	-> decltype(loc_grid.get(v1.getSub()).template insert<p>(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2104,10 +2101,7 @@ public:
 	 *
 	 */
 	template <unsigned int p,typename bg_key>inline auto insertFlush(const grid_dist_key_dx<dim,bg_key> & v1)
-	-> typename std::add_lvalue_reference
-	<
-		decltype(loc_grid.get(v1.getSub()).template insertFlush<p>(v1.getKey()))
-	>::type
+	-> decltype(loc_grid.get(v1.getSub()).template insertFlush<p>(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2145,7 +2139,7 @@ public:
 	 */
 	template <unsigned int p, typename bg_key>
 	inline auto get(const grid_dist_key_dx<dim,bg_key> & v1)
-	-> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	-> decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2162,7 +2156,8 @@ public:
 	 *
 	 */
 	template <unsigned int p = 0>
-	inline auto get(const grid_dist_g_dx<device_grid> & v1) const -> typename std::add_lvalue_reference<decltype(v1.getSub()->template get<p>(v1.getKey()))>::type
+	inline auto get(const grid_dist_g_dx<device_grid> & v1) const
+	-> decltype(v1.getSub()->template get<p>(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2179,7 +2174,7 @@ public:
 	 *
 	 */
 	template <unsigned int p = 0>
-	inline auto get(const grid_dist_g_dx<device_grid> & v1) -> typename std::add_lvalue_reference<decltype(v1.getSub()->template get<p>(v1.getKey()))>::type
+	inline auto get(const grid_dist_g_dx<device_grid> & v1) -> decltype(v1.getSub()->template get<p>(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2196,7 +2191,7 @@ public:
 	 *
 	 */
 	template <unsigned int p = 0>
-	inline auto get(const grid_dist_lin_dx & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	inline auto get(const grid_dist_lin_dx & v1) const -> decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2213,7 +2208,7 @@ public:
 	 *
 	 */
 	template <unsigned int p = 0>
-	inline auto get(const grid_dist_lin_dx & v1) -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	inline auto get(const grid_dist_lin_dx & v1) -> decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2562,6 +2557,35 @@ public:
 			if (overlap == true)
 			{
 				loc_grid.get(i).template conv_cross<prop_src,prop_dst,stencil_size>(inte.getKP1(),inte.getKP2(),func,args...);
+			}
+		}
+	}
+
+	/*! \brief apply a convolution using the stencil N
+	 *
+	 *
+	 */
+	template<unsigned int stencil_size, typename v_type, typename lambda_f, typename ... ArgsT >
+	void conv_cross_ids(grid_key_dx<3> start, grid_key_dx<3> stop , lambda_f func, ArgsT ... args)
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			Box<dim,long int> inte;
+
+			Box<dim,long int> base;
+			for (int j = 0 ; j < dim ; j++)
+			{
+				base.setLow(j,(long int)start.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+				base.setHigh(j,(long int)stop.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+			}
+
+			Box<dim,long int> dom = gdb_ext.get(i).Dbox;
+
+			bool overlap = dom.Intersect(base,inte);
+
+			if (overlap == true)
+			{
+				loc_grid.get(i).template conv_cross_ids<stencil_size,v_type>(inte.getKP1(),inte.getKP2(),func,args...);
 			}
 		}
 	}
@@ -2970,7 +2994,11 @@ public:
 	{
 		// Save the background values
 		T bv;
-		meta_copy<T>::meta_copy_(bv,loc_grid.get(0).getBackgroundValue());
+
+		copy_aggregate_dual<typename std::remove_reference<decltype(loc_grid.get(0).getBackgroundValue())>::type,
+				            T> ca(loc_grid.get(0).getBackgroundValue(),bv);
+
+		boost::mpl::for_each_ref<boost::mpl::range_c<int,0,T::max_prop>>(ca);
 
 		if (!(opt & NO_GDB_EXT_SWITCH))
 		{
