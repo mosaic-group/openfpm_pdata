@@ -22,7 +22,7 @@ LDIR =
 OBJ = main.o
 
 %.o: %.cu
-	$(CUDA_CC) $(OPT) -O3 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH_NVCC)
+	$(CUDA_CC) $(OPT) -O3 -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH_NVCC)
 
 gray_scott_sparse_gpu: $(OBJ)
 	$(CUDA_CC_LINK) -o $@ $^ $(LIBS_PATH) $(LIBS)

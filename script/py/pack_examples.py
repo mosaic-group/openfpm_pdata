@@ -50,6 +50,7 @@ class pack_example:
 
         for file in files:
             print("copy src:"+file+"    dst:"+self.temporary+os.sep+file[len(self.base_dir):])
+            os.makedirs(os.path.dirname(self.temporary+os.sep+file[len(self.base_dir):]), exist_ok=True)
             shutil.copy(file,self.temporary+os.sep+file[len(self.base_dir):])
 
 

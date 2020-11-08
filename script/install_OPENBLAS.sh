@@ -6,7 +6,7 @@ if [ -d "$1/OPENBLAS" ]; then
   echo "OPENBLAS is already installed"
   exit 0
 fi
-
+rm -rf OpenBLAS-0.3.10
 rm -rf OpenBLAS-0.3.10.tar.gz
 wget http://ppmcore.mpi-cbg.de/upload/OpenBLAS-0.3.10.tar.gz
 tar -xf OpenBLAS-0.3.10.tar.gz

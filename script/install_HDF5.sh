@@ -24,7 +24,7 @@ if [ ! -d "$1/ZLIB"  -a x"$platform" != x"cygwin" ]; then
 
   CC=mpicc ./configure --prefix=$1/ZLIB
   make -j $2
-
+  cd ..
   if [ $? -eq 0 ]; then
     make check install
   else
