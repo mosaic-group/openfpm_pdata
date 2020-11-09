@@ -95,6 +95,8 @@ void init(SparseGridType & grid, Box<3,float> & domain)
 
 	grid.template flush<smax_<U>,smax_<V>>(flush_type::FLUSH_ON_DEVICE);
 
+	grid.removeUnusedBuffers();
+
 	//! \cond [create points] \endcond
 
 	long int x_start = grid.size(0)*1.55f/domain.getHigh(0);
@@ -153,11 +155,11 @@ int main(int argc, char* argv[])
 	float dv = 1*1e-5;
 
 	// Number of timesteps
-#ifdef TEST_RUN
-	size_t timeSteps = 300;
-#else
+//#ifdef TEST_RUN
+//	size_t timeSteps = 300;
+//#else
         size_t timeSteps = 15000;
-#endif
+//#endif
 
 	// K and F (Physical constant in the equation)
     float K = 0.053;

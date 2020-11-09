@@ -1985,6 +1985,18 @@ public:
 		return v_cl;
 	}
 
+	/*! \brief Eliminate many internal temporary buffer you can use this between flushes if you get some out of memory
+	 *
+	 *
+	 */
+	void removeUnusedBuffers()
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			loc_grid.get(i).removeUnusedBuffers();
+		}
+	}
+
 	/*! \brief Indicate that this grid is not staggered
 	 *
 	 * \return false
