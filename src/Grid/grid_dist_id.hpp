@@ -2970,7 +2970,12 @@ public:
 	{
 		// Save the background values
 		T bv;
-		meta_copy<T>::meta_copy_(bv,loc_grid.get(0).getBackgroundValue());
+
+		copy_aggregate_dual<typename std::remove_reference<decltype(loc_grid.get(0).getBackgroundValue())>::type,
+				            T> ca(loc_grid.get(0).getBackgroundValue(),bv);
+
+		boost::mpl::for_each_ref<boost::mpl::range_c<int,0,T::max_prop>>(ca);
+
 
 		if (!(opt & NO_GDB_EXT_SWITCH))
 		{
