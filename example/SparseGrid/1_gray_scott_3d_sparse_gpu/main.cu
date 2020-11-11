@@ -155,11 +155,11 @@ int main(int argc, char* argv[])
 	float dv = 1*1e-5;
 
 	// Number of timesteps
-//#ifdef TEST_RUN
-//	size_t timeSteps = 300;
-//#else
+#ifdef TEST_RUN
+	size_t timeSteps = 300;
+#else
         size_t timeSteps = 15000;
-//#endif
+#endif
 
 	// K and F (Physical constant in the equation)
     float K = 0.053;
@@ -250,7 +250,8 @@ int main(int argc, char* argv[])
 //			count++;
 //		}
 	}
-	
+
+
 	tot_sim.stop();
 	std::cout << "Total simulation: " << tot_sim.getwct() << std::endl;
 

@@ -577,7 +577,7 @@ class grid_dist_id_comm
 		size_t sub_id = eg_box.get(ei).bid.get(le_id).sub;
 
 		// sub-grid where to unpack
-		auto sub2 = loc_grid.get(sub_id).getIterator(box.getKP1(),box.getKP2());
+		auto sub2 = loc_grid.get(sub_id).getIterator(box.getKP1(),box.getKP2(),false);
 
 		rem_copy_opt opt_ = rem_copy_opt::NONE_OPT;
 		if (opt & SKIP_LABELLING)
