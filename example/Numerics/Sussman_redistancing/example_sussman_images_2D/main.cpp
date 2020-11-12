@@ -228,8 +228,8 @@ int main(int argc, char* argv[])
 	// the magnitude of the gradient
 	typedef aggregate<double, double[grid_dim], double> props_nb;
 	typedef vector_dist<grid_dim, double, props_nb> vd_type;
-	Ghost<grid_dim, double> ghost_vd(0);
-	vd_type vd_narrow_band(0, box, bc, ghost_vd);
+        Ghost<grid_dim, double> ghost_vd(0);
+        vd_type vd_narrow_band(0, box, bc, ghost_vd);
 	vd_narrow_band.setPropNames({"Phi_SDF", "Phi_grad", "Phi_magnOfGrad"});
 	
 	NarrowBand<grid_in_type> narrowBand(g_dist, redist_options.width_NB_in_grid_points); // Instantiation of NarrowBand class

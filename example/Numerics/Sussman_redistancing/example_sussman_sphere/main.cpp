@@ -35,7 +35,6 @@
  * Once we have received the Phi_SDF from the redistancing, particles can be placed on narrow band around the interface.
  *
  * * Creates filled 3D sphere with -1/+1 indicator function
- * * Runs gaussian filter if gradient at interface too steep or if user sets redist_options.sigma >= 1
  * * Runs Sussman redistancing (see @ref RedistancingSussman.hpp)
  * * Places particles on narrow band around interface
  *
@@ -187,10 +186,6 @@ int main(int argc, char* argv[])
 	 * For the redistancing, we can choose some options. These options will then be passed bundled as a structure to
 	 * the redistancing function. Setting these options is optional, since they all have a Default value as well. In
 	 * particular the following options can be set by the user:
-	 * * \p sigma: Sigma of the gaussian kernel, which is used for gaussian smooting Phi_0. If the initial gradient of
-	 *             phi_0 at the interface is too large and no sigma is chosen or chosen too small, gauss smoothing will
-	 *             automatically be applied until phi gradient magnitude <= 12, regardless of which sigma is chosen by
-	 *             the user. Default = 0.
 	 * * \p min_iter: Minimum number of iterations before steady state in narrow band will be checked (Default: 100).
 	 * * \p max_iter: Maximum number of iterations you want to run the redistancing, even if steady state might not yet
 	 *                have been reached (Default: 1e6).
@@ -221,9 +216,8 @@ int main(int argc, char* argv[])
 	// Now we want to convert the initial Phi into a signed distance function (SDF) with magnitude of gradient = 1.
 	// For the initial re-distancing we use the Sussman method. First of all, we can set some redistancing options.
 	Redist_options redist_options;
-	redist_options.sigma                                = 0;
 	redist_options.min_iter                             = 100;
-	redist_options.max_iter                             = 10000;
+	redist_options.max_iter                             = 1000;
 	
 	redist_options.convTolChange.value                  = 1e-12;
 	redist_options.convTolChange.check                  = true;
@@ -290,7 +284,8 @@ int main(int argc, char* argv[])
 	// the magnitude of the gradient
 	typedef aggregate<double, double[grid_dim], double> props_nb;
 	typedef vector_dist<grid_dim, double, props_nb> vd_type;
-	vd_type vd_narrow_band(0, box, bc, ghost);
+        Ghost<grid_dim, double> ghost_vd(0);
+        vd_type vd_narrow_band(0, box, bc, ghost_vd);
 	vd_narrow_band.setPropNames({"Phi_SDF", "Phi_grad", "Phi_magnOfGrad"});
 	//! @cond [Initialize narrow band] @endcond
 	
