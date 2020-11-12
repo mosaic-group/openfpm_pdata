@@ -2976,7 +2976,6 @@ public:
 
 		boost::mpl::for_each_ref<boost::mpl::range_c<int,0,T::max_prop>>(ca);
 
-
 		if (!(opt & NO_GDB_EXT_SWITCH))
 		{
 			gdb_ext_old = gdb_ext;
