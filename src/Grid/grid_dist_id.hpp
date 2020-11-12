@@ -2971,7 +2971,7 @@ public:
 		// Save the background values
 		T bv;
 
-		copy_aggregate_dual<typename std::remove_reference<decltype(loc_grid.get(0).getBackgroundValue())>::type,
+		copy_aggregate_dual<decltype(loc_grid.get(0).getBackgroundValue()),
 				            T> ca(loc_grid.get(0).getBackgroundValue(),bv);
 
 		boost::mpl::for_each_ref<boost::mpl::range_c<int,0,T::max_prop>>(ca);
