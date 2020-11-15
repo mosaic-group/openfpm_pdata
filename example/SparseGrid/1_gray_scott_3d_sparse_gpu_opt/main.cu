@@ -76,7 +76,7 @@ constexpr int z = 2;
 
 typedef CartDecomposition<3,float, CudaMemory, memory_traits_inte, BoxDistribution<3,float> > Dec;
 
-typedef sgrid_dist_id_gpu<3,float,aggregate<float,float,float,float>,CudaMemory, Dec> SparseGridType;
+typedef sgrid_dist_sid_gpu<3,float,aggregate<float,float,float,float>,CudaMemory, Dec> SparseGridType;
 
 void init(SparseGridType & grid, Box<3,float> & domain)
 {
@@ -256,7 +256,7 @@ int main(int argc, char* argv[])
 	std::cout << "Total simulation: " << tot_sim.getwct() << std::endl;
 
 	grid.deviceToHost<U,V,U_next,V_next>();
-	grid.write("final");
+//	grid.write("final");
 
 	//! \cond [time stepping] \endcond
 

@@ -3178,6 +3178,9 @@ using sgrid_dist_soa = grid_dist_id<dim,St,T,Decomposition,Memory,sgrid_soa<dim,
 #ifdef __NVCC__
 template<unsigned int dim, typename St, typename T, typename Memory = CudaMemory, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte> >
 using sgrid_dist_id_gpu = grid_dist_id<dim,St,T,Decomposition,Memory,SparseGridGpu<dim,T>>;
+
+template<unsigned int dim, typename St, typename T, typename Memory = CudaMemory, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte> >
+using sgrid_dist_sid_gpu = grid_dist_id<dim,St,T,Decomposition,Memory,SparseGridGpu<dim,T,default_edge<dim>::type::value,128,int>>;
 #endif
 
 #endif
