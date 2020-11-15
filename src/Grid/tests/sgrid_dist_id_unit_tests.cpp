@@ -691,4 +691,61 @@ BOOST_AUTO_TEST_CASE( sparse_grid_fast_stencil_vectorized_simplified_conv2_cross
     BOOST_REQUIRE_EQUAL(match,true);
 }
 
+BOOST_AUTO_TEST_CASE (sgrid_dist_id_soa_write )
+{
+	periodicity<3> bc = {PERIODIC, PERIODIC, PERIODIC};
+
+	auto & v_cl = create_vcluster<>();
+
+	// Domain
+	Box<3,double> domain({-0.3,-0.3,-0.3},{1.0,1.0,1.0});
+
+	// grid size
+	size_t sz[3];
+	sz[0] = 256;
+	sz[1] = 256;
+	sz[2] = 256;
+
+	// Ghost
+	Ghost<3,long int> g(1);
+
+	sgrid_dist_soa<3,double,aggregate<double,double[3]>> sg1(sz,domain,g,bc);
+	sgrid_dist_id<3,double,aggregate<double,double[3]>> sg2(sg1.getDecomposition(),sz,g);
+
+	// create a grid iterator over a bilion point
+
+	auto it = sg1.getGridIterator();
+
+	while(it.isNext())
+	{
+		auto gkey = it.get();
+		auto key = it.get_dist();
+
+		size_t sx = gkey.get(0) - 128;
+		size_t sy = gkey.get(1) - 128;
+		size_t sz = gkey.get(2) - 128;
+
+		if (sx*sx + sy*sy + sz*sz < 32*32)
+		{
+			sg1.template insert<0>(key) = 1.0;
+			sg1.template insert<1>(key)[0] = gkey.get(0);
+			sg1.template insert<1>(key)[1] = gkey.get(1);
+			sg1.template insert<1>(key)[2] = gkey.get(2);
+
+			sg2.template insert<0>(key) = 1.0;
+			sg2.template insert<1>(key)[0] = gkey.get(0);
+			sg2.template insert<1>(key)[1] = gkey.get(1);
+			sg2.template insert<1>(key)[2] = gkey.get(2);
+		}
+
+		++it;
+	}
+
+	sg1.write("sg1_test");
+	sg2.write("sg2_test");
+
+	bool test = compare("sg1_test_" + std::to_string(v_cl.rank()) + ".vtk","sg2_test_" + std::to_string(v_cl.rank()) + ".vtk");
+	BOOST_REQUIRE_EQUAL(true,test);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

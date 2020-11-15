@@ -95,6 +95,8 @@ void init(SparseGridType & grid, Box<3,float> & domain)
 
 	grid.template flush<smax_<U>,smax_<V>>(flush_type::FLUSH_ON_DEVICE);
 
+	grid.removeUnusedBuffers();
+
 	//! \cond [create points] \endcond
 
 	long int x_start = grid.size(0)*1.55f/domain.getHigh(0);
@@ -248,7 +250,8 @@ int main(int argc, char* argv[])
 //			count++;
 //		}
 	}
-	
+
+
 	tot_sim.stop();
 	std::cout << "Total simulation: " << tot_sim.getwct() << std::endl;
 
