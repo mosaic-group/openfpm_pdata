@@ -211,13 +211,13 @@ int main(int argc, char* argv[])
 
 				u_out = uc + uFactor *(u(i-1,j,k) + u(i+1,j,k) +
                                                        u(i,j-1,k) + u(i,j+1,k) +
-                                                       u(i,j,k-1) + u(i,j,k+1) - 6.0*uc) - deltaT * uc*vc*vc
-                                                       - deltaT * F * (uc - 1.0);
+                                                       u(i,j,k-1) + u(i,j,k+1) - 6.0f*uc) - deltaT * uc*vc*vc
+                                                       - deltaT * F * (uc - 1.0f);
 
 
 				v_out = vc + vFactor *(v(i-1,j,k) + v(i+1,j,k) +
                                                        v(i,j+1,k) + v(i,j-1,k) +
-                                                       v(i,j,k-1) + v(i,j,k+1) - 6.0*vc) + deltaT * uc*vc*vc
+                                                       v(i,j,k-1) + v(i,j,k+1) - 6.0f*vc) + deltaT * uc*vc*vc
 					               - deltaT * (F+K) * vc;
 				};
 
