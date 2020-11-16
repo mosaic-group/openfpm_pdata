@@ -150,6 +150,8 @@ private:
 
   bool costBeenSet = false;
 
+public:
+
   //! Runtime virtual cluster machine
   Vcluster<> &v_cl;
 };

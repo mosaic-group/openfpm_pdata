@@ -3,9 +3,9 @@
 
 #include <iostream>
 
-bool amIMaster(Vcluster<>& v_cl) { return v_cl.getProcessUnitID() == 0; }
+static bool amIMaster(Vcluster<>& v_cl) { return v_cl.getProcessUnitID() == 0; }
 
-void printMe(Vcluster<>& v_cl) {
+static void printMe(Vcluster<>& v_cl) {
   std::cout << "VCL #" << v_cl.getProcessUnitID() << " ";
 }
 
@@ -20,7 +20,7 @@ bool isIn(const openfpm::vector<T>& v, const T& x) {
   return false;
 }
 
-void print(const std::string& msg) { std::cout << msg; }
+static void print(const std::string& msg) { std::cout << msg; }
 
 template <class T>
 void printLn(const T& stuff) {
