@@ -863,7 +863,21 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		for (size_t i = 0 ; i < dim ; i++)
 		{
 			if (g_sz[i] < 2)
-				std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " distributed grids with size smaller than 2 are not supported\n";
+			{std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " distributed grids with size smaller than 2 are not supported\n";}
+		}
+	}
+
+	/*! \brief Check the domain is valid
+	 *
+	 * \param dom domain is valid
+	 *
+	 */
+	inline void check_domain(const Box<dim,St> & dom)
+	{
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (dom.getLow(i) >= dom.getHigh(i))
+			{std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " error the simulation domain is invalid\n";}
 		}
 	}
 
@@ -962,7 +976,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 
 		// Create the sub-domains
 		dec.setParameters(div,domain,bc,ghost);
-		dec.decompose();
+		dec.decompose(dec_options::DEC_SKIP_ICELL);
 	}
 
 	/*! \brief Initialize the grid
@@ -1440,6 +1454,7 @@ public:
 		if (opt >> 32 != 0)
 		{this->setDecompositionGranularity(opt >> 32);}
 
+		check_domain(domain);
 		InitializeCellDecomposer(g_sz,p.bc);
 		InitializeDecomposition(g_sz, p.bc);
 		InitializeStructures(g_sz);
@@ -1466,6 +1481,7 @@ public:
 		if (opt >> 32 != 0)
 		{this->setDecompositionGranularity(opt >> 32);}
 
+		check_domain(domain);
 		InitializeCellDecomposer(g_sz,p.bc);
 
 		ghost = convert_ghost(g,cd_sm);
@@ -1504,6 +1520,7 @@ public:
 		check_new(this,8,GRID_DIST_EVENT,4);
 #endif
 
+		check_domain(domain);
 		InitializeCellDecomposer(g_sz,p.bc);
 
 		ghost = convert_ghost(g,cd_sm);
@@ -1743,6 +1760,11 @@ public:
 
 #ifdef __NVCC__
 
+	/*! \brief Insert point in the grid
+    *
+	* \param f1 lambda function to insert point
+	* \param f2 lambda function to set points
+	*/
 	template<typename lambda_t1, typename lambda_t2>
 	void addPoints(lambda_t1 f1, lambda_t2 f2)
 	{
@@ -1752,6 +1774,13 @@ public:
 		it.template launch<1>(launch_insert_sparse(),f1,f2);
 	}
 
+	/*! \brief Insert point in the grid between start and stop
+	*
+	* \param start point
+	* \param stop point
+	* \param f1 lambda function to insert point
+	* \param f2 lambda function to set points
+	*/
 	template<typename lambda_t1, typename lambda_t2>
 	void addPoints(grid_key_dx<dim> k1, grid_key_dx<dim> k2, lambda_t1 f1, lambda_t2 f2)
 	{
