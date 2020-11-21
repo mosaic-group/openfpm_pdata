@@ -38,7 +38,7 @@ upgrade_openfpm=0
 gpu_support=0
 no_lin=0
 
-while getopts di:smghcnul FLAG; do
+while getopts di:smghc:nul FLAG; do
 	case $FLAG in
 	    d)
 	      echo "Disable depencencies installation"
