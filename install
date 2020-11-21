@@ -36,8 +36,9 @@ nomake=0
 update_openfpm=0
 upgrade_openfpm=0
 gpu_support=0
+no_lin=0
 
-while getopts di:smghc:nu FLAG; do
+while getopts di:smghcnul FLAG; do
 	case $FLAG in
 	    d)
 	      echo "Disable depencencies installation"
@@ -69,7 +70,11 @@ while getopts di:smghc:nu FLAG; do
 	      ;;
 	    n)
           echo "Upgrading openfpm"
-	      upgrade_openfpm=1
+              upgrade_openfpm=1
+              ;;
+            l)
+	      echo "No linear algebra"
+	      no_lin=1
 	      ;;
 	    h)  #show help
       	  HELP
@@ -218,7 +223,11 @@ if [ ! -d "$i_dir/PETSC" -o ! -f "$i_dir/PETSC/include/petsc.h" -o ! -d "$i_dir/
     if [ $sq -eq 0 ]; then
       read inst_lin_alg
     else
-      inst_lin_alg="y"
+      if [ $no_lin -eq 1 ]; then
+	  inst_lin_alg="n"
+      else
+          inst_lin_alg="y"
+      fi
     fi
 
     ### PETSC require Python
