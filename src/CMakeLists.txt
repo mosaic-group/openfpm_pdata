@@ -13,7 +13,8 @@ if(CUDA_FOUND)
 					 Vector/cuda/vector_dist_gpu_unit_tests.cu
 					 ../openfpm_devices/src/memory/CudaMemory.cu
 					 Decomposition/cuda/Domain_icells_cart_unit_test.cu
-					 Amr/tests/amr_base_gpu_unit_tests.cu)
+					 Amr/tests/amr_base_gpu_unit_tests.cu
+					 Grid/performance/SparseGridGpu_dist_single_benchmark.cu)
 else()
 	set(CUDA_SOURCES)
 endif()

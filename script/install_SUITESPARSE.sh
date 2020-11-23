@@ -22,6 +22,12 @@ if [ $? != 0 ]; then
 fi
 cd SuiteSparse-5.7.2
 
+# Tommaso's Hack: We need to remove old cuda compute_30 et similia from the Makefiles
+echo "HACK! REMOVING DEPRECATED OPTIONS FROM SUITESPARSE'S MAKEFILE! :)"
+sed -i s/"-gencode=arch=compute_20,code=sm_20 -gencode=arch=compute_30,code=sm_30 -gencode=arch=compute_35,code=sm_35"/""/g CHOLMOD/Tcov/Makefile
+sed -i s/"-gencode=arch=compute_30,code=sm_30"/""/g SuiteSparse_config/SuiteSparse_config.mk
+###
+
 if [ x"$CXX" == x"icpc" ]; then
     export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/$1/OPENBLAS/lib"
     STS_LIB="-shared-intel -lrt -lifcore"
