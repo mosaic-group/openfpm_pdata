@@ -133,17 +133,6 @@ endif()
 
 if(PETSC_FOUND)
 	set(DEFINE_HAVE_PETSC "#define HAVE_PETSC")
-	
-	####### Check PETSC hypre (The FindPETSC does not look like add hypre)
-	#	find_library(HYPRE_LIB HYPRE)
-
-	list(GET PETSC_LIBRARIES 0 PETSC_LIB_DIR)
-	get_filename_component(PETSC_LIB_DIR ${PETSC_LIB_DIR} DIRECTORY)
-	find_library(HYPRE_LIB HYPRE HINTS ${PETSC_LIB_DIR})
-	if (HYPRE_LIB)
-		list(APPEND PETSC_LIBRARIES ${HYPRE_LIB})
-		message("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA ${PETSC_LIBRARIES}")
-	endif()
 endif()
 
 if(SCAN_COVERTY)
