@@ -1814,6 +1814,31 @@ public:
 		dec.decompose();
 	}
 
+	/*! \brief Initialize the decomposition
+	 *
+	 * \param box domain
+	 * \param bc boundary conditions
+	 * \param g ghost extension
+	 * \param opt additional options
+	 *
+	 */
+	void init_decomposition_gr_cell(Box<dim,St> & box,
+							const size_t (& bc)[dim],
+							const Ghost<dim,St> & g,
+							size_t opt,
+							const grid_sm<dim,void> & gdist)
+	{
+		size_t div[dim];
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{div[i] = gdist.size(i);}
+
+		// Create the sub-domains
+		dec.setParameters(div, box, bc, g);
+
+		dec.decompose();
+	}
+
 	/*! \brief It synchronize the properties and position of the ghost particles
 	 *
 	 * \tparam prp list of properties to get synchronize

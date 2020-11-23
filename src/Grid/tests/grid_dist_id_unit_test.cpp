@@ -1313,7 +1313,7 @@ void Test3D_periodic_put(const Box<3,float> & domain, long int k)
 		periodicity<3> pr = {{PERIODIC,PERIODIC,PERIODIC}};
 
 		// Distributed grid with id decomposition
-		grid_dist_id<3, float, aggregate<long int>, CartDecomposition<3,float>> g_dist(sz,domain,g,pr);
+		grid_dist_id<3, float, aggregate<long int,double>, CartDecomposition<3,float>> g_dist(sz,domain,g,pr);
 
 		// check the consistency of the decomposition
 		bool val = g_dist.getDecomposition().check_consistency();
@@ -1332,6 +1332,7 @@ void Test3D_periodic_put(const Box<3,float> & domain, long int k)
 			auto key = dom.get();
 
 			g_dist.template get<0>(key) = -6.0;
+			g_dist.template get<1>(key) = -6.0;
 
 			// Count the points
 			count++;
@@ -1356,6 +1357,14 @@ void Test3D_periodic_put(const Box<3,float> & domain, long int k)
 			g_dist.template get<0>(key.move(2,1)) += 1.0;
 			g_dist.template get<0>(key.move(2,-1)) += 1.0;
 
+
+			g_dist.template get<1>(key.move(0,1)) += 1.0;
+			g_dist.template get<1>(key.move(0,-1)) += 1.0;
+			g_dist.template get<1>(key.move(1,1)) += 1.0;
+			g_dist.template get<1>(key.move(1,-1)) += 1.0;
+			g_dist.template get<1>(key.move(2,1)) += 1.0;
+			g_dist.template get<1>(key.move(2,-1)) += 1.0;
+
 			++dom;
 		}
 		}
@@ -1375,12 +1384,14 @@ void Test3D_periodic_put(const Box<3,float> & domain, long int k)
 		}
 
 		g_dist.ghost_put<add_,0>();
+		g_dist.ghost_put<add_,1>();
+
 
 		if (count != 0)
 			BOOST_REQUIRE_EQUAL(correct, false);
 
 		// sync the ghosts
-		g_dist.ghost_get<0>();
+		g_dist.ghost_get<0,1>();
 
 		correct = true;
 
@@ -1392,6 +1403,7 @@ void Test3D_periodic_put(const Box<3,float> & domain, long int k)
 			auto key = dom_gi2.get();
 
 			correct &= (g_dist.template get<0>(key) == 0);
+			correct &= (g_dist.template get<1>(key) == 0);
 
 			++dom_gi2;
 		}

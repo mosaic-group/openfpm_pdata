@@ -2982,7 +2982,11 @@ public:
 	{
 		// Save the background values
 		T bv;
-		meta_copy<T>::meta_copy_(bv,loc_grid.get(0).getBackgroundValue());
+
+		copy_aggregate_dual<decltype(loc_grid.get(0).getBackgroundValue()),
+				            T> ca(loc_grid.get(0).getBackgroundValue(),bv);
+
+		boost::mpl::for_each_ref<boost::mpl::range_c<int,0,T::max_prop>>(ca);
 
 		if (!(opt & NO_GDB_EXT_SWITCH))
 		{
@@ -3176,16 +3180,16 @@ public:
 };
 
 
-template<unsigned int dim, typename St, typename T>
-using sgrid_dist_id = grid_dist_id<dim,St,T,CartDecomposition<dim,St>,HeapMemory,sgrid_cpu<dim,T,HeapMemory>>;
+template<unsigned int dim, typename St, typename T, typename Memory = HeapMemory, typename Decomposition = CartDecomposition<dim,St> >
+using sgrid_dist_id = grid_dist_id<dim,St,T,Decomposition,Memory,sgrid_cpu<dim,T,Memory>>;
 
-template<unsigned int dim, typename St, typename T>
-using sgrid_dist_soa = grid_dist_id<dim,St,T,CartDecomposition<dim,St>,HeapMemory,sgrid_soa<dim,T,HeapMemory>>;
+template<unsigned int dim, typename St, typename T, typename Memory = HeapMemory, typename Decomposition = CartDecomposition<dim,St>>
+using sgrid_dist_soa = grid_dist_id<dim,St,T,Decomposition,Memory,sgrid_soa<dim,T,Memory>>;
 
 
 #ifdef __NVCC__
-template<unsigned int dim, typename St, typename T>
-using sgrid_dist_id_gpu = grid_dist_id<dim,St,T,CartDecomposition<dim,St,CudaMemory,memory_traits_inte>,CudaMemory,SparseGridGpu<dim,T>>;
+template<unsigned int dim, typename St, typename T, typename Memory = CudaMemory, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte> >
+using sgrid_dist_id_gpu = grid_dist_id<dim,St,T,Decomposition,Memory,SparseGridGpu<dim,T>>;
 #endif
 
 #endif

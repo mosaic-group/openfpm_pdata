@@ -538,6 +538,35 @@ public:
 #endif
 	}
 
+	/*! \brief Constructor of a distributed vector
+	 *
+	 * \param np number of elements
+	 * \param box domain where the vector of elements live
+	 * \param bc boundary conditions
+	 * \param g Ghost margins
+	 * \param opt [Optional] additional options. BIND_DEC_TO_GHOST Bind the decomposition to be multiple of the
+	 *          ghost size. This is required if we want to use symmetric to eliminate
+	 *          ghost communications.
+	 * \param gdist [Optional] override the default distribution grid
+	 *
+	 */
+	vector_dist(size_t np, Box<dim, St> box, const size_t (&bc)[dim], const Ghost<dim, St> & g, const grid_sm<dim,void> & gdist)
+	:opt(0) SE_CLASS3_VDIST_CONSTRUCTOR
+	{
+		if (opt >> 32 != 0)
+		{this->setDecompositionGranularity(opt >> 32);}
+
+		check_parameters(box);
+
+		init_structures(np);
+
+		this->init_decomposition_gr_cell(box,bc,g,opt,gdist);
+
+
+#ifdef SE_CLASS3
+		se3.Initialize();
+#endif
+	}
 
 	/*! \brief Constructor of a distributed vector
 	 *

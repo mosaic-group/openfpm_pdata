@@ -178,7 +178,8 @@ install(FILES Decomposition/Distribution/metis_util.hpp
 	      Decomposition/Distribution/parmetis_util.hpp 
 	      Decomposition/Distribution/MetisDistribution.hpp 
 	      Decomposition/Distribution/ParMetisDistribution.hpp 
-	      Decomposition/Distribution/DistParMetisDistribution.hpp  
+	      Decomposition/Distribution/DistParMetisDistribution.hpp
+	      Decomposition/Distribution/BoxDistribution.hpp  
 	      DESTINATION openfpm_pdata/include/Decomposition/Distribution )
 
 install(FILES Decomposition/cuda/ie_ghost_gpu.cuh
