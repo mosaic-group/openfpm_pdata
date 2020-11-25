@@ -116,3 +116,6 @@ perf.data.old
 projectId.sh
 /build
 /Default/
+/cmake-build-debug-gcc/
+/cmake-build-falcon/
+/cmake-build-release-gcc/
