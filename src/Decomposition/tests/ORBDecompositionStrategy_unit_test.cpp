@@ -44,7 +44,7 @@ typedef vector_dist<
 void ORBDecomposition_non_periodic_test(const unsigned int nProcs) {
   Vcluster<> &vcl = create_vcluster();
   OrbDecompositionStrategy<SPACE_N_DIM, domain_type> dec(vcl);
-  SequentialDistributionStrategy<SPACE_N_DIM, domain_type> dist(vcl);
+  SequentialDistributionStrategy<SPACE_N_DIM, domain_type> dist(vcl,dec.getGraph());
 
   // Physical domain
   Box<SPACE_N_DIM, domain_type> box({0.0, 0.0, 0.0}, {1.0, 1.0, 1.0});
@@ -70,14 +70,21 @@ void ORBDecomposition_non_periodic_test(const unsigned int nProcs) {
     ++vp_it;
   }
 
+  /////////////// STUB parameters //////////////////////////////////////////////
+
+  size_t div[SPACE_N_DIM];
+  size_t bc[SPACE_N_DIM];
+  grid_sm<SPACE_N_DIM,void> gr;
+  Ghost<SPACE_N_DIM,domain_type> g;
+
   ///////////////////////////////////////////////////////////////////////// init
-  dec.setParameters(box);
+  dec.setParameters(div,box,bc,g);
 
   //////////////////////////////////////////////////////////////////// decompose
   dec.decompose(vp);
 
   /////////////////////////////////////////////////////////////////// distribute
-  dist.distribute(dec.getGraph());
+  dist.distribute();
 
   //////////////////////////////////////////////////////////////////////// merge
   // no need (we're NOT using sub(sub)domains)

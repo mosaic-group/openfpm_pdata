@@ -11,11 +11,14 @@ template <unsigned int dim, typename domain_type, typename Memory = HeapMemory,
 class CartDistributionStrategy : public domain_nn_calculator_cart<dim> {
 
 public:
+
+  typedef DecompsitionGraph graph_type;
+
   CartDistributionStrategy(Vcluster<> &v_cl) : _inner(v_cl) {}
 
   ~CartDistributionStrategy() {}
 
-  void setParameters(DecompositionGraph& gp, ::Box<dim, domain_type> & box,
+  void setParameters(DecompositionGraph& gp, ::Box<dim, domain_type> & domain,
             grid_sm<dim, void> &gr,
             const size_t (& bc)[dim],
             const grid_sm<dim,void> & sec_dist = grid_sm<dim, void>()) {
@@ -25,7 +28,7 @@ public:
       gr_dist = gr;
     }
 
-    createCartGraph(gp, bc, box);
+    createCartGraph(gp, bc, domain);
   }
 
   /*! \brief Create the Cartesian graph

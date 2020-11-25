@@ -41,6 +41,49 @@ class CartDecompositionStrategy
       openfpm::vector<Box, Memory, typename layout_base<Box>::type,
                       layout_base>;
 
+  typedef Graph_CSR<nm_v<dim>, nm_e> DecompositionGraph;
+
+  AbstractDecStrategy _inner;
+
+  //! set of Boxes produced by the decomposition optimizer
+  openfpm::vector<::Box<dim, size_t>> loc_box;
+
+  //! for each sub-domain, contain the list of the neighborhood processors
+  openfpm::vector<openfpm::vector<long unsigned int> > box_nn_processor;
+
+  //! Magnification factor between distribution and
+  //! decomposition
+  size_t magn[dim];
+
+  //! bool that indicate whenever the buffer has been already transfer to device
+  bool host_dev_transfer = false;
+
+  //! Processor bounding box
+  ::Box<dim, domain_type> bbox;
+
+  //! the set of all local sub-domain as vector
+  SubDomains sub_domains;
+
+  //! the remote set of all sub-domains as vector of 'sub_domains' vectors
+  mutable openfpm::vector<Box_map<dim, domain_type>, Memory,
+                          typename layout_base<Box_map<dim, domain_type>>::type,
+                          layout_base>
+      sub_domains_global;
+
+  //! Structure that contain for each sub-sub-domain box the processor id
+  //! exist for efficient global communication
+  CellList<dim, domain_type, Mem_fast<Memory, int>, shift<dim, domain_type>> fine_s;
+
+  //! Processor domain bounding box
+  ::Box<dim, size_t> proc_box;
+
+  //! Structure that decompose the space into cells without creating them
+  //! useful to convert positions to CellId or sub-domain id in this case
+  CellDecomposer_sm<dim, domain_type, shift<dim, domain_type>> cd;
+
+  //! Structure that store the cartesian grid information
+  grid_sm<dim, void> gr;
+
 public:
     //! Helpers
   /*! \brief class to select the returned id by ghost_processorID
@@ -211,12 +254,18 @@ public:
     return std::make_pair(migration, norm);
   }
 
-  void decompose() {
-    reset();
+  /*! \brief Create the Cartesian graph
+   */
+  void createCartGraph() {
+    // Create a cartesian grid graph
+    CartesianGraphFactory<dim, DecompositionGraph> g_factory_part;
+    inner().getGraph() = g_factory_part.template construct<NO_EDGE, nm_v_id, domain_type, dim - 1, 0>(gr.getSize(), 
+                                                                                                      inner().getDomain(), 
+                                                                                                      inner().bc);
+  }
 
-    // if (inner().shouldSetCosts()) {
-      computeCommunicationAndMigrationCosts(1);
-    // }
+  void decompose() {
+    createCartGraph();
   }
 
   void onEnd() {
@@ -297,6 +346,16 @@ public:
   bool check_consistency() {
     return ie_loc_ghost<dim, domain_type, layout_base, Memory>::check_consistency(
         getNSubDomain());
+  }
+
+  /*! \brief Return the graph of the decomposition (not-distributed)
+   *
+   * \return The graph
+   * 
+   */
+  auto getGraph() -> decltype(this->_inner.getGraph())
+  {
+    return this->_inner.getGraph();
   }
 
   void initialize_fine_s(const ::Box<dim, domain_type> &domain) {
@@ -661,47 +720,5 @@ public:
   AbstractDecStrategy &inner() {
     return _inner;
   }
-
-private:
-  AbstractDecStrategy _inner;
-
-  //! set of Boxes produced by the decomposition optimizer
-  openfpm::vector<::Box<dim, size_t>> loc_box;
-
-  //! for each sub-domain, contain the list of the neighborhood processors
-  openfpm::vector<openfpm::vector<long unsigned int> > box_nn_processor;
-
-  //! Magnification factor between distribution and
-  //! decomposition
-  size_t magn[dim];
-
-  //! bool that indicate whenever the buffer has been already transfer to device
-  bool host_dev_transfer = false;
-
-  //! Processor bounding box
-  ::Box<dim, domain_type> bbox;
-
-  //! the set of all local sub-domain as vector
-  SubDomains sub_domains;
-
-  //! the remote set of all sub-domains as vector of 'sub_domains' vectors
-  mutable openfpm::vector<Box_map<dim, domain_type>, Memory,
-                          typename layout_base<Box_map<dim, domain_type>>::type,
-                          layout_base>
-      sub_domains_global;
-
-  //! Structure that contain for each sub-sub-domain box the processor id
-  //! exist for efficient global communication
-  CellList<dim, domain_type, Mem_fast<Memory, int>, shift<dim, domain_type>> fine_s;
-
-  //! Processor domain bounding box
-  ::Box<dim, size_t> proc_box;
-
-  //! Structure that decompose the space into cells without creating them
-  //! useful to convert positions to CellId or sub-domain id in this case
-  CellDecomposer_sm<dim, domain_type, shift<dim, domain_type>> cd;
-
-  //! Structure that store the cartesian grid information
-  grid_sm<dim, void> gr;
 };
 #endif // SRC_DECOMPOSITION_CART_DECOMPOSITION_STRATEGY_HPP

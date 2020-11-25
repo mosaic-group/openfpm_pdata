@@ -48,7 +48,7 @@ class ParMetisDistribution
 	Box<dim, T> domain;
 
 	//! Global sub-sub-domain graph
-	Graph_CSR<nm_v<dim>, nm_e> gp;
+	Graph_CSR<nm_v<dim>, nm_e> & gp;
 
 	//! Convert the graph to parmetis format
 	Parmetis<Graph_CSR<nm_v<dim>, nm_e>> parmetis_graph;
@@ -280,12 +280,21 @@ class ParMetisDistribution
 
 public:
 
+	//! Global sub-sub-domain graph
+	typedef Graph_CSR<nm_v<dim>, nm_e> graph_type;
+
 	/*! Constructor for the ParMetis class
 	 *
 	 * \param v_cl Vcluster to use as communication object in this class
 	 */
-	ParMetisDistribution(Vcluster<> & v_cl)
-	:is_distributed(false),v_cl(v_cl), parmetis_graph(v_cl, v_cl.getProcessingUnits()), vtxdist(v_cl.getProcessingUnits() + 1), partitions(v_cl.getProcessingUnits()), v_per_proc(v_cl.getProcessingUnits())
+	ParMetisDistribution(Vcluster<> & v_cl, Graph_CSR<nm_v<dim>, nm_e> & gp)
+	:is_distributed(false),
+	  v_cl(v_cl), 
+	  parmetis_graph(v_cl, v_cl.getProcessingUnits()), 
+	  vtxdist(v_cl.getProcessingUnits() + 1), 
+	  partitions(v_cl.getProcessingUnits()), 
+	  v_per_proc(v_cl.getProcessingUnits()),
+	  gp(gp)
 	{
 	}
 
@@ -295,7 +304,7 @@ public:
 	 *
 	 */
 	ParMetisDistribution(const ParMetisDistribution<dim,T> & pm)
-	:v_cl(pm.v_cl),parmetis_graph(v_cl, v_cl.getProcessingUnits())
+	:v_cl(pm.v_cl),parmetis_graph(v_cl, v_cl.getProcessingUnits()),gp(pm.gp)
 	{
 		this->operator=(pm);
 	}
@@ -375,7 +384,7 @@ public:
 	/*! \brief Create the decomposition
 	 *
 	 */
-	void decompose()
+	void distribute()
 	{
 		if (is_distributed == false)
 			parmetis_graph.initSubGraph(gp, vtxdist, m2g, verticesGotWeights);

@@ -66,24 +66,34 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 
 	//! [Initialize a Metis Cartesian graph and decompose]
 
-	MetisDistribution<3, float> met_dist(v_cl);
-
 	// Cartesian grid
 	size_t sz[3] = { GS_SIZE, GS_SIZE, GS_SIZE };
 
 	// Box
-	Box<3, float> box( { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
+	Box<3, float> domain( { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
 
 	// Grid info
 	grid_sm<3, void> info(sz);
+
+	// Ghost area
+	Ghost<3,float> g(0.1);
+
+	// boundary conditions
+	size_t bc[3] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+
+	CartDecompositionStrategy<3,float> cds(v_cl);
+	cds.setParameters(sz,domain,bc,g);
+	cds.createCartGraph();
+
+	MetisDistribution<3, float> met_dist(v_cl,cds.getGraph());
 
 	// Set metis on test, It fix the seed (not required if we are not testing)
 	met_dist.onTest();
 
 	// Initialize Cart graph and decompose
 
-	met_dist.createCartGraph(info,box);
-	met_dist.decompose();
+	met_dist.createCartGraph(info,domain);
+	met_dist.distribute();
 
 	BOOST_REQUIRE_EQUAL(met_dist.get_ndec(),1ul);
 
@@ -123,7 +133,7 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 		met_dist.setCommunicationCost(i,j,1);
 	}
 
-	met_dist.decompose();
+	met_dist.distribute();
 
 	BOOST_REQUIRE_EQUAL(met_dist.get_ndec(),2ul);
 
@@ -187,16 +197,23 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 
 	//! [Initialize a ParMetis Cartesian graph and decompose]
 
-	ParMetisDistribution<3, float> pmet_dist(v_cl);
+	size_t div[3] = { GS_SIZE, GS_SIZE, GS_SIZE };
+
+	size_t bc[3] = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 
 	// Physical domain
-	Box<3, float> box( { 0.0, 0.0, 0.0 }, { 10.0, 10.0, 10.0 });
+	Box<3, float> domain( { 0.0, 0.0, 0.0 }, { 10.0, 10.0, 10.0 });
+
+	Ghost<3,float> g(0.1);
 
 	// Grid info
-	grid_sm<3, void> info( { GS_SIZE, GS_SIZE, GS_SIZE });
+	grid_sm<3, void> info(div);
 
-	// Initialize Cart graph and decompose
-	pmet_dist.createCartGraph(info,box);
+	CartDecompositionStrategy<3,float> cds(v_cl);
+	cds.setParameters(div,domain,bc,g);
+	cds.createCartGraph();
+
+	ParMetisDistribution<3, float> pmet_dist(v_cl,cds.getGraph());
 
 	// First create the center of the weights distribution, check it is coherent to the size of the domain
 	Point<3, float> center( { 2.0, 2.0, 2.0 });
@@ -206,7 +223,7 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 	setSphereComputationCosts(pmet_dist, info, center, 2.0f, 5ul, 1ul);
 
 	// first decomposition
-	pmet_dist.decompose();
+	pmet_dist.distribute();
 
 	BOOST_REQUIRE_EQUAL(pmet_dist.get_ndec(),1ul);
 

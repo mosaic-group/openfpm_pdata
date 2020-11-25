@@ -14,12 +14,17 @@ class SequentialDistributionStrategy {
 
   using Box = SpaceBox<dim, domain_type>;
 
+  Graph_CSR<nm_v<dim>, nm_e> & gp;
+
 public:
-  SequentialDistributionStrategy(Vcluster<> &v_cl) : _inner(v_cl) {}
+
+  typedef DecompositionGraph graph_type;
+
+  SequentialDistributionStrategy(Vcluster<> &v_cl, Graph_CSR<nm_v<dim>, nm_e> & gp) : _inner(v_cl),gp(gp) {}
 
   ~SequentialDistributionStrategy() {}
 
-  void distribute(DecompositionGraph& gp) {
+  void distribute() {
     auto i = inner().getVcluster().rank();
     gp.vertex(i).template get<nm_v_proc_id>() = i;
     inner().distribute();

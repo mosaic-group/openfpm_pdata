@@ -53,7 +53,7 @@ class MetisDistribution
 	Box<dim, T> domain;
 
 	//! Global sub-sub-domain graph
-	Graph_CSR<nm_v<dim>, nm_e> gp;
+	Graph_CSR<nm_v<dim>, nm_e> & gp;
 
 	//! Flag that indicate if we are doing a test (In general it fix the seed)
 	bool testing = false;
@@ -104,6 +104,8 @@ class MetisDistribution
 
 public:
 
+	typedef Graph_CSR<nm_v<dim>, nm_e> graph_type; 
+
 	static constexpr unsigned int computation = nm_v_computation;
 
 	/*! \brief constructor
@@ -111,8 +113,8 @@ public:
 	 * \param v_cl vcluster
 	 *
 	 */
-	MetisDistribution(Vcluster<> & v_cl)
-	:v_cl(v_cl),metis_graph(gp)
+	MetisDistribution(Vcluster<> & v_cl, Graph_CSR<nm_v<dim>, nm_e> & gp)
+	:v_cl(v_cl),gp(gp),metis_graph(gp)
 	{
 #ifdef SE_CLASS2
 			check_new(this,8,VECTOR_EVENT,1);
@@ -214,7 +216,7 @@ public:
 	/*! \brief Distribute the sub-sub-domains
 	 *
 	 */
-	void decompose()
+	void distribute()
 	{
 #ifdef SE_CLASS2
 			check_valid(this,8);
@@ -301,7 +303,7 @@ public:
 			check_valid(this,8);
 #endif
 
-		decompose();
+		distribute();
 	}
 
 	/*! \brief Redecompose current decomposition
@@ -312,7 +314,7 @@ public:
 #ifdef SE_CLASS2
 			check_valid(this,8);
 #endif
-		decompose();
+		distribute();
 	}
 
 

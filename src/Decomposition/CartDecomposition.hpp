@@ -204,6 +204,12 @@ protected:
 	//! Runtime virtual cluster machine
 	Vcluster<> & v_cl;
 
+	//! Decomposition graph
+	typename Distribution::graph_type gp;
+
+	//! Create distribution
+	Decomposition dec;
+
 	//! Create distribution
 	Distribution dist;
 
@@ -682,7 +688,7 @@ public:
 	 *
 	 */
 	CartDecomposition(Vcluster<> & v_cl)
-	:nn_prcs<dim, T, layout_base,Memory>(v_cl), v_cl(v_cl), dist(v_cl),ref_cnt(0)
+	:nn_prcs<dim, T, layout_base,Memory>(v_cl), v_cl(v_cl),dec(v_cl),dist(v_cl,dec.getGraph()),ref_cnt(0)
 	{
 		// Reset the box to zero
 		bbox.zero();
@@ -694,7 +700,7 @@ public:
 	 *
 	 */
 	CartDecomposition(const CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution> & cart)
-	:nn_prcs<dim,T,layout_base,Memory>(cart.v_cl),v_cl(cart.v_cl),dist(v_cl),ref_cnt(0)
+	:nn_prcs<dim,T,layout_base,Memory>(cart.v_cl),v_cl(cart.v_cl),dec(v_cl),dist(v_cl,dec.getGraph()),ref_cnt(0)
 	{
 		this->operator=(cart);
 	}
@@ -705,7 +711,7 @@ public:
 	 *
 	 */
 	CartDecomposition(CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution> && cart)
-	:nn_prcs<dim,T,layout_base,Memory>(cart.v_cl),v_cl(cart.v_cl),dist(v_cl),ref_cnt(0)
+	:nn_prcs<dim,T,layout_base,Memory>(cart.v_cl),v_cl(cart.v_cl),dec(v_cl),dist(v_cl,dec.getGraph()),ref_cnt(0)
 	{
 		this->operator=(cart);
 	}
@@ -1318,8 +1324,10 @@ public:
 			gr_dist = gr;
 		}
 
+		dec.setParameters(div_,domain,bc,ghost,gr_dist);
+
 		// init distribution
-		dist.createCartGraph(gr_dist, domain);
+		dec.createCartGraph();
 	}
 
 	/*! \brief Delete the decomposition and reset the data-structure
@@ -1347,7 +1355,7 @@ public:
 		if (commCostSet == false)
 		{computeCommunicationAndMigrationCosts(1);}  // ... that were already filled by `addComputationCosts`
 
-		dist.decompose();
+		dist.distribute();
 
 		createSubdomains(v_cl, bc);
 
@@ -1920,7 +1928,7 @@ public:
 	 * \return true if they are equal
 	 *
 	 */
-	bool is_equal(CartDecomposition<dim,T,Memory> & cart)
+	bool is_equal(CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution> & cart)
 	{
 		if (static_cast<ie_loc_ghost<dim,T,layout_base,Memory>*>(this)->is_equal(static_cast<ie_loc_ghost<dim,T,layout_base,Memory>&>(cart)) == false)
 			return false;
@@ -1966,7 +1974,7 @@ public:
 	 * \return true if the two CartDecomposition are equal
 	 *
 	 */
-	bool is_equal_ng(CartDecomposition<dim,T,Memory> & cart)
+	bool is_equal_ng(CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution> & cart)
 	{
 		if (static_cast<ie_loc_ghost<dim,T,layout_base,Memory>*>(this)->is_equal_ng(static_cast<ie_loc_ghost<dim,T,layout_base,Memory>&>(cart)) == false)
 			return false;

@@ -67,8 +67,19 @@ public:
     }
   }
 
-  void setParameters(::Box<dim, domain_type> &domain_) {
+
+  void setParameters(const size_t (&div_)[dim],
+    ::Box<dim, domain_type> &domain_,
+    const size_t (&bc)[dim],
+    const Ghost<dim, domain_type> &ghost,
+    const grid_sm<dim, void> &sec_dist = grid_sm<dim, void>()) {
     inner().setDomain(domain_);
+  }
+
+  /*! \brief Stub method to homogenize the interface do not use
+   *
+   */
+  void createCartGraph() {
   }
 
   void decompose(openfpm::vector<Point<dim, domain_type>> points) {

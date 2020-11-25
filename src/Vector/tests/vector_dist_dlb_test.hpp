@@ -10,6 +10,7 @@
 
 #include "DLB/LB_Model.hpp"
 #include "Vector/vector_dist.hpp"
+#include "Decomposition/CartDecompositionStrategy.hpp"
 
 BOOST_AUTO_TEST_SUITE( vector_dist_dlb_test )
 
@@ -431,7 +432,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_dlb_metis_test_part )
 	test_dlb_vector<vector_dist<3,
 	                            double,
 								aggregate<double>,
-	                            CartDecomposition<3,double,HeapMemory,memory_traits_lin,MetisDistribution<3,double>>>>();
+	                            CartDecomposition<3,double,HeapMemory,memory_traits_lin,CartDecompositionStrategy<3,double>,MetisDistribution<3,double>>>>();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
