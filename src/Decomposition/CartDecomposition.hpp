@@ -384,7 +384,7 @@ public:
 
 		// Optimize the decomposition creating bigger spaces
 		// And reducing Ghost over-stress
-		dec_optimizer<dim, Graph_CSR<nm_v<dim>, nm_e>> d_o(dist.getGraph(), gr_dist.getSize());
+		dec_optimizer<dim, Graph_CSR<nm_v<dim>, nm_e>> d_o(dec.getGraph(), gr_dist.getSize());
 
 		// Ghost
 		Ghost<dim,long int> ghe;
@@ -397,7 +397,7 @@ public:
 		}
 
 		// optimize the decomposition or merge sub-sub-domain
-		d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(dist.getGraph(), p_id, loc_box, box_nn_processor,ghe,bc);
+		d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(dec.getGraph(), p_id, loc_box, box_nn_processor,ghe,bc);
 
 		// Initialize
 		if (loc_box.size() > 0)
@@ -477,6 +477,10 @@ public:
 	 */
 	void computeCommunicationAndMigrationCosts(size_t ts)
 	{
+		dec.computeCommunicationCosts();
+
+#if 0
+
 		float migration = 0;
 
 		SpaceBox<dim, T> cellBox = cd.getCellBox();
@@ -513,6 +517,7 @@ public:
 		}
 
 		commCostSet = true;
+		#endif
 	}
 
 	/*! \brief Create the sub-domain that decompose your domain

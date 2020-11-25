@@ -79,6 +79,12 @@ public:
   /*! \brief Stub method to homogenize the interface do not use
    *
    */
+  std::pair<float, size_t> computeCommunicationCosts() {
+  }
+
+  /*! \brief Stub method to homogenize the interface do not use
+   *
+   */
   void createCartGraph() {
   }
 

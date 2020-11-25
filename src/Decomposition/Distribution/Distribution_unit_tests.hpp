@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 
 	// Copy the Metis distribution
 
-	MetisDistribution<3, float> met_dist2(v_cl);
+	MetisDistribution<3, float> met_dist2(v_cl,cds.getGraph());
 
 	met_dist2 = met_dist;
 

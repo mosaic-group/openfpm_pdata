@@ -38,6 +38,13 @@ public:
     return _inner;
   }
 
+  SequentialDistributionStrategy & operator=(const SequentialDistributionStrategy & tmp)
+  {
+    gp = tmp.gp;
+
+    return *this;
+  }
+
 private:
   AbstractDistStrategy _inner;
 };
