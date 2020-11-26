@@ -958,7 +958,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	 * \param bc boundary conditions
 	 *
 	 */
-	inline void InitializeDecomposition(const size_t (& g_sz)[dim], const size_t (& bc)[dim])
+	inline void InitializeDecomposition(const size_t (& g_sz)[dim], const size_t (& bc)[dim], const grid_sm<dim,void> & g_dist = grid_sm<dim,void>())
 	{
 		// fill the global size of the grid
 		for (size_t i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
@@ -973,6 +973,14 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		size_t div[dim];
 		for (size_t i = 0 ; i < dim ; i++)
 		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
+
+		if (g_dist.size(0) != 0)
+		{
+			std::cout << "AAAAAAAAAAAA " << std::endl;
+
+			for (size_t i = 0 ; i < dim ; i++)
+			{div[i] = g_dist.size(i);}
+		}
 
 		// Create the sub-domains
 		dec.setParameters(div,domain,bc,ghost);
@@ -1471,7 +1479,7 @@ public:
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g, const periodicity<dim> & p, size_t opt = 0)
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g, const periodicity<dim> & p, size_t opt = 0, const grid_sm<dim,void> & g_dec = grid_sm<dim,void>())
 	:domain(domain),ghost_int(g),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
@@ -1486,7 +1494,7 @@ public:
 
 		ghost = convert_ghost(g,cd_sm);
 
-		InitializeDecomposition(g_sz,p.bc);
+		InitializeDecomposition(g_sz,p.bc,g_dec);
 
 		// an empty
 		openfpm::vector<Box<dim,long int>> empty;
@@ -1494,6 +1502,7 @@ public:
 		// Initialize structures
 		InitializeStructures(g_sz,empty,g,false);
 	}
+
 
 	/*! \brief It construct a grid on the full domain restricted
 	 *         to the set of boxes specified
