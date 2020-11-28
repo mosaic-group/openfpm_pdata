@@ -26,6 +26,7 @@
 #include "grid_dist_id_comm.hpp"
 #include "HDF5_wr/HDF5_wr.hpp"
 #include "SparseGrid/SparseGrid.hpp"
+#include "lib/pdata.hpp"
 #ifdef __NVCC__
 #include "cuda/grid_dist_id_kernels.cuh"
 #include "Grid/cuda/grid_dist_id_iterator_gpu.cuh"
@@ -976,8 +977,6 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 
 		if (g_dist.size(0) != 0)
 		{
-			std::cout << "AAAAAAAAAAAA " << std::endl;
-
 			for (size_t i = 0 ; i < dim ; i++)
 			{div[i] = g_dist.size(i);}
 		}
@@ -3137,6 +3136,20 @@ public:
 	const openfpm::vector<i_lbox_grid<dim>> & get_ig_box()
 	{
 		return this->ig_box;
+	}
+
+	void print_stats()
+	{
+		std::cout << "-- REPORT --" << std::endl;
+#ifdef ENABLE_GRID_DIST_ID_PERF_STATS
+		std::cout << "Time spent in packing data: " << tot_pack << std::endl;
+		std::cout << "Time spent in sending and receving data: " << tot_sendrecv << std::endl;
+		std::cout << "Time spent in merging: " << tot_merge << std::endl;
+#else
+
+		std::cout << "Enable ENABLE_GRID_DIST_ID_PERF_STATS if you want to activate this feature" << std::endl;
+
+#endif
 	}
 
 #ifdef __NVCC__

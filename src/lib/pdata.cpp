@@ -23,3 +23,6 @@ const std::string nm_e::attributes::name[] = {"communication","srcgid","dstgid"}
 const std::string nm_part_v::attributes::name[] = {"id","sub_id"};
 const std::string nm_part_e::attributes::name[] = {"id"};
 
+double tot_merge = 0.0;
+double tot_sendrecv = 0.0;
+double tot_pack = 0.0;

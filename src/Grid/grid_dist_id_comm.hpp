@@ -12,6 +12,7 @@
 #include "Grid/copy_grid_fast.hpp"
 #include "grid_dist_util.hpp"
 #include "util/common_pdata.hpp"
+#include "lib/pdata.hpp"
 
 /*! \brief Unpack selector
  *
@@ -1060,6 +1061,11 @@ public:
 		for (int i = 0 ; i < loc_grid.size() ; i++)
 		{opt &= (loc_grid.get(i).isSkipLabellingPossible())?(int)-1:~SKIP_LABELLING;}
 
+		#ifdef ENABLE_GRID_DIST_ID_PERF_STATS
+		timer packing_time;
+		packing_time.start();
+		#endif
+
 		if (!(opt & SKIP_LABELLING))
 		{
 			// first we initialize the pack buffer on all internal grids
@@ -1192,6 +1198,13 @@ public:
 			delete &prAlloc_prp;
 		}
 
+		#ifdef ENABLE_GRID_DIST_ID_PERF_STATS
+		packing_time.stop();
+		tot_pack += packing_time.getwct();
+		timer sendrecv_time;
+		sendrecv_time.start();
+		#endif
+
 		for ( size_t i = 0 ; i < ig_box.size() ; i++ )
 		{
 			// This function send (or queue for sending) the information
@@ -1210,6 +1223,13 @@ public:
 
 		queue_recv_data_get<prp_object>(eg_box,prp_recv,prRecv_prp);
 
+		#ifdef ENABLE_GRID_DIST_ID_PERF_STATS
+		sendrecv_time.stop();
+		tot_sendrecv += sendrecv_time.getwct();
+		timer merge_time;
+		merge_time.start();
+		#endif
+
 		ghost_get_local<prp...>(loc_ig_box,loc_eg_box,gdb_ext,loc_grid,g_id_to_external_ghost_box,ginfo,use_bx_def,opt);
 
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
@@ -1223,6 +1243,11 @@ public:
 
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{loc_grid.get(i).template removeAddUnpackFinalize<prp ...>(v_cl.getmgpuContext(),opt_);}
+
+		#ifdef ENABLE_GRID_DIST_ID_PERF_STATS
+		merge_time.stop();
+		tot_merge += merge_time.getwct();
+		#endif
 
 		prRecv_prp.decRef();
 		delete &prRecv_prp;

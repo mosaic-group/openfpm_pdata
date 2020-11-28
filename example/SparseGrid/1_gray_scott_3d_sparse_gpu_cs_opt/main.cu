@@ -1,3 +1,6 @@
+//#define VCLUSTER_PERF_REPORT
+//#define SYNC_BEFORE_TAKE_TIME
+//#define ENABLE_GRID_DIST_ID_PERF_STATS
 #include "Grid/grid_dist_id.hpp"
 #include "data_type/aggregate.hpp"
 #include "timer.hpp"
@@ -451,10 +454,11 @@ int main(int argc, char* argv[])
 
         				};
 
-
         		if (i % 2 == 0)
         		{
         			grid.conv2<U,V,U_next,V_next,1>({0,0,0},{(long int)sz[0]-1,(long int)sz[1]-1,(long int)sz[2]-1},func);
+
+				cudaDeviceSynchronize();
 
         			// After copy we synchronize again the ghost part U and V
 
@@ -463,6 +467,8 @@ int main(int argc, char* argv[])
         		else
         		{
         			grid.conv2<U_next,V_next,U,V,1>({0,0,0},{(long int)sz[0]-1,(long int)sz[1]-1,(long int)sz[2]-1},func);
+
+				cudaDeviceSynchronize();
 
         			// After copy we synchronize again the ghost part U and V
         			grid.ghost_get<U,V>(RUN_ON_DEVICE | SKIP_LABELLING);
@@ -491,8 +497,12 @@ int main(int argc, char* argv[])
 	tot_sim.stop();
 	std::cout << "Total simulation: " << tot_sim.getwct() << std::endl;
 
+	grid.print_stats();
+
+	create_vcluster().print_stats();
+
 	grid.template deviceToHost<U,V>();
-	grid.write("Final");
+//	grid.write("Final");
 
 	//! \cond [time stepping] \endcond
 
