@@ -3142,9 +3142,9 @@ public:
 	{
 		std::cout << "-- REPORT --" << std::endl;
 #ifdef ENABLE_GRID_DIST_ID_PERF_STATS
-		std::cout << "Processor: " << v_cl.rank() << "Time spent in packing data: " << tot_pack << std::endl;
-		std::cout << "Processor: " << v_cl.rank() << "Time spent in sending and receving data: " << tot_sendrecv << std::endl;
-		std::cout << "Processor: " << v_cl.rank() << "Time spent in merging: " << tot_merge << std::endl;
+		std::cout << "Processor: " << v_cl.rank() << " Time spent in packing data: " << tot_pack << std::endl;
+		std::cout << "Processor: " << v_cl.rank() << " Time spent in sending and receving data: " << tot_sendrecv << std::endl;
+		std::cout << "Processor: " << v_cl.rank() << " Time spent in merging: " << tot_merge << std::endl;
 #else
 
 		std::cout << "Enable ENABLE_GRID_DIST_ID_PERF_STATS if you want to activate this feature" << std::endl;
