@@ -1,3 +1,6 @@
+#define VCLUSTER_PERF_REPORT
+#define SYNC_BEFORE_TAKE_TIME
+#define ENABLE_GRID_DIST_ID_PERF_STATS
 #include "Decomposition/Distribution/BoxDistribution.hpp"
 #include "util/cuda/cuda_launch.hpp"
 #include "Grid/grid_dist_id.hpp"
@@ -257,6 +260,8 @@ int main(int argc, char* argv[])
 
 	grid.deviceToHost<U,V,U_next,V_next>();
 //	grid.write("final");
+	grid.print_stats();
+	v_cl.print_stats();
 
 	//! \cond [time stepping] \endcond
 

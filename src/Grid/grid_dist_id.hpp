@@ -3152,6 +3152,19 @@ public:
 #endif
 	}
 
+	void clear_stats()
+	{
+#ifdef ENABLE_GRID_DIST_ID_PERF_STATS
+		tot_pack = 0;
+		tot_sendrecv = 0;
+		tot_merge = 0;
+#else
+
+		std::cout << "Enable ENABLE_GRID_DIST_ID_PERF_STATS if you want to activate this feature" << std::endl;
+
+#endif
+	}
+
 #ifdef __NVCC__
 
 	/*! \brief Set the number inserts each GPU thread do
