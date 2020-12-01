@@ -2334,6 +2334,12 @@ public:
 #endif
 	}
 
+	/*! \brief Stub does not do anything
+	*
+	*/
+	void ghost_get_subset()
+	{}
+
 	/*! \brief It synchronize the properties and position of the ghost particles
 	 *
 	 * \tparam prp list of properties to get synchronize

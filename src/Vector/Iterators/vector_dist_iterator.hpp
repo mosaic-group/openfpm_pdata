@@ -111,7 +111,7 @@ class vector_dist_iterator_subset
 	//! end point
 	size_t stop;
 
-	openfpm::vector<aggregate<int>> & pid;
+	const openfpm::vector<aggregate<int>> & pid;
 
 	public:
 
@@ -121,7 +121,7 @@ class vector_dist_iterator_subset
 	 * \param stop end point
 	 *
 	 */
-	vector_dist_iterator_subset(size_t start, size_t stop, openfpm::vector<aggregate<int>> & pid)
+	vector_dist_iterator_subset(size_t start, size_t stop, const openfpm::vector<aggregate<int>> & pid)
 	:v_it(start),stop(stop),pid(pid)
 	{
 	}

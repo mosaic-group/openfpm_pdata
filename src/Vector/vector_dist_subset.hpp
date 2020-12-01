@@ -13,23 +13,59 @@ template<unsigned int dim,
         typename Decomposition = CartDecomposition<dim,St>,
         typename Memory = HeapMemory,
         template<typename> class layout_base = memory_traits_lin>
+class vector_dist_ws : public vector_dist<dim,St,typename AggregateAppend<int,prop>::type,Decomposition,Memory,layout_base>
+{
+    public:
+
+    using vector_dist<dim,St,typename AggregateAppend<int,prop>::type,Decomposition,Memory,layout_base>::vector_dist;
+
+    typedef boost::mpl::int_<AggregateAppend<int,prop>::type::max_prop-1> flag_prop;
+
+    void setSubset(vect_dist_key_dx key, int sub_id)
+    {
+        this->template getProp<flag_prop::value>(key) = sub_id;
+    }
+
+    void ghost_get_subset()
+    {
+        this->template ghost_get<flag_prop::value>(NO_POSITION | SKIP_LABELLING);
+    }
+
+    void getLastSubset(int sub_id)
+    {
+        this->template getProp<flag_prop::value>(this->size_local()-1) = sub_id;
+    }
+};
+
+template<unsigned int dim,
+        typename St,
+        typename prop,
+        typename Decomposition = CartDecomposition<dim,St>,
+        typename Memory = HeapMemory,
+        template<typename> class layout_base = memory_traits_lin>
 class vector_dist_subset
 {
-    typedef vector_dist<dim,St,prop,Decomposition,Memory,layout_base> ivector_dist;
+    typedef vector_dist_ws<dim,St,prop,Decomposition,Memory,layout_base> ivector_dist;
+
+    typedef boost::mpl::int_<AggregateAppend<int,prop>::type::max_prop-1> flag_prop;
 
     ivector_dist & vd;
 
-    openfpm::vector<aggregate<int>> & pid;
+    openfpm::vector<aggregate<int>> pid;
 
-    size_t g_m = 0;
+    size_t sub_id;
 
-    void update_gm()
+    void check_gm()
     {
-    	g_m = 0;
+        #ifdef SE_CLASS1
         for (size_t i = 0 ; i < pid.size() ; i++)
         {
-            g_m += (pid.template get<0>(i) < vd.size_local())?1:0;
+            if (pid.template get<0>(i) >= vd.size_local())
+            {
+                std::cout << __FILE__ << ":" << __LINE__ << " Error you have ghost particles in your subset" << std::endl;
+            }
         }
+        #endif
     }
 
 public:
@@ -50,27 +86,68 @@ public:
     //!
     typedef int yes_i_am_vector_dist;
 
-    vector_dist_subset(vector_dist<dim,St,prop,Decomposition,Memory,layout_base> & vd,
-                       openfpm::vector<aggregate<int>> & pid)
-                       :vd(vd),pid(pid)
+    vector_dist_subset(vector_dist_ws<dim,St,prop,Decomposition,Memory,layout_base> & vd,
+                       int sub_id)
+                       :vd(vd),pid(pid),sub_id(sub_id)
     {
-    	update_gm();
+        // construct pid vector
+
+        auto it = vd.getDomainIterator();
+
+        while (it.isNext())
+        {
+            auto p = it.get();
+
+            if (vd.template getProp<flag_prop::value>(p) == sub_id)
+            {
+                pid.add();
+                pid.template get<0>(pid.size()-1) = p.getKey();
+            }
+
+            ++it;
+        }
+
+    	check_gm();
     }
 
+    void ghost_get_subset()
+    {
+        vd.template ghost_get<flag_prop::value>(NO_POSITION | SKIP_LABELLING);
+    }
+
+    /*! \brief Return the ids
+     *
+     * \return the ids of the subset
+     * 
+     */
+    openfpm::vector<aggregate<int>> & getIds()
+    {
+        return pid;
+    }
 
     /*! \brief Update the subset indexes
      *
      */
-    inline void update(openfpm::vector<aggregate<int>> & pid)
+    inline void update()
     {
-    	this->pid.resize(pid.size());
+        pid.clear();
 
-        for (size_t i = 0 ; i < pid.size() ; i++)
+        auto it = vd.getDomainIterator();
+
+        while (it.isNext())
         {
-            this->pid.template get<0>(i) = pid.template get<0>(i);
+            auto p = it.get();
+
+            if (vd.template getProp<flag_prop::value>(p) == sub_id)
+            {
+                pid.add();
+                pid.template get<0>(pid.size()-1) = p.getKey();
+            }
+
+            ++it;
         }
 
-        update_gm();
+        check_gm();
     }
 
     /*! \brief Get the decomposition
@@ -100,7 +177,7 @@ public:
  */
     size_t size_local() const
     {
-        return g_m;
+        return pid.size();
     }
 
     /*! \brief return the local size of the original vector
@@ -220,7 +297,7 @@ public:
         se3.getIterator();
 #endif
 
-        return vector_dist_iterator_subset(0, g_m,pid);
+        return vector_dist_iterator_subset(0,pid.size(),pid);
     }
 
 	/*! \brief Construct a cell list starting from the stored particles
@@ -294,7 +371,7 @@ public:
 		cl_param_calculate(pbox, div, r_cut, enlarge);
 
 		cell_list.Initialize(pbox, div);
-		cell_list.set_gm(g_m);
+		cell_list.set_gm(pid.size());
 		cell_list.set_ndec(vd.getDecomposition().get_ndec());
 
 		cell_list.clear();
@@ -312,6 +389,24 @@ public:
 			++it;
 		}
 
+        // Add also the ghost
+
+        auto git = vd.getGhostIterator();
+
+		while (git.isNext())
+		{
+			auto key = git.get();
+
+			Point<dim,St> pos = vd.getPos(key);
+
+            if (vd.template getProp<flag_prop::value>(key) == sub_id)
+            {
+			    cell_list.add(pos,key.getKey());
+            }
+
+			++git;
+		}
+
 		return cell_list;
 	}
 
@@ -327,10 +422,11 @@ public:
 	{
 	    vd = v.vd;
 	    pid = v.pid;
-	    g_m = v.g_m;
 
 		return *this;
 	}
 };
+
+
 
 #endif //OPENFPM_PDATA_VECTOR_DIST_SUBSET_HPP
