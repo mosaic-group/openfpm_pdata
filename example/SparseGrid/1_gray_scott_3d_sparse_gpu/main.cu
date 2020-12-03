@@ -172,7 +172,9 @@ int main(int argc, char* argv[])
 
 	init(grid,domain);
 
-	// sync the ghost
+	// sync and restnc the ghost (the second ensure when we start the performance test the maps are calculated)
+	// can be removed if we do not do performance test
+	grid.template ghost_get<U,V>(RUN_ON_DEVICE);
 	grid.template ghost_get<U,V>(RUN_ON_DEVICE);
 
 	// because we assume that spacing[x] == spacing[y] we use formula 2

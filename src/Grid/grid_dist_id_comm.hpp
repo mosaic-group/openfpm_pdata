@@ -14,6 +14,7 @@
 #include "util/common_pdata.hpp"
 #include "lib/pdata.hpp"
 
+
 /*! \brief Unpack selector
  *
  *
@@ -191,6 +192,11 @@ class grid_dist_id_comm
 	//! send pointers
 	openfpm::vector<void *> pointers;
 	openfpm::vector<void *> pointers2;
+
+	//! header unpacker info
+	openfpm::vector_gpu<aggregate<void *,void *,int>> pointers_h;
+	int n_headers_slot = 1;
+	openfpm::vector_gpu<aggregate<size_t,size_t,unsigned int>> headers;
 
 	//! Receiving option
 	size_t opt;
@@ -606,7 +612,90 @@ class grid_dist_id_comm
 		}
 	}
 
+	template<typename mem, typename header_type,unsigned ... prp>
+	void unpack_data_to_ext_ghost_with_header(ExtPreAlloc<mem> & emem,
+									openfpm::vector<device_grid> & loc_grid,
+									header_type & headers,
+									size_t i,
+									const openfpm::vector<ep_box_grid<dim>> & eg_box,
+									const std::unordered_map<size_t,size_t> & g_id_to_external_ghost_box,
+									const openfpm::vector<e_box_multi<dim>> & eb_gid_list,
+									Unpack_stat & ps,
+									size_t opt)
+	{
+		// Unpack the ghost box global-id
 
+		size_t g_id;
+		// we move from device to host the gid
+		g_id = headers.template get<0>(i);
+		ps.addOffset(sizeof(size_t));
+
+		size_t l_id = 0;
+		// convert the global id into local id
+		auto key = g_id_to_external_ghost_box.find(g_id);
+
+		if (key != g_id_to_external_ghost_box.end()) // FOUND
+		{l_id = key->second;}
+		else
+		{
+			// NOT FOUND
+
+			// It must be always found, if not it mean that the processor has no-idea of
+			// what is stored and conseguently do not know how to unpack, print a critical error
+			// and return
+
+			std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " Critical, cannot unpack object, because received data cannot be interpreted\n";
+
+			return;
+		}
+
+
+		// we unpack into the last eb_gid_list that is always big enought to
+		// unpack the information
+
+		size_t le_id = eb_gid_list.get(l_id).full_match;
+		size_t ei =	eb_gid_list.get(l_id).e_id;
+
+		// Get the external ghost box associated with the packed information
+		Box<dim,long int> box = eg_box.get(ei).bid.get(le_id).l_e_box;
+		size_t sub_id = eg_box.get(ei).bid.get(le_id).sub;
+
+		// sub-grid where to unpack
+		auto sub2 = loc_grid.get(sub_id).getIterator(box.getKP1(),box.getKP2(),false);
+
+		rem_copy_opt opt_ = rem_copy_opt::NONE_OPT;
+		if (opt & SKIP_LABELLING)
+		{opt_ = rem_copy_opt::KEEP_GEOMETRY;}
+
+		// Unpack
+		loc_grid.get(sub_id).remove(box);
+		Unpacker<device_grid,mem>::template unpack_with_header<decltype(sub2),decltype(headers),decltype(v_cl.getmgpuContext()),prp...>
+																				(emem,
+																				sub2,
+																				loc_grid.get(sub_id),
+																				headers,
+																				i,
+																				ps,
+																				v_cl.getmgpuContext(),
+																				opt_);
+
+		// Copy the information on the other grid
+		for (long int j = 0 ; j < (long int)eb_gid_list.get(l_id).eb_list.size() ; j++)
+		{
+			size_t nle_id = eb_gid_list.get(l_id).eb_list.get(j);
+			if (nle_id != le_id)
+			{
+//				size_t nle_id = eb_gid_list.get(l_id).eb_list.get(j);
+				size_t n_sub_id = eg_box.get(ei).bid.get(nle_id).sub;
+
+				Box<dim,long int> box = eg_box.get(ei).bid.get(nle_id).l_e_box;
+				Box<dim,long int> rbox = eg_box.get(ei).bid.get(nle_id).lr_e_box;
+
+				loc_grid.get(n_sub_id).remove(box);
+				loc_grid.get(n_sub_id).copy_to(loc_grid.get(sub_id),rbox,box);
+			}
+		}
+	}
 
 	template<unsigned ... prp>
 	void merge_received_data_get(openfpm::vector<device_grid> & loc_grid,
@@ -643,22 +732,88 @@ class grid_dist_id_comm
 		}
 		else
 		{
-			// Unpack the object
-			for ( size_t i = 0 ; i < recv_buffers.size() ; i++ )
+			if ((opt & KEEP_PROPERTIES) == 0)
 			{
-				Unpack_stat ps;
-				size_t mark_here = ps.getOffset();
+				headers.resize(n_headers_slot * recv_buffers.size());
 
-				ExtPreAlloc<BMemory<Memory>> mem(recv_buffers.get(i).size(),recv_buffers.get(i));
+				CudaMemory result;
+				result.allocate(sizeof(int));
 
-				// for each external ghost box
-				while (ps.getOffset() - mark_here < recv_buffers.get(i).size())
+				pointers_h.resize(recv_buffers.size());
+
+				for ( size_t i = 0 ; i < recv_buffers.size() ; i++ )
 				{
-					// Unpack the ghost box global-id
+					pointers_h.template get<0>(i) = recv_buffers.get(i).getDevicePointer();
+					pointers_h.template get<1>(i) = (unsigned char *)recv_buffers.get(i).getDevicePointer() + recv_buffers.get(i).size();
+				}
 
-					unpack_data_to_ext_ghost<BMemory<Memory>,prp ...>(mem,loc_grid,i,
-																eg_box,g_id_to_external_ghost_box,eb_gid_list,
-																ps,opt);
+				pointers_h.template hostToDevice<0,1>();
+
+				while(1)
+				{
+					for ( size_t i = 0 ; i < recv_buffers.size() ; i++ )
+					{pointers_h.template get<2>(i) = 0;}
+					pointers_h.template hostToDevice<2>();
+					*(int *)result.getPointer() = 0;
+					result.hostToDevice();
+
+					device_grid::template unpack_headers<decltype(pointers_h),decltype(headers),decltype(result),prp ...>(pointers_h,headers,result,n_headers_slot);
+					result.deviceToHost();
+
+					if (*(int *)result.getPointer() == 0) {break;}
+
+					n_headers_slot *= 2;
+					headers.resize(n_headers_slot * recv_buffers.size());
+
+				}
+
+				headers.template deviceToHost<0,1,2>();
+			}
+
+			if (headers.size() != 0)
+			{
+				// Unpack the object
+				for ( size_t i = 0 ; i < recv_buffers.size() ; i++ )
+				{
+					Unpack_stat ps;
+					size_t mark_here = ps.getOffset();
+
+					ExtPreAlloc<BMemory<Memory>> mem(recv_buffers.get(i).size(),recv_buffers.get(i));
+
+					int j = 0;
+
+					// for each external ghost box
+					while (ps.getOffset() - mark_here < recv_buffers.get(i).size())
+					{
+						// Unpack the ghost box global-id
+
+						unpack_data_to_ext_ghost_with_header<BMemory<Memory>,decltype(headers),prp ...>(mem,loc_grid,headers,i*n_headers_slot+j,
+																	eg_box,g_id_to_external_ghost_box,eb_gid_list,
+																	ps,opt);
+
+						j++;
+					}
+				}
+			}
+			else
+			{
+				// Unpack the object
+				for ( size_t i = 0 ; i < recv_buffers.size() ; i++ )
+				{
+					Unpack_stat ps;
+					size_t mark_here = ps.getOffset();
+
+					ExtPreAlloc<BMemory<Memory>> mem(recv_buffers.get(i).size(),recv_buffers.get(i));
+
+					// for each external ghost box
+					while (ps.getOffset() - mark_here < recv_buffers.get(i).size())
+					{
+						// Unpack the ghost box global-id
+
+						unpack_data_to_ext_ghost<BMemory<Memory>,prp ...>(mem,loc_grid,i,
+																	eg_box,g_id_to_external_ghost_box,eb_gid_list,
+																	ps,opt);
+					}
 				}
 			}
 		}
@@ -1226,11 +1381,18 @@ public:
 		#ifdef ENABLE_GRID_DIST_ID_PERF_STATS
 		sendrecv_time.stop();
 		tot_sendrecv += sendrecv_time.getwct();
-		timer merge_time;
-		merge_time.start();
+		timer merge_loc_time;
+		merge_loc_time.start();
 		#endif
 
 		ghost_get_local<prp...>(loc_ig_box,loc_eg_box,gdb_ext,loc_grid,g_id_to_external_ghost_box,ginfo,use_bx_def,opt);
+
+		#ifdef ENABLE_GRID_DIST_ID_PERF_STATS
+		merge_loc_time.stop();
+		tot_loc_merge += merge_loc_time.getwct();
+		timer merge_time;
+		merge_time.start();
+		#endif
 
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{loc_grid.get(i).removeAddUnpackReset();}
