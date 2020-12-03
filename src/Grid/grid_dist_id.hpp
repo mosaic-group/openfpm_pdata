@@ -3282,6 +3282,14 @@ using sgrid_dist_id_gpu = grid_dist_id<dim,St,T,Decomposition,Memory,SparseGridG
 
 template<unsigned int dim, typename St, typename T, typename Memory = CudaMemory, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte> >
 using sgrid_dist_sid_gpu = grid_dist_id<dim,St,T,Decomposition,Memory,SparseGridGpu<dim,T,default_edge<dim>::type::value,default_edge<dim>::tb::value,int>>;
+
+// be=blockEdge size, tb=threadBlock size
+template<unsigned int dim, typename St, typename T, unsigned int be, unsigned int tb, typename Memory = CudaMemory, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte> >
+using sgrid_dist_id_gpu_cb = grid_dist_id<dim,St,T,Decomposition,Memory,SparseGridGpu<dim,T,be,tb>>;
+
+// be=blockEdge size, tb=threadBlock size, Zmorton version
+template<unsigned int dim, typename St, typename T, unsigned int be, unsigned int tb, typename Memory = CudaMemory, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte> >
+using sgrid_dist_id_gpu_z_cb = grid_dist_id<dim,St,T,Decomposition,Memory,SparseGridGpu<dim,T,be,tb,long int,memory_traits_inte, grid_zmb<dim,be,long int>>>;
 #endif
 
 #endif
