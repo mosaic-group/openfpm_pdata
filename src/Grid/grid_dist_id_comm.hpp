@@ -1247,7 +1247,7 @@ public:
 					// Pack a size_t for the internal ghost id
 					Packer<size_t,Memory>::packRequest(req);
 					// Create a sub grid iterator spanning the internal ghost layer
-					auto sub_it = loc_grid.get(sub_id).getIterator(g_ig_box.getKP1(),g_ig_box.getKP2());
+					auto sub_it = loc_grid.get(sub_id).getIterator(g_ig_box.getKP1(),g_ig_box.getKP2(),false);
 
 					// get the size to pack
 					Packer<device_grid,Memory>::template packRequest<decltype(sub_it),prp...>(loc_grid.get(sub_id),sub_it,req);
@@ -1303,7 +1303,7 @@ public:
 					Packer<size_t,Memory>::pack(prAlloc_prp,g_id,sts);
 					prAlloc_prp.hostToDevice(prAlloc_prp.getOffset(),prAlloc_prp.getOffsetEnd());
 					// Create a sub grid iterator spanning the internal ghost layer
-					auto sub_it = loc_grid.get(sub_id).getIterator(g_ig_box.getKP1(),g_ig_box.getKP2());
+					auto sub_it = loc_grid.get(sub_id).getIterator(g_ig_box.getKP1(),g_ig_box.getKP2(),false);
 					// and pack the internal ghost grid
 					Packer<device_grid,Memory>::template pack<decltype(sub_it),prp...>(prAlloc_prp,loc_grid.get(sub_id),sub_it,sts);
 				}
