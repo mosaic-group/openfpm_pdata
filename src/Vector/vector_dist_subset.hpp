@@ -130,6 +130,9 @@ public:
      */
     inline void update()
     {
+
+        ghost_get_subset();
+
         pid.clear();
 
         auto it = vd.getDomainIterator();
