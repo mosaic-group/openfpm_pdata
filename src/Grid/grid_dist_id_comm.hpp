@@ -697,6 +697,48 @@ class grid_dist_id_comm
 		}
 	}
 
+	template<unsigned int ... prp>
+	void fill_headers(size_t opt)
+	{
+		if ((opt & KEEP_PROPERTIES) == 0 && device_grid::is_unpack_header_supported())
+		{
+			headers.resize(n_headers_slot * recv_buffers.size());
+
+			Memory result;
+			result.allocate(sizeof(int));
+
+			pointers_h.resize(recv_buffers.size());
+
+			for ( size_t i = 0 ; i < recv_buffers.size() ; i++ )
+			{
+				pointers_h.template get<0>(i) = recv_buffers.get(i).getDevicePointer();
+				pointers_h.template get<1>(i) = (unsigned char *)recv_buffers.get(i).getDevicePointer() + recv_buffers.get(i).size();
+			}
+
+			pointers_h.template hostToDevice<0,1>();
+
+			while(1)
+			{
+				for ( size_t i = 0 ; i < recv_buffers.size() ; i++ )
+				{pointers_h.template get<2>(i) = 0;}
+				pointers_h.template hostToDevice<2>();
+				*(int *)result.getPointer() = 0;
+				result.hostToDevice();
+
+				device_grid::template unpack_headers<decltype(pointers_h),decltype(headers),decltype(result),prp ...>(pointers_h,headers,result,n_headers_slot);
+				result.deviceToHost();
+
+				if (*(int *)result.getPointer() == 0) {break;}
+
+				n_headers_slot *= 2;
+				headers.resize(n_headers_slot * recv_buffers.size());
+
+			}
+
+			headers.template deviceToHost<0,1,2>();
+		}
+	}
+
 	template<unsigned ... prp>
 	void merge_received_data_get(openfpm::vector<device_grid> & loc_grid,
 							const openfpm::vector<ep_box_grid<dim>> & eg_box,
@@ -732,43 +774,7 @@ class grid_dist_id_comm
 		}
 		else
 		{
-			if ((opt & KEEP_PROPERTIES) == 0)
-			{
-				headers.resize(n_headers_slot * recv_buffers.size());
-
-				CudaMemory result;
-				result.allocate(sizeof(int));
-
-				pointers_h.resize(recv_buffers.size());
-
-				for ( size_t i = 0 ; i < recv_buffers.size() ; i++ )
-				{
-					pointers_h.template get<0>(i) = recv_buffers.get(i).getDevicePointer();
-					pointers_h.template get<1>(i) = (unsigned char *)recv_buffers.get(i).getDevicePointer() + recv_buffers.get(i).size();
-				}
-
-				pointers_h.template hostToDevice<0,1>();
-
-				while(1)
-				{
-					for ( size_t i = 0 ; i < recv_buffers.size() ; i++ )
-					{pointers_h.template get<2>(i) = 0;}
-					pointers_h.template hostToDevice<2>();
-					*(int *)result.getPointer() = 0;
-					result.hostToDevice();
-
-					device_grid::template unpack_headers<decltype(pointers_h),decltype(headers),decltype(result),prp ...>(pointers_h,headers,result,n_headers_slot);
-					result.deviceToHost();
-
-					if (*(int *)result.getPointer() == 0) {break;}
-
-					n_headers_slot *= 2;
-					headers.resize(n_headers_slot * recv_buffers.size());
-
-				}
-
-				headers.template deviceToHost<0,1,2>();
-			}
+			fill_headers<prp ...>(opt);
 
 			if (headers.size() != 0)
 			{
