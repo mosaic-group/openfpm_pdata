@@ -43,6 +43,14 @@ add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
 														  ../openfpm_vcluster/src/VCluster/VCluster.cpp 
 														  )
 
+add_executable(isolation_pdata ${OPENFPM_INIT_FILE} isolation.cu
+														  lib/pdata.cpp  
+														  ../openfpm_devices/src/memory/HeapMemory.cpp 
+														  ../openfpm_devices/src/memory/CudaMemory.cu
+														  ../openfpm_devices/src/memory/PtrMemory.cpp 
+														  ../openfpm_vcluster/src/VCluster/VCluster.cpp 
+														  )
+
 if ( CMAKE_COMPILER_IS_GNUCC )
     target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
     if (TEST_COVERAGE)
@@ -65,6 +73,7 @@ add_test(NAME pdata_4_proc COMMAND mpirun -np 4 ./pdata)
 
 if (CUDA_FOUND)
 	target_compile_options(pdata PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: ${WARNING_SUPPRESSION_AND_OPTION_NVCC} >)
+	target_compile_options(isolation_pdata PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: ${WARNING_SUPPRESSION_AND_OPTION_NVCC} >)
 	target_include_directories (pdata PUBLIC ${MPI_C_INCLUDE_DIRS})
         if (TEST_COVERAGE)
 		target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler "-fprofile-arcs -ftest-coverage" >)
@@ -89,9 +98,24 @@ target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
 target_include_directories (pdata PUBLIC ${PETSC_INCLUDES})
 target_include_directories (pdata PUBLIC ${HDF5_ROOT}/include)
 target_include_directories (pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
-
-target_include_directories(pdata PUBLIC ${Vc_INCLUDE_DIR})
+target_include_directories (pdata PUBLIC ${Vc_INCLUDE_DIR})
 target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
+
+target_include_directories (isolation_pdata PUBLIC ${PARMETIS_ROOT}/include)
+target_include_directories (isolation_pdata PUBLIC ${METIS_ROOT}/include)
+target_include_directories (isolation_pdata PUBLIC ${CUDA_INCLUDE_DIRS})
+target_include_directories (isolation_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories (isolation_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_devices/src/)
+target_include_directories (isolation_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_vcluster/src/)
+target_include_directories (isolation_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
+target_include_directories (isolation_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_io/src/)
+target_include_directories (isolation_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
+target_include_directories (isolation_pdata PUBLIC ${PETSC_INCLUDES})
+target_include_directories (isolation_pdata PUBLIC ${HDF5_ROOT}/include)
+target_include_directories (isolation_pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
+target_include_directories (isolation_pdata PUBLIC ${Vc_INCLUDE_DIR})
+target_include_directories (isolation_pdata PUBLIC ${Boost_INCLUDE_DIRS})
+
 
 target_link_libraries(pdata ${Boost_LIBRARIES})
 target_link_libraries(pdata ${PARMETIS_LIBRARIES})
@@ -100,6 +124,14 @@ target_link_libraries(pdata ${HDF5_LIBRARIES})
 target_link_libraries(pdata -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
 target_link_libraries(pdata ${PETSC_LIBRARIES})
 target_link_libraries(pdata ${Vc_LIBRARIES})
+
+target_link_libraries(isolation_pdata ${Boost_LIBRARIES})
+target_link_libraries(isolation_pdata ${PARMETIS_LIBRARIES})
+target_link_libraries(isolation_pdata -L${METIS_ROOT}/lib metis)
+target_link_libraries(isolation_pdata ${HDF5_LIBRARIES})
+target_link_libraries(isolation_pdata -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
+target_link_libraries(isolation_pdata ${PETSC_LIBRARIES})
+target_link_libraries(isolation_pdata ${Vc_LIBRARIES})
 
 if (TEST_PERFORMANCE)
 	target_link_libraries(pdata  ${Boost_FILESYSTEM_LIBRARY})

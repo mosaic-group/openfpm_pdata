@@ -130,6 +130,7 @@ __global__  void process_ghost_particles_prp(vector_g_opart_type g_opart, vector
     process_ghost_device_particle_prp<vector_g_opart_type,vector_prp_type_out,vector_prp_type_in,prp...>(i,offset,g_opart,m_prp,v_prp);
 }
 
+
 template<typename vector_prp_type_out, typename vector_prp_type_in, unsigned int ... prp>
 __global__  void process_ghost_particles_prp_put(vector_prp_type_out m_prp,
 		     	 	 	 	 	 	   	     vector_prp_type_in  v_prp, unsigned int offset)

@@ -1847,6 +1847,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_overflow_se_class1)
 }
 
 
+
 BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 {
 	Vcluster<> & v_cl = create_vcluster();
@@ -1878,7 +1879,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 		// ghost
 		Ghost<3,float> ghost(r_g);
 
-		typedef  aggregate<float> part_prop;
+		typedef  aggregate<float,float,float> part_prop;
 
 		// Distributed vector
 		vector_dist_gpu<3,float, part_prop > vd(0,box,bc,ghost);
@@ -1899,16 +1900,18 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 
 			vd.getLastPropWrite<0>() = 0.0;
 
+			vd.getLastPropWrite<2>() = 0.0;
+
 			++it;
 		}
 
 		vd.map();
 
 		vd.hostToDevicePos();
-		vd.template hostToDeviceProp<0>();
+		vd.template hostToDeviceProp<0,2>();
 		// sync the ghost
-		vd.ghost_get<0>(RUN_ON_DEVICE);
-		vd.template deviceToHostProp<0>();
+		vd.ghost_get<0,2>(RUN_ON_DEVICE);
+		vd.template deviceToHostProp<0,2>();
 		vd.deviceToHostPos();
 
 		{
@@ -1937,7 +1940,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 					float dist = xp.distance(xq);
 
 					if (dist < r_cut)
+					{
 						vd.getPropWrite<0>(q) += a*(-dist*dist+r_cut*r_cut);
+						vd.getPropWrite<2>(q) += a*(-dist*dist+r_cut*r_cut) / 2;
+					}
 
 					++Np;
 				}
@@ -1946,25 +1952,27 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 			}
 
 			vd.hostToDevicePos();
-			vd.template hostToDeviceProp<0>();
-			vd.template ghost_put<add_atomic_,0>(RUN_ON_DEVICE);
-			vd.template deviceToHostProp<0>();
+			vd.template hostToDeviceProp<0,2>();
+			vd.template ghost_put<add_atomic_,0,2>(RUN_ON_DEVICE);
+			vd.template deviceToHostProp<0,2>();
 			vd.deviceToHostPos();
 
 			bool ret = true;
 			auto it3 = vd.getDomainIterator();
 
 			float constant = vd.getProp<0>(it3.get());
+			float constanta = vd.getProp<2>(it3.get());
 			float eps = 0.001;
 
 			while (it3.isNext())
 			{
 				float constant2 = vd.getProp<0>(it3.get());
-				if (fabs(constant - constant2)/constant > eps)
+				float constant3 = vd.getProp<2>(it3.get());
+				if (fabs(constant - constant2)/constant > eps || fabs(constanta - constant3)/constanta > eps)
 				{
 					Point<3,float> p = vd.getPosRead(it3.get());
 
-					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "    " << v_cl.getProcessUnitID() << std::endl;
+					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "/" << constant3 << "    " << v_cl.getProcessUnitID() << std::endl;
 					ret = false;
 					break;
 				}
@@ -1980,6 +1988,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 			auto key = itp.get();
 
 			vd.getPropWrite<0>(key) = 0.0;
+			vd.getPropWrite<2>(key) = 0.0;
 
 			++itp;
 		}
@@ -2010,7 +2019,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 					float dist = xp.distance(xq);
 
 					if (dist < r_cut)
+					{
 						vd.getPropWrite<0>(q) += a*(-dist*dist+r_cut*r_cut);
+						vd.getPropWrite<2>(q) += a*(-dist*dist+r_cut*r_cut);
+					}
 
 					++Np;
 				}
@@ -2019,25 +2031,28 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 			}
 
 			vd.hostToDevicePos();
-			vd.template hostToDeviceProp<0>();
+			vd.template hostToDeviceProp<0,2>();
 			vd.template ghost_put<add_atomic_,0>(RUN_ON_DEVICE);
-			vd.template deviceToHostProp<0>();
+			vd.template ghost_put<add_atomic_,2>(RUN_ON_DEVICE);
+			vd.template deviceToHostProp<0,2>();
 			vd.deviceToHostPos();
 
 			bool ret = true;
 			auto it3 = vd.getDomainIterator();
 
 			float constant = vd.getPropRead<0>(it3.get());
+			float constanta = vd.getPropRead<2>(it3.get());
 			float eps = 0.001;
 
 			while (it3.isNext())
 			{
 				float constant2 = vd.getPropRead<0>(it3.get());
-				if (fabs(constant - constant2)/constant > eps)
+				float constant3 = vd.getPropRead<0>(it3.get());
+				if (fabs(constant - constant2)/constant > eps || fabs(constanta - constant3)/constanta > eps)
 				{
 					Point<3,float> p = vd.getPosRead(it3.get());
 
-					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "    " << v_cl.getProcessUnitID() << std::endl;
+					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "/" << constant3 << "    " << v_cl.getProcessUnitID() << std::endl;
 					ret = false;
 					break;
 				}
