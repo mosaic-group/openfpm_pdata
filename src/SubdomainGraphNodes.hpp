@@ -4,6 +4,7 @@
 #include <boost/fusion/container/vector.hpp>
 #include <boost/fusion/include/at_c.hpp>
 #include "Grid/Encap.hpp"
+#include "Space/Shape/Box.hpp"
 
 /* In a decomposition graph each node represent a sub-domain while an edge represent
  * an interaction between sub-domain (it mean that they have to communicate).
@@ -35,11 +36,11 @@ constexpr unsigned int nm_v_id = 4;
 constexpr unsigned int nm_v_sub_id = 5;
 constexpr unsigned int nm_v_proc_id = 6;
 
-template<unsigned int dim>
+template<unsigned int dim, typename T = double>
 struct nm_v
 {
 	//! The node contain 3 unsigned long integer for communication computation memory and id
-	typedef boost::fusion::vector<float[3], size_t, size_t, size_t, size_t, long int, size_t> type;
+	typedef boost::fusion::vector<float[3], size_t, size_t, size_t, size_t, long int, size_t,Box<dim,double>> type;
 
 	//! type of the positional field
 	typedef float s_type;
