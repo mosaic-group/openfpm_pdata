@@ -16,8 +16,9 @@
 
 template<unsigned int dim, typename T, typename Memory = HeapMemory,
                                        template<typename> class layout_base = memory_traits_lin,
-									   typename Decomposition = CartDecompositionStrategy<dim,T>,
-									   typename Distribution = ParMetisDistribution<dim, T>>
+									   typename Decomposition = CartDecompositionStrategy<dim,T,Memory,layout_base>,
+									   typename Distribution = ParMetisDistribution<dim, T>,
+									   typename DecOptimizer = dec_optimizer<dim, Graph_CSR<nm_v<dim>, nm_e>> >
 class CartDecomposition;
 
 /**
@@ -42,8 +43,12 @@ class CartDecomposition;
  *
  */
 
-template<unsigned int dim, typename T, typename Memory = HeapMemory, template<typename> class layout_base = memory_traits_lin, typename Decomposition = CartDecompositionStrategy<dim,T>, typename Distribution = ParMetisDistribution<dim, T>>
-class CartDecomposition_ext: public CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution>
+template<unsigned int dim, typename T, typename Memory = HeapMemory, 
+                					   template<typename> class layout_base = memory_traits_lin, 
+									   typename Decomposition = CartDecompositionStrategy<dim,T,Memory,layout_base>, 
+									   typename Distribution = ParMetisDistribution<dim, T>,
+									   typename DecOptimizer = dec_optimizer<dim, Graph_CSR<nm_v<dim>, nm_e>> >
+class CartDecomposition_ext: public CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution,DecOptimizer>
 {
 private:
 
@@ -55,7 +60,7 @@ private:
 	 * \param ext_dom Extended domain
 	 *
 	 */
-	void extend_subdomains(const CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution> & dec, const ::Box<dim,T> & ext_dom)
+	void extend_subdomains(const CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution,DecOptimizer> & dec, const ::Box<dim,T> & ext_dom)
 	{
 		// Box
 		typedef ::Box<dim,T> b;
@@ -94,7 +99,7 @@ private:
 	 * \param dec Non-extended decomposition
 	 *
 	 */
-/*	void extend_fines(const CartDecomposition<dim,T,Memory,Distribution> & dec)
+/*	void extend_fines(const CartDecomposition<dim,T,Memory,Distribution,DecOptimizer> & dec)
 	{
 		// Extension, first we calculate the extensions of the new domain compared
 		// to the old one in cell units (each cell unit is a sub-sub-domain)
@@ -172,12 +177,12 @@ public:
 	 *
 	 */
 	CartDecomposition_ext(Vcluster<> & v_cl)
-	:CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution>(v_cl)
+	:CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution,DecOptimizer>(v_cl)
 	{
 	}
 
 	//! The non-extended decomposition base class
-	typedef CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution> base_type;
+	typedef CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution,DecOptimizer> base_type;
 
 	/*! \brief It create another object that contain the same decomposition information but with different ghost boxes and an extended domain
 	 *
@@ -220,7 +225,7 @@ public:
 	 * \return a duplicated decomposition with different ghost boxes and an extended domain
 	 *
 	 */
-	void setParameters(const CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution> & dec, const Ghost<dim,T> & g, const ::Box<dim,T> & ext_domain)
+	void setParameters(const CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution,DecOptimizer> & dec, const Ghost<dim,T> & g, const ::Box<dim,T> & ext_domain)
 	{
 		// Set the decomposition parameters
 		this->gr.setDimensions(dec.gr.getSize());

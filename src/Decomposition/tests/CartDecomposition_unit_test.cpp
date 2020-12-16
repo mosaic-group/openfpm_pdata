@@ -6,6 +6,7 @@
 #include "nn_processor_unit_test.hpp"
 #include "Decomposition/Distribution/SequentialDistributionStrategy.hpp"
 #include "Decomposition/ORBDecompositionStrategy.hpp"
+#include "Decomposition/dec_optimizer_orb.hpp"
 
 BOOST_AUTO_TEST_SUITE (CartDecomposition_test)
 
@@ -58,7 +59,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test_ORB)
 	// Vcluster
 	Vcluster<> & vcl = create_vcluster();
 
-	typedef CartDecomposition<3, float, HeapMemory,memory_traits_lin, OrbDecompositionStrategy<3,float>, SequentialDistributionStrategy<3,float> > DecType;
+	typedef CartDecomposition<3, float, HeapMemory,memory_traits_lin, OrbDecompositionStrategy<3,float>, SequentialDistributionStrategy<3,float>, dec_optimizer_orb<3, Graph_CSR<nm_v<3>, nm_e>> > DecType;
 
 	DecType dec(vcl);
 

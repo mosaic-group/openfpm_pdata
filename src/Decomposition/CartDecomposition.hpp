@@ -130,7 +130,7 @@ template<unsigned int dim> static void nsub_to_div(size_t (& div)[dim], size_t n
  *
  */
 
-template<unsigned int dim, typename T, typename Memory, template <typename> class layout_base, typename Decomposition, typename Distribution>
+template<unsigned int dim, typename T, typename Memory, template <typename> class layout_base, typename Decomposition, typename Distribution, typename DecOptimizer>
 class CartDecomposition: public ie_loc_ghost<dim, T,layout_base, Memory>,
 						 public nn_prcs<dim, T,layout_base,Memory>,
 						 public ie_ghost<dim,T,Memory,layout_base>,
@@ -146,10 +146,10 @@ public:
 	typedef SpaceBox<dim, T> Box;
 
 	//! This class is base of itself
-	typedef CartDecomposition<dim,T,Memory,layout_base,Decomposition, Distribution> base_type;
+	typedef CartDecomposition<dim,T,Memory,layout_base,Decomposition, Distribution,DecOptimizer> base_type;
 
 	//! This class admit a class defined on an extended domain
-	typedef CartDecomposition_ext<dim,T,Memory,layout_base,Decomposition, Distribution> extended_type;
+	typedef CartDecomposition_ext<dim,T,Memory,layout_base,Decomposition, Distribution,DecOptimizer> extended_type;
 
 protected:
 
@@ -231,57 +231,6 @@ protected:
 	//! set of Boxes produced by the decomposition optimizer
 	openfpm::vector<::Box<dim, size_t>> loc_box;
 
-	/*! \brief It convert the box from the domain decomposition into sub-domain
-	 *
-	 * The decomposition box from the domain-decomposition contain the box in integer
-	 * coordinates. This box is converted into a continuos box. It also adjust loc_box
-	 * if the distribution grid and the decomposition grid are different.
-	 *
-	 * \param loc_box local box
-	 *
-	 * \return the corresponding sub-domain
-	 *
-	 */
-	template<typename Memory_bx> SpaceBox<dim,T> convertDecBoxIntoSubDomain(encapc<1,::Box<dim,size_t>,Memory_bx> loc_box)
-	{
-		// A point with all coordinate to one
-		size_t one[dim];
-		for (size_t i = 0 ; i < dim ; i++)	{one[i] = 1;}
-
-		SpaceBox<dim, size_t> sub_dc = loc_box;
-		SpaceBox<dim, size_t> sub_dce = sub_dc;
-		sub_dce.expand(one);
-		sub_dce.mul(magn);
-
-		// shrink by one
-		for (size_t i = 0 ; i < dim ; i++)
-		{
-			loc_box.template get<Box::p1>()[i] = sub_dce.getLow(i);
-			loc_box.template get<Box::p2>()[i] = sub_dce.getHigh(i) - 1;
-		}
-
-		SpaceBox<dim, T> sub_d(sub_dce);
-		sub_d.mul(spacing);
-		sub_d += domain.getP1();
-
-		// we add the
-
-		// Fixing sub-domains to cover all the domain
-
-		// Fixing sub_d
-		// if (loc_box) is at the boundary we have to ensure that the box span the full
-		// domain (avoiding rounding off error)
-		for (size_t i = 0; i < dim; i++)
-		{
-			if (sub_dc.getHigh(i) == gr.size(i) - 1)
-			{sub_d.setHigh(i, domain.getHigh(i));}
-
-			if (sub_dc.getLow(i) == 0)
-			{sub_d.setLow(i,domain.getLow(i));}
-		}
-
-		return sub_d;
-	}
 
 	void collect_all_sub_domains(openfpm::vector<Box_map<dim,T>,Memory,typename layout_base<Box_map<dim, T>>::type,layout_base> & sub_domains_global)
 	{
@@ -384,7 +333,7 @@ public:
 
 		// Optimize the decomposition creating bigger spaces
 		// And reducing Ghost over-stress
-		dec_optimizer<dim, Graph_CSR<nm_v<dim>, nm_e>> d_o(dec.getGraph(), gr_dist.getSize());
+		DecOptimizer d_o(dec.getGraph(), gr_dist.getSize());
 
 		// Ghost
 		Ghost<dim,long int> ghe;
@@ -399,38 +348,7 @@ public:
 		// optimize the decomposition or merge sub-sub-domain
 		d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(dec.getGraph(), p_id, loc_box, box_nn_processor,ghe,bc);
 
-		// Initialize
-		if (loc_box.size() > 0)
-		{
-			bbox = convertDecBoxIntoSubDomain(loc_box.get(0));
-			proc_box = loc_box.get(0);
-			sub_domains.add(bbox);
-		}
-		else
-		{
-			// invalidate all the boxes
-			for (size_t i = 0 ; i < dim ; i++)
-			{
-				proc_box.setLow(i,0.0);
-				proc_box.setHigh(i,0);
-
-				bbox.setLow(i,0.0);
-				bbox.setHigh(i,0);
-			}
-		}
-
-		// convert into sub-domain
-		for (size_t s = 1; s < loc_box.size(); s++)
-		{
-			SpaceBox<dim,T> sub_d = convertDecBoxIntoSubDomain(loc_box.get(s));
-
-			// add the sub-domain
-			sub_domains.add(sub_d);
-
-			// Calculate the bound box
-			bbox.enclose(sub_d);
-			proc_box.enclose(loc_box.get(s));
-		}
+		dec.convertToSubDomains(loc_box,sub_domains,bbox);
 
 		nn_prcs<dim,T,layout_base,Memory>::create(box_nn_processor, sub_domains);
 		nn_prcs<dim,T,layout_base,Memory>::applyBC(domain,ghost,bc);
@@ -704,7 +622,7 @@ public:
      * \param cart object to copy
 	 *
 	 */
-	CartDecomposition(const CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution> & cart)
+	CartDecomposition(const CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution,DecOptimizer> & cart)
 	:nn_prcs<dim,T,layout_base,Memory>(cart.v_cl),v_cl(cart.v_cl),dec(v_cl),dist(v_cl,dec.getGraph()),ref_cnt(0)
 	{
 		this->operator=(cart);
@@ -715,7 +633,7 @@ public:
      * \param cart object to copy
 	 *
 	 */
-	CartDecomposition(CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution> && cart)
+	CartDecomposition(CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution,DecOptimizer> && cart)
 	:nn_prcs<dim,T,layout_base,Memory>(cart.v_cl),v_cl(cart.v_cl),dec(v_cl),dist(v_cl,dec.getGraph()),ref_cnt(0)
 	{
 		this->operator=(cart);
@@ -867,9 +785,9 @@ public:
 	 * \return a duplicated decomposition with different ghost boxes
 	 *
 	 */
-	CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution> duplicate(const Ghost<dim,T> & g) const
+	CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution,DecOptimizer> duplicate(const Ghost<dim,T> & g) const
 	{
-		CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution> cart(v_cl);
+		CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution,DecOptimizer> cart(v_cl);
 
 		cart.box_nn_processor = box_nn_processor;
 		cart.sub_domains = sub_domains;
@@ -906,9 +824,9 @@ public:
 	 * \return a duplicated CartDecomposition object
 	 *
 	 */
-	CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution> duplicate() const
+	CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution,DecOptimizer> duplicate() const
 	{
-		CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution> cart(v_cl);
+		CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution,DecOptimizer> cart(v_cl);
 
 		(static_cast<ie_loc_ghost<dim,T, layout_base,Memory>*>(&cart))->operator=(static_cast<ie_loc_ghost<dim,T,layout_base,Memory>>(*this));
 		(static_cast<nn_prcs<dim,T,layout_base,Memory>*>(&cart))->operator=(static_cast<nn_prcs<dim,T,layout_base,Memory>>(*this));
@@ -946,7 +864,7 @@ public:
 	 *
 	 */
 	template<typename Memory2, template <typename> class layout_base2>
-	CartDecomposition<dim,T,Memory2,layout_base2,Decomposition,Distribution> duplicate_convert() const
+	CartDecomposition<dim,T,Memory2,layout_base2,Decomposition,Distribution,DecOptimizer> duplicate_convert() const
 	{
 		CartDecomposition<dim,T> cart(v_cl);
 
@@ -985,7 +903,7 @@ public:
 	 * \return itself
 	 *
 	 */
-	CartDecomposition<dim,T,Memory, layout_base, Decomposition,Distribution> & operator=(const CartDecomposition & cart)
+	CartDecomposition<dim,T,Memory, layout_base, Decomposition,Distribution,DecOptimizer> & operator=(const CartDecomposition & cart)
 	{
 		static_cast<ie_loc_ghost<dim,T,layout_base,Memory>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T,layout_base,Memory>>(cart));
 		static_cast<nn_prcs<dim,T,layout_base,Memory>*>(this)->operator=(static_cast<nn_prcs<dim,T,layout_base,Memory>>(cart));
@@ -1025,7 +943,7 @@ public:
 	 * \return itself
 	 *
 	 */
-	CartDecomposition<dim,T,Memory,layout_base, Decomposition, Distribution> & operator=(CartDecomposition && cart)
+	CartDecomposition<dim,T,Memory,layout_base, Decomposition, Distribution,DecOptimizer> & operator=(CartDecomposition && cart)
 	{
 		static_cast<ie_loc_ghost<dim,T,layout_base,Memory>*>(this)->operator=(static_cast<ie_loc_ghost<dim,T,layout_base,Memory>>(cart));
 		static_cast<nn_prcs<dim,T,layout_base,Memory>*>(this)->operator=(static_cast<nn_prcs<dim,T,layout_base,Memory>>(cart));
@@ -1933,7 +1851,7 @@ public:
 	 * \return true if they are equal
 	 *
 	 */
-	bool is_equal(CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution> & cart)
+	bool is_equal(CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution,DecOptimizer> & cart)
 	{
 		if (static_cast<ie_loc_ghost<dim,T,layout_base,Memory>*>(this)->is_equal(static_cast<ie_loc_ghost<dim,T,layout_base,Memory>&>(cart)) == false)
 			return false;
@@ -1979,7 +1897,7 @@ public:
 	 * \return true if the two CartDecomposition are equal
 	 *
 	 */
-	bool is_equal_ng(CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution> & cart)
+	bool is_equal_ng(CartDecomposition<dim,T,Memory,layout_base,Decomposition,Distribution,DecOptimizer> & cart)
 	{
 		if (static_cast<ie_loc_ghost<dim,T,layout_base,Memory>*>(this)->is_equal_ng(static_cast<ie_loc_ghost<dim,T,layout_base,Memory>&>(cart)) == false)
 			return false;

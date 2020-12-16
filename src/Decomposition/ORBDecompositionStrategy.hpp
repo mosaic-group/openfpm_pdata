@@ -92,6 +92,19 @@ public:
     orb = new Orb(inner().getDomain(), inner().getVcluster().getProcessingUnits(), points);  // this takes care of the decomposition
   }
 
+    /*! \brief Covert discrete subdomains into cotinuos subdomains
+    *
+    * \param loc_box discrete boxes
+    * \param sub_domains continuos sub domains
+    * 
+    */
+  void convertToSubDomains(openfpm::vector<::Box<dim, size_t>> & loc_box,
+                           openfpm::vector<SpaceBox<dim, domain_type>,Memory,typename layout_base<SpaceBox<dim, domain_type>>::type,layout_base> & sub_domains,
+                           ::Box<dim,domain_type> & bbox)
+  {
+    std::cout << __FILE__ << ":" << __LINE__ << "Da riempire" << std::endl;
+  }
+
   Graph_CSR<nm_v<dim>, nm_e> &getGraph() {
     // todo get leaves from auto tree = orb->grp;  // Graph_CSR<ORB_node<T>, no_edge>
     // todo test only: ~trivial decomposition

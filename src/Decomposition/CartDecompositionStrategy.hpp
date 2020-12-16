@@ -31,48 +31,17 @@ template <unsigned int dim, typename domain_type, typename Memory = HeapMemory, 
           typename AbstractDecStrategy =
               AbstractDecompositionStrategy<dim, domain_type>>
 class CartDecompositionStrategy
-    : public ie_loc_ghost<dim, domain_type, layout_base, Memory>,
-      public nn_prcs<dim, domain_type, layout_base, Memory>,
-      public ie_ghost<dim, domain_type, Memory, layout_base>,
-      public domain_icell_calculator<dim, domain_type, layout_base, Memory> {
+{
   // todo reuse AbstractDecompositionStrategy types
   using Box = SpaceBox<dim, domain_type>;
-  using SubDomains =
-      openfpm::vector<Box, Memory, typename layout_base<Box>::type,
-                      layout_base>;
 
   typedef Graph_CSR<nm_v<dim>, nm_e> DecompositionGraph;
 
   AbstractDecStrategy _inner;
 
-  //! set of Boxes produced by the decomposition optimizer
-  openfpm::vector<::Box<dim, size_t>> loc_box;
-
-  //! for each sub-domain, contain the list of the neighborhood processors
-  openfpm::vector<openfpm::vector<long unsigned int> > box_nn_processor;
-
   //! Magnification factor between distribution and
   //! decomposition
   size_t magn[dim];
-
-  //! bool that indicate whenever the buffer has been already transfer to device
-  bool host_dev_transfer = false;
-
-  //! Processor bounding box
-  ::Box<dim, domain_type> bbox;
-
-  //! the set of all local sub-domain as vector
-  SubDomains sub_domains;
-
-  //! the remote set of all sub-domains as vector of 'sub_domains' vectors
-  mutable openfpm::vector<Box_map<dim, domain_type>, Memory,
-                          typename layout_base<Box_map<dim, domain_type>>::type,
-                          layout_base>
-      sub_domains_global;
-
-  //! Structure that contain for each sub-sub-domain box the processor id
-  //! exist for efficient global communication
-  CellList<dim, domain_type, Mem_fast<Memory, int>, shift<dim, domain_type>> fine_s;
 
   //! Processor domain bounding box
   ::Box<dim, size_t> proc_box;
@@ -85,59 +54,6 @@ class CartDecompositionStrategy
   grid_sm<dim, void> gr;
 
 public:
-    //! Helpers
-  /*! \brief class to select the returned id by ghost_processorID
-   */
-  class box_id {
-  public:
-    /*! \brief Return the box id
-     *
-     * \param p structure containing the id informations
-     * \param b_id box_id
-     *
-     * \return box id
-     *
-     */
-    inline static size_t id(p_box<dim, domain_type> &p, size_t b_id) { return b_id; }
-  };
-
-  /*! \brief class to select the returned id by ghost_processorID
-   *
-   */
-  class processor_id {
-  public:
-    /*! \brief Return the processor id
-     *
-     * \param p structure containing the id informations
-     * \param b_id box_id
-     *
-     * \return processor id
-     *
-     */
-    template <typename encap_type>
-    inline static size_t id(const encap_type &p, size_t b_id) {
-      return p.template get<proc_>();
-    }
-  };
-
-  /*! \brief class to select the returned id by ghost_processorID
-   *
-   */
-  class lc_processor_id {
-  public:
-    /*! \brief Return the near processor id
-     *
-     * \param p structure containing the id informations
-     * \param b_id box_id
-     *
-     * \return local processor id
-     *
-     */
-    template <typename encap_type>
-    inline static size_t id(const encap_type &p, size_t b_id) {
-      return p.template get<lc_proc_>();
-    }
-  };
 
   /*! \brief class to select the returned id by ghost_processorID
    *
@@ -159,9 +75,8 @@ public:
   };
 
   CartDecompositionStrategy(Vcluster<> &v_cl)
-      : nn_prcs<dim, domain_type, layout_base, Memory>(v_cl), _inner(v_cl) {
-        bbox.zero(); // Reset the box to zero
-  }
+      : _inner(v_cl) 
+  {}
 
   /*! \brief Copy constructor
    *
@@ -188,13 +103,6 @@ public:
   //! Destructor
   ~CartDecompositionStrategy() {}
 
-  /*! \brief Return the bounding box containing union of all the sub-domains for
-   * the local processor
-   *
-   * \return The bounding box
-   *
-   */
-  ::Box<dim, domain_type> &getProcessorBounds() { return bbox; }
 
   /*! \brief Calculate magnification
    *
@@ -268,24 +176,7 @@ public:
     createCartGraph();
   }
 
-  void onEnd() {
-    domain_icell_calculator<dim, domain_type, layout_base, Memory>::
-        CalculateInternalCells(
-            inner().getVcluster(),
-            ie_ghost<dim, domain_type, Memory, layout_base>::private_get_vb_int_box(),
-            sub_domains, this->getProcessorBounds(), inner().getGhost().getRcut(), inner().getGhost());
-  }
-
   void reset() {
-    sub_domains.clear();
-    box_nn_processor.clear();
-    fine_s.clear();
-    loc_box.clear();
-
-    nn_prcs<dim, domain_type, layout_base, Memory>::reset();
-    ie_ghost<dim, domain_type, Memory, layout_base>::reset();
-    ie_loc_ghost<dim, domain_type, layout_base, Memory>::reset();
-
     inner().reset();
   }
 
@@ -328,26 +219,6 @@ public:
     inner().computeCommunicationCosts();
   }
 
-  SubDomains &getSubDomains() { return sub_domains; }
-
-  /*! \brief Get the number of local sub-domains
-   *
-   * \return the number of sub-domains
-   *
-   */
-  size_t getNSubDomain() { return sub_domains.size(); }
-
-  /*! \brief function to check the consistency of the information of the
-   * decomposition
-   *
-   * \return false if is inconsistent
-   *
-   */
-  bool check_consistency() {
-    return ie_loc_ghost<dim, domain_type, layout_base, Memory>::check_consistency(
-        getNSubDomain());
-  }
-
   /*! \brief Return the graph of the decomposition (not-distributed)
    *
    * \return The graph
@@ -358,17 +229,6 @@ public:
     return this->_inner.getGraph();
   }
 
-  void initialize_fine_s(const ::Box<dim, domain_type> &domain) {
-    fine_s.clear();
-    size_t div_g[dim];
-
-    // We reduce the size of the cells by a factor 8 in 3d 4 in 2d
-    for (size_t i = 0; i < dim; ++i) {
-      div_g[i] = (gr.size(i) == 1) ? 1 : gr.size(i) / 2;
-    }
-
-    fine_s.Initialize(domain, div_g);
-  }
 
   /*! \brief It convert the box from the domain decomposition into sub-domain
    *
@@ -422,70 +282,40 @@ public:
     return sub_d;
   }
 
-  /*! \brief Constructor, it decompose and distribute the sub-domains across the
-   * processorscreateSubdomains
-   *
-   * \param v_cl Virtual cluster, used internally for communications
-   * \param inner().bc boundary conditions
-   * \param opt option (one option is to construct)
-   *
-   */
-  void createSubdomains(grid_sm<dim, void> & gr_dist, size_t opt = 0) {
-    // Calculate the total number of box and and the spacing
-    // on each direction
-    // Get the box containing the domain
-    SpaceBox<dim, domain_type> bs = inner().getDomain().getBox();
+  /*! \brief Covert discrete subdomains into cotinuos subdomains
+    *
+    * \param loc_box discrete boxes
+    * \param sub_domains continuos sub domains
+    * 
+    */
+  void convertToSubDomains(openfpm::vector<::Box<dim, size_t>> & loc_box,
+                           openfpm::vector<SpaceBox<dim, domain_type>,Memory,typename layout_base<SpaceBox<dim, domain_type>>::type,layout_base> & sub_domains,
+                           ::Box<dim,domain_type> & bbox)
+  {
+		// Initialize
+		if (loc_box.size() > 0)
+		{
+			bbox = convertDecBoxIntoSubDomain(loc_box.get(0));
+			proc_box = loc_box.get(0);
+			sub_domains.add(bbox);
+		}
+		else
+		{
+			// invalidate all the boxes
+			for (size_t i = 0 ; i < dim ; i++)
+			{
+				proc_box.setLow(i,0.0);
+				proc_box.setHigh(i,0);
 
-    for (unsigned int i = 0; i < dim; i++) {
-      // Calculate the spacing
-      inner().spacing[i] = (bs.getHigh(i) - bs.getLow(i)) / gr.size(i);
-    }
+				bbox.setLow(i,0.0);
+				bbox.setHigh(i,0);
+			}
+		}
 
-    // fill the structure that store the processor id for each sub-domain
-    initialize_fine_s(inner().getDomain());
-
-    // Optimize the decomposition creating bigger spaces
-    // And reducing Ghost over-stress
-    dec_optimizer<dim, Graph_CSR<nm_v<dim>, nm_e>> d_o(inner().getGraph(),
-                                                       gr_dist.getSize());
-
-    // Ghost
-    Ghost<dim, long int> ghe;
-
-    // Set the ghost
-    for (size_t i = 0; i < dim; i++)
-    {
-      ghe.setLow(i, static_cast<long int>(inner().getGhost().getLow(i) / inner().spacing[i]) - 1);  // -1
-      ghe.setHigh(i, static_cast<long int>(inner().getGhost().getHigh(i) / inner().spacing[i]) + 1);  // +1
-    }
-
-    // optimize the decomposition or merge sub-sub-domain
-    d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(
-        inner().getGraph(), inner().getVcluster().getProcessUnitID(), loc_box, box_nn_processor, ghe, inner().bc);
-
-    // Initialize
-    if (loc_box.size() > 0)
-    {
-      bbox = convertDecBoxIntoSubDomain(loc_box.get(0));
-      proc_box = loc_box.get(0);
-      sub_domains.add(bbox);
-    }
-    else
-    {
-      // invalidate all the boxes
-      for (size_t i = 0; i < dim; i++) {
-        proc_box.setLow(i, 0.0);
-        proc_box.setHigh(i, 0);
-
-        bbox.setLow(i, 0.0);
-        bbox.setHigh(i, 0);
-      }
-    }
-
-    // convert into sub-domain
+		// convert into sub-domain
 		for (size_t s = 1; s < loc_box.size(); s++)
 		{
-			SpaceBox<dim, domain_type> sub_d = convertDecBoxIntoSubDomain(loc_box.get(s));
+			SpaceBox<dim,domain_type> sub_d = convertDecBoxIntoSubDomain(loc_box.get(s));
 
 			// add the sub-domain
 			sub_domains.add(sub_d);
@@ -494,102 +324,8 @@ public:
 			bbox.enclose(sub_d);
 			proc_box.enclose(loc_box.get(s));
 		}
-
-    nn_prcs<dim, domain_type, layout_base, Memory>::create(box_nn_processor, sub_domains);
-    nn_prcs<dim, domain_type, layout_base, Memory>::applyBC(inner().getDomain(), inner().getGhost(), inner().bc);
-
-    // fill fine_s structure
-    // fine_s structure contain the processor id for each sub-sub-domain
-    // with sub-sub-domain we mean the sub-domain decomposition before
-    // running dec_optimizer (before merging sub-domains)
-
-    construct_fine_s();
-    Initialize_geo_cell_lists();
   }
 
-  void construct_fine_s() {
-    collect_all_sub_domains(sub_domains_global);
-
-    // now draw all sub-domains in fine-s
-    for (size_t i = 0; i < sub_domains_global.size(); ++i) {
-      // get the cells this box span
-      const grid_key_dx<dim> p1 =
-          fine_s.getCellGrid_me(sub_domains_global.template get<0>(i).getP1());
-      const grid_key_dx<dim> p2 =
-          fine_s.getCellGrid_pe(sub_domains_global.template get<0>(i).getP2());
-
-      // Get the grid and the sub-iterator
-      auto &gi = fine_s.getGrid();
-      grid_key_dx_iterator_sub<dim> g_sub(gi, p1, p2);
-
-      // add the box-id to the cell list
-      while (g_sub.isNext()) {
-        auto key = g_sub.get();
-        fine_s.addCell(gi.LinId(key), i);
-
-        ++g_sub;
-      }
-    }
-
-    host_dev_transfer = false;
-  }
-
-  void Initialize_geo_cell_lists() {
-    // Get the processor bounding Box
-    ::Box<dim, domain_type> bound = getProcessorBounds();
-
-    // Check if the box is valid
-    if (bound.isValidN()) {
-      // calculate the sub-divisions
-      size_t div[dim];
-      for (size_t i = 0; i < dim; ++i) {
-        div[i] = (size_t)((bound.getHigh(i) - bound.getLow(i)) /
-                          cd.getCellBox().getP2()[i]);
-      }
-
-      // Initialize the geo_cell structure
-      ie_ghost<dim, domain_type, Memory, layout_base>::Initialize_geo_cell(bound, div);
-
-      // Initialize shift vectors
-      ie_ghost<dim, domain_type, Memory, layout_base>::generateShiftVectors(inner().getDomain(), inner().bc);
-    }
-  }
-
-  void merge(grid_sm<dim, void>& gr_dist) {
-    createSubdomains(gr_dist);
-    calculateGhostBoxes();
-  }
-
-  void collect_all_sub_domains(
-      openfpm::vector<Box_map<dim, domain_type>, Memory,
-                      typename layout_base<Box_map<dim, domain_type>>::type, layout_base>
-          &sub_domains_global) {
-    sub_domains_global.clear();
-    openfpm::vector<Box_map<dim, domain_type>, Memory,
-                    typename layout_base<Box_map<dim, domain_type>>::type, layout_base>
-        bm;
-
-    for (size_t i = 0; i < sub_domains.size(); i++) {
-      bm.add();
-
-      bm.template get<0>(bm.size() - 1) =
-          ::SpaceBox<dim, domain_type>(sub_domains.get(i));
-      bm.template get<1>(bm.size() - 1) = inner().getVcluster().rank();
-    }
-
-    // todo inner().getVcluster().SGather<decltype(bm), decltype(sub_domains_global), layout_base>(
-    // todo     bm, sub_domains_global, 0);
-
-    size_t size = sub_domains_global.size();
-
-    inner().getVcluster().max(size);
-    inner().getVcluster().execute();
-
-    sub_domains_global.resize(size);
-
-    inner().getVcluster().Bcast(sub_domains_global, 0);
-    inner().getVcluster().execute();
-  }
 
   /*! \brief Set migration cost of the vertex id
    *
@@ -691,28 +427,6 @@ public:
    */
   size_t getNSubSubDomainNeighbors(size_t id) {
     return inner().getGraph().getNChilds(id);
-  }
-
-  /*! \brief It calculate the internal ghost boxes
-   */
-
-  // todo `use ghost ...`
-  void calculateGhostBoxes() {
-    // Intersect all the local sub-domains with the sub-domains of the
-    // contiguous processors
-
-    // create the internal structures that store ghost information
-    ie_ghost<dim, domain_type, Memory, layout_base>::create_box_nn_processor_ext(
-        inner().getVcluster(), inner().getGhost(), sub_domains, box_nn_processor, *this);
-    ie_ghost<dim, domain_type, Memory, layout_base>::create_box_nn_processor_int(
-        inner().getVcluster(), inner().getGhost(), sub_domains, box_nn_processor, *this);
-
-    ie_loc_ghost<dim, domain_type, layout_base, Memory>::create(sub_domains, inner().getDomain(),
-                                                      inner().getGhost(), inner().bc);
-
-    // Ghost box information must be re-offloaded
-    host_dev_transfer = false;
-    ie_ghost<dim, domain_type, Memory, layout_base>::reset_host_dev_transfer();
   }
 
   grid_sm<dim, void> &getGrid() { return gr; }
