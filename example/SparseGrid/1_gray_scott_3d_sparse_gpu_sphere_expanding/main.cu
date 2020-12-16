@@ -231,11 +231,6 @@ int main(int argc, char* argv[])
 
 	sgrid_type grid(sz,domain,g,bc,0,gv);
 
-	grid.getDecomposition().write("GPR");
-
-	openfpm_finalize();
-	return 0;
-
 	grid.template setBackgroundValue<0>(-0.5);
 	grid.template setBackgroundValue<1>(-0.5);
 	grid.template setBackgroundValue<2>(-0.5);

@@ -280,7 +280,7 @@ int main(int argc, char* argv[])
 	Box<3,double> domain({0.0,0.0,0.0},{2.5,2.5,2.5});
 	
 	// grid size
-        size_t sz[3] = {768,768,768};
+        size_t sz[3] = {384,384,384};
 
 	// Define periodicity of the grid
 	periodicity<3> bc = {NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
@@ -289,7 +289,7 @@ int main(int argc, char* argv[])
 	Ghost<3,long int> g(1);
 	
 	// deltaT
-	double deltaT = 0.025;
+	double deltaT = 0.2;
 
 	// Diffusion constant for specie U
 	double du = 2*1e-5;
@@ -502,7 +502,7 @@ int main(int argc, char* argv[])
 	create_vcluster().print_stats();
 
 	grid.template deviceToHost<U,V>();
-//	grid.write("Final");
+	grid.write("Final");
 
 	//! \cond [time stepping] \endcond
 
