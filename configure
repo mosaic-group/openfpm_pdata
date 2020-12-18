@@ -100,6 +100,7 @@ enable_debug
 with_metis
 with_hdf5
 with_libhilbert
+enable_cuda_on_cpu
 enable_scan_coverty
 enable_test_performance
 enable_test_coverage
@@ -107,6 +108,7 @@ with_parmetis
 enable_se_class1
 enable_se_class2
 enable_se_class3
+with_alpaka
 with_action_on_error
 with_boost
 with_boost_libdir
@@ -236,6 +238,9 @@ do
        ;;
     scan_coverty)
        conf_options="$conf_options -DSCAN_COVERTY=ON"
+       ;;
+    cuda_on_cpu)
+       conf_options="$conf_options -DCUDA_ON_CPU=ON"
        ;;
     test_performance)
        conf_options="$conf_options -DTEST_PERFORMANCE=ON"
@@ -492,6 +497,9 @@ do
       ;;
       vcdevel)
       conf_options="$conf_options -DVc_ROOT=$ac_optarg"
+      ;;
+      alpaka)
+      conf_options="$conf_options -DALPAKA_ROOT=$ac_optarg"
       ;;
       *) ac_unrecognized_opts="$ac_unrecognized_opts$ac_unrecognized_sep--with-$ac_useropt_orig"
 	 ac_unrecognized_sep=', ';;

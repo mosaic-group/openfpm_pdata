@@ -4,6 +4,10 @@ add_definitions(-DSCAN_WITH_CUB)
 
 ########################### Executables
 
+if (CUDA_ON_CPU)
+	add_definitions(-DCUDA_ON_CPU)
+endif()
+
 if(CUDA_FOUND)
 	set(CUDA_SOURCES 
 				Grid/tests/sgrid_dist_id_gpu_unit_tests.cu
@@ -11,11 +15,10 @@ if(CUDA_FOUND)
 					 Vector/cuda/vector_dist_cuda_func_test.cu
 					 Decomposition/cuda/decomposition_cuda_tests.cu
 					 Vector/cuda/vector_dist_gpu_unit_tests.cu
-					 ../openfpm_devices/src/memory/CudaMemory.cu
 					 Decomposition/cuda/Domain_icells_cart_unit_test.cu
 					 Amr/tests/amr_base_gpu_unit_tests.cu)
 else()
-	set(CUDA_SOURCES)
+	set(CUDA_SOURCES ../../openfpm_devices/src/util/cudify_vars.cpp)
 endif()
 
 add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
@@ -38,10 +41,10 @@ add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
 														  Decomposition/tests/shift_vect_converter_tests.cpp 
 														  Vector/performance/vector_dist_performance_util.cpp  
 														  lib/pdata.cpp test_multiple_o.cpp  
-														  ../openfpm_devices/src/memory/HeapMemory.cpp 
-														  ../openfpm_devices/src/memory/PtrMemory.cpp 
 														  ../openfpm_vcluster/src/VCluster/VCluster.cpp 
 														  )
+
+add_dependencies(pdata ofpmmemory)
 
 if ( CMAKE_COMPILER_IS_GNUCC )
     target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
@@ -89,7 +92,7 @@ target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
 target_include_directories (pdata PUBLIC ${PETSC_INCLUDES})
 target_include_directories (pdata PUBLIC ${HDF5_ROOT}/include)
 target_include_directories (pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
-
+target_include_directories (pdata PUBLIC ${ALPAKA_ROOT}/include)
 target_include_directories(pdata PUBLIC ${Vc_INCLUDE_DIR})
 target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
 
@@ -100,6 +103,8 @@ target_link_libraries(pdata ${HDF5_LIBRARIES})
 target_link_libraries(pdata -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
 target_link_libraries(pdata ${PETSC_LIBRARIES})
 target_link_libraries(pdata ${Vc_LIBRARIES})
+target_link_libraries(pdata ${alpaka_LIBRARIES})
+target_link_libraries(pdata ofpmmemory)
 
 if (TEST_PERFORMANCE)
 	target_link_libraries(pdata  ${Boost_FILESYSTEM_LIBRARY})

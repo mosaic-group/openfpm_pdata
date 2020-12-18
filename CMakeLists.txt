@@ -35,6 +35,7 @@ set(METIS_DIR ${METIS_ROOT})
 set(PARMETIS_DIR ${PARMETIS_ROOT})
 set(OPENBLAS_ROOT CACHE PATH "Root path for blas library")
 set(SuiteSparse_ROOT ${SUITESPARSE_ROOT})
+set(CUDA_ON_CPU CACHE BOOL "Make Cuda work on heap")
 
 
 set (CMAKE_CXX_STANDARD 14)
@@ -81,12 +82,14 @@ if(ENABLE_GPU)
 	else()
 		message(FATAL_ERROR "CUDA is incompatible, version 9.2 10.1 10.2 and 11.0 is only supported")
 	endif()
+else()
+	find_package(alpaka)
 endif()
 
 set(Vc_DIR "${Vc_ROOT}/lib/cmake/Vc/")
 message("Searching Vc in ${Vc_DIR}")
 
-find_package(Boost 1.68.0 COMPONENTS unit_test_framework iostreams program_options system filesystem)
+find_package(Boost 1.68.0 COMPONENTS unit_test_framework iostreams program_options system filesystem fiber)
 find_package(MPI)
 find_package(PETSc)
 find_package(HDF5)
@@ -101,13 +104,14 @@ find_package(Eigen3)
 find_package(SuiteSparse OPTIONAL_COMPONENTS UMFPACK)
 find_package(Vc)
 
+
 if(PROFILE_WITH_SCOREP)
 	set(CMAKE_CXX_COMPILER_LAUNCHER "scorep")
 	set(CMAKE_CC_COMPILER_LAUNCHER "scorep")
 	set(CMAKE_CUDA_COMPILER_LAUNCHER "scorep")
 endif()
 
-if(CUDA_FOUND)
+if(ENABLE_GPU AND CUDA_FOUND)
 	set(OPENFPM_INIT_FILE "initialize/initialize_wrapper_cuda.cu")
 else()
 	set(OPENFPM_INIT_FILE "initialize/initialize_wrapper_cpu.cpp")
@@ -160,6 +164,7 @@ else()
 	file(WRITE error_code "208")
 	message( FATAL_ERROR "ParMetis is required in order to install OpenFPM")
 endif()
+
 
 if(MPI_FOUND)
 	set(DEFINE_HAVE_MPI "#define HAVE_MPI")
