@@ -30,6 +30,7 @@ if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
 #	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
 	echo "Ubuntu node"
 	./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/ 4
+	export PATH="/opt/bin:$PATH"
 fi
 
 if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
