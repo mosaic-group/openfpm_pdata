@@ -80,14 +80,14 @@ installation_dir="--prefix=$HOME/openfpm_install/$branch"
 #echo "StrictHostKeyChecking=no" > $HOME/.ssh/config
 #chmod 600 $HOME/.ssh/config
 
-foward_options=
+foward_options="--enable-cuda-on-cpu"
 install_options=
 if [ x"$comp_type" == x"full" ]; then
-        install_options="-s --enable-cuda-on-cpu"
+        install_options="-s "
 elif [ x"$comp_type" == x"intel" ]; then
         install_options=" "
 else
-        install_options="-s -m --enable-cuda-on-cpu"
+        install_options="-s -m "
 fi
 
 if [ x"$comp_type" == x"se_class" ]; then
