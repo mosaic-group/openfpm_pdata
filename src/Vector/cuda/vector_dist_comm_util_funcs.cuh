@@ -118,7 +118,7 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 			dec.toKernel(),v_pos.toKernel(),starts.toKernel(),g_opart_device.toKernel());
 
 			// sort particles
-			mergesort((int *)g_opart_device.template getDeviceBuffer<0>(),(long unsigned int *)g_opart_device.template getDeviceBuffer<1>(), g_opart_device.size(), mgpu::template less_t<int>(), v_cl.getmgpuContext());
+			openfpm::sort((int *)g_opart_device.template getDeviceBuffer<0>(),(long unsigned int *)g_opart_device.template getDeviceBuffer<1>(), g_opart_device.size(), mgpu::template less_t<int>(), v_cl.getmgpuContext());
 
 			mem.allocate(sizeof(int));
 			mem.fill(0);
@@ -153,7 +153,7 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 			prc_offset.template hostToDevice<0,1>(prc_offset.size()-1,prc_offset.size()-1);
 
 			// Here we reorder the offsets in ascending order
-			mergesort((int *)prc_offset.template getDeviceBuffer<0>(),(int *)prc_offset.template getDeviceBuffer<1>(), prc_offset.size(), mgpu::template less_t<int>(), v_cl.getmgpuContext());
+			openfpm::sort((int *)prc_offset.template getDeviceBuffer<0>(),(int *)prc_offset.template getDeviceBuffer<1>(), prc_offset.size(), mgpu::template less_t<int>(), v_cl.getmgpuContext());
 
 			prc_offset.template deviceToHost<0,1>();
 

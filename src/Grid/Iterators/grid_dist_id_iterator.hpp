@@ -45,11 +45,13 @@ struct launch_insert_sparse_lambda_call<3>
 									   unsigned int blockId,
 									   itd_type itd,
 									   coord_type & key,
-									   coord_type & keyg,unsigned int offset, bool & is_block_empty)
+									   coord_type & keyg,unsigned int offset, bool & is_block_empty, bool inactive)
 	{
 #ifdef __NVCC__
 
-	    bool is_active = f1(keyg.get(0),keyg.get(1),keyg.get(2));
+		bool is_active = false;
+		if (inactive == false)
+	    {is_active = f1(keyg.get(0),keyg.get(1),keyg.get(2));}
 	    is_active &= key.get(0) >= itd.start_base.get(0) && key.get(1) >= itd.start_base.get(1) && key.get(2) >= itd.start_base.get(2);
 
 	    if (is_active == true)
@@ -101,11 +103,13 @@ struct launch_insert_sparse_lambda_call<2>
 									   unsigned int blockId,
 									   itd_type itd,
 									   coord_type & key,
-									   coord_type & keyg,unsigned int offset, bool & is_block_empty)
+									   coord_type & keyg,unsigned int offset, bool & is_block_empty, bool inactive)
 	{
 #ifdef __NVCC__
 
-	    bool is_active = f1(keyg.get(0),keyg.get(1));
+		bool is_active = false;
+		if (inactive == false)
+	    {is_active = f1(keyg.get(0),keyg.get(1));}
 	    is_active &= key.get(0) >= itd.start_base.get(0) && key.get(1) >= itd.start_base.get(1);
 
 	    if (is_active == true)
@@ -155,20 +159,27 @@ struct launch_insert_sparse
 		grid_key_dx<grid_type::dims,int> key;
 		grid_key_dx<grid_type::dims,int> keyg;
 
-		if (launch_insert_sparse_lambda_call<grid_type::dims>::set_keys(key,keyg,itg) == true)	{return;}
+		bool inactive = launch_insert_sparse_lambda_call<grid_type::dims>::set_keys(key,keyg,itg);
 
-	    if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
-	    {is_block_empty = true;}
+		if (inactive == false)
+		{
+	    	if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
+	    	{is_block_empty = true;}
+		}
 
 	    grid.init();
 
 	    int offset = 0;
-	    grid_key_dx<grid_type::dims,int> blk;
-	    bool out = grid.template getInsertBlockOffset<ite_type>(itg,key,blk,offset);
+		size_t blockId;
+		if (inactive == false)
+		{
+	    	grid_key_dx<grid_type::dims,int> blk;
+	    	bool out = grid.template getInsertBlockOffset<ite_type>(itg,key,blk,offset);
 
-	    auto blockId = grid.getBlockLinId(blk);
+	    	blockId = grid.getBlockLinId(blk);
+		}
 
-	    launch_insert_sparse_lambda_call<grid_type::dims>::call(grid,f1,f2,blockId,itg,key,keyg,offset,is_block_empty);
+	    launch_insert_sparse_lambda_call<grid_type::dims>::call(grid,f1,f2,blockId,itg,key,keyg,offset,is_block_empty,inactive);
 
 	    __syncthreads();
 

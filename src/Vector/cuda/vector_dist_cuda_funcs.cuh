@@ -9,12 +9,11 @@
 #define VECTOR_DIST_CUDA_FUNCS_CUH_
 
 #include "Vector/util/vector_dist_funcs.hpp"
-#include "util/cuda/moderngpu/kernel_reduce.hxx"
-#include "util/cuda/moderngpu/kernel_scan.hxx"
 #include "Decomposition/common.hpp"
 #include "lib/pdata.hpp"
 #include "util/cuda/kernels.cuh"
 #include "util/cuda/scan_ofp.cuh"
+#include "util/cuda/reduce_ofp.cuh"
 #include "memory/CudaMemory.cuh"
 
 template<unsigned int dim, typename St, typename decomposition_type, typename vector_type, typename start_type, typename output_type>
@@ -291,7 +290,7 @@ auto reduce_local(vector_type & vd) -> typename std::remove_reference<decltype(v
 	CudaMemory mem;
 	mem.allocate(sizeof(reduce_type));
 
-	mgpu::reduce((reduce_type *)vd.getPropVector(). template getDeviceBuffer<prp>(),
+	openfpm::reduce((reduce_type *)vd.getPropVector(). template getDeviceBuffer<prp>(),
 			            vd.size_local(), (reduce_type *)mem.getDevicePointer() ,
 			            op<reduce_type>(), vd.getVC().getmgpuContext());
 

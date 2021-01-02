@@ -559,7 +559,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_test )
 	openfpm::vector_gpu<aggregate<float>> output;
 	output.resize(100 * phases.size());
 
-	vdmkt<<<1,1>>>(phases.toKernel(),output.toKernel());
+	CUDA_LAUNCH_DIM3(vdmkt,1,1,phases.toKernel(),output.toKernel());
 
 	output.template deviceToHost<0>();
 
@@ -651,7 +651,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_test_simplified )
 	openfpm::vector_gpu<aggregate<float>> output;
 	output.resize(100 * phases.size());
 
-	vdmkt_simple<<<1,1>>>(phases.toKernel(),output.toKernel());
+	CUDA_LAUNCH_DIM3(vdmkt_simple,1,1,phases.toKernel(),output.toKernel());
 
 	output.template deviceToHost<0>();
 
@@ -760,7 +760,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_cl_test )
 	output.resize(tot);
 	output2.resize(tot_g);
 
-	vdmkt_simple_cl<<<1,1>>>(phases.toKernel(),output.toKernel(),cl_ph.toKernel(),output2.toKernel());
+	CUDA_LAUNCH_DIM3(vdmkt_simple_cl,1,1,phases.toKernel(),output.toKernel(),cl_ph.toKernel(),output2.toKernel());
 
 	output.template deviceToHost<0>();
 

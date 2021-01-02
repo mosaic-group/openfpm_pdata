@@ -15,7 +15,8 @@ struct insert_kernel2D
 
 	    sg.init();
 
-	    sg.template insert<p>(key) = c + keyg.get(0) + keyg.get(1);
+		if (inactive == false)
+	    {sg.template insert<p>(key) = c + keyg.get(0) + keyg.get(1);}
 
 	    __syncthreads();
 
@@ -33,7 +34,8 @@ struct insert_kernel3D
 
 	    sg.init();
 
-	    sg.template insert<p>(key) = c + keyg.get(0) + keyg.get(1) + keyg.get(2);
+		if (inactive == false)
+	    {sg.template insert<p>(key) = c + keyg.get(0) + keyg.get(1) + keyg.get(2);}
 
 	    __syncthreads();
 
@@ -41,15 +43,6 @@ struct insert_kernel3D
 	}
 };
 
-template<unsigned int p>
-struct stencil_kernel
-{
-	template<typename SparseGridGpu_type>
-	__device__ void operator()(SparseGridGpu_type & sg, ite_gpu<SparseGridGpu_type::d> & ite, float c)
-	{
-		// TODO
-	}
-};
 
 BOOST_AUTO_TEST_CASE( sgrid_gpu_test_base )
 {
@@ -212,12 +205,10 @@ void sgrid_ghost_get(size_t (& sz)[2],size_t (& sz2)[2])
 	gdist.template flush<smax_<0>>(flush_type::FLUSH_ON_DEVICE);
 
 	gdist.template deviceToHost<0>();
-	gdist.write_debug("before_ghost");
 
 	gdist.template ghost_get<0>(RUN_ON_DEVICE);
 
 	gdist.template deviceToHost<0>();
-	gdist.write_debug("after_ghost");
 
 	// Now we check that ghost is correct
 
@@ -389,15 +380,17 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_conv2_test )
 		++it3;
 	}
 
-	gdist.write("SGRID");
-
 	BOOST_REQUIRE_EQUAL(match,true);
 }
 
 
 BOOST_AUTO_TEST_CASE( sgrid_gpu_test_conv2_test_3d )
 {
+	#ifdef CUDA_ON_CPU
+	size_t sz[3] = {20,20,20};
+	#else
 	size_t sz[3] = {60,60,60};
+	#endif
 	periodicity<3> bc = {PERIODIC,PERIODIC,PERIODIC};
 
 	Ghost<3,long int> g(1);

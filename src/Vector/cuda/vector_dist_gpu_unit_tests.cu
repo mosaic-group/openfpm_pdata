@@ -396,7 +396,7 @@ void vector_dist_gpu_test_impl()
 	// offload to device
 	vd.hostToDevicePos();
 
-	initialize_props<<<it3.wthr,it3.thr>>>(vd.toKernel());
+	CUDA_LAUNCH_DIM3(initialize_props,it3.wthr,it3.thr,vd.toKernel());
 
 	// now we check what we initialized
 
@@ -482,7 +482,7 @@ void vector_dist_gpu_make_sort_test_impl()
 
 	auto it3 = vd.getDomainIteratorGPU();
 
-	initialize_props<<<it3.wthr,it3.thr>>>(vd.toKernel());
+	CUDA_LAUNCH_DIM3(initialize_props,it3.wthr,it3.thr,vd.toKernel());
 
 	// Here we check make sort does not mess-up particles we use a Cell-List to check that
 	// the two cell-list constructed are identical
@@ -708,8 +708,6 @@ void vdist_calc_gpu_test()
 	{
 		vd.map(RUN_ON_DEVICE);
 
-		CUDA_SAFE(cudaGetLastError());
-
 		vd.deviceToHostPos();
 		vd.template deviceToHostProp<0,1,2>();
 
@@ -854,7 +852,7 @@ void vdist_calc_gpu_test()
 		// move particles on gpu
 
 		auto ite = vd.getDomainIteratorGPU();
-		move_parts_gpu_test<3,decltype(vd.toKernel())><<<ite.wthr,ite.thr>>>(vd.toKernel());
+		CUDA_LAUNCH_DIM3((move_parts_gpu_test<3,decltype(vd.toKernel())>),ite.wthr,ite.thr,vd.toKernel());
 	}
 }
 

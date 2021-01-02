@@ -32,6 +32,12 @@ ${DEFINE_HAVE_BOOST_PROGRAM_OPTIONS} /**/
 /* define if the Boost::Unit_Test_Framework library is available */
 ${DEFINE_HAVE_BOOST_UNIT_TEST_FRAMEWORK} /**/
 
+/* define if the Boost::Context library is available */
+${DEFINE_HAVE_BOOST_CONTEXT} /**/
+
+/* define if the Boost::Fiber library is available */
+${DEFINE_HAVE_BOOST_FIBER} /**/
+
 /* Have clock time */
 ${DEFINE_HAVE_CLOCK_GETTIME} /**/
 

@@ -47,12 +47,14 @@ struct ite_gpu_dist
     						  key.set_d(1,threadIdx.y + blockIdx.y * blockDim.y + ite_gpu.start.get(1));\
 							  key.set_d(2,threadIdx.z + blockIdx.z * blockDim.z + ite_gpu.start.get(2));\
 							  \
+							  bool inactive = false;\
+							  \
 							  keyg.set_d(0,key.get(0) + ite_gpu.origin.get(0));\
     						  keyg.set_d(1,key.get(1) + ite_gpu.origin.get(1));\
 							  keyg.set_d(2,key.get(2) + ite_gpu.origin.get(2));\
 										 \
 										 if (key.get(0) > ite_gpu.stop.get(0) || key.get(1) > ite_gpu.stop.get(1) || key.get(2) > ite_gpu.stop.get(2))\
-    									 {return;}
+    									 {inactive = true;}
 
 
 #define GRID_ID_2_GLOBAL(ite_gpu) grid_key_dx<2,int> key;\
@@ -60,11 +62,13 @@ struct ite_gpu_dist
 							  key.set_d(0,threadIdx.x + blockIdx.x * blockDim.x + ite_gpu.start.get(0));\
     						  key.set_d(1,threadIdx.y + blockIdx.y * blockDim.y + ite_gpu.start.get(1));\
 							  \
+							  bool inactive = false;\
+							  \
 							  keyg.set_d(0,key.get(0) + ite_gpu.origin.get(0));\
     						  keyg.set_d(1,key.get(1) + ite_gpu.origin.get(1));\
 										 \
 										 if (key.get(0) > ite_gpu.stop.get(0) || key.get(1) > ite_gpu.stop.get(1))\
-    									 {return;}
+    									 {inactive = true;}
 
 #endif
 

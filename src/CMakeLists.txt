@@ -4,47 +4,51 @@ add_definitions(-DSCAN_WITH_CUB)
 
 ########################### Executables
 
-if (CUDA_ON_CPU)
-	add_definitions(-DCUDA_ON_CPU)
+
+if(CUDA_FOUND OR CUDA_ON_CPU)
+	set(CUDA_SOURCES 
+	    Grid/tests/sgrid_dist_id_gpu_unit_tests.cu
+	    Vector/cuda/vector_dist_gpu_MP_tests.cu 
+	    Vector/cuda/vector_dist_cuda_func_test.cu
+	    Decomposition/cuda/decomposition_cuda_tests.cu
+	    Vector/cuda/vector_dist_gpu_unit_tests.cu
+	    Decomposition/cuda/Domain_icells_cart_unit_test.cu
+	    Amr/tests/amr_base_gpu_unit_tests.cu)
 endif()
 
-if(CUDA_FOUND)
-	set(CUDA_SOURCES 
-				Grid/tests/sgrid_dist_id_gpu_unit_tests.cu
-				Vector/cuda/vector_dist_gpu_MP_tests.cu 
-					 Vector/cuda/vector_dist_cuda_func_test.cu
-					 Decomposition/cuda/decomposition_cuda_tests.cu
-					 Vector/cuda/vector_dist_gpu_unit_tests.cu
-					 Decomposition/cuda/Domain_icells_cart_unit_test.cu
-					 Amr/tests/amr_base_gpu_unit_tests.cu)
-else()
-	set(CUDA_SOURCES ../../openfpm_devices/src/util/cudify_vars.cpp)
+if (CUDA_ON_CPU)
+        add_definitions(-DCUDA_ON_CPU)
+        set_source_files_properties(${CUDA_SOURCES} PROPERTIES LANGUAGE CXX)
+        set_source_files_properties(${CUDA_SOURCES} PROPERTIES COMPILE_FLAGS "-D__NVCC__ -DCUDA_GPU -DCUDART_VERSION=11000")
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+                add_definitions("-x c++")
+        endif()
 endif()
+
 
 add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
-														  Amr/grid_dist_amr_unit_tests.cpp
-														  Amr/tests/amr_base_unit_tests.cpp
-														  Debug/debug_test.cpp
-														  Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp
-														  Grid/tests/grid_dist_id_unit_test.cpp
-														  Grid/tests/sgrid_dist_id_unit_tests.cpp
-														  Grid/tests/grid_dist_id_dlb_unit_test.cpp
-														  Grid/tests/staggered_grid_dist_unit_test.cpp
-														  Vector/tests/vector_dist_cell_list_tests.cpp
-														  Vector/tests/vector_dist_complex_prp_unit_test.cpp
-														  Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp 
-														  Vector/tests/vector_dist_MP_unit_tests.cpp 
-														  Vector/tests/vector_dist_NN_tests.cpp 
-														  Vector/tests/vector_dist_unit_test.cpp  
-														  pdata_performance.cpp 
-														  Decomposition/tests/CartDecomposition_unit_test.cpp 
-														  Decomposition/tests/shift_vect_converter_tests.cpp 
-														  Vector/performance/vector_dist_performance_util.cpp  
-														  lib/pdata.cpp test_multiple_o.cpp  
-														  ../openfpm_vcluster/src/VCluster/VCluster.cpp 
-														  )
+							  Amr/grid_dist_amr_unit_tests.cpp
+							  Amr/tests/amr_base_unit_tests.cpp
+						  	  Debug/debug_test.cpp
+							  Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp
+							  Grid/tests/grid_dist_id_unit_test.cpp
+							  Grid/tests/sgrid_dist_id_unit_tests.cpp
+							  Grid/tests/grid_dist_id_dlb_unit_test.cpp
+							  Grid/tests/staggered_grid_dist_unit_test.cpp
+							  Vector/tests/vector_dist_cell_list_tests.cpp
+							  Vector/tests/vector_dist_complex_prp_unit_test.cpp
+							  Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp 
+							  Vector/tests/vector_dist_MP_unit_tests.cpp 
+							  Vector/tests/vector_dist_NN_tests.cpp 
+							  Vector/tests/vector_dist_unit_test.cpp  
+							  pdata_performance.cpp 
+							  Decomposition/tests/CartDecomposition_unit_test.cpp 
+							  Decomposition/tests/shift_vect_converter_tests.cpp 
+							  Vector/performance/vector_dist_performance_util.cpp  
+							  lib/pdata.cpp test_multiple_o.cpp)
 
 add_dependencies(pdata ofpmmemory)
+add_dependencies(pdata vcluster)
 
 if ( CMAKE_COMPILER_IS_GNUCC )
     target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
@@ -104,6 +108,7 @@ target_link_libraries(pdata -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES}
 target_link_libraries(pdata ${PETSC_LIBRARIES})
 target_link_libraries(pdata ${Vc_LIBRARIES})
 target_link_libraries(pdata ${alpaka_LIBRARIES})
+target_link_libraries(pdata vcluster)
 target_link_libraries(pdata ofpmmemory)
 
 if (TEST_PERFORMANCE)
