@@ -87,7 +87,7 @@ if [ x"$comp_type" == x"full" ]; then
 elif [ x"$comp_type" == x"intel" ]; then
         install_options=" "
 else
-        install_options="-s -m"
+        install_options="-s -m --enable-cuda-on-cpu"
 fi
 
 if [ x"$comp_type" == x"se_class" ]; then
