@@ -17,10 +17,10 @@ OBJ = main.o
 gpu_interop:
 
 %.o: %.cu
-	$(CUDA_CC) -O3 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH_NVCC)
+	$(CUDA_CC) -O3 -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH_NVCC)
 
 %.o: %.cpp
-	$(CUDA_CC) -O3 $(OPT) -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CUDA_CC) -O3 $(OPT) -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
 gpu_interop: $(OBJ)
 	$(CUDA_CC_LINK) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)

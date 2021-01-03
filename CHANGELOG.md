@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changes
 
-- None
+- In order to compile OpenFPM is now required a compiler implementing C++14 Standard
 
 ## [3.1.0] October 2020 (Codename New Horizons)
 

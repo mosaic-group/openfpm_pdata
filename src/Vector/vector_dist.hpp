@@ -9,6 +9,7 @@
 #define VECTOR_HPP_
 
 #include "config.h"
+#include "util/cuda_launch.hpp"
 #include "HDF5_wr/HDF5_wr.hpp"
 #include "VCluster/VCluster.hpp"
 #include "Space/Shape/Point.hpp"
