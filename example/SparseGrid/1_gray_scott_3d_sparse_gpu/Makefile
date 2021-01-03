@@ -3,13 +3,19 @@ include ../../example.mk
 ### internally the example disable with the preprocessor its code if not compiled with nvcc 
 CUDA_CC=
 CUDA_CC_LINK=
-ifeq (, $(shell which nvcc))
+ifdef CUDA_ON_CPU
         CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
         INCLUDE_PATH_NVCC=
         CUDA_CC_LINK=mpic++
 else
-        CUDA_CC=nvcc -ccbin=mpic++
-        CUDA_CC_LINK=nvcc -ccbin=mpic++
+	ifeq (, $(shell which nvcc))
+        	CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
+        	INCLUDE_PATH_NVCC=
+        	CUDA_CC_LINK=mpic++
+	else
+        	CUDA_CC=nvcc -ccbin=mpic++
+        	CUDA_CC_LINK=nvcc -ccbin=mpic++
+	endif
 endif
 
 gray_scott_sparse_gpu_test: OPT += -DTEST_RUN

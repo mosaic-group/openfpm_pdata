@@ -1,11 +1,16 @@
 include ../../example.mk
 
 CUDA_CC=
-ifeq (, $(shell which nvcc))
-        CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
+ifdef CUDA_ON_CPU
+	CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
         INCLUDE_PATH_NVCC=
 else
-        CUDA_CC=nvcc -ccbin=mpic++
+	ifeq (, $(shell which nvcc))
+        	CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
+        	INCLUDE_PATH_NVCC=
+	else
+        	CUDA_CC=nvcc -ccbin=mpic++
+	endif
 endif
 
 

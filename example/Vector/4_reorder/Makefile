@@ -13,7 +13,7 @@ all_test: OPT += -DTEST_RUN
 all_test: md_data_ord_test md_comp_ord_test
 
 %.o: %.cpp
-	$(CC) -O3 -g -c --std=c++11 $(OPT) -o $@ $< $(INCLUDE_PATH)
+	$(CC) -O3 -g -c --std=c++14 $(OPT) -o $@ $< $(INCLUDE_PATH)
 
 md_data_ord: $(OBJ_DORD)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
