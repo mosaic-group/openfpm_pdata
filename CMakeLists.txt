@@ -249,6 +249,6 @@ file(WRITE cuda_options "${WARNING_SUPPRESSION_AND_OPTION_NVCC_TEXT}")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/config/config_cmake.h.in ${CMAKE_CURRENT_SOURCE_DIR}/src/config/config.h)
 
 add_subdirectory (src)
-add_subdirectory (openfpm_vcluster)
+add_subdirectory (openfpm_io)
 add_subdirectory (openfpm_numerics)
 
