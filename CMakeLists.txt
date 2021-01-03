@@ -152,14 +152,6 @@ if(TEST_PERFORMANCE)
 	set(DEFINE_PERFORMANCE_TEST "#define PERFORMANCE_TEST")
 endif()
 
-if(ENABLE_GPU AND CUDA_FOUND)
-	set(DEFINE_CUDA_GPU "#define CUDA_GPU")
-endif()
-
-if(CUDA_ON_CPU)
-	set(DEFINE_CUDA_GPU "#define CUDA_GPU")
-endif()
-
 if (METIS_FOUND)
 	set(DEFINE_HAVE_METIS "#define HAVE_METIS 1")
 else()
@@ -202,6 +194,14 @@ if (Boost_FOUND)
 else()
 	file(WRITE error_code "202")
 	message( FATAL_ERROR "BOOST is required in order to install OpenFPM" )
+endif()
+
+if(ENABLE_GPU AND CUDA_FOUND)
+        set(DEFINE_CUDA_GPU "#define CUDA_GPU")
+endif()
+
+if(CUDA_ON_CPU)
+        set(DEFINE_CUDA_GPU "#define CUDA_GPU")
 endif()
 
 if(HDF5_FOUND)
