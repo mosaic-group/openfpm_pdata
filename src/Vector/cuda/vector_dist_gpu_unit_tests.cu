@@ -931,14 +931,14 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 {
 	std::random_device r;
 
-    std::seed_seq seed2{r() + create_vcluster().rank(),
-    					r() + create_vcluster().rank(),
-    					r() + create_vcluster().rank(),
-    					r() + create_vcluster().rank(),
-    					r() + create_vcluster().rank(),
-    					r() + create_vcluster().rank(),
-    					r() + create_vcluster().rank(),
-    					r() + create_vcluster().rank()};
+    std::seed_seq seed2{/*r() +*/ create_vcluster().rank(),
+    					/*r() +*/ create_vcluster().rank(),
+    					/*r() +*/ create_vcluster().rank(),
+    					/*r() +*/ create_vcluster().rank(),
+    					/*r() +*/ create_vcluster().rank(),
+    					/*r() +*/ create_vcluster().rank(),
+    					/*r() +*/ create_vcluster().rank(),
+    					/*r() +*/ create_vcluster().rank()};
     std::mt19937 e2(seed2);
 
 	typedef vector_dist_gpu<3,double,aggregate<double,double[3],double[3]>> vector_type;
@@ -1053,6 +1053,7 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 		vd.hostToDevicePos();
 		vd.map(RUN_ON_DEVICE);
 		vd.template ghost_get<0>(RUN_ON_DEVICE);
+
 		vd.deviceToHostPos();
 		vd.template deviceToHostProp<0,1,2>();
 
