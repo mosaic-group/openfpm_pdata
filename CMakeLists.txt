@@ -37,6 +37,10 @@ set(OPENBLAS_ROOT CACHE PATH "Root path for blas library")
 set(SuiteSparse_ROOT ${SUITESPARSE_ROOT})
 set(CUDA_ON_CPU CACHE BOOL "Make Cuda work on heap")
 
+# Enabling real GPU is stronger than using CUDA_ON_CPU
+if (ENABLE_GPU)
+        set(CUDA_ON_CPU OFF)
+endif()
 
 set (CMAKE_CXX_STANDARD 14)
 set (CMAKE_CUDA_STANDARD 14)
