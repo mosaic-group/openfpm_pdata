@@ -738,7 +738,7 @@ BOOST_AUTO_TEST_CASE( decomposition_to_gpu_test_use )
 	proc_id_out.resize(vg.size());
 
 	openfpm::vector_gpu<aggregate<int,int,int>> dev_counter;
-	dev_counter.resize(v.cl.size());
+	dev_counter.resize(v_cl.size());
 	dev_counter.fill<0>(0);
 	dev_counter.fill<1>(0);
 	dev_counter.fill<2>(0);
