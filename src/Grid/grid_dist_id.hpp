@@ -26,6 +26,7 @@
 #include "grid_dist_id_comm.hpp"
 #include "HDF5_wr/HDF5_wr.hpp"
 #include "SparseGrid/SparseGrid.hpp"
+#include "lib/pdata.hpp"
 #ifdef __NVCC__
 #include "cuda/grid_dist_id_kernels.cuh"
 #include "Grid/cuda/grid_dist_id_iterator_gpu.cuh"
@@ -863,7 +864,21 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		for (size_t i = 0 ; i < dim ; i++)
 		{
 			if (g_sz[i] < 2)
-				std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " distributed grids with size smaller than 2 are not supported\n";
+			{std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " distributed grids with size smaller than 2 are not supported\n";}
+		}
+	}
+
+	/*! \brief Check the domain is valid
+	 *
+	 * \param dom domain is valid
+	 *
+	 */
+	inline void check_domain(const Box<dim,St> & dom)
+	{
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			if (dom.getLow(i) >= dom.getHigh(i))
+			{std::cerr << "Error: " << __FILE__ << ":" << __LINE__ << " error the simulation domain is invalid\n";}
 		}
 	}
 
@@ -944,7 +959,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	 * \param bc boundary conditions
 	 *
 	 */
-	inline void InitializeDecomposition(const size_t (& g_sz)[dim], const size_t (& bc)[dim])
+	inline void InitializeDecomposition(const size_t (& g_sz)[dim], const size_t (& bc)[dim], const grid_sm<dim,void> & g_dist = grid_sm<dim,void>())
 	{
 		// fill the global size of the grid
 		for (size_t i = 0 ; i < dim ; i++)	{this->g_sz[i] = g_sz[i];}
@@ -960,9 +975,15 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		for (size_t i = 0 ; i < dim ; i++)
 		{div[i] = openfpm::math::round_big_2(pow(n_sub,1.0/dim));}
 
+		if (g_dist.size(0) != 0)
+		{
+			for (size_t i = 0 ; i < dim ; i++)
+			{div[i] = g_dist.size(i);}
+		}
+
 		// Create the sub-domains
 		dec.setParameters(div,domain,bc,ghost);
-		dec.decompose();
+		dec.decompose(dec_options::DEC_SKIP_ICELL);
 	}
 
 	/*! \brief Initialize the grid
@@ -1440,6 +1461,7 @@ public:
 		if (opt >> 32 != 0)
 		{this->setDecompositionGranularity(opt >> 32);}
 
+		check_domain(domain);
 		InitializeCellDecomposer(g_sz,p.bc);
 		InitializeDecomposition(g_sz, p.bc);
 		InitializeStructures(g_sz);
@@ -1456,7 +1478,7 @@ public:
      * \warning In very rare case the ghost part can be one point bigger than the one specified
      *
      */
-	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g, const periodicity<dim> & p, size_t opt = 0)
+	grid_dist_id(const size_t (& g_sz)[dim],const Box<dim,St> & domain, const Ghost<dim,long int> & g, const periodicity<dim> & p, size_t opt = 0, const grid_sm<dim,void> & g_dec = grid_sm<dim,void>())
 	:domain(domain),ghost_int(g),dec(create_vcluster()),v_cl(create_vcluster()),ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
@@ -1466,11 +1488,12 @@ public:
 		if (opt >> 32 != 0)
 		{this->setDecompositionGranularity(opt >> 32);}
 
+		check_domain(domain);
 		InitializeCellDecomposer(g_sz,p.bc);
 
 		ghost = convert_ghost(g,cd_sm);
 
-		InitializeDecomposition(g_sz,p.bc);
+		InitializeDecomposition(g_sz,p.bc,g_dec);
 
 		// an empty
 		openfpm::vector<Box<dim,long int>> empty;
@@ -1478,6 +1501,7 @@ public:
 		// Initialize structures
 		InitializeStructures(g_sz,empty,g,false);
 	}
+
 
 	/*! \brief It construct a grid on the full domain restricted
 	 *         to the set of boxes specified
@@ -1504,6 +1528,7 @@ public:
 		check_new(this,8,GRID_DIST_EVENT,4);
 #endif
 
+		check_domain(domain);
 		InitializeCellDecomposer(g_sz,p.bc);
 
 		ghost = convert_ghost(g,cd_sm);
@@ -1743,6 +1768,11 @@ public:
 
 #ifdef __NVCC__
 
+	/*! \brief Insert point in the grid
+    *
+	* \param f1 lambda function to insert point
+	* \param f2 lambda function to set points
+	*/
 	template<typename lambda_t1, typename lambda_t2>
 	void addPoints(lambda_t1 f1, lambda_t2 f2)
 	{
@@ -1752,6 +1782,13 @@ public:
 		it.template launch<1>(launch_insert_sparse(),f1,f2);
 	}
 
+	/*! \brief Insert point in the grid between start and stop
+	*
+	* \param start point
+	* \param stop point
+	* \param f1 lambda function to insert point
+	* \param f2 lambda function to set points
+	*/
 	template<typename lambda_t1, typename lambda_t2>
 	void addPoints(grid_key_dx<dim> k1, grid_key_dx<dim> k2, lambda_t1 f1, lambda_t2 f2)
 	{
@@ -1985,6 +2022,18 @@ public:
 		return v_cl;
 	}
 
+	/*! \brief Eliminate many internal temporary buffer you can use this between flushes if you get some out of memory
+	 *
+	 *
+	 */
+	void removeUnusedBuffers()
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			loc_grid.get(i).removeUnusedBuffers();
+		}
+	}
+
 	/*! \brief Indicate that this grid is not staggered
 	 *
 	 * \return false
@@ -2074,10 +2123,7 @@ public:
 	 *
 	 */
 	template <unsigned int p,typename bg_key>inline auto insert(const grid_dist_key_dx<dim,bg_key> & v1)
-	-> typename std::add_lvalue_reference
-	<
-		decltype(loc_grid.get(v1.getSub()).template insert<p>(v1.getKey()))
-	>::type
+	-> decltype(loc_grid.get(v1.getSub()).template insert<p>(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2104,10 +2150,7 @@ public:
 	 *
 	 */
 	template <unsigned int p,typename bg_key>inline auto insertFlush(const grid_dist_key_dx<dim,bg_key> & v1)
-	-> typename std::add_lvalue_reference
-	<
-		decltype(loc_grid.get(v1.getSub()).template insertFlush<p>(v1.getKey()))
-	>::type
+	-> decltype(loc_grid.get(v1.getSub()).template insertFlush<p>(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2145,7 +2188,7 @@ public:
 	 */
 	template <unsigned int p, typename bg_key>
 	inline auto get(const grid_dist_key_dx<dim,bg_key> & v1)
-	-> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	-> decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2162,7 +2205,8 @@ public:
 	 *
 	 */
 	template <unsigned int p = 0>
-	inline auto get(const grid_dist_g_dx<device_grid> & v1) const -> typename std::add_lvalue_reference<decltype(v1.getSub()->template get<p>(v1.getKey()))>::type
+	inline auto get(const grid_dist_g_dx<device_grid> & v1) const
+	-> decltype(v1.getSub()->template get<p>(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2179,7 +2223,7 @@ public:
 	 *
 	 */
 	template <unsigned int p = 0>
-	inline auto get(const grid_dist_g_dx<device_grid> & v1) -> typename std::add_lvalue_reference<decltype(v1.getSub()->template get<p>(v1.getKey()))>::type
+	inline auto get(const grid_dist_g_dx<device_grid> & v1) -> decltype(v1.getSub()->template get<p>(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2196,7 +2240,7 @@ public:
 	 *
 	 */
 	template <unsigned int p = 0>
-	inline auto get(const grid_dist_lin_dx & v1) const -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	inline auto get(const grid_dist_lin_dx & v1) const -> decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2213,7 +2257,7 @@ public:
 	 *
 	 */
 	template <unsigned int p = 0>
-	inline auto get(const grid_dist_lin_dx & v1) -> typename std::add_lvalue_reference<decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))>::type
+	inline auto get(const grid_dist_lin_dx & v1) -> decltype(loc_grid.get(v1.getSub()).template get<p>(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2562,6 +2606,35 @@ public:
 			if (overlap == true)
 			{
 				loc_grid.get(i).template conv_cross<prop_src,prop_dst,stencil_size>(inte.getKP1(),inte.getKP2(),func,args...);
+			}
+		}
+	}
+
+	/*! \brief apply a convolution using the stencil N
+	 *
+	 *
+	 */
+	template<unsigned int stencil_size, typename v_type, typename lambda_f, typename ... ArgsT >
+	void conv_cross_ids(grid_key_dx<3> start, grid_key_dx<3> stop , lambda_f func, ArgsT ... args)
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			Box<dim,long int> inte;
+
+			Box<dim,long int> base;
+			for (int j = 0 ; j < dim ; j++)
+			{
+				base.setLow(j,(long int)start.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+				base.setHigh(j,(long int)stop.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+			}
+
+			Box<dim,long int> dom = gdb_ext.get(i).Dbox;
+
+			bool overlap = dom.Intersect(base,inte);
+
+			if (overlap == true)
+			{
+				loc_grid.get(i).template conv_cross_ids<stencil_size,v_type>(inte.getKP1(),inte.getKP2(),func,args...);
 			}
 		}
 	}
@@ -3065,6 +3138,34 @@ public:
 		return this->ig_box;
 	}
 
+	void print_stats()
+	{
+		std::cout << "-- REPORT --" << std::endl;
+#ifdef ENABLE_GRID_DIST_ID_PERF_STATS
+		std::cout << "Processor: " << v_cl.rank() << " Time spent in packing data: " << tot_pack << std::endl;
+		std::cout << "Processor: " << v_cl.rank() << " Time spent in sending and receving data: " << tot_sendrecv << std::endl;
+		std::cout << "Processor: " << v_cl.rank() << " Time spent in merging: " << tot_merge << std::endl;
+		std::cout << "Processor: " << v_cl.rank() << " Time spent in local merging: " << tot_loc_merge << std::endl;
+#else
+
+		std::cout << "Enable ENABLE_GRID_DIST_ID_PERF_STATS if you want to activate this feature" << std::endl;
+
+#endif
+	}
+
+	void clear_stats()
+	{
+#ifdef ENABLE_GRID_DIST_ID_PERF_STATS
+		tot_pack = 0;
+		tot_sendrecv = 0;
+		tot_merge = 0;
+#else
+
+		std::cout << "Enable ENABLE_GRID_DIST_ID_PERF_STATS if you want to activate this feature" << std::endl;
+
+#endif
+	}
+
 #ifdef __NVCC__
 
 	/*! \brief Set the number inserts each GPU thread do
@@ -3178,6 +3279,9 @@ using sgrid_dist_soa = grid_dist_id<dim,St,T,Decomposition,Memory,sgrid_soa<dim,
 #ifdef __NVCC__
 template<unsigned int dim, typename St, typename T, typename Memory = CudaMemory, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte> >
 using sgrid_dist_id_gpu = grid_dist_id<dim,St,T,Decomposition,Memory,SparseGridGpu<dim,T>>;
+
+template<unsigned int dim, typename St, typename T, typename Memory = CudaMemory, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte> >
+using sgrid_dist_sid_gpu = grid_dist_id<dim,St,T,Decomposition,Memory,SparseGridGpu<dim,T,default_edge<dim>::type::value,default_edge<dim>::tb::value,int>>;
 #endif
 
 #endif
