@@ -8,7 +8,7 @@ if [ -d "$1/MPI" ]; then
 fi
 
 ./script/download_MPI.sh
-cd openmpi-4.1.0
+cd openmpi-4.0.4
 
 if [ -f ../mpi_add_options ]; then
 	mpi_options=$(cat ../mpi_add_options)
@@ -30,5 +30,5 @@ make -j $2
 make install
 
 # Mark the installation
-echo 7 > $1/MPI/version
+echo 8 > $1/MPI/version
 
