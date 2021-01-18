@@ -17,6 +17,9 @@ all: vect
 run: all
 	mpirun -np 2 ./vect
 
+debug:
+	../../../gdbgui/launch_mpi_debugger 2 ./vect
+
 .PHONY: clean all run
 
 clean:

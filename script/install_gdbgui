@@ -1,0 +1,97 @@
+#! /bin/bash
+
+function install_gdbgui() {
+source script/solve_pip3
+source script/solve_pip3_nox
+source script/solve_npm
+source script/solve_npm_yarn
+source script/show_solutions
+source script/solve_gdbserver
+source script/discover_package_manager
+
+if haveProg gdbserver; then
+  echo -e "gdb\033[92;1m SUCCESS \033[0m"
+else
+  echo >&2
+  echo -e "gdbserver\033[91;5;1m FAILED \033[0m"
+  echo "OpenFPM require gdb but it's not installed, searching a solution... "
+  solve_gdbserver $platform
+  if haveProg gdb; then
+    echo -e "gdbserver\033[92;1m SUCCESS \033[0m"
+  else
+    echo -e "gdbserver\033[91;5;1m FAILED \033[0m"
+    exit 1
+  fi
+fi
+
+if haveProg pip3; then
+  echo -e "pip3\033[92;1m SUCCESS \033[0m"
+else
+  echo >&2
+  echo -e "pip3\033[91;5;1m FAILED \033[0m"
+  echo "OpenFPM require pip3 but it's not installed, searching a solution... "
+  solve_pip3 $platform
+  if haveProg pip3; then
+    echo -e "pip3\033[92;1m SUCCESS \033[0m"
+  else
+    echo -e "pip3\033[91;5;1m FAILED \033[0m"
+    exit 1
+  fi
+fi
+
+if haveProg nox; then
+  echo -e "nox\033[92;1m SUCCESS \033[0m"
+else
+  echo >&2
+  echo -e "nox\033[91;5;1m FAILED \033[0m"
+  echo "OpenFPM require nox but it's not installed, searching a solution... "
+  solve_pip3_nox $platform
+  if haveProg nox; then
+    echo -e "nox\033[92;1m SUCCESS \033[0m"
+  else
+    echo -e "nox\033[91;5;1m FAILED \033[0m"
+    exit 1
+  fi
+fi
+
+if haveProg npm; then
+  echo -e "npm\033[92;1m SUCCESS \033[0m"
+else
+  echo >&2
+  echo -e "npm\033[91;5;1m FAILED \033[0m"
+  echo "OpenFPM require nox but it's not installed, searching a solution... "
+  solve_npm $platform
+  if haveProg npm; then
+    echo -e "npm\033[92;1m SUCCESS \033[0m"
+  else
+    echo -e "npm\033[91;5;1m FAILED \033[0m"
+    exit 1
+  fi
+fi
+
+
+if haveProg yarn; then
+  echo -e "yarn\033[92;1m SUCCESS \033[0m"
+else
+  echo >&2
+  echo -e "yarn\033[91;5;1m FAILED \033[0m"
+  echo "OpenFPM require nox but it's not installed, searching a solution... "
+  solve_npm_yarn $platform
+  if haveProg yarn; then
+    echo -e "yarn\033[92;1m SUCCESS \033[0m"
+  else
+    echo -e "yarn\033[91;5;1m FAILED \033[0m"
+    exit 1
+  fi
+fi
+
+cd gdbgui
+nox -s build_executable_current_platform
+cd ..
+
+}
+
+source script/discover_os
+discover_os
+install_gdbgui
+
