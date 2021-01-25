@@ -10,17 +10,18 @@ source script/solve_gdbserver
 source script/discover_package_manager
 
 if haveProg gdbserver; then
-  echo -e "gdb\033[92;1m SUCCESS \033[0m"
+  echo -e "gdbserver\033[92;1m SUCCESS \033[0m"
 else
   echo >&2
   echo -e "gdbserver\033[91;5;1m FAILED \033[0m"
   echo "OpenFPM require gdb but it's not installed, searching a solution... "
   solve_gdbserver $platform
-  if haveProg gdb; then
+  if haveProg gdbserver; then
     echo -e "gdbserver\033[92;1m SUCCESS \033[0m"
   else
     echo -e "gdbserver\033[91;5;1m FAILED \033[0m"
-    exit 1
+    echo -e "Installing parallel debugger\033[91;5;1m FAILED \033[0m"
+    return
   fi
 fi
 
@@ -35,7 +36,8 @@ else
     echo -e "pip3\033[92;1m SUCCESS \033[0m"
   else
     echo -e "pip3\033[91;5;1m FAILED \033[0m"
-    exit 1
+    echo -e "Installing parallel debugger\033[91;5;1m FAILED \033[0m"
+    return
   fi
 fi
 
@@ -50,7 +52,8 @@ else
     echo -e "nox\033[92;1m SUCCESS \033[0m"
   else
     echo -e "nox\033[91;5;1m FAILED \033[0m"
-    exit 1
+    echo -e "Installing parallel debugger\033[91;5;1m FAILED \033[0m"
+    return
   fi
 fi
 
@@ -65,7 +68,8 @@ else
     echo -e "npm\033[92;1m SUCCESS \033[0m"
   else
     echo -e "npm\033[91;5;1m FAILED \033[0m"
-    exit 1
+    echo -e "Installing parallel debugger\033[91;5;1m FAILED \033[0m"
+    return
   fi
 fi
 
@@ -81,7 +85,8 @@ else
     echo -e "yarn\033[92;1m SUCCESS \033[0m"
   else
     echo -e "yarn\033[91;5;1m FAILED \033[0m"
-    exit 1
+    echo -e "Installing parallel debugger\033[91;5;1m FAILED \033[0m"
+    return
   fi
 fi
 
