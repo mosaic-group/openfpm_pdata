@@ -251,7 +251,7 @@ class DistGraph_CSR
 	std::unordered_map<size_t, size_t> glb2loc;
 
 	//! Struct containing the (sub)graph to send
-	typedef struct
+	struct SendGraphPack
 	{
 		//! vertex send buffer
 		openfpm::vector<V> send_v;
@@ -267,7 +267,7 @@ class DistGraph_CSR
 		openfpm::vector<size_t> send_es;
 		//! Indicates if the pack is empty or not
 		bool isEmpty = true;
-	} SendGraphPack;
+	};
 
 	//! Pack storing that data to send to other processors
 	openfpm::vector<SendGraphPack> sgp;

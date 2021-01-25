@@ -30,9 +30,9 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 
 	for (size_t i = 0 ; i < v_prp.size() ; i++)
 	{
-		v_pos.template get<0>(i)[0] = (float)rand()/RAND_MAX;
-		v_pos.template get<0>(i)[1] = (float)rand()/RAND_MAX;
-		v_pos.template get<0>(i)[2] = (float)rand()/RAND_MAX;
+		v_pos.template get<0>(i)[0] = (float)rand()/(float)RAND_MAX;
+		v_pos.template get<0>(i)[1] = (float)rand()/(float)RAND_MAX;
+		v_pos.template get<0>(i)[2] = (float)rand()/(float)RAND_MAX;
 
 		v_prp.template get<0>(i) = i+12345;
 
@@ -560,9 +560,9 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 
 		for (size_t j = 0 ; j < n_part ; j++)
 		{
-			vg.template get<0>(k*n_part+j)[0] = (sp.getHigh(0) - sp.getLow(0))*((float)rand()/RAND_MAX) + sp.getLow(0);
-			vg.template get<0>(k*n_part+j)[1] = (sp.getHigh(1) - sp.getLow(1))*((float)rand()/RAND_MAX) + sp.getLow(1);
-			vg.template get<0>(k*n_part+j)[2] = (sp.getHigh(2) - sp.getLow(2))*((float)rand()/RAND_MAX) + sp.getLow(2);
+			vg.template get<0>(k*n_part+j)[0] = (sp.getHigh(0) - sp.getLow(0))*((float)rand()/(float)RAND_MAX) + sp.getLow(0);
+			vg.template get<0>(k*n_part+j)[1] = (sp.getHigh(1) - sp.getLow(1))*((float)rand()/(float)RAND_MAX) + sp.getLow(1);
+			vg.template get<0>(k*n_part+j)[2] = (sp.getHigh(2) - sp.getLow(2))*((float)rand()/(float)RAND_MAX) + sp.getLow(2);
 		}
 	}
 
@@ -723,9 +723,9 @@ BOOST_AUTO_TEST_CASE( decomposition_to_gpu_test_use )
 
 	for (size_t i = 0 ; i < 10000 ; i++)
 	{
-		vg.template get<0>(i)[0] = (float)rand()/RAND_MAX;
-		vg.template get<0>(i)[1] = (float)rand()/RAND_MAX;
-		vg.template get<0>(i)[2] = (float)rand()/RAND_MAX;
+		vg.template get<0>(i)[0] = (float)rand()/(float)RAND_MAX;
+		vg.template get<0>(i)[1] = (float)rand()/(float)RAND_MAX;
+		vg.template get<0>(i)[2] = (float)rand()/(float)RAND_MAX;
 	}
 
 	vg.hostToDevice<0>();
@@ -1010,22 +1010,22 @@ BOOST_AUTO_TEST_CASE(vector_dist_gpu_map_fill_send_buffer_test)
 
     for (size_t i = 0 ; i < v_pos.size() ; i++)
     {
-    	v_pos.template get<0>(i)[0] = (float)rand()/RAND_MAX;
-    	v_pos.template get<0>(i)[1] = (float)rand()/RAND_MAX;
-    	v_pos.template get<0>(i)[2] = (float)rand()/RAND_MAX;
+    	v_pos.template get<0>(i)[0] = (float)rand()/(float)RAND_MAX;
+    	v_pos.template get<0>(i)[1] = (float)rand()/(float)RAND_MAX;
+    	v_pos.template get<0>(i)[2] = (float)rand()/(float)RAND_MAX;
 
-    	v_prp.template get<0>(i) = 5.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<1>(i)[0] = 10.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<1>(i)[1] = 11.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[0][0] = 40.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[0][1] = 50.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[0][2] = 60.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[1][0] = 70.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[1][1] = 80.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[1][2] = 150.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[2][0] = 160.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[2][1] = 170.0 + (float)rand()/RAND_MAX;
-    	v_prp.template get<2>(i)[2][2] = 340.0 + (float)rand()/RAND_MAX;
+    	v_prp.template get<0>(i) = 5.0 + (float)rand()/(float)RAND_MAX;
+    	v_prp.template get<1>(i)[0] = 10.0 + (float)rand()/(float)RAND_MAX;
+    	v_prp.template get<1>(i)[1] = 11.0 + (float)rand()/(float)RAND_MAX;
+    	v_prp.template get<2>(i)[0][0] = 40.0 + (float)rand()/(float)RAND_MAX;
+    	v_prp.template get<2>(i)[0][1] = 50.0 + (float)rand()/(float)RAND_MAX;
+    	v_prp.template get<2>(i)[0][2] = 60.0 + (float)rand()/(float)RAND_MAX;
+    	v_prp.template get<2>(i)[1][0] = 70.0 + (float)rand()/(float)RAND_MAX;
+    	v_prp.template get<2>(i)[1][1] = 80.0 + (float)rand()/(float)RAND_MAX;
+    	v_prp.template get<2>(i)[1][2] = 150.0 + (float)rand()/(float)RAND_MAX;
+    	v_prp.template get<2>(i)[2][0] = 160.0 + (float)rand()/(float)RAND_MAX;
+    	v_prp.template get<2>(i)[2][1] = 170.0 + (float)rand()/(float)RAND_MAX;
+    	v_prp.template get<2>(i)[2][2] = 340.0 + (float)rand()/(float)RAND_MAX;
 
     	int seg = i / 10000;
     	m_opart.template get<1>(i) = seg;
@@ -1115,9 +1115,9 @@ void vector_dist_remove_marked_type()
 	{
 		auto p = it.get();
 
-		vd.getPos(p)[0] = (float)rand() / RAND_MAX;
-		vd.getPos(p)[1] = (float)rand() / RAND_MAX;
-		vd.getPos(p)[2] = (float)rand() / RAND_MAX;
+		vd.getPos(p)[0] = (float)rand() / (float)RAND_MAX;
+		vd.getPos(p)[1] = (float)rand() / (float)RAND_MAX;
+		vd.getPos(p)[2] = (float)rand() / (float)RAND_MAX;
 
 		++it;
 	}

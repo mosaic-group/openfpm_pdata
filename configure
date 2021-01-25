@@ -251,6 +251,11 @@ do
         else
 		conf_options="$conf_options -DCMAKE_CUDA_HOST_COMPILER=$(which $CXX)"
         fi
+        if [ x"$CXXCUDA" == x"" ]; then
+                conf_options="$conf_options"
+        else
+                conf_options="$conf_options -DCMAKE_CUDA_COMPILER=$(which $CXXCUDA)"
+        fi
        conf_options="$conf_options -DENABLE_GPU=ON"
        ;;
     asan)

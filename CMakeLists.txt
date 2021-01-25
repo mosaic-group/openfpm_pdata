@@ -40,8 +40,10 @@ set(CUDA_ON_CPU CACHE BOOL "Make Cuda work on heap")
 # Enabling real GPU is stronger than using CUDA_ON_CPU
 if (ENABLE_GPU)
     set(CUDA_ON_CPU OFF)
-	enable_language(CUDA)
+	# Test CLang
 	find_package(CUDA)
+	set(CMAKE_CUDA_COMPILER_LIBRARY_ROOT ${CUDA_TOOLKIT_ROOT_DIR})
+        enable_language(CUDA)
 endif()
 
 set (CMAKE_CXX_STANDARD 14)

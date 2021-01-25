@@ -91,7 +91,4 @@ cd ..
 
 }
 
-source script/discover_os
-discover_os
-install_gdbgui
 

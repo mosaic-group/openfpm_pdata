@@ -26,6 +26,7 @@ if (CUDA_ON_CPU)
 endif()
 
 
+
 add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
 							  Amr/grid_dist_amr_unit_tests.cpp
 							  Amr/tests/amr_base_unit_tests.cpp
@@ -65,10 +66,15 @@ if ( CMAKE_COMPILER_IS_GNUCC )
     endif()
 endif()
 
+if (CMAKE_CUDA_COMPILER_ID STREQUAL "Clang")
+        add_definitions(-D__STRICT_ANSI__)
+endif()
+
 if (ENABLE_ASAN)
     target_compile_options(pdata PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler "-fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g" >)
     target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g >)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
+	add_definitions(-DENABLE_ASAN)
 endif()
 
 add_library(ofpm_pdata STATIC lib/pdata.cpp)
@@ -79,8 +85,6 @@ add_test(NAME pdata_4_proc COMMAND mpirun -np 4 ./pdata)
 ###########################
 
 if (CUDA_FOUND)
-#   target_compile_options(pdata PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: ${WARNING_SUPPRESSION_AND_OPTION_NVCC} >)
-#	target_compile_options(isolation_pdata PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: ${WARNING_SUPPRESSION_AND_OPTION_NVCC} >)
 	target_include_directories (pdata PUBLIC ${MPI_C_INCLUDE_DIRS})
         if (TEST_COVERAGE)
 		target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler "-fprofile-arcs -ftest-coverage" >)

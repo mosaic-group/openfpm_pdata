@@ -224,9 +224,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_ghost_get )
 	{
 		auto p = it.get();
 
-		vd.getPos(p)[0] = (float)rand() / RAND_MAX;
-		vd.getPos(p)[1] = (float)rand() / RAND_MAX;
-		vd.getPos(p)[2] = (float)rand() / RAND_MAX;
+		vd.getPos(p)[0] = (float)rand() / (float)RAND_MAX;
+		vd.getPos(p)[1] = (float)rand() / (float)RAND_MAX;
+		vd.getPos(p)[2] = (float)rand() / (float)RAND_MAX;
 
 		vd.template getProp<0>(p) = vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2];
 
@@ -349,9 +349,9 @@ void vector_dist_gpu_test_impl()
 		int y = rand();
 		int z = rand();
 
-		vd.getPos(p)[0] = (float)x / RAND_MAX;
-		vd.getPos(p)[1] = (float)y / RAND_MAX;
-		vd.getPos(p)[2] = (float)z / RAND_MAX;
+		vd.getPos(p)[0] = (float)x / (float)RAND_MAX;
+		vd.getPos(p)[1] = (float)y / (float)RAND_MAX;
+		vd.getPos(p)[2] = (float)z / (float)RAND_MAX;
 
 		Point<3,float> xp = vd.getPos(p);
 
@@ -468,9 +468,9 @@ void vector_dist_gpu_make_sort_test_impl()
 		int y = rand();
 		int z = rand();
 
-		vd.getPos(p)[0] = (float)x / RAND_MAX;
-		vd.getPos(p)[1] = (float)y / RAND_MAX;
-		vd.getPos(p)[2] = (float)z / RAND_MAX;
+		vd.getPos(p)[0] = (float)x / (float)RAND_MAX;
+		vd.getPos(p)[1] = (float)y / (float)RAND_MAX;
+		vd.getPos(p)[2] = (float)z / (float)RAND_MAX;
 
 		++it;
 	}
@@ -603,9 +603,9 @@ void vdist_calc_gpu_test()
 	{
 		auto p = it.get();
 
-		vd.getPos(p)[0] = (St)rand() / RAND_MAX;
-		vd.getPos(p)[1] = (St)rand() / RAND_MAX;
-		vd.getPos(p)[2] = (St)rand() / RAND_MAX;
+		vd.getPos(p)[0] = (St)rand() / (float)RAND_MAX;
+		vd.getPos(p)[1] = (St)rand() / (float)RAND_MAX;
+		vd.getPos(p)[2] = (St)rand() / (float)RAND_MAX;
 
 		vd.template getProp<0>(p) = vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2];
 
@@ -1101,7 +1101,11 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 			double load_f = load;
 			double load_fc = loads.get(i);
 
+#ifdef ENABLE_ASAN
+			BOOST_REQUIRE_CLOSE(load_f,load_fc,30.0);
+#else
 			BOOST_REQUIRE_CLOSE(load_f,load_fc,10.0);
+#endif
 		}
 	}
 }
