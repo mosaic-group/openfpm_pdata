@@ -133,6 +133,16 @@ class Metis
 	void constructAdjListWithWeights(Graph & g)
 	{
 		// create xadj, adjlist, vwgt, adjwgt and vsize
+		if (Mg.xadj != NULL)
+		{delete [] Mg.xadj;}
+		if (Mg.adjncy != NULL)
+		{delete [] Mg.adjncy;}
+		if (Mg.vwgt != NULL)
+		{delete [] Mg.vwgt;}
+		if (Mg.adjwgt != NULL)
+		{delete [] Mg.adjwgt;}
+		if (Mg.vsize != NULL)
+		{delete [] Mg.vsize;}
 		Mg.xadj = new idx_t[g.getNVertex() + 1];
 		Mg.adjncy = new idx_t[g.getNEdge()];
 		Mg.vwgt = new idx_t[g.getNVertex()];
@@ -387,6 +397,10 @@ public:
 		{
 			delete[] Mg.part;
 		}
+        if (Mg.vsize != NULL)
+        {
+            delete[] Mg.vsize;
+        }
 	}
 
 	/*! \brief Decompose the graph
