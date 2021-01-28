@@ -10,7 +10,7 @@ source script/solve_gdbserver
 source script/discover_package_manager
 source script/solve_nodejs
 
-node_js_inst
+node_js_inst=0
 
 if haveProg node; then
 
@@ -18,16 +18,14 @@ if haveProg node; then
   dgc_middle=$(node --version | grep v | sed 's/v\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)/\2/g')
   dgc_minor=$(node --version | grep v | sed 's/v\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)/\3/g')
 
-  if [ x"$dgc_major" = x"10" -a x"$dgc_middle" -gt x"14"  ]; then 
+  if [ x"$dgc_major" -gt x"10" -a x"$dgc_middle" -gt x"14"  ]; then 
     echo -e "node\033[92;1m SUCCESS \033[0m"
     node_js_inst=1
-  else
-    node_js_inst=0
   fi
 else
   echo >&2
   echo -e "node\033[91;5;1m FAILED \033[0m"
-  node_js_inst = 0
+  node_js_inst=0
 fi
 
 if [ x"$node_js_inst" = x"0" ]; then
@@ -42,14 +40,10 @@ if [ x"$node_js_inst" = x"0" ]; then
 
     if [ x"$dgc_major" = x"10" -a x"$dgc_middle" -gt x"14"  ]; then
       echo -e "node\033[92;1m SUCCESS \033[0m"
-      node_js_inst=1
-    else
-      node_js_inst=0
     fi
   else
     echo >&2
     echo -e "node\033[91;5;1m FAILED \033[0m"
-    node_js_inst = 0
   fi
 
 fi
