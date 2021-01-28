@@ -1,4 +1,3 @@
-
 #! /bin/bash 
 
 function solve_gdbserver() {
@@ -11,14 +10,21 @@ if [ x"$pcman" = x"" ]; then
         exit 1
 fi
 
-if [ x"$1" = x"osx" ]; then 
+if [ x"$1" = x"osx" ]; then
         commands[0]="$pcman install gdbserver"
         possible_solutions "${commands[@]}"
 elif [ x"$1" = x"linux"  ]; then
-	pc_install_command "$pcman"
-        commands[0]="su -c \"$pc_install_command_ret gdb-gdbserver\""
-        commands[1]="sudo $pc_install_command_ret gdb-gdbserver"
-        possible_solutions "${commands[@]}"
-fi 
+        if [ x"$pcman" = x"zypper -n" ]; then
+                pc_install_command "$pcman"
+                commands[0]="su -c \"$pc_install_command_ret gdbserver\""
+                commands[1]="sudo $pc_install_command_ret gdbserver"
+                possible_solutions "${commands[@]}"
+        else
+                pc_install_command "$pcman"
+                commands[0]="su -c \"$pc_install_command_ret gdb-gdbserver\""
+                commands[1]="sudo $pc_install_command_ret gdb-gdbserver"
+                possible_solutions "${commands[@]}"
+        fi
+fi
 }
 

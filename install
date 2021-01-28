@@ -9,7 +9,6 @@ source script/set_mpi
 source script/conf_PETSC
 source script/update_openfpm
 source script/solve_python
-source script/install_parallel_debugger
 source script/install_gdbgui
 
 ### switch to the branch
