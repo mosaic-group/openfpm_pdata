@@ -9,8 +9,11 @@ source script/show_solutions
 source script/solve_gdbserver
 source script/discover_package_manager
 source script/solve_nodejs
+source script/solve_python_devel
 
 node_js_inst=0
+
+solve_python_devel
 
 if haveProg node; then
 
