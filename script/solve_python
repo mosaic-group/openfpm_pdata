@@ -25,8 +25,8 @@ if [ x"$pcman" == x"apt-get" ]; then
                 base_python_pkg="python2 $base_python_pkg"
         fi
 elif [ x"$pcman" == x"zypper -n" ]; then
-        base_python_pkg=python2
-        additional_python_pkg=python3
+        base_python_pkg=python2-dev
+        additional_python_pkg=python3-dev
 fi
 
 if [ x"$1" = x"linux"  ]; then
