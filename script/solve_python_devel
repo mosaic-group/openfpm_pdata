@@ -17,6 +17,8 @@ if [ x"$pcman" == x"zypper -n" ]; then
         else
                 return
         fi
+else
+	return
 fi
 
 if [ x"$1" = x"linux"  ]; then
