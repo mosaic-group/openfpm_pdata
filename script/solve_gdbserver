@@ -17,7 +17,7 @@ elif [ x"$1" = x"linux"  ]; then
 	if [ x"$pcman" = x"zypper -n" ]; then
 		package_name=gdbserver
 	elif [ x"$pcman" = x"pacman" ]; then
-		package_name=aarch64-linux-gnu-gdb
+		package_name=aarch64-linux-gnu-gdbserver
 	else
 		package_name=gdb-gdbserver
 	fi
