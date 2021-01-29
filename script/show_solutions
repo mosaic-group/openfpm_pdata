@@ -2,10 +2,6 @@
 
 function possible_solutions {
 
- if [ $sq -eq 1 ]; then
-   return
- fi
-
  sol=1
  echo "Possible solutions:"
  for com in "$@"
@@ -18,8 +14,13 @@ function possible_solutions {
  sol=`expr $sol + 1`
  echo "$sol exit the script"
  echo -e "\033[1;34;5mChoose the solution:\033[0m"
- if [ -f default_choice ]; then
-   choose=$(cat default_choice)
+ if [ $sq -eq 1 ]; then
+   if [ -f cat default_choice ]; then
+     choose=$(cat default_choice)
+   else
+     echo "No solution choosen, continue ... "
+     return
+   fi
  else
    read choose
  fi
