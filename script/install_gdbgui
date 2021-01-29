@@ -133,6 +133,12 @@ else
 fi
 
 cd gdbgui
+cd gdbgui-mpi
+./compile.sh
+cd ..
+cd ..
+
+cd gdbgui
 nox -s build_executable_current_platform
 cd ..
 
