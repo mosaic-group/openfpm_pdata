@@ -1,0 +1,11 @@
+#! /bin/bash
+
+if [ -f gdbgui/executable/linux/gdbgui_0.14.0.2 ]; then
+	install_d=$(cat install_dir)
+	mkdir -p "$install_d/gdbgui/bin"
+	cp gdbgui/executable/linux/gdbgui_0.14.0.2 "$install_d/gdbgui/bin/gdbgui"
+	cp gdbgui/gdbgui-mpi/print_nodes "$install_d/gdbgui/bin"
+	cp gdbgui/gdbgui-mpi/launch_mpi_debugger "$install_d/gdbgui/bin"
+	cp gdbgui/gdbgui-mpi/launch_gdb_server "$install_d/gdbgui/bin"
+fi
+
