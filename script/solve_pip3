@@ -15,9 +15,14 @@ if [ x"$1" = x"osx" ]; then
         commands[0]="$pcman install python3-pip"
         possible_solutions "${commands[@]}"
 elif [ x"$1" = x"linux"  ]; then
+	if [ x"$pcman" == x"pacman -Sy" ]; then
+		package_name=python-pip
+	else
+		package_name=python3-pip
+	fi
 	pc_install_command "$pcman"
-        commands[0]="su -c \"$pc_install_command_ret python3-pip\""
-        commands[1]="sudo $pc_install_command_ret python3-pip"
+        commands[0]="su -c \"$pc_install_command_ret $package_name\""
+        commands[1]="sudo $pc_install_command_ret $package_name"
         possible_solutions "${commands[@]}"
 fi 
 }
