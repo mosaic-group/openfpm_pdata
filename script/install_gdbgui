@@ -13,6 +13,11 @@ source script/solve_python_devel
 
 node_js_inst=0
 
+if [ x"$platform" == x"osx" ]
+	echo -e "node\033[91;5;1m The parallel debugger at the moment is not supported on OSX \033[0m"
+	return
+fi
+
 solve_python_devel $platform
 
 if haveProg node; then

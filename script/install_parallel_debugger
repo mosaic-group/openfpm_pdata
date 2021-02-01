@@ -1,5 +1,9 @@
 #! /bin/bash
 
+if [ x"$platform" == x"$osx" ]; then
+	return
+fi
+
 if [ -f gdbgui/executable/linux/gdbgui_0.14.0.2 ]; then
 	install_d=$(cat install_dir)
 	mkdir -p "$install_d/gdbgui/bin"
