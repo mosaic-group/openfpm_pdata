@@ -36,7 +36,7 @@ set(PARMETIS_DIR ${PARMETIS_ROOT})
 set(OPENBLAS_ROOT CACHE PATH "Root path for blas library")
 set(SuiteSparse_ROOT ${SUITESPARSE_ROOT})
 set(CUDA_ON_CPU CACHE BOOL "Make Cuda work on heap")
-set(CPACK_RUN_INSTALL_DEPENDENCIES BOOL "Set to true if we are creating deb or RPM packages")
+set(CPACK_RUN_INSTALL_DEPENDENCIES CACHE BOOL "Set to true if we are creating deb or RPM packages")
 
 # Enabling real GPU is stronger than using CUDA_ON_CPU
 if (ENABLE_GPU)
