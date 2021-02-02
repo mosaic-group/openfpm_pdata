@@ -88,7 +88,7 @@ install_options=
 if [ x"$comp_type" == x"full" ]; then
         install_options="-s "
 elif [ x"$comp_type" == x"intel" ]; then
-        install_options=" "
+        install_options="-s "
 else
         install_options="-s -m "
 fi
