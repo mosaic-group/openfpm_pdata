@@ -36,6 +36,7 @@ set(PARMETIS_DIR ${PARMETIS_ROOT})
 set(OPENBLAS_ROOT CACHE PATH "Root path for blas library")
 set(SuiteSparse_ROOT ${SUITESPARSE_ROOT})
 set(CUDA_ON_CPU CACHE BOOL "Make Cuda work on heap")
+set(CPACK_RUN_INSTALL_DEPENDENCIES BOOL "Set to true if we are creating deb or RPM packages")
 
 # Enabling real GPU is stronger than using CUDA_ON_CPU
 if (ENABLE_GPU)
@@ -240,7 +241,7 @@ file(WRITE cuda_options "${WARNING_SUPPRESSION_AND_OPTION_NVCC_TEXT}")
 
 add_subdirectory (src)
 
-#################### CPack for RPM
+#################### CPack to create auto installing packages
 
 include(InstallRequiredSystemLibraries)
 
@@ -252,23 +253,65 @@ set(CPACK_PACKAGE_VERSION_MAJOR "3")
 set(CPACK_PACKAGE_VERSION_MINOR "2")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
-if(WIN32 AND NOT UNIX)
-  # There is a bug in NSI that does not handle full UNIX paths properly.
-  # Make sure there is at least one set of four backlashes.
-  set(CPACK_PACKAGE_ICON "${CMake_SOURCE_DIR}/Utilities/Release\\\\InstallIcon.bmp")
-  set(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\MyExecutable.exe")
-  set(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_INSTALL_DIRECTORY} My Famous Project")
-  set(CPACK_NSIS_HELP_LINK "http:\\\\\\\\www.my-project-home-page.org")
-  set(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\www.my-personal-home-page.com")
-  set(CPACK_NSIS_CONTACT "me@my-personal-home-page.com")
-  set(CPACK_NSIS_MODIFY_PATH ON)
-else()
-  set(CPACK_STRIP_FILES "bin/MyExecutable")
-  set(CPACK_SOURCE_STRIP_FILES "")
-endif()
+set(CPACK_STRIP_FILES "bin/MyExecutable")
+set(CPACK_SOURCE_STRIP_FILES "")
 #set(CPACK_PACKAGE_EXECUTABLES "MyExecutable" "My Executable")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY /usr/local/openfpm)
 set(CPACK_PACKAGING_INSTALL_PREFIX /usr/local/openfpm)
 set(CPACK_PACKAGE_HOMEPAGE_URL http://openfpm.mpi-cbg.de)
+set(CPACK_RPM_PACKAGE_AUTOREQPROV NO)
+
+if (CPACK_RUN_INSTALL_DEPENDENCIES)
+
+	install(FILES $ENV{HOME}/openfpm_vars
+              	DESTINATION openfpm_vars
+              	)
+
+        install(DIRECTORY $ENV{HOME}/BOOST
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{HOME}/EIGEN
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{HOME}/HDF5
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{HOME}/LIBHILBERT
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{HOME}/METIS
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{HOME}/MPI
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{HOME}/OPENBLAS
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{HOME}/PARMETIS
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{HOME}/PETSC
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{HOME}/SUITESPARSE
+                DESTINATION dependencies/
+                )
+
+	install(DIRECTORY $ENV{HOME}/VCDEVEL
+                DESTINATION dependencies/
+                )
+
+endif()
+
 include(CPack)
 
