@@ -45,6 +45,9 @@ if [ x"$hostname" == x"falcon1" ]; then
 	if [ x"$comp_type" == x"intel" ]; then
         	module load parallel_studio_xe/2019u1
 		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies_intel/
+        elif [ x"$with_gpu" == x"0" ]; then
+		mkdir /projects/ppm/rundeck/openfpm_dependencies_$branch_no_cuda/
+                dependency_dir=/projects/ppm/rundeck/openfpm_dependencies_$branch_no_cuda/
 	else
 		mkdir /projects/ppm/rundeck/openfpm_dependencies_$branch/
 		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies_$branch/
