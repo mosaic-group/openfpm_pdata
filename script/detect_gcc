@@ -222,6 +222,7 @@ function detect_compiler()
 	choice=$(cat default_choice_compiler)
 	if [ -f default_choice_compiler ]; then
 		possible_solutions_command=$(cat default_choice_compiler)
+		echo "Choosen: $possible_solutions_command"
 	else
 		possible_solutions "${commands[@]}"
 	fi
