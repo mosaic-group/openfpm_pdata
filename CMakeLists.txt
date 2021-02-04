@@ -38,6 +38,7 @@ set(SuiteSparse_ROOT ${SUITESPARSE_ROOT})
 set(CUDA_ON_CPU CACHE BOOL "Make Cuda work on heap")
 set(CPACK_RUN_INSTALL_DEPENDENCIES CACHE BOOL "Set to true if we are creating deb or RPM packages")
 set(ENABLE_GARBAGE_INJECTOR CACHE BOOL "Enable the injector of garbage in the memory allocator")
+set(ENABLE_VCLUSTER_GARBAGE_INJECTOR CACHE BOOL "Enable the injector of garbage in the vcluster memory buffers")
 
 # Enabling real GPU is stronger than using CUDA_ON_CPU
 if (ENABLE_GPU)
@@ -216,6 +217,10 @@ endif()
 
 if (ENABLE_GARBAGE_INJECTOR)
 	set(DEFINE_GARBAGE_INJECTOR "#define GARBAGE_INJECTOR")
+endif()
+
+if (ENABLE_VCLUSTER_GARBAGE_INJECTOR)
+        set(DEFINE_VCLUSTER_GARBAGE_INJECTOR "#define VCLUSTER_GARBAGE_INJECTOR")
 endif()
 
 if(APPLE)
