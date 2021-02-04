@@ -123,6 +123,8 @@ with_eigen
 with_vcdevel
 enable_gpu
 enable_asan
+enable_garbageinj
+enable_garbageinjv
 '
 
 rm -rf build
@@ -263,6 +265,9 @@ do
        ;;
     garbageinj)
        conf_options="$conf_options -DENABLE_GARBAGE_INJECTOR=ON"
+       ;;
+    garbageinjv)
+       conf_options="$conf_options -DENABLE_VCLUSTER_GARBAGE_INJECTOR=ON"
        ;;
     *) ac_unrecognized_opts="$ac_unrecognized_opts$ac_unrecognized_sep--enable-$ac_useropt_orig"
        ac_unrecognized_sep=', '
