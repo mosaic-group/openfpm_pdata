@@ -37,6 +37,7 @@ set(OPENBLAS_ROOT CACHE PATH "Root path for blas library")
 set(SuiteSparse_ROOT ${SUITESPARSE_ROOT})
 set(CUDA_ON_CPU CACHE BOOL "Make Cuda work on heap")
 set(CPACK_RUN_INSTALL_DEPENDENCIES CACHE BOOL "Set to true if we are creating deb or RPM packages")
+set(ENABLE_GARBAGE_INJECTOR "Enable the injector of garbage in the memory allocator")
 
 # Enabling real GPU is stronger than using CUDA_ON_CPU
 if (ENABLE_GPU)
@@ -211,6 +212,10 @@ if (Vc_FOUND)
 else()
 	file(WRITE error_code "211")
 	message( FATAL_ERROR "Vc is required in roder to install OpenFPM")
+endif()
+
+if (ENABLE_GARBAGE_INJECTOR)
+	set(DEFINE_GARBAGE_INJECTOR "#define GARBAGE_INJECTOR")
 endif()
 
 if(APPLE)
