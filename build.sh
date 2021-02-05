@@ -111,7 +111,11 @@ if [ x"$comp_type" == x"full" ]; then
     make install
 else
     echo "Make install partial"
-    mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
+    if [ x"$comp_type" == x"intel" ]; then
+        mv $HOME/openfpm_vars $HOME/openfpm_vars_intel
+    else
+        mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
+    fi
     source $HOME/openfpm_vars_$branch
     if [ x"$hostname" == x"suitcase" ]; then
       echo "Running make on 1 cores"
