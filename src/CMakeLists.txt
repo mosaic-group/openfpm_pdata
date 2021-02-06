@@ -16,6 +16,10 @@ if(CUDA_FOUND OR CUDA_ON_CPU)
 	    Amr/tests/amr_base_gpu_unit_tests.cu)
 endif()
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+        add_definitions("-DBOOST_MPL_CFG_HAS_TYPEOF")
+endif()
+
 if (CUDA_ON_CPU)
         add_definitions(-DCUDA_ON_CPU)
         set_source_files_properties(${CUDA_SOURCES} PROPERTIES LANGUAGE CXX)
