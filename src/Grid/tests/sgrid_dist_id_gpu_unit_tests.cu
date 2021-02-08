@@ -290,6 +290,8 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_ghost_get )
 	size_t sz6[2] = {15,15};
 	sgrid_ghost_get(sz,sz6);
 
+	return;
+
 	size_t sz2[2] = {170,170};
 	size_t sz3[2] = {15,15};
 	sgrid_ghost_get(sz2,sz3);

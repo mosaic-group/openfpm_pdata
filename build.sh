@@ -95,6 +95,8 @@ fi
 
 if [ x"$comp_type" == x"se_class" ]; then
 	foward_options="--enable-se-class1 --with-action-on-error=THROW_ON_ERROR"
+elif [ x"$comp_type" == x"garbageinjv" ]; then
+	forward_options="--enable-garbageinjv"
 elif [ x"$comp_type" == x"asan" ]; then
         foward_options="$foward_options --enable-asan"
 fi
