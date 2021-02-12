@@ -132,7 +132,7 @@ int main(int argc, char* argv[])
 	Box<3,double> domain({0.0,0.0,0.0},{2.5,2.5,2.5});
 	
 	// grid size
-        size_t sz[3] = {256,256,256};
+        size_t sz[3] = {512,512,512};
 
 	// Define periodicity of the grid
 	periodicity<3> bc = {PERIODIC,PERIODIC,PERIODIC};
@@ -220,7 +220,12 @@ int main(int argc, char* argv[])
 
 		if (i % 2 == 0)
 		{
+
+			timer ts;
+			ts.start();
 			grid.conv_cross2<U,V,U_next,V_next,1>({0,0,0},{(long int)sz[0]-1,(long int)sz[1]-1,(long int)sz[2]-1},func);
+			ts.stop();
+			std::cout << ts.getwct() << std::endl;
 	
 			// After copy we synchronize again the ghost part U and V
 			grid.ghost_get<U_next,V_next>();

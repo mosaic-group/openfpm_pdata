@@ -1,7 +1,9 @@
 #! /bin/bash
+source script/discover_os
+discover_os
 
 if [ x"$platform" == x"$osx" ]; then
-	return
+	exit 0
 fi
 
 if [ -f gdbgui/executable/linux/gdbgui_0.14.0.2 ]; then
