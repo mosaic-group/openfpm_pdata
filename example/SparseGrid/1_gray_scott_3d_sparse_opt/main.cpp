@@ -132,7 +132,7 @@ int main(int argc, char* argv[])
 	Box<3,double> domain({0.0,0.0,0.0},{2.5,2.5,2.5});
 	
 	// grid size
-        size_t sz[3] = {512,512,512};
+        size_t sz[3] = {256,256,256};
 
 	// Define periodicity of the grid
 	periodicity<3> bc = {PERIODIC,PERIODIC,PERIODIC};
