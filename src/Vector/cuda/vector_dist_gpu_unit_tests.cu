@@ -1314,7 +1314,9 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda2)
 	if (create_vcluster().size() <= 3)
 	{return;};
 
+	#ifndef CUDA_ON_CPU
 	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,unsigned int,int,false>>(1000000,0.01);
+	#endif
 }
 
 BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda3)
@@ -1322,7 +1324,9 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda3)
 	if (create_vcluster().size() < 8)
 	{return;}
 
+	#ifndef CUDA_ON_CPU
 	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,unsigned int,int,false>>(15000000,0.005);
+	#endif
 }
 
 
