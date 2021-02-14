@@ -275,51 +275,51 @@ if (CPACK_RUN_INSTALL_DEPENDENCIES)
 	set(CPACK_PACKAGE_HOMEPAGE_URL http://openfpm.mpi-cbg.de)
 	set(CPACK_RPM_PACKAGE_AUTOREQPROV NO)
 
-	install(FILES $ENV{HOME}/openfpm_vars
+	install(FILES $ENV{DEP_PACKING}/openfpm_vars
               	DESTINATION openfpm_vars
               	)
 
-        install(DIRECTORY $ENV{HOME}/BOOST
+        install(DIRECTORY $ENV{DEP_PACKING}/BOOST
                 DESTINATION dependencies/
                 )
 
-        install(DIRECTORY $ENV{HOME}/EIGEN
+        install(DIRECTORY $ENV{DEP_PACKING}/EIGEN
                 DESTINATION dependencies/
                 )
 
-        install(DIRECTORY $ENV{HOME}/HDF5
+        install(DIRECTORY $ENV{DEP_PACKING}/HDF5
                 DESTINATION dependencies/
                 )
 
-        install(DIRECTORY $ENV{HOME}/LIBHILBERT
+        install(DIRECTORY $ENV{DEP_PACKING}/LIBHILBERT
                 DESTINATION dependencies/
                 )
 
-        install(DIRECTORY $ENV{HOME}/METIS
+        install(DIRECTORY $ENV{DEP_PACKING}/METIS
                 DESTINATION dependencies/
                 )
 
-        install(DIRECTORY $ENV{HOME}/MPI
+        install(DIRECTORY $ENV{DEP_PACKING}/MPI
                 DESTINATION dependencies/
                 )
 
-        install(DIRECTORY $ENV{HOME}/OPENBLAS
+        install(DIRECTORY $ENV{DEP_PACKING}/OPENBLAS
                 DESTINATION dependencies/
                 )
 
-        install(DIRECTORY $ENV{HOME}/PARMETIS
+        install(DIRECTORY $ENV{DEP_PACKING}/PARMETIS
                 DESTINATION dependencies/
                 )
 
-        install(DIRECTORY $ENV{HOME}/PETSC
+        install(DIRECTORY $ENV{DEP_PACKING}/PETSC
                 DESTINATION dependencies/
                 )
 
-        install(DIRECTORY $ENV{HOME}/SUITESPARSE
+        install(DIRECTORY $ENV{DEP_PACKING}/SUITESPARSE
                 DESTINATION dependencies/
                 )
 
-	install(DIRECTORY $ENV{HOME}/VCDEVEL
+	install(DIRECTORY $ENV{DEP_PACKING}/VCDEVEL
                 DESTINATION dependencies/
                 )
 
