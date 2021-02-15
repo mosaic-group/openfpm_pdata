@@ -161,8 +161,6 @@ BOOST_AUTO_TEST_CASE( sgrid_dist_id_basic_test_2D)
 		++it;
 	}
 
-	sg.write("sg_test_write");
-
 	bool match = true;
 	auto it2 = sg.getGridIterator();
 
@@ -696,6 +694,9 @@ BOOST_AUTO_TEST_CASE (sgrid_dist_id_soa_write )
 	periodicity<3> bc = {PERIODIC, PERIODIC, PERIODIC};
 
 	auto & v_cl = create_vcluster<>();
+
+	if (v_cl.size() > 16)
+	{return;}
 
 	// Domain
 	Box<3,double> domain({-0.3,-0.3,-0.3},{1.0,1.0,1.0});
