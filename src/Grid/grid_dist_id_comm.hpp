@@ -444,9 +444,9 @@ class grid_dist_id_comm
 
 			if (send_prc_queue.size() == 0)
 			{
-                                v_cl.sendrecvMultipleMessagesNBX(send_prc_queue.size(),NULL,
-                                                                                         NULL,NULL,
-                                                                                         receive_dynamic,this);
+                v_cl.sendrecvMultipleMessagesNBX(send_prc_queue.size(),NULL,
+                                                                        NULL,NULL,
+                                                                        receive_dynamic,this);
 			}
 			else
 			{
