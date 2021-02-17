@@ -102,8 +102,8 @@ void init(SparseGridType & grid, Box<3,float> & domain, size_t (& div)[3])
 
 				for (int s = 0 ; s < 3 ; s++)
 				{
-					bx.setLow(s,(size_t)((sph.center(i) - 0.31)/grid.spacing(i)));
-					bx.setHigh(s,(size_t)((sph.center(i) + 0.31)/grid.spacing(i)));
+					bx.setLow(s,(size_t)((sph.center(s) - 0.31)/grid.spacing(s)));
+					bx.setHigh(s,(size_t)((sph.center(s) + 0.31)/grid.spacing(s)));
 				}
 
 				grid.addPoints([spacing_x,spacing_y,spacing_z,sph] __device__ (int i, int j, int k)
