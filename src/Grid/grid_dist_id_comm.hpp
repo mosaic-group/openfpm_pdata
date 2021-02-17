@@ -161,7 +161,7 @@ class grid_dist_id_comm
 	openfpm::vector<size_t> send_size;
 
 	//! receiving buffers in case of dynamic
-	openfpm::vector<BMemory<Memory>> recv_buffers;
+	openfpm::vector_fr<BMemory<Memory>> recv_buffers;
 
 	struct rp_id
 	{
@@ -459,7 +459,7 @@ class grid_dist_id_comm
 
 			recv_proc.sort();
 
-			openfpm::vector<BMemory<Memory>> tmp;
+			openfpm::vector_fr<BMemory<Memory>> tmp;
 			tmp.resize(recv_proc.size());
 
 			for (int i = 0 ; i < recv_proc.size() ; i++)
