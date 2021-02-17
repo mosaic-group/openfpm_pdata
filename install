@@ -568,7 +568,7 @@ bash_library="$bash_library\""
 
 # in cygwin we have to add to PATH additional directories
 
-if [ x"VARS_FILE_LOCATION" == x"" ]; then
+if [ x"$VARS_FILE_LOCATION" == x"" ]; then
 	VARS_FILE_LOCATION=$HOME
 fi
 
