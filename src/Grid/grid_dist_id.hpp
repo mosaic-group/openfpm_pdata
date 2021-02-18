@@ -3041,8 +3041,28 @@ public:
 		}
 		else
 		{
-			loc_grid.swap(loc_grid_old);
-			gdb_ext_old.swap(gdb_ext);
+			for (int i = 0 ; i < gdb_ext_old.size() ; i++)
+			{
+					auto & lg = loc_grid_old.get(i);
+					auto it_src = lg.getIterator(gdb_ext_old.get(i).Dbox.getKP1(),gdb_ext_old.get(i).Dbox.getKP2());
+					auto & dg = loc_grid.get(0);
+
+					grid_key_dx<dim> orig;
+					for (int j = 0 ; j < dim ; j++)
+					{
+							orig.set_d(j,gdb_ext_old.get(i).origin.get(j) + gdb_ext_old.get(i).Dbox.getKP1().get(j));
+					}
+
+					while (it_src.isNext())
+					{
+							auto key = it_src.get();
+							auto key_dst = key + orig;
+
+							dg.get_o(key_dst) = lg.get_o(key);
+
+							++it_src;
+					}
+			}
 		}
 	}
 
