@@ -274,6 +274,8 @@ if (CPACK_RUN_INSTALL_DEPENDENCIES)
 	set(CPACK_PACKAGING_INSTALL_PREFIX /usr/local/openfpm)
 	set(CPACK_PACKAGE_HOMEPAGE_URL http://openfpm.mpi-cbg.de)
 	set(CPACK_RPM_PACKAGE_AUTOREQPROV NO)
+	set(CPACK_PACKAGE_CONTACT incardon@mpi-cbg.de)
+	set(CPACK_DEBIAN_PACKAGE_MAINTAINER Pietro Incardona)
 
 	install(FILES $ENV{DEP_PACKING}/openfpm_vars
               	DESTINATION openfpm_vars
