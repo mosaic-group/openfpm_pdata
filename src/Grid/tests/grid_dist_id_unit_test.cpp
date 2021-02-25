@@ -2456,6 +2456,212 @@ BOOST_AUTO_TEST_CASE( grid_dist_ghost_zero_size )
 	BOOST_REQUIRE_EQUAL(count,32*32*32);
 }
 
+
+BOOST_AUTO_TEST_CASE(grid_dist_id_smb_write_out_1_proc)
+{
+	// Test grid periodic
+	{
+		Box<2,float> domain({-1.0,-1.0,-1.0},{1.0,1.0,1.0});
+
+		Vcluster<> & v_cl = create_vcluster();
+
+		if ( v_cl.getProcessingUnits() > 1 )
+		{return;}
+
+		// grid size
+		size_t sz[2];
+		sz[0] = 16;
+		sz[1] = 16;
+
+		// Ghost
+		Ghost<2,long int> g(0);
+
+		// periodicity
+		periodicity<2> pr = {{NON_PERIODIC,NON_PERIODIC}};
+
+		typedef grid_cpu<2, aggregate<int>, grid_smb<2,4> > devg; 
+
+		// Distributed grid with id decomposition
+		grid_dist_id_devg<2, float, aggregate<int>,devg> g_smb(sz,domain,g,pr);
+
+		auto it = g_smb.getDomainIterator();
+
+		size_t count = 0;
+
+		unsigned char * base = (unsigned char *)g_smb.get_loc_grid(0).getPointer<0>();
+
+		while (it.isNext())
+		{
+			auto k = it.get();
+
+			g_smb.template getProp<0>(k) = (unsigned char *)&g_smb.template getProp<0>(k) - base;
+
+			++count;
+
+			++it;
+		}
+
+		v_cl.sum(count);
+		v_cl.execute();
+
+		BOOST_REQUIRE_EQUAL(count,16*16);
+
+		g_smb.write("g_smb_out");
+	}
+}
+
+BOOST_AUTO_TEST_CASE(grid_dist_id_zmb_write_out_1_proc)
+{
+	{
+		// Test grid periodic
+
+		Box<2,float> domain({-1.0,-1.0,-1.0},{1.0,1.0,1.0});
+
+		Vcluster<> & v_cl = create_vcluster();
+
+		if ( v_cl.getProcessingUnits() > 1 )
+		{return;}
+
+		// grid size
+		size_t sz[2];
+		sz[0] = 16;
+		sz[1] = 16;
+
+		// Ghost
+		Ghost<2,long int> g(0);
+
+		// periodicity
+		periodicity<2> pr = {{NON_PERIODIC,NON_PERIODIC}};
+
+		typedef grid_cpu<2, aggregate<int>, grid_zmb<2,4,long int> > devg; 
+
+		// Distributed grid with id decomposition
+		grid_dist_id_devg<2, float, aggregate<int>,devg> g_smb(sz,domain,g,pr);
+
+		auto it = g_smb.getDomainIterator();
+
+		size_t count = 0;
+
+		unsigned char * base = (unsigned char *)g_smb.get_loc_grid(0).getPointer<0>();
+
+		while (it.isNext())
+		{
+			auto k = it.get();
+
+			g_smb.template getProp<0>(k) = (unsigned char *)&g_smb.template getProp<0>(k) - base;
+
+			++count;
+
+			++it;
+		}
+
+		v_cl.sum(count);
+		v_cl.execute();
+
+		BOOST_REQUIRE_EQUAL(count,16*16);
+
+		g_smb.write("g_zmb_out");
+	}
+
+	{
+		Box<2,float> domain({-1.0,-1.0,-1.0},{1.0,1.0,1.0});
+
+		Vcluster<> & v_cl = create_vcluster();
+
+		if ( v_cl.getProcessingUnits() > 1 )
+		{return;}
+
+		// grid size
+		size_t sz[2];
+		sz[0] = 16;
+		sz[1] = 16;
+
+		// Ghost
+		Ghost<2,long int> g(0);
+
+		// periodicity
+		periodicity<2> pr = {{NON_PERIODIC,NON_PERIODIC}};
+
+		typedef grid_cpu<2, aggregate<int>, grid_zm<2,void> > devg; 
+
+		// Distributed grid with id decomposition
+		grid_dist_id_devg<2, float, aggregate<int>,devg> g_smb(sz,domain,g,pr);
+
+		auto it = g_smb.getDomainIterator();
+
+		size_t count = 0;
+
+		unsigned char * base = (unsigned char *)g_smb.get_loc_grid(0).getPointer<0>();
+
+		while (it.isNext())
+		{
+			auto k = it.get();
+
+			g_smb.template getProp<0>(k) = (unsigned char *)&g_smb.template getProp<0>(k) - base;
+
+			++count;
+
+			++it;
+		}
+
+		v_cl.sum(count);
+		v_cl.execute();
+
+		BOOST_REQUIRE_EQUAL(count,16*16);
+
+		g_smb.write("g_zm_out");
+	}
+
+	{
+		Box<2,float> domain({-1.0,-1.0,-1.0},{1.0,1.0,1.0});
+
+		Vcluster<> & v_cl = create_vcluster();
+
+		if ( v_cl.getProcessingUnits() > 1 )
+		{return;}
+
+		// grid size
+		size_t sz[2];
+		sz[0] = 16;
+		sz[1] = 16;
+
+		// Ghost
+		Ghost<2,long int> g(0);
+
+		// periodicity
+		periodicity<2> pr = {{NON_PERIODIC,NON_PERIODIC}};
+
+		typedef grid_base<2, aggregate<int>> devg; 
+
+		// Distributed grid with id decomposition
+		grid_dist_id_devg<2, float, aggregate<int>,devg> g_smb(sz,domain,g,pr);
+
+		auto it = g_smb.getDomainIterator();
+
+		size_t count = 0;
+
+		unsigned char * base = (unsigned char *)g_smb.get_loc_grid(0).getPointer<0>();
+
+		while (it.isNext())
+		{
+			auto k = it.get();
+
+			g_smb.template getProp<0>(k) = (unsigned char *)&g_smb.template getProp<0>(k) - base;
+
+			++count;
+
+			++it;
+		}
+
+		v_cl.sum(count);
+		v_cl.execute();
+
+		BOOST_REQUIRE_EQUAL(count,16*16);
+
+		g_smb.write("g_sm_out");
+	}
+}
+
 BOOST_AUTO_TEST_CASE( grid_dist_copy_construct )
 {
 	// Test grid periodic
