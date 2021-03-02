@@ -28,22 +28,19 @@ struct labelParticlesGhost_impl
 					Decomposition & dec,
 					openfpm::vector<aggregate<unsigned int,unsigned long int>,
 							CudaMemory,
-							typename memory_traits_inte<aggregate<unsigned int,unsigned long int>>::type,
 							memory_traits_inte> & g_opart_device,
 				    openfpm::vector<aggregate<unsigned int>,
 				                            Memory,
-				                            typename layout_base<aggregate<unsigned int>>::type,
 				                            layout_base> & proc_id_out,
 				    openfpm::vector<aggregate<unsigned int>,
 				                             Memory,
-				                             typename layout_base<aggregate<unsigned int>>::type,
 				                             layout_base> & starts,
 		            Vcluster<Memory> & v_cl,
-					openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
-            		openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+					openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
+            		openfpm::vector<prop,Memory,layout_base> & v_prp,
             		openfpm::vector<size_t> & prc,
             		openfpm::vector<size_t> & prc_sz,
-            		openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int>>::type,layout_base> & prc_offset,
+            		openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,layout_base> & prc_offset,
             		size_t & g_m,
             		size_t opt)
 	{
@@ -60,22 +57,19 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 					Decomposition & dec,
 					openfpm::vector<aggregate<unsigned int,unsigned long int>,
 							CudaMemory,
-							typename memory_traits_inte<aggregate<unsigned int,unsigned long int>>::type,
 							memory_traits_inte> & g_opart_device,
 				    openfpm::vector<aggregate<unsigned int>,
 				                            Memory,
-				                            typename layout_base<aggregate<unsigned int>>::type,
 				                            layout_base> & proc_id_out,
 				    openfpm::vector<aggregate<unsigned int>,
 				                             Memory,
-				                             typename layout_base<aggregate<unsigned int>>::type,
 				                             layout_base> & starts,
 					Vcluster<Memory> & v_cl,
-					openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
-            		openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+					openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
+            		openfpm::vector<prop,Memory,layout_base> & v_prp,
             		openfpm::vector<size_t> & prc,
             		openfpm::vector<size_t> & prc_sz,
-            		openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int>>::type,layout_base> & prc_offset,
+            		openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,layout_base> & prc_offset,
             		size_t & g_m,
             		size_t opt)
 	{
@@ -185,10 +179,10 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 template<bool with_pos,unsigned int dim, typename St,  typename prop, typename Memory, template <typename> class layout_base, bool is_ok_cuda>
 struct local_ghost_from_opart_impl
 {
-	static void run(openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int>>::type,layout_base> & o_part_loc,
-					const openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & shifts,
-					openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
-            		openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+	static void run(openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,layout_base> & o_part_loc,
+					const openfpm::vector<Point<dim, St>,Memory,layout_base> & shifts,
+					openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
+            		openfpm::vector<prop,Memory,layout_base> & v_prp,
             		size_t opt)
 	{
 		std::cout << __FILE__ << ":" << __LINE__ << " error, you are trying to use using Cuda functions for a non cuda enabled data-structures" << std::endl;
@@ -198,10 +192,10 @@ struct local_ghost_from_opart_impl
 template<bool with_pos, unsigned int dim, typename St, typename prop, typename Memory, template <typename> class layout_base>
 struct local_ghost_from_opart_impl<with_pos,dim,St,prop,Memory,layout_base,true>
 {
-	static void run(openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int>>::type,layout_base> & o_part_loc,
-					const openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & shifts,
-					openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
-            		openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+	static void run(openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,layout_base> & o_part_loc,
+					const openfpm::vector<Point<dim, St>,Memory,layout_base> & shifts,
+					openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
+            		openfpm::vector<prop,Memory,layout_base> & v_prp,
             		size_t opt)
 	{
 #if defined(CUDA_GPU) && defined(__NVCC__)
@@ -234,14 +228,14 @@ struct local_ghost_from_opart_impl<with_pos,dim,St,prop,Memory,layout_base,true>
 template<unsigned int dim, typename St, typename prop, typename Memory, template <typename> class layout_base, bool is_ok_cuda>
 struct local_ghost_from_dec_impl
 {
-	static void run(openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int>>::type,layout_base> & o_part_loc,
-					const openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & shifts,
-					openfpm::vector<Box<dim, St>,Memory,typename layout_base<Box<dim,St>>::type,layout_base> & box_f_dev,
-					openfpm::vector<aggregate<unsigned int>,Memory,typename layout_base<aggregate<unsigned int>>::type,layout_base> & box_f_sv,
+	static void run(openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,layout_base> & o_part_loc,
+					const openfpm::vector<Point<dim, St>,Memory,layout_base> & shifts,
+					openfpm::vector<Box<dim, St>,Memory,layout_base> & box_f_dev,
+					openfpm::vector<aggregate<unsigned int>,Memory,layout_base> & box_f_sv,
 					Vcluster<Memory> & v_cl,
-					openfpm::vector<aggregate<unsigned int>,Memory,typename layout_base<aggregate<unsigned int>>::type,layout_base> & starts,
-					openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
-            		openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+					openfpm::vector<aggregate<unsigned int>,Memory,layout_base> & starts,
+					openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
+            		openfpm::vector<prop,Memory,layout_base> & v_prp,
             		size_t & g_m,
             		size_t opt)
 	{
@@ -253,14 +247,14 @@ struct local_ghost_from_dec_impl
 template<unsigned int dim, typename St, typename prop, typename Memory, template <typename> class layout_base>
 struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 {
-	static void run(openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int>>::type,layout_base> & o_part_loc,
-					const openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & shifts,
-					openfpm::vector<Box<dim, St>,Memory,typename layout_base<Box<dim,St>>::type,layout_base> & box_f_dev,
-					openfpm::vector<aggregate<unsigned int>,Memory,typename layout_base<aggregate<unsigned int>>::type,layout_base> & box_f_sv,
+	static void run(openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,layout_base> & o_part_loc,
+					const openfpm::vector<Point<dim, St>,Memory,layout_base> & shifts,
+					openfpm::vector<Box<dim, St>,Memory,layout_base> & box_f_dev,
+					openfpm::vector<aggregate<unsigned int>,Memory,layout_base> & box_f_sv,
 					Vcluster<Memory> & v_cl,
-					openfpm::vector<aggregate<unsigned int>,Memory,typename layout_base<aggregate<unsigned int>>::type,layout_base> & starts,
-					openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
-            		openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+					openfpm::vector<aggregate<unsigned int>,Memory,layout_base> & starts,
+					openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
+            		openfpm::vector<prop,Memory,layout_base> & v_prp,
             		size_t & g_m,
             		size_t opt)
 	{

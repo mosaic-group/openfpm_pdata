@@ -79,14 +79,14 @@ struct CalculateInternalCells_impl
 {
 	template<typename VCluster_type>
 	static void CalculateInternalCells(VCluster_type & v_cl,
-			openfpm::vector<Box<dim,T>,Memory,typename layout_base<Box<dim,T>>::type,layout_base> & ig_box,
-			openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim,T>>::type,layout_base> & domain,
+			openfpm::vector<Box<dim,T>,Memory,layout_base> & ig_box,
+			openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & domain,
 			Box<dim,T> & pbox,
 			T r_cut,
 			const Ghost<dim,T> & enlarge,
 			CellDecomposer_sm<dim,T,shift<dim,T>> & cd,
-			openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> & icells,
-			openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> & dcells)
+			openfpm::vector<aggregate<ids_type>,Memory,layout_base> & icells,
+			openfpm::vector<aggregate<ids_type>,Memory,layout_base> & dcells)
 	{
 
 	}
@@ -97,14 +97,14 @@ struct CalculateInternalCells_impl<dim,T,layout_base,Memory,cnt_type,ids_type,tr
 {
 	template<typename VCluster_type>
 	static void CalculateInternalCells(VCluster_type & v_cl,
-			openfpm::vector<Box<dim,T>,Memory,typename layout_base<Box<dim,T>>::type,layout_base> & ig_box,
-			openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim,T>>::type,layout_base> & domain,
+			openfpm::vector<Box<dim,T>,Memory,layout_base> & ig_box,
+			openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & domain,
 			Box<dim,T> & pbox,
 			T r_cut,
 			const Ghost<dim,T> & enlarge,
 			CellDecomposer_sm<dim,T,shift<dim,T>> & cd,
-			openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> & icells,
-			openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> & dcells)
+			openfpm::vector<aggregate<ids_type>,Memory,layout_base> & icells,
+			openfpm::vector<aggregate<ids_type>,Memory,layout_base> & dcells)
 	{
 #if 0
 
@@ -211,8 +211,8 @@ class domain_icell_calculator
 
 	typedef int ids_type;
 
-	openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> icells;
-	openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> dcells;
+	openfpm::vector<aggregate<ids_type>,Memory,layout_base> icells;
+	openfpm::vector<aggregate<ids_type>,Memory,layout_base> dcells;
 
 	CellDecomposer_sm<dim,T,shift<dim,T>> cd;
 
@@ -255,8 +255,8 @@ class domain_icell_calculator
 	 */
 	template<typename VCluster_type>
 	void CalculateInternalCells(VCluster_type & v_cl,
-								openfpm::vector<Box<dim,T>,Memory,typename layout_base<Box<dim,T>>::type,layout_base> & ig_box,
-								openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim,T>>::type,layout_base> & domain,
+								openfpm::vector<Box<dim,T>,Memory,layout_base> & ig_box,
+								openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & domain,
 								Box<dim,T> & pbox,
 								T r_cut,
 								const Ghost<dim,T> & enlarge)
@@ -271,7 +271,7 @@ class domain_icell_calculator
 	 * \return the list of the internal cells
 	 *
 	 */
-	openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> & getIcells()
+	openfpm::vector<aggregate<ids_type>,Memory,layout_base> & getIcells()
 	{
 		return icells;
 	}
@@ -281,7 +281,7 @@ class domain_icell_calculator
 	 * \return the list of the internal cells
 	 *
 	 */
-	openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> & getDcells()
+	openfpm::vector<aggregate<ids_type>,Memory,layout_base> & getDcells()
 	{
 		return dcells;
 	}
