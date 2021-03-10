@@ -391,12 +391,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_2GB_load_test )
 
 		match &= g_dist.template get<0>(key) == keyg.get(0);
 
-		if (match == false)
-		{
-			int debug = 0;
-			debug++;
-		}
-
 		++it;
 		count++;
 	}
