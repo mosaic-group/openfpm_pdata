@@ -870,8 +870,7 @@ int main(int argc, char* argv[])
 	// Ok the initialization is done on CPU on GPU we are doing the main loop, so first we offload all properties on GPU
 
 	vd.hostToDevicePos();
-	vd.template hostToDeviceProp<type,rho,rho_prev,Pressure,velocity>();
-
+	vd.template hostToDeviceProp<type,rho,rho_prev,Pressure,velocity,velocity_prev>();
 
 	vd.ghost_get<type,rho,Pressure,velocity>(RUN_ON_DEVICE);
 
@@ -889,7 +888,6 @@ int main(int argc, char* argv[])
 	{
 		Vcluster<> & v_cl = create_vcluster();
 		timer it_time;
-
 
 		////// Do rebalancing every 200 timesteps
 		it_reb++;
@@ -923,9 +921,9 @@ int main(int argc, char* argv[])
 
 		vd.ghost_get<type,rho,Pressure,velocity>(RUN_ON_DEVICE);
 
-
 		// Calc forces
 		calc_forces(vd,NN,max_visc,cnt);
+
 
 		// Get the maximum viscosity term across processors
 		v_cl.max(max_visc);
@@ -999,6 +997,7 @@ int main(int argc, char* argv[])
 			if (v_cl.getProcessUnitID() == 0)
 			{std::cout << "TIME: " << t << "  " << it_time.getwct() << "   " << it_reb << "   " << cnt  << " Max visc: " << max_visc << "   " << vd.size_local() << std::endl;}
 		}
+
 	}
 
 	tot_sim.stop();
