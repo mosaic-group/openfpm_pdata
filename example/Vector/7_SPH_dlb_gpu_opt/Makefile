@@ -8,7 +8,7 @@ ifdef CUDA_ON_CPU
         CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
         INCLUDE_PATH_NVCC=
         CUDA_CC_LINK=mpic++
-	CUDA_OPTIONS=
+	CUDA_OPTIONS=-DCUDA_ON_CPU -D__NVCC__ -DCUDART_VERSION=11000
 else
         ifeq (, $(shell which nvcc))
                 CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
