@@ -143,9 +143,9 @@ function remove_old()
 
     if [ -d $1/PETSC ]; then
         version=$(cat $1/PETSC/version)
-        if [ x"$version" != x"5"  ]; then
+        if [ x"$version" != x"6"  ]; then
             echo -e "\033[1;34;5m  -------------------------------------------------------------------------------------- \033[0m"
-            echo -e "\033[1;34;5m  PETSC has been updated to version 3.14.2, the component will be updated automatically      \033[0m"
+            echo -e "\033[1;34;5m  PETSC has been updated to version 3.14.5, the component will be updated automatically      \033[0m"
             echo -e "\033[1;34;5m  -------------------------------------------------------------------------------------- \033[0m"
             sleep 5
             rm -rf $1/PETSC
