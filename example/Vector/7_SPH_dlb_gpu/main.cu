@@ -39,6 +39,21 @@
  *
  * \snippet Vector/7_SPH_dlb_gpu/main.cu mark_to_remove_kernel
  *
+ * ## Macro CUDA_LAUNCH
+ *
+ * When we want to launch a kernel "my_kernel" on CUDA we in general use the Nvidia CUDA syntax
+ *
+ * my_kernel<<<wthr,thr>>>(arguments ... )
+ *
+ * Where wthr is the number of workgroups and thr is the number of threads in a workgroup and arguments... are the arguments to pass to the kernel. 
+ * Equivalently we can launch a kernel with the macro CUDA_LAUNCH_DIM3(my_kernel,wthr,thr,arguments...) or CUDA_LAUNCH(my_kernel,ite,arguments) where
+ * ite has been taken using getDomainIteratorGPU. There are several advantage on using CUDA_LAUNCH. The first advantage in using the macro is enabling SE_CLASS1
+ * all kernel launch become synchronous and an error check is performed before continue to the next kernel making debugging easier. Another feature is the possibility
+ * to run CUDA code on CPU without a GPU. compiling with "CUDA_ON_CPU=1 make" (Note openfpm must be compiled with GPU support (-g)  or with CUDA_ON_CPU support 
+ * (-c "... --enable_cuda_on_cpu"). You can compile this example on CPU. You do not have to change a single line of code for this example. (Check the video to see this 
+ * feature in action). All the openfpm GPU example and CUDA example can run on CPU if they use CUDA_LAUNCH as macro. We are planning to support
+ * AMD GPUs as well using this system.
+ *
  * \include Vector/7_SPH_dlb_gpu_opt/main.cu
  *
  */
@@ -195,7 +210,10 @@ inline void EqState(particles & vd)
 {
 	auto it = vd.getDomainIteratorGPU();
 
-	EqState_gpu<<<it.wthr,it.thr>>>(vd.toKernel(),B);
+	// You can use standard CUDA kernel launch or the macro CUDA_LAUNCH
+
+	//EqState_gpuning<<<it.wthr,it.thr>>>(vd.toKernel(),B);
+	CUDA_LAUNCH(EqState_gpu,it,vd.toKernel(),B)
 }
 
 
@@ -301,16 +319,16 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 	Point<3,real_number> xa = vd.getPos(a);
 
 	// Take the mass of the particle dependently if it is FLUID or BOUNDARY
-	real_number massa = (vd.getProp<type>(a) == FLUID)?MassFluid:MassBound;
+	real_number massa = (vd.template getProp<type>(a) == FLUID)?MassFluid:MassBound;
 
 	// Get the density of the of the particle a
-	real_number rhoa = vd.getProp<rho>(a);
+	real_number rhoa = vd.template getProp<rho>(a);
 
 	// Get the pressure of the particle a
-	real_number Pa = vd.getProp<Pressure>(a);
+	real_number Pa = vd.template getProp<Pressure>(a);
 
 	// Get the Velocity of the particle a
-	Point<3,real_number> va = vd.getProp<velocity>(a);
+	Point<3,real_number> va = vd.template getProp<velocity>(a);
 
 	// Reset the force counter (- gravity on zeta direction)
 	vd.template getProp<force>(a)[0] = 0.0;
@@ -319,7 +337,7 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 	vd.template getProp<drho>(a) = 0.0;
 
 	// We threat FLUID particle differently from BOUNDARY PARTICLES ...
-	if (vd.getProp<type>(a) != FLUID)
+	if (vd.template getProp<type>(a) != FLUID)
 	{
 
 		// If it is a boundary particle calculate the delta rho based on equation 2
@@ -339,14 +357,14 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 			if (a == b)	{++Np; continue;};
 
 			// get the mass of the particle
-			real_number massb = (vd.getProp<type>(b) == FLUID)?MassFluid:MassBound;
+			real_number massb = (vd.template getProp<type>(b) == FLUID)?MassFluid:MassBound;
 
 			// Get the velocity of the particle b
-			Point<3,real_number> vb = vd.getProp<velocity>(b);
+			Point<3,real_number> vb = vd.template getProp<velocity>(b);
 
 			// Get the pressure and density of particle b
-			real_number Pb = vd.getProp<Pressure>(b);
-			real_number rhob = vd.getProp<rho>(b);
+			real_number Pb = vd.template getProp<Pressure>(b);
+			real_number rhob = vd.template getProp<rho>(b);
 
 			// Get the distance between p and q
 			Point<3,real_number> dr = xa - xb;
@@ -374,7 +392,7 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 			++Np;
 		}
 
-		vd.getProp<red>(a) = max_visc;
+		vd.template getProp<red>(a) = max_visc;
 	}
 	else
 	{
@@ -395,10 +413,10 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 			// if (p == q) skip this particle
 			if (a == b)	{++Np; continue;};
 
-			real_number massb = (vd.getProp<type>(b) == FLUID)?MassFluid:MassBound;
-			Point<3,real_number> vb = vd.getProp<velocity>(b);
-			real_number Pb = vd.getProp<Pressure>(b);
-			real_number rhob = vd.getProp<rho>(b);
+			real_number massb = (vd.template getProp<type>(b) == FLUID)?MassFluid:MassBound;
+			Point<3,real_number> vb = vd.template getProp<velocity>(b);
+			real_number Pb = vd.template getProp<Pressure>(b);
+			real_number rhob = vd.template getProp<rho>(b);
 
 			// Get the distance between p and q
 			Point<3,real_number> dr = xa - xb;
@@ -415,7 +433,7 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 				Point<3,real_number> DW;
 				DWab(dr,DW,r,false);
 
-				real_number factor = - massb*((vd.getProp<Pressure>(a) + vd.getProp<Pressure>(b)) / (rhoa * rhob) + Tensile(r,rhoa,rhob,Pa,Pb,W_dap) + Pi(dr,r2,v_rel,rhoa,rhob,massb,cbar,max_visc));
+				real_number factor = - massb*((vd.template getProp<Pressure>(a) + vd.template getProp<Pressure>(b)) / (rhoa * rhob) + Tensile(r,rhoa,rhob,Pa,Pb,W_dap) + Pi(dr,r2,v_rel,rhoa,rhob,massb,cbar,max_visc));
 
 				vd.template getProp<force>(a)[0] += factor * DW.get(0);
 				vd.template getProp<force>(a)[1] += factor * DW.get(1);
@@ -427,7 +445,7 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 			++Np;
 		}
 
-		vd.getProp<red>(a) = max_visc;
+		vd.template getProp<red>(a) = max_visc;
 	}
 }
 
@@ -438,7 +456,8 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 	// Update the cell-list
 	vd.updateCellList(NN);
 
-	calc_forces_gpu<<<part.wthr,part.thr>>>(vd.toKernel(),NN.toKernel(),W_dap,cbar);
+	//calc_forces_gpu<<<part.wthr,part.thr>>>(vd.toKernel(),NN.toKernel(),W_dap,cbar);
+	CUDA_LAUNCH(calc_forces_gpu,part,vd.toKernel(),NN.toKernel(),W_dap,cbar)
 
 	max_visc = reduce_local<red,_max_>(vd);
 }
@@ -448,11 +467,11 @@ __global__ void max_acceleration_and_velocity_gpu(vector_type vd)
 {
 	auto a = GET_PARTICLE(vd);
 
-	Point<3,real_number> acc(vd.getProp<force>(a));
-	vd.getProp<red>(a) = norm(acc);
+	Point<3,real_number> acc(vd.template getProp<force>(a));
+	vd.template getProp<red>(a) = norm(acc);
 
-	Point<3,real_number> vel(vd.getProp<velocity>(a));
-	vd.getProp<red2>(a) = norm(vel);
+	Point<3,real_number> vel(vd.template getProp<velocity>(a));
+	vd.template getProp<red2>(a) = norm(vel);
 }
 
 void max_acceleration_and_velocity(particles & vd, real_number & max_acc, real_number & max_vel)
@@ -460,7 +479,8 @@ void max_acceleration_and_velocity(particles & vd, real_number & max_acc, real_n
 	// Calculate the maximum acceleration
 	auto part = vd.getDomainIteratorGPU();
 
-	max_acceleration_and_velocity_gpu<<<part.wthr,part.thr>>>(vd.toKernel());
+	// max_acceleration_and_velocity_gpu<<<part.wthr,part.thr>>>(vd.toKernel());
+	CUDA_LAUNCH(max_acceleration_and_velocity_gpu,part,vd.toKernel());
 
 	max_acc = reduce_local<red,_max_>(vd);
 	max_vel = reduce_local<red2,_max_>(vd);
@@ -566,7 +586,8 @@ void verlet_int(particles & vd, real_number dt)
 	real_number dt205 = dt*dt*0.5;
 	real_number dt2 = dt*2.0;
 
-	verlet_int_gpu<<<part.wthr,part.thr>>>(vd.toKernel(),dt,dt2,dt205);
+	// verlet_int_gpu<<<part.wthr,part.thr>>>(vd.toKernel(),dt,dt2,dt205);
+	CUDA_LAUNCH(verlet_int_gpu,part,vd.toKernel(),dt,dt2,dt205);
 
 	//! \cond [remove_marked_part] \endcond
 
@@ -646,7 +667,8 @@ void euler_int(particles & vd, real_number dt)
 
 	real_number dt205 = dt*dt*0.5;
 
-	euler_int_gpu<<<part.wthr,part.thr>>>(vd.toKernel(),dt,dt205);
+	// euler_int_gpu<<<part.wthr,part.thr>>>(vd.toKernel(),dt,dt205);
+	CUDA_LAUNCH(euler_int_gpu,part,vd.toKernel(),dt,dt205);
 
 	// remove the particles
 	remove_marked<red>(vd);
@@ -722,7 +744,8 @@ inline void sensor_pressure(Vector & vd,
         // if the probe is inside the processor domain
 		if (vd.getDecomposition().isLocal(probes.get(i)) == true)
 		{
-			sensor_pressure_gpu<<<1,1>>>(vd.toKernel(),NN.toKernel(),probes.get(i),(real_number *)press_tmp_.toKernel());
+			// sensor_pressure_gpu<<<1,1>>>(vd.toKernel(),NN.toKernel(),probes.get(i),(real_number *)press_tmp_.toKernel());
+			CUDA_LAUNCH_DIM3(sensor_pressure_gpu,1,1,vd.toKernel(),NN.toKernel(),probes.get(i),(real_number *)press_tmp_.toKernel());
 
 			// move calculated pressure on
 			press_tmp_.deviceToHost();
@@ -892,7 +915,7 @@ int main(int argc, char* argv[])
 	// Ok the initialization is done on CPU on GPU we are doing the main loop, so first we offload all properties on GPU
 
 	vd.hostToDevicePos();
-	vd.template hostToDeviceProp<type,rho,rho_prev,Pressure,velocity>();
+	vd.template hostToDeviceProp<type,rho,rho_prev,Pressure,velocity,velocity_prev>();
 
 	vd.ghost_get<type,rho,Pressure,velocity>(RUN_ON_DEVICE);
 

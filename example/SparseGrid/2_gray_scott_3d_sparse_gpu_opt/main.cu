@@ -1,14 +1,20 @@
+//#define VCLUSTER_PERF_REPORT <------ Activate telemetry for the VCluster data-structure
+//#define SYNC_BEFORE_TAKE_TIME <------ Force synchronization of the kernels everytime we take the time with the structure timer.
+//                                      Use this option for telemetry and GPU otherwise the result are unreliable                                        
+//#define ENABLE_GRID_DIST_ID_PERF_STATS  <------ Activate telementry for the grid data-structure
+
+#include "Decomposition/Distribution/BoxDistribution.hpp"
 #include "Grid/grid_dist_id.hpp"
 #include "data_type/aggregate.hpp"
 #include "timer.hpp"
 
 /*!
  *
- * \page Grid_3_gs_3D_sparse_gpu Gray Scott in 3D using sparse grids on GPU
+ * \page Grid_3_gs_3D_sparse_gpu_opt Gray Scott in 3D using sparse grids on GPU (Optimized)
  *
  * [TOC]
  *
- * # Solving a gray scott-system in 3D using Sparse grids on gpu # {#e3_gs_gray_scott_gpu}
+ * # Solving a gray scott-system in 3D using Sparse grids on gpu (Optimized) # {#e3_gs_gray_scott_gpu}
  *
  * This example show how to solve a Gray-Scott system in 3D using sparse grids on gpu
  *
@@ -22,41 +28,15 @@
  *
  * \see \ref Grid_3_gs_3D
  *
- * # Initializetion
+ * # Optimizations
  *
- * On gpu we can add points using the function addPoints this function take 2 lamda functions the first take 3 arguments (in 3D)
- * i,j,k these are the global coordinates for a point. We can return either true either false. In case of true the point is
- * created in case of false the point is not inserted. The second lamda is instead used to initialize the point inserted.
- * The arguments of the second lambda are the data argument we use to initialize the point and the global coordinates i,j,k
+ * Instead of using the default decomposition algorithm based on parmetis we use BoxDistribution. This decomposition divide the space equally 
+ * across processors. The way to use a different algorithm for decomposing the sparse grid is given by changing the type of the Sparse grid
+ * 
+ * \snippet SparseGrid/2_gray_scott_3d_sparse_gpu_opt/main.cu grid definition
  *
- * After we add the points we have to flush the added points. This us achieved using the function flush the template parameters
- * indicate how we have to act on the points. Consider infact we are adding points already exist ... do we have to add it using the max
- * or the min. **FLUSH_ON_DEVICE** say instead that the operation is performed using the GPU
- *
- * \snippet SparseGrid/1_gray_scott_3d_sparse_gpu/main.cu create points
- *
- * The function can also called with a specified range
- *
- * \snippet SparseGrid/1_gray_scott_3d_sparse_gpu/main.cu create points sub
- *
- * # Update
- *
- * to calculate the right-hand-side we use the function **conv2** this function can be used to do a convolution that involve
- * two properties
- *
- * The function accept a lambda function where the first 2 arguments are the output of the same type of the two property choosen.
- *
- * The arguments 3 and 4 contain the properties of two selected properties. while i,j,k are the coordinates we have to calculate the
- * convolution. The call **conv2** also accept template parameters the first two indicate the source porperties, the other two are the destination properties. While the
- * last is the extension of the stencil. In this case we use 1.
- *
- * The lambda function is defined as
- *
- * \snippet SparseGrid/1_gray_scott_3d_sparse_gpu/main.cu lambda
- *
- * and used in the body loop
- *
- * \snippet SparseGrid/1_gray_scott_3d_sparse_gpu/main.cu body
+ * Because the geometry is fixed we are also using the option SKIP_LABELLING. With this option active after a normal ghost_get we are able to 
+ * activate certain optimization patterns in constructions of the sending buffers and merging data.
  *
  */
 
@@ -74,7 +54,9 @@ constexpr int z = 2;
 
 //! \cond [grid definition] \endcond
 
-typedef sgrid_dist_id_gpu<3,float,aggregate<float,float,float,float> > SparseGridType;
+typedef CartDecomposition<3,float, CudaMemory, memory_traits_inte, BoxDistribution<3,float> > Dec;
+
+typedef sgrid_dist_id_gpu<3,float,aggregate<float,float,float,float>,CudaMemory, Dec> SparseGridType;
 
 //! \cond [grid definition] \endcond
 
@@ -166,7 +148,7 @@ int main(int argc, char* argv[])
     float K = 0.053;
     float F = 0.014;
 
-	sgrid_dist_id_gpu<3, float, aggregate<float,float,float,float>> grid(sz,domain,g,bc);
+	SparseGridType grid(sz,domain,g,bc);
 
 	// spacing of the grid on x and y
 	float spacing[3] = {grid.spacing(0),grid.spacing(1),grid.spacing(2)};
@@ -211,13 +193,13 @@ int main(int argc, char* argv[])
 
 				u_out = uc + uFactor *(u(i-1,j,k) + u(i+1,j,k) +
                                                        u(i,j-1,k) + u(i,j+1,k) +
-                                                       u(i,j,k-1) + u(i,j,k+1) - 6.0*uc) - deltaT * uc*vc*vc
-                                                       - deltaT * F * (uc - 1.0);
+                                                       u(i,j,k-1) + u(i,j,k+1) - 6.0f*uc) - deltaT * uc*vc*vc
+                                                       - deltaT * F * (uc - 1.0f);
 
 
 				v_out = vc + vFactor *(v(i-1,j,k) + v(i+1,j,k) +
                                                        v(i,j+1,k) + v(i,j-1,k) +
-                                                       v(i,j,k-1) + v(i,j,k+1) - 6.0*vc) + deltaT * uc*vc*vc
+                                                       v(i,j,k-1) + v(i,j,k+1) - 6.0f*vc) + deltaT * uc*vc*vc
 					               - deltaT * (F+K) * vc;
 				};
 

@@ -51,18 +51,18 @@
  * The initialization involve the creation of 3 sphere and one cylinder channel connecting them in order to do it we
  * create an iterator over the grid (inserted and not inserted) point with **getGridIterator**
  *
- * \snippet SparseGrid/1_gray_scott_3d_sparse_cs/main.cpp init sphere channel
+ * \snippet SparseGrid/3_gray_scott_3d_sparse_cs/main.cpp init sphere channel
  *
  * After creating the domain we make a perturbation in the up sphere
  *
- * \snippet SparseGrid/1_gray_scott_3d_sparse_cs/main.cpp perturbation
+ * \snippet SparseGrid/3_gray_scott_3d_sparse_cs/main.cpp perturbation
  *
  * # Boundary conditions
  *
  * For this example we use mirror on direction X Y Z If the point is missing. If the point is missing in both direction than
  * the second derivative is considered zero
  *
- * \snippet SparseGrid/1_gray_scott_3d_sparse_cs/main.cpp boundary condition
+ * \snippet SparseGrid/3_gray_scott_3d_sparse_cs/main.cpp boundary condition
  *
  */
 

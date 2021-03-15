@@ -1,4 +1,8 @@
+#define VCLUSTER_PERF_REPORT
+#define SYNC_BEFORE_TAKE_TIME
+#define ENABLE_GRID_DIST_ID_PERF_STATS
 #include "Decomposition/Distribution/BoxDistribution.hpp"
+#include "util/cuda/cuda_launch.hpp"
 #include "Grid/grid_dist_id.hpp"
 #include "data_type/aggregate.hpp"
 #include "timer.hpp"
@@ -75,7 +79,7 @@ constexpr int z = 2;
 
 typedef CartDecomposition<3,float, CudaMemory, memory_traits_inte, BoxDistribution<3,float> > Dec;
 
-typedef sgrid_dist_id_gpu<3,float,aggregate<float,float,float,float>,CudaMemory, Dec> SparseGridType;
+typedef sgrid_dist_id_gpu<3,float,aggregate<float>,CudaMemory, Dec> SparseGridType;
 
 void init(SparseGridType & grid, Box<3,float> & domain)
 {
@@ -83,49 +87,49 @@ void init(SparseGridType & grid, Box<3,float> & domain)
 
 	typedef typename GetAddBlockType<SparseGridType>::type InsertBlockT;
 
-	grid.addPoints([] __device__ (int i, int j, int k)
+	for (int i = 0 ; i < 10 ; i++)
+	{
+		timer t;
+		t.start();
+
+		grid.addPoints([] __device__ (int i, int j, int k)
 			        {
 						return true;
 			        },
 			        [] __device__ (InsertBlockT & data, int i, int j, int k)
 			        {
 			        	data.template get<U>() = 1.0;
-			        	data.template get<V>() = 0.0;
 			        }
 			        );
 
 
-	grid.template flush<smax_<U>,smax_<V>>(flush_type::FLUSH_ON_DEVICE);
+		grid.template flush<smax_<U>>(flush_type::FLUSH_ON_DEVICE);
 
-	//! \cond [create points] \endcond
+		t.stop();
 
-	long int x_start = grid.size(0)*1.55f/domain.getHigh(0);
-	long int y_start = grid.size(1)*1.55f/domain.getHigh(1);
-	long int z_start = grid.size(1)*1.55f/domain.getHigh(2);
+		std::cout << "Time populate: " << t.getwct()  << std::endl;
 
-	long int x_stop = grid.size(0)*1.85f/domain.getHigh(0);
-	long int y_stop = grid.size(1)*1.85f/domain.getHigh(1);
-	long int z_stop = grid.size(1)*1.85f/domain.getHigh(2);
+        	timer t2;
+		cudaDeviceSynchronize();
+        	t2.start();
 
-	//! \cond [create points sub] \endcond
-
-	grid_key_dx<3> start({x_start,y_start,z_start});
-	grid_key_dx<3> stop ({x_stop,y_stop,z_stop});
-
-        grid.addPoints(start,stop,[] __device__ (int i, int j, int k)
+        	grid.addPoints([] __device__ (int i, int j, int k)
                                 {
                                                 return true;
                                 },
                                 [] __device__ (InsertBlockT & data, int i, int j, int k)
                                 {
-                                        data.template get<U>() = 0.5;
-                                        data.template get<V>() = 0.24;
+                                        data.template get<U>() = 5.0;
                                 }
                                 );
 
-	grid.template flush<smax_<U>,smax_<V>>(flush_type::FLUSH_ON_DEVICE);
 
-	//! \cond [create points sub] \endcond
+        	grid.template flush<sRight_<U>>(flush_type::FLUSH_ON_DEVICE);
+
+		t2.stop();
+
+		std::cout << "Time populate: " << t2.getwct()  << std::endl;
+	}
 }
 
 
@@ -137,7 +141,7 @@ int main(int argc, char* argv[])
 	Box<3,float> domain({0.0,0.0,0.0},{2.5,2.5,2.5});
 	
 	// grid size
-        size_t sz[3] = {256,256,256};
+        size_t sz[3] = {512,512,512};
 
 	// Define periodicity of the grid
 	periodicity<3> bc = {PERIODIC,PERIODIC,PERIODIC};
@@ -173,89 +177,9 @@ int main(int argc, char* argv[])
 	init(grid,domain);
 
 	// sync the ghost
-	grid.template ghost_get<U,V>(RUN_ON_DEVICE);
-
-	// because we assume that spacing[x] == spacing[y] we use formula 2
-	// and we calculate the prefactor of Eq 2
-	float uFactor = deltaT * du/(spacing[x]*spacing[x]);
-	float vFactor = deltaT * dv/(spacing[x]*spacing[x]);
-
-	auto & v_cl = create_vcluster();
-
-	timer tot_sim;
-	tot_sim.start();
-
-	for (size_t i = 0; i < timeSteps ; ++i)
-	{
-		if (v_cl.rank() == 0)
-		{std::cout << "STEP: " << i << std::endl;}
-/*		if (i % 300 == 0)
-		{
-			std::cout << "STEP: " << i << std::endl;
-			grid.write_frame("out",i,VTK_WRITER);
-		}*/
-
-		//! \cond [stencil get and use] \endcond
-
-		typedef typename GetCpBlockType<decltype(grid),0,1>::type CpBlockType;
-
-		//! \cond [lambda] \endcond
-
-		auto func = [uFactor,vFactor,deltaT,F,K] __device__ (float & u_out, float & v_out,
-				                                   CpBlockType & u, CpBlockType & v,
-				                                   int i, int j, int k){
-
-				float uc = u(i,j,k);
-				float vc = v(i,j,k);
-
-				u_out = uc + uFactor *(u(i-1,j,k) + u(i+1,j,k) +
-                                                       u(i,j-1,k) + u(i,j+1,k) +
-                                                       u(i,j,k-1) + u(i,j,k+1) - 6.0*uc) - deltaT * uc*vc*vc
-                                                       - deltaT * F * (uc - 1.0);
-
-
-				v_out = vc + vFactor *(v(i-1,j,k) + v(i+1,j,k) +
-                                                       v(i,j+1,k) + v(i,j-1,k) +
-                                                       v(i,j,k-1) + v(i,j,k+1) - 6.0*vc) + deltaT * uc*vc*vc
-					               - deltaT * (F+K) * vc;
-				};
-
-		//! \cond [lambda] \endcond
-
-		//! \cond [body] \endcond
-
-		if (i % 2 == 0)
-		{
-			grid.conv2<U,V,U_next,V_next,1>({0,0,0},{(long int)sz[0]-1,(long int)sz[1]-1,(long int)sz[2]-1},func);
-
-			// After copy we synchronize again the ghost part U and V
-
-			grid.ghost_get<U_next,V_next>(RUN_ON_DEVICE | SKIP_LABELLING);
-		}
-		else
-		{
-			grid.conv2<U_next,V_next,U,V,1>({0,0,0},{(long int)sz[0]-1,(long int)sz[1]-1,(long int)sz[2]-1},func);
-
-			// After copy we synchronize again the ghost part U and V
-			grid.ghost_get<U,V>(RUN_ON_DEVICE | SKIP_LABELLING);
-		}
-
-		//! \cond [body] \endcond
-
-		// Every 500 time step we output the configuration for
-		// visualization
-//		if (i % 500 == 0)
-//		{
-//			grid.save("output_" + std::to_string(count));
-//			count++;
-//		}
-	}
-	
-	tot_sim.stop();
-	std::cout << "Total simulation: " << tot_sim.getwct() << std::endl;
-
-	grid.deviceToHost<U,V,U_next,V_next>();
+	grid.deviceToHost<U>();
 	grid.write("final");
+	grid.print_stats();
 
 	//! \cond [time stepping] \endcond
 
