@@ -117,4 +117,6 @@ projectId.sh
 /build
 /Default/
 node_modules
-node_modules
+/cmake-build-debug-gcc/
+/cmake-build-falcon/
+/cmake-build-release-gcc/
