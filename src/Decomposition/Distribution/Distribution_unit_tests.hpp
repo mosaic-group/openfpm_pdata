@@ -11,6 +11,7 @@
 #include "config.h"
 #include "SpaceDistribution.hpp"
 #include <unistd.h>
+#include "BoxDistribution.hpp"
 
 /*! \brief Set a sphere as high computation cost
  *
@@ -422,6 +423,53 @@ BOOST_AUTO_TEST_CASE( Space_distribution_test)
 	//! [refine with dist_parmetis the decomposition]
 }
 
+
+BOOST_AUTO_TEST_CASE( Box_distribution_test)
+{
+	Vcluster<> & v_cl = create_vcluster();
+
+	if (v_cl.size() > 16)
+	{return;}
+
+	//! [Initialize a ParMetis Cartesian graph and decompose]
+
+	BoxDistribution<3, float> box_dist(v_cl);
+
+	// Physical domain
+	Box<3, float> box( { 0.0, 0.0, 0.0 }, { 10.0, 10.0, 10.0 });
+
+	// Grid info
+	grid_sm<3, void> info( { GS_SIZE, GS_SIZE, GS_SIZE });
+
+	// Initialize Cart graph and decompose
+	box_dist.createCartGraph(info,box);
+
+	// First create the center of the weights distribution, check it is coherent to the size of the domain
+	Point<3, float> center( { 2.0, 2.0, 2.0 });
+
+	// first decomposition
+	box_dist.decompose();
+
+	BOOST_REQUIRE_EQUAL(box_dist.get_ndec(),0ul);
+
+	auto & graph = box_dist.getGraph();
+
+	for (int i = 0 ; i < graph.getNVertex() ; i++)
+	{
+		BOOST_REQUIRE(graph.vertex(i).template get<nm_v_proc_id>() < v_cl.size());
+	}
+
+	size_t n_sub = box_dist.getNOwnerSubSubDomains();
+
+	size_t n_sub_tot = info.size();
+	size_t n_sub_bal = n_sub_tot / v_cl.size();
+
+	BOOST_REQUIRE( (((int)n_sub_bal - 64) <= (long int)n_sub) && (n_sub_bal + 64 >= n_sub) );
+
+	//! [refine with parmetis the decomposition]
+
+//	BOOST_REQUIRE_EQUAL(sizeof(ParMetisDistribution<3,float>),872ul);
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 

@@ -4,45 +4,77 @@ add_definitions(-DSCAN_WITH_CUB)
 
 ########################### Executables
 
-if(CUDA_FOUND)
+
+if(CUDA_FOUND OR CUDA_ON_CPU)
 	set(CUDA_SOURCES 
-				Grid/tests/sgrid_dist_id_gpu_unit_tests.cu
-				Vector/cuda/vector_dist_gpu_MP_tests.cu 
-					 Vector/cuda/vector_dist_cuda_func_test.cu
-					 Decomposition/cuda/decomposition_cuda_tests.cu
-					 Vector/cuda/vector_dist_gpu_unit_tests.cu
-					 ../openfpm_devices/src/memory/CudaMemory.cu
-					 Decomposition/cuda/Domain_icells_cart_unit_test.cu
-					 Amr/tests/amr_base_gpu_unit_tests.cu)
-else()
-	set(CUDA_SOURCES Vector/vector_dist_subset.hpp)
+	    Grid/tests/sgrid_dist_id_gpu_unit_tests.cu
+	    Vector/cuda/vector_dist_gpu_MP_tests.cu 
+	    Vector/cuda/vector_dist_cuda_func_test.cu
+	    Decomposition/cuda/decomposition_cuda_tests.cu
+	    Vector/cuda/vector_dist_gpu_unit_tests.cu
+	    Decomposition/cuda/Domain_icells_cart_unit_test.cu
+	    Amr/tests/amr_base_gpu_unit_tests.cu)
 endif()
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+        add_definitions("-DBOOST_MPL_CFG_HAS_TYPEOF")
+endif()
+
+if (CUDA_ON_CPU)
+        add_definitions(-DCUDA_ON_CPU)
+        set_source_files_properties(${CUDA_SOURCES} PROPERTIES LANGUAGE CXX)
+        set_source_files_properties(${CUDA_SOURCES} PROPERTIES COMPILE_FLAGS "-D__NVCC__ -DCUDART_VERSION=11000")
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+                add_definitions("-x c++")
+        endif()
+endif()
+
+
 add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
-							   							  Debug/debug_test.cpp
-														  Amr/grid_dist_amr_unit_tests.cpp
-														  Amr/tests/amr_base_unit_tests.cpp
-														  Debug/debug_test.cpp
-														  Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp
-														  Grid/tests/grid_dist_id_unit_test.cpp
-														  Grid/tests/sgrid_dist_id_unit_tests.cpp
-														  Grid/tests/grid_dist_id_dlb_unit_test.cpp
-														  Grid/tests/staggered_grid_dist_unit_test.cpp
-														  Vector/tests/vector_dist_cell_list_tests.cpp
-														  Vector/tests/vector_dist_complex_prp_unit_test.cpp
-														  Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp 
-														  Vector/tests/vector_dist_MP_unit_tests.cpp 
-														  Vector/tests/vector_dist_NN_tests.cpp 
-														  Vector/tests/vector_dist_unit_test.cpp  
-														  pdata_performance.cpp 
-														  Decomposition/tests/CartDecomposition_unit_test.cpp 
-														  Decomposition/tests/shift_vect_converter_tests.cpp 
-														  Vector/performance/vector_dist_performance_util.cpp  
-														  lib/pdata.cpp test_multiple_o.cpp  
-														  ../openfpm_devices/src/memory/HeapMemory.cpp 
-														  ../openfpm_devices/src/memory/PtrMemory.cpp 
-														  ../openfpm_vcluster/src/VCluster/VCluster.cpp 
-														  )
+							  Amr/grid_dist_amr_unit_tests.cpp
+							  Amr/tests/amr_base_unit_tests.cpp
+						  	  Debug/debug_test.cpp
+							  Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp
+							  Grid/tests/grid_dist_id_unit_test.cpp
+							  Grid/tests/sgrid_dist_id_unit_tests.cpp
+							  Grid/tests/grid_dist_id_dlb_unit_test.cpp
+							  Grid/tests/staggered_grid_dist_unit_test.cpp
+							  Vector/tests/vector_dist_cell_list_tests.cpp
+							  Vector/tests/vector_dist_complex_prp_unit_test.cpp
+							  Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp 
+							  Vector/tests/vector_dist_MP_unit_tests.cpp 
+							  Vector/tests/vector_dist_NN_tests.cpp 
+							  Vector/tests/vector_dist_unit_test.cpp  
+							  pdata_performance.cpp 
+							  Decomposition/tests/CartDecomposition_unit_test.cpp 
+							  Decomposition/tests/shift_vect_converter_tests.cpp 
+							  Vector/performance/vector_dist_performance_util.cpp  
+							  lib/pdata.cpp test_multiple_o.cpp)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(pdata PRIVATE "-Wno-undefined-var-template")
+
+        # Instead of enabling this option let's check why is redefined
+        #target_compile_options(pdata PRIVATE "-Wno-macro-redefined")
+endif()
+if ( CMAKE_COMPILER_IS_GNUCC )
+        target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
+        target_compile_options(pdata PRIVATE "-Wno-undefined-var-template")
+
+        # Instead of enabling this option let's check why is redefined
+        #target_compile_options(pdata PRIVATE "-Wno-macro-redefined")
+endif()
+
+add_dependencies(pdata ofpmmemory)
+add_dependencies(pdata vcluster)
+
+#add_executable(isolation_pdata ${OPENFPM_INIT_FILE} isolation.cu
+#														  lib/pdata.cpp  
+#														  ../openfpm_devices/src/memory/HeapMemory.cpp 
+#														  ../openfpm_devices/src/memory/CudaMemory.cu
+#														  ../openfpm_devices/src/memory/PtrMemory.cpp 
+#														  ../openfpm_vcluster/src/VCluster/VCluster.cpp 
+#														  )
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	target_compile_options(pdata PRIVATE "-Wno-undefined-var-template")
@@ -59,10 +91,15 @@ if ( CMAKE_COMPILER_IS_GNUCC )
     endif()
 endif()
 
+if (CMAKE_CUDA_COMPILER_ID STREQUAL "Clang")
+        add_definitions(-D__STRICT_ANSI__)
+endif()
+
 if (ENABLE_ASAN)
     target_compile_options(pdata PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler "-fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g" >)
     target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g >)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
+	add_definitions(-DENABLE_ASAN)
 endif()
 
 add_library(ofpm_pdata STATIC lib/pdata.cpp)
@@ -73,7 +110,6 @@ add_test(NAME pdata_4_proc COMMAND mpirun -np 4 ./pdata)
 ###########################
 
 if (CUDA_FOUND)
-	target_compile_options(pdata PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: ${WARNING_SUPPRESSION_AND_OPTION_NVCC} >)
 	target_include_directories (pdata PUBLIC ${MPI_C_INCLUDE_DIRS})
         if (TEST_COVERAGE)
 		target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler "-fprofile-arcs -ftest-coverage" >)
@@ -102,8 +138,25 @@ if(EIGEN3_FOUND)
 	target_include_directories (pdata PUBLIC ${EIGEN3_INCLUDE_DIR})
 endif()
 
+target_include_directories (pdata PUBLIC ${ALPAKA_ROOT}/include)
 target_include_directories(pdata PUBLIC ${Vc_INCLUDE_DIR})
 target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
+
+#target_include_directories (isolation_pdata PUBLIC ${PARMETIS_ROOT}/include)
+#target_include_directories (isolation_pdata PUBLIC ${METIS_ROOT}/include)
+#target_include_directories (isolation_pdata PUBLIC ${CUDA_INCLUDE_DIRS})
+#target_include_directories (isolation_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+#target_include_directories (isolation_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_devices/src/)
+#target_include_directories (isolation_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_vcluster/src/)
+#target_include_directories (isolation_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
+#target_include_directories (isolation_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_io/src/)
+#target_include_directories (isolation_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
+#target_include_directories (isolation_pdata PUBLIC ${PETSC_INCLUDES})
+#target_include_directories (isolation_pdata PUBLIC ${HDF5_ROOT}/include)
+#target_include_directories (isolation_pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
+#target_include_directories (isolation_pdata PUBLIC ${Vc_INCLUDE_DIR})
+#target_include_directories (isolation_pdata PUBLIC ${Boost_INCLUDE_DIRS})
+
 
 target_link_libraries(pdata ${Boost_LIBRARIES})
 target_link_libraries(pdata ${PARMETIS_LIBRARIES})
@@ -112,6 +165,17 @@ target_link_libraries(pdata ${HDF5_LIBRARIES})
 target_link_libraries(pdata -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
 target_link_libraries(pdata ${PETSC_LIBRARIES})
 target_link_libraries(pdata ${Vc_LIBRARIES})
+target_link_libraries(pdata ${alpaka_LIBRARIES})
+target_link_libraries(pdata vcluster)
+target_link_libraries(pdata ofpmmemory)
+
+#target_link_libraries(isolation_pdata ${Boost_LIBRARIES})
+#target_link_libraries(isolation_pdata ${PARMETIS_LIBRARIES})
+#target_link_libraries(isolation_pdata -L${METIS_ROOT}/lib metis)
+#target_link_libraries(isolation_pdata ${HDF5_LIBRARIES})
+#target_link_libraries(isolation_pdata -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
+#target_link_libraries(isolation_pdata ${PETSC_LIBRARIES})
+#target_link_libraries(isolation_pdata ${Vc_LIBRARIES})
 
 if (TEST_PERFORMANCE)
 	target_link_libraries(pdata  ${Boost_FILESYSTEM_LIBRARY})

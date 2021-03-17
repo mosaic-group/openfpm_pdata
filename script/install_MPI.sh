@@ -30,5 +30,5 @@ make -j $2
 make install
 
 # Mark the installation
-echo 6 > $1/MPI/version
+echo 8 > $1/MPI/version
 

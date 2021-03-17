@@ -35,7 +35,19 @@ set(METIS_DIR ${METIS_ROOT})
 set(PARMETIS_DIR ${PARMETIS_ROOT})
 set(OPENBLAS_ROOT CACHE PATH "Root path for blas library")
 set(SuiteSparse_ROOT ${SUITESPARSE_ROOT})
+set(CUDA_ON_CPU CACHE BOOL "Make Cuda work on heap")
+set(CPACK_RUN_INSTALL_DEPENDENCIES CACHE BOOL "Set to true if we are creating deb or RPM packages")
+set(ENABLE_GARBAGE_INJECTOR CACHE BOOL "Enable the injector of garbage in the memory allocator")
+set(ENABLE_VCLUSTER_GARBAGE_INJECTOR CACHE BOOL "Enable the injector of garbage in the vcluster memory buffers")
 
+# Enabling real GPU is stronger than using CUDA_ON_CPU
+if (ENABLE_GPU)
+    set(CUDA_ON_CPU OFF)
+	# Test CLang
+	find_package(CUDA)
+	set(CMAKE_CUDA_COMPILER_LIBRARY_ROOT ${CUDA_TOOLKIT_ROOT_DIR})
+        enable_language(CUDA)
+endif()
 
 set (CMAKE_CXX_STANDARD 14)
 set (CMAKE_CUDA_STANDARD 14)
@@ -51,55 +63,29 @@ endif()
 set(ENV{PATH} "$ENV{PATH}:${HDF5_ROOT}/bin")
 set(HDF5_PREFER_PARALLEL TRUE)
 
-if(ENABLE_GPU)
-	enable_language(CUDA)
-	find_package(CUDA)
-
-	if (CUDA_VERSION_MAJOR EQUAL 9 AND CUDA_VERSION_MINOR EQUAL 2)
-		message("CUDA is compatible 9.2")
-		set(WARNING_SUPPRESSION_AND_OPTION_NVCC  -Xcudafe "--display_error_number --diag_suppress=611 --diag_suppress=2885 --diag_suppress=2886  --diag_suppress=2887  --diag_suppress=2888 --diag_suppress=186 --diag_suppress=111" --expt-extended-lambda)
-		FILE(WRITE cuda_options " -Xcudafe \"--display_error_number --diag_suppress=611 --diag_suppress=2885 --diag_suppress=2886  --diag_suppress=2887  --diag_suppress=2888 --diag_suppress=186 --diag_suppress=111\" --expt-extended-lambda ")
-	elseif ( CUDA_VERSION_MAJOR EQUAL 10 AND CUDA_VERSION_MINOR EQUAL 1 )
-                message("CUDA is compatible 10.1")
-                set(WARNING_SUPPRESSION_AND_OPTION_NVCC  -Xcudafe "--display_error_number --diag_suppress=2915 --diag_suppress=2912 --diag_suppress=2913 --diag_suppress=111 --diag_suppress=186 --diag_suppress=611 " --expt-extended-lambda )
-		FILE(WRITE cuda_options "-Xcudafe \"--display_error_number --diag_suppress=2915 --diag_suppress=2914  --diag_suppress=2912 --diag_suppress=2913 --diag_suppress=111 --diag_suppress=186 --diag_suppress=611 \" --expt-extended-lambda")
-        elseif ( CUDA_VERSION_MAJOR EQUAL 10 AND CUDA_VERSION_MINOR EQUAL 2 )
-                message("CUDA is compatible 10.2")
-                set(WARNING_SUPPRESSION_AND_OPTION_NVCC  -Xcudafe "--display_error_number --diag_suppress=2976 --diag_suppress=2977 --diag_suppress=2978 --diag_suppress=2979 --diag_suppress=1835 --diag_suppress=611 --diag_suppress=186 --diag_suppress=128" --expt-extended-lambda)
-                set(WARNING_SUPPRESSION_AND_OPTION_NVCC_TEXT  "-Xcudafe \"--display_error_number --diag_suppress=2976 --diag_suppress=2977 --diag_suppress=2978 --diag_suppress=2979 --diag_suppress=1835 --diag_suppress=611 --diag_suppress=186 --diag_suppress=128\" --expt-extended-lambda")
-		FILE(WRITE cuda_options "-Xcudafe \"--display_error_number --diag_suppress=2976 --diag_suppress=2977 --diag_suppress=2978 --diag_suppress=2979 --diag_suppress=1835 --diag_suppress=611 --diag_suppress=186 --diag_suppress=128\" --expt-extended-lambda")
-        elseif ( CUDA_VERSION_MAJOR EQUAL 11 AND CUDA_VERSION_MINOR EQUAL 0 )
-                message("CUDA is compatible 11.0")
-                set(WARNING_SUPPRESSION_AND_OPTION_NVCC  -Xcudafe "--display_error_number --diag_suppress=3056 --diag_suppress=3057 --diag_suppress=3058 --diag_suppress=3059 --diag_suppress=611  --diag_suppress=186 --diag_suppress=128" --expt-extended-lambda)
-                set(WARNING_SUPPRESSION_AND_OPTION_NVCC_TEXT  "-Xcudafe \"--display_error_number --diag_suppress=3056 --diag_suppress=3057  --diag_suppress=3058 --diag_suppress=3059 --diag_suppress=611  --diag_suppress=186 --diag_suppress=128\" --expt-extended-lambda")
-                FILE(WRITE cuda_options "-Xcudafe \"--display_error_number --diag_suppress=3056 --diag_suppress=3058 --diag_suppress=3058 --diag_suppress=3059 --diag_suppress=611  --diag_suppress=186 --diag_suppress=128\" --expt-extended-lambda")
-	elseif ( CUDA_VERSION_MAJOR EQUAL 11 AND CUDA_VERSION_MINOR EQUAL 1 )
-                message("CUDA is compatible 11.1")
-                set(WARNING_SUPPRESSION_AND_OPTION_NVCC  -Xcudafe "--display_error_number --diag_suppress=3124 --diag_suppress=3126 --diag_suppress=3125 --diag_suppress=3123 --diag_suppress=611  --diag_suppress=186 --diag_suppress=128" --expt-extended-lambda)
-                set(WARNING_SUPPRESSION_AND_OPTION_NVCC_TEXT  "-Xcudafe \"--display_error_number --diag_suppress=3124 --diag_suppress=3126  --diag_suppress=3125 --diag_suppress=3123 --diag_suppress=611  --diag_suppress=186 --diag_suppress=128\" --expt-extended-lambda")
-                FILE(WRITE cuda_options "-Xcudafe \"--display_error_number --diag_suppress=3124 --diag_suppress=3125 --diag_suppress=3126 --diag_suppress=3123 --diag_suppress=611  --diag_suppress=186 --diag_suppress=128\" --expt-extended-lambda")
-	else()
-		message(FATAL_ERROR "CUDA is incompatible, version 9.2 10.1 10.2 and 11.0 is only supported")
-	endif()
-endif()
-
 set(Vc_DIR "${Vc_ROOT}/lib/cmake/Vc/")
 message("Searching Vc in ${Vc_DIR}")
 
-find_package(Boost 1.68.0 COMPONENTS unit_test_framework iostreams program_options system filesystem)
+find_package(Boost 1.72.0 COMPONENTS unit_test_framework iostreams program_options system filesystem OPTIONAL_COMPONENTS fiber context)
 find_package(MPI)
 find_package(PETSc)
 find_package(HDF5)
 find_package(Eigen3)
 find_package(LibHilbert)
-find_package(Metis)
-find_package(ParMetis)
+find_package(METIS)
+find_package(ParMETIS)
 find_package(TinyObjLoader )
 find_package(BLAS)
 find_package(LAPACK)
 find_package(Eigen3)
 find_package(SuiteSparse OPTIONAL_COMPONENTS UMFPACK)
 find_package(Vc)
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
 
 if(PROFILE_WITH_SCOREP)
 	set(CMAKE_CXX_COMPILER_LAUNCHER "scorep")
@@ -107,7 +93,7 @@ if(PROFILE_WITH_SCOREP)
 	set(CMAKE_CUDA_COMPILER_LAUNCHER "scorep")
 endif()
 
-if(CUDA_FOUND)
+if(ENABLE_GPU AND CUDA_FOUND)
 	set(OPENFPM_INIT_FILE "initialize/initialize_wrapper_cuda.cu")
 else()
 	set(OPENFPM_INIT_FILE "initialize/initialize_wrapper_cpu.cpp")
@@ -143,10 +129,6 @@ if(TEST_PERFORMANCE)
 	set(DEFINE_PERFORMANCE_TEST "#define PERFORMANCE_TEST")
 endif()
 
-if(CUDA_FOUND)
-	set(DEFINE_CUDA_GPU "#define CUDA_GPU")
-endif()
-
 if (METIS_FOUND)
 	set(DEFINE_HAVE_METIS "#define HAVE_METIS 1")
 else()
@@ -161,6 +143,7 @@ else()
 	message( FATAL_ERROR "ParMetis is required in order to install OpenFPM")
 endif()
 
+
 if(MPI_FOUND)
 	set(DEFINE_HAVE_MPI "#define HAVE_MPI")
 else()
@@ -169,13 +152,33 @@ else()
 endif()
 
 if (Boost_FOUND)
-	set(DEFINE_HAVE_BOOST "#define HAVE_BOOST")
-	set(DEFINE_HAVE_BOOST_IOSTREAMS "#define HAVE_BOOST_IOSTREAMS")
-	set(DEFINE_HAVE_BOOST_PROGRAM_OPTIONS "#define HAVE_BOOST_PROGRAM_OPTIONS")
-	set(DEFINE_HAVE_BOOST_UNIT_TEST_FRAMEWORK "#define HAVE_BOOST_UNIT_TEST_FRAMEWORK")
+        set(DEFINE_HAVE_BOOST "#define HAVE_BOOST")
+        set(DEFINE_HAVE_BOOST_IOSTREAMS "#define HAVE_BOOST_IOSTREAMS")
+        set(DEFINE_HAVE_BOOST_PROGRAM_OPTIONS "#define HAVE_BOOST_PROGRAM_OPTIONS")
+        set(DEFINE_HAVE_BOOST_UNIT_TEST_FRAMEWORK "#define HAVE_BOOST_UNIT_TEST_FRAMEWORK")
+        if (Boost_CONTEXT_FOUND)
+                set(DEFINE_HAVE_BOOST_CONTEXT "#define HAVE_BOOST_CONTEXT")
+		set(OPTIONAL_BOOST_LIBS "-lboost_context")
+        else()
+                #if context is not there CUDA_ON_CPU cannot be activated
+                set(CUDA_ON_CPU OFF)
+        endif()
+        if (Boost_FIBER_FOUND)
+                set(DEFINE_HAVE_BOOST_FIBER "#define HAVE_BOOST_FIBER")
+		string(CONCAT OPTIONAL_BOOST_LIBS ${OPTIONAL_BOOST_LIBS}  " -lboost_fiber")
+        endif()
+	file(WRITE optional_boost_libs "${OPTIONAL_BOOST_LIBS}")
 else()
 	file(WRITE error_code "202")
 	message( FATAL_ERROR "BOOST is required in order to install OpenFPM" )
+endif()
+
+if(ENABLE_GPU AND CUDA_FOUND)
+        set(DEFINE_CUDA_GPU "#define CUDA_GPU")
+endif()
+
+if(CUDA_ON_CPU)
+        set(DEFINE_CUDA_GPU "#define CUDA_GPU")
 endif()
 
 if(HDF5_FOUND)
@@ -215,6 +218,14 @@ else()
 	message( FATAL_ERROR "Vc is required in roder to install OpenFPM")
 endif()
 
+if (ENABLE_GARBAGE_INJECTOR)
+	set(DEFINE_GARBAGE_INJECTOR "#define GARBAGE_INJECTOR")
+endif()
+
+if (ENABLE_VCLUSTER_GARBAGE_INJECTOR)
+        set(DEFINE_VCLUSTER_GARBAGE_INJECTOR "#define VCLUSTER_GARBAGE_INJECTOR")
+endif()
+
 if(APPLE)
 	set(DEFINE_HAVE_OSX "#define HAVE_OSX")
 endif()
@@ -225,16 +236,97 @@ endif()
 
 file(WRITE error_code "0")
 file(WRITE cuda_lib "${CUDA_cudart_static_LIBRARY} ${CUDA_cudadevrt_LIBRARY}")
-file(WRITE cuda_include "-I${CUDA_INCLUDE_DIRS}")
+if(CUDA_ON_CPU)
+	file(WRITE cuda_include "-I${CUDA_INCLUDE_DIRS} -D__NVCC__ -DCUDART_VERSION=11000 -DCUDA_ON_CPU")
+	file(WRITE cuda_on_cpu "YES")
+else()
+	file(WRITE cuda_include "-I${CUDA_INCLUDE_DIRS}")
+	file(WRITE cuda_on_cpu "NO")
+endif()
 file(WRITE mpi_include "-I${MPI_C_INCLUDE_DIRS}")
 file(WRITE mpi_libs "${MPI_C_LINK_FLAGS} ${MPI_C_LIBRARIES}")
-file(WRITE cuda_options "${WARNING_SUPPRESSION_AND_OPTION_NVCC_TEXT}")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/config/config_cmake.h.in ${CMAKE_CURRENT_SOURCE_DIR}/src/config/config.h)
 
-add_subdirectory (src)
-add_subdirectory (openfpm_devices)
-add_subdirectory (openfpm_data)
 add_subdirectory (openfpm_io)
-add_subdirectory (openfpm_vcluster)
 add_subdirectory (openfpm_numerics)
+
+file(WRITE cuda_options "${WARNING_SUPPRESSION_AND_OPTION_NVCC_TEXT}")
+
+add_subdirectory (src)
+
+#################### CPack to create auto installing packages
+
+include(InstallRequiredSystemLibraries)
+
+
+if (CPACK_RUN_INSTALL_DEPENDENCIES)
+
+	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "OpenFPM distributed data-structures")
+	set(CPACK_PACKAGE_VENDOR "IBirdSoft")
+	set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README")
+	set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/gpl-3.0.txt")
+	set(CPACK_PACKAGE_VERSION_MAJOR "3")
+	set(CPACK_PACKAGE_VERSION_MINOR "2")
+	set(CPACK_PACKAGE_VERSION_PATCH "0")
+	set(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
+	set(CPACK_STRIP_FILES "bin/MyExecutable")
+	set(CPACK_SOURCE_STRIP_FILES "")
+	#set(CPACK_PACKAGE_EXECUTABLES "MyExecutable" "My Executable")
+	set(CPACK_PACKAGE_INSTALL_DIRECTORY /usr/local/openfpm)
+	set(CPACK_PACKAGING_INSTALL_PREFIX /usr/local/openfpm)
+	set(CPACK_PACKAGE_HOMEPAGE_URL http://openfpm.mpi-cbg.de)
+	set(CPACK_RPM_PACKAGE_AUTOREQPROV NO)
+
+	install(FILES $ENV{DEP_PACKING}/openfpm_vars
+              	DESTINATION openfpm_vars
+              	)
+
+        install(DIRECTORY $ENV{DEP_PACKING}/BOOST
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{DEP_PACKING}/EIGEN
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{DEP_PACKING}/HDF5
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{DEP_PACKING}/LIBHILBERT
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{DEP_PACKING}/METIS
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{DEP_PACKING}/MPI
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{DEP_PACKING}/OPENBLAS
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{DEP_PACKING}/PARMETIS
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{DEP_PACKING}/PETSC
+                DESTINATION dependencies/
+                )
+
+        install(DIRECTORY $ENV{DEP_PACKING}/SUITESPARSE
+                DESTINATION dependencies/
+                )
+
+	install(DIRECTORY $ENV{DEP_PACKING}/VCDEVEL
+                DESTINATION dependencies/
+                )
+
+endif()
+
+include(CPack)
+

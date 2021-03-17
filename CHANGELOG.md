@@ -1,7 +1,20 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [3.1.0] 2020 (Codename New Horizons)
+## [3.2.0] January 2021 (Codename Hopper)
+
+- Adding CUDA_ON_CPU option to run CUDA code on CPU
+- Adding gdb-gui debugger
+
+### Fixed
+
+- Minors bugs
+
+### Changes
+
+- In order to compile OpenFPM is now required a compiler implementing C++14 Standard
+
+## [3.1.0] October 2020 (Codename New Horizons)
 
 - Adding GPU support for ghost_put
 - Adding support for CUDA 11
@@ -14,7 +27,7 @@ All notable changes to this project will be documented in this file.
 
 - None
 
-## [3.0.0] 2020 (Codename Sparsity)
+## [3.0.0] July 2020 (Codename Sparsity)
 
 - Upgrading all the dependencies: BOOST,PETSC,SUITESPARSE,OPENBLAS
 - Adding CPU and GPU sparse grids. Look at the examples SparseGrid in the forlder examples

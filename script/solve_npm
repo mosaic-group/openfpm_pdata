@@ -1,0 +1,24 @@
+
+#! /bin/bash 
+
+function solve_npm() {
+source script/show_solutions
+source script/discover_package_manager
+discover_package_manager $1
+pcman=$discover_package_manager_ret
+
+if [ x"$pcman" = x"" ]; then
+        exit 1
+fi
+
+if [ x"$1" = x"osx" ]; then 
+        commands[0]="$pcman install npm"
+        possible_solutions "${commands[@]}"
+elif [ x"$1" = x"linux"  ]; then
+	pc_install_command "$pcman"
+        commands[0]="su -c \"$pc_install_command_ret npm\""
+        commands[1]="sudo $pc_install_command_ret npm"
+        possible_solutions "${commands[@]}"
+fi 
+}
+

@@ -26,16 +26,20 @@ __global__ void insert_icell(vector_sparse_type vs, CellDecomposer_type cld, gri
 
 	unsigned int b = blockIdx.x + blockIdx.y * gridDim.x + blockIdx.z * gridDim.x * gridDim.y;
 
+	bool out = false;
 	for (unsigned int i = 0 ; i < dim ; i++)
 	{
 		gk.set_d(i,gk.get(i) + start.get(i));
 		if (gk.get(i) > stop.get(i))
-		{return;}
+		{out = true;}
 	}
 
-	auto id = cld.LinId(gk);
+	if (out == false)
+	{
+		auto id = cld.LinId(gk);
 
-	vs.insert_b(id,b);
+		vs.insert_b(id,b);
+	}
 
 	vs.flush_block_insert(b, threadIdx.x == 0 & threadIdx.y == 0 & threadIdx.z == 0 );
 }
@@ -50,17 +54,21 @@ __global__ void insert_remove_icell(vector_sparse_type vs, vector_sparse_type vs
 
 	unsigned int b = blockIdx.x + blockIdx.y * gridDim.x + blockIdx.z * gridDim.x * gridDim.y;
 
+	bool out = false;
 	for (unsigned int i = 0 ; i < dim ; i++)
 	{
 		gk.set_d(i,gk.get(i) + start.get(i));
 		if (gk.get(i) > stop.get(i))
-		{return;}
+		{out = true;}
 	}
 
-	auto id = cld.LinId(gk);
+	if (out == false)
+	{
+		auto id = cld.LinId(gk);
 
-	vs.insert_b(id,b);
-	vsi.remove_b(id,b);
+		vs.insert_b(id,b);
+		vsi.remove_b(id,b);
+	}
 
 	vs.flush_block_insert(b, threadIdx.x == 0 & threadIdx.y == 0 & threadIdx.z == 0 );
 	vsi.flush_block_remove(b, threadIdx.x == 0 & threadIdx.y == 0 & threadIdx.z == 0);
@@ -98,7 +106,7 @@ struct CalculateInternalCells_impl<dim,T,layout_base,Memory,cnt_type,ids_type,tr
 			openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> & icells,
 			openfpm::vector<aggregate<ids_type>,Memory,typename layout_base<aggregate<ids_type>>::type,layout_base> & dcells)
 	{
-#ifdef __NVCC__
+#if 0
 
 		// Division array
 		size_t div[dim];
@@ -185,6 +193,7 @@ struct CalculateInternalCells_impl<dim,T,layout_base,Memory,cnt_type,ids_type,tr
 			vs.template flush<>(v_cl.getmgpuContext(),flush_type::FLUSH_ON_DEVICE);
 			vsi.flush_remove(v_cl.getmgpuContext(),flush_type::FLUSH_ON_DEVICE);
 		}
+
 
 		vs.swapIndexVector(icells);
 		vsi.swapIndexVector(dcells);

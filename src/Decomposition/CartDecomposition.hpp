@@ -43,6 +43,12 @@
 
 #define CARTDEC_ERROR 2000lu
 
+enum dec_options
+{
+	DEC_NONE = 0,
+	DEC_SKIP_ICELL = 1
+};
+
 /*! \brief It spread the sub-sub-domain on a regular cartesian grid of size dim
  *
  * \warning this function only guarantee that the division on each direction is
@@ -1345,7 +1351,7 @@ public:
 	/*! \brief Start decomposition
 	 *
 	 */
-	void decompose()
+	void decompose(dec_options opt = dec_options::DEC_NONE)
 	{
 		reset();
 
@@ -1361,13 +1367,17 @@ public:
 		domain_nn_calculator_cart<dim>::reset();
 		domain_nn_calculator_cart<dim>::setParameters(proc_box);
 
-		domain_icell_calculator<dim,T,layout_base,Memory>
-		::CalculateInternalCells(v_cl,
+		if (opt != dec_options::DEC_SKIP_ICELL)
+		{
+
+			domain_icell_calculator<dim,T,layout_base,Memory>
+			::CalculateInternalCells(v_cl,
 								 ie_ghost<dim, T,Memory,layout_base>::private_get_vb_int_box(),
 								 sub_domains,
 								 this->getProcessorBounds(),
 								 this->getGhost().getRcut(),
 								 this->getGhost());
+		}
 	}
 
 	/*! \brief Refine the decomposition, available only for ParMetis distribution, for Metis it is a null call

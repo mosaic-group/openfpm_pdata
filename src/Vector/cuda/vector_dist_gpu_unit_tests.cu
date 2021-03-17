@@ -224,9 +224,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_ghost_get )
 	{
 		auto p = it.get();
 
-		vd.getPos(p)[0] = (float)rand() / RAND_MAX;
-		vd.getPos(p)[1] = (float)rand() / RAND_MAX;
-		vd.getPos(p)[2] = (float)rand() / RAND_MAX;
+		vd.getPos(p)[0] = (float)rand() / (float)RAND_MAX;
+		vd.getPos(p)[1] = (float)rand() / (float)RAND_MAX;
+		vd.getPos(p)[2] = (float)rand() / (float)RAND_MAX;
 
 		vd.template getProp<0>(p) = vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2];
 
@@ -349,9 +349,9 @@ void vector_dist_gpu_test_impl()
 		int y = rand();
 		int z = rand();
 
-		vd.getPos(p)[0] = (float)x / RAND_MAX;
-		vd.getPos(p)[1] = (float)y / RAND_MAX;
-		vd.getPos(p)[2] = (float)z / RAND_MAX;
+		vd.getPos(p)[0] = (float)x / (float)RAND_MAX;
+		vd.getPos(p)[1] = (float)y / (float)RAND_MAX;
+		vd.getPos(p)[2] = (float)z / (float)RAND_MAX;
 
 		Point<3,float> xp = vd.getPos(p);
 
@@ -396,7 +396,7 @@ void vector_dist_gpu_test_impl()
 	// offload to device
 	vd.hostToDevicePos();
 
-	initialize_props<<<it3.wthr,it3.thr>>>(vd.toKernel());
+	CUDA_LAUNCH_DIM3(initialize_props,it3.wthr,it3.thr,vd.toKernel());
 
 	// now we check what we initialized
 
@@ -468,9 +468,9 @@ void vector_dist_gpu_make_sort_test_impl()
 		int y = rand();
 		int z = rand();
 
-		vd.getPos(p)[0] = (float)x / RAND_MAX;
-		vd.getPos(p)[1] = (float)y / RAND_MAX;
-		vd.getPos(p)[2] = (float)z / RAND_MAX;
+		vd.getPos(p)[0] = (float)x / (float)RAND_MAX;
+		vd.getPos(p)[1] = (float)y / (float)RAND_MAX;
+		vd.getPos(p)[2] = (float)z / (float)RAND_MAX;
 
 		++it;
 	}
@@ -482,7 +482,7 @@ void vector_dist_gpu_make_sort_test_impl()
 
 	auto it3 = vd.getDomainIteratorGPU();
 
-	initialize_props<<<it3.wthr,it3.thr>>>(vd.toKernel());
+	CUDA_LAUNCH_DIM3(initialize_props,it3.wthr,it3.thr,vd.toKernel());
 
 	// Here we check make sort does not mess-up particles we use a Cell-List to check that
 	// the two cell-list constructed are identical
@@ -603,9 +603,9 @@ void vdist_calc_gpu_test()
 	{
 		auto p = it.get();
 
-		vd.getPos(p)[0] = (St)rand() / RAND_MAX;
-		vd.getPos(p)[1] = (St)rand() / RAND_MAX;
-		vd.getPos(p)[2] = (St)rand() / RAND_MAX;
+		vd.getPos(p)[0] = (St)rand() / (float)RAND_MAX;
+		vd.getPos(p)[1] = (St)rand() / (float)RAND_MAX;
+		vd.getPos(p)[2] = (St)rand() / (float)RAND_MAX;
 
 		vd.template getProp<0>(p) = vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2];
 
@@ -707,8 +707,6 @@ void vdist_calc_gpu_test()
 	for (size_t i = 0 ; i < 10 ; i++)
 	{
 		vd.map(RUN_ON_DEVICE);
-
-		CUDA_SAFE(cudaGetLastError());
 
 		vd.deviceToHostPos();
 		vd.template deviceToHostProp<0,1,2>();
@@ -854,7 +852,7 @@ void vdist_calc_gpu_test()
 		// move particles on gpu
 
 		auto ite = vd.getDomainIteratorGPU();
-		move_parts_gpu_test<3,decltype(vd.toKernel())><<<ite.wthr,ite.thr>>>(vd.toKernel());
+		CUDA_LAUNCH_DIM3((move_parts_gpu_test<3,decltype(vd.toKernel())>),ite.wthr,ite.thr,vd.toKernel());
 	}
 }
 
@@ -933,14 +931,14 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 {
 	std::random_device r;
 
-    std::seed_seq seed2{r() + create_vcluster().rank(),
-    					r() + create_vcluster().rank(),
-    					r() + create_vcluster().rank(),
-    					r() + create_vcluster().rank(),
-    					r() + create_vcluster().rank(),
-    					r() + create_vcluster().rank(),
-    					r() + create_vcluster().rank(),
-    					r() + create_vcluster().rank()};
+    std::seed_seq seed2{/*r() +*/ create_vcluster().rank(),
+    					/*r() +*/ create_vcluster().rank(),
+    					/*r() +*/ create_vcluster().rank(),
+    					/*r() +*/ create_vcluster().rank(),
+    					/*r() +*/ create_vcluster().rank(),
+    					/*r() +*/ create_vcluster().rank(),
+    					/*r() +*/ create_vcluster().rank(),
+    					/*r() +*/ create_vcluster().rank()};
     std::mt19937 e2(seed2);
 
 	typedef vector_dist_gpu<3,double,aggregate<double,double[3],double[3]>> vector_type;
@@ -1055,6 +1053,7 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 		vd.hostToDevicePos();
 		vd.map(RUN_ON_DEVICE);
 		vd.template ghost_get<0>(RUN_ON_DEVICE);
+
 		vd.deviceToHostPos();
 		vd.template deviceToHostProp<0,1,2>();
 
@@ -1102,7 +1101,11 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 			double load_f = load;
 			double load_fc = loads.get(i);
 
+#ifdef ENABLE_ASAN
+			BOOST_REQUIRE_CLOSE(load_f,load_fc,30.0);
+#else
 			BOOST_REQUIRE_CLOSE(load_f,load_fc,10.0);
+#endif
 		}
 	}
 }
@@ -1311,7 +1314,9 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda2)
 	if (create_vcluster().size() <= 3)
 	{return;};
 
+	#ifndef CUDA_ON_CPU
 	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,unsigned int,int,false>>(1000000,0.01);
+	#endif
 }
 
 BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda3)
@@ -1319,7 +1324,9 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda3)
 	if (create_vcluster().size() < 8)
 	{return;}
 
+	#ifndef CUDA_ON_CPU
 	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,unsigned int,int,false>>(15000000,0.005);
+	#endif
 }
 
 
@@ -1847,6 +1854,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_overflow_se_class1)
 }
 
 
+
 BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 {
 	Vcluster<> & v_cl = create_vcluster();
@@ -1878,7 +1886,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 		// ghost
 		Ghost<3,float> ghost(r_g);
 
-		typedef  aggregate<float> part_prop;
+		typedef  aggregate<float,float,float> part_prop;
 
 		// Distributed vector
 		vector_dist_gpu<3,float, part_prop > vd(0,box,bc,ghost);
@@ -1899,16 +1907,18 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 
 			vd.getLastPropWrite<0>() = 0.0;
 
+			vd.getLastPropWrite<2>() = 0.0;
+
 			++it;
 		}
 
 		vd.map();
 
 		vd.hostToDevicePos();
-		vd.template hostToDeviceProp<0>();
+		vd.template hostToDeviceProp<0,2>();
 		// sync the ghost
-		vd.ghost_get<0>(RUN_ON_DEVICE);
-		vd.template deviceToHostProp<0>();
+		vd.ghost_get<0,2>(RUN_ON_DEVICE);
+		vd.template deviceToHostProp<0,2>();
 		vd.deviceToHostPos();
 
 		{
@@ -1937,7 +1947,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 					float dist = xp.distance(xq);
 
 					if (dist < r_cut)
+					{
 						vd.getPropWrite<0>(q) += a*(-dist*dist+r_cut*r_cut);
+						vd.getPropWrite<2>(q) += a*(-dist*dist+r_cut*r_cut) / 2;
+					}
 
 					++Np;
 				}
@@ -1946,25 +1959,27 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 			}
 
 			vd.hostToDevicePos();
-			vd.template hostToDeviceProp<0>();
-			vd.template ghost_put<add_atomic_,0>(RUN_ON_DEVICE);
-			vd.template deviceToHostProp<0>();
+			vd.template hostToDeviceProp<0,2>();
+			vd.template ghost_put<add_atomic_,0,2>(RUN_ON_DEVICE);
+			vd.template deviceToHostProp<0,2>();
 			vd.deviceToHostPos();
 
 			bool ret = true;
 			auto it3 = vd.getDomainIterator();
 
 			float constant = vd.getProp<0>(it3.get());
+			float constanta = vd.getProp<2>(it3.get());
 			float eps = 0.001;
 
 			while (it3.isNext())
 			{
 				float constant2 = vd.getProp<0>(it3.get());
-				if (fabs(constant - constant2)/constant > eps)
+				float constant3 = vd.getProp<2>(it3.get());
+				if (fabs(constant - constant2)/constant > eps || fabs(constanta - constant3)/constanta > eps)
 				{
 					Point<3,float> p = vd.getPosRead(it3.get());
 
-					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "    " << v_cl.getProcessUnitID() << std::endl;
+					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "/" << constant3 << "    " << v_cl.getProcessUnitID() << std::endl;
 					ret = false;
 					break;
 				}
@@ -1980,6 +1995,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 			auto key = itp.get();
 
 			vd.getPropWrite<0>(key) = 0.0;
+			vd.getPropWrite<2>(key) = 0.0;
 
 			++itp;
 		}
@@ -2010,7 +2026,10 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 					float dist = xp.distance(xq);
 
 					if (dist < r_cut)
+					{
 						vd.getPropWrite<0>(q) += a*(-dist*dist+r_cut*r_cut);
+						vd.getPropWrite<2>(q) += a*(-dist*dist+r_cut*r_cut);
+					}
 
 					++Np;
 				}
@@ -2019,25 +2038,28 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 			}
 
 			vd.hostToDevicePos();
-			vd.template hostToDeviceProp<0>();
+			vd.template hostToDeviceProp<0,2>();
 			vd.template ghost_put<add_atomic_,0>(RUN_ON_DEVICE);
-			vd.template deviceToHostProp<0>();
+			vd.template ghost_put<add_atomic_,2>(RUN_ON_DEVICE);
+			vd.template deviceToHostProp<0,2>();
 			vd.deviceToHostPos();
 
 			bool ret = true;
 			auto it3 = vd.getDomainIterator();
 
 			float constant = vd.getPropRead<0>(it3.get());
+			float constanta = vd.getPropRead<2>(it3.get());
 			float eps = 0.001;
 
 			while (it3.isNext())
 			{
 				float constant2 = vd.getPropRead<0>(it3.get());
-				if (fabs(constant - constant2)/constant > eps)
+				float constant3 = vd.getPropRead<0>(it3.get());
+				if (fabs(constant - constant2)/constant > eps || fabs(constanta - constant3)/constanta > eps)
 				{
 					Point<3,float> p = vd.getPosRead(it3.get());
 
-					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "    " << v_cl.getProcessUnitID() << std::endl;
+					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "/" << constant3 << "    " << v_cl.getProcessUnitID() << std::endl;
 					ret = false;
 					break;
 				}

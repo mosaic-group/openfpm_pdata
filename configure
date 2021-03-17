@@ -100,6 +100,7 @@ enable_debug
 with_metis
 with_hdf5
 with_libhilbert
+enable_cuda_on_cpu
 enable_scan_coverty
 enable_test_performance
 enable_test_coverage
@@ -107,6 +108,7 @@ with_parmetis
 enable_se_class1
 enable_se_class2
 enable_se_class3
+with_alpaka
 with_action_on_error
 with_boost
 with_boost_libdir
@@ -121,6 +123,8 @@ with_eigen
 with_vcdevel
 enable_gpu
 enable_asan
+enable_garbageinj
+enable_garbageinjv
 '
 
 rm -rf build
@@ -237,6 +241,9 @@ do
     scan_coverty)
        conf_options="$conf_options -DSCAN_COVERTY=ON"
        ;;
+    cuda_on_cpu)
+       conf_options="$conf_options -DCUDA_ON_CPU=ON"
+       ;;
     test_performance)
        conf_options="$conf_options -DTEST_PERFORMANCE=ON"
        ;;
@@ -246,10 +253,21 @@ do
         else
 		conf_options="$conf_options -DCMAKE_CUDA_HOST_COMPILER=$(which $CXX)"
         fi
+        if [ x"$CXXCUDA" == x"" ]; then
+                conf_options="$conf_options"
+        else
+                conf_options="$conf_options -DCMAKE_CUDA_COMPILER=$(which $CXXCUDA)"
+        fi
        conf_options="$conf_options -DENABLE_GPU=ON"
        ;;
     asan)
        conf_options="$conf_options -DENABLE_ASAN=ON"
+       ;;
+    garbageinj)
+       conf_options="$conf_options -DENABLE_GARBAGE_INJECTOR=ON"
+       ;;
+    garbageinjv)
+       conf_options="$conf_options -DENABLE_VCLUSTER_GARBAGE_INJECTOR=ON"
        ;;
     *) ac_unrecognized_opts="$ac_unrecognized_opts$ac_unrecognized_sep--enable-$ac_useropt_orig"
        ac_unrecognized_sep=', '
@@ -493,6 +511,9 @@ do
       vcdevel)
       conf_options="$conf_options -DVc_ROOT=$ac_optarg"
       ;;
+      alpaka)
+      conf_options="$conf_options -DALPAKA_ROOT=$ac_optarg"
+      ;;
       *) ac_unrecognized_opts="$ac_unrecognized_opts$ac_unrecognized_sep--with-$ac_useropt_orig"
 	 ac_unrecognized_sep=', ';;
     esac
@@ -565,6 +586,7 @@ cd build
 
 ## remove enerything
 echo "Calling cmake ../. $conf_options"
+printf "cmake ../. $conf_options" > cmake_build_options 
 rm ../error_code
 DYLD_LIBRARY_PATH=$ld_lib_pathopt cmake ../. $conf_options
 if [ $? != 0 ]; then
@@ -593,6 +615,7 @@ clean:
 
 install:
 	\$(MAKE) -C build \$@
+	script/install_parallel_debugger
 
 pdata:
 	\$(MAKE) -C build \$@

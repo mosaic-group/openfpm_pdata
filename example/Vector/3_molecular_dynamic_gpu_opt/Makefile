@@ -1,12 +1,22 @@
 include ../../example.mk
 
 CUDA_CC=
-ifeq (, $(shell which nvcc))
+
+ifdef CUDA_ON_CPU
         CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
         INCLUDE_PATH_NVCC=
+        CUDA_CC_LINK=mpic++
 else
-        CUDA_CC=nvcc -ccbin=mpic++
+        ifeq (, $(shell which nvcc))
+                CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
+                INCLUDE_PATH_NVCC=
+                CUDA_CC_LINK=mpic++
+        else
+                CUDA_CC=nvcc -ccbin=mpic++
+                CUDA_CC_LINK=nvcc -ccbin=mpic++
+        endif
 endif
+
 
 ifeq ($(PROFILE),ON)
 	CC=scorep --nocompiler  --cuda --mpp=mpi nvcc
@@ -29,10 +39,10 @@ md_dyn_gpu_test: OPT += -DTEST_RUN
 md_dyn_gpu_test: all
 
 %.o: %.cu
-	$(CC) $(OPT)  -O3 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH_NVCC)
+	$(CC) $(OPT)  -O3 -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH_NVCC)
 
 %.o: %.cpp
-	$(CC_MPI) $(OPT) -O3 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC_MPI) $(OPT) -O3 -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
 md_dyn_gpu: $(OBJ_GPU)
 	$(CC_MPI) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)

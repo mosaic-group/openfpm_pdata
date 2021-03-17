@@ -1,5 +1,3 @@
-
-#include "util/cuda/cuda_launch.hpp"
 #include "Grid/grid_dist_id.hpp"
 #include "data_type/aggregate.hpp"
 #include "timer.hpp"
@@ -222,7 +220,12 @@ int main(int argc, char* argv[])
 
 		if (i % 2 == 0)
 		{
+
+			timer ts;
+			ts.start();
 			grid.conv_cross2<U,V,U_next,V_next,1>({0,0,0},{(long int)sz[0]-1,(long int)sz[1]-1,(long int)sz[2]-1},func);
+			ts.stop();
+			std::cout << ts.getwct() << std::endl;
 	
 			// After copy we synchronize again the ghost part U and V
 			grid.ghost_get<U_next,V_next>();

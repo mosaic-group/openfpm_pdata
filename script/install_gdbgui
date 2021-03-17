@@ -1,0 +1,152 @@
+#! /bin/bash
+
+function install_gdbgui() {
+source script/solve_pip3
+source script/solve_pip3_nox
+source script/solve_npm
+source script/solve_npm_yarn
+source script/show_solutions
+source script/solve_gdbserver
+source script/discover_package_manager
+source script/solve_nodejs
+source script/solve_python_devel
+
+node_js_inst=0
+
+if [ x"$platform" == x"osx" ]; then
+	echo -e "node\033[91;5;1m The parallel debugger at the moment is not supported on OSX \033[0m"
+	return
+fi
+
+solve_python_devel $platform
+
+if haveProg node; then
+
+  dgc_major=$(node --version | grep v | sed 's/v\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)/\1/g')
+  dgc_middle=$(node --version | grep v | sed 's/v\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)/\2/g')
+  dgc_minor=$(node --version | grep v | sed 's/v\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)/\3/g')
+
+  if [[ ( $dgc_major -ge 10 ) && ( $dgc_middle -ge 14 ) ]]; then
+    echo -e "node\033[92;1m SUCCESS \033[0m"
+    node_js_inst=1
+  fi
+else
+  echo >&2
+  echo -e "node\033[91;5;1m FAILED \033[0m"
+  node_js_inst=0
+fi
+
+if [ x"$node_js_inst" = x"0" ]; then
+  echo "OpenFPM require node.js but it's not installed, searching a solution... "
+  solve_nodejs $platform
+
+  if haveProg node; then
+
+    dgc_major=$(node --version | grep v | sed 's/v\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)/\1/g')
+    dgc_middle=$(node --version | grep v | sed 's/v\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)/\2/g')
+    dgc_minor=$(node --version | grep v | sed 's/v\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)/\3/g')
+
+    if [[ ( $dgc_major -ge 10 ) && ( $dgc_middle -ge 14 ) ]]; then
+      echo -e "node\033[92;1m SUCCESS \033[0m"
+    fi
+  else
+    echo >&2
+    echo -e "node\033[91;5;1m FAILED \033[0m"
+  fi
+
+fi
+
+if haveProg gdbserver; then
+  echo -e "gdbserver\033[92;1m SUCCESS \033[0m"
+else
+  echo >&2
+  echo -e "gdbserver\033[91;5;1m FAILED \033[0m"
+  echo "OpenFPM require gdb but it's not installed, searching a solution... "
+  solve_gdbserver $platform
+  if haveProg gdbserver; then
+    echo -e "gdbserver\033[92;1m SUCCESS \033[0m"
+  else
+    echo -e "gdbserver\033[91;5;1m FAILED \033[0m"
+    echo -e "Installing parallel debugger\033[91;5;1m FAILED \033[0m"
+    return
+  fi
+fi
+
+if haveProg pip3; then
+  echo -e "pip3\033[92;1m SUCCESS \033[0m"
+else
+  echo >&2
+  echo -e "pip3\033[91;5;1m FAILED \033[0m"
+  echo "OpenFPM require pip3 but it's not installed, searching a solution... "
+  solve_pip3 $platform
+  if haveProg pip3; then
+    echo -e "pip3\033[92;1m SUCCESS \033[0m"
+  else
+    echo -e "pip3\033[91;5;1m FAILED \033[0m"
+    echo -e "Installing parallel debugger\033[91;5;1m FAILED \033[0m"
+    return
+  fi
+fi
+
+if haveProg nox; then
+  echo -e "nox\033[92;1m SUCCESS \033[0m"
+else
+  echo >&2
+  echo -e "nox\033[91;5;1m FAILED \033[0m"
+  echo "OpenFPM require nox but it's not installed, searching a solution... "
+  solve_pip3_nox $platform
+  if haveProg nox; then
+    echo -e "nox\033[92;1m SUCCESS \033[0m"
+  else
+    echo -e "nox\033[91;5;1m FAILED \033[0m"
+    echo -e "Installing parallel debugger\033[91;5;1m FAILED \033[0m"
+    return
+  fi
+fi
+
+if haveProg npm; then
+  echo -e "npm\033[92;1m SUCCESS \033[0m"
+else
+  echo >&2
+  echo -e "npm\033[91;5;1m FAILED \033[0m"
+  echo "OpenFPM require nox but it's not installed, searching a solution... "
+  solve_npm $platform
+  if haveProg npm; then
+    echo -e "npm\033[92;1m SUCCESS \033[0m"
+  else
+    echo -e "npm\033[91;5;1m FAILED \033[0m"
+    echo -e "Installing parallel debugger\033[91;5;1m FAILED \033[0m"
+    return
+  fi
+fi
+
+
+if haveProg yarn; then
+  echo -e "yarn\033[92;1m SUCCESS \033[0m"
+else
+  echo >&2
+  echo -e "yarn\033[91;5;1m FAILED \033[0m"
+  echo "OpenFPM require nox but it's not installed, searching a solution... "
+  solve_npm_yarn $platform
+  if haveProg yarn; then
+    echo -e "yarn\033[92;1m SUCCESS \033[0m"
+  else
+    echo -e "yarn\033[91;5;1m FAILED \033[0m"
+    echo -e "Installing parallel debugger\033[91;5;1m FAILED \033[0m"
+    return
+  fi
+fi
+
+cd gdbgui
+cd gdbgui-mpi
+./compile.sh
+cd ..
+cd ..
+
+cd gdbgui
+nox -s build_executable_current_platform
+cd ..
+
+}
+
+
