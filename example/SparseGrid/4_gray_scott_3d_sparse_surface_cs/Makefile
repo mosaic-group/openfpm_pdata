@@ -5,8 +5,8 @@ CC=mpic++
 LDIR =
 
 OBJ = main.o
-gray_scott_sparse_surface_cs_test: OPT += -DTEST_RUN
-gray_scott_sparse_surface_cs_test: gray_scott_sparse_surface_cs
+gray_scott_sparse_cs_surface: OPT += -DTEST_RUN
+gray_scott_sparse_cs_surface: gray_scott_sparse_surface_cs
 
 %.o: %.cpp
 	$(CC) -O3 -g $(OPT) -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
@@ -16,7 +16,7 @@ gray_scott_sparse_surface_cs: $(OBJ)
 
 all: gray_scott_sparse_surface_cs
 
-run: gray_scott_sparse_cs_surface_test
+run: gray_scott_sparse_cs_surface
 	mpirun -np 4 ./gray_scott_sparse_surface_cs
 
 .PHONY: clean all run
