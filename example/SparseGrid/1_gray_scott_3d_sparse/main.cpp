@@ -1,9 +1,10 @@
  /*! \page SparseGrid SparseGrid
  *
  * \subpage Grid_3_gs_3D_sparse
- * \subpage Grid_3_gs_3D_sparse_cs
- * \subpage Grid_3_gs_3D_sparse_opt
  * \subpage Grid_3_gs_3D_sparse_gpu
+ * \subpage Grid_3_gs_3D_sparse_opt
+ * \subpage Grid_3_gs_3D_sparse_gpu_opt
+ * \subpage Grid_3_gs_3D_sparse_cs
  * \subpage Grid_3_gs_3D_sparse_gpu_cs
  *
  */
@@ -14,14 +15,13 @@
 
 /*!
  *
- * \page Grid_3_gs_3D_sparse Gray Scott in 3D using sparse grids
+ * \page Grid_3_gs_3D_sparse Gray Scott in\subpage Grid_3_gs_3D_sparse_opt 3D using sparse grids
  *
  * [TOC]
  *
- * # Solving a gray scott-system in 3D using Sparse grids# {#e3_gs_gray_scott_sparse}
+ * # Solving a gray scott-system in 3D using Sparse grids on GPU optimized # {#e3_gs_gray_scott_sparse_gpu_opt}
  *
- * This example show how to solve a Gray-Scott system in 3D using sparse grids in this case we well use a more
- * complex geometry
+ * This example show how to solve a Gray-Scott system in 3D using sparse grids on gpu (optimized). The problem is the same as \ref Grid_3_gs_3D
  *
  * In figure is the final solution of the problem
  *
@@ -34,16 +34,7 @@
  * \see \ref Grid_3_gs_3D
  *
  *
- * We recall here the main differences between sparse and dense.
- *
- * * **get** function return now constant values, so cannot be used to get values, a get in write is an insert
- *   a get on a point position that has not been inserted return the background value
- *
- * * **insert** function create/overwrite the points value
- *
- * * **getDomainIterator** return an iterator on the existing points
- *
- * * **getGridIterator** return an iterator on the dense version of the grid
+ * 
  *
  *
  * 

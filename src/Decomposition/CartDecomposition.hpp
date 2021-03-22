@@ -169,16 +169,15 @@ protected:
 	//! acc_key is size_t
 	typedef typename openfpm::vector<SpaceBox<dim, T>,
 			Memory,
-			typename memory_traits_lin<SpaceBox<dim, T>>::type,
 			memory_traits_lin,
 			openfpm::vector_grow_policy_default,
 			openfpm::vect_isel<SpaceBox<dim, T>>::value>::access_key acc_key;
 
 	//! the set of all local sub-domain as vector
-	openfpm::vector<SpaceBox<dim, T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> sub_domains;
+	openfpm::vector<SpaceBox<dim, T>,Memory,layout_base> sub_domains;
 
 	//! the remote set of all sub-domains as vector of 'sub_domains' vectors
-	mutable openfpm::vector<Box_map<dim, T>,Memory,typename layout_base<Box_map<dim, T>>::type,layout_base> sub_domains_global;
+	mutable openfpm::vector<Box_map<dim, T>,Memory,layout_base> sub_domains_global;
 
 	//! for each sub-domain, contain the list of the neighborhood processors
 	openfpm::vector<openfpm::vector<long unsigned int> > box_nn_processor;
@@ -283,14 +282,14 @@ protected:
 		return sub_d;
 	}
 
-	void collect_all_sub_domains(openfpm::vector<Box_map<dim,T>,Memory,typename layout_base<Box_map<dim, T>>::type,layout_base> & sub_domains_global)
+	void collect_all_sub_domains(openfpm::vector<Box_map<dim,T>,Memory,layout_base> & sub_domains_global)
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
 
 		sub_domains_global.clear();
-		openfpm::vector<Box_map<dim,T>,Memory,typename layout_base<Box_map<dim, T>>::type,layout_base> bm;
+		openfpm::vector<Box_map<dim,T>,Memory,layout_base> bm;
 
 		for (size_t i = 0 ; i < sub_domains.size() ; i++)
 		{
@@ -1587,7 +1586,7 @@ public:
 		return domain;
 	}
 
-	const openfpm::vector<SpaceBox<dim, T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> &
+	const openfpm::vector<SpaceBox<dim, T>,Memory,layout_base> &
 	getSubDomains() const
 	{
 		return sub_domains;
@@ -1836,7 +1835,7 @@ public:
 	bool write(std::string output) const
 	{
 		//! subdomains_X.vtk domain for the local processor (X) as union of sub-domain
-		VTKWriter<openfpm::vector<SpaceBox<dim, T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base>, VECTOR_BOX> vtk_box1;
+		VTKWriter<openfpm::vector<SpaceBox<dim, T>,Memory,layout_base>, VECTOR_BOX> vtk_box1;
 		vtk_box1.add(sub_domains);
 		vtk_box1.write(output + std::string("subdomains_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
@@ -2185,7 +2184,7 @@ public:
 	 * \return sub_domains_global
 	 *
 	 */
-	openfpm::vector<Box_map<dim, T>,Memory,typename layout_base<Box_map<dim, T>>::type,layout_base> & private_get_sub_domains_global()
+	openfpm::vector<Box_map<dim, T>,Memory,layout_base> & private_get_sub_domains_global()
 	{
 		return sub_domains_global;
 	}

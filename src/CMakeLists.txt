@@ -234,7 +234,8 @@ install(FILES Decomposition/CartDecomposition.hpp
 	      Decomposition/nn_processor.hpp Decomposition/ie_loc_ghost.hpp 
 	      Decomposition/ORB.hpp
 	      Decomposition/dec_optimizer.hpp
-	      DESTINATION openfpm_pdata/include/Decomposition/ )
+	      DESTINATION openfpm_pdata/include/Decomposition/ 
+	      COMPONENT OpenFPM)
 
 install(FILES Decomposition/Distribution/metis_util.hpp 
 	      Decomposition/Distribution/SpaceDistribution.hpp 
@@ -244,11 +245,13 @@ install(FILES Decomposition/Distribution/metis_util.hpp
 	      Decomposition/Distribution/ParMetisDistribution.hpp 
 	      Decomposition/Distribution/DistParMetisDistribution.hpp
 	      Decomposition/Distribution/BoxDistribution.hpp  
-	      DESTINATION openfpm_pdata/include/Decomposition/Distribution )
+	      DESTINATION openfpm_pdata/include/Decomposition/Distribution 
+	      COMPONENT OpenFPM)
 
 install(FILES Decomposition/cuda/ie_ghost_gpu.cuh
 	      Decomposition/cuda/CartDecomposition_gpu.cuh
-	      DESTINATION openfpm_pdata/include/Decomposition/cuda )
+	      DESTINATION openfpm_pdata/include/Decomposition/cuda 
+	      COMPONENT OpenFPM)
 
 
 install(FILES Grid/grid_dist_id.hpp 
@@ -258,23 +261,27 @@ install(FILES Grid/grid_dist_id.hpp
 	      Grid/staggered_dist_grid.hpp 
 	      Grid/staggered_dist_grid_util.hpp 
 	      Grid/staggered_dist_grid_copy.hpp
-	      DESTINATION openfpm_pdata/include/Grid/ )
+	      DESTINATION openfpm_pdata/include/Grid/ 
+	      COMPONENT OpenFPM)
 
 install(FILES Grid/cuda/grid_dist_id_kernels.cuh
 	      Grid/cuda/grid_dist_id_iterator_gpu.cuh
-	DESTINATION openfpm_pdata/include/Grid/cuda/ )
+	DESTINATION openfpm_pdata/include/Grid/cuda/ 
+	COMPONENT OpenFPM)
 
 install(FILES Amr/grid_dist_amr_key_iterator.hpp 
 	      Amr/grid_dist_amr_key.hpp
 	      Amr/grid_dist_amr.hpp
-	      DESTINATION openfpm_pdata/include/Amr/ )
+	      DESTINATION openfpm_pdata/include/Amr/ 
+	      COMPONENT OpenFPM)
 
 install(FILES Grid/Iterators/grid_dist_id_iterator_util.hpp
               Grid/Iterators/grid_dist_id_iterator_dec.hpp
               Grid/Iterators/grid_dist_id_iterator_dec_skin.hpp
               Grid/Iterators/grid_dist_id_iterator_sub.hpp
 	      Grid/Iterators/grid_dist_id_iterator.hpp
-	      DESTINATION openfpm_pdata/include/Grid/Iterators )
+	      DESTINATION openfpm_pdata/include/Grid/Iterators 
+	      COMPONENT OpenFPM)
 
 
 install(FILES Vector/se_class3_vector.hpp  
@@ -283,44 +290,54 @@ install(FILES Vector/se_class3_vector.hpp
 	      Vector/vector_dist_ofb.hpp 
 	      Vector/vector_dist_key.hpp
 	      Vector/vector_dist_kernel.hpp
-		  Vector/vector_dist_subset.hpp
-		DESTINATION openfpm_pdata/include/Vector )
+	      Vector/vector_dist_subset.hpp
+	      DESTINATION openfpm_pdata/include/Vector
+	      COMPONENT OpenFPM)
 
 install(FILES util/common_pdata.hpp
-	      DESTINATION openfpm_pdata/include/util)
+	      DESTINATION openfpm_pdata/include/util
+	      COMPONENT OpenFPM)
 
 install(FILES Vector/Iterators/vector_dist_iterator.hpp
-	      DESTINATION openfpm_pdata/include/Vector/Iterators/ )
+	      DESTINATION openfpm_pdata/include/Vector/Iterators/ 
+	      COMPONENT OpenFPM)
 
 install(FILES Vector/util/vector_dist_funcs.hpp
-	      DESTINATION openfpm_pdata/include/Vector/util )
+	      DESTINATION openfpm_pdata/include/Vector/util 
+	      COMPONENT OpenFPM)
 
 install(FILES Vector/cuda/vector_dist_comm_util_funcs.cuh
 	      Vector/cuda/vector_dist_cuda_funcs.cuh
 	      Vector/cuda/vector_dist_operators_list_ker.hpp
-	DESTINATION openfpm_pdata/include/Vector/cuda )
+	DESTINATION openfpm_pdata/include/Vector/cuda 
+	COMPONENT OpenFPM)
 
 install(FILES Graph/ids.hpp Graph/dist_map_graph.hpp 
 	      Graph/DistGraphFactory.hpp
-              DESTINATION openfpm_pdata/include/Graph )
+              DESTINATION openfpm_pdata/include/Graph 
+	      COMPONENT OpenFPM)
 
 install(FILES example.mk
 	      SubdomainGraphNodes.hpp
               DESTINATION openfpm_pdata/include/ )
 
 install(FILES DLB/DLB.hpp DLB/LB_Model.hpp
-	DESTINATION openfpm_pdata/include/DLB )
+	DESTINATION openfpm_pdata/include/DLB 
+	COMPONENT OpenFPM)
 
 install(FILES config/config.h
-        DESTINATION openfpm_pdata/include/config )
+        DESTINATION openfpm_pdata/include/config 
+	COMPONENT OpenFPM)
 
 install(FILES lib/pdata.hpp
-        DESTINATION openfpm_pdata/include/lib )
+        DESTINATION openfpm_pdata/include/lib 
+	COMPONENT OpenFPM)
 
 install(FILES Debug/debug.hpp
-	DESTINATION openfpm_pdata/include/Debug )
+	DESTINATION openfpm_pdata/include/Debug 
+	COMPONENT OpenFPM)
 
-install(TARGETS ofpm_pdata DESTINATION openfpm_pdata/lib)
+install(TARGETS ofpm_pdata DESTINATION openfpm_pdata/lib COMPONENT OpenFPM)
 
 #if(BUILD_TESTING)
 

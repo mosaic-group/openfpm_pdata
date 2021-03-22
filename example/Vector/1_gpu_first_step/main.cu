@@ -99,6 +99,21 @@
  *   \snippet Vector/1_gpu_first_step/main.cu using_openmpi
  *
  * * MPI must be compiled with CUDA support (in general installing OpenFPM with -g should attempt to install OpenMPI with CUDA support)
+ * 
+ * ## Macro CUDA_LAUNCH
+ *
+ * When we want to launch a kernel "my_kernel" on CUDA we in general use the Nvidia CUDA syntax
+ *
+ * my_kernel<<<wthr,thr>>>(arguments ... )
+ *
+ * Where wthr is the number of workgroups and thr is the number of threads in a workgroup and arguments... are the arguments to pass to the kernel.
+ * Equivalently we can launch a kernel with the macro CUDA_LAUNCH_DIM3(my_kernel,wthr,thr,arguments...) or CUDA_LAUNCH(my_kernel,ite,arguments) where
+ * ite has been taken using getDomainIteratorGPU. There are several advantage on using CUDA_LAUNCH. The first advantage in using the macro is enabling SE_CLASS1
+ * all kernel launch become synchronous and an error check is performed before continue to the next kernel making debugging easier. Another feature is the possibility
+ * to run CUDA code on CPU without a GPU. compiling with "CUDA_ON_CPU=1 make" (Note openfpm must be compiled with GPU support (-g)  or with CUDA_ON_CPU support
+ * (-c "... --enable_cuda_on_cpu"). You can compile this example on CPU. You do not have to change a single line of code for this example. (Check the video to see this
+ * feature in action). All the openfpm GPU example and CUDA example can run on CPU if they use CUDA_LAUNCH as macro. We are planning to support
+ * AMD GPUs as well using this system.
  *
  * ## Full code ## {#code_e0_sim}
  *
@@ -211,7 +226,8 @@ int main(int argc, char* argv[])
 	//! \cond [launch_domain_it] \endcond
 
 	auto ite = vd.getDomainIteratorGPU();
-	translate_fill_prop<<<ite.wthr,ite.thr>>>(vd.toKernel());
+	// translate_fill_prop<<<ite.wthr,ite.thr>>>(vd.toKernel());
+	CUDA_LAUNCH(translate_fill_prop,ite,vd.toKernel());
 
 	//! \cond [launch_domain_it] \endcond
 
@@ -230,7 +246,8 @@ int main(int argc, char* argv[])
 	for (int j = 0 ; j < 100 ; j++)
 	{
 		auto ite = vd.getDomainIteratorGPU();
-		translate_fill_prop<<<ite.wthr,ite.thr>>>(vd.toKernel());
+		// translate_fill_prop<<<ite.wthr,ite.thr>>>(vd.toKernel());
+		CUDA_LAUNCH(translate_fill_prop,ite,vd.toKernel());
 
 		vd.map(RUN_ON_DEVICE);
 		vd.template ghost_get<0,1,2>(RUN_ON_DEVICE);

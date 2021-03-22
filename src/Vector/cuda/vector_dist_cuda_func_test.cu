@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 	starts.deviceToHost<0>(starts.size()-1,starts.size()-1);
 	size_t tot = starts.template get<0>(o_part_loc.size()-1);
 
-	openfpm::vector<Point<3,float>,CudaMemory,typename memory_traits_inte<Point<3,float>>::type,memory_traits_inte> shifts;
+	openfpm::vector<Point<3,float>,CudaMemory,memory_traits_inte> shifts;
 
 	shifts.resize(4);
 
@@ -396,7 +396,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_fill_send_buffer_test )
 	typedef object<typename object_creator<typename prop::type, 0,1,2>::type> prp_object;
 
 	// send vector for each processor
-	typedef openfpm::vector<prp_object,CudaMemory,typename memory_traits_inte<prp_object>::type,memory_traits_inte> send_vector;
+	typedef openfpm::vector<prp_object,CudaMemory,memory_traits_inte> send_vector;
 
 	openfpm::vector<send_vector> g_send_prp;
 
@@ -602,7 +602,6 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 
     openfpm::vector<aggregate<unsigned int>,
                     CudaMemory,
-                    typename memory_traits_inte<aggregate<unsigned int>>::type,
                     memory_traits_inte> starts;
 
     starts.resize(proc_id_out.size());
@@ -617,7 +616,6 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 
     openfpm::vector<aggregate<unsigned int,long unsigned int>,
                     CudaMemory,
-                    typename memory_traits_inte<aggregate<unsigned int,long unsigned int>>::type,
                     memory_traits_inte> output;
 
     output.resize(sz);
@@ -996,8 +994,8 @@ BOOST_AUTO_TEST_CASE(vector_dist_gpu_map_fill_send_buffer_test)
 {
 	openfpm::vector_gpu<aggregate<int,int>> m_opart;
 
-    openfpm::vector<openfpm::vector<Point<3,float>,CudaMemory,typename memory_traits_inte<Point<3,float>>::type,memory_traits_inte,openfpm::grow_policy_identity>> m_pos;
-    openfpm::vector<openfpm::vector<aggregate<float,float[2],float[3][3]>,CudaMemory,typename memory_traits_inte<aggregate<float,float[2],float[3][3]>>::type,memory_traits_inte,openfpm::grow_policy_identity>> m_prp;
+    openfpm::vector<openfpm::vector<Point<3,float>,CudaMemory,memory_traits_inte,openfpm::grow_policy_identity>> m_pos;
+    openfpm::vector<openfpm::vector<aggregate<float,float[2],float[3][3]>,CudaMemory,memory_traits_inte,openfpm::grow_policy_identity>> m_prp;
 
     openfpm::vector_gpu<Point<3,float>> v_pos;
     openfpm::vector_gpu<aggregate<float,float[2],float[3][3]>> v_prp;

@@ -145,7 +145,6 @@ class grid_dist_amr<dim,St,T,AMR_IMPL_TRIVIAL,Decomposition,Memory,device_grid>
 	//
 	openfpm::vector<grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>,
 								 HeapMemory,
-								 typename memory_traits_lin<grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>>::type,
 								 memory_traits_lin,
 								 openfpm::grow_policy_identity,STD_VECTOR> gd_array;
 

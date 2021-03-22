@@ -747,6 +747,16 @@ BOOST_AUTO_TEST_CASE (sgrid_dist_id_soa_write )
 
 	bool test = compare("sg1_test_" + std::to_string(v_cl.rank()) + ".vtk","sg2_test_" + std::to_string(v_cl.rank()) + ".vtk");
 	BOOST_REQUIRE_EQUAL(true,test);
+
+	sg1.save("hdf5_w1_test");
+	sg2.save("hdf5_w2_test");
+
+	// To uncomment and check
+//	sgrid_dist_soa<3,double,aggregate<double,double[3]>> sg1_(sz,domain,g,bc);
+//	sgrid_dist_id<3,double,aggregate<double,double[3]>> sg2_(sg1.getDecomposition(),sz,g);
+
+//	sg1.load("hdf5_w1_test");
+//	sg2.load("hdf5_w2_test");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
