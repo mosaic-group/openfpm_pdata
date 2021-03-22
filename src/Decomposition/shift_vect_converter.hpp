@@ -34,7 +34,7 @@ class shift_vect_converter
 	 *
 	 */
 	void generateShiftVectors_ld(const Box<dim,T> & domain, size_t (& bc)[dim],
-			                     openfpm::vector<Point<dim,T>,Memory,typename layout_base<Point<dim,T>>::type,layout_base> & shifts)
+			                     openfpm::vector<Point<dim,T>,Memory,layout_base> & shifts)
 	{
 		shifts.resize(openfpm::math::pow(3,dim));
 
@@ -71,7 +71,7 @@ class shift_vect_converter
 	 *
 	 */
 	void generateShiftVectors_hd(const Box<dim,T> & domain, size_t (& bc)[dim],
-			                     openfpm::vector<Point<dim,T>,Memory,typename layout_base<Point<dim,T>>::type,layout_base> & shifts)
+			                     openfpm::vector<Point<dim,T>,Memory,layout_base> & shifts)
 	{
 		// get the indexes of the free degree of freedom
 		for (size_t i = 0 ; i < dim ; i++)
@@ -126,7 +126,7 @@ public:
 	 *
 	 */
 	void generateShiftVectors(const Box<dim,T> & domain, size_t (& bc)[dim],
-			                  openfpm::vector<Point<dim,T>,Memory,typename layout_base<Point<dim,T>>::type,layout_base> & shifts)
+			                  openfpm::vector<Point<dim,T>,Memory,layout_base> & shifts)
 	{
 		if (dim < 10)
 		{generateShiftVectors_ld(domain,bc,shifts);}

@@ -431,7 +431,7 @@ public:
 	 *
 	 */
 	void create(const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
-			    const openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> & sub_domains)
+			    const openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & sub_domains)
 	{
 		// produce the list of the adjacent processor (nn_processors) list
 		for (size_t i = 0 ;  i < box_nn_processor.size() ; i++)

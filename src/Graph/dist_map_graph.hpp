@@ -221,25 +221,25 @@ class DistGraph_CSR
 	size_t v_slot;
 
 	//! Structure that store the vertex properties
-	openfpm::vector<V, Memory, layout_v,layout_v_base,grow_p, openfpm::vect_isel<V>::value> v;
+	openfpm::vector<V, Memory,layout_v_base,grow_p, openfpm::vect_isel<V>::value> v;
 
 	//! Structure that store the vertex id and global id
-	openfpm::vector<v_info, Memory, typename memory_traits_lin<v_info>::type, memory_traits_lin, grow_p, openfpm::vect_isel<v_info>::value> v_m;
+	openfpm::vector<v_info, Memory, memory_traits_lin, grow_p, openfpm::vect_isel<v_info>::value> v_m;
 
 	//! Structure that store the number of adjacent vertex in e_l for each vertex
-	openfpm::vector<size_t, Memory, typename layout_v_base<size_t>::type, layout_v_base, grow_p, openfpm::vect_isel<size_t>::value> v_l;
+	openfpm::vector<size_t, Memory, layout_v_base, grow_p, openfpm::vect_isel<size_t>::value> v_l;
 
 	//! Structure that store the edge properties
-	openfpm::vector<E, Memory, layout_e, layout_e_base, grow_p, openfpm::vect_isel<E>::value> e;
+	openfpm::vector<E, Memory, layout_e_base, grow_p, openfpm::vect_isel<E>::value> e;
 
 	//! Structure that store the edge properties
-	openfpm::vector<e_info, Memory, typename layout_e_base<e_info>::type, layout_e_base, grow_p, openfpm::vect_isel<e_info>::value> e_m;
+	openfpm::vector<e_info, Memory, layout_e_base, grow_p, openfpm::vect_isel<e_info>::value> e_m;
 
 	//! Structure that store for each vertex the adjacent the vertex id and edge id (for property into e)
-	openfpm::vector<e_map, Memory, typename memory_traits_lin<e_map>::type, layout_e_base, grow_p, openfpm::vect_isel<e_map>::value> e_l;
+	openfpm::vector<e_map, Memory, layout_e_base, grow_p, openfpm::vect_isel<e_map>::value> e_l;
 
 	//! invalid edge element, when a function try to create an in valid edge this object is returned
-	openfpm::vector<E, Memory, layout_e, layout_e_base, grow_p, openfpm::vect_isel<E>::value> e_invalid;
+	openfpm::vector<E, Memory, layout_e_base, grow_p, openfpm::vect_isel<E>::value> e_invalid;
 
 	//! Map to access to the global vertex id given the vertex id
 	std::unordered_map<size_t, size_t> id2glb;
@@ -1001,10 +1001,10 @@ public:
 	typedef E E_type;
 
 	//! Object container for the vertex, for example can be encap<...> (map_grid or openfpm::vector)
-	typedef typename openfpm::vector<V, Memory, layout_v, layout_v_base, grow_p, openfpm::vect_isel<V>::value>::container V_container;
+	typedef typename openfpm::vector<V, Memory, layout_v_base, grow_p, openfpm::vect_isel<V>::value>::container V_container;
 
 	//! Object container for the edge, for example can be encap<...> (map_grid or openfpm::vector)
-	typedef typename openfpm::vector<E, Memory, layout_e, layout_e_base, grow_p, openfpm::vect_isel<E>::value>::container E_container;
+	typedef typename openfpm::vector<E, Memory, layout_e_base, grow_p, openfpm::vect_isel<E>::value>::container E_container;
 
 	/*! \brief It duplicate the graph
 	 *
@@ -1577,7 +1577,7 @@ public:
 	 * \return the number of childs
 	 *
 	 */
-	inline size_t getNChilds(typename openfpm::vector<V, Memory, layout_v, layout_v_base, grow_p, openfpm::vect_isel<V>::value>::iterator_key & c)
+	inline size_t getNChilds(typename openfpm::vector<V, Memory, layout_v_base, grow_p, openfpm::vect_isel<V>::value>::iterator_key & c)
 	{
 		return v_l.template get<0>(c.get());
 	}
@@ -1695,7 +1695,7 @@ public:
 	 * \return the target i connected by an edge node, for the node v
 	 *
 	 */
-	inline size_t getChild(typename openfpm::vector<V, Memory, layout_v, layout_v_base, grow_p, openfpm::vect_isel<V>::value>::iterator_key & v, size_t i)
+	inline size_t getChild(typename openfpm::vector<V, Memory, layout_v_base, grow_p, openfpm::vect_isel<V>::value>::iterator_key & v, size_t i)
 	{
 #ifdef DEBUG
 		if (i >= v_l.template get<0>(v.get()))

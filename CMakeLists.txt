@@ -267,63 +267,70 @@ if (CPACK_RUN_INSTALL_DEPENDENCIES)
 	set(CPACK_PACKAGE_VERSION_MINOR "2")
 	set(CPACK_PACKAGE_VERSION_PATCH "0")
 	set(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
-	set(CPACK_STRIP_FILES "bin/MyExecutable")
-	set(CPACK_SOURCE_STRIP_FILES "")
-	#set(CPACK_PACKAGE_EXECUTABLES "MyExecutable" "My Executable")
 	set(CPACK_PACKAGE_INSTALL_DIRECTORY /usr/local/openfpm)
 	set(CPACK_PACKAGING_INSTALL_PREFIX /usr/local/openfpm)
 	set(CPACK_PACKAGE_HOMEPAGE_URL http://openfpm.mpi-cbg.de)
 	set(CPACK_RPM_PACKAGE_AUTOREQPROV NO)
+	set(CPACK_PACKAGE_CONTACT incardon@mpi-cbg.de)
+	set(CPACK_DEBIAN_PACKAGE_MAINTAINER Pietro Incardona)
+	set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/scripts/postinst)
+	set(CPACK_POSTFLIGHT_OPENFPM_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/src/scripts/postflight)
+	set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/src/script/postinst")
+	set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README")
 
 	install(FILES $ENV{DEP_PACKING}/openfpm_vars
-              	DESTINATION openfpm_vars
-              	)
+		DESTINATION source
+              	COMPONENT OpenFPM)
 
         install(DIRECTORY $ENV{DEP_PACKING}/BOOST
                 DESTINATION dependencies/
-                )
+                COMPONENT OpenFPM)
 
         install(DIRECTORY $ENV{DEP_PACKING}/EIGEN
                 DESTINATION dependencies/
-                )
+                COMPONENT OpenFPM)
 
         install(DIRECTORY $ENV{DEP_PACKING}/HDF5
                 DESTINATION dependencies/
-                )
+                COMPONENT OpenFPM)
 
         install(DIRECTORY $ENV{DEP_PACKING}/LIBHILBERT
                 DESTINATION dependencies/
-                )
+                COMPONENT OpenFPM)
 
         install(DIRECTORY $ENV{DEP_PACKING}/METIS
                 DESTINATION dependencies/
-                )
+                COMPONENT OpenFPM)
 
         install(DIRECTORY $ENV{DEP_PACKING}/MPI
                 DESTINATION dependencies/
-                )
+                COMPONENT OpenFPM)
 
         install(DIRECTORY $ENV{DEP_PACKING}/OPENBLAS
                 DESTINATION dependencies/
-                )
+                COMPONENT OpenFPM)
 
         install(DIRECTORY $ENV{DEP_PACKING}/PARMETIS
                 DESTINATION dependencies/
-                )
+                COMPONENT OpenFPM)
 
         install(DIRECTORY $ENV{DEP_PACKING}/PETSC
                 DESTINATION dependencies/
-                )
+                COMPONENT OpenFPM)
 
         install(DIRECTORY $ENV{DEP_PACKING}/SUITESPARSE
                 DESTINATION dependencies/
-                )
+                COMPONENT OpenFPM)
 
 	install(DIRECTORY $ENV{DEP_PACKING}/VCDEVEL
                 DESTINATION dependencies/
-                )
+                COMPONENT OpenFPM)
 
 endif()
 
 include(CPack)
+
+cpack_add_component(OpenFPM
+                    DISPLAY_NAME OpenFPM
+                    DESCRITION OpenFPM binary files)
 

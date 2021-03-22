@@ -3,7 +3,7 @@
 
 #include <boost/fusion/container/vector.hpp>
 #include <boost/fusion/include/at_c.hpp>
-#include "Grid/Encap.hpp"
+#include "memory_ly/Encap.hpp"
 
 /* In a decomposition graph each node represent a sub-domain while an edge represent
  * an interaction between sub-domain (it mean that they have to communicate).

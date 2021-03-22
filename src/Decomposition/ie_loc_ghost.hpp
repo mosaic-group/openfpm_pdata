@@ -40,7 +40,7 @@ class ie_loc_ghost
 	 *
 	 */
 	void create_loc_ghost_ebox(Ghost<dim,T> & ghost,
-			                   openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> & sub_domains,
+			                   openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & sub_domains,
 							   openfpm::vector<Box_loc_sub<dim,T>> & sub_domains_prc)
 	{
 		comb<dim> zero;
@@ -101,7 +101,7 @@ class ie_loc_ghost
 	 *
 	 */
 	void create_loc_ghost_ibox(Ghost<dim,T> & ghost,
-			                   openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> & sub_domains,
+			                   openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & sub_domains,
 							   openfpm::vector<Box_loc_sub<dim,T>> & sub_domains_prc)
 	{
 		comb<dim> zero;
@@ -249,7 +249,7 @@ public:
 	 * \param bc Boundary conditions
 	 *
 	 */
-	void create(openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> & sub_domains, Box<dim,T> & domain , Ghost<dim,T> & ghost , const size_t (&bc)[dim] )
+	void create(openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & sub_domains, Box<dim,T> & domain , Ghost<dim,T> & ghost , const size_t (&bc)[dim] )
 	{
 		// It will store local sub-domains + borders
 		openfpm::vector<Box_loc_sub<dim,T>> sub_domains_prc;

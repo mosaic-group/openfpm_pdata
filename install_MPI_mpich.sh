@@ -3,9 +3,32 @@
 # check if the directory $1/MPI exist
 
 if [ -d "$1/MPI" ]; then
-  echo "MPI already installed"
-  exit 0
+        version=$(cat $1/MPI/version)
+        if [ x"$version" != x"9"  ]; then
+            echo -e "\033[1;34;5m  -------------------------------------------------------------------------------------- \033[0m"
+            echo -e "\033[1;34;5m  MPICH has been updated to version 3.3.0, the component will be updated automatically      \033[0m"
+            echo -e "\033[1;34;5m  -------------------------------------------------------------------------------------- \033[0m"
+            sleep 5
+            rm -rf $1/MPI/include
+            rm -rf $1/MPI/lib
+            rm -rf $1/MPI/bin
+            rm -rf $1/MPI/etc
+            rm -rf $1/MPI/share
+            rm -rf $1/MPI
+            rm -rf $1/HDF5
+            rm -rf $1/ZLIB
+            rm -rf $1/PARMETIS
+            rm -rf $1/PETSC
+            rm -rf $1/TRILINOS
+            rm -rf $1/HYPRE
+            rm -rf $1/MUMPS
+            rm -rf $1/SUPERLU_DIST
+        else
+                echo "MPI already installed"
+                exit 0
+        fi
 fi
+
 rm -rf mpich-3.3
 rm mpich-3.3.tar.gz
 wget http://ppmcore.mpi-cbg.de/upload/mpich-3.3.tar.gz
@@ -37,5 +60,5 @@ make -j $2
 make install
 
 # Mark the installation
-echo 8 > $1/MPI/version
+echo 9 > $1/MPI/version
 

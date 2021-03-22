@@ -9,6 +9,8 @@ ifdef CUDA_ON_CPU
         CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
         INCLUDE_PATH_NVCC=
         CUDA_CC_LINK=mpic++
+        CUDA_OPTIONS=-DCUDA_ON_CPU -D__NVCC__ -DCUDART_VERSION=11000
+        LIBS_SELECT=$(LIBS_CUDA_ON_CPU)
 else
         ifeq (, $(shell which nvcc))
                 CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
@@ -18,6 +20,7 @@ else
                 CUDA_CC=nvcc -ccbin=mpic++
                 CUDA_CC_LINK=nvcc -ccbin=mpic++
         endif
+	LIBS_SELECT=$(LIBS)
 endif
 
 
@@ -33,13 +36,13 @@ sph_dlb_test: OPT += -DTEST_RUN
 sph_dlb_test: sph_dlb
 
 %.o: %.cu
-	$(CUDA_CC) -O3 $(OPT) -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH_NVCC)
+	$(CUDA_CC) $(CUDA_OPTIONS) -O3 $(OPT) -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH_NVCC)
 
 %.o: %.cpp
 	$(CC) -O3 $(OPT) -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
 sph_dlb: $(OBJ)
-	$(CUDA_CC_LINK) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
+	$(CUDA_CC_LINK) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS_SELECT)
 
 all: sph_dlb
 

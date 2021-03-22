@@ -25,7 +25,7 @@ fi
 ## Check that your home is not empty
 
 if [ x"$HOME" == x"" ]; then
-	 echo -e "Your $HOME folder is empty \033[91;5;1m FAILED \033[0m"
+	 echo -e "Your \$HOME folder is empty \033[91;5;1m FAILED \033[0m"
 	 exit 1
 fi
 
@@ -433,10 +433,9 @@ if [ x"$cuda_on_cpu" == x"YES" ]; then
 fi
 if [ x"$gpu_support" == x"1" ]; then
     echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $(cat cuda_lib) $lin_alg_lib -ldl -lboost_filesystem -lboost_system" >> example.mk
-    echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $(cat cuda_lib) $lin_alg_lib -lboost_filesystem -lboost_system" >> example.mk
+    echo "LIBS_CUDA_ON_CPU=-lvcluster_cuda_on_cpu -lofpmmemory_cuda_on_cpu -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $(cat cuda_lib) $lin_alg_lib -lboost_filesystem -lboost_system -lboost_context" >> example.mk
 else
     echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $lin_alg_lib -ldl -lboost_filesystem -lboost_system $optional_boost" >> example.mk
-    echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $lin_alg_lib -lboost_filesystem -lboost_system $optional_boost" >> example.mk
 fi
 echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" $(cat openmp_flags) "$(cat cuda_options)" -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" >> example.mk
 cp example.mk src/example.mk

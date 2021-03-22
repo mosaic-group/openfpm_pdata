@@ -145,6 +145,85 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test )
 }
 
 
+BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_copy_test )
+{
+
+	// Input data
+	size_t k = 2400;
+
+	float ghost_part = 0.0;
+
+	// Domain
+	Box<2,float> domain({0.0,0.0},{1.0,1.0});
+
+	Vcluster<> & v_cl = create_vcluster();
+
+	// Skip this test on big scale
+	if (v_cl.getProcessingUnits() >= 32)
+		return;
+
+	// grid size
+	size_t sz[2];
+	sz[0] = k;
+	sz[1] = k;
+
+	// Ghost
+	Ghost<2,float> g(ghost_part);
+
+	// Distributed grid with id decomposition
+	grid_dist_id<2, float, aggregate<float>, CartDecomposition<2,float>> g_dist(sz,domain,g);
+	grid_dist_id<2, float, aggregate<float>, CartDecomposition<2,float>> g_dist_copy(g_dist.getDecomposition(),sz,g);
+
+	g_dist.load("test_data/test_data_three.h5");
+
+	// Copy
+
+	auto dom_sc = g_dist.getDomainIterator();
+    auto dom_ds = g_dist_copy.getDomainIterator();
+    while (dom_sc.isNext())
+    {
+        auto key_sc = dom_sc.get();
+        auto key_ds = dom_ds.get();
+        g_dist_copy.template get<0>(key_ds) = g_dist.template get<0>(key_sc);
+        ++dom_sc;
+        ++dom_ds;
+    }
+
+
+	auto it = g_dist_copy.getDomainIterator();
+
+	size_t count = 0;
+
+	bool match = true;
+	while (it.isNext())
+	{
+		//key
+		auto key = it.get();
+
+		//BOOST_CHECK_CLOSE(g_dist.template get<0>(key),1,0.0001);
+		//std::cout << "Element: " << g_dist.template get<0>(key) << std::endl;
+
+		auto keyg = g_dist_copy.getGKey(key);
+
+		match &= g_dist_copy.template get<0>(key) == keyg.get(0);
+
+		++it;
+		count++;
+	}
+
+	openfpm::vector<size_t> count_total;
+	v_cl.allGather(count,count_total);
+	v_cl.execute();
+
+	size_t sum = 0;
+
+	for (size_t i = 0; i < count_total.size(); i++)
+		sum += count_total.get(i);
+
+	BOOST_REQUIRE_EQUAL(sum, (size_t)k*k);
+	BOOST_REQUIRE_EQUAL(match,true);
+}
+
 BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_load_test_diff_proc )
 {
 
@@ -311,12 +390,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_2GB_load_test )
 		auto keyg = g_dist.getGKey(key);
 
 		match &= g_dist.template get<0>(key) == keyg.get(0);
-
-		if (match == false)
-		{
-			int debug = 0;
-			debug++;
-		}
 
 		++it;
 		count++;
