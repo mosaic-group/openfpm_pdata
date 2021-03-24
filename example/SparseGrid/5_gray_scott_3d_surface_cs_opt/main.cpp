@@ -90,7 +90,7 @@ void extend(sgrid_type & grid, size_t (& sz)[3],double (& spacing)[3])
 	double delta = 1e-10;
 	double max = 0.0;
 
-	auto func_extend = [&grid,delta,&spacing](auto & grid, auto & ids,
+	auto func_extend = [delta,&spacing](auto & grid, auto & ids,
 	                                 unsigned char * mask_sum)
 									 {
 										Vc::double_v phi_c;
@@ -238,7 +238,7 @@ int main(int argc, char* argv[])
 
 	for (size_t i = 0; i < timeSteps ; ++i)
 	{
-		auto func_grad = [&grid,&spacing](auto & grid, auto & ids,
+		auto func_grad = [&spacing](auto & grid, auto & ids,
                                  unsigned char * mask_sum){
 
 												Vc::double_v n[3];
@@ -302,7 +302,7 @@ int main(int argc, char* argv[])
 
 		grid.template conv_cross_ids<1,double>({0,0,0},{sz[0]-1,sz[1] - 1,sz[2] - 1},func_grad);
 
-		auto func_lap = [&grid,&spacing,uFactor,vFactor,deltaT,K,F](auto & grid, auto & ids,
+		auto func_lap = [&spacing,uFactor,vFactor,deltaT,K,F](auto & grid, auto & ids,
                                  unsigned char * mask_sum){
 
 												Vc::double_v gradU_px;
