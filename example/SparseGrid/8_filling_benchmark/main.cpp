@@ -1,5 +1,5 @@
 
-#include "util/cuda/cuda_launch.hpp"
+#include "util/cuda_launch.hpp"
 #include "Grid/grid_dist_id.hpp"
 #include "data_type/aggregate.hpp"
 #include "timer.hpp"
