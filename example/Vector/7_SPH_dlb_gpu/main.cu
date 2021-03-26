@@ -900,7 +900,7 @@ int main(int argc, char* argv[])
 
 		++obstacle_box;
 	}
-
+	
 	vd.map();
 
 	// Now that we fill the vector with particles
@@ -909,7 +909,7 @@ int main(int argc, char* argv[])
 	vd.addComputationCosts(md);
 	vd.getDecomposition().decompose();
 	vd.map();
-
+    
 	///////////////////////////
 
 	// Ok the initialization is done on CPU on GPU we are doing the main loop, so first we offload all properties on GPU
