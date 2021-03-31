@@ -17,6 +17,8 @@ class vector_dist_ws : public vector_dist<dim,St,typename AggregateAppend<int,pr
 {
     public:
 
+    typedef prop value_type;
+
     using vector_dist<dim,St,typename AggregateAppend<int,prop>::type,Decomposition,Memory,layout_base>::vector_dist;
 
     typedef boost::mpl::int_<AggregateAppend<int,prop>::type::max_prop-1> flag_prop;
@@ -88,7 +90,7 @@ public:
 
     vector_dist_subset(vector_dist_ws<dim,St,prop,Decomposition,Memory,layout_base> & vd,
                        int sub_id)
-                       :vd(vd),pid(pid),sub_id(sub_id)
+                       :vd(vd),sub_id(sub_id)
     {
         // construct pid vector
 
