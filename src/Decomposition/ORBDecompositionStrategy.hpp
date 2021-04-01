@@ -36,6 +36,33 @@ class OrbDecompositionStrategy {
   using Box = SpaceBox<dim, domain_type>;
   using Orb = ORB<dim, domain_type>;
 
+  typedef openfpm::vector<SpaceBox<dim, domain_type>, Memory, typename layout_base<SpaceBox<dim, domain_type>>::type,layout_base> vector_subdomains_type;
+
+  void go_deep(size_t v_id, ::Box<dim,domain_type> box, typename Orb::graph_type & graph, vector_subdomains_type & sub_domains)
+  {
+    // Ho childe
+    if (graph.getNChilds(v_id) != 0)
+    {
+      for (int i = 0 ; i < graph.getNChilds(v_id) ; i++)
+      {
+        ::Box<dim,domain_type> bc = box;
+        int dir = graph.template vertex_p<ORB_node<domain_type>::dir_split>(v_id);
+        domain_type CM = graph.template vertex_p<ORB_node<domain_type>::CM>(v_id);
+
+          if (i == 0)
+          {box.setHigh(dir,CM);}
+
+          if (i == 1)
+          {box.setLow(dir,CM);}
+          go_deep(graph.getChild(v_id,i),box,graph,sub_domains);       
+      }
+    }
+    else
+    {
+      sub_domains.add(box);
+    }
+  }
+
 public:
   OrbDecompositionStrategy(Vcluster<> &v_cl) : _inner(v_cl) {}
 
@@ -99,26 +126,24 @@ public:
     * 
     */
   void convertToSubDomains(openfpm::vector<::Box<dim, size_t>> & loc_box,
-                           openfpm::vector<SpaceBox<dim, domain_type>, Memory, typename layout_base<SpaceBox<dim, domain_type>>::type,layout_base> & sub_domains,
+                           vector_subdomains_type & sub_domains,
                            ::Box<dim,domain_type> & bbox) {
     // la bbox e' la scatola che contiene tutte le scatole
 
-    // first box
-    if (loc_box.size() > 0) {
-        bbox = loc_box.get(0);
-        sub_domains.add(bbox);
-    }
+    auto & graph = orb->getGraph();
+
+    go_deep(0,inner().getDomain(),graph,sub_domains);
 
     // enclose all the rest -> convert into sub-domain
     for (auto s = 1; s < loc_box.size(); ++s) {
-        SpaceBox<dim, domain_type> sub_d = loc_box.get(s);
-        sub_domains.add(sub_d);  // add the sub-domain
-        bbox.enclose(sub_d);  // Calculate the bound box
+        //SpaceBox<dim, domain_type> sub_d = loc_box.get(s);
+        //sub_domains.add(sub_d);  // add the sub-domain
+        //bbox.enclose(sub_d);  // Calculate the bound box
     }
   }
 
   Graph_CSR<nm_v<dim>, nm_e> &getGraph() {
-    orb -> graph (V box)
+    //orb -> graph (V box)
 
 
     // todo get leaves from auto tree = orb->grp;  // Graph_CSR<ORB_node<T>, no_edge>

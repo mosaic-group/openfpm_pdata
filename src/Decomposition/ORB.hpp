@@ -76,11 +76,12 @@ struct do_when_dim_gr_i<dim,i,ORB,typename boost::enable_if< boost::mpl::bool_<(
  *
  */
 
-template<typename T> class ORB_node : public aggregate<T>
+template<typename T> class ORB_node : public aggregate<T,int>
 {
 public:
 
 	static const unsigned int CM = 0;
+	static const unsigned int dir_split = 1;
 };
 
 /*! \brief This class implement orthogonal recursive bisection
@@ -234,6 +235,7 @@ class ORB
 		for (size_t i = 0 ; i < n_node ; i++)
 		{
 			grp.template vertex_p<ORB_node<T>::CM>(start-n_node+i) = cm.get(i) / cm_cnt.get(i);
+			grp.template vertex_p<ORB_node<T>::dir_split>(start-n_node+i) = dir;
 		}
 
 		// append on the 2^(n-1) previous end node to the 2^n leaf
@@ -255,6 +257,13 @@ class ORB
 	friend class bisect_unroll<dim, ORB<dim,T,loc_wg,loc_pos,Box>>;
 
 public:
+
+	typedef Graph_CSR<ORB_node<T>, no_edge> graph_type;
+
+	Graph_CSR<ORB_node<T>, no_edge> & getGraph()
+	{
+		return grp;
+	}
 
 	/*! \brief constructor
 	 *
