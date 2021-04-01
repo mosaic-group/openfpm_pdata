@@ -92,20 +92,35 @@ public:
     orb = new Orb(inner().getDomain(), inner().getVcluster().getProcessingUnits(), points);  // this takes care of the decomposition
   }
 
-    /*! \brief Covert discrete subdomains into cotinuos subdomains
+    /*! \brief Covert discrete subdomains into continuos subdomains
     *
     * \param loc_box discrete boxes
     * \param sub_domains continuos sub domains
     * 
     */
   void convertToSubDomains(openfpm::vector<::Box<dim, size_t>> & loc_box,
-                           openfpm::vector<SpaceBox<dim, domain_type>,Memory,typename layout_base<SpaceBox<dim, domain_type>>::type,layout_base> & sub_domains,
-                           ::Box<dim,domain_type> & bbox)
-  {
-    std::cout << __FILE__ << ":" << __LINE__ << "Da riempire" << std::endl;
+                           openfpm::vector<SpaceBox<dim, domain_type>, Memory, typename layout_base<SpaceBox<dim, domain_type>>::type,layout_base> & sub_domains,
+                           ::Box<dim,domain_type> & bbox) {
+    // la bbox e' la scatola che contiene tutte le scatole
+
+    // first box
+    if (loc_box.size() > 0) {
+        bbox = loc_box.get(0);
+        sub_domains.add(bbox);
+    }
+
+    // enclose all the rest -> convert into sub-domain
+    for (auto s = 1; s < loc_box.size(); ++s) {
+        SpaceBox<dim, domain_type> sub_d = loc_box.get(s);
+        sub_domains.add(sub_d);  // add the sub-domain
+        bbox.enclose(sub_d);  // Calculate the bound box
+    }
   }
 
   Graph_CSR<nm_v<dim>, nm_e> &getGraph() {
+    orb -> graph (V box)
+
+
     // todo get leaves from auto tree = orb->grp;  // Graph_CSR<ORB_node<T>, no_edge>
     // todo test only: ~trivial decomposition
 

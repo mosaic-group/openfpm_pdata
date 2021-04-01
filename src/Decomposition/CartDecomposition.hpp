@@ -348,7 +348,7 @@ public:
 		// optimize the decomposition or merge sub-sub-domain
 		d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(dec.getGraph(), p_id, loc_box, box_nn_processor,ghe,bc);
 
-		dec.convertToSubDomains(loc_box,sub_domains,bbox);
+		dec.convertToSubDomains(loc_box, sub_domains, bbox);
 
 		nn_prcs<dim,T,layout_base,Memory>::create(box_nn_processor, sub_domains);
 		nn_prcs<dim,T,layout_base,Memory>::applyBC(domain,ghost,bc);

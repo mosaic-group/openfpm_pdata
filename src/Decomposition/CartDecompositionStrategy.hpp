@@ -282,7 +282,7 @@ public:
     return sub_d;
   }
 
-  /*! \brief Covert discrete subdomains into cotinuos subdomains
+  /*! \brief Covert discrete subdomains into continuos subdomains
     *
     * \param loc_box discrete boxes
     * \param sub_domains continuos sub domains
