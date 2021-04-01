@@ -1,4 +1,5 @@
 include ../../example.mk
+LIBS_CUDA_ON_CPU=$(LIBS)
 
 CUDA_CC=
 ifdef CUDA_ON_CPU
@@ -35,7 +36,7 @@ gpu_fstep: $(OBJ)
 all: gpu_fstep
 
 run: gpu_fstep
-	mpirun -np 2 ./gpu_fstep
+	mpirun --oversubscribe -np 2 ./gpu_fstep
 
 .PHONY: clean all run
 

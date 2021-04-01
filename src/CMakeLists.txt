@@ -104,12 +104,12 @@ endif()
 target_include_directories (pdata PUBLIC ${PARMETIS_ROOT}/include)
 target_include_directories (pdata PUBLIC ${METIS_ROOT}/include)
 target_include_directories (pdata PUBLIC ${CUDA_INCLUDE_DIRS})
-target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_devices/src/)
-target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_vcluster/src/)
-target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
-target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_io/src/)
-target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
+target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_devices/src/)
+target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_vcluster/src/)
+target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
+target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_io/src/)
+target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/config)
 target_include_directories (pdata PUBLIC ${PETSC_INCLUDES})
 target_include_directories (pdata PUBLIC ${HDF5_ROOT}/include)
 target_include_directories (pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
@@ -167,10 +167,10 @@ endif()
 
 
 target_include_directories (ofpm_pdata PUBLIC ${CUDA_INCLUDE_DIRS})
-target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
-target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
-target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_devices/src/)
+target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
+target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/config)
+target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_devices/src/)
 target_include_directories (ofpm_pdata PUBLIC ${Boost_INCLUDE_DIRS})
 
 target_compile_definitions(pdata PRIVATE ${MPI_VENDOR})
@@ -184,13 +184,14 @@ endif()
 # Request that particles be built with -std=c++11
 # As this is a public compile feature anything that links to particles
 # will also build with -std=c++11
-target_compile_features(pdata PUBLIC cxx_std_11)
+target_compile_features(pdata PUBLIC cxx_std_14)
 target_link_libraries(pdata ${MPI_C_LIBRARIES})
 target_link_libraries(pdata m)
 target_link_libraries(pdata c)
 if (NOT APPLE)
     target_link_libraries(pdata rt)
 endif ()
+
 
 install(FILES Decomposition/CartDecomposition.hpp
        	      Decomposition/Domain_icells_cart.hpp	
@@ -305,6 +306,68 @@ install(FILES Debug/debug.hpp
 	COMPONENT OpenFPM)
 
 install(TARGETS ofpm_pdata DESTINATION openfpm_pdata/lib COMPONENT OpenFPM)
+
+########## Create openfpmConfig.cmake + openfpmConfigVersion.cmake
+
+add_library(openfpm_config_bin INTERFACE)
+
+target_include_directories(
+  openfpm_config_bin
+  INTERFACE 
+  ${CMAKE_INSTALL_PREFIX}/openfpm_pdata/include
+  ${CMAKE_INSTALL_PREFIX}/openfpm_data/include
+  ${CMAKE_INSTALL_PREFIX}/openfpm_io/include
+  ${CMAKE_INSTALL_PREFIX}/openfpm_vcluster/include
+  ${CMAKE_INSTALL_PREFIX}/openfpm_devices/include
+  ${CMAKE_INSTALL_PREFIX}/openfpm_numerics/include
+  ${PARMETIS_ROOT}/include
+  ${METIS_ROOT}/include
+  ${CUDA_INCLUDE_DIRS}
+  ${PETSC_INCLUDES}
+  ${HDF5_ROOT}/include
+  ${LIBHILBERT_INCLUDE_DIRS}
+  ${Vc_INCLUDE_DIR}
+  ${Boost_INCLUDE_DIRS}
+  )
+
+target_link_libraries(openfpm_config_bin INTERFACE ${Boost_LIBRARIES})
+target_link_libraries(openfpm_config_bin INTERFACE ${PARMETIS_LIBRARIES})
+target_link_libraries(openfpm_config_bin INTERFACE -L${METIS_ROOT}/lib metis)
+target_link_libraries(openfpm_config_bin INTERFACE ${HDF5_LIBRARIES})
+target_link_libraries(openfpm_config_bin INTERFACE -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
+target_link_libraries(openfpm_config_bin INTERFACE ${PETSC_LIBRARIES})
+target_link_libraries(openfpm_config_bin INTERFACE ${Vc_LIBRARIES})
+target_link_libraries(openfpm_config_bin INTERFACE ${alpaka_LIBRARIES})
+#target_link_libraries(openfpm_config_bin INTERFACE vcluster)
+#target_link_libraries(openfpm_config_bin INTERFACE ofpmmemory)
+
+install(TARGETS openfpm_config_bin EXPORT openfpm_config CONFIGURATIONS)
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/openfpm_cmake/openfpmConfigVersion.cmake"
+  VERSION ${openfpm_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
+
+#export(EXPORT openfpm_config
+#  FILE "${CMAKE_CURRENT_BINARY_DIR}/openfpm_cmake/openfpmConfig.cmake"
+#  NAMESPACE openfpm::
+#)
+
+install(EXPORT openfpm_config
+        DESTINATION cmake/
+        NAMESPACE openfpm::
+        FILE openfpmConfig.cmake)
+
+install(
+  FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/openfpm_cmake/openfpmConfigVersion.cmake"
+  DESTINATION
+    cmake/
+)
+
+#####################################################################
 
 #if(BUILD_TESTING)
 

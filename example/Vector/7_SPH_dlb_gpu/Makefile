@@ -47,7 +47,7 @@ sph_dlb: $(OBJ)
 all: sph_dlb
 
 run: sph_dlb_test
-	mpirun -np 2 ./sph_dlb
+	mpirun --oversubscribe -np 2 ./sph_dlb
 
 .PHONY: clean all run
 

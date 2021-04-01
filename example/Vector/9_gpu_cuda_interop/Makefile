@@ -33,7 +33,7 @@ gpu_interop: $(OBJ)
 all: gpu_interop
 
 run: gpu_interop
-	mpirun -np 2 ./gpu_interop
+	mpirun --oversubscribe -np 2 ./gpu_interop
 
 .PHONY: clean all run
 

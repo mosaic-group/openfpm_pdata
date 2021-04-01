@@ -21,7 +21,7 @@ gray_scott_sparse_opt_float: $(OBJ_FLOAT)
 all: gray_scott_sparse_opt gray_scott_sparse_opt_float
 
 run: gray_scott_sparse_opt_test
-	mpirun -np 4 ./gray_scott_sparse_opt
+	mpirun --oversubscribe -np 4 ./gray_scott_sparse_opt
 
 .PHONY: clean all run
 

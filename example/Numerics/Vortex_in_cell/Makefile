@@ -23,7 +23,7 @@ vic_petsc: $(OBJ_VIC_PETSC)
 	$(CC) -o $@ $^ $(LIBS_PATH) $(LIBS)
 	
 run: vic_petsc_test
-	mpirun -np 4 ./vic_petsc && mpirun -np 4 ./vic_petsc_opt
+	mpirun --oversubscribe -np 4 ./vic_petsc && mpirun --oversubscribe -np 4 ./vic_petsc_opt
 	
 .PHONY: clean all
 

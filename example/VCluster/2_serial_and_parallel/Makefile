@@ -15,7 +15,7 @@ serial_parallel: $(OBJ)
 all: serial_parallel
 
 run: all
-	mpirun -np 3 ./serial_parallel
+	mpirun --oversubscribe -np 3 ./serial_parallel
 
 .PHONY: clean all run
 
