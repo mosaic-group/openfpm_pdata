@@ -93,9 +93,6 @@ if (CUDA_FOUND)
         if (TEST_COVERAGE)
 		target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler "-fprofile-arcs -ftest-coverage" >)
         endif()
-	if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-		#		target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -G>)
-	endif()
 endif()
 
 if(TEST_PERFORMANCE)
@@ -305,17 +302,18 @@ install(FILES Debug/debug.hpp
 	DESTINATION openfpm_pdata/include/Debug 
 	COMPONENT OpenFPM)
 
-install(TARGETS ofpm_pdata DESTINATION openfpm_pdata/lib COMPONENT OpenFPM)
+install(TARGETS ofpm_pdata EXPORT ofpm_pdata_config  DESTINATION openfpm_pdata/lib COMPONENT OpenFPM)
 
 ########## Create openfpmConfig.cmake + openfpmConfigVersion.cmake
 
-add_library(openfpm_config_bin INTERFACE)
+add_library(binary_config INTERFACE)
 
 target_include_directories(
-  openfpm_config_bin
+  binary_config
   INTERFACE 
   ${CMAKE_INSTALL_PREFIX}/openfpm_pdata/include
   ${CMAKE_INSTALL_PREFIX}/openfpm_data/include
+  ${CMAKE_INSTALL_PREFIX}/openfpm_pdata/include/config
   ${CMAKE_INSTALL_PREFIX}/openfpm_io/include
   ${CMAKE_INSTALL_PREFIX}/openfpm_vcluster/include
   ${CMAKE_INSTALL_PREFIX}/openfpm_devices/include
@@ -330,18 +328,22 @@ target_include_directories(
   ${Boost_INCLUDE_DIRS}
   )
 
-target_link_libraries(openfpm_config_bin INTERFACE ${Boost_LIBRARIES})
-target_link_libraries(openfpm_config_bin INTERFACE ${PARMETIS_LIBRARIES})
-target_link_libraries(openfpm_config_bin INTERFACE -L${METIS_ROOT}/lib metis)
-target_link_libraries(openfpm_config_bin INTERFACE ${HDF5_LIBRARIES})
-target_link_libraries(openfpm_config_bin INTERFACE -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
-target_link_libraries(openfpm_config_bin INTERFACE ${PETSC_LIBRARIES})
-target_link_libraries(openfpm_config_bin INTERFACE ${Vc_LIBRARIES})
-target_link_libraries(openfpm_config_bin INTERFACE ${alpaka_LIBRARIES})
-#target_link_libraries(openfpm_config_bin INTERFACE vcluster)
-#target_link_libraries(openfpm_config_bin INTERFACE ofpmmemory)
+if (CUDA_ON_CPU)
+	target_compile_definitions(binary_config INTERFACE CUDA_ON_CPU)
+endif()
 
-install(TARGETS openfpm_config_bin EXPORT openfpm_config CONFIGURATIONS)
+target_link_libraries(binary_config INTERFACE ${Boost_LIBRARIES})
+target_link_libraries(binary_config INTERFACE ${PARMETIS_LIBRARIES})
+target_link_libraries(binary_config INTERFACE -L${METIS_ROOT}/lib metis)
+target_link_libraries(binary_config INTERFACE ${HDF5_LIBRARIES})
+target_link_libraries(binary_config INTERFACE -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
+target_link_libraries(binary_config INTERFACE ${PETSC_LIBRARIES})
+target_link_libraries(binary_config INTERFACE ${Vc_LIBRARIES})
+target_link_libraries(binary_config INTERFACE ${alpaka_LIBRARIES})
+target_link_libraries(binary_config INTERFACE $<INSTALL_PREFIX>/openfpm_vcluster/lib/$<TARGET_FILE_NAME:openfpm::vcluster> )
+target_link_libraries(binary_config INTERFACE $<INSTALL_PREFIX>/openfpm_devices/lib/$<TARGET_FILE_NAME:openfpm::ofpmmemory> )
+
+install(TARGETS binary_config vcluster ofpmmemory EXPORT openfpm_config  CONFIGURATIONS)
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
@@ -350,10 +352,6 @@ write_basic_package_version_file(
   COMPATIBILITY AnyNewerVersion
 )
 
-#export(EXPORT openfpm_config
-#  FILE "${CMAKE_CURRENT_BINARY_DIR}/openfpm_cmake/openfpmConfig.cmake"
-#  NAMESPACE openfpm::
-#)
 
 install(EXPORT openfpm_config
         DESTINATION cmake/
