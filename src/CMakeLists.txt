@@ -340,10 +340,16 @@ target_link_libraries(binary_config INTERFACE -L${LIBHILBERT_LIBRARY_DIRS} ${LIB
 target_link_libraries(binary_config INTERFACE ${PETSC_LIBRARIES})
 target_link_libraries(binary_config INTERFACE ${Vc_LIBRARIES})
 target_link_libraries(binary_config INTERFACE ${alpaka_LIBRARIES})
-target_link_libraries(binary_config INTERFACE $<INSTALL_PREFIX>/openfpm_vcluster/lib/$<TARGET_FILE_NAME:openfpm::vcluster> )
-target_link_libraries(binary_config INTERFACE $<INSTALL_PREFIX>/openfpm_devices/lib/$<TARGET_FILE_NAME:openfpm::ofpmmemory> )
 
-install(TARGETS binary_config vcluster ofpmmemory EXPORT openfpm_config  CONFIGURATIONS)
+# Not OK before CMake 3.13
+#target_link_libraries(binary_config INTERFACE $<INSTALL_PREFIX>/openfpm_vcluster/lib/$<TARGET_FILE_NAME:openfpm::vcluster> )
+#target_link_libraries(binary_config INTERFACE $<INSTALL_PREFIX>/openfpm_devices/lib/$<TARGET_FILE_NAME:openfpm::ofpmmemory> )
+target_link_libraries(binary_config INTERFACE ${CMAKE_INSTALL_PREFIX}/openfpm_vcluster/lib/libvcluster.a )
+target_link_libraries(binary_config INTERFACE ${CMAKE_INSTALL_PREFIX}/openfpm_devices/lib/libofpmmemory.a )
+
+# Does not work before Cmake 3.13
+#install(TARGETS binary_config vcluster ofpmmemory EXPORT openfpm_config  CONFIGURATIONS)
+install(TARGETS binary_config EXPORT openfpm_config  CONFIGURATIONS)
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
