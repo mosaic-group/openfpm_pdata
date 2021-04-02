@@ -15,7 +15,7 @@ example_sussman_images: $(OBJ)
 all: example_sussman_images
 
 run: all
-	mpirun -np 2 ./example_sussman_images
+	mpirun --oversubscribe -np 2 ./example_sussman_images
 
 .PHONY: clean all run
 
