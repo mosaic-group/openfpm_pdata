@@ -41,7 +41,7 @@ class OrbDecompositionStrategy {
   void go_deep(size_t v_id, ::Box<dim,domain_type> box, typename Orb::graph_type & graph, vector_subdomains_type & sub_domains)
   {
     // Ho childe
-    if (graph.getNChilds(v_id) != 0)
+    if (graph.getNChilds(v_id) != 0)  // todo 08.04 fix 2 boxes
     {
       for (int i = 0 ; i < graph.getNChilds(v_id) ; i++)
       {
@@ -54,11 +54,9 @@ class OrbDecompositionStrategy {
 
           if (i == 1)
           {box.setLow(dir,CM);}
-          go_deep(graph.getChild(v_id,i),box,graph,sub_domains);       
+          go_deep(graph.getChild(v_id,i),box,graph,sub_domains);
       }
-    }
-    else
-    {
+    } else {  // I'm leaf
       sub_domains.add(box);
     }
   }
@@ -116,7 +114,7 @@ public:
   }
 
   void decompose(openfpm::vector<Point<dim, domain_type>> points) {
-    orb = new Orb(inner().getDomain(), inner().getVcluster().getProcessingUnits(), points);  // this takes care of the decomposition
+    orb = new Orb(inner().getDomain(), inner().getVcluster().getProcessingUnits(), points);
   }
 
     /*! \brief Covert discrete subdomains into continuos subdomains

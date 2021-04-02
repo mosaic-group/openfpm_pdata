@@ -189,7 +189,7 @@ class ORB
 			size_t n1 = grp.getChild(lbl,0);
 			size_t n2 = grp.getChild(lbl,1);
 
-      // todo user can have unbalanced tree
+            // todo user can have unbalanced tree
 			// get the splitting center of mass
 			T cm = grp.template vertex_p<ORB_node<T>::CM>(lbl);
 
@@ -243,7 +243,7 @@ class ORB
 		for (size_t i = start - n_node, s = 0 ; i < start ; i++, s++)
 		{
 			// Add 2 leaf nodes and connect them with the node
-			grp.addVertex();
+			grp.addVertex();  // todo use prime factors e.g 2 * 7 = 14 to divide into N vertices
 			grp.addVertex();
 			grp.template addEdge(i,start+2*s);
 			grp.template addEdge(i,start+2*s+1);
