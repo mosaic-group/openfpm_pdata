@@ -30,7 +30,7 @@ gray_scott_sparse_gpu: $(OBJ)
 all: gray_scott_sparse_gpu
 
 run: gray_scott_sparse_gpu_test
-	mpirun -np 4 ./gray_scott_sparse_gpu
+	mpirun --oversubscribe -np 4 ./gray_scott_sparse_gpu
 
 .PHONY: clean all run
 
