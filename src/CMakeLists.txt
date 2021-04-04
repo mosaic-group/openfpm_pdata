@@ -374,6 +374,13 @@ install(
     cmake/
 )
 
+install(
+  FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/openfpmConfig-configure.cmake"
+  DESTINATION
+    cmake/
+)
+
 #####################################################################
 
 #if(BUILD_TESTING)
