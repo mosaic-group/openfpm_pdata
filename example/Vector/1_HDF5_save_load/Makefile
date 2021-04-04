@@ -18,7 +18,7 @@ hdf5: $(OBJ)
 
 
 run: hdf5
-	mpirun -np 2 ./hdf5
+	mpirun --oversubscribe -np 2 ./hdf5
 
 .PHONY: clean all run
 

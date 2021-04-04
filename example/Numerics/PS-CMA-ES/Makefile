@@ -15,7 +15,7 @@ ps_cma_es: $(OBJ)
 all: ps_cma_es
 
 run: all
-	mpirun -np 2 ./ps_cma_es
+	mpirun --oversubscribe  -np 2 ./ps_cma_es
 
 .PHONY: clean all run
 

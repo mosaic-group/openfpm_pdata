@@ -19,7 +19,7 @@ vect_ser: $(OBJ_SER)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 run: all
-	mpirun -np 2 ./vect_cp && mpirun -np 2 ./vect_ser
+	mpirun --oversubscribe  -np 2 ./vect_cp && mpirun --oversubscribe -np 2 ./vect_ser
 
 .PHONY: clean all run
 

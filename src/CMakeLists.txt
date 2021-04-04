@@ -332,6 +332,8 @@ if (CUDA_ON_CPU)
 	target_compile_definitions(binary_config INTERFACE CUDA_ON_CPU)
 endif()
 
+target_compile_options(binary_config INTERFACE $<$<COMPILE_LANGUAGE:CUDA>: ${WARNING_SUPPRESSION_AND_OPTION_NVCC} >)
+
 target_link_libraries(binary_config INTERFACE ${Boost_LIBRARIES})
 target_link_libraries(binary_config INTERFACE ${PARMETIS_LIBRARIES})
 target_link_libraries(binary_config INTERFACE -L${METIS_ROOT}/lib metis)
@@ -346,6 +348,7 @@ target_link_libraries(binary_config INTERFACE ${alpaka_LIBRARIES})
 #target_link_libraries(binary_config INTERFACE $<INSTALL_PREFIX>/openfpm_devices/lib/$<TARGET_FILE_NAME:openfpm::ofpmmemory> )
 target_link_libraries(binary_config INTERFACE ${CMAKE_INSTALL_PREFIX}/openfpm_vcluster/lib/libvcluster.a )
 target_link_libraries(binary_config INTERFACE ${CMAKE_INSTALL_PREFIX}/openfpm_devices/lib/libofpmmemory.a )
+target_link_libraries(binary_config INTERFACE ${CUDA_LIBRARIES} )
 
 # Does not work before Cmake 3.13
 #install(TARGETS binary_config vcluster ofpmmemory EXPORT openfpm_config  CONFIGURATIONS)

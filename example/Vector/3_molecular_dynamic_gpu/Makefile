@@ -39,7 +39,7 @@ md_dyn: $(OBJ)
 
 
 run: md_dyn_test
-	mpirun -np 3 ./md_dyn;
+	mpirun --oversubscribe -np 3 ./md_dyn;
 
 .PHONY: clean all run
 
