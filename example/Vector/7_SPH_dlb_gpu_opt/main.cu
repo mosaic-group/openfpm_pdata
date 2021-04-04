@@ -912,7 +912,7 @@ int main(int argc, char* argv[])
 
 		// it sort the vector (doesn not seem to produce some advantage)
 		// note force calculation is anyway sorted calculation
-		vd.make_sort(NN);
+		//vd.make_sort(NN);
 
 		// Calculate pressure from the density
 		EqState(vd);
