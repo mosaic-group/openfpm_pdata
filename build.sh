@@ -111,6 +111,9 @@ fi
 # Check of we have to do a make install
 if [ x"$comp_type" == x"full" ]; then
     make install
+    if [ x"$?" != x"0" ]; then
+        exit 1
+    fi
 else
     echo "Make install partial"
     if [ x"$comp_type" == x"intel" ]; then
