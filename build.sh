@@ -76,8 +76,12 @@ mkdir openfpm_numerics/src/config
 echo "Compiling general"
 
 source ~/.bashrc
- 
-installation_dir="--prefix=$HOME/openfpm_install/$branch"
+
+if [ x"$comp_type" != x"full" ]; then
+	installation_dir=" "
+else
+	installation_dir="--prefix=$HOME/openfpm_install/$branch"
+fi
 
 # force ssh to not use HostKey verification
 #echo "StrictHostKeyChecking=no" > $HOME/.ssh/config
