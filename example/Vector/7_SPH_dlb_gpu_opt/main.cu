@@ -997,7 +997,6 @@ int main(int argc, char* argv[])
 			if (v_cl.getProcessUnitID() == 0)
 			{std::cout << "TIME: " << t << "  " << it_time.getwct() << "   " << it_reb << "   " << cnt  << " Max visc: " << max_visc << "   " << vd.size_local() << std::endl;}
 		}
-
 	}
 
 	tot_sim.stop();
