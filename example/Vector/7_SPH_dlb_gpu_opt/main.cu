@@ -45,7 +45,7 @@
 //#define SE_CLASS1
 
 //#define USE_LOW_REGISTER_ITERATOR
-//#define SCAN_WITH_CUB <------ In case you want to use CUB for scan operations
+#define SCAN_WITH_CUB //<------ In case you want to use CUB for scan operations
 //#define EXTERNAL_SET_GPU <----- In case you want to distribute the GPUs differently from the default
 
 #include "Vector/vector_dist.hpp"
@@ -749,7 +749,7 @@ int main(int argc, char* argv[])
 
 	// You can ignore all these dp/2.0 is a trick to reach the same initialization
 	// of Dual-SPH that use a different criteria to draw particles
-	Box<3,real_number> fluid_box({dp/2.0,dp/2.0,dp/2.0},{0.4+dp/2.0,0.67-dp/2.0,0.3+dp/2.0});
+	Box<3,real_number> fluid_box({dp/2.0f,dp/2.0f,dp/2.0f},{0.4f+dp/2.0f,0.67f-dp/2.0f,0.3f+dp/2.0f});
 
 	// return an iterator to the fluid particles to add to vd
 	auto fluid_it = DrawParticles::DrawBox(vd,sz,domain,fluid_box);
@@ -798,12 +798,12 @@ int main(int argc, char* argv[])
 	}
 
 	// Recipient
-	Box<3,real_number> recipient1({0.0,0.0,0.0},{1.6+dp/2.0,0.67+dp/2.0,0.4+dp/2.0});
-	Box<3,real_number> recipient2({dp,dp,dp},{1.6-dp/2.0,0.67-dp/2.0,0.4+dp/2.0});
+	Box<3,real_number> recipient1({0.0f,0.0f,0.0f},{1.6f+dp/2.0f,0.67f+dp/2.0f,0.4f+dp/2.0f});
+	Box<3,real_number> recipient2({dp,dp,dp},{1.6f-dp/2.0f,0.67f-dp/2.0f,0.4f+dp/2.0f});
 
-	Box<3,real_number> obstacle1({0.9,0.24-dp/2.0,0.0},{1.02+dp/2.0,0.36,0.45+dp/2.0});
-	Box<3,real_number> obstacle2({0.9+dp,0.24+dp/2.0,0.0},{1.02-dp/2.0,0.36-dp,0.45-dp/2.0});
-	Box<3,real_number> obstacle3({0.9+dp,0.24,0.0},{1.02,0.36,0.45});
+	Box<3,real_number> obstacle1({0.9f,0.24f-dp/2.0f,0.0f},{1.02f+dp/2.0f,0.36f,0.45f+dp/2.0f});
+	Box<3,real_number> obstacle2({0.9f+dp,0.24f+dp/2.0f,0.0f},{1.02f-dp/2.0f,0.36f-dp,0.45f-dp/2.0f});
+	Box<3,real_number> obstacle3({0.9f+dp,0.24f,0.0f},{1.02f,0.36f,0.45f});
 
 	openfpm::vector<Box<3,real_number>> holes;
 	holes.add(recipient2);

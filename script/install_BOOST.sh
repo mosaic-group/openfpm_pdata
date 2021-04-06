@@ -7,6 +7,7 @@ if [ -d "$1/BOOST" ]; then
   exit 0
 fi
 
+rm boost_1_75_0.tar.bz2
 wget http://ppmcore.mpi-cbg.de/upload/boost_1_75_0.tar.bz2
 tar -xvf boost_1_75_0.tar.bz2
 cd boost_1_75_0

@@ -53,6 +53,7 @@
 #define PRINT_STACKTRACE
 #define STOP_ON_ERROR
 #define OPENMPI
+#define SCAN_WITH_CUB
 //#define SE_CLASS1
 
 //#define USE_LOW_REGISTER_ITERATOR
