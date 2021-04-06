@@ -46,6 +46,7 @@
 
 //#define USE_LOW_REGISTER_ITERATOR
 #define SCAN_WITH_CUB //<------ In case you want to use CUB for scan operations
+#define SORT_WITH_CUB
 //#define EXTERNAL_SET_GPU <----- In case you want to distribute the GPUs differently from the default
 
 #include "Vector/vector_dist.hpp"
