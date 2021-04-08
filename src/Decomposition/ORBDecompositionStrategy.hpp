@@ -40,7 +40,8 @@ class OrbDecompositionStrategy {
 
   void go_deep(size_t v_id, ::Box<dim,domain_type> box, typename Orb::graph_type & graph, vector_subdomains_type & sub_domains)
   {
-    // Ho childe
+    std::cout << "go deep " << graph.getNChilds(v_id) << std::endl;
+
     if (graph.getNChilds(v_id) != 0)  // todo 08.04 fix 2 boxes
     {
       for (int i = 0 ; i < graph.getNChilds(v_id) ; i++)

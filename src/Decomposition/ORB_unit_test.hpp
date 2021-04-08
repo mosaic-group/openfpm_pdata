@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE( ORB_decomposition_strategy_test_use)
 	openfpm::vector<SpaceBox<3, float>> sub_domains;
 	Box<3,float> bbox;
 
-    // todo debug with alinea `mpirun -np 7(13) ./build/src/pdata/ -runtest=*/ORB_decomposition_strategy_test_use
+    // todo debug with alinea `mpirun -np 7(13) --allow-run-as-root ./src/pdata --run_test=*/ORB_decomposition_strategy_test_use
 	orb.convertToSubDomains(garbage,sub_domains,bbox);
 
 	// Create a writer and write
