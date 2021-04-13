@@ -122,6 +122,7 @@ with_petsc
 with_eigen
 with_vcdevel
 enable_gpu
+enable_hip
 enable_asan
 enable_garbageinj
 enable_garbageinjv
@@ -259,6 +260,9 @@ do
                 conf_options="$conf_options -DCMAKE_CUDA_COMPILER=$(which $CXXCUDA)"
         fi
        conf_options="$conf_options -DENABLE_GPU=ON"
+       ;;
+    hip)
+       conf_options="$conf_options -DHIP_ENABLE=ON -DENABLE_GPU=ON"
        ;;
     asan)
        conf_options="$conf_options -DENABLE_ASAN=ON"
