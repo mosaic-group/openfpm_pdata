@@ -104,7 +104,11 @@ public:
    */
   Ghost<dim, domain_type> &getGhost() { return ghost; }
 
-  void setParameters(::Box<dim, domain_type> &domain_, const size_t (&bc)[dim], const Ghost<dim, domain_type> &ghost_) {
+  void setParameters(
+    ::Box<dim, domain_type> &domain_,
+    const size_t (&bc)[dim],
+    const Ghost<dim, domain_type> &ghost_
+    ) {
     setBoundaryConditions(bc);
     setDomain(domain_);
     setGhost(ghost_);
@@ -151,7 +155,6 @@ private:
   bool costBeenSet = false;
 
 public:
-
   //! Runtime virtual cluster machine
   Vcluster<> &v_cl;
 };

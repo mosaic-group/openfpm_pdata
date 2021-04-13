@@ -38,27 +38,39 @@ class OrbDecompositionStrategy {
 
   typedef openfpm::vector<SpaceBox<dim, domain_type>, Memory, typename layout_base<SpaceBox<dim, domain_type>>::type,layout_base> vector_subdomains_type;
 
-  void go_deep(size_t v_id, ::Box<dim,domain_type> box, typename Orb::graph_type & graph, vector_subdomains_type & sub_domains)
+  void go_deep(Vcluster<> &v_cl, size_t v_id, ::Box<dim, domain_type> box, typename Orb::graph_type & graph, vector_subdomains_type & sub_domains)
   {
-    std::cout << "go deep " << graph.getNChilds(v_id) << std::endl;
-
     if (graph.getNChilds(v_id) != 0)  // todo 08.04 fix 2 boxes
     {
-      for (int i = 0 ; i < graph.getNChilds(v_id) ; i++)
-      {
-        ::Box<dim,domain_type> bc = box;
-        int dir = graph.template vertex_p<ORB_node<domain_type>::dir_split>(v_id);
-        domain_type CM = graph.template vertex_p<ORB_node<domain_type>::CM>(v_id);
+        /* domain_type[] CM = ...
 
-          if (i == 0)
-          {box.setHigh(dir,CM);}
+        for ...
+            children[i]
+            CM[i] */
 
-          if (i == 1)
-          {box.setLow(dir,CM);}
-          go_deep(graph.getChild(v_id,i),box,graph,sub_domains);
-      }
+        
+        for (int i = 0 ; i < graph.getNChilds(v_id); i++) {
+            int dir = graph.template vertex_p<ORB_node<domain_type>::dir_split>(v_id);
+            domain_type CM = graph.template vertex_p<ORB_node<domain_type>::CM>(v_id);
+
+            if (i == 0) {  // first child
+                auto new_box = box;
+                new_box.setHigh(dir, CM);
+                go_deep(
+                    v_cl, graph.getChild(v_id, i), new_box, graph, sub_domains
+                );
+            }
+
+            if (i == 1) {  // second (and last) child
+                auto new_box = box;
+                new_box.setLow(dir, CM);
+                go_deep(
+                    v_cl, graph.getChild(v_id, i), new_box, graph, sub_domains
+                );
+            }
+        }
     } else {  // I'm leaf
-      sub_domains.add(box);
+        sub_domains.add(box);
     }
   }
 
@@ -94,12 +106,15 @@ public:
   }
 
 
-  void setParameters(const size_t (&div_)[dim],
+  void setParameters(
+    const size_t (&div_)[dim],
     ::Box<dim, domain_type> &domain_,
     const size_t (&bc)[dim],
     const Ghost<dim, domain_type> &ghost,
     const grid_sm<dim, void> &sec_dist = grid_sm<dim, void>()) {
-    inner().setDomain(domain_);
+    // todo set div_
+
+    inner().setParameters(domain_, bc, ghost);
   }
 
   /*! \brief Stub method to homogenize the interface do not use
@@ -126,18 +141,16 @@ public:
     */
   void convertToSubDomains(openfpm::vector<::Box<dim, size_t>> & loc_box,
                            vector_subdomains_type & sub_domains,
-                           ::Box<dim,domain_type> & bbox) {
+                           ::Box<dim, domain_type> & bbox) {
     // la bbox e' la scatola che contiene tutte le scatole
 
-    auto & graph = orb->getGraph();
-
-    go_deep(0,inner().getDomain(),graph,sub_domains);
+    go_deep(inner().getVcluster(), 0, inner().getDomain(), orb->getGraph(), sub_domains);
 
     // enclose all the rest -> convert into sub-domain
     for (auto s = 1; s < loc_box.size(); ++s) {
-        //SpaceBox<dim, domain_type> sub_d = loc_box.get(s);
-        //sub_domains.add(sub_d);  // add the sub-domain
-        //bbox.enclose(sub_d);  // Calculate the bound box
+        // SpaceBox<dim, domain_type> sub_d = loc_box.get(s);
+        // sub_domains.add(sub_d);  // add the sub-domain
+        // bbox.enclose(sub_d);  // Calculate the bound box
     }
   }
 
