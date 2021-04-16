@@ -111,7 +111,7 @@ target_include_directories (pdata PUBLIC ${PETSC_INCLUDES})
 target_include_directories (pdata PUBLIC ${HDF5_ROOT}/include)
 target_include_directories (pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
 target_include_directories (pdata PUBLIC ${ALPAKA_ROOT}/include)
-target_include_directories(pdata PUBLIC ${Vc_INCLUDE_DIR})
+target_include_directories (pdata PUBLIC ${Vc_INCLUDE_DIR})
 target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
 
 #target_include_directories (isolation_pdata PUBLIC ${PARMETIS_ROOT}/include)
@@ -348,6 +348,7 @@ target_link_libraries(binary_config INTERFACE ${alpaka_LIBRARIES})
 #target_link_libraries(binary_config INTERFACE $<INSTALL_PREFIX>/openfpm_devices/lib/$<TARGET_FILE_NAME:openfpm::ofpmmemory> )
 target_link_libraries(binary_config INTERFACE ${CMAKE_INSTALL_PREFIX}/openfpm_vcluster/lib/libvcluster.a )
 target_link_libraries(binary_config INTERFACE ${CMAKE_INSTALL_PREFIX}/openfpm_devices/lib/libofpmmemory.a )
+target_link_libraries(binary_config INTERFACE ${CMAKE_INSTALL_PREFIX}/openfpm_pdata/lib/libofpm_pdata.a )
 target_link_libraries(binary_config INTERFACE ${CUDA_LIBRARIES} )
 
 # Does not work before Cmake 3.13
@@ -376,7 +377,7 @@ install(
 
 install(
   FILES
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/openfpmConfig-configure.cmake"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/openfpmConfigVars-configure.cmake"
   DESTINATION
     cmake/
 )

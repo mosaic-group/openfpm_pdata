@@ -422,12 +422,14 @@ optional_boost=$(cat optional_boost_libs)
 
 if [ -d "$i_dir/HDF5/lib" ]; then
   hdf5_lib=$i_dir/HDF5/lib
+  hdf5_lib_dir=-L$i_dir/HDF5/lib
 elif [ -d "$i_dir/HDF5/lib64" ]; then
   hdf5_lib=$i_dir/HDF5/lib64
+  hdf5_lib_dir=-L$i_dir/HDF5/lib64
 fi
 
 echo "INCLUDE_PATH=$cuda_include_dirs -Wno-deprecated-declarations $openmp_flags  -I.  -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/VCDEVEL/include  -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" > example.mk
-echo "LIBS_PATH=$openmp_flags -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/VCDEVEL/lib  -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib -L$hdf5_lib -L$i_dir/LIBHILBERT/lib  $lin_alg_dir " >> example.mk
+echo "LIBS_PATH=$openmp_flags -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/VCDEVEL/lib  -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib $hdf5_lib_dir -L$i_dir/LIBHILBERT/lib  $lin_alg_dir " >> example.mk
 if [ x"$cuda_on_cpu" == x"YES" ]; then
    echo "CUDA_ON_CPU=YES" >> example.mk
 fi

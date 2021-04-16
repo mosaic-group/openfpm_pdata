@@ -147,6 +147,9 @@ endif()
 
 
 if(MPI_FOUND)
+	get_filename_component(OPENFPM_MPI_DEP "${MPI_C_INCLUDE_DIRS}" DIRECTORY)
+	file(READ ${CMAKE_SOURCE_DIR}/src/cmake/openfpmConfig-configure.cmake CMAKE_OPENFPM_CONFIG_VARS)
+	file(WRITE ${CMAKE_SOURCE_DIR}/src/cmake/openfpmConfigVars-configure.cmake "${CMAKE_OPENFPM_CONFIG_VARS}\nset(CMAKE_PREFIX_PATH ${OPENFPM_MPI_DEP}/)")
 	set(DEFINE_HAVE_MPI "#define HAVE_MPI")
 else()
 	file(WRITE error_code "200")
