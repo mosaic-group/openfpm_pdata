@@ -114,6 +114,7 @@ fi
 
 # Check of we have to do a make install
 if [ x"$comp_type" == x"full" ]; then
+    mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
     make install
     if [ x"$?" != x"0" ]; then
         exit 1
