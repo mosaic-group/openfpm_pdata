@@ -5,24 +5,32 @@ include ../../example.mk
 CUDA_CC=
 CUDA_CC_LINK=
 
-ifdef CUDA_ON_CPU
-        CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
-        INCLUDE_PATH_NVCC=
-        CUDA_CC_LINK=mpic++
-        CUDA_OPTIONS=-DCUDA_ON_CPU -D__NVCC__ -DCUDART_VERSION=11000
-        LIBS_SELECT=$(LIBS_CUDA_ON_CPU)
+CC=mpic++
+ifdef HIP
+        CUDA_CC=hipcc
+        CUDA_OPTIONS=-D__NVCC__ -D__HIP__ -DCUDART_VERSION=11000 -D__CUDACC__ -D__CUDACC_VER_MAJOR__=11 -D__CUDACC_VER_MINOR__=0 -D__CUDACC_VER_BUILD__=0
+        LIBS_SELECT=$(LIBS)
+        CC=hipcc
+	CUDA_CC_LINK=hipcc
 else
-        ifeq (, $(shell which nvcc))
-                CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
-                INCLUDE_PATH_NVCC=
-                CUDA_CC_LINK=mpic++
-        else
-                CUDA_CC=nvcc -ccbin=mpic++
-                CUDA_CC_LINK=nvcc -ccbin=mpic++
-        endif
-	LIBS_SELECT=$(LIBS)
+	ifdef CUDA_ON_CPU
+        	CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
+        	INCLUDE_PATH_NVCC=
+        	CUDA_CC_LINK=mpic++
+        	CUDA_OPTIONS=-DCUDA_ON_CPU -D__NVCC__ -DCUDART_VERSION=11000
+        	LIBS_SELECT=$(LIBS_CUDA_ON_CPU)
+	else
+        	ifeq (, $(shell which nvcc))
+                	CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
+                	INCLUDE_PATH_NVCC=
+                	CUDA_CC_LINK=mpic++
+        	else
+                	CUDA_CC=nvcc -ccbin=mpic++
+                	CUDA_CC_LINK=nvcc -ccbin=mpic++
+        	endif
+		LIBS_SELECT=$(LIBS)
+	endif
 endif
-
 
 CC=mpic++
 

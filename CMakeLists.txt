@@ -90,6 +90,9 @@ find_package(HIP)
 if(HIP_FOUND)
         set(DEFINE_HIP_GPU "#define HIP_GPU")
         set(DEFINE_CUDIFY_USE_HIP "#define CUDIFY_USE_HIP")
+	file(WRITE hip_enabled 1)
+else()
+	file(WRITE hip_enabled 0)
 endif()
 
 if(HIP_FOUND)
@@ -349,4 +352,5 @@ include(CPack)
 cpack_add_component(OpenFPM
                     DISPLAY_NAME OpenFPM
                     DESCRITION OpenFPM binary files)
+
 
