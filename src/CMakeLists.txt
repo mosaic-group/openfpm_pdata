@@ -342,6 +342,7 @@ target_link_libraries(binary_config INTERFACE -L${LIBHILBERT_LIBRARY_DIRS} ${LIB
 target_link_libraries(binary_config INTERFACE ${PETSC_LIBRARIES})
 target_link_libraries(binary_config INTERFACE ${Vc_LIBRARIES})
 target_link_libraries(binary_config INTERFACE ${alpaka_LIBRARIES})
+target_link_libraries(binary_config INTERFACE ${MPI_C_LIBRARIES})
 
 # Not OK before CMake 3.13
 #target_link_libraries(binary_config INTERFACE $<INSTALL_PREFIX>/openfpm_vcluster/lib/$<TARGET_FILE_NAME:openfpm::vcluster> )
