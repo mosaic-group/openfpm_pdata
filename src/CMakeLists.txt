@@ -5,7 +5,7 @@ add_definitions(-DSCAN_WITH_CUB)
 ########################### Executables
 
 
-if(CUDA_FOUND OR CUDA_ON_CPU)
+if(CUDA_FOUND OR CUDA_ON_CPU OR HIP_FOUND)
 	set(CUDA_SOURCES 
 	    Grid/tests/sgrid_dist_id_gpu_unit_tests.cu
 	    Vector/cuda/vector_dist_gpu_MP_tests.cu 
@@ -23,15 +23,54 @@ endif()
 if (CUDA_ON_CPU)
         add_definitions(-DCUDA_ON_CPU)
         set_source_files_properties(${CUDA_SOURCES} PROPERTIES LANGUAGE CXX)
-        set_source_files_properties(${CUDA_SOURCES} PROPERTIES COMPILE_FLAGS "-D__NVCC__ -DCUDART_VERSION=11000")
+	set_source_files_properties(${CUDA_SOURCES} PROPERTIES COMPILE_FLAGS "-D__NVCC__ -DCUDART_VERSION=11000")
         if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
                 add_definitions("-x c++")
         endif()
 endif()
 
+if ( HIP_ENABLE AND HIP_FOUND )
 
+        list(APPEND HIP_HIPCC_FLAGS ${CMAKE_CXX_FLAGS_DEBUG})
 
-add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
+        if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+                list(APPEND HIP_HIPCC_FLAGS -O0)
+        endif()
+
+	list(APPEND HIP_HIPCC_FLAGS -D__NVCC__ -D__HIP__  -DCUDART_VERSION=11000 -D__CUDACC__ -D__CUDACC_VER_MAJOR__=11 -D__CUDACC_VER_MINOR__=0 -D__CUDACC_VER_BUILD__=0)
+        set_source_files_properties(${CUDA_SOURCES} PROPERTIES LANGUAGE CXX)
+
+        set(CMAKE_CXX_COMPILER ${HIP_HIPCC_EXECUTABLE})
+
+        hip_add_executable(pdata ${CUDA_SOURCES} ${OPENFPM_INIT_FILE} main.cpp
+							  Amr/grid_dist_amr_unit_tests.cpp
+                                                          Amr/tests/amr_base_unit_tests.cpp
+							  Debug/debug_test.cpp
+							  Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp
+							  Grid/tests/grid_dist_id_unit_test.cpp
+							  Grid/tests/sgrid_dist_id_unit_tests.cpp
+							  Grid/tests/grid_dist_id_dlb_unit_test.cpp
+							  Grid/tests/staggered_grid_dist_unit_test.cpp
+							  Vector/tests/vector_dist_cell_list_tests.cpp
+							  Vector/tests/vector_dist_complex_prp_unit_test.cpp
+							  Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp
+							  Vector/tests/vector_dist_MP_unit_tests.cpp
+							  Vector/tests/vector_dist_NN_tests.cpp
+							  Vector/tests/vector_dist_unit_test.cpp
+							  pdata_performance.cpp
+							  Decomposition/tests/CartDecomposition_unit_test.cpp
+							  Decomposition/tests/shift_vect_converter_tests.cpp
+							  Vector/performance/vector_dist_performance_util.cpp
+							  lib/pdata.cpp 
+							  test_multiple_o.cpp
+							  )
+							  
+
+	hip_add_library(ofpm_pdata STATIC lib/pdata.cpp)
+
+else()
+
+	add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
 							  Amr/grid_dist_amr_unit_tests.cpp
 							  Amr/tests/amr_base_unit_tests.cpp
 						  	  Debug/debug_test.cpp
@@ -51,6 +90,10 @@ add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
 							  Decomposition/tests/shift_vect_converter_tests.cpp 
 							  Vector/performance/vector_dist_performance_util.cpp  
 							  lib/pdata.cpp test_multiple_o.cpp)
+
+	add_library(ofpm_pdata STATIC lib/pdata.cpp)
+
+endif()
 
 add_dependencies(pdata ofpmmemory)
 add_dependencies(pdata vcluster)
@@ -81,7 +124,6 @@ if (ENABLE_ASAN)
 	add_definitions(-DENABLE_ASAN)
 endif()
 
-add_library(ofpm_pdata STATIC lib/pdata.cpp)
 
 add_test(NAME pdata_3_proc COMMAND mpirun -np 3 ./pdata)
 add_test(NAME pdata_4_proc COMMAND mpirun -np 4 ./pdata)
