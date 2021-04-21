@@ -155,6 +155,7 @@ target_include_directories (pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
 target_include_directories (pdata PUBLIC ${ALPAKA_ROOT}/include)
 target_include_directories (pdata PUBLIC ${Vc_INCLUDE_DIR})
 target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
+target_include_directories (pdata PUBLIC ${MPI_C_INCLUDE_DIRS})
 
 #target_include_directories (isolation_pdata PUBLIC ${PARMETIS_ROOT}/include)
 #target_include_directories (isolation_pdata PUBLIC ${METIS_ROOT}/include)
@@ -180,6 +181,7 @@ target_link_libraries(pdata -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES}
 target_link_libraries(pdata ${PETSC_LIBRARIES})
 target_link_libraries(pdata ${Vc_LIBRARIES})
 target_link_libraries(pdata ${alpaka_LIBRARIES})
+target_link_libraries(pdata ${MPI_C_LIBRARIES})
 target_link_libraries(pdata vcluster)
 target_link_libraries(pdata ofpmmemory)
 
