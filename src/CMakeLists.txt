@@ -182,6 +182,7 @@ target_link_libraries(pdata ${PETSC_LIBRARIES})
 target_link_libraries(pdata ${Vc_LIBRARIES})
 target_link_libraries(pdata ${alpaka_LIBRARIES})
 target_link_libraries(pdata ${MPI_C_LIBRARIES})
+target_link_libraries(pdata ${MPI_CXX_LIBRARIES})
 target_link_libraries(pdata vcluster)
 target_link_libraries(pdata ofpmmemory)
 
