@@ -89,6 +89,8 @@ find_package(Vc)
 find_package(OpenMP)
 find_package(HIP)
 
+set(CMAKE_SKIP_BUILD_RPATH TRUE)
+
 if(HIP_FOUND)
         set(DEFINE_HIP_GPU "#define HIP_GPU")
         set(DEFINE_CUDIFY_USE_HIP "#define CUDIFY_USE_HIP")
