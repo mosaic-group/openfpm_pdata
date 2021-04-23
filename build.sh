@@ -131,7 +131,7 @@ else
       echo "Running make on 1 cores"
       make VERBOSE=1 -j 1
     else
-      make VERBOSE=1 -j 8
+      nice -n 19 make VERBOSE=1 -j 8
     fi
 fi
 
