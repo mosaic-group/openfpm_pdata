@@ -106,7 +106,7 @@ elif [ x"$comp_type" == x"asan" ]; then
 fi
 
 echo "Installing with: ./install $gpu_support  -i $dependency_dir $install_options -c \"$installation_dir $foward_options  \"  "
-./install $gpu_support -i $dependency_dir $install_options -c "$installation_dir $foward_options "
+nice -n 19 ./install $gpu_support -i $dependency_dir $install_options -c "$installation_dir $foward_options "
 if [ $? -ne 0 ]; then
     echo "Fail to ./install"
     exit 1 ;
