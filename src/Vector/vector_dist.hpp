@@ -39,6 +39,7 @@
 #include "NN/CellList/cuda/CellList_gpu.hpp"
 #include "lib/pdata.hpp"
 #include "cuda/vector_dist_operators_list_ker.hpp"
+#include <type_traits>
 
 #define DEC_GRAN(gr) ((size_t)gr << 32)
 
@@ -303,6 +304,12 @@ private:
 
 #endif
 
+#ifdef SE_CLASS1
+	 int map_ctr=0;
+	 //ghost check to be done.
+     int ghostget_ctr=0;
+#endif
+
 	/*! \brief Initialize the structures
 	 *
 	 * \param np number of particles
@@ -429,6 +436,11 @@ public:
 
 	//! yes I am vector dist
 	typedef int yes_i_am_vector_dist;
+
+	//! yes I am vector subset dist
+	typedef std::integral_constant<bool,false> is_it_a_subset;
+
+
 
 	/*! \brief Operator= for distributed vector
 	 *
@@ -2322,6 +2334,9 @@ public:
 #ifdef SE_CLASS3
 		se3.map_pre();
 #endif
+#ifdef SE_CLASS1
+	    map_ctr++;
+#endif
 
 		this->template map_<obp>(v_pos,v_prp,g_m,opt);
 
@@ -2333,12 +2348,23 @@ public:
 		se3.map_post();
 #endif
 	}
+#ifdef SE_CLASS1
+    int getMapCtr() const
+    {
+	    return map_ctr;
+    }
+#endif
+
 
 	/*! \brief Stub does not do anything
 	*
 	*/
 	void ghost_get_subset()
-	{}
+	{
+    #ifdef SE_CLASS1
+       std::cerr<<__FILE__<<":"<<__LINE__<<":You Used a ghost_get on a subset. This does not do anything. Please use ghostget on the entire set.";
+    #endif
+	}
 
 	/*! \brief It synchronize the properties and position of the ghost particles
 	 *
@@ -2960,7 +2986,18 @@ public:
 		prp_names = names;
 	}
 
-	/*! \brief Get a special particle iterator able to iterate across particles using
+    /*! \brief Get the properties names
+     *
+     * It is useful to get name for the properties in vtk writers
+     *
+     */
+    openfpm::vector<std::string> &  getPropNames()
+    {
+        return prp_names;
+    }
+
+
+    /*! \brief Get a special particle iterator able to iterate across particles using
 	 *         symmetric crossing scheme
 	 *
 	 * \param NN Verlet list neighborhood
