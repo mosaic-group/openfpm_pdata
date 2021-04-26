@@ -118,6 +118,9 @@ public:
                        int sub_id)
                        :vd(vd),pid(pid),sub_id(sub_id)
     {
+#ifdef SE_CLASS1
+        subsetUpdate_ctr=vd.getMapCtr();
+#endif
         // construct pid vector
 
         auto it = vd.getDomainIterator();
