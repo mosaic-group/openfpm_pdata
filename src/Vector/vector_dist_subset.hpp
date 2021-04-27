@@ -37,6 +37,27 @@ class vector_dist_ws : public vector_dist<dim,St,typename AggregateAppend<int,pr
     {
         this->template getProp<flag_prop::value>(this->size_local()-1) = sub_id;
     }
+
+    inline bool write_frame(std::string out, size_t iteration, int opt = VTK_WRITER)
+    {
+        auto &prop_names=this->getPropNames();
+        if(prop_names.size()<prop::max_prop+1){
+            prop_names.add({"SubsetNumber"});
+        }
+
+        return vector_dist<dim,St,typename AggregateAppend<int,prop>::type,Decomposition,Memory,layout_base>::write_frame(out,iteration,opt);
+    }
+
+    inline bool write(std::string out,int opt = VTK_WRITER)
+    {
+        auto &prop_names=this->getPropNames();
+        if(prop_names.size()<prop::max_prop+1){
+            prop_names.add({"SubsetNumber"});
+        }
+
+        return vector_dist<dim,St,typename AggregateAppend<int,prop>::type,Decomposition,Memory,layout_base>::write(out,"",opt);
+    }
+
 };
 
 template<unsigned int dim,
@@ -56,6 +77,10 @@ class vector_dist_subset
     openfpm::vector<aggregate<int>> pid;
 
     size_t sub_id;
+
+#ifdef SE_CLASS1
+    int subsetUpdate_ctr=0;
+#endif
 
     void check_gm()
     {
@@ -88,10 +113,16 @@ public:
     //!
     typedef int yes_i_am_vector_dist;
 
+    //! Subset detection
+    typedef std::integral_constant<bool,true> is_it_a_subset;
+
     vector_dist_subset(vector_dist_ws<dim,St,prop,Decomposition,Memory,layout_base> & vd,
                        int sub_id)
                        :vd(vd),sub_id(sub_id)
     {
+#ifdef SE_CLASS1
+        subsetUpdate_ctr=vd.getMapCtr();
+#endif
         // construct pid vector
 
         auto it = vd.getDomainIterator();
@@ -127,11 +158,24 @@ public:
         return pid;
     }
 
+#ifdef SE_CLASS1
+        int getUpdateCtr() const{
+            return subsetUpdate_ctr;
+        }
+        int getMapCtr()
+        {
+            return vd.getMapCtr();
+        }
+#endif
+
     /*! \brief Update the subset indexes
      *
      */
     inline void update()
     {
+#ifdef SE_CLASS1
+        subsetUpdate_ctr=vd.getMapCtr();
+#endif
 
         ghost_get_subset();
 
