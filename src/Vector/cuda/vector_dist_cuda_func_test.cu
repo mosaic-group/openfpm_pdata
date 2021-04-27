@@ -8,7 +8,7 @@
 #include "Vector/cuda/vector_dist_cuda_funcs.cuh"
 #include "Vector/util/vector_dist_funcs.hpp"
 #include "Decomposition/CartDecomposition.hpp"
-#include "util/cuda/scan_cuda.cuh"
+//#include "util/cuda/scan_cuda.cuh"
 #include "Vector/vector_dist.hpp"
 #include "util/cuda/scan_ofp.cuh"
 

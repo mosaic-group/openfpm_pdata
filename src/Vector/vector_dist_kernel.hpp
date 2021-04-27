@@ -194,6 +194,11 @@ public:
 		return v_prp.template get<id>(vec_key.getKey());
 	}
 
+	__device__ __host__ int getOriginKey(int vec_key)
+	{
+		return vec_key;
+	}
+
 	/*! \brief Get the property of an element
 	 *
 	 * see the vector_dist iterator usage to get an element key
