@@ -4,7 +4,7 @@
 
 if [ -d "$1/MPI" ]; then
         version=$(cat $1/MPI/version)
-        if [ x"$version" != x"9"  ]; then
+        if [ x"$version" != x"10"  ]; then
             echo -e "\033[1;34;5m  -------------------------------------------------------------------------------------- \033[0m"
             echo -e "\033[1;34;5m  MPICH has been updated to version 3.3.0, the component will be updated automatically      \033[0m"
             echo -e "\033[1;34;5m  -------------------------------------------------------------------------------------- \033[0m"
