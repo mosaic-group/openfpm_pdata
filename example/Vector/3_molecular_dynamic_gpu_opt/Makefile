@@ -54,7 +54,7 @@ md_dyn_cpu_best: $(OBJ_CPU_BEST)
 	$(CC_MPI) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 run: md_dyn_gpu_test
-	mpirun -np 3 ./md_dyn_gpu && mpirun -np 3 ./md_dyn_cpu && mpirun -np 3 ./md_dyn_cpu_best;
+	mpirun --oversubscribe -np 3 ./md_dyn_gpu && mpirun --oversubscribe -np 3 ./md_dyn_cpu && mpirun --oversubscribe -np 3 ./md_dyn_cpu_best;
 
 .PHONY: clean all run
 

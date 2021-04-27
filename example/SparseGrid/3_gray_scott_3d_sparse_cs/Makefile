@@ -17,7 +17,7 @@ gray_scott_sparse_cs: $(OBJ)
 all: gray_scott_sparse_cs
 
 run: gray_scott_sparse_cs_test
-	mpirun -np 4 ./gray_scott_sparse_cs
+	mpirun --oversubscribe -np 4 ./gray_scott_sparse_cs
 
 .PHONY: clean all run
 

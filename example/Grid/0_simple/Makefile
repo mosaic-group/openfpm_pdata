@@ -15,7 +15,7 @@ grid: $(OBJ)
 all: grid
 
 run: all
-	mpirun -np 2 ./grid
+	mpirun --oversubscribe -np 2 ./grid
 
 .PHONY: clean all run
 

@@ -2043,7 +2043,7 @@ public:
 	 * \return an iterator
 	 *
 	 */
-	ite_gpu<1> getDomainIteratorGPU(size_t n_thr = 1024) const
+	ite_gpu<1> getDomainIteratorGPU(size_t n_thr = default_kernel_wg_threads_) const
 	{
 #ifdef SE_CLASS3
 		se3.getIterator();
@@ -2057,7 +2057,7 @@ public:
 	 * \return an iterator
 	 *
 	 */
-	ite_gpu<1> getDomainAndGhostIteratorGPU(size_t n_thr = 1024) const
+	ite_gpu<1> getDomainAndGhostIteratorGPU(size_t n_thr = default_kernel_wg_threads_) const
 	{
 #ifdef SE_CLASS3
 		se3.getIterator();
@@ -2072,7 +2072,7 @@ public:
 	 *
 	 */
 	template<unsigned int ... prp,typename id_1, typename id_2, bool is_sparse>
-	void merge_sort(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>,id_1,id_2,is_sparse> & cl, size_t n_thr = 1024)
+	void merge_sort(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>,id_1,id_2,is_sparse> & cl, size_t n_thr = default_kernel_wg_threads_)
 	{
 #if defined(__NVCC__)
 
@@ -2159,7 +2159,7 @@ public:
 	 * \parameter Cell-list from which has been constructed the sorted vector
 	 *
 	 */
-	template<unsigned int ... prp> void merge_sort_with_pos(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> & cl, size_t n_thr = 1024)
+	template<unsigned int ... prp> void merge_sort_with_pos(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> & cl, size_t n_thr = default_kernel_wg_threads_)
 	{
 #if defined(__NVCC__)
 
@@ -2181,7 +2181,7 @@ public:
          * \return an iterator
          *
          */
-        auto getDomainIteratorDevice(size_t n_thr = 1024) const -> decltype(this->getDomainIteratorGPU(n_thr))
+        auto getDomainIteratorDevice(size_t n_thr = default_kernel_wg_threads_) const -> decltype(this->getDomainIteratorGPU(n_thr))
         {
                 return this->getDomainIteratorGPU(n_thr);
         }
@@ -2194,7 +2194,7 @@ public:
          * \return an iterator
          *
          */
-        auto getDomainIteratorDevice(size_t n_thr = 1024) const -> decltype(this->getDomainIterator())
+        auto getDomainIteratorDevice(size_t n_thr = default_kernel_wg_threads_) const -> decltype(this->getDomainIterator())
         {
                 return this->getDomainIterator();
         }

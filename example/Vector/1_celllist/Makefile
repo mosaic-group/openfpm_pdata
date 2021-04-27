@@ -15,7 +15,7 @@ cell: $(OBJ)
 all: cell
 
 run: all
-	mpirun -np 2 ./cell
+	mpirun --oversubscribe -np 2 ./cell
 
 .PHONY: clean all run
 

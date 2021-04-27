@@ -15,7 +15,7 @@ example_sussman_circle: $(OBJ)
 all: example_sussman_circle
 
 run: all
-	mpirun -np 2 ./example_sussman_circle
+	mpirun --oversubscribe -np 2 ./example_sussman_circle
 
 .PHONY: clean all run
 

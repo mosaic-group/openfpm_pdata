@@ -15,7 +15,7 @@ multip: $(OBJ)
 all: multip
 
 run: all
-	mpirun -np 2 ./multip
+	mpirun --oversubscribe -np 2 ./multip
 
 .PHONY: clean all run
 

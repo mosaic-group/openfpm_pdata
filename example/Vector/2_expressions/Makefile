@@ -15,7 +15,7 @@ expr: $(OBJ)
 all: expr
 
 run: all
-	mpirun -np 3 ./expr
+	mpirun --oversubscribe -np 3 ./expr
 
 .PHONY: clean all run
 

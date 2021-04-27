@@ -19,7 +19,7 @@ stokes_2d_petsc: $(OBJ_PETSC)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 run: all
-	mpirun -np 3 ./stokes_2d_eigen && mpirun -np 3 ./stokes_2d_petsc
+	mpirun --oversubscribe -np 3 ./stokes_2d_eigen && mpirun --oversubscribe -np 3 ./stokes_2d_petsc
 	
 .PHONY: clean all
 

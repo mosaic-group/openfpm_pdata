@@ -15,7 +15,7 @@ stencil: $(OBJ)
 all: stencil
 
 run: all
-	mpirun -np 3 ./stencil
+	mpirun --oversubscribe -np 3 ./stencil
 
 .PHONY: clean all run
 

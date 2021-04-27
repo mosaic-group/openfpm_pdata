@@ -11,6 +11,8 @@ if (POLICY CMP0074)
   cmake_policy(SET CMP0074 NEW)
 endif()
 
+set(openfpm_VERSION 3.2.0)
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake_modules/)
 
 set(BOOST_INCLUDE ${Boost_INCLUDE_DIR} CACHE PATH "Include directory for BOOST")
@@ -39,14 +41,18 @@ set(CUDA_ON_CPU CACHE BOOL "Make Cuda work on heap")
 set(CPACK_RUN_INSTALL_DEPENDENCIES CACHE BOOL "Set to true if we are creating deb or RPM packages")
 set(ENABLE_GARBAGE_INJECTOR CACHE BOOL "Enable the injector of garbage in the memory allocator")
 set(ENABLE_VCLUSTER_GARBAGE_INJECTOR CACHE BOOL "Enable the injector of garbage in the vcluster memory buffers")
+set(HIP_ENABLE CACHE BOOL "Enable HIP compiler")
+set(AMD_ARCH_COMPILE "gfx900" CACHE STRING "AMD gpu architecture used to compile kernels")
 
 # Enabling real GPU is stronger than using CUDA_ON_CPU
 if (ENABLE_GPU)
-    set(CUDA_ON_CPU OFF)
+	set(CUDA_ON_CPU OFF)
 	# Test CLang
-	find_package(CUDA)
-	set(CMAKE_CUDA_COMPILER_LIBRARY_ROOT ${CUDA_TOOLKIT_ROOT_DIR})
-        enable_language(CUDA)
+	if (NOT HIP_ENABLE)
+		find_package(CUDA)
+		set(CMAKE_CUDA_COMPILER_LIBRARY_ROOT ${CUDA_TOOLKIT_ROOT_DIR})
+        	enable_language(CUDA)
+	endif()
 endif()
 
 set (CMAKE_CXX_STANDARD 14)
@@ -81,6 +87,22 @@ find_package(Eigen3)
 find_package(SuiteSparse OPTIONAL_COMPONENTS UMFPACK)
 find_package(Vc)
 find_package(OpenMP)
+find_package(HIP)
+
+set(CMAKE_SKIP_BUILD_RPATH TRUE)
+
+if(HIP_FOUND)
+        set(DEFINE_HIP_GPU "#define HIP_GPU")
+        set(DEFINE_CUDIFY_USE_HIP "#define CUDIFY_USE_HIP")
+	file(WRITE hip_enabled 1)
+else()
+	file(WRITE hip_enabled 0)
+endif()
+
+if(HIP_FOUND)
+        set(DEFINE_CUDA_GPU "#define CUDA_GPU")
+endif()
+
 if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -93,7 +115,8 @@ if(PROFILE_WITH_SCOREP)
 	set(CMAKE_CUDA_COMPILER_LAUNCHER "scorep")
 endif()
 
-if(ENABLE_GPU AND CUDA_FOUND)
+
+if(ENABLE_GPU AND (CUDA_FOUND OR HIP_FOUND))
 	set(OPENFPM_INIT_FILE "initialize/initialize_wrapper_cuda.cu")
 else()
 	set(OPENFPM_INIT_FILE "initialize/initialize_wrapper_cpu.cpp")
@@ -145,6 +168,9 @@ endif()
 
 
 if(MPI_FOUND)
+	get_filename_component(OPENFPM_MPI_DEP "${MPI_C_INCLUDE_DIRS}" DIRECTORY)
+	file(READ ${CMAKE_SOURCE_DIR}/src/cmake/openfpmConfig-configure.cmake CMAKE_OPENFPM_CONFIG_VARS)
+	file(WRITE ${CMAKE_SOURCE_DIR}/src/cmake/openfpmConfigVars-configure.cmake "${CMAKE_OPENFPM_CONFIG_VARS}\nset(CMAKE_PREFIX_PATH ${OPENFPM_MPI_DEP}/)")
 	set(DEFINE_HAVE_MPI "#define HAVE_MPI")
 else()
 	file(WRITE error_code "200")
@@ -333,4 +359,5 @@ include(CPack)
 cpack_add_component(OpenFPM
                     DISPLAY_NAME OpenFPM
                     DESCRITION OpenFPM binary files)
+
 

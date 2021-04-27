@@ -83,7 +83,7 @@ void init(sgrid_type & grid, Box<3,double> & domain)
 		                vp.get(1) = pc.get(2)*u.get(0) - pc.get(0)*u.get(2);
 		                vp.get(2) = pc.get(0)*u.get(1) - pc.get(1)*u.get(0);
 
-		                double distance = vp.norm() / sqrt(3);
+		                double distance = vp.norm() / sqrt(3.0f);
 
 		                // Check if the point is in the domain
 		                if (sph1.isInside(pc) || sph2.isInside(pc) || sph3.isInside(pc) || (distance < 0.1 && channel_box.isInside(pc)) )

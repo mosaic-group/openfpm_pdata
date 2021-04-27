@@ -1,6 +1,24 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [3.3.0] April 2021 (Codename Vega)
+
+- Adding support for HIP and AMD GPU. (Only particles) 1_gpu_first/7_sph_dlb_gpu/7_sph_dlb_gpu_opt are compatible with HIP
+Additional Notes:
+- WARNING: AMD GPUs are tested manually and not in CI. This mean that out this release stuff can break at least
+           until I do not convince my working place to buy one for me ... and is gonna be hard because or rule here and there ... or who 
+           is reading this message does not want to buy one for me :-)
+- SparseGridGPU are unsupported untill AMD does not fix the bug reported here:
+           https://github.com/ROCm-Developer-Tools/HIP/issues/2260
+
+### Changes
+
+- None
+
+### Fixed
+
+- uninitialized variables in the SPH example on GPU, and other fixes necessary for AMD gpus
+
 ## [3.2.0] January 2021 (Codename Hopper)
 
 - Adding CUDA_ON_CPU option to run CUDA code on CPU

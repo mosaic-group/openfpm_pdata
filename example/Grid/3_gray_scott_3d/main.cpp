@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
 		// visualization
 		if (i % 500 == 0)
 		{
-			Old.save("output_" + std::to_string(count));
+//			Old.save("output_" + std::to_string(count));
 			count++;
 		}
 	}

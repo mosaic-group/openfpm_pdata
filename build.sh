@@ -23,7 +23,7 @@ echo "GPU compilation: $with_gpu"
 
 if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
 	echo "CentOS node"
-	source /opt/rh/devtoolset-7/enable
+	source /opt/rh/devtoolset-8/enable
 fi
 
 if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
@@ -76,8 +76,12 @@ mkdir openfpm_numerics/src/config
 echo "Compiling general"
 
 source ~/.bashrc
- 
-installation_dir="--prefix=$HOME/openfpm_install/$branch"
+
+if [ x"$comp_type" != x"full" ]; then
+	installation_dir=" "
+else
+	installation_dir="--prefix=$HOME/openfpm_install/$branch"
+fi
 
 # force ssh to not use HostKey verification
 #echo "StrictHostKeyChecking=no" > $HOME/.ssh/config
@@ -102,7 +106,7 @@ elif [ x"$comp_type" == x"asan" ]; then
 fi
 
 echo "Installing with: ./install $gpu_support  -i $dependency_dir $install_options -c \"$installation_dir $foward_options  \"  "
-./install $gpu_support -i $dependency_dir $install_options -c "$installation_dir $foward_options "
+nice -n 19 ./install $gpu_support -i $dependency_dir $install_options -c "$installation_dir $foward_options "
 if [ $? -ne 0 ]; then
     echo "Fail to ./install"
     exit 1 ;
@@ -110,7 +114,11 @@ fi
 
 # Check of we have to do a make install
 if [ x"$comp_type" == x"full" ]; then
+    mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
     make install
+    if [ x"$?" != x"0" ]; then
+        exit 1
+    fi
 else
     echo "Make install partial"
     if [ x"$comp_type" == x"intel" ]; then
@@ -123,7 +131,7 @@ else
       echo "Running make on 1 cores"
       make VERBOSE=1 -j 1
     else
-      make VERBOSE=1 -j 8
+      nice -n 19 make VERBOSE=1 -j 8
     fi
 fi
 

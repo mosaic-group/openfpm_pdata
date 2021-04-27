@@ -4,6 +4,13 @@ ${DEFINE_COVERTY_SCAN}
 /* GPU support */
 ${DEFINE_CUDA_GPU}
 
+/* HIP GPU support */
+${DEFINE_HIP_GPU}
+
+/* HIP Cudify GPU support */
+${DEFINE_CUDIFY_USE_HIP}
+
+
 /* Debug */
 ${DEFINE_DEBUG} /**/
 
