@@ -505,9 +505,9 @@ template<typename grid> void calc_rhs(grid & g_vort, grid & g_vel, grid & g_dwp)
 
 	// calculate several pre-factors for the stencil finite
 	// difference
-	float fac1 = 1.0f*nu/(g_vort.spacing(0)*g_vort.spacing(0));
-	float fac2 = 1.0f*nu/(g_vort.spacing(1)*g_vort.spacing(1));
-	float fac3 = 1.0f*nu/(g_vort.spacing(2)*g_vort.spacing(2));
+	float fac1 = 2.0f*nu/(g_vort.spacing(0)*g_vort.spacing(0));
+	float fac2 = 2.0f*nu/(g_vort.spacing(1)*g_vort.spacing(1));
+	float fac3 = 2.0f*nu/(g_vort.spacing(2)*g_vort.spacing(2));
 
 	float fac4 = 0.5f/(g_vort.spacing(0));
 	float fac5 = 0.5f/(g_vort.spacing(1));

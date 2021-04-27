@@ -1,11 +1,18 @@
 #! /bin/bash
 
+source script/discover_os
+
+discover_os
+
 # check if the directory $1/OPENBLAS exist
 
 if [ -d "$1/OPENBLAS" ]; then
   echo "OPENBLAS is already installed"
   exit 0
 fi
+
+if []
+
 rm -rf OpenBLAS-0.3.13
 rm -rf OpenBLAS-0.3.13.tar.gz
 wget http://ppmcore.mpi-cbg.de/upload/OpenBLAS-0.3.13.tar.gz
@@ -27,6 +34,7 @@ if [ ! "$(ls -A $1/OPENBLAS)" ]; then
    rm -rf $1/OPENBLAS
 else
    rm -rf OpenBLAS-0.3.13
+   rm -rf OpenBLAS-0.3.10
    echo 3 > $1/OPENBLAS/version
    exit 0
 fi

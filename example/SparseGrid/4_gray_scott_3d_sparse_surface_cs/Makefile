@@ -17,7 +17,7 @@ gray_scott_sparse_surface_cs: $(OBJ)
 all: gray_scott_sparse_surface_cs
 
 run: gray_scott_sparse_cs_surface
-	mpirun -np 4 ./gray_scott_sparse_surface_cs
+	mpirun --oversubscribe -np 4 ./gray_scott_sparse_surface_cs
 
 .PHONY: clean all run
 

@@ -15,7 +15,7 @@ vect: $(OBJ)
 all: vect
 
 run: all
-	mpirun -np 2 ./vect
+	mpirun --oversubscribe -np 2 ./vect
 
 debug:
 	../../../gdbgui/launch_mpi_debugger 2 ./vect

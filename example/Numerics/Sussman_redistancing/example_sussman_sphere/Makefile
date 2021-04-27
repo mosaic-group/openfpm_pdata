@@ -15,7 +15,7 @@ example_sussman_sphere: $(OBJ)
 all: example_sussman_sphere
 
 run: all
-	mpirun -np 2 ./example_sussman_sphere
+	mpirun --oversubscribe -np 2 ./example_sussman_sphere
 
 .PHONY: clean all run
 

@@ -15,7 +15,7 @@ vcluster: $(OBJ)
 all: vcluster
 
 run: all
-	mpirun -np 3 ./vcluster
+	mpirun --oversubscribe -np 3 ./vcluster
 
 .PHONY: clean all run
 

@@ -15,7 +15,7 @@ complex_use: $(OBJ_DORD)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 run: all
-	mpirun -np 3 ./complex_use
+	mpirun --oversubscribe -np 3 ./complex_use
 
 .PHONY: clean all run all_test on_test
 

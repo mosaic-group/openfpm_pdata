@@ -15,7 +15,7 @@ gray_scott: $(OBJ)
 all: gray_scott
 
 run: all
-	mpirun -np 4 ./gray_scott
+	mpirun --oversubscribe -np 4 ./gray_scott
 
 .PHONY: clean all run
 

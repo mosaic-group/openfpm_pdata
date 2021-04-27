@@ -21,7 +21,7 @@ dem: $(OBJ)
 
 
 run: dem_test
-	mpirun -np 2 ./dem
+	mpirun --oversubscribe -np 2 ./dem
 
 .PHONY: clean all run
 

@@ -188,13 +188,13 @@ int main(int argc, char* argv[])
 	// Diffusion constant for specie V
 	double dv = 0.5*1e-5;
 
-//#ifdef TEST_RUN
+#ifdef TEST_RUN
         // Number of timesteps
-//        size_t timeSteps = 200;
-//#else
+        size_t timeSteps = 200;
+#else
 	// Number of timesteps
         size_t timeSteps = 150000;
-//#endif
+#endif
 
 	// K and F (Physical constant in the equation)
         double K = 0.053;

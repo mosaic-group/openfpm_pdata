@@ -42,8 +42,8 @@
 
 \endverbatim
  *
- * The function accept a lambda function where the first 2 arguments are the output in form of Vc::double_v. If we use float
- * we have to use Vc::float_v or Vc::int_v in case the property is an integer. Vc variables come from the Vc library that is
+ * The function accept a lambda function where the first 2 arguments are the output in form of Vc::double_v. If we use double
+ * we have to use Vc::double_v or Vc::int_v in case the property is an integer. Vc variables come from the Vc library that is
  * now integrated in openfpm.
  *
  *\htmlonly
@@ -200,7 +200,7 @@ int main(int argc, char* argv[])
 
 		auto func = [uFactor,vFactor,deltaT,F,K](Vc::double_v & u_out,Vc::double_v & v_out,
 				                                   Vc::double_v & u,Vc::double_v & v,
-				                                   cross_stencil_v & uc,cross_stencil_v & vc,
+				                                   cross_stencil_v<double> & uc,cross_stencil_v<double> & vc,
 				                                   unsigned char * mask){
 
 				u_out = u + uFactor *(uc.xm + uc.xp +

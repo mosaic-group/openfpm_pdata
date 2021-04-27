@@ -28,7 +28,7 @@ md_comp_ord_test: $(OBJ_CORD)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 run: all_test
-	mpirun -np 4 ./md_data_ord_test && mpirun -np 4 ./md_comp_ord_test
+	mpirun --oversubscribe -np 4 ./md_data_ord_test && mpirun --oversubscribe -np 4 ./md_comp_ord_test
 
 .PHONY: clean all run all_test on_test
 

@@ -27,7 +27,7 @@ md_dyn_pap: $(OBJ_EXPR_PAP)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 run: all
-	mpirun -np 3 ./md_dyn && mpirun -np 3 ./md_dyn_expr && mpirun -np 3 ./md_dyn_vl;
+	mpirun --oversubscribe -np 3 ./md_dyn && mpirun --oversubscribe -np 3 ./md_dyn_expr && mpirun --oversubscribe -np 3 ./md_dyn_vl;
 
 .PHONY: clean all run
 

@@ -612,7 +612,7 @@ BOOST_AUTO_TEST_CASE( sparse_grid_fast_stencil_vectorized_simplified_conv2_cross
 
     auto func = [uFactor,vFactor,deltaT,F,K](Vc::double_v & u_out,Vc::double_v & v_out,
     															Vc::double_v & u,Vc::double_v & v,
-                                                                cross_stencil_v & us,cross_stencil_v & vs,
+                                                                cross_stencil_v<double> & us,cross_stencil_v<double> & vs,
                                                                 unsigned char * mask){
 
 																														 u_out = u + uFactor *(us.xm + us.xp +
@@ -688,6 +688,182 @@ BOOST_AUTO_TEST_CASE( sparse_grid_fast_stencil_vectorized_simplified_conv2_cross
 
     BOOST_REQUIRE_EQUAL(match,true);
 }
+
+BOOST_AUTO_TEST_CASE( sparse_grid_fast_stencil_vectorized_simplified_conv2_crossing_float)
+{
+	constexpr int U = 0;
+	constexpr int V = 1;
+
+	constexpr int U_next = 2;
+	constexpr int V_next = 3;
+
+	constexpr int x = 0;
+	constexpr int y = 1;
+	constexpr int z = 2;
+
+    Box<3,float> domain({0.0,0.0,0.0},{2.5,2.5,2.5});
+
+    // grid size
+    size_t sz[3] = {32,32,32};
+
+    // Define periodicity of the grid
+    periodicity<3> bc = {PERIODIC,PERIODIC,PERIODIC};
+
+    // Ghost in grid unit
+    Ghost<3,long int> g(1);
+
+    // deltaT
+    float deltaT = 1;
+
+    // Diffusion constant for specie U
+    float du = 2*1e-5;
+
+    // Diffusion constant for specie V
+    float dv = 1*1e-5;
+
+    // Number of timesteps
+    size_t timeSteps = 5000;
+
+    // K and F (Physical constant in the equation)
+    float K = 0.053;
+    float F = 0.014;
+
+    sgrid_dist_soa<3, float, aggregate<float,float,float,float>> grid(sz,domain,g,bc);
+
+    auto it = grid.getGridIterator();
+
+    while (it.isNext())
+    {
+            // Get the local grid key
+            auto key = it.get_dist();
+
+            // Old values U and V
+            grid.template insert<U>(key) = 1.0;
+            grid.template insert<V>(key) = 0.0;
+
+            // Old values U and V
+            grid.template insert<U_next>(key) = 0.0;
+            grid.template insert<V_next>(key) = 0.0;
+
+            ++it;
+    }
+
+    long int x_start = grid.size(0)*1.55f/domain.getHigh(0);
+    long int y_start = grid.size(1)*1.55f/domain.getHigh(1);
+    long int z_start = grid.size(1)*1.55f/domain.getHigh(2);
+
+    long int x_stop = grid.size(0)*1.85f/domain.getHigh(0);
+    long int y_stop = grid.size(1)*1.85f/domain.getHigh(1);
+    long int z_stop = grid.size(1)*1.85f/domain.getHigh(2);
+
+    grid_key_dx<3> start({x_start,y_start,z_start});
+    grid_key_dx<3> stop ({x_stop,y_stop,z_stop});
+    auto it_init = grid.getGridIterator(start,stop);
+
+    while (it_init.isNext())
+    {
+            auto key = it_init.get_dist();
+
+            grid.template insert<U>(key) = 0.5 + (((float)std::rand())/RAND_MAX -0.5)/10.0;
+            grid.template insert<V>(key) = 0.25 + (((float)std::rand())/RAND_MAX -0.5)/20.0;
+
+            ++it_init;
+    }
+
+    // spacing of the grid on x and y
+    float spacing[3] = {grid.spacing(0),grid.spacing(1),grid.spacing(2)};
+    // sync the ghost
+    size_t count = 0;
+    grid.template ghost_get<U,V>();
+
+    // because we assume that spacing[x] == spacing[y] we use formula 2
+    // and we calculate the prefactor of Eq 2
+    float uFactor = deltaT * du/(spacing[x]*spacing[x]);
+    float vFactor = deltaT * dv/(spacing[x]*spacing[x]);
+
+
+     //! \cond [stencil get and use] \endcond
+
+
+    auto func = [uFactor,vFactor,deltaT,F,K](Vc::float_v & u_out,Vc::float_v & v_out,
+    															Vc::float_v & u,Vc::float_v & v,
+                                                                cross_stencil_v<float> & us,cross_stencil_v<float> & vs,
+                                                                unsigned char * mask){
+
+																														 u_out = u + uFactor *(us.xm + us.xp +
+																																 	           us.ym + us.yp +
+																																			   us.zm + us.zp - 6.0f*u) - deltaT * u*v*v
+																																									- deltaT * F * (u - 1.0f);
+
+																														 v_out = v + vFactor *(vs.xm + vs.xp +
+																																	  	  	   vs.ym + vs.yp +
+																																			   vs.zm + vs.zp - 6.0f*v) + deltaT * u*v*v
+																																									- deltaT * (F+K) * v;
+                                                                                     };
+
+    grid.conv_cross2<U,V,U_next,V_next,1>({0,0,0},{(long int)sz[0]-1,(long int)sz[1]-1,(long int)sz[2]-1},func);
+    grid.conv_cross2<U,V,U_next,V_next,1>({0,0,0},{(long int)sz[0]-1,(long int)sz[1]-1,(long int)sz[2]-1},func);
+
+    bool match = true;
+
+    {
+		auto it = grid.getDomainIterator();
+
+		float max_U = 0.0;
+		float max_V = 0.0;
+		grid_dist_key_dx<3> k_max;
+		while (it.isNext())
+		{
+			// center point
+			auto Cp = it.get();
+
+			// plus,minus X,Y,Z
+			auto mx = Cp.move(0,-1);
+			auto px = Cp.move(0,+1);
+			auto my = Cp.move(1,-1);
+			auto py = Cp.move(1,1);
+			auto mz = Cp.move(2,-1);
+			auto pz = Cp.move(2,1);
+
+			// update based on Eq 2
+			if ( fabs(grid.get<U>(Cp) + uFactor * (
+																	grid.get<U>(mz) +
+																	grid.get<U>(pz) +
+																	grid.get<U>(my) +
+																	grid.get<U>(py) +
+																	grid.get<U>(mx) +
+																	grid.get<U>(px) -
+																	6.0*grid.get<U>(Cp)) +
+																	- deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
+																	- deltaT * F * (grid.get<U>(Cp) - 1.0) - grid.get<U_next>(Cp)) > 0.00001 )
+			{
+				match = false;
+				break;
+			}
+
+			// update based on Eq 2
+			if ( fabs(grid.get<V>(Cp) + vFactor * (
+																	grid.get<V>(mz) +
+																	grid.get<V>(pz) +
+																	grid.get<V>(my) +
+																	grid.get<V>(py) +
+																	grid.get<V>(mx) +
+																	grid.get<V>(px) -
+																	6*grid.get<V>(Cp)) +
+																	deltaT * grid.get<U>(Cp) * grid.get<V>(Cp) * grid.get<V>(Cp) +
+																	- deltaT * (F+K) * grid.get<V>(Cp) - grid.get<V_next>(Cp)) > 0.00001 )
+			{
+				match = false;
+				break;
+			}
+
+			++it;
+		}
+    }
+
+    BOOST_REQUIRE_EQUAL(match,true);
+}
+
 
 BOOST_AUTO_TEST_CASE (sgrid_dist_id_soa_write )
 {

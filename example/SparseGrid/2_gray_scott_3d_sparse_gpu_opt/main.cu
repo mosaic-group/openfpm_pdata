@@ -209,7 +209,13 @@ int main(int argc, char* argv[])
 
 		if (i % 2 == 0)
 		{
+			cudaDeviceSynchronize();
+			timer tconv;
+			tconv.start();
 			grid.conv2<U,V,U_next,V_next,1>({0,0,0},{(long int)sz[0]-1,(long int)sz[1]-1,(long int)sz[2]-1},func);
+			cudaDeviceSynchronize();
+			tconv.stop();
+			std::cout << "Conv " << tconv.getwct() << std::endl;
 
 			// After copy we synchronize again the ghost part U and V
 

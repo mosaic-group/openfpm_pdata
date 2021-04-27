@@ -15,7 +15,7 @@ periodic: $(OBJ)
 all: periodic
 
 run: all
-	mpirun -np 4 ./periodic
+	mpirun --oversubscribe -np 4 ./periodic
 
 .PHONY: clean all run
 

@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_hdf5_copy_test )
 	// Input data
 	size_t k = 2400;
 
-	float ghost_part = 0.0;
+	float ghost_part = 0.01;
 
 	// Domain
 	Box<2,float> domain({0.0,0.0},{1.0,1.0});
