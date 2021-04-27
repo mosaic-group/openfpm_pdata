@@ -11,13 +11,19 @@ if [ -d "$1/OPENBLAS" ]; then
   exit 0
 fi
 
-if []
-
-rm -rf OpenBLAS-0.3.13
-rm -rf OpenBLAS-0.3.13.tar.gz
-wget http://ppmcore.mpi-cbg.de/upload/OpenBLAS-0.3.13.tar.gz
-tar -xf OpenBLAS-0.3.13.tar.gz
-cd OpenBLAS-0.3.13
+if [ x"$platform" == x"darwin" ]; then
+  rm -rf OpenBLAS-0.3.10
+  rm -rf OpenBLAS-0.3.10.tar.gz
+  wget http://ppmcore.mpi-cbg.de/upload/OpenBLAS-0.3.10.tar.gz
+  tar -xf OpenBLAS-0.3.10.tar.gz
+  cd OpenBLAS-0.3.10
+else
+  rm -rf OpenBLAS-0.3.13
+  rm -rf OpenBLAS-0.3.13.tar.gz
+  wget http://ppmcore.mpi-cbg.de/upload/OpenBLAS-0.3.13.tar.gz
+  tar -xf OpenBLAS-0.3.13.tar.gz
+  cd OpenBLAS-0.3.13
+fi
 
 #wget http://ppmcore.mpi-cbg.de/upload/openblas.diff
 #patch -p1 < openblas.diff
