@@ -2,86 +2,74 @@
 // Created by Abhinav Singh @absingh on 26/04/2021
 //
 /**
- * @file Odeint/main2.cpp
- * @page Odeint
- *
- * @subpage Odeint_single_step
- * @subpage Odeint_multiple_steps
- *
- * We can use the Odeint library from boost in two ways. The first example will cover a simple case where we control the time stepping ourselves (time loop of the simulation wriiten by us).
- * The 2nd Example will cover a way of using odeint where the time is forwarded by odeint along with a observer.
- *
- *  * In each of these examples, we solve the follwing advection-diffusion pde for two chemicals with concentration @f[\vec(C)=(C_1,C_2)@f] with a fixed velocity @f[\vec(V)=(-y*e^{10*(x^2+y^2)},x*e^{10*(x^2+y^2)})@f]
- *
- * @f[ \frac{\partial\vec{C}}{dt}=\vec{V}.\nabla U + 0.1*\Delta U @f]
- * in 2d domain [-1,-1]*[1,1] with the boundary conditions on the walls as no-slip for velocity V=0 and sink for the chemicals U=0.
- *
- */
-
-
-
-
-
-/**
  * @page Odeint_multiple_steps Multiple steps integration with Odeint
  * *
  * In this example, we perform time integration in a 2d domain of particles of a following partial differential equation:
  *
- * @f[ \frac{\partial\vec{C}}{dt}=\vec{V}.\nabla U + 0.1*\Delta U @f]
- * in 2d domain [-1,-1]*[1,1] with the boundary conditions on the walls as no-slip for velocity @f[\vec{V}=0@f] and sink for the chemicals @f[\vec{C}=0@f].
+ * @f[ \frac{\partial\vec{C}}{dt}=\vec{V}.\nabla_{\{x,y\}} U + 0.1*\Delta_{\{x,y\}} U @f]
+ * in 2d domain [-1,-1]*[1,1] with a fixed velocity \f$\vec{V}(x,y)=(-ye^{10(x^2+y^2)},xe^{10(x^2+y^2)})\f$, and the boundary conditions on the walls as no-slip for velocity @f[\vec{V}=0@f] and sink for the chemicals @f[\vec{C}=0@f].
+ *  Further, we start with the initial condition for the concentration as
+ *   @f[\vec{C}=\begin{cases}
+ *   (1,0)\text{ for } x=0,-0.5<y<0\\
+ *   (0,1)\text{ for } x=0, 0<y<0.5\\
+ *   (0,0)  \text{ for the rest of the domain}\\
+ * \end{cases} @f]
  *
  * We do that by emplying a Lagrangian frame of reference. Hence the Pde is transformed to:
  *
- * @f[\begin{cases}
+ * @f[\begin{align}
  *   \frac{\partial\vec{X}}{dt}=\vec{V}\\
- *   \frac{\partial\vec{C}}{dt}=0.1*\Delta U
- * \end{cases} @f]
+ *   \frac{\partial\vec{C}}{dt}=0.1*\Delta_{\{x,y\}} U
+ * \end{align} @f]
  * This is a system of PDEs. We decouple the moving of the particles from the evolution of the chemicals as it can be expensive to recompute derivatives at every stage of a time integrator in a single step.
  *
  * Output:
- * 1.) Time series data of the PDE Solution.
+ * Time series data of the PDE Solution.
  *
  */
 
 /**
- * @page Odeint_single_step Step by Step time integration with Odeint
+ * @page Odeint_multiple_steps Multiple steps integration with Odeint
  *
- * ## Include ## {#ode_c_include}
+ * ## Includes ## {#ode_c2_include}
  *
  * These are the header files that we need to include:
  *
- * @snippet example/Numerics/Odeint/main2.cpp Include
+ * @snippet example/Numerics/Odeint/main2.cpp Ode2Include
  *
  */
-//! @cond [Include] @endcond
+//! @cond [Ode2Include] @endcond
 
 // Include Vector Expression,Vector Expressions for Subser,DCPSE,Odeint header files
 #include "Operators/Vector/vector_dist_operators.hpp"
 #include "Vector/vector_dist_subset.hpp"
 #include "DCPSE/DCPSE_op/DCPSE_op.hpp"
 #include "OdeIntegrators/OdeIntegrators.hpp"
-//! @cond [Include] @endcond
+//! @cond [Ode2Include] @endcond
 
 
 /**
  * @page Odeint_multiple_steps Multiple steps integration with Odeint
  *
- * ## Initialization of the global parameters## {#ode_c_init}
+ * ## Initialization of the global parameters## {#ode_c2_init}
  *
  * We start with
  * * Initializing certain global parameteres we will use: such as x,y to refer to the dimensions 0 and 1. (Makes it easier to read equations in code)
  * * Creating empty pointers for coupling openfpm distributed vector with odeint. One for the entire distributed vector and another for the subset or bulk.
  * We seperate bulk and the entire distribution as it makes it easier to impose boundary conditions. (Which will be more apparant in ComputeRHS of the PDE)
+ * Note that a subset expression always comes at the left hand side of a computation. (The semantics of the expressions is by denoting what we want to update from regular expressions)
+ * Creating aliases of the types of the datasructures we are going to use in OpenFPM. (Bulk Alias can only be used on LHS, say to update onl the bulk)
  *
- * *Creating aliases of the types of the datasructures we are going to use in OpenFPM.
  * Property_type as the type of properties we wish to use.
+ *
  * dist_vector_type as the 2d openfpm distributed vector type
+ *
  * dist_vector_type as the 2d openfpm distributed subset vector type
  *
- * @snippet example/Numerics/Numerics/Odeint/main2.cpp Initialization of the global parameters
+ * @snippet example/Numerics/Numerics/Odeint/main2.cpp Initializationtwo
  *
  */
-//! @cond [Initialization of the global parameters] @endcond
+//! @cond [Initializationtwo] @endcond
 constexpr int x = 0;
 constexpr int y = 1;
 
@@ -92,12 +80,12 @@ void *PointerDistGlobal, *PointerDistSubset;
 typedef aggregate<VectorS<2, double>, VectorS<2, double>, VectorS<2, double>> Property_type;
 typedef vector_dist_ws<2, double, Property_type> dist_vector_type;
 typedef vector_dist_subset<2, double, Property_type> dist_vector_subset_type;
-
+//! @cond [Initializationtwo] @endcond
 
 /**
  * @page Odeint_multiple_steps Multiple steps integration with Odeint
  *
- * ## Creating the RHS Functor## {#ode_c_rhs}
+ * ## Creating the RHS Functor## {#ode_c2_rhs}
  *
  * Odeint works with certain specific state_types.
  * We offer certain state types such as 'state_type_2d_ofp' for making openfpm work with odeint.
@@ -119,10 +107,10 @@ typedef vector_dist_subset<2, double, Property_type> dist_vector_subset_type;
  *
  * )
  *
- * @snippet example/Numerics/Numerics/Odeint/main2.cpp Creating the RHS Functor
+ * @snippet example/Numerics/Numerics/Odeint/main2.cpp RHS2Functor
  *
  */
-//! @cond [Creating the RHS Functor] @endcond
+//! @cond [RHS2Functor] @endcond
 template<typename DXX,typename DYY>
 struct RHSFunctor
 {
@@ -163,11 +151,13 @@ struct RHSFunctor
         dxdt.data.get<1>()=dC[y];
     }
 };
+//! @cond [RHS2Functor] @endcond
+
 
 /**
  * @page Odeint_multiple_steps Multiple steps integration with Odeint
  *
- * ## Creating the Observer Functor## {#ode_c_obs}
+ * ## Creating the Observer Functor## {#ode_c2_obs}
  *
  * There are multiple ways in which the system can be integrated. For example, and ideally, we could put both the PDEs into the RHS functor (Moving the particles at every stage). This can be expensive.
  * However, Often in numerical simulations, Both the PDEs can be integrated with seperate steppers.
@@ -186,14 +176,12 @@ struct RHSFunctor
  * (Note that these pointers needs to initialized in the main(). Further, 'state_type_2d_ofp' is a temporal structure, which means it does not have the ghost.
  * Hence we copy the current state back to the openfpm vector from the openfpm state type X.
  * We do our computations as required.
- * Then we copy back the output into the state_type dxdt
+ * Then we copy back the output into the state_type dxdt.
  *
- * )
- *
- * @snippet example/Numerics/Numerics/Odeint/main2.cpp Creating the Observer Functor
+ * @snippet example/Numerics/Numerics/Odeint/main2.cpp Observer2Functor
  *
  */
-//! @cond [Creating the Observer Functor] @endcond
+//! @cond [Observer2Functor] @endcond
 template<typename DXX,typename DYY>
 struct ObserverFunctor {
 
@@ -253,38 +241,39 @@ struct ObserverFunctor {
 
     }
 };
-//! @cond [Creating the Observer Functor] @endcond
+//! @cond [Observer2Functor] @endcond
 
 /**
  * @page Odeint_multiple_steps Multiple steps integration with Odeint
  *
- * ## Initializating OpenFPM ## {#odeint_c_initmain}
+ * ## Initializating OpenFPM ## {#odeint_c2_initmain}
  *
  * We start with
  * * Initializing OpenFPM
  *
- * @snippet example/Numerics/Odeint/main2.cpp Initializating OpenFPM
+ * @snippet example/Numerics/Odeint/main2.cpp initParticles2
  *
  */
-//! @cond [initParticles] @endcond
+//! @cond [initParticles2] @endcond
 int main(int argc, char *argv[])
 {
     //	initialize library
     openfpm_init(&argc, &argv);
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //! @cond [initParticles2] @endcond
+
     /**
      * @page Odeint_multiple_steps Multiple steps integration with Odeint
      *
-     * ## Creating Particles and assigning subsets ## {#odeint_c_indices}
+     * ## Creating Particles and assigning subsets ## {#odeint_c2_indices}
      *
      * We create a particle distribution we certain rCut for the domain [-1,-1] to [1,1].
      *
      * Also, we fill the initial concentration as C_1(x=0,y>0 & y<0.5,t=0)=1,C_2(x=0,y<0 & y>-0.5,t=0)=1 and 0 everywhere else.
-     * @snippet example/Numerics/Odeint/main.cpp Creating Particles and assigning subsets
+     *
+     * @snippet example/Numerics/Odeint/main2.cpp init2Subset
      *
      */
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //! @cond [initParticles] @endcond
+    //! @cond [init2Subset] @endcond
     const size_t sz[2] = {41, 41};
     Box<2, double> box({-1, -1}, {1.0, 1.0});
     size_t bc[2] = {NON_PERIODIC, NON_PERIODIC};
@@ -329,41 +318,39 @@ int main(int argc, char *argv[])
 
     //We write the particles to check if the initialization is correct.
     Particles.write("Init");
-    //! @cond [initParticles] @endcond
-
+    //! @cond [init2Subset] @endcond
     /**
      * @page Odeint_multiple_steps Multiple steps integration with Odeint
      *
-     * ## Create the subset and Cast Global Pointers ## {#odeint_c_point}
+     * ## Create the subset and Cast Global Pointers ## {#odeint_c2_point}
      *
      *
      * On the particles we just created we need to constructed the subset object based on the numbering.
      * Further, We cast the Global Pointers so that Odeint RHS functor can recognize our openfpm distributed structure.
      *
      *
-     * @snippet example/Numerics/Odeint/main2.cpp Create the subset and Cast Global Pointers
+     * @snippet example/Numerics/Odeint/main2.cpp Pointer2Init
      */
-    //! @cond [PointerInit] @endcond
+    //! @cond [Pointer2Init] @endcond
     // Now we initialize the grid with a filled circle. Outside the circle, the value of Phi_0 will be -1, inside +1.
     //Now we construct the subsets based on the subset number.
     dist_vector_subset_type Particles_bulk(Particles, 0);
     //We cast the global pointers to Particles and Particles_bulk as expected by the RHS functor.
     PointerDistGlobal = (void *) &Particles;
     PointerDistSubset = (void *) &Particles_bulk;
-    //! @cond [PointerInit] @endcond
+    //! @cond [Pointer2Init] @endcond
 
     /**
-     * @page Odeint_multiple_step Step by Step time integration with Odeint
+     * @page Odeint_multiple_steps Multiple steps integration with Odeintx`
      *
-     * ## Creating DCPSE Operators and aliases for expressions## {#odeint_c_dcpse}
+     * ## Creating DCPSE Operators and aliases for expressions## {#odeint_c2_dcpse}
      *
      * Here we create two dcpse based operators and alias the particle properties.
      *
-     * @snippet example/Numerics/Odeint/main2.cpp Creating Particles and assigning subsets
+     * @snippet example/Numerics/Odeint/main2.cpp DCPSE2Alias
      *
      */
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //! @cond [DCPSEAlias] @endcond
+    //! @cond [DCPSE2Alias] @endcond
     //We create the DCPSE Based operators for discretization of the operators.
     Derivative_xx Dxx(Particles, 2, rCut);
     Derivative_yy Dyy(Particles, 2, rCut);
@@ -376,12 +363,12 @@ int main(int argc, char *argv[])
     //We create aliases for referring to the subset properties.
     auto C_bulk = getV<0>(Particles_bulk);
     auto dC_bulk = getV<2>(Particles_bulk);
-    //! @cond [DCPSEAlias] @endcond
+    //! @cond [DCPSE2Alias] @endcond
 
     /**
-     * @page Odeint_multiple_step Multiple steps integration with Odeint
+     * @page Odeint_multiple_steps Multiple steps integration with Odeintx`
      *
-     * ## Creating Odeint Object ## {#odeint_c_1}
+     * ## Creating Odeint Objects## {#odeint_c2_obj}
      * Now we create a odeint stepper object (RK4 in this case. Please refer to odeint on more such methods or examples listed as comments after calling the method). Since we are in 2d, we are going to use "state_type_2d_ofp". Which is a structure or state_type compatible with odeint. We further pass all the parameters including "boost::numeric::odeint::vector_space_algebra_ofp",which tell odeint to use openfpm algebra.
      * The template parameters are: state_type_2d_ofp (state type of X), double (type of the value inside the state), state_type_2d_ofp (state type of DxDt), double (type of the time), boost::numeric::odeint::vector_space_algebra_ofp (our algebra).
      *
@@ -389,11 +376,10 @@ int main(int argc, char *argv[])
      *
      * Also, we create the state type compatible with odeint and initialize the concentration in it.
      *
-     * @snippet example/Numerics/Odeint/main2.cpp Creating Odeint Object
+     * @snippet example/Numerics/Odeint/main2.cpp Odeint2I
      *
      */
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //! @cond [OdeintI] @endcond
+    //! @cond [Odeint2I] @endcond
     //Now we create a odeint stepper object (RK4). Since we are in 2d, we are going to use "state_type_2d_ofp". Which is a structure or state_type compatible with odeint. We further pass all the parameters including "boost::numeric::odeint::vector_space_algebra_ofp",which tell odeint to use openfpm algebra.
     // The template parameters are: state_type_2d_ofp (state type of X), double (type of the value inside the state), state_type_2d_ofp (state type of DxDt), double (type of the time), boost::numeric::odeint::vector_space_algebra_ofp (our algebra)
     boost::numeric::odeint::runge_kutta4<state_type_2d_ofp, double, state_type_2d_ofp, double, boost::numeric::odeint::vector_space_algebra_ofp> Odeint_rk4;
@@ -410,12 +396,12 @@ int main(int argc, char *argv[])
     //Since we created a 2d state_type we initialize the two fields in the object data using the method get.
     X.data.get<x>() = C[0];
     X.data.get<y>() = C[1];
-    //! @cond [OdeintI] @endcond
+    //! @cond [Odeint2I] @endcond
 
     /**
-    * @page Odeint_multiple_step Multiple steps integration with Odeint
+    * @page Odeint_multiple_steps Multiple steps integration with Odeintx`
     *
-    * ## Calling Odeint ## {#odeint_c_1}
+    * ## Calling Odeint ## {#odeint_c2_1211}
     * We initiliaze the time variable t, step_size dt and final time tf.
     *
     * We create a vector for storing the intermidiate time steps, as most odeint calls return such an object.
@@ -428,11 +414,11 @@ int main(int argc, char *argv[])
     *
     * We finally deallocate the DCPSE operators and finalize the library.
     *
-    * @snippet example/Numerics/Odeint/main2.cpp Calling Odeint
+    * @snippet example/Numerics/Odeint/main2.cpp OdeintTCall
     *
     */
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //! @cond [OdeintT] @endcond
+    //! @cond [OdeintTCall] @endcond
     double t = 0, tf = 1e-1, dt = 1e-2;
     std::vector<double> inter_times; // vector to store intermediate time steps taken by odeint.
 
@@ -451,23 +437,20 @@ int main(int argc, char *argv[])
 
 
     std::cout << "No. of Time steps taken: " << steps << std::endl;
-
     //Copying back the final solution and outputting the number of steps taken by Odeint.
     C_bulk[x] = X.data.get<0>();
     C_bulk[y] = X.data.get<1>();
     //Deallocating the operators
     Dxx.deallocate(Particles);
     Dyy.deallocate(Particles);
-    //! @cond [OdeintT] @endcond
-    //! @cond [Terminate] @endcond
     openfpm_finalize(); // Finalize openFPM library
     return 0;
-}
-//! @cond [Terminate] @endcond
+} //main end
+//! @cond [OdeintTCall] @endcond
 /**
- * @page Odeint_multiple_step Step by Step time integration with Odeint
+ * @page Odeint_multiple_steps Multiple steps integration with Odeint
  *
- * ## Full code ## {#odeint_c_full}
+ * ## Full code ## {#odeint_c2_full}
  *
  * @include example/Numerics/Odeint/main2.cpp
  */
