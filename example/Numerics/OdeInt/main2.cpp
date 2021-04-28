@@ -7,7 +7,7 @@
  * In this example, we perform time integration in a 2d domain of particles of a following partial differential equation:
  *
  * @f[ \frac{\partial\vec{C}}{dt}=\vec{V}.\nabla_{\{x,y\}} U + 0.1*\Delta_{\{x,y\}} U @f]
- * in 2d domain [-1,-1]*[1,1] with a fixed velocity \f$\vec{V}(x,y)=(-ye^{10(x^2+y^2)},xe^{10(x^2+y^2)})\f$, and the boundary conditions on the walls as no-slip for velocity @f[\vec{V}=0@f] and sink for the chemicals @f[\vec{C}=0@f].
+ * in 2d domain [-1,-1]*[1,1] with a fixed velocity \f$\vec{V}(x,y)=(-ye^{10(x^2+y^2)},xe^{10(x^2+y^2)})\f$, and the boundary conditions on the walls as no-slip for velocity \f$\vec{V}=0\f$ and sink for the chemicals \f$\vec{C}=0\f$ for all time \f$t\f$.
  *  Further, we start with the initial condition for the concentration as
  *   @f[\vec{C}=\begin{cases}
  *   (1,0)\text{ for } x=0,-0.5<y<0\\
@@ -66,10 +66,11 @@
  *
  * dist_vector_type as the 2d openfpm distributed subset vector type
  *
- * @snippet example/Numerics/Numerics/Odeint/main2.cpp Initializationtwo
+ * @snippet example/Numerics/Odeint/main2.cpp Initialization__two
  *
  */
-//! @cond [Initializationtwo] @endcond
+//! @cond [Initialization__two] @endcond
+
 constexpr int x = 0;
 constexpr int y = 1;
 
@@ -80,7 +81,7 @@ void *PointerDistGlobal, *PointerDistSubset;
 typedef aggregate<VectorS<2, double>, VectorS<2, double>, VectorS<2, double>> Property_type;
 typedef vector_dist_ws<2, double, Property_type> dist_vector_type;
 typedef vector_dist_subset<2, double, Property_type> dist_vector_subset_type;
-//! @cond [Initializationtwo] @endcond
+//! @cond [Initialization__two] @endcond
 
 /**
  * @page Odeint_multiple_steps Multiple steps integration with Odeint
@@ -107,10 +108,11 @@ typedef vector_dist_subset<2, double, Property_type> dist_vector_subset_type;
  *
  * )
  *
- * @snippet example/Numerics/Numerics/Odeint/main2.cpp RHS2Functor
+ * @snippet example/Numerics/Odeint/main2.cpp RHS2Functor
  *
  */
 //! @cond [RHS2Functor] @endcond
+
 template<typename DXX,typename DYY>
 struct RHSFunctor
 {
@@ -178,10 +180,11 @@ struct RHSFunctor
  * We do our computations as required.
  * Then we copy back the output into the state_type dxdt.
  *
- * @snippet example/Numerics/Numerics/Odeint/main2.cpp Observer2Functor
+ * @snippet example/Numerics/Odeint/main2.cpp Observer2Functor
  *
  */
 //! @cond [Observer2Functor] @endcond
+
 template<typename DXX,typename DYY>
 struct ObserverFunctor {
 
