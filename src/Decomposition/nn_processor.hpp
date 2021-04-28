@@ -430,7 +430,7 @@ public:
 	 * \param sub_domains list of local sub-domains
 	 *
 	 */
-	void create(const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
+	void create(const openfpm::vector<openfpm::vector<size_t> > & box_nn_processor,
 			    const openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & sub_domains)
 	{
 		// produce the list of the adjacent processor (nn_processors) list

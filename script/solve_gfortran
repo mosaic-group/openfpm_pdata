@@ -31,6 +31,11 @@ elif [ x"$1" = x"linux"  ]; then
           commands[1]="sudo $pcman install gcc-gfortran"
           possible_solutions "${commands[@]}"
         fi
+elif [ x"$1" = x"msys"  ]; then
+	if [ x"$pcman" == x"pacman" ]; then
+          commands[0]="$pcman -Sy gcc-fortran"
+          possible_solutions "${commands[@]}"
+	fi
 fi 
 }
 

@@ -95,6 +95,14 @@ configure_options_old=$configure_options
 
 discover_os
 
+if [ x"$platform" == x"msys" ]; then
+	CC=gcc
+	CXX=g++
+	F77=gfortran
+	FC=gfortran
+	export CMAKE_GENERATOR="MSYS Makefiles"
+fi
+
 ## Remove old dependencies and installations
 
 if [ x"$i_dir" == x"" ]; then
@@ -283,9 +291,10 @@ if [ x"$platform" = x"linux" ]; then
 	lin_alg_lib="$lin_alg_lib -lrt"
 fi
 
+
 ### MPI compilers must be in your PATH folder
 call_test_working_mpi_options=0
-set_mpi $i_dir $ncore $gpu_support $CC $CXX $F77 $FC
+set_mpi "$i_dir" $ncore $gpu_support $CC $CXX $F77 $FC
 
 ### METIS and ParMETIS must be installed independently from sistem wide installation
 
@@ -571,12 +580,12 @@ if [ x"$VARS_FILE_LOCATION" == x"" ]; then
 	VARS_FILE_LOCATION=$HOME
 fi
 
-echo "$bash_path" > $VARS_FILE_LOCATION/openfpm_vars
-echo "$bash_library" >> $VARS_FILE_LOCATION/openfpm_vars
-echo "export PURE_PYTHON=1" >> $VARS_FILE_LOCATION/openfpm_vars
+echo "$bash_path" > "$VARS_FILE_LOCATION/openfpm_vars"
+echo "$bash_library" >> "$VARS_FILE_LOCATION/openfpm_vars"
+echo "export PURE_PYTHON=1" >> "$VARS_FILE_LOCATION/openfpm_vars"
 
 if [ x"$platform" = x"osx" ]; then
-    echo "TMPDIR=/tmp/" >> $VARS_FILE_LOCATION/openfpm_vars
+    echo "TMPDIR=/tmp/" >> "$VARS_FILE_LOCATION/openfpm_vars"
 fi
 
 echo -e "$installation_report"

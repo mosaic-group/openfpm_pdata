@@ -29,6 +29,8 @@ elif [ x"$pcman" == x"yum" ]; then
 elif [ x"$pcman" == x"zypper -n" ]; then
         base_python_pkg=python2
         additional_python_pkg=python3
+elif [ x"$pcman" == x"pacman" ]; then
+	base_python_pkg=python
 fi
 
 if [ x"$1" = x"linux"  ]; then
@@ -36,6 +38,11 @@ if [ x"$1" = x"linux"  ]; then
         commands[0]="su -c \"$pc_install_command_ret $base_python_pkg $additional_python_pkg\""
         commands[1]="sudo $pc_install_command_ret $base_python_pkg $additional_python_pkg"
         possible_solutions "${commands[@]}"
+elif [ x"$1" = x"msys"  ]; then
+        pc_install_command "$pcman"
+        commands[0]="$pc_install_command_ret $base_python_pkg $additional_python_pkg"
+        possible_solutions "${commands[@]}"
 fi
+
 }
 

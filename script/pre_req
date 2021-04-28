@@ -290,7 +290,25 @@ if haveProg mpirun; then
   fi
 
 else
-  echo -e "No MPI"
+  ###### We check if we are on windows
+  if [ x"$platform" == x"msys" ]; then
+    if haveProg mpiexec; then
+      major=$(mpiexec 2>&1 | grep "Microsoft MPI Startup" | sed 's/.*\([1-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1/g')
+      middle=$(mpiexec 2>&1 | grep "Microsoft MPI Startup" | sed 's/.*\([1-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\2/g')
+      minor=$(mpiexec 2>&1 | grep "Microsoft MPI Startup" | sed 's/.*\([1-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\3/g')
+
+      if [ $major -ge 10 ]; then
+        echo -e "MS-MPI $major.$middle \033[92;1m SUCCESS \033[0m"
+	MPI_valid=yes
+      elif [ $major -lt 9 ]; then
+	echo -e "MS-MPI $major.$middle \033[92;1m is too old 10.0 at least required \033[0m"
+      fi
+      pacman -Syu mingw-w64-x86_64-msmpi 
+      export PATH="$PATH:/mingw64/bin"
+    fi
+  else
+    echo -e "No MPI"
+  fi
 fi
 
 if [ x"$MPI_valid" == x"yes"  ]; then

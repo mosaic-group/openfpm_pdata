@@ -103,8 +103,14 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 	//! Ghost expansion
 	Ghost<dim,St> ghost;
 
+#ifdef WIN64
+	typedef long long int gint_type;
+#else
+	typedef long int gint_type;
+#endif
+
 	//! Ghost expansion
-	Ghost<dim,long int> ghost_int;
+	Ghost<dim,gint_type> ghost_int;
 
 	//! Local grids
 	mutable openfpm::vector<device_grid> loc_grid;
@@ -320,7 +326,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 							const Box<dim,St> & sub_domain_other,
 							const comb<dim> & cmb,
 							Box<dim,long int> & ib,
-							Ghost<dim,long int> & g)
+							Ghost<dim,gint_type> & g)
 	{
 		if (g.isInvalidGhost() == true || use_bx_def == true)
 		{return;}

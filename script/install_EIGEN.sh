@@ -1,5 +1,8 @@
 #! /bin/bash
 
+source script/discover_os
+discover_os
+
 # check if the directory $1/EIGEN exist
 
 if [ -d "$1/EIGEN" ]; then
@@ -13,8 +16,10 @@ if [ ! -d "$1/OPENBLAS"  ]; then
 fi
 
 CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_SUITESPARSE.sh $1 $2
-if [ ! -d "$1/SUITESPARSE"  -o ! -f "$1/SUITESPARSE/include/umfpack.h" ]; then
-  exit 1
+if [ x"$platform" != x"msys" ]; then
+    if [ ! -d "$1/SUITESPARSE"  -o ! -f "$1/SUITESPARSE/include/umfpack.h" ]; then
+      exit 1
+    fi
 fi
 
 rm -rf eigen-3.3.5.tar.bz2

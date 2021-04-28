@@ -10,7 +10,7 @@
 
 #include "VCluster/VCluster.hpp"
 
-void create_decomposition2x2(openfpm::vector<openfpm::vector<long unsigned int>> & box_nn_processor, openfpm::vector<SpaceBox<2,float>> & sub_domains)
+void create_decomposition2x2(openfpm::vector<openfpm::vector<size_t>> & box_nn_processor, openfpm::vector<SpaceBox<2,float>> & sub_domains)
 {
 	Vcluster<> & v_cl = create_vcluster();
 
@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE( nn_processor_np_test)
 	if (v_cl.getProcessingUnits() != 4)
 		return;
 
-	openfpm::vector<openfpm::vector<long unsigned int>> box_nn_processor;
+	openfpm::vector<openfpm::vector<size_t>> box_nn_processor;
 	openfpm::vector<SpaceBox<2,float>> sub_domains;
 
 	create_decomposition2x2(box_nn_processor,sub_domains);
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE( nn_processor_box_periodic_test)
 
 	Ghost<2,float> ghost(0.01);
 
-	openfpm::vector<openfpm::vector<long unsigned int>> box_nn_processor;
+	openfpm::vector<openfpm::vector<size_t>> box_nn_processor;
 	openfpm::vector<SpaceBox<2,float>> sub_domains;
 
 	create_decomposition2x2(box_nn_processor,sub_domains);

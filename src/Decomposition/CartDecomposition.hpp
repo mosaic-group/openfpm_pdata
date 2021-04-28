@@ -180,7 +180,7 @@ protected:
 	mutable openfpm::vector<Box_map<dim, T>,Memory,layout_base> sub_domains_global;
 
 	//! for each sub-domain, contain the list of the neighborhood processors
-	openfpm::vector<openfpm::vector<long unsigned int> > box_nn_processor;
+	openfpm::vector<openfpm::vector<size_t> > box_nn_processor;
 
 	//! Structure that contain for each sub-sub-domain box the processor id
 	//! exist for efficient global communication
@@ -2104,7 +2104,7 @@ public:
 	 * \return box_nn_processor
 	 *
 	 */
-	openfpm::vector<openfpm::vector<long unsigned int> > & private_get_box_nn_processor()
+	openfpm::vector<openfpm::vector<size_t> > & private_get_box_nn_processor()
 	{
 		return box_nn_processor;
 	}

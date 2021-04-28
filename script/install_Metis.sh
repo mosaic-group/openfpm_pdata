@@ -13,8 +13,13 @@ fi
 ## Remove old download
 rm metis-5.1.0.tar.gz
 rm -rf metis-5.1.0
-wget http://ppmcore.mpi-cbg.de/upload/metis-5.1.0.tar.gz
-tar -xf metis-5.1.0.tar.gz
+if [ x"$platform" == x"msys" ]; then
+	wget http://ppmcore.mpi-cbg.de/upload/metis-5.1.0_msys.tar.gz
+	tar -xf metis-5.1.0_msys.tar.gz
+else
+	wget http://ppmcore.mpi-cbg.de/upload/metis-5.1.0.tar.gz
+	tar -xf metis-5.1.0.tar.gz
+fi
 cd metis-5.1.0
 
 if [ x"$platform" == x"cygwin" ]; then

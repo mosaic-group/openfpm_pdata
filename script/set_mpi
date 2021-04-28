@@ -15,7 +15,7 @@ function set_mpi()
                 if [ $call_test_working_mpi_options -eq 1 ]; then
                         test_working_mpi_options
                 fi
-                ./script/install_MPI.sh $1 $2 $3 $4 $5 $6 $7 "$openmpi_working_options"
+                ./script/install_MPI.sh "$1" $2 $3 $4 $5 $6 $7 "$openmpi_working_options"
         fi
         MPI_installed=1
         export PATH="$1/MPI/bin:$PATH"

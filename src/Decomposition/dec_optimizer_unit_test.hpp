@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_disconnected_subdomains_np)
 	openfpm::vector<::Box<2, size_t>> loc_box;
 
 	//! for each sub-domain, contain the list of the neighborhood processors
-	openfpm::vector<openfpm::vector<long unsigned int> > box_nn_processor;
+	openfpm::vector<openfpm::vector<size_t> > box_nn_processor;
 
 	Ghost<2,size_t> ghe(1);
 	d_o.optimize<nm_v_sub_id, nm_v_proc_id>(g, vcl.getProcessUnitID(), loc_box, box_nn_processor,ghe,bc);

@@ -233,7 +233,7 @@ protected:
 	void create_box_nn_processor_ext(Vcluster<> & v_cl,
 			                         Ghost<dim,T> & ghost,
 									 openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & sub_domains,
-									 const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
+									 const openfpm::vector<openfpm::vector<size_t> > & box_nn_processor,
 									 const nn_prcs<dim,T,layout_base,Memory> & nn_p)
 	{
 		box_nn_processor_int.resize(sub_domains.size());
@@ -335,7 +335,7 @@ protected:
 	void create_box_nn_processor_int(Vcluster<> & v_cl,
 			                         Ghost<dim,T> & ghost,
 									 openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & sub_domains,
-									 const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
+									 const openfpm::vector<openfpm::vector<size_t> > & box_nn_processor,
 									 const nn_prcs<dim,T,layout_base,Memory> & nn_p)
 	{
 		box_nn_processor_int.resize(sub_domains.size());

@@ -24,7 +24,8 @@ if [ x"$3" == x"1" ]; then
    ./configure $mpi_options --with-cuda=$cuda_location --prefix=$1/MPI --enable-mpi-fortran=yes CC=$4 CXX=$5 F77=$6 FC=$7 $8
 else
    echo "Installing MPI without GPU support"
-   ./configure $mpi_options --prefix=$1/MPI --enable-mpi-fortran=yes CC=$4 CXX=$5 F77=$6 FC=$7 $8
+   echo "Command: ./configure $mpi_options --prefix="$1/MPI" --enable-mpi-fortran=yes CC=$4 CXX=$5 F77=$6 FC=$7 $8"
+   ./configure $mpi_options --prefix="$1/MPI" --enable-mpi-fortran=yes CC=$4 CXX=$5 F77=$6 FC=$7 $8
 fi
 make -j $2
 make install

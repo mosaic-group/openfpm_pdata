@@ -36,7 +36,7 @@ add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
 							  Amr/tests/amr_base_unit_tests.cpp
 						  	  Debug/debug_test.cpp
 							  Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp
-							  Grid/tests/grid_dist_id_unit_test.cpp
+#							  Grid/tests/grid_dist_id_unit_test.cpp
 							  Grid/tests/sgrid_dist_id_unit_tests.cpp
 							  Grid/tests/grid_dist_id_dlb_unit_test.cpp
 							  Grid/tests/staggered_grid_dist_unit_test.cpp
@@ -187,9 +187,11 @@ endif()
 target_compile_features(pdata PUBLIC cxx_std_11)
 target_link_libraries(pdata ${MPI_C_LIBRARIES})
 target_link_libraries(pdata m)
-target_link_libraries(pdata c)
-if (NOT APPLE)
-    target_link_libraries(pdata rt)
+if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+	target_link_libraries(pdata c)
+endif()
+if (NOT APPLE AND NOT (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
+	target_link_libraries(pdata rt)
 endif ()
 
 install(FILES Decomposition/CartDecomposition.hpp

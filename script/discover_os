@@ -18,8 +18,7 @@ platform=unknown
 	platform=cygwin
   elif [[ "$OSTYPE" == "msys" ]]; then
         echo -e "We are on\033[1;34m Microsoft Window \033[0m"
-        echo "This platform is not supported"
-        exit 1
+        platform=msys
   elif [[ "$OSTYPE" == "win32" ]]; then
         echo -e "We are on\033[1;34m Microsoft Window \033[0m"
         echo "This platform is not supported"
