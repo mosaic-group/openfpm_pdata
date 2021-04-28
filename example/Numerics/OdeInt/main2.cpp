@@ -40,7 +40,7 @@
  */
 //! @cond [Ode2Include] @endcond
 
-// Include Vector Expression,Vector Expressions for Subser,DCPSE,Odeint header files
+// Include Vector Expression,Vector Expressions for Subset,DCPSE,Odeint header files
 #include "Operators/Vector/vector_dist_operators.hpp"
 #include "Vector/vector_dist_subset.hpp"
 #include "DCPSE/DCPSE_op/DCPSE_op.hpp"
@@ -112,7 +112,6 @@ typedef vector_dist_subset<2, double, Property_type> dist_vector_subset_type;
  *
  */
 //! @cond [RHS2Functor] @endcond
-
 template<typename DXX,typename DYY>
 struct RHSFunctor
 {
@@ -184,7 +183,6 @@ struct RHSFunctor
  *
  */
 //! @cond [Observer2Functor] @endcond
-
 template<typename DXX,typename DYY>
 struct ObserverFunctor {
 
@@ -245,7 +243,6 @@ struct ObserverFunctor {
     }
 };
 //! @cond [Observer2Functor] @endcond
-
 /**
  * @page Odeint_multiple_steps Multiple steps integration with Odeint
  *

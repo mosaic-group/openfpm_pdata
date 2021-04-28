@@ -66,7 +66,7 @@
  *
  */
 //! @cond [Ode1Include] @endcond
-// Include Vector Expression,Vector Expressions for Subser,DCPSE,Odeint header files
+// Include Vector Expression,Vector Expressions for Subset,DCPSE,Odeint header files
 #include "Operators/Vector/vector_dist_operators.hpp"
 #include "Vector/vector_dist_subset.hpp"
 #include "DCPSE/DCPSE_op/DCPSE_op.hpp"
