@@ -36,7 +36,7 @@ add_executable(pdata ${OPENFPM_INIT_FILE} ${CUDA_SOURCES} main.cpp
 							  Amr/tests/amr_base_unit_tests.cpp
 						  	  Debug/debug_test.cpp
 							  Grid/tests/grid_dist_id_HDF5_chckpnt_restart_test.cpp
-#							  Grid/tests/grid_dist_id_unit_test.cpp
+							  Grid/tests/grid_dist_id_unit_test.cpp
 							  Grid/tests/sgrid_dist_id_unit_tests.cpp
 							  Grid/tests/grid_dist_id_dlb_unit_test.cpp
 							  Grid/tests/staggered_grid_dist_unit_test.cpp

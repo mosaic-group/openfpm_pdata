@@ -1307,6 +1307,7 @@ public:
 		for (size_t i = 0 ; i < dim ; i++)
 			this->bc[i] = bc[i];
 
+
 		// set the ghost
 		this->ghost = ghost;
 

@@ -97,7 +97,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter3D_test)
 	}
 }
 
-
 BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter_test)
 {
 	size_t bc[2] = {NON_PERIODIC, NON_PERIODIC};
@@ -189,7 +188,6 @@ void Test2D(const Box<2,float> & domain, long int k)
 		Test2D_core(g_dist,sz,k);
 	}
 }
-
 
 void Test1D(const Box<1,float> & domain, long int k)
 {
@@ -522,19 +520,11 @@ void Test3D(const Box<3,float> & domain, long int k)
 			++domg;
 		}
 
-//		if (match == false)
-//		{
-			g_dist.write("Error_grid");
-
-			g_dist.getDecomposition().write("Error_dec");
-//		}
-
 		BOOST_REQUIRE_EQUAL(match,true);
 
 		//! [Synchronize the ghost and check the information]
 	}
 }
-
 
 void Test3D_gg(const Box<3,float> & domain, long int k, long int gk)
 {
@@ -584,6 +574,7 @@ void Test3D_gg(const Box<3,float> & domain, long int k, long int gk)
 		}
 	}
 }
+
 
 /*! \brief Test when the domain is not from 0.0 to 1.0
  *
@@ -690,8 +681,6 @@ void Test3D_domain(const Box<3,float> & domain, long int k, const periodicity<3>
 		BOOST_REQUIRE_EQUAL(match,true);
 	}
 }
-
-
 
 void Test2D_complex(const Box<2,float> & domain, long int k)
 {
@@ -1759,7 +1748,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_sub)
 	Test3D_sub(domain3,k);
 }
 
-
 BOOST_AUTO_TEST_CASE( grid_dist_id_with_grid_unit_ghost )
 {
 	// Domain
@@ -1878,6 +1866,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_periodic_put_test )
 
 	Test3D_periodic_put(domain3,k);
 }
+
 
 BOOST_AUTO_TEST_CASE ( grid_ghost_correction )
 {
@@ -2457,7 +2446,6 @@ BOOST_AUTO_TEST_CASE( grid_dist_ghost_zero_size )
         BOOST_REQUIRE_EQUAL(count,53*53*10);
 }
 
-
 BOOST_AUTO_TEST_CASE(grid_dist_id_smb_write_out_1_proc)
 {
 	// Test grid periodic
@@ -2745,6 +2733,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_copy_construct )
 
 	BOOST_REQUIRE_EQUAL(match,true);
 }
+
 
 BOOST_AUTO_TEST_SUITE_END()
 
