@@ -74,9 +74,9 @@
 constexpr int x = 0;
 constexpr int y = 1;
 
-double dt;
+double dt=1e-2,tf=1.0;
 
-void *PointerDistGlobal, *PointerDistSubset;
+void *PointerDistGlobal, *PointerDistSubset,*PointerDistSubset2;
 
 typedef aggregate<VectorS<2, double>, VectorS<2, double>, VectorS<2, double>> Property_type;
 typedef vector_dist_ws<2, double, Property_type> dist_vector_type;
@@ -203,6 +203,7 @@ struct ObserverFunctor {
         //Casting the pointers to OpenFPM vector distributions
         dist_vector_type &Particles = *(dist_vector_type *) PointerDistGlobal;
         dist_vector_subset_type &Particles_bulk = *(dist_vector_subset_type *) PointerDistSubset;
+        dist_vector_subset_type &Particles_boundary = *(dist_vector_subset_type *) PointerDistSubset2;
 
         //Aliasing the position and properties.
         auto Pos = getV<PROP_POS>(Particles);
@@ -225,6 +226,7 @@ struct ObserverFunctor {
             Particles.ghost_get<0>();
             //Updating the subset and operators based on new positions
             Particles_bulk.update();
+            Particles_boundary.update();
             Dxx.update(Particles);
             Dyy.update(Particles);
 
@@ -232,9 +234,11 @@ struct ObserverFunctor {
             X.data.get<0>() = Concentration[x];
             X.data.get<1>() = Concentration[y];
             //counting the step number
-            ctr++;
-        }
 
+        }
+        ctr++;
+        std::cout<<"Taking a step at t="<<t<<" with dt="<<t-t_old<<std::endl;
+        t_old=t;
         //Writing the data after every step
         Particles.deleteGhost();
         Particles.write_frame("PDE_sol", ctr);
@@ -335,9 +339,12 @@ int main(int argc, char *argv[])
     // Now we initialize the grid with a filled circle. Outside the circle, the value of Phi_0 will be -1, inside +1.
     //Now we construct the subsets based on the subset number.
     dist_vector_subset_type Particles_bulk(Particles, 0);
+    dist_vector_subset_type Particles_boundary(Particles, 1);
+
     //We cast the global pointers to Particles and Particles_bulk as expected by the RHS functor.
     PointerDistGlobal = (void *) &Particles;
     PointerDistSubset = (void *) &Particles_bulk;
+    PointerDistSubset2 = (void *) &Particles_boundary;
     //! @cond [Pointer2Init] @endcond
 
     /**
@@ -419,7 +426,6 @@ int main(int argc, char *argv[])
     */
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //! @cond [OdeintTCall] @endcond
-    double t = 0, tf = 1e-1, dt = 1e-2;
     std::vector<double> inter_times; // vector to store intermediate time steps taken by odeint.
 
     size_t steps = boost::numeric::odeint::integrate_const(Odeint_rk4, System, X, 0.0, tf, dt, ObserveAndUpdate);
