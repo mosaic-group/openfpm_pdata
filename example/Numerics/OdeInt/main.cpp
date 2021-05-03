@@ -272,6 +272,8 @@ int main(int argc, char* argv[]) {
     // Now we initialize the grid with a filled circle. Outside the circle, the value of Phi_0 will be -1, inside +1.
     //Now we construct the subsets based on the subset number.
     dist_vector_subset_type Particles_bulk(Particles, 0);
+    dist_vector_subset_type Particles_boundary(Particles, 1);
+
     //We cast the global pointers to Particles and Particles_bulk as expected by the RHS functor.
     PointerDistGlobal = (void *) &Particles;
     PointerDistSubset = (void *) &Particles_bulk;
@@ -360,13 +362,15 @@ int main(int argc, char* argv[]) {
     //! @cond [OdeintT] @endcond
     // Now we will create a time loop for controlling the step size ourselves but call odeint to do the 4 stages of RK4.
     int ctr = 0;
-    double t = 0, tf = 1e-1, dt = 1e-2;
+    double t = 0, tf = 1, dt = 1e-2;
     while (t < tf) {
         //computing the velocity at the current position and at time step t (only in the bulk, so boundary remains 0).
         V_bulk[x] = -Pos[y] * exp(-10.0 * (Pos[x] * Pos[x] + Pos[y] * Pos[y]));
         V_bulk[y] = Pos[x] * exp(-10.0 * (Pos[x] * Pos[x] + Pos[y] * Pos[y]));
         //Observing the state
+        Particles.deleteGhost();
         Particles.write_frame("PDE_Sol", ctr);
+        Particles.ghost_get<0>();
         //calling rk4 with the function System, the state_type, current time t and the stepsize dt. It computes one step of the RK4.
         Odeint_rk4.do_step(System, X, t, dt);
         //Copying back the step, updating only the bulk values.
@@ -379,8 +383,12 @@ int main(int argc, char* argv[]) {
         Particles.ghost_get<0>();
         //We update the subset and operators as the particles moved.
         Particles_bulk.update();
+        Particles_boundary.update();
         Dxx.update(Particles);
         Dyy.update(Particles);
+        //Reinitialzing as distributed size can change.
+        X.data.get<0>()=C[x];
+        X.data.get<1>()=C[y];
         ctr++;
         t += dt;
     } //time loop end
@@ -399,8 +407,3 @@ int main(int argc, char* argv[]) {
  *
  * @include example/Numerics/OdeInt/main.cpp
  */
-
-
-
-
-
