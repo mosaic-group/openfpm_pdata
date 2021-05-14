@@ -7,7 +7,7 @@
  * In this example, we perform time integration in a 2d domain of particles of a following partial differential equation:
  *
  * @f[ \frac{\partial\vec{C}}{dt}=\vec{V}.\nabla_{\{x,y\}} U + 0.1*\Delta_{\{x,y\}} U @f]
- * in 2d domain [-1,-1]*[1,1] with a fixed velocity \f$\vec{V}(x,y)=(-ye^{10(x^2+y^2)},xe^{10(x^2+y^2)})\f$, and the boundary conditions on the walls as no-slip for velocity \f$\vec{V}=0\f$ and sink for the chemicals \f$\vec{C}=0\f$ for all time \f$t\f$.
+ * in 2d domain [-1,-1]*[1,1] with a fixed velocity \f$\vec{V}(x,y)=(-ye^{-10(x^2+y^2)},xe^{-10(x^2+y^2)})\f$, and the boundary conditions on the walls as no-slip for velocity \f$\vec{V}=0\f$ and sink for the chemicals \f$\vec{C}=0\f$ for all time \f$t\f$.
  *  Further, we start with the initial condition for the concentration as
  *   @f[\vec{C}=\begin{cases}
  *   (1,0)\text{ for } x=0,-0.5<y<0\\
