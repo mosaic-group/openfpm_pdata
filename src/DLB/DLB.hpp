@@ -9,7 +9,7 @@
 #define SRC_DECOMPOSITION_DLB_HPP_
 
 //! Time structure for statistical purposes
-typedef struct
+struct Times
 {
 	//! starting time of the simulation (0)
 	size_t simulationStartTime = 0;
@@ -27,7 +27,7 @@ typedef struct
 
 	//! End time
 	size_t iterationEndTime;
-} Times;
+};
 
 /*! Class that implements the two heuristics to determine when a re-balance of the distribution is needed.
  *

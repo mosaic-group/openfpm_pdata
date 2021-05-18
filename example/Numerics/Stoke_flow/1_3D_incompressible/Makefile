@@ -8,7 +8,7 @@ OBJ_EIGEN = main_eigen.o
 OBJ_PETSC = main_petsc.o
 
 %.o: %.cpp
-	$(CC) -O3 -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -O3 -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
 all: stokes_3d_eigen stokes_3d_petsc
 
@@ -19,7 +19,7 @@ stokes_3d_petsc: $(OBJ_PETSC)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 run: all
-	mpirun -np 3 ./stokes_3d_eigen && mpirun -np 3 ./stokes_3d_petsc
+	mpirun --oversubscribe -np 3 ./stokes_3d_eigen && mpirun --oversubscribe -np 3 ./stokes_3d_petsc
 	
 .PHONY: clean all run
 

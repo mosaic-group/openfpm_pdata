@@ -4,13 +4,21 @@ include ../../example.mk
 ### internally the example disable with the preprocessor its code if not compiled with nvcc 
 CUDA_CC=
 CUDA_CC_LINK=
-ifeq (, $(shell which nvcc))
-        CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
+ifdef CUDA_ON_CPU
+	CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
         INCLUDE_PATH_NVCC=
         CUDA_CC_LINK=mpic++
+	LIBS_SELECT=$(LIBS_CUDA_ON_CPU)
 else
-        CUDA_CC=nvcc -ccbin=mpic++
-        CUDA_CC_LINK=nvcc -ccbin=mpic++
+	ifeq (, $(shell which nvcc))
+        	CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
+        	INCLUDE_PATH_NVCC=
+       		CUDA_CC_LINK=mpic++
+	else
+        	CUDA_CC=nvcc -ccbin=mpic++
+        	CUDA_CC_LINK=nvcc -ccbin=mpic++
+	endif
+	LIBS_SELECT=$(LIBS)
 endif
 
 CC=mpic++
@@ -29,11 +37,11 @@ md_dyn_test: md_dyn
 	$(CUDA_CC) $(OPT) -O3 -g -c  --std=c++14 -o $@ $< $(INCLUDE_PATH_NVCC)
 
 md_dyn: $(OBJ)
-	$(CUDA_CC_LINK) -o $@ $^ $(LIBS_PATH) $(LIBS)
+	$(CUDA_CC_LINK) -o $@ $^ $(LIBS_PATH) $(LIBS_SELECT)
 
 
 run: md_dyn_test
-	mpirun -np 3 ./md_dyn;
+	mpirun --oversubscribe -np 3 ./md_dyn;
 
 .PHONY: clean all run
 

@@ -251,7 +251,6 @@ template<typename vector_type> void test_dlb_vector()
 	}
 
 	vd.map();
-
 	vd.template ghost_get<>();
 
 	// Get the neighborhood of each particles
@@ -411,7 +410,7 @@ template<typename vector_type> void test_dlb_multi_phase_v_vector()
 	mp_test_template(vd0,vd1,vd2,vd3);
 }
 
-BOOST_AUTO_TEST_CASE( vector_dist_dlb_test_part )
+BOOST_AUTO_TEST_CASE( vector_dist_dlb )
 {
 	test_dlb_vector<vector_dist<3,double,aggregate<double>>>();
 }

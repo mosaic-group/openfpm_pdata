@@ -523,25 +523,25 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_test )
 		phases.template get<0>(2).add();
 		phases.template get<0>(3).add();
 
-		phases.template get<0>(0).getLastPosWrite()[0] = (float)rand() / RAND_MAX;
-		phases.template get<0>(0).getLastPosWrite()[1] = (float)rand() / RAND_MAX;
-		phases.template get<0>(0).getLastPosWrite()[2] = (float)rand() / RAND_MAX;
-		phases.template get<0>(0).getLastPropWrite<0>() = (float)rand() / RAND_MAX;
+		phases.template get<0>(0).getLastPosWrite()[0] = (float)rand() / (float)RAND_MAX;
+		phases.template get<0>(0).getLastPosWrite()[1] = (float)rand() / (float)RAND_MAX;
+		phases.template get<0>(0).getLastPosWrite()[2] = (float)rand() / (float)RAND_MAX;
+		phases.template get<0>(0).getLastPropWrite<0>() = (float)rand() / (float)RAND_MAX;
 
-		phases.template get<0>(1).getLastPosWrite()[0] = (float)rand() / RAND_MAX;
-		phases.template get<0>(1).getLastPosWrite()[1] = (float)rand() / RAND_MAX;
-		phases.template get<0>(1).getLastPosWrite()[2] = (float)rand() / RAND_MAX;
-		phases.template get<0>(1).getLastPropWrite<0>() = (float)rand() / RAND_MAX;
+		phases.template get<0>(1).getLastPosWrite()[0] = (float)rand() / (float)RAND_MAX;
+		phases.template get<0>(1).getLastPosWrite()[1] = (float)rand() / (float)RAND_MAX;
+		phases.template get<0>(1).getLastPosWrite()[2] = (float)rand() / (float)RAND_MAX;
+		phases.template get<0>(1).getLastPropWrite<0>() = (float)rand() / (float)RAND_MAX;
 
-		phases.template get<0>(2).getLastPosWrite()[0] = (float)rand() / RAND_MAX;
-		phases.template get<0>(2).getLastPosWrite()[1] = (float)rand() / RAND_MAX;
-		phases.template get<0>(2).getLastPosWrite()[2] = (float)rand() / RAND_MAX;
-		phases.template get<0>(2).getLastPropWrite<0>() = (float)rand() / RAND_MAX;
+		phases.template get<0>(2).getLastPosWrite()[0] = (float)rand() / (float)RAND_MAX;
+		phases.template get<0>(2).getLastPosWrite()[1] = (float)rand() / (float)RAND_MAX;
+		phases.template get<0>(2).getLastPosWrite()[2] = (float)rand() / (float)RAND_MAX;
+		phases.template get<0>(2).getLastPropWrite<0>() = (float)rand() / (float)RAND_MAX;
 
-		phases.template get<0>(3).getLastPosWrite()[0] = (float)rand() / RAND_MAX;
-		phases.template get<0>(3).getLastPosWrite()[1] = (float)rand() / RAND_MAX;
-		phases.template get<0>(3).getLastPosWrite()[2] = (float)rand() / RAND_MAX;
-		phases.template get<0>(3).getLastPropWrite<0>() = (float)rand() / RAND_MAX;
+		phases.template get<0>(3).getLastPosWrite()[0] = (float)rand() / (float)RAND_MAX;
+		phases.template get<0>(3).getLastPosWrite()[1] = (float)rand() / (float)RAND_MAX;
+		phases.template get<0>(3).getLastPosWrite()[2] = (float)rand() / (float)RAND_MAX;
+		phases.template get<0>(3).getLastPropWrite<0>() = (float)rand() / (float)RAND_MAX;
 	}
 
 	phases.template get<0>(0).hostToDevicePos();
@@ -559,7 +559,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_test )
 	openfpm::vector_gpu<aggregate<float>> output;
 	output.resize(100 * phases.size());
 
-	vdmkt<<<1,1>>>(phases.toKernel(),output.toKernel());
+	CUDA_LAUNCH_DIM3(vdmkt,1,1,phases.toKernel(),output.toKernel());
 
 	output.template deviceToHost<0>();
 
@@ -615,25 +615,25 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_test_simplified )
 		phases.get(2).add();
 		phases.get(3).add();
 
-		phases.get(0).getLastPosWrite()[0] = (float)rand() / RAND_MAX;
-		phases.get(0).getLastPosWrite()[1] = (float)rand() / RAND_MAX;
-		phases.get(0).getLastPosWrite()[2] = (float)rand() / RAND_MAX;
-		phases.get(0).getLastPropWrite<0>() = (float)rand() / RAND_MAX;
+		phases.get(0).getLastPosWrite()[0] = (float)rand() / (float)RAND_MAX;
+		phases.get(0).getLastPosWrite()[1] = (float)rand() / (float)RAND_MAX;
+		phases.get(0).getLastPosWrite()[2] = (float)rand() / (float)RAND_MAX;
+		phases.get(0).getLastPropWrite<0>() = (float)rand() / (float)RAND_MAX;
 
-		phases.get(1).getLastPosWrite()[0] = (float)rand() / RAND_MAX;
-		phases.get(1).getLastPosWrite()[1] = (float)rand() / RAND_MAX;
-		phases.get(1).getLastPosWrite()[2] = (float)rand() / RAND_MAX;
-		phases.get(1).getLastPropWrite<0>() = (float)rand() / RAND_MAX;
+		phases.get(1).getLastPosWrite()[0] = (float)rand() / (float)RAND_MAX;
+		phases.get(1).getLastPosWrite()[1] = (float)rand() / (float)RAND_MAX;
+		phases.get(1).getLastPosWrite()[2] = (float)rand() / (float)RAND_MAX;
+		phases.get(1).getLastPropWrite<0>() = (float)rand() / (float)RAND_MAX;
 
-		phases.get(2).getLastPosWrite()[0] = (float)rand() / RAND_MAX;
-		phases.get(2).getLastPosWrite()[1] = (float)rand() / RAND_MAX;
-		phases.get(2).getLastPosWrite()[2] = (float)rand() / RAND_MAX;
-		phases.get(2).getLastPropWrite<0>() = (float)rand() / RAND_MAX;
+		phases.get(2).getLastPosWrite()[0] = (float)rand() / (float)RAND_MAX;
+		phases.get(2).getLastPosWrite()[1] = (float)rand() / (float)RAND_MAX;
+		phases.get(2).getLastPosWrite()[2] = (float)rand() / (float)RAND_MAX;
+		phases.get(2).getLastPropWrite<0>() = (float)rand() / (float)RAND_MAX;
 
-		phases.get(3).getLastPosWrite()[0] = (float)rand() / RAND_MAX;
-		phases.get(3).getLastPosWrite()[1] = (float)rand() / RAND_MAX;
-		phases.get(3).getLastPosWrite()[2] = (float)rand() / RAND_MAX;
-		phases.get(3).getLastPropWrite<0>() = (float)rand() / RAND_MAX;
+		phases.get(3).getLastPosWrite()[0] = (float)rand() / (float)RAND_MAX;
+		phases.get(3).getLastPosWrite()[1] = (float)rand() / (float)RAND_MAX;
+		phases.get(3).getLastPosWrite()[2] = (float)rand() / (float)RAND_MAX;
+		phases.get(3).getLastPropWrite<0>() = (float)rand() / (float)RAND_MAX;
 	}
 
 	phases.get(0).hostToDevicePos();
@@ -651,7 +651,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_test_simplified )
 	openfpm::vector_gpu<aggregate<float>> output;
 	output.resize(100 * phases.size());
 
-	vdmkt_simple<<<1,1>>>(phases.toKernel(),output.toKernel());
+	CUDA_LAUNCH_DIM3(vdmkt_simple,1,1,phases.toKernel(),output.toKernel());
 
 	output.template deviceToHost<0>();
 
@@ -706,25 +706,25 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_cl_test )
 		phases.get(2).add();
 		phases.get(3).add();
 
-		phases.get(0).getLastPosWrite()[0] = (float)rand() / RAND_MAX;
-		phases.get(0).getLastPosWrite()[1] = (float)rand() / RAND_MAX;
-		phases.get(0).getLastPosWrite()[2] = (float)rand() / RAND_MAX;
-		phases.get(0).getLastPropWrite<0>() = (float)rand() / RAND_MAX;
+		phases.get(0).getLastPosWrite()[0] = (float)rand() / (float)RAND_MAX;
+		phases.get(0).getLastPosWrite()[1] = (float)rand() / (float)RAND_MAX;
+		phases.get(0).getLastPosWrite()[2] = (float)rand() / (float)RAND_MAX;
+		phases.get(0).getLastPropWrite<0>() = (float)rand() / (float)RAND_MAX;
 
-		phases.get(1).getLastPosWrite()[0] = (float)rand() / RAND_MAX;
-		phases.get(1).getLastPosWrite()[1] = (float)rand() / RAND_MAX;
-		phases.get(1).getLastPosWrite()[2] = (float)rand() / RAND_MAX;
-		phases.get(1).getLastPropWrite<0>() = (float)rand() / RAND_MAX;
+		phases.get(1).getLastPosWrite()[0] = (float)rand() / (float)RAND_MAX;
+		phases.get(1).getLastPosWrite()[1] = (float)rand() / (float)RAND_MAX;
+		phases.get(1).getLastPosWrite()[2] = (float)rand() / (float)RAND_MAX;
+		phases.get(1).getLastPropWrite<0>() = (float)rand() / (float)RAND_MAX;
 
-		phases.get(2).getLastPosWrite()[0] = (float)rand() / RAND_MAX;
-		phases.get(2).getLastPosWrite()[1] = (float)rand() / RAND_MAX;
-		phases.get(2).getLastPosWrite()[2] = (float)rand() / RAND_MAX;
-		phases.get(2).getLastPropWrite<0>() = (float)rand() / RAND_MAX;
+		phases.get(2).getLastPosWrite()[0] = (float)rand() / (float)RAND_MAX;
+		phases.get(2).getLastPosWrite()[1] = (float)rand() / (float)RAND_MAX;
+		phases.get(2).getLastPosWrite()[2] = (float)rand() / (float)RAND_MAX;
+		phases.get(2).getLastPropWrite<0>() = (float)rand() / (float)RAND_MAX;
 
-		phases.get(3).getLastPosWrite()[0] = (float)rand() / RAND_MAX;
-		phases.get(3).getLastPosWrite()[1] = (float)rand() / RAND_MAX;
-		phases.get(3).getLastPosWrite()[2] = (float)rand() / RAND_MAX;
-		phases.get(3).getLastPropWrite<0>() = (float)rand() / RAND_MAX;
+		phases.get(3).getLastPosWrite()[0] = (float)rand() / (float)RAND_MAX;
+		phases.get(3).getLastPosWrite()[1] = (float)rand() / (float)RAND_MAX;
+		phases.get(3).getLastPosWrite()[2] = (float)rand() / (float)RAND_MAX;
+		phases.get(3).getLastPropWrite<0>() = (float)rand() / (float)RAND_MAX;
 	}
 
 	// redistribute all
@@ -760,7 +760,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_cl_test )
 	output.resize(tot);
 	output2.resize(tot_g);
 
-	vdmkt_simple_cl<<<1,1>>>(phases.toKernel(),output.toKernel(),cl_ph.toKernel(),output2.toKernel());
+	CUDA_LAUNCH_DIM3(vdmkt_simple_cl,1,1,phases.toKernel(),output.toKernel(),cl_ph.toKernel(),output2.toKernel());
 
 	output.template deviceToHost<0>();
 

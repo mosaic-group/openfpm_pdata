@@ -1,0 +1,31 @@
+#! /bin/bash
+
+function solve_python_devel() {
+source script/show_solutions
+source script/discover_package_manager
+discover_package_manager $1
+pcman=$discover_package_manager_ret
+
+if [ x"$pcman" = x"" ]; then
+        exit 1
+fi
+
+if [ x"$pcman" == x"zypper -n" ]; then
+        if [ ! -f /usr/include/python3.6m/pyconfig.h ]; then
+                base_python_pkg=python2-devel
+                additional_python_pkg=python3-devel
+        else
+                return
+        fi
+else
+	return
+fi
+
+if [ x"$1" = x"linux"  ]; then
+        pc_install_command "$pcman"
+        commands[0]="su -c \"$pc_install_command_ret $base_python_pkg $additional_python_pkg\""
+        commands[1]="sudo $pc_install_command_ret $base_python_pkg $additional_python_pkg"
+        possible_solutions "${commands[@]}"
+fi
+}
+

@@ -1,4 +1,3 @@
-#include "util/cuda/cuda_launch.hpp"
 #include "Grid/grid_dist_id.hpp"
 #include "data_type/aggregate.hpp"
 #include "timer.hpp"
@@ -73,7 +72,11 @@ constexpr int x = 0;
 constexpr int y = 1;
 constexpr int z = 2;
 
+//! \cond [grid definition] \endcond
+
 typedef sgrid_dist_id_gpu<3,float,aggregate<float,float,float,float> > SparseGridType;
+
+//! \cond [grid definition] \endcond
 
 void init(SparseGridType & grid, Box<3,float> & domain)
 {

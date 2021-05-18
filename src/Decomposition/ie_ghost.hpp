@@ -59,18 +59,18 @@ class ie_ghost
 	openfpm::vector<p_box<dim,T> > vb_ext;
 
 	//! Internal ghost boxes for this processor domain
-	openfpm::vector<aggregate<unsigned int,unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int,unsigned int>>::type,layout_base> vb_int;
+	openfpm::vector<aggregate<unsigned int,unsigned int,unsigned int>,Memory,layout_base> vb_int;
 
 	//! Internal ghost boxes for this processor domain
-	openfpm::vector<Box<dim,T>,Memory,typename layout_base<Box<dim,T>>::type,layout_base> vb_int_box;
+	openfpm::vector<Box<dim,T>,Memory,layout_base> vb_int_box;
 
 	//! Cell-list that store the geometrical information of the internal ghost boxes
 	CellList<dim,T,Mem_fast<Memory,int>,shift<dim,T>> geo_cell;
 
-	typedef openfpm::vector<Box<dim,T>,Memory,typename layout_base<Box<dim,T>>::type,layout_base> proc_boxes;
+	typedef openfpm::vector<Box<dim,T>,Memory,layout_base> proc_boxes;
 
 	//! shift vectors
-	openfpm::vector<Point<dim,T>,Memory,typename layout_base<Point<dim,T>>::type,layout_base> shifts;
+	openfpm::vector<Point<dim,T>,Memory,layout_base> shifts;
 
 	//! Temporal buffers to return temporal information for ghost_processorID
 	openfpm::vector<std::pair<size_t,size_t>> ids_p;
@@ -245,7 +245,7 @@ protected:
 	 */
 	void create_box_nn_processor_ext(Vcluster<> & v_cl,
 			                         Ghost<dim,T> & ghost,
-									 openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> & sub_domains,
+									 openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & sub_domains,
 									 const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
 									 const nn_prcs<dim,T,layout_base,Memory> & nn_p)
 	{
@@ -347,7 +347,7 @@ protected:
 	 */
 	void create_box_nn_processor_int(Vcluster<> & v_cl,
 			                         Ghost<dim,T> & ghost,
-									 openfpm::vector<SpaceBox<dim,T>,Memory,typename layout_base<SpaceBox<dim, T>>::type,layout_base> & sub_domains,
+									 openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & sub_domains,
 									 const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
 									 const nn_prcs<dim,T,layout_base,Memory> & nn_p)
 	{
@@ -659,7 +659,7 @@ public:
 	 * \return the shift vectors
 	 *
 	 */
-	const openfpm::vector<Point<dim,T>,Memory,typename layout_base<Point<dim,T>>::type,layout_base> & getShiftVectors()
+	const openfpm::vector<Point<dim,T>,Memory,layout_base> & getShiftVectors()
 	{
 		if (host_dev_transfer == false)
 		{
@@ -1302,7 +1302,7 @@ public:
 	 * \return vb_int
 	 *
 	 */
-	inline openfpm::vector<aggregate<unsigned int,unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int,unsigned int>>::type,layout_base> &
+	inline openfpm::vector<aggregate<unsigned int,unsigned int,unsigned int>,Memory,layout_base> &
 	private_get_vb_int()
 	{
 		return vb_int;
@@ -1313,7 +1313,7 @@ public:
 	 * \return vb_int_box
 	 *
 	 */
-	inline openfpm::vector<Box<dim,T>,Memory,typename layout_base<Box<dim,T>>::type,layout_base> &
+	inline openfpm::vector<Box<dim,T>,Memory,layout_base> &
 	private_get_vb_int_box()
 	{
 		return vb_int_box;
@@ -1335,7 +1335,7 @@ public:
 	 * \return shifts
 	 *
 	 */
-	inline openfpm::vector<Point<dim,T>,Memory,typename layout_base<Point<dim,T>>::type,layout_base> &
+	inline openfpm::vector<Point<dim,T>,Memory,layout_base> &
 	private_get_shifts()
 	{
 		return shifts;

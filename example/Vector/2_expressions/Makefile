@@ -7,7 +7,7 @@ LDIR =
 OBJ = main.o
 
 %.o: %.cpp
-	$(CC) -O3 -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -O3 -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
 expr: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
@@ -15,7 +15,7 @@ expr: $(OBJ)
 all: expr
 
 run: all
-	mpirun -np 3 ./expr
+	mpirun --oversubscribe -np 3 ./expr
 
 .PHONY: clean all run
 

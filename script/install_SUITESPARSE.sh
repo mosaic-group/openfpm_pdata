@@ -6,7 +6,7 @@ source script/discover_os
 discover_os
 
 # check if the directory $1/SUITESPARSE exist
-
+rm -rf SuiteSparse-5.7.2
 if [ -d "$1/SUITESPARSE"  -a -f "$1/SUITESPARSE/include/umfpack.h" ]; then
   echo "SUITESPARSE is already installed"
   exit 0
@@ -35,16 +35,15 @@ if [ x"$platform" == x"cygwin" ]; then
 fi
 
 echo "Compiling SuiteSparse without CUDA (old variable $CUDA)"
-LDLIBS="$STS_LIB -lm" LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$1/OPENBLAS/lib"  make library -j $2 "CUDA=no" "BLAS=-L$1/OPENBLAS/lib -lopenblas -pthread" "LAPACK=-lopenblas"
+LDLIBS="$STS_LIB -lm" LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$1/OPENBLAS/lib"  make library -j $2 "CC=$CC" "CXX=$CXX" "CUDA=no" "BLAS=-L$1/OPENBLAS/lib -lopenblas -pthread" "LAPACK=-lopenblas"
 if [ $? != 0 ]; then
   echo "Failed to compile SuiteSparse"
   exit 1
 fi
 echo "Making library"
-make library "CUDA=no" "INSTALL=$1/SUITESPARSE" "INSTALL_LIB=$1/SUITESPARSE/lib" "INSTALL_INCLUDE=$1/SUITESPARSE/include" "BLAS=-L$1/OPENBLAS/lib -lopenblas -pthread" "LAPACK="
+make library "CC=$CC" "CXX=$CXX" "CUDA=no" "INSTALL=$1/SUITESPARSE" "INSTALL_LIB=$1/SUITESPARSE/lib" "INSTALL_INCLUDE=$1/SUITESPARSE/include" "BLAS=-L$1/OPENBLAS/lib -lopenblas -pthread" "LAPACK="
 echo "Making install"
-make install "CUDA=no" "INSTALL=$1/SUITESPARSE" "INSTALL_LIB=$1/SUITESPARSE/lib" "INSTALL_INCLUDE=$1/SUITESPARSE/include" "BLAS=-L$1/OPENBLAS/lib -lopenblas -pthread" "LAPACK="
+make install "CC=$CC" "CXX=$CXX" "CUDA=no" "INSTALL=$1/SUITESPARSE" "INSTALL_LIB=$1/SUITESPARSE/lib" "INSTALL_INCLUDE=$1/SUITESPARSE/include" "BLAS=-L$1/OPENBLAS/lib -lopenblas -pthread" "LAPACK="
 # Mark the installation
 echo 2 > $1/SUITESPARSE/version
-rm -rf SuiteSparse
 rm SuiteSparse-5.7.2.tar.gz

@@ -11,6 +11,8 @@ BOOST_AUTO_TEST_SUITE( domain_icells_cart )
 
 BOOST_AUTO_TEST_CASE( domain_icells_use )
 {
+#if 0
+
 	domain_icell_calculator<3,float,memory_traits_inte,CudaMemory> dcc;
 
 	openfpm::vector_gpu<SpaceBox<3,float>> domain_proc;
@@ -133,6 +135,8 @@ BOOST_AUTO_TEST_CASE( domain_icells_use )
 
 	for (size_t i = 0 ; i < dcheck.size() ; i++)
 	{BOOST_REQUIRE_EQUAL(dcheck.template get<0>(i),dc.template get<0>(i));}
+
+	#endif
 }
 
 

@@ -220,7 +220,9 @@ class grid_dist_id_iterator_gpu
 			Box<Decomposition::dims,int> range_box(start,stop);
 			Box<Decomposition::dims,int> kbox;
 			range_box -= gdb_ext.get(g_c).origin;
-			range_box.Intersect(gdb_ext.get(g_c).Dbox,kbox);
+			bool intersect = range_box.Intersect(gdb_ext.get(g_c).Dbox,kbox);
+
+			if (intersect == false)	{continue;}
 
 			auto & lg = loc_grids.get(g_c);
 
@@ -234,7 +236,7 @@ class grid_dist_id_iterator_gpu
 
 			for (int i = 0 ; i < Decomposition::dims ; i++)
 			{
-				itd.origin.set_d(i,gdb_ext.get(g_c).origin.get(i) + ite.start.get(i));
+				itd.origin.set_d(i,gdb_ext.get(g_c).origin.get(i));
 				itd.start_base.set_d(i,kbox.getKP1().get(i) % lg.getBlockEdgeSize() + ite.start.get(i));
 			}
 

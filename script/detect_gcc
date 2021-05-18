@@ -218,7 +218,14 @@ function detect_compiler()
         echo "Two different valid compilers has been found please choose one"
         commands[0]="icpc"
         commands[1]="g++"
-        possible_solutions "${commands[@]}"
+
+	choice=$(cat default_choice_compiler)
+	if [ -f default_choice_compiler ]; then
+		possible_solutions_command=$(cat default_choice_compiler)
+		echo "Choosen: $possible_solutions_command"
+	else
+		possible_solutions "${commands[@]}"
+	fi
         if [ x"$possible_solutions_command" == x"icpc" ]; then
           CXX=icpc
           CC=icc

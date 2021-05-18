@@ -257,7 +257,7 @@ public:
 	 * \return an iterator
 	 *
 	 */
-	__host__ ite_gpu<1> getDomainIteratorGPU(size_t n_thr = 1024) const
+	__host__ ite_gpu<1> getDomainIteratorGPU(size_t n_thr = default_kernel_wg_threads_) const
 	{
 		return v_pos.getGPUIteratorTo(g_m,n_thr);
 	}

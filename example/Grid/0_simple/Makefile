@@ -7,7 +7,7 @@ LDIR =
 OBJ = main.o
 
 %.o: %.cpp
-	$(CC) -O3 -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -O3 -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
 grid: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
@@ -15,7 +15,7 @@ grid: $(OBJ)
 all: grid
 
 run: all
-	mpirun -np 2 ./grid
+	mpirun --oversubscribe -np 2 ./grid
 
 .PHONY: clean all run
 

@@ -1313,7 +1313,7 @@ void Test3D_periodic_put(const Box<3,float> & domain, long int k)
 		periodicity<3> pr = {{PERIODIC,PERIODIC,PERIODIC}};
 
 		// Distributed grid with id decomposition
-		grid_dist_id<3, float, aggregate<long int>, CartDecomposition<3,float>> g_dist(sz,domain,g,pr);
+		grid_dist_id<3, float, aggregate<long int,double>, CartDecomposition<3,float>> g_dist(sz,domain,g,pr);
 
 		// check the consistency of the decomposition
 		bool val = g_dist.getDecomposition().check_consistency();
@@ -1332,6 +1332,7 @@ void Test3D_periodic_put(const Box<3,float> & domain, long int k)
 			auto key = dom.get();
 
 			g_dist.template get<0>(key) = -6.0;
+			g_dist.template get<1>(key) = -6.0;
 
 			// Count the points
 			count++;
@@ -1356,6 +1357,14 @@ void Test3D_periodic_put(const Box<3,float> & domain, long int k)
 			g_dist.template get<0>(key.move(2,1)) += 1.0;
 			g_dist.template get<0>(key.move(2,-1)) += 1.0;
 
+
+			g_dist.template get<1>(key.move(0,1)) += 1.0;
+			g_dist.template get<1>(key.move(0,-1)) += 1.0;
+			g_dist.template get<1>(key.move(1,1)) += 1.0;
+			g_dist.template get<1>(key.move(1,-1)) += 1.0;
+			g_dist.template get<1>(key.move(2,1)) += 1.0;
+			g_dist.template get<1>(key.move(2,-1)) += 1.0;
+
 			++dom;
 		}
 		}
@@ -1375,12 +1384,14 @@ void Test3D_periodic_put(const Box<3,float> & domain, long int k)
 		}
 
 		g_dist.ghost_put<add_,0>();
+		g_dist.ghost_put<add_,1>();
+
 
 		if (count != 0)
 			BOOST_REQUIRE_EQUAL(correct, false);
 
 		// sync the ghosts
-		g_dist.ghost_get<0>();
+		g_dist.ghost_get<0,1>();
 
 		correct = true;
 
@@ -1392,6 +1403,7 @@ void Test3D_periodic_put(const Box<3,float> & domain, long int k)
 			auto key = dom_gi2.get();
 
 			correct &= (g_dist.template get<0>(key) == 0);
+			correct &= (g_dist.template get<1>(key) == 0);
 
 			++dom_gi2;
 		}
@@ -2397,51 +2409,258 @@ BOOST_AUTO_TEST_CASE( grid_dist_domain_ghost_3D_put_create_check )
 	TestXD_ghost_put_create(sg_dist3,k);
 }
 
+
 BOOST_AUTO_TEST_CASE( grid_dist_ghost_zero_size )
 {
+        // Test grid periodic
+
+        Box<3,double> domain({0,0,0},{365.376,365.376,102});
+
+        Vcluster<> & v_cl = create_vcluster();
+
+        if ( v_cl.getProcessingUnits() > 32 )
+        {return;}
+
+        BOOST_TEST_CHECKPOINT( "Testing grid zero ghost");
+
+        // grid size
+        size_t sz[3];
+        sz[0] = 53;
+        sz[1] = 53;
+        sz[2] = 10;
+
+        // Ghost
+        Ghost<3,long int> g(0);
+
+        // periodicity
+        periodicity<3> pr = {{NON_PERIODIC,NON_PERIODIC,NON_PERIODIC}};
+
+        // Distributed grid with id decomposition
+        grid_dist_id<3, double, aggregate<long int, int>> g_dist(sz,domain,g,pr);
+
+        auto it = g_dist.getDomainIterator();
+
+        size_t count = 0;
+
+        while (it.isNext())
+        {
+                auto k = it.get();
+
+                ++count;
+
+                ++it;
+        }
+
+        v_cl.sum(count);
+        v_cl.execute();
+
+        BOOST_REQUIRE_EQUAL(count,53*53*10);
+}
+
+
+BOOST_AUTO_TEST_CASE(grid_dist_id_smb_write_out_1_proc)
+{
 	// Test grid periodic
-
-	Box<3,float> domain({-1.0,-1.0,-1.0},{1.0,1.0,1.0});
-
-	Vcluster<> & v_cl = create_vcluster();
-
-	if ( v_cl.getProcessingUnits() > 32 )
-	{return;}
-
-	BOOST_TEST_CHECKPOINT( "Testing grid zero ghost");
-
-	// grid size
-	size_t sz[3];
-	sz[0] = 32;
-	sz[1] = 32;
-	sz[2] = 32;
-
-	// Ghost
-	Ghost<3,long int> g(0);
-
-	// periodicity
-	periodicity<3> pr = {{NON_PERIODIC,NON_PERIODIC,NON_PERIODIC}};
-
-	// Distributed grid with id decomposition
-	grid_dist_id<3, float, aggregate<long int, int>> g_dist(sz,domain,g,pr);
-
-	auto it = g_dist.getDomainIterator();
-
-	size_t count = 0;
-
-	while (it.isNext())
 	{
-		auto k = it.get();
+		Box<2,float> domain({-1.0,-1.0,-1.0},{1.0,1.0,1.0});
 
-		++count;
+		Vcluster<> & v_cl = create_vcluster();
 
-		++it;
+		if ( v_cl.getProcessingUnits() > 1 )
+		{return;}
+
+		// grid size
+		size_t sz[2];
+		sz[0] = 16;
+		sz[1] = 16;
+
+		// Ghost
+		Ghost<2,long int> g(0);
+
+		// periodicity
+		periodicity<2> pr = {{NON_PERIODIC,NON_PERIODIC}};
+
+		typedef grid_cpu<2, aggregate<int>, grid_smb<2,4> > devg; 
+
+		// Distributed grid with id decomposition
+		grid_dist_id_devg<2, float, aggregate<int>,devg> g_smb(sz,domain,g,pr);
+
+		auto it = g_smb.getDomainIterator();
+
+		size_t count = 0;
+
+		unsigned char * base = (unsigned char *)g_smb.get_loc_grid(0).getPointer<0>();
+
+		while (it.isNext())
+		{
+			auto k = it.get();
+
+			g_smb.template getProp<0>(k) = (unsigned char *)&g_smb.template getProp<0>(k) - base;
+
+			++count;
+
+			++it;
+		}
+
+		v_cl.sum(count);
+		v_cl.execute();
+
+		BOOST_REQUIRE_EQUAL(count,16*16);
+
+		g_smb.write("g_smb_out");
+	}
+}
+
+BOOST_AUTO_TEST_CASE(grid_dist_id_zmb_write_out_1_proc)
+{
+	{
+		// Test grid periodic
+
+		Box<2,float> domain({-1.0,-1.0,-1.0},{1.0,1.0,1.0});
+
+		Vcluster<> & v_cl = create_vcluster();
+
+		if ( v_cl.getProcessingUnits() > 1 )
+		{return;}
+
+		// grid size
+		size_t sz[2];
+		sz[0] = 16;
+		sz[1] = 16;
+
+		// Ghost
+		Ghost<2,long int> g(0);
+
+		// periodicity
+		periodicity<2> pr = {{NON_PERIODIC,NON_PERIODIC}};
+
+		typedef grid_cpu<2, aggregate<int>, grid_zmb<2,4,long int> > devg; 
+
+		// Distributed grid with id decomposition
+		grid_dist_id_devg<2, float, aggregate<int>,devg> g_smb(sz,domain,g,pr);
+
+		auto it = g_smb.getDomainIterator();
+
+		size_t count = 0;
+
+		unsigned char * base = (unsigned char *)g_smb.get_loc_grid(0).getPointer<0>();
+
+		while (it.isNext())
+		{
+			auto k = it.get();
+
+			g_smb.template getProp<0>(k) = (unsigned char *)&g_smb.template getProp<0>(k) - base;
+
+			++count;
+
+			++it;
+		}
+
+		v_cl.sum(count);
+		v_cl.execute();
+
+		BOOST_REQUIRE_EQUAL(count,16*16);
+
+		g_smb.write("g_zmb_out");
 	}
 
-	v_cl.sum(count);
-	v_cl.execute();
+	{
+		Box<2,float> domain({-1.0,-1.0,-1.0},{1.0,1.0,1.0});
 
-	BOOST_REQUIRE_EQUAL(count,32*32*32);
+		Vcluster<> & v_cl = create_vcluster();
+
+		if ( v_cl.getProcessingUnits() > 1 )
+		{return;}
+
+		// grid size
+		size_t sz[2];
+		sz[0] = 16;
+		sz[1] = 16;
+
+		// Ghost
+		Ghost<2,long int> g(0);
+
+		// periodicity
+		periodicity<2> pr = {{NON_PERIODIC,NON_PERIODIC}};
+
+		typedef grid_cpu<2, aggregate<int>, grid_zm<2,void> > devg; 
+
+		// Distributed grid with id decomposition
+		grid_dist_id_devg<2, float, aggregate<int>,devg> g_smb(sz,domain,g,pr);
+
+		auto it = g_smb.getDomainIterator();
+
+		size_t count = 0;
+
+		unsigned char * base = (unsigned char *)g_smb.get_loc_grid(0).getPointer<0>();
+
+		while (it.isNext())
+		{
+			auto k = it.get();
+
+			g_smb.template getProp<0>(k) = (unsigned char *)&g_smb.template getProp<0>(k) - base;
+
+			++count;
+
+			++it;
+		}
+
+		v_cl.sum(count);
+		v_cl.execute();
+
+		BOOST_REQUIRE_EQUAL(count,16*16);
+
+		g_smb.write("g_zm_out");
+	}
+
+	{
+		Box<2,float> domain({-1.0,-1.0,-1.0},{1.0,1.0,1.0});
+
+		Vcluster<> & v_cl = create_vcluster();
+
+		if ( v_cl.getProcessingUnits() > 1 )
+		{return;}
+
+		// grid size
+		size_t sz[2];
+		sz[0] = 16;
+		sz[1] = 16;
+
+		// Ghost
+		Ghost<2,long int> g(0);
+
+		// periodicity
+		periodicity<2> pr = {{NON_PERIODIC,NON_PERIODIC}};
+
+		typedef grid_base<2, aggregate<int>> devg; 
+
+		// Distributed grid with id decomposition
+		grid_dist_id_devg<2, float, aggregate<int>,devg> g_smb(sz,domain,g,pr);
+
+		auto it = g_smb.getDomainIterator();
+
+		size_t count = 0;
+
+		unsigned char * base = (unsigned char *)g_smb.get_loc_grid(0).getPointer<0>();
+
+		while (it.isNext())
+		{
+			auto k = it.get();
+
+			g_smb.template getProp<0>(k) = (unsigned char *)&g_smb.template getProp<0>(k) - base;
+
+			++count;
+
+			++it;
+		}
+
+		v_cl.sum(count);
+		v_cl.execute();
+
+		BOOST_REQUIRE_EQUAL(count,16*16);
+
+		g_smb.write("g_sm_out");
+	}
 }
 
 BOOST_AUTO_TEST_CASE( grid_dist_copy_construct )

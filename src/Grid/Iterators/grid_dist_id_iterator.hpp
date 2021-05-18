@@ -45,12 +45,14 @@ struct launch_insert_sparse_lambda_call<3>
 									   unsigned int blockId,
 									   itd_type itd,
 									   coord_type & key,
-									   coord_type & keyg,unsigned int offset, bool & is_block_empty)
+									   coord_type & keyg,unsigned int offset, bool & is_block_empty,
+									   bool is_in)
 	{
 #ifdef __NVCC__
 
-	    bool is_active = f1(keyg.get(0),keyg.get(1),keyg.get(2));
-	    is_active &= key.get(0) >= itd.start_base.get(0) && key.get(1) >= itd.start_base.get(1) && key.get(2) >= itd.start_base.get(2);
+	    bool is_active = false;
+		if (is_in == true)
+		{is_active = f1(keyg.get(0),keyg.get(1),keyg.get(2));}
 
 	    if (is_active == true)
 	    {is_block_empty = false;}
@@ -85,7 +87,8 @@ struct launch_insert_sparse_lambda_call<3>
 		keyg.set_d(1,key.get(1) + itg.origin.get(1));
 		keyg.set_d(2,key.get(2) + itg.origin.get(2));
 
-		if (key.get(0) > itg.stop.get(0) || key.get(1) > itg.stop.get(1) || key.get(2) > itg.stop.get(2))
+		if (key.get(0) > itg.stop.get(0)       || key.get(1) > itg.stop.get(1)       || key.get(2) > itg.stop.get(2) ||
+		    key.get(0) < itg.start_base.get(0) || key.get(1) < itg.start_base.get(1) || key.get(2) < itg.start_base.get(2))
 		{return true;}
 #endif
 		return false;
@@ -101,12 +104,14 @@ struct launch_insert_sparse_lambda_call<2>
 									   unsigned int blockId,
 									   itd_type itd,
 									   coord_type & key,
-									   coord_type & keyg,unsigned int offset, bool & is_block_empty)
+									   coord_type & keyg,unsigned int offset, bool & is_block_empty,
+									   bool is_in)
 	{
 #ifdef __NVCC__
 
-	    bool is_active = f1(keyg.get(0),keyg.get(1));
-	    is_active &= key.get(0) >= itd.start_base.get(0) && key.get(1) >= itd.start_base.get(1);
+	    bool is_active = false;
+		if (is_in == true)
+		{is_active = f1(keyg.get(0),keyg.get(1));}
 
 	    if (is_active == true)
 	    {is_block_empty = false;}
@@ -138,7 +143,8 @@ struct launch_insert_sparse_lambda_call<2>
 		keyg.set_d(0,key.get(0) + itg.origin.get(0));
 		keyg.set_d(1,key.get(1) + itg.origin.get(1));
 
-		if (key.get(0) > itg.stop.get(0) || key.get(1) > itg.stop.get(1))
+		if (key.get(0) > itg.stop.get(0)        || key.get(1) > itg.stop.get(1) ||
+		    key.get(0) < itg.start_base.get(0)  || key.get(1) < itg.start_base.get(1))
 		{return true;}
 #endif
 		return false;
@@ -155,20 +161,20 @@ struct launch_insert_sparse
 		grid_key_dx<grid_type::dims,int> key;
 		grid_key_dx<grid_type::dims,int> keyg;
 
-		if (launch_insert_sparse_lambda_call<grid_type::dims>::set_keys(key,keyg,itg) == true)	{return;}
+		bool not_active = launch_insert_sparse_lambda_call<grid_type::dims>::set_keys(key,keyg,itg);
 
-	    if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
-	    {is_block_empty = true;}
+	    	if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
+	    	{is_block_empty = true;}
 
 	    grid.init();
 
 	    int offset = 0;
-	    grid_key_dx<grid_type::dims,int> blk;
-	    bool out = grid.template getInsertBlockOffset<ite_type>(itg,key,blk,offset);
+	    	grid_key_dx<grid_type::dims,int> blk;
+	    	bool out = grid.template getInsertBlockOffset<ite_type>(itg,key,blk,offset);
 
-	    auto blockId = grid.getBlockLinId(blk);
+	    	auto blockId = grid.getBlockLinId(blk);
 
-	    launch_insert_sparse_lambda_call<grid_type::dims>::call(grid,f1,f2,blockId,itg,key,keyg,offset,is_block_empty);
+		launch_insert_sparse_lambda_call<grid_type::dims>::call(grid,f1,f2,blockId,itg,key,keyg,offset,is_block_empty,!not_active);
 
 	    __syncthreads();
 

@@ -53,6 +53,8 @@
 #define PRINT_STACKTRACE
 #define STOP_ON_ERROR
 #define OPENMPI
+#define SCAN_WITH_CUB
+#define SORT_WITH_CUB
 //#define SE_CLASS1
 
 //#define USE_LOW_REGISTER_ITERATOR
@@ -277,7 +279,7 @@ inline __device__ __host__  real_number Tensile(real_number r, real_number rhoa,
 	    real_number wqq2=qq*qq;
 	    real_number wqq3=wqq2*qq;
 
-	    wab+=a2*(1.0f-1.5f*wqq2+0.75f*wqq3);
+	    wab=a2*(1.0f-1.5f*wqq2+0.75f*wqq3);
 	}
 
 	//-Tensile correction.

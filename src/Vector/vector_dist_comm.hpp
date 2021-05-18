@@ -11,9 +11,7 @@
 #define TEST1
 
 #if defined(CUDA_GPU) && defined(__NVCC__)
-#include "util/cuda/moderngpu/kernel_mergesort.hxx"
 #include "Vector/cuda/vector_dist_cuda_funcs.cuh"
-#include "util/cuda/moderngpu/kernel_scan.hxx"
 #include "util/cuda/kernels.cuh"
 #endif
 
@@ -351,7 +349,7 @@ class vector_dist_comm
 	size_t v_sub_unit_factor = 64;
 
 	//! definition of the send vector for position
-	typedef openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base,openfpm::grow_policy_identity> send_pos_vector;
+	typedef openfpm::vector<Point<dim, St>,Memory,layout_base,openfpm::grow_policy_identity> send_pos_vector;
 
 	//! VCluster
 	Vcluster<Memory> & v_cl;
@@ -369,7 +367,6 @@ class vector_dist_comm
 	//! third id is the processor id
 	openfpm::vector<aggregate<int,int,int>,
 					Memory,
-					typename layout_base<aggregate<int,int,int>>::type,
 					layout_base > m_opart;
 
 	//! Per processor ordered particles id for ghost_get (see prc_g_opart)
@@ -380,14 +377,13 @@ class vector_dist_comm
 	//! Same as g_opart but on device, the vector of vector is flatten into a single vector
     openfpm::vector<aggregate<unsigned int,unsigned long int>,
                     CudaMemory,
-                    typename memory_traits_inte<aggregate<unsigned int,unsigned long int>>::type,
                     memory_traits_inte> g_opart_device;
 
 	//! Helper buffer for computation (on GPU) of local particles (position)
-	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> v_pos_tmp;
+	openfpm::vector<Point<dim, St>,Memory,layout_base> v_pos_tmp;
 
 	//! Helper buffer for computation (on GPU) of local particles (properties)
-	openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> v_prp_tmp;
+	openfpm::vector<prop,Memory,layout_base> v_prp_tmp;
 
 	//! Per processor number of particle g_opart_sz.get(i) = g_opart.get(i).size()
 	openfpm::vector<size_t> g_opart_sz;
@@ -426,17 +422,15 @@ class vector_dist_comm
 	//! temporary buffer to processors ids
     openfpm::vector<aggregate<unsigned int>,
                             Memory,
-                            typename layout_base<aggregate<unsigned int>>::type,
                             layout_base> proc_id_out;
 
     //! temporary buffer for the scan result
 	openfpm::vector<aggregate<unsigned int>,
                              Memory,
-                             typename layout_base<aggregate<unsigned int>>::type,
                              layout_base> starts;
 
 	//! Processor communication size
-	openfpm::vector<aggregate<unsigned int, unsigned int>,Memory,typename layout_base<aggregate<unsigned int, unsigned int>>::type,layout_base> prc_offset;
+	openfpm::vector<aggregate<unsigned int, unsigned int>,Memory,layout_base> prc_offset;
 
 
 	//! Temporary CudaMemory to do stuff
@@ -512,7 +506,7 @@ class vector_dist_comm
 	 * \param prc_r processor ids
 	 *
 	 */
-	inline void calc_send_buffers(openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int>>::type,layout_base> & prc_sz,
+	inline void calc_send_buffers(openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,layout_base> & prc_sz,
 								  openfpm::vector<size_t> & prc_sz_r,
 								  openfpm::vector<size_t> & prc_r,
 								  size_t opt)
@@ -575,17 +569,17 @@ class vector_dist_comm
 	openfpm::vector_std<openfpm::vector_std<Box<dim, St>>> box_f;
 
 	//! The boxes touching the border of the domain + shift vector linearized from where they come from
-	openfpm::vector<Box<dim, St>,Memory,typename layout_base<Box<dim,St>>::type,layout_base> box_f_dev;
-	openfpm::vector<aggregate<unsigned int>,Memory,typename layout_base<aggregate<unsigned int>>::type,layout_base> box_f_sv;
+	openfpm::vector<Box<dim, St>,Memory,layout_base> box_f_dev;
+	openfpm::vector<aggregate<unsigned int>,Memory,layout_base> box_f_sv;
 
 	//! Store the sector for each group (previous vector)
 	openfpm::vector_std<comb<dim>> box_cmb;
 
 	//! Id of the local particle to replicate for ghost_get
-	openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int>>::type,layout_base> o_part_loc;
+	openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,layout_base> o_part_loc;
 
 	//! Processor communication size
-	openfpm::vector<aggregate<unsigned int, unsigned int>,Memory,typename layout_base<aggregate<unsigned int, unsigned int>>::type,layout_base> prc_sz;
+	openfpm::vector<aggregate<unsigned int, unsigned int>,Memory,layout_base> prc_sz;
 
 	/*! \brief For every internal ghost box we create a structure that order such internal local ghost box in
 	 *         shift vectors
@@ -680,12 +674,12 @@ class vector_dist_comm
 	 * \param opt options
 	 *
 	 */
-	void local_ghost_from_opart(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
-			                    openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+	void local_ghost_from_opart(openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
+			                    openfpm::vector<prop,Memory,layout_base> & v_prp,
 			                    size_t opt)
 	{
 		// get the shift vectors
-		const openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & shifts = dec.getShiftVectors();
+		const openfpm::vector<Point<dim, St>,Memory,layout_base> & shifts = dec.getShiftVectors();
 
 		if (!(opt & NO_POSITION))
 		{
@@ -737,14 +731,14 @@ class vector_dist_comm
 	 * \param g_m ghost marker
 	 *
 	 */
-	void local_ghost_from_dec(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
-			                  openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+	void local_ghost_from_dec(openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
+			                  openfpm::vector<prop,Memory,layout_base> & v_prp,
 			                  size_t g_m,size_t opt)
 	{
 		o_part_loc.clear();
 
 		// get the shift vectors
-		const openfpm::vector<Point<dim,St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & shifts = dec.getShiftVectors();
+		const openfpm::vector<Point<dim,St>,Memory,layout_base> & shifts = dec.getShiftVectors();
 
 		if (opt & RUN_ON_DEVICE)
 		{
@@ -848,8 +842,8 @@ class vector_dist_comm
 	 * \param opt options
 	 *
 	 */
-	void add_loc_particles_bc(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
-			                  openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp ,
+	void add_loc_particles_bc(openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
+			                  openfpm::vector<prop,Memory,layout_base> & v_prp ,
 			                  size_t & g_m,
 			                  size_t opt)
 	{
@@ -876,14 +870,14 @@ class vector_dist_comm
 	 * \param g_pos_send Send buffer to fill
 	 *
 	 */
-	void fill_send_ghost_pos_buf(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
+	void fill_send_ghost_pos_buf(openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
 								 openfpm::vector<size_t> & prc_sz,
 			                     openfpm::vector<send_pos_vector> & g_pos_send,
 			                     size_t opt,
 			                     bool async)
 	{
 		// get the shift vectors
-		const openfpm::vector<Point<dim,St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & shifts = dec.getShiftVectors();
+		const openfpm::vector<Point<dim,St>,Memory,layout_base> & shifts = dec.getShiftVectors();
 
 		// create a number of send buffers equal to the near processors
 		g_pos_send.resize(prc_sz.size());
@@ -965,7 +959,7 @@ class vector_dist_comm
 	 *
 	 */
 	template<typename send_vector, typename prp_object, int ... prp>
-	void fill_send_ghost_put_prp_buf(openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+	void fill_send_ghost_put_prp_buf(openfpm::vector<prop,Memory,layout_base> & v_prp,
 									 openfpm::vector<send_vector> & g_send_prp,
 									 size_t & g_m,
 									 size_t opt)
@@ -1040,9 +1034,9 @@ class vector_dist_comm
 				for (size_t j = accum; j < accum + n_part_recv; j++)
 				{
 					// source object type
-					typedef encapc<1, prop, typename openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base>::layout_type> encap_src;
+					typedef encapc<1, prop, typename openfpm::vector<prop,Memory,layout_base>::layout_type> encap_src;
 					// destination object type
-					typedef encapc<1, prp_object, typename openfpm::vector<prp_object,Memory,typename layout_base<prp_object>::type,layout_base>::layout_type> encap_dst;
+					typedef encapc<1, prp_object, typename openfpm::vector<prp_object,Memory,layout_base>::layout_type> encap_dst;
 
 					// Copy only the selected properties
 					object_si_d<encap_src, encap_dst, OBJ_ENCAP, prp...>(v_prp.get(j), g_send_prp.get(i).get(j2));
@@ -1154,7 +1148,7 @@ class vector_dist_comm
 	 *
 	 */
 	template<typename send_vector, typename prp_object, int ... prp>
-	void fill_send_ghost_prp_buf(openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+	void fill_send_ghost_prp_buf(openfpm::vector<prop,Memory,layout_base> & v_prp,
 								 openfpm::vector<size_t> & prc_sz,
 			                     openfpm::vector<send_vector> & g_send_prp,
 			                     size_t opt)
@@ -1245,13 +1239,13 @@ class vector_dist_comm
 	 *        This parameter is used only in case of RUN_ON_DEVICE option
 	 *
 	 */
-	void fill_send_map_buf(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
-			               openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+	void fill_send_map_buf(openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
+			               openfpm::vector<prop,Memory,layout_base> & v_prp,
 			               openfpm::vector<size_t> & prc_sz_r,
 			               openfpm::vector<size_t> & prc_r,
-			               openfpm::vector<openfpm::vector<Point<dim,St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base,openfpm::grow_policy_identity>> & m_pos,
-			               openfpm::vector<openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base,openfpm::grow_policy_identity>> & m_prp,
-			               openfpm::vector<aggregate<unsigned int, unsigned int>,Memory,typename layout_base<aggregate<unsigned int, unsigned int>>::type,layout_base> & prc_sz,
+			               openfpm::vector<openfpm::vector<Point<dim,St>,Memory,layout_base,openfpm::grow_policy_identity>> & m_pos,
+			               openfpm::vector<openfpm::vector<prop,Memory,layout_base,openfpm::grow_policy_identity>> & m_prp,
+			               openfpm::vector<aggregate<unsigned int, unsigned int>,Memory,layout_base> & prc_sz,
 			               size_t opt)
 	{
 		m_prp.resize(prc_sz_r.size());
@@ -1397,7 +1391,7 @@ class vector_dist_comm
 	 */
 	template<typename prp_object,int ... prp>
 	void fill_send_map_buf_list(openfpm::vector<Point<dim, St>> & v_pos,
-			                    openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+			                    openfpm::vector<prop,Memory,layout_base> & v_prp,
 								openfpm::vector<size_t> & prc_sz_r,
 								openfpm::vector<openfpm::vector<Point<dim,St>>> & m_pos,
 								openfpm::vector<openfpm::vector<prp_object>> & m_prp)
@@ -1438,12 +1432,11 @@ class vector_dist_comm
 	 * \param opt options
 	 *
 	 */
-	template<typename obp> void labelParticleProcessor(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
+	template<typename obp> void labelParticleProcessor(openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
 			                                           openfpm::vector<aggregate<int,int,int>,
 			                                                           Memory,
-			                                                           typename layout_base<aggregate<int,int,int>>::type,
 			                                                           layout_base> & lbl_p,
-			                                           openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int>>::type,layout_base> & prc_sz,
+			                                           openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,layout_base> & prc_sz,
 			                                           size_t opt)
 	{
 		if (opt == RUN_ON_DEVICE)
@@ -1601,11 +1594,11 @@ class vector_dist_comm
 	 * \param opt ghost_get options
 	 *
 	 */
-	void labelParticlesGhost(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
-			                 openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+	void labelParticlesGhost(openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
+			                 openfpm::vector<prop,Memory,layout_base> & v_prp,
 			                 openfpm::vector<size_t> & prc,
 			                 openfpm::vector<size_t> & prc_sz,
-			                 openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int>>::type,layout_base> & prc_offset,
+			                 openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,layout_base> & prc_offset,
 			                 size_t & g_m,
 			                 size_t opt)
 	{
@@ -1814,6 +1807,31 @@ public:
 		dec.decompose();
 	}
 
+	/*! \brief Initialize the decomposition
+	 *
+	 * \param box domain
+	 * \param bc boundary conditions
+	 * \param g ghost extension
+	 * \param opt additional options
+	 *
+	 */
+	void init_decomposition_gr_cell(Box<dim,St> & box,
+							const size_t (& bc)[dim],
+							const Ghost<dim,St> & g,
+							size_t opt,
+							const grid_sm<dim,void> & gdist)
+	{
+		size_t div[dim];
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{div[i] = gdist.size(i);}
+
+		// Create the sub-domains
+		dec.setParameters(div, box, bc, g);
+
+		dec.decompose();
+	}
+
 	/*! \brief It synchronize the properties and position of the ghost particles
 	 *
 	 * \tparam prp list of properties to get synchronize
@@ -1824,8 +1842,8 @@ public:
 	 * \param g_m marker between real and ghost particles
 	 *
 	 */
-	template<unsigned int impl, int ... prp> inline void ghost_get_(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
-												 openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+	template<unsigned int impl, int ... prp> inline void ghost_get_(openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
+												 openfpm::vector<prop,Memory,layout_base> & v_prp,
 												 size_t & g_m,
 												 size_t opt = WITH_POSITION)
 	{
@@ -1837,7 +1855,7 @@ public:
 		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;
 
 		// send vector for each processor
-		typedef openfpm::vector<prp_object,Memory,typename layout_base<prp_object>::type,layout_base,openfpm::grow_policy_identity> send_vector;
+		typedef openfpm::vector<prp_object,Memory,layout_base,openfpm::grow_policy_identity> send_vector;
 
 		if (!(opt & NO_POSITION))
 		{v_pos.resize(g_m);}
@@ -1911,8 +1929,8 @@ public:
 	 * \param g_m marker between real and ghost particles
 	 *
 	 */
-	template<int ... prp> inline void ghost_wait_(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
-			 	 	 	 	 	 	 	 	 	 	 	 	 	 	 openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+	template<int ... prp> inline void ghost_wait_(openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
+			 	 	 	 	 	 	 	 	 	 	 	 	 	 	 openfpm::vector<prop,Memory,layout_base> & v_prp,
 			 	 	 	 	 	 	 	 	 	 	 	 	 	 	 size_t & g_m,
 			 	 	 	 	 	 	 	 	 	 	 	 	 	 	 size_t opt = WITH_POSITION)
 	{
@@ -1920,7 +1938,7 @@ public:
 		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;
 
 		// send vector for each processor
-		typedef openfpm::vector<prp_object,Memory,typename layout_base<prp_object>::type,layout_base,openfpm::grow_policy_identity> send_vector;
+		typedef openfpm::vector<prp_object,Memory,layout_base,openfpm::grow_policy_identity> send_vector;
 
 		// Send and receive ghost particle information
 		openfpm::vector<send_vector> g_send_prp;
@@ -1962,7 +1980,7 @@ public:
 		typedef KillParticle obp;
 
 		// Processor communication size
-		openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,typename layout_base<aggregate<unsigned int,unsigned int>>::type,layout_base> prc_sz(v_cl.getProcessingUnits());
+		openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,layout_base> prc_sz(v_cl.getProcessingUnits());
 
 		// map completely reset the ghost part
 		v_pos.resize(g_m);
@@ -2028,8 +2046,8 @@ public:
 	 *
 	 */
 	template<typename obp = KillParticle>
-	void map_(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & v_pos,
-			  openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp, size_t & g_m,
+	void map_(openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
+			  openfpm::vector<prop,Memory,layout_base> & v_prp, size_t & g_m,
 			  size_t opt)
 	{
 #ifdef PROFILE_SCOREP
@@ -2053,9 +2071,9 @@ public:
 		calc_send_buffers(prc_sz,prc_sz_r,prc_r,opt);
 
 		//! position vector
-		openfpm::vector<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base,openfpm::grow_policy_identity>> m_pos;
+		openfpm::vector<openfpm::vector<Point<dim, St>,Memory,layout_base,openfpm::grow_policy_identity>> m_pos;
 		//! properties vector
-		openfpm::vector<openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base,openfpm::grow_policy_identity>> m_prp;
+		openfpm::vector<openfpm::vector<prop,Memory,layout_base,openfpm::grow_policy_identity>> m_prp;
 
 		fill_send_map_buf(v_pos,v_prp, prc_sz_r,prc_r, m_pos, m_prp,prc_sz,opt);
 
@@ -2071,13 +2089,13 @@ public:
 #endif
 		}
 
-		v_cl.template SSendRecv<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base,openfpm::grow_policy_identity>,
-					   openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>,
+		v_cl.template SSendRecv<openfpm::vector<Point<dim, St>,Memory,layout_base,openfpm::grow_policy_identity>,
+					   openfpm::vector<Point<dim, St>,Memory,layout_base>,
 					   layout_base>
 					   (m_pos,v_pos,prc_r,prc_recv_map,recv_sz_map,opt_);
 
-		v_cl.template SSendRecv<openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base,openfpm::grow_policy_identity>,
-					   openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base>,
+		v_cl.template SSendRecv<openfpm::vector<prop,Memory,layout_base,openfpm::grow_policy_identity>,
+					   openfpm::vector<prop,Memory,layout_base>,
 					   layout_base>
 					   (m_prp,v_prp,prc_r,prc_recv_map,recv_sz_map,opt_);
 
@@ -2146,8 +2164,8 @@ public:
 	 *
 	 */
 	template<template<typename,typename> class op, int ... prp>
-	void ghost_put_(openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim, St>>::type,layout_base> & v_pos,
-					openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & v_prp,
+	void ghost_put_(openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
+					openfpm::vector<prop,Memory,layout_base> & v_prp,
 					size_t & g_m,
 					size_t opt)
 	{
@@ -2155,7 +2173,7 @@ public:
 		typedef object<typename object_creator<typename prop::type, prp...>::type> prp_object;
 
 		// send vector for each processor
-		typedef openfpm::vector<prp_object,Memory,typename layout_base<prp_object>::type,layout_base> send_vector;
+		typedef openfpm::vector<prp_object,Memory,layout_base> send_vector;
 
 		openfpm::vector<send_vector> g_send_prp;
 		fill_send_ghost_put_prp_buf<send_vector, prp_object, prp...>(v_prp,g_send_prp,g_m,opt);

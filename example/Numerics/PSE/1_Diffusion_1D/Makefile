@@ -7,7 +7,7 @@ LDIR =
 OBJ = main.o
 
 %.o: %.cpp
-	$(CC) -O3 -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -O3 -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
 diff_1d: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
@@ -15,7 +15,7 @@ diff_1d: $(OBJ)
 all: diff_1d
 
 run: all
-	mpirun -np 4 ./diff_1d
+	mpirun --oversubscribe -np 4 ./diff_1d
 
 .PHONY: clean all
 

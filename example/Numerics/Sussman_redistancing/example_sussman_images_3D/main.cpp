@@ -191,7 +191,6 @@ int main(int argc, char* argv[])
 	// For the initial re-distancing we use the Sussman method
 	// 1.) Set some redistancing options
 	Redist_options redist_options;
-	redist_options.sigma                                = 0;        // if the initial gradient of phi at the interface is too large, gauss smoothing will automatically be applied until phi gradient magnitude <= 12, regardless of the given sigma in the main
 	redist_options.min_iter                             = 100;      // min. number of iterations before steady state in narrow band will be checked (default: 100)
 	redist_options.max_iter                             = 10000;    // max. number of iterations you want to run the
 															        // redistancing, even if steady state might not yet
@@ -225,8 +224,9 @@ int main(int argc, char* argv[])
 	// the magnitude of the gradient
 	typedef aggregate<double, double[grid_dim], double> props_nb;
 	typedef vector_dist<grid_dim, double, props_nb> vd_type;
-	vd_type vd_narrow_band(0, box, bc, ghost);
-	vd_narrow_band.setPropNames({"Phi_SDF", "Phi_grad", "Phi_magnOfGrad"});
+        Ghost<grid_dim, double> ghost_vd(0);
+        vd_type vd_narrow_band(0, box, bc, ghost_vd);	
+        vd_narrow_band.setPropNames({"Phi_SDF", "Phi_grad", "Phi_magnOfGrad"});
 	
 	NarrowBand<grid_in_type> narrowBand(g_dist, redist_options.width_NB_in_grid_points); // Instantiation of NarrowBand class
 	

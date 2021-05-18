@@ -228,7 +228,8 @@ public:
                 getPrimeFactors(v_cl.size(),facts);
 
                 size_t div[dim];
-		size_t ln[dim];
+				size_t ln[dim];
+				double ln_d[dim];
 
                 for (int i = 0 ; i < dim ; i++)
                 {div[i] = 1;}
@@ -237,7 +238,10 @@ public:
                 {div[i % dim] *= facts.get(i);}
 
                 for (int i = 0 ; i < dim ; i++)
-                {ln[i] = gr.size(i) / div[i];}
+                {
+					ln[i] = gr.size(i) / div[i];
+					ln_d[i] = (double)gr.size(i) / div[i];
+				}
 
                 grid_sm<dim,void> gr_proc(div);
 
@@ -249,10 +253,10 @@ public:
 
                     for (int i = 0 ; i < dim ; i++)
                     {
-			key_prc.set_d(i,key.get(i)/ln[i]);
-			if (key_prc.get(i) >= div[i])
-			{key_prc.set_d(i,div[i]-1);}
-		    }
+						key_prc.set_d(i,key.get(i)/ln_d[i]);
+						if (key_prc.get(i) >= div[i])
+						{key_prc.set_d(i,div[i]-1);}
+		    		}
 
                     size_t i = gr.LinId(key);
 

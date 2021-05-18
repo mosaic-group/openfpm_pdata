@@ -1,0 +1,13 @@
+#! /bin/bash
+
+sed -i '' -e 's/Users\/rundeck/usr\/local\/openfpm\/dependencies/g' /usr/local/openfpm/source/openfpm_vars
+sed -i '' -e 's/openfpm_pre/openfpm/g' /usr/local/openfpm/source/openfpm_vars
+sed -i '' -e 's/dependencies\/openfpm_dependencies/dependencies/g' /usr/local/openfpm/source/openfpm_vars
+sed -i '' -e 's/Users\/rundeck/usr\/local\/openfpm\/dependencies/g' /usr/local/openfpm/openfpm_pdata/include/example.mk
+sed -i '' -e 's/openfpm_pre/openfpm/g' /usr/local/openfpm/openfpm_pdata/include/example.mk
+sed -i '' -e 's/dependencies\/openfpm_dependencies/dependencies/g' /usr/local/openfpm/openfpm_pdata/include/example.mk
+
+chmod a+x /usr/local/openfpm/dependencies/MPI/bin/*
+
+echo "export OPAL_PREFIX=/usr/local/openfpm/dependencies/MPI" >> /usr/local/openfpm/source/openfpm_vars
+

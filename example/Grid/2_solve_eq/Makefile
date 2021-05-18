@@ -7,7 +7,7 @@ LDIR =
 OBJ = main.o
 
 %.o: %.cpp
-	$(CC) -O3 -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -O3 -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
 periodic: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
@@ -15,7 +15,7 @@ periodic: $(OBJ)
 all: periodic
 
 run: all
-	mpirun -np 4 ./periodic
+	mpirun --oversubscribe -np 4 ./periodic
 
 .PHONY: clean all run
 

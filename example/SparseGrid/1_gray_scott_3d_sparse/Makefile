@@ -9,7 +9,7 @@ gray_scott_sparse_test: OPT += -DTEST_RUN
 gray_scott_sparse_test: gray_scott_sparse
 
 %.o: %.cpp
-	$(CC) -O3 -g $(OPT) -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -O3 -g $(OPT) -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
 gray_scott_sparse: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
@@ -17,7 +17,7 @@ gray_scott_sparse: $(OBJ)
 all: gray_scott_sparse
 
 run: gray_scott_sparse_test
-	mpirun -np 4 ./gray_scott_sparse
+	mpirun --oversubscribe -np 4 ./gray_scott_sparse
 
 .PHONY: clean all run
 

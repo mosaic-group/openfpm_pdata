@@ -9,6 +9,7 @@
 #define VECTOR_HPP_
 
 #include "config.h"
+#include "util/cuda_launch.hpp"
 #include "HDF5_wr/HDF5_wr.hpp"
 #include "VCluster/VCluster.hpp"
 #include "Space/Shape/Point.hpp"
@@ -280,17 +281,17 @@ private:
 
 	//! Particle position vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> v_pos;
+	openfpm::vector<Point<dim, St>,Memory,layout_base> v_pos;
 
 	//! Particle properties vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> v_prp;
+	openfpm::vector<prop,Memory,layout_base> v_prp;
 
 	//! reordered v_pos buffer
-	openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> v_prp_out;
+	openfpm::vector<prop,Memory,layout_base> v_prp_out;
 
 	//! reordered v_prp buffer
-	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> v_pos_out;
+	openfpm::vector<Point<dim, St>,Memory,layout_base> v_pos_out;
 
 	//! option used to create this vector
 	size_t opt = 0;
@@ -550,6 +551,35 @@ public:
 #endif
 	}
 
+	/*! \brief Constructor of a distributed vector
+	 *
+	 * \param np number of elements
+	 * \param box domain where the vector of elements live
+	 * \param bc boundary conditions
+	 * \param g Ghost margins
+	 * \param opt [Optional] additional options. BIND_DEC_TO_GHOST Bind the decomposition to be multiple of the
+	 *          ghost size. This is required if we want to use symmetric to eliminate
+	 *          ghost communications.
+	 * \param gdist [Optional] override the default distribution grid
+	 *
+	 */
+	vector_dist(size_t np, Box<dim, St> box, const size_t (&bc)[dim], const Ghost<dim, St> & g, const grid_sm<dim,void> & gdist)
+	:opt(0) SE_CLASS3_VDIST_CONSTRUCTOR
+	{
+		if (opt >> 32 != 0)
+		{this->setDecompositionGranularity(opt >> 32);}
+
+		check_parameters(box);
+
+		init_structures(np);
+
+		this->init_decomposition_gr_cell(box,bc,g,opt,gdist);
+
+
+#ifdef SE_CLASS3
+		se3.Initialize();
+#endif
+	}
 
 	/*! \brief Constructor of a distributed vector
 	 *
@@ -2074,7 +2104,7 @@ public:
 	 * \return an iterator
 	 *
 	 */
-	ite_gpu<1> getDomainIteratorGPU(size_t n_thr = 1024) const
+	ite_gpu<1> getDomainIteratorGPU(size_t n_thr = default_kernel_wg_threads_) const
 	{
 #ifdef SE_CLASS3
 		se3.getIterator();
@@ -2088,7 +2118,7 @@ public:
 	 * \return an iterator
 	 *
 	 */
-	ite_gpu<1> getDomainAndGhostIteratorGPU(size_t n_thr = 1024) const
+	ite_gpu<1> getDomainAndGhostIteratorGPU(size_t n_thr = default_kernel_wg_threads_) const
 	{
 #ifdef SE_CLASS3
 		se3.getIterator();
@@ -2103,7 +2133,7 @@ public:
 	 *
 	 */
 	template<unsigned int ... prp,typename id_1, typename id_2, bool is_sparse>
-	void merge_sort(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>,id_1,id_2,is_sparse> & cl, size_t n_thr = 1024)
+	void merge_sort(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>,id_1,id_2,is_sparse> & cl, size_t n_thr = default_kernel_wg_threads_)
 	{
 #if defined(__NVCC__)
 
@@ -2190,7 +2220,7 @@ public:
 	 * \parameter Cell-list from which has been constructed the sorted vector
 	 *
 	 */
-	template<unsigned int ... prp> void merge_sort_with_pos(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> & cl, size_t n_thr = 1024)
+	template<unsigned int ... prp> void merge_sort_with_pos(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> & cl, size_t n_thr = default_kernel_wg_threads_)
 	{
 #if defined(__NVCC__)
 
@@ -2212,7 +2242,7 @@ public:
          * \return an iterator
          *
          */
-        auto getDomainIteratorDevice(size_t n_thr = 1024) const -> decltype(this->getDomainIteratorGPU(n_thr))
+        auto getDomainIteratorDevice(size_t n_thr = default_kernel_wg_threads_) const -> decltype(this->getDomainIteratorGPU(n_thr))
         {
                 return this->getDomainIteratorGPU(n_thr);
         }
@@ -2225,7 +2255,7 @@ public:
          * \return an iterator
          *
          */
-        auto getDomainIteratorDevice(size_t n_thr = 1024) const -> decltype(this->getDomainIterator())
+        auto getDomainIteratorDevice(size_t n_thr = default_kernel_wg_threads_) const -> decltype(this->getDomainIterator())
         {
                 return this->getDomainIterator();
         }
@@ -2657,8 +2687,8 @@ public:
 		if ((opt & 0x0FFF0000) == CSV_WRITER)
 		{
 			// CSVWriter test
-			CSVWriter<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>,
-			          openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> > csv_writer;
+			CSVWriter<openfpm::vector<Point<dim, St>,Memory,layout_base>,
+			          openfpm::vector<prop,Memory,layout_base> > csv_writer;
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".csv"));
 
@@ -2673,8 +2703,8 @@ public:
 				ft = file_type::BINARY;
 
 			// VTKWriter for a set of points
-			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>,
-									   openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base>>,
+			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim, St>,Memory,layout_base>,
+									   openfpm::vector<prop,Memory,layout_base>>,
 			                           VECTOR_POINTS> vtk_writer;
 			vtk_writer.add(v_pos,v_prp,g_m);
 
@@ -2753,8 +2783,8 @@ public:
 		if ((opt & 0x0FFF0000) == CSV_WRITER)
 		{
 			// CSVWriter test
-			CSVWriter<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>,
-					  openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> > csv_writer;
+			CSVWriter<openfpm::vector<Point<dim, St>,Memory,layout_base>,
+					  openfpm::vector<prop,Memory,layout_base> > csv_writer;
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".csv"));
 
@@ -2769,8 +2799,8 @@ public:
 				ft = file_type::BINARY;
 
 			// VTKWriter for a set of points
-			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base>,
-									   openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base>>, VECTOR_POINTS> vtk_writer;
+			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim, St>,Memory,layout_base>,
+									   openfpm::vector<prop,Memory,layout_base>>, VECTOR_POINTS> vtk_writer;
 			vtk_writer.add(v_pos,v_prp,g_m);
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtp"));
@@ -2842,7 +2872,7 @@ public:
 	 * \return the particle position vector
 	 *
 	 */
-	const openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & getPosVector() const
+	const openfpm::vector<Point<dim, St>,Memory,layout_base> & getPosVector() const
 	{
 		return v_pos;
 	}
@@ -2852,7 +2882,7 @@ public:
 	 * \return the particle position vector
 	 *
 	 */
-	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & getPosVector()
+	openfpm::vector<Point<dim, St>,Memory,layout_base> & getPosVector()
 	{
 		return v_pos;
 	}
@@ -2862,7 +2892,7 @@ public:
 	 * \return the particle property vector
 	 *
 	 */
-	const openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & getPropVector() const
+	const openfpm::vector<prop,Memory,layout_base> & getPropVector() const
 	{
 		return v_prp;
 	}
@@ -2872,7 +2902,7 @@ public:
 	 * \return the particle property vector
 	 *
 	 */
-	openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & getPropVector()
+	openfpm::vector<prop,Memory,layout_base> & getPropVector()
 	{
 		return v_prp;
 	}
@@ -2882,7 +2912,7 @@ public:
 	 * \return the particle position vector
 	 *
 	 */
-	const openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & getPosVectorSort() const
+	const openfpm::vector<Point<dim, St>,Memory,layout_base> & getPosVectorSort() const
 	{
 		return v_pos_out;
 	}
@@ -2892,7 +2922,7 @@ public:
 	 * \return the particle position vector
 	 *
 	 */
-	openfpm::vector<Point<dim, St>,Memory,typename layout_base<Point<dim,St>>::type,layout_base> & getPosVectorSort()
+	openfpm::vector<Point<dim, St>,Memory,layout_base> & getPosVectorSort()
 	{
 		return v_pos_out;
 	}
@@ -2902,7 +2932,7 @@ public:
 	 * \return the particle property vector
 	 *
 	 */
-	const openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & getPropVectorSort() const
+	const openfpm::vector<prop,Memory,layout_base> & getPropVectorSort() const
 	{
 		return v_prp_out;
 	}
@@ -2912,7 +2942,7 @@ public:
 	 * \return the particle property vector
 	 *
 	 */
-	openfpm::vector<prop,Memory,typename layout_base<prop>::type,layout_base> & getPropVectorSort()
+	openfpm::vector<prop,Memory,layout_base> & getPropVectorSort()
 	{
 		return v_prp_out;
 	}

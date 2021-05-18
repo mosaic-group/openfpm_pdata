@@ -116,6 +116,7 @@ __device__ inline void process_map_device_particle(unsigned int i, unsigned int 
 	proc_class::proc(i,id,v_prp,m_prp);
 }
 
+
 //! It process one particle
 template<typename Top, typename T2, typename T4, unsigned int ... prp>
 __device__ inline void process_ghost_device_particle_prp(unsigned int i, unsigned int offset, Top & g_opart, T2 & m_prp, T4 & v_prp)

@@ -7,7 +7,7 @@ LDIR =
 OBJ = main.o
 
 %.o: %.cpp
-	$(CC) -O3 -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -O3 -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
 cell: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
@@ -15,7 +15,7 @@ cell: $(OBJ)
 all: cell
 
 run: all
-	mpirun -np 2 ./cell
+	mpirun --oversubscribe -np 2 ./cell
 
 .PHONY: clean all run
 

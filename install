@@ -1,4 +1,5 @@
 #! /bin/bash
+
 source script/help
 source script/discover_os
 source script/show_solutions
@@ -8,6 +9,8 @@ source script/set_mpi
 source script/conf_PETSC
 source script/update_openfpm
 source script/solve_python
+source script/install_gdbgui
+
 
 ### switch to the branch
 #b_switch=`git rev-parse --abbrev-ref HEAD`
@@ -23,7 +26,7 @@ fi
 ## Check that your home is not empty
 
 if [ x"$HOME" == x"" ]; then
-	 echo -e "Your $HOME folder is empty \033[91;5;1m FAILED \033[0m"
+	 echo -e "Your \$HOME folder is empty \033[91;5;1m FAILED \033[0m"
 	 exit 1
 fi
 
@@ -34,8 +37,9 @@ nomake=0
 update_openfpm=0
 upgrade_openfpm=0
 gpu_support=0
+no_lin=0
 
-while getopts di:smghc:nu FLAG; do
+while getopts di:v:smghc:nul FLAG; do
 	case $FLAG in
 	    d)
 	      echo "Disable depencencies installation"
@@ -67,8 +71,16 @@ while getopts di:smghc:nu FLAG; do
 	      ;;
 	    n)
           echo "Upgrading openfpm"
-	      upgrade_openfpm=1
+              upgrade_openfpm=1
+              ;;
+            l)
+	      echo "No linear algebra"
+	      no_lin=1
 	      ;;
+            v)
+              echo "Relocating openfpm_vars file $OPTARG"
+              VARS_FILE_LOCATION=$OPTARG
+              ;;
 	    h)  #show help
       	  HELP
           ;;
@@ -216,7 +228,11 @@ if [ ! -d "$i_dir/PETSC" -o ! -f "$i_dir/PETSC/include/petsc.h" -o ! -d "$i_dir/
     if [ $sq -eq 0 ]; then
       read inst_lin_alg
     else
-      inst_lin_alg="y"
+      if [ $no_lin -eq 1 ]; then
+	  inst_lin_alg="n"
+      else
+          inst_lin_alg="y"
+      fi
     fi
 
     ### PETSC require Python
@@ -376,7 +392,7 @@ else
                 echo "Error the installation of VCDEVEL failed"
                 exit 1
             fi
-            ./script/install_VCDEVEL.sh $i_dir $ncore
+            ./script/install_VCDEVEL.sh $i_dir $ncore $CC $CXX
             configure_options=" $configure_options --with-vcdevel=$i_dir/VCDEVEL "
             VCDEVEL_installed=1
         elif [ $conf_err -ne 0 ]; then
@@ -400,25 +416,35 @@ fi
 install_base=$(cat install_dir)
 openmp_flags="$(cat openmp_flags)"
 cuda_include_dirs=$(cat cuda_include)
-mpi_include_dirs=$(cat mpi_include)
-mpi_libs=$(cat mpi_libs)
+hip_enabled=$(cat hip_enabled)
+if [ x"$hip_enabled" == x"1" ]; then
+	mpi_include_dirs=$(cat mpi_include)
+	mpi_libs=$(cat mpi_libs)
+fi
+cuda_on_cpu=$(cat cuda_on_cpu)
+optional_boost=$(cat optional_boost_libs)
 
 if [ -d "$i_dir/HDF5/lib" ]; then
   hdf5_lib=$i_dir/HDF5/lib
+  hdf5_lib_dir=-L$i_dir/HDF5/lib
 elif [ -d "$i_dir/HDF5/lib64" ]; then
   hdf5_lib=$i_dir/HDF5/lib64
+  hdf5_lib_dir=-L$i_dir/HDF5/lib64
 fi
 
-echo "INCLUDE_PATH=$cuda_include_dirs -Wno-deprecated-declarations $openmp_flags  -I.  -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/VCDEVEL/include  -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" > example.mk
-echo "LIBS_PATH=$openmp_flags -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/VCDEVEL/lib  -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib -L$hdf5_lib -L$i_dir/LIBHILBERT/lib  $lin_alg_dir " >> example.mk
-if [ x"$gpu_support" == x"1" ]; then
-    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $(cat cuda_lib) $lin_alg_lib -ldl -lboost_filesystem -lboost_system" >> example.mk
-    echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $(cat cuda_lib) $lin_alg_lib -lboost_filesystem -lboost_system" >> example.mk
-else
-    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $lin_alg_lib -ldl -lboost_filesystem -lboost_system" >> example.mk
-    echo "LIBS_SE2=-lvcluster -lofpmmemory_se2 -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $lin_alg_lib -lboost_filesystem -lboost_system" >> example.mk
+echo "INCLUDE_PATH=$mpi_include_dirs $cuda_include_dirs -Wno-deprecated-declarations $openmp_flags  -I.  -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/VCDEVEL/include  -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" > example.mk
+echo "LIBS_PATH=$mpi_libs $openmp_flags -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/VCDEVEL/lib  -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib $hdf5_lib_dir -L$i_dir/LIBHILBERT/lib  $lin_alg_dir " >> example.mk
+if [ x"$cuda_on_cpu" == x"YES" ]; then
+   echo "CUDA_ON_CPU=YES" >> example.mk
 fi
-echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" $(cat openmp_flags) "$(cat cuda_options)" -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" >> example.mk
+if [ x"$gpu_support" == x"1" ]; then
+    echo "LIBS=$mpi_libs -lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $(cat cuda_lib) $lin_alg_lib -ldl -lboost_filesystem -lboost_system" >> example.mk
+    echo "LIBS_CUDA_ON_CPU=-lvcluster_cuda_on_cpu -lofpmmemory_cuda_on_cpu -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $(cat cuda_lib) $lin_alg_lib -lboost_filesystem -lboost_system -lboost_context" >> example.mk
+else
+    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $lin_alg_lib -ldl -lboost_filesystem -lboost_system $optional_boost" >> example.mk
+    echo "LIBS_CUDA_ON_CPU=\$(LIBS)" >> example.mk
+fi
+echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" $(cat openmp_flags) "$(cat cuda_options)" $mpi_include_dirs -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" >> example.mk
 cp example.mk src/example.mk
 cp example.mk example/example.mk
 
@@ -430,6 +456,13 @@ fi
 if [ $? -ne 0 ]; then
   conf_err=1
 fi
+
+################ Parallel debugger #######################
+
+echo "Installing parallel debugger"
+install_gdbgui $i_dir
+
+###########################################################
 
 echo "Command used to configure"
 echo ""
@@ -443,6 +476,7 @@ else
 fi
 
 bash_path="export PATH=\""
+
 
 echo -e "\033[1;34;5m ---------------------------------------  \033[0m"
 echo -e "\033[1;34;5m --------- INSTALLATION REPORT ---------  \033[0m"
@@ -532,6 +566,7 @@ if [ x"$platform" == x"cygwin" ]; then
 	bash_path="$bash_path:$i_dir/BOOST/bin:$i_dir/HDF5/bin"
 fi
 
+bash_path="$bash_path:$install_base/gdbgui/bin:"
 bash_path="$bash_path:\$PATH\""
 bash_library="$bash_library\""
 
@@ -539,11 +574,16 @@ bash_library="$bash_library\""
 
 # in cygwin we have to add to PATH additional directories
 
-echo "$bash_path" > $HOME/openfpm_vars
-echo "$bash_library" >> $HOME/openfpm_vars
+if [ x"$VARS_FILE_LOCATION" == x"" ]; then
+	VARS_FILE_LOCATION=$HOME
+fi
+
+echo "$bash_path" > $VARS_FILE_LOCATION/openfpm_vars
+echo "$bash_library" >> $VARS_FILE_LOCATION/openfpm_vars
+echo "export PURE_PYTHON=1" >> $VARS_FILE_LOCATION/openfpm_vars
 
 if [ x"$platform" = x"osx" ]; then
-    echo "TMPDIR=/tmp/" >> $HOME/openfpm_vars
+    echo "TMPDIR=/tmp/" >> $VARS_FILE_LOCATION/openfpm_vars
 fi
 
 echo -e "$installation_report"
@@ -562,12 +602,12 @@ fi
 
 echo ""
 if [ x"$platform" = x"linux" ]; then
-  echo "Before run any openfpm program you must execute the following command. A simple way would be to append this line at the end of your $HOME/.bashrc"
+  echo "Before run any openfpm program you must execute the following command. A simple way would be to append this line at the end of your $VARS_FILE_LOCATION/.bashrc"
 else
-  echo "Before run any openfpm program you must execute the following command. A simple way would be to append this line at the end of your $HOME/.bash_profile"
+  echo "Before run any openfpm program you must execute the following command. A simple way would be to append this line at the end of your $VARS_FILE_LOCATION/.bash_profile"
 fi
 echo ""
-echo -e "\033[1m source $HOME/openfpm_vars \033[0m"
+echo -e "\033[1m source $VARS_FILE_LOCATION/openfpm_vars \033[0m"
 echo ""
 echo ""
 echo -e "Remember to do: \033[91;5;1m make install \033[0m"

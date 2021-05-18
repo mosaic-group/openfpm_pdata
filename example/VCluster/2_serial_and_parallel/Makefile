@@ -7,7 +7,7 @@ LDIR =
 OBJ = main.o
 
 %.o: %.cpp
-	$(CC) -O3 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -O3 -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
 serial_parallel: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
@@ -15,7 +15,7 @@ serial_parallel: $(OBJ)
 all: serial_parallel
 
 run: all
-	mpirun -np 3 ./serial_parallel
+	mpirun --oversubscribe -np 3 ./serial_parallel
 
 .PHONY: clean all run
 

@@ -7,7 +7,7 @@ LDIR =
 OBJ = main.o
 
 %.o: %.cpp
-	$(CC) -O3 -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -O3 -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
 example_sussman_sphere: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
@@ -15,7 +15,7 @@ example_sussman_sphere: $(OBJ)
 all: example_sussman_sphere
 
 run: all
-	mpirun -np 2 ./example_sussman_sphere
+	mpirun --oversubscribe -np 2 ./example_sussman_sphere
 
 .PHONY: clean all run
 

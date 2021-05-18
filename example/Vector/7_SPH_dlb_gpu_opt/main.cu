@@ -45,13 +45,13 @@
 //#define SE_CLASS1
 
 //#define USE_LOW_REGISTER_ITERATOR
-//#define SCAN_WITH_CUB <------ In case you want to use CUB for scan operations
+#define SCAN_WITH_CUB //<------ In case you want to use CUB for scan operations
+#define SORT_WITH_CUB
 //#define EXTERNAL_SET_GPU <----- In case you want to distribute the GPUs differently from the default
 
 #include "Vector/vector_dist.hpp"
 #include <math.h>
 #include "Draw/DrawParticles.hpp"
-#include <cuda_profiler_api.h>
 
 
 
@@ -250,6 +250,7 @@ inline __device__ __host__ void DWab(Point<3,real_number> & dx, Point<3,real_num
     DW.get(2) = factor * dx.get(2);
 }
 
+
 // Tensile correction
 inline __device__ __host__  real_number Tensile(real_number r, real_number rhoa, real_number rhob, real_number prs1, real_number prs2, real_number W_dap)
 {
@@ -268,7 +269,7 @@ inline __device__ __host__  real_number Tensile(real_number r, real_number rhoa,
 	    real_number wqq2=qq*qq;
 	    real_number wqq3=wqq2*qq;
 
-	    wab+=a2*(1.0f-1.5f*wqq2+0.75f*wqq3);
+	    wab=a2*(1.0f-1.5f*wqq2+0.75f*wqq3);
 	}
 
 	//-Tensile correction.
@@ -313,19 +314,19 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 	Point<3,real_number> xa = vd.getPos(a);
 
 	// Type of the particle
-	unsigned int typea = vd.getProp<type>(a);
+	unsigned int typea = vd.template getProp<type>(a);
 
 	// Take the mass of the particle dependently if it is FLUID or BOUNDARY
 	//real_number massa = (typea == FLUID)?MassFluid:MassBound;
 
 	// Get the density of the of the particle a
-	real_number rhoa = vd.getProp<rho>(a);
+	real_number rhoa = vd.template getProp<rho>(a);
 
 	// Get the pressure of the particle a
-	real_number Pa = vd.getProp<Pressure>(a);
+	real_number Pa = vd.template getProp<Pressure>(a);
 
 	// Get the Velocity of the particle a
-	Point<3,real_number> va = vd.getProp<velocity>(a);
+	Point<3,real_number> va = vd.template getProp<velocity>(a);
 
 	Point<3,real_number> force_;
 	force_.get(0) = 0.0f;
@@ -348,12 +349,12 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 		// if (p == q) skip this particle this condition should be done in the r^2 = 0
 		if (a == b)	{++Np; continue;};
 
-        unsigned int typeb = vd.getProp<type>(b);
+        	unsigned int typeb = vd.template getProp<type>(b);
 
-        real_number massb = (typeb == FLUID)?MassFluid:MassBound;
-        Point<3,real_number> vb = vd.getProp<velocity>(b);
-        real_number Pb = vd.getProp<Pressure>(b);
-        real_number rhob = vd.getProp<rho>(b);
+        	real_number massb = (typeb == FLUID)?MassFluid:MassBound;
+        	Point<3,real_number> vb = vd.template getProp<velocity>(b);
+        	real_number Pb = vd.template getProp<Pressure>(b);
+        	real_number rhob = vd.template getProp<rho>(b);
 
 		// Get the distance between p and q
 		Point<3,real_number> dr = xa - xb;
@@ -387,7 +388,7 @@ __global__ void calc_forces_gpu(particles_type vd, NN_type NN, real_number W_dap
 		++Np;
 	}
 
-	vd.getProp<red>(a) = max_visc;
+	vd.template getProp<red>(a) = max_visc;
 
 	vd.template getProp<force>(a)[0] = force_.get(0);
 	vd.template getProp<force>(a)[1] = force_.get(1);
@@ -414,11 +415,11 @@ __global__ void max_acceleration_and_velocity_gpu(vector_type vd)
 {
 	auto a = GET_PARTICLE(vd);
 
-	Point<3,real_number> acc(vd.getProp<force>(a));
-	vd.getProp<red>(a) = norm(acc);
+	Point<3,real_number> acc(vd.template getProp<force>(a));
+	vd.template getProp<red>(a) = norm(acc);
 
-	Point<3,real_number> vel(vd.getProp<velocity>(a));
-	vd.getProp<red2>(a) = norm(vel);
+	Point<3,real_number> vel(vd.template getProp<velocity>(a));
+	vd.template getProp<red2>(a) = norm(vel);
 }
 
 void max_acceleration_and_velocity(particles & vd, real_number & max_acc, real_number & max_vel)
@@ -426,7 +427,7 @@ void max_acceleration_and_velocity(particles & vd, real_number & max_acc, real_n
 	// Calculate the maximum acceleration
 	auto part = vd.getDomainIteratorGPU();
 
-	max_acceleration_and_velocity_gpu<<<part.wthr,part.thr>>>(vd.toKernel());
+	CUDA_LAUNCH(max_acceleration_and_velocity_gpu,part,vd.toKernel());
 
 	max_acc = reduce_local<red,_max_>(vd);
 	max_vel = reduce_local<red2,_max_>(vd);
@@ -529,7 +530,7 @@ void verlet_int(particles & vd, real_number dt)
 	real_number dt205 = dt*dt*0.5;
 	real_number dt2 = dt*2.0;
 
-	verlet_int_gpu<<<part.wthr,part.thr>>>(vd.toKernel(),dt,dt2,dt205);
+	CUDA_LAUNCH(verlet_int_gpu,part,vd.toKernel(),dt,dt2,dt205);
 
 	// remove the particles marked
 	remove_marked<red>(vd);
@@ -605,7 +606,7 @@ void euler_int(particles & vd, real_number dt)
 
 	real_number dt205 = dt*dt*0.5;
 
-	euler_int_gpu<<<part.wthr,part.thr>>>(vd.toKernel(),dt,dt205);
+	CUDA_LAUNCH(euler_int_gpu,part,vd.toKernel(),dt,dt205);
 
 	// remove the particles
 	remove_marked<red>(vd);
@@ -681,7 +682,7 @@ inline void sensor_pressure(Vector & vd,
         // if the probe is inside the processor domain
 		if (vd.getDecomposition().isLocal(probes.get(i)) == true)
 		{
-			sensor_pressure_gpu<<<1,1>>>(vd.toKernel_sorted(),NN.toKernel(),probes.get(i),(real_number *)press_tmp_.toKernel());
+			CUDA_LAUNCH_DIM3(sensor_pressure_gpu,1,1,vd.toKernel_sorted(),NN.toKernel(),probes.get(i),(real_number *)press_tmp_.toKernel());
 
 			vd.merge<Pressure>(NN);
 
@@ -720,17 +721,19 @@ int main(int argc, char* argv[])
     // initialize the library
 	openfpm_init(&argc,&argv);
 
+#if !defined(CUDA_ON_CPU) && !defined(__HIP__)
 	cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
+#endif
 
 	// It contain for each time-step the value detected by the probes
 	openfpm::vector<openfpm::vector<real_number>> press_t;
 	openfpm::vector<Point<3,real_number>> probes;
 
-	probes.add({0.8779,0.3,0.02});
-	probes.add({0.754,0.31,0.02});
+	probes.add({0.8779f,0.3f,0.02f});
+	probes.add({0.754f,0.31f,0.02f});
 
 	// Here we define our domain a 2D box with internals from 0 to 1.0 for x and y
-	Box<3,real_number> domain({-0.05,-0.05,-0.05},{1.7010,0.7065,0.511});
+	Box<3,real_number> domain({-0.05f,-0.05f,-0.05f},{1.7010f,0.7065f,0.511f});
 	size_t sz[3] = {413,179,133};
 
 	// Fill W_dap
@@ -748,7 +751,7 @@ int main(int argc, char* argv[])
 
 	// You can ignore all these dp/2.0 is a trick to reach the same initialization
 	// of Dual-SPH that use a different criteria to draw particles
-	Box<3,real_number> fluid_box({dp/2.0,dp/2.0,dp/2.0},{0.4+dp/2.0,0.67-dp/2.0,0.3+dp/2.0});
+	Box<3,real_number> fluid_box({dp/2.0f,dp/2.0f,dp/2.0f},{0.4f+dp/2.0f,0.67f-dp/2.0f,0.3f+dp/2.0f});
 
 	// return an iterator to the fluid particles to add to vd
 	auto fluid_it = DrawParticles::DrawBox(vd,sz,domain,fluid_box);
@@ -797,12 +800,12 @@ int main(int argc, char* argv[])
 	}
 
 	// Recipient
-	Box<3,real_number> recipient1({0.0,0.0,0.0},{1.6+dp/2.0,0.67+dp/2.0,0.4+dp/2.0});
-	Box<3,real_number> recipient2({dp,dp,dp},{1.6-dp/2.0,0.67-dp/2.0,0.4+dp/2.0});
+	Box<3,real_number> recipient1({0.0f,0.0f,0.0f},{1.6f+dp/2.0f,0.67f+dp/2.0f,0.4f+dp/2.0f});
+	Box<3,real_number> recipient2({dp,dp,dp},{1.6f-dp/2.0f,0.67f-dp/2.0f,0.4f+dp/2.0f});
 
-	Box<3,real_number> obstacle1({0.9,0.24-dp/2.0,0.0},{1.02+dp/2.0,0.36,0.45+dp/2.0});
-	Box<3,real_number> obstacle2({0.9+dp,0.24+dp/2.0,0.0},{1.02-dp/2.0,0.36-dp,0.45-dp/2.0});
-	Box<3,real_number> obstacle3({0.9+dp,0.24,0.0},{1.02,0.36,0.45});
+	Box<3,real_number> obstacle1({0.9f,0.24f-dp/2.0f,0.0f},{1.02f+dp/2.0f,0.36f,0.45f+dp/2.0f});
+	Box<3,real_number> obstacle2({0.9f+dp,0.24f+dp/2.0f,0.0f},{1.02f-dp/2.0f,0.36f-dp,0.45f-dp/2.0f});
+	Box<3,real_number> obstacle3({0.9f+dp,0.24f,0.0f},{1.02f,0.36f,0.45f});
 
 	openfpm::vector<Box<3,real_number>> holes;
 	holes.add(recipient2);
@@ -869,8 +872,7 @@ int main(int argc, char* argv[])
 	// Ok the initialization is done on CPU on GPU we are doing the main loop, so first we offload all properties on GPU
 
 	vd.hostToDevicePos();
-	vd.template hostToDeviceProp<type,rho,rho_prev,Pressure,velocity>();
-
+	vd.template hostToDeviceProp<type,rho,rho_prev,Pressure,velocity,velocity_prev>();
 
 	vd.ghost_get<type,rho,Pressure,velocity>(RUN_ON_DEVICE);
 
@@ -888,7 +890,6 @@ int main(int argc, char* argv[])
 	{
 		Vcluster<> & v_cl = create_vcluster();
 		timer it_time;
-
 
 		////// Do rebalancing every 200 timesteps
 		it_reb++;
@@ -913,7 +914,7 @@ int main(int argc, char* argv[])
 
 		// it sort the vector (doesn not seem to produce some advantage)
 		// note force calculation is anyway sorted calculation
-		vd.make_sort(NN);
+		//vd.make_sort(NN);
 
 		// Calculate pressure from the density
 		EqState(vd);
@@ -922,9 +923,9 @@ int main(int argc, char* argv[])
 
 		vd.ghost_get<type,rho,Pressure,velocity>(RUN_ON_DEVICE);
 
-
 		// Calc forces
 		calc_forces(vd,NN,max_visc,cnt);
+
 
 		// Get the maximum viscosity term across processors
 		v_cl.max(max_visc);

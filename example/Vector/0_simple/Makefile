@@ -7,7 +7,7 @@ LDIR =
 OBJ = main.o
 
 %.o: %.cpp
-	$(CC) -O0 -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -O0 -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
 vect: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
@@ -15,7 +15,10 @@ vect: $(OBJ)
 all: vect
 
 run: all
-	mpirun -np 2 ./vect
+	mpirun --oversubscribe -np 2 ./vect
+
+debug:
+	../../../gdbgui/launch_mpi_debugger 2 ./vect
 
 .PHONY: clean all run
 

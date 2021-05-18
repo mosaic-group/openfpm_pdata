@@ -15,7 +15,7 @@ ghost: $(OBJ)
 all: ghost
 
 run: all
-	mpirun -np 2 ./ghost
+	mpirun --oversubscribe -np 2 ./ghost
 
 .PHONY: clean all run
 
