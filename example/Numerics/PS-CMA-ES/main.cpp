@@ -1,7 +1,7 @@
 /*!
  *
  * \page Numerics Numerics
- *
+ * \subpage Odeint
  * \subpage PS_CMA_ES
  * \subpage Vortex_in_cell_petsc
  * \subpage Stokes_flow
