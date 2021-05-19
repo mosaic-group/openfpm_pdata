@@ -8,7 +8,7 @@
  *  * We can use the Odeint library from boost with OpenFPM in two ways. The first example will cover a simple case where we control the time stepping ourselves (time loop of the simulation wriiten by us).
  * The 2nd Example will cover a way of using odeint where the time is forwarded by odeint along with an observer.
  *
- *  * In the example links below, we solve the follwing advection-diffusion PDE for two chemicals with concentration \f$\vec{C}(x,y,t)=(C_x(x,y,t),C_y(x,y,t))\f$ with a fixed velocity \f$\vec{V}(x,y)=(-ye^{10(x^2+y^2)},xe^{10(x^2+y^2)})\f$:
+ *  * In the example links below, we solve the follwing advection-diffusion PDE for two chemicals with concentration \f$\vec{C}(x,y,t)=(C_x(x,y,t),C_y(x,y,t))\f$ with a fixed velocity \f$\vec{V}(x,y)=(-ye^{-10(x^2+y^2)},xe^{-10(x^2+y^2)})\f$:
  *
  * @f[ \frac{\partial\vec{C}}{dt}=\vec{V}.\nabla_{\{x,y\}} \vec{C} + 0.1\Delta_{\{x,y\}} \vec{C} @f]
  * in 2d domain [-1,-1]*[1,1] with the boundary conditions on the walls as no-slip for velocity \f$\vec{V}=0\f$ and sink for the chemicals \f$\vec{C}=0\f$ for all time \f$t\f$.
@@ -34,7 +34,7 @@
  * In this example, we perform time integration in a 2d domain of particles of a following partial differential equation:
  *
  * @f[ \frac{\partial\vec{C}}{dt}=\vec{V}.\nabla C + 0.1\Delta C @f]
- * in 2d domain [-1,-1]*[1,1] with a fixed velocity \f$\vec{V}(x,y)=(-ye^{10(x^2+y^2)},xe^{10(x^2+y^2)})\f$, and the boundary conditions on the walls as no-slip for velocity \f$\vec{V}=0\f$ and sink for the chemicals \f$\vec{C}=0\f$ for all time \f$t\f$.
+ * in 2d domain [-1,-1]*[1,1] with a fixed velocity \f$\vec{V}(x,y)=(-ye^{-10(x^2+y^2)},xe^{-10(x^2+y^2)})\f$, and the boundary conditions on the walls as no-slip for velocity \f$\vec{V}=0\f$ and sink for the chemicals \f$\vec{C}=0\f$ for all time \f$t\f$.
  *  * Further, we start with the initial condition for the concentration as
  *   @f[\vec{C}=\begin{cases}
  *   (1,0)\text{ for } x=0,-0.5<y<0\\

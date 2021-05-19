@@ -2708,10 +2708,13 @@ public:
 			                           VECTOR_POINTS> vtk_writer;
 			vtk_writer.add(v_pos,v_prp,g_m);
 
-			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtk"));
+			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtp"));
 
 			// Write the VTK file
-			return vtk_writer.write(output,prp_names,"particles",meta_info,ft);
+			bool ret=vtk_writer.write(output,prp_names,"particles",meta_info,ft);
+			if(v_cl.rank()==0)
+            {vtk_writer.write_pvtp(out,prp_names,v_cl.size())   ;}
+			return ret;
 		}
 	}
 
@@ -2800,10 +2803,13 @@ public:
 									   openfpm::vector<prop,Memory,layout_base>>, VECTOR_POINTS> vtk_writer;
 			vtk_writer.add(v_pos,v_prp,g_m);
 
-			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtk"));
+			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtp"));
 
 			// Write the VTK file
-			return vtk_writer.write(output,prp_names,"particles",meta_info,ft);
+			bool ret=vtk_writer.write(output,prp_names,"particles",meta_info,ft);
+            if(v_cl.rank()==0)
+            {vtk_writer.write_pvtp(out,prp_names,v_cl.size(),iteration);}
+            return ret;
 		}
 	}
 
