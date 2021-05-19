@@ -10,12 +10,22 @@ source script/solve_gdbserver
 source script/discover_package_manager
 source script/solve_nodejs
 source script/solve_python_devel
+source script/solve_llvm
 
 node_js_inst=0
 
 if [ x"$platform" == x"osx" ]; then
-	echo -e "node\033[91;5;1m The parallel debugger at the moment is not supported on OSX \033[0m"
-	return
+	solve_llvm $platform
+
+	echo "OSX installing lldb-mi"
+	rm lldb-mi-master.tar.gz
+	wget http://ppmcore.mpi-cbg.de/upload/lldb-mi-master.tar.gz
+	tar -xf lldb-mi-master.tar.gz
+	cd lldb-mi-master
+	mkdir build
+	cd build
+	cmake ../. -DCMAKE_PREFIX_PATH=$1/LLDB-MI
+	make 
 fi
 
 solve_python_devel $platform
