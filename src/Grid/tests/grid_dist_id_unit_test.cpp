@@ -94,6 +94,38 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter3D_test)
 		v_cl.execute();
 
 		BOOST_REQUIRE_EQUAL(vol,sz[0]*sz[1]*sz[2]);
+
+		// Check getPos
+
+		auto it = g_dist.getDomainIterator();
+
+		auto key = it.get();
+
+		auto pos = g_dist.getPos(key);
+
+		BOOST_REQUIRE_CLOSE(pos.get(0),-0.3f,0.0001);
+		BOOST_REQUIRE_CLOSE(pos.get(1),-0.3f,0.0001);
+		BOOST_REQUIRE_CLOSE(pos.get(2),-0.3f,0.0001);
+
+		bool check = false;
+
+		while (it.isNext())
+		{
+			auto key2 = it.get();
+
+			auto pos = g_dist.getPos(key2);
+
+			if (pos[0] >= 0.99999 && pos[0] <= 1.00001 && 
+				pos[1] >= 0.99999 && pos[1] <= 1.00001 &&
+				pos[2] >= 0.99999 && pos[2] <= 1.00001)
+			{
+				check = true;
+			}
+
+			++it;
+		}
+
+		BOOST_REQUIRE_EQUAL(check,true);
 	}
 }
 
