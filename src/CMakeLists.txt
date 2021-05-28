@@ -97,6 +97,7 @@ endif()
 
 add_dependencies(pdata ofpmmemory)
 add_dependencies(pdata vcluster)
+add_dependencies(pdata ofpinsitu)
 
 #add_executable(isolation_pdata ${OPENFPM_INIT_FILE} isolation.cu
 #														  lib/pdata.cpp  
@@ -156,6 +157,8 @@ target_include_directories (pdata PUBLIC ${ALPAKA_ROOT}/include)
 target_include_directories (pdata PUBLIC ${Vc_INCLUDE_DIR})
 target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
 target_include_directories (pdata PUBLIC ${MPI_C_INCLUDE_DIRS})
+target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_live_in_situ/include/)
+
 
 #target_include_directories (isolation_pdata PUBLIC ${PARMETIS_ROOT}/include)
 #target_include_directories (isolation_pdata PUBLIC ${METIS_ROOT}/include)
@@ -185,6 +188,7 @@ target_link_libraries(pdata ${MPI_C_LIBRARIES})
 target_link_libraries(pdata ${MPI_CXX_LIBRARIES})
 target_link_libraries(pdata vcluster)
 target_link_libraries(pdata ofpmmemory)
+target_link_libraries(pdata ofpinsitu)
 
 #target_link_libraries(isolation_pdata ${Boost_LIBRARIES})
 #target_link_libraries(isolation_pdata ${PARMETIS_LIBRARIES})

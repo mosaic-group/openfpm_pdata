@@ -271,6 +271,7 @@ file(WRITE mpi_libs "${MPI_C_LINK_FLAGS} ${MPI_C_LIBRARIES}")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/config/config_cmake.h.in ${CMAKE_CURRENT_SOURCE_DIR}/src/config/config.h)
 
+add_subdirectory(openfpm_live_in_situ)
 add_subdirectory (openfpm_io)
 add_subdirectory (openfpm_numerics)
 
