@@ -119,3 +119,11 @@ projectId.sh
 /cmake-build-debug-gcc/
 /cmake-build-falcon/
 /cmake-build-release-gcc/
+
+*CMake*
+*cmake*
+**/*cmake*
+**/*CMake*
+
+**/.gitignore
+.gitignore
