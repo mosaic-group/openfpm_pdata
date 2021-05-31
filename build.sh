@@ -39,6 +39,7 @@ if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 #	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/PETSC
 	cd openfpm_vcluster
 	git stash
+	cd ..
 fi
 
 if [ x"$hostname" == x"falcon1" ]; then
