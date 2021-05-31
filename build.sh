@@ -24,6 +24,7 @@ echo "GPU compilation: $with_gpu"
 if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
 	echo "CentOS node"
 	source /opt/rh/devtoolset-8/enable
+	./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
 fi
 
 if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
@@ -37,9 +38,7 @@ if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 	echo "Mac node"
 	export PATH="/usr/local/bin:$PATH"
 #	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/PETSC
-	cd openfpm_vcluster
-	git stash
-	cd ..
+        ./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
 fi
 
 if [ x"$hostname" == x"falcon1" ]; then
