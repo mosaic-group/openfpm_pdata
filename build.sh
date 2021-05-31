@@ -33,6 +33,7 @@ if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
 	echo "Ubuntu node"
 	./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/ 4
 	export PATH="/opt/bin:$PATH"
+	foward_options="--enable-cuda-on-cpu"
 fi
 
 if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
@@ -91,7 +92,6 @@ fi
 #echo "StrictHostKeyChecking=no" > $HOME/.ssh/config
 #chmod 600 $HOME/.ssh/config
 
-foward_options="--enable-cuda-on-cpu"
 install_options=
 if [ x"$comp_type" == x"full" ]; then
         install_options="-s "
