@@ -34,8 +34,6 @@ mac_build:
     - mac
   artifacts:
     paths:
-      - cd openfpm_vcluster
-      - git stash
       - ./build/src/pdata
       - ./build/openfpm_numerics/src/numerics
       - ./openfpm_numerics/test
