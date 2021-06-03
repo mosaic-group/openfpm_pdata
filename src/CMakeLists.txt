@@ -218,6 +218,8 @@ target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../op
 target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/config)
 target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_devices/src/)
 target_include_directories (ofpm_pdata PUBLIC ${Boost_INCLUDE_DIRS})
+target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_live_in_situ/include/)
+
 
 target_compile_definitions(pdata PRIVATE ${MPI_VENDOR})
 
