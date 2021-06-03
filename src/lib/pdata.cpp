@@ -27,3 +27,12 @@ double tot_merge = 0.0;
 double tot_loc_merge = 0.0;
 double tot_sendrecv = 0.0;
 double tot_pack = 0.0;
+
+/*
+ * Section: Variables required for live in situ visualization
+ */
+openfpm::vector<handle_shmem> hgrids;
+handle_shmem dtype_flag = {-1};
+handle_shmem hgdb = {-1};
+openfpm::vector<unsigned short*> Vis_ptrs;
+long *Vis_header;

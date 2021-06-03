@@ -27,6 +27,7 @@
 #include "HDF5_wr/HDF5_wr.hpp"
 #include "SparseGrid/SparseGrid.hpp"
 #include "lib/pdata.hpp"
+#include "InVis/grid_to_InVis.hpp"
 #ifdef __NVCC__
 #include "cuda/grid_dist_id_kernels.cuh"
 #include "Grid/cuda/grid_dist_id_iterator_gpu.cuh"
@@ -2734,6 +2735,12 @@ public:
 			}
 		}
 	}
+
+    template<unsigned int prop = 0>
+    void visualize(scale_vis scale = global, St low = 0, St high = 0, vector_visualize vect_vis = magnitude)
+    {
+        grid_to_InVis::visualize<dim,prop>(*this, scale, low, high, vect_vis, v_cl);
+    }
 
 	/*! \brief Write the distributed grid information
 	 *
