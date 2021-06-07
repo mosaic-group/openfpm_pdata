@@ -1768,6 +1768,32 @@ public:
 
 #ifdef __NVCC__
 
+	/*! \brief set existing points in the grid
+    *
+	* \param f2 lambda function to set points
+	*/
+	template<typename lambda_t2>
+	void setPoints(lambda_t2 f2)
+	{
+		auto it = getGridIteratorGPU();
+
+		it.template launch<1>(launch_set_dense<dim>(),f2);
+	}
+
+	/*! \brief set point existing in the grid between start and stop
+	*
+	* \param start point
+	* \param stop point
+	* \param f2 lambda function to set points
+	*/
+	template<typename lambda_t2>
+	void setPoints(grid_key_dx<dim> k1, grid_key_dx<dim> k2, lambda_t2 f2)
+	{
+		auto it = getGridIteratorGPU(k1,k2);
+
+		it.template launch<0>(launch_set_dense<dim>(),f2);
+	}
+
 	/*! \brief Insert point in the grid
     *
 	* \param f1 lambda function to insert point
@@ -1779,7 +1805,7 @@ public:
 		auto it = getGridIteratorGPU();
 		it.setGPUInsertBuffer(1);
 
-		it.template launch<1>(launch_insert_sparse(),f1,f2);
+		it.template launch<0>(launch_insert_sparse(),f1,f2);
 	}
 
 	/*! \brief Insert point in the grid between start and stop
@@ -3305,6 +3331,9 @@ using grid_dist_id_devg = grid_dist_id<dim,St,T,Decomposition,Memory,devg>;
 #ifdef __NVCC__
 template<unsigned int dim, typename St, typename T, typename Memory = CudaMemory, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte> >
 using sgrid_dist_id_gpu = grid_dist_id<dim,St,T,Decomposition,Memory,SparseGridGpu<dim,T>>;
+
+template<unsigned int dim, typename St, typename T, typename Memory = CudaMemory, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte> >
+using grid_dist_id_gpu = grid_dist_id<dim,St,T,Decomposition,Memory,grid_gpu<dim,T>>;
 
 template<unsigned int dim, typename St, typename T, typename Memory = CudaMemory, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte> >
 using sgrid_dist_sid_gpu = grid_dist_id<dim,St,T,Decomposition,Memory,SparseGridGpu<dim,T,default_edge<dim>::type::value,default_edge<dim>::tb::value,int>>;

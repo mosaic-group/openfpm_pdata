@@ -8,6 +8,8 @@
 #ifndef GRID_DIST_ID_KERNELS_CUH_
 #define GRID_DIST_ID_KERNELS_CUH_
 
+#include "config.h"
+
 #ifdef CUDA_GPU
 
 template<unsigned int dim>
