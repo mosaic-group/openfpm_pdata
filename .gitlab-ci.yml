@@ -1,3 +1,4 @@
+
 centos_build:
   stage: build
   tags:
@@ -29,6 +30,8 @@ centos_run:
     - ./run.sh $CI_PROJECT_DIR unused 4 0 0 numerics
 
 mac_build:
+  variables:
+    GIT_STRATEGY: empty
   stage: build
   tags:
     - mac
