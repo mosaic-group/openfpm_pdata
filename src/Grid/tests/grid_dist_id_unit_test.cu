@@ -14,7 +14,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_gpu_test )
 {
 	// Test grid periodic
 
-	Box<3,float> domain({-1.0,-1.0,-1.0},{1.0,1.0,1.0});
+/*	Box<3,float> domain({-1.0,-1.0,-1.0},{1.0,1.0,1.0});
 
 	Vcluster<> & v_cl = create_vcluster();
 
@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_gpu_test )
 			        	data.template get<0>() = c + i*i + j*j + k*k;
 			        }
                     );
-                    
+  */                  
     
 }
 
