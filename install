@@ -460,7 +460,7 @@ fi
 ################ Parallel debugger #######################
 
 echo "Installing parallel debugger"
-install_gdbgui
+install_gdbgui $i_dir
 
 ###########################################################
 
