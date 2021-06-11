@@ -74,7 +74,7 @@ set(HDF5_PREFER_PARALLEL TRUE)
 set(Vc_DIR "${Vc_ROOT}/lib/cmake/Vc/")
 message("Searching Vc in ${Vc_DIR}")
 
-find_package(Boost 1.72.0 COMPONENTS unit_test_framework iostreams program_options system filesystem OPTIONAL_COMPONENTS fiber context)
+find_package(Boost 1.72.0 COMPONENTS unit_test_framework iostreams program_options system filesystem OPTIONAL_COMPONENTS fiber context thread)
 find_package(MPI)
 find_package(PETSc)
 find_package(HDF5)
@@ -90,8 +90,6 @@ find_package(SuiteSparse OPTIONAL_COMPONENTS UMFPACK)
 find_package(Vc)
 find_package(OpenMP)
 find_package(HIP)
-find_package(Boost REQUIRED COMPONENTS unit_test_framework filesystem system thread)
-
 set(CMAKE_SKIP_BUILD_RPATH TRUE)
 
 if(HIP_FOUND)
