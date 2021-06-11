@@ -2391,9 +2391,10 @@ public:
 	*/
 	void ghost_get_subset()
 	{
-    #ifdef SE_CLASS1
+    /*  #ifdef SE_CLASS1
+        This is not a ghost get on subset.
        std::cerr<<__FILE__<<":"<<__LINE__<<":You Used a ghost_get on a subset. This does not do anything. Please use ghostget on the entire set.";
-    #endif
+    #endif */
 	}
 
 	/*! \brief It synchronize the properties and position of the ghost particles
