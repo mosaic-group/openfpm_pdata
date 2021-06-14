@@ -90,7 +90,6 @@ find_package(SuiteSparse OPTIONAL_COMPONENTS UMFPACK)
 find_package(Vc)
 find_package(OpenMP)
 find_package(HIP)
-find_package(Boost REQUIRED COMPONENTS unit_test_framework filesystem system thread)
 
 set(CMAKE_SKIP_BUILD_RPATH TRUE)
 
