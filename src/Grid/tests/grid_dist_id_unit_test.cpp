@@ -99,15 +99,22 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter3D_test)
 
 		auto it = g_dist.getDomainIterator();
 
-		auto key = it.get();
+		if (it.isNext())
+		{
+			auto key = it.get();
+			auto gkey = it.getGKey(key);
 
-		auto pos = g_dist.getPos(key);
+			auto pos = g_dist.getPos(key);
 
-		BOOST_REQUIRE_CLOSE(pos.get(0),-0.3f,0.0001);
-		BOOST_REQUIRE_CLOSE(pos.get(1),-0.3f,0.0001);
-		BOOST_REQUIRE_CLOSE(pos.get(2),-0.3f,0.0001);
+			if (gkey.get(0) == 0 && gkey.get(1) == 0 && gkey.get(2) == 0)
+			{
+				BOOST_REQUIRE_CLOSE(pos.get(0),-0.3f,0.0001);
+				BOOST_REQUIRE_CLOSE(pos.get(1),-0.3f,0.0001);
+				BOOST_REQUIRE_CLOSE(pos.get(2),-0.3f,0.0001);
+			}
+		}
 
-		bool check = false;
+		int check = 0;
 
 		while (it.isNext())
 		{
@@ -119,13 +126,16 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter3D_test)
 				pos[1] >= 0.99999 && pos[1] <= 1.00001 &&
 				pos[2] >= 0.99999 && pos[2] <= 1.00001)
 			{
-				check = true;
+				check = 1;
 			}
 
 			++it;
 		}
 
-		BOOST_REQUIRE_EQUAL(check,true);
+		v_cl.max(check);
+		v_cl.execute();
+
+		BOOST_REQUIRE_EQUAL(check,1);
 	}
 }
 
