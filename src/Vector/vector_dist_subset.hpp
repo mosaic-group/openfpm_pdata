@@ -41,7 +41,7 @@ class vector_dist_ws : public vector_dist<dim,St,typename AggregateAppend<int,pr
     inline bool write_frame(std::string out, size_t iteration, int opt = VTK_WRITER)
     {
         auto &prop_names=this->getPropNames();
-        if(prop_names.size()<prop::max_prop+1){
+        if(prop_names.size()==prop::max_prop){
             prop_names.add({"SubsetNumber"});
         }
 
@@ -51,7 +51,7 @@ class vector_dist_ws : public vector_dist<dim,St,typename AggregateAppend<int,pr
     inline bool write(std::string out,int opt = VTK_WRITER)
     {
         auto &prop_names=this->getPropNames();
-        if(prop_names.size()<prop::max_prop+1){
+        if(prop_names.size()==prop::max_prop){
             prop_names.add({"SubsetNumber"});
         }
 
