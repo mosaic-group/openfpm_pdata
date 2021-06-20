@@ -1,8 +1,3 @@
-########################################################################
-# This file must not be overwritten neither by cmake, neither by Clion #
-# must remain exactly as it is                                         #
-########################################################################
-
 all:
 	$(MAKE) -C build $@
 
