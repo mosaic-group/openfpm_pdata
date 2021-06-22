@@ -210,7 +210,6 @@ add_definitions(-DSCAN_WITH_CUB)
 
 if (TEST_COVERAGE)
     target_link_libraries(pdata -lgcov --coverage)
-    target_link_libraries(pdata_full -lgcov --coverage)
 
     get_target_property(PDATA_SOURCES pdata SOURCES)
     get_target_property(MEM_SOURCES mem SOURCES)
@@ -242,6 +241,7 @@ if (TEST_COVERAGE)
     
     target_compile_definitions(pdata_full PUBLIC NO_INIT_AND_MAIN)
 
+    target_link_libraries(pdata_full -lgcov --coverage)
     target_link_libraries(pdata_full ${PDATA_LIBS})
     target_link_libraries(pdata_full ${NUMERIC_LIBS})
     target_include_directories(pdata_full PUBLIC ${PDATA_INCLUDES})
