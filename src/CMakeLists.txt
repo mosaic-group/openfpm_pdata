@@ -114,7 +114,6 @@ if ( CMAKE_COMPILER_IS_GNUCC )
 ######################################## Add mem tests ############################
 
         target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fprofile-arcs -ftest-coverage>)
-	target_compile_options(pdata_full PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fprofile-arcs -ftest-coverage>)
     endif()
 endif()
 
@@ -139,7 +138,6 @@ if (CUDA_FOUND)
 	target_include_directories (pdata PUBLIC ${MPI_C_INCLUDE_DIRS})
         if (TEST_COVERAGE)
 		target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler "-fprofile-arcs -ftest-coverage" >)
-		target_compile_options(pdata_full PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler "-fprofile-arcs -ftest-coverage" >)
         endif()
 endif()
 
@@ -240,6 +238,7 @@ if (TEST_COVERAGE)
     add_executable(pdata_full ${PDATA_FULL_SOURCES})
     
     target_compile_definitions(pdata_full PUBLIC NO_INIT_AND_MAIN)
+    target_compile_options(pdata_full PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fprofile-arcs -ftest-coverage>)
 
     target_link_libraries(pdata_full -lgcov --coverage)
     target_link_libraries(pdata_full ${PDATA_LIBS})
