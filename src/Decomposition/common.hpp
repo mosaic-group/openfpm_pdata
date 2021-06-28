@@ -126,7 +126,7 @@ struct Box_sub_k
 	//! Where this sub_domain live
 	comb<dim> cmb;
 
-	//! k \see getLocalGhostIBoxE
+	//! k \see getLocalIGhostE
 	long int k;
 
 	Box_sub_k()
@@ -137,21 +137,6 @@ struct Box_sub_k
 };
 
 template<unsigned int dim,typename T> using Box_map = aggregate<Box<dim,T>,long int>;
-
-/*template<unsigned int dim,typename T>
-struct Box_map
-{
-	typedef boost::fusion::vector<Box<dim,T>,long int> type;
-
-	type data;
-
-	static bool noPointers()
-	{
-		return true;
-	}
-
-	static const unsigned int max_prop = 2;
-};*/
 
 //! Case for local ghost box
 template<unsigned int dim, typename T>
