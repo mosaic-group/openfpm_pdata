@@ -63,7 +63,6 @@ if ( HIP_ENABLE AND HIP_FOUND )
 							  Decomposition/tests/shift_vect_converter_tests.cpp
 							  Vector/performance/vector_dist_performance_util.cpp
 							  lib/pdata.cpp 
-							  test_multiple_o.cpp
 							  )
 							  
 
@@ -90,7 +89,7 @@ else()
 							  Decomposition/tests/CartDecomposition_unit_test.cpp 
 							  Decomposition/tests/shift_vect_converter_tests.cpp 
 							  Vector/performance/vector_dist_performance_util.cpp  
-							  lib/pdata.cpp test_multiple_o.cpp)
+							  lib/pdata.cpp)
 
 	add_library(ofpm_pdata STATIC lib/pdata.cpp)
 	add_library(ofpm_pdata_python SHARED lib/pdata_python.cpp)
@@ -239,6 +238,7 @@ if (TEST_COVERAGE)
     
     target_compile_definitions(pdata_full PUBLIC NO_INIT_AND_MAIN)
     target_compile_options(pdata_full PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fprofile-arcs -ftest-coverage>)
+    target_link_options(pdata_full PUBLIC -fprofile-arcs -ftest-coverage)
 
     target_link_libraries(pdata_full -lgcov --coverage)
     target_link_libraries(pdata_full ${PDATA_LIBS})
