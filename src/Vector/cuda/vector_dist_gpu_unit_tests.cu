@@ -1234,7 +1234,7 @@ void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 			++it;
 		}
 
-		//Back to GPU
+		// Back to GPU
 		vd.hostToDevicePos();
 		vd.map(RUN_ON_DEVICE);
 		vd.template Ighost_get<0>(RUN_ON_DEVICE);

@@ -240,6 +240,13 @@ if (TEST_COVERAGE)
     target_compile_options(pdata_full PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fprofile-arcs -ftest-coverage>)
     target_link_options(pdata_full PUBLIC -fprofile-arcs -ftest-coverage)
 
+    target_link_options(pdata_full PUBLIC -fprofile-arcs -ftest-coverage)
+
+    if (ENABLE_ASAN)
+        target_compile_options(pdata_full PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler "-fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g" >)
+        target_compile_options(pdata_full PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g >)
+    endif()
+
     target_link_libraries(pdata_full -lgcov --coverage)
     target_link_libraries(pdata_full ${PDATA_LIBS})
     target_link_libraries(pdata_full ${NUMERIC_LIBS})
