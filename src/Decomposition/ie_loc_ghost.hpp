@@ -350,9 +350,9 @@ public:
 		return loc_ghost_box;
 	}
 
-	/*! \brief Get the number of local sub-domains
+	/*! \brief Get the number of local ghost boxes
 	 *
-	 * \return the number of local sub-domains
+	 * \return the number of local ghost boxes
 	 *
 	 *
 	 */
@@ -385,7 +385,7 @@ public:
 		return loc_ghost_box.get(id).ibx.size();
 	}
 
-	/*! \brief For the sub-domain i intersected with a surrounding sub-domain enlarged. Produce a internal ghost box from
+	/*! \brief For the sub-domain i intersected with a surrounding sub-domain enlarged j. Produce a internal ghost box from
 	 *        the prospecive of i and an associated external ghost box from the prospective of j.
 	 *        In order to retrieve the information about the external ghost box we have to use getLocalEGhostBox(x,k).
 	 *        where k is the value returned by getLocalIGhostE(i,j) and x is the value returned by

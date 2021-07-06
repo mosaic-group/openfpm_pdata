@@ -259,7 +259,9 @@ template<unsigned int dim,
          typename prop,
          typename Decomposition = CartDecomposition<dim,St>,
          typename Memory = HeapMemory,
-         template<typename> class layout_base = memory_traits_lin>
+         template<typename> class layout_base = memory_traits_lin,
+		 typename vector_dist_pos = openfpm::vector<Point<dim, St>,Memory,layout_base>,
+		 typename vector_dist_prop = openfpm::vector<prop,Memory,layout_base> >
 class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>,
 #ifdef CUDA_GPU
 					private vector_dist_ker_list<vector_dist_ker<dim,St,prop,layout_base>>
@@ -280,17 +282,17 @@ private:
 
 	//! Particle position vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector<Point<dim, St>,Memory,layout_base> v_pos;
+	vector_dist_pos v_pos;
 
 	//! Particle properties vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	openfpm::vector<prop,Memory,layout_base> v_prp;
+	vector_dist_prop v_prp;
 
 	//! reordered v_pos buffer
-	openfpm::vector<prop,Memory,layout_base> v_prp_out;
+	vector_dist_prop v_prp_out;
 
 	//! reordered v_prp buffer
-	openfpm::vector<Point<dim, St>,Memory,layout_base> v_pos_out;
+	vector_dist_pos v_pos_out;
 
 	//! option used to create this vector
 	size_t opt = 0;
@@ -2606,8 +2608,8 @@ public:
 		if ((opt & 0x0FFF0000) == CSV_WRITER)
 		{
 			// CSVWriter test
-			CSVWriter<openfpm::vector<Point<dim, St>,Memory,layout_base>,
-			          openfpm::vector<prop,Memory,layout_base> > csv_writer;
+			CSVWriter<vector_dist_pos,
+			          vector_dist_prop > csv_writer;
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".csv"));
 
@@ -2622,8 +2624,8 @@ public:
 				ft = file_type::BINARY;
 
 			// VTKWriter for a set of points
-			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim, St>,Memory,layout_base>,
-									   openfpm::vector<prop,Memory,layout_base>>,
+			VTKWriter<boost::mpl::pair<vector_dist_pos,
+									   vector_dist_prop>,
 			                           VECTOR_POINTS> vtk_writer;
 			vtk_writer.add(v_pos,v_prp,g_m);
 
@@ -2699,8 +2701,8 @@ public:
 		if ((opt & 0x0FFF0000) == CSV_WRITER)
 		{
 			// CSVWriter test
-			CSVWriter<openfpm::vector<Point<dim, St>,Memory,layout_base>,
-					  openfpm::vector<prop,Memory,layout_base> > csv_writer;
+			CSVWriter<vector_dist_pos,
+					  vector_dist_prop > csv_writer;
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".csv"));
 
@@ -2715,8 +2717,8 @@ public:
 				ft = file_type::BINARY;
 
 			// VTKWriter for a set of points
-			VTKWriter<boost::mpl::pair<openfpm::vector<Point<dim, St>,Memory,layout_base>,
-									   openfpm::vector<prop,Memory,layout_base>>, VECTOR_POINTS> vtk_writer;
+			VTKWriter<boost::mpl::pair<vector_dist_pos,
+									   vector_dist_prop>, VECTOR_POINTS> vtk_writer;
 			vtk_writer.add(v_pos,v_prp,g_m);
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtk"));
@@ -2785,7 +2787,7 @@ public:
 	 * \return the particle position vector
 	 *
 	 */
-	const openfpm::vector<Point<dim, St>,Memory,layout_base> & getPosVector() const
+	const vector_dist_pos & getPosVector() const
 	{
 		return v_pos;
 	}
@@ -2795,7 +2797,7 @@ public:
 	 * \return the particle position vector
 	 *
 	 */
-	openfpm::vector<Point<dim, St>,Memory,layout_base> & getPosVector()
+	vector_dist_pos & getPosVector()
 	{
 		return v_pos;
 	}
@@ -2805,7 +2807,7 @@ public:
 	 * \return the particle property vector
 	 *
 	 */
-	const openfpm::vector<prop,Memory,layout_base> & getPropVector() const
+	const vector_dist_prop & getPropVector() const
 	{
 		return v_prp;
 	}
@@ -2815,7 +2817,7 @@ public:
 	 * \return the particle property vector
 	 *
 	 */
-	openfpm::vector<prop,Memory,layout_base> & getPropVector()
+	vector_dist_prop & getPropVector()
 	{
 		return v_prp;
 	}
@@ -2825,7 +2827,7 @@ public:
 	 * \return the particle position vector
 	 *
 	 */
-	const openfpm::vector<Point<dim, St>,Memory,layout_base> & getPosVectorSort() const
+	const vector_dist_pos & getPosVectorSort() const
 	{
 		return v_pos_out;
 	}
@@ -2835,7 +2837,7 @@ public:
 	 * \return the particle position vector
 	 *
 	 */
-	openfpm::vector<Point<dim, St>,Memory,layout_base> & getPosVectorSort()
+	vector_dist_pos & getPosVectorSort()
 	{
 		return v_pos_out;
 	}
@@ -2845,7 +2847,7 @@ public:
 	 * \return the particle property vector
 	 *
 	 */
-	const openfpm::vector<prop,Memory,layout_base> & getPropVectorSort() const
+	const vector_dist_prop & getPropVectorSort() const
 	{
 		return v_prp_out;
 	}
@@ -2855,7 +2857,7 @@ public:
 	 * \return the particle property vector
 	 *
 	 */
-	openfpm::vector<prop,Memory,layout_base> & getPropVectorSort()
+	vector_dist_prop & getPropVectorSort()
 	{
 		return v_prp_out;
 	}

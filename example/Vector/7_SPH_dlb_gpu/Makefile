@@ -8,7 +8,7 @@ CUDA_CC_LINK=
 CC=mpic++
 ifdef HIP
         CUDA_CC=hipcc
-        CUDA_OPTIONS=-D__NVCC__ -D__HIP__ -DCUDART_VERSION=11000 -D__CUDACC__ -D__CUDACC_VER_MAJOR__=11 -D__CUDACC_VER_MINOR__=0 -D__CUDACC_VER_BUILD__=0
+        CUDA_OPTIONS= -D__NVCC__ -D__HIP__ -DCUDART_VERSION=11000 -D__CUDACC__ -D__CUDACC_VER_MAJOR__=11 -D__CUDACC_VER_MINOR__=0 -D__CUDACC_VER_BUILD__=0
         LIBS_SELECT=$(LIBS)
         CC=hipcc
 	CUDA_CC_LINK=hipcc
@@ -44,7 +44,7 @@ sph_dlb_test: OPT += -DTEST_RUN
 sph_dlb_test: sph_dlb
 
 %.o: %.cu
-	$(CUDA_CC) $(CUDA_OPTIONS) -O3 $(OPT) -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH_NVCC)
+	$(CUDA_CC) $(CUDA_OPTIONS) $(OPT) -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH_NVCC)
 
 %.o: %.cpp
 	$(CC) -O3 $(OPT) -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
