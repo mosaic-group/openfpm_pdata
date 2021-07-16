@@ -15,13 +15,12 @@
 #include "level_set/closest_point/closest_point.hpp"
 
 constexpr int SIM_DIM = 3;
-constexpr int POLY_ORDER = 4; // Note: only even degrees do the redistancing correctly now.
-constexpr int SIM_GRID_SIZE = 128;
+constexpr int POLY_ORDER = 5;
+constexpr int SIM_GRID_SIZE = 64;
 constexpr double PI = 3.141592653589793;
 
 // Fields - phi, cp
 using GridDist = grid_dist_id<SIM_DIM,double,aggregate<double,double[3]>>;
-using GridKey = grid_dist_key_dx<SIM_DIM>;
 
 // Grid size on each dimension
 const long int sz[SIM_DIM] = {SIM_GRID_SIZE, SIM_GRID_SIZE, SIM_GRID_SIZE};
@@ -52,21 +51,19 @@ typedef struct EllipseParameters{
 } EllipseParams;
 
 // Generate the initial +1, -1 field on a sphere
-template<typename GridType, typename DomainType, const unsigned int phi_field>
-void initializeColourFunc(GridType &gd, const DomainType &domain,  const EllipseParams &params)
+template<const unsigned int phi_field, typename grid_type>
+void initializeColourFunc(grid_type &gd, const EllipseParams &params)
 {
-    auto it = gd.getDomainIterator();
-    double dx = gd.getSpacing()[0];
-    double dy = gd.getSpacing()[1];
-    double dz = gd.getSpacing()[2];
+    // Note: Since we use a Non-periodic boundary, ghost_get does not update ghost layers of sim box.
+    // Therefore we are initializing the ghost layer with non-zero values.
+    auto it = gd.getDomainGhostIterator();
     while(it.isNext())
     {
         auto key = it.get();
-        auto key_g = gd.getGKey(key);
-        
-        double posx = key_g.get(0)*dx + domain.getLow(0);
-        double posy = key_g.get(1)*dy + domain.getLow(1);
-        double posz = key_g.get(2)*dz + domain.getLow(2);
+        Point<grid_type::dims, double> coords = gd.getPos(key);
+        double posx = coords.get(x) + domain.getLow(x);
+        double posy = coords.get(y) + domain.getLow(y);
+        double posz = coords.get(z) + domain.getLow(z);
         
         double phi_val = 1.0 - sqrt(((posx - params.origin[0])/params.radiusA)*((posx - params.origin[0])/params.radiusA) + ((posy - params.origin[1])/params.radiusB)*((posy - params.origin[1])/params.radiusB) + ((posz - params.origin[2])/params.radiusC)*((posz - params.origin[2])/params.radiusC));
         gd.template get<phi_field>(key) = (phi_val<0)?-1.0:1.0;
@@ -81,23 +78,17 @@ void estimateErrorInReinit(GridDist &gd, EllipseParams &params)
 
 
     auto it = gd.getDomainIterator();
-    double dx = gd.getSpacing()[0];
-    double dy = gd.getSpacing()[1];
-    double dz = gd.getSpacing()[2];
     while(it.isNext())
     {
         auto key = it.get();
-        auto key_g = gd.getGKey(key);
-        
-        double posx = key_g.get(0)*dx + domain.getLow(0);
-        double posy = key_g.get(1)*dy + domain.getLow(1);
-        double posz = key_g.get(2)*dz + domain.getLow(2);
-        
+        Point<GridDist::dims, double> coords = gd.getPos(key);
+        double posx = coords.get(0) + domain.getLow(x);
+        double posy = coords.get(1) + domain.getLow(y);
+        double posz = coords.get(2) + domain.getLow(z);
+
         double exact_phi_val = 1.0 - sqrt(((posx - params.origin[0])/params.radiusA)*((posx - params.origin[0])/params.radiusA) + ((posy - params.origin[1])/params.radiusB)*((posy - params.origin[1])/params.radiusB) + ((posz - params.origin[2])/params.radiusC)*((posz - params.origin[2])/params.radiusC));
         
         double phi_err = std::abs(exact_phi_val - gd.template get<phi>(key)); // / std::abs(exact_phi);
-               
-        // std::cout<<exact_phi_val<<", "<<gd.template get<phi>(key)<<std::endl;
 
         if(phi_err > max_phi_err)
             max_phi_err = phi_err;
@@ -125,9 +116,6 @@ int main(int argc, char* argv[])
     openfpm::vector < std::string > prop_names;
     prop_names.add("ls_phi");
     prop_names.add("closest_point");
-    prop_names.add("mean_curvature");
-    prop_names.add("gauss_curvature");
-    prop_names.add("laplacian");
     gdist.setPropNames(prop_names);
 
     EllipseParams params;
@@ -138,7 +126,7 @@ int main(int argc, char* argv[])
     params.radiusB = 1.0;
     params.radiusC = 1.0;
 
-    initializeColourFunc<GridDist, Box<SIM_DIM,double>, phi>(gdist, domain, params);
+    initializeColourFunc<phi>(gdist, params);
     nb_gamma = narrow_band_half_width * gdist.spacing(0);
 
     gdist.template ghost_get<phi>();
@@ -160,11 +148,11 @@ int main(int argc, char* argv[])
 
     // gdist.write_frame("output", 0);
 
-    estimateClosestPoint<GridDist, GridKey, POLY_ORDER, phi, cp>(gdist, 3.0);
+    estimateClosestPoint<phi, cp, POLY_ORDER>(gdist, 3.0);
     gdist.template ghost_get<cp>();
 
     // Redistance Levelset
-    reinitializeLS<GridDist, GridKey, POLY_ORDER, phi, cp>(gdist, 4.0);
+    reinitializeLS<phi, cp, POLY_ORDER>(gdist, 3.0);
     gdist.template ghost_get<phi>();
 
     estimateErrorInReinit(gdist, params);
