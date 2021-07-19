@@ -43,6 +43,7 @@ set(ENABLE_GARBAGE_INJECTOR CACHE BOOL "Enable the injector of garbage in the me
 set(ENABLE_VCLUSTER_GARBAGE_INJECTOR CACHE BOOL "Enable the injector of garbage in the vcluster memory buffers")
 set(HIP_ENABLE CACHE BOOL "Enable HIP compiler")
 set(AMD_ARCH_COMPILE "gfx900" CACHE STRING "AMD gpu architecture used to compile kernels")
+set(CONDUIT_DIR CACHE STRING "Where is located conduit")
 
 # Enabling real GPU is stronger than using CUDA_ON_CPU
 if (ENABLE_GPU)
@@ -88,6 +89,10 @@ find_package(SuiteSparse OPTIONAL_COMPONENTS UMFPACK)
 find_package(Vc)
 find_package(OpenMP)
 find_package(HIP)
+find_package(PythonLibs)
+find_package(Conduit REQUIRED
+             NO_DEFAULT_PATH
+             PATHS ${CONDUIT_DIR}/lib/cmake/conduit)
 
 set(CMAKE_SKIP_BUILD_RPATH TRUE)
 

@@ -3325,6 +3325,9 @@ using sgrid_dist_id = grid_dist_id<dim,St,T,Decomposition,Memory,sgrid_cpu<dim,T
 template<unsigned int dim, typename St, typename T, typename Memory = HeapMemory, typename Decomposition = CartDecomposition<dim,St>>
 using sgrid_dist_soa = grid_dist_id<dim,St,T,Decomposition,Memory,sgrid_soa<dim,T,Memory>>;
 
+template<unsigned int dim, typename St, typename T, typename Memory = HeapMemory, typename Decomposition = CartDecomposition<dim,St>>
+using grid_dist_soa = grid_dist_id<dim,St,T,Decomposition,Memory,grid_soa<dim,T,Memory>>;
+
 template<unsigned int dim, typename St, typename T, typename devg, typename Memory = HeapMemory, typename Decomposition = CartDecomposition<dim,St>>
 using grid_dist_id_devg = grid_dist_id<dim,St,T,Decomposition,Memory,devg>;
 
