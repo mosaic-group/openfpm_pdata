@@ -224,7 +224,7 @@ echo -e "Installing requirements into: $i_dir "
 
 if [ ! -d "$i_dir/PETSC" -o ! -f "$i_dir/PETSC/include/petsc.h" -o ! -d "$i_dir/EIGEN" ]; then
     echo -e "\033[1;34m Optional packages  \033[0m"
-    echo -e "\033[1mDo you want to install linear algebra packages ?(y/n)\033[0m"
+    echo -e "\033[1mDo you want to install linear algebra packages and extended Level-set functionalities ?(y/n)\033[0m"
     if [ $sq -eq 0 ]; then
       read inst_lin_alg
     else
@@ -295,9 +295,6 @@ configure_options=" $configure_options --with-parmetis=$i_dir/PARMETIS "
 
 ./script/install_Metis.sh $i_dir $CC $CXX $ncore
 configure_options=" $configure_options --with-metis=$i_dir/METIS "
-
-./script/install_blitz_algoim.sh $i_dir $ncore
-configure_options=" $configure_options --with-blitz=$i_dir/BLITZ --with-algoim=$i_dir/ALGOIM "
 
 if [ x"$gpu_support" == x"1" ]; then
 	configure_options=" $configure_options --enable-gpu "
@@ -407,6 +404,8 @@ else
     if [ x"$inst_lin_alg" == x"y" ]; then
         CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_EIGEN.sh $i_dir $ncore
         CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_PETSC.sh $i_dir $ncore $CC $CXX $F77 $FC
+	./script/install_blitz_algoim.sh $i_dir $ncore
+	configure_options=" $configure_options --with-blitz=$i_dir/BLITZ --with-algoim=$i_dir/ALGOIM "
     fi
 
     ### collect PETSC configuration options
