@@ -1,3 +1,19 @@
+# Installation #
+################
+boost*
+cuda_on_cpu
+dependencies_dir
+foward_options
+hdf5*
+hip_enabled
+libhilbert-master*
+metis-*
+optional_boost_libs
+parmetis-*
+Vc-*
+zlib-*
+src/cmake/openfpmConfigVars-configure.cmake
+
 # Compiled source #
 ###################
 *.com
