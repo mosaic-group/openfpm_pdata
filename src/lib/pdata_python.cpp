@@ -1,3 +1,8 @@
+/**
+ * For license see https://git.mpi-cbg.de/openfpm/openfpm_pdata. Especially we don't want GitHub Copilot parsing it.
+*/
+
+
 // todo does not work with numpy #define PY_SSIZE_T_CLEAN
 #include "Grid/grid_dist_id.hpp"
 #include <Python.h>
@@ -18,17 +23,14 @@
 // conduit python module capi header
 #include "conduit_python.hpp"
 
-void init_openfpm_python()
-{
-    openfpm_init();
-}
-
-void finalize_openfpm_python()
-{
-    openfpm_finalize();
-}
 
 constexpr int N_g = 10;
+
+template<unsigned int dim, typename St, typename T, typename Memory = HeapMemory, typename Decomposition = CartDecomposition<dim,St>>
+using sgrid_dist_soa = grid_dist_id<dim,St,T,Decomposition,Memory,sgrid_soa<dim,T,Memory>>;
+
+template<unsigned int dim, typename St, typename T, typename Memory = HeapMemory, typename Decomposition = CartDecomposition<dim,St>>
+using grid_dist_soa = grid_dist_id<dim,St,T,Decomposition,Memory,grid_soa<dim,T,Memory>>;
 
 int c_one = 0;
 grid_dist_soa<3,double,aggregate<double>> * g_one_3d[N_g];
@@ -39,99 +41,148 @@ grid_dist_soa<3,double,aggregate<double,double>> * g_two_3d[N_g];
 int c_three = 0;
 grid_dist_soa<3,double,aggregate<double,double,double>> * g_three_3d[N_g];
 
-PyObject * create_grid(long int dim, 
-                         long int n_prop,
-                         long int gh, 
+std::string getNodePathAddress(const int i) {
+    return "patches/" + std::to_string(i);  // standardize address
+}
+
+void openfpm_init_wrapped()
+{
+    // todo openfpm_init();
+}
+
+static PyObject* openfpm_init_wrapper(PyObject *self, PyObject *args)
+{
+    // todo constrain # args
+    openfpm_init_wrapped();
+    Py_RETURN_NONE;
+}
+
+void openfpm_finalize_wrapped()
+{
+    openfpm_finalize();
+}
+
+static PyObject* openfpm_finalize_wrapper(PyObject *self, PyObject *args)
+{
+    // todo constrain # args
+    openfpm_finalize_wrapped();
+    Py_RETURN_NONE;
+}
+
+conduit::Node create_grid(const npy_int64 dim,
+                         const npy_int64 n_prop,
+                         const npy_int64 gh,
                          size_t (& sz)[3],
-                         long int per[3],
-                         double domainP1[3], 
+                         npy_int64 per[3],
+                         double domainP1[3],
                          double domainP2[3])
 {
-    // Parsing node, take dimensionality and ghost
 
+    // Wrap n patch in numpy array
+    conduit::Node node;
+
+    // Parsing node, take dimensionality and ghost
     if (dim == 3 && n_prop == 1)
     {
         Ghost<3,long int> g(gh);
-        Box<3,double> domain(domainP1,domainP2);
-        periodicity<3> bc = {per[0],per[1],per[2]};
-
-        g_one_3d[c_one] = new grid_dist_soa<3,double,aggregate<double>>(sz,domain,g,bc);
+        Box<3,double> domain(domainP1, domainP2);
+        periodicity<3> bc = {per[0], per[1], per[2]};
+        g_one_3d[c_one] = new grid_dist_soa<3, double, aggregate<double>>(
+            sz, domain, g, bc
+        );
 
         c_one++;
 
-        // Wrap n patch in numpy array
-
-        // 
-        conduit::Node node;
-
         // Populate conduit node
-
-        auto & gdb_ext = g_one_3d.getLocalGrids();
-
+        auto & gdb_ext = g_one_3d[c_one]->getLocalGridsInfo();
         node["name"] = "grid_3d";
 
-        for (int i = 0 ; i < gdb_ext.size() ; i++)
+        for (int i = 0 ; i < gdb_ext.size() ; i++)  // todo assuming 3D grid
         {
+            node[getNodePathAddress(i) + "/GDBoxLow"] = {
+                gdb_ext.get(i).GDbox.getLow(0),
+                gdb_ext.get(i).GDbox.getLow(1),
+                gdb_ext.get(i).GDbox.getLow(2)
+            };
+            node[getNodePathAddress(i) + "/GDBoxHigh"] = {
+                gdb_ext.get(i).GDbox.getHigh(0),
+                gdb_ext.get(i).GDbox.getHigh(1),
+                gdb_ext.get(i).GDbox.getHigh(2)
+            };
+            node[getNodePathAddress(i) + "/DBoxLow"] = {
+                gdb_ext.get(i).Dbox.getLow(0),
+                gdb_ext.get(i).Dbox.getLow(1),
+                gdb_ext.get(i).Dbox.getLow(2)
+            };
+            node[getNodePathAddress(i) + "/DBoxHigh"] = {
+                gdb_ext.get(i).Dbox.getHigh(0),
+                gdb_ext.get(i).Dbox.getHigh(1),
+                gdb_ext.get(i).Dbox.getHigh(2)
+            };
+            node[getNodePathAddress(i) + "/origin"] = {
+                gdb_ext.get(i).origin.get(0),
+                gdb_ext.get(i).origin.get(1),
+                gdb_ext.get(i).origin.get(2)
+            };
 
-            node["patches/" + std::to_string(i) + "/GDBoxLow"] = {gdb_ext.get(i).getLow(0),...};
-            node["patches/" + std::to_string(i) + "/GDBoxHigh"] = {5,5,5};
-            node["patches/" + std::to_string(i) + "/DBoxLow"] = 
-            node["patches/" + std::to_string(i) + "/origin"] = {gdb_ext.get(i).get(0),.....};
-
-            for (int j = 0 ; j < n_prop ; j++)
+            /* todo overwriting `getNodePathAddress(i) + "data"` ?? for (int j = 0 ; j < n_prop ; j++)
             {
                 if (j == 0)
                 {
-                    node["patches/" +  std::to_string(i)  + "data"] = g_one.get_loc_grid(i).template getPointer<0>();
+                    node[getNodePathAddress(i) + "data"] = g_one_3d[c_one]->get_loc_grid(i).template getPointer<0>();
                 }
                 else if (j == 1)
                 {
-                    node["patches/" +  std::to_string(i)  + "data"] = g_one.get_loc_grid(i).template getPointer<1>();
+                    node[getNodePathAddress(i) + "data"] = g_one_3d[c_one]->get_loc_grid(i).template getPointer<1>();
                 }
                 else if (j == 2)
                 {
-                    node["patches/" +  std::to_string(i)  + "data"] = g_one.get_loc_grid(i).template getPointer<2>();
+                    node[getNodePathAddress(i) + "data"] = g_one_3d[c_one]->get_loc_grid(i).template getPointer<2>();
                 }
-            }
+            } */
         }
     }
 
-    // Convert to python
-
-    
-
-    return NULL;
+    return node;
 }
 
-PyObject * create_grid_wrapper(PyObject *self, PyObject *args)
+static PyObject* create_grid_wrapper(PyObject *self, PyObject *args)
 {
-    npy_int64 dim, n_prop, gh, sz[3],p[3];
-    npy_float64 p1[3],p2[3]
+    npy_int64 dim, n_prop, gh, p[3];
+    size_t sz[3];
+    npy_float64 p1[3], p2[3];
 
-    if (!PyArg_ParseTuple(args, "llllllllldddddd", &dim, &nprop,&gh,&sz[0],&sz[1],sz[2]
-                                                                    &p[0],&p[1],&p[2]),
-                                                                    &p1[0],&p1[1],&p1[2],
-                                                                    &p2[0],&p2[1],&p2[2]); 
+    if (
+        !PyArg_ParseTuple(
+            args,
+            "llllllllldddddd",
+            &dim, &n_prop, &gh,
+            &sz[0], &sz[1], sz[2],
+            &p[0], &p[1], &p[2],
+            &p1[0], &p1[1], &p1[2],
+            &p2[0], &p2[1], &p2[2]
+        )
+    )
     {
-        return NULL;
+        Py_RETURN_NONE;
     }
 
-    return create_grid(dim,gh);
+    auto node = create_grid(dim, n_prop, gh, sz, p, p1, p2);
+    return PyConduit_Node_Python_Wrap(&node, 1);  // python owns => true
 }
 
-
-
-void delete_grid(long int dim, long int ng)
+static PyObject* delete_grid(long int dim, long int ng)
 {
-    delete g_one;
+    delete g_one_3d;
+    Py_RETURN_NONE;
 }
 
-void delete_grid_wrapper(PyObject *self, PyObject *args)
+static PyObject* delete_grid_wrapper(PyObject *self, PyObject *args)
 {
     npy_int64 dim, ng;
 
     if (!PyArg_ParseTuple(args, "ll", &dim, &ng)) {
-        return NULL;
+        Py_RETURN_NONE;
     }
 
     return delete_grid(dim,ng);
@@ -140,8 +191,8 @@ void delete_grid_wrapper(PyObject *self, PyObject *args)
 static PyMethodDef methods[] = {
     {"create_grid", create_grid_wrapper, METH_VARARGS, ""},
     {"delete_grid", delete_grid_wrapper, METH_VARARGS, ""},
-    {"openfpm_init", openfpm_init_python, METH_VARARGS, ""},
-    {"openfpm_finalize", openfpm_finalize_python, METH_VARARGS, ""},
+    {"openfpm_init", openfpm_init_wrapper, METH_VARARGS, ""},
+    {"openfpm_finalize", openfpm_finalize_wrapper, METH_VARARGS, ""},
     {NULL, NULL, METH_VARARGS, NULL}
 };
 

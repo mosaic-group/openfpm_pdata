@@ -92,7 +92,7 @@ find_package(HIP)
 find_package(PythonLibs)
 find_package(Conduit REQUIRED
              NO_DEFAULT_PATH
-             PATHS ${CONDUIT_DIR}/lib/cmake/conduit)
+             PATHS /home/stefano/Work/MPI/OpenFPM/pyport/conduit/install-debug/lib/cmake/conduit)
 
 set(CMAKE_SKIP_BUILD_RPATH TRUE)
 
