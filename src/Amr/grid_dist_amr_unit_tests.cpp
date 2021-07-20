@@ -56,6 +56,14 @@ void Test3D_amr_create_levels(grid_amr & amr_g, Box<3,float> & domain, size_t co
 
 			amr_g.template insert<0>(akey) = 3.0;
 
+			amr_g.template insert<1>(akey)[0] = 3.0;
+			amr_g.template insert<1>(akey)[1] = 3.0;
+			amr_g.template insert<1>(akey)[2] = 3.0;
+
+			amr_g.template insert<2>(akey)[0] = 3;
+			amr_g.template insert<2>(akey)[1] = 3;
+			amr_g.template insert<2>(akey)[2] = 3;
+
 			count++;
 
 			++it;
@@ -831,11 +839,11 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_test )
 	k = std::pow(k, 1/3.);
 
 	Ghost<3,long int> g(0);
-	grid_dist_amr<3,float,aggregate<float>> amr_g(domain3,g);
+	grid_dist_amr<3,float,aggregate<float,float[3],int[3]>> amr_g(domain3,g);
 
 	Test3D_amr_create_levels(amr_g,domain3,k,4);
 
-	sgrid_dist_amr<3,float,aggregate<float>> amr_g2(domain3,g);
+	sgrid_dist_amr<3,float,aggregate<float,float[3],int[3]>> amr_g2(domain3,g);
 
 	Test3D_amr_create_levels(amr_g2,domain3,k,4);
 }

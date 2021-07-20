@@ -2283,7 +2283,7 @@ public:
 
 		for (int i = 0 ; i < dim ; i++)
 		{
-			p.get(i) = (gdb_ext.get(v1.getSub()).origin.get(i) + v1.getKeyRef().get(i)) * this->spacing(i);
+			p.get(i) = (gdb_ext.get(v1.getSub()).origin.get(i) + v1.getKeyRef().get(i)) * this->spacing(i) + domain.getLow(i);
 		}
 
 		return p;

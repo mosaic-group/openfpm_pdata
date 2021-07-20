@@ -322,7 +322,7 @@ int main(int argc, char* argv[])
 	// Minimum is 1 property, to which the Phi_SDF can be written
 	// In this example we chose 3 properties. The 1st for the Phi_SDF, the 2nd for the gradient of phi and the 3rd for
 	// the magnitude of the gradient
-	typedef aggregate<double, double[grid_dim], double> props_nb;
+	typedef aggregate<double, Point<grid_dim, double>, double> props_nb;
 	typedef vector_dist<grid_dim, double, props_nb> vd_type;
 	Ghost<grid_dim, double> ghost_vd(0);
 	vd_type vd_narrow_band(0, box, bc, ghost_vd);
