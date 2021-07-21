@@ -52,7 +52,7 @@ typedef struct EllipseParameters{
 
 // Generate the initial +1, -1 field on a sphere
 template<const unsigned int phi_field, typename grid_type>
-void initializeColourFunc(grid_type &gd, const EllipseParams &params)
+void initializeIndicatorFunc(grid_type &gd, const EllipseParams &params)
 {
     // Note: Since we use a Non-periodic boundary, ghost_get does not update ghost layers of sim box.
     // Therefore we are initializing the ghost layer with non-zero values.
@@ -61,9 +61,9 @@ void initializeColourFunc(grid_type &gd, const EllipseParams &params)
     {
         auto key = it.get();
         Point<grid_type::dims, double> coords = gd.getPos(key);
-        double posx = coords.get(x) + domain.getLow(x);
-        double posy = coords.get(y) + domain.getLow(y);
-        double posz = coords.get(z) + domain.getLow(z);
+        double posx = coords.get(x);
+        double posy = coords.get(y);
+        double posz = coords.get(z);
         
         double phi_val = 1.0 - sqrt(((posx - params.origin[0])/params.radiusA)*((posx - params.origin[0])/params.radiusA) + ((posy - params.origin[1])/params.radiusB)*((posy - params.origin[1])/params.radiusB) + ((posz - params.origin[2])/params.radiusC)*((posz - params.origin[2])/params.radiusC));
         gd.template get<phi_field>(key) = (phi_val<0)?-1.0:1.0;
@@ -75,16 +75,17 @@ void initializeColourFunc(grid_type &gd, const EllipseParams &params)
 void estimateErrorInReinit(GridDist &gd, EllipseParams &params)
 {
     double max_phi_err = -1.0;
-
+    // Update the ls_phi field in ghosts
+    gd.template ghost_get<phi>(KEEP_PROPERTIES);
 
     auto it = gd.getDomainIterator();
     while(it.isNext())
     {
         auto key = it.get();
         Point<GridDist::dims, double> coords = gd.getPos(key);
-        double posx = coords.get(0) + domain.getLow(x);
-        double posy = coords.get(1) + domain.getLow(y);
-        double posz = coords.get(2) + domain.getLow(z);
+        double posx = coords.get(0);
+        double posy = coords.get(1);
+        double posz = coords.get(2);
 
         double exact_phi_val = 1.0 - sqrt(((posx - params.origin[0])/params.radiusA)*((posx - params.origin[0])/params.radiusA) + ((posy - params.origin[1])/params.radiusB)*((posy - params.origin[1])/params.radiusB) + ((posz - params.origin[2])/params.radiusC)*((posz - params.origin[2])/params.radiusC));
         
@@ -126,35 +127,21 @@ int main(int argc, char* argv[])
     params.radiusB = 1.0;
     params.radiusC = 1.0;
 
-    initializeColourFunc<phi>(gdist, params);
+    initializeIndicatorFunc<phi>(gdist, params);
     nb_gamma = narrow_band_half_width * gdist.spacing(0);
-
-    gdist.template ghost_get<phi>();
-
-    auto &patches = gdist.getLocalGridsInfo();
-
-    for(int i = 0; i < patches.size();i++)
-    {
-        double max_x = patches.get(i).Dbox.getHigh(x) + patches.get(i).origin[x];
-        double min_x = patches.get(i).Dbox.getLow(x) + patches.get(i).origin[x];
-        double max_y = patches.get(i).Dbox.getHigh(y) + patches.get(i).origin[y];
-        double min_y = patches.get(i).Dbox.getLow(y) + patches.get(i).origin[y];
-        double max_z = patches.get(i).Dbox.getHigh(z) + patches.get(i).origin[z];
-        double min_z = patches.get(i).Dbox.getLow(z) + patches.get(i).origin[z];
-        std::cout<<"In processor "<<v_cl.getProcessUnitID()<<", patch "<<i<<", min = ("<<min_x<<", "<<min_y<<", "<<min_z<<"), max = ("<<max_x<<", "<<max_y<<", "<<max_z<<")"<<std::endl; 
-    }
  
     std::cout<<"Grid spacing = "<<gdist.spacing(x)<<"\n";
 
     // gdist.write_frame("output", 0);
 
+    // Estimates the closest point assuming that the local polynomial approximation
+    // of the level set phi field has the correct zero even if it is not the right SDF.
     estimateClosestPoint<phi, cp, POLY_ORDER>(gdist, 3.0);
-    gdist.template ghost_get<cp>();
 
-    // Redistance Levelset
+    // Redistance Levelset - This would try to get the SDF based on CP estimate.
     reinitializeLS<phi, cp, POLY_ORDER>(gdist, 3.0);
-    gdist.template ghost_get<phi>();
 
+    // Compute the errors
     estimateErrorInReinit(gdist, params);
 
     // gdist.write_frame("output", 1);
