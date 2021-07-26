@@ -297,7 +297,7 @@ inline void EqState(particles & vd)
  */
 
 /*! \cond [kernel_sph] \endcond */
-
+// Wendland quintic kernel
 const double a2 = 7.0/4.0/M_PI/H/H; //H seems to be h
 
 inline double Wab(double r)
@@ -336,7 +336,7 @@ const double c1 = -5.0*a2/H;
 // Filled later
 double W_dap = 0.0;
 
-inline void DWab(Point<3,double> & dx, Point<3,double> & DW, double r, bool print)
+inline void DWab(Point<2,double> & dx, Point<2,double> & DW, double r, bool print)
 {
 	const double qq=r/H;
 	double factor = 0.0;
@@ -347,7 +347,6 @@ inline void DWab(Point<3,double> & dx, Point<3,double> & DW, double r, bool prin
 
     DW.get(0) = factor * dx.get(0);
     DW.get(1) = factor * dx.get(1);
-    DW.get(2) = factor * dx.get(2);
 }
 
 /*! \cond [kernel_sph_der] \endcond */
@@ -369,7 +368,7 @@ inline void DWab(Point<3,double> & dx, Point<3,double> & DW, double r, bool prin
  */
 
 /*! \cond [tensile_term] \endcond */
-
+const double a2_4 = 0.25*a2;
 // Tensile correction
 inline double Tensile(double r, double rhoa, double rhob, double prs1, double prs2)
 {
@@ -418,9 +417,9 @@ inline double Tensile(double r, double rhoa, double rhob, double prs1, double pr
 
 /*! \cond [viscous_term] \endcond */
 
-inline double Pi(const Point<3,double> & dr, double rr2, Point<3,double> & dv, double rhoa, double rhob, double massb, double & visc)
+inline double Pi(const Point<2,double> & dr, double rr2, Point<2,double> & dv, double rhoa, double rhob, double massb, double & visc)
 {
-	const double dot = dr.get(0)*dv.get(0) + dr.get(1)*dv.get(1) + dr.get(2)*dv.get(2);
+	const double dot = dr.get(0)*dv.get(0) + dr.get(1)*dv.get(1);
 	const double dot_rr2 = dot/(rr2+Eta2);
 	visc=std::max(dot_rr2,visc);
 
@@ -467,7 +466,7 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 		auto a = part.get();
 
 		// Get the position xp of the particle
-		Point<3,double> xa = vd.getPos(a);
+		Point<2,double> xa = vd.getPos(a);
 
 		// Take the mass of the particle dependently if it is FLUID or BOUNDARY
 		double massa = 0;
@@ -482,16 +481,15 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 		double Pa = vd.getProp<Pressure>(a);
 
 		// Get the Velocity of the particle a
-		Point<3,double> va = vd.getProp<velocity>(a);
+		Point<2,double> va = vd.getProp<velocity>(a);
 
 		// Reset the force counter (- gravity on zeta direction)
 		vd.template getProp<force>(a)[0] = 0.0;
-		vd.template getProp<force>(a)[1] = 0.0;
-		vd.template getProp<force>(a)[2] = -gravity;
-		vd.template getProp<drho>(a) = 0.0;
+		vd.template getProp<force>(a)[1] = -gravity;
+        vd.template getProp<drho>(a) = 0.0;
 
 		// We treat FLUID particle differently from BOUNDARY PARTICLES ...
-		if (vd.getProp<type>(a) != FLUID)
+		if ((vd.getProp<type>(a) != FLUID) || (vd.getProp<type>(a) != FLUID_B))
 		{
 			// If it is a boundary particle calculate the delta rho based on equation 2
 			// This require to run across the neighborhoods particles of a
@@ -504,7 +502,7 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 				auto b = Np.get();
 
 				// Get the position xp of the particle
-				Point<3,double> xb = vd.getPos(b);
+				Point<2,double> xb = vd.getPos(b);
 
 				// if (p == q) skip this particle
 				if (a.getKey() == b)	{++Np; continue;};
@@ -516,14 +514,14 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
                 else if(vd.getProp<type>(b) == BOUNDARY) massb = MassBound;
 
 				// Get the velocity of the particle b
-				Point<3,double> vb = vd.getProp<velocity>(b);
+				Point<2,double> vb = vd.getProp<velocity>(b);
 
 				// Get the pressure and density of particle b
 				double Pb = vd.getProp<Pressure>(b);
 				double rhob = vd.getProp<rho>(b);
 
 				// Get the distance between p and q
-				Point<3,double> dr = xa - xb;
+				Point<2,double> dr = xa - xb;
 				// take the norm of this vector
 				double r2 = norm2(dr);
 
@@ -533,16 +531,16 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 					// ... calculate delta rho
 					double r = sqrt(r2);
 
-					Point<3,double> dv = va - vb;
+					Point<2,double> dv = va - vb;
 
-					Point<3,double> DW;
+					Point<2,double> DW;
 					DWab(dr,DW,r,false);
 
-					const double dot = dr.get(0)*dv.get(0) + dr.get(1)*dv.get(1) + dr.get(2)*dv.get(2);
+					const double dot = dr.get(0)*dv.get(0) + dr.get(1)*dv.get(1);
 					const double dot_rr2 = dot/(r2+Eta2);
 					max_visc=std::max(dot_rr2,max_visc);
 
-					vd.getProp<drho>(a) += massb*(dv.get(0)*DW.get(0)+dv.get(1)*DW.get(1)+dv.get(2)*DW.get(2));
+					vd.getProp<drho>(a) += massb*(dv.get(0)*DW.get(0)+dv.get(1)*DW.get(1));
 				}
 
 				++Np;
@@ -562,7 +560,7 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 				auto b = Np.get();
 
 				// Get the position xp of the particle
-				Point<3,double> xb = vd.getPos(b);
+				Point<2,double> xb = vd.getPos(b);
 
 				// if (p == q) skip this particle
 				if (a.getKey() == b)	{++Np; continue;};
@@ -571,32 +569,31 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
                 if (vd.getProp<type>(b) == FLUID) massb = MassFluid;
                 else if(vd.getProp<type>(b) == FLUID_B) massb = MassFluid_B;
                 else if(vd.getProp<type>(b) == BOUNDARY) massb = MassBound;
-				Point<3,double> vb = vd.getProp<velocity>(b);
+				Point<2,double> vb = vd.getProp<velocity>(b);
 				double Pb = vd.getProp<Pressure>(b);
 				double rhob = vd.getProp<rho>(b);
 
 				// Get the distance between p and q
-				Point<3,double> dr = xa - xb;
+				Point<2,double> dr = xa - xb;
 				// take the norm of this vector
 				double r2 = norm2(dr);
 
 				// if they interact
 				if (r2 < 4.0*H*H)
 				{
-					double r = sqrt(r2);
+					double r = sqrt(r2); // norm2 is norm^2
 
-					Point<3,double> v_rel = va - vb;
+					Point<2,double> v_rel = va - vb;
 
-					Point<3,double> DW;
+					Point<2,double> DW;
 					DWab(dr,DW,r,false);
 
 					double factor = - massb*((vd.getProp<Pressure>(a) + vd.getProp<Pressure>(b)) / (rhoa * rhob) + Tensile(r,rhoa,rhob,Pa,Pb) + Pi(dr,r2,v_rel,rhoa,rhob,massb,max_visc));
 
 					vd.getProp<force>(a)[0] += factor * DW.get(0);
 					vd.getProp<force>(a)[1] += factor * DW.get(1);
-					vd.getProp<force>(a)[2] += factor * DW.get(2);
 
-					vd.getProp<drho>(a) += massb*(v_rel.get(0)*DW.get(0)+v_rel.get(1)*DW.get(1)+v_rel.get(2)*DW.get(2));
+					vd.getProp<drho>(a) += massb*(v_rel.get(0)*DW.get(0)+v_rel.get(1)*DW.get(1));
 				}
 
 				++Np;
@@ -634,10 +631,10 @@ void max_acceleration_and_velocity(particles & vd, double & max_acc, double & ma
 	{
 		auto a = part.get();
 
-		Point<3,double> acc(vd.getProp<force>(a));
+		Point<2,double> acc(vd.getProp<force>(a));
 		double acc2 = norm2(acc);
 
-		Point<3,double> vel(vd.getProp<velocity>(a));
+		Point<2,double> vel(vd.getProp<velocity>(a));
 		double vel2 = norm2(vel);
 
 		if (vel2 >= max_vel)
@@ -765,7 +762,6 @@ void verlet_int(particles & vd, double dt)
 			// Update only the density
 	    	vd.template getProp<velocity>(a)[0] = 0.0;
 	    	vd.template getProp<velocity>(a)[1] = 0.0;
-	    	vd.template getProp<velocity>(a)[2] = 0.0;
 	    	double rhonew = vd.template getProp<rho_prev>(a) + dt2*vd.template getProp<drho>(a);
 	    	vd.template getProp<rho>(a) = (rhonew < rho_zero)?rho_zero:rhonew;
 
@@ -778,37 +774,32 @@ void verlet_int(particles & vd, double dt)
 		//-Calculate displacement and update position / Calcula desplazamiento y actualiza posicion.
 		double dx = vd.template getProp<velocity>(a)[0]*dt + vd.template getProp<force>(a)[0]*dt205;
 	    double dy = vd.template getProp<velocity>(a)[1]*dt + vd.template getProp<force>(a)[1]*dt205;
-	    double dz = vd.template getProp<velocity>(a)[2]*dt + vd.template getProp<force>(a)[2]*dt205;
 
         dx=0;
         dy=0;
-        dz=0;
 
         vd.getPos(a)[0] += dx;
 	    vd.getPos(a)[1] += dy;
-	    vd.getPos(a)[2] += dz;
 
 	    double velX = vd.template getProp<velocity>(a)[0];
 	    double velY = vd.template getProp<velocity>(a)[1];
-	    double velZ = vd.template getProp<velocity>(a)[2];
 	    double rhop = vd.template getProp<rho>(a);
 
     	vd.template getProp<velocity>(a)[0] = vd.template getProp<velocity_prev>(a)[0] + vd.template getProp<force>(a)[0]*dt2;
     	vd.template getProp<velocity>(a)[1] = vd.template getProp<velocity_prev>(a)[1] + vd.template getProp<force>(a)[1]*dt2;
-    	vd.template getProp<velocity>(a)[2] = vd.template getProp<velocity_prev>(a)[2] + vd.template getProp<force>(a)[2]*dt2;
     	vd.template getProp<rho>(a) = vd.template getProp<rho_prev>(a) + dt2*vd.template getProp<drho>(a);
 
 	    // Check if the particle go out of range in space and in density
-	    if (vd.getPos(a)[0] <  0.0 || vd.getPos(a)[1] < 0.0 || vd.getPos(a)[2] < 0.0 ||
-	        vd.getPos(a)[0] >  0.085 || vd.getPos(a)[1] > 0.085 || vd.getPos(a)[2] > 0.085 ||
+	    if (vd.getPos(a)[0] <  0.0 || vd.getPos(a)[1] < 0.0 ||
+	        vd.getPos(a)[0] >  1.0 || vd.getPos(a)[1] > 1.0 ||
 			vd.template getProp<rho>(a) < RhoMin || vd.template getProp<rho>(a) > RhoMax)
 	    {
+	                   std::cout << "REMOVED" << std::endl;
 	                   to_remove.add(a.getKey());
 	    }
 
 	    vd.template getProp<velocity_prev>(a)[0] = velX;
 	    vd.template getProp<velocity_prev>(a)[1] = velY;
-	    vd.template getProp<velocity_prev>(a)[2] = velZ;
 	    vd.template getProp<rho_prev>(a) = rhop;
 
 		++part;
@@ -847,7 +838,6 @@ void euler_int(particles & vd, double dt)
 			// Update only the density
 	    	vd.template getProp<velocity>(a)[0] = 0.0;
 	    	vd.template getProp<velocity>(a)[1] = 0.0;
-	    	vd.template getProp<velocity>(a)[2] = 0.0;
 	    	double rhonew = vd.template getProp<rho>(a) + dt*vd.template getProp<drho>(a);
 	    	vd.template getProp<rho>(a) = (rhonew < rho_zero)?rho_zero:rhonew;
 
@@ -860,37 +850,32 @@ void euler_int(particles & vd, double dt)
 		//-Calculate displacement and update position / Calcula desplazamiento y actualiza posicion.
 		double dx = vd.template getProp<velocity>(a)[0]*dt + vd.template getProp<force>(a)[0]*dt205;
 	    double dy = vd.template getProp<velocity>(a)[1]*dt + vd.template getProp<force>(a)[1]*dt205;
-	    double dz = vd.template getProp<velocity>(a)[2]*dt + vd.template getProp<force>(a)[2]*dt205;
 
 	    dx=0;
 	    dy=0;
-	    dz=0;
 
 	    vd.getPos(a)[0] += dx;
 	    vd.getPos(a)[1] += dy;
-	    vd.getPos(a)[2] += dz;
 
 	    double velX = vd.template getProp<velocity>(a)[0];
 	    double velY = vd.template getProp<velocity>(a)[1];
-	    double velZ = vd.template getProp<velocity>(a)[2];
 	    double rhop = vd.template getProp<rho>(a);
 
     	vd.template getProp<velocity>(a)[0] = vd.template getProp<velocity>(a)[0] + vd.template getProp<force>(a)[0]*dt;
     	vd.template getProp<velocity>(a)[1] = vd.template getProp<velocity>(a)[1] + vd.template getProp<force>(a)[1]*dt;
-	   	vd.template getProp<velocity>(a)[2] = vd.template getProp<velocity>(a)[2] + vd.template getProp<force>(a)[2]*dt;
 	   	vd.template getProp<rho>(a) = vd.template getProp<rho>(a) + dt*vd.template getProp<drho>(a);
 
 	    // Check if the particle go out of range in space and in density
-        if (vd.getPos(a)[0] <  0.0 || vd.getPos(a)[1] < 0.0 || vd.getPos(a)[2] < 0.0 ||
-            vd.getPos(a)[0] >  0.085 || vd.getPos(a)[1] > 0.085 || vd.getPos(a)[2] > 0.085 ||
+        if (vd.getPos(a)[0] <  0.0 || vd.getPos(a)[1] < 0.0 ||
+            vd.getPos(a)[0] >  1.0 || vd.getPos(a)[1] > 1.0 ||
             vd.template getProp<rho>(a) < RhoMin || vd.template getProp<rho>(a) > RhoMax)
 	    {
+            std::cout << "REMOVED" << std::endl;
 	                   to_remove.add(a.getKey());
 	    }
 
 	    vd.template getProp<velocity_prev>(a)[0] = velX;
 	    vd.template getProp<velocity_prev>(a)[1] = velY;
-	    vd.template getProp<velocity_prev>(a)[2] = velZ;
 	    vd.template getProp<rho_prev>(a) = rhop;
 
 		++part;
@@ -934,7 +919,7 @@ template<typename Vector, typename CellList>
 inline void sensor_pressure(Vector & vd,
                             CellList & NN,
                             openfpm::vector<openfpm::vector<double>> & press_t,
-                            openfpm::vector<Point<3,double>> & probes)
+                            openfpm::vector<Point<2,double>> & probes)
 {
     Vcluster<> & v_cl = create_vcluster();
 
@@ -949,7 +934,7 @@ inline void sensor_pressure(Vector & vd,
 		if (vd.getDecomposition().isLocal(probes.get(i)) == true)
 		{
 			// Get the position of the probe i
-			Point<3,double> xp = probes.get(i);
+			Point<2,double> xp = probes.get(i);
 
 			// get the iterator over the neighbohood particles of the probes position
 			auto itg = NN.template getNNIterator<NO_CHECK>(NN.getCell(probes.get(i)));
@@ -965,7 +950,7 @@ inline void sensor_pressure(Vector & vd,
 				}
 
 				// Get the position of the neighborhood particle q
-				Point<3,double> xq = vd.getPos(q);
+				Point<2,double> xq = vd.getPos(q);
 
 				// Calculate the contribution of the particle to the pressure
 				// of the probe
@@ -1038,17 +1023,17 @@ int main(int argc, char* argv[])
 	// Here we define our domain a 2D box with internals from 0 to 1.0 for x and y
 	const float l = 10.0*dp;
 	//Box<3,double> domain({-dp/2.0,-dp/2.0,-dp/2.0},{l+0.0001,l+0.0001,l+0.0001});
-    Box<3,double> domain({0.0,0.0,0.0},{l,l,l});
-	size_t sz[3] = {10,10,10};
+    Box<2,double> domain({0.0,0.0},{l,l});
+	size_t sz[2] = {10,10};
 
 	// Fill W_dap
 	W_dap = 1.0/Wab(H/1.5);
 
 	// Here we define the boundary conditions of our problem
-    size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
+    size_t bc[2]={NON_PERIODIC,NON_PERIODIC};
 
 	// extended boundary around the domain, and the processor domain
-	Ghost<3,double> g(2*H);
+	Ghost<2,double> g(2*H);
 
 	
 	//! \cond [Initialization and parameters] \endcond
@@ -1132,14 +1117,15 @@ int main(int argc, char* argv[])
 
 	// You can ignore all these dp/2.0 is a trick to reach the same initialization
 	// of Dual-SPH that use a different criteria to draw particles
-	Box<3,double> fluid_box({dp,dp,dp},{l-dp,l-dp,(l-dp)/2.0});
+	std::cout<<"."<<std::endl;
+	Box<2,double> fluid_box({0.0+dp, 0.0+dp}, {(l - dp), (l - dp)/2.0});
 
 	// return an iterator to the fluid particles to add to vd
 	auto fluid_it = DrawParticles::DrawBox(vd,sz,domain,fluid_box);
 
 	// here we fill some of the constants needed by the simulation
-	max_fluid_height = fluid_it.getBoxMargins().getHigh(2);
-	h_swl = fluid_it.getBoxMargins().getHigh(2) - fluid_it.getBoxMargins().getLow(2);
+	max_fluid_height = fluid_it.getBoxMargins().getHigh(1);
+	h_swl = fluid_it.getBoxMargins().getHigh(1) - fluid_it.getBoxMargins().getLow(1);
 	B = (coeff_sound)*(coeff_sound)*gravity*h_swl*rho_zero / gamma_;
 	cbar = coeff_sound * sqrt(gravity * h_swl);
 
@@ -1152,7 +1138,6 @@ int main(int argc, char* argv[])
 		// ... and set it position ...
 		vd.getLastPos()[0] = fluid_it.get().get(0);
 		vd.getLastPos()[1] = fluid_it.get().get(1);
-		vd.getLastPos()[2] = fluid_it.get().get(2);
 
 		// and its type.
 		vd.template getLastProp<type>() = FLUID;
@@ -1164,30 +1149,30 @@ int main(int argc, char* argv[])
 		// rho_p = (P/B + 1)^(1/Gamma) * rho_zero
 		//
 
-		vd.template getLastProp<Pressure>() = rho_zero * gravity *  (max_fluid_height - fluid_it.get().get(2));
+		vd.template getLastProp<Pressure>() = rho_zero * gravity *  (max_fluid_height - fluid_it.get().get(1));
 
 		vd.template getLastProp<rho>() = pow(vd.template getLastProp<Pressure>() / B + 1, 1.0/gamma_) * rho_zero;
 		vd.template getLastProp<rho_prev>() = vd.template getLastProp<rho>();
 		vd.template getLastProp<velocity>()[0] = 0.0;
 		vd.template getLastProp<velocity>()[1] = 0.0;
-		vd.template getLastProp<velocity>()[2] = 0.0;
 
 		vd.template getLastProp<velocity_prev>()[0] = 0.0;
 		vd.template getLastProp<velocity_prev>()[1] = 0.0;
-		vd.template getLastProp<velocity_prev>()[2] = 0.0;
+
+		std::cout << "PART" << std::endl;
 
 		// next fluid particle
 		++fluid_it;
 	}
 
-    Box<3,double> fluid_box_B({dp,dp,(l-dp)/2.0},{l-dp,l-dp,l-dp});
+    Box<2,double> fluid_box_B({dp,(l+dp)/2.0},{l-dp,l-dp});
 
     // return an iterator to the fluid particles to add to vd
     auto fluid_it_B = DrawParticles::DrawBox(vd,sz,domain,fluid_box_B);
 
     // here we fill some of the constants needed by the simulation
-    max_fluid_height = fluid_it_B.getBoxMargins().getHigh(2);
-    h_swl = fluid_it_B.getBoxMargins().getHigh(2) - fluid_it_B.getBoxMargins().getLow(2);
+    max_fluid_height = fluid_it_B.getBoxMargins().getHigh(1);
+    h_swl = fluid_it_B.getBoxMargins().getHigh(1) - fluid_it_B.getBoxMargins().getLow(1);
     B = (coeff_sound)*(coeff_sound)*gravity*h_swl*rho_zero / gamma_;
     cbar = coeff_sound * sqrt(gravity * h_swl);
 
@@ -1200,7 +1185,6 @@ int main(int argc, char* argv[])
         // ... and set it position ...
         vd.getLastPos()[0] = fluid_it_B.get().get(0);
         vd.getLastPos()[1] = fluid_it_B.get().get(1);
-        vd.getLastPos()[2] = fluid_it_B.get().get(2);
 
         // and its type.
         vd.template getLastProp<type>() = FLUID_B;
@@ -1212,17 +1196,15 @@ int main(int argc, char* argv[])
         // rho_p = (P/B + 1)^(1/Gamma) * rho_zero
         //
 
-        vd.template getLastProp<Pressure>() = rho_zero * gravity *  (max_fluid_height - fluid_it_B.get().get(2));
+        vd.template getLastProp<Pressure>() = rho_zero * gravity *  (max_fluid_height - fluid_it_B.get().get(1));
 
         vd.template getLastProp<rho>() = pow(vd.template getLastProp<Pressure>() / B + 1, 1.0/gamma_) * rho_zero;
         vd.template getLastProp<rho_prev>() = vd.template getLastProp<rho>();
         vd.template getLastProp<velocity>()[0] = 0.0;
         vd.template getLastProp<velocity>()[1] = 0.0;
-        vd.template getLastProp<velocity>()[2] = 0.0;
 
         vd.template getLastProp<velocity_prev>()[0] = 0.0;
         vd.template getLastProp<velocity_prev>()[1] = 0.0;
-        vd.template getLastProp<velocity_prev>()[2] = 0.0;
 
         // next fluid particle
         ++fluid_it_B;
@@ -1255,37 +1237,34 @@ int main(int argc, char* argv[])
 
 	//! \cond [draw recipient] \endcond
 
-	// Recipient
-	Box<3,double> recipient1({0.0,0.0,0.0},{l,l,l});
-    Box<3,double> recipient2({0.0+dp,0.0+dp,0.0+dp},{l-dp,l-dp,l-dp});
+    // Recipient
+    Box<2, double> recipient1({0.0, 0.0}, {l, l});
+    Box<2, double> recipient2({0.0 + dp, 0.0 + dp}, {l - dp, l - dp});
 
-	//openfpm::vector<Box<3,double>> holes;
-	//holes.add(recipient2);
+    //openfpm::vector<Box<3,double>> holes;
+    //holes.add(recipient2);
 
 
-	auto bound_box = DrawParticles::DrawSkin(vd,sz,domain,recipient2,recipient1);
-    std::cout<<'!'<<std::endl;
-	while (bound_box.isNext())
-	{
-		vd.add();
+    auto bound_box = DrawParticles::DrawSkin(vd, sz, domain, recipient2, recipient1);
+    std::cout << '!' << std::endl;
+    while (bound_box.isNext()) {
+            vd.add();
 
-		vd.getLastPos()[0] = bound_box.get().get(0);
-		vd.getLastPos()[1] = bound_box.get().get(1);
-		vd.getLastPos()[2] = bound_box.get().get(2);
+            vd.getLastPos()[0] = bound_box.get().get(0);
+            vd.getLastPos()[1] = bound_box.get().get(1);
 
-		vd.template getLastProp<type>() = BOUNDARY;
-		vd.template getLastProp<rho>() = rho_zero;
-		vd.template getLastProp<rho_prev>() = rho_zero;
-		vd.template getLastProp<velocity>()[0] = 0.0;
-		vd.template getLastProp<velocity>()[1] = 0.0;
-		vd.template getLastProp<velocity>()[2] = 0.0;
+            vd.template getLastProp<type>() = BOUNDARY;
+            vd.template getLastProp<rho>() = rho_zero;
+            vd.template getLastProp<rho_prev>() = rho_zero;
+            vd.template getLastProp<velocity>()[0] = 0.0;
+            vd.template getLastProp<velocity>()[1] = 0.0;
 
-		vd.template getLastProp<velocity_prev>()[0] = 0.0;
-		vd.template getLastProp<velocity_prev>()[1] = 0.0;
-		vd.template getLastProp<velocity_prev>()[2] = 0.0;
+            vd.template getLastProp<velocity_prev>()[0] = 0.0;
+            vd.template getLastProp<velocity_prev>()[1] = 0.0;
 
-		++bound_box;
-	}
+            ++bound_box;
+    }
+
 
     //! \cond [draw recipient] \endcond
 
@@ -1332,6 +1311,7 @@ int main(int argc, char* argv[])
 	}*/
 
 	vd.map();
+
 
 	//! \cond [draw obstacle] \endcond
 
@@ -1497,11 +1477,16 @@ int main(int argc, char* argv[])
 		it++;
 		if (it < 40)
 			verlet_int(vd,dt);
-		else
-		{
-			euler_int(vd,dt);
-			it = 0;
-		}
+		else {
+            euler_int(vd, dt);
+            it = 0;
+        }
+
+//        std::cout << "TIME: " << dt << std::endl;
+//        vd.write("fluid_and_bound_after_map_force");
+//
+//        openfpm_finalize();
+//        return 0;
 
 		t += dt;
 
