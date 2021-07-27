@@ -1,6 +1,6 @@
 #! /bin/bash
 
-function conf_PETSC()
+function conf_PETSC_ALGOIM()
 {
 	if [ -d "$i_dir/PETSC" ]; then
 	    configure_options="$configure_options --with-petsc=$i_dir/PETSC "
@@ -24,5 +24,13 @@ function conf_PETSC()
 	    configure_options=" $configure_options --with-eigen=$i_dir/EIGEN "
 	    lin_alg_inc="$lin_alg_inc -I$i_dir/EIGEN"
 	fi
+        if [ -d "$i_dir/ALGOIM" ]; then
+            configure_options=" $configure_options --with-algoim=$i_dir/ALGOIM "
+            lin_alg_inc="$lin_alg_inc -I$i_dir/ALGOIM"
+        fi
+        if [ -d "$i_dir/BLITZ" ]; then
+            configure_options=" $configure_options --with-blitz=$i_dir/BLITZ "
+            lin_alg_inc="$lin_alg_inc -I$i_dir/BLITZ"
+        fi
 }
 

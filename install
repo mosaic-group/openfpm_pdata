@@ -401,17 +401,13 @@ else
         fi
     done
 
-    echo "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
-
     if [ x"$inst_lin_alg" == x"y" ]; then
         CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_EIGEN.sh $i_dir $ncore
         CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_PETSC.sh $i_dir $ncore $CC $CXX $F77 $FC
-	echo "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
 	./script/install_blitz_algoim.sh $i_dir $ncore
-	configure_options=" $configure_options --with-blitz=$i_dir/BLITZ --with-algoim=$i_dir/ALGOIM "
     fi
 
-    ### collect PETSC configuration options
+    ### collect PETSC and ALGOIM configuration options
     conf_PETSC
 
     ./configure $options $configure_options "$configure_blas_option"
