@@ -207,15 +207,17 @@ const int velocity = 6;
 // velocity at previous step
 const int velocity_prev = 7;
 
+const int colorgradient = 8;
+
 /*! \cond [sim parameters] \endcond */
 
 /*! \cond [vector_dist_def] \endcond */
 
 // Type of the vector containing particles
-typedef vector_dist<2,double,aggregate<size_t,double,  double,    double,     double,     double[2], double[2], double[2]>> particles;
-//                                       |      |        |          |            |            |         |            |
-//                                       |      |        |          |            |            |         |            |
-//                                     type   density   density    Pressure    delta       force     velocity    velocity
+typedef vector_dist<2,double,aggregate<size_t,double,  double,    double,     double,     double[2], double[2], double[2], double[2]>> particles;
+//                                       |      |        |          |            |            |         |            |           |
+//                                       |      |        |          |            |            |         |            |           |
+//                                     type   density   density    Pressure    delta       force     velocity    velocity     colorgradient
 //                                                      at n-1                 density                           at n - 1
 
 /*! \cond [vector_dist_def] \endcond */
@@ -452,6 +454,15 @@ inline double Pi(const Point<2,double> & dr, double rr2, Point<2,double> & dv, d
 
 /*! \cond [calc_forces] \endcond */
 
+inline double coloraverage(double rhoa, double rhob, int typea, int typeb)
+{
+    double cij;
+    if (typea==typeb)
+    {cij = 0.0;}
+    else cij = 1.0;
+    return (rhoa/(rhoa+rhob)*cij);
+}
+
 template<typename CellList> inline void calc_forces(particles & vd, CellList & NN, double & max_visc)
 {
 	auto part = vd.getDomainIterator();
@@ -591,7 +602,9 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 
 					//double factor = - massb*((vd.getProp<Pressure>(a) + vd.getProp<Pressure>(b)) / (rhoa * rhob) + Tensile(r,rhoa,rhob,Pa,Pb) + Pi(dr,r2,v_rel,rhoa,rhob,massb,max_visc));
                     double factor = - massb*((vd.getProp<Pressure>(a) + vd.getProp<Pressure>(b)) / (rhoa * rhob) + Pi(dr,r2,v_rel,rhoa,rhob,massb,max_visc));
-                    //std::cout<<factor<<std::endl;
+                    double cfactor = rhoa/massa*((massa/rhoa)*(massa/rhoa)+(massb/rhob)*(massb/rhob))*coloraverage(rhoa,rhob,vd.getProp<type>(a),vd.getProp<type>(b));
+                    vd.getProp<colorgradient>(a)[0] += cfactor * DW.get(0);
+                    vd.getProp<colorgradient>(a)[1] += cfactor * DW.get(1);
 
 					vd.getProp<force>(a)[0] += factor * DW.get(0);
 					vd.getProp<force>(a)[1] += factor * DW.get(1);
@@ -1075,7 +1088,7 @@ int main(int argc, char* argv[])
 
 	particles vd(0,domain,bc,g,DEC_GRAN(512));
 
-    openfpm::vector<std::string> names({"part_type","density","prev_density","pressure","density_difference","force","velocity","prev_velocity"});
+    openfpm::vector<std::string> names({"part_type","density","prev_density","pressure","density_difference","force","velocity","prev_velocity","colorgradient"});
     vd.setPropNames(names);
 
 	//! \cond [vector inst] \endcond
