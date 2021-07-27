@@ -568,6 +568,7 @@ template<typename CellList> inline void calc_curvature(particles & vd, CellList 
         Point<2,double> na = vd.getProp<colorgradient>(a);
         double colornorma = sqrt(na.get(0)*na.get(0)+na.get(1)*na.get(1));
         if (colornorma<0.0001) {++part; continue;};
+        if (vd.getProp<type>(a)==BOUNDARY) {++part; continue;};
 
         // Take the mass of the particle dependently if it is FLUID or BOUNDARY
         double massa = 0;
