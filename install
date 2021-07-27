@@ -231,6 +231,7 @@ if [ ! -d "$i_dir/PETSC" -o ! -f "$i_dir/PETSC/include/petsc.h" -o ! -d "$i_dir/
       if [ $no_lin -eq 1 ]; then
 	  inst_lin_alg="n"
       else
+	  echo "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
           inst_lin_alg="y"
       fi
     fi
