@@ -47,7 +47,8 @@ std::string getNodePathAddress(const int i) {
 
 void openfpm_init_wrapped()
 {
-    // todo openfpm_init();
+    // todo at check runtime
+    openfpm_init(nullptr, nullptr);
 }
 
 static PyObject* openfpm_init_wrapper(PyObject *self, PyObject *args)
@@ -124,22 +125,24 @@ conduit::Node create_grid(const npy_int64 dim,
                 gdb_ext.get(i).origin.get(1),
                 gdb_ext.get(i).origin.get(2)
             };
-
-            /* todo overwriting `getNodePathAddress(i) + "data"` ?? for (int j = 0 ; j < n_prop ; j++)
+            
+            for (int j = 0 ; j < n_prop ; j++)
             {
                 if (j == 0)
                 {
-                    node[getNodePathAddress(i) + "data"] = g_one_3d[c_one]->get_loc_grid(i).template getPointer<0>();
+                    node[getNodePathAddress(i) + "data"] = g_one_3d[c_one]->get_loc_grid(i).template getPointer<0>();  // todo investigate
                 }
-                else if (j == 1)
+                // todo run with `ddd` node["wow"] = { 1.0,2.0,3.0,4.0};
+        
+                /*else if (j == 1)
                 {
-                    node[getNodePathAddress(i) + "data"] = g_one_3d[c_one]->get_loc_grid(i).template getPointer<1>();
+                    node[getNodePathAddress(i) + "data"] = (char*) g_one_3d[c_one]->get_loc_grid(i).template getPointer<1>();
                 }
                 else if (j == 2)
                 {
-                    node[getNodePathAddress(i) + "data"] = g_one_3d[c_one]->get_loc_grid(i).template getPointer<2>();
-                }
-            } */
+                    node[getNodePathAddress(i) + "data"] = (char*) g_one_3d[c_one]->get_loc_grid(i).template getPointer<2>();
+                }*/
+            }
         }
     }
 
