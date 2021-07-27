@@ -144,11 +144,11 @@ const double visco = 0.1;
 double cbar = 0.0;
 
 // Mass of the fluid particles
-const double MassFluid = 1.0;
-const double MassFluid_B = 1.0;
+const double MassFluid = 100.0;
+const double MassFluid_B = 100.0;
 
 // Mass of the boundary particles
-const double MassBound = 1.0;
+const double MassBound = 100.0;
 
 // End simulation time
 #ifdef TEST_RUN
@@ -487,9 +487,9 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 		vd.template getProp<force>(a)[0] = 0.0;
 		vd.template getProp<force>(a)[1] = -gravity;
         vd.template getProp<drho>(a) = 0.0;
-
+        //std::cout<<"hi"<<std::endl;
 		// We treat FLUID particle differently from BOUNDARY PARTICLES ...
-		if ((vd.getProp<type>(a) != FLUID) || (vd.getProp<type>(a) != FLUID_B))
+		if ((vd.getProp<type>(a) != FLUID) && (vd.getProp<type>(a) != FLUID_B))
 		{
 			// If it is a boundary particle calculate the delta rho based on equation 2
 			// This require to run across the neighborhoods particles of a
@@ -548,6 +548,7 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 		}
 		else
 		{
+		    //std::cout<<"bye"<<std::endl;
 			// If it is a fluid particle calculate based on equation 1 and 2
 
 			// Get an iterator over the neighborhood particles of p
@@ -588,7 +589,9 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 					Point<2,double> DW;
 					DWab(dr,DW,r,false);
 
-					double factor = - massb*((vd.getProp<Pressure>(a) + vd.getProp<Pressure>(b)) / (rhoa * rhob) + Tensile(r,rhoa,rhob,Pa,Pb) + Pi(dr,r2,v_rel,rhoa,rhob,massb,max_visc));
+					//double factor = - massb*((vd.getProp<Pressure>(a) + vd.getProp<Pressure>(b)) / (rhoa * rhob) + Tensile(r,rhoa,rhob,Pa,Pb) + Pi(dr,r2,v_rel,rhoa,rhob,massb,max_visc));
+                    double factor = - massb*((vd.getProp<Pressure>(a) + vd.getProp<Pressure>(b)) / (rhoa * rhob) + Pi(dr,r2,v_rel,rhoa,rhob,massb,max_visc));
+                    //std::cout<<factor<<std::endl;
 
 					vd.getProp<force>(a)[0] += factor * DW.get(0);
 					vd.getProp<force>(a)[1] += factor * DW.get(1);
@@ -775,9 +778,6 @@ void verlet_int(particles & vd, double dt)
 		double dx = vd.template getProp<velocity>(a)[0]*dt + vd.template getProp<force>(a)[0]*dt205;
 	    double dy = vd.template getProp<velocity>(a)[1]*dt + vd.template getProp<force>(a)[1]*dt205;
 
-        dx=0;
-        dy=0;
-
         vd.getPos(a)[0] += dx;
 	    vd.getPos(a)[1] += dy;
 
@@ -791,7 +791,7 @@ void verlet_int(particles & vd, double dt)
 
 	    // Check if the particle go out of range in space and in density
 	    if (vd.getPos(a)[0] <  0.0 || vd.getPos(a)[1] < 0.0 ||
-	        vd.getPos(a)[0] >  1.0 || vd.getPos(a)[1] > 1.0 ||
+	        vd.getPos(a)[0] >  10.0 || vd.getPos(a)[1] > 10.0 ||
 			vd.template getProp<rho>(a) < RhoMin || vd.template getProp<rho>(a) > RhoMax)
 	    {
 	                   std::cout << "REMOVED" << std::endl;
@@ -851,9 +851,6 @@ void euler_int(particles & vd, double dt)
 		double dx = vd.template getProp<velocity>(a)[0]*dt + vd.template getProp<force>(a)[0]*dt205;
 	    double dy = vd.template getProp<velocity>(a)[1]*dt + vd.template getProp<force>(a)[1]*dt205;
 
-	    dx=0;
-	    dy=0;
-
 	    vd.getPos(a)[0] += dx;
 	    vd.getPos(a)[1] += dy;
 
@@ -867,7 +864,7 @@ void euler_int(particles & vd, double dt)
 
 	    // Check if the particle go out of range in space and in density
         if (vd.getPos(a)[0] <  0.0 || vd.getPos(a)[1] < 0.0 ||
-            vd.getPos(a)[0] >  1.0 || vd.getPos(a)[1] > 1.0 ||
+            vd.getPos(a)[0] >  10.0 || vd.getPos(a)[1] > 10.0 ||
             vd.template getProp<rho>(a) < RhoMin || vd.template getProp<rho>(a) > RhoMax)
 	    {
             std::cout << "REMOVED" << std::endl;
@@ -1021,10 +1018,11 @@ int main(int argc, char* argv[])
 	//probes.add({0.754,0.31,0.02});
 
 	// Here we define our domain a 2D box with internals from 0 to 1.0 for x and y
-	const float l = 10.0*dp;
-	//Box<3,double> domain({-dp/2.0,-dp/2.0,-dp/2.0},{l+0.0001,l+0.0001,l+0.0001});
+	const float l = 100.0*dp;
+	const int num_blayers = 3;
+
     Box<2,double> domain({0.0,0.0},{l,l});
-	size_t sz[2] = {10,10};
+	size_t sz[2] = {100,100};
 
 	// Fill W_dap
 	W_dap = 1.0/Wab(H/1.5);
@@ -1077,6 +1075,9 @@ int main(int argc, char* argv[])
 
 	particles vd(0,domain,bc,g,DEC_GRAN(512));
 
+    openfpm::vector<std::string> names({"part_type","density","prev_density","pressure","density_difference","force","velocity","prev_velocity"});
+    vd.setPropNames(names);
+
 	//! \cond [vector inst] \endcond
 
 	/*!
@@ -1118,14 +1119,14 @@ int main(int argc, char* argv[])
 	// You can ignore all these dp/2.0 is a trick to reach the same initialization
 	// of Dual-SPH that use a different criteria to draw particles
 	std::cout<<"."<<std::endl;
-	Box<2,double> fluid_box({0.0+dp, 0.0+dp}, {(l - dp), (l - dp)/2.0});
+	Box<2,double> fluid_box({0.0+num_blayers*dp, 0.0+num_blayers*dp}, {(l - num_blayers*dp), (l - dp)/2.0});
 
 	// return an iterator to the fluid particles to add to vd
 	auto fluid_it = DrawParticles::DrawBox(vd,sz,domain,fluid_box);
 
 	// here we fill some of the constants needed by the simulation
-	max_fluid_height = fluid_it.getBoxMargins().getHigh(1);
-	h_swl = fluid_it.getBoxMargins().getHigh(1) - fluid_it.getBoxMargins().getLow(1);
+	max_fluid_height = fluid_it.getBoxMargins().getHigh(1)*2.0;
+	h_swl = fluid_it.getBoxMargins().getHigh(1)*2.0 - fluid_it.getBoxMargins().getLow(1);
 	B = (coeff_sound)*(coeff_sound)*gravity*h_swl*rho_zero / gamma_;
 	cbar = coeff_sound * sqrt(gravity * h_swl);
 
@@ -1159,20 +1160,18 @@ int main(int argc, char* argv[])
 		vd.template getLastProp<velocity_prev>()[0] = 0.0;
 		vd.template getLastProp<velocity_prev>()[1] = 0.0;
 
-		std::cout << "PART" << std::endl;
-
 		// next fluid particle
 		++fluid_it;
 	}
 
-    Box<2,double> fluid_box_B({dp,(l+dp)/2.0},{l-dp,l-dp});
+    Box<2,double> fluid_box_B({num_blayers*dp,(l+dp)/2.0},{l-num_blayers*dp,l-num_blayers*dp});
 
     // return an iterator to the fluid particles to add to vd
     auto fluid_it_B = DrawParticles::DrawBox(vd,sz,domain,fluid_box_B);
 
     // here we fill some of the constants needed by the simulation
     max_fluid_height = fluid_it_B.getBoxMargins().getHigh(1);
-    h_swl = fluid_it_B.getBoxMargins().getHigh(1) - fluid_it_B.getBoxMargins().getLow(1);
+    h_swl = fluid_it_B.getBoxMargins().getHigh(1) - fluid_it.getBoxMargins().getLow(1);
     B = (coeff_sound)*(coeff_sound)*gravity*h_swl*rho_zero / gamma_;
     cbar = coeff_sound * sqrt(gravity * h_swl);
 
@@ -1239,7 +1238,7 @@ int main(int argc, char* argv[])
 
     // Recipient
     Box<2, double> recipient1({0.0, 0.0}, {l, l});
-    Box<2, double> recipient2({0.0 + dp, 0.0 + dp}, {l - dp, l - dp});
+    Box<2, double> recipient2({0.0 + num_blayers*dp, 0.0 + num_blayers*dp}, {l - num_blayers*dp, l - num_blayers*dp});
 
     //openfpm::vector<Box<3,double>> holes;
     //holes.add(recipient2);
