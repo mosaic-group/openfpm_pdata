@@ -463,6 +463,91 @@ inline double coloraverage(double rhoa, double rhob, int typea, int typeb)
     return (rhoa/(rhoa+rhob)*cij);
 }
 
+template<typename CellList> inline void surface_normals(particles & vd, CellList & NN)
+{
+    auto part = vd.getDomainIterator();
+
+    // Update the cell-list
+    vd.updateCellList(NN);
+
+    // For each particle ...
+    while (part.isNext())
+    {
+        // ... a
+        auto a = part.get();
+
+        // Get the position xp of the particle
+        Point<2,double> xa = vd.getPos(a);
+
+        // Take the mass of the particle dependently if it is FLUID or BOUNDARY
+        double massa = 0;
+        if (vd.getProp<type>(a) == FLUID) massa = MassFluid;
+        else if(vd.getProp<type>(a) == FLUID_B) massa = MassFluid_B;
+        else if(vd.getProp<type>(a) == BOUNDARY) massa = MassBound;
+
+        // Get the density of the of the particle a
+        double rhoa = vd.getProp<rho>(a);
+
+        //std::cout<<"hi"<<std::endl;
+        // We treat FLUID particle differently from BOUNDARY PARTICLES ...
+        //std::cout<<"bye"<<std::endl;
+        // If it is a fluid particle calculate based on equation 1 and 2
+
+        // Get an iterator over the neighborhood particles of p
+        auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(a)));
+
+        // For each neighborhood particle
+        while (Np.isNext() == true)
+        {
+            // ... q
+            auto b = Np.get();
+
+            // Get the position xp of the particle
+            Point<2,double> xb = vd.getPos(b);
+
+            // if (p == q) skip this particle
+            if (a.getKey() == b)	{++Np; continue;};
+
+            double massb;
+            if (vd.getProp<type>(b) == FLUID) massb = MassFluid;
+            else if(vd.getProp<type>(b) == FLUID_B) massb = MassFluid_B;
+            else if(vd.getProp<type>(b) == BOUNDARY) massb = MassBound;
+            double rhob = vd.getProp<rho>(b);
+
+            // Get the distance between p and q
+            Point<2,double> dr = xa - xb;
+            // take the norm of this vector
+            double r2 = norm2(dr);
+
+            // if they interact
+            if (r2 < 4.0*H*H)
+            {
+                double r = sqrt(r2); // norm2 is norm^2
+
+                Point<2,double> DW;
+                DWab(dr,DW,r,false);
+
+                double cfactor = rhoa/massa*((massa/rhoa)*(massa/rhoa)+(massb/rhob)*(massb/rhob))*coloraverage(rhoa,rhob,vd.getProp<type>(a),vd.getProp<type>(b));
+                vd.getProp<colorgradient>(a)[0] += cfactor * DW.get(0)/r;
+                vd.getProp<colorgradient>(a)[1] += cfactor * DW.get(1)/r;
+            }
+            ++Np;
+        }
+        // normalize colorgradient to obtain surface normal
+        const double colornorm = sqrt(vd.getProp<colorgradient>(a)[0]*vd.getProp<colorgradient>(a)[0]+vd.getProp<colorgradient>(a)[1]*vd.getProp<colorgradient>(a)[1]);
+        if (colornorm<0.00000001) {
+            vd.getProp<colorgradient>(a)[0] = 0.0;
+            vd.getProp<colorgradient>(a)[0] = 0.0;
+        }
+        else {
+            vd.getProp<colorgradient>(a)[0] = vd.getProp<colorgradient>(a)[0] / colornorm;
+            vd.getProp<colorgradient>(a)[1] = vd.getProp<colorgradient>(a)[1] / colornorm;
+        }
+        ++part;
+    }
+}
+
+
 template<typename CellList> inline void calc_forces(particles & vd, CellList & NN, double & max_visc)
 {
 	auto part = vd.getDomainIterator();
@@ -602,9 +687,6 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 
 					//double factor = - massb*((vd.getProp<Pressure>(a) + vd.getProp<Pressure>(b)) / (rhoa * rhob) + Tensile(r,rhoa,rhob,Pa,Pb) + Pi(dr,r2,v_rel,rhoa,rhob,massb,max_visc));
                     double factor = - massb*((vd.getProp<Pressure>(a) + vd.getProp<Pressure>(b)) / (rhoa * rhob) + Pi(dr,r2,v_rel,rhoa,rhob,massb,max_visc));
-                    double cfactor = rhoa/massa*((massa/rhoa)*(massa/rhoa)+(massb/rhob)*(massb/rhob))*coloraverage(rhoa,rhob,vd.getProp<type>(a),vd.getProp<type>(b));
-                    vd.getProp<colorgradient>(a)[0] += cfactor * DW.get(0);
-                    vd.getProp<colorgradient>(a)[1] += cfactor * DW.get(1);
 
 					vd.getProp<force>(a)[0] += factor * DW.get(0);
 					vd.getProp<force>(a)[1] += factor * DW.get(1);
@@ -615,7 +697,6 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 				++Np;
 			}
 		}
-
 		++part;
 	}
 }
@@ -1475,6 +1556,8 @@ int main(int argc, char* argv[])
 
 		vd.ghost_get<type,rho,Pressure,velocity>();
 
+        // Calc surface normals
+        surface_normals(vd,NN);
 		// Calc forces
 		calc_forces(vd,NN,max_visc);
 
