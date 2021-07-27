@@ -1,6 +1,6 @@
 #! /bin/bash
 
-function conf_PETSC_ALGOIM()
+function conf_PETSC()
 {
 	if [ -d "$i_dir/PETSC" ]; then
 	    configure_options="$configure_options --with-petsc=$i_dir/PETSC "
