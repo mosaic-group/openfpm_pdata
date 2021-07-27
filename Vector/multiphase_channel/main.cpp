@@ -209,15 +209,17 @@ const int velocity_prev = 7;
 
 const int colorgradient = 8;
 
+const int curvature = 9;
+
 /*! \cond [sim parameters] \endcond */
 
 /*! \cond [vector_dist_def] \endcond */
 
 // Type of the vector containing particles
-typedef vector_dist<2,double,aggregate<size_t,double,  double,    double,     double,     double[2], double[2], double[2], double[2]>> particles;
-//                                       |      |        |          |            |            |         |            |           |
-//                                       |      |        |          |            |            |         |            |           |
-//                                     type   density   density    Pressure    delta       force     velocity    velocity     colorgradient
+typedef vector_dist<2,double,aggregate<size_t,double,  double,    double,     double,     double[2], double[2], double[2], double[2], double>> particles;
+//                                       |      |        |          |            |            |         |            |           |         |
+//                                       |      |        |          |            |            |         |            |           |         |
+//                                     type   density   density    Pressure    delta       force     velocity    velocity colorgradient   curvature
 //                                                      at n-1                 density                           at n - 1
 
 /*! \cond [vector_dist_def] \endcond */
@@ -463,7 +465,7 @@ inline double coloraverage(double rhoa, double rhob, int typea, int typeb)
     return (rhoa/(rhoa+rhob)*cij);
 }
 
-template<typename CellList> inline void surface_normals(particles & vd, CellList & NN)
+template<typename CellList> inline void calc_surface_normals(particles & vd, CellList & NN)
 {
     auto part = vd.getDomainIterator();
 
@@ -534,7 +536,7 @@ template<typename CellList> inline void surface_normals(particles & vd, CellList
             ++Np;
         }
         // normalize colorgradient to obtain surface normal
-        const double colornorm = sqrt(vd.getProp<colorgradient>(a)[0]*vd.getProp<colorgradient>(a)[0]+vd.getProp<colorgradient>(a)[1]*vd.getProp<colorgradient>(a)[1]);
+        double colornorm = sqrt(vd.getProp<colorgradient>(a)[0]*vd.getProp<colorgradient>(a)[0]+vd.getProp<colorgradient>(a)[1]*vd.getProp<colorgradient>(a)[1]);
         if (colornorm<0.00000001) {
             vd.getProp<colorgradient>(a)[0] = 0.0;
             vd.getProp<colorgradient>(a)[0] = 0.0;
@@ -543,6 +545,92 @@ template<typename CellList> inline void surface_normals(particles & vd, CellList
             vd.getProp<colorgradient>(a)[0] = vd.getProp<colorgradient>(a)[0] / colornorm;
             vd.getProp<colorgradient>(a)[1] = vd.getProp<colorgradient>(a)[1] / colornorm;
         }
+        ++part;
+    }
+}
+
+template<typename CellList> inline void calc_curvature(particles & vd, CellList & NN)
+{
+    auto part = vd.getDomainIterator();
+
+    // Update the cell-list
+    vd.updateCellList(NN);
+
+    // For each particle ...
+    while (part.isNext())
+    {
+        // ... a
+        auto a = part.get();
+
+        // Get the position xp of the particle
+        Point<2,double> xa = vd.getPos(a);
+        // Get the (unity) surface normal
+        Point<2,double> na = vd.getProp<colorgradient>(a);
+        double colornorma = sqrt(na.get(0)*na.get(0)+na.get(1)*na.get(1));
+        if (colornorma<0.0001) {++part; continue;};
+
+        // Take the mass of the particle dependently if it is FLUID or BOUNDARY
+        double massa = 0;
+        if (vd.getProp<type>(a) == FLUID) massa = MassFluid;
+        else if(vd.getProp<type>(a) == FLUID_B) massa = MassFluid_B;
+        else if(vd.getProp<type>(a) == BOUNDARY) massa = MassBound;
+
+        // Get the density of the of the particle a
+        double rhoa = vd.getProp<rho>(a);
+        double nominator = 0.0;
+        double denominator = 0.0;
+        //std::cout<<"hi"<<std::endl;
+        // We treat FLUID particle differently from BOUNDARY PARTICLES ...
+        //std::cout<<"bye"<<std::endl;
+        // If it is a fluid particle calculate based on equation 1 and 2
+
+        // Get an iterator over the neighborhood particles of p
+        auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(a)));
+
+        // For each neighborhood particle
+        while (Np.isNext() == true)
+        {
+            // ... q
+            auto b = Np.get();
+
+            // Get the position xp of the particle
+            Point<2,double> xb = vd.getPos(b);
+            //Get the (unity) surface normal of the particle
+            Point<2,double> nb =vd.getProp<colorgradient>(b);
+            double colornormb = sqrt(nb.get(0)*nb.get(0)+nb.get(1)*nb.get(1));
+            if (colornormb<0.0001) {++Np; continue;};
+            // Only interact with the same phase
+            if (vd.getProp<type>(a) != vd.getProp<type>(b)) {++Np; continue;};
+            // if (p == q) skip this particle
+            if (a.getKey() == b)	{++Np; continue;};
+
+            double massb;
+            if (vd.getProp<type>(b) == FLUID) massb = MassFluid;
+            else if(vd.getProp<type>(b) == FLUID_B) massb = MassFluid_B;
+            else if(vd.getProp<type>(b) == BOUNDARY) massb = MassBound;
+            double rhob = vd.getProp<rho>(b);
+
+            // Get the distance between p and q
+            Point<2,double> dr = xa - xb;
+            // take the norm of this vector
+            double r2 = norm2(dr);
+
+            // if they interact
+            if (r2 < 4.0*H*H)
+            {
+                double r = sqrt(r2); // norm2 is norm^2
+                Point<2,double> nab = na - nb;
+
+                Point<2,double> DW;
+                DWab(dr,DW,r,false);
+
+                nominator += (nab.get(0)*DW.get(0) + nab.get(1)*DW.get(1))/r*massb/rhob;
+                denominator += r*DW.get(0)/dr.get(0)*massb/rhob;
+            }
+            ++Np;
+        }
+        // 2 comes from dimension
+        vd.getProp<curvature>(a) = 2.0*nominator/denominator;
         ++part;
     }
 }
@@ -1169,7 +1257,7 @@ int main(int argc, char* argv[])
 
 	particles vd(0,domain,bc,g,DEC_GRAN(512));
 
-    openfpm::vector<std::string> names({"part_type","density","prev_density","pressure","density_difference","force","velocity","prev_velocity","colorgradient"});
+    openfpm::vector<std::string> names({"part_type","density","prev_density","pressure","density_difference","force","velocity","prev_velocity","colorgradient","curvature"});
     vd.setPropNames(names);
 
 	//! \cond [vector inst] \endcond
@@ -1557,7 +1645,9 @@ int main(int argc, char* argv[])
 		vd.ghost_get<type,rho,Pressure,velocity>();
 
         // Calc surface normals
-        surface_normals(vd,NN);
+        calc_surface_normals(vd,NN);
+        // Calc curvature
+        calc_curvature(vd,NN);
 		// Calc forces
 		calc_forces(vd,NN,max_visc);
 
