@@ -127,3 +127,4 @@ projectId.sh
 
 **/.gitignore
 .gitignore
+/doxygen/
