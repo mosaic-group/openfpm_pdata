@@ -4,8 +4,8 @@
 
 
 // todo does not work with numpy #define PY_SSIZE_T_CLEAN
-#include "Grid/grid_dist_id.hpp"
 #include <Python.h>
+#include "Grid/grid_dist_id.hpp"
 
 #include <numpy/arrayobject.h>
 
@@ -22,7 +22,6 @@
 
 // conduit python module capi header
 #include "conduit_python.hpp"
-
 
 constexpr int N_g = 10;
 
@@ -130,7 +129,10 @@ conduit::Node create_grid(const npy_int64 dim,
             {
                 if (j == 0)
                 {
-                    node[getNodePathAddress(i) + "data"] = g_one_3d[c_one]->get_loc_grid(i).template getPointer<0>();  // todo investigate
+                    node.set_path(
+                        getNodePathAddress(i) + "data",
+                        (unsigned char *) g_one_3d[c_one]->get_loc_grid(i).template getPointer<0>()
+                    );
                 }
                 // todo run with `ddd` node["wow"] = { 1.0,2.0,3.0,4.0};
         
@@ -191,11 +193,34 @@ static PyObject* delete_grid_wrapper(PyObject *self, PyObject *args)
     return delete_grid(dim,ng);
 }
 
+static PyObject* f_wrapper(PyObject *self, PyObject *args)
+{
+    PyObject *node;
+
+    if(!PyArg_ParseTuple(args, "O", &node)) {
+        return NULL;
+    }
+
+    if(!PyConduit_Node_Check(node)) {
+        PyErr_SetString(PyExc_TypeError, "'argument must be a conduit.Node instance");
+
+        return NULL;
+    }
+
+    conduit::Node& n = *PyConduit_Node_Get_Node_Ptr(node);
+
+    npy_float64 x = n["inp"].value();
+    n.set_path("out", x * 2);
+
+    Py_RETURN_NONE;  // return PyConduit_Node_Python_Wrap(&n, 0);
+}
+
 static PyMethodDef methods[] = {
     {"create_grid", create_grid_wrapper, METH_VARARGS, ""},
     {"delete_grid", delete_grid_wrapper, METH_VARARGS, ""},
     {"openfpm_init", openfpm_init_wrapper, METH_VARARGS, ""},
     {"openfpm_finalize", openfpm_finalize_wrapper, METH_VARARGS, ""},
+    {"f", f_wrapper, METH_VARARGS, ""},
     {NULL, NULL, METH_VARARGS, NULL}
 };
 
