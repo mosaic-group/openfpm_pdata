@@ -2,10 +2,10 @@
 // Created by jstark on 2020-05-18.
 //
 /**
- * @file example_sussman_circle/main.cpp
+ * @file example_sussman_disk/main.cpp
  * @page Examples_SussmanRedistancing Examples Sussman Redistancing
  *
- * @subpage example_sussman_circle
+ * @subpage example_sussman_disk
  * @subpage example_sussman_sphere
  * @subpage example_sussman_images_2D
  * @subpage example_sussman_images_3D
@@ -44,19 +44,19 @@
 
 
 /**
- * @page example_sussman_circle Circle 2D
+ * @page example_sussman_disk Circle 2D
  *
- * # Get the signed distance function for a 2D circle via Sussman Redistancing #
+ * # Get the signed distance function for a 2D disk via Sussman Redistancing #
  *
- * In this example, we perform Sussman redistancing on a filled 2D circle. Here, the circle is constructed via
+ * In this example, we perform Sussman redistancing on a 2D disk. Here, the disk is constructed via
  * equation. For image based reconstruction and redistancing see @ref example_sussman_images_2D.
  *
- * A filled circle with center a, b can be constructed by the following equation:
+ * A disk with center a, b can be constructed by the following equation:
  *
  *
  * @f[ (x-a)^2 + (y-b)^2 <= r^2 @f]
  *
- * We will create a filled circle on a 2D grid, where the circle is represented by a -1/+1 step function
+ * We will create a disk on a 2D grid, where the disk is represented by a -1/+1 step function
  * (indicator function) as:
  *
  * @f[ \phi_{\text{indicator}} = \begin{cases}
@@ -75,14 +75,14 @@
  *
  * Once we have received the Phi_SDF from the redistancing, particles can be placed on narrow band around the interface.
  *
- * * Creates filled 2D circle with -1/+1 indicator function
+ * * Creates 2D disk with -1/+1 indicator function
  * * Runs Sussman redistancing (see @ref RedistancingSussman.hpp)
  * * Places particles on narrow band around interface
  *
  * Output:
  * print on promt : Iteration, Change, Residual (see: #DistFromSol::change, #DistFromSol::residual)
  * writes vtk and hdf5 files of:
- * 1.) 2D grid with circle pre-redistancing and post-redistancing (Phi_0 and Phi_SDF, respectively)
+ * 1.) 2D grid with disk pre-redistancing and post-redistancing (Phi_0 and Phi_SDF, respectively)
  * 2.) particles on narrow band around interface
  *
  * ## Visualization of example output in Paraview ##
@@ -92,13 +92,13 @@
  */
 
 /**
- * @page example_sussman_circle Circle 2D
+ * @page example_sussman_disk Circle 2D
  *
  * ## Include ## {#e2d_c_include}
  *
  * These are the header files that we need to include:
  *
- * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Include
+ * @snippet example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp Include
  *
  */
 //! @cond [Include] @endcond
@@ -107,11 +107,11 @@
 #include "util/PathsAndFiles.hpp"
 #include "level_set/redistancing_Sussman/RedistancingSussman.hpp"
 #include "level_set/redistancing_Sussman/NarrowBand.hpp"
-#include "Draw/DrawCircle.hpp"
+#include "Draw/DrawDisk.hpp"
 //! @cond [Include] @endcond
 
 /**
- * @page example_sussman_circle Circle 2D
+ * @page example_sussman_disk Circle 2D
  *
  * ## Initialization and output folder ## {#e2d_c_init}
  *
@@ -119,7 +119,7 @@
  * * Initializing OpenFPM
  * * Setting the output path and creating an output folder
  *
- * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Initialization and output folder
+ * @snippet example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp Initialization and output folder
  *
  */
 //! @cond [Initialization and output folder] @endcond
@@ -130,13 +130,13 @@ int main(int argc, char* argv[])
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Set current working directory, define output paths and create folders where output will be saved
 	std::string cwd                     = get_cwd();
-	const std::string path_output       = cwd + "/output_circle";
+	const std::string path_output       = cwd + "/output_disk";
 	
 	create_directory_if_not_exist(path_output);
 	//! @cond [Initialization and output folder] @endcond
 	
 	/**
-	 * @page example_sussman_circle Circle 2D
+	 * @page example_sussman_disk Circle 2D
 	 *
 	 * ## Indices for the grid ## {#e2d_c_indices}
 	 *
@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
 	 * * \p y: Second dimension
 	 * * \p Phi_0_grid: Index of property that stores the initial level-set-function
 	 * * \p Phi_SDF_grid: Index of property where the redistancing result should be written to
-	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Indices grid
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp Indices grid
 	 *
 	 */
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -161,7 +161,7 @@ int main(int argc, char* argv[])
 	//! @cond [Indices grid] @endcond
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/**
-	 * @page example_sussman_circle Circle 2D
+	 * @page example_sussman_disk Circle 2D
 	 *
 	 * ## Create the grid ## {#e2d_c_grid}
 	 *
@@ -173,7 +173,7 @@ int main(int argc, char* argv[])
 	 *   the post-redistancing Phi_SDF should be written to.
 	 * * Set some property names (optionally. These names show up when opening the grid vtk in Paraview.)
 	 *
-	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Grid creation
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp Grid creation
 	 *
 	 */
 	//! @cond [Grid creation] @endcond
@@ -191,13 +191,13 @@ int main(int argc, char* argv[])
 	
 	
 	/**
-	 * @page example_sussman_circle Circle 2D
+	 * @page example_sussman_disk Circle 2D
 	 *
-	 * ## Get filled circle on the grid ## {#e2d_c_getcircle}
+	 * ## Get disk on the grid ## {#e2d_c_getdisk}
 	 *
 	 *
-	 * On the grid that we have just created, we can now initialize Phi_0 as a filled circle of defined radius.
-	 * The center of the circle is passed as x_center and y_center (see @ref Circle.hpp). Phi_0 will then be:
+	 * On the grid that we have just created, we can now initialize Phi_0 as a disk of defined radius.
+	 * The center of the disk is passed as x_center and y_center (see @ref Circle.hpp). Phi_0 will then be:
 	 *
 	 * @f[ \phi_{\text{indicator}} = \begin{cases}
      *    +1 & \text{point lies inside the object} \\
@@ -206,49 +206,49 @@ int main(int argc, char* argv[])
      * \end{cases} @f]
 	 *
 	 * Optionally, we can save this initial grid as a vtk file, if we want to visualize and check it in Paraview.
-	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Get circle
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp Get disk
 	 */
-    //! @cond [Get circle] @endcond
-	// Now we initialize the grid with a filled circle. Outside the circle, the value of Phi_0 will be -1, inside +1.
-	double radius = 1.0; // Radius of the circle
-	init_grid_with_circle<Phi_0_grid>(g_dist, radius, 2.5, 2.5); // Initialize circle onto grid, centered at (2.5, 2.5)
+	//! @cond [Get disk] @endcond
+	// Now we initialize the grid with a disk. Outside the disk, the value of Phi_0 will be -1, inside +1.
+	double radius = 1.0; // Radius of the disk
+	init_grid_with_disk<Phi_0_grid>(g_dist, radius, 2.5, 2.5); // Initialize disk onto grid, centered at (2.5, 2.5)
 	
-	g_dist.write(path_output + "/grid_circle_preRedistancing_radius" + std::to_string((int)radius) , FORMAT_BINARY); // Save the circle as vtk file
-	//! @cond [Get circle] @endcond
+	g_dist.write(path_output + "/grid_disk_preRedistancing_radius" + std::to_string((int)radius) , FORMAT_BINARY); // Save the disk as vtk file
+	//! @cond [Get disk] @endcond
 	
 	
 	/**
-	 * @page example_sussman_circle Circle 2D
+	 * @page example_sussman_disk Disk 2D
 	 *
 	 * ## Set the redistancing options ## {#e2d_c_redistoptions}
 	 *
 	 * For the redistancing, we can choose some options. These options will then be passed bundled as a structure to
 	 * the redistancing function. Setting these options is optional, since they all have a Default value as well. In
 	 * particular the following options can be set by the user:
-	 * * \p min_iter: Minimum number of iterations before steady state in narrow band will be checked (Default: 100).
+	 * * \p min_iter: Minimum number of iterations before steady state in narrow band will be checked (Default: 1e5).
 	 * * \p max_iter: Maximum number of iterations you want to run the redistancing, even if steady state might not yet
-	 *                have been reached (Default: 1e6).
-	 * * \p convTolChange.value: Convolution tolerance for the normalized total change of Phi in the narrow band between
-	 *                           two consecutive iterations (Default: 1e-6).
-	 * * \p convTolChange.check: Set true, if you want to use the normalized total change between two iterations as
+	 *                have been reached (Default: 1e12).
+	 * * \p convTolChange.value: Convergence tolerance for the maximal change of Phi within the narrow band between
+	 *                           two consecutive iterations (Default: 1e-15).
+	 * * \p convTolChange.check: Set true, if you want to use the maximal change of Phi between two iterations as
 	 *                           measure of how close you are to the steady state solution. Redistancing will then stop
 	 *                           if convTolChange.value is reached or if the current iteration is bigger than max_iter.
-	 * * \p convTolResidual.value: Convolution tolerance for the residual, that is abs(magnitude gradient of phi - 1) of
-	 *                             Phi in the narrow band (Default 1e-1).
+	 * * \p convTolResidual.value: Convergence tolerance for the residual, that is max{abs(magnitude gradient of phi -
+	 *                              1)} of Phi in the narrow band (Default 1e-3).
 	 * * \p convTolResidual.check: Set true, if you want to use the residual of the current iteration as measure of how
 	 *                             close you are to the steady state solution. Redistancing will then stop if
 	 *                             convTolResidual.value is reached or if the current iteration is bigger than max_iter.
 	 * * \p interval_check_convergence: Interval of #iterations at which convergence to steady state is checked
 	 *                                  (Default: 100).
-	 * * \p width_NB_in_grid_points: Width of narrow band in number of grid points. Must be at least 4, in order to 
-	 *                               have at least 2 grid points on each side of the interface. Is automatically set 
+	 * * \p width_NB_in_grid_points: Width of narrow band in number of grid points. Must be at least 4, in order to
+	 *                               have at least 2 grid points on each side of the interface. Is automatically set
 	 *                               to 4, if a value smaller than 4 is chosen (Default: 4).
 	 * * \p print_current_iterChangeResidual: If true, the number of the current iteration, the corresponding change
 	 *                                        w.r.t the previous iteration and the residual is printed (Default: false).
 	 * * \p print_steadyState_iter: If true, the number of the steady-state-iteration, the corresponding change
 	 *                              w.r.t the previous iteration and the residual is printed (Default: false).
 	 *
-	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Redistancing options
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp Redistancing options
 	 */
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//! @cond [Redistancing options] @endcond
@@ -270,7 +270,7 @@ int main(int argc, char* argv[])
 	//! @cond [Redistancing options] @endcond
 	
 	/**
-	 * @page example_sussman_circle Circle 2D
+	 * @page example_sussman_disk Disk 2D
 	 *
 	 * ## Run the redistancing ## {#e2d_c_runredist}
 	 *
@@ -287,7 +287,7 @@ int main(int argc, char* argv[])
 	 * containing the signed distance function in Prop. 2. The vtk-file can be opened in Paraview. If we want, we can
 	 * further save the result as hdf5 file that can be reloaded onto an openFPM grid.
 	 *
-	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Run redistancing
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp Run redistancing
 	 */
 	//! @cond [Run redistancing] @endcond
 	RedistancingSussman<grid_in_type> redist_obj(g_dist, redist_options);   // Instantiation of Sussman-redistancing class
@@ -296,13 +296,13 @@ int main(int argc, char* argv[])
 	// where the resulting SDF should be written to.
 	redist_obj.run_redistancing<Phi_0_grid, Phi_SDF_grid>();
 	
-	g_dist.write(path_output + "/grid_circle_postRedistancing", FORMAT_BINARY); // Save the result as vtk file
-	g_dist.save(path_output + "/grid_circle_postRedistancing" + ".bin"); // Save the result as hdf5 file that can be
+	g_dist.write(path_output + "/grid_disk_postRedistancing", FORMAT_BINARY); // Save the result as vtk file
+	g_dist.save(path_output + "/grid_disk_postRedistancing" + ".bin"); // Save the result as hdf5 file that can be
 	// reloaded onto an openFPM grid
 	//! @cond [Run redistancing] @endcond
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/**
-	 * @page example_sussman_circle Circle 2D
+	 * @page example_sussman_disk Disk 2D
 	 *
 	 * ## Initialize empty vector for narrow band particles ## {#e2d_c_initnbvector}
 	 *
@@ -313,7 +313,7 @@ int main(int argc, char* argv[])
 	 * one, but you can have particles with arbitrary many properties, depending on what you want to use them for
 	 * later on. Here, we exemplarily define 3 properties.
 	 *
-	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Initialize narrow band
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp Initialize narrow band
 	 */
 	//! @cond [Initialize narrow band] @endcond
 	//	Get narrow band: Place particles on interface (narrow band width e.g. 2 grid points on each side of the interface)
@@ -322,7 +322,7 @@ int main(int argc, char* argv[])
 	// Minimum is 1 property, to which the Phi_SDF can be written
 	// In this example we chose 3 properties. The 1st for the Phi_SDF, the 2nd for the gradient of phi and the 3rd for
 	// the magnitude of the gradient
-	typedef aggregate<double, Point<grid_dim, double>, double> props_nb;
+	typedef aggregate<double, double[grid_dim], double> props_nb;
 	typedef vector_dist<grid_dim, double, props_nb> vd_type;
 	Ghost<grid_dim, double> ghost_vd(0);
 	vd_type vd_narrow_band(0, box, bc, ghost_vd);
@@ -330,7 +330,7 @@ int main(int argc, char* argv[])
 	//! @cond [Initialize narrow band] @endcond
 	
 	/**
-	 * @page example_sussman_circle Circle 2D
+	 * @page example_sussman_disk Disk 2D
 	 *
 	 * ## Instantiate narrow band ## {#e2d_c_instnarrowband}
 	 *
@@ -345,7 +345,7 @@ int main(int argc, char* argv[])
 	 * grid points (size_t), physical width (double) or extension of narrow band as physical width inside of object
 	 * and outside the object (double, double).
 	 *
-	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Instantiate narrow band
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp Instantiate narrow band
 	 */
 	//! @cond [Instantiate narrow band] @endcond
 	size_t thickness_of_narrowBand_in_grid_points = 6;
@@ -353,14 +353,14 @@ int main(int argc, char* argv[])
 	//! @cond [Instantiate narrow band] @endcond
 	
 	/**
-	 * @page example_sussman_circle Circle 2D
+	 * @page example_sussman_disk Disk 2D
 	 *
 	 * ## Indices for the narrow band vector ## {#e2d_c_indices}
 	 *
 	 * Again, we can define some indices for better code readability. This is just an example, you may want to choose
 	 * different names and have a different number of properties thus different number of indices.
 	 *
-	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Indices narrow band
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp Indices narrow band
 	 *
 	 */
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -372,7 +372,7 @@ int main(int argc, char* argv[])
 	//! @cond [Indices narrow band] @endcond
 	
 	/**
-	 * @page example_sussman_circle Circle 2D
+	 * @page example_sussman_disk Disk 2D
 	 *
 	 * ## Fill the vector with particles placed within a narrow band around the interface ## {#e2d_c_getnarrowband}
 	 *
@@ -391,7 +391,7 @@ int main(int argc, char* argv[])
 	 *
 	 * We save the particles in a vtk file (open in Paraview) and as hdf5 file (can be loaded back on particles).
 	 *
-	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Get narrow band
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp Get narrow band
 	 */
 	// Get the narrow band. You can decide, if you only want the Phi_SDF saved to your particles or
 	// if you also want the gradients or gradients and magnitude of gradient.
@@ -403,18 +403,18 @@ int main(int argc, char* argv[])
 	//! @cond [Get narrow band] @endcond
 	narrowBand.get_narrow_band<Phi_SDF_grid, Phi_SDF_vd, Phi_grad_vd, Phi_magnOfGrad_vd>(g_dist, vd_narrow_band);
 	
-	vd_narrow_band.write(path_output + "/vd_narrow_band_circle", FORMAT_BINARY); // Save particles as vtk file
-	vd_narrow_band.save(path_output + "/vd_narrow_band_circle.bin"); // Save particles as hdf5 file -> can be reloaded as particles
+	vd_narrow_band.write(path_output + "/vd_narrow_band_disk", FORMAT_BINARY); // Save particles as vtk file
+	vd_narrow_band.save(path_output + "/vd_narrow_band_disk.bin"); // Save particles as hdf5 file -> can be reloaded as particles
 	//! @cond [Get narrow band] @endcond
 	
 	/**
-	 * @page example_sussman_circle Circle 2D
+	 * @page example_sussman_disk Disk 2D
 	 *
 	 * ## Terminate ## {#e2d_c_terminate}
 	 *
 	 * We end with terminating OpenFPM
 	 *
-	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp Terminate
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp Terminate
 	 */
 	//! @cond [Terminate] @endcond
 	openfpm_finalize(); // Finalize openFPM library
@@ -423,11 +423,11 @@ int main(int argc, char* argv[])
 //! @cond [Terminate] @endcond
 
 /**
- * @page example_sussman_circle Circle 2D
+ * @page example_sussman_disk Disk 2D
  *
  * ## Full code ## {#e2d_c_full}
  *
- * @include example/Numerics/Sussman_redistancing/example_sussman_circle/main.cpp
+ * @include example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp
  */
 
 
