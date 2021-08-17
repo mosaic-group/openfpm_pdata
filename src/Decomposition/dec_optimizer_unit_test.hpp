@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_np)
 	// optimize
 	dec_optimizer<3,Graph_CSR<nm_v<3>,nm_e>> d_o(g,sz);
 
-	Ghost<3,size_t> ghe(1);
+	Ghost<3,long int> ghe(1);
 
 	grid_key_dx<3> keyZero(0,0,0);
 	d_o.optimize<nm_v_sub_id,nm_v_id>(keyZero,g,ghe,bc);
@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_test_use_p)
 	// For each sub-domain check the neighborhood processors
 	openfpm::vector< openfpm::vector<size_t> > box_nn_processor;
 
-	Ghost<3,size_t> ghe(1);
+	Ghost<3,long int> ghe(1);
 
 	// gp,p_id,loc_box,box_nn_processor,bc
 	d_o.optimize<nm_v_sub_id,nm_v_id>(g,-1,dec_o,box_nn_processor,ghe,bc);
@@ -178,7 +178,7 @@ BOOST_AUTO_TEST_CASE( dec_optimizer_disconnected_subdomains_np)
 	//! for each sub-domain, contain the list of the neighborhood processors
 	openfpm::vector<openfpm::vector<long unsigned int> > box_nn_processor;
 
-	Ghost<2,size_t> ghe(1);
+	Ghost<2,long int> ghe(1);
 	d_o.optimize<nm_v_sub_id, nm_v_proc_id>(g, vcl.getProcessUnitID(), loc_box, box_nn_processor,ghe,bc);
 
 	std::stringstream str_g;

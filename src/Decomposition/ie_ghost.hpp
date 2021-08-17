@@ -84,6 +84,12 @@ class ie_ghost
 	//! host to device transfer
 	bool host_dev_transfer = false;
 
+	//! domain
+	Box<dim,T> domain;
+
+	//! boundary conditions
+	size_t bc[dim];
+
 	/*! \brief Given a local sub-domain i, it give the id of such sub-domain in the sent list
 	 *         for the processor p_id
 	 *
@@ -190,6 +196,13 @@ protected:
 	void generateShiftVectors(const Box<dim,T> & domain, size_t (& bc)[dim])
 	{
 		sc_convert.generateShiftVectors(domain,bc,shifts);
+
+		this->domain = domain;
+
+		for (int i = 0 ; i < dim ; i++)
+		{
+			this->bc[i] = bc[i];
+		}
 	}
 
 	/*! \brief Initialize the geo cell list structure
@@ -537,6 +550,12 @@ public:
 		ids_p.swap(ie.ids_p);
 		ids.swap(ie.ids);
 
+		// it die anyway we can avoid to swap
+		domain = ie.domain;
+
+		for (int i = 0 ; i < dim ; i++)
+		{bc[i] = ie.bc[i];}
+
 		return *this;
 	}
 
@@ -552,6 +571,12 @@ public:
 		shifts = ie.shifts;
 		ids_p = ie.ids_p;
 		ids = ie.ids;
+		domain = ie.domain;
+
+		domain = ie.domain;
+
+		for (int i = 0 ; i < dim ; i++)
+		{bc[i] = ie.bc[i];}
 
 		return *this;
 	}
@@ -577,6 +602,11 @@ public:
 		tmp.private_get_shifts() = shifts;
 		tmp.private_get_ids_p() = ids_p;
 		tmp.private_get_ids() = ids;
+
+		tmp.private_get_domain() = domain;
+
+		for (int i = 0 ; i < dim ; i++)
+		{tmp.private_get_bc()[i] = bc[i];}
 
 		return tmp;
 	}
@@ -942,7 +972,7 @@ public:
 		{
 			size_t bid = cell_it.get();
 
-			if (Box<dim,T>(vb_int_box.get(bid)).isInsideNP(p) == true)
+			if (Box<dim,T>(vb_int_box.get(bid)).isInsideNP_with_border(p,domain,bc) == true)
 			{
 				ids_p.add(std::pair<size_t,size_t>(id1::id(vb_int.get(bid),bid),id2::id(vb_int.get(bid),bid)));
 			}
@@ -991,7 +1021,7 @@ public:
 		{
 			size_t bid = cell_it.get();
 
-			if (Box<dim,T>(vb_int_box.get(bid)).isInsideNP(p) == true)
+			if (Box<dim,T>(vb_int_box.get(bid)).isInsideNP_with_border(p,domain,bc) == true)
 			{
 				ids.add(id::id(vb_int.get(bid),bid));
 			}
@@ -1035,7 +1065,7 @@ public:
 		{
 			size_t bid = cell_it.get();
 
-			if (Box<dim,T>(vb_int_box.get(bid)).isInsideNP(p) == true)
+			if (Box<dim,T>(vb_int_box.get(bid)).isInsideNP_with_border(p,domain,bc) == true)
 			{
 				ids_p.add(std::pair<size_t,size_t>(id1::id(vb_int.get(bid),bid),id2::id(vb_int.get(bid),bid)));
 			}
@@ -1078,7 +1108,7 @@ public:
 		{
 			size_t bid = cell_it.get();
 
-			if (vb_int.get(bid).box.isInsideNP(p) == true)
+			if (vb_int.get(bid).box.isInsideNP_with_border(p,bc,domain) == true)
 			{
 				ids.add(id::id(vb_int.get(bid),bid));
 			}
@@ -1194,6 +1224,15 @@ public:
 				if (getProcessorEGhostSub(i,j) != ig.getProcessorEGhostSub(i,j))
 					return false;
 			}
+		}
+
+		if (domain != ig.domain)
+		{return false;}
+
+		for (int i = 0 ; i < dim ; i++)
+		{
+			if (bc[i] != ig.bc[i])
+			{return false;}
 		}
 
 		return true;
@@ -1322,6 +1361,27 @@ public:
 	private_get_ids()
 	{
 		return ids;
+	}
+
+	/*! \brief Return the internal data structure domain
+	 *
+	 * \return domain
+	 *
+	 */
+	inline Box<dim,T> &
+	private_get_domain()
+	{
+		return domain;
+	}
+
+	/*! \brief Return the internal data structure domain
+	 *
+	 * \return domain
+	 *
+	 */
+	inline  size_t (& private_get_bc())[dim]
+	{
+		return bc;
 	}
 
 	/*! \brief toKernel() Convert this data-structure into a kernel usable data-structure

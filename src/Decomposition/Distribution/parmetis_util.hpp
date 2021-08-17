@@ -552,6 +552,7 @@ public:
 	 */
 	const Parmetis<Graph> & operator=(const Parmetis<Graph> & pm)
 	{
+		if (comm != MPI_COMM_NULL){MPI_Comm_free(&comm);}
 		MPI_Comm_dup(pm.comm, &comm);
 		p_id = pm.p_id;
 		nc = pm.nc;
@@ -573,6 +574,7 @@ public:
 	const Parmetis<Graph> & operator=(Parmetis<Graph> && pm)
 	{
 		// TODO Move into VCluster
+		if (comm != MPI_COMM_NULL){MPI_Comm_free(&comm);}
 		MPI_Comm_dup(pm.comm, &comm);
 		p_id = pm.p_id;
 		nc = pm.nc;

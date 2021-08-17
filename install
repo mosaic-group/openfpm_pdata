@@ -297,6 +297,9 @@ configure_options=" $configure_options --with-parmetis=$i_dir/PARMETIS "
 ./script/install_Metis.sh $i_dir $CC $CXX $ncore
 configure_options=" $configure_options --with-metis=$i_dir/METIS "
 
+./script/install_blitz_algoim.sh $i_dir $ncore
+configure_options=" $configure_options --with-blitz=$i_dir/BLITZ --with-algoim=$i_dir/ALGOIM "
+
 if [ x"$gpu_support" == x"1" ]; then
 	configure_options=" $configure_options --enable-gpu "
 fi
@@ -433,7 +436,7 @@ elif [ -d "$i_dir/HDF5/lib64" ]; then
   hdf5_lib_dir=-L$i_dir/HDF5/lib64
 fi
 
-echo "INCLUDE_PATH=$mpi_include_dirs $cuda_include_dirs -Wno-deprecated-declarations $openmp_flags  -I.  -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/VCDEVEL/include  -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" > example.mk
+echo "INCLUDE_PATH=$mpi_include_dirs $cuda_include_dirs -Wno-deprecated-declarations $openmp_flags  -I.  -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/VCDEVEL/include  -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc -I$i_dir/BLITZ/include -I$i_dir/ALGOIM/include" > example.mk
 echo "LIBS_PATH=$mpi_libs $openmp_flags -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/VCDEVEL/lib  -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib $hdf5_lib_dir -L$i_dir/LIBHILBERT/lib  $lin_alg_dir " >> example.mk
 if [ x"$cuda_on_cpu" == x"YES" ]; then
    echo "CUDA_ON_CPU=YES" >> example.mk
@@ -445,7 +448,7 @@ else
     echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $lin_alg_lib -ldl -lboost_filesystem -lboost_system $optional_boost" >> example.mk
     echo "LIBS_CUDA_ON_CPU=\$(LIBS)" >> example.mk
 fi
-echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" $(cat openmp_flags) "$(cat cuda_options)" $mpi_include_dirs -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc" >> example.mk
+echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" $(cat openmp_flags) "$(cat cuda_options)" $mpi_include_dirs -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc -I$i_dir/BLITZ/include -I$i_dir/ALGOIM/include" >> example.mk
 cp example.mk src/example.mk
 cp example.mk example/example.mk
 

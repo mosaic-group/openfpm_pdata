@@ -1,6 +1,7 @@
 #include "Vector/vector_dist.hpp"
 #include <math.h>
 #include  "Draw/DrawParticles.hpp"
+#include "DCPSE/Dcpse.hpp"
 
 #define PHASE_A 0
 #define PHASE_B 1
@@ -8,18 +9,21 @@
 const double dp = 1/64.0;
 const double r = 1.0;
 const double band_width = 12*dp;
+const int np_max = 30;
 
-const size_t type = 0;
+const int type = 0;
 const int sdf = 1;
 const int prev_sdf = 2;
 const int redist_sdf = 3;
 const int d = 4;
 const int sdfgrad = 5;
 const int prev_sdfgrad = 6;
+const int surf_flag = 7;
+const int num_neibs = 8;
 
-typedef vector_dist<2, double, aggregate<int, double, double, double, double, double[2], double[2]>> particles;
-//										  |		|		|		|		|			|			|
-//										type  prev sdf	sdf	redist_sdf	distance	sdfgrad		prev_sdfgrad
+typedef vector_dist<2, double, aggregate<int, double, double, double, double, double[2], double[2], int, int>> particles;
+//										 |		|		|		|		|			|			|	   |    	|
+//									  type    sdf  prev sdf redist_sdf distance sdfgrad prev_sdfgrad surf_flag num_neibs
 
 
 //double randZeroToOne()
@@ -28,6 +32,13 @@ typedef vector_dist<2, double, aggregate<int, double, double, double, double, do
 //}
 
 // SPH definitions for the approximation of the numerical gradient of the SDF
+
+int return_sign(double phi)
+{
+	if (phi > 0) return 1;
+	if (phi < 0) return -1;
+	return 0;
+}
 
 const double H = 1.3*dp;
 const double a2 = 7.0/4.0/M_PI/H/H;
@@ -74,6 +85,9 @@ inline double DWdr(double r)
 	else return 0.0;
 }
 
+
+// Calculate surface normals as an SPH difference gradient (A_i - A_j). This function also tracks the number of neighbors per particle
+// for the following redistancing.
 template<typename CellList> inline void calc_surface_normals(particles & vd, CellList & NN)
 {
     auto part = vd.getDomainIterator();
@@ -87,22 +101,15 @@ template<typename CellList> inline void calc_surface_normals(particles & vd, Cel
         // ... a
         auto a = part.get();
         //reset the values
-        vd.getProp<sdfgrad>(a)[0]=0.0;
-        vd.getProp<sdfgrad>(a)[1]=0.0;
+        vd.getProp<sdfgrad>(a)[0] = 0.0;
+        vd.getProp<sdfgrad>(a)[1] = 0.0;
+        // vd.getProp<num_neibs>(a) = 1;
+
+        int num_neibs_a = 1;
         // Get the position xp of the particle
         Point<2,double> xa = vd.getPos(a);
 
-        // Take the mass of the particle dependently if it is FLUID or BOUNDARY
-//        double massa = 0;
-//        if (vd.getProp<type>(a) == FLUID) massa = MassFluid;
-//        else if(vd.getProp<type>(a) == FLUID_B) massa = MassFluid_B;
-//        else if(vd.getProp<type>(a) == BOUNDARY) massa = MassBound;
-//
-//        // Get the density of the of the particle a
-//        double rhoa = vd.getProp<rho>(a);
-        // For the purpose of only computing the gradient, say V_a = H^3, and rho_a=1000, hence
-        //double rhoa = 1000.0;
-        //double massa = H*H*H*rhoa;
+        // For the purpose of only computing the gradient, say V_a = V_b = H^3
 
         // Get an iterator over the neighborhood particles of p
         auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(a)));
@@ -118,12 +125,6 @@ template<typename CellList> inline void calc_surface_normals(particles & vd, Cel
 
             // if (p == q) skip this particle
             if (a.getKey() == b)	{++Np; continue;};
-
-//            double massb = MassFluid;
-//            double rhob = vd.getProp<rho>(b);
-            // same with V_b
-            //double massb = massa;
-            //double rhob = rhoa;
 
             // Get the distance between p and q
             Point<2,double> dr = xa - xb;
@@ -142,9 +143,12 @@ template<typename CellList> inline void calc_surface_normals(particles & vd, Cel
                 double cfactor = dp*dp*(vd.getProp<sdf>(b) - vd.getProp<sdf>(a));
                 vd.getProp<sdfgrad>(a)[0] += cfactor * DW.get(0);
                 vd.getProp<sdfgrad>(a)[1] += cfactor * DW.get(1);
+                ++num_neibs_a;
             }
+
             ++Np;
         }
+        vd.getProp<num_neibs>(a) = num_neibs_a;
         ++part;
     }
 }
@@ -171,7 +175,109 @@ inline void perturb_pos(particles & vd)
 	}
 }
 
+template <typename CellList> inline void detect_surface_particles(particles & vd, CellList & NN)
+{
+	auto part = vd.getDomainIterator();
+	vd.updateCellList(NN);
+	while (part.isNext())
+	{
+		auto a = part.get();
+		int sgn_a = return_sign(vd. template getProp<sdf>(a));
+		Point<2,double> xa = vd.getPos(a);
 
+		auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(a)));
+		while (Np.isNext())
+		{
+			auto b = Np.get();
+			int sgn_b = return_sign(vd. template getProp<sdf>(b));
+			Point<2,double> xb = vd.getPos(b);
+
+            Point<2,double> dr = xa - xb;
+            double r2 = norm2(dr);
+
+            if (r2 < 4.0*H*H)
+            {
+            	if (sgn_a != sgn_b)
+            	{
+            		vd.template getProp<surf_flag>(a) = 1;
+            		break;
+            	}
+            }
+            ++Np;
+		}
+		++part;
+	}
+
+}
+
+template <typename CellList> inline void cp_redistance(particles & vd, CellList & NN)
+{
+	auto part = vd.getDomainIterator();
+	vd.updateCellList(NN);
+	while (part.isNext())
+	{
+		auto a = part.get();
+		if (vd.template getProp<surf_flag>(a) != 1)
+		{
+			++part;
+			continue;
+		}
+
+		const int num_neibs_a = vd.getProp<num_neibs>(a);
+		if (num_neibs_a > np_max)
+		{
+			throw std::domain_error("Particle has too many neighbours");
+		}
+
+		// Initialize phi-vector from the right hand side
+		Point<np_max, double> phi_rhs = 0.0;
+
+		Point<2, double> xa = vd.getPos(a);
+		double min_sdf = std::abs(vd.getProp<sdf>(a));
+		Point<2, double> min_sdf_x = xa;
+		int neib = 0;
+
+		MonomialBasis<2> m(3);
+
+		EMatrix<double,Eigen::Dynamic,Eigen::Dynamic> V(num_neibs_a,m.size());
+		EMatrix<double,Eigen::Dynamic,1> phi(num_neibs_a,1);
+		EMatrix<double,Eigen::Dynamic,1> Atphi(m.size(),1);
+
+		auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(a)));
+		while(Np.isNext())
+		{
+			auto b = Np.get();
+			Point<2,double> xb = vd.getPos(a);
+			if (std::abs(vd.getProp<sdf>(b)) < min_sdf)
+			{
+				min_sdf = std::abs(vd.getProp<sdf>(b));
+				min_sdf_x = xb;
+			}
+
+			// Fill phi-vector from the right hand side
+			Atphi(neib,0) = vd.getProp<sdf>(b);
+
+			vrb.buildRow(V,neib,xb,1.0);
+
+			++neib;
+			++Np;
+		}
+
+		EMatrix<double,Eigen::Dynamic,Eigen::Dynamic> AtA(m.size(),m.size());
+
+		AtA = V.transpose()*V;
+		Atphi = V.transpose()*phi;
+
+		EMatrix<double,Eigen::Dynamic,1> c(m.size(),1);
+
+		c = AtA.colPivHouseholderQr().solve(Atphi);
+
+		++part;
+	}
+
+}
+
+//################################################################# main function ##################
 int main(int argc, char* argv[])
 {
 	openfpm_init(&argc, &argv);
@@ -184,7 +290,7 @@ int main(int argc, char* argv[])
 	Ghost<2, double> g(0.0);
 
 	particles vd(0, domain, bc, g, DEC_GRAN(512));
-	openfpm::vector<std::string> names({"part_type", "previous_sdf", "sdf", "redistanced_sdf", "distance", "sdfgradient", "previous_sdfgradient"});
+	openfpm::vector<std::string> names({"part_type", "previous_sdf", "sdf", "redistanced_sdf", "distance", "sdfgradient", "previous_sdfgradient", "surface_flag", "number_neibs"});
 	vd.setPropNames(names);
 
 	Box<2, double> particle_box({-l/2.0, -l/2.0}, {l/2.0, l/2.0});
@@ -207,6 +313,8 @@ int main(int argc, char* argv[])
 			vd.template getLastProp<prev_sdf>() = r - dist;
 			vd.template getLastProp<sdf>() = r - dist;
 			vd.template getLastProp<d>() = dist;
+			vd.template getLastProp<surf_flag>() = 0;
+			vd.template getLastProp<num_neibs>() = 1;
 
 		}
 
@@ -230,7 +338,14 @@ int main(int argc, char* argv[])
 	NN = vd.getCellList(2*H);
 	calc_surface_normals(vd, NN);
 
-	vd.write("init1");
+	vd.write("after_perturb");
+
+	detect_surface_particles(vd, NN);
+	cp_redistance(vd, NN);
+
+	vd.write("after_surf_detect");
+
+
 
 	openfpm_finalize();
 

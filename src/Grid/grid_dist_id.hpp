@@ -1046,9 +1046,9 @@ protected:
 	 * \return the ghost in continuous unit
 	 *
 	 */
-	static inline Ghost<dim,float> convert_ghost(const Ghost<dim,long int> & gd, const CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm)
+	static inline Ghost<dim,St> convert_ghost(const Ghost<dim,long int> & gd, const CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm)
 	{
-		Ghost<dim,float> gc;
+		Ghost<dim,St> gc;
 
 		// get the grid spacing
 		Box<dim,St> sp = cd_sm.getCellBox();
@@ -2065,7 +2065,7 @@ public:
 	 * \return false
 	 *
 	 */
-	bool is_staggered()
+	bool is_staggered() const
 	{
 		return false;
 	}
@@ -2309,7 +2309,7 @@ public:
 
 		for (int i = 0 ; i < dim ; i++)
 		{
-			p.get(i) = (gdb_ext.get(v1.getSub()).origin.get(i) + v1.getKeyRef().get(i)) * this->spacing(i);
+			p.get(i) = (gdb_ext.get(v1.getSub()).origin.get(i) + v1.getKeyRef().get(i)) * this->spacing(i) + domain.getLow(i);
 		}
 
 		return p;
@@ -2531,7 +2531,7 @@ public:
 	 * \return the global position in the grid
 	 *
 	 */
-	inline grid_key_dx<dim> getGKey(const grid_dist_key_dx<dim> & k)
+	inline grid_key_dx<dim> getGKey(const grid_dist_key_dx<dim> & k) const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2781,7 +2781,7 @@ public:
 		file_type ft = file_type::ASCII;
 
 		if (opt & FORMAT_BINARY)
-			ft = file_type::BINARY;
+		{ft = file_type::BINARY;}
 
 		// Create a writer and write
 		VTKWriter<boost::mpl::pair<device_grid,float>,VECTOR_GRIDS> vtk_g;
@@ -2978,6 +2978,18 @@ public:
 	void setPropNames(const openfpm::vector<std::string> & names)
 	{
 		prp_names = names;
+	}
+
+	/*! \brief Set the properties names
+	 *
+	 * It is useful to specify name for the properties in vtk writers
+	 *
+	 * \param names set of properties names
+	 *
+	 */
+	const openfpm::vector<std::string> & getPropNames()
+	{
+		return prp_names;
 	}
 
 	/*! \brief It delete all the points

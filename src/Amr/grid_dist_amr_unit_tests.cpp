@@ -830,7 +830,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_test )
 	long int k = 16*16*16*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);
 
-	Ghost<3,float> g(0.05);
+	Ghost<3,long int> g(0);
 	grid_dist_amr<3,float,aggregate<float>> amr_g(domain3,g);
 
 	Test3D_amr_create_levels(amr_g,domain3,k,4);

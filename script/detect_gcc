@@ -254,5 +254,3 @@ function detect_compiler()
           echo "No compiler found"
     fi
 }
-
-
