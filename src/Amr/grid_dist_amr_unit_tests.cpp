@@ -192,11 +192,15 @@ void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain
 		amr_g.template insert<0>(key) = gkey.get(0);
 		amr_g.template insert<1>(key) = gkey.get(1);
 		amr_g.template insert<2>(key) = gkey.get(2);
+		amr_g.template insert<3>(key)[0] = gkey.get(0);
+		amr_g.template insert<3>(key)[1] = gkey.get(1);
+		amr_g.template insert<3>(key)[2] = gkey.get(2);
+		amr_g.template insert<3>(key)[3] = gkey.get(0);
 
 		++it;
 	}
 
-	amr_g.template ghost_get<0,1,2>();
+	amr_g.template ghost_get<0,1,2,3>();
 
 	// now we check that move space work
 
@@ -232,12 +236,10 @@ void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain
 			match &= amr_g.template get<1>(key_px) == gkey.get(1);
 			match &= amr_g.template get<2>(key_px) == gkey.get(2);
 
-
-			if (match == false)
-			{
-				int debug = 0;
-				debug++;
-			}
+			match &= amr_g.template get<3>(key_px)[0] == gkey.get(0) + 1;
+			match &= amr_g.template get<3>(key_px)[1] == gkey.get(1);
+			match &= amr_g.template get<3>(key_px)[2] == gkey.get(2);
+			match &= amr_g.template get<3>(key_px)[3] == gkey.get(0) + 1;
 		}
 
 		if (gr_is_inside(key_gmx,amr_g.getGridInfoVoid(it2.getLvl()).getSize()) == true)
@@ -246,12 +248,10 @@ void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain
 			match &= amr_g.template get<1>(key_mx) == gkey.get(1);
 			match &= amr_g.template get<2>(key_mx) == gkey.get(2);
 
-
-			if (match == false)
-			{
-				int debug = 0;
-				debug++;
-			}
+			match &= amr_g.template get<3>(key_mx)[0] == gkey.get(0) - 1;
+			match &= amr_g.template get<3>(key_mx)[1] == gkey.get(1);
+			match &= amr_g.template get<3>(key_mx)[2] == gkey.get(2);
+			match &= amr_g.template get<3>(key_mx)[3] == gkey.get(0) - 1;
 		}
 
 		if (gr_is_inside(key_gpy,amr_g.getGridInfoVoid(it2.getLvl()).getSize()) == true)
@@ -260,12 +260,10 @@ void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain
 			match &= amr_g.template get<1>(key_py) == gkey.get(1) + 1;
 			match &= amr_g.template get<2>(key_py) == gkey.get(2);
 
-
-			if (match == false)
-			{
-				int debug = 0;
-				debug++;
-			}
+			match &= amr_g.template get<3>(key_py)[0] == gkey.get(0);
+			match &= amr_g.template get<3>(key_py)[1] == gkey.get(1) + 1;
+			match &= amr_g.template get<3>(key_py)[2] == gkey.get(2);
+			match &= amr_g.template get<3>(key_py)[3] == gkey.get(0);
 		}
 
 		if (gr_is_inside(key_gmy,amr_g.getGridInfoVoid(it2.getLvl()).getSize()) == true)
@@ -274,12 +272,10 @@ void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain
 			match &= amr_g.template get<1>(key_my) == gkey.get(1) - 1;
 			match &= amr_g.template get<2>(key_my) == gkey.get(2);
 
-
-			if (match == false)
-			{
-				int debug = 0;
-				debug++;
-			}
+			match &= amr_g.template get<3>(key_my)[0] == gkey.get(0);
+			match &= amr_g.template get<3>(key_my)[1] == gkey.get(1) - 1;
+			match &= amr_g.template get<3>(key_my)[2] == gkey.get(2);
+			match &= amr_g.template get<3>(key_my)[3] == gkey.get(0);
 		}
 
 		if (gr_is_inside(key_gpz,amr_g.getGridInfoVoid(it2.getLvl()).getSize()) == true)
@@ -288,12 +284,10 @@ void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain
 			match &= amr_g.template get<1>(key_pz) == gkey.get(1);
 			match &= amr_g.template get<2>(key_pz) == gkey.get(2) + 1;
 
-
-			if (match == false)
-			{
-				int debug = 0;
-				debug++;
-			}
+			match &= amr_g.template get<3>(key_pz)[0] == gkey.get(0);
+			match &= amr_g.template get<3>(key_pz)[1] == gkey.get(1);
+			match &= amr_g.template get<3>(key_pz)[2] == gkey.get(2) + 1;
+			match &= amr_g.template get<3>(key_pz)[3] == gkey.get(0);
 		}
 
 		if (gr_is_inside(key_gmz,amr_g.getGridInfoVoid(it2.getLvl()).getSize()) == true)
@@ -302,12 +296,10 @@ void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain
 			match &= amr_g.template get<1>(key_mz) == gkey.get(1);
 			match &= amr_g.template get<2>(key_mz) == gkey.get(2) - 1;
 
-
-			if (match == false)
-			{
-				int debug = 0;
-				debug++;
-			}
+			match &= amr_g.template get<3>(key_mz)[0] == gkey.get(0);
+			match &= amr_g.template get<3>(key_mz)[1] == gkey.get(1);
+			match &= amr_g.template get<3>(key_mz)[2] == gkey.get(2) - 1;
+			match &= amr_g.template get<3>(key_mz)[3] == gkey.get(0);
 		}
 
 
@@ -344,12 +336,6 @@ void Test3D_amr_child_parent_get_no_periodic(grid & amr_g, Box<3,float> & domain
 				match &= amr_g.template get<1>(key_l1) == key_gl1.get(1);
 				match &= amr_g.template get<2>(key_l1) == key_gl1.get(2);
 			}
-		}
-
-		if (match == false)
-		{
-			int debug = 0;
-			debug++;
 		}
 
 		++it2;
@@ -798,7 +784,8 @@ void Test3D_ghost_put(grid_amr & g_dist_amr, long int k)
 	BOOST_REQUIRE_EQUAL(correct, true);
 }
 
-template <typename> struct Debug;
+
+
 
 BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test_nop )
 {
@@ -809,7 +796,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test_nop )
 	k = std::pow(k, 1/3.);
 
 	Ghost<3,long int> g(1);
-	grid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g(domain3,g);
+	grid_dist_amr<3,float,aggregate<long int,long int,long int, long int[4]>> amr_g(domain3,g);
 
 	Test3D_amr_child_parent_get_no_periodic(amr_g,domain3,k,4);
 }
@@ -908,11 +895,11 @@ BOOST_AUTO_TEST_CASE( grid_dist_amr_get_child_test_low_res )
 	long int k = 2;
 
 	Ghost<3,long int> g(1);
-	grid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g(domain3,g);
+	grid_dist_amr<3,float,aggregate<long int,long int,long int,long int[4]>> amr_g(domain3,g);
 
 	Test3D_amr_child_parent_get_no_periodic(amr_g,domain3,k,4);
 
-	sgrid_dist_amr<3,float,aggregate<long int,long int,long int>> amr_g2(domain3,g);
+	sgrid_dist_amr<3,float,aggregate<long int,long int,long int, long int [4]>> amr_g2(domain3,g);
 
 	Test3D_amr_child_parent_get_no_periodic(amr_g2,domain3,k,4);
 }
