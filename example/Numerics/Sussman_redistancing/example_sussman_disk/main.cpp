@@ -44,7 +44,7 @@
 
 
 /**
- * @page example_sussman_disk Circle 2D
+ * @page example_sussman_disk Disk 2D
  *
  * # Get the signed distance function for a 2D disk via Sussman Redistancing #
  *
@@ -92,7 +92,7 @@
  */
 
 /**
- * @page example_sussman_disk Circle 2D
+ * @page example_sussman_disk Disk 2D
  *
  * ## Include ## {#e2d_c_include}
  *
@@ -111,7 +111,7 @@
 //! @cond [Include] @endcond
 
 /**
- * @page example_sussman_disk Circle 2D
+ * @page example_sussman_disk Disk 2D
  *
  * ## Initialization and output folder ## {#e2d_c_init}
  *
@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
 	//! @cond [Initialization and output folder] @endcond
 	
 	/**
-	 * @page example_sussman_disk Circle 2D
+	 * @page example_sussman_disk Disk 2D
 	 *
 	 * ## Indices for the grid ## {#e2d_c_indices}
 	 *
@@ -161,7 +161,7 @@ int main(int argc, char* argv[])
 	//! @cond [Indices grid] @endcond
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/**
-	 * @page example_sussman_disk Circle 2D
+	 * @page example_sussman_disk Disk 2D
 	 *
 	 * ## Create the grid ## {#e2d_c_grid}
 	 *
@@ -191,13 +191,13 @@ int main(int argc, char* argv[])
 	
 	
 	/**
-	 * @page example_sussman_disk Circle 2D
+	 * @page example_sussman_disk Disk 2D
 	 *
 	 * ## Get disk on the grid ## {#e2d_c_getdisk}
 	 *
 	 *
 	 * On the grid that we have just created, we can now initialize Phi_0 as a disk of defined radius.
-	 * The center of the disk is passed as x_center and y_center (see @ref Circle.hpp). Phi_0 will then be:
+	 * The center of the disk is passed as x_center and y_center (see @ref DrawDisk.hpp). Phi_0 will then be:
 	 *
 	 * @f[ \phi_{\text{indicator}} = \begin{cases}
      *    +1 & \text{point lies inside the object} \\
@@ -247,6 +247,8 @@ int main(int argc, char* argv[])
 	 *                                        w.r.t the previous iteration and the residual is printed (Default: false).
 	 * * \p print_steadyState_iter: If true, the number of the steady-state-iteration, the corresponding change
 	 *                              w.r.t the previous iteration and the residual is printed (Default: false).
+	 * * \p save_temp_grid: If true, save the temporary grid as hdf5 that can be reloaded onto a grid (Default: false).
+	 *
 	 *
 	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp Redistancing options
 	 */
@@ -255,18 +257,19 @@ int main(int argc, char* argv[])
 	// Now we want to convert the initial Phi into a signed distance function (SDF) with magnitude of gradient = 1.
 	// For the initial re-distancing we use the Sussman method. First of all, we can set some redistancing options.
 	Redist_options redist_options;
-	redist_options.min_iter                             = 100;
-	redist_options.max_iter                             = 10000;
+	redist_options.min_iter                             = 1e3;
+	redist_options.max_iter                             = 1e4;
 	
-	redist_options.convTolChange.value                  = 1e-6;
+	redist_options.convTolChange.value                  = 1e-7;
 	redist_options.convTolChange.check                  = true;
-	redist_options.convTolResidual.value                = 1e-6;
+	redist_options.convTolResidual.value                = 1e-6; // is ignored if convTolResidual.check = false;
 	redist_options.convTolResidual.check                = false;
 	
-	redist_options.interval_check_convergence           = 1;
-	redist_options.width_NB_in_grid_points              = 6;
+	redist_options.interval_check_convergence           = 1e3;
+	redist_options.width_NB_in_grid_points              = 10;
 	redist_options.print_current_iterChangeResidual     = true;
 	redist_options.print_steadyState_iter               = true;
+	redist_options.save_temp_grid                       = true;
 	//! @cond [Redistancing options] @endcond
 	
 	/**
@@ -281,9 +284,9 @@ int main(int argc, char* argv[])
 	 * (T dt). However, be careful when setting your own timestep: if chosen too large, the CFL-condition may be no
 	 * longer fulfilled and the method can become unstable. For the #RedistancingSussman::run_redistancing we need to
 	 * provide two template parameters. These are the indices of the respective property that: 1.) contains the
-	 * initial Phi, 2.) should
-	 * contain the output of the redistancing. You can use the same index twice, if you want that your input will be
-	 * overwritten by the output. This time, it makes sense, to save the output grid, since this is already our grid
+	 * initial Phi, 2.) should contain the output of the redistancing.
+	 * You can use the same index twice, if you want that your input will be overwritten by the output. This time, it
+	 * makes sense, to save the output grid, since this is already our grid
 	 * containing the signed distance function in Prop. 2. The vtk-file can be opened in Paraview. If we want, we can
 	 * further save the result as hdf5 file that can be reloaded onto an openFPM grid.
 	 *
