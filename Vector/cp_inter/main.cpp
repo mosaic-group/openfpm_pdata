@@ -1,14 +1,15 @@
 #include "Vector/vector_dist.hpp"
 #include <math.h>
 #include  "Draw/DrawParticles.hpp"
+#include "DCPSE/MonomialBasis.hpp"
 #include "DCPSE/Dcpse.hpp"
 
 #define PHASE_A 0
 #define PHASE_B 1
 
-const double dp = 1/64.0;
+const double dp = 1/256.0;
 const double r = 1.0;
-const double band_width = 12*dp;
+const double band_width = 24.0*dp;
 const int np_max = 30;
 
 const int type = 0;
@@ -20,10 +21,13 @@ const int sdfgrad = 5;
 const int prev_sdfgrad = 6;
 const int surf_flag = 7;
 const int num_neibs = 8;
+const int min_sdf = 9;
+const int min_sdf_x = 10;
+const int interpol_coeff = 11;
 
-typedef vector_dist<2, double, aggregate<int, double, double, double, double, double[2], double[2], int, int>> particles;
-//										 |		|		|		|		|			|			|	   |    	|
-//									  type    sdf  prev sdf redist_sdf distance sdfgrad prev_sdfgrad surf_flag num_neibs
+typedef vector_dist<2, double, aggregate<int, double, double, double, double, double[2], double[2], int, int, double, double[2], EMatrix<double, Eigen::Dynamic, 1>>> particles;
+//										 |		|		|		|		|			|			|	   |    	|			|						|				|
+//									  type    sdf  prev sdf redist_sdf distance sdfgrad prev_sdfgrad surf_flag num_neibs min sdf in support	min sdf location poly coefficients
 
 
 //double randZeroToOne()
@@ -40,7 +44,7 @@ int return_sign(double phi)
 	return 0;
 }
 
-const double H = 1.3*dp;
+const double H = 2.0*dp;
 const double a2 = 7.0/4.0/M_PI/H/H;
 
 inline double Wab(double r)
@@ -89,7 +93,9 @@ inline double DWdr(double r)
 // Calculate surface normals as an SPH difference gradient (A_i - A_j). This function also tracks the number of neighbors per particle
 // for the following redistancing.
 template<typename CellList> inline void calc_surface_normals(particles & vd, CellList & NN)
-{
+{	
+	double sdf_gradient_norm = 0.0;
+	int sdf_count = 0;
     auto part = vd.getDomainIterator();
 
     // Update the cell-list
@@ -149,8 +155,17 @@ template<typename CellList> inline void calc_surface_normals(particles & vd, Cel
             ++Np;
         }
         vd.getProp<num_neibs>(a) = num_neibs_a;
+		if (vd.template getProp<surf_flag>(a) == 1)
+		{	
+			Point<2, double> sdf_gradient = vd.getProp<sdfgrad>(a);
+			sdf_gradient_norm += norm(sdf_gradient);
+			++sdf_count;
+		}
+      
         ++part;
     }
+    sdf_gradient_norm = sdf_gradient_norm/sdf_count;
+    std::cout<<sdf_gradient_norm<<std::endl;
 }
 
 
@@ -166,8 +181,8 @@ inline void perturb_pos(particles & vd)
 		const double y = vd.getPos(a)[1];
 		const double dist = vd.template getProp<d>(a);
 
-		vd.getPos(a)[0] += x/r*dp;
-		vd.getPos(a)[1] += y/r*dp;
+		vd.getPos(a)[0] += x/r*0.5*dp;
+		vd.getPos(a)[1] += y/r*0.5*dp;
 
 		vd.template getProp<d>(a) = std::sqrt(vd.getPos(a)[0]*vd.getPos(a)[0] + vd.getPos(a)[1]*vd.getPos(a)[1]);
 
@@ -189,8 +204,8 @@ template <typename CellList> inline void detect_surface_particles(particles & vd
 		while (Np.isNext())
 		{
 			auto b = Np.get();
-			int sgn_b = return_sign(vd. template getProp<sdf>(b));
-			Point<2,double> xb = vd.getPos(b);
+			int sgn_b = return_sign(vd.getProp<sdf>(b));
+			Point<2, double> xb = vd.getPos(b);
 
             Point<2,double> dr = xa - xb;
             double r2 = norm2(dr);
@@ -204,13 +219,147 @@ template <typename CellList> inline void detect_surface_particles(particles & vd
             	}
             }
             ++Np;
+            
 		}
 		++part;
 	}
 
 }
 
-template <typename CellList> inline void cp_redistance(particles & vd, CellList & NN)
+inline double get_p(EMatrix<double, Eigen::Dynamic, 1> xvector, EMatrix<double, Eigen::Dynamic, 1> c)
+{
+	const double x = xvector[0];
+	const double y = xvector[1];
+	return(c[0] + c[1]*x + c[2]*x*x + c[3]*x*x*x + c[4]*y + c[5]*x*y + c[6]*x*x*y + c[7]*x*x*x*y + c[8]*y*y + c[9]*x*y*y + c[10]*x*x*y*y + c[11]*x*x*x*y*y +c[12]*y*y*y + c[13]*x*y*y*y + c[14]*x*x*y*y*y + c[15]*x*x*x*y*y*y);
+}
+
+inline double get_dpdx(EMatrix<double, Eigen::Dynamic, 1> xvector, EMatrix<double, Eigen::Dynamic, 1> c)
+{	
+	const double x = xvector[0];
+	const double y = xvector[1];
+	return(c[1] + 2*c[2]*x + 3*c[3]*x*x + c[5]*y + 2*c[6]*x*y + 3*c[7]*x*x*y + c[9]*y*y + 2*c[10]*x*y*y + 3*c[11]*x*x*y*y + c[13]*y*y*y + 2*c[14]*x*y*y*y + 3*c[15]*x*x*y*y*y);
+}
+
+inline double get_dpdy(EMatrix<double, Eigen::Dynamic, 1> xvector, EMatrix<double, Eigen::Dynamic, 1> c)
+{	
+	const double x = xvector[0];
+	const double y = xvector[1];
+	return(c[4] + c[5]*x + c[6]*x*x + c[7]*x*x*x + 2*c[8]*y + 2*c[9]*x*y + 2*c[10]*x*x*y + 2*c[11]*x*x*x*y + 3*c[12]*y*y + 3*c[13]*x*y*y + 3*c[14]*x*x*y*y + 3*c[15]*x*x*x*y*y);
+}
+
+inline double get_dpdxdx(EMatrix<double, Eigen::Dynamic, 1> xvector, EMatrix<double, Eigen::Dynamic, 1> c)
+{
+	const double x = xvector[0];
+	const double y = xvector[1];
+	return(2*c[2] + 6*c[3]*x + 2*c[6]*y + 6*c[7]*x*y + 2*c[10]*y*y + 6*c[11]*y*y*x + 2*c[14]*y*y*y + 6*c[15]*y*y*y*x);
+}
+
+inline double get_dpdydy(EMatrix<double, Eigen::Dynamic, 1> xvector, EMatrix<double, Eigen::Dynamic, 1> c)
+{
+	const double x = xvector[0];
+	const double y = xvector[1];
+	return(2*c[8] + 2*c[9]*x + 2*c[10]*x*x + 2*c[11]*x*x*x + 6*c[12]*y + 6*c[13]*x*y + 6*c[14]*x*x*y + 6*c[15]*x*x*x*y);
+}
+
+inline double get_dpdxdy(EMatrix<double, Eigen::Dynamic, 1> xvector, EMatrix<double, Eigen::Dynamic, 1> c)
+{
+	const double x = xvector[0];
+	const double y = xvector[1];
+	return(c[5] + 2*c[6]*x + 3*c[7]*x*x + 2*c[9]*y + 4*c[10]*x*y + 6*c[11]*x*x*y + 3*c[13]*y*y + 6*c[14]*x*y*y + 9*c[15]*x*x*y*y);
+}
+
+template <typename CellList> inline void cp_interpol(particles & vd, CellList & NN)
+{
+	auto part = vd.getDomainIterator();
+	vd.updateCellList(NN);
+	while (part.isNext())
+		{
+			auto a = part.get();
+			if (vd.template getProp<surf_flag>(a) != 1)
+			{	
+				//++part;
+				//continue;
+			}
+
+			const int num_neibs_a = vd.getProp<num_neibs>(a);
+
+			Point<2, double> xa = vd.getPos(a);
+
+			// debug query point a
+			// std::cout<<"a: "<<xa[0]<<", "<<xa[1]<<std::endl;
+
+			double min_sdf_val = std::abs(vd.getProp<sdf>(a));
+			Point<2, double> min_sdf_val_x = xa;
+			int neib = 0;
+			//std::vector<unsigned int> mo = {1, 0};
+
+			// order limit 4 corresponds to bicubic basis functions
+			MonomialBasis<2> m(4);
+			// std::cout<<"m size"<<m.size()<<std::endl;
+			VandermondeRowBuilder<2, double> vrb(m);
+
+			EMatrix<double, Eigen::Dynamic,Eigen::Dynamic> V(num_neibs_a, m.size());
+			EMatrix<double, Eigen::Dynamic, 1> phi(num_neibs_a, 1);
+			EMatrix<double, Eigen::Dynamic, 1> Atphi(num_neibs_a, 1);
+
+			auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(a)));
+			while(Np.isNext())
+			{
+				auto b = Np.get();
+				Point<2, double> xb = vd.getPos(b);
+				Point<2, double> dr = xa - xb;
+				double r2 = norm2(dr);
+
+				if (r2 > 4.0*H*H)
+				{
+					++Np;
+					continue;
+				}
+
+				// debug given data
+				// std::cout<<std::setprecision(15)<<xb[0]<<"\t"<<xb[1]<<"\t"<<vd.getProp<sdf>(b)<<std::endl;
+
+
+				if (std::abs(vd.getProp<sdf>(b)) < min_sdf_val)
+				{
+					min_sdf_val = std::abs(vd.getProp<sdf>(b));
+					min_sdf_val_x = xb;
+				}
+
+				// Fill phi-vector from the right hand side
+				phi(neib, 0) = vd.getProp<sdf>(b);
+				//xb[0] = 0.1;
+				//xb[1] = 0.5;
+				vrb.buildRow(V, neib, xb, 1.0);
+
+				++neib;
+				++Np;
+			}
+
+			EMatrix<double, Eigen::Dynamic, Eigen::Dynamic> AtA(m.size(), m.size());
+			// debug matrix A
+			// std::cout<<"A:\n"<<V<<std::endl;
+
+			AtA = V.transpose()*V;
+			Atphi = V.transpose()*phi;
+
+			EMatrix<double, Eigen::Dynamic, 1> c(m.size(), 1);
+
+			c = AtA.colPivHouseholderQr().solve(Atphi);
+			// debug matrix AtA, Atphi and coefficients
+			// std::cout<<"AtA:\n"<<AtA<<"\nAtphi:\n"<<Atphi<<"\nc:\n"<<c<<std::endl;
+
+			vd.getProp<interpol_coeff>(a) = c;
+			vd.getProp<min_sdf>(a) = min_sdf_val;
+			vd.getProp<min_sdf_x>(a)[0] = min_sdf_val_x[0];
+			vd.getProp<min_sdf_x>(a)[1] = min_sdf_val_x[1];
+
+			++part;
+		}
+
+}
+
+template <typename CellList> inline void cp_optim(particles & vd, CellList & NN)
 {
 	auto part = vd.getDomainIterator();
 	vd.updateCellList(NN);
@@ -218,59 +367,97 @@ template <typename CellList> inline void cp_redistance(particles & vd, CellList 
 	{
 		auto a = part.get();
 		if (vd.template getProp<surf_flag>(a) != 1)
-		{
-			++part;
-			continue;
+		{	
+			//++part;
+			//continue;
 		}
 
-		const int num_neibs_a = vd.getProp<num_neibs>(a);
-		if (num_neibs_a > np_max)
+		EMatrix<double, Eigen::Dynamic, 1> xa(2,1);
+		xa[0] = vd.getPos(a)[0];
+		xa[1] = vd.getPos(a)[1];
+		double val = vd.getProp<min_sdf>(a);
+		EMatrix<double, Eigen::Dynamic, 1> x(2,1);
+		x[0] = vd.getProp<min_sdf_x>(a)[0];
+		x[1] = vd.getProp<min_sdf_x>(a)[1];
+		EMatrix<double, Eigen::Dynamic, 1> dx(3, 1);
+		dx[0] = 1.0;
+		dx[1] = 1.0;
+		dx[2] = 1.0;
+		double lambda = 0.0;
+		double norm_dx = dx.norm();
+		EMatrix<double, Eigen::Dynamic, 1> xax = x - xa;
+
+		double dpdx = 0;
+		double dpdy = 0;
+		double dpdxdx = 0;
+		double dpdydy = 0;
+		double dpdxdy = 0;
+		double dpdydx = 0;
+
+		EMatrix<double, Eigen::Dynamic, 1> c = vd.getProp<interpol_coeff>(a);
+		EMatrix<double, Eigen::Dynamic, 1> nabla_f(3, 1); // 3 = ndim + 1
+		EMatrix<double, Eigen::Dynamic, Eigen::Dynamic> H(3, 3);
+
+		// order limit 4 corresponds to bicubic basis functions
+		//MonomialBasis<2> m(4);
+		//EMatrix<double, Eigen::Dynamic, 1> nabla_f(2, 1);
+		// std::cout<<x[0]<<", "<<x[1]<<std::endl;
+
+		int k = 0;
+
+		//while(k<1)
+		while(norm_dx > 0.000000000001)
 		{
-			throw std::domain_error("Particle has too many neighbours");
-		}
-
-		// Initialize phi-vector from the right hand side
-		Point<np_max, double> phi_rhs = 0.0;
-
-		Point<2, double> xa = vd.getPos(a);
-		double min_sdf = std::abs(vd.getProp<sdf>(a));
-		Point<2, double> min_sdf_x = xa;
-		int neib = 0;
-
-		MonomialBasis<2> m(3);
-
-		EMatrix<double,Eigen::Dynamic,Eigen::Dynamic> V(num_neibs_a,m.size());
-		EMatrix<double,Eigen::Dynamic,1> phi(num_neibs_a,1);
-		EMatrix<double,Eigen::Dynamic,1> Atphi(m.size(),1);
-
-		auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(a)));
-		while(Np.isNext())
-		{
-			auto b = Np.get();
-			Point<2,double> xb = vd.getPos(a);
-			if (std::abs(vd.getProp<sdf>(b)) < min_sdf)
+			// do optimisation
+			// gather required values
+			dpdx = get_dpdx(x, c);
+			dpdy = get_dpdy(x, c);
+			if (k == 0)
 			{
-				min_sdf = std::abs(vd.getProp<sdf>(b));
-				min_sdf_x = xb;
+				lambda = (-xax[0]*dpdx - xax[1]*dpdy)/(dpdx*dpdx + dpdy*dpdy);
 			}
+			dpdxdx = get_dpdxdx(x, c);
+			dpdydy = get_dpdydy(x, c);
+			dpdxdy = get_dpdxdy(x, c);
+			dpdydx = dpdxdy;
 
-			// Fill phi-vector from the right hand side
-			Atphi(neib,0) = vd.getProp<sdf>(b);
+			nabla_f[0] = xax[0] + lambda*dpdx;
+			nabla_f[1] = xax[1] + lambda*dpdy;
+			nabla_f[2] = get_p(x, c);
 
-			vrb.buildRow(V,neib,xb,1.0);
+			H(0, 0) = 1 + lambda*dpdxdx;
+			H(0, 1) = lambda*dpdydx;
+			H(1, 0) = lambda*dpdxdy;
+			H(1, 1) = 1 + lambda*dpdydy;
+			H(0, 2) = dpdx;
+			H(1, 2) = dpdy;
+			H(2, 0) = dpdx;
+			H(2, 1) = dpdy;
+			H(2, 2) = 0;
 
-			++neib;
-			++Np;
+			dx = - H.inverse()*nabla_f;
+//			std::cout<<"hi"<<std::endl;
+//			std::cout<<dx<<std::endl;
+			x[0] = x[0] + dx[0];
+			x[1] = x[1] + dx[1];
+			lambda = lambda + dx[2];
+			xax = x - xa;
+			norm_dx = dx.norm();
+
+			//std::cout<<"H:\n"<<H<<"\nH_inv:\n"<<H_inv<<std::endl;	
+			//std::cout<<"x:"<<x[0]<<"\nc:"<<std::endl;
+			//std::cout<<c<<std::endl;
+			//std::cout<<dpdx<<std::endl;
+			++k;
+			//std::cout<<k<<std::endl;
 		}
+//		debug optimisation
+//		std::cout<<"p(x) = "<<get_p(x, c)<<std::endl;
+//		std::cout<<"old sdf: "<<vd.getProp<sdf>(a)<<std::endl;
+		vd.getProp<sdf>(a) = return_sign(vd.getProp<sdf>(a))*xax.norm();
+//		std::cout<<"new sdf: "<<vd.getProp<sdf>(a)<<std::endl;
 
-		EMatrix<double,Eigen::Dynamic,Eigen::Dynamic> AtA(m.size(),m.size());
-
-		AtA = V.transpose()*V;
-		Atphi = V.transpose()*phi;
-
-		EMatrix<double,Eigen::Dynamic,1> c(m.size(),1);
-
-		c = AtA.colPivHouseholderQr().solve(Atphi);
+		//std::cout<<"c:\n"<<vd.getProp<interpol_coeff>(a)<<"\nmin_sdf: "<<vd.getProp<min_sdf>(a)<<" , min_sdf_x: "<<vd.getProp<min_sdf_x>(a)<<std::endl;
 
 		++part;
 	}
@@ -281,7 +468,7 @@ template <typename CellList> inline void cp_redistance(particles & vd, CellList 
 int main(int argc, char* argv[])
 {
 	openfpm_init(&argc, &argv);
-
+	
 	const double l = 4.0;
 	Box<2, double> domain({-l/2.0, -l/2.0}, {l/2.0, l/2.0});
 	size_t sz[2] = {(size_t)(l/dp + 0.5), (size_t)(l/dp + 0.5)};
@@ -290,7 +477,7 @@ int main(int argc, char* argv[])
 	Ghost<2, double> g(0.0);
 
 	particles vd(0, domain, bc, g, DEC_GRAN(512));
-	openfpm::vector<std::string> names({"part_type", "previous_sdf", "sdf", "redistanced_sdf", "distance", "sdfgradient", "previous_sdfgradient", "surface_flag", "number_neibs"});
+	openfpm::vector<std::string> names({"part_type", "previous_sdf", "sdf", "redistanced_sdf", "distance", "sdfgradient", "previous_sdfgradient", "surface_flag", "number_neibs", "min_sdf_neibors", "min_sdf_location"});
 	vd.setPropNames(names);
 
 	Box<2, double> particle_box({-l/2.0, -l/2.0}, {l/2.0, l/2.0});
@@ -320,16 +507,21 @@ int main(int argc, char* argv[])
 
 		++particle_it;
 
-
 	}
 
 	vd.map();
 
 	auto NN = vd.getCellList(2*H);
 
+	detect_surface_particles(vd, NN);
+	
 	calc_surface_normals(vd, NN);
+	std::cout<<"#########################################################"<<std::endl;
 
-	vd.write("init");
+	//vd.write("init");
+
+	detect_surface_particles(vd, NN);
+	//cp_interpol(vd, NN);
 
 	perturb_pos(vd);
 
@@ -337,15 +529,16 @@ int main(int argc, char* argv[])
 
 	NN = vd.getCellList(2*H);
 	calc_surface_normals(vd, NN);
-
-	vd.write("after_perturb");
+	std::cout<<"#########################################################"<<std::endl;
+	//vd.write("after_perturb");
 
 	detect_surface_particles(vd, NN);
-	cp_redistance(vd, NN);
+	cp_interpol(vd, NN);
+	cp_optim(vd, NN);
 
-	vd.write("after_surf_detect");
-
-
+	calc_surface_normals(vd, NN);
+	std::cout<<"#########################################################"<<std::endl;
+	//vd.write("after_surf_detect");
 
 	openfpm_finalize();
 
