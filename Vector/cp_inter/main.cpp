@@ -1,15 +1,15 @@
 #include "Vector/vector_dist.hpp"
 #include <math.h>
-#include  "Draw/DrawParticles.hpp"
+#include "Draw/DrawParticles.hpp"
 #include "DCPSE/MonomialBasis.hpp"
 #include "DCPSE/Dcpse.hpp"
 
 #define PHASE_A 0
 #define PHASE_B 1
 
-const double dp = 1/256.0;
+const double dp = 1/64.0;
 const double r = 1.0;
-const double band_width = 24.0*dp;
+const double band_width = 16.0*dp;
 const int np_max = 30;
 
 const int type = 0;
@@ -19,15 +19,16 @@ const int redist_sdf = 3;
 const int d = 4;
 const int sdfgrad = 5;
 const int prev_sdfgrad = 6;
-const int surf_flag = 7;
-const int num_neibs = 8;
-const int min_sdf = 9;
-const int min_sdf_x = 10;
-const int interpol_coeff = 11;
+const int curvature = 7;
+const int surf_flag = 8;
+const int num_neibs = 9;
+const int min_sdf = 10;
+const int min_sdf_x = 11;
+const int interpol_coeff = 12;
 
-typedef vector_dist<2, double, aggregate<int, double, double, double, double, double[2], double[2], int, int, double, double[2], EMatrix<double, Eigen::Dynamic, 1>>> particles;
-//										 |		|		|		|		|			|			|	   |    	|			|						|				|
-//									  type    sdf  prev sdf redist_sdf distance sdfgrad prev_sdfgrad surf_flag num_neibs min sdf in support	min sdf location poly coefficients
+typedef vector_dist<2, double, aggregate<int, double, double, double, double, double[2], double[2], double, int, int, double, double[2], EMatrix<double, Eigen::Dynamic, 1>>> particles;
+//										 |		|		|		|		|			|			|	 |         |    |		|		|				|
+//									  type    sdf  prev sdf redist_sdf distance sdfgrad prev_sdfgrad curvature surf_flag num_neibs min sdf in support	min sdf location poly coefficients
 
 
 //double randZeroToOne()
@@ -44,7 +45,7 @@ int return_sign(double phi)
 	return 0;
 }
 
-const double H = 2.0*dp;
+const double H = 1.3*dp;
 const double a2 = 7.0/4.0/M_PI/H/H;
 
 inline double Wab(double r)
@@ -92,7 +93,7 @@ inline double DWdr(double r)
 
 // Calculate surface normals as an SPH difference gradient (A_i - A_j). This function also tracks the number of neighbors per particle
 // for the following redistancing.
-template<typename CellList> inline void calc_surface_normals(particles & vd, CellList & NN)
+template<typename CellList> inline void calc_surface_normals_sph(particles & vd, CellList & NN)
 {	
 	double sdf_gradient_norm = 0.0;
 	int sdf_count = 0;
@@ -111,7 +112,6 @@ template<typename CellList> inline void calc_surface_normals(particles & vd, Cel
         vd.getProp<sdfgrad>(a)[1] = 0.0;
         // vd.getProp<num_neibs>(a) = 1;
 
-        int num_neibs_a = 1;
         // Get the position xp of the particle
         Point<2,double> xa = vd.getPos(a);
 
@@ -149,12 +149,12 @@ template<typename CellList> inline void calc_surface_normals(particles & vd, Cel
                 double cfactor = dp*dp*(vd.getProp<sdf>(b) - vd.getProp<sdf>(a));
                 vd.getProp<sdfgrad>(a)[0] += cfactor * DW.get(0);
                 vd.getProp<sdfgrad>(a)[1] += cfactor * DW.get(1);
-                ++num_neibs_a;
+
             }
 
             ++Np;
         }
-        vd.getProp<num_neibs>(a) = num_neibs_a;
+
 		if (vd.template getProp<surf_flag>(a) == 1)
 		{	
 			Point<2, double> sdf_gradient = vd.getProp<sdfgrad>(a);
@@ -168,7 +168,6 @@ template<typename CellList> inline void calc_surface_normals(particles & vd, Cel
     std::cout<<sdf_gradient_norm<<std::endl;
 }
 
-
 inline void perturb_pos(particles & vd)
 {
 	auto part = vd.getDomainIterator();
@@ -181,8 +180,8 @@ inline void perturb_pos(particles & vd)
 		const double y = vd.getPos(a)[1];
 		const double dist = vd.template getProp<d>(a);
 
-		vd.getPos(a)[0] += x/r*0.5*dp;
-		vd.getPos(a)[1] += y/r*0.5*dp;
+		vd.getPos(a)[0] += x/r*dp;
+		vd.getPos(a)[1] += y/r*dp;
 
 		vd.template getProp<d>(a) = std::sqrt(vd.getPos(a)[0]*vd.getPos(a)[0] + vd.getPos(a)[1]*vd.getPos(a)[1]);
 
@@ -199,6 +198,7 @@ template <typename CellList> inline void detect_surface_particles(particles & vd
 		auto a = part.get();
 		int sgn_a = return_sign(vd. template getProp<sdf>(a));
 		Point<2,double> xa = vd.getPos(a);
+		int num_neibs_a = 1;
 
 		auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(a)));
 		while (Np.isNext())
@@ -212,15 +212,17 @@ template <typename CellList> inline void detect_surface_particles(particles & vd
 
             if (r2 < 4.0*H*H)
             {
+            	++num_neibs_a;
             	if (sgn_a != sgn_b)
             	{
             		vd.template getProp<surf_flag>(a) = 1;
-            		break;
+            		//break;
             	}
             }
             ++Np;
             
 		}
+		vd.getProp<num_neibs>(a) = num_neibs_a;
 		++part;
 	}
 
@@ -268,6 +270,35 @@ inline double get_dpdxdy(EMatrix<double, Eigen::Dynamic, 1> xvector, EMatrix<dou
 	return(c[5] + 2*c[6]*x + 3*c[7]*x*x + 2*c[9]*y + 4*c[10]*x*y + 6*c[11]*x*x*y + 3*c[13]*y*y + 6*c[14]*x*y*y + 9*c[15]*x*x*y*y);
 }
 
+template<typename CellList> inline void calc_derivatives(particles & vd, CellList & NN)
+{
+	auto part = vd.getDomainIterator();
+
+	while(part.isNext())
+	{
+		auto a = part.get();
+
+		EMatrix<double, Eigen::Dynamic, 1> c = vd.getProp<interpol_coeff>(a);
+
+		EMatrix<double, Eigen::Dynamic, 1> x(2, 1);
+		x[0] = vd.getPos(a)[0];
+		x[1] = vd.getPos(a)[1];
+
+		vd.getProp<sdfgrad>(a)[0] = get_dpdx(x, c);
+		vd.getProp<sdfgrad>(a)[1] = get_dpdy(x, c);
+		const double sdfgradmag = sqrt(vd.getProp<sdfgrad>(a)[0]*vd.getProp<sdfgrad>(a)[0] + vd.getProp<sdfgrad>(a)[1]*vd.getProp<sdfgrad>(a)[1]);
+
+		vd.getProp<curvature>(a) = get_dpdxdx(x, c) + get_dpdydy(x, c);
+		if (vd.getProp<surf_flag>(a))
+			{
+				//std::cout<<"sdfgrad magnitude: "<<sdfgradmag<<"\ncurvature: "<<vd.getProp<curvature>(a)<<std::endl;
+			}
+
+		++part;
+
+	}
+}
+
 template <typename CellList> inline void cp_interpol(particles & vd, CellList & NN)
 {
 	auto part = vd.getDomainIterator();
@@ -276,7 +307,7 @@ template <typename CellList> inline void cp_interpol(particles & vd, CellList & 
 		{
 			auto a = part.get();
 			if (vd.template getProp<surf_flag>(a) != 1)
-			{	
+			{
 				//++part;
 				//continue;
 			}
@@ -310,7 +341,7 @@ template <typename CellList> inline void cp_interpol(particles & vd, CellList & 
 				Point<2, double> dr = xa - xb;
 				double r2 = norm2(dr);
 
-				if (r2 > 4.0*H*H)
+				if ((r2 > 4.0*H*H) || (r2 == 4.0*H*H))
 				{
 					++Np;
 					continue;
@@ -327,14 +358,17 @@ template <typename CellList> inline void cp_interpol(particles & vd, CellList & 
 				}
 
 				// Fill phi-vector from the right hand side
-				phi(neib, 0) = vd.getProp<sdf>(b);
+				phi[neib] = vd.getProp<sdf>(b);
 				//xb[0] = 0.1;
 				//xb[1] = 0.5;
+
 				vrb.buildRow(V, neib, xb, 1.0);
+
 
 				++neib;
 				++Np;
 			}
+
 
 			EMatrix<double, Eigen::Dynamic, Eigen::Dynamic> AtA(m.size(), m.size());
 			// debug matrix A
@@ -346,6 +380,7 @@ template <typename CellList> inline void cp_interpol(particles & vd, CellList & 
 			EMatrix<double, Eigen::Dynamic, 1> c(m.size(), 1);
 
 			c = AtA.colPivHouseholderQr().solve(Atphi);
+
 			// debug matrix AtA, Atphi and coefficients
 			// std::cout<<"AtA:\n"<<AtA<<"\nAtphi:\n"<<Atphi<<"\nc:\n"<<c<<std::endl;
 
@@ -354,24 +389,26 @@ template <typename CellList> inline void cp_interpol(particles & vd, CellList & 
 			vd.getProp<min_sdf_x>(a)[0] = min_sdf_val_x[0];
 			vd.getProp<min_sdf_x>(a)[1] = min_sdf_val_x[1];
 
+			//std::cout<<"Vmat\n"<<V<<std::endl;
+
 			++part;
 		}
 
 }
 
 template <typename CellList> inline void cp_optim(particles & vd, CellList & NN)
-{
+{	// iterate over all particles, i.e. do closest point optimisation for all particles //
 	auto part = vd.getDomainIterator();
 	vd.updateCellList(NN);
 	while (part.isNext())
 	{
 		auto a = part.get();
-		if (vd.template getProp<surf_flag>(a) != 1)
-		{	
+		if (vd.template getProp<surf_flag>(a) != 1) // commented for the moment, could be spared after debugging //
+		{
 			//++part;
 			//continue;
 		}
-
+		// initialise all variables //
 		EMatrix<double, Eigen::Dynamic, 1> xa(2,1);
 		xa[0] = vd.getPos(a)[0];
 		xa[1] = vd.getPos(a)[1];
@@ -405,11 +442,10 @@ template <typename CellList> inline void cp_optim(particles & vd, CellList & NN)
 
 		int k = 0;
 
-		//while(k<1)
-		while(norm_dx > 0.000000000001)
+		while(norm_dx > 0.000000001)
 		{
-			// do optimisation
-			// gather required values
+			// do optimisation //
+			// gather required values //
 			dpdx = get_dpdx(x, c);
 			dpdy = get_dpdy(x, c);
 			if (k == 0)
@@ -420,11 +456,11 @@ template <typename CellList> inline void cp_optim(particles & vd, CellList & NN)
 			dpdydy = get_dpdydy(x, c);
 			dpdxdy = get_dpdxdy(x, c);
 			dpdydx = dpdxdy;
-
+			// Assemble gradient //
 			nabla_f[0] = xax[0] + lambda*dpdx;
 			nabla_f[1] = xax[1] + lambda*dpdy;
 			nabla_f[2] = get_p(x, c);
-
+			// Assemble Hessian matrix //
 			H(0, 0) = 1 + lambda*dpdxdx;
 			H(0, 1) = lambda*dpdydx;
 			H(1, 0) = lambda*dpdxdy;
@@ -434,13 +470,13 @@ template <typename CellList> inline void cp_optim(particles & vd, CellList & NN)
 			H(2, 0) = dpdx;
 			H(2, 1) = dpdy;
 			H(2, 2) = 0;
-
+			// compute and add increment // 
 			dx = - H.inverse()*nabla_f;
-//			std::cout<<"hi"<<std::endl;
-//			std::cout<<dx<<std::endl;
+			//std::cout<<dx<<std::endl;
 			x[0] = x[0] + dx[0];
 			x[1] = x[1] + dx[1];
 			lambda = lambda + dx[2];
+			// compute exit criterion and prepare xax
 			xax = x - xa;
 			norm_dx = dx.norm();
 
@@ -468,7 +504,7 @@ template <typename CellList> inline void cp_optim(particles & vd, CellList & NN)
 int main(int argc, char* argv[])
 {
 	openfpm_init(&argc, &argv);
-	
+
 	const double l = 4.0;
 	Box<2, double> domain({-l/2.0, -l/2.0}, {l/2.0, l/2.0});
 	size_t sz[2] = {(size_t)(l/dp + 0.5), (size_t)(l/dp + 0.5)};
@@ -477,12 +513,11 @@ int main(int argc, char* argv[])
 	Ghost<2, double> g(0.0);
 
 	particles vd(0, domain, bc, g, DEC_GRAN(512));
-	openfpm::vector<std::string> names({"part_type", "previous_sdf", "sdf", "redistanced_sdf", "distance", "sdfgradient", "previous_sdfgradient", "surface_flag", "number_neibs", "min_sdf_neibors", "min_sdf_location"});
+	openfpm::vector<std::string> names({"part_type", "previous_sdf", "sdf", "redistanced_sdf", "distance", "sdfgradient", "previous_sdfgradient", "curvature", "surface_flag", "number_neibs", "min_sdf_neibors", "min_sdf_location"});
 	vd.setPropNames(names);
 
 	Box<2, double> particle_box({-l/2.0, -l/2.0}, {l/2.0, l/2.0});
 	auto particle_it = DrawParticles::DrawBox(vd, sz, domain, particle_box);
-
 
 	while (particle_it.isNext())
 	{
@@ -514,30 +549,35 @@ int main(int argc, char* argv[])
 	auto NN = vd.getCellList(2*H);
 
 	detect_surface_particles(vd, NN);
-	
-	calc_surface_normals(vd, NN);
-	std::cout<<"#########################################################"<<std::endl;
+	cp_interpol(vd, NN);
 
+	//calc_surface_normals(vd, NN);
+	std::cout<<"::::::::::::::::::::::::::::::::::::::before perturbing:"<<std::endl;
+	calc_derivatives(vd, NN);
 	//vd.write("init");
 
-	detect_surface_particles(vd, NN);
 	//cp_interpol(vd, NN);
-
 	perturb_pos(vd);
 
 	vd.map();
 
 	NN = vd.getCellList(2*H);
-	calc_surface_normals(vd, NN);
-	std::cout<<"#########################################################"<<std::endl;
+	//calc_surface_normals(vd, NN);
 	//vd.write("after_perturb");
 
 	detect_surface_particles(vd, NN);
+
 	cp_interpol(vd, NN);
+
+	std::cout<<"::::::::::::::::::::::::::::::::::::::after perturbing, before redistancing:"<<std::endl;
+	calc_derivatives(vd, NN);
+
 	cp_optim(vd, NN);
 
-	calc_surface_normals(vd, NN);
-	std::cout<<"#########################################################"<<std::endl;
+	cp_interpol(vd, NN);
+	std::cout<<"::::::::::::::::::::::::::::::::::::::after redistancing:"<<std::endl;
+	calc_derivatives(vd, NN);
+
 	//vd.write("after_surf_detect");
 
 	openfpm_finalize();
