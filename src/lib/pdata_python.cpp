@@ -131,8 +131,7 @@ conduit::Node create_grid(const npy_int64 dim,
                 {
                     node.set_path(
                         getNodePathAddress(i) + "data",
-                        (unsigned char *) g_one_3d[c_one]->get_loc_grid(i).template getPointer<0>()
-                    );
+                        (unsigned char *)g_one_3d[c_one]->get_loc_grid(i).template getPointer<0>());
                 }
                 // todo run with `ddd` node["wow"] = { 1.0,2.0,3.0,4.0};
         

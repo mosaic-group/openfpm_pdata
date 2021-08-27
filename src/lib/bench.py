@@ -41,7 +41,7 @@ extra_link_args = ' '.join([
     conduit_libs,
     openfpm_libs
 ])
-module_source_cpp = '/home/stefano/opt/openfpm/src/openfpm_pdata/src/lib/pdata_python.cpp'
+module_source_cpp = '/home/stefano/opt/openfpm_pdata/src/lib/pdata_python.cpp'
 
 os.environ['CC'] = 'mpicc'  # auto-include mpi
 os.environ['CXX'] = 'mpic++'
@@ -69,3 +69,26 @@ print(node)
 
 openfpm.f(node)
 print(node)
+
+openfpm.openfpm_init()
+
+grid_node = openfpm.create_grid(
+    3,  # dim
+    2,  # # props
+    4,  # gh
+    5,  # size[0]
+    5,  # size[1]
+    5,  # size[2]
+    7,  # p[0]
+    7,  # p[1]
+    7,  # p[2]
+    3.14,  # p1[0]
+    3.14,  # p1[1]
+    3.14,  # p1[2]
+    40.2,  # p2[0]
+    40.2,  # p2[1]
+    40.2,  # p2[2]
+)
+print(grid_node)
+
+openfpm.openfpm_finalize()
