@@ -147,7 +147,8 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter_test)
 
 			Box<2,size_t> g_box = g_dist.getCellDecomposer().convertDomainSpaceIntoGridUnits(sub,bc);
 
-			vol += g_box.getVolumeKey();
+			if (g_box.isValid() == true)
+			{vol += g_box.getVolumeKey();}
 		}
 
 		v_cl.sum(vol);
