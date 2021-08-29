@@ -31,6 +31,8 @@ struct interp_ele_sca_array
 
 				grid_dst.template get<Tdst_ele::value>(key_dst) += x.template get<Tsrc::value>(key_m);
 
+				std::cout << "DEBUG: " << x.template get<Tsrc::value>(key_m) << std::endl;
+
 				division += 1.0;
 		}
 		grid_dst.template get<Tdst_ele::value>(key_dst) /= division;

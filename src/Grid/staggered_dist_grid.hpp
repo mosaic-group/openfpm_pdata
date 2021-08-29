@@ -236,6 +236,11 @@ public:
 			// destination point
 			auto key_dst = g_dst_it.get();
 
+			if (key_dst.getKey().get(0) == 240 && key_dst.getKey().get(1) == 1)
+            {
+                std::cout << "DEBUG " << std::endl;
+            }
+
 			// Transform this id into an id for the Eigen vector
 
 			interp_ele<vid,Grid_dst,typename std::remove_reference<decltype(*this)>::type,sizeof...(pos)> cp(key_dst,g_dst,*this,key_src,interp_pos);
