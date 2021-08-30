@@ -40,6 +40,7 @@
 #include "NN/CellList/cuda/CellList_gpu.hpp"
 #include "lib/pdata.hpp"
 #include "cuda/vector_dist_operators_list_ker.hpp"
+#include <type_traits>
 
 #define DEC_GRAN(gr) ((size_t)gr << 32)
 
@@ -306,6 +307,12 @@ private:
 
 #endif
 
+#ifdef SE_CLASS1
+	 int map_ctr=0;
+	 //ghost check to be done.
+     int ghostget_ctr=0;
+#endif
+
 	/*! \brief Initialize the structures
 	 *
 	 * \param np number of particles
@@ -432,6 +439,11 @@ public:
 
 	//! yes I am vector dist
 	typedef int yes_i_am_vector_dist;
+
+	//! yes I am vector subset dist
+	typedef std::integral_constant<bool,false> is_it_a_subset;
+
+
 
 	/*! \brief Operator= for distributed vector
 	 *
@@ -636,6 +648,16 @@ public:
 	 * \return local size
 	 *
 	 */
+	size_t size_local_orig() const
+	{
+		return g_m;
+	}
+
+	/*! \brief return the local size of the vector
+	 *
+	 * \return local size
+	 *
+	 */
 	size_t size_local_with_ghost() const
 	{
 		return v_pos.size();
@@ -688,6 +710,40 @@ public:
 	 *
 	 */
 	inline auto getPos(size_t vec_key) -> decltype(v_pos.template get<0>(vec_key))
+	{
+#ifdef SE_CLASS3
+		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key);
+#endif
+		return v_pos.template get<0>(vec_key);
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPosOrig(vect_dist_key_dx vec_key) const -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	{
+#ifdef SE_CLASS3
+		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key.getKey());
+#endif
+		return v_pos.template get<0>(vec_key.getKey());
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getPosOrig(size_t vec_key) -> decltype(v_pos.template get<0>(vec_key))
 	{
 #ifdef SE_CLASS3
 		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key);
@@ -1093,6 +1149,11 @@ public:
 	}
 
 ////////////////////////////////////////////////////////////////
+
+	vect_dist_key_dx getOriginKey(vect_dist_key_dx vec_key)
+	{
+		return vec_key;
+	}
 
 	/*! \brief Construct a cell list symmetric based on a cut of radius
 	 *
@@ -2305,6 +2366,9 @@ public:
 #ifdef SE_CLASS3
 		se3.map_pre();
 #endif
+#ifdef SE_CLASS1
+	    map_ctr++;
+#endif
 
 		this->template map_<obp>(v_pos,v_prp,g_m,opt);
 
@@ -2315,6 +2379,23 @@ public:
 #ifdef SE_CLASS3
 		se3.map_post();
 #endif
+	}
+#ifdef SE_CLASS1
+    int getMapCtr() const
+    {
+	    return map_ctr;
+    }
+#endif
+
+
+	/*! \brief Stub does not do anything
+	*
+	*/
+	void ghost_get_subset()
+	{
+    #ifdef SE_CLASS1
+       std::cerr<<__FILE__<<":"<<__LINE__<<":You Used a ghost_get on a subset. This does not do anything. Please use ghostget on the entire set.";
+    #endif
 	}
 
 	/*! \brief It synchronize the properties and position of the ghost particles
@@ -2629,10 +2710,13 @@ public:
 			                           VECTOR_POINTS> vtk_writer;
 			vtk_writer.add(v_pos,v_prp,g_m);
 
-			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtk"));
+			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtp"));
 
 			// Write the VTK file
-			return vtk_writer.write(output,prp_names,"particles",meta_info,ft);
+			bool ret=vtk_writer.write(output,prp_names,"particles",meta_info,ft);
+			if(v_cl.rank()==0)
+            {vtk_writer.write_pvtp(out,prp_names,v_cl.size())   ;}
+			return ret;
 		}
 	}
 
@@ -2721,10 +2805,13 @@ public:
 									   vector_dist_prop>, VECTOR_POINTS> vtk_writer;
 			vtk_writer.add(v_pos,v_prp,g_m);
 
-			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtk"));
+			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtp"));
 
 			// Write the VTK file
-			return vtk_writer.write(output,prp_names,"particles",meta_info,ft);
+			bool ret=vtk_writer.write(output,prp_names,"particles",meta_info,ft);
+            if(v_cl.rank()==0)
+            {vtk_writer.write_pvtp(out,prp_names,v_cl.size(),iteration);}
+            return ret;
 		}
 	}
 
@@ -2937,7 +3024,18 @@ public:
 		prp_names = names;
 	}
 
-	/*! \brief Get a special particle iterator able to iterate across particles using
+    /*! \brief Get the properties names
+     *
+     * It is useful to get name for the properties in vtk writers
+     *
+     */
+    openfpm::vector<std::string> &  getPropNames()
+    {
+        return prp_names;
+    }
+
+
+    /*! \brief Get a special particle iterator able to iterate across particles using
 	 *         symmetric crossing scheme
 	 *
 	 * \param NN Verlet list neighborhood
@@ -2989,6 +3087,15 @@ public:
 		return key;
 	}
 
+	/*! \brief Indicate that this class is not a subset
+	 *
+	 * \return false
+	 *
+	 */
+	bool isSubset() const
+	{
+		return false;
+	}
 
 #ifdef CUDA_GPU
 

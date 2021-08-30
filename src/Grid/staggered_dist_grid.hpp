@@ -70,6 +70,8 @@ public:
 	//! Properties for each grid point
 	typedef T value_type;
 
+	typedef typename grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>::decomposition decomposition;
+
 	//! Number of dimensions
 	static const unsigned int dims = dim;
 
@@ -104,6 +106,63 @@ public:
 	:grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(g_sz,domain,ghost)
 	{}
 
+	/*! \brief Constructor
+	 *
+	 * \param g_sz size of the staggered grid
+	 * \param domain domain
+	 * \param ghost part
+	 *
+	 *
+	 */
+	staggered_grid_dist(const size_t (& g_sz)[dim],
+			            const Box<dim,St> & domain,
+						const Ghost<dim,long int> & ghost)
+	:grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(g_sz,domain,ghost)
+	{}
+
+    /*! It construct a grid of a specified size, defined on a specified Box space, having a specified ghost size and periodicity
+     *
+     * \param g_sz grid size on each dimension
+     * \param domain Box that contain the grid
+     * \param g Ghost part of the domain (given in grid units)
+     * \param p periodicity
+     *
+     * \warning In very rare case the ghost part can be one point bigger than the one specified
+     *
+     */
+	staggered_grid_dist(const size_t (& g_sz)[dim],const Box<dim,St> & domain,
+			     const Ghost<dim,long int> & g, const periodicity<dim> & p)
+	:grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(g_sz,domain,g,p)
+	{
+	}
+
+    /*! It constructs a grid of a specified size, defined on a specified Box space, forcing to follow a specified decomposition, and having a specified ghost size
+     *
+     * \param dec Decomposition
+     * \param g_sz grid size on each dimension
+     * \param g Ghost part (given in grid units)
+     *
+     * \warning In very rare case the ghost part can be one point bigger than the one specified
+     *
+     */
+	staggered_grid_dist(const Decomposition & dec, const size_t (& g_sz)[dim],
+			     const Ghost<dim,long int> & g)
+	:grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(dec,g_sz,g)
+	{}
+
+    /*! It constructs a grid of a specified size, defined on a specified Box space, forcing to follow a specified decomposition and with a specified ghost size
+     *
+     * \param dec Decomposition
+     * \param g_sz grid size on each dimension
+     * \param ghost Ghost part
+     *
+     */
+    staggered_grid_dist(const Decomposition & dec,
+    		     const size_t (& g_sz)[dim],
+				 const Ghost<dim,St> & ghost)
+    :grid_dist_id<dim,St,T,Decomposition,Memory,device_grid>(dec,g_sz,ghost)
+    {}
+
 	/*! \brief set the staggered positions of the properties
 	 *
 	 * \tparam property p
@@ -114,7 +173,7 @@ public:
 	template<unsigned int p> void setStagPosition(openfpm::vector<comb<dim>> & cmb)
 	{
 #ifdef SE_CLASS1
-		if (extends< typename boost::mpl::at<typename T::type,boost::mpl::int_<p> >::type >::mul() != cmb.size())
+		if (extends< typename boost::mpl::at<typename T::type,boost::mpl::int_<p> >::type >::mul() > cmb.size())
 			std::cerr << __FILE__ << ":" << __LINE__ << " error properties has " << extends< typename boost::mpl::at<typename T::type,boost::mpl::int_<p> >::type >::mul() << " components, but " << cmb.size() << "has been defined \n";
 #endif
 		c_prp[p] = cmb;
@@ -231,7 +290,7 @@ public:
 	 * \return true
 	 *
 	 */
-	bool is_staggered()
+	bool is_staggered() const
 	{
 		return true;
 	}

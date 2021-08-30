@@ -574,7 +574,7 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p>inline auto get(const grid_dist_amr_key<dim> & v1) const -> typename std::add_lvalue_reference<decltype(gd_array.get(v1.getLvl()).template get<p>(v1.getKey()))>::type
+	template <unsigned int p>inline auto get(const grid_dist_amr_key<dim> & v1) const -> decltype(gd_array.get(v1.getLvl()).template get<p>(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -590,7 +590,7 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p>inline auto get(const grid_dist_amr_key<dim> & v1) -> typename std::add_lvalue_reference<decltype(gd_array.get(v1.getLvl()).template get<p>(v1.getKey()))>::type
+	template <unsigned int p>inline auto get(const grid_dist_amr_key<dim> & v1) -> decltype(gd_array.get(v1.getLvl()).template get<p>(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -607,7 +607,7 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p>inline auto get(size_t lvl, const grid_dist_key_dx<dim> & v1) const -> typename std::add_lvalue_reference<decltype(gd_array.get(lvl).template get<p>(v1))>::type
+	template <unsigned int p>inline auto get(size_t lvl, const grid_dist_key_dx<dim> & v1) const -> decltype(gd_array.get(lvl).template get<p>(v1))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -623,7 +623,7 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p>inline auto get(size_t lvl, const grid_dist_key_dx<dim> & v1) -> typename std::add_lvalue_reference<decltype(gd_array.get(lvl).template get<p>(v1))>::type
+	template <unsigned int p>inline auto get(size_t lvl, const grid_dist_key_dx<dim> & v1) -> decltype(gd_array.get(lvl).template get<p>(v1))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -644,7 +644,7 @@ public:
 	 */
 	template <unsigned int p>
 	inline auto insert(const grid_dist_amr_key<dim> & v1)
-	-> typename std::add_lvalue_reference<decltype(gd_array.get(v1.getLvl()).template insert<p>(v1.getKey()))>::type
+	-> decltype(gd_array.get(v1.getLvl()).template insert<p>(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -663,7 +663,7 @@ public:
 	 *
 	 */
 	template <unsigned int p>inline auto insert(size_t lvl, const grid_dist_key_dx<dim> & v1)
-	-> typename std::add_lvalue_reference<decltype(gd_array.get(lvl).template insert<p>(v1))>::type
+	-> decltype(gd_array.get(lvl).template insert<p>(v1))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);

@@ -37,6 +37,14 @@
 ehthumbs.db
 Thumbs.db
 
+# CLion IDE-related
+.idea/
+cmake-build-debug/
+cmake-build-release/
+
+# Script-generated build folder
+build/
+
 ###### Other
 
 AUTHORS
@@ -48,6 +56,7 @@ README
 **/src/Makefile
 ./Makefile
 Makefile.in
+Makefile
 config.status
 configure
 numerics
@@ -107,5 +116,14 @@ perf.data.old
 projectId.sh
 /build
 /Default/
-node_modules
-node_modules
+/cmake-build-debug-gcc/
+/cmake-build-falcon/
+/cmake-build-release-gcc/
+
+*CMake*
+*cmake*
+**/*cmake*
+**/*CMake*
+
+**/.gitignore
+.gitignore

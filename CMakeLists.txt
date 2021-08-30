@@ -28,6 +28,8 @@ set(TINYOBJLOADER_ROOT CACHE PATH "TinyObjLoader library path")
 set(SE_CLASS1 CACHE BOOL "Activate compilation with SE_CLASS1")
 set(SE_CLASS2 CACHE BOOL "Activate compilation with SE_CLASS2")
 set(SE_CLASS3 CACHE BOOL "Activate compilation with SE_CLASS3")
+set(BLITZ_ROOT CACHE PATH "Blitz root directory")
+set(ALGOIM_ROOT CACHE PATH "Algoim root directory")
 set(ACTION_ON_ERROR CACHE STRING "Action to perform in case of error")
 set(PROFILE_WITH_SCOREP CACHE BOOL "Enable profiling with scorep")
 set(ENV{PETSC_DIR} ${PETSC_ROOT})
@@ -220,7 +222,10 @@ else()
 endif()
 
 if(EIGEN3_FOUND)
-	set(DEFINE_HAVE_EIGEN "#define HAVE_EIGEN")
+    message("-- EIGEN3 found.")
+    set(DEFINE_HAVE_EIGEN "#define HAVE_EIGEN")
+else()
+    message("-- EIGEN3 not found!")
 endif()
 
 if(LIBHILBERT_FOUND)
@@ -353,6 +358,14 @@ if (CPACK_RUN_INSTALL_DEPENDENCIES)
                 COMPONENT OpenFPM)
 
 	install(DIRECTORY $ENV{DEP_PACKING}/VCDEVEL
+                DESTINATION dependencies/
+                COMPONENT OpenFPM)
+
+	install(DIRECTORY $ENV{DEP_PACKING}/BLITZ
+                DESTINATION dependencies/
+                COMPONENT OpenFPM)
+
+	install(DIRECTORY $ENV{DEP_PACKING}/ALGOIM
                 DESTINATION dependencies/
                 COMPONENT OpenFPM)
 

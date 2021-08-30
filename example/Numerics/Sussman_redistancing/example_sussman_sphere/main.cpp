@@ -183,51 +183,54 @@ int main(int argc, char* argv[])
 	 *
 	 * ## Set the redistancing options ## {#e3d_s_redistoptions}
 	 *
-	 * For the redistancing, we can choose some options. These options will then be passed bundled as a structure to
+		 * For the redistancing, we can choose some options. These options will then be passed bundled as a structure to
 	 * the redistancing function. Setting these options is optional, since they all have a Default value as well. In
 	 * particular the following options can be set by the user:
-	 * * \p min_iter: Minimum number of iterations before steady state in narrow band will be checked (Default: 100).
+	 * * \p min_iter: Minimum number of iterations before steady state in narrow band will be checked (Default: 1e5).
 	 * * \p max_iter: Maximum number of iterations you want to run the redistancing, even if steady state might not yet
-	 *                have been reached (Default: 1e6).
-	 * * \p convTolChange.value: Convolution tolerance for the normalized total change of Phi in the narrow band between
-	 *                           two consecutive iterations (Default: 1e-6).
-	 * * \p convTolChange.check: Set true, if you want to use the normalized total change between two iterations as
+	 *                have been reached (Default: 1e12).
+	 * * \p convTolChange.value: Convergence tolerance for the maximal change of Phi within the narrow band between
+	 *                           two consecutive iterations (Default: 1e-15).
+	 * * \p convTolChange.check: Set true, if you want to use the maximal change of Phi between two iterations as
 	 *                           measure of how close you are to the steady state solution. Redistancing will then stop
 	 *                           if convTolChange.value is reached or if the current iteration is bigger than max_iter.
-	 * * \p convTolResidual.value: Convolution tolerance for the residual, that is abs(magnitude gradient of phi - 1) of
-	 *                             Phi in the narrow band (Default 1e-1).
+	 * * \p convTolResidual.value: Convergence tolerance for the residual, that is max{abs(magnitude gradient of phi -
+	 *                              1)} of Phi in the narrow band (Default 1e-3).
 	 * * \p convTolResidual.check: Set true, if you want to use the residual of the current iteration as measure of how
 	 *                             close you are to the steady state solution. Redistancing will then stop if
 	 *                             convTolResidual.value is reached or if the current iteration is bigger than max_iter.
 	 * * \p interval_check_convergence: Interval of #iterations at which convergence to steady state is checked
 	 *                                  (Default: 100).
-	 * * \p width_NB_in_grid_points: Width of narrow band in number of grid points. Must be at least 4, in order to 
-	 *                               have at least 2 grid points on each side of the interface. Is automatically set 
+	 * * \p width_NB_in_grid_points: Width of narrow band in number of grid points. Must be at least 4, in order to
+	 *                               have at least 2 grid points on each side of the interface. Is automatically set
 	 *                               to 4, if a value smaller than 4 is chosen (Default: 4).
 	 * * \p print_current_iterChangeResidual: If true, the number of the current iteration, the corresponding change
 	 *                                        w.r.t the previous iteration and the residual is printed (Default: false).
 	 * * \p print_steadyState_iter: If true, the number of the steady-state-iteration, the corresponding change
 	 *                              w.r.t the previous iteration and the residual is printed (Default: false).
+	 * * \p save_temp_grid: If true, save the temporary grid as hdf5 that can be reloaded onto a grid (Default: false).
 	 *
-	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_sphere/main.cpp Redistancing options
+	 *
+	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp Redistancing options
 	 */
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//! @cond [Redistancing options] @endcond
 	// Now we want to convert the initial Phi into a signed distance function (SDF) with magnitude of gradient = 1.
 	// For the initial re-distancing we use the Sussman method. First of all, we can set some redistancing options.
 	Redist_options redist_options;
-	redist_options.min_iter                             = 100;
-	redist_options.max_iter                             = 1000;
+	redist_options.min_iter                             = 1e3;
+	redist_options.max_iter                             = 1e4;
 	
-	redist_options.convTolChange.value                  = 1e-12;
+	redist_options.convTolChange.value                  = 1e-7;
 	redist_options.convTolChange.check                  = true;
-	redist_options.convTolResidual.value                = 1e-1;
+	redist_options.convTolResidual.value                = 1e-6; // is ignored if convTolResidual.check = false;
 	redist_options.convTolResidual.check                = false;
 	
-	redist_options.interval_check_convergence           = 1;
-	redist_options.width_NB_in_grid_points              = 6;
+	redist_options.interval_check_convergence           = 1e3;
+	redist_options.width_NB_in_grid_points              = 10;
 	redist_options.print_current_iterChangeResidual     = true;
 	redist_options.print_steadyState_iter               = true;
+	redist_options.save_temp_grid                       = true;
 	//! @cond [Redistancing options] @endcond
 	
 	/**
@@ -277,12 +280,12 @@ int main(int argc, char* argv[])
 	 */
 	//! @cond [Initialize narrow band] @endcond
 	//	Get narrow band: Place particles on interface (narrow band width e.g. 2 grid points on each side of the interface)
-	size_t bc[grid_dim] = {PERIODIC, PERIODIC, PERIODIC};
+	size_t bc[grid_dim] = {NON_PERIODIC, NON_PERIODIC, NON_PERIODIC};
 	// Create an empty vector to which narrow-band particles will be added. You can choose, how many properties you want.
 	// Minimum is 1 property, to which the Phi_SDF can be written
 	// In this example we chose 3 properties. The 1st for the Phi_SDF, the 2nd for the gradient of phi and the 3rd for
 	// the magnitude of the gradient
-	typedef aggregate<double, double[grid_dim], double> props_nb;
+	typedef aggregate<double, Point<grid_dim, double>, double> props_nb;
 	typedef vector_dist<grid_dim, double, props_nb> vd_type;
         Ghost<grid_dim, double> ghost_vd(0);
         vd_type vd_narrow_band(0, box, bc, ghost_vd);

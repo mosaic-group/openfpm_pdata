@@ -8,7 +8,7 @@ add_definitions(-DSCAN_WITH_CUB)
 if(CUDA_FOUND OR CUDA_ON_CPU OR HIP_FOUND)
 	set(CUDA_SOURCES 
 	    Grid/tests/sgrid_dist_id_gpu_unit_tests.cu
-	    Vector/cuda/vector_dist_gpu_MP_tests.cu 
+	    Vector/cuda/vector_dist_gpu_MP_tests.cu
 	    Vector/cuda/vector_dist_cuda_func_test.cu
 	    Decomposition/cuda/decomposition_cuda_tests.cu
 	    Vector/cuda/vector_dist_gpu_unit_tests.cu
@@ -64,7 +64,7 @@ if ( HIP_ENABLE AND HIP_FOUND )
 							  Vector/performance/vector_dist_performance_util.cpp
 							  lib/pdata.cpp 
 							  )
-							  
+
 
 	hip_add_library(ofpm_pdata STATIC lib/pdata.cpp)
 
@@ -81,14 +81,14 @@ else()
 							  Grid/tests/staggered_grid_dist_unit_test.cpp
 							  Vector/tests/vector_dist_cell_list_tests.cpp
 							  Vector/tests/vector_dist_complex_prp_unit_test.cpp
-							  Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp 
-							  Vector/tests/vector_dist_MP_unit_tests.cpp 
-							  Vector/tests/vector_dist_NN_tests.cpp 
-							  Vector/tests/vector_dist_unit_test.cpp  
-							  pdata_performance.cpp 
-							  Decomposition/tests/CartDecomposition_unit_test.cpp 
-							  Decomposition/tests/shift_vect_converter_tests.cpp 
-							  Vector/performance/vector_dist_performance_util.cpp  
+							  Vector/tests/vector_dist_HDF5_chckpnt_restart_test.cpp
+							  Vector/tests/vector_dist_MP_unit_tests.cpp
+							  Vector/tests/vector_dist_NN_tests.cpp
+							  Vector/tests/vector_dist_unit_test.cpp
+							  pdata_performance.cpp
+							  Decomposition/tests/CartDecomposition_unit_test.cpp
+							  Decomposition/tests/shift_vect_converter_tests.cpp
+							  Vector/performance/vector_dist_performance_util.cpp
 							  lib/pdata.cpp)
 
 	add_library(ofpm_pdata STATIC lib/pdata.cpp)
@@ -100,15 +100,23 @@ add_dependencies(pdata ofpmmemory)
 add_dependencies(pdata vcluster)
 
 #add_executable(isolation_pdata ${OPENFPM_INIT_FILE} isolation.cu
-#														  lib/pdata.cpp  
-#														  ../openfpm_devices/src/memory/HeapMemory.cpp 
+#														  lib/pdata.cpp
+#														  ../openfpm_devices/src/memory/HeapMemory.cpp
 #														  ../openfpm_devices/src/memory/CudaMemory.cu
-#														  ../openfpm_devices/src/memory/PtrMemory.cpp 
-#														  ../openfpm_vcluster/src/VCluster/VCluster.cpp 
+#														  ../openfpm_devices/src/memory/PtrMemory.cpp
+#														  ../openfpm_vcluster/src/VCluster/VCluster.cpp
 #														  )
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	target_compile_options(pdata PRIVATE "-Wno-undefined-var-template")
+	target_compile_options(pdata PRIVATE "-Wno-macro-redefined")
+endif()
 if ( CMAKE_COMPILER_IS_GNUCC )
     target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
+	target_compile_options(pdata PRIVATE "-Wno-undefined-var-template")
+	target_compile_options(pdata PRIVATE "-Wno-macro-redefined")
+    #target_compile_options(pdata PRIVATE "-fsanitize=address")
+    #    target_link_options(pdata PRIVATE "-fsanitize=address")
     if (TEST_COVERAGE)
 ######################################## Add mem tests ############################
 
@@ -294,7 +302,7 @@ install(FILES Decomposition/CartDecomposition.hpp
 	      Decomposition/nn_processor.hpp Decomposition/ie_loc_ghost.hpp 
 	      Decomposition/ORB.hpp
 	      Decomposition/dec_optimizer.hpp
-	      DESTINATION openfpm_pdata/include/Decomposition/ 
+	      DESTINATION openfpm_pdata/include/Decomposition/
 	      COMPONENT OpenFPM)
 
 install(FILES Decomposition/Distribution/metis_util.hpp 
@@ -304,13 +312,13 @@ install(FILES Decomposition/Distribution/metis_util.hpp
 	      Decomposition/Distribution/MetisDistribution.hpp 
 	      Decomposition/Distribution/ParMetisDistribution.hpp 
 	      Decomposition/Distribution/DistParMetisDistribution.hpp
-	      Decomposition/Distribution/BoxDistribution.hpp  
-	      DESTINATION openfpm_pdata/include/Decomposition/Distribution 
+	      Decomposition/Distribution/BoxDistribution.hpp
+	      DESTINATION openfpm_pdata/include/Decomposition/Distribution
 	      COMPONENT OpenFPM)
 
 install(FILES Decomposition/cuda/ie_ghost_gpu.cuh
 	      Decomposition/cuda/CartDecomposition_gpu.cuh
-	      DESTINATION openfpm_pdata/include/Decomposition/cuda 
+	      DESTINATION openfpm_pdata/include/Decomposition/cuda
 	      COMPONENT OpenFPM)
 
 install(FILES Grid/grid_dist_id.hpp 
@@ -320,18 +328,18 @@ install(FILES Grid/grid_dist_id.hpp
 	      Grid/staggered_dist_grid.hpp 
 	      Grid/staggered_dist_grid_util.hpp 
 	      Grid/staggered_dist_grid_copy.hpp
-	      DESTINATION openfpm_pdata/include/Grid/ 
+	      DESTINATION openfpm_pdata/include/Grid/
 	      COMPONENT OpenFPM)
 
 install(FILES Grid/cuda/grid_dist_id_kernels.cuh
 	      Grid/cuda/grid_dist_id_iterator_gpu.cuh
-	DESTINATION openfpm_pdata/include/Grid/cuda/ 
+	DESTINATION openfpm_pdata/include/Grid/cuda/
 	COMPONENT OpenFPM)
 
 install(FILES Amr/grid_dist_amr_key_iterator.hpp 
 	      Amr/grid_dist_amr_key.hpp
 	      Amr/grid_dist_amr.hpp
-	      DESTINATION openfpm_pdata/include/Amr/ 
+	      DESTINATION openfpm_pdata/include/Amr/
 	      COMPONENT OpenFPM)
 
 install(FILES Grid/Iterators/grid_dist_id_iterator_util.hpp
@@ -339,7 +347,7 @@ install(FILES Grid/Iterators/grid_dist_id_iterator_util.hpp
               Grid/Iterators/grid_dist_id_iterator_dec_skin.hpp
               Grid/Iterators/grid_dist_id_iterator_sub.hpp
 	      Grid/Iterators/grid_dist_id_iterator.hpp
-	      DESTINATION openfpm_pdata/include/Grid/Iterators 
+	      DESTINATION openfpm_pdata/include/Grid/Iterators
 	      COMPONENT OpenFPM)
 
 
@@ -349,30 +357,31 @@ install(FILES Vector/se_class3_vector.hpp
 	      Vector/vector_dist_ofb.hpp 
 	      Vector/vector_dist_key.hpp
 	      Vector/vector_dist_kernel.hpp
-	      DESTINATION openfpm_pdata/include/Vector 
-	      COMPONENT OpenFPM)
+		  Vector/vector_dist_subset.hpp
+		DESTINATION openfpm_pdata/include/Vector
+		COMPONENT OpenFPM)
 
 install(FILES util/common_pdata.hpp
 	      DESTINATION openfpm_pdata/include/util
 	      COMPONENT OpenFPM)
 
 install(FILES Vector/Iterators/vector_dist_iterator.hpp
-	      DESTINATION openfpm_pdata/include/Vector/Iterators/ 
+	      DESTINATION openfpm_pdata/include/Vector/Iterators/
 	      COMPONENT OpenFPM)
 
 install(FILES Vector/util/vector_dist_funcs.hpp
-	      DESTINATION openfpm_pdata/include/Vector/util 
+	      DESTINATION openfpm_pdata/include/Vector/util
 	      COMPONENT OpenFPM)
 
 install(FILES Vector/cuda/vector_dist_comm_util_funcs.cuh
 	      Vector/cuda/vector_dist_cuda_funcs.cuh
 	      Vector/cuda/vector_dist_operators_list_ker.hpp
-	DESTINATION openfpm_pdata/include/Vector/cuda 
+	DESTINATION openfpm_pdata/include/Vector/cuda
 	COMPONENT OpenFPM)
 
 install(FILES Graph/ids.hpp Graph/dist_map_graph.hpp 
 	      Graph/DistGraphFactory.hpp
-              DESTINATION openfpm_pdata/include/Graph 
+              DESTINATION openfpm_pdata/include/Graph
 	      COMPONENT OpenFPM)
 
 install(FILES example.mk
@@ -380,19 +389,19 @@ install(FILES example.mk
               DESTINATION openfpm_pdata/include/ )
 
 install(FILES DLB/DLB.hpp DLB/LB_Model.hpp
-	DESTINATION openfpm_pdata/include/DLB 
+	DESTINATION openfpm_pdata/include/DLB
 	COMPONENT OpenFPM)
 
 install(FILES config/config.h
-        DESTINATION openfpm_pdata/include/config 
+        DESTINATION openfpm_pdata/include/config
 	COMPONENT OpenFPM)
 
 install(FILES lib/pdata.hpp
-        DESTINATION openfpm_pdata/include/lib 
+        DESTINATION openfpm_pdata/include/lib
 	COMPONENT OpenFPM)
 
 install(FILES Debug/debug.hpp
-	DESTINATION openfpm_pdata/include/Debug 
+	DESTINATION openfpm_pdata/include/Debug
 	COMPONENT OpenFPM)
 
 install(TARGETS ofpm_pdata EXPORT ofpm_pdata_config  DESTINATION openfpm_pdata/lib COMPONENT OpenFPM)
@@ -403,7 +412,7 @@ add_library(binary_config INTERFACE)
 
 target_include_directories(
   binary_config
-  INTERFACE 
+  INTERFACE
   ${CMAKE_INSTALL_PREFIX}/openfpm_pdata/include
   ${CMAKE_INSTALL_PREFIX}/openfpm_data/include
   ${CMAKE_INSTALL_PREFIX}/openfpm_pdata/include/config
