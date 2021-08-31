@@ -1805,7 +1805,7 @@ public:
 		auto it = getGridIteratorGPU();
 		it.setGPUInsertBuffer(1);
 
-		it.template launch<0>(launch_insert_sparse(),f1,f2);
+		it.template launch<1>(launch_insert_sparse(),f1,f2);
 	}
 
 	/*! \brief Insert point in the grid between start and stop
