@@ -308,13 +308,13 @@ int main(int argc, char* argv[])
 	size_t sz[3] = {10,10,10};
 
 	// domain
-	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Box<3,double> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 
 	// Boundary conditions
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
 	// ghost, big enough to contain the interaction radius
-	Ghost<3,float> ghost(r_cut);
+	Ghost<3,double> ghost(r_cut);
 
 	double dt = 0.0005;
 	double sigma12 = pow(sigma,12);

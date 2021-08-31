@@ -1,6 +1,18 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [4.0.0] September 2021 (Codename )
+
+- Adding DCPSE, Level-set based numerics (Closest-point)
+
+### Changes
+
+- Particles writer use now the new XML pvtp Paraview format
+- Particles constructor does not accept discordance precision on space example:
+            If I create a Particle set with vector_dist<3,double,.......>
+            I MUST give in the constructor a domain Box<3,double> and a Ghost<3,double>, giving a Ghost<3,float> will produce
+            an error
+
 ## [3.3.0] April 2021 (Codename Vega)
 
 - Adding support for HIP and AMD GPU. (Only particles) 1_gpu_first/7_sph_dlb_gpu/7_sph_dlb_gpu_opt are compatible with HIP

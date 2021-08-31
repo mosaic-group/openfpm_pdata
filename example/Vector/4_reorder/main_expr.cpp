@@ -51,9 +51,9 @@ int main(int argc, char* argv[])
 	Vcluster & vcl = create_vcluster();
 
 	size_t sz[3] = {10,10,10};
-	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Box<3,double> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
-	Ghost<3,float> ghost(r_cut);
+	Ghost<3,double> ghost(r_cut);
 
 	ln_force lf(sigma12,sigma6);
 	ln_potential lp(sigma12,sigma6);
