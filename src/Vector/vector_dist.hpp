@@ -2530,6 +2530,22 @@ public:
 		g_m -= keys.size();
 	}
 
+	/*! \brief Remove a set of elements from the distributed vector
+	 *
+	 * \warning keys must be sorted
+	 *
+	 * \param keys vector of elements to eliminate
+	 * \param start from where to eliminate
+	 *
+	 */
+	void remove(openfpm::vector<aggregate<int>> & keys, size_t start = 0)
+	{
+		v_pos.remove(keys, start);
+		v_prp.remove(keys, start);
+
+		g_m -= keys.size();
+	}
+
 	/*! \brief Remove one element from the distributed vector
 	 *
 	 * \param key remove one element from the vector
