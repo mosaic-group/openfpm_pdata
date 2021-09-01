@@ -11,19 +11,18 @@ const double dp = 1/32.0;
 const double r = 1.0;
 const double band_width = 16.0*dp;
 
-const int type = 0;
-const int sdf = 1;
-const int sdfgrad = 2;
-const int curvature = 3;
-const int surf_flag = 4;
-const int num_neibs = 5;
-const int min_sdf = 6;
-const int min_sdf_x = 7;
-const int interpol_coeff = 8;
+const int sdf = 0;
+const int sdfgrad = 1;
+const int curvature = 2;
+const int surf_flag = 3;
+const int num_neibs = 4;
+const int min_sdf = 5;
+const int min_sdf_x = 6;
+const int interpol_coeff = 7;
 
-typedef vector_dist<2, double, aggregate<int, double, double[2], double, int, int, double, double[2], double[16]>> particles;
-//										 |		|		|	 	 |         |    |		 |		|	|
-//									  type    sdf  sdfgrad curvature surf_flag num_neibs min sdf in support	min sdf location poly coefficients
+typedef vector_dist<2, double, aggregate<double, double[2], double, int, int, double, double[2], double[16]>> particles;
+//										|		|	 	 |         |    |		 |		|	|
+//									     sdf  sdfgrad curvature surf_flag num_neibs min sdf in support	min sdf location poly coefficients
 
 
 //double randZeroToOne()
@@ -547,7 +546,7 @@ int main(int argc, char* argv[])
 	Ghost<2, double> g(0.0);
 
 	particles vd(0, domain, bc, g, DEC_GRAN(512));
-	openfpm::vector<std::string> names({"part_type", "sdf", "sdfgradient", "curvature", "surface_flag", "number_neibs", "min_sdf_neibors", "min_sdf_location", "interpol_coeff"});
+	openfpm::vector<std::string> names({"sdf", "sdfgradient", "curvature", "surface_flag", "number_neibs", "min_sdf_neibors", "min_sdf_location", "interpol_coeff"});
 	vd.setPropNames(names);
 
 	Box<2, double> particle_box({-l/2.0, -l/2.0}, {l/2.0, l/2.0});
@@ -564,8 +563,6 @@ int main(int argc, char* argv[])
 			vd.add();
 			vd.getLastPos()[0] = x;
 			vd.getLastPos()[1] = y;
-			if (dist > r) vd.template getLastProp<type>() = PHASE_B;
-			else vd.template getLastProp<type>() = PHASE_A;
 			vd.template getLastProp<sdf>() = dist - r;
 			vd.template getLastProp<surf_flag>() = 0;
 			vd.template getLastProp<num_neibs>() = 1;
