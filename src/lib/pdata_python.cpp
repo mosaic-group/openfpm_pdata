@@ -32,13 +32,13 @@ template<unsigned int dim, typename St, typename T, typename Memory = HeapMemory
 using grid_dist_soa = grid_dist_id<dim,St,T,Decomposition,Memory,grid_soa<dim,T,Memory>>;
 
 int c_one = 0;
-grid_dist_soa<3,double,aggregate<double>> * g_one_3d[N_g];
+grid_dist_id<3,double,aggregate<double>> * g_one_3d[N_g];
 
-int c_two = 0;
-grid_dist_soa<3,double,aggregate<double,double>> * g_two_3d[N_g];
+// int c_two = 0;
+// grid_dist_id<3,double,aggregate<double,double>> * g_two_3d[N_g];
 
-int c_three = 0;
-grid_dist_soa<3,double,aggregate<double,double,double>> * g_three_3d[N_g];
+// int c_three = 0;
+// grid_dist_id<3,double,aggregate<double,double,double>> * g_three_3d[N_g];
 
 std::string getNodePathAddress(const int i) {
     return "patches/" + std::to_string(i);  // standardize address
@@ -48,6 +48,8 @@ void openfpm_init_wrapped()
 {
     // todo at check runtime
     openfpm_init(nullptr, nullptr);
+    std::cout << "openfpm is initialized ? hoping so ... " << is_openfpm_init() << std::endl;  // debug only
+    std::cout << "my rank is " << create_vcluster().getProcessUnitID() << std::endl;
 }
 
 static PyObject* openfpm_init_wrapper(PyObject *self, PyObject *args)
@@ -60,6 +62,7 @@ static PyObject* openfpm_init_wrapper(PyObject *self, PyObject *args)
 void openfpm_finalize_wrapped()
 {
     openfpm_finalize();
+    std::cout << "openfpm is initialized ? should NOT be ... " << is_openfpm_init() << std::endl;  // debug only
 }
 
 static PyObject* openfpm_finalize_wrapper(PyObject *self, PyObject *args)
@@ -69,110 +72,116 @@ static PyObject* openfpm_finalize_wrapper(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 }
 
-conduit::Node create_grid(const npy_int64 dim,
-                         const npy_int64 n_prop,
-                         const npy_int64 gh,
-                         size_t (& sz)[3],
-                         npy_int64 per[3],
-                         double domainP1[3],
-                         double domainP2[3])
+static PyObject* create_grid_wrapper(PyObject *self, PyObject *args)
 {
+    // parse input as conduit::Node
 
-    // Wrap n patch in numpy array
-    conduit::Node node;
+    PyObject *node;
 
-    // Parsing node, take dimensionality and ghost
-    if (dim == 3 && n_prop == 1)
+    if(!PyArg_ParseTuple(args, "O", &node)) {
+        return NULL;
+    }
+
+    if(!PyConduit_Node_Check(node)) {
+        PyErr_SetString(PyExc_TypeError, "'argument must be a conduit.Node instance");
+
+        return NULL;
+    }
+
+    conduit::Node& n = *PyConduit_Node_Get_Node_Ptr(node);
+
+    // parse input values
+    // todo more elegant
+
+    npy_int64 dim = n["dim"].value();
+    npy_int64 n_prop = n["n props"].value();
+    npy_int64 gh = n["gh"].value();
+
+    npy_int64 p[3];
+    p[0] = n["periodicity"].value();
+    p[1] = n["periodicity"].value();
+    p[2] = n["periodicity"].value();
+
+    npy_int64 size[3];  // todo should be unsigned
+    size[0] = n["size"].value();
+    size[1] = n["size"].value();
+    size[2] = n["size"].value();
+
+    npy_float64 p1[3], p2[3];
+    p1[0] = n["p1"].value();
+    p1[1] = n["p1"].value();
+    p1[2] = n["p1"].value();
+
+    p2[0] = n["p2"].value();
+    p2[1] = n["p2"].value();
+    p2[2] = n["p2"].value();
+
+    Ghost<3,long int> g(gh);
+    Box<3,double> domain(p1, p2);
+    periodicity<3> bc = {p[0], p[1], p[2]};
+
+    size_t sz[3];  // todo better
+    sz[0] = (size_t) size[0];
+    sz[1] = (size_t) size[1];
+    sz[2] = (size_t) size[2];
+    g_one_3d[c_one] = new grid_dist_id<3, double, aggregate<double>>(
+        sz, domain, g, bc
+    );
+
+    // populate conduit node
+    if (dim == 3 && n_prop == 1)  // todo debug only
     {
-        Ghost<3,long int> g(gh);
-        Box<3,double> domain(domainP1, domainP2);
-        periodicity<3> bc = {per[0], per[1], per[2]};
-        g_one_3d[c_one] = new grid_dist_soa<3, double, aggregate<double>>(
-            sz, domain, g, bc
-        );
-
-        c_one++;
-
-        // Populate conduit node
         auto & gdb_ext = g_one_3d[c_one]->getLocalGridsInfo();
-        node["name"] = "grid_3d";
-
-        for (int i = 0 ; i < gdb_ext.size() ; i++)  // todo assuming 3D grid
-        {
-            node[getNodePathAddress(i) + "/GDBoxLow"] = {
+        for (int i = 0 ; i < gdb_ext.size(); i++) {
+            const float_t tmp0[3] = {
                 gdb_ext.get(i).GDbox.getLow(0),
                 gdb_ext.get(i).GDbox.getLow(1),
                 gdb_ext.get(i).GDbox.getLow(2)
             };
-            node[getNodePathAddress(i) + "/GDBoxHigh"] = {
-                gdb_ext.get(i).GDbox.getHigh(0),
-                gdb_ext.get(i).GDbox.getHigh(1),
-                gdb_ext.get(i).GDbox.getHigh(2)
-            };
-            node[getNodePathAddress(i) + "/DBoxLow"] = {
-                gdb_ext.get(i).Dbox.getLow(0),
-                gdb_ext.get(i).Dbox.getLow(1),
-                gdb_ext.get(i).Dbox.getLow(2)
-            };
-            node[getNodePathAddress(i) + "/DBoxHigh"] = {
-                gdb_ext.get(i).Dbox.getHigh(0),
-                gdb_ext.get(i).Dbox.getHigh(1),
-                gdb_ext.get(i).Dbox.getHigh(2)
-            };
-            node[getNodePathAddress(i) + "/origin"] = {
-                gdb_ext.get(i).origin.get(0),
-                gdb_ext.get(i).origin.get(1),
-                gdb_ext.get(i).origin.get(2)
-            };
-            
-            for (int j = 0 ; j < n_prop ; j++)
-            {
-                if (j == 0)
-                {
-                    node.set_path(
-                        getNodePathAddress(i) + "data",
-                        (unsigned char *)g_one_3d[c_one]->get_loc_grid(i).template getPointer<0>());
+            n.set_path_float32_ptr(getNodePathAddress(i) + "/GDBoxLow", tmp0, 3);
+
+            const float_t tmp1[3] = {gdb_ext.get(i).GDbox.getHigh(0),
+                    gdb_ext.get(i).GDbox.getHigh(1),
+                    gdb_ext.get(i).GDbox.getHigh(2)};
+            n.set_path_float32_ptr(getNodePathAddress(i) + "/GDBoxHigh", tmp1, 3);
+
+            const float_t tmp2[3] = {gdb_ext.get(i).Dbox.getLow(0),
+                    gdb_ext.get(i).Dbox.getLow(1),
+                    gdb_ext.get(i).Dbox.getLow(2)};
+            n.set_path_float32_ptr(getNodePathAddress(i) + "/DBoxLow", tmp2, 3);
+
+            const float_t tmp3[3] = {gdb_ext.get(i).Dbox.getHigh(0),
+                    gdb_ext.get(i).Dbox.getHigh(1),
+                    gdb_ext.get(i).Dbox.getHigh(2)};
+            n.set_path_float32_ptr(getNodePathAddress(i) + "/DBoxHigh", tmp3, 3);
+
+            const float_t tmp4[3] = {gdb_ext.get(i).origin.get(0),
+                    gdb_ext.get(i).origin.get(1),
+                    gdb_ext.get(i).origin.get(2)};
+            n.set_path_float32_ptr(getNodePathAddress(i) + "/origin", tmp4, 3);
+
+            for (int j = 0 ; j < n_prop ; j++) {
+                if (j == 0) {
+                    // todo node.set_path(
+                    //    getNodePathAddress(i) + "data",
+                    //    (unsigned char *)g_one_3d[c_one]->get_loc_grid(i).template getPointer<0>());
                 }
                 // todo run with `ddd` node["wow"] = { 1.0,2.0,3.0,4.0};
         
-                /*else if (j == 1)
+                /* todo else if (j == 1)
                 {
                     node[getNodePathAddress(i) + "data"] = (char*) g_one_3d[c_one]->get_loc_grid(i).template getPointer<1>();
                 }
-                else if (j == 2)
+                todo else if (j == 2)
                 {
                     node[getNodePathAddress(i) + "data"] = (char*) g_one_3d[c_one]->get_loc_grid(i).template getPointer<2>();
                 }*/
             }
         }
+        c_one += 1;
     }
 
-    return node;
-}
-
-static PyObject* create_grid_wrapper(PyObject *self, PyObject *args)
-{
-    npy_int64 dim, n_prop, gh, p[3];
-    size_t sz[3];
-    npy_float64 p1[3], p2[3];
-
-    if (
-        !PyArg_ParseTuple(
-            args,
-            "llllllllldddddd",
-            &dim, &n_prop, &gh,
-            &sz[0], &sz[1], sz[2],
-            &p[0], &p[1], &p[2],
-            &p1[0], &p1[1], &p1[2],
-            &p2[0], &p2[1], &p2[2]
-        )
-    )
-    {
-        Py_RETURN_NONE;
-    }
-
-    auto node = create_grid(dim, n_prop, gh, sz, p, p1, p2);
-    return PyConduit_Node_Python_Wrap(&node, 1);  // python owns => true
+    Py_RETURN_NONE;  // return PyConduit_Node_Python_Wrap(&n, 0);
 }
 
 static PyObject* delete_grid(long int dim, long int ng)

@@ -19,7 +19,7 @@ conduit_includes = ' '.join(map(
 ))
 pybind_includes = '-I/home/stefano/Work/MPI/OpenFPM/pybind11-2.6.2.tar/pybind11-2.6.2/include'
 openfpm_includes = '-I -Wno-deprecated-declarations   -I.  -I/home/stefano/opt/openfpm/install/openfpm_numerics/include -I/home/stefano/opt/openfpm/install/openfpm_pdata/include/config -I/home/stefano/opt/openfpm/install/openfpm_pdata/include -I/home/stefano/opt/openfpm/install/openfpm_data/include -I/home/stefano/opt/openfpm/install/openfpm_vcluster/include -I/home/stefano/opt/openfpm/install/openfpm_io/include -I/home/stefano/opt/openfpm/install/openfpm_devices/include -I/home/stefano/opt/openfpm/deps/VCDEVEL/include  -I/home/stefano/opt/openfpm/deps/METIS/include -I/home/stefano/opt/openfpm/deps/PARMETIS/include -I/home/stefano/opt/openfpm/deps/BOOST/include -I/home/stefano/opt/openfpm/deps/HDF5/include -I/home/stefano/opt/openfpm/deps/LIBHILBERT/include'
-compile_args = '-std=c++11 -fPIC'  # -Wall -Wextra
+compile_args = '-std=c++11 -fPIC -O0'  # -Wall -Wextra
 extra_compile_args = ' '.join([
     conduit_includes,
     pybind_includes,
@@ -61,34 +61,30 @@ setup(
         )
     ]
 )
+
 import openfpm
 
 node = Node()
 node['inp'] = 8.0
-print(node)
 
 openfpm.f(node)
 print(node)
 
 openfpm.openfpm_init()
 
-grid_node = openfpm.create_grid(
-    3,  # dim
-    2,  # # props
-    4,  # gh
-    5,  # size[0]
-    5,  # size[1]
-    5,  # size[2]
-    7,  # p[0]
-    7,  # p[1]
-    7,  # p[2]
-    3.14,  # p1[0]
-    3.14,  # p1[1]
-    3.14,  # p1[2]
-    40.2,  # p2[0]
-    40.2,  # p2[1]
-    40.2,  # p2[2]
-)
+
+grid_node = Node()
+
+# todo better standardized keys
+grid_node['dim'] = 3
+grid_node['n props'] = 1
+grid_node['gh'] = 4
+grid_node['size'] = 5
+grid_node['periodicity'] = 0  # todo for all dims, MUST BE in {0, 1}
+grid_node['p1'] = 0.0  # todo for all dims
+grid_node['p2'] = 1.0  # todo for all dims
+
+openfpm.create_grid(grid_node)
 print(grid_node)
 
 openfpm.openfpm_finalize()
