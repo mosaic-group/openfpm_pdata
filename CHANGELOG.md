@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [4.0.0] September 2021 (Codename )
+## [4.0.0] September 2021 (Codename Heisenberg)
 
 - Adding DCPSE, Level-set based numerics (Closest-point)
 
