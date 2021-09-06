@@ -1,9 +1,9 @@
 #! /bin/bash
 
-/projects\/ppm\/rundeck\/openfpm_super_bundles\/$1\/openfpm_dep_$1
+echo "Fixing folders for CPACK_LINUX_VERSION"
 
-sed -i -e 's/projects\/ppm\/rundeck\/openfpm_super_bundles\/$1\/openfpm_dep_$1/usr\/local\/openfpm\/dependencies/g' /usr/local/openfpm/source/openfpm_vars
-sed -i -e 's/projects\/ppm\/rundeck\/openfpm_super_bundles\/$1\/openfpm_dep_$1/usr\/local\/openfpm\/dependencies/g' /usr/local/openfpm/openfpm_pdata/include/example.mk
+sed -i -e 's/projects\/ppm\/rundeck\/openfpm_super_bundles\/CPACK_LINUX_VERSION\/openfpm_dep_CPACK_LINUX_VERSION/usr\/local\/openfpm\/dependencies/g' /usr/local/openfpm/source/openfpm_vars
+sed -i -e 's/projects\/ppm\/rundeck\/openfpm_super_bundles\/CPACK_LINUX_VERSION\/openfpm_dep_CPACK_LINUX_VERSION/usr\/local\/openfpm\/dependencies/g' /usr/local/openfpm/openfpm_pdata/include/example.mk
 echo "export OPAL_PREFIX=/usr/local/openfpm/dependencies/MPI" >> /usr/local/openfpm/source/openfpm_vars
 
 
