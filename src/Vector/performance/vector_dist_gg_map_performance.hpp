@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_gg_map_performance_write_report)
 
 		StandardXMLPerformanceGraph("particles_map_performance.xml",file_xml_ref,cg);
 
-		addUpdtateTime(cg,create_vcluster().size());
+		addUpdtateTime(cg,create_vcluster().size(),"pdata","particles_map_performance");
 
 		if (create_vcluster().getProcessUnitID() == 0)
 		{cg.write("particles_map_performance.html");}
