@@ -20,7 +20,7 @@ echo "compilation type: $comp_type"
 echo "Branch name: $branch"
 echo "GPU compilation: $with_gpu"
 
-ssh-keygen -b 2048 -t rsa -q -N ""
+ssh-keygen -q -t rsa -N '' <<< $'\ny' >/dev/null 2>&1
 
 echo "Content: $(ls $HOME/.ssh)"
 echo "Public Key: $(cat $HOME/.ssh/id_rsa.pub)" 
