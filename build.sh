@@ -20,6 +20,8 @@ echo "compilation type: $comp_type"
 echo "Branch name: $branch"
 echo "GPU compilation: $with_gpu"
 
+ssh-keyscan -H gitlab.mpi-cbg.de >> ~/.ssh/known_hosts
+
 if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
 	echo "CentOS node"
 	source /opt/rh/devtoolset-8/enable
