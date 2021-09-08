@@ -20,6 +20,8 @@ echo "compilation type: $comp_type"
 echo "Branch name: $branch"
 echo "GPU compilation: $with_gpu"
 
+echo "Content: $(ls $HOME/.ssh)"
+echo "Public Key: $(cat $HOME/.ssh/id_rsa.pub)" 
 
 if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
 	echo "CentOS node"
