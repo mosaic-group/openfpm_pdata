@@ -1,6 +1,25 @@
-/* Benchmark: Redistance a sphere which is only known as color function (using OpenFPM + Algoim)
+/* Benchmark: Redistance a sphere which is only known as indicator function (using OpenFPM + Algoim)
  * Date : 21 June 2021
  * Author : sachin
+ */
+/**
+ *  @file 0_sphere_redistancing/main.cpp
+ *  @page Examples_ClosestPoint Redistancing Sphere
+ * 
+ *  @subpage example_closest_point_sphere
+ * 
+ */
+
+/**
+ * @page example_closest_point_sphere Redistancing a sphere given as indicator function
+ * 
+ * We are given a grid with a spherical surface implicitly represented using an
+ * indicator function, 
+ * @f[ f_{ijk} = \begin{cases} 
+ *                  1, & \text{inside sphere}\\ 
+ *                  -1, & \text{outside sphere} 
+ * \end{cases} @f]
+ *
  */
 
 #include <cmath>
@@ -50,7 +69,7 @@ typedef struct EllipseParameters{
     double eccentricity;
 } EllipseParams;
 
-// Generate the initial +1, -1 field on a sphere
+// Generate the initial +1, -1 field for a sphere/ellipsoid
 template<const unsigned int phi_field, typename grid_type>
 void initializeIndicatorFunc(grid_type &gd, const EllipseParams &params)
 {
@@ -149,4 +168,10 @@ int main(int argc, char* argv[])
 	openfpm_finalize();
 }
 
-
+/**
+ * @page example_closest_point ClosestPoint Redistancing
+ * 
+ * ## Full code ## {#e2d_c_full}
+ * 
+ * @include example/Numerics/Closest_point/0_sphere_redistancing/main.cpp
+ */
