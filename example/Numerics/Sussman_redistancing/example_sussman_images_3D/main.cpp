@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
 	 *
 	 */
 	//! @cond [Size] @endcond
-	std::vector<size_t> stack_size = get_size(path_to_size);
+	std::vector<int> stack_size = get_size(path_to_size);
 	auto & v_cl = create_vcluster();
 	if (v_cl.rank() == 0)
 	{
@@ -166,7 +166,7 @@ int main(int argc, char* argv[])
 	 *
 	 * Once we have loaded the geometrical object from the 3D stack onto the grid, we can perform Sussman
 	 * redistancing and get the narrow band the same way as it is explained in detail here: @ref
-	 * example_sussman_circle and here: @ref example_sussman_sphere.
+	 * example_sussman_disk and here: @ref example_sussman_sphere.
 	 *
 	 *
 	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_images_3D/main.cpp Redistancing
@@ -189,25 +189,21 @@ int main(int argc, char* argv[])
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Now we want to convert the initial Phi into a signed distance function (SDF) with magnitude of gradient = 1
 	// For the initial re-distancing we use the Sussman method
-	// 1.) Set some redistancing options
+	// 1.) Set some redistancing options (for details see example sussman disk or sphere)
 	Redist_options redist_options;
-	redist_options.min_iter                             = 100;      // min. number of iterations before steady state in narrow band will be checked (default: 100)
-	redist_options.max_iter                             = 10000;    // max. number of iterations you want to run the
-															        // redistancing, even if steady state might not yet
-															        // have been reached (default: 1e6)
-	redist_options.convTolChange.value                  = 1e-6;     // convolution tolerance for the normalized total change of Phi in the narrow band between two consecutive iteratins (default: 1e-6)
-	redist_options.convTolChange.check                  = true;     // define here which of the convergence criteria above should be used. If both are true, termination only occurs when both are fulfilled or when iter > max_iter
-	redist_options.convTolResidual.value                = 1e-1;     // convolution tolerance for the normalized total residual of Phi versus the SDF (aka the error). Don't choose too small to not run forever. (default: 1e-1)
-	redist_options.convTolResidual.check                = false;    // (default: false)
+	redist_options.min_iter                             = 1e3;
+	redist_options.max_iter                             = 1e4;
 	
-	redist_options.interval_check_convergence           = 1;        // interval of #iterations at which convergence is checked (default: 100)
-	redist_options.width_NB_in_grid_points              = 6;        // width of narrow band in number of grid points.
-															        // Must be at least 4, in order to have at least 2
-															        // grid points on each side of the interface.
-															        // (default: 4)
-	redist_options.print_current_iterChangeResidual     = true;     // if true, prints out every current iteration + corresponding change from the previous iteration + residual from SDF (default: false)
-	redist_options.print_steadyState_iter               = true;     // if true, prints out the final iteration number when steady state was reached + final change + residual (default: true)
+	redist_options.convTolChange.value                  = 1e-7;
+	redist_options.convTolChange.check                  = true;
+	redist_options.convTolResidual.value                = 1e-6; // is ignored if convTolResidual.check = false;
+	redist_options.convTolResidual.check                = false;
 	
+	redist_options.interval_check_convergence           = 1e3;
+	redist_options.width_NB_in_grid_points              = 10;
+	redist_options.print_current_iterChangeResidual     = true;
+	redist_options.print_steadyState_iter               = true;
+	redist_options.save_temp_grid                       = true;
 	RedistancingSussman<grid_in_type> redist_obj(g_dist, redist_options);   // Instantiation of Sussman-redistancing class
 //	std::cout << "dt = " << redist_obj.get_time_step() << std::endl;
 	// Run the redistancing. in the <> brackets provide property-index where 1.) your initial Phi is stored and 2.) where the resulting SDF should be written to.
