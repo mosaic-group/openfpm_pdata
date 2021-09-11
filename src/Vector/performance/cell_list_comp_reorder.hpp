@@ -359,6 +359,9 @@ BOOST_AUTO_TEST_CASE(vector_dist_cl_performance_write_report)
 
 		addUpdtateTime(cg,create_vcluster().size(),"pdata","celllist_performance");
 
+		if (create_vcluster().rank() == 0)
+		{createCommitFile("pdata");}
+
 		cg.write("celllist_performance.html");
 	}
 }
