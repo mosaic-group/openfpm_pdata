@@ -1,3 +1,9 @@
+CMakeCache.txt
+CMakeFiles/
+doxygen/
+openmpi/
+*.pyc
+
 # Installation #
 ################
 boost*
