@@ -1535,7 +1535,7 @@ public:
 		std::vector<size_t> prp_recv;
 
 		// Create an object of preallocated memory for properties
-		ExtPreAlloc<Memory> & prRecv_prp = *(new ExtPreAlloc<Memory>(tot_recv,g_recv_prp_mem));
+		ExtPreAlloc<Memory> & prRecv_prp = *(new ExtPreAlloc<Memory>(0,g_recv_prp_mem));
 		prRecv_prp.incRef();
 
 		queue_recv_data_put<prp_object>(ig_box,prp_recv,prRecv_prp);

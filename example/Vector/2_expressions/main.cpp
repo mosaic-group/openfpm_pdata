@@ -115,13 +115,13 @@ int main(int argc, char* argv[])
 	openfpm_init(&argc,&argv);
 
 	// Here we define our domain a 2D box with intervals from 0 to 1.0
-	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
 
 	// Here we define the boundary conditions of our problem
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
 	// extended boundary around the domain, and the processor domain
-	Ghost<3,float> g(0.01);
+	Ghost<3,double> g(0.01);
 
 	// Delta t
 	double dt = 0.01;

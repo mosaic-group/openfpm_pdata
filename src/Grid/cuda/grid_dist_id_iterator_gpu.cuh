@@ -77,28 +77,28 @@ class grid_dist_id_iterator_gpu
 	* \return itself
 	*
 	*/
-	grid_dist_id_iterator_gpu<Decomposition,deviceGrids> & operator=(const grid_dist_id_iterator_gpu<Decomposition,deviceGrids> & tmp)
-	{
-		g_c = tmp.g_c;
-		gdb_ext = tmp.gdb_ext;
+//	grid_dist_id_iterator_gpu<Decomposition,deviceGrids> & operator=(const grid_dist_id_iterator_gpu<Decomposition,deviceGrids> & tmp)
+//	{
+//		g_c = tmp.g_c;
+//		gdb_ext = tmp.gdb_ext;
 
-		start = tmp.start;
-		stop = tmp.stop;
-		loc_grids = tmp.loc_grids;
+//		start = tmp.start;
+//		stop = tmp.stop;
+//		loc_grids = tmp.loc_grids;
 
-		return *this;
-	}
+//		return *this;
+//	}
 
 	/*! \brief Copy constructor
 	*
 	* \param tmp iterator to copy
 	*
 	*/
-	grid_dist_id_iterator_gpu(const grid_dist_id_iterator_gpu<Decomposition,deviceGrids> & tmp)
-	:loc_grids(tmp.loc_grids)
-	{
-		this->operator=(tmp);
-	}
+//	grid_dist_id_iterator_gpu(const grid_dist_id_iterator_gpu<Decomposition,deviceGrids> & tmp)
+//	:loc_grids(tmp.loc_grids)
+//	{
+//		this->operator=(tmp);
+//	}
 
 	/*! \brief Constructor of the distributed grid iterator
 	 *
@@ -268,6 +268,7 @@ class grid_dist_id_iterator_gpu
 			}
 		}
 	}
+
 
 	/*! \brief Get the starting point of the sub-grid we are iterating
 	 *

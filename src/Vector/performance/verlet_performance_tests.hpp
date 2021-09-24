@@ -217,7 +217,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_verlet_performance_write_report)
 
 		StandardXMLPerformanceGraph("verletlist_performance.xml",file_xml_ref,cg);
 
-		addUpdtateTime(cg,create_vcluster().size());
+		addUpdtateTime(cg,create_vcluster().size(),"pdata","verletlist_performance");
 
 		if (create_vcluster().getProcessUnitID() == 0)
 		{cg.write("verletlist_performance.html");}

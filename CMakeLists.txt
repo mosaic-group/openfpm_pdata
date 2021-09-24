@@ -11,7 +11,7 @@ if (POLICY CMP0074)
   cmake_policy(SET CMP0074 NEW)
 endif()
 
-set(openfpm_VERSION 3.3.0)
+set(openfpm_VERSION 4.0.0)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake_modules/)
 
@@ -294,6 +294,12 @@ list(GET VERSION_LIST 2 OPENFPM_VERSION_PATCH)
 
 if (CPACK_RUN_INSTALL_DEPENDENCIES)
 
+        ###### Fix post inst script ######
+
+	
+
+        ######                      ######
+
 	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "OpenFPM distributed data-structures")
 	set(CPACK_PACKAGE_VENDOR "IBirdSoft")
 	set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.txt")
@@ -310,7 +316,7 @@ if (CPACK_RUN_INSTALL_DEPENDENCIES)
 	set(CPACK_DEBIAN_PACKAGE_MAINTAINER Pietro Incardona)
 	set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/scripts/postinst)
 	set(CPACK_POSTFLIGHT_OPENFPM_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/src/scripts/postflight)
-	set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/src/script/postinst")
+	set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA ${CMAKE_CURRENT_SOURCE_DIR}/src/scripts/postinst)
 	set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.txt")
 
 	install(FILES $ENV{DEP_PACKING}/openfpm_vars
@@ -358,6 +364,14 @@ if (CPACK_RUN_INSTALL_DEPENDENCIES)
                 COMPONENT OpenFPM)
 
 	install(DIRECTORY $ENV{DEP_PACKING}/VCDEVEL
+                DESTINATION dependencies/
+                COMPONENT OpenFPM)
+
+	install(DIRECTORY $ENV{DEP_PACKING}/BLITZ
+                DESTINATION dependencies/
+                COMPONENT OpenFPM)
+
+	install(DIRECTORY $ENV{DEP_PACKING}/ALGOIM
                 DESTINATION dependencies/
                 COMPONENT OpenFPM)
 

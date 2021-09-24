@@ -300,6 +300,69 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_ghost_get )
 	sgrid_ghost_get(sz2,sz4);
 }
 
+BOOST_AUTO_TEST_CASE( sgrid_gpu_app_point_test_no_box )
+{
+	size_t sz[3] = {75,75,75};
+	periodicity<3> bc = {PERIODIC,PERIODIC,PERIODIC};
+
+	Ghost<3,long int> g(1);
+
+	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	sgrid_dist_id_gpu<3,float,aggregate<float,float,float,float>> gdist(sz,domain,g,bc);
+
+	gdist.template setBackgroundValue<0>(666);
+	gdist.template setBackgroundValue<1>(666);
+	gdist.template setBackgroundValue<2>(666);
+	gdist.template setBackgroundValue<3>(666);
+
+	/////// GPU insert + flush
+
+	Box<3,size_t> box({1,1,1},{sz[0],sz[1],sz[2]});
+
+	/////// GPU Run kernel
+
+	float c = 5.0;
+
+	typedef typename GetAddBlockType<decltype(gdist)>::type InsertBlockT;
+
+	CudaMemory cmem;
+	cmem.allocate(sizeof(int));
+
+	*(int *)cmem.getPointer() = 0.0;
+
+	cmem.hostToDevice();
+
+	int * cnt = (int *)cmem.getDevicePointer();
+
+	gdist.addPoints([cnt] __device__ (int i, int j, int k)
+			        {
+						atomicAdd(cnt,1);
+
+						return true;
+			        },
+			        [c] __device__ (InsertBlockT & data, int i, int j, int k)
+			        {
+			        	data.template get<0>() = c + i + j;
+			        	data.template get<1>() = c + 1000 + i + j;
+			        }
+			        );
+
+	gdist.template flush<smax_<0>,smax_<1>>(flush_type::FLUSH_ON_DEVICE);
+	gdist.template ghost_get<0,1>(RUN_ON_DEVICE);
+
+	cmem.deviceToHost();
+
+	int cnt_host = *(int *)cmem.getPointer();
+
+	auto & v_cl = create_vcluster();
+
+	v_cl.sum(cnt_host);
+	v_cl.execute();
+
+	BOOST_REQUIRE_EQUAL(cnt_host,75*75*75);
+}
+
 
 BOOST_AUTO_TEST_CASE( sgrid_gpu_app_point_test )
 {
@@ -352,7 +415,6 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_app_point_test )
 						{atomicAdd(cnt,1);}
 						else
 						{
-							printf("%d %d %d \n",i,j,k);
 							atomicAdd(cnt_out,1);
 						}
 

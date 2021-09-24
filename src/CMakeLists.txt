@@ -13,7 +13,8 @@ if(CUDA_FOUND OR CUDA_ON_CPU OR HIP_FOUND)
 	    Decomposition/cuda/decomposition_cuda_tests.cu
 	    Vector/cuda/vector_dist_gpu_unit_tests.cu
 	    Decomposition/cuda/Domain_icells_cart_unit_test.cu
-	    Amr/tests/amr_base_gpu_unit_tests.cu)
+		Amr/tests/amr_base_gpu_unit_tests.cu
+		Grid/tests/grid_dist_id_unit_test.cu)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
@@ -61,8 +62,7 @@ if ( HIP_ENABLE AND HIP_FOUND )
 							  Decomposition/tests/CartDecomposition_unit_test.cpp
 							  Decomposition/tests/shift_vect_converter_tests.cpp
 							  Vector/performance/vector_dist_performance_util.cpp
-							  lib/pdata.cpp
-							  test_multiple_o.cpp
+							  lib/pdata.cpp 
 							  )
 
 
@@ -89,9 +89,10 @@ else()
 							  Decomposition/tests/CartDecomposition_unit_test.cpp
 							  Decomposition/tests/shift_vect_converter_tests.cpp
 							  Vector/performance/vector_dist_performance_util.cpp
-							  lib/pdata.cpp test_multiple_o.cpp)
+							  lib/pdata.cpp)
 
 	add_library(ofpm_pdata STATIC lib/pdata.cpp)
+	add_library(ofpm_pdata_python SHARED lib/pdata_python.cpp)
 
 endif()
 
@@ -111,12 +112,14 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	target_compile_options(pdata PRIVATE "-Wno-macro-redefined")
 endif()
 if ( CMAKE_COMPILER_IS_GNUCC )
-    target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
-	target_compile_options(pdata PRIVATE "-Wno-undefined-var-template")
-	target_compile_options(pdata PRIVATE "-Wno-macro-redefined")
-    #target_compile_options(pdata PRIVATE "-fsanitize=address")
-    #    target_link_options(pdata PRIVATE "-fsanitize=address")
+#target_compile_options(pdata PRIVATE "-Wno-deprecated-declarations")
+#target_compile_options(pdata PRIVATE "-Wno-undefined-var-template")
+#target_compile_options(pdata PRIVATE "-Wno-macro-redefined")
+#target_compile_options(pdata PRIVATE "-fsanitize=address")
+#    target_link_options(pdata PRIVATE "-fsanitize=address")
     if (TEST_COVERAGE)
+######################################## Add mem tests ############################
+
         target_compile_options(pdata PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fprofile-arcs -ftest-coverage>)
     endif()
 endif()
@@ -212,6 +215,51 @@ add_definitions(-DSCAN_WITH_CUB)
 
 if (TEST_COVERAGE)
     target_link_libraries(pdata -lgcov --coverage)
+
+    get_target_property(PDATA_SOURCES pdata SOURCES)
+    get_target_property(MEM_SOURCES mem SOURCES)
+    get_target_property(DATA_SOURCES mem_map SOURCES)
+    get_target_property(VCLUSTER_SOURCES vcluster_test SOURCES)
+    get_target_property(IO_SOURCES io SOURCES)
+    get_target_property(NUMERIC_SOURCES numerics SOURCES)
+    get_target_property(PDATA_INCLUDES pdata INCLUDE_DIRECTORIES)
+    get_target_property(NUMERIC_INCLUDES numerics INCLUDE_DIRECTORIES)
+    get_target_property(PDATA_LIBS pdata LINK_LIBRARIES)
+    get_target_property(NUMERIC_LIBS numerics LINK_LIBRARIES)
+
+    list(TRANSFORM MEM_SOURCES PREPEND "../openfpm_devices/src/")
+    list(TRANSFORM DATA_SOURCES PREPEND "../openfpm_data/src/")
+    list(TRANSFORM VCLUSTER_SOURCES PREPEND "../openfpm_vcluster/src/")
+    list(TRANSFORM IO_SOURCES PREPEND "../openfpm_io/src/")
+    list(TRANSFORM NUMERIC_SOURCES PREPEND "../openfpm_numerics/src/")
+
+    set(PDATA_FULL_SOURCES ${PDATA_SOURCES} ${MEM_SOURCES} ${DATA_SOURCES} ${VCLUSTER_SOURCES} ${IO_SOURCES} ${NUMERIC_SOURCES})
+    set(PDATA_FULL_SOURCES_CU ${PDATA_SOURCES} ${MEM_SOURCES} ${DATA_SOURCES} ${VCLUSTER_SOURCES} ${IO_SOURCES} ${NUMERIC_SOURCES})
+    list(FILTER PDATA_FULL_SOURCES_CU INCLUDE REGEX ^.*\.cu)
+    set_source_files_properties(${PDATA_FULL_SOURCES_CU} PROPERTIES COMPILE_FLAGS "-D__NVCC__ -DCUDART_VERSION=11000")
+
+    if (CUDA_ON_CPU)
+        set_source_files_properties(${PDATA_FULL_SOURCES_CU} PROPERTIES LANGUAGE CXX)
+    endif()
+
+    add_executable(pdata_full ${PDATA_FULL_SOURCES})
+    
+    target_compile_definitions(pdata_full PUBLIC NO_INIT_AND_MAIN)
+    target_compile_options(pdata_full PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fprofile-arcs -ftest-coverage>)
+    target_link_options(pdata_full PUBLIC -fprofile-arcs -ftest-coverage)
+
+    target_link_options(pdata_full PUBLIC -fprofile-arcs -ftest-coverage)
+
+    if (ENABLE_ASAN)
+        target_compile_options(pdata_full PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler "-fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g" >)
+        target_compile_options(pdata_full PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g >)
+    endif()
+
+    target_link_libraries(pdata_full -lgcov --coverage)
+    target_link_libraries(pdata_full ${PDATA_LIBS})
+    target_link_libraries(pdata_full ${NUMERIC_LIBS})
+    target_include_directories(pdata_full PUBLIC ${PDATA_INCLUDES})
+    target_include_directories(pdata_full PUBLIC ${NUMERIC_INCLUDES})
 endif()
 
 

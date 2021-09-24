@@ -219,9 +219,9 @@ echo -e "Installing requirements into: $i_dir "
 
 ## call the configure script
 
-### Installing PETSC
+### Installing PETSC and Extended numerics
 
-if [ ! -d "$i_dir/PETSC" -o ! -f "$i_dir/PETSC/include/petsc.h" -o ! -d "$i_dir/EIGEN" ]; then
+if [ ! -d "$i_dir/PETSC" -o ! -f "$i_dir/PETSC/include/petsc.h" -o ! -d "$i_dir/EIGEN" -o ! -d "$i_dir/BLITZ" -o ! -d "$i_dir/ALGOIM" ]; then
     echo -e "\033[1;34m Optional packages  \033[0m"
     echo -e "\033[1mDo you want to install linear algebra packages and extended Level-set functionalities ?(y/n)\033[0m"
     if [ $sq -eq 0 ]; then

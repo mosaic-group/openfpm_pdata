@@ -226,7 +226,7 @@ int main(int argc, char* argv[])
 	//! \cond [vect create] \endcond
 
 	double dt = 0.0001;
-	float r_cut = 0.03;
+	double r_cut = 0.03;
 	double sigma = r_cut/3.0;
 	double sigma12 = pow(sigma,12);
 	double sigma6 = pow(sigma,6);
@@ -241,13 +241,13 @@ int main(int argc, char* argv[])
 	size_t sz[3] = {40,40,40};
 
 	// domain
-	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Box<3,double> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 
 	// Boundary conditions
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
 	// ghost, big enough to contain the interaction radius
-	Ghost<3,float> ghost(r_cut);
+	Ghost<3,double> ghost(r_cut);
 
 	vector_dist<3,double, aggregate<double[3],double[3]> > vd(0,box,bc,ghost);
 

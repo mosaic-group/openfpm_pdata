@@ -20,6 +20,8 @@
 #include "SparseGridGpu/encap_num.hpp"
 #endif
 
+#include "Grid/cuda/grid_dist_id_kernels.cuh"
+
 template<unsigned int dim>
 struct launch_insert_sparse_lambda_call
 {
@@ -179,6 +181,56 @@ struct launch_insert_sparse
 	    __syncthreads();
 
 	    grid.flush_block_insert();
+#endif
+	}
+};
+
+template<unsigned int dim>
+struct launch_set_dense
+{
+	template<typename grid_type, typename ite_type, typename lambda_f2>
+	__device__ void operator()(grid_type & grid, ite_type itg, lambda_f2 f2)
+	{
+#ifdef __NVCC__
+
+		printf("grid on GPU Dimension %d not implemented, yet\n",(int)dim);
+
+#endif
+	}
+};
+
+template<>
+struct launch_set_dense<2>
+{
+	template<typename grid_type, typename ite_type, typename lambda_f2>
+	__device__ void operator()(grid_type & grid, ite_type itg, lambda_f2 f2)
+	{
+#ifdef __NVCC__
+
+		GRID_ID_2_GLOBAL(itg);
+
+		auto obj = grid.get_o(key);
+
+		f2(obj,keyg.get(0),keyg.get(1));
+
+#endif
+	}
+};
+
+template<>
+struct launch_set_dense<3>
+{
+	template<typename grid_type, typename ite_type, typename lambda_f2>
+	__device__ void operator()(grid_type & grid, ite_type itg, lambda_f2 f2)
+	{
+#ifdef __NVCC__
+
+		GRID_ID_3_GLOBAL(itg);
+
+		auto obj = grid.get_o(key);
+
+		f2(obj,keyg.get(0),keyg.get(1),keyg.get(2));
+
 #endif
 	}
 };

@@ -19,7 +19,7 @@ example_odeint2: $(OBJ2)
 all: example_odeint example_odeint2
 
 run: all
-	mpirun -np 2 ./example_odeint ./example_odeint
+	mpirun  --oversubscribe -np 2 ./example_odeint && mpirun --oversubscribe -np 2 ./example_odeint2
 
 .PHONY: clean all run
 

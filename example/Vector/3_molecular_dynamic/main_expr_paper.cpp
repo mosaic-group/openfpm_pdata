@@ -53,9 +53,9 @@ int main(int argc, char* argv[])
 	///// Define initialization grid, simulation box, periodicity
 	///// and ghost
 	size_t sz[3] = {10,10,10};
-	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Box<3,double> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
-	Ghost<3,float> ghost(r_cut);
+	Ghost<3,double> ghost(r_cut);
 
 	///// Lennard_jones potential object used in applyKernel_in
 	ln_force lennard_jones;
