@@ -356,7 +356,7 @@ BOOST_AUTO_TEST_CASE(grid_iterator_performance_write_report_final)
 
 		if (create_vcluster().getProcessUnitID() == 0)
 		{
-			addUpdtateTime(cg,create_vcluster().size(),"pdata","grid_performance");
+			addUpdateTime(cg,create_vcluster().size(),"pdata","grid_performance");
 
 			cg.write("grid_performance.html");
 		}
