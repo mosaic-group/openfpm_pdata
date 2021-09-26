@@ -1,4 +1,5 @@
 #! /bin/bash
+
 source script/help
 source script/discover_os
 source script/show_solutions
