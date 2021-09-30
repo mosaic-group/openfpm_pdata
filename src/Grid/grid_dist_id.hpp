@@ -2640,6 +2640,35 @@ public:
 	 *
 	 *
 	 */
+	template<unsigned int prop_src, unsigned int prop_dst, unsigned int stencil_size, typename lambda_f, typename ... ArgsT >
+	void conv_cross_b(grid_key_dx<3> start, grid_key_dx<3> stop , lambda_f func, ArgsT ... args)
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			Box<dim,long int> inte;
+
+			Box<dim,long int> base;
+			for (int j = 0 ; j < dim ; j++)
+			{
+				base.setLow(j,(long int)start.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+				base.setHigh(j,(long int)stop.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+			}
+
+			Box<dim,long int> dom = gdb_ext.get(i).Dbox;
+
+			bool overlap = dom.Intersect(base,inte);
+
+			if (overlap == true)
+			{
+				loc_grid.get(i).template conv_cross_b<prop_src,prop_dst,stencil_size>(inte.getKP1(),inte.getKP2(),func,args...);
+			}
+		}
+	}
+
+	/*! \brief apply a convolution using the stencil N
+	 *
+	 *
+	 */
 	template<unsigned int stencil_size, typename v_type, typename lambda_f, typename ... ArgsT >
 	void conv_cross_ids(grid_key_dx<3> start, grid_key_dx<3> stop , lambda_f func, ArgsT ... args)
 	{
