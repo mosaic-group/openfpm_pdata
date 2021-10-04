@@ -1,0 +1,14 @@
+<VTKFile type="PPolyData" version="1.0" byte_order="LittleEndian" header_type="UInt64">
+  <PPolyData>
+    <PPointData>
+      <PDataArray type="Float32" Name="attr0"/>
+      <PDataArray type="Float32" Name="attr1" NumberOfComponents="3"/>
+      <PDataArray type="Float32" Name="domain"/>
+    </PPointData>
+    <PPoints>
+      <PDataArray type="Float32" Name="Points" NumberOfComponents="3"/>
+    </PPoints>
+    <Piece Source="particles_0_0.vtp"/>
+    <Piece Source="particles_1_0.vtp"/>
+  </PPolyData>
+</VTKFile>

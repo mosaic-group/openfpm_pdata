@@ -1,0 +1,54 @@
+<VTKFile type="PolyData" version="1.0" byte_order="LittleEndian" header_type="UInt64">
+  <PolyData>
+    <Piece NumberOfPoints="5" NumberOfVerts="5">
+      <Points>
+        <DataArray type="Float32" Name="Points" NumberOfComponents="3" format="ascii">
+2.5 0.0 0.0
+3 0.0 0.0
+3.5 0.0 0.0
+4 0.0 0.0
+4.5 0.0 0.0
+        </DataArray>
+      </Points>
+      <Verts>
+        <DataArray type="Int64" Name="connectivity" format="ascii">
+0
+1
+2
+3
+4
+        </DataArray>
+                <DataArray type="Int64" Name="offsets" format="ascii">
+1
+2
+3
+4
+5
+        </DataArray>
+      </Verts>
+      <PointData>
+        <DataArray type="Float32" Name="attr0" format="ascii">
+5
+6
+7
+8
+9
+        </DataArray>
+        <DataArray type="Float32" Name="attr1" NumberOfComponents="3" format="ascii">
+2 3 0
+2 3 0
+2 3 0
+2 3 0
+2 3 0
+        </DataArray>
+        <DataArray type="Float32" Name="domain" format="ascii">
+1.0
+1.0
+1.0
+1.0
+1.0
+        </DataArray>
+      </PointData>
+    </Piece>
+  </PolyData>
+</VTKFile>

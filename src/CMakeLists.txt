@@ -89,7 +89,8 @@ else()
 							  Decomposition/tests/CartDecomposition_unit_test.cpp
 							  Decomposition/tests/shift_vect_converter_tests.cpp
 							  Vector/performance/vector_dist_performance_util.cpp
-							  lib/pdata.cpp)
+							  lib/pdata.cpp
+							  ../experiments/ex1.cpp )
 
 	add_library(ofpm_pdata STATIC lib/pdata.cpp)
 	add_library(ofpm_pdata_python SHARED lib/pdata_python.cpp)
