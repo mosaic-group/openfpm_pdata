@@ -28,11 +28,11 @@
       </Verts>
       <PointData>
         <DataArray type="Float32" Name="attr0" format="ascii">
-0
-1
-2
-3
-4
+0.2
+1.2
+2.2
+3.2
+4.2
         </DataArray>
         <DataArray type="Float32" Name="attr1" NumberOfComponents="3" format="ascii">
 2 3 0

@@ -218,14 +218,13 @@ protected:
 
     typedef typename ParticleMethodType::particleType ParticleType;
     ParticleMethodType particleMethod;
-    ParticleData<ParticleType> particleData;
 
 //    explicit Transition(ParticleMethod<ParticleType> particleMethod_in) : particleMethod(particleMethod_in), particleData() {}
 
     int iteration = 0;
 
 
-    void executeInitialization() {
+    void executeInitialization(ParticleData<ParticleType> &particleData) {
         size_t sz[1] = {10};
         auto it2 = particleData.vd.getGridIterator(sz);
         while (it2.isNext())
@@ -238,7 +237,7 @@ protected:
         }
     }
 
-    void executeEvolution() {
+    void executeEvolution(ParticleData<ParticleType> &particleData) {
         auto it2 = particleData.vd.getDomainIterator();
         while (it2.isNext())
         {
@@ -254,7 +253,7 @@ protected:
 
     }
 
-    virtual void executeInteraction() {
+    virtual void executeInteraction(ParticleData<ParticleType> &particleData) {
         auto it2 = particleData.vd.getDomainIterator();
         while (it2.isNext())
         {
@@ -298,13 +297,13 @@ protected:
 
 public:
 
-    void initialize() {
-        executeInitialization();
+    void initialize(ParticleData<ParticleType> &particleData) {
+        executeInitialization(particleData);
 //        particleData.vd.map();
 //        particleData.vd.template ghost_get<0, 1>();
     }
 
-    void run() {
+    void run(ParticleData<ParticleType> &particleData) {
 /*
         auto & vcl = create_vcluster();
         if (vcl.getProcessUnitID() == 0) {
@@ -314,8 +313,8 @@ public:
         particleData.vd.map();
         particleData.vd.template ghost_get<0, 1>();
 
-        executeInteraction();
-        executeEvolution();
+        executeInteraction(particleData);
+        executeEvolution(particleData);
 
         particleData.vd.deleteGhost();
         particleData.vd.write_frame("particles",iteration);
@@ -330,20 +329,20 @@ class TransitionCellList : public Transition<ParticleMethodType>{
 
     CELL_MEMBAL(1, float) cellList;
 
-    void executeInteraction() override {
-        this->particleData.vd.template updateCellList(cellList);
+    void executeInteraction(ParticleData<ParticleType> &particleData) override {
+        particleData.vd.template updateCellList(cellList);
 
-        auto it2 = this->particleData.vd.getDomainIterator();
+        auto it2 = particleData.vd.getDomainIterator();
         while (it2.isNext())
         {
             auto p = it2.get();
-            Particle<ParticleType> particle(this->particleData, p);
+            Particle<ParticleType> particle(particleData, p);
 
-            auto it = cellList.template getNNIterator<NO_CHECK>(cellList.getCell(this->particleData.vd.getPos(p)));
+            auto it = cellList.template getNNIterator<NO_CHECK>(cellList.getCell(particleData.vd.getPos(p)));
 
 //            auto it = this->particleData.vd.getDomainAndGhostIterator();
             while (it.isNext()) {
-                Particle<ParticleType> neighbor(this->particleData, it.get());
+                Particle<ParticleType> neighbor(particleData, it.get());
                 if (particle != neighbor) {
 //                    std::cout << particle.template property<0>() << " neighbor prop 0 " << neighbor.getParticleData().vd.template getProp<0>(neighbor.getID()) << std::endl;
 //                    std::cout << "CellList" << std::endl;
@@ -356,7 +355,7 @@ class TransitionCellList : public Transition<ParticleMethodType>{
     }
 
 public:
-    TransitionCellList() : Transition<ParticleMethodType>(), cellList(this->particleData.vd.template getCellList<CELL_MEMBAL(1, float)>(0.5)) {}
+    explicit TransitionCellList(ParticleData<ParticleType> &particleData) : Transition<ParticleMethodType>(), cellList(particleData.vd.template getCellList<CELL_MEMBAL(1, float)>(0.5)) {}
 
 };
 
@@ -381,6 +380,7 @@ public:
         auto & vcl = create_vcluster();
         std::cout << " interact cpu " << vcl.getProcessUnitID() << ", particle " << particle.property<position>()
                 << ", neighbor " << neighbor.property<position>() << " (" << neighbor.position()[0] << ")" << std::endl;
+        particle.property<position>() += 0.1f;
 
 //        std::cout << particle.property<position>() << ", " << neighbor.property<position>() << std::endl;
     }
@@ -393,12 +393,14 @@ int main(int argc, char* argv[]) {
 
     openfpm_init(&argc,&argv);
 
-    TransitionCellList<TestPM> transition;
+    ParticleData<TestPM::particleType> particleData;
 
-    transition.initialize();
+    TransitionCellList<TestPM> transition(particleData);
+
+    transition.initialize(particleData);
 
     for (int i = 0; i < 1; ++i) {
-        transition.run();
+        transition.run(particleData);
     }
 
     openfpm_finalize();
