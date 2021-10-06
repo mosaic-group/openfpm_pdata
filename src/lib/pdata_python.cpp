@@ -96,34 +96,23 @@ static PyObject* create_grid_wrapper(PyObject *self, PyObject *args)
     npy_int64 dim = n["dim"].value();
     npy_int64 n_prop = n["n props"].value();
     npy_int64 gh = n["gh"].value();
+    conduit::int64_array p = n["periodicity"].as_int64_array();
+    periodicity<3> bc = {p[0], p[1], p[2]};  // todo more elegant?
 
-    npy_int64 p[3];
-    p[0] = n["periodicity"].value();
-    p[1] = n["periodicity"].value();
-    p[2] = n["periodicity"].value();
+    conduit::int64_array size = n["size"].as_int64_array();  // todo should be unsigned
+    size_t sz[3] = {
+        (size_t) size[0], (size_t) size[1], (size_t) size[2]
+    };  // todo more elegant casting
 
-    npy_int64 size[3];  // todo should be unsigned
-    size[0] = n["size"].value();
-    size[1] = n["size"].value();
-    size[2] = n["size"].value();
+    conduit::float64_array _p1 = n["domain/low"].as_float64_array();
+    npy_float64 p1[3] = {_p1[0], _p1[1], _p1[2]};
 
-    npy_float64 p1[3], p2[3];
-    p1[0] = n["p1"].value();
-    p1[1] = n["p1"].value();
-    p1[2] = n["p1"].value();
-
-    p2[0] = n["p2"].value();
-    p2[1] = n["p2"].value();
-    p2[2] = n["p2"].value();
+    conduit::float64_array _p2 = n["domain/high"].as_float64_array();
+    npy_float64 p2[3] = {_p2[0], _p2[1], _p2[2]};
 
     Ghost<3,long int> g(gh);
     Box<3,double> domain(p1, p2);
-    periodicity<3> bc = {p[0], p[1], p[2]};
 
-    size_t sz[3];  // todo better
-    sz[0] = (size_t) size[0];
-    sz[1] = (size_t) size[1];
-    sz[2] = (size_t) size[2];
     g_one_3d[c_one] = new grid_dist_id<3, double, aggregate<double>>(
         sz, domain, g, bc
     );
