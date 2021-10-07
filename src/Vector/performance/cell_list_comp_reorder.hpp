@@ -357,7 +357,9 @@ BOOST_AUTO_TEST_CASE(vector_dist_cl_performance_write_report)
 
 		StandardXMLPerformanceGraph("celllist_performance.xml",file_xml_ref,cg);
 
-		addUpdtateTime(cg,create_vcluster().size());
+		addUpdateTime(cg,create_vcluster().size(),"pdata","celllist_performance");
+
+		createCommitFile("pdata");
 
 		cg.write("celllist_performance.html");
 	}

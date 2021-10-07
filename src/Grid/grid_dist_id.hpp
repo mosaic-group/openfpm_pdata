@@ -1768,6 +1768,32 @@ public:
 
 #ifdef __NVCC__
 
+	/*! \brief set existing points in the grid
+    *
+	* \param f2 lambda function to set points
+	*/
+	template<typename lambda_t2>
+	void setPoints(lambda_t2 f2)
+	{
+		auto it = getGridIteratorGPU();
+
+		it.template launch<1>(launch_set_dense<dim>(),f2);
+	}
+
+	/*! \brief set point existing in the grid between start and stop
+	*
+	* \param start point
+	* \param stop point
+	* \param f2 lambda function to set points
+	*/
+	template<typename lambda_t2>
+	void setPoints(grid_key_dx<dim> k1, grid_key_dx<dim> k2, lambda_t2 f2)
+	{
+		auto it = getGridIteratorGPU(k1,k2);
+
+		it.template launch<0>(launch_set_dense<dim>(),f2);
+	}
+
 	/*! \brief Insert point in the grid
     *
 	* \param f1 lambda function to insert point
@@ -2310,8 +2336,8 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p = 0>
-	inline auto getProp(const grid_dist_key_dx<dim> & v1) const -> decltype(this->template get<p>(v1))
+	template <unsigned int p = 0, typename bgkey>
+	inline auto getProp(const grid_dist_key_dx<dim,bgkey> & v1) const -> decltype(this->template get<p>(v1))
 	{
 		return this->template get<p>(v1);
 	}
@@ -2324,8 +2350,8 @@ public:
 	 * \return the selected element
 	 *
 	 */
-	template <unsigned int p = 0>
-	inline auto getProp(const grid_dist_key_dx<dim> & v1) -> decltype(this->template get<p>(v1))
+	template <unsigned int p = 0, typename bgkey>
+	inline auto getProp(const grid_dist_key_dx<dim,bgkey> & v1) -> decltype(this->template get<p>(v1))
 	{
 		return this->template get<p>(v1);
 	}
@@ -2614,6 +2640,35 @@ public:
 	 *
 	 *
 	 */
+	template<unsigned int prop_src, unsigned int prop_dst, unsigned int stencil_size, typename lambda_f, typename ... ArgsT >
+	void conv_cross_b(grid_key_dx<3> start, grid_key_dx<3> stop , lambda_f func, ArgsT ... args)
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			Box<dim,long int> inte;
+
+			Box<dim,long int> base;
+			for (int j = 0 ; j < dim ; j++)
+			{
+				base.setLow(j,(long int)start.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+				base.setHigh(j,(long int)stop.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+			}
+
+			Box<dim,long int> dom = gdb_ext.get(i).Dbox;
+
+			bool overlap = dom.Intersect(base,inte);
+
+			if (overlap == true)
+			{
+				loc_grid.get(i).template conv_cross_b<prop_src,prop_dst,stencil_size>(inte.getKP1(),inte.getKP2(),func,args...);
+			}
+		}
+	}
+
+	/*! \brief apply a convolution using the stencil N
+	 *
+	 *
+	 */
 	template<unsigned int stencil_size, typename v_type, typename lambda_f, typename ... ArgsT >
 	void conv_cross_ids(grid_key_dx<3> start, grid_key_dx<3> stop , lambda_f func, ArgsT ... args)
 	{
@@ -2668,7 +2723,7 @@ public:
 		}
 	}
 
-	/*! \brief apply a convolution using the stencil N
+	/*! \brief apply a convolution on 2 property on GPU
 	 *
 	 *
 	 */
@@ -2693,6 +2748,35 @@ public:
 			if (overlap == true)
 			{
 				loc_grid.get(i).template conv2<prop_src1,prop_src2,prop_dst1,prop_dst2,stencil_size>(inte.getKP1(),inte.getKP2(),func,args...);
+			}
+		}
+	}
+
+	/*! \brief apply a convolution on 2 property on GPU
+	 *
+	 *
+	 */
+	template<unsigned int prop_src1, unsigned int prop_src2, unsigned int prop_dst1, unsigned int prop_dst2, unsigned int stencil_size, typename lambda_f, typename ... ArgsT >
+	void conv2_b(grid_key_dx<dim> start, grid_key_dx<dim> stop , lambda_f func, ArgsT ... args)
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			Box<dim,long int> inte;
+
+			Box<dim,long int> base;
+			for (int j = 0 ; j < dim ; j++)
+			{
+				base.setLow(j,(long int)start.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+				base.setHigh(j,(long int)stop.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+			}
+
+			Box<dim,long int> dom = gdb_ext.get(i).Dbox;
+
+			bool overlap = dom.Intersect(base,inte);
+
+			if (overlap == true)
+			{
+				loc_grid.get(i).template conv2_b<prop_src1,prop_src2,prop_dst1,prop_dst2,stencil_size>(inte.getKP1(),inte.getKP2(),func,args...);
 			}
 		}
 	}
@@ -3317,6 +3401,9 @@ using grid_dist_id_devg = grid_dist_id<dim,St,T,Decomposition,Memory,devg>;
 #ifdef __NVCC__
 template<unsigned int dim, typename St, typename T, typename Memory = CudaMemory, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte> >
 using sgrid_dist_id_gpu = grid_dist_id<dim,St,T,Decomposition,Memory,SparseGridGpu<dim,T>>;
+
+template<unsigned int dim, typename St, typename T, typename Memory = CudaMemory, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte> >
+using grid_dist_id_gpu = grid_dist_id<dim,St,T,Decomposition,Memory,grid_gpu<dim,T>>;
 
 template<unsigned int dim, typename St, typename T, typename Memory = CudaMemory, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_inte> >
 using sgrid_dist_sid_gpu = grid_dist_id<dim,St,T,Decomposition,Memory,SparseGridGpu<dim,T,default_edge<dim>::type::value,default_edge<dim>::tb::value,int>>;

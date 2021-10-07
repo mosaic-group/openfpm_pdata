@@ -130,7 +130,7 @@ configure_options2="$configure_options --download-superlu_dist "
 test_configure_options
 
 if [ $error -eq 0 ]; then
-  echo "SUITESPARSE work with PETSC"
+  echo "SUPERLU work with PETSC"
   configure_options="$configure_options --download-superlu_dist "
 fi
 

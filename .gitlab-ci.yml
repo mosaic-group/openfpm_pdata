@@ -24,10 +24,10 @@ centos_run:
     - ./run.sh $CI_PROJECT_DIR unused 4 pdata 0 $CI_COMMIT_REF_NAME
     - ./run.sh $CI_PROJECT_DIR unused 5 pdata 0 $CI_COMMIT_REF_NAME
     - cd openfpm_numerics
-    - ./run.sh $CI_PROJECT_DIR unused 1 0 0 numerics
-    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics
-    - ./run.sh $CI_PROJECT_DIR unused 3 0 0 numerics
-    - ./run.sh $CI_PROJECT_DIR unused 4 0 0 numerics
+    - ./run.sh $CI_PROJECT_DIR unused 1 0 0 numerics $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 3 0 0 numerics $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 4 0 0 numerics $CI_COMMIT_REF_NAME
 
 mac_build:
   variables:
@@ -53,7 +53,7 @@ mac_run:
     - ./run.sh $CI_PROJECT_DIR unused 1 0 0 $CI_COMMIT_REF_NAME
     - ./run.sh $CI_PROJECT_DIR unused 2 0 0 $CI_COMMIT_REF_NAME
     - cd openfpm_numerics
-    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics
+    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics $CI_COMMIT_REF_NAME
 
 ubuntu_build:
   stage: build
@@ -78,8 +78,8 @@ ubuntu_run:
     - ./run.sh $CI_PROJECT_DIR unused 2 pdata 0 $CI_COMMIT_REF_NAME
     - ./run.sh $CI_PROJECT_DIR unused 3 pdata 0 $CI_COMMIT_REF_NAME
     - cd openfpm_numerics
-    - ./run.sh $CI_PROJECT_DIR unused 1 0 0 numerics
-    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics
-    - ./run.sh $CI_PROJECT_DIR unused 3 0 0 numerics
-    - ./run.sh $CI_PROJECT_DIR unused 4 0 0 numerics
+    - ./run.sh $CI_PROJECT_DIR unused 1 0 0 numerics $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 3 0 0 numerics $CI_COMMIT_REF_NAME
+    - ./run.sh $CI_PROJECT_DIR unused 4 0 0 numerics $CI_COMMIT_REF_NAME
 

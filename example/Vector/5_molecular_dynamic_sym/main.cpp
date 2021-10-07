@@ -290,13 +290,13 @@ int main(int argc, char* argv[])
 	size_t sz[3] = {10,10,10};
 
 	// domain
-	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Box<3,double> box({0.0,0.0,0.0},{1.0,1.0,1.0});
 
 	// Boundary conditions
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
 	// ghost, big enough to contain the interaction radius
-	Ghost<3,float> ghost(r_gskin);
+	Ghost<3,double> ghost(r_gskin);
 
 	vector_dist<3,double, aggregate<double[3],double[3]> > vd(0,box,bc,ghost);
 
