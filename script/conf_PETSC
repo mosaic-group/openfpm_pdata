@@ -2,6 +2,7 @@
 
 function conf_PETSC()
 {
+  rm -rf $i_dir/PETSC
 	if [ -d "$i_dir/PETSC" ]; then
 	    configure_options="$configure_options --with-petsc=$i_dir/PETSC "
 	    lin_alg_dir="$lin_alg_dir -L$i_dir/PETSC/lib"
