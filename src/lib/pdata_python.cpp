@@ -72,6 +72,11 @@ static PyObject* openfpm_finalize_wrapper(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 }
 
+static PyObject* get_domain_info_wrapper(PyObject *self, PyObject *args)
+{
+    Py_RETURN_NONE;
+}
+
 static PyObject* create_grid_wrapper(PyObject *self, PyObject *args)
 {
     // parse input as conduit::Node
@@ -121,6 +126,9 @@ static PyObject* create_grid_wrapper(PyObject *self, PyObject *args)
     if (dim == 3 && n_prop == 1)  // todo debug only
     {
         auto & gdb_ext = g_one_3d[c_one]->getLocalGridsInfo();
+
+        // todo set spacing
+
         for (int i = 0 ; i < gdb_ext.size(); i++) {
             const float_t tmp0[3] = {
                 gdb_ext.get(i).GDbox.getLow(0),
@@ -149,14 +157,12 @@ static PyObject* create_grid_wrapper(PyObject *self, PyObject *args)
                     gdb_ext.get(i).origin.get(2)};
             n.set_path_float32_ptr(getNodePathAddress(i) + "/origin", tmp4, 3);
 
-            for (int j = 0 ; j < n_prop ; j++) {
+            for (int j = 0; j < n_prop; j++) {
                 if (j == 0) {
                     // todo node.set_path(
                     //    getNodePathAddress(i) + "data",
                     //    (unsigned char *)g_one_3d[c_one]->get_loc_grid(i).template getPointer<0>());
                 }
-                // todo run with `ddd` node["wow"] = { 1.0,2.0,3.0,4.0};
-        
                 /* todo else if (j == 1)
                 {
                     node[getNodePathAddress(i) + "data"] = (char*) g_one_3d[c_one]->get_loc_grid(i).template getPointer<1>();
@@ -170,7 +176,7 @@ static PyObject* create_grid_wrapper(PyObject *self, PyObject *args)
         c_one += 1;
     }
 
-    Py_RETURN_NONE;  // return PyConduit_Node_Python_Wrap(&n, 0);
+    Py_RETURN_NONE;
 }
 
 static PyObject* delete_grid(long int dim, long int ng)
