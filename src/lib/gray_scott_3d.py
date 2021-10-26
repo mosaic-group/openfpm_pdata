@@ -23,7 +23,6 @@ Domain = namedtuple('Domain', 'U V spacing size')
 
 DIM = 3
 PERIODIC = 1
-U, V = 0, 0
 x, y, z = 0, 1, 2
 K, F = 0.053, 0.014  # K and F (Physical constant in the equation)
 
@@ -88,8 +87,18 @@ def init_domain(old, new, whole_domain):
         0.25 + (np.random.rand(old.V[start_i:stop_i, start_j:stop_j, start_k:stop_k].shape) - 0.5) / 20.0
 
 
+def get_from_array(arr, coords):  # todo are there better ways ?
+    out = arr[coords[0]]
+
+    for i in range(1, len(coords)):
+        index = coords[i]
+        out = out[index]
+    
+    return out
+
+
 def get_stencil(uFactor, vFactor, dT, format='numpy'):
-    stencil = [
+    eq_stencil = np.int64([
         [0, 0, 0],  # Cp
         [0, 0, -1],  # mx
         [0, 0, +1],  # px
@@ -97,43 +106,46 @@ def get_stencil(uFactor, vFactor, dT, format='numpy'):
         [0, +1, 0],  # py
         [-1, 0, 0],  # mz
         [-1, 0, 0]  # pz
-    ]
+    ])
 
     if format == 'numpy':
-        .
+        print('to do')
+        exit(17)
     elif format == 'numba':
-        def kernel_U(U, V):
-            Cp = U[stencil[0]]
-            Cpv = V[stencil[0]]
+        @stencil
+        def kernel_U(eq_stencil, uFactor, dT):
+            # Cp = get_from_array(U, eq_stencil[0])
+            # Cpv = get_from_array(V, eq_stencil[0])
 
-            mx = U[stencil[1]]
-            px = U[stencil[2]]
+            # mx = get_from_array(U, eq_stencil[1])
+            # px = get_from_array(U, eq_stencil[2])
 
-            my = U[stencil[3]]
-            py = U[stencil[4]]
+            # my = get_from_array(U, eq_stencil[3])
+            # py = get_from_array(U, eq_stencil[4])
 
-            mz = U[stencil[5]]
-            pz = U[stencil[6]]
+            # mz = get_from_array(U, eq_stencil[5])
+            # pz = get_from_array(U, eq_stencil[6])
 
-            return Cp +\
-                uFactor * (
-                    mz + pz + my + py + mx + px - 6 * Cp
-                ) -\
-                dT * Cp * Cpv * Cpv -\
-                dT * F * (Cp - 1.0)  # update based on Eq 2
+            # return Cp +\
+            #     uFactor * (
+            #         mz + pz + my + py + mx + px - 6 * Cp
+            #     ) -\
+            #     dT * Cp * Cpv * Cpv -\
+            #     dT * F * (Cp - 1.0)  # update based on Eq 2
 
+        @stencil
         def kernel_V(U, V):
-            Cp = V[stencil[0]]
-            Cpu = U[stencil[0]]
+            Cp = get_from_array(V, eq_stencil[0])
+            Cpu = get_from_array(U, eq_stencil[0])
 
-            mx = V[stencil[1]]
-            px = V[stencil[2]]
+            mx = get_from_array(V, eq_stencil[1])
+            px = get_from_array(V, eq_stencil[2])
 
-            my = V[stencil[3]]
-            py = V[stencil[4]]
+            my = get_from_array(V, eq_stencil[3])
+            py = get_from_array(V, eq_stencil[4])
 
-            mz = V[stencil[5]]
-            pz = V[stencil[6]]
+            mz = get_from_array(V, eq_stencil[5])
+            pz = get_from_array(V, eq_stencil[6])
 
             return Cp +\
                 vFactor * (
@@ -142,7 +154,7 @@ def get_stencil(uFactor, vFactor, dT, format='numpy'):
                 dT * Cpu * Cp * Cp -\
                 dT * (F + K) * Cp  # update based on Eq 2
 
-
+        return kernel_U, kernel_V
 
 
 def loop_ofpm(old, new, whole_domain):  # todo compare VS numpy and numba
@@ -153,33 +165,80 @@ def loop_numpy():
     pass
 
 
-def loop_numba():
-    pass
+def loop_numba(uFactor, vFactor, dT, timeSteps):
+    kernel_U, kernel_V = get_stencil(uFactor, vFactor, dT, format='numba')
+
+
+def loop(timeSteps, debug_every=300, save_every=500):
+    should_debug = lambda timeStep: timeStep % debug_every == 0
+    should_save = lambda timeStep: timeStep % save_every == 0
+
+    def _f(stencils, U, V):
+        kernel_U, kernel_V = stencils  # unpack
+
+        for i in range(timeSteps):
+            if should_debug(i):
+                print('STEP: {:d}'.format(i))
+
+            U = kernel_U(U, V)
+            V = kernel_V(U, V)
+
+            if should_save(i):
+                # todo save
+                print('    saved to todo')
+
+        return U, V
+
+    return _f
+
+
+def create_grid_dist(size, domain, gh, periodicity=[0, ] * 3):
+    grid_node = Node()
+    grid_node['dim'] = DIM
+    grid_node['n props'] = 2
+    grid_node['gh'] = gh
+    grid_node['size'] = size
+    grid_node['periodicity'] = periodicity
+    grid_node['domain/low'] = domain.low.coords
+    grid_node['domain/high'] = domain.high.coords
+
+    minimon.enter()
+    openfpm.create_grid(grid_node)
+    minimon.leave('openfpm.create_grid')
+
+    return Domain(
+        U=np.zeros(size),
+        V=np.zeros(size),
+        spacing=None,  # todo get from .cpp
+        size=size
+    )
 
 
 def main():
     """ https://git.mpi-cbg.de/openfpm/openfpm_pdata/-/blob/master/example/Grid/3_gray_scott_3d/main.cpp """
 
-    openfpm.openfpm_init()
-
-    box = Box(
+    whole_domain = Box(
         low=Point(np.float32([0, 0, 0])),
         high=Point(np.float32([2.5, 2.5, 2.5]))
     )
-    grid_size = np.float32([128, 128, 128])
-    bc = np.float32([PERIODIC, PERIODIC, PERIODIC])
+    grid_size = np.float32([128, ] * 3)
+    periodicity = np.float32([PERIODIC, ] * 3)
     g = 1  # Ghost in grid unit
     deltaT, du, dv = 1, 2e-5, 1e-5
     timeSteps = 5000
 
-    # todo calc in .cpp
-    old_domain = Domain(U=None, V=None, size=None, spacing=0.0)
-    new_domain = Domain(U=None, V=None, size=None, spacing=0.0)
+    old_copy = create_grid_dist(
+        grid_size,
+        whole_domain,
+        g,
+        periodicity=periodicity
+    )
+    new_copy = None  # todo deep copy of old
     spacing = np.float32([
-        old_domain.spacing[0], old_domain.spacing[1], old_domain.spacing[2]
+        old_copy.spacing[0], old_copy.spacing[1], old_copy.spacing[2]
     ])
 
-    init_domain(old_domain, new_domain)
+    init_domain(old_copy, new_copy, whole_domain)
 
     count = 0  # sync the ghost
     uFactor = deltaT * du / (spacing[x] * spacing[x])
@@ -194,5 +253,11 @@ def main():
 
     minimon.leave('tot_sim')
     minimon.print_stats()
+
+
+if __name__ == '__main__':
+    openfpm.openfpm_init()
+
+    main()
 
     openfpm.openfpm_finalize()
