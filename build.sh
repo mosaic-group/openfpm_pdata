@@ -41,8 +41,8 @@ if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 	export PATH="/usr/local/bin:$PATH"
 #	rm -rf /Users/admin/openfpm_dependencies/openfpm_pdata/$branch/
 #	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/PETSC
-        #./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
-#	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$branch/CMAKE/bin:$PATH"
+        ./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
+	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$branch/CMAKE/bin:$PATH"
 fi
 
 if [ x"$hostname" == x"falcon1" ]; then
