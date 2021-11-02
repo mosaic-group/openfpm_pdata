@@ -22,10 +22,14 @@ from copy import deepcopy
 Point = namedtuple('Point', 'coords')
 Box = namedtuple('Box', 'low high')
 
-#@dataclass
-#class Domain:
-#    
-Domain = namedtuple('Domain', 'U V spacing size')
+
+@dataclass
+class Domain:
+    U: np.ndarray
+    V: np.ndarray
+    spacing: np.ndarray
+    size: np.ndarray
+
 
 DIM = 3
 PERIODIC = 1
@@ -49,13 +53,14 @@ def domain_point2array_index(point, domain, grid_size, to_int=False):
     """
 
     f = lambda d: convert_between_ranges(
-        point[d], [domain.low[d], domain.high[d]], [0, grid_size[d]]
+        point[d], [domain.low.coords[d], domain.high.coords[d]], [0, grid_size[d]]
     )
     dims = len(point)
     raw = map(f, range(dims))
 
     if to_int:
         raw = map(np.around, raw)
+        return np.int64(list(raw))
 
     return np.float64(list(raw))
 
@@ -88,114 +93,82 @@ def init_domain(old, new, whole_domain):
     )
 
     old.U[start_i:stop_i, start_j:stop_j, start_k:stop_k] =\
-        0.5 + (np.random.rand(old.U[start_i:stop_i, start_j:stop_j, start_k:stop_k].shape) - 0.5) / 10.0
+        0.5 + (np.random.rand(*old.U[start_i:stop_i, start_j:stop_j, start_k:stop_k].shape) - 0.5) / 10.0
     old.V[start_i:stop_i, start_j:stop_j, start_k:stop_k] =\
-        0.25 + (np.random.rand(old.V[start_i:stop_i, start_j:stop_j, start_k:stop_k].shape) - 0.5) / 20.0
+        0.25 + (np.random.rand(*old.V[start_i:stop_i, start_j:stop_j, start_k:stop_k].shape) - 0.5) / 20.0
 
 
-def get_from_array(arr, coords):  # todo are there better ways ?
-    out = arr[coords[0]]
-
-    for i in range(1, len(coords)):
-        index = coords[i]
-        out = out[index]
-
-    return out
-
-
-def get_stencil(uFactor, vFactor, dT, format='numpy'):
-    eq_stencil = np.int64([
-        [0, 0, 0],  # Cp
-        [0, 0, -1],  # mx
-        [0, 0, +1],  # px
-        [0, -1, 0],  # my
-        [0, +1, 0],  # py
-        [-1, 0, 0],  # mz
-        [-1, 0, 0]  # pz
-    ])
-
+def get_stencils(uFactor, vFactor, dT, format='numpy'):
     if format == 'numpy':
-        print('to do')
-        exit(17)
-    elif format == 'numba':
+        return None, None
+    elif format == 'numba':  # todo
         @stencil
-        def kernel_U(eq_stencil, uFactor, dT):
-            # Cp = get_from_array(U, eq_stencil[0])
-            # Cpv = get_from_array(V, eq_stencil[0])
+        def kernel_U(U, V, dT):  # todo without dT
+            Cp = U[0, 0, 0]  # todo avoid repeating locations
+            Cpv = V[0, 0, 0]
 
-            # mx = get_from_array(U, eq_stencil[1])
-            # px = get_from_array(U, eq_stencil[2])
+            mx = U[0, 0, -1]
+            px = U[0, 0, +1]
 
-            # my = get_from_array(U, eq_stencil[3])
-            # py = get_from_array(U, eq_stencil[4])
+            my = U[0, -1, 0]
+            py = U[0, +1, 0]
 
-            # mz = get_from_array(U, eq_stencil[5])
-            # pz = get_from_array(U, eq_stencil[6])
+            mz = U[-1, 0, 0]
+            pz = U[-1, 0, 0]
 
-            # return Cp +\
-            #     uFactor * (
-            #         mz + pz + my + py + mx + px - 6 * Cp
-            #     ) -\
-            #     dT * Cp * Cpv * Cpv -\
-            #     dT * F * (Cp - 1.0)  # update based on Eq 2
-            return 0.1  # todo
+            return Cp +\
+                uFactor * (
+                    mz + pz + my + py + mx + px - 6 * Cp
+                ) -\
+                dT * Cp * Cpv * Cpv -\
+                dT * F * (Cp - 1.0)  # update based on Eq 2
 
         @stencil
-        def kernel_V(U, V):
-            # Cp = get_from_array(V, eq_stencil[0])
-            # Cpu = get_from_array(U, eq_stencil[0])
+        def kernel_V(U, V, dT):
+            Cp = V[0, 0, 0]  # todo avoid repeating locations
+            Cpu = U[0, 0, 0]
 
-            # mx = get_from_array(V, eq_stencil[1])
-            # px = get_from_array(V, eq_stencil[2])
+            mx = V[0, 0, -1]
+            px = V[0, 0, +1]
 
-            # my = get_from_array(V, eq_stencil[3])
-            # py = get_from_array(V, eq_stencil[4])
+            my = V[0, -1, 0]
+            py = V[0, +1, 0]
 
-            # mz = get_from_array(V, eq_stencil[5])
-            # pz = get_from_array(V, eq_stencil[6])
+            mz = V[-1, 0, 0]
+            pz = V[-1, 0, 0]
 
-            # return Cp +\
-            #     vFactor * (
-            #         mz + pz + my + py + mx + px - 6 * Cp
-            #     ) -\
-            #     dT * Cpu * Cp * Cp -\
-            #     dT * (F + K) * Cp  # update based on Eq 2
-            return 0.2
+            return Cp +\
+                vFactor * (
+                    mz + pz + my + py + mx + px - 6 * Cp
+                ) -\
+                dT * Cpu * Cp * Cp -\
+                dT * (F + K) * Cp  # update based on Eq 2
 
         return kernel_U, kernel_V
 
 
-def loop_ofpm(old, new, whole_domain):  # todo compare VS numpy and numba
-    pass
-
-
-def loop_numpy():
-    pass
-
-
-def loop_numba(uFactor, vFactor, dT, timeSteps):
-    kernel_U, kernel_V = get_stencil(uFactor, vFactor, dT, format='numba')
-
-
-def loop(timeSteps, debug_every=300, save_every=500):
+def make_loop(timeSteps, debug_every=300, save_every=500):
     should_debug = lambda timeStep: timeStep % debug_every == 0
     should_save = lambda timeStep: timeStep % save_every == 0
 
-    def _f(stencils, U, V):
+    def _f(stencils, old_copy, new_copy, dT):
         kernel_U, kernel_V = stencils  # unpack
 
         for i in range(timeSteps):
             if should_debug(i):
                 print('STEP: {:d}'.format(i))
 
-            U = kernel_U(U, V)
-            V = kernel_V(U, V)
+            old_U, old_V = np.zeros_like(old_copy.U), np.zeros_like(old_copy.V)
+
+            new_copy.U = kernel_U(old_U, old_V, dT)
+            new_copy.V = kernel_V(old_U, old_V, dT)
+
+            old_copy.U = new_copy.U  # sync
+            old_copy.V = new_copy.V
 
             if should_save(i):
                 # todo save
                 print('    saved to todo')
-
-        return U, V
 
     return _f
 
@@ -217,7 +190,7 @@ def create_grid_dist(size, domain, gh, periodicity=[0, ] * 3):
     return Domain(
         U=np.zeros(size),
         V=np.zeros(size),
-        spacing=grid_node.spacing,
+        spacing=np.float64(grid_node['spacing']),
         size=size
     )
 
@@ -233,7 +206,7 @@ def main():
     periodicity = np.int64([PERIODIC, ] * 3)
     g = 1  # Ghost in grid unit
     deltaT, du, dv = 1, 2e-5, 1e-5
-    timeSteps = 5000
+    timeSteps = 2  # todo debug only 5000
 
     old_copy = create_grid_dist(
         grid_size,
@@ -242,24 +215,17 @@ def main():
         periodicity=periodicity
     )
     new_copy = deepcopy(old_copy)
-    spacing = np.float64([
-        old_copy.spacing[0], old_copy.spacing[1], old_copy.spacing[2]
-    ])
+    spacing = deepcopy(old_copy.spacing)
 
     init_domain(old_copy, new_copy, whole_domain)
-    1/0
 
-    count = 0  # sync the ghost
     uFactor = deltaT * du / (spacing[x] * spacing[x])
     vFactor = deltaT * dv / (spacing[x] * spacing[x])
+    stencils = get_stencils(uFactor, vFactor, deltaT, format='numba')
+    loop = make_loop(timeSteps, debug_every=300, save_every=500)
 
     minimon.enter()
-    for i in range(timeSteps):
-        if i % 300 == 0:
-            print('STEP: {:.0f}'.format(i))
-
-        # todo loop
-
+    loop(stencils, old_copy, new_copy, deltaT)
     minimon.leave('tot_sim')
     minimon.print_stats()
 
