@@ -16,9 +16,15 @@ from minimon import MiniMon
 minimon = MiniMon()
 
 from collections import namedtuple
+from dataclasses import dataclass
+from copy import deepcopy
 
 Point = namedtuple('Point', 'coords')
 Box = namedtuple('Box', 'low high')
+
+#@dataclass
+#class Domain:
+#    
 Domain = namedtuple('Domain', 'U V spacing size')
 
 DIM = 3
@@ -51,7 +57,7 @@ def domain_point2array_index(point, domain, grid_size, to_int=False):
     if to_int:
         raw = map(np.around, raw)
 
-    return np.float32(list(raw))
+    return np.float64(list(raw))
 
 
 def init_domain(old, new, whole_domain):
@@ -93,7 +99,7 @@ def get_from_array(arr, coords):  # todo are there better ways ?
     for i in range(1, len(coords)):
         index = coords[i]
         out = out[index]
-    
+
     return out
 
 
@@ -132,27 +138,29 @@ def get_stencil(uFactor, vFactor, dT, format='numpy'):
             #     ) -\
             #     dT * Cp * Cpv * Cpv -\
             #     dT * F * (Cp - 1.0)  # update based on Eq 2
+            return 0.1  # todo
 
         @stencil
         def kernel_V(U, V):
-            Cp = get_from_array(V, eq_stencil[0])
-            Cpu = get_from_array(U, eq_stencil[0])
+            # Cp = get_from_array(V, eq_stencil[0])
+            # Cpu = get_from_array(U, eq_stencil[0])
 
-            mx = get_from_array(V, eq_stencil[1])
-            px = get_from_array(V, eq_stencil[2])
+            # mx = get_from_array(V, eq_stencil[1])
+            # px = get_from_array(V, eq_stencil[2])
 
-            my = get_from_array(V, eq_stencil[3])
-            py = get_from_array(V, eq_stencil[4])
+            # my = get_from_array(V, eq_stencil[3])
+            # py = get_from_array(V, eq_stencil[4])
 
-            mz = get_from_array(V, eq_stencil[5])
-            pz = get_from_array(V, eq_stencil[6])
+            # mz = get_from_array(V, eq_stencil[5])
+            # pz = get_from_array(V, eq_stencil[6])
 
-            return Cp +\
-                vFactor * (
-                    mz + pz + my + py + mx + px - 6 * Cp
-                ) -\
-                dT * Cpu * Cp * Cp -\
-                dT * (F + K) * Cp  # update based on Eq 2
+            # return Cp +\
+            #     vFactor * (
+            #         mz + pz + my + py + mx + px - 6 * Cp
+            #     ) -\
+            #     dT * Cpu * Cp * Cp -\
+            #     dT * (F + K) * Cp  # update based on Eq 2
+            return 0.2
 
         return kernel_U, kernel_V
 
@@ -209,7 +217,7 @@ def create_grid_dist(size, domain, gh, periodicity=[0, ] * 3):
     return Domain(
         U=np.zeros(size),
         V=np.zeros(size),
-        spacing=None,  # todo get from .cpp
+        spacing=grid_node.spacing,
         size=size
     )
 
@@ -218,11 +226,11 @@ def main():
     """ https://git.mpi-cbg.de/openfpm/openfpm_pdata/-/blob/master/example/Grid/3_gray_scott_3d/main.cpp """
 
     whole_domain = Box(
-        low=Point(np.float32([0, 0, 0])),
-        high=Point(np.float32([2.5, 2.5, 2.5]))
+        low=Point(np.float64([0, 0, 0])),
+        high=Point(np.float64([2.5, 2.5, 2.5]))
     )
-    grid_size = np.float32([128, ] * 3)
-    periodicity = np.float32([PERIODIC, ] * 3)
+    grid_size = np.int64([128, ] * 3)
+    periodicity = np.int64([PERIODIC, ] * 3)
     g = 1  # Ghost in grid unit
     deltaT, du, dv = 1, 2e-5, 1e-5
     timeSteps = 5000
@@ -233,12 +241,13 @@ def main():
         g,
         periodicity=periodicity
     )
-    new_copy = None  # todo deep copy of old
-    spacing = np.float32([
+    new_copy = deepcopy(old_copy)
+    spacing = np.float64([
         old_copy.spacing[0], old_copy.spacing[1], old_copy.spacing[2]
     ])
 
     init_domain(old_copy, new_copy, whole_domain)
+    1/0
 
     count = 0  # sync the ghost
     uFactor = deltaT * du / (spacing[x] * spacing[x])

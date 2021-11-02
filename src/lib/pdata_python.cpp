@@ -123,11 +123,16 @@ static PyObject* create_grid_wrapper(PyObject *self, PyObject *args)
     );
 
     // populate conduit node
-    if (dim == 3 && n_prop == 1)  // todo debug only
+    if (dim == 3 && n_prop == 2)  // todo debug only
     {
         auto & gdb_ext = g_one_3d[c_one]->getLocalGridsInfo();
 
-        // todo set spacing
+        const float_t spacing[3] = {
+            g_one_3d[c_one]->spacing(0),
+            g_one_3d[c_one]->spacing(1),
+            g_one_3d[c_one]->spacing(2)
+        };
+        n.set_path_float32_ptr("spacing", spacing, 3);
 
         for (int i = 0 ; i < gdb_ext.size(); i++) {
             const float_t tmp0[3] = {
