@@ -85,6 +85,9 @@ public:
 	//! Indicate this structure has a function to check the device pointer
 	typedef int yes_has_check_device_pointer;
 
+	//! aggregate stored by the vector
+	typedef prop value_type;
+
 	vector_dist_ker()
 	:g_m(0)
 	{}

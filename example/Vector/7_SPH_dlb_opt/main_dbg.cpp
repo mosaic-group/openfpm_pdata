@@ -684,26 +684,6 @@ template<typename VerletList> inline double calc_forces(particles & vd, VerletLi
 			}
 		}
 
-//		double sum1 = 0.0;
-//		double sum2 = 0.0;
-
-/*		for (size_t i = 0 ; i  < vd.getProp<8>(a).size() ; i++)
-		{
-			if (vd.getProp<8>(a).get(i).id != vd.getProp<9>(a).get(i).id)
-			{
-				std::cout << "CAZZO " << std::endl;
-			}
-
-
-			sum1 += vd.getProp<8>(a).get(i).fact;
-			sum2 += vd.getProp<9>(a).get(i).fact;
-		}*/
-
-/*		if (sum1 != sum2)
-		{
-			break;
-		}*/
-
 		++part3;
 	}
 }
