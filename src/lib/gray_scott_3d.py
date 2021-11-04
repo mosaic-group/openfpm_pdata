@@ -72,24 +72,23 @@ def init_domain(old, new, whole_domain):
     new.U = np.zeros_like(new.U)
     new.V = np.zeros_like(new.V)
 
-    # x_start = old.size[0] * 1.55 / whole_domain.high[0]
-    # y_start = old.size[1] * 1.55 / whole_domain.high[1]
-    # z_start = old.size[1] * 1.55 / whole_domain.high[2]
+    x_start = old.size[0] * 1.55 / whole_domain.high.coords[0]
+    y_start = old.size[1] * 1.55 / whole_domain.high.coords[1]
+    z_start = old.size[1] * 1.55 / whole_domain.high.coords[2]
 
-    # x_stop = old.size[0] * 1.85 / whole_domain.high[0]
-    # y_stop = old.size[1] * 1.85 / whole_domain.high[1]
-    # z_stop = old.size[1] * 1.85 / whole_domain.high[2]
+    x_stop = old.size[0] * 1.85 / whole_domain.high.coords[0]
+    y_stop = old.size[1] * 1.85 / whole_domain.high.coords[1]
+    z_stop = old.size[1] * 1.85 / whole_domain.high.coords[2]
 
-    # start = [x_start, y_start, z_start]
-    # stop = [x_stop, y_stop, z_stop]
+    start = [x_start, y_start, z_start]
+    stop = [x_stop, y_stop, z_stop]
 
-    in_between = 1.2, 2.3  # todo: get from above
     grid_size = [old.U.shape[0], ] * 3  # assuming square grid
     start_i, start_j, start_k = domain_point2array_index(
-        [in_between[0], ] * 3, whole_domain, grid_size, to_int=True
+        start, whole_domain, grid_size, to_int=True
     )
     stop_i, stop_j, stop_k = domain_point2array_index(
-        [in_between[1], ] * 3, whole_domain, grid_size, to_int=True
+        stop, whole_domain, grid_size, to_int=True
     )
 
     old.U[start_i:stop_i, start_j:stop_j, start_k:stop_k] =\
