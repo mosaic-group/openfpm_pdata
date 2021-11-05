@@ -1,5 +1,8 @@
 #!/bin/bash 
 
+source script/discover_os
+discover_os
+
 # check if the directory $1/BOOST exist
 
 if [ -d "$1/BOOST" ]; then
@@ -23,7 +26,18 @@ if [ x"$4" != x"" ]; then
 fi
 ./bootstrap.sh --with-toolset=$3
 mkdir $1/BOOST
-./b2 -j $2 install --prefix=$1/BOOST
+
+# Several flavours
+arch=$(uname -m)
+if [ x"$platform" == x"osx" ]; then
+    if [ x"$arch" == x"arm64" ]; then
+        ./b2 -j $2 install --prefix=$1/BOOST address-model=64 architecture=arm abi=aapcs binary-format=mach-o
+    else
+        ./b2 -j $2 install --prefix=$1/BOOST
+    fi
+else
+    ./b2 -j $2 install --prefix=$1/BOOST
+fi
 rm -rf boost_1_75_0
 
 if [ -f $HOME/user-config.jam_bck ]; then
