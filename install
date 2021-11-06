@@ -349,12 +349,16 @@ else
             if [ x"$CXX" == x"icpc" ]; then
               ./script/install_BOOST.sh $i_dir $ncore intel-linux
             elif [ x"$CXX" == x"clang++" ]; then
-              ./script/install_BOOST.sh $i_dir $ncore darwin
+              ./script/install_BOOST.sh $i_dir $ncore clang
             else
-	      if [ x"$CXX" == x"gcc" ]; then
-              	./script/install_BOOST.sh $i_dir $ncore gcc
+	      if [ x"$CXX" == x"g++" ]; then
+		if [ x"$is_apple_llvm" == x"1" ]; then
+		  ./script/install_BOOST.sh $i_dir $ncore clang
+		else
+              	  ./script/install_BOOST.sh $i_dir $ncore gcc
+		fi
 	      else
-		./script/install_BOOST.sh $i_dir $ncore gcc $(which $CXX) $dgc_major $dgc_middle
+		./script/install_BOOST.sh $i_dir $ncore gcc $(which $CXX)
 	      fi
             fi
             BOOST_installed=1
