@@ -352,7 +352,7 @@ else
               ./script/install_BOOST.sh $i_dir $ncore clang
             else
 	      if [ x"$CXX" == x"g++" ]; then
-		if [ x"$is_apple_llvm" == x"1" ]; then
+		if [ x"$is_apple_llvm" == x"yes" ]; then
 		  ./script/install_BOOST.sh $i_dir $ncore clang
 		else
               	  ./script/install_BOOST.sh $i_dir $ncore gcc
