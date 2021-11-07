@@ -1857,6 +1857,10 @@ BOOST_AUTO_TEST_CASE(vector_dist_overflow_se_class1)
 
 BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 {
+
+// This example require float atomic, until C++20 we are out of luck
+#ifndef CUDIFY_USE_OPENMP
+
 	Vcluster<> & v_cl = create_vcluster();
 
 	long int k = 25*25*25*create_vcluster().getProcessingUnits();
@@ -2069,6 +2073,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 			BOOST_REQUIRE_EQUAL(ret,true);
 		}
 	}
+
+#endif
 }
 
 BOOST_AUTO_TEST_SUITE_END()
