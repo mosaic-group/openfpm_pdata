@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_output )
 	std::string file_test("sgrid_gpu_output_" + std::to_string(v_cl.size()) + "_" + std::to_string(v_cl.rank())  + ".vtk");
 	std::string file("sgrid_gpu_output_" + std::to_string(v_cl.rank()) + ".vtk");
 
-	#ifndef __ARM_ARCH
+	#ifndef HAVE_OSX
 	bool test = compare(file,"test_data/" + file_test);
 
 	BOOST_REQUIRE_EQUAL(true,test);
