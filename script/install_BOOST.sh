@@ -10,10 +10,10 @@ if [ -d "$1/BOOST" ]; then
   exit 0
 fi
 
-rm boost_1_75_0.tar.bz2
-wget http://ppmcore.mpi-cbg.de/upload/boost_1_75_0.tar.bz2
-tar -xvf boost_1_75_0.tar.bz2
-cd boost_1_75_0
+rm boost_1_77_0.tar.bz2
+wget http://ppmcore.mpi-cbg.de/upload/boost_1_77_0.tar.bz2
+tar -xvf boost_1_77_0.tar.bz2
+cd boost_1_77_0
 if [ x"$4" != x"" ]; then
 	if [ -f $HOME/user-config.jam ]; then
 		mv $HOME/user-config.jam $HOME/user-config.jam_bck
@@ -41,10 +41,10 @@ else
     ./b2 -j $2 install --prefix=$1/BOOST
 fi
 
-rm -rf boost_1_75_0
+rm -rf boost_1_77_0
 
 if [ -f $HOME/user-config.jam_bck ]; then
 	mv $HOME/user-config.jam_bck $HOME/user-config.jam
 fi
-rm -rf boost_1_75_0.tar.bz2
+rm -rf boost_1_77_0.tar.bz2
 
