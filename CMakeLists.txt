@@ -154,6 +154,10 @@ else()
 	message( FATAL_ERROR "BOOST is required in order to install OpenFPM" )
 endif()
 
+if (OPENMP_FOUND)
+	file(WRITE openmp_flags ${OpenMP_CXX_FLAGS})
+endif()
+
 if(ENABLE_GPU AND CUDA_FOUND)
         set(DEFINE_CUDA_GPU "#define CUDA_GPU")
 endif()

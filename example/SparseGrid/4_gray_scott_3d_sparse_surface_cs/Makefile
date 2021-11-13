@@ -9,7 +9,7 @@ gray_scott_sparse_surface_cs_test: OPT += -DTEST_RUN
 gray_scott_sparse_surface_cs_test: gray_scott_sparse_surface_cs
 
 %.o: %.cpp
-	$(CC) -O3 -g $(OPT) -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -O3 -g $(OPT) -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
 gray_scott_sparse_surface_cs: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
