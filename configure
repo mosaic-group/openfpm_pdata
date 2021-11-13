@@ -100,7 +100,7 @@ enable_debug
 with_metis
 with_hdf5
 with_libhilbert
-with_cuda_on_cpu
+with_cuda_on_backend
 enable_cuda_on_cpu
 enable_scan_coverty
 enable_test_performance
@@ -122,7 +122,6 @@ with_suitesparse
 with_petsc
 with_eigen
 with_vcdevel
-enable_gpu
 enable_asan
 enable_garbageinj
 enable_garbageinjv
@@ -243,23 +242,10 @@ do
        conf_options="$conf_options -DSCAN_COVERTY=ON"
        ;;
     cuda_on_cpu)
-       conf_options="$conf_options -DCUDA_ON_CPU=ON"
+       conf_options="$conf_options -DCUDA_ON_BACKEND=SEQUENTIAL"
        ;;
     test_performance)
        conf_options="$conf_options -DTEST_PERFORMANCE=ON"
-       ;;
-    gpu)
-        if [ x"$CXX" == x"" ]; then
-                conf_options="$conf_options"
-        else
-		conf_options="$conf_options -DCMAKE_CUDA_HOST_COMPILER=$(which $CXX)"
-        fi
-        if [ x"$CXXCUDA" == x"" ]; then
-                conf_options="$conf_options"
-        else
-                conf_options="$conf_options -DCMAKE_CUDA_COMPILER=$(which $CXXCUDA)"
-        fi
-       conf_options="$conf_options -DENABLE_GPU=ON"
        ;;
     asan)
        conf_options="$conf_options -DENABLE_ASAN=ON"
@@ -475,8 +461,20 @@ do
     ac_useropt_orig=$ac_useropt
     ac_useropt=`$as_echo "$ac_useropt" | sed 's/[-+.]/_/g'`
     case $ac_useropt in
-      cuda_on_cpu)
-      conf_options="$conf_options -DCUDA_ON_CPU=$ac_optarg"
+      cuda_on_backend)
+      conf_options="$conf_options -DCUDA_ON_BACKEND=$ac_optarg"
+      if [ x"$ac_optarg" == x"CUDA" ]; then
+        if [ x"$CXX" == x"" ]; then
+                conf_options="$conf_options"
+        else
+                conf_options="$conf_options -DCMAKE_CUDA_HOST_COMPILER=$(which $CXX)"
+        fi
+        if [ x"$CXXCUDA" == x"" ]; then
+                conf_options="$conf_options"
+        else
+                conf_options="$conf_options -DCMAKE_CUDA_COMPILER=$(which $CXXCUDA)"
+        fi
+      fi
       ;;
       libhilbert)
       conf_options="$conf_options -DLIBHILBERT_ROOT=$ac_optarg"
