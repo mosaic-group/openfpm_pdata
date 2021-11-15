@@ -18,11 +18,12 @@ centos_run:
   dependencies:
     - centos_build
   script:
+    - export OMP_NUM_THREADS=1
     - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
     - ./run.sh $CI_PROJECT_DIR unused 2 pdata 0 $CI_COMMIT_REF_NAME
     - ./run.sh $CI_PROJECT_DIR unused 3 pdata 0 $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR unused 4 pdata 0 $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR unused 5 pdata 0 $CI_COMMIT_REF_NAME
+    - export OMP_NUM_THREADS=8
+    - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
     - cd openfpm_numerics
     - ./run.sh $CI_PROJECT_DIR unused 1 0 0 numerics $CI_COMMIT_REF_NAME
     - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics $CI_COMMIT_REF_NAME
@@ -74,9 +75,12 @@ ubuntu_run:
   dependencies:
     - ubuntu_build
   script:
+    - export OMP_NUM_THREADS=1
     - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
     - ./run.sh $CI_PROJECT_DIR unused 2 pdata 0 $CI_COMMIT_REF_NAME
     - ./run.sh $CI_PROJECT_DIR unused 3 pdata 0 $CI_COMMIT_REF_NAME
+    - export OMP_NUM_THREADS=8
+    - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
     - cd openfpm_numerics
     - ./run.sh $CI_PROJECT_DIR unused 1 0 0 numerics $CI_COMMIT_REF_NAME
     - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics $CI_COMMIT_REF_NAME
