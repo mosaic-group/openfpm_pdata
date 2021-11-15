@@ -297,7 +297,7 @@ configure_options=" $configure_options --with-parmetis=$i_dir/PARMETIS "
 configure_options=" $configure_options --with-metis=$i_dir/METIS "
 
 if [ x"$gpu_support" == x"1" ]; then
-	configure_options=" $configure_options --enable-gpu "
+	configure_options=" $configure_options --with-cuda-on-backend=CUDA"
 fi
 
 MPI_installed=0

@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-source script/discover_os
+source discover_os
 discover_os
 
 # check if the directory $1/BOOST exist
@@ -35,7 +35,7 @@ if [ x"$platform" == x"osx" ]; then
             ./b2 -j $2 install --prefix=$1/BOOST address-model=64 architecture=arm abi=aapcs binary-format=mach-o toolset=$3
         fi
     else
-        ./b2 -j $2 install --prefix=$1/BOOST
+        ./b2 -j $2 install --prefix=$1/BOOST address-model=64 architecture=x86 abi=sysv binary-format=mach-o toolset=clang
     fi
 else
     ./b2 -j $2 install --prefix=$1/BOOST

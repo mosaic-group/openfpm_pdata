@@ -5,7 +5,7 @@ add_definitions(-DSCAN_WITH_CUB)
 ########################### Executables
 
 
-if(CUDA_FOUND OR CUDA_ON_CPU OR HIP_FOUND)
+if(NOT CUDA_ON_BACKEND STREQUAL "None")
 	set(CUDA_SOURCES 
 	    Grid/tests/sgrid_dist_id_gpu_unit_tests.cu
 	    Vector/cuda/vector_dist_gpu_MP_tests.cu
@@ -21,10 +21,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
         add_definitions("-DBOOST_MPL_CFG_HAS_TYPEOF")
 endif()
 
-if (CUDA_ON_CPU)
-        add_definitions(-DCUDA_ON_CPU)
+
+if (CUDA_ON_BACKEND STREQUAL "OpenMP" OR CUDA_ON_BACKEND STREQUAL "SEQUENTIAL")
+        set_source_files_properties(${CUDA_SOURCES} PROPERTIES COMPILE_FLAGS "-D__NVCC__ -DCUDART_VERSION=11000")
         set_source_files_properties(${CUDA_SOURCES} PROPERTIES LANGUAGE CXX)
-	set_source_files_properties(${CUDA_SOURCES} PROPERTIES COMPILE_FLAGS "-D__NVCC__ -DCUDART_VERSION=11000")
         if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
                 add_definitions("-x c++")
         endif()
@@ -196,6 +196,9 @@ target_link_libraries(pdata ${MPI_C_LIBRARIES})
 target_link_libraries(pdata ${MPI_CXX_LIBRARIES})
 target_link_libraries(pdata vcluster)
 target_link_libraries(pdata ofpmmemory)
+if (OpenMP::OpenMP_CXX)
+	target_link_libraries(pdata OpenMP::OpenMP_CXX)
+endif()
 
 #target_link_libraries(isolation_pdata ${Boost_LIBRARIES})
 #target_link_libraries(isolation_pdata ${PARMETIS_LIBRARIES})
