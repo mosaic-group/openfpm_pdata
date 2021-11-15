@@ -112,6 +112,8 @@ elif [ x"$comp_type" == x"asan" ]; then
         foward_options="$foward_options --enable-asan"
 fi
 
+rm -rf $dependency_dir/BOOST
+
 echo "Installing with: ./install $gpu_support  -i $dependency_dir $install_options -c \"$installation_dir $foward_options  \"  "
 nice -n 19 ./install $gpu_support -i $dependency_dir $install_options -c "$installation_dir $foward_options "
 if [ $? -ne 0 ]; then
