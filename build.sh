@@ -27,6 +27,7 @@ if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
 	./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
 	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$branch/CMAKE/bin:$PATH"
 	foward_options="--with-cuda-on-backend=OpenMP"
+	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/BOOST
 fi
 
 if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
@@ -41,6 +42,7 @@ if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 	echo "Mac node"
 	export PATH="/usr/local/bin:$PATH"
 	foward_options="--with-cuda-on-backend=SEQUENTIAL"
+	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/BOOST
 #	rm -rf /Users/admin/openfpm_dependencies/openfpm_pdata/$branch/
 #	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/PETSC
         #./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
