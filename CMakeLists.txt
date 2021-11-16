@@ -77,7 +77,9 @@ find_package(Eigen3)
 find_package(SuiteSparse OPTIONAL_COMPONENTS UMFPACK)
 find_package(Vc)
 find_package(OpenMP)
-find_package(HIP)
+if (CUDA_ON_BACKEND STREQUAL "HIP" AND NOT HIP_FOUND)
+        find_package(HIP)
+endif()
 
 set(CMAKE_SKIP_BUILD_RPATH TRUE)
 

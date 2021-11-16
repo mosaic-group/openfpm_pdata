@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-source discover_os
+source script/discover_os
 discover_os
 
 # check if the directory $1/BOOST exist
@@ -12,7 +12,7 @@ fi
 
 rm boost_1_75_0.tar.bz2
 wget http://ppmcore.mpi-cbg.de/upload/boost_1_75_0.tar.bz2
-tar -xvf boost_1_75_0.tar.bz2
+tar -xf boost_1_75_0.tar.bz2
 cd boost_1_75_0
 if [ x"$4" != x"" ]; then
 	if [ -f $HOME/user-config.jam ]; then
@@ -30,15 +30,15 @@ mkdir $1/BOOST
 if [ x"$platform" == x"osx" ]; then
     if [ x"$arch" == x"arm64" ]; then
         if [ x"$3" == x"" ]; then
-            ./b2 -j $2 install --prefix=$1/BOOST address-model=64 architecture=arm abi=aapcs binary-format=mach-o toolset=clang
+            ./b2 -j $2 install --prefix=$1/BOOST address-model=64 architecture=arm abi=aapcs binary-format=mach-o toolset=clang  -sNO_LZMA=1 -sNO_ZSTD=1
         else
-            ./b2 -j $2 install --prefix=$1/BOOST address-model=64 architecture=arm abi=aapcs binary-format=mach-o toolset=$3
+            ./b2 -j $2 install --prefix=$1/BOOST address-model=64 architecture=arm abi=aapcs binary-format=mach-o toolset=$3  -sNO_LZMA=1 -sNO_ZSTD=1
         fi
     else
-        ./b2 -j $2 install --prefix=$1/BOOST address-model=64 architecture=x86 abi=sysv binary-format=mach-o toolset=clang
+        ./b2 -j $2 install --prefix=$1/BOOST address-model=64 architecture=x86 abi=sysv binary-format=mach-o toolset=clang  -sNO_LZMA=1 -sNO_ZSTD=1
     fi
 else
-    ./b2 -j $2 install --prefix=$1/BOOST
+    ./b2 -j $2 install --prefix=$1/BOOST  -sNO_LZMA=1 -sNO_ZSTD=1
 fi
 
 rm -rf boost_1_75_0
