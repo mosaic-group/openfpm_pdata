@@ -94,6 +94,10 @@ else()
 	add_library(ofpm_pdata STATIC lib/pdata.cpp)
 	add_library(ofpm_pdata_python SHARED lib/pdata_python.cpp)
 
+	set_property(TARGET pdata PROPERTY CUDA_ARCHITECTURES OFF)
+	set_property(TARGET ofpm_pdata PROPERTY CUDA_ARCHITECTURES OFF)
+	set_property(TARGET ofpm_pdata_python PROPERTY CUDA_ARCHITECTURES OFF)
+
 endif()
 
 add_dependencies(pdata ofpmmemory)
