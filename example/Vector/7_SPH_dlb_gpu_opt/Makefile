@@ -15,8 +15,8 @@ else
         	CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
         	INCLUDE_PATH_NVCC=
         	CUDA_CC_LINK=mpic++
-		CUDA_OPTIONS=-DCUDA_ON_CPU -D__NVCC__ -DCUDART_VERSION=11000
-		LIBS_SELECT=$(LIBS_CUDA_ON_CPU)
+		CUDA_OPTIONS=-D__NVCC__ -DCUDART_VERSION=11000
+		LIBS_SELECT=$(LIBS)
 	else
         	ifeq (, $(shell which nvcc))
                 	CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
