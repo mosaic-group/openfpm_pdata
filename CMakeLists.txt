@@ -62,6 +62,8 @@ set(HDF5_PREFER_PARALLEL TRUE)
 set(Vc_DIR "${Vc_ROOT}/lib/cmake/Vc/")
 message("Searching Vc in ${Vc_DIR}")
 
+set (ENV{BOOST_ROOT} ${BOOST_ROOT})
+set (Boost_NO_BOOST_CMAKE OFF)
 find_package(Boost 1.72.0 COMPONENTS unit_test_framework iostreams program_options system filesystem OPTIONAL_COMPONENTS fiber context)
 find_package(MPI)
 find_package(PETSc)
