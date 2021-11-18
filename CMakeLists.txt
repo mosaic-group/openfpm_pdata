@@ -11,7 +11,7 @@ if (POLICY CMP0074)
   cmake_policy(SET CMP0074 NEW)
 endif()
 
-set(openfpm_VERSION 4.0.0)
+set(openfpm_VERSION 4.1.0)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake_modules/)
 
@@ -164,15 +164,18 @@ if (OPENMP_FOUND)
         set(DEFINE_HAVE_OPENMP "#define HAVE_OPENMP")
 endif()
 
+file(READ ${CMAKE_SOURCE_DIR}/src/cmake/openfpmConfig-configure.cmake CMAKE_OPENFPM_CONFIG_VARS)
 if(MPI_FOUND)
 	get_filename_component(OPENFPM_MPI_DEP "${MPI_C_INCLUDE_DIRS}" DIRECTORY)
-	file(READ ${CMAKE_SOURCE_DIR}/src/cmake/openfpmConfig-configure.cmake CMAKE_OPENFPM_CONFIG_VARS)
-	file(WRITE ${CMAKE_SOURCE_DIR}/src/cmake/openfpmConfigVars-configure.cmake "${CMAKE_OPENFPM_CONFIG_VARS}\nset(CMAKE_PREFIX_PATH ${OPENFPM_MPI_DEP}/)")
+	set(CMAKE_OPENFPM_CONFIG_VARS "${CMAKE_OPENFPM_CONFIG_VARS}\nset(CMAKE_PREFIX_PATH ${OPENFPM_MPI_DEP}/)")
 	set(DEFINE_HAVE_MPI "#define HAVE_MPI")
 else()
 	file(WRITE error_code "200")
 	message( FATAL_ERROR "MPI is required in order to install OpenFPM" )
 endif()
+
+set(CMAKE_OPENFPM_CONFIG_VARS "${CMAKE_OPENFPM_CONFIG_VARS}\nmessage(STATUS \"Found OpenFPM version ${openfpm_VERSION} (\$\{CMAKE_CURRENT_LIST_FILE\})\")")
+file(WRITE ${CMAKE_SOURCE_DIR}/src/cmake/openfpmConfig-Vars.cmake "${CMAKE_OPENFPM_CONFIG_VARS}")
 
 if (Boost_FOUND)
 	if ((CUDA_ON_BACKEND STREQUAL "SEQUENTIAL" OR CUDA_ON_BACKEND STREQUAL "OpenMP") AND NOT Boost_CONTEXT_FOUND)

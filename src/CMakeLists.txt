@@ -443,7 +443,11 @@ endif()
 
 target_compile_options(binary_config INTERFACE $<$<COMPILE_LANGUAGE:CUDA>: ${WARNING_SUPPRESSION_AND_OPTION_NVCC} >)
 
-target_link_libraries(binary_config INTERFACE ${Boost_LIBRARIES})
+target_link_libraries(binary_config INTERFACE Boost::context)
+target_link_libraries(binary_config INTERFACE Boost::fiber)
+target_link_libraries(binary_config INTERFACE Boost::filesystem)
+target_link_libraries(binary_config INTERFACE Boost::iostreams)
+target_link_libraries(binary_config INTERFACE Boost::program_options)
 target_link_libraries(binary_config INTERFACE ${PARMETIS_LIBRARIES})
 target_link_libraries(binary_config INTERFACE -L${METIS_ROOT}/lib metis)
 target_link_libraries(binary_config INTERFACE ${HDF5_LIBRARIES})
@@ -487,7 +491,7 @@ install(
 
 install(
   FILES
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/openfpmConfigVars-configure.cmake"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/openfpmConfig-Vars.cmake"
   DESTINATION
     cmake/
 )
