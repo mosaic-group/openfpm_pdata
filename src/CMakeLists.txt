@@ -243,11 +243,15 @@ if (TEST_COVERAGE)
     set(PDATA_FULL_SOURCES ${PDATA_SOURCES} ${MEM_SOURCES} ${DATA_SOURCES} ${VCLUSTER_SOURCES} ${IO_SOURCES} ${NUMERIC_SOURCES})
     set(PDATA_FULL_SOURCES_CU ${PDATA_SOURCES} ${MEM_SOURCES} ${DATA_SOURCES} ${VCLUSTER_SOURCES} ${IO_SOURCES} ${NUMERIC_SOURCES})
     list(FILTER PDATA_FULL_SOURCES_CU INCLUDE REGEX ^.*\.cu)
-    set_source_files_properties(${PDATA_FULL_SOURCES_CU} PROPERTIES COMPILE_FLAGS "-D__NVCC__ -DCUDART_VERSION=11000")
 
-    if (CUDA_ON_CPU)
-        set_source_files_properties(${PDATA_FULL_SOURCES_CU} PROPERTIES LANGUAGE CXX)
+    ### Test coverage are done in SEQUENTIAL
+    if (NOT CUDA_ON_BACKEND STREQUAL "SEQUENTIAL")
+	    message(FATAL_ERROR "Error test coverage must be done with CUDA_ON_BACKEND=SEQUENTIAL backend")
     endif()
+
+    set_source_files_properties(${PDATA_FULL_SOURCES_CU} PROPERTIES COMPILE_FLAGS "-D__NVCC__ -DCUDART_VERSION=11000")
+    set_source_files_properties(${PDATA_FULL_SOURCES_CU} PROPERTIES LANGUAGE CXX)
+    add_definitions("-x c++")
 
     add_executable(pdata_full ${PDATA_FULL_SOURCES})
     
@@ -265,6 +269,7 @@ if (TEST_COVERAGE)
     target_link_libraries(pdata_full -lgcov --coverage)
     target_link_libraries(pdata_full ${PDATA_LIBS})
     target_link_libraries(pdata_full ${NUMERIC_LIBS})
+    target_link_libraries(pdata_full Boost::thread)
     target_include_directories(pdata_full PUBLIC ${PDATA_INCLUDES})
     target_include_directories(pdata_full PUBLIC ${NUMERIC_INCLUDES})
 endif()
