@@ -136,6 +136,7 @@ function remove_old()
             echo -e "\033[1;34;5m  SuiteSparse has been updated to version 5.10.1, the component will be updated automatically      \033[0m"
             echo -e "\033[1;34;5m  ------------------------------------------------------------------------------------------- \033[0m"
             sleep 5
+	    rm -rf $1/EIGEN
             rm -rf $1/SUITESPARSE
             rm -rf $1/PETSC
         fi

@@ -27,6 +27,7 @@ if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
 	./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
 	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$branch/CMAKE/bin:$PATH"
 	foward_options="--with-cuda-on-backend=OpenMP"
+	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/EIGEN
 fi
 
 if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
@@ -35,6 +36,7 @@ if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
 	./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/ 4
 	export PATH="/opt/bin:$PATH"
 	foward_options="--with-cuda-on-backend=OpenMP"
+	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/EIGEN
 fi
 
 if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
@@ -47,6 +49,7 @@ if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 #	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/PETSC
         #./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
 #	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$branch/CMAKE/bin:$PATH"
+	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/EIGEN
 fi
 
 if [ x"$hostname" == x"falcon1" ]; then
