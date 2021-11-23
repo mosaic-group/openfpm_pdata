@@ -71,7 +71,7 @@ else
 fi
 
 if [ x"$with_gpu" == x"1" ]; then
-	gpu_support=-g
+	foward_options="$foward_options --with-cuda-on-backend=CUDA"
 else
 	gpu_support=
 fi
@@ -115,6 +115,8 @@ elif [ x"$comp_type" == x"garbageinjv" ]; then
 	foward_options="$foward_options  --enable-garbageinjv"
 elif [ x"$comp_type" == x"asan" ]; then
         foward_options="$foward_options --enable-asan"
+elif [ x"$comp_type" == x"openmp" ]; then
+	foward_options="$foward_options --with-cuda-on-backend=OpenMP"
 fi
 
 echo "Installing with: ./install $gpu_support  -i $dependency_dir $install_options -c \"$installation_dir $foward_options  \"  "
