@@ -124,7 +124,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Check of we have to do a make install
-if [ x"$comp_type" == x"full" ]; then
+if [ x"$comp_type" == x"full" -o x"$comp_type" == x"openmp" ]; then
     mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
     make install
     if [ x"$?" != x"0" ]; then
