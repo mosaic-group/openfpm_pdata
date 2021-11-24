@@ -73,6 +73,12 @@ else
 	gpu_support=
 fi
 
+if [ x"$branch" == x"master_openmp" ]; then
+
+	foward_options="$foward_options --with-cuda-on-backend=OpenMP"
+
+fi
+
 #### If you have a dep_dir file change the branch name to the dep_dir
 
 dep_dir=$(cat dep_dir)
@@ -124,7 +130,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Check of we have to do a make install
-if [ x"$comp_type" == x"full" -o x"$comp_type" == x"openmp" ]; then
+if [ x"$comp_type" == x"full" ]; then
     mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
     make install
     if [ x"$?" != x"0" ]; then
