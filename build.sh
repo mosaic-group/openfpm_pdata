@@ -41,7 +41,6 @@ fi
 if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 	echo "Mac node"
 	# reinstall all deps
-	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch
 	export PATH="/usr/local/bin:$PATH"
 	foward_options="--with-cuda-on-backend=SEQUENTIAL"
 	./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
