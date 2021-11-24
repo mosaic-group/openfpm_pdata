@@ -1,6 +1,7 @@
 #! /bin/bash
 # Make a directory in /tmp/OpenFPM_pdata
 
+
 workspace=$1
 hostname=$(hostname)
 target=$3
