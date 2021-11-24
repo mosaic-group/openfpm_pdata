@@ -131,9 +131,9 @@ function remove_old()
 
     if [ -d $1/SUITESPARSE ]; then
         version=$(cat $1/SUITESPARSE/version)
-        if [ x"$version" != x"3"  ]; then
+        if [ x"$version" != x"4"  ]; then
             echo -e "\033[1;34;5m  ------------------------------------------------------------------------------------------- \033[0m"
-            echo -e "\033[1;34;5m  SuiteSparse has been updated to version 5.10.1, the component will be updated automatically      \033[0m"
+            echo -e "\033[1;34;5m  SuiteSparse has been updated to version 5.7.2, the component will be updated automatically      \033[0m"
             echo -e "\033[1;34;5m  ------------------------------------------------------------------------------------------- \033[0m"
             sleep 5
 	    rm -rf $1/EIGEN
