@@ -9,6 +9,7 @@ source script/set_mpi
 source script/conf_PETSC
 source script/update_openfpm
 source script/solve_python
+source script/solve_clangomp
 source script/install_gdbgui
 
 
@@ -400,6 +401,18 @@ else
             ./script/install_VCDEVEL.sh $i_dir $ncore $CC $CXX
             configure_options=" $configure_options --with-vcdevel=$i_dir/VCDEVEL "
             VCDEVEL_installed=1
+        elif [ $conf_err -eq 220 ]; then
+	    if [ x"$platform" == x"OSX" ]; then
+            	echo "OpenMP has not been found for your compiler"
+            	if [ $CLANGOMP_installed -eq 1 ]; then
+                	echo "Error the installation of openmp for clang failed"
+                	exit 1
+            	fi
+            	solve_clangomp $platform
+            	CLANGOMP_installed=1
+	    else
+	        exit 1
+	    fi
         elif [ $conf_err -ne 0 ]; then
             echo "I do not know how to recover from this error"
             exit 1
