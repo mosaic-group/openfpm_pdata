@@ -531,7 +531,7 @@ void max_acceleration_and_velocity(particles & vd, real_number & max_acc, real_n
 	// Calculate the maximum acceleration
 	auto part = vd.getDomainIteratorGPU();
 
-	max_acceleration_and_velocity_gpu<<<part.wthr,part.thr>>>(vd.toKernel());
+	CUDA_LAUNCH(max_acceleration_and_velocity_gpu,part,vd.toKernel());
 
 	max_acc = reduce_local<red,_max_>(vd);
 	max_vel = reduce_local<red2,_max_>(vd);
@@ -714,7 +714,7 @@ void euler_int(particles & vd, real_number dt)
 
 	real_number dt205 = dt*dt*0.5;
 
-	euler_int_gpu<<<part.wthr,part.thr>>>(vd.toKernel(),dt,dt205);
+	CUDA_LAUNCH(euler_int_gpu,part,vd.toKernel(),dt,dt205);
 
 	// remove the particles
 	remove_marked<red>(vd);
