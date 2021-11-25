@@ -587,17 +587,10 @@ printf "cmake ../. $conf_options" > cmake_build_options
 rm ../error_code
 DYLD_LIBRARY_PATH=$ld_lib_pathopt cmake ../. $conf_options
 if [ $? != 0 ]; then
-	#ok something went wrong the install script analyze the return code to potentially fix the problem automatically
-	# Read the error code and exit with that
-	if [ -f ../error_code ]; then
-	  ecod=$(cat ../error_code)
-	  if [ x"$ecod" == x"0" ]; then
-	    exit 1
-	  else
-	    echo "Analyze error $ecod"
-	    exit $ecod
-	  fi
-	elif [ -f ../openfpm_devices/error_code ]; then
+        #ok something went wrong the install script analyze the return code to potentially fix the problem automatically
+        # Read the error code and exit with that
+
+        if [ -f ../openfpm_devices/error_code ]; then
           ecod=$(cat ../openfpm_devices/error_code)
           if [ x"$ecod" == x"0" ]; then
             exit 1
@@ -605,9 +598,17 @@ if [ $? != 0 ]; then
             echo "Analyze error $ecod"
             exit $ecod
           fi
-	else
-	  exit 1
-	fi
+        elif [ -f ../error_code ]; then
+          ecod=$(cat ../openfpm_devices/error_code)
+          if [ x"$ecod" == x"0" ]; then
+            exit 1
+          else
+            echo "Analyze error $ecod"
+            exit $ecod
+          fi
+        else
+          exit 1
+        fi
 fi
 
 cd ..
