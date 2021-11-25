@@ -583,7 +583,8 @@ cd build
 
 ## remove enerything
 echo "Calling cmake ../. $conf_options"
-printf "cmake ../. $conf_options" > cmake_build_options 
+printf "cmake ../. $conf_options" > cmake_build_options
+rm ../openfpm_devices/error_code
 rm ../error_code
 DYLD_LIBRARY_PATH=$ld_lib_pathopt cmake ../. $conf_options
 if [ $? != 0 ]; then

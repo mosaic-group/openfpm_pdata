@@ -318,6 +318,7 @@ HDF5_installed=0
 HDF5_System_prv=1
 LIBHILBERT_installed=0
 VCDEVEL_installed=0
+CLANGOMP_installed=0
 conf_err=1
 
 
@@ -402,7 +403,7 @@ else
             configure_options=" $configure_options --with-vcdevel=$i_dir/VCDEVEL "
             VCDEVEL_installed=1
         elif [ $conf_err -eq 220 ]; then
-	    if [ x"$platform" == x"OSX" ]; then
+	    if [ x"$platform" == x"osx" ]; then
             	echo "OpenMP has not been found for your compiler"
             	if [ $CLANGOMP_installed -eq 1 ]; then
                 	echo "Error the installation of openmp for clang failed"
@@ -411,6 +412,7 @@ else
             	solve_clangomp $platform
             	CLANGOMP_installed=1
 	    else
+		echo "We do not know how to install OpenMP for your compiler"
 	        exit 1
 	    fi
         elif [ $conf_err -ne 0 ]; then
