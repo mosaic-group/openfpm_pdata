@@ -1863,7 +1863,7 @@ public:
 
 #endif
 
-	/*! /brief Get a grid Iterator running also on ghost area
+	/*! /brief Get a grid Iterator running on domain and ghost area
 	 *
 	 * In case of dense grid getGridIterator is equivalent to getDomainIterator
 	 * in case if sparse distributed grid getDomainIterator go across all the
@@ -2748,6 +2748,35 @@ public:
 			if (overlap == true)
 			{
 				loc_grid.get(i).template conv2<prop_src1,prop_src2,prop_dst1,prop_dst2,stencil_size>(inte.getKP1(),inte.getKP2(),func,args...);
+			}
+		}
+	}
+
+	/*! \brief apply a convolution on GPU
+	 *
+	 *
+	 */
+	template<unsigned int prop_src1, unsigned int prop_dst1, unsigned int stencil_size, typename lambda_f, typename ... ArgsT >
+	void conv(grid_key_dx<dim> start, grid_key_dx<dim> stop , lambda_f func, ArgsT ... args)
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			Box<dim,long int> inte;
+
+			Box<dim,long int> base;
+			for (int j = 0 ; j < dim ; j++)
+			{
+				base.setLow(j,(long int)start.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+				base.setHigh(j,(long int)stop.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+			}
+
+			Box<dim,long int> dom = gdb_ext.get(i).Dbox;
+
+			bool overlap = dom.Intersect(base,inte);
+
+			if (overlap == true)
+			{
+				loc_grid.get(i).template conv<prop_src1,prop_dst1,stencil_size>(inte.getKP1(),inte.getKP2(),func,args...);
 			}
 		}
 	}

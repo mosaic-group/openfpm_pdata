@@ -255,14 +255,6 @@ if(TINYOBJLOADER_FOUND)
 endif()
 
 file(WRITE error_code "0")
-file(WRITE cuda_lib "${CUDA_cudart_static_LIBRARY} ${CUDA_cudadevrt_LIBRARY}")
-if(CUDA_ON_BACKEND STREQUAL "SEQUENTIAL" OR CUDA_ON_BACKEND STREQUAL "OpenMP")
-	file(WRITE cuda_include "-D__NVCC__ -DCUDART_VERSION=11000")
-	file(WRITE cuda_on_cpu "YES")
-else()
-	file(WRITE cuda_include "-I${CUDA_INCLUDE_DIRS}")
-	file(WRITE cuda_on_cpu "NO")
-endif()
 file(WRITE mpi_include "-I${MPI_C_INCLUDE_DIRS}")
 file(WRITE mpi_libs "${MPI_C_LINK_FLAGS} ${MPI_C_LIBRARIES}")
 
@@ -270,8 +262,21 @@ add_subdirectory (openfpm_io)
 
 if (CUDA_ON_BACKEND STREQUAL "CUDA")
         enable_language(CUDA)
-        find_package(CUDA)
 endif()
+
+file(WRITE cuda_lib "${CUDA_cudart_static_LIBRARY} ${CUDA_cudadevrt_LIBRARY}")
+if(CUDA_ON_BACKEND STREQUAL "SEQUENTIAL" OR CUDA_ON_BACKEND STREQUAL "OpenMP")
+        file(WRITE cuda_include "-D__NVCC__ -DCUDART_VERSION=11000")
+        file(WRITE cuda_on_cpu "YES")
+else()
+	if (NOT CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES STREQUAL "")
+		file(WRITE cuda_include "-I${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
+	else()
+		file(WRITE cuda_include " ")
+	endif()
+        file(WRITE cuda_on_cpu "NO")
+endif()
+
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/config/config_cmake.h.in ${CMAKE_CURRENT_SOURCE_DIR}/src/config/config.h)
 

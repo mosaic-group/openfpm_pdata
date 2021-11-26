@@ -158,7 +158,7 @@ endif()
 target_include_directories (pdata PUBLIC ${PARMETIS_ROOT}/include)
 target_include_directories (pdata PUBLIC ${METIS_ROOT}/include)
 target_include_directories (pdata PUBLIC ${HDF5_ROOT}/include)
-target_include_directories (pdata PUBLIC ${CUDA_INCLUDE_DIRS})
+target_include_directories (pdata PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_devices/src/)
 target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_vcluster/src/)
@@ -276,7 +276,7 @@ endif()
 
 
 
-target_include_directories (ofpm_pdata PUBLIC ${CUDA_INCLUDE_DIRS})
+target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
 target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/config)
@@ -434,7 +434,7 @@ target_include_directories(
   ${CMAKE_INSTALL_PREFIX}/openfpm_numerics/include
   ${PARMETIS_ROOT}/include
   ${METIS_ROOT}/include
-  ${CUDA_INCLUDE_DIRS}
+  ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
   ${PETSC_INCLUDES}
   ${HDF5_ROOT}/include
   ${LIBHILBERT_INCLUDE_DIRS}
