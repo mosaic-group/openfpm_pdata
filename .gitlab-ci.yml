@@ -13,7 +13,7 @@ docker_centos_build:
   script:
     - apt-get update
     - DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata
-    - apt-get -y install cmake wget git g++
+    - apt-get -y install cmake wget git g++ gfortran
     - mkdir -p /root/openfpm_dependencies/openfpm_pdata/base
     - ./build.sh $CI_PROJECT_DIR unused pdata 0 base
   cache:
