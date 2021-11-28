@@ -262,6 +262,7 @@ add_subdirectory (openfpm_io)
 
 if (CUDA_ON_BACKEND STREQUAL "CUDA")
         enable_language(CUDA)
+	find_package(CUDA)
 endif()
 
 file(WRITE cuda_lib "${CUDA_cudart_static_LIBRARY} ${CUDA_cudadevrt_LIBRARY}")
