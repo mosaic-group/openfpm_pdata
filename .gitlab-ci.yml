@@ -12,6 +12,7 @@ docker_centos_build:
       - ./openfpm_numerics/test
   script:
     - apt-get update
+    - DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata
     - apt-get -y install cmake wget git
     - mkdir -p /root/openfpm_dependencies/openfpm_pdata/base
     - ./build.sh $CI_PROJECT_DIR unused pdata 0 base
