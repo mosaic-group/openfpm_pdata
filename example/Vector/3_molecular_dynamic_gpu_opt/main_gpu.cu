@@ -262,7 +262,7 @@ template<typename CellList> void calc_forces(vector_dist_gpu<3,real_number, aggr
 
 	//! \cond [calc_force_sorted] \endcond
 
-	CUDA_LAUNCH(calc_force_gpu,it2.wthr,vd.toKernel_sorted(),NN.toKernel(),sigma12,sigma6,r_cut2);
+	CUDA_LAUNCH(calc_force_gpu,it2,vd.toKernel_sorted(),NN.toKernel(),sigma12,sigma6,r_cut2);
 
 	//! \cond [calc_force_sorted] \endcond
 

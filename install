@@ -90,6 +90,16 @@ while getopts di:v:smghc:nul FLAG; do
 	esac
 done
 
+
+if [ x"$gpu_support" == x"0" ]; then
+  if [[ $configure_options == *"--with-cuda-on-backend=CUDA"* ]]; then
+    gpu_support=1
+  fi
+else
+  configure_options=" $configure_options --with-cuda-on-backend=CUDA"
+fi
+
+
 ### Configure options
 
 i_dir_old=$i_dir
@@ -297,10 +307,6 @@ configure_options=" $configure_options --with-parmetis=$i_dir/PARMETIS "
 
 ./script/install_Metis.sh $i_dir $CC $CXX $ncore
 configure_options=" $configure_options --with-metis=$i_dir/METIS "
-
-if [ x"$gpu_support" == x"1" ]; then
-	configure_options=" $configure_options --with-cuda-on-backend=CUDA"
-fi
 
 MPI_installed=0
 MPI_System_prv=1
