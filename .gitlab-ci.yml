@@ -1,6 +1,9 @@
 
 
 docker_centos_build:
+  stage: build
+  tags:
+    - docker
   image: 'ubuntu:20.04'
   script:
     - echo "Hello ubuntu docker"
