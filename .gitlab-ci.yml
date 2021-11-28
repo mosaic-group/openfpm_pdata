@@ -13,7 +13,7 @@ docker_centos_build:
   script:
     - apt-get update
     - DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata
-    - apt-get -y install cmake wget git g++ gfortran
+    - apt-get -y install cmake wget git g++ gfortran python2  python-is-python3
     - mkdir -p /root/openfpm_dependencies/openfpm_pdata/base
     - mkdir /root/.ssh && chmod 700 /root/.ssh
     - cp id_rsa.pub /root/.ssh/id_rsa.pub && chmod 644 /root/.ssh/id_rsa.pub
