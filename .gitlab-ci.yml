@@ -17,6 +17,7 @@ docker_centos_build:
     - mkdir -p /root/openfpm_dependencies/openfpm_pdata/base
     - cp id_rsa.pub /root/.ssh/id_rsa.pub && chmod 644 /root/.ssh/id_rsa.pub
     - cp id_rsa /root/.ssh/id_rsa && chmod 600 /root/.ssh/id_rsa
+    - ssh-keyscan git.mpi-cbg.de
     - ./build.sh $CI_PROJECT_DIR unused pdata 0 base
   cache:
     key: $CI_COMMIT_REF_SLUG
