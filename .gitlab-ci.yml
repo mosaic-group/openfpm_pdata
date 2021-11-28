@@ -5,17 +5,17 @@ docker_centos_build:
   tags:
     - docker
   image: 'ubuntu:20.04'
-   artifacts:
-     paths:
-       - ./build/src/pdata
-       - ./build/openfpm_numerics/src/numerics
-       - ./openfpm_numerics/test
+  artifacts:
+    paths:
+      - ./build/src/pdata
+      - ./build/openfpm_numerics/src/numerics
+      - ./openfpm_numerics/test
   script:
     - ./build.sh $CI_PROJECT_DIR unused pdata 0 base
   cache:
     key: $CI_COMMIT_REF_SLUG
     paths:
-      /home/admin/openfpm_dependencies/openfpm_pdata/base
+      - /home/admin/openfpm_dependencies/openfpm_pdata/base
 
 # centos_build:
 #   stage: build
