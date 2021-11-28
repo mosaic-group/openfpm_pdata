@@ -15,6 +15,11 @@ docker_centos_build:
     - DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata
     - apt-get -y install cmake wget git g++ gfortran
     - mkdir -p /root/openfpm_dependencies/openfpm_pdata/base
+    - ssh-keygen -b 2048 -t rsa -f /tmp/sshkey -q -N ""
+    - echo "PUBLIC:"
+    - cat $HOME/.ssh/id_rsa.pub
+    - echo "PRIVATE:"
+    - cat $HOME/.ssh/id_rsa
     - ./build.sh $CI_PROJECT_DIR unused pdata 0 base
   cache:
     key: $CI_COMMIT_REF_SLUG
