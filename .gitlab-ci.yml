@@ -11,6 +11,7 @@ docker_centos_build:
       - ./build/openfpm_numerics/src/numerics
       - ./openfpm_numerics/test
   script:
+    - apt-get update
     - apt-get install cmake
     - mkdir -p /root/openfpm_dependencies/openfpm_pdata/base
     - ./build.sh $CI_PROJECT_DIR unused pdata 0 base
