@@ -184,9 +184,17 @@ static PyObject* create_grid_wrapper(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 }
 
-static PyObject* delete_grid(long int dim, long int ng)
+static PyObject* save_grid_wrapper(PyObject *self, PyObject *args)
 {
-    delete g_one_3d;
+    long int id;
+    std::string outputFilename;
+
+    if (!PyArg_ParseTuple(args, "ls", &id, &outputFilename)) {
+        Py_RETURN_NONE;
+    }
+
+    g_one_3d[id]->write(outputFilename);
+
     Py_RETURN_NONE;
 }
 
@@ -198,7 +206,8 @@ static PyObject* delete_grid_wrapper(PyObject *self, PyObject *args)
         Py_RETURN_NONE;
     }
 
-    return delete_grid(dim,ng);
+    delete g_one_3d;
+    Py_RETURN_NONE;
 }
 
 static PyObject* f_wrapper(PyObject *self, PyObject *args)
@@ -226,6 +235,7 @@ static PyObject* f_wrapper(PyObject *self, PyObject *args)
 static PyMethodDef methods[] = {
     {"create_grid", create_grid_wrapper, METH_VARARGS, ""},
     {"delete_grid", delete_grid_wrapper, METH_VARARGS, ""},
+    {"save_grid", save_grid_wrapper, METH_VARARGS, ""},
     {"openfpm_init", openfpm_init_wrapper, METH_VARARGS, ""},
     {"openfpm_finalize", openfpm_finalize_wrapper, METH_VARARGS, ""},
     {"f", f_wrapper, METH_VARARGS, ""},

@@ -19,6 +19,10 @@ from collections import namedtuple
 from dataclasses import dataclass
 from copy import deepcopy
 
+import pyvista as pv
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 Point = namedtuple('Point', 'coords')
 Box = namedtuple('Box', 'low high')
 
@@ -97,7 +101,7 @@ def init_domain(old, new, whole_domain):
         0.25 + (np.random.rand(*old.V[start_i:stop_i, start_j:stop_j, start_k:stop_k].shape) - 0.5) / 20.0
 
 
-def get_stencils(uFactor, vFactor, dT, format='numpy'):
+def get_stencils(uFactor, vFactor, format='numpy'):
     if format == 'numpy':
         return None, None
     elif format == 'numba':  # todo
@@ -146,28 +150,48 @@ def get_stencils(uFactor, vFactor, dT, format='numpy'):
         return kernel_U, kernel_V
 
 
+def add_ghosts(real, gh=1):
+    ghosted = np.zeros(
+        (real.shape[0] + 2 * gh, real.shape[1] + 2 * gh, real.shape[2] + 2 * gh)
+    )
+    ghosted[gh:-gh, gh:-gh, gh:-gh] = real.copy()
+
+    ghosted[0, 0, gh:-gh] = real[0, 0, :]
+    ghosted[0, -1, gh:-gh] = real[0, 0, :]
+
+    # todo y, z
+
+    return ghosted
+
 def make_loop(timeSteps, debug_every=300, save_every=500):
     should_debug = lambda timeStep: timeStep % debug_every == 0
     should_save = lambda timeStep: timeStep % save_every == 0
+    output_filename = 'output'  # much fantasy
+    ghost = 1  # todo as param
 
     def _f(stencils, old_copy, new_copy, dT):
         kernel_U, kernel_V = stencils  # unpack
 
         for i in range(timeSteps):
+            minimon.enter()
             if should_debug(i):
                 print('STEP: {:d}'.format(i))
 
-            old_U, old_V = np.zeros_like(old_copy.U), np.zeros_like(old_copy.V)
+            oldU, oldV = add_ghosts(old_copy.U), add_ghosts(old_copy.V)
 
-            new_copy.U = kernel_U(old_U, old_V, dT)
-            new_copy.V = kernel_V(old_U, old_V, dT)
+            new_copy.U = kernel_U(oldU, oldV, dT)[ghost:-ghost, ghost:-ghost, ghost:-ghost]  # numba replaces ghosts with 0 => discard them all!
+            new_copy.V = kernel_V(oldU, oldV, dT)[ghost:-ghost, ghost:-ghost, ghost:-ghost]
 
             old_copy.U = new_copy.U  # sync
             old_copy.V = new_copy.V
 
+            # todo After copy we synchronize again the ghost part U and V
+
+            minimon.leave('dT')
+
             if should_save(i):
-                # todo save
-                print('    saved to todo')
+                # openfpm.save_grid(0, output_filename)
+                print('    saved to {}'.format(output_filename))
 
     return _f
 
@@ -194,18 +218,35 @@ def create_grid_dist(size, domain, gh, periodicity=[0, ] * 3):
     )
 
 
+def plot3d(domain, subsampling=[20, 20, 20]):
+    plt.rcParams["figure.autolayout"] = True
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    stuff = domain[::subsampling[0], ::subsampling[1], ::subsampling[2]]
+    zcoords, xcoords, ycoords = stuff.nonzero()
+    viz = stuff[stuff != 0]
+    ax.scatter(
+        xcoords, ycoords, zcoords,
+        c=viz.ravel(),
+        cmap='viridis', vmin=viz.min(), vmax=viz.max()
+    )
+    print(stuff)
+    plt.show()
+
+
 def main():
     """ https://git.mpi-cbg.de/openfpm/openfpm_pdata/-/blob/master/example/Grid/3_gray_scott_3d/main.cpp """
 
     whole_domain = Box(
         low=Point(np.float64([0, 0, 0])),
-        high=Point(np.float64([2.5, 2.5, 2.5]))
+        high=Point(np.float64([5.0, 5.0, 5.0]))
     )
     grid_size = np.int64([128, ] * 3)
     periodicity = np.int64([PERIODIC, ] * 3)
     g = 1  # Ghost in grid unit
     deltaT, du, dv = 1, 2e-5, 1e-5
-    timeSteps = 2  # todo debug only 5000
+    timeSteps = 7  # todo debug 5000
 
     old_copy = create_grid_dist(
         grid_size,
@@ -220,13 +261,15 @@ def main():
 
     uFactor = deltaT * du / (spacing[x] * spacing[x])
     vFactor = deltaT * dv / (spacing[x] * spacing[x])
-    stencils = get_stencils(uFactor, vFactor, deltaT, format='numba')
-    loop = make_loop(timeSteps, debug_every=300, save_every=500)
+    stencils = get_stencils(uFactor, vFactor, format='numba')
+    loop = make_loop(timeSteps, debug_every=1, save_every=2)
 
     minimon.enter()
     loop(stencils, old_copy, new_copy, deltaT)
     minimon.leave('tot_sim')
     minimon.print_stats()
+
+    plot3d(old_copy.U)
 
 
 if __name__ == '__main__':
