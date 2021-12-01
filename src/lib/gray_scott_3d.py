@@ -156,10 +156,14 @@ def add_ghosts(real, gh=1):
     )
     ghosted[gh:-gh, gh:-gh, gh:-gh] = real.copy()
 
-    ghosted[0, 0, gh:-gh] = real[0, 0, :]
-    ghosted[0, -1, gh:-gh] = real[0, 0, :]
+    ghosted[0, gh:-gh, gh:-gh] = real[0, :, :].copy()
+    ghosted[-1, gh:-gh, gh:-gh] = real[-1, :, :].copy()
 
-    # todo y, z
+    ghosted[gh:-gh, 0, gh:-gh] = real[:, 0, :].copy()
+    ghosted[gh:-gh, -1, gh:-gh] = real[:, -1, :].copy()
+
+    ghosted[gh:-gh, gh:-gh, 0] = real[:, :, 0].copy()
+    ghosted[gh:-gh, gh:-gh, -1] = real[:, :, -1].copy()
 
     return ghosted
 
