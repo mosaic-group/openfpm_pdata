@@ -40,9 +40,7 @@ OPT=
 
 OBJ = main.o
 
-sph_dlb:
-sph_dlb_test: OPT += -DTEST_RUN
-sph_dlb_test: sph_dlb
+miniBUDE:
 
 %.o: %.cu
 	$(CUDA_CC) $(CUDA_OPTIONS) $(OPT) -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH_NVCC)
@@ -50,16 +48,16 @@ sph_dlb_test: sph_dlb
 %.o: %.cpp
 	$(CC) -O3 $(OPT) -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
-sph_dlb: $(OBJ)
+miniBUDE: $(OBJ)
 	$(CUDA_CC_LINK) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS_SELECT)
 
-all: sph_dlb
+all: miniBUDE
 
-run: sph_dlb_test
-	mpirun --oversubscribe -np 2 ./sph_dlb
+run: miniBUDE
+	mpirun --oversubscribe -np 2 ./miniBUDE
 
 .PHONY: clean all run
 
 clean:
-	rm -f *.o *~ core sph_dlb
+	rm -f *.o *~ core miniBUDE
 
