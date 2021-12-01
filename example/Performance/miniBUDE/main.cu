@@ -75,7 +75,7 @@ double getTimestamp()
     return tv.tv_usec + tv.tv_sec*1e6;
 }
 
-void printTimings(double start, double end, double poses_per_wi)
+void printTimings(double start, double end, double poses_per_wi, openfpm::vector<double> & gflops_data)
 {
     double ms = ((end-start)/params.iterations)*1e-3;
 
@@ -87,6 +87,8 @@ void printTimings(double start, double end, double poses_per_wi)
     double total_ops     = ops_per_wi * (params.nposes/poses_per_wi);
     double flops      = total_ops / runtime;
     double gflops     = flops / 1e9;
+
+    gflops_data.add(gflops);
 
     double interactions         =
         (double)params.nposes
@@ -608,41 +610,45 @@ int main(int argc, char *argv[])
   printf("Deck      : %s\n", params.deckDir);
   float *resultsRef = (float *)malloc(params.nposes*sizeof(float));
 
-  runCUDA(_openfpm);
-
-
-  // Load reference results from file
-  FILE* ref_energies = openFile(params.deckDir, FILE_REF_ENERGIES, "r", NULL);
-  size_t n_ref_poses = params.nposes;
-  if (params.nposes > REF_NPOSES) {
-    printf("Only validating the first %d poses.\n", REF_NPOSES);
-    n_ref_poses = REF_NPOSES;
-  }
-
-  for (size_t i = 0; i < n_ref_poses; i++)
-    fscanf(ref_energies, "%f", &resultsRef[i]);
-
-  fclose(ref_energies);
-
-  float maxdiff = -100.0f;
-  printf("\n Reference        CUDA   (diff)\n");
-  for (int i = 0; i < n_ref_poses; i++)
+  // We run the benchmark 30 times to get mean and variace
+  for (int i = 0 ; i < 30 ; i++)
   {
-    if (fabs(resultsRef[i]) < 1.f && fabs(_openfpm.d_results.template get<0>(i)) < 1.f) continue;
 
-    float diff = fabs(resultsRef[i] - _openfpm.d_results.template get<0>(i)) / _openfpm.d_results.template get<0>(i);
-    if (diff > maxdiff) {
-      maxdiff = diff;
-      // printf ("Maxdiff: %.2f (%.3f vs %.3f)\n", maxdiff, resultsRef[i], resultsCUDA[i]);
+    runCUDA(_openfpm);
+
+
+    // Load reference results from file
+    FILE* ref_energies = openFile(params.deckDir, FILE_REF_ENERGIES, "r", NULL);
+    size_t n_ref_poses = params.nposes;
+    if (params.nposes > REF_NPOSES) {
+      printf("Only validating the first %d poses.\n", REF_NPOSES);
+      n_ref_poses = REF_NPOSES;
     }
 
-    if (i < 8)
-      printf("%7.2f    vs   %7.2f  (%5.2f%%)\n", resultsRef[i], _openfpm.d_results.template get<0>(i), 100*diff);
+    for (size_t i = 0; i < n_ref_poses; i++)
+      fscanf(ref_energies, "%f", &resultsRef[i]);
+
+    fclose(ref_energies);
+
+    float maxdiff = -100.0f;
+    printf("\n Reference        CUDA   (diff)\n");
+    for (int i = 0; i < n_ref_poses; i++)
+    {
+      if (fabs(resultsRef[i]) < 1.f && fabs(_openfpm.d_results.template get<0>(i)) < 1.f) continue;
+
+      float diff = fabs(resultsRef[i] - _openfpm.d_results.template get<0>(i)) / _openfpm.d_results.template get<0>(i);
+      if (diff > maxdiff) {
+        maxdiff = diff;
+        // printf ("Maxdiff: %.2f (%.3f vs %.3f)\n", maxdiff, resultsRef[i], resultsCUDA[i]);
+      }
+
+      if (i < 8)
+        printf("%7.2f    vs   %7.2f  (%5.2f%%)\n", resultsRef[i], _openfpm.d_results.template get<0>(i), 100*diff);
+    }
+    printf("\nLargest difference was %.3f%%\n\n", maxdiff*100);
+
+    free(resultsRef);
   }
-  printf("\nLargest difference was %.3f%%\n\n", maxdiff*100);
-
-  free(resultsRef);
-
 }
 
 
