@@ -200,7 +200,7 @@ target_link_libraries(pdata ${MPI_C_LIBRARIES})
 target_link_libraries(pdata ${MPI_CXX_LIBRARIES})
 target_link_libraries(pdata vcluster)
 target_link_libraries(pdata ofpmmemory)
-if (OpenMP::OpenMP_CXX)
+if (OpenMP_FOUND)
 	target_link_libraries(pdata OpenMP::OpenMP_CXX)
 endif()
 
