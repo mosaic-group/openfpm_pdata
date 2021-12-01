@@ -61,6 +61,7 @@ typedef struct
   openfpm::vector_gpu<aggregate<int,float,float,float>> d_forcefield;
   openfpm::vector_gpu<aggregate<float>> d_results;
   openfpm::vector_gpu<aggregate<float,float,float,float,float,float>> d_poses;
+  openfpm::vector<double> gflops_data;
 
     int deviceIndex;
     int wgsize;
@@ -367,7 +368,7 @@ void runCUDA(OpenFPM & _openfpm)
 
   _openfpm.d_results.deviceToHost<0>();
 
-  printTimings(start, end, _openfpm.posesPerWI);
+  printTimings(start, end, _openfpm.posesPerWI, _openfpm.gflops_data);
 }
 
 #define MAX_PLATFORMS     8
