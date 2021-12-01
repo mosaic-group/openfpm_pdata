@@ -255,6 +255,8 @@ do
        ;;
     *) ac_unrecognized_opts="$ac_unrecognized_opts$ac_unrecognized_sep--enable-$ac_useropt_orig"
        ac_unrecognized_sep=', '
+       echo "Unrecognized option: $ac_unrecognized_opts"
+       exit 1
        ;;
     esac
     eval enable_$ac_useropt=\$ac_optarg ;;
@@ -512,7 +514,10 @@ do
       conf_options="$conf_options -DALPAKA_ROOT=$ac_optarg"
       ;;
       *) ac_unrecognized_opts="$ac_unrecognized_opts$ac_unrecognized_sep--with-$ac_useropt_orig"
-	 ac_unrecognized_sep=', ';;
+	 ac_unrecognized_sep=', '
+	 echo "Unrecognized option: $ac_unrecognized_opts"
+	 exit 1
+	 ;;
     esac
     eval with_$ac_useropt=\$ac_optarg ;;
 
