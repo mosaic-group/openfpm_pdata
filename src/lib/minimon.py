@@ -85,7 +85,7 @@ class MiniMon:
 
     def print_stats(self, as_minutes=False):
         if self._can_print():
-            f_out = '{:>20} x {:10d} ~ {:10.1f} [min: {:10.1f},    max: {:10.1f},    last: {:10.1f}]'
+            f_out = '{:>20} x {:10d} ~ {:10.3f} [min: {:10.3f},    max: {:10.3f},    last: {:10.3f}]'
 
             for checkpoint, info in sorted(self.store.items(), key=lambda x: x[1].get_avg()):
                 if info.num > 1:
@@ -98,13 +98,13 @@ class MiniMon:
                         info.get_last() / (60.0 if as_minutes else 1.0),
                     ))
                 else:  # single call
-                    print('{:>20}   {:>10} ~ {:10.1f}'.format(
+                    print('{:>20}   {:>10} ~ {:10.3f}'.format(
                         checkpoint[-20:],
                         '',
                         info.get_avg() / (60.0 if as_minutes else 1.0)
                     ))
 
             if as_minutes:
-                print('    all times are in minutes')
+                print('All times are in minutes !')
             else:
-                print('    all times are in seconds')
+                print('All times are in seconds !')

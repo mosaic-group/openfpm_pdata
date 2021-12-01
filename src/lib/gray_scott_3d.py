@@ -1,5 +1,5 @@
 import numpy as np
-from numba import stencil
+from numba import stencil, njit
 
 from pathlib import Path
 
@@ -104,50 +104,30 @@ def init_domain(old, new, whole_domain):
 def get_stencils(uFactor, vFactor, format='numpy'):
     if format == 'numpy':
         return None, None
-    elif format == 'numba':  # todo
-        @stencil
-        def kernel_U(U, V, dT):  # todo without dT
-            Cp = U[0, 0, 0]  # todo avoid repeating locations
-            Cpv = V[0, 0, 0]
+    elif format == 'numba':
+        @njit(fastmath=True)  # parallel=True
+        def stencil_U(U, V, dT, uFactor):
+            return stencil(
+                lambda U, V, dT, uFactor, F: U[0, 0, 0] +\
+                    uFactor * (
+                        U[-1, 0, 0] + U[-1, 0, 0] + U[0, -1, 0] + U[0, +1, 0] + U[0, 0, -1] + U[0, 0, +1] - 6 * U[0, 0, 0]
+                    ) -\
+                    dT * U[0, 0, 0] * V[0, 0, 0] * V[0, 0, 0] -\
+                    dT * F * (U[0, 0, 0] - 1.0)  # update based on Eq 2
+            )(U, V, dT, uFactor, F)
 
-            mx = U[0, 0, -1]
-            px = U[0, 0, +1]
+        @njit(fastmath=True)
+        def stencil_V(U, V, dT, vFactor):
+            return stencil(
+                lambda U, V, dT, vFactor, F, K: V[0, 0, 0] +\
+                    vFactor * (
+                        V[-1, 0, 0] + V[-1, 0, 0] + V[0, -1, 0] + V[0, +1, 0] + V[0, 0, -1] + V[0, 0, +1] - 6 * V[0, 0, 0]
+                    ) -\
+                    dT * U[0, 0, 0] * V[0, 0, 0] * V[0, 0, 0] -\
+                    dT * (F + K) * V[0, 0, 0]
+            )(U, V, dT, vFactor, F, K)  # update based on Eq 2
 
-            my = U[0, -1, 0]
-            py = U[0, +1, 0]
-
-            mz = U[-1, 0, 0]
-            pz = U[-1, 0, 0]
-
-            return Cp +\
-                uFactor * (
-                    mz + pz + my + py + mx + px - 6 * Cp
-                ) -\
-                dT * Cp * Cpv * Cpv -\
-                dT * F * (Cp - 1.0)  # update based on Eq 2
-
-        @stencil
-        def kernel_V(U, V, dT):
-            Cp = V[0, 0, 0]  # todo avoid repeating locations
-            Cpu = U[0, 0, 0]
-
-            mx = V[0, 0, -1]
-            px = V[0, 0, +1]
-
-            my = V[0, -1, 0]
-            py = V[0, +1, 0]
-
-            mz = V[-1, 0, 0]
-            pz = V[-1, 0, 0]
-
-            return Cp +\
-                vFactor * (
-                    mz + pz + my + py + mx + px - 6 * Cp
-                ) -\
-                dT * Cpu * Cp * Cp -\
-                dT * (F + K) * Cp  # update based on Eq 2
-
-        return kernel_U, kernel_V
+        return stencil_U, stencil_V
 
 
 def add_ghosts(real, gh=1):
@@ -167,7 +147,7 @@ def add_ghosts(real, gh=1):
 
     return ghosted
 
-def make_loop(timeSteps, debug_every=300, save_every=500):
+def make_loop(timeSteps, uFactor, vFactor, F, debug_every=300, save_every=500):
     should_debug = lambda timeStep: timeStep % debug_every == 0
     should_save = lambda timeStep: timeStep % save_every == 0
     output_filename = 'output'  # much fantasy
@@ -183,8 +163,8 @@ def make_loop(timeSteps, debug_every=300, save_every=500):
 
             oldU, oldV = add_ghosts(old_copy.U), add_ghosts(old_copy.V)
 
-            new_copy.U = kernel_U(oldU, oldV, dT)[ghost:-ghost, ghost:-ghost, ghost:-ghost]  # numba replaces ghosts with 0 => discard them all!
-            new_copy.V = kernel_V(oldU, oldV, dT)[ghost:-ghost, ghost:-ghost, ghost:-ghost]
+            new_copy.U = kernel_U(oldU, oldV, dT, uFactor)[ghost:-ghost, ghost:-ghost, ghost:-ghost]  # numba replaces ghosts with 0 => discard them all!
+            new_copy.V = kernel_V(oldU, oldV, dT, vFactor)[ghost:-ghost, ghost:-ghost, ghost:-ghost]
 
             old_copy.U = new_copy.U  # sync
             old_copy.V = new_copy.V
@@ -235,7 +215,7 @@ def plot3d(domain, subsampling=[20, 20, 20]):
         c=viz.ravel(),
         cmap='viridis', vmin=viz.min(), vmax=viz.max()
     )
-    print(stuff)
+    # debug only print(stuff)
     plt.show()
 
 
@@ -250,7 +230,7 @@ def main():
     periodicity = np.int64([PERIODIC, ] * 3)
     g = 1  # Ghost in grid unit
     deltaT, du, dv = 1, 2e-5, 1e-5
-    timeSteps = 7  # todo debug 5000
+    timeSteps = 100  # todo debug 5000
 
     old_copy = create_grid_dist(
         grid_size,
@@ -266,7 +246,7 @@ def main():
     uFactor = deltaT * du / (spacing[x] * spacing[x])
     vFactor = deltaT * dv / (spacing[x] * spacing[x])
     stencils = get_stencils(uFactor, vFactor, format='numba')
-    loop = make_loop(timeSteps, debug_every=1, save_every=2)
+    loop = make_loop(timeSteps, uFactor, vFactor, F, debug_every=1, save_every=2)
 
     minimon.enter()
     loop(stencils, old_copy, new_copy, deltaT)
