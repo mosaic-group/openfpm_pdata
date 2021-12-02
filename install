@@ -443,6 +443,7 @@ fi
 ### Create example.mk
 install_base=$(cat install_dir)
 openmp_flags="$(cat openmp_flags)"
+openmp_libs="$(cat openmp_libs)"
 cuda_include_dirs=$(cat cuda_include)
 hip_enabled=$(cat hip_enabled)
 if [ x"$hip_enabled" == x"1" ]; then
@@ -465,7 +466,7 @@ echo "LIBS_PATH=$mpi_libs -L$install_base/openfpm_devices/lib -L$install_base/op
 if [ x"$cuda_on_cpu" == x"YES" ]; then
    echo "CUDA_ON_CPU=YES" >> example.mk
 fi
-echo "LIBS=$openmp_flags $mpi_libs -lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $(cat cuda_lib) $lin_alg_lib -ldl -lboost_filesystem -lboost_system $optional_boost" >> example.mk
+echo "LIBS=$openmp_flags $mpi_libs $openmp_libs -lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $(cat cuda_lib) $lin_alg_lib -ldl -lboost_filesystem -lboost_system $optional_boost" >> example.mk
 echo "LIBS_NVCC=-Xcompiler=$openmp_flags $mpi_libs -lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $(cat cuda_lib) $lin_alg_lib -ldl -lboost_filesystem -lboost_system $optional_boost" >> example.mk
 echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" -Xcompiler=$(cat openmp_flags) "$(cat cuda_options)" $mpi_include_dirs -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc -I$i_dir/BLITZ/include -I$i_dir/ALGOIM/include" >> example.mk
 cp example.mk src/example.mk
