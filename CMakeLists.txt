@@ -195,7 +195,11 @@ else()
 endif()
 
 if (OPENMP_FOUND)
-	file(WRITE openmp_flags "${OpenMP_CXX_FLAGS} -I${OpenMP_CXX_INCLUDE_DIRS}")
+	if (NOT CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES STREQUAL "")
+		file(WRITE openmp_flags "${OpenMP_CXX_FLAGS} -I${OpenMP_CXX_INCLUDE_DIRS}")
+	else()
+		file(WRITE openmp_flags "${OpenMP_CXX_FLAGS}")
+	endif()
 	file(WRITE openmp_libs ${OpenMP_CXX_LIBRARIES})
 endif()
 
