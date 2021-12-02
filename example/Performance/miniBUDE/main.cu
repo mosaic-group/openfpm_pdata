@@ -27,7 +27,12 @@ constexpr int radius = 1;
 constexpr int hphb = 2;
 constexpr int elsc = 3;
 
+#ifndef NUM_TD_PER_THREAD
+// Good for CPU
 #define NUM_TD_PER_THREAD 256
+// Good for GPU
+#define NUM_TD_PER_THREAD 4
+#endif
 
 typedef struct
 {
