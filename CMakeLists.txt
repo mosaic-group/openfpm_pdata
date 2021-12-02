@@ -195,7 +195,7 @@ else()
 endif()
 
 if (OPENMP_FOUND)
-	file(WRITE openmp_flags ${OpenMP_CXX_FLAGS} ${OpenMP_CXX_INCLUDE_DIRS})
+	file(WRITE openmp_flags "${OpenMP_CXX_FLAGS} -I${OpenMP_CXX_INCLUDE_DIRS}")
 	file(WRITE openmp_libs ${OpenMP_CXX_LIBRARIES})
 endif()
 
