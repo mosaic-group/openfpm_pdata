@@ -434,7 +434,7 @@ void loadParameters(int argc, char *argv[], OpenFPM & _openfpm)
   // Defaults
   params.deckDir        = DATA_DIR;
   params.iterations = 8;
-  _openfpm.wgsize      = 16;
+  _openfpm.wgsize      = 256;
   _openfpm.posesPerWI  = NUM_TD_PER_THREAD;
   int nposes        = 65536;
 
