@@ -4,6 +4,7 @@ ifdef CUDA_ON_CPU
         INCLUDE_PATH_NVCC=
         CUDA_CC_LINK=mpic++
         CUDA_OPTIONS=
+	LIBS_SELECT=$(LIBS)
 else
 	ifeq (, $(shell which nvcc))
         	CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
