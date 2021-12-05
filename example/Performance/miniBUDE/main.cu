@@ -1,3 +1,5 @@
+#ifdef __NVCC__
+
 /**
  * BUDE CUDA kernel file
  **/
@@ -670,4 +672,11 @@ int main(int argc, char *argv[])
   free(resultsRef);
 }
 
+#else
+
+int main(int argc, char *argv[])
+{
+}
+
+#endif
 
