@@ -1059,6 +1059,22 @@ public:
 #endif
 	}
 
+    //////////////////////////////////////////////
+
+	/*! \brief Add at the END of local and ghost particle
+	 *
+	 * It add a local particle at the end of local and ghost, with "local" we mean in this processor
+	 * the particle can be also created out of the processor domain, in this
+	 * case a call to map is required. Added particles are always created at the
+	 * end and can be accessed with getLastPos and getLastProp
+	 *
+	 */
+	void addAtEnd()
+	{
+		v_prp.add();
+		v_pos.add();
+	}
+
 #ifndef ONLY_READWRITE_GETTER
 
 	/*! \brief Get the position of the last element
@@ -1069,6 +1085,17 @@ public:
 	inline auto getLastPos() -> decltype(v_pos.template get<0>(0))
 	{
 		return v_pos.template get<0>(g_m - 1);
+	}
+
+
+    /*! \brief Get the position of the last element after ghost
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getLastPosEnd() -> decltype(v_pos.template get<0>(0))
+	{
+		return v_pos.template get<0>(v_pos.size() - 1);
 	}
 
 	/*! \brief Get the property of the last element
@@ -2763,6 +2790,22 @@ public:
 
 		g_m = rs;
 
+#ifdef CUDA_GPU
+		this->update(this->toKernel());
+#endif
+	}
+
+    /*! \brief Resize the vector at the end of the ghost (locally)
+	 *
+	 * \warning It doesn't delete the ghosts
+	 *
+	 * \param rs
+	 *
+	 */
+	void resizeAtEnd(size_t rs)
+	{
+		v_pos.resize(rs);
+		v_prp.resize(rs);
 #ifdef CUDA_GPU
 		this->update(this->toKernel());
 #endif
