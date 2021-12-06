@@ -1,5 +1,5 @@
 //
-// Created by Abhinav Singh on 15.06.20.
+// Created by Abhinav Singh on 15.11.2021.
 //
 
 #include "config.h"
@@ -29,8 +29,6 @@ int main(int argc, char* argv[])
         spacing = 1.0 / (sz[0] - 1);
         double rCut = 3.1 * spacing;
         int ord = 2;
-        double sampling_factor = 3.1;
-        double sampling_factor2 = 1.9;
         
         Ghost<2, double> ghost(rCut);
         auto &v_cl = create_vcluster();
