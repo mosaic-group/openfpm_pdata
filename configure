@@ -109,6 +109,8 @@ with_parmetis
 enable_se_class1
 enable_se_class2
 enable_se_class3
+with_blitz
+with_algoim
 with_alpaka
 with_action_on_error
 with_boost
@@ -509,6 +511,12 @@ do
       ;;
       vcdevel)
       conf_options="$conf_options -DVc_ROOT=$ac_optarg"
+      ;;
+      blitz)
+      conf_options="$conf_options -DBLITZ_ROOT=$ac_optarg"
+      ;;
+      algoim)
+      conf_options="$conf_options -DALGOIM_ROOT=$ac_optarg"
       ;;
       alpaka)
       conf_options="$conf_options -DALPAKA_ROOT=$ac_optarg"

@@ -282,7 +282,7 @@ __global__ void fasten_main(const int natlig,
       const float l_hphb   = l_params.hphb * (phphb_gtz && lhphb_ltz ? -ONE : ONE);
       const float distdslv = (phphb_ltz ? (lhphb_ltz ? NPNPDIST : NPPDIST) : (lhphb_ltz ? NPPDIST : -FLT_MAX) );
 
-      const float r_distdslv = (distdslv == -FLT_MAX)?0.0f:(1.0f/distdslv);
+      float r_distdslv = 1.0f/distdslv;
 
       const float chrg_init = l_params.elsc * p_params.elsc;
       const float dslv_init = p_hphb + l_hphb;
@@ -294,7 +294,7 @@ __global__ void fasten_main(const int natlig,
         const float x      = lpos_x[i] - p_atom.x;
         const float y      = lpos_y[i] - p_atom.y;
         const float z      = lpos_z[i] - p_atom.z;
-        const float distij = sqrt(x*x + y*y + z*z);
+        const float distij = sqrtf(x*x + y*y + z*z);
 
         // Calculate the sum of the sphere radii
         const float distbb = distij - radij;
@@ -336,9 +336,6 @@ __global__ void fasten_main(const int natlig,
 
 void runCUDA(OpenFPM & _openfpm)
 {
-  printf("\nRunning CUDA\n");
-
-
   _openfpm.d_protein.hostToDevice<pos,ind>();
   _openfpm.d_ligand.hostToDevice<pos,ind>();
   _openfpm.d_forcefield.hostToDevice<hbtype,radius,hphb,elsc>();
@@ -604,9 +601,14 @@ void loadParameters(int argc, char *argv[], OpenFPM & _openfpm)
   fclose(file);
 }
 
+#include <fenv.h>
+#include <xmmintrin.h>
+#include <pmmintrin.h>
 
 int main(int argc, char *argv[])
 {
+  _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+  _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
   init_wrappers();
 
   OpenFPM _openfpm;
