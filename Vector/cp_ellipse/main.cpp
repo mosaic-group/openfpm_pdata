@@ -4,11 +4,13 @@
 #include "DCPSE/Dcpse.hpp"
 #include "DCPSE/MonomialBasis.hpp"
 #include "Draw/DrawParticles.hpp"
+#include "../../openfpm_numerics/src/level_set/particle_cp/particle_cp.hpp"
+#include "Operators/Vector/vector_dist_operators.hpp"
 
-const double dp = 1/512.0;
+const double dp = 1/1024.0;//
 const double A = 0.75;
 const double B = 0.5;
-const double band_width = 12.0*dp;
+const double band_width = 16.0*dp;
 
 const int sdf = 0;
 const int sdfgrad = 1;
@@ -24,9 +26,9 @@ typedef vector_dist<2, double, aggregate<double, double[2], double, int, int, do
 //										|		|	 	 |         |    |		 |		|	|						|
 //									     sdf  sdfgrad curvature surf_flag num_neibs min sdf in support	min sdf location poly coefficients analytical sdf
 
-typedef vector_dist<2, double, aggregate<vect_dist_key_dx>> particles_surface;
+//typedef vector_dist<2, double, aggregate<vect_dist_key_dx>> particles_surface;
 
-//
+
 double get_distance(double x, double y)
 {
 	double a = A;
@@ -303,7 +305,7 @@ inline void perturb_pos(particles & vd)
 	}
 }
 
-template <typename CellList> inline void detect_surface_particles(particles & vd, CellList & NN, particles_surface & vd_s)
+template <typename CellList> inline void detect_surface_particles_old(particles & vd, CellList & NN, particles_surface & vd_s)
 {
 	auto part = vd.getDomainIterator();
 	vd.updateCellList(NN);
@@ -358,7 +360,7 @@ template <typename CellList> inline void detect_surface_particles(particles & vd
 
 }
 
-template <typename CellList> inline void update_sdfs(particles & vd, CellList & NN)
+template <typename CellList> inline void update_sdfs(particles & vd, CellList & NN)//
 {
 	auto part = vd.getDomainIterator();
 	vd.updateCellList(NN);
@@ -369,16 +371,12 @@ template <typename CellList> inline void update_sdfs(particles & vd, CellList & 
 		double x = xa[0];
 		double y = xa[1];
 		vd.getProp<sdf>(a) = 1 - sqrt((x/A)*(x/A) + (y/B)*(y/B));
+		//if ((sqrt((x/A)*(x/A) + (y/B)*(y/B)))<1.0) vd.getProp<sdf>(a) = 1.0;
+		//else vd.getProp<sdf>(a) = -1.0;
 		vd.getProp<sdf_analytical>(a) = return_sign(vd.getProp<sdf>(a))*DistancePointEllipse(A, B, abs(x), abs(y));
 
 		++part;
 	}
-}
-
-
-inline EMatrix<double, Eigen::Dynamic, Eigen::Dynamic> compute_inverse(EMatrix<double, Eigen::Dynamic, Eigen::Dynamic> H)
-{
-	return H;
 }
 
 inline double get_p(EMatrix<double, Eigen::Dynamic, 1> xvector, EMatrix<double, Eigen::Dynamic, 1> c)
@@ -468,7 +466,7 @@ template<typename CellList> inline void calc_derivatives(particles & vd, CellLis
 	}
 }
 
-template <typename CellList> inline void cp_interpol(particles & vd, CellList & NN)
+template <typename CellList> inline void cp_interpol_old(particles & vd, CellList & NN)
 {
 	auto part = vd.getDomainIterator();
 	vd.updateCellList(NN);
@@ -580,7 +578,7 @@ template <typename CellList> inline void cp_interpol(particles & vd, CellList & 
 
 }
 
-template <typename CellList> inline void cp_optim(particles & vd, CellList & NN, particles_surface & vd_s)
+template <typename CellList> inline void cp_optim_old(particles & vd, CellList & NN, particles_surface & vd_s)
 {	// iterate over all particles, i.e. do closest point optimisation for all particles //
 	auto NN_s = vd_s.getCellList(0.75*band_width);
 	auto part = vd.getDomainIterator();
@@ -631,10 +629,9 @@ template <typename CellList> inline void cp_optim(particles & vd, CellList & NN,
 			double distance = 1000000.0;
 			double dist_calc = 1000000000.0;
 			decltype(a) b_min = a;
-			//std::cout<<"huibuh2"<<std::endl;
+
 			while (Np.isNext())
 			{
-				//std::cout<<"huibuh2.5"<<std::endl;
 				auto b = Np.get();
 				Point<2,double> xbb = vd_s.getPos(b);
 
@@ -763,7 +760,7 @@ int main(int argc, char* argv[])
 	Ghost<2, double> g(0.0);
 
 	particles vd(0, domain, bc, g, DEC_GRAN(512));
-	particles_surface vd_s(vd.getDecomposition(),0);
+	//particles_surface vd_s(vd.getDecomposition(), 0);
 
 	openfpm::vector<std::string> names({"sdf", "sdfgradient", "curvature", "surface_flag", "number_neibs", "min_sdf_neibors", "min_sdf_location", "interpol_coeff", "sdf_analytical"});
 	vd.setPropNames(names);
@@ -799,34 +796,61 @@ int main(int argc, char* argv[])
 	vd.map();
 
 	auto NN = vd.getCellList(2*H);
+	if (false)
+	{
+//		detect_surface_particles(vd, NN, vd_s);
+//
+//		cp_interpol(vd, NN);
+//
+//		//calc_surface_normals(vd, NN);
+//		std::cout<<"::::::::::::::::::::::::::::::::::::::before perturbing:"<<std::endl;
+//		calc_derivatives(vd, NN);
+//		//vd.write("init");
+//
+//		perturb_pos(vd);
+//		vd.map();
+//		NN = vd.getCellList(2*H);
+//
+//		update_sdfs(vd, NN);
+//		detect_surface_particles(vd, NN, vd_s);
+//		vd.write("after_perturb");
+//		//std::cout<<"begincode\ncondnumber = 0;\nk = 0;\nmincond = 1e99;\nmaxcond = 0;\n"<<std::endl;
+//		cp_interpol(vd, NN);
+//
+//		cp_optim(vd, NN,vd_s);
+//		//detect_surface_particles(vd, NN);
+//		cp_interpol(vd, NN);
+//		std::cout<<"::::::::::::::::::::::::::::::::::::::after redistancing:"<<std::endl;
+//		calc_derivatives(vd, NN);
+//
+//		vd.write("after_redistancing_w_sample");
+//		calc_derivatives(vd, NN);
+//		openfpm_finalize();
+	}
 
-	detect_surface_particles(vd, NN, vd_s);
+	if(true)
+	{
+		perturb_pos(vd);
+		vd.map();
+		NN = vd.getCellList(2*H);
+		update_sdfs(vd, NN);
+		vd.write("before_redistancing_binary");
+		Redist_options rdistoptions;
+		//rdistoptions.max_iter = 1000;
+		//rdistoptions.incremental_tolerance = 1e-7;
+		rdistoptions.H = dp;
+		rdistoptions.r_cutoff_factor = 1.75;
+		rdistoptions.sampling_radius = 0.75*band_width;
+		rdistoptions.polynomial_degree = "quadratic";
+		rdistoptions.incremental_tolerance = 1e-12;
 
-	cp_interpol(vd, NN);
+		//typedef vector_dist_ws<2, double, particles> particles_in_type;
+		//particle_cp_redistancing<particles_in_type> pcprdist(vd, rdistoptions);
+		particle_cp_redistancing pcprdist(vd, rdistoptions);
 
-	//calc_surface_normals(vd, NN);
-	std::cout<<"::::::::::::::::::::::::::::::::::::::before perturbing:"<<std::endl;
-	calc_derivatives(vd, NN);
-	//vd.write("init");
+		pcprdist.run_redistancing();
 
-	perturb_pos(vd);
-	vd.map();
-	NN = vd.getCellList(2*H);
-
-	update_sdfs(vd, NN);
-	detect_surface_particles(vd, NN, vd_s);
-	vd.write("after_perturb");
-	//std::cout<<"begincode\ncondnumber = 0;\nk = 0;\nmincond = 1e99;\nmaxcond = 0;\n"<<std::endl;
-	cp_interpol(vd, NN);
-
-	cp_optim(vd, NN,vd_s);
-	//detect_surface_particles(vd, NN);
-	cp_interpol(vd, NN);
-	std::cout<<"::::::::::::::::::::::::::::::::::::::after redistancing:"<<std::endl;
-	calc_derivatives(vd, NN);
-
-	vd.write("after_redistancing_w_sample");
-	calc_derivatives(vd, NN);
+	}
+	vd.write("after_redistancing_after_cleanup");
 	openfpm_finalize();
-
 }

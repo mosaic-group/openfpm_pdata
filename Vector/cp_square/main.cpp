@@ -7,9 +7,10 @@
 #include "../../openfpm_numerics/src/level_set/particle_cp/particle_cp.hpp"
 #include "Operators/Vector/vector_dist_operators.hpp"
 
-const double dp = 1/256.0;//
+const double dp = 1/128.0;
 const double A = 0.5;
 const double B = 0.5;
+const double omega = 2.0; //parameter for steering the errors in the initialization based on sines.
 const double band_width = 24.0*dp;
 
 const int sdf = 0;
@@ -372,10 +373,26 @@ template <typename CellList> inline void update_sdfs(particles & vd, CellList & 
 		double y = xa[1];
 		
 		double dist = 999.0;
-		if (abs(x) > abs(y)) dist = abs(x) - A;
-		else dist = abs(y) - B;
-		if ((abs(x) > A)&&(abs(y) > B)) dist = sqrt((abs(x)-A)*(abs(x)-A) + (abs(y)-B)*(abs(y)-B));
+		double sdf_guess = 0;
+
+		if (abs(x) > abs(y))
+		{
+			dist = abs(x) - A;
+			sdf_guess = - sin(omega*(abs(x) - A));
+		}
+		else
+		{
+			dist = abs(y) - B;
+			sdf_guess = - sin(omega*(abs(y) - B));
+		}
+		if ((abs(x) > A)&&(abs(y) > B))
+		{
+			dist = sqrt((abs(x)-A)*(abs(x)-A) + (abs(y)-B)*(abs(y)-B));
+			//sdf_guess = -sin(omega*(abs(x) - A))*sin(omega*(abs(y) - B))/dist;
+			sdf_guess = -omega*dist;
+		}
 		vd.getProp<sdf_analytical>(a) = -dist;
+		vd.getProp<sdf>(a) = sdf_guess;
 		++part;
 	}
 }
@@ -835,13 +852,14 @@ int main(int argc, char* argv[])
 //		openfpm_finalize();//
 	}
 
-	vd.write("square_init");
+	//vd.write("square_init");
 	if(true)
 	{
 		perturb_pos(vd);
 		vd.map();
 		NN = vd.getCellList(2*H);
 		update_sdfs(vd, NN);
+		vd.write("square_init");
 		Redist_options rdistoptions;
 		//rdistoptions.max_iter = 1000;
 		//rdistoptions.incremental_tolerance = 1e-7;
