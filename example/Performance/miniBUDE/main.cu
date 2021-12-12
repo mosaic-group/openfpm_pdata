@@ -64,10 +64,15 @@ Params params;
 
 typedef struct
 {
-  openfpm::vector_gpu<aggregate<float[3],int>> d_protein;
-  openfpm::vector_gpu<aggregate<float[3],int>> d_ligand;
-  openfpm::vector_gpu<aggregate<int,float,float,float>> d_forcefield;
+  // _lin = AOS
+  openfpm::vector_gpu_lin<aggregate<float[3],int>> d_protein;
+  // AOS
+  openfpm::vector_gpu_lin<aggregate<float[3],int>> d_ligand;
+  // AOS
+  openfpm::vector_gpu_lin<aggregate<int,float,float,float>> d_forcefield;
+  // SOA
   openfpm::vector_gpu<aggregate<float>> d_results;
+  // SOA
   openfpm::vector_gpu<aggregate<float,float,float,float,float,float>> d_poses;
   openfpm::vector<double> gflops_data;
 
@@ -601,14 +606,18 @@ void loadParameters(int argc, char *argv[], OpenFPM & _openfpm)
   fclose(file);
 }
 
+#ifndef __APPLE__
 #include <fenv.h>
 #include <xmmintrin.h>
 #include <pmmintrin.h>
+#endif
 
 int main(int argc, char *argv[])
 {
+#ifndef __APPLE__
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
   _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+#endif
   init_wrappers();
 
   OpenFPM _openfpm;
