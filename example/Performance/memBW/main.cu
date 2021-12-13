@@ -3,7 +3,7 @@
 
 
 template<typename vector_type, typename vector_type2>
-__attribute__((always_inline)) inline __global__ void translate_fill_prop(vector_type & vd_out, vector_type2 & vd_in)
+inline __global__ void translate_fill_prop(vector_type vd_out, vector_type2 vd_in)
 {
 	auto p = blockIdx.x * blockDim.x + threadIdx.x;
 

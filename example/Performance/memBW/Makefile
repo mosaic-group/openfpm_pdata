@@ -47,12 +47,12 @@ miniBUDE:
 %.o: %.cpp
 	$(CC) -g -O3 $(OPT) -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
-miniBUDE: $(OBJ)
+memBW: $(OBJ)
 	$(CUDA_CC_LINK) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS_SELECT)
 
-all: miniBUDE
+all: memBW
 
-run: miniBUDE
+run: memBW
 	mpirun --oversubscribe -np 2 ./miniBUDE
 
 .PHONY: clean all run
