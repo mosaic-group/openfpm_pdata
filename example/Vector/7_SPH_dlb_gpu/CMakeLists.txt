@@ -32,7 +32,7 @@ if (openfpm_FOUND)
 	set_property(TARGET sph_dlb PROPERTY CUDA_ARCHITECTURES OFF)
 
 	if (OpenMP_FOUND)
-		target_link_libraries(vect PUBLIC OpenMP::OpenMP_CXX)
+		target_link_libraries(sph_dlb PUBLIC OpenMP::OpenMP_CXX)
 	endif()
 
 	#or
