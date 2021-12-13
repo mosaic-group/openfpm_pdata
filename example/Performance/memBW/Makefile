@@ -39,7 +39,7 @@ LDIR =
 
 OBJ = main.o
 
-miniBUDE:
+memBW:
 
 %.o: %.cu
 	$(CUDA_CC) -g -O3 $(CUDA_OPTIONS) $(OPT) -c --std=c++14 -o $@ $< $(INCLUDE_PATH_NVCC)
