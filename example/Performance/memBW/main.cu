@@ -1,3 +1,5 @@
+#ifdef __NVCC__
+
 #include "Vector/map_vector.hpp"
 #include "util/stat/common_statistics.hpp"
 
@@ -58,3 +60,12 @@ int main(int argc, char *argv[])
         std::cout << "BW: " << nele*4*19 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
     }
 }
+
+#else
+
+int main(int argc, char *argv[])
+{
+}
+
+#endif
+
