@@ -9,15 +9,18 @@ inline __global__ void translate_fill_prop(vector_type vd_out, vector_type2 vd_i
 {
 	auto p = blockIdx.x * blockDim.x + threadIdx.x;
 
-	vd_out.template get<0>(p) = vd_in.template get<0>(p)[0] + vd_in.template get<0>(p)[1];
+	float a = vd_in.template get<0>(p)[0];
+	float b = vd_in.template get<0>(p)[1];
 
-	vd_out.template get<1>(p)[0] = vd_in.template get<0>(p)[0];
-	vd_out.template get<1>(p)[1] = vd_in.template get<0>(p)[1];
+	vd_out.template get<0>(p) = a + b;
 
-	vd_out.template get<2>(p)[0][0] = vd_in.template get<0>(p)[0];
-	vd_out.template get<2>(p)[0][1] = vd_in.template get<0>(p)[1];
-	vd_out.template get<2>(p)[1][0] = vd_in.template get<0>(p)[0] + vd_in.template get<0>(p)[1];
-	vd_out.template get<2>(p)[1][1] = vd_in.template get<0>(p)[1] - vd_in.template get<0>(p)[0];
+	vd_out.template get<1>(p)[0] = a;
+	vd_out.template get<1>(p)[1] = b;
+
+	vd_out.template get<2>(p)[0][0] = a;
+	vd_out.template get<2>(p)[0][1] = b;
+	vd_out.template get<2>(p)[1][0] = a + b;
+	vd_out.template get<2>(p)[1][1] = b - a;
 
 	vd_in.template get<0>(p)[0] += 0.01f;
 	vd_in.template get<0>(p)[1] += 0.01f;
@@ -57,7 +60,7 @@ int main(int argc, char *argv[])
 
         t.stop();
         std::cout << "Time: " << t.getwct() << std::endl;
-        std::cout << "BW: " << nele*4*19 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
+        std::cout << "BW: " << nele*4*11 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
     }
 }
 
