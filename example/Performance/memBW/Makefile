@@ -53,10 +53,10 @@ memBW: $(OBJ)
 all: memBW
 
 run: memBW
-	mpirun --oversubscribe -np 2 ./miniBUDE
+	mpirun --oversubscribe -np 2 ./memBW
 
 .PHONY: clean all run
 
 clean:
-	rm -f *.o *~ core miniBUDE
+	rm -f *.o *~ core memBW
 
