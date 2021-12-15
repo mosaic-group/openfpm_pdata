@@ -48,8 +48,6 @@ int main(int argc, char *argv[])
         timer t;
         t.start();
 
-//	auto v_out = out.toKernel();
-//	auto v_in = in.toKernel();
 
         CUDA_LAUNCH(translate_fill_prop,ite,out.toKernel(),in.toKernel());
 

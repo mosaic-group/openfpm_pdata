@@ -53,7 +53,7 @@ miniBUDE: $(OBJ)
 all: miniBUDE
 
 run: miniBUDE
-	mpirun --oversubscribe -np 2 ./miniBUDE
+	mpirun --oversubscribe -np 1 ./miniBUDE
 
 .PHONY: clean all run
 
