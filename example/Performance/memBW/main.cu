@@ -22,8 +22,8 @@ inline __global__ void translate_fill_prop_write(vector_type vd_out, vector_type
 	vd_out.template get<2>(p)[1][0] = a + b;
 	vd_out.template get<2>(p)[1][1] = b - a;
 
-	vd_in.template get<0>(p)[0] += 0.01f;
-	vd_in.template get<0>(p)[1] += 0.01f;
+	vd_in.template get<0>(p)[0] += a;
+	vd_in.template get<0>(p)[1] += b;
 }
 
 
@@ -45,8 +45,8 @@ inline __global__ void translate_fill_prop_read(vector_type vd_out, vector_type2
 	float h = vd_in.template get<0>(p)[0];
     float i = vd_in.template get<0>(p)[1];
     
-	vd_in.template get<0>(p)[0] += a+b+c+d;
-	vd_in.template get<0>(p)[1] += e+f+g+h+i;
+	vd_in.template get<0>(p)[0] = a+b+c+d;
+	vd_in.template get<0>(p)[1] = e+f+g+h+i;
 }
 
 int main(int argc, char *argv[])
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 
     for (int i = 0 ; i < 101 ; i++)
     {
-        cudaDeviceSynchronize();
+            cudaDeviceSynchronize();
             timer t;
             t.start();
 
@@ -110,10 +110,10 @@ int main(int argc, char *argv[])
             t.stop();
 
         if (i >=1)
-        {res.get(i-1) = nele*4*13 / t.getwct() * 1e-9;}
+        {res.get(i-1) = nele*4*11 / t.getwct() * 1e-9;}
 
             std::cout << "Time: " << t.getwct() << std::endl;
-            std::cout << "BW: " << nele*4*13 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
+            std::cout << "BW: " << nele*4*11 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
     }
 
     double mean_read = 0.0;
