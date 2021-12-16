@@ -47,7 +47,10 @@ int main(int argc, char *argv[])
 
     auto ite = out.getGPUIterator(256);
 
-    for (int i = 0 ; i < 100 ; i++)
+    openfpm::vector<double> res;
+    res.resize(100);
+
+    for (int i = 0 ; i < 101 ; i++)
     {
 	cudaDeviceSynchronize();
         timer t;
@@ -59,9 +62,19 @@ int main(int argc, char *argv[])
         cudaDeviceSynchronize();
 
         t.stop();
+
+	if (i >=1)
+	{res.get(i-1) = nele*8*11 / t.getwct() * 1e-9;}
+
         std::cout << "Time: " << t.getwct() << std::endl;
         std::cout << "BW: " << nele*8*11 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
     }
+
+    double mean = 0.0;
+    double dev = 0.0;
+    standard_deviation(res,mean,dev);
+
+    std::cout << "Average: " << mean << "  deviation: " << dev << std::endl;
 }
 
 #else
