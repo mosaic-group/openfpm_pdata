@@ -3,7 +3,7 @@
 #include "Vector/map_vector.hpp"
 #include "util/stat/common_statistics.hpp"
 
-
+//! Memory bandwidth with small calculations
 template<typename vector_type, typename vector_type2>
 inline __global__ void translate_fill_prop(vector_type vd_out, vector_type2 vd_in)
 {
@@ -31,8 +31,8 @@ int main(int argc, char *argv[])
 {
     init_wrappers();
 
-    openfpm::vector_gpu<aggregate<float,float[2],float[2][2]>> out;
-    openfpm::vector_gpu<aggregate<float[2]>> in;
+    openfpm::vector_gpu<aggregate<double,double[2],double[2][2]>> out;
+    openfpm::vector_gpu<aggregate<double[2]>> in;
 
     int nele = 16777216;
 
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 
         t.stop();
         std::cout << "Time: " << t.getwct() << std::endl;
-        std::cout << "BW: " << nele*4*11 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
+        std::cout << "BW: " << nele*8*11 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
     }
 }
 
