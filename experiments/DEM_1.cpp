@@ -7,7 +7,7 @@
 
 typedef aggregate<float, float[2]> particle_type;
 typedef aggregate<float, float, float, float> globalvar_type;
-
+/*
 
 class DEM : public ParticleMethod<particle_type, globalvar_type> {
 public:
@@ -52,5 +52,5 @@ public:
         return globalVar.property<time>() >= globalVar.property<t_final>();
     }
 
-};
+};*/
 

@@ -11,12 +11,14 @@
 #include "../ParticleMethod.hpp"
 #include "../Transition.hpp"
 
+// n-dimensional properties
+template <int dimension>
+using particle_type_n = aggregate<float[dimension], float[dimension]>;
 
-typedef aggregate<float, float[2]> particle_type;
 typedef aggregate<float, float, float, float> globalvar_type;
 
-
-class DEM_Test : public ParticleMethod<particle_type, globalvar_type> {
+template <int dimension>
+class DEM_Test : public ParticleMethod<particle_type_n<dimension>>, globalvar_type> {
 public:
     static constexpr int position = 0;
     static constexpr int velocity = 1;
@@ -27,13 +29,13 @@ public:
     static constexpr int r_cut = 3;
 
 
-    void evolve(GlobalVar<globalvar_type> globalVar, Particle<particle_type> particle) override {
+    void evolve(GlobalVar<globalvar_type> globalVar, Particle<particle_type_n<dimension>> particle) override {
 
         // Euler time-stepping
         particle.property<position>() += globalVar.property<dt>() * particle.property<velocity>();
     }
 
-    void interact(GlobalVar<globalvar_type> globalVar, Particle<particle_type> particle, Particle<particle_type> neighbor) override {
+    void interact(GlobalVar<globalvar_type> globalVar, Particle<particle_type_n<dimension>> particle, Particle<particle_type_n<dimension>> neighbor) override {
 
         // Check cutoff radius
         auto diff = particle.property<position>() - neighbor.property<position>();

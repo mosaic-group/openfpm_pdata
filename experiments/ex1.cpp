@@ -396,6 +396,7 @@ int main(int argc, char* argv[]) {
     ParticleData<TestPM::particleType> particleData;
 
     TransitionCellList<TestPM> transition(particleData);
+    Transition<TestPM> transition2();
 
     transition.initialize(particleData);
 

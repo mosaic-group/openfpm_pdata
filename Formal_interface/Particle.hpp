@@ -46,4 +46,21 @@ public:
 };
 
 
+
+template <int dimension, typename PositionType, typename ParticleType>
+class ParticleRef {
+    ParticleDataReference<dimension, PositionType, ParticleType> particleDataReference;
+    vect_dist_key_dx key;
+
+public:
+    ParticleRef(ParticleDataReference<dimension, PositionType, ParticleType> particle_data_ref_in, vect_dist_key_dx key_in) : particleDataReference(particle_data_ref_in), key(key_in) {}
+
+    template<unsigned int id> inline auto property() -> decltype(particleDataReference.template getProp<id>(key)) {
+        return particleDataReference.template getProp<id>(key);
+    }
+
+};
+
+
+
 #endif //OPENFPM_PDATA_PARTICLE_HPP

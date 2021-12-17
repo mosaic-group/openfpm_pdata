@@ -15,34 +15,43 @@ class Transition {
 protected:
 
     typedef typename ParticleMethodType::particleType ParticleType;
+    typedef typename ParticleMethodType::positionType PositionType;
+    static constexpr int dimension = ParticleMethodType::spaceDimension;
+
     ParticleMethodType particleMethod;
 
 //    explicit Transition(ParticleMethod<ParticleType> particleMethod_in) : particleMethod(particleMethod_in), particleData() {}
 
     int iteration = 0;
 
-    void executeInitialization(ParticleData<ParticleType> &particleData) {
-        size_t sz[1] = {10};
+    void executeInitialization(ParticleData<ParticleMethodType> &particleData) {
+        size_t sz[ParticleMethodType::spaceDimension];
+        std::fill(std::begin(sz), std::end(sz), 10);
         auto it2 = particleData.vd.getGridIterator(sz);
         while (it2.isNext())
         {
             particleData.vd.add();
             auto node = it2.get();
-            particleData.vd.getLastPos()[0] = node.get(0) * it2.getSpacing(0);
-            particleData.vd.template getLastProp<0>() = node.get(0);
+            for (int i = 0; i < ParticleMethodType::spaceDimension; i++) {
+                particleData.vd.getLastPos()[i] = node.get(i) * it2.getSpacing(i);
+                particleData.vd.template getLastProp<0>()[i] = node.get(i);
+                particleData.vd.template getLastProp<1>()[i] = 5.0f;
+            }
             ++it2;
         }
     }
 
-    void executeEvolution(ParticleData<ParticleType> &particleData) {
+    void executeEvolution(ParticleData<ParticleMethodType> &particleData) {
         auto it2 = particleData.vd.getDomainIterator();
         while (it2.isNext())
         {
             auto p = it2.get();
-            Particle<ParticleType> particle(particleData, p);
+//            Particle<ParticleType> particle(particleData, p);
+            ParticleDataReference<dimension, PositionType, ParticleType> particleDataReference(particleData.vd);
+            ParticleRef<dimension, PositionType, ParticleType> particle_ref(particleDataReference, p);
+
             // call (overriden) evolve method
-            particleMethod.evolve(particle);
-//            particleData.vd.getPos(p)[0] = particleData.vd.template getProp<0>(p);
+            particleMethod.evolve(particle_ref);
             ++it2;
         }
 
@@ -50,7 +59,8 @@ protected:
 
     }
 
-    virtual void executeInteraction(ParticleData<ParticleType> &particleData) {
+    virtual void executeInteraction(ParticleData<ParticleMethodType> &particleData) {
+/*
         auto it2 = particleData.vd.getDomainIterator();
         while (it2.isNext())
         {
@@ -68,18 +78,19 @@ protected:
             }
             ++it2;
         }
+*/
     }
 
 
 public:
 
-    void initialize(ParticleData<ParticleType> &particleData) {
+    void initialize(ParticleData<ParticleMethodType> &particleData) {
         executeInitialization(particleData);
 //        particleData.vd.map();
 //        particleData.vd.template ghost_get<0, 1>();
     }
 
-    void run(ParticleData<ParticleType> &particleData) {
+    void run_step(ParticleData<ParticleMethodType> &particleData) {
 /*
         auto & vcl = create_vcluster();
         if (vcl.getProcessUnitID() == 0) {
@@ -95,7 +106,12 @@ public:
         particleData.vd.deleteGhost();
         particleData.vd.write_frame("particles",iteration);
 
+//        std::cout << "iteration " << iteration << std::endl;
         iteration++;
+    }
+
+    bool stop(ParticleData<ParticleMethodType> &particleData) {
+        return particleMethod.stop();
     }
 };
 
@@ -103,9 +119,10 @@ template <typename ParticleMethodType>
 class TransitionCellList : public Transition<ParticleMethodType>{
     using typename Transition<ParticleMethodType>::ParticleType;
 
-    CELL_MEMBAL(1, float) cellList;
+    CELL_MEMBAL(ParticleMethodType::spaceDimension, float) cellList;
 
-    void executeInteraction(ParticleData<ParticleType> &particleData) override {
+    void executeInteraction(ParticleData<ParticleMethodType> &particleData) override {
+/*
         particleData.vd.template updateCellList(cellList);
 
         auto it2 = particleData.vd.getDomainIterator();
@@ -128,10 +145,14 @@ class TransitionCellList : public Transition<ParticleMethodType>{
             }
             ++it2;
         }
+*/
     }
 
 public:
-    explicit TransitionCellList(ParticleData<ParticleType> &particleData) : Transition<ParticleMethodType>(), cellList(particleData.vd.template getCellList<CELL_MEMBAL(1, float)>(0.5)) {}
+    explicit TransitionCellList(ParticleData<ParticleMethodType> &particleData) : Transition<ParticleMethodType>(), cellList(particleData.vd.template getCellList<CELL_MEMBAL(ParticleMethodType::spaceDimension, float)>(0.5)) {
+        this->initialize(particleData);
+
+    }
 
 };
 
