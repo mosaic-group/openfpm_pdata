@@ -143,7 +143,7 @@ void check_read(in_type & in, out_type & out)
 
         if (success == false)
         {
-            std::cout << "FAIL READ " << i << in.template get<0>(i)[1] << " != " << a+b+c+d+e+f+g+h << std::endl;
+            std::cout << "FAIL READ " << i << "   " << in.template get<0>(i)[1] << " != " << a+b+c+d+e+f+g+h << std::endl;
             exit(1);
         }
     }
@@ -201,6 +201,12 @@ int main(int argc, char *argv[])
     standard_deviation(res,mean_write_tls,dev_write_tls);
 
     check_write(in,out);
+
+    for (int i = 0 ; i < 16777216 ; i++)
+    {
+        in.template get<0>(i)[0] = i;
+        in.template get<0>(i)[1] = i+100.0;
+    }
 
     for (int i = 0 ; i < 110 ; i++)
     {
@@ -276,6 +282,12 @@ int main(int argc, char *argv[])
     double mean_write_lamb = 0.0;
     double dev_write_lamb = 0.0;
     standard_deviation(res,mean_write_lamb,dev_write_lamb);
+
+    for (int i = 0 ; i < 16777216 ; i++)
+    {
+        in.template get<0>(i)[0] = i;
+        in.template get<0>(i)[1] = i+100.0;
+    }
 
     for (int i = 0 ; i < 110 ; i++)
     {
