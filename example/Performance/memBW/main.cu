@@ -5,7 +5,7 @@
 
 //! Memory bandwidth with small calculations
 template<typename vector_type, typename vector_type2>
-__global__ void translate_fill_prop_write(vector_type vd_out, vector_type2 vd_in)
+inline __global__ void translate_fill_prop_write(vector_type vd_out, vector_type2 vd_in)
 {
 	auto p = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -25,7 +25,7 @@ __global__ void translate_fill_prop_write(vector_type vd_out, vector_type2 vd_in
 
 
 template<typename vector_type, typename vector_type2>
-__global__ void translate_fill_prop_read(vector_type vd_out, vector_type2 vd_in)
+inline __global__ void translate_fill_prop_read(vector_type vd_out, vector_type2 vd_in)
 {
 	auto p = blockIdx.x * blockDim.x + threadIdx.x;
 
