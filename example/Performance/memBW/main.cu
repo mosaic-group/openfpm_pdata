@@ -83,8 +83,8 @@ __global__ void translate_fill_prop_read_array(vector_type vd_out, vector_type2 
 	float f = vd_out.template get<2>(p)[1][0];
 	float g = vd_out.template get<2>(p)[1][1];
     
-	vd_in.template get<0>(p)[0] = a+b+c+d;
-	vd_in.template get<0>(p)[1] = e+f+g;
+	float h = vd_in.template get<0>(p)[0];
+	vd_in.template get<0>(p)[1] = a+b+c+d+e+f+g+h;
 }
 
 template<typename in_type, typename out_type>
@@ -97,22 +97,23 @@ void check_write(in_type & in, out_type & out)
     for (int i = 0 ; i < 16777216 ; i++)
     {
         float a = in.template get<0>(i)[0];
-        float b = in.template get<0>(i)[1];
 
-        success &= out.template get<0>(i) == a + b;
+        success &= out.template get<0>(i) == a;
 
         success &= out.template get<1>(i)[0] == a;
-        success &= out.template get<1>(i)[1] == b;
+        success &= out.template get<1>(i)[1] == a;
 
         success &= out.template get<2>(i)[0][0] == a;
-        success &= out.template get<2>(i)[0][1] == b;
-        success &= out.template get<2>(i)[1][0] == a + b;
-        success &= out.template get<2>(i)[1][1] == b - a;
+        success &= out.template get<2>(i)[0][1] == a;
+        success &= out.template get<2>(i)[1][0] == a;
+        success &= out.template get<2>(i)[1][1] == a;
+
+        success &= in.template get<0>(i)[1] == a;
     }
 
     if (success == false)
     {
-            std::cout << "FAIL" << std::endl;
+            std::cout << "FAIL WRITE" << std::endl;
             exit(1);
     }
 }
@@ -136,13 +137,14 @@ void check_read(in_type & in, out_type & out)
         float f = out.template get<2>(i)[1][0];
         float g = out.template get<2>(i)[1][1];
 
-        success &= in.template get<0>(i)[0] == (a+b+c+d);
-        success &= in.template get<0>(i)[1] == (e+f+g);
+        float h = in.template get<0>(i)[0];
+
+        success &= in.template get<0>(i)[1] == (a+b+c+d+e+f+g+h);
     }
 
     if (success == false)
     {
-            std::cout << "FAIL" << std::endl;
+            std::cout << "FAIL READ" << std::endl;
             exit(1);
     }
 }
