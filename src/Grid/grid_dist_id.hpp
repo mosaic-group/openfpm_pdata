@@ -3248,7 +3248,7 @@ public:
 							for (int j = 0 ; j < dim ; j++)
 							{key_dst.set_d(j,key.get(j) + orig.get(j) + kp1.get(j));}
 
-							dg.get_o(key_dst) = lg.get_o(key);
+							dg.insert_o(key_dst) = lg.get_o(key);
 
 							++it_src;
 					}
