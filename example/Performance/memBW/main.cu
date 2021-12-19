@@ -149,6 +149,27 @@ void check_read(in_type & in, out_type & out)
     }
 }
 
+template<typename vin_type, typename vout_type>
+void initialize_buf(vin_type in, vout_type out)
+{
+    for (int i = 0 ; i < 16777216 ; i++)
+    {
+        in.template get<0>(i)[0] = i;
+        in.template get<0>(i)[1] = i+100.0;
+
+        out.template get<0>(i) = i+200.0;
+
+        out.template get<1>(i)[0] = i;
+        out.template get<1>(i)[1] = i+100.0;
+
+        out.template get<2>(i)[0][0] = i;
+        out.template get<2>(i)[0][1] = i+100.0;
+        out.template get<2>(i)[1][0] = i+200.0;
+        out.template get<2>(i)[1][1] = i+300.0;
+    }
+
+}
+
 int main(int argc, char *argv[])
 {
     init_wrappers();
@@ -161,11 +182,7 @@ int main(int argc, char *argv[])
     out.resize(nele);
     in.resize(nele);
 
-    for (int i = 0 ; i < 16777216 ; i++)
-    {
-        in.template get<0>(i)[0] = i;
-        in.template get<0>(i)[1] = i+100.0;
-    }
+    initialize_buf(in,out);
 
     // Read write test with TLS
 
@@ -202,11 +219,7 @@ int main(int argc, char *argv[])
 
     check_write(in,out);
 
-    for (int i = 0 ; i < 16777216 ; i++)
-    {
-        in.template get<0>(i)[0] = i;
-        in.template get<0>(i)[1] = i+100.0;
-    }
+    initialize_buf(in,out);
 
     for (int i = 0 ; i < 110 ; i++)
     {
@@ -238,6 +251,7 @@ int main(int argc, char *argv[])
 
     /////////////////////////////////////////// LAMBDA //////////////////////////////////////////
 
+    initialize_buf(in,out);
 
     for (int i = 0 ; i < 110 ; i++)
     {
@@ -283,11 +297,7 @@ int main(int argc, char *argv[])
     double dev_write_lamb = 0.0;
     standard_deviation(res,mean_write_lamb,dev_write_lamb);
 
-    for (int i = 0 ; i < 16777216 ; i++)
-    {
-        in.template get<0>(i)[0] = i;
-        in.template get<0>(i)[1] = i+100.0;
-    }
+    initialize_buf(in,out);
 
     for (int i = 0 ; i < 110 ; i++)
     {
