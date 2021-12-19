@@ -140,12 +140,12 @@ void check_read(in_type & in, out_type & out)
         float h = in.template get<0>(i)[0];
 
         success &= in.template get<0>(i)[1] == (a+b+c+d+e+f+g+h);
-    }
 
-    if (success == false)
-    {
-            std::cout << "FAIL READ" << std::endl;
+        if (success == false)
+        {
+            std::cout << "FAIL READ " << i << in.template get<0>(i)[1] << " != " << a+b+c+d+e+f+g+h << std::endl;
             exit(1);
+        }
     }
 }
 
