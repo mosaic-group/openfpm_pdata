@@ -5,7 +5,7 @@
 
 //! Memory bandwidth with small calculations
 template<typename vector_type, typename vector_type2>
-inline __global__ void translate_fill_prop_write(vector_type vd_out, vector_type2 vd_in)
+__global__ void translate_fill_prop_write(vector_type vd_out, vector_type2 vd_in)
 {
 	auto p = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -25,7 +25,7 @@ inline __global__ void translate_fill_prop_write(vector_type vd_out, vector_type
 
 
 template<typename vector_type, typename vector_type2>
-inline __global__ void translate_fill_prop_read(vector_type vd_out, vector_type2 vd_in)
+__global__ void translate_fill_prop_read(vector_type vd_out, vector_type2 vd_in)
 {
 	auto p = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -43,56 +43,9 @@ inline __global__ void translate_fill_prop_read(vector_type vd_out, vector_type2
 	vd_in.template get<0>(p)[1] = e+f+g;
 }
 
-/////////////////////////////// Lambda based
-
-template<typename vector_type, typename vector_type2>
-inline __device__ void translate_fill_prop_write_notls(vector_type vd_out, vector_type2 vd_in, dim3 & blockIdx, dim3 & threadIdx)
-{
-	auto p = blockIdx.x * blockDim.x + threadIdx.x;
-
-	float a = vd_in.template get<0>(p)[0];
-	float b = vd_in.template get<0>(p)[1];
-
-	vd_out.template get<0>(p) = a + b;
-
-	vd_out.template get<1>(p)[0] = a;
-	vd_out.template get<1>(p)[1] = b;
-
-	vd_out.template get<2>(p)[0][0] = a;
-	vd_out.template get<2>(p)[0][1] = b;
-	vd_out.template get<2>(p)[1][0] = a + b;
-	vd_out.template get<2>(p)[1][1] = b - a;
-
-	vd_in.template get<0>(p)[0] = a;
-	vd_in.template get<0>(p)[1] = b;
-}
-
-
-template<typename vector_type, typename vector_type2>
-inline __device__ void translate_fill_prop_read_notls(vector_type vd_out, vector_type2 vd_in, dim3 & blockIdx, dim3 & threadIdx)
-{
-	auto p = blockIdx.x * blockDim.x + threadIdx.x;
-
-	float a = vd_out.template get<0>(p);
-
-	float b = vd_out.template get<1>(p)[0];
-	float c = vd_out.template get<1>(p)[1];
-
-	float d = vd_out.template get<2>(p)[0][0];
-	float e = vd_out.template get<2>(p)[0][1];
-	float f = vd_out.template get<2>(p)[1][0];
-	float g = vd_out.template get<2>(p)[1][1];
-
-	float h = vd_in.template get<0>(p)[0];
-    float i = vd_in.template get<0>(p)[1];
-    
-	vd_in.template get<0>(p)[0] = a+b+c+d;
-	vd_in.template get<0>(p)[1] = e+f+g+h+i;
-}
-
 // Arrays
 
-inline __global__ void translate_fill_prop_write_array(float * vd_out_scal,
+__global__ void translate_fill_prop_write_array(float * vd_out_scal,
                                                        float * vd_out_vec,
                                                        float * vd_out_mat,
                                                        float * vd_in_vec,
@@ -116,7 +69,7 @@ inline __global__ void translate_fill_prop_write_array(float * vd_out_scal,
 
 
 template<typename vector_type, typename vector_type2>
-inline __global__ void translate_fill_prop_read_array(vector_type vd_out, vector_type2 vd_in)
+__global__ void translate_fill_prop_read_array(vector_type vd_out, vector_type2 vd_in)
 {
 	auto p = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -132,6 +85,66 @@ inline __global__ void translate_fill_prop_read_array(vector_type vd_out, vector
     
 	vd_in.template get<0>(p)[0] = a+b+c+d;
 	vd_in.template get<0>(p)[1] = e+f+g;
+}
+
+template<typename in_type, typename out_type>
+void check_write(in_type & in, out_type & out)
+{
+    out.template deviceToHost<0,1,2>();
+    in.template deviceToHost<0>();
+
+    bool success = true;
+    for (int i = 0 ; i < 16777216 ; i++)
+    {
+        float a = in.template get<0>(i)[0];
+        float b = in.template get<0>(i)[1];
+
+        success &= out.template get<0>(i) == a + b;
+
+        success &= out.template get<1>(i)[0] == a;
+        success &= out.template get<1>(i)[1] == b;
+
+        success &= out.template get<2>(i)[0][0] == a;
+        success &= out.template get<2>(i)[0][1] == b;
+        success &= out.template get<2>(i)[1][0] == a + b;
+        success &= out.template get<2>(i)[1][1] == b - a;
+    }
+
+    if (success == false)
+    {
+            std::cout << "FAIL" << std::endl;
+            exit(1);
+    }
+}
+
+template<typename in_type, typename out_type>
+void check_read(in_type & in, out_type & out)
+{
+    out.template deviceToHost<0,1,2>();
+    in.template deviceToHost<0>();
+
+    bool success = true;
+    for (int i = 0 ; i < 16777216 ; i++)
+    {
+        float a = out.template get<0>(i);
+
+        float b = out.template get<1>(i)[0];
+        float c = out.template get<1>(i)[1];
+
+        float d = out.template get<2>(i)[0][0];
+        float e = out.template get<2>(i)[0][1];
+        float f = out.template get<2>(i)[1][0];
+        float g = out.template get<2>(i)[1][1];
+
+        success &= in.template get<0>(i)[0] == (a+b+c+d);
+        success &= in.template get<0>(i)[1] == (e+f+g);
+    }
+
+    if (success == false)
+    {
+            std::cout << "FAIL" << std::endl;
+            exit(1);
+    }
 }
 
 int main(int argc, char *argv[])
@@ -159,6 +172,8 @@ int main(int argc, char *argv[])
     openfpm::vector<double> res;
     res.resize(100);
 
+    in.hostToDevice<0>();
+
     for (int i = 0 ; i < 110 ; i++)
     {
         cudaDeviceSynchronize();
@@ -182,6 +197,8 @@ int main(int argc, char *argv[])
     double mean_write_tls = 0.0;
     double dev_write_tls = 0.0;
     standard_deviation(res,mean_write_tls,dev_write_tls);
+
+    check_write(in,out);
 
     for (int i = 0 ; i < 110 ; i++)
     {
@@ -207,6 +224,10 @@ int main(int argc, char *argv[])
     double dev_read_tls = 0.0;
     standard_deviation(res,mean_read_tls,dev_read_tls);
 
+    check_read(in,out);
+
+    //////////////
+
     /////////////////////////////////////////// LAMBDA //////////////////////////////////////////
 
 
@@ -219,25 +240,22 @@ int main(int argc, char *argv[])
         auto vd_out = out.toKernel();
         auto vd_in = in.toKernel();
 
-        auto lamb = [&] __device__ (dim3 & blockIdx, dim3 & threadIdx)
+        auto lamb = [vd_out,vd_in] __device__ (dim3 & blockIdx, dim3 & threadIdx)
         {
             auto p = blockIdx.x * blockDim.x + threadIdx.x;
 
-            float a = vd_out.template get<0>(p);
-        
-            float b = vd_out.template get<1>(p)[0];
-            float c = vd_out.template get<1>(p)[1];
-        
-            float d = vd_out.template get<2>(p)[0][0];
-            float e = vd_out.template get<2>(p)[0][1];
-            float f = vd_out.template get<2>(p)[1][0];
-            float g = vd_out.template get<2>(p)[1][1];
-        
-            float h = vd_in.template get<0>(p)[0];
-            float i = vd_in.template get<0>(p)[1];
-            
-            vd_in.template get<0>(p)[0] = a+b+c+d;
-            vd_in.template get<0>(p)[1] = e+f+g+h+i;
+            float a = vd_in.template get<0>(p)[0];
+            float b = vd_in.template get<0>(p)[1];
+
+	    vd_out.template get<0>(p) = a + b;
+
+            vd_out.template get<1>(p)[0] = a;
+            vd_out.template get<1>(p)[1] = b;
+
+            vd_out.template get<2>(p)[0][0] = a;
+            vd_out.template get<2>(p)[0][1] = b;
+            vd_out.template get<2>(p)[1][0] = a + b;
+            vd_out.template get<2>(p)[1][1] = b - a;
         };
 
         CUDA_LAUNCH_LAMBDA(ite, lamb);
@@ -280,12 +298,9 @@ int main(int argc, char *argv[])
                                 float e = vd_out.template get<2>(p)[0][1];
                                 float f = vd_out.template get<2>(p)[1][0];
                                 float g = vd_out.template get<2>(p)[1][1];
-                            
-                                float h = vd_in.template get<0>(p)[0];
-                                float i = vd_in.template get<0>(p)[1];
                                 
                                 vd_in.template get<0>(p)[0] = a+b+c+d;
-                                vd_in.template get<0>(p)[1] = e+f+g+h+i;
+                                vd_in.template get<0>(p)[1] = e+f+g;
                             };
 
         CUDA_LAUNCH_LAMBDA(ite, lamb);
@@ -305,11 +320,44 @@ int main(int argc, char *argv[])
     double dev_read_lamb = 0.0;
     standard_deviation(res,mean_read_lamb,dev_read_lamb);
 
+    #ifdef CUDIFY_USE_CUDA
+
+    for (int i = 0 ; i < 110 ; i++)
+    {
+        cudaDeviceSynchronize();
+        timer t;
+        t.start();
+
+        float * a = (float *)in.getDeviceBuffer<0>();
+        float * b = (float *)out.getDeviceBuffer<1>();
+
+        cudaMemcpy(a,b,2*16777216*4,cudaMemcpyDeviceToDevice);
+
+        cudaDeviceSynchronize();
+
+        t.stop();
+
+        if (i >=10)
+        {res.get(i-10) = nele*4*4 / t.getwct() * 1e-9;}
+
+        std::cout << "Time: " << t.getwct() << std::endl;
+        std::cout << "BW: " << nele*4*4 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
+    }    
+
+    double mean_read_mes = 0.0;
+    double dev_read_mes = 0.0;
+    standard_deviation(res,mean_read_mes,dev_read_mes);
+
+    std::cout << "Average measured: " << mean_read_mes << "  deviation: " << dev_read_mes << std::endl;
+
+    #endif
+
     std::cout << "Average READ with TLS: " << mean_read_tls << "  deviation: " << dev_read_tls << std::endl;
     std::cout << "Average WRITE with TLS: " << mean_write_tls << "  deviation: " << dev_write_tls << std::endl;
 
     std::cout << "Average READ with lamb: " << mean_read_lamb << "  deviation: " << dev_read_lamb << std::endl;
     std::cout << "Average WRITE with lamb: " << mean_write_lamb << "  deviation: " << dev_write_lamb << std::endl;
+
 }
 
 #else
