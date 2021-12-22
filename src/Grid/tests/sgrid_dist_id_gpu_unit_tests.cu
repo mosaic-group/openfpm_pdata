@@ -5,6 +5,7 @@
 #include <boost/test/unit_test.hpp>
 #include "Grid/grid_dist_id.hpp"
 
+
 BOOST_AUTO_TEST_SUITE( sgrid_gpu_test_suite )
 
 template<unsigned int p>

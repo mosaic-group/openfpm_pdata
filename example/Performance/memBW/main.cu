@@ -53,18 +53,18 @@ __global__ void translate_fill_prop_write_array(float * vd_out_scal,
 {
 	auto p = blockIdx.x * blockDim.x + threadIdx.x;
 
-	float a = vd_in_vec[p* + 0*stride];
-	float b = vd_in_vec[p* + 1*stride];
+	float a = vd_in_vec[p + 0*stride];
 
-	vd_out_scal[p] = a + b;
+	vd_out_scal[p] = a;
 
 	vd_out_vec[p + 0*stride] = a;
-	vd_out_vec[p + 1*stride] = b;
+	vd_out_vec[p + 1*stride] = a;
 
 	vd_out_mat[p + 0*2*stride + 0*stride ] = a;
-	vd_out_mat[p + 0*2*stride + 1*stride ] = b;
-	vd_out_mat[p + 1*2*stride + 0*stride ] = a + b;
-	vd_out_mat[p + 1*2*stride + 1*stride ] = b - a;
+	vd_out_mat[p + 0*2*stride + 1*stride ] = a;
+	vd_out_mat[p + 1*2*stride + 0*stride ] = a;
+	vd_out_mat[p + 1*2*stride + 1*stride ] = a;
+	vd_in_vec[p + 1*stride] = a;
 }
 
 
@@ -183,6 +183,18 @@ int main(int argc, char *argv[])
     in.resize(nele);
 
     initialize_buf(in,out);
+
+
+for (int j = 0 ; j < 100 ; j++)
+{
+
+    for (int i = 0 ; i < 16777216; i++)
+    {
+	    out.get<2>(i)[1][0] = in.get<0>(i)[1];
+    }
+}
+
+    return 0;
 
     // Read write test with TLS
 
@@ -344,6 +356,38 @@ int main(int argc, char *argv[])
     double dev_read_lamb = 0.0;
     standard_deviation(res,mean_read_lamb,dev_read_lamb);
 
+    // Array benchmark
+
+    for (int i = 0 ; i < 110 ; i++)
+    {
+        cudaDeviceSynchronize();
+        timer t;
+        t.start();
+
+	float * out_s = (float *)out.getDeviceBuffer<0>();
+	float * out_v = (float *)out.getDeviceBuffer<1>();
+	float * out_m = (float *)out.getDeviceBuffer<2>();
+	float * in_v = (float *)in.getDeviceBuffer<0>();
+
+        CUDA_LAUNCH(translate_fill_prop_write_array,ite,out_s,out_v,out_m,in_v,out.capacity());
+
+        cudaDeviceSynchronize();
+
+        t.stop();
+
+        if (i >=10)
+        {res.get(i-10) = nele*4*9 / t.getwct() * 1e-9;}
+
+        std::cout << "Time ARR: " << t.getwct() << std::endl;
+        std::cout << "BW ARR: " << nele*4*9 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
+    }
+
+    double mean_write_arr = 0.0;
+    double dev_write_arr = 0.0;
+    standard_deviation(res,mean_write_arr,dev_write_arr);
+
+    ///////////////////
+
     #ifdef CUDIFY_USE_CUDA
 
     for (int i = 0 ; i < 110 ; i++)
@@ -382,6 +426,7 @@ int main(int argc, char *argv[])
     std::cout << "Average READ with lamb: " << mean_read_lamb << "  deviation: " << dev_read_lamb << std::endl;
     std::cout << "Average WRITE with lamb: " << mean_write_lamb << "  deviation: " << dev_write_lamb << std::endl;
 
+    std::cout << "Average WRITE with array: " << mean_write_arr << "  deviation: " << dev_write_arr << std::endl;
 }
 
 #else
