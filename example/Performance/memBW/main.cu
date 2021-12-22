@@ -68,23 +68,26 @@ __global__ void translate_fill_prop_write_array(float * vd_out_scal,
 }
 
 
-template<typename vector_type, typename vector_type2>
-__global__ void translate_fill_prop_read_array(vector_type vd_out, vector_type2 vd_in)
+__global__ void translate_fill_prop_read_array(float * vd_out_scal,
+                                                float * vd_out_vec,
+                                                float * vd_out_mat,
+                                                float * vd_in_vec,
+                                                int stride)
 {
 	auto p = blockIdx.x * blockDim.x + threadIdx.x;
 
-	float a = vd_out.template get<0>(p);
+	float a = vd_out_scal[p];
 
-	float b = vd_out.template get<1>(p)[0];
-	float c = vd_out.template get<1>(p)[1];
+	float b = vd_out_vec[p + 0*stride];
+	float c = vd_out_vec[p + 1*stride];
 
-	float d = vd_out.template get<2>(p)[0][0];
-	float e = vd_out.template get<2>(p)[0][1];
-	float f = vd_out.template get<2>(p)[1][0];
-	float g = vd_out.template get<2>(p)[1][1];
+	float d = vd_out_mat[p + 0*2*stride + 0*stride];
+	float e = vd_out_mat[p + 0*2*stride + 1*stride];
+	float f = vd_out_mat[p + 1*2*stride + 0*stride];
+	float g = vd_out_mat[p + 1*2*stride + 1*stride];
     
-	float h = vd_in.template get<0>(p)[0];
-	vd_in.template get<0>(p)[1] = a+b+c+d+e+f+g+h;
+	float h = vd_in_vec[p + 0*stride];
+	vd_in_vec[p + 1*stride] = a+b+c+d+e+f+g+h;
 }
 
 template<typename in_type, typename out_type>
@@ -183,18 +186,6 @@ int main(int argc, char *argv[])
     in.resize(nele);
 
     initialize_buf(in,out);
-
-
-for (int j = 0 ; j < 100 ; j++)
-{
-
-    for (int i = 0 ; i < 16777216; i++)
-    {
-	    out.get<2>(i)[1][0] = in.get<0>(i)[1];
-    }
-}
-
-    return 0;
 
     // Read write test with TLS
 
@@ -386,6 +377,38 @@ for (int j = 0 ; j < 100 ; j++)
     double dev_write_arr = 0.0;
     standard_deviation(res,mean_write_arr,dev_write_arr);
 
+    check_write(in,out);
+
+    for (int i = 0 ; i < 110 ; i++)
+    {
+        cudaDeviceSynchronize();
+        timer t;
+        t.start();
+
+	float * out_s = (float *)out.getDeviceBuffer<0>();
+	float * out_v = (float *)out.getDeviceBuffer<1>();
+	float * out_m = (float *)out.getDeviceBuffer<2>();
+	float * in_v = (float *)in.getDeviceBuffer<0>();
+
+        CUDA_LAUNCH(translate_fill_prop_read_array,ite,out_s,out_v,out_m,in_v,out.capacity());
+
+        cudaDeviceSynchronize();
+
+        t.stop();
+
+        if (i >=10)
+        {res.get(i-10) = nele*4*9 / t.getwct() * 1e-9;}
+
+        std::cout << "Time ARR: " << t.getwct() << std::endl;
+        std::cout << "BW ARR: " << nele*4*9 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
+    }
+
+    double mean_read_arr = 0.0;
+    double dev_read_arr = 0.0;
+    standard_deviation(res,mean_read_arr,dev_read_arr);
+
+    check_read(in,out);
+
     ///////////////////
 
     #ifdef CUDIFY_USE_CUDA
@@ -427,6 +450,7 @@ for (int j = 0 ; j < 100 ; j++)
     std::cout << "Average WRITE with lamb: " << mean_write_lamb << "  deviation: " << dev_write_lamb << std::endl;
 
     std::cout << "Average WRITE with array: " << mean_write_arr << "  deviation: " << dev_write_arr << std::endl;
+    std::cout << "Average READ with array: " << mean_read_arr << "  deviation: " << dev_read_arr << std::endl;
 }
 
 #else
