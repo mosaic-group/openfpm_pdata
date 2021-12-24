@@ -152,25 +152,30 @@ void check_read(in_type & in, out_type & out)
     }
 }
 
+template<typename vector_type, typename vector_type2>
+__global__ void initialize_buff(vector_type vd_out, vector_type2 vd_in)
+{
+	auto i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    vd_in.template get<0>(i)[0] = i;
+    vd_in.template get<0>(i)[1] = i+100.0;
+
+    vd_out.template get<0>(i) = i+200.0;
+
+    vd_out.template get<1>(i)[0] = i;
+    vd_out.template get<1>(i)[1] = i+100.0;
+
+    vd_out.template get<2>(i)[0][0] = i;
+    vd_out.template get<2>(i)[0][1] = i+100.0;
+    vd_out.template get<2>(i)[1][0] = i+200.0;
+    vd_out.template get<2>(i)[1][1] = i+300.0;
+}
+
 template<typename vin_type, typename vout_type>
 void initialize_buf(vin_type in, vout_type out)
 {
-    for (int i = 0 ; i < 16777216 ; i++)
-    {
-        in.template get<0>(i)[0] = i;
-        in.template get<0>(i)[1] = i+100.0;
-
-        out.template get<0>(i) = i+200.0;
-
-        out.template get<1>(i)[0] = i;
-        out.template get<1>(i)[1] = i+100.0;
-
-        out.template get<2>(i)[0][0] = i;
-        out.template get<2>(i)[0][1] = i+100.0;
-        out.template get<2>(i)[1][0] = i+200.0;
-        out.template get<2>(i)[1][1] = i+300.0;
-    }
-
+    auto ite = out.getGPUIterator(256);
+    CUDA_LAUNCH(initialize_buff,ite,out.toKernel(),in.toKernel());
 }
 
 int main(int argc, char *argv[])

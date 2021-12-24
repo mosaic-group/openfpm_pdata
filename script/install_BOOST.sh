@@ -24,7 +24,20 @@ if [ x"$4" != x"" ]; then
 		echo "using gcc : : $4 ; " > $HOME/user-config.jam
 	fi
 fi
-./bootstrap.sh --with-toolset=$3
+
+## When we are on powerPC we avoid booststrap for some reason will try xlcpp and most probably will fail we fall back to gcc
+
+if [ x"$arch" == x"ppc64le" ]; then
+	cd tools/build/src/engine
+	./build.sh gcc
+	cd ../../../../
+	cp tools/build/src/engine/b2 .
+	cp tools/build/src/engine/bjam .
+else
+	./bootstrap.sh --with-toolset=$3
+fi
+
+
 mkdir $1/BOOST
 # Several flavours
 if [ x"$platform" == x"osx" ]; then
