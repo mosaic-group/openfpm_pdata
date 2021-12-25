@@ -23,7 +23,6 @@ __global__ void translate_fill_prop_write(vector_type vd_out, vector_type2 vd_in
     vd_in.template get<0>(p)[1] = a;
 }
 
-
 template<typename vector_type, typename vector_type2>
 __global__ void translate_fill_prop_read(vector_type vd_out, vector_type2 vd_in)
 {
@@ -43,52 +42,6 @@ __global__ void translate_fill_prop_read(vector_type vd_out, vector_type2 vd_in)
 	vd_in.template get<0>(p)[1] = a+b+c+d+e+f+g+h;
 }
 
-// Arrays
-
-__global__ void translate_fill_prop_write_array(float * vd_out_scal,
-                                                       float * vd_out_vec,
-                                                       float * vd_out_mat,
-                                                       float * vd_in_vec,
-                                                       int stride)
-{
-	auto p = blockIdx.x * blockDim.x + threadIdx.x;
-
-	float a = vd_in_vec[p + 0*stride];
-
-	vd_out_scal[p] = a;
-
-	vd_out_vec[p + 0*stride] = a;
-	vd_out_vec[p + 1*stride] = a;
-
-	vd_out_mat[p + 0*2*stride + 0*stride ] = a;
-	vd_out_mat[p + 0*2*stride + 1*stride ] = a;
-	vd_out_mat[p + 1*2*stride + 0*stride ] = a;
-	vd_out_mat[p + 1*2*stride + 1*stride ] = a;
-	vd_in_vec[p + 1*stride] = a;
-}
-
-
-__global__ void translate_fill_prop_read_array(float * vd_out_scal,
-                                                float * vd_out_vec,
-                                                float * vd_out_mat,
-                                                float * vd_in_vec,
-                                                int stride)
-{
-	auto p = blockIdx.x * blockDim.x + threadIdx.x;
-
-	float a = vd_out_scal[p];
-
-	float b = vd_out_vec[p + 0*stride];
-	float c = vd_out_vec[p + 1*stride];
-
-	float d = vd_out_mat[p + 0*2*stride + 0*stride];
-	float e = vd_out_mat[p + 0*2*stride + 1*stride];
-	float f = vd_out_mat[p + 1*2*stride + 0*stride];
-	float g = vd_out_mat[p + 1*2*stride + 1*stride];
-    
-	float h = vd_in_vec[p + 0*stride];
-	vd_in_vec[p + 1*stride] = a+b+c+d+e+f+g+h;
-}
 
 template<typename in_type, typename out_type>
 void check_write(in_type & in, out_type & out)
@@ -360,12 +313,32 @@ int main(int argc, char *argv[])
         timer t;
         t.start();
 
-	float * out_s = (float *)out.getDeviceBuffer<0>();
-	float * out_v = (float *)out.getDeviceBuffer<1>();
-	float * out_m = (float *)out.getDeviceBuffer<2>();
-	float * in_v = (float *)in.getDeviceBuffer<0>();
+	    float * out_s = (float *)out.getDeviceBuffer<0>();
+	    float * out_v = (float *)out.getDeviceBuffer<1>();
+	    float * out_m = (float *)out.getDeviceBuffer<2>();
+        float * in_v = (float *)in.getDeviceBuffer<0>();
+        
+        int stride = out.capacity();
 
-        CUDA_LAUNCH(translate_fill_prop_write_array,ite,out_s,out_v,out_m,in_v,out.capacity());
+        auto lamb_arr_write = [out_s,out_v,out_m,in_v,stride] __device__ (dim3 & blockIdx, dim3 & threadIdx)
+        {
+            auto p = blockIdx.x * blockDim.x + threadIdx.x;
+
+            float a = in_v[p + 0*stride];
+        
+            out_s[p] = a;
+        
+            out_v[p + 0*stride] = a;
+            out_v[p + 1*stride] = a;
+        
+            out_m[p + 0*2*stride + 0*stride ] = a;
+            out_m[p + 0*2*stride + 1*stride ] = a;
+            out_m[p + 1*2*stride + 0*stride ] = a;
+            out_m[p + 1*2*stride + 1*stride ] = a;
+            in_v[p + 1*stride] = a;
+        };
+
+        CUDA_LAUNCH_LAMBDA(ite,lamb_arr_write);
 
         cudaDeviceSynchronize();
 
@@ -390,12 +363,32 @@ int main(int argc, char *argv[])
         timer t;
         t.start();
 
-	float * out_s = (float *)out.getDeviceBuffer<0>();
-	float * out_v = (float *)out.getDeviceBuffer<1>();
-	float * out_m = (float *)out.getDeviceBuffer<2>();
-	float * in_v = (float *)in.getDeviceBuffer<0>();
+	    float * out_s = (float *)out.getDeviceBuffer<0>();
+	    float * out_v = (float *)out.getDeviceBuffer<1>();
+	    float * out_m = (float *)out.getDeviceBuffer<2>();
+        float * in_v = (float *)in.getDeviceBuffer<0>();
+        
+        int stride = out.capacity();
 
-        CUDA_LAUNCH(translate_fill_prop_read_array,ite,out_s,out_v,out_m,in_v,out.capacity());
+        auto lamb_arr_red = [out_s,out_v,out_m,in_v,stride] __device__ (dim3 & blockIdx, dim3 & threadIdx)
+        {
+            auto p = blockIdx.x * blockDim.x + threadIdx.x;
+
+            float a = out_s[p];
+        
+            float b = out_v[p + 0*stride];
+            float c = out_v[p + 1*stride];
+        
+            float d = out_m[p + 0*2*stride + 0*stride];
+            float e = out_m[p + 0*2*stride + 1*stride];
+            float f = out_m[p + 1*2*stride + 0*stride];
+            float g = out_m[p + 1*2*stride + 1*stride];
+            
+            float h = in_v[p + 0*stride];
+            in_v[p + 1*stride] = a+b+c+d+e+f+g+h;
+        };
+
+        CUDA_LAUNCH_LAMBDA(ite,lamb_arr_red);
 
         cudaDeviceSynchronize();
 
