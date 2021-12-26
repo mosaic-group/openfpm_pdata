@@ -52,7 +52,7 @@ void check_write(in_type & in, out_type & out)
     in.template deviceToHost<0>();
 
     bool success = true;
-    for (int i = 0 ; i < NELEMENTS; i++); i++)
+    for (int i = 0 ; i < NELEMENTS; i++)
     {
         float a = in.template get<0>(i)[0];
 
