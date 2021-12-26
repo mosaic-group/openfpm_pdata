@@ -3,6 +3,8 @@
 #include "Vector/map_vector.hpp"
 #include "util/stat/common_statistics.hpp"
 
+#define NELEMENTS 67108864
+
 //! Memory bandwidth with small calculations
 template<typename vector_type, typename vector_type2>
 __global__ void translate_fill_prop_write(vector_type vd_out, vector_type2 vd_in)
@@ -50,7 +52,7 @@ void check_write(in_type & in, out_type & out)
     in.template deviceToHost<0>();
 
     bool success = true;
-    for (int i = 0 ; i < 16777216 ; i++)
+    for (int i = 0 ; i < NELEMENTS; i++); i++)
     {
         float a = in.template get<0>(i)[0];
 
@@ -81,7 +83,7 @@ void check_read(in_type & in, out_type & out)
     in.template deviceToHost<0>();
 
     bool success = true;
-    for (int i = 0 ; i < 16777216 ; i++)
+    for (int i = 0 ; i < NELEMENTS ; i++)
     {
         float a = out.template get<0>(i);
 
@@ -138,7 +140,7 @@ int main(int argc, char *argv[])
     openfpm::vector_gpu<aggregate<float,float[2],float[2][2]>> out;
     openfpm::vector_gpu<aggregate<float[2]>> in;
 
-    int nele = 16777216;
+    int nele = NELEMENTS;
 
     out.resize(nele);
     in.resize(nele);
@@ -420,7 +422,7 @@ int main(int argc, char *argv[])
         float * a = (float *)in.getDeviceBuffer<0>();
         float * b = (float *)out.getDeviceBuffer<1>();
 
-        cudaMemcpy(a,b,2*16777216*4,cudaMemcpyDeviceToDevice);
+        cudaMemcpy(a,b,2*NELEMENTS*4,cudaMemcpyDeviceToDevice);
 
         cudaDeviceSynchronize();
 
