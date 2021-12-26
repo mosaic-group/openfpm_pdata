@@ -170,10 +170,10 @@ int main(int argc, char *argv[])
         t.stop();
 
         if (i >=10)
-        {res.get(i-10) = nele*4*9 / t.getwct() * 1e-9;}
+        {res.get(i-10) = (double)nele*4*9 / t.getwct() * 1e-9;}
 
         std::cout << "Time: " << t.getwct() << std::endl;
-        std::cout << "BW: " << nele*4*9 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
+        std::cout << "BW: " << (double)nele*4*9 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
     }
 
     double mean_write_tls = 0.0;
@@ -198,10 +198,10 @@ int main(int argc, char *argv[])
         t.stop();
 
         if (i >=10)
-        {res.get(i-10) = nele*4*9 / t.getwct() * 1e-9;}
+        {res.get(i-10) = (double)nele*4*9 / t.getwct() * 1e-9;}
 
         std::cout << "Time: " << t.getwct() << std::endl;
-        std::cout << "BW: " << nele*4*9 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
+        std::cout << "BW: " << (double)nele*4*9 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
     }
 
     double mean_read_tls = 0.0;
@@ -250,10 +250,10 @@ int main(int argc, char *argv[])
         t.stop();
 
         if (i >=10)
-        {res.get(i-10) = nele*4*9 / t.getwct() * 1e-9;}
+        {res.get(i-10) = (double)nele*4*9 / t.getwct() * 1e-9;}
 
         std::cout << "Time: " << t.getwct() << std::endl;
-        std::cout << "BW: " << nele*4*9 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
+        std::cout << "BW: " << (double)nele*4*9 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
     }
 
     double mean_write_lamb = 0.0;
@@ -297,10 +297,10 @@ int main(int argc, char *argv[])
         t.stop();
 
         if (i >=10)
-        {res.get(i-10) = nele*4*9 / t.getwct() * 1e-9;}
+        {res.get(i-10) = (double)nele*4*9 / t.getwct() * 1e-9;}
 
         std::cout << "Time: " << t.getwct() << std::endl;
-        std::cout << "BW: " << nele*4*9 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
+        std::cout << "BW: " << (double)nele*4*9 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
     }
 
     double mean_read_lamb = 0.0;
@@ -347,10 +347,10 @@ int main(int argc, char *argv[])
         t.stop();
 
         if (i >=10)
-        {res.get(i-10) = nele*4*9 / t.getwct() * 1e-9;}
+        {res.get(i-10) = (double)nele*4*9 / t.getwct() * 1e-9;}
 
         std::cout << "Time ARR: " << t.getwct() << std::endl;
-        std::cout << "BW ARR: " << nele*4*9 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
+        std::cout << "BW ARR: " << (double)nele*4*9 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
     }
 
     double mean_write_arr = 0.0;
@@ -397,10 +397,10 @@ int main(int argc, char *argv[])
         t.stop();
 
         if (i >=10)
-        {res.get(i-10) = nele*4*9 / t.getwct() * 1e-9;}
+        {res.get(i-10) = (double)nele*4*9 / t.getwct() * 1e-9;}
 
         std::cout << "Time ARR: " << t.getwct() << std::endl;
-        std::cout << "BW ARR: " << nele*4*9 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
+        std::cout << "BW ARR: " << (double)nele*4*9 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
     }
 
     double mean_read_arr = 0.0;
@@ -429,10 +429,10 @@ int main(int argc, char *argv[])
         t.stop();
 
         if (i >=10)
-        {res.get(i-10) = nele*4*4 / t.getwct() * 1e-9;}
+        {res.get(i-10) = (double)nele*4*4 / t.getwct() * 1e-9;}
 
         std::cout << "Time: " << t.getwct() << std::endl;
-        std::cout << "BW: " << nele*4*4 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
+        std::cout << "BW: " << (double)nele*4*4 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
     }    
 
     double mean_read_mes = 0.0;
