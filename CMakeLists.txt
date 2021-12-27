@@ -64,7 +64,8 @@ message("Searching Vc in ${Vc_DIR}")
 
 set (ENV{BOOST_ROOT} ${BOOST_ROOT})
 set (Boost_NO_BOOST_CMAKE OFF)
-find_package(Boost 1.72.0 COMPONENTS unit_test_framework iostreams program_options system filesystem thread OPTIONAL_COMPONENTS fiber context)
+find_package(Boost 1.72.0 COMPONENTS REQUIRED unit_test_framework iostreams program_options system filesystem thread
+		OPTIONAL_COMPONENTS fiber context)
 find_package(MPI)
 find_package(PETSc)
 find_package(HDF5)
