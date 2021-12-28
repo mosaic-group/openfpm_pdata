@@ -154,8 +154,6 @@ int main(int argc, char *argv[])
     openfpm::vector<double> res;
     res.resize(100);
 
-    in.hostToDevice<0>();
-
     for (int i = 0 ; i < 110 ; i++)
     {
         cudaDeviceSynchronize();
