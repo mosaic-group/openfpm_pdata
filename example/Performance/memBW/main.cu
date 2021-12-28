@@ -227,18 +227,16 @@ int main(int argc, char *argv[])
         {
             auto p = blockIdx.x * blockDim.x + threadIdx.x;
 
-            float a = vd_in.template get<0>(p)[0];
-            float b = vd_in.template get<0>(p)[1];
-
-	    vd_out.template get<0>(p) = a + b;
+            vd_out.template get<0>(p) = a;
 
             vd_out.template get<1>(p)[0] = a;
-            vd_out.template get<1>(p)[1] = b;
-
+            vd_out.template get<1>(p)[1] = a;
+        
             vd_out.template get<2>(p)[0][0] = a;
-            vd_out.template get<2>(p)[0][1] = b;
-            vd_out.template get<2>(p)[1][0] = a + b;
-            vd_out.template get<2>(p)[1][1] = b - a;
+            vd_out.template get<2>(p)[0][1] = a;
+            vd_out.template get<2>(p)[1][0] = a;
+            vd_out.template get<2>(p)[1][1] = a;
+            vd_in.template get<0>(p)[1] = a;
         };
 
         CUDA_LAUNCH_LAMBDA(ite, lamb);
@@ -275,7 +273,7 @@ int main(int argc, char *argv[])
                                 auto p = blockIdx.x * blockDim.x + threadIdx.x;
 
                                 float a = vd_out.template get<0>(p);
-                            
+
                                 float b = vd_out.template get<1>(p)[0];
                                 float c = vd_out.template get<1>(p)[1];
                             
@@ -284,8 +282,8 @@ int main(int argc, char *argv[])
                                 float f = vd_out.template get<2>(p)[1][0];
                                 float g = vd_out.template get<2>(p)[1][1];
                                 
-                                vd_in.template get<0>(p)[0] = a+b+c+d;
-                                vd_in.template get<0>(p)[1] = e+f+g;
+                                float h = vd_in.template get<0>(p)[0];
+                                vd_in.template get<0>(p)[1] = a+b+c+d+e+f+g+h;
                             };
 
         CUDA_LAUNCH_LAMBDA(ite, lamb);
