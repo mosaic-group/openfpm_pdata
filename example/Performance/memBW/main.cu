@@ -227,6 +227,8 @@ int main(int argc, char *argv[])
         {
             auto p = blockIdx.x * blockDim.x + threadIdx.x;
 
+            float a = vd_in.template get<0>(p)[0];
+
             vd_out.template get<0>(p) = a;
 
             vd_out.template get<1>(p)[0] = a;
