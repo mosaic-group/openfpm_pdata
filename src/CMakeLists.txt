@@ -90,7 +90,7 @@ else()
 							  Decomposition/tests/shift_vect_converter_tests.cpp
 							  Vector/performance/vector_dist_performance_util.cpp
 							  lib/pdata.cpp
-							  ../experiments/ex1.cpp ../experiments/DEM_1.cpp ../Formal_interface/ParticleMethod.hpp ../Formal_interface/Particle.hpp ../Formal_interface/ParticleData.hpp ../Formal_interface/Transition.hpp ../Formal_interface/Tests/DEM_Test.cpp ../Formal_interface/Tests/DEM_Test.hpp ../Formal_interface/GlobalVar.hpp ../Formal_interface/Tests/Test1.cpp ../Formal_interface/Tests/Test1.hpp ../Formal_interface/PropertyAccess.hpp ../Formal_interface/ParticleDataReference.hpp ../Formal_interface/Domain.hpp ../Formal_interface/PositionType.hpp ../Formal_interface/Tests/PSE_Test.cpp ../Formal_interface/Tests/PSE_Test.hpp)
+							  ../experiments/ex1.cpp ../experiments/DEM_1.cpp ../Formal_interface/ParticleMethod.hpp ../Formal_interface/Particle.hpp ../Formal_interface/ParticleData.hpp ../Formal_interface/Transition.hpp ../Formal_interface/Tests/DEM_Test.cpp ../Formal_interface/Tests/DEM_Test.hpp ../Formal_interface/GlobalVar.hpp ../Formal_interface/Tests/Test1.cpp ../Formal_interface/Tests/Test1.hpp ../Formal_interface/PropertyAccess.hpp ../Formal_interface/ParticleDataReference.hpp ../Formal_interface/Domain.hpp ../Formal_interface/PositionType.hpp ../Formal_interface/Tests/PSE_Test.cpp ../Formal_interface/Tests/PSE_Test.hpp ../Formal_interface/InitialConditions.hpp)
 
 	add_library(ofpm_pdata STATIC lib/pdata.cpp)
 	add_library(ofpm_pdata_python SHARED lib/pdata_python.cpp)

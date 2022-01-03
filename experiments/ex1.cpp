@@ -157,10 +157,10 @@ public:
 };
 
 /*
-template <typename ParticleType>
-class NeighborhoodCellList : public Neighborhood<ParticleType> {
+template <typename PropertyType>
+class NeighborhoodCellList : public Neighborhood<PropertyType> {
 private:
-//    ParticleData<ParticleType> particle_data;
+//    ParticleData<PropertyType> particle_data;
     CELL_MEMBAL(1, float) cellList;
     CellNNIterator<1, CellList<1, float, Mem_bal<unsigned long>, shift<1, float>, openfpm::vector<Point<1, float>, HeapMemory, memory_traits_lin, openfpm::grow_policy_double, 2> >, 3, 1> cliterator;
 //    CellNNIterator<1,CellList<1,float,Mem_bal<>,no_transform<1,float>,openfpm::vector<Point<1,float>>>,(int)openfpm::math::pow(3,1), NO_CHECK> cliterator;
@@ -168,7 +168,7 @@ private:
 
 public:
 
-    NeighborhoodCellList(ParticleData<ParticleType>& particle_data_in) : Neighborhood<ParticleType>(particle_data_in),
+    NeighborhoodCellList(ParticleData<PropertyType>& particle_data_in) : Neighborhood<PropertyType>(particle_data_in),
             cellList(particle_data_in.vd.template getCellList<CELL_MEMBAL(1, float)>(0.5)),
             cliterator(cellList.template getNNIterator(cellList.getCell({0}))) {}
 
@@ -176,7 +176,7 @@ public:
         this->particle_data.vd.template updateCellList(cellList);
     }
 
-    void initialize(Particle<ParticleType> particle) override {
+    void initialize(Particle<PropertyType> particle) override {
         // iterator zurückgeben
         // gemeinsames iterator interface für CellNNIterator und vector_dist_iterator?
         auto it = cellList.template getNNIterator<NO_CHECK>(cellList.getCell({0}));
@@ -191,8 +191,8 @@ public:
         return cliterator.isNext();
     }
 
-    Particle<ParticleType> getNeighbor() override {
-        Particle<ParticleType> neighbor(this->particle_data, cliterator.get());
+    Particle<PropertyType> getNeighbor() override {
+        Particle<PropertyType> neighbor(this->particle_data, cliterator.get());
         return neighbor;
     }
 
@@ -216,15 +216,15 @@ class Transition {
 
 protected:
 
-    typedef typename ParticleMethodType::particleType ParticleType;
+    typedef typename ParticleMethodType::particleType PropertyType;
     ParticleMethodType particleMethod;
 
-//    explicit Transition(ParticleMethod<ParticleType> particleMethod_in) : particleMethod(particleMethod_in), particleData() {}
+//    explicit Transition(ParticleMethod<PropertyType> particleMethod_in) : particleMethod(particleMethod_in), particleData() {}
 
     int iteration = 0;
 
 
-    void executeInitialization(ParticleData<ParticleType> &particleData) {
+    void executeInitialization(ParticleData<PropertyType> &particleData) {
         size_t sz[1] = {10};
         auto it2 = particleData.vd.getGridIterator(sz);
         while (it2.isNext())
@@ -237,12 +237,12 @@ protected:
         }
     }
 
-    void executeEvolution(ParticleData<ParticleType> &particleData) {
+    void executeEvolution(ParticleData<PropertyType> &particleData) {
         auto it2 = particleData.vd.getDomainIterator();
         while (it2.isNext())
         {
             auto p = it2.get();
-            Particle<ParticleType> particle(particleData, p);
+            Particle<PropertyType> particle(particleData, p);
             // call (overriden) evolve method
             particleMethod.evolve(particle);
 //            particleData.vd.getPos(p)[0] = particleData.vd.template getProp<0>(p);
@@ -253,16 +253,16 @@ protected:
 
     }
 
-    virtual void executeInteraction(ParticleData<ParticleType> &particleData) {
+    virtual void executeInteraction(ParticleData<PropertyType> &particleData) {
         auto it2 = particleData.vd.getDomainIterator();
         while (it2.isNext())
         {
             auto p = it2.get();
-            Particle<ParticleType> particle(particleData, p);
+            Particle<PropertyType> particle(particleData, p);
 
             auto it = particleData.vd.getDomainAndGhostIterator();
             while (it.isNext()) {
-                Particle<ParticleType> neighbor(particleData, it.get());
+                Particle<PropertyType> neighbor(particleData, it.get());
                 if (particle != neighbor) {
 //                    std::cout << particle.template property<0>() << " neighbor prop 0 " << neighbor.getParticleData().vd.template getProp<0>(neighbor.getID()) << std::endl;
                     particleMethod.interact(particle, neighbor);
@@ -278,11 +278,11 @@ protected:
         while (it2.isNext())
         {
             auto p = it2.get();
-            Particle<ParticleType> particle(particleData, p);
+            Particle<PropertyType> particle(particleData, p);
 
             auto it = particleData.vd.getDomainAndGhostIterator();
             while (it.isNext()) {
-                Particle<ParticleType> neighbor(particleData, it.get());
+                Particle<PropertyType> neighbor(particleData, it.get());
                 if (particle != neighbor) {
 //                    std::cout << particle.template property<0>() << " neighbor prop 0 " << neighbor.getParticleData().vd.template getProp<0>(neighbor.getID()) << std::endl;
                     particleMethod.interact(particle, neighbor);
@@ -297,13 +297,13 @@ protected:
 
 public:
 
-    void initialize(ParticleData<ParticleType> &particleData) {
+    void initialize(ParticleData<PropertyType> &particleData) {
         executeInitialization(particleData);
 //        particleData.vd.map();
 //        particleData.vd.template ghost_get<0, 1>();
     }
 
-    void run(ParticleData<ParticleType> &particleData) {
+    void run(ParticleData<PropertyType> &particleData) {
 /*
         auto & vcl = create_vcluster();
         if (vcl.getProcessUnitID() == 0) {
@@ -325,24 +325,24 @@ public:
 
 template <typename ParticleMethodType>
 class TransitionCellList : public Transition<ParticleMethodType>{
-    using typename Transition<ParticleMethodType>::ParticleType;
+    using typename Transition<ParticleMethodType>::PropertyType;
 
     CELL_MEMBAL(1, float) cellList;
 
-    void executeInteraction(ParticleData<ParticleType> &particleData) override {
+    void executeInteraction(ParticleData<PropertyType> &particleData) override {
         particleData.vd.template updateCellList(cellList);
 
         auto it2 = particleData.vd.getDomainIterator();
         while (it2.isNext())
         {
             auto p = it2.get();
-            Particle<ParticleType> particle(particleData, p);
+            Particle<PropertyType> particle(particleData, p);
 
             auto it = cellList.template getNNIterator<NO_CHECK>(cellList.getCell(particleData.vd.getPos(p)));
 
 //            auto it = this->particleData.vd.getDomainAndGhostIterator();
             while (it.isNext()) {
-                Particle<ParticleType> neighbor(particleData, it.get());
+                Particle<PropertyType> neighbor(particleData, it.get());
                 if (particle != neighbor) {
 //                    std::cout << particle.template property<0>() << " neighbor prop 0 " << neighbor.getParticleData().vd.template getProp<0>(neighbor.getID()) << std::endl;
 //                    std::cout << "CellList" << std::endl;
@@ -355,7 +355,7 @@ class TransitionCellList : public Transition<ParticleMethodType>{
     }
 
 public:
-    explicit TransitionCellList(ParticleData<ParticleType> &particleData) : Transition<ParticleMethodType>(), cellList(particleData.vd.template getCellList<CELL_MEMBAL(1, float)>(0.5)) {}
+    explicit TransitionCellList(ParticleData<PropertyType> &particleData) : Transition<ParticleMethodType>(), cellList(particleData.vd.template getCellList<CELL_MEMBAL(1, float)>(0.5)) {}
 
 };
 

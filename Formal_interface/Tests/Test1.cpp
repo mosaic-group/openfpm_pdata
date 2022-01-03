@@ -15,7 +15,8 @@ int main(int argc, char* argv[]) {
 
 //    PD<ParticleMethodType> pd;
 
-    ParticleData<ParticleMethodType> particleData;
+    ParticleData<ParticleMethodType/*, InitializationType*/> particleData;
+
     TransitionCellList<ParticleMethodType> transition(particleData);
 
     while (!transition.stop(particleData)) {

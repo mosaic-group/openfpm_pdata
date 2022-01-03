@@ -8,13 +8,14 @@
 #include <Vector/vector_dist.hpp>
 #include "ParticleDataReference.hpp"
 #include "Domain.hpp"
-
+#include "GlobalVar.hpp"
 
 template <typename ParticleMethodType>
 class ParticleData {
 
-    typedef typename ParticleMethodType::particleType ParticleType;
+    typedef typename ParticleMethodType::propertyType PropertyType;
     typedef typename ParticleMethodType::positionType PositionType;
+    typedef typename ParticleMethodType::globalVarType GlobalVarType;
     static constexpr int dimension = ParticleMethodType::spaceDimension;
 
     float r_cut = 0.5;
@@ -24,7 +25,8 @@ class ParticleData {
     BoundaryCondition<ParticleMethodType::spaceDimension> bc;
 
 public:
-    vector_dist<ParticleMethodType::spaceDimension, PositionType , ParticleType> vd;
+    vector_dist<ParticleMethodType::spaceDimension, PositionType, PropertyType> vd;
+    GlobalVar<GlobalVarType> globalVar;
 
     ParticleData() : /*box(ParticleMethodType::domainMin,ParticleMethodType::domainMax),*/ ghost(r_cut),
         vd(0, getDomain<dimension, PositionType>(ParticleMethodType::domainMin,ParticleMethodType::domainMax), bc.periodic ,ghost) {
@@ -39,8 +41,8 @@ public:
         return vd.getPos(p);
     }
 
-    ParticleDataReference<dimension, PositionType, ParticleType> getReference() {
-        ParticleDataReference<dimension, PositionType, ParticleType> particleDataReference(&vd);
+    ParticleDataReference<dimension, PositionType, PropertyType> getReference() {
+        ParticleDataReference<dimension, PositionType, PropertyType> particleDataReference(&vd);
         return particleDataReference;
     }
 };

@@ -8,20 +8,20 @@
 #include <Vector/vector_dist.hpp>
 #include "ParticleData.hpp"
 
-template <typename ParticleType>
+template <int dimension, typename PositionType, typename ParticleType>
 class Particle {
-    ParticleData<ParticleType>& particle_data;
+    vector_dist<dimension, PositionType, ParticleType>& vd_ref;
     vect_dist_key_dx key;
 
 public:
-    Particle(ParticleData<ParticleType>& particle_data_in, vect_dist_key_dx key_in) : particle_data(particle_data_in), key(key_in) {}
+    Particle(vector_dist<dimension, PositionType, ParticleType>& vd_in, vect_dist_key_dx key_in) : vd_ref(vd_in), key(key_in) {}
 
-    template<unsigned int id> inline auto property() -> decltype(particle_data.template getProp<id>(key)) {
-        return particle_data.template getProp<id>(key);
+    template<unsigned int id> inline auto property() -> decltype(vd_ref.template getProp<id>(key)) {
+        return vd_ref.template getProp<id>(key);
     }
 
-    inline auto position() -> decltype(particle_data.getPos(key)) {
-        return particle_data.getPos(key);
+    inline auto position() -> decltype(vd_ref.getPos(key)) {
+        return vd_ref.getPos(key);
     }
 
     size_t getID() {
@@ -32,35 +32,14 @@ public:
         return key;
     }
 
-    ParticleData<ParticleType>& getParticleData() {
-        return particle_data;
-    }
-
-    bool operator== (Particle<ParticleType> rhs) {
+    bool operator== (Particle<dimension, PositionType, ParticleType> rhs) {
         return getID() == rhs.getID();
     }
 
-    bool operator!= (Particle<ParticleType> rhs) {
+    bool operator!= (Particle<dimension, PositionType, ParticleType> rhs) {
         return getID() != rhs.getID();
     }
 };
-
-
-
-template <int dimension, typename PositionType, typename ParticleType>
-class ParticleRef {
-    ParticleDataReference<dimension, PositionType, ParticleType> particleDataReference;
-    vect_dist_key_dx key;
-
-public:
-    ParticleRef(ParticleDataReference<dimension, PositionType, ParticleType> particle_data_ref_in, vect_dist_key_dx key_in) : particleDataReference(particle_data_ref_in), key(key_in) {}
-
-    template<unsigned int id> inline auto property() -> decltype(particleDataReference.template getProp<id>(key)) {
-        return particleDataReference.template getProp<id>(key);
-    }
-
-};
-
 
 
 #endif //OPENFPM_PDATA_PARTICLE_HPP

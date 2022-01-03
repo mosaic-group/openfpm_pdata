@@ -23,17 +23,26 @@ using position_type = float;
 template <int dimension>
 using particle_type_n = aggregate<float[dimension], float[dimension]>;
 
+// GlobalVar type
+using globalvar_type = aggregate<float, float, float, float>;
 
 template <int dimension>
-class Test1 : public ParticleMethod<dimension, position_type, particle_type_n<dimension>> {
+class Test1 : public ParticleMethod<dimension, position_type, particle_type_n<dimension>, globalvar_type> {
 public:
+
+    struct GV {
+        float dt = 0.1;
+        float t = 0;
+        float t_final = 30;
+        float r_cut = 0.5;
+    } globalvar;
 
     bool freeParticles;
 
     constexpr static position_type domainMin = 0.0;
-    constexpr static position_type domainMax = 1.0;
+    constexpr static position_type domainMax = 10.0;
 
-    typedef Particle<typename Test1::particleType> Particle_;
+//    typedef Particle<typename Test1::particleType> Particle_;
 
     static constexpr int position = 0;
     static constexpr int velocity = 1;
@@ -45,12 +54,15 @@ public:
 
     int iteration = 0;
 
-    void evolve(ParticleRef<dimension, position_type, particle_type_n<dimension>> particle) override {
+    void evolve(/*GlobalVar<globalvar_type> globalVar,*/ Particle<dimension, position_type, particle_type_n<dimension>> particle) override {
 
 //        std::cout << "evolution " << particle.template property<position>()[0] << " , " << particle.template property<velocity>()[0] << std::endl;
 
         // Euler time-stepping
-        particle.template property<position>()[0] += particle.template property<velocity>()[0];
+        particle.template position()[0] += particle.template property<velocity>()[0] * globalvar.dt;
+        particle.template position()[1] += particle.template property<velocity>()[1] * globalvar.dt;
+
+        //        particle.template property<position>()[0] += particle.template property<velocity>()[0] * globalvar.dt;
 
 //        std::cout << "evolution " << particle.template property<position>()[0] << " , " << particle.template property<velocity>()[0] << std::endl;
 
@@ -61,11 +73,16 @@ public:
     }*/
 
     bool stop() override {
-        iteration++;
+/*        iteration++;
 
 //        std::cout << "stop it " << iteration << std::endl;
         if (iteration > 2)
             return true;
+        return false;*/
+
+        if (globalvar.t > globalvar.t_final)
+            return true;
+        globalvar.t += globalvar.dt;
         return false;
     }
 };
