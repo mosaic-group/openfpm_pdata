@@ -606,7 +606,7 @@ void loadParameters(int argc, char *argv[], OpenFPM & _openfpm)
   fclose(file);
 }
 
-#ifndef __APPLE__
+#if !defined(__APPLE__) || !defined(defined(__powerpc64__))
 #include <fenv.h>
 #include <xmmintrin.h>
 #include <pmmintrin.h>
