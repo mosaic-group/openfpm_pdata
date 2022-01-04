@@ -614,7 +614,7 @@ void loadParameters(int argc, char *argv[], OpenFPM & _openfpm)
 
 int main(int argc, char *argv[])
 {
-#ifndef __APPLE__
+#if !defined(__APPLE__) && !defined(__powerpc64__)
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
   _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 #endif
