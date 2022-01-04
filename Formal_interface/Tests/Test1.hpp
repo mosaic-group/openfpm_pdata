@@ -96,8 +96,9 @@ class InitialCondition1 : InitialCondition<ParticleMethodType> {
     static constexpr int dimension = ParticleMethodType::spaceDimension;
 
 public:
-    constexpr static PositionType domainMin[dimension] = {0.0, 1.0};
-    constexpr static PositionType domainMax[dimension] = {0.0, 1.0};
+    constexpr static PositionType domainMin[dimension] = {0.0, 0.0};
+    constexpr static PositionType domainMax[dimension] = {10.0, 10.0};
+    constexpr static size_t boundaryCondition = PERIODIC;
 
 };
 

@@ -20,19 +20,17 @@ class ParticleData {
 
     float r_cut = 0.5;
 //    Box<ParticleMethodType::spaceDimension,float> box;
-//    size_t bc[ParticleMethodType::spaceDimension] = {NON_PERIODIC};
-    Ghost<ParticleMethodType::spaceDimension,float> ghost;
-    BoundaryCondition<ParticleMethodType::spaceDimension> bc;
+//    size_t bc[ParticleMethodType::spaceDimension] = InitialConditionType::boundaryConditions;
+    Ghost<dimension, PositionType> ghost;
+    BoundaryConditionGenerator<dimension> bc;
     Box<dimension, PositionType> domain_vd;
 
 public:
-    vector_dist<ParticleMethodType::spaceDimension, PositionType, PropertyType> vd;
+    vector_dist<dimension, PositionType, PropertyType> vd;
     GlobalVar<GlobalVarType> globalVar;
 
-    ParticleData() : /*box(ParticleMethodType::domainMin,ParticleMethodType::domainMax),*/ ghost(r_cut), domain_vd(InitialConditionType::domainMin, InitialConditionType::domainMax),
-        vd(0, domain_vd, bc.periodic ,ghost) {
-
-    }
+    ParticleData() : ghost(r_cut), domain_vd(InitialConditionType::domainMin, InitialConditionType::domainMax), bc(InitialConditionType::boundaryCondition),
+        vd(0, domain_vd, bc.array ,ghost) {}
 
     template<unsigned int id> inline auto getProp(vect_dist_key_dx p) -> decltype(vd.template getProp<id>(p)) {
         return vd.template getProp<id>(p);

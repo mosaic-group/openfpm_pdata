@@ -16,8 +16,10 @@ class InitialCondition {
     static constexpr int dimension = ParticleMethodType::spaceDimension;
 
 public:
-//    constexpr static PositionType domainMin[dimension];
-//    constexpr static PositionType domainMax[dimension];
+
+//    constexpr static PositionType domainMin[dimension] = {0.0, 1.0};
+//    constexpr static PositionType domainMax[dimension] = {0.0, 1.0};
+//    constexpr static size_t boundaryCondition[dimension] = {PERIODIC, PERIODIC};
 
 
 //    virtual void initialization(ParticleRef<ParticleMethodType::dimension, typename ParticleMethodType::PositionType, typename ParticleMethodType::ParticleType> particle) {}

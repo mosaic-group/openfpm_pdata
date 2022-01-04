@@ -8,17 +8,19 @@
 #include <Vector/vector_dist.hpp>
 
 template <int dimension>
-struct BoundaryCondition {
+struct BoundaryConditionGenerator {
     size_t periodic[dimension]{};
     size_t non_periodic[dimension]{};
-
-    BoundaryCondition() {
+    size_t array[dimension]{};
+    BoundaryConditionGenerator(size_t value) {
         for (int i = 0; i < dimension; i++) {
             periodic[i] = PERIODIC;
             non_periodic[i] = NON_PERIODIC;
+            array[i] = value;
         }
     }
 };
+
 
 template <int dimension, typename T>
 Box<dimension, T> getDomain(T min, T max) {
