@@ -8,16 +8,15 @@
 constexpr int dimension = 2;
 
 typedef Test1<dimension> ParticleMethodType;
+typedef InitialCondition1<ParticleMethodType> InitialConditionType;
 
 int main(int argc, char* argv[]) {
 
     openfpm_init(&argc,&argv);
 
-//    PD<ParticleMethodType> pd;
+    ParticleData<ParticleMethodType, InitialConditionType> particleData;
 
-    ParticleData<ParticleMethodType/*, InitializationType*/> particleData;
-
-    TransitionCellList<ParticleMethodType> transition(particleData);
+    TransitionCellList<ParticleMethodType, InitialConditionType> transition(particleData);
 
     while (!transition.stop(particleData)) {
         transition.run_step(particleData);

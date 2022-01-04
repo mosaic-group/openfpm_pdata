@@ -10,7 +10,7 @@
 #include "Particle.hpp"
 #include <random>
 
-template <typename ParticleMethodType>
+template <typename ParticleMethodType, typename InitialConditionType>
 class Transition {
 
 protected:
@@ -25,7 +25,7 @@ protected:
 
     int iteration = 0;
 
-    void executeInitialization(ParticleData<ParticleMethodType> &particleData) {
+    void executeInitialization(ParticleData<ParticleMethodType, InitialConditionType> &particleData) {
 
         std::random_device rd;  // Will be used to obtain a seed for the random number engine
         std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
@@ -41,7 +41,8 @@ protected:
             particleData.vd.add();
             auto node = it2.get();
             for (int i = 0; i < ParticleMethodType::spaceDimension; i++) {
-                particleData.vd.getLastPos()[i] = node.get(i) * (it2.getSpacing(i)) + dis_pos(gen);
+//                particleData.vd.getLastPos()[i] = node.get(i) * (it2.getSpacing(i)) + dis_pos(gen);
+                particleData.vd.getLastPos()[i] = node.get(i) * it2.getSpacing(i);
 //                particleData.vd.template getLastProp<0>()[i] = node.get(i);
                 particleData.vd.template getLastProp<1>()[i] = dis_vel(gen);
             }
@@ -49,7 +50,7 @@ protected:
         }
     }
 
-    void executeEvolution(ParticleData<ParticleMethodType> &particleData) {
+    void executeEvolution(ParticleData<ParticleMethodType, InitialConditionType> &particleData) {
         auto it2 = particleData.vd.getDomainIterator();
         while (it2.isNext())
         {
@@ -66,7 +67,7 @@ protected:
 
     }
 
-    virtual void executeInteraction(ParticleData<ParticleMethodType> &particleData) {
+    virtual void executeInteraction(ParticleData<ParticleMethodType, InitialConditionType> &particleData) {
 /*
         auto it2 = particleData.vd.getDomainIterator();
         while (it2.isNext())
@@ -91,13 +92,13 @@ protected:
 
 public:
 
-    void initialize(ParticleData<ParticleMethodType> &particleData) {
+    void initialize(ParticleData<ParticleMethodType, InitialConditionType> &particleData) {
         executeInitialization(particleData);
 //        particleData.vd.map();
 //        particleData.vd.template ghost_get<0, 1>();
     }
 
-    void run_step(ParticleData<ParticleMethodType> &particleData) {
+    void run_step(ParticleData<ParticleMethodType, InitialConditionType> &particleData) {
 /*
         auto & vcl = create_vcluster();
         if (vcl.getProcessUnitID() == 0) {
@@ -118,18 +119,18 @@ public:
         iteration++;
     }
 
-    bool stop(ParticleData<ParticleMethodType> &particleData) {
+    bool stop(ParticleData<ParticleMethodType, InitialConditionType> &particleData) {
         return particleMethod.stop();
     }
 };
 
-template <typename ParticleMethodType>
-class TransitionCellList : public Transition<ParticleMethodType>{
-    using typename Transition<ParticleMethodType>::PropertyType;
+template <typename ParticleMethodType, typename InitialConditionType>
+class TransitionCellList : public Transition<ParticleMethodType, InitialConditionType>{
+    using typename Transition<ParticleMethodType, InitialConditionType>::PropertyType;
 
     CELL_MEMBAL(ParticleMethodType::spaceDimension, float) cellList;
 
-    void executeInteraction(ParticleData<ParticleMethodType> &particleData) override {
+    void executeInteraction(ParticleData<ParticleMethodType, InitialConditionType> &particleData) override {
 /*
         particleData.vd.template updateCellList(cellList);
 
@@ -157,7 +158,7 @@ class TransitionCellList : public Transition<ParticleMethodType>{
     }
 
 public:
-    explicit TransitionCellList(ParticleData<ParticleMethodType> &particleData) : Transition<ParticleMethodType>(), cellList(particleData.vd.template getCellList<CELL_MEMBAL(ParticleMethodType::spaceDimension, float)>(0.5)) {
+    explicit TransitionCellList(ParticleData<ParticleMethodType, InitialConditionType> &particleData) : Transition<ParticleMethodType, InitialConditionType>(), cellList(particleData.vd.template getCellList<CELL_MEMBAL(ParticleMethodType::spaceDimension, float)>(0.5)) {
         this->initialize(particleData);
 
     }

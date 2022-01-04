@@ -10,7 +10,7 @@
 #include "Domain.hpp"
 #include "GlobalVar.hpp"
 
-template <typename ParticleMethodType>
+template <typename ParticleMethodType, typename InitialConditionType>
 class ParticleData {
 
     typedef typename ParticleMethodType::propertyType PropertyType;
@@ -23,13 +23,14 @@ class ParticleData {
 //    size_t bc[ParticleMethodType::spaceDimension] = {NON_PERIODIC};
     Ghost<ParticleMethodType::spaceDimension,float> ghost;
     BoundaryCondition<ParticleMethodType::spaceDimension> bc;
+    Box<dimension, PositionType> domain_vd;
 
 public:
     vector_dist<ParticleMethodType::spaceDimension, PositionType, PropertyType> vd;
     GlobalVar<GlobalVarType> globalVar;
 
-    ParticleData() : /*box(ParticleMethodType::domainMin,ParticleMethodType::domainMax),*/ ghost(r_cut),
-        vd(0, getDomain<dimension, PositionType>(ParticleMethodType::domainMin,ParticleMethodType::domainMax), bc.periodic ,ghost) {
+    ParticleData() : /*box(ParticleMethodType::domainMin,ParticleMethodType::domainMax),*/ ghost(r_cut), domain_vd(InitialConditionType::domainMin, InitialConditionType::domainMax),
+        vd(0, domain_vd, bc.periodic ,ghost) {
 
     }
 

@@ -11,6 +11,7 @@
 #include "../ParticleData.hpp"
 #include "../ParticleMethod.hpp"
 #include "../Transition.hpp"
+#include "../InitialCondition.hpp"
 
 //typedef aggregate<float, float> particle_type;
 //typedef aggregate<float, float, float, float> globalvar_type;
@@ -86,6 +87,20 @@ public:
         return false;
     }
 };
+
+template <typename ParticleMethodType>
+class InitialCondition1 : InitialCondition<ParticleMethodType> {
+
+    typedef typename ParticleMethodType::propertyType PropertyType;
+    typedef typename ParticleMethodType::positionType PositionType;
+    static constexpr int dimension = ParticleMethodType::spaceDimension;
+
+public:
+    constexpr static PositionType domainMin[dimension] = {0.0, 1.0};
+    constexpr static PositionType domainMax[dimension] = {0.0, 1.0};
+
+};
+
 
 
 #endif //OPENFPM_PDATA_TEST1_HPP
