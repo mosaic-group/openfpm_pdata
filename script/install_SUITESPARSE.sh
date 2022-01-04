@@ -45,5 +45,5 @@ make library "CC=$CC" "CXX=$CXX" "CUDA=no" "INSTALL=$1/SUITESPARSE" "INSTALL_LIB
 echo "Making install"
 make install "CC=$CC" "CXX=$CXX" "CUDA=no" "INSTALL=$1/SUITESPARSE" "INSTALL_LIB=$1/SUITESPARSE/lib" "INSTALL_INCLUDE=$1/SUITESPARSE/include" "BLAS=-L$1/OPENBLAS/lib -lopenblas -pthread" "LAPACK="
 # Mark the installation
-echo 2 > $1/SUITESPARSE/version
+echo 4 > $1/SUITESPARSE/version
 rm SuiteSparse-5.7.2.tar.gz

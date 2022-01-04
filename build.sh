@@ -1,6 +1,7 @@
 #! /bin/bash
 # Make a directory in /tmp/OpenFPM_pdata
 
+
 workspace=$1
 hostname=$(hostname)
 target=$3
@@ -26,6 +27,7 @@ if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
 	source /opt/rh/devtoolset-8/enable
 	./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
 	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$branch/CMAKE/bin:$PATH"
+	foward_options="--with-cuda-on-backend=OpenMP"
 fi
 
 if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
@@ -33,12 +35,16 @@ if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
 	echo "Ubuntu node"
 	./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/ 4
 	export PATH="/opt/bin:$PATH"
-	foward_options="--enable-cuda-on-cpu"
+	foward_options="--with-cuda-on-backend=OpenMP"
 fi
 
 if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 	echo "Mac node"
+	# reinstall all deps
 	export PATH="/usr/local/bin:$PATH"
+	foward_options="--with-cuda-on-backend=SEQUENTIAL"
+	./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
+	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$branch/CMAKE/bin:$PATH"
 #	rm -rf /Users/admin/openfpm_dependencies/openfpm_pdata/$branch/
 #	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/PETSC
         ./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
@@ -64,9 +70,15 @@ else
 fi
 
 if [ x"$with_gpu" == x"1" ]; then
-	gpu_support=-g
+	foward_options="$foward_options --with-cuda-on-backend=CUDA"
 else
 	gpu_support=
+fi
+
+if [ x"$branch" == x"master_openmp" ]; then
+
+	foward_options="$foward_options --with-cuda-on-backend=OpenMP"
+
 fi
 
 #### If you have a dep_dir file change the branch name to the dep_dir
@@ -108,6 +120,8 @@ elif [ x"$comp_type" == x"garbageinjv" ]; then
 	foward_options="$foward_options  --enable-garbageinjv"
 elif [ x"$comp_type" == x"asan" ]; then
         foward_options="$foward_options --enable-asan"
+elif [ x"$comp_type" == x"openmp" ]; then
+	foward_options="$foward_options --with-cuda-on-backend=OpenMP"
 fi
 
 echo "Installing with: ./install $gpu_support  -i $dependency_dir $install_options -c \"$installation_dir $foward_options  \"  "

@@ -5,7 +5,7 @@ add_definitions(-DSCAN_WITH_CUB)
 ########################### Executables
 
 
-if(CUDA_FOUND OR CUDA_ON_CPU OR HIP_FOUND)
+if(NOT CUDA_ON_BACKEND STREQUAL "None")
 	set(CUDA_SOURCES 
 	    Grid/tests/sgrid_dist_id_gpu_unit_tests.cu
 	    Vector/cuda/vector_dist_gpu_MP_tests.cu
@@ -21,16 +21,16 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
         add_definitions("-DBOOST_MPL_CFG_HAS_TYPEOF")
 endif()
 
-if (CUDA_ON_CPU)
-        add_definitions(-DCUDA_ON_CPU)
+
+if (CUDA_ON_BACKEND STREQUAL "OpenMP" OR CUDA_ON_BACKEND STREQUAL "SEQUENTIAL")
+        set_source_files_properties(${CUDA_SOURCES} PROPERTIES COMPILE_FLAGS "-D__NVCC__ -DCUDART_VERSION=11000")
         set_source_files_properties(${CUDA_SOURCES} PROPERTIES LANGUAGE CXX)
-	set_source_files_properties(${CUDA_SOURCES} PROPERTIES COMPILE_FLAGS "-D__NVCC__ -DCUDART_VERSION=11000")
         if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
                 add_definitions("-x c++")
         endif()
 endif()
 
-if ( HIP_ENABLE AND HIP_FOUND )
+if ( CUDA_ON_BACKEND STREQUAL "HIP" AND HIP_FOUND )
 
         list(APPEND HIP_HIPCC_FLAGS ${CMAKE_CXX_FLAGS_DEBUG})
 
@@ -38,10 +38,10 @@ if ( HIP_ENABLE AND HIP_FOUND )
                 list(APPEND HIP_HIPCC_FLAGS -O0)
         endif()
 
-	list(APPEND HIP_HIPCC_FLAGS -D__NVCC__ -D__HIP__  -DCUDART_VERSION=11000 -D__CUDACC__ -D__CUDACC_VER_MAJOR__=11 -D__CUDACC_VER_MINOR__=0 -D__CUDACC_VER_BUILD__=0)
+	list(APPEND HIP_HIPCC_FLAGS -D__NVCC__ -D__HIP__  -DCUDART_VERSION=11000 -D__CUDACC__ -D__CUDACC_VER_MAJOR__=11 -D__CUDACC_VER_MINOR__=0 -D__CUDACC_VER_BUILD__=0 --std=c++14)
         set_source_files_properties(${CUDA_SOURCES} PROPERTIES LANGUAGE CXX)
 
-        set(CMAKE_CXX_COMPILER ${HIP_HIPCC_EXECUTABLE})
+	#        set(CMAKE_CXX_COMPILER ${HIP_HIPCC_EXECUTABLE})
 
         hip_add_executable(pdata ${CUDA_SOURCES} ${OPENFPM_INIT_FILE} main.cpp
 							  Amr/grid_dist_amr_unit_tests.cpp
@@ -93,6 +93,10 @@ else()
 
 	add_library(ofpm_pdata STATIC lib/pdata.cpp)
 	add_library(ofpm_pdata_python SHARED lib/pdata_python.cpp)
+
+	set_property(TARGET pdata PROPERTY CUDA_ARCHITECTURES OFF)
+	set_property(TARGET ofpm_pdata PROPERTY CUDA_ARCHITECTURES OFF)
+	set_property(TARGET ofpm_pdata_python PROPERTY CUDA_ARCHITECTURES OFF)
 
 endif()
 
@@ -154,7 +158,7 @@ endif()
 target_include_directories (pdata PUBLIC ${PARMETIS_ROOT}/include)
 target_include_directories (pdata PUBLIC ${METIS_ROOT}/include)
 target_include_directories (pdata PUBLIC ${HDF5_ROOT}/include)
-target_include_directories (pdata PUBLIC ${CUDA_INCLUDE_DIRS})
+target_include_directories (pdata PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_devices/src/)
 target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_vcluster/src/)
@@ -196,6 +200,9 @@ target_link_libraries(pdata ${MPI_C_LIBRARIES})
 target_link_libraries(pdata ${MPI_CXX_LIBRARIES})
 target_link_libraries(pdata vcluster)
 target_link_libraries(pdata ofpmmemory)
+if (OpenMP_FOUND)
+	target_link_libraries(pdata OpenMP::OpenMP_CXX)
+endif()
 
 #target_link_libraries(isolation_pdata ${Boost_LIBRARIES})
 #target_link_libraries(isolation_pdata ${PARMETIS_LIBRARIES})
@@ -236,11 +243,15 @@ if (TEST_COVERAGE)
     set(PDATA_FULL_SOURCES ${PDATA_SOURCES} ${MEM_SOURCES} ${DATA_SOURCES} ${VCLUSTER_SOURCES} ${IO_SOURCES} ${NUMERIC_SOURCES})
     set(PDATA_FULL_SOURCES_CU ${PDATA_SOURCES} ${MEM_SOURCES} ${DATA_SOURCES} ${VCLUSTER_SOURCES} ${IO_SOURCES} ${NUMERIC_SOURCES})
     list(FILTER PDATA_FULL_SOURCES_CU INCLUDE REGEX ^.*\.cu)
-    set_source_files_properties(${PDATA_FULL_SOURCES_CU} PROPERTIES COMPILE_FLAGS "-D__NVCC__ -DCUDART_VERSION=11000")
 
-    if (CUDA_ON_CPU)
-        set_source_files_properties(${PDATA_FULL_SOURCES_CU} PROPERTIES LANGUAGE CXX)
+    ### Test coverage are done in SEQUENTIAL
+    if (NOT CUDA_ON_BACKEND STREQUAL "SEQUENTIAL")
+	    message(FATAL_ERROR "Error test coverage must be done with CUDA_ON_BACKEND=SEQUENTIAL backend")
     endif()
+
+    set_source_files_properties(${PDATA_FULL_SOURCES_CU} PROPERTIES COMPILE_FLAGS "-D__NVCC__ -DCUDART_VERSION=11000")
+    set_source_files_properties(${PDATA_FULL_SOURCES_CU} PROPERTIES LANGUAGE CXX)
+    add_definitions("-x c++")
 
     add_executable(pdata_full ${PDATA_FULL_SOURCES})
     
@@ -258,13 +269,14 @@ if (TEST_COVERAGE)
     target_link_libraries(pdata_full -lgcov --coverage)
     target_link_libraries(pdata_full ${PDATA_LIBS})
     target_link_libraries(pdata_full ${NUMERIC_LIBS})
+    target_link_libraries(pdata_full Boost::thread)
     target_include_directories(pdata_full PUBLIC ${PDATA_INCLUDES})
     target_include_directories(pdata_full PUBLIC ${NUMERIC_INCLUDES})
 endif()
 
 
 
-target_include_directories (ofpm_pdata PUBLIC ${CUDA_INCLUDE_DIRS})
+target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
 target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/config)
@@ -422,7 +434,7 @@ target_include_directories(
   ${CMAKE_INSTALL_PREFIX}/openfpm_numerics/include
   ${PARMETIS_ROOT}/include
   ${METIS_ROOT}/include
-  ${CUDA_INCLUDE_DIRS}
+  ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
   ${PETSC_INCLUDES}
   ${HDF5_ROOT}/include
   ${LIBHILBERT_INCLUDE_DIRS}
@@ -436,7 +448,11 @@ endif()
 
 target_compile_options(binary_config INTERFACE $<$<COMPILE_LANGUAGE:CUDA>: ${WARNING_SUPPRESSION_AND_OPTION_NVCC} >)
 
-target_link_libraries(binary_config INTERFACE ${Boost_LIBRARIES})
+target_link_libraries(binary_config INTERFACE Boost::context)
+target_link_libraries(binary_config INTERFACE Boost::fiber)
+target_link_libraries(binary_config INTERFACE Boost::filesystem)
+target_link_libraries(binary_config INTERFACE Boost::iostreams)
+target_link_libraries(binary_config INTERFACE Boost::program_options)
 target_link_libraries(binary_config INTERFACE ${PARMETIS_LIBRARIES})
 target_link_libraries(binary_config INTERFACE -L${METIS_ROOT}/lib metis)
 target_link_libraries(binary_config INTERFACE ${HDF5_LIBRARIES})
@@ -480,7 +496,7 @@ install(
 
 install(
   FILES
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/openfpmConfigVars-configure.cmake"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/openfpmConfig-Vars.cmake"
   DESTINATION
     cmake/
 )

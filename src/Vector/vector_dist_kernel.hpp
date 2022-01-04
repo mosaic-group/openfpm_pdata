@@ -12,7 +12,7 @@ constexpr unsigned int POS_PROP = (unsigned int)-1;
 
 #ifdef CUDA_GPU
 
-#define GET_PARTICLE(vd) blockDim.x*blockIdx.x + threadIdx.x; if (blockDim.x*blockIdx.x + threadIdx.x >= vd.size_local()) {return;};
+#define GET_PARTICLE(vd) blockDim.x*blockIdx.x + threadIdx.x; if (blockDim.x*blockIdx.x + threadIdx.x >= static_cast<int>(vd.size_local())) {return;};
 #define GET_PARTICLE_SORT(p,NN) if (blockDim.x*blockIdx.x + threadIdx.x >= NN.get_g_m()) {return;}\
 							  else{p = NN.getDomainSortIds().template get<0>(blockDim.x*blockIdx.x + threadIdx.x);}
 
@@ -84,6 +84,9 @@ public:
 
 	//! Indicate this structure has a function to check the device pointer
 	typedef int yes_has_check_device_pointer;
+
+	//! aggregate stored by the vector
+	typedef prop value_type;
 
 	vector_dist_ker()
 	:g_m(0)

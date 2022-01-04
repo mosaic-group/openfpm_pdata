@@ -143,10 +143,12 @@ BOOST_AUTO_TEST_CASE( Metis_distribution_test)
 	{
 	#ifdef HAVE_OSX
 
-		test = compare("0_vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_osx_test.vtk");
-		BOOST_REQUIRE_EQUAL(true,test);
-		test = compare("0_vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_osx_test.vtk");
-		BOOST_REQUIRE_EQUAL(true,test);
+		#ifndef __ARM_ARCH
+			test = compare("0_vtk_metis_distribution.vtk", "src/Decomposition/Distribution/test_data/vtk_metis_distribution_osx_test.vtk");
+			BOOST_REQUIRE_EQUAL(true,test);
+			test = compare("0_vtk_metis_distribution_red.vtk","src/Decomposition/Distribution/test_data/vtk_metis_distribution_red_osx_test.vtk");
+			BOOST_REQUIRE_EQUAL(true,test);
+		#endif
 
 	#elif __GNUC__ == 6 && __GNUC_MINOR__ == 3
 
@@ -220,8 +222,10 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 
 #ifdef HAVE_OSX
 
+		#ifndef __ARM_ARCH
 		bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_vtk_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/" + std::to_string(v_cl.getProcessUnitID()) + "_vtk_parmetis_distribution_0_osx_test.vtk");
 		BOOST_REQUIRE_EQUAL(true,test);
+		#endif
 
 #else
 
@@ -265,9 +269,11 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 
 #ifdef HAVE_OSX
 
+				#ifndef __ARM_ARCH
 				// Check
 				bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_" + str.str() + ".vtk", "src/Decomposition/Distribution/test_data/" + std::to_string(v_cl.getProcessUnitID()) + "_" + str.str() + "_osx_test.vtk");
 				BOOST_REQUIRE_EQUAL(true,test);
+				#endif
 
 #else
 
@@ -326,8 +332,10 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 
 	#ifdef HAVE_OSX
 
+		#ifndef __ARM_ARCH
 		bool test = compare("vtk_dist_parmetis_distribution_0.vtk","src/Decomposition/Distribution/test_data/vtk_dist_parmetis_distribution_0_osx_test.vtk");
 		BOOST_REQUIRE_EQUAL(true,test);
+		#endif
 
 	#else
 
@@ -369,8 +377,11 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 			if (v_cl.getProcessUnitID() == 0)
 			{
 #ifdef HAVE_OSX
+
+				#ifndef __ARM_ARCH
 				bool test = compare(str.str() + ".vtk",std::string("src/Decomposition/Distribution/test_data/") + str.str() + "_osx_test.vtk");
 				BOOST_REQUIRE_EQUAL(true,test);
+				#endif
 
 #else
 

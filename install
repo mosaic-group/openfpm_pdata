@@ -1,4 +1,5 @@
 #! /bin/bash
+
 source script/help
 source script/discover_os
 source script/show_solutions
@@ -8,6 +9,7 @@ source script/set_mpi
 source script/conf_PETSC
 source script/update_openfpm
 source script/solve_python
+source script/solve_clangomp
 source script/install_gdbgui
 
 
@@ -87,6 +89,16 @@ while getopts di:v:smghc:nul FLAG; do
           ;;
 	esac
 done
+
+
+if [ x"$gpu_support" == x"0" ]; then
+  if [[ $configure_options == *"--with-cuda-on-backend=CUDA"* ]]; then
+    gpu_support=1
+  fi
+else
+  configure_options=" $configure_options --with-cuda-on-backend=CUDA"
+fi
+
 
 ### Configure options
 
@@ -267,6 +279,7 @@ fi
 lin_alg_dir=""
 lin_alg_lib=""
 lin_alg_inc=""
+configure_options="CXX=mpic++ $configure_options"
 if [ -d "$i_dir/BOOST" ]; then
     configure_options=" $configure_options --with-boost=$i_dir/BOOST "
 fi
@@ -295,10 +308,6 @@ configure_options=" $configure_options --with-parmetis=$i_dir/PARMETIS "
 ./script/install_Metis.sh $i_dir $CC $CXX $ncore
 configure_options=" $configure_options --with-metis=$i_dir/METIS "
 
-if [ x"$gpu_support" == x"1" ]; then
-	configure_options=" $configure_options --enable-gpu "
-fi
-
 MPI_installed=0
 MPI_System_prv=1
 METIS_installed=1
@@ -315,6 +324,7 @@ HDF5_installed=0
 HDF5_System_prv=1
 LIBHILBERT_installed=0
 VCDEVEL_installed=0
+CLANGOMP_installed=0
 conf_err=1
 
 
@@ -348,12 +358,16 @@ else
             if [ x"$CXX" == x"icpc" ]; then
               ./script/install_BOOST.sh $i_dir $ncore intel-linux
             elif [ x"$CXX" == x"clang++" ]; then
-              ./script/install_BOOST.sh $i_dir $ncore darwin
+              ./script/install_BOOST.sh $i_dir $ncore clang
             else
-	      if [ x"$CXX" == x"gcc" ]; then
-              	./script/install_BOOST.sh $i_dir $ncore gcc
+	      if [ x"$CXX" == x"g++" ]; then
+		if [ x"$is_apple_llvm" == x"yes" ]; then
+		  ./script/install_BOOST.sh $i_dir $ncore clang
+		else
+              	  ./script/install_BOOST.sh $i_dir $ncore gcc
+		fi
 	      else
-		./script/install_BOOST.sh $i_dir $ncore gcc $(which $CXX) $dgc_major $dgc_middle
+		./script/install_BOOST.sh $i_dir $ncore gcc $(which $CXX)
 	      fi
             fi
             BOOST_installed=1
@@ -394,6 +408,19 @@ else
             ./script/install_VCDEVEL.sh $i_dir $ncore $CC $CXX
             configure_options=" $configure_options --with-vcdevel=$i_dir/VCDEVEL "
             VCDEVEL_installed=1
+        elif [ $conf_err -eq 220 ]; then
+	    if [ x"$platform" == x"osx" ]; then
+            	echo "OpenMP has not been found for your compiler"
+            	if [ $CLANGOMP_installed -eq 1 ]; then
+                	echo "Error the installation of openmp for clang failed"
+                	exit 1
+            	fi
+            	solve_clangomp $platform
+            	CLANGOMP_installed=1
+	    else
+		echo "We do not know how to install OpenMP for your compiler"
+	        exit 1
+	    fi
         elif [ $conf_err -ne 0 ]; then
             echo "I do not know how to recover from this error"
             exit 1
@@ -415,6 +442,7 @@ fi
 ### Create example.mk
 install_base=$(cat install_dir)
 openmp_flags="$(cat openmp_flags)"
+openmp_libs="$(cat openmp_libs)"
 cuda_include_dirs=$(cat cuda_include)
 hip_enabled=$(cat hip_enabled)
 if [ x"$hip_enabled" == x"1" ]; then
@@ -433,18 +461,13 @@ elif [ -d "$i_dir/HDF5/lib64" ]; then
 fi
 
 echo "INCLUDE_PATH=$mpi_include_dirs $cuda_include_dirs -Wno-deprecated-declarations $openmp_flags  -I.  -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/VCDEVEL/include  -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc -I$i_dir/BLITZ/include -I$i_dir/ALGOIM/include" > example.mk
-echo "LIBS_PATH=$mpi_libs $openmp_flags -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/VCDEVEL/lib  -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib $hdf5_lib_dir -L$i_dir/LIBHILBERT/lib  $lin_alg_dir " >> example.mk
+echo "LIBS_PATH=$mpi_libs -L$install_base/openfpm_devices/lib -L$install_base/openfpm_pdata/lib  -L$install_base/openfpm_vcluster/lib -L$i_dir/VCDEVEL/lib  -L$i_dir/METIS/lib -L$i_dir/PARMETIS/lib  -L$i_dir/BOOST/lib $hdf5_lib_dir -L$i_dir/LIBHILBERT/lib  $lin_alg_dir " >> example.mk
 if [ x"$cuda_on_cpu" == x"YES" ]; then
    echo "CUDA_ON_CPU=YES" >> example.mk
 fi
-if [ x"$gpu_support" == x"1" ]; then
-    echo "LIBS=$mpi_libs -lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $(cat cuda_lib) $lin_alg_lib -ldl -lboost_filesystem -lboost_system" >> example.mk
-    echo "LIBS_CUDA_ON_CPU=-lvcluster_cuda_on_cpu -lofpmmemory_cuda_on_cpu -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $(cat cuda_lib) $lin_alg_lib -lboost_filesystem -lboost_system -lboost_context" >> example.mk
-else
-    echo "LIBS=-lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $lin_alg_lib -ldl -lboost_filesystem -lboost_system $optional_boost" >> example.mk
-    echo "LIBS_CUDA_ON_CPU=\$(LIBS)" >> example.mk
-fi
-echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" $(cat openmp_flags) "$(cat cuda_options)" $mpi_include_dirs -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc -I$i_dir/BLITZ/include -I$i_dir/ALGOIM/include" >> example.mk
+echo "LIBS=$openmp_flags $mpi_libs $openmp_libs -lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $(cat cuda_lib) $lin_alg_lib -ldl -lboost_filesystem -lboost_system $optional_boost" >> example.mk
+echo "LIBS_NVCC=-Xcompiler=$openmp_flags $mpi_libs -lvcluster -lofpm_pdata -lofpmmemory -lparmetis -lmetis -lboost_iostreams -lboost_program_options -lhdf5 -llibhilbert -lVc  $(cat cuda_lib) $lin_alg_lib -ldl -lboost_filesystem -lboost_system $optional_boost" >> example.mk
+echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" -Xcompiler=$(cat openmp_flags) "$(cat cuda_options)" $mpi_include_dirs -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc -I$i_dir/BLITZ/include -I$i_dir/ALGOIM/include" >> example.mk
 cp example.mk src/example.mk
 cp example.mk example/example.mk
 

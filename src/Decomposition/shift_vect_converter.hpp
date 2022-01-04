@@ -56,7 +56,7 @@ class shift_vect_converter
 					case 0:
 						shifts.get(cmbs[j].lin()).template get<0>()[k] = 0;
 						break;
-					case -1:
+					case (char)-1:
 						shifts.get(cmbs[j].lin()).template get<0>()[k] = (domain.getHigh(k) - domain.getLow(k));
 						break;
 					}
@@ -109,7 +109,7 @@ class shift_vect_converter
 					case 0:
 						shifts.get(lin_cmb).template get<0>()[k] = 0;
 						break;
-					case -1:
+					case (char)-1:
 						shifts.get(lin_cmb).template get<0>()[k] = (domain.getHigh(k) - domain.getLow(k));
 						break;
 					}

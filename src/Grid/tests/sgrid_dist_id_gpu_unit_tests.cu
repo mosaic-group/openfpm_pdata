@@ -5,6 +5,7 @@
 #include <boost/test/unit_test.hpp>
 #include "Grid/grid_dist_id.hpp"
 
+
 BOOST_AUTO_TEST_SUITE( sgrid_gpu_test_suite )
 
 template<unsigned int p>
@@ -25,6 +26,8 @@ struct insert_kernel2D
 	    sg.flush_block_insert();
 	}
 };
+
+
 
 template<unsigned int p>
 struct insert_kernel3D
@@ -177,9 +180,67 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_output )
 	std::string file_test("sgrid_gpu_output_" + std::to_string(v_cl.size()) + "_" + std::to_string(v_cl.rank())  + ".vtk");
 	std::string file("sgrid_gpu_output_" + std::to_string(v_cl.rank()) + ".vtk");
 
+	#ifndef HAVE_OSX
 	bool test = compare(file,"test_data/" + file_test);
 
 	BOOST_REQUIRE_EQUAL(true,test);
+	#endif
+}
+
+
+BOOST_AUTO_TEST_CASE( sgrid_gpu_test_save_and_load )
+{
+/*	auto & v_cl = create_vcluster();
+
+	if (v_cl.size() > 3){return;}
+
+	size_t sz[2] = {17,17};
+	periodicity<2> bc = {PERIODIC,PERIODIC};
+
+	Ghost<2,long int> g(1);
+
+	Box<2,float> domain({0.0,0.0},{1.0,1.0});
+
+	sgrid_dist_id_gpu<2,float,aggregate<float,float,float[2]>> gdist(sz,domain,g,bc);
+
+	gdist.template setBackgroundValue<0>(666);
+
+	/////// GPU insert + flush
+
+	Box<2,size_t> box({1,1},{15,15});
+	auto it = gdist.getGridIterator(box.getKP1(),box.getKP2());
+
+	/////// GPU Run kernel
+
+	typedef typename GetAddBlockType<decltype(gdist)>::type InsertBlockT;
+
+	float c = 5.0;
+
+	gdist.addPoints([] __device__ (int i, int j)
+			        {
+						return true;
+			        },
+			        [c] __device__ (InsertBlockT & data, int i, int j)
+			        {
+			        	data.template get<0>() = c + i + j;
+						data.template get<1>() = c + 1000 + i + j;
+						
+						data.template get<2>()[0] = i;
+						data.template get<2>()[1] = j;
+			        }
+			        );
+
+	gdist.template flush<smax_<0>,smax_<1>,smax_<2>>(flush_type::FLUSH_ON_DEVICE);
+
+	gdist.template deviceToHost<0>();
+
+	gdist.save("sgrid_gpu_output_hdf5");
+
+	// Now load
+
+	sgrid_dist_id_gpu<2,float,aggregate<float,float,float[2]>> gdist2(sz,domain,g,bc);
+
+	gdist2.load("sgrid_gpu_output_hdf5");*/
 }
 
 void sgrid_ghost_get(size_t (& sz)[2],size_t (& sz2)[2])
@@ -617,6 +678,198 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_conv2_test_3d )
 		float sub2 = gdist.template get<3>(p);
 
 		if (sub1 != 6.0 || sub2 != 6.0)
+		{
+			std::cout << sub1 << "  " << sub2 << std::endl;
+			std::cout << gdist.template get<0>(p_xp1) << "   " << gdist.template get<0>(p_xm1) << std::endl;
+			std::cout << gdist.template get<1>(p_xp1) << "   " << gdist.template get<1>(p_xm1) << std::endl;
+			match = false;
+			break;
+		}
+
+		++it3;
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+}
+
+BOOST_AUTO_TEST_CASE( sgrid_gpu_test_conv_cross_block_test_3d )
+{
+	#ifdef CUDA_ON_CPU
+	size_t sz[3] = {20,20,20};
+	#else
+	size_t sz[3] = {60,60,60};
+	#endif
+	periodicity<3> bc = {PERIODIC,PERIODIC,PERIODIC};
+
+	Ghost<3,long int> g(1);
+
+	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	sgrid_dist_id_gpu<3,float,aggregate<float,float,float,float>> gdist(sz,domain,g,bc);
+
+	gdist.template setBackgroundValue<0>(666);
+	gdist.template setBackgroundValue<1>(666);
+	gdist.template setBackgroundValue<2>(666);
+	gdist.template setBackgroundValue<3>(666);
+
+	/////// GPU insert + flush
+
+	Box<3,size_t> box({1,1,1},{sz[0]-1,sz[1]-1,sz[2]-1});
+
+	/////// GPU Run kernel
+
+	float c = 5.0;
+
+	typedef typename GetAddBlockType<decltype(gdist)>::type InsertBlockT;
+
+	gdist.addPoints(box.getKP1(),box.getKP2(),
+			        [] __device__ (int i, int j, int k)
+			        {
+						return true;
+			        },
+			        [c] __device__ (InsertBlockT & data, int i, int j, int k)
+			        {
+			        	data.template get<0>() = c + i + j + k;
+			        	data.template get<1>() = c + 1000 + i + j + k;
+			        }
+			        );
+
+	gdist.template flush<smax_<0>,smax_<1>>(flush_type::FLUSH_ON_DEVICE);
+
+	gdist.template ghost_get<0,1>(RUN_ON_DEVICE);
+
+	for (int i = 0 ; i < 10 ; i++)
+	{
+		gdist.template ghost_get<0,1>(RUN_ON_DEVICE);
+	}
+
+	// Now run the convolution
+
+	typedef typename GetCpBlockType<decltype(gdist),0,1>::type CpBlockType;
+
+	gdist.template conv_cross_b<0,1,1>({2,2,2},{(int)sz[0]-2,(int)sz[1]-2,(int)sz[2]-2},[] __device__ (CpBlockType & u, auto & block, int offset,int i, int j, int k){
+		return u(i+1,j,k) - u(i-1,j,k) + u(i,j+1,k) - u(i,j-1,k) + u(i,j,k+1) - u(i,j,k-1) + block.template get<0>()[offset];
+	});
+
+	gdist.deviceToHost<0,1,2,3>();
+
+	// Now we check that ghost is correct
+
+	auto it3 = gdist.getSubDomainIterator({2,2,2},{(int)sz[0]-2,(int)sz[1]-2,(int)sz[2]-2});
+
+	bool match = true;
+
+	while (it3.isNext())
+	{
+		auto p = it3.get();
+
+		auto p_xp1 = p.move(0,1);
+		auto p_xm1 = p.move(0,-1);
+		auto p_yp1 = p.move(1,1);
+		auto p_ym1 = p.move(1,-1);
+		auto p_zp1 = p.move(2,1);
+		auto p_zm1 = p.move(2,-1);
+
+		float sub1 = gdist.template get<1>(p);
+
+		if (sub1 != 6.0 + gdist.template get<0>(p))
+		{
+			std::cout << sub1 << std::endl;
+			std::cout << gdist.template get<0>(p_xp1) << "   " << gdist.template get<0>(p_xm1) << std::endl;
+			std::cout << gdist.template get<1>(p_xp1) << "   " << gdist.template get<1>(p_xm1) << std::endl;
+			match = false;
+			break;
+		}
+
+		++it3;
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+}
+
+BOOST_AUTO_TEST_CASE( sgrid_gpu_test_conv2_b_test_3d )
+{
+	#ifdef CUDA_ON_CPU
+	size_t sz[3] = {20,20,20};
+	#else
+	size_t sz[3] = {60,60,60};
+	#endif
+	periodicity<3> bc = {PERIODIC,PERIODIC,PERIODIC};
+
+	Ghost<3,long int> g(1);
+
+	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	sgrid_dist_id_gpu<3,float,aggregate<float,float,float,float>> gdist(sz,domain,g,bc);
+
+	gdist.template setBackgroundValue<0>(666);
+	gdist.template setBackgroundValue<1>(666);
+	gdist.template setBackgroundValue<2>(666);
+	gdist.template setBackgroundValue<3>(666);
+
+	/////// GPU insert + flush
+
+	Box<3,size_t> box({1,1,1},{sz[0]-1,sz[1]-1,sz[2]-1});
+
+	/////// GPU Run kernel
+
+	float c = 5.0;
+
+	typedef typename GetAddBlockType<decltype(gdist)>::type InsertBlockT;
+
+	gdist.addPoints(box.getKP1(),box.getKP2(),
+			        [] __device__ (int i, int j, int k)
+			        {
+						return true;
+			        },
+			        [c] __device__ (InsertBlockT & data, int i, int j, int k)
+			        {
+			        	data.template get<0>() = c + i + j + k;
+			        	data.template get<1>() = c + 1000 + i + j + k;
+			        }
+			        );
+
+	gdist.template flush<smax_<0>,smax_<1>>(flush_type::FLUSH_ON_DEVICE);
+
+	gdist.template ghost_get<0,1>(RUN_ON_DEVICE);
+
+	for (int i = 0 ; i < 10 ; i++)
+	{
+		gdist.template ghost_get<0,1>(RUN_ON_DEVICE);
+	}
+
+	// Now run the convolution
+
+	typedef typename GetCpBlockType<decltype(gdist),0,1>::type CpBlockType;
+
+	gdist.template conv2_b<0,1,2,3,1>({2,2,2},{(int)sz[0]-2,(int)sz[1]-2,(int)sz[2]-2},[] __device__ (float & u_out, float & v_out, CpBlockType & u, CpBlockType & v, auto & block, int offset,int i, int j, int k){
+		u_out = u(i+1,j,k) - u(i-1,j,k) + u(i,j+1,k) - u(i,j-1,k) + u(i,j,k+1) - u(i,j,k-1) + block.template get<0>()[offset];
+		v_out = v(i+1,j,k) - v(i-1,j,k) + v(i,j+1,k) - v(i,j-1,k) + v(i,j,k+1) - v(i,j,k-1) + block.template get<1>()[offset];
+	});
+
+	gdist.deviceToHost<0,1,2,3>();
+
+	// Now we check that ghost is correct
+
+	auto it3 = gdist.getSubDomainIterator({2,2,2},{(int)sz[0]-2,(int)sz[1]-2,(int)sz[2]-2});
+
+	bool match = true;
+
+	while (it3.isNext())
+	{
+		auto p = it3.get();
+
+		auto p_xp1 = p.move(0,1);
+		auto p_xm1 = p.move(0,-1);
+		auto p_yp1 = p.move(1,1);
+		auto p_ym1 = p.move(1,-1);
+		auto p_zp1 = p.move(2,1);
+		auto p_zm1 = p.move(2,-1);
+
+		float sub1 = gdist.template get<2>(p) ;
+		float sub2 = gdist.template get<3>(p);
+
+		if (sub1 != 6.0 + gdist.template get<0>(p) || sub2 != 6.0 + gdist.template get<1>(p))
 		{
 			std::cout << sub1 << "  " << sub2 << std::endl;
 			std::cout << gdist.template get<0>(p_xp1) << "   " << gdist.template get<0>(p_xm1) << std::endl;

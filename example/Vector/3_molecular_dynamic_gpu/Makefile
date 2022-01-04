@@ -8,17 +8,18 @@ ifdef CUDA_ON_CPU
 	CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
         INCLUDE_PATH_NVCC=
         CUDA_CC_LINK=mpic++
-	LIBS_SELECT=$(LIBS_CUDA_ON_CPU)
+	LIBS_SELECT=$(LIBS)
 else
 	ifeq (, $(shell which nvcc))
         	CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
         	INCLUDE_PATH_NVCC=
        		CUDA_CC_LINK=mpic++
+		LIBS_SELECT=$(LIBS)
 	else
         	CUDA_CC=nvcc -ccbin=mpic++
         	CUDA_CC_LINK=nvcc -ccbin=mpic++
+		LIBS_SELECT=$(LIBS_NVCC)
 	endif
-	LIBS_SELECT=$(LIBS)
 endif
 
 CC=mpic++

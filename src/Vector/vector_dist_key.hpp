@@ -58,19 +58,12 @@ public:
 		return ts.str();
 	}
 
-	//! constructor from a key
-/*	inline vect_dist_key_dx(size_t key)
-	:key(key)
-	{
-	}*/
-
 	//! Default constructor
 	__device__ __host__ inline vect_dist_key_dx()
 	{
 		/* coverity[uninit_member] */
 	}
 
-	//! Default constructor
 	__device__ __host__ inline vect_dist_key_dx(size_t key)
 	:key(key)
 	{
