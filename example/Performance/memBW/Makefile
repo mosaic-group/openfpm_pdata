@@ -53,7 +53,7 @@ memBW: $(OBJ)
 all: memBW
 
 run: memBW
-	mpirun --oversubscribe -np 2 ./memBW
+	mpirun --oversubscribe -np 1 ./memBW
 
 .PHONY: clean all run
 
