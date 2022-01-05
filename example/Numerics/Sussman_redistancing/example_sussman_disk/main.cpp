@@ -1,5 +1,5 @@
 //
-// Created by jstark on 2020-05-18.
+// Created by jstark on 2020-05-18. Updated on 2022-01-05.
 //
 /**
  * @file example_sussman_disk/main.cpp
@@ -125,6 +125,7 @@
 //! @cond [Initialization and output folder] @endcond
 int main(int argc, char* argv[])
 {
+	typedef double phi_type;
 	//	initialize library
 	openfpm_init(&argc, &argv);
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -169,7 +170,7 @@ int main(int argc, char* argv[])
 	 * * Define the grid size in terms of number of grid points per dimension
 	 * * Create a Box that defines our domain
 	 * * Create a Ghost object that will define the extension of the ghost part
-	 * * Create a 2D grid with two properties of type double, one for the pre-redistancing Phi_initial and one, where
+	 * * Create a 2D grid with two properties of type phi_type, one for the pre-redistancing Phi_initial and one, where
 	 *   the post-redistancing Phi_SDF should be written to.
 	 * * Set some property names (optionally. These names show up when opening the grid vtk in Paraview.)
 	 *
@@ -181,10 +182,10 @@ int main(int argc, char* argv[])
 	// Prop1: store the initial Phi;
 	// Prop2: here the re-initialized Phi (signed distance function) will be written to in the re-distancing step
 	size_t sz[grid_dim] = {128, 128}; // Grid size in terms of number of grid points per dimension
-	Box<grid_dim, double> box({0.0, 0.0}, {5.0, 5.0}); // 2D
+	Box<grid_dim, phi_type> box({0.0, 0.0}, {5.0, 5.0}); // 2D
 	Ghost<grid_dim, long int> ghost(0);
-	typedef aggregate<double, double> props;
-	typedef grid_dist_id<grid_dim, double, props > grid_in_type;
+	typedef aggregate<phi_type, phi_type> props;
+	typedef grid_dist_id<grid_dim, phi_type, props > grid_in_type;
 	grid_in_type g_dist(sz, box, ghost);
 	g_dist.setPropNames({"Phi_0", "Phi_SDF"});
 	//! @cond [Grid creation] @endcond
@@ -210,7 +211,7 @@ int main(int argc, char* argv[])
 	 */
 	//! @cond [Get disk] @endcond
 	// Now we initialize the grid with a disk. Outside the disk, the value of Phi_0 will be -1, inside +1.
-	double radius = 1.0; // Radius of the disk
+	phi_type radius = 1.0; // Radius of the disk
 	init_grid_with_disk<Phi_0_grid>(g_dist, radius, 2.5, 2.5); // Initialize disk onto grid, centered at (2.5, 2.5)
 	
 	g_dist.write(path_output + "/grid_disk_preRedistancing_radius" + std::to_string((int)radius) , FORMAT_BINARY); // Save the disk as vtk file
@@ -247,7 +248,8 @@ int main(int argc, char* argv[])
 	 *                                        w.r.t the previous iteration and the residual is printed (Default: false).
 	 * * \p print_steadyState_iter: If true, the number of the steady-state-iteration, the corresponding change
 	 *                              w.r.t the previous iteration and the residual is printed (Default: false).
-	 * * \p save_temp_grid: If true, save the temporary grid as hdf5 that can be reloaded onto a grid (Default: false).
+	 * * \p save_temp_grid: If true, save the temporary grid every interval_check_convergence as hdf5 that can be
+	 * reloaded onto a grid (Default: false).
 	 *
 	 *
 	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp Redistancing options
@@ -256,7 +258,7 @@ int main(int argc, char* argv[])
 	//! @cond [Redistancing options] @endcond
 	// Now we want to convert the initial Phi into a signed distance function (SDF) with magnitude of gradient = 1.
 	// For the initial re-distancing we use the Sussman method. First of all, we can set some redistancing options.
-	Redist_options redist_options;
+	Redist_options<phi_type> redist_options;
 	redist_options.min_iter                             = 1e3;
 	redist_options.max_iter                             = 1e4;
 	
@@ -293,7 +295,8 @@ int main(int argc, char* argv[])
 	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp Run redistancing
 	 */
 	//! @cond [Run redistancing] @endcond
-	RedistancingSussman<grid_in_type> redist_obj(g_dist, redist_options);   // Instantiation of Sussman-redistancing class
+	RedistancingSussman<grid_in_type, phi_type> redist_obj(g_dist, redist_options);   // Instantiation of
+	// Sussman-redistancing class
 	// std::cout << "dt = " << redist_obj.get_time_step() << std::endl;
 	// Run the redistancing. In the <> brackets provide property-index where 1.) your initial Phi is stored and 2.)
 	// where the resulting SDF should be written to.
@@ -325,9 +328,9 @@ int main(int argc, char* argv[])
 	// Minimum is 1 property, to which the Phi_SDF can be written
 	// In this example we chose 3 properties. The 1st for the Phi_SDF, the 2nd for the gradient of phi and the 3rd for
 	// the magnitude of the gradient
-	typedef aggregate<double, double[grid_dim], double> props_nb;
-	typedef vector_dist<grid_dim, double, props_nb> vd_type;
-	Ghost<grid_dim, double> ghost_vd(0);
+	typedef aggregate<phi_type, phi_type[grid_dim], phi_type> props_nb;
+	typedef vector_dist<grid_dim, phi_type, props_nb> vd_type;
+	Ghost<grid_dim, phi_type> ghost_vd(0);
 	vd_type vd_narrow_band(0, box, bc, ghost_vd);
 	vd_narrow_band.setPropNames({"Phi_SDF", "Phi_grad", "Phi_magnOfGrad"});
 	//! @cond [Initialize narrow band] @endcond
@@ -345,14 +348,15 @@ int main(int argc, char* argv[])
 	 * belonged to the narrow band.
 	 *
 	 * Depending on the type of the variable which you define, the width can be either set in terms of number of
-	 * grid points (size_t), physical width (double) or extension of narrow band as physical width inside of object
-	 * and outside the object (double, double).
+	 * grid points (size_t), physical width (phi_type) or extension of narrow band as physical width inside of object
+	 * and outside the object (phi_type, phi_type).
 	 *
 	 * @snippet example/Numerics/Sussman_redistancing/example_sussman_disk/main.cpp Instantiate narrow band
 	 */
 	//! @cond [Instantiate narrow band] @endcond
 	size_t thickness_of_narrowBand_in_grid_points = 6;
-	NarrowBand<grid_in_type> narrowBand(g_dist, thickness_of_narrowBand_in_grid_points); // Instantiation of NarrowBand class
+	NarrowBand<grid_in_type, phi_type> narrowBand(g_dist, thickness_of_narrowBand_in_grid_points); // Instantiation of
+	// NarrowBand class
 	//! @cond [Instantiate narrow band] @endcond
 	
 	/**

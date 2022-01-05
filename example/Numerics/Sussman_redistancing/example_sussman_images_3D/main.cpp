@@ -74,6 +74,7 @@
 //! @cond [Initialization] @endcond
 int main(int argc, char* argv[])
 {
+	typedef double phi_type;
 	//	initialize library
 	openfpm_init(&argc, &argv);
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -120,8 +121,8 @@ int main(int argc, char* argv[])
 	 *
 	 */
 	//! @cond [Refinement] @endcond
-	const double refinement []          = {1.0, 1.0, 1.0};      // without refinement
-//	const double refinement []          = {0.8, 1.5, 2.0};      // factors by which grid should be finer as underlying image stack in each dimension (e.g. to get isotropic grid from anisotropic stack resolution)
+	const phi_type refinement []          = {1.0, 1.0, 1.0};      // without refinement
+//	const phi_type refinement []          = {0.8, 1.5, 2.0};      // factors by which grid should be finer as underlying image stack in each dimension (e.g. to get isotropic grid from anisotropic stack resolution)
 	//! @cond [Refinement] @endcond
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//	read the stack size (number of pixel values per dimension) from a binary file
@@ -173,11 +174,11 @@ int main(int argc, char* argv[])
 	 *
 	 */
 	//! @cond [Redistancing] @endcond
-	Box<grid_dim, double> box({0.0, 0.0, 0.0}, {5.0, 5.0, 5.0}); // 3D
+	Box<grid_dim, phi_type> box({0.0, 0.0, 0.0}, {5.0, 5.0, 5.0}); // 3D
 
 	Ghost<grid_dim, long int> ghost(0);
-	typedef aggregate<double, double> props;
-	typedef grid_dist_id<grid_dim, double, props > grid_in_type;
+	typedef aggregate<phi_type, phi_type> props;
+	typedef grid_dist_id<grid_dim, phi_type, props > grid_in_type;
 	grid_in_type g_dist(sz, box, ghost);
 	g_dist.setPropNames({"Phi_0", "Phi_SDF"});
 	
@@ -190,7 +191,7 @@ int main(int argc, char* argv[])
 	// Now we want to convert the initial Phi into a signed distance function (SDF) with magnitude of gradient = 1
 	// For the initial re-distancing we use the Sussman method
 	// 1.) Set some redistancing options (for details see example sussman disk or sphere)
-	Redist_options redist_options;
+	Redist_options<phi_type> redist_options;
 	redist_options.min_iter                             = 1e3;
 	redist_options.max_iter                             = 1e4;
 	
@@ -204,7 +205,8 @@ int main(int argc, char* argv[])
 	redist_options.print_current_iterChangeResidual     = true;
 	redist_options.print_steadyState_iter               = true;
 	redist_options.save_temp_grid                       = true;
-	RedistancingSussman<grid_in_type> redist_obj(g_dist, redist_options);   // Instantiation of Sussman-redistancing class
+	RedistancingSussman<grid_in_type, phi_type> redist_obj(g_dist, redist_options);   // Instantiation of Sussman-redistancing
+	// class
 //	std::cout << "dt = " << redist_obj.get_time_step() << std::endl;
 	// Run the redistancing. in the <> brackets provide property-index where 1.) your initial Phi is stored and 2.) where the resulting SDF should be written to.
 	redist_obj.run_redistancing<Phi_0_grid, Phi_SDF_grid>();
@@ -218,13 +220,14 @@ int main(int argc, char* argv[])
 	// Minimum is 1 property, to which the Phi_SDF can be written
 	// In this example we chose 3 properties. The 1st for the Phi_SDF, the 2nd for the gradient of phi and the 3rd for
 	// the magnitude of the gradient
-	typedef aggregate<double, Point<grid_dim, double>, double> props_nb;
-	typedef vector_dist<grid_dim, double, props_nb> vd_type;
-        Ghost<grid_dim, double> ghost_vd(0);
+	typedef aggregate<phi_type, Point<grid_dim, phi_type>, phi_type> props_nb;
+	typedef vector_dist<grid_dim, phi_type, props_nb> vd_type;
+        Ghost<grid_dim, phi_type> ghost_vd(0);
         vd_type vd_narrow_band(0, box, bc, ghost_vd);	
         vd_narrow_band.setPropNames({"Phi_SDF", "Phi_grad", "Phi_magnOfGrad"});
 	
-	NarrowBand<grid_in_type> narrowBand(g_dist, redist_options.width_NB_in_grid_points); // Instantiation of NarrowBand class
+	NarrowBand<grid_in_type, phi_type> narrowBand(g_dist, redist_options.width_NB_in_grid_points); // Instantiation of
+	// NarrowBand class
 	
 	// Get the narrow band. You can decide, if you only want the Phi_SDF saved to your particles or
 	// if you also want the gradients or gradients and magnitude of gradient.
