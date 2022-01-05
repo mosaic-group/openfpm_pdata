@@ -22,7 +22,7 @@ public:
 
 
     virtual void evolve(/*GlobalVar<GlobalVarType> globalVar,*/ Particle<dimension, PositionType, PropertyType> particle) {}
-//    virtual void interact(Particle<PropertyType> particle, Particle<PropertyType> neighbor) {}
+    virtual void interact(Particle<dimension, PositionType, PropertyType> particle, Particle<dimension, PositionType, PropertyType> neighbor) {}
     virtual void evolveGlobalVar() {}
     virtual bool stop() {
         return true;

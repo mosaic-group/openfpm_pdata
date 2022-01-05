@@ -11,6 +11,7 @@
 #include "../ParticleData.hpp"
 #include "../ParticleMethod.hpp"
 #include "../Transition.hpp"
+#include "../SimulationParameters.hpp"
 #include "../InitialCondition.hpp"
 
 //typedef aggregate<float, float> particle_type;
@@ -34,7 +35,7 @@ public:
     struct GV {
         float dt = 0.1;
         float t = 0;
-        float t_final = 30;
+        float t_final = .5;
         float r_cut = 0.5;
     } globalvar;
 
@@ -73,6 +74,11 @@ public:
 
     }*/
 
+    void interact(Particle<dimension, position_type, particle_type_n<dimension>> particle, Particle<dimension, position_type, particle_type_n<dimension>> neighbor) override {
+        std::cout << "interact" << std::endl;
+    }
+
+
     bool stop() override {
 /*        iteration++;
 
@@ -89,16 +95,30 @@ public:
 };
 
 template <typename ParticleMethodType>
-class InitialCondition1 : InitialCondition<ParticleMethodType> {
+class SimulationParams1 : public SimulationParameters<ParticleMethodType> {
 
     typedef typename ParticleMethodType::propertyType PropertyType;
     typedef typename ParticleMethodType::positionType PositionType;
     static constexpr int dimension = ParticleMethodType::spaceDimension;
 
 public:
+
+    // Domain
     constexpr static PositionType domainMin[dimension] = {0.0, 0.0};
     constexpr static PositionType domainMax[dimension] = {10.0, 10.0};
+
+    // Boundary conditions
     constexpr static size_t boundaryCondition = PERIODIC;
+
+    // Mesh initial condition
+    typedef InitialConditionMesh initialCondition;
+    constexpr static size_t meshSize[dimension] = {5, 5};
+
+/*
+    // Random initial condition
+    typedef InitialConditionRandom initialCondition;
+    constexpr static int numberParticles = 30;
+*/
 
 };
 

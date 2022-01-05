@@ -8,9 +8,10 @@
 #include <Vector/vector_dist.hpp>
 #include "ParticleData.hpp"
 #include "Particle.hpp"
+#include "InitialCondition.hpp"
 #include <random>
 
-template <typename ParticleMethodType, typename InitialConditionType>
+template <typename ParticleMethodType, typename SimulationParametersType>
 class Transition {
 
 protected:
@@ -20,46 +21,47 @@ protected:
     static constexpr int dimension = ParticleMethodType::spaceDimension;
 
     ParticleMethodType particleMethod;
+    InitialCondition_Impl<typename SimulationParametersType::initialCondition, ParticleMethodType, SimulationParametersType> initialConditionImplementation;
 
 //    explicit Transition(ParticleMethod<PropertyType> particleMethod_in) : particleMethod(particleMethod_in), particleData() {}
 
     int iteration = 0;
 
-    void executeInitialization(ParticleData<ParticleMethodType, InitialConditionType> &particleData) {
+    virtual void executeInteraction(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
-        std::random_device rd;  // Will be used to obtain a seed for the random number engine
-        std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
-        std::uniform_real_distribution<> dis_pos(ParticleMethodType::domainMin, ParticleMethodType::domainMax);
-        std::uniform_real_distribution<> dis_vel(-0.6, 0.6);
-
-        size_t sz[ParticleMethodType::spaceDimension];
-        std::fill(std::begin(sz), std::end(sz), 5);
-//        sz = {10, 10, 10};
-        auto it2 = particleData.vd.getGridIterator(sz);
-        while (it2.isNext())
+        // iterate through all particles
+        auto iteratorAll = particleData.vd.getDomainIterator();
+        while (iteratorAll.isNext())
         {
-            particleData.vd.add();
-            auto node = it2.get();
-            for (int i = 0; i < ParticleMethodType::spaceDimension; i++) {
-//                particleData.vd.getLastPos()[i] = node.get(i) * (it2.getSpacing(i)) + dis_pos(gen);
-                particleData.vd.getLastPos()[i] = node.get(i) * it2.getSpacing(i);
-//                particleData.vd.template getLastProp<0>()[i] = node.get(i);
-                particleData.vd.template getLastProp<1>()[i] = dis_vel(gen);
+            auto p = iteratorAll.get();
+            Particle<dimension, PositionType, PropertyType> particle(particleData.vd, p);
+
+            // iterate through all particles as neighbors
+            auto iteratorNeighbors = particleData.vd.getDomainIterator();
+            while (iteratorNeighbors.isNext()) {
+                auto n = iteratorNeighbors.get();
+                Particle<dimension, PositionType, PropertyType> neighbor(particleData.vd, n);
+
+                if (particle != neighbor) {
+//                    std::cout << particle.template property<0>() << " neighbor prop 0 " << neighbor.getParticleData().vd.template getProp<0>(neighbor.getID()) << std::endl;
+//                    std::cout << "CellList" << std::endl;
+                    particleMethod.interact(particle, neighbor);
+                }
+                ++iteratorNeighbors;
             }
-            ++it2;
+            ++iteratorAll;
         }
     }
 
-    void executeEvolution(ParticleData<ParticleMethodType, InitialConditionType> &particleData) {
+    void executeEvolution(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
         auto it2 = particleData.vd.getDomainIterator();
         while (it2.isNext())
         {
             auto p = it2.get();
             Particle<dimension, PositionType, PropertyType> particle(particleData.vd, p);
+
             // call (overriden) evolve method
             particleMethod.evolve(particle);
-
-
             ++it2;
         }
 
@@ -67,38 +69,17 @@ protected:
 
     }
 
-    virtual void executeInteraction(ParticleData<ParticleMethodType, InitialConditionType> &particleData) {
-/*
-        auto it2 = particleData.vd.getDomainIterator();
-        while (it2.isNext())
-        {
-            auto p = it2.get();
-            Particle<PropertyType> particle(particleData, p);
-
-            auto it = particleData.vd.getDomainAndGhostIterator();
-            while (it.isNext()) {
-                Particle<PropertyType> neighbor(particleData, it.get());
-                if (particle != neighbor) {
-//                    std::cout << particle.template property<0>() << " neighbor prop 0 " << neighbor.getParticleData().vd.template getProp<0>(neighbor.getID()) << std::endl;
-                    particleMethod.interact(particle, neighbor);
-                }
-                ++it;
-            }
-            ++it2;
-        }
-*/
-    }
-
 
 public:
 
-    void initialize(ParticleData<ParticleMethodType, InitialConditionType> &particleData) {
-        executeInitialization(particleData);
-//        particleData.vd.map();
-//        particleData.vd.template ghost_get<0, 1>();
+    void initialize(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
+
+        initialConditionImplementation.initialization(particleData);
+        particleData.vd.map();
+
     }
 
-    void run_step(ParticleData<ParticleMethodType, InitialConditionType> &particleData) {
+    void run_step(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 /*
         auto & vcl = create_vcluster();
         if (vcl.getProcessUnitID() == 0) {
@@ -119,19 +100,19 @@ public:
         iteration++;
     }
 
-    bool stop(ParticleData<ParticleMethodType, InitialConditionType> &particleData) {
+    bool stop(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
         return particleMethod.stop();
     }
 };
 
-template <typename ParticleMethodType, typename InitialConditionType>
-class TransitionCellList : public Transition<ParticleMethodType, InitialConditionType>{
-    using typename Transition<ParticleMethodType, InitialConditionType>::PropertyType;
+template <typename ParticleMethodType, typename SimulationParametersType>
+class TransitionCellList : public Transition<ParticleMethodType, SimulationParametersType>{
+    using typename Transition<ParticleMethodType, SimulationParametersType>::PropertyType;
 
     CELL_MEMBAL(ParticleMethodType::spaceDimension, float) cellList;
 
-    void executeInteraction(ParticleData<ParticleMethodType, InitialConditionType> &particleData) override {
 /*
+    void executeInteraction(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) override {
         particleData.vd.template updateCellList(cellList);
 
         auto it2 = particleData.vd.getDomainIterator();
@@ -154,11 +135,11 @@ class TransitionCellList : public Transition<ParticleMethodType, InitialConditio
             }
             ++it2;
         }
-*/
     }
+*/
 
 public:
-    explicit TransitionCellList(ParticleData<ParticleMethodType, InitialConditionType> &particleData) : Transition<ParticleMethodType, InitialConditionType>(), cellList(particleData.vd.template getCellList<CELL_MEMBAL(ParticleMethodType::spaceDimension, float)>(0.5)) {
+    explicit TransitionCellList(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) : Transition<ParticleMethodType, SimulationParametersType>(), cellList(particleData.vd.template getCellList<CELL_MEMBAL(ParticleMethodType::spaceDimension, float)>(0.5)) {
         this->initialize(particleData);
 
     }

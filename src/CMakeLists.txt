@@ -14,7 +14,7 @@ if(CUDA_FOUND OR CUDA_ON_CPU OR HIP_FOUND)
 	    Vector/cuda/vector_dist_gpu_unit_tests.cu
 	    Decomposition/cuda/Domain_icells_cart_unit_test.cu
 		Amr/tests/amr_base_gpu_unit_tests.cu
-		Grid/tests/grid_dist_id_unit_test.cu)
+		Grid/tests/grid_dist_id_unit_test.cu ../Formal_interface/InitialCondition.hpp)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
@@ -90,7 +90,7 @@ else()
 							  Decomposition/tests/shift_vect_converter_tests.cpp
 							  Vector/performance/vector_dist_performance_util.cpp
 							  lib/pdata.cpp
-							  ../experiments/ex1.cpp ../experiments/DEM_1.cpp ../Formal_interface/ParticleMethod.hpp ../Formal_interface/Particle.hpp ../Formal_interface/ParticleData.hpp ../Formal_interface/Transition.hpp ../Formal_interface/Tests/DEM_Test.cpp ../Formal_interface/Tests/DEM_Test.hpp ../Formal_interface/GlobalVar.hpp ../Formal_interface/Tests/Test1.cpp ../Formal_interface/Tests/Test1.hpp ../Formal_interface/PropertyAccess.hpp ../Formal_interface/ParticleDataReference.hpp ../Formal_interface/Domain.hpp ../Formal_interface/PositionType.hpp ../Formal_interface/Tests/PSE_Test.cpp ../Formal_interface/Tests/PSE_Test.hpp ../Formal_interface/InitialCondition.hpp)
+							  ../experiments/ex1.cpp ../experiments/DEM_1.cpp ../Formal_interface/ParticleMethod.hpp ../Formal_interface/Particle.hpp ../Formal_interface/ParticleData.hpp ../Formal_interface/Transition.hpp ../Formal_interface/Tests/DEM_Test.cpp ../Formal_interface/Tests/DEM_Test.hpp ../Formal_interface/GlobalVar.hpp ../Formal_interface/Tests/Test1.cpp ../Formal_interface/Tests/Test1.hpp ../Formal_interface/PropertyAccess.hpp ../Formal_interface/ParticleDataReference.hpp ../Formal_interface/Domain.hpp ../Formal_interface/PositionType.hpp ../Formal_interface/Tests/PSE_Test.cpp ../Formal_interface/Tests/PSE_Test.hpp ../Formal_interface/SimulationParameters.hpp)
 
 	add_library(ofpm_pdata STATIC lib/pdata.cpp)
 	add_library(ofpm_pdata_python SHARED lib/pdata_python.cpp)

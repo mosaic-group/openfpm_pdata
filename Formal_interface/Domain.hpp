@@ -9,13 +9,9 @@
 
 template <int dimension>
 struct BoundaryConditionGenerator {
-    size_t periodic[dimension]{};
-    size_t non_periodic[dimension]{};
     size_t array[dimension]{};
     BoundaryConditionGenerator(size_t value) {
         for (int i = 0; i < dimension; i++) {
-            periodic[i] = PERIODIC;
-            non_periodic[i] = NON_PERIODIC;
             array[i] = value;
         }
     }
