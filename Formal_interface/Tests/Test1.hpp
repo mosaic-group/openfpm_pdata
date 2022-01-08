@@ -13,6 +13,7 @@
 #include "../Transition.hpp"
 #include "../SimulationParameters.hpp"
 #include "../InitialCondition.hpp"
+#include <valarray>
 
 //typedef aggregate<float, float> particle_type;
 //typedef aggregate<float, float, float, float> globalvar_type;
@@ -33,34 +34,31 @@ class Test1 : public ParticleMethod<dimension, position_type, particle_type_n<di
 public:
 
     struct GV {
-        float dt = 0.1;
+        float dt = 0.05;
         float t = 0;
-        float t_final = .5;
-        float r_cut = 0.5;
+        float t_final = 50;
+        float r_cut = 0.3;
     } globalvar;
 
-    bool freeParticles;
-
     constexpr static position_type domainMin = 0.0;
-    constexpr static position_type domainMax = 10.0;
+    constexpr static position_type domainMax = 20.0;
 
-//    typedef Particle<typename Test1::particleType> Particle_;
-
-    static constexpr int position = 0;
-    static constexpr int velocity = 1;
-
-    static constexpr int dt = 0;
-    static constexpr int time = 1;
-    static constexpr int t_final = 2;
-    static constexpr int r_cut = 3;
-
-    int iteration = 0;
+    static constexpr int velocity = 0;
+    static constexpr int acceleration = 1;
 
     void evolve(/*GlobalVar<globalvar_type> globalVar,*/ Particle<dimension, position_type, particle_type_n<dimension>> particle) override {
 
 //        std::cout << "evolution " << particle.template property<position>()[0] << " , " << particle.template property<velocity>()[0] << std::endl;
 
-        // Euler time-stepping
+        // Apply change of velocity
+        particle.template property<velocity>()[0] += particle.template property<acceleration>()[0];
+        particle.template property<velocity>()[1] += particle.template property<acceleration>()[1];
+
+        // Reset change of velocity
+        particle.template property<acceleration>()[0] = 0.0f;
+        particle.template property<acceleration>()[1] = 0.0f;
+
+        // Euler time-stepping move particles
         particle.template position()[0] += particle.template property<velocity>()[0] * globalvar.dt;
         particle.template position()[1] += particle.template property<velocity>()[1] * globalvar.dt;
 
@@ -69,13 +67,34 @@ public:
 //        std::cout << "evolution " << particle.template property<position>()[0] << " , " << particle.template property<velocity>()[0] << std::endl;
 
     }
-/*
-    void interact(Particle<particle_type_n<dimension>> particle, Particle<particle_type_n<dimension>> neighbor) override {
-
-    }*/
 
     void interact(Particle<dimension, position_type, particle_type_n<dimension>> particle, Particle<dimension, position_type, particle_type_n<dimension>> neighbor) override {
-        std::cout << "interact" << std::endl;
+//        std::cout << "interact" << std::endl;
+
+        Point<dimension, position_type> p_pos = particle.position();
+        Point<dimension, position_type> n_pos = neighbor.position();
+        Point<dimension, position_type> p_vel = particle.template property<velocity>();
+        Point<dimension, position_type> n_vel = neighbor.template property<velocity>();
+
+        if (p_pos.distance(n_pos) > globalvar.r_cut)
+            return;
+
+        Point<dimension, position_type> diff = p_pos - n_pos;
+        Point<dimension, position_type> diff_scaled = diff / p_pos.distance2(n_pos);
+        Point<dimension, position_type> p_collision = (diff * p_vel) * diff_scaled;
+        Point<dimension, position_type> n_collision = (diff * n_vel) * diff_scaled;
+        Point<dimension, position_type> diff_collision = n_collision - p_collision;
+
+//        p_vel += diff_collision;
+//        n_vel -= diff_collision;
+
+        particle.template property<acceleration>()[0] = diff_collision.asArray()[0];
+        particle.template property<acceleration>()[1] = diff_collision.asArray()[1];
+
+//        particle.template property<velocity>()[0] = p_vel.asArray()[0];
+//        particle.template property<velocity>()[1] = p_vel.asArray()[1];
+//        neighbor.template property<velocity>() = n_vel.asArray();
+
     }
 
 
@@ -86,6 +105,8 @@ public:
         if (iteration > 2)
             return true;
         return false;*/
+
+        std::cout << globalvar.t << std::endl;
 
         if (globalvar.t > globalvar.t_final)
             return true;
@@ -105,20 +126,20 @@ public:
 
     // Domain
     constexpr static PositionType domainMin[dimension] = {0.0, 0.0};
-    constexpr static PositionType domainMax[dimension] = {10.0, 10.0};
+    constexpr static PositionType domainMax[dimension] = {20.0, 20.0};
 
     // Boundary conditions
     constexpr static size_t boundaryCondition = PERIODIC;
 
+/*
     // Mesh initial condition
     typedef InitialConditionMesh initialCondition;
     constexpr static size_t meshSize[dimension] = {5, 5};
+*/
 
-/*
     // Random initial condition
     typedef InitialConditionRandom initialCondition;
-    constexpr static int numberParticles = 30;
-*/
+    constexpr static int numberParticles = 50;
 
 };
 

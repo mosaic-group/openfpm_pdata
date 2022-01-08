@@ -52,7 +52,9 @@ public:
         std::random_device rd;  // Will be used to obtain a seed for the random number engine
         std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
         std::uniform_real_distribution<> dis_pos(ParticleMethodType::domainMin, ParticleMethodType::domainMax);
+        std::normal_distribution<> dis_vel(0, .5);
 
+        // move particles to random positions
         auto iterator = particleData.vd.getDomainIterator();
         while (iterator.isNext())
         {
@@ -60,6 +62,8 @@ public:
             for (int i = 0; i < ParticleMethodType::spaceDimension; i++) {
                 // random positions
                 particleData.vd.getPos(p)[i] = dis_pos(gen);
+                particleData.vd.template getProp<0>(p)[i] = dis_vel(gen);
+
             }
             ++iterator;
         }

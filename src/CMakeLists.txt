@@ -14,7 +14,7 @@ if(CUDA_FOUND OR CUDA_ON_CPU OR HIP_FOUND)
 	    Vector/cuda/vector_dist_gpu_unit_tests.cu
 	    Decomposition/cuda/Domain_icells_cart_unit_test.cu
 		Amr/tests/amr_base_gpu_unit_tests.cu
-		Grid/tests/grid_dist_id_unit_test.cu ../Formal_interface/InitialCondition.hpp)
+		Grid/tests/grid_dist_id_unit_test.cu ../Formal_interface/InitialCondition.hpp ../Formal_interface/Utility.hpp)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
