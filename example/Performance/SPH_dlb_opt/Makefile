@@ -3,7 +3,6 @@ include ../../example.mk
 CC=mpic++
 
 LDIR =
-OPT=
 
 OBJ = main.o
 

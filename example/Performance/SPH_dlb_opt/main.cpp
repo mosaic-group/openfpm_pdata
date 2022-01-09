@@ -215,7 +215,7 @@
 #define FLUID 0
 
 // initial spacing between particles dp in the formulas
-const double dp = 0.0085;
+const double dp = 0.00425;
 // Maximum height of the fluid water
 // is going to be calculated and filled later on
 double h_swl = 0.0;
@@ -227,7 +227,7 @@ const double coeff_sound = 20.0;
 const double gamma_ = 7.0;
 
 // sqrt(3.0*dp*dp) support of the kernel
-const double H = 0.0147224318643;
+const double H = 0.00736121593217;
 
 const double FourH2 = 4.0 * H*H;
 
@@ -241,16 +241,16 @@ const double visco = 0.1;
 double cbar = 0.0;
 
 // Mass of the fluid particles
-const double MassFluid = 0.000614125;
+const double MassFluid = 0.0000767656;
 
 // Mass of the boundary particles
-const double MassBound = 0.000614125;
+const double MassBound = 0.0000767656;
 
 // End simulation time
 #ifndef TEST_RUN
 const double t_end = 1.5;
 #else
-const double t_end = 0.001;
+const double t_end = 0.004;
 #endif
 
 // Gravity acceleration
@@ -865,7 +865,7 @@ int main(int argc, char* argv[])
 
 	// Here we define our domain a 2D box with internals from 0 to 1.0 for x and y
 	Box<3,double> domain({-0.05,-0.05,-0.05},{1.7010,0.7065,0.5025});
-	size_t sz[3] = {207,90,66};
+	size_t sz[3] = {413,179,133};
 
 	// Fill W_dap
 	W_dap = 1.0/Wab(H/1.5);
