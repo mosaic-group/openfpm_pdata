@@ -1,5 +1,5 @@
 /*!
- * \page Vector_7_sph_dlb_opt Vector 7 SPH Dam break simulation with Dynamic load balacing (Optimized version)
+ * \page Vector_7_sph_dlb_opt2 Vector 7 SPH Dam break simulation with Dynamic load balacing (Many core version)
  *
  *
  * [TOC]
@@ -7,46 +7,11 @@
  *
  * # SPH with Dynamic load Balancing # {#SPH_dlb}
  *
- * This is just a rework of the SPH Dam break simulation optimized to get better performance we will focus on the
- * optimization and differences with the previous example
+ * This is just a rework of the SPH Dam break simulation optimized to get better performance. In this case we do not use the CRS scheme
+ * But the nomeal symmetric scheme. This is better in case of many core. We do not provide further explanation because the optimization
+ * operated here is the same as 
  *
- * \see \ref Vector_7_sph_dlb
- *
- * \htmlonly
- * <a href="#" onclick="hide_show('vector-video-3')" >Simulation video 1</a><br>
- * <div style="display:none" id="vector-video-3">
- * <video id="vid3" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_speed.mp4" type="video/mp4"></video>
- * </div>
- * <a href="#" onclick="hide_show('vector-video-4')" >Simulation video 2</a><br>
- * <div style="display:none" id="vector-video-4">
- * <video id="vid4" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_speed2.mp4" type="video/mp4"></video>
- * </div>
- * <a href="#" onclick="hide_show('vector-video-15')" >Simulation dynamic load balancing video 1</a><br>
- * <div style="display:none" id="vector-video-15">
- * <video id="vid15" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_dlb.mp4" type="video/mp4"></video>
- * </div>
- * <a href="#" onclick="hide_show('vector-video-16')" >Simulation dynamic load balancing video 2</a><br>
- * <div style="display:none" id="vector-video-16">
- * <video id="vid16" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_dlb2.mp4" type="video/mp4"></video>
- * </div>
- * <a href="#" onclick="hide_show('vector-video-17')" >Simulation countour prospective 1</a><br>
- * <div style="display:none" id="vector-video-17">
- * <video id="vid17" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_zoom.mp4" type="video/mp4"></video>
- * </div>
- * <a href="#" onclick="hide_show('vector-video-18')" >Simulation countour prospective 2</a><br>
- * <div style="display:none" id="vector-video-18">
- * <video id="vid18" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_back.mp4" type="video/mp4"></video>
- * </div>
- * <a href="#" onclick="hide_show('vector-video-19')" >Simulation countour prospective 3</a><br>
- * <div style="display:none" id="vector-video-19">
- * <video id="vid19" width="1200" height="576" controls> <source src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/sph_all.mp4" type="video/mp4"></video>
- * </div>
- * \endhtmlonly
- *
- * \htmlonly
- * <img src="http://openfpm.mpi-cbg.de/web/images/examples/7_SPH_dlb/dam_break_all.jpg"/>
- * \endhtmlonly
- *
+ * \see \ref Vector_5_md_vl_sym
  *
  */
 
@@ -56,157 +21,6 @@
 #include "Vector/vector_dist.hpp"
 #include <math.h>
 #include "Draw/DrawParticles.hpp"
-
-/*!
- * \page Vector_7_sph_dlb_opt Vector 7 SPH Dam break simulation with Dynamic load balacing (Optimized version)
- *
- * ## Using verlet list with skin{#e7_sph_dlb_opt}
- *
- * The first optimization that we operate is the usage of verlet list. The verlet are reconstructed only when
- * the maximum displacement is bigger than the half skin. Because we have to calculate
- * the maximum displacement the verlet and euler integration has been modified to do this.
- * The function accept a reference to max_disp that is filled with the maximum displacement calculated
- * from these functions.
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp verlet_new_arg
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp euler_new_arg
- *
- *
- * The variable is reset inside verlet and euler time integration function
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp reset_max_disp
- *
- * while iteration across particle the maximum displacement is saved inside the variable
- * max_disp
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp calc_max_disp
- *
- * We also have to be careful that if we are removing particles we have to reconstruct the verlet list,
- *  so we set it to a really big number
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp big_number_set
- *
- * Because the maximum displacement has to be calculated across processors, we use the
- * function max in Vcluster to calculate the maximum displacement across processors.
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp max_across_proc
- *
- * We also calculate the skin part and ghost plus skin. Consider also that the ghost
- * must be extended to ghost + skin so r_gskin
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp skin_calc
- *
- * As we explained before, we update the verlet only if particles move more than the skin.
- * In case they move more than the skin we do first a map to redistribute the particles and in the
- * meanwhile we check if it is a good moment to rebalance. We decided to combine these two steps
- * because in case we rebalance we have anyway to reconstruct the Verler-list. Than we calculate
- *  the pressure for all the particles, refresh the ghost, update the Verlet-list and reset the
- *  total displacement. In case the the total displacement does not overshoot the skin we just
- * calculate the pressure for all the particles and refresh the ghost. We must use the option
- * **SKIP_LABELLING**
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp update_verlet
- *
- * We pass the max_displacement variable to verlet_int and euler_int function. We also add
- * the maximum displacement per iteration to the total maximum displacement
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp pass_ver_eu
- *
- *
- *
- * ## Symmetric interaction (Crossing scheme){#e7_sph_dlb_sym}
- *
- * Symmetric interaction give the possibility to reduce the computation by half and speed-up
- * your simulation. To do this we have to do some changes into the function calc forces.
- * Symmetric interaction require to write on the ghost area. So at the beginning of the function
- * we reset the ghost part. In the meanwhile because we have the external force gravity that
- * operate per particles, we set this force at the beginning.
- *
- * \warning The requirement to set per particle external forces outside the particle loop
- *          come from the symmetric scheme. Suppose to have in pseudocode this
- *          \code{.unparsed}
- 1          for each particles p
- 2             reset the force for p
- 3             for each neighborhood particle q of p
- 4                 calculate the force p-q
- 5                 add the contribution to p
- 6                 add the contribution to q
-
-
- *          \endcode
- *			suppose we are on particle p=0 and calculate the force with q=10 we add the
- *			contribution to p and q. Unfortunately accordingly to this cycle when we reach
- *			particle q = 10 we reset what we previously calculated. So we have to write
- *          \code{.unparsed}
- *
- 1          for each particles p
- 2              reset the force for p
-
- 3          for each particles p
- 4             for each neighborhood particle q of p
- 5                 calculate the force p-q
- 6                 add the contribution to p
- 7                 add the contribution to q
-
-
-           \endcode
- *
- * With this code we set the per particle external force to gravity and reset the derivative of the
- * density for the domain particles
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp reset_particles
- *
- * With this code we reset the force and derivative of the density of the particles on the ghost part
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp reset_particles2
- *
- * Small changes must be done to iterate over the neighborhood particles
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp nn_part
- *
- * skip the self interaction
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp skip_self
- *
- * This is instead an important change (and honestly it took quite some hour of debuging to
- * discover the problem). In case we are on boundary particle (p = boundary particle) and
- * calculating an interaction with a particle q = fluid particle we have to remeber that we have
- * also to calculate the force for q (not only drho)
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp symmetry
- *
- * for a fluid particle instead we calculate p-q interaction and we add the contribution
- * to p and q. Because we do not integrate over the boundary particles we can also avoid to
- * check that q is a boundary particle
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp symmetry2
- *
- * After the calculation cycle we have to merge the forces and delta density calculated on
- * the ghost with the real particles.
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp ghost_put
- *
- * It is important when we construct our vector of particles to pass the option **BIND_DEC_TO_GHOST**.
- * To use symmetric calculation in parallel environment the decomposition must be consistent with the
- * cell decomposition of the space.
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp important_option
- *
- * To construct a Verlet-list using the CRS scheme we use the following function
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp get_verlet_crs
- *
- * while to update the verlet list we use the following
- *
- * \snippet Vector/7_SPH_dlb_opt/main.cpp update_verlet_crs
- *
- * ## Using re-decompose instead of decompose {#e7_sph_dlb_opt_red}
- *
- * Using redecompose instead of decompose produce less jumping decomposition during the simulation
- *
- *
- */
 
 // A constant to indicate boundary particles
 #define BOUNDARY 1
@@ -508,7 +322,7 @@ template<typename VerletList> inline void calc_forces(particles & vd, VerletList
     /*! \cond [reset_particles2] \endcond */
 
     // Get an iterator over particles
-    auto part = vd.getParticleIteratorCRS(NN);
+    auto part = vd.getDomainIterator();
 
 	double visc = 0;
 
@@ -537,7 +351,7 @@ template<typename VerletList> inline void calc_forces(particles & vd, VerletList
 		Point<3,double> va = vd.getProp<velocity>(a);
 
         // Get an iterator over the neighborhood particles of p
-        auto Np = NN.template getNNIterator<NO_CHECK>(a);
+        auto Np = NN.template getNNIterator<NO_CHECK>(a.getKey());
 
         size_t nn = 0;
 
@@ -881,14 +695,6 @@ int main(int argc, char* argv[])
 	// extended boundary around the domain, and the processor domain
     // by the support of the cubic kernel
 	Ghost<3,double> g(r_gskin);
-	
-    /*! \cond [skin_calc] \endcond */
-
-	// Eliminating the lower part of the ghost
-	// We are using CRS scheme
-	g.setLow(0,0.0);
-	g.setLow(1,0.0);
-	g.setLow(2,0.0);
 
 	/*! \cond [important_option] \endcond */
 
@@ -1028,9 +834,9 @@ int main(int argc, char* argv[])
 
 	vd.ghost_get<type,rho,Pressure,velocity>();
 
-	/*! \cond [get_verlet_crs] \endcond */
-	auto NN = vd.getVerletCrs(r_gskin);
-	/*! \cond [get_verlet_crs] \endcond */
+	/*! \cond [get_verlet_sym] \endcond */
+	auto NN = vd.getVerletSym(r_gskin);
+	/*! \cond [get_verlet_sym] \endcond */
 
 	size_t write = 0;
 	size_t it = 0;
@@ -1074,9 +880,9 @@ int main(int argc, char* argv[])
 
 			vd.ghost_get<type,rho,Pressure,velocity>();
 
-			/*! \cond [update_verlet_crs] \endcond */
-			vd.updateVerlet(NN,r_gskin,VL_CRS_SYMMETRIC);
-			/*! \cond [update_verlet_crs] \endcond */
+			/*! \cond [update_verlet_sym] \endcond */
+			vd.updateVerlet(NN,r_gskin,VL_SYMMETRIC);
+			/*! \cond [update_verlet_sym] \endcond */
 
 			tot_disp = 0.0;
 
