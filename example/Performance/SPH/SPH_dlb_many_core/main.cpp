@@ -968,8 +968,12 @@ int main(int argc, char* argv[])
 	double mean_comm, dev_comm;
 
 	standard_deviation(time_steps,mean_ts,dev_ts);
-	standard_deviation(time_forces,mean_tf,dev_ts);
+	standard_deviation(time_forces,mean_tf,dev_tf);
 	standard_deviation(time_comm,mean_comm,dev_comm);
+
+	std::cout << mean_ts << " " << dev_ts << std::endl;
+	std::cout << mean_tf << " " << dev_tf << std::endl;
+	std::cout << mean_comm << " " << dev_comm << std::endl;
 
 	openfpm_finalize();
 }
