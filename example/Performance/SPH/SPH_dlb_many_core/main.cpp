@@ -21,6 +21,7 @@
 #include "Vector/vector_dist.hpp"
 #include <math.h>
 #include "Draw/DrawParticles.hpp"
+#include "util/stat/common_statistics.hpp"
 
 // A constant to indicate boundary particles
 #define BOUNDARY 1
@@ -279,7 +280,7 @@ inline double Pi(const Point<3,double> & dr, double rr2, Point<3,double> & dv, d
 }
 
 
-template<typename VerletList> inline void calc_forces(particles & vd, VerletList & NN, double & max_visc)
+template<typename VerletList> inline void calc_forces(particles & vd, VerletList & NN, double & max_visc, timer & tf)
 {
 	/*! \cond [reset_particles] \endcond */
 
@@ -320,6 +321,8 @@ template<typename VerletList> inline void calc_forces(particles & vd, VerletList
     }
 
     /*! \cond [reset_particles2] \endcond */
+
+	tf.start();
 
     // Get an iterator over particles
     auto part = vd.getDomainIterator();
@@ -421,6 +424,8 @@ template<typename VerletList> inline void calc_forces(particles & vd, VerletList
 
 		++part;
 	}
+
+	tf.stop();
 
 	//! \cond [ghost_put] \endcond
 
@@ -698,7 +703,7 @@ int main(int argc, char* argv[])
 
 	/*! \cond [important_option] \endcond */
 
-	particles vd(0,domain,bc,g,BIND_DEC_TO_GHOST);
+	particles vd(0,domain,bc,g,DEC_GRAN(512));
 
 	/*! \cond [important_option] \endcond */
 
@@ -838,6 +843,10 @@ int main(int argc, char* argv[])
 	auto NN = vd.getVerletSym(r_gskin);
 	/*! \cond [get_verlet_sym] \endcond */
 
+	openfpm::vector<double> time_forces;
+	openfpm::vector<double> time_comm;
+	openfpm::vector<double> time_steps;
+
 	size_t write = 0;
 	size_t it = 0;
 	size_t it_reb = 0;
@@ -894,15 +903,23 @@ int main(int argc, char* argv[])
 			// Calculate pressure from the density
 			EqState(vd);
 
+			timer tc;
+			tc.start();
+
 			vd.ghost_get<type,rho,Pressure,velocity>(SKIP_LABELLING);
+
+			tc.stop();
+			time_comm.add(tc.getwct());
 		}
 
 		/*! \cond [update_verlet] \endcond */
 
 		double max_visc = 0.0;
 
+		timer tf;
+
 		// Calc forces
-		calc_forces(vd,NN,max_visc);
+		calc_forces(vd,NN,max_visc,tf);
 
 		// Get the maximum viscosity term across processors
 		v_cl.max(max_visc);
@@ -933,21 +950,26 @@ int main(int argc, char* argv[])
 
 		if (write < t*100)
 		{
-			vd.deleteGhost();
-			vd.write_frame("Geometry",write,VTK_WRITER | FORMAT_BINARY);
-                        vd.getDecomposition().write("dec" + std::to_string(write));
-			vd.ghost_get<type,rho,Pressure,velocity>(SKIP_LABELLING);
-			write++;
-
 			if (v_cl.getProcessUnitID() == 0)
-				std::cout << "TIME: " << t << "  write " << it_time.getwct() << "   " << v_cl.getProcessUnitID() << "  TOT disp: " << tot_disp << "    " << cnt << std::endl;
+				std::cout << "TIME: " << t << " " << it_time.getwct() << "   " << v_cl.getProcessUnitID() << "  TOT disp: " << tot_disp << "    " << cnt << std::endl;
+
 		}
 		else
 		{
 			if (v_cl.getProcessUnitID() == 0)
 				std::cout << "TIME: " << t << "  " << it_time.getwct() << "   " << v_cl.getProcessUnitID() << "  TOT disp: " << tot_disp << "    " << cnt << std::endl;
 		}
+		time_steps.add(it_time.getwct());
+		time_forces.add(tf.getwct());
 	}
+
+	double mean_ts, dev_ts;
+	double mean_tf, dev_tf;
+	double mean_comm, dev_comm;
+
+	standard_deviation(time_steps,mean_ts,dev_ts);
+	standard_deviation(time_forces,mean_tf,dev_ts);
+	standard_deviation(time_comm,mean_comm,dev_comm);
 
 	openfpm_finalize();
 }
