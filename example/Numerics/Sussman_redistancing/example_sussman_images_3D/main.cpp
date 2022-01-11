@@ -35,7 +35,7 @@
 /**
  * @page example_sussman_images_3D Images 3D
  *
- * ## Include ## {#e2d_img_include}
+ * ## Include ## {#e3d_img_include}
  *
  * These are the header files that we need to include:
  *
@@ -55,7 +55,7 @@
 /**
  * @page example_sussman_images_3D Images 3D
  *
- * ## Initialization, indices and output folder ## {#e2d_img_init}
+ * ## Initialization, indices and output folder ## {#e3d_img_init}
  *
  * Again we start with
  * * Initializing OpenFPM
@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
 	/**
 	 * @page example_sussman_images_3D Images 3D
 	 *
-	 * ## Set refinement factor ## {#e2d_img_refine}
+	 * ## Set refinement factor ## {#e3d_img_refine}
 	 *
 	 * If we want that the grid has a different resolution as the image stack, we can set a refinement factor. In the
 	 * refinement array, we define by which factor the grid resolution should be changed w.r.t. the image stack
@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
 	/**
 	 * @page example_sussman_images_3D Images 3D
 	 *
-	 * ## Get size from image_size.csv ## {#e2d_img_size}
+	 * ## Get size from image_size.csv ## {#e3d_img_size}
 	 *
 	 * Here we read the stack size (number of pixel values per dimension) from a csv file. Alternatively, you can
 	 * directly define the stack size as: \p std::vector<size_t> \p stack_size \p {#pixels \p in \p x, \p #pixels \p in
@@ -163,7 +163,7 @@ int main(int argc, char* argv[])
 	/**
 	 * @page example_sussman_images_3D Images 3D
 	 *
-	 * ## Run Sussman redistancing and get narrow band ## {#e2d_img_redist}
+	 * ## Run Sussman redistancing and get narrow band ## {#e3d_img_redist}
 	 *
 	 * Once we have loaded the geometrical object from the 3D stack onto the grid, we can perform Sussman
 	 * redistancing and get the narrow band the same way as it is explained in detail here: @ref
@@ -181,6 +181,9 @@ int main(int argc, char* argv[])
 	typedef grid_dist_id<grid_dim, phi_type, props > grid_in_type;
 	grid_in_type g_dist(sz, box, ghost);
 	g_dist.setPropNames({"Phi_0", "Phi_SDF"});
+	
+	// initialize complete grid including ghost layer with -1
+	init_grid_and_ghost<Phi_0_grid>(g_dist, -1.0);
 	
 	// Now we can initialize the grid with the pixel values from the image stack
 	load_pixel_onto_grid<Phi_0_grid>(g_dist, path_to_zstack, stack_size);
@@ -248,7 +251,7 @@ int main(int argc, char* argv[])
 /**
  * @page example_sussman_images_3D Images 3D
  *
- * ## Full code ## {#e2d_img_full}
+ * ## Full code ## {#e3d_img_full}
  *
  * @include example/Numerics/Sussman_redistancing/example_sussman_images_3D/main.cpp
  */

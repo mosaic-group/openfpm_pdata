@@ -188,6 +188,9 @@ int main(int argc, char* argv[])
 	grid_in_type g_dist(sz, box, ghost);
 	g_dist.setPropNames({"Phi_0", "Phi_SDF"});
 	
+	// initialize complete grid including ghost layer with -1
+	init_grid_and_ghost<Phi_0_grid>(g_dist, -1.0);
+	
 	// Now we can initialize the grid with the pixel values from the image stack
 	load_pixel_onto_grid<Phi_0_grid>(g_dist, path_to_image, stack_size);
 	g_dist.write(path_output + "/grid_from_images_initial", FORMAT_BINARY); // Save the initial grid as vtk file
