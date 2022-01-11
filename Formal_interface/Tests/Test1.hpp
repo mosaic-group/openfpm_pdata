@@ -36,7 +36,7 @@ public:
     struct GV {
         float dt = 0.05;
         float t = 0;
-        float t_final = 50;
+        float t_final = 0.1;
         float r_cut = 0.3;
     } globalvar;
 
@@ -125,11 +125,15 @@ class SimulationParams1 : public SimulationParameters<ParticleMethodType> {
 public:
 
     // Domain
-    constexpr static PositionType domainMin[dimension] = {0.0, 0.0};
-    constexpr static PositionType domainMax[dimension] = {20.0, 20.0};
+//    constexpr static PositionType domainMin[dimension] = {0.0, 0.0};
+//    constexpr static PositionType domainMax[dimension] = {20.0, 20.0};
+    Point<dimension, PositionType> domainMin = {0.0, 0.0};
+    Point<dimension, PositionType> domainMax = {20.0, 20.0};
+//    PositionType domainMin[dimension] = {0.0, 0.0};
+//    PositionType domainMax[dimension] = {20.0, 20.0};
 
     // Boundary conditions
-    constexpr static size_t boundaryCondition = PERIODIC;
+    size_t boundaryCondition = PERIODIC;
 
 /*
     // Mesh initial condition
@@ -139,7 +143,8 @@ public:
 
     // Random initial condition
     typedef InitialConditionRandom initialCondition;
-    constexpr static int numberParticles = 50;
+    int numberParticles = 50;
+
 
 };
 

@@ -28,12 +28,14 @@ protected:
     int iteration = 0;
 
     virtual void executeInteraction(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
+        std::cout << "interact " << std::endl;
 
         // iterate through all particles
         auto iteratorAll = particleData.vd.getDomainIterator();
         while (iteratorAll.isNext())
         {
             auto p = iteratorAll.get();
+            std::cout << "interact " << p.getKey() << std::endl;
             Particle<dimension, PositionType, PropertyType> particle(particleData.vd, p);
 
             // iterate through all particles as neighbors
@@ -54,6 +56,7 @@ protected:
     }
 
     void executeEvolution(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
+        std::cout << "evolve " << std::endl;
         auto it2 = particleData.vd.getDomainIterator();
         while (it2.isNext())
         {
@@ -65,8 +68,6 @@ protected:
             ++it2;
         }
 
-//        particleData.vd.template ghost_get<>();
-
     }
 
 
@@ -75,7 +76,11 @@ public:
     void initialize(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
         initialConditionImplementation.initialization(particleData);
-        particleData.vd.map();
+
+        particleData.vd.write_frame("particles",10000);
+        particleData.vd.template map<KillParticleWithWarning>();
+        particleData.vd.write_frame("particles",10001);
+
 
     }
 

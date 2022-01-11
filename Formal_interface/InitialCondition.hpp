@@ -62,7 +62,10 @@ public:
             for (int i = 0; i < ParticleMethodType::spaceDimension; i++) {
                 // random positions
                 particleData.vd.getPos(p)[i] = dis_pos(gen);
+//                std::cout << "pos " << i << ": " << particleData.vd.getPos(p)[i] << std::endl;
+
                 particleData.vd.template getProp<0>(p)[i] = dis_vel(gen);
+//                std::cout << "vel " << i << ": " << particleData.vd.template getProp<0>(p)[i] << std::endl;
 
             }
             ++iterator;
