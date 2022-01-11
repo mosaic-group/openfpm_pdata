@@ -47,7 +47,7 @@ public:
     PositionType domainMax[dimension] = {1.0, 1.0};
 
     // Boundary conditions
-    size_t boundaryCondition = PERIODIC;
+    size_t boundaryConditions[dimension] = {PERIODIC, PERIODIC};
 
     // Initial condition
     typedef InitialConditionRandom initialCondition;

@@ -77,9 +77,9 @@ public:
 
         initialConditionImplementation.initialization(particleData);
 
-        particleData.vd.write_frame("particles",10000);
+//        particleData.vd.write_frame("particles",10000);
         particleData.vd.template map<KillParticleWithWarning>();
-        particleData.vd.write_frame("particles",10001);
+//        particleData.vd.write_frame("particles",10001);
 
 
     }

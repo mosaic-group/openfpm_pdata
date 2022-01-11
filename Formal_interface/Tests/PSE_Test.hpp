@@ -29,14 +29,14 @@ using position_type = float;
 
 // Particle type
 template <int dimension>
-using particle_type_n = aggregate<float[dimension], float[dimension]>;
+using property_type_n = aggregate<float[dimension], float[dimension]>;
 
 // Global variable type
 using globalvar_type = aggregate<float, float, float, float, float, float>;
 
 
 template <int dimension>
-class PSE_Test : ParticleMethod<dimension, position_type, particle_type_n<dimension>, globalvar_type> {
+class PSE_Test : ParticleMethod<dimension, position_type, property_type_n<dimension>, globalvar_type> {
 public:
 
     bool meshParticles;
@@ -50,13 +50,13 @@ public:
         return globalVar.property<t>() >= globalVar.property<t_final>();
     }
 
-    void interact(GlobalVar<globalvar_type> globalVar, Particle<particle_type_n<dimension>> particle, Particle<particle_type_n<dimension>> neighbor) override {
+    void interact(GlobalVar<globalvar_type> globalVar, Particle<property_type_n<dimension>> particle, Particle<property_type_n<dimension>> neighbor) override {
         position_type d2 = getDistance2(particle, neighbor);
         particle.property<accumulator>() += (particle.property<concentration>() - neighbor.property<concentration>())
                 / (power(d2 / globalVar.property<epsilon>() / globalVar.property<epsilon>(), 5) + 1.0);
     }
 
-    void evolve(GlobalVar<globalvar_type> globalVar, Particle<particle_type_n<dimension>> particle, Particle<particle_type_n<dimension>> neighbor) override {
+    void evolve(GlobalVar<globalvar_type> globalVar, Particle<property_type_n<dimension>> particle, Particle<property_type_n<dimension>> neighbor) override {
         particle.property<concentration>() += globalVar.property<dt>() * globalVar.property<D>() * 15.0 * power(meshSpacing / globalVar.property<epsilon>(), 3)
                 / power(globalVar.property<epsilon>() * M_PI, 2) * particle.property<accumulator>();
         particle.property<accumulator>() = 0;

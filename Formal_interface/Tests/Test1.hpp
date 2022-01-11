@@ -22,31 +22,33 @@
 // Position type
 using position_type = float;
 
-// Particle type
+// Property type
 template <int dimension>
-using particle_type_n = aggregate<float[dimension], float[dimension]>;
+using property_type_n = aggregate<float[dimension], float[dimension]>;
+
+// Property identifier
+constexpr int velocity = 0;
+constexpr int acceleration = 1;
 
 // GlobalVar type
 using globalvar_type = aggregate<float, float, float, float>;
 
 template <int dimension>
-class Test1 : public ParticleMethod<dimension, position_type, particle_type_n<dimension>, globalvar_type> {
+class Test1 : public ParticleMethod<dimension, position_type, property_type_n<dimension>, globalvar_type> {
 public:
 
     struct GV {
         float dt = 0.05;
         float t = 0;
-        float t_final = 0.1;
+        float t_final = 10;
         float r_cut = 0.3;
     } globalvar;
 
-    constexpr static position_type domainMin = 0.0;
-    constexpr static position_type domainMax = 20.0;
+//    constexpr static position_type domainMin = 0.0;
+//    constexpr static position_type domainMax = 20.0;
 
-    static constexpr int velocity = 0;
-    static constexpr int acceleration = 1;
 
-    void evolve(/*GlobalVar<globalvar_type> globalVar,*/ Particle<dimension, position_type, particle_type_n<dimension>> particle) override {
+    void evolve(/*GlobalVar<globalvar_type> globalVar,*/ Particle<dimension, position_type, property_type_n<dimension>> particle) override {
 
 //        std::cout << "evolution " << particle.template property<position>()[0] << " , " << particle.template property<velocity>()[0] << std::endl;
 
@@ -68,7 +70,7 @@ public:
 
     }
 
-    void interact(Particle<dimension, position_type, particle_type_n<dimension>> particle, Particle<dimension, position_type, particle_type_n<dimension>> neighbor) override {
+    void interact(Particle<dimension, position_type, property_type_n<dimension>> particle, Particle<dimension, position_type, property_type_n<dimension>> neighbor) override {
 //        std::cout << "interact" << std::endl;
 
         Point<dimension, position_type> p_pos = particle.position();
@@ -85,27 +87,14 @@ public:
         Point<dimension, position_type> n_collision = (diff * n_vel) * diff_scaled;
         Point<dimension, position_type> diff_collision = n_collision - p_collision;
 
-//        p_vel += diff_collision;
-//        n_vel -= diff_collision;
+        particle.template property<acceleration>()[0] = diff_collision[0];
+        particle.template property<acceleration>()[1] = diff_collision[1];
 
-        particle.template property<acceleration>()[0] = diff_collision.asArray()[0];
-        particle.template property<acceleration>()[1] = diff_collision.asArray()[1];
-
-//        particle.template property<velocity>()[0] = p_vel.asArray()[0];
-//        particle.template property<velocity>()[1] = p_vel.asArray()[1];
-//        neighbor.template property<velocity>() = n_vel.asArray();
 
     }
 
 
     bool stop() override {
-/*        iteration++;
-
-//        std::cout << "stop it " << iteration << std::endl;
-        if (iteration > 2)
-            return true;
-        return false;*/
-
         std::cout << globalvar.t << std::endl;
 
         if (globalvar.t > globalvar.t_final)
@@ -125,15 +114,11 @@ class SimulationParams1 : public SimulationParameters<ParticleMethodType> {
 public:
 
     // Domain
-//    constexpr static PositionType domainMin[dimension] = {0.0, 0.0};
-//    constexpr static PositionType domainMax[dimension] = {20.0, 20.0};
-    Point<dimension, PositionType> domainMin = {0.0, 0.0};
-    Point<dimension, PositionType> domainMax = {20.0, 20.0};
-//    PositionType domainMin[dimension] = {0.0, 0.0};
-//    PositionType domainMax[dimension] = {20.0, 20.0};
+    PositionType domainMin[dimension] = {0.0, 0.0};
+    PositionType domainMax[dimension] = {20.0, 20.0};
 
     // Boundary conditions
-    size_t boundaryCondition = PERIODIC;
+    size_t boundaryConditions[dimension] = {PERIODIC, PERIODIC};
 
 /*
     // Mesh initial condition
@@ -145,6 +130,16 @@ public:
     typedef InitialConditionRandom initialCondition;
     int numberParticles = 50;
 
+    /*
+    std::map<int, InitialCondition> ICProperty;
+    ICProperty[velocity] =
+
+    InitialConditionPosition initialConditionPosition(random_uniform, 0.0, 20.0);
+    InitialConditionProperty initialConditionVelocity()
+    InitialCondition(position, random_uniform, 0.0, 20.0);
+    InitialCondition(position, mesh, 0.0, 20.0);
+    InitialCondition(velocity, random, 0.0, 20.0);
+*/
 
 };
 

@@ -20,24 +20,18 @@ class ParticleData {
 
     float r_cut = 0.5;
     Ghost<dimension, PositionType> ghost;
-    BoundaryConditionGenerator<dimension> bc;
-    Box<dimension, PositionType> domain_vd;
 
     SimulationParametersType simulationParameters;
 
-    Point<dimension, PositionType> domainMin = {0.0, 0.0};
-    Point<dimension, PositionType> domainMax = {20.0, 20.0};
 
 public:
     vector_dist<dimension, PositionType, PropertyType> vd;
     GlobalVar<GlobalVarType> globalVar;
 
-    ParticleData() : ghost(r_cut), domain_vd(domainMin, domainMax), bc(simulationParameters.boundaryCondition),
-//    ParticleData() : ghost(r_cut), domain_vd({0.0,0.0},{20.0,20.0} ), bc(simulationParameters.boundaryCondition),
-                     vd(simulationParameters.numberParticles, domain_vd, bc.array ,ghost) {}
-
-//    ParticleData() : ghost(r_cut), domain_vd(SimulationParametersType::domainMin, SimulationParametersType::domainMax), bc(SimulationParametersType::boundaryCondition),
-//                     vd(SimulationParametersType::numberParticles, domain_vd, bc.array ,ghost) {}
+    ParticleData() : ghost(r_cut),
+        vd(simulationParameters.numberParticles,
+           Box<dimension, PositionType>(simulationParameters.domainMin, simulationParameters.domainMax),
+           simulationParameters.boundaryConditions ,ghost) {}
 
     template<unsigned int id> inline auto getProp(vect_dist_key_dx p) -> decltype(vd.template getProp<id>(p)) {
         return vd.template getProp<id>(p);

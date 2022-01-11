@@ -46,12 +46,21 @@ template <typename ParticleMethodType, typename SimulationParametersType>
 class InitialCondition_Impl<InitialConditionRandom, ParticleMethodType, SimulationParametersType> {
 public:
     void initialization(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
+        int dimension = ParticleMethodType::spaceDimension;
+        SimulationParametersType simulationParameters;
+
+
         std::cout << "Random particle placement" << std::endl;
 
         // RNG
         std::random_device rd;  // Will be used to obtain a seed for the random number engine
         std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
-        std::uniform_real_distribution<> dis_pos(ParticleMethodType::domainMin, ParticleMethodType::domainMax);
+
+        std::vector<std::uniform_real_distribution<>> dis_pos_v;
+        for (int i = 0; i < dimension; ++i) {
+            dis_pos_v.push_back(std::uniform_real_distribution<>(simulationParameters.domainMin[i], simulationParameters.domainMax[i]));
+//            dis_pos[i](simulationParameters.domainMin.get(i), simulationParameters.domainMax.get(i));
+        }
         std::normal_distribution<> dis_vel(0, .5);
 
         // move particles to random positions
@@ -61,7 +70,7 @@ public:
             auto p = iterator.get();
             for (int i = 0; i < ParticleMethodType::spaceDimension; i++) {
                 // random positions
-                particleData.vd.getPos(p)[i] = dis_pos(gen);
+                particleData.vd.getPos(p)[i] = dis_pos_v[i](gen);
 //                std::cout << "pos " << i << ": " << particleData.vd.getPos(p)[i] << std::endl;
 
                 particleData.vd.template getProp<0>(p)[i] = dis_vel(gen);
