@@ -7,7 +7,7 @@
 #include "../../openfpm_numerics/src/level_set/particle_cp/particle_cp.hpp"
 #include "Operators/Vector/vector_dist_operators.hpp"
 
-const double dp = 1/1024.0;//
+const double dp = 1/256.0;
 const double A = 0.75;
 const double B = 0.5;
 const double band_width = 16.0*dp;
@@ -760,7 +760,7 @@ int main(int argc, char* argv[])
 	Ghost<2, double> g(0.0);
 
 	particles vd(0, domain, bc, g, DEC_GRAN(512));
-	//particles_surface vd_s(vd.getDecomposition(), 0);
+	particles_surface vd_s(vd.getDecomposition(), 0);
 
 	openfpm::vector<std::string> names({"sdf", "sdfgradient", "curvature", "surface_flag", "number_neibs", "min_sdf_neibors", "min_sdf_location", "interpol_coeff", "sdf_analytical"});
 	vd.setPropNames(names);
@@ -798,34 +798,34 @@ int main(int argc, char* argv[])
 	auto NN = vd.getCellList(2*H);
 	if (false)
 	{
-//		detect_surface_particles(vd, NN, vd_s);
-//
-//		cp_interpol(vd, NN);
-//
-//		//calc_surface_normals(vd, NN);
-//		std::cout<<"::::::::::::::::::::::::::::::::::::::before perturbing:"<<std::endl;
-//		calc_derivatives(vd, NN);
-//		//vd.write("init");
-//
-//		perturb_pos(vd);
-//		vd.map();
-//		NN = vd.getCellList(2*H);
-//
-//		update_sdfs(vd, NN);
-//		detect_surface_particles(vd, NN, vd_s);
-//		vd.write("after_perturb");
-//		//std::cout<<"begincode\ncondnumber = 0;\nk = 0;\nmincond = 1e99;\nmaxcond = 0;\n"<<std::endl;
-//		cp_interpol(vd, NN);
-//
-//		cp_optim(vd, NN,vd_s);
-//		//detect_surface_particles(vd, NN);
-//		cp_interpol(vd, NN);
-//		std::cout<<"::::::::::::::::::::::::::::::::::::::after redistancing:"<<std::endl;
-//		calc_derivatives(vd, NN);
-//
-//		vd.write("after_redistancing_w_sample");
-//		calc_derivatives(vd, NN);
-//		openfpm_finalize();
+		detect_surface_particles_old(vd, NN, vd_s);
+
+		cp_interpol_old(vd, NN);
+
+		//calc_surface_normals(vd, NN);
+		std::cout<<"::::::::::::::::::::::::::::::::::::::before perturbing:"<<std::endl;
+		calc_derivatives(vd, NN);
+		//vd.write("init");
+
+		perturb_pos(vd);
+		vd.map();
+		NN = vd.getCellList(2*H);
+
+		update_sdfs(vd, NN);
+		detect_surface_particles_old(vd, NN, vd_s);
+		//vd.write("after_perturb");
+		//std::cout<<"begincode\ncondnumber = 0;\nk = 0;\nmincond = 1e99;\nmaxcond = 0;\n"<<std::endl;
+		cp_interpol_old(vd, NN);
+
+		cp_optim_old(vd, NN,vd_s);
+		//detect_surface_particles(vd, NN);
+		cp_interpol_old(vd, NN);
+		std::cout<<"::::::::::::::::::::::::::::::::::::::after redistancing:"<<std::endl;
+		calc_derivatives(vd, NN);
+
+		vd.write("after_redistancing_w_sample");
+		calc_derivatives(vd, NN);
+		//openfpm_finalize();
 	}
 
 	if(true)
@@ -839,9 +839,12 @@ int main(int argc, char* argv[])
 		//rdistoptions.max_iter = 1000;
 		//rdistoptions.incremental_tolerance = 1e-7;
 		rdistoptions.H = dp;
-		rdistoptions.r_cutoff_factor = 1.75;
+		rdistoptions.r_cutoff_factor = 2.6;
 		rdistoptions.sampling_radius = 0.75*band_width;
-		rdistoptions.polynomial_degree = "quadratic";
+		rdistoptions.polynomial_degree = "bicubic";
+		//rdistoptions.barrier_coefficient = 0.0;
+		rdistoptions.armijo_tau = 0.1;
+		rdistoptions.armijo_c = 0.1;
 		rdistoptions.incremental_tolerance = 1e-12;
 
 		//typedef vector_dist_ws<2, double, particles> particles_in_type;
@@ -850,7 +853,9 @@ int main(int argc, char* argv[])
 
 		pcprdist.run_redistancing();
 
+		vd.write("after_redistancing_after_cleanup");
 	}
-	vd.write("after_redistancing_after_cleanup");
-	openfpm_finalize();
+
+	openfpm_finalize();//
 }
+

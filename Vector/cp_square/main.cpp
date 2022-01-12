@@ -2,7 +2,7 @@
 #include <sys/_types/_size_t.h>
 #include "Vector/vector_dist.hpp"
 #include "DCPSE/Dcpse.hpp"
-#include "DCPSE/MonomialBasis.hpp"
+#include "../../openfpm_numerics/src/DCPSE/MonomialBasis.hpp"
 #include "Draw/DrawParticles.hpp"
 #include "../../openfpm_numerics/src/level_set/particle_cp/particle_cp.hpp"
 #include "Operators/Vector/vector_dist_operators.hpp"
@@ -10,7 +10,7 @@
 const double dp = 1/128.0;
 const double A = 0.5;
 const double B = 0.5;
-const double omega = 2.0; //parameter for steering the errors in the initialization based on sines.
+const double omega = 2.0; //parameter for steering the errors in the initialization based on sines
 const double band_width = 24.0*dp;
 
 const int sdf = 0;
@@ -861,12 +861,17 @@ int main(int argc, char* argv[])
 		update_sdfs(vd, NN);
 		vd.write("square_init");
 		Redist_options rdistoptions;
-		//rdistoptions.max_iter = 1000;
-		//rdistoptions.incremental_tolerance = 1e-7;
+		rdistoptions.max_iter = 10000;
+	//	rdistoptions.incremental_tolerance = 1e-14;
 		rdistoptions.H = dp;
-		rdistoptions.r_cutoff_factor = 2.6;
+		rdistoptions.r_cutoff_factor = 4.0;
 		rdistoptions.sampling_radius = 0.75*band_width;
-		rdistoptions.polynomial_degree = "quadratic";
+		rdistoptions.polynomial_degree = "bicubic";
+		//rdistoptions.barrier_coefficient = -5*1e-6;//-8.75*1e-7;//-10
+		//rdistoptions.armijo_tau = 0.9;
+		//rdistoptions.armijo_c = 0.9;
+		rdistoptions.support_prevent = 0.9;
+		//rdistoptions.fail_projection = 1;
 
 		//typedef vector_dist_ws<2, double, particles> particles_in_type;
 		//particle_cp_redistancing<particles_in_type> pcprdist(vd, rdistoptions);//
