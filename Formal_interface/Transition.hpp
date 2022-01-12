@@ -70,18 +70,26 @@ protected:
 
     }
 
+    void executeInitialization(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
+        auto it2 = particleData.vd.getDomainIterator();
+        while (it2.isNext())
+        {
+            auto p = it2.get();
+            Particle<dimension, PositionType, PropertyType> particle(particleData.vd, p);
+            particleMethod.initialization(particle);
+            ++it2;
+        }
+
+    }
 
 public:
 
     void initialize(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
         initialConditionImplementation.initialization(particleData);
-
-//        particleData.vd.write_frame("particles",10000);
         particleData.vd.template map<KillParticleWithWarning>();
-//        particleData.vd.write_frame("particles",10001);
 
-
+        executeInitialization(particleData);
     }
 
     void run_step(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {

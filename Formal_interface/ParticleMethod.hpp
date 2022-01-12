@@ -21,12 +21,40 @@ public:
 //    constexpr static size_t boundaryCondition[spaceDimension] = {PERIODIC};
 
 
+    ParticleMethod() : gen(rd()) {}
+
     virtual void evolve(/*GlobalVar<GlobalVarType> globalVar,*/ Particle<dimension, PositionType, PropertyType> particle) {}
     virtual void interact(Particle<dimension, PositionType, PropertyType> particle, Particle<dimension, PositionType, PropertyType> neighbor) {}
+    virtual void initialization(Particle<dimension, PositionType, PropertyType> particle) {}
+
     virtual void evolveGlobalVar() {}
     virtual bool stop() {
         return true;
     }
+
+
+
+
+    // Random number generator
+
+    std::random_device rd;  // Will be used to obtain a seed for the random number engine
+    std::mt19937 gen; // Standard mersenne_twister_engine seeded with rd()
+
+    float normalDistribution(float mean, float stdev) {
+        std::normal_distribution<> dis(mean, stdev);
+        return dis(gen);
+    }
+
+    /*template<int d, typename T>
+    Point<d, T> normalDistribution(float mean, float stdev) {
+        std::normal_distribution<> dis(mean, stdev);
+
+        Point<d, T> randomPoint();
+        for (int i = 0; i < d; ++i) {
+            randomPoint()[i] = dis(gen);
+        }
+        return randomPoint();
+    }*/
 };
 
 

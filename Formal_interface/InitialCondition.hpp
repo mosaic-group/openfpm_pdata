@@ -49,7 +49,6 @@ public:
         int dimension = ParticleMethodType::spaceDimension;
         SimulationParametersType simulationParameters;
 
-
         std::cout << "Random particle placement" << std::endl;
 
         // RNG
@@ -59,7 +58,6 @@ public:
         std::vector<std::uniform_real_distribution<>> dis_pos_v;
         for (int i = 0; i < dimension; ++i) {
             dis_pos_v.push_back(std::uniform_real_distribution<>(simulationParameters.domainMin[i], simulationParameters.domainMax[i]));
-//            dis_pos[i](simulationParameters.domainMin.get(i), simulationParameters.domainMax.get(i));
         }
         std::normal_distribution<> dis_vel(0, .5);
 
@@ -71,11 +69,6 @@ public:
             for (int i = 0; i < ParticleMethodType::spaceDimension; i++) {
                 // random positions
                 particleData.vd.getPos(p)[i] = dis_pos_v[i](gen);
-//                std::cout << "pos " << i << ": " << particleData.vd.getPos(p)[i] << std::endl;
-
-                particleData.vd.template getProp<0>(p)[i] = dis_vel(gen);
-//                std::cout << "vel " << i << ": " << particleData.vd.template getProp<0>(p)[i] << std::endl;
-
             }
             ++iterator;
         }

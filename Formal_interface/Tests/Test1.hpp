@@ -13,11 +13,8 @@
 #include "../Transition.hpp"
 #include "../SimulationParameters.hpp"
 #include "../InitialCondition.hpp"
-#include <valarray>
 
-//typedef aggregate<float, float> particle_type;
-//typedef aggregate<float, float, float, float> globalvar_type;
-//Property<velocity>(particle)
+
 
 // Position type
 using position_type = float;
@@ -35,18 +32,26 @@ using globalvar_type = aggregate<float, float, float, float>;
 
 template <int dimension>
 class Test1 : public ParticleMethod<dimension, position_type, property_type_n<dimension>, globalvar_type> {
+
 public:
 
-    struct GV {
+    struct GlobalVariable {
         float dt = 0.05;
         float t = 0;
         float t_final = 10;
         float r_cut = 0.3;
     } globalvar;
 
-//    constexpr static position_type domainMin = 0.0;
-//    constexpr static position_type domainMax = 20.0;
 
+
+
+    void initialization(Particle<dimension, position_type, property_type_n<dimension>> particle) override {
+
+        for (int i = 0; i < dimension; i++) {
+            particle.template property<velocity>()[i] = this->normalDistribution(0, .5);
+        }
+
+    }
 
     void evolve(/*GlobalVar<globalvar_type> globalVar,*/ Particle<dimension, position_type, property_type_n<dimension>> particle) override {
 
@@ -89,8 +94,6 @@ public:
 
         particle.template property<acceleration>()[0] = diff_collision[0];
         particle.template property<acceleration>()[1] = diff_collision[1];
-
-
     }
 
 
@@ -130,9 +133,18 @@ public:
     typedef InitialConditionRandom initialCondition;
     int numberParticles = 50;
 
-    /*
-    std::map<int, InitialCondition> ICProperty;
-    ICProperty[velocity] =
+
+
+/*
+    void initialConditions() {
+        create_random(50);
+        create_mesh({5, 5});
+        random(velocity, dimension, -.4, .4);
+        random(acceleration, dimension, -.4, .4);
+    }
+
+    std::map<int, InitialCondition> PropertyInitialCondition;
+    PropertyInitialCondition[velocity] =
 
     InitialConditionPosition initialConditionPosition(random_uniform, 0.0, 20.0);
     InitialConditionProperty initialConditionVelocity()
