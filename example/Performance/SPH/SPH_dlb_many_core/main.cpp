@@ -971,6 +971,22 @@ int main(int argc, char* argv[])
 	standard_deviation(time_forces,mean_tf,dev_tf);
 	standard_deviation(time_comm,mean_comm,dev_comm);
 
+	v_cl.sum(mean_ts);
+	v_cl.sum(mean_tf);
+	v_cl.sum(mean_comm);
+
+	v_cl.sum(dev_ts);
+	v_cl.sum(dev_tf);
+	v_cl.sum(dev_comm);
+
+	mean_ts /= v_cl.size();
+	mean_tf /= v_cl.size();
+	mean_comm /= v_cl.size();
+
+	dev_ts /= v_cl.size();
+	dev_tf /= v_cl.size();
+	dev_comm /= v_cl.size();
+
 	std::cout << mean_ts << " " << dev_ts << std::endl;
 	std::cout << mean_tf << " " << dev_tf << std::endl;
 	std::cout << mean_comm << " " << dev_comm << std::endl;
