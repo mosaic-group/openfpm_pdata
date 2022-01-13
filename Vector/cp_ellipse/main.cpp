@@ -7,7 +7,7 @@
 #include "../../openfpm_numerics/src/level_set/particle_cp/particle_cp.hpp"
 #include "Operators/Vector/vector_dist_operators.hpp"
 
-const double dp = 1/256.0;
+const double dp = 1/128.0;
 const double A = 0.75;
 const double B = 0.5;
 const double band_width = 16.0*dp;
@@ -843,9 +843,11 @@ int main(int argc, char* argv[])
 		rdistoptions.sampling_radius = 0.75*band_width;
 		rdistoptions.polynomial_degree = "bicubic";
 		//rdistoptions.barrier_coefficient = 0.0;
-		rdistoptions.armijo_tau = 0.1;
-		rdistoptions.armijo_c = 0.1;
-		rdistoptions.incremental_tolerance = 1e-12;
+		//rdistoptions.armijo_tau = 0.9;
+		//rdistoptions.armijo_c = 0.9;
+		rdistoptions.tolerance = 1e-11;
+		//rdistoptions.support_prevent = 0.9;
+		//rdistoptions.init_project = 1;
 
 		//typedef vector_dist_ws<2, double, particles> particles_in_type;
 		//particle_cp_redistancing<particles_in_type> pcprdist(vd, rdistoptions);
@@ -856,6 +858,6 @@ int main(int argc, char* argv[])
 		vd.write("after_redistancing_after_cleanup");
 	}
 
-	openfpm_finalize();//
+	openfpm_finalize();
 }
 
