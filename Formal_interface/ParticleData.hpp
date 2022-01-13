@@ -6,8 +6,6 @@
 #define OPENFPM_PDATA_PARTICLEDATA_HPP
 
 #include <Vector/vector_dist.hpp>
-#include "ParticleDataReference.hpp"
-#include "Domain.hpp"
 #include "GlobalVar.hpp"
 
 template <typename ParticleMethodType, typename SimulationParametersType>
@@ -41,10 +39,6 @@ public:
         return vd.getPos(p);
     }
 
-    ParticleDataReference<dimension, PositionType, PropertyType> getReference() {
-        ParticleDataReference<dimension, PositionType, PropertyType> particleDataReference(&vd);
-        return particleDataReference;
-    }
 };
 
 class ParticleKind {};

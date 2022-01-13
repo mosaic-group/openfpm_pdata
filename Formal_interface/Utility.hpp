@@ -5,8 +5,6 @@
 #ifndef OPENFPM_PDATA_UTILITY_HPP
 #define OPENFPM_PDATA_UTILITY_HPP
 
-template <typename T, int dimension>
-T* subtract(T a[], T b[]) {}
 
 
 

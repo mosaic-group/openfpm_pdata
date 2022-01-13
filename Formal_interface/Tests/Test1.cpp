@@ -3,8 +3,7 @@
 //
 
 #include "Test1.hpp"
-#include <iostream>
-#include "../InitialCondition.hpp"
+
 constexpr int dimension = 2;
 
 typedef Test1<dimension> ParticleMethodType;
@@ -21,7 +20,7 @@ int main(int argc, char* argv[]) {
 
     ParticleData<ParticleMethodType, SimulationParametersType> particleData;
 
-    TransitionCellList<ParticleMethodType, SimulationParametersType> transition(particleData);
+    Transition<ParticleMethodType, SimulationParametersType> transition(particleData);
 
     while (!transition.stop(particleData)) {
         transition.run_step(particleData);

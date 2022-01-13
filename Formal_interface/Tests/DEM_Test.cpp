@@ -6,23 +6,27 @@
 
 constexpr int dimension = 2;
 
-typedef DEM_Test<dimension> ParticleMethodType;
+typedef DEM_ParticleMethod<dimension> ParticleMethodType;
+typedef DEM_SimulationParams<ParticleMethodType> SimulationParametersType;
 
 int main(int argc, char* argv[]) {
 
-//    openfpm_init(&argc,&argv);
+    openfpm_init(&argc,&argv);
 
-    // Particle data container
-    ParticleData<ParticleMethodType> particleData;
+    // Particle container
+    ParticleData<ParticleMethodType, SimulationParametersType> particleData;
 
-    // Transition algorithm
-    TransitionCellList<ParticleMethodType> transition(particleData);
+    // State transition
+    Transition<ParticleMethodType, SimulationParametersType> transition(particleData);
 
+    // Main loop
     while (!transition.stop(particleData)) {
+
+        // Execute simulation step
         transition.run_step(particleData);
     }
 
-//    openfpm_finalize();
+    openfpm_finalize();
 
     return 0;
 }
