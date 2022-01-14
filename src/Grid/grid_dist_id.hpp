@@ -1671,7 +1671,7 @@ public:
 	 * \return The information about the local grids
 	 *
 	 */
-	const openfpm::vector<GBoxes<device_grid::dims>> & getLocalGridsInfo()
+	const openfpm::vector<GBoxes<device_grid::dims>> & getLocalGridsInfo() const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2964,6 +2964,18 @@ public:
 	 * \return local grid
 	 *
 	 */
+	const device_grid & get_loc_grid(size_t i) const
+	{
+		return loc_grid.get(i);
+	}
+
+	/*! \brief Get the i sub-domain grid
+	 *
+	 * \param i sub-domain
+	 *
+	 * \return local grid
+	 *
+	 */
 	grid_key_dx_iterator_sub<dim,no_stencil> get_loc_grid_iterator(size_t i)
 	{
 		return grid_key_dx_iterator_sub<dim,no_stencil>(loc_grid.get(i).getGrid(),
@@ -2993,7 +3005,7 @@ public:
 	 * \return the number of local grid
 	 *
 	 */
-	size_t getN_loc_grid()
+	size_t getN_loc_grid() const
 	{
 		return loc_grid.size();
 	}
