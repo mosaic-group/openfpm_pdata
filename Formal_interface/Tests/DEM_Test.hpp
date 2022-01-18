@@ -41,31 +41,22 @@ public:
         float t = 0;
         float t_final = 50;
         float r_cut = 0.3;
+        float damp = 0.9;
     } globalvar;
-
-    void initialization(Particle<dimension, position_type, property_type_n<dimension>> particle) override {
-
-        // Randomize velocity (normal distribution)
-        for (int i = 0; i < dimension; i++) {
-            particle.template property<velocity>()[i] = this->normalDistribution(0, .5);
-        }
-
-    }
 
     void evolve(Particle<dimension, position_type, property_type_n<dimension>> particle) override {
 
-        // Apply change of velocity
-        particle.template property<velocity>()[0] += particle.template property<acceleration>()[0];
-        particle.template property<velocity>()[1] += particle.template property<acceleration>()[1];
+        for (int i = 0; i < dimension; i++) {
 
-        // Reset change of velocity
-        particle.template property<acceleration>()[0] = 0.0f;
-        particle.template property<acceleration>()[1] = 0.0f;
+            // Apply change of velocity
+            particle.template property<velocity>()[i] += particle.template property<acceleration>()[i];
 
-        // Euler time-stepping move particles
-        particle.template position()[0] += particle.template property<velocity>()[0] * globalvar.dt;
-        particle.template position()[1] += particle.template property<velocity>()[1] * globalvar.dt;
+            // Reset change of velocity
+            particle.template property<acceleration>()[i] = 0.0f;
 
+            // Euler time-stepping move particles
+            particle.template position()[i] += particle.template property<velocity>()[i] * globalvar.dt;
+        }
 
     }
 
@@ -82,16 +73,13 @@ public:
         if (p_pos.distance(n_pos) > globalvar.r_cut)
             return;
 
-/*
-
-        Point<dimension, position_type> p_move = p_pos + p_vel;
-        Point<dimension, position_type> n_move = n_pos + n_vel;
+        // Check if particles are moving towards each other
+        Point<dimension, position_type> p_move = p_pos + (p_vel * globalvar.dt);
+        Point<dimension, position_type> n_move = n_pos + (n_vel * globalvar.dt);
         float dist = p_pos.distance2(n_pos);
         float dist_move = (p_move).distance2(n_move);
-
         if (dist < dist_move)
             return;
-*/
 
         // Compute collision vector
         Point<dimension, position_type> diff = p_pos - n_pos;
@@ -100,9 +88,13 @@ public:
         Point<dimension, position_type> n_collision = (diff * n_vel) * diff_scaled;
         Point<dimension, position_type> diff_collision = n_collision - p_collision;
 
+        diff_collision = diff_collision * globalvar.damp;
+
         // Apply collision to particle acceleration
-        particle.template property<acceleration>()[0] += diff_collision[0];
-        particle.template property<acceleration>()[1] += diff_collision[1];
+
+        for (int i = 0; i < dimension; i++) {
+            particle.template property<acceleration>()[i] += diff_collision[i];
+        }
     }
 
 
@@ -131,25 +123,44 @@ class DEM_SimulationParams : public SimulationParameters<ParticleMethodType> {
 public:
 
     // Domain
-    PositionType domainMin[dimension] = {0.0, 0.0};
-    PositionType domainMax[dimension] = {20.0, 20.0};
+//    PositionType domainMin[dimension] = {0.0, 0.0};
+//    PositionType domainMax[dimension] = {20.0, 20.0};
+
+    Point<dimension, PositionType> domainMin;
+    Point<dimension, PositionType> domainMax;
+
+//    size_t meshSize[dimension] = {10, 10, 10};
+
+
+    DEM_SimulationParams() : domainMin(0.0f), domainMax(20.0f) {}
+
+
+//    Point<dimension, PositionType> (0.0);
 
     // Boundary conditions
     size_t boundaryConditions[dimension] = {PERIODIC, PERIODIC};
 
+/*
     // Mesh initial condition
     typedef InitialConditionMesh initialCondition;
     constexpr static size_t meshSize[dimension] = {18, 18};
+*/
 
-/*
     // Random initial condition
     typedef InitialConditionRandom initialCondition;
     int numberParticles = 300;
-*/
 
     // Neighborhood method
     typedef CellListNeighborhood neighborhoodDetermination;
     float cellWidth = particleMethod.globalvar.r_cut;
+
+    void initialization(Particle<dimension, PositionType , PropertyType> particle) override {
+
+        // Randomize velocity (normal distribution)
+        for (int i = 0; i < dimension; i++) {
+            particle.template property<velocity>()[i] = this->normalDistribution(0, 2);
+        }
+    }
 
 };
 

@@ -22,6 +22,8 @@ protected:
     static constexpr int dimension = ParticleMethodType::spaceDimension;
 
     ParticleMethodType particleMethod;
+    SimulationParametersType simulationParameters;
+
     InitialCondition_Impl<typename SimulationParametersType::initialCondition, ParticleMethodType, SimulationParametersType> initialConditionImplementation;
     Interaction_Impl<typename SimulationParametersType::neighborhoodDetermination, ParticleMethodType, SimulationParametersType> interactionImplementation;
 
@@ -52,7 +54,7 @@ protected:
         {
             auto p = it2.get();
             Particle<dimension, PositionType, PropertyType> particle(particleData.vd, p);
-            particleMethod.initialization(particle);
+            simulationParameters.initialization(particle);
             ++it2;
         }
 
@@ -61,10 +63,10 @@ protected:
 public:
 
     Transition(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) : interactionImplementation(particleData) {
-        initialize(particleData);
+        initializeParticles(particleData);
     }
 
-    void initialize(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
+    void initializeParticles(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
         initialConditionImplementation.initialization(particleData);
         particleData.vd.template map<KillParticleWithWarning>();

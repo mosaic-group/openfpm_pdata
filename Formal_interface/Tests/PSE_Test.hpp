@@ -70,4 +70,36 @@ public:
 };
 
 
+
+template <typename ParticleMethodType>
+class DEM_SimulationParams : public SimulationParameters<ParticleMethodType> {
+
+    typedef typename ParticleMethodType::propertyType PropertyType;
+    typedef typename ParticleMethodType::positionType PositionType;
+    static constexpr int dimension = ParticleMethodType::spaceDimension;
+
+    ParticleMethodType particleMethod;
+
+public:
+
+    // Domain
+    Point<dimension, PositionType> domainMin;
+    Point<dimension, PositionType> domainMax;
+
+
+
+    DEM_SimulationParams() : domainMin(0.0f), domainMax(20.0f) {}
+
+    void initialization(Particle<dimension, PositionType , PropertyType> particle) override {
+
+        // Randomize velocity (normal distribution)
+        for (int i = 0; i < dimension; i++) {
+            particle.template property<concentration>()[i] = this->normalDistribution(0, 2);
+        }
+    }
+
+};
+
+
+
 #endif //OPENFPM_PDATA_PSE_TEST_HPP
