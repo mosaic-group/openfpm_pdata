@@ -7,7 +7,7 @@
 
 #include <Vector/vector_dist.hpp>
 #include "GlobalVar.hpp"
-
+#include "DataContainer.hpp"
 template <typename ParticleMethodType, typename SimulationParametersType>
 class ParticleData {
 
@@ -21,15 +21,23 @@ class ParticleData {
 
     SimulationParametersType simulationParameters;
 
+    using ContainerFactoryType = DataContainerFactory<FREE_PARTICLES, ParticleMethodType, SimulationParametersType>;
+    ContainerFactoryType dataContainerFactory;
+    typename ContainerFactoryType::ContainerType dataContainer;
 
 public:
     vector_dist<dimension, PositionType, PropertyType> vd;
     GlobalVar<GlobalVarType> globalVar;
 
-    ParticleData() : ghost(r_cut),
-        vd(simulationParameters.numberParticles,
-           Box<dimension, PositionType>(simulationParameters.domainMin, simulationParameters.domainMax),
-           simulationParameters.boundaryConditions ,ghost) {}
+    ParticleData() :    ghost(r_cut),
+                        vd(simulationParameters.numberParticles,
+                            Box<dimension, PositionType>(simulationParameters.domainMin, simulationParameters.domainMax),
+                            simulationParameters.boundaryConditions ,ghost),
+                        dataContainer(dataContainerFactory.getContainer(simulationParameters))
+
+    {
+        dataContainer.printType();
+    }
 
     template<unsigned int id> inline auto getProp(vect_dist_key_dx p) -> decltype(vd.template getProp<id>(p)) {
         return vd.template getProp<id>(p);

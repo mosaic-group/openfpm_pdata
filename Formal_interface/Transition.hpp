@@ -40,6 +40,7 @@ protected:
         {
             auto p = it2.get();
             Particle<dimension, PositionType, PropertyType> particle(particleData.vd, p);
+//            Particle_VectorDist<dimension, PositionType, PropertyType> particle(particleData.vd, p);
 
             // call (overriden) evolve method
             particleMethod.evolve(particle);

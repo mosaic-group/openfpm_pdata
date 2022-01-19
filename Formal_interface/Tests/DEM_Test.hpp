@@ -39,10 +39,11 @@ public:
     struct GlobalVariable {
         float dt = 0.04;
         float t = 0;
-        float t_final = 50;
+        float t_final = 0.1;
         float r_cut = 0.3;
         float damp = 0.9;
     } globalvar;
+
 
     void evolve(Particle<dimension, position_type, property_type_n<dimension>> particle) override {
 

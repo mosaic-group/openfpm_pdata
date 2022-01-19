@@ -17,7 +17,7 @@ class SimulationParametersCompiletime {
 
 public:
 
-//    virtual void initialization(ParticleRef<ParticleMethodType::dimension, typename ParticleMethodType::PositionType, typename ParticleMethodType::ParticleType> particle) {}
+//    virtual void initialization(ParticleRef<ParticleMethodType::dimension, typename ParticleMethodType::PositionType, typename ParticleMethodType::PropertyType> particle) {}
 
     constexpr static PositionType domainMin[dimension] = {0.0, 0.0};
     constexpr static PositionType domainMax[dimension] = {1.0, 1.0};
@@ -44,7 +44,7 @@ public:
     SimulationParameters() : gen(rd()) {}
 
 
-//    virtual void initialization(ParticleRef<ParticleMethodType::dimension, typename ParticleMethodType::PositionType, typename ParticleMethodType::ParticleType> particle) {}
+//    virtual void initialization(ParticleRef<ParticleMethodType::dimension, typename ParticleMethodType::PositionType, typename ParticleMethodType::PropertyType> particle) {}
 
     PositionType domainMin[dimension] = {0.0, 0.0};
     PositionType domainMax[dimension] = {1.0, 1.0};
