@@ -203,6 +203,9 @@ int main(int argc, char* argv[])
 		// we define y, assign a random position between 0.0 and 1.0
 		vd.getPos(key)[1] = (float)rand() / RAND_MAX;
 
+
+        vd.template getProp<0>(key)
+
 		// next particle
 		++it;
 	}

@@ -11,6 +11,7 @@
 
 struct AllParticlesNeighborhood {};
 struct CellListNeighborhood {};
+struct MeshNeighborhood {};
 
 // Primary template
 template <typename NeighborhoodDetermination, typename ParticleMethodType, typename SimulationParametersType>
@@ -27,9 +28,10 @@ public:
 template <typename ParticleMethodType, typename SimulationParametersType>
 class Interaction_Impl<AllParticlesNeighborhood, ParticleMethodType, SimulationParametersType> {
 
-    typedef typename ParticleMethodType::propertyType PropertyType;
-    typedef typename ParticleMethodType::positionType PositionType;
-    static constexpr int dimension = ParticleMethodType::spaceDimension;
+    using ParticleSignatureType = typename ParticleMethodType::ParticleSignature;
+    static constexpr int dimension = ParticleSignatureType::dimension;
+    using PositionType = typename ParticleSignatureType::position;
+    using PropertyType = typename ParticleSignatureType::properties;
 
     ParticleMethodType particleMethod;
 
@@ -41,17 +43,17 @@ public:
     void executeInteraction(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
         // iterate through all particles
-        auto iteratorAll = particleData.vd.getDomainIterator();
+        auto iteratorAll = particleData.getContainer().getDomainIterator();
         while (iteratorAll.isNext())
         {
             auto p = iteratorAll.get();
-            Particle<dimension, PositionType, PropertyType> particle(particleData.vd, p);
+            Particle<ParticleSignatureType> particle(particleData.dataContainer, p);
 
             // iterate through all particles as neighbors
-            auto iteratorNeighbors = particleData.vd.getDomainIterator();
+            auto iteratorNeighbors = particleData.getContainer().getDomainIterator();
             while (iteratorNeighbors.isNext()) {
                 auto n = iteratorNeighbors.get();
-                Particle<dimension, PositionType, PropertyType> neighbor(particleData.vd, n);
+                Particle<ParticleSignatureType> neighbor(particleData.dataContainer, n);
 
                 if (particle != neighbor) {
                     particleMethod.interact(particle, neighbor);
@@ -67,9 +69,10 @@ public:
 template <typename ParticleMethodType, typename SimulationParametersType>
 class Interaction_Impl<CellListNeighborhood, ParticleMethodType, SimulationParametersType> {
 
-    typedef typename ParticleMethodType::propertyType PropertyType;
-    typedef typename ParticleMethodType::positionType PositionType;
-    static constexpr int dimension = ParticleMethodType::spaceDimension;
+    using ParticleSignatureType = typename ParticleMethodType::ParticleSignature;
+    static constexpr int dimension = ParticleSignatureType::dimension;
+    using PositionType = typename ParticleSignatureType::position;
+    using PropertyType = typename ParticleSignatureType::properties;
 
     ParticleMethodType particleMethod;
     SimulationParametersType simulationParameters;
@@ -78,25 +81,25 @@ class Interaction_Impl<CellListNeighborhood, ParticleMethodType, SimulationParam
 
 public:
 
-    explicit Interaction_Impl(ParticleData<ParticleMethodType, SimulationParametersType> &particleData): cellList(particleData.vd.template getCellList<CELL_MEMBAL(ParticleMethodType::spaceDimension, float)>(simulationParameters.cellWidth)) {}
+    explicit Interaction_Impl(ParticleData<ParticleMethodType, SimulationParametersType> &particleData): cellList(particleData.getContainer().template getCellList<CELL_MEMBAL(dimension, float)>(simulationParameters.cellWidth)) {}
 
     void executeInteraction(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
-        particleData.vd.template updateCellList(cellList);
+        particleData.getContainer().template updateCellList(cellList);
 
         // iterate through all particles
-        auto iteratorAll = particleData.vd.getDomainIterator();
+        auto iteratorAll = particleData.getContainer().getDomainIterator();
         while (iteratorAll.isNext())
         {
             auto p = iteratorAll.get();
-            Particle<dimension, PositionType, PropertyType> particle(particleData.vd, p);
+            Particle<ParticleSignatureType> particle(particleData.dataContainer, p);
 
             // iterate through all particles in neighbor cells
-            auto iteratorNeighbors = cellList.template getNNIterator<NO_CHECK>(cellList.getCell(particleData.vd.getPos(p)));
+            auto iteratorNeighbors = cellList.template getNNIterator<NO_CHECK>(cellList.getCell(particleData.getContainer().getPos(p)));
 
             while (iteratorNeighbors.isNext()) {
                 auto n = iteratorNeighbors.get();
-                Particle<dimension, PositionType, PropertyType> neighbor(particleData.vd, n);
+                Particle<ParticleSignatureType> neighbor(particleData.dataContainer, n);
 
                 if (particle != neighbor) {
                     particleMethod.interact(particle, neighbor);
@@ -107,6 +110,46 @@ public:
         }
     }
 
+};
+
+template <typename ParticleMethodType, typename SimulationParametersType>
+class Interaction_Impl<MeshNeighborhood, ParticleMethodType, SimulationParametersType> {
+
+    using ParticleSignatureType = typename ParticleMethodType::ParticleSignature;
+    static constexpr int dimension = ParticleSignatureType::dimension;
+    using PositionType = typename ParticleSignatureType::position;
+    using PropertyType = typename ParticleSignatureType::properties;
+
+    ParticleMethodType particleMethod;
+
+public:
+
+    explicit Interaction_Impl(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {}
+
+
+    void executeInteraction(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
+
+        // iterate through all particles
+        auto iteratorAll = particleData.getContainer().getDomainIterator();
+        while (iteratorAll.isNext())
+        {
+            auto p = iteratorAll.get();
+            Particle<ParticleSignatureType> particle(particleData.dataContainer, p);
+
+            // iterate through all neighbor mesh nodes
+            for (int d = 0; d < dimension; ++d) {
+                auto nMinus = p.move(d, -1);
+                Particle<ParticleSignatureType> neighborMinus(particleData.dataContainer, nMinus);
+                particleMethod.interact(particle, neighborMinus);
+
+                auto nPlus = p.move(d, 1);
+                Particle<ParticleSignatureType> neighborPlus(particleData.dataContainer, nPlus);
+                particleMethod.interact(particle, neighborPlus);
+            }
+
+            ++iteratorAll;
+        }
+    }
 };
 
 

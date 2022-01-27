@@ -11,15 +11,23 @@
 #include "InitialCondition.hpp"
 #include "Neighborhood.hpp"
 #include <random>
+#include <boost/hana.hpp>
 
 template <typename ParticleMethodType, typename SimulationParametersType>
 class Transition {
 
 protected:
 
-    typedef typename ParticleMethodType::propertyType PropertyType;
-    typedef typename ParticleMethodType::positionType PositionType;
-    static constexpr int dimension = ParticleMethodType::spaceDimension;
+//    typedef typename ParticleMethodType::propertyType PropertyType;
+//    typedef typename ParticleMethodType::positionType PositionType;
+//    static constexpr int dimension = ParticleMethodType::spaceDimension;
+
+    using ParticleSignatureType = typename ParticleMethodType::ParticleSignature;
+    static constexpr int dimension = ParticleSignatureType::dimension;
+    using PositionType = typename ParticleSignatureType::position;
+    using PropertyType = typename ParticleSignatureType::properties;
+    using ParticleDataStructure = typename ParticleSignatureType::dataStructure;
+
 
     ParticleMethodType particleMethod;
     SimulationParametersType simulationParameters;
@@ -35,12 +43,12 @@ protected:
 
     void executeEvolution(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 //        std::cout << "evolve " << std::endl;
-        auto it2 = particleData.vd.getDomainIterator();
+        auto it2 = particleData.getContainer().getDomainIterator();
         while (it2.isNext())
         {
             auto p = it2.get();
-            Particle<dimension, PositionType, PropertyType> particle(particleData.vd, p);
-//            Particle_VectorDist<dimension, PositionType, PropertyType> particle(particleData.vd, p);
+            Particle<ParticleSignatureType> particle(particleData.dataContainer, p);
+//            Particle_VectorDist<dimension, PositionType, PropertyType> particle(particleData.getContainer(), p);
 
             // call (overriden) evolve method
             particleMethod.evolve(particle);
@@ -50,11 +58,11 @@ protected:
     }
 
     void executeInitialization(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
-        auto it2 = particleData.vd.getDomainIterator();
+        auto it2 = particleData.getContainer().getDomainIterator();
         while (it2.isNext())
         {
             auto p = it2.get();
-            Particle<dimension, PositionType, PropertyType> particle(particleData.vd, p);
+            Particle<ParticleSignatureType> particle(particleData.dataContainer, p);
             simulationParameters.initialization(particle);
             ++it2;
         }
@@ -70,10 +78,13 @@ public:
     void initializeParticles(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
         initialConditionImplementation.initialization(particleData);
-        particleData.vd.template map<KillParticleWithWarning>();
+        particleData.getContainer().template map/*<KillParticleWithWarning>*/();
 
         executeInitialization(particleData);
     }
+
+
+
 
     void run_step(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 /*
@@ -82,16 +93,16 @@ public:
             std::cout << "Iteration " << iteration << std::endl;
         }*/
 
-        particleData.vd.map();
+        particleData.getContainer().map();
 
-        particleData.vd.template ghost_get<0, 1>();
+        particleData.getContainer().template ghost_get<0, 1>();
 
 //        executeInteraction(particleData);
         interactionImplementation.executeInteraction(particleData);
         executeEvolution(particleData);
 
-        particleData.vd.deleteGhost();
-        particleData.vd.write_frame("particles",iteration);
+        particleData.getDataContainer().deleteGhost();
+        particleData.getDataContainer().write_frame("particles",iteration);
 
 //        std::cout << "iteration " << iteration << std::endl;
         iteration++;

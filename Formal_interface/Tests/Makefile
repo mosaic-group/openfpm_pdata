@@ -20,5 +20,5 @@ run_%: %
 .PHONY: clean all run
 
 clean:
-	rm -f *.o *~ core Test1 *.pvtp *.vtp
+	rm -f *.o *~ core Test1 *.pvtp *.vtp *.vtk
 

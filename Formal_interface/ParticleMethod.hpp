@@ -9,23 +9,21 @@
 #include "Particle.hpp"
 #include "GlobalVar.hpp"
 
-template <int dimension, typename PositionType, typename PropertyType, typename GlobalVarType>
+template <typename ParticleSignatureType>
 class ParticleMethod {
 public:
-    typedef PositionType positionType;
-    typedef PropertyType propertyType;
-    typedef GlobalVarType globalVarType;
-    constexpr static int spaceDimension = dimension;
-//    constexpr static float domainMin[spaceDimension] = {0.0};
-//    constexpr static float domainMax[spaceDimension] = {1.0};
-//    constexpr static size_t boundaryCondition[spaceDimension] = {PERIODIC};
+//    typedef PositionType positionType;
+//    typedef PropertyType propertyType;
+//    typedef GlobalVarType globalVarType;
+//    constexpr static int spaceDimension = dimension;
 
+    typedef ParticleSignatureType ParticleSignature;
 
     ParticleMethod() : gen(rd()) {}
 
-    virtual void evolve(/*GlobalVar<GlobalVarType> globalVar,*/ Particle<dimension, PositionType, PropertyType> particle) {}
-    virtual void interact(Particle<dimension, PositionType, PropertyType> particle, Particle<dimension, PositionType, PropertyType> neighbor) {}
-    virtual void initialization(Particle<dimension, PositionType, PropertyType> particle) {}
+    virtual void evolve(Particle<ParticleSignatureType> particle) {}
+    virtual void interact(Particle<ParticleSignatureType> particle, Particle<ParticleSignatureType> neighbor) {}
+//    virtual void initialization(Particle<ParticleSignature> particle) {}
 
     virtual void evolveGlobalVar() {}
     virtual bool stop() {

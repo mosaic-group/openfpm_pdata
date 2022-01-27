@@ -5,6 +5,7 @@
 #ifndef OPENFPM_PDATA_DEM_TEST_HPP
 #define OPENFPM_PDATA_DEM_TEST_HPP
 
+#include <array>
 #include <Vector/vector_dist.hpp>
 #include "../Particle.hpp"
 #include "../ParticleData.hpp"
@@ -15,38 +16,49 @@
 #include "../Neighborhood.hpp"
 
 
-
-
-// Position type
-using position_type = float;
-
-// Property type
-template <int dimension>
-using property_type_n = aggregate<float[dimension], float[dimension]>;
+struct DEM_ParticleSignature {
+    static constexpr int dimension = 2;
+    typedef float position;
+    typedef aggregate<float[dimension], float[dimension]> properties;
+    typedef FREE_PARTICLES dataStructure;
+};
 
 // Property identifier
 constexpr int velocity = 0;
 constexpr int acceleration = 1;
 
-// GlobalVar type
-using globalvar_type = aggregate<float, float, float, float>;
 
-template <int dimension>
-class DEM_ParticleMethod : public ParticleMethod<dimension, position_type, property_type_n<dimension>, globalvar_type> {
+template <typename ParticleSignature>
+class DEM_ParticleMethod : public ParticleMethod<ParticleSignature> {
+
+    static constexpr int dimension = ParticleSignature::dimension;
+    using PositionType = typename ParticleSignature::position;
 
 public:
 
     struct GlobalVariable {
         float dt = 0.04;
         float t = 0;
-        float t_final = 0.1;
-        float r_cut = 0.3;
+        float t_final = 10.1;
+        float r_cut = 0.5;
         float damp = 0.9;
     } globalvar;
 
 
-    void evolve(Particle<dimension, position_type, property_type_n<dimension>> particle) override {
+    void evolve(Particle<ParticleSignature> particle) override {
 
+        // Apply change of velocity
+        particle.template property_test<velocity>() += particle.template property_test<acceleration>();
+
+        // Reset change of velocity
+        particle.template property_test<acceleration>() = 0.0f;
+
+        // Euler time-stepping move particles
+        Point<dimension, PositionType> delta_velocity = particle.template property<velocity>();
+        delta_velocity = delta_velocity * globalvar.dt;
+        particle.position_test() += delta_velocity;
+
+/*
         for (int i = 0; i < dimension; i++) {
 
             // Apply change of velocity
@@ -58,16 +70,18 @@ public:
             // Euler time-stepping move particles
             particle.template position()[i] += particle.template property<velocity>()[i] * globalvar.dt;
         }
+*/
+
 
     }
 
-    void interact(Particle<dimension, position_type, property_type_n<dimension>> particle, Particle<dimension, position_type, property_type_n<dimension>> neighbor) override {
+    void interact(Particle<ParticleSignature> particle, Particle<ParticleSignature> neighbor) override {
 
         // Declare particle property variables
-        Point<dimension, position_type> p_pos = particle.position();
-        Point<dimension, position_type> n_pos = neighbor.position();
-        Point<dimension, position_type> p_vel = particle.template property<velocity>();
-        Point<dimension, position_type> n_vel = neighbor.template property<velocity>();
+        Point<dimension, PositionType> p_pos = particle.position();
+        Point<dimension, PositionType> n_pos = neighbor.position();
+        Point<dimension, PositionType> p_vel = particle.template property<velocity>();
+        Point<dimension, PositionType> n_vel = neighbor.template property<velocity>();
 
 
         // Check cutoff radius
@@ -75,27 +89,29 @@ public:
             return;
 
         // Check if particles are moving towards each other
-        Point<dimension, position_type> p_move = p_pos + (p_vel * globalvar.dt);
-        Point<dimension, position_type> n_move = n_pos + (n_vel * globalvar.dt);
+        Point<dimension, PositionType> p_move = p_pos + (p_vel * globalvar.dt);
+        Point<dimension, PositionType> n_move = n_pos + (n_vel * globalvar.dt);
         float dist = p_pos.distance2(n_pos);
         float dist_move = (p_move).distance2(n_move);
         if (dist < dist_move)
             return;
 
         // Compute collision vector
-        Point<dimension, position_type> diff = p_pos - n_pos;
-        Point<dimension, position_type> diff_scaled = diff / p_pos.distance2(n_pos);
-        Point<dimension, position_type> p_collision = (diff * p_vel) * diff_scaled;
-        Point<dimension, position_type> n_collision = (diff * n_vel) * diff_scaled;
-        Point<dimension, position_type> diff_collision = n_collision - p_collision;
+        Point<dimension, PositionType> diff = p_pos - n_pos;
+        Point<dimension, PositionType> diff_scaled = diff / p_pos.distance2(n_pos);
+        Point<dimension, PositionType> p_collision = (diff * p_vel) * diff_scaled;
+        Point<dimension, PositionType> n_collision = (diff * n_vel) * diff_scaled;
+        Point<dimension, PositionType> diff_collision = n_collision - p_collision;
 
         diff_collision = diff_collision * globalvar.damp;
 
         // Apply collision to particle acceleration
-
+        particle.template property_test<acceleration>() += diff_collision;
+        /*
         for (int i = 0; i < dimension; i++) {
             particle.template property<acceleration>()[i] += diff_collision[i];
         }
+*/
     }
 
 
@@ -112,34 +128,27 @@ public:
     }
 };
 
-template <typename ParticleMethodType>
-class DEM_SimulationParams : public SimulationParameters<ParticleMethodType> {
+template <typename ParticleSignatureType>
+class DEM_SimulationParams : public SimulationParameters<ParticleSignatureType> {
 
-    typedef typename ParticleMethodType::propertyType PropertyType;
-    typedef typename ParticleMethodType::positionType PositionType;
-    static constexpr int dimension = ParticleMethodType::spaceDimension;
-
-    ParticleMethodType particleMethod;
+    static constexpr int dimension = ParticleSignatureType::dimension;
+    using PositionType = typename ParticleSignatureType::position;
+    using PropertyType = typename ParticleSignatureType::properties;
 
 public:
 
     // Domain
-//    PositionType domainMin[dimension] = {0.0, 0.0};
-//    PositionType domainMax[dimension] = {20.0, 20.0};
-
     Point<dimension, PositionType> domainMin;
     Point<dimension, PositionType> domainMax;
 
+    // Boundary conditions
+    periodicity<dimension> boundaryConditions;
+
 //    size_t meshSize[dimension] = {10, 10, 10};
 
-
-    DEM_SimulationParams() : domainMin(0.0f), domainMax(20.0f) {}
-
-
-//    Point<dimension, PositionType> (0.0);
-
-    // Boundary conditions
-    size_t boundaryConditions[dimension] = {PERIODIC, PERIODIC};
+    DEM_SimulationParams() : domainMin(0.0f), domainMax(20.0f) {
+        std::fill(std::begin(boundaryConditions.bc), std::end(boundaryConditions.bc), PERIODIC);
+    }
 
 /*
     // Mesh initial condition
@@ -149,17 +158,18 @@ public:
 
     // Random initial condition
     typedef InitialConditionRandom initialCondition;
-    int numberParticles = 300;
+    int numberParticles = 40;
 
     // Neighborhood method
     typedef CellListNeighborhood neighborhoodDetermination;
-    float cellWidth = particleMethod.globalvar.r_cut;
+//    float cellWidth = particleMethod.globalvar.r_cut;
+    float cellWidth = 0.5;
 
-    void initialization(Particle<dimension, PositionType , PropertyType> particle) override {
+    void initialization(Particle<ParticleSignatureType> particle) override {
 
         // Randomize velocity (normal distribution)
         for (int i = 0; i < dimension; i++) {
-            particle.template property<velocity>()[i] = this->normalDistribution(0, 2);
+            particle.template property<velocity>()[i] = this->normalDistribution(0, 3);
         }
     }
 

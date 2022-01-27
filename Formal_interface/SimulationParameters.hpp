@@ -8,36 +8,14 @@
 #include <Vector/vector_dist.hpp>
 #include "Particle.hpp"
 
-template <typename ParticleMethodType>
-class SimulationParametersCompiletime {
 
-    typedef typename ParticleMethodType::propertyType PropertyType;
-    typedef typename ParticleMethodType::positionType PositionType;
-    static constexpr int dimension = ParticleMethodType::spaceDimension;
-
-public:
-
-//    virtual void initialization(ParticleRef<ParticleMethodType::dimension, typename ParticleMethodType::PositionType, typename ParticleMethodType::PropertyType> particle) {}
-
-    constexpr static PositionType domainMin[dimension] = {0.0, 0.0};
-    constexpr static PositionType domainMax[dimension] = {1.0, 1.0};
-
-    // Boundary conditions
-    constexpr static size_t boundaryCondition = PERIODIC;
-
-    // Initial condition
-    typedef InitialConditionRandom initialCondition;
-    constexpr static size_t meshSize[dimension] = {2, 2};
-    constexpr static int numberParticles = 1;
-
-};
-
-template <typename ParticleMethodType>
+template <typename ParticleSignatureType>
 class SimulationParameters {
 
-    typedef typename ParticleMethodType::propertyType PropertyType;
-    typedef typename ParticleMethodType::positionType PositionType;
-    static constexpr int dimension = ParticleMethodType::spaceDimension;
+    static constexpr int dimension = ParticleSignatureType::dimension;
+    using PositionType = typename ParticleSignatureType::position;
+    using PropertyType = typename ParticleSignatureType::properties;
+    using ParticleDataStructure = typename ParticleSignatureType::dataStructure;
 
 public:
 
@@ -54,10 +32,10 @@ public:
 
     // Initial condition
     typedef InitialConditionRandom initialCondition;
-    size_t meshSize[dimension] = {2, 2};
+    size_t meshSize[dimension] = {5, 5};
     int numberParticles = 1;
 
-    virtual void initialization(Particle<dimension, PositionType, PropertyType> particle) {}
+    virtual void initialization(Particle<ParticleSignatureType> particle) {}
 
 
     std::random_device rd;  // Will be used to obtain a seed for the random number engine

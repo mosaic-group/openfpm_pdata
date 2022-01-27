@@ -4,10 +4,8 @@
 
 #include "DEM_Test.hpp"
 
-constexpr int dimension = 2;
-
-typedef DEM_ParticleMethod<dimension> ParticleMethodType;
-typedef DEM_SimulationParams<ParticleMethodType> SimulationParametersType;
+typedef DEM_ParticleMethod<DEM_ParticleSignature> ParticleMethodType;
+typedef DEM_SimulationParams<DEM_ParticleSignature> SimulationParametersType;
 
 int main(int argc, char* argv[]) {
 

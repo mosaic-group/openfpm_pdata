@@ -28,14 +28,14 @@ public:
         std::cout << "Mesh particle placement" << std::endl;
 
         // create particle mesh
-        particleData.vd.clear();
-        auto meshIterator = particleData.vd.getGridIterator(SimulationParametersType::meshSize);
+        particleData.getContainer().clear();
+        auto meshIterator = particleData.getContainer().getGridIterator(SimulationParametersType::meshSize);
         while (meshIterator.isNext())
         {
-            particleData.vd.add();
+            particleData.getContainer().add();
             auto node = meshIterator.get();
             for (int i = 0; i < ParticleMethodType::spaceDimension; i++) {
-                particleData.vd.getLastPos()[i] = node.get(i) * meshIterator.getSpacing(i);
+                particleData.getContainer().getLastPos()[i] = node.get(i) * meshIterator.getSpacing(i);
             }
             ++meshIterator;
         }
@@ -46,7 +46,13 @@ template <typename ParticleMethodType, typename SimulationParametersType>
 class InitialCondition_Impl<InitialConditionRandom, ParticleMethodType, SimulationParametersType> {
 public:
     void initialization(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
-        int dimension = ParticleMethodType::spaceDimension;
+
+        using ParticleSignatureType = typename ParticleMethodType::ParticleSignature;
+        static constexpr int dimension = ParticleSignatureType::dimension;
+        using PositionType = typename ParticleSignatureType::position;
+        using PropertyType = typename ParticleSignatureType::properties;
+
+
         SimulationParametersType simulationParameters;
 
         std::cout << "Random particle placement" << std::endl;
@@ -62,13 +68,13 @@ public:
         std::normal_distribution<> dis_vel(0, .5);
 
         // move particles to random positions
-        auto iterator = particleData.vd.getDomainIterator();
+        auto iterator = particleData.getContainer().getDomainIterator();
         while (iterator.isNext())
         {
             auto p = iterator.get();
-            for (int i = 0; i < ParticleMethodType::spaceDimension; i++) {
+            for (int i = 0; i < dimension; i++) {
                 // random positions
-                particleData.vd.getPos(p)[i] = dis_pos_v[i](gen);
+                particleData.getContainer().getPos(p)[i] = dis_pos_v[i](gen);
             }
             ++iterator;
         }
