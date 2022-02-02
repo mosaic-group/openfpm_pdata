@@ -43,12 +43,12 @@ protected:
 
     void executeEvolution(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 //        std::cout << "evolve " << std::endl;
-        auto it2 = particleData.getContainer().getDomainIterator();
+        auto it2 = particleData.getOpenFPMContainer().getDomainIterator();
         while (it2.isNext())
         {
             auto p = it2.get();
             Particle<ParticleSignatureType> particle(particleData.dataContainer, p);
-//            Particle_VectorDist<dimension, PositionType, PropertyType> particle(particleData.getContainer(), p);
+//            Particle_VectorDist<dimension, PositionType, PropertyType> particle(particleData.getOpenFPMContainer(), p);
 
             // call (overriden) evolve method
             particleMethod.evolve(particle);
@@ -58,7 +58,7 @@ protected:
     }
 
     void executeInitialization(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
-        auto it2 = particleData.getContainer().getDomainIterator();
+        auto it2 = particleData.getParticleIterator();
         while (it2.isNext())
         {
             auto p = it2.get();
@@ -78,7 +78,7 @@ public:
     void initializeParticles(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
         initialConditionImplementation.initialization(particleData);
-        particleData.getContainer().template map/*<KillParticleWithWarning>*/();
+        particleData.getOpenFPMContainer().template map/*<KillParticleWithWarning>*/();
 
         executeInitialization(particleData);
     }
@@ -93,9 +93,9 @@ public:
             std::cout << "Iteration " << iteration << std::endl;
         }*/
 
-        particleData.getContainer().map();
+        particleData.getOpenFPMContainer().map();
 
-        particleData.getContainer().template ghost_get<0, 1>();
+        particleData.getOpenFPMContainer().template ghost_get<0, 1>();
 
 //        executeInteraction(particleData);
         interactionImplementation.executeInteraction(particleData);

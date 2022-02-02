@@ -2,8 +2,8 @@
 // Created by landfried on 06.12.21.
 //
 
-#ifndef OPENFPM_PDATA_DEM_TEST_HPP
-#define OPENFPM_PDATA_DEM_TEST_HPP
+#ifndef OPENFPM_PDATA_DEM_SYM_HPP
+#define OPENFPM_PDATA_DEM_SYM_HPP
 
 #include <array>
 #include <Vector/vector_dist.hpp>
@@ -118,13 +118,17 @@ class DEM_SimulationParams : public SimulationParameters<ParticleSignatureType> 
 
 public:
 
+    // Domain
+    Point<dimension, PositionType> domainMin;
+    Point<dimension, PositionType> domainMax;
 
-    DEM_SimulationParams() {
-        this->setDomain(globalvar.domainSize);
-        this->setBoundaryConditions(PERIODIC);
-        this->setCutoffRadius(globalvar.r_cut);
-        this->setNumberParticles(40);
-        this->setCellWidth(globalvar.r_cut);
+    // Boundary conditions
+    periodicity<dimension> boundaryConditions;
+
+//    size_t meshSize[dimension] = {10, 10, 10};
+
+    DEM_SimulationParams() : domainMin(0.0f), domainMax(globalvar.domainSize) {
+        std::fill(std::begin(boundaryConditions.bc), std::end(boundaryConditions.bc), PERIODIC);
     }
 
 /*
@@ -135,10 +139,12 @@ public:
 
     // Random initial condition
     typedef INITIALCONDITION_RANDOM initialCondition;
+    int numberParticles = 40;
 
     // Neighborhood method
     typedef NEIGHBORHHOD_CELLLIST neighborhoodDetermination;
-
+//    float cellWidth = particleMethod.globalvar.r_cut;
+    float cellWidth = globalvar.r_cut;
 
     void initialization(Particle<ParticleSignatureType> particle) override {
 

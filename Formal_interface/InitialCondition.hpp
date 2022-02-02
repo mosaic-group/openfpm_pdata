@@ -6,10 +6,8 @@
 #define OPENFPM_PDATA_INITIALCONDITION_HPP
 
 #include <iostream>
+#include "Constants.hpp"
 
-
-struct InitialConditionMesh {};
-struct InitialConditionRandom {};
 
 
 // primary template
@@ -22,20 +20,20 @@ public:
 };
 
 template <typename ParticleMethodType, typename SimulationParametersType>
-class InitialCondition_Impl<InitialConditionMesh, ParticleMethodType, SimulationParametersType> {
+class InitialCondition_Impl<INITIALCONDITION_MESH, ParticleMethodType, SimulationParametersType> {
 public:
     void initialization(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
         std::cout << "Mesh particle placement" << std::endl;
 
         // create particle mesh
-        particleData.getContainer().clear();
-        auto meshIterator = particleData.getContainer().getGridIterator(SimulationParametersType::meshSize);
+        particleData.getOpenFPMContainer().clear();
+        auto meshIterator = particleData.getOpenFPMContainer().getGridIterator(SimulationParametersType::meshSize);
         while (meshIterator.isNext())
         {
-            particleData.getContainer().add();
+            particleData.getOpenFPMContainer().add();
             auto node = meshIterator.get();
             for (int i = 0; i < ParticleMethodType::spaceDimension; i++) {
-                particleData.getContainer().getLastPos()[i] = node.get(i) * meshIterator.getSpacing(i);
+                particleData.getOpenFPMContainer().getLastPos()[i] = node.get(i) * meshIterator.getSpacing(i);
             }
             ++meshIterator;
         }
@@ -43,7 +41,7 @@ public:
 };
 
 template <typename ParticleMethodType, typename SimulationParametersType>
-class InitialCondition_Impl<InitialConditionRandom, ParticleMethodType, SimulationParametersType> {
+class InitialCondition_Impl<INITIALCONDITION_RANDOM, ParticleMethodType, SimulationParametersType> {
 public:
     void initialization(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
@@ -68,13 +66,13 @@ public:
         std::normal_distribution<> dis_vel(0, .5);
 
         // move particles to random positions
-        auto iterator = particleData.getContainer().getDomainIterator();
+        auto iterator = particleData.getOpenFPMContainer().getDomainIterator();
         while (iterator.isNext())
         {
             auto p = iterator.get();
             for (int i = 0; i < dimension; i++) {
                 // random positions
-                particleData.getContainer().getPos(p)[i] = dis_pos_v[i](gen);
+                particleData.getOpenFPMContainer().getPos(p)[i] = dis_pos_v[i](gen);
             }
             ++iterator;
         }

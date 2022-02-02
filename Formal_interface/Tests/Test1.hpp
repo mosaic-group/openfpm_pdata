@@ -19,13 +19,35 @@
 struct PSE_ParticleSignature {
     static constexpr int dimension = 2;
     typedef double position;
-    typedef aggregate<double, double> properties;
+    typedef aggregate<float, float> properties;
     typedef MESH_PARTICLES dataStructure;
 };
 
 // Property identifier
 constexpr int concentration = 0;
 constexpr int accumulator = 1;
+
+
+
+
+struct GlobalVariable {
+    float dt = 0.05;
+    float t = 0;
+    float t_final = 10.1;
+
+    float domainSize = 40.0;
+    int meshSize = 256;
+    float meshSpacing = domainSize / meshSize;
+    float epsilon = meshSpacing;
+    float r_cut = 3 * epsilon;
+    float D = 0.01;
+    float kernel = dt * D * 15.0 * pow(meshSpacing/epsilon, 3)  / pow(epsilon * M_PI, 2);
+} globalvar;
+
+
+
+
+// Particle Method implementation
 
 template <typename ParticleSignature>
 class PSE_ParticleMethod : public ParticleMethod<ParticleSignature> {
@@ -35,37 +57,14 @@ class PSE_ParticleMethod : public ParticleMethod<ParticleSignature> {
 
 public:
 
-    struct GlobalVariable {
-        float dt = 0.04;
-        float t = 0;
-        float t_final = 20.1;
-
-        float domainSize = 2.5;
-        int meshSize = 128;
-        float meshSpacing = domainSize / meshSize;
-        float epsilon = meshSpacing;
-        float r_cut = 3 * epsilon;
-        float D = 0.01;
-        float kernel = dt * D * 15.0 * ((meshSpacing / epsilon) * (meshSpacing / epsilon) * (meshSpacing / epsilon)) / ((epsilon * M_PI) * (epsilon * M_PI));
-    } globalvar;
-
-
-
-
     void interact(Particle<ParticleSignature> particle, Particle<ParticleSignature> neighbor) override {
-
         Point<dimension, PositionType> p_pos = particle.position();
         Point<dimension, PositionType> n_pos = neighbor.position();
         PositionType distance2 = p_pos.distance2(n_pos);
 
         particle.template property<accumulator>() +=
                 (neighbor.template property<concentration>() - particle.template property<concentration>())
-                / (((distance2 / globalvar.epsilon / globalvar.epsilon) *
-                    (distance2 / globalvar.epsilon / globalvar.epsilon) *
-                    (distance2 / globalvar.epsilon / globalvar.epsilon) *
-                    (distance2 / globalvar.epsilon / globalvar.epsilon) *
-                    (distance2 / globalvar.epsilon / globalvar.epsilon))
-                   + 1.0);
+                / (1 + pow(distance2 / globalvar.epsilon / globalvar.epsilon, 5)) ;
 
     }
 
@@ -77,11 +76,13 @@ public:
     }
 
     bool stop() override {
-        std::cout << globalvar.t << std::endl;
+        std::cout << "\r" << int(globalvar.t / globalvar.t_final * 100) << "%" << std::flush;
 
         // Check simulation time
-        if (globalvar.t > globalvar.t_final)
+        if (globalvar.t > globalvar.t_final) {
+            std::cout << std::endl;
             return true;
+        }
 
         globalvar.t += globalvar.dt;
 
@@ -98,32 +99,20 @@ class PSE_SimulationParams : public SimulationParameters<ParticleSignatureType> 
 
 public:
 
-    // Domain
-    Point<dimension, PositionType> domainMin;
-    Point<dimension, PositionType> domainMax;
-
-    // Boundary conditions
-    periodicity<dimension> boundaryConditions {PERIODIC, PERIODIC};
-
-    size_t meshSize[dimension] = {128, 128};
-
-    PSE_SimulationParams() : domainMin(0.0f), domainMax(2.5f) {
-//        std::fill(std::begin(boundaryConditions), std::end(boundaryConditions), PERIODIC);
+    PSE_SimulationParams() {
+        this->setDomain(globalvar.domainSize);
+        this->setBoundaryConditions(PERIODIC);
+        this->setMeshSize(globalvar.meshSize);
+        this->setCutoffRadius(globalvar.r_cut);
+        this->setMeshSpacing(globalvar.meshSpacing);
     }
 
-/*
-    // Mesh initial condition
-    typedef InitialConditionMesh initialCondition;
-    constexpr static size_t meshSize[dimension] = {18, 18};
-*/
-
-    typedef MeshNeighborhood neighborhoodDetermination;
+    typedef NEIGHBORHOOD_MESH neighborhoodDetermination;
 
     void initialization(Particle<ParticleSignatureType> particle) override {
 
-        // Randomize velocity (normal distribution)
-        particle.template property<concentration>() = this->normalDistribution(0, 2);
-//            particle.template property<concentration>()[i] = particle.position()[i];
+        // Randomize concentration (normal distribution)
+        particle.template property<concentration>() = this->normalDistribution(0, 5);
     }
 
 };

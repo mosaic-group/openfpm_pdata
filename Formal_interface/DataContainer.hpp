@@ -48,9 +48,9 @@ private:
 public:
 
 
-    DataContainer_VectorDist(int numberParticles, Box<dimension, PositionType> domain, const periodicity<dimension> boundaryConditions) :
-        ghost(0.5),
-        vd(numberParticles, domain, boundaryConditions.bc, ghost) {}
+    DataContainer_VectorDist(int numberParticles, Box<dimension, PositionType> domain, const size_t (&boundaryConditions)[dimension], int ghostSize) :
+        ghost(ghostSize),
+        vd(numberParticles, domain, boundaryConditions, ghost) {}
 
     void printType() override {
         std::cout << "vector_dist" << std::endl;
@@ -100,8 +100,8 @@ private:
 
 public:
 
-    DataContainer_GridDist(const size_t (&meshSize)[dimension], Box<dimension, PositionType> domain, const periodicity<dimension> boundaryConditions) :
-        ghost(1),
+    DataContainer_GridDist(const size_t (&meshSize)[dimension], Box<dimension, PositionType> domain, const periodicity<dimension> boundaryConditions, int ghostSize) :
+        ghost(ghostSize),
         grid(meshSize,domain,ghost,boundaryConditions) {}
 
     void printType() override {
@@ -154,7 +154,7 @@ struct DataContainerFactory<ParticleSignatureType, FREE_PARTICLES> {
     ContainerType createContainer(SimulationParametersType& simulationParameters) {
         ContainerType newContainer(simulationParameters.numberParticles,
                                    Box<dimension, PositionType>(simulationParameters.domainMin, simulationParameters.domainMax),
-                                           simulationParameters.boundaryConditions);
+                                           simulationParameters.boundaryConditions, simulationParameters.cutoff_radius);
         return newContainer;
     }
 };
@@ -171,8 +171,18 @@ struct DataContainerFactory<ParticleSignatureType, MESH_PARTICLES> {
 
     template<typename SimulationParametersType>
     ContainerType createContainer(SimulationParametersType& simulationParameters) {
+
+        // calculate cutoff radius in mesh nodes
+        int neighborDistance = std::ceil(simulationParameters.cutoff_radius / simulationParameters.meshSpacing);
+
+        // create grid_dist_id boundary conditions
+        periodicity<dimension> boundaryConditions;
+        for (int i = 0; i < dimension; ++i)
+            boundaryConditions.bc[i] = simulationParameters.boundaryConditions[i];
+
+
         ContainerType newContainer(simulationParameters.meshSize, Box<dimension, PositionType>(simulationParameters.domainMin, simulationParameters.domainMax),
-                simulationParameters.boundaryConditions);
+                boundaryConditions, neighborDistance);
         return newContainer;
     }
 };

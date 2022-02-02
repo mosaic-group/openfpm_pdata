@@ -32,12 +32,20 @@ public:
         dataContainer.printType();
     }
 
-    DataStructureType& getContainer() {
+    // return reference to underlying OpenFPM data structure
+    // vector_dist or grid_dist_id
+    DataStructureType& getOpenFPMContainer() {
         return dataContainer.getContainer();
     }
 
+    // return reference to abstract data container
+    // can be free or mesh-based particle container
     DataContainerType& getDataContainer() {
         return dataContainer;
+    }
+
+    auto getParticleIterator() -> decltype(getOpenFPMContainer().getDomainIterator()){
+        return getOpenFPMContainer().getDomainIterator();
     }
 
 
