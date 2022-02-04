@@ -75,16 +75,19 @@ public:
 
     }
 
-    bool stop() override {
+    void evolveGlobalVariable() override {
+
+        // advance time
+        globalvar.t += globalvar.dt;
         std::cout << "\r" << int(globalvar.t / globalvar.t_final * 100) << "%" << std::flush;
 
-        // Check simulation time
-        if (globalvar.t > globalvar.t_final) {
-            std::cout << std::endl;
-            return true;
-        }
+    }
 
-        globalvar.t += globalvar.dt;
+    bool stop() override {
+
+        // Check simulation time
+        if (globalvar.t > globalvar.t_final)
+            return true;
 
         return false;
     }

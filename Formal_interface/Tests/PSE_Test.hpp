@@ -10,95 +10,115 @@
 #include "../ParticleData.hpp"
 #include "../ParticleMethod.hpp"
 #include "../Transition.hpp"
-
-// Particle properties
-static constexpr int concentration = 0;
-static constexpr int accumulator = 1;
-
-// Global variable properties
-static constexpr int dt = 0;
-static constexpr int t = 1;
-static constexpr int t_final = 2;
-static constexpr int r_cut = 3;
-static constexpr int epsilon = 4;
-static constexpr int D = 5;
+#include "../SimulationParameters.hpp"
+#include "../InitialCondition.hpp"
+#include "../Neighborhood.hpp"
 
 
-// Position type
-using position_type = float;
-
-// Particle type
-template <int dimension>
-using property_type_n = aggregate<float[dimension], float[dimension]>;
-
-// Global variable type
-using globalvar_type = aggregate<float, float, float, float, float, float>;
-
-
-template <int dimension>
-class PSE_Test : ParticleMethod<dimension, position_type, property_type_n<dimension>, globalvar_type> {
-public:
-
-    bool meshParticles;
-    constexpr static position_type domainMin = 0.0;
-    constexpr static position_type domainMax = 1.0;
-    constexpr static position_type meshSpacing = 0.005;
-//    constexpr static position_type meshDim = 1.0;
-
-
-    bool stop(GlobalVar<globalvar_type> globalVar) override {
-        return globalVar.property<t>() >= globalVar.property<t_final>();
-    }
-
-    void interact(GlobalVar<globalvar_type> globalVar, Particle<property_type_n<dimension>> particle, Particle<property_type_n<dimension>> neighbor) override {
-        position_type d2 = getDistance2(particle, neighbor);
-        particle.property<accumulator>() += (particle.property<concentration>() - neighbor.property<concentration>())
-                / (power(d2 / globalVar.property<epsilon>() / globalVar.property<epsilon>(), 5) + 1.0);
-    }
-
-    void evolve(GlobalVar<globalvar_type> globalVar, Particle<property_type_n<dimension>> particle, Particle<property_type_n<dimension>> neighbor) override {
-        particle.property<concentration>() += globalVar.property<dt>() * globalVar.property<D>() * 15.0 * power(meshSpacing / globalVar.property<epsilon>(), 3)
-                / power(globalVar.property<epsilon>() * M_PI, 2) * particle.property<accumulator>();
-        particle.property<accumulator>() = 0;
-    }
-
-    void evolveGlobalVar(GlobalVar<globalvar_type> globalVar) override {
-        globalVar.property<t>() += globalVar.property<dt>();
-    }
-
-
+struct PSE_ParticleSignature {
+    static constexpr int dimension = 2;
+    typedef double position;
+    typedef aggregate<float, float> properties;
+    typedef MESH_PARTICLES dataStructure;
 };
 
+// Property identifier
+constexpr int concentration = 0;
+constexpr int accumulator = 1;
 
 
-template <typename ParticleMethodType>
-class DEM_SimulationParams : public SimulationParameters<ParticleMethodType> {
 
-    typedef typename ParticleMethodType::propertyType PropertyType;
-    typedef typename ParticleMethodType::positionType PositionType;
-    static constexpr int dimension = ParticleMethodType::spaceDimension;
 
-    ParticleMethodType particleMethod;
+struct GlobalVariable {
+    float dt = 0.05;
+    float t = 0;
+    float t_final = 10.1;
+
+    float domainSize = 40.0;
+    int meshSize = 256;
+    float meshSpacing = domainSize / meshSize;
+    float epsilon = meshSpacing;
+    float r_cut = 3 * epsilon;
+    float D = 0.01;
+    float kernel = dt * D * 15.0 * pow(meshSpacing/epsilon, 3)  / pow(epsilon * M_PI, 2);
+} globalvar;
+
+
+
+
+// Particle Method implementation
+
+template <typename ParticleSignature>
+class PSE_ParticleMethod : public ParticleMethod<ParticleSignature> {
+
+    static constexpr int dimension = ParticleSignature::dimension;
+    using PositionType = typename ParticleSignature::position;
 
 public:
 
-    // Domain
-    Point<dimension, PositionType> domainMin;
-    Point<dimension, PositionType> domainMax;
+    void interact(Particle<ParticleSignature> particle, Particle<ParticleSignature> neighbor) override {
+        Point<dimension, PositionType> p_pos = particle.position();
+        Point<dimension, PositionType> n_pos = neighbor.position();
+        PositionType distance2 = p_pos.distance2(n_pos);
 
+        particle.template property<accumulator>() +=
+                (neighbor.template property<concentration>() - particle.template property<concentration>())
+                / (1 + pow(distance2 / globalvar.epsilon / globalvar.epsilon, 5)) ;
 
+    }
 
-    DEM_SimulationParams() : domainMin(0.0f), domainMax(20.0f) {}
+    void evolve(Particle<ParticleSignature> particle) override {
 
-    void initialization(Particle<dimension, PositionType , PropertyType> particle) override {
+        particle.template property<concentration>() += globalvar.kernel * particle.template property<accumulator>();
+        particle.template property<accumulator>()= 0;
 
-        // Randomize velocity (normal distribution)
-        for (int i = 0; i < dimension; i++) {
-            particle.template property<concentration>()[i] = this->normalDistribution(0, 2);
-        }
+    }
+
+    void evolveGlobalVariable() override {
+
+        // advance time
+        globalvar.t += globalvar.dt;
+        std::cout << "\r" << int(globalvar.t / globalvar.t_final * 100) << "%" << std::flush;
+
+    }
+
+    bool stop() override {
+
+        // Check simulation time
+        if (globalvar.t > globalvar.t_final)
+            return true;
+
+        return false;
+    }
+};
+
+template <typename ParticleSignatureType>
+class PSE_SimulationParams : public SimulationParameters<ParticleSignatureType> {
+
+    static constexpr int dimension = ParticleSignatureType::dimension;
+    using PositionType = typename ParticleSignatureType::position;
+    using PropertyType = typename ParticleSignatureType::properties;
+
+public:
+
+    PSE_SimulationParams() {
+        this->setDomain(globalvar.domainSize);
+        this->setBoundaryConditions(PERIODIC);
+        this->setMeshSize(globalvar.meshSize);
+        this->setCutoffRadius(globalvar.r_cut);
+        this->setMeshSpacing(globalvar.meshSpacing);
+    }
+
+    typedef NEIGHBORHOOD_MESH neighborhoodDetermination;
+
+    void initialization(Particle<ParticleSignatureType> particle) override {
+
+        // Randomize concentration (normal distribution)
+        particle.template property<concentration>() = this->normalDistribution(0, 5);
     }
 
 };
+
 
 
 

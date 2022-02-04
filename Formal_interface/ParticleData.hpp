@@ -23,6 +23,18 @@ class ParticleData {
     using DataContainerType = typename ContainerFactoryType::ContainerType;
     using DataStructureType = typename ContainerFactoryType::ContainerType::DataStructureType;
 
+
+    /**
+    * helper function to call ghost_get for all properties up to N
+    * @tparam prp pass std::make_integer_sequence<int, N>{}
+    */
+    template <int ... prp>
+    void ghost_get_N (std::integer_sequence<int, prp...>)
+    {
+        getOpenFPMContainer().template ghost_get<prp...>();
+    }
+
+
 public:
 
     DataContainerType dataContainer;
@@ -46,6 +58,18 @@ public:
 
     auto getParticleIterator() -> decltype(getOpenFPMContainer().getDomainIterator()){
         return getOpenFPMContainer().getDomainIterator();
+    }
+
+
+
+    /**
+     * calls ghost_get for all properties
+     */
+    void ghost_get_all() {
+        // get number of properties
+        const int max_prop = ParticleSignatureType::properties::max_prop;
+        // call ghost_get for all properties
+        ghost_get_N(std::make_integer_sequence<int, max_prop>{});
     }
 
 

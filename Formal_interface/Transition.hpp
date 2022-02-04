@@ -10,6 +10,7 @@
 #include "Particle.hpp"
 #include "InitialCondition.hpp"
 #include "Neighborhood.hpp"
+#include "Ghost.hpp"
 #include <random>
 #include <boost/hana.hpp>
 
@@ -95,16 +96,28 @@ public:
 
         particleData.getOpenFPMContainer().map();
 
-        particleData.getOpenFPMContainer().template ghost_get<0, 1>();
+//        particleData.getOpenFPMContainer().template ghost_get<0, 1>();
 
-//        executeInteraction(particleData);
+
+
+        // synchronize ghost for all properties
+        particleData.ghost_get_all();
+
+
+        // call interact method
         interactionImplementation.executeInteraction(particleData);
+
+        // call evolve method
         executeEvolution(particleData);
 
+        // call evolve method (global variable)
+        particleMethod.evolveGlobalVariable();
+
+
+        // write particle data to file
         particleData.getDataContainer().deleteGhost();
         particleData.getDataContainer().write_frame("particles",iteration);
 
-//        std::cout << "iteration " << iteration << std::endl;
         iteration++;
     }
 

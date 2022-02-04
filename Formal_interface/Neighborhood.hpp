@@ -92,7 +92,7 @@ public:
 
         // symmetric cell list
         if (simulationParameters.symmetricInteraction == INTERACTION_SYMMETRIC) {
-            return particleData.getOpenFPMContainer().template getCellListSym<CELL_MEMBAL(dimension, PositionType)>(simulationParameters.cellWidth);
+//            return particleData.getOpenFPMContainer().template getCellListSym<CELL_MEMBAL(dimension, PositionType)>(simulationParameters.cellWidth);
         }
 
         // unsymmetric cell list

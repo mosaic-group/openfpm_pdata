@@ -23,9 +23,7 @@ public:
 
     virtual void evolve(Particle<ParticleSignatureType> particle) {}
     virtual void interact(Particle<ParticleSignatureType> particle, Particle<ParticleSignatureType> neighbor) {}
-//    virtual void initialization(Particle<ParticleSignature> particle) {}
-
-    virtual void evolveGlobalVar() {}
+    virtual void evolveGlobalVariable() {}
     virtual bool stop() {
         return true;
     }
@@ -43,16 +41,7 @@ public:
         return dis(gen);
     }
 
-    /*template<int d, typename T>
-    Point<d, T> normalDistribution(float mean, float stdev) {
-        std::normal_distribution<> dis(mean, stdev);
 
-        Point<d, T> randomPoint();
-        for (int i = 0; i < d; ++i) {
-            randomPoint()[i] = dis(gen);
-        }
-        return randomPoint();
-    }*/
 };
 
 

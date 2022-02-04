@@ -2,7 +2,7 @@ include paths.mk
 
 CC=mpic++
 
-all: Test1 DEM_Test
+all: Test1 DEM_Test PSE_Test
 
 %.o: %.cpp
 	$(CC) -O3 -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
@@ -11,6 +11,9 @@ Test1: Test1.o
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 DEM_Test: DEM_Test.o
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
+
+PSE_Test: PSE_Test.o
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 
 
