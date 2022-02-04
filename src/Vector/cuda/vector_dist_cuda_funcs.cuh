@@ -419,6 +419,17 @@ void remove_marked(vector_type & vd, const int n = 1024)
 
 	// we reuse memory. this give us the possibility to avoid allocation and make the remove faster
 
+	// Reference counter must be set to zero
+
+/*	for (int i = 0 ; i < MAX_NUMER_OF_PROPERTIES ; i++)
+	{
+		for (int j = 0 ; j < exp_tmp2[i].ref() ; j++)
+		{exp_tmp2[i].decRef();}
+	}
+
+	for (int j = 0 ; j < exp_tmp.ref() ; j++)
+	{exp_tmp.decRef();}*/
+
 	vd_pos_new.setMemory(exp_tmp);
 	vd_prp_new.setMemoryArray((CudaMemory *)&exp_tmp2);
 
@@ -436,6 +447,10 @@ void remove_marked(vector_type & vd, const int n = 1024)
 
 	vd.getPosVector().swap_nomode(vd_pos_new);
 	vd.getPropVector().swap_nomode(vd_prp_new);
+
+	// Increment v_pos_new and vd_prp_new memory counters
+
+	vd.setReferenceCounterToOne();
 }
 
 template<unsigned int prp, typename functor, typename particles_type, typename out_type>

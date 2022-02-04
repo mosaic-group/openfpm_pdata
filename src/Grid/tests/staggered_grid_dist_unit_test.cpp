@@ -41,16 +41,16 @@ BOOST_AUTO_TEST_CASE( staggered_grid_dist_unit_test)
 	BOOST_REQUIRE_EQUAL(cmbs[4].size(),2ul);
 	BOOST_REQUIRE_EQUAL(cmbs[5].size(),4ul);
 
-	BOOST_REQUIRE(cmbs[0].get(0) == comb<2>({0,0}));
-	BOOST_REQUIRE(cmbs[1].get(0) == comb<2>({0,0}));
-	BOOST_REQUIRE(cmbs[2].get(0) == comb<2>({0,0}));
-	BOOST_REQUIRE(cmbs[3].get(0) == comb<2>({0,0}));
-	BOOST_REQUIRE(cmbs[4].get(0) == comb<2>({0,-1}));
-	BOOST_REQUIRE(cmbs[4].get(1) == comb<2>({-1,0}));
-	BOOST_REQUIRE(cmbs[5].get(0) == comb<2>({0,0}));
-	BOOST_REQUIRE(cmbs[5].get(1) == comb<2>({-1,-1}));
-	BOOST_REQUIRE(cmbs[5].get(2) == comb<2>({-1,-1}));
-	BOOST_REQUIRE(cmbs[5].get(3) == comb<2>({0,0}));
+	BOOST_REQUIRE(cmbs[0].get(0) == comb<2>({(char)0,(char)0}));
+	BOOST_REQUIRE(cmbs[1].get(0) == comb<2>({(char)0,(char)0}));
+	BOOST_REQUIRE(cmbs[2].get(0) == comb<2>({(char)0,(char)0}));
+	BOOST_REQUIRE(cmbs[3].get(0) == comb<2>({(char)0,(char)0}));
+	BOOST_REQUIRE(cmbs[4].get(0) == comb<2>({(char)0,(char)-1}));
+	BOOST_REQUIRE(cmbs[4].get(1) == comb<2>({(char)-1,(char)0}));
+	BOOST_REQUIRE(cmbs[5].get(0) == comb<2>({(char)0,(char)0}));
+	BOOST_REQUIRE(cmbs[5].get(1) == comb<2>({(char)-1,(char)-1}));
+	BOOST_REQUIRE(cmbs[5].get(2) == comb<2>({(char)-1,(char)-1}));
+	BOOST_REQUIRE(cmbs[5].get(3) == comb<2>({(char)0,(char)0}));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

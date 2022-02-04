@@ -1,6 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [4.1.0] (Codename Thesis)
+- On a general base the code should not use CUDA_ON_CPU but if it does CUDA_ON_CPU macro now cover both SEQUENTIAL and OpenMP backend. The macros CUDIFY_USE_CUDA,CUDIFY_USE_HIP,CUDIFY_USE_OPENMP,CUDIFY_USE_SEQUENTIAL,CUDIFY_USE_NONE can be checked to control which CUDA backend is used
+
+### Fixed
+- Minors bug
+
 ## [4.0.0] September 2021 (Codename Heisenberg)
 
 - Adding DCPSE, Level-set based numerics (Closest-point)

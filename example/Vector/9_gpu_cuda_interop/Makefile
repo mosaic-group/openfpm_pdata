@@ -4,16 +4,19 @@ ifdef CUDA_ON_CPU
         INCLUDE_PATH_NVCC=
         CUDA_CC_LINK=mpic++
         CUDA_OPTIONS=
+	LIBS_SELECT=$(LIBS)
 else
 	ifeq (, $(shell which nvcc))
         	CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
         	INCLUDE_PATH_NVCC=
         	CUDA_CC_LINK=mpic++
         	CUDA_OPTIONS=
+		LIBS_SELECT=$(LIBS)
 	else
         	CUDA_CC=nvcc -ccbin=mpic++
         	CUDA_CC_LINK=nvcc -ccbin=mpic++
         	CUDA_OPTIONS=-use_fast_math  -arch=sm_61 -lineinfo
+		LIBS_SELECT=$(LIBS_NVCC)
 	endif
 endif
 
@@ -28,7 +31,7 @@ gpu_interop:
 	$(CUDA_CC) -O3 $(OPT) -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
 gpu_interop: $(OBJ)
-	$(CUDA_CC_LINK) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
+	$(CUDA_CC_LINK) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS_SELECT)
 
 all: gpu_interop
 

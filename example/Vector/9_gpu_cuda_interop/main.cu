@@ -229,7 +229,7 @@ int main(int argc, char* argv[])
 
 	vd.template hostToDeviceProp<0,1,2>();
 
-	print_data_particle_50<<<100,1>>>((float *)vd.getPropVector().template getDeviceBuffer<0>(),
+	CUDA_LAUNCH_DIM3(print_data_particle_50,100,1,(float *)vd.getPropVector().template getDeviceBuffer<0>(),
 			               (float *)vd.getPropVector().template getDeviceBuffer<1>(),
 			               (float *)vd.getPropVector().template getDeviceBuffer<2>(),
 			               vd.getPropVector().capacity());

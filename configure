@@ -100,6 +100,7 @@ enable_debug
 with_metis
 with_hdf5
 with_libhilbert
+with_cuda_on_backend
 enable_cuda_on_cpu
 enable_scan_coverty
 enable_test_performance
@@ -123,8 +124,6 @@ with_suitesparse
 with_petsc
 with_eigen
 with_vcdevel
-enable_gpu
-enable_hip
 enable_asan
 enable_garbageinj
 enable_garbageinjv
@@ -199,9 +198,6 @@ do
     ac_useropt_orig=$ac_useropt
     ac_useropt=`$as_echo "$ac_useropt" | sed 's/[-+.]/_/g'`
     case $ac_useropt in
-      gpu)
-	conf_options="$conf_options -DENABLE_GPU=OFF"
-        ;;
       *) ac_unrecognized_opts="$ac_unrecognized_opts$ac_unrecognized_sep--disable-$ac_useropt_orig"
 	 ac_unrecognized_sep=', ';;
     esac
@@ -239,29 +235,16 @@ do
        conf_options="$conf_options -DSE_CLASS3=ON"
        ;;
     test_coverage)
-       conf_options="$conf_options -DTEST_COVERAGE=ON"
+       conf_options="$conf_options -DTEST_COVERAGE=ON -DCUDA_ON_BACKEND=SEQUENTIAL"
        ;;
     scan_coverty)
        conf_options="$conf_options -DSCAN_COVERTY=ON"
        ;;
     cuda_on_cpu)
-       conf_options="$conf_options -DCUDA_ON_CPU=ON"
+       conf_options="$conf_options -DCUDA_ON_BACKEND=SEQUENTIAL"
        ;;
     test_performance)
        conf_options="$conf_options -DTEST_PERFORMANCE=ON"
-       ;;
-    gpu)
-	conf_options="$conf_options -DCMAKE_CUDA_HOST_COMPILER=$(which mpic++) "
-        if [ x"$CXXCUDA" == x"" ]; then
-                conf_options="$conf_options"
-        else
-                conf_options="$conf_options -DCMAKE_CUDA_COMPILER=$(which $CXXCUDA)"
-        fi
-       conf_options="$conf_options -DENABLE_GPU=ON"
-       ;;
-    hip)
-       conf_options="$conf_options -DHIP_ENABLE=ON -DENABLE_GPU=ON"
-       enable_hip_conf=1
        ;;
     asan)
        conf_options="$conf_options -DENABLE_ASAN=ON"
@@ -274,6 +257,8 @@ do
        ;;
     *) ac_unrecognized_opts="$ac_unrecognized_opts$ac_unrecognized_sep--enable-$ac_useropt_orig"
        ac_unrecognized_sep=', '
+       echo "Unrecognized option: $ac_unrecognized_opts"
+       exit 1
        ;;
     esac
     eval enable_$ac_useropt=\$ac_optarg ;;
@@ -477,6 +462,19 @@ do
     ac_useropt_orig=$ac_useropt
     ac_useropt=`$as_echo "$ac_useropt" | sed 's/[-+.]/_/g'`
     case $ac_useropt in
+      cuda_on_backend)
+      conf_options="$conf_options -DCUDA_ON_BACKEND=$ac_optarg"
+      if [ x"$ac_optarg" != x"CUDA" ]; then
+      	conf_options="$conf_options"
+      else
+      	conf_options="$conf_options -DCMAKE_CUDA_HOST_COMPILER=$(which $CXX)"
+      fi
+      if [ x"$CXXCUDA" == x"" ]; then
+      	conf_options="$conf_options"
+      else
+      	conf_options="$conf_options -DCMAKE_CUDA_COMPILER=$(which $CXXCUDA)"
+      fi
+      ;;
       libhilbert)
       conf_options="$conf_options -DLIBHILBERT_ROOT=$ac_optarg"
       ;;
@@ -524,7 +522,10 @@ do
       conf_options="$conf_options -DALPAKA_ROOT=$ac_optarg"
       ;;
       *) ac_unrecognized_opts="$ac_unrecognized_opts$ac_unrecognized_sep--with-$ac_useropt_orig"
-	 ac_unrecognized_sep=', ';;
+	 ac_unrecognized_sep=', '
+	 echo "Unrecognized option: $ac_unrecognized_opts"
+	 exit 1
+	 ;;
     esac
     eval with_$ac_useropt=\$ac_optarg ;;
 
@@ -594,28 +595,34 @@ fi
 cd build
 
 ## remove enerything
-if [ x"$enable_hip_conf" != x"1" ]; then
-	conf_options="$conf_options -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpic++"
-fi
-
 echo "Calling cmake ../. $conf_options"
-printf "cmake ../. $conf_options" > cmake_build_options 
+printf "cmake ../. $conf_options" > cmake_build_options
+rm ../openfpm_devices/error_code
 rm ../error_code
 DYLD_LIBRARY_PATH=$ld_lib_pathopt cmake ../. $conf_options
 if [ $? != 0 ]; then
-	#ok something went wrong the install script analyze the return code to potentially fix the problem automatically
-	# Read the error code and exit with that
-	if [ -f ../error_code ]; then
-	  ecod=$(cat ../error_code)
-	  if [ x"$ecod" == x"0" ]; then
-	    exit 1
-	  else
-	    echo "Analyze error $ecod"
-	    exit $ecod
-	  fi
-	else
-	  exit 1
-	fi
+        #ok something went wrong the install script analyze the return code to potentially fix the problem automatically
+        # Read the error code and exit with that
+
+        if [ -f ../openfpm_devices/error_code ]; then
+          ecod=$(cat ../openfpm_devices/error_code)
+          if [ x"$ecod" == x"0" ]; then
+            exit 1
+          else
+            echo "Analyze error $ecod"
+            exit $ecod
+          fi
+        elif [ -f ../error_code ]; then
+          ecod=$(cat ../error_code)
+          if [ x"$ecod" == x"0" ]; then
+            exit 1
+          else
+            echo "Analyze error $ecod"
+            exit $ecod
+          fi
+        else
+          exit 1
+        fi
 fi
 
 cd ..

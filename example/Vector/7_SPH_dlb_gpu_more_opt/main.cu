@@ -62,7 +62,6 @@
 #include "Vector/vector_dist.hpp"
 #include <math.h>
 #include "Draw/DrawParticles.hpp"
-#include <cuda_profiler_api.h>
 
 
 
@@ -324,16 +323,16 @@ __global__ void calc_forces_fluid_gpu(particles_type vd, fluid_ids_type fids, NN
 	Point<3,real_number> xa = vd.getPos(a);
 
 	// Type of the particle
-	unsigned int typea = vd.getProp<type>(a);
+	unsigned int typea = vd.template getProp<type>(a);
 
 	// Get the density of the of the particle a
-	real_number rhoa = vd.getProp<rho>(a);
+	real_number rhoa = vd.template getProp<rho>(a);
 
 	// Get the pressure of the particle a
-	real_number Pa = vd.getProp<Pressure>(a);
+	real_number Pa = vd.template getProp<Pressure>(a);
 
 	// Get the Velocity of the particle a
-	Point<3,real_number> va = vd.getProp<velocity>(a);
+	Point<3,real_number> va = vd.template getProp<velocity>(a);
 
 	Point<3,real_number> force_;
 	force_.get(0) = 0.0f;
@@ -356,12 +355,12 @@ __global__ void calc_forces_fluid_gpu(particles_type vd, fluid_ids_type fids, NN
 		// if (p == q) skip this particle this condition should be done in the r^2 = 0
 		//if (a == b)	{++Np; continue;};
 
-        unsigned int typeb = vd.getProp<type>(b);
+        unsigned int typeb = vd.template getProp<type>(b);
 
         real_number massb = (typeb == FLUID)?MassFluid:MassBound;
-        Point<3,real_number> vb = vd.getProp<velocity>(b);
-        real_number Pb = vd.getProp<Pressure>(b);
-        real_number rhob = vd.getProp<rho>(b);
+        Point<3,real_number> vb = vd.template getProp<velocity>(b);
+        real_number Pb = vd.template getProp<Pressure>(b);
+        real_number rhob = vd.template getProp<rho>(b);
 
 		// Get the distance between p and q
 		Point<3,real_number> dr = xa - xb;
@@ -395,7 +394,7 @@ __global__ void calc_forces_fluid_gpu(particles_type vd, fluid_ids_type fids, NN
 		++Np;
 	}
 
-	vd.getProp<red>(a) = max_visc;
+	vd.template getProp<red>(a) = max_visc;
 
 	vd.template getProp<force>(a)[0] = force_.get(0);
 	vd.template getProp<force>(a)[1] = force_.get(1);
@@ -417,10 +416,10 @@ __global__ void calc_forces_border_gpu(particles_type vd, fluid_ids_type fbord, 
 	Point<3,real_number> xa = vd.getPos(a);
 
 	// Type of the particle
-	unsigned int typea = vd.getProp<type>(a);
+	unsigned int typea = vd.template getProp<type>(a);
 
 	// Get the Velocity of the particle a
-	Point<3,real_number> va = vd.getProp<velocity>(a);
+	Point<3,real_number> va = vd.template getProp<velocity>(a);
 
 	real_number drho_ = 0.0f;
 
@@ -439,10 +438,10 @@ __global__ void calc_forces_border_gpu(particles_type vd, fluid_ids_type fbord, 
 		// if (p == q) skip this particle this condition should be done in the r^2 = 0
 		//if (a == b)	{++Np; continue;};
 
-        unsigned int typeb = vd.getProp<type>(b);
+        unsigned int typeb = vd.template getProp<type>(b);
 
         real_number massb = (typeb == FLUID)?MassFluid:MassBound;
-        Point<3,real_number> vb = vd.getProp<velocity>(b);
+        Point<3,real_number> vb = vd.template getProp<velocity>(b);
 
 		// Get the distance between p and q
 		Point<3,real_number> dr = xa - xb;
@@ -467,7 +466,7 @@ __global__ void calc_forces_border_gpu(particles_type vd, fluid_ids_type fbord, 
 		++Np;
 	}
 
-	vd.getProp<red>(a) = max_visc;
+	vd.template getProp<red>(a) = max_visc;
 
 	vd.template getProp<drho>(a) = drho_;
 }
@@ -519,11 +518,11 @@ __global__ void max_acceleration_and_velocity_gpu(vector_type vd)
 {
 	auto a = GET_PARTICLE(vd);
 
-	Point<3,real_number> acc(vd.getProp<force>(a));
-	vd.getProp<red>(a) = norm(acc);
+	Point<3,real_number> acc(vd.template getProp<force>(a));
+	vd.template getProp<red>(a) = norm(acc);
 
-	Point<3,real_number> vel(vd.getProp<velocity>(a));
-	vd.getProp<red2>(a) = norm(vel);
+	Point<3,real_number> vel(vd.template getProp<velocity>(a));
+	vd.template getProp<red2>(a) = norm(vel);
 }
 
 void max_acceleration_and_velocity(particles & vd, real_number & max_acc, real_number & max_vel)
@@ -531,7 +530,7 @@ void max_acceleration_and_velocity(particles & vd, real_number & max_acc, real_n
 	// Calculate the maximum acceleration
 	auto part = vd.getDomainIteratorGPU();
 
-	max_acceleration_and_velocity_gpu<<<part.wthr,part.thr>>>(vd.toKernel());
+	CUDA_LAUNCH(max_acceleration_and_velocity_gpu,part,vd.toKernel());
 
 	max_acc = reduce_local<red,_max_>(vd);
 	max_vel = reduce_local<red2,_max_>(vd);
@@ -638,7 +637,7 @@ void verlet_int(particles & vd, real_number dt)
 	real_number dt205 = dt*dt*0.5;
 	real_number dt2 = dt*2.0;
 
-	verlet_int_gpu<<<part.wthr,part.thr>>>(vd.toKernel(),dt,dt2,dt205);
+	CUDA_LAUNCH(verlet_int_gpu,part,vd.toKernel(),dt,dt2,dt205);
 
 	// remove the particles marked
 	remove_marked<red>(vd);
@@ -714,7 +713,7 @@ void euler_int(particles & vd, real_number dt)
 
 	real_number dt205 = dt*dt*0.5;
 
-	euler_int_gpu<<<part.wthr,part.thr>>>(vd.toKernel(),dt,dt205);
+	CUDA_LAUNCH(euler_int_gpu,part,vd.toKernel(),dt,dt205);
 
 	// remove the particles
 	remove_marked<red>(vd);
@@ -790,7 +789,7 @@ inline void sensor_pressure(Vector & vd,
         // if the probe is inside the processor domain
 		if (vd.getDecomposition().isLocal(probes.get(i)) == true)
 		{
-			sensor_pressure_gpu<<<1,1>>>(vd.toKernel_sorted(),NN.toKernel(),probes.get(i),(real_number *)press_tmp_.toKernel());
+			CUDA_LAUNCH_DIM3(sensor_pressure_gpu,1,1,vd.toKernel_sorted(),NN.toKernel(),probes.get(i),(real_number *)press_tmp_.toKernel());
 
 			vd.merge<Pressure>(NN);
 
@@ -818,7 +817,9 @@ int main(int argc, char* argv[])
 	openfpm::vector_gpu<aggregate<int>> fluid_ids;
 	openfpm::vector_gpu<aggregate<int>> border_ids;
 
+#ifdef CUDIFY_USE_CUDA
 	cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
+#endif
 
 	// It contain for each time-step the value detected by the probes
 	openfpm::vector<openfpm::vector<real_number>> press_t;

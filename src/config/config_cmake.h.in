@@ -4,12 +4,17 @@ ${DEFINE_COVERTY_SCAN}
 /* GPU support */
 ${DEFINE_CUDA_GPU}
 
+/* Define CUDIFY backend */
+${DEFINE_CUDIFY_BACKEND}
+
+/* OpenMP support */
+${DEFINE_HAVE_OPENMP}
+
 /* HIP GPU support */
 ${DEFINE_HIP_GPU}
 
 /* HIP Cudify GPU support */
 ${DEFINE_CUDIFY_USE_HIP}
-
 
 /* Debug */
 ${DEFINE_DEBUG} /**/
@@ -183,9 +188,6 @@ ${DEFINE_STOP_ON_ERROR}
 
 /* Garbage injector*/
 ${DEFINE_GARBAGE_INJECTOR}
-
-/* VCluster Garbage injector*/
-${DEFINE_VCLUSTER_GARBAGE_INJECTOR}
 
 /* Test coverage mode */
 ${DEFINE_TEST_COVERAGE_MODE}

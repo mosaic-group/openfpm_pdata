@@ -1269,42 +1269,6 @@ class vector_dist_comm
 
 			// The first part of m_opart and prc_sz contain the local particles
 
-			#ifndef TEST1
-
-			v_pos_tmp.resize(prc_sz.template get<0>(0));
-			v_prp_tmp.resize(prc_sz.template get<0>(0));
-
-			auto ite = v_pos_tmp.getGPUIterator();
-
-			// fill v_pos_tmp and v_prp_tmp with local particles
-			process_map_particles<decltype(m_opart.toKernel()),decltype(v_pos_tmp.toKernel()),decltype(v_prp_tmp.toKernel()),
-					                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>
-			<<<ite.wthr,ite.thr>>>
-			(m_opart.toKernel(),v_pos_tmp.toKernel(), v_prp_tmp.toKernel(),
-					            v_pos.toKernel(),v_prp.toKernel(),0);
-
-			size_t offset = prc_sz.template get<0>(0);
-
-			// Fill the sending buffers
-			for (size_t i = 0 ; i < m_pos.size() ; i++)
-			{
-				auto ite = m_pos.get(i).getGPUIterator();
-
-				process_map_particles<decltype(m_opart.toKernel()),decltype(m_pos.get(i).toKernel()),decltype(m_prp.get(i).toKernel()),
-						                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>
-				<<<ite.wthr,ite.thr>>>
-				(m_opart.toKernel(),m_pos.get(i).toKernel(), m_prp.get(i).toKernel(),
-						            v_pos.toKernel(),v_prp.toKernel(),offset);
-
-				offset += prc_sz_r.size();
-			}
-
-			// old local particles with the actual local particles
-			v_pos_tmp.swap(v_pos);
-			v_prp_tmp.swap(v_prp);
-
-			#else
-
 			int rank = v_cl.rank();
 
 			v_pos_tmp.resize(prc_sz.template get<0>(rank));
@@ -1350,7 +1314,6 @@ class vector_dist_comm
 			v_pos_tmp.swap(v_pos);
 			v_prp_tmp.swap(v_prp);
 
-			#endif
 #else
 
 			std::cout << __FILE__ << ":" << __LINE__ << " error RUN_ON_DEVICE require that you compile with NVCC, but it seem compiled with a normal compiler" << std::endl;
@@ -1478,35 +1441,6 @@ class vector_dist_comm
 			ite,
 			dec.toKernel(),v_pos.toKernel(),lbl_p.toKernel(),prc_sz.toKernel(),v_cl.rank());
 
-
-			#ifndef TEST1
-
-			// sort particles
-			mergesort((int *)lbl_p.template getDeviceBuffer<1>(),(int *)lbl_p.template getDeviceBuffer<0>(), lbl_p.size(), mgpu::template less_t<int>(), v_cl.getmgpuContext());
-
-			mem.allocate(sizeof(int));
-			mem.fill(0);
-
-			// Find the buffer bases
-			find_buffer_offsets<1,decltype(lbl_p.toKernel()),decltype(prc_sz.toKernel())><<<ite.wthr,ite.thr>>>
-					           (lbl_p.toKernel(),(int *)mem.getDevicePointer(),prc_sz.toKernel());
-
-#error "should not be here"
-
-			// Trasfer the number of offsets on CPU
-			mem.deviceToHost();
-			prc_sz.template deviceToHost<0,1>();
-			// get also the last element from lbl_p;
-			lbl_p.template deviceToHost<1>(lbl_p.size()-1,lbl_p.size()-1);
-
-			mem.deviceToHost();
-			int noff = *(int *)mem.getPointer();
-			prc_sz.resize(noff+1);
-			prc_sz.template get<0>(prc_sz.size()-1) = lbl_p.size();
-			prc_sz.template get<1>(prc_sz.size()-1) = lbl_p.template get<1>(lbl_p.size()-1);
-
-			#else
-
 			starts.resize(v_cl.size());
 			openfpm::scan((unsigned int *)prc_sz.template getDeviceBuffer<0>(), prc_sz.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
 
@@ -1518,7 +1452,6 @@ class vector_dist_comm
 			// we order lbl_p
 			CUDA_LAUNCH((reorder_lbl<decltype(lbl_p.toKernel()),decltype(starts.toKernel())>),ite,lbl_p.toKernel(),starts.toKernel());
 
-			#endif
 
 #else
 

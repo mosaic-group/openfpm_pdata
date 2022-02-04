@@ -183,7 +183,7 @@ class ie_loc_ghost
 						bp.setHigh(k,domain.getHigh(k));
 						shift.get(k) = 0;
 						break;
-					case -1:
+					case (char)-1:
 						bp.setLow(k,domain.getLow(k));
 						bp.setHigh(k,ghost.getHigh(k));
 						shift.get(k) = domain.getHigh(k)-domain.getLow(k);

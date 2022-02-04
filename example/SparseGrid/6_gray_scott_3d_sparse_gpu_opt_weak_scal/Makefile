@@ -7,14 +7,17 @@ ifdef CUDA_ON_CPU
 	CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
         INCLUDE_PATH_NVCC=
         CUDA_CC_LINK=mpic++
+		LIBS_SELECT=$(LIBS)
 else
 	ifeq (, $(shell which nvcc))
         	CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
         	INCLUDE_PATH_NVCC=
         	CUDA_CC_LINK=mpic++
+			LIBS_SELECT=$(LIBS)
 	else
         	CUDA_CC=nvcc -ccbin=mpic++
         	CUDA_CC_LINK=nvcc -ccbin=mpic++
+			LIBS_SELECT=$(LIBS_NVCC)
 	endif
 endif
 
@@ -31,7 +34,7 @@ OBJ = main.o
 	$(CUDA_CC) -O3 $(OPT) -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH_NVCC)
 
 gray_scott_sparse_gpu: $(OBJ)
-	$(CUDA_CC_LINK) -o $@ $^ $(LIBS_PATH) $(LIBS)
+	$(CUDA_CC_LINK) -o $@ $^ $(LIBS_PATH) $(LIBS_SELECT)
 
 all: gray_scott_sparse_gpu
 

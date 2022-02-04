@@ -8,7 +8,7 @@
 #ifndef GRID_DIST_ID_ITERATOR_DEC_GPU_CUH_
 #define GRID_DIST_ID_ITERATOR_DEC_GPU_CUH_
 
-
+#include "config.h"
 #include "Grid/Iterators/grid_dist_id_iterator.hpp"
 #include "Grid/grid_dist_util.hpp"
 #include "Grid/Iterators/grid_dist_id_iterator_util.hpp"
@@ -28,9 +28,24 @@ template<>
 struct launch_call_impl<1>
 {
 	template<typename loc_grid_type, typename ite_type, typename itd_type, typename functor_type,typename ... argsT>
-	inline static void call(loc_grid_type & loc_grid, ite_type & ite, itd_type & itd, functor_type functor, argsT ... args)
+	inline static void call(loc_grid_type & loc_grid, ite_type & ite, itd_type & itd, functor_type f, argsT ... args)
 	{
-		CUDA_LAUNCH(grid_apply_functor_shared_bool,ite,loc_grid.toKernel(), itd, functor, args... );
+#ifdef CUDIFY_USE_CUDA
+
+		CUDA_LAUNCH(grid_apply_functor_shared_bool,ite,loc_grid.toKernel(), itd, f, args... );
+
+#else
+		auto g = loc_grid.toKernel();
+
+		auto lamb = [g,itd,f,args ...] __device__ () mutable
+		{
+			__shared__ bool is_empty_block;
+
+			f(g,itd,is_empty_block,args...);
+		};
+
+		CUDA_LAUNCH_LAMBDA_TLS(ite,lamb);
+#endif
 	}
 };
 
