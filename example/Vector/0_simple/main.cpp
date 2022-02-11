@@ -65,8 +65,11 @@
 #include "Vector/vector_dist.hpp"
 //! \cond [inclusion] \endcond
 
+
 int main(int argc, char* argv[])
 {
+
+	std::cout << is_layout_inte<memory_traits_custom_separation_of_buffer<aggregate<int>>>::value << std::endl;
 
 	/*!
 	 * \page Vector_0_simple Vector 0 simple
