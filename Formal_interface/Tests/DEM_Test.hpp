@@ -122,6 +122,10 @@ class DEM_SimulationParams : public SimulationParameters<ParticleSignatureType> 
 
 public:
 
+/*
+    size_t domainMin[dimension] = {-1, 0};
+    size_t domainMax[dimension] = {3, 5};
+*/
 
     DEM_SimulationParams() {
         this->setDomain(globalvar.domainSize);
@@ -130,6 +134,8 @@ public:
         this->setNumberParticles(40);
         this->setCellWidth(globalvar.r_cut);
     }
+
+
 
 /*
     // Mesh initial condition
@@ -142,7 +148,7 @@ public:
 
     // Neighborhood method
     typedef NEIGHBORHHOD_CELLLIST neighborhoodDetermination;
-
+//    typedef NEIGHBORHOOD_ALLPARTICLES neighborhoodDetermination;
 
     void initialization(Particle<ParticleSignatureType> particle) override {
 

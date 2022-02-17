@@ -14,7 +14,7 @@ if(NOT CUDA_ON_BACKEND STREQUAL "None")
 	    Vector/cuda/vector_dist_gpu_unit_tests.cu
 	    Decomposition/cuda/Domain_icells_cart_unit_test.cu
 		Amr/tests/amr_base_gpu_unit_tests.cu
-		Grid/tests/grid_dist_id_unit_test.cu ../Formal_interface/InitialCondition.hpp ../Formal_interface/Utility.hpp)
+		Grid/tests/grid_dist_id_unit_test.cu)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
@@ -90,7 +90,7 @@ else()
 							  Decomposition/tests/shift_vect_converter_tests.cpp
 							  Vector/performance/vector_dist_performance_util.cpp
 							  lib/pdata.cpp
-							  ../experiments/ex1.cpp ../experiments/DEM_1.cpp ../Formal_interface/ParticleMethod.hpp ../Formal_interface/Particle.hpp ../Formal_interface/ParticleData.hpp ../Formal_interface/Transition.hpp ../Formal_interface/Tests/DEM_Test.cpp ../Formal_interface/Tests/DEM_Test.hpp ../Formal_interface/GlobalVar.hpp ../Formal_interface/Tests/Test1.cpp ../Formal_interface/Tests/Test1.hpp ../Formal_interface/Tests/PSE_Test.cpp ../Formal_interface/Tests/PSE_Test.hpp ../Formal_interface/SimulationParameters.hpp ../Formal_interface/Neighborhood.hpp ../Formal_interface/DataContainer.hpp ../Formal_interface/ParticleSignature.hpp ../Formal_interface/OperationProxy.hpp ../Formal_interface/Constants.hpp ../Formal_interface/Ghost.hpp)
+							  ../Formal_interface/ParticleMethod.hpp ../Formal_interface/Particle.hpp ../Formal_interface/ParticleData.hpp ../Formal_interface/Transition.hpp ../Formal_interface/GlobalVar.hpp ../Formal_interface/SimulationParameters.hpp ../Formal_interface/Neighborhood.hpp ../Formal_interface/DataContainer.hpp ../Formal_interface/ParticleSignature.hpp ../Formal_interface/OperationProxy.hpp ../Formal_interface/Constants.hpp ../Formal_interface/InitialCondition.hpp ../Formal_interface/DomainIterator.hpp ../Formal_interface/Benchmarks/OperatorProxyValue_Overhead.cpp ../Formal_interface/Benchmarks/OperatorProxyValue_Overhead.hpp)
 
 	add_library(ofpm_pdata STATIC lib/pdata.cpp)
 	add_library(ofpm_pdata_python SHARED lib/pdata_python.cpp)

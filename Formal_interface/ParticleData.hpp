@@ -8,6 +8,9 @@
 #include <Vector/vector_dist.hpp>
 #include "GlobalVar.hpp"
 #include "DataContainer.hpp"
+#include "Constants.hpp"
+#include "DomainIterator.hpp"
+
 template <typename ParticleMethodType, typename SimulationParametersType>
 class ParticleData {
 
@@ -22,6 +25,9 @@ class ParticleData {
     ContainerFactoryType dataContainerFactory;
     using DataContainerType = typename ContainerFactoryType::ContainerType;
     using DataStructureType = typename ContainerFactoryType::ContainerType::DataStructureType;
+
+    DomainIterator<ParticleMethodType, SimulationParametersType> domainIterator;
+
 
 
     /**
@@ -56,8 +62,8 @@ public:
         return dataContainer;
     }
 
-    auto getParticleIterator() -> decltype(getOpenFPMContainer().getDomainIterator()){
-        return getOpenFPMContainer().getDomainIterator();
+    auto getParticleIterator() {
+        return domainIterator.getDomainIterator(dataContainer);
     }
 
 

@@ -14,6 +14,13 @@
 struct FREE_PARTICLES {};
 struct MESH_PARTICLES {};
 
+/**
+ * Primary template
+ * This class contains the actual OpenFPM data structure.
+ * There are 2 child classes for either free particles (using openfpm::vector_dist) or mesh particles (using openfpm::grid_dist_id).
+ * The class contains virtual functions that are implemented by the children with respect to the data structure.
+ * @tparam ParticleSignatureType
+ */
 template <typename ParticleSignatureType>
 class DataContainer {
 
@@ -21,8 +28,8 @@ class DataContainer {
     using PositionType = typename ParticleSignatureType::position;
     using PropertyType = typename ParticleSignatureType::properties;
 
-
 public:
+
     virtual void printType() = 0;
 
     // OpenFPM functions
@@ -31,6 +38,11 @@ public:
 
 };
 
+/**
+ * Implementation of DataContainer for free particles.
+ * Data is stored in an openfpm::vector_dist.
+ * @tparam ParticleSignatureType
+ */
 template <typename ParticleSignatureType>
 class DataContainer_VectorDist : DataContainer<ParticleSignatureType> {
 
@@ -47,7 +59,6 @@ private:
 
 public:
 
-
     DataContainer_VectorDist(int numberParticles, Box<dimension, PositionType> domain, const size_t (&boundaryConditions)[dimension], int ghostSize) :
         ghost(ghostSize),
         vd(numberParticles, domain, boundaryConditions, ghost) {}
@@ -56,33 +67,66 @@ public:
         std::cout << "vector_dist" << std::endl;
     }
 
+    /**
+     * Returns a reference to a particle property in the vector_dist data structure.
+     * @tparam id Component of the property
+     * @param p Referenced particle
+     * @return Reference to property field
+     */
     template<unsigned int id>
     inline auto property(vect_dist_key_dx p) -> decltype(vd.template getProp<id>(p)) {
         return vd.template getProp<id>(p);
     }
 
+    /**
+     * Returns a reference to the position property of a particle in the vector_dist data structure.
+     * @param p Referenced particle
+     * @return Reference to the position property
+     */
     inline auto position(vect_dist_key_dx p) -> decltype(vd.getPos(p)) {
         return vd.getPos(p);
     }
 
+    /**
+     * Returns reference to the underlying vector_dist data structure
+     * @return vector_dist reference
+     */
     vector_dist<dimension, PositionType, PropertyType>& getContainer() {
         return vd;
     }
 
+    /**
+     * Returns the number of properties
+     */
     void n_prop() {
         constexpr int n = decltype(vd)::value_type::max_prop;
     }
 
+    /**
+     * Implementation of deleting the ghost
+     */
     void deleteGhost() override {
         vd.deleteGhost();
     }
 
+    /**
+     * Writes the current state to a file
+     * @param out File name
+     * @param iteration Time step (is added to file name)
+     * @param opt Output format
+     * @return Success of writing to the file
+     */
     bool write_frame(std::string out, size_t iteration, int opt = VTK_WRITER) override {
         return vd.write_frame(out, iteration, opt);
     }
 
 };
 
+/**
+ * Implementation of DataContainer for mesh particles.
+ * Data is stored in an openfpm::grid_dist_id.
+ * @tparam ParticleSignatureType
+ */
 template <typename ParticleSignatureType>
 class DataContainer_GridDist : DataContainer<ParticleSignatureType> {
 
@@ -96,7 +140,6 @@ private:
     Ghost<2,long int> ghost;
 
     DataStructureType grid;
-//    grid_dist_id<dimension, PositionType , PropertyType> grid;
 
 public:
 
@@ -108,27 +151,58 @@ public:
         std::cout << "grid_dist" << std::endl;
     }
 
+    /**
+     * Returns a reference to a particle property in the grid_dist_id data structure.
+     * @tparam id Component of the property
+     * @param p Referenced particle
+     * @return Reference to property field
+     */
     template<unsigned int id>
     inline auto property(grid_dist_key_dx<dimension> p) -> decltype(grid.template get<id>(p)) {
         return grid.template get<id>(p);
     }
 
+    /**
+     * Returns a reference to the position property of a particle in the vector_dist data structure.
+     * @param p Referenced particle
+     * @return Reference to the position property
+     */
     inline auto position(grid_dist_key_dx<dimension> p) -> decltype(grid.getPos(p)) {
         return grid.getPos(p);
     }
 
+    /**
+     * Returns reference to the underlying grid_dist_id data structure
+     * @return grid_dist_id reference
+     */
     grid_dist_id<dimension, PositionType, PropertyType>& getContainer() {
         return grid;
     }
 
+    /**
+     * Implementation of deleting the ghost
+     */
     void deleteGhost() override {}
 
+    /**
+     * Writes the current state to a file
+     * @param out File name
+     * @param iteration Time step (is added to file name)
+     * @param opt Output format
+     * @return Success of writing to the file
+     */
     bool write_frame(std::string out, size_t iteration, int opt = VTK_WRITER | FORMAT_BINARY) override {
         return grid.write_frame(out,iteration, opt);
     }
 
 };
 
+/**
+ * Primary template
+ * Factory for creating a DataContainer object according to the ParticleSignature.dataStructure type
+ * @tparam ParticleSignatureType
+ * @tparam DataStructureType Determines which data structure is used to store the particles
+ */
 template<typename ParticleSignatureType, typename DataStructureType = typename ParticleSignatureType::dataStructure>
 struct DataContainerFactory {
 
@@ -139,6 +213,10 @@ struct DataContainerFactory {
     DataContainer<ParticleSignatureType> createContainer() {}
 };
 
+/**
+ * Factory implementation for creating a DataContainer object for free particles.
+ * @tparam ParticleSignatureType
+ */
 template<typename ParticleSignatureType>
 struct DataContainerFactory<ParticleSignatureType, FREE_PARTICLES> {
 
@@ -149,7 +227,12 @@ struct DataContainerFactory<ParticleSignatureType, FREE_PARTICLES> {
     typedef DataContainer_VectorDist<ParticleSignatureType> ContainerType;
     typedef vect_dist_key_dx KeyType;
 
-
+    /**
+     * Calls constructor with appropriate simulation parameters
+     * @tparam SimulationParametersType
+     * @param simulationParameters contains parameters used to construct the vector_dist
+     * @return DataContainer_VectorDist for free particles
+     */
     template<typename SimulationParametersType>
     ContainerType createContainer(SimulationParametersType& simulationParameters) {
         ContainerType newContainer(simulationParameters.numberParticles,
@@ -159,6 +242,10 @@ struct DataContainerFactory<ParticleSignatureType, FREE_PARTICLES> {
     }
 };
 
+/**
+ * Factory implementation for creating a DataContainer object for mesh particles
+ * @tparam ParticleSignatureType
+ */
 template<typename ParticleSignatureType>
 struct DataContainerFactory<ParticleSignatureType, MESH_PARTICLES> {
 
@@ -169,6 +256,12 @@ struct DataContainerFactory<ParticleSignatureType, MESH_PARTICLES> {
     typedef DataContainer_GridDist<ParticleSignatureType> ContainerType;
     typedef grid_dist_key_dx<dimension> KeyType;
 
+    /**
+     * Calls constructor with appropriate simulation parameters
+     * @tparam SimulationParametersType
+     * @param simulationParameters contains parameters used to construct the grid_dist_id
+     * @return DataContainer_GridDist for mesh particles
+     */
     template<typename SimulationParametersType>
     ContainerType createContainer(SimulationParametersType& simulationParameters) {
 

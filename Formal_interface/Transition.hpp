@@ -10,7 +10,6 @@
 #include "Particle.hpp"
 #include "InitialCondition.hpp"
 #include "Neighborhood.hpp"
-#include "Ghost.hpp"
 #include <random>
 #include <boost/hana.hpp>
 
@@ -102,6 +101,7 @@ public:
 
         // synchronize ghost for all properties
         particleData.ghost_get_all();
+
 
 
         // call interact method

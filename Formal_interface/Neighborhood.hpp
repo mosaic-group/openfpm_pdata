@@ -11,7 +11,12 @@
 #include "Constants.hpp"
 
 
-// Primary template
+/**
+ *
+ * @tparam NeighborhoodDetermination
+ * @tparam ParticleMethodType
+ * @tparam SimulationParametersType
+ */
 template <typename NeighborhoodDetermination, typename ParticleMethodType, typename SimulationParametersType>
 class Interaction_Impl {
 public:
@@ -46,6 +51,7 @@ public:
 
         // iterate through all particles
         auto iteratorAll = particleData.getParticleIterator();
+
         while (iteratorAll.isNext())
         {
             auto p = iteratorAll.get();
@@ -53,6 +59,7 @@ public:
 
             // iterate through all particles as neighbors
             auto iteratorNeighbors = particleData.getParticleIterator();
+
             while (iteratorNeighbors.isNext()) {
                 auto n = iteratorNeighbors.get();
                 Particle<ParticleSignatureType> neighbor(particleData.dataContainer, n);
@@ -91,7 +98,7 @@ public:
         std::cout << "create cell list" << std::endl;
 
         // symmetric cell list
-        if (simulationParameters.symmetricInteraction == INTERACTION_SYMMETRIC) {
+        if (simulationParameters.interactionType == INTERACTION_SYMMETRIC) {
 //            return particleData.getOpenFPMContainer().template getCellListSym<CELL_MEMBAL(dimension, PositionType)>(simulationParameters.cellWidth);
         }
 
@@ -102,12 +109,11 @@ public:
     void executeInteraction(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
         // update symmetric cell list
-        if (simulationParameters.symmetricInteraction == INTERACTION_SYMMETRIC) {
+        if (simulationParameters.interactionType == INTERACTION_SYMMETRIC) {
 //            particleData.getOpenFPMContainer().template updateCellListSym(cellList);
+            particleData.getOpenFPMContainer().template updateCellList(cellList);
         }
-
-        // update unsymmetric cell list
-        if (simulationParameters.symmetricInteraction == INTERACTION_UNSYMMETRIC) {
+        else {
             particleData.getOpenFPMContainer().template updateCellList(cellList);
         }
 
@@ -157,12 +163,11 @@ public:
 
         createStencil();
 
+        if (simulationParameters.interactionType == INTERACTION_SYMMETRIC)
+            makeSymmetricStencil();
     }
 
 
-    /**
-     *
-     */
     void createStencil() {
 
         // calculate farthest neighbor distance (in mesh nodes)
@@ -210,6 +215,30 @@ public:
 
     }
 
+
+    void makeSymmetricStencil() {
+
+        // remove half of the particles to create symmetric stencil
+        auto it_symm = std::remove_if(stencil.begin(), stencil.end(), [](std::array<int, dimension> node)
+        {
+            for (int i = 0; i < dimension; ++i) {
+                // remove node if component > 0
+                if (node[i] > 0)
+                    return true;
+                // keep node if component < 0
+                if (node[i] < 0)
+                    return false;
+                // if component == 0, check next dimension
+            }
+
+            // remove center node [0, 0, 0]
+            return true;
+        });
+        stencil.erase(it_symm, stencil.end());
+
+    }
+
+
     void executeInteraction(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
         // iterate through all particles
@@ -218,6 +247,8 @@ public:
         {
             auto p = iteratorAll.get();
             Particle<ParticleSignatureType> particle(particleData.dataContainer, p);
+
+//            std::cout << "find neighbors for " << p.to_string() << std::endl;
 
             // iterate through all neighbor mesh nodes
             for (std::array<int, dimension> node : stencil) {
@@ -228,12 +259,16 @@ public:
                     n = n.move(component, node[component]);
                 }
 
+//                std::cout << "  neighbor " << n.to_string() /*<< " ~~ " << particleData.getOpenFPMContainer().existPoint(n)*/ << std::endl;
+
                 // execute
                 Particle<ParticleSignatureType> neighbor(particleData.dataContainer, n);
                 particleMethod.interact(particle, neighbor);
-
             }
-            
+
+//            std::cout << "  ### interaction executed " << std::endl;
+
+
             ++iteratorAll;
         }
     }

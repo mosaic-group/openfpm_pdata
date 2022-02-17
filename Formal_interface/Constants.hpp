@@ -12,9 +12,7 @@
 constexpr int INTERACTION_PULL = 0;
 constexpr int INTERACTION_PUSH = 1;
 constexpr int INTERACTION_PULL_PUSH = 2;
-
-constexpr int INTERACTION_SYMMETRIC = 0;
-constexpr int INTERACTION_UNSYMMETRIC = 1;
+constexpr int INTERACTION_SYMMETRIC = 3;
 
 // Neighborhood determination
 struct NEIGHBORHOOD_ALLPARTICLES {};

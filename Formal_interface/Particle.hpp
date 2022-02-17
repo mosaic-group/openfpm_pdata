@@ -23,6 +23,8 @@ class Particle {
     using DataContainerType = typename DataContainerFactory<ParticleSignatureType>::ContainerType;
     using DataKeyType = typename DataContainerFactory<ParticleSignatureType>::KeyType;
 
+    PropertyType propertyAggregate;
+
 protected:
     DataKeyType key;
 

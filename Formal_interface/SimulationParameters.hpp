@@ -43,7 +43,7 @@ public:
 
     // Interaction
     typedef NEIGHBORHOOD_ALLPARTICLES neighborhoodDetermination;
-    int symmetricInteraction = INTERACTION_UNSYMMETRIC;
+    static const int interactionType = INTERACTION_PULL;
     PositionType cutoff_radius = 0.3;
 
 

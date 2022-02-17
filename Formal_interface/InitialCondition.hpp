@@ -7,10 +7,19 @@
 
 #include <iostream>
 #include "Constants.hpp"
+#include "ParticleData.hpp"
 
 
 
-// primary template
+
+/**
+ * Primary template
+ * Initial placement of free particles depending on simulation parameters
+ * 2 types: random positions or evenly distributed on a mesh
+ * @tparam IC determines how particles are placed
+ * @tparam ParticleMethodType
+ * @tparam SimulationParametersType
+ */
 template <typename IC, typename ParticleMethodType, typename SimulationParametersType>
 class InitialCondition_Impl {
 public:
@@ -19,6 +28,11 @@ public:
     }
 };
 
+/**
+ * Particles are initialized on a mesh
+ * @tparam ParticleMethodType
+ * @tparam SimulationParametersType
+ */
 template <typename ParticleMethodType, typename SimulationParametersType>
 class InitialCondition_Impl<INITIALCONDITION_MESH, ParticleMethodType, SimulationParametersType> {
 public:
@@ -40,6 +54,11 @@ public:
     }
 };
 
+/**
+ * Particles are initialized randomly
+ * @tparam ParticleMethodType
+ * @tparam SimulationParametersType
+ */
 template <typename ParticleMethodType, typename SimulationParametersType>
 class InitialCondition_Impl<INITIALCONDITION_RANDOM, ParticleMethodType, SimulationParametersType> {
 public:
