@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
     openfpm::vector<double> res;
     res.resize(100);
 
-    for (int i = 0 ; i < 110 ; i++)
+/*    for (int i = 0 ; i < 110 ; i++)
     {
         cudaDeviceSynchronize();
         timer t;
@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
     double dev_read_tls = 0.0;
     standard_deviation(res,mean_read_tls,dev_read_tls);
 
-    check_read(in,out);
+    check_read(in,out);*/
 
     //////////////
 
@@ -407,6 +407,52 @@ int main(int argc, char *argv[])
 
     check_read(in,out);
 
+    /////// BASE 1 core
+
+    for (int i = 0 ; i < 110 ; i++)
+    {
+        timer t;
+        t.start();
+
+        float * out_s = (float *)out.getDeviceBuffer<0>();
+        float * out_v = (float *)out.getDeviceBuffer<1>();
+        float * out_m = (float *)out.getDeviceBuffer<2>();
+        float * in_v = (float *)in.getDeviceBuffer<0>();
+
+        int stride = out.capacity();
+
+        auto lamb_arr_red = [out_s,out_v,out_m,in_v,stride] __device__ (dim3 & blockIdx, dim3 & threadIdx)
+        {
+            auto p = blockIdx.x * blockDim.x + threadIdx.x;
+
+            float a = out_s[p];
+
+            float b = out_v[p + 0*stride];
+            float c = out_v[p + 1*stride];
+
+            float d = out_m[p + 0*2*stride + 0*stride];
+            float e = out_m[p + 0*2*stride + 1*stride];
+            float f = out_m[p + 1*2*stride + 0*stride];
+            float g = out_m[p + 1*2*stride + 1*stride];
+
+            float h = in_v[p + 0*stride];
+            in_v[p + 1*stride] = a+b+c+d+e+f+g+h;
+        };
+
+	for (int i = 0 ; i < N ; i++)
+	{
+		lamb_arr_red(i);
+	}
+
+        t.stop();
+
+        if (i >=10)
+        {res.get(i-10) = (double)nele*4*9 / t.getwct() * 1e-9;}
+
+        std::cout << "Time ARR: " << t.getwct() << std::endl;
+        std::cout << "BW 1-CORE ARR: " << (double)nele*4*9 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
+    }
+
     ///////////////////
 
     #ifdef CUDIFY_USE_CUDA
@@ -441,8 +487,8 @@ int main(int argc, char *argv[])
 
     #endif
 
-    std::cout << "Average READ with TLS: " << mean_read_tls << "  deviation: " << dev_read_tls << std::endl;
-    std::cout << "Average WRITE with TLS: " << mean_write_tls << "  deviation: " << dev_write_tls << std::endl;
+//    std::cout << "Average READ with TLS: " << mean_read_tls << "  deviation: " << dev_read_tls << std::endl;
+//    std::cout << "Average WRITE with TLS: " << mean_write_tls << "  deviation: " << dev_write_tls << std::endl;
 
     std::cout << "Average READ with lamb: " << mean_read_lamb << "  deviation: " << dev_read_lamb << std::endl;
     std::cout << "Average WRITE with lamb: " << mean_write_lamb << "  deviation: " << dev_write_lamb << std::endl;
