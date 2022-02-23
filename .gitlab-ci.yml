@@ -25,6 +25,7 @@ docker_centos_build:
      paths:
        - /root/openfpm_dependencies/openfpm_pdata/base
 
+
 #centos_build:
 #  stage: build
 #  tags:
