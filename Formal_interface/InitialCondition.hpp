@@ -29,7 +29,7 @@ public:
 };
 
 /**
- * Particles are initialized on a mesh
+ * Implementation for particle initialization on a mesh
  * @tparam ParticleMethodType
  * @tparam SimulationParametersType
  */
@@ -55,7 +55,7 @@ public:
 };
 
 /**
- * Particles are initialized randomly
+ * Implementation for random particle initialization
  * @tparam ParticleMethodType
  * @tparam SimulationParametersType
  */
@@ -89,12 +89,16 @@ public:
         while (iterator.isNext())
         {
             auto p = iterator.get();
+
             for (int i = 0; i < dimension; i++) {
                 // random positions
                 particleData.getOpenFPMContainer().getPos(p)[i] = dis_pos_v[i](gen);
             }
             ++iterator;
         }
+
+        std::cout << "done moving" << std::endl;
+
     }
 };
 

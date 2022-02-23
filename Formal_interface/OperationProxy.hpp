@@ -14,14 +14,46 @@
 
 template <typename T>
 class OperationProxy {
-    T data;
+    T &data;
 public:
-    OperationProxy(T data_in) : data(data_in) {}
-    //    OperationProxy(Point<n1, T> &point_in) : data(point_in.data) {}
+    OperationProxy(T &data_in) : data(data_in) {}
+
+    // Assignment operators
 
 
-/*    OperationProxy<T> operator+= (OperationProxy<T> rhs) {
+
+    // OperationProxy
+
+    OperationProxy<T> operator= (OperationProxy<T> rhs) {
+        data = rhs.data;
+        return *this;
+    }
+
+    OperationProxy<T> operator+= (OperationProxy<T> rhs) {
         data += rhs.data;
+        return *this;
+    }
+
+    OperationProxy<T> operator-= (OperationProxy<T> rhs) {
+        data -= rhs.data;
+        return *this;
+    }
+
+    OperationProxy<T> operator*= (OperationProxy<T> rhs) {
+        data *= rhs.data;
+        return *this;
+    }
+
+    OperationProxy<T> operator/= (OperationProxy<T> rhs) {
+        data /= rhs.data;
+        return *this;
+    }
+
+
+    // Primitive types
+
+    OperationProxy<T> operator= (T rhs) {
+        data = rhs;
         return *this;
     }
 
@@ -30,10 +62,71 @@ public:
         return *this;
     }
 
+    OperationProxy<T> operator-= (T rhs) {
+        data -= rhs;
+        return *this;
+    }
+
+    OperationProxy<T> operator*= (T rhs) {
+        data *= rhs;
+        return *this;
+    }
+
+    OperationProxy<T> operator/= (T rhs) {
+        data /= rhs;
+        return *this;
+    }
+
+
+
+    // Mathematical operations: +, - *, /
+
+
+    // OperationProxy
+
+    T operator+ (OperationProxy<T> rhs) {
+        return data + rhs.data;
+    }
+
+    T operator- (OperationProxy<T> rhs) {
+        return data - rhs.data;
+    }
+
+    T operator* (OperationProxy<T> rhs) {
+        return data * rhs.data;
+    }
+
+    T operator/ (OperationProxy<T> rhs) {
+        return data / rhs.data;
+    }
+
+
+    // Primitive types
+
+    T operator+ (T rhs) {
+        return data + rhs;
+    }
+
+    T operator- (T rhs) {
+        return data - rhs;
+    }
+
     T operator* (T rhs) {
-        rhs *= data;
-        return rhs;
-    }*/
+        return data * rhs;
+    }
+
+    T operator/ (T rhs) {
+        return data / rhs;
+    }
+
+
+    std::string toString() const {
+        std::string output = "{ ";
+        output.append(std::to_string(data));
+        output.append("}");
+        return output;
+    }
+
 };
 
 /*template <typename T, unsigned int n1>
@@ -53,7 +146,6 @@ template <typename T, unsigned int n1>
 class OperationProxy<T[n1]> {
 
     T (&data)[n1];
-
 
 public:
 
@@ -101,6 +193,7 @@ public:
         }
         return *this;
     }
+
 
 
     // Point

@@ -70,7 +70,8 @@ class DomainIterator <ParticleMethodType, SimulationParametersType, FREE_PARTICL
 public:
     DomainIterator() {std::cout << "DomainIterator: FREE, SYMMETRIC" << std::endl;}
     auto getDomainIterator(DataContainerType &dataContainer) {
-        return dataContainer.getContainer().getDomainAndGhostIterator();
+//        return dataContainer.getContainer().getDomainAndGhostIterator();
+        return dataContainer.getContainer().getDomainIterator();
     }
 };
 

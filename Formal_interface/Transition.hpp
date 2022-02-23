@@ -77,8 +77,16 @@ public:
 
     void initializeParticles(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
+//        auto & vcl = create_vcluster();
+//        std::cout << "initial condition " << vcl.getProcessUnitID() << std::endl;
+
         initialConditionImplementation.initialization(particleData);
+
+//        std::cout << "map" << std::endl;
+
         particleData.getOpenFPMContainer().template map/*<KillParticleWithWarning>*/();
+
+//        std::cout << "exec initialization" << std::endl;
 
         executeInitialization(particleData);
     }
@@ -87,22 +95,24 @@ public:
 
 
     void run_step(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
+
 /*
         auto & vcl = create_vcluster();
         if (vcl.getProcessUnitID() == 0) {
             std::cout << "Iteration " << iteration << std::endl;
         }*/
 
+//        std::cout << "map" << std::endl;
+
         particleData.getOpenFPMContainer().map();
 
-//        particleData.getOpenFPMContainer().template ghost_get<0, 1>();
 
-
+//        std::cout << "ghost_get" << std::endl;
 
         // synchronize ghost for all properties
         particleData.ghost_get_all();
 
-
+//        std::cout << "exec interaction" << std::endl;
 
         // call interact method
         interactionImplementation.executeInteraction(particleData);

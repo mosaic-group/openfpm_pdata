@@ -9,7 +9,7 @@
 #include <Grid/grid_dist_id.hpp>
 //#include <Grid/grid_dist_key.hpp>
 #include <Vector/vector_dist.hpp>
-
+#include "OperationProxy.hpp"
 
 struct FREE_PARTICLES {};
 struct MESH_PARTICLES {};
@@ -78,6 +78,12 @@ public:
         return vd.template getProp<id>(p);
     }
 
+    template<unsigned int id>
+    inline auto property_vec(vect_dist_key_dx p) -> OperationProxy<typename std::remove_reference<decltype(property<id>(p))>::type>  {
+        OperationProxy<typename std::remove_reference<decltype(property<id>(p))>::type> operationProxy(property<id>(p));
+        return operationProxy;
+    }
+
     /**
      * Returns a reference to the position property of a particle in the vector_dist data structure.
      * @param p Referenced particle
@@ -86,6 +92,12 @@ public:
     inline auto position(vect_dist_key_dx p) -> decltype(vd.getPos(p)) {
         return vd.getPos(p);
     }
+
+    virtual inline auto position_vec(vect_dist_key_dx p) -> OperationProxy<typename std::remove_reference<decltype(position(p))>::type> {
+        OperationProxy<typename std::remove_reference<decltype(position(p))>::type> operationProxy(position(p));
+        return operationProxy;
+    }
+
 
     /**
      * Returns reference to the underlying vector_dist data structure
@@ -162,6 +174,14 @@ public:
         return grid.template get<id>(p);
     }
 
+
+    template<unsigned int id>
+    inline auto property_vec(grid_dist_key_dx<dimension> p) -> OperationProxy<typename std::remove_reference<decltype(property<id>(p))>::type>  {
+        OperationProxy<typename std::remove_reference<decltype(property<id>(p))>::type> operationProxy(property<id>(p));
+        return operationProxy;
+    }
+
+
     /**
      * Returns a reference to the position property of a particle in the vector_dist data structure.
      * @param p Referenced particle
@@ -169,6 +189,10 @@ public:
      */
     inline auto position(grid_dist_key_dx<dimension> p) -> decltype(grid.getPos(p)) {
         return grid.getPos(p);
+    }
+
+    inline auto position_vec(grid_dist_key_dx<dimension> p) {
+        return position(p);
     }
 
     /**
@@ -191,7 +215,7 @@ public:
      * @param opt Output format
      * @return Success of writing to the file
      */
-    bool write_frame(std::string out, size_t iteration, int opt = VTK_WRITER | FORMAT_BINARY) override {
+    bool write_frame(std::string out, size_t iteration, int opt = VTK_WRITER | FORMAT_ASCII) override {
         return grid.write_frame(out,iteration, opt);
     }
 

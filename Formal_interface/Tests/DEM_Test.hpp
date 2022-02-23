@@ -5,6 +5,7 @@
 #ifndef OPENFPM_PDATA_DEM_TEST_HPP
 #define OPENFPM_PDATA_DEM_TEST_HPP
 
+
 #include <array>
 #include <Vector/vector_dist.hpp>
 #include "../Particle.hpp"
@@ -14,6 +15,7 @@
 #include "../SimulationParameters.hpp"
 #include "../InitialCondition.hpp"
 #include "../Neighborhood.hpp"
+
 
 
 struct DEM_ParticleSignature {
@@ -50,17 +52,19 @@ public:
     void evolve(Particle<ParticleSignature> particle) override {
 
         // Apply change of velocity
-        particle.template property_test<velocity>() += particle.template property_test<acceleration>();
+        particle.template property_vec<velocity>() += particle.template property_vec<acceleration>();
 
         // Reset change of velocity
-        particle.template property_test<acceleration>() = 0.0f;
+        particle.template property_vec<acceleration>() = 0.0f;
 
         // Euler time-stepping move particles
-        particle.position_test() += particle.template property_test<velocity>() * globalvar.dt;
+        particle.position_vec() += particle.template property_vec<velocity>() * globalvar.dt;
 
     }
 
     void interact(Particle<ParticleSignature> particle, Particle<ParticleSignature> neighbor) override {
+
+//        std::cout << "interact" << std::endl;
 
         // Declare particle property variables
         Point<dimension, PositionType> p_pos = particle.position();
@@ -91,7 +95,8 @@ public:
         diff_collision = diff_collision * globalvar.damp;
 
         // Apply collision to particle acceleration
-        particle.template property_test<acceleration>() += diff_collision;
+        particle.template property_vec<acceleration>() += diff_collision;
+        neighbor.template property_vec<acceleration>() -= diff_collision;
 
     }
 
@@ -149,6 +154,8 @@ public:
     // Neighborhood method
     typedef NEIGHBORHHOD_CELLLIST neighborhoodDetermination;
 //    typedef NEIGHBORHOOD_ALLPARTICLES neighborhoodDetermination;
+
+    static const int interactionType = INTERACTION_SYMMETRIC;
 
     void initialization(Particle<ParticleSignatureType> particle) override {
 

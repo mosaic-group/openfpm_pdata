@@ -48,6 +48,8 @@ public:
     ParticleData() : dataContainer(dataContainerFactory.template createContainer<SimulationParametersType>(simulationParameters))
     {
         dataContainer.printType();
+        getOpenFPMContainer().map();
+        ghost_get_all();
     }
 
     // return reference to underlying OpenFPM data structure

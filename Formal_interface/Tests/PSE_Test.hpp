@@ -17,7 +17,7 @@
 
 struct PSE_ParticleSignature {
     static constexpr int dimension = 2;
-    typedef double position;
+    typedef float position;
     typedef aggregate<float, float> properties;
     typedef MESH_PARTICLES dataStructure;
 };
@@ -61,19 +61,19 @@ public:
         Point<dimension, PositionType> n_pos = neighbor.position();
         PositionType distance2 = p_pos.distance2(n_pos);
 
-        PositionType exchange = (neighbor.template property<concentration>() - particle.template property<concentration>())
+        float exchange = (neighbor.template property_vec<concentration>() - particle.template property_vec<concentration>())
                                                   / (1 + pow(distance2 / globalvar.epsilon / globalvar.epsilon, 5)) ;
 
-        particle.template property<accumulator>() += exchange;
-        neighbor.template property<accumulator>() -= exchange;
+        particle.template property_vec<accumulator>() += exchange;
+//        neighbor.template property_vec<accumulator>() -= exchange;
 
     }
 
     void evolve(Particle<ParticleSignature> particle) override {
 
-//        particle.template property_test<concentration>() += globalvar.kernel * particle.template property_test<accumulator>();
-        particle.template property<concentration>() += particle.template property<accumulator>() * globalvar.kernel;
-        particle.template property<accumulator>()= 0;
+        particle.template property_vec<concentration>() += particle.template property_vec<accumulator>() * globalvar.kernel;
+//        particle.template property<concentration>() += particle.template property<accumulator>() * globalvar.kernel;
+        particle.template property_vec<accumulator>() = 0;
 
     }
 

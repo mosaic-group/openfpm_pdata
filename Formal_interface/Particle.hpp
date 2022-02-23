@@ -45,13 +45,22 @@ public:
         return operationProxy;
     }
 
-    virtual inline auto position() -> decltype(dataContainer.position(key)) {
+    template<unsigned int id>
+    inline auto property_vec() {
+        return dataContainer.template property_vec<id>(key);
+    }
+
+    inline auto position() -> decltype(dataContainer.position(key)) {
         return dataContainer.position(key);
     }
 
-    virtual inline auto position_test() -> OperationProxy<typename std::remove_reference<decltype(dataContainer.position(key))>::type> {
+    inline auto position_test() -> OperationProxy<typename std::remove_reference<decltype(dataContainer.position(key))>::type> {
         OperationProxy<typename std::remove_reference<decltype(dataContainer.position(key))>::type> operationProxy(dataContainer.position(key));
         return operationProxy;
+    }
+
+    inline auto position_vec() -> decltype(dataContainer.position_vec(key)) {
+        return dataContainer.position_vec(key);
     }
 
     auto getID() -> decltype(key.getKey()) {
