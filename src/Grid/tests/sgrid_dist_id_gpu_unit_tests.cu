@@ -194,7 +194,7 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_save_and_load )
 
 	if (v_cl.size() > 3){return;}
 
-	size_t sz[2] = {17,17};
+	size_t sz[2] = {370,370};
 	periodicity<2> bc = {PERIODIC,PERIODIC};
 
 	Ghost<2,long int> g(1);
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_save_and_load )
 
 	/////// GPU insert + flush
 
-	Box<2,size_t> box({1,1},{15,15});
+	Box<2,size_t> box({1,1},{350,350});
 	auto it = gdist.getGridIterator(box.getKP1(),box.getKP2());
 
 	/////// GPU Run kernel
