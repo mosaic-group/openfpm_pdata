@@ -911,7 +911,14 @@ int main(int argc, char* argv[])
 			{std::cout << "REBALANCED " << it_reb << std::endl;}
 		}
 
+		timer tmap;
+                tmap.start();
+
 		vd.map(RUN_ON_DEVICE);
+
+                tmap.stop();
+                tmap.getwct();
+                std::cout << "COMM: " << tmap.getwct() << std::endl;
 
 		// it sort the vector (doesn not seem to produce some advantage)
 		// note force calculation is anyway sorted calculation
@@ -922,11 +929,23 @@ int main(int argc, char* argv[])
 
 		real_number max_visc = 0.0;
 
+		timer tcom;
+		tcom.start();
+
 		vd.ghost_get<type,rho,Pressure,velocity>(RUN_ON_DEVICE);
+
+		tcom.stop();
+		tcom.getwct();
+		std::cout << "COMM: " << tcom.getwct() << std::endl;
+
+		timer tf;
+		tf.start();
 
 		// Calc forces
 		calc_forces(vd,NN,max_visc,cnt);
 
+		tf.stop();
+		std::cout << "TFORCE: " << tf.getwct() << std::endl;
 
 		// Get the maximum viscosity term across processors
 		v_cl.max(max_visc);

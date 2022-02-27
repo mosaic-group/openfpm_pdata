@@ -89,6 +89,7 @@ else()
 							  Decomposition/tests/CartDecomposition_unit_test.cpp
 							  Decomposition/tests/shift_vect_converter_tests.cpp
 							  Vector/performance/vector_dist_performance_util.cpp
+							  PolyMesh/test/PolyMesh_test.cpp
 							  lib/pdata.cpp)
 
 	add_library(ofpm_pdata STATIC lib/pdata.cpp)
@@ -171,6 +172,7 @@ target_include_directories (pdata PUBLIC ${ALPAKA_ROOT}/include)
 target_include_directories (pdata PUBLIC ${Vc_INCLUDE_DIR})
 target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
 target_include_directories (pdata PUBLIC ${MPI_C_INCLUDE_DIRS})
+target_include_directories (pdata PUBLIC /usr/local/include/voro++)
 
 #target_include_directories (isolation_pdata PUBLIC ${PARMETIS_ROOT}/include)
 #target_include_directories (isolation_pdata PUBLIC ${METIS_ROOT}/include)
@@ -200,6 +202,8 @@ target_link_libraries(pdata ${MPI_C_LIBRARIES})
 target_link_libraries(pdata ${MPI_CXX_LIBRARIES})
 target_link_libraries(pdata vcluster)
 target_link_libraries(pdata ofpmmemory)
+target_link_libraries(pdata -lvoro++)
+target_link_directories(pdata PUBLIC /usr/local/lib)
 if (OpenMP_FOUND)
 	target_link_libraries(pdata OpenMP::OpenMP_CXX)
 endif()
