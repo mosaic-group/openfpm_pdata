@@ -3,10 +3,13 @@
 
 #include <Vector/vector_dist.hpp>
 #include "voro++.hh"
+#include "util/polymesh_base_functions.hpp"
 
 template<unsigned int dim, typename T, typename TypeVolume, typename TypeSurface, typename TypeEdge, typename TypeVertex>
 class PolyMesh
 {
+    static constexpr int VolumeNumberOfSurfaces = TypeVolume::max_prop;
+    static constexpr int SurfacesStart = TypeVolume::max_prop + 1;
     static constexpr int SurfaceVolume = TypeSurface::max_prop;
     static constexpr int SurfaceNumberOfEdges = TypeSurface::max_prop + 1;
     static constexpr int EdgesStart = TypeSurface::max_prop + 2;
@@ -15,7 +18,10 @@ class PolyMesh
     static constexpr int EdgeMarking = TypeEdge::max_prop + 2;
     static constexpr int VertexMarking = TypeVertex::max_prop;
 
-    // Transform volumes
+    // Transform volumes, we add connectivity
+	// Connectivity (int,int)
+	// The first integer is the number of faces
+	// The second integer indicate where in Surfaces the information are stored
     typedef typename AggregateAppend<int,TypeVolume>::type TypeVolume_plus;
     typedef typename AggregateAppend<int,TypeVolume_plus>::type TypeVolume_plusplus;
 
@@ -32,6 +38,8 @@ class PolyMesh
     // Transform Vertex
     typedef typename AggregateAppend<int,TypeVertex>::type TypeVertex_plus;
 
+    openfpm::vector<int> volume_surface_connectivity;
+    openfpm::vector<int> surface_edge_connectivity;
 
     //! List of cells
     vector_dist<dim,T,TypeVolume_plusplus> Volumes;
@@ -221,6 +229,7 @@ public:
 
         // Loop over all particles in the container and compute each Voronoi
         // cell
+
         voro::c_loop_all cl(con);
         if(cl.start())
         {
@@ -236,50 +245,78 @@ public:
                     c.face_vertices(f_vert);
                     c.vertices(x,y,z,v);
 
+                    Volumes.get<VolumeNumberOfSurfaces>(id) = neigh.size();
+                    Volumes.get<SurfacesStart>(id) = volume_surface_connectivity.size();
+
                     // Loop over all faces of the Voronoi cell
                     for( i = 0,j = 0; i < neigh.size();i++) 
                     {
-                        // Draw all quadrilaterals, pentagons, and hexagons.
-                        // Skip if the neighbor information is smaller than
-                        // this particle's ID, to avoid double counting. This
-                        // also removes faces that touch the walls, since the
-                        // neighbor information is set to negative numbers for
-                        // these cases.
-                        if(neigh[i]>id) 
+                        volume_surface_connectivity.add(Surfaces.size());
+
+                        Surfaces.add();
+                        int last_surf = Surfaces.size() - 1;
+                        Surfaces.get<SurfaceNumberOfEdges>() = n;
+                        Surfaces.get<SurfacesStart> = surfaces_edges_connectivity.size();
+
+                        Point<dim,T> center = {0.0,0.0,0.0};
+                        Point<dim,T> first;
+                        int k,l,n=f_vert[j];
+
+                        for(k = 0; k < n; k++) 
                         {
-                            Surfaces.add();
-
-                            Point<dim,T> center = {0.0,0.0,0.0};
                             Point<dim,T> previous;
-                            int k,l,n=f_vert[j];
+                            l=3*f_vert[j+k+1];
+                            center[0] += v[l];
+                            center[1] += v[l+1];
+                            center[2] += v[l+2];
 
-                            for(k = 0; k < n; k++) 
+                            previous = Point<dim,T>({v[l],v[l+1],v[l+2]});
+
+                            Vertices.add();
+                            Vertices.getLastPos()[0] = v[l];
+                            Vertices.getLastPos()[1] = v[l+1];
+                            Vertices.getLastPos()[2] = v[l+2];
+
+                            if (k != 0)
                             {
-                                l=3*f_vert[j+k+1];
-                                center[0] += v[l];
-                                center[1] += v[l+1];
-                                center[2] += v[l+2];
+                                surfaces_edges_connectivity.add(Edges.size());
 
-                                previous = Point<dim,T>({v[l],v[l+1],v[l+2]});
+                                Edges.add();
+                                int last_e
+                                Edges.getLastPos()[0] = (previous[0] + v[l]) / 2.0;
+                                Edges.getLastPos()[1] = (previous[1] + v[l+1]) / 2.0;
+                                Edges.getLastPos()[2] = (previous[2] + v[l+2]) / 2.0;
 
-                                Vertices.add();
-                                Vertices.getLastPos()[0] = v[l];
-                                Vertices.getLastPos()[1] = v[l+1];
-                                Vertices.getLastPos()[2] = v[l+2];
+                                Edges.getLastProp<EdgeVertices>()[0] = Vertices.size() - 2;
+                                Edges.getLastProp<EdgeVertices>()[1] = Vertices.size() - 1;
 
-                                if (k != 0)
-                                {
-                                    Edges.add();
-                                    Edges.getLastPos()[0] = (previous[0] + v[l]) / 2.0;
-                                    Edges.getLastPos()[1] = (previous[1] + v[l+1]) / 2.0;
-                                    Edges.getLastPos()[2] = (previous[2] + v[l+2]) / 2.0;
-                                }
+                                Edges.getLastProp<EdgeSurfaces>()[0] = last_surf;
+                                Edges.getLastProp<EdgeSurfaces>()[1] = -1;
                             }
-
-                            Surfaces.getLastPos()[0] = center[0];
-                            Surfaces.getLastPos()[1] = center[1];
-                            Surfaces.getLastPos()[2] = center[2];
+                            else
+                            {
+                                first[0] = v[l];
+                                first[1] = v[l+1];
+                                first[2] = v[l+2];
+                            }
                         }
+                        l=3*f_vert[j+n];
+
+                        Edges.add();
+                        Edges.getLastPos()[0] = (first[0] + v[l]) / 2.0;
+                        Edges.getLastPos()[1] = (first[1] + v[l+1]) / 2.0;
+                        Edges.getLastPos()[2] = (first[2] + v[l+2]) / 2.0;
+
+                        Edges.getLastProp<EdgeVertices>()[0] = Vertices.size() - 2;
+                        Edges.getLastProp<EdgeVertices>()[1] = Vertices.size() - 1;
+
+                        Edges.getLastProp<EdgeSurfaces>()[0] = last_surf;
+                        Edges.getLastProp<EdgeSurfaces>()[1] = -1;
+
+                        Surfaces.getLastPos()[0] = center[0];
+                        Surfaces.getLastPos()[1] = center[1];
+                        Surfaces.getLastPos()[2] = center[2];
+
                         // Skip to the next entry in the face vertex list
                         j+=f_vert[j]+1;
                     }
