@@ -1280,4 +1280,63 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_conv_background )
 	BOOST_REQUIRE_EQUAL(match,true);
 }
 
+BOOST_AUTO_TEST_CASE( grid_dense_to_sparse_conversion )
+{
+	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// grid size
+	size_t sz[3];
+	sz[0] = 32;
+	sz[1] = 32;
+	sz[2] = 32;
+
+	// Ghost
+	Ghost<3,float> g(0.1);
+
+	periodicity<3> pr = {PERIODIC,PERIODIC,PERIODIC};
+
+	// Distributed grid with id decomposition
+	grid_dist_id<3, float, aggregate<float,float>> g_dist(sz,domain,g,pr);
+
+	auto it = g_dist.getDomainIterator();
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+		auto gkey = it.getGKey(p);
+
+		g_dist.template getProp<0>(p) = gkey.get(0) + gkey.get(1) + gkey.get(2);
+		g_dist.template getProp<1>(p) = 3.0*gkey.get(0) + gkey.get(1) + gkey.get(2);
+
+		++it;
+	}
+
+	sgrid_dist_id_gpu<3,float,aggregate<float,float>> sgdist(g_dist.getDecomposition(),sz,g);
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+		auto gkey = it.getGKey(p);
+
+		sgdist.template insertFlush<0>(p) = g_dist.template get<0>(p);
+
+		++it;
+	}
+
+
+	bool check = true;
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+		auto gkey = it.getGKey(p);
+
+		check &= sgdist.template getProp<0>(p) == g_dist.template get<0>(p);
+
+		++it;
+	}
+
+	BOOST_REQUIRE_EQUAL(check,true);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

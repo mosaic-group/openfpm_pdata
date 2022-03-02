@@ -581,6 +581,27 @@ public:
 		return *this;
 	}
 
+	//! Copy operator
+	template<typename Memory2, template<typename> class layout_base2>
+	inline ie_ghost<dim,T,Memory,layout_base> & operator=(const ie_ghost<dim,T,Memory2,layout_base2> & ie)
+	{
+		box_nn_processor_int = ie.private_get_box_nn_processor_int();
+		proc_int_box = ie.private_get_proc_int_box();
+		vb_ext = ie.private_get_vb_ext();
+		vb_int = ie.private_get_vb_int();
+		vb_int_box = ie.private_get_vb_int_box();
+		geo_cell = ie.private_geo_cell();
+		shifts = ie.private_get_shifts();
+		ids_p = ie.private_get_ids_p();
+		ids = ie.private_get_ids();
+		domain = ie.private_get_domain();
+
+		for (int i = 0 ; i < dim ; i++)
+		{bc[i] = ie.private_get_bc(i);}
+
+		return *this;
+	}
+
 
 
 	/*! \brief duplicate this structure changing layout and Memory
@@ -1272,6 +1293,16 @@ public:
 	 * \return box_nn_processor_int
 	 *
 	 */
+	inline const openfpm::vector< openfpm::vector< Box_proc<dim,T> > > & private_get_box_nn_processor_int() const
+	{
+		return box_nn_processor_int;
+	}
+
+	/*! \brief Return the internal data structure box_nn_processor_int
+	 *
+	 * \return box_nn_processor_int
+	 *
+	 */
 	inline openfpm::vector< openfpm::vector< Box_proc<dim,T> > > & private_get_box_nn_processor_int()
 	{
 		return box_nn_processor_int;
@@ -1287,12 +1318,32 @@ public:
 		return proc_int_box;
 	}
 
+	/*! \brief Return the internal data structure proc_int_box
+	 *
+	 * \return proc_int_box
+	 *
+	 */
+	inline const openfpm::vector< Box_dom<dim,T> > & private_get_proc_int_box() const
+	{
+		return proc_int_box;
+	}
+
 	/*! \brief Return the internal data structure vb_ext
 	 *
 	 * \return vb_ext
 	 *
 	 */
 	inline openfpm::vector<p_box<dim,T> > & private_get_vb_ext()
+	{
+		return vb_ext;
+	}
+
+	/*! \brief Return the internal data structure vb_ext
+	 *
+	 * \return vb_ext
+	 *
+	 */
+	inline const openfpm::vector<p_box<dim,T> > & private_get_vb_ext() const
 	{
 		return vb_ext;
 	}
@@ -1308,6 +1359,17 @@ public:
 		return vb_int;
 	}
 
+	/*! \brief Return the internal data structure vb_int
+	 *
+	 * \return vb_int
+	 *
+	 */
+	inline const openfpm::vector<aggregate<unsigned int,unsigned int,unsigned int>,Memory,layout_base> &
+	private_get_vb_int() const
+	{
+		return vb_int;
+	}
+
 	/*! \brief Return the internal data structure vb_int_box
 	 *
 	 * \return vb_int_box
@@ -1315,6 +1377,17 @@ public:
 	 */
 	inline openfpm::vector<Box<dim,T>,Memory,layout_base> &
 	private_get_vb_int_box()
+	{
+		return vb_int_box;
+	}
+
+	/*! \brief Return the internal data structure vb_int_box
+	 *
+	 * \return vb_int_box
+	 *
+	 */
+	inline const openfpm::vector<Box<dim,T>,Memory,layout_base> &
+	private_get_vb_int_box() const
 	{
 		return vb_int_box;
 	}
@@ -1330,6 +1403,17 @@ public:
 		return geo_cell;
 	}
 
+	/*! \brief Return the internal data structure proc_int_box
+	 *
+	 * \return proc_int_box
+	 *
+	 */
+	inline const CellList<dim,T,Mem_fast<Memory,int>,shift<dim,T>> &
+	private_geo_cell() const
+	{
+		return geo_cell;
+	}
+
 	/*! \brief Return the internal data structure shifts
 	 *
 	 * \return shifts
@@ -1337,6 +1421,17 @@ public:
 	 */
 	inline openfpm::vector<Point<dim,T>,Memory,layout_base> &
 	private_get_shifts()
+	{
+		return shifts;
+	}
+
+	/*! \brief Return the internal data structure shifts
+	 *
+	 * \return shifts
+	 *
+	 */
+	inline const openfpm::vector<Point<dim,T>,Memory,layout_base> &
+	private_get_shifts() const
 	{
 		return shifts;
 	}
@@ -1357,8 +1452,30 @@ public:
 	 * \return ids_p
 	 *
 	 */
+	inline const openfpm::vector<std::pair<size_t,size_t>> &
+	private_get_ids_p() const
+	{
+		return ids_p;
+	}
+
+	/*! \brief Return the internal data structure ids_p
+	 *
+	 * \return ids_p
+	 *
+	 */
 	inline openfpm::vector<size_t> &
 	private_get_ids()
+	{
+		return ids;
+	}
+
+	/*! \brief Return the internal data structure ids_p
+	 *
+	 * \return ids_p
+	 *
+	 */
+	inline const openfpm::vector<size_t> &
+	private_get_ids() const
 	{
 		return ids;
 	}
@@ -1372,6 +1489,22 @@ public:
 	private_get_domain()
 	{
 		return domain;
+	}
+
+	/*! \brief Return the internal data structure domain
+	 *
+	 * \return domain
+	 *
+	 */
+	inline const Box<dim,T> &
+	private_get_domain() const
+	{
+		return domain;
+	}
+
+	size_t private_get_bc(int i) const
+	{
+		return bc[i];
 	}
 
 	/*! \brief Return the internal data structure domain

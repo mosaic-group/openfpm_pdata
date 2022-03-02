@@ -1314,10 +1314,11 @@ public:
      * \param ghost Ghost part
      *
      */
-    grid_dist_id(const Decomposition & dec,
+	template<typename Decomposition2>
+    grid_dist_id(const Decomposition2 & dec,
     		     const size_t (& g_sz)[dim],
 				 const Ghost<dim,St> & ghost)
-    :domain(dec.getDomain()),ghost(ghost),ghost_int(INVALID_GHOST),dec(dec),v_cl(create_vcluster()),
+    :domain(dec.getDomain()),ghost(ghost),ghost_int(INVALID_GHOST),dec(create_vcluster()),v_cl(create_vcluster()),
 	 ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
