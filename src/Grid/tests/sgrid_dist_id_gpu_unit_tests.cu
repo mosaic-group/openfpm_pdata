@@ -1291,7 +1291,7 @@ BOOST_AUTO_TEST_CASE( grid_dense_to_sparse_conversion )
 	sz[2] = 32;
 
 	// Ghost
-	Ghost<3,float> g(0.1);
+	Ghost<3,long int> g(1);
 
 	periodicity<3> pr = {PERIODIC,PERIODIC,PERIODIC};
 
