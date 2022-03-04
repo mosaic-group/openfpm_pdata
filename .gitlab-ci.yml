@@ -19,8 +19,9 @@ docker_centos_build:
      - cp id_rsa.pub /root/.ssh/id_rsa.pub && chmod 644 /root/.ssh/id_rsa.pub
      - cp id_rsa /root/.ssh/id_rsa && chmod 600 /root/.ssh/id_rsa
      - ssh-keyscan -H git.mpi-cbg.de >> ~/.ssh/known_hosts
-     - cat /root/openfpm_dependencies/openfpm_pdata/base/test_file
+     - pwd
      - echo "Hello Cache" > /root/openfpm_dependencies/openfpm_pdata/base/test_file
+     - cat /root/openfpm_dependencies/openfpm_pdata/base/test_file
 #     - ./build.sh $CI_PROJECT_DIR unused pdata 0 base &> out
    cache:
      key: $CI_COMMIT_REF_SLUG
