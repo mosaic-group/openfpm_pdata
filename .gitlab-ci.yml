@@ -3,7 +3,7 @@
 docker_centos_build:
    stage: build
    tags:
-     - docker
+     - ubuntu-docker
    image: 'ubuntu:20.04'
    artifacts:
      paths:
