@@ -20,8 +20,6 @@ docker_centos_build:
      - cp id_rsa /root/.ssh/id_rsa && chmod 600 /root/.ssh/id_rsa
      - ssh-keyscan -H git.mpi-cbg.de >> ~/.ssh/known_hosts
      - pwd
-     - mkdir base
-     - echo "Hello Cache" > base/test_file
      - cat base/test_file
 #     - ./build.sh $CI_PROJECT_DIR unused pdata 0 base &> out
    cache:
