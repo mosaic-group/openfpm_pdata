@@ -35,18 +35,26 @@ public:
  */
 template <typename ParticleMethodType, typename SimulationParametersType>
 class InitialCondition_Impl<INITIALCONDITION_MESH, ParticleMethodType, SimulationParametersType> {
+
+    using ParticleSignatureType = typename ParticleMethodType::ParticleSignature;
+    static constexpr int dimension = ParticleSignatureType::dimension;
+    using PositionType = typename ParticleSignatureType::position;
+    using PropertyType = typename ParticleSignatureType::properties;
+
+    SimulationParametersType simulationParameters;
+
 public:
     void initialization(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
         std::cout << "Mesh particle placement" << std::endl;
 
         // create particle mesh
         particleData.getOpenFPMContainer().clear();
-        auto meshIterator = particleData.getOpenFPMContainer().getGridIterator(SimulationParametersType::meshSize);
+        auto meshIterator = particleData.getOpenFPMContainer().getGridIterator(simulationParameters.meshSize);
         while (meshIterator.isNext())
         {
             particleData.getOpenFPMContainer().add();
             auto node = meshIterator.get();
-            for (int i = 0; i < ParticleMethodType::spaceDimension; i++) {
+            for (int i = 0; i < dimension; i++) {
                 particleData.getOpenFPMContainer().getLastPos()[i] = node.get(i) * meshIterator.getSpacing(i);
             }
             ++meshIterator;

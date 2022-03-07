@@ -4,6 +4,7 @@
 
 #include "PSE_Test.hpp"
 #include <chrono>
+#include <fstream>
 
 typedef PSE_ParticleMethod<PSE_ParticleSignature> ParticleMethodType;
 typedef PSE_SimulationParams<PSE_ParticleSignature> SimulationParametersType;
@@ -30,6 +31,11 @@ int main(int argc, char* argv[]) {
     auto t_end2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> duration2 = t_end2 - t_start2;
     std::cout << std::endl << "Duration " << duration2.count() << std::endl;
+
+    std::ofstream output_file;
+    output_file.open("DEM_Sym.csv");
+    output_file << duration2.count() << ",\n";
+    output_file.close();
 
 
     openfpm_finalize();

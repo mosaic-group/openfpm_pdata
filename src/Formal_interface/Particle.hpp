@@ -6,9 +6,9 @@
 #define OPENFPM_PDATA_PARTICLE_HPP
 
 
-#include <Vector/vector_dist.hpp>
-#include <memory_ly/Encap.hpp>
-#include <memory_ly/memory_conf.hpp>
+#include "Vector/vector_dist.hpp"
+#include "memory_ly/Encap.hpp"
+#include "memory_ly/memory_conf.hpp"
 #include "ParticleData.hpp"
 #include "DataContainer.hpp"
 #include "OperationProxy.hpp"

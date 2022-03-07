@@ -5,7 +5,7 @@
 #ifndef OPENFPM_PDATA_PARTICLEDATA_HPP
 #define OPENFPM_PDATA_PARTICLEDATA_HPP
 
-#include <Vector/vector_dist.hpp>
+#include "Vector/vector_dist.hpp"
 #include "GlobalVar.hpp"
 #include "DataContainer.hpp"
 #include "Constants.hpp"

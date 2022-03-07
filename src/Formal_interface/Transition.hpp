@@ -5,7 +5,7 @@
 #ifndef OPENFPM_PDATA_TRANSITION_HPP
 #define OPENFPM_PDATA_TRANSITION_HPP
 
-#include <Vector/vector_dist.hpp>
+#include "Vector/vector_dist.hpp"
 #include "ParticleData.hpp"
 #include "Particle.hpp"
 #include "InitialCondition.hpp"
@@ -125,8 +125,10 @@ public:
 
 
         // write particle data to file
-        particleData.getDataContainer().deleteGhost();
-        particleData.getDataContainer().write_frame("particles",iteration);
+        if (simulationParameters.writeOutput) {
+            particleData.getDataContainer().deleteGhost();
+            particleData.getDataContainer().write_frame("particles", iteration);
+        }
 
         iteration++;
     }

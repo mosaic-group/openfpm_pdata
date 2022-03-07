@@ -5,7 +5,7 @@
 #ifndef OPENFPM_PDATA_SIMULATIONPARAMETERS_HPP
 #define OPENFPM_PDATA_SIMULATIONPARAMETERS_HPP
 
-#include <Vector/vector_dist.hpp>
+#include "Vector/vector_dist.hpp"
 #include "Particle.hpp"
 #include "Constants.hpp"
 
@@ -47,6 +47,8 @@ public:
     PositionType cutoff_radius = 0.3;
 
 
+    // Output
+    bool writeOutput = true;
 
 protected:
 

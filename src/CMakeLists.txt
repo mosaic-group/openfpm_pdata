@@ -90,7 +90,22 @@ else()
 							  Decomposition/tests/shift_vect_converter_tests.cpp
 							  Vector/performance/vector_dist_performance_util.cpp
 							  lib/pdata.cpp
-							  ../Formal_interface/ParticleMethod.hpp ../Formal_interface/Particle.hpp ../Formal_interface/ParticleData.hpp ../Formal_interface/Transition.hpp ../Formal_interface/GlobalVar.hpp ../Formal_interface/SimulationParameters.hpp ../Formal_interface/Neighborhood.hpp ../Formal_interface/DataContainer.hpp ../Formal_interface/ParticleSignature.hpp ../Formal_interface/OperationProxy.hpp ../Formal_interface/Constants.hpp ../Formal_interface/InitialCondition.hpp ../Formal_interface/DomainIterator.hpp ../Formal_interface/Benchmarks/OperatorProxyValue_Overhead.cpp ../Formal_interface/Benchmarks/OperatorProxyValue_Overhead.hpp ../Formal_interface/CellList.hpp)
+
+			Formal_interface/ParticleMethod.hpp
+			Formal_interface/Particle.hpp
+			Formal_interface/ParticleData.hpp
+			Formal_interface/Transition.hpp
+			Formal_interface/GlobalVar.hpp
+			Formal_interface/SimulationParameters.hpp
+			Formal_interface/Neighborhood.hpp
+			Formal_interface/DataContainer.hpp
+			Formal_interface/ParticleSignature.hpp
+			Formal_interface/OperationProxy.hpp
+			Formal_interface/Constants.hpp
+			Formal_interface/InitialCondition.hpp
+			Formal_interface/DomainIterator.hpp
+			Formal_interface/CellList.hpp
+            Formal_interface/Benchmarks/PSE_Free_Unsym/PSE_Free_Unsym.cpp Formal_interface/Benchmarks/PSE_Free_Unsym/PSE_Free_Unsym.hpp)
 
 	add_library(ofpm_pdata STATIC lib/pdata.cpp)
 	add_library(ofpm_pdata_python SHARED lib/pdata_python.cpp)
@@ -100,6 +115,9 @@ else()
 	set_property(TARGET ofpm_pdata_python PROPERTY CUDA_ARCHITECTURES OFF)
 
 endif()
+
+
+
 
 add_dependencies(pdata ofpmmemory)
 add_dependencies(pdata vcluster)
@@ -172,6 +190,9 @@ target_include_directories (pdata PUBLIC ${ALPAKA_ROOT}/include)
 target_include_directories (pdata PUBLIC ${Vc_INCLUDE_DIR})
 target_include_directories (pdata PUBLIC ${Boost_INCLUDE_DIRS})
 target_include_directories (pdata PUBLIC ${MPI_C_INCLUDE_DIRS})
+
+target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/Formal_interface/)
+
 
 #target_include_directories (isolation_pdata PUBLIC ${PARMETIS_ROOT}/include)
 #target_include_directories (isolation_pdata PUBLIC ${METIS_ROOT}/include)

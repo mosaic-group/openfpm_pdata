@@ -291,6 +291,22 @@ public:
 
     void executeInteraction(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
+
+/*
+        // flag all domain particles
+
+        auto & vcl = create_vcluster();
+        size_t pid = vcl.getProcessUnitID();
+
+        auto iteratorFlag = particleData.getOpenFPMContainer().getDomainIterator();
+        while (iteratorFlag.isNext()) {
+
+            auto p = iteratorFlag.get();
+            particleData.getOpenFPMContainer().template getProp<0>(p) = pid;
+            ++iteratorFlag;
+        }
+*/
+
         // iterate through all particles
         auto iteratorAll = particleData.getParticleIterator();
         while (iteratorAll.isNext())
@@ -310,6 +326,7 @@ public:
                 for (int component = 0; component < dimension; ++component) {
                     n = n.move(component, node[component]);
                 }
+
 
 
                 if (simulationParameters.interactionType == INTERACTION_SYMMETRIC) {

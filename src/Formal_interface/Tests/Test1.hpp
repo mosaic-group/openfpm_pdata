@@ -6,14 +6,14 @@
 #define OPENFPM_PDATA_TEST1_HPP
 
 
-#include <Vector/vector_dist.hpp>
-#include "../Particle.hpp"
-#include "../ParticleData.hpp"
-#include "../ParticleMethod.hpp"
-#include "../Transition.hpp"
-#include "../SimulationParameters.hpp"
-#include "../InitialCondition.hpp"
-#include "../Neighborhood.hpp"
+#include "Vector/vector_dist.hpp"
+#include "Formal_interface/Particle.hpp"
+#include "Formal_interface/ParticleData.hpp"
+#include "Formal_interface/ParticleMethod.hpp"
+#include "Formal_interface/Transition.hpp"
+#include "Formal_interface/SimulationParameters.hpp"
+#include "Formal_interface/InitialCondition.hpp"
+#include "Formal_interface/Neighborhood.hpp"
 
 
 struct PSE_ParticleSignature {

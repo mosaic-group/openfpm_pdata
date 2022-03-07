@@ -5,7 +5,7 @@
 #ifndef OPENFPM_PDATA_PARTICLESIGNATURE_HPP
 #define OPENFPM_PDATA_PARTICLESIGNATURE_HPP
 
-#include <Vector/vector_dist.hpp>
+#include "Vector/vector_dist.hpp"
 #include "DataContainer.hpp"
 
 struct ParticleSignature {

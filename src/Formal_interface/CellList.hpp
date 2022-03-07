@@ -42,9 +42,6 @@ public:
 
     void executeInteraction(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
-//        particleData.getOpenFPMContainer().map();
-//        particleData.ghost_get_all();
-
         // update symmetric cell list
         particleData.getOpenFPMContainer().updateCellListSym(cellList);
 
@@ -101,9 +98,6 @@ public:
     }
 
     void executeInteraction(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
-
-//        particleData.getOpenFPMContainer().map();
-//        particleData.ghost_get_all();
 
         // update symmetric cell list
         particleData.getOpenFPMContainer().updateCellList(cellList);

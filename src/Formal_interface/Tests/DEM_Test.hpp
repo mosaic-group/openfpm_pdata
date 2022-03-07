@@ -8,13 +8,13 @@
 
 #include <array>
 #include <Vector/vector_dist.hpp>
-#include "../Particle.hpp"
-#include "../ParticleData.hpp"
-#include "../ParticleMethod.hpp"
-#include "../Transition.hpp"
-#include "../SimulationParameters.hpp"
-#include "../InitialCondition.hpp"
-#include "../Neighborhood.hpp"
+#include "Formal_interface/Particle.hpp"
+#include "Formal_interface/ParticleData.hpp"
+#include "Formal_interface/ParticleMethod.hpp"
+#include "Formal_interface/Transition.hpp"
+#include "Formal_interface/SimulationParameters.hpp"
+#include "Formal_interface/InitialCondition.hpp"
+#include "Formal_interface/Neighborhood.hpp"
 
 
 
@@ -96,7 +96,7 @@ public:
 
         // Apply collision to particle acceleration
         particle.template property_vec<acceleration>() += diff_collision;
-        neighbor.template property_vec<acceleration>() -= diff_collision;
+//        neighbor.template property_vec<acceleration>() -= diff_collision;
 
     }
 
@@ -136,7 +136,7 @@ public:
         this->setDomain(globalvar.domainSize);
         this->setBoundaryConditions(PERIODIC);
         this->setCutoffRadius(globalvar.r_cut);
-        this->setNumberParticles(40);
+        this->setNumberParticles(5000);
         this->setCellWidth(globalvar.r_cut);
     }
 
@@ -155,7 +155,7 @@ public:
     typedef NEIGHBORHHOD_CELLLIST neighborhoodDetermination;
 //    typedef NEIGHBORHOOD_ALLPARTICLES neighborhoodDetermination;
 
-    static const int interactionType = INTERACTION_SYMMETRIC;
+//    static const int interactionType = INTERACTION_SYMMETRIC;
 
     void initialization(Particle<ParticleSignatureType> particle) override {
 
