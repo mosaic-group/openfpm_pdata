@@ -190,24 +190,24 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_output )
 
 BOOST_AUTO_TEST_CASE( sgrid_gpu_test_save_and_load )
 {
-/*	auto & v_cl = create_vcluster();
+	auto & v_cl = create_vcluster();
 
 	if (v_cl.size() > 3){return;}
 
-	size_t sz[2] = {17,17};
+	size_t sz[2] = {370,370};
 	periodicity<2> bc = {PERIODIC,PERIODIC};
 
 	Ghost<2,long int> g(1);
 
 	Box<2,float> domain({0.0,0.0},{1.0,1.0});
 
-	sgrid_dist_id_gpu<2,float,aggregate<float,float,float[2]>> gdist(sz,domain,g,bc);
+	sgrid_dist_id_gpu<2,float,aggregate<float,float>> gdist(sz,domain,g,bc);
 
 	gdist.template setBackgroundValue<0>(666);
 
 	/////// GPU insert + flush
 
-	Box<2,size_t> box({1,1},{15,15});
+	Box<2,size_t> box({1,1},{350,350});
 	auto it = gdist.getGridIterator(box.getKP1(),box.getKP2());
 
 	/////// GPU Run kernel
@@ -224,13 +224,10 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_save_and_load )
 			        {
 			        	data.template get<0>() = c + i + j;
 						data.template get<1>() = c + 1000 + i + j;
-						
-						data.template get<2>()[0] = i;
-						data.template get<2>()[1] = j;
 			        }
 			        );
 
-	gdist.template flush<smax_<0>,smax_<1>,smax_<2>>(flush_type::FLUSH_ON_DEVICE);
+	gdist.template flush<smax_<0>,smax_<1>>(flush_type::FLUSH_ON_DEVICE);
 
 	gdist.template deviceToHost<0>();
 
@@ -238,9 +235,85 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_save_and_load )
 
 	// Now load
 
-	sgrid_dist_id_gpu<2,float,aggregate<float,float,float[2]>> gdist2(sz,domain,g,bc);
+	sgrid_dist_id_gpu<2,float,aggregate<float,float>> gdist2(sz,domain,g,bc);
 
-	gdist2.load("sgrid_gpu_output_hdf5");*/
+	gdist2.load("sgrid_gpu_output_hdf5");
+
+	gdist2.template ghost_get<0,1>(RUN_ON_DEVICE);
+
+	gdist2.deviceToHost<0,1>();
+	gdist.deviceToHost<0,1>();
+
+	bool match = true;
+
+
+	auto it2 = gdist2.getDomainIterator();
+
+	while (it2.isNext())
+	{
+		auto p = it2.get();
+
+		auto key = it2.getGKey(p);
+
+		auto p_xp1 = p.move(0,1);
+		auto p_xm1 = p.move(0,-1);
+		auto p_yp1 = p.move(1,1);
+		auto p_ym1 = p.move(1,-1);
+
+		auto key_xp1 = key.move(0,1);
+		auto key_xm1 = key.move(0,-1);
+		auto key_yp1 = key.move(1,1);
+		auto key_ym1 = key.move(1,-1);
+
+		if (box.isInside(key_xp1.toPoint()))
+		{
+			match &= gdist.template get<0>(p_xp1) == c + key_xp1.get(0) + key_xp1.get(1);
+
+			if (match == false)
+			{
+				std::cout << gdist.template get<0>(p_xp1) << "   " << c + key_xp1.get(0) + key_xp1.get(1) << std::endl;
+				break;
+			}
+		}
+
+		if (box.isInside(key_xm1.toPoint()))
+		{
+			match &= gdist.template get<0>(p_xm1) == c + key_xm1.get(0) + key_xm1.get(1);
+
+			if (match == false)
+			{
+				std::cout << gdist.template get<0>(p_xm1) << "   " << c + key_xm1.get(0) + key_xm1.get(1) << std::endl;
+				break;
+			}
+		}
+
+		if (box.isInside(key_yp1.toPoint()))
+		{
+			match &= gdist.template get<0>(p_yp1) == c + key_yp1.get(0) + key_yp1.get(1);
+
+			if (match == false)
+			{
+				std::cout << gdist.template get<0>(p_yp1) << "   " << c + key_yp1.get(0) + key_yp1.get(1) << std::endl;
+				break;
+			}
+		}
+
+		if (box.isInside(key_ym1.toPoint()))
+		{
+			match &= gdist.template get<0>(p_ym1) == c + key_ym1.get(0) + key_ym1.get(1);
+
+			if (match == false)
+			{
+				std::cout << gdist.template get<0>(p_ym1) << "   " << c + key_ym1.get(0) + key_ym1.get(1) << std::endl;
+				break;
+			}
+		}
+
+		++it2;
+	}
+
+
+	BOOST_REQUIRE_EQUAL(match,true);
 }
 
 void sgrid_ghost_get(size_t (& sz)[2],size_t (& sz2)[2])
@@ -1205,6 +1278,65 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_conv_background )
 
 	BOOST_REQUIRE(count == 0 || count == 1);
 	BOOST_REQUIRE_EQUAL(match,true);
+}
+
+BOOST_AUTO_TEST_CASE( grid_dense_to_sparse_conversion )
+{
+	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// grid size
+	size_t sz[3];
+	sz[0] = 32;
+	sz[1] = 32;
+	sz[2] = 32;
+
+	// Ghost
+	Ghost<3,long int> g(1);
+
+	periodicity<3> pr = {PERIODIC,PERIODIC,PERIODIC};
+
+	// Distributed grid with id decomposition
+	grid_dist_id<3, float, aggregate<float,float>> g_dist(sz,domain,g,pr);
+
+	auto it = g_dist.getDomainIterator();
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+		auto gkey = it.getGKey(p);
+
+		g_dist.template getProp<0>(p) = gkey.get(0) + gkey.get(1) + gkey.get(2);
+		g_dist.template getProp<1>(p) = 3.0*gkey.get(0) + gkey.get(1) + gkey.get(2);
+
+		++it;
+	}
+
+	sgrid_dist_id_gpu<3,float,aggregate<float,float>> sgdist(g_dist.getDecomposition(),sz,g);
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+		auto gkey = it.getGKey(p);
+
+		sgdist.template insertFlush<0>(p) = g_dist.template get<0>(p);
+
+		++it;
+	}
+
+
+	bool check = true;
+
+	while (it.isNext())
+	{
+		auto p = it.get();
+		auto gkey = it.getGKey(p);
+
+		check &= sgdist.template getProp<0>(p) == g_dist.template get<0>(p);
+
+		++it;
+	}
+
+	BOOST_REQUIRE_EQUAL(check,true);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

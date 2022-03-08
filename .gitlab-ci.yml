@@ -1,117 +1,119 @@
 
 
-# docker_centos_build:
-#   stage: build
-#   tags:
-#     - docker
-#   image: 'ubuntu:20.04'
-#   artifacts:
-#     paths:
-#       - ./build/src/pdata
-#       - ./build/openfpm_numerics/src/numerics
-#       - ./openfpm_numerics/test
-#   script:
-#     - apt-get update
-#     - DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata
-#     - apt-get -y install cmake wget git g++ gfortran python2  python-is-python3
-#     - mkdir -p /root/openfpm_dependencies/openfpm_pdata/base
-#     - mkdir /root/.ssh && chmod 700 /root/.ssh
-#     - cp id_rsa.pub /root/.ssh/id_rsa.pub && chmod 644 /root/.ssh/id_rsa.pub
-#     - cp id_rsa /root/.ssh/id_rsa && chmod 600 /root/.ssh/id_rsa
-#     - ssh-keyscan -H git.mpi-cbg.de >> ~/.ssh/known_hosts
-#     - ./build.sh $CI_PROJECT_DIR unused pdata 0 base
-#   cache:
-#     key: $CI_COMMIT_REF_SLUG
-#     paths:
-#       - /root/openfpm_dependencies/openfpm_pdata/base
+docker_centos_build:
+   stage: build
+   tags:
+     - ubuntu-docker
+   image: 'ubuntu:20.04'
+   artifacts:
+     paths:
+       - ./build/src/pdata
+       - ./build/openfpm_numerics/src/numerics
+       - ./openfpm_numerics/test
+   script:
+     - apt-get update
+     - DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata
+     - apt-get -y install cmake wget git g++ gfortran python2  python-is-python3
+     - mkdir -p /root/openfpm_dependencies/openfpm_pdata/base
+     - mkdir /root/.ssh && chmod 700 /root/.ssh
+     - cp id_rsa.pub /root/.ssh/id_rsa.pub && chmod 644 /root/.ssh/id_rsa.pub
+     - cp id_rsa /root/.ssh/id_rsa && chmod 600 /root/.ssh/id_rsa
+     - ssh-keyscan -H git.mpi-cbg.de >> ~/.ssh/known_hosts
+     - pwd
+     - cat base/test_file
+#     - ./build.sh $CI_PROJECT_DIR unused pdata 0 base &> out
+   cache:
+     key: $CI_COMMIT_REF_SLUG
+     paths:
+       - base/
 
-centos_build:
-  stage: build
-  tags:
-    - centos
-  artifacts:
-    paths:
-      - ./build/src/pdata
-      - ./build/openfpm_numerics/src/numerics
-      - ./openfpm_numerics/test
-  script:
-    - ./build.sh $CI_PROJECT_DIR unused pdata 0 $CI_COMMIT_REF_NAME
+#centos_build:
+#  stage: build
+#  tags:
+#    - centos
+#  artifacts:
+#    paths:
+#      - ./build/src/pdata
+#      - ./build/openfpm_numerics/src/numerics
+#      - ./openfpm_numerics/test
+#  script:
+#    - ./build.sh $CI_PROJECT_DIR unused pdata 0 $CI_COMMIT_REF_NAME
 
-centos_run:
-  stage: test
-  tags:
-    - centos
-  dependencies:
-    - centos_build
-  script:
-    - export OMP_NUM_THREADS=1
-    - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR unused 2 pdata 0 $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR unused 3 pdata 0 $CI_COMMIT_REF_NAME
-    - export OMP_NUM_THREADS=8
-    - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
-    - export OMP_NUM_THREADS=1
-    - cd openfpm_numerics
-    - ./run.sh $CI_PROJECT_DIR unused 1 0 0 numerics $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR unused 3 0 0 numerics $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR unused 4 0 0 numerics $CI_COMMIT_REF_NAME
+#centos_run:
+#  stage: test
+#  tags:
+#    - centos
+#  dependencies:
+#    - centos_build
+#  script:
+#    - export OMP_NUM_THREADS=1
+#    - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
+#    - ./run.sh $CI_PROJECT_DIR unused 2 pdata 0 $CI_COMMIT_REF_NAME
+#    - ./run.sh $CI_PROJECT_DIR unused 3 pdata 0 $CI_COMMIT_REF_NAME
+#    - export OMP_NUM_THREADS=8
+#    - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
+#    - export OMP_NUM_THREADS=1
+#    - cd openfpm_numerics
+#    - ./run.sh $CI_PROJECT_DIR unused 1 0 0 numerics $CI_COMMIT_REF_NAME
+#    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics $CI_COMMIT_REF_NAME
+#    - ./run.sh $CI_PROJECT_DIR unused 3 0 0 numerics $CI_COMMIT_REF_NAME
+#    - ./run.sh $CI_PROJECT_DIR unused 4 0 0 numerics $CI_COMMIT_REF_NAME
 
-mac_build:
-  variables:
-    GIT_STRATEGY: empty
-  stage: build
-  tags:
-    - mac
-  artifacts:
-    paths:
-      - ./build/src/pdata
-      - ./build/openfpm_numerics/src/numerics
-      - ./openfpm_numerics/test
-  script:
-      - ./build.sh $CI_PROJECT_DIR unused pdata 0  $CI_COMMIT_REF_NAME
+#mac_build:
+#  variables:
+#    GIT_STRATEGY: empty
+#  stage: build
+#  tags:
+#    - mac
+#  artifacts:
+#    paths:
+#      - ./build/src/pdata
+#      - ./build/openfpm_numerics/src/numerics
+#      - ./openfpm_numerics/test
+#  script:
+#      - ./build.sh $CI_PROJECT_DIR unused pdata 0  $CI_COMMIT_REF_NAME
 
-mac_run:
-  stage: test
-  tags:
-    - mac
-  dependencies:
-    - mac_build
-  script:
-    - ./run.sh $CI_PROJECT_DIR unused 1 0 0 $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 $CI_COMMIT_REF_NAME
-    - cd openfpm_numerics
-    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics $CI_COMMIT_REF_NAME
+#mac_run:
+#  stage: test
+#  tags:
+#    - mac
+#  dependencies:
+#    - mac_build
+#  script:
+#    - ./run.sh $CI_PROJECT_DIR unused 1 0 0 $CI_COMMIT_REF_NAME
+#    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 $CI_COMMIT_REF_NAME
+#    - cd openfpm_numerics
+#    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics $CI_COMMIT_REF_NAME
 
-ubuntu_build:
-  stage: build
-  tags:
-    - ubuntu
-  artifacts:
-    paths:
-      - ./build/src/pdata
-      - ./build/openfpm_numerics/src/numerics
-      - ./openfpm_numerics/test
-  script:
-    - ./build.sh $CI_PROJECT_DIR unused pdata 0 $CI_COMMIT_REF_NAME
+#ubuntu_build:
+#  stage: build
+#  tags:
+#    - ubuntu
+#  artifacts:
+#    paths:
+#      - ./build/src/pdata
+#      - ./build/openfpm_numerics/src/numerics
+#      - ./openfpm_numerics/test
+#  script:
+#    - ./build.sh $CI_PROJECT_DIR unused pdata 0 $CI_COMMIT_REF_NAME
 
-ubuntu_run:
-  stage: test
-  tags:
-    - ubuntu
-  dependencies:
-    - ubuntu_build
-  script:
-    - export OMP_NUM_THREADS=1
-    - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR unused 2 pdata 0 $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR unused 3 pdata 0 $CI_COMMIT_REF_NAME
-    - export OMP_NUM_THREADS=8
-    - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
-    - export OMP_NUM_THREADS=1
-    - cd openfpm_numerics
-    - ./run.sh $CI_PROJECT_DIR unused 1 0 0 numerics $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR unused 3 0 0 numerics $CI_COMMIT_REF_NAME
-    - ./run.sh $CI_PROJECT_DIR unused 4 0 0 numerics $CI_COMMIT_REF_NAME
+#ubuntu_run:
+#  stage: test
+#  tags:
+#    - ubuntu
+#  dependencies:
+#    - ubuntu_build
+#  script:
+#    - export OMP_NUM_THREADS=1
+#    - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
+#    - ./run.sh $CI_PROJECT_DIR unused 2 pdata 0 $CI_COMMIT_REF_NAME
+#    - ./run.sh $CI_PROJECT_DIR unused 3 pdata 0 $CI_COMMIT_REF_NAME
+#    - export OMP_NUM_THREADS=8
+#    - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
+#    - export OMP_NUM_THREADS=1
+#    - cd openfpm_numerics
+#    - ./run.sh $CI_PROJECT_DIR unused 1 0 0 numerics $CI_COMMIT_REF_NAME
+#    - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics $CI_COMMIT_REF_NAME
+#    - ./run.sh $CI_PROJECT_DIR unused 3 0 0 numerics $CI_COMMIT_REF_NAME
+#    - ./run.sh $CI_PROJECT_DIR unused 4 0 0 numerics $CI_COMMIT_REF_NAME
 

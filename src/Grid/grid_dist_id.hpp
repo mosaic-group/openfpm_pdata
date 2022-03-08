@@ -1314,10 +1314,11 @@ public:
      * \param ghost Ghost part
      *
      */
-    grid_dist_id(const Decomposition & dec,
+	template<typename Decomposition2>
+    grid_dist_id(const Decomposition2 & dec,
     		     const size_t (& g_sz)[dim],
 				 const Ghost<dim,St> & ghost)
-    :domain(dec.getDomain()),ghost(ghost),ghost_int(INVALID_GHOST),dec(dec),v_cl(create_vcluster()),
+    :domain(dec.getDomain()),ghost(ghost),ghost_int(INVALID_GHOST),dec(create_vcluster()),v_cl(create_vcluster()),
 	 ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
@@ -1368,10 +1369,33 @@ public:
 	:domain(dec.getDomain()),ghost_int(g),dec(create_vcluster()),v_cl(create_vcluster()),
 	 ginfo(g_sz),ginfo_v(g_sz)
 	{
-#ifdef SE_CLASS2
-		check_new(this,8,GRID_DIST_EVENT,4);
-#endif
+		InitializeCellDecomposer(g_sz,dec.periodicity());
 
+		ghost = convert_ghost(g,cd_sm);
+		this->dec = dec.duplicate(ghost);
+
+		// an empty
+		openfpm::vector<Box<dim,long int>> empty;
+
+		// Initialize structures
+		InitializeStructures(g_sz,empty,g,false);
+	}
+
+    /*! It constructs a grid of a specified size, defined on a specified Box space, forcing to follow a specified decomposition, and having a specified ghost size
+     *
+     * \param dec Decomposition
+     * \param g_sz grid size on each dimension
+     * \param g Ghost part (given in grid units)
+     *
+     * \warning In very rare case the ghost part can be one point bigger than the one specified
+     *
+     */
+	template<typename Decomposition2>
+	grid_dist_id(const Decomposition2 & dec, const size_t (& g_sz)[dim],
+			     const Ghost<dim,long int> & g)
+	:domain(dec.getDomain()),ghost_int(g),dec(create_vcluster()),v_cl(create_vcluster()),
+	 ginfo(g_sz),ginfo_v(g_sz)
+	{
 		InitializeCellDecomposer(g_sz,dec.periodicity());
 
 		ghost = convert_ghost(g,cd_sm);

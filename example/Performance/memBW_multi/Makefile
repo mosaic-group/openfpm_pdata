@@ -42,7 +42,7 @@ OBJ = main.o
 memBW:
 
 %.o: %.cu
-	$(CUDA_CC) -O3 $(CUDA_OPTIONS) $(OPT) -c --std=c++14  -o $@ $< $(INCLUDE_PATH_NVCC)
+	$(CUDA_CC) -O3 -g  $(CUDA_OPTIONS) $(OPT) -c --std=c++14  -o $@ $< $(INCLUDE_PATH_NVCC)
 
 %.o: %.cpp
 	$(CC) -g -O3 $(OPT) -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
@@ -53,7 +53,7 @@ memBW: $(OBJ)
 all: memBW
 
 run: memBW
-	mpirun --oversubscribe -np 1 ./memBW
+	mpirun --oversubscribe -np 2 ./memBW
 
 .PHONY: clean all run
 

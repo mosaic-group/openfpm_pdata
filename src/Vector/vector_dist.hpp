@@ -221,6 +221,37 @@ struct cell_list_selector<vector,comp_host>
 	}
 };
 
+template<typename vector_type>
+struct decrement_memory
+{
+	//! vector
+	vector_type & v;
+
+
+	/*! \brief constructor
+	 *
+	 *
+	 * \param src encapsulated object1
+	 * \param dst encapsulated object2
+	 *
+	 */
+	inline decrement_memory(vector_type & v)
+	:v(v)
+	{};
+
+
+	/*!  \brief It call the copy function for each property
+	 *
+	 * \param t each member
+	 *
+	 */
+	template<typename T>
+	inline void operator()(T& t) const
+	{
+		v.template getMemory<T::value>().decRef();
+	}
+};
+
 /*! \brief Distributed vector
  *
  * This class represent a distributed vector, the distribution of the structure
@@ -622,6 +653,24 @@ public:
 #ifdef SE_CLASS2
 		check_delete(this);
 #endif
+	}
+
+	/*! Set reference counter to one
+	 *
+	 */
+	void setReferenceCounterToOne()
+	{
+		for (int i = 0 ; i < v_pos.template getMemory<0>().ref() - 1; i++)
+		{
+			v_pos.template getMemory<0>().decRef();
+		}
+
+		for (int i = 0 ; i < v_prp.template getMemory<0>().ref() - 1; i++)
+		{
+			decrement_memory<decltype(v_prp)> m(v_prp);
+
+			boost::mpl::for_each_ref<boost::mpl::range_c<int,0,decltype(v_prp)::value_type::max_prop>>(m);
+		}
 	}
 
 	/*! \brief remove all the elements

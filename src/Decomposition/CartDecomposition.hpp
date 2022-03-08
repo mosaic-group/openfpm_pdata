@@ -157,6 +157,12 @@ public:
 	//! This class admit a class defined on an extended domain
 	typedef CartDecomposition_ext<dim,T,Memory,layout_base,Distribution> extended_type;
 
+	typedef ie_loc_ghost<dim, T,layout_base, Memory> ie_loc_ghost_type;
+
+	typedef nn_prcs<dim, T,layout_base,Memory> nn_prcs_type;
+
+	typedef ie_ghost<dim,T,Memory,layout_base> ie_ghost_type;
+
 protected:
 
 	//! bool that indicate whenever the buffer has been already transfer to device
@@ -1012,6 +1018,47 @@ public:
 
 		for (size_t i = 0 ; i < dim ; i++)
 			bc[i] = cart.bc[i];
+
+		return *this;
+	}
+
+	/*! \brief Copy the element
+	 *
+	 * \param cart element to copy
+	 *
+	 * \return itself
+	 *
+	 */
+	template<typename CartDecomposition2>
+	CartDecomposition<dim,T,Memory, layout_base, Distribution> & operator=(const CartDecomposition2 & cart)
+	{
+		static_cast<ie_loc_ghost<dim,T,layout_base,Memory>*>(this)->operator=(static_cast<typename CartDecomposition2::ie_loc_ghost_type>(cart));
+		static_cast<nn_prcs<dim,T,layout_base,Memory>*>(this)->operator=(static_cast<typename CartDecomposition2::nn_prcs_type>(cart));
+		static_cast<ie_ghost<dim,T,Memory,layout_base>*>(this)->operator=(static_cast<typename CartDecomposition2::ie_ghost_type>(cart));
+
+		sub_domains = cart.private_get_sub_domains();
+		box_nn_processor = cart.private_get_box_nn_processor();
+		fine_s = cart.private_get_fine_s();
+		gr = cart.private_get_gr();
+		gr_dist = cart.private_get_gr_dist();
+		dist = cart.private_get_dist();
+		commCostSet = cart.private_get_commCostSet();
+		cd = cart.private_get_cd();
+		domain = cart.private_get_domain();
+		sub_domains_global = cart.private_get_sub_domains_global();
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{
+			spacing[i] = cart.private_get_spacing(i);
+			magn[i] = cart.private_get_magn(i);
+		};
+
+		ghost = cart.private_get_ghost();
+
+		bbox = cart.private_get_bbox();
+
+		for (size_t i = 0 ; i < dim ; i++)
+		{bc[i] = cart.private_get_bc(i);}
 
 		return *this;
 	}
@@ -2099,12 +2146,32 @@ public:
 		return sub_domains;
 	}
 
+	/*! \brief Return the internal data structure sub_domains
+	 *
+	 * \return sub_domains
+	 *
+	 */
+	const openfpm::vector<SpaceBox<dim, T>> & private_get_sub_domains() const
+	{
+		return sub_domains;
+	}
+
 	/*! \brief Return the internal data structure box_nn_processor
 	 *
 	 * \return box_nn_processor
 	 *
 	 */
 	openfpm::vector<openfpm::vector<long unsigned int> > & private_get_box_nn_processor()
+	{
+		return box_nn_processor;
+	}
+
+	/*! \brief Return the internal data structure box_nn_processor
+	 *
+	 * \return box_nn_processor
+	 *
+	 */
+	const openfpm::vector<openfpm::vector<long unsigned int> > & private_get_box_nn_processor() const
 	{
 		return box_nn_processor;
 	}
@@ -2119,12 +2186,32 @@ public:
 		return fine_s;
 	}
 
+	/*! \brief Return the internal data structure fine_s
+	 *
+	 * \return fine_s
+	 *
+	 */
+	const CellList<dim,T,Mem_fast<Memory,int>,shift<dim,T>> & private_get_fine_s() const
+	{
+		return fine_s;
+	}
+
 	/*! \brief Return the internal data structure gr
 	 *
 	 * \return gr
 	 *
 	 */
 	grid_sm<dim, void> & private_get_gr()
+	{
+		return gr;
+	}
+
+	/*! \brief Return the internal data structure gr
+	 *
+	 * \return gr
+	 *
+	 */
+	const grid_sm<dim, void> & private_get_gr() const
 	{
 		return gr;
 	}
@@ -2139,12 +2226,32 @@ public:
 		return gr_dist;
 	}
 
+	/*! \brief Return the internal data structure gr_dist
+	 *
+	 * \return gr_dist
+	 *
+	 */
+	const grid_sm<dim, void> & private_get_gr_dist() const
+	{
+		return gr_dist;
+	}
+
 	/*! \brief Return the internal data structure dist
 	 *
 	 * \return dist
 	 *
 	 */
 	Distribution & private_get_dist()
+	{
+		return dist;
+	}
+
+	/*! \brief Return the internal data structure dist
+	 *
+	 * \return dist
+	 *
+	 */
+	const Distribution & private_get_dist() const
 	{
 		return dist;
 	}
@@ -2159,12 +2266,32 @@ public:
 		return commCostSet;
 	}
 
+	/*! \brief Return the internal data structure commCostSet
+	 *
+	 * \return commCostSet
+	 *
+	 */
+	const bool & private_get_commCostSet() const
+	{
+		return commCostSet;
+	}
+
 	/*! \brief Return the internal data structure cd
 	 *
 	 * \return cd
 	 *
 	 */
 	CellDecomposer_sm<dim, T, shift<dim,T>> & private_get_cd()
+	{
+		return cd;
+	}
+
+	/*! \brief Return the internal data structure cd
+	 *
+	 * \return cd
+	 *
+	 */
+	const CellDecomposer_sm<dim, T, shift<dim,T>> & private_get_cd() const
 	{
 		return cd;
 	}
@@ -2179,12 +2306,32 @@ public:
 		return domain;
 	}
 
+	/*! \brief Return the internal data structure domain
+	 *
+	 * \return domain
+	 *
+	 */
+	const ::Box<dim,T> & private_get_domain() const
+	{
+		return domain;
+	}
+
 	/*! \brief Return the internal data structure sub_domains_global
 	 *
 	 * \return sub_domains_global
 	 *
 	 */
 	openfpm::vector<Box_map<dim, T>,Memory,layout_base> & private_get_sub_domains_global()
+	{
+		return sub_domains_global;
+	}
+
+	/*! \brief Return the internal data structure sub_domains_global
+	 *
+	 * \return sub_domains_global
+	 *
+	 */
+	const openfpm::vector<Box_map<dim, T>,Memory,layout_base> & private_get_sub_domains_global() const
 	{
 		return sub_domains_global;
 	}
@@ -2199,12 +2346,53 @@ public:
 		return spacing[i];
 	}
 
+	/*! \brief Return the internal data structure spacing
+	 *
+	 * \return spacing
+	 *
+	 */
+	const T & private_get_spacing(int i) const
+	{
+		return spacing[i];
+	}
+
+	/*! \brief Return the internal data structure magn
+	 *
+	 * \return magn
+	 *
+	 */
+	T & private_get_magn(int i)
+	{
+		return spacing[i];
+	}
+
+	/*! \brief Return the internal data structure magn
+	 *
+	 * \return magn
+	 *
+	 */
+	const T & private_get_magn(int i) const
+	{
+		return spacing[i];
+	}
+
+
 	/*! \brief Return the internal data structure ghost
 	 *
 	 * \return ghost
 	 *
 	 */
 	Ghost<dim,T> & private_get_ghost()
+	{
+		return ghost;
+	}
+
+	/*! \brief Return the internal data structure ghost
+	 *
+	 * \return ghost
+	 *
+	 */
+	const Ghost<dim,T> & private_get_ghost() const
 	{
 		return ghost;
 	}
@@ -2219,12 +2407,32 @@ public:
 		return bbox;
 	}
 
+	/*! \brief Return the internal data structure bbox
+	 *
+	 * \return bbox
+	 *
+	 */
+	const ::Box<dim,T> & private_get_bbox() const
+	{
+		return bbox;
+	}
+
 	/*! \brief Return the internal data structure bc
 	 *
 	 * \return bc
 	 *
 	 */
 	size_t & private_get_bc(int i)
+	{
+		return bc[i];
+	}
+
+	/*! \brief Return the internal data structure bc
+	 *
+	 * \return bc
+	 *
+	 */
+	const size_t & private_get_bc(int i) const
 	{
 		return bc[i];
 	}
