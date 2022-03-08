@@ -25,8 +25,12 @@ const int min_sdf = 5;
 const int min_sdf_x = 6;
 const int interpol_coeff = 7;
 const int sdf_analytical = 8;
+const int norm_analytical = 9;
+const int curv_analytical = 10;
+const int cp_err = 11;
+const int norm_err = 12;
 
-typedef vector_dist<3, double, aggregate<double, double[3], double, int, int, double, double[3], double[35], double>> particles;
+typedef vector_dist<3, double, aggregate<double, double[3], double, int, int, double, double[3], double[35], double, double[3], double, double, double>> particles;
 //					|		|	 	 |         |    |		 |		|	|						|
 //				     sdf  sdfgrad curvature surf_flag num_neibs min sdf in support	min sdf location poly coefficients analytical sdf
 
@@ -73,11 +77,9 @@ double GetRoot(double r0, double r1, double z0, double z1, double z2, double g)
 	return (s);
 }
 
-double DistancePointEllipse(double e0, double e1, double y0, double y1)
+double DistancePointEllipse(double e0, double e1, double y0, double y1, double& x0, double& x1)
     {
         double distance;
-        double x0 = 0.0;
-        double x1 = 0.0;
         if ( y1 > 0){
             if ( y0 > 0){
                 double z0 = y0 / e0;
@@ -112,12 +114,9 @@ double DistancePointEllipse(double e0, double e1, double y0, double y1)
         return distance;
     }
 
-double DistancePointEllipsoid(double e0, double e1, double e2, double y0, double y1, double y2)
+double DistancePointEllipsoid(double e0, double e1, double e2, double y0, double y1, double y2, double& x0, double& x1, double& x2)
 {
 	double distance;
-	double x0 = 0.0;
-	double x1 = 0.0;
-	double x2 = 0.0;
 	if( y2 > 0 )
 	{
 		if( y1 > 0 )
@@ -149,7 +148,7 @@ double DistancePointEllipsoid(double e0, double e1, double e2, double y0, double
 			else // y0 == 0
 			{
 				x0 = 0;
-				distance = DistancePointEllipse( e1 , e2 , y1 , y2);
+				distance = DistancePointEllipse( e1 , e2 , y1 , y2, x1, x2);
 			}
 		}
 		else // y1 == 0
@@ -157,7 +156,7 @@ double DistancePointEllipsoid(double e0, double e1, double e2, double y0, double
 			if( y0 > 0 )
 			{
 				x1 = 0;
-				distance = DistancePointEllipse( e0 , e2 , y0 , y2);
+				distance = DistancePointEllipse( e0 , e2 , y0 , y2, x0, x2);
 			}
 			else // y0 == 0
 			{
@@ -194,7 +193,7 @@ double DistancePointEllipsoid(double e0, double e1, double e2, double y0, double
 		if( !computed )
 		{
 			x2 = 0;
-			distance = DistancePointEllipse(e0 , e1 , y0 , y1);
+			distance = DistancePointEllipse(e0 , e1 , y0 , y1, x0, x1);
 		}
 	}
 	return distance;
@@ -256,7 +255,10 @@ template <typename CellList> inline void update_sdfs(particles & vd, CellList & 
 		// Saye's initial configuration
 		//vd.getProp<sdf>(a) = (1 - exp(-(x-0.3)*(x-0.3)-(y-0.3)*(y-0.3)))*(sqrt(4*x*x+9*y*y)-1);
 
-		vd.getProp<sdf_analytical>(a) = return_sign(vd.getProp<sdf>(a))*DistancePointEllipsoid(A, B, C, abs(x), abs(y), abs(z));
+		double xcp_analytical;
+		double ycp_analytical;
+		double zcp_analytical;
+		vd.getProp<sdf_analytical>(a) = return_sign(vd.getProp<sdf>(a))*DistancePointEllipsoid(A, B, C, abs(x), abs(y), abs(z), xcp_analytical, ycp_analytical, zcp_analytical);
 
 		++part;
 	}
@@ -267,15 +269,49 @@ inline void get_max_error(particles & vd)
 	auto part = vd.getDomainIterator();
 	double err;
 	double maxerr = 0.0;
+	double errkappa;
+	double maxerrkappa = 0.0;
+	double errnorm;
+	double maxerrnorm = 0.0;
+	double errcp;
+	double maxerrcp = 0.0;
+	double errone;
+	double maxerrone = 0.0;
 
 	while(part.isNext())
 	{
 		auto a = part.get();
+		Point<3, double> na = vd.getProp<norm_analytical>(a);
+		Point<3, double> n = vd.getProp<sdfgrad>(a);
+		Point<3, double> nxa = n - na;
+
+		// angle norm:
+		//errnorm = std::acos(n[0]*na[0] + n[1]*na[1] + n[2]*na[2]);
+
+		// L2 norm:
+		errnorm = nxa.norm();
+		vd.getProp<norm_err>(a) = errnorm;
+		// L infinity norm:
+		//errnorm = abs(nxa[0]);
+		//if (abs(nxa[1]) > errnorm) errnorm = abs(nxa[1]);
+		//if (abs(nxa[2]) > errnorm) errnorm = abs(nxa[2]);
+
 		err = abs(vd.getProp<sdf>(a) - vd.getProp<sdf_analytical>(a));
+		errkappa = abs(vd.getProp<curvature>(a) - vd.getProp<curv_analytical>(a));
+		errcp = abs(vd.getProp<cp_err>(a));
+
 		if (err > maxerr) maxerr = err;
+		if (errkappa > maxerrkappa) maxerrkappa = errkappa;
+		if (errnorm > maxerrnorm) maxerrnorm = errnorm;
+		if (errcp > maxerrcp) maxerrcp = errcp;
 		++part;
 	}
-	std::cout<<"Maximum error on processor is: "<<maxerr<<std::endl;
+	std::cout<<"Maximum error for sdf on processor is: "<<maxerr<<std::endl;
+	std::cout<<"Maximum error for surface normal on processor is: "<<maxerrnorm<<std::endl;
+	std::cout<<"Maximum error for curvature on processor is: "<<maxerrkappa<<std::endl;
+	std::cout<<"Maximum error for cp(xa) is: "<<maxerrcp<<std::endl;
+	std::cout<<"Maximum deviation of unit normal length from 1 is: "<<maxerrone<<std::endl;
+
 }
 
 //################################################################# main function ##################
@@ -283,7 +319,7 @@ int main(int argc, char* argv[])
 {
 	openfpm_init(&argc, &argv);
 
-	const double l = 2.0;
+	const double l = 1.6;
 	Box<3, double> domain({-l/2.0, -l/3.0, -l/3.0}, {l/2.0, l/3.0, l/3.0});
 	size_t sz[3] = {(size_t)(l/dp + 0.5), (size_t)((2.0/3.0)*l/dp + 0.5), (size_t)((2.0/3.0)*l/dp + 0.5)};
 
@@ -293,7 +329,7 @@ int main(int argc, char* argv[])
 	particles vd(0, domain, bc, g, DEC_GRAN(512));
 	//particles_surface vd_s(vd.getDecomposition(), 0);
 
-	openfpm::vector<std::string> names({"sdf", "sdfgradient", "curvature", "surface_flag", "number_neibs", "min_sdf_neibors", "min_sdf_location", "interpol_coeff", "sdf_analytical"});
+	openfpm::vector<std::string> names({"sdf", "sdfgradient", "curvature", "surface_flag", "number_neibs", "min_sdf_neibors", "min_sdf_location", "interpol_coeff", "sdf_analytical", "norm_analytical", "curv_analytical", "cp_err", "norm_err"});
 	vd.setPropNames(names);
 	Box<3, double> particle_box({-l/2.0, -l/3.0, -l/3.0}, {l/2.0, l/3.0, l/3.0});
 
@@ -305,8 +341,11 @@ int main(int argc, char* argv[])
 		double x = particle_it.get().get(0);
 		double y = particle_it.get().get(1);
 		double z = particle_it.get().get(2);
+		double xcp_analytical;
+		double ycp_analytical;
+		double zcp_analytical;
 
-		double dist = DistancePointEllipsoid(A, B, C, abs(x), abs(y), abs(z));
+		double dist = DistancePointEllipsoid(A, B, C, abs(x), abs(y), abs(z), xcp_analytical, ycp_analytical, zcp_analytical);
 
 		//std::cout<<x<<"\t"<<y<<"\t"<<dist<<std::endl;
 
@@ -349,7 +388,7 @@ int main(int argc, char* argv[])
 		//rdistoptions.max_iter = 1000;
 		//rdistoptions.incremental_tolerance = 1e-7;
 		rdistoptions.H = dp;
-		rdistoptions.r_cutoff_factor = 2.3;
+		rdistoptions.r_cutoff_factor = 2.4;
 		rdistoptions.sampling_radius = 0.75*band_width;
 		//rdistoptions.barrier_coefficient = 0.0;
 		//rdistoptions.armijo_tau = 0.9;
@@ -357,7 +396,8 @@ int main(int argc, char* argv[])
 		rdistoptions.tolerance = 1e-15;//dp*dp*dp*dp*dp;
 		//rdistoptions.support_prevent = 0.9;
 		//rdistoptions.init_project = 1;
-
+		rdistoptions.compute_normals = 1;
+		rdistoptions.compute_curvatures = 1;
 		//typedef vector_dist_ws<2, double, particles> particles_in_type;
 		particle_cp_redistancing<particles, taylor4> pcprdist(vd, rdistoptions);
 
@@ -369,13 +409,9 @@ int main(int argc, char* argv[])
 		std::cout << "Time difference for pcp redistancing = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
 
 		vd.ghost_get<sdf,sdf_analytical>();
-
+		get_max_error(vd);
 		vd.write("after_redistancing_after_cleanup");
 
-		if(true)
-		{
-			get_max_error(vd);
-		}
 
 //		particle_cp_redistancing pcprdist2(vd, rdistoptions);
 //
