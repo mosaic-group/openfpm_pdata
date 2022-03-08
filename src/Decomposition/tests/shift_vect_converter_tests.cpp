@@ -28,9 +28,9 @@ BOOST_AUTO_TEST_CASE( shift_vect_converter_tests_use )
 	BOOST_REQUIRE_EQUAL(sv.size(),27ul);
 
 	// We test that the cominations generate the correct shift vectors
-	comb<3> cmb1({-1,-1,1});
-	comb<3> cmb2({-1,0,1});
-	comb<3> cmb3({0,0,1});
+	comb<3> cmb1({(char)-1,(char)-1,(char)1});
+	comb<3> cmb2({(char)-1,(char)0,(char)1});
+	comb<3> cmb3({(char)0,(char)0,(char)1});
 
 	size_t i = svc.linId(cmb1);
 

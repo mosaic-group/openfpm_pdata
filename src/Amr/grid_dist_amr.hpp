@@ -977,6 +977,43 @@ public:
 		return gd_array.get(v1.getLvl()).getGKey(v1.getKey());
 	}
 
+	/*! \brief Get the position on the grid in global coordinates
+	 *
+	 * \param lvl level
+	 * \param v1 point in the level
+	 *
+	 * \return the position in global coordinates
+	 *
+	 */
+	grid_key_dx<dim> getGKey(int lvl, const grid_dist_key_dx<dim> & v1)
+	{
+		return gd_array.get(lvl).getGKey(v1);
+	}
+
+	/*! \brief Get the the position of the point
+	 *
+	 * \param v1 AMR point
+	 *
+	 * \return the position in global coordinates
+	 *
+	 */
+	Point<dim,St> getPos(const grid_dist_amr_key<dim> & v1)
+	{
+		return gd_array.get(v1.getLvl()).getPos(v1.getKey());
+	}
+
+	/*! \brief Get the the position of the point
+	 *
+	 * \param v1 AMR point
+	 *
+	 * \return the position in global coordinates
+	 *
+	 */
+	Point<dim,St> getPos(int lvl, const grid_dist_key_dx<dim> & v1)
+	{
+		return gd_array.get(lvl).getPos(v1);
+	}
+
 	/*! \brief return the spacing for the grid in the level lvl
 	 *
 	 * \param lvl level
@@ -988,6 +1025,27 @@ public:
 	{
 		return gd_array.get(lvl).getSpacing();
 	}
+
+	/* \brief Check if a point exist
+	 *
+	 * \param v1 point to checl
+	 * 
+	 */
+	bool existPoint(const grid_dist_amr_key<dim> & v1)
+	{
+		return gd_array.get(v1.getLvl()).existPoint(v1.getKey());
+	}
+
+	/* \brief Check if a point exist
+	 *
+	 * \param v1 point to checl
+	 * 
+	 */
+	bool existPoint(int lvl, const grid_dist_key_dx<dim> & v1)
+	{
+		return gd_array.get(lvl).existPoint(v1);
+	}
+
 
 	/*! \brief Write on vtk file
 	 *

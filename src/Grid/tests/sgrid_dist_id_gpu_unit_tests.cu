@@ -5,6 +5,7 @@
 #include <boost/test/unit_test.hpp>
 #include "Grid/grid_dist_id.hpp"
 
+
 BOOST_AUTO_TEST_SUITE( sgrid_gpu_test_suite )
 
 template<unsigned int p>
@@ -25,6 +26,8 @@ struct insert_kernel2D
 	    sg.flush_block_insert();
 	}
 };
+
+
 
 template<unsigned int p>
 struct insert_kernel3D
@@ -177,9 +180,67 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_output )
 	std::string file_test("sgrid_gpu_output_" + std::to_string(v_cl.size()) + "_" + std::to_string(v_cl.rank())  + ".vtk");
 	std::string file("sgrid_gpu_output_" + std::to_string(v_cl.rank()) + ".vtk");
 
+	#ifndef HAVE_OSX
 	bool test = compare(file,"test_data/" + file_test);
 
 	BOOST_REQUIRE_EQUAL(true,test);
+	#endif
+}
+
+
+BOOST_AUTO_TEST_CASE( sgrid_gpu_test_save_and_load )
+{
+/*	auto & v_cl = create_vcluster();
+
+	if (v_cl.size() > 3){return;}
+
+	size_t sz[2] = {17,17};
+	periodicity<2> bc = {PERIODIC,PERIODIC};
+
+	Ghost<2,long int> g(1);
+
+	Box<2,float> domain({0.0,0.0},{1.0,1.0});
+
+	sgrid_dist_id_gpu<2,float,aggregate<float,float,float[2]>> gdist(sz,domain,g,bc);
+
+	gdist.template setBackgroundValue<0>(666);
+
+	/////// GPU insert + flush
+
+	Box<2,size_t> box({1,1},{15,15});
+	auto it = gdist.getGridIterator(box.getKP1(),box.getKP2());
+
+	/////// GPU Run kernel
+
+	typedef typename GetAddBlockType<decltype(gdist)>::type InsertBlockT;
+
+	float c = 5.0;
+
+	gdist.addPoints([] __device__ (int i, int j)
+			        {
+						return true;
+			        },
+			        [c] __device__ (InsertBlockT & data, int i, int j)
+			        {
+			        	data.template get<0>() = c + i + j;
+						data.template get<1>() = c + 1000 + i + j;
+						
+						data.template get<2>()[0] = i;
+						data.template get<2>()[1] = j;
+			        }
+			        );
+
+	gdist.template flush<smax_<0>,smax_<1>,smax_<2>>(flush_type::FLUSH_ON_DEVICE);
+
+	gdist.template deviceToHost<0>();
+
+	gdist.save("sgrid_gpu_output_hdf5");
+
+	// Now load
+
+	sgrid_dist_id_gpu<2,float,aggregate<float,float,float[2]>> gdist2(sz,domain,g,bc);
+
+	gdist2.load("sgrid_gpu_output_hdf5");*/
 }
 
 void sgrid_ghost_get(size_t (& sz)[2],size_t (& sz2)[2])

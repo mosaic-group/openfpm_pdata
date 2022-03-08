@@ -235,7 +235,7 @@ template<typename CellList> void calc_forces(vector_dist_gpu<3,real_number, aggr
 	// Get an iterator over particles
 	auto it2 = vd.getDomainIteratorGPU();
 
-	calc_force_gpu<<<it2.wthr,it2.thr>>>(vd.toKernel(),NN.toKernel(),sigma12,sigma6,r_cut2);
+	CUDA_LAUNCH(calc_force_gpu,it2,vd.toKernel(),NN.toKernel(),sigma12,sigma6,r_cut2);
 }
 
 //! \cond [calc_forces] \endcond
@@ -249,7 +249,7 @@ template<typename CellList> real_number calc_energy(vector_dist_gpu<3,real_numbe
 
 	auto it2 = vd.getDomainIteratorGPU();
 
-	particle_energy<<<it2.wthr,it2.thr>>>(vd.toKernel(),NN.toKernel(),sigma12,sigma6,shift,r_cut2);
+	CUDA_LAUNCH(particle_energy,it2,vd.toKernel(),NN.toKernel(),sigma12,sigma6,shift,r_cut2);
 
 	//! \cond [calc_energy_red] \endcond
 
@@ -343,7 +343,7 @@ int main(int argc, char* argv[])
 		// Get the iterator
 		auto it3 = vd.getDomainIteratorGPU();
 
-		update_velocity_position<<<it3.wthr,it3.thr>>>(vd.toKernel(),dt);
+		CUDA_LAUNCH(update_velocity_position,it3,vd.toKernel(),dt);
 
 		//! \cond [run_on_device] \endcond
 
@@ -360,7 +360,7 @@ int main(int argc, char* argv[])
 		// Integrate the velocity Step 3
 		auto it4 = vd.getDomainIteratorGPU();
 
-		update_velocity<<<it4.wthr,it4.thr>>>(vd.toKernel(),dt);
+		CUDA_LAUNCH(update_velocity,it4,vd.toKernel(),dt);
 
 		// After every iteration collect some statistic about the configuration
 		if (i % 100 == 0)
