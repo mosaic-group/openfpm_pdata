@@ -64,7 +64,7 @@ message("Searching Vc in ${Vc_DIR}")
 
 set (ENV{BOOST_ROOT} ${BOOST_ROOT})
 set (Boost_NO_BOOST_CMAKE OFF)
-find_package(Boost 1.72.0 COMPONENTS unit_test_framework iostreams program_options system filesystem thread OPTIONAL_COMPONENTS fiber context thread)
+find_package(Boost 1.72.0 COMPONENTS unit_test_framework iostreams program_options system filesystem thread OPTIONAL_COMPONENTS fiber context)
 find_package(MPI)
 find_package(PETSc)
 find_package(HDF5)
@@ -78,7 +78,9 @@ find_package(LAPACK)
 find_package(Eigen3)
 find_package(SuiteSparse OPTIONAL_COMPONENTS UMFPACK)
 find_package(Vc)
-find_package(OpenMP)
+if (NOT CUDA_ON_BACKEND STREQUAL "HIP")
+	find_package(OpenMP)
+endif()
 if (CUDA_ON_BACKEND STREQUAL "HIP" AND NOT HIP_FOUND)
         find_package(HIP)
 endif()
@@ -393,5 +395,3 @@ include(CPack)
 cpack_add_component(OpenFPM
                     DISPLAY_NAME OpenFPM
                     DESCRITION OpenFPM binary files)
-
-
