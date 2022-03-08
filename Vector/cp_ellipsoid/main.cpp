@@ -10,7 +10,7 @@
 #include "Operators/Vector/vector_dist_operators.hpp"
 #include <chrono>
 
-const double dp = 1.0/256.0;
+const double dp = 1.0/32.0;
 const double A = 0.75;//0.5;
 const double B = 0.5;//1.0/3.0;
 const double C = 0.5;
@@ -281,24 +281,14 @@ inline void get_max_error(particles & vd)
 	while(part.isNext())
 	{
 		auto a = part.get();
-		Point<3, double> na = vd.getProp<norm_analytical>(a);
-		Point<3, double> n = vd.getProp<sdfgrad>(a);
-		Point<3, double> nxa = n - na;
-
-		// angle norm:
-		//errnorm = std::acos(n[0]*na[0] + n[1]*na[1] + n[2]*na[2]);
-
-		// L2 norm:
-		errnorm = nxa.norm();
-		vd.getProp<norm_err>(a) = errnorm;
 		// L infinity norm:
 		//errnorm = abs(nxa[0]);
 		//if (abs(nxa[1]) > errnorm) errnorm = abs(nxa[1]);
 		//if (abs(nxa[2]) > errnorm) errnorm = abs(nxa[2]);
 
 		err = abs(vd.getProp<sdf>(a) - vd.getProp<sdf_analytical>(a));
-		errkappa = abs(vd.getProp<curvature>(a) - vd.getProp<curv_analytical>(a));
-		errcp = abs(vd.getProp<cp_err>(a));
+		//errkappa = abs(vd.getProp<curvature>(a) - vd.getProp<curv_analytical>(a));
+		//errcp = abs(vd.getProp<cp_err>(a));
 
 		if (err > maxerr) maxerr = err;
 		if (errkappa > maxerrkappa) maxerrkappa = errkappa;
@@ -319,7 +309,7 @@ int main(int argc, char* argv[])
 {
 	openfpm_init(&argc, &argv);
 
-	const double l = 1.6;
+	const double l = 2.0;
 	Box<3, double> domain({-l/2.0, -l/3.0, -l/3.0}, {l/2.0, l/3.0, l/3.0});
 	size_t sz[3] = {(size_t)(l/dp + 0.5), (size_t)((2.0/3.0)*l/dp + 0.5), (size_t)((2.0/3.0)*l/dp + 0.5)};
 
