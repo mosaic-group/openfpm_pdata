@@ -329,6 +329,7 @@ public:
 
 
 
+/*
                 if (simulationParameters.interactionType == INTERACTION_SYMMETRIC) {
 
                     // check if neighbor is in on this processor domain
@@ -348,6 +349,7 @@ public:
                         continue;
                     }
                 }
+*/
 
 
                 // execute
