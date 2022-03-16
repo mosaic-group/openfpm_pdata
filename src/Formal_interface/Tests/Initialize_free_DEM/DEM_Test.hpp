@@ -169,5 +169,15 @@ public:
 
 };
 
+template <typename ParticleMethodType, typename SimulationParametersType>
+class Instance1 : Instance<ParticleMethodType, SimulationParametersType> {
+
+public:
+
+    virtual void freePlacement() override {
+        this->add();
+    }
+};
+
 
 #endif //OPENFPM_PDATA_DEM_TEST_HPP

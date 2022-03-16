@@ -105,7 +105,7 @@ else()
 			Formal_interface/InitialCondition.hpp
 			Formal_interface/DomainIterator.hpp
 			Formal_interface/CellList.hpp
-            )
+			Formal_interface/Instance.hpp)
 
 	add_library(ofpm_pdata STATIC lib/pdata.cpp)
 	add_library(ofpm_pdata_python SHARED lib/pdata_python.cpp)

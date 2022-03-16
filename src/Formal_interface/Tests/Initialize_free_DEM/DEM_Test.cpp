@@ -13,6 +13,9 @@ int main(int argc, char* argv[]) {
 
     openfpm_init(&argc, &argv);
 
+    Instance1<ParticleMethodType, SimulationParametersType> instance1;
+    instance1.freePlacement();
+
     // Particle container
     ParticleData<ParticleMethodType, SimulationParametersType> particleData;
 
