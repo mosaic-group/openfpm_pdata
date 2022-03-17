@@ -10,17 +10,14 @@
 #include "Particle.hpp"
 #include "InitialCondition.hpp"
 #include "Neighborhood.hpp"
+#include "Instance.hpp"
 #include <random>
 #include <boost/hana.hpp>
 
-template <typename ParticleMethodType, typename SimulationParametersType>
+template <typename ParticleMethodType, typename SimulationParametersType, typename InstanceType = Instance<ParticleMethodType, SimulationParametersType>>
 class Transition {
 
 protected:
-
-//    typedef typename ParticleMethodType::propertyType PropertyType;
-//    typedef typename ParticleMethodType::positionType PositionType;
-//    static constexpr int dimension = ParticleMethodType::spaceDimension;
 
     using ParticleSignatureType = typename ParticleMethodType::ParticleSignature;
     static constexpr int dimension = ParticleSignatureType::dimension;
@@ -77,17 +74,22 @@ public:
 
     void initializeParticles(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
-//        auto & vcl = create_vcluster();
-//        std::cout << "initial condition " << vcl.getProcessUnitID() << std::endl;
+        auto & vcl = create_vcluster();
 
+        // initialize particles on single core
+        if (vcl.getProcessUnitID() == 0) {
+            InstanceType instance(particleData);
+            instance.freePlacement();
+        }
+
+        // place particles
+        // random or on a mesh
         initialConditionImplementation.initialization(particleData);
 
-//        std::cout << "map" << std::endl;
+        // distribute particles across cores
+        particleData.getOpenFPMContainer().template map();
 
-        particleData.getOpenFPMContainer().template map/*<KillParticleWithWarning>*/();
-
-//        std::cout << "exec initialization" << std::endl;
-
+        // particle-wise initialization
         executeInitialization(particleData);
     }
 

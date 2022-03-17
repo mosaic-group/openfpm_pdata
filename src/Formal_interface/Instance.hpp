@@ -6,18 +6,33 @@
 #define OPENFPM_PDATA_INSTANCE_HPP
 
 #include "iostream"
+#include "ParticleData.hpp"
 
 template <typename ParticleMethodType, typename SimulationParametersType>
 class Instance {
 
 protected:
 
-    void add() {
-        std::cout << " add" << std::endl;
+    ParticleData<ParticleMethodType, SimulationParametersType> &particleData;
+
+    void addParticle() {
+        particleData.getOpenFPMContainer().add();
     }
 
+    auto position() {
+        return particleData.getOpenFPMContainer().getLastPos();
+    }
+
+    template<int dimension>
+    auto property() {
+        return particleData.getOpenFPMContainer().template getLastProp<dimension>();
+    }
 
 public:
+
+    Instance(ParticleData<ParticleMethodType, SimulationParametersType> &particleData_in) : particleData(particleData_in) {
+
+    }
 
     virtual void freePlacement() {}
 

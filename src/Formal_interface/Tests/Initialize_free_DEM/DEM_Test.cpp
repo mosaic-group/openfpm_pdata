@@ -13,14 +13,11 @@ int main(int argc, char* argv[]) {
 
     openfpm_init(&argc, &argv);
 
-    Instance1<ParticleMethodType, SimulationParametersType> instance1;
-    instance1.freePlacement();
-
     // Particle container
     ParticleData<ParticleMethodType, SimulationParametersType> particleData;
 
     // State transition
-    Transition<ParticleMethodType, SimulationParametersType> transition(particleData);
+    Transition<ParticleMethodType, SimulationParametersType, Instance1> transition(particleData);
 
     auto t_start2 = std::chrono::high_resolution_clock::now();
 

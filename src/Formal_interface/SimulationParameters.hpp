@@ -31,8 +31,8 @@ public:
     size_t boundaryConditions[dimension] = {PERIODIC};
 
     // Initial condition
-    typedef INITIALCONDITION_RANDOM initialCondition;
-    int numberParticles = 1;
+    typedef INITIALCONDITION_NONE initialCondition;
+    int numberParticles = 0;
 
     // Mesh
     size_t meshSize[dimension] = {5};

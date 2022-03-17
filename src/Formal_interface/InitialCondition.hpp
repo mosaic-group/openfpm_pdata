@@ -29,6 +29,25 @@ public:
 };
 
 /**
+ * Implementation for particle initialization that doesn't change particles
+ * @tparam ParticleMethodType
+ * @tparam SimulationParametersType
+ */
+template <typename ParticleMethodType, typename SimulationParametersType>
+class InitialCondition_Impl<INITIALCONDITION_NONE, ParticleMethodType, SimulationParametersType> {
+
+    using ParticleSignatureType = typename ParticleMethodType::ParticleSignature;
+    static constexpr int dimension = ParticleSignatureType::dimension;
+    using PositionType = typename ParticleSignatureType::position;
+    using PropertyType = typename ParticleSignatureType::properties;
+
+    SimulationParametersType simulationParameters;
+
+public:
+    void initialization(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {}
+};
+
+/**
  * Implementation for particle initialization on a mesh
  * @tparam ParticleMethodType
  * @tparam SimulationParametersType

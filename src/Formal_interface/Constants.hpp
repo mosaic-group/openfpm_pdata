@@ -20,6 +20,7 @@ struct NEIGHBORHHOD_CELLLIST {};
 struct NEIGHBORHOOD_MESH {};
 
 // Initial placement of free particles
+struct INITIALCONDITION_NONE {};
 struct INITIALCONDITION_MESH {};
 struct INITIALCONDITION_RANDOM {};
 

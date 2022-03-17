@@ -33,7 +33,7 @@ constexpr int acceleration = 1;
 struct GlobalVariable {
     float dt = 0.04;
     float t = 0;
-    float t_final = 30.1;
+    float t_final = 20.1;
     float r_cut = 0.5;
     float damp = 0.9;
     float domainSize = 20.0;
@@ -127,55 +127,59 @@ class DEM_SimulationParams : public SimulationParameters<ParticleSignatureType> 
 
 public:
 
-/*
-    size_t domainMin[dimension] = {-1, 0};
-    size_t domainMax[dimension] = {3, 5};
-*/
 
     DEM_SimulationParams() {
         this->setDomain(globalvar.domainSize);
         this->setBoundaryConditions(PERIODIC);
         this->setCutoffRadius(globalvar.r_cut);
-        this->setNumberParticles(5000);
+        this->setNumberParticles(0);
         this->setCellWidth(globalvar.r_cut);
     }
 
-
-
-/*
-    // Mesh initial condition
-    typedef INITIALCONDITION_MESH initialCondition;
-    constexpr static size_t meshSize[dimension] = {18, 18};
-*/
-
-    // Random initial condition
-    typedef INITIALCONDITION_RANDOM initialCondition;
-
     // Neighborhood method
     typedef NEIGHBORHHOD_CELLLIST neighborhoodDetermination;
-//    typedef NEIGHBORHOOD_ALLPARTICLES neighborhoodDetermination;
 
-//    static const int interactionType = INTERACTION_SYMMETRIC;
+    bool writeOutput = true;
 
-    bool writeOutput = false;
-
-    void initialization(Particle<ParticleSignatureType> particle) override {
+/*    void initialization(Particle<ParticleSignatureType> particle) override {
 
         // Randomize velocity (normal distribution)
         for (int i = 0; i < dimension; i++) {
             particle.template property<velocity>()[i] = this->normalDistribution(0, 3);
         }
-    }
+    }*/
 
 };
 
-template <typename ParticleMethodType, typename SimulationParametersType>
-class Instance1 : Instance<ParticleMethodType, SimulationParametersType> {
+class Instance1 : Instance<DEM_ParticleMethod<DEM_ParticleSignature>, DEM_SimulationParams<DEM_ParticleSignature>> {
 
 public:
 
-    virtual void freePlacement() override {
-        this->add();
+    Instance1(ParticleData<DEM_ParticleMethod<DEM_ParticleSignature>, DEM_SimulationParams<DEM_ParticleSignature>> &particleData_in) :
+        Instance<DEM_ParticleMethod<DEM_ParticleSignature>, DEM_SimulationParams<DEM_ParticleSignature>>(particleData_in){}
+
+    virtual void freePlacement() {
+
+        // block
+        for (int i = 4; i < 18; ++i) {
+            for (int j = 1; j < 3; ++j) {
+                this->addParticle();
+                this->position()[0] = float(i);
+                this->position()[1] = float(j);
+                this->property<velocity>()[0] = 0.0;
+                this->property<velocity>()[1] = 0.0;
+            }
+        }
+
+        // cirlce
+        for (int i = 0; i < 30; ++i) {
+            this->addParticle();
+            this->position()[0] = sin(M_PI * float(i) / 15) * 5 + 10;
+            this->position()[1] = cos(M_PI * float(i) / 15) * 5 + 12;
+            this->property<velocity>()[0] = -sin(M_PI * float(i) / 15) * float(i) / 7;
+            this->property<velocity>()[1] = -cos(M_PI * float(i) / 15) * float(i) / 7;
+        }
+
     }
 };
 
