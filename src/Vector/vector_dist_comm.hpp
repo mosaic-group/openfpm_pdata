@@ -747,6 +747,9 @@ class vector_dist_comm
 		}
 		else
 		{
+			unsigned int bc[dim];
+			for (size_t i = 0 ; i < dim ; i++)	{bc[i] = dec.periodicity(i);}
+
 			// Label the internal (assigned) particles
 			auto it = v_pos.getIteratorTo(g_m);
 
@@ -759,7 +762,7 @@ class vector_dist_comm
 				{
 					for (size_t j = 0; j < box_f.get(i).size(); j++)
 					{
-						if (box_f.get(i).get(j).isInsideNP(v_pos.get(key)) == true)
+						if (box_f.get(i).get(j).isInsideNP_with_border(v_pos.get(key),dec.getDomain(),bc) == true)
 						{
 							size_t lin_id = dec.convertShift(box_cmb.get(i));
 
