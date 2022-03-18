@@ -421,10 +421,8 @@ int main(int argc, char *argv[])
 
         int stride = out.capacity();
 
-        auto lamb_arr_red = [out_s,out_v,out_m,in_v,stride] __device__ (dim3 & blockIdx, dim3 & threadIdx)
+        auto lamb_arr_red = [out_s,out_v,out_m,in_v,stride] __device__ (int p)
         {
-            auto p = blockIdx.x * blockDim.x + threadIdx.x;
-
             float a = out_s[p];
 
             float b = out_v[p + 0*stride];
@@ -439,7 +437,7 @@ int main(int argc, char *argv[])
             in_v[p + 1*stride] = a+b+c+d+e+f+g+h;
         };
 
-	for (int i = 0 ; i < N ; i++)
+	for (int i = 0 ; i < NELEMENTS ; i++)
 	{
 		lamb_arr_red(i);
 	}
