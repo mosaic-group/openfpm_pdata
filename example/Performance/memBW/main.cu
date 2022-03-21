@@ -421,7 +421,7 @@ int main(int argc, char *argv[])
 
         int stride = out.capacity();
 
-        auto lamb_arr_red = [out_s,out_v,out_m,in_v,stride] __device__ (int p)
+        auto lamb_arr_red = [out_s,out_v,out_m,in_v,stride] __host__ (int p)
         {
             float a = out_s[p];
 
@@ -437,10 +437,10 @@ int main(int argc, char *argv[])
             in_v[p + 1*stride] = a+b+c+d+e+f+g+h;
         };
 
-	for (int i = 0 ; i < NELEMENTS ; i++)
-	{
-		lamb_arr_red(i);
-	}
+        for (int i = 0 ; i < NELEMENTS ; i++)
+        {
+            lamb_arr_red(i);
+        }
 
         t.stop();
 
