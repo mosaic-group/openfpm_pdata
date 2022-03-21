@@ -3,7 +3,7 @@
 #include "Vector/map_vector.hpp"
 #include "util/stat/common_statistics.hpp"
 
-#define NELEMENTS 67108864
+#define NELEMENTS 16777216
 
 //! Memory bandwidth with small calculations
 template<typename vector_type, typename vector_type2>
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
     openfpm::vector<double> res;
     res.resize(100);
 
-/*    for (int i = 0 ; i < 110 ; i++)
+    for (int i = 0 ; i < 110 ; i++)
     {
         cudaDeviceSynchronize();
         timer t;
@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
     double dev_read_tls = 0.0;
     standard_deviation(res,mean_read_tls,dev_read_tls);
 
-    check_read(in,out);*/
+    check_read(in,out);
 
     //////////////
 
@@ -407,7 +407,9 @@ int main(int argc, char *argv[])
 
     check_read(in,out);
 
-    /////// BASE 1 core
+    /////// BASE 1 core (This is only valid on CPUs)
+
+    #ifdef CUDIFY_USE_OPENMP
 
     for (int i = 0 ; i < 110 ; i++)
     {
@@ -450,6 +452,8 @@ int main(int argc, char *argv[])
         std::cout << "Time ARR: " << t.getwct() << std::endl;
         std::cout << "BW 1-CORE ARR: " << (double)nele*4*9 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
     }
+
+    #endif
 
     ///////////////////
 
