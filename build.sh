@@ -64,6 +64,8 @@ if [ x"$hostname" == x"falcon1" ]; then
 		mkdir /projects/ppm/rundeck/openfpm_dependencies_$branch/
 		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies_$branch/
 	fi
+elif [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de" ]; then
+	dependency_dir=base/$branch
 else
 	dependency_dir=$HOME/openfpm_dependencies/openfpm_pdata/$branch
 	mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
