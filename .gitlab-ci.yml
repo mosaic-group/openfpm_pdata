@@ -1,5 +1,3 @@
-
-
 docker_centos_build:
    stage: build
    tags:
@@ -36,7 +34,7 @@ docker_centos_run:
        - ./build/src/pdata
        - ./build/openfpm_numerics/src/numerics
        - ./openfpm_numerics/test
-  script:
+   script:
     - export OMP_NUM_THREADS=1
     - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
     - ./run.sh $CI_PROJECT_DIR unused 2 pdata 0 $CI_COMMIT_REF_NAME
