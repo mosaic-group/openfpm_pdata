@@ -24,13 +24,13 @@ if [ ! -d "$1/ZLIB"  -a x"$platform" != x"cygwin" ]; then
 
   CC=mpicc ./configure --prefix=$1/ZLIB
   make -j $2
-  cd ..
   if [ $? -eq 0 ]; then
     make check install
   else
     echo -e "\033[91;5;1m ZLIB Installation FAILED \033[0m"
     exit 1
   fi
+  cd ..
 
 else
   echo "ZLIB is already installed"
