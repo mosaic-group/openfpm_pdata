@@ -3,7 +3,7 @@
 
 
 workspace=$1
-hostname=$(hostname)
+hostname=$(cat hostname)
 target=$3
 comp_type=$4
 branch=$5

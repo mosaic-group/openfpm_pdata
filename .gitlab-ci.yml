@@ -18,6 +18,7 @@ docker_centos_build:
      - cp id_rsa /root/.ssh/id_rsa && chmod 600 /root/.ssh/id_rsa
      - ssh-keyscan -H git.mpi-cbg.de >> ~/.ssh/known_hosts
      - ls base
+     - echo "cifarm-ubuntu-node" > hostname
      - ./build.sh $CI_PROJECT_DIR unused pdata 0 base
      - ls base
    cache:
