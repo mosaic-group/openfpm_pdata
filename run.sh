@@ -32,6 +32,7 @@ if [ x"$hostname" == x"no_test" ]; then
    exit 0;
 fi
 
+cp base/openfpm_vars_$branch $HOME/openfpm_vars_$branch
 source $HOME/openfpm_vars_$branch
 
 mpirun $mpi_options -np $nproc ./build/src/pdata
