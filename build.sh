@@ -161,3 +161,6 @@ if [ $? -ne 0 ]; then
    exit 1 ;
 fi
 
+# copy the openfpm_vars into cache
+cp $HOME/openfpm_vars base/openfpm_vars_$branch
+
