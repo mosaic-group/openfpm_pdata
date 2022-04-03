@@ -12,19 +12,19 @@ docker_centos_build:
      - apt-get update
      - DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata
      - apt-get -y install cmake wget git g++ gfortran python2  python-is-python3
-     - mkdir -p base
+     - mkdir -p openfpm_dependencies
      - mkdir /root/.ssh && chmod 700 /root/.ssh
      - cp id_rsa.pub /root/.ssh/id_rsa.pub && chmod 644 /root/.ssh/id_rsa.pub
      - cp id_rsa /root/.ssh/id_rsa && chmod 600 /root/.ssh/id_rsa
      - ssh-keyscan -H git.mpi-cbg.de >> ~/.ssh/known_hosts
-     - ls base
+     - ls openfpm_dependencies
      - echo "cifarm-ubuntu-node" > hostname
      - ./build.sh $CI_PROJECT_DIR unused pdata 0 base
-     - ls base
+     - ls openfpm_dependencies
    cache:
      key: $CI_COMMIT_REF_SLUG
      paths:
-       - base/
+       - openfpm_dependencies/
 
 docker_centos_run:
    stage: test
