@@ -33,7 +33,7 @@ fi
 if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
 #	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
 	echo "Ubuntu node"
-	./install_MPI_mpich.sh openfpm_dependencies/$branch/ 4
+	./install_MPI_mpich.sh $(pwd)/openfpm_dependencies/$branch/ 4
 	export PATH="/opt/bin:$PATH"
 	foward_options="--with-cuda-on-backend=OpenMP"
 	dependency_dir=openfpm_dependencies/$branch
