@@ -165,5 +165,5 @@ if [ $? -ne 0 ]; then
 fi
 
 # copy the openfpm_vars into cache
-cp $HOME/openfpm_vars base/openfpm_vars_$branch
+cp $HOME/openfpm_vars_$branch $(pwd)/openfpm_dependencies/$branch/
 
