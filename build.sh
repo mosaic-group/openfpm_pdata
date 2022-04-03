@@ -36,7 +36,6 @@ if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
 	./install_MPI_mpich.sh $(pwd)/openfpm_dependencies/$branch/ 4
 	export PATH="/opt/bin:$PATH"
 	foward_options="--with-cuda-on-backend=OpenMP"
-	dependency_dir=openfpm_dependencies/$branch
 fi
 
 if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
@@ -66,7 +65,9 @@ if [ x"$hostname" == x"falcon1" ]; then
 		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies_$branch/
 	fi
 elif [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de" ]; then
-	dependency_dir=openfpm_dependencies/$branch
+	dependency_dir=$(pwd)/openfpm_dependencies/$branch
+elif [ x"$hostname" == x"cifarm-ubuntu-node" ]; then
+	dependency_dir=$(pwd)/openfpm_dependencies/$branch
 else
 	dependency_dir=$HOME/openfpm_dependencies/openfpm_pdata/$branch
 	mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
