@@ -36,6 +36,7 @@ if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
 	./install_MPI_mpich.sh $(pwd)/openfpm_dependencies/$branch/ 4
 	export PATH="/opt/bin:$PATH"
 	foward_options="--with-cuda-on-backend=OpenMP"
+	export DISABLE_OPENFPM_BINARY_CONFIG=1
 fi
 
 if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
