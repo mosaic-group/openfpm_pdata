@@ -22,6 +22,7 @@ docker_centos_build:
      - ./build.sh $CI_PROJECT_DIR unused pdata 0 base
      - ls openfpm_dependencies
    cache:
+     when: always
      key: $CI_COMMIT_REF_SLUG
      paths:
        - openfpm_dependencies/
