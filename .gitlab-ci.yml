@@ -53,7 +53,7 @@ docker_centos_run:
    cache:
      key: $CI_COMMIT_REF_SLUG
      paths:
-       - base/
+       - openfpm_dependencies/
 
 #centos_build:
 #  stage: build
