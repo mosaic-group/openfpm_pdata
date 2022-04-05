@@ -19,7 +19,7 @@ docker_centos_build:
      - ssh-keyscan -H git.mpi-cbg.de >> ~/.ssh/known_hosts
      - ls openfpm_dependencies
      - echo "cifarm-ubuntu-node" > hostname
-     - ./build.sh $CI_PROJECT_DIR unused pdata 0 base
+     - ./build.sh $CI_PROJECT_DIR unused pdata 0 $CI_COMMIT_REF_NAME
      - ls openfpm_dependencies
    cache:
      when: always
