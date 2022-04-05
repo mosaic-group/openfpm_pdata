@@ -47,6 +47,15 @@ class vector_dist_ws : public vector_dist<dim,St,typename AggregateAppend<int,pr
 
         return vector_dist<dim,St,typename AggregateAppend<int,prop>::type,Decomposition,Memory,layout_base>::write_frame(out,iteration,opt);
     }
+    inline bool write_frame(std::string out, size_t iteration,double time, int opt = VTK_WRITER)
+    {
+        auto &prop_names=this->getPropNames();
+        if(prop_names.size()==prop::max_prop){
+            prop_names.add({"SubsetNumber"});
+        }
+
+        return vector_dist<dim,St,typename AggregateAppend<int,prop>::type,Decomposition,Memory,layout_base>::write_frame(out,iteration,time,opt);
+    }
 
     inline bool write(std::string out,int opt = VTK_WRITER)
     {
