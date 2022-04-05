@@ -33,7 +33,7 @@ if [ x"$hostname" == x"no_test" ]; then
 fi
 
 ls openfpm_dependencies
-cp openfpm_dependencies/openfpm_vars_$branch $HOME/openfpm_vars_$branch
+cp openfpm_dependencies/$branch/openfpm_vars_$branch $HOME/openfpm_vars_$branch
 source $HOME/openfpm_vars_$branch
 
 mpirun $mpi_options -np $nproc ./build/src/pdata
