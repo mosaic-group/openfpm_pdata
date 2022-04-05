@@ -165,5 +165,8 @@ if [ $? -ne 0 ]; then
 fi
 
 # copy the openfpm_vars into cache
-cp $HOME/openfpm_vars_$branch $(pwd)/openfpm_dependencies/$branch/
+
+if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
+  cp $HOME/openfpm_vars_$branch $(pwd)/openfpm_dependencies/$branch/
+fi
 
