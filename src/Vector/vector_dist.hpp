@@ -2924,6 +2924,54 @@ public:
 		}
 	}
 
+    /*! \brief Output particle position and properties and add a time stamp to pvtp
+	 *
+	 * \param out output
+	 * \param iteration (we can append the number at the end of the file_name)
+	 * \param time = 1.234 to add to the information time to the PVTP file)
+	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
+	 *            FORMAT_BINARY. (the default is ASCII format)
+	 *
+	 * \return if the file has been written correctly
+	 *
+	 */
+	inline bool write_frame(std::string out, size_t iteration, double time, int opt = VTK_WRITER)
+	{
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
+
+		if ((opt & 0x0FFF0000) == CSV_WRITER)
+		{
+			// CSVWriter test
+			CSVWriter<vector_dist_pos,
+					  vector_dist_prop > csv_writer;
+
+			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".csv"));
+
+			// Write the CSV
+			return csv_writer.write(output, v_pos, v_prp);
+		}
+		else
+		{
+			file_type ft = file_type::ASCII;
+
+			if (opt & FORMAT_BINARY)
+				ft = file_type::BINARY;
+
+			// VTKWriter for a set of points
+			VTKWriter<boost::mpl::pair<vector_dist_pos,
+									   vector_dist_prop>, VECTOR_POINTS> vtk_writer;
+			vtk_writer.add(v_pos,v_prp,g_m);
+
+			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtp"));
+
+			// Write the VTK file
+			bool ret=vtk_writer.write(output,prp_names,"particles","",ft);
+            if(v_cl.rank()==0)
+            {vtk_writer.write_pvtp(out,prp_names,v_cl.size(),iteration,time);}
+            return ret;
+		}
+	}
+
 	/*! \brief Get the Celllist parameters
 	 *
 	 * \param r_cut spacing of the cell-list
