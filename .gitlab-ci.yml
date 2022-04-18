@@ -20,7 +20,7 @@ docker_centos_build:
      - ls openfpm_dependencies
      - echo "cifarm-ubuntu-node" > hostname
      - ./build.sh $CI_PROJECT_DIR unused pdata 0 $CI_COMMIT_REF_NAME
-     - ls openfpm_dependencies
+     - ls -la build/src/pdata
    cache:
      when: always
      key: $CI_COMMIT_REF_SLUG
