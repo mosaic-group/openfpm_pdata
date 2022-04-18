@@ -5,6 +5,9 @@
 #include "voro++.hh"
 #include "util/polymesh_base_functions.hpp"
 #include "Space/Shape/Plane.hpp"
+#include "hash_map/hopscotch_map.h"
+#include "hash_map/hopscotch_set.h"
+#include "PolyMesh_gradients.hpp"
 
 template<unsigned int dim, typename T, typename TypeVolume, typename TypeSurface, typename TypeEdge, typename TypeVertex>
 class PolyMesh
@@ -15,6 +18,9 @@ class PolyMesh
 	// The second integer indicate where in Surfaces the information are stored
     typedef typename AggregateAppend<int,TypeVolume>::type TypeVolume_p;
     typedef typename AggregateAppend<int,TypeVolume_p>::type TypeVolume_pp;
+    typedef typename AggregateAppend<int,TypeVolume_pp>::type TypeVolume_ppp;
+    typedef typename AggregateAppend<int,TypeVolume_ppp>::type TypeVolume_pppp;
+    typedef typename AggregateAppend<int,TypeVolume_pppp>::type TypeVolume_ppppp;
 
     // Transform surfaces
     typedef typename AggregateAppend<int,TypeSurface>::type TypeSurface_p;
@@ -32,13 +38,36 @@ class PolyMesh
     // Transform Vertex
     typedef typename AggregateAppend<int,TypeVertex>::type TypeVertex_p;
     typedef typename AggregateAppend<int,TypeVertex_p>::type TypeVertex_pp;
+    typedef typename AggregateAppend<int[4],TypeVertex_pp>::type TypeVertex_ppp;
 
+    static constexpr int LowConIndex = 0;
+    static constexpr int PositionFix = 1;
+    static constexpr int StartPosFix = 2;
+
+    // We use the volume_surfaces_connectivity as an example, in the case we operate on the
+    // surfaces array. If we re-arrange surfaces (make them unique or reorder the indexes), the
+    // connectivity become invalid. The way to reconstruct is before reorder, take the old position of
+    // ,
+    // take start position of 
+    // 
+    // int: index in the lower connectivity
+    // T[3]: Position fix: Connectivity is searched by position when we use the relink.
+    //       The position fix is filled in FillOldPositionConnectivity and used in relink
+    // int: Start pos fix: The start pos stored by the surfaces is still valid, we have to infact
+    //      consider that the edge connectivity remain fixed ergo the start pos in the surface is valid
+    //      (StartPos in surfaces contain the position in the edge connectivity of the surface)
     openfpm::vector<aggregate<int,T[3],int>> volume_surfaces_connectivity;
     openfpm::vector<aggregate<int,T[3],int>> surface_edges_connectivity;
     openfpm::vector<aggregate<int,T[3],int>> edge_vertices_connectivity;
 
+
+    // Delauney tetraedrons
+    // 4 indices of the tetraedron
+    // 1 index of the vetex
+    openfpm::vector<aggregate<int[4],int>> Tet_del;
+
     //! List of cells
-    vector_dist<dim,T,TypeVolume_pp> Volumes;
+    vector_dist<dim,T,TypeVolume_ppppp> Volumes;
 
     //! List of cells surfaces
     vector_dist<dim,T,TypeSurface_ppppp> Surfaces;
@@ -47,10 +76,149 @@ class PolyMesh
     vector_dist<dim,T,TypeEdge_pppp> Edges;
 
     //! List of vertices
-    vector_dist<dim,T,TypeVertex_pp> Vertices;
+    vector_dist<dim,T,TypeVertex_ppp> Vertices;
 
     //! Tollerance (in distance) for which two edges/vertices are considered the same
-    T same_element_tollerance = 1e-5;
+    T same_element_tollerance = 1e-10;
+
+    bool tet_found(Point<dim,T> & xv,int p, int q, int s)
+    {
+        Point<dim,T> xp = Volumes.getPos(p);
+        Point<dim,T> xq = Volumes.getPos(q);
+        Point<dim,T> xs = Volumes.getPos(s);
+
+        xp -= xv;
+        xq -= xv;
+        xs -= xv;
+
+        double tot = (xp[1]*xq[2] - xp[2]*xq[1])*xs[0] + (xp[0]*xq[2] - xp[2]*xq[0])*xs[1] + (xp[0]*xq[1] - xp[1]*xq[0])*xs[2];
+
+        return fabs(tot) > same_element_tollerance;
+    }
+
+    /*! \brief Calculate the delaunay tetraedrons
+     *
+     * \tparam TetDelStart Tetraedra of the delauny start point
+     * \tparam TetDelNum number of the delauny tetraedra for the volume V
+     * 
+     */
+    template <unsigned int TetDelStart, unsigned int TetDelNum, typename vector_deltet_type>
+    void calc_delaunay_tetraedron(vector_deltet_type & Tet_del)
+    {
+        double max_radius = 0.0;
+
+        auto it = Volumes.getDomainIterator();
+
+        while (it.isNext())
+        {
+            auto p = it.get().getKey();
+
+            Point<dim,T> xp = Volumes.getPos(p);
+
+            Volumes.template getProp<TetDelStart>(p) = Tet_del.size();
+
+
+            ForAllVolumeVertices(*this,p,[&](openfpm::vector<int> & indices){
+
+                for (int i = 0 ; i < indices.size() ; i++)
+                {
+                    auto v = indices.get(i);
+
+                    Point<dim,T> xv = Vertices.getPos(v);
+
+                    auto radius = xp.distance(xv);
+
+                    if (radius > max_radius)
+                    {max_radius = radius;}
+                }
+            });
+
+            Volumes.template getProp<TetDelNum>(p) = Tet_del.size() - Volumes.template getProp<TetDelStart>(p);
+
+            ++it;
+        }
+
+        Tet_del.clear();
+
+        Volumes.template ghost_get<>();
+        auto cl_v = Volumes.getCellList(max_radius);
+
+        auto it2 = Volumes.getDomainIterator();
+
+        while (it2.isNext())
+        {
+            auto p = it2.get().getKey();
+
+            Point<dim,T> xp = Volumes.getPos(p);
+
+            Volumes.template getProp<TetDelStart>(p) = Tet_del.size();
+
+
+            ForAllVolumeVertices(*this,p,[&](openfpm::vector<int> & indices){
+
+                for (int i = 0 ; i < indices.size() ; i++)
+                {
+                    int id_tot = 0;
+                    int ids[16];
+
+                    auto v = indices.get(i);
+
+                    Point<dim,T> xv = Vertices.getPos(v);
+
+                    auto radius = xp.distance(xv);
+
+                    auto it_nn = cl_v.getNNIterator(cl_v.getCell(xv));
+
+                    while (it_nn.isNext())
+                    {
+                        auto q = it_nn.get();
+
+                        Point<dim,T> xq = Volumes.getPos(q);
+
+                        if (fabs(radius - xq.distance(xv)) < same_element_tollerance && p != q)
+                        {
+                            // found element tetra
+                            if (id_tot < 16)
+                            {ids[id_tot] = q;}
+                            id_tot++;
+                        }
+
+                        ++it_nn;
+                    }
+
+                    // We should have 4 elements.
+
+                    if (id_tot >= 3)
+                    {
+                        Tet_del.add();
+                        Tet_del.last().template get<DelTelIndices>()[0] = p;
+                        Tet_del.last().template get<DelTelIndices>()[1] = ids[0];
+                        Tet_del.last().template get<DelTelIndices>()[2] = ids[1];
+
+                        // The last point must not be coplanar
+
+                        for (int j = 2 ; j < id_tot ; j++)
+                        {
+                            Tet_del.last().template get<DelTelIndices>()[3] = ids[j];
+
+                            if (tet_found(xp,ids[0],ids[1],ids[j]) == true)
+                            {break;}
+                        }
+
+                        Tet_del.last().template get<DelTelVertId>() = v;
+                    }
+                    else
+                    {
+                        std::cout << __FILE__ << ":" << __LINE__ << " was not able to construct delaunay" << std::endl;
+                    }
+                }
+            });
+
+            Volumes.template getProp<TetDelNum>(p) = Tet_del.size() - Volumes.template getProp<TetDelStart>(p);
+
+            ++it2;
+        }
+    }
 
     template<unsigned int NeleDwProp, unsigned int StartProp, unsigned int unique_id, typename Ele_type, typename Ele_type_up, typename Connectivity_type>
     void FixIndexes(Ele_type_up & Elements_up,
@@ -101,6 +269,8 @@ class PolyMesh
             ++it;
         }
 
+        positions_unique.clear();
+        properties_unique.clear();
         auto it_e = Elements.getDomainIterator();
 
         while (it_e.isNext())
@@ -129,6 +299,8 @@ class PolyMesh
 
                     Elements.template getProp<prp>(q) = smallest;
                     Elements.template getProp<prp>(p) = smallest;
+
+
                 }
 
                 ++it_nn;
@@ -282,27 +454,6 @@ class PolyMesh
     }
 
 
-    void relink()
-    {
-        Volumes.template ghost_get<VolumeNumberOfSurfaces>();
-        Surfaces.template ghost_get<SurfaceNumberOfEdges>();
-        Edges.template ghost_get<EdgeNumberOfVertices>();
-        Vertices.template ghost_get<>();
-
-        auto domain = Volumes.getDecomposition().getProcessorBounds();
-        domain.enlarge(Volumes.getDecomposition().getGhost());
-
-        int n_volumes = Volumes.size_local();
-        double r_cut = pow(domain.getVolume() / n_volumes, 1.0 / dim) / 8;
-
-        auto cl_s = Surfaces.getCellList(r_cut);
-        auto cl_e = Edges.getCellList(r_cut);
-        auto cl_v = Vertices.getCellList(r_cut);
-
-        relink_elements<EdgesStart>(volume_surfaces_connectivity,Surfaces,cl_s);
-        relink_elements<VerticesStart>(surface_edges_connectivity,Edges,cl_e);
-        relink_elements<VertexMarking>(edge_vertices_connectivity,Vertices,cl_v);
-    }
 
     template<unsigned int GID,typename elements_type>
     void CreateGlobalIds(elements_type & elements)
@@ -327,6 +478,9 @@ public:
 
     static constexpr int VolumeNumberOfSurfaces = TypeVolume::max_prop;
     static constexpr int SurfacesStart = TypeVolume::max_prop + 1;
+    static constexpr int VolumeNumberOfDelTet = TypeVolume::max_prop + 2;
+    static constexpr int DelTetStart = TypeVolume::max_prop + 3;
+    static constexpr int VolumeGID = TypeVolume::max_prop + 4;
     static constexpr int SurfaceGID = TypeSurface::max_prop;
     static constexpr int SurfaceNumberOfEdges = TypeSurface::max_prop + 1;
     static constexpr int EdgesStart = TypeSurface::max_prop + 2;
@@ -338,6 +492,9 @@ public:
     static constexpr int VertexMarking = TypeVertex::max_prop;
     static constexpr int VertexGID = TypeVertex::max_prop + 1;
 
+    static constexpr int DelTelIndices = 0;
+    static constexpr int DelTelVertId = 1;
+
     PolyMesh(Box<dim,T> & box, size_t (& bc)[dim], Ghost<dim,double> & ghost)
     :Volumes(0,box,bc,ghost),Surfaces(0,box,bc,ghost),Edges(0,box,bc,ghost),Vertices(0,box,bc,ghost)
     {}
@@ -345,7 +502,7 @@ public:
     template<unsigned int ... prp>
     void ghost_get_volumes()
     {
-        Volumes.template ghost_get<prp ...>();
+        Volumes.template ghost_get<VolumeGID,prp ...>();
     }
 
 
@@ -362,9 +519,9 @@ public:
 
         for (int j = 0 ; j < n_edges ; j++)
         {
-            auto s = surface_edges_connectivity.get(j+edges_start);
+            auto e = surface_edges_connectivity.template get<0>(j+edges_start);
 
-            lamb(s,j+edges_start);
+            lamb(e);
         }
     }
 
@@ -382,13 +539,32 @@ public:
         }
     }
 
-    void addCell(const Point<dim,T> & p)
+    /*! \brief Number of local Volumes
+     *
+     * \return the number of volumes
+     * 
+     */
+    size_t numberOfLocalVolumes()
+    {
+        return Volumes.size_local();
+    }    
+
+    /*! \brief Add a Volume
+     *
+     * \param p Point where to add the volume
+     * 
+     */
+    void addVolume(const Point<dim,T> & p)
     {
         Volumes.add();
         for (int i = 0 ; i < dim ; i++)
         {Volumes.getLastPos()[i] = p[i];}
     }
 
+    /*! \brief Create the Voronoi tesellation
+     *
+     * 
+     */
     void createVoronoi()
     {
         if (dim != 3)
@@ -448,6 +624,13 @@ public:
                                  domain.getLow(1),domain.getHigh(1),
                                  domain.getLow(2),domain.getHigh(2),nx,ny,nz,false,false,false,8);
         pcon.setup(con);
+
+        Surfaces.clear();
+        Edges.clear();
+        Vertices.clear();
+        volume_surfaces_connectivity.clear();
+        edge_vertices_connectivity.clear();
+        surface_edges_connectivity.clear();
 
         // Open the output files
         // FILE *fp4=voro::safe_fopen("polygons4_v.pov","w"),
@@ -585,6 +768,7 @@ public:
         }
 
         // Create global IDs
+        CreateGlobalIds<VolumeGID>(Volumes);
         CreateGlobalIds<SurfaceGID>(Surfaces);
         CreateGlobalIds<EdgeGID>(Edges);
         CreateGlobalIds<VertexGID>(Vertices);
@@ -593,6 +777,7 @@ public:
 
         int n_volumes = Volumes.size_local();
         double r_cut = pow(domain.getVolume() / n_volumes, 1.0 / dim) / 8;
+        auto cl_vol = Volumes.getCellList(r_cut);
 
         typename std::remove_reference<decltype(Surfaces.getPosVector())>::type positions_unique;
         typename std::remove_reference<decltype(Surfaces.getPropVector())>::type properties_surfaces_unique;
@@ -632,7 +817,6 @@ public:
         Edges.template ghost_get<EdgeGID>();
         auto cl_e = Edges.getCellList(r_cut);
 
-        positions_unique.clear();
         unify_elements<EdgeMarking,EdgeGID>(Edges,cl_e,positions_unique,properties_edge_unique);
 
         FixIndexes<SurfaceNumberOfEdges,EdgesStart,EdgeMarking>(Surfaces,Edges,surface_edges_connectivity);
@@ -656,7 +840,6 @@ public:
         Vertices.template ghost_get<VertexGID>();
         auto cl_v = Vertices.getCellList(r_cut);
 
-        positions_unique.clear();
         unify_elements<VertexMarking,VertexGID>(Vertices,cl_v,positions_unique,properties_vertices_unique);
 
         FixIndexes<EdgeNumberOfVertices,VerticesStart,VertexMarking>(Edges,Vertices,edge_vertices_connectivity);
@@ -671,8 +854,20 @@ public:
 
         relink_elements<VertexMarking>(edge_vertices_connectivity,Vertices,cl_v);
 
-        return;
+        // Calculate Delauny
 
+        calc_delaunay_tetraedron<DelTetStart,VolumeNumberOfDelTet>(Tet_del);
+
+        return;
+    }
+
+    /*! \brief Get tge Delauney tetraedron vector
+     *
+     * 
+     */
+    openfpm::vector<aggregate<int[4],int>> & getDelTetraedron()
+    {
+        return Tet_del;
     }
 
     /*! \brief toString
@@ -739,6 +934,101 @@ public:
         return Volumes.getDecomposition().getDomain();
     }
 
+    /*! \brief Return the volume iterator 
+     * 
+     * \return the volume iterator
+     * 
+     */
+    auto getVolumeDomainIterator() -> decltype(Volumes.getDomainIterator())
+    {
+        return Volumes.getDomainIterator();
+    }
+
+    /*! \brief Return the volume position 
+     *
+     * \param i volume element
+     * 
+     * \return the volume position
+     * 
+     */
+    auto getVolumePos(size_t i) -> decltype(Volumes.getPos(0))
+    {
+        return Volumes.getPos(i);
+    }
+
+    /*! \brief Return the volume property
+     *
+     * \param i volume element
+     * 
+     * \return the volume property
+     * 
+     */
+    template<unsigned int prp>
+    auto getVolumeProp(size_t i) -> decltype(Volumes.template getProp<prp>(0))
+    {
+        return Volumes.template getProp<prp>(i);
+    }
+
+    /*! \brief Return the volume global-id
+     *
+     * \param i volume element
+     * 
+     * \return the volume GID
+     * 
+     */
+    auto getVolumeGID(size_t i) -> decltype(Volumes.template getProp<VolumeGID>(0))
+    {
+        return Volumes.template getProp<VolumeGID>(i);
+    }
+
+    /*! \brief Return the Vertex index of an edge
+     *
+     * \param e edge
+     * \param v vertex id
+     * 
+     * \return the vertex index
+     * 
+     */
+    auto getEdgeVertexID(size_t e, int v)
+    {
+        #ifdef SE_CLASS1
+
+        if (v > 2)
+        {std::cout << __FILE__ << ":" << __LINE__ << " error every edge has maximum two vertices" << std::endl;}
+
+        #endif
+
+        auto vstart = Edges.template getProp<VerticesStart>(e);
+
+        return edge_vertices_connectivity.template get<0>(v+vstart);
+    }
+
+    auto getEdgeVertexPos(size_t e, int v) -> decltype(Vertices.template getPos(0))
+    {
+        #ifdef SE_CLASS1
+
+        if (v > 2)
+        {std::cout << __FILE__ << ":" << __LINE__ << " error every edge has maximum two vertices" << std::endl;}
+
+        #endif
+
+        auto vstart = Edges.template getProp<VerticesStart>(e);
+
+        return Vertices.template getPos(edge_vertices_connectivity.template get<0>(v+vstart));
+    }
+
+    /*! \brief Return the surface position 
+     *
+     * \param i surface element
+     * 
+     * \return the surface position
+     * 
+     */
+    auto getSurfacePos(size_t i) -> decltype(Surfaces.getPos(0))
+    {
+        return Surfaces.getPos(i);
+    }
+
     /*! \brief Return the volumes 
      *
      * \return the volumes
@@ -787,6 +1077,17 @@ public:
     openfpm::vector<aggregate<int,T[3],int>> & getSurfacesEdgesConn()
     {
         return surface_edges_connectivity;
+    }
+
+    /*! Return the Vertex position
+     *
+     * \param v index of the position
+     * 
+     */
+    template<typename key_type>
+    auto getVertexPos(key_type & v) -> decltype(Vertices.getPos(v))
+    {
+        return Vertices.getPos(v);
     }
 
     /*! \brief Return the edges
@@ -1025,6 +1326,9 @@ public:
             ++it;
         }
 
+        if (consistent == false)
+        {return false;}
+
         double vol = 0.0;
 
         {
@@ -1070,6 +1374,20 @@ public:
         if (check_uniqueness<>(Vertices,cl_v) == false) {return false;}
 
         return true;
+    }
+
+    mutable tsl::hopscotch_map<int, int> map;
+
+    tsl::hopscotch_map<int, int> & getTempUnorderedMap()
+    {
+        return map;
+    }
+
+    mutable openfpm::vector<int> indices;
+
+    openfpm::vector<int> & getTempVectorInteger()
+    {
+        return indices;
     }
 
     /*! \brief write on VTK
