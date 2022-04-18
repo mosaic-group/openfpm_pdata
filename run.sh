@@ -37,6 +37,8 @@ cp openfpm_dependencies/$branch/openfpm_vars_$branch $HOME/openfpm_vars_$branch
 source $HOME/openfpm_vars_$branch
 
 echo "RUNNING pdata $nproc with $mpi_options"
+ls -la ./build/src/pdata
+head -c 20 ./build/src/pdata
 mpirun $mpi_options -np $nproc ./build/src/pdata
 if [ $? -ne 0 ]; then
    exit 1 ;
