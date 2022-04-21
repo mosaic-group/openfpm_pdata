@@ -32,6 +32,8 @@ docker_centos_run:
    tags:
      - ubuntu-docker
    image: 'ubuntu:20.04'
+   dependencies:
+     - docker_centos_build
    artifacts:
      paths:
        - ./build/src/pdata
