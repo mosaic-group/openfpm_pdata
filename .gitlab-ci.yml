@@ -17,6 +17,7 @@ docker_almalinux_build:
      - ssh-keyscan -H git.mpi-cbg.de >> ~/.ssh/known_hosts
      - ls openfpm_dependencies
      - echo "cifarm-centos-node" > hostname
+     - ln -s /usr/bin/python3 /usr/bin/python
      - ./build.sh $CI_PROJECT_DIR unused pdata 0 $CI_COMMIT_REF_NAME
      - ls -la build/src/pdata
    cache:
