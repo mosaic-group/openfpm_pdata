@@ -9,7 +9,7 @@ docker_almalinux_build:
        - ./build/openfpm_numerics/src/numerics
        - ./openfpm_numerics/test
    script:
-     - yum install -y openssh-clients
+     - yum install -y openssh-clients cmake
      - mkdir -p openfpm_dependencies
      - mkdir /root/.ssh && chmod 700 /root/.ssh
      - cp id_rsa.pub /root/.ssh/id_rsa.pub && chmod 644 /root/.ssh/id_rsa.pub
