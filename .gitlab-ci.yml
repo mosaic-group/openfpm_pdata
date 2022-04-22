@@ -60,7 +60,7 @@ docker_ubuntu_run:
      - ubuntu-docker
    image: 'ubuntu:20.04'
    dependencies:
-     - docker_centos_build
+     - docker_ubuntu_build
    artifacts:
      paths:
        - ./build/src/pdata
