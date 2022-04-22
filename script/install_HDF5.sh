@@ -22,7 +22,7 @@ if [ ! -d "$1/ZLIB"  -a x"$platform" != x"cygwin" ]; then
   tar -xf zlib-1.2.12.tar.gz
   cd zlib-1.2.12
 
-  CC=mpicc ./configure --prefix=$1/ZLIB
+  CC=mpicc CFLAGS=-fPIC  ./configure --prefix=$1/ZLIB
   make -j $2
   if [ $? -eq 0 ]; then
     make check install
