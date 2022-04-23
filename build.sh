@@ -22,12 +22,10 @@ echo "Branch name: $branch"
 echo "GPU compilation: $with_gpu"
 
 
-if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
-	echo "CentOS node"
-	source /opt/rh/devtoolset-8/enable
-	./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
-	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$branch/CMAKE/bin:$PATH"
+if [ x"$hostname" == x"cifarm-centos-node"  ]; then
+	echo "Almalinux node"
 	foward_options="--with-cuda-on-backend=OpenMP"
+	export DISABLE_OPENFPM_BINARY_CONFIG=1
 fi
 
 if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
@@ -65,7 +63,7 @@ if [ x"$hostname" == x"falcon1" ]; then
 		mkdir /projects/ppm/rundeck/openfpm_dependencies_$branch/
 		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies_$branch/
 	fi
-elif [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de" ]; then
+elif [ x"$hostname" == x"cifarm-centos-node" ]; then
 	dependency_dir=$(pwd)/openfpm_dependencies/$branch
 elif [ x"$hostname" == x"cifarm-ubuntu-node" ]; then
 	dependency_dir=$(pwd)/openfpm_dependencies/$branch
