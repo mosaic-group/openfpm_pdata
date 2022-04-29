@@ -14,7 +14,7 @@ fi
 if [ ! -d "$1/ZLIB"  -a x"$platform" != x"cygwin" ]; then
   rm zlib-1.2.11.tar.gz
   rm -rf zlib-1.2.11
-  wget https://zlib.net/zlib-1.2.11.tar.gz
+  wget https://zlib.net/fossils/zlib-1.2.12.tar.gz
   if [ $? -ne 0 ]; then
     echo -e "\033[91;5;1m FAILED! Installation requires an Internet connection \033[0m"
     exit 1
