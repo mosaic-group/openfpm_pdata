@@ -164,3 +164,7 @@ if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
   cp $HOME/openfpm_vars_$branch $(pwd)/openfpm_dependencies/$branch/
 fi
 
+if [ x"$hostname" == x"cifarm-centos-node"  ]; then
+  cp $HOME/openfpm_vars_$branch $(pwd)/openfpm_dependencies/$branch/
+fi
+
