@@ -67,8 +67,6 @@ else
 	mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
 fi
 
-rm -rf dependency_dir/ZLIB
-rm -rf dependency_dir/HDF5
 
 if [ x"$with_gpu" == x"1" ]; then
 	foward_options="$foward_options --with-cuda-on-backend=CUDA"
