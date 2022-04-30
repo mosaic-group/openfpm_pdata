@@ -21,7 +21,6 @@ echo "compilation type: $comp_type"
 echo "Branch name: $branch"
 echo "GPU compilation: $with_gpu"
 
-
 if [ x"$hostname" == x"cifarm-centos-node"  ]; then
 	echo "Almalinux node"
 	foward_options="--with-cuda-on-backend=OpenMP"
@@ -44,10 +43,6 @@ if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 	foward_options="--with-cuda-on-backend=SEQUENTIAL"
 	./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
 	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$branch/CMAKE/bin:$PATH"
-#	rm -rf /Users/admin/openfpm_dependencies/openfpm_pdata/$branch/
-#	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/PETSC
-        #./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
-#	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$branch/CMAKE/bin:$PATH"
 fi
 
 if [ x"$hostname" == x"falcon1" ]; then
@@ -71,6 +66,8 @@ else
 	dependency_dir=$HOME/openfpm_dependencies/openfpm_pdata/$branch
 	mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
 fi
+
+rm -rf dependency_dir/ZLIB
 
 if [ x"$with_gpu" == x"1" ]; then
 	foward_options="$foward_options --with-cuda-on-backend=CUDA"
