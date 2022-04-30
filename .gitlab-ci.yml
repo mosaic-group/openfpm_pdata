@@ -9,7 +9,7 @@ docker_almalinux_build:
        - ./build/openfpm_numerics/src/numerics
        - ./openfpm_numerics/test
    script:
-     - yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diff
+     - yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils
      - mkdir -p openfpm_dependencies
      - mkdir /root/.ssh && chmod 700 /root/.ssh
      - cp id_rsa.pub /root/.ssh/id_rsa.pub && chmod 644 /root/.ssh/id_rsa.pub
@@ -39,7 +39,7 @@ docker_almalinux_run:
        - ./build/openfpm_numerics/src/numerics
        - ./openfpm_numerics/test
    script:
-    - yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diff
+    - yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils
     - export OMP_NUM_THREADS=1
     - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
     - ./run.sh $CI_PROJECT_DIR unused 2 pdata 0 $CI_COMMIT_REF_NAME
