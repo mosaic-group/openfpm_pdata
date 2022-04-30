@@ -36,6 +36,8 @@ else
   echo "ZLIB is already installed"
 fi
 
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$1/ZLIB/lib"
+
 ### 1.8.19 does not compile on CYGWIN
 wget http://ppmcore.mpi-cbg.de/upload/hdf5-1.10.8.tar.gz
 tar -xf hdf5-1.10.8.tar.gz
