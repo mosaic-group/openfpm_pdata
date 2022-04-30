@@ -43,8 +43,9 @@ wget http://ppmcore.mpi-cbg.de/upload/hdf5-1.10.8.tar.gz
 tar -xf hdf5-1.10.8.tar.gz
 cd hdf5-1.10.8
 
+# Disable zlib is completly unstable
 if [ x"$platform" != x"cygwin" ]; then
-        CC=mpicc ./configure --with-zlib=$1/ZLIB --enable-parallel --prefix=$1/HDF5
+        CC=mpicc ./configure --enable-parallel --prefix=$1/HDF5
 	make -j $2
 else
         CC=mpicc ./configure --enable-parallel --prefix=$1/HDF5
