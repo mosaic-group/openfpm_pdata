@@ -39,6 +39,7 @@ docker_almalinux_run:
        - ./build/openfpm_numerics/src/numerics
        - ./openfpm_numerics/test
    script:
+    - echo "cifarm-centos-node" > hostname
     - yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils
     - export OMP_NUM_THREADS=1
     - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
@@ -68,6 +69,7 @@ docker_ubuntu_build:
        - ./build/openfpm_numerics/src/numerics
        - ./openfpm_numerics/test
    script:
+     - echo "cifarm-ubuntu-node" > hostname
      - apt-get update
      - DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata
      - apt-get -y install cmake wget git g++ gfortran python2  python-is-python3
@@ -99,6 +101,7 @@ docker_ubuntu_run:
        - ./build/openfpm_numerics/src/numerics
        - ./openfpm_numerics/test
    script:
+    - echo "cifarm-ubuntu-node" > hostname
     - apt-get update
     - DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata
     - apt-get -y install cmake wget git g++ gfortran python2  python-is-python3
