@@ -49,6 +49,7 @@ docker_almalinux_run:
     - ./run.sh $CI_PROJECT_DIR unused 1 pdata 0 $CI_COMMIT_REF_NAME
     - export OMP_NUM_THREADS=1
     - cd openfpm_numerics
+    - echo "cifarm-centos-node" > hostname
     - ./run.sh $CI_PROJECT_DIR unused 1 0 0 numerics $CI_COMMIT_REF_NAME
     - ./run.sh $CI_PROJECT_DIR unused 2 0 0 numerics $CI_COMMIT_REF_NAME
     - ./run.sh $CI_PROJECT_DIR unused 3 0 0 numerics $CI_COMMIT_REF_NAME
