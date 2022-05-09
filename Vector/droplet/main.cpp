@@ -30,23 +30,25 @@ typedef vector_dist<3, double, aggregate<double, double[3], double, int, double,
 const double dp = 1/32.0;
 //const double H = std::sqrt(3.0*dp*dp);
 const double H = 1.3*dp;
-const double gamma_eos = 7.0;
-const double c = 20.0;
+const double gamma_eos = 1.4;
+const double c = 200.0;
 const double rho_0 = 1.0;
 const double rho_1 = 1.0;
 const double eta_phase0 = 0.2;
 const double eta_phase1 = 0.2;
-const double alpha = 1.0;
+const double alpha = 10.0;
 const double p_background = 0.0;
 
 const double dt = 1.0*1e-4;
 double t;
+int corr;
+const int colorfield = 0;
 
-const double band_width = 6.0*dp;
+const double band_width = 10.0*dp;
 
 const double l_0 = 0.6;
 const double l_1 = 1.0;
-const double t_end = 0.2;
+const double t_end = 1.0;
 const double M_0 = std::pow(l_0, 3)*rho_0;
 const double M_1 = (std::pow(l_1, 3) - std::pow(l_0, 3))*rho_1; 
 const double np_0 = std::pow(l_0/dp, 3);
@@ -114,12 +116,25 @@ inline double Wab(double r)
 	else return(0.0);
 }
 
+const double a3 = 5.0/(8.0*H);
+inline double Wab1D(double r)
+{
+    const double q = r/H;
+    if (q <= 2.0)
+    {
+        double factor = 1.0 - q/2.0;
+        factor = factor*factor*factor;
+        return(a3*factor*(1.5*q + 1));
+    }
+    else return(0.0);
+}
+
 inline void DWab(Point<3,double> & dx, Point<3,double> & DW, double r, bool print, double & dwdrab)
 {
 	const double qq=r/H;
 	if (qq <= 2.0)
     {
-		double factor = (-5.0*a2/(H*H))*qq*(1.0 - qq/2.0)*(1.0 - qq/2.0)*(1.0 - qq/2.0);
+		double factor = (-5.0*a2/(H))*qq*(1.0 - qq/2.0)*(1.0 - qq/2.0)*(1.0 - qq/2.0);
 
     	DW.get(0) = factor * dx.get(0)/r;
     	DW.get(1) = factor * dx.get(1)/r;
@@ -137,9 +152,112 @@ inline void DWab(Point<3,double> & dx, Point<3,double> & DW, double r, bool prin
 	}
 }
 
+// %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SPH geometric computing part %%%%%%%%%%%%%%%%%%%%%
+const double eps_normal = 0.01/H;
+inline double coloraverage(double rhoa, double rhob, int typea, int typeb)
+{
+    double cij;
+    if (typea==typeb)
+    {cij = 0.0;}
+    else cij = 1.0;
+    return (rhoa/(rhoa+rhob)*cij);
+}
+
+template<typename CellList> inline void calc_surface_normals(particles & vd, CellList & NN) {
+    vd.template ghost_get<rho, sdf>();
+    auto part = vd.getDomainIterator();
+
+    // Update the cell-list
+    vd.updateCellList(NN);
+
+    // For each particle ...
+    while (part.isNext()) {
+        // ... a
+        auto a = part.get();
+        vd.getProp<normal>(a)[0] = 0.0;
+        vd.getProp<normal>(a)[1] = 0.0;
+        //if (std::abs(vd.getProp<sdf>(a))>2.0*H) {++part; continue;};
+        // Get the position xp of the particle
+        Point<2, double> xa = vd.getPos(a);
+
+        double massa = (return_sign(vd.getProp<sdf>(a)) < 0) ? m_0 : m_1;
+        double ca = return_sign(vd.getProp<sdf>(a));
+        // Get the density of the particle a
+        double rhoa = vd.getProp<rho>(a);
+
+        // Get an iterator over the neighborhood particles of p
+        auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(a)));
+
+        // For each neighborhood particle
+        while (Np.isNext() == true) {
+            // ... q
+            auto b = Np.get();
+
+            // Get the position xp of the particle
+            Point<2, double> xb = vd.getPos(b);
+
+            // if (p == q) skip this particle
+
+            if (a.getKey() == b) {
+                ++Np;
+                continue;
+            };
+
+            double massb = (return_sign(vd.getProp<sdf>(b)) < 0) ? m_0 : m_1;
+
+            double rhob = vd.getProp<rho>(b);
+
+            // Get the distance between p and q
+            Point<2, double> dr = xa - xb;
+            // take the norm of this vector
+            double r2 = norm2(dr);
+
+            // if they interact
+            if (r2 < 4.0 * H * H) {
+                double r = sqrt(r2); // norm2 is norm^2
+
+                Point<2, double> DW;
+                double dwdrab;
+                DWab(dr, DW, r, false, dwdrab);
+                double cfactor = 0.0;
+                double cb = return_sign(vd.getProp<sdf>(b));
+                if (colorfield) {
+                    //cfactor = rhoa/massa*((massa/rhoa)*(massa/rhoa)+(massb/rhob)*(massb/rhob))*coloraverage(rhoa,rhob,return_sign(vd.getProp<sdf>(a)),return_sign(vd.getProp<sdf>(b)));
+                    cfactor = massb / rhob * (cb - ca);
+                } else cfactor = massb / rhob * (vd.getProp<sdf>(b) - vd.getProp<sdf>(a));
+                vd.getProp<normal>(a)[0] += cfactor * DW.get(0);
+                vd.getProp<normal>(a)[1] += cfactor * DW.get(1);
+            }
+            ++Np;
+        }
+        //std::cout<<"normal:\n"<<vd.getProp<normal>(a)[0]<<", "<<vd.getProp<normal>(a)[1]<<std::endl;
+        // normalize normal to obtain unit surface normal
+        if (false) {
+            double colornorm = sqrt(vd.getProp<normal>(a)[0] * vd.getProp<normal>(a)[0] +
+                                    vd.getProp<normal>(a)[1] * vd.getProp<normal>(a)[1]);
+            if (colornorm < eps_normal) {
+                vd.getProp<normal>(a)[0] = 0.0;
+                vd.getProp<normal>(a)[0] = 0.0;
+            } else {
+                vd.getProp<normal>(a)[0] = vd.getProp<normal>(a)[0] / colornorm;
+                vd.getProp<normal>(a)[1] = vd.getProp<normal>(a)[1] / colornorm;
+            }
+        }
+
+        if (colorfield) {
+            if (return_sign(vd.getProp<sdf>(a)) > 0) {
+                //vd.getProp<normal>(a)[0] = -1.0 * vd.getProp<normal>(a)[0];
+                //vd.getProp<normal>(a)[1] = -1.0 * vd.getProp<normal>(a)[1];
+            }
+        }
+        ++part;
+    }
+}
+
+
 template <typename CellList> inline void density_summation(particles & vd, CellList & NN)
 {
-	vd.template ghost_get<>();
+	vd.template ghost_get<rho>();
 	auto part = vd.getDomainIterator();
 	vd.updateCellList(NN);
 	while (part.isNext())
@@ -188,6 +306,8 @@ inline void EqOfState(particles & vd)
 
 template<typename CellList> inline void calc_forces(particles & vd, CellList & NN)
 {
+	vd.template ghost_get<rho, p, vel>();
+	vd.updateCellList(NN);
 	auto part = vd.getDomainIterator();
 
 	// Update the cell-list
@@ -195,19 +315,24 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 
 	double max_p = 0.0;
 	double max_eta = 0.0;
-	double max_alpha = 0.0;
+	double avg_alpha = 0.0;
 	double maxvel = 0.0;
 	int numparticles = 0;
+	int numsurfparticles = 0;
 
 	// For each particle ...
 	while (part.isNext())
 	{
-		// ... a
 		auto a = part.get();
 
 		vd.getProp<force>(a)[0] = 0.0;
 		vd.getProp<force>(a)[1] = 0.0;
 		vd.getProp<force>(a)[2] = 0.0;
+
+		Point<3, double> p_force;
+		Point<3, double> eta_force;
+		for(int k=0;k<3;k++) p_force[k] = 0.0;
+		for(int k=0;k<3;k++) eta_force[k] = 0.0;
 
 		// Get the position xp of the particle
 		Point<3,double> xa = vd.getPos(a);
@@ -222,7 +347,7 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 		// Get the pressure of the particle a
 		double Pa = vd.getProp<p>(a);
 
-		// Get the Velocity of the particle a
+		// Get the Velocity of the particle
 		Point<3,double> va = vd.getProp<vel>(a);
 
 		// Get an iterator over the neighborhood particles of p
@@ -231,7 +356,6 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 		// For each neighborhood particle
 		while (Np.isNext() == true)
 		{
-			// ... q
 			auto b = Np.get();
 
 			// Get the position xp of the particle
@@ -269,20 +393,23 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 				double factor_visc = (2*etaa*etab/(etaa + etab))*(Va*Va + Vb*Vb)*dwdrab/r;
 				//if (t > 0.0002) factor_p = 0.0;
 
-
-				vd.getProp<force>(a)[0] += factor_p * DW.get(0) + factor_visc*v_rel[0]/massa;
-				vd.getProp<force>(a)[1] += factor_p * DW.get(1) + factor_visc*v_rel[1]/massa;
-				vd.getProp<force>(a)[2] += factor_p * DW.get(2) + factor_visc*v_rel[2]/massa;
+				p_force[0] += factor_p * DW.get(0);
+				p_force[1] += factor_p * DW.get(1);
+				p_force[2] += factor_p * DW.get(2);
+				eta_force[0] += factor_visc*v_rel[0]/massa;
+				eta_force[1] += factor_visc*v_rel[1]/massa;
+				eta_force[2] += factor_visc*v_rel[2]/massa;
 
 				//std::cout<<"W(0) = "<<Wab(0.0)<<" W(1.3/32) = "<<Wab(H)<<std::endl;
 				//std::cout<<"Contribution by grad p: "<<factor_p*DW.get(2)<<", contribution by viscosity: "<<factor_visc*v_rel[2]<<", grad W magnitude: "<<DW.norm()<<", dwdr: "<<dwdrab<<std::endl;
-				if (v_rel.norm() > maxvel) maxvel = v_rel.norm();
-				if (std::abs(factor_p*DW.norm()) > max_p) max_p = std::abs(factor_p*DW.norm());
-				if (std::abs(factor_visc*v_rel.norm()) > max_eta) max_eta = std::abs(factor_visc*v_rel.norm());
 			}
 
 			++Np;
 		}
+
+		vd.getProp<force>(a)[0] += p_force[0] + eta_force[0];
+		vd.getProp<force>(a)[1] += p_force[1] + eta_force[1];
+		vd.getProp<force>(a)[2] += p_force[2] + eta_force[2];
 
 		if (std::abs(vd.getProp<sdf>(a)) < (2.0*H))
 		{
@@ -290,15 +417,27 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 			//if (t < 0.1) smoothing_factor = std::sin(2*M_PI*t*2.5)*smoothing_factor;
 			double sign_corr = 1.0;
 			if (return_sign(vd.getProp<sdf>(a) > 0)) sign_corr = -1.0;
-			vd.getProp<force>(a)[0] = vd.getProp<force>(a)[0] - smoothing_factor*alpha*std::abs(vd.getProp<curvature>(a))*vd.getProp<normal>(a)[0]*sign_corr;
-			vd.getProp<force>(a)[1] = vd.getProp<force>(a)[1] - smoothing_factor*alpha*std::abs(vd.getProp<curvature>(a))*vd.getProp<normal>(a)[1]*sign_corr;
-			vd.getProp<force>(a)[2] = vd.getProp<force>(a)[2] - smoothing_factor*alpha*std::abs(vd.getProp<curvature>(a))*vd.getProp<normal>(a)[2]*sign_corr;
-			if (std::abs(vd.getProp<curvature>(a)) > max_alpha) max_alpha = std::abs(vd.getProp<curvature>(a));
+			const double stf0 = smoothing_factor*alpha*vd.getProp<curvature>(a)*vd.getProp<normal>(a)[0]*sign_corr;
+			const double stf1 = smoothing_factor*alpha*vd.getProp<curvature>(a)*vd.getProp<normal>(a)[1]*sign_corr;
+			const double stf2 = smoothing_factor*alpha*vd.getProp<curvature>(a)*vd.getProp<normal>(a)[2]*sign_corr;
+
+			vd.getProp<force>(a)[0] += stf0;
+			vd.getProp<force>(a)[1] += stf1;
+			vd.getProp<force>(a)[2] += stf2;
+
+			avg_alpha += vd.getProp<curvature>(a);
+			numsurfparticles++;
+			//if ((a.getKey() == 6342)||(a.getKey() == 5285)) std::cout<<"Particle "<<a.getKey()<<" Position: "<<vd.getPos(a)[0]<<", "<<vd.getPos(a)[1]<<", "<<vd.getPos(a)[2]<<", surface tension force: "<<stf0<<", "<<stf1<<", "<<stf2<<std::endl;
 		}
+		if (va.norm() > maxvel) maxvel = va.norm();
+		if (p_force.norm() > max_p) max_p = p_force.norm();
+		if (eta_force.norm() > max_eta) max_eta = eta_force.norm();
 		++numparticles;
 		++part;
 	}
-	std::cout<<"Max p force factor: "<<max_p<<", Max eta force factor: "<<max_eta<<", Max relative vel: "<<maxvel<<", Max alpha factor: "<<max_alpha<<", number of particles: "<<numparticles<<std::endl;
+	avg_alpha = avg_alpha/numsurfparticles;
+	if (corr) std::cout<<"Time step: "<<t<<", Max p force: "<<max_p<<", Max eta force: "<<max_eta<<", Max vel: "<<maxvel<<", Average curvature: "<<avg_alpha<<", number of particles: "<<numparticles<<std::endl;
+	//if (corr) std::cout<<avg_alpha<<std::endl;
 	if (numparticles == 0) throw std::invalid_argument("no particles");
 }
 
@@ -327,6 +466,10 @@ void pred_corr_int(particles & vd, double dt, int & corr)
 		}
 		else
 		{
+		    //auto &v_cl=create_vcluster();
+		    //std::cout<<v_cl.rank()<<": PosPrev:("<<vd.getProp<pos_prev>(a)[0]<<":"<<vd.getProp<pos_prev>(a)[1]<<":"<<vd.getProp<pos_prev>(a)[2]<<")"<<std::endl;
+            //std::cout<<v_cl.rank()<<": VelPrev:("<<vd.getProp<vel_prev>(a)[0]<<":"<<vd.getProp<vel_prev>(a)[1]<<":"<<vd.getProp<vel_prev>(a)[2]<<")"<<std::endl;
+            //std::cout<<v_cl.rank()<<": Force:("<<vd.getProp<force>(a)[0]<<":"<<vd.getProp<force>(a)[1]<<":"<<vd.getProp<force>(a)[2]<<")"<<std::endl;
 			// correct the accelerations and velocities
 			Point<3, double> x = vd.getProp<pos_prev>(a) + dt*(vd.getProp<vel_prev>(a) + 0.5*dt*vd.getProp<force>(a));
 			vd.getPos(a)[0] = x[0];
@@ -400,8 +543,6 @@ int main(int argc, char* argv[])
 	density_summation(vd, NN);
 
 	EqOfState(vd);
-	std::cout<<m_0<<std::endl;
-	std::cout<<m_1<<std::endl;
 
 	vd.write("droplet_init_before_redistancing");
 
@@ -419,33 +560,36 @@ int main(int argc, char* argv[])
 
 	vd.write("droplet_init");
 
-	rdistoptions.tolerance = 1e-10;
+	rdistoptions.tolerance = 1e-12;
 	size_t write = 0;
 	size_t rdist = 0;
+	size_t rdist_small = 0;
 	size_t it = 0;
 	size_t it_reb = 0;
 	t = 0.0;
-	int corr = 0;
+	corr = 0;
 
 	while (t <= t_end)
 	{
-		std::cout<< "time step "<<t<<std::endl;
 		Vcluster<> & v_cl = create_vcluster();
 		timer it_time;
-
 		vd.map();
+		vd.ghost_get<rho>();
 		vd.updateCellList(NN);
 		// Calculate pressure from the density
 		density_summation(vd, NN);
 		EqOfState(vd);
-		if (rdist < t*100)
+
+		if (rdist < t*1000)
 		{
+			if (t<0.05)	rdistoptions.write_sdf = 0;
+			else rdistoptions.write_sdf = 1;
+			//std::cout.setstate(std::ios_base::failbit);
 			particle_cp_redistancing <particles, taylor4>pcprdist(vd, rdistoptions);
 			pcprdist.run_redistancing();
+			//std::cout.clear();
 			rdist++;
 		}
-
-		vd.ghost_get<>();
 
 		// Calc forces
 		calc_forces(vd, NN);
@@ -453,10 +597,8 @@ int main(int argc, char* argv[])
 		// Predictor step
 		it++;
 		pred_corr_int(vd, dt, corr);
-
 		vd.map();
-		vd.updateCellList(NN);
-		vd.ghost_get<>();
+
 		density_summation(vd, NN);
 		EqOfState(vd);
 		calc_forces(vd, NN);
@@ -464,27 +606,21 @@ int main(int argc, char* argv[])
 		// corrector step
 		pred_corr_int(vd, dt, corr);
 
-
 		t += dt;
+
 
 		if (write < t*100)
 		{
-			// sensor_pressure calculation require ghost and update cell-list
-			vd.map();
-			vd.ghost_get<>();
-			vd.updateCellList(NN);
+			vd.deleteGhost();
 
-			vd.write_frame("Geometry_droplet",write);
+			vd.write_frame("Geometry_droplet_v9/Geometry_droplet_rdist_v9",write);
 			write++;
 
 			if (v_cl.getProcessUnitID() == 0)
 			{std::cout << "TIME: " << t << std::endl;}
+
 		}
-		else
-		{
-			if (v_cl.getProcessUnitID() == 0)
-			{std::cout << "TIME: " << t << std::endl;}
-		}
+
 	}
 	openfpm_finalize();
 }
