@@ -11,30 +11,30 @@ if [ -d "$1/HDF5" -a -f "$1/HDF5/include/hdf5.h" ]; then
   exit 0
 fi
 
-if [ ! -d "$1/ZLIB"  -a x"$platform" != x"cygwin" ]; then
-  rm zlib-1.2.12.tar.gz
-  rm -rf zlib-1.2.12
-  wget http://zlib.net/zlib-1.2.12.tar.gz 
-  if [ $? -ne 0 ]; then
-    echo -e "\033[91;5;1m FAILED! Installation requires an Internet connection \033[0m"
-    exit 1
-  fi
-  tar -xf zlib-1.2.12.tar.gz
-  cd zlib-1.2.12
+#if [ ! -d "$1/ZLIB"  -a x"$platform" != x"cygwin" ]; then
+#  rm zlib-1.2.12.tar.gz
+#  rm -rf zlib-1.2.12
+#  wget http://zlib.net/zlib-1.2.12.tar.gz 
+#  if [ $? -ne 0 ]; then
+#    echo -e "\033[91;5;1m FAILED! Installation requires an Internet connection \033[0m"
+#    exit 1
+#  fi
+#  tar -xf zlib-1.2.12.tar.gz
+#  cd zlib-1.2.12
 
-  CC=mpicc CFLAGS=-fPIC  ./configure --prefix=$1/ZLIB
-  make -j $2
-  if [ $? -eq 0 ]; then
-    make check install
-  else
-    echo -e "\033[91;5;1m ZLIB Installation FAILED \033[0m"
-    exit 1
-  fi
-  cd ..
+#  CC=mpicc CFLAGS=-fPIC  ./configure --prefix=$1/ZLIB
+#  make -j $2
+#  if [ $? -eq 0 ]; then
+#    make check install
+#  else
+#    echo -e "\033[91;5;1m ZLIB Installation FAILED \033[0m"
+#    exit 1
+#  fi
+#  cd ..
 
-else
-  echo "ZLIB is already installed"
-fi
+#else
+#  echo "ZLIB is already installed"
+#fi
 
 
 ### 1.8.19 does not compile on CYGWIN
