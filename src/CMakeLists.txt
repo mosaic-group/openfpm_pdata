@@ -66,7 +66,8 @@ if ( CUDA_ON_BACKEND STREQUAL "HIP" AND HIP_FOUND )
 							  )
 
 
-	hip_add_library(ofpm_pdata STATIC lib/pdata.cpp)
+    hip_add_library(ofpm_pdata STATIC lib/pdata.cpp)
+    hip_add_library(ofpm_pdata_dl SHARED lib/pdata.cpp)
 
 else()
 
@@ -91,11 +92,13 @@ else()
 							  Vector/performance/vector_dist_performance_util.cpp
 							  lib/pdata.cpp)
 
-	add_library(ofpm_pdata STATIC lib/pdata.cpp)
+    add_library(ofpm_pdata STATIC lib/pdata.cpp)
+    add_library(ofpm_pdata_dl SHARED lib/pdata.cpp)
 	add_library(ofpm_pdata_python SHARED lib/pdata_python.cpp)
 
 	set_property(TARGET pdata PROPERTY CUDA_ARCHITECTURES OFF)
-	set_property(TARGET ofpm_pdata PROPERTY CUDA_ARCHITECTURES OFF)
+    set_property(TARGET ofpm_pdata PROPERTY CUDA_ARCHITECTURES OFF)
+    set_property(TARGET ofpm_pdata_dl PROPERTY CUDA_ARCHITECTURES OFF)
 	set_property(TARGET ofpm_pdata_python PROPERTY CUDA_ARCHITECTURES OFF)
 
 endif()
@@ -283,6 +286,13 @@ target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/confi
 target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_devices/src/)
 target_include_directories (ofpm_pdata PUBLIC ${Boost_INCLUDE_DIRS})
 
+target_include_directories (ofpm_pdata_dl PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+target_include_directories (ofpm_pdata_dl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories (ofpm_pdata_dl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
+target_include_directories (ofpm_pdata_dl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/config)
+target_include_directories (ofpm_pdata_dl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_devices/src/)
+target_include_directories (ofpm_pdata_dl PUBLIC ${Boost_INCLUDE_DIRS})
+
 target_compile_definitions(pdata PRIVATE ${MPI_VENDOR})
 
 if(PETSC_FOUND)
@@ -417,6 +427,7 @@ install(FILES Debug/debug.hpp
 	COMPONENT OpenFPM)
 
 install(TARGETS ofpm_pdata EXPORT ofpm_pdata_config  DESTINATION openfpm_pdata/lib COMPONENT OpenFPM)
+install(TARGETS ofpm_pdata_dl EXPORT ofpm_pdata_dl_config  DESTINATION openfpm_pdata/lib COMPONENT OpenFPM)
 
 ########## Create openfpmConfig.cmake + openfpmConfigVersion.cmake
 
@@ -425,9 +436,12 @@ set(DOBC $ENV{DISABLE_OPENFPM_BINARY_CONFIG})
 if(NOT DOBC EQUAL 1)
 
     add_library(binary_config INTERFACE)
+    add_library(binary_config_ INTERFACE)
+    add_library(binary_config_shared INTERFACE)
+    add_library(binary_config_static INTERFACE)
 
     target_include_directories(
-    binary_config
+    binary_config_
     INTERFACE
     ${CMAKE_INSTALL_PREFIX}/openfpm_pdata/include
     ${CMAKE_INSTALL_PREFIX}/openfpm_data/include
@@ -447,36 +461,44 @@ if(NOT DOBC EQUAL 1)
     )
 
     if (CUDA_ON_CPU)
-        target_compile_definitions(binary_config INTERFACE CUDA_ON_CPU)
+        target_compile_definitions(binary_config_ INTERFACE CUDA_ON_CPU)
     endif()
 
-    target_compile_options(binary_config INTERFACE $<$<COMPILE_LANGUAGE:CUDA>: ${WARNING_SUPPRESSION_AND_OPTION_NVCC} >)
+    target_compile_options(binary_config_ INTERFACE $<$<COMPILE_LANGUAGE:CUDA>: ${WARNING_SUPPRESSION_AND_OPTION_NVCC} >)
 
-    target_link_libraries(binary_config INTERFACE Boost::context)
-    target_link_libraries(binary_config INTERFACE Boost::fiber)
-    target_link_libraries(binary_config INTERFACE Boost::filesystem)
-    target_link_libraries(binary_config INTERFACE Boost::iostreams)
-    target_link_libraries(binary_config INTERFACE Boost::program_options)
-    target_link_libraries(binary_config INTERFACE ${PARMETIS_LIBRARIES})
-    target_link_libraries(binary_config INTERFACE -L${METIS_ROOT}/lib metis)
-    target_link_libraries(binary_config INTERFACE ${HDF5_LIBRARIES})
-    target_link_libraries(binary_config INTERFACE -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
-    target_link_libraries(binary_config INTERFACE ${PETSC_LIBRARIES})
-    target_link_libraries(binary_config INTERFACE ${Vc_LIBRARIES})
-    target_link_libraries(binary_config INTERFACE ${alpaka_LIBRARIES})
-    target_link_libraries(binary_config INTERFACE ${MPI_C_LIBRARIES})
+    target_link_libraries(binary_config_ INTERFACE Boost::context)
+    target_link_libraries(binary_config_ INTERFACE Boost::fiber)
+    target_link_libraries(binary_config_ INTERFACE Boost::filesystem)
+    target_link_libraries(binary_config_ INTERFACE Boost::iostreams)
+    target_link_libraries(binary_config_ INTERFACE Boost::program_options)
+    target_link_libraries(binary_config_ INTERFACE ${PARMETIS_LIBRARIES})
+    target_link_libraries(binary_config_ INTERFACE -L${METIS_ROOT}/lib metis)
+    target_link_libraries(binary_config_ INTERFACE ${HDF5_LIBRARIES})
+    target_link_libraries(binary_config_ INTERFACE -L${LIBHILBERT_LIBRARY_DIRS} ${LIBHILBERT_LIBRARIES})
+    target_link_libraries(binary_config_ INTERFACE ${PETSC_LIBRARIES})
+    target_link_libraries(binary_config_ INTERFACE ${Vc_LIBRARIES})
+    target_link_libraries(binary_config_ INTERFACE ${alpaka_LIBRARIES})
+    target_link_libraries(binary_config_ INTERFACE ${MPI_C_LIBRARIES})
 
     # Not OK before CMake 3.13
     #target_link_libraries(binary_config INTERFACE $<INSTALL_PREFIX>/openfpm_vcluster/lib/$<TARGET_FILE_NAME:openfpm::vcluster> )
     #target_link_libraries(binary_config INTERFACE $<INSTALL_PREFIX>/openfpm_devices/lib/$<TARGET_FILE_NAME:openfpm::ofpmmemory> )
-    target_link_libraries(binary_config INTERFACE ${CMAKE_INSTALL_PREFIX}/openfpm_vcluster/lib/libvcluster.a )
-    target_link_libraries(binary_config INTERFACE ${CMAKE_INSTALL_PREFIX}/openfpm_devices/lib/libofpmmemory.a )
-    target_link_libraries(binary_config INTERFACE ${CMAKE_INSTALL_PREFIX}/openfpm_pdata/lib/libofpm_pdata.a )
-    target_link_libraries(binary_config INTERFACE ${CUDA_LIBRARIES} )
+    target_link_libraries(binary_config_static INTERFACE ${CMAKE_INSTALL_PREFIX}/openfpm_vcluster/lib/libvcluster.a )
+    target_link_libraries(binary_config_static INTERFACE ${CMAKE_INSTALL_PREFIX}/openfpm_devices/lib/libofpmmemory.a )
+    target_link_libraries(binary_config_static INTERFACE ${CMAKE_INSTALL_PREFIX}/openfpm_pdata/lib/libofpm_pdata.a )
+
+    target_link_libraries(binary_config_shared INTERFACE ${CMAKE_INSTALL_PREFIX}/openfpm_vcluster/lib/libvcluster_dl.so )
+    target_link_libraries(binary_config_shared INTERFACE ${CMAKE_INSTALL_PREFIX}/openfpm_devices/lib/libofpmmemory_dl.so )
+    target_link_libraries(binary_config_shared INTERFACE ${CMAKE_INSTALL_PREFIX}/openfpm_pdata/lib/libofpm_pdata_dl.so )
+
+    target_link_libraries(binary_config_ INTERFACE ${CUDA_LIBRARIES} )
 
     # Does not work before Cmake 3.13
     #install(TARGETS binary_config vcluster ofpmmemory EXPORT openfpm_config  CONFIGURATIONS)
     install(TARGETS binary_config EXPORT openfpm_config  CONFIGURATIONS)
+    install(TARGETS binary_config_ EXPORT openfpm_config  CONFIGURATIONS)
+    install(TARGETS binary_config_static EXPORT openfpm_config  CONFIGURATIONS)
+    install(TARGETS binary_config_shared EXPORT openfpm_config  CONFIGURATIONS)
 
     include(CMakePackageConfigHelpers)
     write_basic_package_version_file(
