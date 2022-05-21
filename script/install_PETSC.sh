@@ -68,7 +68,7 @@ MUMPS_extra_libs=""
 configure_options=""
 
 
-configure_options="$configure_options --download-metis --download-parmetis"
+configure_options="$configure_options --with-64-bit-indices --with-parmetis-include=$1/PARMETIS/include --with-parmetis-lib=$1/PARMETIS/lib/libparmetis.a --with-metis-include=$1/METIS/include --with-metis-lib=$1/METIS/lib/libmetis.so"
 
 if [ -d "$1/BOOST" ]; then
 
