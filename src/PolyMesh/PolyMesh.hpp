@@ -27,7 +27,7 @@ class PolyMesh
     typedef typename AggregateAppend<int,TypeSurface_p>::type TypeSurface_pp;
     typedef typename AggregateAppend<int,TypeSurface_pp>::type TypeSurface_ppp;
     typedef typename AggregateAppend<int,TypeSurface_ppp>::type TypeSurface_pppp;
-    typedef typename AggregateAppend<T[3],TypeSurface_pppp>::type TypeSurface_ppppp;
+    typedef typename AggregateAppend<int[2],TypeSurface_pppp>::type TypeSurface_ppppp;
 
     // Transform edges
     typedef typename AggregateAppend<int,TypeEdge>::type TypeEdge_p;
@@ -79,7 +79,7 @@ class PolyMesh
     vector_dist<dim,T,TypeVertex_ppp> Vertices;
 
     //! Tollerance (in distance) for which two edges/vertices are considered the same
-    T same_element_tollerance = 1e-10;
+    T same_element_tollerance = 1e-7;
 
     bool tet_found(Point<dim,T> & xv,int p, int q, int s)
     {
@@ -141,7 +141,7 @@ class PolyMesh
         Tet_del.clear();
 
         Volumes.template ghost_get<>();
-        auto cl_v = Volumes.getCellList(max_radius);
+        auto cl_v = Volumes.getCellList(max_radius*1.1);
 
         auto it2 = Volumes.getDomainIterator();
 
@@ -175,7 +175,7 @@ class PolyMesh
 
                         Point<dim,T> xq = Volumes.getPos(q);
 
-                        if (fabs(radius - xq.distance(xv)) < same_element_tollerance && p != q)
+                        if (fabs(radius - xq.distance(xv)) < same_element_tollerance)
                         {
                             // found element tetra
                             if (id_tot < 16)
@@ -688,7 +688,7 @@ public:
                         Surfaces.add();
                         int last_surf = Surfaces.size_local() - 1;
                         Surfaces.template getLastProp<SurfaceNumberOfEdges>() = n;
-                        Surfaces.template getLastProp<SurfacesStart>() = surface_edges_connectivity.size();
+                        Surfaces.template getLastProp<EdgesStart>() = surface_edges_connectivity.size();
 
                         Point<dim,T> center = {0.0,0.0,0.0};
                         Point<dim,T> first;
@@ -942,6 +942,16 @@ public:
     auto getVolumeDomainIterator() -> decltype(Volumes.getDomainIterator())
     {
         return Volumes.getDomainIterator();
+    }
+
+    /*! \brief Return the vector of the volumes
+     *
+     * \return the vector of the volumes
+     * 
+     */
+    auto getVolumesDist() -> decltype(Volumes) &
+    {
+        return Volumes;
     }
 
     /*! \brief Return the volume position 

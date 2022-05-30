@@ -469,8 +469,6 @@ void grad_voronoi_cell(PolyMesh_type & Poly, unsigned int c, Gv_type & Gv)
 
     auto & DelTet = Poly.getDelTetraedron();
 
-    auto it = Poly.getVolumeDomainIterator();
-
     auto Nid = Poly.template getVolumeProp<DelTetNumber>(c);
 
     Gv.resize(Nid);
@@ -833,5 +831,116 @@ void grad_barycenter(PolyMesh_type & poly, int c, Gv_type & Gv, Gb_type & Gb)
     });
 }
 
+template<typename PolyMesh_type, typename T>
+void grad_vor_bar_neighbour(PolyMesh_type & poly, int c1, int c2, openfpm::vector<aggregate<T[3][3]>> & Gv2,
+                                                                  openfpm::vector<aggregate<T[3][3]>> & Gb2,
+                                                                  openfpm::vector<aggregate<T[3][3]>> & Gb,
+                                                                  openfpm::vector<aggregate<T[3][3]>> & Gv)
+{
+    //Inputs: - s the simu_box
+    //        - c1 the cell center with respect to which we derivate
+    //        - c2 the cell center for which we aim to compute the derivative of the vertices and barycenters
+    //        - wo->Gv contains the already computed derivatives of the vertices of cell c1, with respect to a movement of c1
+    //        - wo->Gb idem for barycenters
+    //        - wo->Gv2,wo->Gb2 will be filled with derivatives of c2
+    //
+    // Cells c1 and c2 are assumed to be neighbours. The function computes the derivatives (of the vertices and barycenters) of cell c2 with respect to a movement of cell c1. It does this purely by a copy-paste of the information contained in Gv1,Gb1. The only task is to identify wich vertices of c2 correspond to which items in Gv1, and same for Gb.
+    
+    constexpr int DelTetStart = PolyMesh_type::DelTetStart;
+    constexpr int DelTetNumber = PolyMesh_type::VolumeNumberOfDelTet;
+    constexpr int DelTelVertId = PolyMesh_type::DelTelVertId;
+    constexpr int DelTelIndices = PolyMesh_type::DelTelIndices;
+
+    auto & DelTet = poly.getDelTetraedron();
+
+    auto Nid = poly.template getVolumeProp<DelTetNumber>(c1);
+    auto start = poly.template getVolumeProp<DelTetStart>(c1);
+
+    Gv2.resize(Nid);
+
+    //put to zero Gv2 and Gb2 (they are automatically put to zero here)
+    for(int t = 0; t < Nid ; t++) //tetra number here, for the number of vertices
+    {
+        for(int r=0;r<3;r++)
+        {
+            for(int c=0;c<3;c++)
+            {
+                Gv2.template get<0>(t)[r][c] = 0;
+            }
+        }
+    }
+
+    Gb2.resize() = poly.getNumOfSurfaces(c2);
+
+    int f = 0;
+
+    poly.ForAllVolumeSurfaces(c2,[&](int f_int){
+
+        for(int r = 0; r < 3 ; r++)
+        {
+            for(int c = 0; c < 3; c++)
+            {
+                Gb2.template get<0>(f)[r][c] = 0;
+                f++;
+            }
+        }
+    });
+
+    poly.ForAllVolumeSurfaces(c1,[&](int fi)
+    {
+        //is this face in contact with cell c2? And which index in F[].c?
+        int c_con=-1;
+        if(poly.getNNSurfce(fi,0) == c2) {c_con=0;}
+        else if(poly.getNNSurfce(fi,1) == c2){c_con=1;}
+        if(c_con != -1)//contact detected
+        {
+            //copy-paste Gb in Gb2, we already know which index in Gb2 thanks to the voronoi structure
+            int f2=poly.getSurfaceToVolume(fi)[c_con];
+            for(int i = 0 ; i < 3 ; i++)
+            {
+                for(int j = 0 ; j < 3 ; j++)
+                {
+                    Gb2.template get<0>(f2)[i][j] = Gb.template get<0>(f)[i][j];
+                }
+            }
+        }
+    });
+
+    //Now we do the vertices, looping on c1 tetrahedra
+    int v,t2,ti2;
+
+    for(int t = 0; t < Nid ; t++) //tetra number here, for the number of vertices
+    {
+        int ti = DelTet.template getProp<DelTelVertId>(t + start);
+        //look for a vertex connected to cell c2
+        for(int v = 0 ; v < 4 ; v++)
+        {
+            if(DelTet.template getProp<DelTelIndices>(ti)[v] == c2)
+            {
+                int start2 = poly.template getVolumeProp<DelTetNumber>(c2);
+                //look in the tetrahedra of cell c2 for which is ti
+                for (int t2 = 0 ; t2 < poly.template getVolumeProp<DelTetNumber>(c2) ; t2++)
+                {
+                    ti2 = DelTet.template getProp<DelTelVertId>(t2 + start2);
+                    if(ti2 == ti)
+                    {
+                        //copy-paste the Gv in Gv2
+                        for(int i = 0 ; i < 3 ; i++)
+                        {
+                            for(int j = 0 ; j < 3 ; j++ )
+                            {
+                                Gv2.template get<0>(t2)[i][j] = Gv.template get(t)[i][j];
+                            }
+                        }
+                        //break the loop
+                        break;
+                    }
+                }
+                //break the vertex loop
+                break;
+            }
+        }
+    }
+}
 
 #endif

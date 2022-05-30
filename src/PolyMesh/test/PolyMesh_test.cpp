@@ -76,12 +76,12 @@ static void poly_meshtest_case_N_cells(size_t (& bc)[3], int N)
 
     Box<3,double> simBox({0,0,0},{1.0,1.0,1.0});
 
-    Ghost<3,double> g(0.95);
+    Ghost<3,double> g(0.99);
 
-    PolyMesh<3,double,aggregate<double,double,double,double,double>, // Physical quantities for Cells
-                      aggregate<double,double,double,double>,        // Physical quantities for surface
-                      aggregate<>,                                   // Physical quantities for edges
-                      aggregate<> >                                  // Physical quantities for vertices
+    PolyMesh<3,double,aggregate<double>, // Physical quantities for Cells
+                      aggregate<double>,        // Physical quantities for surface
+                      aggregate<double>,                                   // Physical quantities for edges
+                      aggregate<double> >                                  // Physical quantities for vertices
     voroModel(simBox,bc,g);
 
     for (int i = 0 ; i < N ; i++)
@@ -94,6 +94,9 @@ static void poly_meshtest_case_N_cells(size_t (& bc)[3], int N)
     voroModel.ghost_get_volumes<>();
 
     voroModel.createVoronoi();
+
+    voroModel.write("bbbbbbb");
+    voroModel.getVolumesDist().write("bbbbbbb_vols");
 
     bool check = voroModel.check_consistent();
     BOOST_REQUIRE_EQUAL(check,true);
@@ -156,10 +159,22 @@ BOOST_AUTO_TEST_CASE( polymesh_test_case_2 )
 
 }
 
+BOOST_AUTO_TEST_CASE( polymesh_test_case_10 )
+{
+    size_t bc[3] = {PERIODIC,NON_PERIODIC,NON_PERIODIC};
+//    poly_meshtest_case_N_cells(bc,100);
+
+    bc[0] = PERIODIC;
+    bc[1] = PERIODIC;
+    bc[2] = PERIODIC;
+
+    poly_meshtest_case_N_cells(bc,10);
+}
+
 BOOST_AUTO_TEST_CASE( polymesh_test_case_100 )
 {
     size_t bc[3] = {PERIODIC,NON_PERIODIC,NON_PERIODIC};
-    poly_meshtest_case_N_cells(bc,100);
+//    poly_meshtest_case_N_cells(bc,100);
 
     bc[0] = PERIODIC;
     bc[1] = PERIODIC;
@@ -247,7 +262,7 @@ BOOST_AUTO_TEST_CASE( polymesh_test_grad_volume )
 }
 
 template<typename points_type, unsigned int N>
-void test_grad(points_type & points, int (& num)[N])
+void test_grad_center(points_type & points, int (& num)[N])
 {
     size_t bc[3];
 
@@ -335,6 +350,106 @@ void test_grad(points_type & points, int (& num)[N])
             voroModel.ghost_get_volumes<>();
             voroModel.createVoronoi();
         }
+
+        // NN change dVolume
+
+
+    }
+}
+
+template<typename points_type, unsigned int N>
+void test_grad_nn(points_type & points, int (& num)[N])
+{
+    size_t bc[3];
+
+    bc[0] = PERIODIC;
+    bc[1] = PERIODIC;
+    bc[2] = PERIODIC;
+
+    constexpr int x = 0;
+    constexpr int y = 1;
+    constexpr int z = 2;
+
+    Box<3,double> SimBox;
+
+    constexpr int Volume = 0;
+    constexpr int CellMinVolume = 1;
+    constexpr int Pressure = 2;
+    constexpr int OsmoticPressure = 3;
+    constexpr int NumberOfIons = 4;
+
+    constexpr int Area = 1;
+    constexpr int SurfaceTension = 0;
+    constexpr int SurfaceWaterPermeability = 2;
+    constexpr int Flux = 3;
+
+    Box<3,double> simBox({0,0,0},{1.0,1.0,1.0});
+
+    Ghost<3,double> g(0.95);
+
+    PolyMesh<3,double,aggregate<double,double,double,double,double>, // Physical quantities for Cells
+                      aggregate<double,double,double,double>,        // Physical quantities for surface
+                      aggregate<>,                                   // Physical quantities for edges
+                      aggregate<> >                                  // Physical quantities for vertices
+    voroModel(simBox,bc,g);
+
+    for (int i = 0 ; i < points.size() ; i++)
+    {
+        voroModel.addVolume(points.get(i));
+    }
+
+    voroModel.ghost_get_volumes<>();
+
+    voroModel.createVoronoi();
+
+    bool check = voroModel.check_consistent();
+    BOOST_REQUIRE_EQUAL(check,true);
+
+    // First we take 2 cells we create voronoi
+
+    // we move cell 0 by dx 1e-6 ... 0.5e-7 ... 0.25e-7 ... 0.125e-7
+    //                   dy 1e-6 ... 0.5e-7 ... 0.25e-7 ... 0.125e-7
+    //                   dz 1e-6 ... 0.5e-7 ... 0.25e-7 ... 0.125e-7
+
+    openfpm::vector<aggregate<double[4][3]>> Gv;
+    openfpm::vector<aggregate<double[4][3]>> Gb;
+
+    bool Mask[4][3];
+
+    for (int j = 0 ; j < N; j++)
+    {
+        int i = num[j];
+        grad_voronoi_cell(voroModel,i,Gv);
+        grad_barycenter(voroModel,i,Gv,Gb);
+        Point<3,double> deriv = derivate_V_cell(voroModel,i,i,Gv,Gb,Mask);
+
+        std::cout << deriv.toString() << std::endl;
+
+        for (int c = 0 ; c < 3 ; c++)
+        {
+            // Check convergence (Point i) Derivative X
+            double Volume_now = voroModel.getVolume(i);
+
+            voroModel.getVolumePos(i)[c] = voroModel.getVolumePos(i)[c] + 1e-6;
+
+            voroModel.ghost_get_volumes<>();
+            voroModel.createVoronoi();
+
+            double Volume_after = voroModel.getVolume(i);
+
+            double Derivative = (Volume_after - Volume_now) / 1.e-6;
+
+            BOOST_REQUIRE_CLOSE(Derivative,deriv[c],0.01);
+
+            voroModel.getVolumePos(i)[c] = voroModel.getVolumePos(i)[c] - 1e-6;
+
+            voroModel.ghost_get_volumes<>();
+            voroModel.createVoronoi();
+        }
+
+        // NN change dVolume
+
+
     }
 }
 
@@ -348,7 +463,7 @@ BOOST_AUTO_TEST_CASE( polymesh_test_grad_volume_3_point )
     points.add({0.90,0.9,0.1});
     points.add({0.5,0.5,0.3});
 
-    test_grad(points,num);
+    test_grad_center(points,num);
 }
 
 BOOST_AUTO_TEST_CASE( polymesh_test_grad_volume_100_point )
@@ -364,7 +479,7 @@ BOOST_AUTO_TEST_CASE( polymesh_test_grad_volume_100_point )
         points.add(p);
     }
 
-    test_grad(points,num);
+    test_grad_center(points,num);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
