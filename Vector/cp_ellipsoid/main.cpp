@@ -10,29 +10,23 @@
 #include "Operators/Vector/vector_dist_operators.hpp"
 #include <chrono>
 
-const double dp = 1.0/32.0;
+const double dp = 1.0/64.0;
 const double A = 0.75;//0.5;
 const double B = 0.5;//1.0/3.0;
 const double C = 0.5;
-const double band_width = 6.0*dp;
+const double band_width = 12.0*dp;
 
 const int sdf = 0;
 const int sdfgrad = 1;
 const int curvature = 2;
-const int surf_flag = 3;
-const int num_neibs = 4;
-const int min_sdf = 5;
-const int min_sdf_x = 6;
-const int interpol_coeff = 7;
-const int sdf_analytical = 8;
-const int norm_analytical = 9;
-const int curv_analytical = 10;
-const int cp_err = 11;
-const int norm_err = 12;
+const int cp = 3;
+const int surf_flag = 4;
+const int sdf_analytical = 5;
+const int cp_theoretical = 6;
 
-typedef vector_dist<3, double, aggregate<double, double[3], double, int, int, double, double[3], double[35], double, double[3], double, double, double>> particles;
-//					|		|	 	 |         |    |		 |		|	|						|
-//				     sdf  sdfgrad curvature surf_flag num_neibs min sdf in support	min sdf location poly coefficients analytical sdf
+typedef vector_dist<3, double, aggregate<double, double[3], double, double[3], int, double, double[3]>> particles;
+//					 |	 |	    |		|       |	|	|
+//				     sdf  sdfgrad  curvature 		cp surf_flag theoretical sdf	theoretical cp
 
 //typedef vector_dist<2, double, aggregate<vect_dist_key_dx>> particles_surface;
 
@@ -260,6 +254,10 @@ template <typename CellList> inline void update_sdfs(particles & vd, CellList & 
 		double zcp_analytical;
 		vd.getProp<sdf_analytical>(a) = return_sign(vd.getProp<sdf>(a))*DistancePointEllipsoid(A, B, C, abs(x), abs(y), abs(z), xcp_analytical, ycp_analytical, zcp_analytical);
 
+		vd.template getProp<cp_theoretical>(a)[0] = return_sign(x)*xcp_analytical;
+		vd.template getProp<cp_theoretical>(a)[1] = return_sign(y)*ycp_analytical;
+		vd.template getProp<cp_theoretical>(a)[2] = return_sign(z)*zcp_analytical;
+
 		++part;
 	}
 }
@@ -285,11 +283,33 @@ inline void get_max_error(particles & vd)
 		//errnorm = abs(nxa[0]);
 		//if (abs(nxa[1]) > errnorm) errnorm = abs(nxa[1]);
 		//if (abs(nxa[2]) > errnorm) errnorm = abs(nxa[2]);
+		double xcp_analytical = vd.getProp<cp_theoretical>(a)[0];
+		double ycp_analytical = vd.getProp<cp_theoretical>(a)[1];
+		double zcp_analytical = vd.getProp<cp_theoretical>(a)[2];
+		Point<3, double> norm_analytical;
+		Point<3, double> norm_computed;
+		for (int k = 0; k < 3; k++) norm_computed[k] = vd.getProp<sdfgrad>(a)[k];
+		Point<3, double> cp_computed;
+		Point<3, double> cp_theo;
+		for (int k = 0; k < 3; k++)
+		{
+			cp_computed[k] = vd.getProp<cp>(a)[k];
+			cp_theo[k] = vd.getProp<cp_theoretical>(a)[k];
+		}
+
+		norm_analytical[0] = 2*xcp_analytical/(A*A);
+		norm_analytical[1] = 2*ycp_analytical/(B*B);
+		norm_analytical[2] = 2*zcp_analytical/(C*C);
+		double norm_norm_analytical = norm(norm_analytical);
+		for(int k = 0; k < 3; k++) norm_analytical[k] = return_sign(vd.getProp<sdf>(a))*norm_analytical[k]/norm_norm_analytical;
+		//std::cout<<norm(norm_analytical)<<std::endl;
+		errnorm = norm(norm_analytical - norm_computed);
 
 		err = abs(vd.getProp<sdf>(a) - vd.getProp<sdf_analytical>(a));
-		//errkappa = abs(vd.getProp<curvature>(a) - vd.getProp<curv_analytical>(a));
-		//errcp = abs(vd.getProp<cp_err>(a));
+		errcp = norm(cp_computed - cp_theo);
 
+		double kappa = (std::abs(xcp_analytical*xcp_analytical + ycp_analytical*ycp_analytical + zcp_analytical*zcp_analytical - A*A - B*B - C*C))/(2*A*A*B*B*C*C*std::pow(xcp_analytical*xcp_analytical/std::pow(A, 4) + ycp_analytical*ycp_analytical/std::pow(B, 4) + zcp_analytical*zcp_analytical/std::pow(C, 4), 1.5));
+		errkappa = abs(vd.getProp<curvature>(a) - kappa);
 		if (err > maxerr) maxerr = err;
 		if (errkappa > maxerrkappa) maxerrkappa = errkappa;
 		if (errnorm > maxerrnorm) maxerrnorm = errnorm;
@@ -319,11 +339,11 @@ int main(int argc, char* argv[])
 	particles vd(0, domain, bc, g, DEC_GRAN(512));
 	//particles_surface vd_s(vd.getDecomposition(), 0);
 
-	openfpm::vector<std::string> names({"sdf", "sdfgradient", "curvature", "surface_flag", "number_neibs", "min_sdf_neibors", "min_sdf_location", "interpol_coeff", "sdf_analytical", "norm_analytical", "curv_analytical", "cp_err", "norm_err"});
+	openfpm::vector<std::string> names({"sdf", "sdfgradient", "curvature", "cp", "surface_flag", "sdf_theoretical", "cp_theoretical"});
 	vd.setPropNames(names);
 	Box<3, double> particle_box({-l/2.0, -l/3.0, -l/3.0}, {l/2.0, l/3.0, l/3.0});
 
-
+    int count = 0;
 	auto particle_it = DrawParticles::DrawBox(vd, sz, domain, particle_box);
 
 	while (particle_it.isNext())
@@ -347,12 +367,15 @@ int main(int argc, char* argv[])
 			vd.getLastPos()[2] = z;
 			vd.template getLastProp<sdf>() = 1 - sqrt((x/A)*(x/A) + (y/B)*(y/B) + (z/C)*(z/C));
 			vd.template getLastProp<sdf_analytical>() = return_sign(1 - sqrt((x/A)*(x/A) + (y/B)*(y/B) + (z/C)*(z/C)))*dist;
+			vd.template getLastProp<cp_theoretical>()[0] = return_sign(x)*xcp_analytical;
+			vd.template getLastProp<cp_theoretical>()[1] = return_sign(y)*ycp_analytical;
+			vd.template getLastProp<cp_theoretical>()[2] = return_sign(z)*zcp_analytical;
 			vd.template getLastProp<surf_flag>() = 0;
-			vd.template getLastProp<num_neibs>() = 1;
+			count++;
 		}
 		++particle_it;
 	}
-
+    std::cout<<"Total number of particles created: "<<count<<std::endl;
 	vd.map();
 
 	///
@@ -383,24 +406,30 @@ int main(int argc, char* argv[])
 		//rdistoptions.barrier_coefficient = 0.0;
 		//rdistoptions.armijo_tau = 0.9;
 		//rdistoptions.armijo_c = 0.9;
-		rdistoptions.tolerance = 1e-15;//dp*dp*dp*dp*dp;
+		rdistoptions.tolerance = 1e-13;//dp*dp*dp*dp*dp;
 		//rdistoptions.support_prevent = 0.9;
 		//rdistoptions.init_project = 1;
+		rdistoptions.write_cp = 1;
 		rdistoptions.compute_normals = 1;
 		rdistoptions.compute_curvatures = 1;
+		rdistoptions.minter_poly_degree = 4;
+		rdistoptions.minter_lp_degree = 1.0;
+        	static constexpr unsigned int num_coeffs = minter_lp_degree_one_num_coeffs(3,4);
+	        std::cout<<"number of coefficients determined as "<<num_coeffs<<std::endl;
 		//typedef vector_dist_ws<2, double, particles> particles_in_type;
-		particle_cp_redistancing<particles, taylor4> pcprdist(vd, rdistoptions);
+		particle_cp_redistancing<particles, taylor4, num_coeffs> pcprdist(vd, rdistoptions);
 
 		std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
+		std::cout<<"starting redistancing"<<std::endl;
 		pcprdist.run_redistancing();
 
 		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-		std::cout << "Time difference for pcp redistancing = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
+		std::cout << "Time difference for pcp redistancing = " << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() << "[s]" << std::endl;
 
 		vd.ghost_get<sdf,sdf_analytical>();
 		get_max_error(vd);
-		vd.write("after_redistancing_after_cleanup");
+		vd.write("after_redistancing_after_cleanup_minterdebug");
 
 
 //		particle_cp_redistancing pcprdist2(vd, rdistoptions);
