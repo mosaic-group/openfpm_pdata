@@ -27,7 +27,6 @@ class PolyMesh
     typedef typename AggregateAppend<int,TypeSurface_p>::type TypeSurface_pp;
     typedef typename AggregateAppend<int,TypeSurface_pp>::type TypeSurface_ppp;
     typedef typename AggregateAppend<int,TypeSurface_ppp>::type TypeSurface_pppp;
-    typedef typename AggregateAppend<int[2],TypeSurface_pppp>::type TypeSurface_ppppp;
 
     // Transform edges
     typedef typename AggregateAppend<int,TypeEdge>::type TypeEdge_p;
@@ -58,6 +57,7 @@ class PolyMesh
     //      (StartPos in surfaces contain the position in the edge connectivity of the surface)
     openfpm::vector<aggregate<int,T[3],int>> volume_surfaces_connectivity;
     openfpm::vector<aggregate<int,T[3],int>> surface_edges_connectivity;
+    openfpm::vector<aggregate<int[2]>> surface_volume_connectivity;
     openfpm::vector<aggregate<int,T[3],int>> edge_vertices_connectivity;
 
 
@@ -70,7 +70,7 @@ class PolyMesh
     vector_dist<dim,T,TypeVolume_ppppp> Volumes;
 
     //! List of cells surfaces
-    vector_dist<dim,T,TypeSurface_ppppp> Surfaces;
+    vector_dist<dim,T,TypeSurface_pppp> Surfaces;
 
     //! List of edges
     vector_dist<dim,T,TypeEdge_pppp> Edges;
@@ -173,6 +173,8 @@ class PolyMesh
                     {
                         auto q = it_nn.get();
 
+                        if (p == q) {++it_nn; continue;}
+
                         Point<dim,T> xq = Volumes.getPos(q);
 
                         if (fabs(radius - xq.distance(xv)) < same_element_tollerance)
@@ -253,7 +255,9 @@ class PolyMesh
     template<unsigned int prp, unsigned int GID, typename Ele_type, typename cl_type>
     void unify_elements(Ele_type & Elements, cl_type & cl_e,
                         typename std::remove_reference<decltype(Elements.getPosVector())>::type & positions_unique,
-                        typename std::remove_reference<decltype(Elements.getPropVector())>::type & properties_unique)
+                        typename std::remove_reference<decltype(Elements.getPropVector())>::type & properties_unique,
+                        openfpm::vector<aggregate<int[2]>> & con,
+                        openfpm::vector<aggregate<int[2]>> & con_unique)
     {
         auto it = Elements.getDomainAndGhostIterator();
 
@@ -323,10 +327,17 @@ class PolyMesh
             {
                 positions_unique.add();
                 properties_unique.add();
+
+                if (con.size() != 0)
+                {con_unique.add();}
+
                 int last = positions_unique.size()-1;
 
                 positions_unique.get(last) = Elements.getPosVector().get(p);
                 properties_unique.get(last) = Elements.getPropVector().get(p);
+
+                if (con.size() != 0)
+                {con_unique.get(last) = con.get(p);}
 
                 Elements.template getProp<prp>(p) = last;
             }
@@ -539,6 +550,18 @@ public:
         }
     }
 
+    /*! \brief Get the number of surfaces for the volume v
+     *
+     * \param volume v
+     * 
+     * \return the number of surfaces for volume v
+     * 
+     */
+    unsigned int getNumOfSurfaces(int v)
+    {
+        return Volumes.template getProp<VolumeNumberOfSurfaces>(v);
+    }
+
     /*! \brief Number of local Volumes
      *
      * \return the number of volumes
@@ -573,6 +596,10 @@ public:
         unsigned int i,j;
         int id,nx,ny,nz;
         double x,y,z;
+
+        // Create global IDs
+        CreateGlobalIds<VolumeGID>(Volumes);
+        Volumes.template ghost_get<VolumeGID>();
 
         // Create the Voronoi with Voro++ or Quentin Code
 
@@ -632,14 +659,6 @@ public:
         edge_vertices_connectivity.clear();
         surface_edges_connectivity.clear();
 
-        // Open the output files
-        // FILE *fp4=voro::safe_fopen("polygons4_v.pov","w"),
-        //      *fp5=voro::safe_fopen("polygons5_v.pov","w"),
-        //      *fp6=voro::safe_fopen("polygons6_v.pov","w");
-
-        // Loop over all particles in the container and compute each Voronoi
-        // cell
-
         voro::c_loop_all cl(con);
         if(cl.start())
         {
@@ -689,6 +708,11 @@ public:
                         int last_surf = Surfaces.size_local() - 1;
                         Surfaces.template getLastProp<SurfaceNumberOfEdges>() = n;
                         Surfaces.template getLastProp<EdgesStart>() = surface_edges_connectivity.size();
+
+                        surface_volume_connectivity.add();
+                        surface_volume_connectivity.last().template get<0>()[0] = Volumes.template getProp<VolumeGID>(neigh[i]);
+                        surface_volume_connectivity.last().template get<0>()[1] = id;
+                                                
 
                         Point<dim,T> center = {0.0,0.0,0.0};
                         Point<dim,T> first;
@@ -767,8 +791,6 @@ public:
             } while (cl.inc());
         }
 
-        // Create global IDs
-        CreateGlobalIds<VolumeGID>(Volumes);
         CreateGlobalIds<SurfaceGID>(Surfaces);
         CreateGlobalIds<EdgeGID>(Edges);
         CreateGlobalIds<VertexGID>(Vertices);
@@ -781,6 +803,7 @@ public:
 
         typename std::remove_reference<decltype(Surfaces.getPosVector())>::type positions_unique;
         typename std::remove_reference<decltype(Surfaces.getPropVector())>::type properties_surfaces_unique;
+        openfpm::vector<aggregate<int[2]>> con_unique;
 
 
         //////// SURFACE FIX ///////////////////////////////
@@ -791,13 +814,14 @@ public:
         Surfaces.template ghost_get<SurfaceGID>();
         auto cl_s = Surfaces.getCellList(r_cut);
 
-        unify_elements<SurfacesMarking,SurfaceGID>(Surfaces,cl_s,positions_unique,properties_surfaces_unique);
+        unify_elements<SurfacesMarking,SurfaceGID>(Surfaces,cl_s,positions_unique,properties_surfaces_unique,surface_volume_connectivity,con_unique);
 
         FixIndexes<VolumeNumberOfSurfaces,SurfacesStart,SurfacesMarking>(Volumes,Surfaces,volume_surfaces_connectivity);
 
         int sz = positions_unique.size();
         Surfaces.getPosVector().swap(positions_unique);
         Surfaces.getPropVector().swap(properties_surfaces_unique);
+        surface_volume_connectivity.swap(con_unique);
         Surfaces.resize(sz);
 
         // Now we relink surfaces
@@ -817,7 +841,10 @@ public:
         Edges.template ghost_get<EdgeGID>();
         auto cl_e = Edges.getCellList(r_cut);
 
-        unify_elements<EdgeMarking,EdgeGID>(Edges,cl_e,positions_unique,properties_edge_unique);
+        openfpm::vector<aggregate<int[2]>> conn;
+        openfpm::vector<aggregate<int[2]>> conn_unique;
+
+        unify_elements<EdgeMarking,EdgeGID>(Edges,cl_e,positions_unique,properties_edge_unique,conn,conn_unique);
 
         FixIndexes<SurfaceNumberOfEdges,EdgesStart,EdgeMarking>(Surfaces,Edges,surface_edges_connectivity);
 
@@ -840,7 +867,7 @@ public:
         Vertices.template ghost_get<VertexGID>();
         auto cl_v = Vertices.getCellList(r_cut);
 
-        unify_elements<VertexMarking,VertexGID>(Vertices,cl_v,positions_unique,properties_vertices_unique);
+        unify_elements<VertexMarking,VertexGID>(Vertices,cl_v,positions_unique,properties_vertices_unique,conn,conn_unique);
 
         FixIndexes<EdgeNumberOfVertices,VerticesStart,VertexMarking>(Edges,Vertices,edge_vertices_connectivity);
 
@@ -991,6 +1018,18 @@ public:
         return Volumes.template getProp<VolumeGID>(i);
     }
 
+    /*! \brief Return the volume global-id
+     *
+     * \param i volume element
+     * 
+     * \return the volume GID
+     * 
+     */
+    auto getVertexGID(size_t i) -> decltype(Vertices.template getProp<VertexGID>(0))
+    {
+        return Vertices.template getProp<VertexGID>(i);
+    }
+
     /*! \brief Return the Vertex index of an edge
      *
      * \param e edge
@@ -1077,6 +1116,27 @@ public:
     openfpm::vector<aggregate<int,T[3],int>> & getEdgesVerticesConn()
     {
         return edge_vertices_connectivity;
+    }
+
+    /* \brief Return the volume neighborhood of v with face v
+     *
+     * \brief f face f
+     * \brief v Volume index
+     * 
+     * \return the neighborhood volume
+     * 
+     */
+    int getFaceNNVolume(int f, int v)
+    {
+        if (surface_volume_connectivity.template get<0>(f)[0] == v)
+        {return surface_volume_connectivity.template get<0>(f)[1];}
+
+        #ifdef SE_CLASS1
+        if (surface_volume_connectivity.template get<0>(f)[1] != v)
+        {std::cerr << __FILE__ << ":" << __LINE__ << " Error face " << f << " is not neighborhood of volume " << v << std::endl;}
+        #endif
+
+        return surface_volume_connectivity.template get<0>(f)[0];
     }
 
     /*! \brief Return the

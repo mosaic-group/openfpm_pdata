@@ -413,6 +413,7 @@ void test_grad_nn(points_type & points, int (& num)[N])
 
     openfpm::vector<aggregate<double[4][3]>> Gv;
     openfpm::vector<aggregate<double[4][3]>> Gb;
+    openfpm::vector<aggregate<double[4][3]>> Gv2;
 
     bool Mask[4][3];
 
@@ -423,9 +424,19 @@ void test_grad_nn(points_type & points, int (& num)[N])
         grad_barycenter(voroModel,i,Gv,Gb);
         Point<3,double> deriv = derivate_V_cell(voroModel,i,i,Gv,Gb,Mask);
 
-        std::cout << deriv.toString() << std::endl;
+        // get neighborhood cells
 
-        for (int c = 0 ; c < 3 ; c++)
+        voroModel.ForAllVolumeSurfaces(i,[&](int f_ind, int conn){
+
+//            voroModel.get
+            int k = voroModel.getFaceNNVolume(f_ind,i);
+            grad_vor_bar_neighbour(voroModel,i,k,Gv,Gb,Gv2);
+            Point<3,double> dV=derivate_V_cell(voroModel, k, i,Gv2,Gb, Mask);
+
+            std::cout << "Grad: " << dV.toString() << std::endl;
+        });
+
+/*        for (int c = 0 ; c < 3 ; c++)
         {
             // Check convergence (Point i) Derivative X
             double Volume_now = voroModel.getVolume(i);
@@ -449,7 +460,7 @@ void test_grad_nn(points_type & points, int (& num)[N])
 
         // NN change dVolume
 
-
+        grad_vor_bar_neighbour(voroModel,0,1,Gv,Gv2,Gb);*/
     }
 }
 
@@ -464,6 +475,7 @@ BOOST_AUTO_TEST_CASE( polymesh_test_grad_volume_3_point )
     points.add({0.5,0.5,0.3});
 
     test_grad_center(points,num);
+    test_grad_nn(points,num);
 }
 
 BOOST_AUTO_TEST_CASE( polymesh_test_grad_volume_100_point )
@@ -480,6 +492,7 @@ BOOST_AUTO_TEST_CASE( polymesh_test_grad_volume_100_point )
     }
 
     test_grad_center(points,num);
+    test_grad_nn(points,num);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

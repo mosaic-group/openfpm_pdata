@@ -832,10 +832,9 @@ void grad_barycenter(PolyMesh_type & poly, int c, Gv_type & Gv, Gb_type & Gb)
 }
 
 template<typename PolyMesh_type, typename T>
-void grad_vor_bar_neighbour(PolyMesh_type & poly, int c1, int c2, openfpm::vector<aggregate<T[3][3]>> & Gv2,
-                                                                  openfpm::vector<aggregate<T[3][3]>> & Gb2,
-                                                                  openfpm::vector<aggregate<T[3][3]>> & Gb,
-                                                                  openfpm::vector<aggregate<T[3][3]>> & Gv)
+void grad_vor_bar_neighbour(PolyMesh_type & poly, int c1, int c2, openfpm::vector<aggregate<T[4][3]>> & Gb,
+                                                                  openfpm::vector<aggregate<T[4][3]>> & Gv,
+                                                                  openfpm::vector<aggregate<T[4][3]>> & Gv2)
 {
     //Inputs: - s the simu_box
     //        - c1 the cell center with respect to which we derivate
@@ -846,6 +845,8 @@ void grad_vor_bar_neighbour(PolyMesh_type & poly, int c1, int c2, openfpm::vecto
     //
     // Cells c1 and c2 are assumed to be neighbours. The function computes the derivatives (of the vertices and barycenters) of cell c2 with respect to a movement of cell c1. It does this purely by a copy-paste of the information contained in Gv1,Gb1. The only task is to identify wich vertices of c2 correspond to which items in Gv1, and same for Gb.
     
+    auto & Surfaces = poly.getSurfaces();
+
     constexpr int DelTetStart = PolyMesh_type::DelTetStart;
     constexpr int DelTetNumber = PolyMesh_type::VolumeNumberOfDelTet;
     constexpr int DelTelVertId = PolyMesh_type::DelTelVertId;
@@ -870,40 +871,11 @@ void grad_vor_bar_neighbour(PolyMesh_type & poly, int c1, int c2, openfpm::vecto
         }
     }
 
-    Gb2.resize() = poly.getNumOfSurfaces(c2);
-
     int f = 0;
-
-    poly.ForAllVolumeSurfaces(c2,[&](int f_int){
-
-        for(int r = 0; r < 3 ; r++)
-        {
-            for(int c = 0; c < 3; c++)
-            {
-                Gb2.template get<0>(f)[r][c] = 0;
-                f++;
-            }
-        }
-    });
-
-    poly.ForAllVolumeSurfaces(c1,[&](int fi)
+    poly.ForAllVolumeSurfaces(c1,[&](int fi, int cfi)
     {
-        //is this face in contact with cell c2? And which index in F[].c?
-        int c_con=-1;
-        if(poly.getNNSurfce(fi,0) == c2) {c_con=0;}
-        else if(poly.getNNSurfce(fi,1) == c2){c_con=1;}
-        if(c_con != -1)//contact detected
-        {
-            //copy-paste Gb in Gb2, we already know which index in Gb2 thanks to the voronoi structure
-            int f2=poly.getSurfaceToVolume(fi)[c_con];
-            for(int i = 0 ; i < 3 ; i++)
-            {
-                for(int j = 0 ; j < 3 ; j++)
-                {
-                    Gb2.template get<0>(f2)[i][j] = Gb.template get<0>(f)[i][j];
-                }
-            }
-        }
+        Surfaces.template getProp<PolyMesh_type::SurfacesMarking>(fi) = f;
+        ++f;
     });
 
     //Now we do the vertices, looping on c1 tetrahedra
@@ -915,21 +887,23 @@ void grad_vor_bar_neighbour(PolyMesh_type & poly, int c1, int c2, openfpm::vecto
         //look for a vertex connected to cell c2
         for(int v = 0 ; v < 4 ; v++)
         {
-            if(DelTet.template getProp<DelTelIndices>(ti)[v] == c2)
+            std::cout << poly.getVolumeGID(DelTet.template getProp<DelTelIndices>(t + start)[v]) << "   " << c2 << std::endl;
+
+            if(poly.getVolumeGID(DelTet.template getProp<DelTelIndices>(t + start)[v]) == c2)
             {
                 int start2 = poly.template getVolumeProp<DelTetNumber>(c2);
                 //look in the tetrahedra of cell c2 for which is ti
                 for (int t2 = 0 ; t2 < poly.template getVolumeProp<DelTetNumber>(c2) ; t2++)
                 {
                     ti2 = DelTet.template getProp<DelTelVertId>(t2 + start2);
-                    if(ti2 == ti)
+                    if(poly.getVertexGID(ti2) == poly.getVertexGID(ti))
                     {
                         //copy-paste the Gv in Gv2
                         for(int i = 0 ; i < 3 ; i++)
                         {
                             for(int j = 0 ; j < 3 ; j++ )
                             {
-                                Gv2.template get<0>(t2)[i][j] = Gv.template get(t)[i][j];
+                                Gv2.template get<0>(t2)[i][j] = Gv.template get<0>(t)[i][j];
                             }
                         }
                         //break the loop
