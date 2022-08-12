@@ -35,8 +35,10 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_gpu_test )
 
 	// Distributed grid with id decomposition
     grid_dist_id_gpu<3, float, aggregate<float, float>> g_dist(sz,domain,g,pr);
-    
-	Box<3,size_t> box({1,1,1},{30,30,30});
+   
+	void * ptr = (double*)g_dist.get_loc_grid(0).toKernel().getPointer<0>();*/
+
+/*	Box<3,size_t> box({1,1,1},{30,30,30});
     auto it = g_dist.getGridIterator(box.getKP1(),box.getKP2());
 
     float c = 5.0;
