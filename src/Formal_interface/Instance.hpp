@@ -24,7 +24,7 @@ protected:
     }
 
     template<int dimension>
-    auto property() {
+    auto property() -> decltype(particleData.getOpenFPMContainer().template getLastProp<dimension>()) {
         return particleData.getOpenFPMContainer().template getLastProp<dimension>();
     }
 
