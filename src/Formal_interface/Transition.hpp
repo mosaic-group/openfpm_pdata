@@ -82,6 +82,8 @@ public:
             instance.freePlacement();
         }
 
+        particleData.getOpenFPMContainer().template map();
+
         // place particles
         // random or on a mesh
         initialConditionImplementation.initialization(particleData);
@@ -128,8 +130,11 @@ public:
 
         // write particle data to file
         if (simulationParameters.writeOutput) {
-            particleData.getDataContainer().deleteGhost();
-            particleData.getDataContainer().write_frame("particles", iteration);
+//            if (iteration % 100 == 0)
+//            {
+                particleData.getDataContainer().deleteGhost();
+                particleData.getDataContainer().write_frame("particles", iteration);
+//            }
         }
 
         iteration++;

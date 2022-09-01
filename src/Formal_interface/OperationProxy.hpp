@@ -120,6 +120,18 @@ public:
     }
 
 
+
+    // Comparison operators
+
+    bool operator== (const T rhs) {
+        return data == rhs;
+    }
+
+    operator T() {
+        return data;
+    }
+
+
     std::string toString() const {
         std::string output = "{ ";
         output.append(std::to_string(data));
@@ -424,6 +436,23 @@ Point<n1, T> operator/ (Point<n1, T> lhs, OperationProxy<T[n1]> rhs) {
         lhs[i] /= rhs[i];
     }
     return lhs;
+}
+
+/*
+template <typename T, unsigned int n1>
+Point<n1, T> operator+= (Point<n1, T> lhs, OperationProxy<T[n1]> rhs) {
+    for (int i = 0; i < n1; ++i) {
+        lhs[i] /= rhs[i];
+    }
+    return lhs;
+}
+*/
+
+// Operator overloads for primitive types
+
+template <unsigned int n1>
+Point<n1, float> operator* (float lhs, OperationProxy<float[n1]> rhs) {
+    return rhs * lhs;
 }
 
 

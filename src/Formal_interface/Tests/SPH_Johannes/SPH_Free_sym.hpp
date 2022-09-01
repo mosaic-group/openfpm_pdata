@@ -47,7 +47,8 @@ struct GlobalVariable {
     float dt=0.00005;
     float endT=20;
 
-    float particleSpacing=1.0/64.0;
+    float particleSpacing=1.0/8.0;
+//    float particleSpacing=1.0/64.0;
     float particleSpacingWater=particleSpacing;
     float mass=pow(particleSpacing,3)*1000;
     Point<DIMENSION, POSITIONTYPE> gravity{0.0,0.0,-9.81};
@@ -79,20 +80,28 @@ class SPH_ParticleMethod : public ParticleMethod<ParticleSignature> {
     using PositionType = typename ParticleSignature::position;
 
 
-    float pressure_density2(float& density){
+    float pressure_density2(float density){
         return g.c0*g.c0*g.density0/g.gamma * (pow(density/g.density0, g.gamma)-1)/density/density;
     }
 public:
 
 
     void interact(Particle<ParticleSignature> particle, Particle<ParticleSignature> neighbor) override {
-        Point<dimension, PositionType> r_pq = neighbor.position()-particle.position();
+
+        Point<dimension, PositionType> n_pos = neighbor.position();
+        Point<dimension, PositionType> p_pos = particle.position();
+        Point<dimension, PositionType> r_pq = n_pos - p_pos;
         Point<dimension, PositionType> v_pq =  neighbor.template property_vec<velocity>()
                                                -particle.template property_vec<velocity>();
-        float dist2_pq = r_pq.abs2();
+//        float dist2_pq = r_pq.abs2();
+        float dist2_pq = p_pos.distance2(n_pos);
         float dist_pq = sqrt(dist2_pq);
+
         float f_pq=  pow(1.0-dist_pq/2.0/g.h , 3);
-        float vr=v_pq*r_pq;
+        float vr = 0;
+        for (int i = 0; i < DIMENSION; i++)
+            vr += v_pq[i] * r_pq[i];
+//        float vr=v_pq*r_pq;
 
         float p_pressure_density2=pressure_density2(particle.template property_vec<density>());
         float q_pressure_density2=pressure_density2(neighbor.template property_vec<density>());
@@ -106,30 +115,60 @@ public:
 
         particle.template property_vec<deltaDensity>() += densityChange;
         neighbor.template property_vec<deltaDensity>() += densityChange;
+
+
     }
 
     void evolve(Particle<ParticleSignature> particle) override {
         float prefact = g.mass* -5.0*21.0/16.0/M_PI/pow(g.h,5);
-        Point<dimension, PositionType> acceleration = g.gravity+particle.template property_vec<deltaVelocity>()*prefact;
+
+        Point<dimension, PositionType> acceleration = g.gravity + particle.template property_vec<deltaVelocity>()*prefact;
 
         float densityacceleration = particle.template property_vec<deltaDensity>()*prefact;
 
         if (g.phase==0){
             if (particle.template property_vec<boundary>()==false){
-                particle.template property_vec<positionOld>()=particle.position();
-                particle.position()+= g.dt/2.0*particle.template property_vec<velocity>();
+                // fluid
 
+                // move particles half step
+                particle.template property_vec<positionOld>()=particle.position_vec();
+                particle.position_vec() += g.dt/2.0f*particle.template property_vec<velocity>();
+
+                // change velocity half step
                 particle.template property_vec<velocityOld>()=particle.template property_vec<velocity>();
                 particle.template property_vec<velocity>()+= g.dt/2.0*acceleration;
             }
+
+            // fluid + boundary
+
+            // change density
             particle.template property_vec<densityOld>()=particle.template property_vec<density>();
             particle.template property_vec<density>()+=g.dt/2.0*densityacceleration;
         }
         else{
             if (particle.template property_vec<boundary>()==false){
-                particle.position() = particle.template property_vec<positionOld>() +g.dt*(particle.template property_vec<velocityOld>()+g.dt/2.0*acceleration);
-                particle.template property_vec<velocity>() = particle.template property_vec<velocityOld>() +g.dt*acceleration;
+                // fluid
+
+                // move particle from original position
+                Point<dimension, PositionType> step_acc_half = g.dt  / 2.0 * acceleration;
+                Point<dimension, PositionType> step_vel = g.dt * (particle.template property_vec<velocityOld>() + step_acc_half);
+                Point<dimension, PositionType> new_pos = particle.template property_vec<positionOld>() + step_vel;
+                particle.position_vec() = new_pos;
+
+                // change velocity
+                Point<dimension, PositionType> step_acc_full = g.dt * acceleration;
+                particle.template property_vec<velocity>() = particle.template property_vec<velocityOld>() + step_acc_full;
+
+
+//                particle.position_vec() = particle.template property_vec<positionOld>() + g.dt * (particle.template property_vec<velocityOld>()  +  (g.dt  / 2.0) * acceleration);
+//                particle.template property_vec<velocity>() = particle.template property_vec<velocityOld>() +g.dt*acceleration;
+
+
             }
+
+            // fluid + boundary
+
+            // change density
             particle.template property_vec<density>()= particle.template property_vec<densityOld>() + g.dt*densityacceleration;
         }
 
@@ -140,8 +179,14 @@ public:
 
     void evolveGlobalVariable() override {
 
-        // advance time
-        g.t += g.dt;
+        if (g.phase==0){
+            g.phase=1;
+        }
+        else{
+            g.t+=g.dt;//advance the current time by the time step
+            g.phase=0;
+        }
+
         std::cout << "\r" << int(g.t / g.endT * 100) << "%" << std::flush;
 
     }
@@ -173,7 +218,7 @@ public:
     }
 
     // Mesh initial condition
-    typedef INITIALCONDITION_MESH initialCondition;
+//    typedef INITIALCONDITION_MESH initialCondition;
 
     // Neighborhood method
     typedef NEIGHBORHHOD_CELLLIST neighborhoodDetermination;
@@ -181,7 +226,7 @@ public:
     static const int interactionType = INTERACTION_SYMMETRIC;
 
     // Output
-    bool writeOutput = false;
+    bool writeOutput = true;
 
 //     void initialization(Particle<ParticleSignatureType> particle) override {
 
@@ -308,7 +353,7 @@ public:
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
-                    this->position()[1] = z;
+                    this->position()[2] = z;
                     this->property<boundary>() = true;
                     this->property<velocity>()[0] = 0.0;
                     this->property<velocity>()[1] = 0.0;
@@ -335,7 +380,7 @@ public:
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
-                    this->position()[1] = z;
+                    this->position()[2] = z;
                     this->property<boundary>() = true;
                     this->property<velocity>()[0] = 0.0;
                     this->property<velocity>()[1] = 0.0;
@@ -362,7 +407,7 @@ public:
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
-                    this->position()[1] = z;
+                    this->position()[2] = z;
                     this->property<boundary>() = true;
                     this->property<velocity>()[0] = 0.0;
                     this->property<velocity>()[1] = 0.0;
@@ -389,7 +434,7 @@ public:
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
-                    this->position()[1] = z;
+                    this->position()[2] = z;
                     this->property<boundary>() = true;
                     this->property<velocity>()[0] = 0.0;
                     this->property<velocity>()[1] = 0.0;
@@ -416,7 +461,7 @@ public:
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
-                    this->position()[1] = z;
+                    this->position()[2] = z;
                     this->property<boundary>() = true;
                     this->property<velocity>()[0] = 0.0;
                     this->property<velocity>()[1] = 0.0;
@@ -452,7 +497,7 @@ public:
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
-                    this->position()[1] = z;
+                    this->position()[2] = z;
                     this->property<boundary>() = true;
                     this->property<velocity>()[0] = 0.0;
                     this->property<velocity>()[1] = 0.0;
@@ -479,7 +524,7 @@ public:
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
-                    this->position()[1] = z;
+                    this->position()[2] = z;
                     this->property<boundary>() = true;
                     this->property<velocity>()[0] = 0.0;
                     this->property<velocity>()[1] = 0.0;
@@ -506,7 +551,7 @@ public:
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
-                    this->position()[1] = z;
+                    this->position()[2] = z;
                     this->property<boundary>() = true;
                     this->property<velocity>()[0] = 0.0;
                     this->property<velocity>()[1] = 0.0;
@@ -533,7 +578,7 @@ public:
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
-                    this->position()[1] = z;
+                    this->position()[2] = z;
                     this->property<boundary>() = true;
                     this->property<velocity>()[0] = 0.0;
                     this->property<velocity>()[1] = 0.0;
@@ -560,7 +605,7 @@ public:
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
-                    this->position()[1] = z;
+                    this->position()[2] = z;
                     this->property<boundary>() = true;
                     this->property<velocity>()[0] = 0.0;
                     this->property<velocity>()[1] = 0.0;
