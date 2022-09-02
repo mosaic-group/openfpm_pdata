@@ -450,8 +450,8 @@ Point<n1, T> operator+= (Point<n1, T> lhs, OperationProxy<T[n1]> rhs) {
 
 // Operator overloads for primitive types
 
-template <unsigned int n1>
-Point<n1, float> operator* (float lhs, OperationProxy<float[n1]> rhs) {
+template <unsigned int n1, typename T>
+Point<n1, T> operator* (T lhs, OperationProxy<T[n1]> rhs) {
     return rhs * lhs;
 }
 

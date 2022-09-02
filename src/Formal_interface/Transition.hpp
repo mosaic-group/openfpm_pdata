@@ -130,11 +130,11 @@ public:
 
         // write particle data to file
         if (simulationParameters.writeOutput) {
-//            if (iteration % 100 == 0)
-//            {
+            if (iteration % 100 == 0)
+            {
                 particleData.getDataContainer().deleteGhost();
                 particleData.getDataContainer().write_frame("particles", iteration);
-//            }
+            }
         }
 
         iteration++;

@@ -22,12 +22,12 @@
 
 
 constexpr int DIMENSION = 3;
-typedef float POSITIONTYPE;
+typedef double POSITIONTYPE;
 
 struct SPH_ParticleSignature {
     static constexpr int dimension = DIMENSION;
     typedef POSITIONTYPE position;
-    typedef aggregate<float[dimension], float[dimension], float[dimension], float, float, float[dimension],float, bool> properties;
+    typedef aggregate<double[dimension], double[dimension], double[dimension], double, double, double[dimension],double, bool> properties;
     typedef FREE_PARTICLES dataStructure;
 };
 
@@ -43,33 +43,33 @@ constexpr int boundary = 7;
 
 struct GlobalVariable {
 
-    float t=0;
-    float dt=0.00005;
-    float endT=20;
+    double t=0;
+    double dt=0.0002;
+    double endT=20;
 
-    float particleSpacing=1.0/8.0;
-//    float particleSpacing=1.0/64.0;
-    float particleSpacingWater=particleSpacing;
-    float mass=pow(particleSpacing,3)*1000;
+    double particleSpacing=1.0/16.0;
+//    double particleSpacing=1.0/64.0;
+    double particleSpacingWater=particleSpacing;
+    double mass=pow(particleSpacing,3)*1000;
     Point<DIMENSION, POSITIONTYPE> gravity{0.0,0.0,-9.81};
-    float c0=45.0;
-    float density0=1000;
+    double c0=45.0;
+    double density0=1000;
     int gamma=7;
-    float nu=1.0/10000.0;
-    float h=1.3*particleSpacing;//characteristic length
+    double nu=1.0/10000.0;
+    double h=1.3*particleSpacing;//characteristic length
 
-    float phase=0;
+    double phase=0;
     int support=2;
-    float rc=support*h;//cutof radius
-    float epsilon=0.01;
+    double rc=support*h;//cutof radius
+    double epsilon=0.01;
 
 
 
     // Point<DIMENSION, POSITIONTYPE> domain_min;
     // Point<DIMENSION, POSITIONTYPE> domain_max;
     // Point<DIMENSION, POSITIONTYPE> meshDim;
-    float domain_min = -1;
-    float domain_max = 4;
+    double domain_min = -1;
+    double domain_max = 4;
 
 } g;
 
@@ -80,7 +80,7 @@ class SPH_ParticleMethod : public ParticleMethod<ParticleSignature> {
     using PositionType = typename ParticleSignature::position;
 
 
-    float pressure_density2(float density){
+    double pressure_density2(double density){
         return g.c0*g.c0*g.density0/g.gamma * (pow(density/g.density0, g.gamma)-1)/density/density;
     }
 public:
@@ -93,38 +93,45 @@ public:
         Point<dimension, PositionType> r_pq = n_pos - p_pos;
         Point<dimension, PositionType> v_pq =  neighbor.template property_vec<velocity>()
                                                -particle.template property_vec<velocity>();
-//        float dist2_pq = r_pq.abs2();
-        float dist2_pq = p_pos.distance2(n_pos);
-        float dist_pq = sqrt(dist2_pq);
+//        double dist2_pq = r_pq.abs2();
+        double dist2_pq = p_pos.distance2(n_pos);
+        double dist_pq = sqrt(dist2_pq);
 
-        float f_pq=  pow(1.0-dist_pq/2.0/g.h , 3);
-        float vr = 0;
+        if (dist_pq > g.rc)
+            return;
+
+        double f_pq=  pow(1.0-dist_pq/2.0/g.h , 3);
+        double vr = 0;
         for (int i = 0; i < DIMENSION; i++)
             vr += v_pq[i] * r_pq[i];
-//        float vr=v_pq*r_pq;
 
-        float p_pressure_density2=pressure_density2(particle.template property_vec<density>());
-        float q_pressure_density2=pressure_density2(neighbor.template property_vec<density>());
-        float interim01= p_pressure_density2+q_pressure_density2 ;
-        float interim02 = 10*g.nu/dist2_pq * vr;
+
+//        double vr=v_pq*r_pq;
+
+        double p_pressure_density2=pressure_density2(particle.template property_vec<density>());
+        double q_pressure_density2=pressure_density2(neighbor.template property_vec<density>());
+        double interim01= p_pressure_density2+q_pressure_density2 ;
+        double interim02 = 10*g.nu/dist2_pq * vr;
 
         particle.template property_vec<deltaVelocity>() += (interim01-interim02/particle.template property_vec<density>())* r_pq * f_pq;
         neighbor.template property_vec<deltaVelocity>() -= (interim01-interim02/neighbor.template property_vec<density>())* r_pq * f_pq;
 
-        float densityChange= vr * f_pq;
-
-        particle.template property_vec<deltaDensity>() += densityChange;
-        neighbor.template property_vec<deltaDensity>() += densityChange;
 
 
-    }
+double densityChange= vr * f_pq;
 
-    void evolve(Particle<ParticleSignature> particle) override {
-        float prefact = g.mass* -5.0*21.0/16.0/M_PI/pow(g.h,5);
+particle.template property_vec<deltaDensity>() += densityChange;
+neighbor.template property_vec<deltaDensity>() += densityChange;
 
-        Point<dimension, PositionType> acceleration = g.gravity + particle.template property_vec<deltaVelocity>()*prefact;
 
-        float densityacceleration = particle.template property_vec<deltaDensity>()*prefact;
+}
+
+void evolve(Particle<ParticleSignature> particle) override {
+double prefact = g.mass* -5.0*21.0/16.0/M_PI/pow(g.h,5);
+
+Point<dimension, PositionType> acceleration = g.gravity + particle.template property_vec<deltaVelocity>()*prefact;
+
+double densityacceleration = particle.template property_vec<deltaDensity>()*prefact;
 
         if (g.phase==0){
             if (particle.template property_vec<boundary>()==false){
@@ -257,8 +264,8 @@ public:
     virtual void freePlacement() {
 
 
-        // float particleSpacing=1.0/64.0;
-        // float particleSpacingWater=particleSpacing;
+        // double particleSpacing=1.0/64.0;
+        // double particleSpacingWater=particleSpacing;
 
         //     GlobalVariable g;
         //     g.endT=20;
@@ -298,11 +305,60 @@ public:
 
 
 
+/*
+
+        // fluid
+        this->addParticle();
+        this->position()[0] = 0.0;
+        this->position()[1] = 0.0;
+        this->position()[2] = 1.0;
+        this->property<boundary>() = false;
+        this->property<velocity>()[0] = 0.0;
+        this->property<velocity>()[1] = 0.0;
+        this->property<velocity>()[2] = 0.0;
+        this->property<density>() = 1000.0;
+        this->property<deltaVelocity>()[0] = 0.0;
+        this->property<deltaVelocity>()[1] = 0.0;
+        this->property<deltaVelocity>()[2] = 0.0;
+        this->property<deltaDensity>() = 0.0;
+
+        this->addParticle();
+        this->position()[0] = 0.0;
+        this->position()[1] = 0.0;
+        this->position()[2] = 2.0;
+        this->property<boundary>() = false;
+        this->property<velocity>()[0] = 0.0;
+        this->property<velocity>()[1] = 0.0;
+        this->property<velocity>()[2] = 0.0;
+        this->property<density>() = 1000.0;
+        this->property<deltaVelocity>()[0] = 0.0;
+        this->property<deltaVelocity>()[1] = 0.0;
+        this->property<deltaVelocity>()[2] = 0.0;
+        this->property<deltaDensity>() = 0.0;
+
+        // wall
+        this->addParticle();
+        this->position()[0] = 0.0;
+        this->position()[1] = 0.0;
+        this->position()[2] = 0.0;
+        this->property<boundary>() = true;
+        this->property<velocity>()[0] = 0.0;
+        this->property<velocity>()[1] = 0.0;
+        this->property<velocity>()[2] = 0.0;
+        this->property<density>() = 1000.0;
+        this->property<deltaVelocity>()[0] = 0.0;
+        this->property<deltaVelocity>()[1] = 0.0;
+        this->property<deltaVelocity>()[2] = 0.0;
+        this->property<deltaDensity>() = 0.0;
+*/
+
+
+
 
         Point<dimension, PositionType> wallMin;
         Point<dimension, PositionType> wallMax;
 
-        float d= g.particleSpacingWater/2.0;
+        double d= g.particleSpacingWater/2.0;
 
 // fluid block
         wallMin[0]=waterblockMin[0]+g.particleSpacing;
@@ -311,9 +367,9 @@ public:
         wallMax[0]=waterblockMax[0]-g.particleSpacing;
         wallMax[1]=waterblockMax[1]-g.particleSpacing;
         wallMax[2]=waterblockMax[2]-g.particleSpacing;
-        for (float x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
-            for (float y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
-                for (float z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
+        for (double x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
+            for (double y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
+                for (double z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
@@ -347,9 +403,9 @@ public:
         wallMax[0]=poolMax[0]+g.particleSpacing*g.support;
         wallMax[1]=poolMax[1]+g.particleSpacing*g.support;
         wallMax[2]=poolMin[2]-g.particleSpacing;
-        for (float x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
-            for (float y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
-                for (float z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
+        for (double x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
+            for (double y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
+                for (double z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
@@ -374,9 +430,9 @@ public:
         wallMax[0]=poolMin[0]-g.particleSpacing;
         wallMax[1]=poolMax[1]+g.particleSpacing*g.support;
         wallMax[2]=poolMax[2];
-        for (float x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
-            for (float y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
-                for (float z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
+        for (double x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
+            for (double y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
+                for (double z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
@@ -401,9 +457,9 @@ public:
         wallMax[0]=poolMax[0]+g.particleSpacing*g.support;
         wallMax[1]=poolMax[1]+g.particleSpacing*g.support;
         wallMax[2]=poolMax[2];
-        for (float x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
-            for (float y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
-                for (float z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
+        for (double x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
+            for (double y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
+                for (double z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
@@ -428,9 +484,9 @@ public:
         wallMax[0]=poolMax[0];
         wallMax[1]=poolMin[1]-g.particleSpacing;
         wallMax[2]=poolMax[2];
-        for (float x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
-            for (float y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
-                for (float z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
+        for (double x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
+            for (double y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
+                for (double z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
@@ -455,9 +511,9 @@ public:
         wallMax[0]=poolMax[0];
         wallMax[1]=poolMax[1]+g.particleSpacing*g.support;
         wallMax[2]=poolMax[2];
-        for (float x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
-            for (float y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
-                for (float z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
+        for (double x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
+            for (double y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
+                for (double z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
@@ -491,9 +547,9 @@ public:
         wallMax[0]=columnMax[0]+g.particleSpacing*g.support;
         wallMax[1]=columnMax[1]+g.particleSpacing*g.support;
         wallMax[2]=columnMax[2]+g.particleSpacing*g.support;
-        for (float x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
-            for (float y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
-                for (float z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
+        for (double x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
+            for (double y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
+                for (double z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
@@ -518,9 +574,9 @@ public:
         wallMax[0]=columnMin[0]-g.particleSpacing;
         wallMax[1]=columnMax[1]+g.particleSpacing*g.support;
         wallMax[2]=columnMax[2];
-        for (float x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
-            for (float y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
-                for (float z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
+        for (double x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
+            for (double y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
+                for (double z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
@@ -545,9 +601,9 @@ public:
         wallMax[0]=columnMax[0]+g.particleSpacing*g.support;
         wallMax[1]=columnMax[1]+g.particleSpacing*g.support;
         wallMax[2]=columnMax[2];
-        for (float x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
-            for (float y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
-                for (float z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
+        for (double x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
+            for (double y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
+                for (double z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
@@ -572,9 +628,9 @@ public:
         wallMax[0]=columnMax[0];
         wallMax[1]=columnMin[1]-g.particleSpacing;
         wallMax[2]=columnMax[2];
-        for (float x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
-            for (float y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
-                for (float z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
+        for (double x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
+            for (double y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
+                for (double z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
@@ -599,9 +655,9 @@ public:
         wallMax[0]=columnMax[0];
         wallMax[1]=columnMax[1]+g.particleSpacing*g.support;
         wallMax[2]=columnMax[2];
-        for (float x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
-            for (float y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
-                for (float z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
+        for (double x = wallMin[0]; x <= wallMax[0]+d; x+=g.particleSpacing) {
+            for (double y = wallMin[1]; y <= wallMax[1]+d; y+=g.particleSpacing) {
+                for (double z = wallMin[2]; z <= wallMax[2]+d; z+=g.particleSpacing) {
                     this->addParticle();
                     this->position()[0] = x;
                     this->position()[1] = y;
