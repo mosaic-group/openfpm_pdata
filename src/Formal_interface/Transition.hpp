@@ -74,28 +74,28 @@ public:
 
     void initializeParticles(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
-        auto & vcl = create_vcluster();
+        InstanceType instance(particleData);
 
+
+        auto & vcl = create_vcluster();
         // initialize particles on single core
         if (vcl.getProcessUnitID() == 0) {
-            InstanceType instance(particleData);
             instance.freePlacement();
         }
 
-        particleData.getOpenFPMContainer().template map();
+
+        instance.shapePlacement();
 
         // place particles
         // random or on a mesh
         initialConditionImplementation.initialization(particleData);
 
-        // distribute particles across cores
-        particleData.getOpenFPMContainer().template map();
-
         // particle-wise initialization
         executeInitialization(particleData);
+
+        // distribute particles across cores
+        particleData.getOpenFPMContainer().map();
     }
-
-
 
 
     void run_step(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
@@ -130,7 +130,7 @@ public:
 
         // write particle data to file
         if (simulationParameters.writeOutput) {
-            if (iteration % 100 == 0)
+            if (iteration % 100 == 1)
             {
                 particleData.getDataContainer().deleteGhost();
                 particleData.getDataContainer().write_frame("particles", iteration);

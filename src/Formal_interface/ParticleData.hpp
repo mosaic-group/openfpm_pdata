@@ -19,7 +19,6 @@ class ParticleData {
     using PositionType = typename ParticleSignatureType::position;
     using PropertyType = typename ParticleSignatureType::properties;
 
-    SimulationParametersType simulationParameters;
 
     using ContainerFactoryType = DataContainerFactory<ParticleSignatureType>;
     ContainerFactoryType dataContainerFactory;
@@ -42,6 +41,8 @@ class ParticleData {
 
 
 public:
+
+    SimulationParametersType simulationParameters;
 
     DataContainerType dataContainer;
 

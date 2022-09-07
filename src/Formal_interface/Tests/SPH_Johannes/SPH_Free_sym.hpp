@@ -44,8 +44,8 @@ constexpr int boundary = 7;
 struct GlobalVariable {
 
     double t=0;
-    double dt=0.0002;
-    double endT=20;
+    double dt=0.0001;
+    double endT= 2.0;
 
     double particleSpacing=1.0/16.0;
 //    double particleSpacing=1.0/64.0;
@@ -68,8 +68,16 @@ struct GlobalVariable {
     // Point<DIMENSION, POSITIONTYPE> domain_min;
     // Point<DIMENSION, POSITIONTYPE> domain_max;
     // Point<DIMENSION, POSITIONTYPE> meshDim;
-    double domain_min = -1;
-    double domain_max = 4;
+//    double domain_min = -1;
+//    double domain_max = 4;
+
+    double domain_min[3] = {-.5, -.5, -.5};
+    double domain_max[3] = {3.5, 2, 3};
+
+    // calculate number of particles in each dimension
+    size_t sz[3] = {uint((domain_max[0] - domain_min[0]) / particleSpacing),
+                    uint((domain_max[1] - domain_min[1]) / particleSpacing),
+                    uint((domain_max[2] - domain_min[2]) / particleSpacing)};
 
 } g;
 
@@ -194,7 +202,7 @@ double densityacceleration = particle.template property_vec<deltaDensity>()*pref
             g.phase=0;
         }
 
-        std::cout << "\r" << int(g.t / g.endT * 100) << "%" << std::flush;
+        std::cout << "\r" << g.t / g.endT * 100 << "%" << std::flush;
 
     }
 
@@ -217,7 +225,18 @@ class SPH_SimulationParams : public SimulationParameters<ParticleSignatureType> 
 public:
 
     SPH_SimulationParams() {
-        this->setDomain(g.domain_min,g.domain_max);
+
+        // Domain
+//        this->domainMin[0] = {-1.0, -1.0, -1.0};
+//        this->domainMax = {4.0, 4.0, 4.0};
+//        this->setDomain(g.domain_min,g.domain_max);
+        this->domainMin[0] = g.domain_min[0];
+        this->domainMin[1] = g.domain_min[1];
+        this->domainMin[2] = g.domain_min[2];
+        this->domainMax[0] = g.domain_max[0];
+        this->domainMax[1] = g.domain_max[1]; // 3
+        this->domainMax[2] = g.domain_max[2]; // 3
+
         this->setBoundaryConditions(PERIODIC);
         this->setCutoffRadius(g.rc);
         // this->setMeshSize(g.meshDim);
@@ -260,6 +279,72 @@ public:
 
     Instance1(ParticleData<SPH_ParticleMethod<SPH_ParticleSignature>, SPH_SimulationParams<SPH_ParticleSignature>> &particleData_in) :
             Instance<SPH_ParticleMethod<SPH_ParticleSignature>, SPH_SimulationParams<SPH_ParticleSignature>>(particleData_in){}
+
+
+    virtual void shapePlacement() {
+
+        Point<dimension, PositionType> waterblockMin{0.1,0.1,0.1};
+        Point<dimension, PositionType> waterblockMax{0.5,0.9,0.9};
+//        Point<dimension, PositionType> waterblockMin{g.domain_min[0] + .5,g.domain_min[1] + .5,g.domain_min[2] + .5};
+//        Point<dimension, PositionType> waterblockMax{g.domain_max[0] - .5, g.domain_max[1] - .5, g.domain_max[2] - .5 };
+        //size_t sz[3] = {80,80,80};
+
+        auto iterator_fluid = boxIterator(waterblockMin, waterblockMax, g.sz);
+
+        while (iterator_fluid.isNext()) {
+
+            this->addParticle();
+
+            this->position()[0] = iterator_fluid.get().get(0);
+            this->position()[1] = iterator_fluid.get().get(1);
+            this->position()[2] = iterator_fluid.get().get(2);
+
+            this->property<boundary>() = false;
+            this->property<velocity>()[0] = 0.0;
+            this->property<velocity>()[1] = 0.0;
+            this->property<velocity>()[2] = 0.0;
+            this->property<density>() = 1000.0;
+            this->property<deltaVelocity>()[0] = 0.0;
+            this->property<deltaVelocity>()[1] = 0.0;
+            this->property<deltaVelocity>()[2] = 0.0;
+            this->property<deltaDensity>() = 0.0;
+
+            ++iterator_fluid;
+
+        }
+
+
+/*
+        Point<dimension, PositionType> waterblockMin2{2.1,2.1,2.1};
+        Point<dimension, PositionType> waterblockMax2{2.5,2.9,2.9};
+
+        auto iterator_fluid2 = boxIterator(waterblockMin2, waterblockMax2, sz);
+
+        while (iterator_fluid2.isNext()) {
+
+            this->addParticle();
+
+            this->position()[0] = iterator_fluid2.get().get(0);
+            this->position()[1] = iterator_fluid2.get().get(1);
+            this->position()[2] = iterator_fluid2.get().get(2);
+
+            this->property<boundary>() = false;
+            this->property<velocity>()[0] = 0.0;
+            this->property<velocity>()[1] = 0.0;
+            this->property<velocity>()[2] = 0.0;
+            this->property<density>() = 1000.0;
+            this->property<deltaVelocity>()[0] = 0.0;
+            this->property<deltaVelocity>()[1] = 0.0;
+            this->property<deltaVelocity>()[2] = 0.0;
+            this->property<deltaDensity>() = 0.0;
+
+            ++iterator_fluid2;
+
+        }
+*/
+
+
+    }
 
     virtual void freePlacement() {
 
@@ -360,6 +445,8 @@ public:
 
         double d= g.particleSpacingWater/2.0;
 
+/*
+
 // fluid block
         wallMin[0]=waterblockMin[0]+g.particleSpacing;
         wallMin[1]=waterblockMin[1]+g.particleSpacing;
@@ -387,6 +474,7 @@ public:
             }
         }
 
+*/
 
 
 
