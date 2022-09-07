@@ -59,9 +59,9 @@ private:
 
 public:
 
-    DataContainer_VectorDist(int numberParticles, Box<dimension, PositionType> domain, const size_t (&boundaryConditions)[dimension], int ghostSize) :
+    DataContainer_VectorDist(int numberParticles, Box<dimension, PositionType> domain, const size_t (&boundaryConditions)[dimension], PositionType ghostSize) :
         ghost(ghostSize),
-        vd(numberParticles, domain, boundaryConditions, ghost) {}
+        vd(numberParticles, domain, boundaryConditions, ghost, DEC_GRAN(512)) {}
 
     void printType() override {
         std::cout << "vector_dist" << std::endl;
