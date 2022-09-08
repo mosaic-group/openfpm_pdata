@@ -38,7 +38,7 @@ protected:
 
     // Dynamic load balancing
     ModelSquare dlb_model;
-    int steps_rebalance = 100;
+    int steps_rebalance = simulationParameters.balanceIteration;
 
 
 
@@ -98,10 +98,13 @@ public:
         executeInitialization(particleData);
 
 
+
         // dynamic load balancing
-        particleData.getOpenFPMContainer().map();
-        particleData.getOpenFPMContainer().addComputationCosts(dlb_model);
-        particleData.getOpenFPMContainer().getDecomposition().decompose();
+        if (simulationParameters.dynamicLoadBalancing) {
+            particleData.getOpenFPMContainer().map();
+            particleData.getOpenFPMContainer().addComputationCosts(dlb_model);
+            particleData.getOpenFPMContainer().getDecomposition().decompose();
+        }
 
         // distribute particles across cores
         particleData.getOpenFPMContainer().map();
@@ -114,12 +117,13 @@ public:
 
     void run_step(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
-
-        if (iteration % steps_rebalance == 0) {
-            // dynamic load balancing
-            particleData.getOpenFPMContainer().map();
-            particleData.getOpenFPMContainer().addComputationCosts(dlb_model);
-            particleData.getOpenFPMContainer().getDecomposition().redecompose(steps_rebalance);
+        if (simulationParameters.dynamicLoadBalancing) {
+            if (iteration % steps_rebalance == 0) {
+                // dynamic load balancing
+                particleData.getOpenFPMContainer().map();
+                particleData.getOpenFPMContainer().addComputationCosts(dlb_model);
+                particleData.getOpenFPMContainer().getDecomposition().redecompose(steps_rebalance);
+            }
         }
 
         // distribute particles across cores
@@ -146,9 +150,8 @@ public:
         if (simulationParameters.writeOutput) {
             if (iteration % 100 == 0)
             {
-
                 // write particles
-//                particleData.getDataContainer().deleteGhost();
+                particleData.getDataContainer().deleteGhost();
                 particleData.getDataContainer().write_frame("particles", iteration);
             }
         }

@@ -59,9 +59,9 @@ private:
 
 public:
 
-    DataContainer_VectorDist(int numberParticles, Box<dimension, PositionType> domain, const size_t (&boundaryConditions)[dimension], PositionType ghostSize) :
+    DataContainer_VectorDist(int numberParticles, Box<dimension, PositionType> domain, const size_t (&boundaryConditions)[dimension], PositionType ghostSize, int dec_gran) :
         ghost(ghostSize),
-        vd(numberParticles, domain, boundaryConditions, ghost, DEC_GRAN(512)) {}
+        vd(numberParticles, domain, boundaryConditions, ghost, DEC_GRAN(dec_gran)) {}
 
     void printType() override {
         std::cout << "vector_dist" << std::endl;
@@ -261,7 +261,7 @@ struct DataContainerFactory<ParticleSignatureType, FREE_PARTICLES> {
     ContainerType createContainer(SimulationParametersType& simulationParameters) {
         ContainerType newContainer(simulationParameters.numberParticles,
                                    Box<dimension, PositionType>(simulationParameters.domainMin, simulationParameters.domainMax),
-                                           simulationParameters.boundaryConditions, simulationParameters.cutoff_radius);
+                                           simulationParameters.boundaryConditions, simulationParameters.cutoff_radius, simulationParameters.decompositionGranularity);
         return newContainer;
     }
 };

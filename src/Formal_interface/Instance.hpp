@@ -71,6 +71,8 @@ public:
 
     virtual void shapePlacement() {}
 
+    virtual void setGlobalVariable() {}
+
 };
 
 
