@@ -1,7 +1,8 @@
 // Created by Johannes Pahkle
 //
 
-#include "SPH_Free_sym.hpp"
+#include "SPH_Instance.hpp"
+#include "SPH_Algorithm.hpp"
 #include <chrono>
 
 

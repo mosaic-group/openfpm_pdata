@@ -46,9 +46,13 @@ public:
     static const int interactionType = INTERACTION_PULL;
     PositionType cutoff_radius = 0.3;
 
-
     // Output
     bool writeOutput = true;
+
+    // Dynamic load balancing
+    bool dynamicLoadBalancing = false;
+    int balanceIteration = 100;
+    int decompositionGranularity = 512;
 
 protected:
 
