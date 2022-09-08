@@ -36,6 +36,10 @@ protected:
 
     int iteration = 0;
 
+    // Dynamic load balancing
+    ModelSquare dlb_model;
+    int steps_rebalance = 100;
+
 
 
     void executeEvolution(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
@@ -93,33 +97,43 @@ public:
         // particle-wise initialization
         executeInitialization(particleData);
 
+
+        // dynamic load balancing
+        particleData.getOpenFPMContainer().map();
+        particleData.getOpenFPMContainer().addComputationCosts(dlb_model);
+        particleData.getOpenFPMContainer().getDecomposition().decompose();
+
         // distribute particles across cores
         particleData.getOpenFPMContainer().map();
+
+        // synchronize ghost for all properties
+        particleData.ghost_get_all();
+
     }
 
 
     void run_step(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
-/*
-        auto & vcl = create_vcluster();
-        if (vcl.getProcessUnitID() == 0) {
-            std::cout << "Iteration " << iteration << std::endl;
-        }*/
 
-//        std::cout << "map" << std::endl;
+        if (iteration % steps_rebalance == 0) {
+            // dynamic load balancing
+            particleData.getOpenFPMContainer().map();
+            particleData.getOpenFPMContainer().addComputationCosts(dlb_model);
+            particleData.getOpenFPMContainer().getDecomposition().redecompose(steps_rebalance);
+        }
 
+        // distribute particles across cores
         particleData.getOpenFPMContainer().map();
 
-
-//        std::cout << "ghost_get" << std::endl;
 
         // synchronize ghost for all properties
         particleData.ghost_get_all();
 
-//        std::cout << "exec interaction" << std::endl;
-
         // call interact method
         interactionImplementation.executeInteraction(particleData);
+
+        // synchronize ghost for all properties
+        particleData.ghost_get_all();
 
         // call evolve method
         executeEvolution(particleData);
@@ -130,12 +144,16 @@ public:
 
         // write particle data to file
         if (simulationParameters.writeOutput) {
-            if (iteration % 100 == 1)
+            if (iteration % 100 == 0)
             {
-                particleData.getDataContainer().deleteGhost();
+
+                // write particles
+//                particleData.getDataContainer().deleteGhost();
                 particleData.getDataContainer().write_frame("particles", iteration);
             }
         }
+
+
 
         iteration++;
     }
