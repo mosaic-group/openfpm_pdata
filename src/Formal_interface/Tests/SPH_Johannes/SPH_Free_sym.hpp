@@ -44,10 +44,10 @@ constexpr int boundary = 7;
 struct GlobalVariable {
 
     double t=0;
-    double dt=0.0001;
+    double dt=0.00004;
     double endT= 2.0;
 
-    double particleSpacing=1.0/16.0;
+    double particleSpacing=1.0/64.0;
 //    double particleSpacing=1.0/64.0;
     double particleSpacingWater=particleSpacing;
     double mass=pow(particleSpacing,3)*1000;
@@ -71,8 +71,8 @@ struct GlobalVariable {
 //    double domain_min = -1;
 //    double domain_max = 4;
 
-    double domain_min[3] = {-.5, -.5, -.5};
-    double domain_max[3] = {3.5, 2, 3};
+    double domain_min[3] = {-.9, -.9, -.9}; // 0.5
+    double domain_max[3] = {3.3, 1.3, 1.3};  //3.5, 2, 3
 
     // calculate number of particles in each dimension
     size_t sz[3] = {uint((domain_max[0] - domain_min[0]) / particleSpacing),
@@ -202,7 +202,7 @@ double densityacceleration = particle.template property_vec<deltaDensity>()*pref
             g.phase=0;
         }
 
-        std::cout << "\r" << g.t / g.endT * 100 << "%" << std::flush;
+        std::cout << "\r" << "t = " << g.t << " (" << int(g.t / g.endT * 100) << "%) " << std::flush;
 
     }
 
@@ -234,8 +234,8 @@ public:
         this->domainMin[1] = g.domain_min[1];
         this->domainMin[2] = g.domain_min[2];
         this->domainMax[0] = g.domain_max[0];
-        this->domainMax[1] = g.domain_max[1]; // 3
-        this->domainMax[2] = g.domain_max[2]; // 3
+        this->domainMax[1] = g.domain_max[1];
+        this->domainMax[2] = g.domain_max[2];
 
         this->setBoundaryConditions(PERIODIC);
         this->setCutoffRadius(g.rc);
@@ -283,11 +283,9 @@ public:
 
     virtual void shapePlacement() {
 
-        Point<dimension, PositionType> waterblockMin{0.1,0.1,0.1};
-        Point<dimension, PositionType> waterblockMax{0.5,0.9,0.9};
-//        Point<dimension, PositionType> waterblockMin{g.domain_min[0] + .5,g.domain_min[1] + .5,g.domain_min[2] + .5};
-//        Point<dimension, PositionType> waterblockMax{g.domain_max[0] - .5, g.domain_max[1] - .5, g.domain_max[2] - .5 };
-        //size_t sz[3] = {80,80,80};
+        // fluid particles
+        Point<dimension, PositionType> waterblockMin{0.15,0.1,0.1};
+        Point<dimension, PositionType> waterblockMax{0.55,0.9,0.9};
 
         auto iterator_fluid = boxIterator(waterblockMin, waterblockMax, g.sz);
 
@@ -314,21 +312,22 @@ public:
         }
 
 
-/*
-        Point<dimension, PositionType> waterblockMin2{2.1,2.1,2.1};
-        Point<dimension, PositionType> waterblockMax2{2.5,2.9,2.9};
+        // obstacle column
 
-        auto iterator_fluid2 = boxIterator(waterblockMin2, waterblockMax2, sz);
+        Point<dimension, PositionType> columnMin{2.0, 3.0/8.0 ,0.0};
+        Point<dimension, PositionType> columnMax{2.25,5.0/8.0,1.0};
 
-        while (iterator_fluid2.isNext()) {
+        auto iterator_column = skinIterator(columnMin, columnMax, g.particleSpacing, g.sz);
+
+        while (iterator_column.isNext()) {
 
             this->addParticle();
 
-            this->position()[0] = iterator_fluid2.get().get(0);
-            this->position()[1] = iterator_fluid2.get().get(1);
-            this->position()[2] = iterator_fluid2.get().get(2);
+            this->position()[0] = iterator_column.get().get(0);
+            this->position()[1] = iterator_column.get().get(1);
+            this->position()[2] = iterator_column.get().get(2);
 
-            this->property<boundary>() = false;
+            this->property<boundary>() = true;
             this->property<velocity>()[0] = 0.0;
             this->property<velocity>()[1] = 0.0;
             this->property<velocity>()[2] = 0.0;
@@ -338,10 +337,39 @@ public:
             this->property<deltaVelocity>()[2] = 0.0;
             this->property<deltaDensity>() = 0.0;
 
-            ++iterator_fluid2;
+            ++iterator_column;
 
         }
-*/
+
+
+        // pool walls
+
+        Point<dimension, PositionType> poolMin{0.0,0.0,0.0};
+        Point<dimension, PositionType> poolMax{3.0,1.0,1.0};
+
+        auto iterator_pool = skinOpenIterator(poolMin, poolMax, g.particleSpacing, g.sz);
+
+        while (iterator_pool.isNext()) {
+
+            this->addParticle();
+
+            this->position()[0] = iterator_pool.get().get(0);
+            this->position()[1] = iterator_pool.get().get(1);
+            this->position()[2] = iterator_pool.get().get(2);
+
+            this->property<boundary>() = true;
+            this->property<velocity>()[0] = 0.0;
+            this->property<velocity>()[1] = 0.0;
+            this->property<velocity>()[2] = 0.0;
+            this->property<density>() = 1000.0;
+            this->property<deltaVelocity>()[0] = 0.0;
+            this->property<deltaVelocity>()[1] = 0.0;
+            this->property<deltaVelocity>()[2] = 0.0;
+            this->property<deltaDensity>() = 0.0;
+
+            ++iterator_pool;
+
+        }
 
 
     }
@@ -480,6 +508,7 @@ public:
 
 
 
+/*
 
         //Pool Boundary
         d=g.particleSpacing/2.0;
@@ -620,6 +649,7 @@ public:
         }
 
 
+*/
 
 
 
@@ -628,7 +658,7 @@ public:
 
 
 
-        //Top Column Boundary 
+/*        //Top Column Boundary
         wallMin[0]=columnMin[0]-g.particleSpacing*g.support;
         wallMin[1]=columnMin[1]-g.particleSpacing*g.support;
         wallMin[2]=columnMax[2]+g.particleSpacing;
@@ -761,7 +791,7 @@ public:
                     this->property<deltaDensity>() = 0.0;
                 }
             }
-        }
+        }*/
     }
 };
 
