@@ -52,6 +52,7 @@ public:
 
     // Output
     bool writeOutput = true;
+    int writeIteration = 100;
 
     // DLB
     bool dynamicLoadBalancing = true;

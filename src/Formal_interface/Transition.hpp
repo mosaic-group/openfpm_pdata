@@ -148,7 +148,7 @@ public:
 
         // write particle data to file
         if (simulationParameters.writeOutput) {
-            if (iteration % 100 == 0)
+            if (iteration % simulationParameters.writeIteration == 0)
             {
                 // write particles
                 particleData.getDataContainer().deleteGhost();
