@@ -390,6 +390,92 @@ public:
         return result;
     }
 
+    // Comparison
+
+
+    // OperationProxy
+
+    bool operator== (OperationProxy<T[n1]> rhs) {
+        for (int i = 0; i < n1; ++i) {
+            if ( !(data[i] == rhs[i]) )
+                return false;
+        }
+        return true;
+    }
+
+    bool operator<= (OperationProxy<T[n1]> rhs) {
+        for (int i = 0; i < n1; ++i) {
+            if ( !(data[i] <= rhs[i]) )
+                return false;
+        }
+        return true;
+    }
+
+    bool operator>= (OperationProxy<T[n1]> rhs) {
+        for (int i = 0; i < n1; ++i) {
+            if ( !(data[i] >= rhs[i]) )
+                return false;
+        }
+        return true;
+    }
+
+    bool operator< (OperationProxy<T[n1]> rhs) {
+        for (int i = 0; i < n1; ++i) {
+            if ( !(data[i] < rhs[i]) )
+                return false;
+        }
+        return true;
+    }
+
+    bool operator> (OperationProxy<T[n1]> rhs) {
+        for (int i = 0; i < n1; ++i) {
+            if ( !(data[i] > rhs[i]) )
+                return false;
+        }
+        return true;
+    }
+
+    // Point
+
+    bool operator== (Point<n1, T> rhs) {
+        for (int i = 0; i < n1; ++i) {
+            if ( !(data[i] == rhs[i]) )
+                return false;
+        }
+        return true;
+    }
+
+    bool operator<= (Point<n1, T> rhs) {
+        for (int i = 0; i < n1; ++i) {
+            if ( !(data[i] <= rhs[i]) )
+                return false;
+        }
+        return true;
+    }
+
+    bool operator>= (Point<n1, T> rhs) {
+        for (int i = 0; i < n1; ++i) {
+            if ( !(data[i] >= rhs[i]) )
+                return false;
+        }
+        return true;
+    }
+
+    bool operator< (Point<n1, T> rhs) {
+        for (int i = 0; i < n1; ++i) {
+            if ( !(data[i] < rhs[i]) )
+                return false;
+        }
+        return true;
+    }
+
+    bool operator> (Point<n1, T> rhs) {
+        for (int i = 0; i < n1; ++i) {
+            if ( !(data[i] > rhs[i]) )
+                return false;
+        }
+        return true;
+    }
 
 
 
@@ -423,6 +509,22 @@ Point<n1, T> operator* (T lhs, OperationProxy<T[n1]> rhs) {
 
 
 template <typename T, unsigned int n1>
+Point<n1, T> operator+ (Point<n1, T> lhs, OperationProxy<T[n1]> rhs) {
+    for (int i = 0; i < n1; ++i) {
+        lhs[i] += rhs[i];
+    }
+    return lhs;
+}
+
+template <typename T, unsigned int n1>
+Point<n1, T> operator- (Point<n1, T> lhs, OperationProxy<T[n1]> rhs) {
+    for (int i = 0; i < n1; ++i) {
+        lhs[i] -= rhs[i];
+    }
+    return lhs;
+}
+
+template <typename T, unsigned int n1>
 Point<n1, T> operator* (Point<n1, T> lhs, OperationProxy<T[n1]> rhs) {
     for (int i = 0; i < n1; ++i) {
         lhs[i] *= rhs[i];
@@ -438,21 +540,66 @@ Point<n1, T> operator/ (Point<n1, T> lhs, OperationProxy<T[n1]> rhs) {
     return lhs;
 }
 
-/*
-template <typename T, unsigned int n1>
-Point<n1, T> operator+= (Point<n1, T> lhs, OperationProxy<T[n1]> rhs) {
-    for (int i = 0; i < n1; ++i) {
-        lhs[i] /= rhs[i];
-    }
-    return lhs;
-}
-*/
 
 // Operator overloads for primitive types
 
 template <unsigned int n1, typename T>
+Point<n1, T> operator+ (T lhs, OperationProxy<T[n1]> rhs) {
+    return rhs + lhs;
+}
+
+template <unsigned int n1, typename T>
+Point<n1, T> operator- (T lhs, OperationProxy<T[n1]> rhs) {
+    return rhs - lhs;
+}
+
+template <unsigned int n1, typename T>
 Point<n1, T> operator* (T lhs, OperationProxy<T[n1]> rhs) {
     return rhs * lhs;
+}
+
+template <unsigned int n1, typename T>
+Point<n1, T> operator/ (T lhs, OperationProxy<T[n1]> rhs) {
+    return rhs / lhs;
+}
+
+
+// Scalar product
+
+template <unsigned int n1, typename T>
+T scalarProduct (OperationProxy<T[n1]> lhs, OperationProxy<T[n1]> rhs) {
+    T result;
+    for (int i = 0; i < n1; ++i) {
+        result += lhs.data[i] * rhs.data[i];
+    }
+    return result;
+}
+
+template <unsigned int n1, typename T>
+T scalarProduct (Point<n1, T> lhs, OperationProxy<T[n1]> rhs) {
+    T result;
+    for (int i = 0; i < n1; ++i) {
+        result += lhs[i] * rhs.data[i];
+    }
+    return result;
+}
+
+template <unsigned int n1, typename T>
+T scalarProduct (OperationProxy<T[n1]> lhs, Point<n1, T> rhs) {
+    T result;
+    for (int i = 0; i < n1; ++i) {
+        result += lhs.data[i] * rhs[i];
+    }
+    return result;
+}
+
+template <unsigned int n1, typename T>
+T scalarProduct (Point<n1, T> lhs, Point<n1, T> rhs) {
+    T result;
+    for (int i = 0; i < n1; ++i) {
+        result += lhs[i] * rhs[i];
+    }
+    return result;
 }
 
 

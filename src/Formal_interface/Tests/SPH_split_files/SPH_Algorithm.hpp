@@ -103,11 +103,7 @@ public:
 
         double f_pq=  pow(1.0-dist_pq/2.0/g.h , 3);
         double vr = 0;
-        for (int i = 0; i < DIMENSION; i++)
-            vr += v_pq[i] * r_pq[i];
-
-
-//        double vr=v_pq*r_pq;
+        vr = scalarProduct(r_pq, v_pq);
 
         double p_pressure_density2=pressure_density2(particle.template property_vec<density>());
         double q_pressure_density2=pressure_density2(neighbor.template property_vec<density>());
