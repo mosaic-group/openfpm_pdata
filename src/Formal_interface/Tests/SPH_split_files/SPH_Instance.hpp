@@ -19,6 +19,33 @@
 #include "Formal_interface/Instance.hpp"
 #include "SPH_Algorithm.hpp"
 
+    double GlobalVariable::t = 0;
+    double GlobalVariable::dt=0.00016;
+    double GlobalVariable::endT= 20.0;
+
+    double GlobalVariable::particleSpacing=1.0/16.0;
+    double GlobalVariable::particleSpacingWater=particleSpacing;
+    double GlobalVariable::mass=pow(particleSpacing,3)*1000;
+    Point<DIMENSION, POSITIONTYPE> GlobalVariable::gravity{0.0,0.0,-9.81};
+    double GlobalVariable::c0=45.0;
+    double GlobalVariable::density0=1000;
+    int GlobalVariable::gamma=7;
+    double GlobalVariable::nu=1.0/10000.0;
+    double GlobalVariable::h=1.3*GlobalVariable::particleSpacing;//characteristic length
+
+    double GlobalVariable::phase=0;
+    int GlobalVariable::support=2;
+    double GlobalVariable::rc=GlobalVariable::support*GlobalVariable::h;//cutof radius
+    double GlobalVariable::epsilon=0.01;
+
+    double GlobalVariable::domain_min[3] = {-.9, -.9, -.9};
+    double GlobalVariable::domain_max[3] = {3.3, 1.3, 1.3};
+
+    // calculate number of particles in each dimension
+    size_t GlobalVariable::sz[3] ={
+                    uint((GlobalVariable::domain_max[0] - GlobalVariable::domain_min[0]) / GlobalVariable::particleSpacing),
+                    uint((GlobalVariable::domain_max[1] - GlobalVariable::domain_min[1]) / GlobalVariable::particleSpacing),
+                    uint((GlobalVariable::domain_max[2] - GlobalVariable::domain_min[2]) / GlobalVariable::particleSpacing)};
 
 
 template <typename ParticleSignatureType>

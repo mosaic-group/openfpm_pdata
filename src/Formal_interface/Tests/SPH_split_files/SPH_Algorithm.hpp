@@ -45,32 +45,30 @@ struct SPH_ParticleSignature {
 
 struct GlobalVariable {
 
-    double t=0;
-    double dt=0.00016;
-    double endT= 20.0;
+    static double t;
+    static double dt;
+    static double endT;
 
-    double particleSpacing=1.0/16.0;
-    double particleSpacingWater=particleSpacing;
-    double mass=pow(particleSpacing,3)*1000;
-    Point<DIMENSION, POSITIONTYPE> gravity{0.0,0.0,-9.81};
-    double c0=45.0;
-    double density0=1000;
-    int gamma=7;
-    double nu=1.0/10000.0;
-    double h=1.3*particleSpacing;//characteristic length
+    static double particleSpacing;
+    static double particleSpacingWater;
+    static double mass;
+    static Point<DIMENSION, POSITIONTYPE> gravity;
+    static double c0;
+    static double density0;
+    static int gamma;
+    static double nu;
+    static double h;//characteristic length
 
-    double phase=0;
-    int support=2;
-    double rc=support*h;//cutof radius
-    double epsilon=0.01;
+    static double phase;
+    static int support;
+    static double rc;//cutof radius
+    static double epsilon;
 
-    double domain_min[3] = {-.9, -.9, -.9}; // 0.5
-    double domain_max[3] = {3.3, 1.3, 1.3};  //3.5, 2, 3
+    static double domain_min[3];
+    static double domain_max[3];
 
     // calculate number of particles in each dimension
-    size_t sz[3] = {uint((domain_max[0] - domain_min[0]) / particleSpacing),
-                    uint((domain_max[1] - domain_min[1]) / particleSpacing),
-                    uint((domain_max[2] - domain_min[2]) / particleSpacing)};
+    static size_t sz[3];
 
 } g;
 
