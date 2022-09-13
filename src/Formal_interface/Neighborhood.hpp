@@ -74,99 +74,6 @@ public:
     }
 };
 
-/*
-
-template <typename ParticleMethodType, typename SimulationParametersType>
-class Interaction_Impl<NEIGHBORHHOD_CELLLIST, ParticleMethodType, SimulationParametersType> {
-
-    using ParticleSignatureType = typename ParticleMethodType::ParticleSignature;
-    static constexpr int dimension = ParticleSignatureType::dimension;
-    using PositionType = typename ParticleSignatureType::position;
-    using PropertyType = typename ParticleSignatureType::properties;
-
-    ParticleMethodType particleMethod;
-    SimulationParametersType simulationParameters;
-
-    using CellListType = typename vector_dist<dimension, PositionType, PropertyType>::CellList_type;
-
-    CellListType cellList;
-
-public:
-
-    explicit Interaction_Impl(ParticleData<ParticleMethodType, SimulationParametersType> &particleData): cellList(
-            createCellList(particleData)) {
-
-
-
-        auto & vcl = create_vcluster();
-        std::cout << "interaction impl cell list constructed " << vcl.getProcessUnitID() << std::endl;
-
-    }
-
-    CellListType createCellList(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
-        auto & vcl = create_vcluster();
-
-        std::cout << "create cell list " << vcl.getProcessUnitID() << std::endl;
-
-        // symmetric cell list
-        if (simulationParameters.interactionType == INTERACTION_SYMMETRIC) {
-            std::cout << "symmetric " << vcl.getProcessUnitID() << std::endl;
-            return particleData.getOpenFPMContainer().getCellListSym(simulationParameters.cellWidth);
-
-        }
-
-        // unsymmetric cell list
-        std::cout << "unsymmetric" << std::endl;
-        return particleData.getOpenFPMContainer().getCellList(simulationParameters.cellWidth);
-    }
-
-
-    void executeInteraction(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
-
-        particleData.getOpenFPMContainer().map();
-        particleData.ghost_get_all();
-
-        // update symmetric cell list
-        if (simulationParameters.interactionType == INTERACTION_SYMMETRIC) {
-//            particleData.getOpenFPMContainer().template updateCellListSym(cellList);
-            particleData.getOpenFPMContainer().updateCellListSym(cellList);
-        }
-        else {
-            particleData.getOpenFPMContainer().updateCellList(cellList);
-        }
-
-
-
-
-        // iterate through all particles
-        auto iteratorAll = particleData.getParticleIterator();
-        while (iteratorAll.isNext())
-        {
-            auto p = iteratorAll.get();
-            Particle<ParticleSignatureType> particle(particleData.dataContainer, p);
-
-            // iterate through all particles in neighbor cells
-            auto iteratorNeighbors = cellList.template getNNIteratorSym<NO_CHECK>(cellList.getCell(
-                    particleData.getOpenFPMContainer().getPos(p)), p.getKey(), particleData.getOpenFPMContainer().getPosVector());
-//            auto iteratorNeighbors = cellList.template getNNIterator<NO_CHECK>(cellList.getCell(
-//                    particleData.getOpenFPMContainer().getPos(p)));
-
-            while (iteratorNeighbors.isNext()) {
-                auto n = iteratorNeighbors.get();
-                Particle<ParticleSignatureType> neighbor(particleData.dataContainer, n);
-
-                if (particle != neighbor) {
-                    particleMethod.interact(particle, neighbor);
-                }
-                ++iteratorNeighbors;
-            }
-            ++iteratorAll;
-        }
-    }
-
-};
-
-*/
 
 
 template <typename ParticleMethodType, typename SimulationParametersType>
@@ -291,22 +198,6 @@ public:
 
     void executeInteraction(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
-
-/*
-        // flag all domain particles
-
-        auto & vcl = create_vcluster();
-        size_t pid = vcl.getProcessUnitID();
-
-        auto iteratorFlag = particleData.getOpenFPMContainer().getDomainIterator();
-        while (iteratorFlag.isNext()) {
-
-            auto p = iteratorFlag.get();
-            particleData.getOpenFPMContainer().template getProp<0>(p) = pid;
-            ++iteratorFlag;
-        }
-*/
-
         // iterate through all particles
         auto iteratorAll = particleData.getParticleIterator();
         while (iteratorAll.isNext())
@@ -314,9 +205,6 @@ public:
             auto p = iteratorAll.get();
             Particle<ParticleSignatureType> particle(particleData.dataContainer, p);
 
-//             auto & vcl = create_vcluster();
-//            std::cout << vcl.getProcessUnitID() << " ~ interact " << p.to_string() << std::endl;
-//            std::cout << "find neighbors for " << p.to_string() << std::endl;
 
             // iterate through all neighbor mesh nodes
             for (std::array<int, dimension> node : stencil) {
@@ -327,38 +215,10 @@ public:
                     n = n.move(component, node[component]);
                 }
 
-
-
-/*
-                if (simulationParameters.interactionType == INTERACTION_SYMMETRIC) {
-
-                    // check if neighbor is in on this processor domain
-                    int check_count = 0;
-                    auto &gdb_ext = particleData.dataContainer.getContainer().getLocalGridsInfo();
-                    for (size_t s = 0; s < gdb_ext.size(); s++) {
-                        Box<2, long int> bx = gdb_ext.get(s).Dbox;
-                        bx += gdb_ext.get(s).origin;
-                        if (bx.isInside(n.getKey().toPoint())) {
-                            check_count++;
-                            break;
-                        }
-                    }
-
-                    // skip if not in processor domain
-                    if (check_count == 0) {
-                        continue;
-                    }
-                }
-*/
-
-
                 // execute
                 Particle<ParticleSignatureType> neighbor(particleData.dataContainer, n);
                 particleMethod.interact(particle, neighbor);
             }
-
-//            std::cout << "  ### interaction executed " << std::endl;
-
 
             ++iteratorAll;
         }

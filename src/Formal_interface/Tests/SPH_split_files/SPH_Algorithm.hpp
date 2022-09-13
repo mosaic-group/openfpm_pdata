@@ -96,14 +96,8 @@ public:
         double dist2_pq = p_pos.distance2(n_pos);
         double dist_pq = sqrt(dist2_pq);
 
-        /*
-        if (dist_pq > g.rc)
-            return;
-*/
-
         double f_pq=  pow(1.0-dist_pq/2.0/g.h , 3);
-        double vr = 0;
-        vr = scalarProduct(r_pq, v_pq);
+        double vr = scalarProduct(r_pq, v_pq);
 
         double p_pressure_density2=pressure_density2(particle.template property_vec<density>());
         double q_pressure_density2=pressure_density2(neighbor.template property_vec<density>());
