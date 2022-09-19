@@ -97,7 +97,7 @@ else()
 			Formal_interface/Transition.hpp
 			Formal_interface/GlobalVar.hpp
 			Formal_interface/SimulationParameters.hpp
-			Formal_interface/Neighborhood.hpp
+            Formal_interface/Interaction_Impl.hpp
 			Formal_interface/DataContainer.hpp
 			Formal_interface/ParticleSignature.hpp
 			Formal_interface/OperationProxy.hpp

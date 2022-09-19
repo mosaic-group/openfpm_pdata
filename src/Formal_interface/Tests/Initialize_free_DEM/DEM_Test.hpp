@@ -14,7 +14,7 @@
 #include "Formal_interface/Transition.hpp"
 #include "Formal_interface/SimulationParameters.hpp"
 #include "Formal_interface/InitialCondition.hpp"
-#include "Formal_interface/Neighborhood.hpp"
+#include "Formal_interface/Interaction_Impl.hpp"
 #include "Formal_interface/Instance.hpp"
 
 

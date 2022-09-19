@@ -2,8 +2,8 @@
 // Created by landfried on 13.01.22.
 //
 
-#ifndef OPENFPM_PDATA_INTERACTION_HPP
-#define OPENFPM_PDATA_INTERACTION_HPP
+#ifndef OPENFPM_PDATA_INTERACTION_IMPL_HPP
+#define OPENFPM_PDATA_INTERACTION_IMPL_HPP
 
 #include <iostream>
 #include "ParticleData.hpp"
@@ -226,4 +226,4 @@ public:
 };
 
 
-#endif //OPENFPM_PDATA_INTERACTION_HPP
+#endif //OPENFPM_PDATA_INTERACTION_IMPL_HPP

@@ -9,7 +9,7 @@
 #include "ParticleData.hpp"
 #include "Particle.hpp"
 #include "InitialCondition.hpp"
-#include "Neighborhood.hpp"
+#include "Interaction_Impl.hpp"
 #include "Instance.hpp"
 #include <random>
 #include <boost/hana.hpp>
@@ -98,7 +98,6 @@ public:
         executeInitialization(particleData);
 
 
-
         // dynamic load balancing
         if (simulationParameters.dynamicLoadBalancing) {
             particleData.getOpenFPMContainer().map();
@@ -129,7 +128,6 @@ public:
         // distribute particles across cores
         particleData.getOpenFPMContainer().map();
 
-
         // synchronize ghost for all properties
         particleData.ghost_get_all();
 
@@ -137,7 +135,7 @@ public:
         interactionImplementation.executeInteraction(particleData);
 
         // synchronize ghost for all properties
-        particleData.ghost_get_all();
+//        particleData.ghost_get_all();
 
         // call evolve method
         executeEvolution(particleData);
