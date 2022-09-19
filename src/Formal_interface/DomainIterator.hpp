@@ -71,7 +71,6 @@ public:
     DomainIterator() {std::cout << "DomainIterator: FREE, SYMMETRIC" << std::endl;}
     auto getDomainIterator(DataContainerType &dataContainer) {
         return dataContainer.getContainer().getDomainAndGhostIterator();
-//        return dataContainer.getContainer().getDomainIterator();
     }
 };
 
@@ -121,7 +120,7 @@ public:
     DomainIterator() {std::cout << "DomainIterator: MESH, SYMMETRIC" << std::endl;}
 
     auto getDomainIterator(DataContainerType &dataContainer) {
-        return dataContainer.getContainer().getDomainGhostIterator();
+        return dataContainer.getContainer().getDomainIterator();
     }
 };
 
