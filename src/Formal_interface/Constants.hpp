@@ -24,4 +24,9 @@ struct INITIALCONDITION_NONE {};
 struct INITIALCONDITION_MESH {};
 struct INITIALCONDITION_RANDOM {};
 
+// Particle type in signature
+struct FREE_PARTICLES {};
+struct MESH_PARTICLES {};
+
+
 #endif //OPENFPM_PDATA_CONSTANTS_HPP

@@ -10,9 +10,8 @@
 //#include <Grid/grid_dist_key.hpp>
 #include "Vector/vector_dist.hpp"
 #include "OperationProxy.hpp"
+#include "Constants.hpp"
 
-struct FREE_PARTICLES {};
-struct MESH_PARTICLES {};
 
 /**
  * Primary template
