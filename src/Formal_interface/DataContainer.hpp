@@ -34,6 +34,7 @@ public:
     // OpenFPM functions
     virtual void deleteGhost() = 0;
     virtual bool write_frame(std::string out, size_t iteration, int opt) = 0;
+    virtual void dynamicLoadBalancing() = 0;
 
 };
 
@@ -56,6 +57,10 @@ private:
 
     DataStructureType vd;
 
+    // for dynamic load balancing
+    ModelSquare dlb_model;
+
+
 public:
 
     DataContainer_VectorDist(int numberParticles, Box<dimension, PositionType> domain, const size_t (&boundaryConditions)[dimension], PositionType ghostSize, int dec_gran) :
@@ -65,6 +70,7 @@ public:
     void printType() override {
         std::cout << "vector_dist" << std::endl;
     }
+
 
     /**
      * Returns a reference to a particle property in the vector_dist data structure.
@@ -131,6 +137,15 @@ public:
         return vd.write_frame(out, iteration, opt);
     }
 
+    /**
+     * Executes dynamic load balancing
+     */
+    void dynamicLoadBalancing() {
+        vd.map();
+        vd.addComputationCosts(dlb_model);
+        vd.getDecomposition().decompose();
+    }
+
 };
 
 /**
@@ -148,7 +163,7 @@ class DataContainer_GridDist : DataContainer<ParticleSignatureType> {
 public:    typedef grid_dist_id<dimension, PositionType, PropertyType> DataStructureType;
 
 private:
-    Ghost<2,long int> ghost;
+    Ghost<dimension,long int> ghost;
 
     DataStructureType grid;
 
@@ -218,6 +233,11 @@ public:
         return grid.write_frame(out,iteration, opt);
     }
 
+    /**
+    * Dynamic load balancing is not executed for grid data structure
+    */
+    void dynamicLoadBalancing() {
+    }
 };
 
 /**

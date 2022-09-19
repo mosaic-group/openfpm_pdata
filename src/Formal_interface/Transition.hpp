@@ -37,7 +37,6 @@ protected:
     int iteration = 0;
 
     // Dynamic load balancing
-    ModelSquare dlb_model;
     int steps_rebalance = simulationParameters.balanceIteration;
 
 
@@ -97,13 +96,8 @@ public:
         // particle-wise initialization
         executeInitialization(particleData);
 
-
         // dynamic load balancing
-        if (simulationParameters.dynamicLoadBalancing) {
-            particleData.getOpenFPMContainer().map();
-            particleData.getOpenFPMContainer().addComputationCosts(dlb_model);
-            particleData.getOpenFPMContainer().getDecomposition().decompose();
-        }
+        particleData.dynamicLoadBalancing();
 
         // distribute particles across cores
         particleData.getOpenFPMContainer().map();
@@ -116,14 +110,9 @@ public:
 
     void run_step(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
 
-        if (simulationParameters.dynamicLoadBalancing) {
-            if (iteration % steps_rebalance == 0) {
-                // dynamic load balancing
-                particleData.getOpenFPMContainer().map();
-                particleData.getOpenFPMContainer().addComputationCosts(dlb_model);
-                particleData.getOpenFPMContainer().getDecomposition().redecompose(steps_rebalance);
-            }
-        }
+        // dynamic load balancing
+        if (iteration % steps_rebalance == 0)
+            particleData.dynamicLoadBalancing();
 
         // distribute particles across cores
         particleData.getOpenFPMContainer().map();

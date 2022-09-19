@@ -81,6 +81,14 @@ public:
         ghost_get_N(std::make_integer_sequence<int, max_prop>{});
     }
 
+    /**
+ * Executes dynamic load balancing
+ */
+    void dynamicLoadBalancing() {
+        if (simulationParameters.dynamicLoadBalancing) {
+            dataContainer.dynamicLoadBalancing();
+        }
+    }
 
 };
 
