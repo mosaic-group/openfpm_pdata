@@ -35,14 +35,7 @@ public:
 
     template<unsigned int id>
     inline auto property() -> decltype(dataContainer.template property<id>(key)) {
-//        std::cout << boost::core::demangle(typeid(vd_ref.template getProp<id>(key)).name()) << std::endl;
         return dataContainer.template property<id>(key);
-    }
-
-    template<unsigned int id>
-    inline auto property_test() -> OperationProxy<typename std::remove_reference<decltype(dataContainer.template property<id>(key))>::type>  {
-        OperationProxy<typename std::remove_reference<decltype(dataContainer.template property<id>(key))>::type> operationProxy(dataContainer.template property<id>(key)) ;
-        return operationProxy;
     }
 
     template<unsigned int id>
@@ -54,10 +47,6 @@ public:
         return dataContainer.position(key);
     }
 
-    inline auto position_test() -> OperationProxy<typename std::remove_reference<decltype(dataContainer.position(key))>::type> {
-        OperationProxy<typename std::remove_reference<decltype(dataContainer.position(key))>::type> operationProxy(dataContainer.position(key));
-        return operationProxy;
-    }
 
     inline auto position_vec() -> decltype(dataContainer.position_vec(key)) {
         return dataContainer.position_vec(key);
@@ -79,57 +68,6 @@ public:
 
 
 };
-
-/*
-template <typename ParticleSignatureType>
-class Particle_old {
-
-    static constexpr int dimension = ParticleSignatureType::dimension;
-    using PositionType = typename ParticleSignatureType::position;
-    using PropertyType = typename ParticleSignatureType::properties;
-    using ParticleDataStructure = typename ParticleSignatureType::dataStructure;
-
-    using DataContainerType = typename DataContainerFactory<ParticleSignatureType>::ContainerType;
-
-protected:
-    vector_dist<dimension, PositionType, PropertyType>& vd_ref;
-    vect_dist_key_dx key;
-
-//    DataContainerType& dataContainer;
-
-public:
-    Particle_old(vector_dist<dimension, PositionType, PropertyType>& vd_in, vect_dist_key_dx key_in) : vd_ref(vd_in), key(key_in) {}
-
-//    Particle(DataContainerType& dataContainer_in, vect_dist_key_dx key_in) : dataContainer(dataContainer_in), key(key_in) {}
-
-    template<unsigned int id>
-    inline auto property() -> decltype(vd_ref.template getProp<id>(key)) {
-//        std::cout << boost::core::demangle(typeid(vd_ref.template getProp<id>(key)).name()) << std::endl;
-        return vd_ref.template getProp<id>(key);
-    }
-
-
-    virtual inline auto position() -> decltype(vd_ref.getPos(key)) {
-        return vd_ref.getPos(key);
-    }
-
-    size_t getID() {
-        return key.getKey();
-    }
-
-    vect_dist_key_dx getKey() {
-        return key;
-    }
-
-    bool operator== (Particle_old<ParticleSignatureType> rhs) {
-        return getID() == rhs.getID();
-    }
-
-    bool operator!= (Particle_old<ParticleSignatureType> rhs) {
-        return getID() != rhs.getID();
-    }
-};
-*/
 
 
 
