@@ -8,6 +8,7 @@
 #include "Vector/vector_dist.hpp"
 #include "GlobalVar.hpp"
 #include "DataContainer.hpp"
+#include "DataContainerFactory.hpp"
 #include "Constants.hpp"
 #include "DomainIterator.hpp"
 
