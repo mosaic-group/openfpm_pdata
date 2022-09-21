@@ -109,7 +109,6 @@ public:
         for (int i = 0; i < dimension; ++i) {
             dis_pos_v.push_back(std::uniform_real_distribution<>(simulationParameters.domainMin[i], simulationParameters.domainMax[i]));
         }
-        std::normal_distribution<> dis_vel(0, .5);
 
         // move particles to random positions
         auto iterator = particleData.getOpenFPMContainer().getDomainIterator();
