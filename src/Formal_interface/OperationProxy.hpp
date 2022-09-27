@@ -541,6 +541,11 @@ Point<n1, T> operator/ (Point<n1, T> lhs, OperationProxy<T[n1]> rhs) {
 }
 
 
+
+
+
+
+
 // Operator overloads for primitive types
 
 template <unsigned int n1, typename T>
@@ -568,7 +573,7 @@ Point<n1, T> operator/ (T lhs, OperationProxy<T[n1]> rhs) {
 
 template <unsigned int n1, typename T>
 T scalarProduct (OperationProxy<T[n1]> lhs, OperationProxy<T[n1]> rhs) {
-    T result;
+    T result = 0;
     for (int i = 0; i < n1; ++i) {
         result += lhs.data[i] * rhs.data[i];
     }
@@ -577,7 +582,7 @@ T scalarProduct (OperationProxy<T[n1]> lhs, OperationProxy<T[n1]> rhs) {
 
 template <unsigned int n1, typename T>
 T scalarProduct (Point<n1, T> lhs, OperationProxy<T[n1]> rhs) {
-    T result;
+    T result = 0;
     for (int i = 0; i < n1; ++i) {
         result += lhs[i] * rhs.data[i];
     }
@@ -586,7 +591,7 @@ T scalarProduct (Point<n1, T> lhs, OperationProxy<T[n1]> rhs) {
 
 template <unsigned int n1, typename T>
 T scalarProduct (OperationProxy<T[n1]> lhs, Point<n1, T> rhs) {
-    T result;
+    T result = 0;
     for (int i = 0; i < n1; ++i) {
         result += lhs.data[i] * rhs[i];
     }
@@ -595,12 +600,13 @@ T scalarProduct (OperationProxy<T[n1]> lhs, Point<n1, T> rhs) {
 
 template <unsigned int n1, typename T>
 T scalarProduct (Point<n1, T> lhs, Point<n1, T> rhs) {
-    T result;
+    T result = 0;
     for (int i = 0; i < n1; ++i) {
         result += lhs[i] * rhs[i];
     }
     return result;
 }
+
 
 
 
