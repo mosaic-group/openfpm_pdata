@@ -61,8 +61,8 @@ public:
                 Particle<ParticleSignatureType> neighbor(particleData.dataContainer, n);
 
                 // calculate distance
-                Point<dimension, PositionType> n_pos = neighbor.position();
-                Point<dimension, PositionType> p_pos = particle.position();
+                Point<dimension, PositionType> n_pos = neighbor.position_raw();
+                Point<dimension, PositionType> p_pos = particle.position_raw();
                 PositionType distance = p_pos.distance(n_pos);
 
                 // check if distance <= cutoff radius
@@ -127,8 +127,8 @@ public:
                 Particle<ParticleSignatureType> neighbor(particleData.dataContainer, n);
 
                 // calculate distance
-                Point<dimension, PositionType> n_pos = neighbor.position();
-                Point<dimension, PositionType> p_pos = particle.position();
+                Point<dimension, PositionType> n_pos = neighbor.position_raw();
+                Point<dimension, PositionType> p_pos = particle.position_raw();
                 PositionType distance = p_pos.distance(n_pos);
 
                 // check if distance <= cutoff radius
@@ -193,8 +193,8 @@ public:
                 Particle<ParticleSignatureType> neighbor(particleData.dataContainer, n);
 
                 // calculate distance
-                Point<dimension, PositionType> n_pos = neighbor.position();
-                Point<dimension, PositionType> p_pos = particle.position();
+                Point<dimension, PositionType> n_pos = neighbor.position_raw();
+                Point<dimension, PositionType> p_pos = particle.position_raw();
                 PositionType distance = p_pos.distance(n_pos);
 
                 // check if distance <= cutoff radius
@@ -259,8 +259,8 @@ public:
                 Particle<ParticleSignatureType> neighbor(particleData.dataContainer, n);
 
                 // calculate distance
-                Point<dimension, PositionType> n_pos = neighbor.position();
-                Point<dimension, PositionType> p_pos = particle.position();
+                Point<dimension, PositionType> n_pos = neighbor.position_raw();
+                Point<dimension, PositionType> p_pos = particle.position_raw();
                 PositionType distance = p_pos.distance(n_pos);
 
                 // check if distance <= cutoff radius

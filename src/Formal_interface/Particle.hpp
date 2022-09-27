@@ -34,21 +34,21 @@ public:
     Particle(DataContainerType& dataContainer_in, DataKeyType key_in) : dataContainer(dataContainer_in), key(key_in) {}
 
     template<unsigned int id>
-    inline auto property() -> decltype(dataContainer.template property<id>(key)) {
+    inline auto property_raw() -> decltype(dataContainer.template property<id>(key)) {
         return dataContainer.template property<id>(key);
     }
 
     template<unsigned int id>
-    inline auto property_vec() {
+    inline auto property() {
         return dataContainer.template property_vec<id>(key);
     }
 
-    inline auto position() -> decltype(dataContainer.position(key)) {
+    inline auto position_raw() -> decltype(dataContainer.position(key)) {
         return dataContainer.position(key);
     }
 
 
-    inline auto position_vec() -> decltype(dataContainer.position_vec(key)) {
+    inline auto position() -> decltype(dataContainer.position_vec(key)) {
         return dataContainer.position_vec(key);
     }
 
