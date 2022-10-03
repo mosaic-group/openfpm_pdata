@@ -102,6 +102,12 @@ public:
         // distribute particles across cores
         particleData.getOpenFPMContainer().map();
 
+        // write particle data to file
+        if (simulationParameters.writeOutput) {
+            particleData.getDataContainer().write_frame("particles", iteration);
+            iteration++;
+        }
+
         // synchronize ghost for all properties
         particleData.ghost_get_all();
 
@@ -132,7 +138,6 @@ public:
         // call evolve method (global variable)
         particleMethod.evolveGlobalVariable();
 
-
         // write particle data to file
         if (simulationParameters.writeOutput) {
             if (iteration % simulationParameters.writeIteration == 0)
@@ -142,8 +147,6 @@ public:
                 particleData.getDataContainer().write_frame("particles", iteration);
             }
         }
-
-
 
         iteration++;
     }
