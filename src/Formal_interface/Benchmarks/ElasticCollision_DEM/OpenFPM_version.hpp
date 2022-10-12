@@ -1,0 +1,8 @@
+//
+// Created by landfried on 11.10.22.
+//
+
+#ifndef OPENFPM_PDATA_OPENFPM_VERSION_HPP
+#define OPENFPM_PDATA_OPENFPM_VERSION_HPP
+
+#endif //OPENFPM_PDATA_OPENFPM_VERSION_HPP
