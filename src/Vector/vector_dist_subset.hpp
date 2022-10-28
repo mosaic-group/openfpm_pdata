@@ -28,6 +28,11 @@ class vector_dist_ws : public vector_dist<dim,St,typename AggregateAppend<int,pr
         this->template getProp<flag_prop::value>(key) = sub_id;
     }
 
+    int getSubset(vect_dist_key_dx key)
+    {
+        return this->template getProp<flag_prop::value>(key);
+    }
+
     void ghost_get_subset()
     {
         this->template ghost_get<flag_prop::value>(NO_POSITION | SKIP_LABELLING);
