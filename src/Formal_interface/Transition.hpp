@@ -58,12 +58,15 @@ protected:
     }
 
     void executeInitialization(ParticleData<ParticleMethodType, SimulationParametersType> &particleData) {
+
+        InstanceType instance(particleData);
+
         auto it2 = particleData.getParticleIterator();
         while (it2.isNext())
         {
             auto p = it2.get();
             Particle<ParticleSignatureType> particle(particleData.dataContainer, p);
-            simulationParameters.initialization(particle);
+            instance.initialization(particle);
             ++it2;
         }
 

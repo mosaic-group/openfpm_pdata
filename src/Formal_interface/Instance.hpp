@@ -8,11 +8,14 @@
 #include "iostream"
 #include "ParticleData.hpp"
 #include "../../openfpm_numerics/src/Draw/DrawParticles.hpp"
+#include "Particle.hpp"
 
 template <typename ParticleMethodType, typename SimulationParametersType>
 class Instance {
 
 protected:
+
+    using ParticleSignatureType = typename ParticleMethodType::ParticleSignature;
 
     ParticleData<ParticleMethodType, SimulationParametersType> &particleData;
 
@@ -71,7 +74,10 @@ public:
 
     virtual void shapePlacement() {}
 
-    virtual void setGlobalVariable() {}
+    //virtual void setGlobalVariable() {}
+
+    virtual void initialization(Particle<ParticleSignatureType> particle) {}
+
 
 };
 
