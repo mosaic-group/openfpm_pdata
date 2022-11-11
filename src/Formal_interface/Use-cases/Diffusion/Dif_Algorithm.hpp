@@ -15,9 +15,7 @@
 #include "Formal_interface/SimulationParameters.hpp"
 #include "Formal_interface/InitialCondition.hpp"
 #include "Formal_interface/Interaction_Impl.hpp"
-
-#define PARTICLE(property_arg) particle.template property<property_arg>()
-#define NEIGHBOR(property_arg) neighbor.template property<property_arg>()
+#include "Formal_interface/Alias.hpp"
 
 
 struct PSE_ParticleSignature {
