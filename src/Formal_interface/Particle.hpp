@@ -66,6 +66,15 @@ public:
 
 
 
+    // Vector algebra
+
+    template<unsigned int id>
+    inline auto laplace() {
+        return dataContainer.template property_vec<id>(key);
+//        ParticleSignatureType::properties<id> result;
+    }
+
+
 
 };
 
