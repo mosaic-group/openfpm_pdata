@@ -32,10 +32,11 @@ constexpr int acceleration = 1;
 struct GlobalVariable {
     float dt = 0.001;
     float t = 0;
-    float t_final = 50;
-    float r_cut = 0.5;
+    float t_final = .5;
+    float r_cut = 0.08;
     float damp = 0.9;
-    float domainSize = 20.0;
+    float domainSize = 3.0;
+    int number_particles = 3000;
 } globalvar;
 
 
@@ -91,7 +92,7 @@ public:
 //        Point<dimension, PositionType> diff_collision = diff_scaled * scalarProduct(diff_vel, diff);
         Point<dimension, PositionType> diff_collision = diff * scalarProduct(diff_scaled, diff_vel);
 
-        diff_collision = diff_collision * globalvar.damp;
+        diff_collision = diff_collision; //* globalvar.damp;
 
 
         // Apply collision to particle acceleration
@@ -142,7 +143,7 @@ public:
 
     // Random initial condition
     typedef INITIALCONDITION_RANDOM initialCondition;
-    int numberParticles = 50;
+    int numberParticles = globalvar.number_particles;
 
     // Neighborhood method
     typedef NEIGHBORHHOD_CELLLIST neighborhoodDetermination;

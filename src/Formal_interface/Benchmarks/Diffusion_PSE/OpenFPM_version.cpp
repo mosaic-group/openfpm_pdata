@@ -3,35 +3,35 @@
 #include <chrono>
 #include <fstream>
 
-
-double dt = 0.05;
-double t_final = 400;
-double domainSize = 40.0;
-const int meshSize = 64;
+constexpr int DIMENSION = 3;
+double dt = 0.005;
+double t_final = 0.5;
+double domainSize = 1.0;
+const int meshSize = 50;
 double meshSpacing = domainSize / meshSize;
 double epsilon = meshSpacing;
 double r_cut = 3 * epsilon;
 double D = 0.01;
-double kernel = dt * D * 15.0 * pow(meshSpacing/epsilon, 2)  / pow(epsilon * M_PI, 2);
+double kernel = dt * D * 15.0 * pow(meshSpacing/epsilon, DIMENSION)  / pow(epsilon * M_PI, 2);
 
 
-void createStencil(std::vector<std::array<int, 2>>& stencil) {
+void createStencil(std::vector<std::array<int, DIMENSION>>& stencil) {
     
     // calculate farthest neighbor distance (in mesh nodes)
     int neighborDistance = round(r_cut / meshSpacing);
 
     // width of nD cube
-    int diameter = (2 * neighborDistance) + 1;
+    int diameter = (DIMENSION * neighborDistance) + 1;
 
     // offset to shift nD cube to the center node
-    int offset = floor(diameter / 2);
+    int offset = floor(diameter / DIMENSION);
 
     // create nD cube
-    for (int i = 0; i < pow(diameter, 2); ++i) {
-        std::array<int, 2> neighbor;
+    for (int i = 0; i < pow(diameter, DIMENSION); ++i) {
+        std::array<int, DIMENSION> neighbor;
 
         // compute stencil node
-        for (int component = 0; component < 2; ++component) {
+        for (int component = 0; component < DIMENSION; ++component) {
             neighbor[component] = ((int)round(i / pow(diameter, component)) % diameter) - offset;
         }
 
@@ -42,12 +42,12 @@ void createStencil(std::vector<std::array<int, 2>>& stencil) {
     // remove all neighbors outside of cutoff radius
     double cutoffRadius2 = r_cut * r_cut;
     double spacing = meshSpacing;
-    auto it_rcut = std::remove_if(stencil.begin(), stencil.end(), [&cutoffRadius2, &spacing](std::array<int, 2> node)
+    auto it_rcut = std::remove_if(stencil.begin(), stencil.end(), [&cutoffRadius2, &spacing](std::array<int, DIMENSION> node)
     {
         // calculate squared distance
         // from center to neighbor node
         float distance2 = 0;
-        for (int i = 0; i < 2; ++i) {
+        for (int i = 0; i < DIMENSION; ++i) {
             distance2 += node[i] * node[i] * spacing * spacing;
         }
         return (distance2 > cutoffRadius2);
@@ -55,7 +55,7 @@ void createStencil(std::vector<std::array<int, 2>>& stencil) {
     stencil.erase(it_rcut, stencil.end());
 
     // remove center particle
-    auto it_center = std::remove_if(stencil.begin(), stencil.end(), [](std::array<int, 2> node)
+    auto it_center = std::remove_if(stencil.begin(), stencil.end(), [](std::array<int, DIMENSION> node)
     { return std::all_of(node.begin(), node.end(), [](int comp){return comp == 0;}); });
     stencil.erase(it_center, stencil.end());
 
@@ -63,9 +63,9 @@ void createStencil(std::vector<std::array<int, 2>>& stencil) {
     // make symmetric
     
     // remove half of the particles to create symmetric stencil
-    auto it_symm = std::remove_if(stencil.begin(), stencil.end(), [](std::array<int, 2> node)
+    auto it_symm = std::remove_if(stencil.begin(), stencil.end(), [](std::array<int, DIMENSION> node)
     {
-        for (int i = 0; i < 2; ++i) {
+        for (int i = 0; i < DIMENSION; ++i) {
             // remove node if component > 0
             if (node[i] > 0)
                 return true;
@@ -105,17 +105,17 @@ int main(int argc, char* argv[])
         double t = 0;
 
         // 3D physical domain
-        Box<2,double> domain({0.0,0.0},{domainSize,domainSize});
+        Box<DIMENSION,double> domain({0.0,0.0, 0.0},{domainSize,domainSize, domainSize});
 
         // Grid size on each dimension
-        size_t sz[2] = {meshSize+1,meshSize+1};
+        size_t sz[DIMENSION] = {meshSize+1,meshSize+1, meshSize+1};
 
         // Ghost part
-        Ghost<2,double> g(r_cut);
+        Ghost<DIMENSION,double> g(r_cut);
 
-        grid_dist_id<2, double, aggregate<double, double>> g_dist(sz,domain,g);
+        grid_dist_id<DIMENSION, double, aggregate<double, double>> g_dist(sz,domain,g);
 
-        std::vector<std::array<int, 2>> stencil;
+        std::vector<std::array<int, DIMENSION>> stencil;
         createStencil(stencil);
 
         // Get the iterator (No ghost)
@@ -157,16 +157,16 @@ int main(int argc, char* argv[])
                 auto p = it1.get();
 
                 // iterate through all neighbor mesh nodes
-                for (std::array<int, 2> node: stencil) {
+                for (std::array<int, DIMENSION> node: stencil) {
                     auto n = p;
 
                     // move to stencil position
-                    for (int component = 0; component < 2; ++component) {
+                    for (int component = 0; component < DIMENSION; ++component) {
                         n = n.move(component, node[component]);
                     }
 
-                    Point<2, double> p_pos = g_dist.getPos(p);
-                    Point<2, double> n_pos = g_dist.getPos(n);
+                    Point<DIMENSION, double> p_pos = g_dist.getPos(p);
+                    Point<DIMENSION, double> n_pos = g_dist.getPos(n);
                     double distance2 = p_pos.distance2(n_pos);
 
                     double exchange = (g_dist.get<0>(n) - g_dist.get<0>(p))

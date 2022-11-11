@@ -53,7 +53,10 @@ int main(int argc, char* argv[]) {
 
     }
 
+    output_file.close();
+
     openfpm_finalize();
+
 
     return 0;
 }

@@ -5,10 +5,11 @@
 
 
 double dt = 0.001;
-double t_final = 50;
-double domainSize = 20.0;
+double t_final = .5;
+double domainSize = 3.0;
 double damp = 0.9;
-double r_cut = 0.5;
+double r_cut = 0.08;
+int number_particles = 3000;
 
 
 
@@ -43,7 +44,7 @@ int main(int argc, char* argv[])
         // Ghost part
         Ghost<2,double> g(r_cut);
 
-        vector_dist<2, double, aggregate<double[2], double[2]>> v_dist(50,domain, bc,g);
+        vector_dist<2, double, aggregate<double[2], double[2]>> v_dist(number_particles,domain, bc,g);
         auto NN = v_dist.getCellList<CELL_MEMBAL(2,double)>(r_cut);
 
 
@@ -130,7 +131,7 @@ int main(int argc, char* argv[])
                     Point<2, double> diff_vel = n_vel - p_vel;
 
                     Point<2, double> diff_collision = diff * (diff_scaled[0] * diff_vel[0] + diff_scaled[1] * diff_vel[1]);
-                    diff_collision = diff_collision * damp;
+                    diff_collision = diff_collision; //* damp;
 
                     // Apply collision to particle acceleration
                     v_dist.getProp<1>(p)[0] += diff_collision[0];
@@ -184,6 +185,8 @@ int main(int argc, char* argv[])
 
 
     }
+
+    output_file.close();
 
 
 	openfpm_finalize();

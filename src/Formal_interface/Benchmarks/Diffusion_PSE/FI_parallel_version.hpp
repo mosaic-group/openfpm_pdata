@@ -19,9 +19,8 @@
 #define PARTICLE(property_arg) particle.template property<property_arg>()
 #define NEIGHBOR(property_arg) neighbor.template property<property_arg>()
 
-
 struct PSE_ParticleSignature {
-    static constexpr int dimension = 2;
+    static constexpr int dimension = 3;
     typedef double position;
     typedef aggregate<size_t, double, double> properties;
     typedef MESH_PARTICLES dataStructure;
@@ -35,17 +34,17 @@ constexpr int accumulator = 2;
 
 
 struct GlobalVariable {
-    double dt = 0.05;
+    double dt = 0.005;
     double t = 0;
-    double t_final = 400;
+    double t_final = 0.5;
 
-    double domainSize = 40.0;
-    int meshSize = 64;
+    double domainSize = 1.0;
+    int meshSize = 50;
     double meshSpacing = domainSize / meshSize;
     double epsilon = meshSpacing;
     double r_cut = 3 * epsilon;
     double D = 0.01;
-    double kernel = dt * D * 15.0 * pow(meshSpacing/epsilon, 2  )  / pow(epsilon * M_PI, 2);
+    double kernel = dt * D * 15.0 * pow(meshSpacing/epsilon, PSE_ParticleSignature::dimension  )  / pow(epsilon * M_PI, 2);
 } globalvar;
 
 
