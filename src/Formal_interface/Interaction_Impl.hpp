@@ -64,9 +64,18 @@ public:
                 auto n = iteratorNeighbors.get();
                 Particle<ParticleSignatureType> neighbor(particleData.dataContainer, n);
 
-                if (particle != neighbor) {
-                    particleMethod.interact(particle, neighbor);
+                // calculate distance
+                Point<dimension, PositionType> n_pos = neighbor.position_raw();
+                Point<dimension, PositionType> p_pos = particle.position_raw();
+                PositionType distance = p_pos.distance(n_pos);
+
+                // check if distance <= cutoff radius
+                if (distance <= simulationParameters.cutoff_radius) {
+                    if (particle != neighbor) {
+                        particleMethod.interact(particle, neighbor);
+                    }
                 }
+
                 ++iteratorNeighbors;
             }
             ++iteratorAll;
