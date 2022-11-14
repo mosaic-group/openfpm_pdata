@@ -20,7 +20,7 @@
 
 double GlobalVariable::dt = 0.05;
 double GlobalVariable::t = 0;
-double GlobalVariable::t_final = 1;
+double GlobalVariable::t_final = 10;
 
 double GlobalVariable::domainSize = 40.0;
 int GlobalVariable::meshSize = 64;
@@ -28,8 +28,7 @@ double GlobalVariable::meshSpacing = GlobalVariable::domainSize / GlobalVariable
 double GlobalVariable::epsilon = GlobalVariable::meshSpacing;
 double GlobalVariable::r_cut = 3 * GlobalVariable::epsilon;
 double GlobalVariable::D = 0.01;
-double GlobalVariable::kernel = GlobalVariable::dt * GlobalVariable::D * 15.0 *
-        pow(GlobalVariable::meshSpacing/GlobalVariable::epsilon, 3)  / pow(GlobalVariable::epsilon * M_PI, 2);
+double GlobalVariable::kernelFactor = GlobalVariable::D * 15.0 * pow(GlobalVariable::meshSpacing, 3) / (pow(GlobalVariable::epsilon, 5)  * pow(M_PI, 2));
 
 
 template <typename ParticleSignatureType>
@@ -52,7 +51,7 @@ public:
     typedef NEIGHBORHOOD_MESH neighborhoodDetermination;
     static const int interactionType = INTERACTION_SYMMETRIC;
 
-    int writeIteration = 10;
+    int writeIteration = 1;
 
 };
 
