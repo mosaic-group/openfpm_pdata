@@ -16,7 +16,7 @@
 #include "Formal_interface/InitialCondition.hpp"
 #include "Formal_interface/Interaction_Impl.hpp"
 #include "Formal_interface/Alias.hpp"
-
+#include "Formal_interface/Util.hpp"
 
 struct PSE_ParticleSignature {
     static constexpr int dimension = 3;
@@ -55,20 +55,14 @@ public:
     void evolve(Particle<ParticleSignature> particle) override {
         PARTICLE(concentration) += PARTICLE(accumulator) * globalvar.kernel;
         PARTICLE(accumulator) = 0;
-
     }
 
     void interact(Particle<ParticleSignature> particle, Particle<ParticleSignature> neighbor) override {
-        Point<dimension, PositionType> p_pos = particle.position_raw();
-        Point<dimension, PositionType> n_pos = neighbor.position_raw();
-        PositionType distance2 = p_pos.distance2(n_pos);
-
+        PositionType r_pq2 = distance2(particle, neighbor);
         double exchange = (NEIGHBOR(concentration) - PARTICLE(concentration))
-                          / (1 + pow(distance2 / globalvar.epsilon / globalvar.epsilon, 5)) ;
-
+                          / (1 + pow(r_pq2 / globalvar.epsilon / globalvar.epsilon, 5)) ;
         PARTICLE(accumulator) += exchange;
         NEIGHBOR(accumulator) -= exchange;
-
     }
 
     void evolveGlobalVariable() override {

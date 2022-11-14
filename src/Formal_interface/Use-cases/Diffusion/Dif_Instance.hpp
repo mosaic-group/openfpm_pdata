@@ -77,7 +77,7 @@ public:
         }
 
         if (centerParticle) {
-            PARTICLE(concentration) = 1;
+            PARTICLE(concentration) = 1 / pow(globalvar.meshSpacing, 3);
         }
     }
 
