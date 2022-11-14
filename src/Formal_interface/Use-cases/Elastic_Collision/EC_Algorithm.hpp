@@ -16,6 +16,7 @@
 #include "Formal_interface/InitialCondition.hpp"
 #include "Formal_interface/Interaction_Impl.hpp"
 #include "Formal_interface/Alias.hpp"
+#include "Formal_interface/Util.hpp"
 
 
 struct EC_ParticleSignature {
@@ -59,26 +60,13 @@ public:
 
     }
 
+
+
     void interact(Particle<ParticleSignature> particle, Particle<ParticleSignature> neighbor) override {
 
-        // Declare particle property variables
-        Point<dimension, PositionType> p_pos = particle.position_raw();
-        Point<dimension, PositionType> n_pos = neighbor.position_raw();
-        Point<dimension, PositionType> p_vel = particle.template property_raw<velocity>();
-        Point<dimension, PositionType> n_vel = neighbor.template property_raw<velocity>();
-
-        // Check cutoff radius
-        if (p_pos.distance(n_pos) > globalvar.r_cut)
-            return;
-
-        // Compute collision vector
-        Point<dimension, PositionType> diff = n_pos - p_pos;
-        Point<dimension, PositionType> diff_scaled = diff / n_pos.distance2(p_pos);
-        Point<dimension, PositionType> diff_vel = n_vel - p_vel;
-        Point<dimension, PositionType> diff_collision = diff_scaled * scalarProduct(diff, diff_vel);
-
-        // Apply collision to particle acceleration
-        PARTICLE(acceleration) += diff_collision;
+        // Compute collision
+        auto diff = neighbor.position() - particle.position();
+        PARTICLE(acceleration) += diff / abs2(diff) * scalarProduct(diff, NEIGHBOR(velocity) - PARTICLE(velocity));
     }
 
 

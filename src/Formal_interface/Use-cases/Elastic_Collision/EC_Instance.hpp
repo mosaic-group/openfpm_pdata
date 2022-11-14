@@ -19,7 +19,7 @@
 
 float GlobalVariable::dt = 0.001;
 float GlobalVariable::t = 0;
-float GlobalVariable::t_final = 1;
+float GlobalVariable::t_final = 3;
 float GlobalVariable::r_cut = 0.5;
 float GlobalVariable::domainSize = 20.0;
 
@@ -73,7 +73,6 @@ public:
         // Randomize velocity (normal distribution)
         for (int i = 0; i < dimension; i++) {
             PARTICLE(velocity)[i] = this->normalDistribution(0, 1);
-//            particle.template property<velocity>()[i] = this->normalDistribution(0, 1);
         }
     }
 
