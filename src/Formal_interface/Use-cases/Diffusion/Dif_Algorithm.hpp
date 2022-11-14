@@ -21,13 +21,13 @@
 struct PSE_ParticleSignature {
     static constexpr int dimension = 3;
     typedef double position;
-    typedef aggregate<size_t, double, double> properties;
+    typedef aggregate<double, double> properties;
     typedef MESH_PARTICLES dataStructure;
 };
 
 // Property identifier
-constexpr int concentration = 1;
-constexpr int accumulator = 2;
+constexpr int concentration = 0;
+constexpr int accumulator = 1;
 
 
 struct GlobalVariable {
@@ -58,9 +58,7 @@ public:
     }
 
     void interact(Particle<ParticleSignature> particle, Particle<ParticleSignature> neighbor) override {
-        PositionType r_pq2 = distance2(particle, neighbor);
-        double exchange = (NEIGHBOR(concentration) - PARTICLE(concentration))
-                          / (1 + pow(r_pq2 / globalvar.epsilon / globalvar.epsilon, 5)) ;
+        double exchange = (NEIGHBOR(concentration) - PARTICLE(concentration)) / (1 + pow(distance2(neighbor, particle) / globalvar.epsilon / globalvar.epsilon, 5)) ;
         PARTICLE(accumulator) += exchange;
         NEIGHBOR(accumulator) -= exchange;
     }
