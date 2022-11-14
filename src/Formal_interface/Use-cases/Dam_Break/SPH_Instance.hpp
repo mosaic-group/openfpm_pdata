@@ -26,7 +26,7 @@
     double GlobalVariable::particleSpacing=1.0/16.0;
     double GlobalVariable::particleSpacingWater=particleSpacing;
     double GlobalVariable::mass=pow(particleSpacing,3)*1000;
-    Point<DIMENSION, POSITIONTYPE> GlobalVariable::gravity{0.0,0.0,-9.81};
+    Point<SPH_ParticleSignature::dimension, SPH_ParticleSignature::position>  GlobalVariable::gravity{0.0,0.0,-9.81};
     double GlobalVariable::c0=45.0;
     double GlobalVariable::density0=1000;
     int GlobalVariable::gamma=7;

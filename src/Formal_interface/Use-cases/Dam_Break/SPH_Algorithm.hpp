@@ -17,12 +17,8 @@
 #include "Formal_interface/InitialCondition.hpp"
 #include "Formal_interface/Interaction_Impl.hpp"
 #include "Formal_interface/Instance.hpp"
-
-
-
-
-constexpr int DIMENSION = 3;
-typedef double POSITIONTYPE;
+#include "Formal_interface/Util.hpp"
+#include "Formal_interface/Alias.hpp"
 
 // Property identifier
 constexpr int positionOld = 0;
@@ -36,8 +32,8 @@ constexpr int boundary = 7;
 
 
 struct SPH_ParticleSignature {
-    static constexpr int dimension = DIMENSION;
-    typedef POSITIONTYPE position;
+    static constexpr int dimension = 3;
+    typedef double position;
     typedef aggregate<double[dimension], double[dimension], double[dimension], double, double, double[dimension],double, bool> properties;
     typedef FREE_PARTICLES dataStructure;
 };
@@ -52,7 +48,7 @@ struct GlobalVariable {
     static double particleSpacing;
     static double particleSpacingWater;
     static double mass;
-    static Point<DIMENSION, POSITIONTYPE> gravity;
+    static Point<SPH_ParticleSignature::dimension, SPH_ParticleSignature::position> gravity;
     static double c0;
     static double density0;
     static int gamma;
@@ -82,93 +78,79 @@ class SPH_ParticleMethod : public ParticleMethod<ParticleSignature> {
     double pressure_density2(double density){
         return g.c0*g.c0*g.density0/g.gamma * (pow(density/g.density0, g.gamma)-1)/density/density;
     }
+
 public:
 
 
     void interact(Particle<ParticleSignature> particle, Particle<ParticleSignature> neighbor) override {
 
-        Point<dimension, PositionType> n_pos = neighbor.position_raw();
-        Point<dimension, PositionType> p_pos = particle.position_raw();
-        Point<dimension, PositionType> r_pq = n_pos - p_pos;
-        Point<dimension, PositionType> v_pq =  neighbor.template property<velocity>()
-                                               -particle.template property<velocity>();
-//        double dist2_pq = r_pq.abs2();
-        double dist2_pq = p_pos.distance2(n_pos);
-        double dist_pq = sqrt(dist2_pq);
+        Point<dimension, PositionType> r_pq = neighbor.position() - particle.position();
+        double dist2_pq = abs2(r_pq);
+        double f_pq=  pow(1.0 - sqrt(dist2_pq) / 2.0 / g.h, 3);
+        double vr = scalarProduct(r_pq, NEIGHBOR(velocity) - PARTICLE(velocity));
 
-        double f_pq=  pow(1.0-dist_pq/2.0/g.h , 3);
-        double vr = scalarProduct(r_pq, v_pq);
-
-        double p_pressure_density2=pressure_density2(particle.template property<density>());
-        double q_pressure_density2=pressure_density2(neighbor.template property<density>());
-        double interim01= p_pressure_density2+q_pressure_density2 ;
+        // Compute change of velocity
+        double interim01 = pressure_density2(NEIGHBOR(density)) + pressure_density2(PARTICLE(density));
         double interim02 = 10*g.nu/dist2_pq * vr;
+        PARTICLE(deltaVelocity) += (interim01 - interim02 / PARTICLE(density)) * r_pq * f_pq;
+        NEIGHBOR(deltaVelocity) -= (interim01 - interim02 / NEIGHBOR(density)) * r_pq * f_pq;
 
-        particle.template property<deltaVelocity>() += (interim01-interim02/particle.template property<density>())* r_pq * f_pq;
-        neighbor.template property<deltaVelocity>() -= (interim01-interim02/neighbor.template property<density>())* r_pq * f_pq;
+        // Compute change of density
+        double densityChange= vr * f_pq;
+        PARTICLE(deltaDensity) += densityChange;
+        NEIGHBOR(deltaDensity) += densityChange;
+    }
 
+    void evolve(Particle<ParticleSignature> particle) override {
+        double prefact = g.mass* -5.0*21.0/16.0/M_PI/pow(g.h,5);
 
+        Point<dimension, PositionType> acceleration = g.gravity + PARTICLE(deltaVelocity) * prefact;
 
-double densityChange= vr * f_pq;
-
-particle.template property<deltaDensity>() += densityChange;
-neighbor.template property<deltaDensity>() += densityChange;
-
-
-}
-
-void evolve(Particle<ParticleSignature> particle) override {
-double prefact = g.mass* -5.0*21.0/16.0/M_PI/pow(g.h,5);
-
-Point<dimension, PositionType> acceleration = g.gravity + particle.template property<deltaVelocity>()*prefact;
-
-double densityacceleration = particle.template property<deltaDensity>()*prefact;
+        double densityAcceleration = PARTICLE(deltaDensity) * prefact;
 
         if (g.phase==0){
-            if (particle.template property<boundary>()==false){
+            if (PARTICLE(boundary) == false){
                 // fluid
 
                 // move particles half step
-                particle.template property<positionOld>()=particle.position();
-                particle.position() += g.dt/2.0f*particle.template property<velocity>();
+                PARTICLE(positionOld) = particle.position();
+                particle.position() += g.dt/2.0f * PARTICLE(velocity);
 
                 // change velocity half step
-                particle.template property<velocityOld>()=particle.template property<velocity>();
-                particle.template property<velocity>()+= g.dt/2.0*acceleration;
+                PARTICLE(velocityOld) = PARTICLE(velocity);
+                PARTICLE(velocity) += g.dt/2.0 * acceleration;
             }
 
             // fluid + boundary
 
             // change density
-            particle.template property<densityOld>()=particle.template property<density>();
-            particle.template property<density>()+=g.dt/2.0*densityacceleration;
+            PARTICLE(densityOld) = PARTICLE(density);
+            PARTICLE(density) += g.dt/2.0 * densityAcceleration;
         }
-        else{
-            if (particle.template property<boundary>()==false){
+        else {
+            if (PARTICLE(boundary) == false) {
                 // fluid
 
                 // move particle from original position
                 Point<dimension, PositionType> step_acc_half = g.dt  / 2.0 * acceleration;
-                Point<dimension, PositionType> step_vel = g.dt * (particle.template property<velocityOld>() + step_acc_half);
-                Point<dimension, PositionType> new_pos = particle.template property<positionOld>() + step_vel;
+                Point<dimension, PositionType> step_vel = g.dt * (PARTICLE(velocityOld) + step_acc_half);
+                Point<dimension, PositionType> new_pos = PARTICLE(positionOld) + step_vel;
                 particle.position() = new_pos;
 
                 // change velocity
                 Point<dimension, PositionType> step_acc_full = g.dt * acceleration;
-                particle.template property<velocity>() = particle.template property<velocityOld>() + step_acc_full;
-
-
+                PARTICLE(velocity) = PARTICLE(velocityOld) + step_acc_full;
             }
 
             // fluid + boundary
 
             // change density
-            particle.template property<density>()= particle.template property<densityOld>() + g.dt*densityacceleration;
+            PARTICLE(density) = PARTICLE(densityOld) + g.dt*densityAcceleration;
         }
 
         //set to 0 to have a fresh accumulators for the next time step
-        particle.template property<deltaVelocity>()=Point<dimension, PositionType> (0.0);
-        particle.template property<deltaDensity>()=0.0;
+        PARTICLE(deltaVelocity) = Point<dimension, PositionType> (0.0);
+        PARTICLE(deltaDensity) = 0.0;
     }
 
     void evolveGlobalVariable() override {
