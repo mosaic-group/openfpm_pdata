@@ -7,6 +7,7 @@
 
 typedef EC_ParticleMethod<EC_ParticleSignature> ParticleMethodType;
 typedef EC_SimulationParams<EC_ParticleSignature> SimulationParametersType;
+typedef EC_Instance<ParticleMethodType, SimulationParametersType> InstanceType;
 
 int main(int argc, char* argv[]) {
 
@@ -16,7 +17,7 @@ int main(int argc, char* argv[]) {
     ParticleData<ParticleMethodType, SimulationParametersType> particleData;
 
     // State transition
-    Transition<ParticleMethodType, SimulationParametersType> transition(particleData);
+    Transition<ParticleMethodType, SimulationParametersType, InstanceType> transition(particleData);
 
     // Main loop
     while (!transition.stop(particleData)) {

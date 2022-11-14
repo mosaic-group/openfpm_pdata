@@ -19,7 +19,7 @@
 
 float GlobalVariable::dt = 0.001;
 float GlobalVariable::t = 0;
-float GlobalVariable::t_final = 50;
+float GlobalVariable::t_final = 1;
 float GlobalVariable::r_cut = 0.5;
 float GlobalVariable::domainSize = 20.0;
 
@@ -49,18 +49,38 @@ public:
     float cellWidth = globalvar.r_cut;
 
 
-    void initialization(Particle<ParticleSignatureType> particle) override {
 
-        // Randomize velocity (normal distribution)
-        for (int i = 0; i < dimension; i++) {
-            particle.template property<velocity>()[i] = this->normalDistribution(0, 1);
-        }
-    }
 
     bool writeOutput = true;
     int writeIteration = 25;
 
 };
 
+template <typename ParticleMethodType, typename SimulationParametersType>
+class EC_Instance : Instance<ParticleMethodType, SimulationParametersType> {
+
+    static constexpr int dimension = EC_ParticleSignature::dimension;
+    using PositionType = typename EC_ParticleSignature::position;
+
+public:
+
+    EC_Instance(ParticleData<ParticleMethodType, SimulationParametersType> &particleData_in) :
+    Instance<ParticleMethodType, SimulationParametersType>(particleData_in){}
+
+
+    void initialization(Particle<EC_ParticleSignature> particle) override {
+
+        // Randomize velocity (normal distribution)
+        for (int i = 0; i < dimension; i++) {
+            PARTICLE(velocity)[i] = this->normalDistribution(0, 1);
+//            particle.template property<velocity>()[i] = this->normalDistribution(0, 1);
+        }
+    }
+
+    void freePlacement() {}
+
+    void shapePlacement() {}
+
+};
 
 #endif //OPENFPM_PDATA_EC_INSTANCE_HPP

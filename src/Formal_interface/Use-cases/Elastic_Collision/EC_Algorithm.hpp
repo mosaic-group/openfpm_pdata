@@ -15,6 +15,7 @@
 #include "Formal_interface/SimulationParameters.hpp"
 #include "Formal_interface/InitialCondition.hpp"
 #include "Formal_interface/Interaction_Impl.hpp"
+#include "Formal_interface/Alias.hpp"
 
 
 struct EC_ParticleSignature {
@@ -48,13 +49,13 @@ public:
     void evolve(Particle<ParticleSignature> particle) override {
 
         // Apply change of velocity
-        particle.template property<velocity>() += particle.template property<acceleration>();
+        PARTICLE(velocity) += PARTICLE(acceleration);
 
         // Reset change of velocity
-        particle.template property<acceleration>() = 0.0f;
+        PARTICLE(acceleration) = 0.0f;
 
         // Euler time-stepping move particles
-        particle.position() += particle.template property<velocity>() * globalvar.dt;
+        particle.position() += PARTICLE(velocity) * globalvar.dt;
 
     }
 
@@ -74,22 +75,21 @@ public:
         Point<dimension, PositionType> diff = n_pos - p_pos;
         Point<dimension, PositionType> diff_scaled = diff / n_pos.distance2(p_pos);
         Point<dimension, PositionType> diff_vel = n_vel - p_vel;
-        Point<dimension, PositionType> diff_collision = diff * scalarProduct(diff_scaled, diff_vel);
+        Point<dimension, PositionType> diff_collision = diff_scaled * scalarProduct(diff, diff_vel);
 
         // Apply collision to particle acceleration
-        particle.template property<acceleration>() += diff_collision;
+        PARTICLE(acceleration) += diff_collision;
+    }
+
+
+    void evolveGlobalVariable() {
+        // advance time
+        globalvar.t += globalvar.dt;
     }
 
     bool stop() override {
-        std::cout << "\r" << int(globalvar.t / globalvar.t_final * 100) << "%" << std::flush;
-
         // Check simulation time
-        if (globalvar.t > globalvar.t_final)
-            return true;
-
-        globalvar.t += globalvar.dt;
-
-        return false;
+        return globalvar.t > globalvar.t_final;
     }
 };
 
