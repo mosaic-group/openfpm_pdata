@@ -5,19 +5,16 @@
 #include "EC_Algorithm.hpp"
 #include "EC_Instance.hpp"
 
-typedef EC_ParticleMethod<EC_ParticleSignature> ParticleMethodType;
-typedef EC_SimulationParams<EC_ParticleSignature> SimulationParametersType;
-typedef EC_Instance<ParticleMethodType, SimulationParametersType> InstanceType;
 
 int main(int argc, char* argv[]) {
 
     openfpm_init(&argc,&argv);
 
     // Particle container
-    ParticleData<ParticleMethodType, SimulationParametersType> particleData;
+    ParticleData<DEM_ParticleMethod, PEC_SimulationParams> particleData;
 
     // State transition
-    Transition<ParticleMethodType, SimulationParametersType, InstanceType> transition(particleData);
+    Transition<DEM_ParticleMethod, PEC_SimulationParams, PEC_Instance> transition(particleData);
 
     // Main loop
     while (!transition.stop(particleData)) {

@@ -19,7 +19,7 @@
 #include "Formal_interface/Util.hpp"
 
 
-struct EC_ParticleSignature {
+struct DEM_ParticleSignature {
     static constexpr int dimension = 2;
     typedef float position;
     typedef aggregate<float[dimension], float[dimension]> properties;
@@ -30,7 +30,6 @@ struct EC_ParticleSignature {
 constexpr int velocity = 0;
 constexpr int acceleration = 1;
 
-
 struct GlobalVariable {
     static float dt;
     static float t;
@@ -39,36 +38,24 @@ struct GlobalVariable {
     static float domainSize;
 } globalvar;
 
-template <typename ParticleSignature>
-class EC_ParticleMethod : public ParticleMethod<ParticleSignature> {
-
-    static constexpr int dimension = ParticleSignature::dimension;
-    using PositionType = typename ParticleSignature::position;
+class DEM_ParticleMethod : public ParticleMethod<DEM_ParticleSignature> {
 
 public:
 
     void evolve(Particle<ParticleSignature> particle) override {
-
         // Apply change of velocity
         PARTICLE(velocity) += PARTICLE(acceleration);
-
         // Reset change of velocity
         PARTICLE(acceleration) = 0.0f;
-
         // Euler time-stepping move particles
         particle.position() += PARTICLE(velocity) * globalvar.dt;
-
     }
 
-
-
     void interact(Particle<ParticleSignature> particle, Particle<ParticleSignature> neighbor) override {
-
         // Compute collision
         auto diff = neighbor.position() - particle.position();
         PARTICLE(acceleration) += diff / abs2(diff) * scalarProduct(diff, NEIGHBOR(velocity) - PARTICLE(velocity));
     }
-
 
     void evolveGlobalVariable() {
         // advance time

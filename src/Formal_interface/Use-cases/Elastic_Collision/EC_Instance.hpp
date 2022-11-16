@@ -23,20 +23,12 @@ float GlobalVariable::t_final = 3;
 float GlobalVariable::r_cut = 0.5;
 float GlobalVariable::domainSize = 20.0;
 
-template <typename ParticleSignatureType>
-class EC_SimulationParams : public SimulationParameters<ParticleSignatureType> {
-
-    static constexpr int dimension = ParticleSignatureType::dimension;
-    using PositionType = typename ParticleSignatureType::position;
-    using PropertyType = typename ParticleSignatureType::properties;
+class PEC_SimulationParams : public SimulationParameters<DEM_ParticleSignature> {
 
 public:
 
-    // Domain
-    Point<dimension, PositionType> domainMin;
-    Point<dimension, PositionType> domainMax;
-
-    EC_SimulationParams() : domainMin(0.0f), domainMax(globalvar.domainSize) {
+    PEC_SimulationParams() {
+        this->setDomain(globalvar.domainSize);
         this->setBoundaryConditions(PERIODIC);
     }
 
@@ -48,30 +40,21 @@ public:
     typedef NEIGHBORHHOD_CELLLIST neighborhoodDetermination;
     float cellWidth = globalvar.r_cut;
 
-
-
-
     bool writeOutput = true;
     int writeIteration = 25;
 
 };
 
-template <typename ParticleMethodType, typename SimulationParametersType>
-class EC_Instance : Instance<ParticleMethodType, SimulationParametersType> {
-
-    static constexpr int dimension = EC_ParticleSignature::dimension;
-    using PositionType = typename EC_ParticleSignature::position;
+class PEC_Instance : Instance<DEM_ParticleMethod, PEC_SimulationParams> {
 
 public:
 
-    EC_Instance(ParticleData<ParticleMethodType, SimulationParametersType> &particleData_in) :
-    Instance<ParticleMethodType, SimulationParametersType>(particleData_in){}
+    PEC_Instance(ParticleData<DEM_ParticleMethod, PEC_SimulationParams> &particleData_in) :
+    Instance<DEM_ParticleMethod, PEC_SimulationParams>(particleData_in){}
 
-
-    void initialization(Particle<EC_ParticleSignature> particle) override {
-
+    void initialization(Particle<DEM_ParticleSignature> particle) override {
         // Randomize velocity (normal distribution)
-        for (int i = 0; i < dimension; i++) {
+        for (int i = 0; i < DEM_ParticleSignature::dimension; i++) {
             PARTICLE(velocity)[i] = this->normalDistribution(0, 1);
         }
     }
