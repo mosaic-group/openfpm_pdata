@@ -48,11 +48,7 @@
                     uint((GlobalVariable::domain_max[2] - GlobalVariable::domain_min[2]) / GlobalVariable::particleSpacing)};
 
 
-template <typename ParticleSignatureType>
-class DamBreak_SimulationParams : public SimulationParameters<ParticleSignatureType> {
-    static constexpr int dimension = ParticleSignatureType::dimension;
-    using PositionType = typename ParticleSignatureType::position;
-    using PropertyType = typename ParticleSignatureType::properties;
+class DamBreak_SimulationParams : public SimulationParameters<SPH_ParticleSignature> {
 
 public:
 
@@ -87,9 +83,7 @@ public:
 };
 
 
-
-
-class DamBreak_Instance : Instance<SPH_ParticleMethod<SPH_ParticleSignature>, DamBreak_SimulationParams<SPH_ParticleSignature>> {
+class DamBreak_Instance : Instance<SPH_ParticleMethod, DamBreak_SimulationParams> {
 
     static constexpr int dimension = SPH_ParticleSignature::dimension;
     using PositionType = typename SPH_ParticleSignature::position;
@@ -97,8 +91,8 @@ class DamBreak_Instance : Instance<SPH_ParticleMethod<SPH_ParticleSignature>, Da
 
 public:
 
-    DamBreak_Instance(ParticleData<SPH_ParticleMethod<SPH_ParticleSignature>, DamBreak_SimulationParams<SPH_ParticleSignature>> &particleData_in) :
-            Instance<SPH_ParticleMethod<SPH_ParticleSignature>, DamBreak_SimulationParams<SPH_ParticleSignature>>(particleData_in){}
+    DamBreak_Instance(ParticleData<SPH_ParticleMethod, DamBreak_SimulationParams> &particleData_in) :
+            Instance<SPH_ParticleMethod, DamBreak_SimulationParams>(particleData_in){}
 
     virtual void shapePlacement() {
 

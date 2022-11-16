@@ -5,20 +5,15 @@
 #include "SPH_Algorithm.hpp"
 #include <chrono>
 
-
-typedef SPH_ParticleMethod<SPH_ParticleSignature> ParticleMethodType;
-typedef DamBreak_SimulationParams<SPH_ParticleSignature> SimulationParametersType;
-typedef DamBreak_Instance InstanceType;
-
 int main(int argc, char* argv[]) {
 
     openfpm_init(&argc, &argv);
 
     // Particle container
-    ParticleData<ParticleMethodType, SimulationParametersType> particleData;
+    ParticleData<SPH_ParticleMethod, DamBreak_SimulationParams> particleData;
 
     // State transition
-    Transition<ParticleMethodType, SimulationParametersType, InstanceType> transition(particleData);
+    Transition<SPH_ParticleMethod, DamBreak_SimulationParams, DamBreak_Instance> transition(particleData);
 
     // Main loop
     while (!transition.stop(particleData)) {

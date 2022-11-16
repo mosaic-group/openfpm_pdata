@@ -69,8 +69,7 @@ struct GlobalVariable {
 } g;
 
 
-template <typename ParticleSignature>
-class SPH_ParticleMethod : public ParticleMethod<ParticleSignature> {
+class SPH_ParticleMethod : public ParticleMethod<SPH_ParticleSignature> {
     static constexpr int dimension = ParticleSignature::dimension;
     using PositionType = typename ParticleSignature::position;
 
