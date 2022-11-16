@@ -16,6 +16,11 @@ class Instance {
 protected:
 
     using ParticleSignatureType = typename ParticleMethodType::ParticleSignature;
+    static constexpr int dimension = ParticleSignatureType::dimension;
+    using PositionType = typename ParticleSignatureType::position;
+    using PropertyType = typename ParticleSignatureType::properties;
+
+    typedef Point<dimension, PositionType> PointType;
 
     ParticleData<ParticleMethodType, SimulationParametersType> &particleData;
 

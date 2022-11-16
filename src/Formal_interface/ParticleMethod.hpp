@@ -18,6 +18,12 @@ public:
 //    constexpr static int spaceDimension = dimension;
 
     typedef ParticleSignatureType ParticleSignature;
+    static constexpr int dimension = ParticleSignatureType::dimension;
+    using PositionType = typename ParticleSignatureType::position;
+    using PropertyType = typename ParticleSignatureType::properties;
+
+    typedef Point<dimension, PositionType> PointType;
+
 
     ParticleMethod() : gen(rd()) {}
 
