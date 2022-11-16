@@ -97,8 +97,8 @@ public:
     virtual void shapePlacement() {
 
         // fluid particles
-        Point<dimension, PositionType> waterblockMin{0.15,0.1,0.1};
-        Point<dimension, PositionType> waterblockMax{0.55,0.9,0.9};
+        PointType waterblockMin{0.15,0.1,0.1};
+        PointType waterblockMax{0.55,0.9,0.9};
 
         auto iterator_fluid = boxIterator(waterblockMin, waterblockMax, g.sz);
 
@@ -127,8 +127,8 @@ public:
 
         // obstacle column
 
-        Point<dimension, PositionType> columnMin{2.0, 3.0/8.0 ,0.0};
-        Point<dimension, PositionType> columnMax{2.25,5.0/8.0,1.0};
+        PointType columnMin{2.0, 3.0/8.0 ,0.0};
+        PointType columnMax{2.25,5.0/8.0,1.0};
 
         auto iterator_column = skinIterator(columnMin, columnMax, g.particleSpacing, g.sz);
 
@@ -157,8 +157,8 @@ public:
 
         // pool walls
 
-        Point<dimension, PositionType> poolMin{0.0,0.0,0.0};
-        Point<dimension, PositionType> poolMax{3.0,1.0,1.0};
+        PointType poolMin{0.0,0.0,0.0};
+        PointType poolMax{3.0,1.0,1.0};
 
         auto iterator_pool = skinOpenIterator(poolMin, poolMax, g.particleSpacing, g.sz);
 

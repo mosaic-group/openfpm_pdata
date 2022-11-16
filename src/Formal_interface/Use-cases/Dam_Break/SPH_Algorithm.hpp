@@ -83,7 +83,7 @@ public:
 
     void interact(Particle<ParticleSignature> particle, Particle<ParticleSignature> neighbor) override {
 
-        Point<dimension, PositionType> r_pq = neighbor.position() - particle.position();
+        PointType r_pq = neighbor.position() - particle.position();
         double dist2_pq = abs2(r_pq);
         double f_pq=  pow(1.0 - sqrt(dist2_pq) / 2.0 / g.h, 3);
         double vr = scalarProduct(r_pq, NEIGHBOR(velocity) - PARTICLE(velocity));
@@ -103,7 +103,7 @@ public:
     void evolve(Particle<ParticleSignature> particle) override {
         double prefact = g.mass* -5.0*21.0/16.0/M_PI/pow(g.h,5);
 
-        Point<dimension, PositionType> acceleration = g.gravity + PARTICLE(deltaVelocity) * prefact;
+        PointType acceleration = g.gravity + PARTICLE(deltaVelocity) * prefact;
 
         double densityAcceleration = PARTICLE(deltaDensity) * prefact;
 
@@ -131,13 +131,13 @@ public:
                 // fluid
 
                 // move particle from original position
-                Point<dimension, PositionType> step_acc_half = g.dt  / 2.0 * acceleration;
-                Point<dimension, PositionType> step_vel = g.dt * (PARTICLE(velocityOld) + step_acc_half);
-                Point<dimension, PositionType> new_pos = PARTICLE(positionOld) + step_vel;
+                PointType step_acc_half = g.dt  / 2.0 * acceleration;
+                PointType step_vel = g.dt * (PARTICLE(velocityOld) + step_acc_half);
+                PointType new_pos = PARTICLE(positionOld) + step_vel;
                 particle.position() = new_pos;
 
                 // change velocity
-                Point<dimension, PositionType> step_acc_full = g.dt * acceleration;
+                PointType step_acc_full = g.dt * acceleration;
                 PARTICLE(velocity) = PARTICLE(velocityOld) + step_acc_full;
             }
 
@@ -148,7 +148,7 @@ public:
         }
 
         //set to 0 to have a fresh accumulators for the next time step
-        PARTICLE(deltaVelocity) = Point<dimension, PositionType> (0.0);
+        PARTICLE(deltaVelocity) = PointType (0.0);
         PARTICLE(deltaDensity) = 0.0;
     }
 
