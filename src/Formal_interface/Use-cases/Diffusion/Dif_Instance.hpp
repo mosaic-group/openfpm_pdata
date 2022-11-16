@@ -55,8 +55,6 @@ public:
 class Diffusion_Instance : Instance<PSE_ParticleMethod, Diffusion_SimulationParams> {
 
     static constexpr int dimension = PSE_ParticleSignature::dimension;
-    using PositionType = typename PSE_ParticleSignature::position;
-
 
 public:
 
@@ -64,15 +62,11 @@ public:
             Instance<PSE_ParticleMethod, Diffusion_SimulationParams>(particleData_in){}
 
     void initialization(Particle<PSE_ParticleSignature> particle) override {
-        bool centerParticle = true;
-        for (int i = 0; i < dimension; ++i) {
-            if (particle.position()[i] != globalvar.domainSize / 4)
-                centerParticle = false;
-        }
 
-        if (centerParticle) {
+        PointType centerPoint = globalvar.domainSize / 4;
+        if (particle.position() == centerPoint)
             PARTICLE(concentration) = 1 / pow(globalvar.meshSpacing, 3);
-        }
+
     }
 
     void freePlacement() {}
