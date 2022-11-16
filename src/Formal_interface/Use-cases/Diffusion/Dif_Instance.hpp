@@ -31,12 +31,8 @@ double GlobalVariable::D = 0.01;
 double GlobalVariable::kernelFactor = GlobalVariable::D * 15.0 * pow(GlobalVariable::meshSpacing, 3) / (pow(GlobalVariable::epsilon, 5)  * pow(M_PI, 2));
 
 
-template <typename ParticleSignatureType>
-class Diffusion_SimulationParams : public SimulationParameters<ParticleSignatureType> {
+class Diffusion_SimulationParams : public SimulationParameters<PSE_ParticleSignature> {
 
-    static constexpr int dimension = ParticleSignatureType::dimension;
-    using PositionType = typename ParticleSignatureType::position;
-    using PropertyType = typename ParticleSignatureType::properties;
 
 public:
 
@@ -56,8 +52,7 @@ public:
 };
 
 
-template <typename ParticleMethodType, typename SimulationParametersType>
-class Diffusion_Instance : Instance<ParticleMethodType, SimulationParametersType> {
+class Diffusion_Instance : Instance<PSE_ParticleMethod, Diffusion_SimulationParams> {
 
     static constexpr int dimension = PSE_ParticleSignature::dimension;
     using PositionType = typename PSE_ParticleSignature::position;
@@ -65,8 +60,8 @@ class Diffusion_Instance : Instance<ParticleMethodType, SimulationParametersType
 
 public:
 
-    Diffusion_Instance(ParticleData<ParticleMethodType, SimulationParametersType> &particleData_in) :
-            Instance<ParticleMethodType, SimulationParametersType>(particleData_in){}
+    Diffusion_Instance(ParticleData<PSE_ParticleMethod, Diffusion_SimulationParams> &particleData_in) :
+            Instance<PSE_ParticleMethod, Diffusion_SimulationParams>(particleData_in){}
 
     void initialization(Particle<PSE_ParticleSignature> particle) override {
         bool centerParticle = true;

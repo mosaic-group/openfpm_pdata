@@ -34,7 +34,6 @@ struct GlobalVariable {
     static double dt;
     static double t;
     static double t_final;
-
     static double domainSize;
     static int meshSize;
     static double meshSpacing;
@@ -44,11 +43,7 @@ struct GlobalVariable {
     static double kernelFactor;
 } globalvar;
 
-template <typename ParticleSignature>
-class PSE_ParticleMethod : public ParticleMethod<ParticleSignature> {
-
-    static constexpr int dimension = ParticleSignature::dimension;
-    using PositionType = typename ParticleSignature::position;
+class PSE_ParticleMethod : public ParticleMethod<PSE_ParticleSignature> {
 
 public:
 
@@ -72,10 +67,7 @@ public:
     bool stop() override {
 
         // Check simulation time
-        if (globalvar.t > globalvar.t_final)
-            return true;
-
-        return false;
+        return globalvar.t > globalvar.t_final;
     }
 };
 
