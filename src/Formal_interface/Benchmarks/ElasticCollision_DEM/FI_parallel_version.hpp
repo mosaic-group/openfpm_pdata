@@ -35,8 +35,8 @@ struct GlobalVariable {
     float t_final = .5;
     float r_cut = 0.08;
     float damp = 0.9;
-    float domainSize = 3.0;
-    int number_particles = 3000;
+    float domainSize = 9.0;
+    int number_particles = 24000;
 } globalvar;
 
 

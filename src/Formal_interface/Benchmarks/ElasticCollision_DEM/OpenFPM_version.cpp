@@ -6,10 +6,10 @@
 
 double dt = 0.001;
 double t_final = .5;
-double domainSize = 3.0;
+double domainSize = 9.0;
 double damp = 0.9;
 double r_cut = 0.08;
-int number_particles = 3000;
+int number_particles = 24000;
 
 
 
