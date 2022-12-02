@@ -20,15 +20,15 @@
 
 double GlobalVariable::dt = 0.05;
 double GlobalVariable::t = 0;
-double GlobalVariable::t_final = 10;
+double GlobalVariable::t_final = 100;
 
 double GlobalVariable::domainSize = 40.0;
-int GlobalVariable::meshSize = 64;
+int GlobalVariable::meshSize = 128;
 double GlobalVariable::meshSpacing = GlobalVariable::domainSize / GlobalVariable::meshSize;
 double GlobalVariable::epsilon = GlobalVariable::meshSpacing;
 double GlobalVariable::r_cut = 3 * GlobalVariable::epsilon;
 double GlobalVariable::D = 0.01;
-double GlobalVariable::kernelFactor = GlobalVariable::D * 15.0 * pow(GlobalVariable::meshSpacing, 3) / (pow(GlobalVariable::epsilon, 5)  * pow(M_PI, 2));
+//double GlobalVariable::kernelFactor = GlobalVariable::D * 15.0 * pow(GlobalVariable::meshSpacing, 3) / (pow(GlobalVariable::epsilon, 5)  * pow(M_PI, 2));
 
 
 class Diffusion_SimulationParams : public SimulationParameters<PSE_ParticleSignature> {
@@ -47,7 +47,7 @@ public:
     typedef NEIGHBORHOOD_MESH neighborhoodDetermination;
     static const int interactionType = INTERACTION_SYMMETRIC;
 
-    int writeIteration = 1;
+    int writeIteration = 10;
 
 };
 

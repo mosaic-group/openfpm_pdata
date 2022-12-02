@@ -48,13 +48,16 @@ class PSE_ParticleMethod : public ParticleMethod<PSE_ParticleSignature> {
 public:
 
     void interact(Particle<ParticleSignature> particle, Particle<ParticleSignature> neighbor) override {
-        double exchange = (NEIGHBOR(concentration) - PARTICLE(concentration)) / (1 + pow(sqrt(distance2(neighbor, particle)) / globalvar.epsilon, 10)) ;
+        double exchange = (NEIGHBOR(concentration) - PARTICLE(concentration)) /
+                (1 + pow(distance2(neighbor, particle) / globalvar.epsilon / globalvar.epsilon, 5));
         PARTICLE(accumulator) += exchange;
         NEIGHBOR(accumulator) -= exchange;
     }
 
     void evolve(Particle<ParticleSignature> particle) override {
-        PARTICLE(concentration) += globalvar.dt * globalvar.kernelFactor * PARTICLE(accumulator);
+
+        PARTICLE(concentration) += globalvar.dt * globalvar.D * 15.0 *
+                pow(globalvar.meshSpacing / globalvar.epsilon, 3) / pow(globalvar.epsilon * M_PI, 2) * PARTICLE(accumulator);
         PARTICLE(accumulator) = 0;
     }
 
