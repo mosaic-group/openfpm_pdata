@@ -47,7 +47,7 @@ public:
     typedef NEIGHBORHOOD_MESH neighborhoodDetermination;
     static const int interactionType = INTERACTION_SYMMETRIC;
 
-    int writeIteration = 10;
+    int writeIteration = 100;
 
 };
 
