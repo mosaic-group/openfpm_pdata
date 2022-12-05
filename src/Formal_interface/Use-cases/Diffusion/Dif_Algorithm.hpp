@@ -40,7 +40,6 @@ struct GlobalVariable {
     static double epsilon;
     static double r_cut;
     static double D;
-    static double kernelFactor;
 } globalvar;
 
 class PSE_ParticleMethod : public ParticleMethod<PSE_ParticleSignature> {
@@ -49,7 +48,7 @@ public:
 
     void interact(Particle<ParticleSignature> particle, Particle<ParticleSignature> neighbor) override {
         double exchange = (NEIGHBOR(concentration) - PARTICLE(concentration)) /
-                (1 + pow(distance2(neighbor, particle) / globalvar.epsilon / globalvar.epsilon, 5));
+                (1 + pow(distance2(neighbor, particle), 10));
         PARTICLE(accumulator) += exchange;
         NEIGHBOR(accumulator) -= exchange;
     }
@@ -57,7 +56,7 @@ public:
     void evolve(Particle<ParticleSignature> particle) override {
 
         PARTICLE(concentration) += globalvar.dt * globalvar.D * 15.0 *
-                pow(globalvar.meshSpacing / globalvar.epsilon, 3) / pow(globalvar.epsilon * M_PI, 2) * PARTICLE(accumulator);
+                pow(globalvar.meshSpacing, 3) / pow(globalvar.epsilon * M_PI, 2) * PARTICLE(accumulator);
         PARTICLE(accumulator) = 0;
     }
 
