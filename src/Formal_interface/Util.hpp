@@ -21,5 +21,11 @@ typename ParticleSignatureType::position distance2(Particle<ParticleSignatureTyp
     return p_pos.distance2(n_pos);
 }
 
+template<typename ParticleSignatureType>
+typename ParticleSignatureType::position distance(Particle<ParticleSignatureType> particle, Particle<ParticleSignatureType> neighbor) {
+    Point<ParticleSignatureType::dimension, typename ParticleSignatureType::position> p_pos = particle.position_raw();
+    Point<ParticleSignatureType::dimension, typename ParticleSignatureType::position> n_pos = neighbor.position_raw();
+    return p_pos.distance(n_pos);
+}
 
 #endif //OPENFPM_PDATA_UTIL_HPP
