@@ -63,7 +63,7 @@ public:
 
     void initialization(Particle<PSE_ParticleSignature> particle) override {
 
-        PointType centerPoint = globalvar.domainSize / 4;
+        PointType centerPoint = globalvar.domainSize / 2;
         if (particle.position() == centerPoint)
             PARTICLE(concentration) = 1 / pow(globalvar.meshSpacing, 3);
 
