@@ -36,7 +36,6 @@
     double GlobalVariable::phase=0;
     int GlobalVariable::support=2;
     double GlobalVariable::rc=GlobalVariable::support*GlobalVariable::h;//cutof radius
-    double GlobalVariable::epsilon=0.01;
 
     double GlobalVariable::domain_min[3] = {-.9, -.9, -.9};
     double GlobalVariable::domain_max[3] = {3.3, 1.3, 1.3};

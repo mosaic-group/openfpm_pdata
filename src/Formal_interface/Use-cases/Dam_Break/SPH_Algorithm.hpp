@@ -58,7 +58,6 @@ struct GlobalVariable {
     static double phase;
     static int support;
     static double rc;//cutof radius
-    static double epsilon;
 
     static double domain_min[3];
     static double domain_max[3];
@@ -84,13 +83,12 @@ public:
     void interact(Particle<ParticleSignature> particle, Particle<ParticleSignature> neighbor) override {
 
         PointType r_pq = neighbor.position() - particle.position();
-        double dist2_pq = abs2(r_pq);
-        double f_pq=  pow(1.0 - sqrt(dist2_pq) / 2.0 / g.h, 3);
+        double f_pq=  pow(1.0 - distance(neighbor, particle) / 2.0 / g.h, 3);
         double vr = scalarProduct(r_pq, NEIGHBOR(velocity) - PARTICLE(velocity));
 
         // Compute change of velocity
         double interim01 = pressure_density2(NEIGHBOR(density)) + pressure_density2(PARTICLE(density));
-        double interim02 = 10*g.nu/dist2_pq * vr;
+        double interim02 = 10.0 * g.nu / distance2(neighbor, particle) * vr;
         PARTICLE(deltaVelocity) += (interim01 - interim02 / PARTICLE(density)) * r_pq * f_pq;
         NEIGHBOR(deltaVelocity) -= (interim01 - interim02 / NEIGHBOR(density)) * r_pq * f_pq;
 
@@ -131,20 +129,19 @@ public:
                 // fluid
 
                 // move particle from original position
-                PointType step_acc_half = g.dt  / 2.0 * acceleration;
-                PointType step_vel = g.dt * (PARTICLE(velocityOld) + step_acc_half);
-                PointType new_pos = PARTICLE(positionOld) + step_vel;
-                particle.position() = new_pos;
+                PointType acceleration_halfstep = g.dt  / 2.0 * acceleration;
+                PointType velocity_corrected = g.dt * (PARTICLE(velocityOld) + acceleration_halfstep);
+                particle.position() = PARTICLE(positionOld) + velocity_corrected;
 
                 // change velocity
-                PointType step_acc_full = g.dt * acceleration;
-                PARTICLE(velocity) = PARTICLE(velocityOld) + step_acc_full;
+                PointType acceleration_corrected = g.dt * acceleration;
+                PARTICLE(velocity) = PARTICLE(velocityOld) + acceleration_corrected;
             }
 
             // fluid + boundary
 
             // change density
-            PARTICLE(density) = PARTICLE(densityOld) + g.dt*densityAcceleration;
+            PARTICLE(density) = PARTICLE(densityOld) + g.dt * densityAcceleration;
         }
 
         //set to 0 to have a fresh accumulators for the next time step
