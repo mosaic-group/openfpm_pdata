@@ -34,12 +34,12 @@ constexpr int accumulator = 2;
 
 
 struct GlobalVariable {
-    double dt = 0.005;
+    double dt = 0.05;
     double t = 0;
     double t_final = 0.5;
 
-    double domainSize = 1.0;
-    int meshSize = 50;
+    double domainSize = 40.0;
+    int meshSize = 128;
     double meshSpacing = domainSize / meshSize;
     double epsilon = meshSpacing;
     double r_cut = 3 * epsilon;
