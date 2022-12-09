@@ -32,6 +32,8 @@ protected:
     InitialCondition_Impl<typename SimulationParametersType::initialCondition, ParticleMethodType, SimulationParametersType> initialConditionImplementation;
     Interaction_Impl<typename SimulationParametersType::neighborhoodDetermination, ParticleMethodType, SimulationParametersType> interactionImplementation;
 
+    DomainIterator<ParticleMethodType, SimulationParametersType> domainIterator;
+
 //    explicit Transition(ParticleMethod<PropertyType> particleMethod_in) : particleMethod(particleMethod_in), particleData() {}
 
     int iteration = 0;
@@ -134,6 +136,10 @@ public:
 
         // synchronize ghost for all properties
 //        particleData.ghost_get_all();
+
+        if (domainIterator.executeGhostPut()) {
+            particleData.template ghost_put_all<add_>();
+        }
 
         // call evolve method
         executeEvolution(particleData);

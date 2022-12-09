@@ -25,6 +25,10 @@ class DomainIterator {
     using DataContainerType = typename DataContainerFactory<typename ParticleMethodType::ParticleSignature>::ContainerType;
 public:
     auto getDomainIterator(DataContainerType &dataContainer) = 0;
+
+    bool executeGhostPut() {
+        return false;
+    }
 };
 
 
@@ -41,6 +45,10 @@ public:
     auto getDomainIterator(DataContainerType &dataContainer) {
         return dataContainer.getContainer().getDomainIterator();
     }
+
+    bool executeGhostPut() {
+        return false;
+    }
 };
 
 template <typename ParticleMethodType, typename SimulationParametersType>
@@ -52,6 +60,10 @@ public:
     auto getDomainIterator(DataContainerType &dataContainer) {
         return dataContainer.getContainer().getDomainAndGhostIterator();
     }
+
+    bool executeGhostPut() {
+        return false;
+    }
 };
 
 template <typename ParticleMethodType, typename SimulationParametersType>
@@ -62,6 +74,10 @@ public:
     auto getDomainIterator(DataContainerType &dataContainer) {
         return dataContainer.getContainer().getDomainAndGhostIterator();
     }
+
+    bool executeGhostPut() {
+        return false;
+    }
 };
 
 template <typename ParticleMethodType, typename SimulationParametersType>
@@ -71,6 +87,10 @@ public:
     DomainIterator() {std::cout << "DomainIterator: FREE, SYMMETRIC" << std::endl;}
     auto getDomainIterator(DataContainerType &dataContainer) {
         return dataContainer.getContainer().getDomainAndGhostIterator();
+    }
+
+    bool executeGhostPut() {
+        return false;
     }
 };
 
@@ -89,6 +109,10 @@ public:
     auto getDomainIterator(DataContainerType &dataContainer) {
         return dataContainer.getContainer().getDomainIterator();
     }
+
+    bool executeGhostPut() {
+        return false;
+    }
 };
 
 template <typename ParticleMethodType, typename SimulationParametersType>
@@ -99,6 +123,10 @@ public:
 
     auto getDomainIterator(DataContainerType &dataContainer) {
         return dataContainer.getContainer().getDomainGhostIterator();
+    }
+
+    bool executeGhostPut() {
+        return false;
     }
 };
 
@@ -111,6 +139,10 @@ public:
     auto getDomainIterator(DataContainerType &dataContainer) {
         return dataContainer.getContainer().getDomainGhostIterator();
     }
+
+    bool executeGhostPut() {
+        return false;
+    }
 };
 
 template <typename ParticleMethodType, typename SimulationParametersType>
@@ -121,6 +153,10 @@ public:
 
     auto getDomainIterator(DataContainerType &dataContainer) {
         return dataContainer.getContainer().getDomainIterator();
+    }
+
+    bool executeGhostPut() {
+        return true;
     }
 };
 
