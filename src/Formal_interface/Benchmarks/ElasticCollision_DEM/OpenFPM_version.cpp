@@ -9,7 +9,7 @@ double t_final = .5;
 double domainSize = 9.0;
 double damp = 0.9;
 double r_cut = 0.08;
-int number_particles = 48000;
+int number_particles = 100000;
 
 
 
