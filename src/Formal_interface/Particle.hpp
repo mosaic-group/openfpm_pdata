@@ -65,6 +65,9 @@ public:
     }
 
 
+    void remove() {
+        dataContainer.getContainer().remove(getID());
+    }
 
     // Vector algebra
 
