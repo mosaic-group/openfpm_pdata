@@ -5,7 +5,7 @@ CC=mpic++
 all: EC
 
 %.o: %.cpp %_Algorithm.hpp %_Instance.hpp
-	$(CC) -O3 -g -c -pg --std=c++14 -o $@ $< $(INCLUDE_PATH)
+	$(CC) -O3 -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
 EC: EC.o
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
