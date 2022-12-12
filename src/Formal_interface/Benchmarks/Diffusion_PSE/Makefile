@@ -15,10 +15,10 @@ FI_parallel_version: FI_parallel_version.o
 
 run: OpenFPM_version FI_parallel_version
 	mpirun --oversubscribe -np 4 ./OpenFPM_version;
-	mpirun --oversubscribe -np 2 ./OpenFPM_version;
-	mpirun --oversubscribe -np 1 ./OpenFPM_version;
 	mpirun --oversubscribe -np 4 ./FI_parallel_version;
+	mpirun --oversubscribe -np 2 ./OpenFPM_version;
 	mpirun --oversubscribe -np 2 ./FI_parallel_version;
+	mpirun --oversubscribe -np 1 ./OpenFPM_version;
 	mpirun --oversubscribe -np 1 ./FI_parallel_version;
 
 .PHONY: clean all run

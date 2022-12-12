@@ -81,6 +81,15 @@ protected:
         return dis(gen);
     }
 
+    Point<dimension, PositionType> normalDistributionPoint(float mean, float stdev) {
+        Point<dimension, PositionType> point;
+        for (int i = 0; i < dimension; i++) {
+            point.get(i) = normalDistribution(mean, stdev);
+        }
+        return point;
+    }
+
+
 public:
 
     Instance(ParticleData<ParticleMethodType, SimulationParametersType> &particleData_in) : particleData(particleData_in) {

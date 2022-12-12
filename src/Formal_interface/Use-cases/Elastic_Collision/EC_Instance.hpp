@@ -41,7 +41,7 @@ public:
     float cellWidth = globalvar.r_cut;
 
     bool writeOutput = true;
-    int writeIteration = 25;
+    int writeIteration = 20;
 
 };
 
@@ -54,9 +54,8 @@ public:
 
     void initialization(Particle<DEM_ParticleSignature> particle) override {
         // Randomize velocity (normal distribution)
-        for (int i = 0; i < DEM_ParticleSignature::dimension; i++) {
-            PARTICLE(velocity)[i] = this->normalDistribution(0, 1);
-        }
+
+        PARTICLE(velocity) = this->normalDistributionPoint(0.0f, 1.0f);
     }
 
     void freePlacement() {}
