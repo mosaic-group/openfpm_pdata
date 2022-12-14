@@ -89,6 +89,18 @@ public:
         return operationProxy;
     }
 
+    template<unsigned int id>
+    inline auto last_property() -> decltype(vd.template getLastProp<id>()) {
+        return vd.template getLastProp<id>();
+    }
+
+    template<unsigned int id>
+    inline auto last_property_vec() -> OperationProxy<typename std::remove_reference<decltype(last_property<id>())>::type>  {
+        OperationProxy<typename std::remove_reference<decltype(last_property<id>())>::type> operationProxy(last_property<id>());
+        return operationProxy;
+    }
+
+
     /**
      * Returns a reference to the position property of a particle in the vector_dist data structure.
      * @param p Referenced particle
@@ -103,6 +115,14 @@ public:
         return operationProxy;
     }
 
+    inline auto last_position() -> decltype(vd.getLastPos()) {
+        return vd.getLastPos();
+    }
+
+    virtual inline auto last_position_vec() -> OperationProxy<typename std::remove_reference<decltype(last_position())>::type> {
+        OperationProxy<typename std::remove_reference<decltype(last_position())>::type> operationProxy(last_position());
+        return operationProxy;
+    }
 
     /**
      * Returns reference to the underlying vector_dist data structure

@@ -9,6 +9,7 @@
 
 #define PARTICLE(property_arg) particle.template property<property_arg>()
 #define NEIGHBOR(property_arg) neighbor.template property<property_arg>()
+#define NEW_PARTICLE(property_arg) particle.template new_property<property_arg>()
 
 
 
