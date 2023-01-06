@@ -22,6 +22,7 @@ float GlobalVariable::t = 0;
 float GlobalVariable::t_final = 3;
 float GlobalVariable::r_cut = 0.5;
 float GlobalVariable::domainSize = 20.0;
+bool GlobalVariable::addparticles = true;
 
 class PEC_SimulationParams : public SimulationParameters<DEM_ParticleSignature> {
 
@@ -41,7 +42,7 @@ public:
     float cellWidth = globalvar.r_cut;
 
     bool writeOutput = true;
-    int writeIteration = 20;
+    int writeIteration = 30;
 
 };
 

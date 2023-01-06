@@ -28,7 +28,7 @@ struct DEM_ParticleSignature {
 
 // Property identifier
 constexpr int velocity = 0;
-constexpr int acceleration = 1;
+constexpr int deltaVelocity = 1;
 
 struct GlobalVariable {
     static float dt;
@@ -44,9 +44,9 @@ public:
 
     void evolve(Particle<ParticleSignature> particle) override {
         // Apply change of velocity
-        PARTICLE(velocity) += PARTICLE(acceleration);
+        PARTICLE(velocity) += PARTICLE(deltaVelocity);
         // Reset change of velocity
-        PARTICLE(acceleration) = 0.0f;
+        PARTICLE(deltaVelocity) = 0.0f;
         // Euler time-stepping move particles
         particle.position() += PARTICLE(velocity) * globalvar.dt;
     }
@@ -54,8 +54,9 @@ public:
     void interact(Particle<ParticleSignature> particle, Particle<ParticleSignature> neighbor) override {
         // Compute collision
         auto diff = neighbor.position() - particle.position();
-        PARTICLE(acceleration) += diff / abs2(diff) * scalarProduct(diff, NEIGHBOR(velocity) - PARTICLE(velocity));
+        PARTICLE(deltaVelocity) += diff / abs2(diff) * scalarProduct(diff, NEIGHBOR(velocity) - PARTICLE(velocity));
     }
+
 
     void evolveGlobalVariable() {
         // advance time
@@ -66,7 +67,9 @@ public:
         // Check simulation time
         return globalvar.t > globalvar.t_final;
     }
+
 };
+
 
 
 #endif //OPENFPM_PDATA_EC_ALGORITHM_HPP
