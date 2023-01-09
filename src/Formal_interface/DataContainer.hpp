@@ -215,6 +215,17 @@ public:
         return operationProxy;
     }
 
+    // unused for grid
+    template<unsigned int id>
+    int last_property() {
+        return 0;
+    }
+
+    // unused for grid
+    template<unsigned int id>
+    int last_property_vec() {
+        return 0;
+    }
 
     /**
      * Returns a reference to the position property of a particle in the vector_dist data structure.
@@ -227,6 +238,17 @@ public:
 
     inline auto position_vec(grid_dist_key_dx<dimension> p) {
         return position(p);
+    }
+
+    // unused for grid
+    int last_position() {
+        return 0;
+    }
+
+    // unused for grid
+    int last_position_vec() {
+        return 0;
+
     }
 
     /**
