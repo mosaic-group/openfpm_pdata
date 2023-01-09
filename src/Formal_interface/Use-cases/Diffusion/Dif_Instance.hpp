@@ -20,7 +20,7 @@
 
 double GlobalVariable::dt = 0.05;
 double GlobalVariable::t = 0;
-double GlobalVariable::t_final = 100;
+double GlobalVariable::t_final = 1500;
 
 double GlobalVariable::domainSize = 40.0;
 int GlobalVariable::meshSize = 128;

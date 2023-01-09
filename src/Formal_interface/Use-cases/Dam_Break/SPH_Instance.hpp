@@ -21,7 +21,7 @@
 
     double GlobalVariable::t = 0;
     double GlobalVariable::dt=0.00016;
-    double GlobalVariable::endT= 20.0;
+    double GlobalVariable::endT= 300.0;
 
     double GlobalVariable::particleSpacing=1.0/16.0;
     double GlobalVariable::particleSpacingWater=particleSpacing;
