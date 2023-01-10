@@ -137,9 +137,11 @@ public:
         // synchronize ghost for all properties
 //        particleData.ghost_get_all();
 
+/*
         if (domainIterator.executeGhostPut()) {
             particleData.template ghost_put_all<add_>();
         }
+*/
 
         // call evolve method
         executeEvolution(particleData);
