@@ -48,7 +48,7 @@ public:
 
     void interact(Particle<ParticleSignature> particle, Particle<ParticleSignature> neighbor) override {
         double exchange = (NEIGHBOR(concentration) - PARTICLE(concentration)) /
-                (1 + pow(distance2(neighbor, particle), 10));
+                (1.0 + pow(distance2(neighbor, particle), 5));
         PARTICLE(accumulator) += exchange;
         NEIGHBOR(accumulator) -= exchange;
     }
