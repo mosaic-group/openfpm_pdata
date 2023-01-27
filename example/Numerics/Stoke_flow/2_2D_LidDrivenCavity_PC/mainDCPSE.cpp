@@ -1,18 +1,69 @@
 //
 // Created by Abhinav Singh on 15.11.2021.
 //
+/**
+ * @file Stoke_flow/2_2D_LidDrivenCavity_PC/mainDCPSE.cpp
+ * @page Navier-Stokes Navier-Stokes
+ *  \htmlonly
+ *  <img src="https://media.springernature.com/full/springer-static/image/art%3A10.1140%2Fepje%2Fs10189-021-00121-x/MediaObjects/10189_2021_121_Fig4_HTML.png?as=webp"/ width="500">
+ * \endhtmlonly
+ *
+ * @subpage Lid_Driven_Cavity_DCPSE
+ * @subpage Lid_Driven_Cavity_FD
+ *
+ *
+ */
+/*!
+ * \page Lid_Driven_Cavity_DCPSE Lid driven cavity with Pressure Correction and DC-PSE
+ *
+ * # Lid Driven Cavity Problem with Pressure Correction and DC-PSE # {#num_2dlid}
+ *
+ * In this example, we solve the incompressible Navier-Stokes equation in a 2D Square Box:
+ *
+ * @f[ \mathbf{v}\cdot(\nabla \mathbf{v})-\frac{1}{\text{Re}}\mathrm{\Delta} \mathbf{v}=-\nabla \Pi \label{eq:NS} \\ \nabla\cdot \mathbf{v}=0 \\	\mathbf{v}(x_b,y_b)=(0,0), \text{ except } 	\mathbf{v}(x_b,1)=(1,0)\, , @f]
+ *
+ * We do that by solving the implicit stokes equation and and employing an iterative pressure correction scheme:
+ *
+ * Output:
+ * Steady State Solution to the Lid Driven Cavity Problem.
+ *
+ * ## Including the headers ## {#lid_c1_include}
+ *
+ * These are the header files that we need to include:
+ *
+ * @snippet Numerics/Stoke_flow/2_2D_LidDrivenCavity_PC/mainDCPSE.cpp LidDCPSEInclude
+ *
+ */
 
+//! @cond [LidDCPSEInclude] @endcond
+// Include Vector Expression,Vector Expressions for Subset,DCPSE , and Solver header files
 #include "config.h"
 #include <iostream>
 #include "DCPSE/DCPSE_OP/DCPSE_op.hpp"
 #include "DCPSE/DCPSE_OP/DCPSE_Solver.hpp"
 #include "Operators/Vector/vector_dist_operators.hpp"
 #include "Vector/vector_dist_subset.hpp"
+//! \cond [LidDCPSEInclude] \endcond
 
 int main(int argc, char* argv[])
 {
 
-    {   openfpm_init(&argc,&argv);
+    {    /*!
+	 * \page Lid_Driven_Cavity_DCPSE Stokes Lid driven cavity with Pressure Correction and DC-PSE
+	 *
+	 * ## Initialization ## {#init2dlidl}
+	 *
+	 * * Initialize the library
+	 * * Define some useful constants
+	 * * define Ghost size
+	 * * Non-periodic boundary conditions
+	 *
+     * @snippet Numerics/Stoke_flow/2_2D_LidDrivenCavity_PC/mainDCPSE.cpp LidDCPSEInit
+	 *
+	 */
+
+	//! \cond [LidDCPSEInit] \endcond
+        openfpm_init(&argc,&argv);
         timer tt2;
         tt2.start();
         size_t gd_sz = 81;
@@ -42,6 +93,21 @@ int main(int argc, char* argv[])
         y0 = box.getLow(1);
         x1 = box.getHigh(0);
         y1 = box.getHigh(1);
+        //! \cond [LidDCPSEInit] \endcond
+
+           /*!
+	 * \page Lid_Driven_Cavity_DCPSE Stokes Lid driven cavity with Pressure Correction and DC-PSE
+	 *
+	 * ## Creating particles in the 2D domain## {#init2dlidparts}
+	 *
+     * We set the appropriate subset number 0 for bulk and other for boundary.
+     * Note that for different walls we need different subsets as for the pressure, we need normal derivative zero condition.
+	 *
+     * @snippet Numerics/Stoke_flow/2_2D_LidDrivenCavity_PC/mainDCPSE.cpp LidDCPSEInitPart
+	 *
+	 */
+
+	//! \cond [LidDCPSEInitPart] \endcond
 
         auto it = Particles.getGridIterator(sz);
         while (it.isNext())
@@ -82,8 +148,18 @@ int main(int argc, char* argv[])
 
         Particles.map();
         Particles.ghost_get<0>();
+    	//! \cond [LidDCPSEInitPart] \endcond
 
+        /*!
+	     * \page Lid_Driven_Cavity_DCPSE Stokes Lid driven cavity with Pressure Correction and DC-PSE
+         *
+         * ##Creating Subsets and Vector Expressions for Fields and Differential Operators for easier encoding. ## {#init2dlidana3}
+         *
+         * @snippet Numerics/Stoke_flow/2_2D_LidDrivenCavity_PC/mainDCPSE.cpp LidDCPSEexp
+         *
+         */
 
+	    //! \cond [LidDCPSEexp] \endcond
         vector_dist_subset<2, double, LidCavity> Particles_bulk(Particles,0);
         vector_dist_subset<2, double, LidCavity> Particles_up(Particles,1);
         vector_dist_subset<2, double, LidCavity> Particles_down(Particles,2);
@@ -121,7 +197,18 @@ int main(int argc, char* argv[])
         Derivative_y Dy(Particles, 2, rCut,sampling_factor, support_options::RADIUS);
         Derivative_x Bulk_Dx(Particles_bulk, 2, rCut,sampling_factor, support_options::RADIUS);
         Derivative_y Bulk_Dy(Particles_bulk, 2, rCut,sampling_factor, support_options::RADIUS);
+	    //! \cond [LidDCPSEexp] \endcond
 
+        /*!
+	     * \page Lid_Driven_Cavity_DCPSE Stokes Lid driven cavity with Pressure Correction and DC-PSE
+         *
+         * ##Creating a 3D implicit solver for the given set of particles and iteratively solving wit pressure correction. ## {#init3dballana3}
+         *
+         * @snippet Numerics/Stoke_flow/2_2D_LidDrivenCavity_PC/mainDCPSE.cpp LidDCPSESol
+         *
+         */
+
+	    //! \cond [LidDCPSESol] \endcond
         int n = 0, nmax = 300, ctr = 0, errctr=1, Vreset = 0;
         double V_err=1;
         if (Vreset == 1) {
@@ -134,9 +221,6 @@ int main(int argc, char* argv[])
         eq_id vx,vy;
         vx.setId(0);
         vy.setId(1);
-/*          W.setVarId(0);
-        Sf.setVarId(1);
-*/     
 
         double sum, sum1, sum_k,V_err_old;
         auto StokesX=(V[x]*Dx(V_star[x])+V[y]*Dy(V_star[x]))-(1.0/Re)*(Dxx(V_star[x])+Dyy(V_star[x]));
@@ -240,5 +324,16 @@ int main(int argc, char* argv[])
         }
     }
     openfpm_finalize();
+    //! \cond [LidDCPSESol] \endcond
+
+         /*!
+	     * \page Lid_Driven_Cavity_DCPSE Stokes Lid driven cavity with Pressure Correction and DC-PSE
+         *
+	     * # Full code # {#num_lid_2D_codeDCPSE}
+         *
+         * \include Numerics/Stoke_flow/2_2D_LidDrivenCavity_PC/mainDCPSE.cpp
+         *
+         */
+
 
 }

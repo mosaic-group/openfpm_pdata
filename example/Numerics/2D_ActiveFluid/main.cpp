@@ -1,7 +1,57 @@
 //
 // Created by Abhinav Singh on 15.03.20.
 //
-//#define SE_CLASS1
+
+/*!
+ * @file 2D_ActiveFluid/main.cpp
+ * @page ActiveFluid ActiveFluid 
+ * 
+ * ##A Two Dimensional Active Fluid Solver##
+ *
+ *  * \htmlonly
+ * <img src="https://media.springernature.com/full/springer-static/image/art%3A10.1140%2Fepje%2Fs10189-021-00121-x/MediaObjects/10189_2021_121_Fig5_HTML.png?as=webp"/ width="1000">
+ * \endhtmlonly
+ *
+ * In this example, we perform time integration in a 2d domain of particles of the following Active Fluid partial differential equation:
+ *
+ * @f[
+ * 		\frac{\mathrm{D} p_{\alpha}}{\mathrm{D} t}=\frac{h_{\alpha}}{\gamma}-\nu u_{\alpha \beta} p_{\beta}+\lambda\Delta\mu p_\alpha+
+ *		\omega_{\alpha \beta} p_{\beta}\\
+ *		\partial_{\beta} \sigma_{\alpha \beta}-\partial_{\alpha} \Pi=0 \\
+ *		\partial_{\gamma} v_{\gamma}=0\\
+ *		2 \eta u_{\alpha \beta}=\sigma_{\alpha \beta}^{(s)}+\zeta \Delta \mu\left(p_{\alpha} p_{\beta}-\frac{1}{2} p_{\gamma} p_{\gamma} \delta_{\alpha \beta}\right)
+ *		-\frac{\nu}{2}\left(p_{\alpha} h_{\beta}+p_{\beta} h_{\alpha}-p_{\gamma} h_{\gamma} \delta_{\alpha \beta}\right)
+ *
+ * @f]
+ *
+ * It is highly recommended to go through the Odeint Example and the Pressure correction Stokes-Flow example to understand this code.
+ *
+ * We employ a Lagrangian frame of reference for polarity time evolution. Hence the PDE is transformed to a system of PDEs:
+ *
+ * @f[\begin{align}
+ *   \frac{\partial\vec{X}}{dt}=\vec{V}\\
+ *   \frac{\partial p_\alpha}{dt}=\frac{h_{\alpha}}{\gamma}-\nu u_{\alpha \beta} p_{\beta}+\lambda\Delta\mu p_\alpha+
+ *		\omega_{\alpha \beta} p_{\beta}
+ * \end{align} @f]
+ * Where \f$\vec{X}\f$ is the position vector. Hence, we have decoupled the moving of the particles from the evolution of the Polarity. As it can be expensive to recompute derivatives at every stage of a time integrator in a single step, we will integrate the PDEs with seperate techniques (Euler step for moving the particles and solving the force balance for advection).
+ *
+ * Output:
+ * Time series data of the PDE Solution.
+ *
+ */
+
+/**
+ * @page ActiveFluid ActiveFluid 
+ *
+ * ## Including the headers ## {#active_c1_include}
+ *
+ * These are the header files that we need to include:
+ *
+ * @snippet example/Numerics/2D_ActiveFluid/main.cpp active1Include
+ *
+ */
+//! @cond [active1Include] @endcond
+// Include Vector Expression,Vector Expressions for Subset,DCPSE,Odeint header files
 #include "config.h"
 #define BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
 #define BOOST_MPL_LIMIT_VECTOR_SIZE 40
@@ -12,7 +62,29 @@
 #include "Vector/vector_dist_subset.hpp"
 #include "DCPSE/DCPSE_op/EqnsStruct.hpp"
 #include "OdeIntegrators/OdeIntegrators.hpp"
+//! @cond [active1Include] @endcond
 
+/**
+ * @page ActiveFluid ActiveFluid 
+ *
+ * ## Initialization of the global parameters## {#active_c_init}
+ *
+ * We start with
+ * * Initializing certain global parameteres we will use: such as x,y to refer to the dimensions 0 and 1. (Makes it easier to read equations in code)
+ * * Creating empty pointers for coupling openfpm distributed vector with odeint. One for the entire distributed vector and another for the subset or bulk.
+ * We seperate bulk and the entire distribution as it makes it easier to impose boundary conditions. (Which will be more apparant in ComputeRHS of the PDE)
+ * Note that a subset expression always comes at the left hand side of a computation. (The semantics of the expressions is by denoting what we want to update from regular expressions)
+ *
+ * Creating aliases of the types of the datasructures we are going to use in OpenFPM.
+ * Property_type as the type of properties we wish to use.
+ * dist_vector_type as the 2d openfpm distributed vector type
+ * dist_vector_type as the 2d openfpm distributed subset vector type
+ *
+ * @snippet example/Numerics/2D_ActiveFluid/main.cpp Init1active
+ *
+ */
+
+//! @cond [Init1active] @endcond
 constexpr int x = 0;
 constexpr int y = 1;
 constexpr int POLARIZATION= 0,VELOCITY = 1, VORTICITY = 2, EXTFORCE = 3,PRESSURE = 4, STRAIN_RATE = 5, STRESS = 6, MOLFIELD = 7, DPOL = 8, DV = 9, VRHS = 10, F1 = 11, F2 = 12, F3 = 13, F4 = 14, F5 = 15, F6 = 16, V_T = 17, DIV = 18, DELMU = 19, HPB = 20, FE = 21, R = 22;
@@ -35,7 +107,34 @@ PropNAMES={"00-Polarization","01-Velocity","02-Vorticity","03-ExternalForce","04
 typedef aggregate<VectorS<2, double>,VectorS<2, double>,double[2][2],VectorS<2, double>,double,double[2][2],double[2][2],VectorS<2, double>,VectorS<2, double>,VectorS<2, double>,VectorS<2, double>,double,double,double,double,double,double,VectorS<2, double>,double,double,double,double,double> Activegels;
 typedef vector_dist_ws<2, double,Activegels> vector_type;
 typedef vector_dist_subset<2, double, Activegels> vector_type2;
-
+//! @cond [Init1active] @endcond
+/**
+ * @page ActiveFluid ActiveFluid 
+ *
+ * ## Creating the RHS Functor## {#active_c1_rhs}
+ *
+ * Odeint works with certain specific state_types.
+ * We offer certain state types such as 'state_type_2d_ofp' for making openfpm work with odeint.
+ *
+ *
+ * Now we create the RHS functor. Please refer to ODE_int for more detials.
+ * Note that we have templated it with two operator types DXX and DYY as we need to compute Laplacian at each stage. We will pass the DCPSE operators to an instance of this functor.
+ *
+ * All RHS computations  needs to happen in the operator ().
+ * Odeint expects the arguments here to be an input state_type X, an output state_tyoe dxdt and time t.
+ * We pass on the openfpm distributed state types as
+ * void operator()( const state_type_2d_ofp &X , state_type_2d_ofp &dxdt , const double t ) const
+ *
+ * Since we would like to use openfpm here. We cast back the global pointers created before to access the Openfpm distributed vector here.
+ * (Note that these pointers needs to initialized in the main(). Further, 'state_type_2d_ofp' is a temporal structure, which means it does not have the ghost.
+ * Hence we copy the current state back to the openfpm vector from the openfpm state type X.
+ * We do our computations as required.
+ * Then we copy back the output into the state_type dxdt)
+ *
+ * @snippet example/Numerics/2D_ActiveFluid/main.cpp RHSActiveFunctor
+ *
+ */
+//! @cond [RHSActiveFunctor] @endcond
 //Functor to Compute RHS of the time derivative of the polarity
 template<typename DX,typename DY,typename DXX,typename DXY,typename DYY>
 struct PolarEv
@@ -85,7 +184,56 @@ struct PolarEv
         dxdt.data.get<1>()=dPol[y];
     }
 };
+//! @cond [RHSActiveFunctor] @endcond
 
+/**
+ * @page ActiveFluid ActiveFluid 
+ *
+ * ## Creating the Observer Functor## {#ode_c2_obs}
+ *
+ * There are multiple ways in which the system can be integrated. For example, and ideally, we could put both the PDEs into the RHS functor (Moving the particles at every stage). This can be expensive.
+ * However, Often in numerical simulations, Both the PDEs can be integrated with seperate steppers.
+ * To achieve this we will use the observer functor.
+ * The observer functor is called before every time step evolution by odeint. Hence we can use it to update the position of the particles, with an euler step. and also update the operators and solve the force balance equations below.
+ * @f[
+ *		\eta \partial_{x}^{2}  v_{\mathrm{x}}+\eta \partial_{y}^{2} v_{\mathrm{x}}-\partial_{x} \Pi+\frac{\nu}{2} \partial_{x}\left[\frac{\gamma \nu u_\mathrm{x x} p_{\mathrm{x}}^{2}\left(p_{\mathrm{x}}^{2}-p_{\mathrm{y}}^{2}\right)}{p_{\mathrm{x}}^{2}+p_{\mathrm{y}}^{2}}\right]+
+ *		\frac{\nu}{2} \partial_{x}\left[\frac{2 \gamma \nu u_{\mathrm{xy}} p_{\mathrm{x}} p_{\mathrm{y}}\left(p_{\mathrm{x}}^{2}-p_{\mathrm{y}}^{2}\right)}{p_{\mathrm{x}}^{2}+p_{\mathrm{y}}^{2}}\right]
+ *		+\frac{\nu}{2} \partial_{x}\left[\frac{\gamma \nu u_{\mathrm{yy}} p_{\mathrm{y}}^{2}\left(p_{\mathrm{x}}^{2}-p_{\mathrm{y}}^{2}\right)}{p_{\mathrm{x}}^{2}+p_{\mathrm{y}}^{2}}\right] +
+ *		\frac{\nu}{2} \partial_{y}\left[\frac{2 \gamma \nu u_{\mathrm{xx}} p_{\mathrm{x}}^{3} p_{\mathrm{y}}}{p_{\mathrm{x}}^{2}+p_{\mathrm{y}}^{2}}\right]+\frac{\nu}{2} \partial_{y}\left[\frac{4 \gamma \nu u_{\mathrm{xy}} p_{\mathrm{x}}^{2} p_{\mathrm{y}}^{2}}{p_{\mathrm{x}}^{2}+p_{\mathrm{y}}^{2}}\right]+\frac{\nu}{2} \partial_{y}\left[\frac{2 \gamma \nu u_{\mathrm{yy}} p_{\mathrm{x}} p_{\mathrm{y}}^{3}}{p_{\mathrm{x}}^{2}+p_{\mathrm{y}}^{2}}\right] \\
+ *		=-\frac{1}{2} \partial_{y}\left(h_{\perp}\right)+\zeta \partial_{x}\left(\Delta \mu p_{\mathrm{x}}^{2}\right)+\zeta \partial_{y}\left(\Delta \mu p_{\mathrm{x}} p_{\mathrm{y}}\right)-
+ *		 \zeta \partial_{x}\left(\Delta \mu \frac{p_{\mathrm{x}}^{2}+p_{\mathrm{y}}^{2}}{2}\right)- \frac{\nu}{2} \partial_{x}\left(-2 h_{\perp} p_{\mathrm{x}} p_{\mathrm{y}}\right) -
+ *		\quad \frac{\nu}{2} \partial_{y}\left[h_{\perp}\left(p_{\mathrm{x}}^{2}-p_{\mathrm{y}}^{2}\right)\right]-\partial_{x} \sigma_{\mathrm{xx}}^{(\mathrm{e})}-\partial_{y} \sigma_{\mathrm{xy}}^{(\mathrm{e})} +
+ *		\quad \frac{\nu}{2} \partial_{x}\left[\gamma \lambda \Delta \mu\left(p_{\mathrm{x}}^{2}-p_{\mathrm{y}}^{2}\right)\right]-\frac{\nu}{2} \partial_{y}\left(-2 \gamma \lambda \Delta \mu p_{\mathrm{x}} p_{\mathrm{y}}\right),
+ *   \\
+ * \eta \partial_{x}^{2} v_{\mathrm{y}}+\eta \partial_{y}^{2} v_{\mathrm{y}}-\partial_{y} \Pi+\frac{\nu}{2} \partial_{y}\left[\frac{-\gamma \nu u_{\mathrm{xx}} p_{\mathrm{x}}^{2}\left(p_{\mathrm{x}}^{2}-p_{\mathrm{y}}^{2}\right)}{p_{\mathrm{x}}^{2}+p_{\mathrm{y}}^{2}}\right] +
+ * \frac{\nu}{2} \partial_{y}\left[\frac{-2 \gamma \nu u_{\mathrm{xy}} p_{\mathrm{x}} p_{\mathrm{y}}\left(p_{\mathrm{x}}^{2}-p_{\mathrm{y}}^{2}\right)}{p_{\mathrm{x}}^{2}+p_{\mathrm{y}}^{2}}\right]
+ * +\frac{\nu}{2} \partial_{y}\left[\frac{-\gamma \nu u_{\mathrm{yy}} p_{\mathrm{y}}^{2}\left(p_{\mathrm{x}}^{2}-p_{\mathrm{y}}^{2}\right)}{p_{\mathrm{x}}^{2}+p_{\mathrm{y}}^{2}}\right] +
+ * \frac{\nu}{2} \partial_{x}\left[\frac{2 \gamma \nu u_{\mathrm{x} x} p_{\mathrm{x}}^{3} p_{\mathrm{y}}}{p_{\mathrm{x}}^{2}+p_{\mathrm{y}}^{2}}\right]+\frac{\nu}{2} \partial_{x}\left[\frac{4 \gamma \nu u_{\mathrm{xx}} p_{\mathrm{x}}^{2} p_{\mathrm{y}}^{2}}{p_{\mathrm{x}}^{2}+p_{\mathrm{y}}^{2}}\right]+\frac{\nu}{2} \partial_{x}\left[\frac{2 \gamma\nu u_{\mathrm{yy}} p_{\mathrm{x}} p_{\mathrm{y}}^{3}}{p_{\mathrm{x}}^{2}+p_{\mathrm{y}}^{2}}\right] \\
+ * =-\frac{1}{2} \partial_{x}\left(-h_{\perp}\right)+\zeta \partial_{y}\left(\Delta \mu p_{\mathrm{y}}^{2}\right)+\zeta \partial_{x}\left(\Delta \mu p_{\mathrm{x}} p_{\mathrm{y}}\right)-
+ * \zeta \partial_{y}\left(\Delta \mu \frac{p_{\mathrm{x}}^{2}+p_{\mathrm{y}}^{2}}{2}\right)-\frac{\nu}{2} \partial_{y}\left(2 h_{\perp} p_{\mathrm{x}} p_{\mathrm{y}}\right) -
+ * \frac{\nu}{2} \partial_{x}\left[h_{\perp}\left(p_{\mathrm{x}}^{2}-p_{\mathrm{y}}^{2}\right)\right]-\partial_{x} \sigma_{\mathrm{yx}}^{(\mathrm{e})}-\partial_{y} \sigma_{\mathrm{yy}}^{(\mathrm{e})}-
+ * \frac{\nu}{2} \partial_{y}\left[\gamma \lambda \Delta \mu\left(p_{\mathrm{x}}^{2}-p_{\mathrm{y}}^{2}\right)\right]-\frac{\nu}{2} \partial_{x}\left(-2 \gamma \lambda \Delta \mu p_{\mathrm{x}} p_{\mathrm{y}}\right).
+ *
+ * @f]
+ *
+ * Now we create the Observer functor that will calculate velocity.
+ * Note that we have templated it with Differential operators of types DXX and so on. We use them to solve force balance. We further update them after moving the particles.
+ *
+ * All Observer computations  needs to happen in the operator ().
+ * Odeint expects the arguments here to be an input state_type X, and time t.
+ * We pass on the openfpm distributed state types as
+ * void operator()( const state_type_2d_ofp &X , const double t ) const
+ *
+ * Since we would like to use again openfpm here. We cast back the global pointers created before to access the Openfpm distributed vector here.
+ * (Note that these pointers needs to initialized in the main(). Further, 'state_type_2d_ofp' is a temporal structure, which means it does not have the ghost.
+ * Hence we copy the current state back to the openfpm vector from the openfpm state type X.
+ * We do our computations as required.
+ * Then we copy back the output into the state_type dxdt.
+ *
+ * @snippet example/Numerics/2D_ActiveFluid/main.cpp ActiveObserver2Functor
+ *
+ */
+//! @cond [ActiveObserver2Functor] @endcond
 // Functor to calculate velocity and move particles with explicit euler
 template<typename DX,typename DY,typename DXX,typename DXY,typename DYY>
 struct CalcVelocity
@@ -396,7 +544,19 @@ struct CalcVelocity
         }
     }
 };
-
+//! @cond [ActiveObserver2Functor] @endcond
+/**
+ * @page ActiveFluid ActiveFluid 
+ *
+ * ## Initializating OpenFPM ## {#Active_c2_initmain}
+ *
+ * We start with
+ * * Initializing OpenFPM
+ *
+ * @snippet example/Numerics/2D_ActiveFluid/main.cpp ActiveInit
+ *
+ */
+//! @cond [ActiveInit] @endcond
 int main(int argc, char* argv[])
 {
     {   openfpm_init(&argc,&argv);
@@ -408,7 +568,25 @@ int main(int argc, char* argv[])
         wr_f=int(std::atof(argv[3]));
         wr_at=1;
         V_err_eps = 5e-4;
-
+        //! @cond [ActiveInit] @endcond
+        /**
+         * @page ActiveFluid ActiveFluid 
+         *
+         * ## Creating Particles and assigning subsets ## {#odeint_c2_indices}
+         *
+         * We create a particle distribution we certain rCut for the domain.
+         *
+         * Also, we fill the initial Polarity concentration as:
+		 * @f[
+         * \mathbf{p}(x,y,0)=\left( \begin{matrix}
+         * \sin\big(2\pi (\cos\left(\frac{2 x - L_x}{ L_x}\right)-\sin\left(\frac{2 y - L_y}{ L_y}\right) \big)\\[2ex]
+		 *  \cos \big(2\pi (\cos\left(\frac{2 x - L_x}{ L_x}\right)-\sin\left(\frac{2 y - L_y}{ L_y}\right)\big)
+	     * \end{matrix}\right)
+         * @f]
+         * @snippet example/Numerics/2D_ActiveFluid/main.cpp initActSubset
+         *
+         */
+        //! @cond [initActSubset] @endcond
         double boxsize = 10;
         const size_t sz[2] = {Gd, Gd};
         Box<2, double> box({0, 0}, {boxsize, boxsize});
@@ -457,6 +635,21 @@ int main(int argc, char* argv[])
             ++it2;
         }
         Particles.ghost_get<POLARIZATION,EXTFORCE,DELMU>(SKIP_LABELLING);
+        //! @cond [initActSubset] @endcond
+         /**
+         * @page ActiveFluid ActiveFluid 
+         *
+         * ## Create the subset, differential operators, steppers and Cast Global Pointers ## {#Active_c2_point}
+         *
+         * On the particles we just created we need to constructed the subset object based on the numbering.
+         * Further, We cast the Global Pointers so that Odeint RHS functor can recognize our openfpm distributed structure.
+         *
+         *  We create DCPSE based operators and alias the particle properties.
+         *
+         * @snippet example/Numerics/2D_ActiveFluid/main.cpp Pointer2Act
+         *
+         */
+        //! @cond [Pointer2Act] @endcond
 
         vector_dist_subset<2, double, Activegels> Particles_bulk(Particles,0);
         vector_dist_subset<2, double, Activegels> Particles_boundary(Particles,1);
@@ -489,16 +682,37 @@ int main(int argc, char* argv[])
         state_type_2d_ofp tPol;
         tPol.data.get<0>()=Pol[x];
         tPol.data.get<1>()=Pol[y];
+        //! @cond [Pointer2Act] @endcond
 
-        eq_id vx, vy;
-        vx.setId(0);
-        vy.setId(1);
+
         timer tt;
         timer tt3;
         dPol = Pol;
         double V_err = 1, V_err_old;
         double tim=0;
-
+ /**
+    * @page ActiveFluid ActiveFluid 
+    *
+    * ## Calling Odeint ## {#odeint_actc2_1211}
+    * We initiliaze the time variable t, step_size dt and final time tf.
+    *
+    * We create a vector for storing the intermidiate time steps, as most odeint calls return such an object.
+    *
+    * We then Call the Odeint_rk4 method created above to do a rk4 time integration from t0 to tf with arguments as the System, the state_type, current time t and the stepsize dt.
+    *
+    * Odeint updates X in place. And automatically advect the particles (an Euler step) and do a map and ghost_get as needed after moving particles by calling the observer.
+    *
+    * The observer then updates the subset bulk and the DCPSE operators.
+    *
+    * The observer also Solves the Force Balance.
+    *
+    * We finally deallocate the DCPSE operators and finalize the library.
+    *
+    * @snippet example/Numerics/2D_ActiveFluid/main.cpp ActintTCall
+    *
+    */
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //! @cond [ActintTCall] @endcond
         // intermediate time steps
         std::vector<double> inter_times;
 
@@ -527,4 +741,13 @@ int main(int argc, char* argv[])
         }
     }
     openfpm_finalize();
+        //! @cond [ActintTCall] @endcond
 }
+
+/**
+    * @page ActiveFluid ActiveFluid 
+ *
+ * ## Full code ## {#actint_c2_full}
+ *
+ * @include example/Numerics/2D_ActiveFluid/main.cpp
+ */

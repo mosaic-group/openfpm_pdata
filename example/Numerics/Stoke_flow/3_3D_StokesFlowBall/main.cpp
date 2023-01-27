@@ -2,6 +2,42 @@
 // Created by Abhinav Singh on 15.06.20.
 //
 
+/*!
+ * \page Stokes_3d_ball Stokes Flow in a 3D Ball with Pressure Correction
+ *
+ * # Stokes incompressible 3D Ball # {#num_sk_inc_3D_ball}
+ *
+ *  \htmlonly
+ * <img src="https://media.springernature.com/full/springer-static/image/art%3A10.1140%2Fepje%2Fs10189-021-00121-x/MediaObjects/10189_2021_121_Fig7_HTML.png?as=webp"/ width="1000">
+ * \endhtmlonly
+ *
+ *
+ * In this example, we solve the incompressible stokes equation in a 3D ball:
+ *
+ * @f[ \mathrm{\Delta} \mathbf{v} = \nabla \Pi\, , \qquad  \mathbf{v}\in
+\Omega\backslash\partial\Omega \\
+\nabla\cdot \mathbf{v}=0 @f]
+ * in 3d ball \f$\Omega=\overline{B_1}(0)\subset \mathbb{R}^3\f$ with Dirichlet velocity boundary conditions as the analytical solution on the surface:
+ *  @f[
+ *  \mathbf{v}=\sum\limits_{l=0}^{\infty}\sum\limits_{m=-l}^{l}u_{l m}^{r}(r) \mathbf{Y}^{(l m)}+u_{l m}^{(1)}(r) \mathbf{\Psi}^{(l m)}+u_{l m}^{(2)}(r) \mathbf{\Phi}^{(l m)}\\
+ *  \Pi=\sum_{l=0}^{\infty} \sum_{m=-l}^{l} p_{l m}(r) Y_{l m}
+ *  @f]
+ *
+ * We do that by solving the implicit stokes equation and and employing an iterative pressure correction scheme:
+ *
+ * Output:
+ * Stokes flow solution in a 3D Ball.
+ *
+ * ## Including the headers ## {#stokesball_c1_include}
+ *
+ * These are the header files that we need to include:
+ *
+ * @snippet Numerics/Stoke_flow/3_3D_StokesFlowBall/main.cpp Ball1Include
+ *
+ */
+
+//! @cond [Ball1Include] @endcond
+// Include Vector Expression,Vector Expressions for Subset,DCPSE , and Solver header files
 #include "config.h"
 #include <iostream>
 #include "DCPSE/DCPSE_OP/DCPSE_op.hpp"
@@ -9,12 +45,29 @@
 #include "Operators/Vector/vector_dist_operators.hpp"
 #include "Vector/vector_dist_subset.hpp"
 #include "util/SphericalHarmonics.hpp"
-
+//! \cond [Ball1Include] \endcond
 
 int main(int argc, char* argv[])
 {
 
-    {   openfpm_init(&argc,&argv);
+    {
+    /*!
+	 * \page Stokes_3d_ball Stokes Flow in a 3D Ball with Pressure Correction
+	 *
+	 * ## Initialization ## {#init3dball}
+	 *
+	 * * Initialize the library
+	 * * Define some useful constants
+	 * * define Ghost size
+	 * * Non-periodic boundary conditions
+	 *
+	 *
+     * @snippet Numerics/Stoke_flow/3_3D_StokesFlowBall/main.cpp Ball1Init
+	 *
+	 */
+
+	//! \cond [Ball1Init] \endcond
+        openfpm_init(&argc,&argv);
         timer tt2;
         tt2.start();
         size_t grd_sz = 18;
@@ -31,7 +84,20 @@ int main(int argc, char* argv[])
         //                                  P        V                 v_B           RHS            V_t         P_anal              RHS2            Polar cord
         vector_dist_ws<3, double, aggregate<double,VectorS<3, double>,VectorS<3, double>,double,VectorS<3, double>,double,double,VectorS<3, double>,VectorS<3, double>,VectorS<3, double>>> Particles(0, box, bc, ghost);
         Particles.setPropNames({"Pressure","Velocity","Velocity_Boundary","Divergence","V_T","P_analytical","TEMP" ,"RHS","PolarCoord","V_analytical"});
+    //! \cond [Ball1Init] \endcond
 
+
+    /*!
+	 * \page Stokes_3d_ball Stokes Flow in a 3D Ball with Pressure Correction
+	 *
+	 * ## Creating particles in the 3D ball and on the surface ## {#init3dballparts}
+	 *
+	 *
+     * @snippet Numerics/Stoke_flow/3_3D_StokesFlowBall/main.cpp Ball1InitPart
+	 *
+	 */
+
+	//! \cond [Ball1InitPart] \endcond
         auto &v_cl = create_vcluster();
 
         auto it = Particles.getGridIterator(sz);
@@ -85,7 +151,19 @@ int main(int argc, char* argv[])
         }
         Particles.map();
         Particles.ghost_get<0>();
+        //! \cond [Ball1InitPart] \endcond
 
+        /*!
+         * \page Stokes_3d_ball Stokes Flow in a 3D Ball with Pressure Correction
+         *
+         * ## Encoding the analytical solution from vector spherical harmonics for comparison ## {#init3dballana}
+         *
+         *
+         * @snippet Numerics/Stoke_flow/3_3D_StokesFlowBall/main.cpp Ball1InitAna
+         *
+         */
+
+	//! \cond [Ball1InitAna] \endcond
 
         std::unordered_map<const lm,double,key_hash,key_equal> Vr;
         std::unordered_map<const lm,double,key_hash,key_equal> V1;
@@ -135,6 +213,18 @@ int main(int argc, char* argv[])
             }
             ++it2;
         }
+        //! \cond [Ball1InitAna] \endcond
+
+ /*!
+         * \page Stokes_3d_ball Stokes Flow in a 3D Ball with Pressure Correction
+         *
+         * ##Creating Bulk and Boundary partitions of the domain for imposing the boundary condition and equations ## {#init3dballana2}
+         *
+         * @snippet Numerics/Stoke_flow/3_3D_StokesFlowBall/main.cpp Ball1InitAn
+         *
+         */
+
+	//! \cond [Ball1InitAn] \endcond
 
         vector_dist_subset<3, double, aggregate<double,VectorS<3, double>,VectorS<3, double>,double,VectorS<3, double>,double,double,VectorS<3, double>,VectorS<3, double>,VectorS<3, double>>> Particles_bulk(Particles,0);
         vector_dist_subset<3, double, aggregate<double,VectorS<3, double>,VectorS<3, double>,double,VectorS<3, double>,double,double,VectorS<3, double>,VectorS<3, double>,VectorS<3, double>>> Particles_surface(Particles,1);
@@ -147,11 +237,10 @@ int main(int argc, char* argv[])
             Point<3, double> xp = Particles.getPos(p);
             Point<3, double> xP = Particles.getProp<8>(p);
 
-            std::unordered_map<const lm,double,key_hash,key_equal> Ur;
-            std::unordered_map<const lm,double,key_hash,key_equal> U2;
-            std::unordered_map<const lm,double,key_hash,key_equal> U1;
-            std::unordered_map<const lm,double,key_hash,key_equal> Plm;
+            //Dictionary for basis coefficients
+            std::unordered_map<const lm,double,key_hash,key_equal> Ur, U1, U2, Plm;
 
+            //Setting basis coefficients
             for (int l = 0; l <= K; l++) {
                 for (int m = -l; m <= l; m++) {
                     auto Er= Vr.find(std::make_tuple(l,m));
@@ -166,6 +255,7 @@ int main(int argc, char* argv[])
 
             }
 
+            //Computing Analyical Solution.
             if(fabs(xP[0])>=1e-5 && xP[1]>1e-5 && (M_PI-xP[1])>=1e-5)
             {
                 std::vector<double> SVel = openfpm::math::sumY<K>(xP[0], xP[1], xP[2], Ur, U1, U2);
@@ -175,7 +265,18 @@ int main(int argc, char* argv[])
                 Particles.getProp<5>(p) = openfpm::math::sumY_Scalar<K>(xP[0], xP[1], xP[2], Plm);
             }
         }
+        //! \cond [Ball1InitAn] \endcond
 
+        /*!
+         * \page Stokes_3d_ball Stokes Flow in a 3D Ball with Pressure Correction
+         *
+         * ##Creating Vector Expressions for Fields and Differential Operators for easier encoding. ## {#init3dballana3}
+         *
+         * @snippet Numerics/Stoke_flow/3_3D_StokesFlowBall/main.cpp Ball1InitAna3
+         *
+         */
+
+	//! \cond [Ball1InitAna3] \endcond
         auto P = getV<0>(Particles);
         auto V = getV<1>(Particles);
         auto V_B = getV<2>(Particles);
@@ -192,12 +293,6 @@ int main(int argc, char* argv[])
         V_t=V;
         P=0;
         P_bulk=0;
-        eq_id vx,vy,vz;
-
-        vx.setId(0);
-        vy.setId(1);
-        vz.setId(2);
-
         double sampling=3.1;
         double sampling2=1.9;
         double rCut2=3.9*spacing;
@@ -209,23 +304,36 @@ int main(int argc, char* argv[])
         Derivative_yy Dyy(Particles, 2, rCut2,sampling2,support_options::RADIUS);
         Derivative_zz Dzz(Particles, 2, rCut2,sampling2,support_options::RADIUS);
 
-        //std::cout << "DCPSE KERNELS DONE" << std::endl;
+        //! \cond [Ball1InitAna3] \endcond
+
+        /*!
+         * \page Stokes_3d_ball Stokes Flow in a 3D Ball with Pressure Correction
+         *
+         * ##Creating a 3D implicit solver for the given set of particles and iterativelt solving wit pressure correction. ## {#3dballsol}
+         *
+         * @snippet Numerics/Stoke_flow/3_3D_StokesFlowBall/main.cpp Ballsol
+         *
+         */
+
+	//! \cond [Ballsol] \endcond
+
+        eq_id vx,vy,vz;
+
+        vx.setId(0);
+        vy.setId(1);
+        vz.setId(2);
+
         petsc_solver<double> solverPetsc;
         solverPetsc.setPreconditioner(PCNONE);
         timer tt;
         double sum=0,sum1=0;
         V_t=V;
-        //double V_err_eps = 1e-5;
-
         double V_err = 1, V_err_old;
-        int n = 0;
-        int nmax = 30;
-        int ctr = 0, errctr, Vreset = 0;
+        int n = 0, nmax = 30, ctr = 0, errctr, Vreset = 0;
         V_err = 1;
         n = 0;
         tt.start();
         while (V_err >= V_err_eps && n <= nmax) {
-            //Particles.write_frame("StokesSphere",n);
             Particles.ghost_get<0>(SKIP_LABELLING);
             RHS_bulk[0] = B_Dx(P);
             RHS_bulk[1] = B_Dy(P);
@@ -284,8 +392,20 @@ int main(int argc, char* argv[])
             n++;
 
         }
+        //Writing the final Solution
+        //The solution can be visualized at https://link.springer.com/article/10.1140/epje/s10189-021-00121-x/figures/7
         Particles.write("StokesSphere");
-    }
+    }   //Ending Scope for Petsc.
+    //Finalizing the Library.
     openfpm_finalize();
+    //! \cond [Ballsol] \endcond
 
+    /*!
+	 * \page Stokes_3d_ball Stokes Flow in a 3D Ball with Pressure Correction
+	 *
+	 * # Full code # {#num_ball_3D_code}
+	 *
+	 * \include Numerics/Stoke_flow/3_3D_StokesFlowBall/main.cpp
+	 *
+	 */
 }

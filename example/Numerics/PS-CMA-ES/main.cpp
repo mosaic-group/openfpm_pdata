@@ -1,10 +1,11 @@
 /*!
  *
  * \page Numerics Numerics
- * \subpage Odeint
  * \subpage PS_CMA_ES
  * \subpage Vortex_in_cell_petsc
+ * \subpage Odeint
  * \subpage Stokes_flow
+ * \subpage ActiveFluid
  *
  * \page PS_CMA_ES Particle swarm CMA-ES Evolution strategy
  *
