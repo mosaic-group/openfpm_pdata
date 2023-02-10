@@ -430,8 +430,8 @@ void remove_marked(vector_type & vd, const int n = 1024)
 	for (int j = 0 ; j < exp_tmp.ref() ; j++)
 	{exp_tmp.decRef();}*/
 
-	vd_pos_new.setMemory(exp_tmp);
-	vd_prp_new.setMemoryArray((CudaMemory *)&exp_tmp2);
+	//vd_pos_new.setMemory(exp_tmp);
+	//vd_prp_new.setMemoryArray((CudaMemory *)&exp_tmp2);
 
 	// resize them
 
