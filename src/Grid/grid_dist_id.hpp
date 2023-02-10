@@ -61,6 +61,59 @@ struct Box_fix
 
 #define NO_GDB_EXT_SWITCH 0x1000
 
+template<bool is_sparse>
+struct device_grid_copy
+{
+	template<typename key_type1, typename key_type2, typename spg_type, typename lg_type>
+	static void assign(key_type1 & key, key_type2 & key_dst, spg_type & dg, lg_type & lg)
+	{
+		dg.insert_o(key_dst) = lg.get_o(key);
+	}
+};
+
+template<typename e_src, typename e_dst, typename indexT>
+struct copy_all_prop_sparse
+{
+	//! encapsulated source object
+	const e_src & block_data_src;
+	e_dst & block_data_dst;
+
+	indexT local_id;
+
+	/*! \brief constructor
+	 *
+	 * \param src source encapsulated object
+	 * \param dst source encapsulated object
+	 *
+	 */
+	__device__ __host__ inline copy_all_prop_sparse(const e_src & block_data_src, e_dst & block_data_dst, indexT local_id)
+	:block_data_src(block_data_src),block_data_dst(block_data_dst),local_id(local_id)
+	{
+	};
+
+	template<typename T>
+	__device__ __host__ inline void operator()(T& t) const
+	{
+		block_data_dst.template get<T::value>()[local_id] = block_data_src.template get<T::value>();
+	}
+};
+
+template<>
+struct device_grid_copy<true>
+{
+	template<typename key_type1, typename key_type2, typename spg_type, typename lg_type>
+	static void assign(key_type1 & key, key_type2 & key_dst, spg_type & dg, lg_type & lg)
+	{
+		typename spg_type::indexT_ local_id;
+		auto block_data_dst = dg.insertBlockFlush(key_dst, local_id);
+		auto block_data_src = lg.get_o(key);
+
+		copy_all_prop_sparse<decltype(block_data_src),decltype(block_data_dst),decltype(local_id)> cp(block_data_src, block_data_dst, local_id);
+
+		boost::mpl::for_each_ref< boost::mpl::range_c<int,0,decltype(block_data_dst)::max_prop> >(cp);
+	}
+};
+
 /*! \brief This is a distributed grid
  *
  * Implementation of a distributed grid the decomposition is geometrical, grid
@@ -2209,6 +2262,32 @@ public:
 		return loc_grid.get(v1.getSub()).template insertFlush<p>(v1.getKey());
 	}
 
+	/*! \brief insert an element in the grid
+	 *
+	 * In case of dense grid this function is equivalent to get, in case of sparse
+	 * grid this function insert a grid point. When the point already exist it return
+	 * a reference to the already existing point. In case of massive insert Sparse grids
+	 * The point is inserted immediately and a reference to the inserted element is returned
+	 *
+	 * \warning This function is not fast an unlucky insert can potentially cost O(N) where N is the number
+	 *          of points (worst case)
+	 *
+	 * \tparam p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return a reference to the inserted element
+	 *
+	 */
+	template <typename bg_key>inline auto insertFlush(const grid_dist_key_dx<dim,bg_key> & v1)
+	-> decltype(loc_grid.get(v1.getSub()).template insertFlush(v1.getKey()))
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+
+		return loc_grid.get(v1.getSub()).template insertFlush(v1.getKey());
+	}
+
 	/*! \brief Get the reference of the selected element
 	 *
 	 * \tparam p property to get (is an integer)
@@ -3303,7 +3382,7 @@ public:
 							for (int j = 0 ; j < dim ; j++)
 							{key_dst.set_d(j,key.get(j) + orig.get(j) + kp1.get(j));}
 
-							dg.insert_o(key_dst) = lg.get_o(key);
+							device_grid_copy<device_grid::isCompressed()>::assign(key,key_dst,dg,lg);
 
 							++it_src;
 					}
