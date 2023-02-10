@@ -360,7 +360,7 @@ else
             elif [ x"$CXX" == x"clang++" ]; then
               ./script/install_BOOST.sh $i_dir $ncore clang
             else
-	      if [ x"$CXX" == x"g++" ]; then
+	      if [ x"$CXX" == x"g++*" ]; then
 		if [ x"$is_apple_llvm" == x"yes" ]; then
 		  ./script/install_BOOST.sh $i_dir $ncore clang
 		else
@@ -609,6 +609,7 @@ fi
 echo "$bash_path" > $VARS_FILE_LOCATION/openfpm_vars
 echo "$bash_library" >> $VARS_FILE_LOCATION/openfpm_vars
 echo "export PURE_PYTHON=1" >> $VARS_FILE_LOCATION/openfpm_vars
+cp example.mk ~/.Openfpm.mk
 
 if [ x"$platform" = x"osx" ]; then
     echo "TMPDIR=/tmp/" >> $VARS_FILE_LOCATION/openfpm_vars
