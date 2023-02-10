@@ -609,7 +609,7 @@ fi
 echo "$bash_path" > $VARS_FILE_LOCATION/openfpm_vars
 echo "$bash_library" >> $VARS_FILE_LOCATION/openfpm_vars
 echo "export PURE_PYTHON=1" >> $VARS_FILE_LOCATION/openfpm_vars
-cp example.mk ~/.Openfpm.mk
+cp example.mk $HOME/Openfpm.mk
 
 if [ x"$platform" = x"osx" ]; then
     echo "TMPDIR=/tmp/" >> $VARS_FILE_LOCATION/openfpm_vars
