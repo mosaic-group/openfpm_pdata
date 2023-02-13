@@ -89,6 +89,18 @@ public:
         return operationProxy;
     }
 
+
+    // helper function to get the type of the property as Point
+    template<unsigned int dimension, typename T>
+    inline auto getPointType(const T (&p)[dimension] ) {
+        return Point<dimension, T>(p);
+    }
+
+    template<unsigned int id>
+    inline auto property_point(vect_dist_key_dx p) -> decltype(getPointType(property<id>(p))) {
+        return getPointType(property<id>(p));
+    }
+
     template<unsigned int id>
     inline auto last_property() -> decltype(vd.template getLastProp<id>()) {
         return vd.template getLastProp<id>();
@@ -108,6 +120,10 @@ public:
      */
     inline auto position(vect_dist_key_dx p) -> decltype(vd.getPos(p)) {
         return vd.getPos(p);
+    }
+
+    inline auto position_point(vect_dist_key_dx p) -> decltype(getPointType(position(p))) {
+        return getPointType(position(p));
     }
 
     virtual inline auto position_vec(vect_dist_key_dx p) -> OperationProxy<typename std::remove_reference<decltype(position(p))>::type> {

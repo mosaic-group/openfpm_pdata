@@ -11,7 +11,6 @@
 
 
 
-
 template <typename T>
 class OperationProxy {
     T &data;
@@ -178,7 +177,7 @@ public:
         return *this;
     }
 
-    OperationProxy<T[n1]> operator+= (OperationProxy<T[n1]> rhs) {
+/*    OperationProxy<T[n1]> operator+= (OperationProxy<T[n1]> rhs) {
         for (int i = 0; i < n1; ++i) {
             data[i] += rhs.data[i];
         }
@@ -205,11 +204,59 @@ public:
         }
         return *this;
     }
+*/
 
 
+    // Point expression
 
-    // Point
 
+    template<typename P>
+    OperationProxy<T[n1]> operator= (P rhs) {
+        Point<n1, T> point(rhs);
+        for (int i = 0; i < n1; ++i) {
+            data[i] = rhs[i];
+        }
+        return *this;
+    }
+
+    template<typename P>
+    OperationProxy<T[n1]> operator+= (P rhs) {
+        Point<n1, T> point(rhs);
+        for (int i = 0; i < n1; ++i) {
+            data[i] += rhs[i];
+        }
+        return *this;
+    }
+
+    template<typename P>
+    OperationProxy<T[n1]> operator-= (P rhs) {
+        Point<n1, T> point(rhs);
+        for (int i = 0; i < n1; ++i) {
+            data[i] -= rhs[i];
+        }
+        return *this;
+    }
+
+    template<typename P>
+    OperationProxy<T[n1]> operator*= (P rhs) {
+        Point<n1, T> point(rhs);
+        for (int i = 0; i < n1; ++i) {
+            data[i] *= rhs[i];
+        }
+        return *this;
+    }
+
+    template<typename P>
+    OperationProxy<T[n1]> operator/= (P rhs) {
+        Point<n1, T> point(rhs);
+        for (int i = 0; i < n1; ++i) {
+            data[i] /= rhs[i];
+        }
+        return *this;
+    }
+
+
+/*
     OperationProxy<T[n1]> operator= (Point<n1, T> rhs) {
         for (int i = 0; i < n1; ++i) {
             data[i] = rhs[i];
@@ -244,7 +291,7 @@ public:
         }
         return *this;
     }
-
+*/
 
 
 
@@ -256,6 +303,7 @@ public:
         }
         return *this;
     }
+/*
 
     OperationProxy<T[n1]> operator+= (T rhs) {
         for (int i = 0; i < n1; ++i) {
@@ -285,6 +333,7 @@ public:
         return *this;
     }
 
+*/
 
 
     // Mathematical operations: +, - *, /
