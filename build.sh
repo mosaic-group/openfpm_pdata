@@ -10,7 +10,8 @@ branch=$5
 with_gpu=$6
 
 echo "Trying to Fix the CI"
-rm -rf .git/modules/gdbgui/rebase-merge
+rm -rf .git/modules/*/rebase-merge
+git rebase --abort
 
 
 if [ x"$branch" == x"" ]; then
