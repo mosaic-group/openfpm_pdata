@@ -1,7 +1,7 @@
 #! /bin/bash
 
 
-rm -fr "./.git/modules/*/rebase-merge"
+git rebase --abort
 
 source script/help
 source script/discover_os
