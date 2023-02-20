@@ -1,5 +1,8 @@
 #! /bin/bash
 
+
+rm -fr "./.git/modules/*/rebase-merge"
+
 source script/help
 source script/discover_os
 source script/show_solutions
