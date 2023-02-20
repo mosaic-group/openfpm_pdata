@@ -9,10 +9,8 @@ comp_type=$4
 branch=$5
 with_gpu=$6
 
-echo "Trying to Fix the CI"
-rm -rf .git/modules/*/rebase-merge
-git rebase --abort
-
+echo "Trying to Fix the CI by removing everything"
+rm -rf ./*
 
 if [ x"$branch" == x"" ]; then
   echo "Getting branch from git"
