@@ -1,30 +1,18 @@
 [submodule "openfpm_vcluster"]
 	path = openfpm_vcluster
 	url = ../openfpm_vcluster.git
-	update = rebase
-	branch = develop
 [submodule "openfpm_devices"]
 	path = openfpm_devices
 	url = ../openfpm_devices.git
-	update = rebase
-	branch = develop
 [submodule "openfpm_io"]
 	path = openfpm_io
 	url = ../openfpm_io.git
-	update = rebase
-	branch = develop
 [submodule "openfpm_data"]
 	path = openfpm_data
 	url = ../openfpm_data.git
-	update = rebase
-	branch = develop
 [submodule "openfpm_numerics"]
 	path = openfpm_numerics
 	url = ../openfpm_numerics.git
-	update = rebase
-	branch = develop
 [submodule "gdbgui"]
 	path = gdbgui
 	url = https://github.com/incardon/gdbgui.git
-	update = rebase
-	branch = master
