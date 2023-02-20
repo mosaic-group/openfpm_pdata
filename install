@@ -1,7 +1,6 @@
 #! /bin/bash
 
 
-git rebase --abort
 
 source script/help
 source script/discover_os
