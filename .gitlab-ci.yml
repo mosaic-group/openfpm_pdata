@@ -27,6 +27,9 @@
 #     paths:
 #       - base/
 
+variables:
+  GIT_STRATEGY: clone
+
 centos_build:
   stage: build
   tags:
