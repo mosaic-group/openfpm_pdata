@@ -63,8 +63,6 @@ centos_run:
     - ./run.sh $CI_PROJECT_DIR unused 4 0 0 numerics $CI_COMMIT_REF_NAME
 
 mac_build:
-  variables:
-    GIT_STRATEGY: empty
   stage: build
   tags:
     - mac
