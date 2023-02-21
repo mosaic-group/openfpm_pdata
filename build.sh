@@ -8,8 +8,6 @@ target=$3
 comp_type=$4
 branch=$5
 with_gpu=$6
-echo "Trying to Fix the CI by removing everything"
-rm -rf ./*
 
 
 if [ x"$branch" == x"" ]; then
