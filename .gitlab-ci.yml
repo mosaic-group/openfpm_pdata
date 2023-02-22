@@ -39,6 +39,8 @@ centos_build:
       - ./build/src/pdata
       - ./build/openfpm_numerics/src/numerics
       - ./openfpm_numerics/test
+      - ./openfpm_numerics/run.sh
+
   script:
     - ./build.sh $CI_PROJECT_DIR unused pdata 0 $CI_COMMIT_REF_NAME
 
@@ -71,6 +73,7 @@ mac_build:
       - ./build/src/pdata
       - ./build/openfpm_numerics/src/numerics
       - ./openfpm_numerics/test
+      - ./openfpm_numerics/run.sh
   script:
       - ./build.sh $CI_PROJECT_DIR unused pdata 0  $CI_COMMIT_REF_NAME
 
@@ -95,6 +98,7 @@ ubuntu_build:
       - ./build/src/pdata
       - ./build/openfpm_numerics/src/numerics
       - ./openfpm_numerics/test
+      - ./openfpm_numerics/run.sh
   script:
     - ./build.sh $CI_PROJECT_DIR unused pdata 0 $CI_COMMIT_REF_NAME
 
