@@ -69,6 +69,11 @@ struct device_grid_copy
 	{
 		dg.insert_o(key_dst) = lg.get_o(key);
 	}
+
+	template<typename gdb_ext_type, typename loc_grid_type>
+	static void pre_load(gdb_ext_type & gdb_ext_old, loc_grid_type & loc_grid_old, gdb_ext_type & gdb_ext, loc_grid_type & loc_grid) 
+	{
+	}
 };
 
 template<typename e_src, typename e_dst, typename indexT>
@@ -98,6 +103,21 @@ struct copy_all_prop_sparse
 	}
 };
 
+struct ids_pl
+{
+	size_t id;
+
+        bool operator<(const ids_pl & i) const
+        {
+        	return id < i.id;
+	}
+
+	bool operator==(const ids_pl & i) const
+	{
+		return id == i.id;
+	}
+};
+
 template<>
 struct device_grid_copy<true>
 {
@@ -111,6 +131,143 @@ struct device_grid_copy<true>
 		copy_all_prop_sparse<decltype(block_data_src),decltype(block_data_dst),decltype(local_id)> cp(block_data_src, block_data_dst, local_id);
 
 		boost::mpl::for_each_ref< boost::mpl::range_c<int,0,decltype(block_data_dst)::max_prop> >(cp);
+	}
+
+/*
+ *
+ *
+		auto & v_cl = create_vcluster();
+		auto & dg = loc_grid.get(0);
+
+		typedef typename std::remove_reference<decltype(dg)>::type sparse_grid_type;
+
+		grid_key_dx<sparse_grid_type::dims> kp1 = gdb_ext.get(0).Dbox.getKP1();
+
+		for (int j = 0 ; j < std::ceil(gdb_ext_old.size() / 32) + 1 ; j++)
+		{
+			int jbase = j*32;
+                        int sz = gdb_ext_old.size() - jbase;
+			if (sz < 0)	{break;}
+			else if (sz > 32) {sz = 32;}
+			dg.copyRemoveReset();
+
+			std::cout << "JBASE: " << jbase << " SZ: " << sz << std::endl;
+
+                	for (int i = 0 ; i < sz ; i++)
+                	{
+				Box<sparse_grid_type::dims,long int> bx_dst;
+				Box<sparse_grid_type::dims,long int> bx_src;
+                        	for (int k = 0 ; k < sparse_grid_type::dims ; k++)
+                        	{
+					bx_dst.setLow(k,kp1.get(k) + gdb_ext_old.get(i+jbase).origin.get(k) + gdb_ext_old.get(i+jbase).Dbox.getKP1().get(k));
+					bx_dst.setHigh(k,kp1.get(k) + gdb_ext_old.get(i+jbase).origin.get(k) + gdb_ext_old.get(i+jbase).Dbox.getKP2().get(k));
+
+                                        bx_src.setLow(k,gdb_ext_old.get(i+jbase).Dbox.getKP1().get(k));
+                                        bx_src.setHigh(k,gdb_ext_old.get(i+jbase).Dbox.getKP2().get(k));
+                        	}
+
+				std::cout << jbase <<  "  " << i << "  SRC:" << gdb_ext_old.get(i+jbase).Dbox.toString() << "  DST: " << bx_dst.toString() << "  INDEX BUFFER: " << loc_grid_old.get(jbase + i).private_get_index_array().size() << std::endl;
+				loc_grid_old.get(jbase + i).template hostToDevice<0>();
+				dg.copy_to(loc_grid_old.get(jbase + i),gdb_ext_old.get(jbase +i).Dbox,bx_dst);
+			}
+
+			for (int i = 0 ; i < sz ; i++)
+                        {
+				std::cout << "FINALIZE1" << std::endl;
+				loc_grid_old.get(jbase + i).template removeCopyToFinalize<0>(v_cl.getmgpuContext(), rem_copy_opt::PHASE1);
+				std::cout << "FINALIZE2" << std::endl;
+				loc_grid_old.get(jbase + i).template removeCopyToFinalize<0>(v_cl.getmgpuContext(), rem_copy_opt::PHASE2);
+				std::cout << "FINALIZE3" << std::endl;
+				loc_grid_old.get(jbase + i).template removeCopyToFinalize<0>(v_cl.getmgpuContext(), rem_copy_opt::PHASE3);
+			}
+		}
+
+ *
+ *
+ */
+
+        template<typename gdb_ext_type, typename loc_grid_type>
+        static void pre_load(gdb_ext_type & gdb_ext_old, loc_grid_type & loc_grid_old, gdb_ext_type & gdb_ext, loc_grid_type & loc_grid)
+	{
+		auto & dg = loc_grid.get(0);
+		auto dlin = dg.getGrid();
+		typedef typename std::remove_reference<decltype(dg)>::type sparse_grid_type;
+
+		openfpm::vector<ids_pl> ids;
+		openfpm::vector<grid_key_dx<sparse_grid_type::dims>> gg;
+
+		size_t sz[sparse_grid_type::dims];
+
+		for (int i = 0 ; i < sparse_grid_type::dims ; i++)
+		{sz[i] = 2;}
+
+		grid_sm<sparse_grid_type::dims,void> gvoid(sz);
+
+		grid_key_dx_iterator<sparse_grid_type::dims> it(gvoid);
+		while(it.isNext())
+		{
+			auto key = it.get();
+
+			grid_key_dx<sparse_grid_type::dims> k;
+			for (int i = 0 ; i < sparse_grid_type::dims ; i++)
+			{
+				k.set_d(i,key.get(i)*dlin.getBlockEgdeSize());
+			}
+
+			gg.add(k);
+			++it;
+		}
+
+
+		for (int i = 0 ; i < gdb_ext_old.size() ; i++)
+		{
+			
+			auto & lg = loc_grid_old.get(i);
+			auto & indexBuffer = lg.private_get_index_array();
+			auto & dg = loc_grid.get(0);
+
+			auto slin = loc_grid_old.get(i).getGrid();
+
+			grid_key_dx<sparse_grid_type::dims> kp1 = gdb_ext.get(0).Dbox.getKP1();
+
+			grid_key_dx<sparse_grid_type::dims> orig;
+			for (int j = 0 ; j < sparse_grid_type::dims ; j++)
+			{
+				orig.set_d(j,gdb_ext_old.get(i).origin.get(j));
+			}
+
+                        for (int i = 0; i < indexBuffer.size() ; i++)
+                        {
+				for (int ex = 0; ex < gg.size() ; ex++) {
+					auto key = slin.InvLinId(indexBuffer.template get<0>(i),0);
+					grid_key_dx<sparse_grid_type::dims> key_dst;
+
+					for (int j = 0 ; j < sparse_grid_type::dims ; j++)
+					{key_dst.set_d(j,key.get(j) + orig.get(j) + kp1.get(j) + gg.get(ex).get(j));}
+
+					typename sparse_grid_type::indexT_ bid;
+					int lid;
+
+					dlin.LinId(key_dst,bid,lid);
+
+					ids.add();
+					ids.last().id = bid;
+				}
+			}
+		}
+
+		ids.sort();
+		ids.unique();
+
+		auto & indexBuffer = dg.private_get_index_array();
+		auto & dataBuffer = dg.private_get_data_array();
+		indexBuffer.reserve(ids.size()+8);
+		dataBuffer.reserve(ids.size()+8);
+		for (int i = 0 ; i < ids.size() ; i++) 
+		{
+			auto & dg = loc_grid.get(0);
+			dg.insertBlockFlush(ids.get(i).id);
+		}
 	}
 };
 
@@ -3361,6 +3518,7 @@ public:
 		}
 		else
 		{
+			device_grid_copy<device_grid::isCompressed()>::pre_load(gdb_ext_old,loc_grid_old,gdb_ext,loc_grid);
 			for (int i = 0 ; i < gdb_ext_old.size() ; i++)
 			{
 					auto & lg = loc_grid_old.get(i);
@@ -3376,15 +3534,15 @@ public:
 
 					while (it_src.isNext())
 					{
-							auto key = it_src.get();
-							grid_key_dx<dim> key_dst;
+						auto key = it_src.get();
+						grid_key_dx<dim> key_dst;
 
-							for (int j = 0 ; j < dim ; j++)
-							{key_dst.set_d(j,key.get(j) + orig.get(j) + kp1.get(j));}
+						for (int j = 0 ; j < dim ; j++)
+						{key_dst.set_d(j,key.get(j) + orig.get(j) + kp1.get(j));}
 
-							device_grid_copy<device_grid::isCompressed()>::assign(key,key_dst,dg,lg);
+						device_grid_copy<device_grid::isCompressed()>::assign(key,key_dst,dg,lg);
 
-							++it_src;
+						++it_src;
 					}
 			}
 		}

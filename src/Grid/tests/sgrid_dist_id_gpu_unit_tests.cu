@@ -187,6 +187,81 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_output )
 	#endif
 }
 
+template<typename grid, typename box_type>
+void check_sgrid(grid & gdist2, box_type & box, float c)
+{
+	bool match = true;
+	auto it2 = gdist2.getDomainIterator();
+
+	while (it2.isNext())
+	{
+		auto p = it2.get();
+
+		auto key = it2.getGKey(p);
+
+		auto p_xp1 = p.move(0,1);
+		auto p_xm1 = p.move(0,-1);
+		auto p_yp1 = p.move(1,1);
+		auto p_ym1 = p.move(1,-1);
+
+		auto key_xp1 = key.move(0,1);
+		auto key_xm1 = key.move(0,-1);
+		auto key_yp1 = key.move(1,1);
+		auto key_ym1 = key.move(1,-1);
+
+		if (box.isInside(key_xp1.toPoint()))
+		{
+			match &= gdist2.template get<0>(p_xp1) == c + key_xp1.get(0) + key_xp1.get(1);
+
+			if (match == false)
+			{
+				std::cout << gdist2.template get<0>(p_xp1) << "   " << c + key_xp1.get(0) + key_xp1.get(1) << std::endl;
+				std::cout << "1 " << p_xp1.getKey().toPoint().to_string() << " " << &gdist2.template get<0>(p_xp1) << std::endl;
+				break;
+			}
+		}
+
+		if (box.isInside(key_xm1.toPoint()))
+		{
+			match &= gdist2.template get<0>(p_xm1) == c + key_xm1.get(0) + key_xm1.get(1);
+
+			if (match == false)
+			{
+				std::cout << gdist2.template get<0>(p_xm1) << "   " << c + key_xm1.get(0) + key_xm1.get(1) << std::endl;
+				std::cout << "2 " << key_xm1.to_string() << std::endl;
+				break;
+			}
+		}
+
+		if (box.isInside(key_yp1.toPoint()))
+		{
+			match &= gdist2.template get<0>(p_yp1) == c + key_yp1.get(0) + key_yp1.get(1);
+
+			if (match == false)
+			{
+				std::cout << gdist2.template get<0>(p_yp1) << "   " << c + key_yp1.get(0) + key_yp1.get(1) << std::endl;
+				std::cout << "3 " << key_yp1.to_string() << std::endl;
+				break;
+			}
+		}
+
+		if (box.isInside(key_ym1.toPoint()))
+		{
+			match &= gdist2.template get<0>(p_ym1) == c + key_ym1.get(0) + key_ym1.get(1);
+
+			if (match == false)
+			{
+				std::cout << gdist2.template get<0>(p_ym1) << "   " << c + key_ym1.get(0) + key_ym1.get(1) << std::endl;
+				std::cout << "4 " << key_ym1.to_string() << std::endl;
+				break;
+			}
+		}
+
+		++it2;
+	}
+
+	BOOST_REQUIRE_EQUAL(match,true);
+}
 
 BOOST_AUTO_TEST_CASE( sgrid_gpu_test_save_and_load )
 {
@@ -232,19 +307,23 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_save_and_load )
 	gdist.template deviceToHost<0>();
 
 	gdist.save("sgrid_gpu_output_hdf5");
+	check_sgrid(gdist,box,c);
 
 	// Now load
 
 	sgrid_dist_id_gpu<2,float,aggregate<float,float>> gdist2(sz,domain,g,bc);
 
 	gdist2.load("sgrid_gpu_output_hdf5");
+	check_sgrid(gdist2,box,c);
+	gdist2.template hostToDevice<0>();
 
 	gdist2.template ghost_get<0,1>(RUN_ON_DEVICE);
 
 	gdist2.deviceToHost<0,1>();
 	gdist.deviceToHost<0,1>();
+	check_sgrid(gdist2,box,c);
 
-	bool match = true;
+/*	bool match = true;
 
 
 	auto it2 = gdist2.getDomainIterator();
@@ -272,6 +351,7 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_save_and_load )
 			if (match == false)
 			{
 				std::cout << gdist.template get<0>(p_xp1) << "   " << c + key_xp1.get(0) + key_xp1.get(1) << std::endl;
+				std::cout << key_xp1.to_string() << std::endl;
 				break;
 			}
 		}
@@ -283,6 +363,7 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_save_and_load )
 			if (match == false)
 			{
 				std::cout << gdist.template get<0>(p_xm1) << "   " << c + key_xm1.get(0) + key_xm1.get(1) << std::endl;
+				std::cout << key_xm1.to_string() << std::endl;
 				break;
 			}
 		}
@@ -294,6 +375,7 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_save_and_load )
 			if (match == false)
 			{
 				std::cout << gdist.template get<0>(p_yp1) << "   " << c + key_yp1.get(0) + key_yp1.get(1) << std::endl;
+				std::cout << key_yp1.to_string() << std::endl;
 				break;
 			}
 		}
@@ -305,6 +387,7 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_save_and_load )
 			if (match == false)
 			{
 				std::cout << gdist.template get<0>(p_ym1) << "   " << c + key_ym1.get(0) + key_ym1.get(1) << std::endl;
+				std::cout << key_ym1.to_string() << std::endl;
 				break;
 			}
 		}
@@ -313,7 +396,7 @@ BOOST_AUTO_TEST_CASE( sgrid_gpu_test_save_and_load )
 	}
 
 
-	BOOST_REQUIRE_EQUAL(match,true);
+	BOOST_REQUIRE_EQUAL(match,true);*/
 }
 
 void sgrid_ghost_get(size_t (& sz)[2],size_t (& sz2)[2])
