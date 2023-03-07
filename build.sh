@@ -3,11 +3,16 @@
 
 
 workspace=$1
-hostname=$(cat hostname)
 target=$3
 comp_type=$4
 branch=$5
 with_gpu=$6
+
+if [ -f hostname ]; then
+   hostname=$(cat hostname)
+else
+   hostname=$(hostname)
+fi
 
 if [ x"$branch" == x"" ]; then
   echo "Getting branch from git"
