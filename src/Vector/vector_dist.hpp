@@ -2804,11 +2804,15 @@ public:
 			vtk_writer.add(v_pos,v_prp,g_m);
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtp"));
-
+            //Create Directory for VTP files and write the PVTP metadata
+            if(v_cl.rank()==0)
+            {
+                create_directory_if_not_exist("VTPDATA",1);
+                vtk_writer.write_pvtp(out,prp_names,v_cl.size());
+            }
+            v_cl.barrier();
 			// Write the VTK file
 			bool ret=vtk_writer.write(output,prp_names,"particles",meta_info,ft);
-			if(v_cl.rank()==0)
-            {vtk_writer.write_pvtp(out,prp_names,v_cl.size())   ;}
 			return ret;
 		}
 	}
@@ -2916,10 +2920,17 @@ public:
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtp"));
 
+            //Create Directory for VTP files and write the PVTP metadata
+            if(v_cl.rank()==0)
+            {
+                create_directory_if_not_exist("VTPDATA",1);
+                vtk_writer.write_pvtp(out,prp_names,v_cl.size(),iteration);
+            }
+            v_cl.barrier();
+
 			// Write the VTK file
 			bool ret=vtk_writer.write(output,prp_names,"particles",meta_info,ft);
-            if(v_cl.rank()==0)
-            {vtk_writer.write_pvtp(out,prp_names,v_cl.size(),iteration);}
+
             return ret;
 		}
 	}
@@ -2964,10 +2975,15 @@ public:
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtp"));
 
+            //Create Directory for VTP files and write the PVTP metadata
+            if(v_cl.rank()==0)
+            {
+                create_directory_if_not_exist("VTPDATA",1);
+                vtk_writer.write_pvtp(out,prp_names,v_cl.size(),iteration,time);
+            }
+            v_cl.barrier();
 			// Write the VTK file
 			bool ret=vtk_writer.write(output,prp_names,"particles","",ft);
-            if(v_cl.rank()==0)
-            {vtk_writer.write_pvtp(out,prp_names,v_cl.size(),iteration,time);}
             return ret;
 		}
 	}
