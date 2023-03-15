@@ -43,6 +43,12 @@ public:
         return dataContainer.template property_vec<id>(key);
     }
 
+    template<unsigned int id>
+    inline auto property_point() {
+        return dataContainer.template property_point<id>(key);
+    }
+
+
     inline auto position_raw() -> decltype(dataContainer.position(key)) {
         return dataContainer.position(key);
     }
@@ -50,6 +56,10 @@ public:
 
     inline auto position() -> decltype(dataContainer.position_vec(key)) {
         return dataContainer.position_vec(key);
+    }
+
+    inline auto position_point() -> decltype(dataContainer.position_point(key)) {
+        return dataContainer.position_point(key);
     }
 
     auto getID() -> decltype(key.getKey()) {
