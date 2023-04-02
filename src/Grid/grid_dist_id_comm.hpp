@@ -13,6 +13,7 @@
 #include "grid_dist_util.hpp"
 #include "util/common_pdata.hpp"
 #include "lib/pdata.hpp"
+#include "Grid/grid_common.hpp"
 
 
 /*! \brief Unpack selector
@@ -166,6 +167,7 @@ class grid_dist_id_comm
 	struct rp_id
 	{
 		int p_id;
+		int size;
 		int i;
 
 		bool operator<(const rp_id & tmp) const
@@ -182,6 +184,7 @@ class grid_dist_id_comm
 	//! first id is grid
 	//! second id is the processor id
 	openfpm::vector<openfpm::vector<aggregate<device_grid,SpaceBox<dim,long int>>>> m_oGrid;
+	openfpm::vector<int> m_oGrid_c;
 
 	//! Memory for the ghost sending buffer
 	Memory g_send_prp_mem;
@@ -393,10 +396,13 @@ class grid_dist_id_comm
 		gd->recv_buffers.last().resize(msg_i);
 		gd->recv_proc.add();
 		gd->recv_proc.last().p_id = i;
+		gd->recv_proc.last().size = msg_i;
 		gd->recv_proc.last().i = gd->recv_proc.size()-1;
 
 		if (gd->opt & RUN_ON_DEVICE)
-		{return gd->recv_buffers.last().getDevicePointer();}
+		{
+			return gd->recv_buffers.last().getDevicePointer();
+		}
 
 		return gd->recv_buffers.last().getPointer();
 	}
@@ -935,6 +941,26 @@ class grid_dist_id_comm
 		}
 	}
 
+	int find_local_sub(Box<dim, long int> & box_dst, openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext)
+	{
+		Point<dim,long int> point;
+		for (size_t n = 0; n < dim; n++)
+		{point.get(n) = (box_dst.getHigh(n) + box_dst.getLow(n))/2;}
+
+		for (size_t j = 0; j < gdb_ext.size(); j++)
+		{
+			// Local sub-domain
+			SpaceBox<dim,long int> sub = gdb_ext.get(j).Dbox;
+			sub += gdb_ext.get(j).origin;
+
+			if (sub.isInside(point) == true)
+			{
+				return j;
+			}
+		}
+		return -1;
+	}
+
 public:
 
 	/*! \brief Reconstruct the local grids
@@ -999,6 +1025,30 @@ public:
 				}
 			}
 		}
+
+		std::cout << "UNPACKING " << std::endl;
+
+		for (size_t i = 0 ; i < m_oGrid_recv.size() ; i++)
+		{
+			for (size_t j = 0 ; j < m_oGrid_recv.get(i).size() ; j++)
+			{
+				m_oGrid_recv.get(i).template get<0>(j).template deviceToHost<0>();
+				std::cout << "UNPACKING POINTS: " << m_oGrid_recv.get(i).template get<0>(j).size() << std::endl;
+				m_oGrid_recv.get(i).template get<0>(j).template removeCopyToFinalize<0>(v_cl.getmgpuContext(), rem_copy_opt::PHASE1);
+			}
+		}
+
+		for (size_t i = 0 ; i < m_oGrid_recv.size() ; i++)
+		{
+			for (size_t j = 0 ; j < m_oGrid_recv.get(i).size() ; j++)
+			{m_oGrid_recv.get(i).template get<0>(j).template removeCopyToFinalize<0>(v_cl.getmgpuContext(), rem_copy_opt::PHASE2);}
+		}
+
+		for (size_t i = 0 ; i < m_oGrid_recv.size() ; i++)
+		{
+			for (size_t j = 0 ; j < m_oGrid_recv.get(i).size() ; j++)
+			{m_oGrid_recv.get(i).template get<0>(j).template removeCopyToFinalize<0>(v_cl.getmgpuContext(), rem_copy_opt::PHASE3);}
+		}
 	}
 
 	/*! \brief Label intersection grids for mappings
@@ -1013,19 +1063,66 @@ public:
 	 * \param prc_sz For each processor the number of grids to send to
 	 *
 	 */
-	inline void labelIntersectionGridsProcessor(Decomposition & dec,
+	template<typename lambda_t>
+	inline void labelIntersectionGridsProcessor_and_pack(Decomposition & dec,
 												CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm,
 												openfpm::vector<device_grid> & loc_grid_old,
 												openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
 												openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_old,
 												openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_global,
-												openfpm::vector<openfpm::vector<aggregate<device_grid,SpaceBox<dim,long int>>>> & lbl_b,
-												openfpm::vector<size_t> & prc_sz)
+												size_t p_id_cur,
+												lambda_t f)
 	{
-		lbl_b.clear();
+		// lbl_bc.clear();
+		// lbl_bc.resize(v_cl.getProcessingUnits());
 
-		// resize the label buffer
-		lbl_b.resize(v_cl.getProcessingUnits());
+		// for (int i = 0 ; i < lbl_bc.size() ; i++) 
+		// {lbl_bc.get(i) = 0;}
+
+		// // count
+
+		// for (size_t i = 0; i < gdb_ext_old.size(); i++)
+		// {
+		// 	// Local old sub-domain in global coordinates
+		// 	SpaceBox<dim,long int> sub_dom = gdb_ext_old.get(i).Dbox;
+		// 	sub_dom += gdb_ext_old.get(i).origin;
+
+		// 	for (size_t j = 0; j < gdb_ext_global.size(); j++)
+		// 	{
+		// 		size_t p_id = 0;
+
+		// 		// Intersection box
+		// 		SpaceBox<dim,long int> inte_box;
+
+		// 		// Global new sub-domain in global coordinates
+		// 		SpaceBox<dim,long int> sub_dom_new = gdb_ext_global.get(j).Dbox;
+		// 		sub_dom_new += gdb_ext_global.get(j).origin;
+
+		// 		bool intersect = false;
+
+		// 		if (sub_dom.isValid() == true && sub_dom_new.isValid() == true)
+		// 			intersect = sub_dom.Intersect(sub_dom_new, inte_box);
+
+		// 		if (intersect == true)
+		// 		{
+		// 			auto inte_box_cont = cd_sm.convertCellUnitsIntoDomainSpace(inte_box);
+
+		// 			// Get processor ID that store intersection box
+		// 			Point<dim,St> p;
+		// 			for (size_t n = 0; n < dim; n++)
+		// 				p.get(n) = (inte_box_cont.getHigh(n) + inte_box_cont.getLow(n))/2;
+
+		// 			p_id = dec.processorID(p);
+
+		// 			lbl_bc.get(p_id) += 1;
+		// 		}
+		// 	}
+		// }
+
+		// // reserve
+		// for (int i = 0 ; i < lbl_b.size() ; i++) 
+		// {lbl_b.get(i).reserve(lbl_bc.get(i));}
+
 
 		// Label all the intersection grids with the processor id where they should go
 
@@ -1061,7 +1158,9 @@ public:
 						p.get(n) = (inte_box_cont.getHigh(n) + inte_box_cont.getLow(n))/2;
 
 					p_id = dec.processorID(p);
-					prc_sz.get(p_id)++;
+					if (p_id != p_id_cur)
+					{continue;}
+//					prc_sz.get(p_id)++;
 
 					// Transform coordinates to local
 					auto inte_box_local = inte_box;
@@ -1080,8 +1179,12 @@ public:
 					}
 
 					// Grid to send
-					device_grid gr_send(sz);
-					gr_send.setMemory();
+					//device_grid gr_send(sz);
+					//gr_send.setMemory();
+					// lbl_b.get(p_id).add();
+					// device_grid & gr_send = lbl_b.get(p_id).last().template get<0>();
+					// SpaceBox<dim,long int> & box_send = lbl_b.get(p_id).last().template get<1>();
+					// gr_send.setMemory();
 
 					// Sub iterator across intersection box inside local grid
 					grid_key_dx<dim> start = inte_box_local.getKP1();
@@ -1094,22 +1197,76 @@ public:
 					{
 						box_src.setLow(i,start.get(i));
 						box_src.setHigh(i,stop.get(i));
-						box_dst.setLow(i,0);
-						box_dst.setHigh(i,stop.get(i)-start.get(i));
+						box_dst.setLow(i,inte_box.getLow(i));
+						box_dst.setHigh(i,inte_box.getHigh(i));
 					}
 
-					gr_send.copy_to(gr,box_src,box_dst);
-
-					aggregate<device_grid,SpaceBox<dim,long int>> aggr;
-
-					aggr.template get<0>() = gr_send;
-					aggr.template get<1>() = inte_box;
-
-					// Add to the labeling vector
-					lbl_b.get(p_id).add(aggr);
+					f(box_src,box_dst,gr,p_id);
 				}
 			}
 		}
+
+/*		for (size_t i = 0 ; i < loc_grid_old.size() ; i++)
+		{
+			loc_grid_old.get(i).template removeCopyToFinalize<0>(v_cl.getmgpuContext(), rem_copy_opt::PHASE1);
+		}
+
+		for (size_t i = 0 ; i < loc_grid_old.size() ; i++)
+		{
+			loc_grid_old.get(i).template removeCopyToFinalize<0>(v_cl.getmgpuContext(), rem_copy_opt::PHASE2);
+		}
+
+		for (size_t i = 0 ; i < loc_grid_old.size() ; i++)
+		{
+			loc_grid_old.get(i).template removeCopyToFinalize<0>(v_cl.getmgpuContext(), rem_copy_opt::PHASE3);
+		}*/
+	}
+
+	/*! \brief Unpack 
+	 *
+	 *
+	 * 
+	 */
+	template<int ... prp>
+	void unpack_buffer_to_local_grid(openfpm::vector<device_grid> & loc_grid,
+									 openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
+									 ExtPreAlloc<Memory> & send_buffer,
+									 size_t sz)
+	{
+		// unpack local
+		Unpack_stat ps;
+
+		while (ps.getOffset() < sz)
+		{
+			send_buffer.reset();
+
+			Box<dim,long int> box_dst;
+			send_buffer.deviceToHost(ps.getOffset(),ps.getOffset()+sizeof(Box<dim,long int>));
+			Unpacker<Box<dim,long int>,Memory>::unpack(send_buffer,box_dst,ps);
+
+			std::cout << "BOX DEST: " << box_dst.toString() << " ||  " << ps.getOffset() << "  " << sz << std::endl;
+			int s = find_local_sub(box_dst,gdb_ext);
+			if (s == -1)
+			{std::cout << __FILE__ << ":" << __LINE__ << " map, error non-local subdomain " << std::endl;}
+
+			// convert box_dst to local
+			for (int d = 0 ; d < dim ; d++ )
+			{
+				box_dst.setLow(d, box_dst.getLow(d) - gdb_ext.get(s).origin.get(d));
+				box_dst.setHigh(d, box_dst.getHigh(d) - gdb_ext.get(s).origin.get(d));
+			}
+			
+			loc_grid.get(s).remove(box_dst);
+			auto sub2 = loc_grid.get(s).getIterator(box_dst.getKP1(),box_dst.getKP2(),0);
+			Unpacker<device_grid,Memory>::template unpack<decltype(sub2),decltype(v_cl.getmgpuContext()),prp ...>(send_buffer,sub2,loc_grid.get(s),ps,v_cl.getmgpuContext(),NONE_OPT);
+
+			std::cout << "END OFFSET" << ps.getOffset() << " " << sz << std::endl;
+		}
+
+		std::cout << "FINISHING UNPACK" << std::endl;
+
+		for (int s = 0 ; s < loc_grid.size() ; s++)
+		{loc_grid.get(s).template removeAddUnpackFinalize<prp ...>(v_cl.getmgpuContext(),0);}
 	}
 
 	/*! \brief Moves all the grids that does not belong to the local processor to the respective processor
@@ -1125,54 +1282,148 @@ public:
 	 * \param gdb_ext_global it contain the decomposition at global level
 	 *
 	 */
+	template<int ... prp>
 	void map_(Decomposition & dec,
 			  CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm,
 			  openfpm::vector<device_grid> & loc_grid,
 			  openfpm::vector<device_grid> & loc_grid_old,
 			  openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
 			  openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_old,
-			  openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_global)
+			  openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext_global,
+			  size_t opt)
 	{
-		// Processor communication size
-		openfpm::vector<size_t> prc_sz(v_cl.getProcessingUnits());
+		this->opt = opt;
 
-		// Contains the processor id of each box (basically where they have to go)
-		labelIntersectionGridsProcessor(dec,cd_sm,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global,m_oGrid,prc_sz);
+		openfpm::vector<size_t> send_buffer_sizes(v_cl.getProcessingUnits());
+		openfpm::vector<Memory> send_buffers_;
+		openfpm::vector<ExtPreAlloc<Memory>> send_buffers;
+		send_buffers_.resize(v_cl.getProcessingUnits());
+		send_buffers.resize(v_cl.getProcessingUnits());
 
-		// Calculate the sending buffer size for each processor, put this information in
-		// a contiguous buffer
-		p_map_req.resize(v_cl.getProcessingUnits());
+		send_prc_queue.clear();
+		send_pointer.clear();
+		send_size.clear();
 
-		// Vector of number of sending grids for each involved processor
-		openfpm::vector<size_t> prc_sz_r;
-		// Vector of ranks of involved processors
-		openfpm::vector<size_t> prc_r;
-
-		for (size_t i = 0; i < v_cl.getProcessingUnits(); i++)
+		for (int p_id = 0 ; p_id < v_cl.getProcessingUnits() ; p_id++)
 		{
-			if (m_oGrid.get(i).size() != 0)
+			for (int i = 0 ; i < loc_grid_old.size() ; i++)
+			{loc_grid_old.get(i).packReset();}
+
+			auto l = [&](Box<dim,long int> & box_src,
+						Box<dim,long int> & box_dst,
+						device_grid & gr,
+						size_t p_id){
+						//gr_send.copy_to(gr,box_src,box_dst);
+
+						Packer<SpaceBox<dim,long int>,BMemory<Memory>>::packRequest(box_dst,send_buffer_sizes.get(p_id));
+
+						auto sub_it = gr.getIterator(box_src.getKP1(),box_src.getKP2(),0);
+						gr.template packRequest<prp ...>(sub_it,send_buffer_sizes.get(p_id));
+
+						//box_send = inte_box;
+			};
+
+			// Contains the processor id of each box (basically where they have to go)
+			labelIntersectionGridsProcessor_and_pack(dec,cd_sm,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global,p_id,l);
+
+			for (int i = 0 ; i < loc_grid_old.size(); i++)
 			{
-				p_map_req.get(i) = prc_r.size();
-				prc_r.add(i);
-				prc_sz_r.add(m_oGrid.get(i).size());
+				loc_grid_old.get(i).template packCalculate<prp ...>(send_buffer_sizes.get(p_id),v_cl.getmgpuContext());
+			}
+
+			std::cout << "Buffer " << p_id << "  " << send_buffer_sizes.get(p_id) << std::endl;
+
+			send_buffers_.get(p_id).resize(send_buffer_sizes.get(p_id));
+			send_buffers.get(p_id).setMemory(send_buffer_sizes.get(p_id),send_buffers_.get(p_id));
+			send_buffers.get(p_id).incRef();
+
+			// we now pack
+			Pack_stat sts;
+
+			auto lp = [&](Box<dim,long int> & box_src,
+						Box<dim,long int> & box_dst,
+						device_grid & gr,
+						size_t p_id){
+
+						// Print box_dst
+						std::cout << "Box dst: " << box_dst.toString() << std::endl;
+
+						size_t offset = send_buffers.get(p_id).getOffsetEnd();
+						Packer<Box<dim,long int>,Memory>::pack(send_buffers.get(p_id),box_dst,sts);
+						size_t offset2 = send_buffers.get(p_id).getOffsetEnd();
+
+						send_buffers.get(p_id).hostToDevice(offset,offset2);
+
+						auto sub_it = gr.getIterator(box_src.getKP1(),box_src.getKP2(),0);
+
+						Packer<device_grid,Memory>::template pack<decltype(sub_it),prp ...>(send_buffers.get(p_id),gr,sub_it,sts);
+
+						std::cout << "SB: " << send_buffers.get(p_id).getOffsetEnd() << std::endl;
+			};
+
+			// Contains the processor id of each box (basically where they have to go)
+			labelIntersectionGridsProcessor_and_pack(dec,cd_sm,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global,p_id,lp);
+
+			for (int i = 0 ; i < loc_grid_old.size() ; i++)
+			{
+				loc_grid_old.get(i).template packFinalize<prp ...>(send_buffers.get(p_id),sts,0,false);
 			}
 		}
 
-		decltype(m_oGrid) m_oGrid_new;
-		for (size_t i = 0; i < v_cl.getProcessingUnits(); i++)
+		// std::cout << "Local buffer: " << send_buffers.get(v_cl.rank()).size() << std::endl;
+		// int sz = send_buffers.get(v_cl.rank()).size();
+		//send_buffers.get(v_cl.rank()).reset();
+
+		// // Print all the byte in send_buffers_
+		// for (int j = 0 ; j < 16 && j < sz ; j++) {
+		// 	std::cout << "Local buffer " << v_cl.rank() << " " << ((long int *)send_buffers.get(v_cl.rank()).getPointer())[j] << " " << &((long int *)send_buffers.get(v_cl.rank()).getPointer())[j] << std::endl;
+		// }
+
+		unpack_buffer_to_local_grid(loc_grid,gdb_ext,send_buffers.get(v_cl.rank()),send_buffers.get(v_cl.rank()).size());
+
+		//openfpm::vector<void *> send_pointer;
+		//openfpm::vector<int> send_size;
+		for (int i = 0 ; i < send_buffers.size() ; i++)
 		{
-			if (m_oGrid.get(i).size() != 0)
-			{m_oGrid_new.add(m_oGrid.get(i));}
+			if (i != v_cl.rank())
+			{
+				send_pointer.add(send_buffers_.get(i).getDevicePointer());
+				send_size.add(send_buffers_.get(i).size());
+				send_prc_queue.add(i);
+
+				// Print sending buffer size
+				std::cout << "Sending to " << i << " " << send_buffers_.get(i).size() << " bytes" << std::endl;
+			}
 		}
 
-		// Vector for receiving of intersection grids
-		openfpm::vector<openfpm::vector<aggregate<device_grid,SpaceBox<dim,long int>>>> m_oGrid_recv;
+		size_t * send_size_ptr = NULL;
+		size_t * send_prc_queue_ptr = NULL;
+		void ** send_pointer_ptr = NULL;
 
-		// Send and recieve intersection grids
-		v_cl.SSendRecv(m_oGrid_new,m_oGrid_recv,prc_r,prc_recv_map,recv_sz_map);
+		if (send_size.size() != 0)
+		{
+			send_size_ptr = &send_size.get(0);
+			send_pointer_ptr = &send_pointer.get(0);
+			send_prc_queue_ptr = &send_prc_queue.get(0);
+		}
 
-		// Reconstruct the new local grids
-		grids_reconstruct(m_oGrid_recv,loc_grid,gdb_ext,cd_sm);
+		recv_buffers.clear();
+		recv_proc.clear();
+
+		v_cl.sendrecvMultipleMessagesNBX(send_pointer.size(),send_size_ptr,
+											 send_prc_queue_ptr,send_pointer_ptr,
+											 receive_dynamic,this);
+
+
+		for (int i = 0 ; i < recv_buffers.size() ; i++)
+		{
+			ExtPreAlloc<Memory> prAlloc_;
+			prAlloc_.setMemory(recv_buffers.get(i).size(),recv_buffers.get(i));
+			unpack_buffer_to_local_grid<prp ...>(loc_grid,gdb_ext,prAlloc_,recv_proc.get(i).size);
+		}
+
+		for (int i = 0 ; i < send_buffers.size() ; i++)
+		{send_buffers.get(i).decRef();}
 	}
 
 	/*! \brief It fill the ghost part of the grids
