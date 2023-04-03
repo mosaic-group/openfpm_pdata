@@ -3449,9 +3449,7 @@ public:
 
 		typedef typename to_int_sequence<0,T::max_prop-1>::type result;
 
-		//variadic_caller<result>::call(this,dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global,opt);
-
-		this->template map_<0>(dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global,opt);
+		variadic_caller<result>::call(this,dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global,opt);
 
 		loc_grid_old.clear();
 		loc_grid_old.shrink_to_fit();

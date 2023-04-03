@@ -1244,7 +1244,6 @@ public:
 			send_buffer.deviceToHost(ps.getOffset(),ps.getOffset()+sizeof(Box<dim,long int>));
 			Unpacker<Box<dim,long int>,Memory>::unpack(send_buffer,box_dst,ps);
 
-			std::cout << "BOX DEST: " << box_dst.toString() << " ||  " << ps.getOffset() << "  " << sz << std::endl;
 			int s = find_local_sub(box_dst,gdb_ext);
 			if (s == -1)
 			{std::cout << __FILE__ << ":" << __LINE__ << " map, error non-local subdomain " << std::endl;}
@@ -1259,11 +1258,7 @@ public:
 			loc_grid.get(s).remove(box_dst);
 			auto sub2 = loc_grid.get(s).getIterator(box_dst.getKP1(),box_dst.getKP2(),0);
 			Unpacker<device_grid,Memory>::template unpack<decltype(sub2),decltype(v_cl.getmgpuContext()),prp ...>(send_buffer,sub2,loc_grid.get(s),ps,v_cl.getmgpuContext(),NONE_OPT);
-
-			std::cout << "END OFFSET" << ps.getOffset() << " " << sz << std::endl;
 		}
-
-		std::cout << "FINISHING UNPACK" << std::endl;
 
 		for (int s = 0 ; s < loc_grid.size() ; s++)
 		{loc_grid.get(s).template removeAddUnpackFinalize<prp ...>(v_cl.getmgpuContext(),0);}
@@ -1315,6 +1310,7 @@ public:
 						size_t p_id){
 						//gr_send.copy_to(gr,box_src,box_dst);
 
+			
 						Packer<SpaceBox<dim,long int>,BMemory<Memory>>::packRequest(box_dst,send_buffer_sizes.get(p_id));
 
 						auto sub_it = gr.getIterator(box_src.getKP1(),box_src.getKP2(),0);
@@ -1331,8 +1327,6 @@ public:
 				loc_grid_old.get(i).template packCalculate<prp ...>(send_buffer_sizes.get(p_id),v_cl.getmgpuContext());
 			}
 
-			std::cout << "Buffer " << p_id << "  " << send_buffer_sizes.get(p_id) << std::endl;
-
 			send_buffers_.get(p_id).resize(send_buffer_sizes.get(p_id));
 			send_buffers.get(p_id).setMemory(send_buffer_sizes.get(p_id),send_buffers_.get(p_id));
 			send_buffers.get(p_id).incRef();
@@ -1345,9 +1339,6 @@ public:
 						device_grid & gr,
 						size_t p_id){
 
-						// Print box_dst
-						std::cout << "Box dst: " << box_dst.toString() << std::endl;
-
 						size_t offset = send_buffers.get(p_id).getOffsetEnd();
 						Packer<Box<dim,long int>,Memory>::pack(send_buffers.get(p_id),box_dst,sts);
 						size_t offset2 = send_buffers.get(p_id).getOffsetEnd();
@@ -1357,8 +1348,6 @@ public:
 						auto sub_it = gr.getIterator(box_src.getKP1(),box_src.getKP2(),0);
 
 						Packer<device_grid,Memory>::template pack<decltype(sub_it),prp ...>(send_buffers.get(p_id),gr,sub_it,sts);
-
-						std::cout << "SB: " << send_buffers.get(p_id).getOffsetEnd() << std::endl;
 			};
 
 			// Contains the processor id of each box (basically where they have to go)
@@ -1379,7 +1368,7 @@ public:
 		// 	std::cout << "Local buffer " << v_cl.rank() << " " << ((long int *)send_buffers.get(v_cl.rank()).getPointer())[j] << " " << &((long int *)send_buffers.get(v_cl.rank()).getPointer())[j] << std::endl;
 		// }
 
-		unpack_buffer_to_local_grid(loc_grid,gdb_ext,send_buffers.get(v_cl.rank()),send_buffers.get(v_cl.rank()).size());
+		unpack_buffer_to_local_grid<prp ...>(loc_grid,gdb_ext,send_buffers.get(v_cl.rank()),send_buffers.get(v_cl.rank()).size());
 
 		//openfpm::vector<void *> send_pointer;
 		//openfpm::vector<int> send_size;
@@ -1390,9 +1379,6 @@ public:
 				send_pointer.add(send_buffers_.get(i).getDevicePointer());
 				send_size.add(send_buffers_.get(i).size());
 				send_prc_queue.add(i);
-
-				// Print sending buffer size
-				std::cout << "Sending to " << i << " " << send_buffers_.get(i).size() << " bytes" << std::endl;
 			}
 		}
 
