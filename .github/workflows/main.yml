@@ -10,9 +10,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: almalinux:8.5
     steps:
+      - uses: actions/checkout@v3
       - name: Install dependencies
-        run: sudo apt install -y openssh-client cmake wget git g++ gfortran python-is-python3 bzip2 diffutils zlib1g-dev
+        run: yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel
       - name: make dependencies folder
         run: mkdir -p openfpm_dependencies
       - name: LS
