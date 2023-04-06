@@ -477,6 +477,7 @@ echo "LIBS_NVCC=-Xcompiler=$openmp_flags $mpi_libs -lvcluster -lofpm_pdata -lofp
 echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" -Xcompiler=$(cat openmp_flags) "$(cat cuda_options)" $mpi_include_dirs -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc -I$i_dir/BLITZ/include -I$i_dir/ALGOIM/include" >> example.mk
 cp example.mk src/example.mk
 cp example.mk example/example.mk
+cp example.mk ~/.openfpm.mk
 
 if [ $nomake -eq 0 ]; then
   make clean
