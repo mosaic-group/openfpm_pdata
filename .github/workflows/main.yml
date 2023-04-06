@@ -13,6 +13,8 @@ jobs:
     container: almalinux:8.5
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: recursive
       - name: Install dependencies
         run: yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel
       - name: make dependencies folder
