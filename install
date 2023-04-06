@@ -1,6 +1,6 @@
 #! /bin/bash
 
-
+set -x
 
 source script/help
 source script/discover_os
