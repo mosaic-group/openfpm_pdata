@@ -13,7 +13,7 @@ jobs:
     container: almalinux:8.5
     steps:
       - name: Install dependencies
-        run: yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel
+        run: yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python python39 bzip2 diffutils zlib-devel
       - uses: actions/checkout@v3
         with:
           submodules: true
