@@ -13,15 +13,13 @@ jobs:
     container:
       image: almalinux:8.5
     steps:
+      - name: Install dependencies
+        run: yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel
       - name: Clone repository
         run: |
           git clone ${{ secrets.GIT_REPOSITORY }} ${{ github.workspace }}
           cd ${{ github.workspace }}
           git checkout ${{ github.ref }}
-      - name: LS
-        run: ls
-      - name: Install dependencies
-        run: yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel
       - name: make dependencies folder
         run: mkdir -p openfpm_dependencies
       - name: Build
