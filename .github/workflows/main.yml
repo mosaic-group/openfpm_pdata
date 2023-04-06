@@ -17,7 +17,7 @@ jobs:
       - name: Print dependencies
         run: mkdir -p openfpm_dependencies
       - name: Build
-        run: ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
+        run: ls
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
