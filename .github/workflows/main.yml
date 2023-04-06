@@ -1,0 +1,26 @@
+name: OpenFPM_CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  release:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: 'almalinux:8.5'
+    steps:
+      - name: Install dependencies
+        run: yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel
+      - name: Print dependencies
+        run: mkdir -p openfpm_dependencies
+      - name: Build
+        run: ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: openfpm_dependencies/
+          key: dependencies-${{ github.ref }}
+        
