@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install dependencies
-        run: sudo apt install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel
+        run: sudo apt install -y openssh-client cmake wget git g++ gfortran python3.9 bzip2 diffutils zlib1g-dev
       - name: Clone repository
         run: |
           git clone ${{ secrets.GIT_REPOSITORY }} ${{ github.workspace }}
