@@ -1108,6 +1108,22 @@ public:
 #endif
 	}
 
+    //////////////////////////////////////////////
+
+	/*! \brief Add at the END of local and ghost particle
+	 *
+	 * It add a local particle at the end of local and ghost, with "local" we mean in this processor
+	 * the particle can be also created out of the processor domain, in this
+	 * case a call to map is required. Added particles are always created at the
+	 * end and can be accessed with getLastPos and getLastProp
+	 *
+	 */
+	void addAtEnd()
+	{
+		v_prp.add();
+		v_pos.add();
+	}
+
 #ifndef ONLY_READWRITE_GETTER
 
 	/*! \brief Get the position of the last element
@@ -1118,6 +1134,17 @@ public:
 	inline auto getLastPos() -> decltype(v_pos.template get<0>(0))
 	{
 		return v_pos.template get<0>(g_m - 1);
+	}
+
+
+    /*! \brief Get the position of the last element after ghost
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	inline auto getLastPosEnd() -> decltype(v_pos.template get<0>(0))
+	{
+		return v_pos.template get<0>(v_pos.size() - 1);
 	}
 
 	/*! \brief Get the property of the last element
@@ -2442,9 +2469,10 @@ public:
 	*/
 	void ghost_get_subset()
 	{
-    #ifdef SE_CLASS1
+    /*  #ifdef SE_CLASS1
+        This is not a ghost get on subset.
        std::cerr<<__FILE__<<":"<<__LINE__<<":You Used a ghost_get on a subset. This does not do anything. Please use ghostget on the entire set.";
-    #endif
+    #endif */
 	}
 
 	/*! \brief It synchronize the properties and position of the ghost particles
@@ -2776,11 +2804,15 @@ public:
 			vtk_writer.add(v_pos,v_prp,g_m);
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtp"));
-
+            //Create Directory for VTP files and write the PVTP metadata
+            if(v_cl.rank()==0)
+            {
+                create_directory_if_not_exist("VTPDATA",1);
+                vtk_writer.write_pvtp(out,prp_names,v_cl.size());
+            }
+            v_cl.barrier();
 			// Write the VTK file
 			bool ret=vtk_writer.write(output,prp_names,"particles",meta_info,ft);
-			if(v_cl.rank()==0)
-            {vtk_writer.write_pvtp(out,prp_names,v_cl.size())   ;}
 			return ret;
 		}
 	}
@@ -2811,6 +2843,22 @@ public:
 
 		g_m = rs;
 
+#ifdef CUDA_GPU
+		this->update(this->toKernel());
+#endif
+	}
+
+    /*! \brief Resize the vector at the end of the ghost (locally)
+	 *
+	 * \warning It doesn't delete the ghosts
+	 *
+	 * \param rs
+	 *
+	 */
+	void resizeAtEnd(size_t rs)
+	{
+		v_pos.resize(rs);
+		v_prp.resize(rs);
 #ifdef CUDA_GPU
 		this->update(this->toKernel());
 #endif
@@ -2872,10 +2920,70 @@ public:
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtp"));
 
+            //Create Directory for VTP files and write the PVTP metadata
+            if(v_cl.rank()==0)
+            {
+                create_directory_if_not_exist("VTPDATA",1);
+                vtk_writer.write_pvtp(out,prp_names,v_cl.size(),iteration);
+            }
+            v_cl.barrier();
+
 			// Write the VTK file
 			bool ret=vtk_writer.write(output,prp_names,"particles",meta_info,ft);
+
+            return ret;
+		}
+	}
+
+    /*! \brief Output particle position and properties and add a time stamp to pvtp
+	 *
+	 * \param out output
+	 * \param iteration (we can append the number at the end of the file_name)
+	 * \param time = 1.234 to add to the information time to the PVTP file)
+	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
+	 *            FORMAT_BINARY. (the default is ASCII format)
+	 *
+	 * \return if the file has been written correctly
+	 *
+	 */
+	inline bool write_frame(std::string out, size_t iteration, double time, int opt = VTK_WRITER)
+	{
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
+
+		if ((opt & 0x0FFF0000) == CSV_WRITER)
+		{
+			// CSVWriter test
+			CSVWriter<vector_dist_pos,
+					  vector_dist_prop > csv_writer;
+
+			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".csv"));
+
+			// Write the CSV
+			return csv_writer.write(output, v_pos, v_prp);
+		}
+		else
+		{
+			file_type ft = file_type::ASCII;
+
+			if (opt & FORMAT_BINARY)
+				ft = file_type::BINARY;
+
+			// VTKWriter for a set of points
+			VTKWriter<boost::mpl::pair<vector_dist_pos,
+									   vector_dist_prop>, VECTOR_POINTS> vtk_writer;
+			vtk_writer.add(v_pos,v_prp,g_m);
+
+			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtp"));
+
+            //Create Directory for VTP files and write the PVTP metadata
             if(v_cl.rank()==0)
-            {vtk_writer.write_pvtp(out,prp_names,v_cl.size(),iteration);}
+            {
+                create_directory_if_not_exist("VTPDATA",1);
+                vtk_writer.write_pvtp(out,prp_names,v_cl.size(),iteration,time);
+            }
+            v_cl.barrier();
+			// Write the VTK file
+			bool ret=vtk_writer.write(output,prp_names,"particles","",ft);
             return ret;
 		}
 	}

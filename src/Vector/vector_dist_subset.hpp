@@ -28,6 +28,11 @@ class vector_dist_ws : public vector_dist<dim,St,typename AggregateAppend<int,pr
         this->template getProp<flag_prop::value>(key) = sub_id;
     }
 
+    int getSubset(vect_dist_key_dx key)
+    {
+        return this->template getProp<flag_prop::value>(key);
+    }
+
     void ghost_get_subset()
     {
         this->template ghost_get<flag_prop::value>(NO_POSITION | SKIP_LABELLING);
@@ -41,17 +46,26 @@ class vector_dist_ws : public vector_dist<dim,St,typename AggregateAppend<int,pr
     inline bool write_frame(std::string out, size_t iteration, int opt = VTK_WRITER)
     {
         auto &prop_names=this->getPropNames();
-        if(prop_names.size()<prop::max_prop+1){
+        if(prop_names.size()==prop::max_prop){
             prop_names.add({"SubsetNumber"});
         }
 
         return vector_dist<dim,St,typename AggregateAppend<int,prop>::type,Decomposition,Memory,layout_base>::write_frame(out,iteration,opt);
     }
+    inline bool write_frame(std::string out, size_t iteration,double time, int opt = VTK_WRITER)
+    {
+        auto &prop_names=this->getPropNames();
+        if(prop_names.size()==prop::max_prop){
+            prop_names.add({"SubsetNumber"});
+        }
+
+        return vector_dist<dim,St,typename AggregateAppend<int,prop>::type,Decomposition,Memory,layout_base>::write_frame(out,iteration,time,opt);
+    }
 
     inline bool write(std::string out,int opt = VTK_WRITER)
     {
         auto &prop_names=this->getPropNames();
-        if(prop_names.size()<prop::max_prop+1){
+        if(prop_names.size()==prop::max_prop){
             prop_names.add({"SubsetNumber"});
         }
 
@@ -477,5 +491,7 @@ public:
 };
 
 
+template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_lin>> using vector_dist_ws_gpu = vector_dist_ws<dim,St,prop,Decomposition,CudaMemory,memory_traits_lin>;
+template<unsigned int dim, typename St, typename prop, typename Decomposition = CartDecomposition<dim,St,CudaMemory,memory_traits_lin>> using vector_dist_subset_gpu = vector_dist_subset<dim,St,prop,Decomposition,CudaMemory,memory_traits_lin>;
 
 #endif //OPENFPM_PDATA_VECTOR_DIST_SUBSET_HPP

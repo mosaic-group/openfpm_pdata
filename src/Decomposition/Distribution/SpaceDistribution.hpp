@@ -372,7 +372,7 @@ public:
 
 	const SpaceDistribution<dim,T> & operator=(SpaceDistribution<dim,T> && dist)
 	{
-		v_cl = dist.v_cl;
+		//v_cl = dist.v_cl;
 		gr = dist.gr;
 		domain = dist.domain;
 		gp.swap(dist.gp);

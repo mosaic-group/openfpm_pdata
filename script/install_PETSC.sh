@@ -9,7 +9,8 @@ FC=$6
 
 if [ -d "$1/PETSC" -a -f "$1/PETSC/include/petsc.h" ]; then
   echo "PETSC is already installed"
-  exit 0
+  echo "BUT WE ARE REINSTALLING FOR CI"
+  #exit 0
 fi
 
 # Detect gcc pr clang
@@ -20,7 +21,7 @@ discover_os
 
 function test_configure_options() {
   cd petsc-3.14.5
-  $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options2 --with-debugging=0
+  #$python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options2 --with-debugging=0
   error=$?
   cd ..
 }
@@ -67,7 +68,7 @@ MUMPS_extra_libs=""
 configure_options=""
 
 
-configure_options="$configure_options --download-metis --download-parmetis"
+configure_options="$configure_options --with-64-bit-indices --with-parmetis-include=$1/PARMETIS/include --with-parmetis-lib=$1/PARMETIS/lib/libparmetis.a --with-metis-include=$1/METIS/include --with-metis-lib=$1/METIS/lib/libmetis.so"
 
 if [ -d "$1/BOOST" ]; then
 

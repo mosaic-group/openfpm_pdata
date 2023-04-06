@@ -4,6 +4,8 @@
  * \subpage Stokes_0_2D_petsc
  * \subpage Stokes_1_3D
  * \subpage Stokes_1_3D_petsc
+ * \subpage Navier-Stokes
+ * \subpage Stokes_3d_ball
  *
  */
 
