@@ -13,13 +13,10 @@ jobs:
     steps:
       - name: Install dependencies
         run: sudo apt install -y openssh-client cmake wget git g++ gfortran python-is-python3 bzip2 diffutils zlib1g-dev
-      - name: Clone repository
-        run: |
-          git clone ${{ secrets.GIT_REPOSITORY }} ${{ github.workspace }}
-          cd ${{ github.workspace }}
-          git checkout ${{ github.ref }}
       - name: make dependencies folder
         run: mkdir -p openfpm_dependencies
+      - name: LS
+        run: ls
       - name: Build
         run: ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
       - name: Cache dependencies
