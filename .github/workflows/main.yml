@@ -10,13 +10,22 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: almalinux:8.5
     steps:
+      - name: Clone repository
+        run: |
+          git clone ${{ secrets.GIT_REPOSITORY }} ${{ github.workspace }}
+          cd ${{ github.workspace }}
+          git checkout ${{ github.ref }}
+      - name: LS
+        run: ls
       - name: Install dependencies
         run: yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel
-      - name: Print dependencies
+      - name: make dependencies folder
         run: mkdir -p openfpm_dependencies
       - name: Build
-        run: ls
+        run: ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
