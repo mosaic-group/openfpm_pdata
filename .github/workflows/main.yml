@@ -9,10 +9,10 @@ on:
 
 jobs:
   build:
-    runs-on: almalinux:8.5
+    runs-on: ubuntu-latest
     steps:
       - name: Install dependencies
-        run: yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel
+        run: apt install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel
       - name: Clone repository
         run: |
           git clone ${{ secrets.GIT_REPOSITORY }} ${{ github.workspace }}
