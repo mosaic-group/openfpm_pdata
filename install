@@ -1,6 +1,5 @@
 #! /bin/bash
 
-set -x
 source script/help
 source script/discover_os
 source script/show_solutions
@@ -218,7 +217,7 @@ if [ $sq -eq 0 ]; then
   possible_solutions "${commands[@]}"
 fi
 
-ncore=4
+ncore=32
 echo -e "\033[1mHow many core you want to use to install the dependencies?\033[0m"
 if [ $sq -eq 0 ]; then
   read ncore
