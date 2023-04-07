@@ -21,8 +21,6 @@ jobs:
           submodules: true
       - name: make dependencies folder
         run: mkdir -p openfpm_dependencies
-      - name: LS
-        run: ls
       - name: Build
         run: ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
       - name: Cache dependencies
