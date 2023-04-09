@@ -19,13 +19,13 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - name: make dependencies folder
-        run: mkdir -p openfpm_dependencies
-      - name: Build
-        run: ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
           path: openfpm_dependencies/
-          key: dependencies-${{ github.ref }}
+          key: dependencies-${{ github.ref }}    
+      - name: make dependencies folder
+        run: mkdir -p openfpm_dependencies
+      - name: Build
+        run: ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
         
