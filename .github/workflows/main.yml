@@ -20,12 +20,11 @@ jobs:
         with:
           submodules: true
       - name: Cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache/save@v3
+        if: always()
         with:
-          path: openfpm_dependencies/
+          path: ~/openfpm_dependencies/
           key: dependencies-${{ github.ref }}    
-      - name: make dependencies folder
-        run: mkdir -p openfpm_dependencies
       - name: Build
         run: ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
         
