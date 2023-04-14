@@ -150,12 +150,12 @@ else
         mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
     fi
     source $HOME/openfpm_vars_$branch
-    if [ x"$hostname" == x"suitcase" ]; then
-      echo "Running make on 1 cores"
-      make VERBOSE=1 -j 1
-    else
-      nice -n 19 make VERBOSE=1 -j 8
-    fi
+    #if [ x"$hostname" == x"suitcase" ]; then
+    echo "Running make on 1 cores"
+    make VERBOSE=1 -j 1
+    #else
+    #  nice -n 19 make VERBOSE=1 -j 8
+    #fi
 fi
 
 if [ $? -ne 0 ]; then
