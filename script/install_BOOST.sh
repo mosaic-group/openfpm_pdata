@@ -1,5 +1,9 @@
 #!/bin/bash 
 
+short_date=$(/bin/date +%m%d%y)
+exec 2>>"install_BOOST$short_date.log"
+set -x
+
 source script/discover_os
 discover_os
 
@@ -10,10 +14,10 @@ if [ -d "$1/BOOST" ]; then
   exit 0
 fi
 
-rm boost_1_75_0.tar.bz2
-wget http://ppmcore.mpi-cbg.de/upload/boost_1_75_0.tar.bz2
-tar -xf boost_1_75_0.tar.bz2
-cd boost_1_75_0
+rm boost_1_82_0.tar.bz2
+wget http://ppmcore.mpi-cbg.de/upload/boost_1_82_0.tar.bz2
+tar -xf boost_1_82_0.tar.bz2
+cd boost_1_82_0
 if [ x"$4" != x"" ]; then
 	if [ -f $HOME/user-config.jam ]; then
 		mv $HOME/user-config.jam $HOME/user-config.jam_bck
@@ -54,10 +58,10 @@ else
     ./b2 -a -j $2 install --prefix=$1/BOOST  -sNO_LZMA=1 -sNO_ZSTD=1
 fi
 
-rm -rf boost_1_75_0
+rm -rf boost_1_82_0
 
 if [ -f $HOME/user-config.jam_bck ]; then
 	mv $HOME/user-config.jam_bck $HOME/user-config.jam
 fi
-rm -rf boost_1_75_0.tar.bz2
+rm -rf boost_1_82_0.tar.bz2
 
