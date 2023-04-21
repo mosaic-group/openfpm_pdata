@@ -33,7 +33,7 @@ function haveProg() {
 if haveProg python2; then
   python_command=python2
 else
-  python_command=python
+  python_command=python3
 fi
 
 
