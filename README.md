@@ -3,7 +3,7 @@
 
 OpenFPM is a scalable and open C++ framework for particles and mesh simulations.
 
-You can build scalable molecular dynamics, Smooth Particle Hydrodybamics, Granular flow, Finite difference, Hybrid Particle-Mesh codes on CPUs and GPUs.
+You can build scalable Molecular Dynamics, Smooth Particle Hydrodynamics, Granular flows, Finite differences, Hybrid Particle-Mesh codes on CPUs and GPUs.
 
 We provide examples for each case in the documentation.
 
