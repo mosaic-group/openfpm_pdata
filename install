@@ -252,7 +252,7 @@ if [ ! -d "$i_dir/PETSC" -o ! -f "$i_dir/PETSC/include/petsc.h" -o ! -d "$i_dir/
 
     ### PETSC require Python
 
-    command -v python
+    command -v python3
     if [ $? -ne 0 ]; then
       ### We have to install python
       echo "OpenFPM require python but it's not installed, searching a solution... "
