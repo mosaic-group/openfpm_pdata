@@ -120,6 +120,7 @@ with_boost_program_options
 with_boost_iostreams
 with_blas
 with_lapack
+with_mpi
 with_suitesparse
 with_petsc
 with_eigen
@@ -508,6 +509,9 @@ do
       ;;
       mpivendor)
       conf_options="$conf_options -DMPI_VENDOR=$ac_optarg"
+      ;;
+      mpi)
+      conf_options="$conf_options -DMPI_ROOT=$ac_optarg"
       ;;
       vcdevel)
       conf_options="$conf_options -DVc_ROOT=$ac_optarg"

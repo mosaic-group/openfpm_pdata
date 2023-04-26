@@ -19,7 +19,7 @@ function set_mpi()
         fi
         MPI_installed=1
         export PATH="$1/MPI/bin:$PATH"
-        configure_options="$configure_options --with-mpivendor=openmpi"
+        configure_options="$configure_options --with-mpivendor=openmpi --with-mpi=$1/MPI"
   fi
 
 }
