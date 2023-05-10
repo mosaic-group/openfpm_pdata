@@ -19,21 +19,25 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - name: Cache dependencies
-        uses: actions/cache@v3
+      - name: Restore Cache dependencies
+        uses: actions/cache/restore@v3
         with:
-          path: ~/openfpm_dependencies/
           key: dependencies-${{ github.ref }}
       - name: Build
         run: ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
-
+      - uses: actions/cache/save@v3
+        if: always() // or any other condition to invoke the save action
+        with:
+          path: ~/openfpm_dependencies/
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
       - name: Create bundle
         run: |
           cd build
           source $HOME/openfpm_vars
-          export DEP_PACKING=/usr/local/openfpm/dependencies/ ;
+          export DEP_PACKING=~/openfpm_dependencies/ ;
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
-          cp $HOME/openfpm_vars /usr/local/openfpm/dependencies/
+          cp $HOME/openfpm_vars $HOME/openfpm_dependencies/
+          cp $HOME/.ofpmk $HOME/openfpm_dependencies/
           bash cmake_build_options;
           echo "Calling CPACK"
           cpack -G $generator
@@ -64,13 +68,17 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - name: Cache dependencies
-        uses: actions/cache@v3
+      - name: Restore Cache dependencies
+        uses: actions/cache/restore@v3
         with:
-          path: ~/openfpm_dependencies/
           key: dependencies-${{ github.ref }}
       - name: Build
         run: ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
+      - uses: actions/cache/save@v3
+        if: always() // or any other condition to invoke the save action
+        with:
+          path: ~/openfpm_dependencies/
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
 
       - name: Create bundle
         run: |
@@ -78,7 +86,8 @@ jobs:
           source $HOME/openfpm_vars
           export DEP_PACKING=/usr/local/openfpm/dependencies/ ;
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
-          cp $HOME/openfpm_vars /usr/local/openfpm/dependencies/
+          cp $HOME/openfpm_vars $HOME/openfpm_dependencies/
+          cp $HOME/.ofpmk $HOME/openfpm_dependencies/
           bash cmake_build_options;
           echo "Calling CPACK"
           cpack -G $generator
