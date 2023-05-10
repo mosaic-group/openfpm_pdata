@@ -26,7 +26,7 @@ jobs:
       - name: Build
         run: ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
       - uses: actions/cache/save@v3
-        if: always() // or any other condition to invoke the save action
+        if: always()
         with:
           path: ~/openfpm_dependencies/
           key: ${{ steps.restore-cache.outputs.cache-primary-key }}
@@ -75,7 +75,7 @@ jobs:
       - name: Build
         run: ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
       - uses: actions/cache/save@v3
-        if: always() // or any other condition to invoke the save action
+        if: always()
         with:
           path: ~/openfpm_dependencies/
           key: ${{ steps.restore-cache.outputs.cache-primary-key }}
