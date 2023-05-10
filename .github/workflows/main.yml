@@ -54,7 +54,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-          brew install cmake wget gcc
+          brew install cmake wget gcc gnu-sed
       - uses: actions/checkout@v3
         with:
           submodules: true
@@ -64,7 +64,7 @@ jobs:
           path: ~/openfpm_dependencies/
           key: dependencies-${{ github.ref }}
       - name: Build
-        run: ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
+        run: ./run.sh $(pwd) unused pdata 2 0 0 ${{ github.ref }}
 
       - name: Create bundle
         run: |
