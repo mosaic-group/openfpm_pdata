@@ -8,7 +8,7 @@ on:
   release:
 
 jobs:
-  build:
+  build_almalinux:
     runs-on: ubuntu-latest
     container: almalinux:8.5
     steps:
@@ -55,6 +55,8 @@ jobs:
       - name: Install dependencies
         run: |
           brew install cmake wget gcc gnu-sed
+      - name: Setup GNU Fortran
+        uses: modflowpy/install-gfortran-action@v1
       - uses: actions/checkout@v3
         with:
           submodules: true
