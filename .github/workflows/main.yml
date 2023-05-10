@@ -55,7 +55,6 @@ jobs:
       - name: Install dependencies
         run: |
           brew install cmake wget gcc
-          ln -s /usr/local/bin/python3 /usr/local/bin/python
       - uses: actions/checkout@v3
         with:
           submodules: true
