@@ -64,7 +64,7 @@ jobs:
           path: ~/openfpm_dependencies/
           key: dependencies-${{ github.ref }}
       - name: Build
-        run: ./run.sh $(pwd) unused pdata 2 0 0 ${{ github.ref }}
+        run: ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
 
       - name: Create bundle
         run: |
