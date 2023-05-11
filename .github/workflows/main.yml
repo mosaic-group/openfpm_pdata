@@ -97,28 +97,22 @@ jobs:
         run: |
           export PATH="$PATH:/usr/local/bin:"
           source $HOME/openfpm_vars
-          if [ x"uname -m" == x"aarch64-apple-darwin20" ]; then
-            version="arm64"
-            eval "$(/opt/homebrew/bin/brew shellenv)"
-          else
-            version="x86"
-          fi
+          version=$(uname -m)
           ln -s ./LICENSE.md bsd3.txt
           ln -s ./README.md README.txt
           cd build
-          sudo make install
-          export DEP_PACKING=/usr/local/openfpm/dependencies/ ;
+          export DEP_PACKING= $HOME/openfpm_dependencies/
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
-          cp $HOM E/openfpm_vars $HOME/openfpm_dependencies/
+          cp $HOME/openfpm_vars $HOME/openfpm_dependencies/
           cp $HOME/.openfpm.mk $HOME/openfpm_dependencies/
           bash cmake_build_options;
           echo "Calling CPACK"
-          cpack
-          
+          cpack -G productbuild osx
           if [ $? -ne 0 ]; then
             echo "Error creating package"
             exit 1
           fi
+          mv openfpm_pdata-$ofp_version-Darwin.pkg openfpm-$ofp_version-Darwin-$version.pkg
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
