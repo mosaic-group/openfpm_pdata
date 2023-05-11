@@ -38,7 +38,7 @@ jobs:
           export DEP_PACKING=~/openfpm_dependencies/ ;
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           cp $HOME/openfpm_vars $HOME/openfpm_dependencies/
-          cp $HOME/.ofpmk $HOME/openfpm_dependencies/
+          cp $HOME/.openfpm.mk $HOME/openfpm_dependencies/
           bash cmake_build_options;
           echo "Calling CPACK"
           cpack -G $generator
@@ -89,7 +89,7 @@ jobs:
           export DEP_PACKING=/usr/local/openfpm/dependencies/ ;
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           cp $HOME/openfpm_vars $HOME/openfpm_dependencies/
-          cp $HOME/.ofpmk $HOME/openfpm_dependencies/
+          cp $HOME/.openfpm.mk $HOME/openfpm_dependencies/
           bash cmake_build_options;
           echo "Calling CPACK"
           cpack -G $generator
