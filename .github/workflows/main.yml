@@ -75,7 +75,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-        name: ccache
+      - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
         name: Restore Cache dependencies
         uses: actions/cache/restore@v3
