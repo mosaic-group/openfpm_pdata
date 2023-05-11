@@ -101,7 +101,7 @@ jobs:
           ln -s ./LICENSE.md bsd3.txt
           ln -s ./README.md README.txt
           cd build
-          export DEP_PACKING= $HOME/openfpm_dependencies/
+          export DEP_PACKING=/Users/runners/openfpm_dependencies/
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           cp $HOME/openfpm_vars $HOME/openfpm_dependencies/
           cp $HOME/.openfpm.mk $HOME/openfpm_dependencies/
@@ -118,4 +118,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: openfpm_macos
-          path: ./openfpm_pdata-$version-Darwin.pkg
+          path: ./openfpm-$ofp_version-Darwin-$version.pkg
