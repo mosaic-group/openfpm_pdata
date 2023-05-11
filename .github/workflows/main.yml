@@ -19,13 +19,17 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
       - name: Restore Cache dependencies
         uses: actions/cache/restore@v3
         with:
           path: ~/openfpm_dependencies/
           key: dependencies-${{ github.ref }}
       - name: Build
-        run: ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
+        run: |
+          export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+          ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
       - uses: actions/cache/save@v3
         if: always()
         with:
@@ -33,6 +37,8 @@ jobs:
           key: dependencies-${{ github.ref }}
       - name: Create bundle
         run: |
+          ln -s ./LICENSE.md bsd3.txt
+          ln -s ./README.md README.txt
           cd build
           source $HOME/openfpm_vars
           export DEP_PACKING=~/openfpm_dependencies/ ;
@@ -69,13 +75,17 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - name: Restore Cache dependencies
+        name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        name: Restore Cache dependencies
         uses: actions/cache/restore@v3
         with:
           path: ~/openfpm_dependencies/
           key: dependencies-${{ github.ref }}
       - name: Build
-        run: ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
+        run: |
+          export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+          ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
       - uses: actions/cache/save@v3
         if: always()
         with:
@@ -84,6 +94,8 @@ jobs:
 
       - name: Create bundle
         run: |
+          ln -s ./LICENSE.md bsd3.txt
+          ln -s ./README.md README.txt
           cd build
           source $HOME/openfpm_vars
           export DEP_PACKING=/usr/local/openfpm/dependencies/ ;
