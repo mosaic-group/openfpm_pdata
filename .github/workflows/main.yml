@@ -45,6 +45,7 @@ jobs:
           cd build
           export DEP_PACKING=/Users/runners/openfpm_dependencies/
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
+          bash cmake_build_options;
           cp ~/openfpm_vars ~/openfpm_dependencies/
           cp ~/.openfpm.mk ~/openfpm_dependencies/
           echo "Calling CPACK"
@@ -103,6 +104,7 @@ jobs:
           cd build
           export DEP_PACKING=/Users/runners/openfpm_dependencies/
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
+          bash cmake_build_options;
           cp ~/openfpm_vars ~/openfpm_dependencies/
           cp ~/.openfpm.mk ~/openfpm_dependencies/
           echo "Calling CPACK"
