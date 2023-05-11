@@ -14,6 +14,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
+          yum makecache --refresh
           yum install -y openssh-clients cmake ccache wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel
           ln -s /usr/bin/python3 /usr/bin/python
       - uses: actions/checkout@v3
@@ -95,20 +96,20 @@ jobs:
       - name: Create bundle
         run: |
           export PATH="$PATH:/usr/local/bin:"
-
+          source $HOME/openfpm_vars
           if [ x"uname -m" == x"aarch64-apple-darwin20" ]; then
-            version="$version-m1"
+            version="arm64"
             eval "$(/opt/homebrew/bin/brew shellenv)"
           else
-            version="$version-x86"
+            version="x86"
           fi
           ln -s ./LICENSE.md bsd3.txt
           ln -s ./README.md README.txt
           cd build
-          source $HOME/openfpm_vars
+          make install
           export DEP_PACKING=/usr/local/openfpm/dependencies/ ;
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
-          cp $HOME/openfpm_vars $HOME/openfpm_dependencies/
+          cp $HOM E/openfpm_vars $HOME/openfpm_dependencies/
           cp $HOME/.openfpm.mk $HOME/openfpm_dependencies/
           bash cmake_build_options;
           echo "Calling CPACK"
@@ -123,4 +124,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: openfpm_macos
-          path: ./openfpm_pdata-$ofp_version-Darwin.pkg
+          path: ./openfpm_pdata-$version-Darwin.pkg
