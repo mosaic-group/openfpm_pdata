@@ -14,14 +14,13 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-          yum makecache --refresh
-          yum install -y openssh-clients cmake ccache wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel
+          yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel
           ln -s /usr/bin/python3 /usr/bin/python
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+      - name: Setup ccache
+        uses: Chocobo1/setup-ccache-action@v1
       - name: Restore Cache dependencies
         uses: actions/cache/restore@v3
         with:
@@ -38,28 +37,29 @@ jobs:
           key: dependencies-${{ github.ref }}
       - name: Create bundle
         run: |
+          export PATH="$PATH:/usr/local/bin:"
+          source $HOME/openfpm_vars
+          version=$(uname -m)
           ln -s ./LICENSE.md bsd3.txt
           ln -s ./README.md README.txt
           cd build
-          source $HOME/openfpm_vars
-          export DEP_PACKING=~/openfpm_dependencies/ ;
+          export DEP_PACKING=/Users/runners/openfpm_dependencies/
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
-          cp $HOME/openfpm_vars $HOME/openfpm_dependencies/
-          cp $HOME/.openfpm.mk $HOME/openfpm_dependencies/
-          bash cmake_build_options;
+          cp ~/openfpm_vars ~/openfpm_dependencies/
+          cp ~/.openfpm.mk ~/openfpm_dependencies/
           echo "Calling CPACK"
-          cpack
-          
+          cpack -G productbuild osx
           if [ $? -ne 0 ]; then
             echo "Error creating package"
             exit 1
           fi
+          mv openfpm_pdata-$ofp_version-Darwin.pkg openfpm-$ofp_version-Darwin-$version.pkg
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: openfpm_almalinux
-          path: ./openfpm_pdata-$ofp_version-Almalinux.pkg
+          name: openfpm_macos
+          path: ./openfpm-$ofp_version-Darwin-$version.pkg
 
   build_macos:
     runs-on: macos-latest
@@ -103,9 +103,8 @@ jobs:
           cd build
           export DEP_PACKING=/Users/runners/openfpm_dependencies/
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
-          cp $HOME/openfpm_vars $HOME/openfpm_dependencies/
-          cp $HOME/.openfpm.mk $HOME/openfpm_dependencies/
-          bash cmake_build_options;
+          cp ~/openfpm_vars ~/openfpm_dependencies/
+          cp ~/.openfpm.mk ~/openfpm_dependencies/
           echo "Calling CPACK"
           cpack -G productbuild osx
           if [ $? -ne 0 ]; then
