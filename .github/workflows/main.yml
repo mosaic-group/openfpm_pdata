@@ -106,7 +106,7 @@ jobs:
           ln -s ./LICENSE.md bsd3.txt
           ln -s ./README.md README.txt
           cd build
-          make install
+          sudo make install
           export DEP_PACKING=/usr/local/openfpm/dependencies/ ;
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           cp $HOM E/openfpm_vars $HOME/openfpm_dependencies/
