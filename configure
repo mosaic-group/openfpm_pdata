@@ -595,7 +595,9 @@ done
 if [ x"$debug_mode" != x"1" ]; then
 	conf_options="$conf_options -DCMAKE_BUILD_TYPE=Release"
 fi
-
+if [ -x "$(command -v ccache)" ]; then
+  conf_options="$conf_options -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache"
+fi
 cd build
 
 ## remove enerything
