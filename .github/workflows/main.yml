@@ -45,7 +45,7 @@ jobs:
           cd build
           export DEP_PACKING=/Users/runners/openfpm_dependencies/
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
-          bash cmake_build_options || true;
+          bash cmake_build_options;
           cp ~/openfpm_vars ~/openfpm_dependencies/
           cp ~/.openfpm.mk ~/openfpm_dependencies/
           echo "Calling CPACK"
@@ -86,7 +86,6 @@ jobs:
           key: dependencies-${{ github.ref }}
       - name: Build
         run: |
-          source ~/openfpm_vars || true
           export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
           ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
       - uses: actions/cache/save@v3
