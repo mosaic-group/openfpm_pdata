@@ -14,21 +14,25 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-          yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel
+          yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel rpm-build
           ln -s /usr/bin/python3 /usr/bin/python
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - name: Setup ccache
-        uses: Chocobo1/setup-ccache-action@v1
       - name: Restore Cache dependencies
         uses: actions/cache/restore@v3
         with:
           path: ~/openfpm_dependencies/
           key: dependencies-${{ github.ref }}
+      - name: Setup ccache
+        run: |
+          wget https://github.com/ccache/ccache/releases/download/v4.8/ccache-4.8-linux-x86_64.tar.xz
+          tar -xvf ccache-4.8-linux-x86_64.tar.xz -C ~/openfpm_dependencies/
+          export PATH="~/openfpm_dependencies/ccache-4.8-linux-x86_64/ccache:$PATH"
+        uses: Chocobo1/setup-ccache-action@v1
       - name: Build
         run: |
-          export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+          export PATH="~/openfpm_dependencies/ccache-4.8-linux-x86_64/ccache:$PATH"
           ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
       - uses: actions/cache/save@v3
         if: always()
@@ -43,24 +47,24 @@ jobs:
           ln -s ./LICENSE.md bsd3.txt
           ln -s ./README.md README.txt
           cd build
-          export DEP_PACKING=/Users/runners/openfpm_dependencies/
+          export DEP_PACKING=~/openfpm_dependencies/$branch/
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           bash cmake_build_options;
-          cp ~/openfpm_vars ~/openfpm_dependencies/
-          cp ~/.openfpm.mk ~/openfpm_dependencies/
+          cp ~/openfpm_vars ~/openfpm_dependencies/$branch/
+          cp ~/.openfpm.mk ~/openfpm_dependencies/$branch/
           echo "Calling CPACK"
-          cpack -G productbuild osx
+          cpack -G tgz centos
           if [ $? -ne 0 ]; then
             echo "Error creating package"
             exit 1
           fi
-          mv openfpm_pdata-$ofp_version-Darwin.pkg openfpm-$ofp_version-Darwin-$version.pkg
+          mv openfpm_pdata-$ofp_version-Linux.rpm openfpm-$ofp_version-nightly-Linux-$version.rpm
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
           name: openfpm_macos
-          path: ./openfpm-$ofp_version-Darwin-$version.pkg
+          path: openfpm-$ofp_version-nightly--Linux-$version.rpm
 
   build_macos:
     runs-on: macos-latest
@@ -102,21 +106,21 @@ jobs:
           ln -s ./LICENSE.md bsd3.txt
           ln -s ./README.md README.txt
           cd build
-          export DEP_PACKING=/Users/runners/openfpm_dependencies/
+          export DEP_PACKING=~/openfpm_dependencies/$branch/
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
-          bash cmake_build_options || true;
-          cp ~/openfpm_vars ~/openfpm_dependencies/
-          cp ~/.openfpm.mk ~/openfpm_dependencies/
+          bash cmake_build_options;
+          cp ~/openfpm_vars ~/openfpm_dependencies/$branch/
+          cp ~/.openfpm.mk ~/openfpm_dependencies/$branch/
           echo "Calling CPACK"
           cpack -G productbuild osx
           if [ $? -ne 0 ]; then
             echo "Error creating package"
             exit 1
           fi
-          mv openfpm_pdata-$ofp_version-Darwin.pkg openfpm-$ofp_version-Darwin-$version.pkg
+          mv openfpm_pdata-$ofp_version-Darwin.pkg openfpm-$ofp_version-nightly-Darwin-$version.pkg
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
           name: openfpm_macos
-          path: ./openfpm-$ofp_version-Darwin-$version.pkg
+          path: ./openfpm-$ofp_version-nightly-Darwin-$version.pkg
