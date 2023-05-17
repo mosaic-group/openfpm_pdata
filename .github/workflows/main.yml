@@ -29,8 +29,8 @@ jobs:
           wget https://github.com/ccache/ccache/releases/download/v4.8/ccache-4.8-linux-x86_64.tar.xz
           tar -xvf ccache-4.8-linux-x86_64.tar.xz -C ~
           export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
-          mkdir -p ~/openfpm_dependencies/${{ github.ref }/openfpm_dep/ccache
-          export CCACHE_DIR="$HOME/openfpm_dependencies/${{ github.ref }/openfpm_dep/ccache"
+          mkdir -p ~/openfpm_dependencies/${{ github.ref }}/openfpm_dep/ccache
+          export CCACHE_DIR="$HOME/openfpm_dependencies/${{ github.ref }}/openfpm_dep/ccache"
       - name: Build
         run: |
           export PATH="~/openfpm_dependencies/ccache-4.8-linux-x86_64/ccache:$PATH"
