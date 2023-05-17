@@ -23,14 +23,14 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: ~/openfpm_dependencies/
-          key: dependencies-${{ github.ref }}
+          key: almalinux-dep-${{ github.ref }}
       - name: Setup Ccache
         run: |
           wget https://github.com/ccache/ccache/releases/download/v4.8/ccache-4.8-linux-x86_64.tar.xz
           tar -xvf ccache-4.8-linux-x86_64.tar.xz -C ~
           export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
-          mkdir -p ~/openfpm_dependencies/ccache
-          export CCACHE_DIR="$HOME/openfpm_dependencies/ccache"
+          mkdir -p ~/openfpm_dependencies/${{ github.ref }/openfpm_dep/ccache
+          export CCACHE_DIR="$HOME/openfpm_dependencies/${{ github.ref }/openfpm_dep/ccache"
       - name: Build
         run: |
           export PATH="~/openfpm_dependencies/ccache-4.8-linux-x86_64/ccache:$PATH"
@@ -39,7 +39,7 @@ jobs:
         if: always()
         with:
           path: ~/openfpm_dependencies/
-          key: dependencies-${{ github.ref }}
+          key: almalinux-dep-${{ github.ref }}
       - name: Create bundle
         run: |
           export PATH="$PATH:/usr/local/bin:"
@@ -84,7 +84,7 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: ~/openfpm_dependencies/
-          key: dependencies-${{ github.ref }}
+          key: macos-dep-${{ github.ref }}
       - name: Build
         run: |
           export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
@@ -93,7 +93,7 @@ jobs:
         if: always()
         with:
           path: ~/openfpm_dependencies/
-          key: dependencies-${{ github.ref }}
+          key: macos-dep-${{ github.ref }}
 
       - name: Create bundle
         run: |
