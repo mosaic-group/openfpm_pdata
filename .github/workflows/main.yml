@@ -48,11 +48,11 @@ jobs:
           ln -s ./LICENSE.md bsd3.txt
           ln -s ./README.md README.txt
           cd build
-          export DEP_PACKING=~/openfpm_dependencies/${{ github.ref }}/
+          export DEP_PACKING=~/openfpm_dependencies/${{ github.ref }}/openfpm_dep/
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           bash cmake_build_options;
-          cp ~/openfpm_vars ~/openfpm_dependencies/${{ github.ref }}/
-          cp ~/.openfpm.mk ~/openfpm_dependencies/${{ github.ref }}/
+          cp ~/openfpm_vars ~/openfpm_dependencies/${{ github.ref }}/openfpm_dep/
+          cp ~/.openfpm.mk ~/openfpm_dependencies/${{ github.ref }}/openfpm_dep/
           echo "Calling CPACK"
           cpack -G tgz centos
           if [ $? -ne 0 ]; then
@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: openfpm_macos
-          path: openfpm-$ofp_version-nightly--Linux-$version.rpm
+          path: build/openfpm-$ofp_version-nightly--Linux-$version.rpm
 
   build_macos:
     runs-on: macos-latest
@@ -80,11 +80,11 @@ jobs:
           submodules: true
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
-      #- name: Restore Cache dependencies
-      #  uses: actions/cache/restore@v3
-      #  with:
-      #    path: ~/openfpm_dependencies/
-      #    key: dependencies-${{ github.ref }}
+      - name: Restore Cache dependencies
+        uses: actions/cache/restore@v3
+        with:
+          path: ~/openfpm_dependencies/
+          key: dependencies-${{ github.ref }}
       - name: Build
         run: |
           export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
@@ -103,11 +103,11 @@ jobs:
           ln -s ./LICENSE.md bsd3.txt
           ln -s ./README.md README.txt
           cd build
-          export DEP_PACKING=~/openfpm_dependencies/${{ github.ref }}/
+          export DEP_PACKING=~/openfpm_dependencies/${{ github.ref }}/openfpm_dep/
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           bash cmake_build_options;
-          cp ~/openfpm_vars ~/openfpm_dependencies/${{ github.ref }}/
-          cp ~/.openfpm.mk ~/openfpm_dependencies/${{ github.ref }}/
+          cp ~/openfpm_vars ~/openfpm_dependencies/${{ github.ref }}/openfpm_dep/
+          cp ~/.openfpm.mk ~/openfpm_dependencies/${{ github.ref }}/openfpm_dep/
           echo "Calling CPACK"
           cpack -G productbuild osx
           if [ $? -ne 0 ]; then
@@ -120,4 +120,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: openfpm_macos
-          path: ./openfpm-$ofp_version-nightly-Darwin-$version.pkg
+          path: build/openfpm-$ofp_version-nightly-Darwin-$version.pkg
