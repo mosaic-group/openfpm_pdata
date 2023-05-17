@@ -16,9 +16,6 @@ jobs:
         run: |
           yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel rpm-build
           ln -s /usr/bin/python3 /usr/bin/python
-          wget https://github.com/ccache/ccache/releases/download/v4.8/ccache-4.8-linux-x86_64.tar.xz
-          tar -xvf ccache-4.8-linux-x86_64.tar.xz -C ~
-          export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
       - uses: actions/checkout@v3
         with:
           submodules: true
@@ -27,8 +24,13 @@ jobs:
         with:
           path: ~/openfpm_dependencies/
           key: dependencies-${{ github.ref }}
-      - name: Setup ccache
-        uses: Chocobo1/setup-ccache-action@v1
+      - name: Setup Ccache
+        run: |
+          wget https://github.com/ccache/ccache/releases/download/v4.8/ccache-4.8-linux-x86_64.tar.xz
+          tar -xvf ccache-4.8-linux-x86_64.tar.xz -C ~
+          export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
+          mkdir -p ~/openfpm_dependencies/ccache
+          export CCACHE_DIR="$HOME/openfpm_dependencies/ccache"
       - name: Build
         run: |
           export PATH="~/openfpm_dependencies/ccache-4.8-linux-x86_64/ccache:$PATH"
@@ -46,11 +48,11 @@ jobs:
           ln -s ./LICENSE.md bsd3.txt
           ln -s ./README.md README.txt
           cd build
-          export DEP_PACKING=~/openfpm_dependencies/$branch/
+          export DEP_PACKING=~/openfpm_dependencies/${{ github.ref }}/
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           bash cmake_build_options;
-          cp ~/openfpm_vars ~/openfpm_dependencies/$branch/
-          cp ~/.openfpm.mk ~/openfpm_dependencies/$branch/
+          cp ~/openfpm_vars ~/openfpm_dependencies/${{ github.ref }}/
+          cp ~/.openfpm.mk ~/openfpm_dependencies/${{ github.ref }}/
           echo "Calling CPACK"
           cpack -G tgz centos
           if [ $? -ne 0 ]; then
@@ -105,11 +107,11 @@ jobs:
           ln -s ./LICENSE.md bsd3.txt
           ln -s ./README.md README.txt
           cd build
-          export DEP_PACKING=~/openfpm_dependencies/$branch/
+          export DEP_PACKING=~/openfpm_dependencies/${{ github.ref }}/
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           bash cmake_build_options;
-          cp ~/openfpm_vars ~/openfpm_dependencies/$branch/
-          cp ~/.openfpm.mk ~/openfpm_dependencies/$branch/
+          cp ~/openfpm_vars ~/openfpm_dependencies/${{ github.ref }}/
+          cp ~/.openfpm.mk ~/openfpm_dependencies/${{ github.ref }}/
           echo "Calling CPACK"
           cpack -G productbuild osx
           if [ $? -ne 0 ]; then
