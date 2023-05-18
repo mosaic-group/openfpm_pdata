@@ -15,7 +15,7 @@ jobs:
       - name: Install dependencies
         run: |
           yum clean packages
-          yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel rpm-build --nobest
+          yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel yum-utils rpm-build
           ln -s /usr/bin/python3 /usr/bin/python
       - uses: actions/checkout@v3
         with:
@@ -62,7 +62,7 @@ jobs:
           ln -s ./LICENSE.md bsd3.txt
           ln -s ./README.md README.txt
           cd build
-          export DEP_PACKING=$HOME/openfpm_dependencies/${{ github.ref }}/
+          export DEP_PACKING=$HOME/openfpm_dependencies/${{ github.ref }}
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           bash cmake_build_options;
           echo "Calling CPACK"
@@ -120,7 +120,7 @@ jobs:
           ln -s ./LICENSE.md bsd3.txt
           ln -s ./README.md README.txt
           cd build
-          export DEP_PACKING=$HOME/openfpm_dependencies/${{ github.ref }}/
+          export DEP_PACKING=$HOME/openfpm_dependencies/${{ github.ref }}
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           tail cmake_build_options
           bash cmake_build_options;
