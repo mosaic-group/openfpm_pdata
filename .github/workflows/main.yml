@@ -39,12 +39,13 @@ jobs:
       - name: ccache cache files
         uses: actions/cache@v3
         with:
-          path: .ccache
+          path: $HOME/.ccache
           key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
         restore-keys: |
           ${{ matrix.config.name }}-ccache-
       - name: Build
         run: |
+          export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
           ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
           cp $HOME/openfpm_vars $HOME/openfpm_dependencies/${{ github.ref }}/
           cp $HOME/.openfpm.mk $HOME/openfpm_dependencies/${{ github.ref }}/
