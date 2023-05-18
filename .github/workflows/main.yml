@@ -41,8 +41,8 @@ jobs:
         with:
           path: $HOME/.ccache
           key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
-        restore-keys: |
-          ${{ matrix.config.name }}-ccache-
+          restore-keys: |
+            ${{ matrix.config.name }}-ccache-
       - name: Build
         run: |
           export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
