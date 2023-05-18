@@ -29,21 +29,12 @@ jobs:
           wget https://github.com/ccache/ccache/releases/download/v4.8/ccache-4.8-linux-x86_64.tar.xz
           tar -xvf ccache-4.8-linux-x86_64.tar.xz -C ~
           export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
-          mkdir -p ~/openfpm_dependencies/${{ github.ref }}/openfpm_dep/ccache
-          export CCACHE_DIR="$HOME/openfpm_dependencies/${{ github.ref }}/openfpm_dep/ccache"
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
       - name: Build
         run: |
           export PATH="~/openfpm_dependencies/ccache-4.8-linux-x86_64/ccache:$PATH"
           ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
-      - uses: actions/cache/save@v3
-        if: always()
-        with:
-          path: ~/openfpm_dependencies/
-          key: almalinux-dep-${{ github.ref }}
-      - name: Create bundle
-        run: |
-          export PATH="$PATH:/usr/local/bin:"
-          source $HOME/openfpm_vars
           version=$(uname -m)
           ln -s ./LICENSE.md bsd3.txt
           ln -s ./README.md README.txt
@@ -60,7 +51,11 @@ jobs:
             exit 1
           fi
           mv openfpm_pdata-$ofp_version-Linux.rpm openfpm-$ofp_version-nightly-Linux-$version.rpm
-
+      - uses: actions/cache/save@v3
+        if: always()
+        with:
+          path: ~/openfpm_dependencies/
+          key: almalinux-dep-${{ github.ref }}
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
@@ -89,15 +84,6 @@ jobs:
         run: |
           export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
           ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
-      - uses: actions/cache/save@v3
-        if: always()
-        with:
-          path: ~/openfpm_dependencies/
-          key: macos-dep-${{ github.ref }}
-
-      - name: Create bundle
-        run: |
-          export PATH="$PATH:/usr/local/bin:"
           source $HOME/openfpm_vars
           version=$(uname -m)
           ln -s ./LICENSE.md bsd3.txt
@@ -105,6 +91,7 @@ jobs:
           cd build
           export DEP_PACKING=~/openfpm_dependencies/${{ github.ref }}/
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
+          tail cmake_build_options
           bash cmake_build_options;
           cp ~/openfpm_vars ~/openfpm_dependencies/${{ github.ref }}/
           cp ~/.openfpm.mk ~/openfpm_dependencies/${{ github.ref }}/
@@ -115,7 +102,11 @@ jobs:
             exit 1
           fi
           mv openfpm_pdata-$ofp_version-Darwin.pkg openfpm-$ofp_version-nightly-Darwin-$version.pkg
-
+      - uses: actions/cache/save@v3
+        if: always()
+        with:
+          path: ~/openfpm_dependencies/
+          key: macos-dep-${{ github.ref }
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
