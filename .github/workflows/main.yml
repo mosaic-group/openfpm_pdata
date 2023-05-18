@@ -106,7 +106,7 @@ jobs:
         if: always()
         with:
           path: ~/openfpm_dependencies/
-          key: macos-dep-${{ github.ref }
+          key: macos-dep-${{ github.ref }}
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
