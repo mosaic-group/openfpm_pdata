@@ -42,12 +42,13 @@ jobs:
           key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
           restore-keys: |
             ${{ matrix.config.name }}-ccache-
-      - name: Build
+      - name: Build and Pack
         run: |
           export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
           ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
           ln -s ./LICENSE.md bsd3.txt
           ln -s ./README.md README.txt
+          export $DEP_PACKING=$HOME/openfpm_dependencies/${{ github.ref }}
           cd build
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           bash cmake_build_options;
@@ -93,7 +94,8 @@ jobs:
           export CXX=g++-12
           ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
           ln -s ./LICENSE.md bsd3.txt
-          ln -s ./README.md README.txt
+          ln -s ./README.md README.txt          
+          export $DEP_PACKING=$HOME/openfpm_dependencies/${{ github.ref }}
           cd build
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           bash cmake_build_options;
