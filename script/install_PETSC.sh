@@ -9,8 +9,7 @@ FC=$6
 
 if [ -d "$1/PETSC" -a -f "$1/PETSC/include/petsc.h" ]; then
   echo "PETSC is already installed"
-  echo "BUT WE ARE REINSTALLING FOR CI"
-  #exit 0
+  exit 0
 fi
 
 # Detect gcc pr clang
@@ -20,8 +19,8 @@ source script/solve_python
 discover_os
 
 function test_configure_options() {
-  cd petsc-3.14.5
-  $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options2 --with-debugging=0
+  cd petsc-3.19.1
+  #$python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options2 --with-debugging=0
   error=$?
   cd ..
 }
@@ -50,14 +49,14 @@ fi
 
 #### Download and uncompress petsc
 
-rm petsc-lite-3.14.5.tar.gz
-rm -rf petsc-3.14.5
-wget http://ppmcore.mpi-cbg.de/upload/petsc-lite-3.14.5.tar.gz
+rm petsc-3.19.1.tar.gz
+rm -rf petsc-3.19.1
+wget https://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.19.1.tar.gz
 if [ $? -ne 0 ]; then
   echo -e "\033[91;5;1m FAILED! Installation requires an Internet connection \033[0m"
   exit 1
 fi
-tar -xf petsc-lite-3.14.5.tar.gz
+tar -xf petsc-3.19.1.tar.gz
 
 ####
 
@@ -65,10 +64,10 @@ tar -xf petsc-lite-3.14.5.tar.gz
 
 MUMPS_extra_libs=""
 
-configure_options=""
+configure_options="--without-x"
 
 
-configure_options="$configure_options --with-64-bit-indices --with-parmetis-include=$1/PARMETIS/include --with-parmetis-lib=$1/PARMETIS/lib/libparmetis.a --with-metis-include=$1/METIS/include --with-metis-lib=$1/METIS/lib/libmetis.so"
+configure_options="$configure_options --with-64-bit-indices --with-parmetis-include=$1/PARMETIS/include --with-parmetis-lib=$1/PARMETIS/lib/libparmetis.a --with-metis-dir=$1/METIS"
 
 if [ -d "$1/BOOST" ]; then
 
@@ -144,15 +143,15 @@ if [ $error -eq 0 ]; then
 fi
 
 
-rm petsc-lite-3.14.5.tar.gz
-rm -rf petsc-3.14.5
-wget http://ppmcore.mpi-cbg.de/upload/petsc-lite-3.14.5.tar.gz
+rm petsc-3.19.1.tar.gz
+rm -rf petsc-3.19.1
+wget https://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.19.1.tar.gz
 if [ $? -ne 0 ]; then
   echo -e "\033[91;5;1m FAILED! Installation requires an Internet connection \033[0m"
   exit 1
 fi
-tar -xf petsc-lite-3.14.5.tar.gz
-cd petsc-3.14.5
+tar -xf petsc-3.19.1.tar.gz
+cd petsc-3.19.1
 
 if [ x"$CXX" != x"icpc" ]; then
 
@@ -176,7 +175,7 @@ else
       [ -x "$(command -v $1)" ]
   }
 
-  $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --prefix=$1/PETSC --with-debugging=0
+  $python_command ./configure COPTFLAGS="-O3" CXXOPTFLAGS="-O3" FOPTFLAGS="-O3" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --prefix=$1/PETSC --with-debugging=0
 fi
 
 make all
