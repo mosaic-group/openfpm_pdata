@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-          dnf --refresh update
+          dnf -y --refresh update
           yum install -y openssh-clients cmake wget git gcc-c++ gcc-gfortran python39 bzip2 diffutils zlib-devel yum-utils rpm-build
           ln -s /usr/bin/python3 /usr/bin/python
       - uses: actions/checkout@v3
@@ -97,11 +97,21 @@ jobs:
         with:
           path: ~/openfpm_dependencies/
           key: macos-dep-${{ github.ref }}
-      - name: Build
+      - name: Build & Pack
         run: |
           export CC=gcc-12
           export CXX=g++-12
           ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
+          cd build
+          printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
+          bash cmake_build_options;
+          echo "Calling CPACK"
+          cpack -G productbuild osx
+          if [ $? -ne 0 ]; then
+            echo "Error creating package"
+            exit 1
+          fi
+          mv openfpm_pdata-$ofp_version-Darwin.pkg openfpm-$ofp_version-nightly-Darwin-$version.pkg
 #          cp $HOME/openfpm_vars $HOME/openfpm_dependencies/${{ github.ref }}/
 #          cp $HOME/.openfpm.mk $HOME/openfpm_dependencies/${{ github.ref }}/
       - uses: actions/cache/save@v3
