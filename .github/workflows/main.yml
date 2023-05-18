@@ -48,13 +48,13 @@ jobs:
           ln -s ./LICENSE.md bsd3.txt
           ln -s ./README.md README.txt
           cd build
-          export DEP_PACKING=~/openfpm_dependencies/${{ github.ref }}/openfpm_dep/
+          export DEP_PACKING=~/openfpm_dependencies/${{ github.ref }}/
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           bash cmake_build_options;
-          cp ~/openfpm_vars ~/openfpm_dependencies/${{ github.ref }}/openfpm_dep/
-          cp ~/.openfpm.mk ~/openfpm_dependencies/${{ github.ref }}/openfpm_dep/
+          cp ~/openfpm_vars ~/openfpm_dependencies/${{ github.ref }}/
+          cp ~/.openfpm.mk ~/openfpm_dependencies/${{ github.ref }}/
           echo "Calling CPACK"
-          cpack -G tgz centos
+          cpack -G RPM   centos
           if [ $? -ne 0 ]; then
             echo "Error creating package"
             exit 1
@@ -103,11 +103,11 @@ jobs:
           ln -s ./LICENSE.md bsd3.txt
           ln -s ./README.md README.txt
           cd build
-          export DEP_PACKING=~/openfpm_dependencies/${{ github.ref }}/openfpm_dep/
+          export DEP_PACKING=~/openfpm_dependencies/${{ github.ref }}/
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           bash cmake_build_options;
-          cp ~/openfpm_vars ~/openfpm_dependencies/${{ github.ref }}/openfpm_dep/
-          cp ~/.openfpm.mk ~/openfpm_dependencies/${{ github.ref }}/openfpm_dep/
+          cp ~/openfpm_vars ~/openfpm_dependencies/${{ github.ref }}/
+          cp ~/.openfpm.mk ~/openfpm_dependencies/${{ github.ref }}/
           echo "Calling CPACK"
           cpack -G productbuild osx
           if [ $? -ne 0 ]; then
