@@ -25,27 +25,28 @@ jobs:
         with:
           path: ~/openfpm_dependencies/
           key: dependencies-${{ github.ref }}
-      - name: Setup Ccache
-        run: |
-          wget https://github.com/ccache/ccache/releases/download/v4.8/ccache-4.8-linux-x86_64.tar.xz
-          tar -xvf ccache-4.8-linux-x86_64.tar.xz -C ~
-          export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
-      - name: Prepare ccache timestamp
-        id: ccache_cache_timestamp
-        shell: cmake -P {0}
-        run: |
-          string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
-          message("::set-output name=timestamp::${current_date}")
-      - name: ccache cache files
-        uses: actions/cache@v3
-        with:
-          path: $HOME/.ccache
-          key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
-          restore-keys: |
-            ${{ matrix.config.name }}-ccache-
+#      - name: Setup Ccache
+#        run: |
+#          wget https://github.com/ccache/ccache/releases/download/v4.8/ccache-4.8-linux-x86_64.tar.xz
+#          tar -xvf ccache-4.8-linux-x86_64.tar.xz -C ~
+#          export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
+#      - name: Prepare ccache timestamp
+#        id: ccache_cache_timestamp
+#        shell: cmake -P {0}
+#        run: |
+#          string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
+#          message("::set-output name=timestamp::${current_date}")
+#      - name: ccache cache files
+#        uses: actions/cache@v3
+#        with:
+#          path: $HOME/.ccache
+#          key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
+#          restore-keys: |
+#            ${{ matrix.config.name }}-ccache-
+#          export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
+
       - name: Build and Pack
         run: |
-#          export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
           ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
           cp $HOME/openfpm_vars $HOME/openfpm_dependencies/openfpm_pdata/${{ github.ref }}
           cp $HOME/.openfpm.mk $HOME/openfpm_dependencies/openfpm_pdata/${{ github.ref }}
