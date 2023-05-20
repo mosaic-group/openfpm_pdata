@@ -145,9 +145,9 @@ if [ x"$comp_type" == x"full" ]; then
 else
     echo "Make install partial"
     if [ x"$comp_type" == x"intel" ]; then
-        mv $HOME/openfpm_vars $HOME/openfpm_vars_intel
+        cp $HOME/openfpm_vars $HOME/openfpm_vars_intel
     else
-        mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
+        cp $HOME/openfpm_vars $HOME/openfpm_vars_$branch
     fi
     source $HOME/openfpm_vars_$branch
     #if [ x"$hostname" == x"suitcase" ]; then
