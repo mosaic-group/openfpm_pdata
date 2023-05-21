@@ -28,13 +28,13 @@ jobs:
       - name: Setup Ccache
         run: |
           wget https://github.com/ccache/ccache/releases/download/v4.8/ccache-4.8-linux-x86_64.tar.xz
-          tar -xvf ccache-4.8-linux-x86_64.tar.xz -C ~
-          cp  ~/ccache-4.8-linux-x86_64/ccache /usr/bin/local
+          tar -xvf ccache-4.8-linux-x86_64.tar.xz -C $HOME
+          echo "$HOME/ccache-4.8-linux-x86_64/" >> $GITHUB_PATH
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
       - name: Build and Pack
         run: |
-          export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
+          export PATH="~/ccache-4.8-linux-x86_64/:$PATH"
           git config --global safe.directory '*'
           ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
           cp $HOME/openfpm_vars $HOME/openfpm_dependencies/openfpm_pdata/${{ github.ref }}
