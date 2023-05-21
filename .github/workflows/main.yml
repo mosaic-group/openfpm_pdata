@@ -29,7 +29,7 @@ jobs:
         run: |
           wget https://github.com/ccache/ccache/releases/download/v4.8/ccache-4.8-linux-x86_64.tar.xz
           tar -xvf ccache-4.8-linux-x86_64.tar.xz -C ~
-          export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
+          cp  ~/ccache-4.8-linux-x86_64/ccache /usr/bin/local
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
       - name: Build and Pack
@@ -42,7 +42,6 @@ jobs:
           export DEP_PACKING=$HOME/openfpm_dependencies/openfpm_pdata/${{ github.ref }}
           ln -s ./LICENSE.md LICENSE.txt
           ln -s ./README.md README.txt
-          version=$(uname -m)
           cd build
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           bash cmake_build_options;
@@ -53,7 +52,7 @@ jobs:
             echo "Error creating package"
             exit 1
           fi
-          mv openfpm_pdata-*-Linux.rpm openfpm-nightly-Linux-$version.rpm
+          mv openfpm_pdata-*-Linux.rpm openfpm-nightly-Linux-x86_64.rpm
       - uses: actions/cache/save@v3
         if: always()
         with:
@@ -63,7 +62,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: openfpm_macos
-          path: build/openfpm-$ofp_version-nightly-Linux-$version.rpm
+          path: build/openfpm-nightly-Linux-x86_64.rpm
 
   build_macos:
     runs-on: macos-latest
@@ -93,7 +92,6 @@ jobs:
           export DEP_PACKING=$HOME/openfpm_dependencies/openfpm_pdata/${{ github.ref }}
           ln -s ./LICENSE.md LICENSE.txt
           ln -s ./README.md README.txt
-          version=$(uname -m)
           cd build
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           bash cmake_build_options;
@@ -103,7 +101,7 @@ jobs:
             echo "Error creating package"
             exit 1
           fi
-          mv openfpm_pdata-*-Darwin.pkg openfpm-nightly-Darwin-$version.pkg
+          mv openfpm_pdata-*-Darwin.pkg openfpm-nightly-Darwin-x86_64.pkg
       - uses: actions/cache/save@v3
         if: always()
         with:
@@ -113,4 +111,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: openfpm_macos
-          path: build/openfpm-nightly-Darwin-$version.pkg
+          path: build/openfpm-nightly-Darwin-x86_64.pkg
