@@ -25,28 +25,16 @@ jobs:
         with:
           path: ~/openfpm_dependencies/
           key: almalinux-dep-${{ github.ref }}
-#      - name: Setup Ccache
-#        run: |
-#          wget https://github.com/ccache/ccache/releases/download/v4.8/ccache-4.8-linux-x86_64.tar.xz
-#          tar -xvf ccache-4.8-linux-x86_64.tar.xz -C ~
-#          export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
-#      - name: Prepare ccache timestamp
-#        id: ccache_cache_timestamp
-#        shell: cmake -P {0}
-#        run: |
-#          string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
-#          message("::set-output name=timestamp::${current_date}")
-#      - name: ccache cache files
-#        uses: actions/cache@v3
-#        with:
-#          path: $HOME/.ccache
-#          key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
-#          restore-keys: |
-#            ${{ matrix.config.name }}-ccache-
-#          export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
-
+      - name: Setup Ccache
+        run: |
+          wget https://github.com/ccache/ccache/releases/download/v4.8/ccache-4.8-linux-x86_64.tar.xz
+          tar -xvf ccache-4.8-linux-x86_64.tar.xz -C ~
+          export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
       - name: Build and Pack
         run: |
+          export PATH="~/ccache-4.8-linux-x86_64/ccache:$PATH"
           git config --global safe.directory '*'
           ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
           cp $HOME/openfpm_vars $HOME/openfpm_dependencies/openfpm_pdata/${{ github.ref }}
@@ -54,6 +42,7 @@ jobs:
           export DEP_PACKING=$HOME/openfpm_dependencies/openfpm_pdata/${{ github.ref }}
           ln -s ./LICENSE.md LICENSE.txt
           ln -s ./README.md README.txt
+          version=$(uname -m)
           cd build
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           bash cmake_build_options;
@@ -64,7 +53,7 @@ jobs:
             echo "Error creating package"
             exit 1
           fi
-          mv openfpm_pdata-$ofp_version-Linux.rpm openfpm-$ofp_version-nightly-Linux-$version.rpm
+          mv openfpm_pdata-*-Linux.rpm openfpm-nightly-Linux-$version.rpm
       - uses: actions/cache/save@v3
         if: always()
         with:
@@ -74,7 +63,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: openfpm_macos
-          path: build/openfpm-$ofp_version-nightly--Linux-$version.rpm
+          path: build/openfpm-$ofp_version-nightly-Linux-$version.rpm
 
   build_macos:
     runs-on: macos-latest
@@ -104,6 +93,7 @@ jobs:
           export DEP_PACKING=$HOME/openfpm_dependencies/openfpm_pdata/${{ github.ref }}
           ln -s ./LICENSE.md LICENSE.txt
           ln -s ./README.md README.txt
+          version=$(uname -m)
           cd build
           printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
           bash cmake_build_options;
@@ -113,7 +103,7 @@ jobs:
             echo "Error creating package"
             exit 1
           fi
-          mv openfpm_pdata-$ofp_version-Darwin.pkg openfpm-$ofp_version-nightly-Darwin-$version.pkg
+          mv openfpm_pdata-*-Darwin.pkg openfpm-nightly-Darwin-$version.pkg
       - uses: actions/cache/save@v3
         if: always()
         with:
@@ -123,4 +113,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: openfpm_macos
-          path: build/openfpm-$ofp_version-nightly-Darwin-$version.pkg
+          path: build/openfpm-nightly-Darwin-$version.pkg
