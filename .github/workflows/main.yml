@@ -128,7 +128,7 @@ jobs:
         with:
           name: openfpm_nightly_builds
           path: build/openfpm-nightly-Linux-x86_64.deb
-            - name: Single-core Test
+      - name: Single-core Test
         run: |
           source $HOME/openfpm_vars
           export OMP_NUM_THREADS=1
