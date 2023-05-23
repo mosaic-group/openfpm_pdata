@@ -84,7 +84,8 @@ jobs:
 
   build_ubuntu:
     runs-on: ubuntu-latest
-    container: ubuntu-latest
+    container:
+      image: ubuntu:latest
     steps:
       - name: Install dependencies
         run: |
