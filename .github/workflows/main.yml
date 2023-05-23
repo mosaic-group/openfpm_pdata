@@ -68,19 +68,22 @@ jobs:
         run: |
           source $HOME/openfpm_vars
           export OMP_NUM_THREADS=1
-          ./run.sh $(pwd) unused 1 pdata 0 ${{ github.ref }}
+          mpirun --allow-run-as-root -np 2 ./build/src/pdata
+          echo "RUN numerics test"
           cd openfpm_numerics
-          ./run.sh $(pwd) unused 1 0 0 numerics ${{ github.ref }}
+          mpirun --allow-run-as-root -np 2 ../build/openfpm_numerics/src/numerics
       - name: Multi-core Test
         run: |
           source $HOME/openfpm_vars
           export OMP_NUM_THREADS=1
-          ./run.sh $(pwd) unused 2 pdata 0 ${{ github.ref }}
+          mpirun --allow-run-as-root -np 2 ./build/src/pdata
+          echo "RUN numerics test"
           cd openfpm_numerics
-          ./run.sh $(pwd) unused 2 0 0 numerics ${{ github.ref }}    
+          mpirun --allow-run-as-root -np 2 ../build/openfpm_numerics/src/numerics
 
   build_ubuntu:
     runs-on: ubuntu-latest
+    container: ubuntu-latest
     steps:
       - name: Install dependencies
         run: |
@@ -132,16 +135,18 @@ jobs:
         run: |
           source $HOME/openfpm_vars
           export OMP_NUM_THREADS=1
-          ./run.sh $(pwd) unused 1 pdata 0 ${{ github.ref }}
+          mpirun --allow-run-as-root -np 2 ./build/src/pdata
+          echo "RUN numerics test"
           cd openfpm_numerics
-          ./run.sh $(pwd) unused 1 0 0 numerics ${{ github.ref }}
+          mpirun --allow-run-as-root -np 2 ../build/openfpm_numerics/src/numerics
       - name: Multi-core Test
         run: |
           source $HOME/openfpm_vars
           export OMP_NUM_THREADS=1
-          ./run.sh $(pwd) unused 2 pdata 0 ${{ github.ref }}
+          mpirun --allow-run-as-root -np 2 ./build/src/pdata
+          echo "RUN numerics test"
           cd openfpm_numerics
-          ./run.sh $(pwd) unused 2 0 0 numerics ${{ github.ref }}
+          mpirun --allow-run-as-root -np 2 ../build/openfpm_numerics/src/numerics
 
   build_macos:
     runs-on: macos-latest
@@ -208,6 +213,7 @@ jobs:
           export CXX=g++-12
           source $HOME/openfpm_vars
           export OMP_NUM_THREADS=1
-          ./run.sh $(pwd) unused 2 pdata 0 ${{ github.ref }}
+          mpirun --allow-run-as-root -np 2 ./build/src/pdata
+          echo "RUN numerics test"
           cd openfpm_numerics
-          ./run.sh $(pwd) unused 2 0 0 numerics ${{ github.ref }}
+          mpirun --allow-run-as-root -np 2 ../build/openfpm_numerics/src/numerics
