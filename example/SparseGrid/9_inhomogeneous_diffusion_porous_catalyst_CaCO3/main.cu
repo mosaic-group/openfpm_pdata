@@ -4,15 +4,15 @@
 /**
  * @file 9_inhomogeneous_diffusion_porous_catalyst/main.cu
  * @page 9_inhomogeneous_diffusion_porous_catalyst diffusion_porous_media 3D
- *
+ * [TOC]
  * # Simulate inhomogeneous diffusion in a CaCO\f$_3\f$ particle packed bed #
  *
  * In this example, we simulate inhomogeneous diffusion in the fluid phase of a CaCO\f$_3\f$ particle packed bed. For the complete image-based simulation pipeline and performance of this simulation, we refer to
  * <a href="https://arxiv.org/abs/2304.11165">J. Stark, I. F. Sbalzarini "An open-source pipeline for solving continuous reaction-diffusion models in image-based geometries of porous media." arXiv preprint arXiv:2304.11165 (2023).</a>
 
- * The geometry of the fluid phase is reconstructed based on $\upmu$CT images provided by kindly provided by Prof. Jörg Petrasch (Michigan State University, College of Engineering) (see: <a href="https://asmedigitalcollection.asme.org/heattransfer/article/131/7/072701/444766/Tomographic-Characterization-of-a-Semitransparent">S. Haussener et al. “Tomographic characterization of a semitransparent-particle packed bed and determination of its thermal radiative properties”. In: Journal of Heat Transfer 131.7 (2009)</a>).
+ * The geometry of the fluid phase is reconstructed based on $\upmu$CT images provided by kindly provided by Prof. Jörg Petrasch (Michigan State University, College of Engineering) (see: <a href="https://asmedigitalcollection.asme.org/heattransfer/article/131/7/072701/444766/Tomographic-Characterization-of-a-Semitransparent">S. Haussener et al., “Tomographic characterization of a semitransparent-particle packed bed and determination of its thermal radiative properties”. In: Journal of Heat Transfer 131.7 (2009)</a>).
 
- * For image based reconstruction and redistancing see @ref example_sussman_images_3D.
+ * For image based reconstruction and redistancing, see @ref example_sussman_images_3D.
  *
  */
 
