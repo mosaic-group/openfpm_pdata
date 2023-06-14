@@ -200,12 +200,12 @@ enum reorder_opt
 template<typename vector, unsigned int impl>
 struct cell_list_selector
 {
-	typedef decltype(std::declval<vector>().getCellListGPU(0.0).toKernel()) ctype;
+	typedef decltype(std::declval<vector>().getCellListGPU(0.0)) ctype;
 
 	static ctype get(vector & v,
 			typename vector::stype & r_cut)
 	{
-		return v.getCellListGPU(r_cut).toKernel();
+		return v.getCellListGPU(r_cut);
 	}
 };
 
