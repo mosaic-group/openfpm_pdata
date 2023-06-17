@@ -143,7 +143,9 @@ int main(int argc, char* argv[])
     Box<dims, float> box({Lx_low, Ly_low, Lz_low}, {Lx_up, Ly_up, Lz_up});
     Ghost<dims, long int> ghost(1);
 
-    typedef grid_dist_id<dims, float, props_full> grid_in_type;
+    // Defining the decomposition and the input grid type
+    typedef CartDecomposition<dims,float, CudaMemory, memory_traits_inte, BoxDistribution<dims,float> > Dec;
+    typedef grid_dist_id<dims, float, props_full, Dec> grid_in_type;
     grid_in_type g_dist(sz, box, ghost);
 
     std::cout << "Rank " << v_cl.rank() <<  " starts loading redistancing result..." << std::endl;
@@ -156,16 +158,19 @@ int main(int argc, char* argv[])
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Create sparse grid
     std::cout << "Rank " << v_cl.rank() <<  " starts creating sparse grid." << std::endl;
-    typedef CartDecomposition<dims,float, CudaMemory, memory_traits_inte, BoxDistribution<dims,float> > Dec;
+    
 
-    typedef sgrid_dist_id_gpu<dims, float, props_sparse> sparse_grid_type;
+    typedef sgrid_dist_id_gpu<dims, float, props_sparse, CudaMemory, Dec> sparse_grid_type;
     sparse_grid_type g_sparse(sz, box, ghost);
     g_sparse.setPropNames(prop_names_sparse);
     
 
     const float d_low = 0.0, d_up = Lx_up;
     get_diffusion_domain_sparse_grid<PHI_FULL, PHI_PHASE>(g_dist, g_sparse, d_low, d_up);
+    
+    // Alternatively: load sparse grid of diffusion domain from HDF5 file
     // g_sparse.load(path_to_redistancing_result + "/" + redistancing_filename);
+    
     std::cout << "Rank " << v_cl.rank() <<  " finished creating sparse grid." << std::endl;
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -290,20 +295,21 @@ int main(int argc, char* argv[])
     // Iterative diffusion
     // const size_t iterations = 1e6;
     const size_t iterations = 103;
-    const size_t number_write_outs = 1;
+    const size_t number_write_outs = 10;
     const size_t interval_write = iterations / number_write_outs; // Find interval for writing to reach
     size_t iter = 0;
     float t = 0;
 
     // Copy from host to GPU for simulation
     g_sparse.template hostToDevice<U_N, U_NPLUS1, K_SINK, PHI_PHASE>();
+    g_sparse.template ghost_get<PHI_PHASE, K_SINK>(RUN_ON_DEVICE | SKIP_LABELLING);
     t_iterative_diffusion_total.start();
     while(iter <= iterations)
     {
         if (iter % 2 == 0)
         {
             t_iteration_wct.start();
-            g_sparse.template ghost_get<PHI_PHASE, U_N, K_SINK>(RUN_ON_DEVICE);
+            g_sparse.template ghost_get<U_N>(RUN_ON_DEVICE | SKIP_LABELLING);
             t_GPU.startGPU();
             g_sparse.template conv2_b<
                     U_N,
@@ -316,16 +322,16 @@ int main(int argc, char* argv[])
                     t_GPU.stopGPU();
                     t_iteration_wct.stop();
             
-                    // Write out time to text-file
-                    out_wct_file << t_iteration_wct.getwct() << ",";
-                    out_GPUtime_file << t_GPU.getwctGPU() << ",";
+            // Write out time to text-file
+            out_wct_file << t_iteration_wct.getwct() << ",";
+            out_GPUtime_file << t_GPU.getwctGPU() << ",";
 
             t_iteration_wct.reset();
         }
         else
         {
             t_iteration_wct.start();
-            g_sparse.template ghost_get<PHI_PHASE, U_NPLUS1, K_SINK>(RUN_ON_DEVICE);
+            g_sparse.template ghost_get<U_NPLUS1>(RUN_ON_DEVICE | SKIP_LABELLING);
             t_GPU.startGPU();
             g_sparse.template conv2_b<
                     U_NPLUS1,
@@ -336,15 +342,15 @@ int main(int argc, char* argv[])
                     {(long int) sz[x]-1, (long int) sz[y]-1, (long int) sz[z]-1}, 
                     func_heatDiffusion_withSink);
             t_GPU.stopGPU();
-                t_iteration_wct.stop();
+            t_iteration_wct.stop();
             
-                // Write out time to text-file
-                    out_wct_file << t_iteration_wct.getwct() << ",";
-                    out_GPUtime_file << t_GPU.getwctGPU() << ",";
+            // Write out time to text-file
+            out_wct_file << t_iteration_wct.getwct() << ",";
+            out_GPUtime_file << t_GPU.getwctGPU() << ",";
 
             t_iteration_wct.reset();
         }
-#if 0
+
         
         if (iter % interval_write == 0)
         {
@@ -363,7 +369,7 @@ int main(int argc, char* argv[])
                 monitor_total_concentration<U_NPLUS1>(g_sparse, t, iter, path_output,"total_conc.csv");
             }
         }
-#endif
+
         t += dt;
         iter += 1;
     }
