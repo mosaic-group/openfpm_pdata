@@ -167,6 +167,62 @@ public:
 		return v_pos.template get<0>(vec_key.getKey());
 	}
 
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	__device__ __host__ inline auto getPosOrig(int vec_key) -> decltype(v_pos.template get<0>(vec_key))
+	{
+		return v_pos.template get<0>(vec_key);
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	__device__ __host__ inline auto getPosOrig(const vect_dist_key_dx & vec_key) -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	{
+		return v_pos.template get<0>(vec_key.getKey());
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	__device__ __host__ inline auto getPosOrig(int vec_key) const -> decltype(v_pos.template get<0>(vec_key))
+	{
+		return v_pos.template get<0>(vec_key);
+	}
+
+	/*! \brief Get the position of an element
+	 *
+	 * see the vector_dist iterator usage to get an element key
+	 *
+	 * \param vec_key element
+	 *
+	 * \return the position of the element in space
+	 *
+	 */
+	__device__ __host__ inline auto getPosOrig(const vect_dist_key_dx & vec_key) const -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	{
+		return v_pos.template get<0>(vec_key.getKey());
+	}
+
 	/*! \brief Get the property of an element
 	 *
 	 * see the vector_dist iterator usage to get an element key
