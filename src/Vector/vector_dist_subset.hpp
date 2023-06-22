@@ -269,6 +269,27 @@ public:
         return vd.getPos(vect_dist_key_dx(pid.template get<0>(vec_key.getKey())));
     }
 
+    /*! \brief Move the memory from the device to host memory
+     *
+     * \tparam property to move use POS_PROP for position property
+     *
+     */
+    template<unsigned int ... prp>
+    inline void hostToDeviceProp()
+    {
+        vd.template hostToDeviceProp<prp ...>();
+    }
+
+    /*! \brief Move the memory from the device to host memory
+     *
+     * \tparam property to move use POS_PROP for position property
+     *
+     */
+    inline void hostToDevicePos()
+    {
+        vd.template hostToDevicePos<0>();
+    }
+
     /*! \brief Get the position of an element
      *
      * see the vector_dist iterator usage to get an element key
