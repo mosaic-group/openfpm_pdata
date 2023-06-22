@@ -167,7 +167,10 @@ int main(int argc, char* argv[])
         size_t sz[dims] = {v_sz.get(x), v_sz.get(y), v_sz.get(z)};
         Box<dims, float> box({Lx_low, Ly_low, Lz_low}, {Lx_up, Ly_up, Lz_up});
         Ghost<dims, long int> ghost(1);
-        typedef grid_dist_id<dims, float, props_full> grid_in_type;
+
+        // Defining the decomposition and the input grid type
+        typedef CartDecomposition<dims,float, CudaMemory, memory_traits_inte, BoxDistribution<dims,float> > Dec;
+        typedef grid_dist_id<dims, float, props_full, Dec> grid_in_type;
         grid_in_type g_dist(sz, box, ghost);
 
         g_dist.load(path_to_redistancing_result + "/" + redistancing_filename); // Load SDF
@@ -191,7 +194,6 @@ int main(int argc, char* argv[])
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Create sparse grid
         std::cout << "Rank " << v_cl.rank() <<  " starts creating sparse grid." << std::endl;
-	typedef CartDecomposition<dims,float, CudaMemory, memory_traits_inte, BoxDistribution<dims,float> > Dec;
 	typedef sgrid_dist_id_gpu<dims, float, props_sparse, CudaMemory, Dec> sparse_grid_type;
         sparse_grid_type g_sparse(sz, box, ghost);
         g_sparse.setPropNames(prop_names_sparse);
@@ -392,13 +394,14 @@ int main(int argc, char* argv[])
 
 	// Copy from host to GPU for simulation
 	g_sparse.template hostToDevice<CONC_N, CONC_NPLUS1, DIFFUSION_COEFFICIENT, PHI_PHASE>();
+	g_sparse.template ghost_get<DIFFUSION_COEFFICIENT, PHI_PHASE>(RUN_ON_DEVICE | SKIP_LABELLING);
 	t_iterative_diffusion_total.start();
 	while(iter <= iterations)
 	{
 		if (iter % 2 == 0)
 		{
 			t_iteration_wct.start();
-			g_sparse.template ghost_get<PHI_PHASE, CONC_N, DIFFUSION_COEFFICIENT>(RUN_ON_DEVICE);
+			g_sparse.template ghost_get<CONC_N>(RUN_ON_DEVICE  | SKIP_LABELLING);
 			t_GPU.startGPU();
 			g_sparse.template conv3_b<
 			        CONC_N,
@@ -420,7 +423,7 @@ int main(int argc, char* argv[])
 		else
 		{
 			t_iteration_wct.start();
-			g_sparse.template ghost_get<PHI_PHASE, CONC_NPLUS1, DIFFUSION_COEFFICIENT>(RUN_ON_DEVICE);
+			g_sparse.template ghost_get<CONC_NPLUS1>(RUN_ON_DEVICE  | SKIP_LABELLING);
 			t_GPU.startGPU();
 			g_sparse.template conv3_b<
 					CONC_NPLUS1,
