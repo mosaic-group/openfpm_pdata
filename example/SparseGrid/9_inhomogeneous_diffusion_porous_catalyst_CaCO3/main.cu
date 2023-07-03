@@ -2,8 +2,8 @@
 // Created by jstark on 2023-04-24.
 //
 /**
- * @file 9_inhomogeneous_diffusion_porous_catalyst/main.cu
- * @page 9_inhomogeneous_diffusion_porous_catalyst diffusion_porous_media 3D
+ * @file 9_inhomogeneous_diffusion_porous_catalyst_CaCO3/main.cu
+ * @page 9_inhomogeneous_diffusion_porous_catalyst_CaCO3 diffusion_porous_media 3D
  * [TOC]
  * # Simulate inhomogeneous diffusion in a CaCO\f$_3\f$ particle packed bed #
  *
@@ -17,13 +17,13 @@
  */
 
 /**
- * @page 9_inhomogeneous_diffusion_porous_catalyst diffusion_porous_media 3D
+ * @page 9_inhomogeneous_diffusion_porous_catalyst_CaCO3 diffusion_porous_media 3D
  *
  * ## Include ## {#e_CaC03_include}
  *
  * We start with inluding header files, setting some paths and indices:
  *
- * \snippet  SparseGrid/9_inhomogeneous_diffusion_porous_catalyst/main.cu Include
+ * \snippet  SparseGrid/9_inhomogeneous_diffusion_porous_catalyst_CaCO3/main.cu Include
  *
  */
 //! \cond [Include] \endcond
@@ -97,7 +97,7 @@ const size_t dims     = 3;
 //! \cond [Include] \endcond
 
 /**
- * @page 9_inhomogeneous_diffusion_porous_catalyst diffusion_porous_media 3D
+ * @page 9_inhomogeneous_diffusion_porous_catalyst_CaCO3 diffusion_porous_media 3D
  *
  * ## Initialization and output folder ## {#e_CaC03_init}
  *
@@ -105,7 +105,7 @@ const size_t dims     = 3;
  * * Initializing OpenFPM
  * * Setting the output path and creating an output folder
  *
- * \snippet  SparseGrid/9_inhomogeneous_diffusion_porous_catalyst/main.cu Initialization and output folder
+ * \snippet  SparseGrid/9_inhomogeneous_diffusion_porous_catalyst_CaCO3/main.cu Initialization and output folder
  *
  */
 //! \cond [Initialization and output folder] \endcond
@@ -137,11 +137,11 @@ int main(int argc, char* argv[])
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/**
-	 * @page 9_inhomogeneous_diffusion_porous_catalyst diffusion_porous_media 3D
+	 * @page 9_inhomogeneous_diffusion_porous_catalyst_CaCO3 diffusion_porous_media 3D
 	 *
 	 * ## Create a dense grid and load redistancing result ## {#e_CaC03_grid}
 	 *
-	 * \snippet  SparseGrid/9_inhomogeneous_diffusion_porous_catalyst/main.cu Grid creation
+	 * \snippet  SparseGrid/9_inhomogeneous_diffusion_porous_catalyst_CaCO3/main.cu Grid creation
 	 *
 	 */
 	//! \cond [Grid creation] \endcond
@@ -178,13 +178,13 @@ int main(int argc, char* argv[])
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/**
-	 * @page 9_inhomogeneous_diffusion_porous_catalyst diffusion_porous_media 3D
+	 * @page 9_inhomogeneous_diffusion_porous_catalyst_CaCO3 diffusion_porous_media 3D
 	 *
 	 * ## Create a sparse grid of fluid phase ## {#e_CaC03_sparse_grid}
 	 * 
 	 * Obtain sparse grid by placing grid points inside the fluid phase only using the signed distance function
 	 *
-	 * \snippet  SparseGrid/9_inhomogeneous_diffusion_porous_catalyst/main.cu Sparse grid creation
+	 * \snippet  SparseGrid/9_inhomogeneous_diffusion_porous_catalyst_CaCO3/main.cu Sparse grid creation
 	 *
 	 */
 	//! \cond [Sparse grid creation] \endcond
@@ -212,14 +212,14 @@ int main(int argc, char* argv[])
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/**
-	 * @page 9_inhomogeneous_diffusion_porous_catalyst diffusion_porous_media 3D
+	 * @page 9_inhomogeneous_diffusion_porous_catalyst_CaCO3 diffusion_porous_media 3D
 	 *
 	 * ## Defining the inhomogeneous diffusion coefficient ## {#e_CaC03_diff_coeff}
 	 * 
 	 * The inhomogeneous diffusion coefficient is smoothed around the interface by a sigmoidal function that depends on
 	 * the signed distance function
 	 *
-	 * \snippet  SparseGrid/9_inhomogeneous_diffusion_porous_catalyst/main.cu Diffusion coefficient
+	 * \snippet  SparseGrid/9_inhomogeneous_diffusion_porous_catalyst_CaCO3/main.cu Diffusion coefficient
 	 *
 	 */
 	//! \cond [Diffusion coefficient] \endcond
@@ -269,7 +269,7 @@ int main(int argc, char* argv[])
 	//! \cond [Diffusion coefficient] \endcond
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/**
-	 * @page 9_inhomogeneous_diffusion_porous_catalyst diffusion_porous_media 3D
+	 * @page 9_inhomogeneous_diffusion_porous_catalyst_CaCO3 diffusion_porous_media 3D
 	 *
 	 * ## Defining the functor for the inhomogeneous diffusion ## {#e_CaC03_functor}
 	 * 
@@ -277,7 +277,7 @@ int main(int argc, char* argv[])
 	 * The stencil size is 1.
 	 * It will be passed to the GPU and convolved with the sparse grid.
 	 *
-	 * \snippet  SparseGrid/9_inhomogeneous_diffusion_porous_catalyst/main.cu Functor
+	 * \snippet  SparseGrid/9_inhomogeneous_diffusion_porous_catalyst_CaCO3/main.cu Functor
 	 *
 	 */
 	//! \cond [Functor] \endcond
@@ -368,12 +368,12 @@ int main(int argc, char* argv[])
 	//! \cond [Functor] \endcond
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/**
-	 * @page 9_inhomogeneous_diffusion_porous_catalyst diffusion_porous_media 3D
+	 * @page 9_inhomogeneous_diffusion_porous_catalyst_CaCO3 diffusion_porous_media 3D
 	 *
 	 * ## Run inhomogeneous diffusion ## {#e_CaC03_run}
 	 * 
 	 *
-	 * \snippet  SparseGrid/9_inhomogeneous_diffusion_porous_catalyst/main.cu Run
+	 * \snippet  SparseGrid/9_inhomogeneous_diffusion_porous_catalyst_CaCO3/main.cu Run
 	 *
 	 */
 	//! \cond [Run] \endcond
@@ -478,13 +478,13 @@ int main(int argc, char* argv[])
 	//! \cond [Run] \endcond
 
 	/**
-	 * @page 9_inhomogeneous_diffusion_porous_catalyst diffusion_porous_media 3D
+	 * @page 9_inhomogeneous_diffusion_porous_catalyst_CaCO3 diffusion_porous_media 3D
 	 *
 	 * ## Terminate ## {#e_CaC03_terminate}
 	 *
 	 * We end with terminating OpenFPM.
 	 *
-	 * \snippet  SparseGrid/9_inhomogeneous_diffusion_porous_catalyst/main.cu Terminate
+	 * \snippet  SparseGrid/9_inhomogeneous_diffusion_porous_catalyst_CaCO3/main.cu Terminate
 	 */
 	//! \cond [Terminate] \endcond
 	openfpm_finalize(); // Finalize openFPM library
@@ -493,9 +493,9 @@ int main(int argc, char* argv[])
 //! \cond [Terminate] \endcond
 
 /**
- * @page 9_inhomogeneous_diffusion_porous_catalyst diffusion_porous_media 3D
+ * @page 9_inhomogeneous_diffusion_porous_catalyst_CaCO3 diffusion_porous_media 3D
  *
  * ## Full code ## {#e_CaC03_full}
  *
- * @include SparseGrid/9_inhomogeneous_diffusion_porous_catalyst/main.cu
+ * @include SparseGrid/9_inhomogeneous_diffusion_porous_catalyst_CaCO3/main.cu
  */
