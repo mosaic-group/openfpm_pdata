@@ -221,7 +221,7 @@ if [ $sq -eq 0 ]; then
   possible_solutions "${commands[@]}"
 fi
 
-ncore=4
+ncore=2
 echo -e "\033[1mHow many core you want to use to install the dependencies?\033[0m"
 if [ $sq -eq 0 ]; then
   read ncore
@@ -364,7 +364,7 @@ else
             elif [ x"$CXX" == x"clang++" ]; then
               ./script/install_BOOST.sh $i_dir $ncore clang
             else
-	      if [ x"$CXX" == x"g++" ]; then
+	      if [ x"$CXX" == x"g++*" ]; then
 		if [ x"$is_apple_llvm" == x"yes" ]; then
 		  ./script/install_BOOST.sh $i_dir $ncore clang
 		else
@@ -479,6 +479,7 @@ echo "LIBS_NVCC=-Xcompiler=$openmp_flags $mpi_libs -lvcluster -lofpm_pdata -lofp
 echo "INCLUDE_PATH_NVCC=-Xcompiler="-Wno-deprecated-declarations" -Xcompiler=$(cat openmp_flags) "$(cat cuda_options)" $mpi_include_dirs -I. -I$install_base/openfpm_numerics/include -I$install_base/openfpm_pdata/include/config -I$install_base/openfpm_pdata/include -I$install_base/openfpm_data/include -I$install_base/openfpm_vcluster/include -I$install_base/openfpm_io/include -I$install_base/openfpm_devices/include -I$i_dir/METIS/include -I$i_dir/PARMETIS/include -I$i_dir/BOOST/include -I$i_dir/HDF5/include -I$i_dir/LIBHILBERT/include  $lin_alg_inc -I$i_dir/BLITZ/include -I$i_dir/ALGOIM/include" >> example.mk
 cp example.mk src/example.mk
 cp example.mk example/example.mk
+cp example.mk ~/.openfpm.mk
 
 if [ $nomake -eq 0 ]; then
   make clean
@@ -613,6 +614,7 @@ fi
 echo "$bash_path" > $VARS_FILE_LOCATION/openfpm_vars
 echo "$bash_library" >> $VARS_FILE_LOCATION/openfpm_vars
 echo "export PURE_PYTHON=1" >> $VARS_FILE_LOCATION/openfpm_vars
+cp example.mk $HOME/Openfpm.mk
 
 if [ x"$platform" = x"osx" ]; then
     echo "TMPDIR=/tmp/" >> $VARS_FILE_LOCATION/openfpm_vars

@@ -3,7 +3,7 @@
 #include "Vector/map_vector.hpp"
 #include "util/stat/common_statistics.hpp"
 
-#define NELEMENTS 67108864
+#define NELEMENTS 16777216
 
 //! Memory bandwidth with small calculations
 template<typename vector_type, typename vector_type2>
@@ -407,6 +407,54 @@ int main(int argc, char *argv[])
 
     check_read(in,out);
 
+    /////// BASE 1 core (This is only valid on CPUs)
+
+    #ifdef CUDIFY_USE_OPENMP
+
+    for (int i = 0 ; i < 110 ; i++)
+    {
+        timer t;
+        t.start();
+
+        float * out_s = (float *)out.getDeviceBuffer<0>();
+        float * out_v = (float *)out.getDeviceBuffer<1>();
+        float * out_m = (float *)out.getDeviceBuffer<2>();
+        float * in_v = (float *)in.getDeviceBuffer<0>();
+
+        int stride = out.capacity();
+
+        auto lamb_arr_red = [out_s,out_v,out_m,in_v,stride] __host__ (int p)
+        {
+            float a = out_s[p];
+
+            float b = out_v[p + 0*stride];
+            float c = out_v[p + 1*stride];
+
+            float d = out_m[p + 0*2*stride + 0*stride];
+            float e = out_m[p + 0*2*stride + 1*stride];
+            float f = out_m[p + 1*2*stride + 0*stride];
+            float g = out_m[p + 1*2*stride + 1*stride];
+
+            float h = in_v[p + 0*stride];
+            in_v[p + 1*stride] = a+b+c+d+e+f+g+h;
+        };
+
+        for (int i = 0 ; i < NELEMENTS ; i++)
+        {
+            lamb_arr_red(i);
+        }
+
+        t.stop();
+
+        if (i >=10)
+        {res.get(i-10) = (double)nele*4*9 / t.getwct() * 1e-9;}
+
+        std::cout << "Time ARR: " << t.getwct() << std::endl;
+        std::cout << "BW 1-CORE ARR: " << (double)nele*4*9 / t.getwct() * 1e-9 << " GB/s"  << std::endl;
+    }
+
+    #endif
+
     ///////////////////
 
     #ifdef CUDIFY_USE_CUDA
@@ -441,8 +489,8 @@ int main(int argc, char *argv[])
 
     #endif
 
-    std::cout << "Average READ with TLS: " << mean_read_tls << "  deviation: " << dev_read_tls << std::endl;
-    std::cout << "Average WRITE with TLS: " << mean_write_tls << "  deviation: " << dev_write_tls << std::endl;
+//    std::cout << "Average READ with TLS: " << mean_read_tls << "  deviation: " << dev_read_tls << std::endl;
+//    std::cout << "Average WRITE with TLS: " << mean_write_tls << "  deviation: " << dev_write_tls << std::endl;
 
     std::cout << "Average READ with lamb: " << mean_read_lamb << "  deviation: " << dev_read_lamb << std::endl;
     std::cout << "Average WRITE with lamb: " << mean_write_lamb << "  deviation: " << dev_write_lamb << std::endl;

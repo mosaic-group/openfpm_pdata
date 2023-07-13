@@ -14,19 +14,19 @@ ifdef HIP
 	CUDA_CC_LINK=hipcc
 else
 	ifdef CUDA_ON_CPU
-        	CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
+        	CUDA_CC=mpic++ -g -x c++ $(INCLUDE_PATH)
         	INCLUDE_PATH_NVCC=
         	CUDA_CC_LINK=mpic++
         	CUDA_OPTIONS=-D__NVCC__ -DCUDART_VERSION=11000
         	LIBS_SELECT=$(LIBS)
 	else
         	ifeq (, $(shell which nvcc))
-                	CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
+                	CUDA_CC=mpic++  -x c++ $(INCLUDE_PATH)
                 	INCLUDE_PATH_NVCC=
                 	CUDA_CC_LINK=mpic++
 			LIBS_SELECT=$(LIBS)
         	else
-                	CUDA_CC=nvcc -ccbin=mpic++
+                	CUDA_CC=nvcc -g -ccbin=mpic++
                 	CUDA_CC_LINK=nvcc -ccbin=mpic++
 			LIBS_SELECT=$(LIBS_NVCC)
         	endif
@@ -53,7 +53,7 @@ memBW: $(OBJ)
 all: memBW
 
 run: memBW
-	mpirun --oversubscribe -np 2 ./memBW
+	mpirun --oversubscribe -np 1 ./memBW
 
 .PHONY: clean all run
 

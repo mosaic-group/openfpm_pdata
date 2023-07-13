@@ -3,12 +3,16 @@
 
 
 workspace=$1
-hostname=$(hostname)
 target=$3
 comp_type=$4
 branch=$5
 with_gpu=$6
 
+if [ -f hostname ]; then
+   hostname=$(cat hostname)
+else
+   hostname=$(hostname)
+fi
 
 if [ x"$branch" == x"" ]; then
   echo "Getting branch from git"
@@ -22,21 +26,19 @@ echo "compilation type: $comp_type"
 echo "Branch name: $branch"
 echo "GPU compilation: $with_gpu"
 
-
-if [ x"$hostname" == x"cifarm-centos-node.mpi-cbg.de"  ]; then
-	echo "CentOS node"
-	source /opt/rh/devtoolset-8/enable
-	./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
-	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$branch/CMAKE/bin:$PATH"
+if [ x"$hostname" == x"cifarm-centos-node"  ]; then
+	echo "Almalinux node"
 	foward_options="--with-cuda-on-backend=OpenMP"
+	export DISABLE_OPENFPM_BINARY_CONFIG=1
 fi
 
 if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
 #	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/
 	echo "Ubuntu node"
-	./install_MPI_mpich.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/ 4
+	./install_MPI_mpich.sh $(pwd)/openfpm_dependencies/$branch/ 4
 	export PATH="/opt/bin:$PATH"
 	foward_options="--with-cuda-on-backend=OpenMP"
+	export DISABLE_OPENFPM_BINARY_CONFIG=1
 fi
 
 if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
@@ -45,10 +47,6 @@ if [ x"$hostname" == x"cifarm-mac-node.mpi-cbg.de"  ]; then
 	export PATH="/usr/local/bin:$PATH"
 	foward_options="--with-cuda-on-backend=SEQUENTIAL"
 	./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
-	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$branch/CMAKE/bin:$PATH"
-#	rm -rf /Users/admin/openfpm_dependencies/openfpm_pdata/$branch/
-#	rm -rf $HOME/openfpm_dependencies/openfpm_pdata/$branch/PETSC
-        ./install_CMAKE_on_CI.sh $HOME/openfpm_dependencies/openfpm_pdata/$branch/
 	export PATH="$HOME/openfpm_dependencies/openfpm_pdata/$branch/CMAKE/bin:$PATH"
 fi
 
@@ -65,10 +63,15 @@ if [ x"$hostname" == x"falcon1" ]; then
 		mkdir /projects/ppm/rundeck/openfpm_dependencies_$branch/
 		dependency_dir=/projects/ppm/rundeck/openfpm_dependencies_$branch/
 	fi
+elif [ x"$hostname" == x"cifarm-centos-node" ]; then
+	dependency_dir=$(pwd)/openfpm_dependencies/$branch
+elif [ x"$hostname" == x"cifarm-ubuntu-node" ]; then
+	dependency_dir=$(pwd)/openfpm_dependencies/$branch
 else
 	dependency_dir=$HOME/openfpm_dependencies/openfpm_pdata/$branch
 	mkdir $HOME/openfpm_dependencies/openfpm_pdata/$branch
 fi
+
 
 if [ x"$with_gpu" == x"1" ]; then
 	foward_options="$foward_options --with-cuda-on-backend=CUDA"
@@ -142,21 +145,31 @@ if [ x"$comp_type" == x"full" ]; then
 else
     echo "Make install partial"
     if [ x"$comp_type" == x"intel" ]; then
-        mv $HOME/openfpm_vars $HOME/openfpm_vars_intel
+        cp $HOME/openfpm_vars $HOME/openfpm_vars_intel
     else
-        mv $HOME/openfpm_vars $HOME/openfpm_vars_$branch
+        cp $HOME/openfpm_vars $HOME/openfpm_vars_$branch
     fi
     source $HOME/openfpm_vars_$branch
-    if [ x"$hostname" == x"suitcase" ]; then
-      echo "Running make on 1 cores"
-      make VERBOSE=1 -j 1
-    else
-      nice -n 19 make VERBOSE=1 -j 8
-    fi
+    #if [ x"$hostname" == x"suitcase" ]; then
+    echo "Running make on 1 cores"
+    make VERBOSE=1 -j 1
+    #else
+    #  nice -n 19 make VERBOSE=1 -j 8
+    #fi
 fi
 
 if [ $? -ne 0 ]; then
    echo "Fail make install"
    exit 1 ;
+fi
+
+# copy the openfpm_vars into cache
+
+if [ x"$hostname" == x"cifarm-ubuntu-node"  ]; then
+  cp $HOME/openfpm_vars_$branch $(pwd)/openfpm_dependencies/$branch/
+fi
+
+if [ x"$hostname" == x"cifarm-centos-node"  ]; then
+  cp $HOME/openfpm_vars_$branch $(pwd)/openfpm_dependencies/$branch/
 fi
 

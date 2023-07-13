@@ -200,12 +200,12 @@ enum reorder_opt
 template<typename vector, unsigned int impl>
 struct cell_list_selector
 {
-	typedef decltype(std::declval<vector>().getCellListGPU(0.0).toKernel()) ctype;
+	typedef decltype(std::declval<vector>().getCellListGPU(0.0)) ctype;
 
 	static ctype get(vector & v,
 			typename vector::stype & r_cut)
 	{
-		return v.getCellListGPU(r_cut).toKernel();
+		return v.getCellListGPU(r_cut);
 	}
 };
 
@@ -218,6 +218,37 @@ struct cell_list_selector<vector,comp_host>
 			typename vector::stype & r_cut)
 	{
 		return v.getCellList(r_cut);
+	}
+};
+
+template<typename vector_type>
+struct decrement_memory
+{
+	//! vector
+	vector_type & v;
+
+
+	/*! \brief constructor
+	 *
+	 *
+	 * \param src encapsulated object1
+	 * \param dst encapsulated object2
+	 *
+	 */
+	inline decrement_memory(vector_type & v)
+	:v(v)
+	{};
+
+
+	/*!  \brief It call the copy function for each property
+	 *
+	 * \param t each member
+	 *
+	 */
+	template<typename T>
+	inline void operator()(T& t) const
+	{
+		v.template getMemory<T::value>().decRef();
 	}
 };
 
@@ -616,6 +647,24 @@ public:
 #ifdef SE_CLASS2
 		check_delete(this);
 #endif
+	}
+
+	/*! Set reference counter to one
+	 *
+	 */
+	void setReferenceCounterToOne()
+	{
+		for (int i = 0 ; i < v_pos.template getMemory<0>().ref() - 1; i++)
+		{
+			v_pos.template getMemory<0>().decRef();
+		}
+
+		for (int i = 0 ; i < v_prp.template getMemory<0>().ref() - 1; i++)
+		{
+			decrement_memory<decltype(v_prp)> m(v_prp);
+
+			boost::mpl::for_each_ref<boost::mpl::range_c<int,0,decltype(v_prp)::value_type::max_prop>>(m);
+		}
 	}
 
 	/*! \brief remove all the elements
@@ -2749,11 +2798,15 @@ public:
 			vtk_writer.add(v_pos,v_prp,g_m);
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtp"));
-
+            //Create Directory for VTP files and write the PVTP metadata
+            if(v_cl.rank()==0)
+            {
+                create_directory_if_not_exist("VTPDATA",1);
+                vtk_writer.write_pvtp(out,prp_names,v_cl.size());
+            }
+            v_cl.barrier();
 			// Write the VTK file
 			bool ret=vtk_writer.write(output,prp_names,"particles",meta_info,ft);
-			if(v_cl.rank()==0)
-            {vtk_writer.write_pvtp(out,prp_names,v_cl.size())   ;}
 			return ret;
 		}
 	}
@@ -2861,10 +2914,70 @@ public:
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtp"));
 
+            //Create Directory for VTP files and write the PVTP metadata
+            if(v_cl.rank()==0)
+            {
+                create_directory_if_not_exist("VTPDATA",1);
+                vtk_writer.write_pvtp(out,prp_names,v_cl.size(),iteration);
+            }
+            v_cl.barrier();
+
 			// Write the VTK file
 			bool ret=vtk_writer.write(output,prp_names,"particles",meta_info,ft);
+
+            return ret;
+		}
+	}
+
+    /*! \brief Output particle position and properties and add a time stamp to pvtp
+	 *
+	 * \param out output
+	 * \param iteration (we can append the number at the end of the file_name)
+	 * \param time = 1.234 to add to the information time to the PVTP file)
+	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
+	 *            FORMAT_BINARY. (the default is ASCII format)
+	 *
+	 * \return if the file has been written correctly
+	 *
+	 */
+	inline bool write_frame(std::string out, size_t iteration, double time, int opt = VTK_WRITER)
+	{
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
+
+		if ((opt & 0x0FFF0000) == CSV_WRITER)
+		{
+			// CSVWriter test
+			CSVWriter<vector_dist_pos,
+					  vector_dist_prop > csv_writer;
+
+			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".csv"));
+
+			// Write the CSV
+			return csv_writer.write(output, v_pos, v_prp);
+		}
+		else
+		{
+			file_type ft = file_type::ASCII;
+
+			if (opt & FORMAT_BINARY)
+				ft = file_type::BINARY;
+
+			// VTKWriter for a set of points
+			VTKWriter<boost::mpl::pair<vector_dist_pos,
+									   vector_dist_prop>, VECTOR_POINTS> vtk_writer;
+			vtk_writer.add(v_pos,v_prp,g_m);
+
+			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtp"));
+
+            //Create Directory for VTP files and write the PVTP metadata
             if(v_cl.rank()==0)
-            {vtk_writer.write_pvtp(out,prp_names,v_cl.size(),iteration);}
+            {
+                create_directory_if_not_exist("VTPDATA",1);
+                vtk_writer.write_pvtp(out,prp_names,v_cl.size(),iteration,time);
+            }
+            v_cl.barrier();
+			// Write the VTK file
+			bool ret=vtk_writer.write(output,prp_names,"particles","",ft);
             return ret;
 		}
 	}

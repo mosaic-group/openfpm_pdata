@@ -28,6 +28,11 @@ class vector_dist_ws : public vector_dist<dim,St,typename AggregateAppend<int,pr
         this->template getProp<flag_prop::value>(key) = sub_id;
     }
 
+    int getSubset(vect_dist_key_dx key)
+    {
+        return this->template getProp<flag_prop::value>(key);
+    }
+
     void ghost_get_subset()
     {
         this->template ghost_get<flag_prop::value>(NO_POSITION | SKIP_LABELLING);
@@ -46,6 +51,15 @@ class vector_dist_ws : public vector_dist<dim,St,typename AggregateAppend<int,pr
         }
 
         return vector_dist<dim,St,typename AggregateAppend<int,prop>::type,Decomposition,Memory,layout_base>::write_frame(out,iteration,opt);
+    }
+    inline bool write_frame(std::string out, size_t iteration,double time, int opt = VTK_WRITER)
+    {
+        auto &prop_names=this->getPropNames();
+        if(prop_names.size()==prop::max_prop){
+            prop_names.add({"SubsetNumber"});
+        }
+
+        return vector_dist<dim,St,typename AggregateAppend<int,prop>::type,Decomposition,Memory,layout_base>::write_frame(out,iteration,time,opt);
     }
 
     inline bool write(std::string out,int opt = VTK_WRITER)

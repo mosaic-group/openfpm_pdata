@@ -74,7 +74,7 @@
 constexpr int x = 0;
 constexpr int y = 1;
 
-double dt=1e-2,tf=1.0;
+double dt=1e-2,tf=1.0,vf=1.0;
 
 void *PointerDistGlobal, *PointerDistSubset,*PointerDistSubset2;
 
@@ -218,8 +218,8 @@ struct ObserverFunctor {
             Concentration_bulk[x] = X.data.get<0>();
             Concentration_bulk[y] = X.data.get<1>();
             //computing the velocity and move the particles
-            Velocity_bulk[x] = -Pos[y] * exp(-10.0 * (Pos[x] * Pos[x] + Pos[y] * Pos[y]));
-            Velocity_bulk[y] = Pos[x] * exp(-10.0 * (Pos[x] * Pos[x] + Pos[y] * Pos[y]));
+            Velocity_bulk[x] = -vf*Pos[y] * exp(-10.0 * (Pos[x] * Pos[x] + Pos[y] * Pos[y]));
+            Velocity_bulk[y] = vf*Pos[x] * exp(-10.0 * (Pos[x] * Pos[x] + Pos[y] * Pos[y]));
             Pos = Pos + dt * Velocity;
             //Map and ghost_get is required after moving particles.
             Particles.map();
@@ -263,6 +263,10 @@ int main(int argc, char *argv[])
 {
     //	initialize library
     openfpm_init(&argc, &argv);
+
+    dt=std::atof(argv[1]);
+    tf=std::atof(argv[2]);
+    vf=std::atof(argv[3]);
     //! @cond [initParticles2] @endcond
 
     /**

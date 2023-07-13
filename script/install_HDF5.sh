@@ -22,25 +22,27 @@ if [ ! -d "$1/ZLIB"  -a x"$platform" != x"cygwin" ]; then
   tar -xf zlib-1.2.11.tar.gz
   cd zlib-1.2.11
 
-  CC=mpicc ./configure --prefix=$1/ZLIB
+  CC=mpicc CFLAGS=-fPIC  ./configure --prefix=$1/ZLIB
   make -j $2
-  cd ..
   if [ $? -eq 0 ]; then
     make check install
   else
     echo -e "\033[91;5;1m ZLIB Installation FAILED \033[0m"
     exit 1
   fi
+  cd ..
 
 else
   echo "ZLIB is already installed"
 fi
 
-### 1.8.19 does not compile on CYGWIN
-wget http://ppmcore.mpi-cbg.de/upload/hdf5-1.10.7.tar.gz
-tar -xf hdf5-1.10.7.tar.gz
-cd hdf5-1.10.7
 
+### 1.8.19 does not compile on CYGWIN
+wget http://ppmcore.mpi-cbg.de/upload/hdf5-1.10.8.tar.gz
+tar -xf hdf5-1.10.8.tar.gz
+cd hdf5-1.10.8
+
+# Disable zlib is completly unstable
 if [ x"$platform" != x"cygwin" ]; then
         CC=mpicc ./configure --with-zlib=$1/ZLIB --enable-parallel --prefix=$1/HDF5
 	make -j $2
@@ -54,4 +56,4 @@ if [ $? -ne 0 ]; then
     echo "HDF5 error installing"
     exit 0
 fi
-echo 3 > $1/HDF5/version
+echo 4 > $1/HDF5/version

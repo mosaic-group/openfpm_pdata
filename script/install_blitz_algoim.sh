@@ -24,7 +24,7 @@ else
   make install
 
   # Mark the installation
-  echo 1 > $1/BLITZ/version
+  echo //1 > $1/BLITZ/version
 fi
 
 ## Algoim installation
@@ -44,5 +44,5 @@ else
   mv algoim $1/ALGOIM
   mv $1/ALGOIM/src $1/ALGOIM/include
   # Mark the installation
-  echo 1 > $1/ALGOIM/version
+  echo //1 > $1/ALGOIM/version
 fi

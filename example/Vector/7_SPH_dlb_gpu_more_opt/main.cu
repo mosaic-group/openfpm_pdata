@@ -987,7 +987,7 @@ int main(int argc, char* argv[])
 	{
 		Vcluster<> & v_cl = create_vcluster();
 		timer it_time;
-
+		it_time.start();
 
 		////// Do rebalancing every 200 timesteps
 		it_reb++;

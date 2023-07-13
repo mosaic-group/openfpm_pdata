@@ -65,9 +65,9 @@
 #include "Vector/vector_dist.hpp"
 //! \cond [inclusion] \endcond
 
+
 int main(int argc, char* argv[])
 {
-
 	/*!
 	 * \page Vector_0_simple Vector 0 simple
 	 *

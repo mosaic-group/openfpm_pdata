@@ -41,7 +41,6 @@ else
 	./bootstrap.sh --with-toolset=$3
 fi
 
-
 mkdir $1/BOOST
 # Several flavours
 if [ x"$platform" == x"osx" ]; then
@@ -52,7 +51,11 @@ if [ x"$platform" == x"osx" ]; then
             ./b2 -a -j $2 install --prefix=$1/BOOST address-model=64 architecture=arm abi=aapcs binary-format=mach-o toolset=$3  -sNO_LZMA=1 -sNO_ZSTD=1
         fi
     else
-        ./b2 -a -j $2 install --prefix=$1/BOOST address-model=64 architecture=x86 abi=sysv binary-format=mach-o toolset=clang  -sNO_LZMA=1 -sNO_ZSTD=1
+      if [ x"$3" == x"" ]; then
+          ./b2 -a -j $2 install --prefix=$1/BOOST address-model=64 architecture=x86 abi=sysv binary-format=mach-o toolset=clang  -sNO_LZMA=1 -sNO_ZSTD=1
+        else
+          ./b2 -a -j $2 install --prefix=$1/BOOST address-model=64 architecture=x86 abi=sysv binary-format=mach-o toolset=gcc  -sNO_LZMA=1 -sNO_ZSTD=1
+      fi
     fi
 else
     ./b2 -a -j $2 install --prefix=$1/BOOST  -sNO_LZMA=1 -sNO_ZSTD=1

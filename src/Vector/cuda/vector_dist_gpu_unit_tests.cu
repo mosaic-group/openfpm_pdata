@@ -282,7 +282,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_ghost_get )
 template<typename vector_type, typename CellList_type, typename CellList_type_cpu>
 void check_cell_list_cpu_and_gpu(vector_type & vd, CellList_type & NN, CellList_type_cpu & NN_cpu)
 {
-	auto it5 = vd.getDomainIteratorGPU(32);
+	const auto it5 = vd.getDomainIteratorGPU(32);
 
 	CUDA_LAUNCH((calculate_force<typename vector_type::stype,decltype(NN.toKernel())>),it5,vd.toKernel(),vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
 
@@ -391,7 +391,7 @@ void vector_dist_gpu_test_impl()
 
 	// now we offload all the properties
 
-	auto it3 = vd.getDomainIteratorGPU();
+	const auto it3 = vd.getDomainIteratorGPU();
 
 	// offload to device
 	vd.hostToDevicePos();
