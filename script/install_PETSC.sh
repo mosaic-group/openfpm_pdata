@@ -9,8 +9,7 @@ FC=$6
 
 if [ -d "$1/PETSC" -a -f "$1/PETSC/include/petsc.h" ]; then
   echo "PETSC is already installed"
-  echo "BUT WE ARE REINSTALLING FOR CI"
-  #exit 0
+  exit 0
 fi
 
 # Detect gcc pr clang
