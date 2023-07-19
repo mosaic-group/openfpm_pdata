@@ -200,12 +200,12 @@ enum reorder_opt
 template<typename vector, unsigned int impl>
 struct cell_list_selector
 {
-	typedef decltype(std::declval<vector>().getCellListGPU(0.0).toKernel()) ctype;
+	typedef decltype(std::declval<vector>().getCellListGPU(0.0)) ctype;
 
 	static ctype get(vector & v,
 			typename vector::stype & r_cut)
 	{
-		return v.getCellListGPU(r_cut).toKernel();
+		return v.getCellListGPU(r_cut);
 	}
 };
 
@@ -306,6 +306,13 @@ public:
 
 	//! Self type
 	typedef vector_dist<dim,St,prop,Decomposition,Memory,layout_base> self;
+
+	//! template parameters typedefs
+	static const unsigned int dims = dim;
+	typedef St stype;
+	typedef prop value_type;
+	typedef Decomposition Decomposition_type;
+	typedef Memory Memory_type;
 
 private:
 
@@ -452,28 +459,15 @@ private:
 	}
 
 public:
-
-	//! property object
-	typedef prop value_type;
-
-	typedef Decomposition Decomposition_type;
-
 	typedef decltype(v_pos) internal_position_vector_type;
 
 	typedef CellList<dim, St, Mem_fast<>, shift<dim, St>, internal_position_vector_type > CellList_type;
-
-	//! space type
-	typedef St stype;
-
-	//! dimensions of space
-	static const unsigned int dims = dim;
 
 	//! yes I am vector dist
 	typedef int yes_i_am_vector_dist;
 
 	//! yes I am vector subset dist
 	typedef std::integral_constant<bool,false> is_it_a_subset;
-
 
 
 	/*! \brief Operator= for distributed vector
