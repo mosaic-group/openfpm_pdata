@@ -2317,7 +2317,7 @@ public:
 	{
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{
-			loc_grid.get(i).template flush<v_reduce ...>(v_cl.getmgpuContext(),opt);
+			loc_grid.get(i).template flush<v_reduce ...>(v_cl.getgpuContext(),opt);
 		}
 	}
 
@@ -3375,7 +3375,7 @@ public:
 	{
 		for (int i = 0 ; i < loc_grid.size() ; i++)
 		{
-			loc_grid.get(i).construct_link(grid_up.get_loc_grid(i),grid_dw.get_loc_grid(i),v_cl.getmgpuContext());
+			loc_grid.get(i).construct_link(grid_up.get_loc_grid(i),grid_dw.get_loc_grid(i),v_cl.getgpuContext());
 		}
 	}
 
@@ -3393,7 +3393,7 @@ public:
 			for(int j = 0 ; j < dim ; j++)
 			{p_dw.get(j) = mvof.get(i).dw.get(j);}
 
-			loc_grid.get(i).construct_link_dw(grid_dw.get_loc_grid(i),gdb_ext.get(i).Dbox,p_dw,v_cl.getmgpuContext());
+			loc_grid.get(i).construct_link_dw(grid_dw.get_loc_grid(i),gdb_ext.get(i).Dbox,p_dw,v_cl.getgpuContext());
 		}
 	}
 
@@ -3411,7 +3411,7 @@ public:
 			for(int j = 0 ; j < dim ; j++)
 			{p_up.get(j) = mvof.get(i).up.get(j);}
 
-			loc_grid.get(i).construct_link_up(grid_up.get_loc_grid(i),gdb_ext.get(i).Dbox,p_up,v_cl.getmgpuContext());
+			loc_grid.get(i).construct_link_up(grid_up.get_loc_grid(i),gdb_ext.get(i).Dbox,p_up,v_cl.getgpuContext());
 		}
 	}
 
@@ -3431,7 +3431,7 @@ public:
 			Box_check<dim,unsigned int> chk(gdb_ext.get(i).Dbox);
 
 
-			loc_grid.get(i).template tagBoundaries<stencil_type>(v_cl.getmgpuContext(),chk);
+			loc_grid.get(i).template tagBoundaries<stencil_type>(v_cl.getgpuContext(),chk);
 		}
 	}
 
@@ -3667,7 +3667,7 @@ public:
 			{
 				loc_grid.get(i).copyRemoveReset();
 				loc_grid.get(i).remove(bout);
-				loc_grid.get(i).removePoints(v_cl.getmgpuContext());
+				loc_grid.get(i).removePoints(v_cl.getgpuContext());
 			}
 		}
 	}

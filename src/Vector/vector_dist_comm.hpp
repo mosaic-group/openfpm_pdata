@@ -1442,7 +1442,7 @@ class vector_dist_comm
 			dec.toKernel(),v_pos.toKernel(),lbl_p.toKernel(),prc_sz.toKernel(),v_cl.rank());
 
 			starts.resize(v_cl.size());
-			openfpm::scan((unsigned int *)prc_sz.template getDeviceBuffer<0>(), prc_sz.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
+			openfpm::scan((unsigned int *)prc_sz.template getDeviceBuffer<0>(), prc_sz.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getgpuContext());
 
 			// move prc_sz to host
 			prc_sz.template deviceToHost<0>();

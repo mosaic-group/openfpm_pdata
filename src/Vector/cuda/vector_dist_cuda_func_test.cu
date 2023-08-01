@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 	starts.resize(o_part_loc.size());
 
 	auto & v_cl = create_vcluster();
-	openfpm::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
+	openfpm::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getgpuContext());
 
 	starts.deviceToHost<0>(starts.size()-1,starts.size()-1);
 	size_t tot = starts.template get<0>(o_part_loc.size()-1);
@@ -606,7 +606,7 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 
     starts.resize(proc_id_out.size());
 
-    openfpm::scan((unsigned int *)proc_id_out.template getDeviceBuffer<0>(),proc_id_out.size(),(unsigned int *)starts.template getDeviceBuffer<0>(),v_cl.getmgpuContext());
+    openfpm::scan((unsigned int *)proc_id_out.template getDeviceBuffer<0>(),proc_id_out.size(),(unsigned int *)starts.template getDeviceBuffer<0>(),v_cl.getgpuContext());
 
 	starts.deviceToHost<0>(starts.size()-1,starts.size()-1);
 
