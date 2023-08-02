@@ -276,11 +276,11 @@ __global__  void reorder_lbl(vector_lbl_type m_opart, starts_type starts)
 }
 
 template<typename red_type>
-struct _add_: mgpu::plus_t<red_type>
+struct _add_: gpu::plus_t<red_type>
 {};
 
 template<typename red_type>
-struct _max_: mgpu::maximum_t<red_type>
+struct _max_: gpu::maximum_t<red_type>
 {};
 
 template<unsigned int prp, template <typename> class op, typename vector_type>
@@ -293,7 +293,7 @@ auto reduce_local(vector_type & vd) -> typename std::remove_reference<decltype(v
 
 	openfpm::reduce((reduce_type *)vd.getPropVector(). template getDeviceBuffer<prp>(),
 			            vd.size_local(), (reduce_type *)mem.getDevicePointer() ,
-			            op<reduce_type>(), vd.getVC().getmgpuContext());
+			            op<reduce_type>(), vd.getVC().getgpuContext());
 
 	mem.deviceToHost();
 
@@ -396,7 +396,7 @@ void remove_marked(vector_type & vd, const int n = 1024)
 	idx.setMemory(mem_tmp);
 	idx.resize(vd.size_local());
 
-	openfpm::scan((remove_type *)vd.getPropVector().template getDeviceBuffer<prp>(),vd.size_local(),(remove_type *)idx.template getDeviceBuffer<0>(),vd.getVC().getmgpuContext());
+	openfpm::scan((remove_type *)vd.getPropVector().template getDeviceBuffer<prp>(),vd.size_local(),(remove_type *)idx.template getDeviceBuffer<0>(),vd.getVC().getgpuContext());
 
 	// Check if we marked something
 
@@ -489,7 +489,7 @@ __global__ void fill_indexes(out_type scan, ids_type ids)
  *
  */
 template<unsigned int prp, typename functor, typename vector_type, typename ids_type>
-void get_indexes_by_type(vector_type & vd, ids_type & ids, size_t end ,mgpu::ofp_context_t & context)
+void get_indexes_by_type(vector_type & vd, ids_type & ids, size_t end ,gpu::ofp_context_t & context)
 {
 	// first we do a scan of the property
 	openfpm::vector_gpu<aggregate<unsigned int>> scan;

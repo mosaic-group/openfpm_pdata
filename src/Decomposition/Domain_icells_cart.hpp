@@ -163,7 +163,7 @@ struct CalculateInternalCells_impl<dim,T,layout_base,Memory,cnt_type,ids_type,tr
 
 			CUDA_LAUNCH((insert_icell<dim>),ite,vsi.toKernel(),cld,ite.start,p2);
 
-			vsi.template flush<>(v_cl.getmgpuContext(),flush_type::FLUSH_ON_DEVICE);
+			vsi.template flush<>(v_cl.getgpuContext(),flush_type::FLUSH_ON_DEVICE);
 		}
 
 		// calculate the number of kernel launch
@@ -190,8 +190,8 @@ struct CalculateInternalCells_impl<dim,T,layout_base,Memory,cnt_type,ids_type,tr
 
 			CUDA_LAUNCH(insert_remove_icell<dim>,ite,vs.toKernel(),vsi.toKernel(),cld,ite.start,p2);
 
-			vs.template flush<>(v_cl.getmgpuContext(),flush_type::FLUSH_ON_DEVICE);
-			vsi.flush_remove(v_cl.getmgpuContext(),flush_type::FLUSH_ON_DEVICE);
+			vs.template flush<>(v_cl.getgpuContext(),flush_type::FLUSH_ON_DEVICE);
+			vsi.flush_remove(v_cl.getgpuContext(),flush_type::FLUSH_ON_DEVICE);
 		}
 
 

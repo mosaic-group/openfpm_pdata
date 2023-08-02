@@ -96,7 +96,7 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 			// scan
 			//sc.scan_(proc_id_out,starts);
 			starts.resize(proc_id_out.size());
-			openfpm::scan((unsigned int *)proc_id_out.template getDeviceBuffer<0>(), proc_id_out.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
+			openfpm::scan((unsigned int *)proc_id_out.template getDeviceBuffer<0>(), proc_id_out.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getgpuContext());
 			starts.template deviceToHost<0>(starts.size()-1,starts.size()-1);
 			size_t sz = starts.template get<0>(starts.size()-1);
 
@@ -112,7 +112,7 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 			dec.toKernel(),v_pos.toKernel(),starts.toKernel(),g_opart_device.toKernel());
 
 			// sort particles
-			openfpm::sort((int *)g_opart_device.template getDeviceBuffer<0>(),(long unsigned int *)g_opart_device.template getDeviceBuffer<1>(), g_opart_device.size(), mgpu::template less_t<int>(), v_cl.getmgpuContext());
+			openfpm::sort((int *)g_opart_device.template getDeviceBuffer<0>(),(long unsigned int *)g_opart_device.template getDeviceBuffer<1>(), g_opart_device.size(), gpu::template less_t<int>(), v_cl.getgpuContext());
 
 			mem.allocate(sizeof(int));
 			mem.fill(0);
@@ -147,7 +147,7 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 			prc_offset.template hostToDevice<0,1>(prc_offset.size()-1,prc_offset.size()-1);
 
 			// Here we reorder the offsets in ascending order
-			openfpm::sort((int *)prc_offset.template getDeviceBuffer<0>(),(int *)prc_offset.template getDeviceBuffer<1>(), prc_offset.size(), mgpu::template less_t<int>(), v_cl.getmgpuContext());
+			openfpm::sort((int *)prc_offset.template getDeviceBuffer<0>(),(int *)prc_offset.template getDeviceBuffer<1>(), prc_offset.size(), gpu::template less_t<int>(), v_cl.getgpuContext());
 
 			prc_offset.template deviceToHost<0,1>();
 
@@ -273,7 +273,7 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 		box_f_dev.toKernel(),box_f_sv.toKernel(),v_pos.toKernel(),o_part_loc.toKernel(),g_m);
 
 		starts.resize(o_part_loc.size());
-		openfpm::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
+		openfpm::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getgpuContext());
 
 		starts.template deviceToHost<0>(starts.size()-1,starts.size()-1);
 		size_t total = starts.template get<0>(starts.size()-1);

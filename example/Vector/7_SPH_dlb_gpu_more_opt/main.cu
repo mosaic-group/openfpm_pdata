@@ -495,10 +495,10 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
 	//! \cond [get indexes by type] \endcond
 
 	// get the particles fluid ids
-	get_indexes_by_type<type,type_is_fluid>(vd.getPropVectorSort(),fluid_ids,vd.size_local(),vd.getVC().getmgpuContext());
+	get_indexes_by_type<type,type_is_fluid>(vd.getPropVectorSort(),fluid_ids,vd.size_local(),vd.getVC().getgpuContext());
 
 	// get the particles fluid ids
-	get_indexes_by_type<type,type_is_border>(vd.getPropVectorSort(),border_ids,vd.size_local(),vd.getVC().getmgpuContext());
+	get_indexes_by_type<type,type_is_border>(vd.getPropVectorSort(),border_ids,vd.size_local(),vd.getVC().getgpuContext());
 
 	auto part = fluid_ids.getGPUIterator(96);
 	CUDA_LAUNCH(calc_forces_fluid_gpu,part,vd.toKernel_sorted(),fluid_ids.toKernel(),NN.toKernel(),W_dap,cbar);

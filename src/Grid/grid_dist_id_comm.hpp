@@ -290,17 +290,17 @@ class grid_dist_id_comm
 
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{
-			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getmgpuContext(), rem_copy_opt::PHASE1 | opt_);
+			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getgpuContext(), rem_copy_opt::PHASE1 | opt_);
 		}
 
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{
-			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getmgpuContext(), rem_copy_opt::PHASE2 | opt_);
+			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getgpuContext(), rem_copy_opt::PHASE2 | opt_);
 		}
 
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{
-			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getmgpuContext(), rem_copy_opt::PHASE3 | opt_);
+			loc_grid.get(i).template removeCopyToFinalize<prp ...>(v_cl.getgpuContext(), rem_copy_opt::PHASE3 | opt_);
 		}
 	}
 
@@ -598,7 +598,7 @@ class grid_dist_id_comm
 
 		// Unpack
 		loc_grid.get(sub_id).remove(box);
-		Unpacker<device_grid,mem>::template unpack<decltype(sub2),decltype(v_cl.getmgpuContext()),prp...>(emem,sub2,loc_grid.get(sub_id),ps,v_cl.getmgpuContext(),opt_);
+		Unpacker<device_grid,mem>::template unpack<decltype(sub2),decltype(v_cl.getgpuContext()),prp...>(emem,sub2,loc_grid.get(sub_id),ps,v_cl.getgpuContext(),opt_);
 
 		// Copy the information on the other grid
 		for (long int j = 0 ; j < (long int)eb_gid_list.get(l_id).eb_list.size() ; j++)
@@ -675,14 +675,14 @@ class grid_dist_id_comm
 
 		// Unpack
 		loc_grid.get(sub_id).remove(box);
-		Unpacker<device_grid,mem>::template unpack_with_header<decltype(sub2),decltype(headers),decltype(v_cl.getmgpuContext()),prp...>
+		Unpacker<device_grid,mem>::template unpack_with_header<decltype(sub2),decltype(headers),decltype(v_cl.getgpuContext()),prp...>
 																				(emem,
 																				sub2,
 																				loc_grid.get(sub_id),
 																				headers,
 																				i,
 																				ps,
-																				v_cl.getmgpuContext(),
+																				v_cl.getgpuContext(),
 																				opt_);
 
 		// Copy the information on the other grid
@@ -1034,20 +1034,20 @@ public:
 			{
 				m_oGrid_recv.get(i).template get<0>(j).template deviceToHost<0>();
 				std::cout << "UNPACKING POINTS: " << m_oGrid_recv.get(i).template get<0>(j).size() << std::endl;
-				m_oGrid_recv.get(i).template get<0>(j).template removeCopyToFinalize<0>(v_cl.getmgpuContext(), rem_copy_opt::PHASE1);
+				m_oGrid_recv.get(i).template get<0>(j).template removeCopyToFinalize<0>(v_cl.getgpuContext(), rem_copy_opt::PHASE1);
 			}
 		}
 
 		for (size_t i = 0 ; i < m_oGrid_recv.size() ; i++)
 		{
 			for (size_t j = 0 ; j < m_oGrid_recv.get(i).size() ; j++)
-			{m_oGrid_recv.get(i).template get<0>(j).template removeCopyToFinalize<0>(v_cl.getmgpuContext(), rem_copy_opt::PHASE2);}
+			{m_oGrid_recv.get(i).template get<0>(j).template removeCopyToFinalize<0>(v_cl.getgpuContext(), rem_copy_opt::PHASE2);}
 		}
 
 		for (size_t i = 0 ; i < m_oGrid_recv.size() ; i++)
 		{
 			for (size_t j = 0 ; j < m_oGrid_recv.get(i).size() ; j++)
-			{m_oGrid_recv.get(i).template get<0>(j).template removeCopyToFinalize<0>(v_cl.getmgpuContext(), rem_copy_opt::PHASE3);}
+			{m_oGrid_recv.get(i).template get<0>(j).template removeCopyToFinalize<0>(v_cl.getgpuContext(), rem_copy_opt::PHASE3);}
 		}
 	}
 
@@ -1208,17 +1208,17 @@ public:
 
 /*		for (size_t i = 0 ; i < loc_grid_old.size() ; i++)
 		{
-			loc_grid_old.get(i).template removeCopyToFinalize<0>(v_cl.getmgpuContext(), rem_copy_opt::PHASE1);
+			loc_grid_old.get(i).template removeCopyToFinalize<0>(v_cl.getgpuContext(), rem_copy_opt::PHASE1);
 		}
 
 		for (size_t i = 0 ; i < loc_grid_old.size() ; i++)
 		{
-			loc_grid_old.get(i).template removeCopyToFinalize<0>(v_cl.getmgpuContext(), rem_copy_opt::PHASE2);
+			loc_grid_old.get(i).template removeCopyToFinalize<0>(v_cl.getgpuContext(), rem_copy_opt::PHASE2);
 		}
 
 		for (size_t i = 0 ; i < loc_grid_old.size() ; i++)
 		{
-			loc_grid_old.get(i).template removeCopyToFinalize<0>(v_cl.getmgpuContext(), rem_copy_opt::PHASE3);
+			loc_grid_old.get(i).template removeCopyToFinalize<0>(v_cl.getgpuContext(), rem_copy_opt::PHASE3);
 		}*/
 	}
 
@@ -1257,11 +1257,11 @@ public:
 			
 			loc_grid.get(s).remove(box_dst);
 			auto sub2 = loc_grid.get(s).getIterator(box_dst.getKP1(),box_dst.getKP2(),0);
-			Unpacker<device_grid,Memory>::template unpack<decltype(sub2),decltype(v_cl.getmgpuContext()),prp ...>(send_buffer,sub2,loc_grid.get(s),ps,v_cl.getmgpuContext(),NONE_OPT);
+			Unpacker<device_grid,Memory>::template unpack<decltype(sub2),decltype(v_cl.getgpuContext()),prp ...>(send_buffer,sub2,loc_grid.get(s),ps,v_cl.getgpuContext(),NONE_OPT);
 		}
 
 		for (int s = 0 ; s < loc_grid.size() ; s++)
-		{loc_grid.get(s).template removeAddUnpackFinalize<prp ...>(v_cl.getmgpuContext(),0);}
+		{loc_grid.get(s).template removeAddUnpackFinalize<prp ...>(v_cl.getgpuContext(),0);}
 	}
 
 	/*! \brief Moves all the grids that does not belong to the local processor to the respective processor
@@ -1324,7 +1324,7 @@ public:
 
 			for (int i = 0 ; i < loc_grid_old.size(); i++)
 			{
-				loc_grid_old.get(i).template packCalculate<prp ...>(send_buffer_sizes.get(p_id),v_cl.getmgpuContext());
+				loc_grid_old.get(i).template packCalculate<prp ...>(send_buffer_sizes.get(p_id),v_cl.getgpuContext());
 			}
 
 			send_buffers_.get(p_id).resize(send_buffer_sizes.get(p_id));
@@ -1499,7 +1499,7 @@ public:
 
 			// Finalize calculation
 			for (size_t i = 0 ; i < loc_grid.size() ; i++)
-			{loc_grid.get(i).template packCalculate<prp ...>(req,v_cl.getmgpuContext());}
+			{loc_grid.get(i).template packCalculate<prp ...>(req,v_cl.getgpuContext());}
 
 			// resize the property buffer memory
 			g_send_prp_mem.resize(req);
@@ -1647,7 +1647,7 @@ public:
 		{opt_ = rem_copy_opt::KEEP_GEOMETRY;}
 
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
-		{loc_grid.get(i).template removeAddUnpackFinalize<prp ...>(v_cl.getmgpuContext(),opt_);}
+		{loc_grid.get(i).template removeAddUnpackFinalize<prp ...>(v_cl.getgpuContext(),opt_);}
 
 		#ifdef ENABLE_GRID_DIST_ID_PERF_STATS
 		merge_time.stop();

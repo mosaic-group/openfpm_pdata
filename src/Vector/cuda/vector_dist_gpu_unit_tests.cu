@@ -1604,7 +1604,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_get_index_set)
 
 	openfpm::vector_gpu<aggregate<unsigned int>> ids;
 
-	get_indexes_by_type<0,type_is_one>(vdg.getPropVectorSort(),ids,vdg.size_local(),v_cl.getmgpuContext());
+	get_indexes_by_type<0,type_is_one>(vdg.getPropVectorSort(),ids,vdg.size_local(),v_cl.getgpuContext());
 
 	// test
 
