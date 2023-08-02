@@ -1,7 +1,7 @@
 #!/bin/bash
 
-short_date=$(/bin/date +%m%d%y)
-exec 2>>"install$short_date.log"
+#short_date=$(/bin/date +%m%d%y)
+#exec 2>>"install$short_date.log"
 set -x
 
 source script/help
