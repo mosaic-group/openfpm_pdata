@@ -28,7 +28,7 @@ fi
 
 $sed_command -i "/#define\sIDXTYPEWIDTH\s32/c\#define IDXTYPEWIDTH 64" metis/include/metis.h
 
-make config prefix=$1/PARMETIS
+CFLAGS=-fPIC make config prefix=$1/PARMETIS
 make -j $2
 if [ $? -ne 0 ]; then
     echo "PARMETIS error installing"
