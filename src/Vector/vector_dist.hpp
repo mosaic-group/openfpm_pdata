@@ -40,6 +40,8 @@
 #include "NN/CellList/cuda/CellList_gpu.hpp"
 #include "lib/pdata.hpp"
 #include "cuda/vector_dist_operators_list_ker.hpp"
+#include "util/PathsAndFiles.hpp"
+
 #include <type_traits>
 
 #define DEC_GRAN(gr) ((size_t)gr << 32)
