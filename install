@@ -14,8 +14,6 @@ source script/conf_PETSC
 source script/update_openfpm
 source script/solve_python
 source script/solve_clangomp
-source script/install_gdbgui
-
 
 ### switch to the branch
 #b_switch=`git rev-parse --abbrev-ref HEAD`
@@ -490,11 +488,6 @@ if [ $? -ne 0 ]; then
   conf_err=1
 fi
 
-################ Parallel debugger #######################
-
-echo "Installing parallel debugger"
-install_gdbgui $i_dir
-
 ###########################################################
 
 echo "Command used to configure"
@@ -599,7 +592,6 @@ if [ x"$platform" == x"cygwin" ]; then
 	bash_path="$bash_path:$i_dir/BOOST/bin:$i_dir/HDF5/bin"
 fi
 
-bash_path="$bash_path:$install_base/gdbgui/bin:"
 bash_path="$bash_path:\$PATH\""
 bash_library="$bash_library\""
 
