@@ -10,7 +10,7 @@
  * # Solving heat conduction in the image-based geometry of reticulate porous ceramics # {#e10_heat_conduction_RPC_gpu}
  *
  * In this example, we simulate heat conduction in the solid phase of reticulate porous ceramics with heat dissipation at the surface. For the complete image-based simulation pipeline and performance of this simulation, we refer to
- * <a href="https://arxiv.org/abs/2304.11165">J. Stark, I. F. Sbalzarini "An open-source pipeline for solving continuous reaction-diffusion models in image-based geometries of porous media." arXiv preprint arXiv:2304.11165 (2023).</a>
+ * <a href="https://doi.org/10.1016/j.jocs.2023.102118">J. Stark, I. F. Sbalzarini "An open-source pipeline for solving continuous reaction-diffusion models in image-based geometries of porous media", Journal of Computational Science (2023).</a>
  * The geometry of the solid phase is reconstructed based on $\upmu$CT images provided by kindly provided by Prof. Jörg Petrasch (Michigan State University, College of Engineering) (see: <a href="https://doi.org/10.1111/j.1551-2916.2008.02308.x">J. Petrasch et al., "Tomography-based multiscale analyses of the 3D geometrical morphology of reticulated porous ceramics", Journal of the American Ceramic Society (2008)</a>
  * and <a href="https://doi.org/10.1115/1.4000226">S. Haussener et al., "Tomography-based heat and mass transfer characterization of reticu- late porous ceramics for high-temperature processing", Journal of Heat Transfer (2010)</a>).
  * 
