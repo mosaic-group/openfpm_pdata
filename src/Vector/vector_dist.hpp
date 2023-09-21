@@ -2589,6 +2589,23 @@ public:
 
 	/*! \brief Remove a set of elements from the distributed vector
 	 *
+	 * \param keys std::set of elements to eliminate.
+	 * 	Values inside std::set are sorted by definition of the container
+	 *
+	 */
+	void remove(std::set<size_t> & keys)
+	{
+		openfpm::vector<size_t> v_keys; v_keys.reserve(keys.size());
+
+		for (auto it = keys.begin(); it != keys.end(); ++it)
+			v_keys.add(*it);
+
+		// keys are sorted and unique
+		this->remove(v_keys, 0);
+	}
+
+	/*! \brief Remove a set of elements from the distributed vector
+	 *
 	 * \warning keys must be sorted
 	 *
 	 * \param keys vector of elements to eliminate
