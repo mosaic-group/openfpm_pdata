@@ -158,7 +158,7 @@ int main(int argc, char* argv[])
     estimateClosestPoint<phi, cp, POLY_ORDER>(gdist, 3.0);
 
     // Redistance Levelset - This would try to get the SDF based on CP estimate.
-    reinitializeLS<phi, cp, POLY_ORDER>(gdist, 3.0);
+    reinitializeLS<phi, cp>(gdist, 3.0);
 
     // Compute the errors
     estimateErrorInReinit(gdist, params);
