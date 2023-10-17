@@ -38,7 +38,7 @@
 #include "util/PathsAndFiles.hpp"
 #include "level_set/redistancing_Sussman/RedistancingSussman.hpp"
 #include "RawReader/InitGridWithPixel.hpp"
-#include "RemoveLines.hpp" // For removing thin (diagonal or straight) lines
+#include "include/RemoveLines.hpp" // For removing thin (diagonal or straight) lines
 
 #include "level_set/redistancing_Sussman/HelpFunctionsForGrid.hpp"
 #include "level_set/redistancing_Sussman/AnalyticalSDF.hpp"
@@ -57,7 +57,7 @@
 
 // input
 const std::string path_to_redistancing_result =
-"/INPUT_PATH/benchmarks/CaCO3/sussman_redistancing/build/output_sussman_maxIter6e3_CaCO3_fluidPhase_531x531x531/";
+"output_sussman_maxIter6e3_CaCO3_fluidPhase_531x531x531";
 
 
 const std::string redistancing_filename = "grid_CaCO3_post_redistancing.hdf5";
