@@ -46,12 +46,12 @@
 #include "level_set/redistancing_Sussman/RedistancingSussman.hpp"
 #include "RawReader/InitGridWithPixel.hpp"
 #include "level_set/redistancing_Sussman/HelpFunctionsForGrid.hpp" // For the ghost initialization
-#include "RemoveLines.hpp" // For removing thin (diagonal or straight) lines
+#include "include/RemoveLines.hpp" // For removing thin (diagonal or straight) lines
 
 #include "FiniteDifference/FD_simple.hpp"
 
-#include "DiffusionSpace_sparseGrid.hpp"
-#include "HelpFunctions_diffusion.hpp"
+#include "include/DiffusionSpace_sparseGrid.hpp"
+#include "include/HelpFunctions_diffusion.hpp"
 
 #include "Decomposition/Distribution/BoxDistribution.hpp"
 
@@ -84,7 +84,7 @@ constexpr size_t x = 0, y = 1, z = 2;
 
 // input
 const std::string path_to_redistancing_result =
-        "/MY_PATH/porous_ceramics/sussman_with_cuda/build/output_sussman_sparse_grid_porousCeramics_1216x1016x941/";
+        "output_sussman_sparse_grid_porousCeramics_1216x1016x941/";
 
 
 const std::string redistancing_filename = "sparseGrid_initial.hdf5";
