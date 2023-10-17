@@ -1,12 +1,8 @@
-include example.mk
-
-CC=mpic++
-
-LDIR =
+include ../../../common.mk
+include ../../../example.mk
 
 OBJ = Sph.o
 OBJ2 = SphBench.o
-
 
 %.o: %.cpp
 	$(CC) -O3 -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
@@ -21,7 +17,7 @@ SphereBench: $(OBJ2)
 all: SphereE SphereBench 
 
 run: all
-	mpirun -np 4 /SphereE 
+	mpirun -np 4 ./SphereE
 
 .PHONY: clean all run
 

@@ -39,8 +39,8 @@
 // Include Vector Expression,Vector Expressions for Subset,DCPSE , and Solver header files
 #include "config.h"
 #include <iostream>
-#include "DCPSE/DCPSE_OP/DCPSE_op.hpp"
-#include "DCPSE/DCPSE_OP/DCPSE_Solver.hpp"
+#include "DCPSE/DCPSE_op/DCPSE_op.hpp"
+#include "DCPSE/DCPSE_op/DCPSE_Solver.hpp"
 #include "Operators/Vector/vector_dist_operators.hpp"
 #include "Vector/vector_dist_subset.hpp"
 //! \cond [LidDCPSEInclude] \endcond
@@ -191,12 +191,12 @@ int main(int argc, char* argv[])
 
 
         P_bulk = 0;
-        Derivative_x Dx(Particles, 2, rCut,sampling_factor, support_options::RADIUS);
-        Derivative_xx Dxx(Particles, 2, rCut,sampling_factor2, support_options::RADIUS);
-        Derivative_yy Dyy(Particles, 2, rCut,sampling_factor2, support_options::RADIUS);
-        Derivative_y Dy(Particles, 2, rCut,sampling_factor, support_options::RADIUS);
-        Derivative_x Bulk_Dx(Particles_bulk, 2, rCut,sampling_factor, support_options::RADIUS);
-        Derivative_y Bulk_Dy(Particles_bulk, 2, rCut,sampling_factor, support_options::RADIUS);
+        Derivative_x Dx(Particles, 2, rCut);
+        Derivative_xx Dxx(Particles, 2, rCut);
+        Derivative_yy Dyy(Particles, 2, rCut);
+        Derivative_y Dy(Particles, 2, rCut);
+        Derivative_x Bulk_Dx(Particles_bulk, 2, rCut);
+        Derivative_y Bulk_Dy(Particles_bulk, 2, rCut);
 	    //! \cond [LidDCPSEexp] \endcond
 
         /*!

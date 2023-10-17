@@ -1,8 +1,5 @@
+include ../../../common.mk
 include ../../../example.mk
-
-CC=mpic++
-
-LDIR =
 
 OBJ_EIGEN = main_eigen.o
 OBJ_PETSC = main_petsc.o

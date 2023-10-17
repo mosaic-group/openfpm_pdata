@@ -1,8 +1,6 @@
+include ../../common.mk
 include ../../example.mk
 
-CC=mpic++
-
-LDIR =
 
 OBJ = main.o
 OBJ_FLOAT = main_float.o

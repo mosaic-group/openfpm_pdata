@@ -1,10 +1,6 @@
+include ../../common.mk
 include ../../example.mk
 
-CC=mpic++
-
-LDIR =
-
-OPT=
 OBJ_VIC_PETSC = main_vic_petsc.o
 OBJ_VIC_PETSC_OPT = main_vic_petsc_opt.o
 

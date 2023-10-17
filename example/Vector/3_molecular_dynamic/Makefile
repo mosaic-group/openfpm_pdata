@@ -1,8 +1,5 @@
+include ../../common.mk
 include ../../example.mk
-
-CC=mpic++
-
-LDIR =
 
 OBJ = main.o
 OBJ_EXPR = main_expr.o

@@ -1,11 +1,8 @@
+include ../../common.mk
 include ../../example.mk
 
 #### this example work only if you have quadmath activated ###
 #### (only if -lquadmath work) uncomment to reactivate 
-
-CC=mpic++
-
-LDIR =
 
 #OBJ = main.o
 
