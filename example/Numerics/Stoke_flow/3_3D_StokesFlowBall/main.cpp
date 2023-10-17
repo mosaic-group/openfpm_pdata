@@ -40,8 +40,8 @@
 // Include Vector Expression,Vector Expressions for Subset,DCPSE , and Solver header files
 #include "config.h"
 #include <iostream>
-#include "DCPSE/DCPSE_OP/DCPSE_op.hpp"
-#include "DCPSE/DCPSE_OP/DCPSE_Solver.hpp"
+#include "DCPSE/DCPSE_op/DCPSE_op.hpp"
+#include "DCPSE/DCPSE_op/DCPSE_Solver.hpp"
 #include "Operators/Vector/vector_dist_operators.hpp"
 #include "Vector/vector_dist_subset.hpp"
 #include "util/SphericalHarmonics.hpp"

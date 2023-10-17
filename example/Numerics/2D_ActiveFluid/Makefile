@@ -1,8 +1,5 @@
+include ../../common.mk
 include ../../example.mk
-
-CC=mpic++
-
-LDIR =
 
 OBJ = main.o
 
@@ -15,7 +12,7 @@ Active2d: $(OBJ)
 all: Active2d
 
 run: all
-	mpirun -np 4 /Active2d
+	mpirun -np 4 ./Active2d
 
 .PHONY: clean all run
 

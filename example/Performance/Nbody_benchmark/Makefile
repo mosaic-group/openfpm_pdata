@@ -3,7 +3,7 @@ include ../../example.mk
 
 OBJ = main.o
 
-memBW:
+nbody:
 
 %.o: %.cu
 	$(CUDA_CC) -O3 $(CUDA_OPTIONS) $(OPT) -c --std=c++14  -o $@ $< $(INCLUDE_PATH_NVCC)
@@ -11,16 +11,16 @@ memBW:
 %.o: %.cpp
 	$(CC) -g -O3 $(OPT) -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
 
-memBW: $(OBJ)
+nbody: $(OBJ)
 	$(CUDA_CC_LINK) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS_SELECT)
 
-all: memBW
+all: nbody
 
-run: memBW
-	mpirun --oversubscribe -np 1 ./memBW
+run: nbody
+	mpirun --oversubscribe -np 1 ./nbody
 
 .PHONY: clean all run
 
 clean:
-	rm -f *.o *~ core memBW
+	rm -f *.o *~ core nbody
 

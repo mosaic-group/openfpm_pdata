@@ -1,29 +1,5 @@
+include ../../common.mk
 include ../../example.mk
-
-CUDA_CC=
-CC=mpic++
-ifdef HIP
-	CUDA_CC=hipcc
-	CUDA_OPTIONS=-D__NVCC__ -D__HIP__ -DCUDART_VERSION=11000 -D__CUDACC__ -D__CUDACC_VER_MAJOR__=11 -D__CUDACC_VER_MINOR__=0 -D__CUDACC_VER_BUILD__=0
-	LIBS_SELECT=$(LIBS)
-	CC=hipcc
-else
-	ifdef CUDA_ON_CPU
-		CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
-        	INCLUDE_PATH_NVCC=
-        	CUDA_OPTIONS=-DCUDA_ON_CPU -D__NVCC__ -DCUDART_VERSION=11000
-        	LIBS_SELECT=$(LIBS)
-	else
-		ifeq (, $(shell which nvcc))
-        		CUDA_CC=mpic++ -x c++ $(INCLUDE_PATH)
-        		INCLUDE_PATH_NVCC=
-		else
-        		CUDA_CC=nvcc -ccbin=mpic++
-		endif
-		LIBS_SELECT=$(LIBS)
-	endif
-endif
-
 
 OBJ = main.o
 

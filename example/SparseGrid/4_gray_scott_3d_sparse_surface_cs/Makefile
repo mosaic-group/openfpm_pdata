@@ -1,8 +1,6 @@
+include ../../common.mk
 include ../../example.mk
 
-CC=mpic++
-
-LDIR =
 
 OBJ = main.o
 gray_scott_sparse_cs_surface: OPT += -DTEST_RUN

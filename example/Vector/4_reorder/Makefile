@@ -1,12 +1,8 @@
+include ../../common.mk
 include ../../example.mk
-
-CC=mpic++
-
-LDIR =
 
 OBJ_DORD = main_data_ord.o
 OBJ_CORD = main_comp_ord.o
-OPT =
 
 all: md_data_ord md_comp_ord
 all_test: OPT += -DTEST_RUN

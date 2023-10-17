@@ -1,12 +1,7 @@
+include ../../common.mk
 include ../../example.mk
 
-CC=mpic++
-
-LDIR =
-
 OBJ = main.o
-
-OPT=
 
 all: dem
 

@@ -1,8 +1,6 @@
+include ../../common.mk
 include ../../example.mk
 
-CC=mpic++
-
-LDIR =
 
 OBJ = main.o update_new.o
 

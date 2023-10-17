@@ -1,8 +1,5 @@
+include ../../common.mk
 include ../../example.mk
-
-CC=mpic++
-
-LDIR =
 
 OBJ_DORD = main.o
 

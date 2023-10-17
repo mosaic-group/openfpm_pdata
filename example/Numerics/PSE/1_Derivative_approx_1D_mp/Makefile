@@ -1,11 +1,7 @@
 # This example does not work using clang
 # Eliminate the comment to activate it
-
+include ../../../common.mk
 include ../../../example.mk
-
-CC=mpic++
-
-LDIR =
 
 OBJ_128 = main_float128.o
 
