@@ -15,7 +15,7 @@ CircPoisson: $(OBJ2)
 all: Circ CircPoisson
 
 run: all
-	mpirun -np 4 ./CircNoProj
+	mpirun -np 4 ./Circ 1 2 4.9 && mpirun -np 4 ./CircPoisson 256 2 2
 
 .PHONY: clean all run
 

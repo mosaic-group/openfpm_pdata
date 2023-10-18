@@ -11,7 +11,7 @@ Ellipsoid: $(OBJ)
 all: Ellipsoid
 
 run: all
-	mpirun -np 4 ./Ellipsoid
+	mpirun -np 4 ./Ellipsoid 31 4 1.5
 
 .PHONY: clean all run
 
