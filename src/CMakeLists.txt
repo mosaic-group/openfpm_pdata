@@ -404,7 +404,8 @@ install(FILES Graph/ids.hpp Graph/dist_map_graph.hpp
 	      COMPONENT OpenFPM)
 
 install(FILES example.mk
-	      SubdomainGraphNodes.hpp
+	      ../example/common.mk
+              SubdomainGraphNodes.hpp
               DESTINATION openfpm_pdata/include/ )
 
 install(FILES DLB/DLB.hpp DLB/LB_Model.hpp
