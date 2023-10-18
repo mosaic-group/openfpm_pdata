@@ -12,7 +12,7 @@ Active2d: $(OBJ)
 all: Active2d
 
 run: all
-	mpirun -np 4 ./Active2d
+	mpirun -np 4 ./Active2d 41, 1e-2, 1e-3, 1
 
 .PHONY: clean all run
 
