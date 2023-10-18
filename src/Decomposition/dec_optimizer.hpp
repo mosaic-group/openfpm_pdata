@@ -490,7 +490,7 @@ private:
 	 * \param start_p seed point
 	 * \param graph we are processing
 	 * \param pr_id Processor id (if p_id == -1 the optimization is done for all the processors)
-	 * \param lb list of sub-domain boxes produced by the algorithm
+	 * \param loc_boxes list of sub-domain boxes produced by the algorithm
 	 * \param box_nn_processor for each sub-domain it list all the neighborhood processors
 	 * \param ghe Ghost extension in sub-sub-domain units in each direction
 	 * \param init_sub_id when true p_sub property is initially set to -1 [default true]
@@ -500,7 +500,7 @@ private:
 	 * \return last assigned sub-id
 	 *
 	 */
-	template <unsigned int p_sub, unsigned int p_id> size_t optimize(grid_key_dx<dim> & start_p, Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & lb, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor , const Ghost<dim,long int> & ghe ,const size_t (& bc)[dim], bool init_sub_id = true, size_t sub_id = 0)
+	template <unsigned int p_sub, unsigned int p_id> size_t optimize(grid_key_dx<dim> & start_p, Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & loc_boxes, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor , const Ghost<dim,long int> & ghe ,const size_t (& bc)[dim], bool init_sub_id = true, size_t sub_id = 0)
 	{
 		// queue
 		openfpm::vector<size_t> v_q;
@@ -540,7 +540,7 @@ private:
 			expand_from_point<p_sub,p_id>(v_q.get(0),graph,box,v_w,w_comb);
 
 			// Add the created box to the list of boxes
-			lb.add(box);
+			loc_boxes.add(box);
 
 			// fill the domain
 			fill_domain<p_sub>(graph,box,sub_id);
@@ -563,23 +563,23 @@ private:
 	 *
 	 * \param graph graph to process
 	 * \param box_nn_processor for each sub-domain it list all the neighborhood processors
-	 * \param subs vector of sub-domains
+	 * \param loc_boxes vector of sub-domains
 	 * \param ghe ghost extensions
 	 * \param bc boundary conditions
 	 * \param pr_id processor that we are processing
 	 *
 	 */
-	template<unsigned int p_id> void construct_box_nn_processor(Graph & graph, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor, const openfpm::vector<Box<dim,size_t>> & subs, const Ghost<dim,long int> & ghe, const size_t (& bc)[dim], long int pr_id)
+	template<unsigned int p_id> void construct_box_nn_processor(Graph & graph, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor, const openfpm::vector<Box<dim,size_t>> & loc_boxes, const Ghost<dim,long int> & ghe, const size_t (& bc)[dim], long int pr_id)
 	{
 		std::unordered_map<size_t,size_t> map;
 
-		for (size_t i = 0 ; i < subs.size() ; i++)
+		for (size_t i = 0 ; i < loc_boxes.size() ; i++)
 		{
 			map.clear();
-			Box<dim,size_t> sub = subs.get(i);
+			Box<dim,size_t> sub = loc_boxes.get(i);
 			sub.enlarge(ghe);
 
-			grid_skin_iterator_bc<dim> gsi(gh,subs.get(i),sub,bc);
+			grid_skin_iterator_bc<dim> gsi(gh,loc_boxes.get(i),sub,bc);
 
 			while (gsi.isNext())
 			{
@@ -636,13 +636,13 @@ public:
 	template <unsigned int p_sub, unsigned int p_id> void optimize(grid_key_dx<dim> & start_p, Graph & graph, const Ghost<dim,long int> & ghe , const size_t (& bc)[dim])
 	{
 		// temporal vector
-		openfpm::vector<Box<dim,size_t>> tmp;
+		openfpm::vector<Box<dim,size_t>> loc_boxes;
 
 		// temporal vector
 		openfpm::vector< openfpm::vector<size_t> > box_nn_processor;
 
 		// optimize
-		optimize<p_sub,p_id>(start_p,graph,-1,tmp, box_nn_processor,ghe,bc);
+		optimize<p_sub,p_id>(start_p,graph,-1,loc_boxes, box_nn_processor,ghe,bc);
 	}
 
 	/*! \brief optimize the graph
@@ -656,12 +656,12 @@ public:
 	 *
 	 * \param graph we are processing
 	 * \param pr_id Processor id (if p_id == -1 the optimization is done for all the processors)
-	 * \param lb list of sub-domain boxes
+	 * \param loc_boxes list of sub-domain boxes
 	 * \param box_nn_processor for each sub-domain it list all the neighborhood processors
 	 * \param ghe ghost size
 	 *
 	 */
-	template <unsigned int p_sub, unsigned int p_id> void optimize(Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & lb, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor, const Ghost<dim,long int> & ghe, const size_t (& bc)[dim])
+	template <unsigned int p_sub, unsigned int p_id> void optimize(Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & loc_boxes, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor, const Ghost<dim,long int> & ghe, const size_t (& bc)[dim])
 	{
 		grid_key_dx<dim> key_seed;
 		key_seed.zero();
@@ -669,10 +669,10 @@ public:
 		// if processor is -1 call optimize with -1 to do on all processors and exit
 		if (pr_id == -1)
 		{
-			optimize<p_sub,p_id>(key_seed,graph,pr_id,lb,box_nn_processor,ghe,bc);
+			optimize<p_sub,p_id>(key_seed,graph,pr_id,loc_boxes,box_nn_processor,ghe,bc);
 
 			// Construct box box_nn_processor from the constructed domain
-			construct_box_nn_processor<p_id>(graph,box_nn_processor,lb,ghe,bc,pr_id);
+			construct_box_nn_processor<p_id>(graph,box_nn_processor,loc_boxes,ghe,bc,pr_id);
 
 			return;
 		}
@@ -687,14 +687,14 @@ public:
 		while (key_seed.isValid())
 		{
 			// optimize
-			sub_id = optimize<p_sub,p_id>(key_seed,graph,pr_id,lb,box_nn_processor,ghe,bc,false,sub_id);
+			sub_id = optimize<p_sub,p_id>(key_seed,graph,pr_id,loc_boxes,box_nn_processor,ghe,bc,false,sub_id);
 
 			// new seed
 			key_seed = search_seed<p_id,p_sub>(graph,pr_id);
 		}
 
 		// Construct box box_nn_processor from the constructed domain
-		construct_box_nn_processor<p_id>(graph,box_nn_processor,lb,ghe,bc,pr_id);
+		construct_box_nn_processor<p_id>(graph,box_nn_processor,loc_boxes,ghe,bc,pr_id);
 	}
 };
 
