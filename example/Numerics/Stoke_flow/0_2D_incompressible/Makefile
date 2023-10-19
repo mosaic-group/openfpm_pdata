@@ -5,7 +5,7 @@ OBJ_EIGEN = main_eigen.o
 OBJ_PETSC = main_petsc.o
 
 %.o: %.cpp
-	$(CC) -O3 -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
+	$(CC) $(OPT) -c -o $@ $< $(INCLUDE_PATH)
 
 all: stokes_2d_eigen stokes_2d_petsc
 

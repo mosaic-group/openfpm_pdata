@@ -1,5 +1,5 @@
-include ../../common.mk
 include ../../example.mk
+include ../../common.mk
 
 OBJ = main.o
 
@@ -9,7 +9,7 @@ md_dyn_test: OPT += -DTEST_RUN
 md_dyn_test: md_dyn
 
 %.o: %.cu
-	$(CUDA_CC) $(OPT) $(CUDA_OPTIONS) -O3 -g -c  --std=c++14 -o $@ $< $(INCLUDE_PATH_NVCC)
+	$(CUDA_CC) $(CUDA_OPTIONS) -c -o $@ $< $(INCLUDE_PATH_NVCC)
 
 md_dyn: $(OBJ)
 	$(CUDA_CC_LINK) -o $@ $^ $(LIBS_PATH) $(LIBS_SELECT)

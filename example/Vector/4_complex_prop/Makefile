@@ -1,5 +1,5 @@
-include ../../common.mk
 include ../../example.mk
+include ../../common.mk
 
 OBJ = main.o
 OBJ_SER = main_ser.o
@@ -7,7 +7,7 @@ OBJ_SER = main_ser.o
 all: vect_cp vect_ser
 
 %.o: %.cpp
-	$(CC) -O3 -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
+	$(CC) $(OPT) -c -o $@ $< $(INCLUDE_PATH)
 
 vect_cp: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)

@@ -1,5 +1,5 @@
-include ../../common.mk
 include ../../example.mk
+include ../../common.mk
 
 OBJ = main.o
 DATA = reactiondiffusion_imagebased_porousmedia-main.tar.gz
@@ -16,7 +16,7 @@ $(DATA):
 	rm -rf reactiondiffusion_imagebased_porousmedia-main/
 
 %.o: %.cu
-	$(CUDA_CC) -O3 $(OPT) $(CUDA_OPTIONS) -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH_NVCC)
+	$(CUDA_CC) $(CUDA_OPTIONS) -c -o $@ $< $(INCLUDE_PATH_NVCC)
 
 heat_ceram: $(OBJ) $(DATA)
 	$(CUDA_CC_LINK) -o $@ $(OBJ) $(CFLAGS) $(LIBS_PATH) $(LIBS_SELECT)

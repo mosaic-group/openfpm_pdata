@@ -1,15 +1,15 @@
-include ../../common.mk
 include ../../example.mk
+include ../../common.mk
 
 OBJ = main.o
 
 gpu_fstep:
 
 %.o: %.cu
-	$(CUDA_CC) -O3 -g $(CUDA_OPTIONS) -c --std=c++14 -o $@ $< $(INCLUDE_PATH_NVCC)
+	$(CUDA_CC) $(CUDA_OPTIONS) -c -o $@ $< $(INCLUDE_PATH_NVCC)
 
 %.o: %.cpp
-	$(CC) -O3 $(OPT) -g -c --std=c++11 -o $@ $< $(INCLUDE_PATH)
+	$(CC) $(OPT) -c -o $@ $< $(INCLUDE_PATH)
 
 gpu_fstep: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS_SELECT)

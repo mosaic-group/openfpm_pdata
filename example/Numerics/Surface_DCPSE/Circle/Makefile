@@ -5,7 +5,7 @@ OBJ = CircLap.o
 OBJ2=CircPoisson.o
 
 %.o: %.cpp
-	$(CC) -O3 -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
+	$(CC) $(OPT) -c -o $@ $< $(INCLUDE_PATH)
 
 Circ: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)

@@ -4,7 +4,7 @@ include ../../../example.mk
 OBJ = main.o
 
 %.o: %.cpp
-	$(CC) -O3 -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
+	$(CC) $(OPT) -c -o $@ $< $(INCLUDE_PATH)
 
 example_sussman_disk: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
