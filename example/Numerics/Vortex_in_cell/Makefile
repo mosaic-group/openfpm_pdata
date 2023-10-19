@@ -1,5 +1,5 @@
-include ../../common.mk
 include ../../example.mk
+include ../../common.mk
 
 OBJ_VIC_PETSC = main_vic_petsc.o
 OBJ_VIC_PETSC_OPT = main_vic_petsc_opt.o
@@ -10,7 +10,7 @@ vic_petsc_test: OPT += -DTEST_RUN
 vic_petsc_test: vic_petsc vic_petsc_opt
 
 %.o: %.cpp
-	$(CC) -O3 $(OPT) -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
+	$(CC) $(OPT) -c -o $@ $< $(INCLUDE_PATH)
 
 vic_petsc_opt: $(OBJ_VIC_PETSC_OPT)
 	$(CC) -o $@ $^ $(LIBS_PATH) $(LIBS)

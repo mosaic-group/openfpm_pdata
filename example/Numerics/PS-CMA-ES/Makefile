@@ -1,10 +1,10 @@
-include ../../common.mk
 include ../../example.mk
+include ../../common.mk
 
 OBJ = main.o
 
 %.o: %.cpp
-	$(CC) -I/usr/local/cuda/include  -O3 -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
+	$(CC) $(OPT) -c -o $@ $< $(INCLUDE_PATH)
 
 ps_cma_es: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)

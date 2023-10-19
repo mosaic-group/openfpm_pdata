@@ -1,5 +1,5 @@
-include ../../common.mk
 include ../../example.mk
+include ../../common.mk
 
 OBJ_GPU = main_gpu.o
 OBJ_CPU = main_cpu.o
@@ -11,10 +11,10 @@ md_dyn_gpu_test: OPT += -DTEST_RUN
 md_dyn_gpu_test: all
 
 %.o: %.cu
-	$(CUDA_CC) -O3 $(OPT) $(CUDA_OPTIONS)  -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH_NVCC)
+	$(CUDA_CC) $(CUDA_OPTIONS) -c -o $@ $< $(INCLUDE_PATH_NVCC)
 
 %.o: %.cpp
-	$(CC) $(OPT) -O3 -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
+	$(CC) $(OPT) -c -o $@ $< $(INCLUDE_PATH)
 
 md_dyn_gpu: $(OBJ_GPU)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
