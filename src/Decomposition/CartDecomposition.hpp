@@ -234,7 +234,7 @@ protected:
 	::Box<dim,size_t> proc_box;
 
 	//! set of Boxes produced by the decomposition optimizer
-	openfpm::vector<::Box<dim, size_t>> loc_box;
+	openfpm::vector<::Box<dim, size_t>> loc_boxes;
 
 	/*! \brief It convert the box from the domain decomposition into sub-domain
 	 *
@@ -402,13 +402,13 @@ public:
 		}
 
 		// optimize the decomposition or merge sub-sub-domain
-		d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(dist.getGraph(), p_id, loc_box, box_nn_processor,ghe,bc);
+		d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(dist.getGraph(), p_id, loc_boxes, box_nn_processor,ghe,bc);
 
 		// Initialize
-		if (loc_box.size() > 0)
+		if (loc_boxes.size() > 0)
 		{
-			bbox = convertDecBoxIntoSubDomain(loc_box.get(0));
-			proc_box = loc_box.get(0);
+			bbox = convertDecBoxIntoSubDomain(loc_boxes.get(0));
+			proc_box = loc_boxes.get(0);
 			sub_domains.add(bbox);
 		}
 		else
@@ -425,16 +425,16 @@ public:
 		}
 
 		// convert into sub-domain
-		for (size_t s = 1; s < loc_box.size(); s++)
+		for (size_t s = 1; s < loc_boxes.size(); s++)
 		{
-			SpaceBox<dim,T> sub_d = convertDecBoxIntoSubDomain(loc_box.get(s));
+			SpaceBox<dim,T> sub_d = convertDecBoxIntoSubDomain(loc_boxes.get(s));
 
 			// add the sub-domain
 			sub_domains.add(sub_d);
 
 			// Calculate the bound box
 			bbox.enclose(sub_d);
-			proc_box.enclose(loc_box.get(s));
+			proc_box.enclose(loc_boxes.get(s));
 		}
 
 		nn_prcs<dim,T,layout_base,Memory>::create(box_nn_processor, sub_domains);
@@ -1388,7 +1388,7 @@ public:
 		sub_domains.clear();
 		box_nn_processor.clear();
 		fine_s.clear();
-		loc_box.clear();
+		loc_boxes.clear();
 		nn_prcs<dim, T,layout_base,Memory>::reset();
 		ie_ghost<dim,T,Memory,layout_base>::reset();
 		ie_loc_ghost<dim, T,layout_base,Memory>::reset();
@@ -1778,7 +1778,7 @@ public:
 	 */
 	void setNNParameters(grid_key_dx<dim> & shift, grid_sm<dim,void> & gs)
 	{
-		domain_nn_calculator_cart<dim>::setNNParameters(loc_box, shift, gs);
+		domain_nn_calculator_cart<dim>::setNNParameters(loc_boxes, shift, gs);
 	}
 
 	/*! \brief Get the CRS anomalous cells
