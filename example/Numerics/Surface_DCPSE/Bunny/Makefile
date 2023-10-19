@@ -10,7 +10,7 @@ Bunny: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 all: Bunny
 run: all
-	mpirun -np 4 ./Bunny
+	mpirun -np 4 ./Bunny 0.005 1
 
 .PHONY: clean all run
 

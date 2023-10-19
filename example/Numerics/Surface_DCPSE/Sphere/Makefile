@@ -17,7 +17,7 @@ SphereBench: $(OBJ2)
 all: SphereE SphereBench 
 
 run: all
-	mpirun -np 4 ./SphereE
+	mpirun -np 4 ./SphereE 3600 2
 
 .PHONY: clean all run
 
