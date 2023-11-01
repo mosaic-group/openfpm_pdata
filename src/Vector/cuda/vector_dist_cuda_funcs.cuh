@@ -489,7 +489,7 @@ __global__ void fill_indexes(out_type scan, ids_type ids)
  *
  */
 template<unsigned int prp, typename functor, typename vector_type, typename ids_type>
-void get_indexes_by_type(vector_type & vd, ids_type & ids, size_t end ,gpu::ofp_context_t & context)
+void get_indexes_by_type(vector_type & vd, ids_type & ids, size_t end ,gpu::ofp_context_t& gpuContext)
 {
 	// first we do a scan of the property
 	openfpm::vector_gpu<aggregate<unsigned int>> scan;
@@ -501,7 +501,7 @@ void get_indexes_by_type(vector_type & vd, ids_type & ids, size_t end ,gpu::ofp_
 
 	CUDA_LAUNCH((mark_indexes<prp,functor>),ite,vd.toKernel(),scan.toKernel(),end);
 
-	openfpm::scan((unsigned int *)scan.template getDeviceBuffer<0>(),scan.size(),(unsigned int *)scan.template getDeviceBuffer<0>(),context);
+	openfpm::scan((unsigned int *)scan.template getDeviceBuffer<0>(),scan.size(),(unsigned int *)scan.template getDeviceBuffer<0>(),gpuContext);
 
 	// get the number of marked particles
 	scan.template deviceToHost<0>(scan.size()-1,scan.size()-1);
