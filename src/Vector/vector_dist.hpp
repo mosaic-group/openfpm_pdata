@@ -1428,7 +1428,7 @@ public:
 		v_prp_out.resize(v_pos.size());
 		v_pos_out.resize(v_pos.size());
 
-		cell_list.template construct<decltype(v_pos),decltype(v_prp),prp ...>(v_pos,v_pos_out,v_prp,v_prp_out,v_cl.getgpuContext(),g_m);
+		cell_list.template construct<decltype(v_pos),decltype(v_prp),prp ...>(v_pos,v_pos_out,v_prp,v_prp_out,v_cl.getGpuContext(),g_m);
 
 		cell_list.set_ndec(getDecomposition().get_ndec());
 		cell_list.set_gm(g_m);
@@ -1532,7 +1532,7 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list<dim,St,prop,Memory,layout_base,CellL,prp ...>(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getgpuContext(false),g_m,CL_NON_SYMMETRIC,opt);
+			populate_cell_list<dim,St,prop,Memory,layout_base,CellL,prp ...>(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getGpuContext(false),g_m,CL_NON_SYMMETRIC,opt);
 
 			cell_list.set_gm(g_m);
 		}
@@ -1567,7 +1567,7 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getgpuContext(),g_m,CL_SYMMETRIC,cl_construct_opt::Full);
+			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getGpuContext(),g_m,CL_SYMMETRIC,cl_construct_opt::Full);
 
 			cell_list.set_gm(g_m);
 		}
