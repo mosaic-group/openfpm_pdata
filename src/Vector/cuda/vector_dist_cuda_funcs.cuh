@@ -293,7 +293,7 @@ auto reduce_local(vector_type & vd) -> typename std::remove_reference<decltype(v
 
 	openfpm::reduce((reduce_type *)vd.getPropVector(). template getDeviceBuffer<prp>(),
 			            vd.size_local(), (reduce_type *)mem.getDevicePointer() ,
-			            op<reduce_type>(), vd.getVC().getgpuContext());
+			            op<reduce_type>(), vd.getVC().getGpuContext());
 
 	mem.deviceToHost();
 
@@ -396,7 +396,7 @@ void remove_marked(vector_type & vd, const int n = 1024)
 	idx.setMemory(mem_tmp);
 	idx.resize(vd.size_local());
 
-	openfpm::scan((remove_type *)vd.getPropVector().template getDeviceBuffer<prp>(),vd.size_local(),(remove_type *)idx.template getDeviceBuffer<0>(),vd.getVC().getgpuContext());
+	openfpm::scan((remove_type *)vd.getPropVector().template getDeviceBuffer<prp>(),vd.size_local(),(remove_type *)idx.template getDeviceBuffer<0>(),vd.getVC().getGpuContext());
 
 	// Check if we marked something
 
