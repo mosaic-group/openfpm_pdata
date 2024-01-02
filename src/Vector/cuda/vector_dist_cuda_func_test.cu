@@ -20,36 +20,36 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 {
 	typedef aggregate<float,float[3],float[3][3]> prop;
 
-	openfpm::vector_gpu<prop> v_prp;
-	v_prp.resize(10000);
+	openfpm::vector_gpu<prop> vPrp;
+	vPrp.resize(10000);
 
-	openfpm::vector_gpu<Point<3,float>> v_pos;
-	v_pos.resize(10000);
+	openfpm::vector_gpu<Point<3,float>> vPos;
+	vPos.resize(10000);
 
 	openfpm::vector_gpu<aggregate<unsigned int,unsigned int>> o_part_loc;
 
-	for (size_t i = 0 ; i < v_prp.size() ; i++)
+	for (size_t i = 0 ; i < vPrp.size() ; i++)
 	{
-		v_pos.template get<0>(i)[0] = (float)rand()/(float)RAND_MAX;
-		v_pos.template get<0>(i)[1] = (float)rand()/(float)RAND_MAX;
-		v_pos.template get<0>(i)[2] = (float)rand()/(float)RAND_MAX;
+		vPos.template get<0>(i)[0] = (float)rand()/(float)RAND_MAX;
+		vPos.template get<0>(i)[1] = (float)rand()/(float)RAND_MAX;
+		vPos.template get<0>(i)[2] = (float)rand()/(float)RAND_MAX;
 
-		v_prp.template get<0>(i) = i+12345;
+		vPrp.template get<0>(i) = i+12345;
 
-		v_prp.template get<1>(i)[0] = i;
-		v_prp.template get<1>(i)[1] = i+20000;
-		v_prp.template get<1>(i)[2] = i+50000;
+		vPrp.template get<1>(i)[0] = i;
+		vPrp.template get<1>(i)[1] = i+20000;
+		vPrp.template get<1>(i)[2] = i+50000;
 
-		v_prp.template get<2>(i)[0][0] = i+60000;
-		v_prp.template get<2>(i)[0][1] = i+70000;
-		v_prp.template get<2>(i)[0][2] = i+80000;
-		v_prp.template get<2>(i)[1][0] = i+90000;
-		v_prp.template get<2>(i)[1][1] = i+100000;
-		v_prp.template get<2>(i)[1][2] = i+110000;
-		v_prp.template get<2>(i)[2][0] = i+120000;
-		v_prp.template get<2>(i)[2][1] = i+130000;
-		v_prp.template get<2>(i)[2][1] = i+140000;
-		v_prp.template get<2>(i)[2][2] = i+150000;
+		vPrp.template get<2>(i)[0][0] = i+60000;
+		vPrp.template get<2>(i)[0][1] = i+70000;
+		vPrp.template get<2>(i)[0][2] = i+80000;
+		vPrp.template get<2>(i)[1][0] = i+90000;
+		vPrp.template get<2>(i)[1][1] = i+100000;
+		vPrp.template get<2>(i)[1][2] = i+110000;
+		vPrp.template get<2>(i)[2][0] = i+120000;
+		vPrp.template get<2>(i)[2][1] = i+130000;
+		vPrp.template get<2>(i)[2][1] = i+140000;
+		vPrp.template get<2>(i)[2][2] = i+150000;
 	}
 
 	openfpm::vector_gpu<Box<3,float>> box_f_dev;
@@ -91,35 +91,35 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 	box_f_sv.template get<0>(3) = 3;
 
 	// Label the internal (assigned) particles
-	auto ite = v_pos.getGPUIteratorTo(v_pos.size());
+	auto ite = vPos.getGPUIteratorTo(vPos.size());
 
-	o_part_loc.resize(v_pos.size()+1);
+	o_part_loc.resize(vPos.size()+1);
 	o_part_loc.template get<0>(o_part_loc.size()-1) = 0;
 	o_part_loc.template hostToDevice<0>(o_part_loc.size()-1,o_part_loc.size()-1);
 
 	box_f_dev.hostToDevice<0,1>();
 	box_f_sv.hostToDevice<0>();
-	v_pos.hostToDevice<0>();
-	v_prp.hostToDevice<0,1,2>();
+	vPos.hostToDevice<0>();
+	vPrp.hostToDevice<0,1,2>();
 
 	// label particle processor
-	CUDA_LAUNCH_DIM3((num_shift_ghost_each_part<3,float,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),decltype(v_pos.toKernel()),decltype(o_part_loc.toKernel())>),
+	CUDA_LAUNCH_DIM3((num_shift_ghost_each_part<3,float,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),decltype(vPos.toKernel()),decltype(o_part_loc.toKernel())>),
 	ite.wthr,ite.thr,
-	box_f_dev.toKernel(),box_f_sv.toKernel(),v_pos.toKernel(),o_part_loc.toKernel(),v_pos.size());
+	box_f_dev.toKernel(),box_f_sv.toKernel(),vPos.toKernel(),o_part_loc.toKernel(),vPos.size());
 
 	o_part_loc.deviceToHost<0>();
 
 	bool match = true;
 
-	for (size_t i = 0 ; i < v_pos.size() ; i++)
+	for (size_t i = 0 ; i < vPos.size() ; i++)
 	{
-		if (v_pos.template get<0>(i)[0] >= 0.5)
+		if (vPos.template get<0>(i)[0] >= 0.5)
 		{match &= o_part_loc.template get<0>(i) == 0;}
-		else if (v_pos.template get<0>(i)[0] >= 0.3)
+		else if (vPos.template get<0>(i)[0] >= 0.3)
 		{match &= o_part_loc.template get<0>(i) == 1;}
-		else if (v_pos.template get<0>(i)[0] >= 0.2)
+		else if (vPos.template get<0>(i)[0] >= 0.2)
 		{match &= o_part_loc.template get<0>(i) == 2;}
-		else if (v_pos.template get<0>(i)[0] >= 0.1)
+		else if (vPos.template get<0>(i)[0] >= 0.1)
 		{match &= o_part_loc.template get<0>(i) == 3;}
 		else
 		{match &= o_part_loc.template get<0>(i) == 4;}
@@ -156,125 +156,125 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 	shifts.template get<0>(3)[1] = 0.0;
 	shifts.template get<0>(3)[2] = 0.0;
 
-	size_t old = v_pos.size();
-	v_pos.resize(v_pos.size() + tot);
-	v_prp.resize(v_prp.size() + tot);
+	size_t old = vPos.size();
+	vPos.resize(vPos.size() + tot);
+	vPrp.resize(vPrp.size() + tot);
 
 	shifts.template hostToDevice<0>();
 	openfpm::vector_gpu<aggregate<unsigned int,unsigned int>> o_part_loc2;
 	o_part_loc2.resize(tot);
 
 	CUDA_LAUNCH_DIM3((shift_ghost_each_part<3,float,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),
-			                     decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),
+			                     decltype(vPos.toKernel()),decltype(vPrp.toKernel()),
 			                     decltype(starts.toKernel()),decltype(shifts.toKernel()),
 			                     decltype(o_part_loc2.toKernel())>),
 	ite.wthr,ite.thr,
 	box_f_dev.toKernel(),box_f_sv.toKernel(),
-	 v_pos.toKernel(),v_prp.toKernel(),
+	 vPos.toKernel(),vPrp.toKernel(),
 	 starts.toKernel(),shifts.toKernel(),o_part_loc2.toKernel(),old,old);
 
-	v_pos.deviceToHost<0>();
+	vPos.deviceToHost<0>();
 	o_part_loc2.deviceToHost<0,1>();
-	v_prp.deviceToHost<0,1,2>();
+	vPrp.deviceToHost<0,1,2>();
 
 	size_t base = old;
 	size_t base_o = 0;
 	for (size_t i = 0 ; i < old ; i++)
 	{
-		if (v_pos.template get<0>(i)[0] >= 0.5)
+		if (vPos.template get<0>(i)[0] >= 0.5)
 		{}
-		else if (v_pos.template get<0>(i)[0] >= 0.3)
+		else if (vPos.template get<0>(i)[0] >= 0.3)
 		{
 			for (size_t j = 0 ; j < o_part_loc.template get<0>(i) ; j++)
 			{
-				match &= v_pos.template get<0>(base)[0] < 1.0 - (j+1.0)*10.0;
-				match &= v_pos.template get<0>(base)[0] >= -(j+1.0)*10.0;
+				match &= vPos.template get<0>(base)[0] < 1.0 - (j+1.0)*10.0;
+				match &= vPos.template get<0>(base)[0] >= -(j+1.0)*10.0;
 
 				match &= o_part_loc2.template get<0>(base_o) == i;
 				match &= o_part_loc2.template get<1>(base_o) == j;
 
 				////// We check the properties
 
-				match &= v_prp.template get<0>(base) == v_prp.template get<0>(i);
+				match &= vPrp.template get<0>(base) == vPrp.template get<0>(i);
 
-				match &= v_prp.template get<1>(base)[0] == v_prp.template get<1>(i)[0];
-				match &= v_prp.template get<1>(base)[1] == v_prp.template get<1>(i)[1];
-				match &= v_prp.template get<1>(base)[2] == v_prp.template get<1>(i)[2];
+				match &= vPrp.template get<1>(base)[0] == vPrp.template get<1>(i)[0];
+				match &= vPrp.template get<1>(base)[1] == vPrp.template get<1>(i)[1];
+				match &= vPrp.template get<1>(base)[2] == vPrp.template get<1>(i)[2];
 
-				match &= v_prp.template get<2>(base)[0][0] == v_prp.template get<2>(i)[0][0];
-				match &= v_prp.template get<2>(base)[0][1] == v_prp.template get<2>(i)[0][1];
-				match &= v_prp.template get<2>(base)[0][2] == v_prp.template get<2>(i)[0][2];
-				match &= v_prp.template get<2>(base)[1][0] == v_prp.template get<2>(i)[1][0];
-				match &= v_prp.template get<2>(base)[1][1] == v_prp.template get<2>(i)[1][1];
-				match &= v_prp.template get<2>(base)[1][2] == v_prp.template get<2>(i)[1][2];
-				match &= v_prp.template get<2>(base)[2][0] == v_prp.template get<2>(i)[2][0];
-				match &= v_prp.template get<2>(base)[2][1] == v_prp.template get<2>(i)[2][1];
-				match &= v_prp.template get<2>(base)[2][2] == v_prp.template get<2>(i)[2][2];
+				match &= vPrp.template get<2>(base)[0][0] == vPrp.template get<2>(i)[0][0];
+				match &= vPrp.template get<2>(base)[0][1] == vPrp.template get<2>(i)[0][1];
+				match &= vPrp.template get<2>(base)[0][2] == vPrp.template get<2>(i)[0][2];
+				match &= vPrp.template get<2>(base)[1][0] == vPrp.template get<2>(i)[1][0];
+				match &= vPrp.template get<2>(base)[1][1] == vPrp.template get<2>(i)[1][1];
+				match &= vPrp.template get<2>(base)[1][2] == vPrp.template get<2>(i)[1][2];
+				match &= vPrp.template get<2>(base)[2][0] == vPrp.template get<2>(i)[2][0];
+				match &= vPrp.template get<2>(base)[2][1] == vPrp.template get<2>(i)[2][1];
+				match &= vPrp.template get<2>(base)[2][2] == vPrp.template get<2>(i)[2][2];
 
 				base++;
 				base_o++;
 			}
 		}
-		else if (v_pos.template get<0>(i)[0] >= 0.2)
+		else if (vPos.template get<0>(i)[0] >= 0.2)
 		{
 			for (size_t j = 0 ; j < o_part_loc.template get<0>(i) ; j++)
 			{
-				match &= v_pos.template get<0>(base)[0] < 1.0 - (j+1.0)*10.0;
-				match &= v_pos.template get<0>(base)[0] >= -(j+1.0)*10.0;
+				match &= vPos.template get<0>(base)[0] < 1.0 - (j+1.0)*10.0;
+				match &= vPos.template get<0>(base)[0] >= -(j+1.0)*10.0;
 
 				match &= o_part_loc2.template get<0>(base_o) == i;
 				match &= o_part_loc2.template get<1>(base_o) == j;
 
 				////// We check the properties
 
-				match &= v_prp.template get<0>(base) == v_prp.template get<0>(i);
+				match &= vPrp.template get<0>(base) == vPrp.template get<0>(i);
 
-				match &= v_prp.template get<1>(base)[0] == v_prp.template get<1>(i)[0];
-				match &= v_prp.template get<1>(base)[1] == v_prp.template get<1>(i)[1];
-				match &= v_prp.template get<1>(base)[2] == v_prp.template get<1>(i)[2];
+				match &= vPrp.template get<1>(base)[0] == vPrp.template get<1>(i)[0];
+				match &= vPrp.template get<1>(base)[1] == vPrp.template get<1>(i)[1];
+				match &= vPrp.template get<1>(base)[2] == vPrp.template get<1>(i)[2];
 
-				match &= v_prp.template get<2>(base)[0][0] == v_prp.template get<2>(i)[0][0];
-				match &= v_prp.template get<2>(base)[0][1] == v_prp.template get<2>(i)[0][1];
-				match &= v_prp.template get<2>(base)[0][2] == v_prp.template get<2>(i)[0][2];
-				match &= v_prp.template get<2>(base)[1][0] == v_prp.template get<2>(i)[1][0];
-				match &= v_prp.template get<2>(base)[1][1] == v_prp.template get<2>(i)[1][1];
-				match &= v_prp.template get<2>(base)[1][2] == v_prp.template get<2>(i)[1][2];
-				match &= v_prp.template get<2>(base)[2][0] == v_prp.template get<2>(i)[2][0];
-				match &= v_prp.template get<2>(base)[2][1] == v_prp.template get<2>(i)[2][1];
-				match &= v_prp.template get<2>(base)[2][2] == v_prp.template get<2>(i)[2][2];
+				match &= vPrp.template get<2>(base)[0][0] == vPrp.template get<2>(i)[0][0];
+				match &= vPrp.template get<2>(base)[0][1] == vPrp.template get<2>(i)[0][1];
+				match &= vPrp.template get<2>(base)[0][2] == vPrp.template get<2>(i)[0][2];
+				match &= vPrp.template get<2>(base)[1][0] == vPrp.template get<2>(i)[1][0];
+				match &= vPrp.template get<2>(base)[1][1] == vPrp.template get<2>(i)[1][1];
+				match &= vPrp.template get<2>(base)[1][2] == vPrp.template get<2>(i)[1][2];
+				match &= vPrp.template get<2>(base)[2][0] == vPrp.template get<2>(i)[2][0];
+				match &= vPrp.template get<2>(base)[2][1] == vPrp.template get<2>(i)[2][1];
+				match &= vPrp.template get<2>(base)[2][2] == vPrp.template get<2>(i)[2][2];
 
 
 				base++;
 				base_o++;
 			}
 		}
-		else if (v_pos.template get<0>(i)[0] >= 0.1)
+		else if (vPos.template get<0>(i)[0] >= 0.1)
 		{
 			for (size_t j = 0 ; j < o_part_loc.template get<0>(i) ; j++)
 			{
-				match &= v_pos.template get<0>(base)[0] < 1.0 - (j+1.0)*10.0;
-				match &= v_pos.template get<0>(base)[0] >= -(j+1.0)*10.0;
+				match &= vPos.template get<0>(base)[0] < 1.0 - (j+1.0)*10.0;
+				match &= vPos.template get<0>(base)[0] >= -(j+1.0)*10.0;
 
 				match &= o_part_loc2.template get<0>(base_o) == i;
 				match &= o_part_loc2.template get<1>(base_o) == j;
 
 				////// We check the properties
 
-				match &= v_prp.template get<0>(base) == v_prp.template get<0>(i);
+				match &= vPrp.template get<0>(base) == vPrp.template get<0>(i);
 
-				match &= v_prp.template get<1>(base)[0] == v_prp.template get<1>(i)[0];
-				match &= v_prp.template get<1>(base)[1] == v_prp.template get<1>(i)[1];
-				match &= v_prp.template get<1>(base)[2] == v_prp.template get<1>(i)[2];
+				match &= vPrp.template get<1>(base)[0] == vPrp.template get<1>(i)[0];
+				match &= vPrp.template get<1>(base)[1] == vPrp.template get<1>(i)[1];
+				match &= vPrp.template get<1>(base)[2] == vPrp.template get<1>(i)[2];
 
-				match &= v_prp.template get<2>(base)[0][0] == v_prp.template get<2>(i)[0][0];
-				match &= v_prp.template get<2>(base)[0][1] == v_prp.template get<2>(i)[0][1];
-				match &= v_prp.template get<2>(base)[0][2] == v_prp.template get<2>(i)[0][2];
-				match &= v_prp.template get<2>(base)[1][0] == v_prp.template get<2>(i)[1][0];
-				match &= v_prp.template get<2>(base)[1][1] == v_prp.template get<2>(i)[1][1];
-				match &= v_prp.template get<2>(base)[1][2] == v_prp.template get<2>(i)[1][2];
-				match &= v_prp.template get<2>(base)[2][0] == v_prp.template get<2>(i)[2][0];
-				match &= v_prp.template get<2>(base)[2][1] == v_prp.template get<2>(i)[2][1];
-				match &= v_prp.template get<2>(base)[2][2] == v_prp.template get<2>(i)[2][2];
+				match &= vPrp.template get<2>(base)[0][0] == vPrp.template get<2>(i)[0][0];
+				match &= vPrp.template get<2>(base)[0][1] == vPrp.template get<2>(i)[0][1];
+				match &= vPrp.template get<2>(base)[0][2] == vPrp.template get<2>(i)[0][2];
+				match &= vPrp.template get<2>(base)[1][0] == vPrp.template get<2>(i)[1][0];
+				match &= vPrp.template get<2>(base)[1][1] == vPrp.template get<2>(i)[1][1];
+				match &= vPrp.template get<2>(base)[1][2] == vPrp.template get<2>(i)[1][2];
+				match &= vPrp.template get<2>(base)[2][0] == vPrp.template get<2>(i)[2][0];
+				match &= vPrp.template get<2>(base)[2][1] == vPrp.template get<2>(i)[2][1];
+				match &= vPrp.template get<2>(base)[2][2] == vPrp.template get<2>(i)[2][2];
 
 				base++;
 				base_o++;
@@ -284,29 +284,29 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 		{
 			for (size_t j = 0 ; j < o_part_loc.template get<0>(i) ; j++)
 			{
-				match &= v_pos.template get<0>(base)[0] < 1.0 - (j+1.0)*10.0;
-				match &= v_pos.template get<0>(base)[0] >= -(j+1.0)*10.0;
+				match &= vPos.template get<0>(base)[0] < 1.0 - (j+1.0)*10.0;
+				match &= vPos.template get<0>(base)[0] >= -(j+1.0)*10.0;
 
 				match &= o_part_loc2.template get<0>(base_o) == i;
 				match &= o_part_loc2.template get<1>(base_o) == j;
 
 				////// We check the properties
 
-				match &= v_prp.template get<0>(base) == v_prp.template get<0>(i);
+				match &= vPrp.template get<0>(base) == vPrp.template get<0>(i);
 
-				match &= v_prp.template get<1>(base)[0] == v_prp.template get<1>(i)[0];
-				match &= v_prp.template get<1>(base)[1] == v_prp.template get<1>(i)[1];
-				match &= v_prp.template get<1>(base)[2] == v_prp.template get<1>(i)[2];
+				match &= vPrp.template get<1>(base)[0] == vPrp.template get<1>(i)[0];
+				match &= vPrp.template get<1>(base)[1] == vPrp.template get<1>(i)[1];
+				match &= vPrp.template get<1>(base)[2] == vPrp.template get<1>(i)[2];
 
-				match &= v_prp.template get<2>(base)[0][0] == v_prp.template get<2>(i)[0][0];
-				match &= v_prp.template get<2>(base)[0][1] == v_prp.template get<2>(i)[0][1];
-				match &= v_prp.template get<2>(base)[0][2] == v_prp.template get<2>(i)[0][2];
-				match &= v_prp.template get<2>(base)[1][0] == v_prp.template get<2>(i)[1][0];
-				match &= v_prp.template get<2>(base)[1][1] == v_prp.template get<2>(i)[1][1];
-				match &= v_prp.template get<2>(base)[1][2] == v_prp.template get<2>(i)[1][2];
-				match &= v_prp.template get<2>(base)[2][0] == v_prp.template get<2>(i)[2][0];
-				match &= v_prp.template get<2>(base)[2][1] == v_prp.template get<2>(i)[2][1];
-				match &= v_prp.template get<2>(base)[2][2] == v_prp.template get<2>(i)[2][2];
+				match &= vPrp.template get<2>(base)[0][0] == vPrp.template get<2>(i)[0][0];
+				match &= vPrp.template get<2>(base)[0][1] == vPrp.template get<2>(i)[0][1];
+				match &= vPrp.template get<2>(base)[0][2] == vPrp.template get<2>(i)[0][2];
+				match &= vPrp.template get<2>(base)[1][0] == vPrp.template get<2>(i)[1][0];
+				match &= vPrp.template get<2>(base)[1][1] == vPrp.template get<2>(i)[1][1];
+				match &= vPrp.template get<2>(base)[1][2] == vPrp.template get<2>(i)[1][2];
+				match &= vPrp.template get<2>(base)[2][0] == vPrp.template get<2>(i)[2][0];
+				match &= vPrp.template get<2>(base)[2][1] == vPrp.template get<2>(i)[2][1];
+				match &= vPrp.template get<2>(base)[2][2] == vPrp.template get<2>(i)[2][2];
 
 				base++;
 				base_o++;
@@ -318,71 +318,71 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 
 	////////////// Now we check that o_part_loc2 contain processble information
 
-	openfpm::vector_gpu<Point<3,float>> v_pos2;
-	openfpm::vector_gpu<prop> v_prp2;
+	openfpm::vector_gpu<Point<3,float>> vPos2;
+	openfpm::vector_gpu<prop> vPrp2;
 
-	v_pos2.resize(old);
-	v_prp2.resize(old);
+	vPos2.resize(old);
+	vPrp2.resize(old);
 
 	for (size_t i = 0 ; i < old ; i++)
 	{
-		v_pos2.template get<0>(i)[0] = v_pos.template get<0>(i)[0];
-		v_pos2.template get<0>(i)[1] = v_pos.template get<0>(i)[1];
-		v_pos2.template get<0>(i)[2] = v_pos.template get<0>(i)[2];
+		vPos2.template get<0>(i)[0] = vPos.template get<0>(i)[0];
+		vPos2.template get<0>(i)[1] = vPos.template get<0>(i)[1];
+		vPos2.template get<0>(i)[2] = vPos.template get<0>(i)[2];
 
-		v_prp2.template get<0>(i) = v_prp.template get<0>(i);
+		vPrp2.template get<0>(i) = vPrp.template get<0>(i);
 
-		v_prp2.template get<1>(i)[0] = v_prp.template get<1>(i)[0];
-		v_prp2.template get<1>(i)[1] = v_prp.template get<1>(i)[1];
-		v_prp2.template get<1>(i)[2] = v_prp.template get<1>(i)[2];
+		vPrp2.template get<1>(i)[0] = vPrp.template get<1>(i)[0];
+		vPrp2.template get<1>(i)[1] = vPrp.template get<1>(i)[1];
+		vPrp2.template get<1>(i)[2] = vPrp.template get<1>(i)[2];
 
-		v_prp2.template get<2>(i)[0][0] = v_prp.template get<2>(i)[0][0];
-		v_prp2.template get<2>(i)[0][1] = v_prp.template get<2>(i)[0][1];
-		v_prp2.template get<2>(i)[0][2] = v_prp.template get<2>(i)[0][2];
-		v_prp2.template get<2>(i)[1][0] = v_prp.template get<2>(i)[1][0];
-		v_prp2.template get<2>(i)[1][1] = v_prp.template get<2>(i)[1][1];
-		v_prp2.template get<2>(i)[1][2] = v_prp.template get<2>(i)[1][2];
-		v_prp2.template get<2>(i)[2][0] = v_prp.template get<2>(i)[2][0];
-		v_prp2.template get<2>(i)[2][1] = v_prp.template get<2>(i)[2][1];
-		v_prp2.template get<2>(i)[2][2] = v_prp.template get<2>(i)[2][2];
+		vPrp2.template get<2>(i)[0][0] = vPrp.template get<2>(i)[0][0];
+		vPrp2.template get<2>(i)[0][1] = vPrp.template get<2>(i)[0][1];
+		vPrp2.template get<2>(i)[0][2] = vPrp.template get<2>(i)[0][2];
+		vPrp2.template get<2>(i)[1][0] = vPrp.template get<2>(i)[1][0];
+		vPrp2.template get<2>(i)[1][1] = vPrp.template get<2>(i)[1][1];
+		vPrp2.template get<2>(i)[1][2] = vPrp.template get<2>(i)[1][2];
+		vPrp2.template get<2>(i)[2][0] = vPrp.template get<2>(i)[2][0];
+		vPrp2.template get<2>(i)[2][1] = vPrp.template get<2>(i)[2][1];
+		vPrp2.template get<2>(i)[2][2] = vPrp.template get<2>(i)[2][2];
 	}
 
-	v_pos2.resize(v_pos.size());
-	v_prp2.resize(v_prp.size());
+	vPos2.resize(vPos.size());
+	vPrp2.resize(vPrp.size());
 
-	v_pos2.hostToDevice<0>();
-	v_prp2.hostToDevice<0,1,2>();
+	vPos2.hostToDevice<0>();
+	vPrp2.hostToDevice<0,1,2>();
 
 	ite = o_part_loc2.getGPUIterator();
 
-	CUDA_LAUNCH_DIM3((process_ghost_particles_local<true,3,decltype(o_part_loc2.toKernel()),decltype(v_pos2.toKernel()),decltype(v_prp2.toKernel()),decltype(shifts.toKernel())>),
+	CUDA_LAUNCH_DIM3((process_ghost_particles_local<true,3,decltype(o_part_loc2.toKernel()),decltype(vPos2.toKernel()),decltype(vPrp2.toKernel()),decltype(shifts.toKernel())>),
 	ite.wthr,ite.thr,
-	o_part_loc2.toKernel(),v_pos2.toKernel(),v_prp2.toKernel(),shifts.toKernel(),old);
+	o_part_loc2.toKernel(),vPos2.toKernel(),vPrp2.toKernel(),shifts.toKernel(),old);
 
-	v_pos2.template deviceToHost<0>();
-	v_prp2.template deviceToHost<0,1,2>();
+	vPos2.template deviceToHost<0>();
+	vPrp2.template deviceToHost<0,1,2>();
 
-	for (size_t i = old ; i < v_pos.size() ; i++)
+	for (size_t i = old ; i < vPos.size() ; i++)
 	{
-		match &= v_pos.template get<0>(i)[0] == v_pos2.template get<0>(i)[0];
-		match &= v_pos.template get<0>(i)[1] == v_pos2.template get<0>(i)[1];
-		match &= v_pos.template get<0>(i)[2] == v_pos2.template get<0>(i)[2];
+		match &= vPos.template get<0>(i)[0] == vPos2.template get<0>(i)[0];
+		match &= vPos.template get<0>(i)[1] == vPos2.template get<0>(i)[1];
+		match &= vPos.template get<0>(i)[2] == vPos2.template get<0>(i)[2];
 
-		match &= v_prp2.template get<0>(i) == v_prp.template get<0>(i);
+		match &= vPrp2.template get<0>(i) == vPrp.template get<0>(i);
 
-		match &= v_prp2.template get<1>(i)[0] == v_prp.template get<1>(i)[0];
-		match &= v_prp2.template get<1>(i)[1] == v_prp.template get<1>(i)[1];
-		match &= v_prp2.template get<1>(i)[2] == v_prp.template get<1>(i)[2];
+		match &= vPrp2.template get<1>(i)[0] == vPrp.template get<1>(i)[0];
+		match &= vPrp2.template get<1>(i)[1] == vPrp.template get<1>(i)[1];
+		match &= vPrp2.template get<1>(i)[2] == vPrp.template get<1>(i)[2];
 
-		match &= v_prp2.template get<2>(i)[0][0] == v_prp.template get<2>(i)[0][0];
-		match &= v_prp2.template get<2>(i)[0][1] == v_prp.template get<2>(i)[0][1];
-		match &= v_prp2.template get<2>(i)[0][2] == v_prp.template get<2>(i)[0][2];
-		match &= v_prp2.template get<2>(i)[1][0] == v_prp.template get<2>(i)[1][0];
-		match &= v_prp2.template get<2>(i)[1][1] == v_prp.template get<2>(i)[1][1];
-		match &= v_prp2.template get<2>(i)[1][2] == v_prp.template get<2>(i)[1][2];
-		match &= v_prp2.template get<2>(i)[2][0] == v_prp.template get<2>(i)[2][0];
-		match &= v_prp2.template get<2>(i)[2][1] == v_prp.template get<2>(i)[2][1];
-		match &= v_prp2.template get<2>(i)[2][2] == v_prp.template get<2>(i)[2][2];
+		match &= vPrp2.template get<2>(i)[0][0] == vPrp.template get<2>(i)[0][0];
+		match &= vPrp2.template get<2>(i)[0][1] == vPrp.template get<2>(i)[0][1];
+		match &= vPrp2.template get<2>(i)[0][2] == vPrp.template get<2>(i)[0][2];
+		match &= vPrp2.template get<2>(i)[1][0] == vPrp.template get<2>(i)[1][0];
+		match &= vPrp2.template get<2>(i)[1][1] == vPrp.template get<2>(i)[1][1];
+		match &= vPrp2.template get<2>(i)[1][2] == vPrp.template get<2>(i)[1][2];
+		match &= vPrp2.template get<2>(i)[2][0] == vPrp.template get<2>(i)[2][0];
+		match &= vPrp2.template get<2>(i)[2][1] == vPrp.template get<2>(i)[2][1];
+		match &= vPrp2.template get<2>(i)[2][2] == vPrp.template get<2>(i)[2][2];
 	}
 
 	BOOST_REQUIRE_EQUAL(match,true);
@@ -405,31 +405,31 @@ BOOST_AUTO_TEST_CASE( vector_ghost_fill_send_buffer_test )
 	// Vcluster
 	Vcluster<> & vcl = create_vcluster();
 
-	openfpm::vector_gpu<prop> v_prp;
-	v_prp.resize(10000);
+	openfpm::vector_gpu<prop> vPrp;
+	vPrp.resize(10000);
 
 	openfpm::vector_gpu<aggregate<unsigned int,unsigned int,unsigned int>> g_opart_device;
 
-	for (size_t i = 0 ; i < v_prp.size() ; i++)
+	for (size_t i = 0 ; i < vPrp.size() ; i++)
 	{
-		v_prp.template get<0>(i) = i+12345;
+		vPrp.template get<0>(i) = i+12345;
 
-		v_prp.template get<1>(i)[0] = i;
-		v_prp.template get<1>(i)[1] = i+20000;
-		v_prp.template get<1>(i)[2] = i+50000;
+		vPrp.template get<1>(i)[0] = i;
+		vPrp.template get<1>(i)[1] = i+20000;
+		vPrp.template get<1>(i)[2] = i+50000;
 
-		v_prp.template get<2>(i)[0][0] = i+60000;
-		v_prp.template get<2>(i)[0][1] = i+70000;
-		v_prp.template get<2>(i)[0][2] = i+80000;
-		v_prp.template get<2>(i)[1][0] = i+90000;
-		v_prp.template get<2>(i)[1][1] = i+100000;
-		v_prp.template get<2>(i)[1][2] = i+110000;
-		v_prp.template get<2>(i)[2][0] = i+120000;
-		v_prp.template get<2>(i)[2][1] = i+130000;
-		v_prp.template get<2>(i)[2][2] = i+140000;
+		vPrp.template get<2>(i)[0][0] = i+60000;
+		vPrp.template get<2>(i)[0][1] = i+70000;
+		vPrp.template get<2>(i)[0][2] = i+80000;
+		vPrp.template get<2>(i)[1][0] = i+90000;
+		vPrp.template get<2>(i)[1][1] = i+100000;
+		vPrp.template get<2>(i)[1][2] = i+110000;
+		vPrp.template get<2>(i)[2][0] = i+120000;
+		vPrp.template get<2>(i)[2][1] = i+130000;
+		vPrp.template get<2>(i)[2][2] = i+140000;
 	}
 
-	v_prp.hostToDevice<0,1,2>();
+	vPrp.hostToDevice<0,1,2>();
 
 	g_opart_device.resize(2*10000*3);
 
@@ -461,10 +461,10 @@ BOOST_AUTO_TEST_CASE( vector_ghost_fill_send_buffer_test )
 
 		auto ite = g_send_prp.get(i).getGPUIterator();
 
-		CUDA_LAUNCH_DIM3((process_ghost_particles_prp<decltype(g_opart_device.toKernel()),decltype(g_send_prp.get(i).toKernel()),decltype(v_prp.toKernel()),0,1,2>),
+		CUDA_LAUNCH_DIM3((process_ghost_particles_prp<decltype(g_opart_device.toKernel()),decltype(g_send_prp.get(i).toKernel()),decltype(vPrp.toKernel()),0,1,2>),
 		ite.wthr,ite.thr,
 		g_opart_device.toKernel(), g_send_prp.get(i).toKernel(),
-		 v_prp.toKernel(),offset);
+		 vPrp.toKernel(),offset);
 
 		offset += g_send_prp.get(i).size();
 
@@ -847,144 +847,144 @@ BOOST_AUTO_TEST_CASE(vector_dist_reorder_lbl)
 
 BOOST_AUTO_TEST_CASE(vector_dist_merge_sort)
 {
-	openfpm::vector_gpu<aggregate<float[3],float[3],float[3]>> v_prp;
-	openfpm::vector_gpu<Point<3,float>> v_pos;
+	openfpm::vector_gpu<aggregate<float[3],float[3],float[3]>> vPrp;
+	openfpm::vector_gpu<Point<3,float>> vPos;
 
-	openfpm::vector_gpu<aggregate<float[3],float[3],float[3]>> v_prp_out;
-	openfpm::vector_gpu<Point<3,float>> v_pos_out;
+	openfpm::vector_gpu<aggregate<float[3],float[3],float[3]>> vPrpOut;
+	openfpm::vector_gpu<Point<3,float>> vPosOut;
 
 	openfpm::vector_gpu<aggregate<int>> ns_to_s;
 
-	v_prp.resize(10000);
-	v_pos.resize(10000);
-	v_prp_out.resize(10000);
-	v_pos_out.resize(10000);
+	vPrp.resize(10000);
+	vPos.resize(10000);
+	vPrpOut.resize(10000);
+	vPosOut.resize(10000);
 	ns_to_s.resize(10000);
 
 	for (int i = 0 ; i < 10000 ; i++) // <------ particle id
 	{
-		v_pos_out.template get<0>(i)[0] = i;
-		v_pos_out.template get<0>(i)[1] = i+10000;
-		v_pos_out.template get<0>(i)[2] = i+20000;
+		vPosOut.template get<0>(i)[0] = i;
+		vPosOut.template get<0>(i)[1] = i+10000;
+		vPosOut.template get<0>(i)[2] = i+20000;
 
-		v_pos.template get<0>(i)[0] = 0;
-		v_pos.template get<0>(i)[1] = 0;
-		v_pos.template get<0>(i)[2] = 0;
+		vPos.template get<0>(i)[0] = 0;
+		vPos.template get<0>(i)[1] = 0;
+		vPos.template get<0>(i)[2] = 0;
 
-		v_prp_out.template get<0>(i)[0] = i+60123;
-		v_prp_out.template get<0>(i)[1] = i+73543;
-		v_prp_out.template get<0>(i)[2] = i+82432;
+		vPrpOut.template get<0>(i)[0] = i+60123;
+		vPrpOut.template get<0>(i)[1] = i+73543;
+		vPrpOut.template get<0>(i)[2] = i+82432;
 
-		v_prp_out.template get<1>(i)[0] = i+80123;
-		v_prp_out.template get<1>(i)[1] = i+93543;
-		v_prp_out.template get<1>(i)[2] = i+102432;
+		vPrpOut.template get<1>(i)[0] = i+80123;
+		vPrpOut.template get<1>(i)[1] = i+93543;
+		vPrpOut.template get<1>(i)[2] = i+102432;
 
-		v_prp_out.template get<2>(i)[0] = i+110123;
-		v_prp_out.template get<2>(i)[1] = i+123543;
-		v_prp_out.template get<2>(i)[2] = i+132432;
+		vPrpOut.template get<2>(i)[0] = i+110123;
+		vPrpOut.template get<2>(i)[1] = i+123543;
+		vPrpOut.template get<2>(i)[2] = i+132432;
 
-		v_prp.template get<0>(i)[0] = 0;
-		v_prp.template get<0>(i)[1] = 0;
-		v_prp.template get<0>(i)[2] = 0;
+		vPrp.template get<0>(i)[0] = 0;
+		vPrp.template get<0>(i)[1] = 0;
+		vPrp.template get<0>(i)[2] = 0;
 
-		v_prp.template get<1>(i)[0] = 0;
-		v_prp.template get<1>(i)[1] = 0;
-		v_prp.template get<1>(i)[2] = 0;
+		vPrp.template get<1>(i)[0] = 0;
+		vPrp.template get<1>(i)[1] = 0;
+		vPrp.template get<1>(i)[2] = 0;
 
-		v_prp.template get<2>(i)[0] = 0;
-		v_prp.template get<2>(i)[1] = 0;
-		v_prp.template get<2>(i)[2] = 0;
+		vPrp.template get<2>(i)[0] = 0;
+		vPrp.template get<2>(i)[1] = 0;
+		vPrp.template get<2>(i)[2] = 0;
 
 		ns_to_s.template get<0>(i) = 10000-i-1;
 	}
 
-	v_prp.template hostToDevice<0,1,2>();
-	v_prp_out.template hostToDevice<0,1,2>();
-	v_pos.template hostToDevice<0>();
-	v_pos_out.template hostToDevice<0>();
+	vPrp.template hostToDevice<0,1,2>();
+	vPrpOut.template hostToDevice<0,1,2>();
+	vPos.template hostToDevice<0>();
+	vPosOut.template hostToDevice<0>();
 	ns_to_s.template hostToDevice<0>();
 
-	auto ite = v_pos.getGPUIterator();
+	auto ite = vPos.getGPUIterator();
 
-	CUDA_LAUNCH_DIM3((merge_sort_part<false,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(ns_to_s.toKernel()),0>),ite.wthr,ite.thr,v_pos.toKernel(),v_prp.toKernel(),
-																								 v_pos_out.toKernel(),v_prp_out.toKernel(),
+	CUDA_LAUNCH_DIM3((merge_sort_part<false,decltype(vPos.toKernel()),decltype(vPrp.toKernel()),decltype(ns_to_s.toKernel()),0>),ite.wthr,ite.thr,vPos.toKernel(),vPrp.toKernel(),
+																								 vPosOut.toKernel(),vPrpOut.toKernel(),
 																								 ns_to_s.toKernel());
 
-	v_prp.template deviceToHost<0,1,2>();
+	vPrp.template deviceToHost<0,1,2>();
 
 	bool match = true;
 	for (int i = 0 ; i < 10000 ; i++) // <------ particle id
 	{
-		match &= v_prp_out.template get<0>(10000-i-1)[0] == v_prp.template get<0>(i)[0];
-		match &= v_prp_out.template get<0>(10000-i-1)[1] == v_prp.template get<0>(i)[1];
-		match &= v_prp_out.template get<0>(10000-i-1)[2] == v_prp.template get<0>(i)[2];
+		match &= vPrpOut.template get<0>(10000-i-1)[0] == vPrp.template get<0>(i)[0];
+		match &= vPrpOut.template get<0>(10000-i-1)[1] == vPrp.template get<0>(i)[1];
+		match &= vPrpOut.template get<0>(10000-i-1)[2] == vPrp.template get<0>(i)[2];
 
-		match &= v_prp.template get<1>(10000-i-1)[0] == 0;
-		match &= v_prp.template get<1>(10000-i-1)[1] == 0;
-		match &= v_prp.template get<1>(10000-i-1)[2] == 0;
+		match &= vPrp.template get<1>(10000-i-1)[0] == 0;
+		match &= vPrp.template get<1>(10000-i-1)[1] == 0;
+		match &= vPrp.template get<1>(10000-i-1)[2] == 0;
 
-		match &= v_prp.template get<2>(10000-i-1)[0] == 0;
-		match &= v_prp.template get<2>(10000-i-1)[1] == 0;
-		match &= v_prp.template get<2>(10000-i-1)[2] == 0;
+		match &= vPrp.template get<2>(10000-i-1)[0] == 0;
+		match &= vPrp.template get<2>(10000-i-1)[1] == 0;
+		match &= vPrp.template get<2>(10000-i-1)[2] == 0;
 	}
 
 	BOOST_REQUIRE_EQUAL(match,true);
 
-	CUDA_LAUNCH_DIM3((merge_sort_part<false,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(ns_to_s.toKernel()),1,2>),ite.wthr,ite.thr,v_pos.toKernel(),v_prp.toKernel(),
-																								 v_pos_out.toKernel(),v_prp_out.toKernel(),
+	CUDA_LAUNCH_DIM3((merge_sort_part<false,decltype(vPos.toKernel()),decltype(vPrp.toKernel()),decltype(ns_to_s.toKernel()),1,2>),ite.wthr,ite.thr,vPos.toKernel(),vPrp.toKernel(),
+																								 vPosOut.toKernel(),vPrpOut.toKernel(),
 																								 ns_to_s.toKernel());
 
-	v_prp.template deviceToHost<0,1,2>();
-	v_pos.template deviceToHost<0>();
+	vPrp.template deviceToHost<0,1,2>();
+	vPos.template deviceToHost<0>();
 
 	for (int i = 0 ; i < 10000 ; i++) // <------ particle id
 	{
-		match &= v_prp_out.template get<0>(10000-i-1)[0] == v_prp.template get<0>(i)[0];
-		match &= v_prp_out.template get<0>(10000-i-1)[1] == v_prp.template get<0>(i)[1];
-		match &= v_prp_out.template get<0>(10000-i-1)[2] == v_prp.template get<0>(i)[2];
+		match &= vPrpOut.template get<0>(10000-i-1)[0] == vPrp.template get<0>(i)[0];
+		match &= vPrpOut.template get<0>(10000-i-1)[1] == vPrp.template get<0>(i)[1];
+		match &= vPrpOut.template get<0>(10000-i-1)[2] == vPrp.template get<0>(i)[2];
 
-		match &= v_prp_out.template get<1>(10000-i-1)[0] == v_prp.template get<1>(i)[0];
-		match &= v_prp_out.template get<1>(10000-i-1)[1] == v_prp.template get<1>(i)[1];
-		match &= v_prp_out.template get<1>(10000-i-1)[2] == v_prp.template get<1>(i)[2];
+		match &= vPrpOut.template get<1>(10000-i-1)[0] == vPrp.template get<1>(i)[0];
+		match &= vPrpOut.template get<1>(10000-i-1)[1] == vPrp.template get<1>(i)[1];
+		match &= vPrpOut.template get<1>(10000-i-1)[2] == vPrp.template get<1>(i)[2];
 
-		match &= v_prp_out.template get<2>(10000-i-1)[0] == v_prp.template get<2>(i)[0];
-		match &= v_prp_out.template get<2>(10000-i-1)[1] == v_prp.template get<2>(i)[1];
-		match &= v_prp_out.template get<2>(10000-i-1)[2] == v_prp.template get<2>(i)[2];
+		match &= vPrpOut.template get<2>(10000-i-1)[0] == vPrp.template get<2>(i)[0];
+		match &= vPrpOut.template get<2>(10000-i-1)[1] == vPrp.template get<2>(i)[1];
+		match &= vPrpOut.template get<2>(10000-i-1)[2] == vPrp.template get<2>(i)[2];
 
-		match &= v_pos.template get<0>(10000-i-1)[0] == 0;
-		match &= v_pos.template get<0>(10000-i-1)[1] == 0;
-		match &= v_pos.template get<0>(10000-i-1)[2] == 0;
+		match &= vPos.template get<0>(10000-i-1)[0] == 0;
+		match &= vPos.template get<0>(10000-i-1)[1] == 0;
+		match &= vPos.template get<0>(10000-i-1)[2] == 0;
 	}
 
 	BOOST_REQUIRE_EQUAL(match,true);
 
-	CUDA_LAUNCH_DIM3((merge_sort_part<true,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(ns_to_s.toKernel())>),ite.wthr,ite.thr,v_pos.toKernel(),v_prp.toKernel(),
-																								 v_pos_out.toKernel(),v_prp_out.toKernel(),
+	CUDA_LAUNCH_DIM3((merge_sort_part<true,decltype(vPos.toKernel()),decltype(vPrp.toKernel()),decltype(ns_to_s.toKernel())>),ite.wthr,ite.thr,vPos.toKernel(),vPrp.toKernel(),
+																								 vPosOut.toKernel(),vPrpOut.toKernel(),
 																								 ns_to_s.toKernel());
 
-	v_prp.template deviceToHost<0,1,2>();
-	v_pos.template deviceToHost<0>();
+	vPrp.template deviceToHost<0,1,2>();
+	vPos.template deviceToHost<0>();
 
 	for (int i = 0 ; i < 10000 ; i++) // <------ particle id
 	{
 
 
-		match &= v_prp_out.template get<0>(10000-i-1)[0] == v_prp.template get<0>(i)[0];
-		match &= v_prp_out.template get<0>(10000-i-1)[1] == v_prp.template get<0>(i)[1];
-		match &= v_prp_out.template get<0>(10000-i-1)[2] == v_prp.template get<0>(i)[2];
+		match &= vPrpOut.template get<0>(10000-i-1)[0] == vPrp.template get<0>(i)[0];
+		match &= vPrpOut.template get<0>(10000-i-1)[1] == vPrp.template get<0>(i)[1];
+		match &= vPrpOut.template get<0>(10000-i-1)[2] == vPrp.template get<0>(i)[2];
 
-		match &= v_prp_out.template get<1>(10000-i-1)[0] == v_prp.template get<1>(i)[0];
-		match &= v_prp_out.template get<1>(10000-i-1)[1] == v_prp.template get<1>(i)[1];
-		match &= v_prp_out.template get<1>(10000-i-1)[2] == v_prp.template get<1>(i)[2];
+		match &= vPrpOut.template get<1>(10000-i-1)[0] == vPrp.template get<1>(i)[0];
+		match &= vPrpOut.template get<1>(10000-i-1)[1] == vPrp.template get<1>(i)[1];
+		match &= vPrpOut.template get<1>(10000-i-1)[2] == vPrp.template get<1>(i)[2];
 
-		match &= v_prp_out.template get<2>(10000-i-1)[0] == v_prp.template get<2>(i)[0];
-		match &= v_prp_out.template get<2>(10000-i-1)[1] == v_prp.template get<2>(i)[1];
-		match &= v_prp_out.template get<2>(10000-i-1)[2] == v_prp.template get<2>(i)[2];
+		match &= vPrpOut.template get<2>(10000-i-1)[0] == vPrp.template get<2>(i)[0];
+		match &= vPrpOut.template get<2>(10000-i-1)[1] == vPrp.template get<2>(i)[1];
+		match &= vPrpOut.template get<2>(10000-i-1)[2] == vPrp.template get<2>(i)[2];
 
 
-		match &= v_pos_out.template get<0>(10000-i-1)[0] == v_pos.template get<0>(i)[0];
-		match &= v_pos_out.template get<0>(10000-i-1)[1] == v_pos.template get<0>(i)[1];
-		match &= v_pos_out.template get<0>(10000-i-1)[2] == v_pos.template get<0>(i)[2];
+		match &= vPosOut.template get<0>(10000-i-1)[0] == vPos.template get<0>(i)[0];
+		match &= vPosOut.template get<0>(10000-i-1)[1] == vPos.template get<0>(i)[1];
+		match &= vPosOut.template get<0>(10000-i-1)[2] == vPos.template get<0>(i)[2];
 	}
 
 	BOOST_REQUIRE_EQUAL(match,true);
@@ -997,33 +997,33 @@ BOOST_AUTO_TEST_CASE(vector_dist_gpu_map_fill_send_buffer_test)
     openfpm::vector<openfpm::vector<Point<3,float>,CudaMemory,memory_traits_inte,openfpm::grow_policy_identity>> m_pos;
     openfpm::vector<openfpm::vector<aggregate<float,float[2],float[3][3]>,CudaMemory,memory_traits_inte,openfpm::grow_policy_identity>> m_prp;
 
-    openfpm::vector_gpu<Point<3,float>> v_pos;
-    openfpm::vector_gpu<aggregate<float,float[2],float[3][3]>> v_prp;
+    openfpm::vector_gpu<Point<3,float>> vPos;
+    openfpm::vector_gpu<aggregate<float,float[2],float[3][3]>> vPrp;
 
     unsigned int offset = 0;
 
-    v_pos.resize(100000);
-    v_prp.resize(v_pos.size());
-    m_opart.resize(v_pos.size());
+    vPos.resize(100000);
+    vPrp.resize(vPos.size());
+    m_opart.resize(vPos.size());
 
-    for (size_t i = 0 ; i < v_pos.size() ; i++)
+    for (size_t i = 0 ; i < vPos.size() ; i++)
     {
-    	v_pos.template get<0>(i)[0] = (float)rand()/(float)RAND_MAX;
-    	v_pos.template get<0>(i)[1] = (float)rand()/(float)RAND_MAX;
-    	v_pos.template get<0>(i)[2] = (float)rand()/(float)RAND_MAX;
+		vPos.template get<0>(i)[0] = (float)rand()/(float)RAND_MAX;
+		vPos.template get<0>(i)[1] = (float)rand()/(float)RAND_MAX;
+		vPos.template get<0>(i)[2] = (float)rand()/(float)RAND_MAX;
 
-    	v_prp.template get<0>(i) = 5.0 + (float)rand()/(float)RAND_MAX;
-    	v_prp.template get<1>(i)[0] = 10.0 + (float)rand()/(float)RAND_MAX;
-    	v_prp.template get<1>(i)[1] = 11.0 + (float)rand()/(float)RAND_MAX;
-    	v_prp.template get<2>(i)[0][0] = 40.0 + (float)rand()/(float)RAND_MAX;
-    	v_prp.template get<2>(i)[0][1] = 50.0 + (float)rand()/(float)RAND_MAX;
-    	v_prp.template get<2>(i)[0][2] = 60.0 + (float)rand()/(float)RAND_MAX;
-    	v_prp.template get<2>(i)[1][0] = 70.0 + (float)rand()/(float)RAND_MAX;
-    	v_prp.template get<2>(i)[1][1] = 80.0 + (float)rand()/(float)RAND_MAX;
-    	v_prp.template get<2>(i)[1][2] = 150.0 + (float)rand()/(float)RAND_MAX;
-    	v_prp.template get<2>(i)[2][0] = 160.0 + (float)rand()/(float)RAND_MAX;
-    	v_prp.template get<2>(i)[2][1] = 170.0 + (float)rand()/(float)RAND_MAX;
-    	v_prp.template get<2>(i)[2][2] = 340.0 + (float)rand()/(float)RAND_MAX;
+		vPrp.template get<0>(i) = 5.0 + (float)rand()/(float)RAND_MAX;
+		vPrp.template get<1>(i)[0] = 10.0 + (float)rand()/(float)RAND_MAX;
+		vPrp.template get<1>(i)[1] = 11.0 + (float)rand()/(float)RAND_MAX;
+		vPrp.template get<2>(i)[0][0] = 40.0 + (float)rand()/(float)RAND_MAX;
+		vPrp.template get<2>(i)[0][1] = 50.0 + (float)rand()/(float)RAND_MAX;
+		vPrp.template get<2>(i)[0][2] = 60.0 + (float)rand()/(float)RAND_MAX;
+		vPrp.template get<2>(i)[1][0] = 70.0 + (float)rand()/(float)RAND_MAX;
+		vPrp.template get<2>(i)[1][1] = 80.0 + (float)rand()/(float)RAND_MAX;
+		vPrp.template get<2>(i)[1][2] = 150.0 + (float)rand()/(float)RAND_MAX;
+		vPrp.template get<2>(i)[2][0] = 160.0 + (float)rand()/(float)RAND_MAX;
+		vPrp.template get<2>(i)[2][1] = 170.0 + (float)rand()/(float)RAND_MAX;
+		vPrp.template get<2>(i)[2][2] = 340.0 + (float)rand()/(float)RAND_MAX;
 
     	int seg = i / 10000;
     	m_opart.template get<1>(i) = seg;
@@ -1039,8 +1039,8 @@ BOOST_AUTO_TEST_CASE(vector_dist_gpu_map_fill_send_buffer_test)
     	m_prp.get(i).resize(10000);
     }
 
-    v_pos.hostToDevice<0>();
-    v_prp.hostToDevice<0,1,2>();
+    vPos.hostToDevice<0>();
+    vPrp.hostToDevice<0,1,2>();
 
     m_opart.hostToDevice<0,1>();
 
@@ -1049,10 +1049,10 @@ BOOST_AUTO_TEST_CASE(vector_dist_gpu_map_fill_send_buffer_test)
     	auto ite = m_pos.get(i).getGPUIterator();
 
 		CUDA_LAUNCH_DIM3((process_map_particles<decltype(m_opart.toKernel()),decltype(m_pos.get(i).toKernel()),decltype(m_prp.get(i).toKernel()),
-																		   decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>),
+																		   decltype(vPos.toKernel()),decltype(vPrp.toKernel())>),
 						ite.wthr,ite.thr,
 						m_opart.toKernel(),m_pos.get(i).toKernel(), m_prp.get(i).toKernel(),
-											v_pos.toKernel(),v_prp.toKernel(),offset);
+											vPos.toKernel(),vPrp.toKernel(),offset);
 
 		m_pos.get(i).deviceToHost<0>();
 		m_prp.get(i).deviceToHost<0,1,2>();
@@ -1061,24 +1061,24 @@ BOOST_AUTO_TEST_CASE(vector_dist_gpu_map_fill_send_buffer_test)
 
 		for (size_t j = 0 ; j < m_pos.get(i).size() ; j++)
 		{
-			match &= (m_pos.get(i).template get<0>(j)[0] == v_pos.template get<0>(m_opart.template get<0>(offset+j))[0]);
-			match &= (m_pos.get(i).template get<0>(j)[1] == v_pos.template get<0>(m_opart.template get<0>(offset+j))[1]);
-			match &= (m_pos.get(i).template get<0>(j)[2] == v_pos.template get<0>(m_opart.template get<0>(offset+j))[2]);
+			match &= (m_pos.get(i).template get<0>(j)[0] == vPos.template get<0>(m_opart.template get<0>(offset+j))[0]);
+			match &= (m_pos.get(i).template get<0>(j)[1] == vPos.template get<0>(m_opart.template get<0>(offset+j))[1]);
+			match &= (m_pos.get(i).template get<0>(j)[2] == vPos.template get<0>(m_opart.template get<0>(offset+j))[2]);
 
-			match &= (m_prp.get(i).template get<0>(j) == v_prp.template get<0>(m_opart.template get<0>(offset+j)));
+			match &= (m_prp.get(i).template get<0>(j) == vPrp.template get<0>(m_opart.template get<0>(offset+j)));
 
-			match &= (m_prp.get(i).template get<1>(j)[0] == v_prp.template get<1>(m_opart.template get<0>(offset+j))[0]);
-			match &= (m_prp.get(i).template get<1>(j)[1] == v_prp.template get<1>(m_opart.template get<0>(offset+j))[1]);
+			match &= (m_prp.get(i).template get<1>(j)[0] == vPrp.template get<1>(m_opart.template get<0>(offset+j))[0]);
+			match &= (m_prp.get(i).template get<1>(j)[1] == vPrp.template get<1>(m_opart.template get<0>(offset+j))[1]);
 
-			match &= (m_prp.get(i).template get<2>(j)[0][0] == v_prp.template get<2>(m_opart.template get<0>(offset+j))[0][0]);
-			match &= (m_prp.get(i).template get<2>(j)[0][1] == v_prp.template get<2>(m_opart.template get<0>(offset+j))[0][1]);
-			match &= (m_prp.get(i).template get<2>(j)[0][2] == v_prp.template get<2>(m_opart.template get<0>(offset+j))[0][2]);
-			match &= (m_prp.get(i).template get<2>(j)[1][0] == v_prp.template get<2>(m_opart.template get<0>(offset+j))[1][0]);
-			match &= (m_prp.get(i).template get<2>(j)[1][1] == v_prp.template get<2>(m_opart.template get<0>(offset+j))[1][1]);
-			match &= (m_prp.get(i).template get<2>(j)[1][2] == v_prp.template get<2>(m_opart.template get<0>(offset+j))[1][2]);
-			match &= (m_prp.get(i).template get<2>(j)[2][0] == v_prp.template get<2>(m_opart.template get<0>(offset+j))[2][0]);
-			match &= (m_prp.get(i).template get<2>(j)[2][1] == v_prp.template get<2>(m_opart.template get<0>(offset+j))[2][1]);
-			match &= (m_prp.get(i).template get<2>(j)[2][2] == v_prp.template get<2>(m_opart.template get<0>(offset+j))[2][2]);
+			match &= (m_prp.get(i).template get<2>(j)[0][0] == vPrp.template get<2>(m_opart.template get<0>(offset+j))[0][0]);
+			match &= (m_prp.get(i).template get<2>(j)[0][1] == vPrp.template get<2>(m_opart.template get<0>(offset+j))[0][1]);
+			match &= (m_prp.get(i).template get<2>(j)[0][2] == vPrp.template get<2>(m_opart.template get<0>(offset+j))[0][2]);
+			match &= (m_prp.get(i).template get<2>(j)[1][0] == vPrp.template get<2>(m_opart.template get<0>(offset+j))[1][0]);
+			match &= (m_prp.get(i).template get<2>(j)[1][1] == vPrp.template get<2>(m_opart.template get<0>(offset+j))[1][1]);
+			match &= (m_prp.get(i).template get<2>(j)[1][2] == vPrp.template get<2>(m_opart.template get<0>(offset+j))[1][2]);
+			match &= (m_prp.get(i).template get<2>(j)[2][0] == vPrp.template get<2>(m_opart.template get<0>(offset+j))[2][0]);
+			match &= (m_prp.get(i).template get<2>(j)[2][1] == vPrp.template get<2>(m_opart.template get<0>(offset+j))[2][1]);
+			match &= (m_prp.get(i).template get<2>(j)[2][2] == vPrp.template get<2>(m_opart.template get<0>(offset+j))[2][2]);
 		}
 
 		BOOST_REQUIRE_EQUAL(match,true);
@@ -1428,7 +1428,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration_gpu )
 
 				Point<3,float> xp = phases.get(i).getPosRead(p);
 
-				auto Np = NN_ptr.get(j).getNNIteratorSymMP<NO_CHECK>(NN_ptr.get(j).getCell(xp),p.getKey(),phases.get(i).getPosVector(),phases.get(j).getPosVector());
+				auto Np = NN_ptr.get(j).getNNIteratorSymMP(NN_ptr.get(j).getCell(xp),p.getKey(),phases.get(i).getPosVector(),phases.get(j).getPosVector());
 
 				while (Np.isNext())
 				{

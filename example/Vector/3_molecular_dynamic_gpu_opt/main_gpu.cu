@@ -95,8 +95,8 @@
  *
  * while to use it, instead of the \b getNNIteratorBox \b we use
  *
- * \note \b getNNIteratorBox \b has a template parameter (default = 2) that indicate how many neighborhood cell the NN iterator has to span.
- *       For example \b getNNIteratorBox<1> \b is the standard 9/27 neighborhood cell-list.\b getNNIteratorBox<2> \b is the 25/125 neighborhood
+ * \note \b getNNIteratorBox \b is initialized in cell-list by \b setBoxNN \b (default = 2) before it transferred to gpu that indicate how many neighborhood cell the NN iterator has to span.
+ *       For example \b setBoxNN(1) \b is the standard 9/27 neighborhood cell-list.\b setBoxNN(2) \b is the 25/125 neighborhood
  *        and so on.
  *
  */

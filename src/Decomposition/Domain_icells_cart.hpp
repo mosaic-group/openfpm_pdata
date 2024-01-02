@@ -74,7 +74,7 @@ __global__ void insert_remove_icell(vector_sparse_type vs, vector_sparse_type vs
 	vsi.flush_block_remove(b, threadIdx.x == 0 & threadIdx.y == 0 & threadIdx.z == 0);
 }
 
-template<unsigned int dim, typename T, template<typename> class layout_base , typename Memory, typename cnt_type, typename ids_type, bool is_gpu>
+template<unsigned int dim, typename T, template<typename> class layout_base , typename Memory, typename ids_type, bool is_gpu>
 struct CalculateInternalCells_impl
 {
 	template<typename VCluster_type>
@@ -92,8 +92,8 @@ struct CalculateInternalCells_impl
 	}
 };
 
-template<unsigned int dim, typename T, template<typename> class layout_base , typename Memory, typename cnt_type, typename ids_type>
-struct CalculateInternalCells_impl<dim,T,layout_base,Memory,cnt_type,ids_type,true>
+template<unsigned int dim, typename T, template<typename> class layout_base , typename Memory, typename ids_type>
+struct CalculateInternalCells_impl<dim,T,layout_base,Memory,ids_type,true>
 {
 	template<typename VCluster_type>
 	static void CalculateInternalCells(VCluster_type & v_cl,
@@ -115,9 +115,9 @@ struct CalculateInternalCells_impl<dim,T,layout_base,Memory,cnt_type,ids_type,tr
 
 		cl_param_calculate(pbox, div, r_cut, enlarge);
 
-		openfpm::array<T,dim,cnt_type> spacing_c;
-		openfpm::array<ids_type,dim,cnt_type> div_c;
-		openfpm::array<ids_type,dim,cnt_type> off;
+		openfpm::array<T,dim> spacing_c;
+		openfpm::array<ids_type,dim> div_c;
+		openfpm::array<ids_type,dim> off;
 
 		for (size_t i = 0 ; i < dim ; i++)
 		{
@@ -130,7 +130,7 @@ struct CalculateInternalCells_impl<dim,T,layout_base,Memory,cnt_type,ids_type,tr
 
 		shift_only<dim,T> t(Matrix<dim,T>::identity(),pbox.getP1());
 
-		CellDecomposer_gpu_ker<dim,T,cnt_type,ids_type,shift_only<dim,T>> cld(spacing_c,div_c,off,t);
+		CellDecomposer_gpu_ker<dim,T,ids_type,shift_only<dim,T>> cld(spacing_c,div_c,off,t);
 		grid_sm<dim,void> g = cld.getGrid();
 		cd.setDimensions(pbox,div,off[0]);
 
@@ -207,8 +207,6 @@ struct CalculateInternalCells_impl<dim,T,layout_base,Memory,cnt_type,ids_type,tr
 template<unsigned int dim, typename T, template<typename> class layout_base , typename Memory>
 class domain_icell_calculator
 {
-	typedef unsigned int cnt_type;
-
 	typedef int ids_type;
 
 	openfpm::vector<aggregate<ids_type>,Memory,layout_base> icells;
@@ -262,7 +260,7 @@ class domain_icell_calculator
 								const Ghost<dim,T> & enlarge)
 	{
 #ifdef __NVCC__
-		CalculateInternalCells_impl<dim,T,layout_base,Memory,cnt_type,ids_type,std::is_same<Memory,CudaMemory>::value>::CalculateInternalCells(v_cl,ig_box,domain,pbox,r_cut,enlarge,cd,icells,dcells);
+		CalculateInternalCells_impl<dim,T,layout_base,Memory,ids_type,std::is_same<Memory,CudaMemory>::value>::CalculateInternalCells(v_cl,ig_box,domain,pbox,r_cut,enlarge,cd,icells,dcells);
 #endif
 	}
 

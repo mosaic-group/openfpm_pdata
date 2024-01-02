@@ -329,7 +329,7 @@ template<typename VerletList> inline double calc_forces(particles & vd, VerletLi
 		{
 			// If it is a boundary particle calculate the delta rho based on equation 2
 			// This require to run across the neighborhoods particles of a
-			auto Np = NN.template getNNIterator<NO_CHECK>(a);
+			auto Np = NN.template getNNIterator(a);
 
 			// For each neighborhood particle
 			while (Np.isNext() == true)
@@ -415,7 +415,7 @@ template<typename VerletList> inline double calc_forces(particles & vd, VerletLi
 			////////////////////// NN2
 
 			// Get an iterator over the neighborhood particles of p
-			auto Np2 = NN2.template getNNIterator<NO_CHECK>(NN2.getCell(vd.getPos(a)));
+			auto Np2 = NN2.template getNNIterator(NN2.getCell(vd.getPos(a)));
 
 			// For each neighborhood particle
 			while (Np2.isNext() == true)
@@ -477,7 +477,7 @@ template<typename VerletList> inline double calc_forces(particles & vd, VerletLi
 			// If it is a fluid particle calculate based on equation 1 and 2
 
 			// Get an iterator over the neighborhood particles of p
-			auto Np = NN.template getNNIterator<NO_CHECK>(a);
+			auto Np = NN.template getNNIterator(a);
 
 			// For each neighborhood particle
 			while (Np.isNext() == true)
@@ -560,7 +560,7 @@ template<typename VerletList> inline double calc_forces(particles & vd, VerletLi
 			////////////////////// NN2
 
 			// Get an iterator over the neighborhood particles of p
-			auto Np2 = NN2.template getNNIterator<NO_CHECK>(NN2.getCell(vd.getPos(a)));
+			auto Np2 = NN2.template getNNIterator(NN2.getCell(vd.getPos(a)));
 
 			if (a == 0 && create_vcluster().getProcessUnitID() == 0)
 			{

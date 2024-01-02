@@ -318,7 +318,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_class3_check )
 
 			Point<2,float> xp = vd.getPosRead(p);
 
-			auto NNp = NN.template getNNIterator<NO_CHECK>(NN.getCell(xp));
+			auto NNp = NN.template getNNIterator(NN.getCell(xp));
 
 			while (NNp.isNext())
 			{
@@ -374,7 +374,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_class3_check )
 
 			Point<2,float> xp = vd.getPosRead(p);
 
-			auto NNp = NN.template getNNIterator<NO_CHECK>(NN.getCell(xp));
+			auto NNp = NN.template getNNIterator(NN.getCell(xp));
 
 			while (NNp.isNext())
 			{
@@ -412,7 +412,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_class3_check )
 
 			Point<2,float> xp = vd.getPosRead(p);
 
-			auto NNp = NN.template getNNIterator<NO_CHECK>(NN.getCell(xp));
+			auto NNp = NN.template getNNIterator(NN.getCell(xp));
 
 			while (NNp.isNext())
 			{

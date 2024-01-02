@@ -251,7 +251,7 @@ int main(int argc, char* argv[])
     	double prp_x = vd.template getProp<0>(key);
 
     	// Get the neighborhood of the particles
-    	auto NN = cl.template getNNIterator<NO_CHECK>(cl.getCell(p));
+    	auto NN = cl.template getNNIterator(cl.getCell(p));
     	while(NN.isNext())
     	{
     		auto nnp = NN.get();
