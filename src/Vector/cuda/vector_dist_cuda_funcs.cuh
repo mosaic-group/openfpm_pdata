@@ -293,7 +293,7 @@ auto reduce_local(vector_type & vd) -> typename std::remove_reference<decltype(v
 
 	openfpm::reduce((reduce_type *)vd.getPropVector(). template getDeviceBuffer<prp>(),
 			            vd.size_local(), (reduce_type *)mem.getDevicePointer() ,
-			            op<reduce_type>(), vd.getVC().getgpuContext());
+			            op<reduce_type>(), vd.getVC().getGpuContext());
 
 	mem.deviceToHost();
 
@@ -396,7 +396,7 @@ void remove_marked(vector_type & vd, const int n = 1024)
 	idx.setMemory(mem_tmp);
 	idx.resize(vd.size_local());
 
-	openfpm::scan((remove_type *)vd.getPropVector().template getDeviceBuffer<prp>(),vd.size_local(),(remove_type *)idx.template getDeviceBuffer<0>(),vd.getVC().getgpuContext());
+	openfpm::scan((remove_type *)vd.getPropVector().template getDeviceBuffer<prp>(),vd.size_local(),(remove_type *)idx.template getDeviceBuffer<0>(),vd.getVC().getGpuContext());
 
 	// Check if we marked something
 
@@ -430,8 +430,8 @@ void remove_marked(vector_type & vd, const int n = 1024)
 	for (int j = 0 ; j < exp_tmp.ref() ; j++)
 	{exp_tmp.decRef();}*/
 
-	//vd_pos_new.setMemory(exp_tmp);
-	//vd_prp_new.setMemoryArray((CudaMemory *)&exp_tmp2);
+	vd_pos_new.setMemory(exp_tmp);
+	vd_prp_new.setMemoryArray((CudaMemory *)&exp_tmp2);
 
 	// resize them
 
@@ -489,7 +489,7 @@ __global__ void fill_indexes(out_type scan, ids_type ids)
  *
  */
 template<unsigned int prp, typename functor, typename vector_type, typename ids_type>
-void get_indexes_by_type(vector_type & vd, ids_type & ids, size_t end ,gpu::ofp_context_t & context)
+void get_indexes_by_type(vector_type & vd, ids_type & ids, size_t end ,gpu::ofp_context_t& gpuContext)
 {
 	// first we do a scan of the property
 	openfpm::vector_gpu<aggregate<unsigned int>> scan;
@@ -501,7 +501,7 @@ void get_indexes_by_type(vector_type & vd, ids_type & ids, size_t end ,gpu::ofp_
 
 	CUDA_LAUNCH((mark_indexes<prp,functor>),ite,vd.toKernel(),scan.toKernel(),end);
 
-	openfpm::scan((unsigned int *)scan.template getDeviceBuffer<0>(),scan.size(),(unsigned int *)scan.template getDeviceBuffer<0>(),context);
+	openfpm::scan((unsigned int *)scan.template getDeviceBuffer<0>(),scan.size(),(unsigned int *)scan.template getDeviceBuffer<0>(),gpuContext);
 
 	// get the number of marked particles
 	scan.template deviceToHost<0>(scan.size()-1,scan.size()-1);
