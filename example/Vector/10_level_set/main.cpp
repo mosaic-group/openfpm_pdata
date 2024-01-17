@@ -356,8 +356,14 @@ int main(int argc, char* argv[])
 		++particle_it;
 	}
 
+    Vcluster<> & v_cl = create_vcluster();
+    // Get the total number of particles
+    size_t tot_part = vd.size_local();
+    v_cl.sum(tot_part);
+    v_cl.execute();
+
     // compute individual particle masses
-    m = M/np;
+    m = M/tot_part;
     // print the CFL condition
     std::cout<<"dt should be smaller than:\n"<<0.25*H/(c+3.0)<<"\t"<<0.125*rho_0*H*H/eta<<"\t"<<0.25*sqrt(rho_0*H*H*H/(2*M_PI*alpha))<<std::endl;
 
@@ -425,7 +431,6 @@ int main(int argc, char* argv[])
     // enter main time loop
     while (t <= t_end)
     {
-        Vcluster<> & v_cl = create_vcluster();
         timer it_time;
 
         vd.map();
