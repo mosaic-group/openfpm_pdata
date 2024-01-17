@@ -21,7 +21,7 @@
 
 #include "Vector/vector_dist_subset.hpp"
 #include "DCPSE/DCPSE_op/DCPSE_surface_op.hpp"
-//#include "DCPSE/DCPSE_OP/DCPSE_Solver.hpp"
+//#include "DCPSE/DCPSE_op/DCPSE_Solver.hpp"
 #include "util/SphericalHarmonics.hpp"
 #include <util/PathsAndFiles.hpp>
 

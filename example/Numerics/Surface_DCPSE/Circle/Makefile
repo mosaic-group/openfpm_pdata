@@ -1,15 +1,11 @@
-include example.mk
-
-CC=mpic++
-
-LDIR =
+include ../../../common.mk
+include ../../../example.mk
 
 OBJ = CircLap.o
 OBJ2=CircPoisson.o
 
-
 %.o: %.cpp
-	$(CC) -O3 -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
+	$(CC) $(OPT) -c -o $@ $< $(INCLUDE_PATH)
 
 Circ: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
@@ -19,7 +15,7 @@ CircPoisson: $(OBJ2)
 all: Circ CircPoisson
 
 run: all
-	mpirun -np 4 /CircNoProj 
+	mpirun -np 4 ./Circ 1 2 4.9 && mpirun -np 4 ./CircPoisson 256 2 2
 
 .PHONY: clean all run
 

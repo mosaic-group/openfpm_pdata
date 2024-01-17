@@ -40,6 +40,8 @@
 #include "NN/CellList/cuda/CellList_gpu.hpp"
 #include "lib/pdata.hpp"
 #include "cuda/vector_dist_operators_list_ker.hpp"
+#include "util/PathsAndFiles.hpp"
+
 #include <type_traits>
 
 #define DEC_GRAN(gr) ((size_t)gr << 32)
@@ -1426,7 +1428,7 @@ public:
 		v_prp_out.resize(v_pos.size());
 		v_pos_out.resize(v_pos.size());
 
-		cell_list.template construct<decltype(v_pos),decltype(v_prp),prp ...>(v_pos,v_pos_out,v_prp,v_prp_out,v_cl.getmgpuContext(),g_m);
+		cell_list.template construct<decltype(v_pos),decltype(v_prp),prp ...>(v_pos,v_pos_out,v_prp,v_prp_out,v_cl.getGpuContext(),g_m);
 
 		cell_list.set_ndec(getDecomposition().get_ndec());
 		cell_list.set_gm(g_m);
@@ -1530,7 +1532,7 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list<dim,St,prop,Memory,layout_base,CellL,prp ...>(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getmgpuContext(false),g_m,CL_NON_SYMMETRIC,opt);
+			populate_cell_list<dim,St,prop,Memory,layout_base,CellL,prp ...>(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getGpuContext(false),g_m,CL_NON_SYMMETRIC,opt);
 
 			cell_list.set_gm(g_m);
 		}
@@ -1565,7 +1567,7 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getmgpuContext(),g_m,CL_SYMMETRIC,cl_construct_opt::Full);
+			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getGpuContext(),g_m,CL_SYMMETRIC,cl_construct_opt::Full);
 
 			cell_list.set_gm(g_m);
 		}
@@ -2583,6 +2585,23 @@ public:
 		se3.template ghost_put<prp...>();
 #endif
 		this->template ghost_put_<op,prp...>(v_pos,v_prp,g_m,opt_);
+	}
+
+	/*! \brief Remove a set of elements from the distributed vector
+	 *
+	 * \param keys std::set of elements to eliminate.
+	 * 	Values inside std::set are sorted by definition of the container
+	 *
+	 */
+	void remove(std::set<size_t> & keys)
+	{
+		openfpm::vector<size_t> v_keys; v_keys.reserve(keys.size());
+
+		for (auto it = keys.begin(); it != keys.end(); ++it)
+			v_keys.add(*it);
+
+		// keys are sorted and unique
+		this->remove(v_keys, 0);
 	}
 
 	/*! \brief Remove a set of elements from the distributed vector

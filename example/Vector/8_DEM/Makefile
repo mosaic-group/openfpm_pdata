@@ -1,12 +1,7 @@
 include ../../example.mk
-
-CC=mpic++
-
-LDIR =
+include ../../common.mk
 
 OBJ = main.o
-
-OPT=
 
 all: dem
 
@@ -14,7 +9,7 @@ dem_test: OPT += -DTEST_RUN
 dem_test: all
 
 %.o: %.cpp
-	$(CC) -O3 $(OPT) -g -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
+	$(CC) $(OPT) -c -o $@ $< $(INCLUDE_PATH)
 
 dem: $(OBJ)
 	$(CC) -o $@ $^ $(OPT) $(CFLAGS) $(LIBS_PATH) $(LIBS)

@@ -1,16 +1,13 @@
 include ../../example.mk
+include ../../common.mk
 
 #### this example work only if you have quadmath activated ###
 #### (only if -lquadmath work) uncomment to reactivate 
 
-CC=mpic++
-
-LDIR =
-
 #OBJ = main.o
 
 #%.o: %.cpp
-#	$(CC) -O3 -g3 -c --std=c++11  -o $@ $< $(INCLUDE_PATH)
+# 	$(CC) $(OPT) -c -o $@ $< $(INCLUDE_PATH)
 
 #conv_p: $(OBJ)
 #	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS) -lquadmath

@@ -3,7 +3,7 @@ include ../../common.mk
 
 OBJ = main.o
 
-gpu_fstep:
+nbody:
 
 %.o: %.cu
 	$(CUDA_CC) $(CUDA_OPTIONS) -c -o $@ $< $(INCLUDE_PATH_NVCC)
@@ -11,16 +11,16 @@ gpu_fstep:
 %.o: %.cpp
 	$(CC) $(OPT) -c -o $@ $< $(INCLUDE_PATH)
 
-gpu_fstep: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS_SELECT)
+nbody: $(OBJ)
+	$(CUDA_CC_LINK) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS_SELECT)
 
-all: gpu_fstep
+all: nbody
 
-run: gpu_fstep
-	mpirun --oversubscribe -np 2 ./gpu_fstep
+run: nbody
+	mpirun --oversubscribe -np 1 ./nbody
 
 .PHONY: clean all run
 
 clean:
-	rm -f *.o *~ core gpu_fstep
+	rm -f *.o *~ core nbody
 

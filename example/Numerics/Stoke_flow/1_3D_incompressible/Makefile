@@ -1,14 +1,11 @@
+include ../../../common.mk
 include ../../../example.mk
-
-CC=mpic++
-
-LDIR =
 
 OBJ_EIGEN = main_eigen.o
 OBJ_PETSC = main_petsc.o
 
 %.o: %.cpp
-	$(CC) -O3 -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
+	$(CC) $(OPT) -c -o $@ $< $(INCLUDE_PATH)
 
 all: stokes_3d_eigen stokes_3d_petsc
 

@@ -13,6 +13,3 @@
 [submodule "openfpm_numerics"]
 	path = openfpm_numerics
 	url = ../openfpm_numerics.git
-[submodule "gdbgui"]
-	path = gdbgui
-	url = https://github.com/incardon/gdbgui.git

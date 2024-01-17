@@ -6,7 +6,6 @@ clean:
 
 install:
 	$(MAKE) -C build $@
-	script/install_parallel_debugger
 
 pdata:
 	$(MAKE) -C build $@

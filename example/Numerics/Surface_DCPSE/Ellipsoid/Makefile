@@ -1,21 +1,17 @@
-include example.mk
-
-CC=mpic++
-
-LDIR =
+include ../../../common.mk
+include ../../../example.mk
 
 OBJ = Ellip.o
 
-
 %.o: %.cpp
-	$(CC) -O3 -c --std=c++14 -o $@ $< $(INCLUDE_PATH)
+	$(CC) $(OPT) -c -o $@ $< $(INCLUDE_PATH)
 
 Ellipsoid: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)
 all: Ellipsoid
 
 run: all
-	mpirun -np 4 /Ellipsoid
+	mpirun -np 4 ./Ellipsoid 31 4 1.5
 
 .PHONY: clean all run
 

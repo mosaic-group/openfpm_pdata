@@ -1,8 +1,6 @@
 include ../../example.mk
+include ../../common.mk
 
-CC=mpic++
-
-LDIR =
 
 OBJ = main.o update_new.o
 
@@ -10,7 +8,7 @@ OBJ = main.o update_new.o
 	mpif90 -ffree-line-length-none -fno-range-check -fno-second-underscore  -fimplicit-none  -mavx -O3 -c -g -o $@ $<
 
 %.o: %.cpp
-	$(CC) -O3 -mavx  -g -c --std=c++14 -Wno-ignored-attributes  -o  $@ $< $(INCLUDE_PATH)
+	$(CC) $(OPT) -mavx -c -Wno-ignored-attributes -o  $@ $< $(INCLUDE_PATH)
 
 gray_scott: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS_PATH) $(LIBS)

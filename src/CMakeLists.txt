@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
-add_definitions(-DSCAN_WITH_CUB)
-
 ########################### Executables
 
 
@@ -220,7 +218,6 @@ if (TEST_PERFORMANCE)
         target_link_libraries(pdata ${Boost_SYSTEM_LIBRARY})
 endif()
 
-add_definitions(-DSCAN_WITH_CUB)
 #add_definitions(-DMAKE_CELLLIST_DETERMINISTIC)
 
 if (TEST_COVERAGE)
@@ -407,7 +404,8 @@ install(FILES Graph/ids.hpp Graph/dist_map_graph.hpp
 	      COMPONENT OpenFPM)
 
 install(FILES example.mk
-	      SubdomainGraphNodes.hpp
+	      ../example/common.mk
+              SubdomainGraphNodes.hpp
               DESTINATION openfpm_pdata/include/ )
 
 install(FILES DLB/DLB.hpp DLB/LB_Model.hpp
