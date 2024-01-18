@@ -525,6 +525,9 @@ do
       alpaka)
       conf_options="$conf_options -DALPAKA_ROOT=$ac_optarg"
       ;;
+      catalyst)
+      conf_options="$conf_options -Dcatalyst_DIR=$ac_optarg"
+      ;;
       *) ac_unrecognized_opts="$ac_unrecognized_opts$ac_unrecognized_sep--with-$ac_useropt_orig"
 	 ac_unrecognized_sep=', '
 	 echo "Unrecognized option: $ac_unrecognized_opts"
