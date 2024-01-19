@@ -98,7 +98,7 @@ void test_full_nn(long int k)
 		while (it.isNext())
 		{
 			Point<3,float> xp = vd.getPos(it.get());
-			auto Np = NN.getNNIterator<NO_CHECK>(NN.getCell(xp));
+			auto Np = NN.getNNIterator(NN.getCell(xp));
 
 			while (Np.isNext())
 			{
@@ -140,7 +140,7 @@ void test_full_nn(long int k)
 		while (it.isNext())
 		{
 			Point<3,float> xp = vd.getPos(it.get());
-			auto Np = NNv.template getNNIterator<NO_CHECK>(it.get().getKey());
+			auto Np = NNv.template getNNIterator(it.get().getKey());
 
 			list_idx2.get(it.get().getKey()).clear();
 
@@ -184,7 +184,7 @@ void test_full_nn(long int k)
 		while (it.isNext())
 		{
 			Point<3,float> xp = vd.getPos(it.get());
-			auto Np = NNv.template getNNIterator<NO_CHECK>(it.get().getKey());
+			auto Np = NNv.template getNNIterator(it.get().getKey());
 
 			list_idx2.get(it.get().getKey()).clear();
 

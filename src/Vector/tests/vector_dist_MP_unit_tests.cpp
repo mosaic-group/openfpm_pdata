@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_test )
 	while (it.isNext())
 	{
 		auto p = it.get();
-		auto Np = NN_ver01.getNNIterator<NO_CHECK>(p.getKey());
+		auto Np = NN_ver01.getNNIterator(p.getKey());
 
 		size_t nn_count = 0;
 
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_test )
 	while (it.isNext())
 	{
 		auto p = it.get();
-		auto Np = NNver0_all.getNNIterator<NO_CHECK>(p.getKey());
+		auto Np = NNver0_all.getNNIterator(p.getKey());
 
 		size_t nn_cout[4] = {0,0,0,0};
 
@@ -284,7 +284,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_sym_test )
 	while (it.isNext())
 	{
 		auto p = it.get();
-		auto Np = NN_ver01.getNNIterator<NO_CHECK>(p.getKey());
+		auto Np = NN_ver01.getNNIterator(p.getKey());
 
 		// For each neighborhood of the particle p
 		while (Np.isNext())
@@ -369,7 +369,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_sym_test )
 		while (it.isNext())
 		{
 			auto p = it.get();
-			auto Np = NNver_all[i].getNNIterator<NO_CHECK>(p.getKey());
+			auto Np = NNver_all[i].getNNIterator(p.getKey());
 
 			// For each neighborhood of the particle p
 			while (Np.isNext())

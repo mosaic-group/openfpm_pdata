@@ -186,12 +186,12 @@ __global__ void process_ghost_particles_local(vector_g_opart_type g_opart, vecto
 }
 
 template<unsigned int dim, typename St, typename vector_of_box, typename vector_of_shifts, typename vector_type,  typename output_type>
-__global__ void num_shift_ghost_each_part(vector_of_box box_f, vector_of_shifts box_f_sv, vector_type vd,  output_type out, unsigned int g_m)
+__global__ void num_shift_ghost_each_part(vector_of_box box_f, vector_of_shifts box_f_sv, vector_type vd,  output_type out, unsigned int ghostMarker)
 {
 	unsigned int old_shift = (unsigned int)-1;
 	int p = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (p >= g_m) return;
+    if (p >= ghostMarker) return;
 
     Point<dim,St> xp = vd.template get<0>(p);
 
@@ -223,12 +223,12 @@ template<unsigned int dim, typename St,
 __global__ void shift_ghost_each_part(vector_of_box box_f, vector_of_shifts box_f_sv,
 		                              vector_type_pos v_pos, vector_type_prp v_prp,
 		                              start_type start, shifts_type shifts,
-		                              output_type output, unsigned int offset,unsigned int g_m)
+		                              output_type output, unsigned int offset,unsigned int ghostMarker)
 {
 	unsigned int old_shift = (unsigned int)-1;
 	int p = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (p >= g_m) return;
+    if (p >= ghostMarker) return;
 
     Point<dim,St> xp = v_pos.template get<0>(p);
 
@@ -454,13 +454,13 @@ void remove_marked(vector_type & vd, const int n = 1024)
 }
 
 template<unsigned int prp, typename functor, typename particles_type, typename out_type>
-__global__ void mark_indexes(particles_type vd, out_type out, unsigned int g_m)
+__global__ void mark_indexes(particles_type vd, out_type out, unsigned int ghostMarker)
 {
 	unsigned int p = threadIdx.x + blockIdx.x * blockDim.x;
 
 	if (p >= vd.size())	{return;}
 
-	out.template get<0>(p) = functor::check(vd.template get<prp>(p)) == true && p < g_m;
+	out.template get<0>(p) = functor::check(vd.template get<prp>(p)) == true && p < ghostMarker;
 }
 
 template<typename out_type, typename ids_type>

@@ -86,7 +86,7 @@ void calc_forces(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, Ve
 		//! \cond [NN iterator] \endcond
 
 		// Get an iterator over the neighborhood particles of p
-		auto Np = NN.template getNNIterator<NO_CHECK>(p.getKey());
+		auto Np = NN.template getNNIterator(p.getKey());
 
 		//! \cond [NN iterator] \endcond
 
@@ -170,7 +170,7 @@ double calc_energy(vector_dist<3,double, aggregate<double[3],double[3]> > & vd, 
 		Point<3,double> xp = vd.getPos(p);
 
 		// Get an iterator over the neighborhood of the particle p
-		auto Np = NN.template getNNIterator<NO_CHECK>(p.getKey());
+		auto Np = NN.template getNNIterator(p.getKey());
 
 		// For each neighborhood of the particle p
 		while (Np.isNext())
