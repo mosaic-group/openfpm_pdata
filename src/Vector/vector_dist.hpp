@@ -1400,12 +1400,13 @@ public:
 	 *
 	 * \param r_cut interation radius, or size of each cell
 	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
+	 * \param NNIteratorBox sets the number of neighborhood cell layers used to iterate through by getNNIteratorBox()
 	 *
 	 * \return the CellList
 	 *
 	 */
 	template<typename CellType = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>>, unsigned int ... prp>
-	CellType getCellListGPU(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
+	CellType getCellListGPU(St r_cut, const Ghost<dim, St> & enlarge, size_t NNIteratorBox = 1, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -1428,6 +1429,10 @@ public:
 		vPrpOut.resize(vPos.size());
 		vPosOut.resize(vPos.size());
 
+		// getNNIteratorBox has to be set here compared to getNNIteratorRadius (could be set later)
+		// As sparse cell list on gpu uses it in construct()
+		// If not set, the dafault value of 1 would have been used by construct()
+		cell_list.setBoxNN(NNIteratorBox);
 		cell_list.template construct<decltype(vPos),decltype(vPrp),prp ...>(vPos,vPosOut,vPrp,vPrpOut,v_cl.getGpuContext(),ghostMarker);
 
 		cell_list.set_ndec(getDecomposition().get_ndec());
