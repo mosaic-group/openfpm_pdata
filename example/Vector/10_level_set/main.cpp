@@ -89,7 +89,7 @@ template <typename CellList> inline void density_summation(particles & vd, CellL
         // intitialize sum that yields 1/(particle volume)
 	double V_inv = 0.0;
 
-        auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(a)));
+        auto Np = NN.template getNNIterator(NN.getCell(vd.getPos(a)));
 	// iterate over particles b (neighboring particles)
         while (Np.isNext() == true)
         {
@@ -171,7 +171,7 @@ template<typename CellList> inline void calc_forces(particles & vd, CellList & N
         Point<2, double> va = vd.getProp<vel>(a);
 
         // Get an iterator over the neighborhood particles of p
-        auto Np = NN.template getNNIterator<NO_CHECK>(NN.getCell(vd.getPos(a)));
+        auto Np = NN.template getNNIterator(NN.getCell(vd.getPos(a)));
 
         // For each neighborhood particle b
         while (Np.isNext() == true)
