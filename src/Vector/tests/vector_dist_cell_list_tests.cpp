@@ -563,7 +563,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 
 		Point<3,float> xp = vd.getPosRead(p);
 
-		auto Np = NN2.getNNIteratorSym<NO_CHECK>(NN2.getCell(xp),p.getKey(),vd.getPosVector());
+		auto Np = NN2.getNNIteratorSym(NN2.getCell(xp),p.getKey(),vd.getPosVector());
 
 		while (Np.isNext())
 		{
@@ -997,7 +997,7 @@ void test_vd_symmetric_verlet_list()
 
 		Point<3,float> xp = vd.getPosRead(p);
 
-		auto Np = NN2.template getNNIterator<NO_CHECK>(p.getKey());
+		auto Np = NN2.template getNNIterator(p.getKey());
 
 		while (Np.isNext())
 		{
@@ -1223,7 +1223,7 @@ void vector_sym_verlet_list_nb()
 
 			Point<3,float> xp = vd2.getPosRead(p);
 
-			auto Np = NN2.template getNNIterator<NO_CHECK>(p.getKey());
+			auto Np = NN2.template getNNIterator(p.getKey());
 
 			while (Np.isNext())
 			{
@@ -1408,7 +1408,7 @@ template<typename VerletList, typename part_prop> void test_crs_full(vector_dist
 
 		Point<3,float> xp = vd2.getPosRead(p);
 
-		auto Np = NN2.template getNNIterator<NO_CHECK>(p);
+		auto Np = NN2.template getNNIterator(p);
 
 		while (Np.isNext())
 		{
@@ -2143,7 +2143,7 @@ void test_vector_dist_particle_NN_MP_iteration()
 
 				Point<3,float> xp = phases.get(i).getPosRead(p);
 
-				auto Np = NN_ptr.get(j).getNNIteratorSymMP<NO_CHECK>(NN_ptr.get(j).getCell(xp),p.getKey(),phases.get(i).getPosVector(),phases.get(j).getPosVector());
+				auto Np = NN_ptr.get(j).getNNIteratorSymMP(NN_ptr.get(j).getCell(xp),p.getKey(),phases.get(i).getPosVector(),phases.get(j).getPosVector());
 
 				while (Np.isNext())
 				{

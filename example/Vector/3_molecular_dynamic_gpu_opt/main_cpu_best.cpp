@@ -54,7 +54,7 @@ void calc_forces(vector_dist<3,real_number, aggregate<real_number[3],real_number
 
 		// Get an iterator over the neighborhood particles of p
 		// Note that in case of symmetric
-		auto Np = NN.template getNNIterator<NO_CHECK>(p);
+		auto Np = NN.template getNNIterator(p);
 
 		// For each neighborhood particle ...
 		while (Np.isNext())
@@ -127,7 +127,7 @@ real_number calc_energy(vector_dist<3,real_number, aggregate<real_number[3],real
 		Point<3,real_number> xp = vd.getPos(p);
 
 		// Get an iterator over the neighborhood particles of p
-		auto Np = NN.template getNNIterator<NO_CHECK>(p);
+		auto Np = NN.template getNNIterator(p);
 
 		real_number Ep = E;
 

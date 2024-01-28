@@ -537,7 +537,7 @@ template<typename VerletList> inline void calc_forces(particles & vd, VerletList
 		Point<3,double> va = vd.getProp<velocity>(a);
 
         // Get an iterator over the neighborhood particles of p
-        auto Np = NN.template getNNIterator<NO_CHECK>(a);
+        auto Np = NN.template getNNIterator(a);
 
         size_t nn = 0;
 

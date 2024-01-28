@@ -83,7 +83,7 @@ struct ghost_exchange_comm_impl
 						 recv_sz_get_type & recv_sz_get,
 						 recv_sz_get_byte_type & recv_sz_get_byte,
 						 g_opart_sz_type & g_opart_sz,
-						 size_t g_m,
+						 size_t ghostMarker,
 						 size_t opt)
 	{
 		// if there are no properties skip
@@ -96,12 +96,12 @@ struct ghost_exchange_comm_impl
 			{
 				if (opt & RUN_ON_DEVICE)
 				{
-					op_ssend_gg_recv_merge_run_device opm(g_m);
+					op_ssend_gg_recv_merge_run_device opm(ghostMarker);
 					v_cl.template SSendRecvP_op<op_ssend_gg_recv_merge_run_device,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
 				}
 				else
 				{
-					op_ssend_gg_recv_merge opm(g_m);
+					op_ssend_gg_recv_merge opm(ghostMarker);
 					v_cl.template SSendRecvP_op<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
 				}
 			}
@@ -170,7 +170,7 @@ struct ghost_exchange_comm_impl
 			 	 	 	 	 	 	 	 recv_sz_get_type & recv_sz_get,
 			 	 	 	 	 	 	 	 recv_sz_get_byte_type & recv_sz_get_byte,
 			 	 	 	 	 	 	 	 g_opart_sz_type & g_opart_sz,
-			 	 	 	 	 	 	 	 size_t g_m,
+										 size_t ghostMarker,
 			 	 	 	 	 	 	 	 size_t opt)
 	{}
 };
@@ -193,7 +193,7 @@ struct ghost_exchange_comm_impl<GHOST_ASYNC,layout_base, prp ... >
 						 recv_sz_get_type & recv_sz_get,
 						 recv_sz_get_byte_type & recv_sz_get_byte,
 						 g_opart_sz_type & g_opart_sz,
-						 size_t g_m,
+						 size_t ghostMarker,
 						 size_t opt)
 	{
 		prc_recv_get.clear();
@@ -209,12 +209,12 @@ struct ghost_exchange_comm_impl<GHOST_ASYNC,layout_base, prp ... >
 			{
 				if (opt & RUN_ON_DEVICE)
 				{
-					op_ssend_gg_recv_merge_run_device opm(g_m);
+					op_ssend_gg_recv_merge_run_device opm(ghostMarker);
 					v_cl.template SSendRecvP_opAsync<op_ssend_gg_recv_merge_run_device,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
 				}
 				else
 				{
-					op_ssend_gg_recv_merge opm(g_m);
+					op_ssend_gg_recv_merge opm(ghostMarker);
 					v_cl.template SSendRecvP_opAsync<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
 				}
 			}
@@ -296,7 +296,7 @@ struct ghost_exchange_comm_impl<GHOST_ASYNC,layout_base, prp ... >
 			 	 	 	 	 	 	 	 recv_sz_get_type & recv_sz_get,
 			 	 	 	 	 	 	 	 recv_sz_get_byte_type & recv_sz_get_byte,
 			 	 	 	 	 	 	 	 g_opart_sz_type & g_opart_sz,
-			 	 	 	 	 	 	 	 size_t g_m,
+										 size_t ghostMarker,
 			 	 	 	 	 	 	 	 size_t opt)
 	{
 		// if there are no properties skip
@@ -309,12 +309,12 @@ struct ghost_exchange_comm_impl<GHOST_ASYNC,layout_base, prp ... >
 			{
 				if (opt & RUN_ON_DEVICE)
 				{
-					op_ssend_gg_recv_merge_run_device opm(g_m);
+					op_ssend_gg_recv_merge_run_device opm(ghostMarker);
 					v_cl.template SSendRecvP_opWait<op_ssend_gg_recv_merge_run_device,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
 				}
 				else
 				{
-					op_ssend_gg_recv_merge opm(g_m);
+					op_ssend_gg_recv_merge opm(ghostMarker);
 					v_cl.template SSendRecvP_opWait<op_ssend_gg_recv_merge,send_vector,decltype(v_prp),layout_base,prp...>(g_send_prp,v_prp,prc_g_opart,opm,prc_recv_get,recv_sz_get,opt_);
 				}
 			}
@@ -728,12 +728,12 @@ class vector_dist_comm
 	 *
 	 * \param v_pos vector of particle positions
 	 * \param v_prp vector of particle properties
-	 * \param g_m ghost marker
+	 * \param ghostMarker ghost marker
 	 *
 	 */
 	void local_ghost_from_dec(openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
 			                  openfpm::vector<prop,Memory,layout_base> & v_prp,
-			                  size_t g_m,size_t opt)
+			                  size_t ghostMarker,size_t opt)
 	{
 		o_part_loc.clear();
 
@@ -743,12 +743,12 @@ class vector_dist_comm
 		if (opt & RUN_ON_DEVICE)
 		{
 			local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,std::is_same<Memory,CudaMemory>::value>
-			::run(o_part_loc,shifts,box_f_dev,box_f_sv,v_cl,starts,v_pos,v_prp,g_m,opt);
+			::run(o_part_loc,shifts,box_f_dev,box_f_sv,v_cl,starts,v_pos,v_prp,ghostMarker,opt);
 		}
 		else
 		{
 			// Label the internal (assigned) particles
-			auto it = v_pos.getIteratorTo(g_m);
+			auto it = v_pos.getIteratorTo(ghostMarker);
 
 			while (it.isNext())
 			{
@@ -838,13 +838,13 @@ class vector_dist_comm
 	 *
 	 * \param v_pos vector of particle of positions
 	 * \param v_prp vector of particle properties
-	 * \param g_m ghost marker
+	 * \param ghostMarker ghost marker
 	 * \param opt options
 	 *
 	 */
 	void add_loc_particles_bc(openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
 			                  openfpm::vector<prop,Memory,layout_base> & v_prp ,
-			                  size_t & g_m,
+			                  size_t & ghostMarker,
 			                  size_t opt)
 	{
 		// Create the shift boxes
@@ -860,7 +860,7 @@ class vector_dist_comm
 			if (opt & SKIP_LABELLING)
 			{local_ghost_from_opart(v_pos,v_prp,opt);}
 			else
-			{local_ghost_from_dec(v_pos,v_prp,g_m,opt);}
+			{local_ghost_from_dec(v_pos,v_prp,ghostMarker,opt);}
 		}
 	}
 
@@ -955,13 +955,13 @@ class vector_dist_comm
 	 *
 	 * \param v_prp vector of particle properties
 	 * \param g_send_prp Send buffer to fill
-	 * \param g_m ghost marker
+	 * \param ghostMarker ghost marker
 	 *
 	 */
 	template<typename send_vector, typename prp_object, int ... prp>
 	void fill_send_ghost_put_prp_buf(openfpm::vector<prop,Memory,layout_base> & v_prp,
 									 openfpm::vector<send_vector> & g_send_prp,
-									 size_t & g_m,
+									 size_t & ghostMarker,
 									 size_t opt)
 	{
 		// create a number of send buffers equal to the near processors
@@ -991,7 +991,7 @@ class vector_dist_comm
 			g_send_prp.get(i).resize(n_part_recv);
 		}
 
-		size_t accum = g_m;
+		size_t accum = ghostMarker;
 
 		if (opt & RUN_ON_DEVICE)
 		{
@@ -1523,7 +1523,7 @@ class vector_dist_comm
 	 * \param v_pos vector of particle positions
 	 * \param v_prp vector of particle properties
 	 * \param prc for each particle it label the processor id (the owner of the particle, or where it should go the particle)
-	 * \param g_m ghost marker
+	 * \param ghostMarker ghost marker
 	 * \param opt ghost_get options
 	 *
 	 */
@@ -1532,7 +1532,7 @@ class vector_dist_comm
 			                 openfpm::vector<size_t> & prc,
 			                 openfpm::vector<size_t> & prc_sz,
 			                 openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,layout_base> & prc_offset,
-			                 size_t & g_m,
+			                 size_t & ghostMarker,
 			                 size_t opt)
 	{
 		// Buffer that contain for each processor the id of the particle to send
@@ -1545,12 +1545,12 @@ class vector_dist_comm
 		{
 			labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,
 			                         Decomposition,std::is_same<Memory,CudaMemory>::value>
-			::run(mem,dec,g_opart_device,proc_id_out,starts,v_cl,v_pos,v_prp,prc,prc_sz,prc_offset,g_m,opt);
+			::run(mem,dec,g_opart_device,proc_id_out,starts,v_cl,v_pos,v_prp,prc,prc_sz,prc_offset,ghostMarker,opt);
 		}
 		else
 		{
 			// Iterate over all particles
-			auto it = v_pos.getIteratorTo(g_m);
+			auto it = v_pos.getIteratorTo(ghostMarker);
 			while (it.isNext())
 			{
 				auto key = it.get();
@@ -1772,12 +1772,12 @@ public:
 	 * \param opt options WITH_POSITION, it send also the positional information of the particles
 	 * \param v_pos vector of position to update
 	 * \param v_prp vector of properties to update
-	 * \param g_m marker between real and ghost particles
+	 * \param ghostMarker marker between real and ghost particles
 	 *
 	 */
 	template<unsigned int impl, int ... prp> inline void ghost_get_(openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
 												 openfpm::vector<prop,Memory,layout_base> & v_prp,
-												 size_t & g_m,
+												 size_t & ghostMarker,
 												 size_t opt = WITH_POSITION)
 	{
 #ifdef PROFILE_SCOREP
@@ -1791,16 +1791,16 @@ public:
 		typedef openfpm::vector<prp_object,Memory,layout_base,openfpm::grow_policy_identity> send_vector;
 
 		if (!(opt & NO_POSITION))
-		{v_pos.resize(g_m);}
+		{v_pos.resize(ghostMarker);}
 
 		// reset the ghost part
 
 		if (!(opt & SKIP_LABELLING))
-		{v_prp.resize(g_m);}
+		{v_prp.resize(ghostMarker);}
 
 		// Label all the particles
 		if ((opt & SKIP_LABELLING) == false)
-		{labelParticlesGhost(v_pos,v_prp,prc_g_opart,prc_sz_gg,prc_offset,g_m,opt);}
+		{labelParticlesGhost(v_pos,v_prp,prc_g_opart,prc_sz_gg,prc_offset,ghostMarker,opt);}
 
 		{
 			// Send and receive ghost particle information
@@ -1817,7 +1817,7 @@ public:
 
 			ghost_exchange_comm_impl<impl,layout_base,prp ...>::template
 			sendrecv_prp(v_cl,g_send_prp,v_prp,v_pos,prc_g_opart,
-					 prc_recv_get_prp,recv_sz_get_prp,recv_sz_get_byte,g_opart_sz,g_m,opt);
+					 prc_recv_get_prp,recv_sz_get_prp,recv_sz_get_byte,g_opart_sz,ghostMarker,opt);
 		}
 
 		if (!(opt & NO_POSITION))
@@ -1849,7 +1849,7 @@ public:
                 v_prp.resize(v_pos.size());
         }
 
-		add_loc_particles_bc(v_pos,v_prp,g_m,opt);
+		add_loc_particles_bc(v_pos,v_prp,ghostMarker,opt);
 	}
 
 	/*! \brief It synchronize the properties and position of the ghost particles
@@ -1859,12 +1859,12 @@ public:
 	 * \param opt options WITH_POSITION, it send also the positional information of the particles
 	 * \param v_pos vector of position to update
 	 * \param v_prp vector of properties to update
-	 * \param g_m marker between real and ghost particles
+	 * \param ghostMarker marker between real and ghost particles
 	 *
 	 */
 	template<int ... prp> inline void ghost_wait_(openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
 			 	 	 	 	 	 	 	 	 	 	 	 	 	 	 openfpm::vector<prop,Memory,layout_base> & v_prp,
-			 	 	 	 	 	 	 	 	 	 	 	 	 	 	 size_t & g_m,
+																	 size_t & ghostMarker,
 			 	 	 	 	 	 	 	 	 	 	 	 	 	 	 size_t opt = WITH_POSITION)
 	{
 		// Sending property object
@@ -1879,7 +1879,7 @@ public:
 
 		ghost_exchange_comm_impl<GHOST_ASYNC,layout_base,prp ...>::template
 		sendrecv_prp_wait(v_cl,g_send_prp,v_prp,v_pos,prc_g_opart,
-					 prc_recv_get_prp,recv_sz_get_prp,recv_sz_get_byte,g_opart_sz,g_m,opt);
+					 prc_recv_get_prp,recv_sz_get_prp,recv_sz_get_byte,g_opart_sz,ghostMarker,opt);
 
 
 		ghost_exchange_comm_impl<GHOST_ASYNC,layout_base,prp ...>::template
@@ -1898,11 +1898,11 @@ public:
 	 *
 	 * \param v_pos vector of particle positions
 	 * \param v_prp vector of particle properties
-	 * \param g_m ghost marker
+	 * \param ghostMarker ghost marker
 	 * \param opt options
 	 *
 	 */
-	template<unsigned int ... prp> void map_list_(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & g_m, size_t opt)
+	template<unsigned int ... prp> void map_list_(openfpm::vector<Point<dim, St>> & v_pos, openfpm::vector<prop> & v_prp, size_t & ghostMarker, size_t opt)
 	{
 		if (opt & RUN_ON_DEVICE)
 		{
@@ -1916,8 +1916,8 @@ public:
 		openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,layout_base> prc_sz(v_cl.getProcessingUnits());
 
 		// map completely reset the ghost part
-		v_pos.resize(g_m);
-		v_prp.resize(g_m);
+		v_pos.resize(ghostMarker);
+		v_prp.resize(ghostMarker);
 
 		// m_opart, Contain the processor id of each particle (basically where they have to go)
 		labelParticleProcessor<obp>(v_pos,m_opart, prc_sz,opt);
@@ -1962,7 +1962,7 @@ public:
 
 		// mark the ghost part
 
-		g_m = v_pos.size();
+		ghostMarker = v_pos.size();
 	}
 
 	/*! \brief It move all the particles that does not belong to the local processor to the respective processor
@@ -1975,12 +1975,12 @@ public:
 	 *
 	 * \param v_pos vector of particle positions
 	 * \param v_prp vector of particle properties
-	 * \param g_m ghost marker
+	 * \param ghostMarker ghost marker
 	 *
 	 */
 	template<typename obp = KillParticle>
 	void map_(openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
-			  openfpm::vector<prop,Memory,layout_base> & v_prp, size_t & g_m,
+			  openfpm::vector<prop,Memory,layout_base> & v_prp, size_t & ghostMarker,
 			  size_t opt)
 	{
 #ifdef PROFILE_SCOREP
@@ -1990,8 +1990,8 @@ public:
 		prc_sz.resize(v_cl.getProcessingUnits());
 
 		// map completely reset the ghost part
-		v_pos.resize(g_m);
-		v_prp.resize(g_m);
+		v_pos.resize(ghostMarker);
+		v_prp.resize(ghostMarker);
 
 		// Contain the processor id of each particle (basically where they have to go)
 		labelParticleProcessor<obp>(v_pos,m_opart, prc_sz,opt);
@@ -2034,7 +2034,7 @@ public:
 
 		// mark the ghost part
 
-		g_m = v_pos.size();
+		ghostMarker = v_pos.size();
 	}
 
 	/*! \brief Get the decomposition
@@ -2092,14 +2092,14 @@ public:
 	 *
 	 * \param v_pos vector of particle positions
 	 * \param v_prp vector od particle properties
-	 * \param g_m ghost marker
+	 * \param ghostMarker ghost marker
 	 * \param opt options
 	 *
 	 */
 	template<template<typename,typename> class op, int ... prp>
 	void ghost_put_(openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
 					openfpm::vector<prop,Memory,layout_base> & v_prp,
-					size_t & g_m,
+					size_t & ghostMarker,
 					size_t opt)
 	{
 		// Sending property object
@@ -2109,7 +2109,7 @@ public:
 		typedef openfpm::vector<prp_object,Memory,layout_base> send_vector;
 
 		openfpm::vector<send_vector> g_send_prp;
-		fill_send_ghost_put_prp_buf<send_vector, prp_object, prp...>(v_prp,g_send_prp,g_m,opt);
+		fill_send_ghost_put_prp_buf<send_vector, prp_object, prp...>(v_prp,g_send_prp,ghostMarker,opt);
 
 		if (opt & RUN_ON_DEVICE)
 		{

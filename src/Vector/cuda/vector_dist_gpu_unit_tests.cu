@@ -1296,12 +1296,12 @@ void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 
 BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda_async)
 {
-	vector_dist_dlb_on_cuda_impl_async<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,unsigned int,int,false>>(50000,0.01);
+	vector_dist_dlb_on_cuda_impl_async<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,false>>(50000,0.01);
 }
 
 BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda)
 {
-	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,unsigned int,int,false>>(50000,0.01);
+	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,false>>(50000,0.01);
 }
 
 BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda_sparse)
@@ -1315,7 +1315,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda2)
 	{return;};
 
 	#ifndef CUDA_ON_CPU
-	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,unsigned int,int,false>>(1000000,0.01);
+	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,false>>(1000000,0.01);
 	#endif
 }
 
@@ -1325,7 +1325,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda3)
 	{return;}
 
 	#ifndef CUDA_ON_CPU
-	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,unsigned int,int,false>>(15000000,0.005);
+	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,false>>(15000000,0.005);
 	#endif
 }
 
@@ -1940,7 +1940,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 				Point<3,float> xp = vd.getPos(p);
 
 				// Get an iterator over the neighborhood particles of p
-				auto Np = NN.getNNIterator<NO_CHECK>(NN.getCell(xp));
+				auto Np = NN.getNNIterator(NN.getCell(xp));
 
 				// For each neighborhood particle ...
 				while (Np.isNext())
@@ -2019,7 +2019,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 				Point<3,float> xp = vd.getPosRead(p);
 
 				// Get an iterator over the neighborhood particles of p
-				auto Np = NN.getNNIterator<NO_CHECK>(NN.getCell(xp));
+				auto Np = NN.getNNIterator(NN.getCell(xp));
 
 				// For each neighborhood particle ...
 				while (Np.isNext())
