@@ -1,19 +1,8 @@
 #!/bin/bash
 
-# check if the directory $1/MPI exist
-
-if [ -d "$1/MPI" ]; then
-  echo "MPI already installed"
-  exit 0
-fi
-
-./script/download_MPI.sh
-cd openmpi-4.1.1
-
-if [ -f ../mpi_add_options ]; then
-	mpi_options=$(cat ../mpi_add_options)
-	echo "Adding MPI options: $mpi_options"
-fi
+wget http://ppmcore.mpi-cbg.de/upload/openmpi-4.1.6.tar.gz
+tar -xvf openmpi-4.1.6.tar.gz
+cd openmpi-4.1.6
 
 if [ x"$3" == x"1" ]; then
    echo "Installing MPI with GPU support"
@@ -28,7 +17,4 @@ else
 fi
 make -j $2
 make install
-
-# Mark the installation
-echo 10 > $1/MPI/version
 

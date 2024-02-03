@@ -7,19 +7,8 @@ CC=$3
 F77=$5
 FC=$6
 
-if [ -d "$1/PETSC" -a -f "$1/PETSC/include/petsc.h" ]; then
-  echo "PETSC is already installed"
-  exit 0
-fi
-
-# Detect gcc pr clang
-
-source script/discover_os
-source script/solve_python
-discover_os
-
 function test_configure_options() {
-  cd petsc-3.14.5
+  cd petsc-3.19.6
   $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options2 --with-debugging=0
   error=$?
   cd ..
@@ -29,41 +18,14 @@ function haveProg() {
     [ -x "$(command -v $1)" ]
 }
 
-if haveProg python2; then
-  python_command=python2
-else
-  python_command=python3
-fi
+python_command=python3
 
-
-##### if we are on osx we use gsed
-
-ldflags_petsc=
-if [ x"$platform" == x"osx" ]; then
-  sed_command=gsed
-  ldflags_petsc=
-else
-  sed_command=sed
-  ldflags_petsc=
-fi
-
-#### Download and uncompress petsc
-
-rm petsc-lite-3.14.5.tar.gz
-rm -rf petsc-3.14.5
-wget http://ppmcore.mpi-cbg.de/upload/petsc-lite-3.14.5.tar.gz
-if [ $? -ne 0 ]; then
-  echo -e "\033[91;5;1m FAILED! Installation requires an Internet connection \033[0m"
-  exit 1
-fi
-tar -xf petsc-lite-3.14.5.tar.gz
-
-####
+wget http://ppmcore.mpi-cbg.de/upload/petsc-lite-3.19.6.tar.gz -O petsc-lite-3.19.6.tar.gz
+tar -xf petsc-lite-3.19.6.tar.gz
 
 ## If some dependencies has been installed feed them to PETSC
 
 MUMPS_extra_libs=""
-
 configure_options=""
 
 
@@ -82,29 +44,15 @@ else
 fi
 
 
-if [ ! -d "$1/OPENBLAS" ]; then
-  CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_OPENBLAS.sh $1
-  if [ $? -eq 0 ]; then
-    configure_options="$configure_options --with-blas-lib=$1/OPENBLAS/lib/libopenblas.a --with-lapack-lib=$1/OPENBLAS/lib/libopenblas.a"
-  fi
-else
-    configure_options="$configure_options --with-blas-lib=$1/OPENBLAS/lib/libopenblas.a --with-lapack-lib=$1/OPENBLAS/lib/libopenblas.a"
-fi
+configure_options="$configure_options --with-blas-lib=$1/OPENBLAS/lib/libopenblas.a --with-lapack-lib=$1/OPENBLAS/lib/libopenblas.a"
 
-if [ -d "$1/SUITESPARSE"  -a -f "$1/SUITESPARSE/include/umfpack.h" ]; then
-  CXX="$CXX" CC="$CC" FC="$FC" F77="$F77" ./script/install_SUITESPARSE.sh $1 $2
-fi
+echo "Testing if PETSC work with SUITESPARSE"
+configure_options2="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
+test_configure_options
 
-#### OK here we check if we can configure work with SUITESPARSE
-if [ -d "$1/SUITESPARSE"  -a -f "$1/SUITESPARSE/include/umfpack.h" ]; then
-  echo "Testing if PETSC work with SUITESPARSE"
-  configure_options2="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
-  test_configure_options
-
-  if [ $error -eq 0 ]; then
-    echo "SUITESPARSE work with PETSC"
-    configure_options="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
-  fi
+if [ $error -eq 0 ]; then
+  echo "SUITESPARSE work with PETSC"
+  configure_options="$configure_options --with-suitesparse=yes --with-suitesparse-dir=$1/SUITESPARSE "
 fi
 
 configure_options2="$configure_options --download-scalapack"
@@ -124,7 +72,7 @@ if [ $error -eq 0 ]; then
 fi
 
 
-#### OK here we check if we can configure work with SUITESPARSE
+### OK here we check if we can configure work with SUITESPARSE
 echo "Testing if PETSC work with SUPERLU"
 configure_options2="$configure_options --download-superlu_dist "
 test_configure_options
@@ -142,51 +90,26 @@ if [ $error -eq 0 ]; then
   configure_options="$configure_options --download-hypre"
 fi
 
+  configure_options="$configure_options --download-scalapack "
+rm -rf petsc-3.19.6
+wget http://ppmcore.mpi-cbg.de/upload/petsc-lite-3.19.6.tar.gz -O petsc-lite-3.19.6.tar.gz
+tar -xf petsc-lite-3.19.6.tar.gz
+cd petsc-3.19.6
 
-rm petsc-lite-3.14.5.tar.gz
-rm -rf petsc-3.14.5
-wget http://ppmcore.mpi-cbg.de/upload/petsc-lite-3.14.5.tar.gz
-if [ $? -ne 0 ]; then
-  echo -e "\033[91;5;1m FAILED! Installation requires an Internet connection \033[0m"
-  exit 1
-fi
-tar -xf petsc-lite-3.14.5.tar.gz
-cd petsc-3.14.5
 
 if [ x"$CXX" != x"icpc" ]; then
 
   echo "./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc --with-cxx-dialect=C++11 $petsc_openmp  --with-mpi-dir=$mpi_dir $configure_options  --prefix=$1/PETSC --with-debugging=0"
-
-  function haveProg() {
-      [ -x "$(command -v $1)" ]
-  }
-
-  if [ x"$platform" != x"cygwin" ]; then
-  	$python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --prefix=$1/PETSC --with-debugging=0
+  if [[ "$OSTYPE" != "cygwin" ]]; then
+      $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --prefix=$1/PETSC --with-debugging=0
   else
-	echo "Sorry PETSC installation in not supported on CYGWIN"
+    echo "Sorry PETSC installation in not supported on CYGWIN"
   fi
 
 else
-
   echo "./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc --with-cxx-dialect=C++11 $petsc_openmp  --with-mpi-dir=$mpi_dir $configure_options  --prefix=$1/PETSC --with-debugging=0"
-
-  function haveProg() {
-      [ -x "$(command -v $1)" ]
-  }
-
   $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --prefix=$1/PETSC --with-debugging=0
 fi
 
 make all
 make install
-
-# if empty remove the folder
-if [ ! "$(ls -A $1/PETSC)" ]; then
-   rm -rf $1/PETSC
-else
-   #Mark the installation
-   echo 6 > $1/PETSC/version
-   exit 0
-fi
-

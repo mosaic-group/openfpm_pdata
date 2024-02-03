@@ -38,9 +38,9 @@ fi
 
 
 ### 1.8.19 does not compile on CYGWIN
-wget http://ppmcore.mpi-cbg.de/upload/hdf5-1.10.8.tar.gz
-tar -xf hdf5-1.10.8.tar.gz
-cd hdf5-1.10.8
+wget http://ppmcore.mpi-cbg.de/upload/hdf5-1.14.3.tar.gz
+tar -xf hdf5-1.14.3.tar.gz
+cd hdf5-1.14.3
 
 # Disable zlib is completly unstable
 if [ x"$platform" != x"cygwin" ]; then
