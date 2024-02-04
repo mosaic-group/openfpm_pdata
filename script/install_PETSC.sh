@@ -20,6 +20,7 @@ function haveProg() {
 
 python_command=python3
 
+cd petsc-3.19.6
 wget http://ppmcore.mpi-cbg.de/upload/petsc-lite-3.19.6.tar.gz -O petsc-lite-3.19.6.tar.gz
 tar -xf petsc-lite-3.19.6.tar.gz
 
@@ -111,5 +112,5 @@ else
   $python_command ./configure COPTFLAGS="-O3 -g" CXXOPTFLAGS="-O3 -g" FOPTFLAGS="-O3 -g" $ldflags_petsc  --with-cxx-dialect=C++11 $petsc_openmp --with-mpi-dir=$mpi_dir $configure_options --prefix=$1/PETSC --with-debugging=0
 fi
 
-make all
+make all -j $2
 make install

@@ -1,6 +1,7 @@
 #!/bin/bash 
 
-wget http://ppmcore.mpi-cbg.de/upload/boost_1_84_0.tar.gz
+rm -rf boost_1_84_0
+wget http://ppmcore.mpi-cbg.de/upload/boost_1_84_0.tar.gz -O boost_1_84_0.tar.gz
 tar -xf boost_1_84_0.tar.gz
 cd boost_1_84_0
 

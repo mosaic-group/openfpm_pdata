@@ -1,6 +1,7 @@
 #!/bin/bash
 
-wget http://ppmcore.mpi-cbg.de/upload/openmpi-4.1.6.tar.gz
+rm -rf openmpi-4.1.6
+wget http://ppmcore.mpi-cbg.de/upload/openmpi-4.1.6.tar.gz -O openmpi-4.1.6.tar.gz
 tar -xvf openmpi-4.1.6.tar.gz
 cd openmpi-4.1.6
 

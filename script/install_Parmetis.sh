@@ -1,6 +1,7 @@
 #! /bin/bash
 
-wget http://ppmcore.mpi-cbg.de/upload/parmetis-4.0.3.tar.gz
+rm -rf parmetis-4.0.3
+wget http://ppmcore.mpi-cbg.de/upload/parmetis-4.0.3.tar.gz -O parmetis-4.0.3.tar.gz
 tar -xf parmetis-4.0.3.tar.gz
 cd parmetis-4.0.3
 # Change to 64 bit parmetis
@@ -24,12 +25,10 @@ make install
 
 #### Apply patch if we are on cygwin
 
-if [ x"$platform" == x"cygwin" ]; then
+if [[ "$OSTYPE" == "cygwin" ]]; then
   cd $1/PARMETIS/include
   wget http://openfpm.mpi-cbg.de/upload/parmetis_patch
   patch < parmetis_patch
 fi
 
-# Mark the installation
-echo 3 > $1/PARMETIS/version
 

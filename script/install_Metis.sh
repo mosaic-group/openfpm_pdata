@@ -1,6 +1,7 @@
 #! /bin/bash
 
-wget http://ppmcore.mpi-cbg.de/upload/metis-5.1.0.tar.gz
+rm -rf metis-5.1.0
+wget http://ppmcore.mpi-cbg.de/upload/metis-5.1.0.tar.gz -O metis-5.1.0.tar.gz
 tar -xf metis-5.1.0.tar.gz
 cd metis-5.1.0
 
@@ -16,13 +17,13 @@ BUILDDIR=build/$systype-$cputype
 mkdir -p $BUILDDIR
 cd $BUILDDIR
 if [ "$#" -eq 4  ]; then
-  echo "cmake ../../. $shared_opt -DGKLIB_PATH=../../GKlib -DCMAKE_INSTALL_PREFIX=$1/METIS -DCMAKE_C_COMPILER=$2 -DCMAKE_CXX_COMPILER=$3"
-  cmake ../../. $shared_opt -DGKLIB_PATH=../../GKlib  -DCMAKE_INSTALL_PREFIX=$1/METIS -DCMAKE_C_COMPILER=$2 -DCMAKE_CXX_COMPILER=$3
+  echo "cmake ../../. $shared_opt -DGKLIB_PATH=../../GKlib -DCMAKE_INSTALL_PREFIX=$1/METIS -DCMAKE_C_COMPILER=$3 -DCMAKE_CXX_COMPILER=$4"
+  cmake ../../. $shared_opt -DGKLIB_PATH=../../GKlib  -DCMAKE_INSTALL_PREFIX=$1/METIS -DCMAKE_C_COMPILER=$3 -DCMAKE_CXX_COMPILER=$4
 else
   echo "cmake ../../. $shared_opt -DGKLIB_PATH=../../GKlib -DCMAKE_INSTALL_PREFIX=$1/METIS"
   cmake ../../. $shared_opt -DGKLIB_PATH=../../GKlib -DCMAKE_INSTALL_PREFIX=$1/METIS
 fi
-make -j $4
+make -j $2
 make install
 
 # Mark the installation
