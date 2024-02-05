@@ -26,11 +26,7 @@ tar -xf petsc-lite-3.19.6.tar.gz
 
 ## If some dependencies has been installed feed them to PETSC
 
-MUMPS_extra_libs=""
-configure_options=""
-
-
-configure_options="$configure_options --with-64-bit-indices --with-parmetis-include=$1/PARMETIS/include --with-parmetis-lib=$1/PARMETIS/lib/libparmetis.a --with-metis-include=$1/METIS/include --with-metis-lib=$1/METIS/lib/libmetis.so"
+configure_options="--with-64-bit-indices --with-parmetis-include=$1/PARMETIS/include --with-parmetis-lib=$1/PARMETIS/lib/libparmetis.a --with-metis-include=$1/METIS/include --with-metis-lib=$1/METIS/lib/libmetis.so"
 
 if [ -d "$1/BOOST" ]; then
 
@@ -91,9 +87,9 @@ if [ $error -eq 0 ]; then
   configure_options="$configure_options --download-hypre"
 fi
 
-  configure_options="$configure_options --download-scalapack "
+configure_options="$configure_options --download-scalapack "
+
 rm -rf petsc-3.19.6
-wget http://ppmcore.mpi-cbg.de/upload/petsc-lite-3.19.6.tar.gz -O petsc-lite-3.19.6.tar.gz
 tar -xf petsc-lite-3.19.6.tar.gz
 cd petsc-3.19.6
 
