@@ -1,9 +1,9 @@
 #! /bin/bash
 
-prefix_dependencies="/usr/local"
-prefix_openfpm="/usr/local"
+prefix_dependencies="$1"
+prefix_openfpm="$2"
 
-if [[ "$OSTYPE" == "linux-gnu" -o "$OSTYPE" == "linux" -o "$OSTYPE" == "cygwin" ]]; then
+if [[ "$OSTYPE" == "linux-gnu" || "$OSTYPE" == "linux" || "$OSTYPE" == "cygwin" ]]; then
   bash_library="export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:/$prefix_openfpm/openfpm_devices/lib:/$prefix_openfpm/openfpm_vcluster/lib"
 else
   bash_library="export DYLD_LIBRARY_PATH=\"\$DYLD_LIBRARY_PATH:/$prefix_openfpm/openfpm_devices/lib:/$prefix_openfpm/openfpm_vcluster/lib"
@@ -28,24 +28,23 @@ if [ -d "$prefix_dependencies/BOOST" ]; then
   bash_library="$bash_library:$prefix_dependencies/BOOST/lib"
 fi
 
-if [ -d "$prefix_dependencies/HDF5" ]; then
-  bash_library="$bash_library:$hdf5_lib"
+if [ -d "$prefix_dependencies/HDF5/lib" ]; then
+  bash_library="$bash_library:$prefix_dependencies/HDF5/lib"
+elif [ -d "$prefix_dependencies/HDF5/lib64" ]; then
+  bash_library="$bash_library:$prefix_dependencies/HDF5/lib64"
 fi
 
 if [ -d "$prefix_dependencies/LIBHILBERT" ]; then
   bash_library="$bash_library:$prefix_dependencies/LIBHILBERT/lib"
 fi
 
-lin_alg_installed=""
-
 if [ -d "$prefix_dependencies/PETSC" -a -f "$prefix_dependencies/PETSC/include/petsc.h" ]; then
   bash_library="$bash_library:$prefix_dependencies/PETSC/lib"
-  lin_alg_installed="y"
+fi
 
 if [ -d "$prefix_dependencies/OPENBLAS" ]; then
   bash_library="$bash_library:$prefix_dependencies/OPENBLAS/lib"
 fi
-
 
 if [ -d "$prefix_dependencies/SUITESPARSE"  -a -f "$prefix_dependencies/SUITESPARSE/include/umfpack.h" ]; then
   bash_library="$bash_library:$prefix_dependencies/SUITESPARSE/lib"

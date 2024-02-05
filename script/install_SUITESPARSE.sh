@@ -1,8 +1,9 @@
 #! /bin/bash
 
 rm -rf SuiteSparse
-wget http://ppmcore.mpi-cbg.de/upload/SuiteSparse-5.13.0.tar.gz -O SuiteSparse-5.13.0.tar.gz
-tar -xf SuiteSparse-5.13.0.tar.gz
+wget http://ppmcore.mpi-cbg.de/upload/SuiteSparse-5.7.2.tar.gz -O SuiteSparse-5.7.2.tar.gz
+tar -xf SuiteSparse-5.7.2.tar.gz
+cd SuiteSparse-5.7.2
 
 if [ x"$CXX" == x"icpc" ]; then
     export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/$1/OPENBLAS/lib"

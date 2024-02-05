@@ -1,7 +1,7 @@
 #! /bin/bash
 
-prefix_dependencies="/usr/local"
-prefix_openfpm="/usr/local"
+prefix_dependencies="$1"
+prefix_openfpm="$2"
 
 openmp_libs="$(cat openmp_libs)"
 openmp_flags="$(cat openmp_flags)"
@@ -11,10 +11,8 @@ cuda_lib="$(cat cuda_lib)"
 cuda_options="$(cat cuda_options)"
 
 if [ -d "$prefix_dependencies/HDF5/lib" ]; then
-  hdf5_lib=$prefix_dependencies/HDF5/lib
   hdf5_lib_dir=-L$prefix_dependencies/HDF5/lib
 elif [ -d "$prefix_dependencies/HDF5/lib64" ]; then
-  hdf5_lib=$prefix_dependencies/HDF5/lib64
   hdf5_lib_dir=-L$prefix_dependencies/HDF5/lib64
 fi
 
@@ -38,6 +36,14 @@ if [ -d "$prefix_dependencies/SUITESPARSE"  -a -f "$prefix_dependencies/SUITESPA
     lin_alg_dir="$lin_alg_dir -L$prefix_dependencies/SUITESPARSE/lib"
     lin_alg_inc="$lin_alg_inc -I$prefix_dependencies/SUITESPARSE/include"
     lin_alg_lib="$lin_alg_lib -lumfpack -lamd -lbtf -lcamd -lccolamd -lcholmod -lcolamd -lcxsparse -lklu -ldl -lrbio -lspqr -lsuitesparseconfig"
+fi
+
+if [ -d "$prefix_dependencies/EIGEN" ]; then
+    lin_alg_inc="$lin_alg_inc -I$prefix_dependencies/EIGEN"
+fi
+
+if [[ "$OSTYPE" == "linux-gnu" || "$OSTYPE" == "linux" ]]; then
+    lin_alg_lib="$lin_alg_lib -lrt"
 fi
 
 echo "INCLUDE_PATH= $cuda_include_dirs $openmp_flags  -I.  -I$prefix_openfpm/openfpm_numerics/include -I$prefix_openfpm/openfpm_pdata/include/config -I$prefix_openfpm/openfpm_pdata/include -I$prefix_openfpm/openfpm_data/include -I$prefix_openfpm/openfpm_vcluster/include -I$prefix_openfpm/openfpm_io/include -I$prefix_openfpm/openfpm_devices/include -I$prefix_dependencies/VCDEVEL/include  -I$prefix_dependencies/METIS/include -I$prefix_dependencies/PARMETIS/include -I$prefix_dependencies/BOOST/include -I$prefix_dependencies/HDF5/include -I$prefix_dependencies/LIBHILBERT/include  $lin_alg_inc -I$prefix_dependencies/BLITZ/include -I$prefix_dependencies/ALGOIM/include  -I$prefix_dependencies/SUITESPARSE/include " > example.mk

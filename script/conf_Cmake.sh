@@ -1,11 +1,8 @@
 #! /bin/bash
 
-gpu_support=1
-prefix_dependencies="/usr/local"
-prefix_openfpm="/usr/local"
-configure_options=""
+prefix_dependencies="$1"
 
-configure_options="CXX=mpic++ $configure_options"
+configure_options="CXX=mpic++ --prefix=$2"
 
 if [ -d "$prefix_dependencies/PETSC" ]; then
     configure_options="$configure_options --with-petsc=$prefix_dependencies/PETSC "
@@ -51,11 +48,6 @@ fi
 
 if [ -d "$prefix_dependencies/EIGEN" ]; then
     configure_options=" $configure_options --with-eigen=$prefix_dependencies/EIGEN "
-    lin_alg_inc="$lin_alg_inc -I$prefix_dependencies/EIGEN"
-fi
-
-if [[ "$OSTYPE" == "linux-gnu" -o "$OSTYPE" == "linux" ]]; then
-    lin_alg_lib="$lin_alg_lib -lrt"
 fi
 
 if [ x"$gpu_support" == x"1" ]; then

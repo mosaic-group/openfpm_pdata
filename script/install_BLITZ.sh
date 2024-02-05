@@ -1,7 +1,7 @@
 #! /bin/bash
 
 rm -rf blitz-1.0.2
-wget http://ppmcore.mpi-cbg.de/upload/blitz-1.0.2.tar.gz -O boost_1_84_0.tar.gz
+wget http://ppmcore.mpi-cbg.de/upload/blitz-1.0.2.tar.gz -O blitz-1.0.2.tar.gz
 tar -xf blitz-1.0.2.tar.gz
 cd blitz-1.0.2
 
