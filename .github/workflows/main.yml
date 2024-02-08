@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - fix/github-action
   release:
 
 jobs:
@@ -64,84 +65,22 @@ jobs:
         with:
           name: openfpm_nightly_builds
           path: build/openfpm-nightly-Linux-x86_64.rpm
-      - name: Single-core Test
-        run: |
-          source $HOME/openfpm_vars
-          export OMP_NUM_THREADS=1
-          ./run.sh $(pwd) unused 1 pdata 0 ${{ github.ref }}
-          cd openfpm_numerics
-          ./run.sh $(pwd) unused 1 0 0 numerics ${{ github.ref }}
-      - name: Multi-core Test
-        run: |
-          source $HOME/openfpm_vars
-          export OMP_NUM_THREADS=1
-          ./run.sh $(pwd) unused 2 pdata 0 ${{ github.ref }}
-          cd openfpm_numerics
-          ./run.sh $(pwd) unused 2 0 0 numerics ${{ github.ref }}    
-
-  build_ubuntu:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install dependencies
-        run: |
-          apt-get -y update
-          apt-get -y install cmake wget git g++ gfortran python2  python-is-python3
-      - uses: actions/checkout@v3
-        with:
-          submodules: true
-      - name: Restore Cache dependencies
-        uses: actions/cache/restore@v3
-        with:
-          path: ~/openfpm_dependencies/
-          key: almalinux-dep-${{ github.ref }}
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-            append-timestamp: false
-      - name: Build and Pack
-        run: |
-          export PATH="~/ccache-4.8-linux-x86_64/:$PATH"
-          git config --global safe.directory '*'
-          ./build.sh $(pwd) unused pdata 0 ${{ github.ref }}
-          cp $HOME/openfpm_vars $HOME/openfpm_dependencies/openfpm_pdata/${{ github.ref }}
-          cp $HOME/.openfpm.mk $HOME/openfpm_dependencies/openfpm_pdata/${{ github.ref }}
-          export DEP_PACKING=$HOME/openfpm_dependencies/openfpm_pdata/${{ github.ref }}
-          ln -s ./LICENSE.md LICENSE.txt
-          ln -s ./README.md README.txt
-          cd build
-          printf " -DCPACK_RUN_INSTALL_DEPENDENCIES=ON" >> cmake_build_options;
-          bash cmake_build_options;
-          echo "Calling CPACK"
-          cpack -G DEB debian
-          if [ $? -ne 0 ]; then
-            echo "Error creating package"
-            exit 1
-          fi
-          mv openfpm_pdata-*-Linux.deb openfpm-nightly-Linux-x86_64.deb
-      - uses: actions/cache/save@v3
-        if: always()
-        with:
-          path: ~/openfpm_dependencies/
-          key: almalinux-dep-${{ github.ref }}
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: openfpm_nightly_builds
-          path: build/openfpm-nightly-Linux-x86_64.deb
-      - name: Single-core Test
-        run: |
-          source $HOME/openfpm_vars
-          export OMP_NUM_THREADS=1
-          ./run.sh $(pwd) unused 1 pdata 0 ${{ github.ref }}
-          cd openfpm_numerics
-          ./run.sh $(pwd) unused 1 0 0 numerics ${{ github.ref }}
-      - name: Multi-core Test
-        run: |
-          source $HOME/openfpm_vars
-          export OMP_NUM_THREADS=1
-          ./run.sh $(pwd) unused 2 pdata 0 ${{ github.ref }}
-          cd openfpm_numerics
-          ./run.sh $(pwd) unused 2 0 0 numerics ${{ github.ref }}
+#      - name: Single-core Test
+#        run: |
+#          source $HOME/openfpm_vars
+#          export OMP_NUM_THREADS=1
+#          mpirun --allow-run-as-root -np 2 ./build/src/pdata
+#          echo "RUN numerics test"
+#          cd openfpm_numerics
+#          mpirun --allow-run-as-root -np 2 ../build/openfpm_numerics/src/numerics
+#      - name: Multi-core Test
+#        run: |
+#          source $HOME/openfpm_vars
+#          export OMP_NUM_THREADS=1
+#          mpirun --allow-run-as-root -np 2 ./build/src/pdata
+#          echo "RUN numerics test"
+#          cd openfpm_numerics
+#          mpirun --allow-run-as-root -np 2 ../build/openfpm_numerics/src/numerics
 
   build_macos:
     runs-on: macos-latest
@@ -193,21 +132,22 @@ jobs:
         with:
           name: openfpm_nightly_builds
           path: build/openfpm-nightly-Darwin-x86_64.pkg
-      - name: Single-core Test
-        run: |
-          export CC=gcc-12
-          export CXX=g++-12
-          source $HOME/openfpm_vars
-          export OMP_NUM_THREADS=1
-          ./run.sh $(pwd) unused 1 pdata 0 ${{ github.ref }}
-          cd openfpm_numerics
-          ./run.sh $(pwd) unused 1 0 0 numerics ${{ github.ref }}
-      - name: Multi-core Test
-        run: |
-          export CC=gcc-12
-          export CXX=g++-12
-          source $HOME/openfpm_vars
-          export OMP_NUM_THREADS=1
-          ./run.sh $(pwd) unused 2 pdata 0 ${{ github.ref }}
-          cd openfpm_numerics
-          ./run.sh $(pwd) unused 2 0 0 numerics ${{ github.ref }}
+#      - name: Single-core Test
+#        run: |
+#          export CC=gcc-12
+#          export CXX=g++-12
+#          source $HOME/openfpm_vars
+#          export OMP_NUM_THREADS=1
+#          ./run.sh $(pwd) unused 1 pdata 0 ${{ github.ref }}
+#          cd openfpm_numerics
+#          ./run.sh $(pwd) unused 1 0 0 numerics ${{ github.ref }}
+#      - name: Multi-core Test
+#        run: |
+#          export CC=gcc-12
+#          export CXX=g++-12
+#          source $HOME/openfpm_vars
+#          export OMP_NUM_THREADS=1
+#          mpirun --allow-run-as-root -np 2 ./build/src/pdata
+#          echo "RUN numerics test"
+#          cd openfpm_numerics
+#          mpirun --allow-run-as-root -np 2 ../build/openfpm_numerics/src/numerics

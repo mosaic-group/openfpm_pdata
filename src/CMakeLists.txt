@@ -104,14 +104,6 @@ endif()
 add_dependencies(pdata ofpmmemory)
 add_dependencies(pdata vcluster)
 
-#add_executable(isolation_pdata ${OPENFPM_INIT_FILE} isolation.cu
-#														  lib/pdata.cpp
-#														  ../openfpm_devices/src/memory/HeapMemory.cpp
-#														  ../openfpm_devices/src/memory/CudaMemory.cu
-#														  ../openfpm_devices/src/memory/PtrMemory.cpp
-#														  ../openfpm_vcluster/src/VCluster/VCluster.cpp
-#														  )
-
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	target_compile_options(pdata PRIVATE "-Wno-undefined-var-template")
 	target_compile_options(pdata PRIVATE "-Wno-macro-redefined")

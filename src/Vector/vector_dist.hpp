@@ -47,7 +47,7 @@
 #define DEC_GRAN(gr) ((size_t)gr << 32)
 
 #ifdef CUDA_GPU
-template<unsigned int dim,typename St> using CELLLIST_GPU_SPARSE = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>,unsigned int,int,true>;
+template<unsigned int dim,typename St> using CELLLIST_GPU_SPARSE = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>,true>;
 #endif
 
 #define VECTOR_DIST_ERROR_OBJECT std::runtime_error("Runtime vector distributed error");
@@ -318,22 +318,22 @@ public:
 
 private:
 
-	//! Ghost marker, all the particle with id > g_m are ghost all with g_m < are real particle
-	size_t g_m = 0;
+	//! Ghost marker, all the particle with id > ghostMarker are ghost all with ghostMarker < are real particle
+	size_t ghostMarker = 0;
 
 	//! Particle position vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	vector_dist_pos v_pos;
+	vector_dist_pos vPos;
 
 	//! Particle properties vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
-	vector_dist_prop v_prp;
+	vector_dist_prop vPrp;
 
-	//! reordered v_pos buffer
-	vector_dist_prop v_prp_out;
+	//! reordered vPos buffer
+	vector_dist_prop vPrpOut;
 
-	//! reordered v_prp buffer
-	vector_dist_pos v_pos_out;
+	//! reordered vPrp buffer
+	vector_dist_pos vPosOut;
 
 	//! option used to create this vector
 	size_t opt = 0;
@@ -373,12 +373,12 @@ private:
 			p_np++;
 
 		// resize the position vector
-		v_pos.resize(p_np);
+		vPos.resize(p_np);
 
 		// resize the properties vector
-		v_prp.resize(p_np);
+		vPrp.resize(p_np);
 
-		g_m = p_np;
+		ghostMarker = p_np;
 	}
 
 	/*! \brief Check if the parameters describe a valid vector. In case it does not report an error
@@ -428,8 +428,8 @@ private:
 						 sfc_it & h_it,
 						 CellL & cell_list)
 	{
-		v_pos_dest.resize(v_pos.size());
-		v_prp_dest.resize(v_prp.size());
+		v_pos_dest.resize(vPos.size());
+		v_prp_dest.resize(vPrp.size());
 
 		//Index for v_pos_dest
 		size_t count = 0;
@@ -451,8 +451,8 @@ private:
 		  {
 			  //reorder
 			  auto v = cell_list.get(lin,i);
-			  v_pos_dest.get(count) = v_pos.get(v);
-			  v_prp_dest.get(count) = v_prp.get(v);
+			  v_pos_dest.get(count) = vPos.get(v);
+			  v_prp_dest.get(count) = vPrp.get(v);
 
 			  count++;
 		  }
@@ -461,7 +461,7 @@ private:
 	}
 
 public:
-	typedef decltype(v_pos) internal_position_vector_type;
+	typedef decltype(vPos) internal_position_vector_type;
 
 	typedef CellList<dim, St, Mem_fast<>, shift<dim, St>, internal_position_vector_type > CellList_type;
 
@@ -484,9 +484,9 @@ public:
 	{
 		static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>>(v));
 
-		g_m = v.g_m;
-		v_pos = v.v_pos;
-		v_prp = v.v_prp;
+		ghostMarker = v.ghostMarker;
+		vPos = v.vPos;
+		vPrp = v.vPrp;
 
 #ifdef SE_CLASS3
 		se3 = v.se3;
@@ -509,9 +509,9 @@ public:
 	{
 		static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base> *>(this)->operator=(static_cast<vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base> >(v));
 
-		g_m = v.g_m;
-		v_pos.swap(v.v_pos);
-		v_prp.swap(v.v_prp);
+		ghostMarker = v.ghostMarker;
+		vPos.swap(v.vPos);
+		vPrp.swap(v.vPrp);
 
 #ifdef SE_CLASS3
 		se3 = v.se3;
@@ -656,16 +656,16 @@ public:
 	 */
 	void setReferenceCounterToOne()
 	{
-		for (int i = 0 ; i < v_pos.template getMemory<0>().ref() - 1; i++)
+		for (int i = 0 ; i < vPos.template getMemory<0>().ref() - 1; i++)
 		{
-			v_pos.template getMemory<0>().decRef();
+			vPos.template getMemory<0>().decRef();
 		}
 
-		for (int i = 0 ; i < v_prp.template getMemory<0>().ref() - 1; i++)
+		for (int i = 0 ; i < vPrp.template getMemory<0>().ref() - 1; i++)
 		{
-			decrement_memory<decltype(v_prp)> m(v_prp);
+			decrement_memory<decltype(vPrp)> m(vPrp);
 
-			boost::mpl::for_each_ref<boost::mpl::range_c<int,0,decltype(v_prp)::value_type::max_prop>>(m);
+			boost::mpl::for_each_ref<boost::mpl::range_c<int,0,decltype(vPrp)::value_type::max_prop>>(m);
 		}
 	}
 
@@ -685,7 +685,7 @@ public:
 	 */
 	size_t size_local() const
 	{
-		return g_m;
+		return ghostMarker;
 	}
 
 	/*! \brief return the local size of the vector
@@ -695,7 +695,7 @@ public:
 	 */
 	size_t size_local_orig() const
 	{
-		return g_m;
+		return ghostMarker;
 	}
 
 	/*! \brief return the local size of the vector
@@ -705,7 +705,7 @@ public:
 	 */
 	size_t size_local_with_ghost() const
 	{
-		return v_pos.size();
+		return vPos.size();
 	}
 
 #ifndef ONLY_READWRITE_GETTER
@@ -719,13 +719,13 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getPos(vect_dist_key_dx vec_key) -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	inline auto getPos(vect_dist_key_dx vec_key) -> decltype(vPos.template get<0>(vec_key.getKey()))
 	{
 #ifdef SE_CLASS3
 		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key.getKey());
 #endif
 
-		return v_pos.template get<0>(vec_key.getKey());
+		return vPos.template get<0>(vec_key.getKey());
 	}
 
 	/*! \brief Get the position of an element
@@ -737,12 +737,12 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getPos(vect_dist_key_dx vec_key) const -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	inline auto getPos(vect_dist_key_dx vec_key) const -> decltype(vPos.template get<0>(vec_key.getKey()))
 	{
 #ifdef SE_CLASS3
 		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key.getKey());
 #endif
-		return v_pos.template get<0>(vec_key.getKey());
+		return vPos.template get<0>(vec_key.getKey());
 	}
 
 	/*! \brief Get the position of an element
@@ -754,12 +754,12 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getPos(size_t vec_key) -> decltype(v_pos.template get<0>(vec_key))
+	inline auto getPos(size_t vec_key) -> decltype(vPos.template get<0>(vec_key))
 	{
 #ifdef SE_CLASS3
 		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key);
 #endif
-		return v_pos.template get<0>(vec_key);
+		return vPos.template get<0>(vec_key);
 	}
 
 	/*! \brief Get the position of an element
@@ -771,12 +771,12 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getPosOrig(vect_dist_key_dx vec_key) const -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	inline auto getPosOrig(vect_dist_key_dx vec_key) const -> decltype(vPos.template get<0>(vec_key.getKey()))
 	{
 #ifdef SE_CLASS3
 		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key.getKey());
 #endif
-		return v_pos.template get<0>(vec_key.getKey());
+		return vPos.template get<0>(vec_key.getKey());
 	}
 
 	/*! \brief Get the position of an element
@@ -788,12 +788,12 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getPosOrig(size_t vec_key) -> decltype(v_pos.template get<0>(vec_key))
+	inline auto getPosOrig(size_t vec_key) -> decltype(vPos.template get<0>(vec_key))
 	{
 #ifdef SE_CLASS3
 		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key);
 #endif
-		return v_pos.template get<0>(vec_key);
+		return vPos.template get<0>(vec_key);
 	}
 
 	/*! \brief Get the position of an element
@@ -805,12 +805,12 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getPos(size_t vec_key) const -> decltype(v_pos.template get<0>(vec_key))
+	inline auto getPos(size_t vec_key) const -> decltype(vPos.template get<0>(vec_key))
 	{
 #ifdef SE_CLASS3
 		check_for_pos_nan_inf<prop::max_prop_real,prop::max_prop>(*this,vec_key);
 #endif
-		return v_pos.template get<0>(vec_key);
+		return vPos.template get<0>(vec_key);
 	}
 
 	/*! \brief Get the property of an element
@@ -823,12 +823,12 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getProp(vect_dist_key_dx vec_key) -> decltype(v_prp.template get<id>(vec_key.getKey()))
+	template<unsigned int id> inline auto getProp(vect_dist_key_dx vec_key) -> decltype(vPrp.template get<id>(vec_key.getKey()))
 	{
 #ifdef SE_CLASS3
 		check_for_prop_nan_inf<id,prop::max_prop+SE3_STATUS>(*this,vec_key.getKey());
 #endif
-		return v_prp.template get<id>(vec_key.getKey());
+		return vPrp.template get<id>(vec_key.getKey());
 	}
 
 	/*! \brief Get the property of an element
@@ -841,12 +841,12 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getProp(vect_dist_key_dx vec_key) const -> decltype(v_prp.template get<id>(vec_key.getKey()))
+	template<unsigned int id> inline auto getProp(vect_dist_key_dx vec_key) const -> decltype(vPrp.template get<id>(vec_key.getKey()))
 	{
 #ifdef SE_CLASS3
 		check_for_prop_nan_inf<id,prop::max_prop+SE3_STATUS>(*this,vec_key.getKey());
 #endif
-		return v_prp.template get<id>(vec_key.getKey());
+		return vPrp.template get<id>(vec_key.getKey());
 	}
 
 	/*! \brief Get the property of an element
@@ -859,12 +859,12 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getProp(size_t vec_key) -> decltype(v_prp.template get<id>(vec_key))
+	template<unsigned int id> inline auto getProp(size_t vec_key) -> decltype(vPrp.template get<id>(vec_key))
 	{
 #ifdef SE_CLASS3
 		check_for_prop_nan_inf<id,prop::max_prop+SE3_STATUS>(*this,vec_key);
 #endif
-		return v_prp.template get<id>(vec_key);
+		return vPrp.template get<id>(vec_key);
 	}
 
 	/*! \brief Get the property of an element
@@ -877,12 +877,12 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getProp(size_t vec_key) const -> decltype(v_prp.template get<id>(vec_key))
+	template<unsigned int id> inline auto getProp(size_t vec_key) const -> decltype(vPrp.template get<id>(vec_key))
 	{
 #ifdef SE_CLASS3
 		check_for_prop_nan_inf<id,prop::max_prop+SE3_STATUS>(*this,vec_key);
 #endif
-		return v_prp.template get<id>(vec_key);
+		return vPrp.template get<id>(vec_key);
 	}
 
 #endif
@@ -898,9 +898,9 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getPosNC(vect_dist_key_dx vec_key) -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	inline auto getPosNC(vect_dist_key_dx vec_key) -> decltype(vPos.template get<0>(vec_key.getKey()))
 	{
-		return v_pos.template get<0>(vec_key.getKey());
+		return vPos.template get<0>(vec_key.getKey());
 	}
 
 	/*! \brief Get the position of an element
@@ -912,9 +912,9 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getPosNC(vect_dist_key_dx vec_key) const -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	inline auto getPosNC(vect_dist_key_dx vec_key) const -> decltype(vPos.template get<0>(vec_key.getKey()))
 	{
-		return v_pos.template get<0>(vec_key.getKey());
+		return vPos.template get<0>(vec_key.getKey());
 	}
 
 	/*! \brief Get the position of an element
@@ -926,9 +926,9 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getPosNC(size_t vec_key) -> decltype(v_pos.template get<0>(vec_key))
+	inline auto getPosNC(size_t vec_key) -> decltype(vPos.template get<0>(vec_key))
 	{
-		return v_pos.template get<0>(vec_key);
+		return vPos.template get<0>(vec_key);
 	}
 
 	/*! \brief Get the position of an element
@@ -940,9 +940,9 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getPosNC(size_t vec_key) const -> decltype(v_pos.template get<0>(vec_key))
+	inline auto getPosNC(size_t vec_key) const -> decltype(vPos.template get<0>(vec_key))
 	{
-		return v_pos.template get<0>(vec_key);
+		return vPos.template get<0>(vec_key);
 	}
 
 	/*! \brief Get the property of an element
@@ -955,9 +955,9 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getPropNC(vect_dist_key_dx vec_key) -> decltype(v_prp.template get<id>(vec_key.getKey()))
+	template<unsigned int id> inline auto getPropNC(vect_dist_key_dx vec_key) -> decltype(vPrp.template get<id>(vec_key.getKey()))
 	{
-		return v_prp.template get<id>(vec_key.getKey());
+		return vPrp.template get<id>(vec_key.getKey());
 	}
 
 	/*! \brief Get the property of an element
@@ -970,9 +970,9 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getPropNC(vect_dist_key_dx vec_key) const -> decltype(v_prp.template get<id>(vec_key.getKey()))
+	template<unsigned int id> inline auto getPropNC(vect_dist_key_dx vec_key) const -> decltype(vPrp.template get<id>(vec_key.getKey()))
 	{
-		return v_prp.template get<id>(vec_key.getKey());
+		return vPrp.template get<id>(vec_key.getKey());
 	}
 
 	/*! \brief Get the property of an element
@@ -985,9 +985,9 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getPropNC(size_t vec_key) -> decltype(v_prp.template get<id>(vec_key))
+	template<unsigned int id> inline auto getPropNC(size_t vec_key) -> decltype(vPrp.template get<id>(vec_key))
 	{
-		return v_prp.template get<id>(vec_key);
+		return vPrp.template get<id>(vec_key);
 	}
 
 	/*! \brief Get the property of an element
@@ -1000,9 +1000,9 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getPropNC(size_t vec_key) const -> decltype(v_prp.template get<id>(vec_key))
+	template<unsigned int id> inline auto getPropNC(size_t vec_key) const -> decltype(vPrp.template get<id>(vec_key))
 	{
-		return v_prp.template get<id>(vec_key);
+		return vPrp.template get<id>(vec_key);
 	}
 
 ///////////////////// Read and Write function
@@ -1016,13 +1016,13 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getPosWrite(vect_dist_key_dx vec_key) -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	inline auto getPosWrite(vect_dist_key_dx vec_key) -> decltype(vPos.template get<0>(vec_key.getKey()))
 	{
 #ifdef SE_CLASS3
 		se3.template write<prop::max_prop_real>(*this,vec_key.getKey());
 #endif
 
-		return v_pos.template get<0>(vec_key.getKey());
+		return vPos.template get<0>(vec_key.getKey());
 	}
 
 	/*! \brief Get the position of an element
@@ -1034,13 +1034,13 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getPosRead(vect_dist_key_dx vec_key) const -> decltype(v_pos.template get<0>(vec_key.getKey()))
+	inline auto getPosRead(vect_dist_key_dx vec_key) const -> decltype(vPos.template get<0>(vec_key.getKey()))
 	{
 #ifdef SE_CLASS3
 		se3.template read<prop::max_prop_real>(*this,vec_key.getKey());
 #endif
 
-		return v_pos.template get<0>(vec_key.getKey());
+		return vPos.template get<0>(vec_key.getKey());
 	}
 
 	/*! \brief Get the property of an element
@@ -1053,13 +1053,13 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getPropWrite(vect_dist_key_dx vec_key) -> decltype(v_prp.template get<id>(vec_key.getKey()))
+	template<unsigned int id> inline auto getPropWrite(vect_dist_key_dx vec_key) -> decltype(vPrp.template get<id>(vec_key.getKey()))
 	{
 #ifdef SE_CLASS3
 		se3.template write<id>(*this,vec_key.getKey());
 #endif
 
-		return v_prp.template get<id>(vec_key.getKey());
+		return vPrp.template get<id>(vec_key.getKey());
 	}
 
 	/*! \brief Get the property of an element
@@ -1072,13 +1072,13 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getPropRead(vect_dist_key_dx vec_key) const -> decltype(v_prp.template get<id>(vec_key.getKey()))
+	template<unsigned int id> inline auto getPropRead(vect_dist_key_dx vec_key) const -> decltype(vPrp.template get<id>(vec_key.getKey()))
 	{
 #ifdef SE_CLASS3
 		se3.template read<id>(*this,vec_key.getKey());
 #endif
 
-		return v_prp.template get<id>(vec_key.getKey());
+		return vPrp.template get<id>(vec_key.getKey());
 	}
 
 //////////////////////////////////////////////
@@ -1093,14 +1093,14 @@ public:
 	 */
 	void add()
 	{
-		v_prp.insert(g_m);
-		v_pos.insert(g_m);
+		vPrp.insert(ghostMarker);
+		vPos.insert(ghostMarker);
 
-		g_m++;
+		ghostMarker++;
 
 #ifdef SE_CLASS3
 		for (size_t i = 0 ; i < prop::max_prop_real+1 ; i++)
-			v_prp.template get<prop::max_prop_real>(g_m-1)[i] = UNINITIALIZED;
+			vPrp.template get<prop::max_prop_real>(ghostMarker-1)[i] = UNINITIALIZED;
 #endif
 	}
 
@@ -1116,8 +1116,8 @@ public:
 	 */
 	void addAtEnd()
 	{
-		v_prp.add();
-		v_pos.add();
+		vPrp.add();
+		vPos.add();
 	}
 
 #ifndef ONLY_READWRITE_GETTER
@@ -1127,9 +1127,9 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getLastPos() -> decltype(v_pos.template get<0>(0))
+	inline auto getLastPos() -> decltype(vPos.template get<0>(0))
 	{
-		return v_pos.template get<0>(g_m - 1);
+		return vPos.template get<0>(ghostMarker - 1);
 	}
 
 
@@ -1138,9 +1138,9 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getLastPosEnd() -> decltype(v_pos.template get<0>(0))
+	inline auto getLastPosEnd() -> decltype(vPos.template get<0>(0))
 	{
-		return v_pos.template get<0>(v_pos.size() - 1);
+		return vPos.template get<0>(vPos.size() - 1);
 	}
 
 	/*! \brief Get the property of the last element
@@ -1150,9 +1150,9 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getLastProp() -> decltype(v_prp.template get<id>(0))
+	template<unsigned int id> inline auto getLastProp() -> decltype(vPrp.template get<id>(0))
 	{
-		return v_prp.template get<id>(g_m - 1);
+		return vPrp.template get<id>(ghostMarker - 1);
 	}
 
 #endif
@@ -1164,13 +1164,13 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getLastPosRead() -> decltype(v_pos.template get<0>(0))
+	inline auto getLastPosRead() -> decltype(vPos.template get<0>(0))
 	{
 #ifdef SE_CLASS3
-		se3.template read<prop::max_prop_real>(*this,g_m-1);
+		se3.template read<prop::max_prop_real>(*this,ghostMarker-1);
 #endif
 
-		return v_pos.template get<0>(g_m - 1);
+		return vPos.template get<0>(ghostMarker - 1);
 	}
 
 	/*! \brief Get the property of the last element
@@ -1180,13 +1180,13 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getLastPropRead() -> decltype(v_prp.template get<id>(0))
+	template<unsigned int id> inline auto getLastPropRead() -> decltype(vPrp.template get<id>(0))
 	{
 #ifdef SE_CLASS3
-		se3.read<id>(*this,g_m-1);
+		se3.read<id>(*this,ghostMarker-1);
 #endif
 
-		return v_prp.template get<id>(g_m - 1);
+		return vPrp.template get<id>(ghostMarker - 1);
 	}
 
 
@@ -1195,13 +1195,13 @@ public:
 	 * \return the position of the element in space
 	 *
 	 */
-	inline auto getLastPosWrite() -> decltype(v_pos.template get<0>(0))
+	inline auto getLastPosWrite() -> decltype(vPos.template get<0>(0))
 	{
 #ifdef SE_CLASS3
-		se3.template write<prop::max_prop_real>(*this,g_m-1);
+		se3.template write<prop::max_prop_real>(*this,ghostMarker-1);
 #endif
 
-		return v_pos.template get<0>(g_m - 1);
+		return vPos.template get<0>(ghostMarker - 1);
 	}
 
 	/*! \brief Get the property of the last element
@@ -1211,13 +1211,13 @@ public:
 	 * \return return the selected property of the vector element
 	 *
 	 */
-	template<unsigned int id> inline auto getLastPropWrite() -> decltype(v_prp.template get<id>(0))
+	template<unsigned int id> inline auto getLastPropWrite() -> decltype(vPrp.template get<id>(0))
 	{
 #ifdef SE_CLASS3
-		se3.template write<id>(*this,g_m-1);
+		se3.template write<id>(*this,ghostMarker-1);
 #endif
 
-		return v_prp.template get<id>(g_m - 1);
+		return vPrp.template get<id>(ghostMarker - 1);
 	}
 
 ////////////////////////////////////////////////////////////////
@@ -1343,7 +1343,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St>, decltype(v_pos) > >
+	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St>, decltype(vPos) > >
 	CellL getCellList(St r_cut, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
@@ -1400,12 +1400,13 @@ public:
 	 *
 	 * \param r_cut interation radius, or size of each cell
 	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
+	 * \param NNIteratorBox sets the number of neighborhood cell layers used to iterate through by getNNIteratorBox()
 	 *
 	 * \return the CellList
 	 *
 	 */
 	template<typename CellType = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>>, unsigned int ... prp>
-	CellType getCellListGPU(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
+	CellType getCellListGPU(St r_cut, const Ghost<dim, St> & enlarge, size_t NNIteratorBox = 1, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -1425,13 +1426,17 @@ public:
 
 		CellType cell_list(pbox,div);
 
-		v_prp_out.resize(v_pos.size());
-		v_pos_out.resize(v_pos.size());
+		vPrpOut.resize(vPos.size());
+		vPosOut.resize(vPos.size());
 
-		cell_list.template construct<decltype(v_pos),decltype(v_prp),prp ...>(v_pos,v_pos_out,v_prp,v_prp_out,v_cl.getGpuContext(),g_m);
+		// getNNIteratorBox has to be set here compared to getNNIteratorRadius (could be set later)
+		// As sparse cell list on gpu uses it in construct()
+		// If not set, the dafault value of 1 would have been used by construct()
+		cell_list.setBoxNN(NNIteratorBox);
+		cell_list.template construct<decltype(vPos),decltype(vPrp),prp ...>(vPos,vPosOut,vPrp,vPrpOut,v_cl.getGpuContext(),ghostMarker);
 
 		cell_list.set_ndec(getDecomposition().get_ndec());
-		cell_list.set_gm(g_m);
+		cell_list.set_gm(ghostMarker);
 
 #ifdef CUDA_GPU
 		this->update_sort(this->toKernel_sorted());
@@ -1532,16 +1537,16 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list<dim,St,prop,Memory,layout_base,CellL,prp ...>(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getGpuContext(false),g_m,CL_NON_SYMMETRIC,opt);
+			populate_cell_list<dim,St,prop,Memory,layout_base,CellL,prp ...>(vPos,vPosOut,vPrp,vPrpOut,cell_list,v_cl.getGpuContext(false),ghostMarker,CL_NON_SYMMETRIC,opt);
 
-			cell_list.set_gm(g_m);
+			cell_list.set_gm(ghostMarker);
 		}
 		else
 		{
 			CellL cli_tmp = gcl<dim,St,CellL,self,GCL_NON_SYMMETRIC>::get(*this,r_cut,getDecomposition().getGhost());
 
 			cell_list.swap(cli_tmp);
-			cell_list.re_setBoxNN();
+			cell_list.resetBoxNN();
 		}
 	}
 
@@ -1567,9 +1572,9 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list(v_pos,v_pos_out,v_prp,v_prp_out,cell_list,v_cl.getGpuContext(),g_m,CL_SYMMETRIC,cl_construct_opt::Full);
+			populate_cell_list(vPos,vPosOut,vPrp,vPrpOut,cell_list,v_cl.getGpuContext(),ghostMarker,CL_SYMMETRIC,cl_construct_opt::Full);
 
-			cell_list.set_gm(g_m);
+			cell_list.set_gm(ghostMarker);
 		}
 		else
 		{
@@ -1618,7 +1623,7 @@ public:
 		cl_param_calculate(pbox, div, r_cut, enlarge);
 
 		cell_list.Initialize(pbox, div);
-		cell_list.set_gm(g_m);
+		cell_list.set_gm(ghostMarker);
 		cell_list.set_ndec(getDecomposition().get_ndec());
 
 		updateCellList(cell_list,no_se3);
@@ -1659,7 +1664,7 @@ public:
 		cl_param_calculate(pbox,div, r_cut, enlarge);
 
 		cell_list.Initialize(pbox, div);
-		cell_list.set_gm(g_m);
+		cell_list.set_gm(ghostMarker);
 		cell_list.set_ndec(getDecomposition().get_ndec());
 
 		updateCellList(cell_list);
@@ -1686,7 +1691,7 @@ public:
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
 
-		ver.InitializeSym(getDecomposition().getDomain(),pbox,getDecomposition().getGhost(),r_cut,v_pos,g_m);
+		ver.InitializeSym(getDecomposition().getDomain(),pbox,getDecomposition().getGhost(),r_cut,vPos,ghostMarker);
 
 		ver.set_ndec(getDecomposition().get_ndec());
 
@@ -1721,7 +1726,7 @@ public:
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
 
 		// Initialize the verlet list
-		ver.InitializeCrs(getDecomposition().getDomain(),pbox,getDecomposition().getGhost(),r_cut,v_pos,g_m);
+		ver.InitializeCrs(getDecomposition().getDomain(),pbox,getDecomposition().getGhost(),r_cut,vPos,ghostMarker);
 
 		// Get the internal cell list
 		auto & NN = ver.getInternalCellList();
@@ -1737,7 +1742,7 @@ public:
 
 		getDecomposition().setNNParameters(shift,gs);
 
-		ver.createVerletCrs(r_cut,g_m,v_pos,
+		ver.createVerletCrs(r_cut,ghostMarker,vPos,
 				            getDecomposition().getCRSDomainCells(),
 							getDecomposition().getCRSAnomDomainCells());
 
@@ -1753,7 +1758,7 @@ public:
 	 * \return a VerletList object
 	 *
 	 */
-	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St>,decltype(v_pos) >>
+	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St>,decltype(vPos) >>
 	VerletL getVerlet(St r_cut)
 	{
 #ifdef SE_CLASS3
@@ -1772,7 +1777,7 @@ public:
 		// enlarge the box where the Verlet is defined
 		bt.enlarge(g);
 
-		ver.Initialize(bt,getDecomposition().getProcessorBounds(),r_cut,v_pos,g_m,VL_NON_SYMMETRIC);
+		ver.Initialize(bt,getDecomposition().getProcessorBounds(),r_cut,vPos,ghostMarker,VL_NON_SYMMETRIC);
 
 		ver.set_ndec(getDecomposition().get_ndec());
 
@@ -1802,7 +1807,7 @@ public:
 			bool to_reconstruct = NN.get_ndec() != getDecomposition().get_ndec();
 
 			if (to_reconstruct == false)
-				ver.update(getDecomposition().getDomain(),r_cut,v_pos,g_m, opt);
+				ver.update(getDecomposition().getDomain(),r_cut,vPos,ghostMarker, opt);
 			else
 			{
 				VerletList<dim,St,Mem_type,shift<dim,St> > ver_tmp;
@@ -1840,7 +1845,7 @@ public:
 
 				getDecomposition().setNNParameters(shift,gs);
 
-				ver.updateCrs(getDecomposition().getDomain(),r_cut,v_pos,g_m,
+				ver.updateCrs(getDecomposition().getDomain(),r_cut,vPos,ghostMarker,
 						      getDecomposition().getCRSDomainCells(),
 							  getDecomposition().getCRSAnomDomainCells());
 			}
@@ -1861,7 +1866,7 @@ public:
 			bool to_reconstruct = NN.get_ndec() != getDecomposition().get_ndec();
 
 			if (to_reconstruct == false)
-				ver.update(getDecomposition().getDomain(),r_cut,v_pos,g_m, opt);
+				ver.update(getDecomposition().getDomain(),r_cut,vPos,ghostMarker, opt);
 			else
 			{
 				VerletList<dim,St,Mem_type,shift<dim,St> > ver_tmp;
@@ -1904,8 +1909,8 @@ public:
 	void reorder(int32_t m, const Ghost<dim,St> & enlarge, reorder_opt opt = reorder_opt::HILBERT)
 	{
 		// reset the ghost part
-		v_pos.resize(g_m);
-		v_prp.resize(g_m);
+		vPos.resize(ghostMarker);
+		vPrp.resize(ghostMarker);
 
 
 		CellL cell_list;
@@ -1926,7 +1931,7 @@ public:
 		}
 
 		cell_list.Initialize(pbox,div);
-		cell_list.set_gm(g_m);
+		cell_list.set_gm(ghostMarker);
 
 		// for each particle add the particle to the cell list
 
@@ -1943,7 +1948,7 @@ public:
 			++it;
 		}
 
-		// Use cell_list to reorder v_pos
+		// Use cell_list to reorder vPos
 
 		//destination vector
 		openfpm::vector<Point<dim,St>> v_pos_dest;
@@ -1965,12 +1970,12 @@ public:
 		else
 		{
 			// We do nothing, we second swap nullify the first
-			v_pos.swap(v_pos_dest);
-			v_prp.swap(v_prp_dest);
+			vPos.swap(v_pos_dest);
+			vPrp.swap(v_prp_dest);
 		}
 
-		v_pos.swap(v_pos_dest);
-		v_prp.swap(v_prp_dest);
+		vPos.swap(v_pos_dest);
+		vPrp.swap(v_prp_dest);
 	}
 
 	/*! \brief Construct a cell list starting from the stored particles and reorder a vector according to the Hilberts curve
@@ -1990,12 +1995,12 @@ public:
 	void reorder_rcut(St r_cut)
 	{
 		// reset the ghost part
-		v_pos.resize(g_m);
-		v_prp.resize(g_m);
+		vPos.resize(ghostMarker);
+		vPrp.resize(ghostMarker);
 
 		auto cell_list = getCellList<CellL>(r_cut);
 
-		// Use cell_list to reorder v_pos
+		// Use cell_list to reorder vPos
 
 		//destination vector
 		openfpm::vector<Point<dim,St>> v_pos_dest;
@@ -2010,8 +2015,8 @@ public:
 
 		reorder_sfc<CellL,grid_key_dx_iterator<dim>>(v_pos_dest,v_prp_dest,h_it,cell_list);
 
-		v_pos.swap(v_pos_dest);
-		v_prp.swap(v_prp_dest);
+		vPos.swap(v_pos_dest);
+		vPrp.swap(v_prp_dest);
 	}
 
 	/*! \brief It return the number of particles contained by the previous processors
@@ -2062,7 +2067,7 @@ public:
 #ifdef SE_CLASS3
 		se3.getIterator();
 #endif
-		return vector_dist_iterator(0, v_pos.size());
+		return vector_dist_iterator(0, vPos.size());
 	}
 
 	/*! \brief Get an iterator that traverse domain and ghost particles
@@ -2115,7 +2120,7 @@ public:
 		se3.getIterator();
 #endif
 
-		return vector_dist_iterator(g_m, v_pos.size());
+		return vector_dist_iterator(ghostMarker, vPos.size());
 	}
 
 	/*! \brief Get the iterator across the position of the ghost particles
@@ -2125,7 +2130,7 @@ public:
 	 */
 	vector_dist_iterator getGhostIterator_no_se3() const
 	{
-		return vector_dist_iterator(g_m, v_pos.size());
+		return vector_dist_iterator(ghostMarker, vPos.size());
 	}
 
 	/*! \brief Get an iterator that traverse the particles in the domain
@@ -2154,7 +2159,7 @@ public:
 
 		getDecomposition().setNNParameters(shift,gs);
 
-		return ParticleIt_Cells<dim,CellList>(NN,getDecomposition().getDomainCells(),g_m);
+		return ParticleIt_Cells<dim,CellList>(NN,getDecomposition().getDomainCells(),ghostMarker);
 	}
 
 	/*! \brief Get an iterator that traverse the particles in the domain
@@ -2168,7 +2173,7 @@ public:
 		se3.getIterator();
 #endif
 
-		return vector_dist_iterator(0, g_m);
+		return vector_dist_iterator(0, ghostMarker);
 	}
 
 #ifdef CUDA_GPU
@@ -2184,7 +2189,7 @@ public:
 		se3.getIterator();
 #endif
 
-		return v_pos.getGPUIteratorTo(g_m-1,n_thr);
+		return vPos.getGPUIteratorTo(ghostMarker-1,n_thr);
 	}
 
 	/*! \brief Get an iterator that traverse the particles in the domain
@@ -2198,7 +2203,7 @@ public:
 		se3.getIterator();
 #endif
 
-		return v_pos.getGPUIteratorTo(v_pos.size()-1,n_thr);
+		return vPos.getGPUIteratorTo(vPos.size()-1,n_thr);
 	}
 
 	/*! \brief Merge the properties calculated on the sorted vector on the original vector
@@ -2206,19 +2211,19 @@ public:
 	 * \parameter Cell-list from which has been constructed the sorted vector
 	 *
 	 */
-	template<unsigned int ... prp,typename id_1, typename id_2, bool is_sparse>
-	void merge_sort(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>,id_1,id_2,is_sparse> & cl, size_t n_thr = default_kernel_wg_threads_)
+	template<unsigned int ... prp, bool is_sparse>
+	void merge_sort(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>,is_sparse> & cl, size_t n_thr = default_kernel_wg_threads_)
 	{
 #if defined(__NVCC__)
 
-		auto ite = v_pos.getGPUIteratorTo(g_m-1,n_thr);
+		auto ite = vPos.getGPUIteratorTo(ghostMarker-1,n_thr);
 		bool has_work = has_work_gpu(ite);
 
 		if (has_work == true)
 		{
-			CUDA_LAUNCH((merge_sort_part<false,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortToSort().toKernel()),prp...>),
+			CUDA_LAUNCH((merge_sort_part<false,decltype(vPos.toKernel()),decltype(vPrp.toKernel()),decltype(cl.getNonSortToSort().toKernel()),prp...>),
 			ite,
-			v_pos.toKernel(),v_prp.toKernel(),v_pos_out.toKernel(),v_prp_out.toKernel(),cl.getNonSortToSort().toKernel());
+			vPos.toKernel(),vPrp.toKernel(),vPosOut.toKernel(),vPrpOut.toKernel(),cl.getNonSortToSort().toKernel());
 		}
 
 #endif
@@ -2235,9 +2240,9 @@ public:
 	void debugPrintVector(bool print_sorted = false)
 	{
 		if (print_sorted == false)
-		{this->v_prp.template deviceToHost<prp>();}
+		{this->vPrp.template deviceToHost<prp>();}
 		else
-		{this->v_prp_out.template deviceToHost<prp>();}
+		{this->vPrpOut.template deviceToHost<prp>();}
 
 		auto it = this->getDomainIterator();
 
@@ -2248,9 +2253,9 @@ public:
 			for (size_t i = 0 ; i < std::extent<typename boost::mpl::at<typename prop::type,boost::mpl::int_<prp>>::type>::value ; i++)
 			{
 				if (print_sorted == false)
-				{std::cout << v_prp.template get<prp>(p.getKey())[i] << "   ";}
+				{std::cout << vPrp.template get<prp>(p.getKey())[i] << "   ";}
 				else
-				{std::cout << v_prp_out.template get<prp>(p.getKey())[i] << "   ";}
+				{std::cout << vPrpOut.template get<prp>(p.getKey())[i] << "   ";}
 			}
 
 			std::cout << std::endl;
@@ -2270,9 +2275,9 @@ public:
 	void debugPrintScalar(bool print_sorted = false)
 	{
 		if (print_sorted == false)
-		{this->v_prp.template deviceToHost<prp>();}
+		{this->vPrp.template deviceToHost<prp>();}
 		else
-		{this->v_prp_out.template deviceToHost<prp>();}
+		{this->vPrpOut.template deviceToHost<prp>();}
 
 		auto it = this->getDomainIterator();
 
@@ -2281,9 +2286,9 @@ public:
 			auto p = it.get();
 
 			if (print_sorted == false)
-			{std::cout << v_prp_out.template get<prp>(p.getKey()) << "   " << std::endl;}
+			{std::cout << vPrpOut.template get<prp>(p.getKey()) << "   " << std::endl;}
 			else
-			{std::cout << v_prp_out.template get<prp>(p.getKey()) << "   " << std::endl;}
+			{std::cout << vPrpOut.template get<prp>(p.getKey()) << "   " << std::endl;}
 
 			++it;
 		}
@@ -2298,11 +2303,11 @@ public:
 	{
 #if defined(__NVCC__)
 
-		auto ite = v_pos.getGPUIteratorTo(g_m-1,n_thr);
+		auto ite = vPos.getGPUIteratorTo(ghostMarker-1,n_thr);
 
-		CUDA_LAUNCH((merge_sort_part<true,decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortedToSorted().toKernel()),prp...>),
+		CUDA_LAUNCH((merge_sort_part<true,decltype(vPos.toKernel()),decltype(vPrp.toKernel()),decltype(cl.getNonSortedToSorted().toKernel()),prp...>),
 		ite,
-		v_pos.toKernel(),v_prp.toKernel(),v_pos_out.toKernel(),v_prp_out.toKernel(),cl.getNonSortedToSorted().toKernel());
+		vPos.toKernel(),vPrp.toKernel(),vPosOut.toKernel(),vPrpOut.toKernel(),cl.getNonSortedToSorted().toKernel());
 
 #endif
 	}
@@ -2344,7 +2349,7 @@ public:
 	 */
 	vector_dist_iterator getDomainIterator_no_se3() const
 	{
-		return vector_dist_iterator(0, g_m);
+		return vector_dist_iterator(0, ghostMarker);
 	}
 
 	/*! \brief Get an iterator that traverse the particles in the domain
@@ -2358,7 +2363,7 @@ public:
 		se3.getIterator();
 #endif
 
-		return vector_dist_iterator(0, v_pos.size());
+		return vector_dist_iterator(0, vPos.size());
 	}
 
 	/*! \brief Get an iterator that traverse the particles in the domain
@@ -2368,7 +2373,7 @@ public:
 	 */
 	vector_dist_iterator getDomainAndGhostIterator_no_se3() const
 	{
-		return vector_dist_iterator(0, v_pos.size());
+		return vector_dist_iterator(0, vPos.size());
 	}
 
 	/*! \brief Get the decomposition
@@ -2410,7 +2415,7 @@ public:
 		se3.map_pre();
 #endif
 
-		this->template map_list_<prp...>(v_pos,v_prp,g_m,opt);
+		this->template map_list_<prp...>(vPos,vPrp,ghostMarker,opt);
 
 #ifdef CUDA_GPU
 		this->update(this->toKernel());
@@ -2442,7 +2447,7 @@ public:
 	    map_ctr++;
 #endif
 
-		this->template map_<obp>(v_pos,v_prp,g_m,opt);
+		this->template map_<obp>(vPos,vPrp,ghostMarker,opt);
 
 #ifdef CUDA_GPU
 		this->update(this->toKernel());
@@ -2494,7 +2499,7 @@ public:
 		se3.template ghost_get_pre<prp...>(opt);
 #endif
 
-		this->template ghost_get_<GHOST_SYNC,prp...>(v_pos,v_prp,g_m,opt);
+		this->template ghost_get_<GHOST_SYNC,prp...>(vPos,vPrp,ghostMarker,opt);
 
 #ifdef CUDA_GPU
 		this->update(this->toKernel());
@@ -2502,7 +2507,7 @@ public:
 
 #ifdef SE_CLASS3
 
-		this->template ghost_get_<prop::max_prop_real>(v_pos,v_prp,g_m,opt | KEEP_PROPERTIES);
+		this->template ghost_get_<prop::max_prop_real>(vPos,vPrp,ghostMarker,opt | KEEP_PROPERTIES);
 
 		se3.template ghost_get_post<prp...>(opt);
 #endif
@@ -2532,7 +2537,7 @@ public:
 		se3.template ghost_get_pre<prp...>(opt);
 #endif
 
-		this->template ghost_get_<GHOST_ASYNC,prp...>(v_pos,v_prp,g_m,opt);
+		this->template ghost_get_<GHOST_ASYNC,prp...>(vPos,vPrp,ghostMarker,opt);
 	}
 
 	/*! \brief It synchronize the properties and position of the ghost particles
@@ -2554,7 +2559,7 @@ public:
 		}
 #endif
 
-		this->template ghost_wait_<prp...>(v_pos,v_prp,g_m,opt);
+		this->template ghost_wait_<prp...>(vPos,vPrp,ghostMarker,opt);
 
 #ifdef CUDA_GPU
 		this->update(this->toKernel());
@@ -2562,7 +2567,7 @@ public:
 
 #ifdef SE_CLASS3
 
-		this->template ghost_get_<prop::max_prop_real>(v_pos,v_prp,g_m,opt | KEEP_PROPERTIES);
+		this->template ghost_get_<prop::max_prop_real>(vPos,vPrp,ghostMarker,opt | KEEP_PROPERTIES);
 
 		se3.template ghost_get_post<prp...>(opt);
 #endif
@@ -2584,7 +2589,24 @@ public:
 #ifdef SE_CLASS3
 		se3.template ghost_put<prp...>();
 #endif
-		this->template ghost_put_<op,prp...>(v_pos,v_prp,g_m,opt_);
+		this->template ghost_put_<op,prp...>(vPos,vPrp,ghostMarker,opt_);
+	}
+
+	/*! \brief Remove a set of elements from the distributed vector
+	 *
+	 * \param keys std::set of elements to eliminate.
+	 * 	Values inside std::set are sorted by definition of the container
+	 *
+	 */
+	void remove(std::set<size_t> & keys)
+	{
+		openfpm::vector<size_t> v_keys; v_keys.reserve(keys.size());
+
+		for (auto it = keys.begin(); it != keys.end(); ++it)
+			v_keys.add(*it);
+
+		// keys are sorted and unique
+		this->remove(v_keys, 0);
 	}
 
 	/*! \brief Remove a set of elements from the distributed vector
@@ -2614,10 +2636,10 @@ public:
 	 */
 	void remove(openfpm::vector<size_t> & keys, size_t start = 0)
 	{
-		v_pos.remove(keys, start);
-		v_prp.remove(keys, start);
+		vPos.remove(keys, start);
+		vPrp.remove(keys, start);
 
-		g_m -= keys.size();
+		ghostMarker -= keys.size();
 	}
 
 	/*! \brief Remove a set of elements from the distributed vector
@@ -2630,10 +2652,10 @@ public:
 	 */
 	void remove(openfpm::vector<aggregate<int>> & keys, size_t start = 0)
 	{
-		v_pos.remove(keys, start);
-		v_prp.remove(keys, start);
+		vPos.remove(keys, start);
+		vPrp.remove(keys, start);
 
-		g_m -= keys.size();
+		ghostMarker -= keys.size();
 	}
 
 	/*! \brief Remove one element from the distributed vector
@@ -2643,10 +2665,10 @@ public:
 	 */
 	void remove(size_t key)
 	{
-		v_pos.remove(key);
-		v_prp.remove(key);
+		vPos.remove(key);
+		vPrp.remove(key);
 
-		g_m--;
+		ghostMarker--;
 	}
 
 	/*! \brief Add the computation cost on the decomposition coming
@@ -2738,7 +2760,7 @@ public:
 	{
 		HDF5_writer<VECTOR_DIST> h5s;
 
-		h5s.save(filename,v_pos,v_prp);
+		h5s.save(filename,vPos,vPrp);
 	}
 
 	/*! \brief Load the distributed vector from an HDF5 file
@@ -2750,7 +2772,7 @@ public:
 	{
 		HDF5_reader<VECTOR_DIST> h5l;
 
-		h5l.load(filename,v_pos,v_prp,g_m);
+		h5l.load(filename,vPos,vPrp,ghostMarker);
 	}
 
 	/*! \brief Reserve space for the internal vectors
@@ -2760,8 +2782,8 @@ public:
 	 */
 	void setCapacity(unsigned int ns)
 	{
-		v_pos.reserve(ns);
-		v_prp.reserve(ns);
+		vPos.reserve(ns);
+		vPrp.reserve(ns);
 	}
 
 	/*! \brief Output particle position and properties
@@ -2801,7 +2823,7 @@ public:
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".csv"));
 
 			// Write the CSV
-			return csv_writer.write(output,v_pos,v_prp);
+			return csv_writer.write(output,vPos,vPrp);
 		}
 		else
 		{
@@ -2814,7 +2836,7 @@ public:
 			VTKWriter<boost::mpl::pair<vector_dist_pos,
 									   vector_dist_prop>,
 			                           VECTOR_POINTS> vtk_writer;
-			vtk_writer.add(v_pos,v_prp,g_m);
+			vtk_writer.add(vPos,vPrp,ghostMarker);
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtp"));
             //Create Directory for VTP files and write the PVTP metadata
@@ -2836,8 +2858,8 @@ public:
 	 */
 	void deleteGhost()
 	{
-		v_pos.resize(g_m);
-		v_prp.resize(g_m);
+		vPos.resize(ghostMarker);
+		vPrp.resize(ghostMarker);
 	}
 
 	/*! \brief Resize the vector (locally)
@@ -2851,10 +2873,10 @@ public:
 	{
 		deleteGhost();
 
-		v_pos.resize(rs);
-		v_prp.resize(rs);
+		vPos.resize(rs);
+		vPrp.resize(rs);
 
-		g_m = rs;
+		ghostMarker = rs;
 
 #ifdef CUDA_GPU
 		this->update(this->toKernel());
@@ -2870,8 +2892,8 @@ public:
 	 */
 	void resizeAtEnd(size_t rs)
 	{
-		v_pos.resize(rs);
-		v_prp.resize(rs);
+		vPos.resize(rs);
+		vPrp.resize(rs);
 #ifdef CUDA_GPU
 		this->update(this->toKernel());
 #endif
@@ -2917,7 +2939,7 @@ public:
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".csv"));
 
 			// Write the CSV
-			return csv_writer.write(output, v_pos, v_prp);
+			return csv_writer.write(output, vPos, vPrp);
 		}
 		else
 		{
@@ -2929,7 +2951,7 @@ public:
 			// VTKWriter for a set of points
 			VTKWriter<boost::mpl::pair<vector_dist_pos,
 									   vector_dist_prop>, VECTOR_POINTS> vtk_writer;
-			vtk_writer.add(v_pos,v_prp,g_m);
+			vtk_writer.add(vPos,vPrp,ghostMarker);
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtp"));
 
@@ -2972,7 +2994,7 @@ public:
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".csv"));
 
 			// Write the CSV
-			return csv_writer.write(output, v_pos, v_prp);
+			return csv_writer.write(output, vPos, vPrp);
 		}
 		else
 		{
@@ -2984,7 +3006,7 @@ public:
 			// VTKWriter for a set of points
 			VTKWriter<boost::mpl::pair<vector_dist_pos,
 									   vector_dist_prop>, VECTOR_POINTS> vtk_writer;
-			vtk_writer.add(v_pos,v_prp,g_m);
+			vtk_writer.add(vPos,vPrp,ghostMarker);
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtp"));
 
@@ -3062,7 +3084,7 @@ public:
 	 */
 	const vector_dist_pos & getPosVector() const
 	{
-		return v_pos;
+		return vPos;
 	}
 
 	/*! \brief return the position vector of all the particles
@@ -3072,7 +3094,7 @@ public:
 	 */
 	vector_dist_pos & getPosVector()
 	{
-		return v_pos;
+		return vPos;
 	}
 
 	/*! \brief return the property vector of all the particles
@@ -3082,7 +3104,7 @@ public:
 	 */
 	const vector_dist_prop & getPropVector() const
 	{
-		return v_prp;
+		return vPrp;
 	}
 
 	/*! \brief return the property vector of all the particles
@@ -3092,7 +3114,7 @@ public:
 	 */
 	vector_dist_prop & getPropVector()
 	{
-		return v_prp;
+		return vPrp;
 	}
 
 	/*! \brief return the position vector of all the particles
@@ -3102,7 +3124,7 @@ public:
 	 */
 	const vector_dist_pos & getPosVectorSort() const
 	{
-		return v_pos_out;
+		return vPosOut;
 	}
 
 	/*! \brief return the position vector of all the particles
@@ -3112,7 +3134,7 @@ public:
 	 */
 	vector_dist_pos & getPosVectorSort()
 	{
-		return v_pos_out;
+		return vPosOut;
 	}
 
 	/*! \brief return the property vector of all the particles
@@ -3122,7 +3144,7 @@ public:
 	 */
 	const vector_dist_prop & getPropVectorSort() const
 	{
-		return v_prp_out;
+		return vPrpOut;
 	}
 
 	/*! \brief return the property vector of all the particles
@@ -3132,7 +3154,7 @@ public:
 	 */
 	vector_dist_prop & getPropVectorSort()
 	{
-		return v_prp_out;
+		return vPrpOut;
 	}
 
 	/*! \brief It return the sum of the particles in the previous processors
@@ -3167,7 +3189,7 @@ public:
 	 * \return Particle iterator
 	 *
 	 */
-	template<typename cli> ParticleItCRS_Cells<dim,cli,decltype(v_pos)> getParticleIteratorCRS_Cell(cli & NN)
+	template<typename cli> ParticleItCRS_Cells<dim,cli,decltype(vPos)> getParticleIteratorCRS_Cell(cli & NN)
 	{
 #ifdef SE_CLASS3
 		se3.getIterator();
@@ -3193,7 +3215,7 @@ public:
 		getDecomposition().setNNParameters(shift,gs);
 
 		// First we check that
-		return ParticleItCRS_Cells<dim,cli,decltype(v_pos)>(NN,getDecomposition().getCRSDomainCells(),
+		return ParticleItCRS_Cells<dim,cli,decltype(vPos)>(NN,getDecomposition().getCRSDomainCells(),
 				                               getDecomposition().getCRSAnomDomainCells(),
 											   NN.getNNc_sym());
 	}
@@ -3294,7 +3316,7 @@ public:
 		 */
 		template<unsigned int ... prp> vector_dist_ker<dim,St,prop,layout_base> toKernel()
 		{
-			vector_dist_ker<dim,St,prop,layout_base> v(g_m,v_pos.toKernel(), v_prp.toKernel());
+			vector_dist_ker<dim,St,prop,layout_base> v(ghostMarker,vPos.toKernel(), vPrp.toKernel());
 
 			return v;
 		}
@@ -3319,7 +3341,7 @@ public:
 		 */
 		template<unsigned int ... prp> vector_dist_ker<dim,St,prop,layout_base> toKernel_sorted()
 		{
-			vector_dist_ker<dim,St,prop,layout_base> v(g_m,v_pos_out.toKernel(), v_prp_out.toKernel());
+			vector_dist_ker<dim,St,prop,layout_base> v(ghostMarker,vPosOut.toKernel(), vPrpOut.toKernel());
 
 			return v;
 		}
@@ -3331,7 +3353,7 @@ public:
 		 */
 		template<unsigned int ... prp> void deviceToHostProp()
 		{
-			v_prp.template deviceToHost<prp ...>();
+			vPrp.template deviceToHost<prp ...>();
 		}
 
 		/*! \brief Move the memory from the device to host memory
@@ -3344,7 +3366,7 @@ public:
 		 */
 		template<unsigned int ... prp> void deviceToHostProp(size_t start, size_t stop)
 		{
-			v_prp.template deviceToHost<prp ...>(start,stop);
+			vPrp.template deviceToHost<prp ...>(start,stop);
 		}
 
 		/*! \brief Move the memory from the device to host memory
@@ -3354,7 +3376,7 @@ public:
 		 */
 		void deviceToHostPos()
 		{
-			v_pos.template deviceToHost<0>();
+			vPos.template deviceToHost<0>();
 		}
 
 		/*! \brief Move the memory from the device to host memory
@@ -3364,7 +3386,7 @@ public:
 		 */
 		template<unsigned int ... prp> void hostToDeviceProp()
 		{
-			v_prp.template hostToDevice<prp ...>();
+			vPrp.template hostToDevice<prp ...>();
 		}
 
 		/*! \brief Move the memory from the device to host memory
@@ -3374,12 +3396,12 @@ public:
 		 */
 		void hostToDevicePos()
 		{
-			v_pos.template hostToDevice<0>();
+			vPos.template hostToDevice<0>();
 		}
 
-		void set_g_m(size_t g_m)
+		void set_g_m(size_t ghostMarker)
 		{
-			this->g_m = g_m;
+			this->ghostMarker = ghostMarker;
 		}
 
         /*! \brief this function sort the vector
@@ -3399,8 +3421,8 @@ public:
                 // construct a cell-list forcing to create a sorted version without ghost
 
                 // swap the sorted with the non-sorted
-                v_pos.swap(v_pos_out);
-                v_prp.swap(v_prp_out);
+                vPos.swap(vPosOut);
+                vPrp.swap(vPrpOut);
         }
 
         /*! \brief this function sort the vector
@@ -3415,14 +3437,14 @@ public:
         {
 #if defined(__NVCC__)
 
-			auto ite = v_pos.getGPUIteratorTo(g_m-1);
+			auto ite = vPos.getGPUIteratorTo(ghostMarker-1);
 
-			CUDA_LAUNCH((merge_sort_all<decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(cl.getNonSortToSort().toKernel())>),
+			CUDA_LAUNCH((merge_sort_all<decltype(vPos.toKernel()),decltype(vPrp.toKernel()),decltype(cl.getNonSortToSort().toKernel())>),
 					ite,
-					v_pos_out.toKernel(),v_prp_out.toKernel(),v_pos.toKernel(),v_prp.toKernel(),cl.getNonSortToSort().toKernel());
+					vPosOut.toKernel(),vPrpOut.toKernel(),vPos.toKernel(),vPrp.toKernel(),cl.getNonSortToSort().toKernel());
 
-			v_pos.swap(v_pos_out);
-			v_prp.swap(v_prp_out);
+			vPos.swap(vPosOut);
+			vPrp.swap(vPrpOut);
 
 #endif
         }
@@ -3436,7 +3458,7 @@ public:
          */
         bool compareHostAndDevicePos(St tol, St near  = -1.0, bool silent = false)
         {
-        	return compare_host_device<Point<dim,St>,0>::compare(v_pos,tol,near,silent);
+			return compare_host_device<Point<dim,St>,0>::compare(vPos,tol,near,silent);
         }
 
 
@@ -3450,8 +3472,8 @@ public:
         template<unsigned int prp>
         bool compareHostAndDeviceProp(St tol, St near  = -1.0, bool silent = false)
         {
-        	return compare_host_device<typename boost::mpl::at<typename prop::type,
-        							            boost::mpl::int_<prp> >::type,prp>::compare(v_prp,tol,near,silent);
+			return compare_host_device<typename boost::mpl::at<typename prop::type,
+												boost::mpl::int_<prp> >::type,prp>::compare(vPrp,tol,near,silent);
         }
 
 #else
