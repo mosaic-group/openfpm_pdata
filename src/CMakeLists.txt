@@ -395,8 +395,7 @@ install(FILES Graph/ids.hpp Graph/dist_map_graph.hpp
               DESTINATION openfpm_pdata/include/Graph
 	      COMPONENT OpenFPM)
 
-install(FILES example.mk
-	      ../example/common.mk
+install(FILES ../example/common.mk
               SubdomainGraphNodes.hpp
               DESTINATION openfpm_pdata/include/ )
 
