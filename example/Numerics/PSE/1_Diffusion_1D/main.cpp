@@ -69,7 +69,7 @@ template<typename CellL> double calcLap(Point<1,double> p, vect_dist_key_dx key,
 	double prp_x = vd.template getProp<0>(key);
 
 	// Get the neighborhood of the particles
-	auto NN = cl.template getNNIterator(cl.getCell(p));
+	auto NN = cl.getNNIterator(cl.getCell(p));
 	while(NN.isNext())
 	{
 		auto nnp = NN.get();

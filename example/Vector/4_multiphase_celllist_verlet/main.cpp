@@ -186,7 +186,7 @@ int main(int argc, char* argv[])
 		phases.get(0).getProp<0>(p) = 0;
 
 		// Get an iterator over the neighborhood particles for the particle p
-		auto Np = NN_ver01.template getNNIterator(p.getKey());
+		auto Np = NN_ver01.getNNIterator(p.getKey());
 
 		// For each neighborhood of the particle p
 		while (Np.isNext())
@@ -271,7 +271,7 @@ int main(int argc, char* argv[])
 		auto p = it.get();
 
 		// Get an interator over the neighborhood of the particle p
-		auto Np = NNver0_all.template getNNIterator(p.getKey());
+		auto Np = NNver0_all.getNNIterator(p.getKey());
 
 		// reset the counter
 		phases.get(0).getProp<0>(p) = 0;
@@ -356,7 +356,7 @@ int main(int argc, char* argv[])
 		auto p = it.get();
 
 		// Get the neighborhood of particle p
-		auto Np = NN_ver01.template getNNIterator(p.getKey());
+		auto Np = NN_ver01.getNNIterator(p.getKey());
 
 		// For each neighborhood of the particle p
 		while (Np.isNext())
@@ -463,7 +463,7 @@ int main(int argc, char* argv[])
 			auto p = it.get();
 
 			// Get an iterator for neighborhood of the particle p
-			auto Np = NNver_all[i].template getNNIterator(p.getKey());
+			auto Np = NNver_all[i].getNNIterator(p.getKey());
 
 			// For each neighborhood particle
 			while (Np.isNext())
