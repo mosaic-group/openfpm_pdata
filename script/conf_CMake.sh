@@ -14,8 +14,8 @@ scan_coverty=OFF
 cuda_on_backend=NONE
 test_performance=OFF
 enable_asan=OFF
-enable_garbage_injector=ON
-enable_vcluster_garbage_injector=ON
+enable_garbage_injector=OFF
+enable_vcluster_garbage_injector=OFF
 
 # -----------
 
