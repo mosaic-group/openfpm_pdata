@@ -919,7 +919,7 @@ int main(int argc, char* argv[])
 
 	vd.ghost_get<type,rho,Pressure,velocity>(RUN_ON_DEVICE);
 
-	auto NN = vd.getCellListGPU(2*H);
+	auto NN = vd.getCellListGPU(2*H, 2);
 
 	timer tot_sim;
 	tot_sim.start();

@@ -328,7 +328,7 @@ int main(int argc, char* argv[])
 	//! \cond [md steps] \endcond
 
 	// Get the Cell list structure
-	auto NN = vd.getCellListGPU(r_cut);
+	auto NN = vd.getCellListGPU(r_cut, 2);
 
 	// The standard
 	// auto NN = vd.getCellList(r_cut);

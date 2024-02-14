@@ -361,7 +361,7 @@ int main(int argc, char* argv[])
 	//! \cond [get_half_cl] \endcond
 
 	// Get the Cell list structure
-	auto NN = vd.getCellListGPU(r_cut / 2.0);
+	auto NN = vd.getCellListGPU(r_cut / 2.0, 2);
 
 	//! \cond [get_half_cl] \endcond
 
