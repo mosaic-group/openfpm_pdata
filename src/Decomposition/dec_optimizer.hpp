@@ -50,7 +50,7 @@ template <unsigned int dim, typename Graph>
 class dec_optimizer
 {
 	//! Contain information about the grid size
-	grid_sm<dim,void> gh;
+	grid_sm<dim,void> gridDist;
 
 private:
 
@@ -130,7 +130,7 @@ private:
 	{
 		// fill the wall domain with 0
 
-		fill_domain<prp>(graph,gh.getBox(),0);
+		fill_domain<prp>(graph,gridDist.getBox(),0);
 
 		// fill the wavefront
 
@@ -155,7 +155,7 @@ private:
 	template<unsigned int p_sub> void fill_domain(Graph & graph,const Box<dim,size_t> & box, long int ids)
 	{
 		// Create a subgrid iterator
-		grid_key_dx_iterator_sub<dim,no_stencil,grid_sm<dim,void>,do_not_print_warning_on_adjustment<dim,grid_sm<dim,void>>> g_sub(gh,box.getKP1(),box.getKP2());
+		grid_key_dx_iterator_sub<dim,no_stencil,grid_sm<dim,void>,do_not_print_warning_on_adjustment<dim,grid_sm<dim,void>>> g_sub(gridDist,box.getKP1(),box.getKP2());
 
 		// iterate through all grid points
 
@@ -166,7 +166,7 @@ private:
 
 			// get the vertex and set the sub id
 
-			graph.vertex(gh.LinId(gk)).template get<p_sub>() = ids;
+			graph.vertex(gridDist.LinId(gk)).template get<p_sub>() = ids;
 
 			// next subdomain
 			++g_sub;
@@ -218,7 +218,7 @@ private:
 		for (size_t d = 0 ; d < v_w.size() ; d++)
 		{
 			// Create a sub-grid iterator
-			grid_key_dx_iterator_sub_bc<dim,no_stencil,grid_sm<dim,void>,do_not_print_warning_on_adjustment<dim,grid_sm<dim,void>>> g_sub(gh,v_w.template get<wavefront<dim>::start>(d),v_w.template get<wavefront<dim>::stop>(d),bc);
+			grid_key_dx_iterator_sub_bc<dim,no_stencil,grid_sm<dim,void>,do_not_print_warning_on_adjustment<dim,grid_sm<dim,void>>> g_sub(gridDist,v_w.template get<wavefront<dim>::start>(d),v_w.template get<wavefront<dim>::stop>(d),bc);
 
 			// iterate through all grid points
 
@@ -228,10 +228,10 @@ private:
 				const grid_key_dx<dim> & gk = g_sub.get();
 
 				// get the vertex and if does not have a sub-id and is assigned ...
-				long int pid = graph.vertex(gh.LinId(gk)).template get<p_sub>();
+				long int pid = graph.vertex(gridDist.LinId(gk)).template get<p_sub>();
 
 				// Get the processor id of the sub-sub-domain
-				long int pp_id = graph.vertex(gh.LinId(gk)).template get<p_id>();
+				long int pp_id = graph.vertex(gridDist.LinId(gk)).template get<p_id>();
 
 				// if the sub-sub-domain is not assigned
 				if (pid < 0)
@@ -242,10 +242,10 @@ private:
 						// ... and the processor id of the sub-sub-domain match the part we are processing, add to the queue
 
 						if ( pr_id == pp_id)
-							domains_new.add(gh.LinId(gk));
+							domains_new.add(gridDist.LinId(gk));
 					}
 					else
-						domains_new.add(gh.LinId(gk));
+						domains_new.add(gridDist.LinId(gk));
 				}
 
 				++g_sub;
@@ -307,13 +307,13 @@ private:
 				// Create an iterator of the expanded wavefront
 				grid_key_dx<dim> start = grid_key_dx<dim>(v_w.template get<wavefront<dim>::start>(d)) + w_comb[d];
 				grid_key_dx<dim> stop = grid_key_dx<dim>(v_w.template get<wavefront<dim>::stop>(d)) + w_comb[d];
-				grid_key_dx_iterator_sub<dim,no_stencil,grid_sm<dim,void>,do_not_print_warning_on_adjustment<dim,grid_sm<dim,void>>> it(gh,start,stop);
+				grid_key_dx_iterator_sub<dim,no_stencil,grid_sm<dim,void>,do_not_print_warning_on_adjustment<dim,grid_sm<dim,void>>> it(gridDist,start,stop);
 
 				// for each sub-domain in the expanded wavefront
 				while (it.isNext())
 				{
 					// get the wavefront sub-domain id
-					size_t sub_w_e = gh.LinId(it.get());
+					size_t sub_w_e = gridDist.LinId(it.get());
 
 					// we get the processor id of the neighborhood sub-domain on direction d
 					// (expanded wavefront)
@@ -451,7 +451,7 @@ private:
 		}
 
 		// Create a grid iterator
-		grid_key_dx_iterator<dim> g_sub(gh);
+		grid_key_dx_iterator<dim> g_sub(gridDist);
 
 		// iterate through all grid points
 
@@ -461,7 +461,7 @@ private:
 			const grid_key_dx<dim> & gk = g_sub.get();
 
 			// if the subdomain has the id we are searching stop
-			if ((long int)graph.vertex(gh.LinId(gk)).template get<p_id>() == id && graph.vertex(gh.LinId(gk)).template get<p_sub>() == -1)
+			if ((long int)graph.vertex(gridDist.LinId(gk)).template get<p_id>() == id && graph.vertex(gridDist.LinId(gk)).template get<p_sub>() == -1)
 			{
 				return gk;
 			}
@@ -492,7 +492,7 @@ private:
 	 * \param pr_id Processor id (if p_id == -1 the optimization is done for all the processors)
 	 * \param loc_boxes list of sub-domain boxes produced by the algorithm
 	 * \param box_nn_processor for each sub-domain it list all the neighborhood processors
-	 * \param ghe Ghost extension in sub-sub-domain units in each direction
+	 * \param ghostExtended Ghost extension in sub-sub-domain units in each direction
 	 * \param init_sub_id when true p_sub property is initially set to -1 [default true]
 	 * \param sub_id starting sub_id to enumerate them [default 0]
 	 * \param bc boundary conditions
@@ -500,7 +500,7 @@ private:
 	 * \return last assigned sub-id
 	 *
 	 */
-	template <unsigned int p_sub, unsigned int p_id> size_t optimize(grid_key_dx<dim> & start_p, Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & loc_boxes, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor , const Ghost<dim,long int> & ghe ,const size_t (& bc)[dim], bool init_sub_id = true, size_t sub_id = 0)
+	template <unsigned int p_sub, unsigned int p_id> size_t optimize(grid_key_dx<dim> & start_p, Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & loc_boxes, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor , const Ghost<dim,long int> & ghostExtended ,const size_t (& bc)[dim], bool init_sub_id = true, size_t sub_id = 0)
 	{
 		// queue
 		openfpm::vector<size_t> v_q;
@@ -520,10 +520,10 @@ private:
 		// fill the sub decomposition with negative number
 
 		if (init_sub_id == true)
-			fill_domain<p_sub>(graph,gh.getBox(),-1);
+			fill_domain<p_sub>(graph,gridDist.getBox(),-1);
 
 		// push the first domain
-		v_q.add(gh.LinId(start_p));
+		v_q.add(gridDist.LinId(start_p));
 
 		while (v_q.size() != 0)
 		{
@@ -531,7 +531,7 @@ private:
 			Box<dim,size_t> box;
 
 			// Get the grid_key position from the linearized id
-			start_p = gh.InvLinId(v_q.get(0));
+			start_p = gridDist.InvLinId(v_q.get(0));
 
 			// Initialize the wavefronts from the domain start_p
 			InitializeWavefront(start_p,v_w);
@@ -564,12 +564,12 @@ private:
 	 * \param graph graph to process
 	 * \param box_nn_processor for each sub-domain it list all the neighborhood processors
 	 * \param loc_boxes vector of sub-domains
-	 * \param ghe ghost extensions
+	 * \param ghostExtended ghost extensions
 	 * \param bc boundary conditions
 	 * \param pr_id processor that we are processing
 	 *
 	 */
-	template<unsigned int p_id> void construct_box_nn_processor(Graph & graph, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor, const openfpm::vector<Box<dim,size_t>> & loc_boxes, const Ghost<dim,long int> & ghe, const size_t (& bc)[dim], long int pr_id)
+	template<unsigned int p_id> void construct_box_nn_processor(Graph & graph, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor, const openfpm::vector<Box<dim,size_t>> & loc_boxes, const Ghost<dim,long int> & ghostExtended, const size_t (& bc)[dim], long int pr_id)
 	{
 		std::unordered_map<size_t,size_t> map;
 
@@ -577,15 +577,15 @@ private:
 		{
 			map.clear();
 			Box<dim,size_t> sub = loc_boxes.get(i);
-			sub.enlarge(ghe);
+			sub.enlarge(ghostExtended);
 
-			grid_skin_iterator_bc<dim> gsi(gh,loc_boxes.get(i),sub,bc);
+			grid_skin_iterator_bc<dim> gsi(gridDist,loc_boxes.get(i),sub,bc);
 
 			while (gsi.isNext())
 			{
 				auto key = gsi.get();
 
-				size_t pp_id = graph.vertex(gh.LinId(key)).template get<p_id>();
+				size_t pp_id = graph.vertex(gridDist.LinId(key)).template get<p_id>();
 				if (pr_id != (long int)pp_id)
 					map[pp_id] = pp_id;
 
@@ -612,7 +612,7 @@ public:
 	 */
 
 	dec_optimizer(Graph & g, const size_t (& sz)[dim])
-	:gh(sz)
+	:gridDist(sz)
 	{
 		// The graph g is suppose to represent a cartesian grid
 		// No check is performed on g
@@ -629,11 +629,11 @@ public:
 	 *
 	 * \param start_p seed point
 	 * \param graph we are processing
-	 * \param ghe ghost size
+	 * \param ghostExtended ghost size
 	 * \param bc boundary conditions
 	 *
 	 */
-	template <unsigned int p_sub, unsigned int p_id> void optimize(grid_key_dx<dim> & start_p, Graph & graph, const Ghost<dim,long int> & ghe , const size_t (& bc)[dim])
+	template <unsigned int p_sub, unsigned int p_id> void optimize(grid_key_dx<dim> & start_p, Graph & graph, const Ghost<dim,long int> & ghostExtended , const size_t (& bc)[dim])
 	{
 		// temporal vector
 		openfpm::vector<Box<dim,size_t>> loc_boxes;
@@ -642,7 +642,7 @@ public:
 		openfpm::vector< openfpm::vector<size_t> > box_nn_processor;
 
 		// optimize
-		optimize<p_sub,p_id>(start_p,graph,-1,loc_boxes, box_nn_processor,ghe,bc);
+		optimize<p_sub,p_id>(start_p,graph,-1,loc_boxes, box_nn_processor,ghostExtended,bc);
 	}
 
 	/*! \brief optimize the graph
@@ -658,10 +658,10 @@ public:
 	 * \param pr_id Processor id (if p_id == -1 the optimization is done for all the processors)
 	 * \param loc_boxes list of sub-domain boxes
 	 * \param box_nn_processor for each sub-domain it list all the neighborhood processors
-	 * \param ghe ghost size
+	 * \param ghostExtended ghost size
 	 *
 	 */
-	template <unsigned int p_sub, unsigned int p_id> void optimize(Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & loc_boxes, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor, const Ghost<dim,long int> & ghe, const size_t (& bc)[dim])
+	template <unsigned int p_sub, unsigned int p_id> void optimize(Graph & graph, long int pr_id, openfpm::vector<Box<dim,size_t>> & loc_boxes, openfpm::vector< openfpm::vector<size_t> > & box_nn_processor, const Ghost<dim,long int> & ghostExtended, const size_t (& bc)[dim])
 	{
 		grid_key_dx<dim> key_seed;
 		key_seed.zero();
@@ -669,10 +669,10 @@ public:
 		// if processor is -1 call optimize with -1 to do on all processors and exit
 		if (pr_id == -1)
 		{
-			optimize<p_sub,p_id>(key_seed,graph,pr_id,loc_boxes,box_nn_processor,ghe,bc);
+			optimize<p_sub,p_id>(key_seed,graph,pr_id,loc_boxes,box_nn_processor,ghostExtended,bc);
 
 			// Construct box box_nn_processor from the constructed domain
-			construct_box_nn_processor<p_id>(graph,box_nn_processor,loc_boxes,ghe,bc,pr_id);
+			construct_box_nn_processor<p_id>(graph,box_nn_processor,loc_boxes,ghostExtended,bc,pr_id);
 
 			return;
 		}
@@ -680,21 +680,21 @@ public:
 		size_t sub_id = 0;
 
 		// fill the sub decomposition with negative number
-		fill_domain<p_sub>(graph,gh.getBox(),-1);
+		fill_domain<p_sub>(graph,gridDist.getBox(),-1);
 
 		key_seed = search_seed<p_id,p_sub>(graph,pr_id);
 
 		while (key_seed.isValid())
 		{
 			// optimize
-			sub_id = optimize<p_sub,p_id>(key_seed,graph,pr_id,loc_boxes,box_nn_processor,ghe,bc,false,sub_id);
+			sub_id = optimize<p_sub,p_id>(key_seed,graph,pr_id,loc_boxes,box_nn_processor,ghostExtended,bc,false,sub_id);
 
 			// new seed
 			key_seed = search_seed<p_id,p_sub>(graph,pr_id);
 		}
 
 		// Construct box box_nn_processor from the constructed domain
-		construct_box_nn_processor<p_id>(graph,box_nn_processor,loc_boxes,ghe,bc,pr_id);
+		construct_box_nn_processor<p_id>(graph,box_nn_processor,loc_boxes,ghostExtended,bc,pr_id);
 	}
 };
 
