@@ -146,17 +146,17 @@ if (CUDA_FOUND)
 endif()
 
 if(TEST_PERFORMANCE)
-        target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_numerics/src/)
+        target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_numerics/src/)
 endif()
 target_include_directories (pdata PUBLIC ${PARMETIS_ROOT}/include)
 target_include_directories (pdata PUBLIC ${METIS_ROOT}/include)
 target_include_directories (pdata PUBLIC ${HDF5_ROOT}/include)
 target_include_directories (pdata PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_devices/src/)
-target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_vcluster/src/)
-target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
-target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_io/src/)
+target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_devices/src/)
+target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_vcluster/src/)
+target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_data/src/)
+target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_io/src/)
 target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/config)
 target_include_directories (pdata PUBLIC ${PETSC_INCLUDES})
 target_include_directories (pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
@@ -226,11 +226,11 @@ if (TEST_COVERAGE)
     get_target_property(PDATA_LIBS pdata LINK_LIBRARIES)
     get_target_property(NUMERIC_LIBS numerics LINK_LIBRARIES)
 
-    list(TRANSFORM MEM_SOURCES PREPEND "../openfpm_devices/src/")
-    list(TRANSFORM DATA_SOURCES PREPEND "../openfpm_data/src/")
-    list(TRANSFORM VCLUSTER_SOURCES PREPEND "../openfpm_vcluster/src/")
-    list(TRANSFORM IO_SOURCES PREPEND "../openfpm_io/src/")
-    list(TRANSFORM NUMERIC_SOURCES PREPEND "../openfpm_numerics/src/")
+    list(TRANSFORM MEM_SOURCES PREPEND "../../openfpm_devices/src/")
+    list(TRANSFORM DATA_SOURCES PREPEND "../../openfpm_data/src/")
+    list(TRANSFORM VCLUSTER_SOURCES PREPEND "../../openfpm_vcluster/src/")
+    list(TRANSFORM IO_SOURCES PREPEND "../../openfpm_io/src/")
+    list(TRANSFORM NUMERIC_SOURCES PREPEND "../../openfpm_numerics/src/")
 
     set(PDATA_FULL_SOURCES ${PDATA_SOURCES} ${MEM_SOURCES} ${DATA_SOURCES} ${VCLUSTER_SOURCES} ${IO_SOURCES} ${NUMERIC_SOURCES})
     set(PDATA_FULL_SOURCES_CU ${PDATA_SOURCES} ${MEM_SOURCES} ${DATA_SOURCES} ${VCLUSTER_SOURCES} ${IO_SOURCES} ${NUMERIC_SOURCES})
@@ -270,16 +270,16 @@ endif()
 
 target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
+target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_data/src/)
 target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/config)
-target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_devices/src/)
+target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_devices/src/)
 target_include_directories (ofpm_pdata PUBLIC ${Boost_INCLUDE_DIRS})
 
 target_include_directories (ofpm_pdata_dl PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_include_directories (ofpm_pdata_dl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories (ofpm_pdata_dl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
+target_include_directories (ofpm_pdata_dl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_data/src/)
 target_include_directories (ofpm_pdata_dl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/config)
-target_include_directories (ofpm_pdata_dl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_devices/src/)
+target_include_directories (ofpm_pdata_dl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_devices/src/)
 target_include_directories (ofpm_pdata_dl PUBLIC ${Boost_INCLUDE_DIRS})
 
 target_compile_definitions(pdata PRIVATE ${MPI_VENDOR})
@@ -395,8 +395,7 @@ install(FILES Graph/ids.hpp Graph/dist_map_graph.hpp
               DESTINATION openfpm_pdata/include/Graph
 	      COMPONENT OpenFPM)
 
-install(FILES ../example/common.mk
-              SubdomainGraphNodes.hpp
+install(FILES SubdomainGraphNodes.hpp
               DESTINATION openfpm_pdata/include/ )
 
 install(FILES DLB/DLB.hpp DLB/LB_Model.hpp
@@ -517,23 +516,4 @@ if(NOT DOBC EQUAL 1)
     )
     
 endif()
-
-#####################################################################
-
-#if(BUILD_TESTING)
-
-#  add_executable(particle_test test.cu)
-
-#  set_target_properties(particle_test PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-#  target_link_libraries(particle_test PRIVATE particles)
-
-#  add_test(NAME particles_10k COMMAND particle_test 10000 )
-#  add_test(NAME particles_256k COMMAND particle_test 256000 )
-
-#  if(APPLE)
-    # We need to add the default path to the driver (libcuda.dylib) as an rpath,
-    # so that the static cuda runtime can find it at runtime.
-    #    set_property(TARGET particle_test PROPERTY BUILD_RPATH ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
-    #  endif()
-    #endif()
 
