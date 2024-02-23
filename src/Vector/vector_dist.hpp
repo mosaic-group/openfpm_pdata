@@ -205,9 +205,10 @@ struct cell_list_selector
 	typedef decltype(std::declval<vector>().getCellListGPU(0.0)) ctype;
 
 	static ctype get(vector & v,
-			typename vector::stype & r_cut)
+			typename vector::stype & r_cut,
+			size_t NNIteratorBox = 1)
 	{
-		return v.getCellListGPU(r_cut);
+		return v.getCellListGPU(r_cut, NNIteratorBox);
 	}
 };
 
@@ -217,7 +218,8 @@ struct cell_list_selector<vector,comp_host>
 	typedef decltype(std::declval<vector>().getCellList(0.0)) ctype;
 
 	static ctype get(vector & v,
-			typename vector::stype & r_cut)
+			typename vector::stype & r_cut,
+			size_t NNIteratorBox = 1)
 	{
 		return v.getCellList(r_cut);
 	}
@@ -1323,14 +1325,15 @@ public:
 	 *
 	 * \param r_cut interation radius, or size of each cell
 	 * \param no_se3 avoid SE_CLASS3 checking
-	 *
+	 * \param NNIteratorBox sets the number of neighborhood cell layers used to iterate through by getNNIteratorBox()
+
 	 * \return the Cell list
 	 *
 	 */
 	template<unsigned int impl>
-	typename cell_list_selector<self,impl>::ctype getCellListDev(St r_cut)
+	typename cell_list_selector<self,impl>::ctype getCellListDev(St r_cut, size_t NNIteratorBox = 1)
 	{
-		return cell_list_selector<self,impl>::get(*this,r_cut);
+		return cell_list_selector<self,impl>::get(*this, r_cut, NNIteratorBox);
 	}
 
 	/*! \brief Construct a cell list starting from the stored particles
@@ -1366,12 +1369,13 @@ public:
 	/*! \brief Construct a cell list starting from the stored particles
 	 *
 	 * \param r_cut interation radius, or size of each cell
+	 * \param NNIteratorBox sets the number of neighborhood cell layers used to iterate through by getNNIteratorBox()
 	 *
 	 * \return the Cell list
 	 *
 	 */
 	template<typename CellType = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>>,unsigned int ... prp>
-	CellType getCellListGPU(St r_cut, bool no_se3 = false)
+	CellType getCellListGPU(St r_cut, size_t NNIteratorBox = 1, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -1385,7 +1389,7 @@ public:
 		Ghost<dim,St> g = getDecomposition().getGhost();
 		g.magnify(1.013);
 
-		return getCellListGPU<CellType>(r_cut, g,no_se3);
+		return getCellListGPU<CellType>(r_cut, g, NNIteratorBox, no_se3);
 	}
 
 
