@@ -189,6 +189,9 @@ ${DEFINE_STOP_ON_ERROR}
 /* Garbage injector*/
 ${DEFINE_GARBAGE_INJECTOR}
 
+/* VCluster Garbage injector*/
+${DEFINE_VCLUSTER_GARBAGE_INJECTOR}
+
 /* Test coverage mode */
 ${DEFINE_TEST_COVERAGE_MODE}
 
