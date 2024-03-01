@@ -997,7 +997,7 @@ void test_vd_symmetric_verlet_list()
 
 		Point<3,float> xp = vd.getPosRead(p);
 
-		auto Np = NN2.template getNNIterator(p.getKey());
+		auto Np = NN2.getNNIterator(p.getKey());
 
 		while (Np.isNext())
 		{
@@ -1223,7 +1223,7 @@ void vector_sym_verlet_list_nb()
 
 			Point<3,float> xp = vd2.getPosRead(p);
 
-			auto Np = NN2.template getNNIterator(p.getKey());
+			auto Np = NN2.getNNIterator(p.getKey());
 
 			while (Np.isNext())
 			{
@@ -1408,7 +1408,7 @@ template<typename VerletList, typename part_prop> void test_crs_full(vector_dist
 
 		Point<3,float> xp = vd2.getPosRead(p);
 
-		auto Np = NN2.template getNNIterator(p);
+		auto Np = NN2.getNNIterator(p);
 
 		while (Np.isNext())
 		{
