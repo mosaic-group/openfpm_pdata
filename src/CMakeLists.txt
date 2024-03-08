@@ -139,7 +139,7 @@ if (CUDA_FOUND)
 	endif()
 endif()
 
-if(TEST_PERFORMANCE)
+if(TEST_PERFORMANCE AND ENABLE_NUMERICS)
 	target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_numerics/src/)
 endif()
 
@@ -430,7 +430,6 @@ if(NOT DOBC EQUAL 1)
 		${CMAKE_INSTALL_PREFIX}/openfpm_io/include
 		${CMAKE_INSTALL_PREFIX}/openfpm_vcluster/include
 		${CMAKE_INSTALL_PREFIX}/openfpm_devices/include
-		${CMAKE_INSTALL_PREFIX}/openfpm_numerics/include
 		${PARMETIS_ROOT}/include
 		${METIS_ROOT}/include
 		${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
@@ -438,7 +437,15 @@ if(NOT DOBC EQUAL 1)
 		${HDF5_ROOT}/include
 		${LIBHILBERT_INCLUDE_DIRS}
 		${Vc_INCLUDE_DIR}
-		${Boost_INCLUDE_DIRS})
+		${Boost_INCLUDE_DIRS}
+		${MPI_C_INCLUDE_DIRS})
+
+	if (ENABLE_NUMERICS)
+		target_include_directories(
+			binary_config_
+			INTERFACE
+			${CMAKE_INSTALL_PREFIX}/openfpm_numerics/include)
+	endif()
 
 	if (CUDA_ON_CPU)
 		target_compile_definitions(binary_config_ INTERFACE CUDA_ON_CPU)
