@@ -284,7 +284,7 @@ void check_cell_list_cpu_and_gpu(vector_type & vd, CellList_type & NN, CellList_
 {
 	const auto it5 = vd.getDomainIteratorGPU(32);
 
-	CUDA_LAUNCH((calculate_force<typename vector_type::stype,decltype(NN.toKernel())>),it5,vd.toKernel(),vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
+	CUDA_LAUNCH((calculate_force<typename vector_type::stype,decltype(NN.toKernel())>),it5,vd.toKernel(),vd.toKernel_sorted(),NN.toKernel(),(int)create_vcluster().rank());
 
 	vd.template deviceToHostProp<1,2>();
 
@@ -310,7 +310,7 @@ void check_cell_list_cpu_and_gpu(vector_type & vd, CellList_type & NN, CellList_
 
 	// We do exactly the same test as before, but now we completely use the sorted version
 
-	CUDA_LAUNCH((calculate_force_full_sort<typename vector_type::stype,decltype(NN.toKernel())>),it5,vd.toKernel_sorted(),NN.toKernel(),create_vcluster().rank());
+	CUDA_LAUNCH((calculate_force_full_sort<typename vector_type::stype,decltype(NN.toKernel())>),it5,vd.toKernel_sorted(),NN.toKernel(),(int)create_vcluster().rank());
 
 	vd.template merge_sort<1>(NN);
 	vd.template deviceToHostProp<1>();
@@ -526,7 +526,7 @@ void vector_dist_gpu_make_sort_test_impl()
 	// Here we get do a make sort
 	NN = vd.template getCellListGPU<CellList_type>(0.1);
 
-	CUDA_CHECK()
+	CUDA_CHECK();
 
 	vd.make_sort_from(NN);
 
