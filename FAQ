@@ -1,3 +1,4 @@
+test fork commit
 * Try to install OpenFPM I get "cannot recover from this error"
 It mean that the configuration phase has failed. Something has failed, what has failed should be reported some line before. We are trying to track the causes to understand if it is possible to produce a better error message but it seem that most of the time this error has been seen on OSX having a very old X-Code.
 
