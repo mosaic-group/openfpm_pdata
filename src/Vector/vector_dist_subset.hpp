@@ -79,7 +79,8 @@ template<unsigned int dim,
         typename prop,
         typename Decomposition = CartDecomposition<dim,St>,
         typename Memory = HeapMemory,
-        template<typename> class layout_base = memory_traits_lin>
+        template<typename> class layout_base = memory_traits_lin,
+        typename vector_dist_pos = openfpm::vector<Point<dim, St>,Memory,layout_base>>
 class vector_dist_subset
 {
     typedef vector_dist_ws<dim,St,prop,Decomposition,Memory,layout_base> ivector_dist;
@@ -89,6 +90,13 @@ class vector_dist_subset
     ivector_dist & vd;
 
     openfpm::vector<aggregate<int>> pid;
+
+    //! Ghost marker, all the particle with id > ghostMarker are ghost all with ghostMarker < are real particle
+	size_t ghostMarker = 0;
+
+	//! Particle position vector, (It has 2 elements) the first has real particles assigned to a processor
+	//! the second element contain unassigned particles
+	vector_dist_pos vPos;
 
     size_t sub_id;
 
@@ -492,6 +500,131 @@ public:
 		}
 
 		return cell_list;
+	}
+    /*! \brief for each particle get the verlet list
+	 *
+	 * \param r_cut cut-off radius
+	 *
+	 * \return a VerletList object
+	 *
+	 */
+	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St>,decltype(vPos) >>
+	VerletL getVerlet(St r_cut)
+	{
+#ifdef SE_CLASS3
+		se3.getNN();
+#endif
+
+		VerletL ver;
+
+		// get the processor bounding box
+		Box<dim, St> bt = getDecomposition().getProcessorBounds();
+
+		// Get the ghost
+		Ghost<dim,St> g = getDecomposition().getGhost();
+		g.magnify(1.013);
+
+		// enlarge the box where the Verlet is defined
+		bt.enlarge(g);
+
+		ver.Initialize(bt,getDecomposition().getProcessorBounds(),r_cut,vPos,ghostMarker,VL_NON_SYMMETRIC);
+
+		ver.set_ndec(getDecomposition().get_ndec());
+
+		return ver;
+	}
+
+	/*! \brief for each particle get the verlet list
+	 *
+	 * \param r_cut cut-off radius
+	 * \param ver Verlet to update
+	 * \param r_cut cutoff radius
+	 * \param opt option like VL_SYMMETRIC and VL_NON_SYMMETRIC or VL_CRS_SYMMETRIC
+	 *
+	 */
+	template<typename Mem_type> void updateVerlet(VerletList<dim,St,Mem_type,shift<dim,St> > & ver, St r_cut, size_t opt = VL_NON_SYMMETRIC)
+	{
+#ifdef SE_CLASS3
+		se3.getNN();
+#endif
+
+		if (opt == VL_SYMMETRIC)
+		{
+			auto & NN = ver.getInternalCellList();
+
+			// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
+			// processor. if it is not like that we have to completely reconstruct from stratch
+			bool to_reconstruct = NN.get_ndec() != getDecomposition().get_ndec();
+
+			if (to_reconstruct == false)
+				ver.update(getDecomposition().getDomain(),r_cut,vPos,ghostMarker, opt);
+			else
+			{
+				VerletList<dim,St,Mem_type,shift<dim,St> > ver_tmp;
+
+				ver_tmp = getVerlet<VerletList<dim,St,Mem_type,shift<dim,St> >>(r_cut);
+				ver.swap(ver_tmp);
+			}
+		}
+		else if (opt == VL_CRS_SYMMETRIC)
+		{
+#ifdef SE_CLASS1
+			if ((opt & BIND_DEC_TO_GHOST))
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, updateVerlet with the option VL_CRS_SYMMETRIC require the vector to be constructed with BIND_DEC_TO_GHOST option " << std::endl;
+				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+			}
+#endif
+
+			auto & NN = ver.getInternalCellList();
+
+			// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
+			// processor. if it is not like that we have to completely reconstruct from stratch
+			bool to_reconstruct = NN.get_ndec() != getDecomposition().get_ndec();
+
+			if (to_reconstruct == false)
+			{
+				// Shift
+				grid_key_dx<dim> shift;
+
+				// Add padding
+				for (size_t i = 0 ; i < dim ; i++)
+					shift.set_d(i,NN.getPadding(i));
+
+				grid_sm<dim,void> gs = NN.getInternalGrid();
+
+				getDecomposition().setNNParameters(shift,gs);
+
+				ver.updateCrs(getDecomposition().getDomain(),r_cut,vPos,ghostMarker,
+						      getDecomposition().getCRSDomainCells(),
+							  getDecomposition().getCRSAnomDomainCells());
+			}
+			else
+			{
+				VerletList<dim,St,Mem_type,shift<dim,St> > ver_tmp;
+
+				ver_tmp = getVerletCrs<VerletList<dim,St,Mem_type,shift<dim,St> >>(r_cut);
+				ver.swap(ver_tmp);
+			}
+		}
+		else
+		{
+			auto & NN = ver.getInternalCellList();
+
+			// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
+			// processor. if it is not like that we have to completely reconstruct from stratch
+			bool to_reconstruct = NN.get_ndec() != getDecomposition().get_ndec();
+
+			if (to_reconstruct == false)
+				ver.update(getDecomposition().getDomain(),r_cut,vPos,ghostMarker, opt);
+			else
+			{
+				VerletList<dim,St,Mem_type,shift<dim,St> > ver_tmp;
+
+				ver_tmp = getVerlet<VerletList<dim,St,Mem_type,shift<dim,St> >>(r_cut);
+				ver.swap(ver_tmp);
+			}
+		}
 	}
 
 	/*! \brief Operator= for distributed vector
