@@ -140,7 +140,7 @@ void test_full_nn(long int k)
 		while (it.isNext())
 		{
 			Point<3,float> xp = vd.getPos(it.get());
-			auto Np = NNv.template getNNIterator(it.get().getKey());
+			auto Np = NNv.getNNIterator(it.get().getKey());
 
 			list_idx2.get(it.get().getKey()).clear();
 
@@ -184,7 +184,7 @@ void test_full_nn(long int k)
 		while (it.isNext())
 		{
 			Point<3,float> xp = vd.getPos(it.get());
-			auto Np = NNv.template getNNIterator(it.get().getKey());
+			auto Np = NNv.getNNIterator(it.get().getKey());
 
 			list_idx2.get(it.get().getKey()).clear();
 
