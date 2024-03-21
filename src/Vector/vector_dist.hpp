@@ -1781,7 +1781,40 @@ public:
 		// enlarge the box where the Verlet is defined
 		bt.enlarge(g);
 
-		ver.Initialize(bt,getDecomposition().getProcessorBounds(),r_cut,vPos,ghostMarker,VL_NON_SYMMETRIC);
+		ver.Initialize(bt,getDecomposition().getProcessorBounds(),r_cut,vPos,vPos,ghostMarker,VL_NON_SYMMETRIC);
+
+		ver.set_ndec(getDecomposition().get_ndec());
+
+		return ver;
+	}
+
+    	/*! \brief for each particle get the verlet list for reference particles
+	 *
+	 * \param r_cut cut-off radius
+	 *
+	 * \return a VerletList object
+	 *
+	 */
+	template <typename particlesFrom_type, typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St>,decltype(vPos) >>
+	VerletL getVerlet(St r_cut,particlesFrom_type particlesFrom)
+	{
+#ifdef SE_CLASS3
+		se3.getNN();
+#endif
+
+		VerletL ver;
+        auto vPosFrom=particlesFrom.vPos;
+		// get the processor bounding box
+		Box<dim, St> bt = getDecomposition().getProcessorBounds();
+
+		// Get the ghost
+		Ghost<dim,St> g = getDecomposition().getGhost();
+		g.magnify(1.013);
+
+		// enlarge the box where the Verlet is defined
+		bt.enlarge(g);
+
+		ver.Initialize(bt,particlesFrom.getDecomposition().getProcessorBounds(),r_cut,vPos,vPosFrom,ghostMarker,VL_NON_SYMMETRIC);
 
 		ver.set_ndec(getDecomposition().get_ndec());
 
