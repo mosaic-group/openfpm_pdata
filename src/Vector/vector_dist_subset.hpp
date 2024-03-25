@@ -80,7 +80,8 @@ template<unsigned int dim,
         typename Decomposition = CartDecomposition<dim,St>,
         typename Memory = HeapMemory,
         template<typename> class layout_base = memory_traits_lin,
-        typename vector_dist_pos = openfpm::vector<Point<dim, St>,Memory,layout_base>>
+        typename vector_dist_pos = openfpm::vector<Point<dim, St>,Memory,layout_base>,
+        typename vector_dist_prop = openfpm::vector<prop,Memory,layout_base>>
 class vector_dist_subset
 {
     typedef vector_dist_ws<dim,St,prop,Decomposition,Memory,layout_base> ivector_dist;
@@ -97,6 +98,7 @@ class vector_dist_subset
 	//! Particle position vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
 	vector_dist_pos vPos;
+    vector_dist_prop vPrp;
 
     size_t sub_id;
 
@@ -527,7 +529,7 @@ public:
 		// enlarge the box where the Verlet is defined
 		bt.enlarge(g);
 
-		ver.Initialize(bt,getDecomposition().getProcessorBounds(),r_cut,vPos,ghostMarker,VL_NON_SYMMETRIC);
+		ver.Initialize(bt,getDecomposition().getProcessorBounds(),r_cut,vPos,vPos,ghostMarker,VL_NON_SYMMETRIC);
 
 		ver.set_ndec(getDecomposition().get_ndec());
 
@@ -639,6 +641,28 @@ public:
 	{
 	    vd = v.vd;
 	    pid = v.pid;
+        ghostMarker = v.ghostMarker;
+		vPos = v.vPos;
+		vPrp = v.vPrp;
+
+		return *this;
+	}
+
+    /*! \brief Operator= for distributed vector
+	 *
+	 * \param v vector to copy
+	 *
+	 * \return itself
+	 *
+	 */
+	vector_dist_subset<dim,St,prop,Decomposition,Memory,layout_base> &
+	operator=(const vector_dist_subset<dim,St,prop,Decomposition,Memory,layout_base> && v)
+	{
+	    vd = v.vd;
+	    pid = v.pid;
+        ghostMarker = v.ghostMarker;
+		vPos.swap(v.vPos);
+		vPrp.swap(v.vPrp);
 
 		return *this;
 	}
