@@ -556,7 +556,7 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 
 	for (size_t k = 0 ; k < nsub ; k++)
 	{
-		SpaceBox<3,float> sp = dec.getSubDomain(k);
+		Box<3,float> sp = dec.getSubDomain(k);
 
 		for (size_t j = 0 ; j < n_part ; j++)
 		{

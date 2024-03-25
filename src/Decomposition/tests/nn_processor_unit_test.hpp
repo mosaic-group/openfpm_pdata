@@ -10,7 +10,7 @@
 
 #include "VCluster/VCluster.hpp"
 
-void create_decomposition2x2(openfpm::vector<openfpm::vector<long unsigned int>> & box_nn_processor, openfpm::vector<SpaceBox<2,float>> & sub_domains)
+void create_decomposition2x2(openfpm::vector<openfpm::vector<long unsigned int>> & box_nn_processor, openfpm::vector<Box<2,float>> & sub_domains)
 {
 	Vcluster<> & v_cl = create_vcluster();
 
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE( nn_processor_np_test)
 		return;
 
 	openfpm::vector<openfpm::vector<long unsigned int>> box_nn_processor;
-	openfpm::vector<SpaceBox<2,float>> sub_domains;
+	openfpm::vector<Box<2,float>> sub_domains;
 
 	create_decomposition2x2(box_nn_processor,sub_domains);
 
@@ -101,14 +101,14 @@ BOOST_AUTO_TEST_CASE( nn_processor_np_test)
 		const openfpm::vector< ::Box<2,float> > & nsubs2 = nnp.getNearSubdomains(2);
 		const openfpm::vector< ::Box<2,float> > & nsubs3 = nnp.getNearSubdomains(3);
 
-		SpaceBox<2,float> b1_a = nsubs1.get(0);
-		SpaceBox<2,float> b2_a = nsubs2.get(0);
-		SpaceBox<2,float> b3_a = nsubs3.get(0);
+		Box<2,float> b1_a = nsubs1.get(0);
+		Box<2,float> b2_a = nsubs2.get(0);
+		Box<2,float> b3_a = nsubs3.get(0);
 
 
-		SpaceBox<2,float> b1_b = Box<2,float>({0.5,0.0},{1.0,0.5});
-		SpaceBox<2,float> b2_b = Box<2,float>({0.0,0.5},{0.5,1.0});
-		SpaceBox<2,float> b3_b = Box<2,float>({0.5,0.5},{1.0,1.0});
+		Box<2,float> b1_b = Box<2,float>({0.5,0.0},{1.0,0.5});
+		Box<2,float> b2_b = Box<2,float>({0.0,0.5},{0.5,1.0});
+		Box<2,float> b3_b = Box<2,float>({0.5,0.5},{1.0,1.0});
 
 		bool ret1 = b1_a == b1_b;
 		bool ret2 = b2_a == b2_b;
@@ -128,14 +128,14 @@ BOOST_AUTO_TEST_CASE( nn_processor_np_test)
 		const openfpm::vector< ::Box<2,float> > & nsubs2 = nnp.getNearSubdomains(2);
 		const openfpm::vector< ::Box<2,float> > & nsubs3 = nnp.getNearSubdomains(3);
 
-		SpaceBox<2,float> b1_a = nsubs1.get(0);
-		SpaceBox<2,float> b2_a = nsubs2.get(0);
-		SpaceBox<2,float> b3_a = nsubs3.get(0);
+		Box<2,float> b1_a = nsubs1.get(0);
+		Box<2,float> b2_a = nsubs2.get(0);
+		Box<2,float> b3_a = nsubs3.get(0);
 
 
-		SpaceBox<2,float> b1_b = Box<2,float>({0.0,0.0},{0.5,0.5});
-		SpaceBox<2,float> b2_b = Box<2,float>({0.0,0.5},{0.5,1.0});
-		SpaceBox<2,float> b3_b = Box<2,float>({0.5,0.5},{1.0,1.0});
+		Box<2,float> b1_b = Box<2,float>({0.0,0.0},{0.5,0.5});
+		Box<2,float> b2_b = Box<2,float>({0.0,0.5},{0.5,1.0});
+		Box<2,float> b3_b = Box<2,float>({0.5,0.5},{1.0,1.0});
 
 		bool ret1 = b1_a == b1_b;
 		bool ret2 = b2_a == b2_b;
@@ -155,13 +155,13 @@ BOOST_AUTO_TEST_CASE( nn_processor_np_test)
 		const openfpm::vector< ::Box<2,float> > & nsubs2 = nnp.getNearSubdomains(0);
 		const openfpm::vector< ::Box<2,float> > & nsubs3 = nnp.getNearSubdomains(3);
 
-		SpaceBox<2,float> b1_a = nsubs1.get(0);
-		SpaceBox<2,float> b2_a = nsubs2.get(0);
-		SpaceBox<2,float> b3_a = nsubs3.get(0);
+		Box<2,float> b1_a = nsubs1.get(0);
+		Box<2,float> b2_a = nsubs2.get(0);
+		Box<2,float> b3_a = nsubs3.get(0);
 
-		SpaceBox<2,float> b1_b = Box<2,float>({0.5,0.0},{1.0,0.5});
-		SpaceBox<2,float> b2_b = Box<2,float>({0.0,0.0},{0.5,0.5});
-		SpaceBox<2,float> b3_b = Box<2,float>({0.5,0.5},{1.0,1.0});
+		Box<2,float> b1_b = Box<2,float>({0.5,0.0},{1.0,0.5});
+		Box<2,float> b2_b = Box<2,float>({0.0,0.0},{0.5,0.5});
+		Box<2,float> b3_b = Box<2,float>({0.5,0.5},{1.0,1.0});
 
 		bool ret1 = b1_a == b1_b;
 		bool ret2 = b2_a == b2_b;
@@ -181,13 +181,13 @@ BOOST_AUTO_TEST_CASE( nn_processor_np_test)
 		const openfpm::vector< ::Box<2,float> > & nsubs2 = nnp.getNearSubdomains(1);
 		const openfpm::vector< ::Box<2,float> > & nsubs3 = nnp.getNearSubdomains(2);
 
-		SpaceBox<2,float> b1_a = nsubs1.get(0);
-		SpaceBox<2,float> b2_a = nsubs2.get(0);
-		SpaceBox<2,float> b3_a = nsubs3.get(0);
+		Box<2,float> b1_a = nsubs1.get(0);
+		Box<2,float> b2_a = nsubs2.get(0);
+		Box<2,float> b3_a = nsubs3.get(0);
 
-		SpaceBox<2,float> b1_b = Box<2,float>({0.0,0.0},{0.5,0.5});
-		SpaceBox<2,float> b2_b = Box<2,float>({0.5,0.0},{1.0,0.5});
-		SpaceBox<2,float> b3_b = Box<2,float>({0.0,0.5},{0.5,1.0});
+		Box<2,float> b1_b = Box<2,float>({0.0,0.0},{0.5,0.5});
+		Box<2,float> b2_b = Box<2,float>({0.5,0.0},{1.0,0.5});
+		Box<2,float> b3_b = Box<2,float>({0.0,0.5},{0.5,1.0});
 
 		bool ret1 = b1_a == b1_b;
 		bool ret2 = b2_a == b2_b;
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE( nn_processor_box_periodic_test)
 	Ghost<2,float> ghost(0.01);
 
 	openfpm::vector<openfpm::vector<long unsigned int>> box_nn_processor;
-	openfpm::vector<SpaceBox<2,float>> sub_domains;
+	openfpm::vector<Box<2,float>> sub_domains;
 
 	create_decomposition2x2(box_nn_processor,sub_domains);
 

@@ -256,7 +256,7 @@ void Test2D_ghost(Box<2,float> & box)
 		BOOST_REQUIRE(n_part != 0);
 	}
 
-    CellDecomposer_sm<2,float,shift<2,float>> cd(SpaceBox<2,float>(box),g_div,0);
+    CellDecomposer_sm<2,float,shift<2,float>> cd(Box<2,float>(box),g_div,0);
 
 	for (size_t i = 0 ; i < vb.size() ; i++)
 	{
