@@ -499,7 +499,7 @@ void get_indexes_by_type(vector_type & vd, ids_type & ids, size_t end ,gpu::ofp_
 
 	auto ite = scan.getGPUIterator();
 
-	CUDA_LAUNCH((mark_indexes<prp,functor>),ite,vd.toKernel(),scan.toKernel(),end);
+	CUDA_LAUNCH((mark_indexes<prp,functor>),ite,vd.toKernel(),scan.toKernel(),(unsigned int)end);
 
 	openfpm::scan((unsigned int *)scan.template getDeviceBuffer<0>(),scan.size(),(unsigned int *)scan.template getDeviceBuffer<0>(),gpuContext);
 
