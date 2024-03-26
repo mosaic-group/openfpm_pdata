@@ -245,7 +245,7 @@ protected:
 	 */
 	void create_box_nn_processor_ext(Vcluster<> & v_cl,
 			                         Ghost<dim,T> & ghost,
-									 openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & sub_domains,
+									 openfpm::vector<Box<dim,T>,Memory,layout_base> & sub_domains,
 									 const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
 									 const nn_prcs<dim,T,layout_base,Memory> & nn_p)
 	{
@@ -255,7 +255,7 @@ protected:
 		// For each sub-domain
 		for (size_t i = 0 ; i < sub_domains.size() ; i++)
 		{
-			SpaceBox<dim,T> sub_with_ghost = sub_domains.get(i);
+			Box<dim,T> sub_with_ghost = sub_domains.get(i);
 
 			// enlarge the sub-domain with the ghost
 			sub_with_ghost.enlarge(ghost);
@@ -347,7 +347,7 @@ protected:
 	 */
 	void create_box_nn_processor_int(Vcluster<> & v_cl,
 			                         Ghost<dim,T> & ghost,
-									 openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & sub_domains,
+									 openfpm::vector<Box<dim,T>,Memory,layout_base> & sub_domains,
 									 const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
 									 const nn_prcs<dim,T,layout_base,Memory> & nn_p)
 	{
@@ -382,7 +382,7 @@ protected:
 					::Box<dim,T> n_sub = nn_p_box.get(k);
 
 					// local sub-domain
-					::SpaceBox<dim,T> l_sub = sub_domains.get(i);
+					::Box<dim,T> l_sub = sub_domains.get(i);
 
 					// Create a margin of ghost size around the near processor sub-domain
 					n_sub.enlarge(ghost);

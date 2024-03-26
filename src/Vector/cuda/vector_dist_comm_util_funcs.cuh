@@ -217,7 +217,7 @@ struct local_ghost_from_opart_impl<with_pos,dim,St,prop,Memory,layout_base,true>
 				{
 					CUDA_LAUNCH((process_ghost_particles_local<with_pos,dim,decltype(o_part_loc.toKernel()),decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(shifts.toKernel())>),
 					ite,
-					o_part_loc.toKernel(),v_pos.toKernel(),v_prp.toKernel(),shifts.toKernel(),old);
+					o_part_loc.toKernel(),v_pos.toKernel(),v_prp.toKernel(),shifts.toKernel(),(unsigned int)old);
 				}
 #else
 				std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option RUN_ON_DEVICE you must compile with NVCC" << std::endl;
@@ -270,7 +270,7 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 		// label particle processor
 		CUDA_LAUNCH((num_shift_ghost_each_part<dim,St,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),decltype(v_pos.toKernel()),decltype(o_part_loc.toKernel())>),
 		ite,
-		box_f_dev.toKernel(),box_f_sv.toKernel(),v_pos.toKernel(),o_part_loc.toKernel(),ghostMarker);
+		box_f_dev.toKernel(),box_f_sv.toKernel(),v_pos.toKernel(),o_part_loc.toKernel(),(unsigned int)ghostMarker);
 
 		starts.resize(o_part_loc.size());
 		openfpm::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getGpuContext());
@@ -295,7 +295,7 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 		ite,
 		box_f_dev.toKernel(),box_f_sv.toKernel(),
 		 v_pos.toKernel(),v_prp.toKernel(),
-		 starts.toKernel(),shifts.toKernel(),o_part_loc.toKernel(),old,ghostMarker);
+		 starts.toKernel(),shifts.toKernel(),o_part_loc.toKernel(),(unsigned int)old,(unsigned int)ghostMarker);
 
 #else
 		std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option RUN_ON_DEVICE you must compile with NVCC" << std::endl;

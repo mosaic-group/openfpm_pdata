@@ -5,7 +5,8 @@
 #include <unordered_map>
 #include "Grid/map_grid.hpp"
 #include "VCluster/VCluster.hpp"
-#include "Space/SpaceBox.hpp"
+#include "Space/Ghost.hpp"
+#include "Space/Shape/Box.hpp"
 #include "util/mathutil.hpp"
 #include "VTKWriter/VTKWriter.hpp"
 #ifdef __NVCC__
@@ -514,7 +515,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 			sub_domain += gdb_ext.get(sub_id).origin;
 		}
 
-		// Convert from SpaceBox<dim,St> to SpaceBox<dim,long int>
+		// Convert from Box<dim,St> to Box<dim,long int>
 		Box<dim,long int> sub_domain_other_exp = cd_sm.convertDomainSpaceIntoGridUnits(sub_domain_other,dec.periodicity());
 
 		// translate sub_domain_other based on cmb
@@ -1087,7 +1088,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		// Allocate the grids
 		for (size_t i = 0 ; i < n_grid ; i++)
 		{
-			SpaceBox<dim,long int> sp_tg = gdb_ext.get(i).GDbox;
+			Box<dim,long int> sp_tg = gdb_ext.get(i).GDbox;
 
 			// Get the size of the local grid
 			// The boxes indicate the extension of the index the size

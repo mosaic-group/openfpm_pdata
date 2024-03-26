@@ -10,7 +10,6 @@
 
 #include "Space/Shape/Box.hpp"
 #include "Space/Ghost.hpp"
-#include "Space/SpaceBox.hpp"
 #include "common.hpp"
 #include "VTKWriter/VTKWriter.hpp"
 #include "nn_processor.hpp"
@@ -40,7 +39,7 @@ class ie_loc_ghost
 	 *
 	 */
 	void create_loc_ghost_ebox(Ghost<dim,T> & ghost,
-			                   openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & sub_domains,
+			                   openfpm::vector<Box<dim,T>,Memory,layout_base> & sub_domains,
 							   openfpm::vector<Box_loc_sub<dim,T>> & sub_domains_prc)
 	{
 		comb<dim> zero;
@@ -51,7 +50,7 @@ class ie_loc_ghost
 		// For each sub-domain
 		for (size_t i = 0 ; i < sub_domains.size() ; i++)
 		{
-			SpaceBox<dim,T> sub_with_ghost = sub_domains.get(i);
+			Box<dim,T> sub_with_ghost = sub_domains.get(i);
 
 			// enlarge the sub-domain with the ghost
 			sub_with_ghost.enlarge(ghost);
@@ -101,7 +100,7 @@ class ie_loc_ghost
 	 *
 	 */
 	void create_loc_ghost_ibox(Ghost<dim,T> & ghost,
-			                   openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & sub_domains,
+			                   openfpm::vector<Box<dim,T>,Memory,layout_base> & sub_domains,
 							   openfpm::vector<Box_loc_sub<dim,T>> & sub_domains_prc)
 	{
 		comb<dim> zero;
@@ -115,7 +114,7 @@ class ie_loc_ghost
 			// intersect with the others local sub-domains
 			for (size_t j = 0 ; j < sub_domains_prc.size() ; j++)
 			{
-				SpaceBox<dim,T> sub_with_ghost = sub_domains_prc.get(j).bx;
+				Box<dim,T> sub_with_ghost = sub_domains_prc.get(j).bx;
 				size_t rj = sub_domains_prc.get(j).sub;
 
 				// Avoid to intersect the box with itself
@@ -127,7 +126,7 @@ class ie_loc_ghost
 
 				::Box<dim,T> bi;
 
-				bool intersect = sub_with_ghost.Intersect(::SpaceBox<dim,T>(sub_domains.get(i)),bi);
+				bool intersect = sub_with_ghost.Intersect(::Box<dim,T>(sub_domains.get(i)),bi);
 
 				if (intersect == true)
 				{
@@ -249,7 +248,7 @@ public:
 	 * \param bc Boundary conditions
 	 *
 	 */
-	void create(openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & sub_domains, Box<dim,T> & domain , Ghost<dim,T> & ghost , const size_t (&bc)[dim] )
+	void create(openfpm::vector<Box<dim,T>,Memory,layout_base> & sub_domains, Box<dim,T> & domain , Ghost<dim,T> & ghost , const size_t (&bc)[dim] )
 	{
 		// It will store local sub-domains + borders
 		openfpm::vector<Box_loc_sub<dim,T>> sub_domains_prc;
@@ -260,7 +259,7 @@ public:
 		// Copy sub_domains into sub_domains_prc
 		for (size_t i = 0 ; i < sub_domains.size() ; i++)
 		{
-			Box_loc_sub<dim,T> bls(SpaceBox<dim,T>(sub_domains.get(i)),i,zero);
+			Box_loc_sub<dim,T> bls(Box<dim,T>(sub_domains.get(i)),i,zero);
 			sub_domains_prc.add(bls);
 			sub_domains_prc.last().sub = i;
 		}

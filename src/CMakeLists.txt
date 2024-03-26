@@ -34,7 +34,7 @@ if ( CUDA_ON_BACKEND STREQUAL "HIP" AND HIP_FOUND )
 		list(APPEND HIP_HIPCC_FLAGS -O0)
 	endif()
 
-	list(APPEND HIP_HIPCC_FLAGS -D__NVCC__ -D__HIP__  -DCUDART_VERSION=11000 -D__CUDACC__ -D__CUDACC_VER_MAJOR__=11 -D__CUDACC_VER_MINOR__=0 -D__CUDACC_VER_BUILD__=0 --std=c++14)
+	list(APPEND HIP_HIPCC_FLAGS -D__NVCC__ -D__HIP__  -DCUDART_VERSION=11000 -D__CUDACC__ -D__CUDACC_VER_MAJOR__=11 -D__CUDACC_VER_MINOR__=0 -D__CUDACC_VER_BUILD__=0 --std=c++17)
 	set_source_files_properties(${CUDA_SOURCES} PROPERTIES LANGUAGE CXX)
 
 	#set(CMAKE_CXX_COMPILER ${HIP_HIPCC_EXECUTABLE})
@@ -139,7 +139,7 @@ if (CUDA_FOUND)
 	endif()
 endif()
 
-if(TEST_PERFORMANCE)
+if(TEST_PERFORMANCE AND ENABLE_NUMERICS)
 	target_include_directories (pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_numerics/src/)
 endif()
 
@@ -152,7 +152,7 @@ target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../open
 target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_vcluster/src/)
 target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_data/src/)
 target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_io/src/)
-target_include_directories (pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/config)
+target_include_directories (pdata PRIVATE ${CMAKE_BINARY_DIR}/config)
 target_include_directories (pdata PUBLIC ${PETSC_INCLUDES})
 target_include_directories (pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
 target_include_directories (pdata PUBLIC ${ALPAKA_ROOT}/include)
@@ -168,7 +168,7 @@ target_include_directories (pdata PUBLIC ${MPI_C_INCLUDE_DIRS})
 #target_include_directories (isolation_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_vcluster/src/)
 #target_include_directories (isolation_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_data/src/)
 #target_include_directories (isolation_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../openfpm_io/src/)
-#target_include_directories (isolation_pdata PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
+#target_include_directories (isolation_pdata PUBLIC ${CMAKE_BINARY_DIR}/config)
 #target_include_directories (isolation_pdata PUBLIC ${PETSC_INCLUDES})
 #target_include_directories (isolation_pdata PUBLIC ${HDF5_ROOT}/include)
 #target_include_directories (isolation_pdata PUBLIC ${LIBHILBERT_INCLUDE_DIRS})
@@ -267,14 +267,14 @@ endif()
 target_include_directories (ofpm_pdata PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_data/src/)
-target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/config)
+target_include_directories (ofpm_pdata PRIVATE ${CMAKE_BINARY_DIR}/config)
 target_include_directories (ofpm_pdata PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_devices/src/)
 target_include_directories (ofpm_pdata PUBLIC ${Boost_INCLUDE_DIRS})
 
 target_include_directories (ofpm_pdata_dl PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_include_directories (ofpm_pdata_dl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories (ofpm_pdata_dl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_data/src/)
-target_include_directories (ofpm_pdata_dl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/config)
+target_include_directories (ofpm_pdata_dl PRIVATE ${CMAKE_BINARY_DIR}/config)
 target_include_directories (ofpm_pdata_dl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../openfpm_devices/src/)
 target_include_directories (ofpm_pdata_dl PUBLIC ${Boost_INCLUDE_DIRS})
 
@@ -284,10 +284,10 @@ if(PETSC_FOUND)
 	target_link_libraries(pdata ${PETSC_LIBRARIES})
 endif()
 
-# Request that particles be built with -std=c++11
+# Request that particles be built with -std=c++17
 # As this is a public compile feature anything that links to particles
-# will also build with -std=c++11
-target_compile_features(pdata PUBLIC cxx_std_14)
+# will also build with -std=c++17
+target_compile_features(pdata PUBLIC cxx_std_17)
 target_link_libraries(pdata ${MPI_C_LIBRARIES})
 target_link_libraries(pdata m)
 target_link_libraries(pdata c)
@@ -430,7 +430,6 @@ if(NOT DOBC EQUAL 1)
 		${CMAKE_INSTALL_PREFIX}/openfpm_io/include
 		${CMAKE_INSTALL_PREFIX}/openfpm_vcluster/include
 		${CMAKE_INSTALL_PREFIX}/openfpm_devices/include
-		${CMAKE_INSTALL_PREFIX}/openfpm_numerics/include
 		${PARMETIS_ROOT}/include
 		${METIS_ROOT}/include
 		${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
@@ -438,7 +437,15 @@ if(NOT DOBC EQUAL 1)
 		${HDF5_ROOT}/include
 		${LIBHILBERT_INCLUDE_DIRS}
 		${Vc_INCLUDE_DIR}
-		${Boost_INCLUDE_DIRS})
+		${Boost_INCLUDE_DIRS}
+		${MPI_C_INCLUDE_DIRS})
+
+	if (ENABLE_NUMERICS)
+		target_include_directories(
+			binary_config_
+			INTERFACE
+			${CMAKE_INSTALL_PREFIX}/openfpm_numerics/include)
+	endif()
 
 	if (CUDA_ON_CPU)
 		target_compile_definitions(binary_config_ INTERFACE CUDA_ON_CPU)

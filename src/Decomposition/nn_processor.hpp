@@ -40,7 +40,7 @@ class nn_prcs
 	openfpm::vector<openfpm::vector<size_t>> proc_adj_box;
 
 	//! contain the set of sub-domains sent to the other processors
-	openfpm::vector< openfpm::vector< ::SpaceBox<dim,T>> > boxes;
+	openfpm::vector< openfpm::vector< ::Box<dim,T>> > boxes;
 
 	//! Receive counter
 	size_t recv_cnt;
@@ -401,7 +401,7 @@ public:
 	 * \return the internal boxes structure
 	 *
 	 */
-	openfpm::vector< openfpm::vector< ::SpaceBox<dim,T>> > & private_get_boxes()
+	openfpm::vector< openfpm::vector< ::Box<dim,T>> > & private_get_boxes()
 	{
 		return boxes;
 	}
@@ -431,7 +431,7 @@ public:
 	 *
 	 */
 	void create(const openfpm::vector<openfpm::vector<long unsigned int> > & box_nn_processor,
-			    const openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & sub_domains)
+			    const openfpm::vector<Box<dim,T>,Memory,layout_base> & sub_domains)
 	{
 		// produce the list of the adjacent processor (nn_processors) list
 		for (size_t i = 0 ;  i < box_nn_processor.size() ; i++)

@@ -1,8 +1,8 @@
-#include "Space/SpaceBox.hpp"
-
 #ifndef DECOMPOSITION_HPP_
 #define DECOMPOSITION_HPP_
 
+#include "Space/Ghost.hpp"
+#include "Space/Shape/Box.hpp"
 /**
  *
  * \brief class that store Internal part external and border part of a dataset

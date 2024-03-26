@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 	// label particle processor
 	CUDA_LAUNCH_DIM3((num_shift_ghost_each_part<3,float,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),decltype(vPos.toKernel()),decltype(o_part_loc.toKernel())>),
 	ite.wthr,ite.thr,
-	box_f_dev.toKernel(),box_f_sv.toKernel(),vPos.toKernel(),o_part_loc.toKernel(),vPos.size());
+	box_f_dev.toKernel(),box_f_sv.toKernel(),vPos.toKernel(),o_part_loc.toKernel(),(unsigned int)vPos.size());
 
 	o_part_loc.deviceToHost<0>();
 
@@ -171,7 +171,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 	ite.wthr,ite.thr,
 	box_f_dev.toKernel(),box_f_sv.toKernel(),
 	 vPos.toKernel(),vPrp.toKernel(),
-	 starts.toKernel(),shifts.toKernel(),o_part_loc2.toKernel(),old,old);
+	 starts.toKernel(),shifts.toKernel(),o_part_loc2.toKernel(),(unsigned int)old,(unsigned int)old);
 
 	vPos.deviceToHost<0>();
 	o_part_loc2.deviceToHost<0,1>();
@@ -357,7 +357,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 
 	CUDA_LAUNCH_DIM3((process_ghost_particles_local<true,3,decltype(o_part_loc2.toKernel()),decltype(vPos2.toKernel()),decltype(vPrp2.toKernel()),decltype(shifts.toKernel())>),
 	ite.wthr,ite.thr,
-	o_part_loc2.toKernel(),vPos2.toKernel(),vPrp2.toKernel(),shifts.toKernel(),old);
+	o_part_loc2.toKernel(),vPos2.toKernel(),vPrp2.toKernel(),shifts.toKernel(),(unsigned int)old);
 
 	vPos2.template deviceToHost<0>();
 	vPrp2.template deviceToHost<0,1,2>();
@@ -464,7 +464,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_fill_send_buffer_test )
 		CUDA_LAUNCH_DIM3((process_ghost_particles_prp<decltype(g_opart_device.toKernel()),decltype(g_send_prp.get(i).toKernel()),decltype(vPrp.toKernel()),0,1,2>),
 		ite.wthr,ite.thr,
 		g_opart_device.toKernel(), g_send_prp.get(i).toKernel(),
-		 vPrp.toKernel(),offset);
+		 vPrp.toKernel(),(unsigned int)offset);
 
 		offset += g_send_prp.get(i).size();
 
@@ -556,7 +556,7 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 
 	for (size_t k = 0 ; k < nsub ; k++)
 	{
-		SpaceBox<3,float> sp = dec.getSubDomain(k);
+		Box<3,float> sp = dec.getSubDomain(k);
 
 		for (size_t j = 0 ; j < n_part ; j++)
 		{
@@ -743,7 +743,7 @@ BOOST_AUTO_TEST_CASE( decomposition_to_gpu_test_use )
 
 	CUDA_LAUNCH_DIM3((process_id_proc_each_part<3,float,decltype(dec.toKernel()),decltype(vg.toKernel()),decltype(proc_id_out.toKernel()),decltype(dev_counter.toKernel())>),
 	ite.wthr,ite.thr,
-	dec.toKernel(),vg.toKernel(),proc_id_out.toKernel(),dev_counter.toKernel(),v_cl.rank());
+	dec.toKernel(),vg.toKernel(),proc_id_out.toKernel(),dev_counter.toKernel(),(int)v_cl.rank());
 
 
 	proc_id_out.deviceToHost<0>();

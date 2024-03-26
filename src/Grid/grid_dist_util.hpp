@@ -122,8 +122,8 @@ inline void create_gdb_ext(openfpm::vector<GBoxes<Decomposition::dims>> & gdb_ex
 
 		// Get the local sub-domain (Grid conversion must be done with the domain P1 equivalent to 0.0)
 		// consider that the sub-domain with point P1 equivalent to the domain P1 is a (0,0,0) in grid unit
-		SpaceBox<Decomposition::dims, typename Decomposition::stype> sp = dec.getSubDomain(i);
-		SpaceBox<Decomposition::dims, typename Decomposition::stype> sp_g = dec.getSubDomainWithGhost(i);
+		Box<Decomposition::dims, typename Decomposition::stype> sp = dec.getSubDomain(i);
+		Box<Decomposition::dims, typename Decomposition::stype> sp_g = dec.getSubDomainWithGhost(i);
 
 		// Because of round off we expand for safety the ghost area
 		// std::nextafter return the next bigger or smaller representable floating
@@ -134,9 +134,9 @@ inline void create_gdb_ext(openfpm::vector<GBoxes<Decomposition::dims>> & gdb_ex
 			sp_g.setHigh(i,std::nextafter(sp_g.getHigh(i),sp_g.getHigh(i) + 1.0));
 		}
 
-		// Convert from SpaceBox<dim,St> to SpaceBox<dim,long int>
-		SpaceBox<Decomposition::dims,long int> sp_t = cd_sm.convertDomainSpaceIntoGridUnits(sp,dec.periodicity());
-		SpaceBox<Decomposition::dims,long int> sp_tg = cd_sm.convertDomainSpaceIntoGridUnits(sp_g,dec.periodicity());
+		// Convert from Box<dim,St> to Box<dim,long int>
+		Box<Decomposition::dims,long int> sp_t = cd_sm.convertDomainSpaceIntoGridUnits(sp,dec.periodicity());
+		Box<Decomposition::dims,long int> sp_tg = cd_sm.convertDomainSpaceIntoGridUnits(sp_g,dec.periodicity());
 
 		for (size_t i = 0 ; i < Decomposition::dims ; i++)
 		{
@@ -169,8 +169,8 @@ inline void create_gdb_ext(openfpm::vector<GBoxes<Decomposition::dims>> & gdb_ex
 					bx_wg.enlarge(dec.getGhost());
 					bx_wg.Intersect(sp_g,output);
 
-					SpaceBox<Decomposition::dims,long int> sp_t2 = inte;
-					SpaceBox<Decomposition::dims,long int> sp_tg2 =  cd_sm.convertDomainSpaceIntoGridUnits(output,dec.periodicity());
+					Box<Decomposition::dims,long int> sp_t2 = inte;
+					Box<Decomposition::dims,long int> sp_tg2 =  cd_sm.convertDomainSpaceIntoGridUnits(output,dec.periodicity());
 
 					add_to_gdb_ext(gdb_ext,k,sp_t2,sp_tg2);
 				}
