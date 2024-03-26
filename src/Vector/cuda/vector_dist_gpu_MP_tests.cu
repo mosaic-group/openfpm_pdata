@@ -563,7 +563,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_test )
 
 	output.template deviceToHost<0>();
 
-/*	bool match = true;
+	bool match = true;
 	int k = 0;
 	for (int i = 0 ; i < phases.size() ; i++)
 	{
@@ -574,7 +574,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_test )
 		}
 	}
 
-	BOOST_REQUIRE_EQUAL(match,true);*/
+	BOOST_REQUIRE_EQUAL(match,true);
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_test_simplified )
