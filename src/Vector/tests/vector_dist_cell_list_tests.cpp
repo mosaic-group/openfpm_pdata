@@ -551,8 +551,6 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 		++p_it;
 	}
 
-	// We now try symmetric  Cell-list
-
 	auto NN2 = vd.getCellListSym(r_cut);
 
 	auto p_it2 = vd.getDomainIterator();
@@ -606,6 +604,213 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 
 	vd.ghost_put<add_,1>();
 	vd.ghost_put<merge_,4>();
+
+	auto p_it3 = vd.getDomainIterator();
+
+	bool ret = true;
+	while (p_it3.isNext())
+	{
+		auto p = p_it3.get();
+
+		ret &= vd.getPropRead<1>(p) == vd.getPropRead<0>(p);
+
+		vd.getPropWrite<3>(p).sort();
+		vd.getPropWrite<4>(p).sort();
+
+		ret &= vd.getPropRead<3>(p).size() == vd.getPropRead<4>(p).size();
+
+		for (size_t i = 0 ; i < vd.getPropRead<3>(p).size() ; i++)
+			ret &= vd.getPropRead<3>(p).get(i).id == vd.getPropRead<4>(p).get(i).id;
+
+		if (ret == false)
+		{
+			std::cout << vd.getPropRead<3>(p).size() << "   " << vd.getPropRead<4>(p).size() << std::endl;
+
+			for (size_t i = 0 ; i < vd.getPropRead<3>(p).size() ; i++)
+				std::cout << vd.getPropRead<3>(p).get(i).id << "    " << vd.getPropRead<4>(p).get(i).id << std::endl;
+
+			std::cout << vd.getPropRead<1>(p) << "  A  " << vd.getPropRead<0>(p) << std::endl;
+
+			break;
+		}
+
+		++p_it3;
+	}
+
+	BOOST_REQUIRE_EQUAL(ret,true);
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_symmetric_local_cell_list )
+{
+	Vcluster<> & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 24)
+		return;
+
+	float L = 1000.0;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(0);
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(-L,L);
+
+    long int k = 4096 * v_cl.getProcessingUnits();
+
+	long int big_step = k / 4;
+	big_step = (big_step == 0)?1:big_step;
+
+	print_test_v("Testing 3D periodic vector symmetric cell-list k=",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector symmetric cell-list k=" << k );
+
+	Box<3,float> box({-L,-L,-L},{L,L,L});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	float r_cut = 100.0;
+
+	// ghost
+	Ghost<3,float> ghost(r_cut);
+
+	// Point and global id
+	struct point_and_gid
+	{
+		size_t id;
+		Point<3,float> xq;
+
+		bool operator<(const struct point_and_gid & pag) const
+		{
+			return (id < pag.id);
+		}
+	};
+
+	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
+
+	// Distributed vector
+	vector_dist<3,float, part_prop > vd(k,box,bc,ghost,BIND_DEC_TO_GHOST);
+	size_t start = vd.init_size_accum(k);
+
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.getPosWrite(key)[0] = ud(eg);
+		vd.getPosWrite(key)[1] = ud(eg);
+		vd.getPosWrite(key)[2] = ud(eg);
+
+		// Fill some properties randomly
+
+		vd.getPropWrite<0>(key) = 0;
+		vd.getPropWrite<1>(key) = 0;
+		vd.getPropWrite<2>(key) = key.getKey() + start;
+
+		++it;
+	}
+
+	vd.map();
+
+	// sync the ghost
+	vd.ghost_get<0,2>();
+
+
+	auto NN = vd.getCellList(r_cut);
+	auto p_it = vd.getDomainIterator();
+
+	while (p_it.isNext())
+	{
+		auto p = p_it.get();
+
+		Point<3,float> xp = vd.getPosRead(p);
+
+		auto Np = NN.getNNIterator(NN.getCell(xp));
+
+		while (Np.isNext())
+		{
+			auto q = Np.get();
+
+			if (p.getKey() == q)
+			{
+				++Np;
+				continue;
+			}
+
+			// repulsive
+
+			Point<3,float> xq = vd.getPosRead(q);
+			Point<3,float> f = (xp - xq);
+
+			float distance = f.norm();
+
+			// Particle should be inside 2 * r_cut range
+
+			if (distance < r_cut )
+			{
+				vd.getPropWrite<0>(p)++;
+				vd.getPropWrite<3>(p).add();
+				vd.getPropWrite<3>(p).last().xq = xq;
+				vd.getPropWrite<3>(p).last().id = vd.getPropWrite<2>(q);
+			}
+
+			++Np;
+		}
+
+		++p_it;
+	}
+
+	auto NN2 = vd.getCellListSymLocal(r_cut);
+
+	auto p_it2 = vd.getDomainIterator();
+
+	while (p_it2.isNext())
+	{
+		auto p = p_it2.get();
+
+		Point<3,float> xp = vd.getPosRead(p);
+
+		auto Np = NN2.getNNIteratorSymLocal(NN2.getCell(xp),p.getKey(),vd.getPosVector());
+
+		while (Np.isNext())
+		{
+			auto q = Np.get();
+
+			if (p.getKey() == q)
+			{
+				++Np;
+				continue;
+			}
+
+			// repulsive
+
+			Point<3,float> xq = vd.getPosRead(q);
+			Point<3,float> f = (xp - xq);
+
+			float distance = f.norm();
+
+			// Particle should be inside r_cut range
+
+			if (distance < r_cut )
+			{
+				vd.getPropWrite<1>(p)++;
+				vd.getPropWrite<1>(q)++;
+
+				vd.getPropWrite<4>(p).add();
+				vd.getPropWrite<4>(q).add();
+
+				vd.getPropWrite<4>(p).last().xq = xq;
+				vd.getPropWrite<4>(q).last().xq = xp;
+				vd.getPropWrite<4>(p).last().id = vd.getProp<2>(q);
+				vd.getPropWrite<4>(q).last().id = vd.getProp<2>(p);
+
+			}
+
+			++Np;
+		}
+
+		++p_it2;
+	}
 
 	auto p_it3 = vd.getDomainIterator();
 

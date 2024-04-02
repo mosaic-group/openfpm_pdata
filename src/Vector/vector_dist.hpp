@@ -77,6 +77,7 @@ constexpr int WITH_GHOST = 2;
 constexpr int GCL_NON_SYMMETRIC = 0;
 constexpr int GCL_SYMMETRIC = 1;
 constexpr int GCL_HILBERT = 2;
+constexpr int GCL_LOCAL_SYMMETRIC = 3;
 
 template<bool is_gpu_celllist, unsigned int ... prp>
 struct gcl_standard_no_symmetric_impl
@@ -117,7 +118,7 @@ struct gcl
 	}
 };
 
-//! General function t get a cell-list
+//! Function specialization for hilbert curve cell list
 template<unsigned int dim, typename St, typename CellL, typename Vector>
 struct gcl<dim,St,CellL,Vector,GCL_HILBERT>
 {
@@ -136,7 +137,7 @@ struct gcl<dim,St,CellL,Vector,GCL_HILBERT>
 	}
 };
 
-//! General function t get a cell-list
+//! Function specialization for symmetric cell list
 template<unsigned int dim, typename St, typename CellL, typename Vector>
 struct gcl<dim,St,CellL,Vector,GCL_SYMMETRIC>
 {
@@ -152,6 +153,25 @@ struct gcl<dim,St,CellL,Vector,GCL_SYMMETRIC>
 	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
 	{
 		return vd.getCellListSym(r_cut);
+	}
+};
+
+//! Function specialization for local symmetric cell list
+template<unsigned int dim, typename St, typename CellL, typename Vector>
+struct gcl<dim,St,CellL,Vector,GCL_LOCAL_SYMMETRIC>
+{
+	/*! \brief Get the Cell list based on the type
+	 *
+	 * \param vd Distributed vector
+	 * \param r_cut Cut-off radius
+	 * \param g Ghost
+	 *
+	 * \return the constructed cell-list
+	 *
+	 */
+	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
+	{
+		return vd.getCellListSymLocal(r_cut);
 	}
 };
 
@@ -1229,7 +1249,7 @@ public:
 		return vec_key;
 	}
 
-	/*! \brief Construct a cell list symmetric based on a cut of radius
+	/*! \brief Construct a cell list symmetric based on a cut-off radius
 	 *
 	 * \tparam CellL CellList type to construct
 	 *
@@ -1272,7 +1292,51 @@ public:
 		return cell_list;
 	}
 
-	/*! \brief Construct a cell list symmetric based on a cut of radius
+	/*! \brief Construct a local symmetric cell list based on a cut-off radius
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 *
+	 * \return the Cell list
+	 *
+	 */
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>,internal_position_vector_type > >
+	CellL getCellListSymLocal(St r_cut)
+	{
+#ifdef SE_CLASS1
+		if (!(opt & BIND_DEC_TO_GHOST))
+		{
+			if (getDecomposition().getGhost().getLow(dim-1) == 0.0)
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, If you construct a vector without BIND_DEC_TO_GHOST the ghost must be full without reductions " << std::endl;
+				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+			}
+		}
+#endif
+
+		// Cell list
+		CellL cell_list;
+
+		size_t pad = 0;
+		CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
+		cl_param_calculateSym(getDecomposition().getDomain(),cd_sm,getDecomposition().getGhost(),r_cut,pad);
+
+		// Processor bounding box
+		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+
+		// Ghost padding extension
+		Ghost<dim,size_t> g_ext(0);
+		cell_list.Initialize(cd_sm,pbox,pad);
+		cell_list.set_ndec(getDecomposition().get_ndec());
+
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
+		updateCellListSymLocal(cell_list);
+
+		return cell_list;
+	}
+
+	/*! \brief Construct a cell list symmetric based on a cut-off radius
 	 *
 	 * \tparam CellL CellList type to construct
 	 *
@@ -1315,6 +1379,54 @@ public:
 		cell_list.set_ndec(getDecomposition().get_ndec());
 
 		updateCellListSym(cell_list);
+
+		return cell_list;
+	}
+
+	/*! \brief Construct a local symmetric cell list based on a cut-off radius
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 *
+	 * \return the Cell list
+	 *
+	 */
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
+	CellL getCellListSymLocal(const size_t (& div)[dim],
+						 const size_t (& pad)[dim])
+	{
+#ifdef SE_CLASS1
+		if (!(opt & BIND_DEC_TO_GHOST))
+		{
+			if (getDecomposition().getGhost().getLow(dim-1) == 0.0)
+			{
+				std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, If you construct a vector without BIND_DEC_TO_GHOST the ghost must be full without reductions " << std::endl;
+				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+			}
+		}
+#endif
+
+		size_t pad_max = pad[0];
+		for (size_t i = 1 ; i < dim ; i++)
+		{if (pad[i] > pad_max)	{pad_max = pad[i];}}
+
+		// Cell list
+		CellL cell_list;
+
+		CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
+		cd_sm.setDimensions(getDecomposition().getDomain(),div,pad_max);
+
+		// Processor bounding box
+		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+
+		// Ghost padding extension
+		Ghost<dim,size_t> g_ext(0);
+		cell_list.Initialize(cd_sm,pbox,pad_max);
+		cell_list.set_ndec(getDecomposition().get_ndec());
+
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
+		updateCellListSymLocal(cell_list);
 
 		return cell_list;
 	}
@@ -1583,6 +1695,44 @@ public:
 		else
 		{
 			CellL cli_tmp = gcl_An<dim,St,CellL,self,GCL_SYMMETRIC>::get(*this,
+																		 cell_list.getDivWP(),
+																		 cell_list.getPadding(),
+																		 getDecomposition().getGhost());
+
+			cell_list.swap(cli_tmp);
+		}
+	}
+
+
+	/*! \brief Update a cell list using the stored particles
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param cell_list Cell list to update
+	 *
+	 */
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
+	void updateCellListSymLocal(CellL & cell_list)
+	{
+#ifdef SE_CLASS3
+		se3.getNN();
+#endif
+
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
+
+		// Here we have to check that the Cell-list has been constructed
+		// from the same decomposition
+		bool to_reconstruct = cell_list.get_ndec() != getDecomposition().get_ndec();
+
+		if (to_reconstruct == false)
+		{
+			populate_cell_list(vPos,vPosOut,vPrp,vPrpOut,cell_list,v_cl.getGpuContext(),ghostMarker,CL_LOCAL_SYMMETRIC,cl_construct_opt::Full);
+
+			cell_list.set_gm(ghostMarker);
+		}
+		else
+		{
+			CellL cli_tmp = gcl_An<dim,St,CellL,self,CL_LOCAL_SYMMETRIC>::get(*this,
 																		 cell_list.getDivWP(),
 																		 cell_list.getPadding(),
 																		 getDecomposition().getGhost());
