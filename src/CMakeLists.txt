@@ -206,8 +206,6 @@ if (TEST_PERFORMANCE)
 	target_link_libraries(pdata ${Boost_SYSTEM_LIBRARY})
 endif()
 
-#add_definitions(-DMAKE_CELLLIST_DETERMINISTIC)
-
 if (TEST_COVERAGE)
 	target_link_libraries(pdata -lgcov --coverage)
 

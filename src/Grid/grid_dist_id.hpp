@@ -3273,23 +3273,6 @@ public:
 		return loc_grid.size();
 	}
 
-
-	/*! \brief It return the id of structure in the allocation list
-	 *
-	 * \see print_alloc and SE_CLASS2
-	 *
-	 * \return the id
-	 *
-	 */
-	long int who()
-	{
-#ifdef SE_CLASS2
-		return check_whoami(this,8);
-#else
-			return -1;
-#endif
-	}
-
 	/*! \brief It print the internal ghost boxes and external ghost boxes in global unit
 	 *
 	 *

@@ -8,14 +8,14 @@
 #define SUB_UNIT_FACTOR 1024
 
 template<unsigned int dim , typename vector_dist_type>
-__global__ void move_parts_gpu_test(vector_dist_type vd)
+__global__ void move_parts_gpu_test(vector_dist_type vecDist)
 {
-	auto p = GET_PARTICLE(vd);
+	auto p = GET_PARTICLE(vecDist);
 
 #pragma unroll
 	for (int i = 0 ; i < dim ; i++)
 	{
-		vd.getPos(p)[i] += 0.05;
+		vecDist.getPos(p)[i] += 0.05;
 	}
 }
 
@@ -28,116 +28,98 @@ void print_test(std::string test, size_t sz)
 }
 
 
-__global__  void initialize_props(vector_dist_ker<3, float, aggregate<float, float [3], float[3]>> vd)
+__global__  void initialize_props(vector_dist_ker<3, float, aggregate<float, float [3], float[3]>> vecDist)
 {
-	auto p = GET_PARTICLE(vd);
+	auto p = GET_PARTICLE(vecDist);
 
-	vd.template getProp<0>(p) = vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2];
+	vecDist.template getProp<0>(p) = vecDist.getPos(p)[0] + vecDist.getPos(p)[1] + vecDist.getPos(p)[2];
 
-	vd.template getProp<1>(p)[0] = vd.getPos(p)[0] + vd.getPos(p)[1];
-	vd.template getProp<1>(p)[1] = vd.getPos(p)[0] + vd.getPos(p)[2];
-	vd.template getProp<1>(p)[2] = vd.getPos(p)[1] + vd.getPos(p)[2];
+	vecDist.template getProp<1>(p)[0] = vecDist.getPos(p)[0] + vecDist.getPos(p)[1];
+	vecDist.template getProp<1>(p)[1] = vecDist.getPos(p)[0] + vecDist.getPos(p)[2];
+	vecDist.template getProp<1>(p)[2] = vecDist.getPos(p)[1] + vecDist.getPos(p)[2];
 }
 
 template<typename T,typename CellList_type>
-__global__  void calculate_force(vector_dist_ker<3, T, aggregate<T, T[3], T [3]>> vd,
-		                         vector_dist_ker<3, T, aggregate<T, T[3], T [3]>> vd_sort,
-		                         CellList_type cl,
-		                         int rank)
+__global__  void calculate_force(
+	vector_dist_ker<3, T, aggregate<T, T[3], T [3]>> vecDist,
+	CellList_type cellList,
+	int rank)
 {
-	auto p = GET_PARTICLE(vd);
+	size_t p = GET_PARTICLE(vecDist);
 
-	Point<3,T> xp = vd.getPos(p);
+	Point<3,T> xp = vecDist.getPos(p);
 
-    auto it = cl.getNNIterator(cl.getCell(xp));
+	auto it = cellList.getNNIterator(cellList.getCell(xp));
 
-    Point<3,T> force1({0.0,0.0,0.0});
-    Point<3,T> force2({0.0,0.0,0.0});
+	Point<3,T> force({0.0,0.0,0.0});
 
-    while (it.isNext())
-    {
-    	auto q1 = it.get_sort();
-    	auto q2 = it.get();
+	while (it.isNext())
+	{
+		auto q = it.get();
 
-    	if (q2 == p) {++it; continue;}
+		if (q == p) {++it; continue;}
 
-    	Point<3,T> xq_1 = vd_sort.getPos(q1);
-    	Point<3,T> xq_2 = vd.getPos(q2);
+		Point<3,T> xq = vecDist.getPos(q);
+		Point<3,T> r = xq - xp;
 
-    	Point<3,T> r1 = xq_1 - xp;
-    	Point<3,T> r2 = xq_2 - xp;
+		if (r.norm() > 1e-6)
+		{
+			r /= r.norm();
+			force += vecDist.template getProp<0>(q)*r;
+		}
 
-    	// Normalize
+		++it;
+	}
 
-    	if (r1.norm() > 1e-6)
-    	{
-    		r1 /= r1.norm();
-    		force1 += vd_sort.template getProp<0>(q1)*r1;
-    	}
-    	if (r2.norm() > 1e-6)
-    	{
-    		r2 /= r2.norm();
-    		force2 += vd.template getProp<0>(q2)*r2;
-    	}
-
-    	++it;
-    }
-
-    vd.template getProp<1>(p)[0] = force1.get(0);
-    vd.template getProp<1>(p)[1] = force1.get(1);
-    vd.template getProp<1>(p)[2] = force1.get(2);
-
-    vd.template getProp<2>(p)[0] = force2.get(0);
-    vd.template getProp<2>(p)[1] = force2.get(1);
-    vd.template getProp<2>(p)[2] = force2.get(2);
+	vecDist.template getProp<1>(p)[0] = force.get(0);
+	vecDist.template getProp<1>(p)[1] = force.get(1);
+	vecDist.template getProp<1>(p)[2] = force.get(2);
 }
 
-template<typename T, typename CellList_type>
-__global__  void calculate_force_full_sort(vector_dist_ker<3, T, aggregate<T, T[3], T [3]>> vd,
-		                         	 	   CellList_type cl, int rank)
+template<typename T,typename CellList_type>
+__global__  void calculate_force_sort(
+	vector_dist_ker<3, T, aggregate<T, T[3], T [3]>> vecDistSort,
+	CellList_type cellList,
+	int rank)
 {
-	unsigned int p;
-	GET_PARTICLE_SORT(p,cl);
+	size_t p; GET_PARTICLE_SORT(p, cellList);
 
-	Point<3,T> xp = vd.getPos(p);
+	Point<3,T> xp = vecDistSort.getPos(p);
+	Point<3,T> force({0.0,0.0,0.0});
 
-    auto it = cl.getNNIterator(cl.getCell(xp));
+	auto it = cellList.getNNIterator(cellList.getCell(xp));
 
-    Point<3,T> force1({0.0,0.0,0.0});
+	while (it.isNext())
+	{
+		auto q = it.get_sort();
 
-    while (it.isNext())
-    {
-    	auto q1 = it.get_sort();
+		if (q == p) {++it; continue;}
 
-    	if (q1 == p) {++it; continue;}
+		Point<3,T> xq = vecDistSort.getPos(q);
+		Point<3,T> r = xq - xp;
 
-    	Point<3,T> xq_1 = vd.getPos(q1);
+		// Normalize
 
-    	Point<3,T> r1 = xq_1 - xp;
+		if (r.norm() > 1e-6)
+		{
+			r /= r.norm();
+			force += vecDistSort.template getProp<0>(q)*r;
+		}
 
-    	// Normalize
+		++it;
+	}
 
-    	if (r1.norm() > 1e-6)
-    	{
-    		r1 /= r1.norm();
-
-    		force1 += vd.template getProp<0>(q1)*r1;
-    	}
-
-    	++it;
-    }
-
-    vd.template getProp<1>(p)[0] = force1.get(0);
-    vd.template getProp<1>(p)[1] = force1.get(1);
-    vd.template getProp<1>(p)[2] = force1.get(2);
+	vecDistSort.template getProp<1>(p)[0] = force.get(0);
+	vecDistSort.template getProp<1>(p)[1] = force.get(1);
+	vecDistSort.template getProp<1>(p)[2] = force.get(2);
 }
 
 template<typename CellList_type, typename vector_type>
-bool check_force(CellList_type & NN_cpu, vector_type & vd)
+bool check_force(CellList_type & cellList, vector_type & vecDist)
 {
 	typedef typename vector_type::stype St;
 
-	auto it6 = vd.getDomainIterator();
+	auto it6 = vecDist.getDomainIterator();
 
 	bool match = true;
 
@@ -145,54 +127,45 @@ bool check_force(CellList_type & NN_cpu, vector_type & vd)
 	{
 		auto p = it6.get();
 
-		Point<3,St> xp = vd.getPos(p);
+		Point<3,St> xp = vecDist.getPos(p);
 
 		// Calculate on CPU
 
 		Point<3,St> force({0.0,0.0,0.0});
 
-		auto NNc = NN_cpu.getNNIterator(NN_cpu.getCell(xp));
+		auto NNc = cellList.getNNIterator(cellList.getCell(xp));
 
 		while (NNc.isNext())
 		{
 			auto q = NNc.get();
 
-	    	if (q == p.getKey()) {++NNc; continue;}
+			if (q == p.getKey()) {++NNc; continue;}
 
-	    	Point<3,St> xq_2 = vd.getPos(q);
-	    	Point<3,St> r2 = xq_2 - xp;
+			Point<3,St> xq_2 = vecDist.getPos(q);
+			Point<3,St> r2 = xq_2 - xp;
 
-	    	// Normalize
+			// Normalize
 
-	    	if (r2.norm() > 1e-6)
-	    	{
-	    		r2 /= r2.norm();
-	    		force += vd.template getProp<0>(q)*r2;
-	    	}
+			if (r2.norm() > 1e-6)
+			{
+				r2 /= r2.norm();
+				force += vecDist.template getProp<0>(q)*r2;
+			}
 
 			++NNc;
 		}
 
-		match &= fabs(vd.template getProp<1>(p)[0] - vd.template getProp<2>(p)[0]) < 0.0003;
-		match &= fabs(vd.template getProp<1>(p)[1] - vd.template getProp<2>(p)[1]) < 0.0003;
-		match &= fabs(vd.template getProp<1>(p)[2] - vd.template getProp<2>(p)[2]) < 0.0003;
-
-		match &= fabs(vd.template getProp<1>(p)[0] - force.get(0)) < 0.0003;
-		match &= fabs(vd.template getProp<1>(p)[1] - force.get(1)) < 0.0003;
-		match &= fabs(vd.template getProp<1>(p)[2] - force.get(2)) < 0.0003;
+		match &= fabs(vecDist.template getProp<1>(p)[0] - force.get(0)) < 0.0003;
+		match &= fabs(vecDist.template getProp<1>(p)[1] - force.get(1)) < 0.0003;
+		match &= fabs(vecDist.template getProp<1>(p)[2] - force.get(2)) < 0.0003;
 
 		if (match == false)
 		{
-			std::cout << "ERROR: " << vd.template getProp<1>(p)[0]  << "   " << vd.template getProp<2>(p)[0] << std::endl;
-	                std::cout << "ERROR: " << vd.template getProp<1>(p)[1]  << "   " << vd.template getProp<2>(p)[1] << std::endl;
-	                std::cout << "ERROR: " << vd.template getProp<1>(p)[2]  << "   " << vd.template getProp<2>(p)[2] << std::endl;
+			std::cout << p.getKey() << " ERROR: " << vecDist.template getProp<1>(p)[0] << "   " <<  force.get(0) << std::endl;
+			// std::cout << p.getKey() << " ERROR: " << vecDist.template getProp<1>(p)[1] << "   " <<  force.get(1) << std::endl;
+			// std::cout << p.getKey() << " ERROR: " << vecDist.template getProp<1>(p)[2] << "   " <<  force.get(2) << std::endl;
 
-	                std::cout << p.getKey() << " ERROR2: " << vd.template getProp<1>(p)[0] << "   " <<  force.get(0) << std::endl;
-	                std::cout << p.getKey() << " ERROR2: " << vd.template getProp<1>(p)[1] << "   " <<  force.get(1) << std::endl;
-	                std::cout << p.getKey() << " ERROR2: " << vd.template getProp<1>(p)[2] << "   " <<  force.get(2) << std::endl;
-
-
-			break;
+			// break;
 		}
 
 		++it6;
@@ -203,9 +176,9 @@ bool check_force(CellList_type & NN_cpu, vector_type & vd)
 
 BOOST_AUTO_TEST_CASE( vector_dist_gpu_ghost_get )
 {
-	auto & v_cl = create_vcluster();
+	auto & vCluster = create_vcluster();
 
-	if (v_cl.size() > 16)
+	if (vCluster.size() > 16)
 	{return;}
 
 	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
@@ -216,115 +189,114 @@ BOOST_AUTO_TEST_CASE( vector_dist_gpu_ghost_get )
 	// Boundary conditions
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
-	vector_dist_gpu<3,float,aggregate<float,float[3],float[3]>> vd(1000,domain,bc,g);
+	vector_dist_gpu<3,float,aggregate<float,float[3],float[3]>> vecDist(1000,domain,bc,g);
 
-	auto it = vd.getDomainIterator();
+	auto it = vecDist.getDomainIterator();
 
 	while (it.isNext())
 	{
 		auto p = it.get();
 
-		vd.getPos(p)[0] = (float)rand() / (float)RAND_MAX;
-		vd.getPos(p)[1] = (float)rand() / (float)RAND_MAX;
-		vd.getPos(p)[2] = (float)rand() / (float)RAND_MAX;
+		vecDist.getPos(p)[0] = (float)rand() / (float)RAND_MAX;
+		vecDist.getPos(p)[1] = (float)rand() / (float)RAND_MAX;
+		vecDist.getPos(p)[2] = (float)rand() / (float)RAND_MAX;
 
-		vd.template getProp<0>(p) = vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2];
+		vecDist.template getProp<0>(p) = vecDist.getPos(p)[0] + vecDist.getPos(p)[1] + vecDist.getPos(p)[2];
 
-		vd.template getProp<1>(p)[0] = vd.getPos(p)[0] + vd.getPos(p)[1];
-		vd.template getProp<1>(p)[1] = vd.getPos(p)[0] + vd.getPos(p)[2];
-		vd.template getProp<1>(p)[2] = vd.getPos(p)[1] + vd.getPos(p)[2];
+		vecDist.template getProp<1>(p)[0] = vecDist.getPos(p)[0] + vecDist.getPos(p)[1];
+		vecDist.template getProp<1>(p)[1] = vecDist.getPos(p)[0] + vecDist.getPos(p)[2];
+		vecDist.template getProp<1>(p)[2] = vecDist.getPos(p)[1] + vecDist.getPos(p)[2];
 
-		vd.template getProp<2>(p)[0] = vd.getPos(p)[0] + 3.0*vd.getPos(p)[1];
-		vd.template getProp<2>(p)[1] = vd.getPos(p)[0] + 3.0*vd.getPos(p)[2];
-		vd.template getProp<2>(p)[2] = vd.getPos(p)[1] + 3.0*vd.getPos(p)[2];
+		vecDist.template getProp<2>(p)[0] = vecDist.getPos(p)[0] + 3.0*vecDist.getPos(p)[1];
+		vecDist.template getProp<2>(p)[1] = vecDist.getPos(p)[0] + 3.0*vecDist.getPos(p)[2];
+		vecDist.template getProp<2>(p)[2] = vecDist.getPos(p)[1] + 3.0*vecDist.getPos(p)[2];
 
 
 		++it;
 	}
 
 	// Ok we redistribute the particles (CPU based)
-	vd.map();
+	vecDist.map();
 
-	vd.template ghost_get<0,1,2>();
+	vecDist.template ghost_get<0,1,2>();
 
 	// Now we check the the ghost contain the correct information
 
 	bool check = true;
 
-	auto itg = vd.getDomainAndGhostIterator();
+	auto itg = vecDist.getDomainAndGhostIterator();
 
 	while (itg.isNext())
 	{
 		auto p = itg.get();
 
-		check &= (vd.template getProp<0>(p) == vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2]);
+		check &= (vecDist.template getProp<0>(p) == vecDist.getPos(p)[0] + vecDist.getPos(p)[1] + vecDist.getPos(p)[2]);
 
-		check &= (vd.template getProp<1>(p)[0] == vd.getPos(p)[0] + vd.getPos(p)[1]);
-		check &= (vd.template getProp<1>(p)[1] == vd.getPos(p)[0] + vd.getPos(p)[2]);
-		check &= (vd.template getProp<1>(p)[2] == vd.getPos(p)[1] + vd.getPos(p)[2]);
+		check &= (vecDist.template getProp<1>(p)[0] == vecDist.getPos(p)[0] + vecDist.getPos(p)[1]);
+		check &= (vecDist.template getProp<1>(p)[1] == vecDist.getPos(p)[0] + vecDist.getPos(p)[2]);
+		check &= (vecDist.template getProp<1>(p)[2] == vecDist.getPos(p)[1] + vecDist.getPos(p)[2]);
 
-		check &= (vd.template getProp<2>(p)[0] == vd.getPos(p)[0] + 3.0*vd.getPos(p)[1]);
-		check &= (vd.template getProp<2>(p)[1] == vd.getPos(p)[0] + 3.0*vd.getPos(p)[2]);
-		check &= (vd.template getProp<2>(p)[2] == vd.getPos(p)[1] + 3.0*vd.getPos(p)[2]);
+		check &= (vecDist.template getProp<2>(p)[0] == vecDist.getPos(p)[0] + 3.0*vecDist.getPos(p)[1]);
+		check &= (vecDist.template getProp<2>(p)[1] == vecDist.getPos(p)[0] + 3.0*vecDist.getPos(p)[2]);
+		check &= (vecDist.template getProp<2>(p)[2] == vecDist.getPos(p)[1] + 3.0*vecDist.getPos(p)[2]);
 
 		++itg;
 	}
 
-	size_t tot_s = vd.size_local_with_ghost();
+	size_t tot_s = vecDist.size_local_with_ghost();
 
-	v_cl.sum(tot_s);
-	v_cl.execute();
+	vCluster.sum(tot_s);
+	vCluster.execute();
 
 	// We check that we check something
 	BOOST_REQUIRE(tot_s > 1000);
 }
 
 template<typename vector_type, typename CellList_type, typename CellList_type_cpu>
-void check_cell_list_cpu_and_gpu(vector_type & vd, CellList_type & NN, CellList_type_cpu & NN_cpu)
+void compareCellListCpuGpu(vector_type & vecDist, CellList_type & NN, CellList_type_cpu & cellList)
 {
-	const auto it5 = vd.getDomainIteratorGPU(32);
+	const auto it5 = vecDist.getDomainIteratorGPU(32);
 
-	CUDA_LAUNCH((calculate_force<typename vector_type::stype,decltype(NN.toKernel())>),it5,vd.toKernel(),vd.toKernel_sorted(),NN.toKernel(),(int)create_vcluster().rank());
+	CUDA_LAUNCH((calculate_force<typename vector_type::stype,decltype(NN.toKernel())>),
+		it5,
+		vecDist.toKernel(),
+		NN.toKernel(),
+		(int)create_vcluster().rank()
+	);
 
-	vd.template deviceToHostProp<1,2>();
+	vecDist.template deviceToHostProp<1>();
 
-	bool test = check_force(NN_cpu,vd);
-	BOOST_REQUIRE_EQUAL(test,true);
-
-	// We reset the property 1 on device
-
-	auto rst = vd.getDomainIterator();
-
-	while (rst.isNext())
-	{
-		auto p = rst.get();
-
-		vd.template getProp<1>(p)[0] = 0.0;
-		vd.template getProp<1>(p)[1] = 0.0;
-		vd.template getProp<1>(p)[2] = 0.0;
-
-		++rst;
-	}
-
-	vd.template hostToDeviceProp<1>();
-
-	// We do exactly the same test as before, but now we completely use the sorted version
-
-	CUDA_LAUNCH((calculate_force_full_sort<typename vector_type::stype,decltype(NN.toKernel())>),it5,vd.toKernel_sorted(),NN.toKernel(),(int)create_vcluster().rank());
-
-	vd.template merge_sort<1>(NN);
-	vd.template deviceToHostProp<1>();
-
-	test = check_force(NN_cpu,vd);
+	bool test = check_force(cellList,vecDist);
 	BOOST_REQUIRE_EQUAL(test,true);
 }
 
-template<typename CellList_type>
+template<typename vector_type, typename CellList_type, typename CellList_type_cpu>
+void compareCellListCpuGpuSorted(vector_type & vecDistSort, CellList_type & cellListGPU, CellList_type_cpu & cellList)
+{
+	const auto it5 = vecDistSort.getDomainIteratorGPU(32);
+
+	CUDA_LAUNCH((calculate_force_sort<typename vector_type::stype,decltype(cellListGPU.toKernel())>),
+		it5,
+		vecDistSort.toKernel(),
+		cellListGPU.toKernel(),
+		(int)create_vcluster().rank()
+	);
+
+	vecDistSort.restoreOrder(cellListGPU);
+
+	vecDistSort.template deviceToHostProp<0,1>();
+	vecDistSort.template deviceToHostPos();
+
+	bool test = check_force(cellList,vecDistSort);
+	BOOST_REQUIRE_EQUAL(test,true);
+}
+
+template<typename CellList_type, bool sorted>
 void vector_dist_gpu_test_impl()
 {
-	auto & v_cl = create_vcluster();
+	auto & vCluster = create_vcluster();
 
-	if (v_cl.size() > 16)
+	if (vCluster.size() > 16)
 	{return;}
 
 	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
@@ -335,11 +307,11 @@ void vector_dist_gpu_test_impl()
 	// Boundary conditions
 	size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 
-	vector_dist_gpu<3,float,aggregate<float,float[3],float[3]>> vd(10000,domain,bc,g);
+	vector_dist_gpu<3,float,aggregate<float,float[3],float[3]>> vecDist(10000,domain,bc,g);
 
 	srand(55067*create_vcluster().rank());
 
-	auto it = vd.getDomainIterator();
+	auto it = vecDist.getDomainIterator();
 
 	while (it.isNext())
 	{
@@ -349,101 +321,99 @@ void vector_dist_gpu_test_impl()
 		int y = rand();
 		int z = rand();
 
-		vd.getPos(p)[0] = (float)x / (float)RAND_MAX;
-		vd.getPos(p)[1] = (float)y / (float)RAND_MAX;
-		vd.getPos(p)[2] = (float)z / (float)RAND_MAX;
+		vecDist.getPos(p)[0] = (float)x / (float)RAND_MAX;
+		vecDist.getPos(p)[1] = (float)y / (float)RAND_MAX;
+		vecDist.getPos(p)[2] = (float)z / (float)RAND_MAX;
 
-		Point<3,float> xp = vd.getPos(p);
+		Point<3,float> xp = vecDist.getPos(p);
 
 		++it;
 	}
 
 	// Ok we redistribute the particles (CPU based)
-	vd.map();
+	vecDist.map();
 
-	size_t size_l = vd.size_local();
+	size_t size_l = vecDist.size_local();
 
-	v_cl.sum(size_l);
-	v_cl.execute();
+	vCluster.sum(size_l);
+	vCluster.execute();
 
 	BOOST_REQUIRE_EQUAL(size_l,10000);
 
-
-	auto & ct = vd.getDecomposition();
+	auto & dec = vecDist.getDecomposition();
 
 	bool noOut = true;
 	size_t cnt = 0;
 
-	auto it2 = vd.getDomainIterator();
+	auto it2 = vecDist.getDomainIterator();
 
 	while (it2.isNext())
 	{
 		auto p = it2.get();
 
-		noOut &= ct.isLocal(vd.getPos(p));
+		noOut &= dec.isLocal(vecDist.getPos(p));
 
 		cnt++;
 		++it2;
 	}
 
 	BOOST_REQUIRE_EQUAL(noOut,true);
-	BOOST_REQUIRE_EQUAL(cnt,vd.size_local());
+	BOOST_REQUIRE_EQUAL(cnt,vecDist.size_local());
 
 	// now we offload all the properties
 
-	const auto it3 = vd.getDomainIteratorGPU();
+	const auto it3 = vecDist.getDomainIteratorGPU();
 
 	// offload to device
-	vd.hostToDevicePos();
+	vecDist.hostToDevicePos();
 
-	CUDA_LAUNCH_DIM3(initialize_props,it3.wthr,it3.thr,vd.toKernel());
+	CUDA_LAUNCH_DIM3(initialize_props,it3.wthr,it3.thr,vecDist.toKernel());
 
 	// now we check what we initialized
 
-	vd.deviceToHostProp<0,1>();
+	vecDist.deviceToHostProp<0,1>();
 
-	auto it4 = vd.getDomainIterator();
+	auto it4 = vecDist.getDomainIterator();
 
 	while (it4.isNext())
 	{
 		auto p = it4.get();
 
-		BOOST_REQUIRE_CLOSE(vd.template getProp<0>(p),vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2],0.01);
+		BOOST_REQUIRE_CLOSE(vecDist.template getProp<0>(p),vecDist.getPos(p)[0] + vecDist.getPos(p)[1] + vecDist.getPos(p)[2],0.01);
 
-		BOOST_REQUIRE_CLOSE(vd.template getProp<1>(p)[0],vd.getPos(p)[0] + vd.getPos(p)[1],0.01);
-		BOOST_REQUIRE_CLOSE(vd.template getProp<1>(p)[1],vd.getPos(p)[0] + vd.getPos(p)[2],0.01);
-		BOOST_REQUIRE_CLOSE(vd.template getProp<1>(p)[2],vd.getPos(p)[1] + vd.getPos(p)[2],0.01);
+		BOOST_REQUIRE_CLOSE(vecDist.template getProp<1>(p)[0],vecDist.getPos(p)[0] + vecDist.getPos(p)[1],0.01);
+		BOOST_REQUIRE_CLOSE(vecDist.template getProp<1>(p)[1],vecDist.getPos(p)[0] + vecDist.getPos(p)[2],0.01);
+		BOOST_REQUIRE_CLOSE(vecDist.template getProp<1>(p)[2],vecDist.getPos(p)[1] + vecDist.getPos(p)[2],0.01);
 
 		++it4;
 	}
 
 	// here we do a ghost_get
-	vd.ghost_get<0>();
+	vecDist.ghost_get<0>();
 
 	// Double ghost get to check crashes
-	vd.ghost_get<0>();
+	vecDist.ghost_get<0>();
 
 	// we re-offload what we received
-	vd.hostToDevicePos();
-	vd.template hostToDeviceProp<0>();
+	vecDist.hostToDevicePos();
+	vecDist.template hostToDeviceProp<0>();
 
-	auto NN = vd.template getCellListGPU<CellList_type>(0.1);
-	auto NN_cpu = vd.getCellList(0.1);
-	check_cell_list_cpu_and_gpu(vd,NN,NN_cpu);
+	size_t opt = (sorted)? CL_GPU_REORDER : 0;
+	auto cellList = vecDist.getCellList(0.1);
+	auto cellListGPU = vecDist.template getCellListGPU<CellList_type>(0.1, opt);
 
-	auto NN_up = vd.template getCellListGPU<CellList_type>(0.1);
-
-	NN_up.clear();
-	vd.updateCellList(NN_up);
-	check_cell_list_cpu_and_gpu(vd,NN_up,NN_cpu);
+	if (sorted)
+		compareCellListCpuGpuSorted(vecDist,cellListGPU,cellList);
+	else
+		compareCellListCpuGpu(vecDist,cellListGPU,cellList);
 }
 
 template<typename CellList_type>
 void vector_dist_gpu_make_sort_test_impl()
 {
-	auto & v_cl = create_vcluster();
+	auto & vCluster = create_vcluster();
 
-	if (v_cl.size() > 16)
+	if (vCluster.size() > 16)
 	{return;}
 
 	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
@@ -454,11 +424,11 @@ void vector_dist_gpu_make_sort_test_impl()
 	// Boundary conditions
 	size_t bc[3]={NON_PERIODIC,NON_PERIODIC,NON_PERIODIC};
 
-	vector_dist_gpu<3,float,aggregate<float,float[3],float[3]>> vd(10000,domain,bc,g);
+	vector_dist_gpu<3,float,aggregate<float,float[3],float[3]>> vecDist(10000,domain,bc,g);
 
 	srand(55067*create_vcluster().rank());
 
-	auto it = vd.getDomainIterator();
+	auto it = vecDist.getDomainIterator();
 
 	while (it.isNext())
 	{
@@ -468,87 +438,82 @@ void vector_dist_gpu_make_sort_test_impl()
 		int y = rand();
 		int z = rand();
 
-		vd.getPos(p)[0] = (float)x / (float)RAND_MAX;
-		vd.getPos(p)[1] = (float)y / (float)RAND_MAX;
-		vd.getPos(p)[2] = (float)z / (float)RAND_MAX;
+		vecDist.getPos(p)[0] = (float)x / (float)RAND_MAX;
+		vecDist.getPos(p)[1] = (float)y / (float)RAND_MAX;
+		vecDist.getPos(p)[2] = (float)z / (float)RAND_MAX;
 
 		++it;
 	}
 
-	vd.hostToDevicePos();
+	vecDist.hostToDevicePos();
 
-	// Ok we redistribute the particles
-	vd.map(RUN_ON_DEVICE);
+	// redistribute the particles
+	vecDist.map(RUN_ON_DEVICE);
 
-	auto it3 = vd.getDomainIteratorGPU();
+	auto it3 = vecDist.getDomainIteratorGPU();
 
-	CUDA_LAUNCH_DIM3(initialize_props,it3.wthr,it3.thr,vd.toKernel());
+	CUDA_LAUNCH_DIM3(initialize_props,it3.wthr,it3.thr,vecDist.toKernel());
 
-	// Here we check make sort does not mess-up particles we use a Cell-List to check that
-	// the two cell-list constructed are identical
+	vecDist.template deviceToHostProp<0,1,2>();
 
-	vd.deviceToHostPos();
+	// Here we check CL_GPU_REORDER correctly restores particle order
+	// we use a Cell-List to check that the two cell-list constructed are identical
 
-	auto NN_cpu1 = vd.getCellList(0.1);
-	auto NN = vd.template getCellListGPU<CellList_type>(0.1);
-	vd.make_sort(NN);
+	vecDist.deviceToHostPos();
 
-	vd.deviceToHostPos();
+	openfpm::vector_gpu<Point<3,float>> tmpPos = vecDist.getPosVector();
+	openfpm::vector_gpu<aggregate<float,float[3],float[3]>> tmpPrp = vecDist.getPropVector();
 
-	auto NN_cpu2 = vd.getCellList(0.1);
+	auto NN_cpu1 = vecDist.getCellList(0.1);
+	auto NN = vecDist.template getCellListGPU<CellList_type>(0.1, CL_GPU_REORDER);
 
-	// here we compare the two cell-lists
+	vecDist.restoreOrder(NN);
 
+	vecDist.deviceToHostPos();
+	vecDist.template deviceToHostProp<0,1,2>();
+
+	auto NN_cpu2 = vecDist.getCellList(0.1);
+
+	// compare two cell-lists
 	bool match = true;
 	for (size_t i = 0 ; i < NN_cpu1.getNCells() ; i++)
 	{
 		match &= NN_cpu1.getNelements(i) == NN_cpu2.getNelements(i);
 	}
-
 	BOOST_REQUIRE_EQUAL(match,true);
 
-	// In this second step we check that we can use make_sort_from to check we can sort partifcles even
-	// when ghost are filled
-
-	// Here we get do a make sort
-	NN = vd.template getCellListGPU<CellList_type>(0.1);
-	vd.make_sort(NN);
-
-	openfpm::vector_gpu<aggregate<float,float[3],float[3]>> tmp_prp = vd.getPropVector();
-	openfpm::vector_gpu<Point<3,float>> tmp_pos = vd.getPosVector();
-
-	vd.deviceToHostPos();
-	tmp_pos.template deviceToHost<0>();
-
-	// here we do a ghost_get
-	vd.ghost_get<0>(RUN_ON_DEVICE);
-
-	// Here we get do a make sort
-	NN = vd.template getCellListGPU<CellList_type>(0.1);
-
-	CUDA_CHECK();
-
-	vd.make_sort_from(NN);
-
-	// Check
-
-	tmp_pos.deviceToHost<0>();
-	vd.deviceToHostPos();
-
 	match = true;
-	for (size_t i = 0 ; i < vd.size_local() ; i++)
+	for (size_t i = 0 ; i < vecDist.size_local() ; i++)
 	{
-		Point<3,float> p1 = vd.getPos(i);
-		Point<3,float> p2 = tmp_pos.template get<0>(i);
+		Point<3,float> p1 = vecDist.getPos(i);
+		Point<3,float> p2 = tmpPos.template get<0>(i);
 
 		// They must be in the same cell
 		auto c1 = NN.getCell(p1);
-		auto c2 = NN.getCell(p1);
+		auto c2 = NN.getCell(p2);
 
 		match &= c1 == c2;
 	}
+	BOOST_REQUIRE_EQUAL(match,true);
+
+	match = true;
+	for (size_t i = 0 ; i < vecDist.size_local() ; i++)
+	{
+		for (int j = 0; j < 3; ++j)
+			match &= (vecDist.getPos(i)[j] - tmpPos.template get<0>(i)[j]) < 0.0003;
+
+		match &= (vecDist.getProp<0>(i) - tmpPrp.template get<0>(i)) < 0.0003;
+
+		for (int j = 0; j < 3; ++j)
+			match &= (vecDist.getProp<1>(i)[j] - tmpPrp.template get<1>(i)[j]) < 0.0003;
+
+		for (int j = 0; j < 3; ++j)
+			match &= (vecDist.getProp<2>(i)[j] - tmpPrp.template get<2>(i)[j]) < 0.0003;
+	}
 
 	BOOST_REQUIRE_EQUAL(match,true);
+
+	CUDA_CHECK();
 }
 
 
@@ -564,20 +529,30 @@ BOOST_AUTO_TEST_CASE(vector_dist_gpu_make_sort)
 
 BOOST_AUTO_TEST_CASE( vector_dist_gpu_test)
 {
-	vector_dist_gpu_test_impl<CellList_gpu<3,float,CudaMemory,shift_only<3, float>>>();
+	vector_dist_gpu_test_impl<CellList_gpu<3,float,CudaMemory,shift_only<3, float>>, false>();
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_gpu_test_sorted)
+{
+	vector_dist_gpu_test_impl<CellList_gpu<3,float,CudaMemory,shift_only<3, float>>, true>();
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_gpu_test_sparse)
 {
-	vector_dist_gpu_test_impl<CELLLIST_GPU_SPARSE<3,float>>();
+	vector_dist_gpu_test_impl<CELLLIST_GPU_SPARSE<3,float>, false>();
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_gpu_test_sparse_sorted)
+{
+	vector_dist_gpu_test_impl<CELLLIST_GPU_SPARSE<3,float>, true>();
 }
 
 template<typename St>
 void vdist_calc_gpu_test()
 {
-	auto & v_cl = create_vcluster();
+	auto & vCluster = create_vcluster();
 
-	if (v_cl.size() > 16)
+	if (vCluster.size() > 16)
 	{return;}
 
 	Box<3,St> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
@@ -590,96 +565,96 @@ void vdist_calc_gpu_test()
 
 	//! [Create a gpu vector]
 
-	vector_dist_gpu<3,St,aggregate<St,St[3],St[3]>> vd(1000,domain,bc,g);
+	vector_dist_gpu<3,St,aggregate<St,St[3],St[3]>> vecDist(1000,domain,bc,g);
 
 	//! [Create a gpu vector]
 
 	//! [Fill gpu vector and move to GPU]
 
-	srand(v_cl.rank()*10000);
-	auto it = vd.getDomainIterator();
+	srand(vCluster.rank()*10000);
+	auto it = vecDist.getDomainIterator();
 
 	while (it.isNext())
 	{
 		auto p = it.get();
 
-		vd.getPos(p)[0] = (St)rand() / (float)RAND_MAX;
-		vd.getPos(p)[1] = (St)rand() / (float)RAND_MAX;
-		vd.getPos(p)[2] = (St)rand() / (float)RAND_MAX;
+		vecDist.getPos(p)[0] = (St)rand() / (float)RAND_MAX;
+		vecDist.getPos(p)[1] = (St)rand() / (float)RAND_MAX;
+		vecDist.getPos(p)[2] = (St)rand() / (float)RAND_MAX;
 
-		vd.template getProp<0>(p) = vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2];
+		vecDist.template getProp<0>(p) = vecDist.getPos(p)[0] + vecDist.getPos(p)[1] + vecDist.getPos(p)[2];
 
-		vd.template getProp<1>(p)[0] = vd.getPos(p)[0];
-		vd.template getProp<1>(p)[1] = vd.getPos(p)[1];
-		vd.template getProp<1>(p)[2] = vd.getPos(p)[2];
+		vecDist.template getProp<1>(p)[0] = vecDist.getPos(p)[0];
+		vecDist.template getProp<1>(p)[1] = vecDist.getPos(p)[1];
+		vecDist.template getProp<1>(p)[2] = vecDist.getPos(p)[2];
 
-		vd.template getProp<2>(p)[0] = vd.getPos(p)[0] + vd.getPos(p)[1];
-		vd.template getProp<2>(p)[1] = vd.getPos(p)[0] + vd.getPos(p)[2];
-		vd.template getProp<2>(p)[2] = vd.getPos(p)[1] + vd.getPos(p)[2];
+		vecDist.template getProp<2>(p)[0] = vecDist.getPos(p)[0] + vecDist.getPos(p)[1];
+		vecDist.template getProp<2>(p)[1] = vecDist.getPos(p)[0] + vecDist.getPos(p)[2];
+		vecDist.template getProp<2>(p)[2] = vecDist.getPos(p)[1] + vecDist.getPos(p)[2];
 
 		++it;
 	}
 
 	// move on device
-	vd.hostToDevicePos();
-	vd.template hostToDeviceProp<0,1,2>();
+	vecDist.hostToDevicePos();
+	vecDist.template hostToDeviceProp<0,1,2>();
 
 	// Ok we redistribute the particles (GPU based)
-	vd.map(RUN_ON_DEVICE);
+	vecDist.map(RUN_ON_DEVICE);
 
 	//! [Fill gpu vector and move to GPU]
 
-	vd.deviceToHostPos();
-	vd.template deviceToHostProp<0,1,2>();
+	vecDist.deviceToHostPos();
+	vecDist.template deviceToHostProp<0,1,2>();
 
 	// Reset the host part
 
-	auto it3 = vd.getDomainIterator();
+	auto it3 = vecDist.getDomainIterator();
 
 	while (it3.isNext())
 	{
 		auto p = it3.get();
 
-		vd.getPos(p)[0] = 1.0;
-		vd.getPos(p)[1] = 1.0;
-		vd.getPos(p)[2] = 1.0;
+		vecDist.getPos(p)[0] = 1.0;
+		vecDist.getPos(p)[1] = 1.0;
+		vecDist.getPos(p)[2] = 1.0;
 
-		vd.template getProp<0>(p) = 0.0;
+		vecDist.template getProp<0>(p) = 0.0;
 
-		vd.template getProp<0>(p) = 0.0;
-		vd.template getProp<0>(p) = 0.0;
-		vd.template getProp<0>(p) = 0.0;
+		vecDist.template getProp<0>(p) = 0.0;
+		vecDist.template getProp<0>(p) = 0.0;
+		vecDist.template getProp<0>(p) = 0.0;
 
-		vd.template getProp<0>(p) = 0.0;
-		vd.template getProp<0>(p) = 0.0;
-		vd.template getProp<0>(p) = 0.0;
+		vecDist.template getProp<0>(p) = 0.0;
+		vecDist.template getProp<0>(p) = 0.0;
+		vecDist.template getProp<0>(p) = 0.0;
 
 		++it3;
 	}
 
 	// we move from Device to CPU
 
-	vd.deviceToHostPos();
-	vd.template deviceToHostProp<0,1,2>();
+	vecDist.deviceToHostPos();
+	vecDist.template deviceToHostProp<0,1,2>();
 
 	// Check
 
-	auto it2 = vd.getDomainIterator();
+	auto it2 = vecDist.getDomainIterator();
 
 	bool match = true;
 	while (it2.isNext())
 	{
 		auto p = it2.get();
 
-		match &= vd.template getProp<0>(p) == vd.getPos(p)[0] + vd.getPos(p)[1] + vd.getPos(p)[2];
+		match &= vecDist.template getProp<0>(p) == vecDist.getPos(p)[0] + vecDist.getPos(p)[1] + vecDist.getPos(p)[2];
 
-		match &= vd.template getProp<1>(p)[0] == vd.getPos(p)[0];
-		match &= vd.template getProp<1>(p)[1] == vd.getPos(p)[1];
-		match &= vd.template getProp<1>(p)[2] == vd.getPos(p)[2];
+		match &= vecDist.template getProp<1>(p)[0] == vecDist.getPos(p)[0];
+		match &= vecDist.template getProp<1>(p)[1] == vecDist.getPos(p)[1];
+		match &= vecDist.template getProp<1>(p)[2] == vecDist.getPos(p)[2];
 
-		match &= vd.template getProp<2>(p)[0] == vd.getPos(p)[0] + vd.getPos(p)[1];
-		match &= vd.template getProp<2>(p)[1] == vd.getPos(p)[0] + vd.getPos(p)[2];
-		match &= vd.template getProp<2>(p)[2] == vd.getPos(p)[1] + vd.getPos(p)[2];
+		match &= vecDist.template getProp<2>(p)[0] == vecDist.getPos(p)[0] + vecDist.getPos(p)[1];
+		match &= vecDist.template getProp<2>(p)[1] == vecDist.getPos(p)[0] + vecDist.getPos(p)[2];
+		match &= vecDist.template getProp<2>(p)[2] == vecDist.getPos(p)[1] + vecDist.getPos(p)[2];
 
 		++it2;
 	}
@@ -696,26 +671,26 @@ void vdist_calc_gpu_test()
 	Box<3,St> dom_ext = domain;
 	dom_ext.enlarge(g);
 
-	auto it5 = vd.getDomainIterator();
-	count_local_n_local<3>(vd,it5,bc,domain,dom_ext,l_cnt,nl_cnt,n_out);
+	auto it5 = vecDist.getDomainIterator();
+	count_local_n_local<3>(vecDist,it5,bc,domain,dom_ext,l_cnt,nl_cnt,n_out);
 
 	BOOST_REQUIRE_EQUAL(n_out,0);
-	BOOST_REQUIRE_EQUAL(l_cnt,vd.size_local());
+	BOOST_REQUIRE_EQUAL(l_cnt,vecDist.size_local());
 
 	// we do 10 gpu steps (using a cpu vector to check that map and ghost get work as expented)
 
 	for (size_t i = 0 ; i < 10 ; i++)
 	{
-		vd.map(RUN_ON_DEVICE);
+		vecDist.map(RUN_ON_DEVICE);
 
-		vd.deviceToHostPos();
-		vd.template deviceToHostProp<0,1,2>();
+		vecDist.deviceToHostPos();
+		vecDist.template deviceToHostProp<0,1,2>();
 
 		// To test we copy on a cpu distributed vector and we do a map
 
-		vector_dist<3,St,aggregate<St,St[3],St[3]>> vd_cpu(vd.getDecomposition().template duplicate_convert<HeapMemory,memory_traits_lin>(),0);
+		vector_dist<3,St,aggregate<St,St[3],St[3]>> vd_cpu(vecDist.getDecomposition().template duplicate_convert<HeapMemory,memory_traits_lin>(),0);
 
-		auto itc = vd.getDomainIterator();
+		auto itc = vecDist.getDomainIterator();
 
 		while (itc.isNext())
 		{
@@ -723,19 +698,19 @@ void vdist_calc_gpu_test()
 
 			vd_cpu.add();
 
-			vd_cpu.getLastPos()[0] = vd.getPos(p)[0];
-			vd_cpu.getLastPos()[1] = vd.getPos(p)[1];
-			vd_cpu.getLastPos()[2] = vd.getPos(p)[2];
+			vd_cpu.getLastPos()[0] = vecDist.getPos(p)[0];
+			vd_cpu.getLastPos()[1] = vecDist.getPos(p)[1];
+			vd_cpu.getLastPos()[2] = vecDist.getPos(p)[2];
 
-			vd_cpu.template getLastProp<0>() = vd.template getProp<0>(p);
+			vd_cpu.template getLastProp<0>() = vecDist.template getProp<0>(p);
 
-			vd_cpu.template getLastProp<1>()[0] = vd.template getProp<1>(p)[0];
-			vd_cpu.template getLastProp<1>()[1] = vd.template getProp<1>(p)[1];
-			vd_cpu.template getLastProp<1>()[2] = vd.template getProp<1>(p)[2];
+			vd_cpu.template getLastProp<1>()[0] = vecDist.template getProp<1>(p)[0];
+			vd_cpu.template getLastProp<1>()[1] = vecDist.template getProp<1>(p)[1];
+			vd_cpu.template getLastProp<1>()[2] = vecDist.template getProp<1>(p)[2];
 
-			vd_cpu.template getLastProp<2>()[0] = vd.template getProp<2>(p)[0];
-			vd_cpu.template getLastProp<2>()[1] = vd.template getProp<2>(p)[1];
-			vd_cpu.template getLastProp<2>()[2] = vd.template getProp<2>(p)[2];
+			vd_cpu.template getLastProp<2>()[0] = vecDist.template getProp<2>(p)[0];
+			vd_cpu.template getLastProp<2>()[1] = vecDist.template getProp<2>(p)[1];
+			vd_cpu.template getLastProp<2>()[2] = vecDist.template getProp<2>(p)[2];
 
 			++itc;
 		}
@@ -744,12 +719,12 @@ void vdist_calc_gpu_test()
 
 		//! [Fill the ghost on GPU]
 
-		vd.template ghost_get<0,1,2>(RUN_ON_DEVICE);
+		vecDist.template ghost_get<0,1,2>(RUN_ON_DEVICE);
 
 		//! [Fill the ghost on GPU]
 
-		vd.deviceToHostPos();
-		vd.template deviceToHostProp<0,1,2>();
+		vecDist.deviceToHostPos();
+		vecDist.template deviceToHostProp<0,1,2>();
 
 		match = true;
 
@@ -789,40 +764,40 @@ void vdist_calc_gpu_test()
 		openfpm::vector<part> gpu_sort;
 
 		cpu_sort.resize(vd_cpu.size_local_with_ghost() - vd_cpu.size_local());
-		gpu_sort.resize(vd.size_local_with_ghost() - vd.size_local());
+		gpu_sort.resize(vecDist.size_local_with_ghost() - vecDist.size_local());
 
 		BOOST_REQUIRE_EQUAL(cpu_sort.size(),gpu_sort.size());
 
 		size_t cnt = 0;
 
-		auto itc2 = vd.getGhostIterator();
+		auto itc2 = vecDist.getGhostIterator();
 		while (itc2.isNext())
 		{
 			auto p = itc2.get();
 
 			cpu_sort.get(cnt).xp.get(0) = vd_cpu.getPos(p)[0];
-			gpu_sort.get(cnt).xp.get(0) = vd.getPos(p)[0];
+			gpu_sort.get(cnt).xp.get(0) = vecDist.getPos(p)[0];
 			cpu_sort.get(cnt).xp.get(1) = vd_cpu.getPos(p)[1];
-			gpu_sort.get(cnt).xp.get(1) = vd.getPos(p)[1];
+			gpu_sort.get(cnt).xp.get(1) = vecDist.getPos(p)[1];
 			cpu_sort.get(cnt).xp.get(2) = vd_cpu.getPos(p)[2];
-			gpu_sort.get(cnt).xp.get(2) = vd.getPos(p)[2];
+			gpu_sort.get(cnt).xp.get(2) = vecDist.getPos(p)[2];
 
 			cpu_sort.get(cnt).prp0 = vd_cpu.template getProp<0>(p);
-			gpu_sort.get(cnt).prp0 = vd.template getProp<0>(p);
+			gpu_sort.get(cnt).prp0 = vecDist.template getProp<0>(p);
 
 			cpu_sort.get(cnt).prp1[0] = vd_cpu.template getProp<1>(p)[0];
-			gpu_sort.get(cnt).prp1[0] = vd.template getProp<1>(p)[0];
+			gpu_sort.get(cnt).prp1[0] = vecDist.template getProp<1>(p)[0];
 			cpu_sort.get(cnt).prp1[1] = vd_cpu.template getProp<1>(p)[1];
-			gpu_sort.get(cnt).prp1[1] = vd.template getProp<1>(p)[1];
+			gpu_sort.get(cnt).prp1[1] = vecDist.template getProp<1>(p)[1];
 			cpu_sort.get(cnt).prp1[2] = vd_cpu.template getProp<1>(p)[2];
-			gpu_sort.get(cnt).prp1[2] = vd.template getProp<1>(p)[2];
+			gpu_sort.get(cnt).prp1[2] = vecDist.template getProp<1>(p)[2];
 
 			cpu_sort.get(cnt).prp2[0] = vd_cpu.template getProp<2>(p)[0];
-			gpu_sort.get(cnt).prp2[0] = vd.template getProp<2>(p)[0];
+			gpu_sort.get(cnt).prp2[0] = vecDist.template getProp<2>(p)[0];
 			cpu_sort.get(cnt).prp2[1] = vd_cpu.template getProp<2>(p)[1];
-			gpu_sort.get(cnt).prp2[1] = vd.template getProp<2>(p)[1];
+			gpu_sort.get(cnt).prp2[1] = vecDist.template getProp<2>(p)[1];
 			cpu_sort.get(cnt).prp2[2] = vd_cpu.template getProp<2>(p)[2];
-			gpu_sort.get(cnt).prp2[2] = vd.template getProp<2>(p)[2];
+			gpu_sort.get(cnt).prp2[2] = vecDist.template getProp<2>(p)[2];
 
 			++cnt;
 			++itc2;
@@ -851,8 +826,8 @@ void vdist_calc_gpu_test()
 
 		// move particles on gpu
 
-		auto ite = vd.getDomainIteratorGPU();
-		CUDA_LAUNCH_DIM3((move_parts_gpu_test<3,decltype(vd.toKernel())>),ite.wthr,ite.thr,vd.toKernel());
+		auto ite = vecDist.getDomainIteratorGPU();
+		CUDA_LAUNCH_DIM3((move_parts_gpu_test<3,decltype(vecDist.toKernel())>),ite.wthr,ite.thr,vecDist.toKernel());
 	}
 }
 
@@ -864,9 +839,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_map_on_gpu_test)
 
 BOOST_AUTO_TEST_CASE(vector_dist_reduce)
 {
-	auto & v_cl = create_vcluster();
+	auto & vCluster = create_vcluster();
 
-	if (v_cl.size() > 16)
+	if (vCluster.size() > 16)
 	{return;}
 
 	Box<3,float> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
@@ -877,9 +852,9 @@ BOOST_AUTO_TEST_CASE(vector_dist_reduce)
 	// Boundary conditions
 	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
 
-	vector_dist_gpu<3,float,aggregate<float,double,int,size_t>> vd(5000*v_cl.size(),domain,bc,g);
+	vector_dist_gpu<3,float,aggregate<float,double,int,size_t>> vecDist(5000*vCluster.size(),domain,bc,g);
 
-	auto it = vd.getDomainIterator();
+	auto it = vecDist.getDomainIterator();
 
 	float fc = 1.0;
 	double dc = 1.0;
@@ -890,10 +865,10 @@ BOOST_AUTO_TEST_CASE(vector_dist_reduce)
 	{
 		auto p = it.get();
 
-		vd.template getProp<0>(p) = fc;
-		vd.template getProp<1>(p) = dc;
-		vd.template getProp<2>(p) = ic;
-		vd.template getProp<3>(p) = sc;
+		vecDist.template getProp<0>(p) = fc;
+		vecDist.template getProp<1>(p) = dc;
+		vecDist.template getProp<2>(p) = ic;
+		vecDist.template getProp<3>(p) = sc;
 
 		fc += 1.0;
 		dc += 1.0;
@@ -903,30 +878,30 @@ BOOST_AUTO_TEST_CASE(vector_dist_reduce)
 		++it;
 	}
 
-	vd.template hostToDeviceProp<0,1,2,3>();
+	vecDist.template hostToDeviceProp<0,1,2,3>();
 
-	float redf = reduce_local<0,_add_>(vd);
-	double redd = reduce_local<1,_add_>(vd);
-	int redi = reduce_local<2,_add_>(vd);
-	size_t reds = reduce_local<3,_add_>(vd);
+	float redf = reduce_local<0,_add_>(vecDist);
+	double redd = reduce_local<1,_add_>(vecDist);
+	int redi = reduce_local<2,_add_>(vecDist);
+	size_t reds = reduce_local<3,_add_>(vecDist);
 
-	BOOST_REQUIRE_EQUAL(redf,(vd.size_local()+1.0)*(vd.size_local())/2.0);
-	BOOST_REQUIRE_EQUAL(redd,(vd.size_local()+1.0)*(vd.size_local())/2.0);
-	BOOST_REQUIRE_EQUAL(redi,(vd.size_local()+1)*(vd.size_local())/2);
-	BOOST_REQUIRE_EQUAL(reds,(vd.size_local()+1)*(vd.size_local())/2);
+	BOOST_REQUIRE_EQUAL(redf,(vecDist.size_local()+1.0)*(vecDist.size_local())/2.0);
+	BOOST_REQUIRE_EQUAL(redd,(vecDist.size_local()+1.0)*(vecDist.size_local())/2.0);
+	BOOST_REQUIRE_EQUAL(redi,(vecDist.size_local()+1)*(vecDist.size_local())/2);
+	BOOST_REQUIRE_EQUAL(reds,(vecDist.size_local()+1)*(vecDist.size_local())/2);
 
-	float redf2 = reduce_local<0,_max_>(vd);
-	double redd2 = reduce_local<1,_max_>(vd);
-	int redi2 = reduce_local<2,_max_>(vd);
-	size_t reds2 = reduce_local<3,_max_>(vd);
+	float redf2 = reduce_local<0,_max_>(vecDist);
+	double redd2 = reduce_local<1,_max_>(vecDist);
+	int redi2 = reduce_local<2,_max_>(vecDist);
+	size_t reds2 = reduce_local<3,_max_>(vecDist);
 
-	BOOST_REQUIRE_EQUAL(redf2,vd.size_local());
-	BOOST_REQUIRE_EQUAL(redd2,vd.size_local());
-	BOOST_REQUIRE_EQUAL(redi2,vd.size_local());
-	BOOST_REQUIRE_EQUAL(reds2,vd.size_local());
+	BOOST_REQUIRE_EQUAL(redf2,vecDist.size_local());
+	BOOST_REQUIRE_EQUAL(redd2,vecDist.size_local());
+	BOOST_REQUIRE_EQUAL(redi2,vecDist.size_local());
+	BOOST_REQUIRE_EQUAL(reds2,vecDist.size_local());
 }
 
-template<typename CellList_type>
+template<typename CellList_type, bool sorted>
 void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 {
 	std::random_device r;
@@ -943,9 +918,9 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 
 	typedef vector_dist_gpu<3,double,aggregate<double,double[3],double[3]>> vector_type;
 
-	Vcluster<> & v_cl = create_vcluster();
+	Vcluster<> & vCluster = create_vcluster();
 
-	if (v_cl.getProcessingUnits() > 8)
+	if (vCluster.getProcessingUnits() > 8)
 		return;
 
 	std::uniform_real_distribution<double> unif(0.0,0.3);
@@ -954,69 +929,69 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 	Ghost<3,double> g(0.1);
 	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
 
-	vector_type vd(0,domain,bc,g,DEC_GRAN(2048));
+	vector_type vecDist(0,domain,bc,g,DEC_GRAN(2048));
 
 	// Only processor 0 initialy add particles on a corner of a domain
 
-	if (v_cl.getProcessUnitID() == 0)
+	if (vCluster.getProcessUnitID() == 0)
 	{
 		for(size_t i = 0 ; i < k ; i++)
 		{
-			vd.add();
+			vecDist.add();
 
-			vd.getLastPos()[0] = unif(e2);
-			vd.getLastPos()[1] = unif(e2);
-			vd.getLastPos()[2] = unif(e2);
+			vecDist.getLastPos()[0] = unif(e2);
+			vecDist.getLastPos()[1] = unif(e2);
+			vecDist.getLastPos()[2] = unif(e2);
 		}
 	}
 
 	// Move to GPU
-	vd.hostToDevicePos();
-	vd.template hostToDeviceProp<0>();
+	vecDist.hostToDevicePos();
+	vecDist.template hostToDeviceProp<0>();
 
-	vd.map(RUN_ON_DEVICE);
-	vd.template ghost_get<>(RUN_ON_DEVICE);
+	vecDist.map(RUN_ON_DEVICE);
+	vecDist.template ghost_get<>(RUN_ON_DEVICE);
 
 	// now move to CPU
 
-	vd.deviceToHostPos();
-	vd.template deviceToHostProp<0>();
+	vecDist.deviceToHostPos();
+	vecDist.template deviceToHostProp<0>();
 
 	// Get the neighborhood of each particles
 
-	auto VV = vd.getVerlet(r_cut);
+	auto VV = vecDist.getVerlet(r_cut);
 
 	// store the number of neighborhood for each particles
 
-	auto it = vd.getDomainIterator();
+	auto it = vecDist.getDomainIterator();
 
 	while (it.isNext())
 	{
 		auto p = it.get();
 
-		vd.template getProp<0>(p) = VV.getNNPart(p.getKey());
+		vecDist.template getProp<0>(p) = VV.getNNPart(p.getKey());
 
 		++it;
 	}
 
 	// Move to GPU
-	vd.template hostToDeviceProp<0>();
+	vecDist.template hostToDeviceProp<0>();
 
 	ModelSquare md;
 	md.factor = 10;
-	vd.addComputationCosts(md);
-	vd.getDecomposition().decompose();
-	vd.map(RUN_ON_DEVICE);
+	vecDist.addComputationCosts(md);
+	vecDist.getDecomposition().decompose();
+	vecDist.map(RUN_ON_DEVICE);
 
-	vd.deviceToHostPos();
+	vecDist.deviceToHostPos();
 	// Move info to CPU for addComputationcosts
 
-	vd.addComputationCosts(md);
+	vecDist.addComputationCosts(md);
 
 	openfpm::vector<size_t> loads;
-	size_t load = vd.getDecomposition().getDistribution().getProcessorLoad();
-	v_cl.allGather(load,loads);
-	v_cl.execute();
+	size_t load = vecDist.getDecomposition().getDistribution().getProcessorLoad();
+	vCluster.allGather(load,loads);
+	vCluster.execute();
 
 	for (size_t i = 0 ; i < loads.size() ; i++)
 	{
@@ -1026,7 +1001,7 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 		BOOST_REQUIRE_CLOSE(load_f,load_fc,7.0);
 	}
 
-	BOOST_REQUIRE(vd.size_local() != 0);
+	BOOST_REQUIRE(vecDist.size_local() != 0);
 
 	Point<3,double> v({1.0,1.0,1.0});
 
@@ -1034,44 +1009,49 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 	{
 		// move particles to CPU and move the particles by 0.1
 
-		vd.deviceToHostPos();
+		vecDist.deviceToHostPos();
 
-		auto it = vd.getDomainIterator();
+		auto it = vecDist.getDomainIterator();
 
 		while (it.isNext())
 		{
 			auto p = it.get();
 
-			vd.getPos(p)[0] += v.get(0) * 0.09;
-			vd.getPos(p)[1] += v.get(1) * 0.09;
-			vd.getPos(p)[2] += v.get(2) * 0.09;
+			vecDist.getPos(p)[0] += v.get(0) * 0.09;
+			vecDist.getPos(p)[1] += v.get(1) * 0.09;
+			vecDist.getPos(p)[2] += v.get(2) * 0.09;
 
 			++it;
 		}
 
 		//Back to GPU
-		vd.hostToDevicePos();
-		vd.map(RUN_ON_DEVICE);
-		vd.template ghost_get<0>(RUN_ON_DEVICE);
+		vecDist.hostToDevicePos();
+		vecDist.map(RUN_ON_DEVICE);
+		vecDist.template ghost_get<0>(RUN_ON_DEVICE);
 
-		vd.deviceToHostPos();
-		vd.template deviceToHostProp<0,1,2>();
+		vecDist.deviceToHostPos();
+		vecDist.template deviceToHostProp<0,1,2>();
 
 		// Check calc forces
-		auto NN_gpu = vd.template getCellListGPU<CellList_type>(r_cut);
-		auto NN_cpu = vd.getCellList(r_cut);
-		check_cell_list_cpu_and_gpu(vd,NN_gpu,NN_cpu);
+		size_t opt = (sorted)? CL_GPU_REORDER : 0;
+		auto cellList = vecDist.getCellList(r_cut);
+		auto cellListGPU = vecDist.template getCellListGPU<CellList_type>(r_cut, opt);
 
-		auto VV2 = vd.getVerlet(r_cut);
+		if (sorted)
+			compareCellListCpuGpuSorted(vecDist,cellListGPU,cellList);
+		else
+			compareCellListCpuGpu(vecDist,cellListGPU,cellList);
 
-		auto it2 = vd.getDomainIterator();
+		auto VV2 = vecDist.getVerlet(r_cut);
+
+		auto it2 = vecDist.getDomainIterator();
 
 		bool match = true;
 		while (it2.isNext())
 		{
 			auto p = it2.get();
 
-			match &= vd.template getProp<0>(p) == VV2.getNNPart(p.getKey());
+			match &= vecDist.template getProp<0>(p) == VV2.getNNPart(p.getKey());
 
 			++it2;
 		}
@@ -1079,22 +1059,22 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 		BOOST_REQUIRE_EQUAL(match,true);
 
 		ModelSquare md;
-		vd.addComputationCosts(md);
-		vd.getDecomposition().redecompose(200);
-		vd.map(RUN_ON_DEVICE);
+		vecDist.addComputationCosts(md);
+		vecDist.getDecomposition().redecompose(200);
+		vecDist.map(RUN_ON_DEVICE);
 
-		BOOST_REQUIRE(vd.size_local() != 0);
+		BOOST_REQUIRE(vecDist.size_local() != 0);
 
-		vd.template ghost_get<0>(RUN_ON_DEVICE);
-		vd.deviceToHostPos();
-		vd.template deviceToHostProp<0>();
+		vecDist.template ghost_get<0>(RUN_ON_DEVICE);
+		vecDist.deviceToHostPos();
+		vecDist.template deviceToHostProp<0>();
 
-		vd.addComputationCosts(md);
+		vecDist.addComputationCosts(md);
 
 		openfpm::vector<size_t> loads;
-		size_t load = vd.getDecomposition().getDistribution().getProcessorLoad();
-		v_cl.allGather(load,loads);
-		v_cl.execute();
+		size_t load = vecDist.getDecomposition().getDistribution().getProcessorLoad();
+		vCluster.allGather(load,loads);
+		vCluster.execute();
 
 		for (size_t i = 0 ; i < loads.size() ; i++)
 		{
@@ -1110,7 +1090,7 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 	}
 }
 
-template<typename CellList_type>
+template<typename CellList_type, bool sorted>
 void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 {
 	std::random_device r;
@@ -1127,9 +1107,9 @@ void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 
 	typedef vector_dist_gpu<3,double,aggregate<double,double[3],double[3]>> vector_type;
 
-	Vcluster<> & v_cl = create_vcluster();
+	Vcluster<> & vCluster = create_vcluster();
 
-	if (v_cl.getProcessingUnits() > 8)
+	if (vCluster.getProcessingUnits() > 8)
 		return;
 
 	std::uniform_real_distribution<double> unif(0.0,0.3);
@@ -1138,70 +1118,70 @@ void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 	Ghost<3,double> g(0.1);
 	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
 
-	vector_type vd(0,domain,bc,g,DEC_GRAN(2048));
+	vector_type vecDist(0,domain,bc,g,DEC_GRAN(2048));
 
 	// Only processor 0 initialy add particles on a corner of a domain
 
-	if (v_cl.getProcessUnitID() == 0)
+	if (vCluster.getProcessUnitID() == 0)
 	{
 		for(size_t i = 0 ; i < k ; i++)
 		{
-			vd.add();
+			vecDist.add();
 
-			vd.getLastPos()[0] = unif(e2);
-			vd.getLastPos()[1] = unif(e2);
-			vd.getLastPos()[2] = unif(e2);
+			vecDist.getLastPos()[0] = unif(e2);
+			vecDist.getLastPos()[1] = unif(e2);
+			vecDist.getLastPos()[2] = unif(e2);
 		}
 	}
 
 	// Move to GPU
-	vd.hostToDevicePos();
-	vd.template hostToDeviceProp<0>();
+	vecDist.hostToDevicePos();
+	vecDist.template hostToDeviceProp<0>();
 
-	vd.map(RUN_ON_DEVICE);
-	vd.template Ighost_get<>(RUN_ON_DEVICE);
-	vd.template ghost_wait<>(RUN_ON_DEVICE);
+	vecDist.map(RUN_ON_DEVICE);
+	vecDist.template Ighost_get<>(RUN_ON_DEVICE);
+	vecDist.template ghost_wait<>(RUN_ON_DEVICE);
 
 	// now move to CPU
 
-	vd.deviceToHostPos();
-	vd.template deviceToHostProp<0>();
+	vecDist.deviceToHostPos();
+	vecDist.template deviceToHostProp<0>();
 
 	// Get the neighborhood of each particles
 
-	auto VV = vd.getVerlet(r_cut);
+	auto VV = vecDist.getVerlet(r_cut);
 
 	// store the number of neighborhood for each particles
 
-	auto it = vd.getDomainIterator();
+	auto it = vecDist.getDomainIterator();
 
 	while (it.isNext())
 	{
 		auto p = it.get();
 
-		vd.template getProp<0>(p) = VV.getNNPart(p.getKey());
+		vecDist.template getProp<0>(p) = VV.getNNPart(p.getKey());
 
 		++it;
 	}
 
 	// Move to GPU
-	vd.template hostToDeviceProp<0>();
+	vecDist.template hostToDeviceProp<0>();
 
 	ModelSquare md;
 	md.factor = 10;
-	vd.addComputationCosts(md);
-	vd.getDecomposition().decompose();
-	vd.map(RUN_ON_DEVICE);
+	vecDist.addComputationCosts(md);
+	vecDist.getDecomposition().decompose();
+	vecDist.map(RUN_ON_DEVICE);
 
-	vd.deviceToHostPos();
+	vecDist.deviceToHostPos();
 	// Move info to CPU for addComputationcosts
 
-	vd.addComputationCosts(md);
+	vecDist.addComputationCosts(md);
 
 	openfpm::vector<size_t> loads;
-	size_t load = vd.getDecomposition().getDistribution().getProcessorLoad();
-	v_cl.allGather(load,loads);
-	v_cl.execute();
+	size_t load = vecDist.getDecomposition().getDistribution().getProcessorLoad();
+	vCluster.allGather(load,loads);
+	vCluster.execute();
 
 	for (size_t i = 0 ; i < loads.size() ; i++)
 	{
@@ -1211,7 +1191,7 @@ void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 		BOOST_REQUIRE_CLOSE(load_f,load_fc,7.0);
 	}
 
-	BOOST_REQUIRE(vd.size_local() != 0);
+	BOOST_REQUIRE(vecDist.size_local() != 0);
 
 	Point<3,double> v({1.0,1.0,1.0});
 
@@ -1219,44 +1199,49 @@ void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 	{
 		// move particles to CPU and move the particles by 0.1
 
-		vd.deviceToHostPos();
+		vecDist.deviceToHostPos();
 
-		auto it = vd.getDomainIterator();
+		auto it = vecDist.getDomainIterator();
 
 		while (it.isNext())
 		{
 			auto p = it.get();
 
-			vd.getPos(p)[0] += v.get(0) * 0.09;
-			vd.getPos(p)[1] += v.get(1) * 0.09;
-			vd.getPos(p)[2] += v.get(2) * 0.09;
+			vecDist.getPos(p)[0] += v.get(0) * 0.09;
+			vecDist.getPos(p)[1] += v.get(1) * 0.09;
+			vecDist.getPos(p)[2] += v.get(2) * 0.09;
 
 			++it;
 		}
 
 		// Back to GPU
-		vd.hostToDevicePos();
-		vd.map(RUN_ON_DEVICE);
-		vd.template Ighost_get<0>(RUN_ON_DEVICE);
-		vd.template ghost_wait<0>(RUN_ON_DEVICE);
-		vd.deviceToHostPos();
-		vd.template deviceToHostProp<0,1,2>();
+		vecDist.hostToDevicePos();
+		vecDist.map(RUN_ON_DEVICE);
+		vecDist.template Ighost_get<0>(RUN_ON_DEVICE);
+		vecDist.template ghost_wait<0>(RUN_ON_DEVICE);
+		vecDist.deviceToHostPos();
+		vecDist.template deviceToHostProp<0,1,2>();
 
 		// Check calc forces
-		auto NN_gpu = vd.template getCellListGPU<CellList_type>(r_cut);
-		auto NN_cpu = vd.getCellList(r_cut);
-		check_cell_list_cpu_and_gpu(vd,NN_gpu,NN_cpu);
+		size_t opt = (sorted)? CL_GPU_REORDER : 0;
+		auto cellList = vecDist.getCellList(r_cut);
+		auto cellListGPU = vecDist.template getCellListGPU<CellList_type>(r_cut, opt);
 
-		auto VV2 = vd.getVerlet(r_cut);
+		if (sorted)
+			compareCellListCpuGpuSorted(vecDist,cellListGPU,cellList);
+		else
+			compareCellListCpuGpu(vecDist,cellListGPU,cellList);
 
-		auto it2 = vd.getDomainIterator();
+		auto VV2 = vecDist.getVerlet(r_cut);
+
+		auto it2 = vecDist.getDomainIterator();
 
 		bool match = true;
 		while (it2.isNext())
 		{
 			auto p = it2.get();
 
-			match &= vd.template getProp<0>(p) == VV2.getNNPart(p.getKey());
+			match &= vecDist.template getProp<0>(p) == VV2.getNNPart(p.getKey());
 
 			++it2;
 		}
@@ -1264,25 +1249,23 @@ void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 		BOOST_REQUIRE_EQUAL(match,true);
 
 		ModelSquare md;
-		vd.addComputationCosts(md);
-		vd.getDecomposition().redecompose(200);
-		vd.map(RUN_ON_DEVICE);
+		vecDist.addComputationCosts(md);
+		vecDist.getDecomposition().redecompose(200);
+		vecDist.map(RUN_ON_DEVICE);
 
-		BOOST_REQUIRE(vd.size_local() != 0);
+		BOOST_REQUIRE(vecDist.size_local() != 0);
 
-//		vd.template ghost_get<0>(RUN_ON_DEVICE);
-//		vd.template ghost_get<0>(RUN_ON_DEVICE);
-		vd.template Ighost_get<0>(RUN_ON_DEVICE);
-		vd.template ghost_wait<0>(RUN_ON_DEVICE);
-		vd.deviceToHostPos();
-		vd.template deviceToHostProp<0>();
+		vecDist.template Ighost_get<0>(RUN_ON_DEVICE);
+		vecDist.template ghost_wait<0>(RUN_ON_DEVICE);
+		vecDist.deviceToHostPos();
+		vecDist.template deviceToHostProp<0>();
 
-		vd.addComputationCosts(md);
+		vecDist.addComputationCosts(md);
 
 		openfpm::vector<size_t> loads;
-		size_t load = vd.getDecomposition().getDistribution().getProcessorLoad();
-		v_cl.allGather(load,loads);
-		v_cl.execute();
+		size_t load = vecDist.getDecomposition().getDistribution().getProcessorLoad();
+		vCluster.allGather(load,loads);
+		vCluster.execute();
 
 		for (size_t i = 0 ; i < loads.size() ; i++)
 		{
@@ -1296,17 +1279,32 @@ void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 
 BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda_async)
 {
-	vector_dist_dlb_on_cuda_impl_async<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,false>>(50000,0.01);
+	vector_dist_dlb_on_cuda_impl_async<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,false>, false>(50000,0.01);
+}
+
+BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda_async_sorted)
+{
+	vector_dist_dlb_on_cuda_impl_async<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,false>, true>(50000,0.01);
 }
 
 BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda)
 {
-	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,false>>(50000,0.01);
+	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,false>, false>(50000,0.01);
+}
+
+BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda_sorted)
+{
+	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,false>, true>(50000,0.01);
 }
 
 BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda_sparse)
 {
-	vector_dist_dlb_on_cuda_impl<CELLLIST_GPU_SPARSE<3,double>>(50000,0.01);
+	vector_dist_dlb_on_cuda_impl<CELLLIST_GPU_SPARSE<3,double>, false>(50000,0.01);
+}
+
+BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda_sparse_sorted)
+{
+	vector_dist_dlb_on_cuda_impl<CELLLIST_GPU_SPARSE<3,double>, true>(50000,0.01);
 }
 
 BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda2)
@@ -1315,7 +1313,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda2)
 	{return;};
 
 	#ifndef CUDA_ON_CPU
-	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,false>>(1000000,0.01);
+	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,false>, false>(1000000,0.01);
 	#endif
 }
 
@@ -1325,7 +1323,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_dlb_on_cuda3)
 	{return;}
 
 	#ifndef CUDA_ON_CPU
-	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,false>>(15000000,0.005);
+	vector_dist_dlb_on_cuda_impl<CellList_gpu<3,double,CudaMemory,shift_only<3,double>,false>, false>(15000000,0.005);
 	#endif
 }
 
@@ -1334,89 +1332,89 @@ BOOST_AUTO_TEST_CASE(vector_dist_keep_prop_on_cuda)
 {
 	typedef vector_dist_gpu<3,double,aggregate<double,double[3],double[3][3]>> vector_type;
 
-	Vcluster<> & v_cl = create_vcluster();
+	Vcluster<> & vCluster = create_vcluster();
 
-	if (v_cl.getProcessingUnits() > 8)
+	if (vCluster.getProcessingUnits() > 8)
 		return;
 
 	Box<3,double> domain({0.0,0.0,0.0},{1.0,1.0,1.0});
 	Ghost<3,double> g(0.1);
 	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
 
-	vector_type vd(0,domain,bc,g,DEC_GRAN(2048));
+	vector_type vecDist(0,domain,bc,g,DEC_GRAN(2048));
 
 	// Only processor 0 initialy add particles on a corner of a domain
 
-	if (v_cl.getProcessUnitID() == 0)
+	if (vCluster.getProcessUnitID() == 0)
 	{
 		for(size_t i = 0 ; i < 50000 ; i++)
 		{
-			vd.add();
+			vecDist.add();
 
-			vd.getLastPos()[0] = ((double)rand())/RAND_MAX * 0.3;
-			vd.getLastPos()[1] = ((double)rand())/RAND_MAX * 0.3;
-			vd.getLastPos()[2] = ((double)rand())/RAND_MAX * 0.3;
+			vecDist.getLastPos()[0] = ((double)rand())/RAND_MAX * 0.3;
+			vecDist.getLastPos()[1] = ((double)rand())/RAND_MAX * 0.3;
+			vecDist.getLastPos()[2] = ((double)rand())/RAND_MAX * 0.3;
 		}
 	}
 
 	// Move to GPU
-	vd.hostToDevicePos();
-	vd.template hostToDeviceProp<0>();
+	vecDist.hostToDevicePos();
+	vecDist.template hostToDeviceProp<0>();
 
-	vd.map(RUN_ON_DEVICE);
-	vd.template ghost_get<>(RUN_ON_DEVICE);
+	vecDist.map(RUN_ON_DEVICE);
+	vecDist.template ghost_get<>(RUN_ON_DEVICE);
 
 	// now move to CPU
 
-	vd.deviceToHostPos();
-	vd.template deviceToHostProp<0>();
+	vecDist.deviceToHostPos();
+	vecDist.template deviceToHostProp<0>();
 
 
 	// store the number of neighborhood for each particles
 
-	auto it = vd.getDomainIterator();
+	auto it = vecDist.getDomainIterator();
 
 	while (it.isNext())
 	{
 		auto p = it.get();
 
-		vd.template getProp<0>(p) = 0.0;
+		vecDist.template getProp<0>(p) = 0.0;
 
-		vd.template getProp<1>(p)[0] = 1000.0;
-		vd.template getProp<1>(p)[1] = 2000.0;
-		vd.template getProp<1>(p)[2] = 3000.0;
+		vecDist.template getProp<1>(p)[0] = 1000.0;
+		vecDist.template getProp<1>(p)[1] = 2000.0;
+		vecDist.template getProp<1>(p)[2] = 3000.0;
 
-		vd.template getProp<2>(p)[0][0] = 6000,0;
-		vd.template getProp<2>(p)[0][1] = 7000.0;
-		vd.template getProp<2>(p)[0][2] = 8000.0;
-		vd.template getProp<2>(p)[1][0] = 9000.0;
-		vd.template getProp<2>(p)[1][1] = 10000.0;
-		vd.template getProp<2>(p)[1][2] = 11000.0;
-		vd.template getProp<2>(p)[2][0] = 12000.0;
-		vd.template getProp<2>(p)[2][1] = 13000.0;
-		vd.template getProp<2>(p)[2][2] = 14000.0;
+		vecDist.template getProp<2>(p)[0][0] = 6000,0;
+		vecDist.template getProp<2>(p)[0][1] = 7000.0;
+		vecDist.template getProp<2>(p)[0][2] = 8000.0;
+		vecDist.template getProp<2>(p)[1][0] = 9000.0;
+		vecDist.template getProp<2>(p)[1][1] = 10000.0;
+		vecDist.template getProp<2>(p)[1][2] = 11000.0;
+		vecDist.template getProp<2>(p)[2][0] = 12000.0;
+		vecDist.template getProp<2>(p)[2][1] = 13000.0;
+		vecDist.template getProp<2>(p)[2][2] = 14000.0;
 
 		++it;
 	}
 
 	// Move to GPU
-	vd.template hostToDeviceProp<0,1,2>();
+	vecDist.template hostToDeviceProp<0,1,2>();
 
 	ModelSquare md;
 	md.factor = 10;
-	vd.addComputationCosts(md);
-	vd.getDecomposition().decompose();
-	vd.map(RUN_ON_DEVICE);
+	vecDist.addComputationCosts(md);
+	vecDist.getDecomposition().decompose();
+	vecDist.map(RUN_ON_DEVICE);
 
-	vd.deviceToHostPos();
+	vecDist.deviceToHostPos();
 	// Move info to CPU for addComputationcosts
 
-	vd.addComputationCosts(md);
+	vecDist.addComputationCosts(md);
 
 	openfpm::vector<size_t> loads;
-	size_t load = vd.getDecomposition().getDistribution().getProcessorLoad();
-	v_cl.allGather(load,loads);
-	v_cl.execute();
+	size_t load = vecDist.getDecomposition().getDistribution().getProcessorLoad();
+	vCluster.allGather(load,loads);
+	vCluster.execute();
 
 	for (size_t i = 0 ; i < loads.size() ; i++)
 	{
@@ -1426,7 +1424,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_keep_prop_on_cuda)
 		BOOST_REQUIRE_CLOSE(load_f,load_fc,7.0);
 	}
 
-	BOOST_REQUIRE(vd.size_local() != 0);
+	BOOST_REQUIRE(vecDist.size_local() != 0);
 
 	Point<3,double> v({1.0,1.0,1.0});
 
@@ -1438,45 +1436,45 @@ BOOST_AUTO_TEST_CASE(vector_dist_keep_prop_on_cuda)
 		{
 			// move particles to CPU and move the particles by 0.1
 
-			vd.deviceToHostPos();
+			vecDist.deviceToHostPos();
 
-			auto it = vd.getDomainIterator();
+			auto it = vecDist.getDomainIterator();
 
 			while (it.isNext())
 			{
 				auto p = it.get();
 
-				vd.getPos(p)[0] += v.get(0) * 0.09;
-				vd.getPos(p)[1] += v.get(1) * 0.09;
-				vd.getPos(p)[2] += v.get(2) * 0.09;
+				vecDist.getPos(p)[0] += v.get(0) * 0.09;
+				vecDist.getPos(p)[1] += v.get(1) * 0.09;
+				vecDist.getPos(p)[2] += v.get(2) * 0.09;
 
 				++it;
 			}
 
 			//Back to GPU
-			vd.hostToDevicePos();
-			vd.map(RUN_ON_DEVICE);
-			vd.template ghost_get<>(RUN_ON_DEVICE);
-			vd.deviceToHostPos();
-			vd.template deviceToHostProp<0,1,2>();
+			vecDist.hostToDevicePos();
+			vecDist.map(RUN_ON_DEVICE);
+			vecDist.template ghost_get<>(RUN_ON_DEVICE);
+			vecDist.deviceToHostPos();
+			vecDist.template deviceToHostProp<0,1,2>();
 
 			ModelSquare md;
-			vd.addComputationCosts(md);
-			vd.getDecomposition().redecompose(200);
-			vd.map(RUN_ON_DEVICE);
+			vecDist.addComputationCosts(md);
+			vecDist.getDecomposition().redecompose(200);
+			vecDist.map(RUN_ON_DEVICE);
 
-			BOOST_REQUIRE(vd.size_local() != 0);
+			BOOST_REQUIRE(vecDist.size_local() != 0);
 
-			vd.template ghost_get<0>(RUN_ON_DEVICE);
-			vd.deviceToHostPos();
-			vd.template deviceToHostProp<0,1,2>();
+			vecDist.template ghost_get<0>(RUN_ON_DEVICE);
+			vecDist.deviceToHostPos();
+			vecDist.template deviceToHostProp<0,1,2>();
 
-			vd.addComputationCosts(md);
+			vecDist.addComputationCosts(md);
 
 			openfpm::vector<size_t> loads;
-			size_t load = vd.getDecomposition().getDistribution().getProcessorLoad();
-			v_cl.allGather(load,loads);
-			v_cl.execute();
+			size_t load = vecDist.getDecomposition().getDistribution().getProcessorLoad();
+			vCluster.allGather(load,loads);
+			vCluster.execute();
 
 			for (size_t i = 0 ; i < loads.size() ; i++)
 			{
@@ -1488,64 +1486,64 @@ BOOST_AUTO_TEST_CASE(vector_dist_keep_prop_on_cuda)
 		}
 		else
 		{
-			vd.template deviceToHostProp<0,1,2>();
+			vecDist.template deviceToHostProp<0,1,2>();
 
-			auto it2 = vd.getDomainIterator();
+			auto it2 = vecDist.getDomainIterator();
 
 			bool match = true;
 			while (it2.isNext())
 			{
 				auto p = it2.get();
 
-				vd.template getProp<0>(p) += 1;
+				vecDist.template getProp<0>(p) += 1;
 
-				vd.template getProp<1>(p)[0] += 1.0;
-				vd.template getProp<1>(p)[1] += 1.0;
-				vd.template getProp<1>(p)[2] += 1.0;
+				vecDist.template getProp<1>(p)[0] += 1.0;
+				vecDist.template getProp<1>(p)[1] += 1.0;
+				vecDist.template getProp<1>(p)[2] += 1.0;
 
-				vd.template getProp<2>(p)[0][0] += 1.0;
-				vd.template getProp<2>(p)[0][1] += 1.0;
-				vd.template getProp<2>(p)[0][2] += 1.0;
-				vd.template getProp<2>(p)[1][0] += 1.0;
-				vd.template getProp<2>(p)[1][1] += 1.0;
-				vd.template getProp<2>(p)[1][2] += 1.0;
-				vd.template getProp<2>(p)[2][0] += 1.0;
-				vd.template getProp<2>(p)[2][1] += 1.0;
-				vd.template getProp<2>(p)[2][2] += 1.0;
+				vecDist.template getProp<2>(p)[0][0] += 1.0;
+				vecDist.template getProp<2>(p)[0][1] += 1.0;
+				vecDist.template getProp<2>(p)[0][2] += 1.0;
+				vecDist.template getProp<2>(p)[1][0] += 1.0;
+				vecDist.template getProp<2>(p)[1][1] += 1.0;
+				vecDist.template getProp<2>(p)[1][2] += 1.0;
+				vecDist.template getProp<2>(p)[2][0] += 1.0;
+				vecDist.template getProp<2>(p)[2][1] += 1.0;
+				vecDist.template getProp<2>(p)[2][2] += 1.0;
 
 				++it2;
 			}
 
-			vd.template hostToDeviceProp<0,1,2>();
+			vecDist.template hostToDeviceProp<0,1,2>();
 
 			++base;
 
-			vd.template ghost_get<0,1,2>(RUN_ON_DEVICE | KEEP_PROPERTIES);
-			vd.template deviceToHostProp<0,1,2>();
+			vecDist.template ghost_get<0,1,2>(RUN_ON_DEVICE | KEEP_PROPERTIES);
+			vecDist.template deviceToHostProp<0,1,2>();
 
 			// Check that the ghost contain the correct information
 
-			auto itg = vd.getGhostIterator();
+			auto itg = vecDist.getGhostIterator();
 
 			while (itg.isNext())
 			{
 				auto p = itg.get();
 
-				match &= vd.template getProp<0>(p) == base;
+				match &= vecDist.template getProp<0>(p) == base;
 
-				match &= vd.template getProp<1>(p)[0] == base + 1000.0;
-				match &= vd.template getProp<1>(p)[1] == base + 2000.0;
-				match &= vd.template getProp<1>(p)[2] == base + 3000.0;
+				match &= vecDist.template getProp<1>(p)[0] == base + 1000.0;
+				match &= vecDist.template getProp<1>(p)[1] == base + 2000.0;
+				match &= vecDist.template getProp<1>(p)[2] == base + 3000.0;
 
-				match &= vd.template getProp<2>(p)[0][0] == base + 6000.0;
-				match &= vd.template getProp<2>(p)[0][1] == base + 7000.0;
-				match &= vd.template getProp<2>(p)[0][2] == base + 8000.0;
-				match &= vd.template getProp<2>(p)[1][0] == base + 9000.0;
-				match &= vd.template getProp<2>(p)[1][1] == base + 10000.0;
-				match &= vd.template getProp<2>(p)[1][2] == base + 11000.0;
-				match &= vd.template getProp<2>(p)[2][0] == base + 12000.0;
-				match &= vd.template getProp<2>(p)[2][1] == base + 13000.0;
-				match &= vd.template getProp<2>(p)[2][2] == base + 14000.0;
+				match &= vecDist.template getProp<2>(p)[0][0] == base + 6000.0;
+				match &= vecDist.template getProp<2>(p)[0][1] == base + 7000.0;
+				match &= vecDist.template getProp<2>(p)[0][2] == base + 8000.0;
+				match &= vecDist.template getProp<2>(p)[1][0] == base + 9000.0;
+				match &= vecDist.template getProp<2>(p)[1][1] == base + 10000.0;
+				match &= vecDist.template getProp<2>(p)[1][2] == base + 11000.0;
+				match &= vecDist.template getProp<2>(p)[2][0] == base + 12000.0;
+				match &= vecDist.template getProp<2>(p)[2][1] == base + 13000.0;
+				match &= vecDist.template getProp<2>(p)[2][2] == base + 14000.0;
 
 				++itg;
 			}
@@ -1572,7 +1570,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_get_index_set)
 	if (create_vcluster().size() >= 16)
 	{return;}
 
-	Vcluster<> & v_cl = create_vcluster();
+	Vcluster<> & vCluster = create_vcluster();
 
 	vector_dist_gpu<3,double,aggregate<int,double>> vdg(10000,domain,bc,g,DEC_GRAN(128));
 
@@ -1604,13 +1602,13 @@ BOOST_AUTO_TEST_CASE(vector_dist_get_index_set)
 
 	openfpm::vector_gpu<aggregate<unsigned int>> ids;
 
-	get_indexes_by_type<0,type_is_one>(vdg.getPropVectorSort(),ids,vdg.size_local(),v_cl.getGpuContext());
+	get_indexes_by_type<0,type_is_one>(vdg.getPropVector(),ids,vdg.size_local(),vCluster.getGpuContext());
 
 	// test
 
 	ids.template deviceToHost<0>();
 
-	auto & vs = vdg.getPropVectorSort();
+	auto & vs = vdg.getPropVector();
 	vs.template deviceToHost<0>();
 
 	bool match = true;
@@ -1861,12 +1859,12 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 // This example require float atomic, until C++20 we are out of luck
 #ifndef CUDIFY_USE_OPENMP
 
-	Vcluster<> & v_cl = create_vcluster();
+	Vcluster<> & vCluster = create_vcluster();
 
 	long int k = 25*25*25*create_vcluster().getProcessingUnits();
 	k = std::pow(k, 1/3.);
 
-	if (v_cl.getProcessingUnits() > 48)
+	if (vCluster.getProcessingUnits() > 48)
 		return;
 
 	print_test("Testing 3D periodic ghost put GPU k=",k);
@@ -1893,51 +1891,51 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 		typedef  aggregate<float,float,float> part_prop;
 
 		// Distributed vector
-		vector_dist_gpu<3,float, part_prop > vd(0,box,bc,ghost);
+		vector_dist_gpu<3,float, part_prop > vecDist(0,box,bc,ghost);
 
-		auto it = vd.getGridIterator({(size_t)k,(size_t)k,(size_t)k});
+		auto it = vecDist.getGridIterator({(size_t)k,(size_t)k,(size_t)k});
 
 		while (it.isNext())
 		{
 			auto key = it.get();
 
-			vd.add();
+			vecDist.add();
 
-			vd.getLastPosWrite()[0] = key.get(0)*it.getSpacing(0);
-			vd.getLastPosWrite()[1] = key.get(1)*it.getSpacing(1);
-			vd.getLastPosWrite()[2] = key.get(2)*it.getSpacing(2);
+			vecDist.getLastPosWrite()[0] = key.get(0)*it.getSpacing(0);
+			vecDist.getLastPosWrite()[1] = key.get(1)*it.getSpacing(1);
+			vecDist.getLastPosWrite()[2] = key.get(2)*it.getSpacing(2);
 
 			// Fill some properties randomly
 
-			vd.getLastPropWrite<0>() = 0.0;
+			vecDist.getLastPropWrite<0>() = 0.0;
 
-			vd.getLastPropWrite<2>() = 0.0;
+			vecDist.getLastPropWrite<2>() = 0.0;
 
 			++it;
 		}
 
-		vd.map();
+		vecDist.map();
 
-		vd.hostToDevicePos();
-		vd.template hostToDeviceProp<0,2>();
+		vecDist.hostToDevicePos();
+		vecDist.template hostToDeviceProp<0,2>();
 		// sync the ghost
-		vd.ghost_get<0,2>(RUN_ON_DEVICE);
-		vd.template deviceToHostProp<0,2>();
-		vd.deviceToHostPos();
+		vecDist.ghost_get<0,2>(RUN_ON_DEVICE);
+		vecDist.template deviceToHostProp<0,2>();
+		vecDist.deviceToHostPos();
 
 		{
-			auto NN = vd.getCellList(r_cut);
+			auto NN = vecDist.getCellList(r_cut);
 			float a = 1.0f*k*k;
 
 			// run trough all the particles + ghost
 
-			auto it2 = vd.getDomainIterator();
+			auto it2 = vecDist.getDomainIterator();
 
 			while (it2.isNext())
 			{
 				// particle p
 				auto p = it2.get();
-				Point<3,float> xp = vd.getPos(p);
+				Point<3,float> xp = vecDist.getPos(p);
 
 				// Get an iterator over the neighborhood particles of p
 				auto Np = NN.getNNIterator(NN.getCell(xp));
@@ -1946,14 +1944,14 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 				while (Np.isNext())
 				{
 					auto q = Np.get();
-					Point<3,float> xq = vd.getPosRead(q);
+					Point<3,float> xq = vecDist.getPosRead(q);
 
 					float dist = xp.distance(xq);
 
 					if (dist < r_cut)
 					{
-						vd.getPropWrite<0>(q) += a*(-dist*dist+r_cut*r_cut);
-						vd.getPropWrite<2>(q) += a*(-dist*dist+r_cut*r_cut) / 2;
+						vecDist.getPropWrite<0>(q) += a*(-dist*dist+r_cut*r_cut);
+						vecDist.getPropWrite<2>(q) += a*(-dist*dist+r_cut*r_cut) / 2;
 					}
 
 					++Np;
@@ -1962,28 +1960,28 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 				++it2;
 			}
 
-			vd.hostToDevicePos();
-			vd.template hostToDeviceProp<0,2>();
-			vd.template ghost_put<add_atomic_,0,2>(RUN_ON_DEVICE);
-			vd.template deviceToHostProp<0,2>();
-			vd.deviceToHostPos();
+			vecDist.hostToDevicePos();
+			vecDist.template hostToDeviceProp<0,2>();
+			vecDist.template ghost_put<add_atomic_,0,2>(RUN_ON_DEVICE);
+			vecDist.template deviceToHostProp<0,2>();
+			vecDist.deviceToHostPos();
 
 			bool ret = true;
-			auto it3 = vd.getDomainIterator();
+			auto it3 = vecDist.getDomainIterator();
 
-			float constant = vd.getProp<0>(it3.get());
-			float constanta = vd.getProp<2>(it3.get());
+			float constant = vecDist.getProp<0>(it3.get());
+			float constanta = vecDist.getProp<2>(it3.get());
 			float eps = 0.001;
 
 			while (it3.isNext())
 			{
-				float constant2 = vd.getProp<0>(it3.get());
-				float constant3 = vd.getProp<2>(it3.get());
+				float constant2 = vecDist.getProp<0>(it3.get());
+				float constant3 = vecDist.getProp<2>(it3.get());
 				if (fabs(constant - constant2)/constant > eps || fabs(constanta - constant3)/constanta > eps)
 				{
-					Point<3,float> p = vd.getPosRead(it3.get());
+					Point<3,float> p = vecDist.getPosRead(it3.get());
 
-					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "/" << constant3 << "    " << v_cl.getProcessUnitID() << std::endl;
+					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "/" << constant3 << "    " << vCluster.getProcessUnitID() << std::endl;
 					ret = false;
 					break;
 				}
@@ -1993,30 +1991,30 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 			BOOST_REQUIRE_EQUAL(ret,true);
 		}
 
-		auto itp = vd.getDomainAndGhostIterator();
+		auto itp = vecDist.getDomainAndGhostIterator();
 		while (itp.isNext())
 		{
 			auto key = itp.get();
 
-			vd.getPropWrite<0>(key) = 0.0;
-			vd.getPropWrite<2>(key) = 0.0;
+			vecDist.getPropWrite<0>(key) = 0.0;
+			vecDist.getPropWrite<2>(key) = 0.0;
 
 			++itp;
 		}
 
 		{
-			auto NN = vd.getCellList(r_cut);
+			auto NN = vecDist.getCellList(r_cut);
 			float a = 1.0f*k*k;
 
 			// run trough all the particles + ghost
 
-			auto it2 = vd.getDomainIterator();
+			auto it2 = vecDist.getDomainIterator();
 
 			while (it2.isNext())
 			{
 				// particle p
 				auto p = it2.get();
-				Point<3,float> xp = vd.getPosRead(p);
+				Point<3,float> xp = vecDist.getPosRead(p);
 
 				// Get an iterator over the neighborhood particles of p
 				auto Np = NN.getNNIterator(NN.getCell(xp));
@@ -2025,14 +2023,14 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 				while (Np.isNext())
 				{
 					auto q = Np.get();
-					Point<3,float> xq = vd.getPosRead(q);
+					Point<3,float> xq = vecDist.getPosRead(q);
 
 					float dist = xp.distance(xq);
 
 					if (dist < r_cut)
 					{
-						vd.getPropWrite<0>(q) += a*(-dist*dist+r_cut*r_cut);
-						vd.getPropWrite<2>(q) += a*(-dist*dist+r_cut*r_cut);
+						vecDist.getPropWrite<0>(q) += a*(-dist*dist+r_cut*r_cut);
+						vecDist.getPropWrite<2>(q) += a*(-dist*dist+r_cut*r_cut);
 					}
 
 					++Np;
@@ -2041,29 +2039,29 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 				++it2;
 			}
 
-			vd.hostToDevicePos();
-			vd.template hostToDeviceProp<0,2>();
-			vd.template ghost_put<add_atomic_,0>(RUN_ON_DEVICE);
-			vd.template ghost_put<add_atomic_,2>(RUN_ON_DEVICE);
-			vd.template deviceToHostProp<0,2>();
-			vd.deviceToHostPos();
+			vecDist.hostToDevicePos();
+			vecDist.template hostToDeviceProp<0,2>();
+			vecDist.template ghost_put<add_atomic_,0>(RUN_ON_DEVICE);
+			vecDist.template ghost_put<add_atomic_,2>(RUN_ON_DEVICE);
+			vecDist.template deviceToHostProp<0,2>();
+			vecDist.deviceToHostPos();
 
 			bool ret = true;
-			auto it3 = vd.getDomainIterator();
+			auto it3 = vecDist.getDomainIterator();
 
-			float constant = vd.getPropRead<0>(it3.get());
-			float constanta = vd.getPropRead<2>(it3.get());
+			float constant = vecDist.getPropRead<0>(it3.get());
+			float constanta = vecDist.getPropRead<2>(it3.get());
 			float eps = 0.001;
 
 			while (it3.isNext())
 			{
-				float constant2 = vd.getPropRead<0>(it3.get());
-				float constant3 = vd.getPropRead<0>(it3.get());
+				float constant2 = vecDist.getPropRead<0>(it3.get());
+				float constant3 = vecDist.getPropRead<0>(it3.get());
 				if (fabs(constant - constant2)/constant > eps || fabs(constanta - constant3)/constanta > eps)
 				{
-					Point<3,float> p = vd.getPosRead(it3.get());
+					Point<3,float> p = vecDist.getPosRead(it3.get());
 
-					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "/" << constant3 << "    " << v_cl.getProcessUnitID() << std::endl;
+					std::cout << p.toString() << "    " <<  constant2 << "/" << constant << "/" << constant3 << "    " << vCluster.getProcessUnitID() << std::endl;
 					ret = false;
 					break;
 				}

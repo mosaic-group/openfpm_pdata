@@ -466,7 +466,7 @@ __global__ void vdmkt_simple_cl(mp_vector_type mp_v, output_type ot, cl_type cl,
 		}
 	}
 
-	k = 0;
+	int p = 0;
 	for (int i = 0 ; i < cl.size() ; i++)
 	{
 		for (int j = 0 ; j < cl.get(i).getNCells() ; j++)
@@ -475,9 +475,9 @@ __global__ void vdmkt_simple_cl(mp_vector_type mp_v, output_type ot, cl_type cl,
 			{
 				auto s = cl.get(i).get(j,k);
 
-				ot2.template get<0>(k) = s;
+				ot2.template get<0>(p) = s;
 
-				k++;
+				p++;
 			}
 		}
 	}

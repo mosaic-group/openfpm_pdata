@@ -74,11 +74,6 @@ constexpr int PUT = 2;
 constexpr int NO_GHOST = 0;
 constexpr int WITH_GHOST = 2;
 
-constexpr int GCL_NON_SYMMETRIC = 0;
-constexpr int GCL_SYMMETRIC = 1;
-constexpr int GCL_HILBERT = 2;
-constexpr int GCL_LOCAL_SYMMETRIC = 3;
-
 template<bool is_gpu_celllist, unsigned int ... prp>
 struct gcl_standard_no_symmetric_impl
 {
@@ -120,7 +115,7 @@ struct gcl
 
 //! Function specialization for hilbert curve cell list
 template<unsigned int dim, typename St, typename CellL, typename Vector>
-struct gcl<dim,St,CellL,Vector,GCL_HILBERT>
+struct gcl<dim,St,CellL,Vector,CL_HILBERT_CELL_KEYS>
 {
 	/*! \brief Get the Cell list based on the type
 	 *
@@ -139,7 +134,7 @@ struct gcl<dim,St,CellL,Vector,GCL_HILBERT>
 
 //! Function specialization for symmetric cell list
 template<unsigned int dim, typename St, typename CellL, typename Vector>
-struct gcl<dim,St,CellL,Vector,GCL_SYMMETRIC>
+struct gcl<dim,St,CellL,Vector,CL_SYMMETRIC>
 {
 	/*! \brief Get the Cell list based on the type
 	 *
@@ -158,7 +153,7 @@ struct gcl<dim,St,CellL,Vector,GCL_SYMMETRIC>
 
 //! Function specialization for local symmetric cell list
 template<unsigned int dim, typename St, typename CellL, typename Vector>
-struct gcl<dim,St,CellL,Vector,GCL_LOCAL_SYMMETRIC>
+struct gcl<dim,St,CellL,Vector,CL_LOCAL_SYMMETRIC>
 {
 	/*! \brief Get the Cell list based on the type
 	 *
@@ -219,31 +214,6 @@ enum reorder_opt
 	LINEAR = 2
 };
 
-template<typename vector, unsigned int impl>
-struct cell_list_selector
-{
-	typedef decltype(std::declval<vector>().getCellListGPU(0.0)) ctype;
-
-	static ctype get(vector & v,
-			typename vector::stype & r_cut,
-			size_t NNIteratorBox = 1)
-	{
-		return v.getCellListGPU(r_cut, NNIteratorBox);
-	}
-};
-
-template<typename vector>
-struct cell_list_selector<vector,comp_host>
-{
-	typedef decltype(std::declval<vector>().getCellList(0.0)) ctype;
-
-	static ctype get(vector & v,
-			typename vector::stype & r_cut,
-			size_t NNIteratorBox = 1)
-	{
-		return v.getCellList(r_cut);
-	}
-};
 
 template<typename vector_type>
 struct decrement_memory
@@ -351,12 +321,6 @@ private:
 	//! the second element contain unassigned particles
 	vector_dist_prop vPrp;
 
-	//! reordered vPos buffer
-	vector_dist_prop vPrpOut;
-
-	//! reordered vPrp buffer
-	vector_dist_pos vPosOut;
-
 	//! option used to create this vector
 	size_t opt = 0;
 
@@ -441,14 +405,14 @@ private:
 	 * \param v_pos_dest reordered vector of position
 	 * \param v_prp_dest reordered vector of properties
 	 * \param m order of the space filling curve
-	 * \param cell_list cell-list
+	 * \param cellList cell-list
 	 *
 	 */
 	template<typename CellL, typename sfc_it>
 	void reorder_sfc(openfpm::vector<Point<dim,St>> & v_pos_dest,
 						 openfpm::vector<prop> & v_prp_dest,
 						 sfc_it & h_it,
-						 CellL & cell_list)
+						 CellL & cellList)
 	{
 		v_pos_dest.resize(vPos.size());
 		v_prp_dest.resize(vPrp.size());
@@ -459,20 +423,20 @@ private:
 		grid_key_dx<dim> ksum;
 
 		for (size_t i = 0; i < dim ; i++)
-		{ksum.set_d(i,cell_list.getPadding(i));}
+		{ksum.set_d(i,cellList.getPadding(i));}
 
 		while (h_it.isNext())
 		{
 		  auto key = h_it.get();
 		  key += ksum;
 
-		  size_t lin = cell_list.getGrid().LinId(key);
+		  size_t lin = cellList.getGrid().LinId(key);
 
 		  // for each particle in the Cell "lin"
-		  for (size_t i = 0; i < cell_list.getNelements(lin); i++)
+		  for (size_t i = 0; i < cellList.getNelements(lin); i++)
 		  {
 			  //reorder
-			  auto v = cell_list.get(lin,i);
+			  auto v = cellList.get(lin,i);
 			  v_pos_dest.get(count) = vPos.get(v);
 			  v_prp_dest.get(count) = vPrp.get(v);
 
@@ -1249,17 +1213,18 @@ public:
 		return vec_key;
 	}
 
+
 	/*! \brief Construct a cell list symmetric based on a cut-off radius
 	 *
-	 * \tparam CellL CellList type to construct
+	 * \tparam CellList_type CellList type to construct
 	 *
 	 * \param r_cut interation radius, or size of each cell
 	 *
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>,internal_position_vector_type > >
-	CellL getCellListSym(St r_cut)
+	template<typename CellList_type = CellList<dim, St, Mem_fast<>, shift<dim, St>,internal_position_vector_type > >
+	CellList_type getCellListSym(St r_cut)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -1271,9 +1236,7 @@ public:
 			}
 		}
 #endif
-
-		// Cell list
-		CellL cell_list;
+		CellList_type cellList;
 
 		size_t pad = 0;
 		CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
@@ -1282,27 +1245,25 @@ public:
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
 
-		// Ghost padding extension
-		Ghost<dim,size_t> g_ext(0);
-		cell_list.Initialize(cd_sm,pbox,pad);
-		cell_list.set_ndec(getDecomposition().get_ndec());
+		cellList.Initialize(cd_sm,pbox,pad);
+		cellList.set_ndec(getDecomposition().get_ndec());
 
-		updateCellListSym(cell_list);
+		updateCellListSym(cellList);
 
-		return cell_list;
+		return cellList;
 	}
 
 	/*! \brief Construct a local symmetric cell list based on a cut-off radius
 	 *
-	 * \tparam CellL CellList type to construct
+	 * \tparam CellList_type CellList type to construct
 	 *
 	 * \param r_cut interation radius, or size of each cell
 	 *
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>,internal_position_vector_type > >
-	CellL getCellListSymLocal(St r_cut)
+	template<typename CellList_type = CellList<dim, St, Mem_fast<>, shift<dim, St>,internal_position_vector_type > >
+	CellList_type getCellListSymLocal(St r_cut)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -1314,9 +1275,7 @@ public:
 			}
 		}
 #endif
-
-		// Cell list
-		CellL cell_list;
+		CellList_type cellList;
 
 		size_t pad = 0;
 		CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
@@ -1325,15 +1284,13 @@ public:
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
 
-		// Ghost padding extension
-		Ghost<dim,size_t> g_ext(0);
-		cell_list.Initialize(cd_sm,pbox,pad);
-		cell_list.set_ndec(getDecomposition().get_ndec());
+		cellList.Initialize(cd_sm,pbox,pad);
+		cellList.set_ndec(getDecomposition().get_ndec());
 
 		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
-		updateCellListSymLocal(cell_list);
+		updateCellListSymLocal(cellList);
 
-		return cell_list;
+		return cellList;
 	}
 
 	/*! \brief Construct a cell list symmetric based on a cut-off radius
@@ -1365,7 +1322,7 @@ public:
 		{if (pad[i] > pad_max)	{pad_max = pad[i];}}
 
 		// Cell list
-		CellL cell_list;
+		CellL cellList;
 
 		CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
 		cd_sm.setDimensions(getDecomposition().getDomain(),div,pad_max);
@@ -1373,14 +1330,12 @@ public:
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
 
-		// Ghost padding extension
-		Ghost<dim,size_t> g_ext(0);
-		cell_list.Initialize(cd_sm,pbox,pad_max);
-		cell_list.set_ndec(getDecomposition().get_ndec());
+		cellList.Initialize(cd_sm,pbox,pad_max);
+		cellList.set_ndec(getDecomposition().get_ndec());
 
-		updateCellListSym(cell_list);
+		updateCellListSym(cellList);
 
-		return cell_list;
+		return cellList;
 	}
 
 	/*! \brief Construct a local symmetric cell list based on a cut-off radius
@@ -1409,10 +1364,10 @@ public:
 
 		size_t pad_max = pad[0];
 		for (size_t i = 1 ; i < dim ; i++)
-		{if (pad[i] > pad_max)	{pad_max = pad[i];}}
+			if (pad[i] > pad_max) pad_max = pad[i];
 
 		// Cell list
-		CellL cell_list;
+		CellL cellList;
 
 		CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
 		cd_sm.setDimensions(getDecomposition().getDomain(),div,pad_max);
@@ -1420,32 +1375,13 @@ public:
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
 
-		// Ghost padding extension
-		Ghost<dim,size_t> g_ext(0);
-		cell_list.Initialize(cd_sm,pbox,pad_max);
-		cell_list.set_ndec(getDecomposition().get_ndec());
+		cellList.Initialize(cd_sm,pbox,pad_max);
+		cellList.set_ndec(getDecomposition().get_ndec());
 
 		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
-		updateCellListSymLocal(cell_list);
+		updateCellListSymLocal(cellList);
 
-		return cell_list;
-	}
-
-	/*! \brief Construct a cell list starting from the stored particles
-	 *
-	 * \tparam CellL CellList type to construct
-	 *
-	 * \param r_cut interation radius, or size of each cell
-	 * \param no_se3 avoid SE_CLASS3 checking
-	 * \param NNIteratorBox sets the number of neighborhood cell layers used to iterate through by getNNIteratorBox()
-
-	 * \return the Cell list
-	 *
-	 */
-	template<unsigned int impl>
-	typename cell_list_selector<self,impl>::ctype getCellListDev(St r_cut, size_t NNIteratorBox = 1)
-	{
-		return cell_list_selector<self,impl>::get(*this, r_cut, NNIteratorBox);
+		return cellList;
 	}
 
 	/*! \brief Construct a cell list starting from the stored particles
@@ -1473,6 +1409,7 @@ public:
 		Ghost<dim,St> g = getDecomposition().getGhost();
 		g.magnify(1.013);
 
+
 		return getCellList<CellL>(r_cut, g,no_se3);
 	}
 
@@ -1487,7 +1424,7 @@ public:
 	 *
 	 */
 	template<typename CellType = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>>,unsigned int ... prp>
-	CellType getCellListGPU(St r_cut, size_t NNIteratorBox = 1, bool no_se3 = false)
+	CellType getCellListGPU(St r_cut, size_t opt = 0, size_t NNIteratorBox = 1, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -1501,7 +1438,7 @@ public:
 		Ghost<dim,St> g = getDecomposition().getGhost();
 		g.magnify(1.013);
 
-		return getCellListGPU<CellType>(r_cut, g, NNIteratorBox, no_se3);
+		return getCellListGPU<CellType>(r_cut, g, opt, NNIteratorBox, no_se3);
 	}
 
 
@@ -1522,7 +1459,7 @@ public:
 	 *
 	 */
 	template<typename CellType = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>>, unsigned int ... prp>
-	CellType getCellListGPU(St r_cut, const Ghost<dim, St> & enlarge, size_t NNIteratorBox = 1, bool no_se3 = false)
+	CellType getCellListGPU(St r_cut, const Ghost<dim, St> & enlarge, size_t opt = 0, size_t NNIteratorBox = 1, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -1540,64 +1477,22 @@ public:
 		// Processor bounding box
 		cl_param_calculate(pbox, div, r_cut, enlarge);
 
-		CellType cell_list(pbox,div);
-
-		vPrpOut.resize(vPos.size());
-		vPosOut.resize(vPos.size());
+		CellType cellList(pbox,div);
 
 		// getNNIteratorBox has to be set here compared to getNNIteratorRadius (could be set later)
 		// As sparse cell list on gpu uses it in construct()
 		// If not set, the dafault value of 1 would have been used by construct()
-		cell_list.setBoxNN(NNIteratorBox);
-		cell_list.template construct<decltype(vPos),decltype(vPrp),prp ...>(vPos,vPosOut,vPrp,vPrpOut,v_cl.getGpuContext(),ghostMarker);
+		cellList.setBoxNN(NNIteratorBox);
+		cellList.template construct<decltype(vPos),decltype(vPrp),prp ...>(vPos,vPrp,v_cl.getGpuContext(),ghostMarker,0,vPos.size(),opt);
 
-		cell_list.set_ndec(getDecomposition().get_ndec());
-		cell_list.set_gm(ghostMarker);
+		cellList.set_ndec(getDecomposition().get_ndec());
+		cellList.set_gm(ghostMarker);
 
-#ifdef CUDA_GPU
-		this->update_sort(this->toKernel_sorted());
-#endif
-
-		return cell_list;
+		return cellList;
 	}
 
 
 #endif
-
-///////////////////////// Device Interface, this interface always exist it wrap the GPU if you have one or the CPU if you do not have //////////////// 
-
-#ifdef CUDA_GPU
-
-        /*! \brief Construct a cell list from the stored particles
-         *
-         * \param r_cut interation radius, or size of each cell
-         *
-         * \return the Cell list
-         *
-         */
-        auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(this->getCellListGPU(r_cut,no_se3))
-        {
-                return this->getCellListGPU(r_cut,no_se3);
-        }
-
-
-#else
-
-	 /*! \brief Construct a cell list from the stored particles
-         *
-         * \param r_cut interation radius, or size of each cell
-         *
-         * \return the Cell list
-         *
-         */
-        auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(this->getCellList(r_cut,no_se3))
-        {
-                return this->getCellList(r_cut,no_se3);
-        }
-
-#endif
-
-////////////////////// End Device Interface ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	/*! \brief Construct an hilbert cell list starting from the stored particles
 	 *
@@ -1629,12 +1524,12 @@ public:
 	 *
 	 * \tparam CellL CellList type to construct
 	 *
-	 * \param cell_list Cell list to update
+	 * \param cellList Cell list to update
 	 * \param no_se3 avoid se class 3 checking
 	 *
 	 */
 	template<unsigned int ... prp,typename CellL>
-	void updateCellList(CellL & cell_list, bool no_se3 = false, cl_construct_opt opt = cl_construct_opt::Full)
+	void updateCellList(CellL & cellList, bool no_se3 = false, size_t opt = CL_GPU_REORDER)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -1645,24 +1540,22 @@ public:
 
 		// This function assume equal spacing in all directions
 		// but in the worst case we take the maximum
-		St r_cut = cell_list.getCellBox().getRcut();
+		St r_cut = cellList.getCellBox().getRcut();
 
 		// Here we have to check that the Cell-list has been constructed
 		// from the same decomposition
-		bool to_reconstruct = cell_list.get_ndec() != getDecomposition().get_ndec();
+		bool to_reconstruct = cellList.get_ndec() != getDecomposition().get_ndec();
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list<dim,St,prop,Memory,layout_base,CellL,prp ...>(vPos,vPosOut,vPrp,vPrpOut,cell_list,v_cl.getGpuContext(false),ghostMarker,CL_NON_SYMMETRIC,opt);
-
-			cell_list.set_gm(ghostMarker);
+			cellList.fill(vPos, vPrp, ghostMarker, CL_NON_SYMMETRIC | opt);
 		}
 		else
 		{
-			CellL cli_tmp = gcl<dim,St,CellL,self,GCL_NON_SYMMETRIC>::get(*this,r_cut,getDecomposition().getGhost());
+			CellL cli_tmp = gcl<dim,St,CellL,self,CL_NON_SYMMETRIC>::get(*this,r_cut,getDecomposition().getGhost());
 
-			cell_list.swap(cli_tmp);
-			cell_list.resetBoxNN();
+			cellList.swap(cli_tmp);
+			cellList.resetBoxNN();
 		}
 	}
 
@@ -1670,11 +1563,11 @@ public:
 	 *
 	 * \tparam CellL CellList type to construct
 	 *
-	 * \param cell_list Cell list to update
+	 * \param cellList Cell list to update
 	 *
 	 */
 	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
-	void updateCellListSym(CellL & cell_list)
+	void updateCellListSym(CellL & cellList, size_t opt = CL_GPU_REORDER)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -1684,22 +1577,20 @@ public:
 
 		// Here we have to check that the Cell-list has been constructed
 		// from the same decomposition
-		bool to_reconstruct = cell_list.get_ndec() != getDecomposition().get_ndec();
+		bool to_reconstruct = cellList.get_ndec() != getDecomposition().get_ndec();
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list(vPos,vPosOut,vPrp,vPrpOut,cell_list,v_cl.getGpuContext(),ghostMarker,CL_SYMMETRIC,cl_construct_opt::Full);
-
-			cell_list.set_gm(ghostMarker);
+			cellList.fill(vPos, vPrp, ghostMarker, CL_SYMMETRIC | opt);
 		}
 		else
 		{
-			CellL cli_tmp = gcl_An<dim,St,CellL,self,GCL_SYMMETRIC>::get(*this,
-																		 cell_list.getDivWP(),
-																		 cell_list.getPadding(),
+			CellL cli_tmp = gcl_An<dim,St,CellL,self,CL_SYMMETRIC>::get(*this,
+																		 cellList.getDivWP(),
+																		 cellList.getPadding(),
 																		 getDecomposition().getGhost());
 
-			cell_list.swap(cli_tmp);
+			cellList.swap(cli_tmp);
 		}
 	}
 
@@ -1708,11 +1599,11 @@ public:
 	 *
 	 * \tparam CellL CellList type to construct
 	 *
-	 * \param cell_list Cell list to update
+	 * \param cellList Cell list to update
 	 *
 	 */
 	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
-	void updateCellListSymLocal(CellL & cell_list)
+	void updateCellListSymLocal(CellL & cellList, size_t opt = CL_GPU_REORDER)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -1722,22 +1613,20 @@ public:
 
 		// Here we have to check that the Cell-list has been constructed
 		// from the same decomposition
-		bool to_reconstruct = cell_list.get_ndec() != getDecomposition().get_ndec();
+		bool to_reconstruct = cellList.get_ndec() != getDecomposition().get_ndec();
 
 		if (to_reconstruct == false)
 		{
-			populate_cell_list(vPos,vPosOut,vPrp,vPrpOut,cell_list,v_cl.getGpuContext(),ghostMarker,CL_LOCAL_SYMMETRIC,cl_construct_opt::Full);
-
-			cell_list.set_gm(ghostMarker);
+			cellList.fill(vPos, vPrp, ghostMarker, CL_LOCAL_SYMMETRIC | opt);
 		}
 		else
 		{
 			CellL cli_tmp = gcl_An<dim,St,CellL,self,CL_LOCAL_SYMMETRIC>::get(*this,
-																		 cell_list.getDivWP(),
-																		 cell_list.getPadding(),
+																		 cellList.getDivWP(),
+																		 cellList.getPadding(),
 																		 getDecomposition().getGhost());
 
-			cell_list.swap(cli_tmp);
+			cellList.swap(cli_tmp);
 		}
 	}
 
@@ -1765,7 +1654,7 @@ public:
 		{se3.getNN();}
 #endif
 
-		CellL cell_list;
+		CellL cellList;
 
 		// Division array
 		size_t div[dim];
@@ -1776,13 +1665,13 @@ public:
 		// Processor bounding box
 		cl_param_calculate(pbox, div, r_cut, enlarge);
 
-		cell_list.Initialize(pbox, div);
-		cell_list.set_gm(ghostMarker);
-		cell_list.set_ndec(getDecomposition().get_ndec());
+		cellList.Initialize(pbox, div);
+		cellList.set_gm(ghostMarker);
+		cellList.set_ndec(getDecomposition().get_ndec());
 
-		updateCellList(cell_list,no_se3);
+		updateCellList(cellList,no_se3);
 
-		return cell_list;
+		return cellList;
 	}
 
 	/*! \brief Construct an hilbert cell list starting from the stored particles
@@ -1806,7 +1695,7 @@ public:
 		se3.getNN();
 #endif
 
-		CellL cell_list;
+		CellL cellList;
 
 		// Division array
 		size_t div[dim];
@@ -1817,13 +1706,13 @@ public:
 		// Processor bounding box
 		cl_param_calculate(pbox,div, r_cut, enlarge);
 
-		cell_list.Initialize(pbox, div);
-		cell_list.set_gm(ghostMarker);
-		cell_list.set_ndec(getDecomposition().get_ndec());
+		cellList.Initialize(pbox, div);
+		cellList.set_gm(ghostMarker);
+		cellList.set_ndec(getDecomposition().get_ndec());
 
-		updateCellList(cell_list);
+		updateCellList(cellList);
 
-		return cell_list;
+		return cellList;
 	}
 
 	/*! \brief for each particle get the symmetric verlet list
@@ -2067,7 +1956,7 @@ public:
 		vPrp.resize(ghostMarker);
 
 
-		CellL cell_list;
+		CellL cellList;
 
 		// calculate the parameters of the cell list
 
@@ -2084,8 +1973,8 @@ public:
 			div[i] = 1 << m;
 		}
 
-		cell_list.Initialize(pbox,div);
-		cell_list.set_gm(ghostMarker);
+		cellList.Initialize(pbox,div);
+		cellList.set_gm(ghostMarker);
 
 		// for each particle add the particle to the cell list
 
@@ -2097,12 +1986,12 @@ public:
 
 			Point<dim,St> xp = this->getPos(key);
 
-			cell_list.add(xp,key.getKey());
+			cellList.add(xp,key.getKey());
 
 			++it;
 		}
 
-		// Use cell_list to reorder vPos
+		// Use cellList to reorder vPos
 
 		//destination vector
 		openfpm::vector<Point<dim,St>> v_pos_dest;
@@ -2112,14 +2001,14 @@ public:
 		{
 			grid_key_dx_iterator_hilbert<dim> h_it(m);
 
-			reorder_sfc<CellL,grid_key_dx_iterator_hilbert<dim>>(v_pos_dest,v_prp_dest,h_it,cell_list);
+			reorder_sfc<CellL,grid_key_dx_iterator_hilbert<dim>>(v_pos_dest,v_prp_dest,h_it,cellList);
 		}
 		else if (opt == reorder_opt::LINEAR)
 		{
 			grid_sm<dim,void> gs(div);
 			grid_key_dx_iterator<dim> h_it(gs);
 
-			reorder_sfc<CellL,grid_key_dx_iterator<dim>>(v_pos_dest,v_prp_dest,h_it,cell_list);
+			reorder_sfc<CellL,grid_key_dx_iterator<dim>>(v_pos_dest,v_prp_dest,h_it,cellList);
 		}
 		else
 		{
@@ -2152,9 +2041,9 @@ public:
 		vPos.resize(ghostMarker);
 		vPrp.resize(ghostMarker);
 
-		auto cell_list = getCellList<CellL>(r_cut);
+		auto cellList = getCellList<CellL>(r_cut);
 
-		// Use cell_list to reorder vPos
+		// Use cellList to reorder vPos
 
 		//destination vector
 		openfpm::vector<Point<dim,St>> v_pos_dest;
@@ -2162,12 +2051,12 @@ public:
 
 		size_t div[dim];
 		for (size_t i = 0 ; i < dim ; i++)
-		{div[i] = cell_list.getGrid().size(i) - 2*cell_list.getPadding()[i];}
+		{div[i] = cellList.getGrid().size(i) - 2*cellList.getPadding()[i];}
 
 		grid_sm<dim,void> gs(div);
 		grid_key_dx_iterator<dim> h_it(gs);
 
-		reorder_sfc<CellL,grid_key_dx_iterator<dim>>(v_pos_dest,v_prp_dest,h_it,cell_list);
+		reorder_sfc<CellL,grid_key_dx_iterator<dim>>(v_pos_dest,v_prp_dest,h_it,cellList);
 
 		vPos.swap(v_pos_dest);
 		vPrp.swap(v_prp_dest);
@@ -2360,43 +2249,16 @@ public:
 		return vPos.getGPUIteratorTo(vPos.size()-1,n_thr);
 	}
 
-	/*! \brief Merge the properties calculated on the sorted vector on the original vector
-	 *
-	 * \parameter Cell-list from which has been constructed the sorted vector
-	 *
-	 */
-	template<unsigned int ... prp, bool is_sparse>
-	void merge_sort(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>,is_sparse> & cl, size_t n_thr = default_kernel_wg_threads_)
-	{
-#if defined(__NVCC__)
-
-		auto ite = vPos.getGPUIteratorTo(ghostMarker-1,n_thr);
-		bool has_work = has_work_gpu(ite);
-
-		if (has_work == true)
-		{
-			CUDA_LAUNCH((merge_sort_part<false,decltype(vPos.toKernel()),decltype(vPrp.toKernel()),decltype(cl.getNonSortToSort().toKernel()),prp...>),
-			ite,
-			vPos.toKernel(),vPrp.toKernel(),vPosOut.toKernel(),vPrpOut.toKernel(),cl.getNonSortToSort().toKernel());
-		}
-
-#endif
-	}
-
 	/*! \brief print a vector type property
 	 *
-	 * \param print_sorted (Print the sorted version)
 	 *
 	 * \tparam property
 	 *
 	 */
 	template<unsigned int prp>
-	void debugPrintVector(bool print_sorted = false)
+	void debugPrintVector()
 	{
-		if (print_sorted == false)
-		{this->vPrp.template deviceToHost<prp>();}
-		else
-		{this->vPrpOut.template deviceToHost<prp>();}
+		this->vPrp.template deviceToHost<prp>();
 
 		auto it = this->getDomainIterator();
 
@@ -2406,10 +2268,7 @@ public:
 
 			for (size_t i = 0 ; i < std::extent<typename boost::mpl::at<typename prop::type,boost::mpl::int_<prp>>::type>::value ; i++)
 			{
-				if (print_sorted == false)
-				{std::cout << vPrp.template get<prp>(p.getKey())[i] << "   ";}
-				else
-				{std::cout << vPrpOut.template get<prp>(p.getKey())[i] << "   ";}
+				std::cout << vPrp.template get<prp>(p.getKey())[i] << "   ";
 			}
 
 			std::cout << std::endl;
@@ -2420,18 +2279,14 @@ public:
 
 	/*! \brief print a scalar type property
 	 *
-	 * \param print_sorted (Print the sorted version)
 	 *
 	 * \tparam property
 	 *
 	 */
 	template<unsigned int prp>
-	void debugPrintScalar(bool print_sorted = false)
+	void debugPrintScalar()
 	{
-		if (print_sorted == false)
-		{this->vPrp.template deviceToHost<prp>();}
-		else
-		{this->vPrpOut.template deviceToHost<prp>();}
+		this->vPrp.template deviceToHost<prp>();
 
 		auto it = this->getDomainIterator();
 
@@ -2439,31 +2294,10 @@ public:
 		{
 			auto p = it.get();
 
-			if (print_sorted == false)
-			{std::cout << vPrpOut.template get<prp>(p.getKey()) << "   " << std::endl;}
-			else
-			{std::cout << vPrpOut.template get<prp>(p.getKey()) << "   " << std::endl;}
+			std::cout << vPrp.template get<prp>(p.getKey()) << "   " << std::endl;
 
 			++it;
 		}
-	}
-
-	/*! \brief Merge the properties calculated on the sorted vector on the original vector
-	 *
-	 * \parameter Cell-list from which has been constructed the sorted vector
-	 *
-	 */
-	template<unsigned int ... prp> void merge_sort_with_pos(CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>> & cl, size_t n_thr = default_kernel_wg_threads_)
-	{
-#if defined(__NVCC__)
-
-		auto ite = vPos.getGPUIteratorTo(ghostMarker-1,n_thr);
-
-		CUDA_LAUNCH((merge_sort_part<true,decltype(vPos.toKernel()),decltype(vPrp.toKernel()),decltype(cl.getNonSortedToSorted().toKernel()),prp...>),
-		ite,
-		vPos.toKernel(),vPrp.toKernel(),vPosOut.toKernel(),vPrpOut.toKernel(),cl.getNonSortedToSorted().toKernel());
-
-#endif
 	}
 
 #endif
@@ -3184,22 +3018,6 @@ public:
 		box = pbox;
 	}
 
-	/*! \brief It return the id of structure in the allocation list
-	 *
-	 * \see print_alloc and SE_CLASS2
-	 *
-	 * \return the id
-	 *
-	 */
-	long int who()
-	{
-#ifdef SE_CLASS2
-		return check_whoami(this,8);
-#else
-		return -1;
-#endif
-	}
-
 	/*! \brief Get the Virtual Cluster machine
 	 *
 	 * \return the Virtual cluster machine
@@ -3252,46 +3070,6 @@ public:
 	vector_dist_prop & getPropVector()
 	{
 		return vPrp;
-	}
-
-	/*! \brief return the position vector of all the particles
-	 *
-	 * \return the particle position vector
-	 *
-	 */
-	const vector_dist_pos & getPosVectorSort() const
-	{
-		return vPosOut;
-	}
-
-	/*! \brief return the position vector of all the particles
-	 *
-	 * \return the particle position vector
-	 *
-	 */
-	vector_dist_pos & getPosVectorSort()
-	{
-		return vPosOut;
-	}
-
-	/*! \brief return the property vector of all the particles
-	 *
-	 * \return the particle property vector
-	 *
-	 */
-	const vector_dist_prop & getPropVectorSort() const
-	{
-		return vPrpOut;
-	}
-
-	/*! \brief return the property vector of all the particles
-	 *
-	 * \return the particle property vector
-	 *
-	 */
-	vector_dist_prop & getPropVectorSort()
-	{
-		return vPrpOut;
 	}
 
 	/*! \brief It return the sum of the particles in the previous processors
@@ -3469,20 +3247,6 @@ public:
 			return *this;
 		}
 
-		/*! \brief Convert the grid into a data-structure compatible for computing into GPU
-		 *
-		 *  In comparison with toGPU return a version sorted better for coalesced memory
-		 *
-		 * \return an usable vector in the kernel
-		 *
-		 */
-		template<unsigned int ... prp> vector_dist_ker<dim,St,prop,layout_base> toKernel_sorted()
-		{
-			vector_dist_ker<dim,St,prop,layout_base> v(ghostMarker,vPosOut.toKernel(), vPrpOut.toKernel());
-
-			return v;
-		}
-
 		/*! \brief Move the memory from the device to host memory
 		 *
 		 * \tparam property to move use POS_PROP for position property
@@ -3536,54 +3300,20 @@ public:
 			vPos.template hostToDevice<0>();
 		}
 
-		void set_g_m(size_t ghostMarker)
+		void setGhostMarker(size_t ghostMarker)
 		{
 			this->ghostMarker = ghostMarker;
 		}
 
-        /*! \brief this function sort the vector
+        /*! \brief this function restores order after sorting done by cell list (GPU-only)
          *
-         * \warning this function kill the ghost (and invalidate the Cell-list)
-         *
-         * \param NN Cell-list to use to reorder
+         * \param cellList Cell-list to use to restore the order
          *
          */
 		template<typename CellList_type>
-        void make_sort(CellList_type & NN)
+        void restoreOrder(CellList_type & cellList)
         {
-                deleteGhost();
-
-                updateCellList(NN,false,cl_construct_opt::Only_reorder);
-
-                // construct a cell-list forcing to create a sorted version without ghost
-
-                // swap the sorted with the non-sorted
-                vPos.swap(vPosOut);
-                vPrp.swap(vPrpOut);
-        }
-
-        /*! \brief this function sort the vector
-         *
-         * \note this function does not kill the ghost and does not invalidate the Cell-list)
-         *
-         * \param NN Cell-list to use to reorder
-         *
-         */
-		template<typename CellList_type>
-        void make_sort_from(CellList_type & cl)
-        {
-#if defined(__NVCC__)
-
-			auto ite = vPos.getGPUIteratorTo(ghostMarker-1);
-
-			CUDA_LAUNCH((merge_sort_all<decltype(vPos.toKernel()),decltype(vPrp.toKernel()),decltype(cl.getNonSortToSort().toKernel())>),
-					ite,
-					vPosOut.toKernel(),vPrpOut.toKernel(),vPos.toKernel(),vPrp.toKernel(),cl.getNonSortToSort().toKernel());
-
-			vPos.swap(vPosOut);
-			vPrp.swap(vPrpOut);
-
-#endif
+			cellList.restoreOrder(vPos, vPrp);
         }
 
         /*! \brief This function compare if the host and device buffer position match up to some tolerance
