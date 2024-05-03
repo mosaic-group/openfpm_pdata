@@ -396,6 +396,10 @@ install(FILES DLB/DLB.hpp DLB/LB_Model.hpp
 	DESTINATION openfpm_pdata/include/DLB
 	COMPONENT OpenFPM)
 
+install(FILES ${CMAKE_BINARY_DIR}/config/config.h
+	DESTINATION openfpm_pdata/include/config
+	COMPONENT OpenFPM)
+
 install(FILES lib/pdata.hpp
 	DESTINATION openfpm_pdata/include/lib
 	COMPONENT OpenFPM)
