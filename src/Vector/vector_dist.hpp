@@ -18,7 +18,6 @@
 #include "Vector/vector_dist_key.hpp"
 #include "memory/PtrMemory.hpp"
 #include "NN/CellList/CellList.hpp"
-#include "NN/CellList/CellListFast_gen.hpp"
 #include "util/common.hpp"
 #include "util/object_util.hpp"
 #include "memory/ExtPreAlloc.hpp"
@@ -167,27 +166,6 @@ struct gcl<dim,St,CellL,Vector,CL_LOCAL_SYMMETRIC>
 	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
 	{
 		return vd.getCellListSymLocal(r_cut);
-	}
-};
-
-/////////////////// GCL anisotropic ///////////////////////////////////////////
-
-//! General function t get a cell-list
-template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
-struct gcl_An
-{
-	/*! \brief Get the Cell list based on the type
-	 *
-	 * \param vd Distributed vector
-	 * \param r_cut Cut-off radius
-	 * \param g Ghost
-	 *
-	 * \return the constructed cell-list
-	 *
-	 */
-	static inline CellL get(Vector & vd, const size_t (& div)[dim], const size_t (& pad)[dim], const Ghost<dim,St> & g)
-	{
-		return vd.template getCellListSym<CellL>(div,pad);
 	}
 };
 
@@ -1562,8 +1540,8 @@ public:
 	 * \param cellList Cell list to update
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
-	void updateCellListSym(CellL & cellList, size_t opt = CL_GPU_REORDER)
+	template<typename CellList_type = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
+	void updateCellListSym(CellList_type & cellList, size_t opt = CL_GPU_REORDER)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -1581,13 +1559,10 @@ public:
 		}
 		else
 		{
-			CellL cli_tmp = gcl_An<dim,St,CellL,self,CL_SYMMETRIC>::get(*this,
-				cellList.getDivWP(),
-				cellList.getPadding(),
-				getDecomposition().getGhost()
-			);
+			// CellList_type cellListTmp(cellList.getOpt());
+			CellList_type cellListTmp = getCellListSym<CellList_type>(cellList.getDivWP(),cellList.getPadding());
 
-			cellList.swap(cli_tmp);
+			cellList.swap(cellListTmp);
 		}
 	}
 
@@ -1599,8 +1574,8 @@ public:
 	 * \param cellList Cell list to update
 	 *
 	 */
-	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
-	void updateCellListSymLocal(CellL & cellList, size_t opt = CL_GPU_REORDER)
+	template<typename CellList_type = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
+	void updateCellListSymLocal(CellList_type & cellList, size_t opt = CL_GPU_REORDER)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
@@ -1618,12 +1593,8 @@ public:
 		}
 		else
 		{
-			CellL cli_tmp = gcl_An<dim,St,CellL,self,CL_LOCAL_SYMMETRIC>::get(*this,
-																		 cellList.getDivWP(),
-																		 cellList.getPadding(),
-																		 getDecomposition().getGhost());
-
-			cellList.swap(cli_tmp);
+			CellList_type cellListTmp = getCellListSym<CellList_type>(cellList.getDivWP(), cellList.getPadding());
+			cellList.swap(cellListTmp);
 		}
 	}
 
