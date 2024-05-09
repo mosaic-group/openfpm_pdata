@@ -191,13 +191,9 @@ struct gcl_An
 	}
 };
 
-#define CELL_MEMFAST(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St> >
-#define CELL_MEMBAL(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_bal<>, shift<dim, St> >
-#define CELL_MEMMW(dim,St) CellList_gen<dim, St, Process_keys_lin, Mem_mw<>, shift<dim, St> >
-
-#define CELL_MEMFAST_HILB(dim,St) CellList_gen<dim, St, Process_keys_hilb, Mem_fast<>, shift<dim, St> >
-#define CELL_MEMBAL_HILB(dim,St) CellList_gen<dim, St, Process_keys_hilb, Mem_bal<>, shift<dim, St> >
-#define CELL_MEMMW_HILB(dim,St) CellList_gen<dim, St, Process_keys_hilb, Mem_mw<>, shift<dim, St> >
+#define CELL_MEMFAST(dim,St) CellList<dim, St, Mem_fast<>, shift<dim, St> >
+#define CELL_MEMBAL(dim,St) CellList<dim, St, Mem_bal<>, shift<dim, St> >
+#define CELL_MEMMW(dim,St) CellList<dim, St, Mem_mw<>, shift<dim, St> >
 
 #define VERLET_MEMFAST(dim,St) VerletList<dim,St,Mem_fast<>,shift<dim,St> >
 #define VERLET_MEMBAL(dim,St)  VerletList<dim,St,Mem_bal<>,shift<dim,St> >
@@ -1394,7 +1390,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St>, decltype(vPos) > >
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>, decltype(vPos) > >
 	CellL getCellList(St r_cut, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
@@ -1486,7 +1482,7 @@ public:
 		cellList.template construct<decltype(vPos),decltype(vPrp),prp ...>(vPos,vPrp,v_cl.getGpuContext(),ghostMarker,0,vPos.size(),opt);
 
 		cellList.set_ndec(getDecomposition().get_ndec());
-		cellList.set_gm(ghostMarker);
+		cellList.setGhostMarker(ghostMarker);
 
 		return cellList;
 	}
@@ -1503,7 +1499,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast<>, shift<dim, St> > >
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
 	CellL getCellList_hilb(St r_cut)
 	{
 #ifdef SE_CLASS3
@@ -1586,9 +1582,10 @@ public:
 		else
 		{
 			CellL cli_tmp = gcl_An<dim,St,CellL,self,CL_SYMMETRIC>::get(*this,
-																		 cellList.getDivWP(),
-																		 cellList.getPadding(),
-																		 getDecomposition().getGhost());
+				cellList.getDivWP(),
+				cellList.getPadding(),
+				getDecomposition().getGhost()
+			);
 
 			cellList.swap(cli_tmp);
 		}
@@ -1646,7 +1643,7 @@ public:
 	 * \return the CellList
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St> > >
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
 	CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
@@ -1666,7 +1663,7 @@ public:
 		cl_param_calculate(pbox, div, r_cut, enlarge);
 
 		cellList.Initialize(pbox, div);
-		cellList.set_gm(ghostMarker);
+		cellList.setGhostMarker(ghostMarker);
 		cellList.set_ndec(getDecomposition().get_ndec());
 
 		updateCellList(cellList,no_se3);
@@ -1689,13 +1686,13 @@ public:
 	 * \return The Cell-list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_hilb, Mem_fast<>, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
 
-		CellL cellList;
+		CellL cellList(CL_HILBERT_CELL_KEYS);
 
 		// Division array
 		size_t div[dim];
@@ -1707,7 +1704,7 @@ public:
 		cl_param_calculate(pbox,div, r_cut, enlarge);
 
 		cellList.Initialize(pbox, div);
-		cellList.set_gm(ghostMarker);
+		cellList.setGhostMarker(ghostMarker);
 		cellList.set_ndec(getDecomposition().get_ndec());
 
 		updateCellList(cellList);
@@ -1786,8 +1783,9 @@ public:
 		getDecomposition().setNNParameters(shift,gs);
 
 		ver.createVerletCrs(r_cut,ghostMarker,vPos,
-				            getDecomposition().getCRSDomainCells(),
-							getDecomposition().getCRSAnomDomainCells());
+			getDecomposition().getCRSDomainCells(),
+			getDecomposition().getCRSAnomDomainCells()
+		);
 
 		ver.set_ndec(getDecomposition().get_ndec());
 
@@ -1889,8 +1887,9 @@ public:
 				getDecomposition().setNNParameters(shift,gs);
 
 				ver.updateCrs(getDecomposition().getDomain(),r_cut,vPos,ghostMarker,
-						      getDecomposition().getCRSDomainCells(),
-							  getDecomposition().getCRSAnomDomainCells());
+					getDecomposition().getCRSDomainCells(),
+					getDecomposition().getCRSAnomDomainCells()
+				);
 			}
 			else
 			{
@@ -1928,7 +1927,7 @@ public:
 	 * \param m an order of a hilbert curve
 	 *
 	 */
-	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_bal<>,shift<dim,St> > >
+	template<typename CellL=CellList<dim,St,Mem_bal<>,shift<dim,St> > >
 	void reorder (int32_t m, reorder_opt opt = reorder_opt::HILBERT)
 	{
 		reorder<CellL>(m,getDecomposition().getGhost(),opt);
@@ -1948,7 +1947,7 @@ public:
 	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
 	 *
 	 */
-	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_bal<>,shift<dim,St> > >
+	template<typename CellL=CellList<dim,St,Mem_bal<>,shift<dim,St> > >
 	void reorder(int32_t m, const Ghost<dim,St> & enlarge, reorder_opt opt = reorder_opt::HILBERT)
 	{
 		// reset the ghost part
@@ -1974,7 +1973,7 @@ public:
 		}
 
 		cellList.Initialize(pbox,div);
-		cellList.set_gm(ghostMarker);
+		cellList.setGhostMarker(ghostMarker);
 
 		// for each particle add the particle to the cell list
 
@@ -2034,7 +2033,7 @@ public:
 	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
 	 *
 	 */
-	template<typename CellL=CellList_gen<dim,St,Process_keys_lin,Mem_bal<>,shift<dim,St> > >
+	template<typename CellL=CellList<dim,St,Mem_bal<>,shift<dim,St> > >
 	void reorder_rcut(St r_cut)
 	{
 		// reset the ghost part

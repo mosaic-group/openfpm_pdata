@@ -1083,7 +1083,7 @@ void Test_interacting(Box<3,float> & box)
 
 				Point<3,float> xp = vd.getPos(p);
 
-				auto Np = NN.getCellIterator(NN.getCell(xp));
+				auto Np = NN.getParticleInCellIterator(NN.getCell(xp));
 
 				while (Np.isNext())
 				{
