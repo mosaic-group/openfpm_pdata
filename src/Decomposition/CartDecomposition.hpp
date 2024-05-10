@@ -392,17 +392,17 @@ public:
 		dec_optimizer<dim, Graph_CSR<nm_v<dim>, nm_e>> d_o(dist.getGraph(), gr_dist.getSize());
 
 		// Ghost
-		Ghost<dim,long int> ghe;
+		Ghost<dim,long int> ghostExtended;
 
 		// Set the ghost
 		for (size_t i = 0 ; i < dim ; i++)
 		{
-			ghe.setLow(i,static_cast<long int>(ghost.getLow(i)/spacing[i]) - 1);
-			ghe.setHigh(i,static_cast<long int>(ghost.getHigh(i)/spacing[i]) + 1);
+			ghostExtended.setLow(i,static_cast<long int>(ghost.getLow(i)/spacing[i]) - 1);
+			ghostExtended.setHigh(i,static_cast<long int>(ghost.getHigh(i)/spacing[i]) + 1);
 		}
 
 		// optimize the decomposition or merge sub-sub-domain
-		d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(dist.getGraph(), p_id, loc_boxes, box_nn_processor,ghe,bc);
+		d_o.template optimize<nm_v_sub_id, nm_v_proc_id>(dist.getGraph(), p_id, loc_boxes, box_nn_processor,ghostExtended,bc);
 
 		// Initialize
 		if (loc_boxes.size() > 0)
