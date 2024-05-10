@@ -291,11 +291,11 @@ struct decrement_memory
  *
  */
 template<unsigned int dim,
-         typename St,
-         typename prop,
-         typename Decomposition = CartDecomposition<dim,St>,
-         typename Memory = HeapMemory,
-         template<typename> class layout_base = memory_traits_lin,
+	 typename St,
+	 typename prop,
+	 typename Decomposition = CartDecomposition<dim,St>,
+	 typename Memory = HeapMemory,
+	 template<typename> class layout_base = memory_traits_lin,
 		 typename vector_dist_pos = openfpm::vector<Point<dim, St>,Memory,layout_base>,
 		 typename vector_dist_prop = openfpm::vector<prop,Memory,layout_base> >
 class vector_dist : public vector_dist_comm<dim,St,prop,Decomposition,Memory,layout_base>,
@@ -589,8 +589,8 @@ public:
 	 * \param bc boundary conditions
 	 * \param g Ghost margins
 	 * \param opt [Optional] additional options. BIND_DEC_TO_GHOST Bind the decomposition to be multiple of the
-	 *          ghost size. This is required if we want to use symmetric to eliminate
-	 *          ghost communications.
+	 *	  ghost size. This is required if we want to use symmetric to eliminate
+	 *	  ghost communications.
 	 * \param gdist [Optional] override the default distribution grid
 	 *
 	 */
@@ -619,8 +619,8 @@ public:
 	 * \param bc boundary conditions
 	 * \param g Ghost margins
 	 * \param opt [Optional] additional options. BIND_DEC_TO_GHOST Bind the decomposition to be multiple of the
-	 *          ghost size. This is required if we want to use symmetric to eliminate
-	 *          ghost communications.
+	 *	  ghost size. This is required if we want to use symmetric to eliminate
+	 *	  ghost communications.
 	 * \param gdist [Optional] override the default distribution grid
 	 *
 	 */
@@ -1456,32 +1456,32 @@ public:
 
 #ifdef CUDA_GPU
 
-        /*! \brief Construct a cell list from the stored particles
-         *
-         * \param r_cut interation radius, or size of each cell
-         *
-         * \return the Cell list
-         *
-         */
-        auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(this->getCellListGPU(r_cut,no_se3))
-        {
-                return this->getCellListGPU(r_cut,no_se3);
-        }
+	/*! \brief Construct a cell list from the stored particles
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 *
+	 * \return the Cell list
+	 *
+	 */
+	auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(this->getCellListGPU(r_cut,no_se3))
+	{
+		return this->getCellListGPU(r_cut,no_se3);
+	}
 
 
 #else
 
 	 /*! \brief Construct a cell list from the stored particles
-         *
-         * \param r_cut interation radius, or size of each cell
-         *
-         * \return the Cell list
-         *
-         */
-        auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(this->getCellList(r_cut,no_se3))
-        {
-                return this->getCellList(r_cut,no_se3);
-        }
+	 *
+	 * \param r_cut interation radius, or size of each cell
+	 *
+	 * \return the Cell list
+	 *
+	 */
+	auto getCellListDevice(St r_cut, bool no_se3 = false) -> decltype(this->getCellList(r_cut,no_se3))
+	{
+		return this->getCellList(r_cut,no_se3);
+	}
 
 #endif
 
@@ -1747,7 +1747,7 @@ public:
 		getDecomposition().setNNParameters(shift,gs);
 
 		ver.createVerletCrs(r_cut,ghostMarker,vPos,
-				            getDecomposition().getCRSDomainCells(),
+					    getDecomposition().getCRSDomainCells(),
 							getDecomposition().getCRSAnomDomainCells());
 
 		ver.set_ndec(getDecomposition().get_ndec());
@@ -1832,24 +1832,24 @@ public:
 	template <typename particlesFrom_type, typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St>,decltype(vPos) >>
 	VerletL getVerlet(St r_cut, particlesFrom_type &particlesFrom,const size_t nMax=0) {
 #ifdef SE_CLASS3
-        se3.getNN();
+	se3.getNN();
 #endif
 
-        VerletL ver;
-        auto vPosFrom = particlesFrom.vPos;
-        // get the processor bounding box
-        Box<dim, St> bt = getDecomposition().getProcessorBounds();
+		VerletL ver;
+		auto &vPosFrom = particlesFrom.vPos;
+	// get the processor bounding box
+	Box<dim, St> bt = getDecomposition().getProcessorBounds();
 
-        // Get the ghost
-        Ghost<dim, St> g = getDecomposition().getGhost();
-        g.magnify(1.013);
+	// Get the ghost
+	Ghost<dim, St> g = getDecomposition().getGhost();
+	g.magnify(1.013);
 
-        // enlarge the box where the Verlet is defined
-        bt.enlarge(g);
+	// enlarge the box where the Verlet is defined
+	bt.enlarge(g);
 
-        ver.Initialize(bt,particlesFrom.getDecomposition().getProcessorBounds(),r_cut,vPos,vPosFrom,ghostMarker,nMax,VL_NON_SYMMETRIC);
+	ver.Initialize(bt,particlesFrom.getDecomposition().getProcessorBounds(),r_cut,vPos,vPosFrom,ghostMarker,nMax,VL_NON_SYMMETRIC);
 
-        ver.set_ndec(getDecomposition().get_ndec());
+	ver.set_ndec(getDecomposition().get_ndec());
 
 		return ver;
 	}
@@ -2204,7 +2204,7 @@ public:
 	}
 
 	/*! \brief Get an iterator that traverse the particles in the domain
-	 *         using a cell list
+	 *	 using a cell list
 	 *
 	 * \param NN Cell-list
 	 *
@@ -2386,28 +2386,28 @@ public:
 
 #ifdef CUDA_GPU
 
-        /*! \brief Get an iterator that traverse the particles in the domain
-         *
-         * \return an iterator
-         *
-         */
-        auto getDomainIteratorDevice(size_t n_thr = default_kernel_wg_threads_) const -> decltype(this->getDomainIteratorGPU(n_thr))
-        {
-                return this->getDomainIteratorGPU(n_thr);
-        }
+	/*! \brief Get an iterator that traverse the particles in the domain
+	 *
+	 * \return an iterator
+	 *
+	 */
+	auto getDomainIteratorDevice(size_t n_thr = default_kernel_wg_threads_) const -> decltype(this->getDomainIteratorGPU(n_thr))
+	{
+		return this->getDomainIteratorGPU(n_thr);
+	}
 
 
 #else
 
-        /*! \brief Get an iterator that traverse the particles in the domain
-         *
-         * \return an iterator
-         *
-         */
-        auto getDomainIteratorDevice(size_t n_thr = default_kernel_wg_threads_) const -> decltype(this->getDomainIterator())
-        {
-                return this->getDomainIterator();
-        }
+	/*! \brief Get an iterator that traverse the particles in the domain
+	 *
+	 * \return an iterator
+	 *
+	 */
+	auto getDomainIteratorDevice(size_t n_thr = default_kernel_wg_threads_) const -> decltype(this->getDomainIterator())
+	{
+		return this->getDomainIterator();
+	}
 
 
 #endif
@@ -2541,7 +2541,7 @@ public:
 	void ghost_get_subset()
 	{
     /*  #ifdef SE_CLASS1
-        This is not a ghost get on subset.
+	This is not a ghost get on subset.
        std::cerr<<__FILE__<<":"<<__LINE__<<":You Used a ghost_get on a subset. This does not do anything. Please use ghostget on the entire set.";
     #endif */
 	}
@@ -2649,8 +2649,8 @@ public:
 	 * \tparam prp list of properties to get synchronize
 	 *
 	 * \param opt_ options. It is an optional parameter.
-	 *             If set to NO_CHANGE_ELEMENTS the communication has lower latencies. This option has some usage limitations, so please refere to the examples
-	 *             for further explanations
+	 *	     If set to NO_CHANGE_ELEMENTS the communication has lower latencies. This option has some usage limitations, so please refere to the examples
+	 *	     for further explanations
 	 *
 	 *
 	 */
@@ -2757,7 +2757,7 @@ public:
 	 *
 	 * \param md Model to use
 	 * \param ts It is an optional parameter approximately should be the number of ghost get between two
-	 *           rebalancing at first decomposition this number can be ignored (default = 1) because not used
+	 *	   rebalancing at first decomposition this number can be ignored (default = 1) because not used
 	 *
 	 */
 	template <typename Model=ModelLin> void finalizeComputationCosts(Model md=Model(), size_t ts = 1)
@@ -2792,7 +2792,7 @@ public:
 	 *
 	 * \param md Model to use
 	 * \param ts It is an optional parameter approximately should be the number of ghost get between two
-	 *           rebalancing at first decomposition this number can be ignored (default = 1) because not used
+	 *	   rebalancing at first decomposition this number can be ignored (default = 1) because not used
 	 *
 	 */
 	template <typename Model=ModelLin>inline void addComputationCosts(Model md=Model(), size_t ts = 1)
@@ -2843,7 +2843,7 @@ public:
 	 *
 	 * \param out output filename
 	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
-	 *            FORMAT_BINARY. (the default is ASCII format)
+	 *	    FORMAT_BINARY. (the default is ASCII format)
 	 *
 	 * \return true if the file has been written without error
 	 *
@@ -2858,7 +2858,7 @@ public:
 	 * \param out output filename
 	 * \param meta_info meta information example ("time = 1.234" add the information time to the VTK file)
 	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
-	 *            FORMAT_BINARY. (the default is ASCII format)
+	 *	    FORMAT_BINARY. (the default is ASCII format)
 	 *
 	 * \return true if the file has been written without error
 	 *
@@ -2871,7 +2871,7 @@ public:
 		{
 			// CSVWriter test
 			CSVWriter<vector_dist_pos,
-			          vector_dist_prop > csv_writer;
+				  vector_dist_prop > csv_writer;
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".csv"));
 
@@ -2888,17 +2888,17 @@ public:
 			// VTKWriter for a set of points
 			VTKWriter<boost::mpl::pair<vector_dist_pos,
 									   vector_dist_prop>,
-			                           VECTOR_POINTS> vtk_writer;
+						   VECTOR_POINTS> vtk_writer;
 			vtk_writer.add(vPos,vPrp,ghostMarker);
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + std::to_string(".vtp"));
-            //Create Directory for VTP files and write the PVTP metadata
-            if(v_cl.rank()==0)
-            {
-                create_directory_if_not_exist("VTPDATA",1);
-                vtk_writer.write_pvtp(out,prp_names,v_cl.size());
-            }
-            v_cl.barrier();
+	    //Create Directory for VTP files and write the PVTP metadata
+	    if(v_cl.rank()==0)
+	    {
+		create_directory_if_not_exist("VTPDATA",1);
+		vtk_writer.write_pvtp(out,prp_names,v_cl.size());
+	    }
+	    v_cl.barrier();
 			// Write the VTK file
 			bool ret=vtk_writer.write(output,prp_names,"particles",meta_info,ft);
 			return ret;
@@ -2958,7 +2958,7 @@ public:
 	 * \param iteration (we can append the number at the end of the file_name)
 	 * \param meta_info meta information example ("time = 1.234" add the information time to the VTK file)
 	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
-	 *            FORMAT_BINARY. (the default is ASCII format)
+	 *	    FORMAT_BINARY. (the default is ASCII format)
 	 *
 	 * \return if the file has been written correctly
 	 *
@@ -2974,7 +2974,7 @@ public:
 	 * \param iteration (we can append the number at the end of the file_name)
 	 * \param meta_info meta information example ("time = 1.234" add the information time to the VTK file)
 	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
-	 *            FORMAT_BINARY. (the default is ASCII format)
+	 *	    FORMAT_BINARY. (the default is ASCII format)
 	 *
 	 * \return if the file has been written correctly
 	 *
@@ -3008,18 +3008,18 @@ public:
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtp"));
 
-            //Create Directory for VTP files and write the PVTP metadata
-            if(v_cl.rank()==0)
-            {
-                create_directory_if_not_exist("VTPDATA",1);
-                vtk_writer.write_pvtp(out,prp_names,v_cl.size(),iteration);
-            }
-            v_cl.barrier();
+	    //Create Directory for VTP files and write the PVTP metadata
+	    if(v_cl.rank()==0)
+	    {
+		create_directory_if_not_exist("VTPDATA",1);
+		vtk_writer.write_pvtp(out,prp_names,v_cl.size(),iteration);
+	    }
+	    v_cl.barrier();
 
 			// Write the VTK file
 			bool ret=vtk_writer.write(output,prp_names,"particles",meta_info,ft);
 
-            return ret;
+	    return ret;
 		}
 	}
 
@@ -3029,7 +3029,7 @@ public:
 	 * \param iteration (we can append the number at the end of the file_name)
 	 * \param time = 1.234 to add to the information time to the PVTP file)
 	 * \param opt VTK_WRITER, CSV_WRITER, it is also possible to choose the format for  VTK
-	 *            FORMAT_BINARY. (the default is ASCII format)
+	 *	    FORMAT_BINARY. (the default is ASCII format)
 	 *
 	 * \return if the file has been written correctly
 	 *
@@ -3063,16 +3063,16 @@ public:
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtp"));
 
-            //Create Directory for VTP files and write the PVTP metadata
-            if(v_cl.rank()==0)
-            {
-                create_directory_if_not_exist("VTPDATA",1);
-                vtk_writer.write_pvtp(out,prp_names,v_cl.size(),iteration,time);
-            }
-            v_cl.barrier();
+	    //Create Directory for VTP files and write the PVTP metadata
+	    if(v_cl.rank()==0)
+	    {
+		create_directory_if_not_exist("VTPDATA",1);
+		vtk_writer.write_pvtp(out,prp_names,v_cl.size(),iteration,time);
+	    }
+	    v_cl.barrier();
 			// Write the VTK file
 			bool ret=vtk_writer.write(output,prp_names,"particles","",ft);
-            return ret;
+	    return ret;
 		}
 	}
 
@@ -3082,7 +3082,7 @@ public:
 	 * \param div division required for the cell-list
 	 * \param box where the Cell list must be defined (In general Processor domain + Ghost)
 	 * \param enlarge Optionally a request to make the space a littler bit larger than Processor domain + Ghost
-	 *        keeping the cell list consistent with the requests
+	 *	keeping the cell list consistent with the requests
 	 *
 	 */
 	void getCellListParams(St r_cut, size_t (&div)[dim],Box<dim, St> & box, Ghost<dim,St> enlarge = Ghost<dim,St>(0.0))
@@ -3235,7 +3235,7 @@ public:
 	}
 
 	/*! \brief Get a special particle iterator able to iterate across particles using
-	 *         symmetric crossing scheme
+	 *	 symmetric crossing scheme
 	 *
 	 * \param NN Cell-List neighborhood
 	 *
@@ -3269,7 +3269,7 @@ public:
 
 		// First we check that
 		return ParticleItCRS_Cells<dim,cli,decltype(vPos)>(NN,getDecomposition().getCRSDomainCells(),
-				                               getDecomposition().getCRSAnomDomainCells(),
+							       getDecomposition().getCRSAnomDomainCells(),
 											   NN.getNNc_sym());
 	}
 
@@ -3292,12 +3292,12 @@ public:
      */
     openfpm::vector<std::string> &  getPropNames()
     {
-        return prp_names;
+	return prp_names;
     }
 
 
     /*! \brief Get a special particle iterator able to iterate across particles using
-	 *         symmetric crossing scheme
+	 *	 symmetric crossing scheme
 	 *
 	 * \param NN Verlet list neighborhood
 	 *
@@ -3319,7 +3319,7 @@ public:
 	}
 
 	/*! \brief Return from which cell we have to start in case of CRS interation
-	 *         scheme
+	 *	 scheme
 	 *
 	 * \param NN cell-list
 	 *
@@ -3332,7 +3332,7 @@ public:
 	}
 
 	/*! \brief Return from which cell we have to stop in case of CRS interation
-	 *         scheme
+	 *	 scheme
 	 *
 	 * \param NN cell-list
 	 *
@@ -3457,37 +3457,37 @@ public:
 			this->ghostMarker = ghostMarker;
 		}
 
-        /*! \brief this function sort the vector
-         *
-         * \warning this function kill the ghost (and invalidate the Cell-list)
-         *
-         * \param NN Cell-list to use to reorder
-         *
-         */
+	/*! \brief this function sort the vector
+	 *
+	 * \warning this function kill the ghost (and invalidate the Cell-list)
+	 *
+	 * \param NN Cell-list to use to reorder
+	 *
+	 */
 		template<typename CellList_type>
-        void make_sort(CellList_type & NN)
-        {
-                deleteGhost();
+	void make_sort(CellList_type & NN)
+	{
+		deleteGhost();
 
-                updateCellList(NN,false,cl_construct_opt::Only_reorder);
+		updateCellList(NN,false,cl_construct_opt::Only_reorder);
 
-                // construct a cell-list forcing to create a sorted version without ghost
+		// construct a cell-list forcing to create a sorted version without ghost
 
-                // swap the sorted with the non-sorted
-                vPos.swap(vPosOut);
-                vPrp.swap(vPrpOut);
-        }
+		// swap the sorted with the non-sorted
+		vPos.swap(vPosOut);
+		vPrp.swap(vPrpOut);
+	}
 
-        /*! \brief this function sort the vector
-         *
-         * \note this function does not kill the ghost and does not invalidate the Cell-list)
-         *
-         * \param NN Cell-list to use to reorder
-         *
-         */
+	/*! \brief this function sort the vector
+	 *
+	 * \note this function does not kill the ghost and does not invalidate the Cell-list)
+	 *
+	 * \param NN Cell-list to use to reorder
+	 *
+	 */
 		template<typename CellList_type>
-        void make_sort_from(CellList_type & cl)
-        {
+	void make_sort_from(CellList_type & cl)
+	{
 #if defined(__NVCC__)
 
 			auto ite = vPos.getGPUIteratorTo(ghostMarker-1);
@@ -3500,34 +3500,34 @@ public:
 			vPrp.swap(vPrpOut);
 
 #endif
-        }
+	}
 
-        /*! \brief This function compare if the host and device buffer position match up to some tolerance
-         *
-         * \tparam prp property to check
-         *
-         * \param tol tollerance absolute
-         *
-         */
-        bool compareHostAndDevicePos(St tol, St near  = -1.0, bool silent = false)
-        {
+	/*! \brief This function compare if the host and device buffer position match up to some tolerance
+	 *
+	 * \tparam prp property to check
+	 *
+	 * \param tol tollerance absolute
+	 *
+	 */
+	bool compareHostAndDevicePos(St tol, St near  = -1.0, bool silent = false)
+	{
 			return compare_host_device<Point<dim,St>,0>::compare(vPos,tol,near,silent);
-        }
+	}
 
 
-        /*! \brief This function compare if the host and device buffer position match up to some tolerance
-         *
-         * \tparam prp property to check
-         *
-         * \param tol tollerance absolute
-         *
-         */
-        template<unsigned int prp>
-        bool compareHostAndDeviceProp(St tol, St near  = -1.0, bool silent = false)
-        {
+	/*! \brief This function compare if the host and device buffer position match up to some tolerance
+	 *
+	 * \tparam prp property to check
+	 *
+	 * \param tol tollerance absolute
+	 *
+	 */
+	template<unsigned int prp>
+	bool compareHostAndDeviceProp(St tol, St near  = -1.0, bool silent = false)
+	{
 			return compare_host_device<typename boost::mpl::at<typename prop::type,
 												boost::mpl::int_<prp> >::type,prp>::compare(vPrp,tol,near,silent);
-        }
+	}
 
 #else
 
