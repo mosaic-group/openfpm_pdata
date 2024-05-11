@@ -465,7 +465,7 @@ void vector_dist_gpu_make_sort_test_impl()
 	openfpm::vector_gpu<aggregate<float,float[3],float[3]>> tmpPrp = vecDist.getPropVector();
 
 	auto NN_cpu1 = vecDist.getCellList(0.1);
-	auto NN = vecDist.template getCellListGPU<CellList_type>(0.1, CL_GPU_REORDER);
+	auto NN = vecDist.template getCellListGPU<CellList_type>(0.1, CL_NON_SYMMETRIC | CL_GPU_REORDER);
 
 	vecDist.restoreOrder(NN);
 

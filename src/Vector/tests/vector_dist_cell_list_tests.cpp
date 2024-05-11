@@ -71,7 +71,7 @@ void test_reorder_sfc(reorder_opt opt)
 
 		// Create first cell list
 
-		auto NN1 = vd.getCellList(0.01,true);
+		auto NN1 = vd.getCellList(0.01, CL_NON_SYMMETRIC | CL_LINEAR_CELL_KEYS, true);
 
 		//An order of a curve
 		int32_t m = 6;
@@ -80,7 +80,7 @@ void test_reorder_sfc(reorder_opt opt)
 		vd.reorder(m,opt);
 
 		// Create second cell list
-		auto NN2 = vd.getCellList(0.01,true);
+		auto NN2 = vd.getCellList(0.01, CL_NON_SYMMETRIC | CL_LINEAR_CELL_KEYS, true);
 
 		//Check equality of cell sizes
 		for (size_t i = 0 ; i < NN1.getGrid().size() ; i++)
@@ -149,13 +149,13 @@ void test_reorder_cl()
 
 		// Create first cell list
 
-		auto NN1 = vd.getCellList(0.01,true);
+		auto NN1 = vd.getCellList(0.01, CL_NON_SYMMETRIC | CL_LINEAR_CELL_KEYS, true);
 
 		//Reorder a vector
 		vd.reorder_rcut(0.01);
 
 		// Create second cell list
-		auto NN2 = vd.getCellList(0.01,true);
+		auto NN2 = vd.getCellList(0.01, CL_NON_SYMMETRIC | CL_LINEAR_CELL_KEYS, true);
 
 		//Check equality of cell sizes
 		for (size_t i = 0 ; i < NN1.getGrid().size() ; i++)

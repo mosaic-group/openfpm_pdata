@@ -73,101 +73,6 @@ constexpr int PUT = 2;
 constexpr int NO_GHOST = 0;
 constexpr int WITH_GHOST = 2;
 
-template<bool is_gpu_celllist, unsigned int ... prp>
-struct gcl_standard_no_symmetric_impl
-{
-	template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
-	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
-	{
-		return vd.template getCellList<CellL>(r_cut);
-	}
-};
-
-template<unsigned int ... prp>
-struct gcl_standard_no_symmetric_impl<true,prp...>
-{
-	template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl>
-	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
-	{
-		return vd.template getCellListGPU<CellL,prp...>(r_cut);
-	}
-};
-
-//! General function t get a cell-list
-template<unsigned int dim, typename St, typename CellL, typename Vector, unsigned int impl, unsigned int ... prp>
-struct gcl
-{
-	/*! \brief Get the Cell list based on the type
-	 *
-	 * \param vd Distributed vector
-	 * \param r_cut Cut-off radius
-	 * \param g Ghost
-	 *
-	 * \return the constructed cell-list
-	 *
-	 */
-	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
-	{
-		return gcl_standard_no_symmetric_impl<is_gpu_celllist<CellL>::value,prp ...>::template get<dim,St,CellL,Vector,impl>(vd,r_cut,g);
-	}
-};
-
-//! Function specialization for hilbert curve cell list
-template<unsigned int dim, typename St, typename CellL, typename Vector>
-struct gcl<dim,St,CellL,Vector,CL_HILBERT_CELL_KEYS>
-{
-	/*! \brief Get the Cell list based on the type
-	 *
-	 * \param vd Distributed vector
-	 * \param r_cut Cut-off radius
-	 * \param g Ghost
-	 *
-	 * \return the constructed cell-list
-	 *
-	 */
-	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
-	{
-		return vd.getCellList_hilb(r_cut,g);
-	}
-};
-
-//! Function specialization for symmetric cell list
-template<unsigned int dim, typename St, typename CellL, typename Vector>
-struct gcl<dim,St,CellL,Vector,CL_SYMMETRIC>
-{
-	/*! \brief Get the Cell list based on the type
-	 *
-	 * \param vd Distributed vector
-	 * \param r_cut Cut-off radius
-	 * \param g Ghost
-	 *
-	 * \return the constructed cell-list
-	 *
-	 */
-	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
-	{
-		return vd.getCellListSym(r_cut);
-	}
-};
-
-//! Function specialization for local symmetric cell list
-template<unsigned int dim, typename St, typename CellL, typename Vector>
-struct gcl<dim,St,CellL,Vector,CL_LOCAL_SYMMETRIC>
-{
-	/*! \brief Get the Cell list based on the type
-	 *
-	 * \param vd Distributed vector
-	 * \param r_cut Cut-off radius
-	 * \param g Ghost
-	 *
-	 * \return the constructed cell-list
-	 *
-	 */
-	static inline CellL get(Vector & vd, const St & r_cut, const Ghost<dim,St> & g)
-	{
-		return vd.getCellListSymLocal(r_cut);
-	}
-};
 
 #define CELL_MEMFAST(dim,St) CellList<dim, St, Mem_fast<>, shift<dim, St> >
 #define CELL_MEMBAL(dim,St) CellList<dim, St, Mem_bal<>, shift<dim, St> >
@@ -1198,33 +1103,9 @@ public:
 	 *
 	 */
 	template<typename CellList_type = CellList<dim, St, Mem_fast<>, shift<dim, St>,internal_position_vector_type > >
-	CellList_type getCellListSym(St r_cut)
+	CellList_type getCellListSym(St r_cut, size_t opt = CL_LINEAR_CELL_KEYS)
 	{
-#ifdef SE_CLASS1
-		if (!(opt & BIND_DEC_TO_GHOST))
-		{
-			if (getDecomposition().getGhost().getLow(dim-1) == 0.0)
-			{
-				std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, If you construct a vector without BIND_DEC_TO_GHOST the ghost must be full without reductions " << std::endl;
-				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
-			}
-		}
-#endif
-		CellList_type cellList;
-
-		size_t pad = 0;
-		CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
-		cl_param_calculateSym(getDecomposition().getDomain(),cd_sm,getDecomposition().getGhost(),r_cut,pad);
-
-		// Processor bounding box
-		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
-
-		cellList.Initialize(cd_sm,pbox,pad);
-		cellList.set_ndec(getDecomposition().get_ndec());
-
-		updateCellListSym(cellList);
-
-		return cellList;
+		return getCellList(opt | CL_SYMMETRIC);
 	}
 
 	/*! \brief Construct a local symmetric cell list based on a cut-off radius
@@ -1237,93 +1118,105 @@ public:
 	 *
 	 */
 	template<typename CellList_type = CellList<dim, St, Mem_fast<>, shift<dim, St>,internal_position_vector_type > >
-	CellList_type getCellListSymLocal(St r_cut)
+	CellList_type getCellListSymLocal(St r_cut, size_t opt = CL_LINEAR_CELL_KEYS)
 	{
-#ifdef SE_CLASS1
-		if (!(opt & BIND_DEC_TO_GHOST))
-		{
-			if (getDecomposition().getGhost().getLow(dim-1) == 0.0)
-			{
-				std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, If you construct a vector without BIND_DEC_TO_GHOST the ghost must be full without reductions " << std::endl;
-				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
-			}
-		}
-#endif
-		CellList_type cellList;
-
-		size_t pad = 0;
-		CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
-		cl_param_calculateSym(getDecomposition().getDomain(),cd_sm,getDecomposition().getGhost(),r_cut,pad);
-
-		// Processor bounding box
-		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
-
-		cellList.Initialize(cd_sm,pbox,pad);
-		cellList.set_ndec(getDecomposition().get_ndec());
-
-		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
-		updateCellListSymLocal(cellList);
-
-		return cellList;
+		return getCellList(opt | CL_LOCAL_SYMMETRIC);
 	}
 
-	/*! \brief Construct a cell list symmetric based on a cut-off radius
+	/*! \brief Construct a cell list starting from the stored particles
 	 *
 	 * \tparam CellL CellList type to construct
 	 *
 	 * \param r_cut interation radius, or size of each cell
+	 * \param no_se3 avoid SE_CLASS3 checking
+	 *
+	 * \return the Cell list
+	 *
+	 */
+	template<typename CellList_type = CellList<dim, St, Mem_fast<>, shift<dim, St>, decltype(vPos) > >
+	CellList_type getCellList(St r_cut, size_t opt = CL_NON_SYMMETRIC | CL_LINEAR_CELL_KEYS, bool no_se3 = false, float ghostEnlargeFactor = 1.013)
+	{
+		if (opt & CL_SYMMETRIC || opt & CL_LOCAL_SYMMETRIC) {
+#ifdef SE_CLASS1
+			if (!(opt & BIND_DEC_TO_GHOST))
+			{
+				if (getDecomposition().getGhost().getLow(dim-1) == 0.0)
+				{
+					std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, If you construct a vector without BIND_DEC_TO_GHOST the ghost must be full without reductions " << std::endl;
+					ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
+				}
+			}
+#endif
+			size_t pad = 0;
+			CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
+			cl_param_calculateSym(getDecomposition().getDomain(),cd_sm,getDecomposition().getGhost(),r_cut,pad);
+
+			// Processor bounding box
+			Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+
+			CellList_type cellList;
+
+			cellList.setOpt(opt);
+			cellList.Initialize(cd_sm,pbox,pad);
+			cellList.set_ndec(getDecomposition().get_ndec());
+			cellList.setGhostMarker(ghostMarker);
+
+			cellList.fill(vPos, vPrp, ghostMarker);
+
+			return cellList;
+		}
+
+		// CL_NON_SYMMETRIC
+		else {
+#ifdef SE_CLASS3
+			if (no_se3 == false)
+			{se3.getNN();}
+#endif
+#ifdef SE_CLASS1
+			check_ghost_compatible_rcut(r_cut);
+#endif
+			// Get ghost and anlarge by 1%
+			Ghost<dim,St> ghostEnlarge = getDecomposition().getGhost();
+			ghostEnlarge.magnify(ghostEnlargeFactor);
+
+			// Division array
+			size_t div[dim];
+
+			// get the processor bounding box
+			Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+
+			// Processor bounding box
+			cl_param_calculate(pbox, div, r_cut, ghostEnlarge);
+
+			CellList_type cellList;
+
+			cellList.setOpt(opt);
+			cellList.Initialize(pbox, div);
+			cellList.setGhostMarker(ghostMarker);
+			cellList.set_ndec(getDecomposition().get_ndec());
+
+			cellList.fill(vPos, vPrp, ghostMarker);
+
+			return cellList;
+		}
+	}
+
+
+	/*! \brief Construct a symmetric cell list based on a number of divisions and padding
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param div number of cells per dimension
+	 * \param number of padding layers per dimension
 	 *
 	 * \return the Cell list
 	 *
 	 */
 	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
-	CellL getCellListSym(const size_t (& div)[dim],
-						 const size_t (& pad)[dim])
-	{
-#ifdef SE_CLASS1
-		if (!(opt & BIND_DEC_TO_GHOST))
-		{
-			if (getDecomposition().getGhost().getLow(dim-1) == 0.0)
-			{
-				std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, If you construct a vector without BIND_DEC_TO_GHOST the ghost must be full without reductions " << std::endl;
-				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
-			}
-		}
-#endif
-
-		size_t pad_max = pad[0];
-		for (size_t i = 1 ; i < dim ; i++)
-		{if (pad[i] > pad_max)	{pad_max = pad[i];}}
-
-		// Cell list
-		CellL cellList;
-
-		CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
-		cd_sm.setDimensions(getDecomposition().getDomain(),div,pad_max);
-
-		// Processor bounding box
-		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
-
-		cellList.Initialize(cd_sm,pbox,pad_max);
-		cellList.set_ndec(getDecomposition().get_ndec());
-
-		updateCellListSym(cellList);
-
-		return cellList;
-	}
-
-	/*! \brief Construct a local symmetric cell list based on a cut-off radius
-	 *
-	 * \tparam CellL CellList type to construct
-	 *
-	 * \param r_cut interation radius, or size of each cell
-	 *
-	 * \return the Cell list
-	 *
-	 */
-	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
-	CellL getCellListSymLocal(const size_t (& div)[dim],
-						 const size_t (& pad)[dim])
+	CellL getCellListSym(
+		const size_t (& div)[dim],
+		const size_t (& pad)[dim],
+		size_t opt = CL_LINEAR_CELL_KEYS)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -1340,8 +1233,6 @@ public:
 		for (size_t i = 1 ; i < dim ; i++)
 			if (pad[i] > pad_max) pad_max = pad[i];
 
-		// Cell list
-		CellL cellList;
 
 		CellDecomposer_sm<dim,St,shift<dim,St>> cd_sm;
 		cd_sm.setDimensions(getDecomposition().getDomain(),div,pad_max);
@@ -1349,43 +1240,17 @@ public:
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
 
+		CellL cellList;
+
+		cellList.setOpt(opt | CL_SYMMETRIC);
 		cellList.Initialize(cd_sm,pbox,pad_max);
 		cellList.set_ndec(getDecomposition().get_ndec());
 
-		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
-		updateCellListSymLocal(cellList);
+		cellList.fill(vPos, vPrp, ghostMarker);
 
 		return cellList;
 	}
 
-	/*! \brief Construct a cell list starting from the stored particles
-	 *
-	 * \tparam CellL CellList type to construct
-	 *
-	 * \param r_cut interation radius, or size of each cell
-	 * \param no_se3 avoid SE_CLASS3 checking
-	 *
-	 * \return the Cell list
-	 *
-	 */
-	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>, decltype(vPos) > >
-	CellL getCellList(St r_cut, bool no_se3 = false)
-	{
-#ifdef SE_CLASS3
-		if (no_se3 == false)
-		{se3.getNN();}
-#endif
-#ifdef SE_CLASS1
-		check_ghost_compatible_rcut(r_cut);
-#endif
-
-		// Get ghost and anlarge by 1%
-		Ghost<dim,St> g = getDecomposition().getGhost();
-		g.magnify(1.013);
-
-
-		return getCellList<CellL>(r_cut, g,no_se3);
-	}
 
 #ifdef CUDA_GPU
 
@@ -1398,7 +1263,7 @@ public:
 	 *
 	 */
 	template<typename CellType = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>>,unsigned int ... prp>
-	CellType getCellListGPU(St r_cut, size_t opt = 0, size_t NNIteratorBox = 1, bool no_se3 = false)
+	CellType getCellListGPU(St r_cut, size_t opt = CL_NON_SYMMETRIC, size_t NNIteratorBox = 1, bool no_se3 = false, float ghostEnlargeFactor = 1.013)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -1409,36 +1274,8 @@ public:
 #endif
 
 		// Get ghost and anlarge by 1%
-		Ghost<dim,St> g = getDecomposition().getGhost();
-		g.magnify(1.013);
-
-		return getCellListGPU<CellType>(r_cut, g, opt, NNIteratorBox, no_se3);
-	}
-
-
-	/*! \brief Construct a cell list starting from the stored particles
-	 *
-	 * It differ from the get getCellList for an additional parameter, in case the
-	 * domain + ghost is not big enough to contain additional padding particles, a Cell list
-	 * with bigger space can be created
-	 * (padding particles in general are particles added by the user out of the domains)
-	 *
-	 * \tparam CellL CellList type to construct
-	 *
-	 * \param r_cut interation radius, or size of each cell
-	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
-	 * \param NNIteratorBox sets the number of neighborhood cell layers used to iterate through by getNNIteratorBox()
-	 *
-	 * \return the CellList
-	 *
-	 */
-	template<typename CellType = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>>, unsigned int ... prp>
-	CellType getCellListGPU(St r_cut, const Ghost<dim, St> & enlarge, size_t opt = 0, size_t NNIteratorBox = 1, bool no_se3 = false)
-	{
-#ifdef SE_CLASS3
-		if (no_se3 == false)
-		{se3.getNN();}
-#endif
+		Ghost<dim,St> ghostEnlarge = getDecomposition().getGhost();
+		ghostEnlarge.magnify(ghostEnlargeFactor);
 
 		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
 
@@ -1449,22 +1286,23 @@ public:
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
 
 		// Processor bounding box
-		cl_param_calculate(pbox, div, r_cut, enlarge);
+		cl_param_calculate(pbox, div, r_cut, ghostEnlarge);
 
 		CellType cellList(pbox,div);
 
 		// getNNIteratorBox has to be set here compared to getNNIteratorRadius (could be set later)
 		// As sparse cell list on gpu uses it in construct()
 		// If not set, the dafault value of 1 would have been used by construct()
+		cellList.setOpt(opt);
 		cellList.setBoxNN(NNIteratorBox);
-		cellList.template construct<decltype(vPos),decltype(vPrp),prp ...>(vPos,vPrp,v_cl.getGpuContext(),ghostMarker,0,vPos.size(),opt);
+		cellList.template construct<decltype(vPos),decltype(vPrp),prp ...>(vPos,vPrp,v_cl.getGpuContext(),ghostMarker,0,vPos.size());
 
 		cellList.set_ndec(getDecomposition().get_ndec());
 		cellList.setGhostMarker(ghostMarker);
 
 		return cellList;
-	}
 
+	}
 
 #endif
 
@@ -1478,20 +1316,9 @@ public:
 	 *
 	 */
 	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
-	CellL getCellList_hilb(St r_cut)
+	CellL getCellList_hilb(St r_cut, size_t opt = CL_NON_SYMMETRIC)
 	{
-#ifdef SE_CLASS3
-		se3.getNN();
-#endif
-#ifdef SE_CLASS1
-		check_ghost_compatible_rcut(r_cut);
-#endif
-
-		// Get ghost and anlarge by 1%
-		Ghost<dim,St> g = getDecomposition().getGhost();
-		g.magnify(1.013);
-
-		return getCellList_hilb(r_cut, g);
+		return getCellList(r_cut, opt | CL_HILBERT_CELL_KEYS);
 	}
 
 	/*! \brief Update a cell list using the stored particles
@@ -1503,18 +1330,12 @@ public:
 	 *
 	 */
 	template<unsigned int ... prp,typename CellL>
-	void updateCellList(CellL & cellList, bool no_se3 = false, size_t opt = CL_GPU_REORDER)
+	void updateCellList(CellL & cellList, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
 		{se3.getNN();}
 #endif
-
-		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
-
-		// This function assume equal spacing in all directions
-		// but in the worst case we take the maximum
-		St r_cut = cellList.getCellBox().getRcut();
 
 		// Here we have to check that the Cell-list has been constructed
 		// from the same decomposition
@@ -1522,165 +1343,63 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			cellList.fill(vPos, vPrp, ghostMarker, CL_NON_SYMMETRIC | opt);
+			cellList.fill(vPos, vPrp, ghostMarker);
+			cellList.setGhostMarker(ghostMarker);
 		}
 		else
 		{
-			CellL cli_tmp = gcl<dim,St,CellL,self,CL_NON_SYMMETRIC>::get(*this,r_cut,getDecomposition().getGhost());
+			// This function assume equal spacing in all directions
+			// but in the worst case we take the maximum
+			St r_cut = cellList.getCellBox().getRcut();
 
-			cellList.swap(cli_tmp);
+			if (cellList.getOpt() & CL_SYMMETRIC) {
+				CellL cellListTmp = getCellListSym(cellList.getDivWP(), cellList.getPadding());
+				cellList.swap(cellListTmp);
+			}
+
+			else {
+				CellL cellListTmp = getCellList(r_cut, cellList.getOpt());
+				cellList.swap(cellListTmp);
+			}
+
+		}
+	}
+
+	/*! \brief Update a cell list on GPU using the stored particles
+	 *
+	 * \tparam CellL CellList type to construct
+	 *
+	 * \param cellList Cell list to update
+	 * \param no_se3 avoid se class 3 checking
+	 *
+	 */
+	template<unsigned int ... prp, typename CellList_type>
+	void updateCellListGPU(CellList_type & cellList, bool no_se3 = false)
+	{
+#ifdef SE_CLASS3
+		if (no_se3 == false)
+		{se3.getNN();}
+#endif
+
+		// Here we have to check that the Cell-list has been constructed
+		// from the same decomposition
+		bool to_reconstruct = cellList.get_ndec() != getDecomposition().get_ndec();
+
+		if (to_reconstruct == false)
+		{
+			cellList.fill(vPos, vPrp, ghostMarker);
+		}
+		else
+		{
+			// This function assume equal spacing in all directions
+			// but in the worst case we take the maximum
+			St r_cut = cellList.getCellBox().getRcut();
+
+			CellList_type cellListTmp = getCellListGPU<CellList_type,prp...>(r_cut, cellList.getOpt());
+
+			cellList.swap(cellListTmp);
 			cellList.resetBoxNN();
 		}
-	}
-
-	/*! \brief Update a cell list using the stored particles
-	 *
-	 * \tparam CellL CellList type to construct
-	 *
-	 * \param cellList Cell list to update
-	 *
-	 */
-	template<typename CellList_type = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
-	void updateCellListSym(CellList_type & cellList, size_t opt = CL_GPU_REORDER)
-	{
-#ifdef SE_CLASS3
-		se3.getNN();
-#endif
-
-		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
-
-		// Here we have to check that the Cell-list has been constructed
-		// from the same decomposition
-		bool to_reconstruct = cellList.get_ndec() != getDecomposition().get_ndec();
-
-		if (to_reconstruct == false)
-		{
-			cellList.fill(vPos, vPrp, ghostMarker, CL_SYMMETRIC | opt);
-		}
-		else
-		{
-			// CellList_type cellListTmp(cellList.getOpt());
-			CellList_type cellListTmp = getCellListSym<CellList_type>(cellList.getDivWP(),cellList.getPadding());
-
-			cellList.swap(cellListTmp);
-		}
-	}
-
-
-	/*! \brief Update a cell list using the stored particles
-	 *
-	 * \tparam CellL CellList type to construct
-	 *
-	 * \param cellList Cell list to update
-	 *
-	 */
-	template<typename CellList_type = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
-	void updateCellListSymLocal(CellList_type & cellList, size_t opt = CL_GPU_REORDER)
-	{
-#ifdef SE_CLASS3
-		se3.getNN();
-#endif
-
-		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
-
-		// Here we have to check that the Cell-list has been constructed
-		// from the same decomposition
-		bool to_reconstruct = cellList.get_ndec() != getDecomposition().get_ndec();
-
-		if (to_reconstruct == false)
-		{
-			cellList.fill(vPos, vPrp, ghostMarker, CL_LOCAL_SYMMETRIC | opt);
-		}
-		else
-		{
-			CellList_type cellListTmp = getCellListSym<CellList_type>(cellList.getDivWP(), cellList.getPadding());
-			cellList.swap(cellListTmp);
-		}
-	}
-
-	/*! \brief Construct a cell list starting from the stored particles
-	 *
-	 * It differ from the get getCellList for an additional parameter, in case the
-	 * domain + ghost is not big enough to contain additional padding particles, a Cell list
-	 * with bigger space can be created
-	 * (padding particles in general are particles added by the user out of the domains)
-	 *
-	 * \tparam CellL CellList type to construct
-	 *
-	 * \param r_cut interation radius, or size of each cell
-	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
-	 * \param no_se3 avoid se_class3 cheking default false
-	 *
-	 * \return the CellList
-	 *
-	 */
-	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
-	CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
-	{
-#ifdef SE_CLASS3
-		if (no_se3 == false)
-		{se3.getNN();}
-#endif
-
-		CellL cellList;
-
-		// Division array
-		size_t div[dim];
-
-		// get the processor bounding box
-		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
-
-		// Processor bounding box
-		cl_param_calculate(pbox, div, r_cut, enlarge);
-
-		cellList.Initialize(pbox, div);
-		cellList.setGhostMarker(ghostMarker);
-		cellList.set_ndec(getDecomposition().get_ndec());
-
-		updateCellList(cellList,no_se3);
-
-		return cellList;
-	}
-
-	/*! \brief Construct an hilbert cell list starting from the stored particles
-	 *
-	 * It differ from the get getCellList for an additional parameter, in case the
-	 * domain + ghost is not big enough to contain additional padding particles, a Cell list
-	 * with bigger space can be created
-	 * (padding particles in general are particles added by the user out of the domains)
-	 *
-	 * \tparam CellL CellList type to construct
-	 *
-	 * \param r_cut interation radius, or size of each cell
-	 * \param enlarge In case of padding particles the cell list must be enlarged, like a ghost this parameter say how much must be enlarged
-	 *
-	 * \return The Cell-list
-	 *
-	 */
-	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > > CellL getCellList_hilb(St r_cut, const Ghost<dim, St> & enlarge)
-	{
-#ifdef SE_CLASS3
-		se3.getNN();
-#endif
-
-		CellL cellList(CL_HILBERT_CELL_KEYS);
-
-		// Division array
-		size_t div[dim];
-
-		// get the processor bounding box
-		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
-
-		// Processor bounding box
-		cl_param_calculate(pbox,div, r_cut, enlarge);
-
-		cellList.Initialize(pbox, div);
-		cellList.setGhostMarker(ghostMarker);
-		cellList.set_ndec(getDecomposition().get_ndec());
-
-		updateCellList(cellList);
-
-		return cellList;
 	}
 
 	/*! \brief for each particle get the symmetric verlet list
@@ -1831,7 +1550,7 @@ public:
 		else if (opt == VL_CRS_SYMMETRIC)
 		{
 #ifdef SE_CLASS1
-			if ((opt & BIND_DEC_TO_GHOST))
+			if ((this->opt & BIND_DEC_TO_GHOST))
 			{
 				std::cerr << __FILE__ << ":" << __LINE__ << " Error the vector has been constructed without BIND_DEC_TO_GHOST, updateVerlet with the option VL_CRS_SYMMETRIC require the vector to be constructed with BIND_DEC_TO_GHOST option " << std::endl;
 				ACTION_ON_ERROR(VECTOR_DIST_ERROR_OBJECT);
@@ -2016,8 +1735,8 @@ public:
 		// Use cellList to reorder vPos
 
 		//destination vector
-		openfpm::vector<Point<dim,St>> v_pos_dest;
-		openfpm::vector<prop> v_prp_dest;
+		openfpm::vector<Point<dim,St>> vPosReorder;
+		openfpm::vector<prop> vPrpReorder;
 
 		size_t div[dim];
 		for (size_t i = 0 ; i < dim ; i++)
@@ -2026,10 +1745,10 @@ public:
 		grid_sm<dim,void> gs(div);
 		grid_key_dx_iterator<dim> h_it(gs);
 
-		reorder_sfc<CellL,grid_key_dx_iterator<dim>>(v_pos_dest,v_prp_dest,h_it,cellList);
+		reorder_sfc<CellL,grid_key_dx_iterator<dim>>(vPosReorder,vPrpReorder,h_it,cellList);
 
-		vPos.swap(v_pos_dest);
-		vPrp.swap(v_prp_dest);
+		vPos.swap(vPosReorder);
+		vPrp.swap(vPrpReorder);
 	}
 
 	/*! \brief It return the number of particles contained by the previous processors

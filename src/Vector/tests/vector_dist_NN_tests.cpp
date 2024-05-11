@@ -381,7 +381,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_update_with_limit )
 	vd.getDecomposition().decompose();
 	vd.map();
 
-	vd.updateCellListSym(NN);
+	vd.updateCellList(NN);
 
 	auto cell2 = NN.getCellBox();
 
