@@ -34,7 +34,7 @@
 #include "DLB/LB_Model.hpp"
 #include "Vector/vector_map_iterator.hpp"
 #include "NN/CellList/ParticleIt_Cells.hpp"
-#include "NN/CellList/ProcKeys.hpp"
+#include "NN/CellList/SFCKeys.hpp"
 #include "Vector/vector_dist_kernel.hpp"
 #include "NN/CellList/cuda/CellList_gpu.hpp"
 #include "lib/pdata.hpp"
