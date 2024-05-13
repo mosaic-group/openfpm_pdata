@@ -8,7 +8,7 @@
 #ifndef SRC_VECTOR_VECTOR_DIST_MULTIPHASE_FUNCTIONS_HPP_
 #define SRC_VECTOR_VECTOR_DIST_MULTIPHASE_FUNCTIONS_HPP_
 
-#include "NN/CellList/CellListM.hpp"
+#include "NN/CellList/multiphase/CellListM.hpp"
 #include "NN/VerletList/VerletListM.hpp"
 
 template<typename Vector, typename CL, typename T>
