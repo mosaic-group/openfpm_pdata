@@ -229,7 +229,7 @@ template<unsigned int dim, typename v_dist> void vd_initialize_double(v_dist & v
  */
 template<unsigned int dim, size_t prp = 0, typename T, typename V> void calc_forces_hilb(T & NN, V & vd, float r_cut)
 {
-	auto it_cl = NN.getCellIterator();
+	auto it_cl = NN.getCellParticleIterator();
 
 	float sum[dim];
 
