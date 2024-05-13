@@ -1105,7 +1105,7 @@ public:
 	template<typename CellList_type = CellList<dim, St, Mem_fast<>, shift<dim, St>,internal_position_vector_type > >
 	CellList_type getCellListSym(St r_cut, size_t opt = CL_LINEAR_CELL_KEYS)
 	{
-		return getCellList(opt | CL_SYMMETRIC);
+		return getCellList(r_cut, opt | CL_SYMMETRIC);
 	}
 
 	/*! \brief Construct a local symmetric cell list based on a cut-off radius
@@ -1120,7 +1120,7 @@ public:
 	template<typename CellList_type = CellList<dim, St, Mem_fast<>, shift<dim, St>,internal_position_vector_type > >
 	CellList_type getCellListSymLocal(St r_cut, size_t opt = CL_LINEAR_CELL_KEYS)
 	{
-		return getCellList(opt | CL_LOCAL_SYMMETRIC);
+		return getCellList(r_cut, opt | CL_LOCAL_SYMMETRIC);
 	}
 
 	/*! \brief Construct a cell list starting from the stored particles
