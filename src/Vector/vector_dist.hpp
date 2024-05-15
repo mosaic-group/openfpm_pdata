@@ -1529,7 +1529,7 @@ public:
 		se3.getNN();
 #endif
 
-		if (opt == VL_SYMMETRIC)
+		if (opt & VL_SYMMETRIC)
 		{
 			auto & NN = ver.getInternalCellList();
 
@@ -1537,17 +1537,19 @@ public:
 			// processor. if it is not like that we have to completely reconstruct from stratch
 			bool to_reconstruct = NN.get_ndec() != getDecomposition().get_ndec();
 
-			if (to_reconstruct == false)
-				ver.update(getDecomposition().getDomain(),r_cut,vPos,ghostMarker, opt);
-			else
-			{
+			if (to_reconstruct == false) {
+				ver.update(getDecomposition().getDomain(),r_cut,vPos,ghostMarker,opt);
+			}
+
+			else {
 				VerletList<dim,St,Mem_type,shift<dim,St> > ver_tmp;
 
 				ver_tmp = getVerlet<VerletList<dim,St,Mem_type,shift<dim,St> >>(r_cut);
+				ver_tmp.setOpt(opt);
 				ver.swap(ver_tmp);
 			}
 		}
-		else if (opt == VL_CRS_SYMMETRIC)
+		else if (opt & VL_CRS_SYMMETRIC)
 		{
 #ifdef SE_CLASS1
 			if ((this->opt & BIND_DEC_TO_GHOST))
