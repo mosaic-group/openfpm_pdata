@@ -1409,23 +1409,10 @@ public:
 	 * \return the verlet list
 	 *
 	 */
-	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St> >>
+	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
 	VerletL getVerletSym(St r_cut)
 	{
-#ifdef SE_CLASS3
-		se3.getNN();
-#endif
-
-		VerletL ver;
-
-		// Processor bounding box
-		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
-
-		ver.InitializeSym(getDecomposition().getDomain(),pbox,getDecomposition().getGhost(),r_cut,vPos,ghostMarker);
-
-		ver.set_ndec(getDecomposition().get_ndec());
-
-		return ver;
+		return getVerlet<VerletL>(r_cut, VL_SYMMETRIC);
 	}
 
 	/*! \brief for each particle get the symmetric verlet list
@@ -1435,7 +1422,7 @@ public:
 	 * \return the verlet list
 	 *
 	 */
-	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St> >>
+	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
 	VerletL getVerletCrs(St r_cut)
 	{
 #ifdef SE_CLASS1
@@ -1450,7 +1437,7 @@ public:
 		se3.getNN();
 #endif
 
-		VerletL ver;
+		VerletL ver(VL_CRS_SYMMETRIC);
 
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
@@ -1485,30 +1472,37 @@ public:
 	/*! \brief for each particle get the verlet list
 	 *
 	 * \param r_cut cut-off radius
+	 * \param opt bit-wise options flags
 	 *
 	 * \return a VerletList object
 	 *
 	 */
-	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St>,decltype(vPos) >>
-	VerletL getVerlet(St r_cut)
+	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
+	VerletL getVerlet(St r_cut, size_t opt = VL_NON_SYMMETRIC)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
 
-		VerletL ver;
+		VerletL ver(opt);
 
 		// get the processor bounding box
-		Box<dim, St> bt = getDecomposition().getProcessorBounds();
+		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
 
-		// Get the ghost
-		Ghost<dim,St> g = getDecomposition().getGhost();
-		g.magnify(1.013);
+		if (opt & VL_SYMMETRIC)
+		{
+			ver.InitializeSym(getDecomposition().getDomain(),pbox,getDecomposition().getGhost(),r_cut,vPos,ghostMarker);
+		}
 
-		// enlarge the box where the Verlet is defined
-		bt.enlarge(g);
+		else
+		{
+			Ghost<dim,St> g = getDecomposition().getGhost();
+			g.magnify(1.013);
+			// enlarge the box where the Verlet is defined
+			pbox.enlarge(g);
 
-		ver.Initialize(bt,getDecomposition().getProcessorBounds(),r_cut,vPos,ghostMarker,VL_NON_SYMMETRIC);
+			ver.Initialize(pbox,getDecomposition().getProcessorBounds(),r_cut,vPos,ghostMarker);
+		}
 
 		ver.set_ndec(getDecomposition().get_ndec());
 
@@ -1520,16 +1514,15 @@ public:
 	 * \param r_cut cut-off radius
 	 * \param ver Verlet to update
 	 * \param r_cut cutoff radius
-	 * \param opt option like VL_SYMMETRIC and VL_NON_SYMMETRIC or VL_CRS_SYMMETRIC
 	 *
 	 */
-	template<typename Mem_type> void updateVerlet(VerletList<dim,St,Mem_type,shift<dim,St> > & ver, St r_cut, size_t opt = VL_NON_SYMMETRIC)
+	template<typename Mem_type> void updateVerlet(VerletList<dim,St,Mem_type,shift<dim,St> > & ver, St r_cut)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
 
-		if (opt & VL_SYMMETRIC)
+		if ((ver.getOpt() & VL_SYMMETRIC) || (ver.getOpt() & VL_NON_SYMMETRIC))
 		{
 			auto & NN = ver.getInternalCellList();
 
@@ -1537,19 +1530,18 @@ public:
 			// processor. if it is not like that we have to completely reconstruct from stratch
 			bool to_reconstruct = NN.get_ndec() != getDecomposition().get_ndec();
 
-			if (to_reconstruct == false) {
-				ver.update(getDecomposition().getDomain(),r_cut,vPos,ghostMarker,opt);
+			if (to_reconstruct == false)
+			{
+				ver.update(getDecomposition().getDomain(),r_cut,vPos,ghostMarker);
 			}
 
-			else {
-				VerletList<dim,St,Mem_type,shift<dim,St> > ver_tmp;
-
-				ver_tmp = getVerlet<VerletList<dim,St,Mem_type,shift<dim,St> >>(r_cut);
-				ver_tmp.setOpt(opt);
+			else
+			{
+				VerletList<dim,St,Mem_type,shift<dim,St>> ver_tmp = getVerlet<VerletList<dim,St,Mem_type,shift<dim,St> >>(r_cut, ver.getOpt());
 				ver.swap(ver_tmp);
 			}
 		}
-		else if (opt & VL_CRS_SYMMETRIC)
+		else if (ver.getOpt() & VL_CRS_SYMMETRIC)
 		{
 #ifdef SE_CLASS1
 			if ((this->opt & BIND_DEC_TO_GHOST))
@@ -1585,27 +1577,7 @@ public:
 			}
 			else
 			{
-				VerletList<dim,St,Mem_type,shift<dim,St> > ver_tmp;
-
-				ver_tmp = getVerletCrs<VerletList<dim,St,Mem_type,shift<dim,St> >>(r_cut);
-				ver.swap(ver_tmp);
-			}
-		}
-		else
-		{
-			auto & NN = ver.getInternalCellList();
-
-			// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
-			// processor. if it is not like that we have to completely reconstruct from stratch
-			bool to_reconstruct = NN.get_ndec() != getDecomposition().get_ndec();
-
-			if (to_reconstruct == false)
-				ver.update(getDecomposition().getDomain(),r_cut,vPos,ghostMarker, opt);
-			else
-			{
-				VerletList<dim,St,Mem_type,shift<dim,St> > ver_tmp;
-
-				ver_tmp = getVerlet<VerletList<dim,St,Mem_type,shift<dim,St> >>(r_cut);
+				VerletList<dim,St,Mem_type,shift<dim,St>> ver_tmp = getVerletCrs<VerletList<dim,St,Mem_type,shift<dim,St> >>(r_cut);
 				ver.swap(ver_tmp);
 			}
 		}
