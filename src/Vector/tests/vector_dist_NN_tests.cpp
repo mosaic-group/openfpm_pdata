@@ -13,7 +13,11 @@
 
 extern void print_test_v(std::string test, size_t sz);
 
-template<typename VerletList>
+template<unsigned int opt> using VERLET_MEMFAST_OPT = VERLET_MEMFAST<3,float,opt>;
+template<unsigned int opt> using VERLET_MEMBAL_OPT = VERLET_MEMBAL<3,float,opt>;
+template<unsigned int opt> using VERLET_MEMMW_OPT = VERLET_MEMMW<3,float,opt>;
+
+template<template <unsigned int> class VerletList>
 void test_full_nn(long int k)
 {
 	Vcluster<> & v_cl = create_vcluster();
@@ -133,7 +137,7 @@ void test_full_nn(long int k)
 
 		///////////////////////////////////
 
-		auto NNv = vd.template getVerlet<VerletList>(r_cut*1.0001);
+		auto NNv = vd.template getVerlet<VerletList<VL_NON_SYMMETRIC>>(r_cut*1.0001);
 
 		it = vd.getDomainIterator();
 
@@ -230,12 +234,12 @@ BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
     long int k = 750 * v_cl.getProcessingUnits();
 #endif
 
-	test_full_nn<VERLET_MEMFAST(3,float)>(k);
+	test_full_nn<VERLET_MEMFAST_OPT>(k);
 
 	k /= 2;
-	test_full_nn<VERLET_MEMBAL(3,float)>(k);
+	test_full_nn<VERLET_MEMBAL_OPT>(k);
 	k /= 2;
-	test_full_nn<VERLET_MEMMW(3,float)>(k);
+	test_full_nn<VERLET_MEMMW_OPT>(k);
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_particle_iteration )

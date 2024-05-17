@@ -15,6 +15,14 @@
 extern void print_test_v(std::string test, size_t sz);
 extern long int decrement(long int k, long int step);
 
+template<unsigned int opt> using VERLET_MEMFAST_OPT = VERLET_MEMFAST<3,float,opt>;
+template<unsigned int opt> using VERLET_MEMBAL_OPT = VERLET_MEMBAL<3,float,opt>;
+template<unsigned int opt> using VERLET_MEMMW_OPT = VERLET_MEMMW<3,float,opt>;
+
+template<unsigned int opt> using VERLET_MEMFAST_INT_OPT = VERLET_MEMFAST_INT<3,float,opt>;
+template<unsigned int opt> using VERLET_MEMBAL_INT_OPT = VERLET_MEMBAL_INT<3,float,opt>;
+template<unsigned int opt> using VERLET_MEMMW_INT_OPT = VERLET_MEMMW_INT<3,float,opt>;
+
 ///////////////////////// test hilb ///////////////////////////////
 
 void test_reorder_sfc(reorder_opt opt)
@@ -1070,7 +1078,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 	BOOST_REQUIRE_EQUAL(ret,true);
 }
 
-template<typename VerletList>
+template<template <unsigned int> class VerletList>
 void test_vd_symmetric_verlet_list()
 {
 	Vcluster<> & v_cl = create_vcluster();
@@ -1146,7 +1154,7 @@ void test_vd_symmetric_verlet_list()
 	// sync the ghost
 	vd.template ghost_get<0,2>();
 
-	auto NN = vd.template getVerlet<VerletList>(r_cut);
+	auto NN = vd.template getVerlet<VerletList<VL_NON_SYMMETRIC>>(r_cut);
 	auto p_it = vd.getDomainIterator();
 
 	while (p_it.isNext())
@@ -1192,7 +1200,7 @@ void test_vd_symmetric_verlet_list()
 
 	// We now try symmetric  Cell-list
 
-	auto NN2 = vd.template getVerletSym<VerletList>(r_cut);
+	auto NN2 = vd.template getVerletSym<VerletList<VL_SYMMETRIC>>(r_cut);
 
 	auto p_it2 = vd.getDomainIterator();
 
@@ -1274,12 +1282,12 @@ void test_vd_symmetric_verlet_list()
 
 BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list )
 {
-	test_vd_symmetric_verlet_list<VERLET_MEMFAST(3,float)>();
-	test_vd_symmetric_verlet_list<VERLET_MEMBAL(3,float)>();
-	test_vd_symmetric_verlet_list<VERLET_MEMMW(3,float)>();
+	test_vd_symmetric_verlet_list<VERLET_MEMFAST_OPT>();
+	test_vd_symmetric_verlet_list<VERLET_MEMBAL_OPT>();
+	test_vd_symmetric_verlet_list<VERLET_MEMMW_OPT>();
 }
 
-template<typename VerletList>
+template<template <unsigned int> class VerletList>
 void vector_sym_verlet_list_nb()
 {
 	Vcluster<> & v_cl = create_vcluster();
@@ -1372,7 +1380,7 @@ void vector_sym_verlet_list_nb()
 		vd.template ghost_get<0,2>();
 		vd2.template ghost_get<0,2>();
 
-		auto NN = vd.template getVerlet<VerletList>(r_cut);
+		auto NN = vd.template getVerlet<VerletList<VL_NON_SYMMETRIC>>(r_cut);
 		auto p_it = vd.getDomainIterator();
 
 		while (p_it.isNext())
@@ -1418,7 +1426,7 @@ void vector_sym_verlet_list_nb()
 
 		// We now try symmetric  Cell-list
 
-		auto NN2 = vd2.template getVerletSym<VerletList>(r_cut);
+		auto NN2 = vd2.template getVerletSym<VerletList<VL_SYMMETRIC>>(r_cut);
 
 		auto p_it2 = vd2.getDomainIterator();
 
@@ -1506,21 +1514,23 @@ void vector_sym_verlet_list_nb()
 
 BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list_no_bottom )
 {
-	vector_sym_verlet_list_nb<VERLET_MEMFAST(3,float)>();
-	vector_sym_verlet_list_nb<VERLET_MEMBAL(3,float)>();
-	vector_sym_verlet_list_nb<VERLET_MEMMW(3,float)>();
+	vector_sym_verlet_list_nb<VERLET_MEMFAST_OPT>();
+	vector_sym_verlet_list_nb<VERLET_MEMBAL_OPT>();
+	vector_sym_verlet_list_nb<VERLET_MEMMW_OPT>();
 
-	vector_sym_verlet_list_nb<VERLET_MEMFAST_INT(3,float)>();
-	vector_sym_verlet_list_nb<VERLET_MEMBAL_INT(3,float)>();
-	vector_sym_verlet_list_nb<VERLET_MEMMW_INT(3,float)>();
+	vector_sym_verlet_list_nb<VERLET_MEMFAST_INT_OPT>();
+	vector_sym_verlet_list_nb<VERLET_MEMBAL_INT_OPT>();
+	vector_sym_verlet_list_nb<VERLET_MEMMW_INT_OPT>();
 }
 
-template<typename VerletList, typename part_prop> void test_crs_full(vector_dist<3,float, part_prop > & vd,
-		                                        vector_dist<3,float, part_prop > & vd2,
-												std::default_random_engine & eg,
-												std::uniform_real_distribution<float> & ud,
-												size_t start,
-												float r_cut)
+template<template <unsigned int> class VerletList, typename part_prop>
+void test_crs_full(
+	vector_dist<3,float, part_prop > & vd,
+	vector_dist<3,float, part_prop > & vd2,
+	std::default_random_engine & eg,
+	std::uniform_real_distribution<float> & ud,
+	size_t start,
+	float r_cut)
 {
 	auto it = vd.getIterator();
 
@@ -1556,7 +1566,7 @@ template<typename VerletList, typename part_prop> void test_crs_full(vector_dist
 	vd.template ghost_get<0,2>();
 	vd2.template ghost_get<0,2>();
 
-	auto NN = vd.template getVerlet<VerletList>(r_cut);
+	auto NN = vd.template getVerlet<VerletList<VL_NON_SYMMETRIC>>(r_cut);
 	auto p_it = vd.getDomainIterator();
 
 	while (p_it.isNext())
@@ -1602,7 +1612,7 @@ template<typename VerletList, typename part_prop> void test_crs_full(vector_dist
 
 	// We now try symmetric Verlet-list Crs scheme
 
-	auto NN2 = vd2.template getVerletCrs<VerletList>(r_cut);
+	auto NN2 = vd2.template getVerletCrs<VerletList<VL_CRS_SYMMETRIC>>(r_cut);
 
 	// Because iterating across particles in the CSR scheme require a Cell-list
 	auto p_it2 = vd2.getParticleIteratorCRS_Cell(NN2.getInternalCellList());
@@ -1691,7 +1701,7 @@ template<typename VerletList, typename part_prop> void test_crs_full(vector_dist
 	BOOST_REQUIRE_EQUAL(ret,true);
 }
 
-template<typename VerletList>
+template<template <unsigned int> class VerletList>
 void test_csr_verlet_list()
 {
 	Vcluster<> & v_cl = create_vcluster();
@@ -1751,7 +1761,7 @@ void test_csr_verlet_list()
 	test_crs_full<VerletList>(vd,vd2,eg,ud,start,r_cut);
 }
 
-template<typename VerletList>
+template<template <unsigned int> class VerletList>
 void test_csr_verlet_list_override()
 {
 	Vcluster<> & v_cl = create_vcluster();
@@ -1827,19 +1837,19 @@ void test_csr_verlet_list_override()
 
 BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_verlet_list )
 {
-	test_csr_verlet_list<VERLET_MEMFAST(3,float)>();
-	test_csr_verlet_list<VERLET_MEMBAL(3,float)>();
-	test_csr_verlet_list<VERLET_MEMMW(3,float)>();
+	test_csr_verlet_list<VERLET_MEMFAST_OPT>();
+	test_csr_verlet_list<VERLET_MEMBAL_OPT>();
+	test_csr_verlet_list<VERLET_MEMMW_OPT>();
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_verlet_list_dec_override )
 {
-	test_csr_verlet_list_override<VERLET_MEMFAST(3,float)>();
-	test_csr_verlet_list_override<VERLET_MEMBAL(3,float)>();
-	test_csr_verlet_list_override<VERLET_MEMMW(3,float)>();
+	test_csr_verlet_list_override<VERLET_MEMFAST_OPT>();
+	test_csr_verlet_list_override<VERLET_MEMBAL_OPT>();
+	test_csr_verlet_list_override<VERLET_MEMMW_OPT>();
 }
 
-template <typename VerletList>
+template <template <unsigned int> class VerletList>
 void test_vd_symmetric_crs_verlet()
 {
 	Vcluster<> & v_cl = create_vcluster();
@@ -1909,7 +1919,7 @@ void test_vd_symmetric_crs_verlet()
 
 	// We now try symmetric Verlet-list Crs scheme
 
-	auto NN2 = vd.template getVerletCrs<VerletList>(r_cut);
+	auto NN2 = vd.template getVerletCrs<VerletList<VL_CRS_SYMMETRIC>>(r_cut);
 
 	// Because iterating across particles in the CSR scheme require a Cell-list
 	auto p_it2 = vd.getParticleIteratorCRS_Cell(NN2.getInternalCellList());
@@ -1934,9 +1944,9 @@ void test_vd_symmetric_crs_verlet()
 
 BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_verlet_list_partit )
 {
-	test_vd_symmetric_crs_verlet<VERLET_MEMFAST(3,float)>();
-	test_vd_symmetric_crs_verlet<VERLET_MEMBAL(3,float)>();
-	test_vd_symmetric_crs_verlet<VERLET_MEMMW(3,float)>();
+	test_vd_symmetric_crs_verlet<VERLET_MEMFAST_OPT>();
+	test_vd_symmetric_crs_verlet<VERLET_MEMBAL_OPT>();
+	test_vd_symmetric_crs_verlet<VERLET_MEMMW_OPT>();
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_checking_unloaded_processors )
@@ -2088,9 +2098,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_list_multi_type )
 	bool ret = true;
 
 	// We take different type of Cell-list
-	auto NN = vd.getCellList<CELL_MEMFAST(3,float)>(r_cut);
-	auto NN2 = vd.getCellList<CELL_MEMBAL(3,float)>(r_cut);
-	auto NN3 = vd.getCellList<CELL_MEMMW(3,float)>(r_cut);
+	auto NN = vd.getCellList<CELL_MEMFAST<3,float>>(r_cut);
+	auto NN2 = vd.getCellList<CELL_MEMBAL<3,float>>(r_cut);
+	auto NN3 = vd.getCellList<CELL_MEMMW<3,float>>(r_cut);
 
 	auto p_it = vd.getDomainIterator();
 

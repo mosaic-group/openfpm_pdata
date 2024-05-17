@@ -73,19 +73,6 @@ constexpr int PUT = 2;
 constexpr int NO_GHOST = 0;
 constexpr int WITH_GHOST = 2;
 
-
-#define CELL_MEMFAST(dim,St) CellList<dim, St, Mem_fast<>, shift<dim, St> >
-#define CELL_MEMBAL(dim,St) CellList<dim, St, Mem_bal<>, shift<dim, St> >
-#define CELL_MEMMW(dim,St) CellList<dim, St, Mem_mw<>, shift<dim, St> >
-
-#define VERLET_MEMFAST(dim,St) VerletList<dim,St,Mem_fast<>,shift<dim,St> >
-#define VERLET_MEMBAL(dim,St)  VerletList<dim,St,Mem_bal<>,shift<dim,St> >
-#define VERLET_MEMMW(dim,St)   VerletList<dim,St,Mem_mw<>,shift<dim,St> >
-
-#define VERLET_MEMFAST_INT(dim,St) VerletList<dim,St,Mem_fast<HeapMemory,unsigned int>,shift<dim,St> >
-#define VERLET_MEMBAL_INT(dim,St)  VerletList<dim,St,Mem_bal<unsigned int>,shift<dim,St> >
-#define VERLET_MEMMW_INT(dim,St)   VerletList<dim,St,Mem_mw<unsigned int>,shift<dim,St> >
-
 enum reorder_opt
 {
 	NO_REORDER = 0,
@@ -1409,10 +1396,10 @@ public:
 	 * \return the verlet list
 	 *
 	 */
-	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
+	template <typename VerletL = VerletList<dim,St,VL_SYMMETRIC,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
 	VerletL getVerletSym(St r_cut)
 	{
-		return getVerlet<VerletL>(r_cut, VL_SYMMETRIC);
+		return getVerlet<VerletL>(r_cut);
 	}
 
 	/*! \brief for each particle get the symmetric verlet list
@@ -1422,7 +1409,7 @@ public:
 	 * \return the verlet list
 	 *
 	 */
-	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
+	template <typename VerletL = VerletList<dim,St,VL_CRS_SYMMETRIC,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
 	VerletL getVerletCrs(St r_cut)
 	{
 #ifdef SE_CLASS1
@@ -1437,7 +1424,7 @@ public:
 		se3.getNN();
 #endif
 
-		VerletL ver(VL_CRS_SYMMETRIC);
+		VerletL ver;
 
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
@@ -1477,14 +1464,14 @@ public:
 	 * \return a VerletList object
 	 *
 	 */
-	template <typename VerletL = VerletList<dim,St,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
-	VerletL getVerlet(St r_cut, size_t opt = VL_NON_SYMMETRIC)
+	template <typename VerletL = VerletList<dim,St,VL_NON_SYMMETRIC,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
+	VerletL getVerlet(St r_cut)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
 
-		VerletL ver(opt);
+		VerletL ver;
 
 		// get the processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
@@ -1516,13 +1503,12 @@ public:
 	 * \param r_cut cutoff radius
 	 *
 	 */
-	template<typename Mem_type> void updateVerlet(VerletList<dim,St,Mem_type,shift<dim,St> > & ver, St r_cut)
+	template<unsigned int opt, typename Mem_type> void updateVerlet(VerletList<dim,St,opt,Mem_type,shift<dim,St> > & ver, St r_cut)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
-
-		if ((ver.getOpt() & VL_SYMMETRIC) || (ver.getOpt() & VL_NON_SYMMETRIC))
+		if ((opt & VL_SYMMETRIC) || (opt & VL_NON_SYMMETRIC))
 		{
 			auto & NN = ver.getInternalCellList();
 
@@ -1537,11 +1523,11 @@ public:
 
 			else
 			{
-				VerletList<dim,St,Mem_type,shift<dim,St>> ver_tmp = getVerlet<VerletList<dim,St,Mem_type,shift<dim,St> >>(r_cut, ver.getOpt());
+				VerletList<dim,St,opt,Mem_type,shift<dim,St>> ver_tmp = getVerlet<VerletList<dim,St,opt,Mem_type,shift<dim,St>>>(r_cut);
 				ver.swap(ver_tmp);
 			}
 		}
-		else if (ver.getOpt() & VL_CRS_SYMMETRIC)
+		else if (opt & VL_CRS_SYMMETRIC)
 		{
 #ifdef SE_CLASS1
 			if ((this->opt & BIND_DEC_TO_GHOST))
@@ -1577,7 +1563,7 @@ public:
 			}
 			else
 			{
-				VerletList<dim,St,Mem_type,shift<dim,St>> ver_tmp = getVerletCrs<VerletList<dim,St,Mem_type,shift<dim,St> >>(r_cut);
+				VerletList<dim,St,opt,Mem_type,shift<dim,St>> ver_tmp = getVerletCrs<VerletList<dim,St,opt,Mem_type,shift<dim,St> >>(r_cut);
 				ver.swap(ver_tmp);
 			}
 		}
