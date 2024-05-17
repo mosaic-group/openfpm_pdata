@@ -1396,10 +1396,10 @@ public:
 	 * \return the verlet list
 	 *
 	 */
-	template <typename VerletL = VerletList<dim,St,VL_SYMMETRIC,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
-	VerletL getVerletSym(St r_cut)
+	template <typename VerletList_type = VerletList<dim,St,VL_SYMMETRIC,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
+	VerletList_type getVerletSym(St r_cut)
 	{
-		return getVerlet<VerletL>(r_cut);
+		return getVerlet<VerletList_type>(r_cut);
 	}
 
 	/*! \brief for each particle get the symmetric verlet list
@@ -1409,8 +1409,8 @@ public:
 	 * \return the verlet list
 	 *
 	 */
-	template <typename VerletL = VerletList<dim,St,VL_CRS_SYMMETRIC,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
-	VerletL getVerletCrs(St r_cut)
+	template <typename VerletList_type = VerletList<dim,St,VL_CRS_SYMMETRIC,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
+	VerletList_type getVerletCrs(St r_cut)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -1424,7 +1424,7 @@ public:
 		se3.getNN();
 #endif
 
-		VerletL ver;
+		VerletList_type ver;
 
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
@@ -1459,24 +1459,28 @@ public:
 	/*! \brief for each particle get the verlet list
 	 *
 	 * \param r_cut cut-off radius
-	 * \param opt bit-wise options flags
+	 * \param nMax Max number of neighboring particles added per p (sorted by distance). By default all are included
+	 *	Should be supplied additionally with option flag VL_NMAX_NEIGHBOR to VerletList_type template type
 	 *
 	 * \return a VerletList object
 	 *
 	 */
-	template <typename VerletL = VerletList<dim,St,VL_NON_SYMMETRIC,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
-	VerletL getVerlet(St r_cut)
+	template <typename VerletList_type = VerletList<dim,St,VL_NON_SYMMETRIC,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
+	VerletList_type getVerlet(St r_cut, size_t neighborMaxNum = 0)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
 
-		VerletL ver;
+		VerletList_type ver;
+
+		if (neighborMaxNum)
+			ver.setNeighborMaxNum(neighborMaxNum);
 
 		// get the processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
 
-		if (opt & VL_SYMMETRIC)
+		if (ver.getOpt() & VL_SYMMETRIC)
 		{
 			ver.InitializeSym(getDecomposition().getDomain(),pbox,getDecomposition().getGhost(),r_cut,vPos,ghostMarker);
 		}
@@ -1503,7 +1507,8 @@ public:
 	 * \param r_cut cutoff radius
 	 *
 	 */
-	template<unsigned int opt, typename Mem_type> void updateVerlet(VerletList<dim,St,opt,Mem_type,shift<dim,St> > & ver, St r_cut)
+	template<unsigned int opt, typename Mem_type>
+	void updateVerlet(VerletList<dim,St,opt,Mem_type,shift<dim,St> > & ver, St r_cut)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
