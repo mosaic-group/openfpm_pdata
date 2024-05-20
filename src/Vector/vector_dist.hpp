@@ -1430,7 +1430,7 @@ public:
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
 
 		// Initialize the verlet list
-		verletList.InitializeCrs(getDecomposition().getDomain(),pbox,getDecomposition().getGhost(),r_cut,vPos,ghostMarker);
+		verletList.initializeCrs(getDecomposition().getDomain(),pbox,getDecomposition().getGhost(),r_cut,vPos,ghostMarker);
 
 		// Get the internal cell list
 		auto & cellList = verletList.getInternalCellList();
@@ -1446,7 +1446,7 @@ public:
 
 		getDecomposition().setNNParameters(shift,gs);
 
-		verletList.createVerletCrs(r_cut,ghostMarker,vPos,
+		verletList.fillCRSSymmetric(r_cut,ghostMarker,vPos,
 			getDecomposition().getCRSDomainCells(),
 			getDecomposition().getCRSAnomDomainCells()
 		);
