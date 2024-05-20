@@ -1424,36 +1424,56 @@ public:
 		se3.getNN();
 #endif
 
-		VerletList_type ver;
+		VerletList_type verletList;
 
 		// Processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
 
 		// Initialize the verlet list
-		ver.InitializeCrs(getDecomposition().getDomain(),pbox,getDecomposition().getGhost(),r_cut,vPos,ghostMarker);
+		verletList.InitializeCrs(getDecomposition().getDomain(),pbox,getDecomposition().getGhost(),r_cut,vPos,ghostMarker);
 
 		// Get the internal cell list
-		auto & NN = ver.getInternalCellList();
+		auto & cellList = verletList.getInternalCellList();
 
 		// Shift
 		grid_key_dx<dim> shift;
 
 		// Add padding
 		for (size_t i = 0 ; i < dim ; i++)
-			shift.set_d(i,NN.getPadding(i));
+			shift.set_d(i,cellList.getPadding(i));
 
-		grid_sm<dim,void> gs = NN.getInternalGrid();
+		grid_sm<dim,void> gs = cellList.getInternalGrid();
 
 		getDecomposition().setNNParameters(shift,gs);
 
-		ver.createVerletCrs(r_cut,ghostMarker,vPos,
+		verletList.createVerletCrs(r_cut,ghostMarker,vPos,
 			getDecomposition().getCRSDomainCells(),
 			getDecomposition().getCRSAnomDomainCells()
 		);
 
-		ver.set_ndec(getDecomposition().get_ndec());
+		verletList.set_ndec(getDecomposition().get_ndec());
 
-		return ver;
+		return verletList;
+	}
+
+	/*! \brief Get Verlet list with unique cut-off radius for every particle
+	 *
+	 * \param rCuts list of cut-off radii for every particle in vPos
+	 *
+	 * \return the verlet list
+	 *
+	 */
+	template <typename VerletList_type = VerletList<dim,St,VL_ADAPTIVE_RCUT,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
+	VerletList_type getVerletAdaptRCut(openfpm::vector<St> &rCuts)
+	{
+#ifdef SE_CLASS3
+		se3.getNN();
+#endif
+
+		VerletList_type verletList;
+		verletList.initializeNonSymmAdaptive(rCuts, vPos, ghostMarker);
+
+		return verletList;
 	}
 
 	/*! \brief for each particle get the verlet list
@@ -1472,17 +1492,17 @@ public:
 		se3.getNN();
 #endif
 
-		VerletList_type ver;
+		VerletList_type verletList;
 
 		if (neighborMaxNum)
-			ver.setNeighborMaxNum(neighborMaxNum);
+			verletList.setNeighborMaxNum(neighborMaxNum);
 
 		// get the processor bounding box
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
 
-		if (ver.getOpt() & VL_SYMMETRIC)
+		if (verletList.getOpt() & VL_SYMMETRIC)
 		{
-			ver.InitializeSym(getDecomposition().getDomain(),pbox,getDecomposition().getGhost(),r_cut,vPos,ghostMarker);
+			verletList.InitializeSym(getDecomposition().getDomain(),pbox,getDecomposition().getGhost(),r_cut,vPos,ghostMarker);
 		}
 
 		else
@@ -1492,44 +1512,44 @@ public:
 			// enlarge the box where the Verlet is defined
 			pbox.enlarge(g);
 
-			ver.Initialize(pbox,getDecomposition().getProcessorBounds(),r_cut,vPos,ghostMarker);
+			verletList.Initialize(pbox,r_cut,vPos,ghostMarker);
 		}
 
-		ver.set_ndec(getDecomposition().get_ndec());
+		verletList.set_ndec(getDecomposition().get_ndec());
 
-		return ver;
+		return verletList;
 	}
 
 	/*! \brief for each particle get the verlet list
 	 *
 	 * \param r_cut cut-off radius
-	 * \param ver Verlet to update
+	 * \param verletList Verlet to update
 	 * \param r_cut cutoff radius
 	 *
 	 */
 	template<unsigned int opt, typename Mem_type>
-	void updateVerlet(VerletList<dim,St,opt,Mem_type,shift<dim,St> > & ver, St r_cut)
+	void updateVerlet(VerletList<dim,St,opt,Mem_type,shift<dim,St> > & verletList, St r_cut)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
 		if ((opt & VL_SYMMETRIC) || (opt & VL_NON_SYMMETRIC))
 		{
-			auto & NN = ver.getInternalCellList();
+			auto & cellList = verletList.getInternalCellList();
 
 			// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
 			// processor. if it is not like that we have to completely reconstruct from stratch
-			bool to_reconstruct = NN.get_ndec() != getDecomposition().get_ndec();
+			bool to_reconstruct = cellList.get_ndec() != getDecomposition().get_ndec();
 
 			if (to_reconstruct == false)
 			{
-				ver.update(getDecomposition().getDomain(),r_cut,vPos,ghostMarker);
+				verletList.update(getDecomposition().getDomain(),r_cut,vPos,ghostMarker);
 			}
 
 			else
 			{
 				VerletList<dim,St,opt,Mem_type,shift<dim,St>> ver_tmp = getVerlet<VerletList<dim,St,opt,Mem_type,shift<dim,St>>>(r_cut);
-				ver.swap(ver_tmp);
+				verletList.swap(ver_tmp);
 			}
 		}
 		else if (opt & VL_CRS_SYMMETRIC)
@@ -1542,11 +1562,11 @@ public:
 			}
 #endif
 
-			auto & NN = ver.getInternalCellList();
+			auto & cellList = verletList.getInternalCellList();
 
 			// Here we have to check that the Box defined by the Cell-list is the same as the domain box of this
 			// processor. if it is not like that we have to completely reconstruct from stratch
-			bool to_reconstruct = NN.get_ndec() != getDecomposition().get_ndec();
+			bool to_reconstruct = cellList.get_ndec() != getDecomposition().get_ndec();
 
 			if (to_reconstruct == false)
 			{
@@ -1555,13 +1575,13 @@ public:
 
 				// Add padding
 				for (size_t i = 0 ; i < dim ; i++)
-					shift.set_d(i,NN.getPadding(i));
+					shift.set_d(i,cellList.getPadding(i));
 
-				grid_sm<dim,void> gs = NN.getInternalGrid();
+				grid_sm<dim,void> gs = cellList.getInternalGrid();
 
 				getDecomposition().setNNParameters(shift,gs);
 
-				ver.updateCrs(getDecomposition().getDomain(),r_cut,vPos,ghostMarker,
+				verletList.updateCrs(getDecomposition().getDomain(),r_cut,vPos,ghostMarker,
 					getDecomposition().getCRSDomainCells(),
 					getDecomposition().getCRSAnomDomainCells()
 				);
@@ -1569,9 +1589,26 @@ public:
 			else
 			{
 				VerletList<dim,St,opt,Mem_type,shift<dim,St>> ver_tmp = getVerletCrs<VerletList<dim,St,opt,Mem_type,shift<dim,St> >>(r_cut);
-				ver.swap(ver_tmp);
+				verletList.swap(ver_tmp);
 			}
 		}
+	}
+
+	/*! \brief Update non-symmetric adaptive r-cut Verlet list
+	 *
+	 * \param verletList Verlet to update
+	 * \param rCuts list of cut-off radii for every particle in pos
+	 *
+	 */
+	template<unsigned int opt, typename Mem_type>
+	void updateVerletAdaptRCut(VerletList<dim,St,opt,Mem_type,shift<dim,St> > & verletList, openfpm::vector<St> &rCuts)
+	{
+#ifdef SE_CLASS3
+		se3.getNN();
+#endif
+		// in this mode the Verlet list doesn't depend on the decomposition counter
+		// has to be fully reconstructed on update
+		verletList.initializeNonSymmAdaptive(rCuts, vPos, ghostMarker);
 	}
 
 
@@ -1833,13 +1870,13 @@ public:
 	/*! \brief Get an iterator that traverse the particles in the domain
 	 *         using a cell list
 	 *
-	 * \param NN Cell-list
+	 * \param cellList Cell-list
 	 *
 	 * \return an iterator over the particles
 	 *
 	 */
 	template<typename CellList> ParticleIt_Cells<dim,CellList>
-	getDomainIteratorCells(CellList & NN)
+	getDomainIteratorCells(CellList & cellList)
 	{
 #ifdef SE_CLASS3
 		se3.getIterator();
@@ -1850,13 +1887,13 @@ public:
 
 		// Add padding
 		for (size_t i = 0 ; i < dim ; i++)
-			shift.set_d(i,NN.getPadding(i));
+			shift.set_d(i,cellList.getPadding(i));
 
-		grid_sm<dim,void> gs = NN.getInternalGrid();
+		grid_sm<dim,void> gs = cellList.getInternalGrid();
 
 		getDecomposition().setNNParameters(shift,gs);
 
-		return ParticleIt_Cells<dim,CellList>(NN,getDecomposition().getDomainCells(),ghostMarker);
+		return ParticleIt_Cells<dim,CellList>(cellList,getDecomposition().getDomainCells(),ghostMarker);
 	}
 
 	/*! \brief Get an iterator that traverse the particles in the domain
@@ -2613,8 +2650,7 @@ public:
 		if ((opt & 0x0FFF0000) == CSV_WRITER)
 		{
 			// CSVWriter test
-			CSVWriter<vector_dist_pos,
-					  vector_dist_prop > csv_writer;
+			CSVWriter<vector_dist_pos, vector_dist_prop> csv_writer;
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".csv"));
 
@@ -2629,8 +2665,7 @@ public:
 				ft = file_type::BINARY;
 
 			// VTKWriter for a set of points
-			VTKWriter<boost::mpl::pair<vector_dist_pos,
-									   vector_dist_prop>, VECTOR_POINTS> vtk_writer;
+			VTKWriter<boost::mpl::pair<vector_dist_pos, vector_dist_prop>, VECTOR_POINTS> vtk_writer;
 			vtk_writer.add(vPos,vPrp,ghostMarker);
 
 			std::string output = std::to_string(out + "_" + std::to_string(v_cl.getProcessUnitID()) + "_" + std::to_string(iteration) + std::to_string(".vtp"));
@@ -2753,12 +2788,12 @@ public:
 	/*! \brief Get a special particle iterator able to iterate across particles using
 	 *         symmetric crossing scheme
 	 *
-	 * \param NN Cell-List neighborhood
+	 * \param cellList Cell-List neighborhood
 	 *
 	 * \return Particle iterator
 	 *
 	 */
-	template<typename cli> ParticleItCRS_Cells<dim,cli,decltype(vPos)> getParticleIteratorCRS_Cell(cli & NN)
+	template<typename cli> ParticleItCRS_Cells<dim,cli,decltype(vPos)> getParticleIteratorCRS_Cell(cli & cellList)
 	{
 #ifdef SE_CLASS3
 		se3.getIterator();
@@ -2777,16 +2812,18 @@ public:
 
 		// Add padding
 		for (size_t i = 0 ; i < dim ; i++)
-			shift.set_d(i,NN.getPadding(i));
+			shift.set_d(i,cellList.getPadding(i));
 
-		grid_sm<dim,void> gs = NN.getInternalGrid();
+		grid_sm<dim,void> gs = cellList.getInternalGrid();
 
 		getDecomposition().setNNParameters(shift,gs);
 
 		// First we check that
-		return ParticleItCRS_Cells<dim,cli,decltype(vPos)>(NN,getDecomposition().getCRSDomainCells(),
-				                               getDecomposition().getCRSAnomDomainCells(),
-											   NN.getNNc_sym());
+		return ParticleItCRS_Cells<dim,cli,decltype(vPos)>(
+			cellList,getDecomposition().getCRSDomainCells(),
+			getDecomposition().getCRSAnomDomainCells(),
+			cellList.getNNc_sym()
+		);
 	}
 
 	/*! \brief Set the properties names
@@ -2815,12 +2852,13 @@ public:
     /*! \brief Get a special particle iterator able to iterate across particles using
 	 *         symmetric crossing scheme
 	 *
-	 * \param NN Verlet list neighborhood
+	 * \param cellList Verlet list neighborhood
 	 *
 	 * \return Particle iterator
 	 *
 	 */
-	template<typename vrl> openfpm::vector_key_iterator_seq<typename vrl::Mem_type_type::local_index_type> getParticleIteratorCRS(vrl & NN)
+	template<typename VerletList_type>
+	openfpm::vector_key_iterator_seq<typename VerletList_type::Mem_type_type::local_index_type> getParticleIteratorCRS(VerletList_type & cellList)
 	{
 #ifdef SE_CLASS1
 		if (!(opt & BIND_DEC_TO_GHOST))
@@ -2831,33 +2869,33 @@ public:
 #endif
 
 		// First we check that
-		return openfpm::vector_key_iterator_seq<typename vrl::Mem_type_type::local_index_type>(NN.getParticleSeq());
+		return openfpm::vector_key_iterator_seq<typename VerletList_type::Mem_type_type::local_index_type>(cellList.getParticleSeq());
 	}
 
 	/*! \brief Return from which cell we have to start in case of CRS interation
 	 *         scheme
 	 *
-	 * \param NN cell-list
+	 * \param cellList cell-list
 	 *
 	 * \return The starting cell point
 	 *
 	 */
-	template<typename Celllist> grid_key_dx<dim> getCRSStart(Celllist & NN)
+	template<typename Celllist> grid_key_dx<dim> getCRSStart(Celllist & cellList)
 	{
-		return NN.getStartDomainCell();
+		return cellList.getStartDomainCell();
 	}
 
 	/*! \brief Return from which cell we have to stop in case of CRS interation
 	 *         scheme
 	 *
-	 * \param NN cell-list
+	 * \param cellList cell-list
 	 *
 	 * \return The stop cell point
 	 *
 	 */
-	template<typename Celllist> grid_key_dx<dim> getCRSStop(Celllist & NN)
+	template<typename Celllist> grid_key_dx<dim> getCRSStop(Celllist & cellList)
 	{
-		grid_key_dx<dim> key = NN.getStopDomainCell();
+		grid_key_dx<dim> key = cellList.getStopDomainCell();
 
 		for (size_t i = 0 ; i < dim ; i++)
 			key.set_d(i,key.get(i) + 1);
