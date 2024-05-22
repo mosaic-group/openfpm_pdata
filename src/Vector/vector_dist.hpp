@@ -183,9 +183,17 @@ private:
 	//! the second element contain unassigned particles
 	vector_dist_pos vPos;
 
+	//! Used when cell list is constructed with CL_GPU_REORDER_POSITION. Stores a copy of vPos
+	//! Stores a sorted copy of vPos in between updateCellListGPU and restoreOrder
+	vector_dist_pos vPosReordered;
+
 	//! Particle properties vector, (It has 2 elements) the first has real particles assigned to a processor
 	//! the second element contain unassigned particles
 	vector_dist_prop vPrp;
+
+	//! Used when cell list is constructed with CL_GPU_REORDER_PROPERTY. Stores a copy of vPrp
+	//! Stores a sorted copy of vPos in between updateCellListGPU and restoreOrder
+	vector_dist_prop vPrpReordered;
 
 	//! option used to create this vector
 	size_t opt = 0;
@@ -1249,7 +1257,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellType = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>>,unsigned int ... prp>
+	template<typename CellType = CellList_gpu<dim,St,CudaMemory,shift_only<dim, St>>>
 	CellType getCellListGPU(St r_cut, size_t opt = CL_NON_SYMMETRIC, size_t NNIteratorBox = 1, bool no_se3 = false, float ghostEnlargeFactor = 1.013)
 	{
 #ifdef SE_CLASS3
@@ -1282,8 +1290,6 @@ public:
 		// If not set, the dafault value of 1 would have been used by construct()
 		cellList.setOpt(opt);
 		cellList.setBoxNN(NNIteratorBox);
-		cellList.template construct<decltype(vPos),decltype(vPrp),prp ...>(vPos,vPrp,v_cl.getGpuContext(),ghostMarker,0,vPos.size());
-
 		cellList.set_ndec(getDecomposition().get_ndec());
 		cellList.setGhostMarker(ghostMarker);
 
@@ -1340,12 +1346,12 @@ public:
 			St r_cut = cellList.getCellBox().getRcut();
 
 			if (cellList.getOpt() & CL_SYMMETRIC) {
-				CellL cellListTmp = getCellListSym(cellList.getDivWP(), cellList.getPadding());
+				CellL cellListTmp = getCellListSym<CellL>(cellList.getDivWP(), cellList.getPadding());
 				cellList.swap(cellListTmp);
 			}
 
 			else {
-				CellL cellListTmp = getCellList(r_cut, cellList.getOpt());
+				CellL cellListTmp = getCellList<CellL>(r_cut, cellList.getOpt());
 				cellList.swap(cellListTmp);
 			}
 
@@ -1367,6 +1373,13 @@ public:
 		if (no_se3 == false)
 		{se3.getNN();}
 #endif
+		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
+
+		if (cellList.getOpt() & CL_GPU_REORDER_POSITION)
+			vPosReordered.resize(vPos.size());
+
+		if (cellList.getOpt() & CL_GPU_REORDER_PROPERTY)
+			vPrpReordered.resize(vPrp.size());
 
 		// Here we have to check that the Cell-list has been constructed
 		// from the same decomposition
@@ -1374,15 +1387,48 @@ public:
 
 		if (to_reconstruct == false)
 		{
-			cellList.fill(vPos, vPrp, ghostMarker);
+			if (cellList.getOpt() & CL_GPU_REORDER_POSITION || cellList.getOpt() & CL_GPU_REORDER_PROPERTY) {
+				cellList.template construct<decltype(vPos),decltype(vPrp),prp ...>(
+					vPos,
+					vPrp,
+					vPosReordered,
+					vPrpReordered,
+					v_cl.getGpuContext(),
+					ghostMarker,
+					0,
+					vPos.size());
+
+				if (cellList.getOpt() & CL_GPU_REORDER_POSITION) vPos.swap(vPosReordered);
+				if (cellList.getOpt() & CL_GPU_REORDER_PROPERTY) vPrp.swap(vPrpReordered);
+			}
+			else
+				cellList.construct(vPos,vPrp,v_cl.getGpuContext(),ghostMarker,0,vPos.size());
 		}
+
 		else
 		{
 			// This function assume equal spacing in all directions
 			// but in the worst case we take the maximum
 			St r_cut = cellList.getCellBox().getRcut();
 
-			CellList_type cellListTmp = getCellListGPU<CellList_type,prp...>(r_cut, cellList.getOpt());
+			CellList_type cellListTmp = getCellListGPU<CellList_type>(r_cut, cellList.getOpt(), cellList.getBoxNN());
+
+			if (cellList.getOpt() & CL_GPU_REORDER_POSITION || cellList.getOpt() & CL_GPU_REORDER_PROPERTY) {
+				cellListTmp.template construct<decltype(vPos),decltype(vPrp),prp ...>(
+					vPos,
+					vPrp,
+					vPosReordered,
+					vPrpReordered,
+					v_cl.getGpuContext(),
+					ghostMarker,
+					0,
+					vPos.size());
+
+				if (cellList.getOpt() & CL_GPU_REORDER_POSITION) vPos.swap(vPosReordered);
+				if (cellList.getOpt() & CL_GPU_REORDER_PROPERTY) vPrp.swap(vPrpReordered);
+			}
+			else
+				cellListTmp.construct(vPos,vPrp,v_cl.getGpuContext(),ghostMarker,0,vPos.size());
 
 			cellList.swap(cellListTmp);
 			cellList.resetBoxNN();
@@ -2997,16 +3043,19 @@ public:
 			this->ghostMarker = ghostMarker;
 		}
 
-        /*! \brief this function restores order after sorting done by cell list (GPU-only)
-         *
-         * \param cellList Cell-list to use to restore the order
-         *
-         */
-		template<typename CellList_type>
-        void restoreOrder(CellList_type & cellList)
-        {
-			cellList.restoreOrder(vPos, vPrp);
-        }
+		/*! \brief this function restores order after sorting done by cell list (GPU-only)
+		 *
+		 * \param cellList Cell-list to use to restore the order
+		 *
+		 */
+		template<unsigned int ...prp, typename CellList_type>
+		void restoreOrder(CellList_type & cellList)
+		{
+			if (cellList.getOpt() & CL_GPU_REORDER_POSITION) vPos.swap(vPosReordered);
+			if (cellList.getOpt() & CL_GPU_REORDER_PROPERTY) vPrp.swap(vPrpReordered);
+
+			cellList.template restoreOrder<vector_dist_pos, vector_dist_prop, prp...>(vPosReordered, vPrpReordered, vPos, vPrp);
+		}
 
         /*! \brief This function compare if the host and device buffer position match up to some tolerance
          *

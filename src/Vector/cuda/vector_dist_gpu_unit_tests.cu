@@ -37,6 +37,10 @@ __global__  void initialize_props(vector_dist_ker<3, float, aggregate<float, flo
 	vecDist.template getProp<1>(p)[0] = vecDist.getPos(p)[0] + vecDist.getPos(p)[1];
 	vecDist.template getProp<1>(p)[1] = vecDist.getPos(p)[0] + vecDist.getPos(p)[2];
 	vecDist.template getProp<1>(p)[2] = vecDist.getPos(p)[1] + vecDist.getPos(p)[2];
+
+	vecDist.template getProp<2>(p)[0] = vecDist.getPos(p)[0] + vecDist.getPos(p)[1];
+	vecDist.template getProp<2>(p)[1] = vecDist.getPos(p)[0] + vecDist.getPos(p)[2];
+	vecDist.template getProp<2>(p)[2] = vecDist.getPos(p)[1] + vecDist.getPos(p)[2];
 }
 
 template<typename T,typename CellList_type>
@@ -282,10 +286,10 @@ void compareCellListCpuGpuSorted(vector_type & vecDistSort, CellList_type & cell
 		(int)create_vcluster().rank()
 	);
 
-	vecDistSort.restoreOrder(cellListGPU);
+	vecDistSort.template restoreOrder<1>(cellListGPU);
 
-	vecDistSort.template deviceToHostProp<0,1>();
-	vecDistSort.template deviceToHostPos();
+	vecDistSort.template deviceToHostProp<1>();
+	vecDistSort.deviceToHostPos();
 
 	bool test = check_force(cellList,vecDistSort);
 	BOOST_REQUIRE_EQUAL(test,true);
@@ -400,12 +404,22 @@ void vector_dist_gpu_test_impl()
 
 	size_t opt = (sorted)? CL_GPU_REORDER : 0;
 	auto cellList = vecDist.getCellList(0.1);
-	auto cellListGPU = vecDist.template getCellListGPU<CellList_type>(0.1, opt);
+	auto cellListGPU = vecDist.template getCellListGPU<CellList_type>(0.1, opt | CL_NON_SYMMETRIC);
 
 	if (sorted)
+	{
+		vecDist.hostToDevicePos();
+		vecDist.template hostToDeviceProp<0>();
+
+		vecDist.template updateCellListGPU<0>(cellListGPU);
 		compareCellListCpuGpuSorted(vecDist,cellListGPU,cellList);
+	}
+
 	else
+	{
+		vecDist.updateCellListGPU(cellListGPU);
 		compareCellListCpuGpu(vecDist,cellListGPU,cellList);
+	}
 }
 
 template<typename CellList_type>
@@ -467,10 +481,41 @@ void vector_dist_gpu_make_sort_test_impl()
 	auto NN_cpu1 = vecDist.getCellList(0.1);
 	auto NN = vecDist.template getCellListGPU<CellList_type>(0.1, CL_NON_SYMMETRIC | CL_GPU_REORDER);
 
-	vecDist.restoreOrder(NN);
+	vecDist.hostToDevicePos();
+	vecDist.template hostToDeviceProp<0,1,2>();
+
+	vecDist.template updateCellListGPU<0,1,2>(NN);
+	vecDist.template restoreOrder<0,1,2>(NN);
 
 	vecDist.deviceToHostPos();
 	vecDist.template deviceToHostProp<0,1,2>();
+
+	vecDist.hostToDevicePos();
+	vecDist.template hostToDeviceProp<0>();
+
+	vecDist.template updateCellListGPU<0>(NN);
+	vecDist.template restoreOrder<0>(NN);
+
+	vecDist.deviceToHostPos();
+	vecDist.template deviceToHostProp<0>();
+
+	vecDist.hostToDevicePos();
+	vecDist.template hostToDeviceProp<1>();
+
+	vecDist.template updateCellListGPU<1>(NN);
+	vecDist.template restoreOrder<1>(NN);
+
+	vecDist.deviceToHostPos();
+	vecDist.template deviceToHostProp<1>();
+
+	vecDist.hostToDevicePos();
+	vecDist.template hostToDeviceProp<2>();
+
+	vecDist.template updateCellListGPU<2>(NN);
+	vecDist.template restoreOrder<2>(NN);
+
+	vecDist.deviceToHostPos();
+	vecDist.template deviceToHostProp<2>();
 
 	auto NN_cpu2 = vecDist.getCellList(0.1);
 
@@ -1035,12 +1080,22 @@ void vector_dist_dlb_on_cuda_impl(size_t k,double r_cut)
 		// Check calc forces
 		size_t opt = (sorted)? CL_GPU_REORDER : 0;
 		auto cellList = vecDist.getCellList(r_cut);
-		auto cellListGPU = vecDist.template getCellListGPU<CellList_type>(r_cut, opt);
+		auto cellListGPU = vecDist.template getCellListGPU<CellList_type>(r_cut, opt | CL_NON_SYMMETRIC);
 
 		if (sorted)
+		{
+			vecDist.hostToDevicePos();
+			vecDist.template hostToDeviceProp<0>();
+
+			vecDist.template updateCellListGPU<0>(cellListGPU);
 			compareCellListCpuGpuSorted(vecDist,cellListGPU,cellList);
+		}
+
 		else
+		{
+			vecDist.updateCellListGPU(cellListGPU);
 			compareCellListCpuGpu(vecDist,cellListGPU,cellList);
+		}
 
 		auto VV2 = vecDist.getVerlet(r_cut);
 
@@ -1225,12 +1280,22 @@ void vector_dist_dlb_on_cuda_impl_async(size_t k,double r_cut)
 		// Check calc forces
 		size_t opt = (sorted)? CL_GPU_REORDER : 0;
 		auto cellList = vecDist.getCellList(r_cut);
-		auto cellListGPU = vecDist.template getCellListGPU<CellList_type>(r_cut, opt);
+		auto cellListGPU = vecDist.template getCellListGPU<CellList_type>(r_cut, opt | CL_NON_SYMMETRIC);
 
 		if (sorted)
+		{
+			vecDist.hostToDevicePos();
+			vecDist.template hostToDeviceProp<0>();
+
+			vecDist.template updateCellListGPU<0>(cellListGPU);
 			compareCellListCpuGpuSorted(vecDist,cellListGPU,cellList);
+		}
+
 		else
+		{
+			vecDist.updateCellListGPU(cellListGPU);
 			compareCellListCpuGpu(vecDist,cellListGPU,cellList);
+		}
 
 		auto VV2 = vecDist.getVerlet(r_cut);
 
@@ -1597,6 +1662,7 @@ BOOST_AUTO_TEST_CASE(vector_dist_get_index_set)
 	vdg.hostToDevicePos();
 
 	auto cl = vdg.getCellListGPU(0.1);
+	vdg.updateCellListGPU(cl);
 
 	// than we get a cell-list to force reorder
 
