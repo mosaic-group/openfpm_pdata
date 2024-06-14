@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter3D_test)
 		for (size_t i = 0 ; i < n_grid ; i++)
 		{
 			// Get the local hyper-cube
-			SpaceBox<3,float> sub = dec.getSubDomain(i);
+			Box<3,float> sub = dec.getSubDomain(i);
 //			sub -= domain.getP1();
 
 			Box<3,size_t> g_box = g_dist.getCellDecomposer().convertDomainSpaceIntoGridUnits(sub,bc);
@@ -185,7 +185,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_domain_grid_unit_converter_test)
 		for (size_t i = 0 ; i < n_grid ; i++)
 		{
 			// Get the local hyper-cube
-			SpaceBox<2,float> sub = dec.getSubDomain(i);
+			Box<2,float> sub = dec.getSubDomain(i);
 
 			Box<2,size_t> g_box = g_dist.getCellDecomposer().convertDomainSpaceIntoGridUnits(sub,bc);
 

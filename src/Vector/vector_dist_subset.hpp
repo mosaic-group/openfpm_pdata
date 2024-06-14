@@ -394,7 +394,7 @@ public:
 	 * \return the Cell list
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St>, typename std::remove_reference<decltype(vd.getPosVector())>::type > >
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>, typename std::remove_reference<decltype(vd.getPosVector())>::type > >
 	CellL getCellList(St r_cut, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
@@ -435,7 +435,7 @@ public:
 	 * \return the CellList
 	 *
 	 */
-	template<typename CellL = CellList_gen<dim, St, Process_keys_lin, Mem_fast<>, shift<dim, St> > >
+	template<typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St> > >
 	CellL getCellList(St r_cut, const Ghost<dim, St> & enlarge, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
@@ -455,7 +455,7 @@ public:
 		cl_param_calculate(pbox, div, r_cut, enlarge);
 
 		cell_list.Initialize(pbox, div);
-		cell_list.set_gm(pid.size());
+		cell_list.setGhostMarker(pid.size());
 		cell_list.set_ndec(vd.getDecomposition().get_ndec());
 
 		cell_list.clear();

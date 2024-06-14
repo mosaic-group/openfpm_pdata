@@ -52,37 +52,6 @@ __global__ void apply_bc_each_part(Box<dim,St> domain, periodicity_int<dim> bc, 
     applyPointBC_no_dec(domain,bc,parts.get(p));
 }
 
-template<bool merge_pos, typename vector_pos_type, typename vector_prp_type, typename stns_type, unsigned int ... prp>
-__global__ void merge_sort_part(vector_pos_type vd_pos, vector_prp_type vd_prp,
-		                        vector_pos_type v_pos_ord, vector_prp_type vd_prp_ord,
-		                        stns_type nss)
-{
-	int p = threadIdx.x + blockIdx.x * blockDim.x;
-
-	if (p >= vd_pos.size()) return;
-
-	if (merge_pos == true)
-	{
-		vd_pos.template set<0>(p,v_pos_ord,nss.template get<0>(p));
-	}
-
-	vd_prp.template set<prp ...>(p,vd_prp_ord,nss.template get<0>(p));
-}
-
-template<typename vector_pos_type, typename vector_prp_type, typename stns_type, unsigned int ... prp>
-__global__ void merge_sort_all(vector_pos_type vd_pos, vector_prp_type vd_prp,
-		                        vector_pos_type v_pos_ord, vector_prp_type vd_prp_ord,
-		                        stns_type nss)
-{
-	int p = threadIdx.x + blockIdx.x * blockDim.x;
-
-	if (p >= vd_pos.size()) return;
-
-	vd_pos.template set<0>(p,v_pos_ord,nss.template get<0>(p));
-
-	vd_prp.set(p,vd_prp_ord,nss.template get<0>(p));
-}
-
 template<unsigned int dim, typename St, typename cartdec_gpu, typename particles_type, typename vector_out, typename prc_sz_type>
 __global__ void process_id_proc_each_part(cartdec_gpu cdg, particles_type parts, vector_out output, prc_sz_type prc_sz , int rank)
 {
@@ -443,7 +412,7 @@ void remove_marked(vector_type & vd, const int n = 1024)
 
 	CUDA_LAUNCH((copy_new_to_old_by_scan<vector_type::dims,prp>),ite,vd_pos_new.toKernel(),vd_prp_new.toKernel(),vd_pos_old.toKernel(),vd_prp_old.toKernel(),idx.toKernel());
 
-	vd.set_g_m(vd_pos_new.size());
+	vd.setGhostMarker(vd_pos_new.size());
 
 	vd.getPosVector().swap_nomode(vd_pos_new);
 	vd.getPropVector().swap_nomode(vd_prp_new);
@@ -499,7 +468,7 @@ void get_indexes_by_type(vector_type & vd, ids_type & ids, size_t end ,gpu::ofp_
 
 	auto ite = scan.getGPUIterator();
 
-	CUDA_LAUNCH((mark_indexes<prp,functor>),ite,vd.toKernel(),scan.toKernel(),end);
+	CUDA_LAUNCH((mark_indexes<prp,functor>),ite,vd.toKernel(),scan.toKernel(),(unsigned int)end);
 
 	openfpm::scan((unsigned int *)scan.template getDeviceBuffer<0>(),scan.size(),(unsigned int *)scan.template getDeviceBuffer<0>(),gpuContext);
 

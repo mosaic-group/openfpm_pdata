@@ -80,7 +80,7 @@ struct CalculateInternalCells_impl
 	template<typename VCluster_type>
 	static void CalculateInternalCells(VCluster_type & v_cl,
 			openfpm::vector<Box<dim,T>,Memory,layout_base> & ig_box,
-			openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & domain,
+			openfpm::vector<Box<dim,T>,Memory,layout_base> & domain,
 			Box<dim,T> & pbox,
 			T r_cut,
 			const Ghost<dim,T> & enlarge,
@@ -98,7 +98,7 @@ struct CalculateInternalCells_impl<dim,T,layout_base,Memory,ids_type,true>
 	template<typename VCluster_type>
 	static void CalculateInternalCells(VCluster_type & v_cl,
 			openfpm::vector<Box<dim,T>,Memory,layout_base> & ig_box,
-			openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & domain,
+			openfpm::vector<Box<dim,T>,Memory,layout_base> & domain,
 			Box<dim,T> & pbox,
 			T r_cut,
 			const Ghost<dim,T> & enlarge,
@@ -143,7 +143,7 @@ struct CalculateInternalCells_impl<dim,T,layout_base,Memory,ids_type,true>
 
 		for (size_t i = 0 ; i < domain.size() ; i++)
 		{
-			Box<dim,T> bx = SpaceBox<dim,T>(domain.get(i));
+			Box<dim,T> bx = Box<dim,T>(domain.get(i));
 
 			auto pp2 = bx.getP2();
 
@@ -254,7 +254,7 @@ class domain_icell_calculator
 	template<typename VCluster_type>
 	void CalculateInternalCells(VCluster_type & v_cl,
 								openfpm::vector<Box<dim,T>,Memory,layout_base> & ig_box,
-								openfpm::vector<SpaceBox<dim,T>,Memory,layout_base> & domain,
+								openfpm::vector<Box<dim,T>,Memory,layout_base> & domain,
 								Box<dim,T> & pbox,
 								T r_cut,
 								const Ghost<dim,T> & enlarge)

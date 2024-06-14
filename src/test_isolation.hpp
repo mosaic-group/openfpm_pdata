@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D )
 	// For each calculated ghost box
 	for (size_t i = 0; i < dec.getNIGhostBox(); i++)
 	{
-		SpaceBox<2,float> b = dec.getIGhostBox(i);
+		Box<2,float> b = dec.getIGhostBox(i);
 		size_t proc = dec.getIGhostBoxProcessor(i);
 
 		// sample one point inside the box
@@ -241,7 +241,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_2D_sar)
 	// For each calculated ghost box
 	for (size_t i = 0; i < dec.getNIGhostBox(); i++)
 	{
-		SpaceBox<2,float> b = dec.getIGhostBox(i);
+		Box<2,float> b = dec.getIGhostBox(i);
 		size_t proc = dec.getIGhostBoxProcessor(i);
 
 		// sample one point inside the box
@@ -365,7 +365,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_test_3D)
 	// For each calculated ghost box
 	for (size_t i = 0; i < dec.getNIGhostBox(); i++)
 	{
-		SpaceBox<3,float> b = dec.getIGhostBox(i);
+		Box<3,float> b = dec.getIGhostBox(i);
 		size_t proc = dec.getIGhostBoxProcessor(i);
 
 		// sample one point inside the box

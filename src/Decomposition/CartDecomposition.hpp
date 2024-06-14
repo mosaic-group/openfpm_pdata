@@ -148,8 +148,8 @@ public:
 	//! Type of the domain we are going to decompose
 	typedef T domain_type;
 
-	//! It simplify to access the SpaceBox element
-	typedef SpaceBox<dim, T> Box;
+	//! It simplify to access the Box element
+	// typedef Box<dim, T> Box_;
 
 	//! This class is base of itself
 	typedef CartDecomposition<dim,T,Memory,layout_base,Distribution> base_type;
@@ -173,14 +173,14 @@ protected:
 
 	//! This is the key type to access  data_s, for example in the case of vector
 	//! acc_key is size_t
-	typedef typename openfpm::vector<SpaceBox<dim, T>,
+	typedef typename openfpm::vector<Box<dim, T>,
 			Memory,
 			memory_traits_lin,
 			openfpm::vector_grow_policy_default,
-			openfpm::vect_isel<SpaceBox<dim, T>>::value>::access_key acc_key;
+			openfpm::vect_isel<Box<dim, T>>::value>::access_key acc_key;
 
 	//! the set of all local sub-domain as vector
-	openfpm::vector<SpaceBox<dim, T>,Memory,layout_base> sub_domains;
+	openfpm::vector<Box<dim, T>,Memory,layout_base> sub_domains;
 
 	//! the remote set of all sub-domains as vector of 'sub_domains' vectors
 	mutable openfpm::vector<Box_map<dim, T>,Memory,layout_base> sub_domains_global;
@@ -203,7 +203,7 @@ protected:
 	CellDecomposer_sm<dim, T, shift<dim,T>> cd;
 
 	//! rectangular domain to decompose
-	::Box<dim,T> domain;
+	Box<dim,T> domain;
 
 	//! Box Spacing
 	T spacing[dim];
@@ -219,7 +219,7 @@ protected:
 	Distribution dist;
 
 	//! Processor bounding box
-	::Box<dim,T> bbox;
+	Box<dim,T> bbox;
 
 	//! reference counter of the object in case is shared between object
 	long int ref_cnt;
@@ -231,10 +231,10 @@ protected:
 	size_t bc[dim];
 
 	//! Processor domain bounding box
-	::Box<dim,size_t> proc_box;
+	Box<dim,size_t> proc_box;
 
 	//! set of Boxes produced by the decomposition optimizer
-	openfpm::vector<::Box<dim, size_t>> loc_boxes;
+	openfpm::vector<Box<dim, size_t>> loc_boxes;
 
 	/*! \brief It convert the box from the domain decomposition into sub-domain
 	 *
@@ -247,25 +247,25 @@ protected:
 	 * \return the corresponding sub-domain
 	 *
 	 */
-	template<typename Memory_bx> SpaceBox<dim,T> convertDecBoxIntoSubDomain(encapc<1,::Box<dim,size_t>,Memory_bx> loc_box)
+	template<typename Memory_bx> Box<dim,T> convertDecBoxIntoSubDomain(encapc<1,Box<dim,size_t>,Memory_bx> loc_box)
 	{
 		// A point with all coordinate to one
 		size_t one[dim];
 		for (size_t i = 0 ; i < dim ; i++)	{one[i] = 1;}
 
-		SpaceBox<dim, size_t> sub_dc = loc_box;
-		SpaceBox<dim, size_t> sub_dce = sub_dc;
+		Box<dim, size_t> sub_dc = loc_box;
+		Box<dim, size_t> sub_dce = sub_dc;
 		sub_dce.expand(one);
 		sub_dce.mul(magn);
 
 		// shrink by one
 		for (size_t i = 0 ; i < dim ; i++)
 		{
-			loc_box.template get<Box::p1>()[i] = sub_dce.getLow(i);
-			loc_box.template get<Box::p2>()[i] = sub_dce.getHigh(i) - 1;
+			loc_box.template get<Box<dim,T>::p1>()[i] = sub_dce.getLow(i);
+			loc_box.template get<Box<dim,T>::p2>()[i] = sub_dce.getHigh(i) - 1;
 		}
 
-		SpaceBox<dim, T> sub_d(sub_dce);
+		Box<dim, T> sub_d(sub_dce);
 		sub_d.mul(spacing);
 		sub_d += domain.getP1();
 
@@ -301,7 +301,7 @@ protected:
 		{
 			bm.add();
 
-			bm.template get<0>(bm.size()-1) = ::SpaceBox<dim,T>(sub_domains.get(i));
+			bm.template get<0>(bm.size()-1) = Box<dim,T>(sub_domains.get(i));
 			bm.template get<1>(bm.size()-1) = v_cl.rank();
 		}
 
@@ -320,7 +320,7 @@ protected:
 
 public:
 
-	void initialize_fine_s(const ::Box<dim,T> & domain)
+	void initialize_fine_s(const Box<dim,T> & domain)
 	{
 		fine_s.clear();
 		size_t div_g[dim];
@@ -376,7 +376,7 @@ public:
 		// Calculate the total number of box and and the spacing
 		// on each direction
 		// Get the box containing the domain
-		SpaceBox<dim, T> bs = domain.getBox();
+		Box<dim, T> bs = domain.getBox();
 
 		for (unsigned int i = 0; i < dim; i++)
 		{
@@ -427,7 +427,7 @@ public:
 		// convert into sub-domain
 		for (size_t s = 1; s < loc_boxes.size(); s++)
 		{
-			SpaceBox<dim,T> sub_d = convertDecBoxIntoSubDomain(loc_boxes.get(s));
+			Box<dim,T> sub_d = convertDecBoxIntoSubDomain(loc_boxes.get(s));
 
 			// add the sub-domain
 			sub_domains.add(sub_d);
@@ -460,7 +460,7 @@ public:
 	void Initialize_geo_cell_lists()
 	{
 		// Get the processor bounding Box
-		::Box<dim,T> bound = getProcessorBounds();
+		Box<dim,T> bound = getProcessorBounds();
 
 		// Check if the box is valid
 		if (bound.isValidN() == true)
@@ -486,7 +486,7 @@ public:
 	{
 		float migration = 0;
 
-		SpaceBox<dim, T> cellBox = cd.getCellBox();
+		Box<dim, T> cellBox = cd.getCellBox();
 		float b_s = static_cast<float>(cellBox.getHigh(0));
 		float gh_s = static_cast<float>(ghost.getHigh(0));
 
@@ -540,7 +540,7 @@ public:
 			grid_key_dx<dim> key = gk_it.get();
 
 			//! Create a new subspace
-			SpaceBox<dim, T> tmp;
+			Box<dim, T> tmp;
 
 			//! fill with the Margin of the box
 			for (int i = 0; i < dim; i++)
@@ -1275,7 +1275,7 @@ public:
 	 * \param dec_gran number of sub-sub-domain for each processor
 	 *
 	 */
-	void setGoodParameters(::Box<dim,T> & domain_,
+	void setGoodParameters(Box<dim,T> & domain_,
 						   const size_t (& bc)[dim],
 						   const Ghost<dim,T> & ghost,
 						   size_t dec_gran,
@@ -1345,7 +1345,7 @@ public:
 	 *
 	 */
 	void setParameters(const size_t (& div_)[dim],
-					   ::Box<dim,T> & domain_,
+					   Box<dim,T> & domain_,
 						const size_t (& bc)[dim],
 						const Ghost<dim,T> & ghost,
 						const grid_sm<dim,void> & sec_dist = grid_sm<dim,void>())
@@ -1588,18 +1588,18 @@ public:
 	 * \return the sub-domain
 	 *
 	 */
-	SpaceBox<dim, T> getSubDomain(size_t lc)
+	Box<dim, T> getSubDomain(size_t lc)
 	{
 		// Create a space box
-		SpaceBox<dim, T> sp;
+		Box<dim, T> sp;
 
 		// fill the space box
 
 		for (size_t k = 0; k < dim; k++)
 		{
-			// create the SpaceBox Low and High
-			sp.setLow(k, sub_domains.template get<Box::p1>(lc)[k]);
-			sp.setHigh(k, sub_domains.template get<Box::p2>(lc)[k]);
+			// create the Box Low and High
+			sp.setLow(k, sub_domains.template get<Box<dim,T>::p1>(lc)[k]);
+			sp.setHigh(k, sub_domains.template get<Box<dim,T>::p2>(lc)[k]);
 		}
 
 		return sp;
@@ -1612,10 +1612,10 @@ public:
 	 * \return the sub-domain extended
 	 *
 	 */
-	SpaceBox<dim, T> getSubDomainWithGhost(size_t lc)
+	Box<dim, T> getSubDomainWithGhost(size_t lc)
 	{
 		// Create a space box
-		SpaceBox<dim, T> sp = sub_domains.get(lc);
+		Box<dim, T> sp = sub_domains.get(lc);
 
 		// enlarge with ghost
 		sp.enlarge(ghost);
@@ -1628,12 +1628,12 @@ public:
 	 * \return The physical domain box
 	 *
 	 */
-	const ::Box<dim,T> & getDomain() const
+	const Box<dim,T> & getDomain() const
 	{
 		return domain;
 	}
 
-	const openfpm::vector<SpaceBox<dim, T>,Memory,layout_base> &
+	const openfpm::vector<Box<dim, T>,Memory,layout_base> &
 	getSubDomains() const
 	{
 		return sub_domains;
@@ -1824,7 +1824,7 @@ public:
 	 * \return The bounding box
 	 *
 	 */
-	::Box<dim, T> & getProcessorBounds()
+	Box<dim, T> & getProcessorBounds()
 	{
 		return bbox;
 	}
@@ -1882,7 +1882,7 @@ public:
 	bool write(std::string output) const
 	{
 		//! subdomains_X.vtk domain for the local processor (X) as union of sub-domain
-		VTKWriter<openfpm::vector<SpaceBox<dim, T>,Memory,layout_base>, VECTOR_BOX> vtk_box1;
+		VTKWriter<openfpm::vector<Box<dim, T>,Memory,layout_base>, VECTOR_BOX> vtk_box1;
 		vtk_box1.add(sub_domains);
 		vtk_box1.write(output + std::string("subdomains_") + std::to_string(v_cl.getProcessUnitID()) + std::string(".vtk"));
 
@@ -1944,13 +1944,13 @@ public:
 		std::cout << "Subdomains\n";
 		for (size_t p = 0; p < sub_domains.size(); p++)
 		{
-			std::cout << ::SpaceBox<dim, T>(sub_domains.get(p)).toString() << "\n";
+			std::cout << Box<dim, T>(sub_domains.get(p)).toString() << "\n";
 		}
 
 		std::cout << "Subdomains global\n";
 		for (size_t p = 0; p < sub_domains_global.size(); p++)
 		{
-			std::cout << ::SpaceBox<dim, T>(sub_domains_global.template get<0>(p)).toString() << " proc:" << sub_domains_global.template get<1>(p) << "\n";
+			std::cout << Box<dim, T>(sub_domains_global.template get<0>(p)).toString() << " proc:" << sub_domains_global.template get<1>(p) << "\n";
 		}
 
 		std::cout << "External ghost box\n";
@@ -2141,7 +2141,7 @@ public:
 	 * \return sub_domains
 	 *
 	 */
-	openfpm::vector<SpaceBox<dim, T>> & private_get_sub_domains()
+	openfpm::vector<Box<dim, T>> & private_get_sub_domains()
 	{
 		return sub_domains;
 	}
@@ -2151,7 +2151,7 @@ public:
 	 * \return sub_domains
 	 *
 	 */
-	const openfpm::vector<SpaceBox<dim, T>> & private_get_sub_domains() const
+	const openfpm::vector<Box<dim, T>> & private_get_sub_domains() const
 	{
 		return sub_domains;
 	}
@@ -2301,7 +2301,7 @@ public:
 	 * \return domain
 	 *
 	 */
-	::Box<dim,T> & private_get_domain()
+	Box<dim,T> & private_get_domain()
 	{
 		return domain;
 	}
@@ -2311,7 +2311,7 @@ public:
 	 * \return domain
 	 *
 	 */
-	const ::Box<dim,T> & private_get_domain() const
+	const Box<dim,T> & private_get_domain() const
 	{
 		return domain;
 	}
@@ -2402,7 +2402,7 @@ public:
 	 * \return bbox
 	 *
 	 */
-	::Box<dim,T> & private_get_bbox()
+	Box<dim,T> & private_get_bbox()
 	{
 		return bbox;
 	}
@@ -2412,7 +2412,7 @@ public:
 	 * \return bbox
 	 *
 	 */
-	const ::Box<dim,T> & private_get_bbox() const
+	const Box<dim,T> & private_get_bbox() const
 	{
 		return bbox;
 	}

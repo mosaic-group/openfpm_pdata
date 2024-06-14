@@ -8,14 +8,14 @@
 #ifndef SRC_VECTOR_VECTOR_DIST_MULTIPHASE_FUNCTIONS_HPP_
 #define SRC_VECTOR_VECTOR_DIST_MULTIPHASE_FUNCTIONS_HPP_
 
-#include "NN/CellList/CellListM.hpp"
+#include "NN/CellList/multiphase/CellListM.hpp"
 #include "NN/VerletList/VerletListM.hpp"
 
 template<typename Vector, typename CL, typename T>
-VerletList<Vector::dims,typename Vector::stype,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type,CL>
+VerletList<Vector::dims,typename Vector::stype,VL_NON_SYMMETRIC,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type,CL>
 createVerlet(Vector & v, Vector & v1, CL & cl, T r_cut)
 {
-	VerletList<Vector::dims,typename Vector::stype,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type,CL> ver;
+	VerletList<Vector::dims,typename Vector::stype,VL_NON_SYMMETRIC,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type,CL> ver;
 
 	ver.Initialize(cl,r_cut,v.getPosVector(),v1.getPosVector(),v.size_local());
 
@@ -78,10 +78,10 @@ createCellListM(openfpm::vector<Vector> & phases, T r_cut)
 /////// Symmetric version
 
 template<typename Vector,typename CL, typename T>
-VerletList<Vector::dims,typename Vector::stype,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type>
+VerletList<Vector::dims,typename Vector::stype,VL_NON_SYMMETRIC,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type>
 createVerletSym(Vector & v, Vector & v1, CL & cl, T r_cut)
 {
-	VerletList<Vector::dims,typename Vector::stype,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type> ver;
+	VerletList<Vector::dims,typename Vector::stype,VL_NON_SYMMETRIC,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type> ver;
 
 	ver.Initialize(cl,r_cut,v.getPosVector(),v1.getPosVector(),v.size_local());
 
