@@ -1358,6 +1358,9 @@ public:
 		}
 	}
 
+
+#ifdef CUDA_GPU
+
 	/*! \brief Update a cell list on GPU using the stored particles
 	 *
 	 * \tparam CellL CellList type to construct
@@ -1376,10 +1379,10 @@ public:
 		Vcluster<Memory> & v_cl = create_vcluster<Memory>();
 
 		if (cellList.getOpt() & CL_GPU_REORDER_POSITION)
-			vPosReordered.resize(vPos.size());
+			if (vPosReordered.size() != vPos.size()) vPosReordered.resize(vPos.size());
 
 		if (cellList.getOpt() & CL_GPU_REORDER_PROPERTY)
-			vPrpReordered.resize(vPrp.size());
+			if (vPrpReordered.size() != vPrp.size()) vPrpReordered.resize(vPrp.size());
 
 		// Here we have to check that the Cell-list has been constructed
 		// from the same decomposition
@@ -1434,6 +1437,8 @@ public:
 			cellList.resetBoxNN();
 		}
 	}
+
+#endif
 
 	/*! \brief for each particle get the symmetric verlet list
 	 *
