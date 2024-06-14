@@ -37,7 +37,7 @@ template<unsigned int dim, size_t prp = 0, typename T, typename V> void calc_for
 			sum[i] = 0;
 
     	// Get the neighborhood of the particle
-    	auto cell_it = NN.getNNIterator(NN.getCell(p));
+		auto cell_it = NN.getNNIteratorBox(NN.getCell(p));
 
     	while(cell_it.isNext())
     	{
@@ -107,7 +107,7 @@ template<unsigned int dim, unsigned int prp, typename T, typename V> void cross_
 		Point<dim,float> p = vd.getPos(key);
 
     	// Get the neighborhood of the particle
-    	auto cell_it = NN2.getNNIterator(NN2.getCell(p));
+		auto cell_it = NN2.getNNIteratorBox(NN2.getCell(p));
 
     	double sum = 0.0;
 
@@ -248,7 +248,7 @@ template<unsigned int dim, size_t prp = 0, typename T, typename V> void calc_for
 			sum[i] = 0;
 
     	// Get the neighborhood of the particle
-    	auto cell_it = NN.getNNIterator(NN.getCell(p));
+		auto cell_it = NN.getNNIteratorBox(NN.getCell(p));
 
     	while(cell_it.isNext())
     	{

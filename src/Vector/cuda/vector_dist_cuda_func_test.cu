@@ -1159,7 +1159,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration_gpu )
 
 		Point<3,float> xp = vd.getPosRead(p);
 
-		auto Np = NN.getNNIterator(NN.getCell(xp));
+		auto Np = NN.getNNIteratorBox(NN.getCell(xp));
 
 		while (Np.isNext())
 		{
@@ -1283,7 +1283,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration_gpu )
 
 				Point<3,float> xp = phases.get(i).getPosRead(p);
 
-				auto Np = NN_ptr.get(j).getNNIteratorSymMP(NN_ptr.get(j).getCell(xp),p.getKey(),phases.get(i).getPosVector(),phases.get(j).getPosVector());
+				auto Np = NN_ptr.get(j).getNNIteratorBoxSymMP(NN_ptr.get(j).getCell(xp),p.getKey(),phases.get(i).getPosVector(),phases.get(j).getPosVector());
 
 				while (Np.isNext())
 				{

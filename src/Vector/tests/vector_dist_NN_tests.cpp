@@ -102,7 +102,7 @@ void test_full_nn(long int k)
 		while (it.isNext())
 		{
 			Point<3,float> xp = vd.getPos(it.get());
-			auto Np = NN.getNNIterator(NN.getCell(xp));
+			auto Np = NN.getNNIteratorBox(NN.getCell(xp));
 
 			while (Np.isNext())
 			{
@@ -309,7 +309,7 @@ void test_full_nn_adaptive(long int k)
 		while (it.isNext())
 		{
 			Point<3,float> xp = vd.getPos(it.get());
-			auto Np = NN.getNNIterator(NN.getCell(xp));
+			auto Np = NN.getNNIteratorBox(NN.getCell(xp));
 
 			while (Np.isNext())
 			{

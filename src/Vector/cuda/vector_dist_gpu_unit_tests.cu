@@ -53,7 +53,7 @@ __global__  void calculate_force(
 
 	Point<3,T> xp = vecDist.getPos(p);
 
-	auto it = cellList.getNNIterator(cellList.getCell(xp));
+	auto it = cellList.getNNIteratorBox(cellList.getCell(xp));
 
 	Point<3,T> force({0.0,0.0,0.0});
 
@@ -91,7 +91,7 @@ __global__  void calculate_force_sort(
 	Point<3,T> xp = vecDistSort.getPos(p);
 	Point<3,T> force({0.0,0.0,0.0});
 
-	auto it = cellList.getNNIterator(cellList.getCell(xp));
+	auto it = cellList.getNNIteratorBox(cellList.getCell(xp));
 
 	while (it.isNext())
 	{
@@ -137,7 +137,7 @@ bool check_force(CellList_type & cellList, vector_type & vecDist)
 
 		Point<3,St> force({0.0,0.0,0.0});
 
-		auto NNc = cellList.getNNIterator(cellList.getCell(xp));
+		auto NNc = cellList.getNNIteratorBox(cellList.getCell(xp));
 
 		while (NNc.isNext())
 		{
@@ -2004,7 +2004,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 				Point<3,float> xp = vecDist.getPos(p);
 
 				// Get an iterator over the neighborhood particles of p
-				auto Np = NN.getNNIterator(NN.getCell(xp));
+				auto Np = NN.getNNIteratorBox(NN.getCell(xp));
 
 				// For each neighborhood particle ...
 				while (Np.isNext())
@@ -2083,7 +2083,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put_gpu )
 				Point<3,float> xp = vecDist.getPosRead(p);
 
 				// Get an iterator over the neighborhood particles of p
-				auto Np = NN.getNNIterator(NN.getCell(xp));
+				auto Np = NN.getNNIteratorBox(NN.getCell(xp));
 
 				// For each neighborhood particle ...
 				while (Np.isNext())

@@ -1703,7 +1703,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 				Point<3,float> xp = vd.getPos(p);
 
 				// Get an iterator over the neighborhood particles of p
-				auto Np = NN.getNNIterator(NN.getCell(xp));
+				auto Np = NN.getNNIteratorBox(NN.getCell(xp));
 
 				// For each neighborhood particle ...
 				while (Np.isNext())
@@ -1772,7 +1772,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 				Point<3,float> xp = vd.getPosRead(p);
 
 				// Get an iterator over the neighborhood particles of p
-				auto Np = NN.getNNIterator(NN.getCell(xp));
+				auto Np = NN.getNNIteratorBox(NN.getCell(xp));
 
 				// For each neighborhood particle ...
 				while (Np.isNext())

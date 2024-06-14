@@ -524,7 +524,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 
 		Point<3,float> xp = vd.getPosRead(p);
 
-		auto Np = NN.getNNIterator(NN.getCell(xp));
+		auto Np = NN.getNNIteratorBox(NN.getCell(xp));
 
 		while (Np.isNext())
 		{
@@ -569,7 +569,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_cell_list )
 
 		Point<3,float> xp = vd.getPosRead(p);
 
-		auto Np = NN2.getNNIteratorSym(NN2.getCell(xp),p.getKey(),vd.getPosVector());
+		auto Np = NN2.getNNIteratorBoxSym(NN2.getCell(xp),p.getKey(),vd.getPosVector());
 
 		while (Np.isNext())
 		{
@@ -733,7 +733,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_local_cell_list )
 
 		Point<3,float> xp = vd.getPosRead(p);
 
-		auto Np = NN.getNNIterator(NN.getCell(xp));
+		auto Np = NN.getNNIteratorBox(NN.getCell(xp));
 
 		while (Np.isNext())
 		{
@@ -778,7 +778,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_local_cell_list )
 
 		Point<3,float> xp = vd.getPosRead(p);
 
-		auto Np = NN2.getNNIteratorSymLocal(NN2.getCell(xp),p.getKey(),vd.getPosVector());
+		auto Np = NN2.getNNIteratorBoxSymLocal(NN2.getCell(xp),p.getKey(),vd.getPosVector());
 
 		while (Np.isNext())
 		{
@@ -953,7 +953,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_symmetric_crs_cell_list )
 
 		Point<3,float> xp = vd.getPosRead(p);
 
-		auto Np = NN.getNNIterator(NN.getCell(xp));
+		auto Np = NN.getNNIteratorBox(NN.getCell(xp));
 
 		while (Np.isNext())
 		{
@@ -2110,9 +2110,9 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_list_multi_type )
 
 		Point<3,float> xp = vd.getPos(p);
 
-		auto Np = NN.getNNIterator(NN.getCell(xp));
-		auto Np2 = NN2.getNNIterator(NN2.getCell(xp));
-		auto Np3 = NN3.getNNIterator(NN3.getCell(xp));
+		auto Np = NN.getNNIteratorBox(NN.getCell(xp));
+		auto Np2 = NN2.getNNIteratorBox(NN2.getCell(xp));
+		auto Np3 = NN3.getNNIteratorBox(NN3.getCell(xp));
 
 		while (Np.isNext())
 		{
@@ -2233,7 +2233,7 @@ void test_vector_dist_particle_NN_MP_iteration()
 
 		Point<3,float> xp = vd.getPosRead(p);
 
-		auto Np = NN.getNNIterator(NN.getCell(xp));
+		auto Np = NN.getNNIteratorBox(NN.getCell(xp));
 
 		while (Np.isNext())
 		{
@@ -2358,7 +2358,7 @@ void test_vector_dist_particle_NN_MP_iteration()
 
 				Point<3,float> xp = phases.get(i).getPosRead(p);
 
-				auto Np = NN_ptr.get(j).getNNIteratorSymMP(NN_ptr.get(j).getCell(xp),p.getKey(),phases.get(i).getPosVector(),phases.get(j).getPosVector());
+				auto Np = NN_ptr.get(j).getNNIteratorBoxSymMP(NN_ptr.get(j).getCell(xp),p.getKey(),phases.get(i).getPosVector(),phases.get(j).getPosVector());
 
 				while (Np.isNext())
 				{
