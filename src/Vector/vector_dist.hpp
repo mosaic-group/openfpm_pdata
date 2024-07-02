@@ -974,7 +974,7 @@ public:
 	 * end and can be accessed with getLastPos and getLastProp
 	 *
 	 */
-	void addAtEnd()
+	void appendLocal()
 	{
 		vPrp.add();
 		vPos.add();
@@ -2603,7 +2603,7 @@ public:
 	 * \param rs
 	 *
 	 */
-	void resizeAtEnd(size_t rs)
+	void discardLocalAppend(size_t rs)
 	{
 		vPos.resize(rs);
 		vPrp.resize(rs);
