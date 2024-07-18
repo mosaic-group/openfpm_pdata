@@ -125,7 +125,7 @@ public:
     static const unsigned int dims = ivector_dist::dims;
 
     //!
-    typedef int yes_i_am_vector_dist;
+    typedef int yes_i_am_vector_subset;
 
     //! Subset detection
     typedef std::integral_constant<bool,true> is_it_a_subset;
@@ -259,12 +259,40 @@ public:
      *
      * see the vector_dist iterator usage to get an element key
      *
-     * \param vec_key element
+     * \param vector_dist_ws vec_key element
      *
      * \return the position of the element in space
      *
      */
     inline auto getPos(vect_dist_key_dx vec_key) -> decltype(vd.getPos(vec_key))
+    {
+        return vd.getPos(vec_key.getKey());
+    }
+
+    /*! \brief Get the position of an element
+     *
+     * see the vector_dist iterator usage to get an element key
+     *
+     * \param vector_dist_ws vec_key element
+     *
+     * \return the position of the element in space
+     *
+     */
+    inline auto getPos(vect_dist_key_dx vec_key) const -> decltype(vd.getPos(vec_key))
+    {
+        return vd.getPos(vec_key.getKey());
+    }
+
+    /*! \brief Get the position of an element
+     *
+     * see the vector_dist iterator usage to get an element key
+     *
+     * \param vector_dist_subset vec_key element
+     *
+     * \return the position of the element in space
+     *
+     */
+    inline auto getPosSubset(vect_dist_key_dx vec_key) -> decltype(vd.getPos(vec_key))
     {
         return vd.getPos(vect_dist_key_dx(pid.template get<0>(vec_key.getKey())));
     }
@@ -273,12 +301,12 @@ public:
      *
      * see the vector_dist iterator usage to get an element key
      *
-     * \param vec_key element
+     * \param vector_dist_subset vec_key element
      *
      * \return the position of the element in space
      *
      */
-    inline auto getPos(vect_dist_key_dx vec_key) const -> decltype(vd.getPos(vec_key))
+    inline auto getPosSubset(vect_dist_key_dx vec_key) const -> decltype(vd.getPos(vec_key))
     {
         return vd.getPos(vect_dist_key_dx(pid.template get<0>(vec_key.getKey())));
     }
@@ -304,64 +332,65 @@ public:
         vd.template hostToDevicePos<0>();
     }
 
-    /*! \brief Get the position of an element
-     *
-     * see the vector_dist iterator usage to get an element key
-     *
-     * \param vec_key element
-     *
-     * \return the position of the element in space
-     *
-     */
-    inline auto getPosOrig(vect_dist_key_dx vec_key) -> decltype(vd.getPos(vec_key))
-    {
-        return vd.getPos(vec_key.getKey());
-    }
-
-    /*! \brief Get the position of an element
-     *
-     * see the vector_dist iterator usage to get an element key
-     *
-     * \param vec_key element
-     *
-     * \return the position of the element in space
-     *
-     */
-    inline auto getPosOrig(vect_dist_key_dx vec_key) const -> decltype(vd.getPos(vec_key))
-    {
-        return vd.getPos(vec_key.getKey());
-    }
-
     /*! \brief Get the property of an element
- *
- * see the vector_dist iterator usage to get an element key
- *
- * \tparam id property id
- * \param vec_key vector element
- *
- * \return return the selected property of the vector element
- *
- */
+    *
+    * see the vector_dist iterator usage to get an element key
+    *
+    * \tparam id property id
+    * \param vector_dist_ws vec_key vector element
+    *
+    * \return return the selected property of the vector element
+    *
+    */
     template<unsigned int id> inline auto getProp(vect_dist_key_dx vec_key) -> decltype(vd.template getProp<id>(vec_key))
     {
-        return vd.template getProp<id>(vect_dist_key_dx(pid.template get<0>(vec_key.getKey())));
+        return vd.template getProp<id>(vec_key.getKey());
     }
 
     /*! \brief Get the property of an element
-*
-* see the vector_dist iterator usage to get an element key
-*
-* \tparam id property id
-* \param vec_key vector element
-*
-* \return return the selected property of the vector element
-*
-*/
+    *
+    * see the vector_dist iterator usage to get an element key
+    *
+    * \tparam id property id
+    * \param vector_dist_ws vec_key vector element
+    *
+    * \return return the selected property of the vector element
+    *
+    */
     template<unsigned int id> inline auto getProp(vect_dist_key_dx vec_key) const -> decltype(vd.template getProp<id>(vec_key))
+    {
+        return vd.template getProp<id>(vec_key.getKey());
+    }
+
+    /*! \brief Get the property of an element
+    *
+    * see the vector_dist iterator usage to get an element key
+    *
+    * \tparam id property id
+    * \param vector_dist_subset vec_key vector element
+    *
+    * \return return the selected property of the vector element
+    *
+    */
+    template<unsigned int id> inline auto getPropSubset(vect_dist_key_dx vec_key) -> decltype(vd.template getProp<id>(vec_key))
     {
         return vd.template getProp<id>(vect_dist_key_dx(pid.template get<0>(vec_key.getKey())));
     }
 
+    /*! \brief Get the property of an element
+    *
+    * see the vector_dist iterator usage to get an element key
+    *
+    * \tparam id property id
+    * \param vector_dist_subset vec_key vector element
+    *
+    * \return return the selected property of the vector element
+    *
+    */
+    template<unsigned int id> inline auto getPropSubset(vect_dist_key_dx vec_key) const -> decltype(vd.template getProp<id>(vec_key))
+    {
+        return vd.template getProp<id>(vect_dist_key_dx(pid.template get<0>(vec_key.getKey())));
+    }
 
 	vect_dist_key_dx getOriginKey(vect_dist_key_dx vec_key)
 	{
@@ -468,7 +497,7 @@ public:
 
 			Point<dim,St> pos = getPos(key);
 
-			cell_list.add(pos,pid.template get<0>(key.getKey()));
+			cell_list.add(pos,key.getKey());
 
 			++it;
 		}
@@ -509,6 +538,17 @@ public:
 
 		return *this;
 	}
+
+    /*! \brief Returns original vector_dist that was used to construct this subset
+     *
+     *
+     * \return original vector vector_dist_ws (vector_dist)
+     *
+     */
+    ivector_dist & getVectorDist()
+    {
+        return vd;
+    }
 };
 
 
