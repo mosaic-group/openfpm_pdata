@@ -1447,7 +1447,7 @@ public:
 
 		getDecomposition().setNNParameters(shift,gs);
 
-		verletList.fillCRSSymmetric(r_cut,ghostMarker,vPos,
+		verletList.fillCRSSymmetric(vPos,r_cut,ghostMarker,
 			getDecomposition().getCRSDomainCells(),
 			getDecomposition().getCRSAnomDomainCells()
 		);
@@ -1472,7 +1472,7 @@ public:
 #endif
 
 		VerletList_type verletList;
-		verletList.initializeNonSymmAdaptive(rCuts, vPos, ghostMarker);
+		verletList.fillNonSymmAdaptive(vPos, rCuts, ghostMarker);
 
 		return verletList;
 	}
@@ -1582,7 +1582,7 @@ public:
 
 				getDecomposition().setNNParameters(shift,gs);
 
-				verletList.updateCrs(getDecomposition().getDomain(),r_cut,vPos,ghostMarker,
+				verletList.updateCrs(vPos,r_cut,ghostMarker,
 					getDecomposition().getCRSDomainCells(),
 					getDecomposition().getCRSAnomDomainCells()
 				);
@@ -1609,7 +1609,7 @@ public:
 #endif
 		// in this mode the Verlet list doesn't depend on the decomposition counter
 		// has to be fully reconstructed on update
-		verletList.initializeNonSymmAdaptive(rCuts, vPos, ghostMarker);
+		verletList.fillNonSymmAdaptive(vPos, rCuts, ghostMarker);
 	}
 
 

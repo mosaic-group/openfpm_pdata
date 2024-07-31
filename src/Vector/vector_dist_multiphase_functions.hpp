@@ -17,7 +17,10 @@ createVerlet(Vector & v, Vector & v1, CL & cl, T r_cut)
 {
 	VerletList<Vector::dims,typename Vector::stype,VL_NON_SYMMETRIC,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type,CL> ver;
 
-	ver.Initialize(cl,r_cut,v.getPosVector(),v1.getPosVector(),v.size_local());
+	// auto it = v.getPosVector().getIteratorTo(v.size_local());
+	auto it = v.getDomainIterator();
+
+	ver.Initialize(cl,r_cut,it,v1.getPosVector(),v.size_local());
 
 	return ver;
 }
@@ -83,7 +86,10 @@ createVerletSym(Vector & v, Vector & v1, CL & cl, T r_cut)
 {
 	VerletList<Vector::dims,typename Vector::stype,VL_NON_SYMMETRIC,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type> ver;
 
-	ver.Initialize(cl,r_cut,v.getPosVector(),v1.getPosVector(),v.size_local());
+	// auto it = v.getPosVector().getIteratorTo(v.size_local());
+	auto it = v.getDomainIterator();
+
+	ver.Initialize(cl,r_cut,it,v1.getPosVector(),v.size_local());
 
 	return ver;
 }
