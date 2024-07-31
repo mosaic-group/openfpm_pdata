@@ -433,6 +433,44 @@ public:
         return getCellList<CellL>(r_cut, g,no_se3);
     }
 
+    /*! \brief Construct a Verlet List starting from the stored particles
+     *
+     * \tparam CellL CellList type to use for construction
+     * \tparam VerletList_type Verlet List type to construct
+     *
+     * \param r_cut interation radius, or size of each cell
+     * \param no_se3 avoid SE_CLASS3 checking
+     *
+     * \return the Verlet List
+     *
+     */
+    template<
+        typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>, typename std::remove_reference<decltype(vd.getPosVector())>::type>,
+        typename VerletList_type = VerletList<dim,St,VL_NON_SYMMETRIC,Mem_fast<>,shift<dim,St>,typename std::remove_reference<decltype(vd.getPosVector())>::type,CellL>
+    >
+    VerletList_type getVerlet(St r_cut, bool no_se3 = false)
+    {
+#ifdef SE_CLASS3
+        if (no_se3 == false)
+        {se3.getNN();}
+#endif
+
+        CellL cellList = getCellList<CellL>(r_cut, no_se3);
+        VerletList_type verletList;
+
+        if (verletList.getOpt() & VL_NON_SYMMETRIC)
+        {
+            auto it = getDomainIterator();
+            verletList.Initialize(cellList, r_cut, it, vd.getPosVector(), vd.size_local());
+        }
+
+        else {
+            std::cerr << __FILE__ << ":" << __LINE__ << " vector_dist_subset::getVerletList supports VL_NON_SYMMETRIC option only! " << std::endl;
+        }
+
+        return verletList;
+    }
+
     /*! \brief Indicate that this class is not a subset
      *
      * \return false
