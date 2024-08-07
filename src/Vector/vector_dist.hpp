@@ -1400,7 +1400,7 @@ public:
 	template <typename VerletList_type = VerletList<dim,St,VL_SYMMETRIC,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
 	VerletList_type getVerletSym(St r_cut)
 	{
-		return getVerlet<VerletList_type>(r_cut);
+		return getVerlet<VL_SYMMETRIC, VerletList_type>(r_cut);
 	}
 
 	/*! \brief for each particle get the symmetric verlet list
@@ -1486,7 +1486,7 @@ public:
 	 * \return a VerletList object
 	 *
 	 */
-	template <typename VerletList_type = VerletList<dim,St,VL_NON_SYMMETRIC,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
+	template <unsigned int optVerlet=VL_NON_SYMMETRIC, typename VerletList_type = VerletList<dim,St,optVerlet,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
 	VerletList_type getVerlet(St r_cut, size_t neighborMaxNum = 0)
 	{
 #ifdef SE_CLASS3
@@ -1549,7 +1549,7 @@ public:
 
 			else
 			{
-				VerletList<dim,St,opt,Mem_type,shift<dim,St>> ver_tmp = getVerlet<VerletList<dim,St,opt,Mem_type,shift<dim,St>>>(r_cut);
+				VerletList<dim,St,opt,Mem_type,shift<dim,St>> ver_tmp = getVerlet<opt, VerletList<dim,St,opt,Mem_type,shift<dim,St>>>(r_cut);
 				verletList.swap(ver_tmp);
 			}
 		}

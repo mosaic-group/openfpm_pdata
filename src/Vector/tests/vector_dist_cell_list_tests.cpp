@@ -1154,7 +1154,7 @@ void test_vd_symmetric_verlet_list()
 	// sync the ghost
 	vd.template ghost_get<0,2>();
 
-	auto NN = vd.template getVerlet<VerletList<VL_NON_SYMMETRIC>>(r_cut);
+	auto NN = vd.template getVerlet<VL_NON_SYMMETRIC, VerletList<VL_NON_SYMMETRIC>>(r_cut);
 	auto p_it = vd.getDomainIterator();
 
 	while (p_it.isNext())
@@ -1380,7 +1380,7 @@ void vector_sym_verlet_list_nb()
 		vd.template ghost_get<0,2>();
 		vd2.template ghost_get<0,2>();
 
-		auto NN = vd.template getVerlet<VerletList<VL_NON_SYMMETRIC>>(r_cut);
+		auto NN = vd.template getVerlet<VL_NON_SYMMETRIC, VerletList<VL_NON_SYMMETRIC>>(r_cut);
 		auto p_it = vd.getDomainIterator();
 
 		while (p_it.isNext())
@@ -1566,7 +1566,7 @@ void test_crs_full(
 	vd.template ghost_get<0,2>();
 	vd2.template ghost_get<0,2>();
 
-	auto NN = vd.template getVerlet<VerletList<VL_NON_SYMMETRIC>>(r_cut);
+	auto NN = vd.template getVerlet<VL_NON_SYMMETRIC, VerletList<VL_NON_SYMMETRIC>>(r_cut);
 	auto p_it = vd.getDomainIterator();
 
 	while (p_it.isNext())

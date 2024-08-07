@@ -20,7 +20,7 @@ createVerlet(Vector & v, Vector & v1, CL & cl, T r_cut)
 	// auto it = v.getPosVector().getIteratorTo(v.size_local());
 	auto it = v.getDomainIterator();
 
-	ver.Initialize(cl,r_cut,it,v1.getPosVector(),v.size_local());
+	ver.Initialize(cl,r_cut,it,v.getPosVector(),v1.getPosVector(),v.size_local());
 
 	return ver;
 }

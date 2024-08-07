@@ -330,7 +330,7 @@ void test_full_nn(long int k)
 
 		///////////////////////////////////
 
-		auto NNv = vd.template getVerlet<VerletList<VL_NON_SYMMETRIC>>(r_cut*1.0001);
+		auto NNv = vd.template getVerlet<VL_NON_SYMMETRIC, VerletList<VL_NON_SYMMETRIC>>(r_cut*1.0001);
 
 		it = vd.getDomainIterator();
 

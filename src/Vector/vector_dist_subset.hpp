@@ -433,7 +433,7 @@ public:
         return getCellList<CellL>(r_cut, g,no_se3);
     }
 
-    /*! \brief Construct a Verlet List starting from the stored particles
+    /*! \brief Construct a Verlet List from the stored particles
      *
      * \tparam CellL CellList type to use for construction
      * \tparam VerletList_type Verlet List type to construct
@@ -445,8 +445,8 @@ public:
      *
      */
     template<
-        typename CellL = CellList<dim, St, Mem_fast<>, shift<dim, St>, typename std::remove_reference<decltype(vd.getPosVector())>::type>,
-        typename VerletList_type = VerletList<dim,St,VL_NON_SYMMETRIC,Mem_fast<>,shift<dim,St>,typename std::remove_reference<decltype(vd.getPosVector())>::type,CellL>
+        unsigned int optVerlet=VL_NON_SYMMETRIC,
+        typename VerletList_type = VerletList<dim,St,optVerlet,Mem_fast<>,shift<dim,St>,typename std::remove_reference<decltype(vd.getPosVector())>::type>
     >
     VerletList_type getVerlet(St r_cut, bool no_se3 = false)
     {
@@ -455,8 +455,9 @@ public:
         {se3.getNN();}
 #endif
 
-        CellL cellList = getCellList<CellL>(r_cut, no_se3);
         VerletList_type verletList;
+
+        auto cellList = this->template getCellList<typename std::remove_reference<decltype(verletList.getInternalCellList())>::type>(r_cut, no_se3);
 
         if (verletList.getOpt() & VL_NON_SYMMETRIC)
         {
