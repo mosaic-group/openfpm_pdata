@@ -1525,7 +1525,6 @@ public:
 	 *
 	 * \param r_cut cut-off radius
 	 * \param verletList Verlet to update
-	 * \param r_cut cutoff radius
 	 *
 	 */
 	template<unsigned int opt, typename Mem_type>

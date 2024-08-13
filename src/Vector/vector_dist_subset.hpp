@@ -435,7 +435,7 @@ public:
 
     /*! \brief Construct a Verlet List from the stored particles
      *
-     * \tparam CellL CellList type to use for construction
+     * \tparam opt Verlet List option flag
      * \tparam VerletList_type Verlet List type to construct
      *
      * \param r_cut interation radius, or size of each cell
@@ -445,8 +445,8 @@ public:
      *
      */
     template<
-        unsigned int optVerlet=VL_NON_SYMMETRIC,
-        typename VerletList_type = VerletList<dim,St,optVerlet,Mem_fast<>,shift<dim,St>,typename std::remove_reference<decltype(vd.getPosVector())>::type>
+        unsigned int opt=VL_NON_SYMMETRIC,
+        typename VerletList_type = VerletList<dim,St,opt,Mem_fast<>,shift<dim,St>,typename std::remove_reference<decltype(vd.getPosVector())>::type>
     >
     VerletList_type getVerlet(St r_cut, bool no_se3 = false)
     {
@@ -470,6 +470,34 @@ public:
         }
 
         return verletList;
+    }
+
+
+    /*! \brief Update an existing Verlet List
+     *
+     * \tparam opt Verlet List option flag
+     * \tparam Mem_type Memory type of the Verlet List
+     * \tparam vPose_type Position vector type of the Verlet List
+     *
+     * \param verletList Velet List to update
+     * \param r_cut interation radius, or size of each cell
+     *
+     * \return the Verlet List
+     *
+     */
+    template<
+        unsigned int opt,
+        typename Mem_type,
+        typename vPos_type>
+    void updateVerlet(VerletList<dim,St,opt,Mem_type,shift<dim,St>,vPos_type>& verletList, St r_cut, bool no_se3 = false)
+    {
+#ifdef SE_CLASS3
+        if (no_se3 == false)
+        {se3.getNN();}
+#endif
+
+        VerletList<dim,St,opt,Mem_type,shift<dim,St>,vPos_type> ver_tmp = getVerlet<opt, VerletList<dim,St,opt,Mem_type,shift<dim,St>,vPos_type>>(r_cut);
+        verletList.swap(ver_tmp);
     }
 
     /*! \brief Indicate that this class is not a subset
@@ -527,7 +555,7 @@ public:
 
         while (it.isNext())
         {
-            auto key = it.get();
+            size_t key = it.get();
 
             Point<dim,St> pos = getPos(key);
 
@@ -542,7 +570,7 @@ public:
 
         while (git.isNext())
         {
-            auto key = git.get();
+            size_t key = git.get();
 
             Point<dim,St> pos = vd.getPos(key);
 
