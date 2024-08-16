@@ -1384,7 +1384,6 @@ public:
 				cellListTmp.construct(vPos,vPrp,v_cl.getGpuContext(),ghostMarker,0,vPos.size());
 
 			cellList.swap(cellListTmp);
-			cellList.resetBoxNN();
 		}
 	}
 
