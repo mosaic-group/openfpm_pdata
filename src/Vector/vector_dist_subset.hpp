@@ -233,24 +233,24 @@ public:
         return vd.getDecomposition();
     }
 
-    /*! \brief return the local size of the vector
- *
- * \return local size
- *
- */
+    /*! \brief return the local size of vector_dist_ws
+    *
+    * \return local size
+    *
+    */
     size_t size_local() const
     {
-        return pid.size();
+        return vd.size_local();
     }
 
-    /*! \brief return the local size of the original vector
- *
- * \return local size
- *
- */
-    size_t size_local_orig() const
+    /*! \brief return the local size of the vector
+    *
+    * \return local size
+    *
+    */
+    size_t size_local_subset() const
     {
-        return vd.size_local();
+        return pid.size();
     }
 
 #ifndef ONLY_READWRITE_GETTER
