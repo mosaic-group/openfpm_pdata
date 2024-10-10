@@ -13,7 +13,7 @@
 
 template<typename Vector, typename Vector1, typename CL, typename T>
 VerletList<Vector::dims,typename Vector::stype,VL_NON_SYMMETRIC,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type,CL>
-createVerlet(Vector & v, Vector1 & v1, CL & cl, T r_cut)
+createVerletTwoPhase(Vector & v, Vector1 & v1, CL & cl, T r_cut)
 {
 	VerletList<Vector::dims,typename Vector::stype,VL_NON_SYMMETRIC,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type,CL> ver;
 
