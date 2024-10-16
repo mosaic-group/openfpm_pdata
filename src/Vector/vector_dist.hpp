@@ -1463,7 +1463,7 @@ public:
 	 * \return the verlet list
 	 *
 	 */
-	template <typename VerletList_type = VerletList<dim,St,VL_ADAPTIVE_RCUT,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
+	template <typename VerletList_type = VerletList<dim,St,VL_NON_SYMMETRIC|VL_ADAPTIVE_RCUT,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
 	VerletList_type getVerletAdaptRCut(openfpm::vector<St> &rCuts)
 	{
 #ifdef SE_CLASS3
