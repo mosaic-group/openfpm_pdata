@@ -41,7 +41,7 @@ struct labelParticlesGhost_impl
             		openfpm::vector<size_t> & prc,
             		openfpm::vector<size_t> & prc_sz,
             		openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,layout_base> & prc_offset,
-            		size_t & g_m,
+					size_t & ghostMarker,
             		size_t opt)
 	{
 		std::cout << __FILE__ << ":" << __LINE__ << " error, you are trying to use using Cuda functions for a non cuda enabled data-structures" << std::endl;
@@ -70,7 +70,7 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
             		openfpm::vector<size_t> & prc,
             		openfpm::vector<size_t> & prc_sz,
             		openfpm::vector<aggregate<unsigned int,unsigned int>,Memory,layout_base> & prc_offset,
-            		size_t & g_m,
+					size_t & ghostMarker,
             		size_t opt)
 	{
 #if defined(CUDA_GPU) && defined(__NVCC__)
@@ -96,7 +96,7 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 			// scan
 			//sc.scan_(proc_id_out,starts);
 			starts.resize(proc_id_out.size());
-			openfpm::scan((unsigned int *)proc_id_out.template getDeviceBuffer<0>(), proc_id_out.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
+			openfpm::scan((unsigned int *)proc_id_out.template getDeviceBuffer<0>(), proc_id_out.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getGpuContext());
 			starts.template deviceToHost<0>(starts.size()-1,starts.size()-1);
 			size_t sz = starts.template get<0>(starts.size()-1);
 
@@ -112,7 +112,7 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 			dec.toKernel(),v_pos.toKernel(),starts.toKernel(),g_opart_device.toKernel());
 
 			// sort particles
-			openfpm::sort((int *)g_opart_device.template getDeviceBuffer<0>(),(long unsigned int *)g_opart_device.template getDeviceBuffer<1>(), g_opart_device.size(), mgpu::template less_t<int>(), v_cl.getmgpuContext());
+			openfpm::sort((int *)g_opart_device.template getDeviceBuffer<0>(),(long unsigned int *)g_opart_device.template getDeviceBuffer<1>(), g_opart_device.size(), gpu::template less_t<int>(), v_cl.getGpuContext());
 
 			mem.allocate(sizeof(int));
 			mem.fill(0);
@@ -147,7 +147,7 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 			prc_offset.template hostToDevice<0,1>(prc_offset.size()-1,prc_offset.size()-1);
 
 			// Here we reorder the offsets in ascending order
-			openfpm::sort((int *)prc_offset.template getDeviceBuffer<0>(),(int *)prc_offset.template getDeviceBuffer<1>(), prc_offset.size(), mgpu::template less_t<int>(), v_cl.getmgpuContext());
+			openfpm::sort((int *)prc_offset.template getDeviceBuffer<0>(),(int *)prc_offset.template getDeviceBuffer<1>(), prc_offset.size(), gpu::template less_t<int>(), v_cl.getGpuContext());
 
 			prc_offset.template deviceToHost<0,1>();
 
@@ -217,7 +217,7 @@ struct local_ghost_from_opart_impl<with_pos,dim,St,prop,Memory,layout_base,true>
 				{
 					CUDA_LAUNCH((process_ghost_particles_local<with_pos,dim,decltype(o_part_loc.toKernel()),decltype(v_pos.toKernel()),decltype(v_prp.toKernel()),decltype(shifts.toKernel())>),
 					ite,
-					o_part_loc.toKernel(),v_pos.toKernel(),v_prp.toKernel(),shifts.toKernel(),old);
+					o_part_loc.toKernel(),v_pos.toKernel(),v_prp.toKernel(),shifts.toKernel(),(unsigned int)old);
 				}
 #else
 				std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option RUN_ON_DEVICE you must compile with NVCC" << std::endl;
@@ -236,7 +236,7 @@ struct local_ghost_from_dec_impl
 					openfpm::vector<aggregate<unsigned int>,Memory,layout_base> & starts,
 					openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
             		openfpm::vector<prop,Memory,layout_base> & v_prp,
-            		size_t & g_m,
+					size_t & ghostMarker,
             		size_t opt)
 	{
 		std::cout << __FILE__ << ":" << __LINE__ << " error, you are trying to use using Cuda functions for a non cuda enabled data-structures" << std::endl;
@@ -255,25 +255,25 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 					openfpm::vector<aggregate<unsigned int>,Memory,layout_base> & starts,
 					openfpm::vector<Point<dim, St>,Memory,layout_base> & v_pos,
             		openfpm::vector<prop,Memory,layout_base> & v_prp,
-            		size_t & g_m,
+					size_t & ghostMarker,
             		size_t opt)
 	{
 #if defined(CUDA_GPU) && defined(__NVCC__)
 
-		o_part_loc.resize(g_m+1);
+		o_part_loc.resize(ghostMarker+1);
 		o_part_loc.template get<0>(o_part_loc.size()-1) = 0;
 		o_part_loc.template hostToDevice(o_part_loc.size()-1,o_part_loc.size()-1);
 
 		// Label the internal (assigned) particles
-		auto ite = v_pos.getGPUIteratorTo(g_m);
+		auto ite = v_pos.getGPUIteratorTo(ghostMarker);
 
 		// label particle processor
 		CUDA_LAUNCH((num_shift_ghost_each_part<dim,St,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),decltype(v_pos.toKernel()),decltype(o_part_loc.toKernel())>),
 		ite,
-		box_f_dev.toKernel(),box_f_sv.toKernel(),v_pos.toKernel(),o_part_loc.toKernel(),g_m);
+		box_f_dev.toKernel(),box_f_sv.toKernel(),v_pos.toKernel(),o_part_loc.toKernel(),(unsigned int)ghostMarker);
 
 		starts.resize(o_part_loc.size());
-		openfpm::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getmgpuContext());
+		openfpm::scan((unsigned int *)o_part_loc.template getDeviceBuffer<0>(), o_part_loc.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getGpuContext());
 
 		starts.template deviceToHost<0>(starts.size()-1,starts.size()-1);
 		size_t total = starts.template get<0>(starts.size()-1);
@@ -283,7 +283,7 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 		v_prp.resize(v_prp.size() + total);
 
 		// Label the internal (assigned) particles
-		ite = v_pos.getGPUIteratorTo(g_m);
+		ite = v_pos.getGPUIteratorTo(ghostMarker);
 
 		// resize o_part_loc
 		o_part_loc.resize(total);
@@ -295,7 +295,7 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 		ite,
 		box_f_dev.toKernel(),box_f_sv.toKernel(),
 		 v_pos.toKernel(),v_prp.toKernel(),
-		 starts.toKernel(),shifts.toKernel(),o_part_loc.toKernel(),old,g_m);
+		 starts.toKernel(),shifts.toKernel(),o_part_loc.toKernel(),(unsigned int)old,(unsigned int)ghostMarker);
 
 #else
 		std::cout << __FILE__ << ":" << __LINE__ << " error: to use the option RUN_ON_DEVICE you must compile with NVCC" << std::endl;

@@ -102,6 +102,12 @@ void test_vector_grid_dlb()
 			check &= gdist.template get<1>(p) == gkey.get(1);
 			check &= gdist.template get<2>(p) == gkey.get(2);
 
+			if (check == false)
+			{
+				std::cout << "Error " << gdist.template get<0>(p) << " != " << gkey.get(0) << " " << gdist.template get<1>(p) << " != " << gkey.get(1) << " " << gdist.template get<2>(p) << " != " << gkey.get(2) << std::endl;
+				break;
+			}
+
 			++it;
 		}
 

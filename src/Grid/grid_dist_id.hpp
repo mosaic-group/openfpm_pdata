@@ -5,7 +5,8 @@
 #include <unordered_map>
 #include "Grid/map_grid.hpp"
 #include "VCluster/VCluster.hpp"
-#include "Space/SpaceBox.hpp"
+#include "Space/Ghost.hpp"
+#include "Space/Shape/Box.hpp"
 #include "util/mathutil.hpp"
 #include "VTKWriter/VTKWriter.hpp"
 #ifdef __NVCC__
@@ -60,6 +61,187 @@ struct Box_fix
 };
 
 #define NO_GDB_EXT_SWITCH 0x1000
+
+template<bool is_sparse>
+struct device_grid_copy
+{
+	template<typename key_type1, typename key_type2, typename spg_type, typename lg_type>
+	static void assign(key_type1 & key, key_type2 & key_dst, spg_type & dg, lg_type & lg)
+	{
+		dg.insert_o(key_dst) = lg.get_o(key);
+	}
+
+	template<typename gdb_ext_type, typename loc_grid_type>
+	static void pre_load(gdb_ext_type & gdb_ext_old, loc_grid_type & loc_grid_old, gdb_ext_type & gdb_ext, loc_grid_type & loc_grid) 
+	{
+	}
+};
+
+template<typename e_src, typename e_dst, typename indexT>
+struct copy_all_prop_sparse
+{
+	//! encapsulated source object
+	const e_src & block_data_src;
+	e_dst & block_data_dst;
+
+	indexT local_id;
+
+	/*! \brief constructor
+	 *
+	 * \param src source encapsulated object
+	 * \param dst source encapsulated object
+	 *
+	 */
+	__device__ __host__ inline copy_all_prop_sparse(const e_src & block_data_src, e_dst & block_data_dst, indexT local_id)
+	:block_data_src(block_data_src),block_data_dst(block_data_dst),local_id(local_id)
+	{
+	};
+
+	template<typename T>
+	__device__ __host__ inline void operator()(T& t) const
+	{
+		block_data_dst.template get<T::value>()[local_id] = block_data_src.template get<T::value>();
+	}
+};
+
+template<typename T>
+struct variadic_caller
+{};
+
+template<int ... prp>
+struct variadic_caller<index_tuple_sq<prp ...>>
+{
+	template<typename this_type, typename dec_type, typename cd_sm_type, typename loc_grid_type, typename gdb_ext_type>
+	static void call(this_type * this_,
+					 dec_type & dec, 
+					 cd_sm_type & cd_sm,
+					 loc_grid_type & loc_grid, 
+					 loc_grid_type & loc_grid_old, 
+					 gdb_ext_type & gdb_ext, 
+					 gdb_ext_type & gdb_ext_old, 
+					 gdb_ext_type & gdb_ext_global, 
+					 size_t opt)
+	{
+		this_->template map_<prp ...>(dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global,opt);
+	}
+};
+
+struct ids_pl
+{
+	size_t id;
+
+        bool operator<(const ids_pl & i) const
+        {
+        	return id < i.id;
+	}
+
+	bool operator==(const ids_pl & i) const
+	{
+		return id == i.id;
+	}
+};
+
+template<>
+struct device_grid_copy<true>
+{
+	template<typename key_type1, typename key_type2, typename spg_type, typename lg_type>
+	static void assign(key_type1 & key, key_type2 & key_dst, spg_type & dg, lg_type & lg)
+	{
+		typename spg_type::indexT_ local_id;
+		auto block_data_dst = dg.insertBlockFlush(key_dst, local_id);
+		auto block_data_src = lg.get_o(key);
+
+		copy_all_prop_sparse<decltype(block_data_src),decltype(block_data_dst),decltype(local_id)> cp(block_data_src, block_data_dst, local_id);
+
+		boost::mpl::for_each_ref< boost::mpl::range_c<int,0,decltype(block_data_dst)::max_prop> >(cp);
+	}
+
+
+
+    template<typename gdb_ext_type, typename loc_grid_type>
+    static void pre_load(gdb_ext_type & gdb_ext_old, loc_grid_type & loc_grid_old, gdb_ext_type & gdb_ext, loc_grid_type & loc_grid)
+	{
+		auto & dg = loc_grid.get(0);
+		auto dlin = dg.getGrid();
+		typedef typename std::remove_reference<decltype(dg)>::type sparse_grid_type;
+
+		openfpm::vector<ids_pl> ids;
+		openfpm::vector<grid_key_dx<sparse_grid_type::dims>> gg;
+
+		size_t sz[sparse_grid_type::dims];
+
+		for (int i = 0 ; i < sparse_grid_type::dims ; i++)
+		{sz[i] = 2;}
+
+		grid_sm<sparse_grid_type::dims,void> gvoid(sz);
+
+		grid_key_dx_iterator<sparse_grid_type::dims> it(gvoid);
+		while(it.isNext())
+		{
+			auto key = it.get();
+
+			grid_key_dx<sparse_grid_type::dims> k;
+			for (int i = 0 ; i < sparse_grid_type::dims ; i++)
+			{
+				k.set_d(i,key.get(i)*dlin.getBlockEgdeSize());
+			}
+
+			gg.add(k);
+			++it;
+		}
+
+
+		for (int i = 0 ; i < gdb_ext_old.size() ; i++)
+		{
+			
+			auto & lg = loc_grid_old.get(i);
+			auto & indexBuffer = lg.private_get_index_array();
+			auto & dg = loc_grid.get(0);
+
+			auto slin = loc_grid_old.get(i).getGrid();
+
+			grid_key_dx<sparse_grid_type::dims> kp1 = gdb_ext.get(0).Dbox.getKP1();
+
+			grid_key_dx<sparse_grid_type::dims> orig;
+			for (int j = 0 ; j < sparse_grid_type::dims ; j++)
+			{
+				orig.set_d(j,gdb_ext_old.get(i).origin.get(j));
+			}
+
+                        for (int i = 0; i < indexBuffer.size() ; i++)
+                        {
+				for (int ex = 0; ex < gg.size() ; ex++) {
+					auto key = slin.InvLinId(indexBuffer.template get<0>(i),0);
+					grid_key_dx<sparse_grid_type::dims> key_dst;
+
+					for (int j = 0 ; j < sparse_grid_type::dims ; j++)
+					{key_dst.set_d(j,key.get(j) + orig.get(j) + kp1.get(j) + gg.get(ex).get(j));}
+
+					typename sparse_grid_type::indexT_ bid;
+					int lid;
+
+					dlin.LinId(key_dst,bid,lid);
+
+					ids.add();
+					ids.last().id = bid;
+				}
+			}
+		}
+
+		ids.sort();
+		ids.unique();
+
+		auto & indexBuffer = dg.private_get_index_array();
+		auto & dataBuffer = dg.private_get_data_array();
+		indexBuffer.reserve(ids.size()+8);
+		dataBuffer.reserve(ids.size()+8);
+		for (int i = 0 ; i < ids.size() ; i++) 
+		{
+			auto & dg = loc_grid.get(0);
+			dg.insertBlockFlush(ids.get(i).id);
+		}
+	}
+};
 
 /*! \brief This is a distributed grid
  *
@@ -333,7 +515,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 			sub_domain += gdb_ext.get(sub_id).origin;
 		}
 
-		// Convert from SpaceBox<dim,St> to SpaceBox<dim,long int>
+		// Convert from Box<dim,St> to Box<dim,long int>
 		Box<dim,long int> sub_domain_other_exp = cd_sm.convertDomainSpaceIntoGridUnits(sub_domain_other,dec.periodicity());
 
 		// translate sub_domain_other based on cmb
@@ -906,7 +1088,7 @@ class grid_dist_id : public grid_dist_id_comm<dim,St,T,Decomposition,Memory,devi
 		// Allocate the grids
 		for (size_t i = 0 ; i < n_grid ; i++)
 		{
-			SpaceBox<dim,long int> sp_tg = gdb_ext.get(i).GDbox;
+			Box<dim,long int> sp_tg = gdb_ext.get(i).GDbox;
 
 			// Get the size of the local grid
 			// The boxes indicate the extension of the index the size
@@ -1314,10 +1496,11 @@ public:
      * \param ghost Ghost part
      *
      */
-    grid_dist_id(const Decomposition & dec,
+	template<typename Decomposition2>
+    grid_dist_id(const Decomposition2 & dec,
     		     const size_t (& g_sz)[dim],
 				 const Ghost<dim,St> & ghost)
-    :domain(dec.getDomain()),ghost(ghost),ghost_int(INVALID_GHOST),dec(dec),v_cl(create_vcluster()),
+    :domain(dec.getDomain()),ghost(ghost),ghost_int(INVALID_GHOST),dec(create_vcluster()),v_cl(create_vcluster()),
 	 ginfo(g_sz),ginfo_v(g_sz)
 	{
 #ifdef SE_CLASS2
@@ -1368,10 +1551,33 @@ public:
 	:domain(dec.getDomain()),ghost_int(g),dec(create_vcluster()),v_cl(create_vcluster()),
 	 ginfo(g_sz),ginfo_v(g_sz)
 	{
-#ifdef SE_CLASS2
-		check_new(this,8,GRID_DIST_EVENT,4);
-#endif
+		InitializeCellDecomposer(g_sz,dec.periodicity());
 
+		ghost = convert_ghost(g,cd_sm);
+		this->dec = dec.duplicate(ghost);
+
+		// an empty
+		openfpm::vector<Box<dim,long int>> empty;
+
+		// Initialize structures
+		InitializeStructures(g_sz,empty,g,false);
+	}
+
+    /*! It constructs a grid of a specified size, defined on a specified Box space, forcing to follow a specified decomposition, and having a specified ghost size
+     *
+     * \param dec Decomposition
+     * \param g_sz grid size on each dimension
+     * \param g Ghost part (given in grid units)
+     *
+     * \warning In very rare case the ghost part can be one point bigger than the one specified
+     *
+     */
+	template<typename Decomposition2>
+	grid_dist_id(const Decomposition2 & dec, const size_t (& g_sz)[dim],
+			     const Ghost<dim,long int> & g)
+	:domain(dec.getDomain()),ghost_int(g),dec(create_vcluster()),v_cl(create_vcluster()),
+	 ginfo(g_sz),ginfo_v(g_sz)
+	{
 		InitializeCellDecomposer(g_sz,dec.periodicity());
 
 		ghost = convert_ghost(g,cd_sm);
@@ -1671,7 +1877,7 @@ public:
 	 * \return The information about the local grids
 	 *
 	 */
-	const openfpm::vector<GBoxes<device_grid::dims>> & getLocalGridsInfo()
+	const openfpm::vector<GBoxes<device_grid::dims>> & getLocalGridsInfo() const
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
@@ -2112,7 +2318,7 @@ public:
 	{
 		for (size_t i = 0 ; i < loc_grid.size() ; i++)
 		{
-			loc_grid.get(i).template flush<v_reduce ...>(v_cl.getmgpuContext(),opt);
+			loc_grid.get(i).template flush<v_reduce ...>(v_cl.getGpuContext(),opt);
 		}
 	}
 
@@ -2183,6 +2389,32 @@ public:
 #endif
 
 		return loc_grid.get(v1.getSub()).template insertFlush<p>(v1.getKey());
+	}
+
+	/*! \brief insert an element in the grid
+	 *
+	 * In case of dense grid this function is equivalent to get, in case of sparse
+	 * grid this function insert a grid point. When the point already exist it return
+	 * a reference to the already existing point. In case of massive insert Sparse grids
+	 * The point is inserted immediately and a reference to the inserted element is returned
+	 *
+	 * \warning This function is not fast an unlucky insert can potentially cost O(N) where N is the number
+	 *          of points (worst case)
+	 *
+	 * \tparam p property to get (is an integer)
+	 * \param v1 grid_key that identify the element in the grid
+	 *
+	 * \return a reference to the inserted element
+	 *
+	 */
+	template <typename bg_key>inline auto insertFlush(const grid_dist_key_dx<dim,bg_key> & v1)
+	-> decltype(loc_grid.get(v1.getSub()).template insertFlush(v1.getKey()))
+	{
+#ifdef SE_CLASS2
+		check_valid(this,8);
+#endif
+
+		return loc_grid.get(v1.getSub()).template insertFlush(v1.getKey());
 	}
 
 	/*! \brief Get the reference of the selected element
@@ -2810,6 +3042,37 @@ public:
 		}
 	}
 
+		/*! \brief apply a convolution on 2 property on GPU
+	 *
+	 *
+	 */
+	template<unsigned int prop_src1, unsigned int prop_src2, unsigned int prop_src3, 
+	         unsigned int prop_dst1, unsigned int prop_dst2, unsigned int prop_dst3, 
+			 unsigned int stencil_size, typename lambda_f, typename ... ArgsT >
+	void conv3_b(grid_key_dx<dim> start, grid_key_dx<dim> stop , lambda_f func, ArgsT ... args)
+	{
+		for (int i = 0 ; i < loc_grid.size() ; i++)
+		{
+			Box<dim,long int> inte;
+
+			Box<dim,long int> base;
+			for (int j = 0 ; j < dim ; j++)
+			{
+				base.setLow(j,(long int)start.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+				base.setHigh(j,(long int)stop.get(j) - (long int)gdb_ext.get(i).origin.get(j));
+			}
+
+			Box<dim,long int> dom = gdb_ext.get(i).Dbox;
+
+			bool overlap = dom.Intersect(base,inte);
+
+			if (overlap == true)
+			{
+				loc_grid.get(i).template conv3_b<prop_src1,prop_src2,prop_src3,prop_dst1,prop_dst2,prop_dst3,stencil_size>(inte.getKP1(),inte.getKP2(),func,args...);
+			}
+		}
+	}
+	
     template<typename NNtype>
     void findNeighbours()
     {
@@ -2964,6 +3227,18 @@ public:
 	 * \return local grid
 	 *
 	 */
+	const device_grid & get_loc_grid(size_t i) const
+	{
+		return loc_grid.get(i);
+	}
+
+	/*! \brief Get the i sub-domain grid
+	 *
+	 * \param i sub-domain
+	 *
+	 * \return local grid
+	 *
+	 */
 	grid_key_dx_iterator_sub<dim,no_stencil> get_loc_grid_iterator(size_t i)
 	{
 		return grid_key_dx_iterator_sub<dim,no_stencil>(loc_grid.get(i).getGrid(),
@@ -2993,26 +3268,9 @@ public:
 	 * \return the number of local grid
 	 *
 	 */
-	size_t getN_loc_grid()
+	size_t getN_loc_grid() const
 	{
 		return loc_grid.size();
-	}
-
-
-	/*! \brief It return the id of structure in the allocation list
-	 *
-	 * \see print_alloc and SE_CLASS2
-	 *
-	 * \return the id
-	 *
-	 */
-	long int who()
-	{
-#ifdef SE_CLASS2
-		return check_whoami(this,8);
-#else
-			return -1;
-#endif
 	}
 
 	/*! \brief It print the internal ghost boxes and external ghost boxes in global unit
@@ -3101,7 +3359,7 @@ public:
 	{
 		for (int i = 0 ; i < loc_grid.size() ; i++)
 		{
-			loc_grid.get(i).construct_link(grid_up.get_loc_grid(i),grid_dw.get_loc_grid(i),v_cl.getmgpuContext());
+			loc_grid.get(i).construct_link(grid_up.get_loc_grid(i),grid_dw.get_loc_grid(i),v_cl.getGpuContext());
 		}
 	}
 
@@ -3119,7 +3377,7 @@ public:
 			for(int j = 0 ; j < dim ; j++)
 			{p_dw.get(j) = mvof.get(i).dw.get(j);}
 
-			loc_grid.get(i).construct_link_dw(grid_dw.get_loc_grid(i),gdb_ext.get(i).Dbox,p_dw,v_cl.getmgpuContext());
+			loc_grid.get(i).construct_link_dw(grid_dw.get_loc_grid(i),gdb_ext.get(i).Dbox,p_dw,v_cl.getGpuContext());
 		}
 	}
 
@@ -3137,7 +3395,7 @@ public:
 			for(int j = 0 ; j < dim ; j++)
 			{p_up.get(j) = mvof.get(i).up.get(j);}
 
-			loc_grid.get(i).construct_link_up(grid_up.get_loc_grid(i),gdb_ext.get(i).Dbox,p_up,v_cl.getmgpuContext());
+			loc_grid.get(i).construct_link_up(grid_up.get_loc_grid(i),gdb_ext.get(i).Dbox,p_up,v_cl.getGpuContext());
 		}
 	}
 
@@ -3157,7 +3415,7 @@ public:
 			Box_check<dim,unsigned int> chk(gdb_ext.get(i).Dbox);
 
 
-			loc_grid.get(i).template tagBoundaries<stencil_type>(v_cl.getmgpuContext(),chk);
+			loc_grid.get(i).template tagBoundaries<stencil_type>(v_cl.getGpuContext(),chk);
 		}
 	}
 
@@ -3184,7 +3442,10 @@ public:
 
 		getGlobalGridsInfo(gdb_ext_global);
 
-		this->map_(dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global);
+
+		typedef typename to_int_sequence<0,T::max_prop-1>::type result;
+
+		variadic_caller<result>::call(this,dec,cd_sm,loc_grid,loc_grid_old,gdb_ext,gdb_ext_old,gdb_ext_global,opt);
 
 		loc_grid_old.clear();
 		loc_grid_old.shrink_to_fit();
@@ -3222,11 +3483,18 @@ public:
 
 		if (v_cl.size() != 1)
 		{
+			// move information from host to device
+			for (int i = 0 ; i < loc_grid_old.size() ; i++)
+			{loc_grid_old.get(i).template hostToDevice<0>();}
 			// Map the distributed grid
-                	map(NO_GDB_EXT_SWITCH);
+			size_t opt_ = NO_GDB_EXT_SWITCH;
+			if (std::is_same<Memory,CudaMemory>::value == true)
+			{opt_ |= RUN_ON_DEVICE;}
+            map(opt_);
 		}
 		else
 		{
+			device_grid_copy<device_grid::isCompressed()>::pre_load(gdb_ext_old,loc_grid_old,gdb_ext,loc_grid);
 			for (int i = 0 ; i < gdb_ext_old.size() ; i++)
 			{
 					auto & lg = loc_grid_old.get(i);
@@ -3242,16 +3510,18 @@ public:
 
 					while (it_src.isNext())
 					{
-							auto key = it_src.get();
-							grid_key_dx<dim> key_dst;
+						auto key = it_src.get();
+						grid_key_dx<dim> key_dst;
 
-							for (int j = 0 ; j < dim ; j++)
-							{key_dst.set_d(j,key.get(j) + orig.get(j) + kp1.get(j));}
+						for (int j = 0 ; j < dim ; j++)
+						{key_dst.set_d(j,key.get(j) + orig.get(j) + kp1.get(j));}
 
-							dg.insert_o(key_dst) = lg.get_o(key);
+						device_grid_copy<device_grid::isCompressed()>::assign(key,key_dst,dg,lg);
 
-							++it_src;
+						++it_src;
 					}
+
+					dg.template hostToDevice<0>();
 			}
 		}
 	}
@@ -3381,7 +3651,7 @@ public:
 			{
 				loc_grid.get(i).copyRemoveReset();
 				loc_grid.get(i).remove(bout);
-				loc_grid.get(i).removePoints(v_cl.getmgpuContext());
+				loc_grid.get(i).removePoints(v_cl.getGpuContext());
 			}
 		}
 	}

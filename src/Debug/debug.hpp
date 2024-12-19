@@ -85,17 +85,17 @@ bool debug_find(vector_dist_type & vd, functor_test fun_test, functor_print fun_
  */
 template<typename vector_type, typename functor_test, typename functor_print>
 bool debug_find_single(vector_type vd, functor_test fun_test, functor_print fun_print,
-		        size_t g_m, debug_iterator it = debug_iterator::DOMAIN_IT, debug_run type_of_run = debug_run::HOST,
+		        size_t ghostMarker, debug_iterator it = debug_iterator::DOMAIN_IT, debug_run type_of_run = debug_run::HOST,
 		        bool print = true)
 {
 	openfpm::vector_key_iterator ite(0,0);
 
 	if (it == debug_iterator::DOMAIN_IT)
-	{ite = vd.getIteratorTo(g_m);}
+	{ite = vd.getIteratorTo(ghostMarker);}
 	else if (it == debug_iterator::DOMAIN_GHOST_IT)
 	{ite = vd.getIterator();}
 	else
-	{ite = vd.getIteratorFrom(g_m);}
+	{ite = vd.getIteratorFrom(ghostMarker);}
 
 	bool test_tot = false;
 
@@ -150,7 +150,7 @@ bool debug_is_in_box(vector_dist_type & vd, Box<vector_dist_type::dims, typename
  */
 template<typename vector_type>
 bool debug_is_in_box_single(vector_type & vd, Box<vector_type::value_type::dims, typename vector_type::value_type::coord_type> box,
-		             size_t g_m, std::string message = std::string() , debug_iterator it = debug_iterator::DOMAIN_IT, debug_run type_of_run = debug_run::HOST,
+		             size_t ghostMarker, std::string message = std::string() , debug_iterator it = debug_iterator::DOMAIN_IT, debug_run type_of_run = debug_run::HOST,
 		             bool print = true)
 {
 	auto fun_test = [&vd,&box](unsigned int p){return box.isInside(vd.template get<0>(p));};
@@ -161,7 +161,7 @@ bool debug_is_in_box_single(vector_type & vd, Box<vector_type::value_type::dims,
 						return message_srm.str();
 					 };
 
-	return debug_find_single(vd,fun_test,fun_print,g_m,it,type_of_run,print);
+	return debug_find_single(vd,fun_test,fun_print,ghostMarker,it,type_of_run,print);
 }
 
 #endif /* DEBUG_HPP_ */

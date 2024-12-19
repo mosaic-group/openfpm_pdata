@@ -256,7 +256,7 @@ void Test2D_ghost(Box<2,float> & box)
 		BOOST_REQUIRE(n_part != 0);
 	}
 
-    CellDecomposer_sm<2,float,shift<2,float>> cd(SpaceBox<2,float>(box),g_div,0);
+    CellDecomposer_sm<2,float,shift<2,float>> cd(Box<2,float>(box),g_div,0);
 
 	for (size_t i = 0 ; i < vb.size() ; i++)
 	{
@@ -1083,7 +1083,7 @@ void Test_interacting(Box<3,float> & box)
 
 				Point<3,float> xp = vd.getPos(p);
 
-				auto Np = NN.getCellIterator(NN.getCell(xp));
+				auto Np = NN.getParticleInCellIterator(NN.getCell(xp));
 
 				while (Np.isNext())
 				{
@@ -1281,7 +1281,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_cell_verlet_test )
 
 		// Create a verlet list for each particle
 
-		VerletList<3,float,Mem_fast<>,shift<3,float>> verlet = vd.getVerlet(third_dist);
+		VerletList<3,float,VL_NON_SYMMETRIC,Mem_fast<>,shift<3,float>> verlet = vd.getVerlet(third_dist);
 
 		bool correct = true;
 
@@ -1703,7 +1703,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 				Point<3,float> xp = vd.getPos(p);
 
 				// Get an iterator over the neighborhood particles of p
-				auto Np = NN.getNNIterator<NO_CHECK>(NN.getCell(xp));
+				auto Np = NN.getNNIteratorBox(NN.getCell(xp));
 
 				// For each neighborhood particle ...
 				while (Np.isNext())
@@ -1772,7 +1772,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_ghost_put )
 				Point<3,float> xp = vd.getPosRead(p);
 
 				// Get an iterator over the neighborhood particles of p
-				auto Np = NN.getNNIterator<NO_CHECK>(NN.getCell(xp));
+				auto Np = NN.getNNIteratorBox(NN.getCell(xp));
 
 				// For each neighborhood particle ...
 				while (Np.isNext())

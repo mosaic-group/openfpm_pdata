@@ -52,37 +52,6 @@ __global__ void apply_bc_each_part(Box<dim,St> domain, periodicity_int<dim> bc, 
     applyPointBC_no_dec(domain,bc,parts.get(p));
 }
 
-template<bool merge_pos, typename vector_pos_type, typename vector_prp_type, typename stns_type, unsigned int ... prp>
-__global__ void merge_sort_part(vector_pos_type vd_pos, vector_prp_type vd_prp,
-		                        vector_pos_type v_pos_ord, vector_prp_type vd_prp_ord,
-		                        stns_type nss)
-{
-	int p = threadIdx.x + blockIdx.x * blockDim.x;
-
-	if (p >= vd_pos.size()) return;
-
-	if (merge_pos == true)
-	{
-		vd_pos.template set<0>(p,v_pos_ord,nss.template get<0>(p));
-	}
-
-	vd_prp.template set<prp ...>(p,vd_prp_ord,nss.template get<0>(p));
-}
-
-template<typename vector_pos_type, typename vector_prp_type, typename stns_type, unsigned int ... prp>
-__global__ void merge_sort_all(vector_pos_type vd_pos, vector_prp_type vd_prp,
-		                        vector_pos_type v_pos_ord, vector_prp_type vd_prp_ord,
-		                        stns_type nss)
-{
-	int p = threadIdx.x + blockIdx.x * blockDim.x;
-
-	if (p >= vd_pos.size()) return;
-
-	vd_pos.template set<0>(p,v_pos_ord,nss.template get<0>(p));
-
-	vd_prp.set(p,vd_prp_ord,nss.template get<0>(p));
-}
-
 template<unsigned int dim, typename St, typename cartdec_gpu, typename particles_type, typename vector_out, typename prc_sz_type>
 __global__ void process_id_proc_each_part(cartdec_gpu cdg, particles_type parts, vector_out output, prc_sz_type prc_sz , int rank)
 {
@@ -186,12 +155,12 @@ __global__ void process_ghost_particles_local(vector_g_opart_type g_opart, vecto
 }
 
 template<unsigned int dim, typename St, typename vector_of_box, typename vector_of_shifts, typename vector_type,  typename output_type>
-__global__ void num_shift_ghost_each_part(vector_of_box box_f, vector_of_shifts box_f_sv, vector_type vd,  output_type out, unsigned int g_m)
+__global__ void num_shift_ghost_each_part(vector_of_box box_f, vector_of_shifts box_f_sv, vector_type vd,  output_type out, unsigned int ghostMarker)
 {
 	unsigned int old_shift = (unsigned int)-1;
 	int p = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (p >= g_m) return;
+    if (p >= ghostMarker) return;
 
     Point<dim,St> xp = vd.template get<0>(p);
 
@@ -223,12 +192,12 @@ template<unsigned int dim, typename St,
 __global__ void shift_ghost_each_part(vector_of_box box_f, vector_of_shifts box_f_sv,
 		                              vector_type_pos v_pos, vector_type_prp v_prp,
 		                              start_type start, shifts_type shifts,
-		                              output_type output, unsigned int offset,unsigned int g_m)
+		                              output_type output, unsigned int offset,unsigned int ghostMarker)
 {
 	unsigned int old_shift = (unsigned int)-1;
 	int p = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (p >= g_m) return;
+    if (p >= ghostMarker) return;
 
     Point<dim,St> xp = v_pos.template get<0>(p);
 
@@ -276,11 +245,11 @@ __global__  void reorder_lbl(vector_lbl_type m_opart, starts_type starts)
 }
 
 template<typename red_type>
-struct _add_: mgpu::plus_t<red_type>
+struct _add_: gpu::plus_t<red_type>
 {};
 
 template<typename red_type>
-struct _max_: mgpu::maximum_t<red_type>
+struct _max_: gpu::maximum_t<red_type>
 {};
 
 template<unsigned int prp, template <typename> class op, typename vector_type>
@@ -293,7 +262,7 @@ auto reduce_local(vector_type & vd) -> typename std::remove_reference<decltype(v
 
 	openfpm::reduce((reduce_type *)vd.getPropVector(). template getDeviceBuffer<prp>(),
 			            vd.size_local(), (reduce_type *)mem.getDevicePointer() ,
-			            op<reduce_type>(), vd.getVC().getmgpuContext());
+			            op<reduce_type>(), vd.getVC().getGpuContext());
 
 	mem.deviceToHost();
 
@@ -396,7 +365,7 @@ void remove_marked(vector_type & vd, const int n = 1024)
 	idx.setMemory(mem_tmp);
 	idx.resize(vd.size_local());
 
-	openfpm::scan((remove_type *)vd.getPropVector().template getDeviceBuffer<prp>(),vd.size_local(),(remove_type *)idx.template getDeviceBuffer<0>(),vd.getVC().getmgpuContext());
+	openfpm::scan((remove_type *)vd.getPropVector().template getDeviceBuffer<prp>(),vd.size_local(),(remove_type *)idx.template getDeviceBuffer<0>(),vd.getVC().getGpuContext());
 
 	// Check if we marked something
 
@@ -443,7 +412,7 @@ void remove_marked(vector_type & vd, const int n = 1024)
 
 	CUDA_LAUNCH((copy_new_to_old_by_scan<vector_type::dims,prp>),ite,vd_pos_new.toKernel(),vd_prp_new.toKernel(),vd_pos_old.toKernel(),vd_prp_old.toKernel(),idx.toKernel());
 
-	vd.set_g_m(vd_pos_new.size());
+	vd.setGhostMarker(vd_pos_new.size());
 
 	vd.getPosVector().swap_nomode(vd_pos_new);
 	vd.getPropVector().swap_nomode(vd_prp_new);
@@ -454,13 +423,13 @@ void remove_marked(vector_type & vd, const int n = 1024)
 }
 
 template<unsigned int prp, typename functor, typename particles_type, typename out_type>
-__global__ void mark_indexes(particles_type vd, out_type out, unsigned int g_m)
+__global__ void mark_indexes(particles_type vd, out_type out, unsigned int ghostMarker)
 {
 	unsigned int p = threadIdx.x + blockIdx.x * blockDim.x;
 
 	if (p >= vd.size())	{return;}
 
-	out.template get<0>(p) = functor::check(vd.template get<prp>(p)) == true && p < g_m;
+	out.template get<0>(p) = functor::check(vd.template get<prp>(p)) == true && p < ghostMarker;
 }
 
 template<typename out_type, typename ids_type>
@@ -489,7 +458,7 @@ __global__ void fill_indexes(out_type scan, ids_type ids)
  *
  */
 template<unsigned int prp, typename functor, typename vector_type, typename ids_type>
-void get_indexes_by_type(vector_type & vd, ids_type & ids, size_t end ,mgpu::ofp_context_t & context)
+void get_indexes_by_type(vector_type & vd, ids_type & ids, size_t end ,gpu::ofp_context_t& gpuContext)
 {
 	// first we do a scan of the property
 	openfpm::vector_gpu<aggregate<unsigned int>> scan;
@@ -499,9 +468,9 @@ void get_indexes_by_type(vector_type & vd, ids_type & ids, size_t end ,mgpu::ofp
 
 	auto ite = scan.getGPUIterator();
 
-	CUDA_LAUNCH((mark_indexes<prp,functor>),ite,vd.toKernel(),scan.toKernel(),end);
+	CUDA_LAUNCH((mark_indexes<prp,functor>),ite,vd.toKernel(),scan.toKernel(),(unsigned int)end);
 
-	openfpm::scan((unsigned int *)scan.template getDeviceBuffer<0>(),scan.size(),(unsigned int *)scan.template getDeviceBuffer<0>(),context);
+	openfpm::scan((unsigned int *)scan.template getDeviceBuffer<0>(),scan.size(),(unsigned int *)scan.template getDeviceBuffer<0>(),gpuContext);
 
 	// get the number of marked particles
 	scan.template deviceToHost<0>(scan.size()-1,scan.size()-1);

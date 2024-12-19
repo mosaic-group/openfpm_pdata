@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test)
 	// For each calculated ghost box
 	for (size_t i = 0; i < dec.getNIGhostBox(); i++)
 	{
-		SpaceBox<3,float> b = dec.getIGhostBox(i);
+		Box<3,float> b = dec.getIGhostBox(i);
 		size_t proc = dec.getIGhostBoxProcessor(i);
 
 		// sample one point inside the box
@@ -178,7 +178,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_periodic_test)
 	// For each calculated ghost box
 	for (size_t i = 0; i < dec.getNIGhostBox(); i++)
 	{
-		SpaceBox<3,float> b = dec.getIGhostBox(i);
+		Box<3,float> b = dec.getIGhostBox(i);
 		size_t proc = dec.getIGhostBoxProcessor(i);
 
 		// sample one point inside the box
@@ -417,13 +417,13 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 			Point<3,double> p1;
 			Point<3,double> p2;
 
-			p1.get(0) = SpaceBox<3,double>(dec.getSubDomains().get(i)).getLow(0);
-			p1.get(1) = SpaceBox<3,double>(dec.getSubDomains().get(i)).getLow(1);
-			p1.get(2) = SpaceBox<3,double>(dec.getSubDomains().get(i)).getLow(2);
+			p1.get(0) = Box<3,double>(dec.getSubDomains().get(i)).getLow(0);
+			p1.get(1) = Box<3,double>(dec.getSubDomains().get(i)).getLow(1);
+			p1.get(2) = Box<3,double>(dec.getSubDomains().get(i)).getLow(2);
 
 			p2 = p1;
 
-			p2.get(j) = std::nextafter(SpaceBox<3,double>(dec.getSubDomains().get(i)).getLow(j),-1.0);
+			p2.get(j) = std::nextafter(Box<3,double>(dec.getSubDomains().get(i)).getLow(j),-1.0);
 
 			size_t proc1 = dec.processorIDBC(p1);
 			size_t proc2 = dec.processorIDBC(p2);
@@ -450,13 +450,13 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 			}
 
 
-			p1.get(0) = std::nextafter(SpaceBox<3,double>(dec.getSubDomains().get(i)).getHigh(0),SpaceBox<3,double>(dec.getSubDomains().get(i)).getLow(0));
-			p1.get(1) = std::nextafter(SpaceBox<3,double>(dec.getSubDomains().get(i)).getHigh(1),SpaceBox<3,double>(dec.getSubDomains().get(i)).getLow(1));
-			p1.get(2) = std::nextafter(SpaceBox<3,double>(dec.getSubDomains().get(i)).getHigh(2),SpaceBox<3,double>(dec.getSubDomains().get(i)).getLow(2));
+			p1.get(0) = std::nextafter(Box<3,double>(dec.getSubDomains().get(i)).getHigh(0),Box<3,double>(dec.getSubDomains().get(i)).getLow(0));
+			p1.get(1) = std::nextafter(Box<3,double>(dec.getSubDomains().get(i)).getHigh(1),Box<3,double>(dec.getSubDomains().get(i)).getLow(1));
+			p1.get(2) = std::nextafter(Box<3,double>(dec.getSubDomains().get(i)).getHigh(2),Box<3,double>(dec.getSubDomains().get(i)).getLow(2));
 
 			p2 = p1;
 
-			p2.get(j) = std::nextafter(SpaceBox<3,double>(dec.getSubDomains().get(i)).getHigh(j),1.0);
+			p2.get(j) = std::nextafter(Box<3,double>(dec.getSubDomains().get(i)).getHigh(j),1.0);
 
 			proc1 = dec.processorIDBC(p1);
 			proc2 = dec.processorIDBC(p2);
@@ -528,7 +528,7 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_non_periodic_test_dist_grid)
 	// For each calculated ghost box
 	for (size_t i = 0; i < dec.getNIGhostBox(); i++)
 	{
-		SpaceBox<3,float> b = dec.getIGhostBox(i);
+		Box<3,float> b = dec.getIGhostBox(i);
 		size_t proc = dec.getIGhostBoxProcessor(i);
 
 		// sample one point inside the box

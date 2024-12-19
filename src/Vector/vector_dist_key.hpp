@@ -44,6 +44,16 @@ public:
 		return key;
 	}
 
+	/*! \brief Get the key
+	 *
+	 * \return the local key
+	 *
+	 */
+	__device__ __host__ inline operator unsigned int() const
+	{
+		return key;
+	}
+
 	/*! \brief Convert the key into a string message
 	 *
 	 * \return a string message

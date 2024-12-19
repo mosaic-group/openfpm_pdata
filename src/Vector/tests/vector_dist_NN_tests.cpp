@@ -10,10 +10,207 @@
 
 #include "VCluster/VCluster.hpp"
 #include "Vector/vector_dist.hpp"
+#include "Vector/vector_dist_subset.hpp"
 
 extern void print_test_v(std::string test, size_t sz);
 
-template<typename VerletList>
+template<unsigned int opt> using VERLET_MEMFAST_OPT = VERLET_MEMFAST<3,float,opt>;
+template<unsigned int opt> using VERLET_MEMBAL_OPT = VERLET_MEMBAL<3,float,opt>;
+template<unsigned int opt> using VERLET_MEMMW_OPT = VERLET_MEMMW<3,float,opt>;
+
+template<template <unsigned int> class VerletList>
+void test_full_nn_subset(long int k)
+{
+	Vcluster<> & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 12)
+		return;
+
+	// set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+	std::default_random_engine eg;
+	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+	long int big_step = k / 4;
+	big_step = (big_step == 0)?1:big_step;
+
+	print_test_v("Testing 3D full NN search k=",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D full NN search k=" << k );
+
+	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	for (double r_cut = 0.1 ; r_cut < 1.0; r_cut += 0.1)
+	{
+		// ghost
+		Ghost<3,float> ghost(r_cut*1.001);
+
+		typedef  aggregate<float> part_prop;
+
+		// Distributed vector
+		vector_dist_ws<3,float, part_prop > vd(k,box,bc,ghost);
+
+		auto it = vd.getIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			vd.getPos(key)[0] = ud(eg);
+			vd.getPos(key)[1] = ud(eg);
+			vd.getPos(key)[2] = ud(eg);
+
+			// Fill some properties randomly
+
+			vd.getProp<0>(key) = 0.0;
+
+			if (ud(eg) < 0.5)
+				vd.setSubset(key, 0);
+			else
+				vd.setSubset(key, 1);
+
+			++it;
+		}
+
+		vd.map();
+
+		// sync the ghost
+		vd.ghost_get<0>();
+
+        vector_dist_subset<3,float, part_prop> Particles_subset0(vd,0);
+        vector_dist_subset<3,float, part_prop> Particles_subset1(vd,1);
+
+		openfpm::vector<openfpm::vector<size_t>> list_idx;
+		openfpm::vector<openfpm::vector<size_t>> list_idx2;
+		bool ret;
+
+		list_idx.resize(vd.size_local());
+		list_idx2.resize(vd.size_local());
+
+		for (size_t i = 0 ; i < vd.size_local() ; i++)
+		{
+			Point<3,float> p = vd.getPos(i);
+
+			for (size_t j = 0 ; j < vd.size_local_with_ghost(); j++)
+			{
+				Point<3,float> q = vd.getPos(j);
+
+				if (vd.getSubset(i) == 0 && vd.getSubset(j) == 0)
+					if (p.distance2(q) < r_cut * r_cut)
+						list_idx.get(i).add(j);
+			}
+
+			list_idx.get(i).sort();
+		}
+
+		auto NNv = Particles_subset0.getVerlet(r_cut*1.0001);
+
+		it = vd.getDomainIterator();
+
+		while (it.isNext())
+		{
+			Point<3,float> xp = vd.getPos(it.get());
+			auto Np = NNv.getNNIterator(it.get().getKey());
+
+			list_idx2.get(it.get().getKey()).clear();
+
+			while (Np.isNext())
+			{
+				auto q = Np.get();
+
+				Point<3,float> xq = vd.getPos(q);
+
+				if (xp.distance2(xq) < r_cut * r_cut)
+					list_idx2.get(it.get().getKey()).add(q);
+
+				++Np;
+			}
+
+			list_idx2.get(it.get().getKey()).sort();
+
+			++it;
+		}
+
+		BOOST_REQUIRE_EQUAL(list_idx.size(),list_idx2.size());
+
+		for (size_t i = 0 ; i < list_idx.size() ; i++)
+		{
+			BOOST_REQUIRE_EQUAL(list_idx.get(i).size(),list_idx2.get(i).size());
+
+			ret = true;
+			for (size_t j = 0 ; j < list_idx.get(i).size() ; j++)
+				ret &= list_idx.get(i).get(j) == list_idx2.get(i).get(j);
+
+			BOOST_REQUIRE_EQUAL(ret,true);
+		}
+
+		list_idx.clear(); list_idx.resize(vd.size_local());
+		list_idx2.clear(); list_idx2.resize(vd.size_local());
+
+		for (size_t i = 0 ; i < vd.size_local() ; i++)
+		{
+			Point<3,float> p = vd.getPos(i);
+
+			for (size_t j = 0 ; j < vd.size_local_with_ghost(); j++)
+			{
+				Point<3,float> q = vd.getPos(j);
+
+				if (vd.getSubset(i) == 1 && vd.getSubset(j) == 1)
+					if (p.distance2(q) < r_cut * r_cut)
+						list_idx.get(i).add(j);
+			}
+
+			list_idx.get(i).sort();
+		}
+
+		NNv = Particles_subset1.getVerlet(r_cut*1.0001);
+
+		it = vd.getDomainIterator();
+
+		while (it.isNext())
+		{
+			Point<3,float> xp = vd.getPos(it.get());
+			auto Np = NNv.getNNIterator(it.get().getKey());
+
+			list_idx2.get(it.get().getKey()).clear();
+
+			while (Np.isNext())
+			{
+				auto q = Np.get();
+
+				Point<3,float> xq = vd.getPos(q);
+
+				if (xp.distance2(xq) < r_cut * r_cut)
+					list_idx2.get(it.get().getKey()).add(q);
+
+				++Np;
+			}
+
+			list_idx2.get(it.get().getKey()).sort();
+
+			++it;
+		}
+
+		BOOST_REQUIRE_EQUAL(list_idx.size(),list_idx2.size());
+
+		for (size_t i = 0 ; i < list_idx.size() ; i++)
+		{
+			BOOST_REQUIRE_EQUAL(list_idx.get(i).size(),list_idx2.get(i).size());
+
+			ret = true;
+			for (size_t j = 0 ; j < list_idx.get(i).size() ; j++)
+				ret &= list_idx.get(i).get(j) == list_idx2.get(i).get(j);
+
+			BOOST_REQUIRE_EQUAL(ret,true);
+		}
+
+	}
+}
+
+template<template <unsigned int> class VerletList>
 void test_full_nn(long int k)
 {
 	Vcluster<> & v_cl = create_vcluster();
@@ -21,11 +218,11 @@ void test_full_nn(long int k)
 	if (v_cl.getProcessingUnits() > 12)
 		return;
 
-    // set the seed
+	// set the seed
 	// create the random generator engine
 	std::srand(v_cl.getProcessUnitID());
-    std::default_random_engine eg;
-    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+	std::default_random_engine eg;
+	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
 	long int big_step = k / 4;
 	big_step = (big_step == 0)?1:big_step;
@@ -98,7 +295,7 @@ void test_full_nn(long int k)
 		while (it.isNext())
 		{
 			Point<3,float> xp = vd.getPos(it.get());
-			auto Np = NN.getNNIterator<NO_CHECK>(NN.getCell(xp));
+			auto Np = NN.getNNIteratorBox(NN.getCell(xp));
 
 			while (Np.isNext())
 			{
@@ -133,14 +330,14 @@ void test_full_nn(long int k)
 
 		///////////////////////////////////
 
-		auto NNv = vd.template getVerlet<VerletList>(r_cut*1.0001);
+		auto NNv = vd.template getVerlet<VL_NON_SYMMETRIC, VerletList<VL_NON_SYMMETRIC>>(r_cut*1.0001);
 
 		it = vd.getDomainIterator();
 
 		while (it.isNext())
 		{
 			Point<3,float> xp = vd.getPos(it.get());
-			auto Np = NNv.template getNNIterator<NO_CHECK>(it.get().getKey());
+			auto Np = NNv.getNNIterator(it.get().getKey());
 
 			list_idx2.get(it.get().getKey()).clear();
 
@@ -184,7 +381,220 @@ void test_full_nn(long int k)
 		while (it.isNext())
 		{
 			Point<3,float> xp = vd.getPos(it.get());
-			auto Np = NNv.template getNNIterator<NO_CHECK>(it.get().getKey());
+			auto Np = NNv.getNNIterator(it.get().getKey());
+
+			list_idx2.get(it.get().getKey()).clear();
+
+			while (Np.isNext())
+			{
+				auto q = Np.get();
+
+				Point<3,float> xq = vd.getPos(q);
+
+				if (xp.distance2(xq) < r_cut * r_cut)
+					list_idx2.get(it.get().getKey()).add(q);
+
+				++Np;
+			}
+
+			list_idx2.get(it.get().getKey()).sort();
+
+			++it;
+		}
+
+		BOOST_REQUIRE_EQUAL(list_idx.size(),list_idx2.size());
+
+		for (size_t i = 0 ; i < list_idx.size() ; i++)
+		{
+			BOOST_REQUIRE_EQUAL(list_idx.get(i).size(),list_idx2.get(i).size());
+
+			ret = true;
+			for (size_t j = 0 ; j < list_idx.get(i).size() ; j++)
+				ret &= list_idx.get(i).get(j) == list_idx2.get(i).get(j);
+
+			BOOST_REQUIRE_EQUAL(ret,true);
+		}
+	}
+}
+
+template<template <unsigned int> class VerletList>
+void test_full_nn_adaptive(long int k)
+{
+	Vcluster<> & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 12)
+		return;
+
+	// set the seed
+	// create the random generator engine
+	std::srand(v_cl.getProcessUnitID());
+	std::default_random_engine eg;
+	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+
+	long int big_step = k / 4;
+	big_step = (big_step == 0)?1:big_step;
+
+	print_test_v("Testing 3D full NN search k=",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D full NN search k=" << k );
+
+	Box<3,float> box({0.0,0.0,0.0},{1.0,1.0,1.0});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	for (double r_cut = 0.1 ; r_cut < 1.0; r_cut += 0.1)
+	{
+		// ghost
+		Ghost<3,float> ghost(r_cut*1.001);
+
+		typedef  aggregate<float> part_prop;
+
+		// Distributed vector
+		vector_dist<3,float, part_prop > vd(k,box,bc,ghost);
+
+		auto it = vd.getIterator();
+
+		while (it.isNext())
+		{
+			auto key = it.get();
+
+			vd.getPos(key)[0] = ud(eg);
+			vd.getPos(key)[1] = ud(eg);
+			vd.getPos(key)[2] = ud(eg);
+
+			// Fill some properties randomly
+
+			vd.getProp<0>(key) = 0.0;
+
+			++it;
+		}
+
+		vd.map();
+
+		// sync the ghost
+		vd.ghost_get<0>();
+
+		openfpm::vector<openfpm::vector<size_t>> list_idx;
+		openfpm::vector<openfpm::vector<size_t>> list_idx2;
+
+		list_idx.resize(vd.size_local());
+		list_idx2.resize(vd.size_local());
+
+		for (size_t i = 0 ; i < vd.size_local() ; i++)
+		{
+			Point<3,float> p = vd.getPos(i);
+
+			for (size_t j = 0 ; j < vd.size_local_with_ghost(); j++)
+			{
+				Point<3,float> q = vd.getPos(j);
+
+				if (p.distance2(q) < r_cut * r_cut)
+					list_idx.get(i).add(j);
+			}
+
+			list_idx.get(i).sort();
+		}
+
+		auto NN = vd.getCellList(r_cut);
+
+		it = vd.getDomainIterator();
+
+		while (it.isNext())
+		{
+			Point<3,float> xp = vd.getPos(it.get());
+			auto Np = NN.getNNIteratorBox(NN.getCell(xp));
+
+			while (Np.isNext())
+			{
+				auto q = Np.get();
+
+				Point<3,float> xq = vd.getPos(q);
+
+				if (xp.distance2(xq) < r_cut * r_cut)
+					list_idx2.get(it.get().getKey()).add(q);
+
+				++Np;
+			}
+
+			list_idx2.get(it.get().getKey()).sort();
+
+			++it;
+		}
+
+		BOOST_REQUIRE_EQUAL(list_idx.size(),list_idx2.size());
+
+		bool ret;
+		for (size_t i = 0 ; i < list_idx.size() ; i++)
+		{
+			BOOST_REQUIRE_EQUAL(list_idx.get(i).size(),list_idx2.get(i).size());
+
+			ret = true;
+			for (size_t j = 0 ; j < list_idx.get(i).size() ; j++)
+				ret &= list_idx.get(i).get(j) == list_idx2.get(i).get(j);
+
+			BOOST_REQUIRE_EQUAL(ret,true);
+		}
+
+		///////////////////////////////////
+
+		openfpm::vector<float> rCuts(vd.size_local());
+		for (int i = 0; i < vd.size_local(); ++i)
+		{
+			rCuts.get(i) = r_cut*1.0001;
+		}
+
+		auto NNv = vd.template getVerletAdaptRCut<VerletList<VL_ADAPTIVE_RCUT>>(rCuts);
+
+		it = vd.getDomainIterator();
+
+		while (it.isNext())
+		{
+			Point<3,float> xp = vd.getPos(it.get());
+			auto Np = NNv.getNNIterator(it.get().getKey());
+
+			list_idx2.get(it.get().getKey()).clear();
+
+			while (Np.isNext())
+			{
+				auto q = Np.get();
+
+				Point<3,float> xq = vd.getPos(q);
+
+				if (xp.distance2(xq) < r_cut * r_cut)
+					list_idx2.get(it.get().getKey()).add(q);
+
+				++Np;
+			}
+
+			list_idx2.get(it.get().getKey()).sort();
+
+			++it;
+		}
+
+		BOOST_REQUIRE_EQUAL(list_idx.size(),list_idx2.size());
+
+		for (size_t i = 0 ; i < list_idx.size() ; i++)
+		{
+			BOOST_REQUIRE_EQUAL(list_idx.get(i).size(),list_idx2.get(i).size());
+
+			ret = true;
+			for (size_t j = 0 ; j < list_idx.get(i).size() ; j++)
+				ret &= list_idx.get(i).get(j) == list_idx2.get(i).get(j);
+
+			BOOST_REQUIRE_EQUAL(ret,true);
+		}
+
+		//////////////////////////////////////////
+
+		NNv.clear();
+		vd.updateVerletAdaptRCut(NNv,rCuts);
+
+		it = vd.getDomainIterator();
+
+		while (it.isNext())
+		{
+			Point<3,float> xp = vd.getPos(it.get());
+			auto Np = NNv.getNNIterator(it.get().getKey());
 
 			list_idx2.get(it.get().getKey()).clear();
 
@@ -225,17 +635,53 @@ BOOST_AUTO_TEST_CASE( vector_dist_full_NN )
 	auto & v_cl = create_vcluster();
 
 #ifdef TEST_COVERAGE_MODE
-    long int k = 50 * v_cl.getProcessingUnits();
+	long int k = 50 * v_cl.getProcessingUnits();
 #else
-    long int k = 750 * v_cl.getProcessingUnits();
+	long int k = 750 * v_cl.getProcessingUnits();
 #endif
 
-	test_full_nn<VERLET_MEMFAST(3,float)>(k);
+	test_full_nn<VERLET_MEMFAST_OPT>(k);
 
 	k /= 2;
-	test_full_nn<VERLET_MEMBAL(3,float)>(k);
+	test_full_nn<VERLET_MEMBAL_OPT>(k);
 	k /= 2;
-	test_full_nn<VERLET_MEMMW(3,float)>(k);
+	test_full_nn<VERLET_MEMMW_OPT>(k);
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_full_NN_subset )
+{
+	auto & v_cl = create_vcluster();
+
+#ifdef TEST_COVERAGE_MODE
+	long int k = 50 * v_cl.getProcessingUnits();
+#else
+	long int k = 750 * v_cl.getProcessingUnits();
+#endif
+
+	test_full_nn_subset<VERLET_MEMFAST_OPT>(k);
+
+	k /= 2;
+	test_full_nn_subset<VERLET_MEMBAL_OPT>(k);
+	k /= 2;
+	test_full_nn_subset<VERLET_MEMMW_OPT>(k);
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_full_NN_adaptive )
+{
+	auto & v_cl = create_vcluster();
+
+#ifdef TEST_COVERAGE_MODE
+	long int k = 50 * v_cl.getProcessingUnits();
+#else
+	long int k = 750 * v_cl.getProcessingUnits();
+#endif
+
+	test_full_nn_adaptive<VERLET_MEMFAST_OPT>(k);
+
+	k /= 2;
+	test_full_nn_adaptive<VERLET_MEMBAL_OPT>(k);
+	k /= 2;
+	test_full_nn_adaptive<VERLET_MEMMW_OPT>(k);
 }
 
 BOOST_AUTO_TEST_CASE( vector_dist_particle_iteration )
@@ -245,13 +691,13 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_iteration )
 	if (v_cl.getProcessingUnits() > 12)
 		return;
 
-    // set the seed
+	// set the seed
 	// create the random generator engine
 	std::srand(v_cl.getProcessUnitID());
-    std::default_random_engine eg;
-    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+	std::default_random_engine eg;
+	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
-    long int k = 750 * v_cl.getProcessingUnits();
+	long int k = 750 * v_cl.getProcessingUnits();
 
 	print_test_v("Testing 3D particle cell iterator=",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D full NN search k=" << k );
@@ -326,13 +772,13 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_update_with_limit )
 	if (v_cl.getProcessingUnits() > 12)
 		return;
 
-    // set the seed
+	// set the seed
 	// create the random generator engine
 	std::srand(v_cl.getProcessUnitID());
-    std::default_random_engine eg;
-    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+	std::default_random_engine eg;
+	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
-    long int k = 750 * v_cl.getProcessingUnits();
+	long int k = 750 * v_cl.getProcessingUnits();
 
 	print_test_v("Testing 3D particle cell-list with radius at limit= ",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D particle cell-list with radius at limit= " << k );
@@ -381,7 +827,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_update_with_limit )
 	vd.getDecomposition().decompose();
 	vd.map();
 
-	vd.updateCellListSym(NN);
+	vd.updateCellList(NN);
 
 	auto cell2 = NN.getCellBox();
 
@@ -397,13 +843,13 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_getCellListSym_with_div )
 	if (v_cl.getProcessingUnits() > 12)
 		return;
 
-    // set the seed
+	// set the seed
 	// create the random generator engine
 	std::srand(v_cl.getProcessUnitID());
-    std::default_random_engine eg;
-    std::uniform_real_distribution<float> ud(0.0f, 1.0f);
+	std::default_random_engine eg;
+	std::uniform_real_distribution<float> ud(0.0f, 1.0f);
 
-    long int k = 750 * v_cl.getProcessingUnits();
+	long int k = 750 * v_cl.getProcessingUnits();
 
 	print_test_v("Testing 3D particle getCellListSym with div =",k);
 	BOOST_TEST_CHECKPOINT( "Testing 3D particle getCellListSym with div = " << k );
