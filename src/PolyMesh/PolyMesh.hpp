@@ -2,7 +2,7 @@
 #define __POLYMESH_HPP__
 
 #include <Vector/vector_dist.hpp>
-#include "voro++.hh"
+#include "voro++/voro++.hh"
 #include "util/polymesh_base_functions.hpp"
 #include "Space/Shape/Plane.hpp"
 #include "hash_map/hopscotch_map.h"
