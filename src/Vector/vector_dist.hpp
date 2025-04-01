@@ -932,7 +932,6 @@ public:
 	 */
 	void appendLocal()
 	{
-		vPrp.add();
 		vPos.add();
 	}
 
@@ -2554,7 +2553,6 @@ public:
 	void discardLocalAppend(size_t rs)
 	{
 		vPos.resize(rs);
-		vPrp.resize(rs);
 #ifdef CUDA_GPU
 		this->update(this->toKernel());
 #endif
