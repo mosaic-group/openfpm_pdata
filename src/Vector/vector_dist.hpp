@@ -61,10 +61,6 @@ template<unsigned int dim,typename St> using CELLLIST_GPU_SPARSE = CellList_gpu<
 	#define SE_CLASS3_VDIST_CONSTRUCTOR
 #endif
 
-
-#define NO_ID false
-#define ID true
-
 // Perform a ghost get or a ghost put
 constexpr int GET = 1;
 constexpr int PUT = 2;
