@@ -2037,6 +2037,16 @@ public:
 		ghostMarker = v_pos.size();
 	}
 
+	/*! \brief Set the decomposition
+	 *
+	 * \return
+	 *
+	 */
+	void setDecomposition(Decomposition& dec2)
+	{
+		dec = dec2;
+	}
+
 	/*! \brief Get the decomposition
 	 *
 	 * \return
