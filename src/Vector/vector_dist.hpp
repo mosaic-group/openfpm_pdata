@@ -1352,7 +1352,8 @@ public:
 				if (cellList.getOpt() & CL_GPU_REORDER_PROPERTY) vPrp.swap(vPrpReordered);
 			}
 			else
-				cellList.construct(vPos,vPrp,v_cl.getGpuContext(),ghostMarker,0,vPos.size());
+				if (!skipConstructOnStaticDomain)
+					cellList.construct(vPos,vPrp,v_cl.getGpuContext(),ghostMarker,0,vPos.size());
 		}
 
 		else
