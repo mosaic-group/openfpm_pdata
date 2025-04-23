@@ -1315,7 +1315,7 @@ public:
 	 *
 	 */
 	template<unsigned int ... prp, typename CellList_type>
-	void updateCellListGPU(CellList_type & cellList, bool no_se3 = false)
+	void updateCellListGPU(CellList_type & cellList, bool skipConstructOnStaticDomain = false, bool no_se3 = false)
 	{
 #ifdef SE_CLASS3
 		if (no_se3 == false)
@@ -1336,15 +1336,17 @@ public:
 		if (to_reconstruct == false)
 		{
 			if (cellList.getOpt() & CL_GPU_REORDER_POSITION || cellList.getOpt() & CL_GPU_REORDER_PROPERTY) {
-				cellList.template construct<decltype(vPos),decltype(vPrp),prp ...>(
-					vPos,
-					vPrp,
-					vPosReordered,
-					vPrpReordered,
-					v_cl.getGpuContext(),
-					ghostMarker,
-					0,
-					vPos.size());
+
+				if (!skipConstructOnStaticDomain)
+					cellList.template construct<decltype(vPos),decltype(vPrp),prp ...>(
+						vPos,
+						vPrp,
+						vPosReordered,
+						vPrpReordered,
+						v_cl.getGpuContext(),
+						ghostMarker,
+						0,
+						vPos.size());
 
 				if (cellList.getOpt() & CL_GPU_REORDER_POSITION) vPos.swap(vPosReordered);
 				if (cellList.getOpt() & CL_GPU_REORDER_PROPERTY) vPrp.swap(vPrpReordered);

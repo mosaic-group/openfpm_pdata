@@ -487,6 +487,9 @@ void vector_dist_gpu_make_sort_test_impl()
 	vecDist.template updateCellListGPU<0,1,2>(NN);
 	vecDist.template restoreOrder<0,1,2>(NN);
 
+	vecDist.template updateCellListGPU<0,1,2>(NN, true);
+	vecDist.template restoreOrder<0,1,2>(NN);
+
 	vecDist.deviceToHostPos();
 	vecDist.template deviceToHostProp<0,1,2>();
 
