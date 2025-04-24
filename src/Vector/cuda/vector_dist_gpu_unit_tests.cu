@@ -487,8 +487,10 @@ void vector_dist_gpu_make_sort_test_impl()
 	vecDist.template updateCellListGPU<0,1,2>(NN);
 	vecDist.template restoreOrder<0,1,2>(NN);
 
-	vecDist.template updateCellListGPU<0,1,2>(NN, true);
+	NN.setOpt(NN.getOpt() | CL_GPU_SKIP_CONSTRUCT_ON_STATIC_DOMAIN);
+	vecDist.template updateCellListGPU<0,1,2>(NN);
 	vecDist.template restoreOrder<0,1,2>(NN);
+	NN.setOpt(NN.getOpt() ^ CL_GPU_SKIP_CONSTRUCT_ON_STATIC_DOMAIN);
 
 	vecDist.deviceToHostPos();
 	vecDist.template deviceToHostProp<0,1,2>();
