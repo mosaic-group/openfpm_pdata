@@ -1280,11 +1280,219 @@ void test_vd_symmetric_verlet_list()
 	BOOST_REQUIRE_EQUAL(ret,true);
 }
 
+template<template <unsigned int> class VerletList>
+void test_vd_adaptive_verlet_list()
+{
+	Vcluster<> & v_cl = create_vcluster();
+
+	if (v_cl.getProcessingUnits() > 24)
+		return;
+
+	float L = 1000.0;
+	float r_cut = 100.0;
+
+    // set the seed
+	// create the random generator engine
+	std::srand(0);
+    std::default_random_engine eg;
+    std::uniform_real_distribution<float> ud(-L,L);
+    std::uniform_real_distribution<float> rCutDistr(0,r_cut);
+
+    long int k = 4096 * v_cl.getProcessingUnits();
+
+	print_test_v("Testing 3D periodic vector adaptive verlet-list k=",k);
+	BOOST_TEST_CHECKPOINT( "Testing 3D periodic vector adaptive verlet-list k=" << k );
+
+	Box<3,float> box({-L,-L,-L},{L,L,L});
+
+	// Boundary conditions
+	size_t bc[3]={PERIODIC,PERIODIC,PERIODIC};
+
+	// ghost
+	Ghost<3,float> ghost(r_cut);
+
+	// Point and global id
+	struct point_and_gid
+	{
+		size_t id;
+		Point<3,float> xq;
+
+		bool operator<(const struct point_and_gid & pag) const
+		{
+			return (id < pag.id);
+		}
+	};
+
+	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
+
+	// vector of cut-off radii for Verlet List
+	openfpm::vector<float> rCuts;
+
+	// Distributed vector
+	vector_dist<3,float, part_prop > vd(k,box,bc,ghost,BIND_DEC_TO_GHOST);
+	size_t start = vd.init_size_accum(k);
+
+	auto it = vd.getIterator();
+
+	while (it.isNext())
+	{
+		auto key = it.get();
+
+		vd.getPosWrite(key)[0] = ud(eg);
+		vd.getPosWrite(key)[1] = ud(eg);
+		vd.getPosWrite(key)[2] = ud(eg);
+
+		// Fill some properties randomly
+
+		vd.template getPropWrite<0>(key) = 0;
+		vd.template getPropWrite<1>(key) = 0;
+		vd.template getPropWrite<2>(key) = key.getKey() + start;
+
+		rCuts.add(rCutDistr(eg));
+
+		++it;
+	}
+
+	vd.map();
+
+	// sync the ghost
+	vd.template ghost_get<0,2>();
+
+	auto NN = vd.getVerletAdaptRCut(rCuts);
+	auto p_it = vd.getDomainIterator();
+
+	while (p_it.isNext())
+	{
+		auto p = p_it.get();
+
+		Point<3,float> xp = vd.getPosRead(p);
+
+		auto Np = NN.getNNIterator(p.getKey());
+
+		while (Np.isNext())
+		{
+			auto q = Np.get();
+			float rCutP = rCuts.get(p);
+
+			if (p.getKey() == q)
+			{
+				++Np;
+				continue;
+			}
+
+			// repulsive
+
+			Point<3,float> xq = vd.getPosRead(q);
+			Point<3,float> f = (xp - xq);
+
+			float distance = f.norm();
+
+			// Particle should be inside rCutP range
+
+			if (distance < rCutP )
+			{
+				vd.template getPropWrite<0>(p)++;
+				vd.template getPropWrite<3>(p).add();
+				vd.template getPropWrite<3>(p).last().xq = xq;
+				vd.template getPropWrite<3>(p).last().id = vd.template getPropRead<2>(q);
+			}
+
+			++Np;
+		}
+
+		++p_it;
+	}
+
+	auto p_it2 = vd.getDomainIterator();
+
+	while (p_it2.isNext())
+	{
+		auto p = p_it2.get();
+
+		Point<3,float> xp = vd.getPosRead(p);
+
+		auto p_it3 = vd.getDomainAndGhostIterator();
+		float rCutP = rCuts.get(p);
+
+		while (p_it3.isNext())
+		{
+			auto q = p_it3.get().getKey();
+
+			if (p.getKey() == q)
+			{
+				++p_it3;
+				continue;
+			}
+
+			// repulsive
+
+			Point<3,float> xq = vd.getPosRead(q);
+			Point<3,float> f = (xp - xq);
+
+			float distance = f.norm();
+
+			// Particle should be inside rCutP range
+
+			if (distance < rCutP )
+			{
+				vd.template getPropWrite<1>(p)++;
+
+				vd.template getPropWrite<4>(p).add();
+
+				vd.template getPropWrite<4>(p).last().xq = xq;
+				vd.template getPropWrite<4>(p).last().id = vd.template getPropRead<2>(q);
+			}
+
+			++p_it3;
+		}
+
+		++p_it2;
+	}
+
+	vd.template ghost_put<add_,1>();
+	vd.template ghost_put<merge_,4>();
+
+	auto p_it4 = vd.getDomainIterator();
+
+	bool ret = true;
+	while (p_it4.isNext())
+	{
+		auto p = p_it4.get();
+
+		ret &= vd.template getPropRead<1>(p) == vd.template getPropRead<0>(p);
+
+		vd.template getPropWrite<3>(p).sort();
+		vd.template getPropWrite<4>(p).sort();
+
+		ret &= vd.template getPropRead<3>(p).size() == vd.template getPropRead<4>(p).size();
+		ret &= fabs(rCuts.get(p) - NN.getRCuts(p)) < 0.001;
+
+		for (size_t i = 0 ; i < vd.template getPropRead<3>(p).size() ; i++) {
+			ret &= vd.template getPropRead<3>(p).get(i).id == vd.template getPropRead<4>(p).get(i).id;
+			auto xq = vd.template getPropRead<3>(p).get(i).xq;
+		}
+
+		if (ret == false)
+			break;
+
+		++p_it4;
+	}
+
+	BOOST_REQUIRE_EQUAL(ret,true);
+}
+
 BOOST_AUTO_TEST_CASE( vector_dist_symmetric_verlet_list )
 {
 	test_vd_symmetric_verlet_list<VERLET_MEMFAST_OPT>();
 	test_vd_symmetric_verlet_list<VERLET_MEMBAL_OPT>();
 	test_vd_symmetric_verlet_list<VERLET_MEMMW_OPT>();
+}
+
+BOOST_AUTO_TEST_CASE( vector_dist_adaptive_verlet_list )
+{
+	test_vd_adaptive_verlet_list<VERLET_MEMFAST_OPT>();
+	test_vd_adaptive_verlet_list<VERLET_MEMBAL_OPT>();
+	test_vd_adaptive_verlet_list<VERLET_MEMMW_OPT>();
 }
 
 template<template <unsigned int> class VerletList>
