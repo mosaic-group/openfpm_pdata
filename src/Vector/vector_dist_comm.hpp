@@ -1595,30 +1595,6 @@ class vector_dist_comm
 #endif
 	}
 
-	/*! \brief Call-back to allocate buffer to receive incoming elements (particles)
-	 *
-	 * \param msg_i size required to receive the message from i
-	 * \param total_msg total size to receive from all the processors
-	 * \param total_p the total number of processor that want to communicate with you
-	 * \param i processor id
-	 * \param ri request id (it is an id that goes from 0 to total_p, and is unique
-	 *           every time message_alloc is called)
-	 * \param ptr a pointer to the vector_dist structure
-	 *
-	 * \return the pointer where to store the message for the processor i
-	 *
-	 */
-	static void * message_alloc_map(size_t msg_i, size_t total_msg, size_t total_p, size_t i, size_t ri, void * ptr)
-	{
-		// cast the pointer
-		vector_dist_comm<dim, St, prop, Decomposition, Memory, layout_base> * vd = static_cast<vector_dist_comm<dim, St, prop, Decomposition, Memory, layout_base> *>(ptr);
-
-		vd->recv_mem_gm.resize(vd->v_cl.getProcessingUnits());
-		vd->recv_mem_gm.get(i).resize(msg_i);
-
-		return vd->recv_mem_gm.get(i).getPointer();
-	}
-
 public:
 
 	/*! \brief Copy Constructor
