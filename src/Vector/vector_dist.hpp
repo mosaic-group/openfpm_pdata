@@ -1467,7 +1467,16 @@ public:
 #endif
 
 		VerletList_type verletList;
-		verletList.fillNonSymmAdaptive(vPos, rCuts, ghostMarker);
+
+		// get the processor bounding box
+		Ghost<dim,St> g = getDecomposition().getGhost();
+		g.magnify(1.013);
+
+		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+		// enlarge the box where the Verlet is defined
+		pbox.enlarge(g);
+
+		verletList.InitializeNonSymmAdaptive(pbox,rCuts,vPos,ghostMarker);
 
 		return verletList;
 	}
@@ -1603,7 +1612,8 @@ public:
 #endif
 		// in this mode the Verlet list doesn't depend on the decomposition counter
 		// has to be fully reconstructed on update
-		verletList.fillNonSymmAdaptive(vPos, rCuts, ghostMarker);
+		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+		verletList.InitializeNonSymmAdaptive(pbox,rCuts,vPos,ghostMarker);
 	}
 
 
