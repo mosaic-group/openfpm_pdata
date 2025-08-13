@@ -921,7 +921,7 @@ class vector_dist_comm
 				CUDA_LAUNCH((process_ghost_particles_pos<dim,decltype(g_opart_device.toKernel()),decltype(g_pos_send.get(i).toKernel()),decltype(v_pos.toKernel()),decltype(shifts.toKernel())>),
 				ite,
 				g_opart_device.toKernel(), g_pos_send.get(i).toKernel(),
-				 v_pos.toKernel(),shifts.toKernel(),offset);
+				 v_pos.toKernel(),shifts.toKernel(),(unsigned int)offset);
 
 				offset += prc_sz.get(i);
 			}
@@ -1011,7 +1011,7 @@ class vector_dist_comm
 						CUDA_LAUNCH((process_ghost_particles_prp_put<decltype(g_send_prp.get(i).toKernel()),decltype(v_prp.toKernel()),prp...>),
 						ite,
 						g_send_prp.get(i).toKernel(),
-						v_prp.toKernel(),accum);
+						v_prp.toKernel(),(unsigned int)accum);
 
 						accum = accum + n_part_recv;
 					}
@@ -1194,7 +1194,7 @@ class vector_dist_comm
 					CUDA_LAUNCH((process_ghost_particles_prp<decltype(g_opart_device.toKernel()),decltype(g_send_prp.get(i).toKernel()),decltype(v_prp.toKernel()),prp...>),
 					ite,
 					g_opart_device.toKernel(), g_send_prp.get(i).toKernel(),
-					 v_prp.toKernel(),offset);
+					 v_prp.toKernel(),(unsigned int)offset);
 
 					offset += prc_sz.get(i);
 				}
@@ -1287,7 +1287,7 @@ class vector_dist_comm
 					                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>),
 				ite,
 				m_opart.toKernel(),v_pos_tmp.toKernel(), v_prp_tmp.toKernel(),
-					            v_pos.toKernel(),v_prp.toKernel(),offset);
+					            v_pos.toKernel(),v_prp.toKernel(),(unsigned int)offset);
 			}
 
 			// Fill the sending buffers
@@ -1305,7 +1305,7 @@ class vector_dist_comm
 						                                           decltype(v_pos.toKernel()),decltype(v_prp.toKernel())>),
 					ite,
 					m_opart.toKernel(),m_pos.get(i).toKernel(), m_prp.get(i).toKernel(),
-						            v_pos.toKernel(),v_prp.toKernel(),offset);
+						            v_pos.toKernel(),v_prp.toKernel(),(unsigned int)offset);
 
 				}
 			}
@@ -1439,7 +1439,7 @@ class vector_dist_comm
 			// label particle processor
 			CUDA_LAUNCH((process_id_proc_each_part<dim,St,decltype(dec.toKernel()),decltype(v_pos.toKernel()),decltype(lbl_p.toKernel()),decltype(prc_sz.toKernel())>),
 			ite,
-			dec.toKernel(),v_pos.toKernel(),lbl_p.toKernel(),prc_sz.toKernel(),v_cl.rank());
+			dec.toKernel(),v_pos.toKernel(),lbl_p.toKernel(),prc_sz.toKernel(),(int)v_cl.rank());
 
 			starts.resize(v_cl.size());
 			openfpm::scan((unsigned int *)prc_sz.template getDeviceBuffer<0>(), prc_sz.size(), (unsigned int *)starts.template getDeviceBuffer<0>() , v_cl.getGpuContext());
@@ -2011,6 +2011,16 @@ public:
 		// mark the ghost part
 
 		ghostMarker = v_pos.size();
+	}
+
+	/*! \brief Set the decomposition
+	 *
+	 * \return
+	 *
+	 */
+	void setDecomposition(Decomposition& dec2)
+	{
+		dec = dec2;
 	}
 
 	/*! \brief Get the decomposition

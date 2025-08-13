@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 	// label particle processor
 	CUDA_LAUNCH_DIM3((num_shift_ghost_each_part<3,float,decltype(box_f_dev.toKernel()),decltype(box_f_sv.toKernel()),decltype(vPos.toKernel()),decltype(o_part_loc.toKernel())>),
 	ite.wthr,ite.thr,
-	box_f_dev.toKernel(),box_f_sv.toKernel(),vPos.toKernel(),o_part_loc.toKernel(),vPos.size());
+	box_f_dev.toKernel(),box_f_sv.toKernel(),vPos.toKernel(),o_part_loc.toKernel(),(unsigned int)vPos.size());
 
 	o_part_loc.deviceToHost<0>();
 
@@ -171,7 +171,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 	ite.wthr,ite.thr,
 	box_f_dev.toKernel(),box_f_sv.toKernel(),
 	 vPos.toKernel(),vPrp.toKernel(),
-	 starts.toKernel(),shifts.toKernel(),o_part_loc2.toKernel(),old,old);
+	 starts.toKernel(),shifts.toKernel(),o_part_loc2.toKernel(),(unsigned int)old,(unsigned int)old);
 
 	vPos.deviceToHost<0>();
 	o_part_loc2.deviceToHost<0,1>();
@@ -357,7 +357,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_process_local_particles )
 
 	CUDA_LAUNCH_DIM3((process_ghost_particles_local<true,3,decltype(o_part_loc2.toKernel()),decltype(vPos2.toKernel()),decltype(vPrp2.toKernel()),decltype(shifts.toKernel())>),
 	ite.wthr,ite.thr,
-	o_part_loc2.toKernel(),vPos2.toKernel(),vPrp2.toKernel(),shifts.toKernel(),old);
+	o_part_loc2.toKernel(),vPos2.toKernel(),vPrp2.toKernel(),shifts.toKernel(),(unsigned int)old);
 
 	vPos2.template deviceToHost<0>();
 	vPrp2.template deviceToHost<0,1,2>();
@@ -464,7 +464,7 @@ BOOST_AUTO_TEST_CASE( vector_ghost_fill_send_buffer_test )
 		CUDA_LAUNCH_DIM3((process_ghost_particles_prp<decltype(g_opart_device.toKernel()),decltype(g_send_prp.get(i).toKernel()),decltype(vPrp.toKernel()),0,1,2>),
 		ite.wthr,ite.thr,
 		g_opart_device.toKernel(), g_send_prp.get(i).toKernel(),
-		 vPrp.toKernel(),offset);
+		 vPrp.toKernel(),(unsigned int)offset);
 
 		offset += g_send_prp.get(i).size();
 
@@ -556,7 +556,7 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 
 	for (size_t k = 0 ; k < nsub ; k++)
 	{
-		SpaceBox<3,float> sp = dec.getSubDomain(k);
+		Box<3,float> sp = dec.getSubDomain(k);
 
 		for (size_t j = 0 ; j < n_part ; j++)
 		{
@@ -743,7 +743,7 @@ BOOST_AUTO_TEST_CASE( decomposition_to_gpu_test_use )
 
 	CUDA_LAUNCH_DIM3((process_id_proc_each_part<3,float,decltype(dec.toKernel()),decltype(vg.toKernel()),decltype(proc_id_out.toKernel()),decltype(dev_counter.toKernel())>),
 	ite.wthr,ite.thr,
-	dec.toKernel(),vg.toKernel(),proc_id_out.toKernel(),dev_counter.toKernel(),v_cl.rank());
+	dec.toKernel(),vg.toKernel(),proc_id_out.toKernel(),dev_counter.toKernel(),(int)v_cl.rank());
 
 
 	proc_id_out.deviceToHost<0>();
@@ -843,151 +843,6 @@ BOOST_AUTO_TEST_CASE(vector_dist_reorder_lbl)
 			BOOST_REQUIRE_EQUAL(lbl_p.template get<0>(j*10+i),i*10+j);
 		}
 	}
-}
-
-BOOST_AUTO_TEST_CASE(vector_dist_merge_sort)
-{
-	openfpm::vector_gpu<aggregate<float[3],float[3],float[3]>> vPrp;
-	openfpm::vector_gpu<Point<3,float>> vPos;
-
-	openfpm::vector_gpu<aggregate<float[3],float[3],float[3]>> vPrpOut;
-	openfpm::vector_gpu<Point<3,float>> vPosOut;
-
-	openfpm::vector_gpu<aggregate<int>> ns_to_s;
-
-	vPrp.resize(10000);
-	vPos.resize(10000);
-	vPrpOut.resize(10000);
-	vPosOut.resize(10000);
-	ns_to_s.resize(10000);
-
-	for (int i = 0 ; i < 10000 ; i++) // <------ particle id
-	{
-		vPosOut.template get<0>(i)[0] = i;
-		vPosOut.template get<0>(i)[1] = i+10000;
-		vPosOut.template get<0>(i)[2] = i+20000;
-
-		vPos.template get<0>(i)[0] = 0;
-		vPos.template get<0>(i)[1] = 0;
-		vPos.template get<0>(i)[2] = 0;
-
-		vPrpOut.template get<0>(i)[0] = i+60123;
-		vPrpOut.template get<0>(i)[1] = i+73543;
-		vPrpOut.template get<0>(i)[2] = i+82432;
-
-		vPrpOut.template get<1>(i)[0] = i+80123;
-		vPrpOut.template get<1>(i)[1] = i+93543;
-		vPrpOut.template get<1>(i)[2] = i+102432;
-
-		vPrpOut.template get<2>(i)[0] = i+110123;
-		vPrpOut.template get<2>(i)[1] = i+123543;
-		vPrpOut.template get<2>(i)[2] = i+132432;
-
-		vPrp.template get<0>(i)[0] = 0;
-		vPrp.template get<0>(i)[1] = 0;
-		vPrp.template get<0>(i)[2] = 0;
-
-		vPrp.template get<1>(i)[0] = 0;
-		vPrp.template get<1>(i)[1] = 0;
-		vPrp.template get<1>(i)[2] = 0;
-
-		vPrp.template get<2>(i)[0] = 0;
-		vPrp.template get<2>(i)[1] = 0;
-		vPrp.template get<2>(i)[2] = 0;
-
-		ns_to_s.template get<0>(i) = 10000-i-1;
-	}
-
-	vPrp.template hostToDevice<0,1,2>();
-	vPrpOut.template hostToDevice<0,1,2>();
-	vPos.template hostToDevice<0>();
-	vPosOut.template hostToDevice<0>();
-	ns_to_s.template hostToDevice<0>();
-
-	auto ite = vPos.getGPUIterator();
-
-	CUDA_LAUNCH_DIM3((merge_sort_part<false,decltype(vPos.toKernel()),decltype(vPrp.toKernel()),decltype(ns_to_s.toKernel()),0>),ite.wthr,ite.thr,vPos.toKernel(),vPrp.toKernel(),
-																								 vPosOut.toKernel(),vPrpOut.toKernel(),
-																								 ns_to_s.toKernel());
-
-	vPrp.template deviceToHost<0,1,2>();
-
-	bool match = true;
-	for (int i = 0 ; i < 10000 ; i++) // <------ particle id
-	{
-		match &= vPrpOut.template get<0>(10000-i-1)[0] == vPrp.template get<0>(i)[0];
-		match &= vPrpOut.template get<0>(10000-i-1)[1] == vPrp.template get<0>(i)[1];
-		match &= vPrpOut.template get<0>(10000-i-1)[2] == vPrp.template get<0>(i)[2];
-
-		match &= vPrp.template get<1>(10000-i-1)[0] == 0;
-		match &= vPrp.template get<1>(10000-i-1)[1] == 0;
-		match &= vPrp.template get<1>(10000-i-1)[2] == 0;
-
-		match &= vPrp.template get<2>(10000-i-1)[0] == 0;
-		match &= vPrp.template get<2>(10000-i-1)[1] == 0;
-		match &= vPrp.template get<2>(10000-i-1)[2] == 0;
-	}
-
-	BOOST_REQUIRE_EQUAL(match,true);
-
-	CUDA_LAUNCH_DIM3((merge_sort_part<false,decltype(vPos.toKernel()),decltype(vPrp.toKernel()),decltype(ns_to_s.toKernel()),1,2>),ite.wthr,ite.thr,vPos.toKernel(),vPrp.toKernel(),
-																								 vPosOut.toKernel(),vPrpOut.toKernel(),
-																								 ns_to_s.toKernel());
-
-	vPrp.template deviceToHost<0,1,2>();
-	vPos.template deviceToHost<0>();
-
-	for (int i = 0 ; i < 10000 ; i++) // <------ particle id
-	{
-		match &= vPrpOut.template get<0>(10000-i-1)[0] == vPrp.template get<0>(i)[0];
-		match &= vPrpOut.template get<0>(10000-i-1)[1] == vPrp.template get<0>(i)[1];
-		match &= vPrpOut.template get<0>(10000-i-1)[2] == vPrp.template get<0>(i)[2];
-
-		match &= vPrpOut.template get<1>(10000-i-1)[0] == vPrp.template get<1>(i)[0];
-		match &= vPrpOut.template get<1>(10000-i-1)[1] == vPrp.template get<1>(i)[1];
-		match &= vPrpOut.template get<1>(10000-i-1)[2] == vPrp.template get<1>(i)[2];
-
-		match &= vPrpOut.template get<2>(10000-i-1)[0] == vPrp.template get<2>(i)[0];
-		match &= vPrpOut.template get<2>(10000-i-1)[1] == vPrp.template get<2>(i)[1];
-		match &= vPrpOut.template get<2>(10000-i-1)[2] == vPrp.template get<2>(i)[2];
-
-		match &= vPos.template get<0>(10000-i-1)[0] == 0;
-		match &= vPos.template get<0>(10000-i-1)[1] == 0;
-		match &= vPos.template get<0>(10000-i-1)[2] == 0;
-	}
-
-	BOOST_REQUIRE_EQUAL(match,true);
-
-	CUDA_LAUNCH_DIM3((merge_sort_part<true,decltype(vPos.toKernel()),decltype(vPrp.toKernel()),decltype(ns_to_s.toKernel())>),ite.wthr,ite.thr,vPos.toKernel(),vPrp.toKernel(),
-																								 vPosOut.toKernel(),vPrpOut.toKernel(),
-																								 ns_to_s.toKernel());
-
-	vPrp.template deviceToHost<0,1,2>();
-	vPos.template deviceToHost<0>();
-
-	for (int i = 0 ; i < 10000 ; i++) // <------ particle id
-	{
-
-
-		match &= vPrpOut.template get<0>(10000-i-1)[0] == vPrp.template get<0>(i)[0];
-		match &= vPrpOut.template get<0>(10000-i-1)[1] == vPrp.template get<0>(i)[1];
-		match &= vPrpOut.template get<0>(10000-i-1)[2] == vPrp.template get<0>(i)[2];
-
-		match &= vPrpOut.template get<1>(10000-i-1)[0] == vPrp.template get<1>(i)[0];
-		match &= vPrpOut.template get<1>(10000-i-1)[1] == vPrp.template get<1>(i)[1];
-		match &= vPrpOut.template get<1>(10000-i-1)[2] == vPrp.template get<1>(i)[2];
-
-		match &= vPrpOut.template get<2>(10000-i-1)[0] == vPrp.template get<2>(i)[0];
-		match &= vPrpOut.template get<2>(10000-i-1)[1] == vPrp.template get<2>(i)[1];
-		match &= vPrpOut.template get<2>(10000-i-1)[2] == vPrp.template get<2>(i)[2];
-
-
-		match &= vPosOut.template get<0>(10000-i-1)[0] == vPos.template get<0>(i)[0];
-		match &= vPosOut.template get<0>(10000-i-1)[1] == vPos.template get<0>(i)[1];
-		match &= vPosOut.template get<0>(10000-i-1)[2] == vPos.template get<0>(i)[2];
-	}
-
-	BOOST_REQUIRE_EQUAL(match,true);
 }
 
 BOOST_AUTO_TEST_CASE(vector_dist_gpu_map_fill_send_buffer_test)
@@ -1304,7 +1159,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration_gpu )
 
 		Point<3,float> xp = vd.getPosRead(p);
 
-		auto Np = NN.getNNIterator(NN.getCell(xp));
+		auto Np = NN.getNNIteratorBox(NN.getCell(xp));
 
 		while (Np.isNext())
 		{
@@ -1428,7 +1283,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_particle_NN_MP_iteration_gpu )
 
 				Point<3,float> xp = phases.get(i).getPosRead(p);
 
-				auto Np = NN_ptr.get(j).getNNIteratorSymMP(NN_ptr.get(j).getCell(xp),p.getKey(),phases.get(i).getPosVector(),phases.get(j).getPosVector());
+				auto Np = NN_ptr.get(j).getNNIteratorBoxSymMP(NN_ptr.get(j).getCell(xp),p.getKey(),phases.get(i).getPosVector(),phases.get(j).getPosVector());
 
 				while (Np.isNext())
 				{

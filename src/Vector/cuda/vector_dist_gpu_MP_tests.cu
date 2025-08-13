@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_gpu_cell_list_test )
 	auto CL_phase1 = phases.get(1).getCellList(r_cut);
 
 	// This function create a Verlet-list between phases 0 and 1
-	auto NN_ver01 = createVerlet(phases.get(0),phases.get(1),CL_phase1,r_cut);
+	auto NN_ver01 = createVerletTwoPhase(phases.get(0),phases.get(1),CL_phase1,r_cut);
 
 	// Check NNver0_1
 
@@ -466,7 +466,7 @@ __global__ void vdmkt_simple_cl(mp_vector_type mp_v, output_type ot, cl_type cl,
 		}
 	}
 
-	k = 0;
+	int p = 0;
 	for (int i = 0 ; i < cl.size() ; i++)
 	{
 		for (int j = 0 ; j < cl.get(i).getNCells() ; j++)
@@ -475,9 +475,9 @@ __global__ void vdmkt_simple_cl(mp_vector_type mp_v, output_type ot, cl_type cl,
 			{
 				auto s = cl.get(i).get(j,k);
 
-				ot2.template get<0>(k) = s;
+				ot2.template get<0>(p) = s;
 
-				k++;
+				p++;
 			}
 		}
 	}
@@ -748,6 +748,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_cl_test )
 	for (size_t i = 0 ; i < phases.size() ; i++)
 	{
 		cl_ph.add(phases.get(i).getCellListGPU(0.1));
+		phases.get(i).updateCellListGPU(cl_ph.get(i));
 	}
 
 	//

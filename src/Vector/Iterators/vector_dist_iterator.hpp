@@ -79,18 +79,6 @@ class vector_dist_iterator
 		return v;
 	}
 
-	/*! \brief Get the actual key
-	 *
-	 * \return the actual key
-	 *
-	 */
-	inline vect_dist_key_dx getOrig()
-	{
-		vect_dist_key_dx v;
-		v.setKey(v_it);
-		return v;
-	}
-
 	/*! \brief Reset the iterator
 	 *
 	 *
@@ -168,19 +156,19 @@ class vector_dist_iterator_subset
 	inline vect_dist_key_dx get()
 	{
 		vect_dist_key_dx v;
-		v.setKey(v_it);
+		v.setKey(pid.template get<0>(v_it));
 		return v;
 	}
 
-	/*! \brief Get the actual key
+	/*! \brief Get the subset key
 	 *
-	 * \return the actual key
+	 * \return the subset key
 	 *
 	 */
-	inline vect_dist_key_dx getOrig()
+	inline vect_dist_key_dx getSubset()
 	{
 		vect_dist_key_dx v;
-		v.setKey(pid.template get<0>(v_it));
+		v.setKey(v_it);
 		return v;
 	}
 

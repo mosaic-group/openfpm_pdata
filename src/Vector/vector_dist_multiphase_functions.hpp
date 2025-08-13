@@ -8,33 +8,50 @@
 #ifndef SRC_VECTOR_VECTOR_DIST_MULTIPHASE_FUNCTIONS_HPP_
 #define SRC_VECTOR_VECTOR_DIST_MULTIPHASE_FUNCTIONS_HPP_
 
-#include "NN/CellList/CellListM.hpp"
+#include "NN/CellList/multiphase/CellListM.hpp"
 #include "NN/VerletList/VerletListM.hpp"
 
-template<typename Vector, typename CL, typename T>
-VerletList<Vector::dims,typename Vector::stype,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type,CL>
-createVerlet(Vector & v, Vector & v1, CL & cl, T r_cut)
+template<typename Vector, typename Vector1, typename CL, typename T>
+VerletList<Vector::dims,typename Vector::stype,VL_NON_SYMMETRIC,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type,CL>
+createVerletTwoPhase(Vector & v, Vector1 & v1, CL & cl, T r_cut)
 {
-	VerletList<Vector::dims,typename Vector::stype,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type,CL> ver;
+	VerletList<Vector::dims,typename Vector::stype,VL_NON_SYMMETRIC,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type,CL> verletList;
 
-	ver.Initialize(cl,r_cut,v.getPosVector(),v1.getPosVector(),v.size_local());
+	// auto it = v.getPosVector().getIteratorTo(v.size_local());
+	auto it = v.getDomainIterator();
 
-	return ver;
+	verletList.Initialize(cl,r_cut,it,v.getPosVector(),v1.getPosVector(),v.size_local());
+
+	return verletList;
+}
+
+template<typename Vector, typename Vector1, typename T>
+VerletList<Vector::dims,typename Vector::stype,VL_NON_SYMMETRIC|VL_ADAPTIVE_RCUT,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type>
+createVerletTwoPhaseAdaptive(Vector & v, Vector1 & v1, openfpm::vector<T> &rCuts)
+{
+
+	VerletList<Vector::dims,typename Vector::stype,VL_NON_SYMMETRIC|VL_ADAPTIVE_RCUT,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type> verletList;
+
+	auto it = v.getDomainIterator();
+
+	verletList.fillNonSymmAdaptiveIterator(it, v.getPosVector(), v1.getPosVector(), rCuts, v.size_local());
+
+	return verletList;
 }
 
 template<unsigned int sh_byte, typename Vector , typename Vector1,typename CL, typename T> VerletListM<Vector::dims,typename Vector::stype,sh_byte,CL,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type>
 createVerletM(size_t pp, Vector & v, Vector1 & phases, CL & cl, T r_cut)
 {
-	VerletListM<Vector::dims,typename Vector::stype,sh_byte,CL,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type> ver;
+	VerletListM<Vector::dims,typename Vector::stype,sh_byte,CL,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type> verletList;
 
 	openfpm::vector<pos_v<typename Vector::internal_position_vector_type>> v_phases;
 
 	for (size_t i = 0 ; i < phases.size() ; i++)
 	{v_phases.add(pos_v<typename Vector::internal_position_vector_type>(phases.get(i).getPosVector()));}
 
-	ver.Initialize(cl,pp,r_cut,v.getPosVector(),v_phases,v.size_local());
+	verletList.Initialize(cl,pp,r_cut,v.getPosVector(),v_phases,v.size_local());
 
-	return ver;
+	return verletList;
 }
 
 template<unsigned int nbit, typename Vector, typename T>
@@ -78,30 +95,33 @@ createCellListM(openfpm::vector<Vector> & phases, T r_cut)
 /////// Symmetric version
 
 template<typename Vector,typename CL, typename T>
-VerletList<Vector::dims,typename Vector::stype,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type>
+VerletList<Vector::dims,typename Vector::stype,VL_NON_SYMMETRIC,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type>
 createVerletSym(Vector & v, Vector & v1, CL & cl, T r_cut)
 {
-	VerletList<Vector::dims,typename Vector::stype,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type> ver;
+	VerletList<Vector::dims,typename Vector::stype,VL_NON_SYMMETRIC,Mem_fast<>,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type> verletList;
 
-	ver.Initialize(cl,r_cut,v.getPosVector(),v1.getPosVector(),v.size_local());
+	// auto it = v.getPosVector().getIteratorTo(v.size_local());
+	auto it = v.getDomainIterator();
 
-	return ver;
+	verletList.Initialize(cl,r_cut,it,v1.getPosVector(),v.size_local());
+
+	return verletList;
 }
 
 template<unsigned int sh_byte, typename Vector, typename Vector1 ,typename CL, typename T>
 VerletListM<Vector::dims,typename Vector::stype,sh_byte,CL,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type>
 createVerletSymM(size_t pp, Vector & v, Vector1 & phases, CL & cl, T r_cut)
 {
-	VerletListM<Vector::dims,typename Vector::stype,sh_byte,CL,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type> ver;
+	VerletListM<Vector::dims,typename Vector::stype,sh_byte,CL,shift<Vector::dims,typename Vector::stype>,typename Vector::internal_position_vector_type> verletList;
 
 	openfpm::vector<pos_v<typename CL::internal_vector_pos_type>> v_phases;
 
 	for (size_t i = 0 ; i < phases.size() ; i++)
 	{v_phases.add(pos_v<typename CL::internal_vector_pos_type>(phases.get(i).getPosVector()));}
 
-	ver.Initialize(cl,pp,r_cut,v.getPosVector(),v_phases,v.size_local(),VL_SYMMETRIC);
+	verletList.Initialize(cl,pp,r_cut,v.getPosVector(),v_phases,v.size_local(),VL_SYMMETRIC);
 
-	return ver;
+	return verletList;
 }
 
 template<unsigned int nbit, typename Vector, typename T>

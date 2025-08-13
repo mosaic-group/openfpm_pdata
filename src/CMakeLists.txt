@@ -34,7 +34,7 @@ if ( CUDA_ON_BACKEND STREQUAL "HIP" AND HIP_FOUND )
 		list(APPEND HIP_HIPCC_FLAGS -O0)
 	endif()
 
-	list(APPEND HIP_HIPCC_FLAGS -D__NVCC__ -D__HIP__  -DCUDART_VERSION=11000 -D__CUDACC__ -D__CUDACC_VER_MAJOR__=11 -D__CUDACC_VER_MINOR__=0 -D__CUDACC_VER_BUILD__=0 --std=c++14)
+	list(APPEND HIP_HIPCC_FLAGS -D__NVCC__ -D__HIP__  -DCUDART_VERSION=11000 -D__CUDACC__ -D__CUDACC_VER_MAJOR__=11 -D__CUDACC_VER_MINOR__=0 -D__CUDACC_VER_BUILD__=0 --std=c++17)
 	set_source_files_properties(${CUDA_SOURCES} PROPERTIES LANGUAGE CXX)
 
 	#set(CMAKE_CXX_COMPILER ${HIP_HIPCC_EXECUTABLE})
@@ -206,8 +206,6 @@ if (TEST_PERFORMANCE)
 	target_link_libraries(pdata ${Boost_SYSTEM_LIBRARY})
 endif()
 
-#add_definitions(-DMAKE_CELLLIST_DETERMINISTIC)
-
 if (TEST_COVERAGE)
 	target_link_libraries(pdata -lgcov --coverage)
 
@@ -284,10 +282,10 @@ if(PETSC_FOUND)
 	target_link_libraries(pdata ${PETSC_LIBRARIES})
 endif()
 
-# Request that particles be built with -std=c++11
+# Request that particles be built with -std=c++17
 # As this is a public compile feature anything that links to particles
-# will also build with -std=c++11
-target_compile_features(pdata PUBLIC cxx_std_14)
+# will also build with -std=c++17
+target_compile_features(pdata PUBLIC cxx_std_17)
 target_link_libraries(pdata ${MPI_C_LIBRARIES})
 target_link_libraries(pdata m)
 target_link_libraries(pdata c)
@@ -396,6 +394,9 @@ install(FILES DLB/DLB.hpp DLB/LB_Model.hpp
 	DESTINATION openfpm_pdata/include/DLB
 	COMPONENT OpenFPM)
 
+install(FILES ${CMAKE_BINARY_DIR}/config/config.h
+	DESTINATION openfpm_pdata/include/config
+	COMPONENT OpenFPM)
 
 install(FILES lib/pdata.hpp
 	DESTINATION openfpm_pdata/include/lib

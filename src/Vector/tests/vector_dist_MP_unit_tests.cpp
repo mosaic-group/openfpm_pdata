@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_cell_list_test )
 	auto CL_phase1 = phases.get(1).getCellList(r_cut);
 
 	// This function create a Verlet-list between phases 0 and 1
-	auto NN_ver01 = createVerlet(phases.get(0),phases.get(1),CL_phase1,r_cut);
+	auto NN_ver01 = createVerletTwoPhase(phases.get(0),phases.get(1),CL_phase1,r_cut);
 
 	// Check NNver0_1
 

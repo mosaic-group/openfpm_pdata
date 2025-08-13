@@ -15,7 +15,7 @@ BOOST_AUTO_TEST_CASE( domain_icells_use )
 
 	domain_icell_calculator<3,float,memory_traits_inte,CudaMemory> dcc;
 
-	openfpm::vector_gpu<SpaceBox<3,float>> domain_proc;
+	openfpm::vector_gpu<Box<3,float>> domain_proc;
 
 	Box<3,float> box1({0.0,0.0,0.0},{0.5,0.5,0.5});
 	Box<3,float> box2({0.5,0.25,0.25},{0.75,0.5,0.5});

@@ -183,7 +183,7 @@ class grid_dist_id_comm
 	//! \warning m_oGrid is assumed to be an ordered list
 	//! first id is grid
 	//! second id is the processor id
-	openfpm::vector<openfpm::vector<aggregate<device_grid,SpaceBox<dim,long int>>>> m_oGrid;
+	openfpm::vector<openfpm::vector<aggregate<device_grid,Box<dim,long int>>>> m_oGrid;
 	openfpm::vector<int> m_oGrid_c;
 
 	//! Memory for the ghost sending buffer
@@ -950,7 +950,7 @@ class grid_dist_id_comm
 		for (size_t j = 0; j < gdb_ext.size(); j++)
 		{
 			// Local sub-domain
-			SpaceBox<dim,long int> sub = gdb_ext.get(j).Dbox;
+			Box<dim,long int> sub = gdb_ext.get(j).Dbox;
 			sub += gdb_ext.get(j).origin;
 
 			if (sub.isInside(point) == true)
@@ -971,7 +971,7 @@ public:
 	 * \param cd_sm Cell-decomposer
 	 *
 	 */
-	inline void grids_reconstruct(openfpm::vector<openfpm::vector<aggregate<device_grid,SpaceBox<dim,long int>>>> & m_oGrid_recv,
+	inline void grids_reconstruct(openfpm::vector<openfpm::vector<aggregate<device_grid,Box<dim,long int>>>> & m_oGrid_recv,
 			                      openfpm::vector<device_grid> & loc_grid,
 								  openfpm::vector<GBoxes<device_grid::dims>> & gdb_ext,
 								  CellDecomposer_sm<dim,St,shift<dim,St>> & cd_sm)
@@ -986,7 +986,7 @@ public:
 			{
 				device_grid & g = m_oGrid_recv.get(a).template get<0>(k);
 
-				SpaceBox<dim,long int> b = m_oGrid_recv.get(a).template get<1>(k);
+				Box<dim,long int> b = m_oGrid_recv.get(a).template get<1>(k);
 
 				Point<dim,St> p;
 				for (size_t n = 0; n < dim; n++)
@@ -999,7 +999,7 @@ public:
 				for (size_t j = 0; j < gdb_ext.size(); j++)
 				{
 					// Local sub-domain
-					SpaceBox<dim,long int> sub = gdb_ext.get(j).Dbox;
+					Box<dim,long int> sub = gdb_ext.get(j).Dbox;
 					sub += gdb_ext.get(j).origin;
 
 					if (sub.isInside(point) == true)
@@ -1084,7 +1084,7 @@ public:
 		// for (size_t i = 0; i < gdb_ext_old.size(); i++)
 		// {
 		// 	// Local old sub-domain in global coordinates
-		// 	SpaceBox<dim,long int> sub_dom = gdb_ext_old.get(i).Dbox;
+		// 	Box<dim,long int> sub_dom = gdb_ext_old.get(i).Dbox;
 		// 	sub_dom += gdb_ext_old.get(i).origin;
 
 		// 	for (size_t j = 0; j < gdb_ext_global.size(); j++)
@@ -1092,10 +1092,10 @@ public:
 		// 		size_t p_id = 0;
 
 		// 		// Intersection box
-		// 		SpaceBox<dim,long int> inte_box;
+		// 		Box<dim,long int> inte_box;
 
 		// 		// Global new sub-domain in global coordinates
-		// 		SpaceBox<dim,long int> sub_dom_new = gdb_ext_global.get(j).Dbox;
+		// 		Box<dim,long int> sub_dom_new = gdb_ext_global.get(j).Dbox;
 		// 		sub_dom_new += gdb_ext_global.get(j).origin;
 
 		// 		bool intersect = false;
@@ -1129,7 +1129,7 @@ public:
 		for (size_t i = 0; i < gdb_ext_old.size(); i++)
 		{
 			// Local old sub-domain in global coordinates
-			SpaceBox<dim,long int> sub_dom = gdb_ext_old.get(i).Dbox;
+			Box<dim,long int> sub_dom = gdb_ext_old.get(i).Dbox;
 			sub_dom += gdb_ext_old.get(i).origin;
 
 			for (size_t j = 0; j < gdb_ext_global.size(); j++)
@@ -1137,10 +1137,10 @@ public:
 				size_t p_id = 0;
 
 				// Intersection box
-				SpaceBox<dim,long int> inte_box;
+				Box<dim,long int> inte_box;
 
 				// Global new sub-domain in global coordinates
-				SpaceBox<dim,long int> sub_dom_new = gdb_ext_global.get(j).Dbox;
+				Box<dim,long int> sub_dom_new = gdb_ext_global.get(j).Dbox;
 				sub_dom_new += gdb_ext_global.get(j).origin;
 
 				bool intersect = false;
@@ -1183,7 +1183,7 @@ public:
 					//gr_send.setMemory();
 					// lbl_b.get(p_id).add();
 					// device_grid & gr_send = lbl_b.get(p_id).last().template get<0>();
-					// SpaceBox<dim,long int> & box_send = lbl_b.get(p_id).last().template get<1>();
+					// Box<dim,long int> & box_send = lbl_b.get(p_id).last().template get<1>();
 					// gr_send.setMemory();
 
 					// Sub iterator across intersection box inside local grid
@@ -1311,7 +1311,7 @@ public:
 						//gr_send.copy_to(gr,box_src,box_dst);
 
 			
-						Packer<SpaceBox<dim,long int>,BMemory<Memory>>::packRequest(box_dst,send_buffer_sizes.get(p_id));
+						Packer<Box<dim,long int>,BMemory<Memory>>::packRequest(box_dst,send_buffer_sizes.get(p_id));
 
 						auto sub_it = gr.getIterator(box_src.getKP1(),box_src.getKP2(),0);
 						gr.template packRequest<prp ...>(sub_it,send_buffer_sizes.get(p_id));

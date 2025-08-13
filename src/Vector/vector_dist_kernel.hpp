@@ -13,8 +13,8 @@ constexpr unsigned int POS_PROP = (unsigned int)-1;
 #ifdef CUDA_GPU
 
 #define GET_PARTICLE(vd) blockDim.x*blockIdx.x + threadIdx.x; if (blockDim.x*blockIdx.x + threadIdx.x >= static_cast<unsigned int>(vd.size_local())) {return;};
-#define GET_PARTICLE_SORT(p,NN) if (blockDim.x*blockIdx.x + threadIdx.x >= NN.get_g_m()) {return;}\
-							  else{p = NN.getDomainSortIds().template get<0>(blockDim.x*blockIdx.x + threadIdx.x);}
+#define GET_PARTICLE_SORT(p,NN) if (blockDim.x*blockIdx.x + threadIdx.x >= NN.getGhostMarker()) {return;}\
+	else{p = NN.getDomainSortIds().template get<0>(blockDim.x*blockIdx.x + threadIdx.x);}
 
 
 #define GET_PARTICLE_BY_ID(p,ids) if (blockDim.x*blockIdx.x + threadIdx.x >= ids.size()) {return;}\
