@@ -2408,13 +2408,13 @@ public:
 	 *
 	 */
 	template <typename bg_key>inline auto insertFlush(const grid_dist_key_dx<dim,bg_key> & v1)
-	-> decltype(loc_grid.get(v1.getSub()).template insertFlush(v1.getKey()))
+	-> decltype(loc_grid.get(v1.getSub()).insertFlush(v1.getKey()))
 	{
 #ifdef SE_CLASS2
 		check_valid(this,8);
 #endif
 
-		return loc_grid.get(v1.getSub()).template insertFlush(v1.getKey());
+		return loc_grid.get(v1.getSub()).insertFlush(v1.getKey());
 	}
 
 	/*! \brief Get the reference of the selected element

@@ -242,8 +242,8 @@ class ORB
 			// Add 2 leaf nodes and connect them with the node
 			grp.addVertex();
 			grp.addVertex();
-			grp.template addEdge(i,start+2*s);
-			grp.template addEdge(i,start+2*s+1);
+			grp.addEdge(i,start+2*s);
+			grp.addEdge(i,start+2*s+1);
 		}
 
 		return 2*n_node;

@@ -1791,7 +1791,7 @@ public:
 			// if there are no properties skip
 			// SSendRecvP send everything when we do not give properties
 
-			ghost_exchange_comm_impl<impl,layout_base,prp ...>::template
+			ghost_exchange_comm_impl<impl,layout_base,prp ...>::
 			sendrecv_prp(v_cl,g_send_prp,v_prp,v_pos,prc_g_opart,
 					 prc_recv_get_prp,recv_sz_get_prp,recv_sz_get_byte,g_opart_sz,ghostMarker,opt);
 		}
@@ -1807,7 +1807,7 @@ public:
 			cudaDeviceSynchronize();
 #endif
 
-			ghost_exchange_comm_impl<impl,layout_base,prp ...>::template
+			ghost_exchange_comm_impl<impl,layout_base,prp ...>::
 			sendrecv_pos(v_cl,g_pos_send,v_prp,v_pos,prc_recv_get_pos,recv_sz_get_pos,prc_g_opart,opt);
 
             // fill g_opart_sz
@@ -1853,12 +1853,12 @@ public:
 		openfpm::vector<send_vector> g_send_prp;
 		openfpm::vector<send_pos_vector> g_pos_send;
 
-		ghost_exchange_comm_impl<GHOST_ASYNC,layout_base,prp ...>::template
+		ghost_exchange_comm_impl<GHOST_ASYNC,layout_base,prp ...>::
 		sendrecv_prp_wait(v_cl,g_send_prp,v_prp,v_pos,prc_g_opart,
 					 prc_recv_get_prp,recv_sz_get_prp,recv_sz_get_byte,g_opart_sz,ghostMarker,opt);
 
 
-		ghost_exchange_comm_impl<GHOST_ASYNC,layout_base,prp ...>::template
+		ghost_exchange_comm_impl<GHOST_ASYNC,layout_base,prp ...>::
 		sendrecv_pos_wait(v_cl,g_pos_send,v_prp,v_pos,prc_recv_get_pos,recv_sz_get_pos,prc_g_opart,opt);
 	}
 
