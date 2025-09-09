@@ -1323,10 +1323,7 @@ void test_vd_adaptive_verlet_list()
 		}
 	};
 
-	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
-
-	// vector of cut-off radii for Verlet List
-	openfpm::vector<float> rCuts;
+	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>,float> part_prop;
 
 	// Distributed vector
 	vector_dist<3,float, part_prop > vd(k,box,bc,ghost,BIND_DEC_TO_GHOST);
@@ -1347,8 +1344,8 @@ void test_vd_adaptive_verlet_list()
 		vd.template getPropWrite<0>(key) = 0;
 		vd.template getPropWrite<1>(key) = 0;
 		vd.template getPropWrite<2>(key) = key.getKey() + start;
-
-		rCuts.add(rCutDistr(eg));
+		// rCut is always stored in the last property
+		vd.template getPropWrite<5>(key) = rCutDistr(eg);
 
 		++it;
 	}
@@ -1358,7 +1355,7 @@ void test_vd_adaptive_verlet_list()
 	// sync the ghost
 	vd.template ghost_get<0,2>();
 
-	auto NN = vd.getVerletAdaptRCut(rCuts);
+	auto NN = vd.getVerletAdaptRCut();
 	auto p_it = vd.getDomainIterator();
 
 	while (p_it.isNext())
@@ -1372,7 +1369,7 @@ void test_vd_adaptive_verlet_list()
 		while (Np.isNext())
 		{
 			auto q = Np.get();
-			float rCutP = rCuts.get(p);
+			float rCutP = vd.template getPropRead<5>(p);
 
 			if (p.getKey() == q)
 			{
@@ -1412,7 +1409,7 @@ void test_vd_adaptive_verlet_list()
 		Point<3,float> xp = vd.getPosRead(p);
 
 		auto p_it3 = vd.getDomainAndGhostIterator();
-		float rCutP = rCuts.get(p);
+		float rCutP = vd.template getPropRead<5>(p);
 
 		while (p_it3.isNext())
 		{
@@ -1465,7 +1462,7 @@ void test_vd_adaptive_verlet_list()
 		vd.template getPropWrite<4>(p).sort();
 
 		ret &= vd.template getPropRead<3>(p).size() == vd.template getPropRead<4>(p).size();
-		ret &= fabs(rCuts.get(p) - NN.getRCuts(p)) < 0.001;
+		ret &= fabs(vd.template getPropRead<5>(p) - NN.getRCuts(p)) < 0.001;
 
 		for (size_t i = 0 ; i < vd.template getPropRead<3>(p).size() ; i++) {
 			ret &= vd.template getPropRead<3>(p).get(i).id == vd.template getPropRead<4>(p).get(i).id;

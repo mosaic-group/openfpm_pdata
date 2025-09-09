@@ -447,7 +447,7 @@ void test_full_nn_adaptive(long int k)
 		// ghost
 		Ghost<3,float> ghost(r_cut*1.001);
 
-		typedef  aggregate<float> part_prop;
+		typedef  aggregate<float, float> part_prop;
 
 		// Distributed vector
 		vector_dist<3,float, part_prop > vd(k,box,bc,ghost);
@@ -536,14 +536,13 @@ void test_full_nn_adaptive(long int k)
 		}
 
 		///////////////////////////////////
-
-		openfpm::vector<float> rCuts(vd.size_local());
 		for (int i = 0; i < vd.size_local(); ++i)
 		{
-			rCuts.get(i) = r_cut*1.0001;
+			// rCut is always stored in the last property
+			vd.getProp<1>(i) = r_cut*1.0001;
 		}
 
-		auto NNv = vd.template getVerletAdaptRCut<VerletList<VL_ADAPTIVE_RCUT>>(rCuts);
+		auto NNv = vd.template getVerletAdaptRCut<VerletList<VL_ADAPTIVE_RCUT>>();
 
 		it = vd.getDomainIterator();
 
@@ -587,7 +586,7 @@ void test_full_nn_adaptive(long int k)
 		//////////////////////////////////////////
 
 		NNv.clear();
-		vd.updateVerletAdaptRCut(NNv,rCuts);
+		vd.updateVerletAdaptRCut(NNv);
 
 		it = vd.getDomainIterator();
 

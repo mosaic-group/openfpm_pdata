@@ -1460,11 +1460,15 @@ public:
 	 *
 	 */
 	template <typename VerletList_type = VerletList<dim,St,VL_NON_SYMMETRIC|VL_ADAPTIVE_RCUT,Mem_fast<>,shift<dim,St>,decltype(vPos)>>
-	VerletList_type getVerletAdaptRCut(openfpm::vector<St> &rCuts)
+	VerletList_type getVerletAdaptRCut()
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
+		openfpm::vector<St> rCuts(size_local());
+		// rCut is always stored in the last property
+		for (int i = 0; i < size_local(); ++i)
+			rCuts.get(i) = getProp<prop::size-1>(i);
 
 		VerletList_type verletList;
 
@@ -1605,13 +1609,18 @@ public:
 	 *
 	 */
 	template<unsigned int opt, typename Mem_type>
-	void updateVerletAdaptRCut(VerletList<dim,St,opt,Mem_type,shift<dim,St> > & verletList, openfpm::vector<St> &rCuts)
+	void updateVerletAdaptRCut(VerletList<dim,St,opt,Mem_type,shift<dim,St> > & verletList)
 	{
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
 		// in this mode the Verlet list doesn't depend on the decomposition counter
 		// has to be fully reconstructed on update
+		openfpm::vector<St> rCuts(size_local());
+		// rCut is always stored in the last property
+		for (int i = 0; i < size_local(); ++i)
+			rCuts.get(i) = getProp<prop::size-1>(i);
+
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
 		verletList.InitializeNonSymmAdaptive(pbox,rCuts,vPos,ghostMarker);
 	}
