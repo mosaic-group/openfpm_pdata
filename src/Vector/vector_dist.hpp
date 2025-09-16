@@ -1621,7 +1621,14 @@ public:
 		for (int i = 0; i < size_local(); ++i)
 			rCuts.get(i) = getProp<prop::size-1>(i);
 
+		// get the processor bounding box
+		Ghost<dim,St> g = getDecomposition().getGhost();
+		g.magnify(1.013);
+
 		Box<dim, St> pbox = getDecomposition().getProcessorBounds();
+		// enlarge the box where the Verlet is defined
+		pbox.enlarge(g);
+
 		verletList.InitializeNonSymmAdaptive(pbox,rCuts,vPos,ghostMarker);
 	}
 
