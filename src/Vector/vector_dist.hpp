@@ -1468,7 +1468,7 @@ public:
 		openfpm::vector<St> rCuts(size_local());
 		// rCut is always stored in the last property
 		for (int i = 0; i < size_local(); ++i)
-			rCuts.get(i) = getProp<prop::size-1>(i);
+			rCuts.get(i) = getProp<0>(i);
 
 		VerletList_type verletList;
 
@@ -1619,7 +1619,7 @@ public:
 		openfpm::vector<St> rCuts(size_local());
 		// rCut is always stored in the last property
 		for (int i = 0; i < size_local(); ++i)
-			rCuts.get(i) = getProp<prop::size-1>(i);
+			rCuts.get(i) = getProp<0>(i);
 
 		// get the processor bounding box
 		Ghost<dim,St> g = getDecomposition().getGhost();
