@@ -108,6 +108,22 @@ struct decrement_memory
 	}
 };
 
+/*
+ * SFINAE version of getProp function for vector_dist
+ * checks whether the property at the position 'id' is 
+ * of the type T. Fails without compilation error if not
+ */
+template<typename T, typename VectorType, unsigned id, typename = void>
+struct getPropSFINAE {
+	static T get(VectorType const& vectorDist, unsigned p) { /*Default case*/ return 0.0; }
+};
+
+template<typename T, typename VectorType, unsigned id>
+struct getPropSFINAE<T, VectorType, id, std::enable_if_t<std::is_same<typename boost::fusion::result_of::at_c<typename VectorType::value_type::type, id>::type, int>::value>> {
+	static T get(VectorType const& vectorDist, unsigned p) { /*Special case for adaptive verlet list*/ return vectorDist.template getProp<id>(p); }
+};
+
+
 /*! \brief Distributed vector
  *
  * This class represent a distributed vector, the distribution of the structure
@@ -1468,7 +1484,7 @@ public:
 		openfpm::vector<St> rCuts(size_local());
 		// rCut is always stored in the last property
 		for (int i = 0; i < size_local(); ++i)
-			rCuts.get(i) = getProp<0>(i);
+			rCuts.get(i) = getPropSFINAE<St, self, 0>::get(*this, i);
 
 		VerletList_type verletList;
 
@@ -1619,7 +1635,7 @@ public:
 		openfpm::vector<St> rCuts(size_local());
 		// rCut is always stored in the last property
 		for (int i = 0; i < size_local(); ++i)
-			rCuts.get(i) = getProp<0>(i);
+			rCuts.get(i) = getPropSFINAE<St, self, 0>::get(*this, i);
 
 		// get the processor bounding box
 		Ghost<dim,St> g = getDecomposition().getGhost();
