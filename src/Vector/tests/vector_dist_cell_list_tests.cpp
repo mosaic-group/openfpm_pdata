@@ -1323,7 +1323,7 @@ void test_vd_adaptive_verlet_list()
 		}
 	};
 
-	typedef  aggregate<size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>,float> part_prop;
+	typedef  aggregate<float,size_t,size_t,size_t,openfpm::vector<point_and_gid>,openfpm::vector<point_and_gid>> part_prop;
 
 	// Distributed vector
 	vector_dist<3,float, part_prop > vd(k,box,bc,ghost,BIND_DEC_TO_GHOST);
@@ -1341,11 +1341,11 @@ void test_vd_adaptive_verlet_list()
 
 		// Fill some properties randomly
 
-		vd.template getPropWrite<0>(key) = 0;
 		vd.template getPropWrite<1>(key) = 0;
-		vd.template getPropWrite<2>(key) = key.getKey() + start;
-		// rCut is always stored in the last property
-		vd.template getPropWrite<5>(key) = rCutDistr(eg);
+		vd.template getPropWrite<2>(key) = 0;
+		vd.template getPropWrite<3>(key) = key.getKey() + start;
+		// rCut is always stored in the first property
+		vd.template getPropWrite<0>(key) = rCutDistr(eg);
 
 		++it;
 	}
@@ -1353,7 +1353,7 @@ void test_vd_adaptive_verlet_list()
 	vd.map();
 
 	// sync the ghost
-	vd.template ghost_get<0,2>();
+	vd.template ghost_get<1,3>();
 
 	auto NN = vd.getVerletAdaptRCut();
 	auto p_it = vd.getDomainIterator();
@@ -1369,7 +1369,7 @@ void test_vd_adaptive_verlet_list()
 		while (Np.isNext())
 		{
 			auto q = Np.get();
-			float rCutP = vd.template getPropRead<5>(p);
+			float rCutP = vd.template getPropRead<0>(p);
 
 			if (p.getKey() == q)
 			{
@@ -1388,10 +1388,10 @@ void test_vd_adaptive_verlet_list()
 
 			if (distance < rCutP )
 			{
-				vd.template getPropWrite<0>(p)++;
-				vd.template getPropWrite<3>(p).add();
-				vd.template getPropWrite<3>(p).last().xq = xq;
-				vd.template getPropWrite<3>(p).last().id = vd.template getPropRead<2>(q);
+				vd.template getPropWrite<1>(p)++;
+				vd.template getPropWrite<4>(p).add();
+				vd.template getPropWrite<4>(p).last().xq = xq;
+				vd.template getPropWrite<4>(p).last().id = vd.template getPropRead<3>(q);
 			}
 
 			++Np;
@@ -1409,7 +1409,7 @@ void test_vd_adaptive_verlet_list()
 		Point<3,float> xp = vd.getPosRead(p);
 
 		auto p_it3 = vd.getDomainAndGhostIterator();
-		float rCutP = vd.template getPropRead<5>(p);
+		float rCutP = vd.template getPropRead<0>(p);
 
 		while (p_it3.isNext())
 		{
@@ -1432,12 +1432,12 @@ void test_vd_adaptive_verlet_list()
 
 			if (distance < rCutP )
 			{
-				vd.template getPropWrite<1>(p)++;
+				vd.template getPropWrite<2>(p)++;
 
-				vd.template getPropWrite<4>(p).add();
+				vd.template getPropWrite<5>(p).add();
 
-				vd.template getPropWrite<4>(p).last().xq = xq;
-				vd.template getPropWrite<4>(p).last().id = vd.template getPropRead<2>(q);
+				vd.template getPropWrite<5>(p).last().xq = xq;
+				vd.template getPropWrite<5>(p).last().id = vd.template getPropRead<3>(q);
 			}
 
 			++p_it3;
@@ -1446,8 +1446,8 @@ void test_vd_adaptive_verlet_list()
 		++p_it2;
 	}
 
-	vd.template ghost_put<add_,1>();
-	vd.template ghost_put<merge_,4>();
+	vd.template ghost_put<add_,2>();
+	vd.template ghost_put<merge_,5>();
 
 	auto p_it4 = vd.getDomainIterator();
 
@@ -1456,17 +1456,17 @@ void test_vd_adaptive_verlet_list()
 	{
 		auto p = p_it4.get();
 
-		ret &= vd.template getPropRead<1>(p) == vd.template getPropRead<0>(p);
+		ret &= vd.template getPropRead<2>(p) == vd.template getPropRead<1>(p);
 
-		vd.template getPropWrite<3>(p).sort();
 		vd.template getPropWrite<4>(p).sort();
+		vd.template getPropWrite<5>(p).sort();
 
-		ret &= vd.template getPropRead<3>(p).size() == vd.template getPropRead<4>(p).size();
-		ret &= fabs(vd.template getPropRead<5>(p) - NN.getRCuts(p)) < 0.001;
+		ret &= vd.template getPropRead<4>(p).size() == vd.template getPropRead<5>(p).size();
+		ret &= fabs(vd.template getPropRead<0>(p) - NN.getRCuts(p)) < 0.001;
 
-		for (size_t i = 0 ; i < vd.template getPropRead<3>(p).size() ; i++) {
-			ret &= vd.template getPropRead<3>(p).get(i).id == vd.template getPropRead<4>(p).get(i).id;
-			auto xq = vd.template getPropRead<3>(p).get(i).xq;
+		for (size_t i = 0 ; i < vd.template getPropRead<4>(p).size() ; i++) {
+			ret &= vd.template getPropRead<4>(p).get(i).id == vd.template getPropRead<5>(p).get(i).id;
+			auto xq = vd.template getPropRead<4>(p).get(i).xq;
 		}
 
 		if (ret == false)

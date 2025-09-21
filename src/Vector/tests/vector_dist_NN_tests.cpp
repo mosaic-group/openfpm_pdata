@@ -464,7 +464,7 @@ void test_full_nn_adaptive(long int k)
 
 			// Fill some properties randomly
 
-			vd.getProp<0>(key) = 0.0;
+			vd.getProp<1>(key) = 0.0;
 
 			++it;
 		}
@@ -472,7 +472,7 @@ void test_full_nn_adaptive(long int k)
 		vd.map();
 
 		// sync the ghost
-		vd.ghost_get<0>();
+		vd.ghost_get<1>();
 
 		openfpm::vector<openfpm::vector<size_t>> list_idx;
 		openfpm::vector<openfpm::vector<size_t>> list_idx2;
@@ -538,8 +538,8 @@ void test_full_nn_adaptive(long int k)
 		///////////////////////////////////
 		for (int i = 0; i < vd.size_local(); ++i)
 		{
-			// rCut is always stored in the last property
-			vd.getProp<1>(i) = r_cut*1.0001;
+			// rCut is always stored in the first property
+			vd.getProp<0>(i) = r_cut*1.0001;
 		}
 
 		auto NNv = vd.template getVerletAdaptRCut<VerletList<VL_ADAPTIVE_RCUT>>();
