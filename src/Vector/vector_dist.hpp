@@ -1482,9 +1482,9 @@ public:
 #ifdef SE_CLASS3
 		se3.getNN();
 #endif
-		openfpm::vector<St> rCuts(size_local());
+		openfpm::vector<St> rCuts(vPos.size());
 		// rCut is always stored in the first property
-		for (int i = 0; i < size_local(); ++i)
+		for (int i = 0; i < vPos.size(); ++i)
 			rCuts.get(i) = getPropSFINAE<St, self, 0>::get(*this, i);
 
 		VerletList_type verletList;
@@ -1633,9 +1633,9 @@ public:
 #endif
 		// in this mode the Verlet list doesn't depend on the decomposition counter
 		// has to be fully reconstructed on update
-		openfpm::vector<St> rCuts(size_local());
+		openfpm::vector<St> rCuts(vPos.size());
 		// rCut is always stored in the first property
-		for (int i = 0; i < size_local(); ++i)
+		for (int i = 0; i < vPos.size(); ++i)
 			rCuts.get(i) = getPropSFINAE<St, self, 0>::get(*this, i);
 
 		// get the processor bounding box
