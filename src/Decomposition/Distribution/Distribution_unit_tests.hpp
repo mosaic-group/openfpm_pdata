@@ -279,7 +279,6 @@ BOOST_AUTO_TEST_CASE( Parmetis_distribution_test)
 
 				// Check
 				bool test = compare(std::to_string(v_cl.getProcessUnitID()) + "_" + str.str() + ".vtk", "src/Decomposition/Distribution/test_data/" + std::to_string(v_cl.getProcessUnitID()) + "_" + str.str() + "_test.vtk");
-				std::cerr << str.str() << std::endl;
 				BOOST_REQUIRE_EQUAL(true,test);
 
 #endif
@@ -374,7 +373,6 @@ BOOST_AUTO_TEST_CASE( DistParmetis_distribution_test)
 			str << "vtk_dist_parmetis_distribution_" << iter;
 			pmet_dist.write(str.str());
 
-			std::cerr << str.str() << std::endl;
 			// Check
 			if (v_cl.getProcessUnitID() == 0)
 			{
