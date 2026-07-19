@@ -1,0 +1,4 @@
+# OpenFPM package entry point.  Keep target import separate from component
+# checks so repeated find_package() calls can request additional components.
+include("${CMAKE_CURRENT_LIST_DIR}/openfpmTargets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/openfpmConfig-Vars.cmake")

@@ -575,7 +575,7 @@ BOOST_AUTO_TEST_CASE( decomposition_ie_ghost_gpu_test_use )
 	openfpm::vector_gpu<aggregate<unsigned int>> proc_id_out;
 	proc_id_out.resize(vg.size()+1);
 	proc_id_out.template get<0>(proc_id_out.size()-1) = 0;
-	proc_id_out.template hostToDevice(proc_id_out.size()-1,proc_id_out.size()-1);
+	proc_id_out.template hostToDevice<>(proc_id_out.size()-1,proc_id_out.size()-1);
 
 	CUDA_LAUNCH_DIM3((num_proc_ghost_each_part<3,float,decltype(dec.toKernel()),decltype(vg.toKernel()),decltype(proc_id_out.toKernel())>),
 	ite.wthr,ite.thr,

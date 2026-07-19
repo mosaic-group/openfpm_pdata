@@ -6,22 +6,30 @@
 
 #define SUB_UNIT_FACTOR 1024
 
+#ifdef CUDIFY_USE_METAL
+// Apple GPUs do not expose fp64 compute.  Keep this test on the same production
+// decomposition/kernel path while exercising the supported Metal scalar type.
+using decomposition_gpu_test_real = float;
+#else
+using decomposition_gpu_test_real = double;
+#endif
+
 template<typename dec_type>
-__global__ void test_proc_idbc(Point<3,double> p1 ,Point<3,double> p2 , dec_type dec, unsigned int * pr_id)
+__global__ void test_proc_idbc(Point<3,decomposition_gpu_test_real> p1 ,Point<3,decomposition_gpu_test_real> p2 , dec_type dec, unsigned int * pr_id)
 {
 	pr_id[0] = dec.processorIDBC(p1);
 	pr_id[1] = dec.processorIDBC(p2);
 }
 
 template<typename dec_type>
-__global__ void test_ghost_n(Point<3,double> p1 ,Point<3,double> p2 , dec_type dec, unsigned int * ng_id)
+__global__ void test_ghost_n(Point<3,decomposition_gpu_test_real> p1 ,Point<3,decomposition_gpu_test_real> p2 , dec_type dec, unsigned int * ng_id)
 {
 	ng_id[0] = dec.ghost_processorID_N(p1);
 	ng_id[1] = dec.ghost_processorID_N(p2);
 }
 
 template<typename dec_type, typename output_type>
-__global__ void test_ghost(Point<3,double> p1 ,Point<3,double> p2 , dec_type dec, unsigned int * ng_id , output_type g_id)
+__global__ void test_ghost(Point<3,decomposition_gpu_test_real> p1 ,Point<3,decomposition_gpu_test_real> p2 , dec_type dec, unsigned int * ng_id , output_type g_id)
 {
 	for (unsigned int i = 0 ; i < ng_id[0] ; i++)
 	{
@@ -41,14 +49,14 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 	// Vcluster
 	Vcluster<> & vcl = create_vcluster();
 
-	CartDecomposition<3, double, CudaMemory,memory_traits_inte> dec(vcl);
+	CartDecomposition<3, decomposition_gpu_test_real, CudaMemory,memory_traits_inte> dec(vcl);
 
 	size_t bc[3] = {PERIODIC,PERIODIC,PERIODIC};
 
 	// Physical domain
-	Box<3, double> box( { -0.01, -0.01, 0.0 }, { 0.01, 0.01, 0.003 });
+	Box<3, decomposition_gpu_test_real> box( { -0.01, -0.01, 0.0 }, { 0.01, 0.01, 0.003 });
 
-	Ghost<3,double> g(0.0015);
+	Ghost<3,decomposition_gpu_test_real> g(0.0015);
 
 	dec.setGoodParameters(box, bc, g, 512);
 
@@ -60,12 +68,12 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 	{
 		for (size_t i = 0 ; i < dec.getNSubDomain() ; i++)
 		{
-			Point<3,double> p1;
-			Point<3,double> p2;
+			Point<3,decomposition_gpu_test_real> p1;
+			Point<3,decomposition_gpu_test_real> p2;
 
-			p1.get(0) = Box<3,double>(dec.getSubDomains().get(i)).getLow(0);
-			p1.get(1) = Box<3,double>(dec.getSubDomains().get(i)).getLow(1);
-			p1.get(2) = Box<3,double>(dec.getSubDomains().get(i)).getLow(2);
+			p1.get(0) = Box<3,decomposition_gpu_test_real>(dec.getSubDomains().get(i)).getLow(0);
+			p1.get(1) = Box<3,decomposition_gpu_test_real>(dec.getSubDomains().get(i)).getLow(1);
+			p1.get(2) = Box<3,decomposition_gpu_test_real>(dec.getSubDomains().get(i)).getLow(2);
 
 			p2 = p1;
 
@@ -111,13 +119,13 @@ BOOST_AUTO_TEST_CASE( CartDecomposition_check_cross_consistency_between_proc_idb
 			}
 
 
-			p1.get(0) = std::nextafter(Box<3,double>(dec.getSubDomains().get(i)).getHigh(0),Box<3,double>(dec.getSubDomains().get(i)).getLow(0));
-			p1.get(1) = std::nextafter(Box<3,double>(dec.getSubDomains().get(i)).getHigh(1),Box<3,double>(dec.getSubDomains().get(i)).getLow(1));
-			p1.get(2) = std::nextafter(Box<3,double>(dec.getSubDomains().get(i)).getHigh(2),Box<3,double>(dec.getSubDomains().get(i)).getLow(2));
+			p1.get(0) = std::nextafter(Box<3,decomposition_gpu_test_real>(dec.getSubDomains().get(i)).getHigh(0),Box<3,decomposition_gpu_test_real>(dec.getSubDomains().get(i)).getLow(0));
+			p1.get(1) = std::nextafter(Box<3,decomposition_gpu_test_real>(dec.getSubDomains().get(i)).getHigh(1),Box<3,decomposition_gpu_test_real>(dec.getSubDomains().get(i)).getLow(1));
+			p1.get(2) = std::nextafter(Box<3,decomposition_gpu_test_real>(dec.getSubDomains().get(i)).getHigh(2),Box<3,decomposition_gpu_test_real>(dec.getSubDomains().get(i)).getLow(2));
 
 			p2 = p1;
 
-			p2.get(j) = std::nextafter(Box<3,double>(dec.getSubDomains().get(i)).getHigh(j),1.0);
+			p2.get(j) = std::nextafter(Box<3,decomposition_gpu_test_real>(dec.getSubDomains().get(i)).getHigh(j),static_cast<decomposition_gpu_test_real>(1.0));
 
 			CUDA_LAUNCH_DIM3((test_proc_idbc<decltype(gpudec)>),1,1,p1,p2,gpudec,(unsigned int *)mem.getDevicePointer());
 

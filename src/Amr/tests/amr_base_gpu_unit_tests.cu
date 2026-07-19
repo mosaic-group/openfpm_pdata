@@ -42,9 +42,9 @@ struct amr_launch_sparse
 	    const float y = keyg.get(1)*spacing - center.get(1);
 	    const float z = keyg.get(2)*spacing - center.get(2);
 
-	    float radius = sqrt((float) (x*x + y*y + z*z));
+	    float radius = sqrtf(x*x + y*y + z*z);
 
-	    bool is_active = radius < 0.4 && radius > 0.3;
+	    bool is_active = radius < 0.4f && radius > 0.3f;
 
 	    if (is_active == true)
 	    {is_block_empty = false;}
@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_SUITE( amr_grid_dist_id_test )
 BOOST_AUTO_TEST_CASE( grid_dist_id_amr_gpu )
 {
 	// Domain
-	Box<3,float> domain3({0.0,0.0,0.0},{1.0,1.0,1.0});
+	Box<3,float> domain3({0.0f,0.0f,0.0f},{1.0f,1.0f,1.0f});
 
 
 	Ghost<3,long int> g(1);
@@ -97,7 +97,7 @@ BOOST_AUTO_TEST_CASE( grid_dist_id_amr_gpu )
 		auto it = amr_g.getGridIteratorGPU(i);
 		it.setGPUInsertBuffer(1);
 
-		Point<3,float> center({0.5,0.5,0.5});
+		Point<3,float> center({0.5f,0.5f,0.5f});
 
 		it.launch(amr_launch_sparse(),it.getSpacing(0),center);
 		amr_g.getDistGrid(i).template flush<smax_<0>>(FLUSH_ON_DEVICE);

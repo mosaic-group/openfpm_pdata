@@ -401,7 +401,15 @@ class grid_dist_id_comm
 
 		if (gd->opt & RUN_ON_DEVICE)
 		{
+#ifdef CUDIFY_USE_METAL
+			// MoltenVK exposes a Vulkan buffer device address to kernels, not a
+			// CPU pointer that a conventional MPI implementation can dereference.
+			// Receive through the ordinary host view and publish it to the device
+			// allocation once communication has completed.
+			return gd->recv_buffers.last().getPointer();
+#else
 			return gd->recv_buffers.last().getDevicePointer();
+#endif
 		}
 
 		return gd->recv_buffers.last().getPointer();
@@ -474,6 +482,16 @@ class grid_dist_id_comm
 			}
 
 			recv_buffers.swap(tmp);
+
+#ifdef CUDIFY_USE_METAL
+			if (opt & RUN_ON_DEVICE)
+			{
+				for (size_t i = 0 ; i < recv_buffers.size() ; i++)
+				{
+					recv_buffers.get(i).hostToDevice();
+				}
+			}
+#endif
 		}
 	}
 
@@ -758,6 +776,11 @@ class grid_dist_id_comm
 		{
 			// wait to receive communication
 			v_cl.execute();
+
+#ifdef CUDIFY_USE_METAL
+			if (opt & RUN_ON_DEVICE)
+				prRecv_prp.hostToDevice();
+#endif
 
 			Unpack_stat ps;
 
@@ -1376,7 +1399,14 @@ public:
 		{
 			if (i != v_cl.rank())
 			{
+#ifdef CUDIFY_USE_METAL
+				// The pack kernels wrote the Vulkan allocation.  Stage it through
+				// MoltenVKMemory's host view for non-GPU-aware MPI.
+				send_buffers_.get(i).deviceToHost();
+				send_pointer.add(send_buffers_.get(i).getPointer());
+#else
 				send_pointer.add(send_buffers_.get(i).getDevicePointer());
+#endif
 				send_size.add(send_buffers_.get(i).size());
 				send_prc_queue.add(i);
 			}
@@ -1403,6 +1433,10 @@ public:
 
 		for (int i = 0 ; i < recv_buffers.size() ; i++)
 		{
+#ifdef CUDIFY_USE_METAL
+			if (opt & RUN_ON_DEVICE)
+				recv_buffers.get(i).hostToDevice();
+#endif
 			ExtPreAlloc<Memory> prAlloc_;
 			prAlloc_.setMemory(recv_buffers.get(i).size(),recv_buffers.get(i));
 			unpack_buffer_to_local_grid<prp ...>(loc_grid,gdb_ext,prAlloc_,recv_proc.get(i).size);
@@ -1523,7 +1557,13 @@ public:
 				void * pointer;
 
 				if (opt & RUN_ON_DEVICE)
-				{pointer = prAlloc_prp.getDevicePointerEnd();}
+				{
+#ifdef CUDIFY_USE_METAL
+					pointer = prAlloc_prp.getPointerEnd();
+#else
+					pointer = prAlloc_prp.getDevicePointerEnd();
+#endif
+				}
 				else
 				{pointer = prAlloc_prp.getPointerEnd();}
 
@@ -1555,7 +1595,13 @@ public:
 				void * pointer2;
 
 				if (opt & RUN_ON_DEVICE)
-				{pointer2 = prAlloc_prp.getDevicePointerEnd();}
+				{
+#ifdef CUDIFY_USE_METAL
+					pointer2 = prAlloc_prp.getPointerEnd();
+#else
+					pointer2 = prAlloc_prp.getDevicePointerEnd();
+#endif
+				}
 				else
 				{pointer2 = prAlloc_prp.getPointerEnd();}
 
@@ -1595,6 +1641,13 @@ public:
 			prAlloc_prp.decRef();
 			delete &prAlloc_prp;
 		}
+
+#ifdef CUDIFY_USE_METAL
+		// MPI sends from the host shadow. packFinalize updates the Vulkan allocation
+		// in both the normal and KEEP_GEOMETRY (SKIP_LABELLING) paths.
+		if (opt & RUN_ON_DEVICE)
+			g_send_prp_mem.deviceToHost();
+#endif
 
 		#ifdef ENABLE_GRID_DIST_ID_PERF_STATS
 		packing_time.stop();

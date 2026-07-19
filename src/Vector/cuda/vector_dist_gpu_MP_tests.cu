@@ -753,8 +753,8 @@ BOOST_AUTO_TEST_CASE( vector_dist_multiphase_kernel_cl_test )
 
 	//
 
-	phases.template hostToDevice();
-	cl_ph.template hostToDevice();
+	phases.hostToDevice();
+	cl_ph.hostToDevice();
 
 	openfpm::vector_gpu<aggregate<float>> output;
 	openfpm::vector_gpu<aggregate<float>> output2;

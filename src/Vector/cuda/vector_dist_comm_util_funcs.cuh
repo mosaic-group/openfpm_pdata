@@ -80,7 +80,7 @@ struct labelParticlesGhost_impl<dim,St,prop,Memory,layout_base,Decomposition,tru
 
 			proc_id_out.resize(v_pos.size()+1);
 			proc_id_out.template get<0>(proc_id_out.size()-1) = 0;
-			proc_id_out.template hostToDevice(proc_id_out.size()-1,proc_id_out.size()-1);
+			proc_id_out.template hostToDevice<>(proc_id_out.size()-1,proc_id_out.size()-1);
 
 			auto ite = v_pos.getGPUIterator();
 
@@ -262,7 +262,7 @@ struct local_ghost_from_dec_impl<dim,St,prop,Memory,layout_base,true>
 
 		o_part_loc.resize(ghostMarker+1);
 		o_part_loc.template get<0>(o_part_loc.size()-1) = 0;
-		o_part_loc.template hostToDevice(o_part_loc.size()-1,o_part_loc.size()-1);
+		o_part_loc.template hostToDevice<>(o_part_loc.size()-1,o_part_loc.size()-1);
 
 		// Label the internal (assigned) particles
 		auto ite = v_pos.getGPUIteratorTo(ghostMarker);

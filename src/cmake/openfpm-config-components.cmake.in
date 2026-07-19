@@ -1,0 +1,89 @@
+# OpenFPM package components.  Core is always available; numerics is an
+# optional build-time module whose installed configuration requires PETSc.
+set(OPENFPM_AVAILABLE_COMPONENTS core)
+set(openfpm_core_FOUND TRUE)
+set(OPENFPM_NUMERICS_BUILT @OPENFPM_NUMERICS_BUILT@)
+set(OPENFPM_PETSC_FOUND_AT_BUILD @OPENFPM_PETSC_FOUND_AT_BUILD@)
+set(OPENFPM_PETSC_INCLUDES "@PETSC_INCLUDES@")
+set(OPENFPM_PETSC_LIBRARIES "@PETSC_LIBRARIES@")
+
+set(openfpm_numerics_FOUND FALSE)
+set(_openfpm_numerics_reason "")
+if (NOT OPENFPM_NUMERICS_BUILT)
+    set(_openfpm_numerics_reason
+        "this OpenFPM installation was built with ENABLE_NUMERICS=OFF")
+elseif (NOT OPENFPM_PETSC_FOUND_AT_BUILD)
+    set(_openfpm_numerics_reason
+        "OpenFPM numerics was built without PETSc support")
+elseif (NOT TARGET openfpm::numerics)
+    set(_openfpm_numerics_reason
+        "the installed openfpm::numerics target is missing")
+elseif (NOT OPENFPM_PETSC_INCLUDES OR NOT OPENFPM_PETSC_LIBRARIES)
+    set(_openfpm_numerics_reason
+        "the installed package does not contain its PETSc include/library metadata")
+else()
+    foreach(_openfpm_petsc_include IN LISTS OPENFPM_PETSC_INCLUDES)
+        if (_openfpm_petsc_include AND
+            NOT IS_DIRECTORY "${_openfpm_petsc_include}")
+            set(_openfpm_numerics_reason
+                "required PETSc include directory is missing: ${_openfpm_petsc_include}")
+            break()
+        endif()
+    endforeach()
+
+    if (NOT _openfpm_numerics_reason)
+        foreach(_openfpm_petsc_library IN LISTS OPENFPM_PETSC_LIBRARIES)
+            if (IS_ABSOLUTE "${_openfpm_petsc_library}" AND
+                NOT EXISTS "${_openfpm_petsc_library}")
+                set(_openfpm_numerics_reason
+                    "required PETSc library is missing: ${_openfpm_petsc_library}")
+                break()
+            endif()
+        endforeach()
+    endif()
+
+    if (NOT _openfpm_numerics_reason)
+        set(openfpm_numerics_FOUND TRUE)
+        list(APPEND OPENFPM_AVAILABLE_COMPONENTS numerics)
+    endif()
+endif()
+
+set(openfpm_FOUND TRUE)
+set(_openfpm_required_component_errors)
+foreach(_openfpm_component IN LISTS openfpm_FIND_COMPONENTS)
+    if (_openfpm_component STREQUAL "core")
+        set(openfpm_core_FOUND TRUE)
+    elseif (_openfpm_component STREQUAL "numerics")
+        # openfpm_numerics_FOUND was determined above.
+    else()
+        set(openfpm_${_openfpm_component}_FOUND FALSE)
+        set(_openfpm_component_reason
+            "unknown OpenFPM component '${_openfpm_component}' (available: ${OPENFPM_AVAILABLE_COMPONENTS})")
+    endif()
+
+    if (NOT openfpm_${_openfpm_component}_FOUND AND
+        openfpm_FIND_REQUIRED_${_openfpm_component})
+        if (_openfpm_component STREQUAL "numerics")
+            set(_openfpm_component_reason
+                "OpenFPM component 'numerics' is unavailable: ${_openfpm_numerics_reason}")
+        endif()
+        list(APPEND _openfpm_required_component_errors
+            "${_openfpm_component_reason}")
+    endif()
+    unset(_openfpm_component_reason)
+endforeach()
+
+if (_openfpm_required_component_errors)
+    set(openfpm_FOUND FALSE)
+    list(JOIN _openfpm_required_component_errors "; "
+        openfpm_NOT_FOUND_MESSAGE)
+else()
+    message(STATUS
+        "Found OpenFPM version @openfpm_VERSION@ (${CMAKE_CURRENT_LIST_FILE}); components: ${OPENFPM_AVAILABLE_COMPONENTS}")
+endif()
+
+unset(_openfpm_component)
+unset(_openfpm_required_component_errors)
+unset(_openfpm_numerics_reason)
+unset(_openfpm_petsc_include)
+unset(_openfpm_petsc_library)
